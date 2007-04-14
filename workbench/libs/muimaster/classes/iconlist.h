@@ -6,6 +6,27 @@
     $Id$
 */
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <math.h>
+#include <stdarg.h>
+#include <exec/types.h>
+#include <exec/memory.h>
+#include <dos/dos.h>
+#include <intuition/intuitionbase.h>
+#include <intuition/classusr.h>
+#include <clib/alib_protos.h>
+#include <utility/utility.h>
+#include <dos/dosextens.h>
+#include <libraries/mui.h>
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/muimaster.h>
+#include <proto/intuition.h>
+
 /****************************************************************************/
 /*** Name *******************************************************************/
 #define MUIC_IconList "IconList.mui"
@@ -16,16 +37,18 @@
 /*** Methods ****************************************************************/
 #define MUIM_IconList_Clear             (MUIB_IconList | 0x00000000) /* Zune: V1 */
 #define MUIM_IconList_Update            (MUIB_IconList | 0x00000001) /* Zune: V1 */
-#define MUIM_IconList_Add               (MUIB_IconList | 0x00000002) /* Zune: V1 returns 0 For Failure or (struct IconEntry *) */
-#define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000003) /* Zune: V1 */
-#define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000004) /* Zune: V1 */
-#define MUIM_IconList_Sort              (MUIB_IconList | 0x00000005) /* Zune: V1 */
-#define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000008) /* Zune: V1 */
-#define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000009) /* Zune: V1 */
+#define MUIM_IconList_CreateEntry       (MUIB_IconList | 0x00000010) /* Zune: V1 returns 0 For Failure or (struct IconEntry *) */
+#define MUIM_IconList_DestroyEntry      (MUIB_IconList | 0x00000011)
+#define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000020) /* Zune: V1 */
+#define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000021) /* Zune: V1 */
+#define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000022) /* Zune: V1 */
+#define MUIM_IconList_Sort              (MUIB_IconList | 0x00000031) /* Zune: V1 */
+#define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000032) /* Zune: V1 */
 
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
-struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib;};/* void *udata; More file attrs to add };*/
+struct MUIP_IconList_CreateEntry        {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib; struct DiskObject *icon_dob;};/* void *udata; More file attrs to add };*/
+struct MUIP_IconList_DestroyEntry       {ULONG MethodID; struct IconEntry *icon;};
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 struct MUIP_IconList_Sort               {ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
@@ -59,7 +82,7 @@ struct IconList_Entry
     char *filename;  /* The absolute filename of the file which the icons represents (means without the */
     char *label;     /* The label which is displayed (often FilePart(filename)) */
     LONG type;
-    void *udata;     /* userdate given at MUIM_IconList_Add */
+    void *udata;     /* userdate given at MUIM_IconList_CreateEntry */
 };
 
 struct IconList_Click
@@ -73,6 +96,30 @@ struct IconList_Drop
     IPTR   *source_iconlistobj;              /* iconlist obj */
     IPTR   *destination_iconlistobj;         /* iconlist obj */
     unsigned char destination_string[1024];  /* destination path */
+};
+
+struct IconEntry
+{
+    struct Node                   ile_Node;
+
+    struct IconList_Entry         ile_IconListEntry;
+
+    struct DiskObject             *ile_DiskObj;                           /* The icons disk objects */
+    struct FileInfoBlock          ile_FileInfoBlock;
+
+    LONG                          ile_IconX,
+					              ile_IconY;
+    ULONG                         ile_IconWidth,
+							      ile_IconHeight,
+                                  ile_AreaWidth,
+	                              ile_AreaHeight;                     /* <- includes textwidth and everything */
+
+    ULONG                         ile_Flags;
+
+    UBYTE   	    	          *ile_TxtBuf_DATE;
+    UBYTE   	    	          *ile_TxtBuf_TIME;
+    UBYTE   	    	          *ile_TxtBuf_SIZE;
+    UBYTE   	    	          *ile_TxtBuf_PROT;
 };
 
 /****************************************************************************/

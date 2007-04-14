@@ -5,6 +5,8 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+//#define DEBUG_NETWORKBROWSER
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -18,6 +20,7 @@
 #include <proto/muimaster.h>
 #include <proto/exec.h>
 #include <proto/datatypes.h>
+#include <proto/icon.h>
 
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -47,11 +50,26 @@ struct IconWindowIconList_DATA
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
 };
 
+struct IconWindowIconVolumeList_DATA
+{
+	Object                       *iwcd_IconWindow;
+	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
+	struct Hook					 iwcd_ProcessIconListPrefs_hook;
+	IPTR						 iwvcd_ShowNetworkBrowser;
+};
+
+struct IconWindowIconNetworkBrowserList_DATA
+{
+	Object                       *iwcd_IconWindow;
+	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
+	struct Hook					 iwcd_ProcessIconListPrefs_hook;
+	struct List                  iwnbcd_NetworkClasses;
+};
+
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindowIconList_DATA *data = INST_DATA(CLASS, self)
 
-#define IconWindowIconDrawerList_DATA IconWindowIconList_DATA
-#define IconWindowIconVolumeList_DATA IconWindowIconList_DATA
+#define IconWindowIconDrawerList_DATA             IconWindowIconList_DATA
 
 /*** Hook functions *********************************************************/
 AROS_UFH3(
@@ -243,6 +261,35 @@ IPTR IconWindowIconList__MUIM_Setup
 	
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
+		if (prefs)
+		{
+			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser);
+
+#if defined(DEBUG_NETWORKBROWSER)
+			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser = TRUE;
+#endif
+
+			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser)
+			{
+				struct DiskObject    *_nb_dob = NULL;
+				_nb_dob = GetIconTags
+				(
+					"ENV:SYS/def_NetworkHost", 
+					ICONGETA_FailIfUnavailable, FALSE,
+					ICONGETA_Label,             (IPTR)"Network Access..",
+					TAG_DONE
+				);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: NetworkBrowser Icon DOB @ %x\n", _nb_dob));
+
+				if (_nb_dob)
+				{
+					DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob);
+					//DoMethod(self, MUIM_IconList_Sort);
+				}
+			}
+		}
+		
 		if (muiRenderInfo(self))
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setting up EventHandler for (IDCMP_DISKINSERTED | IDCMP_DISKREMOVED)\n"));
@@ -372,6 +419,64 @@ iwc_ParentBackground:
 	return retVal;
 }
 
+IPTR IconWindowIconList__MUIM_IconList_Update
+(
+    Class *CLASS, Object *self, struct MUIP_IconList_Update *message
+)
+{
+    SETUP_INST_DATA;
+
+	IPTR 				retVal = (IPTR)TRUE;
+
+	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
+	{
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: (ROOT WINDOW) Causing parent to update\n"));
+		retVal = DoSuperMethodA(CLASS, self, (Msg) message);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if we should show NetworkBrowser Icon ..\n"));
+
+		Object *prefs = NULL;
+
+		GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+		if (prefs)
+		{
+			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser);
+
+#if defined(DEBUG_NETWORKBROWSER)
+			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser = TRUE;
+#endif
+
+			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser)
+			{
+				struct DiskObject    *_nb_dob = NULL;
+				_nb_dob = GetIconTags
+				(
+					"ENV:SYS/def_NetworkHost", 
+					ICONGETA_FailIfUnavailable, FALSE,
+					ICONGETA_Label,             (IPTR)"Network Access..",
+					TAG_DONE
+				);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBrowser Icon DOB @ %x\n", _nb_dob));
+
+				if (_nb_dob)
+				{
+					DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob);
+					DoMethod(self, MUIM_IconList_Sort);
+				}
+			}
+		}
+	}
+	else
+	{
+		retVal = TRUE;
+		DoMethod(self, MUIM_IconList_Clear);
+	}
+
+    return retVal;
+}
+
 /*** Setup ******************************************************************/
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
 (
@@ -393,5 +498,19 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     MUIM_Setup,                    Msg,
     MUIM_Cleanup,                  Msg,
 	MUIM_DrawBackground,           Msg,
-	MUIM_HandleEvent,              Msg
+	MUIM_HandleEvent,              Msg,
+	MUIM_IconList_Update,          struct MUIP_IconList_Update *
+);
+
+ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS
+(
+    IconWindowIconNetworkBrowserList, IconWindowIconList, NULL, MUIC_IconList, NULL,
+    OM_NEW,                        struct opSet *,
+    OM_SET,                        struct opSet *,
+    OM_GET,                        struct opGet *,
+    MUIM_Setup,                    Msg,
+    MUIM_Cleanup,                  Msg,
+	MUIM_DrawBackground,           Msg,
+	MUIM_HandleEvent,              Msg,
+	MUIM_IconList_Update,          struct MUIP_IconList_Update *
 );

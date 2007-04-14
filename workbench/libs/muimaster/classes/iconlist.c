@@ -76,30 +76,6 @@ extern struct Library *MUIMasterBase;
 #define ICONLIST_DRAWMODE_NORMAL    1
 #define ICONLIST_DRAWMODE_FAST      2
 
-struct IconEntry
-{
-    struct Node                   ile_Node;
-
-    struct IconList_Entry         ile_IconListEntry;
-
-    struct DiskObject             *ile_DiskObj;                           /* The icons disk objects */
-    struct FileInfoBlock          ile_FileInfoBlock;
-
-    LONG                          ile_IconX,
-					              ile_IconY;
-    ULONG                         ile_IconWidth,
-							      ile_IconHeight,
-                                  ile_AreaWidth,
-	                              ile_AreaHeight;                     /* <- includes textwidth and everything */
-
-    ULONG                         ile_Flags;
-
-    UBYTE   	    	          ile_TxtBuf_DATE[LEN_DATSTRING];
-    UBYTE   	    	          ile_TxtBuf_TIME[LEN_DATSTRING];
-    UBYTE   	    	          ile_TxtBuf_SIZE[30];
-    UBYTE   	    	          ile_TxtBuf_PROT[8];
-};
-
 struct MUI_IconData
 {
     IPTR                          icld_Pool;                          /* Pool to allocate data from */
@@ -1497,10 +1473,7 @@ IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUI
 
     while ((node = (struct IconEntry*)RemTail((struct List*)&data->icld_IconList)))
     {
-        if (node->ile_DiskObj) FreeDiskObject(node->ile_DiskObj);
-        if (node->ile_IconListEntry.label) FreePooled(data->icld_Pool, node->ile_IconListEntry.label, strlen(node->ile_IconListEntry.label)+1);
-        if (node->ile_IconListEntry.filename) FreePooled(data->icld_Pool, node->ile_IconListEntry.filename, strlen(node->ile_IconListEntry.filename)+1);
-        FreePooled(data->icld_Pool, node, sizeof(struct IconEntry));
+        DoMethod(obj, MUIM_IconList_DestroyEntry, node);
     }
 
     data->icld_SelectionFirst = NULL;
@@ -1519,11 +1492,29 @@ IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUI
     return 1;
 }
 
+IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DestroyEntry *message)
+{
+    struct MUI_IconData *data = INST_DATA(CLASS, obj);
+
+	if (message->icon)
+	{
+		if (message->icon->ile_TxtBuf_PROT) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_PROT, 8);
+		if (message->icon->ile_TxtBuf_SIZE) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_SIZE, 30);
+		if (message->icon->ile_TxtBuf_TIME) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_TIME, LEN_DATSTRING);
+		if (message->icon->ile_TxtBuf_DATE) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_DATE, LEN_DATSTRING);
+        if (message->icon->ile_DiskObj) FreeDiskObject(message->icon->ile_DiskObj);
+        if (message->icon->ile_IconListEntry.label) FreePooled(data->icld_Pool, message->icon->ile_IconListEntry.label, strlen(message->icon->ile_IconListEntry.label)+1);
+        if (message->icon->ile_IconListEntry.filename) FreePooled(data->icld_Pool, message->icon->ile_IconListEntry.filename, strlen(message->icon->ile_IconListEntry.filename)+1);
+        FreePooled(data->icld_Pool, message->icon, sizeof(struct IconEntry));
+	}
+	return TRUE;
+}
+
 /**************************************************************************
-MUIM_IconList_Add.
+MUIM_IconList_CreateEntry.
 Returns 0 on failure otherwise it returns the icons entry ..
 **************************************************************************/
-IPTR IconList__MUIM_IconList_Add(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Add *message)
+IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
 {
     struct MUI_IconData  *data = INST_DATA(CLASS, obj);
     struct IconEntry     *entry = NULL;
@@ -1534,13 +1525,20 @@ IPTR IconList__MUIM_IconList_Add(struct IClass *CLASS, Object *obj, struct MUIP_
     struct Rectangle     rect;
 
     /*disk object (icon)*/
-    dob = GetIconTags
-    (
-        message->filename, 
-        ICONGETA_FailIfUnavailable,        FALSE,
-        ICONGETA_Label,             (IPTR) message->label,
-        TAG_DONE
-    );
+	if (!(message->icon_dob))
+	{
+		dob = GetIconTags
+		(
+			message->filename, 
+			ICONGETA_FailIfUnavailable,        FALSE,
+			ICONGETA_Label,             (IPTR) message->label,
+			TAG_DONE
+		);
+	}
+	else
+	{
+		dob = message->icon_dob;
+	}
 
     if (!dob) return 0;
 
@@ -1552,20 +1550,39 @@ IPTR IconList__MUIM_IconList_Add(struct IClass *CLASS, Object *obj, struct MUIP_
 
     memset(entry,0,sizeof(struct IconEntry));
 
-    /*alloc filename*/
-    if (!(entry->ile_IconListEntry.filename = AllocPooled(data->icld_Pool,strlen(message->filename)+1)))
+	/* Allocate Text Buffers */
+    if (!(entry->ile_TxtBuf_DATE = AllocPooled(data->icld_Pool, LEN_DATSTRING)))
     {
-        FreePooled(data->icld_Pool,entry,sizeof(struct IconEntry));
-        FreeDiskObject(dob);
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
+        return 0;
+    }
+    if (!(entry->ile_TxtBuf_TIME = AllocPooled(data->icld_Pool, LEN_DATSTRING)))
+    {
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
+        return 0;
+    }
+    if (!(entry->ile_TxtBuf_SIZE = AllocPooled(data->icld_Pool, 30)))
+    {
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
+        return 0;
+    }
+    if (!(entry->ile_TxtBuf_PROT = AllocPooled(data->icld_Pool, 8)))
+    {
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
+        return 0;
+    }	
+	
+    /*alloc filename*/
+    if (!(entry->ile_IconListEntry.filename = AllocPooled(data->icld_Pool, strlen(message->filename)+1)))
+    {
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
     }
 
     /*alloc icon label*/
     if (!(entry->ile_IconListEntry.label = AllocPooled(data->icld_Pool,strlen(message->label)+1)))
     {
-        FreePooled(data->icld_Pool,entry->ile_IconListEntry.filename,strlen(entry->ile_IconListEntry.filename)+1);
-        FreePooled(data->icld_Pool,entry,sizeof(struct IconEntry));
-        FreeDiskObject(dob);
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
     }
 
@@ -2552,7 +2569,7 @@ D(bug("[IconList] IconDrawerList__ParseContents: Registering file '%s'\n", filen
 
 					struct IconEntry *this_Icon = NULL;
 						
-					if (this_Icon = DoMethod(obj, MUIM_IconList_Add, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib))
+					if (this_Icon = DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL))
 					{
 						sprintf(namebuffer + strlen(namebuffer), ".info");
 						if (tmplock = Lock(namebuffer, SHARED_LOCK))
@@ -2666,7 +2683,7 @@ do
         strcpy(buf,data->drawer);
         AddPart(buf,filename,sizeof(buf));
 
-        if (!(DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,entry->ile_ed_Type,NULL *//* udata *//*)))
+        if (!(DoMethod(obj,MUIM_IconList_CreateEntry,(IPTR)buf,(IPTR)filename,entry->ile_ed_Type,NULL *//* udata *//*)))
         {
         }
     }
@@ -2895,7 +2912,8 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_UnknownDropDestination: return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
         case MUIM_IconList_Update:        return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
         case MUIM_IconList_Clear:         return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
-        case MUIM_IconList_Add:           return IconList__MUIM_IconList_Add(CLASS, obj, (APTR)message);
+        case MUIM_IconList_CreateEntry:   return IconList__MUIM_IconList_CreateEntry(CLASS, obj, (APTR)message);
+        case MUIM_IconList_DestroyEntry:  return IconList__MUIM_IconList_DestroyEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_NextSelected:  return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
         case MUIM_IconList_UnselectAll:   return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
         case MUIM_IconList_Sort:          return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
@@ -3173,7 +3191,7 @@ IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mes
 /**************************************************************************
 MUIM_IconList_Update
 **************************************************************************/
-IPTR IconVolumeList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
+IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
     //struct MUI_IconVolumeData *data = INST_DATA(CLASS, obj);
     struct IconEntry  *this_Icon = NULL;
@@ -3195,9 +3213,9 @@ IPTR IconVolumeList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_
                 strcpy(buf, nd->name);
                 strcat(buf, ":Disk");
         
-                if (!(this_Icon = DoMethod(obj, MUIM_IconList_Add, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL)))
+                if (!(this_Icon = DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)))
                 {
-D(bug("[IconList]: IconVolumeList__MUIM_Update: Failed to Add IconEntry for '%s'\n", nd->name));
+D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Failed to Add IconEntry for '%s'\n", nd->name));
                 }
 				else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
 						this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
@@ -3218,7 +3236,7 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
     switch (message->MethodID)
     {
         case OM_NEW: return IconVolumeList__OM_NEW(CLASS, obj, (struct opSet *)message);
-        case MUIM_IconList_Update: return IconVolumeList__MUIM_Update(CLASS,obj,(APTR)message);
+        case MUIM_IconList_Update: return IconVolumeList__MUIM_IconList_Update(CLASS,obj,(APTR)message);
     }
 
     return DoSuperMethodA(CLASS, obj, message);
