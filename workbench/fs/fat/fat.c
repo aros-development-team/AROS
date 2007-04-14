@@ -288,10 +288,9 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         kprintf("\tInvalid FAT Boot Sector\n");
         return ERROR_NOT_A_DOS_DISK;
     }
- 
-    if ((err = InitDevice(glob->fssm, sb->sectorsize) != 0))
-        return err;
 
+    glob->cache = cache_new(64, 256, sb->sectorsize, 0);
+ 
     if (sb->clusters_count < 4085) {
         kprintf("\tFAT12 filesystem detected\n");
         sb->type = 12;
