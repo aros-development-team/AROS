@@ -329,6 +329,7 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return (msg->MethodID == OM_SET) ? DoSuperMethodA(cl, obj, (Msg)msg) : 0;
     
 }
+
 IPTR Dirlist__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Dirlist_DATA *data = INST_DATA(cl, obj);
@@ -439,16 +440,44 @@ IPTR Dirlist__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     
 }
 
+
+IPTR Dirlist__MUIM_Dirlist_ReRead(struct IClass *cl, Object *obj, struct MUIP_Dirlist_ReRead *msg)
+{
+    struct Dirlist_DATA *data = INST_DATA(cl, obj);
+
+    set(obj, MUIA_List_Quiet, TRUE);
+    if (data->status == MUIV_Dirlist_Status_Valid)
+    {
+	DoMethod(obj, MUIM_List_Clear);
+
+	SetAttrs(obj, MUIA_Dirlist_Status	 , MUIV_Dirlist_Status_Invalid,
+		MUIA_Dirlist_NumBytes  , 0 	    	    	      ,
+		MUIA_Dirlist_NumFiles  , 0 	    	    	      ,
+		MUIA_Dirlist_NumDrawers, 0	    	    	      ,
+		TAG_DONE  	    	    	    	    	      );
+    }
+
+    if (data->directory)
+    {
+	ReadDirectory(obj, data);
+    }
+    set(obj, MUIA_List_Quiet, FALSE);
+
+    return 0;
+}
+
+
 #if ZUNE_BUILTIN_DIRLIST
 BOOPSI_DISPATCHER(IPTR, Dirlist_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:     return Dirlist__OM_NEW(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Dirlist__OM_DISPOSE(cl, obj, msg);
-	case OM_SET:     return Dirlist__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET:     return Dirlist__OM_GET(cl, obj, (struct opGet *)msg);
-        default:         return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW:              return Dirlist__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:          return Dirlist__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:              return Dirlist__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:              return Dirlist__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Dirlist_ReRead: return Dirlist__MUIM_Dirlist_ReRead(cl, obj, (struct opGet *)msg);
+        default:                  return DoSuperMethodA(cl, obj, msg);
     }
 }
 BOOPSI_DISPATCHER_END
