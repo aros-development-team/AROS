@@ -98,11 +98,11 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
             /* find it */
             for (i = 0; i < cluster_offset - ioh->cluster_offset; i++) {
                 /* get the next one */
-                ioh->cur_cluster = NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+                ioh->cur_cluster = GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
 
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */
-                if (ioh->cur_cluster == 0) {
+                if (ioh->cur_cluster == 0 || ioh->cur_cluster > ioh->sb->eoc_mark) {
                     D(bug("[fat] hit empty or eoc cluster, no more file left\n"));
 
                     RESET_HANDLE(ioh);
@@ -191,6 +191,163 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
     }
 
     *nread = pos;
+
+    return 0;
+}
+
+LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nwritten) {
+    LONG err = 0;
+    ULONG sector_offset, byte_offset, cluster_offset;
+    struct cache_block *b;
+    ULONG pos, ncopy;
+
+    /* figure out how far into the file to start */
+    sector_offset = file_pos >> ioh->sb->sectorsize_bits;
+    byte_offset = file_pos & (ioh->sb->sectorsize-1);
+
+    /* loop until we've finished writing */
+    pos = 0;
+    while (nwant > 0) {
+
+        D(bug("[fat] trying to write %ld bytes (%ld sectors + %ld bytes into the file)\n", nwant, sector_offset, byte_offset));
+
+        /* move clusters if necessary */
+        cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
+        if (ioh->cluster_offset != cluster_offset) {
+            ULONG i, j;
+
+            /* if we're already ahead of the wanted cluster, then we need to
+             * back to the start of the cluster list */
+            if (ioh->cluster_offset > cluster_offset) {
+                ioh->cur_cluster = ioh->first_cluster;
+                ioh->cluster_offset = 0;
+            }
+
+            D(bug("[fat] moving forward %ld clusters from cluster %ld\n", cluster_offset - ioh->cluster_offset, ioh->cur_cluster));
+
+            /* find it */
+            for (i = 0; i < cluster_offset - ioh->cluster_offset; i++) {
+                /* get the next one */
+                ULONG next_cluster = GET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster);
+
+                /* if it was free (shouldn't happen) or we hit the end of the
+                 * chain, there is no next cluster, so we have to allocate a
+                 * new one */
+
+                /* XXX this should be optimised to allocate a group of
+                 * clusters at once. unused ones will be freed when the file
+                 * is closed */
+                if (next_cluster == 0 || next_cluster > ioh->sb->eoc_mark) {
+                    D(bug("[fat] hit empty or eoc cluster, allocating another\n"));
+
+                    /* search for a free cluster */
+                    /* XXX this is extremely naive. at the very least we
+                     * should start from our current position */
+                    for (next_cluster = 0;
+                         next_cluster < ioh->sb->clusters_count &&
+                         GET_NEXT_CLUSTER(ioh->sb, next_cluster) != 0; next_cluster++);
+
+                    /* if we reached the end, there's none left */
+                    if (next_cluster == ioh->sb->clusters_count) {
+                        D(bug("[fat] no more free clusters, we're out of space\n"));
+
+                        RESET_HANDLE(ioh);
+
+                        return ERROR_DISK_FULL;
+                    }
+
+                    SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster, next_cluster);
+                    ioh->cur_cluster = next_cluster;
+
+                    D(bug("[fat] allocated cluster %d\n", next_cluster));
+                }
+
+                else
+                    ioh->cur_cluster = next_cluster;
+            }
+
+            /* remember how far in we are now */
+            ioh->cluster_offset = cluster_offset;
+
+            D(bug("[fat] moved to cluster %ld\n", ioh->cur_cluster));
+
+            /* reset the sector offset so the sector recalc gets triggered */
+            ioh->sector_offset = 0xffffffff;
+        }
+
+        /* recalculate the sector location if we moved */
+        if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))) {
+
+            /* work out how many sectors in we should be looking */
+            ioh->sector_offset = sector_offset & (ioh->sb->cluster_sectors-1);
+
+            /* simple math to find the absolute sector number */
+            ioh->cur_sector = SECTOR_FROM_CLUSTER(ioh->sb, ioh->cur_cluster) + ioh->sector_offset;
+
+            /* if this is cluster 0 and the first sector has been set, adjust
+             * for it. this is hack to support fat12/16 root dirs, which live
+             * in the first cluster. there's no checks to make sure we have
+             * adjusted off the end of the cluster */
+            if (ioh->cur_cluster == 0 && ioh->first_sector > 0) {
+                ioh->sector_offset = sector_offset - ioh->first_sector;
+                ioh->cur_sector = ioh->first_sector + sector_offset;
+
+                D(bug("[fat] adjusted for cluster 0, chunks starts in sector %ld\n", ioh->cur_sector));
+            }
+            
+            else
+                D(bug("[fat] chunk starts %ld sectors into the cluster, which is sector %ld\n", ioh->sector_offset, ioh->cur_sector));
+        }
+
+        /* if we don't have the wanted block kicking around, we need to bring it
+         * in from the cache */
+        if (ioh->block == NULL || ioh->cur_sector != ioh->block->num) {
+            if (ioh->block != NULL) {
+                cache_put_block(glob->cache, ioh->block, 0);
+                ioh->block = NULL;
+            }
+
+            D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
+
+            err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->cur_sector, 0, &b);
+            if (err > 0) {
+                RESET_HANDLE(ioh);
+
+                D(bug("[fat] couldn't load sector, returning error %ld\n", err));
+
+                return err;
+            }
+
+            ioh->block = b;
+        }
+
+        else
+            D(bug("[fat] using cached sector %ld\n", ioh->cur_sector));
+
+        /* copy our data into the block */
+        ncopy = ioh->sb->sectorsize - byte_offset;
+        if (ncopy > nwant) ncopy = nwant;
+        CopyMem(&(data[pos]), &(ioh->block->data[byte_offset]), ncopy);
+
+#ifdef DEBUG_DUMP
+        D(bug("[fat] dump of last write, %ld bytes:\n", ncopy));
+        fat_hexdump(&(ioh->block->data[pos]), ncopy);
+#endif
+
+        cache_mark_block_dirty(ioh->block);
+
+        pos += ncopy;
+        nwant -= ncopy;
+
+        D(bug("[fat] wrote %ld bytes, want %ld more\n", ncopy, nwant));
+
+        if (nwant > 0) {
+            sector_offset++;
+            byte_offset = 0;
+        }
+    }
+
+    *nwritten = pos;
 
     return 0;
 }
