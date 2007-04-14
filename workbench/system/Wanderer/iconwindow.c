@@ -212,6 +212,7 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
 				MUIA_Weight, 100,
 				Child, (IPTR)( strObj = StringObject,
 					MUIA_String_Contents, (IPTR)"",
+					MUIA_CycleChain, 1,
 					MUIA_Frame, MUIV_Frame_String,
 				End ),
 			End,
@@ -241,11 +242,13 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
        copied to the data of the object */
     if ( toolbarPanel != NULL )
     {
-         SET( bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
-        SET( bt_dirup, MUIA_Frame, MUIV_Frame_None );
+        SET(bt_dirup, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
+		SET(bt_dirup, MUIA_CycleChain, 1);
+        SET(bt_dirup, MUIA_Frame, MUIV_Frame_None );
 #if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
-        SET( bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
-        SET( bt_search, MUIA_Frame, MUIV_Frame_None );
+        SET(bt_search, MUIA_Background, XGET( toolbarPanel, MUIA_Background ) );
+		SET(bt_search, MUIA_CycleChain, 1);
+        SET(bt_search, MUIA_Frame, MUIV_Frame_None );
 #endif
 
         if (DoMethod( data->iwd_ExtensionGroupObj, MUIM_Group_InitChange ))

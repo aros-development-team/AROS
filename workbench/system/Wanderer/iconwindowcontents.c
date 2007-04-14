@@ -142,6 +142,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
+		MUIA_CycleChain, 1,
         TAG_MORE, (IPTR) message->ops_AttrList
     );
     
