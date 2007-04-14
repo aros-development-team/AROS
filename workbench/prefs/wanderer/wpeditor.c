@@ -68,15 +68,15 @@ struct WPEditor_AdvancedBackgroundWindow_DATA
 	Object                                          *wpedabwd_Window_WindowObj,
 									                *wpedabwd_Window_UseObj,
 									                *wpedabwd_Window_CancelObj,
-									                *wpedabwd_Window_DrawModeGrpObj,
-									                *wpedabwd_Window_DrawModeObj,
+									                *wpedabwd_Window_RenderModeGrpObj,
+									                *wpedabwd_Window_RenderModeObj,
 									                *wpedabwd_Window_PageObj,
 									                *wpedabwd_Window_TileModeObj,
 									                *wpedabwd_Window_XOffsetObj,
 									                *wpedabwd_Window_YOffsetObj;
 
-	char                                            **wpedabwd_DrawModeObj_DrawModes;
-	IPTR                                            *wpedabwd_DrawModeObj_DrawPages;
+	STRPTR                                          *wpedabwd_RenderModeObj_RenderModes;
+	IPTR                                            *wpedabwd_RenderModeObj_RenderPages;
     struct Hook                                     wpedabwd_Hook_DrawModeChage;
 };
 
@@ -104,8 +104,8 @@ static STRPTR   iconlistmodes[3];
 static STRPTR   icontextmodes[3];
 static STRPTR   registerpages[4];
 
-static STRPTR   _wpeditor_intern_Base_BackgroundImage_DrawModeNames[WP_MAX_RENDER_MODES];
-static IPTR     _wpeditor_intern_Base_BackgroundImage_DrawModeValues[WP_MAX_RENDER_MODES];
+static STRPTR   _wpeditor_intern_Base_BackgroundImage_RenderModeNames[WP_MAX_RENDER_MODES];
+static IPTR     _wpeditor_intern_Base_BackgroundImage_RenderModeValues[WP_MAX_RENDER_MODES];
 static STRPTR   _wpeditor_intern_Base_BackgroundImage_TileModeNames[WP_MAX_TILE_MODES];
 static IPTR     _wpeditor_intern_Base_BackgroundImage_TileModeValues[WP_MAX_TILE_MODES];
 
@@ -123,9 +123,37 @@ IPTR GetRenderModeTag(char *rendermode_name)
 	
 	for (i = 0; i < WP_MAX_RENDER_MODES; i++)
 	{
-		if (strcmp(_wpeditor_intern_Base_BackgroundImage_DrawModeNames[i], rendermode_name) == 0)
+		if (strcmp(_wpeditor_intern_Base_BackgroundImage_RenderModeNames[i], rendermode_name) == 0)
 		{
-			return _wpeditor_intern_Base_BackgroundImage_DrawModeValues[i];
+			return _wpeditor_intern_Base_BackgroundImage_RenderModeValues[i];
+		}
+	}
+	return -1;
+}
+
+IPTR GetRenderModeName(IPTR rendermode_val)
+{
+	int i = 0;
+	
+	for (i = 0; i < WP_MAX_RENDER_MODES; i++)
+	{
+		if (_wpeditor_intern_Base_BackgroundImage_RenderModeValues[i] == rendermode_val)
+		{
+			return _wpeditor_intern_Base_BackgroundImage_RenderModeNames[i];
+		}
+	}
+	return -1;
+}
+
+IPTR GetRenderModePage(char *rendermode_name, STRPTR __RenderModeNames[], IPTR __DrawModePages[])
+{
+	int i = 0;
+	
+	for (i = 0; i < WP_MAX_RENDER_MODES; i++)
+	{
+		if (strcmp(__RenderModeNames[i], rendermode_name) == 0)
+		{
+			return __DrawModePages[i];
 		}
 	}
 	return -1;
@@ -257,8 +285,8 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc()\n"));
 	{
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: Updating tags for Background ..\n"));
 		IPTR current_rendermode = 0;
-		GET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj, MUIA_Cycle_Active, &current_rendermode);
-		char *current_rendermode_name = data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawModes[current_rendermode];
+		GET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj, MUIA_Cycle_Active, &current_rendermode);
+		char *current_rendermode_name = data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes[current_rendermode];
 
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: Render Mode '%s'\n", current_rendermode_name));
 		current_rendermode = GetRenderModeTag(current_rendermode_name);
@@ -355,12 +383,12 @@ D(bug("[WPEditor] WandererPrefs_Hook_DrawModeChangeFunc()\n"));
 	{
 		IPTR drawmode_no = 0;
 
-		GET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj, MUIA_Cycle_Active, &drawmode_no);
+		GET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj, MUIA_Cycle_Active, &drawmode_no);
 
-D(bug("[WPEditor] WandererPrefs_Hook_DrawModeChangeFunc: Active DrawMode = %d, Page = %d\n", drawmode_no, data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawPages[drawmode_no]));
+D(bug("[WPEditor] WandererPrefs_Hook_DrawModeChangeFunc: Active DrawMode = %d, Page = %d\n", drawmode_no, data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages[drawmode_no]));
 
 		SET((IPTR)data->wped_AdvancedBG_WindowData->wpedabwd_Window_PageObj,
-				MUIA_Group_ActivePage, data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawPages[drawmode_no]);
+				MUIA_Group_ActivePage, data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages[drawmode_no]);
 	}
 	
     AROS_USERFUNC_EXIT
@@ -398,7 +426,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enab
 #if !defined(WP_DISABLE_ADVANCEDIMAGEOPTIONS)
 		SET(this_Background->wpedbo_AdvancedOptionsObject, MUIA_Disabled, FALSE);
 #endif
-		IPTR             newBG_DrawModes[WP_DRAWMODE_COUNT];
+		STRPTR           newBG_RenderModes[WP_DRAWMODE_COUNT];
 		IPTR             newBG_DrawModePages[WP_DRAWMODE_COUNT];
 		IPTR             newBG_DrawModeCount = 0;
 
@@ -410,30 +438,34 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enab
 		{
 			newBG_Options[i].ti_Tag = TAG_DONE;
 		}
-		
+
+		if (this_Background->wpedbo_Options)
+		{
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Existing options @ %x\n", this_Background->wpedbo_Options));
+		}
+
 		switch ((int)this_Background->wpedbo_Type)
 		{
 			case 5:
 			{
 				if ((strcmp(this_Background->wpedbo_BackgroundName, "Workbench")) == 0)
 				{
-					newBG_DrawModes[newBG_DrawModeCount] = _wpeditor_intern_Base_BackgroundImage_DrawModeNames[WPD_BackgroundRenderMode_Scale - 1];
+					newBG_RenderModes[newBG_DrawModeCount] = _wpeditor_intern_Base_BackgroundImage_RenderModeNames[WPD_BackgroundRenderMode_Scale - 1];
 					newBG_DrawModePages[newBG_DrawModeCount++] = 0;
 
-					newBG_Options[newBG_OptionCount].ti_Tag = MUIA_WandererPrefs_Background_RenderMode;
-					newBG_Options[newBG_OptionCount++].ti_Data = WPD_BackgroundRenderMode_Scale;
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newBG_DrawModeCount -1, newBG_RenderModes[newBG_DrawModeCount-1]));
 				}
 			}
 			case 0:
 			{
-				newBG_DrawModes[newBG_DrawModeCount]	= _wpeditor_intern_Base_BackgroundImage_DrawModeNames[WPD_BackgroundRenderMode_Tiled - 1];
+				newBG_RenderModes[newBG_DrawModeCount]	= _wpeditor_intern_Base_BackgroundImage_RenderModeNames[WPD_BackgroundRenderMode_Tiled - 1];
 				newBG_DrawModePages[newBG_DrawModeCount++] = 1;
 
-				if (GetTagData(MUIA_WandererPrefs_Background_RenderMode, WPD_BackgroundRenderMode_Tiled, newBG_Options) != WPD_BackgroundRenderMode_Scale)
-				{
-					newBG_Options[newBG_OptionCount].ti_Tag = MUIA_WandererPrefs_Background_RenderMode;
-					newBG_Options[newBG_OptionCount++].ti_Data = WPD_BackgroundRenderMode_Tiled;
-				}
+				newBG_Options[newBG_OptionCount].ti_Tag = MUIA_WandererPrefs_Background_RenderMode;
+				if (this_Background->wpedbo_Options)
+					newBG_Options[newBG_OptionCount++].ti_Data = GetTagData(MUIA_WandererPrefs_Background_RenderMode, WPD_BackgroundRenderMode_Tiled, this_Background->wpedbo_Options);
+				else
+				 newBG_Options[newBG_OptionCount++].ti_Data = WPD_BackgroundRenderMode_Tiled;
 
 				newBG_Options[newBG_OptionCount].ti_Tag = MUIA_WandererPrefs_Background_TileMode;
 				if (this_Background->wpedbo_Options)
@@ -452,59 +484,19 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enab
 					newBG_Options[newBG_OptionCount++].ti_Data = GetTagData(MUIA_WandererPrefs_Background_YOffset, 0, this_Background->wpedbo_Options);
 				else
 					newBG_Options[newBG_OptionCount++].ti_Data = 0;
+
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newBG_DrawModeCount -1, newBG_RenderModes[newBG_DrawModeCount-1]));
+
 				break;
 			}
 		}
 
-		if (newBG_DrawModeCount > 0)
-		{
-			IPTR setpage_active = newBG_DrawModeCount - 1;
-
-			if ((this_Background->wpedbo_Options) && (newBG_DrawModeCount > 1))
-			{
-				setpage_active = GetTagData(MUIA_WandererPrefs_Background_RenderMode, WPD_BackgroundRenderMode_Tiled, this_Background->wpedbo_Options) - 1;
-			}
-
-			IPTR old_bg_drawmodes = data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawModes;
-			data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawModes = AllocVec((sizeof(IPTR) * newBG_DrawModeCount + 1), MEMF_CLEAR|MEMF_PUBLIC);
-			data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawPages = AllocVec((sizeof(IPTR) * newBG_DrawModeCount), MEMF_CLEAR|MEMF_PUBLIC);
-			
-			for (i = 0; i < newBG_DrawModeCount; i ++)
-			{
-				data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawModes[i] = newBG_DrawModes[i];
-				data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawPages[i] = newBG_DrawModePages[i];
-			}
-			
-			Object *new_DrawModeObj = NULL;
-			
-			if (new_DrawModeObj = MUI_MakeObject(MUIO_Cycle, NULL, data->wped_AdvancedBG_WindowData->wpedabwd_DrawModeObj_DrawModes))
-			{
-				
-				if (DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeGrpObj, MUIM_Group_InitChange))
-				{
-					DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeGrpObj, OM_REMMEMBER, data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj);
-					DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeGrpObj, OM_ADDMEMBER, new_DrawModeObj);
-					DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeGrpObj, MUIM_Group_ExitChange);
-					
-					data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj = new_DrawModeObj;
-					
-					DoMethod (
-						data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj,
-						MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-						(IPTR)self, 3, MUIM_CallHook,
-						&data->wped_AdvancedBG_WindowData->wpedabwd_Hook_DrawModeChage, CLASS
-					);
-				}
-				
-				SET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj, MUIA_Cycle_Active, setpage_active);
-			}
-			if (old_bg_drawmodes)
-				FreeVec(old_bg_drawmodes);
-		}
-		
 		if (newBG_OptionCount > 0)
 		{
 			IPTR old_bg_options = this_Background->wpedbo_Options;
+
+			this_Background->wpedbo_Options = NULL;
+
 			this_Background->wpedbo_Options = AllocVec((sizeof(struct TagItem) * newBG_OptionCount + 1), MEMF_CLEAR|MEMF_PUBLIC);
 			do
 			{
@@ -513,11 +505,76 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enab
 				newBG_OptionCount --;
 			}while(newBG_OptionCount > 0);
 
-			SET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_TileModeObj, MUIA_Cycle_Active, GetTagData(MUIA_WandererPrefs_Background_TileMode, WPD_BackgroundTileMode_Float + 1, this_Background->wpedbo_Options) - 1);
+			SET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_TileModeObj, MUIA_Cycle_Active, GetTagData(MUIA_WandererPrefs_Background_TileMode, WPD_BackgroundTileMode_Float, this_Background->wpedbo_Options) - 1);
 			SET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_XOffsetObj, MUIA_String_Integer, GetTagData(MUIA_WandererPrefs_Background_XOffset, 0, this_Background->wpedbo_Options));
 			SET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_YOffsetObj, MUIA_String_Integer, GetTagData(MUIA_WandererPrefs_Background_YOffset, 0, this_Background->wpedbo_Options));
+
 			if (old_bg_options)
 				FreeVec(old_bg_options);
+		}
+
+		if (newBG_DrawModeCount > 0)
+		{
+			IPTR setpage_active = newBG_DrawModeCount - 1;
+
+			IPTR old_bg_drawmodes = data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes;
+			IPTR old_bg_drawpages = data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages;
+
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Old RenderModes @ %x, pages @ %x\n", old_bg_drawmodes, old_bg_drawpages));
+
+			data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes = NULL;
+			data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages = NULL;
+
+			data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes = AllocVec((sizeof(STRPTR) * (newBG_DrawModeCount + 1)), MEMF_CLEAR|MEMF_PUBLIC);
+			data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages = AllocVec((sizeof(IPTR) * newBG_DrawModeCount), MEMF_CLEAR|MEMF_PUBLIC);
+
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Allocated new RenderModes Array @ %x, page mappings @ %x\n", data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes, data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages));
+
+			for (i = 0; i < newBG_DrawModeCount; i ++)
+			{
+				data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes[i] = newBG_RenderModes[i];
+				data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages[i] = newBG_DrawModePages[i];
+			}
+
+			if ((this_Background->wpedbo_Options) && (newBG_DrawModeCount > 1))
+			{
+				setpage_active = GetRenderModePage(
+				                                    GetRenderModeName(GetTagData(MUIA_WandererPrefs_Background_RenderMode, WPD_BackgroundRenderMode_Tiled, this_Background->wpedbo_Options)),
+                                     				data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes,
+												    data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderPages);
+			}
+
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Setting advanced page to  %d = '%s'\n", setpage_active, data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes[i]));
+
+			Object *new_RenderModeObj = NULL;
+
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Creating RenderModes Cycle gadget\n"));
+
+			if (new_RenderModeObj = MUI_MakeObject(MUIO_Cycle, NULL, data->wped_AdvancedBG_WindowData->wpedabwd_RenderModeObj_RenderModes))
+			{
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ %x\n", new_RenderModeObj));
+				if (DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeGrpObj, MUIM_Group_InitChange))
+				{
+					DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeGrpObj, OM_REMMEMBER, data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj);
+					DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeGrpObj, OM_ADDMEMBER, new_RenderModeObj);
+					DoMethod(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeGrpObj, MUIM_Group_ExitChange);
+					
+					data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj = new_RenderModeObj;
+					
+					DoMethod (
+						data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj,
+						MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+						(IPTR)self, 3, MUIM_CallHook,
+						&data->wped_AdvancedBG_WindowData->wpedabwd_Hook_DrawModeChage, CLASS
+					);
+				}
+
+D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Setting cycle active \n"));
+
+				SET(data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj, MUIA_Cycle_Active, setpage_active);
+			}
+			if (old_bg_drawmodes)
+				FreeVec(old_bg_drawmodes);
 		}
     }
 	else
@@ -623,10 +680,10 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     navigationtypelabels[WPD_NAVIGATION_CLASSIC] = (STRPTR)_(MSG_CLASSIC);
     navigationtypelabels[WPD_NAVIGATION_ENHANCED] = (STRPTR)_(MSG_ENHANCED);
 
-	_wpeditor_intern_Base_BackgroundImage_DrawModeNames[WPD_BackgroundRenderMode_Tiled - 1] = "Tiled";
-	_wpeditor_intern_Base_BackgroundImage_DrawModeValues[WPD_BackgroundRenderMode_Tiled - 1] = WPD_BackgroundRenderMode_Tiled;
-	_wpeditor_intern_Base_BackgroundImage_DrawModeNames[WPD_BackgroundRenderMode_Scale - 1] = "Scaled";
-	_wpeditor_intern_Base_BackgroundImage_DrawModeValues[WPD_BackgroundRenderMode_Scale - 1] = WPD_BackgroundRenderMode_Scale;
+	_wpeditor_intern_Base_BackgroundImage_RenderModeNames[WPD_BackgroundRenderMode_Tiled - 1] = "Tiled";
+	_wpeditor_intern_Base_BackgroundImage_RenderModeValues[WPD_BackgroundRenderMode_Tiled - 1] = WPD_BackgroundRenderMode_Tiled;
+	_wpeditor_intern_Base_BackgroundImage_RenderModeNames[WPD_BackgroundRenderMode_Scale - 1] = "Scaled";
+	_wpeditor_intern_Base_BackgroundImage_RenderModeValues[WPD_BackgroundRenderMode_Scale - 1] = WPD_BackgroundRenderMode_Scale;
 
 	_wpeditor_intern_Base_BackgroundImage_TileModeNames[WPD_BackgroundTileMode_Float - 1] = "Floating";
 	_wpeditor_intern_Base_BackgroundImage_TileModeValues[WPD_BackgroundTileMode_Float - 1] = WPD_BackgroundTileMode_Float;
@@ -648,9 +705,9 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	                                    MUIA_Window_CloseGadget, FALSE,
 										MUIA_Window_Title, (IPTR)"Advanced Options ..",
 										WindowContents, (IPTR)VGroup,
-											Child, (IPTR)(_WP_AdvancedBackgroundOptions_WindowData->wpedabwd_Window_DrawModeGrpObj = HGroup,
+											Child, (IPTR)(_WP_AdvancedBackgroundOptions_WindowData->wpedabwd_Window_RenderModeGrpObj = HGroup,
 												Child, (IPTR) Label1("Draw Mode : "),
-												Child, (IPTR)(_WP_AdvancedBackgroundOptions_WindowData->wpedabwd_Window_DrawModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_Base_BackgroundImage_DrawModeNames)),
+												Child, (IPTR)(_WP_AdvancedBackgroundOptions_WindowData->wpedabwd_Window_RenderModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_Base_BackgroundImage_RenderModeNames)),
 											End),
 											Child, (IPTR)(_WP_AdvancedBackgroundOptions_WindowData->wpedabwd_Window_PageObj = GroupObject,
 												MUIA_Group_PageMode, TRUE,
@@ -1115,7 +1172,7 @@ D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: Freeing old Background Tag d
 
 		if (background_Node->wpedbo_Options = AllocVec(chunk_size - bgtag_offset, MEMF_CLEAR | MEMF_PUBLIC))
 		{
-D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: Allocated new Tag storrage @ %x [%d bytes] \n", background_Node->wpedbo_Options, chunk_size - bgtag_offset));
+D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: Allocated new Tag storage @ %x [%d bytes] \n", background_Node->wpedbo_Options, chunk_size - bgtag_offset));
 			CopyMem(background_chunk + bgtag_offset, background_Node->wpedbo_Options, chunk_size - bgtag_offset);
 		}
 	}
@@ -1324,19 +1381,19 @@ D(bug("[WPEditor] Write 'global' Wanderer Prefs Data Chunk ... \n"));
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefs))) == 0) 
 			{
 				/* save toolbar state*/
-				get(data->wped_cm_ToolbarEnabled, MUIA_Selected, &wpd.wpd_ToolbarEnabled);
+				GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &wpd.wpd_ToolbarEnabled);
 
 				/* save navigation bahaviour */
-				get(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &wpd.wpd_NavigationMethod);
+				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &wpd.wpd_NavigationMethod);
 
 				/* save the icon listing method */
-				get(data->wped_icon_listmode, MUIA_Cycle_Active, &wpd.wpd_IconListMode);
+				GET(data->wped_icon_listmode, MUIA_Cycle_Active, &wpd.wpd_IconListMode);
 
 				/* save the icon text mode */
-				get(data->wped_icon_textmode, MUIA_Cycle_Active, &wpd.wpd_IconTextMode);
+				GET(data->wped_icon_textmode, MUIA_Cycle_Active, &wpd.wpd_IconTextMode);
 
 				/* save the max length of icons */
-				get(data->wped_icon_textmaxlen, MUIA_String_Integer, &wpd.wpd_IconTextMaxLen);
+				GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &wpd.wpd_IconTextMaxLen);
 
 #warning "TODO: fix problems with endian-ness?"
 				//SMPByteSwap(&wpd); 
@@ -1365,7 +1422,8 @@ D(bug("[WPEditor] 'global' PushChunk() = %ld failed\n", error));
 
 D(bug("[WPEditor] Write 'background' Wanderer Prefs Header Chunk  for '%s' ... \n", background_Node->wpedbo_BackgroundName));
 
-				char *background_value = (char *)XGET(background_Node->wpedbo_ImageSpecObject, MUIA_Imagedisplay_Spec);
+				char *background_value = NULL;
+				GET(background_Node->wpedbo_ImageSpecObject, MUIA_Imagedisplay_Spec, &background_value);
 				
 				if (background_value)
 				{
@@ -1425,11 +1483,10 @@ D(bug("[WPEditor] Write 'background' String length doesnt need aligned (length %
 								break;
 							}
 							default:
-							//Colour/Gradient type -> we dont store tags ..
 								break;
 						}
 					}
-					background_chunksize += background_tagcounter * sizeof(struct TagItem);
+					background_chunksize += (background_tagcounter * sizeof(struct TagItem));
 
 					wanderer_chunkdata.wpIFFch_ChunkSize = background_chunksize;
 
@@ -1519,7 +1576,7 @@ D(bug("[IconWindow] WPEditor__MUIM_Setup()\n"));
 		DoMethod(_app(self), OM_ADDMEMBER, data->wped_AdvancedBG_WindowData->wpedabwd_Window_WindowObj);
 #endif
 	DoMethod (
-		data->wped_AdvancedBG_WindowData->wpedabwd_Window_DrawModeObj,
+		data->wped_AdvancedBG_WindowData->wpedabwd_Window_RenderModeObj,
         MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
 		(IPTR)self, 3, MUIM_CallHook,
         &data->wped_AdvancedBG_WindowData->wpedabwd_Hook_DrawModeChage, CLASS
