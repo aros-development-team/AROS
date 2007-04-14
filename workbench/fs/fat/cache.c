@@ -309,6 +309,30 @@ ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, U
     return 0;
 }
 
+ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
+    D(bug("cache_mark_block_dirty: block %d is now dirty\n", b->num));
+
+    b->is_dirty = 1;
+
+    /* XXX if we're doing writethrough then we need to write here */
+
+    return 0;
+}
+
+ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nblocks) {
+    ULONG i;
+
+    for (i = 0; i < nblocks; i++) {
+        D(bug("cache_mark_blocks_dirty: block %d is now dirty\n", b[i]->num));
+
+        b[i]->is_dirty = 1;
+    }
+
+    /* XXX if we're doing writethrough then send the whole lot out */
+
+    return 0;
+}
+
 /* lowlevel block functions */
 
 static ULONG _cache_get_blocks_ll(struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {

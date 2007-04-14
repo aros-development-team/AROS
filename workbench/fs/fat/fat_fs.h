@@ -155,6 +155,7 @@ struct FSSuper {
 
     /* function table */
     ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);
+    void  (*func_set_fat_entry)(struct FSSuper *sb, ULONG n, ULONG val);
     /* ... */
 };
 
@@ -207,6 +208,7 @@ struct Globals {
         }                                                          \
     } while (0);
 
-#define NEXT_CLUSTER(sb,cl) (sb->func_get_fat_entry(sb,cl))
+#define GET_NEXT_CLUSTER(sb,cl)     (sb->func_get_fat_entry(sb,cl))
+#define SET_NEXT_CLUSTER(sb,cl,val) (sb->func_set_fat_entry(sb,cl,val))
 
 #endif

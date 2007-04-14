@@ -42,7 +42,7 @@ void FillDiskInfo (struct InfoData *id) {
 
     id->id_NumSoftErrors = 0;
     id->id_UnitNumber = glob->fssm->fssm_Unit;
-    id->id_DiskState = ID_WRITE_PROTECTED;
+    id->id_DiskState = ID_VALIDATED;
 
     if (glob->sb) {
         CountFreeClusters(glob->sb);
@@ -65,7 +65,7 @@ void FillDiskInfo (struct InfoData *id) {
         id->id_NumBlocksUsed = id->id_NumBlocks;
         id->id_BytesPerBlock = de->de_SizeBlock << 2;
 
-        id->id_DiskState = ID_WRITE_PROTECTED;
+        id->id_DiskState = ID_VALIDATED;
 
         if (glob->disk_inhibited)
                 id->id_DiskType = ID_BUSY;

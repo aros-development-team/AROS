@@ -28,7 +28,7 @@
 
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
-static inline UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset) {
+static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_block **rb) {
     ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
     ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
 
@@ -37,7 +37,8 @@ static inline UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset) {
     if (sb->fat_cache_block != entry_cache_block) {
         D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block));
         /* put the old ones back */
-        cache_put_blocks(glob->cache, sb->fat_blocks, sb->fat_blocks_count, 0);
+        if (sb->fat_cache_block != 0xffffffff)
+            cache_put_blocks(glob->cache, sb->fat_blocks, sb->fat_blocks_count, 0);
 
         /* load some more */
         cache_get_blocks(glob->cache,
@@ -53,28 +54,132 @@ static inline UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset) {
         sb->fat_cache_block = entry_cache_block;
     }
 
+    /* give the block back if they asked for it (needed to mark the block
+     * dirty if they're writing */
+    if (rb != NULL)
+        *rb = sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits];
+
     /* compute the pointer location and return it */
     return sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits]->data +
            (entry_cache_offset & (sb->sectorsize-1));
 }
 
+/* FAT12 has, as the name suggests, 12-bit FAT entries. This means that two
+ * entries are condensed into three bytes, like so:
+ *
+ * entry: aaaaaaaa aaaabbbb bbbbbbbb
+ * bytes: xxxxxxxx xxxxxxxx xxxxxxxx
+ *
+ * To get at the entry we want, we find and grab the word starting at either
+ * byte 0 or 1 of the three-byte set, then shift up or down as needed. FATdoc
+ * 1.03 p16-17 describes the method
+ * 
+ * The only tricky bit is if the word falls such that the first byte is the
+ * last byte of the block and the second byte is the first byte of the next
+ * block. Since our block data are stored within cache block structures, a
+ * simple cast won't do (hell, the second block may not even be in memory if
+ * we're at the end of the FAT cache). So we get it a byte at a time, and
+ * build the word ourselves.
+ */
 static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
-    UWORD val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n + n/2)));
+    ULONG offset = n + n/2;
+    UWORD val;
+
+    if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
+        D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
+
+        val =  ((UWORD) *GetFatEntryPtr(sb, offset, NULL)) << 8;
+        val |= ((UWORD) *GetFatEntryPtr(sb, offset+1, NULL));
+
+        val = AROS_LE2WORD(val);
+    }
+    else
+        val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n + n/2, NULL)));
 
     if (n & 1)
         val >>= 4;
     else
-        val &= 0x0FFF;
+        val &= 0xfff;
 
     return val;
 }
 
+/*
+ * FAT16 and FAT32, on the other hand, have nice neat entry widths, so simple
+ * word/long casts are fine. There's also no chance that the entry can be
+ * split across blocks. Why can't everything be this simple?
+ */
 static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n) {
-    return AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n << 1)));
+    return AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n << 1, NULL)));
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
-    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2)));
+    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2, NULL)));
+}
+
+static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
+    struct cache_block *b;
+    ULONG offset = n + n/2;
+    BOOL boundary = FALSE;
+    UWORD *fat, newval;
+
+    if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
+        boundary = TRUE;
+
+        D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
+
+        newval =  ((UWORD) *GetFatEntryPtr(sb, offset, NULL)) << 8;
+        newval |= ((UWORD) *GetFatEntryPtr(sb, offset+1, NULL));
+
+        newval = AROS_LE2WORD(newval);
+    }
+    else {
+        fat = (UWORD *) GetFatEntryPtr(sb, offset, &b);
+        newval = AROS_LE2WORD(*fat);
+    }
+
+    if (n & 1) {
+        n <<= 4;
+        newval = (newval & 0xf) | val;
+    }
+    else {
+        n &= 0xfff;
+        newval = (newval & 0xf000) | val;
+    }
+
+    if (boundary) {
+        newval = AROS_WORD2LE(newval);
+
+        /* XXX ideally we'd mark both blocks dirty at the same time or only do
+         * it once if they're same block. unfortunately b is essentially
+         * invalid after a call to GetFatEntryPtr, as it may have swapped the
+         * previous cache out. This is probably safe enough. */
+        *GetFatEntryPtr(sb, offset+1, &b) = newval >> 8;
+        cache_mark_block_dirty(glob->cache, b);
+        *GetFatEntryPtr(sb, offset, &b) = newval & 0xff;
+        cache_mark_block_dirty(glob->cache, b);
+    }
+    else {
+        *fat = AROS_WORD2LE(newval);
+        cache_mark_block_dirty(glob->cache, b);
+    }
+}
+
+static void SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val) {
+    struct cache_block *b;
+
+    *((UWORD *) GetFatEntryPtr(sb, n << 1, &b)) = AROS_WORD2LE((UWORD) val);
+
+    cache_mark_block_dirty(glob->cache, b);
+}
+
+static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
+    struct cache_block *b;
+    ULONG *fat = (ULONG *) GetFatEntryPtr(sb, n << 2, &b);
+
+    *fat = (*fat & 0xf0000000) | val;
+
+    cache_mark_block_dirty(glob->cache, b);
 }
  
 LONG ReadFATSuper(struct FSSuper *sb ) {
@@ -192,29 +297,30 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->type = 12;
         sb->eoc_mark = 0x0FF8;
         sb->func_get_fat_entry = GetFat12Entry;
+        sb->func_set_fat_entry = SetFat12Entry;
     }
     else if (sb->clusters_count < 65525) {
         kprintf("\tFAT16 filesystem detected\n");
         sb->type = 16;
         sb->eoc_mark = 0xFFF8;
         sb->func_get_fat_entry = GetFat16Entry;
+        sb->func_set_fat_entry = SetFat16Entry;
     }
     else {
         kprintf("\tFAT32 filesystem detected\n");
         sb->type = 32;
         sb->eoc_mark = 0x0FFFFFF8;
         sb->func_get_fat_entry = GetFat32Entry;
+        sb->func_set_fat_entry = SetFat32Entry;
     }
 
     /* setup the FAT cache and load the first blocks */
     sb->fat_cachesize = 4096;
     sb->fat_cachesize_bits = log2(sb->fat_cachesize);
-    sb->fat_cache_block = 0;
+    sb->fat_cache_block = 0xffffffff;
 
     sb->fat_blocks_count = MIN(sb->fat_size, sb->fat_cachesize >> sb->sectorsize_bits);
     sb->fat_blocks = AllocVecPooled(glob->mempool, sizeof(struct cache_block *) * sb->fat_blocks_count);
-
-    cache_get_blocks(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, sb->first_fat_sector, sb->fat_blocks_count, 0, sb->fat_blocks);
 
     if (sb->type != 32) { /* FAT 12/16 */
         /* setup volume id */
@@ -344,7 +450,7 @@ void CountFreeClusters(struct FSSuper *sb) {
     for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)
 
         /* record the free ones */
-        if (NEXT_CLUSTER(sb, cluster) == 0)
+        if (GET_NEXT_CLUSTER(sb, cluster) == 0)
             free++;
 
     /* put the value away for later */
