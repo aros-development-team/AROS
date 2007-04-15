@@ -51,6 +51,10 @@ struct cache {
     struct cache_block  *free_tail;     /* last block in the free list */
 };
 
+/* flags for cache_new */
+#define CACHE_WRITETHROUGH  (1<<0)
+#define CACHE_WRITEBACK     (1<<1)
+
 struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
 void cache_free(struct cache *c);
 

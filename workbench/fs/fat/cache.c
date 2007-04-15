@@ -82,6 +82,8 @@ struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULO
 
     c->block_size = block_size;
 
+    if ((flags & (CACHE_WRITETHROUGH | CACHE_WRITEBACK)) == 0)
+        flags |= CACHE_WRITETHROUGH;
     c->flags = flags;
 
     c->num_blocks = num_blocks;
@@ -204,8 +206,16 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
 
     b->free_prev = b->free_next = NULL;
 
+    /* write it out if its dirty */
     if (b->is_dirty) {
-        /* XXX write the block out */
+        D(bug("cache_get_block: writing dirty block %d before reusing it\n", b->num));
+
+        if ((err = _cache_put_blocks_ll(dev, unit, num, 1, c->block_size, b->data)) != 0) {
+            /* write failed. this is bad. */
+            /* XXX what is the sane thing to do here? */
+            *rb = NULL;
+            return err;
+        }
     }
 
     /* read the block from disk */
@@ -310,25 +320,49 @@ ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, U
 }
 
 ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
-    D(bug("cache_mark_block_dirty: block %d is now dirty\n", b->num));
+    ULONG err;
 
-    b->is_dirty = 1;
+    if (c->flags & CACHE_WRITEBACK) {
+        D(bug("cache_mark_block_dirty: block %d is now dirty\n", b->num));
+        b->is_dirty = 1;
+        return 0;
+    }
 
-    /* XXX if we're doing writethrough then we need to write here */
+    D(bug("cache_mark_block_dirty: writing dirty block %d\n", b->num));
+
+    if ((err = _cache_put_blocks_ll(b->device, b->unit, b->num, 1, c->block_size, b->data)) != 0) {
+        D(bug("cache_mark_block_dirty: write failed, leaving block marked dirty\n"));
+        b->is_dirty = 1;
+        return err;
+    }
 
     return 0;
 }
 
 ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nblocks) {
-    ULONG i;
+    ULONG err, i;
 
-    for (i = 0; i < nblocks; i++) {
-        D(bug("cache_mark_blocks_dirty: block %d is now dirty\n", b[i]->num));
-
-        b[i]->is_dirty = 1;
+    if (c->flags & CACHE_WRITEBACK) {
+        for (i = 0; i < nblocks; i++) {
+            D(bug("cache_mark_blocks_dirty: block %d is now dirty\n", b[i]->num));
+            b[i]->is_dirty = 1;
+        }
+        return 0;
     }
 
-    /* XXX if we're doing writethrough then send the whole lot out */
+    /* XXX optimise this to do contiguous blocks in one hit */
+    for (i = 0; i < nblocks; i++) {
+        D(bug("cache_mark_blocks_dirty: writing dirty block %d\n", b[i]->num));
+        if ((err = _cache_put_blocks_ll(b[i]->device, b[i]->unit, b[i]->num, 1, c->block_size, b[i]->data)) != 0) {
+            D(bug("cache_mark_blocks_dirty: write failed, leaving this and remaining blocks marked dirty\n"));
+            b[i]->is_dirty = 1;
+            for (; i < nblocks; i++) {
+                D(bug("cache_mark_blocks_dirty: block %d is now dirty\n", b[i]->num));
+                b[i]->is_dirty = 1;
+            }
+        }
+    }
+
 
     return 0;
 }
@@ -363,13 +397,40 @@ static ULONG _cache_get_blocks_ll(struct Device *dev, struct Unit *unit, ULONG n
 
     DeleteMsgPort(port);
 
-    D(bug("_cache_put_blocks_ll: returning error %ld\n", err));
+    D(bug("_cache_get_blocks_ll: returning error %ld\n", err));
 
     return err;
 }
 
 static ULONG _cache_put_blocks_ll(struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
-    D(bug("_cache_put_blocks_ll: request to put %ld blocks starting from %ld (block_size %ld)", nblocks, num, block_size));
+    struct MsgPort *port;
+    struct IOExtTD req;
+    ULONG err;
 
-    return IOERR_NOCMD;
+    D(bug("_cache_put_blocks_ll: request to put %ld blocks starting from %ld (block_size %ld)\n", nblocks, num, block_size));
+
+    port = CreateMsgPort();
+
+    req.iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    req.iotd_Req.io_Message.mn_ReplyPort = port;
+    req.iotd_Req.io_Message.mn_Length = sizeof(struct IOExtTD);
+
+    req.iotd_Req.io_Command = CMD_WRITE;
+    req.iotd_Req.io_Offset = num * block_size;
+    req.iotd_Req.io_Length = nblocks * block_size;
+    req.iotd_Req.io_Data = data;
+    req.iotd_Req.io_Flags = IOF_QUICK;
+
+    req.iotd_Req.io_Device = dev;
+    req.iotd_Req.io_Unit = unit;
+
+    DoIO((struct IORequest *) &req);
+
+    err = req.iotd_Req.io_Error;
+
+    DeleteMsgPort(port);
+
+    D(bug("_cache_put_blocks_ll: returning error %ld\n", err));
+
+    return err;
 }
