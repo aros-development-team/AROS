@@ -540,6 +540,8 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
     CheckLayers(targetwindow->WScreen, IntuitionBase);
 
     UNLOCK_REFRESH(targetwindow->WScreen);
+    
+#if 0    
     if (size_dx || size_dy)
     {
         if (!(((struct IntWindow *)targetwindow)->CustomShape))
@@ -559,6 +561,8 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
             ((struct IntWindow *)targetwindow)->CustomShape = FALSE;
         }
     }
+#endif
+    
 }
 
 /*******************************************************************************************************/
