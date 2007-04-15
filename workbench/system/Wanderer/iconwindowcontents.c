@@ -6,7 +6,7 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 //#define DEBUG_NETWORKBROWSER
-//#define DEBUG_SHOWUSERFILES
+#define DEBUG_SHOWUSERFILES
 #define TXTBUFF_LEN 1024
 
 #define DEBUG 0
@@ -383,7 +383,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: NetworkBrowse
 						struct DiskObject    *_nb_dob = NULL;
 						_nb_dob = GetIconTags
 						(
-							"ENV:SYS/def_Drawer", 
+							"ENV:SYS/def_UserHome", 
 							ICONGETA_FailIfUnavailable, FALSE,
 							ICONGETA_Label,             (IPTR)"User Files..",
 							TAG_DONE
@@ -597,7 +597,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBro
 						struct DiskObject    *_nb_dob = NULL;
 						_nb_dob = GetIconTags
 						(
-							"ENV:SYS/def_Drawer", 
+							"ENV:SYS/def_UserHome", 
 							ICONGETA_FailIfUnavailable, FALSE,
 							ICONGETA_Label,             (IPTR)"User Files..",
 							TAG_DONE

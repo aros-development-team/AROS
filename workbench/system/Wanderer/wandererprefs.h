@@ -38,12 +38,13 @@
 struct  MUIP_WandererPrefs_Background_GetNotifyObject        {ULONG MethodID; char *Background_Name;};
 struct  MUIP_WandererPrefs_Background_GetAttribute           {ULONG MethodID; char *Background_Name; ULONG AttributeID;};
 
-
 #define WPD_BackgroundRenderMode_Tiled       				 1        // Default
 #define WPD_BackgroundRenderMode_Scale       	             2        // Scaled to screen
 
 #define WPD_BackgroundTileMode_Float       		             1        // Default (moves with window scrolling)
 #define WPD_BackgroundTileMode_Fixed       		             2        // Tile's are fixed in the background
+
+#define WP_GLOBALTAGCOUNT 6
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *WandererPrefs_CLASS;

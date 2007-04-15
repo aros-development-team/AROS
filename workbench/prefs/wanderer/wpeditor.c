@@ -1056,41 +1056,51 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create GUI ..\n"));
     return self;
 }
 
-BOOL WPEditor_ProccessGlobalChunk(Class *CLASS, Object *self, struct WandererPrefs *global_chunk)
+BOOL WPEditor_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem *global_chunk)
 {
     SETUP_INST_DATA;
 	
 D(bug("[WPEditor] WPEditor_ProccessGlobalChunk()\n"));
 #warning "TODO: fix problems with endian-ness?"
 	//SMPByteSwap(global_chunk);
-
-	 /* set navigation type */   
-	SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)global_chunk->wpd_NavigationMethod);    
-
-	/* check if toolbar set */
-	if (global_chunk->wpd_ToolbarEnabled == FALSE)
+	int i = 0;
+	
+	for (i =0; i < WP_GLOBALTAGCOUNT; i++)
 	{
-		SET(data->wped_toolbarpreview, MUIA_Disabled, TRUE);
-		SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, FALSE);
-		DoMethod ( data->wped_toolbarGroup, MUIM_Group_InitChange );
-		DoMethod ( data->wped_toolbarGroup, MUIM_Group_ExitChange );
+		switch ((int)global_chunk[i].ti_Tag)
+		{
+		case MUIA_WandererPrefs_NavigationMethod:
+			SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);   
+
+			break;
+
+		case MUIA_WandererPrefs_Toolbar_Enabled:
+				SET(data->wped_toolbarpreview, MUIA_Disabled, !(BOOL)global_chunk[i].ti_Data);
+				SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)global_chunk[i].ti_Data);
+				if (DoMethod(data->wped_toolbarGroup, MUIM_Group_InitChange))
+					DoMethod(data->wped_toolbarGroup, MUIM_Group_ExitChange);
+			break;
+
+#if defined(DEBUG_SHOWUSERFILES)
+		case MUIA_WandererPrefs_ShowUserFolder:
+			SET(data->wped_cm_EnableUserFiles, MUIA_Selected, (IPTR)global_chunk[i].ti_Data);
+			break;
+#endif
+
+		case MUIA_WandererPrefs_Icon_ListMode:
+			SET( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
+	
+			break;
+
+		case MUIA_WandererPrefs_Icon_TextMode:
+			SET( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
+			break;
+
+		case MUIA_WandererPrefs_Icon_TextMaxLen:
+			SET(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)global_chunk[i].ti_Data);
+			break;
+		}
 	}
-	else
-	{
-		SET(data->wped_toolbarpreview, MUIA_Disabled, FALSE);
-		SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, TRUE);
-		DoMethod ( data->wped_toolbarGroup, MUIM_Group_InitChange );
-		DoMethod ( data->wped_toolbarGroup, MUIM_Group_ExitChange );
-	}        
-
-	/* Icon listmode */
-	SET( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)global_chunk->wpd_IconListMode );
-	
-	/* Icon textmode */
-	SET( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)global_chunk->wpd_IconTextMode );
-	
-	/* set max text length */
-	SET(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)global_chunk->wpd_IconTextMaxLen);
 
 	return TRUE;
 }
@@ -1412,7 +1422,7 @@ D(bug("[WPEditor] Write 'global' Wanderer Prefs Header Chunk ... \n"));
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
 			{
 				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:global");
-				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(struct WandererPrefs);
+				wanderer_chunkdata.wpIFFch_ChunkSize = WP_GLOBALTAGCOUNT * sizeof(struct TagItem);
 				
 				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 				
@@ -1429,27 +1439,39 @@ D(bug("[WPEditor] 'global' Wanderer Prefs Header Chunk : Error! %d \n", error));
 			}	
 
 D(bug("[WPEditor] Write 'global' Wanderer Prefs Data Chunk ... \n"));
-			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefs))) == 0) 
+			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, WP_GLOBALTAGCOUNT * sizeof(struct TagItem))) == 0) 
 			{
 				/* save toolbar state*/
-				GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &wpd.wpd_ToolbarEnabled);
+				struct TagItem	_wp_GlobalTags[5];
+
+				_wp_GlobalTags[0].ti_Tag = MUIA_WandererPrefs_Toolbar_Enabled;
+				GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &_wp_GlobalTags[0].ti_Data);
 
 				/* save navigation bahaviour */
-				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &wpd.wpd_NavigationMethod);
+				_wp_GlobalTags[1].ti_Tag = MUIA_WandererPrefs_NavigationMethod;
+				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &_wp_GlobalTags[1].ti_Data);
 
 				/* save the icon listing method */
-				GET(data->wped_icon_listmode, MUIA_Cycle_Active, &wpd.wpd_IconListMode);
+				_wp_GlobalTags[2].ti_Tag = MUIA_WandererPrefs_Icon_ListMode;
+				GET(data->wped_icon_listmode, MUIA_Cycle_Active, &_wp_GlobalTags[2].ti_Data);
 
 				/* save the icon text mode */
-				GET(data->wped_icon_textmode, MUIA_Cycle_Active, &wpd.wpd_IconTextMode);
+				_wp_GlobalTags[3].ti_Tag = MUIA_WandererPrefs_Icon_TextMode;
+				GET(data->wped_icon_textmode, MUIA_Cycle_Active, &_wp_GlobalTags[3].ti_Data);
 
 				/* save the max length of icons */
-				GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &wpd.wpd_IconTextMaxLen);
+				_wp_GlobalTags[4].ti_Tag = MUIA_WandererPrefs_Icon_TextMaxLen;
+				GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &_wp_GlobalTags[4].ti_Data);
+
+#if defined(DEBUG_SHOWUSERFILES)
+				_wp_GlobalTags[5].ti_Tag = MUIA_WandererPrefs_ShowUserFolder;
+				GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &_wp_GlobalTags[5].ti_Data);
+#endif
 
 #warning "TODO: fix problems with endian-ness?"
 				//SMPByteSwap(&wpd); 
 
-				error = WriteChunkBytes(handle, &wpd, sizeof(struct WandererPrefs));
+				error = WriteChunkBytes(handle, _wp_GlobalTags, WP_GLOBALTAGCOUNT * sizeof(struct TagItem));
 D(bug("[WPEditor] 'global' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, sizeof(struct WandererPrefs)));
 				if ((error = PopChunk(handle)) != 0)
 				{
