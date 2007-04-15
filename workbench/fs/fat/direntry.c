@@ -67,9 +67,10 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de) {
     de->sb = dh->ioh.sb;
     de->cluster = dh->ioh.first_cluster;
     de->index = index;
+    de->pos = index * sizeof(struct FATDirEntry);
 
     /* get the data directly into the entry */
-    err = ReadFileChunk(&(dh->ioh), index * sizeof(struct FATDirEntry), sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nread);
+    err = ReadFileChunk(&(dh->ioh), de->pos, sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nread);
     if (err != 0) {
         D(bug("[fat] dir entry lookup failed\n"));
         return err;
@@ -263,6 +264,26 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
     D(bug("[fat] empty path supplied, so naturally not found\n"));
 
     return ERROR_OBJECT_NOT_FOUND;
+}
+
+LONG UpdateDirEntry(struct DirEntry *de) {
+    struct DirHandle dh;
+    LONG err = 0;
+    ULONG nwritten;
+
+    D(bug("[fat] writing dir entry %ld in dir starting at cluster %ld\n", de->index, de->cluster));
+
+    InitDirHandle(glob->sb, de->cluster, &dh);
+
+    err = WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nwritten);
+    if (err != 0) {
+        D(bug("[fat] dir entry update failed\n"));
+        return err;
+    }
+
+    ReleaseDirHandle(&dh);
+
+    return 0;
 }
 
 

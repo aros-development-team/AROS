@@ -498,10 +498,16 @@ void ProcessPackets(void) {
                 err = ERROR_DISK_WRITE_PROTECTED;
                 break;
 
-            case ACTION_RENAME_DISK:
-                D(bug("[fat] RENAME_DISK [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
+            case ACTION_RENAME_DISK: {
+                UBYTE *name = BADDR(pkt->dp_Arg1);
+                
+                D(bug("[fat] RENAME_DISK: name '%.*s'\n",
+                      name[0], &name[1]));
+
+                err = SetVolumeName(glob->sb, name);
+
                 break;
+            }
 
             case ACTION_WRITE:
                 D(bug("[fat] WRITE [WRITE]\n"));
