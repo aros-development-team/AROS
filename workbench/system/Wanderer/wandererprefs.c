@@ -184,19 +184,19 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     return rv;
 }
 
-BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct WandererPrefs *global_chunk)
+BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem *global_chunk)
 {
     SETUP_INST_DATA;
 	
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
 #warning "TODO: fix problems with endian-ness?"
 
-	SetAttrs(self, MUIA_WandererPrefs_NavigationMethod, global_chunk->wpd_NavigationMethod,
-				   MUIA_WandererPrefs_Toolbar_Enabled, global_chunk->wpd_ToolbarEnabled,
-				   MUIA_WandererPrefs_Icon_ListMode, global_chunk->wpd_IconListMode,
-				   MUIA_WandererPrefs_Icon_TextMode, global_chunk->wpd_IconTextMode, 
-				   MUIA_WandererPrefs_Icon_TextMaxLen, global_chunk->wpd_IconTextMaxLen,
-                       TAG_DONE);
+	int i = 0;
+	
+	for (i =0; i < WP_GLOBALTAGCOUNT; i++)
+	{
+		SET(self, global_chunk[i].ti_Tag, global_chunk[i].ti_Data);
+	}
 
 	return TRUE;
 }
