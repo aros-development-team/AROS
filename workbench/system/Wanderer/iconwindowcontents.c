@@ -334,31 +334,6 @@ IPTR IconWindowIconList__MUIM_Setup
 	{
 		if (prefs)
 		{
-			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser);
-
-#if defined(DEBUG_NETWORKBROWSER)
-			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser = TRUE;
-#endif
-
-			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser)
-			{
-				struct DiskObject    *_nb_dob = NULL;
-				_nb_dob = GetIconTags
-				(
-					"ENV:SYS/def_NetworkHost", 
-					ICONGETA_FailIfUnavailable, FALSE,
-					ICONGETA_Label,             (IPTR)"Network Access..",
-					TAG_DONE
-				);
-
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: NetworkBrowser Icon DOB @ %x\n", _nb_dob));
-
-				if (_nb_dob)
-				{
-					DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob);
-				}
-			}
-    
 			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc;
 			
 			DoMethod
@@ -367,37 +342,6 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: NetworkBrowse
 				(IPTR) self, 3, 
 				MUIM_CallHook, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook, (IPTR)CLASS
 			);
-
-			GET(prefs, MUIA_WandererPrefs_ShowUserFolder, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder);
-
-#if defined(DEBUG_SHOWUSERFILES)
-			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder = TRUE;
-#endif
-
-			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder)
-			{
-				if (GetVar("SYS/UserFilesLocation", __icwc_intern_TxtBuff, TXTBUFF_LEN, GVF_GLOBAL_ONLY) != -1)
-				{
-					if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath = AllocVec(strlen(__icwc_intern_TxtBuff), MEMF_CLEAR|MEMF_PUBLIC) != NULL)
-					{
-						struct DiskObject    *_nb_dob = NULL;
-						_nb_dob = GetIconTags
-						(
-							"ENV:SYS/def_UserHome", 
-							ICONGETA_FailIfUnavailable, FALSE,
-							ICONGETA_Label,             (IPTR)"User Files..",
-							TAG_DONE
-						);
-
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: UserFiles Icon DOB @ %x\n", _nb_dob));
-
-						if (_nb_dob)
-						{
-							DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob);
-						}
-					}
-				}
-			}
 		}
 		
 		if (muiRenderInfo(self))
