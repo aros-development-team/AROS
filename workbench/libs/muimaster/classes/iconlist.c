@@ -2841,7 +2841,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
     }
 
 	/* Quickly resort based on node priorities .. */
-    while ((entry = (struct IconEntry *)RemTail((struct List*)&list_SortedIcons)))
+    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
 	{
 		Enqueue((struct List*)&data->icld_IconList, (struct Node *)entry);
 	}
