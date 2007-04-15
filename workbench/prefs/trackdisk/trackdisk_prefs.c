@@ -1,3 +1,6 @@
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <clib/alib_protos.h>
 #include <devices/trackdisk.h>
 #include <dos/dosextens.h>
@@ -28,8 +31,9 @@ ULONG __abox__ = 1;
 
 #ifdef __AROS__
 struct Library *aroscbase;
-#endif
+#else
 struct ExecBase *SysBase;
+#endif
 struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
 struct Library *MUIMasterBase;
@@ -58,7 +62,11 @@ ULONG Start()
 	struct Message *wbmsg;
 	ULONG ret;
 
+D(bug("[Trackdisk.Prefs] Start()\n"));
+
+#if !defined(__AROS__)
 	SysBase = sBase;
+#endif
 	me = (struct Process *)FindTask(NULL);
 	if (me->pr_CLI)
 		return Main();
@@ -80,6 +88,8 @@ ULONG Main(void)
     ULONG signals;
     int i;
     ULONG retval = 0;
+
+D(bug("[Trackdisk.Prefs] Main()\n"));
 
 #ifdef __AROS__
     aroscbase = OpenLibrary("arosc.library", 39);
@@ -175,6 +185,7 @@ ULONG Main(void)
 
 void InitUnitPrefs(struct TDU_Prefs *UnitPrefs, int nunit)
 {
+D(bug("[Trackdisk.Prefs] InitUnitPrefs()\n"));
 	UnitPrefs->TagUnitNum	= TDPR_UnitNum;
 	UnitPrefs->Unit		= nunit;
 	UnitPrefs->TagPubFlags	= TDPR_PubFlags;
@@ -185,7 +196,7 @@ void InitUnitPrefs(struct TDU_Prefs *UnitPrefs, int nunit)
 
 Object *CreateDriveControls(struct DriveControls *dc, int ndrive)
 {
-
+D(bug("[Trackdisk.Prefs] CreateDriveControls()\n"));
 	sprintf(dc->DriveLabel, "Drive %u", ndrive);
 	return MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
 		MUIA_Disabled, dc->Disabled,
@@ -215,6 +226,8 @@ void LoadPrefs(void)
 	ULONG i;
 	struct TDU_PublicUnit *tdu;
 
+D(bug("[Trackdisk.Prefs] LoadPrefs()\n"));
+
 	for (i = 0; i < TD_NUMUNITS; i++) {
 		if (OpenDevice("trackdisk.device", i, &TDIO, 0))
 			Drives[i].Disabled = TRUE;
@@ -232,6 +245,8 @@ void ControlsToPrefs(struct DriveControls *dc, struct TDU_Prefs *pr)
 {
 	ULONG NoClick;
 
+D(bug("[Trackdisk.Prefs] ControlsToPrefs()\n"));
+
 	GetAttr(MUIA_Selected, dc->NoClickSwitch, &NoClick);
 	pr->PubFlags = NoClick ? TDPF_NOCLICK : 0 ;
 	GetAttr(MUIA_Numeric_Value, dc->RetriesSlider, &pr->RetryCnt);
@@ -241,6 +256,8 @@ void ControlsToPrefs(struct DriveControls *dc, struct TDU_Prefs *pr)
 void SavePrefs(void)
 {
 	BPTR cf;
+
+D(bug("[Trackdisk.Prefs] SavePrefs()\n"));
 
 	cf = Open(TRACKDISK_PREFS_NAME, MODE_NEWFILE);
 	if (cf) {
@@ -254,6 +271,8 @@ void UsePrefs(void)
 {
 	ULONG i;
 	struct TDU_PublicUnit *tdu;
+
+D(bug("[Trackdisk.Prefs] UsePrefs()\n"));
 
 	for (i = 0; i < TD_NUMUNITS; i++) {
 		if ((!Drives[i].Disabled) && (!OpenDevice("trackdisk.device", i, &TDIO, 0))) {
