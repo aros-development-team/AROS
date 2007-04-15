@@ -165,12 +165,16 @@ LONG GetDirLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
 
             D(bug("[fat] extracted long name '%.*s'\n", *len, name));
 
+            ReleaseDirHandle(&dh);
+
             return 0;
         }
 
         index--;
         order++;
     }
+
+    ReleaseDirHandle(&dh);
 
     D(bug("[fat] long name construction failed\n"));
 
