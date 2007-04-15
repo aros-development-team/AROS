@@ -1099,4 +1099,36 @@ void FireScreenNotifyMessage(IPTR data, ULONG flag, struct IntuitionBase *Intuit
 {
     FireScreenNotifyMessageCode(data, flag, 0, IntuitionBase);
 }
+
+/**********************************************************************************/
+
+AROS_UFH3(struct Region *, DefaultWindowShapeFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct Layer *, lay, A2),
+    AROS_UFHA(struct ShapeHookMsg *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct IntuitionBase    *IntuitionBase = (struct IntuitionBase *)hook->h_Data;
+    struct Window   	    *win = (struct Window *)hook->h_SubEntry;
+    struct Region   	    *shape;
+    struct wdpWindowShape    shapemsg;
+    
+    shapemsg.MethodID	    = WDM_WINDOWSHAPE;
+    shapemsg.wdp_TrueColor  = (GetPrivScreen(win->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
+    shapemsg.wdp_Width 	    = msg->NewBounds.MaxX - msg->NewBounds.MinX + 1;
+    shapemsg.wdp_Height     = msg->NewBounds.MaxY - msg->NewBounds.MinY + 1;
+    shapemsg.wdp_UserBuffer = IW(win)->DecorUserBuffer;
+    
+    shape = (struct Region *)DoMethodA(GetPrivScreen(win->WScreen)->WinDecorObj, (Msg)&shapemsg);
+    
+    if (IW(win)->OutlineShape) DisposeRegion(IW(win)->OutlineShape);
+    IW(win)->OutlineShape = shape;
+    IW(win)->CustomShape = FALSE;
+    
+    return shape;   
+    
+    AROS_USERFUNC_EXIT 
+}
+
 /**********************************************************************************/
