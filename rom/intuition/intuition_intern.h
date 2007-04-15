@@ -529,7 +529,6 @@ struct IntIntuitionBase
     struct Hook             	 transphook; /* hook for windows with intui transp */
     struct Hook             	 notransphook; /* hook for windows with no additional transp (borderless,etc) */
 #endif
-
 //#ifdef INTUITION_NOTIFY_SUPPORT   // commented to avoid offset fuckup! - Piru
     struct Library          	*ScreenNotifyBase;
     struct Library          	*NotifyIntuitionBase;
@@ -881,6 +880,7 @@ struct IntWindow
     struct Hook             custombackfill;
     struct HookData         hd;
 #endif
+    struct Hook     	    DefaultWindowShapeHook;
     BOOL                    CustomShape;
     struct Region          *OutlineShape;
     ULONG                   DecorUserBufferSize;
@@ -968,6 +968,7 @@ extern void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBas
 extern void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase);
 extern void UpdateMouseCoords(struct Window *win);
 extern WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
+extern struct Region *DefaultWindowShapeFunc(struct Hook *hook, struct Layer *lay, struct ShapeHookMsg *msg);
 
 extern LONG CalcResourceHash(APTR resource);
 extern void AddResourceToList(APTR resource, UWORD resourcetype, struct IntuitionBase *IntuitionBase);
