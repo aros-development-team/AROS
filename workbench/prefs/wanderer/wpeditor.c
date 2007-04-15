@@ -1224,10 +1224,13 @@ D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: Freeing old Background Tag d
 			FreeVec(background_Node->wpedbo_Options);
 		}
 
-		if (background_Node->wpedbo_Options = AllocVec(chunk_size - bgtag_offset, MEMF_CLEAR | MEMF_PUBLIC))
+		int tag_count = (chunk_size - bgtag_offset)/sizeof(struct TagItem);
+
+		if (background_Node->wpedbo_Options = AllocVec((tag_count + 1) * sizeof(struct TagItem), MEMF_CLEAR | MEMF_PUBLIC))
 		{
 D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: Allocated new Tag storage @ %x [%d bytes] \n", background_Node->wpedbo_Options, chunk_size - bgtag_offset));
-			CopyMem(background_chunk + bgtag_offset, background_Node->wpedbo_Options, chunk_size - bgtag_offset);
+			CopyMem(background_chunk + bgtag_offset, background_Node->wpedbo_Options, tag_count * sizeof(struct TagItem));
+			background_Node->wpedbo_Options[tag_count].ti_Tag = TAG_DONE;
 		}
 	}
 

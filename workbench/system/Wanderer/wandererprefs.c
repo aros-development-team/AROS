@@ -275,11 +275,20 @@ D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length doesnt need al
 
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: %d Tags at offset %d ..\n", bgtag_count, bgtag_offset));
 
-		if (background_Node->wpbn_Options) FreeVec(background_Node->wpbn_Options);
+		if (background_Node->wpbn_Options != NULL)
+		{
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Freeing old background tag's @ %x\n", background_Node->wpbn_Options));
+			FreeVec(background_Node->wpbn_Options);
+			background_Node->wpbn_Options = NULL;
+		}
 		
 		background_Node->wpbn_Options = AllocVec((bgtag_count + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: New tag storage @ %x\n", background_Node->wpbn_Options));
+
 		CopyMem(background_chunk + bgtag_offset, background_Node->wpbn_Options, (bgtag_count) * sizeof(struct TagItem));
-		background_Node->wpbn_Options[bgtag_count + 1].ti_Tag = TAG_DONE;
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Tags copied to storage \n"));
+
+		background_Node->wpbn_Options[bgtag_count].ti_Tag = TAG_DONE;
 
 		int i = 0;
 		for (i = 0; i < bgtag_count; i++)
