@@ -92,6 +92,7 @@ static void makewin(void)
 			       WA_SizeBBottom	, TRUE,
 			       WA_SizeBRight	, TRUE,
 			       WA_NoCareRefresh , TRUE,
+			       WA_Shape     	, 0,
 			       WA_IDCMP		, IDCMP_CLOSEWINDOW |
 			       			  IDCMP_RAWKEY |
 						  IDCMP_NEWSIZE,
