@@ -70,12 +70,17 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de);
 LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len);
 LONG GetDirLongName(struct DirEntry *de, STRPTR name, ULONG *len);
 
+LONG UpdateDirEntry(struct DirEntry *de);
+
+LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
+
 /* fat.c */
 void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds);
-LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
+LONG SetVolumeName(struct FSSuper *sb, UBYTE *name);
 
 /* file.c */
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nread);
+LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nwritten);
 
 #endif
 

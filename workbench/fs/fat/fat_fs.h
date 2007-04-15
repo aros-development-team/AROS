@@ -72,10 +72,9 @@ struct DirEntry {
 
     ULONG               cluster;        /* cluster the containing directory starts at */
     ULONG               index;          /* index of this entry */
-    
-    ULONG               sector;         /* absolute sector number this entry came from */
-    ULONG               offset;         /* byte offset within that sector */
 
+    ULONG               pos;            /* byte offset within directory that the entry came from */
+    
     union {
         struct FATDirEntry      entry;
         struct FATLongDirEntry  long_entry;

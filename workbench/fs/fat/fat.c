@@ -289,7 +289,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         return ERROR_NOT_A_DOS_DISK;
     }
 
-    glob->cache = cache_new(64, 256, sb->sectorsize, 0);
+    glob->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
  
     if (sb->clusters_count < 4085) {
         kprintf("\tFAT12 filesystem detected\n");
@@ -405,7 +405,59 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
 
             D(bug("[fat] volume name is '%s'\n", &(volume->name[1])));
 
-            return 0;
+            break;
+        }
+
+        /* bail out if we hit the end of the dir */
+        if (de.e.entry.name[0] == 0x00) {
+            D(bug("[fat] found end-of-directory marker, volume name entry not found\n"));
+            err = ERROR_OBJECT_NOT_FOUND;
+            break;
+        }
+    }
+
+    ReleaseDirHandle(&dh);
+    return err;
+}
+
+LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
+    struct DirHandle dh;
+    struct DirEntry de;
+    LONG err;
+    int i;
+
+    D(bug("[fat] searching root directory for volume name\n"));
+
+    /* search the directory for the volume id entry. it would've been nice to
+     * just use GetNextDirEntry but I didn't want a flag or something to tell
+     * it not to skip the volume name */
+    InitDirHandle(sb, 0, &dh);
+
+    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
+
+        /* match the volume id entry */
+        if ((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_VOLUME_ID) {
+            D(bug("[fat] found volume id entry %ld\n", dh.cur_index));
+
+            /* copy the name in. name is a BSTR */
+            de.e.entry.name[0] = name[1];
+            for (i = 1; i < 11; i++)
+                if (i < name[0])
+                    de.e.entry.name[i] = tolower(name[i+1]);
+                else
+                    de.e.entry.name[i] = ' ';
+
+            if ((err = UpdateDirEntry(&de)) != 0) {
+                D(bug("[fat] couldn't change volume name\n"));
+                return err;
+            }
+
+            CopyMem(name, sb->volume.name, name[0]+1);
+            sb->volume.name[name[0]+1] = '\0';
+
+            D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
+
+            break;
         }
 
         /* bail out if we hit the end of the dir */
