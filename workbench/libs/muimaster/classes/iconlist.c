@@ -2068,15 +2068,15 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Processing key up event\n"));
                         IconList_InvertLassoOutlines(obj, &old_lasso);
 
                         /* if mouse leaves iconlist area during lasso mode, scroll view */
-                        if (mx < 0 || mx > _width(obj) || my < 0 || my > _height(obj))
+                        if (mx < 0 || mx >= _mwidth(obj) || my < 0 || my >= _mheight(obj))
                         {
                             WORD newleft = data->icld_ViewX;
                             WORD newtop = data->icld_ViewY;
 
-                            if (data->click_x < mx) newleft += 5;
-                               else newleft -= 5;
-                            if (data->click_y < my) newtop +=  5;
-                               else newtop -= 5;
+                            if (mx >= _mwidth(obj)) newleft += 5;
+                               else if (mx < 0) newleft -= 5;
+                            if (my >= _mheight(obj)) newtop +=  5;
+                               else if (my < 0) newtop -= 5;
 
                             if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
                             if (newleft < 0) newleft = 0;
