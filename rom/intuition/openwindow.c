@@ -98,7 +98,7 @@ AROS_LH1(struct Window *, OpenWindow,
     struct OpenWindowActionMsg   msg;
     struct NewWindow        	 nw;
     struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
-    struct TagItem  	    	*tag, *tagList;
+    struct TagItem  	    	*tag, *tagList, *shapeti = NULL, *shapehookti = NULL;
     struct RastPort 	    	*rp;
     struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
     struct Region   	    	*shape = NULL;
@@ -517,6 +517,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_UserPort:
                 userport = (struct MsgPort *)tag->ti_Data;
                 break;
+/**********************************************************************************/
 
             case WA_IAmMUI:
                 MODIFY_MFLAG(WMFLG_IAMMUI);
@@ -525,10 +526,12 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     	#ifndef __MORPHOS__
             case WA_Shape:
+	    	shapeti = tag;
                 shape = (struct Region *)tag->ti_Data;
                 break;
 
     	    case WA_ShapeHook:
+	    	shapehookti = tag;
 	    	shapehook = (struct Hook *)tag->ti_Data;
 		break;
 		
@@ -842,6 +845,9 @@ moreFlags |= (name); else moreFlags &= ~(name)
         IW(w)->usertransphook = usertransphook;
     }
 #endif
+    IW(w)->DefaultWindowShapeHook.h_Entry = (HOOKFUNC)DefaultWindowShapeFunc;
+    IW(w)->DefaultWindowShapeHook.h_SubEntry = (HOOKFUNC)w;
+    IW(w)->DefaultWindowShapeHook.h_Data = (APTR)IntuitionBase;
 
     if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
     if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
@@ -1025,6 +1031,14 @@ moreFlags |= (name); else moreFlags &= ~(name)
     }
 #endif
 
+    IW(w)->OutlineShape = NULL;
+
+    if ((shapeti != NULL) || (shapehookti != NULL)) IW(w)->CustomShape = TRUE;
+    if (!(IW(w)->CustomShape) && (!(w->Flags & WFLG_BORDERLESS)) && !IS_GZZWINDOW(w))
+    {
+    	shapehook = &IW(w)->DefaultWindowShapeHook;
+    }
+    
     msg.window = w;
     msg.bitmap = nw.BitMap;
     //msg.backfillhook = backfillhook == LAYERS_BACKFILL ? &IW(w)->custombackfill : backfillhook;
@@ -1125,6 +1139,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         SetWindowPointerA(w, tagList);
     }
 
+#if 0
     ((struct IntWindow *)w)->OutlineShape = NULL;
 
     if ((shape != NULL) || (shapehook != NULL)) ((struct IntWindow *)w)->CustomShape = TRUE;
@@ -1143,6 +1158,8 @@ moreFlags |= (name); else moreFlags &= ~(name)
         ChangeWindowShape(w, shape, NULL);
         ((struct IntWindow *)w)->CustomShape = FALSE;
     }
+#endif
+    
     goto exit;
 
 failexit:
