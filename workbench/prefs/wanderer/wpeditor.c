@@ -10,12 +10,14 @@
 
 #define DEBUG 0
 
-#define WP_MAX_BG_TAG_COUNT                20
-#define WP_IFF_CHUNK_BUFFER_SIZE           1024
-#define WP_MAX_RENDER_MODES                4
-#define WP_MAX_TILE_MODES                  4
-#define WP_DRAWMODE_COUNT                  2
-//#define WP_DISABLE_ADVANCEDIMAGEOPTIONS
+#define       WP_MAX_BG_TAG_COUNT                20
+#define       WP_IFF_CHUNK_BUFFER_SIZE           1024
+#define       WP_MAX_RENDER_MODES                4
+#define       WP_MAX_TILE_MODES                  4
+#define       WP_DRAWMODE_COUNT                  2
+//#define     WP_DISABLE_ADVANCEDIMAGEOPTIONS
+//#define       DEBUG_NETWORKBROWSER
+//#define       DEBUG_SHOWUSERFILES
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -93,6 +95,12 @@ struct WPEditor_DATA
                                                     *wped_icon_listmode,
                                                     *wped_icon_textmode,
                                                     *wped_icon_textmaxlen,
+#if defined(DEBUG_NETWORKBROWSER)
+                                                    *wped_cm_EnableNetworkBrowser, 
+#endif
+#if defined(DEBUG_SHOWUSERFILES)
+                                                    *wped_cm_EnableUserFiles, 
+#endif
                                                     *wped_toolbarGroup;
     struct Hook                                     wped_Hook_EnhancedNav,
 		                                            wped_Hook_CloseAdvancedOptions;
@@ -647,6 +655,12 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 			                                       *bt_dirup = NULL,
                                                    *bt_search = NULL,
                                                    *cm_toolbarenabled = NULL, 
+#if defined(DEBUG_NETWORKBROWSER)
+												   *cm_EnableNetworkBrowser, 
+#endif
+#if defined(DEBUG_SHOWUSERFILES)
+												   *cm_EnableUserFiles, 
+#endif
 			                                       *toolbarpreview = NULL,
 			                                       *wped_icon_listmode = NULL,
                                                    *wped_icon_textmode = NULL, 
@@ -778,8 +792,20 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
 						Child, (IPTR) HGroup,
 							MUIA_Group_Columns, 2,
 							MUIA_Group_SameSize, FALSE,
+#if defined(DEBUG_NETWORKBROWSER)
+							Child, (IPTR) Label1("Network Browser on Workbench"),
+							Child, (IPTR) (cm_EnableNetworkBrowser = MUI_MakeObject(MUIO_Checkmark,NULL)),
+#else
 							Child, (IPTR) HVSpace,
 							Child, (IPTR) HVSpace,
+#endif
+#if defined(DEBUG_SHOWUSERFILES)
+							Child, (IPTR) Label1("User Files Folder on Workbench"),
+							Child, (IPTR) (cm_EnableUserFiles = MUI_MakeObject(MUIO_Checkmark,NULL)),
+#else
+							Child, (IPTR) HVSpace,
+							Child, (IPTR) HVSpace,
+#endif
 							Child, (IPTR) HVSpace,
 							Child, (IPTR) HVSpace,
 						End,
@@ -870,6 +896,12 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ %x\n", self));
 		
         data->wped_c_NavigationMethod                          = c_navitype;
         data->wped_cm_ToolbarEnabled                           = cm_toolbarenabled;
+#if defined(DEBUG_NETWORKBROWSER)
+        data->wped_cm_EnableNetworkBrowser                     = cm_EnableNetworkBrowser;
+#endif
+#if defined(DEBUG_SHOWUSERFILES)
+        data->wped_cm_EnableUserFiles                          = cm_EnableUserFiles;
+#endif
         data->wped_toolbarpreview                              = toolbarpreview;
 		
         data->wped_icon_listmode                               = wped_icon_listmode;
@@ -1063,6 +1095,18 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk()\n"));
 	return TRUE;
 }
 
+#if defined(DEBUG_NETWORKBROWSER)
+BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *background_chunk)
+{
+    SETUP_INST_DATA;
+
+	struct TagItem *network_tags = background_chunk;
+	SET(data->wped_cm_EnableNetworkBrowser, MUIA_Selected, network_tags[0].ti_Data);
+
+	return TRUE;
+}
+#endif
+
 BOOL WPEditor_ProccessBackgroundChunk(Class *CLASS, Object *self, char *background_name, UBYTE *background_chunk, IPTR chunk_size)
 {
     SETUP_INST_DATA;
@@ -1255,13 +1299,20 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context %x\n", context));
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
 										if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 										{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer global chunk ..\n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer global config chunk ..\n"));
 											WPEditor_ProccessGlobalChunk(CLASS, self, chunk_buffer);
 										}
+#if defined(DEBUG_NETWORKBROWSER)
+										else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
+										{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
+											WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
+										}
+#endif
 										else if ((strncmp(this_chunk_name, "wanderer:background", strlen("wanderer:background"))) == 0)
 										{
 											char *bg_name = this_chunk_name + strlen("wanderer:background") + 1;
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer background chunk '%s'..\n", bg_name));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer background config chunk '%s'..\n", bg_name));
 											WPEditor_ProccessBackgroundChunk(CLASS, self, bg_name, chunk_buffer, this_chunk_size);
 										}
 									}	
@@ -1411,6 +1462,51 @@ D(bug("[WPEditor] 'global' PopChunk() = %ld\n", error));
 D(bug("[WPEditor] 'global' PushChunk() = %ld failed\n", error));
 				goto exportFH_CloseFORM;
 			}
+
+#if defined(DEBUG_NETWORKBROWSER)
+D(bug("[WPEditor] Write 'network' Wanderer Prefs Header Chunk ... \n"));
+			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
+			{
+				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:network");
+				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(struct TagItem);
+				
+				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
+				
+				if ((error = PopChunk(handle)) != 0)
+				{
+D(bug("[WPEditor] 'network' Header PopChunk() = %ld\n", error));
+					goto exportFH_CloseFORM;
+				}
+			}
+			else
+			{
+D(bug("[WPEditor] 'network' Wanderer Prefs Header Chunk : Error! %d \n", error));
+				goto exportFH_CloseFORM;
+			}	
+
+D(bug("[WPEditor] Write 'network' Wanderer Prefs Data Chunk ... \n"));
+			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct TagItem))) == 0) 
+			{
+				struct TagItem __wp_networkconfig[2];
+
+				/* save network options*/
+				__wp_networkconfig[0].ti_Tag = MUIA_WandererPrefs_ShowNetworkBrowser;
+				GET(data->wped_cm_EnableNetworkBrowser, MUIA_Selected, &__wp_networkconfig[0].ti_Data);
+
+				error = WriteChunkBytes(handle, __wp_networkconfig, sizeof(struct TagItem));
+D(bug("[WPEditor] 'network' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, sizeof(struct TagItem)));
+				if ((error = PopChunk(handle)) != 0)
+				{
+D(bug("[WPEditor] 'network' PopChunk() = %ld\n", error));
+					goto exportFH_CloseFORM;
+				}
+			}
+			else
+			{
+D(bug("[WPEditor] 'network' PushChunk() = %ld failed\n", error));
+				goto exportFH_CloseFORM;
+			}
+#endif
 
 			struct WPEditor_BackgroundObject *background_Node = NULL;
 			ForeachNode(&_wpeditor_intern_Backgrounds, background_Node)
