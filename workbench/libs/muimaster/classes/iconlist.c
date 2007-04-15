@@ -1411,6 +1411,14 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
 				{
 					clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
 				}
+				else
+				{
+					/* View became smaller both in horizontal and vertical direction.
+					   Nothing to do */
+					   
+					DisposeRegion(region);
+					return 0;
+				}
 			}
 
 			MUI_Redraw(obj, MADF_DRAWOBJECT);
