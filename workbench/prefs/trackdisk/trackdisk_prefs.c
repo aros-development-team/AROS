@@ -1,5 +1,10 @@
-#define DEBUG 0
+
+#if defined(__AROS__)
+#define DEBUG 1
 #include <aros/debug.h>
+#else
+#define D(x) 
+#endif
 
 #include <clib/alib_protos.h>
 #include <devices/trackdisk.h>
@@ -17,7 +22,7 @@
 
 #include <stdio.h>
 
-#ifdef __AROS__
+#if defined(__AROS__)
 #include <aros/asmcall.h>
 #include <prefs/trackdisk.h>
 #else
@@ -25,51 +30,48 @@
 #endif
 #include "trackdisk_prefs.h"
 
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__)
 ULONG __abox__ = 1;
 #endif
 
-#ifdef __AROS__
-struct Library *aroscbase;
-#else
-struct ExecBase *SysBase;
+#if !defined(__AROS__)
+struct ExecBase      *SysBase = NULL;
+struct DosLibrary    *DOSBase = NULL;
+struct IntuitionBase *IntuitionBase = NULL;
+struct Library       *MUIMasterBase = NULL;
 #endif
-struct DosLibrary *DOSBase;
-struct IntuitionBase *IntuitionBase;
-struct Library *MUIMasterBase;
-Object *App, *MainWin, *SaveButton, *UseButton, *CancelButton;
-struct DriveControls Drives[TD_NUMUNITS];
-struct WindowGroup MainGrp;
+Object                *App = NULL,
+                      *MainWin = NULL,
+                      *SaveButton = NULL,
+                      *UseButton = NULL,
+                      *CancelButton = NULL;
+struct DriveControls  Drives[TD_NUMUNITS];
+struct WindowGroup    MainGrp;
 struct TrackdiskPrefs TDPrefs;
-struct IORequest TDIO;
+struct IORequest      TDIO;
 
 const char __version__[] = "\0$VER: Trackdisk prefs 41.2 (2007-31-03)";
 
-#ifdef __AROS__
-AROS_UFH3(ULONG, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(LONG, arglen, D0),
-	  AROS_UFHA(struct ExecBase *, sBase, A6))
-{
-	AROS_USERFUNC_INIT
+#if defined(__AROS__)
+int main(void)
 #else
-#define sBase *(struct ExecBase **)4L
-
 ULONG Start()
-{
 #endif
-	struct Process *me;
-	struct Message *wbmsg;
+{
+	struct Process *me = NULL;
+	struct Message *wbmsg = NULL;
 	ULONG ret;
 
 D(bug("[Trackdisk.Prefs] Start()\n"));
 
 #if !defined(__AROS__)
-	SysBase = sBase;
-#endif
+	SysBase = *(struct ExecBase **)4L;
+
 	me = (struct Process *)FindTask(NULL);
 	if (me->pr_CLI)
+#endif
 		return Main();
+#if !defined(__AROS__)
 	else {
 		WaitPort(&me->pr_MsgPort);
 		wbmsg = GetMsg(&me->pr_MsgPort);
@@ -78,8 +80,6 @@ D(bug("[Trackdisk.Prefs] Start()\n"));
 		ReplyMsg(wbmsg);
 		return ret;
 	}
-#ifdef __AROS__
-	AROS_USERFUNC_EXIT
 #endif
 }
 
@@ -91,16 +91,14 @@ ULONG Main(void)
 
 D(bug("[Trackdisk.Prefs] Main()\n"));
 
-#ifdef __AROS__
-    aroscbase = OpenLibrary("arosc.library", 39);
-    if (aroscbase) {
-#endif
+#if !defined(__AROS__)
 	MUIMasterBase = OpenLibrary("muimaster.library", 4);
 	if (MUIMasterBase) {
 		IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
 		if (IntuitionBase) {
 		    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
 		    if (DOSBase) {
+#endif
 			for (i = 0; i < TD_NUMUNITS; i++)
 				InitUnitPrefs(&TDPrefs.UnitPrefs[i], i);
 			LoadPrefs();
@@ -170,15 +168,13 @@ D(bug("[Trackdisk.Prefs] Main()\n"));
 				}
 				MUI_DisposeObject(App);
 			}
+#if !defined(__AROS__)
 			CloseLibrary((struct Library *)DOSBase);
 		    }
 		    CloseLibrary((struct Library *)IntuitionBase);
 		}
 		CloseLibrary(MUIMasterBase);
 	}
-#ifdef __AROS__
-	CloseLibrary(aroscbase);
-    }
 #endif
     return 0;
 }
@@ -224,7 +220,7 @@ D(bug("[Trackdisk.Prefs] CreateDriveControls()\n"));
 void LoadPrefs(void)
 {
 	ULONG i;
-	struct TDU_PublicUnit *tdu;
+	struct TDU_PublicUnit *tdu = NULL;
 
 D(bug("[Trackdisk.Prefs] LoadPrefs()\n"));
 
@@ -270,7 +266,7 @@ D(bug("[Trackdisk.Prefs] SavePrefs()\n"));
 void UsePrefs(void)
 {
 	ULONG i;
-	struct TDU_PublicUnit *tdu;
+	struct TDU_PublicUnit *tdu = NULL;
 
 D(bug("[Trackdisk.Prefs] UsePrefs()\n"));
 

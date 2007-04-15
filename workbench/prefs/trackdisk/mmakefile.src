@@ -5,7 +5,6 @@ include $(TOP)/config/make.cfg
 
 FILES 	     := trackdisk_prefs
 EXEDIR       := $(AROS_PREFS)
-USER_LDFLAGS := -nostartfiles
 
 #MM- workbench-prefs : workbench-prefs-trackdisk
 #MM workbench-prefs-trackdisk : includes linklibs
