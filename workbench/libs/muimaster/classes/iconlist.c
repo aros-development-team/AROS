@@ -541,7 +541,10 @@ D(bug("[IconList] IconList_RethinkDimensions()\n"));
     
     while (icon)
     {
-        if (icon->ile_DiskObj && icon->ile_IconX != NO_ICON_POSITION && icon->ile_IconY != NO_ICON_POSITION)
+        if (icon->ile_DiskObj &&
+			(icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
+            (icon->ile_IconX != NO_ICON_POSITION) &&
+            (icon->ile_IconY != NO_ICON_POSITION))
         {
             struct Rectangle icon_rect;
     
