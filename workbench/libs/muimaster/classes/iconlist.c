@@ -2754,7 +2754,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
 //    entry = List_First(&list_VisibleIcons);
     while ((entry = (struct IconEntry *)RemTail((struct List*)&list_VisibleIcons)))
     {
-        icon1 = List_First(&data->icld_IconList);
+        icon1 = List_First(&list_SortedIcons);
         icon2 = NULL;
         sortme = FALSE;
 		
