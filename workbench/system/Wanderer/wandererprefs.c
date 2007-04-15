@@ -31,7 +31,9 @@ struct WandererPrefs_DATA
 {
     ULONG  wpd_NavigationMethod;
     ULONG  wpd_ToolbarEnabled;
-
+    ULONG  wpd_ShowNetwork;
+    ULONG  wpd_ShowUserFiles;
+	
     ULONG  wpd_IconListMode;
     ULONG  wpd_IconTextMode;
     ULONG  wpd_IconTextMaxLen;
@@ -106,6 +108,14 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
+			case MUIA_WandererPrefs_ShowNetworkBrowser:
+				data->wpd_ShowNetwork = (LONG)tag->ti_Data;
+				break;
+
+			case MUIA_WandererPrefs_ShowUserFolder:
+				data->wpd_ShowUserFiles = (LONG)tag->ti_Data;
+				break;
+
             case MUIA_WandererPrefs_NavigationMethod:
                 data->wpd_NavigationMethod = (LONG)tag->ti_Data;
                 break;
@@ -139,6 +149,14 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     
     switch (message->opg_AttrID)
     {
+        case MUIA_WandererPrefs_ShowNetworkBrowser:
+            *store = (IPTR)data->wpd_ShowNetwork;
+            break;
+
+        case MUIA_WandererPrefs_ShowUserFolder:
+            *store = (IPTR)data->wpd_ShowUserFiles;
+            break;
+
         case MUIA_WandererPrefs_NavigationMethod:
             *store = (IPTR)data->wpd_NavigationMethod;
             break;
@@ -179,6 +197,16 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
 				   MUIA_WandererPrefs_Icon_TextMode, global_chunk->wpd_IconTextMode, 
 				   MUIA_WandererPrefs_Icon_TextMaxLen, global_chunk->wpd_IconTextMaxLen,
                        TAG_DONE);
+
+	return TRUE;
+}
+
+BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *background_chunk)
+{
+    SETUP_INST_DATA;
+
+	struct TagItem *network_tags = background_chunk;
+	SET(self, network_tags[0].ti_Tag, network_tags[0].ti_Data);
 
 	return TRUE;
 }
@@ -338,6 +366,11 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
 										{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
 											WandererPrefs_ProccessGlobalChunk(CLASS, self, chunk_buffer);
+										}
+										else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
+										{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
+											WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
 										}
 										else if ((strncmp(this_chunk_name, "wanderer:background", strlen("wanderer:background"))) == 0)
 										{

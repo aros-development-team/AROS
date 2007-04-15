@@ -17,6 +17,7 @@
 #define MUIA_WandererPrefs_NavigationMethod                  (MUIB_WandererPrefs | 0x00000002) /* -SG */
 #define MUIA_WandererPrefs_Toolbar_Enabled                   (MUIB_WandererPrefs | 0x00000003) /* -SG */
 #define MUIA_WandererPrefs_ShowNetworkBrowser                (MUIB_WandererPrefs | 0x00000011) /* -SG */
+#define MUIA_WandererPrefs_ShowUserFolder                    (MUIB_WandererPrefs | 0x00000012) /* -SG */
 
 #define MUIA_WandererPrefs_Icon_ListMode                     (MUIB_WandererPrefs | 0x000000D0) /* -SG */
 #define MUIA_WandererPrefs_Icon_TextMode                     (MUIB_WandererPrefs | 0x000000D1) /* -SG */

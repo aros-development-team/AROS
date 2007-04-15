@@ -6,6 +6,8 @@
 #define MUIMASTER_YES_INLINE_STDARG
 
 //#define DEBUG_NETWORKBROWSER
+//#define DEBUG_SHOWUSERFILES
+#define TXTBUFF_LEN 1024
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -55,7 +57,11 @@ struct IconWindowIconVolumeList_DATA
 	Object                       *iwcd_IconWindow;
 	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
+	struct Hook                  iwvcd_UpdateNetworkPrefs_hook;
 	IPTR						 iwvcd_ShowNetworkBrowser;
+	IPTR						 iwvcd_ShowUserFolder;
+	char                         *iwvcd_UserFolderPath;
+
 };
 
 struct IconWindowIconNetworkBrowserList_DATA
@@ -63,8 +69,11 @@ struct IconWindowIconNetworkBrowserList_DATA
 	Object                       *iwcd_IconWindow;
 	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
+	struct Hook                  iwnbcd_UpdateNetworkPrefs_hook;
 	struct List                  iwnbcd_NetworkClasses;
 };
+
+static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindowIconList_DATA *data = INST_DATA(CLASS, self)
@@ -115,7 +124,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		GET(prefs, MUIA_WandererPrefs_Icon_ListMode, &prefs_ListMode);
 		GET(prefs, MUIA_WandererPrefs_Icon_TextMode, &prefs_TextMode);
 		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_TextMaxLen);		
-		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_Processing);		
+		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);		
 
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
 
@@ -141,6 +150,68 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		if ((options_changed) && !(prefs_Processing))
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Options have changed, causing an update ..\n"));
+			DoMethod(self, MUIM_IconList_Update);
+		}
+		else if (data->iwcd_IconWindow)
+		{
+			SET(data->iwcd_IconWindow, MUIA_IconWindow_Changed, TRUE);
+		}
+	}
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(
+    void, IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    /* Get our private data */
+    Object *self = ( Object *)obj;
+    Object *prefs = NULL;
+    Class *CLASS = *( Class **)param;
+
+	SETUP_INST_DATA;
+
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc()\n"));
+
+	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+	if (prefs)
+	{
+		BOOL    options_changed = FALSE;
+		IPTR	prefs_Processing = 0;
+
+		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
+
+		if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Setting ROOT view Network options ..\n"));
+			ULONG   current_ShowNetwork = 0;
+
+			GET(self, MUIA_IconWindowIconVolumeList_ShowNetwork, &current_ShowNetwork);
+
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Current = %d\n", current_ShowNetwork));
+
+			ULONG   prefs_ShowNetwork = 0;
+
+			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &prefs_ShowNetwork);
+		
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Prefs = %d\n", prefs_ShowNetwork));
+
+			if ((BOOL)current_ShowNetwork != (BOOL)prefs_ShowNetwork)
+			{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: ROOT view Network prefs changed - updating ..\n"));
+				options_changed = TRUE;
+				((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser = prefs_ShowNetwork;
+			}
+		}
+		if ((options_changed) && !(prefs_Processing))
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Network prefs changed, causing an update ..\n"));
 			DoMethod(self, MUIM_IconList_Update);
 		}
 		else if (data->iwcd_IconWindow)
@@ -285,7 +356,46 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: NetworkBrowse
 				if (_nb_dob)
 				{
 					DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob);
-					//DoMethod(self, MUIM_IconList_Sort);
+				}
+			}
+    
+			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc;
+			
+			DoMethod
+			(
+				prefs, MUIM_Notify, MUIA_WandererPrefs_ShowNetworkBrowser, MUIV_EveryTime,
+				(IPTR) self, 3, 
+				MUIM_CallHook, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook, (IPTR)CLASS
+			);
+
+			GET(prefs, MUIA_WandererPrefs_ShowUserFolder, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder);
+
+#if defined(DEBUG_SHOWUSERFILES)
+			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder = TRUE;
+#endif
+
+			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder)
+			{
+				if (GetVar("SYS/UserFilesLocation", __icwc_intern_TxtBuff, TXTBUFF_LEN, GVF_GLOBAL_ONLY) != -1)
+				{
+					if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath = AllocVec(strlen(__icwc_intern_TxtBuff), MEMF_CLEAR|MEMF_PUBLIC) != NULL)
+					{
+						struct DiskObject    *_nb_dob = NULL;
+						_nb_dob = GetIconTags
+						(
+							"ENV:SYS/def_Drawer", 
+							ICONGETA_FailIfUnavailable, FALSE,
+							ICONGETA_Label,             (IPTR)"User Files..",
+							TAG_DONE
+						);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: UserFiles Icon DOB @ %x\n", _nb_dob));
+
+						if (_nb_dob)
+						{
+							DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob);
+						}
+					}
 				}
 			}
 		}
@@ -436,6 +546,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: (ROOT WIND
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if we should show NetworkBrowser Icon ..\n"));
 
 		Object *prefs = NULL;
+		BOOL    sort_list = FALSE;
 
 		GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
@@ -462,10 +573,51 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBro
 
 				if (_nb_dob)
 				{
-					DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob);
-					DoMethod(self, MUIM_IconList_Sort);
+					struct Node *this_entry = NULL;
+					if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob))
+					{
+						this_entry->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
+						sort_list = TRUE;
+					}
 				}
 			}
+
+			GET(prefs, MUIA_WandererPrefs_ShowUserFolder, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder);
+
+#if defined(DEBUG_SHOWUSERFILES)
+			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder = TRUE;
+#endif
+
+			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder)
+			{
+				if (GetVar("SYS/UserFilesLocation", __icwc_intern_TxtBuff, TXTBUFF_LEN, GVF_GLOBAL_ONLY) != -1)
+				{
+					if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath = AllocVec(strlen(__icwc_intern_TxtBuff), MEMF_CLEAR|MEMF_PUBLIC) != NULL)
+					{
+						struct DiskObject    *_nb_dob = NULL;
+						_nb_dob = GetIconTags
+						(
+							"ENV:SYS/def_Drawer", 
+							ICONGETA_FailIfUnavailable, FALSE,
+							ICONGETA_Label,             (IPTR)"User Files..",
+							TAG_DONE
+						);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: UserFiles Icon DOB @ %x\n", _nb_dob));
+
+						if (_nb_dob)
+						{
+							struct Node *this_entry = NULL;
+							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob))
+							{
+								this_entry->ln_Pri = 5;   /// Special dirs get Priority 5
+								sort_list = TRUE;
+							}
+						}
+					}
+				}
+			}
+			if (sort_list) DoMethod(self, MUIM_IconList_Sort);
 		}
 	}
 	else

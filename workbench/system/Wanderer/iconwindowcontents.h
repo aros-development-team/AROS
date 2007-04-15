@@ -10,9 +10,12 @@
 #include <libraries/mui.h>
 
 /*** Identifier Base ********************************************************/
-#define MUIB_IconWindowIconDrawerList               (TAG_USER | 0x10000200)
-#define MUIB_IconWindowIconVolumeList               (TAG_USER | 0x10000300)
-#define MUIB_IconWindowIconNetworkBrowserList       (TAG_USER | 0x10000A00)
+#define MUIB_IconWindowIconDrawerList                  (TAG_USER | 0x10000200)
+#define MUIB_IconWindowIconVolumeList                  (TAG_USER | 0x10000300)
+#define MUIB_IconWindowIconNetworkBrowserList          (TAG_USER | 0x10000A00)
+
+#define MUIA_IconWindowIconVolumeList_ShowNetwork      (TAG_USER | 0x10000310)
+#define MUIA_IconWindowIconVolumeList_ShowUserFiles    (TAG_USER | 0x10000311)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *IconWindowIconDrawerList_CLASS;

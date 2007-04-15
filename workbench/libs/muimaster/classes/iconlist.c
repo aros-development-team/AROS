@@ -2589,6 +2589,7 @@ D(bug("[IconList] IconDrawerList__ParseContents: File has a .info file .. updati
 						{
 							this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
 						}
+						this_Icon->ile_Node.ln_Pri = 0;
 					}
 					else
 					{
@@ -2709,12 +2710,14 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
 		                *icon1 = NULL,
 	                    *icon2 = NULL;
     struct List         list_VisibleIcons,
+		                list_SortedIcons,
 		                list_HiddenIcons;
 
     BOOL                sortme;
     int                 i, visible_count = 0;
 
     NewList((struct List*)&list_VisibleIcons);
+    NewList((struct List*)&list_SortedIcons);
     NewList((struct List*)&list_HiddenIcons);
 
     /*move list int out local list struct*/
@@ -2834,17 +2837,19 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
 				icon1 = Node_Next( icon1 );
 			}
 		}
-        Insert((struct List*)&data->icld_IconList, (struct Node *)entry, (struct Node *)icon2);
+        Insert((struct List*)&list_SortedIcons, (struct Node *)entry, (struct Node *)icon2);
     }
 
-/* debug, stomp it back in in reverse order instead
-    while( (entry = (struct IconEntry *)RemTail((struct List*)&list)) )
-    AddTail( (struct List*)&data->icld_IconList , (struct Node *)entry );
-*/
+	/* Quickly resort based on node priorities .. */
+    while ((entry = (struct IconEntry *)RemTail((struct List*)&list_SortedIcons)))
+	{
+		Enqueue((struct List*)&data->icld_IconList, (struct Node *)entry);
+	}
 
     DoMethod(obj, MUIM_IconList_PositionIcons);
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 
+#warning "TODO: leave hidden icons on a seperate list to speed up normal list parsing"
 //    entry = List_First(&list_HiddenIcons);
     while ((entry = (struct IconEntry *)RemTail((struct List*)&list_HiddenIcons)))
 	{
@@ -3217,8 +3222,23 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
                 {
 D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Failed to Add IconEntry for '%s'\n", nd->name));
                 }
-				else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+				else
+				{
+					if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
 						this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+
+					if (!(strcmp(nd->name, "Ram Disk")))
+					{
+D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Setting Ram Disks icon node priority to 5\n"));
+						this_Icon->ile_Node.ln_Pri = 5;   /// Special dirs get Priority 5
+					}
+#warning "TODO: Check if volume is removable and set its priority lower than fixed disks"
+//					else if ()
+//					{
+//						this_Icon->ile_Node.ln_Pri = 0;   /// Removable Media get Priority 0
+//					}
+					else this_Icon->ile_Node.ln_Pri = 1;   /// Fixed Media get Priority 1
+				}
             }
         }
         IconVolumeList__DestroyDOSList(ndl);
