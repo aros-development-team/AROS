@@ -45,6 +45,7 @@
 #define MUIM_IconList_Sort              (MUIB_IconList | 0x00000031) /* Zune: V1 */
 #define MUIM_IconList_CoordsSort        (MUIB_IconList | 0x00000032) /* Zune: V1 */
 #define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000033) /* Zune: V1 */
+#define MUIM_IconList_ViewIcon          (MUIB_IconList | 0x00000034) /* Zune: V1 */
 
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
@@ -53,6 +54,7 @@ struct MUIP_IconList_DestroyEntry       {ULONG MethodID; struct IconEntry *icon;
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 struct MUIP_IconList_Sort               {ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
+struct MUIMPIconList_ViewIcon           {ULONG MethodID; struct IconEntry *icon;};
 
 #define MUIV_IconList_NextSelected_Start 0
 #define MUIV_IconList_NextSelected_End   0
