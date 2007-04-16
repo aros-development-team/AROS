@@ -1848,7 +1848,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_SPACE\n"));
 							if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
 							else if (data->icld_SelectionFirst) active_entry = data->icld_SelectionFirst;
 
-						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && (data->icld_SelectionFirst))
+						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: SPACE: Clearing selected icons ..\n"));
@@ -2013,7 +2013,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: using start_x %d, start_y %d
 #endif
 							}
 
-						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && (data->icld_SelectionFirst))
+						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Clearing selected icons ..\n"));
@@ -2226,7 +2226,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: using start_x %d, start_y %
 #endif
 							}
 
-						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && (data->icld_SelectionFirst))
+						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Clearing selected icons ..\n"));
