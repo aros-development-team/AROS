@@ -100,7 +100,6 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
 		    flush(afsbase, volume);
 		    osMediumFree(afsbase, volume, FALSE);
 		}
-		volume->ioh.ioflags &= ~IOHF_DISK_IN;
 	    }
 	}
 	else if (volume->inhibitcounter)
@@ -114,6 +113,8 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
 		    newMedium(afsbase, volume);
 		    volume->ioh.ioflags |= IOHF_DISK_IN;
 		}
+		else
+		    volume->ioh.ioflags &= ~IOHF_DISK_IN;
 	    }
 	}
 	return 0;

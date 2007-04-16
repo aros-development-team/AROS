@@ -361,15 +361,19 @@ struct IOHandle *ioh;
 			{
 			    if (!(ioh->ioflags & IOHF_DISK_IN))
 			    {
-				newMedium(afsbase, volume);
+			        if (!volume->inhibitcounter)
+				    newMedium(afsbase, volume);
 				ioh->ioflags |= IOHF_DISK_IN;
 			    }
 			}
 			else
 			{
+			    if (!volume->inhibitcounter)
+			    {
 				flush(afsbase, volume);
 				remDosVolume(afsbase, volume);
-				ioh->ioflags &= ~IOHF_DISK_IN;
+			    }
+			    ioh->ioflags &= ~IOHF_DISK_IN;
 			}
 			ioh->ioflags &= ~IOHF_MEDIA_CHANGE;
 		}
