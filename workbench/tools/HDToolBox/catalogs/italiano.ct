@@ -33,7 +33,7 @@ WORD_Create_Table
 Crea tavola
 ;
 WORD_Devices
-Periferiche
+Unità
 ;
 WORD_DosEnvec
 DosEnvec
@@ -48,10 +48,10 @@ WORD_Name
 Nome
 ;
 WORD_Switches
-Scambia
+Proprietà
 ;
 WORD_Parent
-Superiore
+Indietro
 ;
 WORD_Ok
 Ok
@@ -66,7 +66,7 @@ WORD_Partition_Table_Type
 Tipo di tavola delle partizioni
 ;
 WORD_Partition_Type
-Tipo della partizione
+Tipo di partizione
 ;
 WORD_RemoveEntry
 Rimuovi voce
@@ -102,7 +102,7 @@ WORD_MENU_Quit
 Esci
 ;
 MSG_ASK_SAVE
-Tutte le mofiche alle partizioni sono perdute\n Siete sicuri di voler conservare la tavola delle partizioni '%s' ?
+Il contenuto delle partizioni verrà aliminato\n Siete sicuri di voler apportare le modifiche alle partizioni '%s' ?
 ;Alle Daten auf modifizierten Partitionen werden zerstört!\nBist du dir sicher die Änderungen der Partitionstabelle '%s' zu speichern?
 ;
 MSG_NO_MEMORY
@@ -110,7 +110,7 @@ Non c'è abbastanza memoria
 ;Nicht genug Speicher vorhanden
 ;
 MSG_PARTITION_TABLE_FULL
-Tavola delle partizioni completa
+La tavola delle partizioni è piena
 ;Partitionstabelle voll
 ;
 MSG_Select_Empty_Area
@@ -122,7 +122,7 @@ Scegliere la partizione da ridimensionare o spostare
 ;Wähle eine Partition und ändere die Größe bzw. bewege sie
 ;
 MSG_Welcome
-Benvenuti all'utilità di partizionamento
+Benvenuti nel programma di partizionamento
 ;Willkommen zum Partitionierungswerkzeug
 ;
 MSG_WriteTableError
