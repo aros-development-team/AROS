@@ -517,6 +517,8 @@ void ProcessPackets(void) {
 
                 UnLockDosList(LDF_VOLUMES | LDF_WRITE);
 
+                SendEvent(IECLASS_DISKINSERTED);
+
                 res = DOSTRUE;
 
                 break;
