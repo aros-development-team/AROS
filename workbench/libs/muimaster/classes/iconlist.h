@@ -43,7 +43,8 @@
 #define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000021) /* Zune: V1 */
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000022) /* Zune: V1 */
 #define MUIM_IconList_Sort              (MUIB_IconList | 0x00000031) /* Zune: V1 */
-#define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000032) /* Zune: V1 */
+#define MUIM_IconList_CoordsSort        (MUIB_IconList | 0x00000032) /* Zune: V1 */
+#define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000033) /* Zune: V1 */
 
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};

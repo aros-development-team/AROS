@@ -44,7 +44,7 @@
 
 #include "locale.h"
 
-#define VERSION "$VER: Wanderer 0.62 (09.04.2007) The AROS Dev Team"
+#define VERSION "$VER: Wanderer 0.65 (16.04.2007) The AROS Dev Team"
 
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
 
