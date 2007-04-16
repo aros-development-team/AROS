@@ -13,6 +13,12 @@ Assign ENV:     RAM:ENV
 Assign T:       RAM:T
 Assign CLIPS:   RAM:Clipboards
 
+If EXISTS DEVS:DOSDrivers
+    List DEVS:DOSDrivers NOHEAD FILES TO T:Mount LFORMAT="C:Mount %s:*N"
+    Execute T:Mount
+    Delete T:Mount QUIET
+EndIf
+
 Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
