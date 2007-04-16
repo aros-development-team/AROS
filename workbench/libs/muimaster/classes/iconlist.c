@@ -2885,7 +2885,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 			DrawIconStateA(
 #endif
 					&temprp, node->ile_DiskObj, NULL,
-					node->ile_IconX, node->ile_IconY,
+					0, 0,
 					IDS_SELECTED,
 #if !defined(__AROS__)
 					ICONDRAWA_EraseBackground, TRUE,
