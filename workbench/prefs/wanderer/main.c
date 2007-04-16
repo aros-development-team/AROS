@@ -5,7 +5,7 @@
     
     $Id$
 */
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
