@@ -676,6 +676,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	struct WPEditor_BackgroundObject               *background_Workbench = NULL;
 	struct WPEditor_BackgroundObject               *background_Drawer    = NULL;
 
+	background_Workbench = WPEditor__NewBackgroundObjects("Screen");
 	background_Workbench = WPEditor__NewBackgroundObjects("Workbench");
 	background_Drawer = WPEditor__NewBackgroundObjects("Drawer");
 
