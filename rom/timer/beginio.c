@@ -162,6 +162,7 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
 		    break;
 
 		case UNIT_VBLANK:
+		case UNIT_MICROHZ:
 		    /*
 			Adjust the time request to be relative to the
 			the elapsed time counter that we keep.
@@ -176,7 +177,6 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
 		    replyit = FALSE;
 		    break;
 
-		case UNIT_MICROHZ:
 		case UNIT_ECLOCK:
 		case UNIT_WAITECLOCK:
 		default:

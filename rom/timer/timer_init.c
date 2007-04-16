@@ -95,13 +95,13 @@ static int GM_UNIQUENAME(Open)
     switch(unitNum)
     {
 	case UNIT_VBLANK:
+	case UNIT_MICROHZ:
 	case UNIT_WAITUNTIL:
 	    tr->tr_node.io_Error = 0;
 	    tr->tr_node.io_Unit = (struct Unit *)unitNum;
 	    tr->tr_node.io_Device = (struct Device *)LIBBASE;
 	    break;
 
-	case UNIT_MICROHZ:
 	case UNIT_ECLOCK:
 	case UNIT_WAITECLOCK:	
 	default:
