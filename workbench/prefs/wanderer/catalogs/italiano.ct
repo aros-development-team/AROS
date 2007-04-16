@@ -5,7 +5,10 @@
 ;
 MSG_NAME
 Preferenze di Wanderer
-; Wanderer Preferences
+;
+MSG_DESCRIPTION
+Impostazioni di Wanderer
+;Wanderer preferences
 ;
 MSG_BACKGROUNDS
 Sfondi
@@ -26,4 +29,71 @@ Scegli uno sfondo per il Workbench
 MSG_SELECT_DRAWER_BACKGROUND
 Scegli uno sfondo per le directory
 ; Select Drawer Background
+;
+MSG_GENERAL
+Generali
+;General
+;
+MSG_APPEARANCE
+Aspetto
+;Appearance
+;
+MSG_TOOLBAR
+Barra degli strumenti
+;Toolbar
+;
+MSG_CLASSIC
+Classica
+;Classic
+;
+MSG_ENHANCED
+Moderna
+;Enhanced
+;
+MSG_NAVIGATION
+Navigazione
+;Navigation
+;
+MSG_METHOD
+Metodo
+;Method
+;
+MSG_OBJECTS
+Oggetti
+;
+MSG_PREVIEW
+Anteprima
+;
+MSG_TOOLBAR_ENABLED
+Barra strumenti attiva
+;
+MSG_ICONSPREFS
+Aspetto e comportamento delle icone
+;
+MSG_ICONLISTMODE
+Modalità di elencazione
+;
+MSG_ICONLISTMODE_PLAIN (//)
+Elenco icone normale
+;
+MSG_ICONLISTMODE_GRID (//)
+Elenco icone a griglia
+;
+MSG_ICONTEXTMODE (//)
+Modalità testo
+;
+MSG_ICONTEXTMODE_OUTLINE (//)
+Bordo esterno
+;
+MSG_ICONTEXTMODE_PLAIN (//)
+Normale
+;
+MSG_ICONTEXTLENGTH (//)
+Lunghezza massima del testo
+;
+MSG_DOUBLEBUFFERED (//)
+doppio buffering
+;
+MSG_MISC (//)
+miscellanea
 ;
