@@ -91,8 +91,8 @@ struct MUI_IconData
 	                              icld_ViewY;
     ULONG                         icld_ViewWidth,                     /* dimensions of the view (_mwidth(obj) and _mheight(obj)) */
 	                              icld_ViewHeight,
-                                  width,                              /* The whole width/height */
-	                              height;
+                                  icld_AreaWidth,                              /* The whole width/height */
+	                              icld_AreaHeight;
 
 
 	/* Selection & Drag/Drop Info .. */
@@ -538,17 +538,25 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
 /**************************************************************************
 
 **************************************************************************/
-static void IconList_RethinkDimensions(Object *obj, struct MUI_IconData *data, struct IconEntry *singleicon)
+IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj, struct MUIP_IconList_RethinkDimensions *message)
 {
+    struct MUI_IconData *data = INST_DATA(CLASS, obj);
+
     struct IconEntry  *icon = NULL;
-    WORD              maxx = data->width - 1,
-	                  maxy = data->height - 1;
+    LONG              maxx = 0,
+	                  maxy = 0;
 
 D(bug("[IconList] IconList_RethinkDimensions()\n"));
 
-    if (!(_flags(obj)&MADF_SETUP)) return;
+    if (!(_flags(obj) & MADF_SETUP)) return FALSE;
 
-    icon = singleicon ? singleicon : List_First(&data->icld_IconList);
+    if (message->singleicon)
+	{
+		icon = message->singleicon;
+        maxx = data->icld_AreaWidth - 1,
+        maxy = data->icld_AreaHeight - 1;
+	}
+	else icon = List_First(&data->icld_IconList);
     
     while (icon)
     {
@@ -558,7 +566,7 @@ D(bug("[IconList] IconList_RethinkDimensions()\n"));
             (icon->ile_IconY != NO_ICON_POSITION))
         {
             struct Rectangle icon_rect;
-    
+
             IconList_GetIconRectangle(obj, data, icon, &icon_rect);
     
             icon_rect.MinX += icon->ile_IconX;
@@ -568,26 +576,26 @@ D(bug("[IconList] IconList_RethinkDimensions()\n"));
     
             if (icon_rect.MaxX > maxx) maxx = icon_rect.MaxX;
             if (icon_rect.MaxY > maxy) maxy = icon_rect.MaxY;
-    
         }
 
-        if (singleicon) break;
+        if (message->singleicon) break;
     
         icon = Node_Next(icon);
     }
 
     /* update our view when max x/y have changed */
-    if (maxx + 1 != data->width)
+    if (maxx + 1 != data->icld_AreaWidth)
     {
-        data->width = maxx + 1;
-        SET(obj, MUIA_IconList_Width, data->width);
+        data->icld_AreaWidth = maxx + 1;
+        SET(obj, MUIA_IconList_Width, data->icld_AreaWidth);
     }
-    if (maxy + 1 != data->height)
+    if (maxy + 1 != data->icld_AreaHeight)
     {
-        data->height = maxy + 1;
-        SET(obj, MUIA_IconList_Height, data->height);
+        data->icld_AreaHeight = maxy + 1;
+        SET(obj, MUIA_IconList_Height, data->icld_AreaHeight);
     }
 
+	return TRUE;
 }
 
 /**************************************************************************
@@ -650,16 +658,16 @@ toplace->x = atx;
 toplace->y = aty;
 #if 0
 *//* update our view *//*
-if (toplace_rect.MaxX - data->icld_ViewX > data->width)
+if (toplace_rect.MaxX - data->icld_ViewX > data->icld_AreaWidth)
 {
-    data->width = toplace_rect.MaxX - data->icld_ViewX;
-    SET(obj, MUIA_IconList_Width, data->width);
+    data->icld_AreaWidth = toplace_rect.MaxX - data->icld_ViewX;
+    SET(obj, MUIA_IconList_Width, data->icld_AreaWidth);
 }
 
-if (toplace_rect.MaxY - data->icld_ViewY > data->height)
+if (toplace_rect.MaxY - data->icld_ViewY > data->icld_AreaHeight)
 {
-    data->height = toplace_rect.MaxY - data->icld_ViewY;
-    SET(obj, MUIA_IconList_Height, data->height);
+    data->icld_AreaHeight = toplace_rect.MaxY - data->icld_ViewY;
+    SET(obj, MUIA_IconList_Height, data->icld_AreaHeight);
 }
 #endif
 }
@@ -765,7 +773,7 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
             icon = Node_Next(icon);
         next = TRUE;
     }
-    IconList_RethinkDimensions(obj, data, NULL);
+    DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
     return 0;
 }
 
@@ -812,7 +820,7 @@ if (icon_rect.MinX < 0)
 icon = Node_Next(icon);
 }
 
-IconList_RethinkDimensions(obj, data, NULL);
+DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
 }
 */
 /**************************************************************************
@@ -1020,8 +1028,8 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 		case MUIA_IconList_Rastport:             STORE = data->icld_BufferRastPort; return 1;
         case MUIA_IconList_Left:                 STORE = data->icld_ViewX; return 1;
         case MUIA_IconList_Top:                  STORE = data->icld_ViewY; return 1;
-        case MUIA_IconList_Width:                STORE = data->width; return 1;
-        case MUIA_IconList_Height:               STORE = data->height; return 1;
+        case MUIA_IconList_Width:                STORE = data->icld_AreaWidth; return 1;
+        case MUIA_IconList_Height:               STORE = data->icld_AreaHeight; return 1;
         case MUIA_IconList_IconsDropped:         STORE = (IPTR)&data->drop_entry; return 1;
         case MUIA_IconList_Clicked:              STORE = (ULONG)&data->icon_click; return 1;
         case MUIA_IconList_ListMode:             STORE = (ULONG)data->icld__Option_IconListMode; return 1;
@@ -1094,10 +1102,10 @@ IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *me
 		newleft = data->icld_ViewX;
 		newtop = data->icld_ViewY;
 
-		if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+		if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
 		if (newleft < 0) newleft = 0;
 
-		if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+		if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
 		if (newtop < 0) newtop = 0;
 
 		if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
@@ -1507,15 +1515,15 @@ IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUI
     }
 
     data->icld_SelectionFirst = NULL;
-    data->icld_ViewX = data->icld_ViewY = data->width = data->height = 0;
+    data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
     /*data->icld_SortFlags = 0;*/
 
     data->icld_IconLargestWidth = data->icld_IconLargestHeight = 32;	/*default icon size*/
 
     SetAttrs(obj, MUIA_IconList_Left, data->icld_ViewX,
         MUIA_IconList_Top, data->icld_ViewY,
-        MUIA_IconList_Width, data->width,
-        MUIA_IconList_Height, data->height,
+        MUIA_IconList_Width, data->icld_AreaWidth,
+        MUIA_IconList_Height, data->icld_AreaHeight,
         TAG_DONE);
 
     MUI_Redraw(obj,MADF_DRAWOBJECT);
@@ -1697,7 +1705,7 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
         #  vertical wheel is used and one of the ALT keys is down.      */  
 
     if ((wheely && !wheelx) &&
-       ((data->height <= _mheight(obj)) || (qual & (IEQUALIFIER_LALT | IEQUALIFIER_RALT))))
+       ((data->icld_AreaHeight <= _mheight(obj)) || (qual & (IEQUALIFIER_LALT | IEQUALIFIER_RALT))))
     {
         wheelx = wheely; wheely = 0;
     }
@@ -1705,9 +1713,9 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
     if (qual & (IEQUALIFIER_CONTROL))
     {
         if (wheelx < 0) newleft = 0;
-        if (wheelx > 0) newleft = data->width;
+        if (wheelx > 0) newleft = data->icld_AreaWidth;
         if (wheely < 0) newtop = 0;
-        if (wheely > 0) newtop = data->height;
+        if (wheely > 0) newtop = data->icld_AreaHeight;
     }
     else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
     {
@@ -1720,10 +1728,10 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
         newtop += wheely * 30;
     }
 
-    if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+    if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
     if (newleft < 0) newleft = 0;
 
-    if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+    if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
     if (newtop < 0) newtop = 0;
 
     if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
@@ -1872,7 +1880,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: SPACE: Clearing selected icons ..\
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEUP\n"));
 #endif
 
-							if (data->height > data->icld_ViewHeight)
+							if (data->icld_AreaHeight > data->icld_ViewHeight)
 							{
 								new_ViewY -= data->icld_ViewHeight;
 								if (new_ViewY< 0)
@@ -1892,11 +1900,11 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEUP\n"));
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEDOWN\n"));
 #endif
 
-							if (data->height > data->icld_ViewHeight)
+							if (data->icld_AreaHeight > data->icld_ViewHeight)
 							{
 								new_ViewY += data->icld_ViewHeight;
-								if (new_ViewY > (data->height - data->icld_ViewHeight))
-									new_ViewY = data->height - data->icld_ViewHeight;
+								if (new_ViewY > (data->icld_AreaHeight - data->icld_ViewHeight))
+									new_ViewY = data->icld_AreaHeight - data->icld_ViewHeight;
 							}
 
 							if (new_ViewY != data->icld_ViewY)
@@ -2660,10 +2668,10 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
                             if (my >= _mheight(obj)) newtop +=  5;
                                else if (my < 0) newtop -= 5;
 
-                            if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+                            if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
                             if (newleft < 0) newleft = 0;
 
-                            if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+                            if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
                             if (newtop < 0) newtop = 0;
 
                             if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
@@ -2731,10 +2739,10 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
                     newleft = data->click_x - mx;
                     newtop = data->click_y - my;
         
-                    if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+                    if (newleft + _mwidth(obj) > data->icld_AreaWidth) newleft = data->icld_AreaWidth - _mwidth(obj);
                     if (newleft < 0) newleft = 0;
         
-                    if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+                    if (newtop + _mheight(obj) > data->icld_AreaHeight) newtop = data->icld_AreaHeight - _mheight(obj);
                     if (newtop < 0) newtop = 0;
         
                     if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
@@ -2823,9 +2831,14 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
     
         node = data->icld_SelectionFirst;
-    
+
+#if defined(CREAT_FULL_DRAGIMAGE)
+        img->width = data->ile_IconWidth;
+        img->height = data->ile_IconHeight;
+#else
         img->width = node->ile_IconWidth;
         img->height = node->ile_IconHeight;
+#endif
     
         if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_MINPLANES|BMF_CLEAR, _screen(obj)->RastPort.BitMap)))
         {
@@ -2903,30 +2916,30 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
     if (message->obj == obj)
     {
         struct IconEntry *icon = data->icld_SelectionFirst;
-    
+
         if (icon)
         {
             struct Region       *region = NULL;
             struct Rectangle    rect_old,
                                 rect_new;
             APTR    	        clip = NULL;
-   
+
             /* icon moved, dropped in the same window */
             SET(obj, MUIA_IconList_IconsMoved, (IPTR) &(data->icld_SelectionFirst->ile_IconListEntry)); /* Now notify */
 D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window\n", data->icld_SelectionFirst->ile_IconListEntry.filename); )
                 
             IconList_GetIconRectangle(obj, data, icon, &rect_old);
-    
+
             rect_old.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
             rect_old.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
             rect_old.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
             rect_old.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
-    
+
             icon->ile_IconX = message->x - _mleft(obj) + data->icld_ViewX - data->touch_x;
             icon->ile_IconY = message->y - _mtop(obj) + data->icld_ViewY - data->touch_y;
-    
-            IconList_RethinkDimensions(obj, data, data->icld_SelectionFirst);
-    
+
+            DoMethod(obj, MUIM_IconList_RethinkDimensions, data->icld_SelectionFirst);
+
             IconList_GetIconRectangle(obj, data, data->icld_SelectionFirst, &rect_new);
     
             rect_new.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
@@ -3529,35 +3542,37 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW:                      return IconList__OM_NEW(CLASS, obj, (struct opSet *)message);
-        case OM_DISPOSE:                  return IconList__OM_DISPOSE(CLASS, obj, message);
-        case OM_SET:                      return IconList__OM_SET(CLASS, obj, (struct opSet *)message);
-        case OM_GET:                      return IconList__OM_GET(CLASS, obj, (struct opGet *)message);
+        case OM_NEW:                            return IconList__OM_NEW(CLASS, obj, (struct opSet *)message);
+        case OM_DISPOSE:                        return IconList__OM_DISPOSE(CLASS, obj, message);
+        case OM_SET:                            return IconList__OM_SET(CLASS, obj, (struct opSet *)message);
+        case OM_GET:                            return IconList__OM_GET(CLASS, obj, (struct opGet *)message);
         
-        case MUIM_Setup:                  return IconList__MUIM_Setup(CLASS, obj, (struct MUIP_Setup *)message);
+        case MUIM_Setup:                        return IconList__MUIM_Setup(CLASS, obj, (struct MUIP_Setup *)message);
         
-        case MUIM_Show:                   return IconList__MUIM_Show(CLASS,obj, (struct MUIP_Show *)message);
-        case MUIM_Cleanup:                return IconList__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
-        case MUIM_AskMinMax:              return IconList__MUIM_AskMinMax(CLASS, obj, (struct MUIP_AskMinMax *)message);
-        case MUIM_Draw:                   return IconList__MUIM_Draw(CLASS, obj, (struct MUIP_Draw *)message);
-        case MUIM_Layout:                 return IconList__MUIM_Layout(CLASS, obj, (struct MUIP_Layout *)message);
-        case MUIM_HandleEvent:            return IconList__MUIM_HandleEvent(CLASS, obj, (struct MUIP_HandleEvent *)message);
-        case MUIM_CreateDragImage:        return IconList__MUIM_CreateDragImage(CLASS, obj, (APTR)message);
-        case MUIM_DeleteDragImage:        return IconList__MUIM_DeleteDragImage(CLASS, obj, (APTR)message);
-        case MUIM_DragQuery:              return IconList__MUIM_DragQuery(CLASS, obj, (APTR)message);
-        case MUIM_DragReport:             return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
-        case MUIM_DragDrop:               return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
-        case MUIM_UnknownDropDestination: return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
-        case MUIM_IconList_Update:        return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
-        case MUIM_IconList_Clear:         return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
-        case MUIM_IconList_CreateEntry:   return IconList__MUIM_IconList_CreateEntry(CLASS, obj, (APTR)message);
-        case MUIM_IconList_DestroyEntry:  return IconList__MUIM_IconList_DestroyEntry(CLASS, obj, (APTR)message);
-        case MUIM_IconList_NextSelected:  return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
-        case MUIM_IconList_UnselectAll:   return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
-        case MUIM_IconList_Sort:          return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
-        case MUIM_IconList_CoordsSort:    return IconList__MUIM_IconList_CoordsSort(CLASS, obj, (APTR)message);
-        case MUIM_IconList_PositionIcons: return IconList__MUIM_IconList_PositionIcons(CLASS, obj, (APTR)message);
-        case MUIM_IconList_SelectAll:     return IconList__MUIM_IconList_SelectAll(CLASS, obj, (APTR)message);
+        case MUIM_Show:                         return IconList__MUIM_Show(CLASS,obj, (struct MUIP_Show *)message);
+        case MUIM_Cleanup:                      return IconList__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
+        case MUIM_AskMinMax:                    return IconList__MUIM_AskMinMax(CLASS, obj, (struct MUIP_AskMinMax *)message);
+        case MUIM_Draw:                         return IconList__MUIM_Draw(CLASS, obj, (struct MUIP_Draw *)message);
+        case MUIM_Layout:                       return IconList__MUIM_Layout(CLASS, obj, (struct MUIP_Layout *)message);
+        case MUIM_HandleEvent:                  return IconList__MUIM_HandleEvent(CLASS, obj, (struct MUIP_HandleEvent *)message);
+        case MUIM_CreateDragImage:              return IconList__MUIM_CreateDragImage(CLASS, obj, (APTR)message);
+        case MUIM_DeleteDragImage:              return IconList__MUIM_DeleteDragImage(CLASS, obj, (APTR)message);
+        case MUIM_DragQuery:                    return IconList__MUIM_DragQuery(CLASS, obj, (APTR)message);
+        case MUIM_DragReport:                   return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
+        case MUIM_DragDrop:                     return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
+        case MUIM_UnknownDropDestination:       return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
+        case MUIM_IconList_Update:              return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
+        case MUIM_IconList_Clear:               return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
+        case MUIM_IconList_RethinkDimensions:   return IconList__MUIM_IconList_RethinkDimensions(CLASS, obj, (APTR)message);
+        case MUIM_IconList_CreateEntry:         return IconList__MUIM_IconList_CreateEntry(CLASS, obj, (APTR)message);
+        case MUIM_IconList_DestroyEntry:        return IconList__MUIM_IconList_DestroyEntry(CLASS, obj, (APTR)message);
+        case MUIM_IconList_NextSelected:        return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
+        case MUIM_IconList_UnselectAll:         return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
+        case MUIM_IconList_Sort:                return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
+        case MUIM_IconList_CoordsSort:          return IconList__MUIM_IconList_CoordsSort(CLASS, obj, (APTR)message);
+        case MUIM_IconList_PositionIcons:       return IconList__MUIM_IconList_PositionIcons(CLASS, obj, (APTR)message);
+        case MUIM_IconList_SelectAll:           return IconList__MUIM_IconList_SelectAll(CLASS, obj, (APTR)message);
+//      case MUIM_IconList_ViewIcon:            return IconList__MUIM_IconList_ViewIcon(CLASS, obj, (APTR)message);
     }
 
     return DoSuperMethodA(CLASS, obj, message);
