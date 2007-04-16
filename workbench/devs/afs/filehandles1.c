@@ -358,8 +358,7 @@ struct AfsHandle *ah;
 		);
 
 	error = 0;
-	if (mode & FMF_WRITE && volume->state != ID_VALIDATED)
-		error = ERROR_DISK_WRITE_PROTECTED;
+	if ((mode & FMF_WRITE) && ( volume->state != ID_VALIDATED)) error=ERROR_DISK_WRITE_PROTECTED;
 
 	ah = findHandle(volume, fileblock->blocknum);
 	if (ah != NULL)
