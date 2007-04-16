@@ -148,13 +148,13 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
          * in from the cache */
         if (ioh->block == NULL || ioh->cur_sector != ioh->block->num) {
             if (ioh->block != NULL) {
-                cache_put_block(glob->cache, ioh->block, 0);
+                cache_put_block(ioh->sb->cache, ioh->block, 0);
                 ioh->block = NULL;
             }
 
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
-            err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->cur_sector, 0, &b);
+            err = cache_get_block(ioh->sb->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
             if (err > 0) {
                 RESET_HANDLE(ioh);
 
@@ -310,13 +310,13 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
          * in from the cache */
         if (ioh->block == NULL || ioh->cur_sector != ioh->block->num) {
             if (ioh->block != NULL) {
-                cache_put_block(glob->cache, ioh->block, 0);
+                cache_put_block(ioh->sb->cache, ioh->block, 0);
                 ioh->block = NULL;
             }
 
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
-            err = cache_get_block(glob->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->cur_sector, 0, &b);
+            err = cache_get_block(ioh->sb->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
             if (err > 0) {
                 RESET_HANDLE(ioh);
 
@@ -341,7 +341,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         fat_hexdump(&(ioh->block->data[pos]), ncopy);
 #endif
 
-        cache_mark_block_dirty(glob->cache, ioh->block);
+        cache_mark_block_dirty(ioh->sb->cache, ioh->block);
 
         pos += ncopy;
         nwant -= ncopy;

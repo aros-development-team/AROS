@@ -116,6 +116,9 @@ struct FSSuper {
     struct FSSuper *next;
     struct DosList *doslist;
 
+    struct cache *cache;
+    ULONG        first_device_sector;
+
     ULONG sectorsize;
     ULONG sectorsize_bits;
 
@@ -164,8 +167,6 @@ struct Globals {
     struct MsgPort *ourport;
     APTR mempool;
 
-    struct cache *cache;
-
     /* fs */
     struct DosList *devnode;
     struct FileSysStartupMsg *fssm;
@@ -176,7 +177,6 @@ struct Globals {
     struct IOExtTD *diskioreq;
     struct IOExtTD *diskchgreq;
     struct MsgPort *diskport;
-        LONG blocksize;
 
     /* volumes */
     struct FSSuper *sb;    /* current sb */
@@ -202,7 +202,7 @@ struct Globals {
     do {                                                           \
         (ioh)->cluster_offset = (ioh)->sector_offset = 0xffffffff; \
         if ((ioh)->block != NULL) {                                \
-            cache_put_block(glob->cache, (ioh)->block, 0);         \
+            cache_put_block((ioh)->sb->cache, (ioh)->block, 0);    \
             (ioh)->block = NULL;                                   \
         }                                                          \
     } while (0);
