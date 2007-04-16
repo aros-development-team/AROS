@@ -37,6 +37,7 @@
 /*** Methods ****************************************************************/
 #define MUIM_IconList_Clear             (MUIB_IconList | 0x00000000) /* Zune: V1 */
 #define MUIM_IconList_Update            (MUIB_IconList | 0x00000001) /* Zune: V1 */
+#define MUIM_IconList_RethinkDimensions (MUIB_IconList | 0x00000002) /* Zune: V1 */
 #define MUIM_IconList_CreateEntry       (MUIB_IconList | 0x00000010) /* Zune: V1 returns 0 For Failure or (struct IconEntry *) */
 #define MUIM_IconList_DestroyEntry      (MUIB_IconList | 0x00000011)
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000020) /* Zune: V1 */
@@ -49,12 +50,13 @@
 
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
+struct MUIP_IconList_RethinkDimensions  {ULONG MethodID; struct IconEntry *singleicon;};
 struct MUIP_IconList_CreateEntry        {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib; struct DiskObject *icon_dob;};/* void *udata; More file attrs to add };*/
 struct MUIP_IconList_DestroyEntry       {ULONG MethodID; struct IconEntry *icon;};
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 struct MUIP_IconList_Sort               {ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
-struct MUIMPIconList_ViewIcon           {ULONG MethodID; struct IconEntry *icon;};
+struct MUIP_IconList_ViewIcon           {ULONG MethodID; struct IconEntry *icon;};
 
 #define MUIV_IconList_NextSelected_Start 0
 #define MUIV_IconList_NextSelected_End   0
