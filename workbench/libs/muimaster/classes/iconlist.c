@@ -8,6 +8,7 @@ $Id$
 #include "debug.h"
 
 //#define DEBUG_IL_KEYEVENTS
+//#define CREATE_FULL_DRAGIMAGE
 
 #include <string.h>
 #include <stdlib.h>
@@ -2832,9 +2833,9 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
     
         node = data->icld_SelectionFirst;
 
-#if defined(CREAT_FULL_DRAGIMAGE)
-        img->width = data->ile_IconWidth;
-        img->height = data->ile_IconHeight;
+#if defined(CREATE_FULL_DRAGIMAGE)
+        img->width = data->icld_AreaWidth + data->icld_IconLargestWidth;
+        img->height = data->icld_AreaHeight + data->icld_IconLargestHeight;
 #else
         img->width = node->ile_IconWidth;
         img->height = node->ile_IconHeight;
@@ -2846,11 +2847,38 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             InitRastPort(&temprp);
             temprp.BitMap = img->bm;
     
-#ifndef __AROS__
-            DrawIconState(&temprp, node->ile_DiskObj, NULL, 0, 0, (node->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
+#if defined(CREATE_FULL_DRAGIMAGE)
+			ForeachNode(&data->icld_IconList, node)
+			{
+				if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+#if !defined(__AROS__)
+					DrawIconState(
 #else
-            DrawIconStateA(&temprp, node->ile_DiskObj, NULL, 0, 0, (node->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL, NULL);
+					DrawIconStateA(
 #endif
+							&temprp, node->ile_DiskObj, NULL,
+							node->ile_IconX, node->ile_IconY,
+                            IDS_SELECTED,
+#if !defined(__AROS__)
+							ICONDRAWA_EraseBackground, TRUE,
+#endif
+							TAG_DONE);
+			}
+#else
+#if !defined(__AROS__)
+			DrawIconState(
+#else
+			DrawIconStateA(
+#endif
+					&temprp, node->ile_DiskObj, NULL,
+					node->ile_IconX, node->ile_IconY,
+					IDS_SELECTED,
+#if !defined(__AROS__)
+					ICONDRAWA_EraseBackground, TRUE,
+#endif
+					TAG_DONE);
+#endif
+
             DeinitRastPort(&temprp);
         }
     
