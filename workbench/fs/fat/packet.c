@@ -504,7 +504,20 @@ void ProcessPackets(void) {
                 D(bug("[fat] RENAME_DISK: name '%.*s'\n",
                       name[0], &name[1]));
 
-                err = SetVolumeName(glob->sb, name);
+                if (glob->sb->doslist == NULL) {
+                    err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
+                    break;
+                }
+
+                while (! AttemptLockDosList(LDF_VOLUMES | LDF_WRITE))
+                    ProcessPackets();
+
+                if ((err = SetVolumeName(glob->sb, name)) != 0)
+                    break;
+
+                UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+
+                res = DOSTRUE;
 
                 break;
             }
