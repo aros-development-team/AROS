@@ -38,13 +38,13 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_bloc
         D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block));
         /* put the old ones back */
         if (sb->fat_cache_block != 0xffffffff)
-            cache_put_blocks(glob->cache, sb->fat_blocks, sb->fat_blocks_count, 0);
+            cache_put_blocks(sb->cache, sb->fat_blocks, sb->fat_blocks_count, 0);
 
         /* load some more */
-        cache_get_blocks(glob->cache,
+        cache_get_blocks(sb->cache,
                          glob->diskioreq->iotd_Req.io_Device,
                          glob->diskioreq->iotd_Req.io_Unit,
-                         sb->first_fat_sector +
+                         sb->first_device_sector + sb->first_fat_sector +
                             (entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)),
                          sb->fat_blocks_count,
                          0,
@@ -155,13 +155,13 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
          * invalid after a call to GetFatEntryPtr, as it may have swapped the
          * previous cache out. This is probably safe enough. */
         *GetFatEntryPtr(sb, offset+1, &b) = newval >> 8;
-        cache_mark_block_dirty(glob->cache, b);
+        cache_mark_block_dirty(sb->cache, b);
         *GetFatEntryPtr(sb, offset, &b) = newval & 0xff;
-        cache_mark_block_dirty(glob->cache, b);
+        cache_mark_block_dirty(sb->cache, b);
     }
     else {
         *fat = AROS_WORD2LE(newval);
-        cache_mark_block_dirty(glob->cache, b);
+        cache_mark_block_dirty(sb->cache, b);
     }
 }
 
@@ -170,7 +170,7 @@ static void SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 
     *((UWORD *) GetFatEntryPtr(sb, n << 1, &b)) = AROS_WORD2LE((UWORD) val);
 
-    cache_mark_block_dirty(glob->cache, b);
+    cache_mark_block_dirty(sb->cache, b);
 }
 
 static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
@@ -179,16 +179,18 @@ static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 
     *fat = (*fat & 0xf0000000) | val;
 
-    cache_mark_block_dirty(glob->cache, b);
+    cache_mark_block_dirty(sb->cache, b);
 }
  
 LONG ReadFATSuper(struct FSSuper *sb ) {
+    struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err;
     UBYTE raw[512];
     struct FATBootSector *boot = (struct FATBootSector *) &raw;
     BOOL invalid = FALSE;
 
     D(bug("[fat] reading boot sector\n"));
+
 
     /*
      * Read the boot sector. We go direct because we don't have a cache yet,
@@ -197,8 +199,13 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
      * once and once only.
      */
 
+    sb->first_device_sector = de->de_BlocksPerTrack *
+                              de->de_LowCyl;
+
+    D(bug("[fat] boot sector at sector %ld\n", sb->first_device_sector));
+
     glob->diskioreq->iotd_Req.io_Command = CMD_READ;
-    glob->diskioreq->iotd_Req.io_Offset = 0;
+    glob->diskioreq->iotd_Req.io_Offset = sb->first_device_sector * de->de_SizeBlock * 4;
     glob->diskioreq->iotd_Req.io_Length = 512;
     glob->diskioreq->iotd_Req.io_Data = &raw;
     glob->diskioreq->iotd_Req.io_Flags = IOF_QUICK;
@@ -289,7 +296,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         return ERROR_NOT_A_DOS_DISK;
     }
 
-    glob->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
+    sb->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
  
     if (sb->clusters_count < 4085) {
         kprintf("\tFAT12 filesystem detected\n");

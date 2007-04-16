@@ -263,7 +263,7 @@ LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
         fl->fl_Task = NULL;
 
         if (fl->ioh.block != NULL)
-            cache_put_block(glob->cache, fl->ioh.block, 0);
+            cache_put_block(sb->cache, fl->ioh.block, 0);
 
         FreeVecPooled(glob->mempool, fl);
 
