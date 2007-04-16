@@ -452,8 +452,9 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
                 return err;
             }
 
-            CopyMem(name, sb->volume.name, name[0]+1);
-            sb->volume.name[name[0]+1] = '\0';
+            sb->volume.name[0] = name[0] < 10 ? name[0] : 10;
+            CopyMem(&name[1], &(sb->volume.name[1]), sb->volume.name[0]);
+            sb->volume.name[sb->volume.name[0]+1] = '\0';
 
             D(bug("[fat] new volume name is '%s'\n", &(sb->volume.name[1])));
 
