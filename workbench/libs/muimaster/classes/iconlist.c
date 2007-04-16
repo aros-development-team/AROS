@@ -2821,8 +2821,10 @@ MUIM_CreateDragImage
 **************************************************************************/
 IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MUIP_CreateDragImage *message)
 {
-    struct MUI_IconData  *data = INST_DATA(CLASS, obj);
-    struct MUI_DragImage *img = NULL;    
+    struct MUI_IconData     *data = INST_DATA(CLASS, obj);
+    struct MUI_DragImage    *img = NULL;    
+	LONG                    first_x = -1,
+							first_y = -1;
 
     if (!data->icld_SelectionFirst) DoSuperMethodA(CLASS, obj, (Msg)message);
 
@@ -2834,8 +2836,18 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         node = data->icld_SelectionFirst;
 
 #if defined(CREATE_FULL_DRAGIMAGE)
-        img->width = data->icld_AreaWidth + data->icld_IconLargestWidth;
-        img->height = data->icld_AreaHeight + data->icld_IconLargestHeight;
+		ForeachNode(&data->icld_IconList, node)
+		{
+			if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (node->ile_Flags & ICONENTRY_FLAG_SELECTED))
+			{
+				if ((first_x == -1) || ((first_x != -1) && (node->ile_IconX < first_x))) first_x = node->ile_IconX;
+				if ((first_y == -1) || ((first_y != -1) && (node->ile_IconY < first_y))) first_y = node->ile_IconY;
+				if ((node->ile_IconX + node->ile_IconWidth) > img->width)   img->width = node->ile_IconX + node->ile_IconWidth;
+				if ((node->ile_IconY + node->ile_IconHeight) > img->height) img->height = node->ile_IconY + node->ile_IconHeight;
+			}
+		}
+        img->width = (img->width - first_x) + 2;
+        img->height = (img->height - first_y) + 2;
 #else
         img->width = node->ile_IconWidth;
         img->height = node->ile_IconHeight;
@@ -2850,19 +2862,21 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 #if defined(CREATE_FULL_DRAGIMAGE)
 			ForeachNode(&data->icld_IconList, node)
 			{
-				if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+				if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (node->ile_Flags & ICONENTRY_FLAG_SELECTED))
+				{
 #if !defined(__AROS__)
 					DrawIconState(
 #else
 					DrawIconStateA(
 #endif
 							&temprp, node->ile_DiskObj, NULL,
-							node->ile_IconX, node->ile_IconY,
+							(node->ile_IconX + 1) - first_x, (node->ile_IconY + 1) - first_y,
                             IDS_SELECTED,
 #if !defined(__AROS__)
 							ICONDRAWA_EraseBackground, TRUE,
 #endif
 							TAG_DONE);
+				}
 			}
 #else
 #if !defined(__AROS__)
