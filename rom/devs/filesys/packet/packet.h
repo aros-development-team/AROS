@@ -12,7 +12,7 @@
 #ifndef _PACKET_HANDLER_H
 #define _PACKET_HANDLER_H 1
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/devices.h>
