@@ -24,7 +24,6 @@ int ilog2(ULONG data);
 #ifdef __DEBUG__
 
 #define DEBUG 1
-#include <aros/debug.h>
 
 #define __DEBUG_ENTRIES__
 #define __DEBUG_IO__
@@ -35,6 +34,8 @@ void knprints(UBYTE *name, LONG namelen);
 #define kprintf( fmt, ... )
 #define knprints( path, len )
 #endif
+
+#include <aros/debug.h>
 
 #endif
 
