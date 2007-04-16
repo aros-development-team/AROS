@@ -1,0 +1,7 @@
+FileSystem               = fat.handler
+Device                   = ata.device
+Unit                     = 0
+BlockSize                = 512
+BlocksPerTrack           = 1
+LowCyl                   = 63
+HighCyl                  = 2092607
