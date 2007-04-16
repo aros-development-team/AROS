@@ -14,6 +14,8 @@
 #include <dos/dos.h>
 #include <proto/exec.h>
 
+#include <string.h>
+
 #include "cache.h"
 
 #include "fat_fs.h"
