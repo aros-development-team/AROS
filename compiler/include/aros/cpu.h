@@ -19,24 +19,24 @@
 #define AROS_CPU_X8664              9
 
 /*
-    Firstly, include the sub-include file for a particular CPU. The
-    specs.in file contains a -D__@gcc_target_cpu@__, so we can assume
-    that each target has a __cpu__ style #define.
+    Firstly, include the sub-include file for a particular CPU.
 */
-#if 0
 #if defined __i386__
-#   include <aros/cpu-i386.h>
+#   include <aros/i386/cpu.h>
+#elif defined __x86_64__
+#   include <aros/x86_64/cpu.h>
 #elif defined __mc68000__
-#   include <aros/cpu-m68k.h>
-#elif defined __ppc__
-#   include <aros/cpu-ppc.h>
+#   include <aros/m68k/cpu.h>
+#elif defined __powerpc__
+#   include <aros/ppc/cpu.h>
 #else
-#   error CPU type unknown
+#   error unsupported CPU type
 #endif
-#else
-/* XXX For now, just include machine.h, and fix everything else up... */
 
-#include <aros/machine.h>
+/*
+    Now, for any optional define that hasn't been provided, we must provide
+    an implementation of it here. This is somewhat tedious...
+*/
 
 #ifndef AROS_INTPTR_TYPE
 #define AROS_INTPTR_TYPE    long
@@ -93,14 +93,6 @@
 #ifndef AROS_ATOMIC_TYPE
 #define AROS_ATOMIC_TYPE            int
 #endif
-
-/* XXX End of Hacks */
-
-#endif
-/*
-    Now, for any optional define that hasn't been provided, we must provide
-    an implementation of it here. This is somewhat tedious...
-*/
 
 /*
  * AROS_xBIT_LEAST: A type that holds at least a certain bit width.

@@ -2,48 +2,26 @@
 include $(TOP)/config/make.cfg
 
 GENINC	:= $(TOOLDIR)/geninc-i386-native$(HOST_EXE_SUFFIX)
-_INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))             \
-            $(foreach f,$(shell ls aros/*.[hi]), $(f))    \
-            $(foreach f,$(shell ls asm/*.[hi]), $(f))      \
-            $(foreach f,$(shell ls exec/*.[hi]), $(f))
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
 
-INCFILES := $(foreach f,$(_INCLUDES), $(AROS_INCLUDES)/$(f) $(GENINCDIR)/$(f))
+ifeq ($(findstring machine.i, $(INCLUDE_FILES)),)
+INCLUDE_FILES += machine.i
+endif
 
-DIRS :=	$(AROS_INCLUDES) $(GENINCDIR) \
-	$(foreach d, aros asm exec libcore, $(AROS_INCLUDES)/$(d) $(GENINCDIR)/$(d))
+#MM- includes-copy-pc-i386 : includes-common-i386
 
-MACHINE_H := $(GENINCDIR)/aros/machine.h
+%copy_includes mmake=includes-copy-pc-i386
 
-#MM
-includes-pc-i386 : setup-includes $(INCFILES) machine.i
-	@$(NOP)
-
-#MM
-includes-copy-pc-i386 : setup-includes $(INCFILES)
-	@$(NOP)
-
-#MM
-kernel-exec-includes-pc-i386 : $(GENINCDIR)/sigcore.h
-
-setup-includes :
-	@$(FOR) dir in $(DIRS) ; do \
-	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ; \
-	done
+#MM- kernel-exec-includes-pc-i386 : includes-copy-pc-i386
 
 #MM
 clean ::
-	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
-
-$(AROS_INCLUDES)/% : %
-	$(CP) $< $@
-
-$(GENINCDIR)/% : %
-	$(CP) $< $@
+	$(RM) machine.i $(GENINC)
 
 # geninc is run on the host (which is incorrect...)
 GENINC_CFLAGS := $(USER_CFLAGS) $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
 
-$(GENINC) : geninc.c $(MACHINE_H)
+$(GENINC) : geninc.c $(GENINCDIR)/aros/cpu.h $(GENINCDIR)/aros/i386/cpu.h
 	@echo "CFLAGS=$(GENINC_CFLAGS)"
 	@echo "Creating geninc..."
 	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<

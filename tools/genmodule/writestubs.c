@@ -4,7 +4,7 @@
     
     Function to write module_stubs.c. Part of genmodule.
 */
-#include <aros/machine.h>
+#include <aros/cpu.h>
 
 #include "genmodule.h"
 
