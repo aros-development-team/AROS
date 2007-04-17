@@ -38,7 +38,7 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-pc-i386-drivers \
 #MM     hidd-usb
 
-#MM- includes-pc-i386 : includes-copy-pc-i386 includes-copy
+#MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
 #MM
 install-bootdisk :
