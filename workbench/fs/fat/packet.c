@@ -55,12 +55,12 @@ void ProcessPackets(void) {
                 }
 
                 else if (fl != NULL) {
-                    kprintf("\tCopying lock\n");
+                    D(bug("\tCopying lock\n"));
                     err = CopyLock(fl, &res);
                 }
 
                 else {
-                    kprintf("\tLocking root directory.\n");
+                    D(bug("\tLocking root directory.\n"));
                     err = LockRoot(access, &res);
                 }
 
@@ -221,11 +221,11 @@ void ProcessPackets(void) {
                 /* handle empty filename */
                 if (path[0] == 0) {
                     if (fl != NULL) {
-                        kprintf("\tCopying lock\n");
+                        D(bug("\tCopying lock\n"));
                         err = CopyLock(fl, &lock);
                     }
                     else {
-                        kprintf("\tLocking root directory.\n");
+                        D(bug("\tLocking root directory.\n"));
                         err = LockRoot(SHARED_LOCK, &lock);
                     }
                 }
@@ -405,12 +405,12 @@ void ProcessPackets(void) {
                 D(bug("[fat] DIE\n"));
 
                 if (glob->sblist != NULL || (glob->sb != NULL && glob->sb->doslist->dol_misc.dol_volume.dol_LockList != NULL)) {
-                    kprintf("\tThere are some locks/volumes left. Shutting down is not possible\n");
+                    D(bug("\tThere are some locks/volumes left. Shutting down is not possible\n"));
                     err = ERROR_OBJECT_IN_USE;
                     break;
                 }
 
-                kprintf("\tNo locks pending. Shutting down the handler\n");
+                D(bug("\tNo locks pending. Shutting down the handler\n"));
 
                 DoDiskRemove(); /* risky, because of async. volume remove, but works */
 
@@ -425,14 +425,14 @@ void ProcessPackets(void) {
             /* XXX AROS needs these ACTION_ headers defined in dos/dosextens.h */
 
             case ACTION_GET_DISK_FSSM: {
-                kprintf("\nGot ACTION_GET_DISK_FSSM\n");
+                D(bug("\nGot ACTION_GET_DISK_FSSM\n"));
 
                 res = (ULONG) glob->fssm;
                 break;
             }
 
             case ACTION_FREE_DISK_FSSM: {
-                kprintf("\nGot ACTION_FREE_DISK_FSSM\n");
+                D(bug("\nGot ACTION_FREE_DISK_FSSM\n"));
 
                 res = DOSTRUE;
                 break;
@@ -456,7 +456,7 @@ void ProcessPackets(void) {
 
                             SendEvent(IECLASS_DISKINSERTED);
 
-                            kprintf("\tVolume added successfuly\n");
+                            D(bug("\tVolume added successfuly\n"));
                         }
                         else if (type == ACTION_VOLUME_REMOVE) {
                             RemDosEntry(vol);
@@ -465,21 +465,21 @@ void ProcessPackets(void) {
 
                             SendEvent(IECLASS_DISKREMOVED);
 
-                            kprintf("\tVolume removed successfuly.\n");
+                            D(bug("\tVolume removed successfuly.\n"));
                         }
 
                         FreeDosObject(DOS_STDPKT, pkt); /* cleanup */
 
                         pkt = NULL;
-                        kprintf("Packet destroyed\n");
+                        D(bug("Packet destroyed\n"));
                     }
 
                     else {
-                        kprintf("\tDosList is locked\n");
+                        D(bug("\tDosList is locked\n"));
                         Delay(5);
                         PutMsg(glob->ourport, pkt->dp_Link);
                         pkt = NULL;
-                        kprintf("Message moved to the end of the queue\n");
+                        D(bug("Message moved to the end of the queue\n"));
                     }
                 }
                 else

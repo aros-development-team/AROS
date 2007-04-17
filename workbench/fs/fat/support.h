@@ -21,22 +21,5 @@ void SendEvent(LONG event);
 int ilog2(ULONG data);
 #define log2 ilog2
 
-#ifdef __DEBUG__
-
-#define DEBUG 1
-#include <aros/debug.h>
-
-
-#define __DEBUG_ENTRIES__
-#define __DEBUG_IO__
-
-void knprints(UBYTE *name, LONG namelen);
-
-#else
-#define D(x)
-#define kprintf( fmt, ... )
-#define knprints( path, len )
-#endif
-
 #endif
 
