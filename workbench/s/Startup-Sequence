@@ -14,7 +14,7 @@ Assign T:       RAM:T
 Assign CLIPS:   RAM:Clipboards
 
 If EXISTS DEVS:DOSDrivers
-    List DEVS:DOSDrivers NOHEAD FILES TO T:Mount LFORMAT="C:Mount %s:*N"
+    List >NIL: DEVS:DOSDrivers/~(#?.info) NOHEAD FILES TO T:Mount LFORMAT="C:Mount %s:*N"
     Execute T:Mount
     Delete T:Mount QUIET
 EndIf
