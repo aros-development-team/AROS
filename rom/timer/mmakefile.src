@@ -4,15 +4,13 @@ include $(TOP)/config/make.cfg
 FILES := timervblank
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
-#MM- kernel-timer : includes linklibs
-#MM- kernel-timer-linklib : includes linklibs
+#MM- kernel-timer : linklibs
+#MM- kernel-timer-linklib : linklibs
 
 %build_module mmake=kernel-timer \
   modname=timer modtype=device \
   files="timer_init $(FUNCS) $(FILES)"
 
-#MM includes-copy
-
 INCLUDE_FILES := include/timer.h
 
-%copy_includes path=hidd dir=include
+%copy_includes mmake=kernel-timer-includes path=hidd dir=include
