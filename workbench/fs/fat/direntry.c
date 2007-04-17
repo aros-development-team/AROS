@@ -297,22 +297,22 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     struct DirEntry de;
     LONG result = 0;
 
-    kprintf("\tFilling FIB data.\n");
+    D(bug("\tFilling FIB data.\n"));
 
     if (fl->dir_cluster == 0xffffffff) {
-        kprintf("\t\ttype: root directory\n");
+        D(bug("\t\ttype: root directory\n"));
         fib->fib_DirEntryType = ST_ROOT;
     }
     else if (fl->attr & ATTR_DIRECTORY) {
-        kprintf("\t\ttype: directory\n");
+        D(bug("\t\ttype: directory\n"));
         fib->fib_DirEntryType = ST_USERDIR;
     }
     else {
-        kprintf("\t\ttype: file\n");
+        D(bug("\t\ttype: file\n"));
         fib->fib_DirEntryType = ST_FILE;
     }
 
-    kprintf("\t\tsize: %ld\n", fl->size);
+    D(bug("\t\tsize: %ld\n", fl->size));
 
     fib->fib_Size = fl->size;
     fib->fib_NumBlocks = ((fl->size + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
@@ -329,7 +329,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     }
 
     memcpy(fib->fib_FileName, fl->name, 108);
-    kprintf("\t\tname (len %ld) ", fib->fib_FileName[0]); knprints(&fib->fib_FileName[1], fib->fib_FileName[0]);
+    D(bug("\t\tname (len %ld) %.*s\n", fib->fib_FileName[0], fib->fib_FileName[0], &(fib->fib_FileName[1])));
 
     fib->fib_Protection = 0;
     if (fl->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);

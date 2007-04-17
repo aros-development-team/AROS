@@ -47,8 +47,8 @@ void handler(void) {
     startuppacket = (struct DosPacket *) msg->mn_Node.ln_Name;
     glob->devnode = BADDR(startuppacket->dp_Arg3);
 
-    kprintf("\nFATFS: opening libraries.\n");
-    kprintf("\tFS task: %lx, port %lx\n");
+    D(bug("\nFATFS: opening libraries.\n"));
+    D(bug("\tFS task: %lx, port %lx\n"));
 
     if ((DOSBase = (struct DosLibrary*)OpenLibrary("dos.library", 37))) {
         if ((IntuitionBase = OpenLibrary("intuition.library", 37))) {
@@ -65,8 +65,7 @@ void handler(void) {
                         ULONG sigs;
                         struct MsgPort *rp;
 
-                        kprintf("\tInitiated device: ");
-                        knprints(AROS_BSTR_ADDR(glob->devnode->dol_Name), AROS_BSTR_strlen(glob->devnode->dol_Name));
+                        D(bug("\tInitiated device: %.*s\n", AROS_BSTR_strlen(glob->devnode->dol_Name), AROS_BSTR_ADDR(glob->devnode->dol_Name)));
 
                         glob->devnode->dol_Task = glob->ourport;
 
@@ -78,7 +77,7 @@ void handler(void) {
                         startuppacket->dp_Res2 = 0;
                         PutMsg(rp, startuppacket->dp_Link);
 
-                        kprintf("Handler init finished.\n");
+                        D(bug("Handler init finished.\n"));
 
                         glob->sb = NULL;
                         glob->sblist = NULL;
@@ -96,7 +95,7 @@ void handler(void) {
                                 ProcessPackets();
                         }
 
-                        kprintf("\nHandler shutdown initiated\n");
+                        D(bug("\nHandler shutdown initiated\n"));
 
                         error = 0;
                         startuppacket = NULL;
@@ -116,7 +115,7 @@ void handler(void) {
         CloseLibrary((struct Library*)DOSBase);
     }
 
-    kprintf("The end.\n");
+    D(bug("The end.\n"));
 
     if (startuppacket != NULL) {
         struct MsgPort *rp;
@@ -173,7 +172,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
             if ((glob->diskioreq = CreateIORequest(glob->diskport, sizeof(struct IOExtTD)))) {
 
                 if (OpenDevice(device, unit, (struct IORequest *)glob->diskioreq, flags) == 0) {
-                    kprintf("\tDevice successfully opened\n");
+                    D(bug("\tDevice successfully opened\n"));
 
                     if ((glob->diskchgreq = AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC))) {
                         CopyMem(glob->diskioreq, glob->diskchgreq, sizeof(struct IOExtTD));
@@ -197,7 +196,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
 
                         SendIO((struct IORequest*)glob->diskchgreq);
 
-                        kprintf("\tDisk change interrupt handler installed\n");
+                        D(bug("\tDisk change interrupt handler installed\n"));
 
                         return 0;
                     }
@@ -232,7 +231,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
 }
 
 void CleanupDiskHandler(ULONG diskchgsig_bit) {
-    kprintf("\tFreeing handler resources:\n");
+    D(bug("\tFreeing handler resources:\n"));
 
     /* remove disk change interrupt */
     glob->diskchgreq->iotd_Req.io_Command = TD_REMCHANGEINT;
@@ -241,13 +240,13 @@ void CleanupDiskHandler(ULONG diskchgsig_bit) {
     glob->diskchgreq->iotd_Req.io_Flags = 0;
 
     DoIO((struct IORequest*)glob->diskchgreq);
-    kprintf("\tDisk change interrupt handler removed\n");
+    D(bug("\tDisk change interrupt handler removed\n"));
 
     CloseDevice((struct IORequest *)glob->diskioreq);
     DeleteIORequest(glob->diskioreq);
     FreeVec(glob->diskchgreq);
     DeleteMsgPort(glob->diskport);
-    kprintf("\tDevice closed\n");
+    D(bug("\tDevice closed\n"));
 
     glob->diskioreq = NULL;
     glob->diskchgreq = NULL;
@@ -255,5 +254,5 @@ void CleanupDiskHandler(ULONG diskchgsig_bit) {
 
     FreeSignal(diskchgsig_bit);
 
-    kprintf("\tDone.\n");
+    D(bug("\tDone.\n"));
 }

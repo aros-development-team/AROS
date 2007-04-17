@@ -54,7 +54,7 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
 
     dir_cluster = (fl) ? fl->ioh.first_cluster : 0;
     
-    kprintf("\tSearching for: "); knprints(name, namelen);
+    D(bug("\tSearching for: %.*s\n", namelen, name));
 
     for (i = 0; i < namelen; i++)
         if (name[i] == ':') {
@@ -84,7 +84,7 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
     struct DirEntry de;
     ULONG len;
 
-    kprintf("\tLockFile entry %ld cluster %ld\n", entry, cluster);
+    D(bug("\tLockFile entry %ld cluster %ld\n", entry, cluster));
 
     if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
@@ -122,7 +122,7 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
 LONG LockRoot(LONG axs, BPTR *res) {
     struct ExtFileLock *fl;
 
-    kprintf("\tLockRoot()\n");
+    D(bug("\tLockRoot()\n"));
 
     if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
@@ -258,7 +258,7 @@ LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
     }
 
     if (found) {
-        kprintf("\tFreeing lock.\n");
+        D(bug("\tFreeing lock.\n"));
 
         fl->fl_Task = NULL;
 
@@ -289,7 +289,7 @@ void FreeLock(struct ExtFileLock *fl) {
 
     if (ptr) {
         if (ptr->doslist->dol_misc.dol_volume.dol_LockList == NULL) { /* check if the device can be removed */
-            kprintf("\tRemoving disk completely\n");
+            D(bug("\tRemoving disk completely\n"));
 
             SendVolumePacket(ptr->doslist, ACTION_VOLUME_REMOVE);
 

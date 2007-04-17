@@ -215,52 +215,52 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         return err;
     }
 
-    kprintf("\tBoot sector:\n");
+    D(bug("\tBoot sector:\n"));
 
     sb->sectorsize = AROS_LE2WORD(boot->bpb_bytes_per_sect);
     sb->sectorsize_bits = log2(sb->sectorsize);
-    kprintf("\tSectorSize = %ld\n", sb->sectorsize);
-    kprintf("\tSectorSize Bits = %ld\n", sb->sectorsize_bits);
+    D(bug("\tSectorSize = %ld\n", sb->sectorsize));
+    D(bug("\tSectorSize Bits = %ld\n", sb->sectorsize_bits));
 
     sb->cluster_sectors = boot->bpb_sect_per_clust;
     sb->clustersize = sb->sectorsize * boot->bpb_sect_per_clust;
     sb->clustersize_bits = log2(sb->clustersize);
     sb->cluster_sectors_bits = sb->clustersize_bits - sb->sectorsize_bits;
 
-    kprintf("\tSectorsPerCluster = %ld\n", (ULONG)boot->bpb_sect_per_clust);
-    kprintf("\tClusterSize = %ld\n", sb->clustersize);
-    kprintf("\tClusterSize Bits = %ld\n", sb->clustersize_bits);
-    kprintf("\tCluster Sectors Bits = %ld\n", sb->cluster_sectors_bits);
+    D(bug("\tSectorsPerCluster = %ld\n", (ULONG)boot->bpb_sect_per_clust));
+    D(bug("\tClusterSize = %ld\n", sb->clustersize));
+    D(bug("\tClusterSize Bits = %ld\n", sb->clustersize_bits));
+    D(bug("\tCluster Sectors Bits = %ld\n", sb->cluster_sectors_bits));
 
     sb->first_fat_sector = AROS_LE2WORD(boot->bpb_rsvd_sect_count);
-    kprintf("\tFirst FAT Sector = %ld\n", sb->first_fat_sector);
+    D(bug("\tFirst FAT Sector = %ld\n", sb->first_fat_sector));
 
     if (boot->bpb_fat_size_16 != 0)
         sb->fat_size = AROS_LE2WORD(boot->bpb_fat_size_16);
     else
         sb->fat_size = AROS_LE2LONG(boot->type.fat32.bpb_fat_size_32);
-    kprintf("\tFAT Size = %ld\n", sb->fat_size);
+    D(bug("\tFAT Size = %ld\n", sb->fat_size));
 
     if (boot->bpb_total_sectors_16 != 0)
         sb->total_sectors = AROS_LE2WORD(boot->bpb_total_sectors_16);
     else
         sb->total_sectors = AROS_LE2LONG(boot->bpb_total_sectors_32);
-    kprintf("\tTotal Sectors = %ld\n", sb->total_sectors);
+    D(bug("\tTotal Sectors = %ld\n", sb->total_sectors));
 
     sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count) * sizeof(struct FATDirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
-    kprintf("\tRootDir Sectors = %ld\n", sb->rootdir_sectors);
+    D(bug("\tRootDir Sectors = %ld\n", sb->rootdir_sectors));
 
     sb->data_sectors = sb->total_sectors - (sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors);
-    kprintf("\tData Sectors = %ld\n", sb->data_sectors);
+    D(bug("\tData Sectors = %ld\n", sb->data_sectors));
 
     sb->clusters_count = sb->data_sectors >> sb->cluster_sectors_bits;
-    kprintf("\tClusters Count = %ld\n", sb->clusters_count);
+    D(bug("\tClusters Count = %ld\n", sb->clusters_count));
 
     sb->first_rootdir_sector = sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size);
-    kprintf("\tFirst RootDir Sector = %ld\n", sb->first_rootdir_sector);
+    D(bug("\tFirst RootDir Sector = %ld\n", sb->first_rootdir_sector));
 
     sb->first_data_sector = sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors;
-    kprintf("\tFirst Data Sector = %ld\n", sb->first_data_sector);
+    D(bug("\tFirst Data Sector = %ld\n", sb->first_data_sector));
 
     sb->free_clusters = 0xffffffff;
 
@@ -292,28 +292,28 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         invalid = TRUE;
  
     if (invalid) {
-        kprintf("\tInvalid FAT Boot Sector\n");
+        D(bug("\tInvalid FAT Boot Sector\n"));
         return ERROR_NOT_A_DOS_DISK;
     }
 
     sb->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
  
     if (sb->clusters_count < 4085) {
-        kprintf("\tFAT12 filesystem detected\n");
+        D(bug("\tFAT12 filesystem detected\n"));
         sb->type = 12;
         sb->eoc_mark = 0x0FF8;
         sb->func_get_fat_entry = GetFat12Entry;
         sb->func_set_fat_entry = SetFat12Entry;
     }
     else if (sb->clusters_count < 65525) {
-        kprintf("\tFAT16 filesystem detected\n");
+        D(bug("\tFAT16 filesystem detected\n"));
         sb->type = 16;
         sb->eoc_mark = 0xFFF8;
         sb->func_get_fat_entry = GetFat16Entry;
         sb->func_set_fat_entry = SetFat16Entry;
     }
     else {
-        kprintf("\tFAT32 filesystem detected\n");
+        D(bug("\tFAT32 filesystem detected\n"));
         sb->type = 32;
         sb->eoc_mark = 0x0FFFFFF8;
         sb->func_get_fat_entry = GetFat32Entry;
@@ -369,7 +369,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[0] = 9;
     }
 
-    kprintf("\tFAT Filesystem succesfully detected.\n");
+    D(bug("\tFAT Filesystem succesfully detected.\n"));
 
     return 0;
 }
@@ -481,7 +481,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
 }
 
 void FreeFATSuper(struct FSSuper *sb) {
-    kprintf("\tRemoving Super Block from memory\n");
+    D(bug("\tRemoving Super Block from memory\n"));
     FreeVecPooled(glob->mempool, sb->fat_blocks);
     sb->fat_blocks = NULL;
 }
@@ -515,7 +515,7 @@ void CountFreeClusters(struct FSSuper *sb) {
     /* put the value away for later */
     sb->free_clusters = free;
 
-    kprintf("\tfree clusters: %ld\n", free);
+    D(bug("\tfree clusters: %ld\n", free));
 }
 
 static const UWORD mdays[] = { 0, 31, 59, 90, 120, 151, 181, 212, 143, 273, 304, 334 };

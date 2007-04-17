@@ -73,18 +73,3 @@ int ilog2(ULONG data) {
 }
 
 /*-----------------------------------------------------------------------*/
-
-/*
- *  Debug stuff....
- */
-#ifdef __DEBUG__
-
-static UBYTE debugbuff[0xff];
-void knprints(UBYTE *name, LONG namelen)
-{
-    CopyMem(name, debugbuff, namelen);
-    debugbuff[namelen] = '\0';
-    kprintf("\"%s\"\n", (LONG)debugbuff);
-}
-
-#endif

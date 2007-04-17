@@ -113,7 +113,7 @@ void DoDiskInsert(void) {
                 }
 
                 if (ptr) {
-                    kprintf("\tFound FAT FS Super Block in spare list, freeing obsolete old one\n");
+                    D(bug("\tFound FAT FS Super Block in spare list, freeing obsolete old one\n"));
 
                     sb->doslist = ptr->doslist;
                     ptr->doslist = NULL;
@@ -134,7 +134,7 @@ void DoDiskInsert(void) {
             if (!found) {
                 struct DosList *newvol;
 
-                kprintf("\tCreating new volume.\n");
+                D(bug("\tCreating new volume.\n"));
 
                 if ((newvol = AllocVecPooled(glob->mempool, sizeof(struct DosList)))) {
                     newvol->dol_Next = NULL;
@@ -170,7 +170,7 @@ void DoDiskInsert(void) {
 
             glob->sb = sb;
 
-            kprintf("\tDisk successfully initialised\n");
+            D(bug("\tDisk successfully initialised\n"));
 
             return;
         }
@@ -191,7 +191,7 @@ void DoDiskRemove(void) {
         glob->sb = NULL;
 
         if (sb->doslist->dol_misc.dol_volume.dol_LockList == NULL) { /* check if the device can be removed */
-            kprintf("\tRemoving disk completely\n");
+            D(bug("\tRemoving disk completely\n"));
 
             SendVolumePacket(sb->doslist, ACTION_VOLUME_REMOVE);
 
@@ -203,7 +203,7 @@ void DoDiskRemove(void) {
             sb->next = glob->sblist;
             glob->sblist = sb;
 
-            kprintf("\tMoved in-memory super block to spare list. Waiting for locks to be freed\n");
+            D(bug("\tMoved in-memory super block to spare list. Waiting for locks to be freed\n"));
 
             SendEvent(IECLASS_DISKREMOVED);
         }
@@ -211,10 +211,10 @@ void DoDiskRemove(void) {
 }
  
 void ProcessDiskChange(void) {
-    kprintf("\nGot disk change request\n");
+    D(bug("\nGot disk change request\n"));
     
     if (glob->disk_inhibited) {
-        kprintf("Disk is inhibited, ignoring disk change\n");
+        D(bug("Disk is inhibited, ignoring disk change\n"));
         return;
     }
 
@@ -226,16 +226,16 @@ void ProcessDiskChange(void) {
 
     if (glob->diskioreq->iotd_Req.io_Error == 0 && glob->diskioreq->iotd_Req.io_Actual == 0) {
         /* Disk has been inserted. */
-        kprintf("\tDisk has been inserted\n");
+        D(bug("\tDisk has been inserted\n"));
         glob->disk_inserted = TRUE;
         DoDiskInsert();
     }
     else {
         /* Disk has been removed. */
-        kprintf("\tDisk has been removed\n");
+        D(bug("\tDisk has been removed\n"));
         glob->disk_inserted = FALSE;
         DoDiskRemove();
     }
 
-    kprintf("Done\n");
+    D(bug("Done\n"));
 }
