@@ -947,7 +947,7 @@ BD_LDFLAGS$(BDID)   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM
+#MM %(mmake) : includes-generate-deps
 %(mmake) : $(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID))
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
@@ -1003,7 +1003,7 @@ BD_LDFLAGS$(BDID)   := %(ldflags)
 #MM
 %(mmake)-quick : %(mmake)
 
-#MM
+#MM %(mmake) : includes-generate-deps
 %(mmake) : $(BD_EXES$(BDID))
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
@@ -1468,7 +1468,7 @@ BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
 
 .PHONY : %(mmake) %(mmake)-clean
 
-#MM
+#MM %(mmake) : includes-generate-deps
 %(mmake) : $(BD_LINKLIB$(BDID))
 
 #MM
@@ -1516,9 +1516,9 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))
 
 %buildid targets="%(mmake) %(mmake)-clean"
 
-BD_SRCS$(BDID) := $(foreach name, %(catalogs), $(name).ct)
-BD_OBJS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir)/%(name).catalog)
-BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
+BD_SRCS$(BDID) := $(addsuffix .ct, %(catalogs))
+BD_OBJS$(BDID) := $(addsuffix .catalog, $(addprefix %(dir)/$(name)/%(subdir)/, %(catalogs)))
+BD_DIRS$(BDID) := $(addsuffix /%(subdir), $(addprefix %(dir)/, %(catalogs)))
 
 #MM
 %(mmake) : $(BD_OBJS$(BDID)) %(source)
@@ -1557,7 +1557,7 @@ endif
 
 %buildid targets="%(mmake) %(mmake)-clean"
 
-BD_OBJS$(BDID) := $(foreach icon, %(icons), %(dir)/$(icon).info)
+BD_OBJS$(BDID) := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
 #MM
 %(mmake) : $(BD_OBJS$(BDID))
@@ -1732,8 +1732,8 @@ endif
 
 %define copy_files_q files=$(FILES) src=. dst=/A maketarget=files-copy
 
-SRC_FILES := $(foreach f, %(files), %(src)/$(f))
-DST_FILES := $(foreach f, %(files), %(dst)/$(f))
+SRC_FILES := $(addprefix %(src)/, %(files))
+DST_FILES := $(addprefix %(dst)/, %(files))
 
 %(maketarget) : setup $(DST_FILES)
 
@@ -1755,7 +1755,7 @@ setup ::
 %define copy_dir_recursive mmake=/A src=$(TOP)/$(CURDIR) dst=/A
 
 %(mmake)_FILES := $(shell cd %(src); find . -path '*/CVS' -prune -o -path '*/.svn' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
-%(mmake)_DIRS  := $(sort $(foreach f,$(%(mmake)_FILES),$(dir $(f))))
+%(mmake)_DIRS  := $(sort $(dir $(%(mmake)_FILES)))
 
 define %(mmake)_mkdir
 $(1):
@@ -1797,46 +1797,54 @@ $(GENDIR)/$(CURDIR):
 #   $(GENINCDIR) path must not contain any references to the C runtime
 #   library header files.
 #
-%define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. dir=
+%define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. \
+    dir= compiler=target
+
+ifeq ($(findstring %(compiler),host target),)
+$(error %copy_includes: compiler argument (%(compiler)) has to be host or target)
+endif
 
 ifneq (%(dir),)
-INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),%(includes))
-INCL_FILES_2 := $(subst %(dir),$(GENINCDIR)/%(path),%(includes))
-_INC_PATH := %(dir)/
+BD_INCL_FILES := $(subst %(dir),$(GENINCDIR)/%(path),%(includes))
+BD_INC_PATH := %(dir)/
 else
-INCL_FILES_1 := $(foreach f,%(includes),$(AROS_INCLUDES)/%(path)/$(f))
-INCL_FILES_2 := $(foreach f,%(includes),$(GENINCDIR)/%(path)/$(f))
-_INC_PATH :=
+BD_INCL_FILES := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
+BD_INC_PATH :=
 endif
 
-#MM %(mmake)
+$(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
+	@$(CP) $< $@
 
-ifneq (%(mmake),includes-copy)
+
+ifeq (%(compiler),target)
+
+ifneq (%(dir),)
+BD_INCL_FILES2 := $(subst %(dir),$(AROS_INCLUDES)/%(path),%(includes))
+else
+BD_INCL_FILES2 := $(addprefix $(AROS_INCLUDES)/%(path)/,%(includes))
+endif
+
+BD_INCL_FILES += $(BD_INCL_FILES2)
+
+$(BD_INCL_FILES2) : $(AROS_INCLUDES)/%(path)/% : $(BD_INC_PATH)%
+	@$(CP) $< $@
+endif
+
 #MM
-includes-copy : %(mmake)
-endif
-
-%(mmake) : $(INCL_FILES_1) $(INCL_FILES_2)
+%(mmake) : $(BD_INCL_FILES)
 
 .PHONY: %(mmake)
 
-$(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
-	@$(CP) $< $@
-
-$(GENINCDIR)/%(path)/%.h : $(_INC_PATH)%.h
-	@$(CP) $< $@
-
-$(INCL_FILES_1) : | $(AROS_INCLUDES)/%(path)
-$(INCL_FILES_2) : | $(GENINCDIR)/%(path)
-GLOB_MKDIRS += $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+$(BD_INCL_FILES) : | $(dir $(BD_INCL_FILES))
+GLOB_MKDIRS += $(dir $(BD_INCL_FILES))
 %end
 
 
 %define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS) parenttarget=linklibs
-STUBS_SRC := $(foreach f,$(STUBS),$(f).c)
-STUBS_OBJ := $(foreach f,$(STUBS),$(OBJDIR)/$(f).o)
-STUBS_MEM := $(foreach f,$(STUBS),$(f).o)
-STUBS_DEP := $(foreach f,$(STUBS),$(OBJDIR)/$(f).d)
+STUBS_SRC := $(addsuffix .c,$(STUBS))
+STUBS_MEM := $(addsuffix .o,$(STUBS))
+STUBS_OBJ := $(addprefix $(OBJDIR)/,$(STUBS_MEM))
+STUBS_DEP := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(STUBS)))
 HIDD_LIB := $(AROS_LIB)/libhiddstubs.a
 
 #MM- linklibs : hidd-%(hidd)-stubs
