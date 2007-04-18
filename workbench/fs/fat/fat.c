@@ -181,7 +181,7 @@ static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 
     cache_mark_block_dirty(sb->cache, b);
 }
- 
+
 LONG ReadFATSuper(struct FSSuper *sb ) {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err;
@@ -408,7 +408,7 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
             volume->name[0] = strlen(&(volume->name[1]));
 
             /* get the volume creation date date too */
-            ConvertDate(de.e.entry.create_date, de.e.entry.create_time, &volume->create_time);
+            ConvertFATDate(de.e.entry.create_date, de.e.entry.create_time, &volume->create_time);
 
             D(bug("[fat] volume name is '%s'\n", &(volume->name[1])));
 
@@ -480,6 +480,36 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     return err;
 }
 
+LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
+    ULONG cluster = 0;
+
+    /*
+     * XXX this implementation is extremely naive. things we
+     * could do to make it better:
+     *
+     *  - don't start looking for a free cluster at the start
+     *    each time. start from the current cluster and wrap
+     *    around when we hit the end
+     *  - track where we last found a free cluster and start
+     *    from there
+     *  - allocate several contiguous clusters at a time to
+     *    reduce fragmentation
+     */
+
+    for (cluster = 2; cluster < sb->clusters_count && GET_NEXT_CLUSTER(sb, cluster) != 0; cluster++);
+
+    if (cluster == sb->clusters_count) {
+        D(bug("[fat] no more free clusters, we're out of space\n"));
+        return ERROR_DISK_FULL;
+    }
+
+    D(bug("[fat] found free cluster %ld\n", cluster));
+
+    *rcluster = cluster;
+
+    return 0;
+}
+
 void FreeFATSuper(struct FSSuper *sb) {
     D(bug("\tRemoving Super Block from memory\n"));
     FreeVecPooled(glob->mempool, sb->fat_blocks);
@@ -520,7 +550,7 @@ void CountFreeClusters(struct FSSuper *sb) {
 
 static const UWORD mdays[] = { 0, 31, 59, 90, 120, 151, 181, 212, 143, 273, 304, 334 };
 
-void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds) {
+void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds) {
     UBYTE year, month, day, hours, mins, secs;
     UBYTE nleap;
 
@@ -534,7 +564,7 @@ void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds) {
     mins = (time & 0x07e0) >> 5;    /* bits 8-5 */
     secs = time & 0x001f;           /* bits 4-0 */
 
-    D(bug("[fat] convert date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
+    D(bug("[fat] converting fat date: year %d month %d day %d hours %d mins %d secs %d\n", year, month, day, hours, mins, secs));
 
     /* number of leap years in before this year. note this is only dividing by
      * four, which is fine because FAT dates range 1980-2107. The only year in
@@ -560,7 +590,64 @@ void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds) {
 
     /* 1/50 sec ticks. FAT dates are 0-29, so we have to multiply them by two
      * as well */
-    ds->ds_Tick = (secs << 1) * 50;
+    ds->ds_Tick = (secs << 1) * TICKS_PER_SECOND;
 
-    D(bug("[fat] convert date: days %ld minutes %ld ticks %ld\n", ds->ds_Days, ds->ds_Minute, ds->ds_Tick));
+    D(bug("[fat] converted fat date: days %ld minutes %ld ticks %ld\n", ds->ds_Days, ds->ds_Minute, ds->ds_Tick));
+}
+
+void ConvertAROSDate(struct DateStamp ds, UWORD *date, UWORD *time) {
+    UBYTE year, month, day, hours, mins, secs;
+    BOOL leap;
+
+    /* converting no. of days since 1978-01-01 (DOS epoch) to
+     * years/months/days since FAT epoch (1980-01-01) */
+
+    /* subtract 730 days in 1978/1979 */
+    ds.ds_Days -= 730;
+
+    /* years are 365 days */
+    year = ds.ds_Days / 365;
+    ds.ds_Days -= year * 365;
+
+    /* leap years. same algorithm as above. get the number of leap years
+     * before this year, and subtract that many days */
+    ds.ds_Days -= year >> 2;
+
+    /* figure out if we need to adjust for a leap year this year. day 60 is
+     * 29-Feb/1-Mar */
+    leap = (year & 0x03 && ds.ds_Days >= 60);
+    
+    /* find the month by checking it against the days-in-month array */
+    for (month = 1; month <= 12 && ds.ds_Days > mdays[month]; month++);
+
+    /* day of month is whatever's left (+1, since we count from the 1st) */
+    day = ds.ds_Days - mdays[month] + 1;
+
+    /* subtract a day if we're after march in a leap year */
+    if (leap) {
+        day--;
+        if (day == 0) {
+            month--;
+            if (month == 2)
+                day = 29;
+            else
+                day = ds.ds_Days - mdays[month] + 1;
+        }
+    }
+
+    /* time is easy by comparison. convert minutes since midnight to
+     * hours and seconds */
+    hours = ds.ds_Minute / 60;
+    mins = ds.ds_Minute - (hours * 60);
+
+    /* FAT seconds are 0-29 */
+    secs = (ds.ds_Tick / TICKS_PER_SECOND) >> 1;
+
+    /* all that remains is to bit-encode the whole lot */
+
+    /* date bits: yyyy yyym mmmd dddd */
+    *date = (((ULONG) year) << 9) | (((ULONG) month) << 5) | day;
+
+    /* time bits: hhhh hmmm mmms ssss */
+    *time = (((ULONG) hours) << 11) | (((ULONG) mins) << 5) | secs;
 }

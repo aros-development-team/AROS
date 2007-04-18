@@ -107,11 +107,12 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
 
     fl->ioh.sb = glob->sb;
     fl->ioh.first_cluster = FIRST_FILE_CLUSTER(&de);
+    if (fl->ioh.first_cluster == 0) fl->ioh.first_cluster = 0xffffffff;
     fl->ioh.block = NULL;
     RESET_HANDLE(&(fl->ioh));
 
-    GetDirShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
-    GetDirLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
+    GetDirEntryShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
+    GetDirEntryLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
 
     ReleaseDirHandle(&dh);
 

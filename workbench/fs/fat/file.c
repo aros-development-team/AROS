@@ -71,6 +71,12 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
     struct cache_block *b;
     ULONG pos, ncopy;
 
+    /* files with no data can't be read from */
+    if (ioh->first_cluster == 0xffffffff) {
+        D(bug("[fat] file has no first cluster, so nothing to read!\n"));
+        return ERROR_OBJECT_NOT_FOUND;
+    }
+
     /* figure out how far into the file to look for the requested data */
     sector_offset = file_pos >> ioh->sb->sectorsize_bits;
     byte_offset = file_pos & (ioh->sb->sectorsize-1);
@@ -236,31 +242,9 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
                 if (next_cluster == 0 || next_cluster > ioh->sb->eoc_mark) {
                     D(bug("[fat] hit empty or eoc cluster, allocating another\n"));
 
-                    /*
-                     * XXX this implementation is extremely naive. things we
-                     * could do to make it better:
-                     *
-                     *  - don't start looking for a free cluster at the start
-                     *    each time. start from the current cluster and wrap
-                     *    around when we hit the end
-                     *  - track where we last found a free cluster and start
-                     *    from there
-                     *  - allocate several contiguous clusters at a time to
-                     *    reduce fragmentation
-                     */
-
-                    /* search for a free cluster */
-                    for (next_cluster = 0;
-                         next_cluster < ioh->sb->clusters_count &&
-                         GET_NEXT_CLUSTER(ioh->sb, next_cluster) != 0; next_cluster++);
-
-                    /* if we reached the end, there's none left */
-                    if (next_cluster == ioh->sb->clusters_count) {
-                        D(bug("[fat] no more free clusters, we're out of space\n"));
-
+                    if ((err = FindFreeCluster(ioh->sb, &next_cluster)) != 0) {
                         RESET_HANDLE(ioh);
-
-                        return ERROR_DISK_FULL;
+                        return err;
                     }
 
                     SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster, next_cluster);
@@ -338,7 +322,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 
 #ifdef DEBUG_DUMP
         D(bug("[fat] dump of last write, %ld bytes:\n", ncopy));
-        fat_hexdump(&(ioh->block->data[pos]), ncopy);
+        fat_hexdump(&(ioh->block->data[byte_offset]), ncopy);
 #endif
 
         cache_mark_block_dirty(ioh->sb->cache, ioh->block);
