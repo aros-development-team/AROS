@@ -439,7 +439,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Ca
 				GetDTAttrs(this_BFI->bfi_Source->bfsir_DTPictureObject, PDTA_DestBitMap, &this_BFI->bfi_Source->bfsir_DTBitMap, TAG_DONE);
 
 				if (!this_BFI->bfi_Source->bfsir_DTBitMap)
-					GetDTAttrs(this_BFI->bfi_Source->bfsir_DTPictureObject, PDTA_DestBitMap, &this_BFI->bfi_Source->bfsir_DTBitMap, TAG_DONE);
+					GetDTAttrs(this_BFI->bfi_Source->bfsir_DTPictureObject, PDTA_BitMap, &this_BFI->bfi_Source->bfsir_DTBitMap, TAG_DONE);
 			
 				if (this_BFI->bfi_Source->bfsir_DTBitMap)
 				{
