@@ -1,10 +1,4 @@
-
-#if defined(__AROS__)
 #define DEBUG 0
-#include <aros/debug.h>
-#else
-#define D(x) 
-#endif
 
 #include <clib/alib_protos.h>
 #include <devices/trackdisk.h>
@@ -23,23 +17,14 @@
 #include <stdio.h>
 
 #if defined(__AROS__)
-#include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <prefs/trackdisk.h>
 #else
 #include "prefs_common.h"
+#define D(x)
 #endif
 #include "trackdisk_prefs.h"
 
-#if defined(__MORPHOS__)
-ULONG __abox__ = 1;
-#endif
-
-#if !defined(__AROS__)
-struct ExecBase      *SysBase = NULL;
-struct DosLibrary    *DOSBase = NULL;
-struct IntuitionBase *IntuitionBase = NULL;
-struct Library       *MUIMasterBase = NULL;
-#endif
 Object                *App = NULL,
                       *MainWin = NULL,
                       *SaveButton = NULL,
@@ -50,138 +35,91 @@ struct WindowGroup    MainGrp;
 struct TrackdiskPrefs TDPrefs;
 struct IORequest      TDIO;
 
-const char __version__[] = "\0$VER: Trackdisk prefs 41.2 (2007-31-03)";
+const char __version__[] = "\0$VER: Trackdisk prefs 41.3 (2007-17-04)";
 
-#if defined(__AROS__)
 int main(void)
-#else
-ULONG Start()
-#endif
-{
-	struct Process *me = NULL;
-	struct Message *wbmsg = NULL;
-	ULONG ret;
-
-D(bug("[Trackdisk.Prefs] Start()\n"));
-
-#if !defined(__AROS__)
-	SysBase = *(struct ExecBase **)4L;
-
-	me = (struct Process *)FindTask(NULL);
-	if (me->pr_CLI)
-#endif
-		return Main();
-#if !defined(__AROS__)
-	else {
-		WaitPort(&me->pr_MsgPort);
-		wbmsg = GetMsg(&me->pr_MsgPort);
-		ret = Main();
-		Forbid();
-		ReplyMsg(wbmsg);
-		return ret;
-	}
-#endif
-}
-
-ULONG Main(void)
 {
     ULONG signals;
     int i;
     ULONG retval = 0;
 
-D(bug("[Trackdisk.Prefs] Main()\n"));
+    D(bug("[Trackdisk.Prefs] Main()\n"));
 
-#if !defined(__AROS__)
-	MUIMasterBase = OpenLibrary("muimaster.library", 4);
-	if (MUIMasterBase) {
-		IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
-		if (IntuitionBase) {
-		    DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
-		    if (DOSBase) {
-#endif
-			for (i = 0; i < TD_NUMUNITS; i++)
-				InitUnitPrefs(&TDPrefs.UnitPrefs[i], i);
-			LoadPrefs();
-			for (i = 0; i < TD_NUMUNITS; i++) {
-				MainGrp.DriveGroup[i].ti_Tag = MUIA_Group_Child;
-				MainGrp.DriveGroup[i].ti_Data = (ULONG)CreateDriveControls(&Drives[i], i);
-			}
-			MainGrp.TagChild = MUIA_Group_Child;
-			MainGrp.ButtonsGroup = MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
-				MUIA_Group_Child,
-				SaveButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
-					MUIA_CycleChain, TRUE,
-					MUIA_Text_Contents, "Save",
-					MUIA_Text_PreParse, "\33c",
-					MUIA_Background, MUII_ButtonBack,
-					MUIA_Frame, MUIV_Frame_Button,
-				TAG_DONE),
-				MUIA_Group_Child,
-				UseButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
-					MUIA_CycleChain, TRUE,
-					MUIA_Text_Contents, "Use",
-					MUIA_Text_PreParse, "\33c",
-					MUIA_Background, MUII_ButtonBack,
-					MUIA_Frame, MUIV_Frame_Button,
-				TAG_DONE),
-				MUIA_Group_Child,
-				CancelButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
-					MUIA_CycleChain, TRUE,
-					MUIA_Text_Contents, "Cancel",
-					MUIA_Text_PreParse, "\33c",
-					MUIA_Background, MUII_ButtonBack,
-					MUIA_Frame, MUIV_Frame_Button,
-				TAG_DONE),
-			TAG_DONE);
-			MainGrp.TagDone = TAG_DONE;
-			App = MUI_NewObject("Application.mui", MUIA_Application_Author, "Pavel Fedin",
-				MUIA_Application_Base, (ULONG)"TRACKDISKPREFS",
-				MUIA_Application_Copyright, (ULONG)"(c) 2006 Pavel Fedin",
-				MUIA_Application_Description, (ULONG)"trackdisk.device preferences editor",
-				MUIA_Application_SingleTask, TRUE,
-				MUIA_Application_Title, (ULONG)"Trackdisk prefs",
-				MUIA_Application_Version, (ULONG)"$VER: trackdisk prefs 1.0 (15.07.2006)",
-				MUIA_Application_Window,
-				MainWin = MUI_NewObject("Window.mui", MUIA_Window_ID, MAKE_ID('M', 'A', 'I', 'N'),
-					MUIA_Window_Title, (ULONG)"trackdisk.device preferences",
-					MUIA_Window_RootObject,	MUI_NewObjectA("Group.mui", (struct TagItem *)&MainGrp),
-				TAG_DONE),
-			TAG_DONE);
-			if (App) {
-				DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 1);
-				DoMethod(UseButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 2);
-				DoMethod(CancelButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-				DoMethod(MainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-				SetAttrs(MainWin, MUIA_Window_Open, TRUE);
-				while (retval != MUIV_Application_ReturnID_Quit) {
-					retval = DoMethod(App, MUIM_Application_NewInput, &signals);
-					if (retval && (retval != MUIV_Application_ReturnID_Quit)) {
-						for (i = 0; i < TD_NUMUNITS; i++)
-							ControlsToPrefs(&Drives[i], &TDPrefs.UnitPrefs[i]);
-						if (retval == 1)
-							SavePrefs();
-						UsePrefs();
-						retval = MUIV_Application_ReturnID_Quit;
-					}
-					if (signals)
-						signals = Wait(signals);
-				}
-				MUI_DisposeObject(App);
-			}
-#if !defined(__AROS__)
-			CloseLibrary((struct Library *)DOSBase);
+    for (i = 0; i < TD_NUMUNITS; i++)
+	    InitUnitPrefs(&TDPrefs.UnitPrefs[i], i);
+    LoadPrefs();
+    for (i = 0; i < TD_NUMUNITS; i++) {
+	    MainGrp.DriveGroup[i].ti_Tag = MUIA_Group_Child;
+	    MainGrp.DriveGroup[i].ti_Data = (ULONG)CreateDriveControls(&Drives[i], i);
+    }
+    MainGrp.TagChild = MUIA_Group_Child;
+    MainGrp.ButtonsGroup = MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
+	    MUIA_Group_Child,
+	    SaveButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
+		    MUIA_CycleChain, TRUE,
+		    MUIA_Text_Contents, "Save",
+		    MUIA_Text_PreParse, "\33c",
+		    MUIA_Background, MUII_ButtonBack,
+		    MUIA_Frame, MUIV_Frame_Button,
+	    TAG_DONE),
+	    MUIA_Group_Child,
+	    UseButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
+		    MUIA_CycleChain, TRUE,
+		    MUIA_Text_Contents, "Use",
+		    MUIA_Text_PreParse, "\33c",
+		    MUIA_Background, MUII_ButtonBack,
+		    MUIA_Frame, MUIV_Frame_Button,
+	    TAG_DONE),
+	    MUIA_Group_Child,
+	    CancelButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
+		    MUIA_CycleChain, TRUE,
+		    MUIA_Text_Contents, "Cancel",
+		    MUIA_Text_PreParse, "\33c",
+		    MUIA_Background, MUII_ButtonBack,
+		    MUIA_Frame, MUIV_Frame_Button,
+	    TAG_DONE),
+    TAG_DONE);
+    MainGrp.TagDone = TAG_DONE;
+    App = MUI_NewObject("Application.mui", MUIA_Application_Author, "Pavel Fedin",
+	    MUIA_Application_Base, (ULONG)"TRACKDISKPREFS",
+	    MUIA_Application_Copyright, (ULONG)"(c) 2006 Pavel Fedin",
+	    MUIA_Application_Description, (ULONG)"trackdisk.device preferences editor",
+	    MUIA_Application_SingleTask, TRUE,
+	    MUIA_Application_Title, (ULONG)"Trackdisk prefs",
+	    MUIA_Application_Version, (ULONG)"$VER: trackdisk prefs 1.0 (15.07.2006)",
+	    MUIA_Application_Window,
+	    MainWin = MUI_NewObject("Window.mui", MUIA_Window_ID, MAKE_ID('M', 'A', 'I', 'N'),
+		    MUIA_Window_Title, (ULONG)"trackdisk.device preferences",
+		    MUIA_Window_RootObject, MUI_NewObjectA("Group.mui", (struct TagItem *)&MainGrp),
+	    TAG_DONE),
+    TAG_DONE);
+    if (App) {
+	    DoMethod(SaveButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 1);
+	    DoMethod(UseButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 2);
+	    DoMethod(CancelButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	    DoMethod(MainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	    SetAttrs(MainWin, MUIA_Window_Open, TRUE);
+	    while (retval != MUIV_Application_ReturnID_Quit) {
+		    retval = DoMethod(App, MUIM_Application_NewInput, &signals);
+		    if (retval && (retval != MUIV_Application_ReturnID_Quit)) {
+			    for (i = 0; i < TD_NUMUNITS; i++)
+				    ControlsToPrefs(&Drives[i], &TDPrefs.UnitPrefs[i]);
+			    if (retval == 1)
+				    SavePrefs();
+			    UsePrefs();
+			    retval = MUIV_Application_ReturnID_Quit;
 		    }
-		    CloseLibrary((struct Library *)IntuitionBase);
-		}
-		CloseLibrary(MUIMasterBase);
-	}
-#endif
+		    if (signals)
+			    signals = Wait(signals);
+	    }
+	    MUI_DisposeObject(App);
+    }
     return 0;
 }
 
 void InitUnitPrefs(struct TDU_Prefs *UnitPrefs, int nunit)
 {
-D(bug("[Trackdisk.Prefs] InitUnitPrefs()\n"));
+	D(bug("[Trackdisk.Prefs] InitUnitPrefs()\n"));
 	UnitPrefs->TagUnitNum	= TDPR_UnitNum;
 	UnitPrefs->Unit		= nunit;
 	UnitPrefs->TagPubFlags	= TDPR_PubFlags;
@@ -192,7 +130,7 @@ D(bug("[Trackdisk.Prefs] InitUnitPrefs()\n"));
 
 Object *CreateDriveControls(struct DriveControls *dc, int ndrive)
 {
-D(bug("[Trackdisk.Prefs] CreateDriveControls()\n"));
+	D(bug("[Trackdisk.Prefs] CreateDriveControls()\n"));
 	sprintf(dc->DriveLabel, "Drive %u", ndrive);
 	return MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
 		MUIA_Disabled, dc->Disabled,
@@ -222,7 +160,7 @@ void LoadPrefs(void)
 	ULONG i;
 	struct TDU_PublicUnit *tdu = NULL;
 
-D(bug("[Trackdisk.Prefs] LoadPrefs()\n"));
+	D(bug("[Trackdisk.Prefs] LoadPrefs()\n"));
 
 	for (i = 0; i < TD_NUMUNITS; i++) {
 		if (OpenDevice("trackdisk.device", i, &TDIO, 0))
@@ -241,7 +179,7 @@ void ControlsToPrefs(struct DriveControls *dc, struct TDU_Prefs *pr)
 {
 	ULONG NoClick;
 
-D(bug("[Trackdisk.Prefs] ControlsToPrefs()\n"));
+	D(bug("[Trackdisk.Prefs] ControlsToPrefs()\n"));
 
 	GetAttr(MUIA_Selected, dc->NoClickSwitch, &NoClick);
 	pr->PubFlags = NoClick ? TDPF_NOCLICK : 0 ;
@@ -253,7 +191,7 @@ void SavePrefs(void)
 {
 	BPTR cf;
 
-D(bug("[Trackdisk.Prefs] SavePrefs()\n"));
+	D(bug("[Trackdisk.Prefs] SavePrefs()\n"));
 
 	cf = Open(TRACKDISK_PREFS_NAME, MODE_NEWFILE);
 	if (cf) {
@@ -268,7 +206,7 @@ void UsePrefs(void)
 	ULONG i;
 	struct TDU_PublicUnit *tdu = NULL;
 
-D(bug("[Trackdisk.Prefs] UsePrefs()\n"));
+	D(bug("[Trackdisk.Prefs] UsePrefs()\n"));
 
 	for (i = 0; i < TD_NUMUNITS; i++) {
 		if ((!Drives[i].Disabled) && (!OpenDevice("trackdisk.device", i, &TDIO, 0))) {
