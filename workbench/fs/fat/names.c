@@ -15,11 +15,12 @@
 #include <proto/exec.h>
 
 #include <string.h>    
+#include <stdio.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
+LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     int i;
     UBYTE *raw, *c;
 
@@ -82,7 +83,7 @@ LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     return 0;
 }
 
-LONG GetDirLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
+LONG GetDirEntryLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
     UBYTE buf[256];
     int i;
     UBYTE *raw, *c;
@@ -180,4 +181,251 @@ LONG GetDirLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
     D(bug("[fat] long name construction failed\n"));
 
     return ERROR_OBJECT_NOT_FOUND;
+}
+
+/* set the name of an entry. this will also set the long name too. it assumes
+ * that there is room before the entry to store the long filename. if there
+ * isn't the whole thing will fail */
+LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
+    UBYTE basis[11];
+    ULONG nlong;
+    ULONG src, dst, i;
+    ULONG seq = 0, cur = 0;
+    UBYTE tail[8];
+    struct DirHandle dh;
+    struct DirEntry de;
+    LONG err;
+    UBYTE checksum;
+    UBYTE order;
+
+    D(bug("[fat] setting name for entry index %ld to '%.*s'\n", short_de->index, len, name));
+
+    nlong = NumLongNameEntries(name, len);
+    D(bug("[fat] name requires %ld long name entries\n", nlong));
+
+    /* first we generate the "basis name" of the passed in name. XXX we just
+     * take the first eight characters and any three-letter extension and mash
+     * them together. FATDoc 1.03 p30-31 outlines a more comprehensive
+     * algorithm that handles unicode, but we're not doing unicode yet */
+    
+    dst = 0;
+
+    /* strip off leading spaces and periods */
+    for (src = 0; src < len; src++)
+        if (name[src] != ' ' && name[src] != '.')
+            break;
+
+    /* copy the first eight chars in, ignoring spaces and stopping at period */
+    if (src != len) {
+        while (src < len && dst < 8 && name[src] != '.')
+            if (name[src] != ' ')
+                basis[dst++] = name[src++];
+            else
+                src++;
+    }
+
+    /* if there was more bytes available, then we need a tail later */
+    if (src < len && name[src] != '.')
+        seq = 1;
+
+    /* remember the current value of src for the multiple-dot check below */
+    i = src;
+    
+    /* pad the rest of the left side with spaces */
+    for (; dst < 8; dst++)
+        basis[dst] = ' ';
+
+    /* now go to the end and track back looking for a dot */
+    for (src = len-1; src >= 0 && name[src] != '.'; src--);
+
+    /* found it */
+    if (src != 0) {
+        /* if this isn't the same dot we found earlier, then we need a tail */
+        if (src != i)
+            seq = 1;
+
+        /* first char after the dot */
+        src++;
+
+        /* copy it in */
+        while(src < len && dst < 11)
+            if (name[src] != ' ')
+                basis[dst++] = name[src++];
+            else
+                src++;
+    }
+
+    /* if there was more bytes available, then we'll need a tail later */
+    if (src < len)
+        seq = 1;
+
+    /* pad the rest of the right side with spaces */
+    for (; dst < 11; dst++)
+        basis[dst] = ' ';
+
+    D(bug("[fat] basis name is '%.11s'\n", basis));
+
+    /* get a fresh handle on the current directory */
+    InitDirHandle(short_de->sb, short_de->cluster, &dh);
+
+    /* if the name will require one or more entries, then our basis name is
+     * actually some conversion of the real name, and we have to look to make
+     * sure its not in use */
+    if (nlong > 0) {
+        D(bug("[fat] searching for basis name to confirm that its not in use\n"));
+
+        err = 0;
+        /* loop over the entries until we hit the end of the dir */
+        while ((err = GetNextDirEntry(&dh, &de)) != ERROR_OBJECT_NOT_FOUND) {
+            /* abort on any other error */
+            if (err != 0) {
+                ReleaseDirHandle(&dh);
+                return err;
+            }
+
+            /* build a new tail if necessary */
+            if (cur != seq) {
+                sprintf(tail, "~%ld", seq);
+                CopyMem(tail, &basis[8-strlen(tail)], strlen(tail));
+                cur = seq;
+
+                D(bug("[fat] new basis name is '%.11s'\n", basis));
+            }
+
+            /* compare the two names */
+            for (i = 0; i < 11; i++)
+                if (de.e.entry.name[i] != basis[i])
+                    break;
+
+            /* if we reached the end, then our current basis is in use and we need
+             * to generate a new one next time round */
+            if (src == 11)
+                seq++;
+        }
+
+        D(bug("[fat] basis name '%.11s' not in use, using it\n", basis));
+    }
+
+    /* copy the new name into the original entry. we don't write it out -
+     * we'll leave that for the caller to do, its his entry */
+    CopyMem(basis, short_de->e.entry.name, 11);
+
+    /* we can stop here if no long name is required */
+    if (nlong == 0) {
+        D(bug("[fat] copied short name and long name not required, we're done\n"));
+        ReleaseDirHandle(&dh);
+        return 0;
+    }
+
+    /* compute the long name checksum */
+    checksum = 0;
+    for (i = 0; i < 11; i++)
+        checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + basis[i];
+
+    D(bug("[fat] long name checksum is 0x%02x\n", checksum));
+
+    /* now we loop back over the previous entries and fill them in with
+     * long name components */
+    src = 0;
+    de.index = short_de->index;
+    order = 1;
+    while (src < len) {
+        /* get the previous entry */
+        if ((err = GetDirEntry(&dh, de.index-1, &de)) != 0) {
+            ReleaseDirHandle(&dh);
+            return err;
+        }
+
+        /* it must be unused (or end of directory) */
+        if (de.e.entry.name[0] != 0xe5 && de.e.entry.name[0] != 0x00) {
+            D(bug("[fat] index %ld appears to be in use, aborting long name\n", de.index));
+
+            /* clean up any long name entries we already added */
+            while ((err = GetDirEntry(&dh, de.index+1, &de)) == 0 && 
+                   (de.e.entry.attr & ATTR_LONG_NAME_MASK)) {
+                de.e.entry.name[0] = 0xe5;
+                if ((err = UpdateDirEntry(&de)) != 0) {
+                    /* XXX corrupt */
+                    ReleaseDirHandle(&dh);
+                    return err;
+                }
+            }
+
+            ReleaseDirHandle(&dh);
+            return ERROR_NO_FREE_STORE;
+        }
+
+        D(bug("[fat] building long name entry %ld\n", de.index));
+
+        /* copy bytes in */
+        for (dst = 0; dst < 5; dst++) {
+            de.e.long_entry.name1[dst << 1] = src < len ? name[src++] : 0x00;
+            de.e.long_entry.name1[(dst << 1)+1] = 0;
+        }
+
+        for (dst = 0; dst < 6; dst++) {
+            de.e.long_entry.name2[dst << 1] = src < len ? name[src++] : 0x00;
+            de.e.long_entry.name2[(dst << 1)+1] = 0;
+        }
+
+        for (dst = 0; dst < 2; dst++) {
+            de.e.long_entry.name3[dst << 1] = src < len ? name[src++] : 0x00;
+            de.e.long_entry.name3[(dst << 1)+1] = 0;
+        }
+
+        /* setup the rest of the entry */
+        de.e.long_entry.order = order++;
+        de.e.long_entry.attr = ATTR_LONG_NAME;
+        de.e.long_entry.type = 0;
+        de.e.long_entry.checksum = checksum;
+        de.e.long_entry.first_cluster_lo = 0;
+
+        /* if we've reached the end then this is the last entry */
+        if (src == len)
+            de.e.long_entry.order |= 0x40;
+
+        /* write the entry out */
+        UpdateDirEntry(&de);
+
+        D(bug("[fat] wrote long name entry %ld order 0x%02x\n", de.index, de.e.long_entry.order));
+    }
+
+    D(bug("[fat] successfully wrote short & long names\n"));
+
+    return 0;
+}
+
+/* return the number of long name entries that are required to store this name */
+ULONG NumLongNameEntries(STRPTR name, ULONG len) {
+    ULONG i, left, right;
+
+    /* XXX because we don't handle unicode this is pretty simple - thirteen
+     * characters per long entry. if we ever support unicode, then this
+     * function will need to be changed to deal with each character and keep a
+     * running total */
+
+    /* if the name is standard 8.3 (or less) then we don't need any long name
+     * entries - the name can be contained within the standard entry */
+    if (len <= 12) {
+        left = right = 0;
+
+        for (i = 0; i < 8 && i < len; i++) {
+            if (name[i] == '.')
+                break;
+            left++;
+        }
+
+        if (i == len)
+            return 0;
+
+        if (name[i] == '.') {
+            for (i = 0; i < 3 && left + 1 + i < len; i++)
+                right++;
+
+            if (left + 1 + i == len)
+                return 0;
+        }
+    }
+
+    return (len / 13) + 1;
 }

@@ -13,6 +13,7 @@
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 
 #include <string.h>
 
@@ -160,14 +161,14 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
     /* loop through the entries until we find a match */
     while ((err = GetNextDirEntry(dh, de)) == 0) {
         /* compare with the short name first, since we already have it */
-        GetDirShortName(de, buf, &buflen);
+        GetDirEntryShortName(de, buf, &buflen);
         if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
             D(bug("[fat] matched short name '%.*s' at entry %ld, returning\n", buflen, buf, dh->cur_index));
             return 0;
         }
 
         /* no match, extract the long name and compare with that instead */
-        GetDirLongName(de, buf, &buflen);
+        GetDirEntryLongName(de, buf, &buflen);
         if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
             D(bug("[fat] matched long name '%.*s' at entry %ld, returning\n", buflen, buf, dh->cur_index));
             return 0;
@@ -288,6 +289,104 @@ LONG UpdateDirEntry(struct DirEntry *de) {
     return 0;
 }
 
+LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr, ULONG cluster, struct DirEntry *de) {
+    ULONG nwant;
+    LONG err;
+    ULONG nfound;
+    struct DateStamp ds;
+
+    D(bug("[fat] creating dir entry (name '%.*s' attr 0x%02x cluster %ld)\n", namelen, name, attr, cluster));
+
+    /* find out how many entries we need */
+    nwant = NumLongNameEntries(name, namelen) + 1;
+
+    D(bug("[fat] need to find room for %ld contiguous entries\n", nwant));
+
+    /* get back to the start of the dir */
+    RESET_DIRHANDLE(dh);
+
+    /* search the directory until we find a large enough gap */
+    nfound = 0;
+    de->index = -1;
+    while (nfound < nwant) {
+        err = GetDirEntry(dh, de->index+1, de);
+
+        /* if we can't get the entry, then we ran off the end, so there's no
+         * space left */
+        if (err == ERROR_OBJECT_NOT_FOUND) {
+            D(bug("[fat] ran off the end of the directory, no space left\n"));
+            return ERROR_NO_FREE_STORE;
+        }
+
+        /* return any other error direct */
+        if (err != 0)
+            return err;
+
+        /* if its unused, make a note */
+        if (de->e.entry.name[0] == 0xe5) {
+            nfound++;
+            continue;
+        }
+
+        /* if we hit end-of-directory, then we can shortcut it */
+        if (de->e.entry.name[0] == 0x00) {
+            if (de->index + nwant >= 0x10000) {
+                D(bug("[fat] hit end-of-directory marker, but there's not enough room left after it\n"));
+                return ERROR_NO_FREE_STORE;
+            }
+
+            D(bug("[fat] found end-of-directory marker, making space after it\n"));
+
+            /* set the new end-of-directory marker */
+            GetDirEntry(dh, de->index + nwant, de);
+            de->e.entry.name[0] = 0x00;
+            UpdateDirEntry(de);
+
+            D(bug("[fat] new end-of-directory is entry %ld\n", de->index));
+
+            /* get the previous entry; this is this base (short name) entry */
+            GetDirEntry(dh, de->index-1, de);
+
+            break;
+        }
+
+        /* anything else is a in-use entry, so reset our count */
+        nfound = 0;
+    }
+
+    D(bug("[fat] found a gap, base (short name) entry is %ld\n", de->index));
+
+    /* build the entry */
+    de->e.entry.attr = attr;
+    de->e.entry.nt_res = 0;
+
+    DateStamp(&ds);
+    ConvertAROSDate(ds, &(de->e.entry.create_date), &(de->e.entry.create_time));
+    de->e.entry.write_date = de->e.entry.create_date;
+    de->e.entry.write_time = de->e.entry.create_time;
+    de->e.entry.last_access_date = de->e.entry.last_access_date;
+
+    /* XXX calculate this. I've just written ConvertAROSDate and I'm sick of
+     * dates and times for the moment */
+    de->e.entry.create_time_tenth = 0;
+
+    de->e.entry.first_cluster_lo = cluster & 0xffff;
+    de->e.entry.first_cluster_hi = cluster >> 16;
+
+    de->e.entry.file_size = 0;
+
+    SetDirEntryName(de, name, namelen);
+
+    if ((err = UpdateDirEntry(de)) != 0) {
+        D(bug("[fat] couldn't update base directory entry, creation failed\n"));
+        return err;
+    }
+
+    D(bug("[fat] created dir entry %ld\n", de->index));
+
+    return 0;
+}
+
 
 
 #define sb glob->sb
@@ -299,7 +398,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
 
     D(bug("\tFilling FIB data.\n"));
 
-    if (fl->dir_cluster == 0xffffffff) {
+    if (fl->dir_cluster == FAT_ROOTDIR_MARK) {
         D(bug("\t\ttype: root directory\n"));
         fib->fib_DirEntryType = ST_ROOT;
     }
@@ -324,7 +423,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     else {
         InitDirHandle(sb, fl->dir_cluster, &dh);
         GetDirEntry(&dh, fl->dir_entry, &de);
-        ConvertDate(de.e.entry.write_date, de.e.entry.write_time, &fib->fib_Date);
+        ConvertFATDate(de.e.entry.write_date, de.e.entry.write_time, &fib->fib_Date);
         ReleaseDirHandle(&dh);
     }
 

@@ -22,11 +22,6 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume);
 
 void CountFreeClusters(struct FSSuper *sb);
 
-/* file */
-LONG File_Read(struct ExtFileLock *fl, ULONG togo, void *buffer, LONG *result);
-
-/* names.c */
-
 /* diskchange */
 void ProcessDiskChange (void);
 void DoDiskInsert();
@@ -67,16 +62,23 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
 
 LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de);
 
-LONG GetDirShortName(struct DirEntry *de, STRPTR name, ULONG *len);
-LONG GetDirLongName(struct DirEntry *de, STRPTR name, ULONG *len);
-
 LONG UpdateDirEntry(struct DirEntry *de);
+
+LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr, ULONG cluster, struct DirEntry *de);
 
 LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
 
+/* names.c */
+LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len);
+LONG GetDirEntryLongName(struct DirEntry *de, STRPTR name, ULONG *len);
+LONG SetDirEntryName(struct DirEntry *de, STRPTR name, ULONG len);
+ULONG NumLongNameEntries(STRPTR name, ULONG len);
+
 /* fat.c */
-void ConvertDate(UWORD date, UWORD time, struct DateStamp *ds);
+void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds);
+void ConvertAROSDate(struct DateStamp ds, UWORD *date, UWORD *time);
 LONG SetVolumeName(struct FSSuper *sb, UBYTE *name);
+LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 
 /* file.c */
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nread);
