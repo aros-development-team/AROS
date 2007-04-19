@@ -101,6 +101,7 @@ struct wdpLayoutBorderGadgets
     struct Window   *wdp_Window;
     struct Gadget   *wdp_Gadgets;
     STACKULONG	     wdp_Flags;
+    STACKULONG       wdp_ExtraButtons;
     STACKIPTR        wdp_UserBuffer;
 };
 
