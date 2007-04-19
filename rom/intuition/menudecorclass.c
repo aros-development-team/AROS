@@ -126,8 +126,18 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
     switch(msg->mdp_Which)
     {
     	case SUBMENUIMAGE:
-    	    *msg->mdp_Width = 8;
-    	    *msg->mdp_Height = 7;
+    	    *msg->mdp_Width = 0;
+    	    *msg->mdp_Height = 0;
+            struct  RastPort *rp = CreateRastPort();
+            if (rp)
+            {
+                struct  TextExtent TextExt;
+                SetFont(rp, msg->mdp_ReferenceFont);
+                TextExtent(rp, ">>", 2, &TextExt);
+                *msg->mdp_Width = TextExt.te_Width;
+                *msg->mdp_Height = TextExt.te_Height;
+                FreeRastPort(rp);
+            }
 	    break;
 	
 	default:
@@ -166,23 +176,13 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             {
                 SetAPen(rport, pens[(msg->mdp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
             }
-
             RectFill(rport, left, top, right, bottom);
-
             SetAPen(rport, pens[BARDETAILPEN]);
-
+            SetDrMd(rport, JAM1);
             WORD x = left;
 
-	    Move(rport, x, top);
-	    Draw(rport, x + (width >> 1), top + (height >> 1));
-	    Draw(rport, x, bottom);
-
-	    x += (width / 2);
-
-	    Move(rport, x, top);
-	    Draw(rport, x + (width >> 1), top + (height >> 1));
-	    Draw(rport, x, bottom);
-
+    	    Move(rport, x, top + rport->Font->tf_Baseline);
+            Text(rport, ">>", 2);
             break;
         }
 
