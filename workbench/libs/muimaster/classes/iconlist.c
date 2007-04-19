@@ -325,11 +325,10 @@ D(bug("[IconList] IconList_GetIconRectangle()\n"));
 Draw the icon at its position
 **************************************************************************/
 
-#define DRAWICON_TESTDRAW TRUE
-#define DRAWICON_DODRAW   FALSE
+IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DrawEntry *message)
+{
+    struct MUI_IconData *data = INST_DATA(CLASS, obj);
 
-static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, BOOL onlytest)
-{   
     struct Rectangle iconrect;
     struct Rectangle objrect;
 
@@ -338,18 +337,21 @@ static BOOL IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct Ico
 
     STRPTR buf = NULL;
 
-D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
+D(bug("[IconList] IconList__MUIM_IconList_DrawEntry(message->icon @ %x)\n", message->icon));
 
-	if ((!(icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
-		(!(icon->ile_DiskObj)))
+	if ((!(message->icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
+		(!(message->icon->ile_DiskObj)))
+	{
+D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\n"));
 		return FALSE;
+	}
 	
-    /* Get the dimensions and affected area of icon */
-    IconList_GetIconRectangle(obj, data, icon, &iconrect);
+    /* Get the dimensions and affected area of message->icon */
+    IconList_GetIconRectangle(obj, data, message->icon, &iconrect);
 
-    /* Add the relative position offset of the icon */
-    offsetx = _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
-    offsety = _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
+    /* Add the relative position offset of the message->icon */
+    offsetx = _mleft(obj) - data->icld_ViewX + message->icon->ile_IconX;
+    offsety = _mtop(obj) - data->icld_ViewY + message->icon->ile_IconY;
 
     iconrect.MinX += offsetx;
     iconrect.MinY += offsety;
@@ -381,8 +383,8 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
     {
         if (!RectAndRect(&iconrect, data->update_rect2)) return FALSE;
     }
-   
-    if (onlytest) return TRUE;
+    
+    if (message->icon == ICONENTRY_DRAWMODE_NONE) return TRUE;
     
     if (data->icld_BufferRastPort == NULL)
     {
@@ -391,8 +393,8 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
     
     SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
 
-    // Center icon
-    ULONG iconX = iconrect.MinX + ((icon->ile_AreaWidth - icon->ile_IconWidth )/2);
+    // Center message->icon
+    ULONG iconX = iconrect.MinX + ((message->icon->ile_AreaWidth - message->icon->ile_IconWidth )/2);
     ULONG iconY = iconrect.MinY;
 
 #if !defined(__AROS__)
@@ -400,10 +402,10 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
 #else
     DrawIconStateA(
 #endif
-        data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, icon->ile_DiskObj, NULL,
+        data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->ile_DiskObj, NULL,
         iconX, 
         iconY, 
-        ((icon->ile_Flags & ICONENTRY_FLAG_SELECTED)||(icon->ile_Flags & ICONENTRY_FLAG_FOCUS)) ? IDS_SELECTED : IDS_NORMAL, 
+        (message->icon->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL, 
 #if !defined(__AROS__)
         ICONDRAWA_EraseBackground, FALSE, 
 #endif
@@ -411,18 +413,18 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
     );
 
 
-    if (icon->ile_IconListEntry.label) buf = AllocVec ( 255, MEMF_CLEAR );
+    if (message->icon->ile_IconListEntry.label) buf = AllocVec ( 255, MEMF_CLEAR );
 
-    if (icon->ile_IconListEntry.label && buf)
+    if (message->icon->ile_IconListEntry.label && buf)
     {
-        ULONG nameLength = strlen(icon->ile_IconListEntry.label);
+        ULONG nameLength = strlen(message->icon->ile_IconListEntry.label);
 
         SetFont(data->icld_BufferRastPort, data->icld_IconFont);
 
         if ( nameLength > data->icld__Option_IconTextMaxLen )
-            txwidth = TextLength(data->icld_BufferRastPort, icon->ile_IconListEntry.label, data->icld__Option_IconTextMaxLen);
+            txwidth = TextLength(data->icld_BufferRastPort, message->icon->ile_IconListEntry.label, data->icld__Option_IconTextMaxLen);
         else
-			txwidth = TextLength(data->icld_BufferRastPort, icon->ile_IconListEntry.label, nameLength);
+			txwidth = TextLength(data->icld_BufferRastPort, message->icon->ile_IconListEntry.label, nameLength);
 
         ULONG len = data->icld__Option_IconTextMaxLen;
         // Make sure the maxlen is at least the length of ".."
@@ -430,17 +432,17 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
         
         if(nameLength > len)
         {
-            strncpy(buf, icon->ile_IconListEntry.label, len - 3);
+            strncpy(buf, message->icon->ile_IconListEntry.label, len - 3);
             strcat(buf , " ..");
             nameLength = len;
         }
         else 
         {
-            strncpy( buf, icon->ile_IconListEntry.label, nameLength );
+            strncpy( buf, message->icon->ile_IconListEntry.label, nameLength );
         }
              
         tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - txwidth)/2);
-        ty = iconY + icon->ile_IconHeight + data->icld_IconFont->tf_Baseline;
+        ty = iconY + message->icon->ile_IconHeight + data->icld_IconFont->tf_Baseline;
 
         switch ( data->icld__Option_IconTextMode )
         {
@@ -469,13 +471,13 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
                 break;
         }
 
-        /*date/size sorting has the date/size appended under the icon label*/
+        /*date/size sorting has the date/size appended under the message->icon label*/
 
-        if( icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE)) )
+        if( message->icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE)) )
         {
             if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
             {
-                int i = icon->ile_FileInfoBlock.fib_Size;
+                int i = message->icon->ile_FileInfoBlock.fib_Size;
         
                 /*show byte size for small files*/
                 if( i > 9999 )
@@ -491,10 +493,10 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
                     DateStamp(&now);
         
                     /*if modified today show time, otherwise just show date*/
-                    if( now.ds_Days == icon->ile_FileInfoBlock.fib_Date.ds_Days )
-                        sprintf( buf , "%s" ,icon->ile_TxtBuf_TIME );
+                    if( now.ds_Days == message->icon->ile_FileInfoBlock.fib_Date.ds_Days )
+                        sprintf( buf , "%s" ,message->icon->ile_TxtBuf_TIME );
                     else
-                        sprintf( buf , "%s" ,icon->ile_TxtBuf_DATE );
+                        sprintf( buf , "%s" ,message->icon->ile_TxtBuf_DATE );
                 }
             }
 
@@ -502,7 +504,7 @@ D(bug("[IconList] IconList_DrawIcon(icon @ %x)\n", icon));
 
             ULONG textwidth = TextLength(data->icld_BufferRastPort, buf, nameLength);
             tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - textwidth)/2);
-            ty = iconY + icon->ile_IconHeight + data->icld_IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->icld_IconFont->tf_Baseline;
+            ty = iconY + message->icon->ile_IconHeight + data->icld_IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->icld_IconFont->tf_Baseline;
     
             switch ( data->icld__Option_IconTextMode )
             {
@@ -1258,15 +1260,15 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
                     rect2.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
                     rect2.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
 
-                    if (RectAndRect(&rect,&rect2))
+                    if (RectAndRect(&rect, &rect2))
                     {  
                         // Update icon here
-                        IconList_DrawIcon(obj, data, icon, DRAWICON_DODRAW);
+                        DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
                     }
                 }
             }
 
-            IconList_DrawIcon(obj, data, data->update_icon, DRAWICON_DODRAW);
+            DoMethod(obj, MUIM_IconList_DrawEntry, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
             data->icld_UpdateMode = 0;
             MUI_RemoveClipping(muiRenderInfo(obj),clip);
             return 0;
@@ -1474,7 +1476,7 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (B)\n"));
 		{
 			if ((icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (icon->ile_DiskObj && icon->ile_IconX != NO_ICON_POSITION && icon->ile_IconY != NO_ICON_POSITION))
 			{
-				IconList_DrawIcon(obj, data, icon, DRAWICON_DODRAW);
+				DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
 			}
 		}
 
@@ -3609,6 +3611,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_RethinkDimensions:   return IconList__MUIM_IconList_RethinkDimensions(CLASS, obj, (APTR)message);
         case MUIM_IconList_CreateEntry:         return IconList__MUIM_IconList_CreateEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_DestroyEntry:        return IconList__MUIM_IconList_DestroyEntry(CLASS, obj, (APTR)message);
+		case MUIM_IconList_DrawEntry:           return IconList__MUIM_IconList_DrawEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_NextSelected:        return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
         case MUIM_IconList_UnselectAll:         return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
         case MUIM_IconList_Sort:                return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
