@@ -3025,7 +3025,8 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
            /* go through list and check if dropped on icon */
            ForeachNode(&data->icld_IconList, node)
            {
-               if (message->x >= node->ile_IconX - data->icld_ViewX && 
+               if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
+				   message->x >= node->ile_IconX - data->icld_ViewX && 
                    message->x <  node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth  &&
                    message->y >= node->ile_IconY - data->icld_ViewY + _mtop(obj)  && 
                    message->y <  node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight + _mtop(obj) && !drop_target_node)
