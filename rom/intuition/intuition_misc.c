@@ -545,6 +545,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 		    msg.wdp_Window  = w;
 		    msg.wdp_Gadgets = (struct Gadget *)SYSGAD(w, i);
 		    msg.wdp_Flags   = WDF_LBG_SYSTEMGADGET | WDF_LBG_INITIAL;
+            msg.wdp_UserBuffer  = ((struct IntWindow *)(w))->DecorUserBuffer;
+            msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
+
 		    msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 		    msg.wdp_Dri = dri;
 
