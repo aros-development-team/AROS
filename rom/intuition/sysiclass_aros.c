@@ -197,19 +197,16 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         return FALSE;
 
     {
-    	struct wdpGetDefSizeSysImage  wmsg;
-    	struct sdpGetDefSizeSysImage  smsg;
-    	struct mdpGetDefSizeSysImage  mmsg;
-
 	ULONG	width = DEFSIZE_WIDTH, height = DEFSIZE_HEIGHT;
 
-        BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR);
+    BOOL	 tc = (data->dri->dri_Flags & DRIF_DIRECTCOLOR);
 
 	if (data->type == SDEPTHIMAGE)
 	{
+        struct sdpGetDefSizeSysImage  smsg;
 	
 		smsg.MethodID 	    	= SDM_GETDEFSIZE_SYSIMAGE;
-                smsg.sdp_TrueColor      = tc;
+        smsg.sdp_TrueColor      = tc;
 		smsg.sdp_Which 	    	= data->type;
 		smsg.sdp_SysiSize     	= size;
 		smsg.sdp_ReferenceFont 	= reffont;
@@ -218,12 +215,16 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 		smsg.sdp_Flags	    	= 0;
 		smsg.sdp_Dri            = data->dri;
 		smsg.sdp_UserBuffer 	= NULL;
+
+        DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&smsg);  
+
 	}
 	else if ((data->type == AMIGAKEY) || (data->type == MENUCHECK) || (data->type == SUBMENUIMAGE))
 	{
-	
+        struct mdpGetDefSizeSysImage  mmsg;
+
 		mmsg.MethodID 	    	= MDM_GETDEFSIZE_SYSIMAGE;
-                mmsg.mdp_TrueColor      = tc;
+        mmsg.mdp_TrueColor      = tc;
 		mmsg.mdp_Which 	    	= data->type;
 		mmsg.mdp_SysiSize     	= size;
 		mmsg.mdp_ReferenceFont 	= reffont;
@@ -231,11 +232,15 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 		mmsg.mdp_Height	    	= &height;
 		mmsg.mdp_Flags	    	= 0;
 		mmsg.mdp_Dri            = data->dri;
+        DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mmsg); 
+
 	}
 	else
 	{
+        struct wdpGetDefSizeSysImage  wmsg;
+
 		wmsg.MethodID 	    	= WDM_GETDEFSIZE_SYSIMAGE;
-                wmsg.wdp_TrueColor      = tc;
+        wmsg.wdp_TrueColor      = tc;
 		wmsg.wdp_Which 	    	= data->type;
 		wmsg.wdp_SysiSize     	= size;
 		wmsg.wdp_ReferenceFont 	= reffont;
@@ -244,25 +249,16 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 		wmsg.wdp_Flags	    	= 0;
 		wmsg.wdp_Dri            = data->dri;
 		wmsg.wdp_UserBuffer	= NULL;
+
+        DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wmsg);  
+
 	}
 
-	if (data->type == SDEPTHIMAGE)
-	{
-	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->ScrDecorObj, (Msg)&smsg);	
-	}
-	else if ((data->type == AMIGAKEY) || (data->type == MENUCHECK) || (data->type == SUBMENUIMAGE))
-	{
-	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->MenuDecorObj, (Msg)&mmsg);	
-	}
-	else
-	{
-	    DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wmsg);	
-	}
 	
     	if (!set_width) IM(obj)->Width = width;
     	if (!set_height) IM(obj)->Height = height;	
     }
-    
+
     return TRUE;
 }
 
@@ -297,6 +293,7 @@ Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 
     switch (data->type)
     {
+
 	case CHECKIMAGE:
         {
             struct TagItem tags[] =
@@ -331,7 +328,7 @@ Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 	case CLOSEIMAGE:
 	case SIZEIMAGE:
 
-	case MENUCHECK:
+ 	case MENUCHECK:
 	case AMIGAKEY:
 	case SUBMENUIMAGE:
 	case ICONIFYIMAGE:
@@ -1011,9 +1008,13 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
         }
 
         /* MUI and other non-std images */
-    #if 0
     	case MUIIMAGE:
         {
+            {
+                DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg); 
+                break;
+            }
+#if (0)
             UWORD *pens = data->dri->dri_Pens;
             UWORD bg;
 
@@ -1038,10 +1039,11 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
             /* DRAW IMAGE :) */
 
             DrawIB(rport,(BYTE *)ibPrefs,left+(width/2),top+(height/2),IntuitionBase);
-
+#endif
             break;
         }
 
+#if (0)
     	case SNAPSHOTIMAGE:
     	case POPUPIMAGE:
     	case ICONIFYIMAGE:
