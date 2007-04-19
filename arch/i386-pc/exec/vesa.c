@@ -110,8 +110,8 @@ short findMode(int x, int y, int d)
             if ((modeinfo.mode_attributes & mode_attrs) != mode_attrs) continue;
             if ((modeinfo.memory_model != 6) && (modeinfo.memory_model != 4))
 		continue;
-	    if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
-		continue;
+/*	    if ((modeinfo.memory_model == 4) && (modeinfo.mode_attributes & 0x20))
+		continue;*/
 
             if (modeinfo.x_resolution == x &&
                 modeinfo.y_resolution == y &&
