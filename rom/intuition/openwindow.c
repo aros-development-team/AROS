@@ -1099,10 +1099,12 @@ moreFlags |= (name); else moreFlags &= ~(name)
     	struct wdpLayoutBorderGadgets  msg;
 
 	msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
-        msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    msg.wdp_UserBuffer  = ((struct IntWindow *)w)->DecorUserBuffer;;
+    msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 	msg.wdp_Window 	    	= w;
 	msg.wdp_Gadgets     	= nw.FirstGadget;
 	msg.wdp_Flags   	= WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
+    msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
 	msg.wdp_Dri             = dri;
 
 	DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&msg);	
