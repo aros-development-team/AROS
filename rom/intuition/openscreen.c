@@ -1495,47 +1495,9 @@ AROS_LH1(struct Screen *, OpenScreen,
 
 #endif
 
-    
     if (ok)
     {
-        struct TagItem sysi_tags[] =
-        {
-            {SYSIA_Which    , MENUCHECK     	    },
-            {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
-            {TAG_DONE                       	    }
-        };
-
-        screen->DInfo.dri.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: CheckMark 0x%lx\n",
-                                 screen->DInfo.dri.dri_CheckMark));
-
-        sysi_tags[0].ti_Data = AMIGAKEY;
-
-        screen->DInfo.dri.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: AmigaKey 0x%lx\n",
-                                 screen->DInfo.dri.dri_AmigaKey));
-
-        sysi_tags[0].ti_Data = SUBMENUIMAGE;
-
-        screen->DInfo.dri.dri_SubMenuImage  = NewObjectA(NULL, "sysiclass", sysi_tags);
-        DEBUG_OPENSCREEN(dprintf("OpenScreen: SubMenuImage 0x%lx\n",
-                                 screen->DInfo.dri.dri_SubMenuImage));
-
-#ifdef SKINS
-        sysi_tags[0].ti_Data = SUBMENUIMAGE;
-        screen->DInfo.dri_Customize->submenu  = NewObjectA(NULL, "sysiclass", sysi_tags);
-        sysi_tags[0].ti_Data = MENUTOGGLEIMAGE;
-        screen->DInfo.dri_Customize->menutoggle  = NewObjectA(NULL, "sysiclass", sysi_tags);
-        if (!screen->DInfo.dri_Customize->submenu ||
-            !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
-#endif
-
-        if (!screen->DInfo.dri.dri_CheckMark || !screen->DInfo.dri.dri_AmigaKey || !screen->DInfo.dri.dri_SubMenuImage) ok = FALSE;
-    }
-
-    if (ok)
-    {
-        IPTR	userbuffersize;
+        IPTR    userbuffersize;
 
         struct NewDecorator *nd;
 
@@ -1591,6 +1553,45 @@ AROS_LH1(struct Screen *, OpenScreen,
             if (!screen->DecorUserBuffer) ok = FALSE;
         }
     }
+
+    if (ok)
+    {
+        struct TagItem sysi_tags[] =
+        {
+            {SYSIA_Which    , MENUCHECK     	    },
+            {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
+            {TAG_DONE                       	    }
+        };
+
+        screen->DInfo.dri.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: CheckMark 0x%lx\n",
+                                 screen->DInfo.dri.dri_CheckMark));
+
+        sysi_tags[0].ti_Data = AMIGAKEY;
+
+        screen->DInfo.dri.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: AmigaKey 0x%lx\n",
+                                 screen->DInfo.dri.dri_AmigaKey));
+
+        sysi_tags[0].ti_Data = SUBMENUIMAGE;
+
+        screen->DInfo.dri.dri_SubMenuImage  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        DEBUG_OPENSCREEN(dprintf("OpenScreen: SubMenuImage 0x%lx\n",
+                                 screen->DInfo.dri.dri_SubMenuImage));
+
+#ifdef SKINS
+        sysi_tags[0].ti_Data = SUBMENUIMAGE;
+        screen->DInfo.dri_Customize->submenu  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        sysi_tags[0].ti_Data = MENUTOGGLEIMAGE;
+        screen->DInfo.dri_Customize->menutoggle  = NewObjectA(NULL, "sysiclass", sysi_tags);
+        if (!screen->DInfo.dri_Customize->submenu ||
+            !screen->DInfo.dri_Customize->menutoggle) ok = FALSE;
+#endif
+
+        if (!screen->DInfo.dri.dri_CheckMark || !screen->DInfo.dri.dri_AmigaKey || !screen->DInfo.dri.dri_SubMenuImage) ok = FALSE;
+    }
+
+
 
     if (ok)
     {
