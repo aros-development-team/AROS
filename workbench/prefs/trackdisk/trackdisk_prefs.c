@@ -36,6 +36,7 @@ struct TrackdiskPrefs TDPrefs;
 struct IORequest      TDIO;
 
 const char __version__[] = "\0$VER: Trackdisk prefs 41.3 (2007-17-04)";
+int __nocommandline;
 
 int main(void)
 {
