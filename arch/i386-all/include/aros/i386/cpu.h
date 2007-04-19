@@ -26,7 +26,7 @@
 #define SIZEOF_FPU_STATE	108  /* 108 bytes are needed to store FPU */
 #define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE)  /* Size of iet_Context */
 
-#define AROS_GET_SYSBASE	struct ExecBase * SysBase = *(struct ExecBase **)0x4;
+#define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
 #define AROS_GET_SYSBASE_OK     extern struct ExecBase * SysBase;
 
