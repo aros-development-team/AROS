@@ -37,6 +37,7 @@
 #include "intuition_intern.h"
 #include "gadgets.h"
 
+
 /**************************************************************************************************/
 
 #ifdef __AROS__
@@ -50,6 +51,9 @@
 
 #define HSPACING 3
 #define VSPACING 3
+#define REFHEIGHT (msg->mdp_ReferenceFont->tf_YSize)
+#define REFWIDTH  REFHEIGHT
+
 /* Ralph Schmidt
  * heuristics for smaller arrows used in apps
  * like filer
@@ -66,6 +70,9 @@
 #undef IntuitionBase
 #define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
 
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
 /**************************************************************************************************/
 
 void menu_draw_thick_line(struct RastPort *rport,
@@ -123,6 +130,7 @@ IPTR MenuDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
 IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpGetDefSizeSysImage *msg)
 {
+
     switch(msg->mdp_Which)
     {
     	case SUBMENUIMAGE:
@@ -138,13 +146,19 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
                 *msg->mdp_Height = TextExt.te_Height;
                 FreeRastPort(rp);
             }
-	    break;
-	
-	default:
-	    *msg->mdp_Width = DEFSIZE_WIDTH;
-	    *msg->mdp_Height = DEFSIZE_HEIGHT;
-	    break;
+	       break;
+
+        case MENUCHECK:
+            *msg->mdp_Width = REFWIDTH / 2 + 4; // reffont->tf_XSize * 3 / 2;
+            *msg->mdp_Height= REFHEIGHT;
+            break;
+
+    	default:
+	       *msg->mdp_Width = DEFSIZE_WIDTH;
+	       *msg->mdp_Height = DEFSIZE_HEIGHT;
+	       break;
     }
+
     return TRUE;
 }
 
