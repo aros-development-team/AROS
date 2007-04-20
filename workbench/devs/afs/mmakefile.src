@@ -22,6 +22,8 @@ endif
 #MM- workbench-fs-complete : workbench-fs-afs
 #MM- workbench-fs-afs : includes linklibs
 
+USER_CFLAGS := -DDEBUG=0
+
 %build_module mmake=workbench-fs-afs \
     modname=afs modtype=device modsuffix=handler \
     files="arosdevice $(FILES)" uselibs="arosc"

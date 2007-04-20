@@ -3,7 +3,9 @@
     $Id$
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 
 #include "os.h"
 #include "misc.h"
