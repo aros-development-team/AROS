@@ -279,46 +279,115 @@ D(bug("[IconList] IconList_InvertLassoOutlines()\n"));
 As we don't use the label drawing of icon.library we also have to do
 this by hand
 **************************************************************************/
+static void IconList_GetIconImageRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
+{
+D(bug("[IconList] IconList_GetIconImageRectangle()\n"));
+    /* Get basic width/height */    
+    GetIconRectangleA(NULL, icon->ile_DiskObj, NULL, rect, NULL);
+}
+
+static void IconList_GetIconLabelRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
+{
+	ULONG      outline_offset = 0;
+	ULONG 	   textwidth = 0;
+
+D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
+
+	switch ( data->icld__Option_IconTextMode )
+	{
+		case ICON_TEXTMODE_DROPSHADOW:
+			outline_offset = 1;
+			break;
+
+		case ICON_TEXTMODE_PLAIN:
+			break;
+
+		default:
+			outline_offset = 2;
+			break;
+	}
+	
+    /* Get icon box width including text width */
+    if (icon->ile_IconListEntry.label && icon->ile_TxtBuf_DisplayedLabel)
+    {
+		SetFont(data->icld_BufferRastPort, data->icld_IconFont);
+		
+		ULONG textlength = strlen(icon->ile_TxtBuf_DisplayedLabel);
+		if ( !data->icld__Option_IconTextMaxLen ) data->icld__Option_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
+		if ( textlength > data->icld__Option_IconTextMaxLen ) textlength = data->icld__Option_IconTextMaxLen;
+		
+		rect->MinX = 0;
+		icon->ile_TxtBuf_DisplayedLabelWidth = TextLength(data->icld_BufferRastPort, icon->ile_TxtBuf_DisplayedLabel, textlength) + outline_offset + ( ICONLIST_TEXTMARGIN * 2 );
+		rect->MaxX = icon->ile_TxtBuf_DisplayedLabelWidth;
+	
+		rect->MinY = icon->ile_IconHeight + ICONLIST_TEXTMARGIN;
+		
+		rect->MaxY = rect->MinY  + data->icld_IconFont->tf_YSize + outline_offset;
+
+		/*  Date/size sorting has the date/size appended under the icon label
+			only list regular files like this (drawers have no size/date output) */
+		if(
+			icon->ile_IconListEntry.type != WBDRAWER && 
+			((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
+		)
+		{
+			rect->MaxY += data->icld_IconFont->tf_YSize + outline_offset + ( ICONLIST_TEXTMARGIN * 2 );
+
+			if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+			{
+				icon->ile_TxtBuf_SIZEWidth = TextLength(data->icld_BufferRastPort, icon->ile_TxtBuf_SIZE, strlen(icon->ile_TxtBuf_SIZE));
+				textwidth = icon->ile_TxtBuf_SIZEWidth;
+			}
+			else
+			{
+				if( !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+				{
+					if( icon->ile_Flags & ICONENTRY_FLAG_TODAY )
+					{
+						icon->ile_TxtBuf_TIMEWidth = TextLength(data->icld_BufferRastPort, icon->ile_TxtBuf_TIME, strlen(icon->ile_TxtBuf_TIME));
+						textwidth = icon->ile_TxtBuf_TIMEWidth;
+					}
+					else
+					{
+						icon->ile_TxtBuf_DATEWidth = TextLength(data->icld_BufferRastPort, icon->ile_TxtBuf_DATE, strlen(icon->ile_TxtBuf_DATE));
+						textwidth = icon->ile_TxtBuf_DATEWidth;
+					}
+				}
+			}
+
+			if ((textwidth + outline_offset) > (rect->MaxX - rect->MinX)) rect->MaxX = textwidth + outline_offset;
+		}
+	}
+}
+
 static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
 D(bug("[IconList] IconList_GetIconRectangle()\n"));
-    /* Get basic width/height */    
-    GetIconRectangleA(NULL, icon->ile_DiskObj, NULL, rect, NULL);
+    struct Rectangle labelrect;
 
+	IconList_GetIconImageRectangle(obj, data, icon, rect);
+	
     icon->ile_AreaWidth  = (rect->MaxX - rect->MinX) + 1;
     icon->ile_AreaHeight = (rect->MaxY - rect->MinY) + 1;
 
-    /* Get icon box width including text width */
-    if (icon->ile_IconListEntry.label)
-    {
-        SetFont(data->icld_BufferRastPort, data->icld_IconFont);
-        
-        ULONG textlength = strlen(icon->ile_IconListEntry.label);
-        if ( !data->icld__Option_IconTextMaxLen ) data->icld__Option_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
-        if ( textlength > data->icld__Option_IconTextMaxLen ) textlength = data->icld__Option_IconTextMaxLen;
-        
-        LONG txwidth = TextLength(data->icld_BufferRastPort, icon->ile_IconListEntry.label, textlength) + 3;
-	
-        if ( txwidth > icon->ile_AreaWidth ) icon->ile_AreaWidth = txwidth;
-        
-        icon->ile_AreaHeight += data->icld_IconFont->tf_YSize + ICONLIST_TEXTMARGIN;
-    }
-
-    /*  Date/size sorting has the date/size appended under the icon label
-        only list regular files like this (drawers have no size/date output) */
-    if(
-        icon->ile_IconListEntry.type != WBDRAWER && 
-        ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
-    )
-    {
-        icon->ile_AreaHeight += data->icld_IconFont->tf_YSize + ( ICONLIST_TEXTMARGIN * 2 );
-    }
-        
     /* Store */
     icon->ile_IconWidth = rect->MaxX - rect->MinX + 1;
     icon->ile_IconHeight = rect->MaxY - rect->MinY + 1;
+	
     rect->MaxX = rect->MinX + icon->ile_AreaWidth - 1;
     rect->MaxY = rect->MinY + icon->ile_AreaHeight - 1;
+	
+    /* Get icon box width including text width */
+    IconList_GetIconLabelRectangle(obj, data, icon, &labelrect);
+
+	if (icon->ile_AreaWidth < (labelrect.MaxX - labelrect.MinX) + 1)
+		icon->ile_AreaWidth = (labelrect.MaxX - labelrect.MinX) + 1;
+
+    icon->ile_AreaHeight += (labelrect.MaxY - labelrect.MinY) + 1;
+	
+	/* Store */
+	rect->MaxX = rect->MinX + icon->ile_AreaWidth - 1;
+	rect->MaxY = rect->MinY + icon->ile_AreaHeight - 1;
 }
 
 /**************************************************************************
@@ -335,8 +404,6 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     LONG tx,ty,offsetx,offsety;
     LONG txwidth; // txheight;
 
-    STRPTR buf = NULL;
-
 D(bug("[IconList] IconList__MUIM_IconList_DrawEntry(message->icon @ %x)\n", message->icon));
 
 	if ((!(message->icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
@@ -347,15 +414,15 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
 	}
 	
     /* Get the dimensions and affected area of message->icon */
-    IconList_GetIconRectangle(obj, data, message->icon, &iconrect);
+    IconList_GetIconImageRectangle(obj, data, message->icon, &iconrect);
 
     /* Add the relative position offset of the message->icon */
     offsetx = _mleft(obj) - data->icld_ViewX + message->icon->ile_IconX;
-    offsety = _mtop(obj) - data->icld_ViewY + message->icon->ile_IconY;
-
     iconrect.MinX += offsetx;
-    iconrect.MinY += offsety;
     iconrect.MaxX += offsetx;
+
+    offsety = _mtop(obj) - data->icld_ViewY + message->icon->ile_IconY;
+    iconrect.MinY += offsety;
     iconrect.MaxY += offsety;
 
     /* Add the relative position of the window */
@@ -384,16 +451,14 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
         if (!RectAndRect(&iconrect, data->update_rect2)) return FALSE;
     }
     
-    if (message->icon == ICONENTRY_DRAWMODE_NONE) return TRUE;
+    if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
     
     if (data->icld_BufferRastPort == NULL)
     {
     	data->icld_BufferRastPort = _rp(obj);
     }
     
-    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
-
-    // Center message->icon
+     // Center icon image
     ULONG iconX = iconrect.MinX + ((message->icon->ile_AreaWidth - message->icon->ile_IconWidth )/2);
     ULONG iconY = iconrect.MinY;
 
@@ -412,45 +477,103 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
         TAG_DONE
     );
 
+    return TRUE;
+}
 
-    if (message->icon->ile_IconListEntry.label) buf = AllocVec ( 255, MEMF_CLEAR );
+IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DrawEntry *message)
+{
+    struct MUI_IconData *data = INST_DATA(CLASS, obj);
 
-    if (message->icon->ile_IconListEntry.label && buf)
+    STRPTR     			buf = NULL;
+
+    struct Rectangle 	iconlabelrect;
+    struct Rectangle 	objrect;
+
+    LONG 				tx,ty,offsetx,offsety;
+    LONG 				txwidth; // txheight;
+
+D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel(message->icon @ %x)\n", message->icon));
+
+	if ((!(message->icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
+		(!(message->icon->ile_DiskObj)))
+	{
+D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing DOB\n"));
+		return FALSE;
+	}
+	
+    /* Get the dimensions and affected area of message->icon */
+    IconList_GetIconLabelRectangle(obj, data, message->icon, &iconlabelrect);
+
+    /* Add the relative position offset of the message->icon */
+    offsetx = _mleft(obj) - data->icld_ViewX + message->icon->ile_IconX;
+    iconlabelrect.MinX += offsetx;
+    iconlabelrect.MaxX += offsetx;
+
+    offsety = _mtop(obj) - data->icld_ViewY + message->icon->ile_IconY;
+    iconlabelrect.MinY += offsety;
+    iconlabelrect.MaxY += offsety;
+
+    /* Add the relative position of the window */
+    objrect.MinX = _mleft(obj);
+    objrect.MinY = _mtop(obj);
+    objrect.MaxX = _mright(obj);
+    objrect.MaxY = _mbottom(obj);
+
+    if (!RectAndRect(&iconlabelrect, &objrect)) return FALSE;
+
+    /* data->update_rect1 and data->update_rect2 may
+       point to rectangles to indicate that only icons
+       in any of this rectangles need to be drawn      */
+    
+    if (data->update_rect1 && data->update_rect2)
     {
-        ULONG nameLength = strlen(message->icon->ile_IconListEntry.label);
+        if (!RectAndRect(&iconlabelrect, data->update_rect1) &&
+        !RectAndRect(&iconlabelrect, data->update_rect2)) return FALSE;
+    }
+    else if (data->update_rect1)
+    {
+        if (!RectAndRect(&iconlabelrect, data->update_rect1)) return FALSE;
+    }
+    else if (data->update_rect2)
+    {
+        if (!RectAndRect(&iconlabelrect, data->update_rect2)) return FALSE;
+    }
+    
+    if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
+    
+    if (data->icld_BufferRastPort == NULL)
+    {
+    	data->icld_BufferRastPort = _rp(obj);
+    }
+    
+    SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
 
-        SetFont(data->icld_BufferRastPort, data->icld_IconFont);
+    // Center message->icon
+	ULONG labelX = iconlabelrect.MinX;
+    ULONG labelY = iconlabelrect.MinY;
 
-        if ( nameLength > data->icld__Option_IconTextMaxLen )
-            txwidth = TextLength(data->icld_BufferRastPort, message->icon->ile_IconListEntry.label, data->icld__Option_IconTextMaxLen);
-        else
-			txwidth = TextLength(data->icld_BufferRastPort, message->icon->ile_IconListEntry.label, nameLength);
+	if (message->icon->ile_TxtBuf_DisplayedLabelWidth <= message->icon->ile_AreaWidth)
+		labelX += ((message->icon->ile_AreaWidth - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
+	else
+		labelX -= ((message->icon->ile_AreaWidth - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
 
-        ULONG len = data->icld__Option_IconTextMaxLen;
-        // Make sure the maxlen is at least the length of ".."
-        if ( len < 3 ) len = 3;
-        
-        if(nameLength > len)
-        {
-            strncpy(buf, message->icon->ile_IconListEntry.label, len - 3);
-            strcat(buf , " ..");
-            nameLength = len;
-        }
-        else 
-        {
-            strncpy( buf, message->icon->ile_IconListEntry.label, nameLength );
-        }
+    if (message->icon->ile_IconListEntry.label && message->icon->ile_TxtBuf_DisplayedLabel)
+    {
+        ULONG nameLength = strlen(message->icon->ile_TxtBuf_DisplayedLabel);
              
-        tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - txwidth)/2);
-        ty = iconY + message->icon->ile_IconHeight + data->icld_IconFont->tf_Baseline;
+        tx = labelX;
+        ty = labelY + data->icld_IconFont->tf_Baseline;
 
         switch ( data->icld__Option_IconTextMode )
         {
             case ICON_TEXTMODE_DROPSHADOW:
-            case ICON_TEXTMODE_PLAIN:
                 SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
+                Move(data->icld_BufferRastPort, tx + 1, ty + 1); 
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+            case ICON_TEXTMODE_PLAIN:
+                SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
                 Move(data->icld_BufferRastPort, tx, ty); 
-                Text(data->icld_BufferRastPort, buf, nameLength);
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
                 break;
                 
             default:
@@ -458,15 +581,19 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
                 
                 SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
                 SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-                
-                Move(data->icld_BufferRastPort, tx + 1, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
-                Move(data->icld_BufferRastPort, tx - 1, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
-                Move(data->icld_BufferRastPort, tx, ty + 1);  Text(data->icld_BufferRastPort, buf, nameLength);
-                Move(data->icld_BufferRastPort, tx, ty - 1);  Text(data->icld_BufferRastPort, buf, nameLength);
-                
+
+				Move(data->icld_BufferRastPort, tx + 1, ty ); Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx + 2, ty ); Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx , ty ); Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx, ty + 1);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx, ty + 2);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx + 1, ty + 2);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx + 2, ty + 1);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx + 2, ty + 2);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+
                 SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                Move(data->icld_BufferRastPort, tx, ty);
-                Text(data->icld_BufferRastPort, buf, nameLength);
+                Move(data->icld_BufferRastPort, tx + 1, ty + 1);
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
                 SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
                 break;
         }
@@ -475,42 +602,45 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
 
         if( message->icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE)) )
         {
-            if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
-            {
-                int i = message->icon->ile_FileInfoBlock.fib_Size;
-        
-                /*show byte size for small files*/
-                if( i > 9999 )
-                    sprintf( buf , "%ld KB" , (LONG)(i/1024) );
-                else
-                    sprintf( buf , "%ld B" , (LONG)i );
-            }
-            else
-            {
-                if( !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
-                {
-                    struct DateStamp now;
-                    DateStamp(&now);
-        
-                    /*if modified today show time, otherwise just show date*/
-                    if( now.ds_Days == message->icon->ile_FileInfoBlock.fib_Date.ds_Days )
-                        sprintf( buf , "%s" ,message->icon->ile_TxtBuf_TIME );
-                    else
-                        sprintf( buf , "%s" ,message->icon->ile_TxtBuf_DATE );
-                }
-            }
+			if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+			{
+				buf = message->icon->ile_TxtBuf_SIZE;
+				txwidth = message->icon->ile_TxtBuf_SIZEWidth;
+			}
+			else
+			{
+				if( !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+				{
+					if( message->icon->ile_Flags & ICONENTRY_FLAG_TODAY )
+					{
+						buf  = message->icon->ile_TxtBuf_TIME;
+						txwidth = message->icon->ile_TxtBuf_TIMEWidth;
+					}
+					else
+					{
+						buf = message->icon->ile_TxtBuf_DATE;
+						txwidth = message->icon->ile_TxtBuf_DATEWidth;
+					}
+				}
+			}
 
-            nameLength = strlen(buf);
+			tx = iconlabelrect.MinX;
+			nameLength = strlen(buf);
 
-            ULONG textwidth = TextLength(data->icld_BufferRastPort, buf, nameLength);
-            tx = iconrect.MinX + ((iconrect.MaxX - iconrect.MinX + 1 - textwidth)/2);
-            ty = iconY + message->icon->ile_IconHeight + data->icld_IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->icld_IconFont->tf_Baseline;
+			if (txwidth <= message->icon->ile_AreaWidth)
+				tx += ((message->icon->ile_AreaWidth - txwidth)/2);
+			else
+				tx -= ((message->icon->ile_AreaWidth - txwidth)/2);
+
+            ty = labelY + data->icld_IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->icld_IconFont->tf_Baseline;
     
             switch ( data->icld__Option_IconTextMode )
             {
                 case ICON_TEXTMODE_DROPSHADOW:
-                case ICON_TEXTMODE_PLAIN:
                     SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
+                    Move(data->icld_BufferRastPort, tx + 1, ty + 1); Text(data->icld_BufferRastPort, buf, nameLength);
+                case ICON_TEXTMODE_PLAIN:
+                    SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
                     Move(data->icld_BufferRastPort, tx, ty); Text(data->icld_BufferRastPort, buf, nameLength);
                     break;
                     
@@ -518,21 +648,23 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
                     // Outline mode..
                     SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
                     SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
-        
+
                     Move(data->icld_BufferRastPort, tx + 1, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
-                    Move(data->icld_BufferRastPort, tx - 1, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
+                    Move(data->icld_BufferRastPort, tx + 2, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
+                    Move(data->icld_BufferRastPort, tx , ty ); Text(data->icld_BufferRastPort, buf, nameLength);
                     Move(data->icld_BufferRastPort, tx, ty + 1);  Text(data->icld_BufferRastPort, buf, nameLength);
-                    Move(data->icld_BufferRastPort, tx, ty - 1);  Text(data->icld_BufferRastPort, buf, nameLength);
+                    Move(data->icld_BufferRastPort, tx, ty + 2);  Text(data->icld_BufferRastPort, buf, nameLength);
+                    Move(data->icld_BufferRastPort, tx + 1, ty + 2);  Text(data->icld_BufferRastPort, buf, nameLength);
+                    Move(data->icld_BufferRastPort, tx + 2, ty + 1);  Text(data->icld_BufferRastPort, buf, nameLength);
+                    Move(data->icld_BufferRastPort, tx + 2, ty + 2);  Text(data->icld_BufferRastPort, buf, nameLength);
         
                     SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
-                    Move(data->icld_BufferRastPort, tx, ty);
+                    Move(data->icld_BufferRastPort, tx + 1, ty + 1);
                     Text(data->icld_BufferRastPort, buf, nameLength);
                     SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
                     break;
             }
         }
-		// Free up icontext memory
-		FreeVec(buf);
     }
     
     return TRUE;
@@ -1264,11 +1396,13 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
                     {  
                         // Update icon here
                         DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
+                        DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
                     }
                 }
             }
 
             DoMethod(obj, MUIM_IconList_DrawEntry, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
+			DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
             data->icld_UpdateMode = 0;
             MUI_RemoveClipping(muiRenderInfo(obj),clip);
             return 0;
@@ -1477,6 +1611,7 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (B)\n"));
 			if ((icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (icon->ile_DiskObj && icon->ile_IconX != NO_ICON_POSITION && icon->ile_IconY != NO_ICON_POSITION))
 			{
 				DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
+				DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
 			}
 		}
 
@@ -1539,6 +1674,7 @@ IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, str
 
 	if (message->icon)
 	{
+		if (message->icon->ile_TxtBuf_DisplayedLabel) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_DisplayedLabel, 255);
 		if (message->icon->ile_TxtBuf_PROT) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_PROT, 8);
 		if (message->icon->ile_TxtBuf_SIZE) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_SIZE, 30);
 		if (message->icon->ile_TxtBuf_TIME) FreePooled(data->icld_Pool, message->icon->ile_TxtBuf_TIME, LEN_DATSTRING);
@@ -1560,6 +1696,7 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     struct MUI_IconData  *data = INST_DATA(CLASS, obj);
     struct IconEntry     *entry = NULL;
     struct DateTime 	 dt;
+	struct DateStamp     now;
     UBYTE   	    	 *sp = NULL;
 
     struct DiskObject    *dob = NULL;
@@ -1588,40 +1725,53 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
         FreeDiskObject(dob);
         return 0;
     }
-
     memset(entry,0,sizeof(struct IconEntry));
 
 	/* Allocate Text Buffers */
+    if (!(entry->ile_TxtBuf_DisplayedLabel = AllocPooled(data->icld_Pool, 255)))
+	{
+        DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
+        return 0;
+	}
+	memset(entry->ile_TxtBuf_DisplayedLabel, 0, 255);
+	
     if (!(entry->ile_TxtBuf_DATE = AllocPooled(data->icld_Pool, LEN_DATSTRING)))
     {
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
     }
+	memset(entry->ile_TxtBuf_DATE, 0, LEN_DATSTRING);
+
     if (!(entry->ile_TxtBuf_TIME = AllocPooled(data->icld_Pool, LEN_DATSTRING)))
     {
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
     }
+	memset(entry->ile_TxtBuf_TIME, 0, LEN_DATSTRING);
+
     if (!(entry->ile_TxtBuf_SIZE = AllocPooled(data->icld_Pool, 30)))
     {
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
     }
+	memset(entry->ile_TxtBuf_SIZE, 0, 30);
+
     if (!(entry->ile_TxtBuf_PROT = AllocPooled(data->icld_Pool, 8)))
     {
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
-    }	
+    }
+	memset(entry->ile_TxtBuf_PROT, 0, 8);
 	
     /*alloc filename*/
-    if (!(entry->ile_IconListEntry.filename = AllocPooled(data->icld_Pool, strlen(message->filename)+1)))
+    if (!(entry->ile_IconListEntry.filename = AllocPooled(data->icld_Pool, strlen(message->filename) + 1)))
     {
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
     }
 
     /*alloc icon label*/
-    if (!(entry->ile_IconListEntry.label = AllocPooled(data->icld_Pool,strlen(message->label)+1)))
+    if (!(entry->ile_IconListEntry.label = AllocPooled(data->icld_Pool, strlen(message->label) + 1)))
     {
         DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
         return 0;
@@ -1638,7 +1788,13 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
         }
         else
         {
-            sprintf(entry->ile_TxtBuf_SIZE, "%ld", entry->ile_FileInfoBlock.fib_Size);
+			int i = entry->ile_FileInfoBlock.fib_Size;
+
+			/*show byte size for small files*/
+			if( i > 9999 )
+				sprintf(entry->ile_TxtBuf_SIZE, "%ld KB", (LONG)(i/1024));
+			else
+				sprintf(entry->ile_TxtBuf_SIZE, "%ld B", (LONG)i);
         }
 
         dt.dat_Stamp    = entry->ile_FileInfoBlock.fib_Date;
@@ -1649,7 +1805,14 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
         dt.dat_StrTime  = entry->ile_TxtBuf_TIME;
     
         DateToStr(&dt);
-    
+		DateStamp(&now);
+
+		/*if modified today show time, otherwise just show date*/
+		if( now.ds_Days == entry->ile_FileInfoBlock.fib_Date.ds_Days )
+			entry->ile_Flags |= ICONENTRY_FLAG_TODAY;
+		else
+			entry->ile_Flags &= ~ICONENTRY_FLAG_TODAY;
+		
         sp = entry->ile_TxtBuf_PROT;
         *sp++ = (entry->ile_FileInfoBlock.fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
         *sp++ = (entry->ile_FileInfoBlock.fib_Protection & FIBF_PURE)    ? 'p' : '-';
@@ -1667,9 +1830,26 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
         entry->ile_IconListEntry.type = ST_USERDIR;
     }
 
-    strcpy(entry->ile_IconListEntry.filename,message->filename);
-    strcpy(entry->ile_IconListEntry.label,message->label);
+    strcpy(entry->ile_IconListEntry.filename, message->filename);
+    strcpy(entry->ile_IconListEntry.label, message->label);
 
+	ULONG nameLength = strlen(entry->ile_IconListEntry.label);
+
+	ULONG len = data->icld__Option_IconTextMaxLen;
+	// Make sure the maxlen is at least the length of ".."
+	if ( len < 3 ) len = 3;
+        
+	if(nameLength > len)
+	{
+		strncpy(entry->ile_TxtBuf_DisplayedLabel, entry->ile_IconListEntry.label, len - 3);
+		strcat(entry->ile_TxtBuf_DisplayedLabel , " ..");
+		nameLength = len;
+	}
+	else 
+	{
+		strncpy(entry->ile_TxtBuf_DisplayedLabel, entry->ile_IconListEntry.label, nameLength );
+	}
+	
     entry->ile_DiskObj = dob;
     entry->ile_IconListEntry.udata = NULL;
     entry->ile_IconX = dob->do_CurrentX;
@@ -2437,56 +2617,42 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_END\n"));
 									((my + data->icld_ViewY) >= node->ile_IconY  && (my + data->icld_ViewY) < node->ile_IconY + node->ile_AreaHeight) &&
 									!new_selected)
 								{
-									BOOL update_icon = FALSE;
 									new_selected = node;
-
 D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
-
-									if (data->icld_FocusIcon)
-									{
-										data->icld_FocusIcon->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
-										data->icld_UpdateMode = UPDATE_SINGLEICON;
-										data->update_icon = data->icld_FocusIcon;
-										MUI_Redraw(obj, MADF_DRAWUPDATE);
-										data->icld_FocusIcon = NULL;
-									}
-
-									if (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
-									{
-										node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
-										update_icon = TRUE;
-									}
-									if (!(node->ile_Flags & ICONENTRY_FLAG_FOCUS))
-									{
-										node->ile_Flags |= ICONENTRY_FLAG_FOCUS;
-										update_icon = TRUE;
-									}
-
-									if (update_icon)
-									{
-										data->icld_UpdateMode = UPDATE_SINGLEICON;
-										data->update_icon = node;
-										MUI_Redraw(obj, MADF_DRAWUPDATE);
-									}
-									data->icld_SelectionFirst = node;
-									data->icld_FocusIcon = node;
 
 								}
 							}
                         }
 
-                        /* if not cliked on icon set lasso as active */
-                        if (!new_selected)
-                        {
-							if (data->icld_FocusIcon)
+						if (data->icld_FocusIcon)
+						{
+							if (!(new_selected) || (new_selected && (new_selected != data->icld_FocusIcon)))
 							{
-								data->icld_FocusIcon->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
+								data->icld_FocusIcon->ile_Flags &= ~(ICONENTRY_FLAG_FOCUS|ICONENTRY_FLAG_SELECTED);
+								if ((data->icld_SelectionLast == data->icld_FocusIcon) && selections < 2) data->icld_SelectionLast = NULL;
 								data->icld_UpdateMode = UPDATE_SINGLEICON;
 								data->update_icon = data->icld_FocusIcon;
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
 								data->icld_FocusIcon = NULL;
+D(bug("[IconList] IconList__MUIM_HandleEvent: Cleared currently focused icon..\n"));
 							}
+						}
 
+						if (data->icld_SelectionLast)
+						{
+							if (!(new_selected) || (new_selected && (new_selected != data->icld_SelectionLast) && selections < 2))
+							{
+								data->icld_SelectionLast->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
+								data->icld_UpdateMode = UPDATE_SINGLEICON;
+								data->update_icon = data->icld_SelectionLast;
+								MUI_Redraw(obj,MADF_DRAWUPDATE);
+D(bug("[IconList] IconList__MUIM_HandleEvent: ReDrawn last selected..\n"));
+							}
+						}
+						
+                        /* if not cliked on icon set lasso as active */
+                        if (!new_selected)
+                        {
                             data->icld_LassoActive = TRUE;
 
                             data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
@@ -2502,16 +2668,29 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
                         }
                         else
                         {
+							BOOL update_icon = FALSE;
                             data->icld_LassoActive = FALSE;
 
-                            /* remove last single selection if clicked on different file*/
-                            if (data->icld_SelectionLast && new_selected != data->icld_SelectionLast && selections < 2)
-                            {
-                                data->icld_SelectionLast->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                data->icld_UpdateMode = UPDATE_SINGLEICON;
-                                data->update_icon = data->icld_SelectionLast;
-                                MUI_Redraw(obj,MADF_DRAWUPDATE);
-                            }
+							if (!(new_selected->ile_Flags & ICONENTRY_FLAG_SELECTED))
+							{
+								new_selected->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+								update_icon = TRUE;
+							}
+							if (!(new_selected->ile_Flags & ICONENTRY_FLAG_FOCUS))
+							{
+								new_selected->ile_Flags |= ICONENTRY_FLAG_FOCUS;
+								update_icon = TRUE;
+							}
+
+							if (update_icon)
+							{
+								data->icld_UpdateMode = UPDATE_SINGLEICON;
+								data->update_icon = new_selected;
+								MUI_Redraw(obj, MADF_DRAWUPDATE);
+D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
+							}
+							data->icld_SelectionFirst = new_selected;
+							data->icld_FocusIcon = new_selected;
                         }                       
 
                         data->icon_click.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
@@ -3061,7 +3240,7 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
                data->update_icon = drop_target_node;
                MUI_Redraw(obj,MADF_DRAWUPDATE);
 
- D(bug("[IconList] IconList__MUIM_DragDrop: drop entry: %s dropped on disk icon %s\n", entry->filename, drop_target_node->ile_IconListEntry.filename); )
+D(bug("[IconList] IconList__MUIM_DragDrop: drop entry: %s dropped on disk icon %s\n", entry->filename, drop_target_node->ile_IconListEntry.filename); )
            }
            /* check if dropped on a drawer icon in iconlist */
            else if (drop_target_node && (drop_target_node->ile_IconListEntry.type == ST_USERDIR))
@@ -3612,6 +3791,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_CreateEntry:         return IconList__MUIM_IconList_CreateEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_DestroyEntry:        return IconList__MUIM_IconList_DestroyEntry(CLASS, obj, (APTR)message);
 		case MUIM_IconList_DrawEntry:           return IconList__MUIM_IconList_DrawEntry(CLASS, obj, (APTR)message);
+		case MUIM_IconList_DrawEntryLabel:      return IconList__MUIM_IconList_DrawEntryLabel(CLASS, obj, (APTR)message);
         case MUIM_IconList_NextSelected:        return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
         case MUIM_IconList_UnselectAll:         return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
         case MUIM_IconList_Sort:                return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
@@ -3766,7 +3946,8 @@ struct NewDosNode
 {
     struct Node       node;
     STRPTR            name;
-    STRPTR            device;
+    struct Device     *device;
+	struct Unit       *unit;
     struct MsgPort    *port;
 };
 
@@ -3805,9 +3986,11 @@ static struct NewDosList *IconVolumeList__CreateDOSList(void)
     
                     if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
                     {
-D(bug("[IconList]: IconVolumeList__CreateDOSList: adding node for '%s'\n", name));
                         ndn->name = name;
-                        ndn->device = NULL;
+                        ndn->device = dl->dol_Device;
+                        ndn->unit = dl->dol_Unit;
+D(bug("[IconList]: IconVolumeList__CreateDOSList: adding node for '%s' (Device @ %x, Unit @ %x)\n", ndn->name, ndn->device, ndn->unit));
+D(bug("[IconList]: IconVolumeList__CreateDOSList: Device '%s'\n", ndn->device->dd_Library.lib_Node.ln_Name));
 #ifndef __AROS__
                         ndn->port = dl->dol_Task;
 #else
@@ -3913,38 +4096,62 @@ D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update()\n"));
     if ((ndl = IconVolumeList__CreateDOSList()))
     {
         struct NewDosNode *nd = NULL;
-		ForeachNode(ndl, nd)
-        {
-            char buf[300];
-            if (nd->name)
-            {
-                strcpy(buf, nd->name);
-                strcat(buf, ":Disk");
-        
-                if (!(this_Icon = DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)))
-                {
-D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Failed to Add IconEntry for '%s'\n", nd->name));
-                }
-				else
+		struct	MsgPort 			*mp=NULL;
+			
+		mp = CreateMsgPort();
+		if (mp)
+		{
+			ForeachNode(ndl, nd)
+			{
+				char buf[300];
+				if (nd->name)
 				{
-					if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-						this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
-
-					if (!(strcmp(nd->name, "Ram Disk")))
+					strcpy(buf, nd->name);
+					strcat(buf, ":Disk");
+			
+					if (!(this_Icon = DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)))
 					{
-D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Setting Ram Disks icon node priority to 5\n"));
-						this_Icon->ile_Node.ln_Pri = 5;   /// Special dirs get Priority 5
+	D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Failed to Add IconEntry for '%s'\n", nd->name));
 					}
-#warning "TODO: Check if volume is removable and set its priority lower than fixed disks"
-//					else if ()
-//					{
-//						this_Icon->ile_Node.ln_Pri = 0;   /// Removable Media get Priority 0
-//					}
-					else this_Icon->ile_Node.ln_Pri = 1;   /// Fixed Media get Priority 1
+					else
+					{
+						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+
+						if (!(strcmp(nd->name, "Ram Disk")))
+						{
+	D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update: Setting Ram Disks icon node priority to 5\n"));
+							this_Icon->ile_Node.ln_Pri = 5;   // Special dirs get Priority 5
+						}
+						else
+						{
+							this_Icon->ile_Node.ln_Pri = 1;   // Fixed Media get Priority 1
+
+/*							struct IOExtTD *ioreq = NULL;
+							struct DriveGeometry dg;
+
+							if (ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq)))
+							{
+								if (OpenDevice(boot_Device, boot_Unit, (struct IORequest *)ioreq, 0) == 0)
+								{
+									ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
+									ioreq->iotd_Req.io_Data = &dg;
+									ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
+									DoIO((struct IORequest *)ioreq);
+									if (dg.dg_Flags & DGF_REMOVABLE)
+									{
+										this_Icon->ile_Node.ln_Pri = 0;   // Removable Media get Priority 0
+									}
+									CloseDevice((struct IORequest *)ioreq);
+								}
+								DeleteIORequest((struct IORequest *)ioreq);
+							}*/
+						}
+					}
 				}
-            }
-        }
-        IconVolumeList__DestroyDOSList(ndl);
+			}
+			IconVolumeList__DestroyDOSList(ndl);
+		}
     }
 
     /* default display/sorting flags */

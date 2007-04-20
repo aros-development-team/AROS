@@ -41,6 +41,7 @@
 #define MUIM_IconList_CreateEntry       (MUIB_IconList | 0x00000010) /* Zune: V1 returns 0 For Failure or (struct IconEntry *) */
 #define MUIM_IconList_DestroyEntry      (MUIB_IconList | 0x00000011)
 #define MUIM_IconList_DrawEntry         (MUIB_IconList | 0x00000012)
+#define MUIM_IconList_DrawEntryLabel    (MUIB_IconList | 0x00000013)
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000020) /* Zune: V1 */
 #define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000021) /* Zune: V1 */
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000022) /* Zune: V1 */
@@ -55,6 +56,7 @@ struct MUIP_IconList_RethinkDimensions  {ULONG MethodID; struct IconEntry *singl
 struct MUIP_IconList_CreateEntry        {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib; struct DiskObject *icon_dob;};/* void *udata; More file attrs to add };*/
 struct MUIP_IconList_DestroyEntry       {ULONG MethodID; struct IconEntry *icon;};
 struct MUIP_IconList_DrawEntry          {ULONG MethodID; struct IconEntry *icon; IPTR drawmode;};
+struct MUIP_IconList_DrawEntryLabel     {ULONG MethodID; struct IconEntry *icon; IPTR drawmode;};
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
 struct MUIP_IconList_Sort               {ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
@@ -123,9 +125,14 @@ struct IconEntry
 
     ULONG                         ile_Flags;
 
+	UBYTE                         *ile_TxtBuf_DisplayedLabel;
+	ULONG						  ile_TxtBuf_DisplayedLabelWidth;
     UBYTE   	    	          *ile_TxtBuf_DATE;
+    ULONG   	    	          ile_TxtBuf_DATEWidth;
     UBYTE   	    	          *ile_TxtBuf_TIME;
+    ULONG   	    	          ile_TxtBuf_TIMEWidth;
     UBYTE   	    	          *ile_TxtBuf_SIZE;
+    ULONG   	    	          ile_TxtBuf_SIZEWidth;
     UBYTE   	    	          *ile_TxtBuf_PROT;
 };
 
@@ -136,10 +143,11 @@ struct IconEntry
 #define ICONENTRY_DRAWMODE_BACKONLY  3
 
 /* Internal Icon state flags */
-#define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state         */
-#define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state      */
-#define ICONENTRY_FLAG_VISIBLE		 (1<<3)		/* icon should be drawn        */
-#define ICONENTRY_FLAG_HASICON	     (1<<4)		/* icon has an '.info' file    */
+#define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state              */
+#define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state           */
+#define ICONENTRY_FLAG_VISIBLE		 (1<<3)		/* icon for entry should be drawn   */
+#define ICONENTRY_FLAG_HASICON	     (1<<4)		/* entry has an '.info' file        */
+#define ICONENTRY_FLAG_TODAY	     (1<<7)		/* entry's timestamp is from today    */
 
 /* iconlist rendering control flags */
 /* SORTFLAGS - a value of zero sets: sort by name + drawers at top */
