@@ -107,6 +107,14 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
             continue;
         }
 
+        /* ignore the . and .. entries */
+        if (de->e.entry.name[0] == '.' &&
+            ((de->index == 0 && strncmp((char *) de->e.entry.name, ".          ", 11) == 0) ||
+             (de->index == 1 && strncmp((char *) de->e.entry.name, "..         ", 11) == 0))) {
+            D(bug("[fat] skipping . or .. entry\n"));
+            continue;
+        }
+
         /* end of directory, there is no next entry */
         if (de->e.entry.name[0] == 0x00) {
             D(bug("[fat] entry %ld is end-of-directory marker, we're done\n", dh->cur_index));

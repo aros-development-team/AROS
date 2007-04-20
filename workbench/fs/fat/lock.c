@@ -52,6 +52,10 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
     if (fl && (fl->attr & ATTR_DIRECTORY) == 0)
         return ERROR_OBJECT_WRONG_TYPE;
 
+    /* the . and .. entries are invisible to the user */
+    if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2)))
+        return ERROR_OBJECT_NOT_FOUND;
+
     dir_cluster = (fl) ? fl->ioh.first_cluster : 0;
     
     D(bug("\tSearching for: %.*s\n", namelen, name));
