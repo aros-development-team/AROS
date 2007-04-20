@@ -30,10 +30,6 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
 
     D(bug("[fat] deleting file '%.*s' in directory at cluster %ld\n", namelen, name, dirlock->ioh.first_cluster));
 
-    /* can't delete the dot entries */
-    if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2)))
-        return ERROR_DELETE_PROTECTED;
-
     /* obtain a lock on the file. we need an exclusive lock as we don't want
      * to delete the file if its in use */
     if ((err = TryLockObj(dirlock, name, namelen, EXCLUSIVE_LOCK, &b)) != 0) {
