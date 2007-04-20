@@ -6,8 +6,6 @@
     $Id$
 */
 
-#define DEBUG 0
-
 #include <aros/macros.h>
 #include <devices/trackdisk.h>
 #include <dos/dos.h>
