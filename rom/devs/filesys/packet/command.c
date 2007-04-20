@@ -235,6 +235,11 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             break;
 
         case FSA_OPEN_FILE: {
+	    if (iofs->io_Union.io_OPEN_FILE.io_FileName[0] == '\0') {
+		iofs->io_DosError = ERROR_OBJECT_WRONG_TYPE;
+		goto reply;
+	    }
+	    
             ULONG mode = iofs->io_Union.io_OPEN_FILE.io_FileMode;
             struct FileHandle *fh;
 
