@@ -14,6 +14,7 @@
 #define FAT_HANDLER_H
 
 #define DEBUG 0
+#define DEBUG_DUMP 0
 #include <aros/debug.h>
 
 #include <aros/libcall.h>
@@ -210,5 +211,13 @@ struct Globals {
 
 #define GET_NEXT_CLUSTER(sb,cl)     (sb->func_get_fat_entry(sb,cl))
 #define SET_NEXT_CLUSTER(sb,cl,val) (sb->func_set_fat_entry(sb,cl,val))
+
+#define CALC_SHORT_NAME_CHECKSUM(name,checksum)                                 \
+    do {                                                                        \
+        ULONG i;                                                                \
+        checksum = 0;                                                           \
+        for (i = 0; i < 11; i++)                                                \
+            checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + name[i]; \
+    } while(0);
 
 #endif

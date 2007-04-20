@@ -21,9 +21,7 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#undef DEBUG_DUMP
-
-#ifdef DEBUG_DUMP
+#if defined(DEBUG_DUMP) && DEBUG_DUMP != 0
 #include <ctype.h>
 
 #define CHUNK 16
