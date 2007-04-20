@@ -66,6 +66,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
                 break;
 
             /* otherwise the directory is still in use */
+            D(bug("[fat] directory still has files in it, won't delete it\n"));
+
             ReleaseDirHandle(&dh);
             FreeLock(lock);
             return ERROR_DIRECTORY_NOT_EMPTY;
@@ -92,6 +94,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     de.e.entry.name[0] = 0xe5;
     UpdateDirEntry(&de);
 
+    D(bug("[fat] deleted short name entry\n"));
+
     /* now we loop over the previous entries, looking for matching long name
      * entries and killing them */
     order = 1;
@@ -111,6 +115,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
         order++;
     }
 
+    D(bug("[fat] deleted %ld long name entries\n", order-1));
+
     /* directory entries are free */
     ReleaseDirHandle(&dh);
 
@@ -124,6 +130,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
 
     /* this lock is now completely meaningless */
     FreeLock(lock);
+
+    D(bug("[fat] deleted '%.*s'\n", namelen, name));
 
     return 0;
 }
