@@ -84,5 +84,8 @@ LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster);
 LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nread);
 LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nwritten);
 
+/* ops.c */
+LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen);
+
 #endif
 

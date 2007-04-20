@@ -529,10 +529,22 @@ void ProcessPackets(void) {
                 err = ERROR_DISK_WRITE_PROTECTED;
                 break;
 
-            case ACTION_DELETE_OBJECT:
-                D(bug("[fat] DELETE_OBJECT [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
+            case ACTION_DELETE_OBJECT: {
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
+                UBYTE *name = BADDR(pkt->dp_Arg2);
+
+                D(bug("[fat] DELETE_OBJECT: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      name[0], &name[1]));
+
+                if ((err = TestLock(fl)))
+                    break;
+
+                err = OpDeleteFile(fl, &name[1], name[0]);
+
                 break;
+            }
 
             case ACTION_RENAME_OBJECT:
                 D(bug("[fat] RENAME_OBJECT [WRITE]\n"));

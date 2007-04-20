@@ -107,11 +107,9 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
 
     /* compute the short name checksum. this value is held in every associated
      * long name entry to help us identify it. see FATdoc 1.03 p28 */
-    checksum = 0;
-    for (i = 0; i < 11; i++)
-        checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + raw[i];
+    CALC_SHORT_NAME_CHECKSUM(raw, checksum);
 
-    D(bug("[fat] long name checksum is 0x%02x\n", checksum));
+    D(bug("[fat] short name checksum is 0x%02x\n", checksum));
 
     /* get a handle on the directory */
     InitDirHandle(short_de->sb, short_de->cluster, &dh);
@@ -317,12 +315,10 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
         return 0;
     }
 
-    /* compute the long name checksum */
-    checksum = 0;
-    for (i = 0; i < 11; i++)
-        checksum = ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + basis[i];
+    /* compute the short name checksum */
+    CALC_SHORT_NAME_CHECKSUM(basis, checksum);
 
-    D(bug("[fat] long name checksum is 0x%02x\n", checksum));
+    D(bug("[fat] short name checksum is 0x%02x\n", checksum));
 
     /* now we loop back over the previous entries and fill them in with
      * long name components */
