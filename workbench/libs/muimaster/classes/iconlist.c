@@ -318,11 +318,11 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 		
 		rect->MinX = 0;
 		icon->ile_TxtBuf_DisplayedLabelWidth = TextLength(data->icld_BufferRastPort, icon->ile_TxtBuf_DisplayedLabel, textlength) + outline_offset + ( ICONLIST_TEXTMARGIN * 2 );
-		rect->MaxX = icon->ile_TxtBuf_DisplayedLabelWidth;
+		rect->MaxX = icon->ile_TxtBuf_DisplayedLabelWidth + 1;
 	
 		rect->MinY = icon->ile_IconHeight + ICONLIST_TEXTMARGIN;
 		
-		rect->MaxY = rect->MinY  + data->icld_IconFont->tf_YSize + outline_offset;
+		rect->MaxY = rect->MinY  + data->icld_IconFont->tf_YSize + outline_offset + 1;
 
 		/*  Date/size sorting has the date/size appended under the icon label
 			only list regular files like this (drawers have no size/date output) */
@@ -331,7 +331,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 			((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
 		)
 		{
-			rect->MaxY += data->icld_IconFont->tf_YSize + outline_offset + ( ICONLIST_TEXTMARGIN * 2 );
+			rect->MaxY += data->icld_IconFont->tf_YSize + outline_offset + ( ICONLIST_TEXTMARGIN * 2 ) + 1;
 
 			if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
 			{
@@ -355,7 +355,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 				}
 			}
 
-			if ((textwidth + outline_offset) > (rect->MaxX - rect->MinX)) rect->MaxX = textwidth + outline_offset;
+			if ((textwidth + outline_offset + 1) > ((rect->MaxX - rect->MinX) + 1)) rect->MaxX = textwidth + outline_offset + 1;
 		}
 	}
 }
@@ -459,7 +459,8 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\
     }
     
      // Center icon image
-    ULONG iconX = iconrect.MinX + ((message->icon->ile_AreaWidth - message->icon->ile_IconWidth )/2);
+    ULONG iconX = iconrect.MinX;
+	if (message->icon->ile_IconWidth < message->icon->ile_AreaWidth) iconX += ((message->icon->ile_AreaWidth - message->icon->ile_IconWidth )/2);
     ULONG iconY = iconrect.MinY;
 
 #if !defined(__AROS__)
@@ -501,10 +502,10 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 		return FALSE;
 	}
 	
-    /* Get the dimensions and affected area of message->icon */
+    /* Get the dimensions and affected area of message->icon's label */
     IconList_GetIconLabelRectangle(obj, data, message->icon, &iconlabelrect);
 
-    /* Add the relative position offset of the message->icon */
+    /* Add the relative position offset of the message->icon's label */
     offsetx = _mleft(obj) - data->icld_ViewX + message->icon->ile_IconX;
     iconlabelrect.MinX += offsetx;
     iconlabelrect.MaxX += offsetx;
@@ -548,14 +549,14 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
     
     SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
 
-    // Center message->icon
+    // Center message->icon's label
 	ULONG labelX = iconlabelrect.MinX;
     ULONG labelY = iconlabelrect.MinY;
 
 	if (message->icon->ile_TxtBuf_DisplayedLabelWidth <= message->icon->ile_AreaWidth)
 		labelX += ((message->icon->ile_AreaWidth - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
-	else
-		labelX -= ((message->icon->ile_AreaWidth - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
+//	else
+//		labelX -= ((message->icon->ile_AreaWidth - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
 
     if (message->icon->ile_IconListEntry.label && message->icon->ile_TxtBuf_DisplayedLabel)
     {
@@ -629,8 +630,8 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 
 			if (txwidth <= message->icon->ile_AreaWidth)
 				tx += ((message->icon->ile_AreaWidth - txwidth)/2);
-			else
-				tx -= ((message->icon->ile_AreaWidth - txwidth)/2);
+//			else
+//				tx -= ((message->icon->ile_AreaWidth - txwidth)/2);
 
             ty = labelY + data->icld_IconFont->tf_YSize + ICONLIST_TEXTMARGIN + data->icld_IconFont->tf_Baseline;
     
