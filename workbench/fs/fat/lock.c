@@ -67,7 +67,7 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
     err = GetDirEntryByPath(&dh, name, namelen, &de);
 
     if (err == 0) {
-        if (FIRST_FILE_CLUSTER(&de) == 0)
+        if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de) == 0)
             err = LockRoot(access, result);
         else
             err = LockFile(de.index, dh.ioh.first_cluster, access, result);
