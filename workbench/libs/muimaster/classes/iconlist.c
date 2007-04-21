@@ -998,9 +998,9 @@ D(bug("[IconList] IconList__OM_NEW: SELF = %x\n", obj));
 	data->icld_IconFont = icl_WindowFont;	
 
     // Get some initial values
-    data->icld__Option_IconListMode   = (UBYTE)GetTagData(MUIA_IconList_ListMode, 0, message->ops_AttrList);
-    data->icld__Option_IconTextMode   = (UBYTE)GetTagData(MUIA_IconList_TextMode, 0, message->ops_AttrList);
-    data->icld__Option_IconTextMaxLen = GetTagData(MUIA_IconList_TextMaxLen, 0, message->ops_AttrList);
+    data->icld__Option_IconListMode   = (UBYTE)GetTagData(MUIA_IconList_IconListMode, 0, message->ops_AttrList);
+    data->icld__Option_IconTextMode   = (UBYTE)GetTagData(MUIA_IconList_LabelText_Mode, 0, message->ops_AttrList);
+    data->icld__Option_IconTextMaxLen = GetTagData(MUIA_IconList_LabelText_MaxLineLen, 0, message->ops_AttrList);
 
     if ( data->icld__Option_IconTextMaxLen <= 0 )
         data->icld__Option_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
@@ -1082,15 +1082,15 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 				data->icld_SortFlags = tag->ti_Data;
                 break;
 				
-            case MUIA_IconList_ListMode:
+            case MUIA_IconList_IconListMode:
                 data->icld__Option_IconListMode = (UBYTE)tag->ti_Data;
                 break;
             
-            case MUIA_IconList_TextMode:
+            case MUIA_IconList_LabelText_Mode:
                 data->icld__Option_IconTextMode = (UBYTE)tag->ti_Data;
                 break;
             
-            case MUIA_IconList_TextMaxLen:
+            case MUIA_IconList_LabelText_MaxLineLen:
                 data->icld__Option_IconTextMaxLen = tag->ti_Data;
                 break;
 
@@ -1161,22 +1161,22 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 
     switch (message->opg_AttrID)
     {
-		case MUIA_IconList_Rastport:             STORE = data->icld_BufferRastPort; return 1;
-        case MUIA_IconList_Left:                 STORE = data->icld_ViewX; return 1;
-        case MUIA_IconList_Top:                  STORE = data->icld_ViewY; return 1;
-        case MUIA_IconList_Width:                STORE = data->icld_AreaWidth; return 1;
-        case MUIA_IconList_Height:               STORE = data->icld_AreaHeight; return 1;
-        case MUIA_IconList_IconsDropped:         STORE = (IPTR)&data->drop_entry; return 1;
-        case MUIA_IconList_Clicked:              STORE = (ULONG)&data->icon_click; return 1;
-        case MUIA_IconList_ListMode:             STORE = (ULONG)data->icld__Option_IconListMode; return 1;
-        case MUIA_IconList_TextMode:             STORE = (ULONG)data->icld__Option_IconTextMode; return 1;
-        case MUIA_IconList_TextMaxLen:           STORE = (ULONG)data->icld__Option_IconTextMaxLen; return 1;
-        case MUIA_IconList_DisplayFlags:         STORE = data->icld_DisplayFlags; return 1;
-        case MUIA_IconList_SortFlags:            STORE = data->icld_SortFlags; return 1;
+		case MUIA_IconList_Rastport:                 STORE = data->icld_BufferRastPort; return 1;
+        case MUIA_IconList_Left:                     STORE = data->icld_ViewX; return 1;
+        case MUIA_IconList_Top:                      STORE = data->icld_ViewY; return 1;
+        case MUIA_IconList_Width:                    STORE = data->icld_AreaWidth; return 1;
+        case MUIA_IconList_Height:                   STORE = data->icld_AreaHeight; return 1;
+        case MUIA_IconList_IconsDropped:             STORE = (IPTR)&data->drop_entry; return 1;
+        case MUIA_IconList_Clicked:                  STORE = (ULONG)&data->icon_click; return 1;
+        case MUIA_IconList_IconListMode:             STORE = (ULONG)data->icld__Option_IconListMode; return 1;
+        case MUIA_IconList_LabelText_Mode:           STORE = (ULONG)data->icld__Option_IconTextMode; return 1;
+        case MUIA_IconList_LabelText_MaxLineLen:     STORE = (ULONG)data->icld__Option_IconTextMaxLen; return 1;
+        case MUIA_IconList_DisplayFlags:             STORE = data->icld_DisplayFlags; return 1;
+        case MUIA_IconList_SortFlags:                STORE = data->icld_SortFlags; return 1;
 
 		/* Settings defined by the view class */
-		case MUIA_IconListview_FixedBackground:  STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
-		case MUIA_IconListview_ScaledBackground: STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
+		case MUIA_IconListview_FixedBackground:      STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
+		case MUIA_IconListview_ScaledBackground:     STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
     }
 
     if (DoSuperMethodA(CLASS, obj, (Msg) message)) 

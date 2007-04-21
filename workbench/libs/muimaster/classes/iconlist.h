@@ -66,22 +66,24 @@ struct MUIP_IconList_ViewIcon           {ULONG MethodID; struct IconEntry *icon;
 #define MUIV_IconList_NextSelected_End   0
 
 /*** Attributes *************************************************************/
-#define MUIA_IconList_DoubleClick               (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL                      */
-#define MUIA_IconList_Left                      (MUIB_IconList | 0x00000001) /* Zune: V1 ..G LONG                      */
-#define MUIA_IconList_Top                       (MUIB_IconList | 0x00000002) /* Zune: V1 ..G LONG                      */
-#define MUIA_IconList_Width                     (MUIB_IconList | 0x00000003) /* Zune: V1 ..G LONG                      */
-#define MUIA_IconList_Height                    (MUIB_IconList | 0x00000004) /* Zune: V1 ..G LONG                      */
-#define MUIA_IconList_IconsDropped              (MUIB_IconList | 0x00000005) /* Zune: V1 ..G (struct IconList_Entry *) */
-#define MUIA_IconList_Clicked                   (MUIB_IconList | 0x00000006) /* Zune: V1 ..G (struct IconList_Click *) */
-#define MUIA_IconList_IconsMoved                (MUIB_IconList | 0x00000007) /* Zune: V1 ..G (struct IconList_Entry *) */
-#define MUIA_IconList_AppWindowDrop             (MUIB_IconList | 0x00000008) /* Zune: V1 ..G (struct IconList_Entry *) */
+#define MUIA_IconList_DoubleClick                           (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL                      */
+#define MUIA_IconList_Left                                  (MUIB_IconList | 0x00000001) /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_Top                                   (MUIB_IconList | 0x00000002) /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_Width                                 (MUIB_IconList | 0x00000003) /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_Height                                (MUIB_IconList | 0x00000004) /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_IconsDropped                          (MUIB_IconList | 0x00000005) /* Zune: V1 ..G (struct IconList_Entry *) */
+#define MUIA_IconList_Clicked                               (MUIB_IconList | 0x00000006) /* Zune: V1 ..G (struct IconList_Click *) */
+#define MUIA_IconList_IconsMoved                            (MUIB_IconList | 0x00000007) /* Zune: V1 ..G (struct IconList_Entry *) */
+#define MUIA_IconList_AppWindowDrop                         (MUIB_IconList | 0x00000008) /* Zune: V1 ..G (struct IconList_Entry *) */
 
-#define MUIA_IconList_DisplayFlags              (MUIB_IconList | 0x00000020) /* Zune: V1 ISG ULONG                     */
-#define MUIA_IconList_SortFlags                 (MUIB_IconList | 0x00000021) /* Zune: V1 ISG ULONG                     */
+#define MUIA_IconList_DisplayFlags                          (MUIB_IconList | 0x00000020) /* Zune: V1 ISG ULONG                     */
+#define MUIA_IconList_SortFlags                             (MUIB_IconList | 0x00000021) /* Zune: V1 ISG ULONG                     */
 
-#define MUIA_IconList_ListMode                  (MUIB_IconList | 0x00000030) /* Zune: V1 ISG UBYTE */
-#define MUIA_IconList_TextMode                  (MUIB_IconList | 0x00000031) /* Zune: V1 ISG UBYTE */
-#define MUIA_IconList_TextMaxLen                (MUIB_IconList | 0x00000032) /* Zune: V1 ISG ULONG */
+#define MUIA_IconList_IconListMode                          (MUIB_IconList | 0x00000030) /* Zune: V1 ISG UBYTE */
+#define MUIA_IconList_LabelText_Mode                        (MUIB_IconList | 0x00000031) /* Zune: V1 ISG UBYTE */
+#define MUIA_IconList_LabelText_MaxLineLen                  (MUIB_IconList | 0x00000032) /* Zune: V1 ISG ULONG */
+#define MUIA_IconList_LabelText_MultiLine                   (MUIB_IconList | 0x00000033) /* Zune: V1 ISG ULONG */
+#define MUIA_IconList_LabelText_OnlySelectedMultiLine       (MUIB_IconList | 0x00000034) /* Zune: V1 ISG BOOL  */
 
 #define MUIA_IconList_Rastport                  (MUIB_IconList | 0x000000FF) /* Zune: V1 ISG (struct RastPort *)       */
 

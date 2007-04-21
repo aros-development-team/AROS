@@ -38,6 +38,9 @@ struct WandererPrefs_DATA
     ULONG  wpd_IconTextMode;
     ULONG  wpd_IconTextMaxLen;
 
+    ULONG  wpd_MultiLine;
+    ULONG  wpd_MultiLineSelected;
+	
 	struct List wpd_Backgrounds;
 };
 
@@ -124,16 +127,24 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 data->wpd_ToolbarEnabled = (LONG)tag->ti_Data;
 			    break;
 
-            case MUIA_WandererPrefs_Icon_ListMode:
+            case MUIA_WandererPrefs_IconList_IconListMode:
                 data->wpd_IconListMode = (LONG)tag->ti_Data;
                 break;
 
-            case MUIA_WandererPrefs_Icon_TextMode:
+            case MUIA_WandererPrefs_LabelText_Mode:
                 data->wpd_IconTextMode = (ULONG)tag->ti_Data;
                 break;
 
-            case MUIA_WandererPrefs_Icon_TextMaxLen:
+            case MUIA_WandererPrefs_LabelText_MaxLineLen:
                 data->wpd_IconTextMaxLen = (ULONG)tag->ti_Data;
+                break;
+
+            case MUIA_WandererPrefs_LabelText_MultiLine:
+                data->wpd_MultiLine = (ULONG)tag->ti_Data;
+                break;
+
+            case MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine:
+                data->wpd_MultiLineSelected = (ULONG)tag->ti_Data;
                 break;
         }
     }
@@ -165,19 +176,27 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = (IPTR)data->wpd_ToolbarEnabled;
             break;
 
-        case MUIA_WandererPrefs_Icon_ListMode:
+        case MUIA_WandererPrefs_IconList_IconListMode:
             *store = (IPTR)data->wpd_IconListMode;
             break;
 
-        case MUIA_WandererPrefs_Icon_TextMode:
+        case MUIA_WandererPrefs_LabelText_Mode:
             *store = (IPTR)data->wpd_IconTextMode;
             break;
             
-        case MUIA_WandererPrefs_Icon_TextMaxLen:
+        case MUIA_WandererPrefs_LabelText_MaxLineLen:
             *store = (IPTR)data->wpd_IconTextMaxLen;
             break;
 
-        default:
+		case MUIA_WandererPrefs_LabelText_MultiLine:
+			*store = (IPTR)data->wpd_MultiLine;
+			break;
+
+		case MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine:
+			*store = (IPTR)data->wpd_MultiLineSelected;
+			break;
+
+		default:
             rv = DoSuperMethodA(CLASS, self, (Msg)message);
     }
     
@@ -187,15 +206,20 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem *global_chunk)
 {
     SETUP_INST_DATA;
-	
+
+	int i = 0;
+	BOOL cont = TRUE;
+
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
 #warning "TODO: fix problems with endian-ness?"
 
-	int i = 0;
-	
 	for (i =0; i < WP_GLOBALTAGCOUNT; i++)
 	{
-		SET(self, global_chunk[i].ti_Tag, global_chunk[i].ti_Data);
+		if (cont)
+		{
+			if ((IPTR)global_chunk[i].ti_Tag == TAG_DONE) cont = FALSE;
+			SET(self, (IPTR)global_chunk[i].ti_Tag, (IPTR)global_chunk[i].ti_Data);
+		}
 	}
 
 	return TRUE;

@@ -17,7 +17,8 @@
 #define       WP_DRAWMODE_COUNT                  2
 //#define     WP_DISABLE_ADVANCEDIMAGEOPTIONS
 //#define       DEBUG_NETWORKBROWSER
-//#define       DEBUG_SHOWUSERFILES
+#define       DEBUG_SHOWUSERFILES
+//#define       DEBUG_MULTLINE
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -100,6 +101,11 @@ struct WPEditor_DATA
 #endif
 #if defined(DEBUG_SHOWUSERFILES)
                                                     *wped_cm_EnableUserFiles, 
+#endif
+#if defined(DEBUG_MULTLINE)
+                                                   *wped_icon_textmultiline, 
+                                                   *wped_icon_multilineselected, 
+                                                   *wped_icon_multilineno, 	
 #endif
                                                     *wped_toolbarGroup;
     struct Hook                                     wped_Hook_EnhancedNav,
@@ -656,10 +662,15 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                                    *bt_search = NULL,
                                                    *cm_toolbarenabled = NULL, 
 #if defined(DEBUG_NETWORKBROWSER)
-												   *cm_EnableNetworkBrowser, 
+												   *cm_EnableNetworkBrowser = NULL, 
 #endif
 #if defined(DEBUG_SHOWUSERFILES)
-												   *cm_EnableUserFiles, 
+												   *cm_EnableUserFiles = NULL, 
+#endif
+#if defined(DEBUG_MULTLINE)
+                                                   *wped_icon_textmultiline = NULL, 
+                                                   *wped_icon_multilineselected = NULL, 
+                                                   *wped_icon_multilineno = NULL, 	
 #endif
 			                                       *toolbarpreview = NULL,
 			                                       *wped_icon_listmode = NULL,
@@ -709,8 +720,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 	wped_icon_listmode = MUI_MakeObject(MUIO_Cycle, NULL, iconlistmodes);
     wped_icon_textmode = MUI_MakeObject(MUIO_Cycle, NULL, icontextmodes);
-    cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark,NULL);
-    wped_icon_textmaxlen = MUI_MakeObject(MUIO_String,NULL,4);
+    cm_toolbarenabled = MUI_MakeObject(MUIO_Checkmark, NULL);
 
 	_WP_AdvancedBackgroundOptions_WindowData = AllocMem(sizeof(struct WPEditor_AdvancedBackgroundWindow_DATA), MEMF_CLEAR|MEMF_PUBLIC);
 
@@ -770,7 +780,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
-            
+
             MUIA_PrefsEditor_Name, __(MSG_NAME),
             MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
             
@@ -815,13 +825,21 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
                 Child, (IPTR) (GroupObject,                     // appearance 
                     MUIA_Group_SameSize, FALSE,
                     MUIA_Group_Horiz, TRUE,
-                    
-                    Child, (IPTR) (_WP_Background_GroupObj = GroupObject,
-						MUIA_Group_SameSize, FALSE,
-						MUIA_FrameTitle, __(MSG_BACKGROUNDS),
-						MUIA_Frame, MUIV_Frame_Group,
 
-						Child, (IPTR) (_WP_Background_SpacerObj = HVSpace),
+					Child, (IPTR) (ScrollgroupObject,
+						MUIA_Group_SameSize, FALSE,
+						MUIA_Scrollgroup_FreeHoriz, FALSE,
+						MUIA_Scrollgroup_FreeVert, TRUE,
+						MUIA_Scrollgroup_Contents, (IPTR) (VirtgroupObject,
+							MUIA_FrameTitle, __(MSG_BACKGROUNDS),
+							MUIA_Frame, MUIV_Frame_ReadList,
+							MUIA_Virtgroup_Height, (2*50),
+							MUIA_Virtgroup_Input, FALSE,
+							Child, (IPTR) (_WP_Background_GroupObj = GroupObject,
+								MUIA_Background, MUII_SHINE,
+								Child, (IPTR) (_WP_Background_SpacerObj = HVSpace),
+							End),
+						End),
 					End),
 
                     Child, (IPTR) (GroupObject,
@@ -831,10 +849,30 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
 						MUIA_Group_Columns, 2,
 						Child, (IPTR) Label1(_(MSG_ICONLISTMODE)),
 						Child, (IPTR) wped_icon_listmode,
+						Child, (IPTR) HVSpace,
+						Child, (IPTR) HVSpace,
 						Child, (IPTR) Label1(_(MSG_ICONTEXTMODE)),
 						Child, (IPTR) wped_icon_textmode,
-						Child, (IPTR) Label1(_(MSG_ICONTEXTLENGTH)),
-						Child, (IPTR) wped_icon_textmaxlen,
+						Child, (IPTR) Label1("Max. Label line length .."),
+						Child, (IPTR) (wped_icon_textmaxlen = StringObject,
+											//MUIA_String_Integer, ICON_TEXT_MAXLEN_DEFAULT,
+											MUIA_String_MaxLen, 3,
+											MUIA_String_Format, MUIV_String_Format_Right,
+											MUIA_String_Accept, ( IPTR )"0123456789",
+										End),
+#if defined(DEBUG_MULTLINE)
+						Child, (IPTR) Label1("Use MultiLine Labels "),
+						Child, (IPTR) (wped_icon_textmultiline = MUI_MakeObject(MUIO_Checkmark, NULL)),
+						Child, (IPTR) Label1("Only show for Focus'ed Icon "),
+						Child, (IPTR) (wped_icon_multilineselected = MUI_MakeObject(MUIO_Checkmark, NULL)),
+						Child, (IPTR) Label1("No. of lines to display .."),
+						Child, (IPTR) (wped_icon_multilineno = StringObject,
+											//MUIA_String_Integer, 3,
+											MUIA_String_MaxLen, 2,
+											MUIA_String_Format, MUIV_String_Format_Right,
+											MUIA_String_Accept, ( IPTR )"0123456789",
+										End),
+#endif
 						Child, (IPTR) HVSpace,
 						Child, (IPTR) HVSpace,
                     End),
@@ -903,6 +941,11 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ %x\n", self));
 #if defined(DEBUG_SHOWUSERFILES)
         data->wped_cm_EnableUserFiles                          = cm_EnableUserFiles;
 #endif
+#if defined(DEBUG_MULTLINE)
+        data->wped_icon_textmultiline                          = wped_icon_textmultiline;
+        data->wped_icon_multilineselected                      = wped_icon_multilineselected;
+        data->wped_icon_multilineno                            = wped_icon_multilineno; 	
+#endif
         data->wped_toolbarpreview                              = toolbarpreview;
 		
         data->wped_icon_listmode                               = wped_icon_listmode;
@@ -945,25 +988,68 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ %x\n", self));
         );
         DoMethod
         (
-            cm_toolbarenabled, MUIM_Notify, MUIA_Selected, FALSE,  
-            (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, TRUE
+            cm_toolbarenabled, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,  
+            (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
         );    
+
+#if defined(DEBUG_NETWORKBROWSER)
         DoMethod
         (
-            cm_toolbarenabled, MUIM_Notify, MUIA_Selected, TRUE,  
-            (IPTR) toolbarpreview, 3, MUIM_Set, MUIA_Disabled, FALSE
+            data->wped_cm_EnableNetworkBrowser, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
+#endif
+
+#if defined(DEBUG_SHOWUSERFILES)
+        DoMethod
+        (
+            data->wped_cm_EnableUserFiles, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+#endif
+
+#if defined(DEBUG_MULTLINE)
+        DoMethod
+        (
+            data->wped_icon_textmultiline, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,  
+            (IPTR) data->wped_icon_multilineselected, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
+        );
+
+        DoMethod
+        (
+            data->wped_icon_textmultiline, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,  
+            (IPTR) data->wped_icon_multilineno, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
+        );
+
+        SET(data->wped_icon_textmultiline, MUIA_Selected, TRUE);
+        SET(data->wped_icon_multilineno, MUIA_String_Integer, 3);
+
+        DoMethod
+        (
+            data->wped_icon_textmultiline, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            data->wped_icon_multilineselected, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            data->wped_icon_multilineno, MUIM_Notify, MUIA_String_Integer, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+#endif
 
 		/* navigation cycle linked to toolbar checkbox, enhanced nevigation sets toolbar */
         DoMethod (
             c_navitype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_CallHook, &data->wped_Hook_EnhancedNav, (IPTR)CLASS
         );
+
         // Icon textmode maxlength
-        SET( wped_icon_textmaxlen, MUIA_String_Integer, ICON_TEXT_MAXLEN_DEFAULT );
-        SET( wped_icon_textmaxlen, MUIA_String_MaxLen, 3 );
-        SET( wped_icon_textmaxlen, MUIA_String_Format, MUIV_String_Format_Right );
-        SET( wped_icon_textmaxlen, MUIA_String_Accept, ( IPTR )"0123456789" ); 
         DoMethod ( 
             wped_icon_textmaxlen, MUIM_Notify, MUIA_String_Integer, MUIV_EveryTime,  
             (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE 
@@ -1045,6 +1131,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create objects ..\n"));
 				if (thisBGImspecGrp) DoMethod(thisBGImspecGrp, OM_DISPOSE);
 			}
 		}
+		SET(self, MUIA_Window_Height, 350);
     }
 	else
 	{
@@ -1060,46 +1147,72 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create GUI ..\n"));
 BOOL WPEditor_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem *global_chunk)
 {
     SETUP_INST_DATA;
-	
+
+	int i = 0;
+	BOOL cont = TRUE;
+
 D(bug("[WPEditor] WPEditor_ProccessGlobalChunk()\n"));
 #warning "TODO: fix problems with endian-ness?"
 	//SMPByteSwap(global_chunk);
-	int i = 0;
-	
+
 	for (i =0; i < WP_GLOBALTAGCOUNT; i++)
 	{
-		switch ((int)global_chunk[i].ti_Tag)
+		if (cont)
 		{
-		case MUIA_WandererPrefs_NavigationMethod:
-			SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);   
+			switch ((int)global_chunk[i].ti_Tag)
+			{
+			case MUIA_WandererPrefs_NavigationMethod:
+				SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);   
+				break;
 
-			break;
-
-		case MUIA_WandererPrefs_Toolbar_Enabled:
-				SET(data->wped_toolbarpreview, MUIA_Disabled, !(BOOL)global_chunk[i].ti_Data);
-				SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)global_chunk[i].ti_Data);
-				if (DoMethod(data->wped_toolbarGroup, MUIM_Group_InitChange))
-					DoMethod(data->wped_toolbarGroup, MUIM_Group_ExitChange);
-			break;
+			case MUIA_WandererPrefs_Toolbar_Enabled:
+					SET(data->wped_toolbarpreview, MUIA_Disabled, !(BOOL)global_chunk[i].ti_Data);
+					SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)global_chunk[i].ti_Data);
+					if (DoMethod(data->wped_toolbarGroup, MUIM_Group_InitChange))
+						DoMethod(data->wped_toolbarGroup, MUIM_Group_ExitChange);
+				break;
 
 #if defined(DEBUG_SHOWUSERFILES)
-		case MUIA_WandererPrefs_ShowUserFolder:
-			SET(data->wped_cm_EnableUserFiles, MUIA_Selected, (IPTR)global_chunk[i].ti_Data);
-			break;
+			case MUIA_WandererPrefs_ShowUserFolder:
+				SET(data->wped_cm_EnableUserFiles, MUIA_Selected, (IPTR)global_chunk[i].ti_Data);
+				break;
 #endif
 
-		case MUIA_WandererPrefs_Icon_ListMode:
-			SET( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
-	
-			break;
+			case MUIA_WandererPrefs_IconList_IconListMode:
+				SET( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
+		
+				break;
 
-		case MUIA_WandererPrefs_Icon_TextMode:
-			SET( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
-			break;
+			case MUIA_WandererPrefs_LabelText_Mode:
+				SET( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
+				break;
 
-		case MUIA_WandererPrefs_Icon_TextMaxLen:
-			SET(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)global_chunk[i].ti_Data);
-			break;
+			case MUIA_WandererPrefs_LabelText_MaxLineLen:
+				SET(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)global_chunk[i].ti_Data);
+				break;
+
+#if defined(DEBUG_MULTLINE)
+			case MUIA_WandererPrefs_LabelText_MultiLine:
+				if ((IPTR)global_chunk[i].ti_Data > 1)
+				{
+					SET(data->wped_icon_multilineno, MUIA_String_Integer, (IPTR)global_chunk[i].ti_Data);
+					SET(data->wped_icon_textmultiline, MUIA_Selected, TRUE);
+				}
+				else
+				{
+					SET(data->wped_icon_multilineno, MUIA_String_Integer, 1);
+					SET(data->wped_icon_textmultiline, MUIA_Selected, FALSE);
+				}
+				break;
+
+			case MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine:
+				SET(data->wped_icon_multilineselected, MUIA_Selected, (BOOL)global_chunk[i].ti_Data);
+				break;
+#endif
+			case TAG_DONE:
+				cont = FALSE;
+				break;
+			}
 		}
 	}
 
@@ -1446,37 +1559,87 @@ D(bug("[WPEditor] Write 'global' Wanderer Prefs Data Chunk ... \n"));
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, WP_GLOBALTAGCOUNT * sizeof(struct TagItem))) == 0) 
 			{
 				/* save toolbar state*/
-				struct TagItem	_wp_GlobalTags[5];
+				struct TagItem	_wp_GlobalTags[WP_GLOBALTAGCOUNT + 1];
+				ULONG           _wp_GlobalTagCounter = 0;
 
-				_wp_GlobalTags[0].ti_Tag = MUIA_WandererPrefs_Toolbar_Enabled;
-				GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &_wp_GlobalTags[0].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_Toolbar_Enabled;
+				GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTagCounter += 1;
 
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_Toolbar_Enabled @ Tag %d\n", _wp_GlobalTagCounter - 1));
+				
 				/* save navigation bahaviour */
-				_wp_GlobalTags[1].ti_Tag = MUIA_WandererPrefs_NavigationMethod;
-				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &_wp_GlobalTags[1].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_NavigationMethod;
+				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTagCounter += 1;
+
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_NavigationMethod @ Tag %d\n", _wp_GlobalTagCounter - 1));
 
 				/* save the icon listing method */
-				_wp_GlobalTags[2].ti_Tag = MUIA_WandererPrefs_Icon_ListMode;
-				GET(data->wped_icon_listmode, MUIA_Cycle_Active, &_wp_GlobalTags[2].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_IconList_IconListMode;
+				GET(data->wped_icon_listmode, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTagCounter += 1;
+
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_IconList_IconListMode @ Tag %d\n", _wp_GlobalTagCounter - 1));
 
 				/* save the icon text mode */
-				_wp_GlobalTags[3].ti_Tag = MUIA_WandererPrefs_Icon_TextMode;
-				GET(data->wped_icon_textmode, MUIA_Cycle_Active, &_wp_GlobalTags[3].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_LabelText_Mode;
+				GET(data->wped_icon_textmode, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTagCounter += 1;
+
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_LabelText_Mode @ Tag %d\n", _wp_GlobalTagCounter - 1));
 
 				/* save the max length of icons */
-				_wp_GlobalTags[4].ti_Tag = MUIA_WandererPrefs_Icon_TextMaxLen;
-				GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &_wp_GlobalTags[4].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_LabelText_MaxLineLen;
+				GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTagCounter += 1;
+
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_LabelText_MaxLineLen @ Tag %d\n", _wp_GlobalTagCounter - 1));
 
 #if defined(DEBUG_SHOWUSERFILES)
-				_wp_GlobalTags[5].ti_Tag = MUIA_WandererPrefs_ShowUserFolder;
-				GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &_wp_GlobalTags[5].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_ShowUserFolder;
+				GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTagCounter += 1;
+				
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_ShowUserFolder @ Tag %d\n", _wp_GlobalTagCounter - 1));
 #endif
+#if defined(DEBUG_MULTLINE)
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_LabelText_MultiLine;
+				GET(data->wped_icon_textmultiline, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				if ((BOOL)_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data == TRUE)
+				{
+					GET(data->wped_icon_multilineno, MUIA_String_Integer, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+					if ((IPTR)_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data < 2)
+						_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = 1;
+
+					_wp_GlobalTagCounter += 1;
+
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_LabelText_MultiLine @ Tag %d\n", _wp_GlobalTagCounter - 1));
+					
+					_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine;
+					GET(data->wped_icon_multilineselected, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+
+					_wp_GlobalTagCounter += 1;
+
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine @ Tag %d\n", _wp_GlobalTagCounter - 1));
+				}
+				else
+				{
+					_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = 1;
+					
+					_wp_GlobalTagCounter += 1;
+D(bug("[WPEditor] 'global' MUIA_WandererPrefs_LabelText_MultiLine @ Tag %d\n", _wp_GlobalTagCounter - 1));
+				}
+#endif
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = TAG_DONE;
+				
+D(bug("[WPEditor] 'global' Marked Tag %d as TAG_DONE\n", _wp_GlobalTagCounter));
 
 #warning "TODO: fix problems with endian-ness?"
 				//SMPByteSwap(&wpd); 
 
 				error = WriteChunkBytes(handle, _wp_GlobalTags, WP_GLOBALTAGCOUNT * sizeof(struct TagItem));
-D(bug("[WPEditor] 'global' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, sizeof(struct WandererPrefs)));
+D(bug("[WPEditor] 'global' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, (WP_GLOBALTAGCOUNT * sizeof(struct TagItem))));
 				if ((error = PopChunk(handle)) != 0)
 				{
 D(bug("[WPEditor] 'global' PopChunk() = %ld\n", error));

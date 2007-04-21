@@ -110,9 +110,9 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
                 current_TextMode = 0,
                 current_TextMaxLen = 0;
 
-		GET(self, MUIA_IconList_ListMode, &current_ListMode);
-		GET(self, MUIA_IconList_TextMode, &current_TextMode);
-		GET(self, MUIA_IconList_TextMaxLen, &current_TextMaxLen);
+		GET(self, MUIA_IconList_IconListMode, &current_ListMode);
+		GET(self, MUIA_IconList_LabelText_Mode, &current_TextMode);
+		GET(self, MUIA_IconList_LabelText_MaxLineLen, &current_TextMaxLen);
 
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Current = %d %d %d\n", current_ListMode, current_TextMode, current_TextMaxLen));
 
@@ -121,9 +121,9 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
                 prefs_TextMaxLen = 0,
 				prefs_Processing = 0;
 
-		GET(prefs, MUIA_WandererPrefs_Icon_ListMode, &prefs_ListMode);
-		GET(prefs, MUIA_WandererPrefs_Icon_TextMode, &prefs_TextMode);
-		GET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen, &prefs_TextMaxLen);		
+		GET(prefs, MUIA_WandererPrefs_IconList_IconListMode , &prefs_ListMode);
+		GET(prefs, MUIA_WandererPrefs_LabelText_Mode, &prefs_TextMode);
+		GET(prefs, MUIA_WandererPrefs_LabelText_MaxLineLen, &prefs_TextMaxLen);		
 		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);		
 
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
@@ -132,19 +132,19 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList ListMode changed - updating ..\n"));
 			options_changed = TRUE;
-			SET(self, MUIA_IconList_ListMode, prefs_ListMode);
+			SET(self, MUIA_IconList_IconListMode, prefs_ListMode);
 		}
 		if (current_TextMode != prefs_TextMode)
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList TextRenderMode changed - updating ..\n"));
 			options_changed = TRUE;
-			SET(self, MUIA_IconList_TextMode, prefs_TextMode);
+			SET(self, MUIA_IconList_LabelText_Mode, prefs_TextMode);
 		}
 		if (current_TextMaxLen != prefs_TextMaxLen)
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Max Text Length changed - updating ..\n"));
 			options_changed = TRUE;
-			SET(self, MUIA_IconList_TextMaxLen, prefs_TextMaxLen);
+			SET(self, MUIA_IconList_LabelText_MaxLineLen, prefs_TextMaxLen);
 		}
 
 		if ((options_changed) && !(prefs_Processing))
@@ -302,28 +302,28 @@ IPTR IconWindowIconList__MUIM_Setup
 	if (prefs)
 	{
 		/* Set our initial options */
-		SET(self, MUIA_IconList_ListMode, XGET(prefs, MUIA_WandererPrefs_Icon_ListMode));
-		SET(self, MUIA_IconList_TextMode, XGET(prefs, MUIA_WandererPrefs_Icon_TextMode));
-		SET(self, MUIA_IconList_TextMaxLen, XGET(prefs, MUIA_WandererPrefs_Icon_TextMaxLen));
+		SET(self, MUIA_IconList_IconListMode, XGET(prefs, MUIA_WandererPrefs_IconList_IconListMode ));
+		SET(self, MUIA_IconList_LabelText_Mode, XGET(prefs, MUIA_WandererPrefs_LabelText_Mode));
+		SET(self, MUIA_IconList_LabelText_MaxLineLen, XGET(prefs, MUIA_WandererPrefs_LabelText_MaxLineLen));
 
 		/* Configure notifications incase they get updated =) */
 		DoMethod
 		(
-			prefs, MUIM_Notify, MUIA_WandererPrefs_Icon_ListMode, MUIV_EveryTime,
+			prefs, MUIM_Notify, MUIA_WandererPrefs_IconList_IconListMode, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			prefs, MUIM_Notify, MUIA_WandererPrefs_Icon_TextMode, MUIV_EveryTime,
+			prefs, MUIM_Notify, MUIA_WandererPrefs_LabelText_Mode, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			prefs, MUIM_Notify, MUIA_WandererPrefs_Icon_TextMaxLen, MUIV_EveryTime,
+			prefs, MUIM_Notify, MUIA_WandererPrefs_LabelText_MaxLineLen, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);
@@ -496,13 +496,15 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if w
 
 		if (prefs)
 		{
-			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser);
+			struct IconWindowIconVolumeList_DATA *volumel_data = (struct IconWindowIconVolumeList_DATA *)data;
+
+			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &volumel_data->iwvcd_ShowNetworkBrowser);
 
 #if defined(DEBUG_NETWORKBROWSER)
-			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser = TRUE;
+			volumel_data->iwvcd_ShowNetworkBrowser = TRUE;
 #endif
 
-			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser)
+			if (volumel_data->iwvcd_ShowNetworkBrowser)
 			{
 				struct DiskObject    *_nb_dob = NULL;
 				_nb_dob = GetIconTags
@@ -522,23 +524,36 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBro
 					{
 						this_entry->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
 						sort_list = TRUE;
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBrowser Icon Entry @ %x\n", this_entry));
 					}
 				}
 			}
 
-			GET(prefs, MUIA_WandererPrefs_ShowUserFolder, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder);
+			GET(prefs, MUIA_WandererPrefs_ShowUserFolder, &volumel_data->iwvcd_ShowUserFolder);
 
 #if defined(DEBUG_SHOWUSERFILES)
-			((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder = TRUE;
+			volumel_data->iwvcd_ShowUserFolder = TRUE;
 #endif
-
-			if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowUserFolder)
+			if (volumel_data->iwvcd_ShowUserFolder)
 			{
 				if (GetVar("SYS/UserFilesLocation", __icwc_intern_TxtBuff, TXTBUFF_LEN, GVF_GLOBAL_ONLY) != -1)
 				{
-					if (((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath = AllocVec(strlen(__icwc_intern_TxtBuff), MEMF_CLEAR|MEMF_PUBLIC) != NULL)
+					char * userfiles_path = NULL;
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: SYS/UserFilesLocation = '%s'\n", __icwc_intern_TxtBuff));
+
+					if ((userfiles_path = AllocVec(strlen(__icwc_intern_TxtBuff) + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 					{
 						struct DiskObject    *_nb_dob = NULL;
+
+						volumel_data->iwvcd_UserFolderPath = userfiles_path;
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage @ %x\n", userfiles_path));
+						
+						strcpy(userfiles_path, __icwc_intern_TxtBuff);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage contains '%s'\n", userfiles_path));
+
 						_nb_dob = GetIconTags
 						(
 							"ENV:SYS/def_UserHome", 
@@ -552,7 +567,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: UserFiles Ico
 						if (_nb_dob)
 						{
 							struct Node *this_entry = NULL;
-							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UserFolderPath, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob))
+							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob))
 							{
 								this_entry->ln_Pri = 5;   /// Special dirs get Priority 5
 								sort_list = TRUE;
