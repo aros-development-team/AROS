@@ -19,9 +19,11 @@
 #define MUIA_WandererPrefs_ShowNetworkBrowser                (MUIB_WandererPrefs | 0x00000011) /* -SG */
 #define MUIA_WandererPrefs_ShowUserFolder                    (MUIB_WandererPrefs | 0x00000012) /* -SG */
 
-#define MUIA_WandererPrefs_Icon_ListMode                     (MUIB_WandererPrefs | 0x000000D0) /* -SG */
-#define MUIA_WandererPrefs_Icon_TextMode                     (MUIB_WandererPrefs | 0x000000D1) /* -SG */
-#define MUIA_WandererPrefs_Icon_TextMaxLen                   (MUIB_WandererPrefs | 0x000000D2) /* -SG */
+#define MUIA_WandererPrefs_IconList_IconListMode             (MUIB_WandererPrefs | 0x000000D0) /* -SG */
+#define MUIA_WandererPrefs_LabelText_Mode                    (MUIB_WandererPrefs | 0x000000D1) /* -SG */
+#define MUIA_WandererPrefs_LabelText_MaxLineLen              (MUIB_WandererPrefs | 0x000000D2) /* -SG */
+#define MUIA_WandererPrefs_LabelText_MultiLine               (MUIB_WandererPrefs | 0x000000D3) /* -SG */
+#define MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine   (MUIB_WandererPrefs | 0x000000D4) /* -SG  */
 
 #define MUIA_WandererPrefs_Background                        (MUIB_WandererPrefs | 0x000000E0) /* I-G */
 
@@ -44,7 +46,7 @@ struct  MUIP_WandererPrefs_Background_GetAttribute           {ULONG MethodID; ch
 #define WPD_BackgroundTileMode_Float       		             1        // Default (moves with window scrolling)
 #define WPD_BackgroundTileMode_Fixed       		             2        // Tile's are fixed in the background
 
-#define WP_GLOBALTAGCOUNT 6
+#define WP_GLOBALTAGCOUNT 8
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *WandererPrefs_CLASS;

@@ -252,22 +252,26 @@ AROS_UFH3
 
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
-        static unsigned char buf[1024];
+        static unsigned char  buf[1024];
+
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-        
+
         DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
         if ((int)ent == MUIV_IconList_NextSelected_End) return;
-    
-        if (msg->isroot)
-        {
-            strcpy(buf,ent->label);
-            strcat(buf,":");
-        }
+
+		IPTR                  offset = strlen(ent->filename) - 5;
+
+        if ((msg->isroot) && (!Stricmp(ent->filename + offset, ":Disk")))
+		{
+			strcpy(buf,ent->label);
+			strcat(buf,":");
+		}
         else
         {
             strcpy(buf,ent->filename);
         }
 
+D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset = %d, buf = %s\n", offset, buf);)
     
         if  ( (ent->type == ST_ROOT) || (ent->type == ST_USERDIR) )
         {
@@ -411,10 +415,10 @@ AROS_UFH3
                     /* if not end of selection, process */
                     if ( (int)ent != MUIV_IconList_NextSelected_End )
                     {
-D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path);)
+D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path));
 
                         /* copy via filesystems.c */
-D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path );)
+D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path ));
                         CopyContent(NULL, ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
                     }
                 } 
