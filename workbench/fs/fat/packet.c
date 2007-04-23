@@ -530,7 +530,7 @@ void ProcessPackets(void) {
                 break;
 
             case ACTION_DELETE_OBJECT: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 UBYTE *name = BADDR(pkt->dp_Arg2);
 
                 D(bug("[fat] DELETE_OBJECT: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
@@ -552,69 +552,19 @@ void ProcessPackets(void) {
                 break;
 
             case ACTION_CREATE_DIR: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
-                UBYTE *path = BADDR(pkt->dp_Arg2);
-                BPTR lock;
-                struct DirHandle dh, sdh;
-                struct DirEntry de, sde;
-                ULONG cluster;
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *new;
+                UBYTE *name = BADDR(pkt->dp_Arg2);
 
-                D(bug("[fat] CREATE_DIR: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
+                D(bug("[fat] CREATE_DIR: lock 0x%08x (dir %ld/%ld) name '%.*s'\n",
                       pkt->dp_Arg1,
                       fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
-                      path[0], &path[1]));
+                      name[0], &name[1]));
 
                 if ((err = TestLock(fl)))
                     break;
 
-                err = TryLockObj(fl, &path[1], path[0], SHARED_LOCK, &lock);
-                if (err == 0) {
-                    FreeLock(BADDR(lock));
-                    err = ERROR_OBJECT_EXISTS;
-                    break;
-                }
-
-                if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh)) != 0)
-                    break;
-
-                if ((err = FindFreeCluster(glob->sb, &cluster)) != 0) {
-                    ReleaseDirHandle(&dh);
-                    break;
-                }
-
-                SET_NEXT_CLUSTER(glob->sb, cluster, glob->sb->eoc_mark);
-
-                if ((err = CreateDirEntry(&dh, &path[1], path[0], ATTR_DIRECTORY, cluster, &de)) != 0) {
-                    ReleaseDirHandle(&dh);
-                    break;
-                }
-
-                if ((err = InitDirHandle(glob->sb, cluster, &sdh)) != 0) {
-                    ReleaseDirHandle(&dh);
-                    break;
-                }
-
-                GetDirEntry(&sdh, 0, &sde);
-                CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
-                CopyMem(".          ", &sde.e.entry.name, 11);
-                UpdateDirEntry(&sde);
-
-                GetDirEntry(&sdh, 1, &sde);
-                CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
-                CopyMem("..         ", &sde.e.entry.name, 11);
-                sde.e.entry.first_cluster_lo = fl->ioh.first_cluster & 0xffff;
-                sde.e.entry.first_cluster_hi = fl->ioh.first_cluster >> 16;
-                UpdateDirEntry(&sde);
-
-                GetDirEntry(&sdh, 2, &sde);
-                memset(&sde.e.entry, 0, sizeof(struct FATDirEntry));
-                UpdateDirEntry(&sde);
-
-                ReleaseDirHandle(&sdh);
-
-                err = LockFile(de.index, de.cluster, SHARED_LOCK, &res);
-
-                ReleaseDirHandle(&dh);
+                if ((err = OpCreateDir(fl, &name[1], name[0], &new)) == 0)
+                    res = MKBADDR(new);
 
                 break;
             }

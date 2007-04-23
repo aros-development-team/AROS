@@ -13,7 +13,7 @@
 #ifndef FAT_HANDLER_H
 #define FAT_HANDLER_H
 
-#define DEBUG 0
+#define DEBUG 1
 #define DEBUG_DUMP 0
 #include <aros/debug.h>
 

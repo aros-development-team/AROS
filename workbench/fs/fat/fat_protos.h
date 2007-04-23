@@ -86,6 +86,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 
 /* ops.c */
 LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen);
+LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock);
 
 #endif
 
