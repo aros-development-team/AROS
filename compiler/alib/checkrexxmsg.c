@@ -1,5 +1,5 @@
 /*
-        Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+        Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,7 +45,6 @@
 
 *****************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct Library *RexxSysBase = NULL;
     struct RexxMsg *msg2 = NULL, *msg3;
     struct MsgPort *port = NULL, *rexxport;

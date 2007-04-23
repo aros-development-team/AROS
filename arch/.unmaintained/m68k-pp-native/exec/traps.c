@@ -16,7 +16,6 @@
 
 void do_TRAP(struct pt_regs regs)
 {
-	AROS_GET_SYSBASE
 	ULONG alert = 0;
 #if 0
 	kprintf("*** trap: eip = %x eflags = %x  ds = %x sp ~= %x\n",

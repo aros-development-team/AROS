@@ -227,7 +227,6 @@ void main_init(void)
  */
 void main_init_cont(void)
 {
-	AROS_GET_SYSBASE
 	InitCode(RTF_SINGLETASK, 0);
 
 	/*

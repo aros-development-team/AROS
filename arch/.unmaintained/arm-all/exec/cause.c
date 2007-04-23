@@ -89,8 +89,6 @@ extern void RestoreRegs(struct Task *task, struct pt_regs *regs);
 {
 	struct IntVector *iv;
 
-	AROS_GET_SYSBASE
-
 #if 0
 	/* Hmm, interrupts are nesting, not a good idea... */
 	if(!user_mode(regs)) {

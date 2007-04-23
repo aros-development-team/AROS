@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function malloc().
@@ -53,7 +53,6 @@
 ******************************************************************************/
 {
     UBYTE *mem = NULL;
-    AROS_GET_SYSBASE_OK
 
     /* Allocate the memory */
     mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
@@ -72,8 +71,6 @@
 
 int __init_memstuff(void)
 {
-    AROS_GET_SYSBASE_OK
-
     __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 4096L, 2000L);
 
     if (!__startup_mempool)
@@ -87,8 +84,6 @@ int __init_memstuff(void)
 
 void __exit_memstuff(void)
 {
-    AROS_GET_SYSBASE_OK
-
     if (__startup_mempool)
     {
 	DeletePool(__startup_mempool);

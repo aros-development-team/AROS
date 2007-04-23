@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,8 +50,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
-
     ASSERT_VALID_PTR(obj);
     if (!obj)
 	return 0L;
@@ -64,8 +62,6 @@
 
 IPTR DoMethod (Object * obj, ULONG MethodID, ...)
 {
-    AROS_GET_SYSBASE_OK
-
     ASSERT_VALID_PTR(obj);
     if (!obj)
     	return 0L;

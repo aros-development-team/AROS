@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Formats a message and makes sure the user will see it.
@@ -78,7 +78,6 @@
 
 int vkprintf (const UBYTE * fmt, va_list args)
 {
-    AROS_GET_SYSBASE_OK
     int 	 ret;
     static const char uhex[] = "0123456789ABCDEF";
     static const char lhex[] = "0123456789abcdef";

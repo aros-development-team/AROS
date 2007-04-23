@@ -52,7 +52,6 @@ static inline void serial_out_w(struct HIDDSerialUnitData * data,
                                 ULONG offset, 
                                 UWORD value)
 {
-	AROS_GET_SYSBASE
 	D(bug("poke.w 0x%x,0x%x\n",data->baseaddr+offset,value));
 	WREG_W((data->baseaddr+offset)) = value;
 }
@@ -60,7 +59,6 @@ static inline void serial_out_w(struct HIDDSerialUnitData * data,
 static inline UWORD serial_in_w(struct HIDDSerialUnitData * data,
                                 ULONG offset)
 {
-	AROS_GET_SYSBASE
 	UWORD value = RREG_W((data->baseaddr+offset));
 	D(bug("peek.w 0x%x = 0x%x\n",data->baseaddr+offset,value));
 	return value;
@@ -71,7 +69,6 @@ static inline void serial_out_b(struct HIDDSerialUnitData * data,
                                 ULONG offset, 
                                 UBYTE value)
 {
-	AROS_GET_SYSBASE
 	D(bug("poke.b 0x%x,0x%x\n",data->baseaddr+offset,value));
 	WREG_B((data->baseaddr+offset)) = value;
 }
@@ -80,7 +77,6 @@ static inline void serial_out_b(struct HIDDSerialUnitData * data,
 static inline UBYTE serial_in_b(struct HIDDSerialUnitData * data,
                                 ULONG offset)
 {
-	AROS_GET_SYSBASE
 	UBYTE value = RREG_B(data->baseaddr+offset);
 	D(bug("peek.b 0x%x = 0x%x\n",data->baseaddr+offset,value));
 	return value;

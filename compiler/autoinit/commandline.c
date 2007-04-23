@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,6 @@ static int  __argmax;
 
 int __initcommandline(void)
 {
-    AROS_GET_SYSBASE_OK
     char *ptr    = NULL;
 
     if (WBenchMsg)
@@ -144,8 +143,6 @@ int __initcommandline(void)
 
 void __exitcommandline(void)
 {
-    AROS_GET_SYSBASE_OK
-
     if (WBenchMsg != NULL)
         return;
 

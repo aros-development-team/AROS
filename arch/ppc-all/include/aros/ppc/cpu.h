@@ -1,7 +1,7 @@
-#ifndef AROS_MACHINE_H
-#define AROS_MACHINE_H
+#ifndef AROS_PPC_CPU_H
+#define AROS_PPC_CPU_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -19,10 +19,6 @@
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
-
-#define AROS_GET_SYSBASE	extern struct ExecBase   *SysBase;
-#define AROS_GET_DOSBASE	extern struct DosLibrary *DOSBase;
-#define AROS_GET_SYSBASE_OK	extern struct ExecBase   *SysBase;
 
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm __attribute__((stackparm))
@@ -234,4 +230,4 @@ extern void _aros_not_implemented (char *);
     (_t)_re;\
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
-#endif /* AROS_MACHINE_H */
+#endif /* AROS_PPC_CPU_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read one C string from a streamhook
@@ -58,7 +58,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     STRPTR buffer;
     LONG   size, maxsize;
     LONG   c;

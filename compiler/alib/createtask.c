@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new Amiga task
@@ -74,7 +74,6 @@ static const struct newMemList MemTemplate =
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct Task     * newtask,
 		    * task2;
     struct newMemList nml;

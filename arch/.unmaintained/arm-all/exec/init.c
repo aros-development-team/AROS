@@ -378,7 +378,6 @@ void main_init(void)
  */
 static void main_init_cont(void)
 {
-	AROS_GET_SYSBASE
 	D(bug("!!!!! in user mode now !!!!\n"));
 	InitCode(RTF_SINGLETASK, 0);
 	D(bug("Ooops, should never get here!\n"));

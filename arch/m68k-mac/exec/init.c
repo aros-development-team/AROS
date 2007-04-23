@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -326,7 +326,6 @@ void get_initial_epinfo(void)
  */
 void main_init_cont(void)
 {
-	AROS_GET_SYSBASE
 	InitCode(RTF_SINGLETASK, 0);
 
 	/*

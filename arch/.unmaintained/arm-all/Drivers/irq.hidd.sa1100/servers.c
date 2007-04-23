@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IRQ servers for SA1110
@@ -79,9 +79,6 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
 	struct IntVector *iv = irq->h_Data;
 
-#if 0
-	AROS_GET_SYSBASE;
-#endif
 	if (iv->iv_Code)
 	{
 		/*  Call it. I call with all these parameters for a reason.

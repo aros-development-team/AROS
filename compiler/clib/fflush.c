@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fflush().
@@ -50,9 +50,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
-
     /* flush all streams opened for output */
     if (!stream)
     {

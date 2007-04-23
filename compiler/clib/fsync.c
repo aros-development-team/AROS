@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function fsync().
@@ -18,9 +18,6 @@
 int fsync(int fd)
 /* FIXME: documentation */
 {
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
-
     fdesc *fdesc = __getfdesc(fd);
 
     if (!fdesc || !(fdesc->flags & O_WRITE))

@@ -104,9 +104,6 @@ int __oflags2sflags(int omode)
 
 int __init_stdio(void)
 {
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
-
     NEWLIST(&__stdio_files);
 
     if

@@ -131,7 +131,6 @@ static void do_db_IRQ(unsigned int irq,
                       unsigned int virq,
                       struct pt_regs * regs)
 {
-	AROS_GET_SYSBASE
 	struct irqServer     * iServer;
 	struct irqDescriptor * desc = &PLATFORMDATA(SysBase)->irq_desc[irq];
 
@@ -201,7 +200,6 @@ static void handle_IRQ_event(unsigned int virq, struct pt_regs * regs, struct ir
  */
 void disable_irq_nosync(unsigned int irq)
 {
-	AROS_GET_SYSBASE
 	if (!PLATFORMDATA(SysBase)->irq_desc[irq].id_depth++) {
 		PLATFORMDATA(SysBase)->irq_desc[irq].id_status |= IRQ_DISABLED;
 		PLATFORMDATA(SysBase)->irq_desc[irq].id_handler->ic_disable(irq);
@@ -224,7 +222,6 @@ void enable_irq(unsigned int virq)
 {
 	enable_db_irq(virq);
 #if 0
-	AROS_GET_SYSBASE
 	struct irqDescriptor * irq_desc = PLATFORMDATA(SysBase)->irq_desc;
 	switch (irq_desc[irq].id_depth) {
 		case 0: break;
@@ -245,7 +242,6 @@ void enable_irq(unsigned int virq)
  */
 void do_IRQ(struct pt_regs * regs, LONG adjust)
 {
-	AROS_GET_SYSBASE
 	BOOL treated = FALSE;
 	struct irqDescriptor * irq_desc = &PLATFORMDATA(SysBase)->irq_desc[1];
 	ULONG icip = RREG_L(ICIP);
@@ -316,7 +312,6 @@ void do_IRQ(struct pt_regs * regs, LONG adjust)
 
 static void VBL_handler(int i, void *user, struct pt_regs *regs)
 {
-	AROS_GET_SYSBASE;
 	if (SysBase->Elapsed == 0) {
 		SysBase->SysFlags |= 0x2000;
 		SysBase->AttnResched |= 0x80;

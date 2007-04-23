@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     File descriptors handling internals.
@@ -53,8 +53,6 @@ int __getfirstfd(register int startfd)
 
 int __getfdslot(int wanted_fd)
 {
-    AROS_GET_SYSBASE_OK
-
     if (wanted_fd>=__numslots)
     {
         void *tmp;
@@ -116,8 +114,6 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     fdesc *currdesc = NULL;
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
 
     if (__doupath && pathname[0] == '\0')
     {
@@ -246,8 +242,6 @@ int __init_stdfiles(void)
     struct Process *me;
     fdesc *indesc=NULL, *outdesc=NULL, *errdesc=NULL;
     int res = __getfdslot(2);
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
 
     if
     (
@@ -294,8 +288,6 @@ void __exit_stdfiles(void)
 void __updatestdio(void)
 {
     struct Process *me;
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
 
     me = (struct Process *)FindTask(NULL);
 

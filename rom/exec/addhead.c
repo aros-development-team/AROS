@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a node to the head of a list
@@ -52,7 +52,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_GET_SYSBASE
     ASSERT_VALID_PTR(node);
     ASSERT_VALID_PTR(list);
 

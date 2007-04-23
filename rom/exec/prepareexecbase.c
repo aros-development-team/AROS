@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
@@ -75,12 +75,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 {
     ULONG   negsize = 0, i;
     VOID  **fp      = LIBFUNCTABLE;
-    
-    /*
-       Basically this does not get anything useful, but I still need to have 
-       SysBase defined here...
-    */
-    AROS_GET_SYSBASE
     
     /* Calculate the size of the vector table */
     while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;

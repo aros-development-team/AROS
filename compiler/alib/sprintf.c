@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -56,6 +56,5 @@ AROS_UFH2(void, __putChr,
 
 *****************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     RawDoFmt(format, &format+1, (VOID_FUNC)__putChr, &buffer);
 } /* sprintf */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free a structure created by CreateExtIO()
@@ -44,7 +44,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     /* Erase some fields to enforce crashes */
     ioreq->io_Message.mn_Node.ln_Type = -1L;
 
