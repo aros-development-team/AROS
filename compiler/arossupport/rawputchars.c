@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Formats a message and makes sure the user will see it.
@@ -44,8 +44,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
-
     while (*str && len --)
 	RawPutChar (*str ++);
 } /* RawPutChars */

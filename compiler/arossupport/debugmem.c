@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Show a dump of the memory list.
@@ -46,7 +46,6 @@
 ******************************************************************************/
 {
 #ifndef __DONT_USE_DEBUGMEM__
-    AROS_GET_SYSBASE_OK
     struct MemHeader *mh;
     struct MemChunk  *mc;
 

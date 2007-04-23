@@ -1,7 +1,7 @@
-#ifndef AROS_MACHINE_H
-#define AROS_MACHINE_H
+#ifndef AROS_I386_CPU_H
+#define AROS_I386_CPU_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -25,10 +25,6 @@
 
 #define SIZEOF_FPU_STATE	108  /* 108 bytes are needed to store FPU */
 #define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE)  /* Size of iet_Context */
-
-#define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
-#define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
-#define AROS_GET_SYSBASE_OK     extern struct ExecBase * SysBase;
 
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
@@ -207,4 +203,4 @@ extern void aros_not_implemented ();
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
-#endif /* AROS_MACHINE_H */
+#endif /* AROS_I386_CPU_H */

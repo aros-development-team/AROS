@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - support function for showing errors to the user
@@ -17,8 +17,6 @@ int __forceerrorrequester __attribute__((weak)) = 0;
 
 void __showerror(char *format, const IPTR *args)
 {
-    AROS_GET_SYSBASE_OK
-    
     struct IntuitionBase *IntuitionBase;
     struct DosLibrary *DOSBase = NULL;
     const char *name = FindTask(NULL)->tc_Node.ln_Name;

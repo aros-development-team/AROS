@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,6 @@ static struct Library       *cool_cybergfxbase;
 
 static IPTR coolimage_new(Class * cl, Object * o, struct opSet * msg)
 {
-    AROS_GET_SYSBASE_OK
     struct CoolImageData *data;
     
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
@@ -103,7 +102,6 @@ static IPTR coolimage_new(Class * cl, Object * o, struct opSet * msg)
 
 static IPTR coolimage_dispose(Class * cl, Object * o, Msg msg)
 {
-    AROS_GET_SYSBASE_OK
     struct CoolImageData *data;
     
     data = INST_DATA(cl, o);
@@ -192,7 +190,6 @@ AROS_UFH3S(IPTR, cool_imageclass_dispatcher,
 
 BOOL InitCoolImageClass(struct Library *CyberGfxBase)
 {
-    AROS_GET_SYSBASE_OK
     BOOL retval = FALSE;
     
     cool_cybergfxbase = CyberGfxBase;

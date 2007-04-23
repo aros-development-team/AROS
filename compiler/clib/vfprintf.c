@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Format a string and call a usercallback to output each char.
@@ -64,8 +64,6 @@ static int __putc(int c, BPTR fh);
 
 static int __putc(int c, BPTR fh)
 {
-    AROS_GET_SYSBASE_OK
-    AROS_GET_DOSBASE
     if (FPutC(fh, c) == EOF)
     {
 	errno = IoErr2errno(IoErr());

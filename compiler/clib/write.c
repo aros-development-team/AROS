@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function write().
@@ -49,8 +49,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
-
     ssize_t cnt;
 
     fdesc *fdesc = __getfdesc(fd);

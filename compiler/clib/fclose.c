@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fclose().
@@ -51,7 +51,6 @@
 ******************************************************************************/
 {
     FILENODE * fn;
-    AROS_GET_SYSBASE_OK
 
     if (close(stream->fd) == -1)
     	return EOF;

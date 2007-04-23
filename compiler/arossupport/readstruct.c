@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read a big endian structure from a streamhook
@@ -69,7 +69,6 @@ struct ReadLevel
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct MinList     _list;
     struct ReadLevel * curr;
 

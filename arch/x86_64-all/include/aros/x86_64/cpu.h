@@ -1,7 +1,7 @@
-#ifndef AROS_MACHINE_H
-#define AROS_MACHINE_H
+#ifndef AROS_X86_64_CPU_H
+#define AROS_X86_64_CPU_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id: machine.h 22676 2005-01-09 23:01:16Z falemagn $
 
     NOTE: This file must compile *without* any other header !
@@ -20,10 +20,6 @@
 #define AROS_IPTRALIGN		   8 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   8 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
-
-#define AROS_GET_SYSBASE	extern struct ExecBase   *SysBase;
-#define AROS_GET_DOSBASE	extern struct DosLibrary *DOSBase;
-#define AROS_GET_SYSBASE_OK	extern struct ExecBase   *SysBase;
 
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP asm("%rsp");
@@ -194,4 +190,4 @@ extern void _aros_not_implemented (char *);
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
-#endif /* AROS_MACHINE_H */
+#endif /* AROS_X86_64_CPU_H */

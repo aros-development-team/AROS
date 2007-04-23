@@ -1,8 +1,8 @@
-#ifndef AROS_MACHINE_H
-#define AROS_MACHINE_H
+#ifndef AROS_M68K_CPU_H
+#define AROS_M68K_CPU_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -23,12 +23,6 @@
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
-
-#define AROS_GET_SYSBASE        struct ExecBase * SysBase = *(struct ExecBase **)0x4;
-#define AROS_GET_SYSBASE_OK     struct ExecBase * SysBase = *(struct ExecBase **)0x4;
-/*#define AROS_GET_DOSBASE        struct DosLibrary * DOSBase = (struct DosLibrary *)OpenLibrary((UBYTE *)"dos.library",0); \*/
-//                                CloseLibrary(DOSBase);
-#define AROS_GET_DOSBASE        extern struct DosLibrary *DOSBase;
 
 #define AROS_NOFPU 1
 
@@ -215,4 +209,4 @@ extern void aros_not_implemented ();
 })
 #define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
-#endif /* AROS_MACHINE_H */
+#endif /* AROS_M68K_CPU_H */

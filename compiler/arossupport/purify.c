@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support files for purify (incomplete)
@@ -114,7 +114,6 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct PNode * node;
 
     if (!InitWasCalled)
@@ -177,7 +176,6 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct PNode * node, * nodeBefore, * nodeAfter;
     UBYTE * mem;
 
@@ -264,7 +262,6 @@ extern void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct PNode * node;
     UBYTE * mem;
 

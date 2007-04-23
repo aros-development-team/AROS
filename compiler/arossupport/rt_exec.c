@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic functions for ressource tracking
@@ -125,7 +125,6 @@ void RT_ExitExec (void)
 
 static IPTR RT_AllocMem (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success)
 {
-    AROS_GET_SYSBASE_OK
     rt->Size = va_arg (args, ULONG);
     rt->Flags = va_arg (args, ULONG);
 
@@ -139,7 +138,6 @@ static IPTR RT_AllocMem (RTData * rtd, MemoryResource * rt, va_list args, BOOL *
 
 static IPTR RT_FreeMem (RTData * rtd, MemoryResource * rt)
 {
-    AROS_GET_SYSBASE_OK
     FreeMem (rt->Memory, rt->Size);
 
     return TRUE;
@@ -243,7 +241,6 @@ static IPTR RT_ShowErrorMem (RTData * rtd, int rtt, MemoryResource * rt,
 
 static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL * success)
 {
-    AROS_GET_SYSBASE_OK
     rt->Size = va_arg (args, ULONG);
     rt->Flags = va_arg (args, ULONG);
 
@@ -257,7 +254,6 @@ static IPTR RT_AllocVec (RTData * rtd, MemoryResource * rt, va_list args, BOOL *
 
 static IPTR RT_FreeVec (RTData * rtd, MemoryResource * rt)
 {
-    AROS_GET_SYSBASE_OK
     if (rt)
 	FreeVec (rt->Memory);
 
@@ -355,7 +351,6 @@ static IPTR RT_ShowErrorVec (RTData * rtd, int rtt, MemoryResource * rt,
 
 static IPTR RT_CreatePort (RTData * rtd, PortResource * rt, va_list args, BOOL * success)
 {
-    AROS_GET_SYSBASE_OK
     STRPTR name;
     LONG   pri;
 
@@ -527,7 +522,6 @@ static IPTR RT_CheckPort (RTData * rtd, int rtt,
 
 static IPTR RT_OpenLibrary (RTData * rtd, LibraryResource * rt, va_list args, BOOL * success)
 {
-    AROS_GET_SYSBASE_OK
     rt->Name	= va_arg (args, STRPTR);
     rt->Version = va_arg (args, ULONG);
 
@@ -541,7 +535,6 @@ static IPTR RT_OpenLibrary (RTData * rtd, LibraryResource * rt, va_list args, BO
 
 static IPTR RT_CloseLibrary (RTData * rtd, LibraryResource * rt)
 {
-    AROS_GET_SYSBASE_OK
     CloseLibrary (rt->Lib);
 
     return TRUE;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free a structure returned by ReadStruct()
@@ -64,7 +64,6 @@ struct FreeLevel
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct MinList     _list;
     struct FreeLevel * curr;
 

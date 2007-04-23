@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function free().
@@ -48,8 +48,6 @@
 {
     if (memory)
     {
-	AROS_GET_SYSBASE_OK
-
 	unsigned char *mem;
 	size_t         size;
 

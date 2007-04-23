@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Formats a message and makes sure the user will see it.
@@ -86,7 +86,6 @@
 {
     va_list	 ap;
     int 	 ret;
-    //AROS_GET_SYSBASE_OK
 
 #warning FIXME check the systems and the debug level
     // Check SysBase->DebugAROSBase->DebugConfig

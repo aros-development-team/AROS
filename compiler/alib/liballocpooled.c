@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     Original version from libnix
     $Id$
 */
@@ -40,7 +40,6 @@
 ******************************************************************************/
 {
 #   define poolHeader	((POOL *)pool)
-    AROS_GET_SYSBASE_OK
     ULONG *puddle = NULL;
 
     if (SysBase->LibNode.lib_Version >= 39)

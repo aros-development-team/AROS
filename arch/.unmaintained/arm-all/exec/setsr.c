@@ -69,7 +69,6 @@
 
 void _sys_SetSR(struct pt_regs * regs, LONG adjust) 
 {
-//	AROS_GET_SYSBASE
 	ULONG new  = regs->r0;
 	ULONG mask = regs->r1;
 	regs->r0   = regs->cpsr;

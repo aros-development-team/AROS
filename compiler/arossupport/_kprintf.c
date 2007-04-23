@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level debugging support.
@@ -27,7 +27,5 @@ void KPrintF(STRPTR format, ...) __stackparm;
 
 void KPrintF(STRPTR format, ...)
 {
-    AROS_GET_SYSBASE_OK
-
     RawDoFmt(format,&format+1,(VOID_FUNC)KPutChar,SysBase);
 }

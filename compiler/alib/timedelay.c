@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TimeDelay() - wait a specified time.
@@ -57,7 +57,6 @@
 ******************************************************************************/
 {
     AROS_USERFUNC_INIT
-    AROS_GET_SYSBASE_OK
 
     struct timerequest tr;
     struct MsgPort mp;

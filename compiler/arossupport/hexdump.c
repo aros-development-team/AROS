@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prints a hexdump of a memory region
@@ -57,7 +57,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     ULONG t, end;
     int   i;
 

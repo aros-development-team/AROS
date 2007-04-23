@@ -1,7 +1,7 @@
 #ifndef AROS_CPU_H
 #define AROS_CPU_H
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     CPU independent version of the <aros/cpu.h> header. This is the one
@@ -189,19 +189,6 @@
 #   ifdef AROS_64BIT_MAX
 #       define AROS_64BIT_FASTMAX          AROS_64BIT_MAX
 #   endif
-#endif
-
-/*****************************************************************************
- * Miscellaneous
- ****************************************************************************/
-#ifndef AROS_GET_SYSBASE
-#   define  AROS_GET_SYSBASE        extern struct ExecBase      *SysBase;
-#endif
-#ifndef AROS_GET_DOSBASE
-#   define  AROS_GET_DOSBASE        extern struct DosLibrary    *DOSBase;
-#endif
-#ifndef AROS_GET_SYSBASE_OK
-#   define  AROS_GET_SYSBASE_OK     extern struct ExecBase      *SysBase;
 #endif
 
 /*

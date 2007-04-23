@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic functions for ressource tracking
@@ -69,7 +69,6 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     RTData * rtd;
 
     if ((rtd = GetRTData ()))
@@ -239,7 +238,6 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     RTData * rtd;
 
     if (!(rtd = GetRTData ()) )
@@ -296,7 +294,6 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     RTData * rtd;
     IPTR     ret;
     va_list  args;
@@ -388,7 +385,6 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     RTData   * rtd;
     va_list    args;
     Resource * rtnew;
@@ -855,7 +851,6 @@ RTDesc const * RT_Resources[RTT_MAX];
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     if (!rtd && !(rtd = GetRTData ()))
 	return;
 

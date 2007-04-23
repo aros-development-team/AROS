@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Write a big endian structure to a streamhook
@@ -77,7 +77,6 @@ struct WriteLevel
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     struct MinList	_list;
     struct WriteLevel * curr;
 

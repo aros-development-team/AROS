@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Loader for shared libraries and devices.
@@ -820,7 +820,6 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 )
 {
     AROS_USERFUNC_INIT
-    AROS_GET_SYSBASE
 
     struct Library *AROS_SLIB_ENTRY(OpenLibrary,Dos)();
     BYTE AROS_SLIB_ENTRY(OpenDevice,Dos)();

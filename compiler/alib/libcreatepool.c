@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     Original version from libnix
     $Id$
 */
@@ -39,7 +39,6 @@
 
 ******************************************************************************/
 {
-    AROS_GET_SYSBASE_OK
     if (SysBase->LibNode.lib_Version >= 39)
 	return (CreatePool (requirements, puddleSize, threshSize));
 

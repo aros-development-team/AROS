@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: amiga.lib function DeleteStdIo()
@@ -45,8 +45,6 @@
 ******************************************************************************/
 {
 #   define ioreq    ((struct IORequest *)io)
-    AROS_GET_SYSBASE_OK
-
     /* Write illegal values to some fields to enforce crashes */
     ioreq->io_Message.mn_Node.ln_Type = -1L;
 
