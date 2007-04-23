@@ -7,7 +7,12 @@ $Id$
 //#define MYDEBUG
 #include "debug.h"
 
-//#define DEBUG_IL_KEYEVENTS
+//#define DEBUG_ILC_EVENTS
+//#define DEBUG_ILC_KEYEVENTS
+//#define DEBUG_ILC_ICONRENDERING
+//#define DEBUG_ILC_ICONPOSITIONING
+//#define DEBUG_ILC_LASSO
+
 //#define CREATE_FULL_DRAGIMAGE
 
 #include <string.h>
@@ -227,7 +232,9 @@ static void GetAbsoluteLassoRect(struct MUI_IconData *data, struct Rectangle *La
     WORD maxx = data->icld_LassoRectangle.MaxX;
     WORD maxy = data->icld_LassoRectangle.MaxY;
 
+#if defined(DEBUG_ILC_LASSO)
 D(bug("[IconList] GetAbsoluteLassoRect()\n"));
+#endif
 
     if (minx > maxx)
     {
@@ -253,7 +260,9 @@ D(bug("[IconList] GetAbsoluteLassoRect()\n"));
 
 static void IconList_InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, WORD maxx, WORD maxy)
 {
+#if defined(DEBUG_ILC_RENDERING)
 D(bug("[IconList] IconList_InvertPixelRect()\n"));
+#endif
 
     if (maxx < minx)
     {
@@ -281,7 +290,9 @@ void IconList_InvertLassoOutlines(Object *obj, struct Rectangle *rect)
 {
     struct Rectangle lasso;
 
+#if defined(DEBUG_ILC_LASSO)
 D(bug("[IconList] IconList_InvertLassoOutlines()\n"));
+#endif
 
     /* get abolute iconlist coords */
     lasso.MinX = rect->MinX + _mleft(obj);
@@ -310,7 +321,9 @@ this by hand
 **************************************************************************/
 static void IconList_GetIconImageRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
+#if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList] IconList_GetIconImageRectangle()\n"));
+#endif
     /* Get basic width/height */    
     GetIconRectangleA(NULL, icon->ile_DiskObj, NULL, rect, NULL);
 }
@@ -320,7 +333,9 @@ static void IconList_GetIconLabelRectangle(Object *obj, struct MUI_IconData *dat
 	ULONG      outline_offset = 0;
 	ULONG 	   textwidth = 0;
 
+#if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
+#endif
 
 	switch ( data->icld__Option_IconTextMode )
 	{
@@ -391,7 +406,9 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 
 static void IconList_GetIconRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
+#if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList] IconList_GetIconRectangle()\n"));
+#endif
     struct Rectangle labelrect;
 
 	IconList_GetIconImageRectangle(obj, data, icon, rect);
@@ -433,12 +450,16 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     LONG tx,ty,offsetx,offsety;
     LONG txwidth; // txheight;
 
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_IconList_DrawEntry(message->icon @ %x)\n", message->icon));
+#endif
 
 	if ((!(message->icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
 		(!(message->icon->ile_DiskObj)))
 	{
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_IconList_DrawEntry: Not visible or missing DOB\n"));
+#endif
 		return FALSE;
 	}
 	
@@ -526,12 +547,16 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     LONG 				tx,ty,offsetx,offsety;
     LONG 				txwidth; // txheight;
 
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel(message->icon @ %x)\n", message->icon));
+#endif
 
 	if ((!(message->icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)) ||
 		(!(message->icon->ile_DiskObj)))
 	{
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing DOB\n"));
+#endif
 		return FALSE;
 	}
 	
@@ -740,7 +765,9 @@ IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj
     LONG              maxx = 0,
 	                  maxy = 0;
 
+#if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList] IconList_RethinkDimensions()\n"));
+#endif
 
     if (!(_flags(obj) & MADF_SETUP)) return FALSE;
 
@@ -884,7 +911,9 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     int maxw = 0;        // Widest & Talest icon in a column or row.
     int maxh = 0;
 
+#if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
+#endif
 
 	BOOL  next = TRUE;
     
@@ -1178,12 +1207,16 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 
 			/* We also listen for this and manually adjust for known stuff */
 			case MUIA_Background:
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__OM_SET: MUIA_Background\n"));
+#endif
 			{
 				char *bgmode_string = tag->ti_Data;
 				BYTE this_mode = bgmode_string[0] - 48;
 
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__OM_SET: MUIA_Background | MUI BG Mode = %d\n", this_mode));
+#endif
 				switch (this_mode)
 				{
 				case 0:
@@ -1446,7 +1479,9 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
     
             clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
+#endif
 			DoMethod(obj, MUIM_DrawBackground, 
 				rect.MinX, rect.MinY,
 				rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
@@ -1674,7 +1709,9 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
 	{
 		clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
+#if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (B)\n"));
+#endif
 		DoMethod(
 			obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
 			clear_xoffset, clear_yoffset, 0
@@ -2041,7 +2078,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
 				if (rawkey_handled)
 				{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: Processing mouse wheel event\n"));
 #endif
 					if (_isinobject(message->imsg->MouseX, message->imsg->MouseY) &&
@@ -2056,7 +2093,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Processing mouse wheel event\n"));
 					struct IconEntry *start_entry = NULL, *active_entry = NULL, *entry_next = NULL;
 					IPTR              start_x = 0, next_x = 0, start_y = 0, next_y = 0;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: Processing key up event\n"));
 #endif
 
@@ -2065,7 +2102,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Processing key up event\n"));
 						case RAWKEY_RETURN:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_RETURN\n"));
 #endif
 
@@ -2092,7 +2129,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_RETURN\n"));
 						case RAWKEY_SPACE:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_SPACE\n"));
 #endif
 
@@ -2101,7 +2138,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_SPACE\n"));
 
 						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: SPACE: Clearing selected icons ..\n"));
 #endif
 								DoMethod(obj, MUIM_IconList_UnselectAll);
@@ -2128,7 +2165,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: SPACE: Clearing selected icons ..\
 						case RAWKEY_PAGEUP:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEUP\n"));
 #endif
 
@@ -2148,7 +2185,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEUP\n"));
 						case RAWKEY_PAGEDOWN:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEDOWN\n"));
 #endif
 
@@ -2168,14 +2205,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_PAGEDOWN\n"));
 						case RAWKEY_UP:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_UP\n"));
 #endif
 
 							if (data->icld_FocusIcon)
 							{
 								start_entry = data->icld_FocusIcon;
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Clearing existing focused icon @ %x\n", start_entry));
 #endif
 
@@ -2187,14 +2224,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Clearing existing focused icon
 								start_x = start_entry->ile_IconX + start_entry->ile_AreaWidth;
 								start_y = start_entry->ile_IconY + start_entry->ile_AreaHeight;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: start_x %d, start_y %d\n", start_x, start_y));
 #endif
 
 								if (!(active_entry = Node_PreviousVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
 									active_entry = (((struct List *)(&data->icld_IconList))->lh_TailPred);
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Start at the END (Active @ %x) using icon X + Width\n", active_entry));
 #endif
 									start_x = active_entry->ile_IconX + active_entry->ile_AreaWidth;
@@ -2203,12 +2240,12 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Start at the END (Active @ %x)
 								}
 								else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Active @ %x, X %d\n", active_entry, active_entry->ile_IconX));
 #endif
 									if (entry_next = Node_PreviousVisible(start_entry))
 									{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Next @ %x, X %d\n", entry_next, entry_next->ile_IconX));
 #endif
 
@@ -2218,20 +2255,20 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Next @ %x, X %d\n", entry_next
 											next_x = (entry_next->ile_IconX + entry_next->ile_AreaWidth);
 									}
 								}
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: using start_x %d, start_y %d\n", start_x, start_y));
 #endif
 							}
 
 						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Clearing selected icons ..\n"));
 #endif
 								DoMethod(obj, MUIM_IconList_UnselectAll);
 							}
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: active = %x, next = %x\n", active_entry, entry_next));
 #endif
 
@@ -2242,7 +2279,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: active = %x, next = %x\n", act
 
 							while (active_entry != NULL)
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Checking active @ %x\n", active_entry));
 #endif
 								if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
@@ -2261,14 +2298,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Checking active @ %x\n", activ
 												((active_entry->ile_IconX < start_x - 1) &&
 												(active_entry->ile_IconX > next_x)))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) entry %x matches\n", active_entry));
 #endif
 												break;
 											}
 											else if (active_entry == GetHead(&data->icld_IconList))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) reached list start .. starting at the end ..\n"));
 #endif
 												start_x = entry_next->ile_IconX;
@@ -2279,7 +2316,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) reached list start .. star
 													else next_x = entry_next->ile_IconX;
 												}
 												start_y = 0;
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) startx = %d, start_y = %d, next_x = %d, entry_next @ %x\n", start_x, start_y, next_x, entry_next));
 #endif
 												active_entry = (((struct List *)(&data->icld_IconList))->lh_TailPred);
@@ -2291,7 +2328,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) startx = %d, start_y = %d,
 												(active_entry->ile_IconY < start_y) &&
 												(active_entry->ile_IconX < start_x - 1))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (B) entry %x matches\n", active_entry));
 #endif
 												break;
@@ -2302,7 +2339,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (B) entry %x matches\n", activ
 									{
 										if (active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 										{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (C) entry %x matches\n", active_entry));
 #endif
 											break;
@@ -2314,7 +2351,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (C) entry %x matches\n", activ
 
 							if (!(active_entry))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: No Next UP Node - Getting Last visable icon ..\n"));
 #endif
 								/* We didnt find a "next up" icon so just use the first visible */
@@ -2342,14 +2379,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: No Next UP Node - Getting Last
 						case RAWKEY_DOWN:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_DOWN\n"));
 #endif
 
 							if (data->icld_FocusIcon)
 							{
 								start_entry = data->icld_FocusIcon;
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Clearing existing focused icon @ %x\n", start_entry));
 #endif
 
@@ -2366,14 +2403,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Clearing existing focused ic
 								}
 								start_y = start_entry->ile_IconY;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: start_x %d, start_y %d\n", start_x, start_y));
 #endif
 
 								if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
 									active_entry = List_First(&data->icld_IconList);
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Start at the beginning (Active @ %x) using icon X + Width\n", active_entry));
 #endif
 									start_x = start_x + start_entry->ile_AreaWidth;
@@ -2388,12 +2425,12 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Start at the beginning (Acti
 								}
 								else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Active @ %x, X %d\n", active_entry, active_entry->ile_IconX));
 #endif
 									if (entry_next = Node_NextVisible(start_entry))
 									{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Next @ %x, X %d\n", entry_next, entry_next->ile_IconX));
 #endif
 
@@ -2410,20 +2447,20 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Next @ %x, X %d\n", entry_ne
 										}
 									}
 								}
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: using start_x %d, start_y %d\n", start_x, start_y));
 #endif
 							}
 
 						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Clearing selected icons ..\n"));
 #endif
 								DoMethod(obj, MUIM_IconList_UnselectAll);
 							}
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: active = %x, next = %x\n", active_entry, entry_next));
 #endif
 
@@ -2434,7 +2471,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: active = %x, next = %x\n", a
 
 							while (active_entry != NULL)
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Checking active @ %x\n", active_entry));
 #endif
 								if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
@@ -2461,14 +2498,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Checking active @ %x\n", act
 												((active_entry_X > start_x - 1) &&
 												(active_entry_X < next_x)))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) entry %x matches\n", active_entry));
 #endif
 												break;
 											}
 											else if (active_entry == GetTail(&data->icld_IconList))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) reached list end .. starting at the beginng ..\n"));
 #endif
 												start_x = entry_next->ile_IconX;
@@ -2493,7 +2530,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) reached list end .. star
 													}
 												}
 												start_y = 0;
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) startx = %d, start_y = %d, next_x = %d, entry_next @ %x\n", start_x, start_y, next_x, entry_next));
 #endif
 												active_entry = List_First(&data->icld_IconList);
@@ -2505,7 +2542,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) startx = %d, start_y = %
 												(active_entry_Y > start_y) &&
 												(active_entry_X > start_x - 1))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (B) entry %x matches\n", active_entry));
 #endif
 												break;
@@ -2516,7 +2553,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (B) entry %x matches\n", act
 									{
 										if (active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 										{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (C) entry %x matches\n", active_entry));
 #endif
 											break;
@@ -2528,7 +2565,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (C) entry %x matches\n", act
 
 							if (!(active_entry))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: No Next DOWN Node - Getting first visable icon ..\n"));
 #endif
 								/* We didnt find a "next down" icon so just use the first visible */
@@ -2556,13 +2593,13 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: No Next DOWN Node - Getting 
 						case RAWKEY_LEFT:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_LEFT\n"));
 #endif
 
 						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && (data->icld_SelectionFirst))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing selected icons ..\n"));
 #endif
 								DoMethod(obj, MUIM_IconList_UnselectAll);
@@ -2570,7 +2607,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing selected icons ..\n
 
 							if (data->icld_FocusIcon)
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing existing focused icon @ %x\n", data->icld_FocusIcon));
 #endif
 								data->icld_FocusIcon->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
@@ -2586,7 +2623,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing existing focused ic
 								}
 							}
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: active = %x, next = %x\n", active_entry, entry_next));
 #endif
 
@@ -2595,14 +2632,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: active = %x, next = %x\n", a
 						case RAWKEY_RIGHT:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_RIGHT\n"));
 #endif
 
 							if (data->icld_FocusIcon)
 							{
 								start_entry = data->icld_FocusIcon;
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Clearing existing focused icon @ %x\n", start_entry));
 #endif
 
@@ -2614,14 +2651,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Clearing existing focused i
 								start_x = start_entry->ile_IconX;
 								start_y = start_entry->ile_IconY;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: start_x %d, start_y %d\n", start_x, start_y));
 #endif
 
 								if (!(active_entry = Node_NextVisible(start_entry)) && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
 								{
 									active_entry = List_First(&data->icld_IconList);
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Start at the beginning (Active @ %x) using icon X + Width\n", active_entry));
 #endif
 									start_x = 0;
@@ -2630,12 +2667,12 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Start at the beginning (Act
 								}
 								else if (active_entry && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
 								{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Active @ %x, Y %d\n", active_entry, active_entry->ile_IconY));
 #endif
 									if (entry_next = Node_NextVisible(start_entry))
 									{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Next @ %x, Y %d\n", entry_next, entry_next->ile_IconY));
 #endif
 
@@ -2645,20 +2682,20 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Next @ %x, Y %d\n", entry_n
 											next_y = entry_next->ile_IconY;
 									}
 								}
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: using start_x %d, start_y %d\n", start_x, start_y));
 #endif
 							}
 
 						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Clearing selected icons ..\n"));
 #endif
 								DoMethod(obj, MUIM_IconList_UnselectAll);
 							}
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: active = %x, next = %x\n", active_entry, entry_next));
 #endif
 
@@ -2669,7 +2706,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: active = %x, next = %x\n", 
 
 							while (active_entry != NULL)
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Checking active @ %x\n", active_entry));
 #endif
 								if (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
@@ -2688,14 +2725,14 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Checking active @ %x\n", ac
 												((active_entry->ile_IconY > start_y - 1) &&
 												(active_entry->ile_IconY < next_y)))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) entry %x matches\n", active_entry));
 #endif
 												break;
 											}
 											else if (active_entry == GetTail(&data->icld_IconList))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) reached list end .. starting at the beginng ..\n"));
 #endif
 												start_y = entry_next->ile_IconY;
@@ -2706,7 +2743,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) reached list end .. sta
 													else next_y = entry_next->ile_IconY;
 												}
 												start_y = 0;
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) startx = %d, start_y = %d, next_y = %d, entry_next @ %x\n", start_x, start_y, next_y, entry_next));
 #endif
 												active_entry = List_First(&data->icld_IconList);
@@ -2718,7 +2755,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) startx = %d, start_y = 
 												(active_entry->ile_IconX > start_x) &&
 												(active_entry->ile_IconY > start_y - 1))
 											{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (B) entry %x matches\n", active_entry));
 #endif
 												break;
@@ -2729,7 +2766,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (B) entry %x matches\n", ac
 									{
 										if (active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 										{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (C) entry %x matches\n", active_entry));
 #endif
 											break;
@@ -2741,7 +2778,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (C) entry %x matches\n", ac
 
 							if (!(active_entry))
 							{
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: No Next RIGHT Node - Getting first visable icon ..\n"));
 #endif
 								/* We didnt find a "next right" icon so just use the first visible */
@@ -2769,7 +2806,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: No Next RIGHT Node - Gettin
 						case RAWKEY_HOME:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_HOME\n"));
 #endif
 
@@ -2800,7 +2837,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_HOME\n"));
 						case RAWKEY_END:
 							rawkey_handled = TRUE;
 
-#if defined(DEBUG_IL_KEYEVENTS)
+#if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_END\n"));
 #endif
 
@@ -2860,7 +2897,9 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_END\n"));
 									!new_selected)
 								{
 									new_selected = node;
+#if defined(DEBUG_ILC_EVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
+#endif
 
 								}
 							}
@@ -2876,7 +2915,9 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
 								data->update_icon = data->icld_FocusIcon;
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
 								data->icld_FocusIcon = NULL;
+#if defined(DEBUG_ILC_EVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: Cleared currently focused icon..\n"));
+#endif
 							}
 						}
 
@@ -2888,7 +2929,9 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Cleared currently focused icon..\n
 								data->icld_UpdateMode = UPDATE_SINGLEICON;
 								data->update_icon = data->icld_SelectionLast;
 								MUI_Redraw(obj,MADF_DRAWUPDATE);
+#if defined(DEBUG_ILC_EVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: ReDrawn last selected..\n"));
+#endif
 							}
 						}
 						
@@ -2929,7 +2972,9 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: ReDrawn last selected..\n"));
 								data->icld_UpdateMode = UPDATE_SINGLEICON;
 								data->update_icon = new_selected;
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
+#if defined(DEBUG_ILC_EVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
+#endif
 							}
 							data->icld_SelectionFirst = new_selected;
 							data->icld_FocusIcon = new_selected;
