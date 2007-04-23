@@ -84,7 +84,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     }
 
     /* open the containing directory */
-    if ((err = InitDirHandle(dirlock->ioh.sb, dirlock->ioh.first_cluster, &dh)) != 0) {
+    if ((err = InitDirHandle(lock->ioh.sb, lock->dir_cluster, &dh)) != 0) {
         FreeLock(lock);
         return err;
     }
