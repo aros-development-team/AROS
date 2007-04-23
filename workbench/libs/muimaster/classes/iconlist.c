@@ -57,35 +57,44 @@ extern struct Library *MUIMasterBase;
 #define dol_Name dol_OldName /* This doesn't work really */
 #endif
 
-#define UPDATE_SINGLEICON           1
-#define UPDATE_SCROLL               2
-#define UPDATE_SORT                 3
-#define UPDATE_RESCALE              4
+#define UPDATE_SINGLEICON                      1
+#define UPDATE_SCROLL                          2
+#define UPDATE_SORT                            3
+#define UPDATE_RESCALE                         4
 
-#define LEFT_BUTTON	                1
-#define RIGHT_BUTTON                2
-#define MIDDLE_BUTTON               4
+#define LEFT_BUTTON	                           1
+#define RIGHT_BUTTON                           2
+#define MIDDLE_BUTTON                          4
 
-#define ICON_LISTMODE_GRID          0
-#define ICON_LISTMODE_ROUGH         1
+#define ICON_LISTMODE_GRID                     0
+#define ICON_LISTMODE_ROUGH                    1
 
-#define ICON_TEXTMODE_OUTLINE       0
-#define ICON_TEXTMODE_PLAIN         1
-#define ICON_TEXTMODE_DROPSHADOW    2
+#define ICON_TEXTMODE_OUTLINE                  0
+#define ICON_TEXTMODE_PLAIN                    1
+#define ICON_TEXTMODE_DROPSHADOW               2
 
-#define ICONLIST_DRAWMODE_NORMAL    1
-#define ICONLIST_DRAWMODE_FAST      2
+#define ICONLIST_DRAWMODE_NORMAL               1
+#define ICONLIST_DRAWMODE_FAST                 2
 
-#define ICON_TEXTMAXLEN_DEFAULT     15
+/* Icon rendering settings */
+#warning "TODO: Icon Spacing Settings should be user configurable"
+// Spacing between icons ..
+#define ILC_ICON_HORIZONTALMARGIN              5
+#define ILC_ICON_VERTICALMARGIN                5
 
 /* Icon label rendering settings */
+// Max no of characters to display on a single line
+#define ILC_ICONLABEL_MAXLINELEN_DEFAULT       15
 
-#warning "TODO: Margin(s) should be calculated from the set font"
+#warning "TODO: Label Text Margin(s) should be calculated from the set font (or user configurable)"
+// Space between icon image and icons label bounding box
 #define ILC_ICONLABEL_IMAGEMARGIN              1
+// Spacing between label text lines
 #define ILC_ICONLABEL_HORIZONTALTEXTMARGIN     4
 #define ILC_ICONLABEL_VERTICALTEXTMARGIN       4
 
-#warning "TODO: Label border settings should be user configurable"
+#warning "TODO: Label Border Settings should be user configurable"
+// Icon Label's border dimensions
 #define ILC_ICONLABEL_BORDERWIDTH              1
 #define ILC_ICONLABEL_BORDERHEIGHT             1
 
@@ -333,7 +342,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 		SetFont(data->icld_BufferRastPort, data->icld_IconFont);
 		
 		ULONG textlength = strlen(icon->ile_TxtBuf_DisplayedLabel);
-		if ( !data->icld__Option_IconTextMaxLen ) data->icld__Option_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
+		if ( !data->icld__Option_IconTextMaxLen ) data->icld__Option_IconTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
 		if ( textlength > data->icld__Option_IconTextMaxLen ) textlength = data->icld__Option_IconTextMaxLen;
 		
 		rect->MinX = 0;
@@ -598,7 +607,6 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 		if (message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS)
 		{
 			//Draw the focus box around the selected label ..
-			SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
 			InvertPixelArray(data->icld_BufferRastPort,
 						iconlabelrect.MinX, iconlabelrect.MinY,
 						(iconlabelrect.MaxX - iconlabelrect.MinX) + 1, ILC_ICONLABEL_BORDERHEIGHT);
@@ -865,44 +873,20 @@ MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
 IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
 {
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *icon = NULL;
+    struct IconEntry    *icon = NULL, *pass_first = NULL;
     
-    int spacing = 4;
-    int top = spacing;
-    int left = spacing;
-    int gridx = 32;
-    int gridy = 32;
-    int cur_x = spacing;
-    int cur_y = spacing;
-    int maxw = 0; //  There two are the max icon width recorded in a column
-    int maxh = 0; //  or the max icon height recorded in a row depending
-    int listMode = (int)data->icld__Option_IconListMode;
+    int left = ILC_ICON_HORIZONTALMARGIN;
+    int top = ILC_ICON_VERTICALMARGIN;
+    int cur_x = left;
+    int cur_y = top;
+    int gridx = 0;
+    int gridy = 0;
+    int maxw = 0;        // Widest & Talest icon in a column or row.
+    int maxh = 0;
 
 D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 
 	BOOL  next = TRUE;
-    int   maxWidth = 0,
-          maxHeight = 0;
-    
-    // If going by grid, first traverse and find the highest w/h
-    if (listMode == ICON_LISTMODE_GRID)
-    {
-        ForeachNode(&data->icld_IconList, icon)
-        {
-			if (icon->ile_Flags & ICONENTRY_FLAG_VISIBLE)
-			{
-				struct Rectangle  iconrect;
-
-				IconList_GetIconRectangle(obj, data, icon, &iconrect);
-
-				if ( icon->ile_AreaWidth > maxWidth )
-					maxWidth = icon->ile_AreaWidth;
-
-				if ( icon->ile_AreaHeight > maxHeight )
-					maxHeight = icon->ile_AreaHeight;
-			}
-        }
-    }
     
     // Now go to the actual positioning
     icon = List_First(&data->icld_IconList);
@@ -913,26 +897,61 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
             icon->ile_IconX = cur_x;
             icon->ile_IconY = cur_y;
     
-            if ( listMode == ICON_LISTMODE_GRID )
+            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
             {
-                gridx = maxWidth + spacing;
-                gridy = maxHeight + spacing;
+				maxw = data->icld_IconLargestWidth + ILC_ICON_HORIZONTALMARGIN;
+				maxh = data->icld_IconLargestHeight + ILC_ICON_VERTICALMARGIN;
+                gridx = maxw;
+                gridy = maxh;
+
                 // center icons on grid
-                icon->ile_IconX += ( maxWidth - icon->ile_AreaWidth ) / 2;
-                icon->ile_IconY += ( maxHeight - icon->ile_AreaHeight ) / 2;
+				if (icon->ile_AreaWidth < data->icld_IconLargestWidth)
+					icon->ile_IconX += ( data->icld_IconLargestWidth - icon->ile_AreaWidth ) / 2;
+
+/*  Dont try to vertically centre
+
+				if (icon->ile_AreaHeight < maxHeight)
+					icon->ile_IconY += ( maxHeight - icon->ile_AreaHeight ) / 2;
+*/
             }
             else
             {
-                // Update the realWidth/realHeight values every time we position an icon!
                 struct Rectangle iconrect;
+
+				if (!(pass_first)) pass_first = icon;
+
                 IconList_GetIconRectangle(obj, data, icon, &iconrect);
-                gridx = icon->ile_AreaWidth + spacing;
-                gridy = icon->ile_AreaHeight + spacing;
+
+				if (icon->ile_AreaWidth < maxw)
+					icon->ile_IconX += ( maxw - icon->ile_AreaWidth ) / 2;
+
+                if ((maxw < icon->ile_AreaWidth) || (maxh < icon->ile_AreaHeight))
+				{
+					if (maxw < icon->ile_AreaWidth) maxw = icon->ile_AreaWidth;
+					if (maxh < icon->ile_AreaHeight) maxh = icon->ile_AreaHeight;
+					if (pass_first != icon)
+					{
+						icon = pass_first;
+						cur_x = icon->ile_IconX;
+						cur_y = icon->ile_IconY;
+						continue;
+					}
+				}
+
+				if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+				{
+					gridx = maxw;
+					gridy = icon->ile_AreaHeight + ILC_ICON_HORIZONTALMARGIN;
+				}
+				else
+				{
+					gridx = icon->ile_AreaWidth + ILC_ICON_VERTICALMARGIN;
+					gridy = maxh;
+				}
             }
     
             if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
             {
-                if ( maxw < gridx ) maxw = gridx;
                 cur_y += gridy;
     
                 if (cur_y >= data->icld_ViewHeight )
@@ -940,11 +959,12 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
                     next = FALSE;
                     cur_x += maxw;
                     cur_y =  top;
+					pass_first = NULL;
+					maxw = 0;
                 }
             }
             else
             {
-                if ( maxh < gridy ) maxh = gridy;
                 cur_x += gridx;
         
                 if (cur_x >= data->icld_ViewWidth )
@@ -952,11 +972,14 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
                     next = FALSE;
                     cur_x =  left;
                     cur_y += maxh;
+					pass_first = NULL;
+					maxh = 0;
                 }
             }
         }
         if ( next ) 
             icon = Node_Next(icon);
+
         next = TRUE;
     }
     DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
@@ -1053,7 +1076,7 @@ D(bug("[IconList] IconList__OM_NEW: SELF = %x\n", obj));
     data->icld__Option_IconTextMaxLen = GetTagData(MUIA_IconList_LabelText_MaxLineLen, 0, message->ops_AttrList);
 
     if ( data->icld__Option_IconTextMaxLen <= 0 )
-        data->icld__Option_IconTextMaxLen = ICON_TEXTMAXLEN_DEFAULT;
+        data->icld__Option_IconTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
@@ -1909,14 +1932,9 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     /* Use a geticonrectangle routine that gets textwidth! */
     IconList_GetIconRectangle(obj, data, entry, &rect);
 
-    entry->ile_IconWidth = rect.MaxX - rect.MinX + 1;
-    entry->ile_IconHeight = rect.MaxY - rect.MinY + 1;
-
-//D(bug("add  %s %i\n" , entry->ile_IconListEntry.label , (entry->ile_IconListEntry.type & 255) ));
-
     /*hack, force grid to recognise largest icon!*/
-    if( entry->ile_IconWidth > data->icld_IconLargestWidth ) data->icld_IconLargestWidth = entry->ile_IconWidth;
-    if( entry->ile_IconHeight > data->icld_IconLargestHeight ) data->icld_IconLargestHeight = entry->ile_IconHeight;
+    if( entry->ile_AreaWidth > data->icld_IconLargestWidth ) data->icld_IconLargestWidth = entry->ile_AreaWidth;
+    if( entry->ile_AreaHeight > data->icld_IconLargestHeight ) data->icld_IconLargestHeight = entry->ile_AreaHeight;
 
     AddHead((struct List*)&data->icld_IconList, (struct Node*)entry);
 
