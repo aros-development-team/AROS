@@ -2191,7 +2191,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Clearing existing focused icon
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: start_x %d, start_y %d\n", start_x, start_y));
 #endif
 
-								if (!(active_entry = (((struct Node *)(start_entry))->ln_Pred)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+								if (!(active_entry = Node_PreviousVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
 									active_entry = (((struct List *)(&data->icld_IconList))->lh_TailPred);
 #if defined(DEBUG_IL_KEYEVENTS)
@@ -2206,7 +2206,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Start at the END (Active @ %x)
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Active @ %x, X %d\n", active_entry, active_entry->ile_IconX));
 #endif
-									if (entry_next = (((struct Node *)(start_entry))->ln_Pred))
+									if (entry_next = Node_PreviousVisible(start_entry))
 									{
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Next @ %x, X %d\n", entry_next, entry_next->ile_IconX));
@@ -2359,6 +2359,11 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Clearing existing focused ic
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
 
 								start_x = start_entry->ile_IconX;
+								if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+								{
+									if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+										start_x = start_x - ((data->icld_IconLargestWidth - start_entry->ile_AreaWidth)/2);
+								}
 								start_y = start_entry->ile_IconY;
 
 #if defined(DEBUG_IL_KEYEVENTS)
@@ -2371,7 +2376,13 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: start_x %d, start_y %d\n", s
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Start at the beginning (Active @ %x) using icon X + Width\n", active_entry));
 #endif
-									start_x = start_x + start_entry->ile_IconWidth;
+									start_x = start_x + start_entry->ile_AreaWidth;
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											start_x = start_x + ((data->icld_IconLargestWidth - start_entry->ile_AreaWidth)/2);
+									}
+
 									start_y = 0;
 									entry_next = NULL;
 								}
@@ -2388,8 +2399,15 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Next @ %x, X %d\n", entry_ne
 
 										if (entry_next->ile_IconX < start_x)
 											entry_next = NULL;
-										else 
+										else
+										{
 											next_x = entry_next->ile_IconX;
+											if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+											{
+												if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+													next_x = next_x - ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+											}
+										}
 									}
 								}
 #if defined(DEBUG_IL_KEYEVENTS)
@@ -2426,14 +2444,22 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Checking active @ %x\n", act
 								}
 								else
 								{
+									LONG active_entry_X = active_entry->ile_IconX;
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (active_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											active_entry_X = active_entry_X - ((data->icld_IconLargestWidth - active_entry->ile_AreaWidth)/2);
+									}
+									LONG active_entry_Y = active_entry->ile_IconY;
+									
 									if (start_entry)
 									{
 										if (entry_next)
 										{
 											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-												(active_entry->ile_IconY > start_y) &&
-												((active_entry->ile_IconX > start_x - 1) &&
-												(active_entry->ile_IconX < next_x)))
+												(active_entry_Y > start_y) &&
+												((active_entry_X > start_x - 1) &&
+												(active_entry_X < next_x)))
 											{
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) entry %x matches\n", active_entry));
@@ -2446,11 +2472,25 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) entry %x matches\n", act
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) reached list end .. starting at the beginng ..\n"));
 #endif
 												start_x = entry_next->ile_IconX;
+												if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+												{
+													if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+														start_x = start_x + ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+												}
+
 												if (entry_next = Node_NextVisible(entry_next))
 												{
 													if (entry_next->ile_IconX < start_x)
 														entry_next = NULL;
-													else next_x = entry_next->ile_IconX;
+													else
+													{
+														next_x = entry_next->ile_IconX;
+														if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+														{
+															if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+																next_x = next_x + ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+														}
+													}
 												}
 												start_y = 0;
 #if defined(DEBUG_IL_KEYEVENTS)
@@ -2462,8 +2502,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) startx = %d, start_y = %
 										else
 										{
 											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-												(active_entry->ile_IconY > start_y) &&
-												(active_entry->ile_IconX > start_x - 1))
+												(active_entry_Y > start_y) &&
+												(active_entry_X > start_x - 1))
 											{
 #if defined(DEBUG_IL_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (B) entry %x matches\n", active_entry));
