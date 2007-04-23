@@ -2512,7 +2512,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (A) reached list end .. star
 												if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
 												{
 													if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
-														start_x = start_x + ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+														start_x = start_x - ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
 												}
 
 												if (entry_next = Node_NextVisible(entry_next))
