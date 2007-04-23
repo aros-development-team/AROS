@@ -600,6 +600,19 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
 				break;
 			}
 
+		case MUIA_Window_Activate:
+			if (data->iwd_IconListObj)
+			{
+				IPTR focusicon = NULL;
+				GET(data->iwd_IconListObj, MUIA_IconList_FocusIcon, &focusicon);
+				if (focusicon)
+				{
+					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntry, ICONENTRY_DRAWMODE_PLAIN);
+					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntryLabel, ICONENTRY_DRAWMODE_PLAIN);
+				}
+			}
+			break;
+
 		case MUIA_IconWindow_Font:
 			data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
 D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_Font [font @ %x]\n", data->iwd_WindowFont));

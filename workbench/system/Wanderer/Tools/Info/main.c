@@ -157,7 +157,7 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
             return NULL;
         }
         CopyMem(text, dst_ttypes[num_ttypes + 1], strlen(text) + 1);
-        D(bug("[WBInfo] tooltype #%ld %s\n", num_ttypes + 1, text));
+D(bug("[WBInfo] tooltype #%ld %s\n", num_ttypes + 1, text));
         num_ttypes++;
     }
     dst_ttypes[0] = (APTR)pool;
@@ -295,7 +295,7 @@ void DelKey(void)
 
 static char * GetVersion(STRPTR name, BPTR cd)
 {
-    D(bug("[WBINFO/Getversion] Name %s\n", name));
+D(bug("[WBINFO/Getversion] Name %s\n", name));
     STRPTR commandline = NULL;
     ULONG commandlineSize;
     static TEXT result[100]; // must be static because we return its address
@@ -308,7 +308,7 @@ static char * GetVersion(STRPTR name, BPTR cd)
 
     if (name == NULL)
     {
-        D(bug("[WBINFO/Getversion] Name is Null\n"));
+D(bug("[WBINFO/Getversion] Name is Null\n"));
         goto exit;
     }
 
@@ -319,7 +319,7 @@ static char * GetVersion(STRPTR name, BPTR cd)
     commandline = AllocVec(commandlineSize, MEMF_CLEAR);
     if (commandline == NULL)
     {
-        D(bug("[WBInfo/GetVersion] Can't allocate RAM for commandline\n"));
+D(bug("[WBInfo/GetVersion] Can't allocate RAM for commandline\n"));
         goto exit;
     }
 
@@ -331,7 +331,7 @@ static char * GetVersion(STRPTR name, BPTR cd)
         nr++;
         if (nr > 30)
         {
-            D(bug("[WBINFO/Getversion] Can't find non-existing tmpfile"));
+D(bug("[WBINFO/Getversion] Can't find non-existing tmpfile"));
             goto exit;
         }
         sprintf(tmpfilename, "t:tmp_version_%d", nr);
@@ -346,13 +346,13 @@ static char * GetVersion(STRPTR name, BPTR cd)
     output = Open(tmpfilename, MODE_NEWFILE);
     if (output == NULL)
     {
-        D(bug("[WBInfo/Getversion] Can't create tmpfile\n"));
+D(bug("[WBInfo/Getversion] Can't create tmpfile\n"));
         goto exit;
     }
 
     // call c:version
     sprintf(commandline, "c:version \"%s\" full", name);
-    D(bug("[WBInfo/GetVersion] Commandline %s\n", commandline));
+D(bug("[WBInfo/GetVersion] Commandline %s\n", commandline));
     if (SystemTags(commandline,
                 SYS_Asynch,          FALSE,
                 SYS_Output,   (IPTR) output,
@@ -360,7 +360,7 @@ static char * GetVersion(STRPTR name, BPTR cd)
                 NP_StackSize,        16000,
                 TAG_DONE) != 0)
     {
-        D(bug("[WBInfo/Getversion] SystemTags failed\n"));
+D(bug("[WBInfo/Getversion] SystemTags failed\n"));
         goto exit;
     }
 
@@ -369,16 +369,16 @@ static char * GetVersion(STRPTR name, BPTR cd)
     output = Open(tmpfilename, MODE_OLDFILE);
     if (output == NULL)
     {
-        D(bug("[WBInfo/GetVersion] Can't open tmpfile\n"));
+D(bug("[WBInfo/GetVersion] Can't open tmpfile\n"));
         goto exit;
     }
     // read result
     if (Read(output, result, sizeof(result) - 1) == -1)
     {
-        D(bug("[WBInfo/GetVersion] Can't read from tmpfile\n"));
+D(bug("[WBInfo/GetVersion] Can't read from tmpfile\n"));
         goto exit;
     }
-    D(bug("[WBInfo/GetVersion] Result %s\n", result));
+D(bug("[WBInfo/GetVersion] Result %s\n", result));
 
     // remove illegal chars (e.g. newline) from result
     for (i = 0 ; result[i] != 0 ; i++)
@@ -464,20 +464,20 @@ int main(int argc, char **argv)
     {
         /* need atleast 1 arg */
         PrintFault(ERROR_REQUIRED_ARG_MISSING, argv[0]);
-        D(bug("[WBInfo] required arg missing\n"));
+D(bug("[WBInfo] required arg missing\n"));
         return RETURN_FAIL;
     }
 
     lock = startup->sm_ArgList[1].wa_Lock;
     NameFromLock(lock, lname, MAXFILENAMELENGTH);
-    D(bug("[WBInfo] name from lock: %s\n",lname));
+D(bug("[WBInfo] name from lock: %s\n",lname));
     name = startup->sm_ArgList[1].wa_Name;
     cd = CurrentDir(lock);
     if (name == NULL)
     {
         /* directory not found*/
         PrintFault(ERROR_DIR_NOT_FOUND, argv[0]);
-        D(bug("[WBInfo] dir not found\n"));
+D(bug("[WBInfo] dir not found\n"));
         return RETURN_FAIL;
     };
 
@@ -485,7 +485,7 @@ int main(int argc, char **argv)
     if (ap == NULL)
     {
         PrintFault(ERROR_NO_FREE_STORE, argv[0]);
-        D(bug("[WBInfo] no free store\n"));
+D(bug("[WBInfo] no free store\n"));
         return RETURN_FAIL;
     }
 
@@ -493,7 +493,7 @@ int main(int argc, char **argv)
 
     if (0 != MatchFirst(name, ap))
     {
-        D(bug("[WBInfo] pass to diskinfo\n"));
+D(bug("[WBInfo] pass to diskinfo\n"));
         OpenWorkbenchObject(
             "WANDERER:Tools/DiskInfo",
             WBOPENA_ArgLock, (IPTR) startup->sm_ArgList[1].wa_Lock,
@@ -507,7 +507,7 @@ int main(int argc, char **argv)
 
     if (!(ap->ap_Flags & APF_DIDDIR))
     {
-        D(bug("[WBInfo] scan file\n"));
+D(bug("[WBInfo] scan file\n"));
         /* fill comment */
         sprintf(comment,"%s",ap->ap_Info.fib_Comment);
 
@@ -551,9 +551,9 @@ int main(int argc, char **argv)
 
     if (icon != NULL)
     {
-        D(bug("[WBInfo] file has icon\n"));
+D(bug("[WBInfo] file has icon\n"));
         type = (char *) typeNames[icon->do_Type];
-        D(bug("[WBInfo] icon type is: %s\n", type));
+D(bug("[WBInfo] icon type is: %s\n", type));
         sprintf(stack, "%ld", icon->do_StackSize);
         if (icon->do_DefaultTool) sprintf(deftool, "%s", icon->do_DefaultTool);
     } else {
@@ -897,7 +897,7 @@ int main(int argc, char **argv)
 #ifdef DEBUG
             if (returnid)
             {
-                D(bug("[WBInfo] broker command received: %ld\n", returnid));
+D(bug("[WBInfo] broker command received: %ld\n", returnid));
 #endif
                 switch(returnid)
                 {
@@ -968,7 +968,7 @@ int main(int argc, char **argv)
         MUI_DisposeObject(application);
     } else {
         PrintFault(ERROR_INVALID_RESIDENT_LIBRARY, argv[0]);
-        D(bug("[WBInfo: Couldn't create app\n"));
+D(bug("[WBInfo: Couldn't create app\n"));
     }
     FreeDiskObject(icon);
     FreeVec(ap);
