@@ -2,7 +2,7 @@
 #define LIBRARIES_CONFIGVARS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Software structures used by expansion boards
@@ -35,7 +35,7 @@ struct ConfigDev
 {
     struct Node         cd_Node;
     UBYTE               cd_Flags;       /* read/write device flags */
-    UBYTE               cd_pad;
+    UBYTE               cd_Pad;
     struct ExpansionRom cd_Rom;         /* copy of boards expansion ROM */
     APTR                cd_BoardAddr;   /* physical address of exp. board */
     ULONG               cd_BoardSize;   /* size in bytes of exp. board */

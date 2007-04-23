@@ -2,7 +2,7 @@
 #define EXEC_EXECBASE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: structure of exec.library
@@ -97,7 +97,7 @@ struct ExecBase
     ULONG          ex_EClockFrequency; /* (readable) */
     ULONG          ex_CacheControl;    /* PRIVATE */
     ULONG          ex_TaskID;
-    ULONG          ex_Reserved[5];
+    ULONG          ex_Reserved1[5];
     APTR           ex_MMULock;         /* PRIVATE */
     ULONG          ex_Reserved2[3];
     struct MinList ex_MemHandlers;

@@ -2,7 +2,7 @@
 #define GRAPHICS_GFXBASE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: graphics.library
@@ -140,7 +140,7 @@ struct GfxBase
     ULONG   SpecialCounter;
     APTR    DBList;
     UWORD   MonitorFlags;
-    UBYTE   ScanDoubleSprites;
+    UBYTE   ScanDoubledSprites;
     UBYTE   BP3Bits;
 
     struct AnalogSignalInterval MonitorVBlank;

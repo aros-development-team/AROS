@@ -2,7 +2,7 @@
 #define GRAPHICS_COPPER_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copper definitions and structures.
@@ -50,7 +50,7 @@ struct CopList
     struct CopIns   * CopPtr;
 
     UWORD * CopLStart;
-    UWORD * SopSStart;
+    UWORD * CopSStart;
     WORD    Count;
     WORD    MaxCount;
     WORD    DyOffset;
