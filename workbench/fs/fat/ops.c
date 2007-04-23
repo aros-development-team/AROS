@@ -17,6 +17,17 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+
+#define FREE_CLUSTER_CHAIN(sb,cl)                               \
+    do {                                                        \
+        ULONG cluster = cl;                                     \
+        while (cluster >= 0 && cluster < sb->eoc_mark) {        \
+            ULONG next_cluster = GET_NEXT_CLUSTER(sb, cluster); \
+            SET_NEXT_CLUSTER(sb, cluster, 0);                   \
+            cluster = next_cluster;                             \
+        }                                                       \
+    } while(0)
+
 /* find the named file in the directory referenced by dirlock, and delete it.
  * if the file is a directory, it will only be deleted if its empty */
 LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
@@ -117,12 +128,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     ReleaseDirHandle(&dh);
 
     /* now free the clusters the file was using */
-    cluster = lock->ioh.first_cluster;
-    while (cluster >= 0 && cluster < glob->sb->eoc_mark) {
-        ULONG next_cluster = GET_NEXT_CLUSTER(glob->sb, cluster);
-        SET_NEXT_CLUSTER(glob->sb, cluster, 0);
-        cluster = next_cluster;
-    }
+    FREE_CLUSTER_CHAIN(glob->sb, lock->ioh.first_cluster);
 
     /* this lock is now completely meaningless */
     FreeLock(lock);
