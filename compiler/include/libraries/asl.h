@@ -2,7 +2,7 @@
 #define LIBRARIES_ASL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -49,7 +49,7 @@
 
 struct FileRequester
 {
-    UBYTE		fr_Reserved[4];
+    UBYTE		fr_Reserved0[4];
     STRPTR		fr_File;		/* User selected file */
     STRPTR		fr_Drawer;		/* User selected drawer */
     UBYTE		fr_Reserved1[10];

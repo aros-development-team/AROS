@@ -2,7 +2,7 @@
 #define LIBRARIES_LOCALE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for locale.library
@@ -66,7 +66,7 @@ struct Locale
 
     UBYTE loc_MonFracDigits;
     UBYTE loc_MonIntFracDigits;
-    UBYTE loc_Reserved[2];
+    UBYTE loc_Reserved1[2];
 
     STRPTR loc_MonCS;
     STRPTR loc_MonSmallCS;

@@ -2,7 +2,7 @@
 #define DEVICES_INPUTEVENT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Input events
@@ -180,7 +180,7 @@ struct IEPointerTablet
         UWORD X;
         UWORD Y;
     } iept_Value;
-    WORD iept_Prssure;
+    WORD iept_Pressure;
 };
 
 /* Used for IECLASS_NEWPOINTERPOS with IESUBCLASS_NEWTABLET

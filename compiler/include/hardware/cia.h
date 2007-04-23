@@ -2,7 +2,7 @@
 #define HARDWARE_CIA_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Amiga CIA chips
@@ -29,7 +29,7 @@ struct CIA
     UBYTE ciapad5[255];
     UBYTE ciatblo;
     UBYTE ciapad6[255];
-    UBYTE ciatbho;
+    UBYTE ciatbhi;
     UBYTE ciapad7[255];
     UBYTE ciatodlow;
     UBYTE ciapad8[255];
