@@ -131,3 +131,84 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
 
     return 0;
 }
+
+LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock) {
+    LONG err;
+    BPTR b;
+    ULONG cluster;
+    struct DirHandle dh, sdh;
+    struct DirEntry de, sde;
+
+    D(bug("[fat] creating directory '%.*s' in directory at cluster %ld\n", namelen, name, dirlock->ioh.first_cluster));
+
+    /* first try to lock the named dir. if it exists, then we do nothing */
+    err = TryLockObj(dirlock, name, namelen, SHARED_LOCK, &b);
+    if (err == 0) {
+        D(bug("[fat] name exists, can't do anything\n"));
+
+        FreeLock(BADDR(b));
+
+        return ERROR_OBJECT_EXISTS;
+    }
+
+    /* find a free cluster to store the dir in*/
+    if ((err = FindFreeCluster(glob->sb, &cluster)) != 0)
+        return err;
+
+    /* allocate it */
+    SET_NEXT_CLUSTER(glob->sb, cluster, glob->sb->eoc_mark);
+
+    D(bug("[fat] allocated cluster %ld for directory\n", cluster));
+
+    /* get a handle on the parent dir */
+    if ((err = InitDirHandle(glob->sb, dirlock->ioh.first_cluster, &dh)) != 0) {
+        /* deallocate the cluster */
+        SET_NEXT_CLUSTER(glob->sb, cluster, 0);
+        return err;
+    }
+
+    /* create the entry, pointing to the new cluster */
+    if ((err = CreateDirEntry(&dh, name, namelen, ATTR_DIRECTORY, cluster, &de)) != 0) {
+        /* deallocate the cluster */
+        SET_NEXT_CLUSTER(glob->sb, cluster, 0);
+
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* now get a handle on the new directory */
+    InitDirHandle(glob->sb, cluster, &sdh);
+
+    /* create the dot entry. its a direct copy of the just-created entry, but
+     * with a different name */
+    GetDirEntry(&sdh, 0, &sde);
+    CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
+    CopyMem(".          ", &sde.e.entry.name, 11);
+    UpdateDirEntry(&sde);
+
+    /* create the dot-dot entry. again, a copy, with the cluster pointer setup
+     * to point to the parent */
+    GetDirEntry(&sdh, 1, &sde);
+    CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
+    CopyMem("..         ", &sde.e.entry.name, 11);
+    sde.e.entry.first_cluster_lo = dirlock->ioh.first_cluster & 0xffff;
+    sde.e.entry.first_cluster_hi = dirlock->ioh.first_cluster >> 16;
+    UpdateDirEntry(&sde);
+
+    /* put an empty entry at the end to mark end of directory */
+    GetDirEntry(&sdh, 2, &sde);
+    memset(&sde.e.entry, 0, sizeof(struct FATDirEntry));
+    UpdateDirEntry(&sde);
+
+    /* new dir created */
+    ReleaseDirHandle(&sdh);
+
+    /* now obtain a lock on the new dir */
+    err = LockFile(de.index, de.cluster, SHARED_LOCK, &b);
+    *newdirlock = BADDR(b);
+
+    /* done */
+    ReleaseDirHandle(&dh);
+
+    return err;
+}
