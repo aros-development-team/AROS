@@ -1,6 +1,6 @@
 
 /*
-Copyright  2002-2006, The AROS Development Team. All rights reserved.
+Copyright  2002-2007, The AROS Development Team. All rights reserved.
 $Id$
 */
 
@@ -58,10 +58,6 @@ extern struct Library *MUIMasterBase;
 #define NO_ICON_POSITION (0x8000000) /* belongs to workbench/workbench.h */
 #endif
 
-#ifdef __AROS__
-#define dol_Name dol_OldName /* This doesn't work really */
-#endif
-
 #define UPDATE_SINGLEICON                      1
 #define UPDATE_SCROLL                          2
 #define UPDATE_SORT                            3
@@ -108,7 +104,8 @@ struct MUI_IconData
     IPTR                          icld_Pool;                          /* Pool to allocate data from */
 
 	struct RastPort               *icld_BufferRastPort;
-    struct TextFont               *icld_IconFont;
+    struct TextFont               *icld_IconLabelFont;
+    struct TextFont               *icld_IconInfoFont;
 
     struct List                   icld_IconList;                      /* IconEntry */
 
@@ -163,23 +160,31 @@ struct MUI_IconData
     struct Rectangle              *update_rect2;
     struct Rectangle              view_rect;
     
-    ULONG                         textWidth;                          /*  Whole textwidth for icon in pixels */
-
     struct Rectangle              icld_LassoRectangle;                /* lasso data */
     BOOL                          icld_LassoActive;
 
+#warning "TODO: move config options to a seperate struct"
 	/* IconList configuration settings ... */
 	ULONG                         icld_LabelPen;		
 	ULONG                         icld_LabelShadowPen;
 	ULONG                         icld_InfoPen;
 	ULONG                         icld_InfoShadowPen;
-	
-    ULONG                         icld__Option_IconTextMaxLen;
-    UBYTE                         icld__Option_IconListMode;
-    UBYTE                         icld__Option_IconTextMode;
-	BOOL                          icld__Option_IconListFixedBackground;
-	BOOL                          icld__Option_IconListScaledBackground;
 
+    ULONG                         icld__Option_IconTextMaxLen;                   /* max no. of chars to display in a line */
+    UBYTE                         icld__Option_IconListMode;                     /* */
+    UBYTE                         icld__Option_IconTextMode;                     /* */
+	BOOL                          icld__Option_IconListFixedBackground;          /* */
+	BOOL                          icld__Option_IconListScaledBackground;         /* */
+    ULONG                         icld__Option_LabelTextMultiLine;               /* */
+    BOOL                          icld__Option_LabelTextOnlySelectedMultiLine;   /* */
+    UBYTE                         icld__Option_IconHorizontalSpacing;            /* */
+    UBYTE                         icld__Option_IconVerticalSpacing;              /* */
+    UBYTE                         icld__Option_IconImageSpacing;                 /* */
+    UBYTE                         icld__Option_LabelTextHorizontalSpacing;       /* */
+    UBYTE                         icld__Option_LabelTextVerticalSpacing;         /* */
+    UBYTE                         icld__Option_LabelTextBorderWidth;             /* */
+    UBYTE                         icld__Option_LabelTextBorderHeight;            /* */
+	
     UBYTE                         mouse_pressed;
 };
 
@@ -354,7 +359,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
     /* Get icon box width including text width */
     if (icon->ile_IconListEntry.label && icon->ile_TxtBuf_DisplayedLabel)
     {
-		SetFont(data->icld_BufferRastPort, data->icld_IconFont);
+		SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 		
 		ULONG textlength = strlen(icon->ile_TxtBuf_DisplayedLabel);
 		if ( !data->icld__Option_IconTextMaxLen ) data->icld__Option_IconTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
@@ -366,7 +371,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 	
 		rect->MinY = 0;
 		
-		rect->MaxY = rect->MinY + data->icld_IconFont->tf_YSize + outline_offset + (ILC_ICONLABEL_VERTICALTEXTMARGIN * 2) + (ILC_ICONLABEL_BORDERHEIGHT * 2);
+		rect->MaxY = rect->MinY + data->icld_IconLabelFont->tf_YSize + outline_offset + (ILC_ICONLABEL_VERTICALTEXTMARGIN * 2) + (ILC_ICONLABEL_BORDERHEIGHT * 2);
 
 		/*  Date/size sorting has the date/size appended under the icon label
 			only list regular files like this (drawers have no size/date output) */
@@ -375,7 +380,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 			((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
 		)
 		{
-			rect->MaxY += data->icld_IconFont->tf_YSize + outline_offset + ILC_ICONLABEL_VERTICALTEXTMARGIN;
+			rect->MaxY += data->icld_IconLabelFont->tf_YSize + outline_offset + ILC_ICONLABEL_VERTICALTEXTMARGIN;
 
 			if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
 			{
@@ -627,9 +632,9 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 		if (message->icon->ile_TxtBuf_DisplayedLabelWidth < txtarea_width)
 			tx += ((txtarea_width - message->icon->ile_TxtBuf_DisplayedLabelWidth)/2);
 
-        ty = labelY + data->icld_IconFont->tf_Baseline;
+        ty = labelY + data->icld_IconLabelFont->tf_Baseline;
 
-		if (message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS)
+		if ((message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
 		{
 			//Draw the focus box around the selected label ..
 			InvertPixelArray(data->icld_BufferRastPort,
@@ -715,7 +720,7 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 				if (txwidth < txtarea_width)
 					tx += ((txtarea_width - txwidth)/2);
 
-				ty = labelY + ((ILC_ICONLABEL_VERTICALTEXTMARGIN + data->icld_IconFont->tf_YSize ) * 1) + data->icld_IconFont->tf_Baseline;
+				ty = labelY + ((ILC_ICONLABEL_VERTICALTEXTMARGIN + data->icld_IconLabelFont->tf_YSize ) * 1) + data->icld_IconLabelFont->tf_Baseline;
 
 				switch ( data->icld__Option_IconTextMode )
 				{
@@ -1097,7 +1102,7 @@ D(bug("[IconList] IconList__OM_NEW: SELF = %x\n", obj));
     NewList((struct List*)&data->icld_IconList);
 
 	data->icld_BufferRastPort = icl_RastPort;
-	data->icld_IconFont = icl_WindowFont;	
+	data->icld_IconLabelFont = icl_WindowFont;	
 
     // Get some initial values
     data->icld__Option_IconListMode   = (UBYTE)GetTagData(MUIA_IconList_IconListMode, 0, message->ops_AttrList);
@@ -1173,7 +1178,7 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                 break;
 
             case MUIA_Font:
-                data->icld_IconFont = (struct TextFont*)tag->ti_Data;
+                data->icld_IconLabelFont = (struct TextFont*)tag->ti_Data;
                 break;
 
 			case MUIA_IconList_DisplayFlags:
@@ -1305,8 +1310,8 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
 
 	/* Get Internal Objects to use if not set .. */
 	if (data->icld_BufferRastPort == NULL) data->icld_BufferRastPort = _rp(obj);
-	if (data->icld_IconFont == NULL)       data->icld_IconFont = _font(obj);
-D(bug("[IconList] IconList__MUIM_Setup: Use Font @ %x, RastPort @ %x\n", data->icld_IconFont, data->icld_BufferRastPort ));
+	if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
+D(bug("[IconList] IconList__MUIM_Setup: Use Font @ %x, RastPort @ %x\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
 
 	/* Set our base options .. */
     data->icld_LabelPen = _pens(obj)[MPEN_SHINE];
@@ -1359,11 +1364,11 @@ IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *me
 
 		/* Get Internal Objects to use if not set .. */
 		if (data->icld_BufferRastPort == NULL) data->icld_BufferRastPort = _rp(obj);
-		if (data->icld_IconFont == NULL)       data->icld_IconFont = _font(obj);
-D(bug("[IconList] IconList__MUIM_Show: Use Font @ %x, RastPort @ %x\n", data->icld_IconFont, data->icld_BufferRastPort ));
+		if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
+D(bug("[IconList] IconList__MUIM_Show: Use Font @ %x, RastPort @ %x\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
 
-		if ((data->icld_BufferRastPort) && (data->icld_IconFont))
-			SetFont(data->icld_BufferRastPort, data->icld_IconFont);
+		if ((data->icld_BufferRastPort) && (data->icld_IconLabelFont))
+			SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 	}
     return rc;
 }
