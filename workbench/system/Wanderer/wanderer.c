@@ -1140,7 +1140,7 @@ void wanderer_menufunc_icon_rename(void)
             BPTR parent = ParentDir(lock);
             UnLock(lock);
             
-            D(bug("[wanderer] *** selected: %s\n", entry->filename));
+D(bug("[wanderer] wanderer_menufunc_icon_rename: selected = '%s'\n", entry->filename));
             
             OpenWorkbenchObject
             (
@@ -1150,7 +1150,7 @@ void wanderer_menufunc_icon_rename(void)
                 TAG_DONE
             );
             
-            D(bug("[wanderer] *** selected: %s\n", entry->filename));
+D(bug("[wanderer] wanderer_menufunc_icon_rename: selected = '%s'\n", entry->filename));
             
             UnLock(parent);
         }
@@ -1175,13 +1175,13 @@ void wanderer_menufunc_icon_information()
         {
             BPTR lock   = Lock(entry->filename, ACCESS_READ);
             BPTR parent = ParentDir(lock);
-            
-            D(bug("[wanderer] selected: %s\n", entry->filename));
-            
-            WBInfo(lock, entry->filename, NULL);
-            
-            UnLock(parent);
             UnLock(lock);
+
+D(bug("[wanderer] wanderer_menufunc_icon_information: selected = '%s'\n", entry->filename));
+
+            WBInfo(parent, entry->filename, NULL);
+
+            UnLock(parent);
         }
         else
         {

@@ -55,49 +55,46 @@ $Id$
 extern struct Library *MUIMasterBase;
 
 #ifndef NO_ICON_POSITION
-#define NO_ICON_POSITION (0x8000000) /* belongs to workbench/workbench.h */
+#define NO_ICON_POSITION                               (0x8000000) /* belongs to workbench/workbench.h */
 #endif
 
-#define UPDATE_SINGLEICON                      1
-#define UPDATE_SCROLL                          2
-#define UPDATE_SORT                            3
-#define UPDATE_RESCALE                         4
+#define UPDATE_SINGLEICON                              1
+#define UPDATE_SCROLL                                  2
+#define UPDATE_SORT                                    3
+#define UPDATE_RESCALE                                 4
 
-#define LEFT_BUTTON	                           1
-#define RIGHT_BUTTON                           2
-#define MIDDLE_BUTTON                          4
+#define LEFT_BUTTON	                                   1
+#define RIGHT_BUTTON                                   2
+#define MIDDLE_BUTTON                                  4
 
-#define ICON_LISTMODE_GRID                     0
-#define ICON_LISTMODE_ROUGH                    1
+#define ICON_LISTMODE_GRID                             0
+#define ICON_LISTMODE_ROUGH                            1
 
-#define ICON_TEXTMODE_OUTLINE                  0
-#define ICON_TEXTMODE_PLAIN                    1
-#define ICON_TEXTMODE_DROPSHADOW               2
+#define ICON_TEXTMODE_OUTLINE                          0
+#define ICON_TEXTMODE_PLAIN                            1
+#define ICON_TEXTMODE_DROPSHADOW                       2
 
-#define ICONLIST_DRAWMODE_NORMAL               1
-#define ICONLIST_DRAWMODE_FAST                 2
+#define ICONLIST_DRAWMODE_NORMAL                       1
+#define ICONLIST_DRAWMODE_FAST                         2
 
-/* Icon rendering settings */
-#warning "TODO: Icon Spacing Settings should be user configurable"
+/* Default Icon rendering settings */
 // Spacing between icons ..
-#define ILC_ICON_HORIZONTALMARGIN              5
-#define ILC_ICON_VERTICALMARGIN                5
+#define ILC_ICON_HORIZONTALMARGIN_DEFAULT              5
+#define ILC_ICON_VERTICALMARGIN_DEFAULT                5
 
-/* Icon label rendering settings */
+/* Default Icon label rendering settings */
 // Max no of characters to display on a single line
-#define ILC_ICONLABEL_MAXLINELEN_DEFAULT       15
+#define ILC_ICONLABEL_MAXLINELEN_DEFAULT               15
 
-#warning "TODO: Label Text Margin(s) should be calculated from the set font (or user configurable)"
 // Space between icon image and icons label bounding box
-#define ILC_ICONLABEL_IMAGEMARGIN              1
+#define ILC_ICONLABEL_IMAGEMARGIN_DEFAULT              1
 // Spacing between label text lines
-#define ILC_ICONLABEL_HORIZONTALTEXTMARGIN     4
-#define ILC_ICONLABEL_VERTICALTEXTMARGIN       4
+#define ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT     4
+#define ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT       4
 
-#warning "TODO: Label Border Settings should be user configurable"
 // Icon Label's border dimensions
-#define ILC_ICONLABEL_BORDERWIDTH              1
-#define ILC_ICONLABEL_BORDERHEIGHT             1
+#define ILC_ICONLABEL_BORDERWIDTH_DEFAULT              1
+#define ILC_ICONLABEL_BORDERHEIGHT_DEFAULT             1
 
 struct MUI_IconData
 {
@@ -362,16 +359,17 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 		SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 		
 		ULONG textlength = strlen(icon->ile_TxtBuf_DisplayedLabel);
+
 		if ( !data->icld__Option_IconTextMaxLen ) data->icld__Option_IconTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
 		if ( textlength > data->icld__Option_IconTextMaxLen ) textlength = data->icld__Option_IconTextMaxLen;
 		
 		rect->MinX = 0;
 		icon->ile_TxtBuf_DisplayedLabelWidth = TextLength(data->icld_BufferRastPort, icon->ile_TxtBuf_DisplayedLabel, textlength) + outline_offset;
-		rect->MaxX = icon->ile_TxtBuf_DisplayedLabelWidth + ( ILC_ICONLABEL_HORIZONTALTEXTMARGIN * 2 ) + (ILC_ICONLABEL_BORDERWIDTH * 2);
+		rect->MaxX = icon->ile_TxtBuf_DisplayedLabelWidth + ( data->icld__Option_LabelTextHorizontalSpacing * 2 ) + (data->icld__Option_LabelTextBorderWidth * 2);
 	
 		rect->MinY = 0;
 		
-		rect->MaxY = rect->MinY + data->icld_IconLabelFont->tf_YSize + outline_offset + (ILC_ICONLABEL_VERTICALTEXTMARGIN * 2) + (ILC_ICONLABEL_BORDERHEIGHT * 2);
+		rect->MaxY = rect->MinY + data->icld_IconLabelFont->tf_YSize + outline_offset + (data->icld__Option_LabelTextVerticalSpacing * 2) + (data->icld__Option_LabelTextBorderHeight * 2);
 
 		/*  Date/size sorting has the date/size appended under the icon label
 			only list regular files like this (drawers have no size/date output) */
@@ -380,7 +378,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 			((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
 		)
 		{
-			rect->MaxY += data->icld_IconLabelFont->tf_YSize + outline_offset + ILC_ICONLABEL_VERTICALTEXTMARGIN;
+			SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
 
 			if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
 			{
@@ -404,7 +402,9 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 				}
 			}
 
-			if ((textwidth + outline_offset + (ILC_ICONLABEL_HORIZONTALTEXTMARGIN * 2) + (ILC_ICONLABEL_BORDERWIDTH * 2)) > (rect->MaxX - rect->MinX)) rect->MaxX = textwidth + outline_offset + (ILC_ICONLABEL_VERTICALTEXTMARGIN * 2) + (ILC_ICONLABEL_BORDERWIDTH * 2);
+			if (textwidth > 0) rect->MaxY += data->icld_IconInfoFont->tf_YSize + outline_offset + data->icld__Option_LabelTextVerticalSpacing;
+			
+			if ((textwidth + outline_offset + (data->icld__Option_LabelTextHorizontalSpacing * 2) + (data->icld__Option_LabelTextBorderWidth * 2)) > (rect->MaxX - rect->MinX)) rect->MaxX = textwidth + outline_offset + (data->icld__Option_LabelTextVerticalSpacing * 2) + (data->icld__Option_LabelTextBorderWidth * 2);
 		}
 	}
 }
@@ -434,7 +434,7 @@ D(bug("[IconList] IconList_GetIconRectangle()\n"));
 	if (icon->ile_AreaWidth < ((labelrect.MaxX - labelrect.MinX) + 1))
 		icon->ile_AreaWidth = (labelrect.MaxX - labelrect.MinX) + 1;
 
-    icon->ile_AreaHeight += ILC_ICONLABEL_IMAGEMARGIN + ((labelrect.MaxY - labelrect.MinY) + 1);
+    icon->ile_AreaHeight += data->icld__Option_IconImageSpacing + ((labelrect.MaxY - labelrect.MinY) + 1);
 	
 	/* Store */
 	rect->MaxX = (rect->MinX + icon->ile_AreaWidth) - 1;
@@ -578,7 +578,7 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
     iconlabelrect.MinX += offsetx;
     iconlabelrect.MaxX += offsetx;
 
-    offsety = (_mtop(obj) - data->icld_ViewY) + message->icon->ile_IconY + message->icon->ile_IconHeight + ILC_ICONLABEL_IMAGEMARGIN;
+    offsety = (_mtop(obj) - data->icld_ViewY) + message->icon->ile_IconY + message->icon->ile_IconHeight + data->icld__Option_IconImageSpacing;
     iconlabelrect.MinY += offsety;
     iconlabelrect.MaxY += offsety;
 
@@ -618,10 +618,10 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
     SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[MPEN_TEXT], 0, JAM1);
 
     // Center message->icon's label
-	ULONG labelX = iconlabelrect.MinX + ILC_ICONLABEL_BORDERWIDTH + ILC_ICONLABEL_HORIZONTALTEXTMARGIN;
-    ULONG labelY = iconlabelrect.MinY + ILC_ICONLABEL_BORDERHEIGHT + ILC_ICONLABEL_VERTICALTEXTMARGIN;
+	ULONG labelX = iconlabelrect.MinX + data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalSpacing;
+    ULONG labelY = iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalSpacing;
 
-	ULONG txtarea_width = txtbox_width - ((ILC_ICONLABEL_BORDERWIDTH + ILC_ICONLABEL_HORIZONTALTEXTMARGIN) * 2);
+	ULONG txtarea_width = txtbox_width - ((data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalSpacing) * 2);
 
     if (message->icon->ile_IconListEntry.label && message->icon->ile_TxtBuf_DisplayedLabel)
     {
@@ -639,17 +639,19 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 			//Draw the focus box around the selected label ..
 			InvertPixelArray(data->icld_BufferRastPort,
 						iconlabelrect.MinX, iconlabelrect.MinY,
-						(iconlabelrect.MaxX - iconlabelrect.MinX) + 1, ILC_ICONLABEL_BORDERHEIGHT);
+						(iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
 			InvertPixelArray(data->icld_BufferRastPort,
 						iconlabelrect.MaxX, iconlabelrect.MinY,
-						ILC_ICONLABEL_BORDERWIDTH, (iconlabelrect.MaxY - iconlabelrect.MinY) + 1);
+						data->icld__Option_LabelTextBorderWidth, (iconlabelrect.MaxY - iconlabelrect.MinY) + 1);
 			InvertPixelArray(data->icld_BufferRastPort,
 						iconlabelrect.MinX, iconlabelrect.MaxY,
-						(iconlabelrect.MaxX - iconlabelrect.MinX) + 1, ILC_ICONLABEL_BORDERHEIGHT);
+						(iconlabelrect.MaxX - iconlabelrect.MinX) + 1, data->icld__Option_LabelTextBorderHeight);
 			InvertPixelArray(data->icld_BufferRastPort,
 						iconlabelrect.MinX, iconlabelrect.MinY,
-						ILC_ICONLABEL_BORDERWIDTH, (iconlabelrect.MaxY - iconlabelrect.MinY) + 1);
+						data->icld__Option_LabelTextBorderWidth, (iconlabelrect.MaxY - iconlabelrect.MinY) + 1);
 		}
+
+		SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 
         switch ( data->icld__Option_IconTextMode )
         {
@@ -690,6 +692,8 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
         if( message->icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE)) )
         {
 			buf = NULL;
+			SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
+
 			if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
 			{
 				buf = message->icon->ile_TxtBuf_SIZE;
@@ -720,7 +724,7 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 				if (txwidth < txtarea_width)
 					tx += ((txtarea_width - txwidth)/2);
 
-				ty = labelY + ((ILC_ICONLABEL_VERTICALTEXTMARGIN + data->icld_IconLabelFont->tf_YSize ) * 1) + data->icld_IconLabelFont->tf_Baseline;
+				ty = labelY + ((data->icld__Option_LabelTextVerticalSpacing + data->icld_IconLabelFont->tf_YSize ) * 1) + data->icld_IconInfoFont->tf_Baseline;
 
 				switch ( data->icld__Option_IconTextMode )
 				{
@@ -907,8 +911,8 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     struct MUI_IconData *data = INST_DATA(CLASS, obj);
     struct IconEntry    *icon = NULL, *pass_first = NULL;
     
-    int left = ILC_ICON_HORIZONTALMARGIN;
-    int top = ILC_ICON_VERTICALMARGIN;
+    int left = data->icld__Option_IconHorizontalSpacing;
+    int top = data->icld__Option_IconVerticalSpacing;
     int cur_x = left;
     int cur_y = top;
     int gridx = 0;
@@ -933,8 +937,8 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
     
             if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
             {
-				maxw = data->icld_IconLargestWidth + ILC_ICON_HORIZONTALMARGIN;
-				maxh = data->icld_IconLargestHeight + ILC_ICON_VERTICALMARGIN;
+				maxw = data->icld_IconLargestWidth + data->icld__Option_IconHorizontalSpacing;
+				maxh = data->icld_IconLargestHeight + data->icld__Option_IconVerticalSpacing;
                 gridx = maxw;
                 gridy = maxh;
 
@@ -975,11 +979,11 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 				if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
 				{
 					gridx = maxw;
-					gridy = icon->ile_AreaHeight + ILC_ICON_HORIZONTALMARGIN;
+					gridy = icon->ile_AreaHeight + data->icld__Option_IconHorizontalSpacing;
 				}
 				else
 				{
-					gridx = icon->ile_AreaWidth + ILC_ICON_VERTICALMARGIN;
+					gridx = icon->ile_AreaWidth + data->icld__Option_IconVerticalSpacing;
 					gridy = maxh;
 				}
             }
@@ -1285,6 +1289,8 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
         case MUIA_IconList_DisplayFlags:             STORE = data->icld_DisplayFlags; return 1;
         case MUIA_IconList_SortFlags:                STORE = data->icld_SortFlags; return 1;
 
+		case MUIA_IconList_FocusIcon:                STORE = data->icld_FocusIcon; return 1;
+		
 		/* Settings defined by the view class */
 		case MUIA_IconListview_FixedBackground:      STORE = (IPTR)data->icld__Option_IconListFixedBackground; return 1;
 		case MUIA_IconListview_ScaledBackground:     STORE = (IPTR)data->icld__Option_IconListScaledBackground; return 1;
@@ -1310,14 +1316,26 @@ IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *
 
 	/* Get Internal Objects to use if not set .. */
 	if (data->icld_BufferRastPort == NULL) data->icld_BufferRastPort = _rp(obj);
-	if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
+	if (data->icld_IconLabelFont == NULL)  data->icld_IconLabelFont = _font(obj);
+	if (data->icld_IconInfoFont == NULL)   data->icld_IconInfoFont = _font(obj);
 D(bug("[IconList] IconList__MUIM_Setup: Use Font @ %x, RastPort @ %x\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
 
 	/* Set our base options .. */
-    data->icld_LabelPen = _pens(obj)[MPEN_SHINE];
-    data->icld_LabelShadowPen = _pens(obj)[MPEN_SHADOW];
-    data->icld_InfoPen = _pens(obj)[MPEN_SHINE];
-	data->icld_InfoShadowPen = _pens(obj)[MPEN_SHADOW];
+    data->icld_LabelPen                           = _pens(obj)[MPEN_SHINE];
+    data->icld_LabelShadowPen                     = _pens(obj)[MPEN_SHADOW];
+    data->icld_InfoPen                            = _pens(obj)[MPEN_SHINE];
+	data->icld_InfoShadowPen                      = _pens(obj)[MPEN_SHADOW];
+
+//	data->icld__Option_LabelTextMultiLine;
+//	data->icld__Option_LabelTextOnlySelectedMultiLine;
+
+	data->icld__Option_IconHorizontalSpacing      = ILC_ICON_HORIZONTALMARGIN_DEFAULT;
+	data->icld__Option_IconVerticalSpacing        = ILC_ICON_VERTICALMARGIN_DEFAULT;
+	data->icld__Option_IconImageSpacing           = ILC_ICONLABEL_IMAGEMARGIN_DEFAULT;
+	data->icld__Option_LabelTextHorizontalSpacing = ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT;
+	data->icld__Option_LabelTextVerticalSpacing   = ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT;
+	data->icld__Option_LabelTextBorderWidth       = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
+	data->icld__Option_LabelTextBorderHeight      = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
 	
     ForeachNode(&data->icld_IconList, node)
     {
@@ -1365,6 +1383,7 @@ IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *me
 		/* Get Internal Objects to use if not set .. */
 		if (data->icld_BufferRastPort == NULL) data->icld_BufferRastPort = _rp(obj);
 		if (data->icld_IconLabelFont == NULL)       data->icld_IconLabelFont = _font(obj);
+		if (data->icld_IconInfoFont == NULL)        data->icld_IconInfoFont = _font(obj);
 D(bug("[IconList] IconList__MUIM_Show: Use Font @ %x, RastPort @ %x\n", data->icld_IconLabelFont, data->icld_BufferRastPort ));
 
 		if ((data->icld_BufferRastPort) && (data->icld_IconLabelFont))
@@ -2226,21 +2245,31 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Clearing existing focused icon
 								data->update_icon = start_entry;
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
 
-								start_x = start_entry->ile_IconX + start_entry->ile_AreaWidth;
-								start_y = start_entry->ile_IconY + start_entry->ile_AreaHeight;
+								start_x = start_entry->ile_IconX;
+								if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+								{
+									if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+										start_x = start_x - (data->icld_IconLargestWidth - start_entry->ile_AreaWidth);
+								}
+								start_y = start_entry->ile_IconY;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: start_x %d, start_y %d\n", start_x, start_y));
 #endif
-
 								if (!(active_entry = Node_PreviousVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
 									active_entry = (((struct List *)(&data->icld_IconList))->lh_TailPred);
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Start at the END (Active @ %x) using icon X + Width\n", active_entry));
+D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Start at the END (Active @ %x) using icon X - Width\n", active_entry));
 #endif
-									start_x = active_entry->ile_IconX + active_entry->ile_AreaWidth;
-									start_y = 0;
+									start_x = start_x - start_entry->ile_AreaWidth;
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											start_x = start_x - (data->icld_IconLargestWidth - start_entry->ile_AreaWidth);
+									}
+
+									start_y = data->icld_AreaHeight + 1;
 									entry_next = NULL;
 								}
 								else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
@@ -2253,11 +2282,17 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Active @ %x, X %d\n", active_e
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Next @ %x, X %d\n", entry_next, entry_next->ile_IconX));
 #endif
-
-										if ((entry_next->ile_IconX + entry_next->ile_AreaWidth) > start_x)
+										if (entry_next->ile_IconX > start_x - 1)
 											entry_next = NULL;
-										else 
-											next_x = (entry_next->ile_IconX + entry_next->ile_AreaWidth);
+										else
+										{
+											next_x = entry_next->ile_IconX;
+											if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+											{
+												if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+													next_x = next_x - (data->icld_IconLargestWidth - entry_next->ile_AreaWidth);
+											}
+										}
 									}
 								}
 #if defined(DEBUG_ILC_KEYEVENTS)
@@ -2294,14 +2329,24 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Checking active @ %x\n", activ
 								}
 								else
 								{
+									LONG active_entry_X = active_entry->ile_IconX;
+									LONG x_diff = 0;
+
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (active_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											x_diff = ((data->icld_IconLargestWidth - active_entry->ile_AreaWidth)/2);
+									}
+									LONG active_entry_Y = active_entry->ile_IconY;
+									
 									if (start_entry)
 									{
 										if (entry_next)
 										{
 											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-												(active_entry->ile_IconY < start_y) &&
-												((active_entry->ile_IconX < start_x - 1) &&
-												(active_entry->ile_IconX > next_x)))
+												(active_entry_Y < start_y) &&
+												(((active_entry_X + x_diff) > start_x - 1) &&
+												((active_entry_X + x_diff) < (start_x + start_entry->ile_AreaWidth + x_diff))))
 											{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) entry %x matches\n", active_entry));
@@ -2311,14 +2356,28 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) entry %x matches\n", activ
 											else if (active_entry == GetHead(&data->icld_IconList))
 											{
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) reached list start .. starting at the end ..\n"));
+D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) reached list start .. restarting from the end ..\n"));
 #endif
 												start_x = entry_next->ile_IconX;
+												if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+												{
+													if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+														start_x = start_x - ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+												}
+
 												if (entry_next = Node_PreviousVisible(entry_next))
 												{
 													if (entry_next->ile_IconX > start_x)
 														entry_next = NULL;
-													else next_x = entry_next->ile_IconX;
+													else
+													{
+														next_x = entry_next->ile_IconX;
+														if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+														{
+															if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+																next_x = next_x - ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+														}
+													}
 												}
 												start_y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
@@ -2330,8 +2389,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (A) startx = %d, start_y = %d,
 										else
 										{
 											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-												(active_entry->ile_IconY < start_y) &&
-												(active_entry->ile_IconX < start_x - 1))
+												(active_entry_Y < start_y) &&
+												((active_entry_X + x_diff) < (start_x + start_entry->ile_AreaWidth + x_diff)))
 											{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (B) entry %x matches\n", active_entry));
@@ -2351,19 +2410,19 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: (C) entry %x matches\n", activ
 										}
 									}
 								}
-								active_entry = (((struct Node *)(active_entry))->ln_Pred);
+								active_entry = (((struct Node *)active_entry)->ln_Pred);
 							}
 
 							if (!(active_entry))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: UP: No Next UP Node - Getting Last visable icon ..\n"));
+D(bug("[IconList] IconList__MUIM_HandleEvent: UP: No Next UP Node - Getting Last visible icon ..\n"));
 #endif
-								/* We didnt find a "next up" icon so just use the first visible */
+								/* We didnt find a "next UP" icon so just use the last visible */
 								active_entry = (((struct List *)(&data->icld_IconList))->lh_TailPred);
 								while ((active_entry != NULL) &&(!(active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)))
 								{
-									active_entry = (((struct Node *)(active_entry))->ln_Pred);
+									active_entry = (((struct Node *)active_entry)->ln_Pred);
 								}
 							}
 							
@@ -2573,7 +2632,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: (C) entry %x matches\n", act
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: No Next DOWN Node - Getting first visable icon ..\n"));
 #endif
-								/* We didnt find a "next down" icon so just use the first visible */
+								/* We didnt find a "next DOWN" icon so just use the first visible */
 								active_entry =  List_First(&data->icld_IconList);
 								while ((active_entry != NULL) &&(!(active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)))
 								{
@@ -2602,7 +2661,76 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: No Next DOWN Node - Getting 
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_LEFT\n"));
 #endif
 
-						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && (data->icld_SelectionFirst))
+							if (data->icld_FocusIcon)
+							{
+								start_entry = data->icld_FocusIcon;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing existing focused icon @ %x\n", start_entry));
+#endif
+
+								start_entry->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
+								data->icld_UpdateMode = UPDATE_SINGLEICON;
+								data->update_icon = start_entry;
+								MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+								start_x = start_entry->ile_IconX;
+								if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+								{
+									if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+										start_x = start_x - ((data->icld_IconLargestWidth - start_entry->ile_AreaWidth)/2);
+								}
+								start_y = start_entry->ile_IconY;
+
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: start_x %d, start_y %d\n", start_x, start_y));
+#endif
+
+								if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+								{
+									active_entry = List_First(&data->icld_IconList);
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Start at the beginning (Active @ %x) using icon X + Width\n", active_entry));
+#endif
+									start_x = start_x + start_entry->ile_AreaWidth;
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											start_x = start_x + ((data->icld_IconLargestWidth - start_entry->ile_AreaWidth)/2);
+									}
+
+									start_y = 0;
+									entry_next = NULL;
+								}
+								else if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
+								{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Active @ %x, X %d\n", active_entry, active_entry->ile_IconX));
+#endif
+									if (entry_next = Node_NextVisible(start_entry))
+									{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Next @ %x, X %d\n", entry_next, entry_next->ile_IconX));
+#endif
+
+										if (entry_next->ile_IconX < start_x)
+											entry_next = NULL;
+										else
+										{
+											next_x = entry_next->ile_IconX;
+											if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+											{
+												if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+													next_x = next_x - ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+											}
+										}
+									}
+								}
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: using start_x %d, start_y %d\n", start_x, start_y));
+#endif
+							}
+
+						    if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing selected icons ..\n"));
@@ -2610,28 +2738,134 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing selected icons ..\n
 								DoMethod(obj, MUIM_IconList_UnselectAll);
 							}
 
-							if (data->icld_FocusIcon)
-							{
-#if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing existing focused icon @ %x\n", data->icld_FocusIcon));
-#endif
-								data->icld_FocusIcon->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
-								data->icld_UpdateMode = UPDATE_SINGLEICON;
-								data->update_icon = data->icld_FocusIcon;
-								MUI_Redraw(obj, MADF_DRAWUPDATE);
-								active_entry = Node_NextVisible(data->icld_FocusIcon);
-								if (active_entry && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
-								{
-									entry_next = Node_Next(active_entry);
-									if (entry_next->ile_IconX < active_entry->ile_IconX)
-										entry_next = NULL;
-								}
-							}
-
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: active = %x, next = %x\n", active_entry, entry_next));
 #endif
 
+							if (!(active_entry))
+							{
+								active_entry = List_First(&data->icld_IconList);
+							}
+
+							while (active_entry != NULL)
+							{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Checking active @ %x\n", active_entry));
+#endif
+								if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+								{
+									if (active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+										break;
+								}
+								else
+								{
+									LONG active_entry_X = active_entry->ile_IconX;
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (active_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											active_entry_X = active_entry_X - ((data->icld_IconLargestWidth - active_entry->ile_AreaWidth)/2);
+									}
+									LONG active_entry_Y = active_entry->ile_IconY;
+									
+									if (start_entry)
+									{
+										if (entry_next)
+										{
+											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
+												(active_entry_Y > start_y) &&
+												((active_entry_X > start_x - 1) &&
+												(active_entry_X < next_x)))
+											{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: (A) entry %x matches\n", active_entry));
+#endif
+												break;
+											}
+											else if (active_entry == GetTail(&data->icld_IconList))
+											{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: (A) reached list end .. starting at the beginng ..\n"));
+#endif
+												start_x = entry_next->ile_IconX;
+												if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+												{
+													if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+														start_x = start_x - ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+												}
+
+												if (entry_next = Node_NextVisible(entry_next))
+												{
+													if (entry_next->ile_IconX < start_x)
+														entry_next = NULL;
+													else
+													{
+														next_x = entry_next->ile_IconX;
+														if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+														{
+															if (entry_next->ile_AreaWidth < data->icld_IconLargestWidth)
+																next_x = next_x + ((data->icld_IconLargestWidth - entry_next->ile_AreaWidth)/2);
+														}
+													}
+												}
+												start_y = 0;
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: (A) startx = %d, start_y = %d, next_x = %d, entry_next @ %x\n", start_x, start_y, next_x, entry_next));
+#endif
+												active_entry = List_First(&data->icld_IconList);
+											}
+										}
+										else
+										{
+											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
+												(active_entry_Y > start_y) &&
+												(active_entry_X > start_x - 1))
+											{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: (B) entry %x matches\n", active_entry));
+#endif
+												break;
+											}
+										}
+									}
+									else
+									{
+										if (active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+										{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: (C) entry %x matches\n", active_entry));
+#endif
+											break;
+										}
+									}
+								}
+								active_entry = Node_Next(active_entry);
+							}
+
+							if (!(active_entry))
+							{
+#if defined(DEBUG_ILC_KEYEVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: No Next LEFT Node - Getting first visable icon ..\n"));
+#endif
+								/* We didnt find a "next LEFT" icon so just use the last visible */
+								active_entry =  List_First(&data->icld_IconList);
+								while ((active_entry != NULL) &&(!(active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)))
+								{
+									active_entry = Node_Next(active_entry);
+								}
+							}
+							
+							if (active_entry)
+							{
+								if (!(active_entry->ile_Flags & ICONENTRY_FLAG_FOCUS))
+								{
+									active_entry->ile_Flags |= ICONENTRY_FLAG_FOCUS;
+									data->icld_UpdateMode = UPDATE_SINGLEICON;
+									data->update_icon = active_entry;
+									MUI_Redraw(obj, MADF_DRAWUPDATE);
+								}
+								
+							}
+							data->icld_FocusIcon = active_entry;
 							break;
 
 						case RAWKEY_RIGHT:
@@ -2647,43 +2881,46 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_RIGHT\n"));
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Clearing existing focused icon @ %x\n", start_entry));
 #endif
-
 								start_entry->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
 								data->icld_UpdateMode = UPDATE_SINGLEICON;
 								data->update_icon = start_entry;
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
 
 								start_x = start_entry->ile_IconX;
+								if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+								{
+									if (start_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+										start_x = start_x - ((data->icld_IconLargestWidth - start_entry->ile_AreaWidth)/2);
+								}
 								start_y = start_entry->ile_IconY;
 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: start_x %d, start_y %d\n", start_x, start_y));
 #endif
-
-								if (!(active_entry = Node_NextVisible(start_entry)) && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
+								if (!(active_entry = Node_NextVisible(start_entry)) && (!(data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)))
 								{
 									active_entry = List_First(&data->icld_IconList);
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Start at the beginning (Active @ %x) using icon X + Width\n", active_entry));
 #endif
 									start_x = 0;
-									start_y = start_y + start_entry->ile_IconHeight;
+									start_y = start_y + start_entry->ile_AreaHeight;
 									entry_next = NULL;
 								}
 								else if (active_entry && (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL))
 								{
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Active @ %x, Y %d\n", active_entry, active_entry->ile_IconY));
+D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Active @ %x, X %d\n", active_entry, active_entry->ile_IconX));
 #endif
 									if (entry_next = Node_NextVisible(start_entry))
 									{
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Next @ %x, Y %d\n", entry_next, entry_next->ile_IconY));
+D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Next @ %x, X %d\n", entry_next, entry_next->ile_IconX));
 #endif
 
 										if (entry_next->ile_IconY < start_y)
 											entry_next = NULL;
-										else 
+										else
 											next_y = entry_next->ile_IconY;
 									}
 								}
@@ -2721,14 +2958,22 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Checking active @ %x\n", ac
 								}
 								else
 								{
+									LONG active_entry_X = active_entry->ile_IconX;
+									if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+									{
+										if (active_entry->ile_AreaWidth < data->icld_IconLargestWidth)
+											active_entry_X = active_entry_X - ((data->icld_IconLargestWidth - active_entry->ile_AreaWidth)/2);
+									}
+									LONG active_entry_Y = active_entry->ile_IconY;
+									
 									if (start_entry)
 									{
 										if (entry_next)
 										{
 											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-												(active_entry->ile_IconX > start_x) &&
-												((active_entry->ile_IconY > start_y - 1) &&
-												(active_entry->ile_IconY < next_y)))
+												(active_entry_X > start_x) &&
+												((active_entry_Y > start_y - 1) &&
+												(active_entry_Y < next_y)))
 											{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) entry %x matches\n", active_entry));
@@ -2741,15 +2986,19 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) entry %x matches\n", ac
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) reached list end .. starting at the beginng ..\n"));
 #endif
 												start_y = entry_next->ile_IconY;
+
 												if (entry_next = Node_NextVisible(entry_next))
 												{
 													if (entry_next->ile_IconY < start_y)
 														entry_next = NULL;
-													else next_y = entry_next->ile_IconY;
+													else
+													{
+														next_y = entry_next->ile_IconY;
+													}
 												}
 												start_y = 0;
 #if defined(DEBUG_ILC_KEYEVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) startx = %d, start_y = %d, next_y = %d, entry_next @ %x\n", start_x, start_y, next_y, entry_next));
+D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) startx = %d, start_y = %d, next_x = %d, entry_next @ %x\n", start_x, start_y, next_x, entry_next));
 #endif
 												active_entry = List_First(&data->icld_IconList);
 											}
@@ -2757,8 +3006,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (A) startx = %d, start_y = 
 										else
 										{
 											if ((active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-												(active_entry->ile_IconX > start_x) &&
-												(active_entry->ile_IconY > start_y - 1))
+												(active_entry_X > start_x) &&
+												(active_entry_Y > start_y - 1))
 											{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (B) entry %x matches\n", active_entry));
@@ -2786,7 +3035,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: (C) entry %x matches\n", ac
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: No Next RIGHT Node - Getting first visable icon ..\n"));
 #endif
-								/* We didnt find a "next right" icon so just use the first visible */
+								/* We didnt find a "next RIGHT" icon so just use the first visible */
 								active_entry =  List_First(&data->icld_IconList);
 								while ((active_entry != NULL) &&(!(active_entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)))
 								{
