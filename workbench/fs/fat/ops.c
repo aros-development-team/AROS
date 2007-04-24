@@ -37,7 +37,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     struct DirHandle dh;
     struct DirEntry de;
     UBYTE checksum;
-    ULONG order, cluster;
+    ULONG order;
 
     D(bug("[fat] deleting file '%.*s' in directory at cluster %ld\n", namelen, name, dirlock->ioh.first_cluster));
 
@@ -141,37 +141,65 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock) {
     LONG err;
     BPTR b;
+    UBYTE *base;
+    ULONG baselen;
     ULONG cluster;
     struct DirHandle dh, sdh;
     struct DirEntry de, sde;
 
     D(bug("[fat] creating directory '%.*s' in directory at cluster %ld\n", namelen, name, dirlock->ioh.first_cluster));
 
-    /* first try to lock the named dir. if it exists, then we do nothing */
-    err = TryLockObj(dirlock, name, namelen, SHARED_LOCK, &b);
-    if (err == 0) {
+    /* we break the given name into two pieces - the name of the containing
+     * dir, and the name of the new dir to go within it. if the base ends up
+     * empty, then we just use the dirlock */
+    baselen = namelen;
+    base = name;
+    while (baselen > 0) {
+        if (base[baselen-1] != '/')
+            break;
+        baselen--;
+    }
+    while (baselen > 0) {
+        if (base[baselen-1] == '/')
+            break;
+        baselen--;
+    }
+    namelen -= baselen;
+    name = &base[baselen];
+
+    D(bug("[fat] base is '%.*s', name is '%.*s'\n", baselen, base, namelen, name));
+
+    if ((err = InitDirHandle(glob->sb, dirlock->ioh.first_cluster, &dh)) != 0)
+        return err;
+
+    if (baselen > 0) {
+        if ((err = GetDirEntryByPath(&dh, base, baselen, &de)) != 0) {
+            D(bug("[fat] base not found\n"));
+            return err;
+        }
+
+        if ((err = InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh)) != 0)
+            return err;
+    }
+
+    /* now see if the wanted name is in this dir. if it exists, then we do
+     * nothing */
+    if ((err = GetDirEntryByName(&dh, name, namelen, &de)) == 0) {
         D(bug("[fat] name exists, can't do anything\n"));
-
-        FreeLock(BADDR(b));
-
+        ReleaseDirHandle(&dh);
         return ERROR_OBJECT_EXISTS;
     }
 
-    /* find a free cluster to store the dir in*/
-    if ((err = FindFreeCluster(glob->sb, &cluster)) != 0)
+    /* find a free cluster to store the dir in */
+    if ((err = FindFreeCluster(glob->sb, &cluster)) != 0) {
+        ReleaseDirHandle(&dh);
         return err;
+    }
 
     /* allocate it */
     SET_NEXT_CLUSTER(glob->sb, cluster, glob->sb->eoc_mark);
 
     D(bug("[fat] allocated cluster %ld for directory\n", cluster));
-
-    /* get a handle on the parent dir */
-    if ((err = InitDirHandle(glob->sb, dirlock->ioh.first_cluster, &dh)) != 0) {
-        /* deallocate the cluster */
-        SET_NEXT_CLUSTER(glob->sb, cluster, 0);
-        return err;
-    }
 
     /* create the entry, pointing to the new cluster */
     if ((err = CreateDirEntry(&dh, name, namelen, ATTR_DIRECTORY, cluster, &de)) != 0) {
@@ -197,8 +225,8 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     GetDirEntry(&sdh, 1, &sde);
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
     CopyMem("..         ", &sde.e.entry.name, 11);
-    sde.e.entry.first_cluster_lo = dirlock->ioh.first_cluster & 0xffff;
-    sde.e.entry.first_cluster_hi = dirlock->ioh.first_cluster >> 16;
+    sde.e.entry.first_cluster_lo = dh.ioh.first_cluster & 0xffff;
+    sde.e.entry.first_cluster_hi = dh.ioh.first_cluster >> 16;
     UpdateDirEntry(&sde);
 
     /* put an empty entry at the end to mark end of directory */
