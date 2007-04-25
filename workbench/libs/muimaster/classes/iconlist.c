@@ -1993,10 +1993,6 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     /* Use a geticonrectangle routine that gets textwidth! */
     IconList_GetIconRectangle(obj, data, entry, &rect);
 
-    /*hack, force grid to recognise largest icon!*/
-    if( entry->ile_AreaWidth > data->icld_IconLargestWidth ) data->icld_IconLargestWidth = entry->ile_AreaWidth;
-    if( entry->ile_AreaHeight > data->icld_IconLargestHeight ) data->icld_IconLargestHeight = entry->ile_AreaHeight;
-
     AddHead((struct List*)&data->icld_IconList, (struct Node*)entry);
 
     return entry;
@@ -4163,10 +4159,20 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
 
     /*now copy each one back to the main list, sorting as we go*/
 //    entry = List_First(&list_VisibleIcons);
+
+    /*Reset incase view options have changed .. */
+    data->icld_IconLargestWidth = 0;
+    data->icld_IconLargestHeight = 0;
+
     while ((entry = (struct IconEntry *)RemTail((struct List*)&list_VisibleIcons)))
     {
         icon1 = List_First(&list_SortedIcons);
         icon2 = NULL;
+
+		/*hack, force grid to recognise largest icon!*/
+		if( entry->ile_AreaWidth > data->icld_IconLargestWidth ) data->icld_IconLargestWidth = entry->ile_AreaWidth;
+		if( entry->ile_AreaHeight > data->icld_IconLargestHeight ) data->icld_IconLargestHeight = entry->ile_AreaHeight;
+
         sortme = FALSE;
 		
 		if (visible_count > 1)
