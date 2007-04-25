@@ -1,0 +1,229 @@
+## version $VER: <name>.ct <ver>.0 (08.04.05)
+## language nederlands
+## codeset 0
+;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Bestanden Manager
+; File Manager
+;
+MSG_SCREENTITLE
+Wanderer %s grafisch %s ander
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+; B
+;
+MSG_MEM_K
+K
+; K
+;
+MSG_MEM_M
+M
+; M
+;
+MSG_MEM_G
+G
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Achtergrond
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+; B
+;
+MSG_MEN_EXECUTE
+Opdracht Uitvoeren...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+E
+; E
+;
+MSG_MEN_SHELL
+Shell...
+; Shell...
+;
+MSG_MEN_SC_SHELL
+W
+; W
+;
+MSG_MEN_GUISET
+GUI Instellingen...
+; GUI Settings...
+;
+MSG_MEN_ABOUT
+Over...
+; About...
+;
+MSG_MEN_SC_ABOUT
+?
+; ?
+;
+MSG_MEN_QUIT
+Einde...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Venster
+; Window
+;
+MSG_MEN_NEWDRAW
+Nieuwe Map...
+; New Drawer...
+;
+MSG_MEN_SC_NEWDRAW
+N
+; N
+;
+MSG_MEN_OPENPAR
+Open hogere
+; Open Parent
+;
+MSG_MEN_CLOSE
+Sluit
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Werk bij
+; Update
+;
+MSG_MEN_CONTENTS
+Selecteer inhoud
+; Select Contents
+;
+MSG_MEN_SC_CONTENTS
+A
+; A
+;
+MSG_MEN_CLRSEL
+Wis selectie
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+; Z
+;
+MSG_MEN_SNAPSHT
+Leg Vast
+; Snapshot
+;
+MSG_MEN_ALL
+Alles
+; All
+;
+MSG_MEN_VIEW
+Toon
+; View
+;
+MSG_MEN_ICVIEW
+Iconen
+; Icon view
+;
+MSG_MEN_DCVIEW
+Details
+; Detail view
+;
+MSG_MEN_ALLFIL
+Alle Bestanden
+; All files
+;
+MSG_MEN_SORTIC
+Gesorteerd
+; Sorted
+;
+MSG_MEN_CLNUP
+Ruim Op
+; Clean Up
+;
+MSG_MEN_SC_CLNUP
+U
+; U
+;
+MSG_MEN_BYNAME
+Op naam
+; By name
+;
+MSG_MEN_BYDATE
+Op datum
+; By Date
+;
+MSG_MEN_BYSIZE
+Op grootte
+; By size
+;
+MSG_MEN_REVERSE
+Omdraaien
+; Reverse
+;
+MSG_MEN_DRWFRST
+Mappen eerst
+; Drawers first
+;
+MSG_MEN_ICON
+Iconen
+; Icon
+;
+MSG_MEN_OPEN
+Open
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+; O
+;
+MSG_MEN_RENAME
+Hernoem...
+; Rename...
+;
+MSG_MEN_SC_RENAME
+R
+; R
+;
+MSG_MEN_INFO
+Informatie...
+; Information...
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Verwijderen...
+; Delete...
+;
+MSG_MEN_TOOLS
+Tools
+; Tools
+;
+MSG_REALLYQUIT
+Wilt u Wanderer echt stoppen?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Ja|Nee
+; *Yes|No
+;
+MSG_DUMMY
+Dummy
+; DUMMY
+; DUMMY :)

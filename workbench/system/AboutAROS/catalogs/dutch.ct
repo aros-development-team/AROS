@@ -1,0 +1,133 @@
+## version $VER: <name>.ct <ver>.0 (08.04.05)
+## language nederlands
+## codeset 0
+;
+;
+MSG_TITLE
+Over AROS
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Persoonlijke Build
+; Personal Build
+;
+MSG_NIGHTLY_BUILD
+Nightly Build
+; Nightly Build
+;
+MSG_SNAPSHOT
+Snapshot
+; Snapshot
+;
+MSG_MILESTONE
+Milestone
+; Milestone
+;
+MSG_RELEASE
+Release
+; Release
+;
+MSG_COPYRIGHT
+Copyright © 1995-2007, Het AROS Ontwikkelaars Team. Alle rechten voorbehouden.
+; Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Uitgegeven onder de termen van de
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Publieke Licentie
+; AROS Public License
+;
+MSG_LICENSE_3
+, versie 1.1.
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Bezoek http://www.aros.org/nl/ voor meer informatie.
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Auteurs
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponsors
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Dankbetuigingen
+; Acknowledgements
+;
+MSG_SECTION_COORDINATION
+Coordinatie
+; Coordination
+;
+MSG_SECTION_EVANGELISM
+Evangelisme
+; Evangelism
+;
+MSG_SECTION_HIDD
+HIDD subsystem
+; HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+;
+MSG_SECTION_GRAPHICS
+Grafisch
+; Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Shell Commando's
+; Shell Commands
+;
+MSG_SECTION_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_SECTION_TOOLS
+Tools
+; Tools
+;
+MSG_SECTION_PREFERENCES
+Preferences
+; Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+; Zune
+;
+MSG_SECTION_KERNEL
+Kernel
+; Kernel
+;
+MSG_SECTION_DOS
+DOS
+; DOS
+;
+MSG_SECTION_LIBC_POSIX
+C link library en POSIX layer
+; C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION
+Documentatie
+; Documentation
+;
+MSG_SECTION_TRANSLATION
+Vertaling
+; Translation
+;
+MSG_SECTION_ARTISTRY
+Ontwerpen
+; Artistry
+;
+MSG_SECTION_WEBSITE
+Website
+; Website
+;
