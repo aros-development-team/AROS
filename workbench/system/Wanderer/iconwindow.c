@@ -607,8 +607,8 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
 				GET(data->iwd_IconListObj, MUIA_IconList_FocusIcon, &focusicon);
 				if (focusicon)
 				{
-					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntry, ICONENTRY_DRAWMODE_PLAIN);
-					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntryLabel, ICONENTRY_DRAWMODE_PLAIN);
+					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntry, focusicon, ICONENTRY_DRAWMODE_PLAIN);
+					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntryLabel, focusicon, ICONENTRY_DRAWMODE_PLAIN);
 				}
 			}
 			break;
