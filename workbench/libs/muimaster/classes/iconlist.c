@@ -2291,7 +2291,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: adjusted start_X for grid = %d
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: active_entry @ %x '%s' , X %d, Y %d\n", active_entry, active_entry->ile_IconListEntry.label, active_entry->ile_IconX, active_entry->ile_IconY));
 #endif
-									active_Y = entry_next->ile_IconY;
+									active_Y = active_entry->ile_IconY;
 
 									if (active_Y == start_Y)
 									{
@@ -2493,7 +2493,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: adjusted start_X for grid = 
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: active_entry @ %x '%s' , X %d, Y %d\n", active_entry, active_entry->ile_IconListEntry.label, active_entry->ile_IconX, active_entry->ile_IconY));
 #endif
-									active_Y = entry_next->ile_IconY;
+									active_Y = active_entry->ile_IconY;
 
 									if (active_Y == start_Y)
 									{
