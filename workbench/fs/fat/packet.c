@@ -204,13 +204,18 @@ void ProcessPackets(void) {
                 break;
             }
 
-            case ACTION_FINDINPUT: {
+            case ACTION_FINDINPUT:
+            case ACTION_FINDOUTPUT:
+            case ACTION_FINDUPDATE: {
                 struct FileHandle *fh = BADDR(pkt->dp_Arg1);
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
                 UBYTE *path = BADDR(pkt->dp_Arg3);
-                BPTR lock;
+                struct ExtFileLock *lock;
 
-                D(bug("[fat] FINDINPUT: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
+                D(bug("[fat] %s: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
+                      pkt->dp_Type == ACTION_FINDINPUT  ? "FINDINPUT"  :
+                      pkt->dp_Type == ACTION_FINDOUTPUT ? "FINDOUTPUT" :
+                                                          "FINDUPDATE",
                       pkt->dp_Arg2,
                       fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
                       path[0], &path[1]));
@@ -218,41 +223,14 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
 
-                /* handle empty filename */
-                if (path[0] == 0) {
-                    if (fl != NULL) {
-                        D(bug("\tCopying lock\n"));
-                        err = CopyLock(fl, &lock);
-                    }
-                    else {
-                        D(bug("\tLocking root directory.\n"));
-                        err = LockRoot(SHARED_LOCK, &lock);
-                    }
-                }
-
-                else
-                    err = TryLockObj(fl, &path[1], path[0], SHARED_LOCK, &lock);
-
-                if (err == 0) {
-                    struct ExtFileLock *fl_new = BADDR(lock);
-
-                    if ((fl_new->attr & ATTR_DIRECTORY) == 0) {
-                        fh->fh_Arg1 = (LONG)lock;
-                        fh->fh_Port = DOSFALSE;
-
-                        fl_new->pos = 0;
-
-                        res = DOSTRUE;
-                        break;
-                    }
-                    else
-                        err = ERROR_OBJECT_WRONG_TYPE;
-
-                    FreeLock(fl_new);
+                if ((err = OpOpenFile(fl, &path[1], path[0], pkt->dp_Type, &lock)) != 0)
                     break;
-                }
 
-                err = ERROR_OBJECT_NOT_FOUND;
+                fh->fh_Arg1 = MKBADDR(lock);
+                fh->fh_Port = DOSFALSE;
+
+                res = DOSTRUE;
+
                 break;
             }
 
@@ -487,16 +465,6 @@ void ProcessPackets(void) {
 
                 break;
             }
-
-            case ACTION_FINDOUTPUT:
-                D(bug("[fat] FINDOUTPUT [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
-                break;
-
-            case ACTION_FINDUPDATE:
-                D(bug("[fat] FINDUPDATE [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
-                break;
 
             case ACTION_RENAME_DISK: {
                 UBYTE *name = BADDR(pkt->dp_Arg1);
