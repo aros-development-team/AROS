@@ -127,19 +127,24 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     if (err == 0) {
         lock = BADDR(b);
 
+        D(bug("[fat] found existing file\n"));
+
         /* can't open directories */
         if (lock->attr & ATTR_DIRECTORY) {
+            D(bug("[fat] its a directory, can't open it\n"));
             FreeLock(lock);
             return ERROR_OBJECT_WRONG_TYPE;
         }
 
         /* INPUT/UPDATE use the file as/is */
         if (action != ACTION_FINDOUTPUT) {
+            D(bug("[fat] returning the lock\n"));
             *filelock = lock;
             return 0;
         }
 
         /* whereas OUTPUT truncates it */
+        D(bug("[fat] handling FINDOUTPUT, so truncating the file\n"));
 
         /* update the dir entry to make the file empty */
         InitDirHandle(lock->ioh.sb, lock->dir_cluster, &dh);
@@ -148,11 +153,15 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         de.e.entry.file_size = 0;
         UpdateDirEntry(&de);
 
+        D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
+
         /* free the clusters */
         FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
         lock->ioh.first_cluster = 0xffffffff;
         RESET_HANDLE(&lock->ioh);
         lock->size = 0;
+
+        D(bug("[fat] file truncated, returning the lock\n"));
 
         /* file is empty, go */
         *filelock = lock;
@@ -165,8 +174,12 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return err;
 
     /* not found. for INPUT or UPDATE, we bail out */
-    if (action != ACTION_FINDOUTPUT)
+    if (action != ACTION_FINDOUTPUT) {
+        D(bug("[fat] file not found, and not creating it\n"));
         return ERROR_OBJECT_NOT_FOUND;
+    }
+
+    D(bug("[fat] trying to create '%.*s'\n", namelen, name));
 
     /* otherwise its time to create the file. get a handle on the passed dir */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
@@ -175,14 +188,6 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     /* get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0)
         return err;
-
-    /* now see if the wanted name is in this dir. if it exists, then we do
-     * nothing */
-    if ((err = GetDirEntryByName(&dh, name, namelen, &de)) == 0) {
-        D(bug("[fat] name exists, can't do anything\n"));
-        ReleaseDirHandle(&dh);
-        return ERROR_OBJECT_EXISTS;
-    }
 
     /* create the entry */
     if ((err = CreateDirEntry(&dh, name, namelen, 0, 0, &de)) != 0) {
@@ -196,6 +201,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 
     /* done */
     ReleaseDirHandle(&dh);
+
+    D(bug("[fat] returning lock on new file\n"));
 
     return err;
 }
@@ -388,6 +395,63 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
 
     /* done */
     ReleaseDirHandle(&dh);
+
+    return err;
+}
+
+LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read) {
+    LONG err;
+
+    D(bug("[fat] request to read %ld bytes from file pos %ld\n", want, lock->pos));
+
+    if (want + lock->pos > lock->size) {
+        want = lock->size - lock->pos;
+        D(bug("[fat] full read would take us past end-of-file, adjusted want to %ld bytes\n", want));
+    }
+
+    if ((err = ReadFileChunk(&(lock->ioh), lock->pos, want, data, read)) == 0) {
+        lock->pos += *read;
+        D(bug("[fat] read %ld bytes, new file pos is %ld\n", *read, lock->pos));
+    }
+
+    return err;
+}
+
+LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) {
+    LONG err;
+    BOOL update_entry = FALSE;
+    struct DirHandle dh;
+    struct DirEntry de;
+
+    D(bug("[fat] request to write %ld bytes to file pos %ld\n", want, lock->pos));
+
+    /* if this is the first write, make a note as we'll have to store the
+     * first cluster in the directory entry later */
+    if (lock->ioh.first_cluster == 0xffffffff)
+        update_entry = TRUE;
+
+    if ((err = WriteFileChunk(&(lock->ioh), lock->pos, want, data, written)) == 0) {
+        lock->pos += *written;
+        if (lock->pos > lock->size) {
+            lock->size = lock->pos;
+            update_entry = TRUE;
+        }
+
+        D(bug("[fat] wrote %ld bytes, new file pos is %ld, size is %ld\n", *written, lock->pos, lock->size));
+
+        if (update_entry) {
+            D(bug("[fat] updating dir entry, first cluster is %ld, size is %ld\n", lock->ioh.first_cluster, lock->size));
+
+            InitDirHandle(lock->ioh.sb, lock->dir_cluster, &dh);
+            GetDirEntry(&dh, lock->dir_entry, &de);
+
+            de.e.entry.file_size = lock->size;
+            de.e.entry.first_cluster_lo = lock->ioh.first_cluster & 0xffff;
+            de.e.entry.first_cluster_hi = lock->ioh.first_cluster >> 16;
+
+            UpdateDirEntry(&de);
+        }
+    }
 
     return err;
 }

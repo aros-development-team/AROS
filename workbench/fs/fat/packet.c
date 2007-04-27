@@ -245,17 +245,34 @@ void ProcessPackets(void) {
                       fl->pos,
                       want));
 
-                if (want + fl->pos > fl->size)
-                    want = fl->size - fl->pos;
- 
                 if ((err = TestLock(fl))) {
                     res = -1;
                     break;
                 }
 
-                if ((err = ReadFileChunk(&(fl->ioh), fl->pos, want, buffer, &res)) == 0)
-                    fl->pos += res;
-                else
+                if ((err = OpRead(fl, buffer, want, &res)) != 0)
+                    res = -1;
+
+                break;
+            }
+
+            case ACTION_WRITE: {
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                APTR buffer = (APTR)pkt->dp_Arg2;
+                ULONG want = pkt->dp_Arg3;
+
+                D(bug("[fat] WRITE: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl->pos,
+                      want));
+
+                if ((err = TestLock(fl))) {
+                    res = -1;
+                    break;
+                }
+
+                if ((err = OpWrite(fl, buffer, want, &res)) != 0)
                     res = -1;
 
                 break;
@@ -491,11 +508,6 @@ void ProcessPackets(void) {
 
                 break;
             }
-
-            case ACTION_WRITE:
-                D(bug("[fat] WRITE [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
-                break;
 
             case ACTION_DELETE_OBJECT: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
