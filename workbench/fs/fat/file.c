@@ -106,7 +106,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, the requested data isn't here */
-                if (ioh->cur_cluster == 0 || ioh->cur_cluster > ioh->sb->eoc_mark) {
+                if (ioh->cur_cluster == 0 || ioh->cur_cluster >= ioh->sb->eoc_mark) {
                     D(bug("[fat] hit empty or eoc cluster, no more file left\n"));
 
                     RESET_HANDLE(ioh);
@@ -220,6 +220,27 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         if (ioh->cluster_offset != cluster_offset) {
             ULONG i;
 
+            /* if we have no first cluster, this is a new file. we allocate
+             * the first cluster and then update the ioh */
+            if (ioh->first_cluster == 0xffffffff) {
+                ULONG cluster;
+
+                D(bug("[fat] no first cluster, allocating one\n"));
+
+                /* allocate a cluster */
+                if ((err = FindFreeCluster(ioh->sb, &cluster)) != 0) {
+                    RESET_HANDLE(ioh);
+                    return err;
+                }
+
+                /* mark the cluster used */
+                SET_NEXT_CLUSTER(ioh->sb, cluster, ioh->sb->eoc_mark);
+
+                /* now setup the ioh */
+                ioh->first_cluster = cluster;
+                RESET_HANDLE(ioh);
+            }
+
             /* if we're already ahead of the wanted cluster, then we need to
              * back to the start of the cluster list */
             if (ioh->cluster_offset > cluster_offset) {
@@ -237,7 +258,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
                 /* if it was free (shouldn't happen) or we hit the end of the
                  * chain, there is no next cluster, so we have to allocate a
                  * new one */
-                if (next_cluster == 0 || next_cluster > ioh->sb->eoc_mark) {
+                if (next_cluster == 0 || next_cluster >= ioh->sb->eoc_mark) {
                     D(bug("[fat] hit empty or eoc cluster, allocating another\n"));
 
                     if ((err = FindFreeCluster(ioh->sb, &next_cluster)) != 0) {
@@ -245,7 +266,12 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
                         return err;
                     }
 
+                    /* link the current cluster to the new one */
                     SET_NEXT_CLUSTER(ioh->sb, ioh->cur_cluster, next_cluster);
+
+                    /* and mark the new one used */
+                    SET_NEXT_CLUSTER(ioh->sb, next_cluster, ioh->sb->eoc_mark);
+
                     ioh->cur_cluster = next_cluster;
 
                     D(bug("[fat] allocated cluster %d\n", next_cluster));
