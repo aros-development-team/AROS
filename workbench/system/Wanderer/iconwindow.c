@@ -70,7 +70,7 @@ AROS_UFH3(
     SETUP_ICONWINDOW_INST_DATA;
 
     /* Only change dir if it is a valid directory/volume */
-    GET(data->iwd_ToolbarLocationStringObj, MUIA_String_Contents, &str);
+    GET(data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, &str);
 
 #warning "TODO: Signal that it is a wrong path"
     /* so that the user understands (here where we abort with return) */
@@ -117,6 +117,7 @@ D(bug("[IconWindow] IconWindow__HookFunc_PrefsUpdatedFunc()\n"));
 	{
 D(bug("[IconWindow] IconWindow__HookFunc_PrefsUpdatedFunc: Window contents have changed .. updating display ..\n"));
 		DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+		SET(self, MUIA_IconWindow_Changed, FALSE);
     }
 
     AROS_USERFUNC_EXIT
@@ -133,7 +134,8 @@ AROS_UFH3(
     AROS_USERFUNC_INIT
     
     /* Get our private data */
-    Object *self = ( Object *)obj;
+    Object *self = ( Object *)obj,
+	       *prefs = NULL;
     Class *CLASS = *( Class **)param;
 
     SETUP_ICONWINDOW_INST_DATA;
@@ -141,7 +143,21 @@ AROS_UFH3(
 D(bug("[IconWindow] IconWindow__HookFunc_ProcessBackgroundFunc()\n"));
 
 	DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
-    
+
+	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+	if (prefs)
+	{
+		BOOL    options_changed = FALSE;
+		IPTR	prefs_Processing = 0;
+
+		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
+		if (!prefs_Processing)
+		{
+#warning "TODO: We arent in prefs-processing so cause an update!"
+		}
+	}
+
     AROS_USERFUNC_EXIT
 }
 
@@ -189,7 +205,7 @@ D(bug("[IconWindow] IconWindow__HookFunc_WandererBackFillFunc()\n"));
 }
 
 /*** Methods ****************************************************************/
-void IconWindow__SetupToolbar(Class *CLASS, Object *self)
+void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
@@ -198,6 +214,17 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
     Object          *strObj = NULL,
                     *bt_dirup = NULL,
                     *bt_search = NULL;
+
+D(bug("[IconWindow] IconWindow__SetupToolbar: App PrefsObj @ %x\n", prefs));
+
+	if (prefs != NULL)
+	{
+		data->iwd_Toolbar_PrefsNotificationObject = DoMethod(prefs,
+															MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
+															"Toolbar");
+		//Set up our prefs notification handlers ..
+
+	}
 
     /* Create the "ToolBar" panel object .. */
     Object *toolbarPanel = VGroup,
@@ -261,21 +288,21 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
 			}
 
 			DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
-			data->iwd_ToolbarPanelObj = toolbarPanel;
+			data->iwd_Toolbar_PanelObj = toolbarPanel;
 		}
 
-		if (data->iwd_ToolbarPanelObj)
+		if (data->iwd_Toolbar_PanelObj)
 		{
 			DoMethod( 
 				bt_dirup, MUIM_Notify, MUIA_Pressed, FALSE, 
 				(IPTR)self, 1, MUIM_IconWindow_DirectoryUp
 			);
 
-			data->iwd_ToolbarLocationStringObj = strObj;
+			data->iwd_Toolbar_LocationStringObj = strObj;
 
 			data->iwd_pathStrHook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ToolbarLocationStringFunc;
 			SET(
-				data->iwd_ToolbarLocationStringObj, MUIA_String_Contents, 
+				data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, 
 				XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
 			);
 
@@ -288,7 +315,7 @@ D(bug("[IconWindow] IconWindow__SetupToolbar()\n"));
     }
     else
     {
-        data->iwd_ToolbarPanelObj = NULL;
+        data->iwd_Toolbar_PanelObj = NULL;
     }
 }
 
@@ -487,14 +514,14 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
         data->iwd_ExtensionContainerObj   = _newIconWin__ExtensionContainerObj;
         data->iwd_ExtensionGroupSpacerObj = _newIconWin__ExtensionGroupSpacerObj;
 
-        data->iwd_ToolbarPanelObj         = NULL;
+        data->iwd_Toolbar_PanelObj         = NULL;
 
         data->iwd_Flag_ISROOT             = isRoot;
         data->iwd_Flag_ISBACKDROP         = isBackdrop;
 
         data->iwd_WindowFont              = _newIconWin__WindowFont;        
 
-		data->iwd_BackGround_Attrib = data->iwd_Flag_ISROOT 
+		data->iwd_ViewSettings_Attrib = data->iwd_Flag_ISROOT 
                     ? "Workbench"
                     : "Drawer";
 
@@ -509,9 +536,9 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
 				MUIM_CallHook, &data->iwd_PrefsUpdated_hook, (IPTR)CLASS
 			);
 
-			data->iwd_BackGround_PrefsNotificationObject = DoMethod(prefs,
-                                                         		MUIM_WandererPrefs_Background_GetNotifyObject,
-																data->iwd_BackGround_Attrib);
+			data->iwd_ViewSettings_PrefsNotificationObject = DoMethod(prefs,
+                                                         		MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
+																data->iwd_ViewSettings_Attrib);
 
 			if (data->iwd_ExtensionContainerObj)
 			{
@@ -539,7 +566,7 @@ D(bug("[iconwindow] IconWindow__OM_NEW: Window BackFill_Data @ %x for '%s'\n", d
 
         /* no tool bar when root */
         if (!isRoot && hasToolbar && data->iwd_ExtensionContainerObj)
-			IconWindow__SetupToolbar(CLASS,self);
+			IconWindow__SetupToolbar(CLASS, self, prefs);
 
         /* If double clicked then we call our own private methods, that's 
 		   easier then using Hooks */
@@ -577,8 +604,10 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
 
-    struct TagItem *tstate = message->ops_AttrList, *tag;
-    BOOL UpdateIconlist = FALSE;
+    struct TagItem  *tstate = message->ops_AttrList, *tag;
+    BOOL 			UpdateIconlist = FALSE;
+	IPTR 			focusicon = NULL;
+    IPTR  			rv = TRUE;
 
     while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
     {
@@ -602,15 +631,8 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [%x]\n", data->iwd_Win
 
 		case MUIA_Window_Activate:
 			if (data->iwd_IconListObj)
-			{
-				IPTR focusicon = NULL;
 				GET(data->iwd_IconListObj, MUIA_IconList_FocusIcon, &focusicon);
-				if (focusicon)
-				{
-					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntry, focusicon, ICONENTRY_DRAWMODE_PLAIN);
-					DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntryLabel, focusicon, ICONENTRY_DRAWMODE_PLAIN);
-				}
-			}
+
 			break;
 
 		case MUIA_IconWindow_Font:
@@ -630,7 +652,7 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_Location [drawer '%s']\n
 			if (!data->iwd_Flag_ISROOT)
 			{
 				SET(self, MUIA_Window_Title, (IPTR)data->iwd_DirectoryPath);
-				SET(data->iwd_ToolbarLocationStringObj, MUIA_String_Contents, (IPTR)data->iwd_DirectoryPath);
+				SET(data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, (IPTR)data->iwd_DirectoryPath);
 			}
 			break;
 
@@ -644,7 +666,7 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_BackgroundAttrib (not im
 				// remove toolbar
 				if (!(( BOOL )tag->ti_Data))
 				{
-					if (data->iwd_ToolbarPanelObj != NULL)
+					if (data->iwd_Toolbar_PanelObj != NULL)
 					{
 						data->iwd_ExtensionGroupSpacerObj = HSpace(0);
 						
@@ -653,18 +675,22 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_BackgroundAttrib (not im
 
 						if ((data->iwd_ExtensionGroupSpacerObj) && (DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_InitChange)))
 						{
-							DoMethod(data->iwd_ExtensionGroupObj, OM_REMMEMBER, (IPTR)data->iwd_ToolbarPanelObj);
+							DoMethod(data->iwd_ExtensionGroupObj, OM_REMMEMBER, (IPTR)data->iwd_Toolbar_PanelObj);
 							DoMethod(data->iwd_ExtensionGroupObj, OM_ADDMEMBER, (IPTR)data->iwd_ExtensionGroupSpacerObj);
 							DoMethod(data->iwd_ExtensionGroupObj, MUIM_Group_ExitChange);
-							data->iwd_ToolbarPanelObj = NULL;
+							data->iwd_Toolbar_PanelObj = NULL;
 						}
 					}
 				}
 				else
 				{
 					// setup toolbar
-					if (data->iwd_ToolbarPanelObj == NULL)
-						IconWindow__SetupToolbar ( CLASS, self );
+					if (data->iwd_Toolbar_PanelObj == NULL)
+					{
+						Object *prefs = NULL;
+						GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+						IconWindow__SetupToolbar(CLASS, self, prefs);
+					}
 				 }
 				 data->iwd_Flag_EXT_TOOLBARENABLED = (IPTR)tag->ti_Data;
 			 }
@@ -672,10 +698,19 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_BackgroundAttrib (not im
         }
     }
 
-    if ( UpdateIconlist )
+    if (UpdateIconlist)
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
 
-    return DoSuperMethodA(CLASS, self, (Msg) message);
+	rv = DoSuperMethodA(CLASS, self, (Msg) message);
+
+	if (focusicon)
+	{
+D(bug("[iconwindow] IconWindow__OM_SET: Updating focused icon (@ %x)\n", focusicon));
+		DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntry, focusicon, ICONENTRY_DRAWMODE_PLAIN);
+		DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntryLabel, focusicon, ICONENTRY_DRAWMODE_PLAIN);
+	}
+
+    return rv;
 }
 
 
@@ -723,7 +758,7 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             break;
 
 		case MUIA_IconWindow_BackgroundAttrib:
-			*store = (IPTR)data->iwd_BackGround_Attrib;
+			*store = (IPTR)data->iwd_ViewSettings_Attrib;
             break;
 
         default:
@@ -750,14 +785,14 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Setup()\n"));
 
 D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: App PrefsObj @ %x\n", prefs));
 	
-	if ((prefs) && (data->iwd_BackGround_PrefsNotificationObject))
+	if ((prefs) && (data->iwd_ViewSettings_PrefsNotificationObject))
 	{
 D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: Setting up window background change hook\n"));
 
 		/* Set-up a hook to call ProcessBackground on prefs notification */
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_Background, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_Background, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
@@ -766,29 +801,29 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: Setting up window background 
 		{
 			DoMethod
 			(
-				data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_RenderMode, MUIV_EveryTime,
+				data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGRenderMode, MUIV_EveryTime,
 				(IPTR) self, 3, 
 				MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 			);
 		}
-		
+
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_TileMode, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGTileMode, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_XOffset, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGXOffset, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject, MUIM_Notify, MUIA_WandererPrefs_Background_YOffset, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGYOffset, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
@@ -814,38 +849,38 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Cleanup()\n"));
 		data->iwd_BackFillInfo = NULL;
 	}
 
-	if (data->iwd_BackGround_PrefsNotificationObject)
+	if (data->iwd_ViewSettings_PrefsNotificationObject)
 	{
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject,
-			MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_YOffset, (IPTR) self
+			data->iwd_ViewSettings_PrefsNotificationObject,
+			MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGYOffset, (IPTR) self
 		);
 	
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject,
-			MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_XOffset, (IPTR) self
+			data->iwd_ViewSettings_PrefsNotificationObject,
+			MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGXOffset, (IPTR) self
 		);
 	
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject,
-			MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_TileMode, (IPTR) self
+			data->iwd_ViewSettings_PrefsNotificationObject,
+			MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGTileMode, (IPTR) self
 		);
 
 		if (data->iwd_Flag_ISROOT)
 		{
 			DoMethod
 			(
-				data->iwd_BackGround_PrefsNotificationObject,
-				MUIM_KillNotifyObj, MUIA_WandererPrefs_Background_RenderMode, (IPTR) self
+				data->iwd_ViewSettings_PrefsNotificationObject,
+				MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGRenderMode, (IPTR) self
 			);
 		}
 
 		DoMethod
 		(
-			data->iwd_BackGround_PrefsNotificationObject,
+			data->iwd_ViewSettings_PrefsNotificationObject,
 			MUIM_KillNotifyObj, MUIA_Background, (IPTR) self
 		);
 	}
@@ -1098,14 +1133,14 @@ D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_ProcessBackground: Usin
 			IPTR IconWindowPB_BGMode     = 0;
 			IPTR IconWindowPB_BGTileMode = 0;
 
-			if ((IconWindowPB_Background = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute, data->iwd_BackGround_Attrib, MUIA_Background)) != -1)
+			if ((IconWindowPB_Background = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwd_ViewSettings_Attrib, MUIA_Background)) != -1)
 			{
-				if ((IconWindowPB_BGMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-												data->iwd_BackGround_Attrib, MUIA_WandererPrefs_Background_RenderMode)) == -1)
+				if ((IconWindowPB_BGMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+												data->iwd_ViewSettings_Attrib, MUIA_IconWindow_ImageBackFill_BGRenderMode)) == -1)
 					IconWindowPB_BGMode = WPD_BackgroundRenderMode_Tiled;
 
-				if ((IconWindowPB_BGTileMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-																	data->iwd_BackGround_Attrib, MUIA_WandererPrefs_Background_TileMode)) == -1)
+				if ((IconWindowPB_BGTileMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+																	data->iwd_ViewSettings_Attrib, MUIA_IconWindow_ImageBackFill_BGTileMode)) == -1)
 					IconWindowPB_BGTileMode = WPD_BackgroundTileMode_Float;
 				
 				SET(data->iwd_RootViewObj, MUIA_Background, IconWindowPB_Background);
@@ -1113,7 +1148,7 @@ D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_ProcessBackground: Usin
 				char *bgmode_string = IconWindowPB_Background;
 				BYTE this_mode = bgmode_string[0] - 48;
 
-	D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_ProcessBackground: MUI BG Mode = %d\n", this_mode));
+D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_ProcessBackground: MUI BG Mode = %d\n", this_mode));
 				
 				switch (this_mode)
 				{

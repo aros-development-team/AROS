@@ -121,9 +121,9 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
                 prefs_TextMaxLen = 0,
 				prefs_Processing = 0;
 
-		GET(prefs, MUIA_WandererPrefs_IconList_IconListMode , &prefs_ListMode);
-		GET(prefs, MUIA_WandererPrefs_LabelText_Mode, &prefs_TextMode);
-		GET(prefs, MUIA_WandererPrefs_LabelText_MaxLineLen, &prefs_TextMaxLen);		
+		GET(prefs, MUIA_IconList_IconListMode , &prefs_ListMode);
+		GET(prefs, MUIA_IconList_LabelText_Mode, &prefs_TextMode);
+		GET(prefs, MUIA_IconList_LabelText_MaxLineLen, &prefs_TextMaxLen);		
 		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);		
 
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
@@ -302,28 +302,28 @@ IPTR IconWindowIconList__MUIM_Setup
 	if (prefs)
 	{
 		/* Set our initial options */
-		SET(self, MUIA_IconList_IconListMode, XGET(prefs, MUIA_WandererPrefs_IconList_IconListMode ));
-		SET(self, MUIA_IconList_LabelText_Mode, XGET(prefs, MUIA_WandererPrefs_LabelText_Mode));
-		SET(self, MUIA_IconList_LabelText_MaxLineLen, XGET(prefs, MUIA_WandererPrefs_LabelText_MaxLineLen));
+		SET(self, MUIA_IconList_IconListMode, XGET(prefs, MUIA_IconList_IconListMode ));
+		SET(self, MUIA_IconList_LabelText_Mode, XGET(prefs, MUIA_IconList_LabelText_Mode));
+		SET(self, MUIA_IconList_LabelText_MaxLineLen, XGET(prefs, MUIA_IconList_LabelText_MaxLineLen));
 
 		/* Configure notifications incase they get updated =) */
 		DoMethod
 		(
-			prefs, MUIM_Notify, MUIA_WandererPrefs_IconList_IconListMode, MUIV_EveryTime,
+			prefs, MUIM_Notify, MUIA_IconList_IconListMode, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			prefs, MUIM_Notify, MUIA_WandererPrefs_LabelText_Mode, MUIV_EveryTime,
+			prefs, MUIM_Notify, MUIA_IconList_LabelText_Mode, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			prefs, MUIM_Notify, MUIA_WandererPrefs_LabelText_MaxLineLen, MUIV_EveryTime,
+			prefs, MUIM_Notify, MUIA_IconList_LabelText_MaxLineLen, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);

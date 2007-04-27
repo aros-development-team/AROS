@@ -93,7 +93,7 @@ struct MUIP_IconList_ViewIcon           {ULONG MethodID; struct IconEntry *icon;
 #define MUIA_IconList_LabelInfoText_ShadowPen               (MUIB_IconList_ConfigTags | 0x00000006) /* Zune: V1 ISG UBYTE */
 #define MUIA_IconList_LabelText_MaxLineLen                  (MUIB_IconList_ConfigTags | 0x00000007) /* Zune: V1 ISG ULONG */
 #define MUIA_IconList_LabelText_MultiLine                   (MUIB_IconList_ConfigTags | 0x00000008) /* Zune: V1 ISG ULONG */
-#define MUIA_IconList_LabelText_OnlySelectedMultiLine       (MUIB_IconList_ConfigTags | 0x00000009) /* Zune: V1 ISG BOOL  */
+#define MUIA_IconList_LabelText_MultiLineOnFocus            (MUIB_IconList_ConfigTags | 0x00000009) /* Zune: V1 ISG BOOL  */
 
 #define MUIA_IconList_Icon_HorizontalSpacing                (MUIB_IconList_ConfigTags | 0x00000010) /* Zune: V1 ISG UBYTE  */
 #define MUIA_IconList_Icon_VerticalSpacing                  (MUIB_IconList_ConfigTags | 0x00000011) /* Zune: V1 ISG UBYTE  */

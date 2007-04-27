@@ -69,6 +69,18 @@ struct  MUIP_IconWindow_BackFill_DrawBackground            {ULONG MethodID; IPTR
 #define ICONWINDOW_ACTION_DIRUP                   4
 #define ICONWINDOW_ACTION_APPWINDOWDROP           5
 
+/*** Identifier Base ********************************************************/
+
+#define MUIB_IconWindow_ImageBackFill                      (MUIB_IconWindow | 0x0fe00000)
+
+/*** Public Attributes ******************************************************/
+
+#define MUIA_IconWindow_ImageBackFill_BGRenderMode         (MUIB_IconWindow | 0x00000001) /* ISG */
+#define MUIA_IconWindow_ImageBackFill_BGTileMode           (MUIB_IconWindow | 0x00000002) /* ISG */
+#define MUIA_IconWindow_ImageBackFill_BGXOffset            (MUIB_IconWindow | 0x00000003) /* ISG */
+#define MUIA_IconWindow_ImageBackFill_BGYOffset            (MUIB_IconWindow | 0x00000004) /* ISG */
+
+
 /*** Variables **************************************************************/
 
 extern struct MUI_CustomClass                     *IconWindow_CLASS;
@@ -127,17 +139,20 @@ struct IconWindow_DATA
 	char                                 *iwd_Title;
     char                                 iwd_DirectoryPath[IWD_MAX_DIRECTORYPATHLEN];
 
-	char                                 *iwd_BackGround_Attrib;
-	char                                 *iwd_BackGround_PrefsNotificationObject;
+	char                                 *iwd_ViewSettings_Attrib;
+	Object                               *iwd_ViewSettings_PrefsNotificationObject;
 
 	Object                               *iwd_RootViewObj;
     Object                               *iwd_IconListObj;
-    Object                               *iwd_ToolbarPanelObj;
-    Object                               *iwd_ToolbarLocationStringObj;
 
     Object                               *iwd_ExtensionContainerObj;
     Object                               *iwd_ExtensionGroupObj;
     Object                               *iwd_ExtensionGroupSpacerObj;
+
+	Object                               *iwd_Toolbar_PrefsNotificationObject;
+
+    Object                               *iwd_Toolbar_PanelObj;
+    Object                               *iwd_Toolbar_LocationStringObj;
 
 	struct Hook                          iwd_PrefsUpdated_hook;
     struct Hook                          *iwd_ActionHook;
