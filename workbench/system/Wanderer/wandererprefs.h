@@ -20,10 +20,6 @@
 #define MUIA_WandererPrefs_ShowNetworkBrowser                (MUIB_WandererPrefs | 0x00000011) /* -SG */
 #define MUIA_WandererPrefs_ShowUserFolder                    (MUIB_WandererPrefs | 0x00000012) /* -SG */
 
-#define MUIA_WandererPrefs_IconList_IconListMode             (MUIB_WandererPrefs | 0x000000D0) /* -SG */
-#define MUIA_WandererPrefs_LabelText_Mode                    (MUIB_WandererPrefs | 0x000000D1) /* -SG */
-#define MUIA_WandererPrefs_LabelText_MaxLineLen              (MUIB_WandererPrefs | 0x000000D2) /* -SG */
-
 /*** Public Methods *********************************************************/
 #define MUIM_WandererPrefs_Reload                            (MUIB_WandererPrefs | 0x00000000)
 
