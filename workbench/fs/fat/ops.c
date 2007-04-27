@@ -28,6 +28,178 @@
         }                                                       \
     } while(0)
 
+/*
+ * this takes a full path and moves to the directory that would contain the
+ * last file in the path. ie calling with (dh, "foo/bar/baz", 11) will move to
+ * directory "foo/bar" under the dir specified by dh. dh will become a handle
+ * to the new dir. after the return name will be "baz" and namelen will be 3
+ */
+static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
+    LONG err;
+    UBYTE *name = *pname, *base;
+    ULONG namelen = *pnamelen, baselen;
+    struct DirEntry de;
+
+    /* we break the given name into two pieces - the name of the containing
+     * dir, and the name of the new dir to go within it. if the base ends up
+     * empty, then we just use the dirlock */
+    baselen = namelen;
+    base = name;
+    while (baselen > 0) {
+        if (base[baselen-1] != '/')
+            break;
+        baselen--;
+    }
+    while (baselen > 0) {
+        if (base[baselen-1] == '/')
+            break;
+        baselen--;
+    }
+    namelen -= baselen;
+    name = &base[baselen];
+
+    D(bug("[fat] base is '%.*s', name is '%.*s'\n", baselen, base, namelen, name));
+
+    if (baselen > 0) {
+        if ((err = GetDirEntryByPath(dh, base, baselen, &de)) != 0) {
+            D(bug("[fat] base not found\n"));
+            return err;
+        }
+
+        if ((err = InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(&de), dh)) != 0)
+            return err;
+    }
+
+    *pname = name;
+    *pnamelen = namelen;
+
+    return 0;
+}
+
+/*
+ * obtains a lock on the named file under the given dir. this is the service
+ * routine for DOS Open() (ie FINDINPUT/FINDOUTPUT/FINDUPDATE) and as such may
+ * only return a lock on a file, never on a dir.
+ */
+LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG action, struct ExtFileLock **filelock) {
+    LONG err;
+    BPTR b;
+    struct ExtFileLock *lock;
+    struct DirHandle dh;
+    struct DirEntry de;
+
+    D(bug("[fat] opening file '%.*s' in dir at cluster %ld, action %s\n",
+          namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0,
+          action == ACTION_FINDINPUT  ? "FINDINPUT"  :
+          action == ACTION_FINDOUTPUT ? "FINDOUTPUT" :
+          action == ACTION_FINDUPDATE ? "FINDUPDATE" : "[unknown]"));
+
+    /* no filename means they're trying to open whatever dirlock is (which
+     * despite the name may not actually be a dir). since there's already an
+     * extant lock, its never going be possible to get an exclusive lock, so
+     * this will only work for FINDINPUT (read-only) */
+    if (namelen == 0) {
+        D(bug("[fat] trying to copy passed dir lock\n"));
+
+        if (action != ACTION_FINDINPUT) {
+            D(bug("[fat] can't copy lock for write (exclusive)\n"));
+            return ERROR_OBJECT_IN_USE;
+        }
+
+        /* dirs can't be opened */
+        if (dirlock == NULL || dirlock->attr & ATTR_DIRECTORY) {
+            D(bug("[fat] dir lock is a directory, which can't be opened\n"));
+            return ERROR_OBJECT_WRONG_TYPE;
+        }
+
+        /* its a file, just copy the lock */
+        if ((err = CopyLock(dirlock, &b)) != 0)
+            return err;
+
+        *filelock = BADDR(b);
+        return 0;
+    }
+
+    /* lock the file */
+    err = TryLockObj(dirlock, name, namelen, action == ACTION_FINDINPUT ? SHARED_LOCK : EXCLUSIVE_LOCK, &b);
+
+    /* found it */
+    if (err == 0) {
+        lock = BADDR(b);
+
+        /* can't open directories */
+        if (lock->attr & ATTR_DIRECTORY) {
+            FreeLock(lock);
+            return ERROR_OBJECT_WRONG_TYPE;
+        }
+
+        /* INPUT/UPDATE use the file as/is */
+        if (action != ACTION_FINDOUTPUT) {
+            *filelock = lock;
+            return 0;
+        }
+
+        /* whereas OUTPUT truncates it */
+
+        /* update the dir entry to make the file empty */
+        InitDirHandle(lock->ioh.sb, lock->dir_cluster, &dh);
+        GetDirEntry(&dh, lock->dir_entry, &de);
+        de.e.entry.first_cluster_lo = de.e.entry.first_cluster_hi = 0;
+        de.e.entry.file_size = 0;
+        UpdateDirEntry(&de);
+
+        /* free the clusters */
+        FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
+        lock->ioh.first_cluster = 0xffffffff;
+        RESET_HANDLE(&lock->ioh);
+        lock->size = 0;
+
+        /* file is empty, go */
+        *filelock = lock;
+
+        return 0;
+    }
+
+    /* any error other than "not found" should be taken as-is */
+    if (err != ERROR_OBJECT_NOT_FOUND)
+        return err;
+
+    /* not found. for INPUT or UPDATE, we bail out */
+    if (action != ACTION_FINDOUTPUT)
+        return ERROR_OBJECT_NOT_FOUND;
+
+    /* otherwise its time to create the file. get a handle on the passed dir */
+    if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
+        return err;
+
+    /* get down to the correct subdir */
+    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0)
+        return err;
+
+    /* now see if the wanted name is in this dir. if it exists, then we do
+     * nothing */
+    if ((err = GetDirEntryByName(&dh, name, namelen, &de)) == 0) {
+        D(bug("[fat] name exists, can't do anything\n"));
+        ReleaseDirHandle(&dh);
+        return ERROR_OBJECT_EXISTS;
+    }
+
+    /* create the entry */
+    if ((err = CreateDirEntry(&dh, name, namelen, 0, 0, &de)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* lock the new file */
+    err = LockFile(de.index, de.cluster, EXCLUSIVE_LOCK, &b);
+    *filelock = BADDR(b);
+
+    /* done */
+    ReleaseDirHandle(&dh);
+
+    return err;
+}
+
 /* find the named file in the directory referenced by dirlock, and delete it.
  * if the file is a directory, it will only be deleted if its empty */
 LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
@@ -128,7 +300,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     ReleaseDirHandle(&dh);
 
     /* now free the clusters the file was using */
-    FREE_CLUSTER_CHAIN(glob->sb, lock->ioh.first_cluster);
+    FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
 
     /* this lock is now completely meaningless */
     FreeLock(lock);
@@ -141,46 +313,19 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock) {
     LONG err;
     BPTR b;
-    UBYTE *base;
-    ULONG baselen;
     ULONG cluster;
     struct DirHandle dh, sdh;
     struct DirEntry de, sde;
 
-    D(bug("[fat] creating directory '%.*s' in directory at cluster %ld\n", namelen, name, dirlock->ioh.first_cluster));
+    D(bug("[fat] creating directory '%.*s' in directory at cluster %ld\n", namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0));
 
-    /* we break the given name into two pieces - the name of the containing
-     * dir, and the name of the new dir to go within it. if the base ends up
-     * empty, then we just use the dirlock */
-    baselen = namelen;
-    base = name;
-    while (baselen > 0) {
-        if (base[baselen-1] != '/')
-            break;
-        baselen--;
-    }
-    while (baselen > 0) {
-        if (base[baselen-1] == '/')
-            break;
-        baselen--;
-    }
-    namelen -= baselen;
-    name = &base[baselen];
-
-    D(bug("[fat] base is '%.*s', name is '%.*s'\n", baselen, base, namelen, name));
-
-    if ((err = InitDirHandle(glob->sb, dirlock->ioh.first_cluster, &dh)) != 0)
+    /* get a handle on the passed dir */
+    if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
         return err;
 
-    if (baselen > 0) {
-        if ((err = GetDirEntryByPath(&dh, base, baselen, &de)) != 0) {
-            D(bug("[fat] base not found\n"));
-            return err;
-        }
-
-        if ((err = InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh)) != 0)
-            return err;
-    }
+    /* get down to the correct subdir */
+    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0)
+        return err;
 
     /* now see if the wanted name is in this dir. if it exists, then we do
      * nothing */
@@ -191,27 +336,27 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     }
 
     /* find a free cluster to store the dir in */
-    if ((err = FindFreeCluster(glob->sb, &cluster)) != 0) {
+    if ((err = FindFreeCluster(dh.ioh.sb, &cluster)) != 0) {
         ReleaseDirHandle(&dh);
         return err;
     }
 
     /* allocate it */
-    SET_NEXT_CLUSTER(glob->sb, cluster, glob->sb->eoc_mark);
+    SET_NEXT_CLUSTER(dh.ioh.sb, cluster, dh.ioh.sb->eoc_mark);
 
     D(bug("[fat] allocated cluster %ld for directory\n", cluster));
 
     /* create the entry, pointing to the new cluster */
     if ((err = CreateDirEntry(&dh, name, namelen, ATTR_DIRECTORY, cluster, &de)) != 0) {
         /* deallocate the cluster */
-        SET_NEXT_CLUSTER(glob->sb, cluster, 0);
+        SET_NEXT_CLUSTER(dh.ioh.sb, cluster, 0);
 
         ReleaseDirHandle(&dh);
         return err;
     }
 
     /* now get a handle on the new directory */
-    InitDirHandle(glob->sb, cluster, &sdh);
+    InitDirHandle(dh.ioh.sb, cluster, &sdh);
 
     /* create the dot entry. its a direct copy of the just-created entry, but
      * with a different name */

@@ -118,6 +118,8 @@ LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
     GetDirEntryShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
     GetDirEntryLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
 
+    fl->pos = 0;
+
     ReleaseDirHandle(&dh);
 
     *res = MKBADDR(fl);
@@ -152,6 +154,8 @@ LONG LockRoot(LONG axs, BPTR *res) {
 
     CopyMem(glob->sb->volume.name, fl->name, 32);
 
+    fl->pos = 0;
+
     *res = MKBADDR(fl);
     return 0;
 }
@@ -184,6 +188,8 @@ LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res) {
     RESET_HANDLE(&(fl->ioh));
 
     memcpy(fl->name, src_fl->name, 108);
+
+    fl->pos = 0;
 
     *res = MKBADDR(fl);
     return 0;
