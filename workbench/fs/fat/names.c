@@ -188,7 +188,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, UBYTE *name, ULONG *len) {
 LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
     UBYTE basis[11];
     ULONG nlong;
-    ULONG src, dst, i;
+    ULONG src, dst, i, left;
     ULONG seq = 0, cur = 0;
     UBYTE tail[8];
     struct DirHandle dh;
@@ -216,16 +216,24 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
 
     /* copy the first eight chars in, ignoring spaces and stopping at period */
     if (src != len) {
-        while (src < len && dst < 8 && name[src] != '.')
-            if (name[src] != ' ')
-                basis[dst++] = toupper(name[src++]);
-            else
-                src++;
+        while (src < len && dst < 8 && name[src] != '.') {
+            if (name[src] != ' ') {
+                basis[dst] = toupper(name[src]);
+                if (basis[dst] != name[src])
+                    seq = 1;
+                dst++;
+            }
+            src++;
+        }
     }
 
     /* if there was more bytes available, then we need a tail later */
     if (src < len && name[src] != '.')
         seq = 1;
+
+    /* make a note of the length of the left side. this gets used further down
+     * to determine the position to add the tail */
+    left = dst;
 
     /* remember the current value of src for the multiple-dot check below */
     i = src;
@@ -247,11 +255,15 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
         src++;
 
         /* copy it in */
-        while(src < len && dst < 11)
-            if (name[src] != ' ')
-                basis[dst++] = toupper(name[src++]);
-            else
-                src++;
+        while(src < len && dst < 11) {
+            if (name[src] != ' ') {
+                basis[dst] = toupper(name[src]);
+                if (basis[dst] != name[src])
+                    seq = 1;
+                dst++;
+            }
+            src++;
+        }
     }
 
     /* if there was more bytes available, then we'll need a tail later */
@@ -273,22 +285,27 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
     if (nlong > 0) {
         D(bug("[fat] searching for basis name to confirm that its not in use\n"));
 
-        err = 0;
-        /* loop over the entries until we hit the end of the dir */
-        while ((err = GetNextDirEntry(&dh, &de)) != ERROR_OBJECT_NOT_FOUND) {
+        /* loop over the entries and compare them with the basis until we find
+         * a gap */
+        while (1) {
+            /* build a new tail if necessary */
+            if (cur != seq) {
+                sprintf(tail, "~%ld", seq);
+                while (left + strlen(tail) > 8) left--;
+                CopyMem(tail, &basis[left], strlen(tail));
+                cur = seq;
+
+                D(bug("[fat] new basis name is '%.11s'\n", basis));
+            }
+
+            /* get the next entry, and bail if we hit the end of the dir */
+            if ((err = GetNextDirEntry(&dh, &de)) == ERROR_OBJECT_NOT_FOUND)
+                break;
+
             /* abort on any other error */
             if (err != 0) {
                 ReleaseDirHandle(&dh);
                 return err;
-            }
-
-            /* build a new tail if necessary */
-            if (cur != seq) {
-                sprintf(tail, "~%ld", seq);
-                CopyMem(tail, &basis[8-strlen(tail)], strlen(tail));
-                cur = seq;
-
-                D(bug("[fat] new basis name is '%.11s'\n", basis));
             }
 
             /* compare the two names */
@@ -394,7 +411,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
 
 /* return the number of long name entries that are required to store this name */
 ULONG NumLongNameEntries(STRPTR name, ULONG len) {
-    ULONG i, left, right;
+    ULONG i, left;
 
     /* XXX because we don't handle unicode this is pretty simple - thirteen
      * characters per long entry. if we ever support unicode, then this
@@ -404,10 +421,12 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
     /* if the name is standard 8.3 (or less) then we don't need any long name
      * entries - the name can be contained within the standard entry */
     if (len <= 12) {
-        left = right = 0;
+        left = 0;
 
         for (i = 0; i < 8 && i < len; i++) {
             if (name[i] == '.')
+                break;
+            if (name[i] != toupper(name[i]))
                 break;
             left++;
         }
@@ -417,7 +436,8 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
 
         if (name[i] == '.') {
             for (i = 0; i < 3 && left + 1 + i < len; i++)
-                right++;
+                if (name[left+1+i] != toupper(name[left+1+i]))
+                    break;
 
             if (left + 1 + i == len)
                 return 0;
