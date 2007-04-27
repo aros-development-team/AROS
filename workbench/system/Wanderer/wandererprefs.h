@@ -14,6 +14,7 @@
 
 /*** Public Attributes ******************************************************/
 #define MUIA_WandererPrefs_Processing                        (MUIB_WandererPrefs | 0x00000001) /* --G Set (TRUE) while processing/ cleared (FALSE) when complete*/
+/* we should just use/store the Wanderer/Zune MUIA_(s) for these (no need for duplicate attributes) */
 #define MUIA_WandererPrefs_NavigationMethod                  (MUIB_WandererPrefs | 0x00000002) /* -SG */
 #define MUIA_WandererPrefs_Toolbar_Enabled                   (MUIB_WandererPrefs | 0x00000003) /* -SG */
 #define MUIA_WandererPrefs_ShowNetworkBrowser                (MUIB_WandererPrefs | 0x00000011) /* -SG */
@@ -22,23 +23,14 @@
 #define MUIA_WandererPrefs_IconList_IconListMode             (MUIB_WandererPrefs | 0x000000D0) /* -SG */
 #define MUIA_WandererPrefs_LabelText_Mode                    (MUIB_WandererPrefs | 0x000000D1) /* -SG */
 #define MUIA_WandererPrefs_LabelText_MaxLineLen              (MUIB_WandererPrefs | 0x000000D2) /* -SG */
-#define MUIA_WandererPrefs_LabelText_MultiLine               (MUIB_WandererPrefs | 0x000000D3) /* -SG */
-#define MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine   (MUIB_WandererPrefs | 0x000000D4) /* -SG  */
-
-#define MUIA_WandererPrefs_Background                        (MUIB_WandererPrefs | 0x000000E0) /* I-G */
-
-#define MUIA_WandererPrefs_Background_RenderMode             (MUIB_WandererPrefs | 0x000000E1) /* -SG */
-#define MUIA_WandererPrefs_Background_TileMode               (MUIB_WandererPrefs | 0x000000E2) /* -SG */
-#define MUIA_WandererPrefs_Background_XOffset                (MUIB_WandererPrefs | 0x000000E3) /* -SG */
-#define MUIA_WandererPrefs_Background_YOffset                (MUIB_WandererPrefs | 0x000000E4) /* -SG */
 
 /*** Public Methods *********************************************************/
 #define MUIM_WandererPrefs_Reload                            (MUIB_WandererPrefs | 0x00000000)
 
-#define MUIM_WandererPrefs_Background_GetNotifyObject        (MUIB_WandererPrefs | 0x000000E0) /* --G */
-#define MUIM_WandererPrefs_Background_GetAttribute           (MUIB_WandererPrefs | 0x000000E1) /* --G */
-struct  MUIP_WandererPrefs_Background_GetNotifyObject        {ULONG MethodID; char *Background_Name;};
-struct  MUIP_WandererPrefs_Background_GetAttribute           {ULONG MethodID; char *Background_Name; ULONG AttributeID;};
+#define MUIM_WandererPrefs_ViewSettings_GetNotifyObject      (MUIB_WandererPrefs | 0x000000E0) /* --G */
+#define MUIM_WandererPrefs_ViewSettings_GetAttribute         (MUIB_WandererPrefs | 0x000000E1) /* --G */
+struct  MUIP_WandererPrefs_ViewSettings_GetNotifyObject      {ULONG MethodID; char *Background_Name;};
+struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {ULONG MethodID; char *Background_Name; ULONG AttributeID;};
 
 #define WPD_BackgroundRenderMode_Tiled       				 1        // Default
 #define WPD_BackgroundRenderMode_Scale       	             2        // Scaled to screen

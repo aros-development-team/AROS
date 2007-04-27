@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -19,7 +19,7 @@
 #include "locale.h"
 #include "wpeditor.h"
 
-#define VERSIONSTR "$VER: Wanderer Prefs 1.1 (18.02.2006) ©1995-2006 The AROS Development Team"
+#define VERSIONSTR "$VER: Wanderer Prefs 1.1 (18.02.2006) ©1995-2007 The AROS Development Team"
 
 int main(void)
 {

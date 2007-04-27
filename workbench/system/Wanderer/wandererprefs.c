@@ -39,12 +39,12 @@ struct WandererPrefs_DATA
     ULONG  wpd_IconTextMaxLen;
 
     ULONG  wpd_MultiLine;
-    ULONG  wpd_MultiLineSelected;
+    ULONG  wpd_MultiLineOnFocus;
 	
-	struct List wpd_Backgrounds;
+	struct List wpd_ViewSettings;
 };
 
-struct WandererPrefs_BackgroundNode
+struct WandererPrefs_ViewSettingsNode
 {
 	struct Node    wpbn_Node;
 	char           *wpbn_Name;
@@ -87,7 +87,7 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
 		SETUP_INST_DATA;
 
-		NewList(&data->wpd_Backgrounds);
+		NewList(&data->wpd_ViewSettings);
         DoMethod(self, MUIM_WandererPrefs_Reload);
     }
     
@@ -127,24 +127,26 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                 data->wpd_ToolbarEnabled = (LONG)tag->ti_Data;
 			    break;
 
-            case MUIA_WandererPrefs_IconList_IconListMode:
+/* The Following attributes will be moved to the ViewSettings Specific Chunks */
+			
+            case MUIA_IconList_IconListMode:
                 data->wpd_IconListMode = (LONG)tag->ti_Data;
                 break;
 
-            case MUIA_WandererPrefs_LabelText_Mode:
+            case MUIA_IconList_LabelText_Mode:
                 data->wpd_IconTextMode = (ULONG)tag->ti_Data;
                 break;
 
-            case MUIA_WandererPrefs_LabelText_MaxLineLen:
+            case MUIA_IconList_LabelText_MaxLineLen:
                 data->wpd_IconTextMaxLen = (ULONG)tag->ti_Data;
                 break;
 
-            case MUIA_WandererPrefs_LabelText_MultiLine:
+            case MUIA_IconList_LabelText_MultiLine:
                 data->wpd_MultiLine = (ULONG)tag->ti_Data;
                 break;
 
-            case MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine:
-                data->wpd_MultiLineSelected = (ULONG)tag->ti_Data;
+            case MUIA_IconList_LabelText_MultiLineOnFocus:
+                data->wpd_MultiLineOnFocus = (ULONG)tag->ti_Data;
                 break;
         }
     }
@@ -176,24 +178,24 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = (IPTR)data->wpd_ToolbarEnabled;
             break;
 
-        case MUIA_WandererPrefs_IconList_IconListMode:
+        case MUIA_IconList_IconListMode:
             *store = (IPTR)data->wpd_IconListMode;
             break;
 
-        case MUIA_WandererPrefs_LabelText_Mode:
+        case MUIA_IconList_LabelText_Mode:
             *store = (IPTR)data->wpd_IconTextMode;
             break;
             
-        case MUIA_WandererPrefs_LabelText_MaxLineLen:
+        case MUIA_IconList_LabelText_MaxLineLen:
             *store = (IPTR)data->wpd_IconTextMaxLen;
             break;
 
-		case MUIA_WandererPrefs_LabelText_MultiLine:
+		case MUIA_IconList_LabelText_MultiLine:
 			*store = (IPTR)data->wpd_MultiLine;
 			break;
 
-		case MUIA_WandererPrefs_LabelText_OnlySelectedMultiLine:
-			*store = (IPTR)data->wpd_MultiLineSelected;
+		case MUIA_IconList_LabelText_MultiLineOnFocus:
+			*store = (IPTR)data->wpd_MultiLineOnFocus;
 			break;
 
 		default:
@@ -218,107 +220,107 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
 		if (cont)
 		{
 			if ((IPTR)global_chunk[i].ti_Tag == TAG_DONE) cont = FALSE;
-			SET(self, (IPTR)global_chunk[i].ti_Tag, (IPTR)global_chunk[i].ti_Data);
+			else SET(self, (IPTR)global_chunk[i].ti_Tag, (IPTR)global_chunk[i].ti_Data);
 		}
 	}
 
 	return TRUE;
 }
 
-BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *background_chunk)
+BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSettings_Chunk)
 {
     SETUP_INST_DATA;
 
-	struct TagItem *network_tags = background_chunk;
+	struct TagItem *network_tags = _viewSettings_Chunk;
 	SET(self, network_tags[0].ti_Tag, network_tags[0].ti_Data);
 
 	return TRUE;
 }
 
-struct WandererPrefs_BackgroundNode *WandererPrefs_FindBackgroundNode(struct WandererPrefs_DATA *data, char *node_Name)
+struct WandererPrefs_ViewSettingsNode *WandererPrefs_FindViewSettingsNode(struct WandererPrefs_DATA *data, char *node_Name)
 {
-	struct WandererPrefs_BackgroundNode *current_Node = NULL;
+	struct WandererPrefs_ViewSettingsNode *current_Node = NULL;
 
-	ForeachNode(&data->wpd_Backgrounds, current_Node)
+	ForeachNode(&data->wpd_ViewSettings, current_Node)
 	{
 		if ((strcmp(current_Node->wpbn_Name, node_Name)) == 0) return current_Node;
 	}
 	return NULL;
 }
 
-BOOL WandererPrefs_ProccessBackgroundChunk(Class *CLASS, Object *self, char *background_name, UBYTE *background_chunk, IPTR chunk_size)
+BOOL WandererPrefs_ProccessViewSettingsChunk(Class *CLASS, Object *self, char *_viewSettings_ViewName, UBYTE *_viewSettings_Chunk, IPTR chunk_size)
 {
     SETUP_INST_DATA;
 
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk()\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk()\n"));
 	BOOL                                 background_node_found = FALSE;
-	struct WandererPrefs_BackgroundNode  *background_Node = NULL;
+	struct WandererPrefs_ViewSettingsNode  *_viewSettings_Node = NULL;
 
-	background_Node = WandererPrefs_FindBackgroundNode(data, background_name);
+	_viewSettings_Node = WandererPrefs_FindViewSettingsNode(data, _viewSettings_ViewName);
 
-	if (background_Node)
+	if (_viewSettings_Node)
 	{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Updating Existing node @ %x\n", background_Node));
-		if (background_Node->wpbn_Background) FreeVec(background_Node->wpbn_Background);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Updating Existing node @ %x\n", _viewSettings_Node));
+		if (_viewSettings_Node->wpbn_Background) FreeVec(_viewSettings_Node->wpbn_Background);
 	}
 	else
 	{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Creating new node for '%s'\n", background_name));
-		background_Node = AllocMem(sizeof(struct WandererPrefs_BackgroundNode), MEMF_CLEAR|MEMF_PUBLIC);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Creating new node for '%s'\n", _viewSettings_ViewName));
+		_viewSettings_Node = AllocMem(sizeof(struct WandererPrefs_ViewSettingsNode), MEMF_CLEAR|MEMF_PUBLIC);
 
-		background_Node->wpbn_Name = AllocVec(strlen(background_name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
-		strcpy(background_Node->wpbn_Name, background_name);
+		_viewSettings_Node->wpbn_Name = AllocVec(strlen(_viewSettings_ViewName) + 1, MEMF_CLEAR|MEMF_PUBLIC);
+		strcpy(_viewSettings_Node->wpbn_Name, _viewSettings_ViewName);
 
-		background_Node->wpbn_NotifyObject = NotifyObject, End;
+		_viewSettings_Node->wpbn_NotifyObject = NotifyObject, End;
 
-		AddTail(&data->wpd_Backgrounds, &background_Node->wpbn_Node);
+		AddTail(&data->wpd_ViewSettings, &_viewSettings_Node->wpbn_Node);
 	}
 
-	background_Node->wpbn_Background = AllocVec(strlen(background_chunk) + 1, MEMF_CLEAR|MEMF_PUBLIC);
-	strcpy(background_Node->wpbn_Background, background_chunk);
+	_viewSettings_Node->wpbn_Background = AllocVec(strlen(_viewSettings_Chunk) + 1, MEMF_CLEAR|MEMF_PUBLIC);
+	strcpy(_viewSettings_Node->wpbn_Background, _viewSettings_Chunk);
 
-	SET(background_Node->wpbn_NotifyObject, MUIA_Background, background_chunk);
+	SET(_viewSettings_Node->wpbn_NotifyObject, MUIA_Background, _viewSettings_Chunk);
 	
-	if (chunk_size > (strlen(background_chunk) + 1))
+	if (chunk_size > (strlen(_viewSettings_Chunk) + 1))
 	{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Chunk has options Tag data ..\n"));
-		UBYTE bgtag_offset = ((strlen(background_chunk)  + 1)/4);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Chunk has options Tag data ..\n"));
+		UBYTE _viewSettings_TagOffset = ((strlen(_viewSettings_Chunk)  + 1)/4);
 
-		if ((bgtag_offset * 4) != (strlen(background_chunk)  + 1))
+		if ((_viewSettings_TagOffset * 4) != (strlen(_viewSettings_Chunk)  + 1))
 		{
-			bgtag_offset = (bgtag_offset + 1) * 4;
-D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length unalined - rounding up (length %d, rounded %d) \n", strlen(background_chunk) + 1, bgtag_offset ));
+			_viewSettings_TagOffset = (_viewSettings_TagOffset + 1) * 4;
+D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length unalined - rounding up (length %d, rounded %d) \n", strlen(_viewSettings_Chunk) + 1, _viewSettings_TagOffset ));
 		}
 		else
 		{
-			bgtag_offset = bgtag_offset * 4;
-D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length doesnt need aligned (length %d) \n", strlen(background_chunk) + 1));
+			_viewSettings_TagOffset = _viewSettings_TagOffset * 4;
+D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length doesnt need aligned (length %d) \n", strlen(_viewSettings_Chunk) + 1));
 		}
 
-		IPTR bgtag_count  = ((chunk_size - bgtag_offset)/sizeof(struct TagItem));
+		IPTR _viewSettings_TagCount  = ((chunk_size - _viewSettings_TagOffset)/sizeof(struct TagItem));
 
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: %d Tags at offset %d ..\n", bgtag_count, bgtag_offset));
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: %d Tags at offset %d ..\n", _viewSettings_TagCount, _viewSettings_TagOffset));
 
-		if (background_Node->wpbn_Options != NULL)
+		if (_viewSettings_Node->wpbn_Options != NULL)
 		{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Freeing old background tag's @ %x\n", background_Node->wpbn_Options));
-			FreeVec(background_Node->wpbn_Options);
-			background_Node->wpbn_Options = NULL;
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Freeing old background tag's @ %x\n", _viewSettings_Node->wpbn_Options));
+			FreeVec(_viewSettings_Node->wpbn_Options);
+			_viewSettings_Node->wpbn_Options = NULL;
 		}
 		
-		background_Node->wpbn_Options = AllocVec((bgtag_count + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: New tag storage @ %x\n", background_Node->wpbn_Options));
+		_viewSettings_Node->wpbn_Options = AllocVec((_viewSettings_TagCount + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: New tag storage @ %x\n", _viewSettings_Node->wpbn_Options));
 
-		CopyMem(background_chunk + bgtag_offset, background_Node->wpbn_Options, (bgtag_count) * sizeof(struct TagItem));
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Tags copied to storage \n"));
+		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem));
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to storage \n"));
 
-		background_Node->wpbn_Options[bgtag_count].ti_Tag = TAG_DONE;
+		_viewSettings_Node->wpbn_Options[_viewSettings_TagCount].ti_Tag = TAG_DONE;
 
 		int i = 0;
-		for (i = 0; i < bgtag_count; i++)
+		for (i = 0; i < _viewSettings_TagCount; i++)
 		{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessBackgroundChunk: Setting Tag %x Value %d\n", background_Node->wpbn_Options[i].ti_Tag, background_Node->wpbn_Options[i].ti_Data));
-			SET(background_Node->wpbn_NotifyObject, background_Node->wpbn_Options[i].ti_Tag, background_Node->wpbn_Options[i].ti_Data);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Setting Tag %x Value %d\n", _viewSettings_Node->wpbn_Options[i].ti_Tag, _viewSettings_Node->wpbn_Options[i].ti_Data));
+			SET(_viewSettings_Node->wpbn_NotifyObject, _viewSettings_Node->wpbn_Options[i].ti_Tag, _viewSettings_Node->wpbn_Options[i].ti_Data);
 		}
 	}
 	return TRUE;
@@ -409,7 +411,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 										{
 											char *bg_name = this_chunk_name + strlen("wanderer:background") + 1;
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", bg_name));
-											WandererPrefs_ProccessBackgroundChunk(CLASS, self, bg_name, chunk_buffer, this_chunk_size);
+											WandererPrefs_ProccessViewSettingsChunk(CLASS, self, bg_name, chunk_buffer, this_chunk_size);
 										}
 									}	
 									if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
@@ -451,51 +453,51 @@ D(bug("[WANDERER.PREFS] Failed to open stream!, returncode %ld!\n", error));
     return FALSE;
 }
 
-IPTR WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject
+IPTR WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject
 (
-    Class *CLASS, Object *self, struct MUIP_WandererPrefs_Background_GetNotifyObject *message
+    Class *CLASS, Object *self, struct MUIP_WandererPrefs_ViewSettings_GetNotifyObject *message
 )
 {
 	SETUP_INST_DATA;
-	struct WandererPrefs_BackgroundNode *current_Node = NULL;
+	struct WandererPrefs_ViewSettingsNode *current_Node = NULL;
 
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject()\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject()\n"));
 
-    if (current_Node = WandererPrefs_FindBackgroundNode(data, message->Background_Name))
+    if (current_Node = WandererPrefs_FindViewSettingsNode(data, message->Background_Name))
 	{
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject: Returning Object for existing record\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject: Returning Object for existing record\n"));
 		return current_Node->wpbn_NotifyObject;
 	}
 
-	current_Node = AllocMem(sizeof(struct WandererPrefs_BackgroundNode), MEMF_CLEAR|MEMF_PUBLIC);
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject: Created new node ..\n"));
+	current_Node = AllocMem(sizeof(struct WandererPrefs_ViewSettingsNode), MEMF_CLEAR|MEMF_PUBLIC);
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject: Created new node ..\n"));
 
 	current_Node->wpbn_Name = AllocVec(strlen(message->Background_Name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
 	strcpy(current_Node->wpbn_Name, message->Background_Name);
 
 	current_Node->wpbn_NotifyObject = NotifyObject, End;
 	
-	AddTail(&data->wpd_Backgrounds, &current_Node->wpbn_Node);
+	AddTail(&data->wpd_ViewSettings, &current_Node->wpbn_Node);
 
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetNotifyObject: Notify Object @ %x\n", current_Node->wpbn_NotifyObject));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject: Notify Object @ %x\n", current_Node->wpbn_NotifyObject));
 
 	return current_Node->wpbn_NotifyObject;
 }
 
 
-IPTR WandererPrefs__MUIM_WandererPrefs_Background_GetAttribute
+IPTR WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute
 (
-    Class *CLASS, Object *self, struct MUIP_WandererPrefs_Background_GetAttribute *message
+    Class *CLASS, Object *self, struct MUIP_WandererPrefs_ViewSettings_GetAttribute *message
 )
 {
 	SETUP_INST_DATA;
-	struct WandererPrefs_BackgroundNode *current_Node = NULL;
+	struct WandererPrefs_ViewSettingsNode *current_Node = NULL;
 
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetAttribute()\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute()\n"));
 
-    if (current_Node = WandererPrefs_FindBackgroundNode(data, message->Background_Name))
+    if (current_Node = WandererPrefs_FindViewSettingsNode(data, message->Background_Name))
 	{
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Background_GetAttribute: Found Background Record ..\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Found Background Record ..\n"));
 		if (message->AttributeID == MUIA_Background)
 		{
 			if (current_Node->wpbn_Background) return current_Node->wpbn_Background;
@@ -517,6 +519,6 @@ ZUNE_CUSTOMCLASS_7
     OM_SET,                                              struct opSet *,
     OM_GET,                                              struct opGet *,
     MUIM_WandererPrefs_Reload,                           Msg,
-    MUIM_WandererPrefs_Background_GetNotifyObject,       struct MUIP_WandererPrefs_Background_GetNotifyObject *,
-    MUIM_WandererPrefs_Background_GetAttribute,          struct MUIP_WandererPrefs_Background_GetAttribute *
+    MUIM_WandererPrefs_ViewSettings_GetNotifyObject,     struct MUIP_WandererPrefs_ViewSettings_GetNotifyObject *,
+    MUIM_WandererPrefs_ViewSettings_GetAttribute,        struct MUIP_WandererPrefs_ViewSettings_GetAttribute *
 );

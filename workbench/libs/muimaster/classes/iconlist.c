@@ -175,7 +175,7 @@ struct MUI_IconData
 	BOOL                          icld__Option_IconListFixedBackground;          /* */
 	BOOL                          icld__Option_IconListScaledBackground;         /* */
     ULONG                         icld__Option_LabelTextMultiLine;               /* */
-    BOOL                          icld__Option_LabelTextOnlySelectedMultiLine;   /* */
+    BOOL                          icld__Option_LabelTextMultiLineOnFocus;        /* */
     UBYTE                         icld__Option_IconHorizontalSpacing;            /* */
     UBYTE                         icld__Option_IconVerticalSpacing;              /* */
     UBYTE                         icld__Option_IconImageSpacing;                 /* */

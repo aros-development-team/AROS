@@ -326,15 +326,22 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 )
 {
 
-	LONG                  Depth;
-    Object                *_IconWindows_PrefsObj = NULL,
-	                      *_IconWindows_WindowObj = NULL;
+	LONG                  Depth = 0;
+    Object                *_IconWindows_PrefsObj    = NULL,
+	                      *_IconWindows_WindowObj   = NULL;
 	Object 				  *_IconWindows_IconListObj = NULL;
 
-	IPTR                  BackGround_Attrib = 0,
-	                      BackGround_Base   = 0,
-	                      BackGround_Mode   = 0;
+	BOOL    			  options_changed = FALSE;
 
+	IPTR                  prefs_processing        = 0;
+	
+	IPTR                  BackGround_Attrib       = 0,
+	                      BackGround_Base         = 0,
+	                      BackGround_RenderMode   = 0,
+	                      BackGround_TileMode     = 0,
+	                      BackGround_XOffset      = 0,
+	                      BackGround_YOffset      = 0;
+	
 	struct BackFillInfo   *this_BFI = message->BackFill_Data;
 
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground()\n"));
@@ -342,6 +349,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground()\n
 	GET(_app(self), MUIA_Wanderer_Prefs, &_IconWindows_PrefsObj);
 
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: PrefsObj @ %x\n", _IconWindows_PrefsObj));
+	
 	GET(self, MUIA_IconWindow_Window, &_IconWindows_WindowObj);
 	GET(self, MUIA_IconWindow_IconList, &_IconWindows_IconListObj);
 
@@ -349,25 +357,34 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: MU
 
 	if ((_IconWindows_PrefsObj == NULL) || (_IconWindows_WindowObj == NULL) || (_IconWindows_IconListObj == NULL)) return FALSE;
 
+	GET(_IconWindows_PrefsObj, MUIA_WandererPrefs_Processing, &prefs_processing);
+
+#if defined(DEBUG)
+	if (prefs_processing)
+	{
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderer Prefs (re)loading detected\n"));
+	}
+#endif
+	
 	GET(_IconWindows_WindowObj, MUIA_IconWindow_BackgroundAttrib, &BackGround_Attrib);
 	
-D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background Attrib = %x\n", BackGround_Attrib));
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background Attrib = '%s'\n", BackGround_Attrib));
 
 	if (BackGround_Attrib == NULL) return FALSE;
 	
-	if ((BackGround_Base = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
+	if ((BackGround_Base = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
 									BackGround_Attrib, MUIA_Background)) == -1)
 		return FALSE;
 
-	if ((BackGround_Mode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-									BackGround_Attrib, MUIA_WandererPrefs_Background_RenderMode)) == -1)
-		BackGround_Mode = WPD_BackgroundRenderMode_Tiled;
+	if ((BackGround_RenderMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+									BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGRenderMode)) == -1)
+		BackGround_RenderMode = WPD_BackgroundRenderMode_Tiled;
 
 	UBYTE                  *this_bgtype    = (UBYTE *)BackGround_Base;
 	char                  *this_ImageName = (char *)(BackGround_Base + 2);
 	
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo @ %x\n", this_BFI));
-D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background '%s', mode %d\n", BackGround_Base, BackGround_Mode));
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background '%s', mode %d\n", BackGround_Base, BackGround_RenderMode));
 
 	if ((this_bgtype[0] - 48) != 5)
 	{
@@ -384,7 +401,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wa
 	if (this_BFI->bfi_Source)
 	{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo has existing source record @ %x\n", this_BFI->bfi_Source));
-		if ((strcmp(this_BFI->bfi_Source->bfsir_SourceImage, this_ImageName) == 0) && (this_BFI->bfi_Source->bfsir_BackGroundRenderMode == BackGround_Mode))
+		if ((strcmp(this_BFI->bfi_Source->bfsir_SourceImage, this_ImageName) == 0) && (this_BFI->bfi_Source->bfsir_BackGroundRenderMode == BackGround_RenderMode))
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: existing BackFillInfo Using the same background / mode\n"));
 			goto check_imagebuffer;
@@ -401,7 +418,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: ex
 		}
 	}
 
-	if (!(this_BFI->bfi_Source)) this_BFI->bfi_Source = ImageBackFill_FindSourceRecord(this_ImageName, BackGround_Mode);
+	if (!(this_BFI->bfi_Source)) this_BFI->bfi_Source = ImageBackFill_FindSourceRecord(this_ImageName, BackGround_RenderMode);
 
 	if (!(this_BFI->bfi_Source))
 	{
@@ -448,7 +465,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Da
 					if (this_BFI->bfi_Source->bfsir_DTRastPort = CreateRastPort())
 					{
 						this_BFI->bfi_Source->bfsir_DTRastPort->BitMap = this_BFI->bfi_Source->bfsir_DTBitMap;
-						this_BFI->bfi_Source->bfsir_BackGroundRenderMode = BackGround_Mode;
+						this_BFI->bfi_Source->bfsir_BackGroundRenderMode = BackGround_RenderMode;
 						this_BFI->bfi_Source->bfsir_OpenerCount = 0x01;
 
 						NewList(&this_BFI->bfi_Source->bfsir_Buffers);
@@ -510,7 +527,7 @@ check_imagebuffer:
 	this_BFI->bfi_CopyWidth = this_BFI->bfi_Source->bfsir_DTBitMapHeader->bmh_Width;
 	this_BFI->bfi_CopyHeight = this_BFI->bfi_Source->bfsir_DTBitMapHeader->bmh_Height;
 
-	switch (BackGround_Mode)
+	switch (BackGround_RenderMode)
 	{
 		case WPD_BackgroundRenderMode_Scale:
 		{
@@ -545,7 +562,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 				{
 					if ((this_BFI->bfi_Buffer->bfsib_BitMapWidth == this_BFI->bfi_CopyWidth) && (this_BFI->bfi_Buffer->bfsib_BitMapHeight == this_BFI->bfi_CopyHeight))
 					{
-						return TRUE;
+						goto pb_backfillsetup_complete;
 					}
 					else
 					{
@@ -593,7 +610,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 
 						AddTail(&this_BFI->bfi_Source->bfsir_Buffers, &this_Buffer->bfsib_Node);
 						
-						return TRUE;
+						goto pb_backfillsetup_complete;
 					}
 					break;
 				}
@@ -601,7 +618,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 				{
 					this_BFI->bfi_Buffer = this_Buffer;
 					this_Buffer->bfsib_OpenerCount += 1;
-					return TRUE;
+					goto pb_backfillsetup_complete;
 				}
 			}
 			// We arent the "ROOT" (desktop) window so only tile ...
@@ -610,17 +627,35 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 		default:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
-			if ((this_BFI->bfi_Options.bfo_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-																BackGround_Attrib, MUIA_WandererPrefs_Background_TileMode)) == -1)
-				this_BFI->bfi_Options.bfo_TileMode = WPD_BackgroundTileMode_Float;
+			if ((BackGround_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+																BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGTileMode)) == -1)
+				BackGround_TileMode = WPD_BackgroundTileMode_Float;
 
-			if ((this_BFI->bfi_Options.bfo_OffsetX = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-																BackGround_Attrib, MUIA_WandererPrefs_Background_XOffset)) == -1)
-				this_BFI->bfi_Options.bfo_OffsetX = 0;
-			
-			if ((this_BFI->bfi_Options.bfo_OffsetY = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_Background_GetAttribute,
-																BackGround_Attrib, MUIA_WandererPrefs_Background_YOffset)) == -1)
+			if ((BackGround_XOffset = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+																BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGXOffset)) == -1)
+				BackGround_XOffset = 0;
+
+			if ((BackGround_YOffset = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+																BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGYOffset)) == -1)
 				this_BFI->bfi_Options.bfo_OffsetY = 0;
+
+			if (this_BFI->bfi_Options.bfo_TileMode != BackGround_TileMode)
+			{
+				this_BFI->bfi_Options.bfo_TileMode = BackGround_TileMode;
+				options_changed = TRUE;
+			}
+
+			if (this_BFI->bfi_Options.bfo_OffsetX != BackGround_XOffset)
+			{
+				this_BFI->bfi_Options.bfo_OffsetX = BackGround_XOffset;
+				options_changed = TRUE;
+			}
+			
+			if (this_BFI->bfi_Options.bfo_OffsetY != BackGround_YOffset)
+			{
+				this_BFI->bfi_Options.bfo_OffsetY = BackGround_YOffset;
+				options_changed = TRUE;
+			}
 
 			if (this_BFI->bfi_Options.bfo_TileMode == WPD_BackgroundTileMode_Float)
 				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
@@ -635,7 +670,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TI
 			{
 				if ((this_BFI->bfi_Buffer->bfsib_BitMapWidth == this_BFI->bfi_CopyWidth) && (this_BFI->bfi_Buffer->bfsib_BitMapHeight == this_BFI->bfi_CopyHeight))
 				{
-					return TRUE;
+					goto pb_backfillsetup_complete;
 				}
 				else
 				{
@@ -681,7 +716,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TI
 					
 					AddTail(&this_BFI->bfi_Source->bfsir_Buffers, &this_BFI->bfi_Buffer->bfsib_Node);
 
-					return TRUE;
+					goto pb_backfillsetup_complete;
 				}
 				break;
 			}
@@ -689,7 +724,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TI
 			{
 				this_BFI->bfi_Buffer = this_Buffer;
 				this_Buffer->bfsib_OpenerCount += 1;
-				return TRUE;
+				goto pb_backfillsetup_complete;
 			}
 		}
 	}
@@ -698,7 +733,6 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Fa
 	return FALSE;
 	
 pb_cleanup_buffer:
-
 	if (this_BFI->bfi_Buffer)
 	{
 		ImageBackFill_CloseSourceBuffer(this_BFI->bfi_Source, this_BFI->bfi_Buffer);
@@ -713,6 +747,12 @@ pb_cleanup_source:
 	}
 	
 	return FALSE;
+	
+pb_backfillsetup_complete:
+	if ((prefs_processing) && (options_changed))
+		SET(self, MUIA_IconWindow_Changed, TRUE);
+
+	return TRUE;
 }
 
 IPTR ImageBackFill__MUIM_IconWindow_BackFill_Setup
