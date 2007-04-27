@@ -11,7 +11,7 @@
 
 #include "packet.h"
 
-#ifdef DEBUG
+#if defined(DEBUG) && DEBUG != 0
 #define fsa_str(cmd) ( \
     cmd == FSA_OPEN            ? "FSA_OPEN"            : \
     cmd == FSA_CLOSE           ? "FSA_CLOSE"           : \
@@ -325,7 +325,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             break;
 
         case FSA_SEEK:
-#ifdef DEBUG
+#if defined(DEBUG) && DEBUG != 0
         {
             ULONG mode = iofs->io_Union.io_SEEK.io_SeekMode;
 
@@ -347,7 +347,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             break;
 
         case FSA_SET_FILE_SIZE: /* XXX untested */
-#ifdef DEBUG
+#if defined(DEBUG) && DEBUG != 0
         {
             ULONG mode = iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode;
 
@@ -567,7 +567,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             break;
 
         case FSA_SET_DATE: /* XXX untested */
-#ifdef DEBUG
+#if defined(DEBUG) && DEBUG != 0
         {
             struct DateTime dt;
             char datestr[LEN_DATSTRING];
@@ -627,7 +627,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             break;
 
         case FSA_LOCK_RECORD: /* XXX untested */
-#ifdef DEBUG
+#if defined(DEBUG) && DEBUG != 0
         {
             ULONG mode = iofs->io_Union.io_RECORD.io_RecordMode;
 
