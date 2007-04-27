@@ -16,6 +16,7 @@
 
 #include <string.h>    
 #include <stdio.h>
+#include <ctype.h>
 
 #include "fat_fs.h"
 #include "fat_protos.h"
@@ -217,7 +218,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
     if (src != len) {
         while (src < len && dst < 8 && name[src] != '.')
             if (name[src] != ' ')
-                basis[dst++] = name[src++];
+                basis[dst++] = toupper(name[src++]);
             else
                 src++;
     }
@@ -248,7 +249,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
         /* copy it in */
         while(src < len && dst < 11)
             if (name[src] != ' ')
-                basis[dst++] = name[src++];
+                basis[dst++] = toupper(name[src++]);
             else
                 src++;
     }
