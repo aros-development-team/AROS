@@ -127,24 +127,19 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     if (err == 0) {
         lock = BADDR(b);
 
-        D(bug("[fat] found existing file\n"));
-
         /* can't open directories */
         if (lock->attr & ATTR_DIRECTORY) {
-            D(bug("[fat] its a directory, can't open it\n"));
             FreeLock(lock);
             return ERROR_OBJECT_WRONG_TYPE;
         }
 
         /* INPUT/UPDATE use the file as/is */
         if (action != ACTION_FINDOUTPUT) {
-            D(bug("[fat] returning the lock\n"));
             *filelock = lock;
             return 0;
         }
 
         /* whereas OUTPUT truncates it */
-        D(bug("[fat] handling FINDOUTPUT, so truncating the file\n"));
 
         /* update the dir entry to make the file empty */
         InitDirHandle(lock->ioh.sb, lock->dir_cluster, &dh);
@@ -153,15 +148,11 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         de.e.entry.file_size = 0;
         UpdateDirEntry(&de);
 
-        D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
-
         /* free the clusters */
         FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
         lock->ioh.first_cluster = 0xffffffff;
         RESET_HANDLE(&lock->ioh);
         lock->size = 0;
-
-        D(bug("[fat] file truncated, returning the lock\n"));
 
         /* file is empty, go */
         *filelock = lock;
@@ -174,12 +165,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return err;
 
     /* not found. for INPUT or UPDATE, we bail out */
-    if (action != ACTION_FINDOUTPUT) {
-        D(bug("[fat] file not found, and not creating it\n"));
+    if (action != ACTION_FINDOUTPUT)
         return ERROR_OBJECT_NOT_FOUND;
-    }
-
-    D(bug("[fat] trying to create '%.*s'\n", namelen, name));
 
     /* otherwise its time to create the file. get a handle on the passed dir */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
@@ -188,6 +175,14 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     /* get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0)
         return err;
+
+    /* now see if the wanted name is in this dir. if it exists, then we do
+     * nothing */
+    if ((err = GetDirEntryByName(&dh, name, namelen, &de)) == 0) {
+        D(bug("[fat] name exists, can't do anything\n"));
+        ReleaseDirHandle(&dh);
+        return ERROR_OBJECT_EXISTS;
+    }
 
     /* create the entry */
     if ((err = CreateDirEntry(&dh, name, namelen, 0, 0, &de)) != 0) {
@@ -201,8 +196,6 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 
     /* done */
     ReleaseDirHandle(&dh);
-
-    D(bug("[fat] returning lock on new file\n"));
 
     return err;
 }
