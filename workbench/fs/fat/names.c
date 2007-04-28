@@ -216,15 +216,11 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
 
     /* copy the first eight chars in, ignoring spaces and stopping at period */
     if (src != len) {
-        while (src < len && dst < 8 && name[src] != '.') {
-            if (name[src] != ' ') {
-                basis[dst] = toupper(name[src]);
-                if (basis[dst] != name[src])
-                    seq = 1;
-                dst++;
-            }
-            src++;
-        }
+        while (src < len && dst < 8 && name[src] != '.')
+            if (name[src] != ' ')
+                basis[dst++] = toupper(name[src++]);
+            else
+                src++;
     }
 
     /* if there was more bytes available, then we need a tail later */
@@ -255,15 +251,11 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
         src++;
 
         /* copy it in */
-        while(src < len && dst < 11) {
-            if (name[src] != ' ') {
-                basis[dst] = toupper(name[src]);
-                if (basis[dst] != name[src])
-                    seq = 1;
-                dst++;
-            }
-            src++;
-        }
+        while(src < len && dst < 11)
+            if (name[src] != ' ')
+                basis[dst++] = toupper(name[src++]);
+            else
+                src++;
     }
 
     /* if there was more bytes available, then we'll need a tail later */
