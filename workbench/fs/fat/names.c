@@ -444,5 +444,5 @@ ULONG NumLongNameEntries(STRPTR name, ULONG len) {
         }
     }
 
-    return (len / 13) + 1;
+    return ((len-1) / 13) + 1;
 }

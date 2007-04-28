@@ -14,7 +14,7 @@
 #define FAT_HANDLER_H
 
 #define DEBUG 1
-#define DEBUG_DUMP 0
+#define DEBUG_DUMP 1
 #include <aros/debug.h>
 
 #include <aros/libcall.h>

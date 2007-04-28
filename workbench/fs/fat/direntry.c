@@ -94,6 +94,13 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
     /* cur_index defaults to -1, so this will do the right thing even on a
      * fresh dirhandle */
     while ((err = GetDirEntry(dh, dh->cur_index + 1, de)) == 0) {
+        /* end of directory, there is no next entry */
+        if (de->e.entry.name[0] == 0x00) {
+            D(bug("[fat] entry %ld is end-of-directory marker, we're done\n", dh->cur_index));
+            RESET_DIRHANDLE(dh);
+            return ERROR_OBJECT_NOT_FOUND;
+        }
+
         /* skip unused entries */
         if (de->e.entry.name[0] == 0xe5) {
             D(bug("[fat] entry %ld is empty, skipping it\n", dh->cur_index));
@@ -113,13 +120,6 @@ LONG GetNextDirEntry(struct DirHandle *dh, struct DirEntry *de) {
              (de->index == 1 && strncmp((char *) de->e.entry.name, "..         ", 11) == 0))) {
             D(bug("[fat] skipping . or .. entry\n"));
             continue;
-        }
-
-        /* end of directory, there is no next entry */
-        if (de->e.entry.name[0] == 0x00) {
-            D(bug("[fat] entry %ld is end-of-directory marker, we're done\n", dh->cur_index));
-            RESET_DIRHANDLE(dh);
-            return ERROR_OBJECT_NOT_FOUND;
         }
 
         D(bug("[fat] returning entry %ld\n", dh->cur_index));
@@ -338,6 +338,8 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
 
         /* if we hit end-of-directory, then we can shortcut it */
         if (de->e.entry.name[0] == 0x00) {
+            ULONG last;
+
             if (de->index + nwant >= 0x10000) {
                 D(bug("[fat] hit end-of-directory marker, but there's not enough room left after it\n"));
                 return ERROR_NO_FREE_STORE;
@@ -345,10 +347,12 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
 
             D(bug("[fat] found end-of-directory marker, making space after it\n"));
 
-            /* set the new end-of-directory marker */
-            GetDirEntry(dh, de->index + nwant, de);
-            de->e.entry.name[0] = 0x00;
-            UpdateDirEntry(de);
+            last = de->index + nwant;
+            do {
+                GetDirEntry(dh, de->index+1, de);
+                de->e.entry.name[0] = 0x00;
+                UpdateDirEntry(de);
+            } while(de->index != last);
 
             D(bug("[fat] new end-of-directory is entry %ld\n", de->index));
 
