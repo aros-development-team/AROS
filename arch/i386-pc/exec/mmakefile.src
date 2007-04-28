@@ -7,7 +7,7 @@ CFILES		:= \
 	wait remtask settaskpri signal setexcept superstate userstate \
 	core traps screen serialrawio execfunctions prepareexecbase
 
-AFILES		:= coldreboot corelow execstubs stackswap
+AFILES		:= coldreboot corelow stackswap
 
 #MM kernel-exec-pc-i386 : kernel-exec-includes
 
