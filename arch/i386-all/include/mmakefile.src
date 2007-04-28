@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := aros/i386/cpu.h
-%copy_includes mmake=includes-common-i386
+%copy_includes
 
 INCLUDE_FILES := jmpdefs.h
 %copy_includes mmake=includes-common-i386 compiler=host
