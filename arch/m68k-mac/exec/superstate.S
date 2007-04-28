@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -44,7 +44,7 @@
  
 ******************************************************************************/
 
-	#include "../include/aros/machine.i"
+	#include "aros/m68k/asm.h"
 
 	.text
 	.balign 4

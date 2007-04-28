@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id: execstubs.s 21502 2004-04-09 00:29:38Z falemagn $
 
     Desc: Stubs to call C functions while preserving all registers
     Lang: english
 */
-	#include "machine.i"
+	#include "aros/x86_64/asm.h"
 
 /*
     Macros:

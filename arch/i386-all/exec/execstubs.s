@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Stubs to call C functions while preserving all registers
     Lang: english
 */
-	#include "machine.i"
+	#include "aros/i386/asm.h"
 
 /*
     Macros:

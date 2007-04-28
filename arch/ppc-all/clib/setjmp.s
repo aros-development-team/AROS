@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function setjmp()
@@ -56,7 +56,7 @@
 	12.10.1999 Code rewritten according to glibc
 ******************************************************************************/
 
-#include "machine.i"
+#include "aros/ppc/asm.h"
 
 	.text
 	_ALIGNMENT

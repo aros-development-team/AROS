@@ -9,11 +9,11 @@ AFILES          := coldreboot ints superstate sys_trap1_handler \
 		detect_memory_handlers setsr supervisor userstate \
 		execstubs stackswap switchtouser
 
-#MM kernel-exec-mac-m68k : kernel-exec-includes
+#MM kernel-exec-mac-m68k : kernel-exec-includes includes-asm_h-m68k
 
 #USER_CFLAGS    := -I../ -I$(TOP)/rom/exec -I$(GENINCDIR) -D__AROS__
-USER_CFLAGS     := -I../ -I$(TOP)/rom/exec -fomit-frame-pointer -O6
-USER_AFLAGS     := -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
+USER_CFLAGS     := -I$(TOP)/rom/exec -fomit-frame-pointer -O6
+USER_AFLAGS     := -I$(TOP)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=mac-m68k \
   files=$(CFILES) asmfiles=$(AFILES) modulename=exec

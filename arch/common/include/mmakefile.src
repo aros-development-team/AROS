@@ -1,0 +1,14 @@
+include $(TOP)/config/make.cfg
+
+#MM
+includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
+
+.PHONY : includes-asm_h-$(CPU)
+
+$(OBJDIR)/asm.s : asm.c | $(OBJDIR)
+	$(TARGET_CC) -S $< -o $@
+
+$(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
+	grep "^[/#][*d]" $< | sed s/[$$]//g >$@
+
+GLOB_MKDIRS += $(OBJDIR) $(GENINCDIR)/aros/$(CPU)

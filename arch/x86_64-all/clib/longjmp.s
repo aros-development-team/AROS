@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id: longjmp.s 12741 2001-12-08 18:16:08Z chodorowski $
 
     Desc: ANSI C function longjmp()
@@ -59,7 +59,7 @@
 
 ******************************************************************************/
 
-	#include "machine.i"
+	#include "aros/x86_64/asm.h"
 
 	.text
 	_ALIGNMENT
