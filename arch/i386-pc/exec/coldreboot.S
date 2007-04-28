@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ColdReboot() - Reboot the computer.
@@ -45,7 +45,7 @@
 
 ******************************************************************************/
 
-#include "include/machine.i"
+#include "aros/i386/asm.h"
 
 	    .text
 	    .globl	AROS_SLIB_ENTRY(ColdReboot,Exec)

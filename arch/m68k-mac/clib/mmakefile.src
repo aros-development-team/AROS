@@ -1,11 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS     := $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
-SPECIAL_AFLAGS  := -I..
+SPECIAL_AFLAGS  := -I$(GENINCDIR)
 %build_archspecific \
 	mainmmake=linklibs-clib maindir=compiler/clib \
 	arch=m68k \
 	asmfiles="longjmp setjmp"
+
+#MM linklibs-clib-m68k : includes-asm_h-m68k
 
 %common

@@ -1,13 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_AFLAGS := -I..
+USER_AFLAGS := -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles=execstubs \
   files="atomic cachecleare" \
   arch=ppc
 
-#MM kernel-exec-ppc : kernel-ppc-machine_i
+#MM kernel-exec-ppc : includes-asm_h-ppc
 
 %common

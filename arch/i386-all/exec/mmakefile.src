@@ -1,12 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_AFLAGS := -I..
+USER_AFLAGS := -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   asmfiles=execstubs \
   arch=i386
 
-#MM kernel-exec-i386 : kernel-i386-machine_i
+#MM kernel-exec-i386 : includes-asm_h-i386
 
 %common

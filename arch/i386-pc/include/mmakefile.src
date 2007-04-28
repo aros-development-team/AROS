@@ -1,12 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-GENINC	:= $(TOOLDIR)/geninc-i386-native$(HOST_EXE_SUFFIX)
 INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
-
-ifeq ($(findstring machine.i, $(INCLUDE_FILES)),)
-INCLUDE_FILES += machine.i
-endif
 
 #MM- includes-copy-pc-i386 : includes-common-i386
 
@@ -14,19 +9,3 @@ endif
 
 #MM- kernel-exec-includes-pc-i386 : includes-copy-pc-i386
 
-#MM
-clean ::
-	$(RM) machine.i $(GENINC)
-
-# geninc is run on the host (which is incorrect...)
-GENINC_CFLAGS := $(USER_CFLAGS) $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
-
-$(GENINC) : geninc.c $(GENINCDIR)/aros/cpu.h $(GENINCDIR)/aros/i386/cpu.h
-	@echo "CFLAGS=$(GENINC_CFLAGS)"
-	@echo "Creating geninc..."
-	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
-
-machine.i : $(GENINC) 
-	$(GENINC) > machine.i
-
-%common

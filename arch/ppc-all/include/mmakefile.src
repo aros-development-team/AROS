@@ -2,34 +2,8 @@
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := aros/ppc/cpu.h
-%copy_includes
+%copy_includes mmake=compiler-includes
 
 INCLUDE_FILES := jmpdefs.h
 %copy_includes mmake=includes-common-ppc compiler=host
 
-GENINC		:= $(TOOLDIR)/geninc-ppc$(HOST_EXE_SUFFIX)
-USER_INCLUDES	:= -I$(GENINCDIR)
-MACHINE_H	:= $(GENINCDIR)/aros/machine.h
-
-# The dependancies here are for compiling geninc.c
-#MM kernel-ppc-machine_i : \
-#MM     kernel-exec-includes compiler-includes compiler-arossuport-includes
-
-#MM
-kernel-ppc-machine_i : machine.i
-
-#MM
-clean::
-	$(RM) machine.i $(GENINC)
-
-GENINC_CFLAGS := $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
-
-$(GENINC) : geninc.c
-	@echo "CFLAGS=$(GENINC_CFLAGS)"
-	@echo "Creating geninc..."
-	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
-
-machine.i: $(GENINC) $(GENINCDIR)/aros/cpu.h $(GENINCDIR)/aros/ppc/cpu.h
-	$(GENINC) > machine.i
-
-%common

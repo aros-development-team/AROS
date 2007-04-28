@@ -9,11 +9,10 @@ CFILES		:= \
 
 AFILES		:= coldreboot corelow stackswap
 
-#MM kernel-exec-pc-i386 : kernel-exec-includes
+#MM kernel-exec-pc-i386 : kernel-exec-includes includes-asm_h-i386
 
-#USER_CFLAGS 	:= -I../ -I$(TOP)/rom/exec -I$(GENINCDIR) -D__AROS__
-USER_CFLAGS 	:= -I../ -I$(TOP)/rom/exec
-USER_AFLAGS 	:= -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
+USER_CFLAGS 	:= -I$(TOP)/rom/exec
+USER_AFLAGS 	:= -I$(TOP)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-i386 \
   files=$(CFILES) asmfiles=$(AFILES) modulename=exec
