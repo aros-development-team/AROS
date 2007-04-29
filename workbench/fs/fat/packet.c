@@ -234,12 +234,12 @@ void ProcessPackets(void) {
                 break;
             }
 
-            case ACTION_WRITE: {
+            case ACTION_READ: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 APTR buffer = (APTR)pkt->dp_Arg2;
                 ULONG want = pkt->dp_Arg3;
 
-                D(bug("[fat] WRITE: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
+                D(bug("[fat] READ: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
                       pkt->dp_Arg1,
                       fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
                       fl->pos,
