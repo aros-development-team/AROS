@@ -9,32 +9,9 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 
+#include "iconwindow_attributes.h"
+
 #include "iconwindowbackfill.h"
-
-/*** Identifier Base ********************************************************/
-
-#define MUIB_IconWindow                           (TAG_USER | 0x10000000)
-
-/*** Public Attributes ******************************************************/
-
-#define MUIA_IconWindow_Location                           (MUIB_IconWindow | 0x00000001) /* ISG */
-#define MUIA_IconWindow_Window                             (MUIB_IconWindow | 0x00000002) /* I-G */
-#define MUIA_IconWindow_Font                               (MUIB_IconWindow | 0x00000003) /* ISG */
-#define MUIA_IconWindow_IconList                           (MUIB_IconWindow | 0x00000004) /* --G */
-
-#define MUIA_IconWindow_ActionHook                         (MUIB_IconWindow | 0x00000010) /* I-- */ /* Hook to call when some action happens */
-
-#define MUIA_IconWindow_BackgroundAttrib                   (MUIB_IconWindow | 0x00000020) /* --G */
-#define MUIA_IconWindow_BackFillData                       (MUIB_IconWindow | 0x00000021) /* --G */
-
-#define MUIA_IconWindow_IsRoot                             (MUIB_IconWindow | 0x000000A1) /* I-G */
-#define MUIA_IconWindow_IsBackdrop                         (MUIB_IconWindow | 0x000000A2) /* ISG */ /* is Backdrop window ? */
-#define MUIA_IconWindow_Toolbar_Enabled                    (MUIB_IconWindow | 0x000000E1) /* ISG */
-
-#define MUIA_IconWindow_Changed                            (MUIB_IconWindow | 0x000000FF) /* -SG (TRUE) if the window(s) settings
-																								 have changed (ie window needs refereshed)
-																								 used in combination with MUIA_WandererPrefs_Processing
-																								 to determine if we need to redraw */
 
 /*** Public Methods *********************************************************/
 
@@ -62,26 +39,6 @@ struct  MUIP_IconWindow_BackFill_Cleanup                   {ULONG MethodID; IPTR
 struct  MUIP_IconWindow_BackFill_ProcessBackground         {ULONG MethodID; IPTR BackFill_Data; Object *BackFill_Root;};
 struct  MUIP_IconWindow_BackFill_DrawBackground            {ULONG MethodID; IPTR BackFill_Data; struct IconWindowBackFillMsg *draw_BFM; IPTR draw_RastPort;};
 /*** Private Constants ********************************************************/
-
-#define ICONWINDOW_ACTION_OPEN                    1
-#define ICONWINDOW_ACTION_CLICK                   2
-#define ICONWINDOW_ACTION_ICONDROP                3
-#define ICONWINDOW_ACTION_DIRUP                   4
-#define ICONWINDOW_ACTION_APPWINDOWDROP           5
-
-/*** Identifier Base ********************************************************/
-
-#define MUIB_IconWindow_ImageBackFill                      (MUIB_IconWindow | 0x0fe00000)
-
-/*** Public Attributes ******************************************************/
-
-#define MUIA_IconWindow_ImageBackFill_BGRenderMode         (MUIB_IconWindow | 0x00000001) /* ISG */
-#define MUIA_IconWindow_ImageBackFill_BGTileMode           (MUIB_IconWindow | 0x00000002) /* ISG */
-#define MUIA_IconWindow_ImageBackFill_BGXOffset            (MUIB_IconWindow | 0x00000003) /* ISG */
-#define MUIA_IconWindow_ImageBackFill_BGYOffset            (MUIB_IconWindow | 0x00000004) /* ISG */
-
-
-/*** Variables **************************************************************/
 
 extern struct MUI_CustomClass                     *IconWindow_CLASS;
 
@@ -131,8 +88,6 @@ struct IconWindow_BackFillHookData
 	Class                                *bfhd_IWClass;
 	Object                               *bfhd_IWObject;
 };
-
-#define IWD_MAX_DIRECTORYPATHLEN         1024
 
 struct IconWindow_DATA
 {

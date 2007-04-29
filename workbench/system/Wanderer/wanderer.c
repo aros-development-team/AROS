@@ -35,13 +35,14 @@
 #include <prefs/wanderer.h>
 
 #include "iconwindow.h"
+#include "iconwindow_attributes.h"
 #include "iconwindowcontents.h"
 #include "wandererprefs.h"
 #include "wandererprefsintern.h"
 #include "filesystems.h"
 #include "wanderer.h"
 #include "../../libs/muimaster/classes/iconlist.h"
-
+#include "../../libs/muimaster/classes/iconlist_attributes.h"
 #include "locale.h"
 
 #define VERSION "$VER: Wanderer 0.65 (16.04.2007) The AROS Dev Team"
@@ -107,7 +108,7 @@ AROS_UFH3
 {
     AROS_USERFUNC_INIT
     
-    char    *c;
+    char     *c = NULL;
     unsigned int difftime;
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
@@ -187,9 +188,8 @@ AROS_UFH3
     
     ULONG back = DELMODE_NONE;
 
-    UWORD ret;
+    UWORD    ret = 0;
     char     *string = NULL;
-    ret = 0;
     
     if (obj->file) 
     {
@@ -280,7 +280,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
             Object *child;
 
             /* open new window if root or classic navigation set */
-            if ( (msg->isroot) || (XGET(prefs, MUIA_WandererPrefs_NavigationMethod) == WPD_NAVIGATION_CLASSIC) )
+            if ( (msg->isroot) || (XGET(prefs, MUIA_IconWindowExt_Toolbar_NavigationMethod) == WPD_NAVIGATION_CLASSIC) )
             {
                 while ((child = NextObject(&cstate)))
                 {
@@ -2029,7 +2029,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 		useBackdrop = data->wd_Option_BackDropMode;
 	}
 
-    BOOL    hasToolbar            = XGET(data->wd_Prefs, MUIA_WandererPrefs_Toolbar_Enabled);
+    BOOL    hasToolbar            = XGET(data->wd_Prefs, MUIA_IconWindowExt_Toolbar_Enabled);
     IPTR    TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
 
     IPTR    useFont = (IPTR)NULL;
@@ -2042,18 +2042,18 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
     
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,
-        MUIA_UserData,                     1,
-		MUIA_Wanderer_Prefs,               data->wd_Prefs,
-		MUIA_Wanderer_Screen,              data->wd_Screen,
-        MUIA_Window_ScreenTitle,           (IPTR) GetScreenTitle(),
-        MUIA_Window_Menustrip,             (IPTR) _NewWandDrawerMenu__menustrip,
-		TAG_IconWindow_Drawer,             (IPTR) message->drawer,
-        MUIA_IconWindow_Font,              useFont,
-        MUIA_IconWindow_ActionHook,        (IPTR) &_WandererIntern_hook_action,
-        MUIA_IconWindow_IsRoot,            isWorkbenchWindow ? TRUE : FALSE,
+        MUIA_UserData,                        1,
+		MUIA_Wanderer_Prefs,                  data->wd_Prefs,
+		MUIA_Wanderer_Screen,                 data->wd_Screen,
+        MUIA_Window_ScreenTitle,              (IPTR) GetScreenTitle(),
+        MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
+		TAG_IconWindow_Drawer,                (IPTR) message->drawer,
+        MUIA_IconWindow_Font,                 useFont,
+        MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
+        MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
 		isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
-        MUIA_Window_IsSubWindow,           isWorkbenchWindow ? FALSE : TRUE,
-        MUIA_IconWindow_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
+        MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
+        MUIA_IconWindowExt_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
     End;
     
     if (window != NULL)

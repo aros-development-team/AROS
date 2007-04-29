@@ -21,6 +21,8 @@
 #include <string.h>
 
 #include "wandererprefs.h"
+#include "../../libs/muimaster/classes/iconlist_attributes.h"
+#include "iconwindow_attributes.h"
 #include "support.h"
 
 #include <prefs/prefhdr.h>
@@ -111,21 +113,21 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     {
         switch (tag->ti_Tag)
         {
-			case MUIA_WandererPrefs_ShowNetworkBrowser:
+			case MUIA_IconWindowExt_NetworkBrowser_Show:
 				data->wpd_ShowNetwork = (LONG)tag->ti_Data;
 				break;
 
-			case MUIA_WandererPrefs_ShowUserFolder:
+			case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
 				data->wpd_ShowUserFiles = (LONG)tag->ti_Data;
 				break;
 
-            case MUIA_WandererPrefs_NavigationMethod:
-                data->wpd_NavigationMethod = (LONG)tag->ti_Data;
-                break;
-
-            case MUIA_WandererPrefs_Toolbar_Enabled:
+            case MUIA_IconWindowExt_Toolbar_Enabled:
                 data->wpd_ToolbarEnabled = (LONG)tag->ti_Data;
 			    break;
+
+            case MUIA_IconWindowExt_Toolbar_NavigationMethod:
+                data->wpd_NavigationMethod = (LONG)tag->ti_Data;
+                break;
 
 /* The Following attributes will be moved to the ViewSettings Specific Chunks */
 			
@@ -162,19 +164,19 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     
     switch (message->opg_AttrID)
     {
-        case MUIA_WandererPrefs_ShowNetworkBrowser:
+        case MUIA_IconWindowExt_NetworkBrowser_Show:
             *store = (IPTR)data->wpd_ShowNetwork;
             break;
 
-        case MUIA_WandererPrefs_ShowUserFolder:
+        case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
             *store = (IPTR)data->wpd_ShowUserFiles;
             break;
 
-        case MUIA_WandererPrefs_NavigationMethod:
+        case MUIA_IconWindowExt_Toolbar_NavigationMethod:
             *store = (IPTR)data->wpd_NavigationMethod;
             break;
 
-        case MUIA_WandererPrefs_Toolbar_Enabled:
+        case MUIA_IconWindowExt_Toolbar_Enabled:
             *store = (IPTR)data->wpd_ToolbarEnabled;
             break;
 
@@ -311,7 +313,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Freeing old bac
 		_viewSettings_Node->wpbn_Options = AllocVec((_viewSettings_TagCount + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: New tag storage @ %x\n", _viewSettings_Node->wpbn_Options));
 
-		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem));
+		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset + 1, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem));
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to storage \n"));
 
 		_viewSettings_Node->wpbn_Options[_viewSettings_TagCount].ti_Tag = TAG_DONE;
@@ -407,11 +409,11 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data f
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
 											WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
 										}
-										else if ((strncmp(this_chunk_name, "wanderer:background", strlen("wanderer:background"))) == 0)
+										else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
 										{
-											char *bg_name = this_chunk_name + strlen("wanderer:background") + 1;
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", bg_name));
-											WandererPrefs_ProccessViewSettingsChunk(CLASS, self, bg_name, chunk_buffer, this_chunk_size);
+											char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
+											WandererPrefs_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
 										}
 									}	
 									if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)

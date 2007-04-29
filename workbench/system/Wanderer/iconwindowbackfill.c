@@ -377,8 +377,8 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Ba
 		return FALSE;
 
 	if ((BackGround_RenderMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
-									BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGRenderMode)) == -1)
-		BackGround_RenderMode = WPD_BackgroundRenderMode_Tiled;
+									BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGRenderMode)) == -1)
+		BackGround_RenderMode = IconWindowExt_ImageBackFill_RenderMode_Tiled;
 
 	UBYTE                  *this_bgtype    = (UBYTE *)BackGround_Base;
 	char                  *this_ImageName = (char *)(BackGround_Base + 2);
@@ -529,11 +529,11 @@ check_imagebuffer:
 
 	switch (BackGround_RenderMode)
 	{
-		case WPD_BackgroundRenderMode_Scale:
+		case IconWindowExt_ImageBackFill_RenderMode_Scale:
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED mode\n"));
 
-			this_BFI->bfi_Options.bfo_TileMode = WPD_BackgroundTileMode_Fixed;
+			this_BFI->bfi_Options.bfo_TileMode = IconWindowExt_ImageBackFill_TileMode_Fixed;
 			
 			SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, TRUE);
 			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, TRUE);
@@ -628,15 +628,15 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SC
 		{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
 			if ((BackGround_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
-																BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGTileMode)) == -1)
-				BackGround_TileMode = WPD_BackgroundTileMode_Float;
+																BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGTileMode)) == -1)
+				BackGround_TileMode = IconWindowExt_ImageBackFill_TileMode_Float;
 
 			if ((BackGround_XOffset = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
-																BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGXOffset)) == -1)
+																BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGXOffset)) == -1)
 				BackGround_XOffset = 0;
 
 			if ((BackGround_YOffset = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
-																BackGround_Attrib, MUIA_IconWindow_ImageBackFill_BGYOffset)) == -1)
+																BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGYOffset)) == -1)
 				this_BFI->bfi_Options.bfo_OffsetY = 0;
 
 			if (this_BFI->bfi_Options.bfo_TileMode != BackGround_TileMode)
@@ -657,7 +657,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TI
 				options_changed = TRUE;
 			}
 
-			if (this_BFI->bfi_Options.bfo_TileMode == WPD_BackgroundTileMode_Float)
+			if (this_BFI->bfi_Options.bfo_TileMode == IconWindowExt_ImageBackFill_TileMode_Float)
 				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, FALSE);
 			else
 				SET(_IconWindows_IconListObj, MUIA_IconListview_FixedBackground, TRUE);
@@ -812,7 +812,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Got B
 			WORD OffsetX = this_BFI->bfi_Options.bfo_OffsetX;         // the offset within the tile in x direction
 			WORD OffsetY = this_BFI->bfi_Options.bfo_OffsetY;         // the offset within the tile in y direction
 
-			if (this_BFI->bfi_Options.bfo_TileMode == WPD_BackgroundTileMode_Float)
+			if (this_BFI->bfi_Options.bfo_TileMode == IconWindowExt_ImageBackFill_TileMode_Float)
 			{
 D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Rendering using floating backdrop mode\n"));
 				OffsetX += message->draw_BFM->OffsetX;

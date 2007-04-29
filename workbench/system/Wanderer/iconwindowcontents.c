@@ -34,6 +34,9 @@
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
 
+#include "../../libs/muimaster/classes/iconlist.h"
+#include "../../libs/muimaster/classes/iconlist_attributes.h"
+
 #include "wanderer.h"
 #include "wandererprefs.h"
 #include "iconwindow.h"
@@ -192,13 +195,13 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc(
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Setting ROOT view Network options ..\n"));
 			ULONG   current_ShowNetwork = 0;
 
-			GET(self, MUIA_IconWindowIconVolumeList_ShowNetwork, &current_ShowNetwork);
+			GET(self, MUIA_IconWindowExt_NetworkBrowser_Show, &current_ShowNetwork);
 
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Current = %d\n", current_ShowNetwork));
 
 			ULONG   prefs_ShowNetwork = 0;
 
-			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &prefs_ShowNetwork);
+			GET(prefs, MUIA_IconWindowExt_NetworkBrowser_Show, &prefs_ShowNetwork);
 		
 D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Prefs = %d\n", prefs_ShowNetwork));
 
@@ -338,7 +341,7 @@ IPTR IconWindowIconList__MUIM_Setup
 			
 			DoMethod
 			(
-				prefs, MUIM_Notify, MUIA_WandererPrefs_ShowNetworkBrowser, MUIV_EveryTime,
+				prefs, MUIM_Notify, MUIA_IconWindowExt_NetworkBrowser_Show, MUIV_EveryTime,
 				(IPTR) self, 3, 
 				MUIM_CallHook, &((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_UpdateNetworkPrefs_hook, (IPTR)CLASS
 			);
@@ -498,7 +501,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if w
 		{
 			struct IconWindowIconVolumeList_DATA *volumel_data = (struct IconWindowIconVolumeList_DATA *)data;
 
-			GET(prefs, MUIA_WandererPrefs_ShowNetworkBrowser, &volumel_data->iwvcd_ShowNetworkBrowser);
+			GET(prefs, MUIA_IconWindowExt_NetworkBrowser_Show, &volumel_data->iwvcd_ShowNetworkBrowser);
 
 #if defined(DEBUG_NETWORKBROWSER)
 			volumel_data->iwvcd_ShowNetworkBrowser = TRUE;
@@ -529,7 +532,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBro
 				}
 			}
 
-			GET(prefs, MUIA_WandererPrefs_ShowUserFolder, &volumel_data->iwvcd_ShowUserFolder);
+			GET(prefs, MUIA_IconWindowExt_UserFiles_ShowFilesFolder, &volumel_data->iwvcd_ShowUserFolder);
 
 #if defined(DEBUG_SHOWUSERFILES)
 			volumel_data->iwvcd_ShowUserFolder = TRUE;
