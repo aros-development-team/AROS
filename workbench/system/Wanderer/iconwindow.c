@@ -683,6 +683,12 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_BackgroundAttrib (not im
 							data->iwd_Toolbar_PanelObj = NULL;
 						}
 					}
+					//Force classic navigation when the toolbar is disabled ..
+					Object *prefs = NULL;
+
+					GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+					if (prefs)
+						SET(prefs, MUIA_IconWindowExt_Toolbar_NavigationMethod, WPD_NAVIGATION_CLASSIC);
 				}
 				else
 				{

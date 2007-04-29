@@ -1533,7 +1533,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Using Screen @ %x\n", data->wd_Screen));
         data->wd_TimerIHN.ihn_Millis = 3000;
         data->wd_TimerIHN.ihn_Object = self;
         data->wd_TimerIHN.ihn_Method = MUIM_Wanderer_HandleTimer;
-        
+
         DoMethod
         (
             self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_TimerIHN
@@ -1543,20 +1543,19 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Using Screen @ %x\n", data->wd_Screen));
         data->wd_NotifyIHN.ihn_Signals = 1UL << data->wd_NotifyPort->mp_SigBit;
         data->wd_NotifyIHN.ihn_Object  = self;
         data->wd_NotifyIHN.ihn_Method  = MUIM_Wanderer_HandleNotify;
-        
+
         DoMethod
         (
             self, MUIM_Application_AddInputHandler, (IPTR) &data->wd_NotifyIHN
         );
 
         // All the following should be moved to InitWandererPrefs
-        
+
         /* Setup notification on prefs file --------------------------------*/
         data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
         data->pnr.nr_Flags                = NRF_SEND_MESSAGE;
         data->pnr.nr_stuff.nr_Msg.nr_Port = data->wd_NotifyPort;
 
-#if defined(DEBUG)
         if (StartNotify(&data->pnr))
         {
 D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup\n"));
@@ -1565,13 +1564,13 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup\n"));
         {
 D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
         }
-#endif
+
         data->wd_Prefs = WandererPrefsObject,
 						 End; // FIXME: error handling
 
 		if (data->wd_Prefs) data->wd_PrefsIntern = InitWandererPrefs();
     }
-    
+
     return self;
 }
 
