@@ -34,13 +34,15 @@
 
 #include <prefs/wanderer.h>
 
+#include "../../libs/muimaster/classes/iconlist.h"
+#include "../../libs/muimaster/classes/iconlist_attributes.h"
 #include "wanderer.h"
 #include "wandererprefs.h"
+
 #include "iconwindow.h"
+#include "iconwindow_attributes.h"
 #include "iconwindowcontents.h"
 #include "iconwindowbackfill.h"
-
-
 
 static char __intern_wintitle_wanderer[] = "Wanderer";
 
@@ -355,7 +357,7 @@ D(bug("[iconwindow] IconWindow__OM_NEW()\n"));
     isBackdrop = (BOOL)GetTagData(MUIA_IconWindow_IsBackdrop, (IPTR)FALSE, message->ops_AttrList);
 
     if (!(isRoot = (BOOL)GetTagData(MUIA_IconWindow_IsRoot, (IPTR)FALSE, message->ops_AttrList)))
-		hasToolbar = (BOOL)GetTagData(MUIA_IconWindow_Toolbar_Enabled, (IPTR)FALSE, message->ops_AttrList);
+		hasToolbar = (BOOL)GetTagData(MUIA_IconWindowExt_Toolbar_Enabled, (IPTR)FALSE, message->ops_AttrList);
 
     actionHook = (struct Hook *)GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
     _newIconWin__WindowFont = (struct TextFont *)GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
@@ -544,8 +546,8 @@ D(bug("[iconwindow] IconWindow__OM_NEW: SELF = %x\n", self));
 			{
 				DoMethod
 				(
-					prefs, MUIM_Notify, MUIA_WandererPrefs_Toolbar_Enabled, MUIV_EveryTime, 
-					(IPTR)self, 3, MUIM_Set, MUIA_IconWindow_Toolbar_Enabled, MUIV_TriggerValue
+					prefs, MUIM_Notify, MUIA_IconWindowExt_Toolbar_Enabled, MUIV_EveryTime, 
+					(IPTR)self, 3, MUIM_Set, MUIA_IconWindowExt_Toolbar_Enabled, MUIV_TriggerValue
 				);
 			}
 		}
@@ -660,7 +662,7 @@ D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_Location [drawer '%s']\n
 D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_BackgroundAttrib (not implemented)\n"));
 			break;
 
-		case MUIA_IconWindow_Toolbar_Enabled:   
+		case MUIA_IconWindowExt_Toolbar_Enabled:   
 			if ((!(data->iwd_Flag_ISROOT)) && (data->iwd_ExtensionContainerObj))
 			{
 				// remove toolbar
@@ -741,7 +743,7 @@ IPTR IconWindow__OM_GET(Class *CLASS, Object *self, struct opGet *message)
             *store = (IPTR)data->iwd_IconListObj;
             break;
 
-        case MUIA_IconWindow_Toolbar_Enabled:
+        case MUIA_IconWindowExt_Toolbar_Enabled:
             *store = (IPTR)data->iwd_Flag_EXT_TOOLBARENABLED;
             break;
 
@@ -801,7 +803,7 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: Setting up window background 
 		{
 			DoMethod
 			(
-				data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGRenderMode, MUIV_EveryTime,
+				data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGRenderMode, MUIV_EveryTime,
 				(IPTR) self, 3, 
 				MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 			);
@@ -809,21 +811,21 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Setup: Setting up window background 
 
 		DoMethod
 		(
-			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGTileMode, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGTileMode, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGXOffset, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGXOffset, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
 
 		DoMethod
 		(
-			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_ImageBackFill_BGYOffset, MUIV_EveryTime,
+			data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindowExt_ImageBackFill_BGYOffset, MUIV_EveryTime,
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
 		);
@@ -854,19 +856,19 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Cleanup()\n"));
 		DoMethod
 		(
 			data->iwd_ViewSettings_PrefsNotificationObject,
-			MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGYOffset, (IPTR) self
+			MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGYOffset, (IPTR) self
 		);
 	
 		DoMethod
 		(
 			data->iwd_ViewSettings_PrefsNotificationObject,
-			MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGXOffset, (IPTR) self
+			MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGXOffset, (IPTR) self
 		);
 	
 		DoMethod
 		(
 			data->iwd_ViewSettings_PrefsNotificationObject,
-			MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGTileMode, (IPTR) self
+			MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGTileMode, (IPTR) self
 		);
 
 		if (data->iwd_Flag_ISROOT)
@@ -874,7 +876,7 @@ D(bug("[IconWindow] IconWindow__MUIM_Window_Cleanup()\n"));
 			DoMethod
 			(
 				data->iwd_ViewSettings_PrefsNotificationObject,
-				MUIM_KillNotifyObj, MUIA_IconWindow_ImageBackFill_BGRenderMode, (IPTR) self
+				MUIM_KillNotifyObj, MUIA_IconWindowExt_ImageBackFill_BGRenderMode, (IPTR) self
 			);
 		}
 
@@ -1136,12 +1138,12 @@ D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_ProcessBackground: Usin
 			if ((IconWindowPB_Background = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwd_ViewSettings_Attrib, MUIA_Background)) != -1)
 			{
 				if ((IconWindowPB_BGMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
-												data->iwd_ViewSettings_Attrib, MUIA_IconWindow_ImageBackFill_BGRenderMode)) == -1)
-					IconWindowPB_BGMode = WPD_BackgroundRenderMode_Tiled;
+												data->iwd_ViewSettings_Attrib, MUIA_IconWindowExt_ImageBackFill_BGRenderMode)) == -1)
+					IconWindowPB_BGMode = IconWindowExt_ImageBackFill_RenderMode_Tiled;
 
 				if ((IconWindowPB_BGTileMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
-																	data->iwd_ViewSettings_Attrib, MUIA_IconWindow_ImageBackFill_BGTileMode)) == -1)
-					IconWindowPB_BGTileMode = WPD_BackgroundTileMode_Float;
+																	data->iwd_ViewSettings_Attrib, MUIA_IconWindowExt_ImageBackFill_BGTileMode)) == -1)
+					IconWindowPB_BGTileMode = IconWindowExt_ImageBackFill_TileMode_Float;
 				
 				SET(data->iwd_RootViewObj, MUIA_Background, IconWindowPB_Background);
 
@@ -1154,13 +1156,20 @@ D(bug("[IconWindow] IconWindow__MUIM_IconWindow_BackFill_ProcessBackground: MUI 
 				{
 				case 5:
 					//Image =D
-					if (IconWindowPB_BGMode == WPD_BackgroundRenderMode_Scale)
+					if (IconWindowPB_BGMode == IconWindowExt_ImageBackFill_RenderMode_Scale)
+					{
 						SET(data->iwd_RootViewObj, MUIA_IconListview_ScaledBackground, TRUE);
+						break;
+					}
+					else
+						SET(data->iwd_RootViewObj, MUIA_IconListview_ScaledBackground, FALSE);
 
 				case 0:
 					//MUI Pattern
-					if (IconWindowPB_BGTileMode == WPD_BackgroundTileMode_Fixed)
+					if (IconWindowPB_BGTileMode == IconWindowExt_ImageBackFill_TileMode_Fixed)
 						SET(data->iwd_RootViewObj, MUIA_IconListview_FixedBackground, TRUE);
+					else
+						SET(data->iwd_RootViewObj, MUIA_IconListview_FixedBackground, FALSE);
 					break;
 				}
 			}

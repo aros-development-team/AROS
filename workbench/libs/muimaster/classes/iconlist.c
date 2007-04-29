@@ -52,6 +52,7 @@ $Id$
 #include "muimaster_intern.h"
 #include "support.h"
 #include "imspec.h"
+#include "iconlist_attributes.h"
 #include "iconlist.h"
 
 extern struct Library *MUIMasterBase;
