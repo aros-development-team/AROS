@@ -31,6 +31,8 @@
 
 #include <libraries/mui.h>
 
+#include "../../workbench/libs/muimaster/classes/iconlist_attributes.h"
+
 struct Library *MUIMasterBase;
 
 Object *app;

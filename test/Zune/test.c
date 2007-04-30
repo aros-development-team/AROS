@@ -29,6 +29,7 @@
 */
 
 #include <libraries/mui.h>
+#include "../../workbench/libs/muimaster/classes/iconlist_attributes.h"
 
 struct Library *MUIMasterBase;
 struct Library *ColorWheelBase;
