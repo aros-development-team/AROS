@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Assign CLI command
@@ -231,7 +231,7 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 	/* Print all mounted volumes */
 	while ((tdl = NextDosEntry(tdl, LDF_VOLUMES)) != NULL)
 	{
-	    VPrintf("%s [Mounted]\n", (IPTR *)&tdl->dol_DevName);
+	    VPrintf("%s [Mounted]\n", (IPTR *)&tdl->dol_Ext.dol_AROS.dol_DevName);
 	}
     }
     
@@ -245,9 +245,9 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 	/* Print all assigned directories */
 	while ((tdl = NextDosEntry(tdl, LDF_ASSIGNS)) != NULL)
 	{
-	    PutStr(tdl->dol_DevName);
+	    PutStr(tdl->dol_Ext.dol_AROS.dol_DevName);
 	    
-	    for(count = 14 - strlen(tdl->dol_DevName); count > 0; count--)
+	    for(count = 14 - strlen(tdl->dol_Ext.dol_AROS.dol_DevName); count > 0; count--)
 	    {
 		PutStr(" ");
 	    }
@@ -314,7 +314,7 @@ static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 	/* Print all assigned devices */
 	while ((tdl = NextDosEntry(tdl, LDF_DEVICES)) != NULL)
 	{
-	    VPrintf("%s ", (IPTR *)&tdl->dol_DevName);
+	    VPrintf("%s ", (IPTR *)&tdl->dol_Ext.dol_AROS.dol_DevName);
 	    count++;
 	    
 	    if (count == 5)
@@ -573,20 +573,20 @@ static int checkAssign(struct ExecBase *SysBase, struct DosLibrary *DOSBase, STR
 	switch (dl->dol_Type)
 	{
 	case DLT_DEVICE:
-		VPrintf("%s\n", &tdl->dol_OldName);
+		VPrintf("%s\n", &tdl->dol_Name);
 		break;
 
 	case DLT_VOLUME:
-		VPrintf("%s [Mounted]\n", &tdl->dol_OldName);
+		VPrintf("%s [Mounted]\n", &tdl->dol_Name);
 		break;
 
 	case DLT_DIRECTORY:
 	case DLT_LATE:
 	case DLT_NONBINDING:
 
-		VPrintf("%s ", &tdl->dol_OldName);
+		VPrintf("%s ", &tdl->dol_Name);
 
-		for (count = 14 - *((UBYTE*)tdl->dol_OldName); count > 0; count--)
+		for (count = 14 - *((UBYTE*)tdl->dol_Name); count > 0; count--)
 		{
 			PutStr(" ");
 		}

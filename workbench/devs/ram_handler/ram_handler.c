@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     RAM: handler.
@@ -460,8 +460,8 @@ static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs)
 			    NewList((struct List *)&vol->list);
 			    NewList((struct List *)&vol->receivers);
 			    fhv->node = (struct dnode *)vol;
-			    dlv->dol_Unit = (struct Unit *)fhv;
-			    dlv->dol_Device = &rambase->device;
+			    dlv->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)fhv;
+			    dlv->dol_Ext.dol_AROS.dol_Device = &rambase->device;
 			    dev->type = ST_LINKDIR;
 			    dev->self = dev;
 			    dev->volume=vol;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Creates an entry for the dos list.
@@ -69,7 +69,7 @@
     {
 #ifdef AROS_FAST_BPTR
 	s2 = (STRPTR)AllocVec(len+1, MEMF_PUBLIC | MEMF_CLEAR);
-	dl->dol_OldName = MKBADDR(s2);
+	dl->dol_Name = MKBADDR(s2);
 #else
 	/* Binary compatibility for BCPL string.
 	 * First byte is the length then comes the string.
@@ -77,14 +77,14 @@
 	 * C string
 	 */
 	s2 = (STRPTR)AllocVec(len+2, MEMF_PUBLIC | MEMF_CLEAR);
-	dl->dol_OldName = MKBADDR(s2);
+	dl->dol_Name = MKBADDR(s2);
 	if (s2 != NULL)
 	    *s2++ = (UBYTE)(len > 255 ? 255 : len);
 #endif
 	if (s2 != NULL)
 	{
 	    strcpy(s2, name);
-	    dl->dol_DevName = s2;
+	    dl->dol_Ext.dol_AROS.dol_DevName = s2;
 	    dl->dol_Type = type;
 	    return dl;
 	}

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -360,9 +360,9 @@ static void ScanVol(struct conbase *conbase, struct completioninfo *ci)
     
     while ((dlist = NextDosEntry(dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_DEVICES)) != NULL)
     {
-	if (MatchPatternNoCase(ci->pattern, dlist->dol_DevName))
+	if (MatchPatternNoCase(ci->pattern, dlist->dol_Ext.dol_AROS.dol_DevName))
 	{
-    	    AddMatchNode(conbase, ci, dlist->dol_DevName, 2);
+    	    AddMatchNode(conbase, ci, dlist->dol_Ext.dol_AROS.dol_DevName, 2);
 
 	}
     }

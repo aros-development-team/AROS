@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -96,7 +96,7 @@ UBYTE i;
 		dl = FindDosEntry(doslist,string,LDF_VOLUMES);
 		if (dl != NULL)
 		{
-			if (((struct AfsHandle *)dl->dol_Unit)->volume == volume)
+			if (((struct AfsHandle *)dl->dol_Ext.dol_AROS.dol_Unit)->volume == volume)
 			{
 				if (dl->dol_misc.dol_volume.dol_LockList != NULL)
 				{
@@ -116,8 +116,8 @@ UBYTE i;
 		doslist = MakeDosEntry(string,DLT_VOLUME);
 		if (doslist == NULL)
 			return DOSFALSE;
-		doslist->dol_Unit = (struct Unit *)&volume->ah;
-		doslist->dol_Device = volume->device;
+		doslist->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)&volume->ah;
+		doslist->dol_Ext.dol_AROS.dol_Device = volume->device;
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Days =
 			volume->devicelist.dl_VolumeDate.ds_Days;
 		doslist->dol_misc.dol_volume.dol_VolumeDate.ds_Minute =

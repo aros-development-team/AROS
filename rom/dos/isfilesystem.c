@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Check if a device is a filesystem.
@@ -98,8 +98,8 @@
 			/* Prepare I/O request. */
 			InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
 			
-			iofs.IOFS.io_Device = dl->dol_Device;
-			iofs.IOFS.io_Unit   = dl->dol_Unit;
+			iofs.IOFS.io_Device = dl->dol_Ext.dol_AROS.dol_Device;
+			iofs.IOFS.io_Unit   = dl->dol_Ext.dol_AROS.dol_Unit;
 			
 			/* Send the request. */
 			DosDoIO(&iofs.IOFS);

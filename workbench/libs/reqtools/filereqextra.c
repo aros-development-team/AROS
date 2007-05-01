@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -694,7 +694,7 @@ IsDosVolume(struct DosList *dlist)
 #ifdef __AROS__
     struct InfoData id;
     BPTR            lock;
-    STRPTR          volName = AllocVec(strlen(dlist->dol_DevName) + 2,
+    STRPTR          volName = AllocVec(strlen(dlist->dol_Ext.dol_AROS.dol_DevName) + 2,
 				       MEMF_ANY);
 
     /* Create a colon ended volume name, lock it and call Info() */
@@ -704,7 +704,7 @@ IsDosVolume(struct DosList *dlist)
 	return FALSE;
     }
 
-    strcpy(volName, dlist->dol_DevName);
+    strcpy(volName, dlist->dol_Ext.dol_AROS.dol_DevName);
     strcat(volName, ":");
 
     lock = Lock(volName, SHARED_LOCK);
@@ -971,11 +971,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
     
     while( ( dlist = NextDosEntry( dlist, LDF_VOLUMES | LDF_ASSIGNS | LDF_READ ) ) )
     {
-#ifdef __AROS__
-	GetVolName(dlist->dol_OldName, name);
-#else
 	GetVolName(dlist->dol_Name, name);
-#endif
 	if (dlist->dol_Type == DLT_VOLUME)
 	{
 	    if (IsDosVolume(dlist) && !(volreqflags & VREQF_NODISKS))
@@ -1021,11 +1017,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 	    if( !deventry->resolved && deventry->task && ( deventry->task == dlist->dol_Task ) )
 #endif
 	    {
-#ifdef __AROS__
-		GetVolName( dlist->dol_OldName, devname );
-#else
 		GetVolName( dlist->dol_Name, devname );
-#endif
 		AddDisk( glob, deventry, devname, SIZE_CALCULATE, volreqflags );
 		deventry->resolved = TRUE;
 	    }
@@ -1040,11 +1032,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
 	     * to a volume, and we should really show all devices in a
 	     * volume requester.
 	     */
-#ifdef __AROS__
-	    GetVolName( dlist->dol_OldName, devname );
-#else
 	    GetVolName( dlist->dol_Name, devname );
-#endif
 
 	    if( ( deventry = AllocDevEntry( glob, dlist, "-" ) ) )
 	    {

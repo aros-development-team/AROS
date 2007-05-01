@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,6 @@
 #ifndef __AROS__
 #define VOID_FUNC APTR
 #define MAXFILENAMELENGTH 108
-#define dol_DevName dol_Name
 #define DosGetString
 #endif
 
@@ -1864,14 +1863,14 @@ void *params;
 			switch (lockBits)
 			{
 			    case LDF_VOLUMES:
-DMSG("VOLUME(%s:)\n",(char *)tdl->dol_DevName);
-				ret = AllocVec(strlen((char *)tdl->dol_DevName) + 2, MEMF_ANY);
+DMSG("VOLUME(%s:)\n",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
+				ret = AllocVec(strlen((char *)tdl->dol_Ext.dol_AROS.dol_DevName) + 2, MEMF_ANY);
 				outofmem(ret);
-				sprintf(ret,"%s:",(char *)tdl->dol_DevName);
+				sprintf(ret,"%s:",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
 				break;
 
 			    case LDF_ASSIGNS:
-DMSG("ASSIGN(%s:):\n",(char *)tdl->dol_DevName);
+DMSG("ASSIGN(%s:):\n",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
 				switch (tdl->dol_Type)
 				{
 				    case DLT_LATE:
@@ -1921,9 +1920,9 @@ DMSG("  +%s\n", dirName);
 				    BPTR lockdev;
 				    char *lname;
 
-DMSG("DEV(%s:):\n",(char *)tdl->dol_DevName);
-				    lname = AllocVec(strlen(tdl->dol_DevName) + 2, MEMF_ANY);
-				    sprintf(lname,"%s:",tdl->dol_DevName);
+DMSG("DEV(%s:):\n",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
+				    lname = AllocVec(strlen(tdl->dol_Ext.dol_AROS.dol_DevName) + 2, MEMF_ANY);
+				    sprintf(lname,"%s:",tdl->dol_Ext.dol_AROS.dol_DevName);
 				    lockdev = Lock(lname, SHARED_LOCK);
 				    FreeVec(lname);
 				    if (lockdev)
@@ -1934,9 +1933,9 @@ DMSG("   %s\n",ret);
 				    }
 				    else
 				    {
-					ret = AllocVec(strlen((char *)tdl->dol_DevName) + 2, MEMF_ANY);
+					ret = AllocVec(strlen((char *)tdl->dol_Ext.dol_AROS.dol_DevName) + 2, MEMF_ANY);
 					outofmem(ret);
-					sprintf(ret,"%s:",(char *)tdl->dol_DevName);
+					sprintf(ret,"%s:",(char *)tdl->dol_Ext.dol_AROS.dol_DevName);
 				    }
 				}
 				break;

@@ -4607,7 +4607,7 @@ static struct NewDosList *IconVolumeList__CreateDOSList(void)
                 LONG len = dosname[0];
                 dosname++;
 #else
-                UBYTE *dosname = dl->dol_DevName;
+                UBYTE *dosname = dl->dol_Ext.dol_AROS.dol_DevName;
                 LONG len = strlen(dosname);
 #endif
 
@@ -4621,8 +4621,8 @@ static struct NewDosList *IconVolumeList__CreateDOSList(void)
                     if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
                     {
                         ndn->name = name;
-                        ndn->device = dl->dol_Device;
-                        ndn->unit = dl->dol_Unit;
+                        ndn->device = dl->dol_Ext.dol_AROS.dol_Device;
+                        ndn->unit = dl->dol_Ext.dol_AROS.dol_Unit;
 D(bug("[IconList]: IconVolumeList__CreateDOSList: adding node for '%s' (Device @ %x, Unit @ %x)\n", ndn->name, ndn->device, ndn->unit));
 D(bug("[IconList]: IconVolumeList__CreateDOSList: Device '%s'\n", ndn->device->dd_Library.lib_Node.ln_Name));
 #ifndef __AROS__

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -46,9 +46,9 @@
 
     if (dlist != NULL)
     {
-	/* It's important to free OldName here due to BSTR compatibility
-	   shit. See MakeDosEntry() */
-	FreeVec(BADDR(dlist->dol_OldName));
+	/* It's important to free dol_Name here due to BSTR compatibility.
+	   See MakeDosEntry() */
+	FreeVec(BADDR(dlist->dol_Name));
 	FreeMem(dlist, sizeof(struct DosList));
     }
 

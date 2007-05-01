@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -391,6 +391,15 @@ struct FileLock
 #define ST_SOFTLINK  3 /* Soft link (may be a file or directory) */
 #define ST_LINKDIR   4 /* Hard link to a directory */
 
+/* Aros specific extension of struct DosList
+ */
+struct DosListAROSExt
+{
+    STRPTR dol_DevName;
+    struct Device * dol_Device;
+    struct Unit   * dol_Unit;
+};
+
 /**********************************************************************
  ****************************** DosLists ******************************
  **********************************************************************/
@@ -436,22 +445,18 @@ struct DosList
         } dol_assign;
     } dol_misc;
 
-      /* This field is called dol_Name in AmigaOS. It is now named dol_OldName
-         to give you a hint that something has changed. Additionally to the
-         old nasty BSTR there is now a new clean STRPTR for the same purpose.
-         You may want to:
-         1. Change your sources to reflect this change thus getting rid of
-            all BCPL stuff or
-         2. just define dol_OldName to dol_Name before including this file
-            to stay downwards compatible. */
-    BSTR dol_OldName;
+    /* Name as a BCPL string */
+    BSTR dol_Name;
 
-    /* The following fields are new to AROS. */
-    STRPTR	    dol_DevName;
-    struct Device * dol_Device;
-    struct Unit   * dol_Unit;
+    /* Private extensions for the DosList struct.
+     * Should not be used in user land code.
+     */
+    union
+    {
+        IPTR dol_Reserved[5];
+        struct DosListAROSExt dol_AROS;
+    } dol_Ext;
 };
-#define dol_Name dol_OldName
 
 /* dol_Type/dl_Type/dvi_Type. Given to MakeDosEntry(). */
 #define DLT_DEVICE     0 /* A real filesystem (or similar) */

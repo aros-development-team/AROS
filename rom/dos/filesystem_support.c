@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -91,9 +91,9 @@ struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
     dl = FindDosEntry(dl, tempName, type);
     if (dl != NULL)
     {
-	device = dl->dol_Device;
+	device = dl->dol_Ext.dol_AROS.dol_Device;
 	if (unit!=NULL)
-	    *unit = dl->dol_Unit;
+	    *unit = dl->dol_Ext.dol_AROS.dol_Unit;
     }
 
     UnLockDosList(type | LDF_READ);

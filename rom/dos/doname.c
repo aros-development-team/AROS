@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prepare an IO message for use with a specific filename.
@@ -142,8 +142,8 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
         		    return ERROR_DEVICE_NOT_MOUNTED;
     	        }
         
-        		device = dl->dol_Device;
-        		unit = dl->dol_Unit;
+        		device = dl->dol_Ext.dol_AROS.dol_Device;
+        		unit = dl->dol_Ext.dol_AROS.dol_Unit;
     	    }
     	    else
     	    {
@@ -173,8 +173,8 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
     	}
     	else
     	{
-    	    device = dl->dol_Device;
-    	    unit   = dl->dol_Unit;
+    	    device = dl->dol_Ext.dol_AROS.dol_Device;
+    	    unit   = dl->dol_Ext.dol_AROS.dol_Unit;
     	}
     
     	pathname = s1;

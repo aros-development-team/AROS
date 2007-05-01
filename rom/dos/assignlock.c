@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create an assign.
@@ -67,9 +67,9 @@
 	    return DOSFALSE;
 	}
 
-	newdl->dol_Unit   = fh->fh_Unit;
-	newdl->dol_Device = fh->fh_Device;
-	newdl->dol_Lock   = lock;
+	newdl->dol_Ext.dol_AROS.dol_Unit   = fh->fh_Unit;
+	newdl->dol_Ext.dol_AROS.dol_Device = fh->fh_Device;
+	newdl->dol_Lock                    = lock;
     }
 
     dl = LockDosList(LDF_ALL | LDF_WRITE);

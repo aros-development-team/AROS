@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -81,9 +81,9 @@
     if (dlist->dol_Task != NULL) {
         for (scan = dl; scan != NULL; scan = scan->dol_Next)
             if (scan->dol_Task == dlist->dol_Task && scan->dol_Type == DLT_DEVICE) {
-                dlist->dol_DevName = AROS_BSTR_ADDR(dlist->dol_OldName);
-                dlist->dol_Device = scan->dol_Device;
-                dlist->dol_Unit = scan->dol_Unit;
+                dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
+                dlist->dol_Ext.dol_AROS.dol_Device = scan->dol_Ext.dol_AROS.dol_Device;
+                dlist->dol_Ext.dol_AROS.dol_Unit = scan->dol_Ext.dol_AROS.dol_Unit;
                 break;
             }
     }
@@ -98,7 +98,7 @@
 		break;
 
 	    if(dl->dol_Type != DLT_VOLUME &&
-	       !Stricmp(dl->dol_DevName, dlist->dol_DevName))
+	       !Stricmp(dl->dol_Ext.dol_AROS.dol_DevName, dlist->dol_Ext.dol_AROS.dol_DevName))
 	    {
 		success = 0;
 		break;

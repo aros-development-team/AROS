@@ -195,7 +195,7 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
 					while((dl = NextDosEntry(dl, LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)))
 					{
 					#ifdef __AROS__
-						STRPTR NodeName = dl->dol_DevName;
+						STRPTR NodeName = dl->dol_Ext.dol_AROS.dol_DevName;
 					#else
 						STRPTR NodeName = (STRPTR)((dl->dol_Name << 2)+1);
     	    	    	    	    	#endif

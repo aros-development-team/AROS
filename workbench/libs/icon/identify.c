@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define DEBUG 0
@@ -359,7 +359,7 @@ BOOL __FindDeviceName_WB
         {
             TEXT device[MAXFILENAMELENGTH];
             
-            strlcpy(device, dol->dol_DevName, MAXFILENAMELENGTH);
+            strlcpy(device, dol->dol_Ext.dol_AROS.dol_DevName, MAXFILENAMELENGTH);
             
             if (strlcat(device, ":", MAXFILENAMELENGTH) < MAXFILENAMELENGTH)
             {
