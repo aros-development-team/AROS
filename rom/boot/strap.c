@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -259,21 +259,21 @@ static VOID AddPartitionVolume
             devnode = MakeDosNode(pp);
             if (devnode)
             {
-                devnode->dn_OldName = MKBADDR(AllocVec(strlen(name) + 2,
+                devnode->dn_Name = MKBADDR(AllocVec(strlen(name) + 2,
                     MEMF_PUBLIC | MEMF_CLEAR));
-                if (devnode->dn_OldName)
+                if (devnode->dn_Name)
                 {
                     i = 0;
                     while (name[i])
                     {
-                        AROS_BSTR_putchar(devnode->dn_OldName, i, name[i]);
+                        AROS_BSTR_putchar(devnode->dn_Name, i, name[i]);
                         i++;
                     }
-                    AROS_BSTR_setstrlen(devnode->dn_OldName, i);
-                    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
+                    AROS_BSTR_setstrlen(devnode->dn_Name, i);
+                    devnode->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devnode->dn_Name);
                     AddBootNode(pp[4 + DE_BOOTPRI], 0, devnode, 0);
                     D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
-                        devnode->dn_NewName, pp[4 + DE_DOSTYPE], pp[0]));
+                        devnode->dn_Ext.dn_AROS.dn_DevName, pp[4 + DE_DOSTYPE], pp[0]));
                     return;
                 }
             }

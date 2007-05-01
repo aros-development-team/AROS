@@ -291,12 +291,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
 				        AROS_BSTR_setstrlen(s, 3);
 
 	    			        dn->dn_Type	    = DLT_DEVICE;
-	    			        dn->dn_Unit	    = dummyiofs.IOFS.io_Unit;
-	    			        dn->dn_Device   = dummyiofs.IOFS.io_Device;
+	    			        dn->dn_Ext.dn_AROS.dn_Unit	    = dummyiofs.IOFS.io_Unit;
+	    			        dn->dn_Ext.dn_AROS.dn_Device   = dummyiofs.IOFS.io_Device;
 	    			        dn->dn_Handler  = NULL;
 	    			        dn->dn_Startup  = NULL;
-	     			        dn->dn_OldName  = MKBADDR(s);
-	    			        dn->dn_NewName  = AROS_BSTR_ADDR(dn->dn_OldName);
+	     			        dn->dn_Name  = MKBADDR(s);
+	    			        dn->dn_Ext.dn_AROS.dn_DevName  = AROS_BSTR_ADDR(dn->dn_Name);
 
 				        if (AddDosEntry((struct DosList *)dn))
 				            if (NewAddTask(task, deventry, NULL, tasktags) != NULL)

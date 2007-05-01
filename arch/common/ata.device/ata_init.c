@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -96,26 +96,26 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 
             if (devnode)
             {
-                if ((devnode->dn_OldName =
+                if ((devnode->dn_Name =
                      MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR))))
                 {
                     if( !unit->au_DevType )
                     {
-                        AROS_BSTR_putchar(devnode->dn_OldName, 0, 'H');
-                        AROS_BSTR_putchar(devnode->dn_OldName, 1, 'D');
-                        AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
+                        AROS_BSTR_putchar(devnode->dn_Name, 0, 'H');
+                        AROS_BSTR_putchar(devnode->dn_Name, 1, 'D');
+                        AROS_BSTR_putchar(devnode->dn_Name, 2, '0' + volnum);
                     }
                     else
                     {
-                        AROS_BSTR_putchar(devnode->dn_OldName, 0, 'C');
-                        AROS_BSTR_putchar(devnode->dn_OldName, 1, 'D');
-                        AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
+                        AROS_BSTR_putchar(devnode->dn_Name, 0, 'C');
+                        AROS_BSTR_putchar(devnode->dn_Name, 1, 'D');
+                        AROS_BSTR_putchar(devnode->dn_Name, 2, '0' + volnum);
                     }
-                    AROS_BSTR_setstrlen(devnode->dn_OldName, 3);
-                    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
+                    AROS_BSTR_setstrlen(devnode->dn_Name, 3);
+                    devnode->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devnode->dn_Name);
 
                     D(bug("-Adding volume %s with SC=%d, EC=%d\n",
-                          &(devnode->dn_NewName[0]), StartCyl, EndCyl));
+                          &(devnode->dn_Ext.dn_AROS.dn_DevName[0]), StartCyl, EndCyl));
                     AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
                     volnum++;
 

@@ -274,13 +274,13 @@ BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase )
 	    iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
 	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 	    iofs->io_Union.io_OpenDevice.io_Environ    = BADDR(fssm->fssm_Environ);
-	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_NewName;
+	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_Ext.dn_AROS.dn_DevName;
 	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
 	    {
 		if (AddDosEntry((struct DosList *) dn))
 		{
-		    dn->dn_Unit = iofs->IOFS.io_Unit;
-		    dn->dn_Device = iofs->IOFS.io_Device;
+		    dn->dn_Ext.dn_AROS.dn_Unit = iofs->IOFS.io_Unit;
+		    dn->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
 		    /* Do not close filesys !!! */
 		    rc = TRUE;
 		}

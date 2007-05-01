@@ -925,12 +925,12 @@ static LONG startup(struct emulbase *emulbase)
 				AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
 				
 				dlv->dn_Type    = DLT_DEVICE;
-				dlv->dn_Unit    = (struct Unit *)fhv;
-				dlv->dn_Device  = &emulbase->device;
+				dlv->dn_Ext.dn_AROS.dn_Unit    = (struct Unit *)fhv;
+				dlv->dn_Ext.dn_AROS.dn_Device  = &emulbase->device;
 				dlv->dn_Handler = NULL;
 				dlv->dn_Startup = NULL;
-				dlv->dn_OldName = MKBADDR(s);
-				dlv->dn_NewName = AROS_BSTR_ADDR(dlv->dn_OldName);
+				dlv->dn_Name    = MKBADDR(s);
+				dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
 
 				AddBootNode(0, 0, dlv, NULL);
 
@@ -947,12 +947,12 @@ static LONG startup(struct emulbase *emulbase)
 				AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
 
 				dlv2->dn_Type    = DLT_VOLUME;
-				dlv2->dn_Unit    = (struct Unit *)fhv;
-				dlv2->dn_Device  = &emulbase->device;
+				dlv2->dn_Ext.dn_AROS.dn_Unit    = (struct Unit *)fhv;
+				dlv2->dn_Ext.dn_AROS.dn_Device  = &emulbase->device;
 				dlv2->dn_Handler = NULL;
 				dlv2->dn_Startup = NULL;
-				dlv2->dn_OldName = MKBADDR(s2);
-				dlv2->dn_NewName = AROS_BSTR_ADDR(dlv2->dn_OldName);
+				dlv2->dn_Name = MKBADDR(s2);
+				dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
 
 				/* Make sure this is not booted from */
 				AddBootNode(-128, 0, dlv2, NULL);

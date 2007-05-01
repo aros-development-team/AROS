@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Mount CLI command.
@@ -263,11 +263,11 @@ LONG mount (STRPTR name, struct RDArgs *rda)
 	if (dn != NULL)
 	{
 	    /* Use the name found in the mountlist */
-	    dn->dn_OldName = DuplicateBSTRVolumeName(name);
+	    dn->dn_Name = DuplicateBSTRVolumeName(name);
 
-	    if (dn->dn_OldName != NULL)
+	    if (dn->dn_Name != NULL)
 	    {
-		dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
+		dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
 
                 dn->dn_StackSize = args[19] ? (IPTR) *args[19] : AROS_STACKSIZE;
                 dn->dn_Priority  = args[20] ? (IPTR) *args[20] : 50;

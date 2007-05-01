@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a DOS device to the system.
@@ -77,7 +77,7 @@
     BOOL ok = FALSE;
 
     /* Have we been asked to start a filesystem, and there is none already */
-    if ((flags & ADNF_STARTPROC) && (deviceNode->dn_Device == NULL))
+    if ((flags & ADNF_STARTPROC) && (deviceNode->dn_Ext.dn_AROS.dn_Device == NULL))
     {
 	/* yes, better do so */
 	struct MsgPort *mp;
@@ -108,7 +108,7 @@
 		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
 		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
-		iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_NewName;
+		iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_Ext.dn_AROS.dn_DevName;
                 iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
 
 		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags) ||
@@ -121,8 +121,8 @@
 		      I suppose that is one one of preventing it from
 		      dieing
 		    */
-		    deviceNode->dn_Device = iofs->IOFS.io_Device;
-		    deviceNode->dn_Unit = iofs->IOFS.io_Unit;
+		    deviceNode->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
+		    deviceNode->dn_Ext.dn_AROS.dn_Unit = iofs->IOFS.io_Unit;
 		    ok = TRUE;
 		}
 

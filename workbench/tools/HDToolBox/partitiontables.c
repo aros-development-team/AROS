@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -240,16 +240,15 @@ ULONG i;
 				dn = MakeDosNode(params);
 				if (dn)
 				{
-					dn->dn_OldName = MKBADDR(AllocVec(strlen(name)+2, MEMF_PUBLIC));
-#ifndef __AMIGAOS__
-					dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
-#endif
+					dn->dn_Name = MKBADDR(AllocVec(strlen(name)+2, MEMF_PUBLIC));
+					dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
+
 					i = 0;
 					do
 					{
-						AROS_BSTR_putchar(dn->dn_OldName, i, name[i]);
+						AROS_BSTR_putchar(dn->dn_Name, i, name[i]);
 					} while (name[i++]);
-					AROS_BSTR_setstrlen(dn->dn_OldName, i-1);
+					AROS_BSTR_setstrlen(dn->dn_Name, i-1);
 					AddDosNode(nde->de_BootPri, ADNF_STARTPROC, dn);
 				}
 				else

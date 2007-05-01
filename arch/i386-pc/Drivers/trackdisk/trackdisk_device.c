@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Amigastyle device for trackdisk
@@ -128,15 +128,15 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 
 		if (devnode)
 		{
-		    devnode->dn_OldName = MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR));
+		    devnode->dn_Name = MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR));
 
-		    if (devnode->dn_OldName != NULL)
+		    if (devnode->dn_Name != NULL)
 		    {
-			AROS_BSTR_putchar(devnode->dn_OldName, 0, 'D');
-			AROS_BSTR_putchar(devnode->dn_OldName, 1, 'F');
-			AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + num);
-			AROS_BSTR_setstrlen(devnode->dn_OldName, 3);
-			devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
+			AROS_BSTR_putchar(devnode->dn_Name, 0, 'D');
+			AROS_BSTR_putchar(devnode->dn_Name, 1, 'F');
+			AROS_BSTR_putchar(devnode->dn_Name, 2, '0' + num);
+			AROS_BSTR_setstrlen(devnode->dn_Name, 3);
+			devnode->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devnode->dn_Name);
 
 			AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
 		    }
