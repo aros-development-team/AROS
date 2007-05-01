@@ -10,9 +10,12 @@
     Lang: english
 */
 
+/* Information about size and alignment,
+ * the defines have to be numeric constants */
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */
 #define AROS_BIG_ENDIAN 	   1 /* Big or little endian */
 #define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
+#define AROS_SIZEOPTR		   4 /* Size of a PTR */
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
 #define AROS_LONGALIGN		   4 /* Alignment for LONG */
 #define AROS_PTRALIGN		   4 /* Alignment for PTR */
