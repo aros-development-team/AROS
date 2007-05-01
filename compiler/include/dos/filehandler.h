@@ -20,6 +20,7 @@
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+#include <dos/dosextaros.h>
 
 
 /* Disk environment array. The size of this structure is variable.
@@ -122,14 +123,16 @@ struct DeviceNode
     BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
     BPTR  dn_NoAROS3[2]; /* PRIVATE */
 
-    /* For the following two fields, see comments in <dos/dosextens.h>.
-       Both fields specify the name of the handler. */
-    BSTR   dn_OldName;
-    STRPTR dn_NewName;
+    BSTR   dn_Name;
 
-    struct Device *dn_Device;
-    struct Unit   *dn_Unit;
+    /* Private extensions
+     * Should not be used in user land code.
+     */
+    union
+    {
+        IPTR dn_Reserved[5];
+        struct DosListAROSExt dn_AROS;
+    } dn_Ext;
 };
-#define dn_Name dn_OldName
 
 #endif /* DOS_FILEHANDLER_H */

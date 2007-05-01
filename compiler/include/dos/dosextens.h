@@ -39,6 +39,7 @@
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+#include <dos/dosextaros.h>
 
 /**********************************************************************
  ***************************** DosLibrary *****************************
@@ -391,15 +392,6 @@ struct FileLock
 #define ST_SOFTLINK  3 /* Soft link (may be a file or directory) */
 #define ST_LINKDIR   4 /* Hard link to a directory */
 
-/* Aros specific extension of struct DosList
- */
-struct DosListAROSExt
-{
-    STRPTR dol_DevName;
-    struct Device * dol_Device;
-    struct Unit   * dol_Unit;
-};
-
 /**********************************************************************
  ****************************** DosLists ******************************
  **********************************************************************/
@@ -434,7 +426,7 @@ struct DosList
             struct DateStamp dol_VolumeDate;
             BPTR             dol_LockList;
             LONG             dol_DiskType;
-            IPTR             dol_unused;
+            BPTR             dol_unused;
         } dol_volume;
           /* Structure used for assigns. */
         struct {
@@ -471,12 +463,6 @@ struct DosList
    instead of DosList, if you have a list, containing just one type of
    entries. For more information see above. */
 
-/* Structure that describes a volume.
-   ATTENTION: This struture does currently work on 32bit computers only due to
-              the fact that dl_unused does not compensate the missing pointers
-              in this structure. In DevInfo we have three pointer and three
-              longwords, while in this structure we have only two pointers and
-              four longwords. */
 struct DeviceList
 {
     struct DeviceList * dl_Next;
@@ -485,22 +471,35 @@ struct DeviceList
     struct MsgPort * dl_Task;
     BPTR             dl_Lock;
 
-      /* Embedded DateStamp structured as defined in <dos/dos.h>. At this
-         date the volume was created. */
+    /* Embedded DateStamp structured as defined in <dos/dos.h>. At this
+       date the volume was created. */
     struct DateStamp dl_VolumeDate;
-      /* (void *) List of all locks on the volume. */
+    /* (void *) List of all locks on the volume. */
     BPTR             dl_LockList;
-      /* Type of the disk. (see <dos/dos.h> for definitions) */
+    /* Type of the disk. (see <dos/dos.h> for definitions) */
     LONG             dl_DiskType;
     IPTR             dl_unused; /* PRIVATE */
+    
+    /* In DevInfo we have three pointers and three longwords,
+     * in this structu two pointers and for longwords,
+     * add some bytes if pointers are longer then longwords
+     * FIXME: ptr alignment not taking into account
+     */
+#if AROS_SIZEOFPTR > AROS_SIZEOFULONG
+    UBYTE            dl_unused2[AROS_SIZEOFPTR-AROS_SIZEOFULONG];
+#endif
 
-    BSTR dl_OldName;
+    BSTR dl_Name;
 
-    STRPTR	    dl_DevName;
-    struct Device * dl_Device;
-    struct Unit   * dl_Unit;
+    /* Private extensions
+     * Should not be used in user land code.
+     */
+    union
+    {
+        IPTR dl_Reserved[5];
+        struct DosListAROSExt dl_AROS;
+    } dl_Ext;
 };
-#define dl_Name dl_OldName
 
 
 /* Structure that describes a device. This is essentially the same structure
@@ -520,13 +519,17 @@ struct DevInfo
                             <dos/filehandler.h>) */
     BPTR dvi_NoAROS4[2]; /* PRIVATE */
 
-    BSTR dvi_OldName;
+    BSTR dvi_Name;
 
-    STRPTR	    dvi_DevName;
-    struct Device * dvi_Device;
-    struct Unit   * dvi_Unit;
+    /* Private extensions
+     * Should not be used in user land code.
+     */
+    union
+    {
+        IPTR dvi_Reserved[5];
+        struct DosListAROSExt dvi_AROS;
+    } dvi_Ext;
 };
-#define dvi_Name dvi_OldName
 
 
 /* Dos list scanning and locking modes as used in LockDosList() */
