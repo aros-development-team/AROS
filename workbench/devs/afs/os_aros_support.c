@@ -43,7 +43,7 @@ UBYTE i;
 	name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
 	volume->devicelist.dl_Next = 0;
 	volume->devicelist.dl_Type = DLT_VOLUME;
-	volume->devicelist.dl_Device = volume->device;
+	volume->devicelist.dl_Ext.dl_AROS.dl_Device = volume->device;
 	volume->devicelist.dl_Lock = 0;
 	volume->devicelist.dl_VolumeDate.ds_Days =
 		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_DAYS(volume)]);
@@ -53,22 +53,22 @@ UBYTE i;
 		AROS_BE2LONG(rootblock->buffer[BLK_ROOT_TICKS(volume)]);
 	volume->devicelist.dl_LockList = 0;
 	volume->devicelist.dl_DiskType = volume->dostype;
-	if (volume->devicelist.dl_OldName != NULL)
+	if (volume->devicelist.dl_Name != NULL)
 	{
-		volume->devicelist.dl_OldName =
-			(BSTR)BADDR(volume->devicelist.dl_OldName);
+		volume->devicelist.dl_Name =
+			(BSTR)BADDR(volume->devicelist.dl_Name);
 	}
 	else
 	{
-		volume->devicelist.dl_OldName =
+		volume->devicelist.dl_Name =
 			(BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
-		if (volume->devicelist.dl_OldName == NULL)
+		if (volume->devicelist.dl_Name == NULL)
 			return DOSFALSE;
 	}
 	for (i=0; i<name[0]; i++)
-		AROS_BSTR_putchar(volume->devicelist.dl_OldName, i, name[i+1]);
-	AROS_BSTR_setstrlen(volume->devicelist.dl_OldName, name[0]);
-	volume->devicelist.dl_OldName = MKBADDR(volume->devicelist.dl_OldName);
+		AROS_BSTR_putchar(volume->devicelist.dl_Name, i, name[i+1]);
+	AROS_BSTR_setstrlen(volume->devicelist.dl_Name, name[0]);
+	volume->devicelist.dl_Name = MKBADDR(volume->devicelist.dl_Name);
 	return DOSTRUE;
 }
 
@@ -85,7 +85,7 @@ char string[32];
 char *bname;
 UBYTE i;
 
-	bname = BADDR(volume->devicelist.dl_OldName);
+	bname = BADDR(volume->devicelist.dl_Name);
 	for (i=0; i<AROS_BSTR_strlen(bname); i++)
 		string[i] = AROS_BSTR_getchar(bname,i);
 	string[AROS_BSTR_strlen(bname)] = 0;
@@ -150,7 +150,7 @@ UBYTE i;
 
 	if (volume->dostype == 0x444F5300)
 	{
-		bname = BADDR(volume->devicelist.dl_OldName);
+		bname = BADDR(volume->devicelist.dl_Name);
 		if (bname != NULL)
 		{
 			for (i=0; i<AROS_BSTR_strlen(bname); i++)
@@ -198,8 +198,8 @@ LONG osMediumInit
 void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 	remDosVolume(afsbase, volume);
 	if (all)
-		if (volume->devicelist.dl_OldName != NULL)
-			FreeVec(BADDR(volume->devicelist.dl_OldName));
+		if (volume->devicelist.dl_Name != NULL)
+			FreeVec(BADDR(volume->devicelist.dl_Name));
 }
 
 /************************** I/O ******************************************/

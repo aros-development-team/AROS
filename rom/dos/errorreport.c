@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -99,27 +99,27 @@
 	case ERROR_DISK_FULL:
 	    /* "The volume <name> is full"; */
 	    format = DosGetString(STRING_VOLUME_FULL);
-	    args[0] = ((struct DeviceList *)arg1)->dl_DevName;
+	    args[0] = ((struct DeviceList *)arg1)->dl_Ext.dl_AROS.dl_DevName;
 	    break;
 	    
 	case ERROR_NO_DISK:
 	    /* "No disk in drive <name>"; */
 	    format = DosGetString(STRING_NO_DISK);
-	    args[0] = ((struct DeviceList *)arg1)->dl_DevName;
+	    args[0] = ((struct DeviceList *)arg1)->dl_Ext.dl_AROS.dl_DevName;
 	    break;
 
 	case ERROR_NOT_A_DOS_DISK:
 	    /* "Not a DOS disk in unit <name>"; */
 	    format = DosGetString(STRING_NO_DOS_DISK);
-	    args[0] = ((struct DeviceList *)arg1)->dl_DevName;
-	    kprintf("%s %s\n", format, ((struct DeviceList *)arg1)->dl_DevName);
+	    args[0] = ((struct DeviceList *)arg1)->dl_Ext.dl_AROS.dl_DevName;
+	    kprintf("%s %s\n", format, ((struct DeviceList *)arg1)->dl_Ext.dl_AROS.dl_DevName);
 	    break;
 	    
 	case ABORT_BUSY:
 	    /* "You MUST replace volume <name> in drive <name>"; */
 	    format = DosGetString(STRING_MUST_REPLACE);
 	    args[0] = "Where do I get this argument from?"; /* GetFileSysTask()? */
-	    args[1] = ((struct DeviceList *)arg1)->dl_DevName;
+	    args[1] = ((struct DeviceList *)arg1)->dl_Ext.dl_AROS.dl_DevName;
 	    break;
 
 	default:

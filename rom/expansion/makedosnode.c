@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MakeDosNode() - Create a DOS DeviceNode structure.
@@ -197,7 +197,7 @@
     dn->dn_Startup = MKBADDR(fssm);
     dn->dn_Type = DLT_DEVICE;
 
-    /* Sorry, we can't fill in dn_NewName and dn_OldName here, we simply
+    /* Sorry, we can't fill in dn_DevName and dn_Name here, we simply
        don't have that information */
 
     return dn;

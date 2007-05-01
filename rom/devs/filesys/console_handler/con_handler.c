@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that uses console device for input/output.
@@ -91,16 +91,16 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
 	    dn->dn_Type		= DLT_DEVICE;
 
 	    /* 
-	       i equals 1 when dn_NewName is "RAW", and 0 otherwise. This
+	       i equals 1 when dn_DevName is "RAW", and 0 otherwise. This
 	       tells con_task that it has to start in RAW mode
 	     */   
-	    dn->dn_Unit		= (struct Unit *)i;
+	    dn->dn_Ext.dn_AROS.dn_Unit		= (struct Unit *)i;
 
-	    dn->dn_Device	= &conbase->device;
+	    dn->dn_Ext.dn_AROS.dn_Device	= &conbase->device;
 	    dn->dn_Handler	= NULL;
 	    dn->dn_Startup	= NULL;
-	    dn->dn_OldName	= MKBADDR(s);
-	    dn->dn_NewName	= AROS_BSTR_ADDR(dn->dn_OldName);
+	    dn->dn_Name		= MKBADDR(s);
+	    dn->dn_Ext.dn_AROS.dn_DevName	= AROS_BSTR_ADDR(dn->dn_Name);
 
 	    if (AddDosEntry((struct DosList *)dn))
 	    {
