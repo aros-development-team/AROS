@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -1618,8 +1618,8 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 
 		    if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
 		    {
-			doslist->dol_Unit=(struct Unit *)fhv;
-			doslist->dol_Device=&emulbase->device;
+			doslist->dol_Ext.dol_AROS.dol_Unit=(struct Unit *)fhv;
+			doslist->dol_Ext.dol_AROS.dol_Device=&emulbase->device;
 			AddDosEntry(doslist);
 
 			iofs->IOFS.io_Unit   = (struct Unit *)fhv;

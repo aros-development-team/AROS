@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -863,8 +863,8 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		    return ERROR_DEVICE_NOT_MOUNTED;
 	        }
 		
-		device = dl->dol_Device;
-		unit = dl->dol_Unit;
+		device = dl->dol_Ext.dol_AROS.dol_Device;
+		unit = dl->dol_Ext.dol_AROS.dol_Unit;
 	    } 
 	    else
 	    {
@@ -893,8 +893,8 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	}
 	else
 	{
-	    device = dl->dol_Device;
-	    unit   = dl->dol_Unit;
+	    device = dl->dol_Ext.dol_AROS.dol_Device;
+	    unit   = dl->dol_Ext.dol_AROS.dol_Unit;
 	}
     }
     else if (cur)

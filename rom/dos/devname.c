@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Get a device pointer from a filename.
@@ -126,7 +126,7 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
                 dl = FindDosEntry(dl, volname, LDF_ALL);
 
                 if(dl != NULL)
-                    *devptr = dl->dol_Device;
+                    *devptr = dl->dol_Ext.dol_AROS.dol_Device;
                 else
                     error = ERROR_DEVICE_NOT_MOUNTED;
 
@@ -153,7 +153,7 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
         }
 	else
         {
-            *devptr = dl->dol_Device;
+            *devptr = dl->dol_Ext.dol_AROS.dol_Device;
             UnLockDosList(LDF_ALL | LDF_READ);
         }
     }

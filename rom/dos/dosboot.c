@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start up the ol' Dos boot process.
@@ -54,7 +54,7 @@ AROS_UFH3(void, intBoot,
     BPTR                  lock;
     LONG                  second;
 
-#   define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_DevName)
+#   define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_Ext.dol_AROS.dol_DevName)
     
     /**** Open all required libraries **********************************************/
     DOSBase       = (struct DosLibrary *)    OpenLibrary( "dos.library", 0 );

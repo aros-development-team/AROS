@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,8 +9,6 @@
 
 #include <aros/system.h>
 #include <dos/dos.h>
-
-//#define dol_OldName dol_Name
 
 #include <dos/dosextens.h>
 #include <exec/types.h>
@@ -102,7 +100,7 @@
       DList = NextDosEntry(DList, Flags);
       while (DList != NULL && ReturnValue == FALSE)
       {
-        DLName = AROS_BSTR_ADDR(DList->dol_OldName);
+        DLName = AROS_BSTR_ADDR(DList->dol_Name);
 
         Success = Strnicmp(DLName, &Buffer[0], Position - 1);
         if (Success == 0)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -209,7 +209,7 @@ if (volname)
 		return NULL;
 	    }
 
-	    dp->dvp_Port = (struct MsgPort *)dl->dol_Device;
+	    dp->dvp_Port = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
 	    dp->dvp_Lock = lock;
 	    dp->dvp_Flags = 0;
 	    dp->dvp_DevNode = dl;
@@ -245,7 +245,7 @@ if (volname)
     {
 /* kprintf("generic case\n");    
 */	/* Generic case, a volume, a device, or a multi-assign */
-	dp->dvp_Port = (struct MsgPort *)dl->dol_Device;
+	dp->dvp_Port = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
 	dp->dvp_DevNode = dl;
 	if( dl->dol_Type == DLT_DIRECTORY )
 	{

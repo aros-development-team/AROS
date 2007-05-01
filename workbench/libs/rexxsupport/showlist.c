@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Rexx stub for AllocMem system function
@@ -22,9 +22,6 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
-#ifdef __AROS__
-#define dol_Name dol_OldName
-#endif
 #ifndef AROS_BSTR_ADDR
 #   define AROS_BSTR_ADDR(s) (((STRPTR)BADDR(s))+1)
 #endif

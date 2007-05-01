@@ -1,5 +1,5 @@
 /*
-   Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2007, The AROS Development Team. All rights reserved.
    $Id$ 
  */
 
@@ -196,7 +196,7 @@ ULONG desktopHandler(void)
                                     (dl = NextDosEntry(dl, htl->htl_Types))
                                 )
                                 {
-                                    ULONG length = strlen(dl->dol_DevName) + 1;
+                                    ULONG length = strlen(dl->dol_Ext.dol_AROS.dol_DevName) + 1;
                                     
                                     tn = (struct TempNode *) AllocVec
                                     (
@@ -206,7 +206,7 @@ ULONG desktopHandler(void)
                                     (
                                         length + 1, MEMF_ANY
                                     );
-                                    strlcpy(tn->t_Name, dl->dol_DevName, length);
+                                    strlcpy(tn->t_Name, dl->dol_Ext.dol_AROS.dol_DevName, length);
                                     AddTail(&tnList, (struct Node *) tn);
                                     i++;
                                 }

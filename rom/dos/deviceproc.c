@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DeviceProc - Return a handle to a devices process.
@@ -68,7 +68,7 @@
 	if(dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME ||
 	   dl->dol_Type == DLT_DIRECTORY)
 	{
-	    res = (struct MsgPort *)dl->dol_Device;
+	    res = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
 	}
 
 	/* If it is an assign, return device and lock */
