@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-complete : themes-gorilla-icons-contrib
 
-ICONS := MultiMedia Dopus
+ICONS := MultiMedia DOpus
 
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-contrib
