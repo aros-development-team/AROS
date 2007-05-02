@@ -22,6 +22,13 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+#if defined(DEBUG_FULL) && DEBUG_FULL != 0
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
+
 #define RESET_DIRHANDLE(dh)         \
     do {                            \
         RESET_HANDLE(&(dh->ioh));   \
@@ -29,7 +36,20 @@
     } while(0);
 
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
-    dh->ioh.sb = sb;
+    /* dh may or may not be initialised when this is called. if it is, then it
+     * probably has a valid cache block that we need to free, but we wouldn't
+     * know. we test the superblock pointer to figure out its valid or not */
+    if (dh->ioh.sb == sb) {
+        D(bug("[fat] reusing directory handle\n"));
+        if (dh->ioh.block != NULL) {
+            cache_put_block(sb->cache, dh->ioh.block, 0);
+            dh->ioh.block = NULL;
+        }
+    }
+    else {
+        dh->ioh.sb = sb;
+        dh->ioh.block = NULL;
+    }
 
     if (cluster == 0) {
         dh->ioh.first_cluster = sb->rootdir_cluster;
@@ -40,8 +60,6 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
         dh->ioh.first_sector = 0;
     }
 
-    dh->ioh.block = NULL;
-
     RESET_DIRHANDLE(dh);
 
     D(bug("[fat] initialised dir handle, first cluster is %ld, first sector is %ld\n", dh->ioh.first_cluster, dh->ioh.first_sector));
@@ -50,6 +68,7 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
 }
 
 LONG ReleaseDirHandle(struct DirHandle *dh) {
+    D(bug("[fat] releasing dir handle (cluster %ld)\n", dh->ioh.first_cluster));
     RESET_DIRHANDLE(dh);
     return 0;
 }

@@ -25,6 +25,13 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+#if defined(DEBUG_FULL) && DEBUG_FULL != 0
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
+
 LONG TestLock(struct ExtFileLock *fl) {
     if (fl == 0 && glob->sb == NULL) {
         if (glob->disk_inserted == FALSE)

@@ -24,6 +24,13 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+#if defined(DEBUG_PACKETS) && DEBUG_PACKETS != 0
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
+
 void ProcessPackets(void) {
     struct Message *msg;
     struct DosPacket *pkt;
@@ -571,5 +578,9 @@ void ProcessPackets(void) {
 
             PutMsg(rp, pkt->dp_Link);
         }
+
+#if defined(DEBUG_CACHESTATS) && DEBUG_CACHESTATS != 0
+        cache_stats(glob->sb->cache);
+#endif
     }
 }
