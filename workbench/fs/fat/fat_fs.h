@@ -13,9 +13,10 @@
 #ifndef FAT_HANDLER_H
 #define FAT_HANDLER_H
 
-#define DEBUG 1
-#define DEBUG_DUMP 0
-#include <aros/debug.h>
+#define DEBUG_PACKETS       1
+#define DEBUG_CACHESTATS    0
+#define DEBUG_DUMP          0
+#define DEBUG_FULL          0
 
 #include <aros/libcall.h>
 #include <devices/trackdisk.h>

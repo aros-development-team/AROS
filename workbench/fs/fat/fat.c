@@ -26,6 +26,13 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+#if defined(DEBUG_FULL) && DEBUG_FULL != 0
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
+
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
 static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_block **rb) {
@@ -35,7 +42,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_bloc
     /* if the target cluster is not within the currently loaded chunk of fat,
      * we need to get the right data in */
     if (sb->fat_cache_block != entry_cache_block) {
-        D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block));
+        D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)));
         /* put the old ones back */
         if (sb->fat_cache_block != 0xffffffff)
             cache_put_blocks(sb->cache, sb->fat_blocks, sb->fat_blocks_count, 0);

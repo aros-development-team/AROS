@@ -17,6 +17,12 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
+#if defined(DEBUG_FULL) && DEBUG_FULL != 0
+#define DEBUG 1
+#else
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
 
 #define FREE_CLUSTER_CHAIN(sb,cl)                               \
     do {                                                        \
@@ -218,7 +224,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     UBYTE checksum;
     ULONG order;
 
-    D(bug("[fat] deleting file '%.*s' in directory at cluster %ld\n", namelen, name, dirlock->ioh.first_cluster));
+    D(bug("[fat] deleting file '%.*s' in directory at cluster %ld\n", namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0));
 
     /* obtain a lock on the file. we need an exclusive lock as we don't want
      * to delete the file if its in use */
