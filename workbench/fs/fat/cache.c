@@ -156,7 +156,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
 
     /* not there, check the recently-freed list. recently used stuff is placed
      * at the back, so we start there */
-    for (b = c->free_tail; b != NULL; b = b->free_prev)
+    for (b = c->free_tail; b != NULL; b = b->free_prev) {
         if (b->num == num) {
             D(bug("cache_get_block: found it in the free list\n"));
 
@@ -192,17 +192,25 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
             *rb = b;
             return 0;
         }
+    }
 
     D(bug("cache_get_block: not found, loading from disk\n"));
 
     /* gotta read it from disk. get an empty buffer */
     b = c->free_head;
-    if (b == NULL)
+    if (b == NULL) {
+        D(bug("cache_get_block: no free blocks left\n"));
         return ERROR_NO_FREE_STORE;
+    }
 
     /* detach it */
-    c->free_head = b->free_next;
-    c->free_head->free_prev = NULL;
+    if (c->free_head == c->free_tail)
+        c->free_head = c->free_tail = NULL;
+    else {
+        c->free_head = b->free_next;
+        if (c->free_head != NULL)
+            c->free_head->free_prev = NULL;
+    }
 
     b->free_prev = b->free_next = NULL;
 
@@ -237,6 +245,8 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
 
     /* add it to the hash */
     b->hash_next = c->hash[num & c->hash_mask];
+    if (b->hash_next != NULL)
+        b->hash_next->hash_prev = b;
     c->hash[num & c->hash_mask] = b;
 
     b->use_count = 1;
@@ -261,11 +271,8 @@ ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
     /* no longer in use, remove it from its hash */
     if (b->hash_prev != NULL)
         b->hash_prev->hash_next = b->hash_next;
-    else {
+    else
         c->hash[b->num & c->hash_mask] = b->hash_next;
-        if (b->hash_next != NULL)
-            b->hash_next->hash_prev = NULL;
-    }
 
     if (b->hash_next != NULL)
         b->hash_next->hash_prev = b->hash_prev;
@@ -278,6 +285,8 @@ ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
     if (b->free_prev != NULL)
         b->free_prev->free_next = b;
     c->free_tail = b;
+    if (c->free_head == NULL)
+        c->free_head = b;
     
     /* one down */
     c->num_in_use--;
@@ -365,6 +374,35 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
 
 
     return 0;
+}
+
+void cache_stats(struct cache *c) {
+    struct cache_block *b;
+    ULONG count, i;
+
+    kprintf("[cache] statistics for cache 0x%08x\n", c);
+
+    kprintf("    %ld hash buckets (mask 0x%x)\n", c->hash_size, c->hash_mask);
+    kprintf("    block size: %ld bytes\n", c->block_size);
+    kprintf("    total blocks: %ld\n", c->num_blocks);
+    kprintf("    flags:%s%s\n", c->flags & CACHE_WRITETHROUGH ? " CACHE_WRITETHROUGH" : "",
+                                c->flags & CACHE_WRITEBACK    ? " CACHE_WRITEBACK"    : "");
+    kprintf("\n");
+    kprintf("    total blocks in use: %ld\n", c->num_in_use);
+
+    count = 0;
+    for (i = 0; i < c->hash_size; i++)
+        for (b = c->hash[i]; b != NULL; b = b->hash_next)
+            count++;
+
+    if (count != c->num_in_use)
+        kprintf("WARNING: in-use count (%ld) doesn't match hash contents (%ld)\n", c->num_in_use, count);
+
+    count = 0;
+    for (b = c->free_head; b != NULL; b = b->free_next)
+        count++;
+
+    kprintf("    blocks on free list: %ld\n");
 }
 
 /* lowlevel block functions */
