@@ -1,0 +1,12 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-complete : themes-gorilla-icons-amp2
+
+ICONS := Plugin AMP
+
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
+#MM- themes-gorilla-icons : themes-gorilla-icons-amp2
+%build_icons mmake=themes-gorilla-icons-amp2 icons=$(ICONS) dir=$(CONTRIBDIR)/MultiMedia/AMP2

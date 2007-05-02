@@ -1,0 +1,15 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-complete : themes-gorilla-icons-aros
+
+ICONS := C Demos Development Devs Extras Fonts \
+         Libs Locale Prefs S Storage System \
+         T Tests Tools Utilities WBStartup \
+         boot Rexxc
+
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
+#MM- themes-gorilla-icons : themes-gorilla-icons-aros
+%build_icons mmake=themes-gorilla-icons-aros icons=$(ICONS) dir=$(AROSDIR)
