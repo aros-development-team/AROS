@@ -402,7 +402,7 @@ void cache_stats(struct cache *c) {
     for (b = c->free_head; b != NULL; b = b->free_next)
         count++;
 
-    kprintf("    blocks on free list: %ld\n");
+    kprintf("    blocks on free list: %ld\n", count);
 }
 
 /* lowlevel block functions */
