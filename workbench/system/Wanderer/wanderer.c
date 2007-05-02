@@ -700,6 +700,37 @@ STRPTR GetScreenTitle(VOID)
     return title;
 }
 
+/* Expand a passed in env: string to its full location */
+/* Wanderer doesnt free this mem at the moment but should 
+   incase it is every closed */
+STRPTR ExpandEnvName(STRPTR env_path)
+{
+	BOOL     ok = FALSE;
+	char     tmp_envbuff[1024];
+	STRPTR   fullpath = NULL;
+	BPTR     env_lock = NULL;
+
+	env_lock = Lock("ENV:", SHARED_LOCK);
+	if (env_lock)
+	{
+		if (NameFromLock(env_lock, tmp_envbuff, 256)) ok = TRUE;
+		UnLock(env_lock);
+	}
+	
+	if (ok)
+	{
+		if ((fullpath = AllocVec(strlen(tmp_envbuff) + strlen(env_path) - 3, MEMF_CLEAR | MEMF_PUBLIC)) != NULL)
+		{
+			strcpy(fullpath, tmp_envbuff);
+			AddPart(fullpath, env_path + 4, 1019);
+			return fullpath;
+		}			
+	}
+
+	//We couldnt expand it so just use as is ..
+	return env_path;
+}
+
 enum
 {
     MEN_WANDERER = 1,
@@ -1552,13 +1583,13 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Using Screen @ %x\n", data->wd_Screen));
         // All the following should be moved to InitWandererPrefs
 
         /* Setup notification on prefs file --------------------------------*/
-        data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
+        data->pnr.nr_Name                 = ExpandEnvName("ENV:SYS/Wanderer.prefs");
         data->pnr.nr_Flags                = NRF_SEND_MESSAGE;
         data->pnr.nr_stuff.nr_Msg.nr_Port = data->wd_NotifyPort;
 
         if (StartNotify(&data->pnr))
         {
-D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup\n"));
+D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", data->pnr.nr_Name));
         }
         else
         {
