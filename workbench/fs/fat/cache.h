@@ -67,4 +67,6 @@ ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, U
 ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b);
 ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nblocks);
 
+void cache_stats(struct cache *c);
+
 #endif
