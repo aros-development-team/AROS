@@ -1,0 +1,12 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-complete : themes-gorilla-icons-contrib
+
+ICONS := MultiMedia
+
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
+#MM- themes-gorilla-icons : themes-gorilla-icons-contrib
+%build_icons mmake=themes-gorilla-icons-contrib icons=$(ICONS) dir=$(CONTRIBDIR)
