@@ -192,8 +192,10 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return err;
 
     /* get down to the correct subdir */
-    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0)
+    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0) {
+        RelaseDirHandle(&dh);
         return err;
+    }
 
     /* create the entry */
     if ((err = CreateDirEntry(&dh, name, namelen, 0, 0, &de)) != 0) {
@@ -337,8 +339,10 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
         return err;
 
     /* get down to the correct subdir */
-    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0)
+    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0) {
+        ReleaseDirHandle(&dh);
         return err;
+    }
 
     /* now see if the wanted name is in this dir. if it exists, then we do
      * nothing */
@@ -456,6 +460,8 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
             de.e.entry.first_cluster_hi = lock->ioh.first_cluster >> 16;
 
             UpdateDirEntry(&de);
+
+            ReleaseDirHandle(&dh);
         }
     }
 

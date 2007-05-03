@@ -308,6 +308,7 @@ LONG UpdateDirEntry(struct DirEntry *de) {
     err = WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nwritten);
     if (err != 0) {
         D(bug("[fat] dir entry update failed\n"));
+        ReleaseDirHandle(&dh);
         return err;
     }
 
