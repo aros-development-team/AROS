@@ -37,18 +37,21 @@ struct cache {
     ULONG               hash_size;      /* size of hash table */
     ULONG               hash_mask;      /* mask applied to block number to find correct hash bucket */
 
+    ULONG               num_blocks;     /* number of blocks allocated */
     ULONG               block_size;     /* size of block */
 
     ULONG               flags;          /* cache options */
 
     struct cache_block  **blocks;       /* big list of all the blocks */
-    ULONG               num_blocks;     /* number of blocks in the list */
     ULONG               num_in_use;     /* number of blocks currently in use (ie not on the free list) */
 
     struct cache_block  **hash;         /* the hash table itself */
 
     struct cache_block  *free_head;     /* first block in the free list */
     struct cache_block  *free_tail;     /* last block in the free list */
+
+    ULONG               hits;           /* number of hits, for stats */
+    ULONG               misses;         /* number of misses */
 };
 
 /* flags for cache_new */

@@ -91,6 +91,8 @@ struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULO
 
     c->blocks = (struct cache_block **) AllocVec(sizeof(struct cache_block *) * num_blocks, MEMF_PUBLIC);
 
+    c->hits = c->misses = 0;
+
     for (i = 0; i < num_blocks; i++) {
         struct cache_block *b;
 
@@ -147,6 +149,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
             b->use_count++;
 
             D(bug("cache_get_block: found in-use block, use count is now %d\n", b->use_count));
+            c->hits++;
 
             *rb = b;
             return 0;
@@ -159,6 +162,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
     for (b = c->free_tail; b != NULL; b = b->free_prev) {
         if (b->num == num) {
             D(bug("cache_get_block: found it in the free list\n"));
+            c->hits++;
 
             /* remove it from the free list */
             if (b->free_prev != NULL)
@@ -195,6 +199,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
     }
 
     D(bug("cache_get_block: not found, loading from disk\n"));
+    c->misses++;
 
     /* gotta read it from disk. get an empty buffer */
     b = c->free_head;
@@ -387,7 +392,6 @@ void cache_stats(struct cache *c) {
     kprintf("    total blocks: %ld\n", c->num_blocks);
     kprintf("    flags:%s%s\n", c->flags & CACHE_WRITETHROUGH ? " CACHE_WRITETHROUGH" : "",
                                 c->flags & CACHE_WRITEBACK    ? " CACHE_WRITEBACK"    : "");
-    kprintf("\n");
     kprintf("    total blocks in use: %ld\n", c->num_in_use);
 
     count = 0;
@@ -403,6 +407,8 @@ void cache_stats(struct cache *c) {
         count++;
 
     kprintf("    blocks on free list: %ld\n", count);
+
+    kprintf("    hits: %ld    misses: %ld\n", c->hits, c->misses);
 }
 
 /* lowlevel block functions */
