@@ -185,7 +185,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
         if (ncopy > nwant) ncopy = nwant;
         CopyMem(&(ioh->block->data[byte_offset]), &(data[pos]), ncopy);
 
-#ifdef DEBUG_DUMP
+#if defined(DEBUG_DUMP) && DEBUG_DUMP != 0
         D(bug("[fat] dump of last read, %ld bytes:\n", ncopy));
         fat_hexdump(&(data[pos]), ncopy);
 #endif
@@ -351,7 +351,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         if (ncopy > nwant) ncopy = nwant;
         CopyMem(&(data[pos]), &(ioh->block->data[byte_offset]), ncopy);
 
-#ifdef DEBUG_DUMP
+#if defined(DEBUG_DUMP) && DEBUG_DUMP != 0
         D(bug("[fat] dump of last write, %ld bytes:\n", ncopy));
         fat_hexdump(&(ioh->block->data[byte_offset]), ncopy);
 #endif
