@@ -193,7 +193,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 
     /* get down to the correct subdir */
     if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0) {
-        RelaseDirHandle(&dh);
+        ReleaseDirHandle(&dh);
         return err;
     }
 
