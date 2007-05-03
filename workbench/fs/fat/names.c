@@ -411,6 +411,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, UBYTE *name, ULONG len) {
         D(bug("[fat] wrote long name entry %ld order 0x%02x\n", de.index, de.e.long_entry.order));
     }
 
+    ReleaseDirHandle(&dh);
+
     D(bug("[fat] successfully wrote short & long names\n"));
 
     return 0;
