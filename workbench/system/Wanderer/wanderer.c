@@ -719,7 +719,7 @@ STRPTR ExpandEnvName(STRPTR env_path)
 	
 	if (ok)
 	{
-		if ((fullpath = AllocVec(strlen(tmp_envbuff) + strlen(env_path) - 3, MEMF_CLEAR | MEMF_PUBLIC)) != NULL)
+		if ((fullpath = AllocVec(strlen(tmp_envbuff) + strlen(env_path) + 1 + 1 - 4, MEMF_CLEAR | MEMF_PUBLIC)) != NULL)
 		{
 			strcpy(fullpath, tmp_envbuff);
 			AddPart(fullpath, env_path + 4, 1019);
