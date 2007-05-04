@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    $Id: writemccquery.c,v 1.5 2005/02/15 22:04:34 verhaegs Exp $
+    $Id$
     
     Functions to support datatypes. Part of genmodule.
 */

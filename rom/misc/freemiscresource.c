@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1998-2001 AROS - The Amiga Research OS
+    Copyright © 1998-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AllocMiscResource() function.

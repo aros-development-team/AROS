@@ -2,7 +2,7 @@
 #define _RT_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-96, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common header file for RT

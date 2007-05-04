@@ -1,6 +1,6 @@
 #ifndef EXEC_LISTS_H
 #define EXEC_LISTS_H
-/* (C) 1995 AROS - The Amiga Research OS */
+/* Copyright © 1995, The AROS Development Team. All rights reserved. */
 
 /******************************************************************************
 

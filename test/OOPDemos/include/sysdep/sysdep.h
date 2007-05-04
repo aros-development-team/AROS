@@ -1,7 +1,7 @@
 #ifndef SYSDEP_SYSDEP_H
 #define SYSDEP_SYSDEP_H
 /*
-   (C) 1997-98 AROS - The Amiga Research OS
+   Copyright © 1997-98, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Demo of new OOP system

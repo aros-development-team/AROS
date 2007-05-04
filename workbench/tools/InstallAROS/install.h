@@ -2,7 +2,7 @@
 #include	<exec/nodes.h>
 
 static const char* KMsgWelcome =
-MUIX_L " " MUIX_B"\nWelcome to the Amiga Research OS\n"
+MUIX_L " " MUIX_B"\nWelcome to the AROS Research OS\n"
 "installer.\n\n" MUIX_N
 "This program allows you to install.\n"
 "the " MUIX_B "pre-alpha" MUIX_N " version of AROS\n"

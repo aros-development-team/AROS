@@ -1,4 +1,4 @@
-#    (C) 1995-96 AROS - The Amiga Research OS
+#    Copyright © 1995-96, The AROS Development Team. All rights reserved.
 #    $Id$
 #    $Log$
 #    Revision 1.2  1998/10/20 16:40:29  hkiel

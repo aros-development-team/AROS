@@ -32,7 +32,7 @@ static void action(void)
     struct TagItem tags[] =
     {
         {RT_Underscore		, (IPTR)'_'						},
-	{RTGS_TextFmt		, (IPTR)"AROS - The Amiga Research OS\n\nLine2\nLine3"	},
+	{RTGS_TextFmt		, (IPTR)"AROS - The AROS Research OS\n\nLine2\nLine3"	},
     	{RTGS_GadFmt		, (IPTR)"O_k|Hel_lo|_Something"				},
     	{TAG_DONE									}
     };

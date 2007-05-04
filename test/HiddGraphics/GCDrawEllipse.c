@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1998, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Test for graphics.hidd

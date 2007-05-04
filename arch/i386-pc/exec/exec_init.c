@@ -418,7 +418,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     }
 
     clr();
-    rkprintf("AROS - The Amiga Research OS\nCompiled %s\n\n",__DATE__);
+    rkprintf("AROS - The AROS Research OS\nCompiled %s\n\n",__DATE__);
 
     /* MultiBoot
      * This messy bit here will store away useful information we receive from

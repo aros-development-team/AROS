@@ -74,7 +74,7 @@ ASM void ClosePort(
 const struct MidiDeviceData mididevicedata={
   MDD_Magic,
   "debugdriver",
-  "Debugdriver V41.0 (c) 2001 AROS - The Amiga Research OS",
+  "Debugdriver V41.0 (c) 2001 AROS - The AROS Research OS",
   41,
   0,
   Init,

@@ -2,7 +2,7 @@
 #define PROTO_PARTITION_H
 
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-98, The AROS Development Team. All rights reserved.
     Automatically generated header
 */
 

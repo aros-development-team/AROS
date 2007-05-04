@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1998, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Test for graphics.hidd
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
                                 if(font)
                                 {
                                     OOP_SetAttrsTags(gc, aHidd_GC_Font, (IPTR) font, TAG_END);
-                                    HIDD_BM_DrawText(gc, 10, 30, "AROS - The Amiga Research OS", 28);
+                                    HIDD_BM_DrawText(gc, 10, 30, "AROS - The AROS Research OS", 28);
 
                                     printf("Press enter to continue");
                                     scanf("%c", &wait);
