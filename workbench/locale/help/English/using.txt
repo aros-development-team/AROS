@@ -22,7 +22,7 @@ AROS Users Guide
 Introduction
 ============
 
-This is the Amiga Research Operating System User's Guide. It is meant to
+This is the AROS Research Operating System User's Guide. It is meant to
 get people used to AROS. It is for *everybody* interested in AROS, as it
 tries to provide information on AROS in different levels of
 advancedness. I try to cover everything in depth, but in such a way that

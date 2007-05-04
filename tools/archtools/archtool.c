@@ -614,7 +614,7 @@ void emit(FILE *out, struct libconf *lc, char **names, int number)
 int i;
 
   fprintf( out, "/*\n" );
-  fprintf( out, "    Copyright (C) 1995-1998 AROS - The Amiga Research OS\n" );
+  fprintf( out, "    Copyright © 1995-1998, The AROS Development Team. All rights reserved.\n" );
   fprintf( out, "    *** Automatic generated file. Do not edit ***\n" );
   fprintf( out, "    Desc: Function table for %s\n", lc->basename );
   fprintf( out, "    Lang: english\n" );

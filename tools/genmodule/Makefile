@@ -1,4 +1,4 @@
-#   Copyright (C) 2002 AROS - The Amiga Research OS
+#   Copyright © 2002, The AROS Development Team. All rights reserved.
 #   $Id$
 #
 #   Desc: Makefile to create genmodule

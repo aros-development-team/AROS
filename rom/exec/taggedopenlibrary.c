@@ -25,9 +25,9 @@ static const char * const libnames[] =
 
 static const char * const copyrights[] =
 {
-    "AMIGA Research Operating System (AROS)",
+    "AROS Research Operating System (AROS)",
     "Copyright © 1995-1997 ",
-    "AROS - The Amiga Research OS  ",
+    "AROS - The AROS Research OS  ",
     "Other parts © by respective owners.",
     "ALPHA ",
     "exec.library",

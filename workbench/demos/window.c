@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright © 1999, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Demo showing moving and sizing of windows

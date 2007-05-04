@@ -178,7 +178,7 @@ void main_init(void)
 	get_initial_epinfo();
 	screen_init();
 
-	rkprintf("AROS - The Amiga Research OS - Mac68k\nCompiled %s\n\n",__DATE__);
+	rkprintf("AROS - The AROS Research OS - Mac68k\nCompiled %s\n\n",__DATE__);
 	rkprintf("CPU: %s, MEM: %ld\n", Processor_type[init_stuff.cpu],	init_stuff.mem);
 	rkprintf("MacModel: %ld\nVidBase: 0x%lx, VidDepth: %ld, ScreenWidth: %ld, ScreenHeight: %ld\n", \
 			init_stuff.model, init_stuff.vidaddr, init_stuff.viddepth, init_stuff.vidwidth, init_stuff.vidheight);

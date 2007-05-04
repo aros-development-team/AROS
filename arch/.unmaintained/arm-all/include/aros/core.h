@@ -2,7 +2,7 @@
 #define AROS_CORE_H
 
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 2000, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt core, part of kernel.resource

@@ -82,7 +82,7 @@ const struct MidiDeviceData mididevicedata =
 {
     MDD_Magic,
     "hostmidi",
-    "HostMidi V41.0 (c) 2001 AROS - The Amiga Research OS",
+    "HostMidi V41.0 (c) 2001 AROS - The AROS Research OS",
     41,
     0,
     Init,

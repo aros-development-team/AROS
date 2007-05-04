@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    Copyright © 2000, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Probe installed x86 compatable CPUs and display relevant information
