@@ -91,7 +91,7 @@
 	seglist = 0;
     }
 
-    AROS_COMPAT_SETDO(seglist);
+    AROS_COMPAT_SETD0(seglist);
     AROS_LIBFUNC_EXIT
 } /* CloseLibrary */
 
