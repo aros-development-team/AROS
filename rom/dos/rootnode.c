@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Miscellaneous functions for dealing with DOS rootnode.
@@ -52,11 +52,7 @@ void addprocesstoroot(struct Process *process, struct DosLibrary *DOSBase)
     /* This is kind of hacky but doing it another way will be more
        troublesome; we rely here that even BSTR:s have a trailing 0. */
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    ci->ci_Node.ln_Name = ((STRPTR)cli->cli_CommandName) + 1;
-#else
-    ci->ci_Node.ln_Name = cli->cli_CommandName;
-#endif
+    ci->ci_Node.ln_Name = AROS_BSTR_ADDR(cli->cli_CommandName);
     
     /* Can't use AddTail() here as it complains about the list pointer */
     ADDTAIL((struct List *)&root->rn_CliList, (struct Node *)ci);
