@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a library to the public list of libraries.
@@ -68,20 +68,7 @@
 
     /* All done. */
     Permit();
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /*
-	Kludge to force the library to register d0.
-	Some libraries seem to use this side effect in
-	their init code. 
-    */
-    {
-        /* Put the library base in register d0 */
-        register struct Library *ret __asm("d0") = library;
 
-        /* Make sure the above assignment isn't optimized away */
-        __asm __volatile("": : "r" (ret));
-    }
-#endif
-
+    AROS_COMPAT_SETD0(library);
     AROS_LIBFUNC_EXIT
 } /* AddLibrary */

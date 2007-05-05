@@ -137,6 +137,16 @@ do                                                       \
 */
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
+/*
+    This define is only used only M68K as some programs depend on the
+    contents of the D0 register
+*/
+#define AROS_COMPAT_SETD0(x) \
+    do { \
+        register IPTR d0 __asm("d0") = x; \
+        asm volatile("": : "r" d0); \
+    } while(0)
+
 /* Prototypes */
 extern void _aros_not_implemented ();
 extern void aros_not_implemented ();
