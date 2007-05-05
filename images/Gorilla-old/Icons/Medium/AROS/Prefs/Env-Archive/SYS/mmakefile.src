@@ -13,7 +13,7 @@ ICONS := \
     def_Country def_Home def_MP3ID3 def_MP3 def_SFS def_Lua def_AmiLua \
     def_Archive def_Python def_REXX def_NetworkHost def_UserHome
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-prefs-envarc-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-envarc
-%build_icons mmake=themes-gorilla-icons-aros-prefs-envarc icons=$(ICONS) \
+#MM- themes-gorilla-old-icons-aros-clean : themes-gorilla-old-icons-aros-prefs-envarc-clean
+#MM- themes-gorilla-old-icons-aros : themes-gorilla-old-icons-aros-prefs-envarc
+%build_icons mmake=themes-gorilla-old-icons-aros-prefs-envarc icons=$(ICONS) \
              dir=$(AROS_ENVARC)/SYS 
