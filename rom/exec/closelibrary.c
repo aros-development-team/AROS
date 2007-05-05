@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Close a library.
@@ -21,12 +21,6 @@
 #endif
 #include <aros/debug.h>
 #undef kprintf
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#   define NATIVE(x)        x
-#else
-#   define NATIVE(x)        /* eps */
-#endif
 
 /*****************************************************************************
 
@@ -63,7 +57,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    NATIVE(BPTR seglist;)
+    BPTR seglist;
 
     D(bug("CloseLibrary $%lx (\"%s\") by \"%s\"\n", library,
 	library ? library->lib_Node.ln_Name : "(null)",
@@ -78,7 +72,7 @@
 	Forbid();
 
 	/* Do the close */
-	NATIVE(seglist =) AROS_LVO_CALL0(BPTR,struct Library *,library,2,);
+	seglist = AROS_LVO_CALL0(BPTR,struct Library *,library,2,);
 	/*
 	    Normally you'd expect the library to be expunged if this returns
 	    non-zero, but this is only exec which doesn't know anything about
@@ -89,7 +83,6 @@
 	/* All done. */
 	Permit();
     }
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     else
     {
 	/* Local vars not guaranteed to be initialised to 0. I initialise
@@ -98,21 +91,7 @@
 	seglist = 0;
     }
 
-    /*
-	Kludge to force the seglist to register d0. Ramlib patches this
-	vector for seglist expunge capability and expects the seglist in
-	d0 after it has called the original (this) function.
-	Also see CloseDevice().
-    */
-    {
-	/* Put the library base in register d0 */
-	register BPTR ret __asm("d0") = seglist;
-
-	/* Make sure the above assignment isn't optimized away */
-	asm volatile("": : "r" (ret));
-    }
-#endif
-
+    AROS_COMPAT_SETDO(seglist);
     AROS_LIBFUNC_EXIT
 } /* CloseLibrary */
 
