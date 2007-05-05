@@ -6,11 +6,11 @@ include $(TOP)/config/make.cfg
 STORAGEICONS := DataTypes DOSDrivers Drivers Keymaps
 DEVSICONS := $(STORAGEICONS) Midi
 
-#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-devs-clean themes-gorilla-icons-aros-storage-clean
-#MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-devs themes-gorilla-icons-aros-storage
+#MM- themes-gorilla-old-icons-aros-clean : themes-gorilla-old-icons-aros-devs-clean themes-gorilla-old-icons-aros-storage-clean
+#MM- themes-gorilla-old-icons-aros : themes-gorilla-old-icons-aros-devs themes-gorilla-old-icons-aros-storage
 
-%build_icons mmake=themes-gorilla-icons-aros-devs icons=$(DEVSICONS) \
+%build_icons mmake=themes-gorilla-old-icons-aros-devs icons=$(DEVSICONS) \
              dir=$(AROS_DEVS)
 
-%build_icons mmake=themes-gorilla-icons-aros-storage icons=$(STORAGEICONS) \
+%build_icons mmake=themes-gorilla-old-icons-aros-storage icons=$(STORAGEICONS) \
              dir=$(AROSDIR)/Storage
