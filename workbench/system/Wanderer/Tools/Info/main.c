@@ -586,6 +586,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
             End,
         SubWindow, (IPTR) (window = WindowObject,
             MUIA_Window_Title, (IPTR) __(MSG_ICON),
+            MUIA_Window_ID, MAKE_ID('I','N','F','O'),
             MUIA_Window_Activate, TRUE,
             WindowContents, (IPTR) VGroup,
                 Child, (IPTR) HGroup,
