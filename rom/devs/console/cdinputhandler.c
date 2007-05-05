@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: console.device function CDInputHandler()
@@ -29,12 +29,6 @@
 /* protos */
 static Object *obtainconunit(struct ConsoleBase *ConsoleDevice);
 static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
-
-/* Prototype necessary for Linux-M68k w/ bin. compat. */
-#if (((AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && UseRegisterArgs))
-struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
-                                           struct cdihData * cdihData);
-#endif
 
 /*************************************************************************
 
