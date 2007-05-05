@@ -8,12 +8,14 @@
 #endif
 
 #include <exec/types.h>
+#include <devices/input.h>
 #include <devices/newstyle.h>
 #include <devices/trackdisk.h>
 #include <exec/errors.h>
 #include <exec/io.h>
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
+#include <intuition/intuition.h>
 
 #include "os.h"
 #include "afsblocks.h"
@@ -21,6 +23,36 @@
 #include "extstrings.h"
 #include "volumes.h"
 #include "baseredef.h"
+
+// copy pasted from fat.handler,
+// pushes an IECLASS event in the input stream.
+static void SendEvent(struct AFSBase *afsbase, LONG event) {
+    struct IOStdReq *InputRequest;
+    struct MsgPort *InputPort;
+    struct InputEvent *ie;
+    if ((InputPort = (struct MsgPort*)CreateMsgPort())) {
+
+        if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
+
+            if (!OpenDevice("input.device", 0, (struct IORequest*)InputRequest, 0)) {
+
+                if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC))) {
+                    ie->ie_Class = event;
+                    InputRequest->io_Command = IND_WRITEEVENT;
+                    InputRequest->io_Data = ie;
+                    InputRequest->io_Length = sizeof(struct InputEvent);
+
+                    DoIO((struct IORequest*)InputRequest);
+
+                    FreeVec(ie);
+                }
+                CloseDevice((struct IORequest*)InputRequest);
+            }
+            DeleteIORequest ((APTR)InputRequest);
+        }
+        DeleteMsgPort (InputPort);
+    }
+}
 
 /************************** DOS ******************************************/
 /*******************************************
@@ -128,6 +160,7 @@ UBYTE i;
 		/* if we re-use "volume" clear locklist */
 		volume->locklist = NULL;
 	}
+    SendEvent(afsbase, IECLASS_DISKINSERTED);
 	return DOSTRUE;
 }
 
@@ -148,6 +181,7 @@ char *bname;
 char string[32];
 UBYTE i;
 
+    SendEvent(afsbase, IECLASS_DISKREMOVED);
 	if (volume->dostype == 0x444F5300)
 	{
 		bname = BADDR(volume->devicelist.dl_Name);
