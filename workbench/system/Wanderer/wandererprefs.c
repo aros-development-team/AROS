@@ -313,7 +313,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Freeing old bac
 		_viewSettings_Node->wpbn_Options = AllocVec((_viewSettings_TagCount + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: New tag storage @ %x\n", _viewSettings_Node->wpbn_Options));
 
-		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset + 1, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem));
+		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem));
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to storage \n"));
 
 		_viewSettings_Node->wpbn_Options[_viewSettings_TagCount].ti_Tag = TAG_DONE;

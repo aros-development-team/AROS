@@ -8,7 +8,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define       WP_MAX_BG_TAG_COUNT                20
 #define       WP_IFF_CHUNK_BUFFER_SIZE           1024
@@ -200,7 +200,7 @@ IPTR SetViewSettingTag(struct TagItem * this_Taglist, IPTR Tag_ID, IPTR newTag_V
 			return TRUE;
 		}
 		i ++;
-	}while( i < WP_MAX_BG_TAG_COUNT);
+	}while((i < WP_MAX_BG_TAG_COUNT) && (this_Taglist[i].ti_Tag != TAG_DONE));
 
 	return FALSE;
 }
@@ -1364,7 +1364,7 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Freeing old ViewSetting Ta
 		if (_viewSettings_Node->wpedbo_Options = AllocVec((tag_count + 1) * sizeof(struct TagItem), MEMF_CLEAR | MEMF_PUBLIC))
 		{
 D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage @ %x [%d bytes] \n", _viewSettings_Node->wpedbo_Options, chunk_size - _viewSettings_TagOffset));
-			CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset + 1, _viewSettings_Node->wpedbo_Options, tag_count * sizeof(struct TagItem));
+			CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpedbo_Options, tag_count * sizeof(struct TagItem));
 			_viewSettings_Node->wpedbo_Options[tag_count].ti_Tag = TAG_DONE;
 		}
 	}
@@ -1814,7 +1814,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' Chunk Data
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_Background = '%s'\n", _viewSettings_ChunkData));
 						if ((_viewSettings_Node->wpedbo_AdvancedOptionsObject) && ((_viewSettings_Node->wpedbo_Options)&&(_viewSettings_TagCount > 0)))
 						{
-							struct TagItem 			*dest_tag = _viewSettings_ChunkData + _viewSettings_TagOffset + 1;
+							struct TagItem 			*dest_tag = _viewSettings_ChunkData + _viewSettings_TagOffset;
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' Writing data for %d Tags @ %x\n", _viewSettings_TagCount, dest_tag));
 							do
 							{
