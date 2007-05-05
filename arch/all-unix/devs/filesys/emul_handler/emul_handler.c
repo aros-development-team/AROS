@@ -27,6 +27,8 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
+#include <devices/input.h>
+#include <devices/inputevent.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/filesystem.h>
@@ -120,6 +122,35 @@ static LONG u2a[][2]=
   { EROFS, ERROR_WRITE_PROTECTED },
   { 0, ERROR_UNKNOWN }
 };
+
+static void SendEvent(struct emulbase *emulbase, LONG event) {
+    struct IOStdReq *InputRequest;
+    struct MsgPort *InputPort;
+    struct InputEvent *ie;
+    D(bug("[afs] os_aros_support/SendEvent\n"));
+    if ((InputPort = (struct MsgPort*)CreateMsgPort())) {
+
+        if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
+
+            if (!OpenDevice("input.device", 0, (struct IORequest*)InputRequest, 0)) {
+
+                if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC))) {
+                    ie->ie_Class = event;
+                    InputRequest->io_Command = IND_WRITEEVENT;
+                    InputRequest->io_Data = ie;
+                    InputRequest->io_Length = sizeof(struct InputEvent);
+
+                    DoIO((struct IORequest*)InputRequest);
+
+                    FreeVec(ie);
+                }
+                CloseDevice((struct IORequest*)InputRequest);
+            }
+            DeleteIORequest ((APTR)InputRequest);
+        }
+        DeleteMsgPort (InputPort);
+    }
+}
 
 /*********************************************************************************************/
 
@@ -1626,6 +1657,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 			iofs->IOFS.io_Device = &emulbase->device;
 
     			ReleaseSemaphore(&emulbase->sem);
+                SendEvent(emulbase, IECLASS_DISKINSERTED);
 
 			return TRUE;
 
