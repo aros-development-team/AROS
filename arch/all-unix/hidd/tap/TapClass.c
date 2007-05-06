@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: TapClass.c 23835 2005-12-20 14:43:30Z stegerg $
+    $Id$
 
     Desc: Tap hidd class implementation.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: getsystime.c 20492 2004-01-03 18:46:50Z schulz $
+    $Id$
 
     Desc: GetSysTime() - Find out what time it is.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: timer_init.c 22734 2005-01-23 11:49:48Z verhaegs $
+    $Id$
 
     Desc: Timer startup and device commands
 */

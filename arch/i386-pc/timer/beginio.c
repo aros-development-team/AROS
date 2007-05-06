@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: beginio.c 12532 2001-10-27 19:46:10Z chodorowski $
+    $Id$
 
     Desc: BeginIO - Start up a timer.device request.
     Lang: english

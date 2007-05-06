@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: unix_funcs.h 19289 2003-08-18 15:19:59Z verhaegs $
+    $Id$
 */
 
 #ifndef UNIX_FUNCS_H
