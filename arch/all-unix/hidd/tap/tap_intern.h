@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    $Id: tap_intern.h 23803 2005-12-11 11:58:09Z verhaegs $
+    $Id$
 */
 
 #ifndef TAP_HIDD_INTERN_H

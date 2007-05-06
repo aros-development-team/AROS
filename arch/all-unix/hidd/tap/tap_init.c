@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: tap_init.c 23803 2005-12-11 11:58:09Z verhaegs $
+    $Id$
 
     Desc: Serial hidd initialization code.
     Lang: English.

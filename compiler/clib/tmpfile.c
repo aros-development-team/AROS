@@ -1,6 +1,6 @@
 /*
     This file has been released into the Public Domain.
-    $Id:  $
+    $Id$
 
     POSIX function tmpfile().
 */

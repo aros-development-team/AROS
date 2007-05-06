@@ -2,7 +2,7 @@
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
 
-    $Id: crawling.c 19971 2003-10-16 15:47:01Z stegerg $
+    $Id$
 */
 
 #include <exec/types.h>

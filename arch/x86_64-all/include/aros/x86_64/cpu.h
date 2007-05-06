@@ -2,7 +2,7 @@
 #define AROS_X86_64_CPU_H
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: machine.h 22676 2005-01-09 23:01:16Z falemagn $
+    $Id$
 
     NOTE: This file must compile *without* any other header !
 

@@ -2,7 +2,7 @@
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
 
-    $Id: virttest.c 19300 2003-08-19 14:33:55Z chodorowski $
+    $Id$
 */
 
 #include <dos/dos.h>

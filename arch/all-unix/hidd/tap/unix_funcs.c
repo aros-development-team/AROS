@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: unix_funcs.c 12745 2001-12-08 19:36:48Z chodorowski $
+    $Id$
 */
 
 /* Some POSIX includes */

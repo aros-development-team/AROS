@@ -76,7 +76,7 @@ typedef char grub_bool_t;
 
 #define UChar(c) ((unsigned char)(c))
 
-//MODULE_ID("$Id: tparm.c,v 1.1 2005/09/03 16:54:27 okuji Exp $")
+//MODULE_ID("$Id$")
 
 /*
  *	char *

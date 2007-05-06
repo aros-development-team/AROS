@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2005, The AROS Development Team. All rights reserved.
-    $Id: writestart.c 23331 2005-05-28 11:38:57Z verhaegs $
+    $Id$
     
     Write the functionlist to a file that can be includes the .conf file.
 */

@@ -1,6 +1,6 @@
 /*
     Copyright © 2004-2006, The AROS Development Team. All rights reserved.
-    $Id: driverclass.c 20878 2004-02-13 00:00:48Z dlecorfec $
+    $Id$
 
     Desc: PCI direct driver for x86_64 linux.
     Lang: English
