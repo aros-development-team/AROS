@@ -36,7 +36,7 @@ static void SendEvent(struct AFSBase *afsbase, LONG event) {
 
             if (!OpenDevice("input.device", 0, (struct IORequest*)InputRequest, 0)) {
 
-                if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC))) {
+                if ((ie = AllocVec(sizeof(struct InputEvent), MEMF_PUBLIC|MEMF_CLEAR))) {
                     ie->ie_Class = event;
                     InputRequest->io_Command = IND_WRITEEVENT;
                     InputRequest->io_Data = ie;
