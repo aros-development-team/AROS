@@ -289,7 +289,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                         STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
                         if (child_drawer && !Stricmp(buf,child_drawer))
                         {
-                            int is_open = XGET(child, MUIA_Window_Open);
+                            BOOL is_open = ( BOOL )XGET(child, MUIA_Window_Open);
                             
                             if (!is_open)
                             {
@@ -308,7 +308,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
         
                 /* Check if the window for this drawer is already opened */
                 DoMethod(_WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
-                        // FIXME: error handling
+                // FIXME: error handling
             }
             else
             {
