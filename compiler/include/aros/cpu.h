@@ -199,7 +199,7 @@
 #define SP_OFFSET       0
 #endif /* SP_OFFSET */
 
-#ifndef AROS_COMPAT_SETD0(x)
+#ifndef AROS_COMPAT_SETD0
 #define AROS_COMPAT_SETD0(x) (void)x
 #endif /* AROS_COMPAT_SETD0 */
 
