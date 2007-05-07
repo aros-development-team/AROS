@@ -193,14 +193,16 @@ IPTR SetViewSettingTag(struct TagItem * this_Taglist, IPTR Tag_ID, IPTR newTag_V
 	int i = 0;
 	do
 	{
-		if (this_Taglist[i].ti_Tag == Tag_ID)
+		if (this_Taglist[i].ti_Tag == TAG_DONE)
+			break;
+		else if (this_Taglist[i].ti_Tag == Tag_ID)
 		{
 			if (this_Taglist[i].ti_Data == newTag_Value) return -1;
 			this_Taglist[i].ti_Data = newTag_Value;
 			return TRUE;
 		}
 		i ++;
-	}while((i < WP_MAX_BG_TAG_COUNT) && (this_Taglist[i].ti_Tag != TAG_DONE));
+	}while(i < WP_MAX_BG_TAG_COUNT);
 
 	return FALSE;
 }
