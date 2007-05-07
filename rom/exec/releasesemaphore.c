@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Release a semaphore.
@@ -57,7 +57,6 @@
 #undef Exec
 
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)

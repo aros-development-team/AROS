@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tell locale that the preferences have been changed.
@@ -76,7 +76,6 @@ static const char *langlist[] =
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     struct IntLocale *old = NULL;
     STRPTR language, dotptr;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IsXXXX() - Stub for Language isXXXXX() functions.
@@ -78,7 +78,6 @@ AROS_LH2(ULONG, IsAlNum,
     struct LocaleBase *, LocaleBase, 14, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[4],
@@ -99,7 +98,6 @@ AROS_LH2(ULONG, IsAlpha,
     struct LocaleBase *, LocaleBase, 15, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[5],
@@ -120,7 +118,6 @@ AROS_LH2(ULONG, IsCntrl,
     struct LocaleBase *, LocaleBase, 16, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[6],
@@ -141,7 +138,6 @@ AROS_LH2(ULONG, IsDigit,
     struct LocaleBase *, LocaleBase, 17, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[7],
@@ -162,7 +158,6 @@ AROS_LH2(ULONG, IsGraph,
     struct LocaleBase *, LocaleBase, 18, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[8],
@@ -183,7 +178,6 @@ AROS_LH2(ULONG, IsLower,
     struct LocaleBase *, LocaleBase, 19, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[9],
@@ -204,7 +198,6 @@ AROS_LH2(ULONG, IsPrint,
     struct LocaleBase *, LocaleBase, 20, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[10],
@@ -225,7 +218,6 @@ AROS_LH2(ULONG, IsPunct,
     struct LocaleBase *, LocaleBase, 21, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[11],
@@ -246,7 +238,6 @@ AROS_LH2(ULONG, IsSpace,
     struct LocaleBase *, LocaleBase, 22, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[12],
@@ -267,7 +258,6 @@ AROS_LH2(ULONG, IsUpper,
     struct LocaleBase *, LocaleBase, 23, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[13],
@@ -288,7 +278,6 @@ AROS_LH2(ULONG, IsXDigit,
     struct LocaleBase *, LocaleBase, 24, Locale)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(BOOL, IntL(locale)->il_LanguageFunctions[14],

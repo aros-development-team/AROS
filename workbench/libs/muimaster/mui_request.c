@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -80,7 +80,6 @@ AROS_UFH2S(void, len_func,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,MUIMasterBase)
 
     LONG result;
     char *reqtxt;

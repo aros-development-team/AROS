@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -49,7 +49,6 @@ AROS_UFP2(void, vfp_hook,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct vfp vfp;
     BPTR       file = ((struct Process *)FindTask(NULL))->pr_COS;

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id: changedecorationa.c 23476 2005-07-31 17:07:04Z stegerg, dariusb $
 */
@@ -59,7 +59,6 @@ AROS_LH2(void, ChangeDecoration,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
         ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
         if (ID == DECORATION_SET)

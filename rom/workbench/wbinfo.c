@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Open the file information window for a specified file.
@@ -49,7 +49,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
     
     // FIXME: screen argument is ignored
     

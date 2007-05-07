@@ -79,7 +79,6 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /*
      * Trying to emulate the packet system by rewriting the

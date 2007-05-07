@@ -55,7 +55,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct MsgPort *res = NULL;
     struct DosList *dl;

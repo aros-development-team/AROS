@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock the CurrentBinding structure.
@@ -59,7 +59,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExpansionBase *,ExpansionBase)
 
     ObtainSemaphore(&IntExpBase(ExpansionBase)->eb_BindSemaphore);
 

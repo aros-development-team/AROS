@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Makes a class publically available.
@@ -55,7 +55,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,BOOPSIBase)
 
     ObtainSemaphore (&GetBBase(BOOPSIBase)->bb_ClassListLock);
     AddTail (	(struct List *)&GetBBase(BOOPSIBase)->bb_ClassList,

@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function InternalLoadSeg()
@@ -71,7 +71,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     typedef struct _segfunc_t
     {

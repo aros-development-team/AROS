@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ChangeVPBitMap()
@@ -51,7 +51,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
 #warning TODO: Write graphics/ChangeVPBitMap()
     aros_print_not_implemented ("ChangeVPBitMap");

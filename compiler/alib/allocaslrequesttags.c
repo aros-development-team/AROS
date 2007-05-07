@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of AllocAslRequestA()
@@ -48,8 +48,6 @@ extern struct Library *AslBase;
 
 *****************************************************************************/
 {
-    AROS_LIBBASE_EXT_DECL(struct Library *,AslBase)
-
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
     retval = AllocAslRequest(reqType, AROS_SLOWSTACKTAGS_ARG(tag1));

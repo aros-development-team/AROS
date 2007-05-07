@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Returns a pointer to the first char of the filename in the give file part.
@@ -10,7 +10,6 @@
 #    define AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
 #    define AROS_LHA(t,n,r)                   t n
 #    define AROS_LIBFUNC_INIT
-#    define AROS_LIBBASE_EXT_DECL(bt,bn)
 #    define AROS_LIBFUNC_EXIT
 #    include <exec/types.h>
 #    define CLIB_DOS_PROTOS_H
@@ -62,7 +61,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     if(path)
     {

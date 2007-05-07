@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CloseLocale() - Close a locale structure.
@@ -50,7 +50,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     /* Best make sure we actually have something freeable. */
     if(locale && (locale != (struct Locale *)IntLB(LocaleBase)->lb_DefaultLocale))

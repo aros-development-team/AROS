@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: functions for serial RawIOInit/RawPutChar
@@ -98,7 +98,6 @@ int ser_Init(short, LONG, BYTE);
 *****************************************************************************/
 {
    AROS_LIBFUNC_INIT
-   AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 #if AROS_SERIAL_DEBUG == 1
 	if (ser_Init(0x3F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
 		ser_FIFOLevel(0x3F8, 0);
@@ -227,7 +226,6 @@ int ser_IsWritingPossible(short);
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     	/* stegerg: Don't use Disable/Enable, because we want
 	            interrupt enabled flag to stay the same as

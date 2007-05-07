@@ -58,7 +58,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 	
     (void)tags;
     

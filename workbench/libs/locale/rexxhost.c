@@ -202,7 +202,6 @@ int dispcomp(const void *name, const void *dispentry)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 	struct Locale *locale = (struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale;
 	struct dispentry *dispentry;

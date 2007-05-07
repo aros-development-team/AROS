@@ -56,7 +56,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     ULONG len = strlen(name);
     STRPTR s2;

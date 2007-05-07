@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function SetRGB4CM()
@@ -57,7 +57,6 @@
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
   SetRGB32CM(cm, n, r * 0x11111111, g * 0x11111111, b * 0x11111111);
 

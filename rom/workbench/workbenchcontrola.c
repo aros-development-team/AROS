@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Change global options and control the Workbench in various ways.
@@ -51,7 +51,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
     struct TagItem *tstate = tags,
                    *tag;

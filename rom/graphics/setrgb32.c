@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Set one color register for this Viewport
@@ -65,7 +65,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     struct BitMap   	*bm;
     HIDDT_Color     	hidd_col;

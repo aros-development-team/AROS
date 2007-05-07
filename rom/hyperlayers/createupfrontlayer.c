@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -60,7 +60,6 @@
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   D(bug("CreateUpfrontLayer(li@$lx, bm@$lx, x0 %ld, y0 %ld, x1 %ld, y1 %ld, flags %ld, bm2@$lx)\n",
      li, bm, x0, y0, x1, y1, flags, bm2));

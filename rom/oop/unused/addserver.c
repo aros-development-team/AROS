@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a server to the list of public servers
@@ -60,7 +60,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     EnterFunc(bug("OOP_AddServer(server=%p, serverID=%s)\n",
     	serverPtr, serverID));

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -80,7 +80,6 @@ AROS_LH7(void, ScrollWindowRaster,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     DEBUG_SCROLLWINDOWRASTER(dprintf("ScrollWindowRaster: window 0x%lx dx %d dy %d (%d,%d)-(%d,%d)\n",
                      win, dx, dy, xmin, ymin, xmax, ymax));
@@ -146,7 +145,6 @@ AROS_LH7(void, ScrollWindowRasterNoFill,
 
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     DEBUG_SCROLLWINDOWRASTER(dprintf("ScrollWindowRaster: window 0x%lx dx %d dy %d (%d,%d)-(%d,%d)\n",
                      win, dx, dy, xmin, ymin, xmax, ymax));

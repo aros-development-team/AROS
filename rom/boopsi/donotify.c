@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ICClass notification support routines.
@@ -114,7 +114,6 @@ static struct IntuiMessage *SendIDCMPUpdate(
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *, BOOPSIBase)
 
     if( ic->ic_Target != NULL )
     {

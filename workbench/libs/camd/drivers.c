@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -223,7 +223,7 @@ struct Drivers *FindPrevDriverForMidiDeviceData(
 void LoadDriver(char *name,
 	struct CamdIFace *ICamd
 ){
-    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+    CAMD_LIBBASE_DECL(struct CamdBase *,CamdBase)
 #else
 void LoadDriver(char *name,
 	struct CamdBase *CamdBase

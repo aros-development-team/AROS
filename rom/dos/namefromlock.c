@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Retrieve thew full pathname from a lock.
@@ -81,7 +81,6 @@ struct MyExAllData
 /*AROS alias NameFromFH NameFromLock */
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     STRPTR  	    	 s1, s2, name;
     struct Unit     	*curlock, *oldlock=NULL;

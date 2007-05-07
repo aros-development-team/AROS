@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of OpenCatalog()
@@ -63,8 +63,6 @@ extern struct LocaleBase *LocaleBase;
 
 *****************************************************************************/
 {
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
-
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
     retval = OpenCatalogA(locale, name, AROS_SLOWSTACKTAGS_ARG(tag1));

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -72,7 +72,6 @@ AROS_LH1(void, ActivateWindow,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct ActivateWindowActionMsg msg;
 

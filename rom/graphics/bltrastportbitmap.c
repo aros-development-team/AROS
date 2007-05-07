@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Blit the content of a rastport into a bitmap
@@ -62,7 +62,6 @@
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 	struct Layer * srcLayer;
 
     	FIX_GFXCOORD(xSrc);

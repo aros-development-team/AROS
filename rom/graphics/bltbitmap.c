@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy a rectangle in a bitmap to another place or another bitmap.
@@ -109,7 +109,6 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     LONG planecnt;
     
     FIX_GFXCOORD(xSrc);

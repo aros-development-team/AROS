@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2007, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -50,7 +50,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
     struct Window *w = mri->mri_Window;
     struct Layer  *l;

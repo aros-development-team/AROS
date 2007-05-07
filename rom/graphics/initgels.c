@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function InitGels()
@@ -57,7 +57,6 @@
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
 	/* initilize the head's coordinates with the lowest possible values */
 	head -> OldY = 0x8000;

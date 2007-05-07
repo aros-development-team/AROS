@@ -107,21 +107,17 @@
     /* Fill all entries */
     for(i = 0; i < entry->ml_NumEntries; i++)
     {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 	/*
-	    Somewhat of a compatibility kludge: some programs rely that
+	    A compatibility kludge: some programs rely that
 	    AllocEntry() doesn't fail if the length field is 0.
 
 	    E.g. CrossDos' PCx wants to allocate 7 memory regions, but the
 	    last two fields are empty.
 
-	    Should this be turned into a feature and be noted in the autodoc?
-	    The original behaves this way, but it is, AFAIK, not documented to do
-	    so. Comments?
+            Don't depend on this feature.
 	*/
 	if(entry->ml_ME[i].me_Length)
 	{
-#endif
 	    /* Get one */
 	    ret->ml_ME[i].me_Addr = AllocMem(entry->ml_ME[i].me_Length,
 				             entry->ml_ME[i].me_Reqs);
@@ -145,13 +141,12 @@
 		
 		return FALSE;
 	    }
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
 	}
 	else /* if length = 0 */
 	{
 	    ret->ml_ME[i].me_Addr = NULL;
 	}
-#endif
+
 	/* Copy the Length field */
 	ret->ml_ME[i].me_Length = entry->ml_ME[i].me_Length;
     }

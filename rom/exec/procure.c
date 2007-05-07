@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Try to lock a semaphore.
@@ -52,7 +52,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     /* Prepare semaphore message to be a sent message */
     bidMsg->ssm_Message.mn_Length=sizeof(struct SemaphoreMessage);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emit one character via raw IO
@@ -53,7 +53,6 @@ void vputc(unsigned char chr);
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 #if 0
 #ifdef DO_SERIAL_DEBUG
 	/*

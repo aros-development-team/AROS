@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -16,7 +16,7 @@
 
 #ifdef __amigaos4__
 BOOL InitCamd(struct CamdIFace *ICamd){
-    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+    CAMD_LIBBASE_DECL(struct CamdBase *,CamdBase)
 #else
 BOOL InitCamd(struct CamdBase *CamdBase){
 #endif
@@ -61,7 +61,7 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 
 #ifdef __amigaos4__
 void UninitCamd(struct CamdIFace *ICamd){
-    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
+    CAMD_LIBBASE_DECL(struct CamdBase *,CamdBase)
 #else
 void UninitCamd(struct CamdBase *CamdBase){
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,6 @@
 ***************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
     
     LONG                  count = 0;
     struct TagItem 	     *tag;

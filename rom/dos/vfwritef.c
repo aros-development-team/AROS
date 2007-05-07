@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -73,7 +73,6 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
 #define  bLast  (sizeof(ULONG)*8/3 + 1)
 

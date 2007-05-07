@@ -71,7 +71,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExpansionBase *,ExpansionBase)
 
     struct DosLibrary *DOSBase;
     BOOL ok = FALSE;

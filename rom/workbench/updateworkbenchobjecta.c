@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Inform the file manager that an object has changed.
@@ -68,7 +68,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
   
     BOOL                     success = FALSE;
     struct WBCommandMessage *wbcm    = NULL;

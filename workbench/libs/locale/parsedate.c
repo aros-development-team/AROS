@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -101,7 +101,6 @@ BOOL _getnum(LONG numchars,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
     ULONG c;
     LONG day = 0, month = 0, hour = 0, min = 0, sec = 0;

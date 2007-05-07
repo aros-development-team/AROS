@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ConvToLower() - Stub for the Language tolower() function.
@@ -56,7 +56,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
     ULONG	retval;
 
     DEBUG_CONVTOLOWER(dprintf("ConvToLower: locale 0x%lx char 0x%lx\n",

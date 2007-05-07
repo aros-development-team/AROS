@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a Bob from the gel list an the RastPort
@@ -49,7 +49,6 @@
 *****************************************************************************/
 {
 	AROS_LIBFUNC_INIT
-	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
 	_ClearBobAndFollowClearPath(bob->BobVSprite,
 	                            rp,

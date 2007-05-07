@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -53,7 +53,6 @@ AROS_LH3(void, OffGadget,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     DEBUG_OFFGADGET(dprintf("OffGadget: gadget 0x%lx window 0x%lx req 0x%lx\n",
                             gadget, window, requester));

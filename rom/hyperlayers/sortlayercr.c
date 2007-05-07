@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -90,7 +90,6 @@ AROS_UFP2(BOOL, (*CompFunc),
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
     D(bug("SortLayerCR(layer @ $%lx, dx %ld, dy %ld)\n", layer, dx, dy));
 

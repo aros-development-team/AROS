@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id: readeclock.c 12532 2001-10-27 19:46:10Z chodorowski $
 
     Desc: ReadEClock() - read the base frequency of timers.
@@ -54,7 +54,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct TimerBase *,TimerBase)
 
     Disable();
     dest->ev_hi = (ULONG)(TimerBase->tb_ticks_total >> 32);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Converts a string into a date
@@ -124,7 +124,6 @@ const char *const Dos_SubstDateTable[]=
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     struct DateStamp curr;
     LONG days, min, tick, len, t, year, month;
     BOOL leap;

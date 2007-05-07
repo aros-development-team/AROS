@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock the directory a file is located in
@@ -47,7 +47,6 @@
 *****************************************************************************/
 {  
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     BPTR    lock = MKBADDR(NULL); 
     LONG    success = DOSFALSE;

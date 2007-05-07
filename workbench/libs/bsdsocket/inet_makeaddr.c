@@ -1,5 +1,5 @@
 /*
-    Copyright © 2000, The AROS Development Team. All rights reserved.
+    Copyright © 2000-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -42,7 +42,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,SocketBase)
 
     aros_print_not_implemented ("Inet_MakeAddr");
 #warning TODO: Write BSDSocket/Inet_MakeAddr

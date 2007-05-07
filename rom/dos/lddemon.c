@@ -289,7 +289,6 @@ AROS_LH2(struct Library *, OpenLibrary,
     struct ExecBase *, SysBase, 0, Dos)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library, *tmplib;

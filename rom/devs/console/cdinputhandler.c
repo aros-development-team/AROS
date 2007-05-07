@@ -66,7 +66,6 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,ConsoleDevice)
 
     struct cdihData   *cdihdata = _cdihdata;
     

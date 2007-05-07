@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetVar - Return the value of a local or global variable.
@@ -87,7 +87,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     D(bug("GetVar: name = \"%s\", buffer = $%lx, size = %ld, flags = $%lx\n",
 	  name, buffer, size, flags));

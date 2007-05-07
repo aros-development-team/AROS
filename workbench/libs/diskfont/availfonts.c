@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Main fileof diskfont function AvailFonts()
@@ -88,7 +88,6 @@ STATIC VOID BufferInfoFree(struct BufferInfo *bi, struct DiskfontBase_intern *Di
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
 
     LONG retval = 0;
     APTR iterator;

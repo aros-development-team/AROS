@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP function OOP_ObtainAttrBase
@@ -66,7 +66,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
     /* Look up ID */
     struct iid_bucket *idb;

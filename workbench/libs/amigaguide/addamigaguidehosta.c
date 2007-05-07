@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AmigaGuide function AddAmigaGuideHostA()
@@ -44,7 +44,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *, AmigaGuideBase)
 
 #warning TODO: Write amigaguide/AddAmigaGuideHostA()
     aros_print_not_implemented ("amigaguide/AddAmigaGuideHostA");
