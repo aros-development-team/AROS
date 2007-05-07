@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -56,7 +56,6 @@ AROS_LH3(struct Preferences *, SetPrefs,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     DEBUG_SETPREFS(dprintf("SetPrefs: Buffer 0x%lx Size 0x%lx Inform %d\n",
                            (ULONG) prefbuffer, size, inform));

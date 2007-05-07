@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -64,7 +64,6 @@ AROS_LH1(LONG, PNG_CheckSig,
     struct Library *, PNGBase, 6, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     BPTR fh;
     LONG ret = -1;
@@ -474,7 +473,6 @@ AROS_LH4(APTR, PNG_LoadImageFH,
     struct Library *, PNGBase, 7, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
         
     return PNG_LoadImageInternal(fh, chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
     
@@ -491,7 +489,6 @@ AROS_LH4(APTR, PNG_LoadImage,
     struct Library *, PNGBase, 8, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
     
     BPTR fh;
     APTR retval = 0;
@@ -518,7 +515,6 @@ AROS_LH5(APTR, PNG_LoadImageMEM,
     struct Library *, PNGBase, 9, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
     
     struct MyMemHandle mh;    
     APTR retval = 0;
@@ -547,7 +543,6 @@ AROS_LH5(void, PNG_GetImageInfo,
     struct Library *, PNGBase, 10, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     struct PNGHandle *h = (struct PNGHandle *)pnghandle;
     
@@ -570,7 +565,6 @@ AROS_LH3(void, PNG_GetImageData,
     struct Library *, PNGBase, 11, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     struct PNGHandle *h = (struct PNGHandle *)pnghandle;
     
@@ -589,7 +583,6 @@ AROS_LH1(void, PNG_FreeImage,
     struct Library *, PNGBase, 12, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     if (pnghandle) FreeVec(pnghandle);
     
@@ -603,7 +596,6 @@ AROS_LH1(void, PNG_FreeChunk,
     struct Library *, PNGBase, 13, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     if (chunk) FreeVec(chunk);
     
@@ -619,7 +611,6 @@ AROS_LH3(void, PNG_GetChunkInfo,
     struct Library *, PNGBase, 14, PNG)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     png_unknown_chunkp p = (png_unknown_chunkp)chunk;
     if (dataptr) *dataptr = p->data;

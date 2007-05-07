@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$	 $Log
 
     Desc: Graphics function WritePixel()
@@ -69,7 +69,6 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     struct pix_render_data prd;
     LONG    	    	   retval;

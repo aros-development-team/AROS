@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: BeginIO - Start up a timer.device request.
@@ -79,7 +79,6 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct TimerBase *, TimerBase)
     
     ULONG unitNum;
     BOOL replyit = FALSE;

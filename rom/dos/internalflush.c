@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,8 +15,6 @@
 
 LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase )
 {
-    AROS_LIBBASE_EXT_DECL( struct DosLibrary *, DOSBase )
-    
     UBYTE *position;
     
     /* Make sure the input parameters are sane. */

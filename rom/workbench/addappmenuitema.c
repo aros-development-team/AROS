@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Add a menuitem to Workbench's list of AppMenuItems.
@@ -83,7 +83,6 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
     struct TagItem     *tagState = taglist;
     struct TagItem     *tag;

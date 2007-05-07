@@ -20,7 +20,6 @@ AROS_LH0(struct IClass *, ObtainEngine,
          LIBBASETYPEPTR, LIBBASE, 5, BASENAME)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
 
     return ObtainEngine(LIBBASE);
     

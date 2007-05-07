@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     $Id: sendappwindowmessage.c 19008 2007-01-30 22:53:38Z dariusb $
 
     Desc: check if the given window is an app window and send a list of files to it
@@ -84,7 +84,6 @@ char *allocPath(char *str) {
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
     struct List *awl = NULL;
 
     BOOL success = FALSE;

@@ -44,9 +44,6 @@
 	{
 	    // Hier *keine* ";" !!
 	    AROS_LIBFUNC_INIT
-	    // Das ist eigentlich nicht notwendig, da die Funktion
-	    // SysBase nicht verwendet, aber ist ja nur ein Demo :-)
-	    AROS_LIBBASE_EXT_DECL(struct ExecBase, SysBase)
 
 	    struct Node *node;
 
@@ -1721,9 +1718,6 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 #ifndef AROS_LIBFUNC_EXIT
 #   define AROS_LIBFUNC_EXIT }}
-#endif
-#ifndef AROS_LIBBASE_EXT_DECL
-#   define AROS_LIBBASE_EXT_DECL(a,b)
 #endif
 
 /* Tagging of private functions, so that they can be distinguished from

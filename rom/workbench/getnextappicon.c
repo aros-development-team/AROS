@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id: getnextappicon.c 19008 2003-07-30 22:53:38Z craid-hjb $
 
     Desc: Accesses AppIcon information from workbench.library.
@@ -80,8 +80,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
-
 
     /* get wblibs list of appicons */
     struct List *appiconlist = NULL;

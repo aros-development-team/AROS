@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -47,7 +47,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
 	msg=0xff & msg>>24;
 

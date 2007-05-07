@@ -2,7 +2,7 @@
 #define CAMD_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -18,9 +18,6 @@
 
 #ifndef __AROS__
 #  define AROS_LIBFUNC_INIT
-#  ifndef __amigaos4__
-#    define AROS_LIBBASE_EXT_DECL(a,b)
-#  endif
 #  define AROS_LIBFUNC_EXIT
 #  ifndef __amigaos4__
 #    define aros_print_not_implemented(a) kprintf("camd.library: "a" is not implemented\n");
@@ -69,7 +66,7 @@
 #ifdef __amigaos4__
 #  include <libcore/base.h>
 #  include <interfaces/camd.h>
-#  define AROS_LIBBASE_EXT_DECL(a,b) a b = (a) ICamd->Data.LibBase;
+#  define CAMD_LIBBASE_DECL(a,b) a b = (a) ICamd->Data.LibBase;
 #endif
 
 

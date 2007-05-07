@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ClearScreen()
@@ -60,7 +60,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     ULONG ymin   = rp->cp_y - rp->TxBaseline + rp->Font->tf_YSize;
     ULONG height = GetBitMapAttr(rp->BitMap, BMA_HEIGHT);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -69,7 +69,6 @@ static char * langlist[] =
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct LowLevelBase *, LowLevelBase)
 
   int index = 0;
   /*

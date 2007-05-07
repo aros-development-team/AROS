@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function LoadSeg()
@@ -63,7 +63,6 @@ struct MinList debug_seglist, free_debug_segnodes;
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     void (* FunctionArray[3])();
     BPTR file, segs=0;

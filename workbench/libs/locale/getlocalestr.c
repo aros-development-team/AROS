@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetLocaleStr() - Get a builtin system string.
@@ -56,7 +56,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
 #ifdef AROS_CALL1
     return AROS_CALL1(STRPTR, IntL(locale)->il_LanguageFunctions[3],

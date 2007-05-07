@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -67,7 +67,6 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
   enum {OUTPUT = 0,
         FOUND_FORMAT} state;

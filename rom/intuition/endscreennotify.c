@@ -50,7 +50,6 @@ AROS_LH1(BOOL, EndScreenNotify,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     BOOL back;
 

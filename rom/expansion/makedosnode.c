@@ -106,7 +106,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExpansionBase *,ExpansionBase)
 
     struct DeviceNode *dn;
     struct FileSysStartupMsg *fssm;

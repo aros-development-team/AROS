@@ -55,7 +55,6 @@ AROS_LH4(void, DrawImage,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     DrawImageState(rp, image, leftOffset, topOffset, IDS_NORMAL, NULL);
 

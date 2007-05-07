@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ReadPixel()
@@ -70,7 +70,6 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 *****************************************************************************/
 {
    AROS_LIBFUNC_INIT
-   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     struct prlut8_render_data prlrd;
     LONG    	    	       ret;

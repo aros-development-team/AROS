@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id: startscreennotifytaglist.c 20651 2006-12-30 20:57:12Z d.brewka $
  
@@ -50,7 +50,6 @@ AROS_LH1(IPTR, StartScreenNotifyTagList,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct IntScreenNotify *notify;
 
     notify = (struct IntScreenNotify *) AllocVec(sizeof(struct IntScreenNotify), MEMF_CLEAR);

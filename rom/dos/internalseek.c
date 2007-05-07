@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,6 @@ LONG InternalSeek
     struct DosLibrary *DOSBase 
 )
 {
-    AROS_LIBBASE_EXT_DECL( struct DosLibrary *, DOSBase )
     
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys iofs;

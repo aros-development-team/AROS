@@ -59,7 +59,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct DosList *dl = NULL;

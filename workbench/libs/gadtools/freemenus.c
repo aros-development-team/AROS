@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by CreateMenusA()
@@ -47,7 +47,6 @@
 #if NEWMENUCODE
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     DEBUG_FREEMENUS(bug("FreeMenus: menu %p\n", menu));
     /*
@@ -92,7 +91,6 @@
 #else
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
     DEBUG_FREEMENUS(bug("FreeMenus: menu %p\n", menu));
 

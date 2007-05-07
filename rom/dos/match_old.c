@@ -3,7 +3,7 @@ matchfirst.c:
 
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -67,7 +67,6 @@ matchfirst.c:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct AChain * AC;
     struct AChain * AC_Prev = NULL;
@@ -395,7 +394,6 @@ matchnext.c:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* 
     ** If the user says I am supposed to enter the directory then I first check
@@ -680,7 +678,6 @@ matchend.c:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Free the AChain and unlock all locks that are still there */
     struct AChain * AC = AP->ap_Current;

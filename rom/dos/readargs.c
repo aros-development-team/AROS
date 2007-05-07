@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -25,8 +25,6 @@
 #    define AROS_LHA(t,n,r)                   t n
 #    undef AROS_LIBFUNC_INIT
 #    define AROS_LIBFUNC_INIT
-#    undef AROS_LIBBASE_EXT_DECL
-#    define AROS_LIBBASE_EXT_DECL(bt,bn)
 #    undef AROS_LIBFUNC_EXIT
 #    define AROS_LIBFUNC_EXIT
 #endif
@@ -100,7 +98,6 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *, DOSBase)
 
     /* Allocated resources */
     struct DAList *dalist = NULL;

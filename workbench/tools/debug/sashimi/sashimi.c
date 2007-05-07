@@ -159,7 +159,6 @@ AROS_LH0(void, NewRawIOInit,
     struct ExecBase *, SysBase, 84, Exec)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     /* Nothing happens here */
 
@@ -170,7 +169,6 @@ AROS_LH0(LONG, NewRawMayGetChar,
     struct ExecBase *, SysBase, 85, Exec)
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
     
     /* We always return sort of a confirmation. */
     return('y');

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Return a pointer to after the directories in a path.
@@ -11,7 +11,6 @@
 #    define AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
 #    define AROS_LHA(t,n,r)                   t n
 #    define AROS_LIBFUNC_INIT
-#    define AROS_LIBBASE_EXT_DECL(bt,bn)
 #    define AROS_LIBFUNC_EXIT
 #    define CLIB_DOS_PROTOS_H
 #    include <exec/types.h>
@@ -55,7 +54,6 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     const char *ptr;
 

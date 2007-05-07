@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -63,7 +63,6 @@ struct header
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     struct Locale   	* def_locale = NULL;
     struct IntCatalog 	* catalog = NULL;

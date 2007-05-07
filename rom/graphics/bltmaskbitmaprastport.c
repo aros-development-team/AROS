@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -90,7 +90,6 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
     struct bltmask_render_data 	brd;
     struct Rectangle 	    	rr;

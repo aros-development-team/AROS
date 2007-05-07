@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a device.
@@ -77,7 +77,6 @@ char *const inputname = "input.device";
 {
     AROS_LIBFUNC_INIT
 
-    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
     struct Device *device;
     BYTE ret=IOERR_OPENFAIL;
 
@@ -87,14 +86,12 @@ char *const inputname = "input.device";
     /* Arbitrate for the device list */
     Forbid();
 
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
     /*
 	Kludge for compatibility with V40 kickstart. DO NOT depend on this!
 	See TaggedOpenLibrary() for more info.
     */
     if	   (devName == (STRPTR)0) devName = timername;
     else if(devName == (STRPTR)1) devName = inputname;
-#endif
 
     /* Look for the device in our list */
     device=(struct Device *)FindName(&SysBase->DeviceList,devName);
