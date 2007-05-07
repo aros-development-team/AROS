@@ -3441,87 +3441,60 @@ VOID BM__Hidd_BitMap__ReleaseDirectAccess(OOP_Class *cl, OOP_Object *o,
 VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
 				  struct pHidd_BitMap_BitMapScale * msg)
 {
-    struct BitScaleArgs     *bsa = msg->bsa;
-    UWORD   	    	    ys = bsa-> bsa_SrcY;
-    ULONG   	    	    xs = bsa-> bsa_SrcX;
-    ULONG   	    	    count = 0;
-    ULONG   	    	    dxs = bsa->bsa_SrcWidth;
-    ULONG   	    	    dys = bsa->bsa_SrcHeight;
-    LONG    	    	    accuyd = - (dys >> 1);
-    LONG    	    	    accuxd = - (dxs >> 1);
-    ULONG   	    	    y;
-    HIDDT_Color     	    col;
-    HIDDT_PixelFormat 	    *srcpf, *dstpf;
-    OOP_Object      	    *gc = msg->gc;
-    OOP_Object      	    *dst, *src;
-    HIDDT_Pixel     	    pix;
-    UWORD   	    	    *linepattern;
+    struct BitScaleArgs *bsa = msg->bsa;
+    ULONG *srcbuf, *dstbuf;
+    UWORD *linepattern;
+    ULONG count;
+    UWORD ys = bsa->bsa_SrcY;
+    ULONG xs = bsa->bsa_SrcX;
+    ULONG dyd = bsa->bsa_DestHeight;
+    ULONG dxd = bsa->bsa_DestWidth;
+    LONG accuys = dyd;
+    LONG accuxs = dxd;
+    ULONG dxs = bsa->bsa_SrcWidth;
+    ULONG dys = bsa->bsa_SrcHeight;
+    LONG accuyd = - (dys >> 1);
+    LONG accuxd = - (dxs >> 1);
+    ULONG y;
 
-    if (NULL != (linepattern = (UWORD *) AllocMem(2*bsa->bsa_DestHeight, 0)))
-    {
-        ULONG 	dyd = bsa->bsa_DestHeight;
-        ULONG 	dxd = bsa->bsa_DestWidth;
-        LONG 	accuys = dyd;
-        LONG 	accuxs = dxd;
-        UWORD 	DestHeight = bsa->bsa_DestHeight;
-        UWORD 	DestWidth  = bsa->bsa_DestWidth + bsa->bsa_DestX;
-        /*
-         * Fill in the LinePattern array that tells me which original
-         * line goes to which destination line.
-         */
-        while (count < DestHeight)
-        {
-            accuyd += dys;
-            while (accuyd > accuys)
-            {
-                ys++;
-                accuys += dyd;
-            }
-            linepattern[count] = ys;
-    	    //bug("[%d]=%d\n",count, ys);
-            count++;
+    srcbuf = AllocVec(bsa->bsa_SrcWidth * sizeof(ULONG) * bsa->bsa_SrcHeight, 0);
+    dstbuf = AllocVec(bsa->bsa_DestWidth * sizeof(ULONG) * bsa->bsa_DestHeight, 0);
+
+    HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY, bsa->bsa_SrcWidth, bsa->bsa_SrcHeight, vHidd_StdPixFmt_Native32);
+
+    linepattern = (UWORD *) AllocVec(bsa->bsa_DestHeight * sizeof(UWORD), 0);
+
+    count = 0;
+    while (count < bsa->bsa_DestHeight) {
+        accuyd += dys;
+        while (accuyd > accuys) {
+            ys++;
+            accuys += dyd;
+        }
+        linepattern[count] = ys;
+        count++;
+    }
+
+    count = bsa->bsa_DestX;
+    while (count < bsa->bsa_DestWidth + bsa->bsa_DestX) {
+        accuxd += dxs;
+        while (accuxd > accuxs) {
+            xs++;
+            accuxs += dxd;
         }
 
-        src = msg->src;
-        dst = msg->dst;
+        for (y = 0; y < bsa->bsa_DestHeight; y++)
+            dstbuf[(bsa->bsa_DestWidth * y) + count] = srcbuf[(bsa->bsa_SrcWidth * linepattern[y]) + xs];
 
-        srcpf = (HIDDT_PixelFormat *)HBM(msg->src)->prot.pixfmt;
-        dstpf = (HIDDT_PixelFormat *)HBM(msg->dst)->prot.pixfmt;
-
-        count = bsa->bsa_DestX;
-
-        while (count < DestWidth)
-        {
-            accuxd += dxs;
-            while (accuxd > accuxs)
-            {
-                 xs++;
-                 accuxs += dxd;
-            }
-
-            /*
-             * I am copying pixel by pixel only!!!
-             */
-            for (y = 0; y < bsa->bsa_DestHeight; y++)
-            {
-    	    	//bug("Reading from source at %d/%d\t",xs,linepattern[y]);
-                pix = HIDD_BM_GetPixel(src, xs, linepattern[y]);
-
-                if (srcpf == dstpf)
-                    GC_FG(gc) = pix;
-                else
-                {
-                     HIDD_BM_UnmapPixel(src,pix,&col);
-                     GC_FG(gc) = HIDD_BM_MapColor(src, &col);
-                }
-    	    	//bug("Writing to destination at %d/%d\n",count,y);
-
-                HIDD_BM_DrawPixel(dst, gc, count, y);
-            } /* for (y =...) */
-            count++;
-        }/* while */
-        FreeMem(linepattern,2*bsa->bsa_DestHeight);
+        count++;
     }
+
+    FreeVec(linepattern);
+
+    HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY, bsa->bsa_DestWidth, bsa->bsa_DestHeight, vHidd_StdPixFmt_Native32);
+
+    FreeVec(dstbuf);
+    FreeVec(srcbuf);
 }
 
 HIDDT_RGBConversionFunction BM__Hidd_BitMap__SetRGBConversionFunction(OOP_Class * cl, OOP_Object *o,
