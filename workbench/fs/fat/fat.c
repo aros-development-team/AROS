@@ -376,6 +376,17 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         sb->volume.name[0] = 9;
     }
 
+    NEWLIST(&(sb->locks));
+
+    sb->root_lock.dir_cluster = FAT_ROOTDIR_MARK;
+    sb->root_lock.dir_entry = FAT_ROOTDIR_MARK;
+    sb->root_lock.access = SHARED_LOCK;
+    sb->root_lock.first_cluster = 0;
+    sb->root_lock.attr = ATTR_DIRECTORY;
+    sb->root_lock.size = 0;
+    CopyMem(sb->volume.name, sb->root_lock.name, sb->volume.name[0]+1);
+    NEWLIST(&sb->root_lock.locks);
+
     D(bug("\tFAT Filesystem succesfully detected.\n"));
 
     return 0;
