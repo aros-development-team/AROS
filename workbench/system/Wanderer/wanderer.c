@@ -118,7 +118,7 @@ AROS_UFH3
     {
         d->updateme = TRUE;
 
-        if (obj->filelen < 8192)
+        if ((obj->filelen < 8192) && (d->numfiles > 0))
         {
             d->smallobjects++;
             if (d->smallobjects >= 20) d->smallobjects = 0;
@@ -151,7 +151,8 @@ AROS_UFH3
         {
             if (d->updateme &&(obj->totallen <= obj->filelen))
             {
-                sprintf(d->SpeedBuffer, "Speed: %.2f kBytes/s",  (double) (((double) obj->totallen) / (((double) obj->difftime) / ((double) CLOCKS_PER_SEC))) / 1024.0);
+                double rate = (double) (((double) obj->totallen) / (((double) obj->difftime) / ((double) CLOCKS_PER_SEC))) / 1024.0;
+                if (rate < 1024.0) sprintf(d->SpeedBuffer, "Speed: %.2f kBytes/s",  rate); else sprintf(d->SpeedBuffer, "Speed: %.2f MBytes/s",  rate / 1024.0);
                 SetAttrs(d->gauge, MUIA_Gauge_Current, (ULONG) (32768.0 * (double) obj->totallen / (double) obj->filelen),  MUIA_Gauge_InfoText, d->SpeedBuffer, TAG_DONE);
             }
         }
@@ -159,10 +160,40 @@ AROS_UFH3
 
         if (d->updateme)
         {
-            sprintf(
-                d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes", 
-                d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0
-            );
+            if (d->bytes < 1048576)
+            {
+                if (obj->filelen < 1048576)
+                {
+                    sprintf(
+                        d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes", 
+                        d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0
+                    );
+                }
+                else
+                {
+                    sprintf(
+                        d->Buffer, "# of files: %ld   Actual: %.2f MBytes   Total: %.2f kBytes", 
+                        d->numfiles, (double) obj->filelen / 1048576.0, (double) d->bytes / 1024.0
+                    );
+                }
+            }
+            else
+            {
+                if (obj->filelen < 1048576)
+                {
+                    sprintf(
+                        d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f MBytes", 
+                        d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1048576.0
+                    );
+                }
+                else
+                {
+                    sprintf(
+                        d->Buffer, "# of files: %ld   Actual: %.2f MBytes   Total: %.2f MBytes", 
+                        d->numfiles, (double) obj->filelen / 1048576.0, (double) d->bytes / 1048576.0
+                    );
+                }
+            }
             SET(d->performanceObject, MUIA_Text_Contents, d->Buffer);
         }
     }
@@ -1258,6 +1289,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             MUIA_Window_Borderless,     FALSE,
             MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Centered,
             MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Centered,
+            MUIA_Window_Width,          MUIV_Window_Width_Visible(60),
             WindowContents, (group = VGroup,
                 Child, (IPTR)(fromObject = TextObject,
                     InnerSpacing(8,2),
@@ -1268,7 +1300,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     InnerSpacing(8,2),
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"--------------------------------------------------------------------------------------------",
+                    MUIA_Text_Contents, (IPTR)"---",
                 End),
                 Child, (IPTR)(toObject = TextObject,
                     InnerSpacing(8,2),
@@ -1279,7 +1311,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     InnerSpacing(8,2),
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"--------------------------------------------------------------------------------------------",
+                    MUIA_Text_Contents, (IPTR)"---",
                 End),
                 Child, (IPTR)(fileTextObject = TextObject,
                     InnerSpacing(8,2),
@@ -1290,7 +1322,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     InnerSpacing(8,2),
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                    MUIA_Text_Contents, (IPTR)"--------------------------------------------------------------------------------------------",
+                    MUIA_Text_Contents, (IPTR)"---",
                 End),
                 Child, (IPTR)(fileLengthObject = TextObject,
                     InnerSpacing(8,2),
@@ -1301,7 +1333,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     Child, d->gauge = GaugeObject,
                         MUIA_Gauge_Horiz, TRUE,
                         MUIA_Gauge_Max, 32768,
-                        MUIA_Gauge_InfoText, "...........Processing...........",
+                        MUIA_Gauge_InfoText, "Processing...",
                     End,
                     Child, ScaleObject,
                         MUIA_Scale_Horiz, TRUE,
