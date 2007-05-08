@@ -1121,6 +1121,7 @@ AROS_UFH3(struct Region *, DefaultWindowShapeFunc,
     shapemsg.wdp_TrueColor  = (GetPrivScreen(win->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
     shapemsg.wdp_Width 	    = msg->NewBounds.MaxX - msg->NewBounds.MinX + 1;
     shapemsg.wdp_Height     = msg->NewBounds.MaxY - msg->NewBounds.MinY + 1;
+    shapemsg.wdp_Window = win;
     shapemsg.wdp_UserBuffer = IW(win)->DecorUserBuffer;
     
     shape = (struct Region *)DoMethodA(GetPrivScreen(win->WScreen)->WinDecorObj, (Msg)&shapemsg);

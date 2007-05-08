@@ -551,6 +551,7 @@ void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTop
             shapemsg.MethodID           = WDM_WINDOWSHAPE;
             shapemsg.wdp_Width      = targetwindow->Width;
             shapemsg.wdp_Height     = targetwindow->Height;
+            shapemsg.wdp_Window = targetwindow;
             shapemsg.wdp_TrueColor      = (((struct IntScreen *)targetwindow->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
             shapemsg.wdp_UserBuffer     = ((struct IntWindow *)targetwindow)->DecorUserBuffer;
             shape = DoMethodA(((struct IntScreen *)(targetwindow->WScreen))->WinDecorObj, (Msg)&shapemsg);	

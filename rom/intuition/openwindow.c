@@ -1152,6 +1152,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         shapemsg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
         shapemsg.wdp_Width 	    = w->Width;
         shapemsg.wdp_Height 	    = w->Height;
+        shapemsg.wdp_Window = w;
         shapemsg.wdp_UserBuffer      = ((struct IntWindow *)w)->DecorUserBuffer;
 
         shape = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&shapemsg);	
