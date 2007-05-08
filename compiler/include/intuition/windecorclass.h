@@ -152,6 +152,7 @@ struct wdpWindowShape
 {
     STACKULONG       MethodID;
     BOOL             wdp_TrueColor;
+    struct Window   *wdp_Window;
     STACKLONG        wdp_Width;
     STACKLONG        wdp_Height;
     STACKIPTR        wdp_UserBuffer;
