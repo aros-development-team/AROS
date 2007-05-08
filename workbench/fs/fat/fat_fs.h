@@ -84,14 +84,14 @@ struct DirEntry {
     } e;
 };
 
-#define fl_Key dir_entry
-
 #define FAT_ROOTDIR_MARK    0xFFFFFFFFlu
+
+struct GlobalLock;
 
 struct ExtFileLock {
     /* struct FileLock */
     BPTR                fl_Link;
-    ULONG               dir_entry;      /* was fl_Key. this is our dir entry within dir_cluster */
+    LONG                fl_Key;
     LONG                fl_Access;
     struct MsgPort *    fl_Task;
     BPTR                fl_Volume;
@@ -99,15 +99,29 @@ struct ExtFileLock {
     ULONG               magic;          /* we set this to ID_FAT_DISK so we can tell
                                            our locks from those of other filesystems */
 
-    ULONG               dir_cluster;    /* first cluster of directory we're in */
+    struct MinNode      node;           /* node in the list of locks attached to the global lock */
+    struct GlobalLock   *gl;            /* pointer to the global lock for this file */
 
     struct IOHandle     ioh;            /* handle for reads and writes */
     ULONG               pos;            /* current seek position within the file */
+};
+
+struct GlobalLock {
+    struct MinNode      node;
+
+    ULONG               dir_cluster;    /* first cluster of the directory we're in */
+    ULONG               dir_entry;      /* this is our dir entry within dir_cluster */
+
+    LONG                access;         /* access mode, shared or exclusive */
+
+    ULONG               first_cluster;  /* first data cluster */
 
     ULONG               attr;           /* file attributes, from the dir entry */
     ULONG               size;           /* file size, from the dir entry */
+    
+    UBYTE               name[108];      /* copy of the name (bstr) */
 
-    UBYTE               name[108];      /* copy of the name */
+    struct MinList      locks;          /* list of ExtFileLocks opened on this file */
 };
 
 struct VolumeInfo {
@@ -157,6 +171,9 @@ struct FSSuper {
     ULONG rootdir_sector;
 
     struct VolumeInfo volume;
+
+    struct MinList locks;
+    struct GlobalLock root_lock;
 
     /* function table */
     ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);

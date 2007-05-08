@@ -32,6 +32,25 @@
 #endif
 #include <aros/debug.h>
 
+#ifndef DEBUG
+#define DumpLocks(sb)
+#else
+void DumpLocks(struct FSSuper *sb) {
+    struct GlobalLock *gl;
+    ULONG count;
+
+    bug("[fat] global locks:\n");
+
+    ListLength(&sb->root_lock.locks, count);
+    bug("    root: %ld references\n", count);
+    
+    ForeachNode(&sb->locks, gl) {
+        ListLength(&gl->locks, count);
+        bug("    (%ld/%ld) %.*s: %ld references\n", gl->dir_cluster, gl->dir_entry, gl->name[0], &(gl->name[1]), count);
+    }
+}
+#endif
+
 LONG TestLock(struct ExtFileLock *fl) {
     if (fl == 0 && glob->sb == NULL) {
         if (glob->disk_inserted == FALSE)
@@ -49,24 +68,28 @@ LONG TestLock(struct ExtFileLock *fl) {
     return 0;
 }
 
-LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, BPTR *result) {
+LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, struct ExtFileLock **lock) {
     LONG err = ERROR_OBJECT_NOT_FOUND;
     struct DirHandle dh;
     struct DirEntry de;
     ULONG dir_cluster;
     int i;
 
-    if (fl && (fl->attr & ATTR_DIRECTORY) == 0)
+    /* the base lock must be a directory. if its NULL, then its the root,
+     * otherwise we check its attributes */
+    if (fl != NULL && !(fl->gl->attr & ATTR_DIRECTORY))
         return ERROR_OBJECT_WRONG_TYPE;
 
     /* the . and .. entries are invisible to the user */
-    if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2)))
+    if (name[0] == '.' && (namelen == 1 || (name[1] == '.' && namelen == 2))) {
+        D(bug("[fat] not allowing access to '.' or '..' entries\n"));
         return ERROR_OBJECT_NOT_FOUND;
+    }
 
-    dir_cluster = (fl) ? fl->ioh.first_cluster : 0;
-    
-    D(bug("\tSearching for: %.*s\n", namelen, name));
+    /* get the first cluster of the directory to look for the file in */
+    dir_cluster = (fl != NULL) ? fl->ioh.first_cluster : 0;
 
+    /* remove any volume specifier */
     for (i = 0; i < namelen; i++)
         if (name[i] == ':') {
             namelen -= (i+1);
@@ -74,146 +97,184 @@ LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, 
             break;
         }
 
+    D(bug("[fat] trying to obtain lock on '%.*s' in dir at cluster %ld\n", namelen, name, dir_cluster));
+    
+    /* open the dir */
     InitDirHandle(glob->sb, dir_cluster, &dh);
-    err = GetDirEntryByPath(&dh, name, namelen, &de);
 
-    if (err == 0) {
-        if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de) == 0)
-            err = LockRoot(access, result);
-        else
-            err = LockFile(de.index, dh.ioh.first_cluster, access, result);
+    /* look for the entry */
+    if ((err = GetDirEntryByPath(&dh, name, namelen, &de)) != 0) {
+        ReleaseDirHandle(&dh);
+        D(bug("[fat] couldn't get lock\n"));
+        return err;
     }
+
+    /* found it, do the locking proper */
+    err = LockFile(dh.ioh.first_cluster, de.index, access, lock);
 
     ReleaseDirHandle(&dh);
 
     return err;
 }
 
-LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res) {
+LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLock **lock) {
+    struct GlobalLock *node, *gl;
     struct ExtFileLock *fl;
     struct DirHandle dh;
     struct DirEntry de;
     ULONG len;
 
-    D(bug("\tLockFile entry %ld cluster %ld\n", entry, cluster));
+    D(bug("[fat] locking file (%ld/%ld) (%s)\n", dir_cluster, dir_entry, access == SHARED_LOCK ? "shared" : "exclusive"));
 
+    /* first see if we already have a global lock for this file */
+    gl = NULL;
+    ForeachNode(&glob->sb->locks, node)
+        if (node->dir_cluster == dir_cluster && node->dir_entry == dir_entry) {
+            gl = node;
+            break;
+        }
+
+    /* if we do and we're trying for an exclusive lock, then bail out */
+    if (gl != NULL && access == EXCLUSIVE_LOCK) {
+        D(bug("[fat] can't obtain exclusive lock on already-locked file\n"));
+        return ERROR_OBJECT_IN_USE;
+    }
+
+    /* allocate space for the lock. we do this first so that we don't go to
+     * all the effort of setting up the global lock only to have to discard it
+     * if the filelock allocation fails */
     if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
 
-    InitDirHandle(glob->sb, cluster, &dh);
-    GetDirEntry(&dh, entry, &de);
+    /* if we don't have a global lock we need to build one */
+    if (gl == NULL) {
+        if ((gl = AllocVecPooled(glob->mempool, sizeof(struct GlobalLock))) == NULL) {
+            FreeVecPooled(glob->mempool, fl);
+            return ERROR_NO_FREE_STORE;
+        }
 
-    fl->fl_Access = axs;
+        gl->dir_cluster = dir_cluster;
+        gl->dir_entry = dir_entry;
+        gl->access = access;
+
+        /* gotta fish some stuff out of the dir entry too */
+        InitDirHandle(glob->sb, dir_cluster, &dh);
+        GetDirEntry(&dh, dir_entry, &de);
+
+        gl->first_cluster = FIRST_FILE_CLUSTER(&de);
+        if (gl->first_cluster == 0) gl->first_cluster = 0xffffffff;
+        
+        gl->attr = de.e.entry.attr;
+        gl->size = AROS_LE2LONG(de.e.entry.file_size);
+
+        GetDirEntryShortName(&de, &(gl->name[1]), &len); gl->name[0] = (UBYTE) len;
+        GetDirEntryLongName(&de, &(gl->name[1]), &len); gl->name[0] = (UBYTE) len;
+
+        ReleaseDirHandle(&dh);
+
+        NEWLIST(&gl->locks);
+
+        ADDTAIL(&glob->sb->locks, gl);
+
+        D(bug("[fat] created new global lock\n"));
+    }
+
+    /* now setup the file lock */
+    fl->fl_Link = NULL;
+    fl->fl_Key = 0;
+    fl->fl_Access = access;
     fl->fl_Task = glob->ourport;
     fl->fl_Volume = MKBADDR(glob->sb->doslist);
-    fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
+
     fl->magic = ID_FAT_DISK;
 
-    glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
-
-    fl->dir_entry = entry;
-    fl->dir_cluster = cluster;
-    fl->attr = de.e.entry.attr;
-    fl->size = AROS_LE2LONG(de.e.entry.file_size);
-
     fl->ioh.sb = glob->sb;
-    fl->ioh.first_cluster = FIRST_FILE_CLUSTER(&de);
-    if (fl->ioh.first_cluster == 0) fl->ioh.first_cluster = 0xffffffff;
+    fl->ioh.first_cluster = gl->first_cluster;
     fl->ioh.block = NULL;
     RESET_HANDLE(&(fl->ioh));
 
-    GetDirEntryShortName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
-    GetDirEntryLongName(&de, &(fl->name[1]), &len); fl->name[0] = (UBYTE) len;
-
     fl->pos = 0;
 
-    ReleaseDirHandle(&dh);
+    fl->gl = gl;
+    ADDTAIL(&gl->locks, &fl->node);
 
-    *res = MKBADDR(fl);
+    D(bug("[fat] created file lock 0x%08x\n", fl));
+
+    DumpLocks(glob->sb);
+
+    *lock = fl;
     return 0;
 }
 
-LONG LockRoot(LONG axs, BPTR *res) {
+LONG LockRoot(LONG access, struct ExtFileLock **lock) {
     struct ExtFileLock *fl;
 
-    D(bug("\tLockRoot()\n"));
+    D(bug("[fat] locking root\n"));
+
+    if (access == EXCLUSIVE_LOCK) {
+        D(bug("[fat] can't obtain exclusive lock on the fs root\n"));
+        return ERROR_OBJECT_IN_USE;
+    }
 
     if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
         return ERROR_NO_FREE_STORE;
 
-    fl->fl_Access = axs;
+    fl->fl_Link = NULL;
+    fl->fl_Key = 0;
+    fl->fl_Access = SHARED_LOCK;
     fl->fl_Task = glob->ourport;
     fl->fl_Volume = MKBADDR(glob->sb->doslist);
-    fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
+
     fl->magic = ID_FAT_DISK;
-
-    glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
-
-    fl->dir_entry = FAT_ROOTDIR_MARK;
-    fl->dir_cluster = FAT_ROOTDIR_MARK;
-    fl->attr = ATTR_DIRECTORY;
-    fl->size = 0;
 
     fl->ioh.sb = glob->sb;
     fl->ioh.first_cluster = 0;
     fl->ioh.block = NULL;
     RESET_HANDLE(&(fl->ioh));
 
-    CopyMem(glob->sb->volume.name, fl->name, 32);
-
     fl->pos = 0;
 
-    *res = MKBADDR(fl);
+    fl->gl = &glob->sb->root_lock;
+    ADDTAIL(&glob->sb->root_lock.locks, &fl->node);
+
+    D(bug("[fat] created root lock 0x%08x\n", fl));
+
+    DumpLocks(glob->sb);
+
+    *lock = fl;
     return 0;
 }
 
-LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res) {
-    struct ExtFileLock *fl;
+LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock) {
+    D(bug("[fat] copying lock\n"));
 
-    if (src_fl->fl_Access == EXCLUSIVE_LOCK)
+    if (fl == NULL || fl->gl == &glob->sb->root_lock)
+        return LockRoot(SHARED_LOCK, lock);
+
+    if (fl->fl_Access == EXCLUSIVE_LOCK) {
+        D(bug("[fat] can't copy exclusive lock\n"));
         return ERROR_OBJECT_IN_USE;
+    }
 
-    if ((fl = AllocVecPooled(glob->mempool, sizeof(struct ExtFileLock))) == NULL)
-        return ERROR_NO_FREE_STORE;
-
-    fl->fl_Access = src_fl->fl_Access;
-    fl->fl_Task = glob->ourport;
-    fl->fl_Volume = MKBADDR(glob->sb->doslist);
-    fl->fl_Link = glob->sb->doslist->dol_misc.dol_volume.dol_LockList;
-    fl->magic = ID_FAT_DISK;
-
-    glob->sb->doslist->dol_misc.dol_volume.dol_LockList = MKBADDR(fl);
-
-    fl->dir_entry = src_fl->dir_entry;
-    fl->dir_cluster = src_fl->dir_cluster;
-    fl->attr = src_fl->attr;
-    fl->size = src_fl->size;
-
-    fl->ioh.sb = glob->sb;
-    fl->ioh.first_cluster = src_fl->ioh.first_cluster;
-    fl->ioh.block = NULL;
-    RESET_HANDLE(&(fl->ioh));
-
-    memcpy(fl->name, src_fl->name, 108);
-
-    fl->pos = 0;
-
-    *res = MKBADDR(fl);
-    return 0;
+    return LockFile(fl->gl->dir_cluster, fl->gl->dir_entry, SHARED_LOCK, lock);
 }
 
-LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
+LONG LockParent(struct ExtFileLock *fl, LONG access, struct ExtFileLock **lock) {
     LONG err;
     struct DirHandle dh;
     struct DirEntry de;
     ULONG parent_cluster;
 
+    /* the root has no parent */
+    if (fl == NULL || fl->gl == &glob->sb->root_lock)
+        return ERROR_OBJECT_NOT_FOUND;
+
     /* if we're in the root directory, then the root is our parent */
-    if (fl->dir_cluster == glob->sb->rootdir_cluster)
-        return LockRoot(axs, res);
+    if (fl->gl->dir_cluster == glob->sb->rootdir_cluster)
+        return LockRoot(access, lock);
 
     /* get the parent dir */
-    InitDirHandle(glob->sb, fl->dir_cluster, &dh);
+    InitDirHandle(glob->sb, fl->gl->dir_cluster, &dh);
     if ((err = GetDirEntryByPath(&dh, "/", 1, &de)) != 0) {
         ReleaseDirHandle(&dh);
         return err;
@@ -238,9 +299,9 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
         if (de.e.entry.name[0] != 0xe5 &&
             !(de.e.entry.attr & ATTR_VOLUME_ID) &&
             de.e.entry.attr & ATTR_DIRECTORY &&
-            FIRST_FILE_CLUSTER(&de) == fl->dir_cluster) {
+            FIRST_FILE_CLUSTER(&de) == fl->gl->dir_cluster) {
             
-            err = LockFile(dh.cur_index, parent_cluster, axs, res);
+            err = LockFile(parent_cluster, dh.cur_index, access, lock);
             break;
         }
     }
@@ -249,6 +310,30 @@ LONG LockParent(struct ExtFileLock *fl, LONG axs, BPTR *res) {
     return err;
 }
 
+void FreeLock(struct ExtFileLock *fl) {
+    if (fl == NULL)
+        return;
+
+    D(bug("[fat] freeing lock 0x%08x\n", fl));
+
+    REMOVE(&fl->node);
+
+    if (IsListEmpty(&fl->gl->locks) && fl->gl != &glob->sb->root_lock) {
+        REMOVE(fl->gl);
+        FreeVecPooled(glob->mempool, fl->gl);
+
+        D(bug("[fat] freed associated global lock\n"));
+    }
+
+    if (fl->ioh.block != NULL)
+        cache_put_block(glob->sb->cache, fl->ioh.block, 0);
+
+    FreeVecPooled(glob->mempool, fl);
+
+    DumpLocks(glob->sb);
+}
+
+#if 0
 LONG FreeLockSB(struct ExtFileLock *fl, struct FSSuper *sb) {
     LONG found = FALSE;
 
@@ -323,4 +408,4 @@ void FreeLock(struct ExtFileLock *fl) {
         }
     }
 }
-
+#endif

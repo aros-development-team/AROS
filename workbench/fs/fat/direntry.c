@@ -424,17 +424,18 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
 #define sb glob->sb
 
 LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
+    struct GlobalLock *gl = (fl != NULL ? fl->gl : &sb->root_lock);
     struct DirHandle dh;
     struct DirEntry de;
     LONG result = 0;
 
     D(bug("\tFilling FIB data.\n"));
 
-    if (fl->dir_cluster == FAT_ROOTDIR_MARK) {
+    if (gl->dir_cluster == FAT_ROOTDIR_MARK) {
         D(bug("\t\ttype: root directory\n"));
         fib->fib_DirEntryType = ST_ROOT;
     }
-    else if (fl->attr & ATTR_DIRECTORY) {
+    else if (gl->attr & ATTR_DIRECTORY) {
         D(bug("\t\ttype: directory\n"));
         fib->fib_DirEntryType = ST_USERDIR;
     }
@@ -443,28 +444,28 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
         fib->fib_DirEntryType = ST_FILE;
     }
 
-    D(bug("\t\tsize: %ld\n", fl->size));
+    D(bug("\t\tsize: %ld\n", gl->size));
 
-    fib->fib_Size = fl->size;
-    fib->fib_NumBlocks = ((fl->size + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
+    fib->fib_Size = gl->size;
+    fib->fib_NumBlocks = ((gl->size + (sb->clustersize - 1)) >> sb->clustersize_bits) << sb->cluster_sectors_bits;
     fib->fib_EntryType = fib->fib_DirEntryType;
     fib->fib_DiskKey = 0xfffffffflu; //fl->entry;
 
     if (fib->fib_DirEntryType == ST_ROOT)
         CopyMem(&sb->volume.create_time, &fib->fib_Date, sizeof(struct DateStamp));
     else {
-        InitDirHandle(sb, fl->dir_cluster, &dh);
-        GetDirEntry(&dh, fl->dir_entry, &de);
+        InitDirHandle(sb, gl->dir_cluster, &dh);
+        GetDirEntry(&dh, gl->dir_entry, &de);
         ConvertFATDate(de.e.entry.write_date, de.e.entry.write_time, &fib->fib_Date);
         ReleaseDirHandle(&dh);
     }
 
-    memcpy(fib->fib_FileName, fl->name, 108);
+    memcpy(fib->fib_FileName, gl->name, 108);
     D(bug("\t\tname (len %ld) %.*s\n", fib->fib_FileName[0], fib->fib_FileName[0], &(fib->fib_FileName[1])));
 
     fib->fib_Protection = 0;
-    if (fl->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
-    if (fl->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
+    if (gl->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
+    if (gl->attr & ATTR_ARCHIVE)   fib->fib_Protection |= FIBF_ARCHIVE;
 
     fib->fib_Comment[0] = '\0';
 

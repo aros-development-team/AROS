@@ -35,16 +35,6 @@ void CleanupDiskHandler(ULONG diskchgsig_bit);
 /* info.c */
 void FillDiskInfo (struct InfoData *id);
  
-/* lock.c */
-LONG TestLock(struct ExtFileLock *fl);
-LONG TryLockObj(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, BPTR *result);
-LONG LockFile(ULONG entry, ULONG cluster, LONG axs, BPTR *res);
-LONG LockRoot(LONG axs, BPTR *res);
-LONG LockParent(struct ExtFileLock *ld, LONG axs, BPTR *res);
-LONG IsLockable(ULONG ino, LONG mode);
-void FreeLock(struct ExtFileLock *fl);
-LONG CopyLock(struct ExtFileLock *src_fl, BPTR *res);
-
 /* packet.c */
 void ProcessPackets(void);
 
@@ -91,5 +81,13 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
 LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read);
 LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written);
 
-#endif
+/* lock.c */
+LONG TestLock(struct ExtFileLock *fl);
+LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG access, struct ExtFileLock **lock);
+LONG LockFile(ULONG cluster, ULONG entry, LONG access, struct ExtFileLock **lock);
+LONG LockRoot(LONG access, struct ExtFileLock **lock);
+LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock);
+LONG LockParent(struct ExtFileLock *fl, LONG access, struct ExtFileLock **lock);
+void FreeLock(struct ExtFileLock *fl);
 
+#endif

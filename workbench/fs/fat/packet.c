@@ -44,13 +44,13 @@ void ProcessPackets(void) {
 
         switch(pkt->dp_Type) {
             case ACTION_LOCATE_OBJECT: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
                 UBYTE *path = BADDR(pkt->dp_Arg2);
                 LONG access = pkt->dp_Arg3;
 
                 D(bug("[fat] LOCATE_OBJECT: lock 0x%08x (dir %ld/%ld) name '%.*s' type %s\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       path[0], &path[1],
                       pkt->dp_Arg3 == EXCLUSIVE_LOCK ? "EXCLUSIVE" : "SHARED"));
 
@@ -58,18 +58,19 @@ void ProcessPackets(void) {
                     break;
 
                 if (path[0] != 0) {
-                    err = TryLockObj(fl, &path[1], path[0], access, &res);
+                    err = LockFileByName(fl, &path[1], path[0], access, &lock);
                 }
 
                 else if (fl != NULL) {
-                    D(bug("\tCopying lock\n"));
-                    err = CopyLock(fl, &res);
+                    err = CopyLock(fl, &lock);
                 }
 
                 else {
-                    D(bug("\tLocking root directory.\n"));
-                    err = LockRoot(access, &res);
+                    err = LockRoot(access, &lock);
                 }
+
+                if (err == 0)
+                    res = MKBADDR(lock);
 
                 break;
             }
@@ -79,7 +80,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] FREE_LOCK: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
                 if(fl)
                     FreeLock(fl);
@@ -90,38 +91,39 @@ void ProcessPackets(void) {
 
             case ACTION_COPY_DIR:
             case ACTION_COPY_DIR_FH: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
 
                 D(bug("[fat] COPY_DIR: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
  
-                if (fl)
-                    err = CopyLock(fl, &res);
+                if (fl != NULL)
+                    err = CopyLock(fl, &lock);
                 else
-                    err = LockRoot(SHARED_LOCK, &res);
+                    err = LockRoot(SHARED_LOCK, &lock);
+
+                if (err == 0)
+                    res = MKBADDR(lock);
 
                 break;
             }
 
             case ACTION_PARENT:
             case ACTION_PARENT_FH: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
 
                 D(bug("[fat] ACTION_PARENT: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
                 
                 if ((err = TestLock(fl)))
                     break;
  
-                if (fl && fl->fl_Key != FAT_ROOTDIR_MARK)
-                    err = LockParent(fl, SHARED_LOCK, &res);
-                else
-                    err = ERROR_OBJECT_NOT_FOUND;
+                if ((err = LockParent(fl, SHARED_LOCK, &lock)) == 0)
+                    res = MKBADDR(lock);
 
                 break;
             }
@@ -132,13 +134,13 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] ACTION_SAME_LOCK: lock #1 0x%08x (dir %ld/%ld) lock #2 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl1 != NULL ? fl1->dir_cluster : 0, fl1 != NULL ? fl1->dir_entry : 0,
+                      fl1 != NULL ? fl1->gl->dir_cluster : 0, fl1 != NULL ? fl1->gl->dir_entry : 0,
                       pkt->dp_Arg2,
-                      fl2 != NULL ? fl2->dir_cluster : 0, fl2 != NULL ? fl2->dir_entry : 0));
+                      fl2 != NULL ? fl2->gl->dir_cluster : 0, fl2 != NULL ? fl2->gl->dir_entry : 0));
 
                 err = 0;
 
-                if (fl1 == fl2 || ((fl1->fl_Volume == fl2->fl_Volume) && fl1->fl_Key == fl2->fl_Key))
+                if (fl1 == fl2 || fl1->gl == fl2->gl)
                     res = DOSTRUE;
 
                 break;
@@ -151,7 +153,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] EXAMINE_OBJECT: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -163,46 +165,44 @@ void ProcessPackets(void) {
             }
 
             case ACTION_EXAMINE_NEXT: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *lock;
                 struct FileInfoBlock *fib = BADDR(pkt->dp_Arg2);
                 struct DirHandle dh;
                 struct DirEntry de;
-                BPTR b; struct ExtFileLock *temp_lock;
 
                 D(bug("[fat] EXAMINE_NEXT: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh)))
+                if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh)) != 0)
                     break;
 
                 dh.cur_index = fib->fib_DiskKey;
 
-                if ((err = GetNextDirEntry(&dh, &de))) {
+                if ((err = GetNextDirEntry(&dh, &de)) != 0) {
                     if (err == ERROR_OBJECT_NOT_FOUND)
                         err = ERROR_NO_MORE_ENTRIES;
                     ReleaseDirHandle(&dh);
                     break;
                 }
 
-                if ((err = LockFile(dh.cur_index, fl->ioh.first_cluster, SHARED_LOCK, &b))) {
+                if ((err = LockFile(fl->ioh.first_cluster, dh.cur_index, SHARED_LOCK, &lock)) != 0) {
                     ReleaseDirHandle(&dh);
                     break;
                 }
-                temp_lock = BADDR(b);
 
-                if ((err = FillFIB(temp_lock, fib))) {
-                    FreeLock(temp_lock);
+                if ((err = FillFIB(lock, fib))) {
+                    FreeLock(lock);
                     ReleaseDirHandle(&dh);
                     break;
                 }
 
                 fib->fib_DiskKey = dh.cur_index;
 
-                FreeLock(temp_lock);
+                FreeLock(lock);
 
                 ReleaseDirHandle(&dh);
 
@@ -224,7 +224,7 @@ void ProcessPackets(void) {
                       pkt->dp_Type == ACTION_FINDOUTPUT ? "FINDOUTPUT" :
                                                           "FINDUPDATE",
                       pkt->dp_Arg2,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       path[0], &path[1]));
 
                 if ((err = TestLock(fl)))
@@ -248,7 +248,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] READ: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       fl->pos,
                       want));
 
@@ -270,7 +270,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] WRITE: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       fl->pos,
                       want));
 
@@ -292,7 +292,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] SEEK: lock 0x%08x (dir %ld/%ld pos %ld) offset %ld whence %s\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       fl->pos,
                       offset,
                       whence == OFFSET_BEGINNING ? "BEGINNING" :
@@ -307,12 +307,18 @@ void ProcessPackets(void) {
                 res = fl->pos;
                 err = 0;
 
-                if (whence == OFFSET_BEGINNING && offset >= 0 && offset <= fl->size)
+                if (whence == OFFSET_BEGINNING &&
+                    offset >= 0 &&
+                    offset <= fl->gl->size)
                     fl->pos = offset;
-                else if (whence == OFFSET_CURRENT && offset + fl->pos >= 0 && offset + fl->pos <= fl->size)
+                else if (whence == OFFSET_CURRENT &&
+                         offset + fl->pos >= 0 &&
+                         offset + fl->pos <= fl->gl->size)
                     fl->pos += offset;
-                else if (whence == OFFSET_END && offset <= 0 && fl->size + offset >= 0)
-                    fl->pos = fl->size + offset;
+                else if (whence == OFFSET_END
+                         && offset <= 0
+                         && fl->gl->size + offset >= 0)
+                    fl->pos = fl->gl->size + offset;
                 else {
                     res = -1;
                     err = ERROR_SEEK_ERROR;
@@ -326,7 +332,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] END: lock 0x%08x (dir %ld/%ld)\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0));
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -522,7 +528,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] DELETE_OBJECT: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       name[0], &name[1]));
 
                 if ((err = TestLock(fl)))
@@ -544,7 +550,7 @@ void ProcessPackets(void) {
 
                 D(bug("[fat] CREATE_DIR: lock 0x%08x (dir %ld/%ld) name '%.*s'\n",
                       pkt->dp_Arg1,
-                      fl != NULL ? fl->dir_cluster : 0, fl != NULL ? fl->dir_entry : 0,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
                       name[0], &name[1]));
 
                 if ((err = TestLock(fl)))
