@@ -26,27 +26,17 @@
 
 #include	<libraries/cybergraphics.h>
 
-/* #define MYDEBUG 1 */
+#define MYDEBUG 1 
 #include "debug.h"
 #include "support.h"
 #include "muimaster_intern.h"
+#include "datatypescache.h"
 
 extern struct Library *MUIMasterBase;
 
 static struct List dt_list;
 static int dt_initialized;
 
-struct dt_node
-{
-    struct MinNode node;
-    char *filename;
-    Object *o;
-    int width, height;
-    struct Screen *scr;
-    int count;
-    struct BackFillInfo *bfi;
-    UBYTE mask;
-};
 
 /* A BltBitMaskPort() replacement which blits masks for interleaved bitmaps correctly */
 struct LayerHookMsg
@@ -197,17 +187,272 @@ void dt_cleanup(void)
 }
 */
 
+char *allocPath(char *str) {
+  char *s0, *s1, *s;
+  int	 l;
+
+  s = NULL;
+  s0 = str;
+
+  s1 = PathPart(str);
+  if (s1) {
+    for (l=0; s0 != s1; s0++,l++);
+    s = AllocVec(l+1, MEMF_CLEAR);
+    if (s) strncpy(s, str, l);
+  }
+  return s;
+}
+
+void  freeString(char *str) {
+  if (str) FreeVec(str);
+}
+
+char *SkipChars(char *v) {
+    char *c;
+
+    c = strstr(v, "=");
+    return ++c;
+}
+
+int GetInt(char *v) {
+    char *c;
+    c = SkipChars(v);
+    return atol(c);
+}
+
+void GetIntegers(char *v, int *v1, int *v2) {
+    char *c;
+    char va1[32], va2[32];
+    int cnt;
+    c = SkipChars(v);
+    if (c) {
+        cnt = sscanf(c, "%s %s", va1, va2);
+        if (cnt == 1) {
+            *v1 = -1;
+            *v2 = atol(va1);
+        } else if (cnt == 2) {
+            *v1 = atol(va1);
+            *v2 = atol(va2);
+        }
+    }
+}
+
+struct NewImage *NewImageContainer(UWORD w, UWORD h) {
+
+/* Function:   Create a new Image with the specified dimensions
+ * Input:      UWORD   w, h:
+    *                          width and height ofthe wished Image
+ * Output:     NewImage:
+    *                          Pointer to the Created image or NULL
+    * Bugs:	   Not known yet
+    * NOTES:      Function will only return non-NULL if all allocations could be done
+    *             so you have not to check something inside the NewImage structure
+*/
+
+    struct	NewImage *ni;
+
+    ni = AllocVec(sizeof(struct NewImage), MEMF_ANY|MEMF_CLEAR);
+    if (ni) {
+        ni->w = w;
+        ni->h = h;
+        ni->data = AllocVec(w*h*4, MEMF_ANY|MEMF_CLEAR);
+        if (ni->data == NULL) {
+            FreeVec(ni);
+            ni = NULL;
+        }
+    }
+    return ni;
+}
+
+void DisposeImageContainer(struct NewImage *ni) {
+
+/* Function:   Remove all Memory used by an Image
+ * Input:      NewImage ni:
+    *                          Pointer to an Image to be deallocated
+    * Bugs:	   Not known
+*/
+    if (ni) {
+        if (ni->data) {
+            FreeVec(ni->data);
+        }
+        if (ni->o != NULL) DisposeDTObject(ni->o);
+        FreeVec(ni);
+    }
+}
+
+struct NewImage *GetImageFromFile(char *name, struct Screen *scr) {
+
+/* Function:   Load an Image from a file
+ * Input:      char   name:
+    *                          Filename of the Image to load
+ * Output:     NewImage:
+    *                          Pointer to the Created image or NULL
+    * Bugs:	   Not known yet
+    * NOTES:      Function will only return non-NULL if all allocations could be done
+    *             so you have not to check something inside the NewImage struct.
+    *             This function uses DataTypes for loading images, so be sure to have
+    *             the specific DataTypes installed
+*/
+
+    struct	BitMapHeader   	  *bmhd;
+    struct	NewImage	   	  *ni;
+
+    struct  pdtBlitPixelArray pa;
+    Object		   	  *pic;
+    UWORD		   	  w, h;
+    ULONG   a, depth;
+    UBYTE   mask;
+    ni = NULL;
+
+    pic = NewDTObject(name,  DTA_SourceType,	  DTST_FILE,
+                      DTA_GroupID,		GID_PICTURE,
+                      PDTA_Remap,		FALSE,
+                      PDTA_DestMode,	PMODE_V43,
+                      TAG_DONE);
+    if (pic) {
+        get(pic, PDTA_BitMapHeader, &bmhd);
+        if(bmhd) {
+            w = bmhd->bmh_Width;
+            h = bmhd->bmh_Height;
+            mask = bmhd->bmh_Masking;
+            ni = NewImageContainer(w, h);
+            if (ni) {
+                pa.MethodID = PDTM_READPIXELARRAY;
+                pa.pbpa_PixelData = (APTR) ni->data;
+                pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+                pa.pbpa_PixelArrayMod = w*4;
+                pa.pbpa_Left = 0;
+                pa.pbpa_Top = 0;
+                pa.pbpa_Width = w;
+                pa.pbpa_Height = h;
+                DoMethodA(pic, (Msg) &pa);
+                if (mask != mskHasAlpha) {
+#if !AROS_BIG_ENDIAN
+                    for (a= 0; a < (w*h); a++) ni->data[a] |= 0x000000ff;
+#else
+                    for (a= 0; a < (w*h); a++) ni->data[a] |= 0xff000000;
+#endif
+                }
+                if (scr != NULL)
+                {
+                    depth = (ULONG) GetBitMapAttr(&scr->BitMap, BMA_DEPTH);
+
+                    if (depth < 15) ni->o = LoadPicture(name, scr);
+                    if (ni->o != NULL)
+                    {
+                        GetDTAttrs(ni->o, PDTA_DestBitMap, (IPTR)&ni->bitmap, TAG_DONE);
+                        if (ni->bitmap == NULL) GetDTAttrs(ni->o, PDTA_BitMap, (IPTR)&ni->bitmap, TAG_DONE);
+
+                        if (ni->bitmap) GetDTAttrs(ni->o, PDTA_MaskPlane, (IPTR)&ni->mask, TAG_DONE);
+                    }
+                }
+            }
+        }
+        DisposeDTObject(pic);
+    }
+    return ni;
+
+
+}
+
+BOOL ReadPropConfig(struct dt_node *data, struct Screen *scr) {
+    
+    char    buffer[256];
+    char    *line, *v;
+    BPTR    file;
+    
+    file = Open(data->filename, MODE_OLDFILE);
+    if (file) {
+        do {
+            line = FGets(file, buffer, 256);
+            if (line) {
+                if ((v = strstr(line, "ContainerTop ")) == line) {
+                    GetIntegers(v, &data->ContainerTop_o, &data->ContainerTop_s);
+                } else  if ((v = strstr(line, "ContainerVertTile ")) == line) {
+                    GetIntegers(v, &data->ContainerVertTile_o, &data->ContainerVertTile_s);
+                } else  if ((v = strstr(line, "KnobTop ")) == line) {
+                    GetIntegers(v, &data->KnobTop_o, &data->KnobTop_s);
+                } else  if ((v = strstr(line, "KnobTileTop ")) == line) {
+                    GetIntegers(v, &data->KnobTileTop_o, &data->KnobTileTop_s);
+                } else  if ((v = strstr(line, "KnobVertGripper ")) == line) {
+                    GetIntegers(v, &data->KnobVertGripper_o, &data->KnobVertGripper_s);
+                } else  if ((v = strstr(line, "KnobTileBottom ")) == line) {
+                    GetIntegers(v, &data->KnobTileBottom_o, &data->KnobTileBottom_s);
+                } else  if ((v = strstr(line, "KnobBottom ")) == line) {
+                    GetIntegers(v, &data->KnobBottom_o, &data->KnobBottom_s);
+                } else  if ((v = strstr(line, "ContainerBottom ")) == line) {
+                    GetIntegers(v, &data->ContainerBottom_o, &data->ContainerBottom_s);
+                } else  if ((v = strstr(line, "ContainerLeft ")) == line) {
+                    GetIntegers(v, &data->ContainerLeft_o, &data->ContainerLeft_s);
+                } else  if ((v = strstr(line, "ContainerHorTile ")) == line) {
+                    GetIntegers(v, &data->ContainerHorTile_o, &data->ContainerHorTile_s);
+                } else  if ((v = strstr(line, "KnobLeft ")) == line) {
+                    GetIntegers(v, &data->KnobLeft_o, &data->KnobLeft_s);
+                } else  if ((v = strstr(line, "KnobTileLeft ")) == line) {
+                    GetIntegers(v, &data->KnobTileLeft_o, &data->KnobTileLeft_s);
+                } else  if ((v = strstr(line, "KnobHorGripper ")) == line) {
+                    GetIntegers(v, &data->KnobHorGripper_o, &data->KnobHorGripper_s);
+                } else  if ((v = strstr(line, "KnobTileRight ")) == line) {
+                    GetIntegers(v, &data->KnobTileRight_o, &data->KnobTileRight_s);
+                } else  if ((v = strstr(line, "KnobRight ")) == line) {
+                    GetIntegers(v, &data->KnobRight_o, &data->KnobRight_s);
+                } else  if ((v = strstr(line, "ContainerRight ")) == line) {
+                    GetIntegers(v, &data->ContainerRight_o, &data->ContainerRight_s);
+                } 
+            }
+        } while(line);
+        Close(file);
+    }
+    STRPTR path = allocPath(data->filename);
+    if (path)
+    {
+        BPTR lock = Lock(path, ACCESS_READ);
+        if (lock)
+        {
+            BPTR oldcd = CurrentDir(lock);
+            data->img_verticalcontainer = GetImageFromFile("Container/Vertical", scr);
+            data->img_verticalknob = GetImageFromFile("Knob/Vertical", scr);
+            data->img_horizontalcontainer = GetImageFromFile("Container/Horizontal", scr);
+            data->img_horizontalknob = GetImageFromFile("Knob/Horizontal", scr);
+            data->img_up = GetImageFromFile("ArrowUp/default", scr);
+            data->img_down = GetImageFromFile("ArrowDown/default", scr);
+            data->img_left = GetImageFromFile("ArrowLeft/default", scr);
+            data->img_right = GetImageFromFile("ArrowRight/default", scr);
+
+            CurrentDir(oldcd);
+            UnLock(lock);
+            
+        }
+        freeString(path);
+    }
+
+    if (data->img_horizontalcontainer && data->img_horizontalknob && data->img_verticalcontainer && data->img_verticalknob && data->img_up && data->img_down && data->img_left && data->img_right) return TRUE;
+    return FALSE;
+}
+
+void FreePropConfig(struct dt_node *data)
+{
+    DisposeImageContainer(data->img_verticalcontainer);
+    DisposeImageContainer(data->img_verticalknob);
+    DisposeImageContainer(data->img_horizontalcontainer);
+    DisposeImageContainer(data->img_horizontalknob);
+    DisposeImageContainer(data->img_up);
+    DisposeImageContainer(data->img_down);
+    DisposeImageContainer(data->img_left);
+    DisposeImageContainer(data->img_right);
+
+}
+
 struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
 {
     struct dt_node *node;
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
     if (!dt_initialized)
     {
 	NewList(&dt_list);
 	dt_initialized = 1;
     }
-
+ 
     node = List_First(&dt_list);
     while (node)
     {
@@ -219,32 +464,53 @@ struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
 	}
 	node = Node_Next(node);
     }
-
+ 
     if ((node = (struct dt_node*)AllocVec(sizeof(struct dt_node),MEMF_CLEAR)))
     {
+ 
 	if ((node->filename = StrDup(filename)))
 	{
 	    /* create the datatypes object */
 	    D(bug("loading %s\n", filename));
-	    if ((node->o = LoadPicture(filename,scr)))
-	    {
-		struct BitMapHeader *bmhd;
-		GetDTAttrs(node->o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
-		D(bug("picture %lx\n", node->o));
+            if ((Stricmp(FilePart(filename), "prop.config") == 0) || (Stricmp(FilePart(filename), "config") == 0)) /* special configuration image for prop gadgets */
+            {
+                if (ReadPropConfig(node, scr))
+                {
 
-		if (bmhd)
-		{
-		    node->width = bmhd->bmh_Width;
-		    node->height = bmhd->bmh_Height;
-		    node->mask = bmhd->bmh_Masking;
-		    D(bug("picture %lx = %ldx%ld\n", node->o, node->width, node->height));
-		}
-		node->scr = scr;
-		node->count = 1;
-		AddTail((struct List*)&dt_list,(struct Node*)node);
-		ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-		return node;
-	    }
+                    node->mode = MODE_PROP;
+                    node->scr = scr;
+                    node->count = 1;
+                    AddTail((struct List*)&dt_list,(struct Node*)node);
+                    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+                    return node;
+                }
+                else
+                {
+                    FreePropConfig(node);
+                }
+            }
+            else
+            {
+	       if ((node->o = LoadPicture(filename,scr)))
+	       {
+		  struct BitMapHeader *bmhd;
+		  GetDTAttrs(node->o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+		  D(bug("picture %lx\n", node->o));
+
+		  if (bmhd)
+		  {
+		      node->width = bmhd->bmh_Width;
+		      node->height = bmhd->bmh_Height;
+		      node->mask = bmhd->bmh_Masking;
+		      D(bug("picture %lx = %ldx%ld\n", node->o, node->width, node->height));
+		  }
+		  node->scr = scr;
+		  node->count = 1;
+		  AddTail((struct List*)&dt_list,(struct Node*)node);
+		  ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+		  return node;
+	       }
+            }
 	    FreeVec(node->filename);
 	}
 	FreeVec(node);
@@ -262,7 +528,7 @@ void dt_dispose_picture(struct dt_node *node)
 	if (!node->count)
 	{
 	    Remove((struct Node*)node);
-	    DisposeDTObject(node->o);
+	    if (node->mode == MODE_PROP) FreePropConfig(node); else DisposeDTObject(node->o);
 	    FreeVec(node->filename);
 	    FreeVec(node);
 	}
