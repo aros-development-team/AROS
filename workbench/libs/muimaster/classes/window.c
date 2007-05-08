@@ -13,6 +13,7 @@
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/extensions.h>
 #include <clib/alib_protos.h>
 #include <graphics/gfxmacros.h>
 #include <proto/exec.h>
@@ -113,6 +114,8 @@ struct MUI_WindowData
     Object *wd_LeftButton;
     Object *wd_RightButton;
     Object *wd_RefWindow;
+
+    Object *wd_MUIGadget;
     
     Object *wd_HelpObject;
     APTR    wd_HelpBubble;
@@ -380,10 +383,10 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     return TRUE;
 }
 
-static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
+static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     int i;
-
+    
     if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
     if (mri->mri_RightImage){DisposeObject(mri->mri_RightImage);mri->mri_RightImage=NULL;};
     if (mri->mri_UpImage) {DisposeObject(mri->mri_UpImage);mri->mri_UpImage=NULL;};
@@ -410,7 +413,18 @@ static void CleanupRenderInfo(struct MUI_WindowData *data, struct MUI_RenderInfo
 
     if (data->wd_UserScreen)
     {
-	CloseScreen(mri->mri_Screen);
+        BOOL screenclose = TRUE;
+        Object _app = _app(obj);
+        if (_app != NULL)
+        {
+            struct List *store = NULL;
+            get(_app, MUIA_Application_WindowList, &store);
+            if (store != NULL)
+            {
+                if (!IsListEmpty(store)) screenclose = FALSE;
+            }
+        }
+	    if (screenclose) CloseScreen(mri->mri_Screen);
     }    
 
 
@@ -562,6 +576,10 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 
     }                                        
 
+    struct Gadget *gadgets = NULL;
+    
+    gadgets = (data->wd_VertProp != NULL) ? data->wd_VertProp : data->wd_HorizProp;
+
     win = OpenWindowTags
     (
         NULL,
@@ -580,10 +598,11 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_InnerHeight,         (IPTR) data->wd_Height,
         WA_AutoAdjust,          (IPTR) TRUE,
         WA_NewLookMenus,        (IPTR) TRUE,
+//         WA_ExtraGadget_MUI,    TRUE,
         data->wd_NoMenus ?
             WA_RMBTrap   :
             TAG_IGNORE,         (IPTR) TRUE,
-        WA_Gadgets,             (IPTR) (data->wd_VertProp ? data->wd_VertProp : data->wd_HorizProp),
+        WA_Gadgets,             (IPTR) gadgets,
         data->wd_ZoomGadget ?
             WA_Zoom         :
             TAG_IGNORE,         (IPTR) &altdims,
@@ -593,6 +612,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 
     if (win)
     {
+
         int hborders = win->BorderLeft + win->BorderRight;
         int vborders = win->BorderTop  + win->BorderBottom;
 
@@ -1473,7 +1493,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 	    break;
 
 	case IDCMP_REFRESHWINDOW:
-	    ReplyMsg((struct Message*)imsg);
+        ReplyMsg((struct Message*)imsg);
 	    replied = TRUE;
 	    if (data->wd_Flags & MUIWF_RESIZING)
 	    {
@@ -2527,6 +2547,10 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_ERASEAREA);
 		break;
 
+        case MUIA_Window_ToolBox:
+        _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_TOOLBOX);
+        break;
+
 	    case MUIA_Window_CloseGadget:
 		_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
 		break;
@@ -3527,7 +3551,7 @@ IPTR Window__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
     	data->wd_dnd = NULL;
     }
 
-    CleanupRenderInfo(data, &data->wd_RenderInfo);
+    CleanupRenderInfo(obj, data, &data->wd_RenderInfo);
     return TRUE;
 }
 
