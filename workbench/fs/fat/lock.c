@@ -110,7 +110,10 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     }
 
     /* found it, do the locking proper */
-    err = LockFile(dh.ioh.first_cluster, de.index, access, lock);
+    if (de.e.entry.attr & ATTR_DIRECTORY && FIRST_FILE_CLUSTER(&de) == 0)
+        err = LockRoot(access, lock);
+    else
+        err = LockFile(dh.ioh.first_cluster, de.index, access, lock);
 
     ReleaseDirHandle(&dh);
 
