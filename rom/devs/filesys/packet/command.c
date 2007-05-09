@@ -310,7 +310,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             iofs->io_Union.io_READ.io_Length = 0;
             break;
 
-        case FSA_WRITE: /* XXX untested */
+        case FSA_WRITE:
             D(bug("[packet] WRITE: handle 0x%08x buf 0x%08x len %ld\n",
                 handle->actual,
                 iofs->io_Union.io_WRITE.io_Buffer,
@@ -394,7 +394,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             iofs->io_DosError = 0;
             goto reply;
 
-        case FSA_SAME_LOCK: { /* XXX untested */
+        case FSA_SAME_LOCK: {
             struct ph_handle *h1, *h2;
             h1 = (struct ph_handle *) iofs->io_Union.io_SAME_LOCK.io_Lock[0];
             h2 = (struct ph_handle *) iofs->io_Union.io_SAME_LOCK.io_Lock[1];
@@ -437,7 +437,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg2 = (IPTR) MKBADDR(iofs->io_Union.io_EXAMINE_NEXT.io_fib);
             break;
 
-        case FSA_CREATE_DIR: /* XXX untested */
+        case FSA_CREATE_DIR:
             D(bug("[packet] CREATE_DIR: lock 0x%08x (%s) name '%s'\n",
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
@@ -485,17 +485,25 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg4 = LINK_SOFT;
             break;
 
-        case FSA_RENAME: /* XXX untested */
+        case FSA_RENAME:
             D(bug("[packet] RENAME: lock 0x%08x (%s) name '%s' target '%s'\n",
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
                 iofs->io_Union.io_RENAME.io_Filename,
                 iofs->io_Union.io_RENAME.io_NewName));
 
+            /* XXX the two paths from FSA_RENAME are copied directly from the
+             * arguments to rename with no changes, so they may contain volume
+             * specifiers, path seperators, etc. both can be calculated
+             * relative to the handle. here we just pass them through to the
+             * handler as-is, but I'm not sure if thats right. fat.handler at
+             * least will do the right thing. this probably needs to be
+             * revisited if another packet-based handler is ported */
+
             dp->dp_Type = ACTION_RENAME_OBJECT;
             dp->dp_Arg1 = (IPTR) handle->actual;
             dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_RENAME.io_Filename);
-            dp->dp_Arg3 = 0; /* XXX we don't have this (lock on directory to move object to (NULL for root) */
+            dp->dp_Arg3 = (IPTR) handle->actual;
             dp->dp_Arg4 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_RENAME.io_NewName);
             break;
 
@@ -511,7 +519,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg4 = (IPTR) iofs->io_Union.io_READ_SOFTLINK.io_Size;
             break;
 
-        case FSA_DELETE_OBJECT: /* XXX untested */
+        case FSA_DELETE_OBJECT:
             D(bug("[packet] DELETE: lock 0x%08x (%s) name '%s'\n",
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
@@ -619,7 +627,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg1 = (IPTR) iofs->io_Union.io_INHIBIT.io_Inhibit;
             break;
 
-        case FSA_RELABEL: /* XXX untested */
+        case FSA_RELABEL:
             D(bug("[packet] FSA_RELABEL: name '%s'\n", iofs->io_Union.io_RELABEL.io_NewName));
 
             dp->dp_Type = ACTION_RENAME_DISK;
