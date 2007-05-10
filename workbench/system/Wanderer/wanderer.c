@@ -1262,8 +1262,8 @@ void DisposeCopyDisplay(struct MUIDisplayObjects *d)
         MUI_DisposeObject(d->copyApp);
     }
 }
+
 /* create the file copy window */
-    
 BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d) 
 {
     BOOL    back = FALSE;

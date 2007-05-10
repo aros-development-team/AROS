@@ -70,50 +70,55 @@ struct WPEditor_ViewSettingsObject
 
 struct WPEditor_AdvancedBackgroundWindow_DATA
 {
-	Object                                          *wpedabwd_Window_WindowObj,
-									                *wpedabwd_Window_UseObj,
-									                *wpedabwd_Window_CancelObj,
-									                *wpedabwd_Window_RenderModeGrpObj,
-									                *wpedabwd_Window_RenderModeObj,
-									                *wpedabwd_Window_PageObj,
-									                *wpedabwd_Window_TileModeObj,
-									                *wpedabwd_Window_XOffsetObj,
-									                *wpedabwd_Window_YOffsetObj;
+	Object	*wpedabwd_Window_WindowObj,
+                	*wpedabwd_Window_UseObj,
+			*wpedabwd_Window_CancelObj,
+			*wpedabwd_Window_RenderModeGrpObj,
+			*wpedabwd_Window_RenderModeObj,
+			*wpedabwd_Window_PageObj,
+			*wpedabwd_Window_TileModeObj,
+			*wpedabwd_Window_XOffsetObj,
+			*wpedabwd_Window_YOffsetObj;
 
-	STRPTR                                          *wpedabwd_RenderModeObj_RenderModes;
-	IPTR                                            *wpedabwd_RenderModeObj_RenderPages;
-    struct Hook                                     wpedabwd_Hook_DrawModeChage;
+	STRPTR  *wpedabwd_RenderModeObj_RenderModes;
+	IPTR    *wpedabwd_RenderModeObj_RenderPages;
+    struct Hook wpedabwd_Hook_DrawModeChage;
 };
 
 struct WPEditor_DATA
 {
 	struct WPEditor_AdvancedBackgroundWindow_DATA   *wped_AdvancedViewSettings_WindowData;
+
 	struct WPEditor_ViewSettingsObject              *wped_ViewSettings_Current;
+
 	Object                                          *wped_FirstBGImSpecObj,
-													*wped_FirstBGAdvancedObj;	
+								*wped_FirstBGAdvancedObj;	
+
 	ULONG                                           wped_DimensionsSet;
+
 	Object                                          *wped_ViewSettings_GroupObj,
-									                *wped_ViewSettings_SpacerObj,
-                                                    *wped_c_NavigationMethod,
-                                                    *wped_cm_ToolbarEnabled, 
-                                                    *wped_toolbarpreview,
-	                                                *wped_background_drawmode,
-                                                    *wped_icon_listmode,
-                                                    *wped_icon_textmode,
-                                                    *wped_icon_textmaxlen,
-#if defined(DEBUG_NETWORKBROWSER)
-                                                    *wped_cm_EnableNetworkBrowser, 
-#endif
-#if defined(DEBUG_SHOWUSERFILES)
-                                                    *wped_cm_EnableUserFiles, 
-#endif
-#if defined(DEBUG_MULTLINE)
-                                                   *wped_icon_textmultiline, 
-                                                   *wped_icon_multilineonfocus, 
-                                                   *wped_icon_multilineno, 	
-#endif
-                                                    *wped_toolbarGroup;
-    struct Hook                                     wped_Hook_CloseAdvancedOptions;
+						                *wped_ViewSettings_SpacerObj,
+                                                    		*wped_c_NavigationMethod,
+                                                    		*wped_cm_ToolbarEnabled, 
+                                                    		*wped_toolbarpreview,
+	                                                	*wped_background_drawmode,
+                                                    		*wped_icon_listmode,
+                                                    		*wped_icon_textmode,
+                                                    		*wped_icon_textmaxlen,
+								#if defined(DEBUG_NETWORKBROWSER)
+                                                    			*wped_cm_EnableNetworkBrowser, 
+								#endif
+								#if defined(DEBUG_SHOWUSERFILES)
+                                                    			*wped_cm_EnableUserFiles, 
+								#endif
+								#if defined(DEBUG_MULTLINE)
+                                                   			*wped_icon_textmultiline, 
+                                                   			*wped_icon_multilineonfocus, 
+                                                   			*wped_icon_multilineno, 	
+								#endif
+                                                    		*wped_toolbarGroup;
+
+    	struct Hook                           		wped_Hook_CloseAdvancedOptions;
 };
 
 //static struct Hook navichangehook;
@@ -639,31 +644,46 @@ nbo_Done:
 /*** Methods ****************************************************************/
 Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    struct WPEditor_DATA *data = NULL;
+	struct WPEditor_DATA *data = NULL;
 
-    Object 	                                       *_WP_ViewSettings_GroupObj = NULL,
-			                                       *_WP_ViewSettings_SpacerObj = NULL,
-                                                   *_WP_Toolbar_EnabledObj = NULL,
-			                                       *_WP_Toolbar_GroupObj = NULL,
-			                                       *_WP_Toolbar_NavTypeObj = NULL,
-			                                       *_WP_Toolbar_PreviewObj = NULL,
-			                                       *_WP_Toolbar_PreviewDirUpObj = NULL,
-                                                   *_WP_Toolbar_PreviewSearchObj = NULL,
-#if defined(DEBUG_NETWORKBROWSER)
-												   *_WP_NetworkBrowser_EnabledObj = NULL, 
-#endif
-#if defined(DEBUG_SHOWUSERFILES)
-												   *_WP_UserFiles_ShowFileFolderObj = NULL, 
-#endif
-#if defined(DEBUG_MULTLINE)
-                                                   *_WP_Icon_TextMultilineObj = NULL, 
-                                                   *_WP_Icon_TextMultilineOnFocusObj = NULL, 
-                                                   *_WP_Icon_DisplayedLinesNoObj = NULL, 	
-#endif
-			                                       *_WP_Icon_ListModeObj = NULL,
-                                                   *_WP_Icon_TextModeObj = NULL, 
-			                                       *_WP_Icon_TextLineMaxLenObj = NULL,
-			                                       *_WP_Prefs_PageGroupObj = NULL;
+	Object
+		*_WP_Navigation_HGrp = NULL,
+		*_WP_Navigation_InnerHGrp1 = NULL,
+		*_WP_Navigation_InnerHGrp2 = NULL,
+		*_WP_NavigationObj = NULL,	
+		*_WP_Appearance_GroupObj = NULL,
+		*_WP_ViewSettings_GroupObj = NULL,
+		*_WP_ViewSettings_SpacerObj = NULL,
+		*_WP_ViewSettings_VirtGrpObj = NULL,
+		*_WP_ViewSettings_ScrollGrpObj = NULL,
+		#if defined(DEBUG_NETWORKBROWSER)
+			*_WP_NetworkBrowser_EnabledObj = NULL, 
+		#endif
+		#if defined(DEBUG_SHOWUSERFILES)
+			*_WP_UserFiles_ShowFileFolderObj = NULL, 
+		#endif
+		#if defined(DEBUG_MULTLINE)
+			*_WP_Icon_TextMultilineObj = NULL, 
+			*_WP_Icon_TextMultilineOnFocusObj = NULL, 
+			*_WP_Icon_DisplayedLinesNoObj = NULL, 	
+		#endif
+		*_WP_Icon_ListModeObj = NULL,
+                *_WP_Icon_TextModeObj = NULL, 
+		*_WP_Icon_TextLineMaxLenObj = NULL,
+		*_WP_Icon_GroupObj = NULL,
+		*_WP_Toolbar_EnabledObj = NULL,
+		*_WP_Toolbar_GroupObj = NULL,
+		*_WP_Toolbar_InnerGroupObj1 = NULL,
+		*_WP_Toolbar_InnerGroupObj2 = NULL,
+		*_WP_Toolbar_InnerGroupObj3 = NULL,
+		*_WP_Toolbar_InnerGroupObj4 = NULL,
+		*_WP_Toolbar_NavTypeObj = NULL,
+		*_WP_Toolbar_PreviewObj = NULL,
+		*_WP_Toolbar_PreviewDirUpObj = NULL,
+        *_WP_Toolbar_PreviewSearchObj = NULL,
+		*_WP_Prefs_PageGroupObj = NULL;
+
+		
 
 	struct WPEditor_AdvancedBackgroundWindow_DATA  *_WP_AdvancedViewSettingOptions_WindowData = NULL;
 D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
@@ -672,25 +692,24 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	
 	WPEditor__NewViewSettingObjects("Workbench", TRUE);
 	WPEditor__NewViewSettingObjects("Drawer", TRUE);
-#if defined(DEBUG_NEWVIEWSETTINGS)
-	WPEditor__NewViewSettingObjects("Screen", TRUE);
-	WPEditor__NewViewSettingObjects("Toolbar", FALSE);
-#endif
+	#if defined(DEBUG_NEWVIEWSETTINGS)
+		WPEditor__NewViewSettingObjects("Screen", TRUE);
+		WPEditor__NewViewSettingObjects("Toolbar", FALSE);
+	#endif
 
-    //Object *cm_searchenabled;
+    	//Object *cm_searchenabled;
+	registerpages[WPD_GENERAL] = (STRPTR)_(MSG_GENERAL);
+	registerpages[WPD_APPEARANCE] = (STRPTR)_(MSG_APPEARANCE);
+	registerpages[WPD_TOOLBAR] = (STRPTR)_(MSG_TOOLBAR);
 
-    registerpages[WPD_GENERAL] = (STRPTR)_(MSG_GENERAL);
-    registerpages[WPD_APPEARANCE] = (STRPTR)_(MSG_APPEARANCE);
-    registerpages[WPD_TOOLBAR] = (STRPTR)_(MSG_TOOLBAR);
+	iconlistmodes[WPD_ICONLISTMODE_GRID] = (STRPTR)_(MSG_ICONLISTMODE_GRID);
+	iconlistmodes[WPD_ICONLISTMODE_PLAIN] = (STRPTR)_(MSG_ICONLISTMODE_PLAIN);
 
-    iconlistmodes[WPD_ICONLISTMODE_GRID] = (STRPTR)_(MSG_ICONLISTMODE_GRID);
-    iconlistmodes[WPD_ICONLISTMODE_PLAIN] = (STRPTR)_(MSG_ICONLISTMODE_PLAIN);
+	icontextmodes[WPD_ICONTEXTMODE_OUTLINE] = (STRPTR)_(MSG_ICONTEXTMODE_OUTLINE);
+	icontextmodes[WPD_ICONTEXTMODE_PLAIN] = (STRPTR)_(MSG_ICONTEXTMODE_PLAIN);
 
-    icontextmodes[WPD_ICONTEXTMODE_OUTLINE] = (STRPTR)_(MSG_ICONTEXTMODE_OUTLINE);
-    icontextmodes[WPD_ICONTEXTMODE_PLAIN] = (STRPTR)_(MSG_ICONTEXTMODE_PLAIN);
-
-    navigationtypelabels[WPD_NAVIGATION_CLASSIC] = (STRPTR)_(MSG_CLASSIC);
-    navigationtypelabels[WPD_NAVIGATION_ENHANCED] = (STRPTR)_(MSG_ENHANCED);
+	navigationtypelabels[WPD_NAVIGATION_CLASSIC] = (STRPTR)_(MSG_CLASSIC);
+	navigationtypelabels[WPD_NAVIGATION_ENHANCED] = (STRPTR)_(MSG_ENHANCED);
 
 	_wpeditor_intern_Base_BackgroundImage_RenderModeNames[IconWindowExt_ImageBackFill_RenderMode_Tiled - 1] = "Tiled";
 	_wpeditor_intern_Base_BackgroundImage_RenderModeValues[IconWindowExt_ImageBackFill_RenderMode_Tiled - 1] = IconWindowExt_ImageBackFill_RenderMode_Tiled;
@@ -702,17 +721,17 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	_wpeditor_intern_Base_BackgroundImage_TileModeNames[IconWindowExt_ImageBackFill_TileMode_Fixed - 1] = "Fixed";
 	_wpeditor_intern_Base_BackgroundImage_TileModeValues[IconWindowExt_ImageBackFill_TileMode_Fixed - 1] = IconWindowExt_ImageBackFill_TileMode_Fixed;
 
-    _WP_Toolbar_NavTypeObj = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels);
+    	_WP_Toolbar_NavTypeObj = MUI_MakeObject(MUIO_Cycle, NULL, navigationtypelabels);
 
 	_WP_Icon_ListModeObj = MUI_MakeObject(MUIO_Cycle, NULL, iconlistmodes);
-    _WP_Icon_TextModeObj = MUI_MakeObject(MUIO_Cycle, NULL, icontextmodes);
+    	_WP_Icon_TextModeObj = MUI_MakeObject(MUIO_Cycle, NULL, icontextmodes);
 
 	_WP_AdvancedViewSettingOptions_WindowData = AllocMem(sizeof(struct WPEditor_AdvancedBackgroundWindow_DATA), MEMF_CLEAR|MEMF_PUBLIC);
 
 	_WP_AdvancedViewSettingOptions_WindowData->wpedabwd_Hook_DrawModeChage.h_Entry = ( HOOKFUNC )WandererPrefs_Hook_DrawModeChangeFunc;
 	
 	_WP_AdvancedViewSettingOptions_WindowData->wpedabwd_Window_WindowObj = WindowObject,
-	                                    MUIA_Window_CloseGadget, FALSE,
+							                        MUIA_Window_CloseGadget, FALSE,
 										MUIA_Window_Title, (IPTR)"Advanced Options ..",
 										WindowContents, (IPTR)VGroup,
 											Child, (IPTR)(_WP_AdvancedViewSettingOptions_WindowData->wpedabwd_Window_RenderModeGrpObj = HGroup,
@@ -764,147 +783,230 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_AdvancedViewSettingOptions_WindowData->wpedabwd_Window_WindowObj));
 
-    self = (Object *) DoSuperNewTags
-    (
-        CLASS, self, NULL,
+/*self : Window?-------------------------------------------------------------*/
+    self = (Object *) DoSuperNewTags(CLASS, self, NULL,
+           	 							MUIA_PrefsEditor_Name, __(MSG_NAME),
+            							MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
+        								TAG_DONE);
+/*END self-------------------------------------------------------------------*/
 
-            MUIA_PrefsEditor_Name, __(MSG_NAME),
-            MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
-            
-            Child, (IPTR) (_WP_Prefs_PageGroupObj = RegisterObject,
-                MUIA_Register_Titles, (IPTR) registerpages,
-                Child, (IPTR) GroupObject,
-                    Child, (IPTR) HGroup,                    // general 
-                        MUIA_FrameTitle, __(MSG_NAVIGATION),
-                        MUIA_Group_SameSize, TRUE,
-                        MUIA_Frame, MUIV_Frame_Group,
-						MUIA_Group_Columns, 2,
-						Child, (IPTR) HGroup,
-							MUIA_Group_Columns, 2,
-							MUIA_Group_SameSize, FALSE,
-                            Child, (IPTR) Label1(_(MSG_METHOD)),
-                            Child, (IPTR) _WP_Toolbar_NavTypeObj,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-						End,
-						Child, (IPTR) HGroup,
-							MUIA_Group_Columns, 2,
-							MUIA_Group_SameSize, FALSE,
-#if defined(DEBUG_NETWORKBROWSER)
-							Child, (IPTR) Label1("Network Browser on Workbench"),
-							Child, (IPTR) (_WP_NetworkBrowser_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL)),
-#else
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-#endif
-#if defined(DEBUG_SHOWUSERFILES)
-							Child, (IPTR) Label1("User Files Folder on Workbench"),
-							Child, (IPTR) (_WP_UserFiles_ShowFileFolderObj = MUI_MakeObject(MUIO_Checkmark,NULL)),
-#else
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-#endif
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-						End,
-                    End,
-                End,
-                Child, (IPTR) (GroupObject,                     // appearance 
-                    MUIA_Group_SameSize, FALSE,
-                    MUIA_Group_Horiz, TRUE,
+/*_WP_Prefs_PageGroupObj = Object for handling multi (3) page groups---------*/
+	_WP_Prefs_PageGroupObj = RegisterObject,
+                				MUIA_Register_Titles, (IPTR) registerpages,      
+            				 End;
+/*END _WP_Prefs_PageGroupObj-------------------------------------------------*/
 
-					Child, (IPTR) (ScrollgroupObject,
-						MUIA_Group_SameSize, FALSE,
-						MUIA_Scrollgroup_FreeHoriz, FALSE,
-						MUIA_Scrollgroup_FreeVert, TRUE,
-						MUIA_Scrollgroup_Contents, (IPTR) (VirtgroupObject,
-							MUIA_FrameTitle, (IPTR)"View Settings",
-							MUIA_Frame, MUIV_Frame_ReadList,
-							MUIA_Virtgroup_Input, FALSE,
-							Child, (IPTR) (_WP_ViewSettings_GroupObj = GroupObject,
-								MUIA_Background, MUII_SHINE,
-								Child, (IPTR) (_WP_ViewSettings_SpacerObj = HVSpace),
-							End),
-						End),
-					End),
+/*_WP_NavigationObj: "Navigation" page group---------------------------------*/
+	
+	_WP_NavigationObj = GroupObject, End;
 
-                    Child, (IPTR) (GroupObject,
-						MUIA_Group_SameSize, FALSE,
-                        MUIA_FrameTitle, __(MSG_ICONSPREFS),
-                        MUIA_Frame, MUIV_Frame_Group,
-						MUIA_Group_Columns, 2,
-						Child, (IPTR) Label1(_(MSG_ICONLISTMODE)),
-						Child, (IPTR) _WP_Icon_ListModeObj,
-						Child, (IPTR) HVSpace,
-						Child, (IPTR) HVSpace,
-						Child, (IPTR) Label1(_(MSG_ICONTEXTMODE)),
-						Child, (IPTR) _WP_Icon_TextModeObj,
-						Child, (IPTR) Label1("Max. Label line length .."),
-						Child, (IPTR) (_WP_Icon_TextLineMaxLenObj = StringObject,
+		_WP_Navigation_HGrp = HGroup,                    // general 
+                        		MUIA_FrameTitle, __(MSG_NAVIGATION),
+                        		MUIA_Group_SameSize, TRUE,
+                        		MUIA_Frame, MUIV_Frame_Group,
+								MUIA_Group_Columns, 2,
+                     	  	  End;
+
+			_WP_Navigation_InnerHGrp1 = HGroup,
+											MUIA_Group_Columns, 2,
+											MUIA_Group_SameSize, FALSE,
+                            				Child, (IPTR) Label1(_(MSG_METHOD)),
+                            				Child, (IPTR) _WP_Toolbar_NavTypeObj,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+						   				End;
+
+			_WP_Navigation_InnerHGrp2 = HGroup,
+											MUIA_Group_Columns, 2,
+											MUIA_Group_SameSize, FALSE,
+						   				End;
+/*END _WP_NavigationObj------------------------------------------------------*/
+
+/*_WP_Appearance_GroupObj: "Appearance" page group---------------------------*/
+
+	_WP_Appearance_GroupObj= GroupObject,                     // appearance 
+                    			MUIA_Group_SameSize, FALSE,
+                    			MUIA_Group_Horiz, TRUE,
+                			 End;
+		
+		/*Left part of Appearance*/
+		_WP_ViewSettings_ScrollGrpObj = ScrollgroupObject,
+											MUIA_Group_SameSize, FALSE,
+											MUIA_Scrollgroup_FreeHoriz, FALSE,
+											MUIA_Scrollgroup_FreeVert, TRUE,
+											MUIA_Scrollgroup_Contents, 
+												(IPTR) (_WP_ViewSettings_VirtGrpObj = VirtgroupObject,
+															MUIA_FrameTitle, (IPTR)"View Settings",
+															MUIA_Frame, MUIV_Frame_ReadList,
+															MUIA_Virtgroup_Input, FALSE,
+														End),
+											End;	
+	
+			_WP_ViewSettings_GroupObj = GroupObject,
+											MUIA_Background, MUII_SHINE,
+											Child, (IPTR) (_WP_ViewSettings_SpacerObj = HVSpace),
+										End;
+		/**/
+
+		/*Right part of Appearance*/
+		_WP_Icon_GroupObj = GroupObject,
+								MUIA_Group_SameSize, FALSE,
+                        		MUIA_FrameTitle, __(MSG_ICONSPREFS),
+                        		MUIA_Frame, MUIV_Frame_Group,
+								MUIA_Group_Columns, 2,
+                    		End;	
+
+			#if defined(DEBUG_MULTLINE)
+				_WP_Icon_DisplayedLinesNoObj = StringObject,
+											   	StringFrame,
+												MUIA_String_MaxLen, 2,
+												MUIA_String_Format, MUIV_String_Format_Right,
+												MUIA_String_Accept, (IPTR)"0123456789",
+											   End;
+
+				_WP_Icon_TextMultilineObj = MUI_MakeObject(MUIO_Checkmark, NULL);
+				_WP_Icon_TextMultilineOnFocusObj = MUI_MakeObject(MUIO_Checkmark, NULL);
+			#endif
+
+			_WP_Icon_TextLineMaxLenObj = StringObject,
 											StringFrame,
 											MUIA_String_MaxLen, 3,
 											MUIA_String_Format, MUIV_String_Format_Right,
 											MUIA_String_Accept, (IPTR)"0123456789",
-										End),
-#if defined(DEBUG_MULTLINE)
-						Child, (IPTR) Label1("Use MultiLine Labels "),
-						Child, (IPTR) (_WP_Icon_TextMultilineObj = MUI_MakeObject(MUIO_Checkmark, NULL)),
-						Child, (IPTR) Label1("Only show for Focus(ed) Icon "),
-						Child, (IPTR) (_WP_Icon_TextMultilineOnFocusObj = MUI_MakeObject(MUIO_Checkmark, NULL)),
-						Child, (IPTR) Label1("No. of lines to display .."),
-						Child, (IPTR) (_WP_Icon_DisplayedLinesNoObj = StringObject,
-											StringFrame,
-											MUIA_String_MaxLen, 2,
-											MUIA_String_Format, MUIV_String_Format_Right,
-											MUIA_String_Accept, (IPTR)"0123456789",
-										End),
-#endif
-						Child, (IPTR) HVSpace,
-						Child, (IPTR) HVSpace,
-                    End),
-                End),
-                Child, (IPTR) (_WP_Toolbar_GroupObj = GroupObject,                     // toolbar 
-					MUIA_Group_SameSize, FALSE,
-                    Child, (IPTR) HGroup,
-                        MUIA_FrameTitle,  __(MSG_OBJECTS),
-                        MUIA_Group_SameSize, TRUE,
-                        MUIA_Frame, MUIV_Frame_Group,
-						MUIA_Group_Columns, 2,
-						Child, (IPTR) HGroup,
-							MUIA_Group_Columns, 2,
+									 	 End;
+/*END _WP_Appearance_GroupObj------------------------------------------------*/
+
+/*_WP_Toolbar_GroupObj: "Toolbar" page group---------------------------------*/
+	
+	_WP_Toolbar_GroupObj = GroupObject,                     // toolbar 
 							MUIA_Group_SameSize, FALSE,
-							Child, (IPTR)Label1(_(MSG_TOOLBAR_ENABLED)),
-							Child, (IPTR)(_WP_Toolbar_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL)),
-							Child, (IPTR)HVSpace,
-							Child, (IPTR)HVSpace,
-						End,
-						Child, (IPTR) HGroup,
-							MUIA_Group_Columns, 2,
-							MUIA_Group_SameSize, FALSE,
-							//Child, Label1("search"),
-							//Child, cm_searchenabled = MUI_MakeObject(MUIO_Checkmark,NULL),
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-							Child, (IPTR) HVSpace,
-						End,
-                    End,
-                    Child, (IPTR) (_WP_Toolbar_PreviewObj = HGroup,
-                        MUIA_FrameTitle, __(MSG_PREVIEW),
-                        MUIA_Frame, MUIV_Frame_Group,
-                        MUIA_Group_SameSize, FALSE,
-						Child, (IPTR) HVSpace,
-                        Child, (IPTR) HGroup,
-						    MUIA_HorizWeight, 0,
-							MUIA_Group_SameSize, TRUE,
-                            Child, (IPTR) (_WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-                            Child, (IPTR) (_WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
-                        End,
-                    End),
-                End),          
-            End),
-        TAG_DONE
-    );
+                		   End;
+	
+		_WP_Toolbar_InnerGroupObj1 = HGroup,
+                        				MUIA_FrameTitle,  __(MSG_OBJECTS),
+                        				MUIA_Group_SameSize, TRUE,
+                        				MUIA_Frame, MUIV_Frame_Group,
+										MUIA_Group_Columns, 2,
+                    				 End;
+	
+			_WP_Toolbar_InnerGroupObj2 = HGroup,
+											MUIA_Group_Columns, 2,
+											MUIA_Group_SameSize, FALSE,
+											Child, (IPTR)Label1(_(MSG_TOOLBAR_ENABLED)),
+										 End;
+			
+				_WP_Toolbar_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
+
+
+			_WP_Toolbar_InnerGroupObj3 = HGroup,
+											MUIA_Group_Columns, 2,
+											MUIA_Group_SameSize, FALSE,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) HVSpace,
+										 End;
+
+		_WP_Toolbar_PreviewObj = HGroup,
+                        			MUIA_FrameTitle, __(MSG_PREVIEW),
+                        			MUIA_Frame, MUIV_Frame_Group,
+                        			MUIA_Group_SameSize, FALSE,
+                    			 End;	
+
+
+			_WP_Toolbar_InnerGroupObj4 = HGroup,
+						    				MUIA_HorizWeight, 0,
+											MUIA_Group_SameSize, TRUE,
+                        				 End;
+
+				_WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert");
+				_WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Test");
+/*END _WP_Toolbar_GroupObj---------------------------------------------------*/
+
+
+/**/
+
+	/*Add toolbar Objects to Toolbar page*/
+		DoMethod(_WP_Toolbar_InnerGroupObj4, OM_ADDMEMBER,_WP_Toolbar_PreviewDirUpObj);
+		DoMethod(_WP_Toolbar_InnerGroupObj4, OM_ADDMEMBER,_WP_Toolbar_PreviewSearchObj);
+	
+		DoMethod(_WP_Toolbar_PreviewObj, OM_ADDMEMBER,HVSpace);
+		DoMethod(_WP_Toolbar_PreviewObj, OM_ADDMEMBER, _WP_Toolbar_InnerGroupObj4);
+		
+		DoMethod(_WP_Toolbar_InnerGroupObj2 , OM_ADDMEMBER,_WP_Toolbar_EnabledObj);
+		DoMethod(_WP_Toolbar_InnerGroupObj2 , OM_ADDMEMBER,HVSpace);
+		DoMethod(_WP_Toolbar_InnerGroupObj2 , OM_ADDMEMBER,HVSpace);
+	
+		DoMethod(_WP_Toolbar_InnerGroupObj1 , OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj2);
+		DoMethod(_WP_Toolbar_InnerGroupObj1 , OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj3);	
+	
+
+		DoMethod(_WP_Toolbar_GroupObj, OM_ADDMEMBER,_WP_Toolbar_InnerGroupObj1);
+		DoMethod(_WP_Toolbar_GroupObj, OM_ADDMEMBER,_WP_Toolbar_PreviewObj);
+	/**/
+
+	/*Add appearance Objects to Appearance page*/
+		/*Add objects which are contain into right part*/
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,Label1(_(MSG_ICONLISTMODE)));
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,_WP_Icon_ListModeObj);
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,HVSpace);
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,HVSpace);
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,Label1(_(MSG_ICONTEXTMODE)));
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,_WP_Icon_TextModeObj);
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,Label1("Max. Label line length .."));	
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,_WP_Icon_TextLineMaxLenObj);
+			#if defined(DEBUG_MULTLINE)
+				DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,Label1("Use MultiLine Labels "));	
+				DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,_WP_Icon_TextMultilineObj);
+				DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,Label1("Only show for Focus(ed) Icon "));	
+				DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,_WP_Icon_TextMultilineOnFocusObj);
+				DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,Label1("No. of lines to display .."));
+				DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,_WP_Icon_DisplayedLinesNoObj);
+			#endif
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,HVSpace);	
+			DoMethod(_WP_Icon_GroupObj, OM_ADDMEMBER,HVSpace);
+		/**/			
+
+		/*Add objects which are contain into left part*/
+			DoMethod(_WP_ViewSettings_VirtGrpObj, OM_ADDMEMBER,_WP_ViewSettings_GroupObj);
+		/**/
+
+		DoMethod(_WP_Appearance_GroupObj, OM_ADDMEMBER,_WP_ViewSettings_ScrollGrpObj);
+		DoMethod(_WP_Appearance_GroupObj, OM_ADDMEMBER,_WP_Icon_GroupObj);
+	/**/
+
+	/*Add navigation Objects to Navigation page*/
+		#if defined(DEBUG_NETWORKBROWSER)
+			_WP_NetworkBrowser_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1("Network Browser on Workbench"));
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,_WP_NetworkBrowser_EnabledObj);
+		#else
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+		#endif
+		#if defined(DEBUG_SHOWUSERFILES)
+			_WP_UserFiles_ShowFileFolderObj = MUI_MakeObject(MUIO_Checkmark,NULL);
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,Label1("User Files Folder on Workbench"));
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,_WP_UserFiles_ShowFileFolderObj);
+		#else
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+			DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+		#endif
+		
+		DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+		DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
+	
+		DoMethod(_WP_Navigation_HGrp, OM_ADDMEMBER,_WP_Navigation_InnerHGrp1);
+		DoMethod(_WP_Navigation_HGrp, OM_ADDMEMBER,_WP_Navigation_InnerHGrp2);
+		DoMethod(_WP_NavigationObj, OM_ADDMEMBER,_WP_Navigation_HGrp);
+	/**/
+
+	DoMethod(_WP_Prefs_PageGroupObj, OM_ADDMEMBER,_WP_NavigationObj);/*add Navigation page to pagesGroup*/
+	DoMethod(_WP_Prefs_PageGroupObj, OM_ADDMEMBER,_WP_Appearance_GroupObj);/*add Appearance page to pagesGroup*/
+	DoMethod(_WP_Prefs_PageGroupObj, OM_ADDMEMBER,_WP_Toolbar_GroupObj);/*add Toolbar page to pagesGroup*/
+
+	DoMethod(self, OM_ADDMEMBER,_WP_Prefs_PageGroupObj);/*add pagesGroup to self*/
+/**/
 
     if ((self != NULL) && (_WP_AdvancedViewSettingOptions_WindowData->wpedabwd_Window_WindowObj))
     {
