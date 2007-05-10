@@ -34,11 +34,7 @@ int main(void)
 
 D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
 
-    OpenWorkbenchObject
-	(
-	 "Wanderer:Tools/ExecuteStartup",
-	 0, 0
-	);
+    OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", 0, 0);
 
 	/* To be moved at a later date .. */
 	IconWindow__SetupClass();

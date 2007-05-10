@@ -214,44 +214,51 @@ executeWBStartup(void)
     BPTR startupdir = 0;
 
     struct FileInfoBlock *fib = AllocDosObjectTags(DOS_FIB, TAG_END);
-    if (fib == NULL)
+    
+ 
+    while (TRUE) /*Cicle loop to avoid the use of goto; It uses now break instruction;*/
     {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
-	EasyRequest(0, &es, 0);
-	goto exit;
-    }
+        if (fib == NULL)
+        {
+	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+	       "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
+	   EasyRequest(0, &es, 0);
+	   break;
+        }
 
-    if ( (startupdir = Lock(STARTUPDIR, ACCESS_READ) ) == 0)
-    {
-	D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
-	goto exit;
-    }        
+        if ( (startupdir = Lock(STARTUPDIR, ACCESS_READ) ) == 0)
+        {
+	   D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
+	   break;
+        }        
 
-    if ( ! Examine(startupdir, fib))
-    {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
-	EasyRequest(0, &es, 0);
-	goto exit;
-    }
+        if ( ! Examine(startupdir, fib))
+        {
+	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+	       "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
+	   EasyRequest(0, &es, 0);
+	   break;
+        }
 
     // check if startupdir is a directory
-    if (fib->fib_DirEntryType >= 0)
-    {
-	olddir = CurrentDir(startupdir);
-	if (searchInfo(&infoList))
-	{
-	    executePrograms(&infoList);
-	    retvalue = TRUE;
-	}
-    }        
-    else
-    {
-	D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
+        if (fib->fib_DirEntryType >= 0)
+        {
+	   olddir = CurrentDir(startupdir);
+	   if (searchInfo(&infoList))
+	   {
+	       executePrograms(&infoList);
+	       retvalue = TRUE;
+	   }
+        }        
+        else
+        {
+	   D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
+        }
+        
+        break;
     }
 
-exit:
+
     // Cleanup
     if (startupdir) UnLock(startupdir);
     if (olddir != (BPTR)-1) CurrentDir(olddir);
