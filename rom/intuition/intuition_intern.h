@@ -958,7 +958,7 @@ ULONG TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase);
 
 /* intuition_misc protos */
 extern void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase);
-Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
+Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr, APTR buffer,
     	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase);
 extern void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, struct IntuitionBase * IntuitionBase);
 extern BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase);
@@ -1175,6 +1175,7 @@ struct SysIData
 {
     struct DrawInfo *dri;
     struct Image    *frame;
+    APTR            userbuffer;
     ULONG            type;
     UWORD            flags;
 };

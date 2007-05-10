@@ -168,7 +168,7 @@ void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 #define TITLEBAR_HEIGHT (w->BorderTop)
 
-Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
+Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr, APTR buffer,
     	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
 {
     Object *im;
@@ -179,6 +179,7 @@ Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr,
 	{SYSIA_DrawInfo , (IPTR)dri         	    	    },
 	{SYSIA_Size 	, scr->Flags & SCREENHIRES ?
                 	  SYSISIZE_MEDRES : SYSISIZE_LOWRES },
+    {SYSIA_UserBuffer , buffer                          },
 	{TAG_DONE                   	    	    	    }
     };
 
@@ -260,6 +261,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {IA_Height  	, height    	    	    	    	    	    	    	     },
                 {SYSIA_Which    , SIZEIMAGE 	    	    	    	    	    	    	     },
                 {SYSIA_DrawInfo , (IPTR)dri 	    	    	    	    	    	    	     },
+                {SYSIA_UserBuffer, ((struct IntWindow *)(w))->DecorUserBuffer                        },
                 {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES},
                 {TAG_DONE           	    	    	    	    	    	    	    	     }
             };
@@ -304,7 +306,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(DEPTHIMAGE, TITLEBAR_HEIGHT, w->WScreen, dri, IntuitionBase);
+            im = CreateStdSysImage(DEPTHIMAGE, TITLEBAR_HEIGHT, w->WScreen, ((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -370,7 +372,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
             Object *im;
 
-            im = CreateStdSysImage(ZOOMIMAGE, TITLEBAR_HEIGHT, w->WScreen, dri, IntuitionBase);
+            im = CreateStdSysImage(ZOOMIMAGE, TITLEBAR_HEIGHT, w->WScreen, ((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -470,7 +472,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(CLOSEIMAGE, TITLEBAR_HEIGHT, w->WScreen, dri,IntuitionBase);
+            im = CreateStdSysImage(CLOSEIMAGE, TITLEBAR_HEIGHT, w->WScreen, ((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -869,6 +871,8 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
         {SYSIA_DrawInfo , (IPTR)dri         	    	    },
         {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
             	      SYSISIZE_MEDRES : SYSISIZE_LOWRES     },
+        {SYSIA_UserBuffer, ((struct IntWindow *)(w))->DecorUserBuffer                        },
+
         {TAG_DONE                   	    	    	    }
     };
     Object *im;

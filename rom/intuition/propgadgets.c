@@ -51,7 +51,9 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
 	msg.MethodID 	    = WDM_DRAW_BORDERPROPBACK;
 
 	msg.wdp_Window      = win;
-        msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    msg.wdp_TrueColor   = (((struct IntScreen *)win->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    msg.wdp_UserBuffer  = ((struct IntWindow *)win)->DecorUserBuffer;
+
 	msg.wdp_RPort 	    = rp;
 	msg.wdp_Gadget      = gad;
 	msg.wdp_RenderRect  = rect;
@@ -691,6 +693,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 
                     msg.MethodID    	= WDM_DRAW_BORDERPROPKNOB;
                     msg.wdp_TrueColor   = (((struct IntScreen *)window->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+                    msg.wdp_UserBuffer  = ((struct IntWindow *)window)->DecorUserBuffer;
                     msg.wdp_Window  	= window;
                     msg.wdp_RPort   	= rp;
                     msg.wdp_Gadget  	= gadget;
