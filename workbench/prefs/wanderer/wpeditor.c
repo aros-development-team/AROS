@@ -785,15 +785,15 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
 
 /*self : Window?-------------------------------------------------------------*/
     self = (Object *) DoSuperNewTags(CLASS, self, NULL,
-           	 							MUIA_PrefsEditor_Name, __(MSG_NAME),
-            							MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
-        								TAG_DONE);
+           	 			MUIA_PrefsEditor_Name, __(MSG_NAME),
+            				MUIA_PrefsEditor_Path, (IPTR) "SYS/Wanderer.prefs",
+        			    TAG_DONE);
 /*END self-------------------------------------------------------------------*/
 
 /*_WP_Prefs_PageGroupObj = Object for handling multi (3) page groups---------*/
 	_WP_Prefs_PageGroupObj = RegisterObject,
-                				MUIA_Register_Titles, (IPTR) registerpages,      
-            				 End;
+                			MUIA_Register_Titles, (IPTR) registerpages,      
+            			 End;
 /*END _WP_Prefs_PageGroupObj-------------------------------------------------*/
 
 /*_WP_NavigationObj: "Navigation" page group---------------------------------*/
@@ -804,22 +804,22 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
                         		MUIA_FrameTitle, __(MSG_NAVIGATION),
                         		MUIA_Group_SameSize, TRUE,
                         		MUIA_Frame, MUIV_Frame_Group,
-								MUIA_Group_Columns, 2,
+					MUIA_Group_Columns, 2,
                      	  	  End;
 
 			_WP_Navigation_InnerHGrp1 = HGroup,
-											MUIA_Group_Columns, 2,
-											MUIA_Group_SameSize, FALSE,
+							MUIA_Group_Columns, 2,
+							MUIA_Group_SameSize, FALSE,
                             				Child, (IPTR) Label1(_(MSG_METHOD)),
                             				Child, (IPTR) _WP_Toolbar_NavTypeObj,
-											Child, (IPTR) HVSpace,
-											Child, (IPTR) HVSpace,
-						   				End;
+							Child, (IPTR) HVSpace,
+							Child, (IPTR) HVSpace,
+						    End;
 
 			_WP_Navigation_InnerHGrp2 = HGroup,
-											MUIA_Group_Columns, 2,
-											MUIA_Group_SameSize, FALSE,
-						   				End;
+							MUIA_Group_Columns, 2,
+                                                        MUIA_Group_SameSize, FALSE,
+						    End;
 /*END _WP_NavigationObj------------------------------------------------------*/
 
 /*_WP_Appearance_GroupObj: "Appearance" page group---------------------------*/
@@ -831,81 +831,81 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
 		
 		/*Left part of Appearance*/
 		_WP_ViewSettings_ScrollGrpObj = ScrollgroupObject,
-											MUIA_Group_SameSize, FALSE,
-											MUIA_Scrollgroup_FreeHoriz, FALSE,
-											MUIA_Scrollgroup_FreeVert, TRUE,
-											MUIA_Scrollgroup_Contents, 
-												(IPTR) (_WP_ViewSettings_VirtGrpObj = VirtgroupObject,
-															MUIA_FrameTitle, (IPTR)"View Settings",
-															MUIA_Frame, MUIV_Frame_ReadList,
-															MUIA_Virtgroup_Input, FALSE,
-														End),
-											End;	
+				        		MUIA_Group_SameSize, FALSE,
+							MUIA_Scrollgroup_FreeHoriz, FALSE,
+							MUIA_Scrollgroup_FreeVert, TRUE,
+							MUIA_Scrollgroup_Contents, 
+                                                        (IPTR) (_WP_ViewSettings_VirtGrpObj = VirtgroupObject,
+                                                                MUIA_FrameTitle, (IPTR)"View Settings",
+								MUIA_Frame, MUIV_Frame_ReadList,
+								MUIA_Virtgroup_Input, FALSE,
+								End),
+						End;	
 	
 			_WP_ViewSettings_GroupObj = GroupObject,
-											MUIA_Background, MUII_SHINE,
-											Child, (IPTR) (_WP_ViewSettings_SpacerObj = HVSpace),
-										End;
+							MUIA_Background, MUII_SHINE,
+							Child, (IPTR) (_WP_ViewSettings_SpacerObj = HVSpace),
+                                                    End;
 		/**/
 
 		/*Right part of Appearance*/
 		_WP_Icon_GroupObj = GroupObject,
-								MUIA_Group_SameSize, FALSE,
+					MUIA_Group_SameSize, FALSE,
                         		MUIA_FrameTitle, __(MSG_ICONSPREFS),
                         		MUIA_Frame, MUIV_Frame_Group,
-								MUIA_Group_Columns, 2,
+					MUIA_Group_Columns, 2,
                     		End;	
 
 			#if defined(DEBUG_MULTLINE)
 				_WP_Icon_DisplayedLinesNoObj = StringObject,
-											   	StringFrame,
-												MUIA_String_MaxLen, 2,
-												MUIA_String_Format, MUIV_String_Format_Right,
-												MUIA_String_Accept, (IPTR)"0123456789",
-											   End;
+							   	        StringFrame,
+                                                                        MUIA_String_MaxLen, 2,
+                                                                        MUIA_String_Format, MUIV_String_Format_Right,
+									MUIA_String_Accept, (IPTR)"0123456789",
+                                                               End;
 
 				_WP_Icon_TextMultilineObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 				_WP_Icon_TextMultilineOnFocusObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 			#endif
 
 			_WP_Icon_TextLineMaxLenObj = StringObject,
-											StringFrame,
-											MUIA_String_MaxLen, 3,
-											MUIA_String_Format, MUIV_String_Format_Right,
-											MUIA_String_Accept, (IPTR)"0123456789",
-									 	 End;
+							StringFrame,
+							MUIA_String_MaxLen, 3,
+							MUIA_String_Format, MUIV_String_Format_Right,
+							MUIA_String_Accept, (IPTR)"0123456789",
+						     End;
 /*END _WP_Appearance_GroupObj------------------------------------------------*/
 
 /*_WP_Toolbar_GroupObj: "Toolbar" page group---------------------------------*/
 	
 	_WP_Toolbar_GroupObj = GroupObject,                     // toolbar 
-							MUIA_Group_SameSize, FALSE,
-                		   End;
+			               MUIA_Group_SameSize, FALSE,
+                	       End;
 	
 		_WP_Toolbar_InnerGroupObj1 = HGroup,
-                        				MUIA_FrameTitle,  __(MSG_OBJECTS),
-                        				MUIA_Group_SameSize, TRUE,
-                        				MUIA_Frame, MUIV_Frame_Group,
-										MUIA_Group_Columns, 2,
-                    				 End;
+                        			MUIA_FrameTitle,  __(MSG_OBJECTS),
+                        			MUIA_Group_SameSize, TRUE,
+                        			MUIA_Frame, MUIV_Frame_Group,
+						MUIA_Group_Columns, 2,
+                    			     End;
 	
 			_WP_Toolbar_InnerGroupObj2 = HGroup,
-											MUIA_Group_Columns, 2,
-											MUIA_Group_SameSize, FALSE,
-											Child, (IPTR)Label1(_(MSG_TOOLBAR_ENABLED)),
-										 End;
+							MUIA_Group_Columns, 2,
+							MUIA_Group_SameSize, FALSE,
+							Child, (IPTR)Label1(_(MSG_TOOLBAR_ENABLED)),
+						     End;
 			
 				_WP_Toolbar_EnabledObj = MUI_MakeObject(MUIO_Checkmark, NULL);
 
 
 			_WP_Toolbar_InnerGroupObj3 = HGroup,
-											MUIA_Group_Columns, 2,
-											MUIA_Group_SameSize, FALSE,
-											Child, (IPTR) HVSpace,
-											Child, (IPTR) HVSpace,
-											Child, (IPTR) HVSpace,
-											Child, (IPTR) HVSpace,
-										 End;
+							MUIA_Group_Columns, 2,
+							MUIA_Group_SameSize, FALSE,
+							Child, (IPTR) HVSpace,
+							Child, (IPTR) HVSpace,
+							Child, (IPTR) HVSpace,
+							Child, (IPTR) HVSpace,
+						     End;
 
 		_WP_Toolbar_PreviewObj = HGroup,
                         			MUIA_FrameTitle, __(MSG_PREVIEW),
@@ -915,8 +915,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", _WP_Advanc
 
 
 			_WP_Toolbar_InnerGroupObj4 = HGroup,
-						    				MUIA_HorizWeight, 0,
-											MUIA_Group_SameSize, TRUE,
+						    	MUIA_HorizWeight, 0,
+							MUIA_Group_SameSize, TRUE,
                         				 End;
 
 				_WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert");
