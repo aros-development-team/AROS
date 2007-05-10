@@ -57,6 +57,9 @@
 #define SYSIA_Size		(IA_Dummy + 0x0B) /* See #define's below */
 #define SYSIA_Depth		(IA_Dummy + 0x0C)
 #define SYSIA_Which		(IA_Dummy + 0x0D) /* See #define's below */
+#define SYSIA_UserBuffer (IA_Dummy + 0x20) /* Only for system Images */
+
+
 #define SYSIA_DrawInfo		(IA_Dummy + 0x18) /* Must be specified */
 
 #define SYSIA_ReferenceFont	(IA_Dummy + 0x19)

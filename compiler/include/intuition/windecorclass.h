@@ -139,6 +139,8 @@ struct wdpInitWindow
     STACKULONG	     MethodID;
     BOOL             wdp_TrueColor;
     STACKIPTR        wdp_UserBuffer;
+    struct Screen   *wdp_Screen;
+    STACKIPTR        wdp_ScreenUserBuffer;
 };
 
 struct wdpExitWindow

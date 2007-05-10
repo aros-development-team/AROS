@@ -112,12 +112,13 @@ struct mdpInitMenu
     STACKLONG	     MethodID;
     BOOL             mdp_TrueColor;
     struct RastPort *mdp_RPort;
+    struct Screen   *mdp_Screen;
     STACKULONG       mdp_Left;
     STACKULONG       mdp_Top;
     STACKULONG       mdp_Width;
     STACKLONG        mdp_Height;
     STACKIPTR        mdp_UserBuffer;
-    
+    STACKIPTR        mdp_ScreenUserBuffer;
 };
 
 struct mdpExitMenu

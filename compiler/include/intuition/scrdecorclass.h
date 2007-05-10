@@ -108,6 +108,7 @@ struct sdpInitScreen
     STACKULONG	     MethodID;
     BOOL             sdp_TrueColor;
     struct DrawInfo *sdp_Dri;
+    struct Screen   *sdp_Screen;
     STACKULONG       sdp_FontHeight;
     STACKLONG        sdp_TitleHack;
     STACKULONG       sdp_BarHeight;
