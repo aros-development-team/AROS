@@ -645,8 +645,8 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 		msg.mdp_Height = mhd->win->Height - 1;
 		msg.mdp_ItemLeft = x1;
 		msg.mdp_ItemTop = y1;
-		msg.mdp_ItemWidth = x2 - x1;
-		msg.mdp_ItemHeight = y2 - y1;
+		msg.mdp_ItemWidth = x2 - x1 + 1;
+		msg.mdp_ItemHeight = y2 - y1 + 1;
 		msg.mdp_Flags = menu->Flags;
 		if (mhd->win == mhd->submenuwin) msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
 		else if (mhd->win == mhd->menuwin) msg.mdp_UserBuffer = mhd->DecorUserBuffer;
@@ -916,6 +916,10 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 	   msg.mdp_Width = win_tags[2].ti_Data;
 	   msg.mdp_Height = win_tags[3].ti_Data;
 	   msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
+       msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
+
+       msg.mdp_Screen             = mhd->scr;
+
 	   DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
 	}
     }
@@ -1192,6 +1196,10 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 	    msg.mdp_Width       = width;
 	    msg.mdp_Height      = height;
 	    msg.mdp_UserBuffer  = mhd->DecorUserBuffer;
+        msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
+
+        msg.mdp_Screen             = mhd->scr;
+
 	    DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
 
             mhd->menuwin = OpenWindowTagList(0, win_tags);
@@ -1347,7 +1355,11 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
     	msg.mdp_Width = win_tags[2].ti_Data;
     	msg.mdp_Height = win_tags[3].ti_Data;
     	msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
+        msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
+
 	msg.mdp_TrueColor = mhd->TrueColor;
+       msg.mdp_Screen             = mhd->scr;
+
     	DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
     }
     mhd->submenuwin = OpenWindowTagList(0, win_tags);
@@ -1617,8 +1629,8 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
 	    msg.mdp_Height = win->Height - 1;
 	    msg.mdp_ItemLeft = x1;
 	    msg.mdp_ItemTop = y1;
-	    msg.mdp_ItemWidth = x2 - x1;
-	    msg.mdp_ItemHeight = y2 - y1;
+	    msg.mdp_ItemWidth = x2 - x1 + 1;
+	    msg.mdp_ItemHeight = y2 - y1 + 1;
 	    msg.mdp_Flags = item->Flags;
 	    if (win == mhd->submenuwin) msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;
 	    else if (win == mhd->menuwin) msg.mdp_UserBuffer = mhd->DecorUserBuffer;
@@ -1781,8 +1793,8 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 	msg.mdp_Height = win->Height - 1;
 	msg.mdp_ItemLeft = x1;
 	msg.mdp_ItemTop = y1;
-	msg.mdp_ItemWidth = x2 - x1;
-	msg.mdp_ItemHeight = y2 - y1;
+	msg.mdp_ItemWidth = x2 - x1 + 1;
+	msg.mdp_ItemHeight = y2 - y1 + 1;
 	msg.mdp_Flags = item->Flags;
 
 	if (win == mhd->submenuwin) msg.mdp_UserBuffer = mhd->SubDecorUserBuffer;

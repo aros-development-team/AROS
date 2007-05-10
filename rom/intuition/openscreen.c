@@ -1559,6 +1559,8 @@ AROS_LH1(struct Screen *, OpenScreen,
         {
             {SYSIA_Which    , MENUCHECK     	    },
             {SYSIA_DrawInfo , (IPTR)&screen->DInfo  },
+            {SYSIA_UserBuffer, screen->DecorUserBuffer },
+            
             {TAG_DONE                       	    }
         };
 
@@ -1619,6 +1621,7 @@ AROS_LH1(struct Screen *, OpenScreen,
         struct sdpInitScreen       msg;
 
         msg.MethodID 	           = SDM_INITSCREEN;
+        msg.sdp_Screen             = &screen->Screen;
         msg.sdp_TrueColor          = screen->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR;
         msg.sdp_FontHeight         = screen->DInfo.dri.dri_Font->tf_YSize;
         msg.sdp_BarVBorder         = screen->Screen.BarVBorder;
@@ -1637,6 +1640,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 #endif
 
         msg.sdp_BarHeight      = msg.sdp_FontHeight + msg.sdp_BarVBorder * 2 + msg.sdp_TitleHack;
+        msg.sdp_UserBuffer      = ((struct IntScreen *)screen)->DecorUserBuffer;
 
         if (!DoMethodA(((struct IntScreen *)(screen))->ScrDecorObj, (Msg)&msg)) ok = FALSE;	
         if (ok)
@@ -1682,7 +1686,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 
             if (!(screen->Screen.Flags & SCREENQUIET))
             {
-                im = CreateStdSysImage(SDEPTHIMAGE, SDEPTH_HEIGHT, &screen->Screen,
+                im = CreateStdSysImage(SDEPTHIMAGE, SDEPTH_HEIGHT, &screen->Screen, (APTR) ((struct IntScreen *)screen)->DecorUserBuffer,
 		    	    	       (struct DrawInfo *)&screen->DInfo, IntuitionBase);
             }
 

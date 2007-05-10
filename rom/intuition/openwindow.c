@@ -655,6 +655,9 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     initmsg.MethodID           = WDM_INITWINDOW;
     initmsg.wdp_TrueColor      = (((struct IntScreen *) nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    initmsg.wdp_UserBuffer     = ((struct IntWindow *)w)->DecorUserBuffer;
+    initmsg.wdp_ScreenUserBuffer   = ((struct IntScreen *) nw.Screen)->DecorUserBuffer;
+    initmsg.wdp_Screen             = nw.Screen;
 
     ok = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&initmsg);	
 

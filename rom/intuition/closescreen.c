@@ -89,6 +89,13 @@ AROS_LH1(BOOL, CloseScreen,
 
     if (screen != GetPrivIBase(IntuitionBase)->WorkBench)  FireScreenNotifyMessage((IPTR) screen, SNOTIFY_BEFORE_CLOSESCREEN, IntuitionBase);
 
+    /* Push ExitScreen Message to the Screensdecoration Class */
+    struct sdpExitScreen       semsg;
+
+    semsg.MethodID             = SDM_EXITSCREEN;
+    semsg.sdp_UserBuffer       = ((struct IntScreen *)screen)->DecorUserBuffer;
+    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+    DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, (Msg)&semsg);  
 
     /* there's a second check below for public screens */
     if (screen->FirstWindow)
@@ -212,14 +219,6 @@ AROS_LH1(BOOL, CloseScreen,
 
     /* Free the sprite */
     ReleaseSharedPointer(((struct IntScreen *)screen)->Pointer, IntuitionBase);
-
-    /* Push ExitScreen Message to the Screensdecoration Class */
-    struct sdpExitScreen       semsg;
-
-    semsg.MethodID 	           = SDM_EXITSCREEN;
-    semsg.sdp_UserBuffer       = ((struct IntScreen *)screen)->DecorUserBuffer;
-    semsg.sdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
-    DoMethodA(((struct IntScreen *)screen)->ScrDecorObj, (Msg)&semsg);	
 
     /* Free the memory */
     if (((struct IntScreen *)screen)->DecorUserBuffer)
