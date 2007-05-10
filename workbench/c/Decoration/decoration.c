@@ -41,6 +41,15 @@
 
 /**************************************************************************************************/
 
+#define PUTIMAGE_WIN(id) data->img_##id=data->sd->img_##id
+#define PUTIMAGE_MEN(id) data->img_##id=data->sd->img_##id
+
+#define SETIMAGE_SCR(id) SetImage(data->img_##id, &sd->img_##id, truecolor, screen)
+#define SETIMAGE_WIN(id) wd->img_##id=&sd->img_##id
+#define SETIMAGE_MEN(id) md->img_##id=&sd->img_##id
+
+#define DELIMAGE_SCR(id) RemoveLUTImage(&sd->img_##id)
+
 #if AROS_BIG_ENDIAN
 #define GET_A(rgb) ((rgb >> 24) & 0xff)
 #define GET_R(rgb) ((rgb >> 16) & 0xff)
@@ -59,6 +68,10 @@
 #define SDA_Configuration 0x20002
 #define WDA_Configuration 0x30002
 
+#define MDA_ScreenData 0x10003
+#define SDA_ScreenData 0x20003
+#define WDA_ScreenData 0x30003
+
     struct IClass 	*cl, *scrcl, *menucl;
 
     struct	  NewImage
@@ -69,23 +82,12 @@
         ULONG  *data;
         UWORD   tile_left, tile_top, tile_bottom, tile_right;
         UWORD   inner_left, inner_top, inner_bottom, inner_right;
-    };
+        APTR    mask;
+        Object  *o;
+        struct  BitMap  *bitmap;
+        BOOL    ok;
+        STRPTR  filename;
 
-    struct  WindowData
-    {
-        struct  NewImage        *ni;
-        struct  RastPort        *rp;
-        UWORD                    w, h;
-        WORD                     closewidth, depthwidth, zoomwidth, muiwidth;
-    };
-
-    struct MenuData
-    {
-        struct  NewImage    *ni;
-    };
-
-    struct ScreenData
-    {
     };
 
     struct  NewLUT8Image
@@ -95,9 +97,50 @@
         UBYTE  *data;
     };
 
-/**************************************************************************************************/    
+/**************************************************************************************************/
+    struct scrdecor_data
+    {
+
+        struct NewImage *img_sdepth;
+        struct NewImage *img_sbarlogo;
+        struct NewImage *img_stitlebar;
+
+        struct NewImage *img_size;
+        struct NewImage *img_close;
+        struct NewImage *img_depth;
+        struct NewImage *img_zoom;
+        struct NewImage *img_up;
+        struct NewImage *img_down;
+        struct NewImage *img_left;
+        struct NewImage *img_right;
+        struct NewImage *img_mui;
+        struct NewImage *img_winbar_normal;
+        struct NewImage *img_border_normal;
+        struct NewImage *img_border_deactivated;
+        struct NewImage *img_verticalcontainer;
+        struct NewImage *img_verticalknob;
+        struct NewImage *img_horizontalcontainer;
+        struct NewImage *img_horizontalknob;
+
+        struct NewImage *img_menu;
+        struct NewImage *img_amigakey;
+        struct NewImage *img_menucheck;
+        struct NewImage *img_submenu;
+
+        UWORD            sbarheight;
+        UWORD            slogo_off;
+        UWORD            stitle_off;
+        UWORD            winbarheight;
+
+        int              leftborder, bottomborder, rightborder;
+        int              lut_col_a, lut_col_d;
+
+    };
+
+
     struct windecor_data
     {
+        struct scrdecor_data *sd;
         struct DrawInfo *dri;
         struct Screen   *scr;
         struct NewImage *img_size;
@@ -183,24 +226,14 @@
         int              d_col_s, d_col_e;
         int              b_col_a, b_col_d;
         int              light, middle, dark;
+
     };
 
-    struct scrdecor_data
-    {
-        struct NewImage *img_sdepth;
-        struct NewImage *img_sbarlogo;
-        struct NewImage *img_stitlebar;
-
-        UWORD            sbarheight;
-        UWORD            slogo_off;
-        UWORD            stitle_off;
-        UWORD            winbarheight;
-
-        int              leftborder, bottomborder, rightborder;
-    };
 
     struct menudecor_data
     {
+        struct scrdecor_data *sd;
+
         struct DrawInfo *dri;
         struct Screen *scr;
         struct NewImage *img_menu;
@@ -209,11 +242,90 @@
         struct NewImage *img_submenu;
     };
 
+    struct  WindowData
+    {
+        struct  NewImage        *ni;
+
+        struct NewImage *img_size;
+        struct NewImage *img_close;
+        struct NewImage *img_depth;
+        struct NewImage *img_zoom;
+        struct NewImage *img_up;
+        struct NewImage *img_down;
+        struct NewImage *img_left;
+        struct NewImage *img_right;
+        struct NewImage *img_mui;
+        struct NewImage *img_winbar_normal;
+        struct NewImage *img_border_normal;
+        struct NewImage *img_border_deactivated;
+        struct NewImage *img_verticalcontainer;
+        struct NewImage *img_verticalknob;
+        struct NewImage *img_horizontalcontainer;
+        struct NewImage *img_horizontalknob;
+
+        struct  RastPort        *rp;
+        UWORD                    w, h;
+        LONG   ActivePen;
+        LONG   DeactivePen;
+
+        WORD   closewidth, depthwidth, zoomwidth, muiwidth;
+        BOOL   truecolor;
+
+    };
+
+    struct MenuData
+    {
+        struct  NewImage    *ni;
+        struct  BitMap      *map;
+
+        struct NewImage *img_menu;
+        struct NewImage *img_amigakey;
+        struct NewImage *img_menucheck;
+        struct NewImage *img_submenu;
+        LONG   ActivePen;
+        LONG   DeactivePen;
+        BOOL   truecolor;
+
+    };
+
+
+    struct ScreenData
+    {
+        struct NewImage  img_sdepth;
+        struct NewImage  img_sbarlogo;
+        struct NewImage  img_stitlebar;
+
+        struct NewImage  img_size;
+        struct NewImage  img_close;
+        struct NewImage  img_depth;
+        struct NewImage  img_zoom;
+        struct NewImage  img_up;
+        struct NewImage  img_down;
+        struct NewImage  img_left;
+        struct NewImage  img_right;
+        struct NewImage  img_mui;
+        struct NewImage  img_winbar_normal;
+        struct NewImage  img_border_normal;
+        struct NewImage  img_border_deactivated;
+        struct NewImage  img_verticalcontainer;
+        struct NewImage  img_verticalknob;
+        struct NewImage  img_horizontalcontainer;
+        struct NewImage  img_horizontalknob;
+
+        struct NewImage  img_menu;
+        struct NewImage  img_amigakey;
+        struct NewImage  img_menucheck;
+        struct NewImage  img_submenu;
+        LONG   ActivePen;
+        LONG   DeactivePen;
+        BOOL   truecolor;
+
+    };
+
     struct myrgb
     {
         int red,green,blue;
     };
-
 
     BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data);
     BOOL InitMenuSkinning(STRPTR path, struct menudecor_data *data);
@@ -225,19 +337,120 @@
     void DrawTileToRP(struct RastPort *rp, struct NewImage *ni, ULONG col, UWORD offx, UWORD offy, UWORD x, UWORD y, WORD w, WORD h);
     void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data * data, struct Window *win, struct RastPort *dst_rp, struct DrawInfo *dri, UWORD align, UWORD start, UWORD width, UWORD *pens);
 
+static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
+{
+    Object *o;
 
 
+    o = NewDTObject((APTR)filename,
+    DTA_GroupID          , GID_PICTURE,
+    OBP_Precision        , PRECISION_EXACT,
+    PDTA_Screen          , (IPTR)scr,
+    PDTA_FreeSourceBitMap, TRUE,
+    PDTA_DestMode        , PMODE_V43,
+    PDTA_UseFriendBitMap , TRUE,
+    TAG_DONE);
+    
+
+    if (o)
+    {
+    struct BitMapHeader *bmhd;
+    
+    GetDTAttrs(o,PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+    
+    struct FrameInfo fri = {0};
+    
+    D(bug("DTM_FRAMEBOX\n", o));
+    DoMethod(o,DTM_FRAMEBOX,NULL,(IPTR)&fri,(IPTR)&fri,sizeof(struct FrameInfo),0);
+    
+    if (fri.fri_Dimensions.Depth>0)
+    {
+        D(bug("DTM_PROCLAYOUT\n", o));
+        if (DoMethod(o,DTM_PROCLAYOUT,NULL,1))
+        {
+        return o;
+        }
+    }
+    DisposeDTObject(o);
+    }
+    return NULL;
+}
+
+
+    SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr)
+    {
+        if (in != NULL)
+        {
+            out->w = in->w;
+            out->h = in->h;
+            out->istiled = in->istiled;
+            out->data = in->data;
+            out->tile_left = in->tile_left;
+            out->tile_right = in->tile_right;
+            out->tile_top = in->tile_top;
+            out->tile_bottom = in->tile_bottom;
+            out->inner_left = in->inner_left;
+            out->inner_right = in->inner_right;
+            out->inner_top = in->inner_top;
+            out->inner_bottom = in->inner_bottom;
+            out->bitmap = NULL;
+            out->mask = NULL;
+            out->o = NULL;
+            out->ok = (in->data != NULL) ? TRUE : FALSE;
+            if (!truecolor)
+            {
+                out->ok = FALSE;
+                STRPTR file = AllocVec(strlen(in->filename) + 5, MEMF_ANY | MEMF_CLEAR);
+                if (file != NULL)
+                {
+                    strcpy(file, in->filename);
+                    strcat(file, "_LUT");
+                    out->o = LoadPicture(file, scr);
+                    FreeVec(file);
+                }
+                out->filename = in->filename; 
+                if (out->o == NULL) out->o = LoadPicture(in->filename, scr);
+                if (out->o)
+                {
+                        GetDTAttrs(out->o, PDTA_DestBitMap, (IPTR)&out->bitmap, TAG_DONE);
+                        if (out->bitmap == NULL) GetDTAttrs(out->o, PDTA_BitMap, (IPTR)&out->bitmap, TAG_DONE);
+
+                        if (out->bitmap) GetDTAttrs(out->o, PDTA_MaskPlane, (IPTR)&out->mask, TAG_DONE);
+                        if (out->bitmap == NULL)
+                        {
+                            DisposeDTObject(out->o);
+                            out->o = NULL;
+                        } else out->ok = TRUE;
+                }
+            }
+        }
+    }
+
+void RemoveLUTImage(struct NewImage *ni)
+{
+    if (ni)
+    {
+        if (ni->ok)
+        {
+            if (ni->o) DisposeDTObject(ni->o);
+            ni->o = NULL;
+            ni->bitmap = NULL;
+            ni->mask = NULL;
+        }
+    }
+}
 
 void DrawAlphaStateImageToRP(struct windecor_data *data, struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp, BOOL multiple)
 {
 
-    UWORD   ix, iy;
+    UWORD   ix, iy, dx;
     UBYTE  *d;
 
     int images = (data == NULL) ? 2 : data->threestate ? 3 : 4;
 
-    if (ni)
+    if (ni->ok)
     {
+        dx = 0;
         d = (UBYTE *) ni->data;
         ix=ni->w;
         iy=ni->h;
@@ -248,9 +461,11 @@ void DrawAlphaStateImageToRP(struct windecor_data *data, struct RastPort *rp, st
                 case IDS_NORMAL:
                     break;
                 case IDS_SELECTED:
+                    dx += ix / images;
                     d += ix / images * 4;
                     break;
                 case IDS_INACTIVENORMAL:
+                    dx += ix / images * 2;
                     d += ix / images * 8;
                     break;
             }
@@ -258,15 +473,33 @@ void DrawAlphaStateImageToRP(struct windecor_data *data, struct RastPort *rp, st
         else
         images = 1;
 
-        WritePixelArrayAlpha(d, 0 , 0, ix*4, rp, xp, yp, ix / images, iy, 0xffffffff);
+        if (ni->bitmap == NULL)
+        {
+            WritePixelArrayAlpha(d, 0 , 0, ix*4, rp, xp, yp, ix / images, iy, 0xffffffff);
+        }
+        else
+        {
+            if (ni->mask)
+            {
+                BltMaskBitMapRastPort(ni->bitmap, dx, 0, rp, xp, yp, ix / images, iy, 0xe0, (PLANEPTR) ni->mask);  
+            }
+            else BltBitMapRastPort(ni->bitmap, dx, 0, rp, xp, yp, ix / images, iy, 0xc0);
+        }
     }
 }
 
 void DrawPartImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y, UWORD sx, UWORD sy, UWORD sw, UWORD sh)
 {
-    if (ni)
+    if (ni->ok)
     {
-        if (ni->data) WritePixelArray(ni->data, sx, sy, ni->w*4, rp, x, y, sw, sh, RECTFMT_ARGB);
+        if (ni->bitmap == NULL)
+        {
+            WritePixelArray(ni->data, sx, sy, ni->w*4, rp, x, y, sw, sh, RECTFMT_ARGB);
+        }
+        else
+        {
+            BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, y, sw, sh, 0xc0);
+        }
     }
 }
 
@@ -278,6 +511,8 @@ void DisposeImageContainer(struct NewImage *ni)
         {
             FreeVec(ni->data);
         }
+        if (ni->o) DisposeDTObject(ni->o);
+        if (ni->filename) FreeVec(ni->filename);
         FreeVec(ni);
     }
 }
@@ -332,7 +567,7 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
     return ni;
 }
 
-struct NewImage *GetImageFromFile(STRPTR name, BOOL fixmode)
+struct NewImage *GetImageFromFile(STRPTR path, STRPTR name, BOOL fixmode)
 {
     struct	BitMapHeader       *bmhd;
     struct	NewImage           *ni = NULL;
@@ -361,66 +596,85 @@ struct NewImage *GetImageFromFile(STRPTR name, BOOL fixmode)
                                TAG_DONE);
     if (pic)
     {
+
         get(pic, PDTA_BitMapHeader, &bmhd);
         if(bmhd)
         {
+
             w = bmhd->bmh_Width;
             h = bmhd->bmh_Height;
             mask = bmhd->bmh_Masking;
             ni = NewImageContainer(w, h);
             if (ni)
             {
-                pa.MethodID = PDTM_READPIXELARRAY;
-                pa.pbpa_PixelData = (APTR) ni->data;
-                pa.pbpa_PixelFormat = PBPAFMT_ARGB;
-                pa.pbpa_PixelArrayMod = w*4;
-                pa.pbpa_Left = 0;
-                pa.pbpa_Top = 0;
-                pa.pbpa_Width = w;
-                pa.pbpa_Height = h;
-                DoMethodA(pic, (Msg) &pa);
-                if (bmhd->bmh_Depth <= 8)
+                int len = strlen(path) + strlen(Buffer) +2;
+                ni->filename = AllocVec(len, MEMF_CLEAR | MEMF_ANY);
+                if (ni->filename != NULL)
                 {
-                    get(pic, PDTA_BitMap, &map);
-                    if (map && (mask == mskHasTransparentColor))
+                    strncpy(ni->filename, path, len);
+                    AddPart(ni->filename, Buffer, len);
+
+                    pa.MethodID = PDTM_READPIXELARRAY;
+                    pa.pbpa_PixelData = (APTR) ni->data;
+                    pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+                    pa.pbpa_PixelArrayMod = w*4;
+                    pa.pbpa_Left = 0;
+                    pa.pbpa_Top = 0;
+                    pa.pbpa_Width = w;
+                    pa.pbpa_Height = h;
+                    DoMethodA(pic, (Msg) &pa);
+                    ni->ok = TRUE;
+                    if (bmhd->bmh_Depth <= 8)
                     {
-                        rp = CreateRastPort();
-                        if (rp) rp->BitMap = map;
-                        tc = bmhd->bmh_Transparent;
-                    }
-                }
-                if (rp)
-                {
-                    dst = ni->data;
-                    for (y = 0; y < h; y++)
-                    {
-                        for (x = 0; x < w; x++)
+                        get(pic, PDTA_BitMap, &map);
+                        if (map && (mask == mskHasTransparentColor))
                         {
-#if !AROS_BIG_ENDIAN
-                           if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0xffffff00; else dst[x+y*w] |= 0x000000ff;
-#else
-                           if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0x00ffffff; else dst[x+y*w] |= 0xff000000;
-#endif
+                            rp = CreateRastPort();
+                            if (rp) rp->BitMap = map;
+                            tc = bmhd->bmh_Transparent;
                         }
                     }
-                    FreeRastPort(rp);
-                }
-                else
-                {
 
-                    if (mask != mskHasAlpha)
+                    if (rp)
                     {
-#if !AROS_BIG_ENDIAN
-                        for (a= 0; a < (w*h); a++) ni->data[a] |= 0x000000ff;
-#else
-                        for (a= 0; a < (w*h); a++) ni->data[a] |= 0xff000000;
-#endif
+                        dst = ni->data;
+                        for (y = 0; y < h; y++)
+                        {
+                            for (x = 0; x < w; x++)
+                            {
+    #if !AROS_BIG_ENDIAN
+                            if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0xffffff00; else dst[x+y*w] |= 0x000000ff;
+    #else
+                            if (ReadPixel(rp, x, y) == 0) dst[x+y*w] &= 0x00ffffff; else dst[x+y*w] |= 0xff000000;
+    #endif
+                            }
+                        }
+                        FreeRastPort(rp);
                     }
+                    else
+                    {
+    
+                        if (mask != mskHasAlpha)
+                        {
+    #if !AROS_BIG_ENDIAN
+                            for (a= 0; a < (w*h); a++) ni->data[a] |= 0x000000ff;
+    #else
+                            for (a= 0; a < (w*h); a++) ni->data[a] |= 0xff000000;
+    #endif
+                        }
+                    }
+                }
+                else 
+                {
+                    DisposeImageContainer(ni);
+                    ni = NULL;
                 }
             }
         }
+
         DisposeDTObject(pic);
     }
+
     return ni;
 }
 
@@ -447,7 +701,7 @@ void PutImageToRP(struct RastPort *rp, struct NewImage *ni, UWORD x, UWORD y) {
 
 /* the following code is taken from zune sources and modified */
 
-void FillPixelArrayGradientDelta(struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG start_rgb, ULONG end_rgb, int angle, int dx, int dy)
+void FillPixelArrayGradientDelta(LONG pen, BOOL tc, struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG start_rgb, ULONG end_rgb, int angle, int dx, int dy)
 {
     
     /* The basic idea of this algorithm is to calc the intersection between the
@@ -482,6 +736,13 @@ void FillPixelArrayGradientDelta(struct RastPort *rp, int xt, int yt, int xb, in
     int height = yb - yt + 1;
     
     if ((w <= 0) || (h <= 0)) return;
+    if (!tc)
+    {
+        if (pen != -1) SetAPen(rp, pen); else SetAPen(rp, 2);
+        RectFill(rp, xp, yp, xp + w - 1, yp + h - 1);
+        return;
+    }
+
     UBYTE *buf = AllocVec(w*h*3, 0);
     if (buf == NULL) return;
     startRGB.red = (start_rgb >> 16) & 0xff;
@@ -605,9 +866,9 @@ void FillPixelArrayGradientDelta(struct RastPort *rp, int xt, int yt, int xb, in
     FreeVec(buf);
 }
 
-void FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG start_rgb, ULONG end_rgb, int angle)
+void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG start_rgb, ULONG end_rgb, int angle)
 {
-    FillPixelArrayGradientDelta(rp, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle, xp, yp);
+    FillPixelArrayGradientDelta(pen, tc, rp, xt, yt, xb, yb, xp, yp, w, h, start_rgb, end_rgb, angle, xp, yp);
 }
 
 
@@ -655,6 +916,44 @@ void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWO
     }
 }
 
+void DrawMapTileToRP(struct NewImage *src, struct RastPort *rp, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
+{
+
+    ULONG   dy, dx;
+    LONG    dh, height, dw, width;
+
+    if (src == NULL) return;
+    if (rp == NULL) return;
+
+    dh = _sh;
+    dy = _dy;
+    height = _dh;
+
+    if (!src->ok) return;
+
+    while (height > 0)
+    {
+        if ((height-dh)<0) dh = height;
+        height -= dh;
+        dw = _sw;
+        width = _dw;
+        dx = _dx;
+        while (width > 0)
+        {
+            if ((width-dw)<0) dw = width;
+            width -= dw;
+
+            if (src->mask)
+            {
+                BltMaskBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xe0, (PLANEPTR) src->mask);  
+            }
+            else BltBitMapRastPort(src->bitmap, _sx, _sy, rp, dx, dy, dw, dh, 0xc0);
+
+            dx += dw;
+        }
+        dy += dh;
+    }
+}
 /**************************************************************************************************/
 
 char *SkipChars(char *v)
@@ -744,7 +1043,8 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
          data = INST_DATA(cl, obj);
 
          STRPTR path = (STRPTR) GetTagData(WDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
-        
+         data->sd = (struct scrdecor_data *) GetTagData(WDA_ScreenData, NULL, msg->ops_AttrList);
+
          if (!InitWindowSkinning(path, data))
          {
              CoerceMethod(cl,obj,OM_DISPOSE);
@@ -798,14 +1098,12 @@ IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
     BOOL                    isset = FALSE;
     BOOL                    titlegadget = FALSE;
 
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
-
     switch(msg->wdp_Which)
     {
         case SIZEIMAGE:
-            if (data->img_size)
+            if (wd->img_size->ok)
             {
-                ni = data->img_size;
+                ni = wd->img_size;
                 isset = TRUE;
                 if (data->threestate) addx = (data->rightbordergads - (data->img_size->w / 3)) /2; else addx = (data->rightbordergads - (data->img_size->w >> 2)) /2;
                 addy = (data->bottombordergads - data->img_size->h) / 2;
@@ -813,64 +1111,64 @@ IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
             break;
 
         case CLOSEIMAGE:
-            if (data->img_close)
+            if (wd->img_close->ok)
             {
-                ni = data->img_close;
+                ni = wd->img_close;
                 isset = TRUE;
                 titlegadget = TRUE;
             }
             break;
 
         case MUIIMAGE:
-            if (data->img_mui)
+            if (wd->img_mui->ok)
             {
-                ni = data->img_mui;
+                ni = wd->img_mui;
                 isset = TRUE;
                 titlegadget = TRUE;
             }
             break;
 
         case DEPTHIMAGE:
-            if (data->img_depth)
+            if (wd->img_depth->ok)
             {
-                ni = data->img_depth;
+                ni = wd->img_depth;
                 isset = TRUE;
                 titlegadget = TRUE;
             }
             break;
 
         case ZOOMIMAGE:
-            if (data->img_zoom)
+            if (wd->img_zoom->ok)
             {
-                ni = data->img_zoom;
+                ni = wd->img_zoom;
                 isset = TRUE;
                 titlegadget = TRUE;
             }
             break;
 
         case UPIMAGE:
-            ni = data->img_up;
+            ni = wd->img_up;
             if (data->threestate) addx = (data->rightbordergads - (data->img_up->w / 3)) /2; else addx = (data->rightbordergads - (data->img_up->w >> 2)) /2;
             addy = data->updownaddy / 2;
             isset = TRUE;
             break;
 
         case DOWNIMAGE:
-            ni = data->img_down;
+            ni = wd->img_down;
             if (data->threestate) addx = (data->rightbordergads - (data->img_down->w / 3)) /2; else addx = (data->rightbordergads - (data->img_down->w >> 2)) /2;
             addy = data->updownaddy / 2;
             isset = TRUE;
             break;
 
         case LEFTIMAGE:
-            ni = data->img_left;
+            ni = wd->img_left;
             addx = data->leftrightaddx / 2;
             addy = (data->bottombordergads - data->img_left->h) / 2;
             isset = TRUE;
             break;
 
         case RIGHTIMAGE:
-            ni = data->img_right;
+            ni = wd->img_right;
             addx = data->leftrightaddx / 2;
             addy = (data->bottombordergads - data->img_right->h) /2;
             isset = TRUE;
@@ -962,7 +1260,7 @@ void getleftgadgetsdimensions(struct windecor_data *data, struct Window *win, in
 
 /**************************************************************************************************/
 
-void ShadeLine(struct windecor_data *d, struct RastPort *rp, struct NewImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
+void ShadeLine(LONG pen, BOOL tc, struct windecor_data *d, struct RastPort *rp, struct NewImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1)
 {
     int px, py, x, y;
     ULONG   c;
@@ -970,6 +1268,13 @@ void ShadeLine(struct windecor_data *d, struct RastPort *rp, struct NewImage *ni
     UWORD   offy = 0;
 
     if ((x1 < x0) || (y1 < y0)) return;
+    if (!tc)
+    {
+        SetAPen(rp, pen);
+        Move(rp, x0, y0);
+        Draw(rp, x1, y1);
+        return;
+    }
     if (d->usegradients)
     {
         c = basecolor;
@@ -994,7 +1299,7 @@ void ShadeLine(struct windecor_data *d, struct RastPort *rp, struct NewImage *ni
         Move(rp, x0, y0);
         Draw(rp, x1, y1);
     }
-    else if (ni)
+    else if (ni->ok)
     {
         if (x0 == x1)
         {
@@ -1061,6 +1366,8 @@ int WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni
     int     x = xp;
     int     ddw;
 
+    if (!ni->ok) return xp;
+
     if ((sw == 0) || (dw == 0)) return xp;
     if (win)
     {
@@ -1072,8 +1379,18 @@ int WriteTiledImage(struct Window *win, struct RastPort *rp, struct NewImage *ni
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        
-        WritePixelArrayAlpha(ni->data, sx , sy, ni->w*4, rp, x, yp, ddw, dh, 0xffffffff);
+        if (ni->bitmap == NULL)
+        {
+            WritePixelArrayAlpha(ni->data, sx , sy, ni->w*4, rp, x, yp, ddw, dh, 0xffffffff);
+        }
+        else
+        {
+            if (ni->mask)
+            {
+                BltMaskBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xe0, (PLANEPTR) ni->mask);  
+            }
+            else BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
+        }
         w -= ddw;
         x += ddw;
     }
@@ -1086,6 +1403,8 @@ int WriteTiledImageNoAlpha(struct Window *win, struct RastPort *rp, struct NewIm
     int     x = xp;
     int     ddw;
 
+    if (!ni->ok) return x;
+
     if ((sw == 0) || (dw == 0)) return xp;
 
     if (win)
@@ -1098,8 +1417,14 @@ int WriteTiledImageNoAlpha(struct Window *win, struct RastPort *rp, struct NewIm
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        
-        WritePixelArray(ni->data, sx , sy, ni->w*4, rp, x, yp, ddw, dh, RECTFMT_ARGB);
+        if (ni->bitmap == NULL)
+        {
+            WritePixelArray(ni->data, sx , sy, ni->w*4, rp, x, yp, ddw, dh, RECTFMT_ARGB);
+        }
+        else
+        {
+            BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
+        }
         w -= ddw;
         x += ddw;
     }
@@ -1130,6 +1455,8 @@ int WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, str
     int     x = xp;
     int     ddw;
 
+    if (!ni->ok) return x;
+
     if (!fill) return WriteTiledImageNoAlpha(win, rp, ni, sx, sy, sw, sh, xp, yp, dw, dh);
 
     if ((sw == 0) || (dw == 0)) return xp;
@@ -1144,8 +1471,27 @@ int WriteTiledImageTitle(BOOL fill, struct Window *win, struct RastPort *rp, str
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        if (fill) WritePixelArrayAlpha(ni->data, sx, sy, ni->w*4, rp, x, yp, ddw, dh, 0xffffffff); //RECTFMT_ARGB);
-        else WritePixelArray(ni->data, sx, sy, ni->w*4, rp, x, yp, ddw, dh, RECTFMT_ARGB);
+        if (ni->bitmap == NULL)
+        {
+            if (fill) WritePixelArrayAlpha(ni->data, sx, sy, ni->w*4, rp, x, yp, ddw, dh, 0xffffffff); //RECTFMT_ARGB);
+            else WritePixelArray(ni->data, sx, sy, ni->w*4, rp, x, yp, ddw, dh, RECTFMT_ARGB);
+
+        }
+        else
+        {
+            if (fill)
+            {
+                if (ni->mask)
+                {
+                    BltMaskBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xe0, (PLANEPTR) ni->mask);  
+                }
+                else BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
+            }
+            else
+            {
+                BltBitMapRastPort(ni->bitmap, sx, sy, rp, x, yp, ddw, dh, 0xc0);
+            }
+        }
         w -= ddw;
         x += ddw;
     }
@@ -1157,6 +1503,8 @@ int WriteTiledImageShape(BOOL fill, struct Window *win, struct NewLUT8Image *lut
     int     w = dw;
     int     x = xp;
     int     ddw;
+
+    if (!ni->ok) return xp;
 
     if ((sw == 0) || (dw == 0)) return xp;
 
@@ -1188,13 +1536,26 @@ int WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, int sx, in
     int     y = yp;
     int     ddh;
 
+    if (!ni->ok) return y;
+
     if ((sh == 0) || (dh == 0)) return yp;
 
     while (h > 0)
     {
         ddh = sh;
         if (h < ddh) ddh = h;
-        WritePixelArrayAlpha(ni->data, sx , sy, ni->w*4, rp, xp, y, dw, ddh, 0xffffffff);
+        if (ni->bitmap == NULL)
+        {
+            WritePixelArrayAlpha(ni->data, sx , sy, ni->w*4, rp, xp, y, dw, ddh, 0xffffffff);
+        }
+        else
+        {
+            if (ni->mask)
+            {
+                BltMaskBitMapRastPort(ni->bitmap, sx, sy, rp, xp, y, dw, ddh, 0xe0, (PLANEPTR) ni->mask);  
+            }
+            else BltBitMapRastPort(ni->bitmap, sx, sy, rp, xp, y, dw, ddh, 0xc0);
+        }
         h -= ddh;
         y += ddh;
     }
@@ -1207,17 +1568,22 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     struct RastPort        *rp = msg->wdp_RPort;
     struct Window          *window = msg->wdp_Window;
     struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
-    struct NewImage        *ni;
+    struct NewImage        *ni = NULL;
     UWORD                  *pens = msg->wdp_Dri->dri_Pens;
     ULONG                   bc, color, s_col, e_col, arc;
     UWORD                   bl, bt, br, bb, ww, wh;
+    LONG    pen = -1;
     int                     dy;
-    
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
 
-    ni = data->img_border_normal;
+    if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
     if (ni == NULL) data->usegradients = TRUE;
+
+    BOOL    tc = wd->truecolor;
+
+    LONG    dpen = pens[SHADOWPEN];
+    LONG    lpen = pens[SHINEPEN];
+    LONG    mpen = pens[SHINEPEN];
 
     bl = window->BorderLeft;
     bt = window->BorderTop;
@@ -1226,16 +1592,19 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     ww = window->Width;
     wh = window->Height;
 
+    kprintf("border left         %d\n", bl);
     color = 0x00cccccc;
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
     {
+        pen = wd->ActivePen;
         s_col = data->a_col_s;
         e_col = data->a_col_e;
         arc = data->a_arc;
         dy = 0;
         bc = data->b_col_a;
     } else {
+        pen = wd->DeactivePen;
         s_col = data->d_col_s;
         e_col = data->d_col_e;
         arc = data->d_arc;
@@ -1243,13 +1612,13 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
         bc = data->b_col_d;
         if (!data->usegradients)
         {
-            if (data->img_border_deactivated) ni = data->img_border_deactivated;
+            if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
         }
     }
 
 //     if (data->filltitlebar)
 //     {
-//         if (data->usegradients) FillPixelArrayGradient(rp, 0, 0, window->Width, window->Height, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc);
+//         if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width, window->Height, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc);
 //         else DrawTileToRP(rp, ni, color, 0, 0, 0, 0, window->Width, window->BorderTop);
 //     }
 
@@ -1258,17 +1627,17 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     {
         if (window->BorderLeft > 2)
         {
-            if (data->usegradients) FillPixelArrayGradient(rp, 0, 0, window->Width-1, window->Height-1, 0, window->BorderTop, window->BorderLeft, window->Height - window->BorderTop, s_col, e_col, arc);
+            if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, window->BorderTop, window->BorderLeft, window->Height - window->BorderTop, s_col, e_col, arc);
             else DrawTileToRP(rp, ni, color, 0, 0, 0, window->BorderTop, window->BorderLeft - 1, window->Height - window->BorderTop);
         }
         if (window->BorderRight > 2)
         {
-            if (data->usegradients) FillPixelArrayGradient(rp, 0, 0, window->Width-1, window->Height-1, window->Width - window->BorderRight , window->BorderTop, window->BorderRight, window->Height - window->BorderTop, s_col, e_col, arc);
+            if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, window->Width - window->BorderRight , window->BorderTop, window->BorderRight, window->Height - window->BorderTop, s_col, e_col, arc);
             else DrawTileToRP(rp, ni, color, 0, 0, window->Width - window->BorderRight , window->BorderTop, window->BorderRight, window->Height - window->BorderTop);
         }
         if (window->BorderBottom > 2)
         {
-            if (data->usegradients) FillPixelArrayGradient(rp, 0, 0, window->Width-1, window->Height-1, 0, window->Height - window->BorderBottom , window->Width, window->BorderBottom, s_col, e_col, arc);
+            if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, window->Height - window->BorderBottom , window->Width, window->BorderBottom, s_col, e_col, arc);
             else DrawTileToRP(rp, ni, color, 0, 0, 0, window->Height - window->BorderBottom , window->Width, window->BorderBottom);
         }
 
@@ -1279,33 +1648,33 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
             if (bt > 1) bq = bt - 1;
             if (window->BorderTop > 2)
             {
-                if (data->usegradients) FillPixelArrayGradient(rp, 0, 0, window->Width-1, window->Height-1, 0, 0 , window->Width - 1, window->BorderTop - 1, s_col, e_col, arc);
+                if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1, 0, 0 , window->Width - 1, window->BorderTop - 1, s_col, e_col, arc);
                 else DrawTileToRP(rp, ni, color, 0, 0, 0, 0 , window->Width, window->BorderTop);
             }
-            if (bt > 0) ShadeLine(data, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
-            if (bq > 0) ShadeLine(data, rp, ni, bc, data->dark, bq, 0, bq, ww - 1, bq);
-            if (bt > 1) ShadeLine(data, rp, ni, bc, data->light, 1, 1, 1, ww - 2, 1);
+            if (bt > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, 0, 0, 0, ww - 1, 0);
+            if (bq > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bq, 0, bq, ww - 1, bq);
+            if (bt > 1) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, 1, 1, 1, ww - 2, 1);
             bbt = 0;
         }
 
-        if (bl > 0) ShadeLine(data, rp, ni, bc, data->dark, bbt, 0, bbt, 0, wh - 1);
-        if (bb > 0) ShadeLine(data, rp, ni, bc, data->dark, wh - 1, 0, wh - 1, ww - 1, wh - 1);
-        if (br > 0) ShadeLine(data, rp, ni, bc, data->dark, bbt , ww - 1, bbt , ww - 1, wh - 1);
-        if (bl > 1) ShadeLine(data, rp, ni, bc, data->dark, bbt, bl - 1, bbt, bl - 1, wh - bb);
-        if (bb > 1) ShadeLine(data, rp, ni, bc, data->dark, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
-        if (br > 1) ShadeLine(data, rp, ni, bc, data->dark, bbt , ww - br, bbt , ww - br, wh - bb);
-        if (bl > 2) ShadeLine(data, rp, ni, bc, data->light, bbt, 1, bbt, 1, wh - 2);
+        if (bl > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt, 0, bbt, 0, wh - 1);
+        if (bb > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, wh - 1, 0, wh - 1, ww - 1, wh - 1);
+        if (br > 0) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt , ww - 1, bbt , ww - 1, wh - 1);
+        if (bl > 1) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt, bl - 1, bbt, bl - 1, wh - bb);
+        if (bb > 1) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, wh - bb, bl - 1, wh - bb, ww - br, wh - bb);
+        if (br > 1) ShadeLine(dpen, tc, data, rp, ni, bc, data->dark, bbt , ww - br, bbt , ww - br, wh - bb);
+        if (bl > 2) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, bbt, 1, bbt, 1, wh - 2);
         if (bl > 3) {
-            if (bb > 1) ShadeLine(data, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
-            else ShadeLine(data, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb);
+            if (bb > 1) ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb + 1);
+            else ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, bbt, bl - 2, bbt, bl - 2, wh - bb);
         }
-        if (br > 2) ShadeLine(data, rp, ni, bc, data->middle, bbt, ww - 2, bbt, ww - 2, wh - 2);
-        if (bb > 2) ShadeLine(data, rp, ni, bc, data->middle, wh - 2, 1, wh - 2, ww - 2, wh - 2);
+        if (br > 2) ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, bbt, ww - 2, bbt, ww - 2, wh - 2);
+        if (bb > 2) ShadeLine(mpen, tc, data, rp, ni, bc, data->middle, wh - 2, 1, wh - 2, ww - 2, wh - 2);
         if (bb > 3) {
-            if ((bl > 0) && (br > 0)) ShadeLine(data, rp, ni, bc, data->light, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
+            if ((bl > 0) && (br > 0)) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, wh - bb + 1, bl, wh - bb + 1, ww - br, wh - bb + 1);
         }
         if (br > 3) {
-            if (bb > 1) ShadeLine(data, rp, ni, bc, data->light, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
+            if (bb > 1) ShadeLine(lpen, tc, data, rp, ni, bc, data->light, bbt, ww - br + 1, bbt, ww - br + 1, wh - bb + 1);
         }
     }
     return TRUE;
@@ -1345,8 +1714,14 @@ void DrawTileToRP(struct RastPort *rp, struct NewImage *ni, ULONG color, UWORD o
         {
             if ((width-dw)<0) dw = width;
             width -= dw;
-
-            WritePixelArray(ni->data, sx, sy, ni->w*4, rp, dx, dy, dw, dh, RECTFMT_ARGB);
+            if (ni->bitmap == NULL)
+            {
+                WritePixelArray(ni->data, sx, sy, ni->w*4, rp, dx, dy, dw, dh, RECTFMT_ARGB);
+            }
+            else
+            {
+                BltBitMapRastPort(ni->bitmap, sx, sy, rp, dx, dy, dw, dh, 0xc0);
+            }
             dx += dw;
             sx = 0;
             dw = ow;
@@ -1363,9 +1738,11 @@ void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWO
     ULONG   ow, oh, sy, sx, dy, dx, _dy, _dx;
     LONG    dh, height, dw, width;
 
+    if (!ni->ok) return;
+
     if ((w <= 0) || (h <= 0)) return;
 
-    if (ni == NULL)
+    if (!ni->ok)
     {
         FillPixelArray(rp, x, y, w, h, color);
         return;
@@ -1394,8 +1771,14 @@ void DrawTileToRPRoot(struct RastPort *rp, struct NewImage *ni, ULONG color, UWO
         {
             if ((width-dw)<0) dw = width;
             width -= dw;
-
-            WritePixelArray(ni->data, sx, sy, ni->w*4, rp, _dx, _dy, dw, dh, RECTFMT_ARGB);
+            if (ni->bitmap == NULL)
+            {
+                WritePixelArray(ni->data, sx, sy, ni->w*4, rp, _dx, _dy, dw, dh, RECTFMT_ARGB);
+            }
+            else
+            {
+                BltBitMapRastPort(ni->bitmap, sx, sy, rp, _dx, _dy, dw, dh, 0xc0);
+            }
             dx += dw;
             _dx += dw;
             sx = 0;
@@ -1702,6 +2085,41 @@ void TileImageToImage(struct NewImage *src, struct NewImage *dest)
     DrawTileToImage(src, dest, src->tile_left, y + src->tile_top, src->w - src->tile_left - src->tile_right, h - src->tile_bottom - src->tile_top, src->tile_left, src->tile_top + 0, dest->w - src->tile_left - src->tile_right, dest->h - src->tile_top - src->tile_bottom - 0);
 }
 
+void TileMapToBitmap(struct NewImage *src, struct BitMap *map, UWORD dw, UWORD dh)
+{
+    UWORD   y, h;
+
+    if (map == NULL) return;
+    if (src == NULL) return;
+    y = 0;
+
+    h = src->h;
+
+    if (src->istiled == FALSE) return;
+
+    if ((src->tile_top + src->tile_bottom) > dh) return;
+    if ((src->tile_left + src->tile_right) > dw) return;
+
+    struct RastPort *dest = CreateRastPort();
+
+    if (dest != NULL)
+    {
+        dest->BitMap = map;
+
+        DrawMapTileToRP(src, dest, 0, y, src->tile_left, src->tile_top, 0 , 0, src->tile_left, src->tile_top);
+        DrawMapTileToRP(src, dest, 0, y + h - src->tile_bottom, src->tile_left, src->tile_bottom, 0 , dh - src->tile_bottom, src->tile_left, src->tile_bottom);
+        DrawMapTileToRP(src, dest, src->w - src->tile_right, y, src->tile_right, src->tile_top, dw - src->tile_right, 0, src->tile_right, src->tile_top);
+        DrawMapTileToRP(src, dest, src->w - src->tile_right, y + h - src->tile_bottom, src->tile_right, src->tile_bottom, dw - src->tile_right , dh - src->tile_bottom, src->tile_right, src->tile_bottom);
+
+        DrawMapTileToRP(src, dest, src->tile_left, y, src->w - src->tile_left - src->tile_right, src->tile_top, src->tile_left, 0, dw - src->tile_left - src->tile_right, src->tile_top);
+        DrawMapTileToRP(src, dest, src->tile_left, y + h - src->tile_bottom, src->w - src->tile_left - src->tile_right, src->tile_bottom, src->tile_left, dh - src->tile_bottom, dw - src->tile_left - src->tile_right, src->tile_bottom);
+        DrawMapTileToRP(src, dest, 0, y + src->tile_top, src->tile_left, h - src->tile_bottom - src->tile_top, 0 , src->tile_top + 0, src->tile_left, dh - src->tile_top - src->tile_bottom - 0);
+        DrawMapTileToRP(src, dest, src->w - src->tile_right, y + src->tile_top, src->tile_right,  h - src->tile_bottom - src->tile_top, dw - src->tile_right, src->tile_top + 0, src->tile_right, dh - src->tile_top - src->tile_bottom - 0);
+        DrawMapTileToRP(src, dest, src->tile_left, y + src->tile_top, src->w - src->tile_left - src->tile_right, h - src->tile_bottom - src->tile_top, src->tile_left, src->tile_top + 0, dw - src->tile_left - src->tile_right, dh - src->tile_top - src->tile_bottom - 0);
+        FreeRastPort(dest);
+    }
+}
+
 void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture, UWORD ratio)
 {
     struct NewImage *ni;
@@ -1742,7 +2160,7 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
     struct TextExtent   te;
     struct RastPort    *rp;
-    struct NewImage    *ni;
+    struct NewImage    *ni = NULL;
 
     BOOL                hasdepth;
     BOOL                haszoom;
@@ -1753,6 +2171,8 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
     UWORD               textstart = 0, barh, x;
     ULONG                   bc, color, s_col, e_col, arc;
     int                     dy;
+
+    LONG    pen = -1;
 
     if ((wd->rp == NULL) || (window->Width != wd->w) || (window->BorderTop != wd->h))
     {
@@ -1792,7 +2212,7 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
     haszoom = ((window->Flags & WFLG_HASZOOM) || ((window->Flags & WFLG_SIZEGADGET) && hasdepth)) ? TRUE : FALSE;
     hastitlebar = (window->BorderTop == data->winbarheight) ? TRUE : FALSE;
 
-    ni = data->img_border_normal;
+    if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
     if (ni == NULL) data->usegradients = TRUE;
 
@@ -1805,6 +2225,7 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
         arc = data->a_arc;
         dy = 0;
         bc = data->b_col_a;
+        pen = wd->ActivePen;
     } else {
         s_col = data->d_col_s;
         e_col = data->d_col_e;
@@ -1813,14 +2234,15 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
         bc = data->b_col_d;
         if (!data->usegradients)
         {
-            if (data->img_border_deactivated) ni = data->img_border_deactivated;
+            if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
         }
+        pen = wd->DeactivePen;
     }
 
 
     if (data->filltitlebar)
     {
-        if (data->usegradients) FillPixelArrayGradient(rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc);
+        if (data->usegradients) FillPixelArrayGradient(pen, wd->truecolor, rp, 0, 0, window->Width - 1, window->Height - 1, 0, 0, window->Width, window->BorderTop, s_col, e_col, arc);
         else DrawTileToRP(rp, ni, color, 0, 0, 0, 0, window->Width, window->BorderTop);
     }
     
@@ -1862,7 +2284,7 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
         }
     }
 
-    if (data->img_winbar_normal && hastitlebar)
+    if (wd->img_winbar_normal->ok && hastitlebar)
     {
         barh =  data->img_winbar_normal->h;
         if (data->barvert)
@@ -1872,21 +2294,21 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
         x = 0;
         if (xl0 != xl1)
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarPreGadget_o, dy, data->BarPreGadget_s, barh, x, 0, data->BarPreGadget_s, barh);
-            if ((xl1-xl0) > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarLGadgetFill_o, dy, data->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
+            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPreGadget_o, dy, data->BarPreGadget_s, barh, x, 0, data->BarPreGadget_s, barh);
+            if ((xl1-xl0) > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarLGadgetFill_o, dy, data->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
         }
         else
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarPre_o, dy, data->BarPre_s, barh, x, 0, data->BarPreGadget_s, barh);
+            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPre_o, dy, data->BarPre_s, barh, x, 0, data->BarPreGadget_s, barh);
         }
-        x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarJoinGB_o, dy, data->BarJoinGB_s, barh, x, 0, data->BarJoinGB_s, barh);
+        x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinGB_o, dy, data->BarJoinGB_s, barh, x, 0, data->BarJoinGB_s, barh);
         if (hastitle && (textlen > 0))
         {
             switch(align)
             {
                 case WD_DWTA_CENTER:
                     //BarLFill
-                    x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarLFill_o, dy, data->BarLFill_s, barh, x, 0, 60, barh);
+                    x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarLFill_o, dy, data->BarLFill_s, barh, x, 0, 60, barh);
                     break;
                 case WD_DWTA_RIGHT:
                     //BarLFill
@@ -1895,21 +2317,21 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
                 case WD_DWTA_LEFT:
                     break;
             }
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarJoinBT_o, dy, data->BarJoinBT_s, barh, x, 0, data->BarJoinBT_s, barh);
+            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinBT_o, dy, data->BarJoinBT_s, barh, x, 0, data->BarJoinBT_s, barh);
             textstart = x;
-            if (textpixellen > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarTitleFill_o, dy, data->BarTitleFill_s, barh, x, 0, textpixellen, barh);
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarJoinTB_o, dy, data->BarJoinTB_s, barh, x, 0, data->BarJoinTB_s, barh);
+            if (textpixellen > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarTitleFill_o, dy, data->BarTitleFill_s, barh, x, 0, textpixellen, barh);
+            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinTB_o, dy, data->BarJoinTB_s, barh, x, 0, data->BarJoinTB_s, barh);
         }
-        x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarRFill_o, dy, data->BarRFill_s, barh, x, 0, xr0 - x - data->BarJoinBG_s, barh);
-        x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarJoinBG_o, dy, data->BarJoinBG_s, barh, x, 0, data->BarJoinBG_s, barh);
-        if ((xr1-xr0) > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarRGadgetFill_o, dy, data->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
+        x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarRFill_o, dy, data->BarRFill_s, barh, x, 0, xr0 - x - data->BarJoinBG_s, barh);
+        x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarJoinBG_o, dy, data->BarJoinBG_s, barh, x, 0, data->BarJoinBG_s, barh);
+        if ((xr1-xr0) > 0) x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarRGadgetFill_o, dy, data->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
         if (xr0 != xr1)
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarPostGadget_o, dy, data->BarPostGadget_s, barh, x, 0, data->BarPostGadget_s, barh);
+            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPostGadget_o, dy, data->BarPostGadget_s, barh, x, 0, data->BarPostGadget_s, barh);
         }
         else
         {
-            x = WriteTiledImageTitle(data->filltitlebar, window, rp, data->img_winbar_normal, data->BarPost_o, dy, data->BarPost_s, barh, x, 0, data->BarPost_s, barh);
+            x = WriteTiledImageTitle(data->filltitlebar, window, rp, wd->img_winbar_normal, data->BarPost_o, dy, data->BarPost_s, barh, x, 0, data->BarPost_s, barh);
         }
     }
 
@@ -1948,13 +2370,13 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
             switch(g->GadgetType & GTYP_SYSTYPEMASK)
             {
                 case GTYP_CLOSE:
-                    ni = data->img_close;
+                    ni = wd->img_close;
                     break;
                 case GTYP_WDEPTH:
-                    ni = data->img_depth;
+                    ni = wd->img_depth;
                     break;
                 case GTYP_WZOOM:
-                    ni = data->img_zoom;
+                    ni = wd->img_zoom;
                     break;
             }
 
@@ -1987,8 +2409,6 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
     LONG                    rightborder = 0;
     LONG                    bottomborder = 0;
 
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
-
     DoSuperMethodA(cl, obj, (Msg)msg);
 
     hastitle = window->Title != NULL ? TRUE : FALSE;
@@ -1999,6 +2419,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
     borderless = (window->Flags & WFLG_BORDERLESS) ? TRUE : FALSE;
     haszoom = ((window->Flags & WFLG_HASZOOM) || ((window->Flags & WFLG_SIZEGADGET) && hasdepth)) ? TRUE : FALSE;
 
+
     if ((msg->wdp_Flags & WDF_LBG_SYSTEMGADGET) != 0)
     {
 
@@ -2007,7 +2428,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
             switch(gadget->GadgetID)
             {
                 case ETI_MUI:
-                    if (data->img_mui)
+                    if (wd->img_mui->ok)
                     {
                         if (data->threestate) width = (data->img_mui->w / 3); else width = (data->img_mui->w >> 2);
 
@@ -2234,17 +2655,18 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
     struct windecor_data   *data = INST_DATA(cl, obj);
     struct Window          *window = msg->wdp_Window;
     struct RastPort        *winrp = msg->wdp_RPort;
+    struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
+
     struct RastPort        *rp;
     struct Gadget          *gadget = msg->wdp_Gadget;
     struct Rectangle       *r;
     struct PropInfo        *pi = ((struct PropInfo *)gadget->SpecialInfo);
-    struct NewImage        *ni;
+    struct NewImage        *ni = NULL;
     BOOL                    hit = (msg->wdp_Flags & WDF_DBPK_HIT) ? TRUE : FALSE;
     ULONG                   y, x, bx0, bx1, by0, by1;
     int                     size, is, pos;
     ULONG                   bc, color, s_col, e_col, arc;
-
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
+    LONG    pen = -1;
 
     if (!(pi->Flags & PROPNEWLOOK) || (gadget->Activation && (GACT_RIGHTBORDER | GACT_BOTTOMBORDER) == 0))
     {
@@ -2272,7 +2694,7 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
 
     color = 0x00cccccc;
 
-    ni = data->img_border_normal;
+    if (wd->img_border_normal->ok) ni = wd->img_border_normal;
 
     if (ni == NULL) data->usegradients = TRUE;
 
@@ -2282,6 +2704,7 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
         e_col = data->a_col_e;
         arc = data->a_arc;
         bc = data->b_col_a;
+        pen = wd->ActivePen;
     }
     else
     {
@@ -2291,23 +2714,28 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
         bc = data->b_col_d;
         if (!data->usegradients)
         {
-            if (data->img_border_deactivated) ni = data->img_border_deactivated;
+            if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
         }
+        pen = wd->DeactivePen;
     }
 
     if (data->usegradients)
     {
-        FillPixelArrayGradientDelta(rp, 0, 0, window->Width-1, window->Height-1,  bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, 0, 0);
+
+        FillPixelArrayGradientDelta(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, 0, 0);
+
     }
     else
     {
 
-        if (ni != NULL)
+
+        if (ni->ok != NULL)
         {
             ULONG   color = 0x00cccccc;
 
             DrawTileToRPRoot(rp, ni, color, 0, 0, bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
+
     }
 
     r = msg->wdp_PropRect;
@@ -2319,23 +2747,27 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
 
     if ((pi->Flags & FREEVERT) != 0)
     {
+
         is = data->img_verticalcontainer->w >> 1;
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is;
         y = by0;
         size = by1 - by0 - data->ContainerTop_s - data->ContainerBottom_s + 1;
-        y = WriteTiledImageVertical(rp, data->img_verticalcontainer, pos, data->ContainerTop_o, is, data->ContainerTop_s, bx0, y, is, data->ContainerTop_s);
-        if (size > 0) y = WriteTiledImageVertical(rp, data->img_verticalcontainer, pos, data->ContainerVertTile_o, is, data->ContainerVertTile_s, bx0, y, is, size);
-        y = WriteTiledImageVertical(rp, data->img_verticalcontainer, pos, data->ContainerBottom_o, is, data->ContainerBottom_s, bx0, y, is, data->ContainerBottom_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, pos, data->ContainerTop_o, is, data->ContainerTop_s, bx0, y, is, data->ContainerTop_s);
+        if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, pos, data->ContainerVertTile_o, is, data->ContainerVertTile_s, bx0, y, is, size);
+
+        y = WriteTiledImageVertical(rp, wd->img_verticalcontainer, pos, data->ContainerBottom_o, is, data->ContainerBottom_s, bx0, y, is, data->ContainerBottom_s);
+
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
+
         is = data->img_horizontalcontainer->h >> 1;
         if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is;
         x = bx0;
         size = bx1 - bx0 - data->ContainerLeft_s - data->ContainerRight_s + 1;
-        x = WriteTiledImageHorizontal(rp, data->img_horizontalcontainer, data->ContainerLeft_o, pos, data->ContainerLeft_s, is, x, by0, data->ContainerLeft_s, is);
-        if (size > 0) x = WriteTiledImageHorizontal(rp, data->img_horizontalcontainer, data->ContainerHorTile_o, pos, data->ContainerHorTile_s, is, x, by0, size, is);
-        x = WriteTiledImageHorizontal(rp, data->img_horizontalcontainer, data->ContainerRight_o, pos, data->ContainerRight_s, is, x, by0, data->ContainerRight_s, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerLeft_o, pos, data->ContainerLeft_s, is, x, by0, data->ContainerLeft_s, is);
+        if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerHorTile_o, pos, data->ContainerHorTile_s, is, x, by0, size, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalcontainer, data->ContainerRight_o, pos, data->ContainerRight_s, is, x, by0, data->ContainerRight_s, is);
     }
 
     bx0 = msg->wdp_PropRect->MinX;
@@ -2350,7 +2782,8 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
         if (hit) pos = is; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is * 2;
         y = r->MinY - by0;
         size = r->MaxY - r->MinY - data->KnobTop_s - data->KnobBottom_s + 1;
-        y = WriteTiledImageVertical(rp, data->img_verticalknob, pos, data->KnobTop_o, is, data->KnobTop_s, r->MinX - bx0, y, is, data->KnobTop_s);
+
+        y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTop_o, is, data->KnobTop_s, r->MinX - bx0, y, is, data->KnobTop_s);
         if (size > 0)
         {
             if (size > data->KnobVertGripper_s)
@@ -2358,25 +2791,27 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
                 size = size - data->KnobVertGripper_s;
                 int size_bak = size;
                 size = size / 2;
-                if (size > 0) y = WriteTiledImageVertical(rp, data->img_verticalknob, pos, data->KnobTileTop_o, is, data->KnobTileTop_s, r->MinX - bx0, y, is, size);
-                y = WriteTiledImageVertical(rp, data->img_verticalknob, pos, data->KnobVertGripper_o, is, data->KnobVertGripper_s, r->MinX - bx0, y, is, data->KnobVertGripper_s);
+                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTileTop_o, is, data->KnobTileTop_s, r->MinX - bx0, y, is, size);
+                y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobVertGripper_o, is, data->KnobVertGripper_s, r->MinX - bx0, y, is, data->KnobVertGripper_s);
                 size = size_bak - size;
-                if (size > 0) y = WriteTiledImageVertical(rp, data->img_verticalknob, pos, data->KnobTileBottom_o, is, data->KnobTileBottom_s, r->MinX - bx0, y, is, size);
+                if (size > 0) y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTileBottom_o, is, data->KnobTileBottom_s, r->MinX - bx0, y, is, size);
             }
             else
             {
-                y = WriteTiledImageVertical(rp, data->img_verticalknob, pos, data->KnobTileTop_o, is, data->KnobTileTop_s, r->MinX - bx0, y, is, size);
+                y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobTileTop_o, is, data->KnobTileTop_s, r->MinX - bx0, y, is, size);
             }
         }
-        y = WriteTiledImageVertical(rp, data->img_verticalknob, pos, data->KnobBottom_o, is, data->KnobBottom_s, r->MinX - bx0, y, is, data->KnobBottom_s);
+        y = WriteTiledImageVertical(rp, wd->img_verticalknob, pos, data->KnobBottom_o, is, data->KnobBottom_s, r->MinX - bx0, y, is, data->KnobBottom_s);
     }
     else if ((pi->Flags & FREEHORIZ) != 0)
     {
+
         is = data->img_horizontalknob->h / 3;
         if (hit) pos = is; else if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) pos = 0; else pos = is * 2;
         x = r->MinX - bx0;
         size = r->MaxX - r->MinX - data->KnobLeft_s - data->KnobRight_s + 1;
-        x = WriteTiledImageHorizontal(rp, data->img_horizontalknob, data->KnobLeft_o, pos, data->KnobLeft_s, is, x, r->MinY - by0, data->KnobLeft_s, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobLeft_o, pos, data->KnobLeft_s, is, x, r->MinY - by0, data->KnobLeft_s, is);
+
         if (size > 0)
         {
             if (size > data->KnobHorGripper_s)
@@ -2384,17 +2819,17 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
                 size = size - data->KnobHorGripper_s;
                 int size_bak = size;
                 size = size / 2;
-                if (size > 0) x = WriteTiledImageHorizontal(rp, data->img_horizontalknob, data->KnobTileLeft_o, pos, data->KnobTileLeft_s, is, x, r->MinY - by0, size, is);
-                x = WriteTiledImageHorizontal(rp, data->img_horizontalknob, data->KnobHorGripper_o, pos, data->KnobHorGripper_s, is, x, r->MinY - by0, data->KnobHorGripper_s, is);
+                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobTileLeft_o, pos, data->KnobTileLeft_s, is, x, r->MinY - by0, size, is);
+                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobHorGripper_o, pos, data->KnobHorGripper_s, is, x, r->MinY - by0, data->KnobHorGripper_s, is);
                 size = size_bak - size;
-                if (size > 0) x = WriteTiledImageHorizontal(rp, data->img_horizontalknob, data->KnobTileRight_o, pos, data->KnobTileRight_s, is, x, r->MinY - by0, size, is);
+                if (size > 0) x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobTileRight_o, pos, data->KnobTileRight_s, is, x, r->MinY - by0, size, is);
             }
             else
             {
-                x = WriteTiledImageHorizontal(rp, data->img_horizontalknob, data->KnobTileRight_o, pos, data->KnobTileRight_s, is, x, r->MinY - by0, size, is);
+                x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobTileRight_o, pos, data->KnobTileRight_s, is, x, r->MinY - by0, size, is);
             }
         }
-        x = WriteTiledImageHorizontal(rp, data->img_horizontalknob, data->KnobRight_o, pos, data->KnobRight_s, is, x, r->MinY - by0, data->KnobRight_s, is);
+        x = WriteTiledImageHorizontal(rp, wd->img_horizontalknob, data->KnobRight_o, pos, data->KnobRight_s, is, x, r->MinY - by0, data->KnobRight_s, is);
     }
 
     BltBitMapRastPort(rp->BitMap, 0, 0, winrp, msg->wdp_PropRect->MinX, msg->wdp_PropRect->MinY, bx1 - bx0 + 1, by1 - by0 + 1, 0xc0);
@@ -2411,8 +2846,6 @@ IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSysImage *
     struct NewImage        *n = NULL;
     WORD                    w = 0, h = 0;
     BOOL                    isset = FALSE;
-
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
 
     switch(msg->wdp_Which)
     {
@@ -2554,7 +2987,7 @@ struct Region *RegionFromLUT8Image(int w, int h, struct NewLUT8Image *s)
 }
 
 
-void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8ImageContainer *shape, struct windecor_data *data, struct Window *window, UWORD align, UWORD start, UWORD width)
+void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image *shape, struct windecor_data *data, struct Window *window, UWORD align, UWORD start, UWORD width)
 {
     int                 xl0, xl1, xr0, xr1, defwidth;
     ULONG               textlen = 0, titlelen = 0, textpixellen = 0;
@@ -2598,7 +3031,7 @@ void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8ImageContaine
     defwidth += (xr0 != xr1) ? data->BarPostGadget_s : data->BarPost_s;
 
     if (defwidth >= window->Width) hastitle = FALSE;
-
+ 
     if (hastitle)
     {
         titlelen = strlen(window->Title);
@@ -2609,7 +3042,8 @@ void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8ImageContaine
         }
     }
 
-    if (data->img_winbar_normal && hastitlebar)
+ 
+    if (data->img_winbar_normal->ok && hastitlebar)
     {
         barh =  data->img_winbar_normal->h;
         if (data->barvert)
@@ -2671,7 +3105,6 @@ IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *msg)
     struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
     struct Window          *window = msg->wdp_Window;
 
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
     if (data->barmasking)
     {
         struct  NewLUT8ImageContainer *shape;
@@ -2750,7 +3183,33 @@ IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *msg)
 
 IPTR windecor_initwindow(Class *cl, Object *obj, struct wdpInitWindow *msg)
 {
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
+    struct WindowData *wd = msg->wdp_UserBuffer;
+    struct ScreenData *sd = msg->wdp_ScreenUserBuffer;
+    struct windecor_data   *data = INST_DATA(cl, obj);
+    struct Screen *screen = msg->wdp_Screen;
+
+    wd->truecolor = msg->wdp_TrueColor;
+
+    wd->ActivePen = sd->ActivePen;
+    wd->DeactivePen = sd->DeactivePen;
+
+    SETIMAGE_WIN(size);
+    SETIMAGE_WIN(close);
+    SETIMAGE_WIN(depth);
+    SETIMAGE_WIN(zoom);
+    SETIMAGE_WIN(up);
+    SETIMAGE_WIN(down);
+    SETIMAGE_WIN(left);
+    SETIMAGE_WIN(right);
+    SETIMAGE_WIN(mui);
+    SETIMAGE_WIN(winbar_normal);
+    SETIMAGE_WIN(border_normal);
+    SETIMAGE_WIN(border_deactivated);
+    SETIMAGE_WIN(verticalcontainer);
+    SETIMAGE_WIN(verticalknob);
+    SETIMAGE_WIN(horizontalcontainer);
+    SETIMAGE_WIN(horizontalknob);
+
     return TRUE;
 }
 
@@ -2759,7 +3218,6 @@ IPTR windecor_initwindow(Class *cl, Object *obj, struct wdpInitWindow *msg)
 IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *msg)
 {
     struct WindowData *wd = (struct WindowData *) msg->wdp_UserBuffer;
-    if (!msg->wdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (wd->rp)
     {
@@ -2828,6 +3286,8 @@ IPTR windecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
             retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
+
+
     return retval;
 }
 
@@ -2879,6 +3339,10 @@ static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
             *msg->opg_Storage = TRUE;
             break;
 
+        case SDA_ScreenData:
+            *msg->opg_Storage = (APTR) INST_DATA(cl, obj);
+            break;
+
         default:
             return DoSuperMethodA(cl, obj, (Msg)msg);
     }
@@ -2910,16 +3374,15 @@ static void scr_findtitlearea(struct Screen *scr, LONG *left, LONG *right)
 IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
     struct scrdecor_data   *data = INST_DATA(cl, obj);
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
     struct TextExtent       te;
     struct RastPort        *rp = msg->sdp_RPort;
     struct Screen          *scr = msg->sdp_Screen;
     LONG                    left, right, titlelen = 0;
     BOOL                    hastitle = TRUE;
 
-    if (!msg->sdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
-
-    if (data->img_stitlebar) WriteTiledImage(NULL, rp, data->img_stitlebar, 0, 0, data->img_stitlebar->w, data->img_stitlebar->h, 0, 0, scr->Width, data->img_stitlebar->h);
-    if (data->img_sbarlogo) WriteTiledImage(NULL, rp, data->img_sbarlogo, 0, 0, data->img_sbarlogo->w, data->img_sbarlogo->h, data->slogo_off, (scr->BarHeight + 1 - data->img_sbarlogo->h) / 2, data->img_sbarlogo->w, data->img_sbarlogo->h);
+    if (sd->img_stitlebar.ok) WriteTiledImage(NULL, rp, &sd->img_stitlebar, 0, 0, data->img_stitlebar->w, data->img_stitlebar->h, 0, 0, scr->Width, data->img_stitlebar->h);
+    if (sd->img_sbarlogo.ok) WriteTiledImage(NULL, rp, &sd->img_sbarlogo, 0, 0, data->img_sbarlogo->w, data->img_sbarlogo->h, data->slogo_off, (scr->BarHeight + 1 - data->img_sbarlogo->h) / 2, data->img_sbarlogo->w, data->img_sbarlogo->h);
     if (scr->Title == NULL) hastitle = FALSE;
 
     if (hastitle)
@@ -2944,8 +3407,6 @@ IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDefSizeSy
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
 
-    if (!msg->sdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
-
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
         if (data->img_sdepth)
@@ -2963,18 +3424,18 @@ IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDefSizeSy
 IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
     struct scrdecor_data   *data = INST_DATA(cl, obj);
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
+
     struct RastPort        *rp = msg->sdp_RPort;
     LONG                    left = msg->sdp_X;
     LONG                    top = msg->sdp_Y;
     LONG                    state = msg->sdp_State;
 
-    if (!msg->sdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
-
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
         if (data->img_sdepth)
         {
-            DrawAlphaStateImageToRP(NULL, rp, data->img_sdepth, state, left, top, TRUE);
+            DrawAlphaStateImageToRP(NULL, rp, &sd->img_sdepth, state, left, top, TRUE);
         }
         else return DoSuperMethodA(cl, obj, (Msg) msg);
     }
@@ -2986,9 +3447,9 @@ IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
 {
     struct Gadget          *gadget = msg->sdp_Gadgets;
-    struct scrdecor_data   *data = INST_DATA(cl, obj);
 
-    if (!msg->sdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
+    struct scrdecor_data   *data = INST_DATA(cl, obj);
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
 
     while(gadget)
     {
@@ -3015,11 +3476,16 @@ IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutScreenGad
     return TRUE;
 }
 
+
 IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct ScreenData *sd = msg->sdp_UserBuffer;
+    struct Screen *screen = msg->sdp_Screen;
 
-    if (!msg->sdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg)msg);
+    sd->truecolor = msg->sdp_TrueColor;
+
+    BOOL    truecolor = sd->truecolor;
 
     msg->sdp_WBorTop = data->winbarheight - 1 - msg->sdp_FontHeight;
     msg->sdp_BarHBorder = 1;
@@ -3027,6 +3493,73 @@ IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
     msg->sdp_WBorLeft = data->leftborder;
     msg->sdp_WBorRight = data->rightborder;
     msg->sdp_WBorBottom = data->bottomborder;
+
+    sd->ActivePen = -1;
+    sd->DeactivePen = -1;
+    if (!truecolor) {
+        sd->ActivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->lut_col_a << 8) & 0xff000000, (data->lut_col_a << 16) & 0xff000000, (data->lut_col_a << 24) & 0xff000000, PEN_EXCLUSIVE);
+        sd->DeactivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->lut_col_d << 8) & 0xff000000, (data->lut_col_d << 16) & 0xff000000, (data->lut_col_d << 24) & 0xff000000, PEN_EXCLUSIVE);
+    }
+
+    SETIMAGE_SCR(sdepth);
+    SETIMAGE_SCR(sbarlogo);
+    SETIMAGE_SCR(stitlebar);
+
+    SETIMAGE_SCR(size);
+    SETIMAGE_SCR(close);
+    SETIMAGE_SCR(depth);
+    SETIMAGE_SCR(zoom);
+    SETIMAGE_SCR(up);
+    SETIMAGE_SCR(down);
+    SETIMAGE_SCR(left);
+    SETIMAGE_SCR(right);
+    SETIMAGE_SCR(mui);
+    SETIMAGE_SCR(winbar_normal);
+    SETIMAGE_SCR(border_normal);
+    SETIMAGE_SCR(border_deactivated);
+    SETIMAGE_SCR(verticalcontainer);
+    SETIMAGE_SCR(verticalknob);
+    SETIMAGE_SCR(horizontalcontainer);
+    SETIMAGE_SCR(horizontalknob);
+
+    SETIMAGE_SCR(menu);
+    SETIMAGE_SCR(amigakey);
+    SETIMAGE_SCR(menucheck);
+    SETIMAGE_SCR(submenu);
+
+    return TRUE;
+}
+
+IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct ScreenData *sd = msg->sdp_UserBuffer;
+
+    DELIMAGE_SCR(sdepth);
+    DELIMAGE_SCR(sbarlogo);
+    DELIMAGE_SCR(stitlebar);
+
+    DELIMAGE_SCR(size);
+    DELIMAGE_SCR(close);
+    DELIMAGE_SCR(depth);
+    DELIMAGE_SCR(zoom);
+    DELIMAGE_SCR(up);
+    DELIMAGE_SCR(down);
+    DELIMAGE_SCR(left);
+    DELIMAGE_SCR(right);
+    DELIMAGE_SCR(mui);
+    DELIMAGE_SCR(winbar_normal);
+    DELIMAGE_SCR(border_normal);
+    DELIMAGE_SCR(border_deactivated);
+    DELIMAGE_SCR(verticalcontainer);
+    DELIMAGE_SCR(verticalknob);
+    DELIMAGE_SCR(horizontalcontainer);
+    DELIMAGE_SCR(horizontalknob);
+
+    DELIMAGE_SCR(menu);
+    DELIMAGE_SCR(amigakey);
+    DELIMAGE_SCR(menucheck);
+    DELIMAGE_SCR(submenu);
 
     return TRUE;
 }
@@ -3071,20 +3604,24 @@ IPTR scrdecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
             retval = scrdecor_initscreen(cl, obj, (struct sdpInitScreen *)msg);
             break;
 
+       case SDM_EXITSCREEN:
+            retval = scrdecor_exitscreen(cl, obj, (struct sdpExitScreen *)msg);
+            break;
+
         default:
             retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
+
     return retval;
 }
 
 IPTR menudecor_getdefsizes(Class *cl, Object *obj, struct mdpGetDefSizeSysImage *msg)
 {
     struct menudecor_data *data = INST_DATA(cl, obj);
+
     struct NewImage *n = NULL;
     BOOL  isset = FALSE;
-
-    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
 
     switch(msg->mdp_Which)
     {
@@ -3117,6 +3654,7 @@ IPTR menudecor_getdefsizes(Class *cl, Object *obj, struct mdpGetDefSizeSysImage 
 IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysImage *msg)
 {
     struct menudecor_data  *data = INST_DATA(cl, obj);
+    struct ScreenData        *md = (struct ScreenData *) msg->mdp_UserBuffer;
     struct RastPort        *rp = msg->mdp_RPort;
     struct NewImage        *ni = NULL;
     LONG                    state = msg->mdp_State;
@@ -3126,30 +3664,28 @@ IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysImage *msg
     WORD                    addy = 0;
     BOOL                    isset = FALSE;
     
-    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
-
     switch(msg->mdp_Which)
     {
         case AMIGAKEY:
-            if (data->img_amigakey)
+            if (md->img_amigakey.ok)
             {
-                ni = data->img_amigakey;
+                ni = &md->img_amigakey;
                 isset = TRUE;
             }
             break;
 
         case MENUCHECK:
-            if (data->img_amigakey)
+            if (md->img_amigakey.ok)
             {
-                ni = data->img_menucheck;
+                ni = &md->img_menucheck;
                 isset = TRUE;
             }
             break;
 
         case SUBMENUIMAGE:
-            if (data->img_submenu)
+            if (md->img_submenu.ok)
             {
-                ni = data->img_submenu;
+                ni = &md->img_submenu;
                 isset = TRUE;
             }
             break;
@@ -3174,24 +3710,37 @@ IPTR menudecor_renderbackground(Class *cl, Object *obj, struct mdpDrawBackground
     struct MenuData    *md = (struct MenuData *) msg->mdp_UserBuffer;
     UWORD               flags = msg->mdp_Flags;
 
-    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
+    if (!msg->mdp_TrueColor)
+    {   
 
-    if (md)
-    {
-        if ((flags & HIGHITEM) && md->ni)
+        if ((flags & HIGHITEM) && md->map)
         {
-            ni = NewImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
-            if (ni)
-            {
-                DrawPartToImage(md->ni, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
-                SetImageTint(ni, 60, 0x00888800);
-                PutImageToRP(rp, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop);
-            }
         }
         else
         {
-            if (md->ni) DrawPartImageToRP(rp, md->ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight);
+            if (md->map)
+            {
+                BltBitMapRastPort(md->map, msg->mdp_ItemLeft, msg->mdp_ItemTop, rp, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0xc0);
+                return TRUE;
+            }
         }
+        return FALSE;
+
+    }
+
+    if ((flags & HIGHITEM) && md->ni)
+    {
+        ni = NewImageContainer(msg->mdp_ItemWidth, msg->mdp_ItemHeight);
+        if (ni)
+        {
+            DrawPartToImage(md->ni, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
+            SetImageTint(ni, 60, 0x00888800);
+            PutImageToRP(rp, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop);
+        }
+    }
+    else
+    {
+        if (md->ni) DrawPartImageToRP(rp, md->ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight);
     }
 
     return TRUE;
@@ -3201,13 +3750,36 @@ IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
 {
     struct RastPort        *rp = msg->mdp_RPort;
     struct MenuData        *md = (struct MenuData *) msg->mdp_UserBuffer;
+    struct ScreenData      *sd = (struct ScreenData *) msg->mdp_ScreenUserBuffer;
 
     struct menudecor_data  *data = INST_DATA(cl, obj);
 
-    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
+    SETIMAGE_MEN(menu);
+    SETIMAGE_MEN(amigakey);
+    SETIMAGE_MEN(menucheck);
+    SETIMAGE_MEN(submenu);
 
-    md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
-    if (md->ni) RenderBackground(md->ni, data->img_menu, 20);
+    md->truecolor = msg->mdp_TrueColor;
+
+//    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (md->truecolor)
+    {
+        md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
+        if (md->ni) {
+            md->ni->ok = TRUE;
+            RenderBackground(md->ni, md->img_menu, 20);
+        }
+    }
+    else
+    {
+        md->map = AllocBitMap(msg->mdp_Width, msg->mdp_Height, 1, BMF_CLEAR, rp->BitMap);
+        if (md->map) {
+            BltBitMap(rp->BitMap, msg->mdp_Left, msg->mdp_Top, md->map, 0, 0, msg->mdp_Width, msg->mdp_Height, 0xc0, 0xff, NULL);
+
+            TileMapToBitmap(md->img_menu, md->map, msg->mdp_Width, msg->mdp_Height);
+        }
+    }
 
     return TRUE;
 }
@@ -3216,9 +3788,8 @@ IPTR menudecor_exitmenu(Class *cl, Object *obj, struct mdpExitMenu *msg)
 {
     struct MenuData      *md = (struct MenuData *) msg->mdp_UserBuffer;
 
-    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
-
     if (md->ni) DisposeImageContainer(md->ni);
+    if (md->map) FreeBitMap(md->map);
 
     return TRUE;
 }
@@ -3226,8 +3797,6 @@ IPTR menudecor_exitmenu(Class *cl, Object *obj, struct mdpExitMenu *msg)
 IPTR menudecor_getmenuspaces(Class *cl, Object *obj, struct mdpGetMenuSpaces *msg)
 {
     struct menudecor_data *data = INST_DATA(cl, obj);
-
-    if (!msg->mdp_TrueColor) return DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (data->img_menu)
     {
@@ -3247,14 +3816,6 @@ IPTR menudecor_getmenuspaces(Class *cl, Object *obj, struct mdpGetMenuSpaces *ms
 
 void DisposeMenuSkinning(struct menudecor_data *data)
 {
-    DisposeImageContainer(data->img_menu);
-    DisposeImageContainer(data->img_menucheck);
-    DisposeImageContainer(data->img_amigakey);
-    DisposeImageContainer(data->img_submenu);
-    data->img_menu = NULL;
-    data->img_menucheck = NULL;
-    data->img_amigakey = NULL;
-    data->img_submenu = NULL;
 }
 
 BOOL InitMenuSkinning(STRPTR path, struct menudecor_data *data) {
@@ -3331,10 +3892,10 @@ BOOL InitMenuSkinning(STRPTR path, struct menudecor_data *data) {
         Close(file);
     }
 
-    data->img_menu = GetImageFromFile("Menu/Background/Default", FALSE);
-    data->img_amigakey = GetImageFromFile("Menu/AmigaKey/", TRUE);
-    data->img_menucheck = GetImageFromFile("Menu/Checkmark/", TRUE);
-    data->img_submenu = GetImageFromFile("Menu/SubMenu/", TRUE);
+    PUTIMAGE_MEN(menu);
+    PUTIMAGE_MEN(amigakey);
+    PUTIMAGE_MEN(menucheck);
+    PUTIMAGE_MEN(submenu);
 
     if (data->img_menu)
     {
@@ -3365,6 +3926,7 @@ IPTR menudecor__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         data = INST_DATA(cl, obj);
 
         STRPTR path = (STRPTR) GetTagData(MDA_Configuration, (IPTR) "Theme:", msg->ops_AttrList);
+        data->sd = (struct scrdecor_data *) GetTagData(MDA_ScreenData, NULL, msg->ops_AttrList);
 
         if (!InitMenuSkinning(path, data))
         {
@@ -3388,6 +3950,7 @@ IPTR menudecor__OM_DISPOSE(Class *cl, Object *obj, struct opSet *msg)
 IPTR menudecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 {
     IPTR retval;
+
     switch(msg->MethodID)
     {
         case OM_NEW:
@@ -3426,6 +3989,7 @@ IPTR menudecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
             retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
+
     return retval;
 }
 
@@ -3433,38 +3997,7 @@ IPTR menudecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 
 void DisposeWindowSkinning(struct windecor_data *data)
 {
-    DisposeImageContainer(data->img_size);
-    DisposeImageContainer(data->img_close);
-    DisposeImageContainer(data->img_depth);
-    DisposeImageContainer(data->img_zoom);
-    DisposeImageContainer(data->img_mui);
-    DisposeImageContainer(data->img_up);
-    DisposeImageContainer(data->img_down);
-    DisposeImageContainer(data->img_left);
-    DisposeImageContainer(data->img_right);
-    DisposeImageContainer(data->img_winbar_normal);
-    DisposeImageContainer(data->img_border_normal);
-    DisposeImageContainer(data->img_border_deactivated);
-    DisposeImageContainer(data->img_verticalcontainer);
-    DisposeImageContainer(data->img_verticalknob);
-    DisposeImageContainer(data->img_horizontalcontainer);
-    DisposeImageContainer(data->img_horizontalknob);
-    data->img_size = NULL;
-    data->img_close = NULL;
-    data->img_depth = NULL;
-    data->img_zoom = NULL;
-    data->img_mui = NULL;
-    data->img_up = NULL;
-    data->img_down = NULL;
-    data->img_left = NULL;
-    data->img_right = NULL;
-    data->img_winbar_normal = NULL;
-    data->img_border_normal = NULL;
-    data->img_border_deactivated = NULL;
-    data->img_verticalcontainer = NULL;
-    data->img_verticalknob = NULL;
-    data->img_horizontalcontainer = NULL;
-    data->img_horizontalknob = NULL;
+
 }
 
 BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
@@ -3473,6 +4006,8 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
     BPTR    file;
     BPTR    lock;
     BPTR    olddir = 0;
+    struct  screendecor_data *sd = data->sd;
+
     lock = Lock(path, ACCESS_READ);
     if (lock)
     {
@@ -3644,23 +4179,23 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
         Close(file);
     }
 
-    data->img_size = GetImageFromFile("System/Size/", TRUE);
-    data->img_close = GetImageFromFile("System/Close/", TRUE);
-    data->img_depth = GetImageFromFile("System/Depth/", TRUE);
-    data->img_zoom = GetImageFromFile("System/Zoom/", TRUE);
-    data->img_mui = GetImageFromFile("System/MUI/", TRUE);
-    data->img_up = GetImageFromFile("System/ArrowUp/", TRUE);
-    data->img_down = GetImageFromFile("System/ArrowDown/", TRUE);
-    data->img_left = GetImageFromFile("System/ArrowLeft/", TRUE);
-    data->img_right = GetImageFromFile("System/ArrowRight/", TRUE);
-    data->img_winbar_normal = GetImageFromFile("System/Titlebar/", TRUE);
-    data->img_border_normal = GetImageFromFile("System/Borders/Default", FALSE);
-    data->img_border_deactivated = GetImageFromFile("System/Borders/Default_Deactivated", FALSE);
-    data->img_verticalcontainer = GetImageFromFile("System/Container/Vertical", FALSE);
-    data->img_verticalknob = GetImageFromFile("System/Knob/Vertical", FALSE);
-    data->img_horizontalcontainer = GetImageFromFile("System/Container/Horizontal", FALSE);
-    data->img_horizontalknob = GetImageFromFile("System/Knob/Horizontal", FALSE);
-    
+    PUTIMAGE_WIN(size);
+    PUTIMAGE_WIN(close);
+    PUTIMAGE_WIN(depth);
+    PUTIMAGE_WIN(zoom);
+    PUTIMAGE_WIN(up);
+    PUTIMAGE_WIN(down);
+    PUTIMAGE_WIN(left);
+    PUTIMAGE_WIN(right);
+    PUTIMAGE_WIN(mui);
+    PUTIMAGE_WIN(winbar_normal);
+    PUTIMAGE_WIN(border_normal);
+    PUTIMAGE_WIN(border_deactivated);
+    PUTIMAGE_WIN(verticalcontainer);
+    PUTIMAGE_WIN(verticalknob);
+    PUTIMAGE_WIN(horizontalcontainer);
+    PUTIMAGE_WIN(horizontalknob);
+
     if (olddir) CurrentDir(olddir);
     UnLock(lock);
 
@@ -3675,6 +4210,46 @@ void DisposeScreenSkinning(struct scrdecor_data *data)
     DisposeImageContainer(data->img_sdepth);
     DisposeImageContainer(data->img_sbarlogo);
     DisposeImageContainer(data->img_stitlebar);
+
+    DisposeImageContainer(data->img_size);
+    DisposeImageContainer(data->img_close);
+    DisposeImageContainer(data->img_depth);
+    DisposeImageContainer(data->img_zoom);
+    DisposeImageContainer(data->img_mui);
+    DisposeImageContainer(data->img_up);
+    DisposeImageContainer(data->img_down);
+    DisposeImageContainer(data->img_left);
+    DisposeImageContainer(data->img_right);
+    DisposeImageContainer(data->img_winbar_normal);
+    DisposeImageContainer(data->img_border_normal);
+    DisposeImageContainer(data->img_border_deactivated);
+    DisposeImageContainer(data->img_verticalcontainer);
+    DisposeImageContainer(data->img_verticalknob);
+    DisposeImageContainer(data->img_horizontalcontainer);
+    DisposeImageContainer(data->img_horizontalknob);
+
+    DisposeImageContainer(data->img_menu);
+    DisposeImageContainer(data->img_menucheck);
+    DisposeImageContainer(data->img_amigakey);
+    DisposeImageContainer(data->img_submenu);
+
+    data->img_size = NULL;
+    data->img_close = NULL;
+    data->img_depth = NULL;
+    data->img_zoom = NULL;
+    data->img_mui = NULL;
+    data->img_up = NULL;
+    data->img_down = NULL;
+    data->img_left = NULL;
+    data->img_right = NULL;
+    data->img_winbar_normal = NULL;
+    data->img_border_normal = NULL;
+    data->img_border_deactivated = NULL;
+    data->img_verticalcontainer = NULL;
+    data->img_verticalknob = NULL;
+    data->img_horizontalcontainer = NULL;
+    data->img_horizontalknob = NULL;
+
     data->img_sdepth = NULL;
     data->img_sbarlogo = NULL;
     data->img_stitlebar = NULL;
@@ -3699,6 +4274,10 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     data->rightborder = 4;
     data->bottomborder = 4;
 
+    data->lut_col_a = 0x00cccccc;
+    data->lut_col_d = 0x00888888;
+
+
     file = Open("System/Config", MODE_OLDFILE);
     if (file)
     {
@@ -3721,6 +4300,8 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
                     data->sbarheight = GetInt(v);
                 } else  if ((v = strstr(line, "BarHeight ")) == line) {
                     data->winbarheight = GetInt(v); //screen, window
+                } else  if ((v = strstr(line, "LUTBaseColors ")) == line) {
+                    GetColors(v, &data->lut_col_a, &data->lut_col_d);
                 }
             }
         }
@@ -3728,9 +4309,32 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
         Close(file);
     }
 
-    data->img_sdepth = GetImageFromFile("System/SDepth/", TRUE);
-    data->img_stitlebar = GetImageFromFile("System/STitlebar/", TRUE);
-    data->img_sbarlogo = GetImageFromFile("System/SBarLogo/Default", FALSE);
+    data->img_sdepth = GetImageFromFile(path, "System/SDepth/", TRUE);
+    data->img_stitlebar = GetImageFromFile(path, "System/STitlebar/", TRUE);
+    data->img_sbarlogo = GetImageFromFile(path, "System/SBarLogo/Default", FALSE);
+
+    data->img_size = GetImageFromFile(path, "System/Size/", TRUE);
+    data->img_close = GetImageFromFile(path, "System/Close/", TRUE);
+    data->img_depth = GetImageFromFile(path, "System/Depth/", TRUE);
+    data->img_zoom = GetImageFromFile(path, "System/Zoom/", TRUE);
+    data->img_mui = GetImageFromFile(path, "System/MUI/", TRUE);
+    data->img_up = GetImageFromFile(path, "System/ArrowUp/", TRUE);
+    data->img_down = GetImageFromFile(path, "System/ArrowDown/", TRUE);
+    data->img_left = GetImageFromFile(path, "System/ArrowLeft/", TRUE);
+    data->img_right = GetImageFromFile(path, "System/ArrowRight/", TRUE);
+    data->img_winbar_normal = GetImageFromFile(path, "System/Titlebar/", TRUE);
+    data->img_border_normal = GetImageFromFile(path, "System/Borders/Default", FALSE);
+    data->img_border_deactivated = GetImageFromFile(path, "System/Borders/Default_Deactivated", FALSE);
+    data->img_verticalcontainer = GetImageFromFile(path, "System/Container/Vertical", FALSE);
+    data->img_verticalknob = GetImageFromFile(path, "System/Knob/Vertical", FALSE);
+    data->img_horizontalcontainer = GetImageFromFile(path, "System/Container/Horizontal", FALSE);
+    data->img_horizontalknob = GetImageFromFile(path, "System/Knob/Horizontal", FALSE);
+
+    data->img_menu = GetImageFromFile(path, "Menu/Background/Default", FALSE);
+    data->img_amigakey = GetImageFromFile(path, "Menu/AmigaKey/", TRUE);
+    data->img_menucheck = GetImageFromFile(path, "Menu/Checkmark/", TRUE);
+    data->img_submenu = GetImageFromFile(path, "Menu/SubMenu/", TRUE);
+
     if (data->img_stitlebar)
     {
         data->img_stitlebar->tile_left = 8;
@@ -3775,18 +4379,33 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
     if (path != NULL) newpath = path; else newpath = "Theme:";
 
-    struct   TagItem        WindowTags[] = { WDA_UserBuffer, sizeof(struct WindowData), WDA_Configuration, (ULONG) newpath, TAG_DONE, };
-    struct   TagItem        MenuTags[] = { MDA_UserBuffer, sizeof(struct MenuData), MDA_Configuration, (ULONG) newpath, TAG_DONE, };
     struct   TagItem        ScreenTags[] = { SDA_UserBuffer, sizeof(struct ScreenData), SDA_Configuration, (ULONG) newpath, TAG_DONE, };
 
 
-    nd = AllocVec(sizeof(struct NewDecorator), MEMF_CLEAR);
+    nd = AllocVec(sizeof(struct NewDecorator), MEMF_CLEAR | MEMF_ANY);
     if (nd)
     {
-        nd->nd_Window = NewObjectA(cl, NULL, WindowTags);
         nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
-        nd->nd_Menu = NewObjectA(menucl, NULL, MenuTags);
-        if ((nd->nd_Menu == NULL ) || (nd->nd_Window == NULL) || (nd->nd_Screen == NULL))
+
+        if (nd->nd_Screen)
+        {
+            APTR    screendata;
+
+            get(nd->nd_Screen, SDA_ScreenData, &screendata);
+
+            struct   TagItem        WindowTags[] = { WDA_UserBuffer, sizeof(struct WindowData), WDA_Configuration, (ULONG) newpath, WDA_ScreenData, screendata, TAG_DONE, };
+            struct   TagItem        MenuTags[] = { MDA_UserBuffer, sizeof(struct MenuData), MDA_Configuration, (ULONG) newpath, MDA_ScreenData, screendata, TAG_DONE, };
+
+
+            nd->nd_Window = NewObjectA(cl, NULL, WindowTags);
+            nd->nd_Menu = NewObjectA(menucl, NULL, MenuTags);
+            if ((nd->nd_Menu == NULL ) || (nd->nd_Window == NULL) || (nd->nd_Screen == NULL))
+            {
+                DeleteDecorator(nd);
+                nd = NULL;
+            }
+        }
+        else
         {
             DeleteDecorator(nd);
             nd = NULL;
