@@ -132,8 +132,13 @@
         UWORD            stitle_off;
         UWORD            winbarheight;
 
+        BOOL             outline;
+        BOOL             shadow;
+
         int              leftborder, bottomborder, rightborder;
         int              lut_col_a, lut_col_d;
+        int              text_col, shadow_col;
+
 
     };
 
@@ -160,6 +165,8 @@
         struct NewImage *img_horizontalcontainer;
         struct NewImage *img_horizontalknob;
 
+        BOOL             outline;
+        BOOL             shadow;
         BOOL             barmasking;
         BOOL             closeright;
         BOOL             threestate;
@@ -226,7 +233,7 @@
         int              d_col_s, d_col_e;
         int              b_col_a, b_col_d;
         int              light, middle, dark;
-
+        int              text_col, shadow_col;
     };
 
 
@@ -1592,7 +1599,6 @@ IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBorder *ms
     ww = window->Width;
     wh = window->Height;
 
-    kprintf("border left         %d\n", bl);
     color = 0x00cccccc;
 
     if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
@@ -2339,8 +2345,45 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
     {
         SetAPen(rp, pens[(window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) ? FILLTEXTPEN : TEXTPEN]);
         SetDrMd(rp, JAM1);
-        Move(rp, textstart, ((data->winbarheight - dri->dri_Font->tf_YSize) >> 1) + dri->dri_Font->tf_Baseline);
-        Text(rp, window->Title, textlen);
+        UWORD   tx = textstart;
+        UWORD   ty = ((data->winbarheight - dri->dri_Font->tf_YSize) >> 1) + dri->dri_Font->tf_Baseline;
+
+        if (!wd->truecolor || ((data->outline == FALSE) && (data->shadow == FALSE)))
+        {
+            Move(rp, tx, ty);
+            Text(rp, window->Title, textlen);
+        }
+        else if (data->outline)
+        {
+
+                SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+
+                Move(rp, tx + 1, ty ); Text(rp, window->Title, textlen);
+                Move(rp, tx + 2, ty ); Text(rp, window->Title, textlen);
+                Move(rp, tx , ty ); Text(rp, window->Title, textlen);
+                Move(rp, tx, ty + 1);  Text(rp, window->Title, textlen);
+                Move(rp, tx, ty + 2);  Text(rp, window->Title, textlen);
+                Move(rp, tx + 1, ty + 2);  Text(rp, window->Title, textlen);
+                Move(rp, tx + 2, ty + 1);  Text(rp, window->Title, textlen);
+                Move(rp, tx + 2, ty + 2);  Text(rp, window->Title, textlen);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                Move(rp, tx + 1, ty + 1);
+                Text(rp, window->Title, textlen);
+                SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
+        }
+        else
+        {
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+                Move(rp, tx + 1, ty + 1 );
+                Text(rp, window->Title, textlen);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                Move(rp, tx, ty);
+                Text(rp, window->Title, textlen);
+
+        }
     }
     struct Gadget *g;
 
@@ -3395,10 +3438,50 @@ IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *ms
 
     if (hastitle)
     {
+        UWORD tx = data->stitle_off;
+        UWORD ty = (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline;
+
         SetFont(rp, msg->sdp_Dri->dri_Font);
         SetDrMd(rp, JAM1);
-        Move(rp, data->stitle_off, (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline);
-        Text(rp, scr->Title, titlelen);
+//         Move(rp, data->stitle_off, (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline);
+//         Text(rp, scr->Title, titlelen);
+
+        if (!sd->truecolor || ((data->outline == FALSE) && (data->shadow == FALSE)))
+        {
+            Move(rp, tx, ty);
+            Text(rp, scr->Title, titlelen);
+        }
+        else if (data->outline)
+        {
+
+                SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+
+                Move(rp, tx + 1, ty ); Text(rp, scr->Title, titlelen);
+                Move(rp, tx + 2, ty ); Text(rp, scr->Title, titlelen);
+                Move(rp, tx , ty ); Text(rp, scr->Title, titlelen);
+                Move(rp, tx, ty + 1);  Text(rp, scr->Title, titlelen);
+                Move(rp, tx, ty + 2);  Text(rp, scr->Title, titlelen);
+                Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, titlelen);
+                Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, titlelen);
+                Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, titlelen);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                Move(rp, tx + 1, ty + 1);
+                Text(rp, scr->Title, titlelen);
+                SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
+        }
+        else
+        {
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->shadow_col, TAG_DONE);
+                Move(rp, tx + 1, ty + 1 );
+                Text(rp, scr->Title, titlelen);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->text_col, TAG_DONE);
+                Move(rp, tx, ty);
+                Text(rp, scr->Title, titlelen);
+
+        }
     }
     return TRUE;
 }
@@ -4053,11 +4136,17 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
     data->closeright = FALSE;
     data->barvert = FALSE;
     data->filltitlebar = FALSE;
+    data->outline = FALSE;
+    data->shadow = FALSE;
 
     data->a_col_s = 0xaaaaaaaa;
     data->a_col_e = 0xeeeeeeff;
     data->d_col_s = 0x66666666;
     data->d_col_e = 0xaaaaaabb;
+
+    data->text_col = 0x00cccccc;
+    data->shadow_col = 0x00444444;
+
     data->a_arc = 0;
     data->d_arc = 0;
     data->light = 320;
@@ -4076,6 +4165,9 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
                     data->threestate = GetBool(v, "Yes");
                 } else if ((v = strstr(line, "BarRounded ")) == line) {
                     data->rounded = GetBool(v, "Yes");
+                } else if ((v = strstr(line, "WindowTitleMode ")) == line) {
+                    data->outline = GetBool(v, "Outline");
+                    data->shadow = GetBool(v, "Shadow");
                 } else if ((v = strstr(line, "FillTitleBar ")) == line) {
                     data->filltitlebar = GetBool(v, "Yes");
                 } else if ((v = strstr(line, "BarMasking ")) == line) {
@@ -4172,6 +4264,8 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
                     GetTripleIntegers(v, &data->light, &data->middle, &data->dark);
                 } else  if ((v = strstr(line, "BaseColors ")) == line) {
                     GetColors(v, &data->b_col_a, &data->b_col_d);
+                } else  if ((v = strstr(line, "WindowTitleColors ")) == line) {
+                    GetColors(v, &data->text_col, &data->shadow_col);
                 }
             }
         }
@@ -4277,6 +4371,11 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     data->lut_col_a = 0x00cccccc;
     data->lut_col_d = 0x00888888;
 
+    data->outline = FALSE;
+    data->shadow = FALSE;
+
+    data->text_col = 0x00cccccc;
+    data->shadow_col = 0x00444444;
 
     file = Open("System/Config", MODE_OLDFILE);
     if (file)
@@ -4302,6 +4401,11 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
                     data->winbarheight = GetInt(v); //screen, window
                 } else  if ((v = strstr(line, "LUTBaseColors ")) == line) {
                     GetColors(v, &data->lut_col_a, &data->lut_col_d);
+                } else  if ((v = strstr(line, "ScreenTitleColors ")) == line) {
+                    GetColors(v, &data->text_col, &data->shadow_col);
+                } else if ((v = strstr(line, "ScreenTitleMode ")) == line) {
+                    data->outline = GetBool(v, "Outline");
+                    data->shadow = GetBool(v, "Shadow");
                 }
             }
         }
