@@ -4628,7 +4628,9 @@ int main(void)
                                         {
                                             decor->nd_Pattern = msg->id;
                                             decor->nd_Port = port;
+                                            CloseWorkbench();
                                             ChangeDecoration(DECORATION_SET, decor);
+                                            OpenWorkbench();
                                         }
                                         break;
                                     case MAGIC_DECORATOR:
