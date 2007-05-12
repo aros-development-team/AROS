@@ -32,7 +32,7 @@
 #endif
 #include <aros/debug.h>
 
-#ifndef DEBUG
+#if DEBUG == 0
 #define DumpLocks(sb)
 #else
 void DumpLocks(struct FSSuper *sb) {
