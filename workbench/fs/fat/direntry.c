@@ -396,7 +396,7 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
     ConvertAROSDate(ds, &(de->e.entry.create_date), &(de->e.entry.create_time));
     de->e.entry.write_date = de->e.entry.create_date;
     de->e.entry.write_time = de->e.entry.create_time;
-    de->e.entry.last_access_date = de->e.entry.last_access_date;
+    de->e.entry.last_access_date = de->e.entry.create_date;
 
     /* XXX calculate this. I've just written ConvertAROSDate and I'm sick of
      * dates and times for the moment */
@@ -417,6 +417,51 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
     D(bug("[fat] created dir entry %ld\n", de->index));
 
     return 0;
+}
+
+LONG DeleteDirEntry(struct DirEntry *de) {
+    struct DirHandle dh;
+    UBYTE checksum;
+    ULONG order;
+    LONG err;
+
+    InitDirHandle(glob->sb, de->cluster, &dh);
+
+    /* calculate the short name checksum before we trample on the name */
+    CALC_SHORT_NAME_CHECKSUM(de->e.entry.name, checksum);
+
+    D(bug("[fat] short name checksum is 0x%02x\n", checksum));
+
+    /* mark the short entry free */
+    de->e.entry.name[0] = 0xe5;
+    UpdateDirEntry(de);
+
+    D(bug("[fat] deleted short name entry\n"));
+
+    /* now we loop over the previous entries, looking for matching long name
+     * entries and killing them */
+    order = 1;
+    while ((err = GetDirEntry(&dh, de->index-1, de)) == 0) {
+
+        /* see if this is a matching long name entry. if its not, we're done */
+        if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
+            (de->e.long_entry.order & ~0x40) != order ||
+            de->e.long_entry.checksum != checksum)
+
+            break;
+
+        /* kill it */
+        de->e.entry.name[0] = 0xe5;
+        UpdateDirEntry(de);
+
+        order++;
+    }
+
+    D(bug("[fat] deleted %ld long name entries\n", order-1));
+
+    ReleaseDirHandle(&dh);
+
+    return err;
 }
 
 

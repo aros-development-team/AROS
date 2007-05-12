@@ -539,10 +539,25 @@ void ProcessPackets(void) {
                 break;
             }
 
-            case ACTION_RENAME_OBJECT:
-                D(bug("[fat] RENAME_OBJECT [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
+            case ACTION_RENAME_OBJECT: {
+                struct ExtFileLock *sfl = BADDR(pkt->dp_Arg1), *dfl = BADDR(pkt->dp_Arg3);
+                UBYTE *sname = BADDR(pkt->dp_Arg2), *dname = BADDR(pkt->dp_Arg4);
+
+                D(bug("[fat] RENAME_OBJECT: srclock 0x%08x (dir %ld/%ld) name '%.*s' destlock 0x%08x (dir %ld/%ld) name '%.*s'\n",
+                      pkt->dp_Arg1,
+                      sfl != NULL ? sfl->gl->dir_cluster : 0, sfl != NULL ? sfl->gl->dir_entry : 0,
+                      sname[0], &sname[1],
+                      pkt->dp_Arg3,
+                      dfl != NULL ? dfl->gl->dir_cluster : 0, dfl != NULL ? dfl->gl->dir_entry : 0,
+                      dname[0], &dname[1]));
+
+                if ((err = TestLock(sfl)) != 0 || (err = TestLock(dfl)) != 0)
+                    break;
+
+                err = OpRenameFile(sfl, &sname[1], sname[0], dfl, &dname[1], dname[0]);
+
                 break;
+            }
 
             case ACTION_CREATE_DIR: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *new;
