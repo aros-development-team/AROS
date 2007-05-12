@@ -45,6 +45,15 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
     UBYTE *name = *pname, *base;
     ULONG namelen = *pnamelen, baselen;
     struct DirEntry de;
+    int i;
+
+    /* remove any volume specifier */
+    for (i = 0; i < namelen; i++)
+        if (name[i] == ':') {
+            namelen -= (i+1);
+            name = &name[i+1];
+            break;
+        }
 
     /* we break the given name into two pieces - the name of the containing
      * dir, and the name of the new dir to go within it. if the base ends up
@@ -215,8 +224,6 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     struct ExtFileLock *lock;
     struct DirHandle dh;
     struct DirEntry de;
-    UBYTE checksum;
-    ULONG order;
 
     D(bug("[fat] deleting file '%.*s' in directory at cluster %ld\n", namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0));
 
@@ -270,39 +277,10 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     /* get the entry for the file */
     GetDirEntry(&dh, lock->gl->dir_entry, &de);
 
-    /* calculate the short name checksum before we trample on the name */
-    CALC_SHORT_NAME_CHECKSUM(de.e.entry.name, checksum);
+    /* kill it */
+    DeleteDirEntry(&de);
 
-    D(bug("[fat] short name checksum is 0x%02x\n", checksum));
-
-    /* mark the short entry free */
-    de.e.entry.name[0] = 0xe5;
-    UpdateDirEntry(&de);
-
-    D(bug("[fat] deleted short name entry\n"));
-
-    /* now we loop over the previous entries, looking for matching long name
-     * entries and killing them */
-    order = 1;
-    while ((err = GetDirEntry(&dh, de.index-1, &de)) == 0) {
-
-        /* see if this is a matching long name entry. if its not, we're done */
-        if (!((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
-            (de.e.long_entry.order & ~0x40) != order ||
-            de.e.long_entry.checksum != checksum)
-
-            break;
-
-        /* kill it */
-        de.e.entry.name[0] = 0xe5;
-        UpdateDirEntry(&de);
-
-        order++;
-    }
-
-    D(bug("[fat] deleted %ld long name entries\n", order-1));
-
-    /* directory entries are free */
+    /* its all good */
     ReleaseDirHandle(&dh);
 
     /* now free the clusters the file was using */
@@ -312,6 +290,99 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     FreeLock(lock);
 
     D(bug("[fat] deleted '%.*s'\n", namelen, name));
+
+    return 0;
+}
+
+LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen) {
+    struct DirHandle sdh, ddh;
+    struct DirEntry sde, dde;
+    struct GlobalLock *gl;
+    LONG err;
+    ULONG len;
+
+    /* get the source dir handle */
+    if ((err = InitDirHandle(glob->sb, sdirlock != NULL ? sdirlock->ioh.first_cluster : 0, &sdh)) != 0)
+        return err;
+
+    /* get down to the correct subdir */
+    if ((err = MoveToSubdir(&sdh, &sname, &snamelen)) != 0) {
+        ReleaseDirHandle(&sdh);
+        return err;
+    }
+
+    /* get the entry */
+    if ((err = GetDirEntryByName(&sdh, sname, snamelen, &sde)) != 0) {
+        ReleaseDirHandle(&sdh);
+        return err;
+    }
+
+    /* now get a handle on the passed dest dir */
+    if ((err = InitDirHandle(glob->sb, ddirlock != NULL ? ddirlock->ioh.first_cluster : 0, &ddh)) != 0) {
+        ReleaseDirHandle(&sdh);
+        return err;
+    }
+
+    /* get down to the correct subdir */
+    if ((err = MoveToSubdir(&ddh, &dname, &dnamelen)) != 0) {
+        ReleaseDirHandle(&ddh);
+        ReleaseDirHandle(&sdh);
+        return err;
+    }
+
+    /* now see if the wanted name is in this dir. if it exists, do nothing */
+    if ((err = GetDirEntryByName(&ddh, dname, dnamelen, &dde)) == 0) {
+        ReleaseDirHandle(&ddh);
+        ReleaseDirHandle(&sdh);
+        return ERROR_OBJECT_EXISTS;
+    }
+    else if (err != ERROR_OBJECT_NOT_FOUND) {
+        ReleaseDirHandle(&ddh);
+        ReleaseDirHandle(&sdh);
+        return err;
+    }
+
+    /* at this point we have the source entry in sde, and we know the dest
+     * doesn't exist */
+
+    /* XXX if sdh and ddh are the same dir and there's room in the existing
+     * entries for the new name, just overwrite the name */
+
+    /* make a new entry in the target dir */
+    if ((err = CreateDirEntry(&ddh, dname, dnamelen, sde.e.entry.attr, (sde.e.entry.first_cluster_hi << 16) | sde.e.entry.first_cluster_lo, &dde)) != 0) {
+        ReleaseDirHandle(&ddh);
+        ReleaseDirHandle(&sdh);
+    }
+
+    /* copy in the leftover attributes */
+    dde.e.entry.create_date = sde.e.entry.create_date;
+    dde.e.entry.create_time = sde.e.entry.create_time;
+    dde.e.entry.write_date = sde.e.entry.write_date;
+    dde.e.entry.write_time = sde.e.entry.write_time;
+    dde.e.entry.last_access_date = sde.e.entry.last_access_date;
+    dde.e.entry.create_time_tenth = sde.e.entry.create_time_tenth;
+    dde.e.entry.file_size = sde.e.entry.file_size;
+
+    UpdateDirEntry(&dde);
+
+    /* update the global lock (if present) with the new dir cluster/entry */
+    ForeachNode(&sdh.ioh.sb->locks, gl)
+        if (gl->dir_cluster == sde.cluster && gl->dir_entry == sde.index) {
+            D(bug("[fat] found lock with old dir entry (%ld/%ld), changing to (%ld/%ld)\n", sde.cluster, sde.index, dde.cluster, dde.index));
+
+            gl->dir_cluster = dde.cluster;
+            gl->dir_entry = dde.index;
+
+            /* update the filename too */
+            GetDirEntryShortName(&dde, &(gl->name[1]), &len); gl->name[0] = (UBYTE) len;
+            GetDirEntryLongName(&dde, &(gl->name[1]), &len); gl->name[0] = (UBYTE) len;
+        }
+
+    /* delete the original */
+    DeleteDirEntry(&sde);
+
+    ReleaseDirHandle(&ddh);
+    ReleaseDirHandle(&sdh);
 
     return 0;
 }

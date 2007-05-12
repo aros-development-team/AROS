@@ -13,7 +13,7 @@
 #ifndef FAT_HANDLER_H
 #define FAT_HANDLER_H
 
-#define DEBUG_PACKETS       1
+#define DEBUG_PACKETS       0
 #define DEBUG_CACHESTATS    0
 #define DEBUG_DUMP          0
 #define DEBUG_FULL          0

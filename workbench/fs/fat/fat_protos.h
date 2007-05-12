@@ -55,6 +55,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de);
 LONG UpdateDirEntry(struct DirEntry *de);
 
 LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr, ULONG cluster, struct DirEntry *de);
+LONG DeleteDirEntry(struct DirEntry *de);
 
 LONG FillFIB(struct ExtFileLock *fl, struct FileInfoBlock *fib);
 
@@ -77,6 +78,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 /* ops.c */
 LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG action, struct ExtFileLock **filelock);
 LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen);
+LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen);
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock);
 LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read);
 LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written);
