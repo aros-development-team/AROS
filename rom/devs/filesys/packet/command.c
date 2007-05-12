@@ -673,12 +673,28 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg3 = (IPTR) iofs->io_Union.io_RECORD.io_Size;
             break;
 
+        case FSA_ADD_NOTIFY:
+            D(bug("[packet] FSA_ADD_NOTIFY: nr 0x%08x name '%s'\n", 
+                  iofs->io_Union.io_NOTIFY.io_NotificationRequest,
+                  iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
+
+            dp->dp_Type = ACTION_ADD_NOTIFY;
+            dp->dp_Arg1 = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+            break;
+
+        case FSA_REMOVE_NOTIFY:
+            D(bug("[packet] FSA_REMOVE_NOTIFY: nr 0x%08x name '%s'\n", 
+                  iofs->io_Union.io_NOTIFY.io_NotificationRequest,
+                  iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
+
+            dp->dp_Type = ACTION_ADD_NOTIFY;
+            dp->dp_Arg1 = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+            break;
+
         /* XXX implement */
         case FSA_EXAMINE_ALL:
         case FSA_EXAMINE_ALL_END:
         case FSA_MOUNT_MODE:
-        case FSA_ADD_NOTIFY:
-        case FSA_REMOVE_NOTIFY:
         case FSA_CHANGE_SIGNAL:
         case FSA_PARENT_DIR:
         case FSA_PARENT_DIR_POST:
