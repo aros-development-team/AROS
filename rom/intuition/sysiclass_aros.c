@@ -1016,150 +1016,17 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
         /* MUI and other non-std images */
     	case MUIIMAGE:
+        case SNAPSHOTIMAGE:
+        case POPUPIMAGE:
+        case ICONIFYIMAGE:
+        case LOCKIMAGE:
         {
-            {
-                DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg); 
-                break;
-            }
-#if (0)
-            UWORD *pens = data->dri->dri_Pens;
-            UWORD bg;
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-            }
-
-            bg = getbgpen(msg->imp_State, pens);
-
-            /* Clear background into correct color */
-            SetAPen(rport, bg);
-            RectFill(rport, left, top, right, bottom);
-
-            /* DRAW IMAGE :) */
-
-            DrawIB(rport,(BYTE *)ibPrefs,left+(width/2),top+(height/2),IntuitionBase);
-#endif
+            DoMethodA(((struct IntScreen *)(((struct IntDrawInfo *)data->dri)->dri_Screen))->WinDecorObj, (Msg)&wdecormsg); 
             break;
         }
 
-#if (0)
-    	case SNAPSHOTIMAGE:
-    	case POPUPIMAGE:
-    	case ICONIFYIMAGE:
-    	case LOCKIMAGE:
-        {
-            UWORD *pens = data->dri->dri_Pens;
-            UWORD  bg;
 
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-            }
 
-            bg = getbgpen(msg->imp_State, pens);
-
-            /* Clear background into correct color */
-            SetAPen(rport, bg);
-            RectFill(rport, left, top, right, bottom);
-
-            /* DRAW IMAGE :) */
-
-            if (data->type == SNAPSHOTIMAGE)
-            {
-                if (msg->imp_State == IDS_SELECTED)
-                {
-                    DrawIB(rport,(BYTE *)ibSnapshotSel,left+(width/2),top+(height/2),IntuitionBase);
-                }
-                else
-                {
-                    DrawIB(rport,(BYTE *)ibSnapshot,left+(width/2),top+(height/2),IntuitionBase);
-                }
-            }
-
-            if (data->type == POPUPIMAGE)
-            {
-                if (msg->imp_State == IDS_SELECTED)
-                {
-                    DrawIB(rport,(BYTE *)ibPopupSel,left+(width/2),top+(height/2),IntuitionBase);
-                }
-                else
-                {
-                    DrawIB(rport,(BYTE *)ibPopup,left+(width/2),top+(height/2),IntuitionBase);
-                }
-            }
-
-            if (data->type == ICONIFYIMAGE)
-            {
-                if (msg->imp_State == IDS_SELECTED)
-                {
-                    DrawIB(rport,(BYTE *)ibIconifySel,left+(width/2),top+(height/2),IntuitionBase);
-                }
-                else
-                {
-                    DrawIB(rport,(BYTE *)ibIconify,left+(width/2),top+(height/2),IntuitionBase);
-                }
-            }
-
-            if (data->type == LOCKIMAGE)
-            {
-                if ((msg->imp_State == IDS_SELECTED) || (msg->imp_State == IDS_INACTIVESELECTED))
-                {
-                    DrawIB(rport,(BYTE *)ibLockSel,left+(width/2),top+(height/2),IntuitionBase);
-                }
-                else
-                {
-                    DrawIB(rport,(BYTE *)ibLock,left+(width/2),top+(height/2),IntuitionBase);
-                }
-            }
-
-            break;
-        }
-
-    	case JUMPIMAGE:
-        {
-            UWORD *pens = data->dri->dri_Pens;
-            UWORD  bg;
-
-            if (!(data->flags & SYSIFLG_NOBORDER))
-            {
-                renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
-                                 left, top, width, height, IntuitionBase);
-                left++;
-                top++;
-                right--;
-                bottom--;
-                width -= 2;
-                height -= 2;
-            }
-
-            bg = getbgpen(msg->imp_State, pens);
-
-            /* Clear background into correct color */
-            SetAPen(rport, bg);
-            RectFill(rport, left, top, right, bottom);
-
-            /* DRAW IMAGE :) */
-
-            DrawJUMP(rport,msg->imp_State,left+(width/2),top+(height/2),IntuitionBase);
-
-            break;
-        }
-    #endif
     } /* switch (image type) */
 
     return (IPTR)0;
