@@ -1,6 +1,6 @@
 /* 
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -127,7 +127,7 @@ struct ZunePrefsNew
     WORD     window_inner_right;
     WORD     window_inner_top;
     WORD     window_inner_bottom;
-
+    ULONG    window_buttons;
     /* MUI Keys */
     ZuneKeySpec muikeys[MUIKEY_COUNT];
 
