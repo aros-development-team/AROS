@@ -59,48 +59,73 @@
     AROS_LIBFUNC_INIT
 
     struct IOFileSys iofs;
-    struct FileHandle *dir;
-
-    /* Prepare I/O request. */
-    InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
-
-    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
+    struct DevProc *dvp;
+    UBYTE buf[256], *buf2, *p;
+    ULONG len, len2;
 
     notify->nr_MsgCount = 0;
+    notify->nr_FullName = NULL;
 
-    if (strchr(notify->nr_Name, ':') != NULL)
-    {
-	DoName(&iofs, notify->nr_Name, DOSBase);
+    if ((dvp = GetDeviceProc(notify->nr_Name, NULL)) == NULL)
+        return DOSFALSE;
+
+    InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
+    iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
+
+    iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
+
+    notify->nr_Device = (struct Device *) dvp->dvp_Port;
+    notify->nr_FullName = notify->nr_Name;
+
+    if (dvp->dvp_Lock != NULL) {
+        if (NameFromLock(dvp->dvp_Lock, buf, sizeof(buf)) == DOSFALSE) {
+            FreeDeviceProc(dvp);
+            return DOSFALSE;
+        }
+        len = strlen(buf);
+
+        if (buf[len-1] != ':') {
+            buf[len] = '/';
+            len++;
+        }
+
+        p = notify->nr_Name;
+        while (*p && *p != ':')
+            p++;
+
+        if (*p)
+            p++;
+        else
+            p = notify->nr_Name;
+
+        len2 = strlen(p);
+
+        if ((buf2 = AllocVec(len + len2 + 1, MEMF_PUBLIC)) == NULL) {
+            FreeDeviceProc(dvp);
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return DOSFALSE;
+        }
+
+        CopyMem(buf, buf2, len);
+        CopyMem(p, buf2 + len, len2 + 1);
+        notify->nr_FullName = buf2;
+
+        iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
     }
+
     else
-    {
-	dir = BADDR(CurrentDir(NULL));
-	CurrentDir(MKBADDR(dir));		/* Set back the current dir */
-	
-	if (dir == NULL)
-	{
-	    return DOSFALSE;
-	}
-	
-	iofs.IOFS.io_Device = dir->fh_Device;
-	iofs.IOFS.io_Unit = dir->fh_Unit;
-	
-	/* Save device for EndNotify() purposes */
-	notify->nr_Device = dir->fh_Device;
-	
-	if (iofs.IOFS.io_Device == NULL)
-	{
-	    return DOSFALSE;
-	}
+        iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
 
-	DosDoIO(&iofs.IOFS);
-    }
+    FreeDeviceProc(dvp);
+
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 
-    if (iofs.io_DosError != 0)
-    {
-	return DOSFALSE;
+    if (iofs.io_DosError != 0) {
+        if (notify->nr_FullName != notify->nr_Name)
+            FreeVec(notify->nr_FullName);
+        return DOSFALSE;
     }
 
     return DOSTRUE;
