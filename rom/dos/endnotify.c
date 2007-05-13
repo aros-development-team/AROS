@@ -56,54 +56,41 @@
 
     struct IOFileSys iofs;
 
-    /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_REMOVE_NOTIFY, DOSBase);
-
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
+    iofs.IOFS.io_Device = notify->nr_Device;
 
-    if (strchr(notify->nr_Name, ':'))
-    {
-	DoName(&iofs, notify->nr_Name, DOSBase);
-    }
-    else
-    {
-	iofs.IOFS.io_Device = (struct Device *)notify->nr_Device;
-	
-	if (iofs.IOFS.io_Device == NULL)
-	{
-	    return;
-	}
-	
-	DosDoIO(&iofs.IOFS);
-    }
+    DoIO(&iofs.IOFS);
 
-    if (notify->nr_Flags & NRF_SEND_MESSAGE)
-    {
-	struct Node          *tempNode;
-	struct NotifyMessage *nm;
+    if (notify->nr_FullName != notify->nr_Name)
+        FreeVec(notify->nr_FullName);
+
+    if (notify->nr_Flags & NRF_SEND_MESSAGE &&
+	(notify->nr_Flags & NRF_WAIT_REPLY || notify->nr_MsgCount)) {
+
+	struct MsgPort *port = notify->nr_stuff.nr_Msg.nr_Port;
+	struct NotifyMessage *nm, *tmp;
+
+	notify->nr_Flags &= ~NRF_MAGIC;
 
 	Disable();
 
-	ForeachNodeSafe(&notify->nr_stuff.nr_Msg.nr_Port->mp_MsgList,
-			nm, tempNode)
-	{
-	    if (notify->nr_MsgCount == 0)
-	    {
-		break;
-	    }
-	    
-	    if (nm->nm_NReq == notify)
-	    {
-		notify->nr_MsgCount--;
-		Remove((struct Node *)nm);
-		ReplyMsg((struct Message *)nm);		
+	ForeachNodeSafe(&port->mp_MsgList, nm, tmp) {
+	    if (nm->nm_Class == NOTIFY_CLASS &&
+		nm->nm_Code == NOTIFY_CODE &&
+		nm->nm_NReq == notify) {
+
+		Remove((struct Node *) nm);
+		ReplyMsg((struct Message *) nm);
+
+                notify->nr_MsgCount--;
+                if (notify->nr_MsgCount == 0)
+                    break;
 	    }
 	}
 
 	Enable();
     }
-    
-    SetIoErr(iofs.io_DosError);
 
     AROS_LIBFUNC_EXIT
 } /* EndNotify */

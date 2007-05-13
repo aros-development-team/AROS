@@ -2381,7 +2381,7 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 {
     struct dnode *dnTemp = dn;
     HashTable *ht = rambase->notifications;
-    STRPTR  name = nr->nr_Name;
+    STRPTR  name = nr->nr_FullName;
     STRPTR  colon;
 
     colon = strchr(name, ':');
@@ -2390,13 +2390,6 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
     if (colon != NULL)
     {
 	name = colon + 1;
-    }
-
-    nr->nr_FullName = getName(rambase, dn, nr->nr_Name);
-
-    if (nr->nr_FullName == NULL)
-    {
-	return FALSE;
     }
 
     /* First: Check if the file is opened */
@@ -2463,6 +2456,15 @@ void Notify_removeNotification(struct rambase *rambase,
     STRPTR name = nr->nr_FullName;
     struct List *receivers;
     BOOL  fromTable = FALSE;
+    STRPTR  colon;
+
+    colon = strchr(name, ':');
+   
+    /* Take care of absolute names in nr_Name */
+    if (colon != NULL)
+    {
+	name = colon + 1;
+    }
 
     if (findname(rambase, &name, &dn) == 0)
     {
@@ -2489,7 +2491,6 @@ void Notify_removeNotification(struct rambase *rambase,
 	{
 	    Remove((struct Node *)rr);
 	    FreeVec(rr);
-	    FreeVec(nr->nr_FullName);
 	    break;
 	}
     }
