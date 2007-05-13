@@ -780,13 +780,13 @@ enum
     ZOOMGAD,
     SIZEGAD,
     CLOSEGAD,
-    DRAGBAR,
     ICONIFYGAD,
     LOCKGAD,
     MUIGAD,
     POPUPGAD,
     SNAPSHOTGAD,
     JUMPGAD,
+    DRAGBAR,
     NUM_SYSGADS
 };
 

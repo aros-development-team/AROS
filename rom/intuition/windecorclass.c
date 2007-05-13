@@ -372,6 +372,19 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
     
     switch(msg->wdp_Which)
     {
+
+        case MUIIMAGE:
+    {
+        renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
+        /* no code yet */
+        break;      
+    }
+    case POPUPIMAGE:
+    {
+        renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
+        /* code should be added later */
+        break;      
+    }
     	case CLOSEIMAGE:
 	{
 	    renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
