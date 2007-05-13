@@ -158,9 +158,9 @@ struct contentsBuffer
 
 	    if(fontSeg == NULL)
 		continue;
-	    
+
 	    /* Skip NextSegment and ReturnCode */
-	    dfh = ConvDiskFont(fontSeg, "test", (struct DiskfontBase_intern *)DiskfontBase);
+	    dfh = ConvDiskFont(fontSeg, "test", FALSE, (struct DiskfontBase_intern *)DiskfontBase);
 	    UnLoadSeg(fontSeg);
 	    
 	    if(dfh == NULL)
@@ -192,7 +192,7 @@ struct contentsBuffer
 	    strcat(cNode->fc.fc_FileName, fib->fib_FileName);
 
 	    /* Embedded tags? */
-	    if(dfh->dfh_TF.tf_Style & FSF_TAGGED)
+	    if((dfh->dfh_TF.tf_Style & FSF_TAGGED) && (dfh->dfh_TagList != NULL))
 	    {
 		const struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
 		struct TagItem *tPtr;
@@ -217,8 +217,8 @@ struct contentsBuffer
 		i = 0;
 		while((item = NextTagItem(&ti)) != NULL)
 		{
-		    tPtr[i].ti_Tag  = item->ti_Tag;
-		    tPtr[i].ti_Data = item->ti_Data;
+		    tPtr[i].ti_Tag  = AROS_BE2LONG(item->ti_Tag);
+		    tPtr[i].ti_Data = AROS_BE2LONG(item->ti_Data);
 		    i++;
 		}
 		/* Add TAG_DONE tag, but no data (to avoid writing over the

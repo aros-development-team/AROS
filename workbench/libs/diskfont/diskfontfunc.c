@@ -148,7 +148,8 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
          retval->Attrs[ind].tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
     }
 
-    tagitems = (struct TagItem *)(retval->Attrs + fdh->NumEntries);
+    tagitems = (struct TagItem *)(retval->Attrs + retval->Numentries);
+	       
     for (i = 0; i < fdh->NumEntries; i++)
     {
 	retval->Attrs[i].tta_Name = retval->FileName;
