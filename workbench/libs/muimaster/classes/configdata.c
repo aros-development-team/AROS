@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright  2002, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -181,6 +181,7 @@ const static struct def_ulval DefULValues[] =
     { MUICFG_Window_Spacing_Left,     4 },
     { MUICFG_Window_Spacing_Right,    4 },
     { MUICFG_Window_Spacing_Top,      3 },
+    { MUICFG_Window_Buttons,          0 },
     { MUICFG_Window_Spacing_Bottom,   3 },
     { MUICFG_Window_Positions,        WINDOW_POSITION_FORGET_ON_EXIT },
     { MUICFG_Window_Redraw,           WINDOW_REDRAW_WITHOUT_CLEAR },
@@ -359,6 +360,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.screenmodeid = GetConfigULong(obj, MUICFG_Screen_Mode_ID);
     data->prefs.screen_width = GetConfigULong(obj, MUICFG_Screen_Width);
     data->prefs.screen_height = GetConfigULong(obj, MUICFG_Screen_Height);
+    data->prefs.window_buttons = GetConfigULong(obj, MUICFG_Window_Buttons);
     data->prefs.screenaddress = 0;
     
 

@@ -147,6 +147,12 @@ struct  MUIP_Window_SetMenuState    {ULONG MethodID; ULONG MenuID; LONG stat;};
 #define MUIV_Window_Width_Scaled            (-1000)
 #define MUIV_Window_Width_Default           (-1001)
 
+#define MUIV_Window_Button_MUI              1
+#define MUIV_Window_Button_Snapshot         2
+#define MUIV_Window_Button_Iconify          4
+#define MUIV_Window_Button_Popup            8
+
+
 #ifdef MUI_OBSOLETE
 #define MUIA_Window_Menu            (MUIB_MUI|0x0042db94) /* MUI: V4  i.. struct NewMenu * */
 #define MUIV_Window_Menu_NoMenu     (-1)

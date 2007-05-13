@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -147,6 +147,8 @@
 #define MUICFG_Screen_Width             0x507
 #define MUICFG_Screen_Height            0x508
 #define MUICFG_WindowPos                0x509
+#define MUICFG_Window_Buttons           0x50a
+
 #define MUIM_Configdata_GetWindowPos    (MUIB_Configdata | 0x0000002A)
 #define MUIM_Configdata_SetWindowPos    (MUIB_Configdata | 0x0000002B)
 

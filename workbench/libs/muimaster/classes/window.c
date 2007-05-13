@@ -458,7 +458,7 @@ static ULONG GetDefaultEvents (void)
     return IDCMP_NEWSIZE      | IDCMP_REFRESHWINDOW
          | IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_MENUPICK
          | IDCMP_CLOSEWINDOW  | IDCMP_RAWKEY | IDCMP_INTUITICKS
-         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW;
+         | IDCMP_ACTIVEWINDOW | IDCMP_INACTIVEWINDOW | IDCMP_GADGETUP;
 }
 
 static void ChangeEvents (struct MUI_WindowData *data, ULONG new_events)
@@ -580,6 +580,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     
     gadgets = (data->wd_VertProp != NULL) ? data->wd_VertProp : data->wd_HorizProp;
 
+    ULONG   buttons = muiGlobalInfo(obj)->mgi_Prefs->window_buttons;
+
     win = OpenWindowTags
     (
         NULL,
@@ -598,7 +600,10 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_InnerHeight,         (IPTR) data->wd_Height,
         WA_AutoAdjust,          (IPTR) TRUE,
         WA_NewLookMenus,        (IPTR) TRUE,
-//         WA_ExtraGadget_MUI,    TRUE,
+        WA_ExtraGadget_MUI,     (IPTR) ((buttons & MUIV_Window_Button_MUI) != 0) ? TRUE : FALSE,
+        WA_ExtraGadget_PopUp,   (IPTR) ((buttons & MUIV_Window_Button_Popup) != 0) ? TRUE : FALSE,
+        WA_ExtraGadget_Snapshot,(IPTR) ((buttons & MUIV_Window_Button_Snapshot) != 0) ? TRUE : FALSE,
+        WA_ExtraGadget_Iconify, (IPTR) ((buttons & MUIV_Window_Button_Iconify) != 0) ? TRUE : FALSE,
         data->wd_NoMenus ?
             WA_RMBTrap   :
             TAG_IGNORE,         (IPTR) TRUE,
@@ -2180,8 +2185,19 @@ void _zune_window_message(struct IntuiMessage *imsg)
     {
 	if (IDCMP_RAWKEY == imsg->Class)
 	    HandleRawkey(oWin, data, imsg);
-	else
+	else if (IDCMP_GADGETUP == imsg->Class)
+    {
+        
+        if (ETI_MUI == ((struct Gadget *) imsg->IAddress)->GadgetID)
+        {
+            DoMethod(_app(oWin), MUIM_Application_OpenConfigWindow);
+        }
+    }
+    else
+    {
 	    HandleInputEvent(oWin, data, imsg);
+    }
+
     }
 }
 
