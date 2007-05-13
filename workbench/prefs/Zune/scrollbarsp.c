@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 

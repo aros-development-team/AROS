@@ -14,11 +14,11 @@ Hintergrund
 ; Background:
 ;
 MSG_BACKGROUND_PRESSED
-Hintergrund im\ngedrückten Zustand:
+Hintergrund im\ngedrckten Zustand:
 ; Background in\npressed state:
 ;
 MSG_TEXT_BUTTONS
-Textknöpfe
+Textknï¿½fe
 ; Text Buttons
 ;
 MSG_FRAME_COLON
@@ -30,7 +30,7 @@ Zeichensatz
 ; Font:
 ;
 MSG_IMAGE_BUTTONS
-Bildknöpfe
+Bildknï¿½fe
 ; Image Buttons
 ;
 MSG_ADJUST_FRAME
@@ -38,7 +38,7 @@ Rahmeneinstellung
 ; Adjust Frame
 ;
 MSG_CHECKMARKS
-An-/Aus-Knöpfe
+An-/Aus-Knï¿½fe
 ; Checkmarks
 ;
 MSG_LOOK_COLON
@@ -50,7 +50,7 @@ An-/Aus-Knopf
 ; Checkmark
 ;
 MSG_RADIO_BUTTONS
-Radio-Knöpfe
+Radio-Knï¿½fe
 ; Radio Buttons
 ;
 MSG_RADIOBUTTON
@@ -93,7 +93,7 @@ Cycle
 ; Cycle
 ;
 MSG_POPUP_MENU_CONTROL
-Popup-Menü Steuerung
+Popup-Men Steuerung
 ; Popup Menu Control
 ;
 MSG_POSITION
@@ -109,7 +109,7 @@ Geschwindigkeit:
 ; Speed:
 ;
 MSG_POPUP_MENU_DESIGN
-Popup-Menü Design
+Popup-Men Design
 ; Popup Menu Design
 ;
 MSG_FRAME
@@ -125,7 +125,7 @@ Hintergrund
 ; Background
 ;
 MSG_RECESSED_ENTRIES
-Vertiefte Einträge:
+Vertiefte Eintrï¿½e:
 ; Recessed Entries:
 ;
 ;=============================
@@ -231,7 +231,7 @@ Weich:
 ; Smooth:
 ;
 MSG_FONTS
-Zeichensätze
+Zeichensï¿½ze
 ; Fonts
 ;
 MSG_NORMAL_COLON
@@ -267,11 +267,11 @@ Aktiv:
 ; Active:
 ;
 MSG_ACTIVE_SELECTED
-Aktiv &\ngewählt
+Aktiv &\ngewï¿½lt
 ; Active &\nSelected:
 ;
 MSG_SELECTED
-Gewählt:
+Gewï¿½lt:
 ; Selected:
 ;
 ;=============================
@@ -282,7 +282,7 @@ immer komplett
 ; always solid
 ;
 MSG_GHOSTED_ON_BOX
-durchsichtig über Box
+durchsichtig ber Box
 ; ghosted on box
 ;
 MSG_GHOSTED_OUTSIDE_BOX
@@ -302,7 +302,7 @@ Objekte zeigen
 ; show objects
 ;
 MSG_KL_PRESS
-Drücken:
+Drcken:
 ; Press:
 ;
 MSG_KL_TOGGLE
@@ -362,7 +362,7 @@ Gadget vor:
 ; Next gadget:
 ;
 MSG_KL_PREV_GADGET
-Gadget zurück:
+Gadget zurck:
 ; Prev. gadget:
 ;
 MSG_KL_GADGET_OFF
@@ -378,7 +378,7 @@ Fenster vor:
 ; Next window:
 ;
 MSG_KL_PREV_WINDOW
-Fenster zurück:
+Fenster zurck:
 ; Prev. window:
 ;
 MSG_KL_HELP
@@ -505,7 +505,7 @@ Anordnung
 ; slidersp.c
 ;-----------
 MSG_CONTAINER_DESIGN
-Behälter-Design
+Behï¿½ter-Design
 ; Container Design
 ;
 MSG_KNOB_DESIGN
@@ -532,7 +532,7 @@ Fortschrittsanzeige
 ; Progress Indicator
 ;
 MSG_DEVICE_IMAGES
-Geräte-Bilder
+Gerï¿½e-Bilder
 ; Device Images
 ;
 MSG_DRAWER
@@ -552,7 +552,7 @@ RAM
 ; RAM
 ;
 MSG_VOLUME
-Datenträger
+Datentrï¿½er
 ; Volume
 ;
 MSG_NETWORK
@@ -603,7 +603,7 @@ String Rahmen
 ; String Frame
 ;
 MSG_SPECIAL_POPUP_BUTTONS
-Spezialle Popup-Knöpfe
+Spezialle Popup-Knï¿½fe
 ; Special Popup Buttons
 ;
 MSG_POPUP
@@ -670,11 +670,11 @@ simpel
 ; simple
 ;
 MSG_WITHOUT_CLEAR
-ohne löschen
+ohne lï¿½chen
 ; without clear
 ;
 MSG_WITH_CLEAR
-mit löschen
+mit lï¿½chen
 ; with clear
 ;
 MSG_POSITIONS
@@ -690,7 +690,7 @@ Klein:
 ; Tiny:
 ;
 MSG_BIG
-Groß:
+Groï¿½
 ; Big:
 ;
 MSG_WINDOW
@@ -717,6 +717,10 @@ MSG_B
 U
 ; B
 ;
+MSG_BUTTONS
+KnÃ¶pfe
+;Buttons
+;
 ;=============================
 ; zune.c
 ;-------
@@ -725,7 +729,7 @@ Zune - globale Einstellungen
 ; Zune - Global Prefs
 ;
 MSG_WINTITLE2
-Zune - Einstellungen für : %s
+Zune - Einstellungen fr : %s
 ; Zune - Prefs for : %s
 ;
 MSG_MEN_PROJECT
@@ -733,7 +737,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_OPEN
-Öffnen ...
+ï¿½fnen ...
 ; Open ...
 ;
 MSG_MEN_OPEN_SC
@@ -741,7 +745,7 @@ O
 ; O
 ;
 MSG_MEN_APPEND
-Anhängen ...
+Anhï¿½gen ...
 ; Append ...
 ;
 MSG_MEN_SAVEAS
@@ -753,7 +757,7 @@ A
 ; A
 ;
 MSG_MEN_ABOUT
-Über Zune ...
+ï¿½er Zune ...
 ; About Zune ...
 ;
 MSG_MEN_ABOUT_SC
@@ -801,7 +805,7 @@ Gruppen
 ; Groups
 ;
 MSG_DSC_BUTTONS
-Knöpfe
+Knï¿½fe
 ; Buttons
 ;
 MSG_DSC_CYCLES
