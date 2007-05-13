@@ -73,7 +73,7 @@ SKIPPTR(ptr);
 
 /****************************************************************************************/
 
-struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
+struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL doextend,
     	    	    	      struct DiskfontBase_intern *DiskfontBase)
 {
     UWORD count, numchars;
@@ -124,6 +124,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     CONVWORD(ptr, tmp_dfh.dfh_Revision);    /* dfh_Revision */
     
     COPYPTR(ptr, taglist_ptr);	    	    /* dfh_Segment */
+    
     ptr += MAXFONTNAME;
 
     /* dfh_TF starts */
@@ -185,8 +186,14 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     if (!dfh) goto failure;
 
     fontsegment = (BPTR)MAKE_REAL_SEGMENT(dfh);
-    tmp_dfh.dfh_Segment = fontsegment;
-   
+    if (doextend)
+    {
+    	/* Don't do this in case of doextend = FALSE (called by NewFontContents),
+	   because then code expects taglist to be in there!!!! (dfh_Segment == dfh_TagList) */
+	   	  
+    	tmp_dfh.dfh_Segment = fontsegment;
+    }
+    
     tf = &dfh->dfh_TF;
     
     D(bug("charkern in temp:  %p\n", 	tmp_dfh.dfh_TF.tf_CharKern));
@@ -389,7 +396,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
     /* ----------------------- */
     /* Handle taglist */
     
-    if (tf->tf_Style & FSF_TAGGED)
+    if ((tf->tf_Style & FSF_TAGGED) && taglist_ptr)
     {
 	UWORD numtags = 0;
 	ULONG tag;
@@ -429,16 +436,23 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname,
 	    CONVLONG(ptr, taglist[i].ti_Data);
 	}
 
-	if (ExtendFont(tf, taglist))
+    	if (doextend)
 	{
-	    fontextended = TRUE;
+	    if (ExtendFont(tf, taglist))
+	    {
+		fontextended = TRUE;
+	    }
+	    else
+	    {
+		goto failure;
+	    }
 	}
 	else
 	{
-	    goto failure;
+	    dfh->dfh_TagList = taglist;
 	}
     }
-    else
+    else if (doextend)
     {
     	D(bug("No tags, extending it\n"));
 
@@ -504,7 +518,7 @@ struct TextFont *ReadDiskFont(
     
     if ((seglist = LoadSeg(filename)) != 0)
     {
-	dfh = ConvDiskFont(seglist, realfontname, DiskfontBase);
+	dfh = ConvDiskFont(seglist, realfontname, TRUE, DiskfontBase);
 	UnLoadSeg(seglist);
 
 	if (dfh != NULL)
