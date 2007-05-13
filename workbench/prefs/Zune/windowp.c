@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,11 +39,25 @@ struct MUI_WindowPData
     Object *spacing_right_slider;
     Object *spacing_top_slider;
     Object *spacing_bottom_slider;
+    Object *mui;
+    Object *popup;
+    Object *iconify;
+    Object *snapshot;
 };
 
 static CONST_STRPTR positions_labels[4];
 static CONST_STRPTR refresh_labels[3];
 static CONST_STRPTR redraw_labels[3];
+
+#define _Button(name)\
+    TextObject,\
+        ButtonFrame,\
+        MUIA_Font, MUIV_Font_Button,\
+        MUIA_Text_Contents, name,\
+        MUIA_Text_PreParse, "\33c",\
+        MUIA_InputMode    , MUIV_InputMode_Toggle,\
+        MUIA_Background   , MUII_ButtonBack,\
+        End
 
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -77,6 +91,21 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		      Child, (IPTR) (d.refresh_cycle = MakeCycle(_(MSG_REFRESH), refresh_labels)),
 		      Child, (IPTR) Label(_(MSG_REDRAW)),
 		      Child, (IPTR) (d.redraw_cycle = MakeCycle(_(MSG_REDRAW), redraw_labels)),
+              Child, (IPTR) Label(_(MSG_BUTTONS)),
+                Child, HGroup,
+                    NoFrame,
+                    Child, ColGroup(8),
+                     NoFrame,
+                     Child, HVSpace,
+                     Child, d.mui = _Button("M"),
+                     Child, HVSpace,
+                     Child, d.snapshot = _Button("S"),
+                     Child, HVSpace,
+                     Child, d.popup = _Button("P"),
+                     Child, HVSpace,
+                     Child, d.iconify = _Button("I"),
+                    End,
+                End,
 		      End,
 		   Child, (IPTR) VSpace(0),
 		   End,
@@ -179,6 +208,14 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj,
 	setcycle(data->positions_cycle,
 	     DoMethod(msg->configdata, MUIM_Configdata_GetULong,
 		      MUICFG_Window_Positions));
+
+    ULONG   buttons = DoMethod(msg->configdata, MUIM_Configdata_GetULong, MUICFG_Window_Buttons);
+
+    if ((buttons & MUIV_Window_Button_MUI) != 0) set(data->mui, MUIA_Selected, TRUE); else set(data->mui, MUIA_Selected, FALSE);
+    if ((buttons & MUIV_Window_Button_Popup) != 0) set(data->popup, MUIA_Selected, TRUE); else set(data->popup, MUIA_Selected, FALSE);
+    if ((buttons & MUIV_Window_Button_Iconify) != 0) set(data->iconify, MUIA_Selected, TRUE); else set(data->iconify, MUIA_Selected, FALSE);
+    if ((buttons & MUIV_Window_Button_Snapshot) != 0) set(data->snapshot, MUIA_Selected, TRUE); else set(data->snapshot, MUIA_Selected, FALSE);
+
     return 1;    
 }
 
@@ -224,6 +261,15 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj,
 	DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Positions,
 	     XGET(data->positions_cycle, MUIA_Cycle_Active));
 
+    ULONG   buttons = 0;
+
+    if (XGET(data->mui, MUIA_Selected) != FALSE) buttons |= MUIV_Window_Button_MUI;
+    if (XGET(data->popup, MUIA_Selected) != FALSE) buttons |= MUIV_Window_Button_Popup;
+    if (XGET(data->snapshot, MUIA_Selected) != FALSE) buttons |= MUIV_Window_Button_Snapshot;
+    if (XGET(data->iconify, MUIA_Selected) != FALSE) buttons |= MUIV_Window_Button_Iconify;
+
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Buttons, buttons);
+    
     return TRUE;
 }
 
