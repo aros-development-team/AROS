@@ -114,6 +114,10 @@
         struct NewImage *img_left;
         struct NewImage *img_right;
         struct NewImage *img_mui;
+        struct NewImage *img_popup;
+        struct NewImage *img_snapshot;
+        struct NewImage *img_iconify;
+        struct NewImage *img_lock;
         struct NewImage *img_winbar_normal;
         struct NewImage *img_border_normal;
         struct NewImage *img_border_deactivated;
@@ -157,6 +161,10 @@
         struct NewImage *img_left;
         struct NewImage *img_right;
         struct NewImage *img_mui;
+        struct NewImage *img_popup;
+        struct NewImage *img_snapshot;
+        struct NewImage *img_iconify;
+        struct NewImage *img_lock;
         struct NewImage *img_winbar_normal;
         struct NewImage *img_border_normal;
         struct NewImage *img_border_deactivated;
@@ -262,6 +270,10 @@
         struct NewImage *img_left;
         struct NewImage *img_right;
         struct NewImage *img_mui;
+        struct NewImage *img_popup;
+        struct NewImage *img_snapshot;
+        struct NewImage *img_iconify;
+        struct NewImage *img_lock;
         struct NewImage *img_winbar_normal;
         struct NewImage *img_border_normal;
         struct NewImage *img_border_deactivated;
@@ -275,7 +287,7 @@
         LONG   ActivePen;
         LONG   DeactivePen;
 
-        WORD   closewidth, depthwidth, zoomwidth, muiwidth;
+        WORD   closewidth, depthwidth, zoomwidth;
         BOOL   truecolor;
 
     };
@@ -311,6 +323,10 @@
         struct NewImage  img_left;
         struct NewImage  img_right;
         struct NewImage  img_mui;
+        struct NewImage  img_popup;
+        struct NewImage  img_snapshot;
+        struct NewImage  img_iconify;
+        struct NewImage  img_lock;
         struct NewImage  img_winbar_normal;
         struct NewImage  img_border_normal;
         struct NewImage  img_border_deactivated;
@@ -386,6 +402,7 @@ static Object *LoadPicture(CONST_STRPTR filename, struct Screen *scr)
 
     SetImage(struct NewImage *in, struct NewImage *out, BOOL truecolor, struct Screen* scr)
     {
+        out->ok = FALSE;
         if (in != NULL)
         {
             out->w = in->w;
@@ -1135,6 +1152,42 @@ IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
             }
             break;
 
+        case POPUPIMAGE:
+            if (wd->img_popup->ok)
+            {
+                ni = wd->img_popup;
+                isset = TRUE;
+                titlegadget = TRUE;
+            }
+            break;
+
+        case SNAPSHOTIMAGE:
+            if (wd->img_snapshot->ok)
+            {
+                ni = wd->img_snapshot;
+                isset = TRUE;
+                titlegadget = TRUE;
+            }
+            break;
+
+        case LOCKIMAGE:
+            if (wd->img_lock->ok)
+            {
+                ni = wd->img_lock;
+                isset = TRUE;
+                titlegadget = TRUE;
+            }
+            break;
+
+        case ICONIFYIMAGE:
+            if (wd->img_iconify->ok)
+            {
+                ni = wd->img_iconify;
+                isset = TRUE;
+                titlegadget = TRUE;
+            }
+            break;
+
         case DEPTHIMAGE:
             if (wd->img_depth->ok)
             {
@@ -1189,7 +1242,7 @@ IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
 
     if (wd && titlegadget) if (wd->rp) if (wd->rp->BitMap) BltBitMapRastPort(wd->rp->BitMap, left+addy, top+addy, rp, left+addy, top+addy, width, height, 0xc0);
 
-    DrawAlphaStateImageToRP(data, rp, ni, state, left+addx, top+addy, TRUE);
+    if (ni) DrawAlphaStateImageToRP(data, rp, ni, state, left+addx, top+addy, TRUE);
 
     return TRUE;
 }
@@ -2410,17 +2463,44 @@ void DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *data, stru
             }
             else  if (g->Flags & GFLG_SELECTED) state = IDS_SELECTED;
 
-            switch(g->GadgetType & GTYP_SYSTYPEMASK)
+            if (g->GadgetType & GTYP_SYSTYPEMASK) {
+                switch(g->GadgetType & GTYP_SYSTYPEMASK)
+                {
+                    case GTYP_CLOSE:
+                        ni = wd->img_close;
+                        break;
+                    case GTYP_WDEPTH:
+                        ni = wd->img_depth;
+                        break;
+                    case GTYP_WZOOM:
+                        ni = wd->img_zoom;
+                        break;
+                }
+            }
+            else
             {
-                case GTYP_CLOSE:
-                    ni = wd->img_close;
-                    break;
-                case GTYP_WDEPTH:
-                    ni = wd->img_depth;
-                    break;
-                case GTYP_WZOOM:
-                    ni = wd->img_zoom;
-                    break;
+                switch(g->GadgetID)
+                {
+                    case ETI_MUI:
+                        ni = wd->img_mui;
+                        break;
+
+                    case ETI_PopUp:
+                        ni = wd->img_popup;
+                        break;
+
+                    case ETI_Snapshot:
+                        ni = wd->img_snapshot;
+                        break;
+
+                    case ETI_Iconify:
+                        ni = wd->img_iconify;
+                        break;
+
+                    case ETI_Lock:
+                        ni = wd->img_lock;
+                        break;
+                }
             }
 
             if (ni) DrawAlphaStateImageToRP(data, rp, ni, state, x, y, TRUE);
@@ -2465,7 +2545,6 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
 
     if ((msg->wdp_Flags & WDF_LBG_SYSTEMGADGET) != 0)
     {
-
         if (gadget->GadgetType == GTYP_CUSTOMGADGET)
         {
             switch(gadget->GadgetID)
@@ -2473,32 +2552,250 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
                 case ETI_MUI:
                     if (wd->img_mui->ok)
                     {
-                        if (data->threestate) width = (data->img_mui->w / 3); else width = (data->img_mui->w >> 2);
+                        if (data->threestate) width = (wd->img_mui->w / 3); else width = (wd->img_mui->w >> 2);
 
                         gadget->Width = width;
-                        wd->muiwidth = width;
-                        gadget->Height = data->img_mui->h;
+                        gadget->Height = wd->img_mui->h;
                         gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
 
                         if (haszoom)
                         {
-                            if (data->threestate) width += (data->img_zoom->w / 3); else width += (data->img_zoom->w >> 2);
+                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
                         }
                         if (hasclose && data->closeright)
                         {
-                            if (data->threestate) width += (data->img_close->w / 3); else width += (data->img_close->w >> 2);
+                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
                         }
                         if (hasdepth)
                         {
-                            if (data->threestate) width += (data->img_depth->w / 3); else width += (data->img_depth->w >> 2);
+                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
                             gadget->LeftEdge = -data->BarPostGadget_s - width;
                         }
                         else
                         {
                             gadget->LeftEdge = -data->BarPostGadget_s - width;
                         }
+                        gadget->Flags &= ~GFLG_RELWIDTH;
+                        gadget->Flags |= GFLG_RELRIGHT;
+
                     }
                     break;
+
+                case ETI_PopUp:
+                    if (wd->img_popup->ok)
+                    {
+                        if (data->threestate) width = (wd->img_popup->w / 3); else width = (wd->img_popup->w >> 2);
+
+                        gadget->Width = width;
+                        gadget->Height = wd->img_popup->h;
+                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+
+                        if ((eb & ETG_MUI) != 0)
+                        {
+                            if (wd->img_mui->ok)
+                            {
+                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                            }
+                        }
+
+                        if (haszoom)
+                        {
+                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                        }
+
+                        if (hasclose && data->closeright)
+                        {
+                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                        }
+                        if (hasdepth)
+                        {
+                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        else
+                        {
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        gadget->Flags &= ~GFLG_RELWIDTH;
+                        gadget->Flags |= GFLG_RELRIGHT;
+
+                    }
+                    break;
+
+                case ETI_Snapshot:
+                    if (wd->img_snapshot->ok)
+                    {
+                        if (data->threestate) width = (wd->img_snapshot->w / 3); else width = (wd->img_snapshot->w >> 2);
+
+                        gadget->Width = width;
+                        gadget->Height = wd->img_snapshot->h;
+                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+
+                        if ((eb & ETG_MUI) != 0)
+                        {
+
+                            if (wd->img_mui->ok)
+                            {
+                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                            }
+                        }
+
+                        if ((eb & ETG_POPUP) != 0)
+                        {
+                            if (wd->img_popup->ok)
+                            {
+                                if (data->threestate) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
+                            }
+                        }
+
+                        if (haszoom)
+                        {
+                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                        }
+
+                        if (hasclose && data->closeright)
+                        {
+                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                        }
+
+                        if (hasdepth)
+                        {
+                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        else
+                        {
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+
+                        gadget->Flags &= ~GFLG_RELWIDTH;
+                        gadget->Flags |= GFLG_RELRIGHT;
+
+                    }
+                    break;
+
+                case ETI_Iconify:
+                    if (wd->img_iconify->ok)
+                    {
+                        if (data->threestate) width = (wd->img_iconify->w / 3); else width = (wd->img_iconify->w >> 2);
+
+                        gadget->Width = width;
+                        gadget->Height = wd->img_iconify->h;
+                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+
+                        if ((eb & ETG_MUI) != 0)
+                        {
+                            if (wd->img_mui->ok)
+                            {
+                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                            }
+                        }
+
+                        if ((eb & ETG_POPUP) != 0)
+                        {
+                            if (wd->img_popup->ok)
+                            {
+                                if (data->threestate) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
+                            }
+                        }
+
+                        if ((eb & ETG_SNAPSHOT) != 0)
+                        {
+                            if (wd->img_snapshot->ok)
+                            {
+                                if (data->threestate) width += (wd->img_snapshot->w / 3); else width += (wd->img_snapshot->w >> 2);
+                            }
+                        }
+
+                        if (haszoom)
+                        {
+                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                        }
+
+                        if (hasclose && data->closeright)
+                        {
+                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                        }
+                        if (hasdepth)
+                        {
+                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        else
+                        {
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        gadget->Flags &= ~GFLG_RELWIDTH;
+                        gadget->Flags |= GFLG_RELRIGHT;
+
+                    }
+                    break;
+
+                case ETI_Lock:
+                    if (wd->img_lock->ok)
+                    {
+                        if (data->threestate) width = (wd->img_lock->w / 3); else width = (wd->img_lock->w >> 2);
+
+                        gadget->Width = width;
+                        gadget->Height = wd->img_lock->h;
+                        gadget->TopEdge = (data->winbarheight - gadget->Height) / 2;
+
+                        if ((eb & ETG_MUI) != NULL)
+                        {
+                            if (wd->img_mui->ok)
+                            {
+                                if (data->threestate) width += (wd->img_mui->w / 3); else width += (wd->img_mui->w >> 2);
+                            }
+                        }
+
+                        if ((eb & ETG_POPUP) != NULL)
+                        {
+                            if (wd->img_popup->ok)
+                            {
+                                if (data->threestate) width += (wd->img_popup->w / 3); else width += (wd->img_popup->w >> 2);
+                            }
+                        }
+
+                        if ((eb & ETG_SNAPSHOT) != NULL)
+                        {
+                            if (wd->img_snapshot->ok)
+                            {
+                                if (data->threestate) width += (wd->img_snapshot->w / 3); else width += (wd->img_snapshot->w >> 2);
+                            }
+                        }
+
+                        if ((eb & ETG_ICONIFY) != NULL)
+                        {
+                            if (wd->img_iconify->ok)
+                            {
+                                if (data->threestate) width += (wd->img_iconify->w / 3); else width += (wd->img_iconify->w >> 2);
+                            }
+                        }
+
+                        if (haszoom)
+                        {
+                            if (data->threestate) width += (wd->img_zoom->w / 3); else width += (wd->img_zoom->w >> 2);
+                        }
+
+                        if (hasclose && data->closeright)
+                        {
+                            if (data->threestate) width += (wd->img_close->w / 3); else width += (wd->img_close->w >> 2);
+                        }
+                        if (hasdepth)
+                        {
+                            if (data->threestate) width += (wd->img_depth->w / 3); else width += (wd->img_depth->w >> 2);
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        else
+                        {
+                            gadget->LeftEdge = -data->BarPostGadget_s - width;
+                        }
+                        gadget->Flags &= ~GFLG_RELWIDTH;
+                        gadget->Flags |= GFLG_RELRIGHT;
+
+                    }
+                    break;
+
             }
         }
         else
@@ -2889,7 +3186,6 @@ IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSysImage *
     struct NewImage        *n = NULL;
     WORD                    w = 0, h = 0;
     BOOL                    isset = FALSE;
-
     switch(msg->wdp_Which)
     {
         case SIZEIMAGE:
@@ -2906,6 +3202,26 @@ IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSysImage *
 
         case MUIIMAGE:
             n = data->img_mui;
+            isset = TRUE;
+            break;
+
+        case POPUPIMAGE:
+            n = data->img_popup;
+            isset = TRUE;
+            break;
+
+        case SNAPSHOTIMAGE:
+            n = data->img_snapshot;
+            isset = TRUE;
+            break;
+
+        case ICONIFYIMAGE:
+            n = data->img_iconify;
+            isset = TRUE;
+            break;
+
+        case LOCKIMAGE:
+            n = data->img_lock;
             isset = TRUE;
             break;
 
@@ -2962,17 +3278,20 @@ IPTR windecor_getdefsizes(Class *cl, Object *obj, struct wdpGetDefSizeSysImage *
     }
     else
     {
-        if (data->threestate)
-        {
-            *msg->wdp_Width = (n->w / 3);
-            *msg->wdp_Height = n->h;
-        }
-        else
-        {
-            *msg->wdp_Width = (n->w >> 2);
-            *msg->wdp_Height = n->h;
-        }
+        if (n->ok) {
+            if (data->threestate)
+            {
+                *msg->wdp_Width = (n->w / 3);
+                *msg->wdp_Height = n->h;
+            }
+            else
+            {
+                *msg->wdp_Width = (n->w >> 2);
+                *msg->wdp_Height = n->h;
+            }
+        } else return DoSuperMethodA(cl, obj, (Msg) msg);
     }
+
     return TRUE;
 }
 
@@ -3245,6 +3564,10 @@ IPTR windecor_initwindow(Class *cl, Object *obj, struct wdpInitWindow *msg)
     SETIMAGE_WIN(left);
     SETIMAGE_WIN(right);
     SETIMAGE_WIN(mui);
+    SETIMAGE_WIN(popup);
+    SETIMAGE_WIN(snapshot);
+    SETIMAGE_WIN(iconify);
+    SETIMAGE_WIN(lock);
     SETIMAGE_WIN(winbar_normal);
     SETIMAGE_WIN(border_normal);
     SETIMAGE_WIN(border_deactivated);
@@ -3274,7 +3597,6 @@ IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *msg)
 IPTR windecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 {
     IPTR retval;
-
     switch(msg->MethodID)
     {
         case OM_NEW:
@@ -3329,7 +3651,6 @@ IPTR windecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
             retval = DoSuperMethodA(cl, obj, msg);
             break;
     }
-
 
     return retval;
 }
@@ -3597,6 +3918,10 @@ IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
     SETIMAGE_SCR(left);
     SETIMAGE_SCR(right);
     SETIMAGE_SCR(mui);
+    SETIMAGE_SCR(popup);
+    SETIMAGE_SCR(snapshot);
+    SETIMAGE_SCR(iconify);
+    SETIMAGE_SCR(lock);
     SETIMAGE_SCR(winbar_normal);
     SETIMAGE_SCR(border_normal);
     SETIMAGE_SCR(border_deactivated);
@@ -3631,6 +3956,10 @@ IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *msg)
     DELIMAGE_SCR(left);
     DELIMAGE_SCR(right);
     DELIMAGE_SCR(mui);
+    DELIMAGE_SCR(popup);
+    DELIMAGE_SCR(snapshot);
+    DELIMAGE_SCR(iconify);
+    DELIMAGE_SCR(lock);
     DELIMAGE_SCR(winbar_normal);
     DELIMAGE_SCR(border_normal);
     DELIMAGE_SCR(border_deactivated);
@@ -3652,7 +3981,7 @@ IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *msg)
 IPTR scrdecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 {
     IPTR retval;
-
+  
     switch(msg->MethodID)
     {
         case OM_NEW:
@@ -4282,6 +4611,10 @@ BOOL InitWindowSkinning(STRPTR path, struct windecor_data *data) {
     PUTIMAGE_WIN(left);
     PUTIMAGE_WIN(right);
     PUTIMAGE_WIN(mui);
+    PUTIMAGE_WIN(popup);
+    PUTIMAGE_WIN(snapshot);
+    PUTIMAGE_WIN(iconify);
+    PUTIMAGE_WIN(lock);
     PUTIMAGE_WIN(winbar_normal);
     PUTIMAGE_WIN(border_normal);
     PUTIMAGE_WIN(border_deactivated);
@@ -4310,6 +4643,10 @@ void DisposeScreenSkinning(struct scrdecor_data *data)
     DisposeImageContainer(data->img_depth);
     DisposeImageContainer(data->img_zoom);
     DisposeImageContainer(data->img_mui);
+    DisposeImageContainer(data->img_popup);
+    DisposeImageContainer(data->img_snapshot);
+    DisposeImageContainer(data->img_iconify);
+    DisposeImageContainer(data->img_lock);
     DisposeImageContainer(data->img_up);
     DisposeImageContainer(data->img_down);
     DisposeImageContainer(data->img_left);
@@ -4332,6 +4669,10 @@ void DisposeScreenSkinning(struct scrdecor_data *data)
     data->img_depth = NULL;
     data->img_zoom = NULL;
     data->img_mui = NULL;
+    data->img_popup = NULL;
+    data->img_snapshot = NULL;
+    data->img_iconify = NULL;
+    data->img_lock = NULL;
     data->img_up = NULL;
     data->img_down = NULL;
     data->img_left = NULL;
@@ -4356,7 +4697,6 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     BPTR    file;
     BPTR    lock;
     BPTR    olddir = 0;
-
     lock = Lock(path, ACCESS_READ);
     if (lock)
     {
@@ -4422,6 +4762,10 @@ BOOL InitScreenSkinning(STRPTR path, struct scrdecor_data *data) {
     data->img_depth = GetImageFromFile(path, "System/Depth/", TRUE);
     data->img_zoom = GetImageFromFile(path, "System/Zoom/", TRUE);
     data->img_mui = GetImageFromFile(path, "System/MUI/", TRUE);
+    data->img_popup = GetImageFromFile(path, "System/PopUp/", TRUE);
+    data->img_snapshot = GetImageFromFile(path, "System/Snapshot/", TRUE);
+    data->img_iconify = GetImageFromFile(path, "System/Iconify/", TRUE);
+    data->img_lock = GetImageFromFile(path, "System/Lock/", TRUE);
     data->img_up = GetImageFromFile(path, "System/ArrowUp/", TRUE);
     data->img_down = GetImageFromFile(path, "System/ArrowDown/", TRUE);
     data->img_left = GetImageFromFile(path, "System/ArrowLeft/", TRUE);
@@ -4628,9 +4972,7 @@ int main(void)
                                         {
                                             decor->nd_Pattern = msg->id;
                                             decor->nd_Port = port;
-//                                             CloseWorkBench();
                                             ChangeDecoration(DECORATION_SET, decor);
-//                                             OpenWorkBench();
                                         }
                                         break;
                                     case MAGIC_DECORATOR:
