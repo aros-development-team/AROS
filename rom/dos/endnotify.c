@@ -55,10 +55,22 @@
     AROS_LIBFUNC_INIT
 
     struct IOFileSys iofs;
+    struct DevProc *dvp;
+
+    if ((dvp = GetDeviceProc(notify->nr_FullName, NULL)) == NULL)
+        return;
 
     InitIOFS(&iofs, FSA_REMOVE_NOTIFY, DOSBase);
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
-    iofs.IOFS.io_Device = notify->nr_Device;
+
+    iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
+
+    if (dvp->dvp_Lock != NULL)
+        iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
+    else
+        iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
+
+    FreeDeviceProc(dvp);
 
     DoIO(&iofs.IOFS);
 
