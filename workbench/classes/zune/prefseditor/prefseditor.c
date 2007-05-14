@@ -360,7 +360,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Revert
 {
     SETUP_INST_DATA;
     
-    if (Seek(data->ped_BackupFH, 0, OFFSET_BEGINNING) == -1) goto error;
+    if (Seek(data->ped_BackupFH, 0, OFFSET_BEGINNING) == -1) 
+		 return FALSE;//error
     
     if
     (
@@ -374,8 +375,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Revert
         return TRUE;
     }
 
-error:    
-    return FALSE;
+     return FALSE;//error   
+   
 }
 
 IPTR PrefsEditor__MUIM_PrefsEditor_Save
