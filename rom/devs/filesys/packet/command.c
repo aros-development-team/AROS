@@ -687,7 +687,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest,
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
 
-            dp->dp_Type = ACTION_ADD_NOTIFY;
+            dp->dp_Type = ACTION_REMOVE_NOTIFY;
             dp->dp_Arg1 = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
             break;
 
