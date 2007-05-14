@@ -14,6 +14,7 @@
 #include <exec/execbase.h>
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
+#include <dos/notify.h>
 #include <devices/inputevent.h>
 
 #include <proto/exec.h>
@@ -581,6 +582,26 @@ void ProcessPackets(void) {
                 D(bug("[fat] SET_FILE_SIZE [WRITE]\n"));
                 err = ERROR_DISK_WRITE_PROTECTED;
                 break;
+
+            case ACTION_ADD_NOTIFY: {
+                struct NotifyRequest *nr = pkt->dp_Arg1;
+
+                D(bug("[fat] ADD_NOTIFY: nr 0x%08x name '%s'\n", nr, nr->nr_FullName));
+
+                err = OpAddNotify(nr);
+
+                break;
+            }
+
+            case ACTION_REMOVE_NOTIFY: {
+                struct NotifyRequest *nr = pkt->dp_Arg1;
+
+                D(bug("[fat] REMOVE_NOTIFY: nr 0x%08x name '%s'\n", nr, nr->nr_FullName));
+
+                err = OpRemoveNotify(nr);
+                
+                break;
+            }
 
             default:
                 D(bug("[fat] got unknown packet type %ld\n", pkt->dp_Type));
