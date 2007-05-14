@@ -186,6 +186,29 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
         ADDTAIL(&glob->sb->locks, gl);
 
         D(bug("[fat] created new global lock\n"));
+
+        /* look through the notify list. if there's any in there that aren't
+         * currently attached to a global lock, expand them and are for this
+         * file, fill them in */
+        {
+            struct NotifyNode *nn;
+
+            ForeachNode(&glob->sb->notifies, nn)
+                if (nn->gl == NULL) {
+                    D(bug("[fat] searching for notify name '%s'\n", nn->nr->nr_FullName));
+
+                    if (InitDirHandle(glob->sb, 0, &dh) != 0)
+                        continue;
+
+                    if (GetDirEntryByPath(&dh, nn->nr->nr_FullName, strlen(nn->nr->nr_FullName), &de) != 0)
+                        continue;
+
+                    if (gl->dir_cluster == de.cluster && gl->dir_entry == de.index) {
+                        D(bug("[fat] found and matched to the global lock (%ld/%ld)\n", gl->dir_cluster, gl->dir_entry));
+                        nn->gl = gl;
+                    }
+                }
+        }
     }
 
     /* now setup the file lock */
@@ -320,6 +343,8 @@ LONG LockParent(struct ExtFileLock *fl, LONG access, struct ExtFileLock **lock) 
 }
 
 void FreeLock(struct ExtFileLock *fl) {
+    struct NotifyNode *nn;
+
     if (fl == NULL)
         return;
 
@@ -329,6 +354,11 @@ void FreeLock(struct ExtFileLock *fl) {
 
     if (IsListEmpty(&fl->gl->locks) && fl->gl != &glob->sb->root_lock) {
         REMOVE(fl->gl);
+
+        ForeachNode(&glob->sb->notifies, nn)
+            if(nn->gl == fl->gl)
+                nn->gl = NULL;
+
         FreeVecPooled(glob->mempool, fl->gl);
 
         D(bug("[fat] freed associated global lock\n"));

@@ -16,6 +16,7 @@
 #define DEBUG_PACKETS       0
 #define DEBUG_CACHESTATS    0
 #define DEBUG_DUMP          0
+#define DEBUG_NOTIFY        0
 #define DEBUG_FULL          0
 
 #include <aros/libcall.h>
@@ -124,6 +125,16 @@ struct GlobalLock {
     struct MinList      locks;          /* list of ExtFileLocks opened on this file */
 };
 
+/* a node in the list of notification requests */
+struct NotifyNode {
+    struct MinNode          node;
+
+    struct GlobalLock       *gl;        /* pointer to global lock if this file is
+                                           locked. if its not, this is NULL */
+
+    struct NotifyRequest    *nr;        /* the request that DOS passed us */
+};
+
 struct VolumeInfo {
     UBYTE               name[32];     /* BCPL string */
     struct DateStamp    create_time;
@@ -174,6 +185,8 @@ struct FSSuper {
 
     struct MinList locks;
     struct GlobalLock root_lock;
+
+    struct MinList notifies;
 
     /* function table */
     ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);

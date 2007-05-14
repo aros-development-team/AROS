@@ -82,6 +82,8 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock);
 LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read);
 LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written);
+LONG OpAddNotify(struct NotifyRequest *nr);
+LONG OpRemoveNotify(struct NotifyRequest *nr);
 
 /* lock.c */
 LONG TestLock(struct ExtFileLock *fl);
@@ -91,5 +93,9 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock);
 LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock);
 LONG LockParent(struct ExtFileLock *fl, LONG access, struct ExtFileLock **lock);
 void FreeLock(struct ExtFileLock *fl);
+
+/* notify.c */
+void SendNotifyByLock (struct GlobalLock *gl);
+void SendNotifyByDirEntry (struct DirEntry *de);
 
 #endif

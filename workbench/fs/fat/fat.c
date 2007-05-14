@@ -387,6 +387,8 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     CopyMem(sb->volume.name, sb->root_lock.name, sb->volume.name[0]+1);
     NEWLIST(&sb->root_lock.locks);
 
+    NEWLIST(&(sb->notifies));
+
     D(bug("\tFAT Filesystem succesfully detected.\n"));
 
     return 0;

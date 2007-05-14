@@ -12,6 +12,7 @@
 
 #include <exec/types.h>
 #include <dos/dos.h>
+#include <dos/notify.h>
 #include <proto/exec.h>
 
 #include "fat_fs.h"
@@ -292,6 +293,9 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     /* now free the clusters the file was using */
     FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
 
+    /* notify */
+    SendNotifyByLock(lock->gl);
+
     /* this lock is now completely meaningless */
     FreeLock(lock);
 
@@ -387,6 +391,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
     /* delete the original */
     DeleteDirEntry(&sde);
 
+    /* notify */
+    SendNotifyByDirEntry(&dde);
+
     ReleaseDirHandle(&ddh);
     ReleaseDirHandle(&sdh);
 
@@ -472,6 +479,9 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     /* done */
     ReleaseDirHandle(&dh);
 
+    /* notify */
+    SendNotifyByLock((*newdirlock)->gl);
+
     return err;
 }
 
@@ -534,4 +544,82 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
     }
 
     return err;
+}
+
+LONG OpAddNotify(struct NotifyRequest *nr) {
+    LONG err;
+    struct DirHandle dh;
+    struct DirEntry de;
+    struct GlobalLock *gl = NULL, *tmp;
+    struct NotifyNode *nn;
+
+    D(bug("[fat] trying to add notification for '%s'\n", nr->nr_FullName));
+
+    /* if the request is for the volume root, then we just link to the root lock */
+    if (nr->nr_FullName[strlen(nr->nr_FullName)-1] == ':') {
+        D(bug("[fat] adding notify for root dir\n"));
+        gl = &glob->sb->root_lock;
+    }
+
+    else {
+        if ((err = InitDirHandle(glob->sb, 0, &dh)) != 0)
+        return err;
+
+        /* look for the entry */
+        err = GetDirEntryByPath(&dh, nr->nr_FullName, strlen(nr->nr_FullName), &de);
+        if (err != 0 && err != ERROR_OBJECT_NOT_FOUND)
+            return err;
+
+        /* if it was found, then it might be open. try to find the global lock */
+        if (err == 0) {
+            D(bug("[fat] file exists (%ld/%ld), looking for global lock\n", de.cluster, de.index));
+
+            ForeachNode(&glob->sb->locks, tmp)
+                if (tmp->dir_cluster == de.cluster && tmp->dir_entry == de.index) {
+                    gl = tmp;
+
+                    D(bug("[fat] found global lock 0x%0x\n", gl));
+
+                    break;
+                }
+        }
+        else
+            D(bug("[fat] file doesn't exist\n"));
+    }
+
+    if (gl == NULL)
+        D(bug("[fat] file not currently locked\n"));
+
+    /* allocate space to for the notify node */
+    if ((nn = AllocVecPooled(glob->mempool, sizeof(struct NotifyNode))) == NULL)
+        return ERROR_NO_FREE_STORE;
+
+    /* plug the bits in */
+    nn->gl = gl;
+    nn->nr = nr;
+
+    /* add to the list */
+    ADDTAIL(&glob->sb->notifies, nn);
+
+    D(bug("[fat] now reporting activity on '%s'\n", nr->nr_FullName));
+
+    return 0;
+}
+
+LONG OpRemoveNotify(struct NotifyRequest *nr) {
+    struct NotifyNode *nn;
+
+    D(bug("[fat] trying to remove notification for '%s'\n", nr->nr_FullName));
+
+    ForeachNode(&glob->sb->notifies, nn)
+        if (nn->nr == nr) {
+            D(bug("[fat] found notify request in list, removing it\n"));
+            REMOVE(nn);
+            FreeVecPooled(glob->mempool, nn);
+            return 0;
+        }
+
+    D(bug("[fat] not found, doing nothing\n"));
+
+    return 0;
 }
