@@ -207,12 +207,26 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
 
 LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct DirEntry *de) {
     LONG err;
-    ULONG len;
+    ULONG len, i;
 
     D(bug("[fat] looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->ioh.first_cluster));
 
     /* get back to the start of the dir */
     RESET_DIRHANDLE(dh);
+
+    /* if it starts with a volume specifier (or just a :), remove it and get
+     * us back to the root dir */
+    for (i = 0; i < pathlen; i++)
+        if (path[i] == ':') {
+            D(bug("[fat] path has volume specifier, moving to the root dir\n"));
+
+            pathlen -= (i+1);
+            path = &path[i+1];
+
+            InitDirHandle(dh->ioh.sb, 0, dh);
+
+            break;
+        }
 
     /* eat up leading slashes */
     while (pathlen >= 0 && path[0] == '/') {

@@ -89,18 +89,24 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     /* get the first cluster of the directory to look for the file in */
     dir_cluster = (fl != NULL) ? fl->ioh.first_cluster : 0;
 
-    /* remove any volume specifier */
-    for (i = 0; i < namelen; i++)
-        if (name[i] == ':') {
-            namelen -= (i+1);
-            name = &name[i+1];
-            break;
-        }
-
     D(bug("[fat] trying to obtain lock on '%.*s' in dir at cluster %ld\n", namelen, name, dir_cluster));
     
     /* open the dir */
     InitDirHandle(glob->sb, dir_cluster, &dh);
+
+    /* if it starts with a volume specifier (or just a :), remove it and get
+     * us back to the root dir */
+    for (i = 0; i < namelen; i++)
+        if (name[i] == ':') {
+            D(bug("[fat] name has volume specifier, moving to the root dir\n"));
+
+            namelen -= (i+1);
+            name = &name[i+1];
+
+            InitDirHandle(dh.ioh.sb, 0, &dh);
+
+            break;
+        }
 
     /* look for the entry */
     if ((err = GetDirEntryByPath(&dh, name, namelen, &de)) != 0) {

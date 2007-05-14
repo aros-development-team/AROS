@@ -47,11 +47,17 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
     struct DirEntry de;
     int i;
 
-    /* remove any volume specifier */
+    /* if it starts with a volume specifier (or just a :), remove it and get
+     * us back to the root dir */
     for (i = 0; i < namelen; i++)
         if (name[i] == ':') {
+            D(bug("[fat] name has volume specifier, moving to the root dir\n"));
+
             namelen -= (i+1);
             name = &name[i+1];
+
+            InitDirHandle(dh->ioh.sb, 0, dh);
+
             break;
         }
 
