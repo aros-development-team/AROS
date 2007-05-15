@@ -8,7 +8,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define       WP_MAX_BG_TAG_COUNT                20
 #define       WP_IFF_CHUNK_BUFFER_SIZE           1024
@@ -23,7 +23,7 @@
 //#define       DEBUG_NEWVIEWSETTINGS
 //#define       DEBUG_NETWORKBROWSER
 //#define       DEBUG_MULTLINE
-#define       DEBUG_CHANGEMENUBAR
+//#define       DEBUG_CHANGEMENUBAR
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
