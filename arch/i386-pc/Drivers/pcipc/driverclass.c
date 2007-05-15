@@ -180,12 +180,18 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 void SanityCheck(struct pci_staticdata *psd)
 {
     UWORD temp;
-    
+
+/* FIXME: This logic was originally taken from Linux operating system. However it
+   fails on newer systems since rules assumed here are no longer met.
+   This code is left for reference in case if new method generates problems too.
     temp = ReadConfigWord(psd, 0, 0, 0, PCICS_SUBCLASS);
     if ((temp == PCI_CLASS_BRIDGE_HOST) || (temp == PCI_CLASS_DISPLAY_VGA))
 	return;
     temp = ReadConfigWord(psd, 0, 0, 0, PCICS_VENDOR);
     if ((temp == PCI_VENDOR_INTEL) || (temp == PCI_VENDOR_COMPAQ))
+	return; */
+    temp = ReadConfigWord(psd, 0, 0, 0, PCICS_PRODUCT);
+    if ((temp != 0x0000) && (temp != 0xFFFF))
 	return;
     D(bug("Sanity check failed\n"));
     psd->ConfType = 0;
@@ -229,7 +235,14 @@ static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 	    D(bug("PCPCI: configuration mechanism 2 detected\n"));
 	    SanityCheck(&LIBBASE->psd);
 	}
-    }	
+    }
+    /* FIXME: Newer systems may have empty bus 0. In this case SanityCheck() will fail. We
+       assume configuration type 1 for such systems.
+       Probably SanityCheck() should be revised or removed at all. */
+    if (LIBBASE->psd.ConfType == 0) {
+        D(bug("PCPCI: Failing back to configuration mechanism 1\n"));
+        LIBBASE->psd.ConfType = 1;
+    }
     
     msg.driverClass = LIBBASE->psd.driverClass;
     msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_AddHardwareDriver);

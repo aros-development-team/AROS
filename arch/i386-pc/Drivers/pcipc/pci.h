@@ -37,6 +37,7 @@ struct pcibase {
 #define PCI_DataPort	0x0cfc
 
 #define PCICS_VENDOR	0x00
+#define PCICS_PRODUCT   0x02
 #define PCICS_SUBCLASS	0x0a
 
 #define PCI_CLASS_BRIDGE_HOST	0x0600
