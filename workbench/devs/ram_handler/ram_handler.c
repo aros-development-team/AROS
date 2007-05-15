@@ -281,13 +281,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
 
 	   			    if (OpenDev(rambase, &dummyiofs))
 	   			    {
-				        STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+				        BSTR s = MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
 
 					rambase->device.dd_Library.lib_OpenCnt++;
 					
 	    			        AROS_BSTR_putchar(s, 0, 'R');
 	    			        AROS_BSTR_putchar(s, 1, 'A');
 	    			        AROS_BSTR_putchar(s, 2, 'M');
+                                        AROS_BSTR_putchar(s, 3, 0);
 				        AROS_BSTR_setstrlen(s, 3);
 
 	    			        dn->dn_Type	    = DLT_DEVICE;
@@ -295,7 +296,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
 	    			        dn->dn_Ext.dn_AROS.dn_Device   = dummyiofs.IOFS.io_Device;
 	    			        dn->dn_Handler  = NULL;
 	    			        dn->dn_Startup  = NULL;
-	     			        dn->dn_Name  = MKBADDR(s);
+	     			        dn->dn_Name  = s;
 	    			        dn->dn_Ext.dn_AROS.dn_DevName  = AROS_BSTR_ADDR(dn->dn_Name);
 
 				        if (AddDosEntry((struct DosList *)dn))
