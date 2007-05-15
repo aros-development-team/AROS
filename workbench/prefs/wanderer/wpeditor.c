@@ -8,7 +8,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define       WP_MAX_BG_TAG_COUNT                20
 #define       WP_IFF_CHUNK_BUFFER_SIZE           1024
@@ -23,7 +23,7 @@
 //#define       DEBUG_NEWVIEWSETTINGS
 //#define       DEBUG_NETWORKBROWSER
 //#define       DEBUG_MULTLINE
-//#define       DEBUG_CHANGEMENUBAR
+#define       DEBUG_CHANGEMENUBAR
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -1450,17 +1450,6 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_User
 				}
 #endif
 
-#if defined(DEBUG_CHANGEMENUBAR)
-				case MUIA_IconWindowExt_Menubar_String:
-				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Menubar_String, val = %d\n", i, global_chunk[i].ti_Data));
-					SET(data->wped_s_menubar, MUIA_String_Contents, (STRPTR)global_chunk[i].ti_Data);
-					
-//D(bug("[WPEditor] WPEditor_ProccessGlobalChunk MUIA_IconWindowExt_Menubar_String in memory: '%s'\n",global_chunk[i].ti_Data));
-					break;
-				}
-#endif
-
 /* The Following attributes will be moved to the ViewSettings Specific Chunks */
 				case MUIA_IconList_IconListMode:
 				{
@@ -1528,12 +1517,22 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 }
 #endif
 
+#if defined(DEBUG_CHANGEMENUBAR)
+BOOL WPEditor_ProccessMenubarChunk(Class *CLASS, Object *self, UBYTE *_viewSettings_Chunk)
+{
+    SETUP_WPEDITOR_INST_DATA;
+
+	
+D(bug("[WPEditor] WPEditor_ProccessMenubarChunk: string readed = %s\n", _viewSettings_Chunk));
+	SET(data->wped_s_menubar, MUIA_String_Contents, _viewSettings_Chunk);
+D(bug("[WPEditor] WPEditor_ProccessMenubarChunk: string setted = %s\n", _viewSettings_Chunk));
+
+	return TRUE;
+}
+#endif
+
 /*Renabled WPEditor_ProccessViewSettingsChunk() as Nic Andrews (nicja@yahoo.com) has asked...;
- *I don't understand why
- *it must rebuild a new ViewSetting object to add an image to its PopImage gadget...;
- *All this function sounds like redundant...;
- *I've added 3 lines of codes (now disabled) to WPEditor__MUIM_PrefsEditor_ImportFH() for updating
- * the viewsetting objects without call this redundant function...;
+ *Please report here what do it do this function ;)
  */
 
 BOOL WPEditor_ProccessViewSettingsChunk(Class *CLASS, Object *self, char *_viewSettings_Name, UBYTE *_viewSettings_Chunk, IPTR chunk_size)
@@ -1761,6 +1760,15 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 										WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
 									}
 								#endif
+
+								#if defined(DEBUG_CHANGEMENUBAR)
+									else if ((strcmp(this_chunk_name, "wanderer:menubar")) == 0)
+									{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer menubar config chunk ..\n"));
+										WPEditor_ProccessMenubarChunk(CLASS, self, chunk_buffer);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Data for wanderer menubar config chunk PROCESSED..\n"));
+									}
+								#endif
 									else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
 									{
 										char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
@@ -1919,20 +1927,6 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowE
 			_wp_GlobalTagCounter += 1;
 #endif
 
-
-#if defined(DEBUG_CHANGEMENUBAR)
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconWindowExt_Menubar_String;
-			GET(data->wped_s_menubar, MUIA_String_Contents, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-			
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Menubar_String @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
-			
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Menubar_String in memory: '%s'\n",_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
-			positionTemp=_wp_GlobalTagCounter;
-			_wp_GlobalTagCounter += 1;
-			
-#endif
-
-
 #if defined(DEBUG_MULTLINE)
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_LabelText_MultiLine;
 			GET(data->wped_icon_textmultiline, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
@@ -2043,6 +2037,53 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' PopChunk() = %l
 			else
 			{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' PushChunk() = %ld failed\n", error));
+				goto exportFH_CloseFORM;
+			}
+#endif
+
+#if defined(DEBUG_CHANGEMENUBAR)
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'menubar' Wanderer Prefs Header Chunk ... \n"));
+			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
+			{
+				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:menubar");
+				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(struct TagItem);
+				
+				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
+				
+				if ((error = PopChunk(handle)) != 0)
+				{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Header PopChunk() = %ld\n", error));
+					goto exportFH_CloseFORM;
+				}
+			}
+			else
+			{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Wanderer Prefs Header Chunk : Error! %d \n", error));
+				goto exportFH_CloseFORM;
+			}	
+
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'menubar' Wanderer Prefs Data Chunk ... \n"));
+			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, IFFSIZE_UNKNOWN)) == 0) 
+			{
+				UBYTE menubarsize;
+				STRPTR menubarstr;
+				// save menubar options
+				
+				GET(data->wped_s_menubar, MUIA_String_Contents, &menubarstr);
+				menubarsize = strlen(menubarstr);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' string to write %s\n", menubarstr));			
+				error = WriteChunkBytes(handle, menubarstr, sizeof(menubarstr)*menubarsize);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' string written %s\n", menubarstr));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Data Chunk | Wrote %d bytes\n", error));
+				if ((error = PopChunk(handle)) != 0)
+				{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' PopChunk() = %ld\n", error));
+					goto exportFH_CloseFORM;
+				}
+			}
+			else
+			{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' PushChunk() = %ld failed\n", error));
 				goto exportFH_CloseFORM;
 			}
 #endif
