@@ -188,8 +188,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     if (err != ERROR_OBJECT_NOT_FOUND)
         return err;
 
-    /* not found. for INPUT or UPDATE, we bail out */
-    if (action != ACTION_FINDOUTPUT) {
+    /* not found. for INPUT we bail out */
+    if (action == ACTION_FINDINPUT) {
         D(bug("[fat] file not found, and not creating it\n"));
         return ERROR_OBJECT_NOT_FOUND;
     }
