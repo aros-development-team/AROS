@@ -70,6 +70,7 @@ LONG initDeviceList
 	)
 {
 STRPTR name;
+BSTR newname;
 UBYTE i;
 
 	name=(char *)rootblock->buffer+(BLK_DISKNAME_START(volume)*4);
@@ -87,20 +88,18 @@ UBYTE i;
 	volume->devicelist.dl_DiskType = volume->dostype;
 	if (volume->devicelist.dl_Name != NULL)
 	{
-		volume->devicelist.dl_Name =
-			(BSTR)BADDR(volume->devicelist.dl_Name);
+		newname = volume->devicelist.dl_Name;
 	}
 	else
 	{
-		volume->devicelist.dl_Name =
-			(BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
+		newname = (BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
 		if (volume->devicelist.dl_Name == NULL)
 			return DOSFALSE;
 	}
 	for (i=0; i<name[0]; i++)
 		AROS_BSTR_putchar(volume->devicelist.dl_Name, i, name[i+1]);
 	AROS_BSTR_setstrlen(volume->devicelist.dl_Name, name[0]);
-	volume->devicelist.dl_Name = MKBADDR(volume->devicelist.dl_Name);
+	volume->devicelist.dl_Name = newname;
 	return DOSTRUE;
 }
 
@@ -114,10 +113,10 @@ LONG addDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
 struct DosList *doslist;
 struct DosList *dl=NULL;
 char string[32];
-char *bname;
+BSTR bname;
 UBYTE i;
 
-	bname = BADDR(volume->devicelist.dl_Name);
+	bname = volume->devicelist.dl_Name;
 	for (i=0; i<AROS_BSTR_strlen(bname); i++)
 		string[i] = AROS_BSTR_getchar(bname,i);
 	string[AROS_BSTR_strlen(bname)] = 0;
@@ -177,14 +176,14 @@ UBYTE i;
 void remDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
 struct DosList *doslist;
 struct DosList *dl;
-char *bname;
+BSTR bname;
 char string[32];
 UBYTE i;
 
     SendEvent(afsbase, IECLASS_DISKREMOVED);
 	if (volume->dostype == 0x444F5300)
 	{
-		bname = BADDR(volume->devicelist.dl_Name);
+		bname = volume->devicelist.dl_Name;
 		if (bname != NULL)
 		{
 			for (i=0; i<AROS_BSTR_strlen(bname); i++)
