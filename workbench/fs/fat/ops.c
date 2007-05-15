@@ -218,8 +218,10 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     /* done */
     ReleaseDirHandle(&dh);
 
-    if (err == 0)
+    if (err == 0) {
+        (*filelock)->do_notify = TRUE;
         D(bug("[fat] returning lock on new file\n"));
+    }
 
     return err;
 }
@@ -523,6 +525,15 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
         update_entry = TRUE;
 
     if ((err = WriteFileChunk(&(lock->ioh), lock->pos, want, data, written)) == 0) {
+        /* if nothing was written but success was returned (can that even
+         * happen?) then we don't want to mess with the dir entry */
+        if (*written == 0) {
+            D(bug("[fat] nothing successfully written (!), nothing else to do\n"));
+            return 0;
+        }
+
+        lock->do_notify = TRUE;
+
         lock->pos += *written;
         if (lock->pos > lock->gl->size) {
             lock->gl->size = lock->pos;

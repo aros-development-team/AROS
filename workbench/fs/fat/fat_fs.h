@@ -105,6 +105,8 @@ struct ExtFileLock {
 
     struct IOHandle     ioh;            /* handle for reads and writes */
     ULONG               pos;            /* current seek position within the file */
+
+    BOOL                do_notify;      /* if set, send notification on file close (ACTION_END) */
 };
 
 struct GlobalLock {

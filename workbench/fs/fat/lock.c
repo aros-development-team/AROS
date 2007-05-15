@@ -227,6 +227,8 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
 
     fl->pos = 0;
 
+    fl->do_notify = FALSE;
+
     fl->gl = gl;
     ADDTAIL(&gl->locks, &fl->node);
 
@@ -265,6 +267,8 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock) {
     RESET_HANDLE(&(fl->ioh));
 
     fl->pos = 0;
+
+    fl->do_notify = FALSE;
 
     fl->gl = &glob->sb->root_lock;
     ADDTAIL(&glob->sb->root_lock.locks, &fl->node);
@@ -349,6 +353,9 @@ void FreeLock(struct ExtFileLock *fl) {
         return;
 
     D(bug("[fat] freeing lock 0x%08x\n", fl));
+
+    if (fl->do_notify)
+        SendNotifyByLock(fl->gl);
 
     REMOVE(&fl->node);
 
