@@ -1671,7 +1671,6 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage 
 
 	return TRUE;
 }
-*/
 
 
 /*IPTR WPEditor__MUIM_PrefsEditor_ImportFH(): definition of an abstract function from
