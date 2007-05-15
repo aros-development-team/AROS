@@ -490,6 +490,9 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read) {
 
     D(bug("[fat] request to read %ld bytes from file pos %ld\n", want, lock->pos));
 
+    if (want == 0)
+        return 0;
+
     if (want + lock->pos > lock->gl->size) {
         want = lock->gl->size - lock->pos;
         D(bug("[fat] full read would take us past end-of-file, adjusted want to %ld bytes\n", want));
@@ -510,6 +513,9 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
     struct DirEntry de;
 
     D(bug("[fat] request to write %ld bytes to file pos %ld\n", want, lock->pos));
+
+    if (want == 0)
+        return 0;
 
     /* if this is the first write, make a note as we'll have to store the
      * first cluster in the directory entry later */
