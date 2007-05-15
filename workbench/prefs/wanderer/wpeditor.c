@@ -817,7 +817,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 					_WP_Navigator_MenubarObj = StringObject,
 									StringFrame,
 									MUIA_String_MaxLen, 256,
-									MUIA_String_Format, 
+									//MUIA_String_Contents, (IPTR)" ",
 						     		   End;
 			#endif
 /*END _WP_NavigationObj------------------------------------------------------*/
@@ -1409,6 +1409,10 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create GUI ..\n"));
      return self;
 }
 
+
+/*BOOL WPEditor_ProccessGlobalChunk(): read a TagItem global_chunk (from global setting) 
+ *and memorize its value into correspondent attribute of an object of the gui...;
+ */
 BOOL WPEditor_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem *global_chunk)
 {
     SETUP_WPEDITOR_INST_DATA;
@@ -1445,6 +1449,18 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_User
 					break;
 				}
 #endif
+
+#if defined(DEBUG_CHANGEMENUBAR)
+				case MUIA_IconWindowExt_Menubar_String:
+				{
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Menubar_String, val = %d\n", i, global_chunk[i].ti_Data));
+					SET(data->wped_s_menubar, MUIA_String_Contents, (STRPTR)global_chunk[i].ti_Data);
+					
+//D(bug("[WPEditor] WPEditor_ProccessGlobalChunk MUIA_IconWindowExt_Menubar_String in memory: '%s'\n",global_chunk[i].ti_Data));
+					break;
+				}
+#endif
+
 /* The Following attributes will be moved to the ViewSettings Specific Chunks */
 				case MUIA_IconList_IconListMode:
 				{
@@ -1512,17 +1528,20 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 }
 #endif
 
-/*I disabled WPEditor_ProccessViewSettingsChunk() because I don't understand why
+/*Renabled WPEditor_ProccessViewSettingsChunk() as Nic Andrews (nicja@yahoo.com) has asked...;
+ *I don't understand why
  *it must rebuild a new ViewSetting object to add an image to its PopImage gadget...;
  *All this function sounds like redundant...;
+ *I've added 3 lines of codes (now disabled) to WPEditor__MUIM_PrefsEditor_ImportFH() for updating
+ * the viewsetting objects without call this redundant function...;
  */
-/*
+
 BOOL WPEditor_ProccessViewSettingsChunk(Class *CLASS, Object *self, char *_viewSettings_Name, UBYTE *_viewSettings_Chunk, IPTR chunk_size)
 {
     SETUP_WPEDITOR_INST_DATA;
 
 D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk('%s')\n", _viewSettings_Name));
-	//BOOL  _viewSettings_NodeFound = FALSE;
+	//BOOL  _viewSettings_NodeFound = FALSE;//unused
 	struct WPEditor_ViewSettingsObject  *_viewSettings_Node = NULL;
 
 	_viewSettings_Node = WPEditor__FindViewSettingObjects(_viewSettings_Name);
@@ -1652,15 +1671,19 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: Allocated new Tag storage 
 
 	return TRUE;
 }
-*/
 
+
+/*IPTR WPEditor__MUIM_PrefsEditor_ImportFH(): definition of an abstract function from
+ *MUIC_PrefsEditor; This function basically read the iff prefs file and show in
+ *Wanderer prefs window the data readed...;
+*/
 IPTR WPEditor__MUIM_PrefsEditor_ImportFH
 (
     Class *CLASS, Object *self, 
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
-    //SETUP_WPEDITOR_INST_DATA;
+    //SETUP_WPEDITOR_INST_DATA;//unused
     
     struct ContextNode     *context;
     struct IFFHandle       *handle;
@@ -1681,108 +1704,102 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Iff current handle %x, ms
 
     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-		if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
-		{
-			
-			do
-			{				
-				if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
-				{
-					context = CurrentChunk(handle);
-					iff_parse_mode = IFFPARSE_STEP;
+	if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+	{		
+		do
+		{				
+			if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
+			{
+				context = CurrentChunk(handle);
+				iff_parse_mode = IFFPARSE_STEP;
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context %x\n", context));
 					
-					error = ReadChunkBytes(
-								handle, 
-								chunk_buffer, 
-								WP_IFF_CHUNK_BUFFER_SIZE
-							       );
-					
-					if (error/* == sizeof(struct WandererPrefsIFFChunkHeader)*/)
-					{
+				if ((error = ReadChunkBytes(handle, chunk_buffer, WP_IFF_CHUNK_BUFFER_SIZE)))
+				{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
-						struct WandererPrefsIFFChunkHeader *this_header = (struct WandererPrefsIFFChunkHeader *) chunk_buffer;
-						char                               *this_chunk_name = NULL;
-						IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
+					struct WandererPrefsIFFChunkHeader *this_header = (struct WandererPrefsIFFChunkHeader *) chunk_buffer;
+					char                               *this_chunk_name = NULL;
+					IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
 						
-						this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,
-									   MEMF_ANY|MEMF_CLEAR
-									  );
-						if (this_chunk_name)
-						{
-							strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
+					this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,
+								   MEMF_ANY|MEMF_CLEAR
+								  );
+					if (this_chunk_name)
+					{
+						strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Prefs Header for '%s' data size %d bytes\n", this_chunk_name, this_chunk_size));
 
-							if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
-							{
+						if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+						{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of header chunk ..\n"));
 
-								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
-								{
-									context = CurrentChunk(handle);
+							if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
+							{
+								context = CurrentChunk(handle);
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context %x\n", context));
 
-									error = ReadChunkBytes
-									(
-										handle, chunk_buffer, this_chunk_size
-									);
+								error = ReadChunkBytes(
+						                 			handle, 
+											chunk_buffer, 
+											this_chunk_size
+										       );
 									
-									if (error == this_chunk_size)
-									{
+								if (error == this_chunk_size)
+								{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
-										if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
-										{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer global config chunk ..\n"));
-											WPEditor_ProccessGlobalChunk(CLASS, self,(struct TagItem *) chunk_buffer);
-										}
-#if defined(DEBUG_NETWORKBROWSER)
-										else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
-										{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
-											WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
-										}
-#endif
-										else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
-										{
-											char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer background config chunk '%s'..\n", view_name));
-											//WPEditor_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
-											/*these 3 following lines replace the call to
-											 *WPEditor_ProccessViewSettingsChunk() that seems redundant...;
-											 */
-											struct WPEditor_ViewSettingsObject  *_viewSettings_Node = NULL;
-											_viewSettings_Node = WPEditor__FindViewSettingObjects(view_name);
-											SET(_viewSettings_Node->wpedbo_ImageSpecObject, MUIA_Imagedisplay_Spec, chunk_buffer);
-
-										}
-									}	
-									if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+									if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 									{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of Data chunk ..\n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer global config chunk ..\n"));
+										WPEditor_ProccessGlobalChunk(CLASS, self,(struct TagItem *) chunk_buffer);
 									}
-								}
-							}				
-						}
-					}
-				}
-				else
-				{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ParseIFF() failed, returncode %ld!\n", error));
-					//success = FALSE;
-					//break;
-				}
+								#if defined(DEBUG_NETWORKBROWSER)
+									else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
+									{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
+										WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
+									}
+								#endif
+									else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
+									{
+										char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer background config chunk '%s'..\n", view_name));
+										WPEditor_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
+										/*these 3 following lines replace the call to
+										 *WPEditor_ProccessViewSettingsChunk() that seems redundant...;
+										 */
+										//struct WPEditor_ViewSettingsObject  *_viewSettings_Node = NULL;
+										//_viewSettings_Node = WPEditor__FindViewSettingObjects(view_name);
+										//SET(_viewSettings_Node->wpedbo_ImageSpecObject, MUIA_Imagedisplay_Spec, chunk_buffer);
+									}
+								}//END if (error == this_chunk_size)	
 
-			} while (error != IFFERR_EOF);
+								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+								{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: End of Data chunk ..\n"));
+								}
+							}//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
+						}//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)				
+					}//END if (this_chunk_name)
+				}//END if ((error = ReadChunkBytes(handle, chunk_buffer, WP_IFF_CHUNK_BUFFER_SIZE)))
+			}//END if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
+			else
+			{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ParseIFF() failed, returncode %ld!\n", error));
+				//success = FALSE;// this brokes cancel button
+				//break;
+			}
+
+		} while (error != IFFERR_EOF);
 			
 			
-		}
-		else
-		{
+	}
+	else
+	{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: StopChunk() failed, returncode %ld!\n", error));
-			//success = FALSE;
-		}
+		//success = FALSE;// this brokes cancel button
+	}//END if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
 
         CloseIFF(handle);
     }
@@ -1791,14 +1808,17 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: StopChunk() failed, retur
 D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
         //ShowError(_(MSG_CANT_OPEN_STREAM));
 	success = FALSE;
-    }
+    }//END if ((error = OpenIFF(handle, IFFF_READ)) == 0)
 
     FreeIFF(handle);
     
     return success;
 }
 
-
+/*IPTR WPEditor__MUIM_PrefsEditor_ExportFH(): definition of an abstract function from
+ *MUIC_PrefsEditor; This function basically memorized in the correspondent iff prefs file 
+ *of Wanderer prefs the changes made with Wanderer prefs window...;
+ */
 IPTR WPEditor__MUIM_PrefsEditor_ExportFH
 (
     Class *CLASS, Object *self,
@@ -1809,9 +1829,10 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
     
     struct IFFHandle                       *handle;
     struct PrefHeader                      header = { 0 };
-	struct WandererPrefsIFFChunkHeader     wanderer_chunkdata = { };
+    struct WandererPrefsIFFChunkHeader     wanderer_chunkdata = { };
     BOOL                                   success = TRUE;
     LONG                                   error   = 0;
+    int positionTemp =0;
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH()\n"));
 
@@ -1872,7 +1893,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowE
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_NavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
 				_wp_GlobalTagCounter += 1;
 			}
-
+			
 			/* save the icon listing method */
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_IconListMode;
 			GET(data->wped_icon_listmode, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
@@ -1897,6 +1918,21 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_La
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_UserFiles_ShowFilesFolder @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
 			_wp_GlobalTagCounter += 1;
 #endif
+
+
+#if defined(DEBUG_CHANGEMENUBAR)
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconWindowExt_Menubar_String;
+			GET(data->wped_s_menubar, MUIA_String_Contents, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+			
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Menubar_String @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+			
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Menubar_String in memory: '%s'\n",_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+			positionTemp=_wp_GlobalTagCounter;
+			_wp_GlobalTagCounter += 1;
+			
+#endif
+
+
 #if defined(DEBUG_MULTLINE)
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_LabelText_MultiLine;
 			GET(data->wped_icon_textmultiline, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
@@ -1924,7 +1960,6 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_La
 			}
 #endif
 			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = TAG_DONE;
-
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Marked Tag %d as TAG_DONE\n", _wp_GlobalTagCounter));
 
 			ULONG globaldatasize = (_wp_GlobalTagCounter + 1) * sizeof(struct TagItem);
@@ -2301,8 +2336,8 @@ ZUNE_CUSTOMCLASS_5
 (
     WPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                                struct opSet *,
-	MUIM_Setup,                            Msg,
-	MUIM_Show,                             Msg,
+    MUIM_Setup,                            Msg,
+    MUIM_Show,                             Msg,
     MUIM_PrefsEditor_ImportFH,             struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,             struct MUIP_PrefsEditor_ExportFH *
 );
