@@ -23,7 +23,7 @@
 struct  MUIP_WandererPrefs_ViewSettings_GetNotifyObject      {ULONG MethodID; char *Background_Name;};
 struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {ULONG MethodID; char *Background_Name; ULONG AttributeID;};
 
-#define WP_GLOBALTAGCOUNT 8
+#define WP_GLOBALTAGCOUNT 9
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *WandererPrefs_CLASS;
