@@ -342,9 +342,10 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
               */
               if (!scanning)
               {
-                buffer = (UBYTE *)BADDR(*(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]));
+                BSTR s = (BSTR)*(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]);
 
-                buflen = *buffer++;
+                buffer = AROS_BSTR_ADDR(s);
+                buflen = AROS_BSTR_strlen(s);
 
 #if !USE_GLOBALLIMIT
                 if (buflen > limit)

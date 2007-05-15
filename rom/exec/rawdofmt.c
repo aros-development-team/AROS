@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
@@ -137,8 +137,8 @@ do                                        \
 
 				   defaults to WORD, if nothing is specified.
 
-		       type	 - 'b' BCPL string. A BPTR to a one byte
-				       byte count followed by the characters.
+		       type	 - 'b' BSTR. It will use the internal representation
+                                       of the BSTR defined by the ABI.
 				   'c' single character.
 				   'd' signed decimal number.
 				   's' C string. NULL terminated.
@@ -370,12 +370,14 @@ do                                        \
 	    {
 		/* BCPL string */
 		case 'b':
-		    buf = BADDR(fetch_arg(BPTR));
-
-		    /* Set width */
-		    width = *buf++;
+                {
+                    BSTR s = fetch_arg(BSTR);
+                    
+		    buf = AROS_BSTR_ADDR(s);
+		    width = AROS_BSTR_strlen(s);
 
 		    break;
+                }
 
 		/* C string */
 		case 's':
