@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -219,17 +219,7 @@ static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
 
     if (!tcb || full)
     {
-	STRPTR  name;
-
-	/* Sort of a hack. We rely on the fact that binary compatibility
-	   BSTR:s is ended with a 0 byte */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-	name = (STRPTR)cli->cli_CommandName + 1;
-#else
-	name = (STRPTR)cli->cli_CommandName;
-#endif
-
-	PrintF(DOSBase, "Loaded as command: %s", name);
+	PrintF(DOSBase, "Loaded as command: %b", cli->cli_CommandName);
     }
 
     PrintF(DOSBase,"\n");
