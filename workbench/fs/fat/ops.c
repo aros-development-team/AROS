@@ -161,6 +161,12 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         /* whereas OUTPUT truncates it */
         D(bug("[fat] handling FINDOUTPUT, so truncating the file\n"));
 
+        if (lock->gl->attr & ATTR_READ_ONLY) {
+            D(bug("[fat] file is write protected, doing nothing\n"));
+            FreeLock(lock);
+            return ERROR_WRITE_PROTECTED;
+        }
+
         /* update the dir entry to make the file empty */
         InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh);
         GetDirEntry(&dh, lock->gl->dir_entry, &de);
@@ -206,6 +212,14 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return err;
     }
 
+    /* if the dir is write protected, can't do anything */
+    GetDirEntry(&dh, 0, &de);
+    if (de.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] containing dir is write protected, doing nothing\n"));
+        ReleaseDirHandle(&dh);
+        return ERROR_WRITE_PROTECTED;
+    }
+
     /* create the entry */
     if ((err = CreateDirEntry(&dh, name, namelen, 0, 0, &de)) != 0) {
         ReleaseDirHandle(&dh);
@@ -241,6 +255,12 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     if ((err = LockFileByName(dirlock, name, namelen, EXCLUSIVE_LOCK, &lock)) != 0) {
         D(bug("[fat] couldn't obtain exclusive lock on named file\n"));
         return err;
+    }
+
+    if (lock->gl->attr & ATTR_READ_ONLY) {
+        D(bug("[fat] file is write protected, doing nothing\n"));
+        FreeLock(lock);
+        return ERROR_DELETE_PROTECTED;
     }
 
     /* if its a directory, we have to make sure its empty */
@@ -281,6 +301,14 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     if ((err = InitDirHandle(lock->ioh.sb, lock->gl->dir_cluster, &dh)) != 0) {
         FreeLock(lock);
         return err;
+    }
+
+    /* if the dir is write protected, can't do anything */
+    GetDirEntry(&dh, 0, &de);
+    if (de.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] containing dir is write protected, doing nothing\n"));
+        FreeLock(lock);
+        return ERROR_DELETE_PROTECTED;
     }
 
     /* get the entry for the file */
@@ -340,6 +368,16 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
         ReleaseDirHandle(&ddh);
         ReleaseDirHandle(&sdh);
         return err;
+    }
+
+    /* check the source and dest dirs. if either are readonly, do nothing */
+    GetDirEntry(&sdh, 0, &sde);
+    GetDirEntry(&ddh, 0, &dde);
+    if (sde.e.entry.attr & ATTR_READ_ONLY || dde.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] source or dest dir is read only, doing nothing\n"));
+        ReleaseDirHandle(&ddh);
+        ReleaseDirHandle(&sdh);
+        return ERROR_WRITE_PROTECTED;
     }
 
     /* now see if the wanted name is in this dir. if it exists, do nothing */
@@ -418,6 +456,14 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0) {
         ReleaseDirHandle(&dh);
         return err;
+    }
+
+    /* if the dir is write protected, can't do anything */
+    GetDirEntry(&dh, 0, &de);
+    if (de.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] containing dir is write protected, doing nothing\n"));
+        ReleaseDirHandle(&dh);
+        return ERROR_DELETE_PROTECTED;
     }
 
     /* now see if the wanted name is in this dir. if it exists, then we do
@@ -518,6 +564,11 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
 
     if (want == 0)
         return 0;
+
+    if (lock->gl->attr & ATTR_READ_ONLY) {
+        D(bug("[fat] file is write protected\n"));
+        return ERROR_WRITE_PROTECTED;
+    }
 
     /* if this is the first write, make a note as we'll have to store the
      * first cluster in the directory entry later */
