@@ -725,10 +725,23 @@ STRPTR GetScreenTitle(VOID)
     UBYTE chip[10], fast[10];
     fmtlarge(chip,AvailMem(MEMF_CHIP));
     fmtlarge(fast,AvailMem(MEMF_FAST));
+  
     /* AROS probably don't have graphics mem but without it looks so empty */
     sprintf(title, _(MSG_SCREENTITLE), chip, fast);
 
     return title;
+}
+
+STRPTR GetUserScreenTitle(Object *self)
+{
+  
+    STATIC ULONG screentitlestr;
+
+    GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
+ 
+
+D(bug("[WANDERER] GetUserScreenTitle: Wb screen title = %s\n", screentitlestr));
+    return screentitlestr;
 }
 
 /* Expand a passed in env: string to its full location */
@@ -1564,7 +1577,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Using Screen @ %x\n", data->wd_Screen));
         /*-- Setup hooks structures ----------------------------------------*/
         _WandererIntern_hook_standard.h_Entry = (HOOKFUNC) Wanderer__HookFunc_StandardFunc;
         _WandererIntern_hook_action.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_ActionFunc;
-		_WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
+	_WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
 
         // ---
         if ((data->wd_CommandPort = CreateMsgPort()) == NULL)
@@ -1628,10 +1641,10 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", data->p
 D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
         }
 
-        data->wd_Prefs = WandererPrefsObject,
-						 End; // FIXME: error handling
+        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
 
-		if (data->wd_Prefs) data->wd_PrefsIntern = InitWandererPrefs();
+		if (data->wd_Prefs) 
+			data->wd_PrefsIntern = InitWandererPrefs();
     }
 
     return self;
@@ -1771,11 +1784,14 @@ D(bug("[Wanderer] Wanderer__MUIM_Application_Execute: Really handing control to 
     return RETURN_ERROR;
 }
 
+/*This function uses GetScreenTitle() function...*/
+
 IPTR Wanderer__MUIM_Wanderer_HandleTimer
 (
     Class *CLASS, Object *self, Msg message
 )
 {
+    SETUP_WANDERER_INST_DATA;
     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
     Object *child = NULL;
     STRPTR scr_title = GetScreenTitle();
@@ -1785,6 +1801,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
     
     return TRUE;
 }
+
 
 IPTR Wanderer__MUIM_Wanderer_HandleCommand
 (
@@ -2104,19 +2121,19 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
     
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,
-        MUIA_UserData,                        1,
-		MUIA_Wanderer_Prefs,                  data->wd_Prefs,
-		MUIA_Wanderer_Screen,                 data->wd_Screen,
-        MUIA_Window_ScreenTitle,              (IPTR) GetScreenTitle(),
-        MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
-		TAG_IconWindow_Drawer,                (IPTR) message->drawer,
-        MUIA_IconWindow_Font,                 useFont,
-        MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
-        MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
-		isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
-        MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
-        MUIA_IconWindowExt_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
-    End;
+        		MUIA_UserData, 			      1,
+			MUIA_Wanderer_Prefs,                  data->wd_Prefs,
+			MUIA_Wanderer_Screen,                 data->wd_Screen,
+        		MUIA_Window_ScreenTitle,              GetScreenTitle(),
+        		MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
+			TAG_IconWindow_Drawer,                (IPTR) message->drawer,
+        		MUIA_IconWindow_Font,                 useFont,
+        		MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
+        		MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
+			isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
+        		MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
+        		MUIA_IconWindowExt_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
+    	     End;
     
     if (window != NULL)
     {

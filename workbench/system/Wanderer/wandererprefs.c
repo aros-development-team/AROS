@@ -35,6 +35,7 @@ struct WandererPrefs_DATA
     ULONG  wpd_ToolbarEnabled;
     ULONG  wpd_ShowNetwork;
     ULONG  wpd_ShowUserFiles;
+    ULONG  wpd_ScreenTitleString;
 	
     ULONG  wpd_IconListMode;
     ULONG  wpd_IconTextMode;
@@ -121,6 +122,10 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 				data->wpd_ShowUserFiles = (LONG)tag->ti_Data;
 				break;
 
+			case MUIA_IconWindowExt_ScreenTitle_String:
+				data->wpd_ScreenTitleString = (LONG)tag->ti_Data;
+				break;
+
             case MUIA_IconWindowExt_Toolbar_Enabled:
                 data->wpd_ToolbarEnabled = (LONG)tag->ti_Data;
 			    break;
@@ -161,6 +166,7 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
     SETUP_INST_DATA;
     IPTR *store = message->opg_Storage;
     IPTR  rv    = TRUE;
+
     
     switch (message->opg_AttrID)
     {
@@ -170,6 +176,11 @@ IPTR WandererPrefs__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
         case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
             *store = (IPTR)data->wpd_ShowUserFiles;
+            break;
+
+	case MUIA_IconWindowExt_ScreenTitle_String:
+            *store = (IPTR)data->wpd_ScreenTitleString;
+D(bug("[WANDERER.PREFS] WandererPrefs__GET@@@@@@@@@: SCREENTITLE= %s\n", data->wpd_ScreenTitleString));
             break;
 
         case MUIA_IconWindowExt_Toolbar_NavigationMethod:
@@ -236,6 +247,19 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 	struct TagItem *network_tags = _viewSettings_Chunk;
 	SET(self, network_tags[0].ti_Tag, network_tags[0].ti_Data);
 
+	return TRUE;
+}
+
+BOOL WPEditor_ProccessScreenTitleChunk(Class *CLASS, Object *self, UBYTE *_ScreenTitle_Chunk)
+{
+    SETUP_INST_DATA;
+
+	
+D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE to write= %s\n", _ScreenTitle_Chunk));
+	SET(self, MUIA_IconWindowExt_ScreenTitle_String, _ScreenTitle_Chunk);
+
+D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE written= %s\n", data->wpd_ScreenTitleString));
+	
 	return TRUE;
 }
 
@@ -335,11 +359,10 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
 {
     struct ContextNode     *context;
     struct IFFHandle       *handle;
-    BOOL                    success = TRUE;
-    LONG                    error;
-	IPTR                    iff_parse_mode = IFFPARSE_SCAN;
-	
-	UBYTE                    chunk_buffer[IFF_CHUNK_BUFFER_SIZE];
+    BOOL                   success = TRUE;
+    LONG                   error;
+    IPTR                   iff_parse_mode = IFFPARSE_SCAN;
+    UBYTE                  chunk_buffer[IFF_CHUNK_BUFFER_SIZE];
 
     if (!(handle = AllocIFF()))
         return FALSE;
@@ -352,93 +375,97 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
 
     if ((error = OpenIFF(handle, IFFF_READ)) == 0)
     {
-		if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
-		{
-			SET(self, MUIA_WandererPrefs_Processing, TRUE);
-			do
-			{				
-				if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
-				{
-					context = CurrentChunk(handle);
-					iff_parse_mode = IFFPARSE_STEP;
+	if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
+	{
+		SET(self, MUIA_WandererPrefs_Processing, TRUE);
+		do
+		{				
+			if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
+			{
+				context = CurrentChunk(handle);
+				iff_parse_mode = IFFPARSE_STEP;
 
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context %x\n", context));
 					
-					error = ReadChunkBytes
-					(
-						handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE
-					);
-					
-					if (error == sizeof(struct WandererPrefsIFFChunkHeader))
-					{
+				if ((error=ReadChunkBytes(handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE)))
+				{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
-						struct WandererPrefsIFFChunkHeader *this_header = chunk_buffer;
-						char                               *this_chunk_name = NULL;
-						IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
+					struct WandererPrefsIFFChunkHeader *this_header =(struct WandererPrefsIFFChunkHeader *) chunk_buffer;
+					char                               *this_chunk_name = NULL;
+					IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
 						
-						if (this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_CLEAR|MEMF_PUBLIC))
-						{
-							strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
+
+					if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
+					{
+						strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Prefs Header for '%s' data size %d bytes\n", this_chunk_name, this_chunk_size));
 
-							if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
-							{
+						if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+						{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of header chunk ..\n"));
 
-								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
-								{
-									context = CurrentChunk(handle);
+							if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
+							{
+								context = CurrentChunk(handle);
 
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context %x\n", context));
 
-									error = ReadChunkBytes
-									(
-										handle, chunk_buffer, this_chunk_size
-									);
+								error = ReadChunkBytes(
+									 		handle, 
+											chunk_buffer,
+											IFF_CHUNK_BUFFER_SIZE/* same problem of size
+														   *that there was in WP (this_chunk_size)*/
+										      );
 									
-									if (error == this_chunk_size)
-									{
+								//if (error == this_chunk_size)// this stab long string in chunk_buffer (Nic check it)
+								//{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
-										if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
-										{
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
-											WandererPrefs_ProccessGlobalChunk(CLASS, self, chunk_buffer);
-										}
-										else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
-										{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
-											WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
-										}
-										else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
-										{
-											char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
-											WandererPrefs_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
-										}
-									}	
-									if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+									if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 									{
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of Data chunk ..\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
+										WandererPrefs_ProccessGlobalChunk(CLASS, self, chunk_buffer);
 									}
-								}
-							}				
-						}
-					}
-				}
-				else
-				{
-D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
-					success = FALSE;
-				}
+									else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
+									{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
+										WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
+									}
+									else if ((strcmp(this_chunk_name, "wanderer:screentitle")) == 0)
+									{
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer screentitle config chunk ..size=%d\n", error));
+										WPEditor_ProccessScreenTitleChunk(CLASS, self, chunk_buffer);
+									}
 
-			} while (error != IFFERR_EOF);
-			SET(self, MUIA_WandererPrefs_Processing, FALSE);
-		}
-		else
-		{
+									else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
+									{
+										char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
+										WandererPrefs_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
+									}
+								//}//END if (error == this_chunk_size)	
+								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
+								{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of Data chunk ..\n"));
+								}
+							}//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
+						}//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)				
+					}//END if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
+				}//END if ((error=ReadChunkBytes(handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE)))
+			}
+			else
+			{
+D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
+				//success = FALSE;
+			}//END if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
+
+		} while (error != IFFERR_EOF);
+		SET(self, MUIA_WandererPrefs_Processing, FALSE);
+	}
+	else
+	{
 D(bug("[WANDERER.PREFS] StopChunk() failed, returncode %ld!\n", error));
-			success = FALSE;
-		}
+		//success = FALSE;
+	}
 
         CloseIFF(handle);
     }
@@ -446,14 +473,16 @@ D(bug("[WANDERER.PREFS] StopChunk() failed, returncode %ld!\n", error));
     {
 D(bug("[WANDERER.PREFS] Failed to open stream!, returncode %ld!\n", error));
         //ShowError(_(MSG_CANT_OPEN_STREAM));
-    }
+	success = FALSE;
+    }//END if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
 
     Close((APTR)handle->iff_Stream);
 
     FreeIFF(handle);
     
-    return FALSE;
+    return success;
 }
+
 
 IPTR WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject
 (
