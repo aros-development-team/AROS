@@ -98,6 +98,83 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
     return 0;
 }
 
+LONG OpLockFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG access, struct ExtFileLock **filelock) {
+    /* if they passed in a name, go searching for it */
+    if (namelen != 0)
+        return LockFileByName(dirlock, name, namelen, access, filelock);
+
+    /* otherwise the empty filename, just make a copy */
+    else if (dirlock != NULL)
+        return CopyLock(dirlock, filelock);
+
+    /* null dir lock means they want the root */
+    else
+        return LockRoot(access, filelock);
+}
+
+void OpUnlockFile(struct ExtFileLock *lock) {
+    if (lock != NULL)
+        FreeLock(lock);
+}
+
+LONG OpCopyLock(struct ExtFileLock *lock, struct ExtFileLock **copy) {
+    if (lock != NULL)
+        return CopyLock(lock, copy);
+    else
+        return LockRoot(SHARED_LOCK, copy);
+}
+
+LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent) {
+    LONG err;
+    struct DirHandle dh;
+    struct DirEntry de;
+    ULONG parent_cluster;
+
+    /* the root has no parent */
+    if (lock == NULL || lock->gl == &glob->sb->root_lock)
+        return ERROR_OBJECT_NOT_FOUND;
+
+    /* if we're in the root directory, then the root is our parent */
+    if (lock->gl->dir_cluster == glob->sb->rootdir_cluster)
+        return LockRoot(SHARED_LOCK, parent);
+
+    /* get the parent dir */
+    InitDirHandle(glob->sb, lock->gl->dir_cluster, &dh);
+    if ((err = GetDirEntryByPath(&dh, "/", 1, &de)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* and its cluster */
+    parent_cluster = FIRST_FILE_CLUSTER(&de);
+
+    /* then we go through the parent dir, looking for a link back to us. we do
+     * this so that we have an entry with the proper name for copying by
+     * LockFile() */
+    InitDirHandle(glob->sb, parent_cluster, &dh);
+    while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
+        /* don't go past the end */
+        if (de.e.entry.name[0] == 0x00) {
+            err = ERROR_OBJECT_NOT_FOUND;
+            break;
+        }
+
+        /* we found it if its not empty, and its not the volume id or a long
+         * name, and it is a directory, and it does point to us */
+        if (de.e.entry.name[0] != 0xe5 &&
+            !(de.e.entry.attr & ATTR_VOLUME_ID) &&
+            de.e.entry.attr & ATTR_DIRECTORY &&
+            FIRST_FILE_CLUSTER(&de) == lock->gl->dir_cluster) {
+            
+            err = LockFile(parent_cluster, dh.cur_index, SHARED_LOCK, parent);
+            break;
+        }
+    }
+
+    ReleaseDirHandle(&dh);
+    return err;
+}
+
 /*
  * obtains a lock on the named file under the given dir. this is the service
  * routine for DOS Open() (ie FINDINPUT/FINDOUTPUT/FINDUPDATE) and as such may
