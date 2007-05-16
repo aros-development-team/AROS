@@ -95,7 +95,9 @@ LONG LockParent(struct ExtFileLock *fl, LONG access, struct ExtFileLock **lock);
 void FreeLock(struct ExtFileLock *fl);
 
 /* notify.c */
-void SendNotifyByLock (struct GlobalLock *gl);
-void SendNotifyByDirEntry (struct DirEntry *de);
+void SendNotify(struct NotifyRequest *nr);
+void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl);
+void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de);
+void ProcessNotify(void); 
 
 #endif

@@ -355,7 +355,7 @@ void FreeLock(struct ExtFileLock *fl) {
     D(bug("[fat] freeing lock 0x%08x\n", fl));
 
     if (fl->do_notify)
-        SendNotifyByLock(fl->gl);
+        SendNotifyByLock(fl->ioh.sb, fl->gl);
 
     REMOVE(&fl->node);
 
