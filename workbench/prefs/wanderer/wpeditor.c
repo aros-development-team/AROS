@@ -1742,11 +1742,12 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context %x\n", context));
 								error = ReadChunkBytes(
 						                 			handle, 
 											chunk_buffer, 
-											this_chunk_size
+											WP_IFF_CHUNK_BUFFER_SIZE/*dimension current buffer is independent from
+														 *from its previous' one (this_chunk_name)*/
 										       );
 									
-								if (error == this_chunk_size)
-								{
+							//	if (error == this_chunk_size)// this stabbed chunk_buffer, Nic check it...
+							//	{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
 									if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 									{
@@ -1765,6 +1766,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 									else if ((strcmp(this_chunk_name, "wanderer:menubar")) == 0)
 									{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer menubar config chunk ..\n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Chunk menubar Data size .. (%d)\n", error));
 										WPEditor_ProccessMenubarChunk(CLASS, self, chunk_buffer);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Data for wanderer menubar config chunk PROCESSED..\n"));
 									}
@@ -1774,14 +1776,9 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Data for wanderer menubar
 										char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer background config chunk '%s'..\n", view_name));
 										WPEditor_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
-										/*these 3 following lines replace the call to
-										 *WPEditor_ProccessViewSettingsChunk() that seems redundant...;
-										 */
-										//struct WPEditor_ViewSettingsObject  *_viewSettings_Node = NULL;
-										//_viewSettings_Node = WPEditor__FindViewSettingObjects(view_name);
-										//SET(_viewSettings_Node->wpedbo_ImageSpecObject, MUIA_Imagedisplay_Spec, chunk_buffer);
+										
 									}
-								}//END if (error == this_chunk_size)	
+							//	}//END if (error == this_chunk_size)	
 
 								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
 								{
@@ -2066,13 +2063,13 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'menubar' Wanderer 
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, IFFSIZE_UNKNOWN)) == 0) 
 			{
 				UBYTE menubarsize;
-				STRPTR menubarstr;
+				UBYTE *menubarstr;
 				// save menubar options
 				
 				GET(data->wped_s_menubar, MUIA_String_Contents, &menubarstr);
 				menubarsize = strlen(menubarstr);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' string to write %s\n", menubarstr));			
-				error = WriteChunkBytes(handle, menubarstr, sizeof(menubarstr)*menubarsize);
+				error = WriteChunkBytes(handle, menubarstr, sizeof(UBYTE)*menubarsize+1);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' string written %s\n", menubarstr));
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Data Chunk | Wrote %d bytes\n", error));
 				if ((error = PopChunk(handle)) != 0)
