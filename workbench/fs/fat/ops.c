@@ -296,7 +296,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     FREE_CLUSTER_CHAIN(lock->ioh.sb, lock->ioh.first_cluster);
 
     /* notify */
-    SendNotifyByLock(lock->gl);
+    SendNotifyByLock(lock->ioh.sb, lock->gl);
 
     /* this lock is now completely meaningless */
     FreeLock(lock);
@@ -394,7 +394,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
     DeleteDirEntry(&sde);
 
     /* notify */
-    SendNotifyByDirEntry(&dde);
+    SendNotifyByDirEntry(sdh.ioh.sb, &dde);
 
     ReleaseDirHandle(&ddh);
     ReleaseDirHandle(&sdh);
@@ -482,7 +482,7 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     ReleaseDirHandle(&dh);
 
     /* notify */
-    SendNotifyByLock((*newdirlock)->gl);
+    SendNotifyByLock((*newdirlock)->ioh.sb, (*newdirlock)->gl);
 
     return err;
 }
@@ -569,6 +569,7 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
     struct DirEntry de;
     struct GlobalLock *gl = NULL, *tmp;
     struct NotifyNode *nn;
+    BOOL exists;
 
     D(bug("[fat] trying to add notification for '%s'\n", nr->nr_FullName));
 
@@ -589,6 +590,8 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
 
         /* if it was found, then it might be open. try to find the global lock */
         if (err == 0) {
+            exists = TRUE;
+
             D(bug("[fat] file exists (%ld/%ld), looking for global lock\n", de.cluster, de.index));
 
             ForeachNode(&glob->sb->locks, tmp)
@@ -599,9 +602,13 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
 
                     break;
                 }
+
         }
-        else
+        else {
+            exists = FALSE;
+
             D(bug("[fat] file doesn't exist\n"));
+        }
     }
 
     if (gl == NULL)
@@ -617,6 +624,10 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
 
     /* add to the list */
     ADDTAIL(&glob->sb->notifies, nn);
+
+    /* tell them that the file exists if they wanted to know */
+    if (exists && nr->nr_Flags & NRF_NOTIFY_INITIAL)
+        SendNotify(nr);
 
     D(bug("[fat] now reporting activity on '%s'\n", nr->nr_FullName));
 

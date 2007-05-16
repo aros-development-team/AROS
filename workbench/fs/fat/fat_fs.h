@@ -202,6 +202,8 @@ struct Globals {
     struct MsgPort *ourport;
     APTR mempool;
 
+    struct MsgPort *notifyport;
+
     /* fs */
     struct DosList *devnode;
     struct FileSysStartupMsg *fssm;

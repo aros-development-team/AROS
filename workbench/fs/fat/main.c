@@ -57,6 +57,8 @@ void handler(void) {
     D(bug("\nFATFS: opening libraries.\n"));
     D(bug("\tFS task: %lx, port %lx\n"));
 
+    glob->notifyport = CreateMsgPort();
+
     if ((DOSBase = (struct DosLibrary*)OpenLibrary("dos.library", 37))) {
         if ((IntuitionBase = OpenLibrary("intuition.library", 37))) {
             if ((UtilityBase = OpenLibrary("utility.library", 37))) {
@@ -68,7 +70,8 @@ void handler(void) {
                     if ((error = InitDiskHandler(glob->fssm, &diskchgsig_bit)) == 0) {
                         ULONG pktsig = 1 << glob->ourport->mp_SigBit;
                         ULONG diskchgsig = 1 << diskchgsig_bit;
-                        ULONG mask = pktsig | diskchgsig;
+                        ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
+                        ULONG mask = pktsig | diskchgsig | notifysig;
                         ULONG sigs;
                         struct MsgPort *rp;
 
@@ -100,6 +103,8 @@ void handler(void) {
                                 ProcessDiskChange();
                             if (sigs & pktsig)
                                 ProcessPackets();
+                            if (sigs & notifysig)
+                                ProcessNotify();
                         }
 
                         D(bug("\nHandler shutdown initiated\n"));
@@ -121,6 +126,8 @@ void handler(void) {
         }
         CloseLibrary((struct Library*)DOSBase);
     }
+
+    DeleteMsgPort(glob->notifyport);
 
     D(bug("The end.\n"));
 
