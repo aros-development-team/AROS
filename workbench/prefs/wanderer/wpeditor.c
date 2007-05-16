@@ -23,7 +23,7 @@
 //#define       DEBUG_NEWVIEWSETTINGS
 //#define       DEBUG_NETWORKBROWSER
 //#define       DEBUG_MULTLINE
-//#define       DEBUG_CHANGEMENUBAR
+//#define       DEBUG_CHANGESCREENTITLE
 
 #include <exec/types.h>
 #include <utility/tagitem.h>
@@ -101,8 +101,8 @@ struct WPEditor_DATA
 						        *wped_ViewSettings_SpacerObj,
                                                     	*wped_c_NavigationMethod,
                                                     	*wped_cm_ToolbarEnabled, 
-							#if defined(DEBUG_CHANGEMENUBAR)
-								*wped_s_menubar, 
+							#if defined(DEBUG_CHANGESCREENTITLE)
+								*wped_s_screentitle, 
 							#endif
                                                     	*wped_toolbarpreview,
 	                                                *wped_background_drawmode,
@@ -697,10 +697,10 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		*_WP_Navigation_InnerHGrp1 = NULL,
 		*_WP_Navigation_TypeObj = NULL,
 		*_WP_Navigation_InnerHGrp2 = NULL,
-		#if defined(DEBUG_CHANGEMENUBAR)
+		#if defined(DEBUG_CHANGESCREENTITLE)
 		*_WP_Navigation_HGrp2 =NULL,
 		*_WP_Navigation_InnerHGrp3 = NULL,
-		*_WP_Navigator_MenubarObj = NULL,
+		*_WP_Navigator_ScreenTitleObj = NULL,
 		#endif
 		*_WP_NavigationObj = NULL,	
 		*_WP_Appearance_GroupObj = NULL,
@@ -804,9 +804,9 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 					_WP_UserFiles_ShowFileFolderObj = MUI_MakeObject(MUIO_Checkmark,NULL);
 				#endif
 
-			#if defined(DEBUG_CHANGEMENUBAR)
+			#if defined(DEBUG_CHANGESCREENTITLE)
 			_WP_Navigation_HGrp2 = HGroup,                   
-                        		MUIA_FrameTitle, "Wanderer Menubar",
+                        		MUIA_FrameTitle, "Wanderer ScreenTitle",
                         		MUIA_Group_SameSize, TRUE,
                         		MUIA_Frame, MUIV_Frame_Group,
 					
@@ -814,7 +814,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 				_WP_Navigation_InnerHGrp3 = HGroup, End;
 							
-					_WP_Navigator_MenubarObj = StringObject,
+					_WP_Navigator_ScreenTitleObj = StringObject,
 									StringFrame,
 									MUIA_String_MaxLen, 256,
 									//MUIA_String_Contents, (IPTR)" ",
@@ -964,8 +964,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 		DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 		DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 	
-		#if defined(DEBUG_CHANGEMENUBAR)
-		DoMethod(_WP_Navigation_InnerHGrp3, OM_ADDMEMBER,_WP_Navigator_MenubarObj);
+		#if defined(DEBUG_CHANGESCREENTITLE)
+		DoMethod(_WP_Navigation_InnerHGrp3, OM_ADDMEMBER,_WP_Navigator_ScreenTitleObj);
 		DoMethod(_WP_Navigation_HGrp2, OM_ADDMEMBER,_WP_Navigation_InnerHGrp3);
 		#endif
 		
@@ -973,7 +973,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 		DoMethod(_WP_Navigation_HGrp1, OM_ADDMEMBER,_WP_Navigation_InnerHGrp2);
 		
 		DoMethod(_WP_NavigationObj, OM_ADDMEMBER,_WP_Navigation_HGrp1);
-		#if defined(DEBUG_CHANGEMENUBAR)
+		#if defined(DEBUG_CHANGESCREENTITLE)
 		DoMethod(_WP_NavigationObj, OM_ADDMEMBER,_WP_Navigation_HGrp2);
 		#endif
 	/**/
@@ -1173,8 +1173,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ %x\n", advancedVi
 		
         data->wped_c_NavigationMethod                 = _WP_Navigation_TypeObj;
         data->wped_cm_ToolbarEnabled                  = _WP_Toolbar_EnabledObj;
-#if defined(DEBUG_CHANGEMENUBAR)
-	data->wped_s_menubar			      =_WP_Navigator_MenubarObj;
+#if defined(DEBUG_CHANGESCREENTITLE)
+	data->wped_s_screentitle			      =_WP_Navigator_ScreenTitleObj;
 #endif
 #if defined(DEBUG_NETWORKBROWSER)
         data->wped_cm_EnableNetworkBrowser            = _WP_NetworkBrowser_EnabledObj;
@@ -1517,15 +1517,15 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 }
 #endif
 
-#if defined(DEBUG_CHANGEMENUBAR)
-BOOL WPEditor_ProccessMenubarChunk(Class *CLASS, Object *self, UBYTE *_viewSettings_Chunk)
+#if defined(DEBUG_CHANGESCREENTITLE)
+BOOL WPEditor_ProccessScreenTitleChunk(Class *CLASS, Object *self, UBYTE *_ScreenTitle_Chunk)
 {
     SETUP_WPEDITOR_INST_DATA;
 
 	
-D(bug("[WPEditor] WPEditor_ProccessMenubarChunk: string readed = %s\n", _viewSettings_Chunk));
-	SET(data->wped_s_menubar, MUIA_String_Contents, _viewSettings_Chunk);
-D(bug("[WPEditor] WPEditor_ProccessMenubarChunk: string setted = %s\n", _viewSettings_Chunk));
+D(bug("[WPEditor] WPEditor_ProccessScreenTitleChunk: string readed = %s\n", _ScreenTitle_Chunk));
+	SET(data->wped_s_screentitle, MUIA_String_Contents, _ScreenTitle_Chunk);
+D(bug("[WPEditor] WPEditor_ProccessScreenTitleChunk: string setted = %s\n", _ScreenTitle_Chunk));
 
 	return TRUE;
 }
@@ -1721,10 +1721,8 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk ma
 					char                               *this_chunk_name = NULL;
 					IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
 						
-					this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,
-								   MEMF_ANY|MEMF_CLEAR
-								  );
-					if (this_chunk_name)
+					
+					if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1, MEMF_ANY|MEMF_CLEAR)))
 					{
 						strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Prefs Header for '%s' data size %d bytes\n", this_chunk_name, this_chunk_size));
@@ -1762,13 +1760,13 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 									}
 								#endif
 
-								#if defined(DEBUG_CHANGEMENUBAR)
-									else if ((strcmp(this_chunk_name, "wanderer:menubar")) == 0)
+								#if defined(DEBUG_CHANGESCREENTITLE)
+									else if ((strcmp(this_chunk_name, "wanderer:screentitle")) == 0)
 									{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer menubar config chunk ..\n"));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Chunk menubar Data size .. (%d)\n", error));
-										WPEditor_ProccessMenubarChunk(CLASS, self, chunk_buffer);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Data for wanderer menubar config chunk PROCESSED..\n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer screentitle config chunk ..\n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Chunk screentitle Data size .. (%d)\n", error));
+										WPEditor_ProccessScreenTitleChunk(CLASS, self, chunk_buffer);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Data for wanderer screentitle config chunk PROCESSED..\n"));
 									}
 								#endif
 									else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
@@ -1815,6 +1813,7 @@ D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
 	success = FALSE;
     }//END if ((error = OpenIFF(handle, IFFF_READ)) == 0)
 
+    //Close((APTR)handle->iff_Stream);
     FreeIFF(handle);
     
     return success;
@@ -2038,49 +2037,49 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' PushChunk() = %
 			}
 #endif
 
-#if defined(DEBUG_CHANGEMENUBAR)
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'menubar' Wanderer Prefs Header Chunk ... \n"));
+#if defined(DEBUG_CHANGESCREENTITLE)
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wanderer Prefs Header Chunk ... \n"));
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
 			{
-				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:menubar");
+				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:screentitle");
 				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(struct TagItem);
 				
 				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 				
 				if ((error = PopChunk(handle)) != 0)
 				{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Header PopChunk() = %ld\n", error));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Header PopChunk() = %ld\n", error));
 					goto exportFH_CloseFORM;
 				}
 			}
 			else
 			{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Wanderer Prefs Header Chunk : Error! %d \n", error));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Wanderer Prefs Header Chunk : Error! %d \n", error));
 				goto exportFH_CloseFORM;
 			}	
 
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'menubar' Wanderer Prefs Data Chunk ... \n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wanderer Prefs Data Chunk ... \n"));
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, IFFSIZE_UNKNOWN)) == 0) 
 			{
-				UBYTE menubarsize;
-				UBYTE *menubarstr;
-				// save menubar options
+				UBYTE screentitlesize;
+				UBYTE *screentitlestr;
+				// save screentitle options
 				
-				GET(data->wped_s_menubar, MUIA_String_Contents, &menubarstr);
-				menubarsize = strlen(menubarstr);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' string to write %s\n", menubarstr));			
-				error = WriteChunkBytes(handle, menubarstr, sizeof(UBYTE)*menubarsize+1);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' string written %s\n", menubarstr));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' Data Chunk | Wrote %d bytes\n", error));
+				GET(data->wped_s_screentitle, MUIA_String_Contents, &screentitlestr);
+				screentitlesize = strlen(screentitlestr);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' string to write %s\n", screentitlestr));			
+				error = WriteChunkBytes(handle, screentitlestr, sizeof(UBYTE)*screentitlesize+1);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' string written %s\n", screentitlestr));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' Data Chunk | Wrote %d bytes\n", error));
 				if ((error = PopChunk(handle)) != 0)
 				{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' PopChunk() = %ld\n", error));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' PopChunk() = %ld\n", error));
 					goto exportFH_CloseFORM;
 				}
 			}
 			else
 			{
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'menubar' PushChunk() = %ld failed\n", error));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'screentitle' PushChunk() = %ld failed\n", error));
 				goto exportFH_CloseFORM;
 			}
 #endif
