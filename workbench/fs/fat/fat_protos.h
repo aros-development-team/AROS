@@ -76,6 +76,10 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *data, ULONG *nwritten);
 
 /* ops.c */
+LONG OpLockFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG access, struct ExtFileLock **filelock);
+void OpUnlockFile(struct ExtFileLock *lock);
+LONG OpCopyLock(struct ExtFileLock *lock, struct ExtFileLock **copy);
+LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent);
 LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG action, struct ExtFileLock **filelock);
 LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen);
 LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, struct ExtFileLock *ddirlock, UBYTE *dname, ULONG dnamelen);
@@ -91,7 +95,6 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
 LONG LockFile(ULONG cluster, ULONG entry, LONG access, struct ExtFileLock **lock);
 LONG LockRoot(LONG access, struct ExtFileLock **lock);
 LONG CopyLock(struct ExtFileLock *fl, struct ExtFileLock **lock);
-LONG LockParent(struct ExtFileLock *fl, LONG access, struct ExtFileLock **lock);
 void FreeLock(struct ExtFileLock *fl);
 
 /* notify.c */

@@ -58,19 +58,7 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
 
-                if (path[0] != 0) {
-                    err = LockFileByName(fl, &path[1], path[0], access, &lock);
-                }
-
-                else if (fl != NULL) {
-                    err = CopyLock(fl, &lock);
-                }
-
-                else {
-                    err = LockRoot(access, &lock);
-                }
-
-                if (err == 0)
+                if ((err = OpLockFile(fl, &path[1], path[0], access, &lock)) == 0)
                     res = MKBADDR(lock);
 
                 break;
@@ -83,8 +71,7 @@ void ProcessPackets(void) {
                       pkt->dp_Arg1,
                       fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0));
 
-                if(fl)
-                    FreeLock(fl);
+                OpUnlockFile(fl);
 
                 res = DOSTRUE;
                 break;
@@ -100,13 +87,8 @@ void ProcessPackets(void) {
 
                 if ((err = TestLock(fl)))
                     break;
- 
-                if (fl != NULL)
-                    err = CopyLock(fl, &lock);
-                else
-                    err = LockRoot(SHARED_LOCK, &lock);
 
-                if (err == 0)
+                if ((err = OpCopyLock(fl, &lock)) == 0)
                     res = MKBADDR(lock);
 
                 break;
@@ -123,7 +105,7 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
  
-                if ((err = LockParent(fl, SHARED_LOCK, &lock)) == 0)
+                if ((err = OpLockParent(fl, &lock)) == 0)
                     res = MKBADDR(lock);
 
                 break;
