@@ -661,13 +661,23 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
             return 0;
         }
 
+        /* something changed, we need to tell people about it */
         lock->do_notify = TRUE;
 
+        /* move to the end of the area written */
         lock->pos += *written;
+
+        /* update the dir entry if the size changed */
         if (lock->pos > lock->gl->size) {
             lock->gl->size = lock->pos;
             update_entry = TRUE;
         }
+
+        /* force an update if the file hasn't already got an archive bit. this
+         * will happen if this was the first write to an existing file that
+         * didn't cause it to grow */
+        else if (!(lock->gl->attr & ATTR_ARCHIVE))
+            update_entry = TRUE;
 
         D(bug("[fat] wrote %ld bytes, new file pos is %ld, size is %ld\n", *written, lock->pos, lock->gl->size));
 
