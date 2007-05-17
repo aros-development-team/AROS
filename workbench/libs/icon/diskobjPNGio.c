@@ -32,6 +32,11 @@
 #define ATTR_STACKSIZE	    0x80001009
 #define ATTR_DEFAULTTOOL    0x8000100a
 #define ATTR_TOOLTYPE	    0x8000100b
+#define ATTR_VIEWMODES      0x8000100c  //OS4 PNG use that
+#define ATTR_DD_CURRENTX    0x8000100d  //OS4 PNG use that
+#define ATTR_DD_CURRENTY    0x8000100e  //OS4 PNG use that
+#define ATTR_TYPE           0x8000100f  //OS4 PNG use that
+#define ATTR_DRAWERFLAGS2   0x80001107  //writen from AFA to store needed dopus Magellan settings
 
 #define EFFECT_NONE      (0)
 #define EFFECT_LIGHTEN   (1)
@@ -329,12 +334,17 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		    case ATTR_DRAWERWIDTH:
 		    case ATTR_DRAWERHEIGHT:
 		    case ATTR_DRAWERFLAGS:
+            case ATTR_DRAWERFLAGS2:
+            case ATTR_VIEWMODES:
+            case ATTR_DD_CURRENTX:
+            case ATTR_DD_CURRENTY:
 		    	need_drawerdata = TRUE;
 			/* Fall through */
 			
 		    case ATTR_ICONX:
 		    case ATTR_ICONY:
-		    case ATTR_STACKSIZE:
+            case ATTR_STACKSIZE:
+            case ATTR_TYPE:
 		    	if (chunksize >= 4)
 			{
 			    val = (chunkdata[0] << 24) | (chunkdata[1] << 16) | (chunkdata[2] << 8) | chunkdata[3];
