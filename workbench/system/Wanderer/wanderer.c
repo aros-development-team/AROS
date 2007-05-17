@@ -735,12 +735,14 @@ STRPTR GetScreenTitle(VOID)
 STRPTR GetUserScreenTitle(Object *self)
 {
   
-    STATIC ULONG screentitlestr;
+    char *screentitlestr;
 
+    Object *prefs = NULL;
+
+	
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
- 
-
-D(bug("[WANDERER] GetUserScreenTitle: Wb screen title = %s\n", screentitlestr));
+    D(bug("[WANDERER] GetUserScreenTitle: Wb screen title = %s\n", screentitlestr));
+    	
     return screentitlestr;
 }
 
@@ -2109,6 +2111,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 	}
 
     BOOL    hasToolbar            = XGET(data->wd_Prefs, MUIA_IconWindowExt_Toolbar_Enabled);
+
     IPTR    TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
 
     IPTR    useFont = (IPTR)NULL;
