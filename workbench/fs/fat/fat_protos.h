@@ -86,6 +86,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
 LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct ExtFileLock **newdirlock);
 LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read);
 LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written);
+LONG OpSetProtect(struct ExtFileLock *lock, UBYTE *name, ULONG namelen, ULONG prot);
 LONG OpAddNotify(struct NotifyRequest *nr);
 LONG OpRemoveNotify(struct NotifyRequest *nr);
 

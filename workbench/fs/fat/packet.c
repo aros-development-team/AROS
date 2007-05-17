@@ -560,6 +560,25 @@ void ProcessPackets(void) {
                 break;
             }
 
+            case ACTION_SET_PROTECT: {
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
+                UBYTE *name = BADDR(pkt->dp_Arg3);
+                ULONG prot = pkt->dp_Arg4;
+
+                D(bug("[fat] SET_PROTECT: lock 0x%08x (dir %ld/%ld) name '%.*s' prot 0x%08x\n",
+                      pkt->dp_Arg2,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
+                      name[0], &name[1],
+                      prot));
+
+                if ((err = TestLock(fl)))
+                    break;
+
+                err = OpSetProtect(fl, &name[1], name[0], prot);
+
+                break;
+            }
+
             case ACTION_SET_FILE_SIZE:
                 D(bug("[fat] SET_FILE_SIZE [WRITE]\n"));
                 err = ERROR_DISK_WRITE_PROTECTED;
