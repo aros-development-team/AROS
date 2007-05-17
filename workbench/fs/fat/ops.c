@@ -249,6 +249,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         GetDirEntry(&dh, lock->gl->dir_entry, &de);
         de.e.entry.first_cluster_lo = de.e.entry.first_cluster_hi = 0;
         de.e.entry.file_size = 0;
+        de.e.entry.attr |= ATTR_ARCHIVE;
         UpdateDirEntry(&de);
 
         D(bug("[fat] set first cluster and size to 0 in directory entry\n"));
@@ -298,7 +299,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     }
 
     /* create the entry */
-    if ((err = CreateDirEntry(&dh, name, namelen, 0, 0, &de)) != 0) {
+    if ((err = CreateDirEntry(&dh, name, namelen, ATTR_ARCHIVE, 0, &de)) != 0) {
         ReleaseDirHandle(&dh);
         return err;
     }
@@ -476,7 +477,7 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
      * entries for the new name, just overwrite the name */
 
     /* make a new entry in the target dir */
-    if ((err = CreateDirEntry(&ddh, dname, dnamelen, sde.e.entry.attr, (sde.e.entry.first_cluster_hi << 16) | sde.e.entry.first_cluster_lo, &dde)) != 0) {
+    if ((err = CreateDirEntry(&ddh, dname, dnamelen, sde.e.entry.attr | ATTR_ARCHIVE, (sde.e.entry.first_cluster_hi << 16) | sde.e.entry.first_cluster_lo, &dde)) != 0) {
         ReleaseDirHandle(&ddh);
         ReleaseDirHandle(&sdh);
     }
@@ -563,7 +564,7 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     D(bug("[fat] allocated cluster %ld for directory\n", cluster));
 
     /* create the entry, pointing to the new cluster */
-    if ((err = CreateDirEntry(&dh, name, namelen, ATTR_DIRECTORY, cluster, &de)) != 0) {
+    if ((err = CreateDirEntry(&dh, name, namelen, ATTR_DIRECTORY | ATTR_ARCHIVE, cluster, &de)) != 0) {
         /* deallocate the cluster */
         SET_NEXT_CLUSTER(dh.ioh.sb, cluster, 0);
 
@@ -681,7 +682,8 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
             de.e.entry.file_size = lock->gl->size;
             de.e.entry.first_cluster_lo = lock->gl->first_cluster & 0xffff;
             de.e.entry.first_cluster_hi = lock->gl->first_cluster >> 16;
-
+    
+            de.e.entry.attr |= ATTR_ARCHIVE;
             UpdateDirEntry(&de);
 
             ReleaseDirHandle(&dh);
