@@ -760,6 +760,8 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
 
     D(bug("[fat] new protection is 0x%08x\n", de.e.entry.attr));
 
+    SendNotifyByDirEntry(glob->sb, &de);
+
     /* if its a directory, we also need to update the protections for the
      * directory's . entry */
     if (de.e.entry.attr & ATTR_DIRECTORY) {
