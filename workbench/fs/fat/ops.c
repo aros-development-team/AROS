@@ -435,6 +435,13 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
         return err;
     }
 
+    /* make sure we can delete it */
+    if (sde.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] source file is write protected, doing nothing\n"));
+        ReleaseDirHandle(&sdh);
+        return ERROR_DELETE_PROTECTED;
+    }
+
     /* now get a handle on the passed dest dir */
     if ((err = InitDirHandle(glob->sb, ddirlock != NULL ? ddirlock->ioh.first_cluster : 0, &ddh)) != 0) {
         ReleaseDirHandle(&sdh);
@@ -449,10 +456,16 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname, ULONG snamelen, st
     }
 
     /* check the source and dest dirs. if either are readonly, do nothing */
-    GetDirEntry(&sdh, 0, &sde);
+    GetDirEntry(&sdh, 0, &dde);
+    if (dde.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] source dir is read only, doing nothing\n"));
+        ReleaseDirHandle(&ddh);
+        ReleaseDirHandle(&sdh);
+        return ERROR_WRITE_PROTECTED;
+    }
     GetDirEntry(&ddh, 0, &dde);
-    if (sde.e.entry.attr & ATTR_READ_ONLY || dde.e.entry.attr & ATTR_READ_ONLY) {
-        D(bug("[fat] source or dest dir is read only, doing nothing\n"));
+    if (dde.e.entry.attr & ATTR_READ_ONLY) {
+        D(bug("[fat] dest dir is read only, doing nothing\n"));
         ReleaseDirHandle(&ddh);
         ReleaseDirHandle(&sdh);
         return ERROR_WRITE_PROTECTED;
@@ -541,7 +554,7 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     if (de.e.entry.attr & ATTR_READ_ONLY) {
         D(bug("[fat] containing dir is write protected, doing nothing\n"));
         ReleaseDirHandle(&dh);
-        return ERROR_DELETE_PROTECTED;
+        return ERROR_WRITE_PROTECTED;
     }
 
     /* now see if the wanted name is in this dir. if it exists, then we do
@@ -701,6 +714,68 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
     }
 
     return err;
+}
+
+LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG prot) {
+    LONG err;
+    struct DirHandle dh;
+    struct DirEntry de;
+
+    /* fat barely supports anything. all protection bits must be 0, except
+     * ARCHIVE, DELETE and WRITE. additionally, DELETE and WRITE must be the
+     * same */
+    if ((prot & ~(FIBF_ARCHIVE | FIBF_DELETE | FIBF_WRITE)) ||
+        (!(prot & FIBF_DELETE) ^ !(prot & FIBF_WRITE)))
+
+        return ERROR_BAD_NUMBER;
+
+    /* get the source dir handle */
+    if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
+        return err;
+
+    /* get down to the correct subdir */
+    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* can't change permissions on the root */
+    if (dh.ioh.first_cluster == 0 && namelen == 0) {
+        D(bug("[fat] can't set protection on root dir\n"));
+        ReleaseDirHandle(&dh);
+        return ERROR_INVALID_LOCK;
+    }
+
+    /* get the entry */
+    if ((err = GetDirEntryByName(&dh, name, namelen, &de)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* set the attributes */
+    de.e.entry.attr &= ~(ATTR_ARCHIVE | ATTR_READ_ONLY);
+    de.e.entry.attr |= (prot & FIBF_ARCHIVE ? ATTR_ARCHIVE : 0);
+    de.e.entry.attr |= (prot & FIBF_WRITE ? ATTR_READ_ONLY : 0);
+    UpdateDirEntry(&de);
+
+    D(bug("[fat] new protection is 0x%08x\n", de.e.entry.attr));
+
+    /* if its a directory, we also need to update the protections for the
+     * directory's . entry */
+    if (de.e.entry.attr & ATTR_DIRECTORY) {
+        ULONG attr = de.e.entry.attr;
+
+        D(bug("[fat] setting protections for directory '.' entry\n"));
+
+        InitDirHandle(glob->sb, FIRST_FILE_CLUSTER(&de), &dh);
+        GetDirEntry(&dh, 0, &de);
+        de.e.entry.attr = attr;
+        UpdateDirEntry(&de);
+    }
+
+    ReleaseDirHandle(&dh);
+
+    return 0;
 }
 
 LONG OpAddNotify(struct NotifyRequest *nr) {
