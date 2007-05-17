@@ -734,7 +734,13 @@ STRPTR GetScreenTitle(VOID)
 
 STRPTR GetUserScreenTitle(Object *self)
 {
-  
+  /*This function in theory should implement the mechanism with which screentitle
+   *bar is personalized by user, but for some strange reason I don't find why the
+   *saved prefs value MUIA_IconWindowExt_ScreenTitle_String isn't correctly read
+   *from the function of wanderer.c, while all function of wandererprefs.c and
+   *wpeditor.c check it in right way. Thus until someone (am I?) doesn't discover 
+   *why this thing happens I can't finish this function... :-( 
+   */
     char *screentitlestr;
 
     Object *prefs = NULL;
@@ -1460,9 +1466,14 @@ void wanderer_menufunc_wanderer_about(void)
 
 void wanderer_menufunc_wanderer_quit(void)
 {
-    //if (MUI_RequestA(_WandererIntern_AppObj, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
-	//DoMethod(_WandererIntern_AppObj, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    OpenWorkbenchObject("WANDERER:Tools/Quit", TAG_DONE);
+    if (OpenWorkbenchObject("WANDERER:Tools/Quit", TAG_DONE))
+	;
+    else
+    {
+    	if (MUI_RequestA(_WandererIntern_AppObj, NULL, 0, "Wanderer", _(MSG_YESNO), _(MSG_REALLYQUIT), NULL))
+		DoMethod(_WandererIntern_AppObj, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	
+    }
 }
 
 /**************************************************************************
@@ -1644,6 +1655,8 @@ D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
         }
 
         data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
+
+D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-SCREENTITLE IS = '%s'\n",XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
 
 		if (data->wd_Prefs) 
 			data->wd_PrefsIntern = InitWandererPrefs();
