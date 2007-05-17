@@ -524,9 +524,9 @@ D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_pa
                                 s =  succ;
                             }
 
-D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filelist, wscreen->MouseX, wscreen->MouseY);)
+D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filelist, wscreen->MouseX - win->LeftEdge, wscreen->MouseY - win->TopEdge);)
                             /* send appwindow msg struct containing selected files to destination */
-                            SendAppWindowMessage(win, files, filelist, 0, wscreen->MouseX, wscreen->MouseY, 0, 0);
+                            SendAppWindowMessage(win, files, filelist, 0, wscreen->MouseX - win->LeftEdge, wscreen->MouseY - win->TopEdge, 0, 0);
 
                         }
                         FreeVec(filelist);
