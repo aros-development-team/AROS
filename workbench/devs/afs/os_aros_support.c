@@ -93,12 +93,12 @@ UBYTE i;
 	else
 	{
 		newname = (BSTR)AllocVec(32,MEMF_CLEAR | MEMF_PUBLIC);
-		if (volume->devicelist.dl_Name == NULL)
+		if (newname == (BSTR)NULL)
 			return DOSFALSE;
 	}
 	for (i=0; i<name[0]; i++)
-		AROS_BSTR_putchar(volume->devicelist.dl_Name, i, name[i+1]);
-	AROS_BSTR_setstrlen(volume->devicelist.dl_Name, name[0]);
+		AROS_BSTR_putchar(newname, i, name[i+1]);
+	AROS_BSTR_setstrlen(newname, name[0]);
 	volume->devicelist.dl_Name = newname;
 	return DOSTRUE;
 }
