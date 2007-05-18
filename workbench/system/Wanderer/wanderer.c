@@ -734,22 +734,79 @@ STRPTR GetScreenTitle(VOID)
 
 STRPTR GetUserScreenTitle(Object *self)
 {
-  /*This function in theory should implement the mechanism with which screentitle
-   *bar is personalized by user, but for some strange reason I don't find why the
-   *saved prefs value MUIA_IconWindowExt_ScreenTitle_String isn't correctly read
-   *from the function of wanderer.c, while all function of wandererprefs.c and
-   *wpeditor.c check it in right way. Thus until someone (am I?) doesn't discover 
-   *why this thing happens I can't finish this function... :-( 
+  /*Work in progress :-)
    */
     char *screentitlestr;
-
-    Object *prefs = NULL;
-
+    STATIC TEXT title[256];
+    TEXT temp[256], buffer[256];
+    UBYTE chip[10], fast[10];
 	
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
-    D(bug("[WANDERER] GetUserScreenTitle: Wb screen title = %s\n", screentitlestr));
-    	
-    return screentitlestr;
+   
+    strcpy(temp,screentitlestr);
+    
+    int screentitleleng = strlen(screentitlestr);
+
+
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN title=%s\n", title));
+    int i;
+    for (i=0; i<screentitleleng; i++)
+    {
+	if (temp[i]=='%')
+	{
+		if (i<=screentitleleng-4)
+		 {
+			
+			if (strncmp(temp+i,"%pc",3)==0)
+			{
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				temp[i+1]='s';
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				temp[i+2]=' ';
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				fmtlarge(chip,AvailMem(MEMF_CHIP));
+				//strcat(chip," ");
+				sprintf(title,temp, chip);
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				i=i+strlen(chip);
+				strncpy(buffer, title, i);
+			
+				strcpy(&buffer[i],&temp[(i+3)-strlen(chip)]);
+				strcpy(temp, buffer);
+				screentitleleng=screentitleleng+strlen(chip);
+				
+				continue;	
+			}	
+
+			if (strncmp(temp+i,"%pf",3)==0)
+			{
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				temp[i+1]='s';
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				temp[i+2]=' ';
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				fmtlarge(fast,AvailMem(MEMF_FAST));
+				//strcat(fast," ");
+				sprintf(title,temp, fast);
+D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				i=i+strlen(fast);
+				strncpy(buffer, title, i);
+			
+				strcpy(&buffer[i],&temp[(i+3)-strlen(fast)]);
+				strcpy(temp, buffer);
+				screentitleleng=screentitleleng+strlen(fast);
+				
+				continue;	
+			}
+	    	}
+			
+		
+	}
+    }
+    
+   		
+    return title;
+
 }
 
 /* Expand a passed in env: string to its full location */
@@ -1809,7 +1866,8 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
     SETUP_WANDERER_INST_DATA;
     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
     Object *child = NULL;
-    STRPTR scr_title = GetScreenTitle();
+
+    STRPTR scr_title = GetUserScreenTitle(data->wd_Prefs);
 
     while ((child = NextObject(&cstate)))
 	   SET(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
@@ -2140,7 +2198,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
         		MUIA_UserData, 			      1,
 			MUIA_Wanderer_Prefs,                  data->wd_Prefs,
 			MUIA_Wanderer_Screen,                 data->wd_Screen,
-        		MUIA_Window_ScreenTitle,              GetScreenTitle(),
+        		MUIA_Window_ScreenTitle,              GetUserScreenTitle(data->wd_Prefs),
         		MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
 			TAG_IconWindow_Drawer,                (IPTR) message->drawer,
         		MUIA_IconWindow_Font,                 useFont,

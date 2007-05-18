@@ -23,7 +23,7 @@
 //#define       DEBUG_NEWVIEWSETTINGS
 //#define       DEBUG_NETWORKBROWSER
 //#define       DEBUG_MULTLINE
-//#define       DEBUG_CHANGESCREENTITLE
+#define       DEBUG_CHANGESCREENTITLE
 
 #include <exec/types.h>
 #include <utility/tagitem.h>

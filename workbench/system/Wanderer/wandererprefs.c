@@ -35,7 +35,7 @@ struct WandererPrefs_DATA
     ULONG  wpd_ToolbarEnabled;
     ULONG  wpd_ShowNetwork;
     ULONG  wpd_ShowUserFiles;
-    ULONG  wpd_ScreenTitleString;
+    ULONG  wpd_ScreenTitleString[IFF_CHUNK_BUFFER_SIZE];
 	
     ULONG  wpd_IconListMode;
     ULONG  wpd_IconTextMode;
@@ -123,7 +123,8 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 				break;
 
 			case MUIA_IconWindowExt_ScreenTitle_String:
-				data->wpd_ScreenTitleString = (LONG)tag->ti_Data;
+				strcpy(data->wpd_ScreenTitleString,tag->ti_Data);
+				//data->wpd_ScreenTitleString = (LONG)tag->ti_Data;
 				break;
 
             case MUIA_IconWindowExt_Toolbar_Enabled:
