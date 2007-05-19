@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define WANDERER_DEFAULT_BACKDROP
@@ -756,13 +756,10 @@ STRPTR GetUserScreenTitle(Object *self)
   /*Work in progress :-)
    */
     char *screentitlestr;
-    STATIC TEXT title[256];
-    TEXT temp[256], buffer[256];
-    UBYTE infostr[10];
-  
-
-	
-	
+    STATIC char title[256];
+    char temp[256], buffer[256];
+    char infostr[10];
+  	
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
 D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitlestr=%s\n", screentitlestr));   
    
@@ -770,10 +767,7 @@ D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitlestr=%s\n", screentitles
     int screentitleleng = strlen(screentitlestr);
 
     if (screentitleleng<1)
-	{
-		strcpy(temp,_(MSG_USERSCREENTITLE));
-		screentitleleng = strlen(temp);
-	}
+	return GetScreenTitle();
      else
      	strcpy(temp,screentitlestr);
 
@@ -787,7 +781,7 @@ D(bug("[Wanderer] GetUserScreenTitle(),EXTERN temp=%s\n", temp));
 	{
 D(bug("[Wanderer] GetUserScreenTitle(),entered in if  \n"));
 D(bug("[Wanderer] GetUserScreenTitle(),EXTERN leng i=%d\n", i));
-		if (i<=screentitleleng-4)
+		if (screentitleleng>=3)
 		{
 			BOOL found=FALSE;
 
@@ -850,13 +844,21 @@ D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
 		}
 		else
 		{
-		  temp[i]='?';
-		  sprintf(title,temp);
+			switch (screentitleleng)
+			{
+				case 2:
+					temp[i]='?';
+					temp[i+1]='?';
+					break;
+				case 1:
+		  			temp[i]='?';
+		  	}
+			sprintf(title,temp);
 		}
 	}
 	
     }
-     sprintf(title,temp);
+    sprintf(title,temp);
    		
     return title;
 
