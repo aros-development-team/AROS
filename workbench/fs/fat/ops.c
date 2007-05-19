@@ -716,6 +716,159 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
     return err;
 }
 
+LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *newsize) {
+    LONG err;
+    LONG size;
+    struct DirHandle dh;
+    struct DirEntry de;
+    ULONG want, count;
+    ULONG cl, next, first, last;
+
+    /* need an exclusive lock to do what is effectively a write */
+    if (lock->gl->access != EXCLUSIVE_LOCK) {
+        D(bug("[fat] can't modify global attributes via a shared lock\n"));
+        return ERROR_OBJECT_IN_USE;
+    }
+
+    /* don't modify the file if its protected */
+    if (lock->gl->attr & ATTR_READ_ONLY) {
+        D(bug("[fat] file is write protected\n"));
+        return ERROR_WRITE_PROTECTED;
+    }
+
+    /* calculate the new length based on the current position */
+    if (whence == OFFSET_BEGINNING && offset >= 0)
+        size = offset;
+    else if (whence == OFFSET_CURRENT && lock->pos + offset>= 0)
+        size = lock->pos + offset;
+    else if (whence == OFFSET_END && offset <= 0 && lock->gl->size + offset >= 0)
+        size = lock->gl->size + offset;
+    else
+        return ERROR_SEEK_ERROR;
+
+    if (lock->gl->size == size) {
+        D(bug("[fat] new size matches old size, nothing to do\n"));
+        return 0;
+    }
+
+    D(bug("[fat] old size was %ld bytes, new size is %ld bytes\n", lock->gl->size, size));
+
+    /* get the dir that this file is in */
+    if ((err = InitDirHandle(glob->sb, lock->gl->dir_cluster, &dh)) != 0)
+        return err;
+
+    /* and the entry */
+    if ((err = GetDirEntry(&dh, lock->gl->dir_entry, &de)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* calculate how many clusters we need */
+    want = (size >> glob->sb->clustersize_bits) + ((size & (glob->sb->clustersize-1)) ? 1 : 0);
+
+    D(bug("[fat] want %ld clusters for file\n", want));
+
+    /* we're getting three things here - the first cluster of the existing
+     * file, the last cluster of the existing file (which might be the same),
+     * and the number of clusters currently allocated to it (its not safe to
+     * infer it from the current size as a broken fat implementation may have
+     * allocated it more than it needs). we handle file shrinking/truncation
+     * here as it falls out naturally from following the current cluster chain
+     */
+
+    cl = FIRST_FILE_CLUSTER(&de);
+    if (cl == 0) {
+        D(bug("[fat] file is empty\n"));
+
+        first = 0;
+        count = 0;
+    }
+
+    else if (want == 0) {
+        /* if we're fully truncating the file, then the below loop will
+         * actually not truncate the file at all (count will get incremented
+         * past want first time around the loop). its a pain to incorporate a
+         * full truncate into the loop, not counting the change to the first
+         * cluster, so its easier to just take care of it all here */
+        D(bug("[fat] want nothing, so truncating the entire file\n"));
+
+        FREE_CLUSTER_CHAIN(glob->sb, cl);
+
+        /* now it has nothing */
+        first = 0;
+        count = 0;
+    }
+
+    else {
+        first = cl;
+        count = 0;
+
+        /* do the actual count */
+        while ((last = GET_NEXT_CLUSTER(glob->sb, cl)) < glob->sb->eoc_mark) {
+            count++;
+            cl = last;
+
+            /* if we get as many clusters as we want, kill everything after it */
+            if (count == want) {
+                FREE_CLUSTER_CHAIN(glob->sb, GET_NEXT_CLUSTER(glob->sb, cl));
+                SET_NEXT_CLUSTER(glob->sb, cl, glob->sb->eoc_mark);
+
+                D(bug("[fat] truncated file\n"));
+
+                break;
+            }
+        }
+
+        D(bug("[fat] file has %ld clusters\n", count));
+    }
+
+    /* now we know how big the current file is. if we don't have enough,
+     * allocate more until we do */
+    if (count < want) {
+        D(bug("[fat] growing file\n"));
+
+        while (count < want) {
+            if ((err = FindFreeCluster(glob->sb, &next)) != 0) {
+                /* XXX probably no free clusters left. we should clean up the
+                    * extras we allocated before returning. it won't hurt
+                    * anything to leave them but it is dead space */
+                ReleaseDirHandle(&dh);
+                return err;
+            }
+
+            /* mark the cluster used */
+            SET_NEXT_CLUSTER(glob->sb, next, glob->sb->eoc_mark);
+
+            /* if the file had no clusters, then this is the first and we
+                * need to note it for later storage in the direntry */
+            if (cl == 0)
+                first = next;
+
+            /* otherwise, hook it up to the current one */
+            else
+                SET_NEXT_CLUSTER(glob->sb, cl, next);
+
+            /* one more */
+            count++;
+            cl = next;
+        }
+    }
+
+    /* clusters are fixed, now update the directory entry */
+    de.e.entry.first_cluster_lo = first & 0xffff;
+    de.e.entry.first_cluster_hi = first >> 16;
+    de.e.entry.file_size = size;
+    de.e.entry.attr |= ATTR_ARCHIVE;
+    UpdateDirEntry(&de);
+
+    D(bug("[fat] set file size to %ld, first cluster is %ld\n", size, first));
+
+    /* done! */
+    *newsize = size;
+
+    return 0;
+}
+
 LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG prot) {
     LONG err;
     struct DirHandle dh;
