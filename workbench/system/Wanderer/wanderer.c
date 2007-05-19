@@ -764,20 +764,31 @@ STRPTR GetUserScreenTitle(Object *self)
 	
 	
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitlestr=%s\n", screentitlestr));   
    
-    strcpy(temp,screentitlestr);
-    
+
     int screentitleleng = strlen(screentitlestr);
 
+    if (screentitleleng<1)
+	{
+		strcpy(temp,_(MSG_USERSCREENTITLE));
+		screentitleleng = strlen(temp);
+	}
+     else
+     	strcpy(temp,screentitlestr);
 
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN title=%s\n", title));
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN leng=%d\n", screentitleleng));
+
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN temp=%s\n", temp));
     int i;
     for (i=0; i<screentitleleng; i++)
     {
 	if (temp[i]=='%')
 	{
+D(bug("[Wanderer] GetUserScreenTitle(),entered in if  \n"));
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN leng i=%d\n", i));
 		if (i<=screentitleleng-4)
-		 {
+		{
 			BOOL found=FALSE;
 
 			if (strncmp(temp+i,"%wv",3)==0)
@@ -805,6 +816,7 @@ D(bug("[Wanderer] GetUserScreenTitle(),EXTERN title=%s\n", title));
 			{
 				fmtlarge(infostr,AvailMem(MEMF_CHIP));
 				found=TRUE;
+D(bug("[Wanderer] GetUserScreenTitle(),found pc \n"));
 			}	
 
 			if (strncmp(temp+i,"%pf",3)==0)
@@ -815,16 +827,17 @@ D(bug("[Wanderer] GetUserScreenTitle(),EXTERN title=%s\n", title));
 
 			if (found)
 			{
+D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
 				temp[i+1]='s';
 				temp[i+2]=' ';
-
+D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
 				sprintf(title,temp, infostr);
-				
+D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));				
 				i=i+strlen(infostr);
 				strncpy(buffer, title, i);
 				strcpy(&buffer[i],&temp[(i+3)-strlen(infostr)]);
 				strcpy(temp, buffer);
-
+D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
 				screentitleleng=screentitleleng+strlen(infostr);
 			}
 			else
@@ -832,14 +845,18 @@ D(bug("[Wanderer] GetUserScreenTitle(),EXTERN title=%s\n", title));
 				temp[i]='?';
 				temp[i+1]='?';
 				temp[i+2]='?';
+				sprintf(title,temp);
 			}
-	    	}
-			
-		
+		}
+		else
+		{
+		  temp[i]='?';
+		  sprintf(title,temp);
+		}
 	}
 	
     }
-    
+     sprintf(title,temp);
    		
     return title;
 

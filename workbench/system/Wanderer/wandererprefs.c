@@ -24,6 +24,7 @@
 #include "../../libs/muimaster/classes/iconlist_attributes.h"
 #include "iconwindow_attributes.h"
 #include "support.h"
+#include "locale.h"
 
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
@@ -257,11 +258,12 @@ BOOL WPEditor_ProccessScreenTitleChunk(Class *CLASS, Object *self, UBYTE *_Scree
 
 	
 D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE to write= %s\n", _ScreenTitle_Chunk));
+	if (_ScreenTitle_Chunk==NULL)
+	{
+		sprintf(_ScreenTitle_Chunk,_(MSG_SCREENTITLE));
+	}
 	SET(self, MUIA_IconWindowExt_ScreenTitle_String, _ScreenTitle_Chunk);
-	char *teststring;
-	GET(self, MUIA_IconWindowExt_ScreenTitle_String, &teststring);
-D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE written= %s\n", teststring));
-
+	
 	return TRUE;
 }
 
@@ -415,12 +417,11 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context %x\n",
 								error = ReadChunkBytes(
 									 		handle, 
 											chunk_buffer,
-											IFF_CHUNK_BUFFER_SIZE/* same problem of size
-														   *that there was in WP (this_chunk_size)*/
+											this_chunk_size
 										      );
 									
-								//if (error == this_chunk_size)// this stab long string in chunk_buffer (Nic check it)
-								//{
+								if (error == this_chunk_size)
+								{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
 									if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 									{
@@ -445,7 +446,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
 										WandererPrefs_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
 									}
-								//}//END if (error == this_chunk_size)	
+								}//END if (error == this_chunk_size)	
 								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
 								{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of Data chunk ..\n"));
