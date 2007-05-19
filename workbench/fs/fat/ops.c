@@ -18,11 +18,7 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#if defined(DEBUG_FULL) && DEBUG_FULL != 0
-#define DEBUG 1
-#else
-#define DEBUG 0
-#endif
+#define DEBUG DEBUG_OPS
 #include <aros/debug.h>
 
 #define FREE_CLUSTER_CHAIN(sb,cl)                               \

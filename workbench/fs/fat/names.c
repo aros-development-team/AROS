@@ -21,11 +21,7 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#if defined(DEBUG_FULL) && DEBUG_FULL != 0
-#define DEBUG 1
-#else
-#define DEBUG 0
-#endif
+#define DEBUG DEBUG_NAMES
 #include <aros/debug.h>
 
 LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
