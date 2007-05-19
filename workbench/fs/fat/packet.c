@@ -282,6 +282,7 @@ void ProcessPackets(void) {
                       whence == OFFSET_END       ? "END"       :
                       whence == OFFSET_CURRENT   ? "CURRENT"   :
                                                    "(unknown)"));
+
                 if ((err = TestLock(fl))) {
                     res = -1;
                     break;
@@ -306,6 +307,32 @@ void ProcessPackets(void) {
                     res = -1;
                     err = ERROR_SEEK_ERROR;
                 }
+
+                break;
+            }
+
+            case ACTION_SET_FILE_SIZE: {
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                LONG offset = pkt->dp_Arg2;
+                LONG whence = pkt->dp_Arg3;
+
+                D(bug("[fat] SET_FILE_SIZE: lock 0x%08x (dir %ld/%ld pos %ld) offset %ld whence %s\n",
+                      pkt->dp_Arg1,
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
+                      fl->pos,
+                      offset,
+                      whence == OFFSET_BEGINNING ? "BEGINNING" :
+                      whence == OFFSET_END       ? "END"       :
+                      whence == OFFSET_CURRENT   ? "CURRENT"   :
+                                                   "(unknown)"));
+
+                if ((err = TestLock(fl))) {
+                    res = -1;
+                    break;
+                }
+
+                if ((err = OpSetFileSize(fl, offset, whence, &res)) != 0)
+                    res = -1;
 
                 break;
             }
@@ -578,11 +605,6 @@ void ProcessPackets(void) {
 
                 break;
             }
-
-            case ACTION_SET_FILE_SIZE:
-                D(bug("[fat] SET_FILE_SIZE [WRITE]\n"));
-                err = ERROR_DISK_WRITE_PROTECTED;
-                break;
 
             case ACTION_ADD_NOTIFY: {
                 struct NotifyRequest *nr = pkt->dp_Arg1;
