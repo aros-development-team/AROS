@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define WANDERER_DEFAULT_BACKDROP
@@ -719,6 +719,25 @@ static void fmtlarge(UBYTE *buf, ULONG num)
     *buf   = '\0';
 }
 
+/* Case-insensitive FindName()
+ * code from workbench/c/Version.c
+ */
+static
+struct Node *findname(struct List *list, CONST_STRPTR name)
+{
+	struct Node *node;
+
+	ForeachNode(list, node)
+	{
+		if (!Stricmp(node->ln_Name, (STRPTR) name))
+		{
+			return node;
+		}
+	}
+
+	return NULL;
+}
+
 STRPTR GetScreenTitle(VOID)
 {
     STATIC TEXT title[256];
@@ -739,7 +758,10 @@ STRPTR GetUserScreenTitle(Object *self)
     char *screentitlestr;
     STATIC TEXT title[256];
     TEXT temp[256], buffer[256];
-    UBYTE chip[10], fast[10];
+    UBYTE infostr[10];
+  
+
+	
 	
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
    
@@ -756,52 +778,66 @@ D(bug("[Wanderer] GetUserScreenTitle(),EXTERN title=%s\n", title));
 	{
 		if (i<=screentitleleng-4)
 		 {
+			BOOL found=FALSE;
+
+			if (strncmp(temp+i,"%wv",3)==0)
+			{
+				struct Library *MyLibrary;
+				MyLibrary = (struct Library *) findname(&SysBase->LibList, "workbench.library");
+		
+				sprintf(infostr,"%ld",MyLibrary->lib_Version);
+				sprintf(infostr+strlen(infostr),".");
+				sprintf(infostr+strlen(infostr),"%ld",MyLibrary->lib_Revision);	
+				found=TRUE;			
+			}	
+
+			if (strncmp(temp+i,"%ov",3)==0)
+			{
+				sprintf(infostr,"%ld",SysBase->LibNode.lib_Version);
+				sprintf(infostr+strlen(infostr),".");
+				sprintf(infostr+strlen(infostr),"%ld",SysBase->SoftVer);
+
+				found=TRUE;				
+			}	
+
 			
 			if (strncmp(temp+i,"%pc",3)==0)
 			{
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
-				temp[i+1]='s';
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
-				temp[i+2]=' ';
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
-				fmtlarge(chip,AvailMem(MEMF_CHIP));
-				//strcat(chip," ");
-				sprintf(title,temp, chip);
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
-				i=i+strlen(chip);
-				strncpy(buffer, title, i);
-			
-				strcpy(&buffer[i],&temp[(i+3)-strlen(chip)]);
-				strcpy(temp, buffer);
-				screentitleleng=screentitleleng+strlen(chip);
-				
-				continue;	
+				fmtlarge(infostr,AvailMem(MEMF_CHIP));
+				found=TRUE;
 			}	
 
 			if (strncmp(temp+i,"%pf",3)==0)
 			{
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
+				fmtlarge(infostr,AvailMem(MEMF_FAST));
+				found=TRUE;
+			}
+
+			if (found)
+			{
 				temp[i+1]='s';
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
 				temp[i+2]=' ';
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
-				fmtlarge(fast,AvailMem(MEMF_FAST));
-				//strcat(fast," ");
-				sprintf(title,temp, fast);
-D(bug("[Wanderer] GetUserScreenTitle(), title=%s\n", title));
-				i=i+strlen(fast);
-				strncpy(buffer, title, i);
-			
-				strcpy(&buffer[i],&temp[(i+3)-strlen(fast)]);
-				strcpy(temp, buffer);
-				screentitleleng=screentitleleng+strlen(fast);
+
+				sprintf(title,temp, infostr);
 				
-				continue;	
+				i=i+strlen(infostr);
+				strncpy(buffer, title, i);
+				strcpy(&buffer[i],&temp[(i+3)-strlen(infostr)]);
+				strcpy(temp, buffer);
+
+				screentitleleng=screentitleleng+strlen(infostr);
+			}
+			else
+			{
+				temp[i]='?';
+				temp[i+1]='?';
+				temp[i+2]='?';
 			}
 	    	}
 			
 		
 	}
+	
     }
     
    		
