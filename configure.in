@@ -610,7 +610,20 @@ case "$target_os" in
 		aros_default_wbheight=480
 		gcc_target_cpu="i386"
 		;;
-	    *)
+            *x86_64*)
+                aros_target_cpu="x86_64"
+                if test "$aros_object_format" = "" ; then
+                    aros_object_format="elf_x86_64"
+                fi
+                aros_flavour="standalone"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
+                aros_config_cflags="$aros_config_cflags -fno-asynchronous-unwind-tables"
+                aros_kernel_ldflags=""
+                aros_default_wbwidth=640
+                aros_default_wbheight=480
+                gcc_target_cpu="x86_64"
+                ;;
+            *)
 		AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
 		;;
 	esac
