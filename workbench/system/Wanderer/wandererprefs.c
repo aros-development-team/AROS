@@ -81,6 +81,205 @@ BOOL SetString(STRPTR *dst, STRPTR src)
        
     return FALSE;
 }
+static unsigned char strtochar(STRPTR st)
+{
+    return *st++;
+}
+
+/******** code from workbench/c/Info.c *******************/
+static void fmtlarge(UBYTE *buf, ULONG num)
+{
+    UQUAD d;
+    UBYTE ch;
+    struct
+    {
+        ULONG val;
+        LONG  dec;
+    } array =
+    {
+        num,
+        0
+    };
+
+    if (num >= 1073741824)
+    {
+        array.val = num >> 30;
+        d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+        array.dec = d % 10;
+        //ch = 'G';
+        ch = strtochar((STRPTR)_(MSG_MEM_G));
+    }
+    else if (num >= 1048576)
+    {
+        array.val = num >> 20;
+        d = ((UQUAD)num * 10 + 524288) / 1048576;
+        array.dec = d % 10;
+        //ch = 'M';
+        ch = strtochar((STRPTR)_(MSG_MEM_M));
+    }
+    else if (num >= 1024)
+    {
+        array.val = num >> 10;
+        d = (num * 10 + 512) / 1024;
+        array.dec = d % 10;
+        //ch = 'K';
+        ch = strtochar((STRPTR)_(MSG_MEM_K));
+    }
+    else
+    {
+        array.val = num;
+        array.dec = 0;
+        d = 0;
+        //ch = 'B';
+    ch = strtochar((STRPTR)_(MSG_MEM_B));
+    }
+
+    if (!array.dec && (d > array.val * 10))
+    {
+        array.val++;
+    }
+
+    RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
+    while (*buf) { buf++; }
+    *buf++ = ch;
+    *buf   = '\0';
+}
+
+/* Case-insensitive FindName()
+ * code from workbench/c/Version.c
+ */
+static
+struct Node *findname(struct List *list, CONST_STRPTR name)
+{
+	struct Node *node;
+
+	ForeachNode(list, node)
+	{
+		if (!Stricmp(node->ln_Name, (STRPTR) name))
+		{
+			return node;
+		}
+	}
+
+	return NULL;
+}
+
+STRPTR ProcessUserScreenTitle(STRPTR screentitlestr)
+{
+  /*Work in progress :-)
+   */
+   
+D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitlestr=%s\n", screentitlestr));   
+
+    if  (screentitlestr==NULL)
+	{
+D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle=NULL\n"));   
+		return screentitlestr;
+	}
+
+    int screentitleleng = strlen(screentitlestr);
+
+    if (screentitleleng<1)
+	{
+D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitleleng=%d\n", screentitleleng));   
+		return screentitleleng;
+	}
+
+    STATIC char title[256];
+    char temp[256], buffer[256];
+    char infostr[10];  
+
+    strcpy(temp,screentitlestr);
+
+
+    int i;
+    for (i=0; i<screentitleleng; i++)
+    {
+	if (temp[i]=='%')
+	{
+
+		if (screentitleleng>=3)
+		{
+			BOOL found=FALSE;
+
+			if (strncmp(temp+i,"%wv",3)==0)
+			{
+				struct Library *MyLibrary;
+				MyLibrary = (struct Library *) findname(&SysBase->LibList, "workbench.library");
+		
+				sprintf(infostr,"%ld",MyLibrary->lib_Version);
+				sprintf(infostr+strlen(infostr),".");
+				sprintf(infostr+strlen(infostr),"%ld",MyLibrary->lib_Revision);	
+				found=TRUE;			
+			}	
+
+			if (strncmp(temp+i,"%ov",3)==0)
+			{
+				sprintf(infostr,"%ld",SysBase->LibNode.lib_Version);
+				sprintf(infostr+strlen(infostr),".");
+				sprintf(infostr+strlen(infostr),"%ld",SysBase->SoftVer);
+
+				found=TRUE;				
+			}	
+
+			
+			if (strncmp(temp+i,"%pc",3)==0)
+			{
+				fmtlarge(infostr,AvailMem(MEMF_CHIP));
+				found=TRUE;
+
+			}	
+
+			if (strncmp(temp+i,"%pf",3)==0)
+			{
+				fmtlarge(infostr,AvailMem(MEMF_FAST));
+				found=TRUE;
+			}
+
+			if (found)
+			{
+
+				temp[i+1]='s';
+				temp[i+2]=' ';
+
+				sprintf(title,temp, infostr);
+			
+				i=i+strlen(infostr);
+				strncpy(buffer, title, i);
+				strcpy(&buffer[i],&temp[(i+3)-strlen(infostr)]);
+				strcpy(temp, buffer);
+
+				screentitleleng=screentitleleng+strlen(infostr);
+			}
+			else
+			{
+				temp[i]='?';
+				temp[i+1]='?';
+				temp[i+2]='?';
+				sprintf(title,temp);
+			}
+		}
+		else
+		{
+			switch (screentitleleng)
+			{
+				case 2:
+					temp[i]='?';
+					temp[i+1]='?';
+					break;
+				case 1:
+		  			temp[i]='?';
+		  	}
+			sprintf(title,temp);
+		}
+	}
+	
+    }
+    sprintf(title,temp);
+   		
+    return title;
+
+}
 
 /*** Methods ****************************************************************/
 Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
@@ -258,11 +457,15 @@ BOOL WPEditor_ProccessScreenTitleChunk(Class *CLASS, Object *self, UBYTE *_Scree
 
 	
 D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE to write= %s\n", _ScreenTitle_Chunk));
-	if (_ScreenTitle_Chunk==NULL)
-	{
-		sprintf(_ScreenTitle_Chunk,_(MSG_SCREENTITLE));
-	}
-	SET(self, MUIA_IconWindowExt_ScreenTitle_String, _ScreenTitle_Chunk);
+
+	char *userscreentitle=	ProcessUserScreenTitle(_ScreenTitle_Chunk);
+D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE returned= %s\n", userscreentitle));
+
+	if (userscreentitle==NULL)
+		SET(self, MUIA_IconWindowExt_ScreenTitle_String,_ScreenTitle_Chunk);
+	else	
+		SET(self, MUIA_IconWindowExt_ScreenTitle_String,userscreentitle);
+D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREENTITLE setted\n"));
 	
 	return TRUE;
 }
