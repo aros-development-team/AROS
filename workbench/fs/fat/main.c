@@ -27,11 +27,7 @@
 #include "fat_fs.h"
 #include "fat_protos.h"
 
-#if defined(DEBUG_FULL) && DEBUG_FULL != 0
-#define DEBUG 1
-#else
-#define DEBUG 0
-#endif
+#define DEBUG DEBUG_MISC
 #include <aros/debug.h>
 
 struct DosLibrary *DOSBase;
