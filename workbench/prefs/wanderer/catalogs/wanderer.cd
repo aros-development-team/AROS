@@ -80,3 +80,6 @@ double buffering
 MSG_MISC (//)
 misc
 ;
+MSG_BUBBLESCREENTITLE (//) 
+%pc = Chip Ram\n %pf = Fast Ram\n %wv Workbench version (Exact)\n %ov Kickstart version (Exact)
+;
