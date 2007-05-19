@@ -965,6 +965,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 		DoMethod(_WP_Navigation_InnerHGrp2, OM_ADDMEMBER,HVSpace);
 	
 		#if defined(DEBUG_CHANGESCREENTITLE)
+		DoMethod(_WP_Navigator_ScreenTitleObj,MUIM_Set, MUIA_ShortHelp,_(MSG_BUBBLESCREENTITLE));
 		DoMethod(_WP_Navigation_InnerHGrp3, OM_ADDMEMBER,_WP_Navigator_ScreenTitleObj);
 		DoMethod(_WP_Navigation_HGrp2, OM_ADDMEMBER,_WP_Navigation_InnerHGrp3);
 		#endif
