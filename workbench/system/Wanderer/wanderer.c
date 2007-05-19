@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define WANDERER_DEFAULT_BACKDROP
@@ -719,24 +719,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
     *buf   = '\0';
 }
 
-/* Case-insensitive FindName()
- * code from workbench/c/Version.c
- */
-static
-struct Node *findname(struct List *list, CONST_STRPTR name)
-{
-	struct Node *node;
 
-	ForeachNode(list, node)
-	{
-		if (!Stricmp(node->ln_Name, (STRPTR) name))
-		{
-			return node;
-		}
-	}
-
-	return NULL;
-}
 
 STRPTR GetScreenTitle(VOID)
 {
@@ -756,111 +739,20 @@ STRPTR GetUserScreenTitle(Object *self)
   /*Work in progress :-)
    */
     char *screentitlestr;
-    STATIC char title[256];
-    char temp[256], buffer[256];
-    char infostr[10];
+    
   	
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
 D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitlestr=%s\n", screentitlestr));   
    
-
     int screentitleleng = strlen(screentitlestr);
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitleleng=%d\n", screentitleleng));   
 
     if (screentitleleng<1)
-	return GetScreenTitle();
-     else
-     	strcpy(temp,screentitlestr);
-
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN leng=%d\n", screentitleleng));
-
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN temp=%s\n", temp));
-    int i;
-    for (i=0; i<screentitleleng; i++)
-    {
-	if (temp[i]=='%')
 	{
-D(bug("[Wanderer] GetUserScreenTitle(),entered in if  \n"));
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN leng i=%d\n", i));
-		if (screentitleleng>=3)
-		{
-			BOOL found=FALSE;
-
-			if (strncmp(temp+i,"%wv",3)==0)
-			{
-				struct Library *MyLibrary;
-				MyLibrary = (struct Library *) findname(&SysBase->LibList, "workbench.library");
-		
-				sprintf(infostr,"%ld",MyLibrary->lib_Version);
-				sprintf(infostr+strlen(infostr),".");
-				sprintf(infostr+strlen(infostr),"%ld",MyLibrary->lib_Revision);	
-				found=TRUE;			
-			}	
-
-			if (strncmp(temp+i,"%ov",3)==0)
-			{
-				sprintf(infostr,"%ld",SysBase->LibNode.lib_Version);
-				sprintf(infostr+strlen(infostr),".");
-				sprintf(infostr+strlen(infostr),"%ld",SysBase->SoftVer);
-
-				found=TRUE;				
-			}	
-
-			
-			if (strncmp(temp+i,"%pc",3)==0)
-			{
-				fmtlarge(infostr,AvailMem(MEMF_CHIP));
-				found=TRUE;
-D(bug("[Wanderer] GetUserScreenTitle(),found pc \n"));
-			}	
-
-			if (strncmp(temp+i,"%pf",3)==0)
-			{
-				fmtlarge(infostr,AvailMem(MEMF_FAST));
-				found=TRUE;
-			}
-
-			if (found)
-			{
-D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
-				temp[i+1]='s';
-				temp[i+2]=' ';
-D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
-				sprintf(title,temp, infostr);
-D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));				
-				i=i+strlen(infostr);
-				strncpy(buffer, title, i);
-				strcpy(&buffer[i],&temp[(i+3)-strlen(infostr)]);
-				strcpy(temp, buffer);
-D(bug("[Wanderer] GetUserScreenTitle(),temp=%s \n", temp));
-				screentitleleng=screentitleleng+strlen(infostr);
-			}
-			else
-			{
-				temp[i]='?';
-				temp[i+1]='?';
-				temp[i+2]='?';
-				sprintf(title,temp);
-			}
-		}
-		else
-		{
-			switch (screentitleleng)
-			{
-				case 2:
-					temp[i]='?';
-					temp[i+1]='?';
-					break;
-				case 1:
-		  			temp[i]='?';
-		  	}
-			sprintf(title,temp);
-		}
-	}
-	
-    }
-    sprintf(title,temp);
-   		
-    return title;
+D(bug("[Wanderer] GetUserScreenTitle(),EXTERN call GetScreenTitle \n"));   
+		return GetScreenTitle();
+   	}	
+    return screentitlestr;
 
 }
 
