@@ -1740,12 +1740,11 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context %x\n", context));
 								error = ReadChunkBytes(
 						                 			handle, 
 											chunk_buffer, 
-											WP_IFF_CHUNK_BUFFER_SIZE/*dimension current buffer is independent from
-														 *from its previous' one (this_chunk_name)*/
+											this_chunk_size
 										       );
 									
-							//	if (error == this_chunk_size)// this stabbed chunk_buffer, Nic check it...
-							//	{
+								if (error == this_chunk_size)
+								{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
 									if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 									{
@@ -1776,7 +1775,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer
 										WPEditor_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
 										
 									}
-							//	}//END if (error == this_chunk_size)	
+								}//END if (error == this_chunk_size)	
 
 								if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
 								{
@@ -1801,7 +1800,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ParseIFF() failed, return
 	else
 	{
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: StopChunk() failed, returncode %ld!\n", error));
-		//success = FALSE;// this brokes cancel button
+		success = FALSE;// this brokes cancel button
 	}//END if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
 
         CloseIFF(handle);
@@ -2042,7 +2041,14 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wande
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
 			{
 				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:screentitle");
-				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(struct TagItem);
+				UBYTE screentitlesize;
+				UBYTE *screentitlestr;
+				
+				
+				GET(data->wped_s_screentitle, MUIA_String_Contents, &screentitlestr);
+				screentitlesize = strlen(screentitlestr);
+				
+				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(UBYTE)*screentitlesize+1;
 				
 				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 				

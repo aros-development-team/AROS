@@ -167,3 +167,6 @@ MSG_YESNO (//)
 MSG_DUMMY (//)
 DUMMY
 ; DUMMY :)
+MSG_USERSCREENTITLE (//)
+Wanderer %pc graphics mem %pf other mem
+;
