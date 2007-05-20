@@ -740,16 +740,12 @@ STRPTR GetUserScreenTitle(Object *self)
    */
     char *screentitlestr;
     
-  	
-    GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitlestr=%s\n", screentitlestr));   
+    GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);   
    
     int screentitleleng = strlen(screentitlestr);
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN screentitleleng=%d\n", screentitleleng));   
 
     if (screentitleleng<1)
-	{
-D(bug("[Wanderer] GetUserScreenTitle(),EXTERN call GetScreenTitle \n"));   
+	{ 
 		return GetScreenTitle();
    	}	
     return screentitlestr;
