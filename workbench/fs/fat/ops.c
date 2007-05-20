@@ -924,6 +924,8 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
         UpdateDirEntry(&de);
     }
 
+    SendNotifyByDirEntry(glob->sb, &de);
+
     ReleaseDirHandle(&dh);
 
     return 0;
