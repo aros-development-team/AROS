@@ -346,7 +346,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg3 = (IPTR) iofs->io_Union.io_SEEK.io_SeekMode;
             break;
 
-        case FSA_SET_FILE_SIZE: /* XXX untested */
+        case FSA_SET_FILE_SIZE:
 #if defined(DEBUG) && DEBUG != 0
         {
             ULONG mode = iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode;
@@ -544,7 +544,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg4 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_SET_COMMENT.io_Comment);
             break;
             
-        case FSA_SET_PROTECT: /* XXX untested */
+        case FSA_SET_PROTECT:
             D(bug("[packet] SET_PROTECT: lock 0x%08x (%s) name '%s' attrs 0x%x\n",
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
@@ -599,8 +599,8 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Type = ACTION_SET_DATE;
             dp->dp_Arg1 = 0;
             dp->dp_Arg2 = (IPTR) handle->actual;
-            dp->dp_Arg3 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_SET_PROTECT.io_Filename);
-            dp->dp_Arg4 = (IPTR) iofs->io_Union.io_SET_PROTECT.io_Protection;
+            dp->dp_Arg3 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_SET_DATE.io_Filename);
+            dp->dp_Arg4 = (IPTR) &iofs->io_Union.io_SET_DATE.io_Date;
             break;
 
         case FSA_MORE_CACHE: /* XXX untested */
