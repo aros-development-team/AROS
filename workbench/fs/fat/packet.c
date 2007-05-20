@@ -602,6 +602,40 @@ void ProcessPackets(void) {
                 break;
             }
 
+            case ACTION_SET_DATE: {
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
+                UBYTE *name = BADDR(pkt->dp_Arg3);
+                struct DateStamp *ds = pkt->dp_Arg4;
+
+#if defined(DEBUG) && DEBUG != 0
+                {
+                    struct DateTime dt;
+                    char datestr[LEN_DATSTRING];
+
+                    dt.dat_Stamp = *ds;
+                    dt.dat_Format = FORMAT_DOS;
+                    dt.dat_Flags = 0;
+                    dt.dat_StrDay = NULL;
+                    dt.dat_StrDate = datestr;
+                    dt.dat_StrTime = NULL;
+                    DateToStr(&dt);
+
+                    D(bug("[fat] SET_DATE: lock 0x%08x (dir %ld/%ld) name '%.*s' ds '%s'\n",
+                          pkt->dp_Arg2,
+                          fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
+                          name[0], &name[1],
+                          datestr));
+                }
+#endif
+
+                if ((err = TestLock(fl)))
+                    break;
+
+                err = OpSetDate(fl, &name[1], name[0], ds);
+
+                break;
+            }
+
             case ACTION_ADD_NOTIFY: {
                 struct NotifyRequest *nr = pkt->dp_Arg1;
 

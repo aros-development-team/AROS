@@ -88,6 +88,7 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *read);
 LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written);
 LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG mode, LONG *newsize);
 LONG OpSetProtect(struct ExtFileLock *lock, UBYTE *name, ULONG namelen, ULONG prot);
+LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct DateStamp *ds);
 LONG OpAddNotify(struct NotifyRequest *nr);
 LONG OpRemoveNotify(struct NotifyRequest *nr);
 
