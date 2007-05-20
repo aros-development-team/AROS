@@ -29,7 +29,8 @@ struct MsgPort
 #define mp_SoftInt mp_SigTask	/* Alias */
 
 /* mp_Flags: Port arrival actions (PutMsg) */
-#define PF_ACTION	3	/* Mask */
+#define PF_ACTION	7	/* Mask */
+
 #define PA_SIGNAL	0	/* Signal task in mp_SigTask */
 #define PA_SOFTINT	1	/* Signal SoftInt in mp_SoftInt/mp_SigTask */
 #define PA_IGNORE	2	/* Ignore arrival */
@@ -37,6 +38,13 @@ struct MsgPort
 #define PA_CALL         3       /* Call function in mp_SigTask. This was never
                                    documented on AmigaOS and was never defined
                                    but would work for mp_Flags == 3 */
+
+#define PA_FASTCALL     4       /* AROS extension. Like PA_SOFTINT, calls an
+                                   Interrupt in mp_SoftInt, but passes the
+                                   message as the third argument without doesn't
+                                   add it to the message list and so doesn't
+                                   require any locking, task switching or
+                                   Disable()/Enable() pairs */
 
 /* Message */
 struct Message

@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#define NUM_MESSAGES (100000)
+#define NUM_MESSAGES (1000000)
 
 struct MsgPort *port;
 
@@ -37,6 +37,18 @@ AROS_UFH3(void, intentry,
 
     WaitPort(port);
     ReplyMsg(GetMsg(port));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH4(void, fastentry,
+          AROS_UFHA(APTR,              data,    A1),
+          AROS_UFHA(APTR,              code,    A5),
+          AROS_UFHA(struct Message *,  msg,     D0),
+          AROS_UFHA(struct ExecBase *, SysBase, A6)) {
+    AROS_USERFUNC_INIT
+
+    ReplyMsg(msg);
 
     AROS_USERFUNC_EXIT
 }
@@ -90,7 +102,7 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("MP_SIGNAL: %ld.%ld\n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
+    printf("PA_SIGNAL: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
 
     intr = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     intr->is_Code = intentry;
@@ -113,9 +125,7 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("MP_SOFTINT: %ld.%ld\n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
-
-    FreeVec(intr);
+    printf("PA_SOFTINT: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
 
     port->mp_Flags = PA_CALL;
     port->mp_SigTask = callentry;
@@ -135,7 +145,31 @@ int main(int argc, char **argv) {
         end.tv_usec += 1000000;
     }
 
-    printf("MP_CALL: %ld.%ld\n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
+    printf("PA_CALL: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
+
+    intr->is_Code = fastentry;
+
+    port->mp_Flags = PA_FASTCALL;
+    port->mp_SoftInt = intr;
+
+    gettimeofday(&start, NULL);
+
+    for (i = 0; i < NUM_MESSAGES; i++) {
+        PutMsg(port, msg);
+        WaitPort(reply);
+        GetMsg(reply);
+    }
+
+    gettimeofday(&end, NULL);
+
+    while (end.tv_usec < start.tv_usec) {
+        end.tv_sec--;
+        end.tv_usec += 1000000;
+    }
+
+    printf("PA_FASTCALL: %ld.%lds\n", end.tv_sec - start.tv_sec, (end.tv_usec - start.tv_usec) / 1000);
+
+    FreeVec(intr);
 
     FreeVec(msg);
 
