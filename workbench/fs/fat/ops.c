@@ -649,13 +649,20 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
 
     D(bug("[fat] request to write %ld bytes to file pos %ld\n", want, lock->pos));
 
-    if (want == 0)
-        return 0;
+    /* need an exclusive lock */
+    if (lock->gl->access != EXCLUSIVE_LOCK) {
+        D(bug("[fat] can't modify global attributes via a shared lock\n"));
+        return ERROR_OBJECT_IN_USE;
+    }
 
+    /* don't modify the file if its protected */
     if (lock->gl->attr & ATTR_READ_ONLY) {
         D(bug("[fat] file is write protected\n"));
         return ERROR_WRITE_PROTECTED;
     }
+
+    if (want == 0)
+        return 0;
 
     /* if this is the first write, make a note as we'll have to store the
      * first cluster in the directory entry later */
