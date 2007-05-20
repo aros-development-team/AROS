@@ -1,0 +1,31 @@
+;
+MSG_NAME (//) 
+Trackdisk
+;
+MSG_TITLE (//)
+Trackdisk prefs
+;
+MSG_SAVE (//)
+Save
+;
+MSG_USE (//)
+Use
+;
+MSG_CANCEL (//)
+Cancel
+;
+MSG_DESCRIPTION (//)
+trackdisk.device preferences editor
+;
+MSG_WINDOW_TITLE (//)
+trackdisk.device preferences
+;
+MSG_DRIVE (//)
+Drive %u
+;
+MSG_NOCLICK (//)
+No click:
+;
+MSG_RETRIES (//)
+Retries:
+;

@@ -1,0 +1,35 @@
+## version $VER: Trackdisk.catalog 1.0 (20.05.2007)
+## language français
+## codeset 0
+;
+; 
+MSG_NAME
+Disquettes
+;
+MSG_TITLE
+Préférences Disquettes
+;
+MSG_SAVE
+Sauver
+;
+MSG_USE
+Utiliser
+;
+MSG_CANCEL
+Annuler
+;
+MSG_DESCRIPTION
+Éditeur des préférences des disquettes
+;
+MSG_WINDOW_TITLE
+Préférences Disquettes
+;
+MSG_DRIVE
+Lecteur %u
+;
+MSG_NOCLICK
+Anti-clic :
+;
+MSG_RETRIES
+Tentatives :
+;
