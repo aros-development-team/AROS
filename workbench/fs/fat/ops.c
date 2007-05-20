@@ -885,7 +885,7 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
 
         return ERROR_BAD_NUMBER;
 
-    /* get the source dir handle */
+    /* get the dir handle */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
         return err;
 
@@ -930,6 +930,43 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
         de.e.entry.attr = attr;
         UpdateDirEntry(&de);
     }
+
+    ReleaseDirHandle(&dh);
+
+    return 0;
+}
+
+LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct DateStamp *ds) {
+    LONG err;
+    struct DirHandle dh;
+    struct DirEntry de;
+
+    /* get the dir handle */
+    if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
+        return err;
+
+    /* get down to the correct subdir */
+    if ((err = MoveToSubdir(&dh, &name, &namelen)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* can't set date on the root */
+    if (dh.ioh.first_cluster == 0 && namelen == 0) {
+        D(bug("[fat] can't set date on root dir\n"));
+        ReleaseDirHandle(&dh);
+        return ERROR_INVALID_LOCK;
+    }
+
+    /* get the entry */
+    if ((err = GetDirEntryByName(&dh, name, namelen, &de)) != 0) {
+        ReleaseDirHandle(&dh);
+        return err;
+    }
+
+    /* set and update the date */
+    ConvertAROSDate(*ds, &de.e.entry.write_date, &de.e.entry.write_time);
+    UpdateDirEntry(&de);
 
     SendNotifyByDirEntry(glob->sb, &de);
 
