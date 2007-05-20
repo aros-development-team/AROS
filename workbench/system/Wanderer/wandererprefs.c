@@ -168,6 +168,7 @@ struct Node *findname(struct List *list, CONST_STRPTR name)
 	return NULL;
 }
 
+/*ProcessUserScreenTitle(): pattern matching of user screentitle...;*/
 STRPTR ProcessUserScreenTitle(STRPTR screentitlestr)
 {
   /*Work in progress :-)
