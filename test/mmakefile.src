@@ -81,7 +81,8 @@ FILES := \
     examine \
     rwverify \
     notify \
-    setfilesize
+    setfilesize \
+    timeport
 
 EXEDIR := $(AROS_TESTS)
 
