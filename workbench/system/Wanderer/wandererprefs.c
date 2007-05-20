@@ -17,6 +17,9 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/iffparse.h>
+#include <proto/aros.h>
+#include <aros/arosbase.h>
+#include <aros/inquire.h>
 
 #include <string.h>
 
@@ -25,6 +28,7 @@
 #include "iconwindow_attributes.h"
 #include "support.h"
 #include "locale.h"
+#include "version.h"
 
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
@@ -215,14 +219,57 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitleleng=%d\n", screent
 
 			if (strncmp(temp+i,"%ov",3)==0)
 			{
-				sprintf(infostr,"%ld",SysBase->LibNode.lib_Version);
-				sprintf(infostr+strlen(infostr),".");
-				sprintf(infostr+strlen(infostr),"%ld",SysBase->SoftVer);
-
-				found=TRUE;				
+				struct Library *AROSBase=OpenLibrary(AROSLIBNAME, AROSLIBVERSION);
+				if (AROSBase!=NULL)
+				{
+					UWORD ver, kickrev;
+					ArosInquire(AI_ArosVersion, (IPTR) &ver,
+						    TAG_DONE
+						   );
+					sprintf(infostr,"%d", ver);
+					CloseLibrary(AROSBase);
+					found=TRUE;
+				}				
 			}	
 
 			
+			if (strncmp(temp+i,"%os",3)==0)
+			{
+				struct Library *AROSBase=OpenLibrary(AROSLIBNAME, AROSLIBVERSION);
+				if (AROSBase!=NULL)
+				{
+					ULONG ver, rev;
+					ArosInquire(AI_ArosReleaseMajor, (IPTR) &ver,
+						    AI_ArosReleaseMinor,(IPTR) &rev,
+						    TAG_DONE
+						   );
+					sprintf(infostr,"%ld", ver);
+					sprintf(infostr+strlen(infostr),".");
+					sprintf(infostr+strlen(infostr),"%ld",rev);
+					CloseLibrary(AROSBase);
+					found=TRUE;
+				}				
+			}	
+			
+			if (strncmp(temp+i,"%wb",3)==0)
+			{
+				struct Library *AROSBase=OpenLibrary(AROSLIBNAME, AROSLIBVERSION);
+				if (AROSBase!=NULL)
+				{
+					ULONG ver, rev;
+					ArosInquire(AI_ArosReleaseMajor, (IPTR) &ver,
+						    AI_ArosReleaseMinor,(IPTR) &rev,
+						    TAG_DONE
+						   );
+					sprintf(infostr,"%d", WANDERERVERS);
+					sprintf(infostr+strlen(infostr),".");
+					sprintf(infostr+strlen(infostr),"%d",WANDERERREV);
+					CloseLibrary(AROSBase);
+					found=TRUE;
+				}				
+			}	
+
+
 			if (strncmp(temp+i,"%pc",3)==0)
 			{
 				fmtlarge(infostr,AvailMem(MEMF_CHIP));
