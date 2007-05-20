@@ -48,6 +48,32 @@
 
     struct MsgPort *port;
 
+    /* handle FASTCALL before doing locking or anything else. yes, there's a
+     * potential race here if some task was to change mn_ReplyPort before/as
+     * we read it. thats why we fetch it again further down, after Disable().
+     * all bets are of when using FASTCALL */
+    port = message->mn_ReplyPort;
+
+    if (port != NULL && port->mp_Flags & PA_FASTCALL)
+    {
+        if (port->mp_SoftInt == NULL || ((struct Interrupt *) port->mp_SoftInt)->is_Code == NULL)
+            return;
+
+        ASSERT_VALID_PTR(port->mp_SoftInt);
+        ASSERT_VALID_PTR(((struct Interrupt *) port->mp_SoftInt)->is_Code);
+
+        message->mn_Node.ln_Type = NT_REPLYMSG;
+
+        /* call the "interrupt" with the message as an argument */
+        AROS_UFC4(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
+            AROS_UFCA(APTR,              ((struct Interrupt *) port->mp_SoftInt)->is_Data, A1),
+            AROS_UFCA(ULONG_FUNC,        ((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
+            AROS_UFCA(struct Message *,  message,                                          D0),
+            AROS_UFCA(struct ExecBase *, SysBase,                                          A6));
+
+        return;
+    }
+
     /* Protect the message against access by other tasks. */
     Disable();
 
