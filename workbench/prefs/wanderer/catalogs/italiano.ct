@@ -19,7 +19,7 @@ Workbench
 ; Workbench
 ;
 MSG_BACKGROUND_DRAWERS
-Directory
+Cassetti
 ; Drawers
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
@@ -27,7 +27,7 @@ Scegli uno sfondo per il Workbench
 ; Select Workbench Background
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Scegli uno sfondo per le directory
+Scegli uno sfondo per i cassetti
 ; Select Drawer Background
 ;
 MSG_GENERAL
@@ -96,4 +96,12 @@ doppio buffering
 ;
 MSG_MISC (//)
 miscellanea
+;
+MSG_BUBBLESCREENTITLE (//) 
+%pc = Chip Ram\n
+%pf = Fast Ram\n
+%os = Versione di AROS\n
+%wb = Versione di Wanderer\n
+%ov = Versione esatta di AROS\n
+%wv = Versione di workbench.library 
 ;
