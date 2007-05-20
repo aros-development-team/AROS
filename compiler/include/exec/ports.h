@@ -34,6 +34,10 @@ struct MsgPort
 #define PA_SOFTINT	1	/* Signal SoftInt in mp_SoftInt/mp_SigTask */
 #define PA_IGNORE	2	/* Ignore arrival */
 
+#define PA_CALL         3       /* Call function in mp_SigTask. This was never
+                                   documented on AmigaOS and was never defined
+                                   but would work for mp_Flags == 3 */
+
 /* Message */
 struct Message
 {

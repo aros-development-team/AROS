@@ -41,6 +41,16 @@ AROS_UFH3(void, intentry,
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH1(void, callentry,
+          AROS_UFHA(struct ExecBase *, SysBase, A6)) {
+    AROS_USERFUNC_INIT
+
+    WaitPort(port);
+    ReplyMsg(GetMsg(port));
+
+    AROS_USERFUNC_EXIT
+}
+
 int main(int argc, char **argv) {
     struct MsgPort *reply;
     struct Message *msg;
@@ -106,6 +116,26 @@ int main(int argc, char **argv) {
     printf("MP_SOFTINT: %ld.%ld\n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
 
     FreeVec(intr);
+
+    port->mp_Flags = PA_CALL;
+    port->mp_SigTask = callentry;
+
+    gettimeofday(&start, NULL);
+
+    for (i = 0; i < NUM_MESSAGES; i++) {
+        PutMsg(port, msg);
+        WaitPort(reply);
+        GetMsg(reply);
+    }
+
+    gettimeofday(&end, NULL);
+
+    while (end.tv_usec < start.tv_usec) {
+        end.tv_sec--;
+        end.tv_usec += 1000000;
+    }
+
+    printf("MP_CALL: %ld.%ld\n", end.tv_sec - start.tv_sec, end.tv_usec - start.tv_usec);
 
     FreeVec(msg);
 
