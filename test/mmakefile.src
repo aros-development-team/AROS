@@ -80,7 +80,8 @@ FILES := \
     consolemodes \
     examine \
     rwverify \
-    notify
+    notify \
+    setfilesize
 
 EXEDIR := $(AROS_TESTS)
 
