@@ -81,10 +81,14 @@ MSG_MISC (//)
 misc
 ;
 MSG_BUBBLESCREENTITLE (//) 
-%pc = Chip Ram\n
-%pf = Fast Ram\n
-%os = AROS version\n
-%wb = Wanderer version\n
-%ov = Exact AROS version\n
-%wv = Exact workbench.library version 
+%pc = Chip Ram free\n\
+%pf = Fast Ram free\n\
+%pt = Total Ram free\n\
+%PC = Chip Ram\n\
+%PF = Fast Ram\n\
+%PT = Total Ram\n\
+%os = AROS version\n\
+%wb = Wanderer version\n\
+%ov = Exact AROS version\n\
+%wv = Exact workbench.library version
 ;

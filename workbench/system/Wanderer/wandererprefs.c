@@ -284,6 +284,31 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitleleng=%d\n", screent
 				found=TRUE;
 			}
 
+			if (strncmp(temp+i,"%pt",3)==0)
+			{
+				fmtlarge(infostr,AvailMem(MEMF_ANY));
+				found=TRUE;
+			}
+
+			if (strncmp(temp+i,"%PC",3)==0)
+			{
+				fmtlarge(infostr,AvailMem(MEMF_CHIP|MEMF_TOTAL));
+				found=TRUE;
+
+			}
+
+			if (strncmp(temp+i,"%PF",3)==0)
+			{
+				fmtlarge(infostr,AvailMem(MEMF_FAST|MEMF_TOTAL));
+				found=TRUE;
+			}
+
+			if (strncmp(temp+i,"%PT",3)==0)
+			{
+				fmtlarge(infostr,AvailMem(MEMF_ANY|MEMF_TOTAL));
+				found=TRUE;
+			}
+
 			if (found)
 			{
 
