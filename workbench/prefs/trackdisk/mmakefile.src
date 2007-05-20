@@ -3,11 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	     := trackdisk_prefs
+FILES 	     := locale trackdisk_prefs
 EXEDIR       := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-trackdisk
-#MM workbench-prefs-trackdisk : includes linklibs
+#MM  workbench-prefs-trackdisk : includes linklibs \
+#MM  workbench-prefs-trackdisk-catalogs
 
 %build_prog mmake=workbench-prefs-trackdisk \
     progname=Trackdisk targetdir=$(EXEDIR) \

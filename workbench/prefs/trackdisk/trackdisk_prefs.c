@@ -25,6 +25,8 @@
 #endif
 #include "trackdisk_prefs.h"
 
+#include "locale.h"
+
 Object                *App = NULL,
                       *MainWin = NULL,
                       *SaveButton = NULL,
@@ -34,8 +36,8 @@ struct DriveControls  Drives[TD_NUMUNITS];
 struct WindowGroup    MainGrp;
 struct TrackdiskPrefs TDPrefs;
 struct IORequest      TDIO;
+int res = RETURN_OK;
 
-const char __version__[] = "\0$VER: Trackdisk prefs 41.3 (2007-17-04)";
 int __nocommandline;
 
 int main(void)
@@ -45,6 +47,8 @@ int main(void)
     ULONG retval = 0;
 
     D(bug("[Trackdisk.Prefs] Main()\n"));
+
+    Locale_Initialize();
 
     for (i = 0; i < TD_NUMUNITS; i++)
 	    InitUnitPrefs(&TDPrefs.UnitPrefs[i], i);
@@ -58,7 +62,7 @@ int main(void)
 	    MUIA_Group_Child,
 	    SaveButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
 		    MUIA_CycleChain, TRUE,
-		    MUIA_Text_Contents, "Save",
+            MUIA_Text_Contents, _(MSG_SAVE),
 		    MUIA_Text_PreParse, "\33c",
 		    MUIA_Background, MUII_ButtonBack,
 		    MUIA_Frame, MUIV_Frame_Button,
@@ -66,7 +70,7 @@ int main(void)
 	    MUIA_Group_Child,
 	    UseButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
 		    MUIA_CycleChain, TRUE,
-		    MUIA_Text_Contents, "Use",
+            MUIA_Text_Contents, _(MSG_USE),
 		    MUIA_Text_PreParse, "\33c",
 		    MUIA_Background, MUII_ButtonBack,
 		    MUIA_Frame, MUIV_Frame_Button,
@@ -74,7 +78,7 @@ int main(void)
 	    MUIA_Group_Child,
 	    CancelButton = MUI_NewObject("Text.mui", MUIA_InputMode, MUIV_InputMode_RelVerify,
 		    MUIA_CycleChain, TRUE,
-		    MUIA_Text_Contents, "Cancel",
+            MUIA_Text_Contents, _(MSG_CANCEL),
 		    MUIA_Text_PreParse, "\33c",
 		    MUIA_Background, MUII_ButtonBack,
 		    MUIA_Frame, MUIV_Frame_Button,
@@ -82,15 +86,15 @@ int main(void)
     TAG_DONE);
     MainGrp.TagDone = TAG_DONE;
     App = MUI_NewObject("Application.mui", MUIA_Application_Author, "Pavel Fedin",
-	    MUIA_Application_Base, (ULONG)"TRACKDISKPREFS",
-	    MUIA_Application_Copyright, (ULONG)"(c) 2006 Pavel Fedin",
-	    MUIA_Application_Description, (ULONG)"trackdisk.device preferences editor",
+	    MUIA_Application_Base, (IPTR)"TRACKDISKPREFS",
+	    MUIA_Application_Copyright, (IPTR)"(c) 2006-2007 Pavel Fedin",
+        MUIA_Application_Description, __(MSG_DESCRIPTION),
 	    MUIA_Application_SingleTask, TRUE,
-	    MUIA_Application_Title, (ULONG)"Trackdisk prefs",
-	    MUIA_Application_Version, (ULONG)"$VER: trackdisk prefs 1.0 (15.07.2006)",
+        MUIA_Application_Title, __(MSG_NAME),
+        MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.4 (17.04.2007) ©2007 Pavel Fedin",
 	    MUIA_Application_Window,
 	    MainWin = MUI_NewObject("Window.mui", MUIA_Window_ID, MAKE_ID('M', 'A', 'I', 'N'),
-		    MUIA_Window_Title, (ULONG)"trackdisk.device preferences",
+            MUIA_Window_Title,__(MSG_WINDOW_TITLE),
 		    MUIA_Window_RootObject, MUI_NewObjectA("Group.mui", (struct TagItem *)&MainGrp),
 	    TAG_DONE),
     TAG_DONE);
@@ -114,8 +118,9 @@ int main(void)
 			    signals = Wait(signals);
 	    }
 	    MUI_DisposeObject(App);
-    }
-    return 0;
+    } else res = RETURN_ERROR;
+    Locale_Deinitialize();
+    return res;
 }
 
 void InitUnitPrefs(struct TDU_Prefs *UnitPrefs, int nunit)
@@ -132,13 +137,13 @@ void InitUnitPrefs(struct TDU_Prefs *UnitPrefs, int nunit)
 Object *CreateDriveControls(struct DriveControls *dc, int ndrive)
 {
 	D(bug("[Trackdisk.Prefs] CreateDriveControls()\n"));
-	sprintf(dc->DriveLabel, "Drive %u", ndrive);
+    sprintf(dc->DriveLabel, _(MSG_DRIVE), ndrive);
 	return MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
 		MUIA_Disabled, dc->Disabled,
 		MUIA_FrameTitle, dc->DriveLabel,
 		MUIA_Background, MUII_GroupBack,
 		MUIA_Frame, MUIV_Frame_Group,
-		MUIA_Group_Child, MUI_MakeObject(MUIO_Label, "No click:", 0),
+        MUIA_Group_Child, MUI_MakeObject(MUIO_Label, _(MSG_NOCLICK), 0),
 		MUIA_Group_Child,
 		dc->NoClickSwitch = MUI_NewObject("Image.mui", MUIA_Image_Spec, MUII_CheckMark,
 			MUIA_InputMode, MUIV_InputMode_Toggle,
@@ -147,7 +152,7 @@ Object *CreateDriveControls(struct DriveControls *dc, int ndrive)
 			MUIA_Frame, MUIV_Frame_ImageButton,
 			MUIA_ShowSelState, FALSE,
 		TAG_DONE),
-		MUIA_Group_Child, MUI_MakeObject(MUIO_Label, "Retries:", 0),
+        MUIA_Group_Child, MUI_MakeObject(MUIO_Label, _(MSG_RETRIES), 0),
 		MUIA_Group_Child,
 		dc->RetriesSlider = MUI_NewObject("Slider.mui", MUIA_CycleChain, TRUE,
 			MUIA_Numeric_Min, 1, MUIA_Numeric_Max, 10,
