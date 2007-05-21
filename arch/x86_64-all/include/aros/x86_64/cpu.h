@@ -14,14 +14,18 @@
  * the defines have to be numeric constants */
 #define AROS_STACK_GROWS_DOWNWARDS 1
 #define AROS_BIG_ENDIAN 	   0
-#define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
+#define AROS_SIZEOFULONG	   8 /* Size of an ULONG */
 #define AROS_SIZEOFPTR		   8 /* Size of a PTR */
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
-#define AROS_LONGALIGN		   4 /* Alignment for LONG */
+#define AROS_LONGALIGN		   8 /* Alignment for LONG */
 #define AROS_PTRALIGN		   8 /* Alignment for PTR */
 #define AROS_IPTRALIGN		   8 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   8 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
+
+#define AROS_32BIT_TYPE		int
+#define AROS_64BIT_TYPE		long
+#define AROS_64BIT_STACKTYPE	long
 
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP asm("%rsp");
