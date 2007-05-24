@@ -286,12 +286,15 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return err;
     }
 
-    /* if the dir is write protected, can't do anything */
-    GetDirEntry(&dh, 0, &de);
-    if (de.e.entry.attr & ATTR_READ_ONLY) {
-        D(bug("[fat] containing dir is write protected, doing nothing\n"));
-        ReleaseDirHandle(&dh);
-        return ERROR_WRITE_PROTECTED;
+    /* if the dir is write protected, can't do anything. root dir is never
+     * write protected */
+    if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster) {
+        GetDirEntry(&dh, 0, &de);
+        if (de.e.entry.attr & ATTR_READ_ONLY) {
+            D(bug("[fat] containing dir is write protected, doing nothing\n"));
+            ReleaseDirHandle(&dh);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
 
     /* create the entry */
@@ -377,12 +380,16 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
         return err;
     }
 
-    /* if the dir is write protected, can't do anything */
-    GetDirEntry(&dh, 0, &de);
-    if (de.e.entry.attr & ATTR_READ_ONLY) {
-        D(bug("[fat] containing dir is write protected, doing nothing\n"));
-        FreeLock(lock);
-        return ERROR_DELETE_PROTECTED;
+    /* if the dir is write protected, can't do anything. root dir is never
+     * write protected */
+    if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster) {
+        GetDirEntry(&dh, 0, &de);
+        if (de.e.entry.attr & ATTR_READ_ONLY) {
+            D(bug("[fat] containing dir is write protected, doing nothing\n"));
+            ReleaseDirHandle(&dh);
+            FreeLock(lock);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
 
     /* get the entry for the file */
@@ -545,12 +552,15 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
         return err;
     }
 
-    /* if the dir is write protected, can't do anything */
-    GetDirEntry(&dh, 0, &de);
-    if (de.e.entry.attr & ATTR_READ_ONLY) {
-        D(bug("[fat] containing dir is write protected, doing nothing\n"));
-        ReleaseDirHandle(&dh);
-        return ERROR_WRITE_PROTECTED;
+    /* if the dir is write protected, can't do anything. root dir is never
+     * write protected */
+    if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster) {
+        GetDirEntry(&dh, 0, &de);
+        if (de.e.entry.attr & ATTR_READ_ONLY) {
+            D(bug("[fat] containing dir is write protected, doing nothing\n"));
+            ReleaseDirHandle(&dh);
+            return ERROR_WRITE_PROTECTED;
+        }
     }
 
     /* now see if the wanted name is in this dir. if it exists, then we do
@@ -896,7 +906,7 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
     }
 
     /* can't change permissions on the root */
-    if (dh.ioh.first_cluster == 0 && namelen == 0) {
+    if (dh.ioh.first_cluster == dh.ioh.sb->rootdir_cluster && namelen == 0) {
         D(bug("[fat] can't set protection on root dir\n"));
         ReleaseDirHandle(&dh);
         return ERROR_INVALID_LOCK;
@@ -952,7 +962,7 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct D
     }
 
     /* can't set date on the root */
-    if (dh.ioh.first_cluster == 0 && namelen == 0) {
+    if (dh.ioh.first_cluster == dh.ioh.sb->rootdir_cluster && namelen == 0) {
         D(bug("[fat] can't set date on root dir\n"));
         ReleaseDirHandle(&dh);
         return ERROR_INVALID_LOCK;
