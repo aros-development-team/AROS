@@ -82,7 +82,8 @@ FILES := \
     rwverify \
     notify \
     setfilesize \
-    timeport
+    timeport \
+    getdeviceproc
 
 EXEDIR := $(AROS_TESTS)
 
