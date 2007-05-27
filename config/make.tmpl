@@ -1517,7 +1517,7 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))
 %buildid targets="%(mmake) %(mmake)-clean"
 
 BD_SRCS$(BDID) := $(addsuffix .ct, %(catalogs))
-BD_OBJS$(BDID) := $(addsuffix .catalog, $(addprefix %(dir)/$(name)/%(subdir)/, %(catalogs)))
+BD_OBJS$(BDID) := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, %(catalogs)))
 BD_DIRS$(BDID) := $(addsuffix /%(subdir), $(addprefix %(dir)/, %(catalogs)))
 
 #MM
