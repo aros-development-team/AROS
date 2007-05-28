@@ -63,38 +63,58 @@
     UBYTE buf[256], *buf2, *p;
     ULONG len, len2;
 
+    /* set up some defaults */
     notify->nr_MsgCount = 0;
     notify->nr_FullName = NULL;
 
+    /* turn the filename into a device and dir lock */
     if ((dvp = GetDeviceProc(notify->nr_Name, NULL)) == NULL)
         return DOSFALSE;
 
+    /* setup the request */
     InitIOFS(&iofs, FSA_ADD_NOTIFY, DOSBase);
     iofs.io_Union.io_NOTIFY.io_NotificationRequest = notify;
 
     iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
 
+    /* remember the device for EndNotify() */
     notify->nr_Device = (struct Device *) dvp->dvp_Port;
-    notify->nr_FullName = notify->nr_Name;
 
-    if (dvp->dvp_Lock != NULL) {
+    /* if no lock is returned by GetDeviceProc() (eg if the path is for a
+     * device or volume), then the path is fine as-is, and just use the
+     * device/volume root lock */
+    if (dvp->dvp_Lock == NULL) {
+        notify->nr_FullName = notify->nr_Name;
+        iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
+    }
+
+    /* otherwise we need to expand the name using the lock */
+    else {
+        /* get the name */
         if (NameFromLock(dvp->dvp_Lock, buf, sizeof(buf)) == DOSFALSE) {
             FreeDeviceProc(dvp);
             return DOSFALSE;
         }
         len = strlen(buf);
 
+        /* if its not some absolute base thing, then add a dir seperator for
+         * the concat operation below */
         if (buf[len-1] != ':') {
             buf[len] = '/';
             len++;
         }
 
+        /* look for the ':' following the assign name in the path provided by
+         * the caller */
         p = notify->nr_Name;
         while (*p && *p != ':')
             p++;
 
+        /* if we found it, move past it */
         if (*p)
             p++;
+
+        /* hit the end, so the name is a relative path, and we take all of it */
         else
             p = notify->nr_Name;
 
@@ -106,22 +126,26 @@
             return DOSFALSE;
         }
 
+        /* concatenate the two bits */
         CopyMem(buf, buf2, len);
         CopyMem(p, buf2 + len, len2 + 1);
+
+        /* thats our expanded name */
         notify->nr_FullName = buf2;
 
+        /* use the assign base lock as the relative lock */
         iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
     }
 
-    else
-        iofs.IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
-
+    /* done with this */
     FreeDeviceProc(dvp);
 
+    /* send the request */
     DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 
+    /* something broke, clean up */
     if (iofs.io_DosError != 0) {
         if (notify->nr_FullName != notify->nr_Name)
             FreeVec(notify->nr_FullName);
