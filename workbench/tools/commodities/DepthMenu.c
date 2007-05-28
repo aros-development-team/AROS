@@ -72,7 +72,7 @@
 
 /***************************************************************************/
 
-UBYTE version[] = "$VER: DepthMenu 0.1 (03.04.2007)";
+UBYTE version[] = "$VER: DepthMenu 0.2 (28.05.2007)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -82,10 +82,10 @@ UBYTE version[] = "$VER: DepthMenu 0.1 (03.04.2007)";
 #define DM_WINDOW       1
 #define DM_SCREEN       2
 
-#define MAXENTRY        15
-#define MAXSTRLEN       30
+#define DM_MAXENTRY     15
+#define DM_MAXSTRLEN    30
 
-#define BORDERWIDTH     8
+#define DM_BORDERWIDTH  4
 
 struct Device         *InputBase = NULL;
 struct Catalog        *catalog;
@@ -119,10 +119,11 @@ typedef struct _DMData
     struct Window *popupwindow;
     WORD entries;
     WORD mode;
-    void *address[MAXENTRY]; // struct Window * or struct Screen *
-    char title[MAXENTRY][MAXSTRLEN];
+    void *address[DM_MAXENTRY]; // struct Window * or struct Screen *
+    char title[DM_MAXENTRY][DM_MAXSTRLEN];
     ULONG ibaselock;
     BOOL locked;
+    WORD selected;  // -1 means no entry selected
 } DMData;
 
 static DMData dmdata;
@@ -134,6 +135,7 @@ static BOOL initiate(int argc, char **argv, DMState *cs);
 static void depthMenu(CxMsg *msg, CxObj *co);
 static void handleMenuUp(CxMsg *cxm);
 static void handleMenuDown(CxMsg *cxm);
+static void handleMouseMove(CxMsg *cxm);
 static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos);
 static void lockIBaseSave(void);
 static void unlockIBaseSave(void);
@@ -141,6 +143,7 @@ static CONST_STRPTR _(ULONG id);
 static BOOL Locale_Initialize(VOID);
 static VOID Locale_Deinitialize(VOID);
 static void showSimpleMessage(CONST_STRPTR msgString);
+static void drawEntry(LONG entry, BOOL selstate);
 
 /************************************************************************************/
 
@@ -316,13 +319,17 @@ static void depthMenu(CxMsg *cxm, CxObj *co)
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(cxm);
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-	if (ie->ie_Code == MENUDOWN)
+	switch (ie->ie_Code)
 	{
-	    handleMenuDown(cxm);
-	}
-	else if (ie->ie_Code == MENUUP)
-	{
-	    handleMenuUp(cxm);
+	    case MENUDOWN:
+		handleMenuDown(cxm);
+		break;
+	    case MENUUP:
+		handleMenuUp(cxm);
+		break;
+	    case IECODE_NOBUTTON:
+		handleMouseMove(cxm);
+		break;
 	}
     }
 }
@@ -335,6 +342,7 @@ static void handleMenuDown(CxMsg *cxm)
     struct Layer  *layer;
     struct Window *window;
 
+    dmdata.selected = -1;
     lockIBaseSave();
     screen = IntuitionBase->FirstScreen; // frontmost screen
     layer = WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY);
@@ -384,22 +392,14 @@ static void handleMenuUp(CxMsg *cxm)
     if (dmdata.popupwindow)
     {
 	struct Screen *screen = dmdata.popupwindow->WScreen;
-	// have we released right mouse within window?
-	if (
-		(screen->MouseX > dmdata.popupwindow->LeftEdge)
-		&& (screen->MouseX < dmdata.popupwindow->LeftEdge + dmdata.popupwindow->Width)
-		&& (screen->MouseY > dmdata.popupwindow->TopEdge)
-		&& (screen->MouseY < dmdata.popupwindow->TopEdge + dmdata.popupwindow->Height)
-	   )
 	{
-	    LONG entry = (screen->MouseY - dmdata.popupwindow->TopEdge - BORDERWIDTH)
-		/ dmdata.popupwindow->RPort->TxHeight;
+	    LONG entry = dmdata.selected;
 
 	    CloseWindow(dmdata.popupwindow);
 	    dmdata.popupwindow = NULL;
 
 	    D(bug("DepthMenu: selected entry %d\n", entry));
-	    if ((entry >= 0) && (entry < MAXENTRY))
+	    if (entry != -1)
 	    {
 		if (dmdata.mode == DM_WINDOW)
 		{
@@ -448,6 +448,44 @@ static void handleMenuUp(CxMsg *cxm)
 
 /************************************************************************************/
 
+static void handleMouseMove(CxMsg *cxm)
+{
+    if ( ! dmdata.popupwindow) return;
+
+    struct Screen *screen = dmdata.popupwindow->WScreen;
+    LONG entry = -1;
+
+    // are we within popupwindow?
+    if (
+	    (screen->MouseX > dmdata.popupwindow->LeftEdge)
+	    && (screen->MouseX < dmdata.popupwindow->LeftEdge + dmdata.popupwindow->Width)
+	    && (screen->MouseY > dmdata.popupwindow->TopEdge)
+	    && (screen->MouseY < dmdata.popupwindow->TopEdge + dmdata.popupwindow->Height)
+       )
+    {
+	entry = (screen->MouseY - dmdata.popupwindow->TopEdge - DM_BORDERWIDTH)
+	    / dmdata.popupwindow->RPort->TxHeight;
+	if ((entry < 0) || (entry >= DM_MAXENTRY)) entry = -1;
+    }
+    if (entry != dmdata.selected)
+    {
+	// undraw old entry
+	if (dmdata.selected != -1)
+	{
+	    drawEntry(dmdata.selected, FALSE);
+	}
+
+	// draw selected
+	if (entry != -1)
+	{
+	    drawEntry(entry, TRUE);
+	}
+	dmdata.selected = entry;
+    }
+}
+
+/************************************************************************************/
+
 static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 {
     lockIBaseSave();
@@ -460,19 +498,25 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 	return;
     }
 
+    if ( ! popupscreen->RastPort.Font)
+    {
+	bug("DepthMenu: Frontmost screen doesn't have Font\n");
+	return;
+    }
+
     if (mode == DM_WINDOW)
     {
 	(bug("DepthMenu: window\n"));
 	struct Window *window = screen->FirstWindow;
 	dmdata.entries = 0;
-	while (window && (dmdata.entries < MAXENTRY))
+	while (window && (dmdata.entries < DM_MAXENTRY))
 	{
 	    if (window->Title && (window->WScreen == screen))
 	    {
 		dmdata.mode = DM_WINDOW;
 		dmdata.address[dmdata.entries] = window;
-		strncpy(dmdata.title[dmdata.entries], window->Title, MAXSTRLEN);
-		dmdata.title[dmdata.entries][MAXSTRLEN - 1] = 0;
+		strncpy(dmdata.title[dmdata.entries], window->Title, DM_MAXSTRLEN);
+		dmdata.title[dmdata.entries][DM_MAXSTRLEN - 1] = 0;
 		dmdata.entries++;
 	    }
 	    window = window->NextWindow;
@@ -483,14 +527,14 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 	D(bug("DepthMenu: Screen\n"));
 	dmdata.entries = 0;
 	screen = screen->NextScreen; // Don't add frontmost screen, start with second screen
-	while (screen && (dmdata.entries < MAXENTRY))
+	while (screen && (dmdata.entries < DM_MAXENTRY))
 	{
 	    if (screen->Title)
 	    {
 		dmdata.mode = DM_SCREEN;
 		dmdata.address[dmdata.entries] = screen;
-		strncpy(dmdata.title[dmdata.entries], screen->Title, MAXSTRLEN);
-		dmdata.title[dmdata.entries][MAXSTRLEN - 1] = 0;
+		strncpy(dmdata.title[dmdata.entries], screen->Title, DM_MAXSTRLEN);
+		dmdata.title[dmdata.entries][DM_MAXSTRLEN - 1] = 0;
 		dmdata.entries++;
 	    }
 	    screen = screen->NextScreen;
@@ -505,13 +549,12 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 	int i;
 	for (i=0 ; i < dmdata.entries ; i++)
 	{
-	    //FIXME is it correct to calculate TextLength with screen's RastPort?
 	    textwidth = TextLength(&popupscreen->RastPort, dmdata.title[i], strlen(dmdata.title[i]));
 	    if (textwidth > maxtextwidth) maxtextwidth = textwidth;
 	}
 
-	LONG width = maxtextwidth + 2 * BORDERWIDTH;
-	LONG height = (dmdata.entries + 1) * popupscreen->RastPort.TxHeight + 2 * BORDERWIDTH;
+	LONG width = maxtextwidth + 2 * DM_BORDERWIDTH;
+	LONG height = dmdata.entries * popupscreen->RastPort.TxHeight + 2 * DM_BORDERWIDTH;
 	LONG left = xpos - width / 2;
 	LONG top = ypos - height / 2;
 	if (left < 0) left = 0;
@@ -524,25 +567,35 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 	dmdata.popupwindow = OpenWindowTags
 	    (
 	     NULL,
-	     WA_Left,       left,
-	     WA_Top,        top,
-	     WA_InnerWidth, width,
-	     WA_InnerHeight,height,
-	     WA_Borderless, TRUE,
-	     WA_Activate,   TRUE,
-	     WA_PubScreen,  popupscreen,
+	     WA_Left,         left,
+	     WA_Top,          top,
+	     WA_InnerWidth,   width,
+	     WA_InnerHeight,  height,
+	     WA_Borderless,   TRUE,
+	     WA_Activate,     TRUE,
+	     WA_SmartRefresh, TRUE,
+	     WA_PubScreen,    popupscreen,
 	     TAG_DONE
 	    );
 	if (dmdata.popupwindow)
 	{
 	    struct RastPort *rp = dmdata.popupwindow->RPort;
+	    SetFont(rp, popupscreen->RastPort.Font);	// use the screen's font for the menu
+							// so we can calculate the window size with the screen font
+	    SetDrMd(rp, JAM1); // for text rendering
+
+	    SetAPen(rp, 1);
+	    Move(rp, 0, 0);
+	    Draw(rp, width-1, 0);
+	    Draw(rp, width-1, height-1);
+	    Draw(rp, 0, height-1);
+	    Draw(rp, 0, 0);
+
 	    SetAPen(rp, 1);
 	    int i;
 	    for(i=0; i<dmdata.entries; i++)
 	    {
-		Move(rp, BORDERWIDTH, (i+1) * rp->TxHeight + BORDERWIDTH);
-		Text(rp, dmdata.title[i], strlen(dmdata.title[i]));
-		D(bug("DepthMenu: i %d title %s address %x\n", i, dmdata.title[i], dmdata.address[i]));
+		drawEntry(i, FALSE);
 	    }
 	}
 	else
@@ -552,8 +605,30 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
     }
 }
 
+/************************************************************************************/
+
+static void drawEntry(LONG entry, BOOL selstate)
+{
+    struct RastPort *rp = dmdata.popupwindow->RPort;
+
+    if (selstate)
+    {
+	SetAPen(rp, 3);
+    }
+    else
+    {
+	SetAPen(rp, 0);
+    }
+    RectFill(rp, DM_BORDERWIDTH, entry * rp->TxHeight + DM_BORDERWIDTH,
+	    dmdata.popupwindow->Width - DM_BORDERWIDTH , (entry+1) * rp->TxHeight + DM_BORDERWIDTH);
+
+    SetAPen(rp, 1);
+    Move(rp, DM_BORDERWIDTH, entry * rp->TxHeight + rp->TxBaseline + DM_BORDERWIDTH);
+    Text(rp, dmdata.title[entry], strlen(dmdata.title[entry]));
+}
 
 /************************************************************************************/
+
 static void lockIBaseSave(void)
 {
     if ( ! dmdata.locked)
