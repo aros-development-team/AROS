@@ -87,6 +87,8 @@ UBYTE version[] = "$VER: DepthMenu 0.2 (28.05.2007)";
 
 #define DM_BORDERWIDTH  4
 
+#define SYSGADTYPE(gad) ((gad)->GadgetType & GTYP_SYSTYPEMASK)
+
 struct Device         *InputBase = NULL;
 struct Catalog        *catalog;
 struct IOStdReq       *inputIO;
@@ -144,6 +146,7 @@ static BOOL Locale_Initialize(VOID);
 static VOID Locale_Deinitialize(VOID);
 static void showSimpleMessage(CONST_STRPTR msgString);
 static void drawEntry(LONG entry, BOOL selstate);
+static BOOL depthGadHit(struct Window *window, WORD mousex, WORD mousey);
 
 /************************************************************************************/
 
@@ -370,11 +373,7 @@ static void handleMenuDown(CxMsg *cxm)
 	    window = layer->Window;
 	    if (
 		    window
-		    && window->Title
-		    && (screen->MouseX > window->LeftEdge + window->Width - 25)  // FIXME real width/pos. of depth gadget
-		    && (screen->MouseX < window->LeftEdge + window->Width)
-		    && (screen->MouseY > window->TopEdge)
-		    && (screen->MouseY < window->TopEdge + window->BorderTop)
+		    && depthGadHit(window, screen->MouseX, screen->MouseY)
 	       )
 	    {
 		showPopup(DM_WINDOW, screen, screen->MouseX, screen->MouseY);
@@ -625,6 +624,44 @@ static void drawEntry(LONG entry, BOOL selstate)
     SetAPen(rp, 1);
     Move(rp, DM_BORDERWIDTH, entry * rp->TxHeight + rp->TxBaseline + DM_BORDERWIDTH);
     Text(rp, dmdata.title[entry], strlen(dmdata.title[entry]));
+}
+
+/************************************************************************************/
+
+static BOOL depthGadHit(struct Window *window, WORD mousex, WORD mousey)
+{
+    struct Gadget *gad;
+
+    for(gad = window->FirstGadget; gad; gad = gad->NextGadget)
+    {
+	if ( ! (gad->Flags & GFLG_DISABLED))
+	{
+	    WORD x = window->LeftEdge + gad->LeftEdge;
+	    WORD y = window->TopEdge + gad->TopEdge;
+	    WORD w = gad->Width;
+	    WORD h = gad->Height;
+
+	    if (gad->Flags & GFLG_RELRIGHT)  x += window->Width  - 1;
+	    if (gad->Flags & GFLG_RELBOTTOM) y += window->Height - 1;
+	    if (gad->Flags & GFLG_RELWIDTH)  w += window->Width;
+	    if (gad->Flags & GFLG_RELHEIGHT) h += window->Height;
+
+	    if (
+		    (mousex >= x) &&
+		    (mousey >= y) &&
+		    (mousex < x + w) &&
+		    (mousey < y + h)
+	       )
+	    {
+		if (SYSGADTYPE(gad) == GTYP_WDEPTH)
+		{
+		    /* found depth */
+		    return TRUE;
+		}
+	    }
+	}
+    }
+    return FALSE;
 }
 
 /************************************************************************************/
