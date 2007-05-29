@@ -55,13 +55,9 @@ struct NotifyRequest
 
     ULONG            nr_Reserved[4]; /* PRIVATE! Set to 0 for now. */
 
-    /* The following fields are for PRIVATE use by handlers. */
     ULONG            nr_MsgCount; /* Number of unreplied messages. */
 
-    /* This used to be   struct MsgPort *nr_Handler   but as AROS filesystems
-       are different and this is a PRIVATE field anyway no Amiga programs
-       should use it, so I changed it   --  SDuvan */
-    struct Device   *nr_Device;
+    struct MsgPort  *nr_Handler;  /* Filesystem task/device. Used by EndNotify() */
 };
 
 /* nr_Flags */
