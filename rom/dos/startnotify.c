@@ -77,8 +77,9 @@
 
     iofs.IOFS.io_Device = (struct Device *) dvp->dvp_Port;
 
-    /* remember the device for EndNotify() */
-    notify->nr_Device = (struct Device *) dvp->dvp_Port;
+    /* remember the handler for EndNotify() (but see the comments there about
+     * why we don't really use it */
+    notify->nr_Handler = dvp->dvp_Port;
 
     /* if no lock is returned by GetDeviceProc() (eg if the path is for a
      * device or volume), then the path is fine as-is, and just use the

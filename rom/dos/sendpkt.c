@@ -618,7 +618,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		    iofs->IOFS.io_Unit = dir->fh_Unit;
 		    
 		    /* Save device for EndNotify() purposes */
-		    notify->nr_Device = dir->fh_Device;
+		    notify->nr_Handler = (struct MsgPort *) dir->fh_Device;
 	
 		    if (iofs->IOFS.io_Device == NULL)
 		    {
@@ -642,7 +642,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		}
 		else
 		{
-		    iofs->IOFS.io_Device = (struct Device *)notify->nr_Device;
+		    iofs->IOFS.io_Device = (struct Device *)notify->nr_Handler;
 		    
 		    if (iofs->IOFS.io_Device == NULL)
 		    {
