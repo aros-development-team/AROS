@@ -475,7 +475,7 @@ static void handleMouseMove(CxMsg *cxm)
     {
 	entry = (screen->MouseY - dmdata.popupwindow->TopEdge - DM_BORDERWIDTH)
 	    / dmdata.popupwindow->RPort->TxHeight;
-	if ((entry < 0) || (entry >= DM_MAXENTRY)) entry = -1;
+	if ((entry < 0) || (entry >= dmdata.entries)) entry = -1;
     }
     if (entry != dmdata.selected)
     {
@@ -516,7 +516,7 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 
     if (mode == DM_WINDOW)
     {
-	(bug("DepthMenu: window\n"));
+	D(bug("DepthMenu: window\n"));
 	struct Window *window = screen->FirstWindow;
 	dmdata.entries = 0;
 	while (window && (dmdata.entries < DM_MAXENTRY))
