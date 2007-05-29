@@ -72,7 +72,7 @@
 
 /***************************************************************************/
 
-UBYTE version[] = "$VER: DepthMenu 0.2 (28.05.2007)";
+UBYTE version[] = "$VER: DepthMenu 0.3 (30.05.2007)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -126,6 +126,12 @@ typedef struct _DMData
     ULONG ibaselock;
     BOOL locked;
     WORD selected;  // -1 means no entry selected
+    struct DrawInfo *drawinfo;
+    UBYTE bgpen;
+    UBYTE txtpen;
+    UBYTE highpen;
+    UBYTE shinepen;
+    UBYTE shadowpen;
 } DMData;
 
 static DMData dmdata;
@@ -394,6 +400,9 @@ static void handleMenuUp(CxMsg *cxm)
 	{
 	    LONG entry = dmdata.selected;
 
+	    FreeScreenDrawInfo(screen, dmdata.drawinfo);
+	    dmdata.drawinfo = NULL;
+
 	    CloseWindow(dmdata.popupwindow);
 	    dmdata.popupwindow = NULL;
 
@@ -438,6 +447,8 @@ static void handleMenuUp(CxMsg *cxm)
 	// when we release mouse outside window it's still open
 	if (dmdata.popupwindow)
 	{
+	    FreeScreenDrawInfo(screen, dmdata.drawinfo);
+	    dmdata.drawinfo = NULL;
 	    CloseWindow(dmdata.popupwindow);
 	    dmdata.popupwindow = NULL;
 	}
@@ -580,17 +591,36 @@ static void showPopup(WORD mode, struct Screen *screen, WORD xpos, WORD ypos)
 	{
 	    struct RastPort *rp = dmdata.popupwindow->RPort;
 	    SetFont(rp, popupscreen->RastPort.Font);	// use the screen's font for the menu
-							// so we can calculate the window size with the screen font
+	    // so we can calculate the window size with the screen font
 	    SetDrMd(rp, JAM1); // for text rendering
 
-	    SetAPen(rp, 1);
-	    Move(rp, 0, 0);
-	    Draw(rp, width-1, 0);
-	    Draw(rp, width-1, height-1);
-	    Draw(rp, 0, height-1);
-	    Draw(rp, 0, 0);
+	    dmdata.drawinfo = GetScreenDrawInfo(popupscreen);
+	    if (dmdata.drawinfo)
+	    {
+		dmdata.bgpen = dmdata.drawinfo->dri_Pens[BACKGROUNDPEN];
+		dmdata.txtpen = dmdata.drawinfo->dri_Pens[TEXTPEN];
+		dmdata.highpen = dmdata.drawinfo->dri_Pens[FILLPEN];
+		dmdata.shinepen =dmdata.drawinfo->dri_Pens[SHINEPEN];
+		dmdata.shadowpen = dmdata.drawinfo->dri_Pens[SHADOWPEN];
+	    }
+	    else
+	    {
+		bug("DepthMenu: GetScreenDrawInfo failed\n");
+		dmdata.bgpen = 0;
+		dmdata.txtpen = 1;
+		dmdata.highpen = 3;
+		dmdata.shinepen = 1;
+		dmdata.shadowpen = 1;
+	    }
 
-	    SetAPen(rp, 1);
+	    SetAPen(rp, dmdata.shinepen);
+	    Move(rp, width-1, 0);
+	    Draw(rp, 0, 0);
+	    Draw(rp, 0, height-1);
+	    SetAPen(rp, dmdata.shadowpen);
+	    Draw(rp, width-1, height-1);
+	    Draw(rp, width-1, 0);
+
 	    int i;
 	    for(i=0; i<dmdata.entries; i++)
 	    {
@@ -612,16 +642,16 @@ static void drawEntry(LONG entry, BOOL selstate)
 
     if (selstate)
     {
-	SetAPen(rp, 3);
+	SetAPen(rp, dmdata.highpen);
     }
     else
     {
-	SetAPen(rp, 0);
+	SetAPen(rp, dmdata.bgpen);
     }
     RectFill(rp, DM_BORDERWIDTH, entry * rp->TxHeight + DM_BORDERWIDTH,
 	    dmdata.popupwindow->Width - DM_BORDERWIDTH , (entry+1) * rp->TxHeight + DM_BORDERWIDTH);
 
-    SetAPen(rp, 1);
+    SetAPen(rp, dmdata.txtpen);
     Move(rp, DM_BORDERWIDTH, entry * rp->TxHeight + rp->TxBaseline + DM_BORDERWIDTH);
     Text(rp, dmdata.title[entry], strlen(dmdata.title[entry]));
 }
