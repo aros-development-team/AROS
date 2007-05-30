@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <aros/system.h>
+#include <dos/bptr.h>
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 #undef kprintf
@@ -145,6 +146,28 @@ int vkprintf (const UBYTE * fmt, va_list args)
 		ret ++;
 		break;
 
+	    case 'b':
+#ifndef AROS_FAST_BPTR
+	    {
+		char * str = va_arg (args, char *);
+		int len;
+
+		if (str) {
+		    str = (char *)((unsigned long)str << 2);
+		    len = *str++;
+		} else {
+		    str = "(null)";
+		    len = 6;
+		}
+
+		if (precision)
+		    len = precision;
+
+		RawPutChars (str, len);
+		ret += len;
+
+		break; }
+#endif
 	    case 's':
 	    case 'S': {
 		char * str = va_arg (args, char *);
