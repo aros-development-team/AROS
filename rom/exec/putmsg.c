@@ -111,7 +111,8 @@
 
             case PA_CALL:
                 /* Call the function in mp_SigTask. */
-                AROS_UFC1(void, port->mp_SigTask,
+                AROS_UFC2(void, port->mp_SigTask,
+                    AROS_UFCA(struct MsgPort *,  port,    D0),
                     AROS_UFCA(struct ExecBase *, SysBase, A6));
                 break;
 	}
