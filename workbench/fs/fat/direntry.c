@@ -483,6 +483,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     struct DirHandle dh;
     struct DirEntry de;
     LONG result = 0;
+    int len;
 
     D(bug("\tFilling FIB data.\n"));
 
@@ -515,8 +516,10 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
         ReleaseDirHandle(&dh);
     }
 
-    memcpy(fib->fib_FileName, gl->name, 108);
-    D(bug("\t\tname (len %ld) %.*s\n", fib->fib_FileName[0], fib->fib_FileName[0], &(fib->fib_FileName[1])));
+    len = gl->name[0] <= 107 ? gl->name[0] : 107;
+    strncpy(fib->fib_FileName, &gl->name[1], len);
+    fib->fib_FileName[len] = '\0';
+    D(bug("\t\tname (len %ld) %s\n", strlen(fib->fib_FileName), fib->fib_FileName));
 
     fib->fib_Protection = 0;
     if (gl->attr & ATTR_READ_ONLY) fib->fib_Protection |= (FIBF_DELETE | FIBF_WRITE);
