@@ -11,8 +11,6 @@
 
 #define NUM_MESSAGES (1000000)
 
-struct MsgPort *port;
-
 AROS_UFH3(void, taskentry,
           AROS_UFHA(STRPTR,            argPtr,  A0),
           AROS_UFHA(ULONG,             argSize, D0),
@@ -20,6 +18,7 @@ AROS_UFH3(void, taskentry,
     AROS_USERFUNC_INIT
 
     int i;
+    struct MsgPort *port = (struct MsgPort *) FindTask(NULL)->tc_UserData;
 
     for (i = 0; i < NUM_MESSAGES; i++) {
         WaitPort(port);
@@ -34,6 +33,8 @@ AROS_UFH3(void, intentry,
           AROS_UFHA(APTR,              code,    A5),
           AROS_UFHA(struct ExecBase *, SysBase, A6)) {
     AROS_USERFUNC_INIT
+
+    struct MsgPort *port = (struct MsgPort *) data;
 
     WaitPort(port);
     ReplyMsg(GetMsg(port));
@@ -53,7 +54,8 @@ AROS_UFH4(void, fastentry,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH1(void, callentry,
+AROS_UFH2(void, callentry,
+          AROS_UFHA(struct MsgPort *,  port,    D0),
           AROS_UFHA(struct ExecBase *, SysBase, A6)) {
     AROS_USERFUNC_INIT
 
@@ -64,7 +66,7 @@ AROS_UFH1(void, callentry,
 }
 
 int main(int argc, char **argv) {
-    struct MsgPort *reply;
+    struct MsgPort *port, *reply;
     struct Message *msg;
     struct Process *proc;
     int i;
@@ -82,6 +84,7 @@ int main(int argc, char **argv) {
 
     proc = CreateNewProcTags(NP_Entry,    (IPTR) taskentry,
                              NP_Name,     "timeport task",
+                             NP_UserData, (IPTR) port,
                              TAG_DONE);
 
     port->mp_Flags = PA_SIGNAL;
@@ -106,6 +109,7 @@ int main(int argc, char **argv) {
 
     intr = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     intr->is_Code = intentry;
+    intr->is_Data = port;
 
     port->mp_Flags = PA_SOFTINT;
     port->mp_SoftInt = intr;
