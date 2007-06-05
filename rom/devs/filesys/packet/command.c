@@ -934,22 +934,6 @@ AROS_UFH3(void, packet_reply,
             break;
         }
 
-#ifdef AROS_FAST_BPTR
-        /* AROS and even AOS headers lie about FileInfoBlock fields
-         * fib_FileName and fib_Comment - they're BCPL strings, not C strings.
-         * The handler has just passed such a block back, but if
-         * AROS_FAST_BPTR is defined then caller is expecting real C strings,
-         * so we have to convert. */
-        case ACTION_EXAMINE_NEXT: {
-            struct FileInfoBlock *fib = BADDR(dp->dp_Arg2);
-            
-            strcpy(fib->fib_FileName, mkcstr(pkt->pool, fib->fib_FileName));
-            strcpy(fib->fib_Comment, mkcstr(pkt->pool, fib->fib_Comment));
-
-            break;
-        }
-#endif
-
         case ACTION_IS_FILESYSTEM:
             iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
             break;
