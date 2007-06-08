@@ -49,7 +49,9 @@
     fh1 = (struct FileHandle *)BADDR(lock1);
     fh2 = (struct FileHandle *)BADDR(lock2);
 
-#warning Is this check good enough ?
+    /* XXX this isn't enough. two filesystems of the same type are different
+     * "devices" but will have the same value for fh_Device. there's no good
+     * way to fix (the only bad way involves hoops with NameFromLock() */
     if (fh1->fh_Device == fh2->fh_Device)
     	return DOSTRUE;
     

@@ -554,22 +554,25 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		{
 		    /* We want a hard-link. */
 		    struct FileHandle *fh = (struct FileHandle *)BADDR((BPTR)dp->dp_Arg3);
-		    struct Device *dev;
-		    
+                    struct DevProc *dvp;
+
 		    /* We check, if name and dest are on the same device. */
-		    if (DevName(name, &dev, DOSBase))
+                    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
 		    {
 			/* TODO: Simulate packet return */
 			return;
 		    }
 		    
-		    if (dev != fh->fh_Device)
+		    if (dvp->dvp_Port != fh->fh_Device)
 		    {
+                        FreeDeviceProc(dvp);
 			SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
 			
 			/* TODO: Simulate packet return */
 			return;
 		    }
+
+                    FreeDeviceProc(dvp);
 		    
 		    iofs->IOFS.io_Command = FSA_CREATE_HARDLINK;
 		    iofs->io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;

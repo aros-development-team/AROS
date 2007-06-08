@@ -58,10 +58,10 @@
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_DELETE_OBJECT, DOSBase);
 
-    if(DoName(&iofs, name, DOSBase) == 0)
-	return DOSTRUE;
+    if (DoIOFS(&iofs, NULL, name, DOSBase) == 0)
+        return DOSTRUE;
     else
-	return DOSFALSE;
+        return DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* DeleteFile */

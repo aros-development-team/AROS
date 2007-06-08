@@ -58,7 +58,7 @@
     iofs.io_Union.io_SET_OWNER.io_UID = owner_info >> 16;
     iofs.io_Union.io_SET_OWNER.io_GID = owner_info & 0xffff;
 
-    return !DoName(&iofs, name, DOSBase);
+    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetOwner */

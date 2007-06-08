@@ -9,6 +9,9 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -62,286 +65,265 @@
 
     struct Process *pr = (struct Process *)FindTask(NULL);
     struct DosList *dl = NULL;
-    struct FileHandle *fh;
-    STRPTR volname = NULL, s1 = NULL;
-    BPTR cur = NULL, lock = (BPTR)0;
+    char vol[32];
+    LONG len;
+    char buf[256];
+    BPTR cur = NULL, lock = NULL;
 
-    /*
-	Note: We can free the DevProc structure anywhere an error occurs
-	because for all cases except DLT_DIRECTORY types, we will have
-	not returned a DevProc before, therefore the caller will have
-	nothing to call FreeDeviceProc() on.
+    /* if they passed us the result of a previous call, then they're wanted to
+     * loop over the targets of a multidirectory assign */
+    if (dp != NULL) {
 
-	There are no errors of this type for DLT_DIRECTORY, so we can
-	just handle this as needed. However if there was an error, we
-	would simply check the dp->dvp_Flags & DVPF_ASSIGN to see if
-	we had returned the structure to the caller.
-    */
+        /* if what they passed us is not a multidirectory assign, then there's
+         * nothing for us to do */
+        if (dp->dvp_DevNode != NULL &&
+            (dp->dvp_DevNode->dol_Type != DLT_DIRECTORY || !(dp->dvp_Flags & DVPF_ASSIGN)))
 
-    /* Have we already got a DevProc? */
-    if( dp != NULL )
-    {
-	/*
-	    Yes, if this is not a multi-assign directory, then there
-	    is no reason for us to bother again. Just return NULL in
-	    that case.
-	*/
-	if( dp->dvp_DevNode )
-	    if(    dp->dvp_DevNode->dol_Type != DLT_DIRECTORY
-		|| (dp->dvp_Flags & DVPF_ASSIGN) == 0 )
-	    {
-		return NULL;
-	    }
-	    
-	/* We'll start from there. */
-	
-        /* Matches UnlockDosList at end of func */
-    	LockDosList(LDF_ALL|LDF_READ);
-	
-	dl = dp->dvp_DevNode;
+            return NULL;
+
+        /* its fine, we'll start from here */
+        dl = dp->dvp_DevNode;
+
+        /* lock the dos list here, to match the result of the next block */
+    	LockDosList(LDF_ALL | LDF_READ);
     }
-    else
-    {
-	/*
-	    We have to find the starting dl structure
-	    What is the volume part of the filesystem?
-	*/
-	cur = pr->pr_CurrentDir;
 
-    	if(!Strnicmp(name, "PROGDIR:", 8))
-    	{
-    	    /* The path refers to PROGDIR: */
+    /* otherwise we need find a place to start in the doslist based on the
+     * name they passed in */
+    else {
+
+        /* first figure out where we the name is relative to */
+    	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
     	    cur = pr->pr_HomeDir;
-    	}
-    	else if( *name == ':' )
-    	{
-    	    /*
-		Relative to the current volume (ie current directory)
-		We simply need to remove this case from the below.
-	    */
-    	}
-    	else
-    	{
-    	    /* Copy the volume name */
-    	    s1 = name;
-    	    volname = NULL;
-    
-    	    while(*s1)
-    	    {
-    		if(*s1++ == ':')
-    		{
-    		    volname = (STRPTR)AllocMem(s1-name, MEMF_ANY);
-    		    if( volname == NULL )
-    		    {
-    			SetIoErr(ERROR_NO_FREE_STORE);
-    			return NULL;
-    		    }
-    		    CopyMem(name, volname, s1 - name -1 );
-    		    volname[s1-name-1] = '\0';
-    		    break;
-    		}
-    	    }
-    	}
 
-/* kprintf("Volume name: %p\n", volname);
-if (volname)
-	kprintf("volname: %s\n", volname);
-*/    
-	/* Allocate a DevProc */
-	dp = AllocMem(sizeof(struct DevProc), MEMF_ANY|MEMF_CLEAR);
-	if( dp == NULL )
-	{
-	    FreeMem(volname, s1-name);
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	    return NULL;
-	}
+            /* move past the "volume" name, so that we end up in the "no
+             * volume name" case below */;
+            name = &name[8];
+        }
 
-    	/* We now go through the DOS device list */
-    	dl = LockDosList(LDF_ALL|LDF_READ);
-    	if( volname != NULL )
-    	{
-    	    /* Find logical Device */
-    	    dl = FindDosEntry(dl, volname, LDF_ALL);
-    	    if( dl == NULL )
-    	    {
-/* kprintf("Found logical device\n");
-*/    		UnLockDosList(LDF_ALL|LDF_READ);
-    		FreeMem(volname, s1-name);
-		FreeMem(dp, sizeof(struct DevProc));
-    		SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-    		return NULL;
-    	    }
-	}
-	else
-	{
-	    /* We have the lock in cur */
-/* kprintf("lock in cur\n");
-*/	    fh = BADDR(cur);
-	    dp->dvp_Port = (struct MsgPort *)fh->fh_Device;
-	    dp->dvp_Lock = cur;
-	    dp->dvp_Flags = 0;
-	    dp->dvp_DevNode = NULL;
-	    UnLockDosList(LDF_ALL|LDF_READ);
-	    SetIoErr(0);
-	    return dp;
-	}
-    } /* we didn't have a DevProc passed into us */
+        else
+            cur = pr->pr_CurrentDir;
 
-    /* We now look at the type of the DosList entry */
-    if( dl->dol_Type == DLT_LATE )
-    {
-/* kprintf("Late assign\n");
-*/	UnLockDosList(LDF_ALL|LDF_READ);
-	
-	lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
-	if( lock )
-	{
-	    AssignLock(volname, lock);
-	    dl = LockDosList(LDF_ALL|LDF_READ);
-	    dl = FindDosEntry(dl, volname, LDF_ALL);
-	    if( dl == NULL )
-	    {
-		UnLockDosList(LDF_ALL|LDF_READ);
-		FreeMem(volname, s1-name);
-		FreeMem(dp, sizeof(struct DevProc));
-		SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-		return NULL;
-	    }
+        /* if we got NULL, then its relative to the system root lock */
+        if (cur == NULL)
+            cur = DOSBase->dl_SYSLock;
 
-	    dp->dvp_Port = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
-	    dp->dvp_Lock = lock;
-	    dp->dvp_Flags = 0;
-	    dp->dvp_DevNode = dl;
-	}
-    	else
-    	{
-    	    FreeMem(volname, s1-name);
-	    FreeMem(dp, sizeof(struct DevProc));
-    	    return NULL;
-    	}
-    } /* late binding assign */
-    else if(dl->dol_Type == DLT_NONBINDING)
-    {
-/* kprintf("nonbinding assign\n");    
-*/	lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
-	fh = (struct FileHandle *)BADDR(lock);
-	if( fh != NULL )
-	{
-	    dp->dvp_Port = (struct MsgPort *)fh->fh_Device;
-	    dp->dvp_Lock = lock;
-	    dp->dvp_Flags = DVPF_UNLOCK;
-	    dp->dvp_DevNode = dl;
-	}
-	else
-	{
-	    UnLockDosList(LDF_ALL|LDF_READ);
-	    FreeMem(dp, sizeof(struct DevProc));
-	    FreeMem(volname, s1-name);
-	    return NULL;
-	}
+        /* extract the volume name */
+        len = SplitName(name, ':', vol, 0, sizeof(vol)-1);
+
+        /* move the name past it, its now relative to the volume */
+        name += len;
+
+        /* if there wasn't one (or we found a lone ':'), then we need to
+         * extract it from the name of the current dir */
+
+        /* XXX this block sucks. NameFromLock () calls DupLock(), which calls
+         * Lock(), which would end up back here if it wasn't for the
+         * special-case in Lock(). once we have real FileLock locks, then this
+         * code will go and we can just look at cur->fl_Volume to get the
+         * doslist entry. see the morphos version for details */
+        if (len <= 1) {
+
+            /* if we didn't find a ':' at all, then we'll need to return the
+             * lock that its relative to, so make a note */
+            if (len == -1)
+                lock = cur;
+
+            if (NameFromLock(cur, buf, 255) != DOSTRUE)
+                return NULL;
+
+            len = SplitName(buf, ':', vol, 0, sizeof(vol)-1);
+
+            /* if there isn't one, something is horribly wrong */
+            if (len <= 1) {
+                kprintf("%s:%d: NameFromLock() returned a path without a volume. Probably a bug, report it!\n"
+                        "    GetDeviceProc() called for '%s'\n"
+                        "    NameFromLock() called on 0x%08x, returned '%s'\n",
+                        __FILE__, __LINE__, name, cur, buf);
+                SetIoErr(ERROR_INVALID_COMPONENT_NAME);
+                return NULL;
+            }
+        }
+
+        /* allocate structure for return */
+        if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+
+        /* now find the doslist entry for the named volume */
+        dl = LockDosList(LDF_ALL | LDF_READ);
+        dl = FindDosEntry(dl, vol, LDF_ALL);
+
+        /* not found, bail out */
+        if (dl == NULL) {
+            /* XXX perhaps this should popup a "please insert" dialog? */
+            UnLockDosList(LDF_ALL | LDF_READ);
+            FreeMem(dp, sizeof(struct DevProc));
+            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+            return NULL;
+        }
+
+        /* relative to the current dir, then we have enough to get out of here */
+        if (lock != NULL) {
+            dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(cur))->fh_Device;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = 0;
+            dp->dvp_DevNode = dl;
+
+            UnLockDosList(LDF_ALL | LDF_READ);
+
+            return dp;
+        }
     }
-    else
-    {
-/* kprintf("generic case\n");    
-*/	/* Generic case, a volume, a device, or a multi-assign */
-	dp->dvp_Port = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
-	dp->dvp_DevNode = dl;
-	if( dl->dol_Type == DLT_DIRECTORY )
-	{
-	    /* If called before, this will be set */
-	    if( dp->dvp_Flags == DVPF_ASSIGN )
-	    {
-/*		kprintf("DBPF_ASSIGN flag found\n");
-*/		/* First iteration of list ? */
-		if (dp->dvp_Lock == dl->dol_Lock)
-		{
-		    /* If so, set to first item in assignlist.
-		       (The set DVPF_ASSIGN flag tells that a assignlist
-		       does exist
-		    */
-/*		    kprintf("First time multiple assign\n");
-*/		    dp->dvp_Lock = dl->dol_misc.dol_assign.dol_List->al_Lock;
-		}
-		else
-		{
 
-		    struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
-		
-/*		    UBYTE buf[100];
-		    
-		    kprintf("Do assign list\n");
-*/		    /*  
-		    	Go through until we have found the last one returned.
-		    */
-		    while( al && (al->al_Lock != dp->dvp_Lock) )
-		    {
-/*		    	NameFromLock(al->al_Lock, buf, 100);
-		    	kprintf("gdp: trying assigndir %s\n", buf);
-*/		    	al = al->al_Next;
-		    }
+    /* at this point, we have an allocated devproc in dp, the doslist is
+     * locked for read, and we have the the entry for the named "volume"
+     * (device, assign, etc) in dl and a filename relative to that in name */
 
-		    if( al != NULL )
-		    {
-/*		        kprintf("al != NULL\n");
-*/		    	if( al->al_Next != NULL )
-		    	{
-    			    dp->dvp_Lock = al->al_Next->al_Lock;
-			
-/*		    	    NameFromLock(dp->dvp_Lock, buf, 100);
-		    	    kprintf("gdp: returning assigndir %s\n", buf); 
-*/		    	}
-			else
-			{
-			    /* We have reached the end of the list - just return NULL */
-			    UnLockDosList(LDF_ALL|LDF_READ);
-			    SetIoErr(ERROR_NO_MORE_ENTRIES);
-		    
-			    if (volname)
-				FreeMem(volname, s1-name);
+    /* late assign. we resolve the target and then promote the doslist entry
+     * to full assign */
+    if (dl->dol_Type == DLT_LATE) {
+        /* obtain a lock on the target */
+        lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
-		    	    FreeMem(dp, sizeof(struct DevProc));
-				
-			    return NULL;
+        /* unlock the list, either we have a lock and need to assign it, or we
+         * don't and need to bail out */
+        UnLockDosList(LDF_ALL | LDF_READ);
 
-			}
-			
-		    }
-		    else
-		    {
-		    	/* We have reached the end of the list - just return NULL */
-	    	    	UnLockDosList(LDF_ALL|LDF_READ);
-		    	SetIoErr(ERROR_NO_MORE_ENTRIES);
-		    
-		    	if (volname)
-		    	    FreeMem(volname, s1-name);
+        /* XXX there's a race here. with the doslist unlocked, its possible
+         * that some other process will add or remove this assign, blowing
+         * everything up. need more tuits before attempting a fix */
 
+        /* didn't find the target */
+        if (lock == NULL) {
+            FreeMem(dp, sizeof(struct DevProc));
+            return NULL;
+        }
 
-		    	FreeMem(dp, sizeof(struct DevProc));
-			
-		    	return NULL;
-		    }
-		    
-		} /* if (first iteration of assignlist) */
-		
-	    } /* if (DVPF_ASSIGN flag has been set */
-	    else
-    		dp->dvp_Lock = dl->dol_Lock;
+        /* try to assign it */
+        if (AssignLock(vol, lock) == DOSFALSE) {
+            UnLock(lock);
+            FreeMem(dp, sizeof(struct DevProc));
+            return NULL;
+        }
 
-	    /* Only set this again if we have some locks to look at */
-	    if( dl->dol_misc.dol_assign.dol_List != NULL )
-    		dp->dvp_Flags = DVPF_ASSIGN;
+        /* we made the assign! now we have to go back over the list and find
+         * the new entry */
+        dl = LockDosList(LDF_ALL | LDF_READ);
+        dl = FindDosEntry(dl, vol, LDF_ALL);
 
-	} /* DLT_DIRECTORY */
-	else
-	{
-	    dp->dvp_Lock = NULL;
-	    dp->dvp_Flags = 0;
-	}
+        /* not found. XXX this will only happen if we hit that race above */
+        if (dl == NULL) {
+            UnLockDosList(LDF_ALL | LDF_READ);
+            FreeMem(dp, sizeof(struct DevProc));
+            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+            return NULL;
+        }
+
+        /* the added entry will be a DLT_DIRECTORY, so we can just copy the
+         * details in and get out of here */
+        dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
+        dp->dvp_Lock = dl->dol_Lock;
+        dp->dvp_Flags = 0;
+        dp->dvp_DevNode = dl;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+        return dp;
     }
+
+    /* nonbinding assign. like a late assign, but with no doslist promotion */
+    if (dl->dol_Type == DLT_NONBINDING) {
+        lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
+
+        /* just fill out the dp and return */
+        dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(lock))->fh_Device;
+        dp->dvp_Lock = lock;
+        dp->dvp_Flags = DVPF_UNLOCK;   /* remember to unlock in FreeDeviceNode() */
+        dp->dvp_DevNode = dl;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+        return dp;
+    }
+
+    /* devices and volumes are easy */
+    if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME) {
+        /* XXX if dvp_Port is NULL, then we're supposed to get the handler
+         * online here. Pavel's upcoming changes will implement this */
+        dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
+        dp->dvp_Lock = NULL;
+        dp->dvp_Flags = 0;
+        dp->dvp_DevNode = dl;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+        return dp;
+    }
+
+    /* sanity check */
+    if (dl->dol_Type != DLT_DIRECTORY) {
+        UnLockDosList(LDF_ALL | LDF_READ);
+        FreeMem(dp, sizeof(struct DevProc));
+        kprintf("%s:%d: DosList entry 0x%08x has unknown type %d. Probably a bug, report it!\n"
+                "    GetDeviceProc() called for '%s'\n",
+                __FILE__, __LINE__, dl, dl->dol_Type, name);
+        SetIoErr(ERROR_BAD_NUMBER);
+        return NULL;
+    }
+
+    /* real assigns. first, see if its just pointing to a single dir */
+    if (dp->dvp_Flags != DVPF_ASSIGN) {
+        /* just a plain assign, easy */
+        dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
+        dp->dvp_Lock = dl->dol_Lock;
+        dp->dvp_DevNode = dl;
+        
+        /* note multidirectory assigns so the caller knows to loop */
+        dp->dvp_Flags = dl->dol_misc.dol_assign.dol_List != NULL ? DVPF_ASSIGN : 0;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+        return dp;
+    }
+
+    /* finally the tricky but - multidirectory assigns */
+
+    /* if we're pointing at the "primary" lock, then we just take the first
+     * one in the list */
+    if (dp->dvp_Lock == dl->dol_Lock)
+        dp->dvp_Lock = dl->dol_misc.dol_assign.dol_List->al_Lock;
+
+    /* otherwise we're finding the next */
+    else {
+        struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
+
+        /* find our current lock (ie the one we returned last time) */
+        for (; al != NULL && al->al_Lock != dp->dvp_Lock; al = al->al_Next);
+
+        /* if we didn't find it, or we didn't but there's none after it, then
+         * we've run out */
+        if (al == NULL || (al = al->al_Next) == NULL) {
+            UnLockDosList(LDF_ALL | LDF_READ);
+            FreeMem(dp, sizeof(struct DevProc));
+
+            SetIoErr(ERROR_NO_MORE_ENTRIES);
+            return NULL;
+        }
+
+        /* fill out the lock from the new entry */
+        dp->dvp_Lock = al->al_Lock;
+    }
+
+    /* final pieces */
+    dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(dp->dvp_Lock))->fh_Device;
+    dp->dvp_Flags = DVPF_ASSIGN;
+    dp->dvp_DevNode = dl;
 
     UnLockDosList(LDF_READ|LDF_ALL);
-    if( volname != NULL )
-    	FreeMem(volname,s1-name);
+
+    /* phew */
     SetIoErr(0);
     return dp;
 

@@ -49,49 +49,35 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    LONG error;
-    struct Device *olddev, *newdev;
-
+    struct DevProc *olddvp, *newdvp;
     struct IOFileSys iofs;
+    LONG err;
 
-    /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_RENAME, DOSBase);
 
-    error = DevName(oldName, &olddev, DOSBase);
-    if(error != 0)
-    {
-	SetIoErr(error);
-	return DOSFALSE;
+    /* get device pointers */
+    if ((olddvp = GetDeviceProc(oldName, NULL)) == NULL ||
+        (newdvp = GetDeviceProc(newName, NULL)) == NULL) {
+        FreeDeviceProc(olddvp);
+        return DOSFALSE;
     }
 
-    error = DevName(newName, &newdev, DOSBase);
-    if(error != 0)
-    {
-	SetIoErr(error);
-	return DOSFALSE;
+    /* make sure they're on the same device
+     * XXX this is insufficient, see comments in samedevice.c */
+    if (olddvp->dvp_Port != newdvp->dvp_Port) {
+        FreeDeviceProc(olddvp);
+        FreeDeviceProc(newdvp);
+        SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
+        return DOSFALSE;
     }
 
-    if(olddev != newdev)
-    {
-	SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
-	return DOSFALSE;
-    }
+    iofs.io_Union.io_RENAME.io_NewName = StripVolume(newName);
+    err = DoIOFS(&iofs, olddvp, oldName, DOSBase);
 
-    iofs.io_Union.io_RENAME.io_Filename = oldName;
-    iofs.io_Union.io_RENAME.io_NewName = newName;
+    FreeDeviceProc(olddvp);
+    FreeDeviceProc(newdvp);
 
-    DoName(&iofs, oldName, DOSBase);
-
-    SetIoErr(iofs.io_DosError);
-
-    if(iofs.io_DosError)
-    {
-	return DOSFALSE;
-    }
-    else
-    {
-	return DOSTRUE;
-    }
+    return err == 0 ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* Rename */

@@ -17,10 +17,6 @@
 #include <string.h>
 
 
-struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
-			  struct DosLibrary *DOSBase);
-
-
 void InitIOFS(struct IOFileSys *iofs, ULONG type,
 	      struct DosLibrary *DOSBase)
 {
@@ -33,77 +29,42 @@ void InitIOFS(struct IOFileSys *iofs, ULONG type,
     iofs->IOFS.io_Flags                   = 0;
 }
 
-struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit, 
-			 struct DosLibrary *DOSBase)
-{
-    return GetDosType(LDF_DEVICES, name, unit, DOSBase);
-//    return GetDosType(DLT_DEVICE, name, unit, DOSBase);
+STRPTR StripVolume(STRPTR name) {
+    char *path = strchr(name, ':');
+    if (path != NULL)
+        path++;
+    else
+        path = name;
+    return path;
 }
 
+LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, STRPTR name, struct DosLibrary *DOSBase) {
+    LONG err;
+    BOOL freedvp = FALSE;
 
-struct Device *GetVolume(CONST_STRPTR name, struct Unit **unit,
-			 struct DosLibrary *DOSBase)
-{
-    return GetDosType(LDF_VOLUMES, name, unit, DOSBase);
-//    return GetDosType(DLT_VOLUME, name, unit, DOSBase);
-}
+    if (dvp == NULL) {
+        if ((dvp = GetDeviceProc(name, NULL)) == NULL)
+            return IoErr();
 
-
-/* Return the device corresponding to the 'name'. This function will
-   only look into "real" devices, that is no "PROGDIR:" or such.
-   The pointer to the device unit will be written into 'unit' if
-   'unit' is not NULL. */ 
-struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
-			  struct DosLibrary *DOSBase)
-{
-    int     len = strlen(name);
-    int     size;
-    STRPTR  colon = strchr(name, ':');
-    STRPTR  tempName;
-
-    struct Device  *device = NULL;
-    struct DosList *dl;
-
-    if (colon == NULL)
-    {
-	return NULL;
+        freedvp = TRUE;
     }
 
-    size = colon - name;
+    iofs->IOFS.io_Device = (struct Device *) dvp->dvp_Port;
 
-    /* Not only a device name with trailing colon? */
-    if (size + 1 != len)
-    {
-	return NULL;
-    }
+    if (dvp->dvp_Lock != NULL)
+        iofs->IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
+    else
+        iofs->IOFS.io_Unit = dvp->dvp_DevNode->dol_Ext.dol_AROS.dol_Unit;
 
-    tempName = AllocVec(len, MEMF_ANY);
+    if (name != NULL)
+        iofs->io_Union.io_NamedFile.io_Filename = StripVolume(name);
 
-    if (tempName == NULL)
-    {
-	return NULL;
-    }
+    DosDoIO(iofs);
 
-    CopyMem(name, tempName, size);
-    tempName[size] = 0;		/* Terminate string */
+    SetIoErr(iofs->io_DosError);
 
-    dl = LockDosList(type | LDF_READ);
-    dl = FindDosEntry(dl, tempName, type);
-    if (dl != NULL)
-    {
-	device = dl->dol_Ext.dol_AROS.dol_Device;
-	if (unit!=NULL)
-	    *unit = dl->dol_Ext.dol_AROS.dol_Unit;
-    }
+    if (freedvp)
+        FreeDeviceProc(dvp);
 
-    UnLockDosList(type | LDF_READ);
-
-    if (device == NULL)
-    {
-	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-    }
-
-    FreeVec(tempName);
-
-    return device;
+    return iofs->io_DosError;
 }

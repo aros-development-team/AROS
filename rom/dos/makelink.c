@@ -67,43 +67,40 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    LONG error;
-    struct Device *dev;
-    struct Process *me=(struct Process *)FindTask(NULL);
-    struct IOFileSys io;
 
-    io.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    io.IOFS.io_Message.mn_ReplyPort = &me->pr_MsgPort;
-    io.IOFS.io_Message.mn_Length = sizeof(struct IOFileSys);
-    io.IOFS.io_Flags = 0;
-    if (soft)
-    {
-        /* We want a soft-link. */
-        io.IOFS.io_Command = FSA_CREATE_SOFTLINK;
-        io.io_Union.io_CREATE_SOFTLINK.io_Reference = (STRPTR)dest;
-    } else
-    {
-        /* We want a hard-link. */
-	struct FileHandle *fh = (struct FileHandle *)BADDR((BPTR)dest);
-        /* We check, if name and dest are on the same device. */
-        if (DevName(name, &dev, DOSBase))
-	    return DOSFALSE;
-	if (dev != fh->fh_Device)
-	{
-	    SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
-	    return DOSFALSE;
-	}
-	io.IOFS.io_Command = FSA_CREATE_HARDLINK;
-	io.io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;
+    struct IOFileSys iofs;
+    struct DevProc *dvp;
+    struct FileHandle *fh;
+    LONG err;
+
+    /* soft link is easy */
+    if (soft) {
+        InitIOFS(&iofs, FSA_CREATE_SOFTLINK, DOSBase);
+        iofs.io_Union.io_CREATE_SOFTLINK.io_Reference = (STRPTR) dest;
+        return DoIOFS(&iofs, NULL, name, DOSBase) == 0 ? DOSTRUE : DOSFALSE;
     }
 
-    error = DoName(&io, name, DOSBase);
-    if (error)
-    {
-        SetIoErr(error);
+    /* hard link. find the handler */
+    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
+        return DOSFALSE;
+
+    fh = (struct FileHandle *) BADDR(dest);
+
+    /* source and target must be on the same device
+     * XXX this is insufficient, see comments in samedevice.c */
+    if (dvp->dvp_Port != fh->fh_Device) {
+        FreeDeviceProc(dvp);
+        SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
         return DOSFALSE;
     }
 
-    return DOSTRUE;
+    InitIOFS(&iofs, FSA_CREATE_HARDLINK, DOSBase);
+    iofs.io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;
+    err = DoIOFS(&iofs, dvp, name, DOSBase);
+
+    FreeDeviceProc(dvp);
+
+    return err == 0 ? DOSTRUE : DOSFALSE;
+
     AROS_LIBFUNC_EXIT
 } /* MakeLink */

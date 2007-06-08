@@ -60,7 +60,7 @@
 
     memcpy(&iofs.io_Union.io_SET_DATE.io_Date, date, sizeof(struct DateStamp));
 
-    return !DoName(&iofs, name, DOSBase);
+    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetFileDate */

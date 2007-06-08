@@ -53,34 +53,27 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct FileHandle *ret;
-
-    /* Get pointer to I/O request. Use stackspace for now. */
+    struct FileHandle *fh;
     struct IOFileSys iofs;
+    struct DevProc *dvp;
 
-    /* Allocate memory for lock */
-    ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
-
-    if(ret != NULL)
-    {
-	/* Prepare I/O request. */
-	InitIOFS(&iofs, FSA_CREATE_DIR, DOSBase);
-
-	iofs.io_Union.io_CREATE_DIR.io_Protection = 0;
-
-	if(!DoName(&iofs, name, DOSBase))
-	{
-	    ret->fh_Unit   = iofs.IOFS.io_Unit;
-	    ret->fh_Device = iofs.IOFS.io_Device;
-	    return MKBADDR(ret);
-	}
-	
-	FreeDosObject(DOS_FILEHANDLE, ret);
+    if ((fh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL) {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return NULL;
     }
-    else
-	SetIoErr(ERROR_NO_FREE_STORE);
 
-    return 0;
+    InitIOFS(&iofs, FSA_CREATE_DIR, DOSBase);
+    iofs.io_Union.io_CREATE_DIR.io_Protection = 0;
+
+    if (DoIOFS(&iofs, NULL, name, DOSBase) != 0) {
+        FreeDosObject(DOS_FILEHANDLE, fh);
+        return NULL;
+    }
+
+    fh->fh_Device = iofs.IOFS.io_Device;
+    fh->fh_Unit   = iofs.IOFS.io_Unit;
+
+    return MKBADDR(fh);
 
     AROS_LIBFUNC_EXIT
 } /* CreateDir */

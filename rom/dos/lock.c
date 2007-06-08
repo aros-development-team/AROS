@@ -56,17 +56,15 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct DevProc *dvp;
+    LONG error;
+
     ASSERT_VALID_PTR(name);
 
     /* Sanity check */
     if (name == NULL)
-    {
         return NULL;
-    }
     
-    BPTR con = NULL, ast = NULL;
-    LONG error;
-
     /* Get pointer to process structure */
         struct Process *
     me = (struct Process *)FindTask(NULL);
@@ -83,92 +81,60 @@
     	/* Prepare I/O request. */
     	InitIOFS(&iofs, FSA_OPEN, DOSBase);
     
-    	/* io_Args[0] is the name which is set by DoName(). */
     	switch (accessMode)
     	{
         	case EXCLUSIVE_LOCK:
         	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
-        	    con = me->pr_COS;
-        	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
         	    break;
         
         	case SHARED_LOCK:
         	    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
-        	    con = ast = me->pr_CIS;
         	    break;
         
         	default:
         	    iofs.io_Union.io_OPEN.io_FileMode = accessMode;
-        	    con = ast = me->pr_CIS;
         	    break;
     	}
-    
-#define iofs_SetDeviceUnit(_iofs, _fh) \
-{ \
-     (_iofs).IOFS.io_Device = ((struct FileHandle *)BADDR((_fh)))->fh_Device; \
-     (_iofs).IOFS.io_Unit   = ((struct FileHandle *)BADDR((_fh)))->fh_Unit; \
-}
-    
-    	if(!Stricmp(name, "IN:") || !Stricmp(name, "STDIN:"))
-    	{
-            iofs_SetDeviceUnit(iofs, me->pr_CIS);
-    
-    	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-    
-    	    DosDoIO(&iofs.IOFS);
-    
-    	    error = me->pr_Result2 = iofs.io_DosError;
-    	}
-    	else if(!Stricmp(name, "OUT:") || !Stricmp(name, "STDOUT:"))
-    	{
-            iofs_SetDeviceUnit(iofs, me->pr_COS);
-    
-    	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-    
-    	    DosDoIO(&iofs.IOFS);
-    
-    	    error = me->pr_Result2 = iofs.io_DosError;
-    	}
-    	else if(!Stricmp(name, "ERR:") || !Stricmp(name, "STDERR:"))
-    	{
-            if (NULL != me->pr_CES)
-            {
-                iofs_SetDeviceUnit(iofs, me->pr_CES);
-            }
+
+        /* catch the zero-length special case. we can't (currently) call
+         * GetDeviceProc(), as it will call NameFromLock(), which will
+         * DupLock(), which will end up here */
+        if (*name == '\0') {
+            struct FileHandle *fh;
+
+            if (me->pr_CurrentDir != NULL)
+                fh = BADDR(me->pr_CurrentDir);
             else
-            {
-                iofs_SetDeviceUnit(iofs, me->pr_COS);
-            }
+                fh = BADDR(DOSBase->dl_SYSLock);
+
+            iofs.io_Union.io_OPEN.io_Filename = "";
+
+            iofs.IOFS.io_Device = fh->fh_Device;
+            iofs.IOFS.io_Unit = fh->fh_Unit;
+
+            DosDoIO(&iofs.IOFS);
+
+            error = me->pr_Result2 = iofs.io_DosError;
+        }
+
+        else {
+            iofs.io_Union.io_OPEN.io_Filename = StripVolume(name);
+
+            dvp = NULL;
     
-    	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-    
-    	    DosDoIO(&iofs.IOFS);
-    
-    	    error = me->pr_Result2 = iofs.io_DosError;
-    	}
-    	else if(!Stricmp(name, "CONSOLE:"))
-    	{
-            iofs_SetDeviceUnit(iofs, con);
-    
-    	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-    
-    	    DosDoIO(&iofs.IOFS);
-    
-    	    error = me->pr_Result2 = iofs.io_DosError;
-    	}
-    	else if(!Stricmp(name, "*"))
-    	{
-            iofs_SetDeviceUnit(iofs, ast);
-    
-    	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-    
-    	    DosDoIO(&iofs.IOFS);
-    
-    	    error = me->pr_Result2 = iofs.io_DosError;
-    	}
-    	else
-        {
-    	    error = DoName(&iofs, name, DOSBase);
+            do {
+                if ((dvp = GetDeviceProc(name, dvp)) == NULL) {
+                    error = IoErr();
+                    break;
+                }
+
+                error = DoIOFS(&iofs, dvp, NULL, DOSBase);
+            } while (error == ERROR_OBJECT_NOT_FOUND);
+
+            if (error == ERROR_NO_MORE_ENTRIES)
+                error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
+
+            FreeDeviceProc(dvp);
         }
     
     	if (!error)

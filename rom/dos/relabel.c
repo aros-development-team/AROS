@@ -51,28 +51,31 @@
     AROS_LIBFUNC_INIT
 
     struct IOFileSys iofs;
+    struct DevProc *dvp;
+    LONG err;
 
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_RELABEL, DOSBase);
-
-    iofs.IOFS.io_Device = GetDevice(drive, &iofs.IOFS.io_Unit, DOSBase);
-
-    if(iofs.IOFS.io_Device == NULL)
-    {
-	return DOSFALSE;
-    }
-
     iofs.io_Union.io_RELABEL.io_NewName = newname;
     iofs.io_Union.io_RELABEL.io_Result  = FALSE;
 
-    DosDoIO(&iofs.IOFS);
+    /* get the device */
+    if ((dvp = GetDeviceProc(drive, NULL)) == NULL)
+        return DOSFALSE;
 
-    SetIoErr(iofs.io_DosError);
-
-    if(iofs.io_DosError != 0)
-    {
-	return DOSFALSE;
+    /* we're only interested in real devices */
+    if (dvp->dvp_DevNode->dol_Type != DLT_DEVICE) {
+        FreeDeviceProc(dvp);
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        return DOSFALSE;
     }
+
+    err = DoIOFS(&iofs, dvp, NULL, DOSBase);
+
+    FreeDeviceProc(dvp);
+
+    if (err != 0)
+        return DOSFALSE;
 
     return iofs.io_Union.io_RELABEL.io_Result ? DOSTRUE : DOSFALSE;
 
