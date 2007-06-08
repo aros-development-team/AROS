@@ -41,14 +41,10 @@ LONG InternalSeek
     iofs.io_Union.io_SEEK.io_Offset   = (QUAD)position;
     iofs.io_Union.io_SEEK.io_SeekMode = mode;
 
-    /* Send the request. */
-    DosDoIO( &iofs.IOFS );
+    /* send the request, with error reporting */
+    do {
+        DosDoIO(&iofs.IOFS);
+    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_STREAM, fh, NULL) == DOSFALSE);
 
-    if( iofs.io_DosError )
-    {
-        SetIoErr( iofs.io_DosError );
-	return -1;
-    }
-    else
-	return (LONG) iofs.io_Union.io_SEEK.io_Offset;
+    return iofs.io_DosError == 0 ? (LONG) iofs.io_Union.io_SEEK.io_Offset : -1;
 }

@@ -146,24 +146,60 @@ MSG_ERROR_BREAK
 MSG_ERROR_NOT_EXECUTABLE
 file non eseguibile
 ;
-MSG_STRING_INSERT_VOLUME
-Prego inserire volume\n\
-%s\n\
-in un drive qualsiasi
+; === New ErrorReport() format strings. Need to be translated.
 ;
-MSG_STRING_VOLUME_FULL
-Il volume %s è pieno
+MSG_STRING_DISK_NOT_VALIDATED
+Volume "%s" is not validated
+;
+MSG_STRING_DISK_WRITE_PROTECTED
+Volume "%s" is write protected
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
+Please insert volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
+Please replace volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
+Please replace volume "%s" in "%s"
+;
+MSG_STRING_DISK_FULL
+Volume "%s" is full
+;
+MSG_STRING_NOT_A_DOS_DISK
+Not a DOS disk in "%s"
 ;
 MSG_STRING_NO_DISK
-Disco non presente nel drive %s
+No disk present in "%s"
 ;
-MSG_STRING_NO_DOS_DISK
-Disco non-DOS nel drive %s
+MSG_STRING_ABORT_BUSY
+You MUST replace volume "%s" in "%s"!
 ;
-MSG_STRING_MUST_REPLACE
-È necessario sostituire il volume\n\
-%s\n\
-nel drive %s
+MSG_STRING_ABORT_DISK_ERROR
+Volume "%s" has a read/write error
+;
+; === End of new ErrorRequest() format strings. Old ones follow for reference.
+;
+;MSG_STRING_INSERT_VOLUME
+;Prego inserire volume\n\
+;%s\n\
+;in un drive qualsiasi
+;
+;MSG_STRING_VOLUME_FULL
+;Il volume %s è pieno
+;
+;MSG_STRING_NO_DISK
+;Disco non presente nel drive %s
+;
+;MSG_STRING_NO_DOS_DISK
+;Disco non-DOS nel drive %s
+;
+;MSG_STRING_MUST_REPLACE
+;È necessario sostituire il volume\n\
+;%s\n\
+;nel drive %s
+;
+; === End of ErrorRequest() format strings.
 ;
 MSG_STRING_RETRY
 Riprova

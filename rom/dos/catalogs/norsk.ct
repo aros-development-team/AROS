@@ -194,29 +194,65 @@ MSG_ERROR_NOT_EXECUTABLE
 filen er ikke kjørbar
 ; file not executable
 ;
-MSG_STRING_INSERT_VOLUME
-Vennligst sett in vlum\n%s\ni en enhet
-; Please insert volume\n%s\nin any drive
+; === New ErrorReport() format strings. Need to be translated.
 ;
-MSG_STRING_VOLUME_FULL
-Volum %s er full
-; The volume %s is full
+MSG_STRING_DISK_NOT_VALIDATED
+Volume "%s" is not validated
+;
+MSG_STRING_DISK_WRITE_PROTECTED
+Volume "%s" is write protected
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
+Please insert volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
+Please replace volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
+Please replace volume "%s" in "%s"
+;
+MSG_STRING_DISK_FULL
+Volume "%s" is full
+;
+MSG_STRING_NOT_A_DOS_DISK
+Not a DOS disk in "%s"
 ;
 MSG_STRING_NO_DISK
-Ingen disk i enhet %s
+No disk present in "%s"
+;
+MSG_STRING_ABORT_BUSY
+You MUST replace volume "%s" in "%s"!
+;
+MSG_STRING_ABORT_DISK_ERROR
+Volume "%s" has a read/write error
+;
+; === End of new ErrorRequest() format strings. Old ones follow for reference.
+;
+;MSG_STRING_INSERT_VOLUME
+;Vennligst sett in vlum\n%s\ni en enhet
+; Please insert volume\n%s\nin any drive
+;
+;MSG_STRING_VOLUME_FULL
+;Volum %s er full
+; The volume %s is full
+;
+;MSG_STRING_NO_DISK
+;Ingen disk i enhet %s
 ; No disk in drive %s
 ;
-MSG_STRING_NO_DOS_DISK
-Ikke en DOS disk i enhet %s
+;MSG_STRING_NO_DOS_DISK
+;Ikke en DOS disk i enhet %s
 ; Not a DOS disk in drive %s
 ;
-MSG_STRING_MUST_REPLACE
-Du MÅ sette tilbake volum\n\
-%s\n\
-i enhet %s
+;MSG_STRING_MUST_REPLACE
+;Du MÅ sette tilbake volum\n\
+;%s\n\
+;i enhet %s
 ; You MUST replace volume\n\
 ; %s\n\
 ; in drive %s
+;
+; === End of ErrorRequest() format strings.
 ;
 MSG_STRING_RETRY
 Prøv igjen

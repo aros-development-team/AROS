@@ -78,7 +78,9 @@
     FreeDeviceProc(dvp);
 
     /* go */
-    DoIO(&iofs.IOFS);
+    do {
+        DosDoIO(&iofs.IOFS);
+    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port));
 
     /* free fullname if it was built in StartNotify() */
     if (notify->nr_FullName != notify->nr_Name)
