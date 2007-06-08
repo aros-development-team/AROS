@@ -62,7 +62,7 @@
         comment = "";
     iofs.io_Union.io_SET_COMMENT.io_Comment = comment;
 
-    return !DoName(&iofs, name, DOSBase);
+    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetComment */

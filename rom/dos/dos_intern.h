@@ -64,19 +64,12 @@ struct vfp
  ((struct FileHandle *)BADDR(f))->fh_Pos<((struct FileHandle *)BADDR(f))->fh_End? \
 *((struct FileHandle *)BADDR(f))->fh_Pos++=c,0:FPutC(f,c))
 
-LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
-	    struct DosLibrary *DOSBase);
-LONG DevName(CONST_STRPTR name, struct Device **devptr,
-	     struct DosLibrary *DOSBase);
-
 void InitIOFS(struct IOFileSys *iofs, ULONG type,
 	      struct DosLibrary *DOSBase);
 
-struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
-			 struct DosLibrary *DOSBase);
+STRPTR StripVolume(STRPTR name);
 
-struct Device *GetVolume(CONST_STRPTR name, struct Unit **unit,
-			 struct DosLibrary *DOSBase);
+LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, STRPTR name, struct DosLibrary *DOSBase);
 
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);

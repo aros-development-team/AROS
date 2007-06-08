@@ -59,32 +59,21 @@
 
     struct IOFileSys iofs;
     struct FileHandle *fh = BADDR(lock);	
-    ULONG error = 0;
+    LONG err;
 
-    InitIOFS(&iofs, FSA_OPEN, DOSBase);
-    iofs.IOFS.io_Device	= fh->fh_Device;
+    InitIOFS(&iofs, FSA_READ_SOFTLINK, DOSBase);
+
+    iofs.IOFS.io_Device = fh->fh_Device;
     iofs.IOFS.io_Unit   = fh->fh_Unit;
+    iofs.io_Union.io_READ_SOFTLINK.io_Filename = path;
+    iofs.io_Union.io_READ_SOFTLINK.io_Buffer   = buffer;
+    iofs.io_Union.io_READ_SOFTLINK.io_Size     = size;
 
-    iofs.io_Union.io_OPEN.io_FileMode = FMF_READ;
+    DosDoIO(&iofs.IOFS);
+    err = iofs.io_DosError;
+    SetIoErr(err);
 
-    if( (error = DoName(&iofs, path, DOSBase)) == 0 )
-    {
-	iofs.IOFS.io_Command = FSA_READ_SOFTLINK;
-
-	iofs.io_Union.io_READ_SOFTLINK.io_Buffer = buffer;
-    	iofs.io_Union.io_READ_SOFTLINK.io_Size   = size;
-
-    	DosDoIO(&iofs.IOFS);
-
-	error = iofs.io_DosError;
-
-	iofs.IOFS.io_Command = FSA_CLOSE;
-	DosDoIO(&iofs.IOFS);
-
-	SetIoErr(error);
-    }
-
-    return (!error);
+    return err == 0 ? DOSTRUE : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ReadLink */

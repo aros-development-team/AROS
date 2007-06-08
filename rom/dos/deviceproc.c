@@ -57,27 +57,27 @@
     AROS_LIBFUNC_INIT
 
     struct MsgPort *res = NULL;
-    struct DosList *dl;
+    struct DevProc *dvp;
 
-    dl = LockDosList(LDF_READ|LDF_ALL);
-    dl = FindDosEntry(dl, name, LDF_ALL);
-    if(dl != NULL)
-    {
-	/* If it is a device, return the Device */
-	if(dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME ||
-	   dl->dol_Type == DLT_DIRECTORY)
-	{
-	    res = (struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device;
-	}
+    /* just use GetDeviceProc(), it knows everything useful anyway */
+    if ((dvp = GetDeviceProc(name, NULL)) == NULL)
+        return NULL;
 
-	/* If it is an assign, return device and lock */
-	if(dl->dol_Type == DLT_DIRECTORY)
-	{
-	    SetIoErr((ULONG)dl->dol_Lock);
-	}
+    /* if GetDeviceProc() had to create the lock (ie non-binding assigns), we
+     * can't return it as there's no cleanup function, so we have to error */
+    if (dvp->dvp_Flags & DVPF_UNLOCK) {
+        FreeDeviceProc(dvp);
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        return NULL;
     }
-    UnLockDosList(LDF_READ|LDF_ALL);
+
+    /* all good. get the lock and device */
+    SetIoErr(dvp->dvp_Lock);
+    res = dvp->dvp_Port;
+
+    FreeDeviceProc(dvp);
 
     return res;
+
     AROS_LIBFUNC_EXIT
 } /* DeviceProc */

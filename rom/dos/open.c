@@ -65,10 +65,20 @@
 
     /* Sanity check */
     if (name == NULL) return NULL;
-    
+
     /* Get pointer to process structure */
     me = (struct Process *)FindTask(NULL);
 
+    /* check for an empty filename. this supports this form that was required
+     * pre-2.0, which didn't have OpenFromLock():
+     *
+     *     old = CurrentDir(lock);
+     *     fh = Open("", MODE_OLDFILE);
+     *     CurrentDir(old);
+     */
+    if (*name == '\0')
+        return OpenFromLock(DupLock(me->pr_CurrentDir));
+    
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
 
@@ -82,7 +92,6 @@
 	/* Prepare I/O request. */
 	InitIOFS(&iofs, FSA_OPEN_FILE, DOSBase);
 
-	/* io_Args[0] is the name which is set by DoName(). */
 	switch(accessMode)
 	{
 	case MODE_OLDFILE:
@@ -160,8 +169,25 @@
 	    DosDoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
-	else
-	    error = DoName(&iofs, name, DOSBase);
+	else {
+            struct DevProc *dvp = NULL;
+
+            iofs.io_Union.io_OPEN_FILE.io_Filename = StripVolume(name);
+
+            do {
+                if ((dvp = GetDeviceProc(name, dvp)) == NULL) {
+                    error = IoErr();
+                    break;
+                }
+
+                error = DoIOFS(&iofs, dvp, NULL, DOSBase);
+            } while(error == ERROR_OBJECT_NOT_FOUND && accessMode != MODE_NEWFILE);
+
+            if (error == ERROR_NO_MORE_ENTRIES)
+                error = me->pr_Result2 = ERROR_OBJECT_NOT_FOUND;
+
+            FreeDeviceProc(dvp);
+        }
 
 	if(error == 0)
 	{

@@ -57,7 +57,7 @@
 
     iofs.io_Union.io_SET_PROTECT.io_Protection = protect;
 
-    return !DoName(&iofs, name, DOSBase);
+    return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetProtection */

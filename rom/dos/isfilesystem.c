@@ -56,106 +56,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to process structure */
-    struct DosList *dl;
-    STRPTR devicename_copy;
-    STRPTR colon;
+    struct IOFileSys iofs;
+    LONG err;
 
-    struct Process *me = (struct Process *)FindTask(NULL);
-    
-    BOOL success = TRUE;
-    
-    colon = strchr(devicename, ':');
+    InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
+    err = DoIOFS(&iofs, NULL, devicename, DOSBase);
 
-    /* CHECKME: If devicename starts with ":" always assume that it is a filesystem.
-                When doing "Copy c:type :" IsFileSystem(":") is called. */    
-		
-    if ((colon != NULL) && (colon != devicename))
-    {
-	UWORD stringlen = (UWORD)(colon - devicename + 1);
-	
-	devicename_copy = AllocVec(stringlen + 1, MEMF_PUBLIC | MEMF_CLEAR);
+    /* XXX if err is ERROR_ACTION_NOT_KNOWN, we should try to the lock the
+     * root. if we can get a lock, then its a filesystem */
 
-	if (devicename_copy != NULL)
-	{
-	    CopyMem(devicename, devicename_copy, stringlen);
-	   	
-	    success = FALSE;
-	    
-	    dl = LockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
-	    dl = FindDosEntry(dl, devicename_copy, LDF_DEVICES | LDF_ASSIGNS | LDF_VOLUMES);
+    if (err != 0)
+        return FALSE;
 
-	    if (dl != NULL)
-	    {
-		switch (dl->dol_Type)
-		{
-		case DLT_DEVICE:
-		    {
-			/* Space for I/O request. Use stackspace for now. */
-			struct IOFileSys iofs;
-			
-			/* Prepare I/O request. */
-			InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
-			
-			iofs.IOFS.io_Device = dl->dol_Ext.dol_AROS.dol_Device;
-			iofs.IOFS.io_Unit   = dl->dol_Ext.dol_AROS.dol_Unit;
-			
-			/* Send the request. */
-			DosDoIO(&iofs.IOFS);
-			
-			/* Set return code */
-			if (!iofs.io_DosError)
-			{
-			    success = iofs.io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
-			}
-		    }
-
-		    UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS |
-				  LDF_READ);
-		    break;
-		    
-		case DLT_VOLUME:
-		case DLT_DIRECTORY:	/* normal assign */
-		    success = TRUE;
-		    UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS |
-				  LDF_READ);
-		    break;
-		    
-		case DLT_LATE:
-		case DLT_NONBINDING:
-		    {
-			APTR old_windowptr = me->pr_WindowPtr;
-			BPTR lock;
-
-			D(bug("Found late assign %s, trying to lock it\n",
-				devicename_copy));
-			
-			UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS |
-				      LDF_READ);
-	    
-			me->pr_WindowPtr = (APTR)-1;
-			
-			if ((lock = Lock(devicename_copy, ACCESS_READ)))
-			{
-			    success = TRUE;
-			    UnLock(lock);
-			}
-			
-			me->pr_WindowPtr = old_windowptr;
-		    }
-		    break;
-		    
-		} /* switch (dl->dol_Type) */
-		
-	    } /* if (dl != NULL) */
-	    
-	    FreeVec(devicename_copy);
-	    
-	} /* if (devicename_copy != NULL) */
-	
-    } /* ((colon != NULL) && (colon != devicename)) */
-
-    return success;
+    return iofs.io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
     
     AROS_LIBFUNC_EXIT
 } /* IsFilesystem */

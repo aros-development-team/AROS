@@ -53,37 +53,37 @@
 {
     AROS_LIBFUNC_INIT
     
-    LONG success = DOSFALSE;
+    struct DevProc *dvp;
+    LONG err;
 
     /* Use stackspace for IO request. */
     struct IOFileSys iofs;
     
+    /* setup */
     InitIOFS(&iofs, FSA_MORE_CACHE, DOSBase);
-
-    /* Now the specific intialization */
-
-    /* Get the device corresponding to 'devicename' */
-    iofs.IOFS.io_Device = GetDevice(devicename, &iofs.IOFS.io_Unit, DOSBase);
-
-    if(iofs.IOFS.io_Device == NULL)
-	return DOSFALSE;
-
     iofs.io_Union.io_MORE_CACHE.io_NumBuffers = numbuffers;
-    
-    /* Send the request. */
-    DosDoIO(&iofs.IOFS);
-    
-    /* Set error code */
-    if(iofs.io_DosError == 0)
-    {
-	/* IoErr() gives the number of buffers! */
-	SetIoErr(iofs.io_Union.io_MORE_CACHE.io_NumBuffers);
-	success = DOSTRUE;
-    }
-    else
-	SetIoErr(iofs.io_DosError);
 
-    return success;
+    /* get the device */
+    if ((dvp = GetDeviceProc(devicename, NULL)) == NULL)
+        return DOSFALSE;
+
+    /* we're only interested in real devices */
+    if (dvp->dvp_DevNode->dol_Type != DLT_DEVICE) {
+        FreeDeviceProc(dvp);
+        SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+        return DOSFALSE;
+    }
+
+    err = DoIOFS(&iofs, dvp, NULL, DOSBase);
+
+    FreeDeviceProc(dvp);
+
+    if (err != 0)
+        return DOSFALSE;
+
+    /* caller expects the new number of buffers in IoErr() */
+    SetIoErr(iofs.io_Union.io_MORE_CACHE.io_NumBuffers);
+    return DOSTRUE;
 
     AROS_LIBFUNC_EXIT
 } /* AddBuffers */
