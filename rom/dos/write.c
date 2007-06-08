@@ -83,16 +83,12 @@
     iofs.io_Union.io_WRITE.io_Buffer = (APTR)buffer;
     iofs.io_Union.io_WRITE.io_Length = length;
 
-    /* Send the request */
-    DosDoIO( &iofs.IOFS );
+    /* send the request, with error reporting */
+    do {
+        DosDoIO(&iofs.IOFS);
+    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_STREAM, fh, NULL) == DOSFALSE);
 
-    if( iofs.io_DosError != 0 )
-    {
-        SetIoErr(iofs.io_DosError);
-	return -1;
-    }
-    else
-	return iofs.io_Union.io_WRITE.io_Length;
+    return iofs.io_DosError == 0 ? iofs.io_Union.io_WRITE.io_Length : -1;
 
     AROS_LIBFUNC_EXIT
 } /* Write */

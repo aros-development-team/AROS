@@ -151,18 +151,21 @@
             return NULL;
         }
 
-        /* now find the doslist entry for the named volume */
-        dl = LockDosList(LDF_ALL | LDF_READ);
-        dl = FindDosEntry(dl, vol, LDF_ALL);
+        do {
+            /* now find the doslist entry for the named volume */
+            dl = LockDosList(LDF_ALL | LDF_READ);
+            dl = FindDosEntry(dl, vol, LDF_ALL);
 
-        /* not found, bail out */
-        if (dl == NULL) {
-            /* XXX perhaps this should popup a "please insert" dialog? */
-            UnLockDosList(LDF_ALL | LDF_READ);
-            FreeMem(dp, sizeof(struct DevProc));
-            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-            return NULL;
-        }
+            /* not found, bail out */
+            if (dl == NULL) {
+                UnLockDosList(LDF_ALL | LDF_READ);
+
+                if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (ULONG) vol, NULL) == DOSTRUE) {
+                    FreeMem(dp, sizeof(struct DevProc));
+                    return NULL;
+                }
+            }
+        } while(dl == NULL);
 
         /* relative to the current dir, then we have enough to get out of here */
         if (lock != NULL) {

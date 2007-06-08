@@ -183,11 +183,16 @@ struct markerarray
 
 /* DosGetString additional codes (printf style parametrized) */
 
-#define  STRING_INSERT_VOLUME   -4000
-#define  STRING_VOLUME_FULL     -4001
-#define  STRING_NO_DISK         -4002
-#define  STRING_NO_DOS_DISK     -4003
-#define  STRING_MUST_REPLACE    -4004
+#define  STRING_DISK_NOT_VALIDATED                  -4000
+#define  STRING_DISK_WRITE_PROTECTED                -4001
+#define  STRING_DEVICE_NOT_MOUNTED_INSERT           -4002
+#define  STRING_DEVICE_NOT_MOUNTED_REPLACE          -4003
+#define  STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET   -4004
+#define  STRING_DISK_FULL                           -4005
+#define  STRING_NOT_A_DOS_DISK                      -4006
+#define  STRING_NO_DISK                             -4007
+#define  STRING_ABORT_BUSY                          -4008
+#define  STRING_ABORT_DISK_ERROR                    -4009
 
 #define  STRING_RETRY           -5000
 #define  STRING_CANCEL          -5001
