@@ -1,4 +1,4 @@
-## version $VER: dos.catalog 1.0 (10.03.2001)
+## version $VER: dos.catalog 1.1 (08.06.2007)
 ## codeset 0
 ## language deutsch
 ;
@@ -8,19 +8,19 @@ Speicherplatzmangel
 ; not enough memory available
 ;
 MSG_ERROR_TASK_TABLE_FULL
-Prozeßtabelle ist voll
+Prozesstabelle ist voll
 ;
 ; process table full
 ;
 MSG_ERROR_BAD_TEMPLATE
-Falsches NamensMuster
+Falsches Namensmuster
 ;
-; bad template 
+; bad template
 ;
 MSG_ERROR_BAD_NUMBER
 Ungültiger Zahlenwert
 ;
-; bad number 
+; bad number
 ;
 MSG_ERROR_REQUIRED_ARG_MISSING
 Gefordertes Argument fehlt
@@ -45,7 +45,7 @@ Ungerade Anzahl an Anführungszeichen
 MSG_ERROR_LINE_TOO_LONG
 Argumentzeile ist ungültig oder zu lang
 ;
-; argument line invalid or too long 
+; argument line invalid or too long
 ;
 MSG_ERROR_FILE_NOT_OBJECT
 Datei ist nicht ausführbar
@@ -60,7 +60,7 @@ Ungültige residente Library
 MSG_ERROR_NO_DEFAULT_DIR
 Fehler 201
 ;
-; error 201 
+; error 201
 ;
 MSG_ERROR_OBJECT_IN_USE
 Objekt ist in Gebrauch
@@ -70,17 +70,17 @@ Objekt ist in Gebrauch
 MSG_ERROR_OBJECT_EXISTS
 Objekt existiert bereits
 ;
-; object already exists 
+; object already exists
 ;
 MSG_ERROR_DIR_NOT_FOUND
 Verzeichnis nicht gefunden
 ;
-; directory not found 
+; directory not found
 ;
 MSG_ERROR_OBJECT_NOT_FOUND
 Objekt nicht gefunden
 ;
-; object not found 
+; object not found
 ;
 MSG_ERROR_BAD_STREAM_NAME
 Ungültige Fensterparameter
@@ -90,12 +90,12 @@ Ungültige Fensterparameter
 MSG_ERROR_OBJECT_TOO_LARGE
 Objekt ist zu groß
 ;
-; object too large  
+; object too large
 ;
 MSG_ERROR_ACTION_NOT_KNOWN
 Unbekannter Filesystem-Action-Typ
 ;
-; filesystem action type unknown 
+; filesystem action type unknown
 ;
 MSG_ERROR_INVALID_COMPONENT_NAME
 Ungültiger Objektname
@@ -115,7 +115,7 @@ Objekt ist nicht vom geforderten Typ
 MSG_ERROR_DISK_NOT_VALIDATED
 Disk ist nicht gültig
 ;
-; disk not validated 
+; disk not validated
 ;
 MSG_ERROR_DISK_WRITE_PROTECTED
 Disk ist schreibgeschützt
@@ -125,7 +125,7 @@ Disk ist schreibgeschützt
 MSG_ERROR_RENAME_ACROSS_DEVICES
 Umbenennen auf anderen Datenträger versucht
 ;
-; rename across devices attempted 
+; rename across devices attempted
 ;
 MSG_ERROR_DIRECTORY_NOT_EMPTY
 Verzeichnis ist nicht leer
@@ -135,7 +135,7 @@ Verzeichnis ist nicht leer
 MSG_ERROR_TOO_MANY_LEVELS
 Zu tiefe Schachtelung
 ;
-; too many levels 
+; too many levels
 ;
 MSG_ERROR_DEVICE_NOT_MOUNTED
 Gerät (oder Datenträger) ist nicht angemeldet
@@ -155,7 +155,7 @@ Kommentar ist zu lang
 MSG_ERROR_DISK_FULL
 Disk ist voll
 ;
-; disk is full 
+; disk is full
 ;
 MSG_ERROR_DELETE_PROTECTED
 Objekt ist löschgeschützt
@@ -190,12 +190,12 @@ Keine weiteren Verzeichniseinträge
 MSG_ERROR_IS_SOFT_LINK
 Objekt im Verbund
 ;
-; object is soft link 
+; object is soft link
 ;
 MSG_ERROR_OBJECT_LINKED
 Verbundobjekt
 ;
-; object is linked 
+; object is linked
 ;
 MSG_ERROR_BAD_HUNK
 Ungültiger Hunk in zu ladender Datei
@@ -228,51 +228,61 @@ Fehler bei Datensatzfreigabe
 ; record unlock error
 ;
 MSG_ERROR_BUFFER_OVERFLOW
-Puffer Überlauf
+Pufferüberlauf
 ;
-; buffer overflow 
+; buffer overflow
 ;
 MSG_ERROR_BREAK
 *** Abbruch
 ;
-; ***Break 
+; ***Break
 ;
 MSG_ERROR_NOT_EXECUTABLE
 Datei ist nicht ausführbar
 ;
 ; file not executable
 ;
-; === New ErrorReport() format strings. Need to be translated.
+; === New ErrorReport() format strings.
 ;
 MSG_STRING_DISK_NOT_VALIDATED
-Volume "%s" is not validated
+Datenträger "%s" ist nicht gültig
+;Volume "%s" is not validated
 ;
 MSG_STRING_DISK_WRITE_PROTECTED
-Volume "%s" is write protected
+Datenträger "%s" ist schreibgeschützt
+;Volume "%s" is write protected
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
-Please insert volume "%s" in any drive
+Benötige den Datenträger "%s" in beliebigem Laufwerk
+;Please insert volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Please replace volume "%s" in any drive
+Benötige wieder den Datenträger "%s" in beliebigem Laufwerk
+;Please replace volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
-Please replace volume "%s" in "%s"
+Benötige den Datenträger "%s" in "%s"
+;Please replace volume "%s" in "%s"
 ;
 MSG_STRING_DISK_FULL
-Volume "%s" is full
+Datenträger "%s" ist voll
+;Volume "%s" is full
 ;
 MSG_STRING_NOT_A_DOS_DISK
-Not a DOS disk in "%s"
+Keine DOS-Disk in "%s"
+;Not a DOS disk in "%s"
 ;
 MSG_STRING_NO_DISK
-No disk present in "%s"
+Keine Diskette in "%s" vorhanden
+;No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-You MUST replace volume "%s" in "%s"!
+Benötige UNBEDINGT den Datenträger "%s" in "%s"!
+;You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
-Volume "%s" has a read/write error
+Datenträger "%s" hat einen Schreib-/Lesefehler
+;Volume "%s" has a read/write error
 ;
 ; === End of new ErrorRequest() format strings. Old ones follow for reference.
 ;
@@ -281,22 +291,22 @@ Volume "%s" has a read/write error
 ;%s\n\
 ;in beliebigem Laufwerk
 ;
-; Please insert volume\n%s\nin any drive 
+; Please insert volume\n%s\nin any drive
 ;
 ;MSG_STRING_VOLUME_FULL
 ;Der Datenträger %s ist voll
 ;
-; The volume %s is full 
+; The volume %s is full
 ;
 ;MSG_STRING_NO_DISK
 ;Keine Diskette in Laufwerk %s
 ;
-; No disk in drive %s 
+; No disk in drive %s
 ;
 ;MSG_STRING_NO_DOS_DISK
 ;Keine DOS-Diskette in Laufwerk %s
 ;
-; Not a DOS disk in drive %s 
+; Not a DOS disk in drive %s
 ;
 ;MSG_STRING_MUST_REPLACE
 ;Benötige UNBEDINGT den Datenträger\n\
@@ -305,24 +315,24 @@ Volume "%s" has a read/write error
 ;
 ; You MUST replace volume\n\
 ; %s\n\
-; in drive %s 
+; in drive %s
 ;
 ; === End of ErrorRequest() format strings.
 ;
 MSG_STRING_RETRY
 Nochmal versuchen
 ;
-; Retry 
+; Retry
 ;
 MSG_STRING_CANCEL
 Abbrechen
 ;
-; Cancel 
+; Cancel
 ;
 MSG_STRING_REQUESTTITLE
 Systemmeldung
 ;
-; System requester 
+; System requester
 ;
 MSG_ERROR_NO_MATCHING_ELSEENDIF
 Fehlendes ELSE oder ENDIF
@@ -330,7 +340,7 @@ Fehlendes ELSE oder ENDIF
 ; no matching Else or EndIf
 ;
 MSG_ERROR_SCRIPT_ONLY
-Muß in einer Befehlsdatei stehen
+Muss in einer Befehlsdatei stehen
 ;
 ; this command is supposed to be used in command files only
 ;
