@@ -55,7 +55,7 @@ If EXISTS Sys:Rexxc
     Path Sys:Rexxc ADD QUIET
 Endif
 
-Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
+Copy >NIL: ENVARC: ENV: ALL NOPRO NOREQ
 
 Assign THEME: $SYS/theme.var
 
