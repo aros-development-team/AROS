@@ -64,7 +64,7 @@ extern struct Library *MUIMasterBase;
 #define UPDATE_SINGLEICON                              1
 #define UPDATE_SCROLL                                  2
 #define UPDATE_SORT                                    3
-#define UPDATE_RESCALE                                 4
+#define UPDATE_RESIZE                                  4
 
 #define LEFT_BUTTON	                                   1
 #define RIGHT_BUTTON                                   2
@@ -147,7 +147,7 @@ struct MUI_IconData
 
        UPDATE_SINGLEICON = draw the given single icon only
        UPDATE_SCROLL     = scroll the view by update_scrolldx/update_scrolldy
-       UPDATE_RESCALE    = rescaling window                                   */
+       UPDATE_RESIZE    = resizing window                                   */
 
     ULONG                         icld_UpdateMode;
     WORD                          update_scrolldx;
@@ -1526,7 +1526,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
     {
         if ( data->icld_UpdateMode != UPDATE_SCROLL )
         { 
-            data->icld_UpdateMode = UPDATE_RESCALE;
+            data->icld_UpdateMode = UPDATE_RESIZE;
             update_oldwidth = data->update_oldwidth;
             update_oldheight = data->update_oldheight;
             data->update_oldwidth = data->icld_ViewWidth;
@@ -1534,7 +1534,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
         }
     }
 
-    if (message->flags & MADF_DRAWUPDATE || data->icld_UpdateMode == UPDATE_RESCALE)
+    if (message->flags & MADF_DRAWUPDATE || data->icld_UpdateMode == UPDATE_RESIZE)
     {
         if (data->icld_UpdateMode == UPDATE_SINGLEICON) /* draw only a single icon at update_icon */
         {
@@ -1699,7 +1699,7 @@ D(bug("[IconList] IconList__MUIM_Draw: Calling MUIM_DrawBackground (A)\n"));
 			}
             return 0;
         }
-        else if (data->icld_UpdateMode == UPDATE_RESCALE)
+        else if (data->icld_UpdateMode == UPDATE_RESIZE)
         {
             struct Region       *region = NULL;
             struct Rectangle    wrect,
