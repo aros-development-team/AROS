@@ -323,7 +323,7 @@ D(bug("[IconWindow] IconWindow__SetupToolbar: App PrefsObj @ %x\n", prefs));
 
 Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-	struct Screen 	                *_newIconWin__Screen = NULL;
+    struct Screen 	                *_newIconWin__Screen = NULL;
     Object                          *_newIconWin__IconListObj = NULL,
 		                            *_newIconWin__RootViewObj = NULL, 
                                     *_newIconWin__ExtensionContainerObj = NULL, // around extension group
