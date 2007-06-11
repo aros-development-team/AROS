@@ -77,9 +77,15 @@
         /* if what they passed us is not a multidirectory assign, then there's
          * nothing for us to do */
         if (dp->dvp_DevNode != NULL &&
-            (dp->dvp_DevNode->dol_Type != DLT_DIRECTORY || !(dp->dvp_Flags & DVPF_ASSIGN)))
+            (dp->dvp_DevNode->dol_Type != DLT_DIRECTORY || !(dp->dvp_Flags & DVPF_ASSIGN))) {
 
+            /* cleanup */
+            if (dp->dvp_Flags & DVPF_UNLOCK)
+                UnLock(dp->dvp_Lock);
+
+            FreeMem(dp, sizeof(struct DevProc));
             return NULL;
+        }
 
         /* its fine, we'll start from here */
         dl = dp->dvp_DevNode;
