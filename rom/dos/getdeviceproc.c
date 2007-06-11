@@ -69,6 +69,7 @@
     LONG len;
     char buf[256];
     BPTR cur = NULL, lock = NULL;
+    BOOL stdio = FALSE;
 
     /* if they passed us the result of a previous call, then they're wanted to
      * loop over the targets of a multidirectory assign */
@@ -98,7 +99,72 @@
      * name they passed in */
     else {
 
-        /* first figure out where we the name is relative to */
+        /* handle standard I/O streams as "virtual" devices */
+        if (Stricmp(name, "IN:") == 0 || Stricmp(name, "STDIN:") == 0) {
+            cur = pr->pr_CIS != NULL ? pr->pr_CIS : (BPTR) -1;
+            stdio = TRUE;
+        }
+        else if (Stricmp(name, "OUT:") == 0 || Stricmp(name, "STDOUT:") == 0) {
+            cur = pr->pr_COS != NULL ? pr->pr_COS : (BPTR) -1;
+            stdio = TRUE;
+        }
+        else if (Stricmp(name, "ERR:") == 0 || Stricmp(name, "STDERR:") == 0) {
+            cur = pr->pr_CES != NULL ? pr->pr_CES :
+                  pr->pr_COS != NULL ? pr->pr_COS : (BPTR) -1;
+            stdio = TRUE;
+        }
+
+        if (stdio) {
+            /* handle doesn't exist */
+            if (cur == (BPTR) -1) {
+                SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+                return NULL;
+            }
+
+            /* got it, make a fake devproc */
+            if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
+                SetIoErr(ERROR_NO_FREE_STORE);
+                return NULL;
+            }
+
+            /* we need a lock for the devproc */
+            if ((lock = DupLockFromFH(cur)) == NULL) {
+                FreeMem(dp, sizeof(struct DevProc));
+                return NULL;
+            }
+
+            /* build the devproc for return */
+            dp->dvp_Port = (struct MsgPort *) ((struct FileHandle *) BADDR(lock))->fh_Device;
+            dp->dvp_Lock = lock;
+            dp->dvp_Flags = DVPF_UNLOCK; /* remember to unlock in FreeDeviceNode() */
+
+            /* finding the device node
+             * XXX this is naive - if the device appears on the doslist twice
+             * we have no way to tell which one is ours.  we can't even use
+             * NameFromLock() to get the volume name and then find the doslist
+             * entry from that as console handlers probably don't even
+             * implement names. bring on packets I say */
+
+            dl = LockDosList(LDF_ALL | LDF_READ);
+            while (dl != NULL && (dl->dol_Ext.dol_AROS.dol_Device != dp->dvp_Port))
+                dl = dl->dol_Next;
+
+            UnLockDosList(LDF_READ | LDF_ALL);
+
+            /* not found */
+            if (dl == NULL) {
+                FreeMem(dp, sizeof(struct DevProc));
+                SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+                return NULL;
+            }
+
+            /* take it */
+            dp->dvp_DevNode = dl;
+
+            return dp;
+        }
+
+        /* something real, work out what its relative to */
     	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
     	    cur = pr->pr_HomeDir;
 
