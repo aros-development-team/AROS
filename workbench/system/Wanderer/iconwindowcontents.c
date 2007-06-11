@@ -100,13 +100,13 @@ AROS_UFH3(
 
 	SETUP_INST_DATA;
 
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc()\n"));
+    D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc()\n"));
 
 	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
 	if (prefs)
 	{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Setting IconList options ..\n"));
+        D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Setting IconList options ..\n"));
 		BOOL    options_changed = FALSE;
 
 		ULONG   current_ListMode = 0,
@@ -117,7 +117,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		GET(self, MUIA_IconList_LabelText_Mode, &current_TextMode);
 		GET(self, MUIA_IconList_LabelText_MaxLineLen, &current_TextMaxLen);
 
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Current = %d %d %d\n", current_ListMode, current_TextMode, current_TextMaxLen));
+        D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Current = %d %d %d\n", current_ListMode, current_TextMode, current_TextMaxLen));
 
 		ULONG   prefs_ListMode = 0,
                 prefs_TextMode = 0,
@@ -129,30 +129,30 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFun
 		GET(prefs, MUIA_IconList_LabelText_MaxLineLen, &prefs_TextMaxLen);		
 		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);		
 
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
+        D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: Prefs = %d %d %d\n", prefs_ListMode, prefs_TextMode, prefs_TextMaxLen));
 
 		if (current_ListMode != prefs_ListMode)
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList ListMode changed - updating ..\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList ListMode changed - updating ..\n"));
 			options_changed = TRUE;
 			SET(self, MUIA_IconList_IconListMode, prefs_ListMode);
 		}
 		if (current_TextMode != prefs_TextMode)
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList TextRenderMode changed - updating ..\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList TextRenderMode changed - updating ..\n"));
 			options_changed = TRUE;
 			SET(self, MUIA_IconList_LabelText_Mode, prefs_TextMode);
 		}
 		if (current_TextMaxLen != prefs_TextMaxLen)
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Max Text Length changed - updating ..\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Max Text Length changed - updating ..\n"));
 			options_changed = TRUE;
 			SET(self, MUIA_IconList_LabelText_MaxLineLen, prefs_TextMaxLen);
 		}
 
 		if ((options_changed) && !(prefs_Processing))
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Options have changed, causing an update ..\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_ProcessIconListPrefsFunc: IconList Options have changed, causing an update ..\n"));
 			DoMethod(self, MUIM_IconList_Update);
 		}
 		else if (data->iwcd_IconWindow)
@@ -179,7 +179,7 @@ AROS_UFH3(
 
 	SETUP_INST_DATA;
 
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc()\n"));
+    D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc()\n"));
 
 	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
@@ -192,29 +192,29 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc(
 
 		if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Setting ROOT view Network options ..\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Setting ROOT view Network options ..\n"));
 			ULONG   current_ShowNetwork = 0;
 
 			GET(self, MUIA_IconWindowExt_NetworkBrowser_Show, &current_ShowNetwork);
 
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Current = %d\n", current_ShowNetwork));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Current = %d\n", current_ShowNetwork));
 
 			ULONG   prefs_ShowNetwork = 0;
 
 			GET(prefs, MUIA_IconWindowExt_NetworkBrowser_Show, &prefs_ShowNetwork);
 		
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Prefs = %d\n", prefs_ShowNetwork));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Prefs = %d\n", prefs_ShowNetwork));
 
 			if ((BOOL)current_ShowNetwork != (BOOL)prefs_ShowNetwork)
 			{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: ROOT view Network prefs changed - updating ..\n"));
+                D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: ROOT view Network prefs changed - updating ..\n"));
 				options_changed = TRUE;
 				((struct IconWindowIconVolumeList_DATA *)data)->iwvcd_ShowNetworkBrowser = prefs_ShowNetwork;
 			}
 		}
 		if ((options_changed) && !(prefs_Processing))
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Network prefs changed, causing an update ..\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc: Network prefs changed, causing an update ..\n"));
 			DoMethod(self, MUIM_IconList_Update);
 		}
 		else if (data->iwcd_IconWindow)
@@ -229,7 +229,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc:
 
 Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
+    D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
 	
     self = (Object *) DoSuperNewTags
     (
@@ -241,7 +241,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
     if (self != NULL)
     {
         SETUP_INST_DATA;
-D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: SELF = %x\n", self));
+        D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: SELF = %x\n", self));
         data->iwcd_ProcessIconListPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowIconList__HookFunc_ProcessIconListPrefsFunc;
     }
         
@@ -260,7 +260,7 @@ IPTR IconWindowIconList__OM_SET(Class *CLASS, Object *self, struct opSet *messag
         {
             case MUIA_Background:
 			{
-D(bug("[IconWindowIconList] IconWindowIconList__OM_SET: MUIA_Background\n"));
+                D(bug("[IconWindowIconList] IconWindowIconList__OM_SET: MUIA_Background\n"));
 				break;
 			}
             case MUIA_IconWindow_Window:
@@ -349,7 +349,7 @@ IPTR IconWindowIconList__MUIM_Setup
 		
 		if (muiRenderInfo(self))
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setting up EventHandler for (IDCMP_DISKINSERTED | IDCMP_DISKREMOVED)\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setting up EventHandler for (IDCMP_DISKINSERTED | IDCMP_DISKREMOVED)\n"));
 		
 			data->iwcd_EventHandlerNode.ehn_Priority = 1;
 			data->iwcd_EventHandlerNode.ehn_Flags    = MUI_EHF_GUIMODE;
@@ -361,11 +361,11 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setting up Ev
 		}
 		else
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Couldnt add IDCMP EventHandler!\n"));
+            D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Couldnt add IDCMP EventHandler!\n"));
 		}
 	}
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setup complete!\n"));
+    D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setup complete!\n"));
 	
     return TRUE;
 }
@@ -377,12 +377,12 @@ IPTR IconWindowIconList__MUIM_Cleanup
 {
     SETUP_INST_DATA;
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup()\n"));
+    D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup()\n"));
 
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup: (ROOT WINDOW) Removing our Disk Event Handler\n"));
-	  DoMethod(_win(self), MUIM_Window_RemEventHandler, &data->iwcd_EventHandlerNode);
+        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup: (ROOT WINDOW) Removing our Disk Event Handler\n"));
+        DoMethod(_win(self), MUIM_Window_RemEventHandler, &data->iwcd_EventHandlerNode);
 	}
 
     return DoSuperMethodA(CLASS, self, message);
@@ -395,18 +395,18 @@ IPTR IconWindowIconList__MUIM_HandleEvent
 {
     SETUP_INST_DATA;
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent()\n"));
+    D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent()\n"));
     struct IntuiMessage *imsg = message->imsg;
 		
     if(imsg->Class == IDCMP_DISKINSERTED) 
 	{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKINSERTED\n"));
+        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKINSERTED\n"));
 		DoMethod(self, MUIM_IconList_Update);
 		return(MUI_EventHandlerRC_Eat);
 	}
 	else if (imsg->Class == IDCMP_DISKREMOVED) 
 	{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKREMOVED\n"));
+        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent: IDCMP_DISKREMOVED\n"));
 		DoMethod(self, MUIM_IconList_Update);
 		return(MUI_EventHandlerRC_Eat);
 	}
@@ -423,12 +423,12 @@ IPTR IconWindowIconList__MUIM_DrawBackground
 	IPTR 				retVal = (IPTR)TRUE;
 	IPTR                clip = NULL, adjust_left = 0, adjust_top = 0;
 
-D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground()\n"));
+    D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground()\n"));
 
 	if ((iconwindow_BackFill_Active == NULL) ||
 		(data->iwcd_IconWindow == NULL))
 	{
-D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: No Backfill support/Window not set .. causing parent class to render\n"));
+        D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: No Backfill support/Window not set .. causing parent class to render\n"));
 		goto iwc_ParentBackground;
 	}
 
@@ -451,14 +451,14 @@ D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: No Backfill support
 	DrawBackGround_BackFillMsg.OffsetX = message->xoffset;
 	DrawBackGround_BackFillMsg.OffsetY = message->yoffset;
 
-D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: RastPort @ %x\n", DrawBackGround_RastPort));
+    D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: RastPort @ %x\n", DrawBackGround_RastPort));
 	
 	if ((retVal = DoMethod(data->iwcd_IconWindow, MUIM_IconWindow_BackFill_DrawBackground, XGET(data->iwcd_IconWindow, MUIA_IconWindow_BackFillData), &DrawBackGround_BackFillMsg, DrawBackGround_RastPort)) == (IPTR)TRUE)
 	{
-D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: Backfill module rendered background ..\n"));
+        D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: Backfill module rendered background ..\n"));
 		return retVal;
 	}
-D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: Backfill module failed to render background ..\n"));
+    D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground: Backfill module failed to render background ..\n"));
 
 iwc_ParentBackground:
 
@@ -487,10 +487,10 @@ IPTR IconWindowIconList__MUIM_IconList_Update
 
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: (ROOT WINDOW) Causing parent to update\n"));
+        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: (ROOT WINDOW) Causing parent to update\n"));
 		retVal = DoSuperMethodA(CLASS, self, (Msg) message);
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if we should show NetworkBrowser Icon ..\n"));
+        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if we should show NetworkBrowser Icon ..\n"));
 
 		Object *prefs = NULL;
 		BOOL    sort_list = FALSE;
@@ -518,7 +518,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if w
 					TAG_DONE
 				);
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBrowser Icon DOB @ %x\n", _nb_dob));
+                D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBrowser Icon DOB @ %x\n", _nb_dob));
 
 				if (_nb_dob)
 				{
@@ -527,7 +527,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBro
 					{
 						this_entry->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
 						sort_list = TRUE;
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBrowser Icon Entry @ %x\n", this_entry));
+                        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBrowser Icon Entry @ %x\n", this_entry));
 					}
 				}
 			}
@@ -543,7 +543,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: NetworkBro
 				{
 					char * userfiles_path = NULL;
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: SYS/UserFilesLocation = '%s'\n", __icwc_intern_TxtBuff));
+                    D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: SYS/UserFilesLocation = '%s'\n", __icwc_intern_TxtBuff));
 
 					if ((userfiles_path = AllocVec(strlen(__icwc_intern_TxtBuff) + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 					{
@@ -551,11 +551,11 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: SYS/UserFi
 
 						volumel_data->iwvcd_UserFolderPath = userfiles_path;
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage @ %x\n", userfiles_path));
+                        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage @ %x\n", userfiles_path));
 						
 						strcpy(userfiles_path, __icwc_intern_TxtBuff);
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage contains '%s'\n", userfiles_path));
+                        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesLocation Path storage contains '%s'\n", userfiles_path));
 
 						_nb_dob = GetIconTags
 						(
@@ -565,7 +565,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: UserFilesL
 							TAG_DONE
 						);
 
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: UserFiles Icon DOB @ %x\n", _nb_dob));
+                        D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: UserFiles Icon DOB @ %x\n", _nb_dob));
 
 						if (_nb_dob)
 						{
