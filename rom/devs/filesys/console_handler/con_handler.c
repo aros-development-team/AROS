@@ -154,8 +154,8 @@ ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
 {
     struct filehandle 	    *fh = (struct filehandle *)iofs->IOFS.io_Unit;
-#if DEBUG
     STRPTR  	    	    filename = iofs->io_Union.io_OPEN.io_Filename;
+#if DEBUG
     ULONG   	    	    mode = iofs->io_Union.io_OPEN.io_FileMode;
 #endif
     struct conTaskParams    params;
@@ -165,11 +165,16 @@ static LONG open_con(struct conbase *conbase, struct IOFileSys *iofs)
     EnterFunc(bug("open_conh(filename=%s, mode=%d)\n",
     	filename, mode));
 
-    if (fh != NULL && fh != (struct filehandle *)1)
+    /* we're a console, we don't have a parent */
+    if (filename[0] == '/' && filename[1] == '\0')
+        err = iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
+
+    else if (fh != NULL && fh != (struct filehandle *)1)
     {
         /* DupLock */
 	fh->usecount++;
     }
+    
     else
     {
     	UBYTE sig = AllocSignal(-1);
