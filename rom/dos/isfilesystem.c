@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include <proto/utility.h>
 #include "dos_intern.h"
 #include <string.h>
 
@@ -58,6 +59,10 @@
 
     struct IOFileSys iofs;
     LONG err;
+
+    /* console is never a filesystem */
+    if (Stricmp(devicename, "CONSOLE:") == 0 || Stricmp(devicename, "*") == 0)
+        return FALSE;
 
     InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
     err = DoIOFS(&iofs, NULL, devicename, DOSBase);
