@@ -17,7 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <clib/alib_protos.h>
-#include <MUI/Busy_mcc.h>
+#include <mui/Busy_mcc.h>
 
 /* the following should go in a single include file which then only
 ** constits of the public constants and members. Actually this is easiey

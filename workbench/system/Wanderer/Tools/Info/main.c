@@ -27,7 +27,7 @@
 #include <workbench/icon.h>
 #include <devices/inputevent.h>
 
-#include <MUI/TextEditor_mcc.h>
+#include <mui/TextEditor_mcc.h>
 #include <zune/iconimage.h>
 
 #include "locale.h"

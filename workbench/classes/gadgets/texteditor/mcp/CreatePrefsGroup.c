@@ -26,8 +26,8 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
-#include <MUI/BetterString_mcc.h>
-#include <MUI/HotkeyString_mcc.h>
+#include <mui/BetterString_mcc.h>
+#include <mui/HotkeyString_mcc.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>

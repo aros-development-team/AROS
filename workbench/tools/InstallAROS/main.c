@@ -36,7 +36,7 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#include <MUI/NFloattext_mcc.h>
+#include <mui/NFloattext_mcc.h>
 
 #include "install.h"
 

@@ -27,7 +27,7 @@ FILES := locale \
 #MM includes-copy
 
 INCLUDE_FILES := TextEditor_mcp.h
-%copy_includes path=MUI
+%copy_includes path=mui
 
 #MM workbench-classes-zune-texteditor-mcp-locale :
 workbench-classes-zune-texteditor-mcp-locale : locale.c locale.h

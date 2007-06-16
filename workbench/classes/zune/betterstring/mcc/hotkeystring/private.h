@@ -37,8 +37,8 @@
 #include "HotkeyString_mcc.h"
 #include "BetterString_mcc.h"
 #else
-#include <MUI/HotkeyString_mcc.h>
-#include <MUI/BetterString_mcc.h>
+#include <mui/HotkeyString_mcc.h>
+#include <mui/BetterString_mcc.h>
 #endif
 
 struct InstData
