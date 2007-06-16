@@ -43,7 +43,7 @@
 #include "private.h"
 
 #ifdef __AROS__
-#include "MUI/NFloattext_mcc.h"
+#include "mui/NFloattext_mcc.h"
 #undef FloattextObject
 #define FloattextObject NFloattextObject
 #endif

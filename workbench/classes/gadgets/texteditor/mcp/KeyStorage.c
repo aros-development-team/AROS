@@ -30,7 +30,7 @@
 #include <dos/rdargs.h>
 #include <exec/memory.h>
 #include <libraries/mui.h>
-#include <MUI/HotkeyString_mcc.h>
+#include <mui/HotkeyString_mcc.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>

@@ -42,6 +42,6 @@ FILES := AllocBitMap \
 #MM includes-copy
 
 INCLUDE_FILES := TextEditor_mcc.h
-%copy_includes path=MUI
+%copy_includes path=mui
 
 %common
