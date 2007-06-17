@@ -619,37 +619,6 @@ exit:
     return result;
 }
 
-static BPTR DupFH(BPTR fh, LONG mode)
-{
-    BPTR ret = NULL;
-
-    if (fh)
-    {
-        BPTR olddir = CurrentDir(fh);
-        ret    = Open("", mode);
-
-        CurrentDir(olddir);
-    }
-
-    return ret;
-}
-
-static BOOL Pipe(BPTR pipefhs[2])
-{
-    pipefhs[0] = Open("PIPEFS:__UNNAMED__", FMF_READ|FMF_NONBLOCK);
-    pipefhs[1] = DupFH(pipefhs[0], FMF_WRITE);
-
-    if (pipefhs[1])
-    {
-        ChangeMode(CHANGE_FH, pipefhs[0], FMF_READ);
-	return TRUE;
-    }
-
-    Close(pipefhs[0]);
-
-    return FALSE;
-}
-
 /* The shell has the following semantics when it comes to command lines:
    Redirection (<,>,>>) may be written anywhere (except before the command
    itself); the following item (as defined by ReadItem() is the redirection
@@ -730,7 +699,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    }
 	    else
 	    {
-	        if (!Pipe(pipefhs))
+                if (Pipe("PIPEFS:", &pipefhs[0], &pipefhs[1]) != DOSTRUE)
 	            return FALSE;
 
 	        tags[0].ti_Data = (IPTR)pipefhs[0];

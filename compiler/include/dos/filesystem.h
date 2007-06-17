@@ -409,6 +409,22 @@ struct IFS_RELABEL
     BOOL        io_Result;
 };
 
+/* FSA_PIPE: create a pair of handles connected to each other
+ *
+ * This opens a "file" (which will usually be a pipe device) and returns two
+ * handles such that writing data to the writer will result in that data
+ * appearing on the reader. Both handles must be closed for the underlying
+ * file to be closed. If a NULL/empty path is supplied, an unnamed pipe will
+ * be created, which will be destroyed once both handles are closed.
+ *
+ * The read handle is returned in io_Unit. */
+#define FSA_PIPE 45
+struct IFS_PIPE {
+    STRPTR       io_FileName;
+    struct Unit *io_Writer;
+};
+
+
 
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
    and may be or'ed. Note that not all filesystems support all flags. */
@@ -516,6 +532,7 @@ struct IOFileSys
 	struct IFS_INFO            io_INFO;           /* FSA_INFO */
 	struct IFS_RECORD          io_RECORD;         /* FSA_LOCK_RECORD */
 	struct IFS_CHANGE_SIGNAL   io_CHANGE_SIGNAL;  /* FSA_CHANGE_SIGNAL */
+        struct IFS_PIPE            io_PIPE;           /* FSA_PIPE */
     } io_Union;
 };
 

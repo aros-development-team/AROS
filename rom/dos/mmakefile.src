@@ -27,7 +27,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     makedosentry makelink matchend matchfirst matchnext matchpattern \
 	     matchpatternnocase maxcli namefromlock newloadseg nextdosentry \
 	     open openfromlock output parentdir parentoffh parsepattern \
-	     parsepatternnocase pathpart printfault putstr read readargs \
+	     parsepatternnocase pathpart pipe printfault putstr read readargs \
 	     readitem relabel readlink remassignlist remdosentry remsegment rename \
 	     replypkt runcommand samedevice samelock seek selecterror selectinput \
 	     selectoutput sendpkt setargstr setcomment setconsoletask \
