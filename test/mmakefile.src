@@ -82,7 +82,8 @@ FILES := \
     notify \
     setfilesize \
     timeport \
-    getdeviceproc
+    getdeviceproc \
+    minicat
 
 EXEDIR := $(AROS_TESTS)
 
