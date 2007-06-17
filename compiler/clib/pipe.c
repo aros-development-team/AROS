@@ -5,26 +5,18 @@
 
 #include <proto/dos.h>
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
 
+#include "__errno.h"
 #include "__open.h"
-
-static int clear_nonblock_flag (int desc)
-{
-    int oldflags = fcntl(desc, F_GETFL, 0);
-
-    if (oldflags == -1)
-	return -1;
-
-    oldflags &= ~O_NONBLOCK;
-
-    return fcntl(desc, F_SETFL, oldflags);
-}
 
 int pipe(int *pipedes)
 {
+    BPTR reader, writer;
+    fdesc *rdesc, *wdesc;
+
     if (!pipedes)
     {
 	errno = EFAULT;
@@ -32,26 +24,32 @@ int pipe(int *pipedes)
 	return -1;
     }
 
-    pipedes[0] =  open("PIPEFS:__UNNAMED__", O_RDONLY|O_NONBLOCK);
-    if (pipedes[0] != -1)
-    {
-	fdesc *desc = __getfdesc(pipedes[0]);
-        BPTR olddir = CurrentDir(desc->fh);
-
-	if
-	(
-	    clear_nonblock_flag(pipedes[0]) != -1 &&
-       	    ((pipedes[1] = open("", O_WRONLY)) != -1)
-	)
-	{
-      	    CurrentDir(olddir);
-
-	    return 0;
-	}
-
-	CurrentDir(olddir);
-	close(pipedes[0]);
+    if ((rdesc = malloc(sizeof(fdesc))) == NULL)
+        return -1;
+    if ((wdesc = malloc(sizeof(fdesc))) == NULL) {
+        free(rdesc);
+        return -1;
     }
 
-    return -1;
+    if (Pipe("PIPEFS:", &reader, &writer) != DOSTRUE) {
+        errno = IoErr2errno(IoErr());
+        free(rdesc);
+        free(wdesc);
+        return -1;
+    }
+
+    pipedes[0] = __getfirstfd(0);
+    pipedes[1] = __getfirstfd(pipedes[0]);
+
+    rdesc->fh        = reader;
+    rdesc->flags     = O_RDONLY;
+    rdesc->opencount = 1;
+    __setfdesc(pipedes[0], rdesc);
+
+    wdesc->fh        = writer;
+    wdesc->flags     = O_WRONLY;
+    wdesc->opencount = 1;
+    __setfdesc(pipedes[1], wdesc);
+
+    return 0;
 }

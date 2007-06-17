@@ -209,6 +209,7 @@ AROS_LH1(void, beginio,
     {
 	case FSA_OPEN:
 	case FSA_OPEN_FILE:
+        case FSA_PIPE:
         case FSA_EXAMINE:
 	case FSA_EXAMINE_NEXT:
 	case FSA_READ:
@@ -362,17 +363,12 @@ static struct filenode *FindFile(struct pipefsbase *pipefsbase, struct dirnode *
 
     D(bug("Searching for %.*S.\n", len, path));
 
-    while (fn)
-    {
-	D(bug("Comparing %S with %.*S.\n", fn->name, len, path));
-	if
-	(
-	    strlen(fn->name) == len               &&
-	    strncasecmp(fn->name, path, len) == 0
-	)
-	{
-	    break;
-	}
+    while (fn) {
+        if (fn->name != NULL) {
+            D(bug("Comparing %S with %.*S.\n", fn->name, len, path));
+            if (strlen(fn->name) == len && strncasecmp(fn->name, path, len) == 0)
+                break;
+        }
         fn = (struct filenode *)GetSucc((struct Node *)fn);
     }
 
@@ -396,10 +392,7 @@ static struct filenode *NewFileNode(struct pipefsbase *pipefsbase, STRPTR filena
     fn = AllocVec(sizeof(*fn), MEMF_PUBLIC|MEMF_CLEAR);
     if (fn)
     {
-	fn->name = StrDup(pipefsbase, filename);
-
-	if (fn->name)
-	{
+        if (filename == NULL || (fn->name = StrDup(pipefsbase, filename)) != NULL) {
 	    fn->type = ST_PIPEFILE;
 
 	    DateStamp(&fn->datestamp);
@@ -676,6 +669,47 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    continue;
 		}
+
+                case FSA_PIPE: {
+                    struct usernode *reader, *writer;
+                    LONG err;
+
+                    D(bug("Command is FSA_PIPE\n"));
+
+                    if ((reader = AllocVec(sizeof(struct usernode), MEMF_PUBLIC)) == NULL) {
+                        SendBack(msg, ERROR_NO_FREE_STORE);
+                        continue;
+                    }
+                    if ((writer = AllocVec(sizeof(struct usernode), MEMF_PUBLIC)) == NULL) {
+                        SendBack(msg, ERROR_NO_FREE_STORE);
+                        continue;
+                    }
+
+                    fn = NewFileNode(pipefsbase, NULL, FNF_DELETEONCLOSE, (struct dirnode *) fn, &err);
+                    if (fn == NULL) {
+                        FreeVec(reader);
+                        FreeVec(writer);
+                        SendBack(msg, err);
+                        continue;
+                    }
+
+                    msg->iofs->IOFS.io_Unit = (struct Unit *) reader;
+                    msg->iofs->io_Union.io_PIPE.io_Writer = (struct Unit *) writer;
+
+                    reader->fn = writer->fn = fn;
+                    fn->numusers = 2;
+
+                    reader->mode = FMF_READ;
+                    fn->numreaders++;
+
+                    writer->mode = FMF_WRITE;
+                    fn->numwriters++;
+
+                    SendBack(msg, 0);
+
+                    continue;
+                }
+                    
 		case FSA_CLOSE:
 		    D(bug("Command is FSA_CLOSE\n"));
 
@@ -725,7 +759,8 @@ AROS_UFH3(LONG, pipefsproc,
 		    if (!un->fn->numusers && un->fn->type <= 0 && (un->fn->flags & FNF_DELETEONCLOSE))
 		    {
  		        Remove((struct Node *)fn);
-		        FreeVec(fn->name);
+                        if (fn->name != NULL)
+		            FreeVec(fn->name);
 		        FreeVec(fn);
 		    }
 
@@ -753,6 +788,12 @@ AROS_UFH3(LONG, pipefsproc,
     		    };
 
 		    D(bug("Command is EXAMINE\n"));
+
+                    if (fn->name == NULL) {
+                        SendBack(msg, ERROR_OBJECT_NOT_FOUND);
+                        continue;
+                    }
+
 		    D(bug("Examining file %S\n", fn->name));
 
 		    if (type > ED_OWNER)
@@ -849,6 +890,11 @@ AROS_UFH3(LONG, pipefsproc,
 			continue;
 		    }
 
+                    if (fn->name == NULL) {
+                        SendBack(msg, ERROR_OBJECT_NOT_FOUND);
+                        continue;
+                    }
+
     		    D(bug("Current directory is %S. Current file is %S\n", fn->parent->name, fn->name));
 
 		    fib->fib_OwnerUID       = 0;
@@ -934,6 +980,11 @@ AROS_UFH3(LONG, pipefsproc,
 		{
 		    STRPTR filename    = msg->iofs->io_Union.io_DELETE_OBJECT.io_Filename;
 		    struct dirnode *dn = (struct dirnode *)fn;
+
+                    if (fn->name == NULL) {
+                        SendBack(msg, ERROR_OBJECT_NOT_FOUND);
+                        continue;
+                    }
 
 		    D(bug("Command is FSA_DELETE_OBJECT\n"));
 		    D(bug("Current directory is %S\n", fn->name));

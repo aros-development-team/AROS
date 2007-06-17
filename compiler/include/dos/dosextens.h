@@ -670,6 +670,23 @@ struct DosPacket
 
 #define ACTION_SERIALIZE_DISK 4200
 
+/* AROS-specific actions 1800-1899 */
+
+/* ACTION_PIPE: create a pair of handles connected to each other
+ *
+ * LONG ACTION_PIPE(BPTR lock, STRPTR path, BPTR reader, BPTR writer)
+ * dp_Res1          dp_Arg1    dp_Arg2      dp_Arg3      dp_Arg4
+ *
+ 
+ * This opens a "file" (which will usually be a pipe device) and returns two
+ * handles such that writing data to the writer will result in that data
+ * appearing on the reader. Both handles must be closed for the underlying
+ * file to be closed. If the NULL lock and a NULL/empty path is supplied, an
+ * unnamed pipe will be created, which will be destroyed once both handles are
+ * closed. */
+#define ACTION_PIPE            1800
+
+
 /* Structure for easy handling of DosPackets. DosPackets don´t have to be in
    this structure, but this struture may ease the use of it. */
 struct StandardPacket

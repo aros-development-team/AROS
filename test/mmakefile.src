@@ -42,7 +42,6 @@ FILES := \
     librarytest \
     opendiskfont \
     partition \
-    pipe \
     scantest \
     semaphoretest \
     showvisregion \
