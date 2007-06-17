@@ -24,6 +24,26 @@
 #include "volumes.h"
 #include "baseredef.h"
 
+/*
+ * XXX Notes about SendEvent() and LockDosList()
+ *
+ * InstallAROS has been hanging during format. Georg figured out why, see here
+ * for the details:
+ * 
+ *   https://mail.aros.org/mailman/prvate/aros-dev/2007-June/050263.html
+ *
+ * The quick-and-dirty fix is to remove calls to SendEvent(). This does mean
+ * that Wanderer doesn't get diskchange updates and so doesn't refresh the
+ * volume list, but it avoids the hang.
+ *
+ * The correct way to fix is it to call AttemptLockDosList() when
+ * adding/removing the device node. If the list lock can't be obtained right
+ * now, the handler should schedule a retry. fat.handler has a good example of
+ * how to do this.
+ *
+ * --rob 2007-06-18
+ */
+
 // copy pasted from fat.handler,
 // pushes an IECLASS event in the input stream.
 static void SendEvent(struct AFSBase *afsbase, LONG event) {
@@ -159,7 +179,7 @@ UBYTE i;
 		/* if we re-use "volume" clear locklist */
 		volume->locklist = NULL;
 	}
-    SendEvent(afsbase, IECLASS_DISKINSERTED);
+    //SendEvent(afsbase, IECLASS_DISKINSERTED);
 	return DOSTRUE;
 }
 
@@ -180,7 +200,7 @@ BSTR bname;
 char string[32];
 UBYTE i;
 
-    SendEvent(afsbase, IECLASS_DISKREMOVED);
+    //SendEvent(afsbase, IECLASS_DISKREMOVED);
 	if (volume->dostype == 0x444F5300)
 	{
 		bname = volume->devicelist.dl_Name;
