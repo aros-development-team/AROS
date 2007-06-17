@@ -27,13 +27,13 @@ MSG_ERROR_UNMATCHED_QUOTES
 unmatched quotes
 ;
 MSG_ERROR_LINE_TOO_LONG
-linea degli argomenti invalida o troppo lunga
+linea degli argomenti non valida o troppo lunga
 ;
 MSG_ERROR_FILE_NOT_OBJECT
 il file non è eseguibile
 ;
 MSG_ERROR_INVALID_RESIDENT_LIBRARY
-libreria residente invalida
+libreria residente non valida
 ;
 MSG_ERROR_NO_DEFAULT_DIR
 errore 201
@@ -146,39 +146,35 @@ MSG_ERROR_BREAK
 MSG_ERROR_NOT_EXECUTABLE
 file non eseguibile
 ;
-; === New ErrorReport() format strings. Need to be translated.
-;
 MSG_STRING_DISK_NOT_VALIDATED
-Volume "%s" is not validated
+Volume "%s" non convalidato
 ;
 MSG_STRING_DISK_WRITE_PROTECTED
-Volume "%s" is write protected
+Volume "%s" protetto da scrittura
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
-Please insert volume "%s" in any drive
+Prego inserire il volume "%s" in qualsiasi unità
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Please replace volume "%s" in any drive
+Prego reinserire il volume "%s" in qualsiasi unità
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
-Please replace volume "%s" in "%s"
+Prego reinserire il volume "%s" in "%s"
 ;
 MSG_STRING_DISK_FULL
-Volume "%s" is full
+Volume "%s" pieno
 ;
 MSG_STRING_NOT_A_DOS_DISK
-Not a DOS disk in "%s"
+Disco DOS non valido in "%s"
 ;
 MSG_STRING_NO_DISK
-No disk present in "%s"
+manca il disco in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-You MUST replace volume "%s" in "%s"!
+È assolutamente necessario reinserire "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
-Volume "%s" has a read/write error
-;
-; === End of new ErrorRequest() format strings. Old ones follow for reference.
+Il volume "%s" ha errori di lettura/scrittura
 ;
 ;MSG_STRING_INSERT_VOLUME
 ;Prego inserire volume\n\
@@ -198,8 +194,6 @@ Volume "%s" has a read/write error
 ;È necessario sostituire il volume\n\
 ;%s\n\
 ;nel drive %s
-;
-; === End of ErrorRequest() format strings.
 ;
 MSG_STRING_RETRY
 Riprova
