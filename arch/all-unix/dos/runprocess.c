@@ -89,6 +89,7 @@ BOOL CallWithStack
         Enable();
         return FALSE;
     }
+    Enable();
     
     ucx.uc_stack.ss_sp    = stack;
     ucx.uc_stack.ss_size  = size;
