@@ -15,7 +15,7 @@
 
     SYNOPSIS
 
-        DISKS/S, VOLS=VOLUMES/S, GOODONLY/S, BLOCKS/S, DEVICES/M
+        DISKS/S, VOLS=VOLUMES/S, ALL/S, BLOCKS/S, DEVICES/M
 
     LOCATION
 
@@ -32,7 +32,7 @@
 
     DISKS     --  show information on file system devices
     VOLS      --  show information on volumes
-    GOODONLY  --  don't show any information on bad devices or volumes
+    ALL       --  show information bad devices or volumes
     BLOCKS    --  show additional block size and usage information
     DEVICES   --  device names to show information about
 
@@ -549,7 +549,7 @@ enum
 {
     ARG_DISKS,
     ARG_VOLS,
-    ARG_GOODONLY,
+    ARG_ALL,
     ARG_BLOCKS,
     ARG_DEVS,
     NOOFARGS
@@ -584,14 +584,14 @@ void doInfo()
     D(bug("Calling ReadArgs()\n"));
     
     /* read arguments */
-    rdargs = ReadArgs("DISKS/S,VOLS=VOLUMES/S,GOODONLY/S,BLOCKS/S,DEVICES/M",
+    rdargs = ReadArgs("DISKS/S,VOLS=VOLUMES/S,ALL/S,BLOCKS/S,DEVICES/M",
 		      args, NULL);
     
     if(rdargs != NULL)
     {
 	BOOL     disks    = (BOOL)args[ARG_DISKS];
 	BOOL     vols     = (BOOL)args[ARG_VOLS];
-	BOOL     goodOnly = (BOOL)args[ARG_GOODONLY];
+	BOOL     showall  = (BOOL)args[ARG_ALL];
 	BOOL     blocks   = (BOOL)args[ARG_BLOCKS];
 	STRPTR  *devs     = (STRPTR *)args[ARG_DEVS];
 
@@ -764,7 +764,7 @@ void doInfo()
 			{
 			    LONG err = IoErr();
 			    
-			    if((err != 0) && !goodOnly)
+			    if((err != 0) && showall)
 			    {
 				LPrintf(~0, nfmtstr, name);
 				PrintFault(err, NULL);
