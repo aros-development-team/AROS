@@ -83,8 +83,12 @@ BOOL CallWithStack
 {
     ucontext_t ucx, ucx_return;
     
+    Disable();  /* To avoid random crashes during startup */
     if (argc > MAXARGS || getcontext(&ucx) == -1)
+    {
+        Enable();
         return FALSE;
+    }
     
     ucx.uc_stack.ss_sp    = stack;
     ucx.uc_stack.ss_size  = size;
