@@ -146,6 +146,8 @@
         DosDoIO(&iofs.IOFS);
     } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port));
 
+    SetIoErr(iofs.io_DosError);
+
     /* something broke, clean up */
     if (iofs.io_DosError != 0) {
         if (notify->nr_FullName != notify->nr_Name)

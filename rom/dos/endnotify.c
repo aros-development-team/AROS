@@ -120,5 +120,7 @@
 	Enable();
     }
 
+    SetIoErr(iofs.io_DosError);
+
     AROS_LIBFUNC_EXIT
 } /* EndNotify */

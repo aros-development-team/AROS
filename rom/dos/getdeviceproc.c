@@ -234,6 +234,7 @@
 
                 if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (ULONG) vol, NULL) == DOSTRUE) {
                     FreeMem(dp, sizeof(struct DevProc));
+                    SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
                     return NULL;
                 }
             }

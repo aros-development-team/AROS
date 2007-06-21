@@ -329,8 +329,6 @@
 
     res = DisplayError(format, idcmp, &args);
    
-    SetIoErr(code);
-
     return res == 0 ? DOSFALSE : DOSTRUE;
 
     AROS_LIBFUNC_EXIT
