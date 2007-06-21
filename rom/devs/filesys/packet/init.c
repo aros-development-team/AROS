@@ -14,7 +14,6 @@
 /* places we might find handlers */
 const char *search_path[] = {
     "%s",
-    "L:%s",
     "DEVS:%s",
     "DEVS:Filesystems/%s",
     "DEVS:Handlers/%s",
