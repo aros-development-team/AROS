@@ -405,7 +405,7 @@ AROS_UFH3(LONG, unitentry,
     LONG 		err = 0L;
     struct IOExtTD 	*iotd;
     struct unit 	*unit;
-    struct DosList      *dl;
+    APTR                win;
 
     D(bug("fdsk_device/unitentry: just started\n"));
     
@@ -416,19 +416,10 @@ AROS_UFH3(LONG, unitentry,
     unit->port.mp_SigBit = AllocSignal(-1);
     unit->port.mp_Flags = PA_SIGNAL;
 
-    /* see if FDSK: exists. if its not there and we try to open it, DOS will
-     * throw up lots of "insert FDSK:" requesters which aren't particularly
-     * useful in this context */
-    dl = LockDosList(LDF_ALL | LDF_READ);
-    if (dl != NULL) {
-        dl = FindDosEntry(dl, "FDSK", LDF_ALL);
-        UnLockDosList(LDF_ALL | LDF_READ);
-    }
-    if (dl == NULL) {
-        unit->file = NULL;
-        ReplyMsg(&unit->msg);
-        return 0;
-    }
+    /* disable DOS error requesters. save it the old pointer so we can put it
+     * back later */
+    win = me->pr_WindowPtr;
+    me->pr_WindowPtr = (APTR) -1;
 
     (void)RawDoFmt("FDSK:Unit%ld", &unit->unitnum, (VOID_FUNC)putchr, &ptr);
 
@@ -446,6 +437,9 @@ AROS_UFH3(LONG, unitentry,
 	ReplyMsg(&unit->msg);
 	return 0;
     }
+
+    /* enable requesters */
+    me->pr_WindowPtr = win;
 
     D(bug("fdsk_device/unitentry: open okay :-) Replying startup msg.\n"));
 
