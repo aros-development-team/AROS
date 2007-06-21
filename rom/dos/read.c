@@ -83,6 +83,8 @@
         DosDoIO(&iofs.IOFS);
     } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_STREAM, fh, NULL) == DOSFALSE);
 
+    SetIoErr(iofs.io_DosError);
+
     return iofs.io_DosError == 0 ? iofs.io_Union.io_READ.io_Length : -1;
 
     AROS_LIBFUNC_EXIT

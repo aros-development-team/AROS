@@ -46,5 +46,7 @@ LONG InternalSeek
         DosDoIO(&iofs.IOFS);
     } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_STREAM, fh, NULL) == DOSFALSE);
 
+    SetIoErr(iofs.io_DosError);
+
     return iofs.io_DosError == 0 ? (LONG) iofs.io_Union.io_SEEK.io_Offset : -1;
 }
