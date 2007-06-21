@@ -882,8 +882,8 @@ AROS_UFH3(void, packet_reply,
 
             /* make sure we have enough room for everything that came back */
             if (size < sizeof(struct ExAllData) +
-                       (mode >= ED_COMMENT ? (comment_len = fib->fib_Comment[0] + 1) : 0) +
-                       (mode >= ED_NAME    ? (filename_len = fib->fib_FileName[0]) + 1 : 0)) {
+                       (mode >= ED_COMMENT ? (comment_len = strlen(fib->fib_Comment)) : 0) +
+                       (mode >= ED_NAME    ? (filename_len = strlen(fib->fib_FileName)) : 0)) {
                 iofs->io_DosError = ERROR_BUFFER_OVERFLOW;
                 FreeMem(fib, sizeof(struct FileInfoBlock));
                 break;
@@ -899,7 +899,7 @@ AROS_UFH3(void, packet_reply,
                     /* store the comment in the spare space after the ead and
                      * the filename */
                     ead->ed_Comment = (UBYTE *) ead + sizeof(struct ExAllData) + filename_len + 1;
-                    strcpy(ead->ed_Comment, mkcstr(pkt->pool, fib->fib_Comment));
+                    strcpy(ead->ed_Comment, fib->fib_Comment);
 
                 case ED_DATE:
                     ead->ed_Days = fib->fib_Date.ds_Days;
@@ -918,8 +918,8 @@ AROS_UFH3(void, packet_reply,
                 case ED_NAME:
                     /* store the name in the spare space after the ead */
                     ead->ed_Name = (UBYTE *) ead + sizeof(struct ExAllData);
-                    strcpy(ead->ed_Name, mkcstr(pkt->pool, fib->fib_FileName));
-                
+                    strcpy(ead->ed_Name, fib->fib_FileName);
+               
                 case 0:
                     ead->ed_Next = NULL;
                     break;
