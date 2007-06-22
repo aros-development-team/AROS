@@ -1,4 +1,4 @@
-## version $VER: deutsch.catalog 0.1 (22.02.2006)
+## version $VER: deutsch.catalog 0.2 (22.06.2007)
 ## language deutsch
 ## codeset 0
 ;
@@ -14,11 +14,11 @@ Hintergrund
 ; Background:
 ;
 MSG_BACKGROUND_PRESSED
-Hintergrund im\ngedrckten Zustand:
+Hintergrund im\ngedrückten Zustand:
 ; Background in\npressed state:
 ;
 MSG_TEXT_BUTTONS
-Textknï¿½fe
+Textknöpfe
 ; Text Buttons
 ;
 MSG_FRAME_COLON
@@ -30,7 +30,7 @@ Zeichensatz
 ; Font:
 ;
 MSG_IMAGE_BUTTONS
-Bildknï¿½fe
+Bildknöpfe
 ; Image Buttons
 ;
 MSG_ADJUST_FRAME
@@ -38,7 +38,7 @@ Rahmeneinstellung
 ; Adjust Frame
 ;
 MSG_CHECKMARKS
-An-/Aus-Knï¿½fe
+An-/Aus-Knöpfe
 ; Checkmarks
 ;
 MSG_LOOK_COLON
@@ -50,7 +50,7 @@ An-/Aus-Knopf
 ; Checkmark
 ;
 MSG_RADIO_BUTTONS
-Radio-Knï¿½fe
+Radio-Knöpfe
 ; Radio Buttons
 ;
 MSG_RADIOBUTTON
@@ -93,7 +93,7 @@ Cycle
 ; Cycle
 ;
 MSG_POPUP_MENU_CONTROL
-Popup-Men Steuerung
+Popup-Menü Steuerung
 ; Popup Menu Control
 ;
 MSG_POSITION
@@ -109,7 +109,7 @@ Geschwindigkeit:
 ; Speed:
 ;
 MSG_POPUP_MENU_DESIGN
-Popup-Men Design
+Popup-Menü Design
 ; Popup Menu Design
 ;
 MSG_FRAME
@@ -125,7 +125,7 @@ Hintergrund
 ; Background
 ;
 MSG_RECESSED_ENTRIES
-Vertiefte Eintrï¿½e:
+Vertiefte Einträge:
 ; Recessed Entries:
 ;
 ;=============================
@@ -176,7 +176,7 @@ Register
 ; Register
 ;
 MSG_DEFAULT_SIZE_TRUNCATE_TITLES
-
+Voreingestellte Größe schneidet Titel ab:
 ; Default size truncate titles:
 ;
 MSG_NORMAL
@@ -231,7 +231,7 @@ Weich:
 ; Smooth:
 ;
 MSG_FONTS
-Zeichensï¿½ze
+Zeichensätze
 ; Fonts
 ;
 MSG_NORMAL_COLON
@@ -267,11 +267,11 @@ Aktiv:
 ; Active:
 ;
 MSG_ACTIVE_SELECTED
-Aktiv &\ngewï¿½lt
+Aktiv &\ngewählt
 ; Active &\nSelected:
 ;
 MSG_SELECTED
-Gewï¿½lt:
+Gewählt:
 ; Selected:
 ;
 ;=============================
@@ -282,7 +282,7 @@ immer komplett
 ; always solid
 ;
 MSG_GHOSTED_ON_BOX
-durchsichtig ber Box
+durchsichtig über Box
 ; ghosted on box
 ;
 MSG_GHOSTED_OUTSIDE_BOX
@@ -302,7 +302,7 @@ Objekte zeigen
 ; show objects
 ;
 MSG_KL_PRESS
-Drcken:
+Drücken:
 ; Press:
 ;
 MSG_KL_TOGGLE
@@ -362,7 +362,7 @@ Gadget vor:
 ; Next gadget:
 ;
 MSG_KL_PREV_GADGET
-Gadget zurck:
+Gadget zurück:
 ; Prev. gadget:
 ;
 MSG_KL_GADGET_OFF
@@ -378,7 +378,7 @@ Fenster vor:
 ; Next window:
 ;
 MSG_KL_PREV_WINDOW
-Fenster zurck:
+Fenster zurück:
 ; Prev. window:
 ;
 MSG_KL_HELP
@@ -505,7 +505,7 @@ Anordnung
 ; slidersp.c
 ;-----------
 MSG_CONTAINER_DESIGN
-Behï¿½ter-Design
+Behälter-Design
 ; Container Design
 ;
 MSG_KNOB_DESIGN
@@ -532,7 +532,7 @@ Fortschrittsanzeige
 ; Progress Indicator
 ;
 MSG_DEVICE_IMAGES
-Gerï¿½e-Bilder
+Geräte-Bilder
 ; Device Images
 ;
 MSG_DRAWER
@@ -552,7 +552,7 @@ RAM
 ; RAM
 ;
 MSG_VOLUME
-Datentrï¿½er
+Datenträger
 ; Volume
 ;
 MSG_NETWORK
@@ -603,7 +603,7 @@ String Rahmen
 ; String Frame
 ;
 MSG_SPECIAL_POPUP_BUTTONS
-Spezialle Popup-Knï¿½fe
+Spezialle Popup-Knöpfe
 ; Special Popup Buttons
 ;
 MSG_POPUP
@@ -670,11 +670,11 @@ simpel
 ; simple
 ;
 MSG_WITHOUT_CLEAR
-ohne lï¿½chen
+ohne löschen
 ; without clear
 ;
 MSG_WITH_CLEAR
-mit lï¿½chen
+mit löschen
 ; with clear
 ;
 MSG_POSITIONS
@@ -690,7 +690,7 @@ Klein:
 ; Tiny:
 ;
 MSG_BIG
-Groï¿½
+Groß
 ; Big:
 ;
 MSG_WINDOW
@@ -718,8 +718,8 @@ U
 ; B
 ;
 MSG_BUTTONS
-KnÃ¶pfe
-;Buttons
+Knöpfe
+; Buttons
 ;
 ;=============================
 ; zune.c
@@ -729,7 +729,7 @@ Zune - globale Einstellungen
 ; Zune - Global Prefs
 ;
 MSG_WINTITLE2
-Zune - Einstellungen fr : %s
+Zune - Einstellungen für : %s
 ; Zune - Prefs for : %s
 ;
 MSG_MEN_PROJECT
@@ -737,7 +737,7 @@ Projekt
 ; Project
 ;
 MSG_MEN_OPEN
-ï¿½fnen ...
+Öffnen ...
 ; Open ...
 ;
 MSG_MEN_OPEN_SC
@@ -745,7 +745,7 @@ O
 ; O
 ;
 MSG_MEN_APPEND
-Anhï¿½gen ...
+Anhängen ...
 ; Append ...
 ;
 MSG_MEN_SAVEAS
@@ -757,7 +757,7 @@ A
 ; A
 ;
 MSG_MEN_ABOUT
-ï¿½er Zune ...
+Über Zune ...
 ; About Zune ...
 ;
 MSG_MEN_ABOUT_SC
@@ -805,7 +805,7 @@ Gruppen
 ; Groups
 ;
 MSG_DSC_BUTTONS
-Knï¿½fe
+Knöpfe
 ; Buttons
 ;
 MSG_DSC_CYCLES
