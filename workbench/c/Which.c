@@ -185,7 +185,7 @@ int main(void)
 BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 {
     BOOL            found = FALSE;    /* Object found? */
-    struct DevProc *dp = NULL, *dp2;  /* For GetDeviceProc() call */
+    struct DevProc *dp = NULL;        /* For GetDeviceProc() call */
     BPTR            oldCurDir;        /* Temporary holder of old current dir */
     // struct MsgPort *oldFST;        /* Temporary holder of old FileSysTask */
     
@@ -198,17 +198,15 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
     oldCurDir = CurrentDir(NULL);     /* Just to save the old current dir... */
     // oldFST    = GetFileSysTask();  /* ... and the filesystem task */
     
-    while(((dp2 = GetDeviceProc("C:", dp)) != NULL) && (!found || checkAll))
+    while(((dp = GetDeviceProc("C:", dp)) != NULL) && (!found || checkAll))
     {
 	// SetFileSysTask(dp2->dvp_Port);
-	CurrentDir(dp2->dvp_Lock);
+	CurrentDir(dp->dvp_Lock);
 	found |= CheckDirectory(name, fib);
 	
 	/* Is this a multi assign? */
-	if(!(dp2->dvp_Flags & DVPF_ASSIGN))
+	if(!(dp->dvp_Flags & DVPF_ASSIGN))
 	    break;
-	
-	dp = dp2;
     }
     
     // SetFileSysTask(oldFST);
