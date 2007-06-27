@@ -2179,7 +2179,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 			DoMethod
 			(
 				window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-				(IPTR)window, 1, MUIM_IconWindow_Remove
+				(IPTR)_app(self), 4, MUIM_Application_PushMethod, (IPTR)window, 1, MUIM_IconWindow_Remove
 			);
 		}
 
