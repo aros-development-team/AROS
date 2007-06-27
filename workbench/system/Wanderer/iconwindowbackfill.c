@@ -789,6 +789,7 @@ D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Cleanup()\n"));
 		this_BFI->bfi_Source = NULL;
 	}
 
+    FreeVec(this_BFI);
     return TRUE;
 }
 
