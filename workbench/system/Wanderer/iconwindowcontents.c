@@ -330,7 +330,6 @@ IPTR IconWindowIconList__MUIM_Setup
 			(IPTR) self, 3, 
 			MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)CLASS
 		);
-
 	}
 	
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
@@ -377,8 +376,36 @@ IPTR IconWindowIconList__MUIM_Cleanup
 {
     SETUP_INST_DATA;
 
-    D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup()\n"));
+    Object *prefs = NULL;
 
+    D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup()\n"));
+    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+    if (prefs)
+    {
+    	DoMethod
+    	(
+    	    prefs,
+    	    MUIM_KillNotifyObj, MUIA_IconList_IconListMode, (IPTR) self
+    	);
+    	DoMethod
+    	(
+    	    prefs,
+    	    MUIM_KillNotifyObj, MUIA_IconList_LabelText_Mode, (IPTR) self
+    	);
+    	DoMethod
+    	(
+    	    prefs,
+    	    MUIM_KillNotifyObj, MUIA_IconList_LabelText_MaxLineLen, (IPTR) self
+    	);
+    	DoMethod
+    	(
+    	    prefs,
+    	    MUIM_KillNotifyObj, MUIA_IconWindowExt_NetworkBrowser_Show, (IPTR) self
+    	);
+    	
+    }
+    
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
         D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup: (ROOT WINDOW) Removing our Disk Event Handler\n"));
