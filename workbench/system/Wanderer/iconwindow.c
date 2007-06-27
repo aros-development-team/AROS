@@ -67,7 +67,9 @@ AROS_UFH3(
     Class                 *CLASS = *( Class **)param;
 	STRPTR                str = NULL;
     BPTR                  fp = NULL;
-    struct FileInfoBlock  fib;
+    struct FileInfoBlock  *fib;
+
+#warning "stegerg: doesn't allocate fib with AllocDOSObject"
 
     SETUP_ICONWINDOW_INST_DATA;
 
@@ -76,20 +78,32 @@ AROS_UFH3(
 
 #warning "TODO: Signal that it is a wrong path"
     /* so that the user understands (here where we abort with return) */
-    if (!(fp = Lock(str, &fib)))
-        return;
+#warning "stegerg: calls lock with 2nd param == &fib instead of ACCESS_READ or whatever"
 
-    if (!(Examine(fp, &fib)))
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    	return;
+	
+    if (!(fp = Lock(str, ACCESS_READ)))
+    {
+    	FreeDosObject(DOS_FIB, fib);
+        return;
+    }
+
+    if (!(Examine(fp, fib)))
     {
         UnLock (fp );
+	FreeDosObject(DOS_FIB, fib);
         return;
     }
 
     /* Change directory! */
-    if (fib.fib_DirEntryType >= 0)
+    if (fib->fib_DirEntryType >= 0)
         SET(self, MUIA_IconWindow_Location, (IPTR)str);
 
     UnLock(fp);
+    
+    FreeDosObject(DOS_FIB, fib);
     
     AROS_USERFUNC_EXIT
 }
@@ -602,6 +616,35 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
+IPTR IconWindow__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_ICONWINDOW_INST_DATA;
+
+    Object *prefs = NULL;
+
+    GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
+
+    if (prefs)
+    {
+    	DoMethod
+    	(
+    	    prefs,
+    	    MUIM_KillNotifyObj, MUIA_WandererPrefs_Processing, (IPTR) self
+    	);
+
+    	DoMethod
+    	(
+    	    prefs,
+    	    MUIM_KillNotifyObj, MUIA_IconWindowExt_Toolbar_Enabled, (IPTR) self
+    	);
+    }
+    
+    if (data->iwd_BackFill_hook)
+    	FreeVec(data->iwd_BackFill_hook);
+    
+    return DoSuperMethodA(CLASS, self, message);
+}
+
 IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_ICONWINDOW_INST_DATA;
@@ -991,7 +1034,7 @@ IPTR IconWindow__MUIM_IconWindow_Open
     SETUP_ICONWINDOW_INST_DATA;
 	
     D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Open()\n"));
-	
+
     if (!XGET(self, MUIA_Window_Open))
     {
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
@@ -1057,10 +1100,9 @@ IPTR IconWindow__MUIM_IconWindow_Remove
     D(bug("[IconWindow] IconWindow__MUIM_IconWindow_Remove()\n"));
 	
     // Remove window
-    SET( _window(self), MUIA_Window_Open, FALSE );
-    DoMethod ( _app(self), OM_REMMEMBER, _window(self) );
+    SET( self, MUIA_Window_Open, FALSE );
     DoMethod ( _app(self), OM_REMMEMBER, self );
-    DoMethod ( _window(self), OM_DISPOSE );
+    DisposeObject(self);
     
     return TRUE;
 }
@@ -1215,6 +1257,7 @@ ICONWINDOW_CUSTOMCLASS
 (
     IconWindow, NULL, MUIC_Window, NULL,
     OM_NEW,                                     struct opSet *,
+    OM_DISPOSE,	    	    	    	    	Msg,
     OM_SET,                                     struct opSet *,
     OM_GET,                                     struct opGet *,
     MUIM_Window_Setup,                          Msg,
