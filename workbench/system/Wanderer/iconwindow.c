@@ -78,7 +78,6 @@ AROS_UFH3(
 
 #warning "TODO: Signal that it is a wrong path"
     /* so that the user understands (here where we abort with return) */
-#warning "stegerg: calls lock with 2nd param == &fib instead of ACCESS_READ or whatever"
 
     fib = AllocDosObject(DOS_FIB, NULL);
     if (!fib)
