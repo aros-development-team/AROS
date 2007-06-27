@@ -152,7 +152,8 @@ and temporarily placed here */
                            m15, m15_msg_type,                        \
                            m16, m16_msg_type,                        \
                            m17, m17_msg_type,                        \
-                           m18, m18_msg_type)                        \
+                           m18, m18_msg_type,                        \
+                           m19, m19_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -172,6 +173,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type); \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 IPTR IconWindow__MUIM_IconWindow_BackFill_Register(Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Register *message);
