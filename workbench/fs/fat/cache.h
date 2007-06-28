@@ -25,9 +25,6 @@ struct cache_block {
     ULONG               use_count;      /* number of users of this block */
     BOOL                is_dirty;       /* does the block need to be written? */
 
-    struct Device       *device;        /* device this block was loaded from */
-    struct Unit         *unit;          /* unit of aforementioned device */
-
     ULONG               num;            /* block number */
 
     UBYTE               *data;          /* actual block data */
@@ -50,6 +47,9 @@ struct cache {
     struct cache_block  *free_head;     /* first block in the free list */
     struct cache_block  *free_tail;     /* last block in the free list */
 
+    struct Device       *device;        /* device to read/write */
+    struct Unit         *unit;          /* unit on said device */
+
     ULONG               hits;           /* number of hits, for stats */
     ULONG               misses;         /* number of misses */
 };
@@ -58,13 +58,13 @@ struct cache {
 #define CACHE_WRITETHROUGH  (1<<0)
 #define CACHE_WRITEBACK     (1<<1)
 
-struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
+struct cache *cache_new(struct Device *device, struct Unit *unit, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
 void cache_free(struct cache *c);
 
-ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG flags, struct cache_block **rb);
+ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_block **rb);
 ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags);
 
-ULONG cache_get_blocks(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb);
+ULONG cache_get_blocks(struct cache *c, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb);
 ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, ULONG flags);
 
 ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b);

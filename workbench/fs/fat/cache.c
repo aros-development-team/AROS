@@ -65,11 +65,10 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/* prototypes for lowlevel block functions */
-static ULONG _cache_get_blocks_ll(struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
-static ULONG _cache_put_blocks_ll(struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
+/* prototype for lowlevel block function */
+static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
 
-struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
+struct cache *cache_new(struct Device *device, struct Unit *unit, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
     struct cache *c;
     ULONG i;
 
@@ -91,6 +90,9 @@ struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULO
 
     c->blocks = (struct cache_block **) AllocVec(sizeof(struct cache_block *) * num_blocks, MEMF_PUBLIC);
 
+    c->device = device;
+    c->unit = unit;
+
     c->hits = c->misses = 0;
 
     for (i = 0; i < num_blocks; i++) {
@@ -100,8 +102,6 @@ struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULO
         b->use_count = 0;
         b->is_dirty = FALSE;
         b->num = 0;
-        b->device = NULL;
-        b->unit = NULL;
         b->data = (UBYTE *) b + sizeof(struct cache_block);
 
         b->hash_next = b->hash_prev = NULL;
@@ -137,7 +137,7 @@ void cache_free(struct cache *c) {
     FreeVec(c);
 }
 
-ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG flags, struct cache_block **rb) {
+ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_block **rb) {
     struct cache_block *b;
     ULONG err;
 
@@ -223,7 +223,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
     if (b->is_dirty) {
         D(bug("cache_get_block: writing dirty block %d before reusing it\n", b->num));
 
-        if ((err = _cache_put_blocks_ll(dev, unit, num, 1, c->block_size, b->data)) != 0) {
+        if ((err = _cache_do_blocks_ll(c, TRUE, num, 1, c->block_size, b->data)) != 0) {
             /* write failed. this is bad. */
             /* XXX what is the sane thing to do here? */
             *rb = NULL;
@@ -232,7 +232,7 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
     }
 
     /* read the block from disk */
-    if ((err = _cache_get_blocks_ll(dev, unit, num, 1, c->block_size, b->data)) != 0) {
+    if ((err = _cache_do_blocks_ll(c, FALSE, num, 1, c->block_size, b->data)) != 0) {
         /* read failed, put the block back on the free list */
         b->free_next = c->free_head;
         c->free_head = b;
@@ -243,8 +243,6 @@ ULONG cache_get_block(struct cache *c, struct Device *dev, struct Unit *unit, UL
     }
 
     /* setup the rest of it */
-    b->device = dev;
-    b->unit = unit;
     b->num = num;
     b->is_dirty = FALSE;
 
@@ -301,14 +299,14 @@ ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
     return 0;
 }
 
-ULONG cache_get_blocks(struct cache *c, struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb) {
+ULONG cache_get_blocks(struct cache *c, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb) {
     ULONG err, i;
 
     D(bug("cache_get_blocks: loading %d blocks starting at %d, flags 0x%08x\n", nblocks, num, flags));
 
     /* XXX optimise this to get contiguous blocks in one hit */
     for (i = 0; i < nblocks; i++) {
-        if ((err = cache_get_block(c, dev, unit, num+i, flags, &rb[i])) != 0) {
+        if ((err = cache_get_block(c, num+i, flags, &rb[i])) != 0) {
             D(bug("cache_get_blocks: block load failed, freeing everything we got so far\n"));
 
             for (; i >= 0; i--)
@@ -344,7 +342,7 @@ ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
 
     D(bug("cache_mark_block_dirty: writing dirty block %d\n", b->num));
 
-    if ((err = _cache_put_blocks_ll(b->device, b->unit, b->num, 1, c->block_size, b->data)) != 0) {
+    if ((err = _cache_do_blocks_ll(c, TRUE, b->num, 1, c->block_size, b->data)) != 0) {
         D(bug("cache_mark_block_dirty: write failed, leaving block marked dirty\n"));
         b->is_dirty = 1;
         return err;
@@ -367,7 +365,7 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
     /* XXX optimise this to do contiguous blocks in one hit */
     for (i = 0; i < nblocks; i++) {
         D(bug("cache_mark_blocks_dirty: writing dirty block %d\n", b[i]->num));
-        if ((err = _cache_put_blocks_ll(b[i]->device, b[i]->unit, b[i]->num, 1, c->block_size, b[i]->data)) != 0) {
+        if ((err = _cache_do_blocks_ll(c, TRUE, b[i]->num, 1, c->block_size, b[i]->data)) != 0) {
             D(bug("cache_mark_blocks_dirty: write failed, leaving this and remaining blocks marked dirty\n"));
             b[i]->is_dirty = 1;
             for (; i < nblocks; i++) {
@@ -413,12 +411,12 @@ void cache_stats(struct cache *c) {
 
 /* lowlevel block functions */
 
-static ULONG _cache_get_blocks_ll(struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
+static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
     struct MsgPort *port;
     struct IOExtTD req;
     ULONG err;
 
-    D(bug("_cache_get_blocks_ll: request to get %ld blocks starting from %ld (block_size %ld)\n", nblocks, num, block_size));
+    D(bug("_cache_do_blocks_ll: request to %s %ld blocks starting from %ld (block_size %ld)\n", do_write ? "write" : "read", nblocks, num, block_size));
 
     port = CreateMsgPort();
 
@@ -426,14 +424,14 @@ static ULONG _cache_get_blocks_ll(struct Device *dev, struct Unit *unit, ULONG n
     req.iotd_Req.io_Message.mn_ReplyPort = port;
     req.iotd_Req.io_Message.mn_Length = sizeof(struct IOExtTD);
 
-    req.iotd_Req.io_Command = CMD_READ;
+    req.iotd_Req.io_Command = do_write ? CMD_WRITE : CMD_READ;
     req.iotd_Req.io_Offset = num * block_size;
     req.iotd_Req.io_Length = nblocks * block_size;
     req.iotd_Req.io_Data = data;
     req.iotd_Req.io_Flags = IOF_QUICK;
 
-    req.iotd_Req.io_Device = dev;
-    req.iotd_Req.io_Unit = unit;
+    req.iotd_Req.io_Device = c->device;
+    req.iotd_Req.io_Unit = c->unit;
 
     DoIO((struct IORequest *) &req);
 
@@ -441,40 +439,7 @@ static ULONG _cache_get_blocks_ll(struct Device *dev, struct Unit *unit, ULONG n
 
     DeleteMsgPort(port);
 
-    D(bug("_cache_get_blocks_ll: returning error %ld\n", err));
-
-    return err;
-}
-
-static ULONG _cache_put_blocks_ll(struct Device *dev, struct Unit *unit, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
-    struct MsgPort *port;
-    struct IOExtTD req;
-    ULONG err;
-
-    D(bug("_cache_put_blocks_ll: request to put %ld blocks starting from %ld (block_size %ld)\n", nblocks, num, block_size));
-
-    port = CreateMsgPort();
-
-    req.iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    req.iotd_Req.io_Message.mn_ReplyPort = port;
-    req.iotd_Req.io_Message.mn_Length = sizeof(struct IOExtTD);
-
-    req.iotd_Req.io_Command = CMD_WRITE;
-    req.iotd_Req.io_Offset = num * block_size;
-    req.iotd_Req.io_Length = nblocks * block_size;
-    req.iotd_Req.io_Data = data;
-    req.iotd_Req.io_Flags = IOF_QUICK;
-
-    req.iotd_Req.io_Device = dev;
-    req.iotd_Req.io_Unit = unit;
-
-    DoIO((struct IORequest *) &req);
-
-    err = req.iotd_Req.io_Error;
-
-    DeleteMsgPort(port);
-
-    D(bug("_cache_put_blocks_ll: returning error %ld\n", err));
+    D(bug("_cache_do_blocks_ll: returning error %ld\n", err));
 
     return err;
 }
