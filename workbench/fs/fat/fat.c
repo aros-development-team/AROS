@@ -45,8 +45,6 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, struct cache_bloc
 
         /* load some more */
         cache_get_blocks(sb->cache,
-                         glob->diskioreq->iotd_Req.io_Device,
-                         glob->diskioreq->iotd_Req.io_Unit,
                          sb->first_device_sector + sb->first_fat_sector +
                             (entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)),
                          sb->fat_blocks_count,
@@ -299,7 +297,9 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         return ERROR_NOT_A_DOS_DISK;
     }
 
-    sb->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
+    sb->cache = cache_new(glob->diskioreq->iotd_Req.io_Device,
+                          glob->diskioreq->iotd_Req.io_Unit,
+                          64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
  
     if (sb->clusters_count < 4085) {
         D(bug("\tFAT12 filesystem detected\n"));

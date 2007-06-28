@@ -161,7 +161,7 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
-            err = cache_get_block(ioh->sb->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
+            err = cache_get_block(ioh->sb->cache, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
             if (err > 0) {
                 RESET_HANDLE(ioh);
 
@@ -327,7 +327,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 
             D(bug("[fat] requesting sector %ld from cache\n", ioh->cur_sector));
 
-            err = cache_get_block(ioh->sb->cache, glob->diskioreq->iotd_Req.io_Device, glob->diskioreq->iotd_Req.io_Unit, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
+            err = cache_get_block(ioh->sb->cache, ioh->sb->first_device_sector + ioh->cur_sector, 0, &b);
             if (err > 0) {
                 RESET_HANDLE(ioh);
 
