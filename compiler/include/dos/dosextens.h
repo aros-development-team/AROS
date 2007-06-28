@@ -70,7 +70,6 @@ struct DosLibrary
     /* These are AROS specific extensions. They are all PRIVATE! */
     struct timerequest	   dl_TimerIO;
 
-    struct SignalSemaphore dl_DosListLock;
     struct DosList	 * dl_DevInfo;
     struct ExecBase	 * dl_SysBase;
     BPTR		   dl_SegList;
@@ -141,12 +140,6 @@ struct CLIInfo
     struct Process  *ci_Process;
 };
 
-
-/* The following structures in this sections are not used by AROS and may
-   be removed in the future. So BEWARE, if you use them. */
-
-#if 0
-
 struct DosInfo
 {
     BPTR di_McName;   /* PRIVATE */
@@ -161,8 +154,6 @@ struct DosInfo
     struct SignalSemaphore di_DeleteLock;
 };
 #define di_ResList di_McName
-
-#endif
 
 /**********************************************************************
  ***************************** Processes ******************************
@@ -669,23 +660,6 @@ struct DosPacket
 #define ACTION_REMOVE_NOTIFY 4098
 
 #define ACTION_SERIALIZE_DISK 4200
-
-/* AROS-specific actions 1800-1899 */
-
-/* ACTION_PIPE: create a pair of handles connected to each other
- *
- * LONG ACTION_PIPE(BPTR lock, STRPTR path, BPTR reader, BPTR writer)
- * dp_Res1          dp_Arg1    dp_Arg2      dp_Arg3      dp_Arg4
- *
- 
- * This opens a "file" (which will usually be a pipe device) and returns two
- * handles such that writing data to the writer will result in that data
- * appearing on the reader. Both handles must be closed for the underlying
- * file to be closed. If the NULL lock and a NULL/empty path is supplied, an
- * unnamed pipe will be created, which will be destroyed once both handles are
- * closed. */
-#define ACTION_PIPE            1800
-
 
 /* Structure for easy handling of DosPackets. DosPackets don´t have to be in
    this structure, but this struture may ease the use of it. */

@@ -1,7 +1,5 @@
 SetClock LOAD
 
-Mount PIPEFS:
-
 FailAt 21
 
 Makedir RAM:Clipboards RAM:ENV RAM:ENV/SYS
@@ -13,11 +11,7 @@ Assign ENV:     RAM:ENV
 Assign T:       RAM:T
 Assign CLIPS:   RAM:Clipboards
 
-If EXISTS DEVS:DOSDrivers
-    List >NIL: DEVS:DOSDrivers/~(#?.info) NOHEAD FILES TO T:Mount LFORMAT="C:Mount %s:*N"
-    Execute T:Mount
-    Delete T:Mount QUIET
-EndIf
+Mount >NIL: DEVS:DOSDrivers/~(#?.info)
 
 Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale

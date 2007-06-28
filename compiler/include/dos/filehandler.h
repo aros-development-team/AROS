@@ -48,7 +48,7 @@ struct DosEnvec
                             */
     IPTR de_MaxTransfer;    /* How many bytes may be transferred together? */
     IPTR de_Mask;           /* Memory address mask for DMA devices. */
-    IPTR de_BootPri;        /* Priority of Autoboot. */
+    LONG de_BootPri;        /* Priority of Autoboot. */
     IPTR de_DosType;        /* Type of disk. See <dos/dos.h> for definitions.
                             */
     IPTR de_Baud;           /* Baud rate to use. */
@@ -121,7 +121,8 @@ struct DeviceNode
     ULONG dn_StackSize;  /* Initial stacksize for packet-handler task */
     LONG  dn_Priority;   /* Initial priority for packet-handler task */
     BPTR  dn_Startup;    /* (struct FileSysStartupMsg *) see above */
-    BPTR  dn_NoAROS3[2]; /* PRIVATE */
+    BPTR  dn_SegList;    /* SegList (for packet handlers) */
+    BPTR  dn_GlobalVec;  /* Ignored, historic */
 
     BSTR   dn_Name;
 

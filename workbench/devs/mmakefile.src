@@ -47,7 +47,10 @@ include $(TOP)/config/make.cfg
   uselibs="arossupport amiga rom"
 
 #MM
-workbench-devs-mountlist : $(AROS_DEVS)/Mountlist
+workbench-devs-mountlist : $(AROS_DEVS)/Mountlist workbench-devs-dosdrivers
 
 $(AROS_DEVS)/Mountlist : Mountlist
 	@$(CP) $< $@
+
+workbench-devs-dosdrivers
+	@$(CP) -r DOSDrivers $(AROS_DEVS)

@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -45,13 +46,52 @@
 
     INTERNALS
 
+    HISTORY
+	04-06-07    sonic   merged back from MorphOS source code
+	29-10-95    digulla automatically created from
+			    dos_lib.fd and clib/dos_protos.h
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    if(flags&LDF_WRITE)
-	ObtainSemaphore(&DOSBase->dl_DosListLock);
-    else
-	ObtainSemaphoreShared(&DOSBase->dl_DosListLock);
+
+    struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
+
+    D(bug("LockDosList: flags = $%lx\n", flags));
+
+    if (((flags & (LDF_READ|LDF_WRITE)) != LDF_READ &&
+	 (flags & (LDF_READ|LDF_WRITE)) != LDF_WRITE) ||
+	(flags & ~(LDF_READ|LDF_WRITE|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS|LDF_ENTRY|LDF_DELETE)))
+	return NULL;
+
+    if (flags & LDF_ALL)
+    {
+	if (flags & LDF_WRITE)
+	    ObtainSemaphore(&di->di_DevLock);
+	else
+	    ObtainSemaphoreShared(&di->di_DevLock);
+    }
+
+    if (flags & LDF_ENTRY)
+    {
+	if (flags & LDF_WRITE)
+	    ObtainSemaphore(&di->di_EntryLock);
+	else
+	    ObtainSemaphoreShared(&di->di_EntryLock);
+    }
+
+    if (flags & LDF_DELETE)
+    {
+	if (flags & LDF_WRITE)
+	    ObtainSemaphore(&di->di_DeleteLock);
+	else
+	    ObtainSemaphoreShared(&di->di_DeleteLock);
+    }
+
+/* This strange thing came from MorphOS.
+    Forbid(); */
+
     return (struct DosList *)&DOSBase->dl_DevInfo;
+
     AROS_LIBFUNC_EXIT
 } /* LockDosList */

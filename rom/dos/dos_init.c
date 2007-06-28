@@ -37,19 +37,24 @@ static int DosInit(LIBBASETYPEPTR LIBBASE)
     __AROS_SETVECADDR(LIBBASE, 68, __AROS_GETVECADDR(LIBBASE, 67));
     
     ULONG * taskarray;
+    struct DosInfo *dosinfo;
 
     LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
                                                    MEMF_PUBLIC|MEMF_CLEAR);
+    dosinfo = AllocMem(sizeof(struct DosInfo), MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Init the RootNode structure */
     taskarray = (ULONG *)AllocMem(sizeof(ULONG) + sizeof(APTR), MEMF_CLEAR);
     taskarray[0] = 1;
     LIBBASE->dl_Root->rn_TaskArray = MKBADDR(taskarray);
+    LIBBASE->dl_Root->rn_Info= MKBADDR(dosinfo);
 
     NEWLIST((struct List *)&LIBBASE->dl_Root->rn_CliList);
     InitSemaphore(&LIBBASE->dl_Root->rn_RootLock);
 
-    InitSemaphore(&LIBBASE->dl_DosListLock);
+    InitSemaphore(&dosinfo->di_DevLock);
+    InitSemaphore(&dosinfo->di_EntryLock);
+    InitSemaphore(&dosinfo->di_DeleteLock);
 
     /* Initialize for the fools that illegally used this field */
     LIBBASE->dl_UtilityBase = (struct Library*) UtilityBase;

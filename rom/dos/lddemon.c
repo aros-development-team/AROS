@@ -801,10 +801,7 @@ AROS_UFH3(void, LDDemon,
 		ldd->ldd_BaseDir,
 		DOSBase);
 
-	    if (ldd->ldd_Return == 0)
-		bug("[LDDemon] Could not open %s\n",ldd->ldd_Name);
-	    else
-	    	D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
+	    D(bug("[LDDemon] Replying with %p as result\n", ldd->ldd_Return));
 	    ReplyMsg((struct Message *)ldd);
 	} /* messages available */
     }
@@ -832,6 +829,7 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 	{ NP_Entry, (IPTR)LDDemon },
 	{ NP_Input, 0 },
 	{ NP_Output, 0 },
+	{ NP_WindowPtr, -1 },
 	{ NP_Name, (IPTR)ldDemonName },
 	{ NP_StackSize, AROS_STACKSIZE },
 	{ TAG_END , 0 }

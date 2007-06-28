@@ -149,7 +149,6 @@ struct StackVars
     UBYTE           *HookBuffer;
     ULONG            HookBufSize;
     ULONG            HookPosition;
-    BOOL    	     DidCreateDTList;
 };
 
 #undef  SysBase
@@ -159,7 +158,6 @@ struct StackVars
 #define HookBuffer        sv->HookBuffer
 #define HookBufSize       sv->HookBufSize
 #define HookPosition      sv->HookPosition
-#define DidCreateDTList   sv->DidCreateDTList
 
 /****** AddDatatypes/main *****************************************************
 *
@@ -229,7 +227,7 @@ int main(void)
 	    {
 		if(AA.aa_Refresh)
 		{
-		    if(DidCreateDTList || DateScan(sv))
+		    if(DateScan(sv))
 		    {
 			ScanDirectory(sv, "DEVS:DataTypes");
 		    }
@@ -464,50 +462,18 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 {
     struct DataTypesList *dtl = NULL;
     struct NamedObject   *no  = NULL;
+    struct Library *DTBase;
+
+    /* We do this in order to force datatypes.library to get
+       loaded and initialized. During this process it will
+       create and install datatypes list object in memory. */
+    DTBase = OpenLibrary("datatypes.library", 0);
+    if (DTBase)
+	CloseLibrary(DTBase);
     
     if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
     {
 	dtl = (struct DataTypesList*)no->no_Object;
-    }
-    
-    if(!dtl)
-    {
-    	struct TagItem tags[] =
-	{
-	    {ANO_NameSpace  , TRUE  	    	    	    },
-	    {ANO_UserSpace  , sizeof(struct DataTypesList)  },
-	    {ANO_Flags	    , NSF_NODUPS | NSF_CASE 	    },
-	    {TAG_DONE	    	    	    	    	    }
-	};
-	
-	if((no = AllocNamedObjectA(DATATYPESLIST, tags)))
-	    {
-		if(!(dtl = (struct DataTypesList*)no->no_Object))
-		{
-		    FreeNamedObject(no);
-		    no = NULL;
-		}
-	    }
-	
-	if(dtl)
-	{
-	    InitSemaphore(&dtl->dtl_Lock);
-	    
-	    DidCreateDTList = TRUE;
-	    
-	    NewList(&dtl->dtl_SortedList);
-	    NewList(&dtl->dtl_BinaryList);
-	    NewList(&dtl->dtl_ASCIIList);
-	    NewList(&dtl->dtl_IFFList);
-	    NewList(&dtl->dtl_MiscList);
-	    
-	    if(!AddNamedObject(NULL, no))
-	    {
-		FreeNamedObject(no);
-		no = NULL;
-		dtl = NULL;
-	    }
-	}
     }
     
     if(dtl)

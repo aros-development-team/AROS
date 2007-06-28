@@ -12,7 +12,7 @@
 
 #include <proto/exec.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "datatypes_intern.h"
@@ -40,6 +40,9 @@ static int Init(LIBBASETYPEPTR LIBBASE)
     
     /* Get the list of datatypes */
     LIBBASE->dtb_DTList = GetDataTypesList(LIBBASE);
+    D(bug("Datatypes list at 0x%08lX\n", LIBBASE->dtb_DTList));
+    if (!LIBBASE->dtb_DTList)
+	return FALSE;
 
     if(!InstallClass((struct Library *)LIBBASE))
 	return FALSE;

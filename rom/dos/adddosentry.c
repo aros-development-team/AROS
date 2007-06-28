@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+
+#include <aros/debug.h>
 #include <dos/dosextens.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
@@ -48,6 +51,21 @@
     SEE ALSO
 
     INTERNALS
+	Behavour of this function is slightly different from AmigaOS 3.x
+	and MorphOS. Instead of LDF_WRITE it locks DosList with LDF_READ
+	flag. This is done because in AROS handlers are run with DosList
+	locked with LDF_READ flag and this could cause a lockup if we use
+	LDF_WRITE here.
+	
+	Due to nature of the DosList it is safe to read the list while
+	someone is adding a node, adding operation is atomic to other
+	readers. The only problem here would happen if more than one
+	process	attempts to add a DosNode at the same time. In order to
+	avoid this race condition we make this call single-threaded
+	using an LDF_ENTRY lock in LDF_WRITE mode.
+	
+	LDF_ENTRY is NOT touched when a handler is started up in this
+	dos.library implmentation. LDF_DELETE is not used at all.
 
 *****************************************************************************/
 {
@@ -58,7 +76,8 @@
 
     if (dlist == NULL) return success;
 
-    dl = LockDosList(LDF_ALL | LDF_WRITE);
+    D(bug("[AddDosEntry] Adding %b\n", dlist->dol_Name));
+    dl = LockDosList(LDF_ALL | LDF_READ);
 
     /* If the passed entry has dol_Task defined, then its a packet-based
      * handler, and probably doesn't have valid dol_DevName, dol_Device and
@@ -86,7 +105,16 @@
                 break;
             }
     }
+    /* Software ported from AmigaOS may be unaware of dol_DevName existance.
+     * In this case dol_DevName will be NULL (this assumes that it allocates
+     * the DosNode in a system-friendly manner using AllocDosObject().
+     */
+    if (!dlist->dol_Ext.dol_AROS.dol_DevName) {
+	dlist->dol_Ext.dol_AROS.dol_DevName = AROS_BSTR_ADDR(dlist->dol_Name);
+	D(bug("[AddDosEntry] Filling in dol_DevName: %s\n", dlist->dol_Ext.dol_AROS.dol_DevName));
+    }
 
+    LockDosList(LDF_ENTRY|LDF_WRITE);
     if(dlist->dol_Type != DLT_VOLUME)
     {
 	while(TRUE)
@@ -111,7 +139,8 @@
 	DOSBase->dl_DevInfo = dlist;
     }
 
-    UnLockDosList(LDF_ALL | LDF_WRITE);
+    UnLockDosList(LDF_ENTRY|LDF_WRITE);
+    UnLockDosList(LDF_ALL | LDF_READ);
 
     return success;    
 

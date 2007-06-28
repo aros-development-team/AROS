@@ -326,8 +326,17 @@
 
     /* devices and volumes are easy */
     if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME) {
-        /* XXX if dvp_Port is NULL, then we're supposed to get the handler
-         * online here. Pavel's upcoming changes will implement this */
+	if (dl->dol_Type == DLT_DEVICE) {
+	    if (!dl->dol_Ext.dol_AROS.dol_Device) {
+		D(bug("Accessing offline device %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
+		RunHandler((struct DeviceNode *)dl, DOSBase);
+	    }
+	} else {
+	    while (!dl->dol_Ext.dol_AROS.dol_Device) {
+	    	D(bug("Accessing offline volume %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
+		ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (ULONG)dl, NULL);
+	    }
+	}
         dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
         dp->dvp_Lock = NULL;
         dp->dvp_Flags = 0;
@@ -405,3 +414,60 @@
 
     AROS_LIBFUNC_EXIT
 } /* GetDeviceProc */
+
+/* Attempt to start a handler for the DeviceNode */
+BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
+{
+    struct MsgPort *mp;
+    struct IOFileSys *iofs;
+    BOOL ok = FALSE;
+
+    mp = CreateMsgPort();
+
+    if (mp != NULL)
+    {
+        iofs = (struct IOFileSys *)CreateIORequest(mp, sizeof(struct IOFileSys));
+
+        if (iofs != NULL)
+        {
+	    STRPTR handler;
+	    struct FileSysStartupMsg *fssm;
+
+	    if (deviceNode->dn_Handler == NULL)
+	    {
+		handler = "afs.handler";
+	    }
+	    else
+	    {
+		handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
+	    }
+
+	    /* FIXME: this assumes that dol_Startup points to struct FileSysStartupMsg.
+	       This is not true for plain handlers, dol_Startup is a BSTR in this case.
+	       In order to make use of this we should implement direct support for
+	       packet-style handlers in dos.library */
+	    fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
+	    iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
+	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
+	    iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
+	    iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_Ext.dn_AROS.dn_DevName;
+	    iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
+
+	    D(bug("Starting up %s\n", handler));
+	    if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags) ||
+        	!OpenDevice("packet.handler", 0, &iofs->IOFS, fssm->fssm_Flags))
+	    {
+		/* Ok, this means that the handler was able to open. */
+		D(bug("Handler started\n"));
+		deviceNode->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
+		deviceNode->dn_Ext.dn_AROS.dn_Unit = iofs->IOFS.io_Unit;
+		ok = TRUE;
+	    }
+
+	    DeleteIORequest(&iofs->IOFS);
+	}
+
+	DeleteMsgPort(mp);
+    }
+    return ok;
+}

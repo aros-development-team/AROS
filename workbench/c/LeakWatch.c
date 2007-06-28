@@ -361,6 +361,8 @@ static BOOL AddAClass(struct List *opened,
 /* Add opencount-based resources to the tracking list. */
 static BOOL AddOpenedResources(struct List *opened)
 {
+    struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
+
     if (!AddLibs(opened))
 	return FALSE;
     if (!AddDevs(opened))
@@ -375,7 +377,7 @@ static BOOL AddOpenedResources(struct List *opened)
 	return FALSE;
     if (!AddNodeNames(opened, &SysBase->SemaphoreList, "Semaphore"))
 	return FALSE;
-    if (!AddASemaphore(opened, &DOSBase->dl_DosListLock, "dl_DosListLock"))
+    if (!AddASemaphore(opened, &di->di_DevLock, "di_DevLock"))
 	return FALSE;
     if (!AddAClass(opened, ((struct GadToolsBase_intern *)GadToolsBase)->buttonclass, "button"))
 	return FALSE;
