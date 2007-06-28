@@ -87,7 +87,7 @@ if(input!=NULL)					\
     do
     {
         GET(c);
-    }while(c==' '||c=='\t'||c=='\n');
+    } while (c==' '||c=='\t');
 
     if(!c||c=='\n'||c==EOF)
     {

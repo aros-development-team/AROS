@@ -7,7 +7,7 @@
 */
 
 
-# define  DEBUG  0
+# define  DEBUG  1
 # include <aros/debug.h>
 
 #include <aros/macros.h>
@@ -31,6 +31,8 @@
 #include <proto/dos.h>
 
 #include <string.h>
+
+#include "dos_intern.h"
 
 extern void boot();
 
@@ -83,9 +85,6 @@ AROS_UFH3(void, intBoot,
             bootNode, bootNode->bn_DeviceNode,
 	    deviceName ? deviceName : "(null)" 
 	));
-#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-	AddDosEntry( (struct DosList *) bootNode->bn_DeviceNode );
-#else
     	/* 
             Try to mount the filesystem. If it fails, remove the BootNode 
 	    from the list so DOS doesn't try to boot from it later. 
@@ -96,7 +95,6 @@ AROS_UFH3(void, intBoot,
 	{
 	    REMOVE( bootNode );
 	}
-#endif
     }
    
     /**** Try to find a bootable filesystem ****************************************/   
@@ -241,6 +239,7 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 	{ NP_Name,	 (IPTR) "Boot Process" },
 	{ NP_Input,	 (IPTR) NULL },
 	{ NP_Output,	 (IPTR) NULL },
+	{ NP_WindowPtr,  -1 },
 	{ NP_CurrentDir, (IPTR) NULL },
 	{ NP_StackSize, AROS_STACKSIZE * 2},
 	{ NP_Cli,	 (IPTR) 0 },
@@ -260,46 +259,19 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 
 BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase ) 
 {
-    struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
-    struct IOFileSys         *iofs;
-    struct MsgPort           *mp = CreateMsgPort();
-    BOOL                      rc = FALSE;
-    
-    if (mp != NULL)
-    {
-	iofs = (struct IOFileSys *)CreateIORequest(mp,
-						   sizeof(struct IOFileSys));
-	if (iofs != NULL)
-	{
-	    iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
-	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
-	    iofs->io_Union.io_OpenDevice.io_Environ    = BADDR(fssm->fssm_Environ);
-	    iofs->io_Union.io_OpenDevice.io_DosName    = dn->dn_Ext.dn_AROS.dn_DevName;
-	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
-	    {
-		if (AddDosEntry((struct DosList *) dn))
-		{
-		    dn->dn_Ext.dn_AROS.dn_Unit = iofs->IOFS.io_Unit;
-		    dn->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
-		    /* Do not close filesys !!! */
-		    rc = TRUE;
-		}
-	    }
+    BOOL rc; 
 
-	    DeleteIORequest((struct IORequest *)iofs);
-	}
-	else
+    if (!dn->dn_Ext.dn_AROS.dn_Device)
+	rc = RunHandler(dn, DOSBase);
+    else
+	rc = TRUE;
+    if (rc)    
+    {
+	if (!AddDosEntry((struct DosList *) dn))
 	{
 	    Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
 	}
-
-	DeleteMsgPort(mp);
     }
-    else
-    {
-	Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-    }
-    
     return rc;
 }
 

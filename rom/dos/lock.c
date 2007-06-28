@@ -100,21 +100,28 @@
          * GetDeviceProc(), as it will call NameFromLock(), which will
          * DupLock(), which will end up here */
         if (*name == '\0') {
+	    BPTR cur;
             struct FileHandle *fh;
 
-            if (me->pr_CurrentDir != NULL)
-                fh = BADDR(me->pr_CurrentDir);
-            else
-                fh = BADDR(DOSBase->dl_SYSLock);
+	    cur = me->pr_CurrentDir;
+	    if (!cur)
+		cur = DOSBase->dl_SYSLock;
 
-            iofs.io_Union.io_OPEN.io_Filename = "";
+	    if (cur) {
+		fh = BADDR(cur);
 
-            iofs.IOFS.io_Device = fh->fh_Device;
-            iofs.IOFS.io_Unit = fh->fh_Unit;
+        	iofs.io_Union.io_OPEN.io_Filename = "";
 
-            DosDoIO(&iofs.IOFS);
+        	iofs.IOFS.io_Device = fh->fh_Device;
+        	iofs.IOFS.io_Unit = fh->fh_Unit;
 
-            error = me->pr_Result2 = iofs.io_DosError;
+        	DosDoIO(&iofs.IOFS);
+
+        	error = me->pr_Result2 = iofs.io_DosError;
+	    } else {
+		error = ERROR_OBJECT_NOT_FOUND;
+		SetIoErr(error);
+	    }
         }
 
         else {

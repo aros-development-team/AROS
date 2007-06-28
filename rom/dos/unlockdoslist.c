@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -39,9 +40,31 @@
 
     INTERNALS
 
+    HISTORY
+	04-06-07    sonic   - imported back from MorphOS source code
+			    - removed Permit()
+	29-10-95    digulla automatically created from
+			    dos_lib.fd and clib/dos_protos.h
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    ReleaseSemaphore(&DOSBase->dl_DosListLock);
+
+    struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
+
+    D(bug("UnLockDosList: flags = $%lx\n", flags));
+
+    if (flags & LDF_ALL)
+	ReleaseSemaphore(&di->di_DevLock);
+
+    if (flags & LDF_ENTRY)
+	ReleaseSemaphore(&di->di_EntryLock);
+
+    if (flags & LDF_DELETE)
+	ReleaseSemaphore(&di->di_DeleteLock);
+
+/* This came from MorphOS. Left for reference.
+    Permit(); */
+
     AROS_LIBFUNC_EXIT
 } /* UnLockDosList */

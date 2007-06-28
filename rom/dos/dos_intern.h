@@ -74,7 +74,7 @@ LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, STRPTR name, struct Dos
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
 
-
+BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase);
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
 BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name,

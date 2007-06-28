@@ -6,6 +6,7 @@
 #define USE_BOOPSI_STUBS
 #include <aros/macros.h>
 #include <datatypes/datatypes.h>
+#include <proto/alib.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
@@ -56,10 +57,49 @@ struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
     
     if((no = FindNamedObject(NULL, DATATYPESLIST, NULL)))
     {
-	ReleaseNamedObject(no);
 	dtl = (struct DataTypesList *)no->no_Object;
     }
-    
+
+    if(!dtl)
+    {
+    	struct TagItem tags[] =
+	{
+	    {ANO_NameSpace  , TRUE  	    	    	    },
+	    {ANO_UserSpace  , sizeof(struct DataTypesList)  },
+	    {ANO_Flags	    , NSF_NODUPS | NSF_CASE 	    },
+	    {TAG_DONE	    	    	    	    	    }
+	};
+	
+	if((no = AllocNamedObjectA(DATATYPESLIST, tags)))
+	    {
+		if(!(dtl = (struct DataTypesList*)no->no_Object))
+		{
+		    FreeNamedObject(no);
+		    no = NULL;
+		}
+	    }
+	
+	if(dtl)
+	{
+	    InitSemaphore(&dtl->dtl_Lock);
+	    NewList(&dtl->dtl_SortedList);
+	    NewList(&dtl->dtl_BinaryList);
+	    NewList(&dtl->dtl_ASCIIList);
+	    NewList(&dtl->dtl_IFFList);
+	    NewList(&dtl->dtl_MiscList);
+	    
+	    if(!AddNamedObject(NULL, no))
+	    {
+		FreeNamedObject(no);
+		no = NULL;
+		dtl = NULL;
+	    }
+	}
+    }
+
+    if (no)
+	ReleaseNamedObject(no);
+
     return(dtl);
 }
 
