@@ -12,6 +12,7 @@
 #include <sys/cdefs.h>
 
 #include <stddef.h>
+#include <sdgstd.h>
 
 __BEGIN_DECLS
 
