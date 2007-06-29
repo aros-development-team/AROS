@@ -190,7 +190,6 @@ LONG mount(IPTR	*params, STRPTR	name);
 void __stackparm ShowError(char *s, ...);
 void ShowFault(LONG code, char *s, ...);
 
-struct ExecBase	*SysBase;
 struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
 UtilityBase_t UtilityBase;
@@ -222,7 +221,6 @@ LONG		error = RETURN_FAIL;
 struct RDArgs	*rda;
 char            dirname[512];
 
-  SysBase = *((struct ExecBase**) 4);
   MyProcess = (struct Process*) FindTask(NULL);
 
   if (!MyProcess->pr_CLI)

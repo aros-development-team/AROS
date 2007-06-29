@@ -1,0 +1,2 @@
+EHandler = pipefs.handler
+Activate = 1
