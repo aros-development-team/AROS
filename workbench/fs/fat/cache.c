@@ -57,6 +57,7 @@
 #include <exec/errors.h>
 #include <dos/dos.h>
 #include <devices/trackdisk.h>
+#include <devices/newstyle.h>
 
 #include <proto/exec.h>
 
@@ -67,8 +68,9 @@
 
 /* prototype for lowlevel block function */
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
+static void _cache_64bit_support(struct cache *c);
 
-struct cache *cache_new(struct IOExtTD *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
+struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
     struct cache *c;
     ULONG i;
 
@@ -86,9 +88,11 @@ struct cache *cache_new(struct IOExtTD *req, ULONG hash_size, ULONG num_blocks, 
 
     c->block_size = block_size;
 
-    if ((flags & (CACHE_WRITETHROUGH | CACHE_WRITEBACK)) == 0)
-        flags |= CACHE_WRITETHROUGH;
-    c->flags = flags;
+    c->flags = CACHE_WRITETHROUGH;
+    if ((flags & (CACHE_WRITEBACK | CACHE_WRITETHROUGH)) == CACHE_WRITEBACK)
+        c->flags = CACHE_WRITEBACK;
+
+    _cache_64bit_support(c);
 
     c->num_blocks = num_blocks;
     c->num_in_use = 0;
@@ -391,7 +395,10 @@ void cache_stats(struct cache *c) {
     kprintf("    block size: %ld bytes\n", c->block_size);
     kprintf("    total blocks: %ld\n", c->num_blocks);
     kprintf("    flags:%s%s\n", c->flags & CACHE_WRITETHROUGH ? " CACHE_WRITETHROUGH" : "",
-                                c->flags & CACHE_WRITEBACK    ? " CACHE_WRITEBACK"    : "");
+                                c->flags & CACHE_WRITEBACK    ? " CACHE_WRITEBACK"    : "",
+                                c->flags & CACHE_64_TD64      ? " CACHE_64_TD64"      : "",
+                                c->flags & CACHE_64_NSD       ? " CACHE_64_NSD"       : "",
+                                c->flags & CACHE_64_SCSI      ? " CACHE_64_SCSI"      : "");
     kprintf("    total blocks in use: %ld\n", c->num_in_use);
 
     count = 0;
@@ -411,24 +418,63 @@ void cache_stats(struct cache *c) {
     kprintf("    hits: %ld    misses: %ld\n", c->hits, c->misses);
 }
 
-/* lowlevel block functions */
-
+/* lowlevel block function */
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
     ULONG err;
 
     D(bug("_cache_do_blocks_ll: request to %s %ld blocks starting from %ld (block_size %ld)\n", do_write ? "write" : "read", nblocks, num, block_size));
 
-    c->req->iotd_Req.io_Command = do_write ? CMD_WRITE : CMD_READ;
-    c->req->iotd_Req.io_Offset = num * block_size;
-    c->req->iotd_Req.io_Length = nblocks * block_size;
-    c->req->iotd_Req.io_Data = data;
-    c->req->iotd_Req.io_Flags = IOF_QUICK;
+    c->req->io_Command = do_write ? CMD_WRITE : CMD_READ;
+    c->req->io_Offset = num * block_size;
+    c->req->io_Length = nblocks * block_size;
+    c->req->io_Data = data;
+    c->req->io_Flags = IOF_QUICK;
 
     DoIO((struct IORequest *) c->req);
 
-    err = c->req->iotd_Req.io_Error;
+    err = c->req->io_Error;
 
     D(bug("_cache_do_blocks_ll: returning error %ld\n", err));
 
     return err;
+}
+
+/* probe the device to determine 64-bit support */
+static void _cache_64bit_support(struct cache *c) {
+    struct NSDeviceQueryResult nsd_query;
+    UWORD *nsd_cmd;
+
+    /* probe TD64 */
+    c->req->io_Command = 24; /* TD_READ64 */
+    c->req->io_Offset = 0;
+    c->req->io_Length = 0;
+    c->req->io_Actual = 0;
+    c->req->io_Data = 0;
+    c->req->io_Flags = IOF_QUICK;
+
+    if (DoIO((struct IORequest *) c->req) == 0 && c->req->io_Error != IOERR_NOCMD) {
+        D(bug("_cache_64bit_support: device supports 64-bit trackdisk extensions\n"));
+        c->flags |= CACHE_64_TD64;
+    }
+
+    /* probe NSD */
+    c->req->io_Command = NSCMD_DEVICEQUERY;
+    c->req->io_Length = sizeof(struct NSDeviceQueryResult);
+    c->req->io_Data = (APTR) &nsd_query;
+
+    if (DoIO((struct IORequest *) c->req) == 0 && c->req->io_Error != IOERR_NOCMD)
+        for (nsd_cmd = nsd_query.SupportedCommands; *nsd_cmd != 0; nsd_cmd++) {
+            if (*nsd_cmd == NSCMD_TD_READ64) {
+                D(bug("_cache_64bit_support: device supports NSD 64-bit trackdisk extensions\n"));
+                c->flags |= CACHE_64_NSD;
+                break;
+            }
+        }
+
+    /* XXX probe DirectSCSI */
+
+    if (c->flags & CACHE_64_MASK)
+        D(bug("_cache_64bit_support: 64-bit access available\n"));
+    else
+        D(bug("_cache_64bit_support: 64-bit access not available\n"));
 }
