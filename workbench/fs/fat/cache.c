@@ -66,6 +66,12 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/* TD64 commands */
+#ifndef TD_READ64
+#  define TD_READ64     24
+#  define TD_WRITE64    25
+#endif
+
 /* prototype for lowlevel block function */
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
 static void _cache_64bit_support(struct cache *c);
@@ -421,14 +427,35 @@ void cache_stats(struct cache *c) {
 /* lowlevel block function */
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
     ULONG err;
+    UQUAD off;
+    ULONG low, high;
 
     D(bug("_cache_do_blocks_ll: request to %s %ld blocks starting from %ld (block_size %ld)\n", do_write ? "write" : "read", nblocks, num, block_size));
 
-    c->req->io_Command = do_write ? CMD_WRITE : CMD_READ;
-    c->req->io_Offset = num * block_size;
+    off = ((UQUAD) num) * 512;
+
+    low = off & 0xffffffff;
+    high = off >> 32;
+
+    if (high > 0 && !(c->flags & CACHE_64_MASK)) {
+        D(bug("_cache_do_blocks_ll: 64-bit operation requested but underlying device doesn't support it\n"));
+        return IOERR_NOCMD;
+    }
+
+    /* !!! support DirectSCSI */
+
+    c->req->io_Offset = low;
+    c->req->io_Actual = high;
     c->req->io_Length = nblocks * block_size;
     c->req->io_Data = data;
     c->req->io_Flags = IOF_QUICK;
+
+    if (high == 0)
+        c->req->io_Command = do_write ? CMD_WRITE : CMD_READ;
+    else if (c->flags & CACHE_64_TD64)
+        c->req->io_Command = do_write ? TD_WRITE64 : TD_READ64;
+    else if (c->flags & CACHE_64_NSD)
+        c->req->io_Command = do_write ? NSCMD_TD_WRITE64 : NSCMD_TD_READ64;
 
     DoIO((struct IORequest *) c->req);
 
@@ -445,7 +472,7 @@ static void _cache_64bit_support(struct cache *c) {
     UWORD *nsd_cmd;
 
     /* probe TD64 */
-    c->req->io_Command = 24; /* TD_READ64 */
+    c->req->io_Command = TD_READ64;
     c->req->io_Offset = 0;
     c->req->io_Length = 0;
     c->req->io_Actual = 0;
