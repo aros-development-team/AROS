@@ -22,7 +22,8 @@ labels2sids = {
     'Documentation'                  : 'SID_DOCUMENTATION',
     'Translation'                    : 'SID_TRANSLATION',
     'Artistry'                       : 'SID_ARTISTRY',
-    'Website'                        : 'SID_WEBSITE'    
+    'Website'                        : 'SID_WEBSITE',
+    'Datatypes'                      : 'SID_DATATYPES'
 }
 
 def parse(file):
@@ -79,6 +80,7 @@ sys.stdout.write('''#ifndef _AUTHORS_H_
 #define SID_TRANSLATION     (115)
 #define SID_ARTISTRY        (116)
 #define SID_WEBSITE         (117)
+#define SID_DATATYPES       (118)
 
 struct TagItem *AUTHORS = TAGLIST
 (
