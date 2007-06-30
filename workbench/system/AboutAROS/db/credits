@@ -85,7 +85,7 @@ Tools:
 Preferences:
     Georg Steger
     Peter Eriksson
-    Nico Fran+ois
+    Nico François
     Magnus Holmgren
 
 BGUI:
@@ -119,6 +119,14 @@ C link library and POSIX layer:
     Iain Templeton
     Henning Kiel
 
+Datatypes:
+    Johan Alfredsson
+    Sebastian Bauer
+    Georg Steger
+    Joerg Dietrich
+    Martin Gierich
+    Stephan Rupprecht
+
 Documentation:
     Adam Chodorowski
     Aaron Digulla
@@ -131,12 +139,14 @@ Documentation:
     Michal Schulz
     Daniel Holmen
     Matthias Rustler
-    
+
 Translation:
     Henning Kiel
     Adam Chodorowski
     Georg Steger
     Daniel Holmen
+    William Ouwehand
+	Ioannis Koniaris
     Sergey Mineychev
     Paolo Besser
 
@@ -156,3 +166,4 @@ Artistry:
 Website:
     Adam Chodorowski
     Daniel Holmen
+    Tom / Mithrandir
