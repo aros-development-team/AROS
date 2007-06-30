@@ -13,7 +13,7 @@
 #define CACHE_H 1
 
 #include <exec/types.h>
-#include <devices/trackdisk.h>
+#include <exec/io.h>
 
 struct cache_block {
     struct cache_block  *hash_next;     /* next block in this hash bucket */
@@ -31,7 +31,7 @@ struct cache_block {
 };
 
 struct cache {
-    struct IOExtTD      *req;           /* io request for disk access. this hold the device and unit pointers */
+    struct IOStdReq     *req;           /* io request for disk access. this hold the device and unit pointers */
 
     ULONG               hash_size;      /* size of hash table */
     ULONG               hash_mask;      /* mask applied to block number to find correct hash bucket */
@@ -54,10 +54,16 @@ struct cache {
 };
 
 /* flags for cache_new */
-#define CACHE_WRITETHROUGH  (1<<0)
-#define CACHE_WRITEBACK     (1<<1)
+#define CACHE_WRITETHROUGH  (1<<0)      /* write immediately */
+#define CACHE_WRITEBACK     (1<<1)      /* defer writes */
 
-struct cache *cache_new(struct IOExtTD *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
+/* internal flags */
+#define CACHE_64_TD64       (1<<2)      /* have 64-bit via trackdisk64 requests */ 
+#define CACHE_64_NSD        (1<<3)      /* have 64-bit via new-style device requests */
+#define CACHE_64_SCSI       (1<<4)      /* have 64-bit via DirectSCSI requests */
+#define CACHE_64_MASK       (CACHE_64_NSD | CACHE_64_TD64 | CACHE_64_SCSI)
+
+struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
 void cache_free(struct cache *c);
 
 ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_block **rb);
