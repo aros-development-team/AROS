@@ -297,9 +297,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         return ERROR_NOT_A_DOS_DISK;
     }
 
-    sb->cache = cache_new(glob->diskioreq->iotd_Req.io_Device,
-                          glob->diskioreq->iotd_Req.io_Unit,
-                          64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
+    sb->cache = cache_new(glob->diskioreq, 64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
  
     if (sb->clusters_count < 4085) {
         D(bug("\tFAT12 filesystem detected\n"));
