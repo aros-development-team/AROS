@@ -78,6 +78,7 @@ STRPTR Section2Name(ULONG section)
         case SID_TRANSLATION:    return _(MSG_SECTION_TRANSLATION);
         case SID_ARTISTRY:       return _(MSG_SECTION_ARTISTRY);
         case SID_WEBSITE:        return _(MSG_SECTION_WEBSITE);
+        case SID_DATATYPES:      return _(MSG_SECTION_DATATYPES);
         default:                 return NULL;
     }
 }
