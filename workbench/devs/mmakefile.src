@@ -54,4 +54,4 @@ $(AROS_DEVS)/Mountlist : Mountlist
 
 #MM workbench-devs-dosdrivers
 workbench-devs-dosdrivers :
-	@if [ -d DOSDrivers ] ; then $(CP) -r DOSDrivers $(AROS_DEVS) ; fi
+	@if [ -d DOSDrivers ] ; then $(MKDIR) $(AROS_DEVS)/DOSDrivers ; $(CP) DOSDrivers/* $(AROS_DEVS)/DOSDrivers ; fi
