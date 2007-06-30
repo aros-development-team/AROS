@@ -13,7 +13,7 @@
 #define CACHE_H 1
 
 #include <exec/types.h>
-#include <exec/devices.h>
+#include <devices/trackdisk.h>
 
 struct cache_block {
     struct cache_block  *hash_next;     /* next block in this hash bucket */
@@ -31,6 +31,8 @@ struct cache_block {
 };
 
 struct cache {
+    struct IOExtTD      *req;           /* io request for disk access. this hold the device and unit pointers */
+
     ULONG               hash_size;      /* size of hash table */
     ULONG               hash_mask;      /* mask applied to block number to find correct hash bucket */
 
@@ -47,9 +49,6 @@ struct cache {
     struct cache_block  *free_head;     /* first block in the free list */
     struct cache_block  *free_tail;     /* last block in the free list */
 
-    struct Device       *device;        /* device to read/write */
-    struct Unit         *unit;          /* unit on said device */
-
     ULONG               hits;           /* number of hits, for stats */
     ULONG               misses;         /* number of misses */
 };
@@ -58,7 +57,7 @@ struct cache {
 #define CACHE_WRITETHROUGH  (1<<0)
 #define CACHE_WRITEBACK     (1<<1)
 
-struct cache *cache_new(struct Device *device, struct Unit *unit, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
+struct cache *cache_new(struct IOExtTD *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags);
 void cache_free(struct cache *c);
 
 ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_block **rb);

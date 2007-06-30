@@ -68,13 +68,18 @@
 /* prototype for lowlevel block function */
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
 
-struct cache *cache_new(struct Device *device, struct Unit *unit, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
+struct cache *cache_new(struct IOExtTD *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
     struct cache *c;
     ULONG i;
 
     D(bug("cache_new: hash_size %ld num_blocks %ld block_size %ld flags 0x%08x\n", hash_size, num_blocks, block_size, flags));
 
-    c = (struct cache *) AllocVec(sizeof(struct cache), MEMF_PUBLIC);
+    if ((c = (struct cache *) AllocVec(sizeof(struct cache), MEMF_PUBLIC)) == NULL)
+        return NULL;
+
+    c->req = req;
+
+    /* XXX probe the device, see if it supports 64-bit extensions */
 
     c->hash_size = hash_size;
     c->hash_mask = hash_size-1;
@@ -89,9 +94,6 @@ struct cache *cache_new(struct Device *device, struct Unit *unit, ULONG hash_siz
     c->num_in_use = 0;
 
     c->blocks = (struct cache_block **) AllocVec(sizeof(struct cache_block *) * num_blocks, MEMF_PUBLIC);
-
-    c->device = device;
-    c->unit = unit;
 
     c->hits = c->misses = 0;
 
@@ -412,32 +414,19 @@ void cache_stats(struct cache *c) {
 /* lowlevel block functions */
 
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
-    struct MsgPort *port;
-    struct IOExtTD req;
     ULONG err;
 
     D(bug("_cache_do_blocks_ll: request to %s %ld blocks starting from %ld (block_size %ld)\n", do_write ? "write" : "read", nblocks, num, block_size));
 
-    port = CreateMsgPort();
+    c->req->iotd_Req.io_Command = do_write ? CMD_WRITE : CMD_READ;
+    c->req->iotd_Req.io_Offset = num * block_size;
+    c->req->iotd_Req.io_Length = nblocks * block_size;
+    c->req->iotd_Req.io_Data = data;
+    c->req->iotd_Req.io_Flags = IOF_QUICK;
 
-    req.iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    req.iotd_Req.io_Message.mn_ReplyPort = port;
-    req.iotd_Req.io_Message.mn_Length = sizeof(struct IOExtTD);
+    DoIO((struct IORequest *) c->req);
 
-    req.iotd_Req.io_Command = do_write ? CMD_WRITE : CMD_READ;
-    req.iotd_Req.io_Offset = num * block_size;
-    req.iotd_Req.io_Length = nblocks * block_size;
-    req.iotd_Req.io_Data = data;
-    req.iotd_Req.io_Flags = IOF_QUICK;
-
-    req.iotd_Req.io_Device = c->device;
-    req.iotd_Req.io_Unit = c->unit;
-
-    DoIO((struct IORequest *) &req);
-
-    err = req.iotd_Req.io_Error;
-
-    DeleteMsgPort(port);
+    err = c->req->iotd_Req.io_Error;
 
     D(bug("_cache_do_blocks_ll: returning error %ld\n", err));
 
