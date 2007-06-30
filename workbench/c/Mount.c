@@ -1087,7 +1087,7 @@ char			name[256+1];
 
     oldwinptr = me->pr_WindowPtr;
     me->pr_WindowPtr = (APTR) -1;
-    lock = Lock(filename, MODE_OLDFILE);
+    lock = Lock(filename, SHARED_LOCK);
     if (lock)
     {
       /* reusing name as fib, just to annoy certain guy ;-) */
