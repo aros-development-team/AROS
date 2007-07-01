@@ -429,6 +429,8 @@ static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULON
     ULONG err;
     UQUAD off;
     ULONG low, high;
+    ULONG length;
+    BOOL want_64 = FALSE;
 
     D(bug("_cache_do_blocks_ll: request to %s %ld blocks starting from %ld (block_size %ld)\n", do_write ? "write" : "read", nblocks, num, block_size));
 
@@ -437,12 +439,18 @@ static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULON
     low = off & 0xffffffff;
     high = off >> 32;
 
-    if (high > 0 && !(c->flags & CACHE_64_MASK)) {
-        D(bug("_cache_do_blocks_ll: 64-bit operation requested but underlying device doesn't support it\n"));
-        return IOERR_NOCMD;
+    length = nblocks * block_size;
+
+    if (high > 0 || low + length < length) {
+        if (!(c->flags & CACHE_64_MASK)) {
+            D(bug("_cache_do_blocks_ll: 64-bit operation requested but underlying device doesn't support it\n"));
+            return IOERR_NOCMD;
+        }
+
+        want_64 = TRUE;
     }
 
-    /* !!! support DirectSCSI */
+    /* XXX support DirectSCSI */
 
     c->req->io_Offset = low;
     c->req->io_Actual = high;
@@ -450,7 +458,7 @@ static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULON
     c->req->io_Data = data;
     c->req->io_Flags = IOF_QUICK;
 
-    if (high == 0)
+    if (!want_64)
         c->req->io_Command = do_write ? CMD_WRITE : CMD_READ;
     else if (c->flags & CACHE_64_TD64)
         c->req->io_Command = do_write ? TD_WRITE64 : TD_READ64;
