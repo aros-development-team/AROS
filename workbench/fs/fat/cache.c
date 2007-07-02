@@ -55,7 +55,6 @@
 #include <exec/io.h>
 #include <exec/ports.h>
 #include <exec/errors.h>
-#include <exec/semaphores.h>
 #include <dos/dos.h>
 #include <devices/trackdisk.h>
 #include <devices/newstyle.h>
@@ -73,10 +72,6 @@
 #  define TD_WRITE64    25
 #endif
 
-/* locking helpers to aid readability */
-#define LOCK(c)    ObtainSemaphore(&((c)->lock))
-#define UNLOCK(c)  ReleaseSemaphore(&((c)->lock))
-
 /* prototype for lowlevel block function */
 static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
 static void _cache_64bit_support(struct cache *c);
@@ -89,8 +84,6 @@ struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks,
 
     if ((c = (struct cache *) AllocVec(sizeof(struct cache), MEMF_PUBLIC)) == NULL)
         return NULL;
-
-    InitSemaphore(&c->lock);
 
     c->req = req;
 
@@ -160,8 +153,6 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
     struct cache_block *b;
     ULONG err;
 
-    LOCK(c);
-
     D(bug("cache_get_block: looking for block %d, flags 0x%08x\n", num, flags));
 
     /* first check the in-use blocks */
@@ -173,8 +164,6 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
             c->hits++;
 
             *rb = b;
-
-            UNLOCK(c);
             return 0;
         }
 
@@ -217,8 +206,6 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
             D(bug("cache_get_block: total %d blocks in use\n", c->num_in_use));
 
             *rb = b;
-
-            UNLOCK(c);
             return 0;
         }
     }
@@ -230,7 +217,6 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
     b = c->free_head;
     if (b == NULL) {
         D(bug("cache_get_block: no free blocks left\n"));
-        UNLOCK(c);
         return ERROR_NO_FREE_STORE;
     }
 
@@ -257,8 +243,6 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
 
         /* and bail */
         *rb = NULL;
-
-        UNLOCK(c);
         return err;
     }
 
@@ -278,21 +262,16 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
     D(bug("cache_get_block: loaded from disk, total %d blocks in use\n", c->num_in_use));
 
     *rb = b;
-
-    UNLOCK(c);
     return 0;
 }
 
 ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
-    LOCK(c);
-
     D(bug("cache_put_block: returning block %d, flags 0x%08x\n", b->num, flags));
 
     /* if its still in use, then we've got it easy */
     b->use_count--;
     if (b->use_count != 0) {
         D(bug("cache_put_block: new use count is %d, nothing else to do\n", b->use_count));
-        UNLOCK(c);
         return 0;
     }
 
@@ -321,14 +300,11 @@ ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
 
     D(bug("cache_put_block: no longer in use, moved to free list, total %ld blocks in use\n", c->num_in_use));
 
-    UNLOCK(c);
     return 0;
 }
 
 ULONG cache_get_blocks(struct cache *c, ULONG num, ULONG nblocks, ULONG flags, struct cache_block **rb) {
     ULONG err, i;
-
-    LOCK(c);
 
     D(bug("cache_get_blocks: loading %d blocks starting at %d, flags 0x%08x\n", nblocks, num, flags));
 
@@ -340,33 +316,27 @@ ULONG cache_get_blocks(struct cache *c, ULONG num, ULONG nblocks, ULONG flags, s
             for (; i >= 0; i--)
                 cache_put_block(c, rb[i], 0);
 
-            UNLOCK(c);
             return err;
         }
+    
     }
 
-    UNLOCK(c);
     return 0;
 }
 
 ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, ULONG flags) {
     ULONG i;
 
-    LOCK(c);
-
     D(bug("cache_put_blocks: returning %d blocks starting at %d, flags 0x%08x\n", nblocks, b[0]->num, flags));
 
     for (i = 0; i < nblocks; i++)
         cache_put_block(c, b[i], 0);
 
-    UNLOCK(c);
     return 0;
 }
 
 ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
     ULONG err;
-
-    LOCK(c);
 
     if (c->flags & CACHE_WRITEBACK) {
         if (!b->is_dirty) {
@@ -381,7 +351,6 @@ ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
         else
             D(bug("cache_mark_block_dirty: block %d already dirty\n", b->num));
 
-        UNLOCK(c);
         return 0;
     }
 
@@ -402,18 +371,14 @@ ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
         else
             D(bug("cache_mark_block_dirty: block %d already dirty\n", b->num));
 
-        UNLOCK(c);
         return err;
     }
 
-    UNLOCK(c);
     return 0;
 }
 
 ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nblocks) {
     ULONG err, i;
-
-    LOCK(c);
 
     if (c->flags & CACHE_WRITEBACK) {
         for (i = 0; i < nblocks; i++) {
@@ -430,7 +395,6 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
                 D(bug("cache_mark_block_dirty: block %d already dirty\n", b[i]->num));
         }
 
-        UNLOCK(c);
         return 0;
     }
 
@@ -454,13 +418,10 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
                 else
                     D(bug("cache_mark_block_dirty: block %d already dirty\n", b[i]->num));
             }
-
-            UNLOCK(c);
-            return err;
         }
     }
 
-    UNLOCK(c);
+
     return 0;
 }
 
@@ -468,8 +429,6 @@ ULONG cache_flush(struct cache *c) {
     struct cache_block *b, *next;
     ULONG err;
     int count = 0;
-
-    LOCK(c);
 
     D(bug("cache_flush: flushing dirty blocks\n"));
 
@@ -492,15 +451,12 @@ ULONG cache_flush(struct cache *c) {
 
     D(bug("cache_flush: %d blocks flushed\n", count));
 
-    UNLOCK(c);
     return err;
 }
 
 void cache_stats(struct cache *c) {
     struct cache_block *b;
     ULONG count, i;
-
-    LOCK(c);
 
     kprintf("[cache] statistics for cache 0x%08x\n", c);
 
@@ -535,8 +491,6 @@ void cache_stats(struct cache *c) {
     kprintf("    blocks on dirty list: %ld\n", count);
 
     kprintf("    hits: %ld    misses: %ld\n", c->hits, c->misses);
-
-    UNLOCK(c);
 }
 
 /* lowlevel block function */
