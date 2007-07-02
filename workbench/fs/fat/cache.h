@@ -22,6 +22,8 @@ struct cache_block {
     struct cache_block  *free_next;     /* next block on free list */
     struct cache_block  *free_prev;     /* previous block on free list */
 
+    struct cache_block  *dirty_next;    /* next block on dirty list */
+
     ULONG               use_count;      /* number of users of this block */
     BOOL                is_dirty;       /* does the block need to be written? */
 
@@ -49,6 +51,8 @@ struct cache {
     struct cache_block  *free_head;     /* first block in the free list */
     struct cache_block  *free_tail;     /* last block in the free list */
 
+    struct cache_block  *dirty;         /* list of dirty blocks */
+
     ULONG               hits;           /* number of hits, for stats */
     ULONG               misses;         /* number of misses */
 };
@@ -74,6 +78,8 @@ ULONG cache_put_blocks(struct cache *c, struct cache_block **b, ULONG nblocks, U
 
 ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b);
 ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nblocks);
+
+ULONG cache_flush(struct cache *c);
 
 void cache_stats(struct cache *c);
 

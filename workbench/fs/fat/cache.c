@@ -87,8 +87,6 @@ struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks,
 
     c->req = req;
 
-    /* XXX probe the device, see if it supports 64-bit extensions */
-
     c->hash_size = hash_size;
     c->hash_mask = hash_size-1;
 
@@ -196,9 +194,9 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
                 b->hash_next->hash_prev = b;
             c->hash[num & c->hash_mask] = b;
 
-            if (b->is_dirty) {
-                /* XXX flush dirty blocks */
-            }
+            /* if its dirty, flush everything */
+            if (b->is_dirty)
+                cache_flush(c);
 
             b->use_count = 1;
             c->num_in_use++;
@@ -232,16 +230,8 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
     b->free_prev = b->free_next = NULL;
 
     /* write it out if its dirty */
-    if (b->is_dirty) {
-        D(bug("cache_get_block: writing dirty block %d before reusing it\n", b->num));
-
-        if ((err = _cache_do_blocks_ll(c, TRUE, num, 1, c->block_size, b->data)) != 0) {
-            /* write failed. this is bad. */
-            /* XXX what is the sane thing to do here? */
-            *rb = NULL;
-            return err;
-        }
-    }
+    if (b->is_dirty)
+        cache_flush(c);
 
     /* read the block from disk */
     if ((err = _cache_do_blocks_ll(c, FALSE, num, 1, c->block_size, b->data)) != 0) {
@@ -347,8 +337,18 @@ ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
     ULONG err;
 
     if (c->flags & CACHE_WRITEBACK) {
-        D(bug("cache_mark_block_dirty: block %d is now dirty\n", b->num));
-        b->is_dirty = 1;
+        if (!b->is_dirty) {
+            D(bug("cache_mark_block_dirty: adding block %d to dirty list\n", b->num));
+
+            b->dirty_next = c->dirty;
+            c->dirty = b;
+
+            b->is_dirty = TRUE;
+        }
+
+        else
+            D(bug("cache_mark_block_dirty: block %d already dirty\n", b->num));
+
         return 0;
     }
 
@@ -356,7 +356,19 @@ ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
 
     if ((err = _cache_do_blocks_ll(c, TRUE, b->num, 1, c->block_size, b->data)) != 0) {
         D(bug("cache_mark_block_dirty: write failed, leaving block marked dirty\n"));
-        b->is_dirty = 1;
+
+        if (!b->is_dirty) {
+            D(bug("cache_mark_block_dirty: adding block %d to dirty list\n", b->num));
+
+            b->dirty_next = c->dirty;
+            c->dirty = b;
+
+            b->is_dirty = TRUE;
+        }
+
+        else
+            D(bug("cache_mark_block_dirty: block %d already dirty\n", b->num));
+
         return err;
     }
 
@@ -368,27 +380,76 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
 
     if (c->flags & CACHE_WRITEBACK) {
         for (i = 0; i < nblocks; i++) {
-            D(bug("cache_mark_blocks_dirty: block %d is now dirty\n", b[i]->num));
-            b[i]->is_dirty = 1;
+            if (!b[i]->is_dirty) {
+                D(bug("cache_mark_block_dirty: adding block %d to dirty list\n", b[i]->num));
+
+                b[i]->dirty_next = c->dirty;
+                c->dirty = b[i];
+
+                b[i]->is_dirty = TRUE;
+            }
+
+            else
+                D(bug("cache_mark_block_dirty: block %d already dirty\n", b[i]->num));
         }
+
         return 0;
     }
 
     /* XXX optimise this to do contiguous blocks in one hit */
     for (i = 0; i < nblocks; i++) {
         D(bug("cache_mark_blocks_dirty: writing dirty block %d\n", b[i]->num));
+
         if ((err = _cache_do_blocks_ll(c, TRUE, b[i]->num, 1, c->block_size, b[i]->data)) != 0) {
             D(bug("cache_mark_blocks_dirty: write failed, leaving this and remaining blocks marked dirty\n"));
-            b[i]->is_dirty = 1;
+
             for (; i < nblocks; i++) {
-                D(bug("cache_mark_blocks_dirty: block %d is now dirty\n", b[i]->num));
-                b[i]->is_dirty = 1;
+                if (!b[i]->is_dirty) {
+                    D(bug("cache_mark_block_dirty: adding block %d to dirty list\n", b[i]->num));
+
+                    b[i]->dirty_next = c->dirty;
+                    c->dirty = b[i];
+
+                    b[i]->is_dirty = TRUE;
+                }
+
+                else
+                    D(bug("cache_mark_block_dirty: block %d already dirty\n", b[i]->num));
             }
         }
     }
 
 
     return 0;
+}
+
+ULONG cache_flush(struct cache *c) {
+    struct cache_block *b, *next;
+    ULONG err;
+    int count = 0;
+
+    D(bug("cache_flush: flushing dirty blocks\n"));
+
+    b = c->dirty;
+    while (b != NULL) {
+        next = b->dirty_next;
+
+        if ((err = _cache_do_blocks_ll(c, TRUE, b->num, 1, c->block_size, b->data)) != 0) {
+            D(bug("cache_flush: write failed, leaving this and remaining blocks marked dirty\n"));
+            break;
+        }
+
+        b->dirty_next = NULL;
+
+        count++;
+        b = next;
+    }
+
+    c->dirty = b;
+
+    D(bug("cache_flush: %d blocks flushed\n", count));
+
+    return err;
 }
 
 void cache_stats(struct cache *c) {
