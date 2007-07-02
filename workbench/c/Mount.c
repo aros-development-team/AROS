@@ -153,7 +153,6 @@ struct Args
 typedef struct Library *UtilityBase_t;
 #else
 #define PROGNAME "Mount"
-#define VARARGS68K
 typedef struct UtilityBase *UtilityBase_t;
 #endif
 
