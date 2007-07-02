@@ -14,6 +14,7 @@
 
 #include <exec/types.h>
 #include <exec/io.h>
+#include <exec/semaphores.h>
 
 struct cache_block {
     struct cache_block  *hash_next;     /* next block in this hash bucket */
@@ -33,6 +34,8 @@ struct cache_block {
 };
 
 struct cache {
+    struct SignalSemaphore  lock;       /* lock for the entire cache structure */
+
     struct IOStdReq     *req;           /* io request for disk access. this hold the device and unit pointers */
 
     ULONG               hash_size;      /* size of hash table */
@@ -53,7 +56,7 @@ struct cache {
 
     struct cache_block  *dirty;         /* list of dirty blocks */
 
-    ULONG               hits;           /* number of hits, for stats */
+    ULONG               hits;           /* number of hits, for stats. not protected by the lock */
     ULONG               misses;         /* number of misses */
 };
 
