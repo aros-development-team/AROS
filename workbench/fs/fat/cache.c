@@ -138,7 +138,7 @@ struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks,
 void cache_free(struct cache *c) {
     ULONG i;
 
-    /* XXX flush dirty blocks */
+    cache_flush(c);
 
     for (i = 0; i < c->num_blocks; i++)
         FreeVec(c->blocks[i]);
