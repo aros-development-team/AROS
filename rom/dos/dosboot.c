@@ -6,8 +6,13 @@
     Lang: english 
 */
 
+/* Uncomment this definition in order to enable mounting
+   disk-based handlers (e.g. fat.handler) at bootup.
+   This code works however fat.handler itself currently has
+   problems, so this option is disabled for now
+#define MOUNT_DISK_HANDLERS */
 
-# define  DEBUG  1
+# define  DEBUG 0
 # include <aros/debug.h>
 
 #include <aros/macros.h>
@@ -33,6 +38,8 @@
 #include <string.h>
 
 #include "dos_intern.h"
+
+#define BNF_RETRY 0x8000 /* Private flag for the BootNode */
 
 extern void boot();
 
@@ -86,15 +93,23 @@ AROS_UFH3(void, intBoot,
 	    deviceName ? deviceName : "(null)" 
 	));
     	/* 
-            Try to mount the filesystem. If it fails, remove the BootNode 
-	    from the list so DOS doesn't try to boot from it later. 
+            Try to mount the filesystem. If it fails, mark the BootNode
+	    so DOS doesn't try to boot from it later but will retry to
+	    mount it after boot device is found and system directories
+	    assigned.
         */ 
 
 	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode , 
 	            (struct DosLibrary *) DOSBase))
 	{
+#ifdef MOUNT_DISK_HANDLERS
+	    bootNode->bn_Flags |= BNF_RETRY;
+#else
 	    REMOVE( bootNode );
+#endif
 	}
+	else
+	    bootNode->bn_Flags &= ~BNF_RETRY;
     }
    
     /**** Try to find a bootable filesystem ****************************************/   
@@ -109,7 +124,7 @@ AROS_UFH3(void, intBoot,
                 the list. 
             */
         
-            if( isBootable( deviceName, (struct DosLibrary *)DOSBase ) )
+            if((!(bootNode->bn_Flags & BNF_RETRY)) && isBootable( deviceName, (struct DosLibrary *)DOSBase ) )
             {
                 goto boot;
             }
@@ -147,12 +162,7 @@ boot:
     
     kprintf("[DOS] Booting from device %s\n",bootName);
     
-    /* We don't need expansion.library any more */
-    CloseLibrary( (struct Library *) ExpansionBase );
-
     /* Lock the boot device and add some default assigns */
-    D(bug("Locking primary boot device %s\n", bootName));
-    
     lock =  Lock(bootName, SHARED_LOCK);
     if (lock) DOSBase->dl_SYSLock = DupLock(lock);
         
@@ -213,10 +223,41 @@ boot:
         AssignLock("DRIVERS", lock);
         AssignAdd("LIBS", lock);        /* Let hidds in DRIVERS: directory be found by OpenLibrary */
     }
+
+    lock = Lock("SYS:L", SHARED_LOCK);
     
+    if (lock != NULL)
+    {
+        AssignLock("L", lock);
+    }
+
     /* Late binding ENVARC: assign, only if used */
     AssignLate("ENVARC", "SYS:Prefs/env-archive");
-	
+
+    /* 
+        Retry to mount marked filesystems. If it fails again,
+	remove the BootNode from the list.
+    */ 
+    ForeachNode( &ExpansionBase->MountList, bootNode )
+    {
+	if (bootNode->bn_Flags & BNF_RETRY) {
+	    D(bug
+    	    (
+        	"Retry node: %p, DevNode: %p, Name = %s\n", 
+        	bootNode, bootNode->bn_DeviceNode,
+		deviceName ? deviceName : "(null)" 
+	    ));
+	    if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode , 
+	                (struct DosLibrary *) DOSBase))
+	    {
+		REMOVE( bootNode );
+	    }
+	}
+    }
+
+    /* We don't need expansion.library any more */
+    CloseLibrary( (struct Library *) ExpansionBase );
+
     /* Initialize HIDDs */
     init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 
