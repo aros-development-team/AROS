@@ -46,7 +46,8 @@
 STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
-    struct TagItem 	*tag, *tstate;
+    struct TagItem 	*tag;
+    const struct TagItem *tstate;
     struct TextData 	*data = INST_DATA(cl, o);
     struct RastPort 	*rport;
     
@@ -234,18 +235,25 @@ IPTR GTText__OM_NEW(Class * cl, Object * o, struct opSet *msg)
     	    
     	    D(bug("Got GTTX_CopyText\n"));
     	    text = (STRPTR)GetTagData(GTTX_Text, (IPTR)"Text MUST be passed with OM_NEW", msg->ops_AttrList);
-    	     
-    	    D(bug("Text: %s\n", text));
-    	    /* Allocate copy buffer for the text */
-    	    data->toprint = (IPTR)AllocVec(strlen(text) + 1, MEMF_ANY);
-    	    if (data->toprint)
-    	    {
-    	    	data->flags |= TEXTF_COPYTEXT;
-    	    	D(bug("Copying text\n"));
-    	    	strcpy((STRPTR)data->toprint, text);
-    	    }
-    	    else
-    	    	goto error;
+    	    if (text)
+	    {		
+		D(bug("Text: %s\n", text));
+		/* Allocate copy buffer for the text */
+		data->toprint = (IPTR)AllocVec(strlen(text) + 1, MEMF_ANY);
+		if (data->toprint)
+		{
+		    data->flags |= TEXTF_COPYTEXT;
+		    D(bug("Copying text\n"));
+		    strcpy((STRPTR)data->toprint, text);
+		}
+		else
+		{
+		    goto error;
+		}
+	    } else {
+		/* If text==NULL we have nothing to copy */
+		data->toprint = (IPTR)text;
+	    }
     	} else {
 	    STRPTR text;
 	    
