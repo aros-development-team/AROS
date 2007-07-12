@@ -3950,6 +3950,51 @@ IPTR Window__MUIM_Snapshot(struct IClass *cl, Object *obj, struct MUIP_Window_Sn
     return 1;
 }
 
+/**************************************************************************
+ MUIM_Window_UpdateMenu
+**************************************************************************/
+IPTR Window__MUIM_UpdateMenu(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    struct Menu *menu = NULL;
+    struct NewMenu *newmenu = NULL;
+    APTR visinfo = NULL;
+    struct Window *win =NULL;
+
+    if (data->wd_Menustrip) // only open windows can have a menustrip
+    {
+	if ((visinfo = GetVisualInfoA(data->wd_RenderInfo.mri_Screen, NULL)))
+	{
+	    win = data->wd_RenderInfo.mri_Window;
+	    ClearMenuStrip(win);
+	    if (data->wd_Menu)
+	    {
+		FreeMenus(data->wd_Menu);
+		data->wd_Menu = NULL;
+	    }
+
+	    get(data->wd_Menustrip, MUIA_Menuitem_NewMenu, &newmenu);
+	    if (newmenu)
+	    {
+		if ((menu = CreateMenusA(newmenu, NULL)))
+		{
+		    struct TagItem tags[] =
+		    {
+			{ GTMN_NewLookMenus, TRUE       },
+			{ TAG_DONE,          (IPTR)NULL }
+		    };
+		    LayoutMenusA(menu, visinfo, tags);
+		    data->wd_Menu = menu;
+		    SetMenuStrip(win, menu);
+		}
+	    }
+	    FreeVisualInfo(visinfo);
+	}
+    }
+
+    return 1;
+}
 
 
 BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
@@ -3987,6 +4032,7 @@ BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 	case MUIM_Window_ScreenToBack:          return Window__MUIM_ScreenToBack(cl, obj, (APTR)msg);
 	case MUIM_Window_ActionIconify:         return Window__MUIM_ActionIconify(cl, obj, (APTR)msg);
 	case MUIM_Window_Snapshot:              return Window__MUIM_Snapshot(cl, obj, (APTR)msg);
+	case MUIM_Window_UpdateMenu:            return Window__MUIM_UpdateMenu(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

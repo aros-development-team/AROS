@@ -64,8 +64,9 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
     	if (newmenu[i].nm_Type == NM_TITLE)
     	{
 	    menu = MenuitemObject, 
-	               MUIA_Menuitem_Title, (IPTR)newmenu[i].nm_Label, 
-		       MUIA_UserData,       (IPTR)newmenu[i].nm_UserData,
+	               MUIA_Menuitem_Title,   (IPTR)newmenu[i].nm_Label, 
+		       MUIA_UserData,         (IPTR)newmenu[i].nm_UserData,
+		       MUIA_Menuitem_Enabled, (newmenu[i].nm_Flags & NM_MENUDISABLED) == 0,
 		   End;
 	    if (menu)
 	        DoMethod(menustrip, MUIM_Family_AddTail, (IPTR)menu);
@@ -100,6 +101,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 		    MUIA_Menuitem_Checked,       (newmenu[i].nm_Flags & CHECKED)          != 0,
 		    MUIA_Menuitem_Toggle,        (newmenu[i].nm_Flags & MENUTOGGLE)       != 0,
 		    MUIA_Menuitem_CommandString, (newmenu[i].nm_Flags & NM_COMMANDSTRING) != 0,
+		    MUIA_Menuitem_Enabled,       (newmenu[i].nm_Flags & NM_ITEMDISABLED)  == 0,
 	        End;
 		
 		if (item != NULL)

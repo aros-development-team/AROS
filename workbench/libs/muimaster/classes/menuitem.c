@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -70,21 +70,36 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-    	int entries;
-    	ULONG checkit = 0, checked = 0, toggle = 0;
+	int entries;
+	ULONG checkit = 0, checked = 0, toggle = 0, enabled = 0;
 
-    	if (depth == 0) menu->nm_Type = NM_TITLE;
-    	else if (depth == 1) menu->nm_Type = NM_ITEM;
-    	else if (depth == 2) menu->nm_Type = NM_SUB;
-    	get(child, MUIA_Menuitem_Title, &menu->nm_Label);
-    	get(child, MUIA_Menuitem_Shortcut, &menu->nm_CommKey);
-    	get(child, MUIA_Menuitem_Checkit, &checkit);
-    	get(child, MUIA_Menuitem_Checked, &checked);
-    	get(child, MUIA_Menuitem_Toggle, &toggle);
-    	if (checkit) menu->nm_Flags |= CHECKIT;
-    	if (checked) menu->nm_Flags |= CHECKED;
-    	if (toggle) menu->nm_Flags |= MENUTOGGLE;
-    	get(child, MUIA_Menuitem_Exclude, &menu->nm_MutualExclude);
+	get(child, MUIA_Menuitem_Title, &menu->nm_Label);
+	get(child, MUIA_Menuitem_Shortcut, &menu->nm_CommKey);
+	get(child, MUIA_Menuitem_Checkit, &checkit);
+	get(child, MUIA_Menuitem_Checked, &checked);
+	get(child, MUIA_Menuitem_Toggle, &toggle);
+	get(child, MUIA_Menuitem_Enabled, &enabled);
+	if (checkit) menu->nm_Flags |= CHECKIT;
+	if (checked) menu->nm_Flags |= CHECKED;
+	if (toggle) menu->nm_Flags |= MENUTOGGLE;
+	get(child, MUIA_Menuitem_Exclude, &menu->nm_MutualExclude);
+
+	if (depth == 0)
+	{
+	    menu->nm_Type = NM_TITLE;
+	    if ( ! enabled) menu->nm_Flags |= NM_MENUDISABLED;
+	}
+	else if (depth == 1)
+	{
+	    menu->nm_Type = NM_ITEM;
+	    if ( ! enabled) menu->nm_Flags |= NM_ITEMDISABLED;
+	}
+	else if (depth == 2)
+	{
+	    menu->nm_Type = NM_SUB;
+	    if ( ! enabled) menu->nm_Flags |= NM_ITEMDISABLED;
+	}
+
 	menu->nm_UserData = child;
 
 	menu++;
@@ -126,6 +141,8 @@ IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj) return 0;
 
     data = INST_DATA(cl, obj);
+
+    data->flags = MENUF_ENABLED;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
@@ -180,6 +197,8 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
+    BOOL rebuild = FALSE;
+
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
@@ -220,43 +239,65 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }
 		    
 		}
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menuitem_Checkit:
 		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_CHECKIT);
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menuitem_CommandString:
 		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_COMMANDSTRING);
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menu_Enabled:
 	    case  MUIA_Menuitem_Enabled:
 		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_ENABLED);
 		tag->ti_Tag = TAG_IGNORE;
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menuitem_Toggle:
 		_handle_bool_tag(data->flags, tag->ti_Data, MENUF_TOGGLE);
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menuitem_Exclude:
 		data->exclude = tag->ti_Data;
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menuitem_Shortcut:
 		data->shortcut = (char*)tag->ti_Data;
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menu_Title:
 	    case  MUIA_Menuitem_Title:
 		data->title = (char*)tag->ti_Data;
 		tag->ti_Tag = TAG_IGNORE;
+		rebuild = TRUE;
 		break;
 
 	    case  MUIA_Menuitem_Trigger:
-	    	  data->trigger = (struct MenuItem*)tag->ti_Data;
-		  break;
+		data->trigger = (struct MenuItem*)tag->ti_Data;
+		rebuild = TRUE;
+		break;
+	}
+    }
+
+    if (rebuild)
+    {
+	if
+	    (
+		muiNotifyData(obj) &&
+		muiNotifyData(obj)->mnd_GlobalInfo &&
+		muiNotifyData(obj)->mnd_GlobalInfo->mgi_ApplicationObject
+	    )
+	{
+	    DoMethod(_app(obj), MUIM_Application_UpdateMenus);
 	}
     }
 
