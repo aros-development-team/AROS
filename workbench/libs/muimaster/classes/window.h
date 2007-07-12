@@ -44,6 +44,7 @@ struct  MUIP_Window_ToFront         {ULONG MethodID;};
 #define MUIM_Window_FreeGadgetID           (MUIB_Window | 0x00000004) /* Zune: V1 - free the GadgetID for BOOPSI gadgets */
 #define MUIM_Window_RecalcDisplay          (MUIB_Window | 0x00000005) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_RemControlCharHandler  (MUIB_Window | 0x00000006) /* Zune: V1, PRIV don't use it! */
+#define MUIM_Window_UpdateMenu             (MUIB_Window | 0x00000007) /* Zune: V1, PRIV dont' use it! */
 struct  MUIP_Window_AddControlCharHandler  { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
 struct  MUIP_Window_AllocGadgetID          { ULONG MethodID; }; /* Custom Class - returns the Gadget ID */
 struct  MUIP_Window_DrawBackground         { ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
@@ -51,6 +52,7 @@ struct  MUIP_Window_DragObject             { ULONG MethodID; Object *obj; LONG t
 struct  MUIP_Window_FreeGadgetID           { ULONG MethodID; LONG gadgetid; }; /* Custom Class */
 struct  MUIP_Window_RecalcDisplay          { ULONG MethodID; Object *originator; };
 struct  MUIP_Window_RemControlCharHandler  { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
+struct  MUIP_Window_UpdateMenu             { ULONG MethodID; };
 
 #ifdef MUI_OBSOLETE
 #define MUIM_Window_GetMenuCheck    (MUIB_MUI|0x00420414) /* MUI: V4  */

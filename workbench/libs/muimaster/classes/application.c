@@ -1598,6 +1598,28 @@ static IPTR Application__MUIM_Execute(Class *CLASS, Object *self, Msg message)
 }
 
 
+static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj, Msg message)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct List *wlist;
+    APTR         wstate;
+    Object      *curwin;
+
+    get(obj, MUIA_Application_WindowList, &wlist);
+
+    if (wlist)
+    {
+	wstate = wlist->lh_Head;
+	while ((curwin = NextObject(&wstate)))
+	{
+	    DoMethod(curwin, MUIM_Window_UpdateMenu);
+	}
+    }
+    
+    return 0;
+}
+
+
 /*
  * The class dispatcher
  */
@@ -1627,6 +1649,7 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	case MUIM_Application_OpenWindows:      return Application__MUIM_OpenWindows(cl, obj, (APTR)msg);
 	case MUIM_Application_OpenConfigWindow: return Application__MUIM_OpenConfigWindow(cl, obj, (APTR)msg);
         case MUIM_Application_Execute:          return Application__MUIM_Execute(cl, obj, msg);
+	case MUIM_Application_UpdateMenus:      return Application__MUIM_UpdateMenus(cl, obj, msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
