@@ -1991,7 +1991,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
     
-        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, NM_MENUDISABLED},
+        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
     
             {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_UPDATE},
             {NM_ITEM, NM_BARLABEL},
@@ -2019,7 +2019,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
             {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
         //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
     
-        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, NM_MENUDISABLED},
+        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
             {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
     //    {NM_ITEM,  "Close","C" },
             {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
@@ -2033,7 +2033,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
     //    {NM_ITEM,  "Format Disk..." },
     //    {NM_ITEM,  "Empty Trash..." },
     
-        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, NM_MENUDISABLED},
+        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, 0},
     //    {NM_ITEM,  "ResetWanderer" },
         {NM_END}
         };
@@ -2051,7 +2051,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
     
-        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, NM_MENUDISABLED},
+        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
     
             {NM_ITEM,  _(MSG_MEN_NEWDRAW), _(MSG_MEN_SC_NEWDRAW) , 0                         , 0, (APTR) MEN_WINDOW_NEW_DRAWER},
             {NM_ITEM,  _(MSG_MEN_OPENPAR),  NULL                 , 0                         , 0, (APTR) MEN_WINDOW_OPEN_PARENT},
@@ -2082,7 +2082,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
             {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
         //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
     
-        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, NM_MENUDISABLED},
+        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
             {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
     //    {NM_ITEM,  "Close","C" },
             {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
@@ -2096,7 +2096,7 @@ Object * __CreateWandererIntuitionMenu__ ( BOOL isRoot, BOOL isBackdrop)
     //    {NM_ITEM,  "Format Disk..." },
     //    {NM_ITEM,  "Empty Trash..." },
     
-        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, NM_MENUDISABLED},
+        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, 0},
     //    {NM_ITEM,  "ResetWanderer" },
         {NM_END}
         };
