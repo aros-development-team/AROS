@@ -1120,6 +1120,8 @@ IPTR WinDecorClass__WDM_LAYOUT_BORDERGADGETS(Class *cl, Object *obj, struct wdpL
     //struct Window   	 *window = msg->wdp_Window;
     struct Gadget   	 *gadget = msg->wdp_Gadgets;
 
+    if (!(msg->wdp_Flags & WDF_LBG_SYSTEMGADGET)) return TRUE;
+    
     while(gadget)
     {
     	switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
