@@ -2956,7 +2956,7 @@ IPTR windecor_layout_bordergadgets(Class *cl, Object *obj, struct wdpLayoutBorde
 
     gadget = msg->wdp_Gadgets;
 
-    while(gadget)
+    if ((msg->wdp_Flags & WDF_LBG_SYSTEMGADGET) != 0) while(gadget)
     {
         switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
         {
