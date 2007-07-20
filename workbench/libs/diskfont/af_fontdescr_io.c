@@ -89,7 +89,12 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
 	    }
 	}
 	else
+	{
 	    D(bug("ReadFontDescr: No OTagList for outlined font\n"));
+
+	    #warning "stegerg: CHECKME!! Prevent OTAG_ functions from being called on NULL/non existing otag / taglist"
+	    fdh->ContentsID = TFCH_ID;
+	}
     }
     
     if (!(numentries + numoutlineentries)) goto failure;
