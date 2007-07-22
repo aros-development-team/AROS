@@ -709,20 +709,21 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
                 // Outline mode:
                 
                 SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
+
                 SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
-
-				Move(data->icld_BufferRastPort, tx + 1, ty ); Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx + 2, ty ); Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx , ty ); Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx, ty + 1);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx, ty + 2);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx + 1, ty + 2);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx + 2, ty + 1);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-				Move(data->icld_BufferRastPort, tx + 2, ty + 2);  Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
-
-                SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
-                Move(data->icld_BufferRastPort, tx + 1, ty + 1);
+				Move(data->icld_BufferRastPort, tx + 1, ty ); 
                 Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+                Move(data->icld_BufferRastPort, tx - 1, ty ); 
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+				Move(data->icld_BufferRastPort, tx, ty + 1);  
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+                Move(data->icld_BufferRastPort, tx, ty - 1);
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+                
+                SetAPen(data->icld_BufferRastPort, data->icld_LabelPen);
+                Move(data->icld_BufferRastPort, tx , ty ); 
+                Text(data->icld_BufferRastPort, message->icon->ile_TxtBuf_DisplayedLabel, nameLength);
+                
                 SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
                 break;
         }
@@ -780,19 +781,21 @@ D(bug("[IconList] IconList__MUIM_IconList_DrawEntryLabel: Not visible or missing
 						// Outline mode..
 						SetSoftStyle(data->icld_BufferRastPort, FSF_BOLD, AskSoftStyle(data->icld_BufferRastPort));
 						SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
-
-						Move(data->icld_BufferRastPort, tx + 1, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx + 2, ty ); Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx , ty ); Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx, ty + 1);  Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx, ty + 2);  Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx + 1, ty + 2);  Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx + 2, ty + 1);  Text(data->icld_BufferRastPort, buf, nameLength);
-						Move(data->icld_BufferRastPort, tx + 2, ty + 2);  Text(data->icld_BufferRastPort, buf, nameLength);
-			
+                        
+						Move(data->icld_BufferRastPort, tx + 1, ty ); 
+                        Text(data->icld_BufferRastPort, buf, nameLength);
+                        Move(data->icld_BufferRastPort, tx - 1, ty );  
+                        Text(data->icld_BufferRastPort, buf, nameLength);
+                        Move(data->icld_BufferRastPort, tx, ty - 1 );  
+                        Text(data->icld_BufferRastPort, buf, nameLength);
+                        Move(data->icld_BufferRastPort, tx, ty + 1 );  
+                        Text(data->icld_BufferRastPort, buf, nameLength);
+                        
 						SetAPen(data->icld_BufferRastPort, data->icld_InfoPen);
-						Move(data->icld_BufferRastPort, tx + 1, ty + 1);
+						
+                        Move(data->icld_BufferRastPort, tx, ty );
 						Text(data->icld_BufferRastPort, buf, nameLength);
+                        
 						SetSoftStyle(data->icld_BufferRastPort, FS_NORMAL, AskSoftStyle(data->icld_BufferRastPort));
 						break;
 				}
