@@ -252,7 +252,7 @@ IPTR GTText__OM_NEW(Class * cl, Object * o, struct opSet *msg)
 		}
 	    } else {
 		/* If text==NULL we have nothing to copy */
-		data->toprint = (IPTR)text;
+		data->toprint = 0;
 	    }
     	} else {
 	    STRPTR text;
@@ -346,10 +346,16 @@ IPTR GTText__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 	oldfont = rp->Font;
 	SetFont(rp, data->font);
 
-	/* Create the text */
 	str = textbuf;
-
-	RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
+	if (data->gadgetkind == TEXT_KIND)
+	{
+	    strncpy(str, (char *)data->toprint, sizeof(textbuf));
+	    textbuf[sizeof(textbuf) - 1] = '\0';
+	}
+	else /* NUMERIC_KIND or label of SLIDER_KIND */
+	{
+	    RawDoFmt(data->format, &(data->toprint), (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &str);
+	}
 
 	D(bug("Text formatted into: %s\n", textbuf));
 	numchars = strlen(textbuf);
