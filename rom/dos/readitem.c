@@ -28,13 +28,14 @@
 
 /*  FUNCTION
 	Read an item from a given character source. Items are words
-	or quoted strings seperated by whitespace or '=' just like on
-	the commandline. The seperator is unread and the read string
+	or quoted strings separated by whitespace or '=' just like on
+	the commandline. The separator is unread and the output string
 	is terminated by a NUL character.
 
     INPUTS
 	buffer   - Buffer to be filled.
-	maxchars - Size of the buffer. Must be at least 1 (for the terminator).
+	maxchars - Size of the buffer. Must be at least 1 (for the NUL
+                   terminator).
 	input    - A ready to use CSource structure or NULL which means
 		   "read from the input stream".
 
@@ -89,15 +90,8 @@ if(input!=NULL)					\
         GET(c);
     } while (c==' '||c=='\t');
 
-    if(!c||c=='\n'||c==EOF)
+    if(!c||c=='\n'||c==EOF||c==';')
     {
-        /*
-    	    End of line found. Note that unlike the Amiga DOS original
-            this funtion doesn't know about ';' comments. Comments are
-            the shell's job, IMO. I don't need them here.
-        */
-        if(c!=EOF)
-            UNGET();
         *b=0;
         return ITEM_NOTHING;
     }else if(c=='=')
@@ -159,7 +153,7 @@ if(input!=NULL)					\
         }
         maxchars--;
         *b++=c;
-        /* Read upto the next terminator. */
+        /* Read up to the next terminator. */
         for(;;)
         {
             if(!maxchars)
@@ -173,7 +167,7 @@ if(input!=NULL)					\
             /* Check for terminator */
             if(!c||c==' '||c=='\t'||c=='\n'||c=='='||c==EOF)
             {
-                if(c!=EOF)
+                if(c=='\n')
                     UNGET();
                 *b=0;
                 return ITEM_UNQUOTED;
