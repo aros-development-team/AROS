@@ -167,7 +167,7 @@ if(input!=NULL)					\
             /* Check for terminator */
             if(!c||c==' '||c=='\t'||c=='\n'||c=='='||c==EOF)
             {
-                if(c=='\n')
+                if(c!=EOF)
                     UNGET();
                 *b=0;
                 return ITEM_UNQUOTED;
