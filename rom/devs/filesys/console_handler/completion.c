@@ -259,7 +259,7 @@ static BOOL PreparePattern(struct conbase *conbase, struct completioninfo *ci)
     {
     	if (parsecode == 0)
 	{
-	    strncat(ci->filepart, "#?", sizeof(ci->filepart));
+	    strncat(ci->filepart, "~(#?.info)", sizeof(ci->filepart));
 	    parsecode = ParsePatternNoCase(ci->filepart, ci->pattern, sizeof(ci->pattern));	    
 	}
     }
