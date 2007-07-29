@@ -1840,104 +1840,114 @@ IPTR Install__MUIM_IC_MakeDirs
 {
     struct Install_DATA *data    = INST_DATA(CLASS, self);
 
-    UBYTE buffer[4096];
-    struct ExAllData *ead = (struct ExAllData*)buffer;
-    struct ExAllData *oldEad = ead;
-    struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-    eac->eac_LastKey = 0;
+    UBYTE *buffer = NULL;
+	LONG  noOfFiles=0;
 
-    BPTR lock = Lock(message->dstDir, SHARED_LOCK);     /* check the dest dir exists */
-    if(lock == 0)
-    {
-        BPTR dstLock = CreateDir(message->dstDir);      /* no, so create it */
-        if(dstLock != NULL) UnLock(dstLock);
-        else
-        {
-            D(bug("[INSTALLER.MD] Failed to create dest dir: %s (Error: %d)\n", message->dstDir, IoErr()));
-            data->inst_success = MUIV_Inst_Failed;
-            return 0;
-        }
-    }
-    else
-    {
-        UnLock(lock);
-        lock = 0;
-    }
+	if ((buffer = AllocVec(4096, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+	{
+		struct ExAllData *ead = (struct ExAllData*)buffer;
+		struct ExAllData *oldEad = ead;
+		struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+		eac->eac_LastKey = 0;
 
-    lock = Lock(message->srcDir, SHARED_LOCK);          /* get the source dir */
-    if(lock == 0)
-    {
-        D(bug("[INSTALLER.MD] Failed to lock dir when making the dirs: %s (Error: %d)\n", message->srcDir, IoErr()));
-        data->inst_success = MUIV_Inst_Failed;
-        return 0;
-    }
+		BPTR lock = Lock(message->dstDir, SHARED_LOCK);     /* check the dest dir exists */
+		if(lock == 0)
+		{
+			BPTR dstLock = CreateDir(message->dstDir);      /* no, so create it */
+			if(dstLock != NULL) UnLock(dstLock);
+			else
+			{
+				D(bug("[INSTALLER.MD] Failed to create dest dir: %s (Error: %d)\n", message->dstDir, IoErr()));
+				data->inst_success = MUIV_Inst_Failed;
+				return 0;
+			}
+		}
+		else
+		{
+			UnLock(lock);
+			lock = 0;
+		}
 
-    LONG noOfFiles=0;
-    BOOL  loop;
+		lock = Lock(message->srcDir, SHARED_LOCK);          /* get the source dir */
+		if(lock == 0)
+		{
+			D(bug("[INSTALLER.MD] Failed to lock dir when making the dirs: %s (Error: %d)\n", message->srcDir, IoErr()));
+			data->inst_success = MUIV_Inst_Failed;
+			return 0;
+		}
 
-    //D(bug("[INSTALLER.MD] Locked and loaded\n"));
-    
-    do
-    {
-        ead = oldEad;
-        loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
+		BOOL  loop;
 
-        if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
-        {
-            break;
-        }
-        
-        if(eac->eac_Entries != 0)
-        {
-            do
-            {
-                //D(bug("[INSTALLER.MD] Doin the entries: %d\n", ead->ed_Type));
+		//D(bug("[INSTALLER.MD] Locked and loaded\n"));
 
-                switch(ead->ed_Type)
-                {
-                    default:
-                        //D(bug("[INSTALLER.MD] Type: %d\tName: %s\n", ead->ed_Type, ead->ed_Name));
-                        break;
-                    case ST_FILE:
-                        noOfFiles++;
-		    
+		do
+		{
+			ead = oldEad;
+			loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
+
+			if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
+			{
+				break;
+			}
+
+			if(eac->eac_Entries != 0)
+			{
+				do
+				{
+					//D(bug("[INSTALLER.MD] Doin the entries: %d\n", ead->ed_Type));
+
+					switch(ead->ed_Type)
+					{
+						default:
+							//D(bug("[INSTALLER.MD] Type: %d\tName: %s\n", ead->ed_Type, ead->ed_Name));
+							break;
+						case ST_FILE:
+							noOfFiles++;
+
 #warning: TODO - add the file size to a global count for total time estimation		    
-		    
-                        break;
-                    case ST_USERDIR:
-                    {
-                        ULONG srcLen = strlen(message->srcDir);
-                        ULONG dstLen = strlen(message->dstDir);
-                        ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
-                        ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
 
-                        TEXT srcDir[newSrcLen];
-                        TEXT dstDir[newDstLen];
+							break;
+						case ST_USERDIR:
+						{
+							ULONG srcLen = strlen(message->srcDir);
+							ULONG dstLen = strlen(message->dstDir);
+							ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
+							ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
 
-                        CopyMem(message->srcDir, srcDir, srcLen + 1);
-                        CopyMem(message->dstDir, dstDir, dstLen + 1);
-                        if(AddPart(srcDir, ead->ed_Name, newSrcLen) && AddPart(dstDir, ead->ed_Name, newDstLen))
-                        {
-                            //D(bug("[INSTALLER.MD] R: %s -> %s \n", srcDir, dstDir));
-                            BPTR dirLock = CreateDir(dstDir);
-                            if(dirLock != NULL) UnLock(dirLock);
-                            noOfFiles += DoMethod(self, MUIM_IC_MakeDirs, srcDir, dstDir);
-                        }
-                        else
-                        {
-                            data->inst_success = MUIV_Inst_Failed;
-                            D(bug("[INSTALLER.MD] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
-                        }
-                        break;
-                    }
-                }               
-                ead = ead->ed_Next;
-            } while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
-        }
-    } while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
-    
-    FreeDosObject(DOS_EXALLCONTROL, eac);
-    UnLock(lock);
+							TEXT srcDir[newSrcLen];
+							TEXT dstDir[newDstLen];
+
+							CopyMem(message->srcDir, srcDir, srcLen + 1);
+							CopyMem(message->dstDir, dstDir, dstLen + 1);
+							if(AddPart(srcDir, ead->ed_Name, newSrcLen) && AddPart(dstDir, ead->ed_Name, newDstLen))
+							{
+								//D(bug("[INSTALLER.MD] R: %s -> %s \n", srcDir, dstDir));
+								BPTR dirLock = CreateDir(dstDir);
+								if(dirLock != NULL) UnLock(dirLock);
+								noOfFiles += DoMethod(self, MUIM_IC_MakeDirs, srcDir, dstDir);
+							}
+							else
+							{
+								data->inst_success = MUIV_Inst_Failed;
+								D(bug("[INSTALLER.MD] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
+							}
+							break;
+						}
+					}               
+					ead = ead->ed_Next;
+				} while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
+			}
+		} while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
+
+		FreeDosObject(DOS_EXALLCONTROL, eac);
+		UnLock(lock);
+
+		FreeVec(buffer);
+	}
+	else
+	{
+#warning "TODO: Warn out of mem creating dir tree"
+	}
 
     return noOfFiles;
 }
@@ -1947,8 +1957,9 @@ IPTR Install__MUIM_IC_CopyFiles
     Class *CLASS, Object *self, struct MUIP_CopyFiles* message 
 )
 {
-    struct Install_DATA* data = INST_DATA(CLASS, self);
-    BPTR lock = Lock(message->srcDir, SHARED_LOCK);
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    UBYTE               *buffer = NULL;
+    BPTR                lock = Lock(message->srcDir, SHARED_LOCK);
 
     if(lock == 0)
     {
@@ -1956,106 +1967,114 @@ IPTR Install__MUIM_IC_CopyFiles
         data->inst_success = MUIV_Inst_Failed;
         return 0;
     }
-    
-    UBYTE buffer[kExallBufSize];
-    struct ExAllData *ead = (struct ExAllData*)buffer;
-    struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-    eac->eac_LastKey = 0;
 
-    BOOL  loop;
-    struct ExAllData *oldEad = ead;
-    
-    do
-    {
-        ead = oldEad;
-        loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
+	if ((buffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+	{
+		struct ExAllData *ead = (struct ExAllData*)buffer;
+		struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+		eac->eac_LastKey = 0;
 
-        if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
-        
-        if(eac->eac_Entries != 0)
-        {
-            do
-            {
-                if(ead->ed_Type == ST_FILE || ead->ed_Type == ST_USERDIR)
-                {
-                    ULONG srcLen = strlen(message->srcDir);
-                    ULONG dstLen = strlen(message->dstDir);
-                    ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
-                    ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
-                    
-                    TEXT srcFile[newSrcLen];
-                    TEXT dstFile[newDstLen];
-                    
-                    CopyMem(message->srcDir, srcFile, srcLen + 1);
-                    CopyMem(message->dstDir, dstFile, dstLen + 1);
-                    if(AddPart(srcFile, ead->ed_Name, newSrcLen) && AddPart(dstFile, ead->ed_Name, newDstLen))
-                    {
-                        //D(bug("[INSTALLER] R: %s -> %s \n", srcFile, dstFile));
-//                        set(data->actioncurrent, MUIA_Text_Contents, srcFile); // CRASH?
+		BOOL  loop;
+		struct ExAllData *oldEad = ead;
 
-                        DoMethod(data->installer,MUIM_Application_InputBuffered);
+		do
+		{
+			ead = oldEad;
+			loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
 
-                        switch(ead->ed_Type)
-                        {
-                            case ST_FILE:
-                                DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
-                                
-                                message->currFile++;
-                                break;
+			if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
 
-                            case ST_USERDIR:
-				if(data->instc_undoenabled)
+			if(eac->eac_Entries != 0)
+			{
+				do
 				{
-					BPTR		dlock = 0;
-					if ((dlock = Lock(message->dstDir, ACCESS_READ))==NULL) break;
-					UnLock(dlock);
-
-					char		*tmppath = AllocVec((strlen(message->dstDir) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
-					BPTR	ulock=NULL;
-
-					IPTR		src_point = (((message->dstDir) + strlen(dest_Path))+1),
-							src_len = (strlen(message->dstDir) - strlen(dest_Path));
-
-					sprintf(tmppath,"%s/%s", instalationtmp_path, src_point);
-			
-					D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
-					if ((ulock = Lock(tmppath, ACCESS_READ))!=NULL)
+					if(ead->ed_Type == ST_FILE || ead->ed_Type == ST_USERDIR)
 					{
-						D(bug("[INSTALLER.CFs] Dir '%s' Exists - no nead to create\n",tmppath));
-						UnLock(ulock);
-					}
-					else
+						ULONG srcLen = strlen(message->srcDir);
+						ULONG dstLen = strlen(message->dstDir);
+						ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
+						ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
+
+						TEXT srcFile[newSrcLen];
+						TEXT dstFile[newDstLen];
+
+						CopyMem(message->srcDir, srcFile, srcLen + 1);
+						CopyMem(message->dstDir, dstFile, dstLen + 1);
+						if(AddPart(srcFile, ead->ed_Name, newSrcLen) && AddPart(dstFile, ead->ed_Name, newDstLen))
+						{
+							//D(bug("[INSTALLER] R: %s -> %s \n", srcFile, dstFile));
+	//                        set(data->actioncurrent, MUIA_Text_Contents, srcFile); // CRASH?
+
+							DoMethod(data->installer,MUIM_Application_InputBuffered);
+
+							switch(ead->ed_Type)
+							{
+								case ST_FILE:
+									DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
+
+									message->currFile++;
+									break;
+
+								case ST_USERDIR:
+					if(data->instc_undoenabled)
 					{
-						ulock = CreateDir(tmppath);
-						if(ulock != NULL) UnLock(ulock);
+						BPTR		dlock = 0;
+						if ((dlock = Lock(message->dstDir, ACCESS_READ))==NULL) break;
+						UnLock(dlock);
+
+						char		*tmppath = AllocVec((strlen(message->dstDir) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
+						BPTR	ulock=NULL;
+
+						IPTR		src_point = (((message->dstDir) + strlen(dest_Path))+1),
+								src_len = (strlen(message->dstDir) - strlen(dest_Path));
+
+						sprintf(tmppath,"%s/%s", instalationtmp_path, src_point);
+
+						D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
+						if ((ulock = Lock(tmppath, ACCESS_READ))!=NULL)
+						{
+							D(bug("[INSTALLER.CFs] Dir '%s' Exists - no nead to create\n",tmppath));
+							UnLock(ulock);
+						}
 						else
 						{
-							D(bug("[INSTALLER.CFs] Failed to create %s dir!!\n",tmppath));
-							data->inst_success = MUIV_Inst_Failed;
-							return 0;
+							ulock = CreateDir(tmppath);
+							if(ulock != NULL) UnLock(ulock);
+							else
+							{
+								D(bug("[INSTALLER.CFs] Failed to create %s dir!!\n",tmppath));
+								data->inst_success = MUIV_Inst_Failed;
+								return 0;
+							}
 						}
+				
+						FreeVec(tmppath);
 					}
-			
-					FreeVec(tmppath);
-				}
-                                message->currFile = DoMethod(self, MUIM_IC_CopyFiles, srcFile, dstFile, message->noOfFiles, message->currFile);
-                                break;
-                        }
-                        ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
-                        set(data->gauge2, MUIA_Gauge_Current, percent);
-                    }
-                    else
-                    {
-                        D(bug("[INSTALLER.CFs] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
-                    }
-                }               
-                ead = ead->ed_Next;
-            } while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
-        }
-    } while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
-    
-    FreeDosObject(DOS_EXALLCONTROL, eac);
-    UnLock(lock);
+									message->currFile = DoMethod(self, MUIM_IC_CopyFiles, srcFile, dstFile, message->noOfFiles, message->currFile);
+									break;
+							}
+							ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
+							set(data->gauge2, MUIA_Gauge_Current, percent);
+						}
+						else
+						{
+							D(bug("[INSTALLER.CFs] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
+						}
+					}               
+					ead = ead->ed_Next;
+				} while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
+			}
+		} while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
+
+		FreeDosObject(DOS_EXALLCONTROL, eac);
+		UnLock(lock);
+
+		FreeVec(buffer);
+	}
+	else
+	{
+#warning "TODO: Warn out of mem copying files"
+	}
 
     return message->currFile;
 }
