@@ -1327,7 +1327,9 @@ localecopydone:
 	get(data->instc_options_main->opt_copycore, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
-		TEXT     *core_dirs[] = 
+		char 	tmp[100];
+		BOOL	success = FALSE;
+		TEXT	*core_dirs[] = 
 		{
 			"C",			"C",
 			"Classes",		"Classes",
@@ -1351,8 +1353,13 @@ localecopydone:
 		set(data->label, MUIA_Text_Contents, "Copying Core System files...");
 
 		CopyDirArray( CLASS, self, data, core_dirs, dest_Path);
-	}
 
+		//Make Env-Archive Writeable ..
+		sprintf(tmp,"Protect ADD FLAGS=W ALL QUIET %s:Prefs/Env-Archive", dest_Path);
+		D(bug("[INSTALLER] Changing Protection on Env Files (command='%s')\n", tmp));
+		success = (BOOL)Execute(tmp, NULL, NULL);
+	}
+	
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : COPY EXTRAS **/
