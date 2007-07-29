@@ -1569,7 +1569,6 @@ D(bug("[Wanderer] Wanderer__OM_NEW()\n"));
 
 D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data));
 
-		data->wd_Screen = LockPubScreen(NULL);
 		_WandererIntern_CLASS = CLASS;
 
 #if defined(WANDERER_DEFAULT_BACKDROP)
@@ -1577,15 +1576,6 @@ D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data)
 #else
 		data->wd_Option_BackDropMode = FALSE;
 #endif
-
-		if(data->wd_Screen == NULL)
-		{
-D(bug("[Wanderer] Wanderer__OM_NEW: Couldn't lock screen!\n"));
-            CoerceMethod(CLASS, self, OM_DISPOSE);
-            return NULL;
-		}
-
-D(bug("[Wanderer] Wanderer__OM_NEW: Using Screen @ %x\n", data->wd_Screen));
 
         /*-- Setup hooks structures ----------------------------------------*/
         _WandererIntern_hook_standard.h_Entry = (HOOKFUNC) Wanderer__HookFunc_StandardFunc;
@@ -2129,6 +2119,16 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
     IPTR    TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
 
     IPTR    useFont = (IPTR)NULL;
+	
+	data->wd_Screen = LockPubScreen(NULL);
+	if(data->wd_Screen == NULL)
+	{
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Couldn't lock screen!\n"));
+		CoerceMethod(CLASS, self, OM_DISPOSE);
+		return NULL;
+	}
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Using Screen @ %x\n", data->wd_Screen));
+	
     if (data->wd_PrefsIntern)
     {
         useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
@@ -2151,7 +2151,13 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
         		MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
         		MUIA_IconWindowExt_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
     	     End;
-    
+
+	if (data->wd_Screen)
+	{
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Unlocking access to screen @ %x\n", data->wd_Screen));
+		UnlockPubScreen(NULL, data->wd_Screen);
+	}
+
     if (window != NULL)
     {
         /* Get the drawer path back so we can use it also outside this function */
