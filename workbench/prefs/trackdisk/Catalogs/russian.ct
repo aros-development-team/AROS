@@ -1,0 +1,35 @@
+## version $VER: Trackdisk.catalog 1.0 (30.07.2007)
+## language russian
+## codeset 0
+;
+; 
+MSG_NAME
+Trackdisk
+;
+MSG_TITLE
+Свойства Trackdisk
+;
+MSG_SAVE
+Сохранить
+;
+MSG_USE
+Применить
+;
+MSG_CANCEL
+Отменить
+;
+MSG_DESCRIPTION
+Редактор свойств trackdisk.device 
+;
+MSG_WINDOW_TITLE
+Свойства trackdisk.device
+;
+MSG_DRIVE
+Накопитель %u
+;
+MSG_NOCLICK
+Тихий:
+;
+MSG_RETRIES
+Повторы:
+;
