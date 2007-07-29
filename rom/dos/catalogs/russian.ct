@@ -1,0 +1,351 @@
+## version $VER: dos.catalog 1.1 (30.07.2007)
+## codeset 0
+## language russian
+;
+MSG_ERROR_NO_FREE_STORE
+Недостаточно свободной памяти
+;
+; not enough memory available
+;
+MSG_ERROR_TASK_TABLE_FULL
+Переполнена таблица процессов
+;
+; process table full
+;
+MSG_ERROR_BAD_TEMPLATE
+Неверный шаблон
+;
+; bad template
+;
+MSG_ERROR_BAD_NUMBER
+Неверный номер
+;
+; bad number
+;
+MSG_ERROR_REQUIRED_ARG_MISSING
+Отсутствует необходимый параметр
+;
+; required argument missing
+;
+MSG_ERROR_KEY_NEEDS_ARG
+Отсутствует значение указанного параметра
+;
+; value after keyword missing
+;
+MSG_ERROR_TOO_MANY_ARGS
+Неверное число аргументов
+;
+; wrong number of arguments
+;
+MSG_ERROR_UNMATCHED_QUOTES
+Не закрыты кавычки
+;
+; unmatched quotes
+;
+MSG_ERROR_LINE_TOO_LONG
+Список аргументов неверен или переполнен
+;
+; argument line invalid or too long
+;
+MSG_ERROR_FILE_NOT_OBJECT
+Файл не является исполняемым
+;
+; file is not executable
+;
+MSG_ERROR_INVALID_RESIDENT_LIBRARY
+Ошибка в резидентной библиотеке
+;
+; invalid resident library
+;
+MSG_ERROR_NO_DEFAULT_DIR
+Ошибка 201
+;
+; error 201
+;
+MSG_ERROR_OBJECT_IN_USE
+Обьект занят
+;
+; object is in use
+;
+MSG_ERROR_OBJECT_EXISTS
+Обьект уже существует
+;
+; object already exists
+;
+MSG_ERROR_DIR_NOT_FOUND
+Каталог не найден
+;
+; directory not found
+;
+MSG_ERROR_OBJECT_NOT_FOUND
+Объект не найден
+;
+; object not found
+;
+MSG_ERROR_BAD_STREAM_NAME
+Ошибка в описании окна
+;
+; invalid window description
+;
+MSG_ERROR_OBJECT_TOO_LARGE
+Объект слишком велик
+;
+; object too large
+;
+MSG_ERROR_ACTION_NOT_KNOWN
+Неизвестный тип файловой системы
+;
+; filesystem action type unknown
+;
+MSG_ERROR_INVALID_COMPONENT_NAME
+Ошибка в имени объекта
+;
+; object name invalid
+;
+MSG_ERROR_INVALID_LOCK
+Ошибка блокировки объекта
+;
+; invalid object lock
+;
+MSG_ERROR_OBJECT_WRONG_TYPE
+Объект неподходящего типа
+;
+; object is not of required type
+;
+MSG_ERROR_DISK_NOT_VALIDATED
+Диск не прошёл проверку
+;
+; disk not validated
+;
+MSG_ERROR_DISK_WRITE_PROTECTED
+Диск защищён от записи
+;
+; disk is write-protected
+;
+MSG_ERROR_RENAME_ACROSS_DEVICES
+Попытка переименования между устройствами
+;
+; rename across devices attempted
+;
+MSG_ERROR_DIRECTORY_NOT_EMPTY
+Каталог не пуст
+;
+; directory not empty
+;
+MSG_ERROR_TOO_MANY_LEVELS
+Превышено число вложенных уровней
+;
+; too many levels
+;
+MSG_ERROR_DEVICE_NOT_MOUNTED
+Устройство (том) не смонтировано
+;
+; device (or volume) is not mounted
+;
+MSG_ERROR_SEEK_ERROR
+Ошибка чтения
+;
+; seek failure
+;
+MSG_ERROR_COMMENT_TOO_BIG
+Превышена длина комментария
+;
+; comment is too long
+;
+MSG_ERROR_DISK_FULL
+Диск переполнен
+;
+; disk is full
+;
+MSG_ERROR_DELETE_PROTECTED
+Объект защищён от удаления
+;
+; object is protected from deletion
+;
+MSG_ERROR_WRITE_PROTECTED
+Файл защищён от записи
+;
+; file is write protected
+;
+MSG_ERROR_READ_PROTECTED
+Файл защищен от чтения
+;
+; file is read protected
+;
+MSG_ERROR_NOT_A_DOS_DISK
+Неверный диск DOS
+;
+; not a valid DOS disk
+;
+MSG_ERROR_NO_DISK
+Нет диска в приводе
+;
+; no disk in drive
+;
+MSG_ERROR_NO_MORE_ENTRIES
+Превышено число объектов в каталоге
+;
+; no more entries in directory
+;
+MSG_ERROR_IS_SOFT_LINK
+Объект является "мягкой" ссылкой
+;
+; object is soft link
+;
+MSG_ERROR_OBJECT_LINKED
+Объект имеет ссылки
+;
+; object is linked
+;
+MSG_ERROR_BAD_HUNK
+Ошибка в заголовке
+;
+; bad loadfile hunk
+;
+MSG_ERROR_NOT_IMPLEMENTED
+Функция ещё не внедрена
+;
+; function not implemented
+;
+MSG_ERROR_RECORD_NOT_LOCKED
+Запись не заблокирована
+;
+; record not locked
+;
+MSG_ERROR_LOCK_COLLISION
+Запись уже заблокирована
+;
+; record lock collision
+;
+MSG_ERROR_LOCK_TIMEOUT
+Истек срок защиты записи
+;
+; record lock timeout
+;
+MSG_ERROR_UNLOCK_ERROR
+Ошибка при разблокировании записи
+;
+; record unlock error
+;
+MSG_ERROR_BUFFER_OVERFLOW
+Переполнение буфера
+;
+; buffer overflow
+;
+MSG_ERROR_BREAK
+*** Останов
+;
+; ***Break
+;
+MSG_ERROR_NOT_EXECUTABLE
+Файл не является исполняемым
+;
+; file not executable
+;
+; === New ErrorReport() format strings.
+;
+MSG_STRING_DISK_NOT_VALIDATED
+Том "%s" не прошёл проверку
+;Volume "%s" is not validated
+;
+MSG_STRING_DISK_WRITE_PROTECTED
+Том "%s" защищён от записи
+;Volume "%s" is write protected
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT
+Пожалуйста, вставьте том "%s" в любой привод
+;Please insert volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
+Пожалуйста, замените том "%s" в любом приводе
+;Please replace volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
+Пожалуйста, замените том "%s" на "%s"
+;Please replace volume "%s" in "%s"
+;
+MSG_STRING_DISK_FULL
+Том "%s" переполнен
+;Volume "%s" is full
+;
+MSG_STRING_NOT_A_DOS_DISK
+Неверный диск DOS в "%s"
+;Not a DOS disk in "%s"
+;
+MSG_STRING_NO_DISK
+Нет диска в "%s"
+;No disk present in "%s"
+;
+MSG_STRING_ABORT_BUSY
+НЕОБХОДИМО заменить том "%s" в "%s"!
+;You MUST replace volume "%s" in "%s"!
+;
+MSG_STRING_ABORT_DISK_ERROR
+Том "%s" имеет ошибки чтения/записи
+;Volume "%s" has a read/write error
+;
+; === End of new ErrorRequest() format strings. Old ones follow for reference.
+;
+;MSG_STRING_INSERT_VOLUME
+;Benцtige den Datentrфger\n\
+;%s\n\
+;in beliebigem Laufwerk
+;
+; Please insert volume\n%s\nin any drive
+;
+;MSG_STRING_VOLUME_FULL
+;Der Datentrфger %s ist voll
+;
+; The volume %s is full
+;
+;MSG_STRING_NO_DISK
+;Keine Diskette in Laufwerk %s
+;
+; No disk in drive %s
+;
+;MSG_STRING_NO_DOS_DISK
+;Keine DOS-Diskette in Laufwerk %s
+;
+; Not a DOS disk in drive %s
+;
+;MSG_STRING_MUST_REPLACE
+;Benцtige UNBEDINGT den Datentrфger\n\
+;%s\n\
+;in Laufwerk %s
+;
+; You MUST replace volume\n\
+; %s\n\
+; in drive %s
+;
+; === End of ErrorRequest() format strings.
+;
+MSG_STRING_RETRY
+Повторить
+;
+; Retry
+;
+MSG_STRING_CANCEL
+Отменить
+;
+; Cancel
+;
+MSG_STRING_REQUESTTITLE
+Диалог запроса
+;
+; System requester
+;
+MSG_ERROR_NO_MATCHING_ELSEENDIF
+Не найден замыкающий оператор ELSE или ENDIF
+;
+; no matching Else or EndIf
+;
+MSG_ERROR_SCRIPT_ONLY
+Эта команда должна применяться только в скриптах
+;
+; this command is supposed to be used in command files only
+;
+MSG_ERROR_UNKNOWN
+Неизвестная ошибка
+;
+; undefined error
+;

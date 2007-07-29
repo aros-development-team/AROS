@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (12.08.2006)
+## version $VER: wanderer.catalog 1.1 (30.07.2007)
 ## language russian
 ## codeset 0
 ;
@@ -57,3 +57,44 @@ MSG_PREVIEW
 MSG_TOOLBAR_ENABLED
 Включить Инструментарий
 ;
+MSG_ICONSPREFS
+Вид иконок
+;
+MSG_ICONLISTMODE
+Расстановка иконок
+;
+MSG_ICONLISTMODE_PLAIN
+Расставить плоско
+;
+MSG_ICONLISTMODE_GRID
+Расставить по сетке
+;
+MSG_ICONTEXTMODE
+Вид текста иконок
+;
+MSG_ICONTEXTMODE_OUTLINE
+Обведенный
+;
+MSG_ICONTEXTMODE_PLAIN
+Простой
+;
+MSG_ICONTEXTLENGTH
+Макс. длина текста иконок
+;
+MSG_DOUBLEBUFFERED
+double buffering
+;
+MSG_MISC
+Прочее
+;
+MSG_BUBBLESCREENTITLE
+%pc = Chip Ram free\n\
+%pf = Fast Ram free\n\
+%pt = Памяти свободно\n\
+%PC = Chip Ram\n\
+%PF = Fast Ram\n\
+%PT = Всего памяти\n\
+%os = Версия AROS\n\
+%wb = Версия Wanderer\n\
+%ov = Точная версия AROS\n\
+%wv = Точная версия workbench.library
