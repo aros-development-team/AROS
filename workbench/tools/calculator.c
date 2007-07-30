@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -143,7 +143,7 @@ static char ledstring[256],visledstring[256],
 
 static char *deftapename = "RAW:%ld/%ld/%ld/%ld/Calculator Tape/INACTIVE/SCREEN%s";
 
-UBYTE version[] = "$VER: Calculator 1.1 (1.5.2001)";
+UBYTE version[] = "$VER: Calculator 1.2 (30.07.2007)";
 
 static LONG Args[NUM_ARGS];
 
@@ -514,6 +514,11 @@ static char *DoOperation(void)
 	break;
     }
     
+    if (leftval > 9999999999999) // because of MAX_VAL_LEN
+    {
+	matherr = "Buffer overflow!";
+    }
+
     if (!matherr) LeftValToLED();
     
     return matherr;
