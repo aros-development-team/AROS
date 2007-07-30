@@ -162,6 +162,10 @@ typedef struct UtilityBase *UtilityBase_t;
 #define ARGS(ap) (ULONG *)ap
 #endif
 
+#ifdef __AROS__
+#define _WBenchMsg WBenchMsg
+#endif
+
 #ifdef AROS_FAST_BPTR
 #define BSTR_EXTRA 1
 #define BSTR_OFFSET 0
@@ -192,7 +196,6 @@ void ShowFault(LONG code, char *s, ...);
 struct DosLibrary *DOSBase;
 struct IntuitionBase *IntuitionBase;
 UtilityBase_t UtilityBase;
-struct Library *ExpansionBase;
 struct Process *MyProcess;
 
 ULONG StartupValue;
@@ -210,37 +213,24 @@ char *DeviceString;
 BOOL  IsEHandler, IsFilesystem;
 BOOL  IsCli;
 struct Args flagargs;
+extern struct WBStartup *_WBenchMsg;
 
 int main(void)
 {
-struct WBStartup *_WBenchMsg = NULL;
-STRPTR		args[2];
-IPTR		*params;
-LONG		error = RETURN_FAIL;
-struct RDArgs	*rda;
-char            dirname[512];
-
-  MyProcess = (struct Process*) FindTask(NULL);
-
-  if (!MyProcess->pr_CLI)
-  {
-    WaitPort(&MyProcess->pr_MsgPort);
-    _WBenchMsg = (struct WBStartup *) GetMsg(&MyProcess->pr_MsgPort);
-    IsCli = FALSE;
-  }
-  else
-    IsCli = TRUE;
+  STRPTR args[2];
+  IPTR *params;
+  LONG error = RETURN_FAIL;
+  struct RDArgs	*rda;
+  char dirname[512];
 
   if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
   {
     if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
     {
-      if ((ExpansionBase = OpenLibrary("expansion.library",37)))
-      {
 	memset(&flagargs,0,sizeof(struct Args));
 	IsEHandler = TRUE;
 	IsFilesystem = TRUE;
-        if (!_WBenchMsg)
+	if (!_WBenchMsg)
         {
           memset(args,0,sizeof(args));
 
@@ -443,21 +433,21 @@ char            dirname[512];
         else
         {
           /* wb startup */
-          if (_WBenchMsg->sm_NumArgs >= 2)
+	  if (_WBenchMsg->sm_NumArgs >= 2)
           {
             if ((params = AllocVec(PARAMSLENGTH,
                                    MEMF_PUBLIC | MEMF_CLEAR)))
             {
               int i;
 
-              for (i = 1; i < _WBenchMsg->sm_NumArgs; i++)
+	      for (i = 1; i < _WBenchMsg->sm_NumArgs; i++)
               {
                 BPTR olddir;
 
                 DEBUG_MOUNT(kprintf("Mount: try File <%s>\n",
-                                   (ULONG) _WBenchMsg->sm_ArgList[i].wa_Name));
+				   (ULONG) _WBenchMsg->sm_ArgList[i].wa_Name));
 
-                olddir = CurrentDir(_WBenchMsg->sm_ArgList[i].wa_Lock);
+		olddir = CurrentDir(_WBenchMsg->sm_ArgList[i].wa_Lock);
 
 		error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
 		DEBUG_MOUNT(kprintf("Mount: readmountfile returned %ld\n", error));
@@ -472,20 +462,10 @@ char            dirname[512];
               error = ERROR_NO_FREE_STORE;
             }
           }
-          
         }
-
-        CloseLibrary((struct Library *)ExpansionBase);
-      }
-      CloseLibrary((struct Library *)UtilityBase);
+        CloseLibrary((struct Library *)UtilityBase);
     }
     CloseLibrary((struct Library *)DOSBase);
-  }
-
-  if (_WBenchMsg)
-  {
-    Forbid();
-    ReplyMsg(&_WBenchMsg->sm_Message);
   }
 
   return error;
