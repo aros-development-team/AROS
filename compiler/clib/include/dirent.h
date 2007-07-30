@@ -55,7 +55,7 @@ void rewinddir(DIR *dir);
 #endif
 
 #if __XSI_VISIBLE
-void seekdir(DIR *dir, long loc);
+void seekdir(DIR *dir, off_t loc);
 long telldir(DIR *dir);
 #endif
 
