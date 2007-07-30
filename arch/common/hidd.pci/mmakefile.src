@@ -7,6 +7,9 @@ CFLAGS := $(CFLAGS) -D__KERNEL__
 
 FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
 
+#MM kernel-pci : kernel-pci-ids
+#MM kernel-pci-kobj : kernel-pci-ids
+
 #MM
 includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h $(AROS_INCLUDES)/libraries/pci.h $(GENINCDIR)/libraries/pci.h
 
