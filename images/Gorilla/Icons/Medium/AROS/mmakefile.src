@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-complete : themes-gorilla-icons-aros
 
-ICONS := Demos Development Devs Extras Fonts \
+ICONS := Demos Development Devs Fonts \
          Libs Locale Prefs Storage System \
          Tests Tools Utilities WBStartup \
          Rexxc
