@@ -12,4 +12,10 @@ ICONS := Demos Development Devs Fonts \
 
 #MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-aros
+#MM themes-gorilla-icons-aros : themes-gorilla-icons-aros-livecd
+
 %build_icons mmake=themes-gorilla-icons-aros icons=$(ICONS) dir=$(AROSDIR)
+
+#MM
+themes-gorilla-icons-aros-livecd :  
+	@$(ILBMTOICON) LiveCD.info.src LiveCD.png $(AROSDIR)/disk.info
