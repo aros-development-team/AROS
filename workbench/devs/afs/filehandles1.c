@@ -358,7 +358,6 @@ struct AfsHandle *ah;
 		);
 
 	error = 0;
-	if ((mode & FMF_WRITE) && ( volume->state != ID_VALIDATED)) error=ERROR_DISK_WRITE_PROTECTED;
 
 	ah = findHandle(volume, fileblock->blocknum);
 	if (ah != NULL)
@@ -484,7 +483,10 @@ ULONG fileblocknum = -1;
 						dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
 						if (dirblock != NULL)
 						{
-							fileblock = createNewEntry(afsbase, dirah->volume, ST_FILE, filename, dirblock, protection);
+							if (dirah->volume->state == ID_VALIDATED)
+								fileblock = createNewEntry(afsbase, dirah->volume, ST_FILE, filename, dirblock, protection);
+							else
+								error = ERROR_DISK_WRITE_PROTECTED;
 						}
 						else
 							error = ERROR_UNKNOWN;

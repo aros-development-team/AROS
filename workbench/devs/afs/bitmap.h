@@ -9,7 +9,7 @@
 #include "os.h"
 #include "volumes.h"
 
-ULONG	countUsedBlocks(struct AFSBase *, struct Volume *);
+ULONG countUsedBlocks(struct AFSBase *, struct Volume *);
 ULONG createNewBitmapBlocks(struct AFSBase *, struct Volume *);
 LONG setBitmapFlag(struct AFSBase *, struct Volume *, LONG);
 LONG invalidBitmap(struct AFSBase *, struct Volume *);
