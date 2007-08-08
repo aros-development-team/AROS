@@ -1,0 +1,21 @@
+include $(TOP)/config/make.cfg
+
+FILES := \
+    01-d980_wearefutureot3.jpg \
+    02-d980_aros-rose.jpg \
+    03-wesssper_aros.jpg \
+    04-Mithrandir_wallpaperupdated.jpg \
+    05-sprocket-01_aroscrap.jpg \
+    06-amigamia-04_AROS_Creation.jpg \
+    07-klesterjr_AROS_Rising.jpg \
+    08-roadto10_v2_spring.jpg \
+    09-seventyfour_02-arosglass.jpg \
+    10-Infiniton_arosgreen.jpg
+    
+#MM workbench-prefs-patterns-wallpapercomp : setup
+workbench-prefs-patterns-wallpapercomp : files-copy
+
+%copy_files_q files=$(FILES) dst=$(AROSDIR)/Prefs/Presets/Patterns/WallpaperComp2007
+
+%common
+
