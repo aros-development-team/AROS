@@ -22,14 +22,19 @@
         struct GfxBase *, GfxBase, 35, Graphics)
 
 /*  FUNCTION
-
+        Merge together the display, color, sprite and user coprocessor
+		instructions into a single coprocessor instruction stream.
+		
     INPUTS
-        view -
+        view - a pointer to the view structure whos coprocessor instructions
+		       are to be merged.
 
     RESULT
-        error -
+        error - ULONG error value indicating either lack of memory to build the system copper lists,
+		        or that MrgCop() has no work to do - ie there where no viewPorts in the list.
 
     NOTES
+        Pre-v39 AmigaOS returns void.
 
     EXAMPLE
 
