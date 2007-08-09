@@ -102,29 +102,29 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEVERT);
 		break;
 	    case MUIA_Image_Spec:
-	    {
-		char *spec;
-		char spec_buf[20];
+		{
+		    char *spec;
+		    char spec_buf[20];
 
-                data->specnr = tag->ti_Data;
+		    data->specnr = tag->ti_Data;
 
-		if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
-		{
-		    sprintf(spec_buf,"6:%ld",tag->ti_Data);
-		    spec = spec_buf;
+		    if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
+		    {
+			sprintf(spec_buf,"6:%ld",tag->ti_Data);
+			spec = spec_buf;
+		    }
+		    else if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
+		    {
+			sprintf(spec_buf,"0:%ld",tag->ti_Data);
+			spec = spec_buf;
+		    }
+		    else
+		    {
+			spec = (char*)tag->ti_Data;
+		    }
+		    data->spec = StrDup(spec);
 		}
-		else if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
-		{
-		    sprintf(spec_buf,"0:%ld",tag->ti_Data);
-		    spec = spec_buf;
-		}
-		else
-		{
-		    spec = (char*)tag->ti_Data;
-		}
-		data->spec = StrDup(spec);
-	    }
-	    break;
+		break;
 
 	    case MUIA_Image_OldImage:
 		data->old_image = (struct Image *)tag->ti_Data;
@@ -132,7 +132,7 @@ IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Image_State:
 		data->state = (LONG)tag->ti_Data;
 		break;
-    	}
+	}
     }
 
     data->prop = prop;
@@ -192,7 +192,7 @@ IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		}
 		break;
 	    case MUIA_Image_Spec:
-                data->specnr = tag->ti_Data;
+		data->specnr = tag->ti_Data;
 		if (data->spec)
 		    zune_image_spec_free(data->spec);
 		data->spec = zune_image_spec_duplicate(tag->ti_Data);
@@ -206,24 +206,24 @@ IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 			zune_imspec_cleanup(data->img);
 		    data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
 #warning quick hack to not draw the background for gradients. It should really be generalized
-                    if (data->img)
-                    {
-                        if (data->img->type == IST_SCALED_GRADIENT
-			    || data->img->type == IST_TILED_GRADIENT)
-                            set(obj, MUIA_FillArea, FALSE);
-                        else
-                            set(obj, MUIA_FillArea, TRUE);
+		    if (data->img)
+		    {
+			if (data->img->type == IST_SCALED_GRADIENT
+				|| data->img->type == IST_TILED_GRADIENT)
+			    set(obj, MUIA_FillArea, FALSE);
+			else
+			    set(obj, MUIA_FillArea, TRUE);
 		    }
-                }
+		}
 
 		if (_flags(obj) & MADF_CANDRAW)
 		    zune_imspec_show(data->img, obj);
 
 		MUI_Redraw(obj,MADF_DRAWOBJECT);
 		break;
-    	}
+	}
     }
-    
+
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
@@ -236,8 +236,8 @@ IPTR Image__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
 	case    MUIA_Image_Spec:
-		*msg->opg_Storage = (IPTR)data->spec;
-	        return TRUE;
+	    *msg->opg_Storage = (IPTR)data->spec;
+	    return TRUE;
     }
 
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
@@ -245,26 +245,26 @@ IPTR Image__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 struct NewImage *GetPropImage(struct MUI_ImageData *data, Object *prop)
 {
-        struct MUI_AreaData *adata = muiAreaData(prop);
-        struct MUI_ImageSpec_intern *spec = adata->mad_Background;
+    struct MUI_AreaData *adata = muiAreaData(prop);
+    struct MUI_ImageSpec_intern *spec = adata->mad_Background;
 
-        if (spec)
-        {
-            if (spec->type == IST_BITMAP)
-            {
-                struct dt_node *node = spec->u.bitmap.dt;
-                if (node)
-                {
-                    if (node->mode == MODE_PROP)
-                    {
-                        if (data->specnr == MUII_ArrowDown) return node->img_down;
-                        if (data->specnr == MUII_ArrowUp) return node->img_up;
-                        if (data->specnr == MUII_ArrowLeft) return node->img_left;
-                        if (data->specnr == MUII_ArrowRight) return node->img_right;
-                    }
-                }
-            }
-        }
+    if (spec)
+    {
+	if (spec->type == IST_BITMAP)
+	{
+	    struct dt_node *node = spec->u.bitmap.dt;
+	    if (node)
+	    {
+		if (node->mode == MODE_PROP)
+		{
+		    if (data->specnr == MUII_ArrowDown) return node->img_down;
+		    if (data->specnr == MUII_ArrowUp) return node->img_up;
+		    if (data->specnr == MUII_ArrowLeft) return node->img_left;
+		    if (data->specnr == MUII_ArrowRight) return node->img_right;
+		}
+	    }
+	}
+    }
     return NULL;
 }
 
@@ -280,34 +280,34 @@ IPTR Image__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (data->prop)
     {
-        if (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_type == SCROLLBAR_TYPE_CUSTOM)
-        {
-            struct NewImage *ni = GetPropImage(data, data->prop);
-            if (ni)
-            {
-                set(obj, MUIA_Frame, MUIV_Frame_None);
-                return(1);
-            }
-        }
-        else
-        {
-            data->prop = NULL;
-        }
+	if (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_type == SCROLLBAR_TYPE_CUSTOM)
+	{
+	    struct NewImage *ni = GetPropImage(data, data->prop);
+	    if (ni)
+	    {
+		set(obj, MUIA_Frame, MUIV_Frame_None);
+		return(1);
+	    }
+	}
+	else
+	{
+	    data->prop = NULL;
+	}
 
     }
-    
+
     if (data->spec)
     {
 	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
 #warning quick hack to not draw the background for gradients. It should really be generalized
-        if (data->img)
-        {
-            if (data->img->type == IST_SCALED_GRADIENT
-		|| data->img->type == IST_TILED_GRADIENT)
-                set(obj, MUIA_FillArea, FALSE);
-            else
-                set(obj, MUIA_FillArea, TRUE);
-        }
+	if (data->img)
+	{
+	    if (data->img->type == IST_SCALED_GRADIENT
+		    || data->img->type == IST_TILED_GRADIENT)
+		set(obj, MUIA_FillArea, FALSE);
+	    else
+		set(obj, MUIA_FillArea, TRUE);
+	}
 
 	if ((data->img != NULL) && (data->img->type == IST_BRUSH))
 	{
@@ -345,19 +345,19 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 
     if (data->prop != NULL)
     {
-        struct NewImage *ni = GetPropImage(data, data->prop);
-        if (ni)
-        {
-            msg->MinMaxInfo->MinWidth = ni->w >> 2;
-            msg->MinMaxInfo->MaxWidth = ni->w >> 2;
-            msg->MinMaxInfo->DefWidth = ni->w >> 2;
+	struct NewImage *ni = GetPropImage(data, data->prop);
+	if (ni)
+	{
+	    msg->MinMaxInfo->MinWidth = ni->w >> 2;
+	    msg->MinMaxInfo->MaxWidth = ni->w >> 2;
+	    msg->MinMaxInfo->DefWidth = ni->w >> 2;
 
-            msg->MinMaxInfo->MinHeight = ni->h;
-            msg->MinMaxInfo->MaxHeight = ni->h;
-            msg->MinMaxInfo->DefHeight = ni->h;
-            data->propimage = ni;
-            return(1);
-        }
+	    msg->MinMaxInfo->MinHeight = ni->h;
+	    msg->MinMaxInfo->MaxHeight = ni->h;
+	    msg->MinMaxInfo->DefHeight = ni->h;
+	    data->propimage = ni;
+	    return(1);
+	}
     }
 
     if (data->img)
@@ -365,7 +365,7 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 	struct MUI_MinMax minmax;
 
 	zune_imspec_askminmax(data->img, &minmax);
-   
+
 	if (data->flags & MIF_FREEHORIZ)
 	{
 	    msg->MinMaxInfo->MinWidth += minmax.MinWidth;
@@ -373,8 +373,8 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
 	}
 	else if ((data->flags & MIF_FONTMATCHWIDTH) &&
-		 (_font(obj)->tf_XSize >= minmax.MinWidth) &&
-		 (_font(obj)->tf_XSize <= minmax.MaxWidth))
+		(_font(obj)->tf_XSize >= minmax.MinWidth) &&
+		(_font(obj)->tf_XSize <= minmax.MaxWidth))
 	{
 	    msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize;
 	    msg->MinMaxInfo->MaxWidth += _font(obj)->tf_XSize;
@@ -394,8 +394,8 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
 	}
 	else if ((data->flags & MIF_FONTMATCHHEIGHT) &&
-		 (_font(obj)->tf_YSize >= minmax.MinHeight) &&
-		 (_font(obj)->tf_YSize <= minmax.MaxHeight))
+		(_font(obj)->tf_YSize >= minmax.MinHeight) &&
+		(_font(obj)->tf_YSize <= minmax.MaxHeight))
 	{
 	    msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
 	    msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize;
@@ -481,35 +481,36 @@ void DrawAlphaStateImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG sta
 
 
     
-    if (ni) {
-       depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+    if (ni)
+    {
+	depth = (ULONG) GetBitMapAttr(rp->BitMap, BMA_DEPTH);
 
-       d = (UBYTE *) ni->data;
-       ix=ni->w;
-       iy=ni->h;
-       switch(state) {
-           case IDS_NORMAL:
-               break;
-           case IDS_SELECTED:
-               d += (ix >> 2) * 4;
-               break;
-           case IDS_INACTIVENORMAL:
-               d += (ix >> 2) * 8;
-               break;
-    }
+	d = (UBYTE *) ni->data;
+	ix=ni->w;
+	iy=ni->h;
+	switch(state) {
+	    case IDS_NORMAL:
+		break;
+	    case IDS_SELECTED:
+		d += (ix >> 2) * 4;
+		break;
+	    case IDS_INACTIVENORMAL:
+		d += (ix >> 2) * 8;
+		break;
+	}
 
-        if (depth >= 15)
-        {
-            WritePixelArrayAlpha(d, 0 , 0, ix*4, rp, xp, yp, ix >> 2, iy, 0xffffffff);
-        }
-        else if (ni->bitmap != NULL)
-        {
-            if (ni->mask)
-            {
-                BltMaskBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xe0, (PLANEPTR) ni->mask);  
-            }
-            else BltBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xc0);
-        }
+	if (depth >= 15)
+	{
+	    WritePixelArrayAlpha(d, 0 , 0, ix*4, rp, xp, yp, ix >> 2, iy, 0xffffffff);
+	}
+	else if (ni->bitmap != NULL)
+	{
+	    if (ni->mask)
+	    {
+		BltMaskBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xe0, (PLANEPTR) ni->mask);  
+	    }
+	    else BltBitMapRastPort(ni->bitmap, 0, 0, rp, xp, yp, ix >> 2, iy, 0xc0);
+	}
     }
 }
 
@@ -519,34 +520,34 @@ IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
     D(bug("Image_Draw(%p): msg=0x%08lx state=%ld sss=%ld\n",
-       obj, ((struct MUIP_Draw *)msg)->flags, data->state,
-	  !!(_flags(obj) & MADF_SHOWSELSTATE)));
+		obj, ((struct MUIP_Draw *)msg)->flags, data->state,
+		!!(_flags(obj) & MADF_SHOWSELSTATE)));
 
     if (data->propimage == NULL) 
     {
-        DoSuperMethodA(cl,obj,(Msg)msg);
+	DoSuperMethodA(cl,obj,(Msg)msg);
 
-        if (!(msg->flags & (MADF_DRAWOBJECT|MADF_DRAWUPDATE)))
-                return 0;
+	if (!(msg->flags & (MADF_DRAWOBJECT|MADF_DRAWUPDATE)))
+	    return 0;
     }
 
     if (data->propimage)
     {
-        //Object *p = NULL;
-        //get(obj, MUIA_Parent, &p);
-        //if (p) DoMethod(p, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
-        //else 
-        DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
+	//Object *p = NULL;
+	//get(obj, MUIA_Parent, &p);
+	//if (p) DoMethod(p, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
+	//else 
+	DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
 
-        DrawAlphaStateImageToRP(_rp(obj), data->propimage, data->state, _left(obj), _top(obj));
+	DrawAlphaStateImageToRP(_rp(obj), data->propimage, data->state, _left(obj), _top(obj));
     }
     else if (data->img)
     {
-        DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
+	DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
 
 	zune_imspec_draw(data->img, muiRenderInfo(obj),
-			_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
-			0, 0, data->state);
+		_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
+		0, 0, data->state);
     }
     else if (data->old_image)
     {
@@ -571,7 +572,7 @@ BOOPSI_DISPATCHER(IPTR, Image_Dispatcher, cl, obj, msg)
 	case MUIM_Hide:      return Image__MUIM_Hide(cl,obj,(APTR)msg);
 	case MUIM_Draw:      return Image__MUIM_Draw(cl,obj,(APTR)msg);
     }
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
