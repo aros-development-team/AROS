@@ -101,7 +101,7 @@ static struct MUI_ImageSpec_intern *get_pattern_imspec(LONG in)
 	    spec->type = IST_COLOR;
 	    zune_penspec_fill_muipen(&spec->u.penspec, color);
 	}
-    	return spec;
+	return spec;
     }
     else if (in >= MUII_SHADOWBACK && in <= MUII_MARKBACKGROUND)
     {
@@ -110,7 +110,7 @@ static struct MUI_ImageSpec_intern *get_pattern_imspec(LONG in)
 	    spec->type = IST_PATTERN;
 	    spec->u.pattern = in - MUII_SHADOWBACK;
 	}
-    	return spec;
+	return spec;
     }
     return NULL;
 }
@@ -129,7 +129,7 @@ static struct MUI_ImageSpec_intern *get_pen_imspec(CONST_STRPTR str)
 	    return NULL;
 	}
 	spec->type = IST_COLOR;
-    	return spec;
+	return spec;
     }
     return NULL;
 }
@@ -147,7 +147,7 @@ static struct MUI_ImageSpec_intern *get_scaled_gradient_imspec(CONST_STRPTR str)
 	    return NULL;
 	}
 	spec->type = IST_SCALED_GRADIENT;
-    	return spec;
+	return spec;
     }
     return NULL;
 }
@@ -165,7 +165,7 @@ static struct MUI_ImageSpec_intern *get_tiled_gradient_imspec(CONST_STRPTR str)
 	    return NULL;
 	}
 	spec->type = IST_TILED_GRADIENT;
-    	return spec;
+	return spec;
     }
     return NULL;
 }
@@ -295,11 +295,11 @@ static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
 	    sprintf(buf, "6:%ld", spec->u.cfg.muiimg);
 	    break;
 
-        case IST_SCALED_GRADIENT:
+	case IST_SCALED_GRADIENT:
 	    zune_scaled_gradient_intern_to_string(spec, buf);
 	    break;
 
-        case IST_TILED_GRADIENT:
+	case IST_TILED_GRADIENT:
 	    zune_tiled_gradient_intern_to_string(spec, buf);
 	    break;
     }
@@ -338,20 +338,20 @@ static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
 	switch (*s)
 	{
 	    case '0': /* builtin pattern */
-	    {
-		LONG pat;
-		StrToLong(s+2, &pat);
-		spec = get_pattern_imspec(pat);
-		break;
-	    }
+		{
+		    LONG pat;
+		    StrToLong(s+2, &pat);
+		    spec = get_pattern_imspec(pat);
+		    break;
+		}
 
 	    case '1': /* builtin standard image, obsoleted by 6: */
-	    {
-		LONG vect;
-		StrToLong(s+2, &vect);
-		spec = zune_imspec_create_vector(vect);
-		break;
-	    }
+		{
+		    LONG vect;
+		    StrToLong(s+2, &vect);
+		    spec = zune_imspec_create_vector(vect);
+		    break;
+		}
 
 	    case '2': /* a penspec */
 		spec = get_pen_imspec(s+2);
@@ -371,27 +371,27 @@ static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
 		break;
 
 	    case '6': /* preconfigured image or background */
-	    {
-		LONG img;
-		StrToLong(s+2, &img);
+		{
+		    LONG img;
+		    StrToLong(s+2, &img);
 
-		if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
-		    spec = get_config_imspec(img);
-		break;
-	    }
+		    if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
+			spec = get_config_imspec(img);
+		    break;
+		}
 
-            case '7': /* scaled gradient */
+	    case '7': /* scaled gradient */
 		spec = get_scaled_gradient_imspec(s+2);
 		break;
 
-            case '8': /* tiled gradient */
+	    case '8': /* tiled gradient */
 		spec = get_tiled_gradient_imspec(s+2);
 		break;
 
 	} /* switch(*s) */
     }
     D(bug("zune_image_spec_to_structure : out=0x%lx [%s]\n",
-	  spec, zune_imspec_to_string(spec)));
+		spec, zune_imspec_to_string(spec)));
     return spec;
 }
 
@@ -415,7 +415,7 @@ static void zune_imspec_free(struct MUI_ImageSpec_intern *spec)
     if (!spec)
 	return;
     D(bug("zune_imspec_free(0x%lx) [%s]\n",
-	   spec, zune_imspec_to_string(spec)));
+		spec, zune_imspec_to_string(spec)));
 
     switch (spec->type)
     {
@@ -456,7 +456,7 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
     spec = zune_image_spec_to_structure(s);
 
     D(bug("zune_imspec_setup(%lx) [%s]\n",
-	  spec, zune_imspec_to_string(spec)));
+		spec, zune_imspec_to_string(spec)));
     if (!spec)
 	return NULL;
 
@@ -476,83 +476,83 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    break;
 
 	case IST_BRUSH:
-	{
-	    int i;
-
-	    for (i = 0; i < 2; i++)
 	    {
-		if (spec->u.brush.filename[i])
+		int i;
+
+		for (i = 0; i < 2; i++)
 		{
-                    spec->u.brush.dt[i] = dt_load_picture
-		    (
-			spec->u.brush.filename[i], mri->mri_Screen
-		    );
-
-		    if (!spec->u.brush.dt[i] &&  !strchr(spec->u.brush.filename[i], ':'))
+		    if (spec->u.brush.filename[i])
 		    {
- 		        int size;
-			STRPTR fullpath;
-
-		        size = strlen(IMSPEC_EXTERNAL_PREFIX)
-			    + strlen(spec->u.brush.filename[i]) + 1;
-		        fullpath = (STRPTR)AllocVec(size, MEMF_ANY);
-
-		        if (fullpath != NULL)
-		        {
-			    strcpy(fullpath, IMSPEC_EXTERNAL_PREFIX);
-			    strcat(fullpath, spec->u.brush.filename[i]);
-			    fullpath[size - 1] = 0;
-                            spec->u.brush.dt[i] = dt_load_picture
+			spec->u.brush.dt[i] = dt_load_picture
 			    (
-			        fullpath, mri->mri_Screen
+			     spec->u.brush.filename[i], mri->mri_Screen
 			    );
-			    FreeVec(fullpath);
-		        }
+
+			if (!spec->u.brush.dt[i] &&  !strchr(spec->u.brush.filename[i], ':'))
+			{
+			    int size;
+			    STRPTR fullpath;
+
+			    size = strlen(IMSPEC_EXTERNAL_PREFIX)
+				+ strlen(spec->u.brush.filename[i]) + 1;
+			    fullpath = (STRPTR)AllocVec(size, MEMF_ANY);
+
+			    if (fullpath != NULL)
+			    {
+				strcpy(fullpath, IMSPEC_EXTERNAL_PREFIX);
+				strcat(fullpath, spec->u.brush.filename[i]);
+				fullpath[size - 1] = 0;
+				spec->u.brush.dt[i] = dt_load_picture
+				    (
+				     fullpath, mri->mri_Screen
+				    );
+				FreeVec(fullpath);
+			    }
+			}
+		    }
+		    else
+		    {
+			spec->u.brush.dt[i] = spec->u.brush.dt[0];
 		    }
 		}
-		else
-		{
-		    spec->u.brush.dt[i] = spec->u.brush.dt[0];
-		}
 	    }
-	}
-	break;
+	    break;
 
 	case IST_BITMAP:
 	    if (spec->u.bitmap.filename)
 	    {
 		spec->u.bitmap.dt = dt_load_picture
-		(
-		    spec->u.bitmap.filename, mri->mri_Screen
-		);
+		    (
+		     spec->u.bitmap.filename, mri->mri_Screen
+		    );
 	    }
 	    break;
 
 	case IST_CONFIG:
-	{
-	    Object *win = mri->mri_WindowObject;
-	    struct ZunePrefsNew *prefs =  muiGlobalInfo(win)->mgi_Prefs;
-	    /* potential for deadloop if Zune prefs images contain a 6: */
-	    CONST_STRPTR spec_desc = prefs->imagespecs[spec->u.cfg.muiimg];
-	    zune_imspec_free(spec);
-	    spec = NULL;
-
-	    if (spec_desc && (spec_desc[0] == '6'))
 	    {
-		D(bug("*** zune_imspec_setup (%s recursive config)\n",
-		      zune_imspec_to_string(spec)));
-	    }
-	    else
-	    {
-		spec = zune_imspec_setup((IPTR)spec_desc, mri);
-	    }
-	    break;
-	}
+		Object *win = mri->mri_WindowObject;
+		struct ZunePrefsNew *prefs =  muiGlobalInfo(win)->mgi_Prefs;
+		/* potential for deadloop if Zune prefs images contain a 6: */
+		CONST_STRPTR spec_desc = prefs->imagespecs[spec->u.cfg.muiimg];
+		zune_imspec_free(spec);
+		spec = NULL;
 
-        case IST_SCALED_GRADIENT:
-        case IST_TILED_GRADIENT:
+		if (spec_desc && (spec_desc[0] == '6'))
+		{
+		    D(bug("*** zune_imspec_setup (%s recursive config)\n",
+				zune_imspec_to_string(spec)));
+		}
+		else
+		{
+		    spec = zune_imspec_setup((IPTR)spec_desc, mri);
+		}
+		break;
+	    }
+
+	case IST_SCALED_GRADIENT:
+	case IST_TILED_GRADIENT:
 	    zune_gradientspec_setup(spec, mri);
-            break;
+	    break;
     }
     return spec;
 }
@@ -564,7 +564,7 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 	return;
 
     D(bug("zune_imspec_cleanup(0x%lx) [%s]\n",
-	  spec, zune_imspec_to_string(spec)));
+		spec, zune_imspec_to_string(spec)));
 
     switch (spec->type)
     {
@@ -582,19 +582,19 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 	    break;
 
 	case IST_BRUSH:
-	{
-	    int i;
-
-	    for (i = 0; i < 2; i++)
 	    {
-		if (spec->u.brush.filename[i])
+		int i;
+
+		for (i = 0; i < 2; i++)
 		{
-		    dt_dispose_picture(spec->u.brush.dt[i]);
+		    if (spec->u.brush.filename[i])
+		    {
+			dt_dispose_picture(spec->u.brush.dt[i]);
+		    }
+		    spec->u.brush.dt[i] = NULL;
 		}
-		spec->u.brush.dt[i] = NULL;
+		break;
 	    }
-	    break;
-	}
 	case IST_BITMAP:
 	    if (spec->u.bitmap.dt)
 	    {
@@ -607,10 +607,10 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 	    D(bug("*** zune_imspec_cleanup : IST_CONFIG\n"));
 	    break;
 
-        case IST_SCALED_GRADIENT:
-        case IST_TILED_GRADIENT:
+	case IST_SCALED_GRADIENT:
+	case IST_TILED_GRADIENT:
 	    zune_gradientspec_cleanup(spec);
-            break;
+	    break;
 
     }
 
@@ -626,8 +626,8 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
     switch (spec->type)
     {
 	case IST_PATTERN:
-        case IST_SCALED_GRADIENT:
-        case IST_TILED_GRADIENT:
+	case IST_SCALED_GRADIENT:
+	case IST_TILED_GRADIENT:
 	case IST_COLOR:
 	    minmax->MinWidth = 3;
 	    minmax->MinHeight = 3;
@@ -648,23 +648,23 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
 	case IST_BRUSH:
 	    if (spec->u.brush.dt[0])
 	    {
-        char *straddr;
-        long len;
-        straddr = *(spec->u.brush.filename);
-        len = strlen(straddr);                        
-        if (len > 4)
-        {         
-           if (strcmp(&straddr[len-4],".mim")==0)
-           {
-           minmax->MinWidth = dt_width(spec->u.brush.dt[0]) >> 1;
-		   minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
-		   minmax->DefWidth = minmax->MinWidth;
-		   minmax->DefHeight = minmax->MinHeight;
-		   minmax->MaxWidth = minmax->MinWidth;
-		   minmax->MaxHeight = minmax->MinHeight;
-           break;                                              
-           }   
-        }                                
+		char *straddr;
+		long len;
+		straddr = *(spec->u.brush.filename);
+		len = strlen(straddr);                        
+		if (len > 4)
+		{         
+		    if (strcmp(&straddr[len-4],".mim")==0)
+		    {
+			minmax->MinWidth = dt_width(spec->u.brush.dt[0]) >> 1;
+			minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
+			minmax->DefWidth = minmax->MinWidth;
+			minmax->DefHeight = minmax->MinHeight;
+			minmax->MaxWidth = minmax->MinWidth;
+			minmax->MaxHeight = minmax->MinHeight;
+			break;                                              
+		    }   
+		}                                
 		minmax->MinWidth = dt_width(spec->u.brush.dt[0]);
 		minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
 		minmax->DefWidth = minmax->MinWidth;
@@ -709,7 +709,7 @@ void zune_imspec_show(struct MUI_ImageSpec_intern *spec, Object *obj)
 	return;
 
     D(bug("zune_imspec_show(0x%lx) [%s]\n", spec,
-	  zune_imspec_to_string(spec)));
+		zune_imspec_to_string(spec)));
 
     /* scaled gradient generation made here */
     switch (spec->type)
@@ -718,11 +718,11 @@ void zune_imspec_show(struct MUI_ImageSpec_intern *spec, Object *obj)
 	    D(bug("*** zune_imspec_show : IST_CONFIG\n"));
 	    break;
 
-        case IST_SCALED_GRADIENT:
-        case IST_TILED_GRADIENT:
-            spec->u.gradient.obj = obj;
-            break;
-            
+	case IST_SCALED_GRADIENT:
+	case IST_TILED_GRADIENT:
+	    spec->u.gradient.obj = obj;
+	    break;
+
 	default:
 	    break;
     }
@@ -735,7 +735,7 @@ void zune_imspec_hide(struct MUI_ImageSpec_intern *spec)
 	return;
 
     D(bug("zune_imspec_hide(0x%lx) [%s]\n", spec,
-	  zune_imspec_to_string(spec)));
+		zune_imspec_to_string(spec)));
 
     switch (spec->type)
     {
@@ -763,27 +763,27 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
     }
 
     if ((spec->type == IST_BITMAP && !spec->u.bitmap.dt)
-	|| (spec->type == IST_BRUSH && !spec->u.brush.dt[0]))
+	    || (spec->type == IST_BRUSH && !spec->u.brush.dt[0]))
     {
-    	def.type = IST_COLOR;
+	def.type = IST_COLOR;
 	zune_penspec_fill_muipen(&def.u.penspec, MPEN_BACKGROUND);
-    	spec = &def;
+	spec = &def;
     }
 
     switch (spec->type)
     {
 	case IST_PATTERN:
-	{
-	    LONG fg = mri->mri_Pens[patternPens[spec->u.pattern].fg];
-	    LONG bg = mri->mri_Pens[patternPens[spec->u.pattern].bg];
-	    SetDrMd(rp, JAM2);
-	    SetAPen(rp, fg);
-	    SetBPen(rp, bg);
-	    SetAfPt(rp, patternPens[spec->u.pattern].pattern, 1);
-	    RectFill(rp, left-dx, top-dy, right-dx, bottom-dy);
-	    SetAfPt(rp, NULL, 0);
-	}
-	break;
+	    {
+		LONG fg = mri->mri_Pens[patternPens[spec->u.pattern].fg];
+		LONG bg = mri->mri_Pens[patternPens[spec->u.pattern].bg];
+		SetDrMd(rp, JAM2);
+		SetAPen(rp, fg);
+		SetBPen(rp, bg);
+		SetAfPt(rp, patternPens[spec->u.pattern].pattern, 1);
+		RectFill(rp, left-dx, top-dy, right-dx, bottom-dy);
+		SetAfPt(rp, NULL, 0);
+	    }
+	    break;
 
 	case IST_VECTOR:
 	    if (spec->u.vect.draw)
@@ -804,24 +804,24 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
 		state = 0;
 	    if (spec->u.brush.dt[state])
 	    {
-            char *straddr;
-        long len;
-        straddr = *(spec->u.brush.filename);
-        len = strlen(straddr);                        
-        if (len > 4)
-        {                      
-           if (strcmp(&straddr[len-4],".mim")==0)
-           {                                  
-            dt_put_mim_on_rastport(spec->u.brush.dt[0], mri->mri_RastPort,
-					 left-dx, top-dy, state);
-           break;                                              
-           }   
-        }          
+		char *straddr;
+		long len;
+		straddr = *(spec->u.brush.filename);
+		len = strlen(straddr);                        
+		if (len > 4)
+		{                      
+		    if (strcmp(&straddr[len-4],".mim")==0)
+		    {                                  
+			dt_put_mim_on_rastport(spec->u.brush.dt[0], mri->mri_RastPort,
+				left-dx, top-dy, state);
+			break;                                              
+		    }   
+		}          
 		dt_put_on_rastport(spec->u.brush.dt[state], mri->mri_RastPort,
-					 left-dx, top-dy);
-/*  		dt_put_on_rastport_tiled(spec->u.brush.dt[state], mri->mri_RastPort, */
-/*  					 left, top, right, bottom, */
-/*  					 xoffset - left, yoffset - top); */
+			left-dx, top-dy);
+		/*  		dt_put_on_rastport_tiled(spec->u.brush.dt[state], mri->mri_RastPort, */
+		/*  					 left, top, right, bottom, */
+		/*  					 xoffset - left, yoffset - top); */
 	    }
 	    break;
 
@@ -829,8 +829,8 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
 	    if (spec->u.bitmap.dt)
 	    {
 		dt_put_on_rastport_tiled(spec->u.bitmap.dt, rp,
-					 left-dx, top-dy, right-dx, bottom-dy,
-					 xoffset - left, yoffset - top);
+			left-dx, top-dy, right-dx, bottom-dy,
+			xoffset - left, yoffset - top);
 	    }
 	    break;
 
@@ -838,15 +838,15 @@ void zune_imspec_drawbuffered (struct MUI_ImageSpec_intern *spec, struct RastPor
 	    D(bug("*** zune_imspec_draw : IST_CONFIG\n"));
 	    break;
 
-        case IST_SCALED_GRADIENT:
-            if (mode == 0) zune_gradient_draw(spec, mri, left, top, right, bottom, 0, 0);
-            else zune_gradient_drawfast(spec, rp, mri, 1, abs_l, abs_t, abs_r, abs_b, left, top, right, bottom, xoffset, yoffset);
-            break;
+	case IST_SCALED_GRADIENT:
+	    if (mode == 0) zune_gradient_draw(spec, mri, left, top, right, bottom, 0, 0);
+	    else zune_gradient_drawfast(spec, rp, mri, 1, abs_l, abs_t, abs_r, abs_b, left, top, right, bottom, xoffset, yoffset);
+	    break;
 
-        case IST_TILED_GRADIENT:
-            if (mode == 0) zune_gradient_draw(spec, mri, left, top, right, bottom, xoffset, yoffset);
-            else zune_gradient_drawfast(spec, rp, mri, 1, abs_l, abs_t, abs_r, abs_b, left, top, right, bottom, xoffset, yoffset);
-            break;
+	case IST_TILED_GRADIENT:
+	    if (mode == 0) zune_gradient_draw(spec, mri, left, top, right, bottom, xoffset, yoffset);
+	    else zune_gradient_drawfast(spec, rp, mri, 1, abs_l, abs_t, abs_r, abs_b, left, top, right, bottom, xoffset, yoffset);
+	    break;
     }
 }
 
@@ -871,15 +871,15 @@ STRPTR zune_image_spec_duplicate(IPTR in)
 
     if (in >= MUII_WindowBack && in < MUII_BACKGROUND)
     {
-        sprintf(spec_buf,"6:%ld",in);
-        spec = spec_buf;
+	sprintf(spec_buf,"6:%ld",in);
+	spec = spec_buf;
     } else
     {
-        if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
-        {
-            sprintf(spec_buf,"0:%ld",in);
-            spec = spec_buf;
-        } else spec = (char*)in;
+	if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
+	{
+	    sprintf(spec_buf,"0:%ld",in);
+	    spec = spec_buf;
+	} else spec = (char*)in;
     }
 
     return StrDup(spec);
