@@ -25,6 +25,7 @@ $Id$
 
 #include <dos/dos.h>
 #include <dos/datetime.h>
+#include <dos/filehandler.h>
 
 #include <exec/memory.h>
 #include <graphics/gfx.h>
@@ -3959,7 +3960,7 @@ D(bug("[IconList] IconDrawerList__ParseContents: '%s', len = %d\n", filename, le
                         if (!Stricmp(&filename[len-5],".info"))
 						{
 							/* Its a .info file .. skip "disk.info" and just ".info" files*/
-							if ((len == 5) || (!Stricmp(filename,"Disk")))
+							if ((len == 5) || ((len == 9) && (!Strnicmp(filename, "Disk", 4))))
 							{
 D(bug("[IconList] IconDrawerList__ParseContents: Skiping file named disk.info or just .info ('%s')\n", filename));
 								continue;
@@ -4626,8 +4627,14 @@ static struct NewDosList *IconVolumeList__CreateDOSList(void)
                         ndn->name = name;
                         ndn->device = dl->dol_Ext.dol_AROS.dol_Device;
                         ndn->unit = dl->dol_Ext.dol_AROS.dol_Unit;
-D(bug("[IconList]: IconVolumeList__CreateDOSList: adding node for '%s' (Device @ %x, Unit @ %x)\n", ndn->name, ndn->device, ndn->unit));
+D(bug("[IconList]: IconVolumeList__CreateDOSList: adding node for '%s' (Device @ %x, Unit @ %x) Type: %d\n", ndn->name, ndn->device, ndn->unit, dl->dol_Type));
 D(bug("[IconList]: IconVolumeList__CreateDOSList: Device '%s'\n", ndn->device->dd_Library.lib_Node.ln_Name));
+						if (dl->dol_misc.dol_handler.dol_Startup)
+						{
+							struct FileSysStartupMsg *thisfs_SM = dl->dol_misc.dol_handler.dol_Startup;
+D(bug("[IconList]: IconVolumeList__CreateDOSList: Startup msg @ %x\n", thisfs_SM));
+D(bug("[IconList]: IconVolumeList__CreateDOSList: Startup Device '%s', Unit %d\n", thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit));
+						}
 #ifndef __AROS__
                         ndn->port = dl->dol_Task;
 #else
@@ -4752,6 +4759,8 @@ D(bug("[IconList]: IconVolumeList__MUIM_IconList_Update()\n"));
 					}
 					else
 					{
+						this_Icon->ile_IconListEntry.type == ST_ROOT;
+
 						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
 							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
 
