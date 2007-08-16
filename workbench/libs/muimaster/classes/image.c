@@ -372,20 +372,18 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 	    msg->MinMaxInfo->MaxWidth += minmax.MaxWidth;
 	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
 	}
-	else if ((data->flags & MIF_FONTMATCHWIDTH) &&
-		(_font(obj)->tf_XSize >= minmax.MinWidth) &&
-		(_font(obj)->tf_XSize <= minmax.MaxWidth))
-	{
-	    msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize;
-	    msg->MinMaxInfo->MaxWidth += _font(obj)->tf_XSize;
-	    msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize;
-	}
 	else
 	{
-	    msg->MinMaxInfo->MinWidth += minmax.MinWidth;
-	    msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
-	    msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+	    msg->MinMaxInfo->MinWidth += minmax.DefWidth;
+	    msg->MinMaxInfo->MaxWidth += minmax.DefWidth;
+	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
 	}
+
+	if (data->flags & MIF_FONTMATCHWIDTH)
+	{
+	    (msg->MinMaxInfo->DefWidth *= _font(obj)->tf_XSize) / 8;
+	}
+
 
 	if (data->flags & MIF_FREEVERT)
 	{
@@ -393,19 +391,16 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 	    msg->MinMaxInfo->MaxHeight += minmax.MaxHeight;
 	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
 	}
-	else if ((data->flags & MIF_FONTMATCHHEIGHT) &&
-		(_font(obj)->tf_YSize >= minmax.MinHeight) &&
-		(_font(obj)->tf_YSize <= minmax.MaxHeight))
-	{
-	    msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
-	    msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize;
-	    msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize;
-	}
 	else
 	{
-	    msg->MinMaxInfo->MinHeight += minmax.MinHeight;
-	    msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
-	    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+	    msg->MinMaxInfo->MinHeight += minmax.DefHeight;
+	    msg->MinMaxInfo->MaxHeight += minmax.DefHeight;
+	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
+	}
+
+	if (data->flags & MIF_FONTMATCHHEIGHT)
+	{
+	    (msg->MinMaxInfo->DefHeight *= _font(obj)->tf_YSize) / 8;
 	}
     }
     else if (data->old_image)
