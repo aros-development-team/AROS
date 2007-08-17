@@ -685,8 +685,8 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
 	    break;
 
 	case IST_BITMAP:
-	    minmax->MinWidth = 3;
-	    minmax->MinHeight = 3;
+	    minmax->MinWidth = 0;
+	    minmax->MinHeight = 0;
 	    minmax->DefWidth = dt_width(spec->u.bitmap.dt);
 	    minmax->DefHeight = dt_height(spec->u.bitmap.dt);
 	    minmax->MaxWidth = MUI_MAXMAX;
