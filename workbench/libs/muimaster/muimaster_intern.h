@@ -76,7 +76,8 @@ struct MUIMasterBase_intern
     
 /*  struct Library  	    	*datatypesbase; */
 #endif /* __AROS__ */
-    
+
+    struct TextFont *topaz8font;
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
 
     struct MinList BuiltinClasses;
