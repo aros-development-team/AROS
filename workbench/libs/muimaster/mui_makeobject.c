@@ -121,7 +121,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
 }
 
 
-Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
+Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct TextFont *textFont)
 {
 #   define BUFFERSIZE 512
     
@@ -144,7 +144,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
 	    MUIA_CycleChain,	    	   1,
             MUIA_InputMode,                MUIV_InputMode_RelVerify,
             MUIA_Group_Spacing,            0,
-            MUIA_Group_SameHeight,         TRUE,
+            //MUIA_Group_SameHeight,         TRUE,
             controlChar      ? 
             MUIA_ControlChar : 
             TAG_IGNORE,             (IPTR) controlChar,
@@ -152,6 +152,10 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
             Child, (IPTR)HVSpace,
             Child, (IPTR)ImageObject,
                 MUIA_Image_Spec, (IPTR) imageSpec,
+		MUIA_Image_FreeVert,    FALSE,
+		MUIA_Image_FreeHoriz,   FALSE,
+		MUIA_Image_FontMatch,   TRUE,
+		MUIA_Font,       (IPTR) textFont,
                 MUIA_Weight,            0,
             End,
             Child, (IPTR)HSpace(4),
@@ -361,7 +365,9 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
         case MUIO_ImageButton: 
             return INTERNAL_ImageButton
             ( 
-                (CONST_STRPTR) params[0], (CONST_STRPTR) params[1] 
+                (CONST_STRPTR) params[0],
+		(CONST_STRPTR) params[1],
+		((struct MUIMasterBase_intern *)MUIMasterBase)->topaz8font
             );
 
 	case MUIO_Checkmark: /* STRPTR label */
