@@ -71,12 +71,6 @@
 	goto error;
     }
 
-    if( SetCurrentDirName( path ) != DOSTRUE ) 
-    {
-    	errno = ENAMETOOLONG;
-	goto error;
-    }
-    
     oldlock = CurrentDir( newlock );
     
     if( __startup_cd_changed )
@@ -109,14 +103,8 @@ void __exit_chdir(void)
     if( __startup_cd_changed )
     {
         TEXT buffer[256]; /* Longest string supported by SetCurrentDirName() */
-        
-        if( NameFromLock( __startup_cd_lock, buffer, 256 ) )
-        {
-            SetCurrentDirName(buffer);
-        }
-        
-            BPTR
-        lock = CurrentDir( __startup_cd_lock );
+
+        BPTR lock = CurrentDir( __startup_cd_lock );
 
         UnLock( lock );
     }
