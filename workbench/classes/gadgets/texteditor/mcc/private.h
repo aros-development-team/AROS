@@ -240,7 +240,7 @@ long  CheckSep    (unsigned char, struct InstData *);
 long  CheckSent   (unsigned char, struct InstData *);
 void  NextLine    (struct InstData *);
 
-unsigned long convert (unsigned long);
+ULONG convert (ULONG);
 LONG  PrintLine   (LONG, struct line_node *, LONG, BOOL, struct InstData *);
 void  ClearLine   (char *, LONG, LONG, struct InstData *);
 void  ScrollUp    (LONG, LONG, struct InstData *);
@@ -298,7 +298,7 @@ LONG  GetStyle        (LONG, struct line_node *);
 void  AddStyle        (struct marking *, unsigned short, long, struct InstData *);
 void  AddStyleToLine      (LONG, struct line_node *, LONG, UWORD, struct InstData *);
 
-void  *MyAllocPooled    (void *, unsigned long);
+APTR MyAllocPooled    (APTR, ULONG);
 void  MyFreePooled      (void *, void *);
 
 struct line_node  *AllocLine(struct InstData *data);
@@ -306,7 +306,7 @@ void FreeLine(struct line_node *line, struct InstData *data);
 
 /* ------------ */
 
-extern SAVEDS ASM ULONG _Dispatcher(REG(a0, struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg));
+extern SAVEDS ASM IPTR _Dispatcher(REG(a0, struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg));
 
 void  InitConfig(Object *, struct InstData *);
 void  FreeConfig(struct InstData *, struct MUI_RenderInfo *);

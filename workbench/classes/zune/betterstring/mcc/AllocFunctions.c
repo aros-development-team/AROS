@@ -28,7 +28,7 @@
 
 #include "private.h"
 
-void *MyAllocPooled(void *pool, unsigned long length)
+APTR MyAllocPooled(APTR pool, ULONG length)
 {
   long *mem;
 

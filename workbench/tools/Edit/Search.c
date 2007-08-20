@@ -43,7 +43,7 @@ struct NewWindow NewSWin =						/* Main window information */
 
 WORD  SWinZoom[4];
 ULONG SWinTags[] = {
-	WA_Zoom,(ULONG)SWinZoom,
+	WA_Zoom,NULL,
 	WA_NewLookMenus,TRUE,
 	TAG_DONE
 };
@@ -96,7 +96,6 @@ static struct Hook hook;
 /*** Open an asynchronous GUI for searching/replacing string ***/
 BYTE setup_winsearch(Project p, UBYTE replace)
 {
-	extern ULONG  HookEntry();
 	static struct NewGadget NG;
 	static ULONG  SGadTags[] = {
 		GTCB_Checked,  0,
@@ -163,6 +162,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		NewSWin.TopEdge = 50;
 
 	/** Setting up GUI **/
+	SWinTags[1] = SWinZoom;
 	if(NULL != (swin = (APTR) OpenWindowTagList(&NewSWin, (struct TagItem *)SWinTags)))
 	{
 		UWORD I;
