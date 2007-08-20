@@ -5,29 +5,41 @@
 
 #ifndef _IMPLEMENTATION_
 
-asm (".set getControllerInfo,0xf000");
-asm (".set getModeInfo,0xf004");
-asm (".set findMode,0xf008");
-asm (".set setVbeMode,0xf00c");
-asm (".set controllerinfo,0xf010");
-asm (".set modeinfo,0xf014");
+asm (".set getControllerInfo,0x1000");
+asm (".set getModeInfo,0x1004");
+asm (".set findMode,0x1008");
+asm (".set setVbeMode,0x100c");
+asm (".set paletteWidth,0x1010");
+asm (".set controllerinfo,0x1014");
+asm (".set modeinfo,0x1018");
 
-extern short (*getControllerInfo)(struct vbe_controller *info);
-extern short (*getModeInfo)(long mode, struct vbe_mode *info);
+extern short (*getControllerInfo)(void);
+extern short (*getModeInfo)(long mode);
 extern short (*setVbeMode)(long mode);
+extern short (*paletteWidth)(long req, unsigned char *width);
 extern short (*findMode)(int x, int y, int d);
 extern struct vbe_controller *controllerinfo;
 extern struct vbe_mode       *modeinfo;
 
 #else
 
-extern short getControllerInfo(struct vbe_controller *info);
-extern short getModeInfo(long mode, struct vbe_mode *info);
+struct vesa11Info
+{
+    unsigned short x_resolution;
+    unsigned short y_resolution;
+    unsigned char bits_per_pixel;
+    unsigned char memory_model;
+};
+
+extern short getControllerInfo(void);
+extern short getModeInfo(long mode);
 extern short setVbeMode(long mode);
+extern short paletteWidth(long req, unsigned char *width);
 extern short findMode(int x, int y, int d);
 extern struct vbe_controller controllerinfo;
 extern struct vbe_mode       modeinfo;
 
 #endif /*_IMPLEMENTATION_ */
+
 
 #endif /*VESA_H_*/
