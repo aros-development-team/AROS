@@ -1,12 +1,13 @@
 /*
     Copyright (C) 2006 The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
     
     Desc: ELF64 loader extracted from our internal_load_seg_elf in dos.library.
     Lang: English
 */
 
-#define DEBUG
+//#define DEBUG
+#define BOOTSTRAP
 
 #include "../include/aros/kernel.h"
 #include "elfloader.h"
@@ -121,7 +122,7 @@ static int load_hunk(void *file, struct sheader *sh)
     else
     {
         bzero(ptr, sh->size);
-        bss_tracker->addr = (unsigned long long)ptr;
+        bss_tracker->addr = KERNEL_OFFSET | (unsigned long long)ptr;
         bss_tracker->len = sh->size;
         bss_tracker++;
     }
@@ -145,7 +146,8 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
 
     struct symbol *SysBase_sym = (void*)0;
 
-    D(kprintf("[ELF Loader] performing %d relocations\n", numrel));
+    D(kprintf("[ELF Loader] performing %d relocations, target address %p%p\n", 
+              numrel, (unsigned long)(virt >> 32), (unsigned long)virt));
 
     for (i=0; i<numrel; i++, rel++)
     {
@@ -189,27 +191,27 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, un
                 break;
 
             default:
-                s = (unsigned long long)sh[sym->shindex].addr + sym->value;
+                s = (unsigned long long)sh[sym->shindex].addr + virt + sym->value;
         }
         
-        s+=virt;
+        //s+=virt;
 
         switch (ELF64_R_TYPE(rel->info))
         {
             case R_X86_64_64: /* 64bit direct/absolute */
-                *(unsigned long long *)p = s + rel->addend;
+                *(unsigned long long *)p = s + rel->addend;// + virt;
                 break;
 
             case R_X86_64_PC32: /* PC relative 32 bit signed */
-                *p = s + rel->addend - (unsigned long)p;
+                *p = s + rel->addend - (unsigned long)((unsigned long long)p + virt);
                 break;
 
             case R_X86_64_32:
-                *(unsigned long *)p = (unsigned long long)s + (unsigned long long)rel->addend;
+                *(unsigned long *)p = (unsigned long long)s + (unsigned long long)rel->addend;// + virt;
                 break;
 
             case R_X86_64_32S:
-                *(signed long *)p = (signed long long)s + (signed long long)rel->addend;
+                *(signed long *)p = (signed long long)s + (signed long long)rel->addend;// + virt;
                 break;
 
             case R_X86_64_NONE: /* No reloc */
@@ -229,7 +231,7 @@ void load_elf_file(void *file, unsigned long long virt)
     struct sheader *sh;
     long i;
     
-    kprintf("[ELF Loader] Loading ELF module from address %p\n", (unsigned int)file);
+    D(kprintf("[ELF Loader] Loading ELF module from address %p\n", (unsigned int)file));
     
     /* Check the header of ELF file */
     if
