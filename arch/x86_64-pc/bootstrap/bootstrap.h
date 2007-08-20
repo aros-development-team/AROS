@@ -3,11 +3,12 @@
 
 /*
     Copyright (C) 2006 The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 */
 
 #define NULL ((void*)0)
-
+/*
+ 
 struct KernelMessage {
     struct { void *low,*high; } GRUBData;
     
@@ -23,6 +24,7 @@ struct KernelMessage {
     struct { void *low,*high; } vbeControllerInfo;
     
 };
+*/
 
 #ifdef DEBUG
 #define D(x)    x

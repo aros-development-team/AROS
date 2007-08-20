@@ -1,12 +1,13 @@
 /*
     Copyright (C) 2006 The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
     
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
     Lang: English
 */
 
 #define DEBUG
+#define BOOTSTRAP
 
 #include "../include/aros/kernel.h"
 
@@ -17,6 +18,8 @@
 #include "elfloader.h"
 #include "support.h"
 #include "vesa.h"
+
+#include "../kernel/startup.h"
 
 /*
     The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
@@ -53,21 +56,15 @@ asm("	.text\n\t"
     are stored in .bss.aros.tables section which is remapped to the begin of 0x00100000. Therefore this 
     tables may be re-used by the 64-bit kernel.
 */
+extern char *_prot_lo, *_prot_hi;
 static unsigned char __stack[65536] __attribute__((used));
-static unsigned char __bss_track[32768] __attribute__((used));
 static unsigned char __vesa_buffer[4096];
+static unsigned char __bss_track[32768] __attribute__((used,section(".bss.aros.tables")));
 
-static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256),section(".bss.aros.tables")));
-static struct tss_64bit TSS __attribute__((used,aligned(128),section(".bss.aros.tables")));
 static struct {
     struct segment_desc seg0;      /* seg 0x00 */
     struct segment_desc super_cs;  /* seg 0x08 */
     struct segment_desc super_ds;  /* seg 0x10 */
-    struct segment_desc user_cs32; /* seg 0x18 */
-    struct segment_desc user_ds;   /* seg 0x20 */
-    struct segment_desc user_cs;   /* seg 0x28 */
-    struct segment_desc tss_low;   /* seg 0x30 */
-    struct segment_ext 	tss_high;
 } GDT __attribute__((used,aligned(128),section(".bss.aros.tables")));
 
 /*
@@ -82,7 +79,9 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.
 static struct vbe_mode VBEModeInfo = {0, };
 static struct vbe_controller VBEControllerInfo = {0, };
 
-struct KernelMessage km = {0};
+struct TagItem km[64] __attribute__((used, section(".bss.aros.tables")));
+
+struct TagItem *tag = &km[0];
 
 static struct {
     void *off;
@@ -97,8 +96,7 @@ const struct
     unsigned short size __attribute__((packed));
     unsigned int base __attribute__((packed));
 } 
-GDT_sel = {sizeof(GDT)-1, (unsigned int)&GDT},
-IDT_sel = {sizeof(IGATES)-1, (unsigned int)IGATES};
+GDT_sel = {sizeof(GDT)-1, (unsigned int)&GDT};
 
 /*
     Setting descriptor tables up. It is perhaps not wise to embed it into the function. Most likely the more
@@ -124,45 +122,7 @@ static void setup_tables()
     GDT.super_ds.limit_low=0xffff;
     GDT.super_ds.limit_high=0xf;
     GDT.super_ds.g=1;
-    GDT.super_ds.d=1;
-    
-    /* User mode segments */
-    GDT.user_cs.type=0x1a;	/* code segment */
-    GDT.user_cs.dpl=3;		/* User level */
-    GDT.user_cs.p=1;		/* present */
-    GDT.user_cs.l=1;		/* long mode */
-    GDT.user_cs.d=0;		/* must be zero */
-    GDT.user_cs.limit_low=0xffff;
-    GDT.user_cs.limit_high=0xf;
-    GDT.user_cs.g=1;
-
-    GDT.user_cs32.type=0x1a;	/* code segment for legacy 32-bit code. NOT USED YET! */
-    GDT.user_cs32.dpl=3;	/* user elvel */
-    GDT.user_cs32.p=1;		/* present */
-    GDT.user_cs32.l=0;		/* 32-bit mode */
-    GDT.user_cs32.d=1;		/* 32-bit code */
-    GDT.user_cs32.limit_low=0xffff;
-    GDT.user_cs32.limit_high=0xf;
-    GDT.user_cs32.g=1;
-    
-    GDT.user_ds.type=0x12;	/* data segment */
-    GDT.user_ds.dpl=3;    /* user elvel */
-    GDT.user_ds.p=1;		/* present */
-    GDT.user_ds.limit_low=0xffff;
-    GDT.user_ds.limit_high=0xf;
-    GDT.user_ds.g=1;
-    GDT.user_ds.d=1;
-    
-    /* Task State Segment */
-    GDT.tss_low.type=0x09;	/* 64-bit TSS */
-    GDT.tss_low.limit_low=sizeof(TSS)-1;
-    GDT.tss_low.base_low=((unsigned int)&TSS) & 0xffff;
-    GDT.tss_low.base_mid=(((unsigned int)&TSS) >> 16) & 0xff;
-    GDT.tss_low.dpl=3;		/* User mode task */
-    GDT.tss_low.p=1;		/* present */
-    GDT.tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
-    GDT.tss_low.base_high=(((unsigned int)&TSS) >> 24) & 0xff;
-    GDT.tss_high.base_ext = 0;	/* is within 4GB :-D */
+    GDT.super_ds.d=1;   
 }
 
 /*
@@ -194,19 +154,6 @@ static void setup_mmu()
     PML4[0].avail = 0;
     PML4[0].base_high = 0;
 
-    PML4[KERNEL_HIGH_OFFSET].p  = 1; /* present */
-    PML4[KERNEL_HIGH_OFFSET].rw = 1; /* read/write */
-    PML4[KERNEL_HIGH_OFFSET].us = 0; /* accessible for user */
-    PML4[KERNEL_HIGH_OFFSET].pwt= 0; /* write-through cache */
-    PML4[KERNEL_HIGH_OFFSET].pcd= 0; /* cache enabled */
-    PML4[KERNEL_HIGH_OFFSET].a  = 0; /* not yet accessed */
-    PML4[KERNEL_HIGH_OFFSET].mbz= 0; /* must be zero */
-    PML4[KERNEL_HIGH_OFFSET].base_low = (unsigned int)PDP >> 12;
-    PML4[KERNEL_HIGH_OFFSET].avl= 0;
-    PML4[KERNEL_HIGH_OFFSET].nx = 0;
-    PML4[KERNEL_HIGH_OFFSET].avail = 0;
-    PML4[KERNEL_HIGH_OFFSET].base_high = 0;
-
     /*
         PDP Entries. There are four of them used in order to define 2048 pages of 2MB each.
      */
@@ -235,7 +182,7 @@ static void setup_mmu()
             struct PDE2M *PDE = pdes[i];
             PDE[j].p  = 1;
             PDE[j].rw = 1;
-            PDE[j].us = 0;
+            PDE[j].us = 1;
             PDE[j].pwt= 0;  // 1
             PDE[j].pcd= 0;  // 1
             PDE[j].a  = 0;
@@ -262,7 +209,7 @@ int leave_32bit_mode()
 {
     unsigned int v1, v2, v3, v4;
     int retval = 0;
-    asm volatile ("lgdt %0\n\tlidt %1"::"m"(GDT_sel),"m"(IDT_sel));
+    asm volatile ("lgdt %0"::"m"(GDT_sel));
 
     cpuid(0x80000000, v1, v2, v3, v4);
     if (v1 > 0x80000000)
@@ -428,22 +375,22 @@ void setupVesa(const char *str)
         }
         
         kprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
-        memcpy(__vesa_buffer, (void *)0xf000, sizeof(__vesa_buffer));
-        memcpy((void *)0xf000, vesa_start, vesa_size);
+        memcpy(__vesa_buffer, (void *)0x1000, sizeof(__vesa_buffer));
+        memcpy((void *)0x1000, vesa_start, vesa_size);
         kprintf("[VESA] Module installed\n");
 
         kprintf("[VESA] BestModeMatch for %dx%dx%d = ",x,y,d);        
         mode = findMode(x,y,d);
 
-        getModeInfo(mode, modeinfo);
+        getModeInfo(mode);
         memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
-        getControllerInfo(controllerinfo);
+        getControllerInfo();
         memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
         kprintf("%x\n",mode);
         setVbeMode(mode);
             
-        memcpy((void *)0xf000, __vesa_buffer, sizeof(__vesa_buffer));
+        memcpy((void *)0x1000, __vesa_buffer, sizeof(__vesa_buffer));
         kprintf("[VESA] Module uninstalled\n");
     }
 }
@@ -489,23 +436,52 @@ void change_kernel_address(const char *str)
 
 void prepare_message(struct multiboot *mb)
 {
-    km.GRUBData.low = mb;
+    /*km.GRUBData.low = mb; */
     
-    km.GDT.low = &GDT;
-    km.IDT.low = &IGATES;
+    tag->ti_Tag = KRN_GDT;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&GDT;
+    tag++;
     
-    km.PL4.low = &PML4;
+    tag->ti_Tag = KRN_PL4;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&PML4;
+    tag++;
     
-    km.kernelBase.low = KernelTarget.off;
-    km.kernelLowest.low = (void*)((long)kernel_lowest() & ~4095);
-    km.kernelHighest.low = (void*)(((long)kernel_highest() + 4095) & ~4095);
-    km.kernelBSS.low = __bss_track;
+    tag->ti_Tag = KRN_KernelBase;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)KernelTarget.off;
+    tag++;
+    
+    tag->ti_Tag = KRN_KernelLowest;
+    tag->ti_Data = KERNEL_OFFSET | ((long)kernel_lowest() & ~4095);
+    tag++;
+    
+    tag->ti_Tag = KRN_KernelHighest;
+    tag->ti_Data = KERNEL_OFFSET | (((long)kernel_highest() + 4095) & ~4095);
+    tag++;
+    
+    tag->ti_Tag = KRN_KernelBss;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)__bss_track;
+    tag++;
     
     if (VBEModeInfo.mode_attributes)
     {
-        km.vbeModeInfo.low = &VBEModeInfo;
-        km.vbeControllerInfo.low = &VBEControllerInfo;
+        tag->ti_Tag = KRN_VBEModeInfo;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEModeInfo;
+        tag++;
+        
+        tag->ti_Tag = KRN_VBEControllerInfo;
+        tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEControllerInfo;
+        tag++;
     }
+
+    tag->ti_Tag = KRN_ProtAreaStart;
+    tag->ti_Data = &_prot_lo;
+    tag++;
+    
+    tag->ti_Tag = KRN_ProtAreaEnd;
+    tag->ti_Data = &_prot_hi;
+    tag++;
+    
+    tag->ti_Tag = TAG_DONE;
 }
 
 /*
@@ -537,14 +513,30 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
     setupVesa(mb->cmdline);
     change_kernel_address(mb->cmdline);
-      
+
+    tag->ti_Tag = KRN_CmdLine;
+    tag->ti_Data = KERNEL_OFFSET | (unsigned long long)(mb->cmdline);
+    tag++;
+    tag->ti_Tag = TAG_DONE;
+    
+    if (mb->mmap_length)
+    {
+        tag->ti_Tag = KRN_MMAPLength;
+        tag->ti_Data = mb->mmap_length;
+        tag++;
+        tag->ti_Tag = KRN_MMAPAddress;
+        tag->ti_Data = KERNEL_OFFSET | mb->mmap_addr;
+        tag++;
+        tag->ti_Tag = TAG_DONE;                
+    }
+    
     /* Setup stage - prepare 64-bit environment */
     setup_tables();
     setup_mmu();
     
     /* Load the first ELF relocable object - the kernel itself */
     kprintf("[BOOT] Loading kernel\n");
-    load_elf_file(&_binary_aros_o_start, ((unsigned long long)KERNEL_HIGH_OFFSET) << 39);
+    //load_elf_file(&_binary_aros_o_start, 0); //((unsigned long long)KERNEL_HIGH_OFFSET) << 39);
     
     /* Search for external modules loaded by GRUB */
     module_count = find_modules(mb, mod);
