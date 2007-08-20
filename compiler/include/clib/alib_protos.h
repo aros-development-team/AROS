@@ -111,7 +111,7 @@ void SetWindowPointer( struct Window * window, ULONG tag1, ...) __stackparm;
 #ifndef OpenCatalog
 struct Catalog *OpenCatalog(	struct Locale * locale,
 				STRPTR name,
-				ULONG tag1,
+				Tag tag1,
 				...) __stackparm;
 #endif
 

@@ -36,7 +36,7 @@ static ULONG tags[] = {
 	ASLFR_SleepWindow,            TRUE,
 	ASLFR_InitialDrawer,   (IPTR) NULL,
 	ASLFR_InitialFile,     (IPTR) NULL,
-	ASLFR_InitialPattern,  (IPTR) "#?",
+	ASLFR_InitialPattern,  (IPTR) NULL,
 	ASLFR_TitleText,       (IPTR) NULL,
 	TAG_DONE
 };
@@ -153,6 +153,7 @@ struct TagItem *init_tags(struct Window *wnd, ULONG flags)
 	tags[9]  = (ULONG) wnd;
 	tags[11] = (ULONG) wnd->WScreen;
 	tags[13] = flags;
+	tags[21] = (IPTR) "#?";
 	return (struct TagItem *)tags;
 }
 
