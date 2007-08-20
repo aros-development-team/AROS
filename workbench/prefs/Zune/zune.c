@@ -797,6 +797,7 @@ void loop(void)
 
 int main(void)
 {
+    BPTR OldDir, NewDir;
     int  retval = RETURN_OK;
     struct RDArgs *rda = NULL;
 //    APTR *proc=0;
@@ -828,7 +829,9 @@ int main(void)
 	    if (open_classes())
 	    {
 	    	find_mcps();
-		
+		NewDir = Lock("RAM:", SHARED_LOCK);
+		if (NewDir)
+		    OldDir = CurrentDir(NewDir);
 		if (init_gui())
 		{
 		    load_prefs((STRPTR)args[ARG_APPNAME]);
@@ -840,6 +843,10 @@ int main(void)
 		    if (LastSavedConfigdata)
 			MUI_DisposeObject(LastSavedConfigdata);
 		    deinit_gui();
+		}
+		if (NewDir) {
+		    CurrentDir(OldDir);
+		    UnLock(NewDir);
 		}
 		close_classes();
 	    }

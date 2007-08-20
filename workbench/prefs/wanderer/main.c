@@ -24,10 +24,13 @@
 int main(void)
 {
     Object *application, *window;
+    BPTR OldDir, NewDir;
     int rc = RETURN_OK;
 D(bug("[WPEditor.exe] Starting...\n"));
     Locale_Initialize();
-    
+    NewDir = Lock("RAM:", SHARED_LOCK);
+    if (NewDir)
+        OldDir = CurrentDir(NewDir);
     application = ApplicationObject,
         MUIA_Application_Title, (IPTR) "Wanderer Prefs",
         MUIA_Application_Version, (IPTR) VERSIONSTR,
@@ -55,7 +58,10 @@ D(bug("[WPEditor.exe] Starting...\n"));
         rc = RETURN_FAIL;
 D(bug("[WPEditor.exe] Can't create application!\n"));
     }
-
+    if (NewDir) {
+        CurrentDir(OldDir);
+        UnLock(NewDir);
+    }
     Locale_Deinitialize();
 D(bug("[WPEditor.exe] Quitting...\n"));
     return rc;
