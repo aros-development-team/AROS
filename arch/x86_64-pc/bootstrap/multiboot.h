@@ -51,10 +51,10 @@ struct multiboot {
 };
 
 struct mb_module {
-    unsigned long   mod_start;
-    unsigned long   mod_end;
-    unsigned long   string;
-    unsigned long   reserved;
+    unsigned int    mod_start;
+    unsigned int    mod_end;
+    unsigned int    string;
+    unsigned int    reserved;
 };
 
 struct mb_mmap {
@@ -75,14 +75,14 @@ struct vbe_controller
 {
     unsigned char signature[4];
     unsigned short version;
-    unsigned long oem_string;
-    unsigned long capabilities;
-    unsigned long video_mode;
+    unsigned int  oem_string;
+    unsigned int  capabilities;
+    unsigned int  video_mode;
     unsigned short total_memory;
     unsigned short oem_software_rev;
-    unsigned long oem_vendor_name;
-    unsigned long oem_product_name;
-    unsigned long oem_product_rev;
+    unsigned int  oem_vendor_name;
+    unsigned int oem_product_name;
+    unsigned int oem_product_rev;
     unsigned char reserved[222];
     unsigned char oem_data[256];
 } __attribute__ ((packed));
@@ -97,7 +97,7 @@ struct vbe_mode
     unsigned short win_size;
     unsigned short win_a_segment;
     unsigned short win_b_segment;
-    unsigned long win_func;
+    unsigned int win_func;
     unsigned short bytes_per_scanline;
 
     /* >=1.2 */
@@ -125,8 +125,8 @@ struct vbe_mode
     unsigned char direct_color_mode_info;
 
     /* >=2.0 */
-    unsigned long phys_base;
-    unsigned long reserved1;
+    unsigned int phys_base;
+    unsigned int reserved1;
     unsigned short reversed2;
 
     /* >=3.0 */
@@ -141,7 +141,7 @@ struct vbe_mode
     unsigned char linear_blue_field_position;
     unsigned char linear_reserved_mask_size;
     unsigned char linear_reserved_field_position;
-    unsigned long max_pixel_clock;
+    unsigned int max_pixel_clock;
 
     unsigned char reserved3[189];
 } __attribute__ ((packed));
