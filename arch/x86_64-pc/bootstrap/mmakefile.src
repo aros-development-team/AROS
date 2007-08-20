@@ -5,16 +5,19 @@ TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 KOBJS 		:=
 FILES		:= bootstrap screen elfloader support
 
-#MM kernel-bootstrap-x86_64: kernel-x86_64-kobj
-kernel-bootstrap-x86_64: $(TARGETDIR)/aros.bin.o $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-x86_64
+#MM kernel-bootstrap-x86_64: kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj
+kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-x86_64
 
-$(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o
+$(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o
 	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T ldscript.lds \
-	-o $@ $< $(KOBJS) 
+		-o $@ $< $(KOBJS) 
 	@strip --strip-unneeded -R .note -R .comment $@
 
-$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o
-	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o $(TARGETDIR)/aros.bin.o -o $@
+$(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o
+	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o -o $@
+
+$(BINDIR)/boot/kernel: $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o 
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds -o $@ $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm
 
 $(TARGETDIR)/aros.bin.o: $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
 	$(LD) -melf_x86_64 -r \
@@ -22,7 +25,7 @@ $(TARGETDIR)/aros.bin.o: $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)
 	cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 aros.o -o aros.bin.o
 	
 $(TARGETDIR)/vesa.bin.o: $(TARGETDIR)/vesa.o
-	$(HOST_LD) -melf_i386 -e 0xf000 -Ttext 0xf000 -N -d -nostdlib \
+	$(HOST_LD) -melf_i386 -e 0x1000 -Ttext 0x1000 -N -d -nostdlib \
 	-o $(TARGETDIR)/vesa $(TARGETDIR)/vesa.o
 	$(OBJCOPY) -O binary $(TARGETDIR)/vesa
 	cd $(TARGETDIR) && $(HOST_LD) -r --format binary --oformat elf32-i386 vesa -o vesa.bin.o
