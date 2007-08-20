@@ -8,11 +8,15 @@ SECTIONS
     {
 	*(.aros.tables)
     }
-
+    
+    _prot_lo = . ;
+    
     .bsstables :
     {
 	*(.bss.aros.tables)
     }
+    
+    _prot_hi = . ;
     
     .text ALIGN(4096) :
     {
