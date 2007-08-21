@@ -451,6 +451,8 @@ int main(void)
 
 		error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
 		DEBUG_MOUNT(kprintf("Mount: readmountfile returned %ld\n", error));
+                if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
+	          ShowFault(error, "ERROR");
 
                 (void) CurrentDir(olddir);
               }
