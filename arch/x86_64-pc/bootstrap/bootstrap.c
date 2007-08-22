@@ -387,6 +387,9 @@ void setupVesa(const char *str)
         getControllerInfo();
         memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
+        if (modeinfo->mode_attributes & 0x80)
+            mode |= 0x4000;
+
         kprintf("%x\n",mode);
         setVbeMode(mode);
             
