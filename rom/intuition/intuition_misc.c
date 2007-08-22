@@ -44,7 +44,7 @@
 #   include <aros/debug.h>
 
 ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relright,ULONG imagetype,ULONG gadgetid,ULONG gadgettype,struct IntuitionBase *IntuitionBase);
-extern ULONG HookEntry();
+extern IPTR HookEntry();
 
 /**********************************************************************************/
 

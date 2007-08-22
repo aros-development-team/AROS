@@ -25,7 +25,7 @@
 #endif
 #include "gadgets.h"
 
-extern ULONG HookEntry();
+extern IPTR HookEntry();
 
 #undef DEBUG
 #define DEBUG 0

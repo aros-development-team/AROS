@@ -39,7 +39,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-extern ULONG HookEntry();
+extern IPTR HookEntry();
 
 /**************************************************************************************************/
 
