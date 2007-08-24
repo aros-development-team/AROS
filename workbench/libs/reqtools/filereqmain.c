@@ -48,7 +48,7 @@
 static const IPTR getstringtags[] = { RTGS_Width,180,RT_LockWindow,TRUE,
 				  RT_ReqPos,REQPOS_CENTERWIN,RT_ShareIDCMP,TRUE,TAG_END };
 static const IPTR ezreqtags[] = { RT_Underscore,'_',RTEZ_Flags,EZREQF_NORETURNKEY,
-				 TAG_MORE, (ULONG)&getstringtags[2] };
+				 TAG_MORE, &getstringtags[2] };
 
 
 /****************************************************************************************/

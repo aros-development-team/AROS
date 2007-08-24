@@ -62,7 +62,7 @@ ULONG ClipStreamHandler
 )
 {
       #define CLIPSCANBUFSIZE 10000000 //500
-    LONG error = 0;
+    ULONG error = 0;
 
     /* Buffer neede for reading rest of clip in IFFCMD_CLEANUP. Eats some stack */
 //	UBYTE  buf[CLIPSCANBUFSIZE];
