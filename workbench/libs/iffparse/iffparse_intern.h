@@ -71,7 +71,7 @@ LONG PropFunc	    (struct Hook *, struct IFFHandle *, APTR);
 LONG CollectionFunc (struct Hook *, struct IFFHandle *, APTR);
 
 /* A system purge hook for purging the LCIs installed by PropChunk and CollectionChunk */
-IPTR CollectionPurgeFunc (struct Hook *, struct LocalContextItem *, ULONG);
+ULONG CollectionPurgeFunc (struct Hook *, struct LocalContextItem *, ULONG);
 IPTR PropPurgeFunc	 (struct Hook *, struct LocalContextItem *, ULONG);
 
 /* Buffer functions */
@@ -87,9 +87,9 @@ BOOL BufferToStream (struct BufferList *, struct IFFHandle *, struct IFFParseBas
 
 /* StreamHandler hooks */
 
-IPTR DOSStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
-IPTR ClipStreamHandler (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
-IPTR BufStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
+ULONG DOSStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
+ULONG ClipStreamHandler (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
+ULONG BufStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
 
 /* Message port help functions */
 

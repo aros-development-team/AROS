@@ -611,7 +611,7 @@ ULONG BufStreamHandler
 )
 {
 
-    LONG error = 0;
+    ULONG error = 0;
 
     DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: hook %p iff %p cmd %p\n", hook, iff, cmd));
 

@@ -84,7 +84,7 @@ struct TagItem *GadTags[]     = {IntTags, SepTags, TextFontTags, ScrFontTags, Sc
 /* Tag list for opening the main window */
 WORD  PrefZoom[4];
 struct TagItem PrefTags[] = {
-	{WA_Zoom,(ULONG)PrefZoom},
+	{WA_Zoom,PrefZoom},
 	{WA_NewLookMenus,TRUE},
 	{TAG_DONE}
 };
