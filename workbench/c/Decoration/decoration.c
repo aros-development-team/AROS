@@ -3073,7 +3073,7 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
         {
             ULONG   color = 0x00cccccc;
 
-            DrawTileToRPRoot(rp, ni, color, 0, 0, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
+            DrawTileToRPRoot(rp, ni, color, 0, 0, bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
 
     }
