@@ -3062,7 +3062,7 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
     if (data->usegradients)
     {
 
-        FillPixelArrayGradientDelta(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, 0, 0);
+        FillPixelArrayGradientDelta(pen, wd->truecolor, rp, 0, 0, window->Width-1, window->Height-1,  0, 0, bx1 - bx0 + 1, by1 - by0 + 1, s_col, e_col, arc, 0, 0);
 
     }
     else
@@ -3073,7 +3073,7 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
         {
             ULONG   color = 0x00cccccc;
 
-            DrawTileToRPRoot(rp, ni, color, 0, 0, bx0, by0, bx1 - bx0 + 1, by1 - by0 + 1);
+            DrawTileToRPRoot(rp, ni, color, 0, 0, 0, 0, bx1 - bx0 + 1, by1 - by0 + 1);
         }
 
     }
@@ -3597,6 +3597,7 @@ IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *msg)
 IPTR windecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 {
     IPTR retval;
+
     switch(msg->MethodID)
     {
         case OM_NEW:
