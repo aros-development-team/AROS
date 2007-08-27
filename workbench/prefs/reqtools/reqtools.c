@@ -754,7 +754,7 @@ ULONG RTTags[] =
     RT_Window,        0,
     RT_LockWindow,        TRUE,
     RT_ShareIDCMP,        TRUE,
-    RT_IntuiMsgFunc,     ( ULONG ) &IntuiHook,
+    RT_IntuiMsgFunc,     NULL,
     TAG_END
 };
 
@@ -765,6 +765,7 @@ ULONG RTTags[] =
 LONG
 GetFilename( STRPTR file, STRPTR hail, ULONG flags )
 {
+    RTTags[ 9  ] = &IntuiHook;
     RTTags[ TAG_FLAGS  ] = flags;
     RTTags[ TAG_WINDOW ] = ( ULONG ) WindowPtr;
 
