@@ -28,8 +28,6 @@ struct LayerHookMsg
     LONG offsety;
 };
 
-extern ULONG HookEntry();
-
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
 struct Library *LayersBase;
