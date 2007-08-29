@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -365,66 +365,42 @@ IPTR Image__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax
 	struct MUI_MinMax minmax;
 
 	zune_imspec_askminmax(data->img, &minmax);
+
 	if (data->flags & MIF_FREEHORIZ)
 	{
-	    if (data->flags & MIF_FONTMATCHWIDTH)
-	    {
-		msg->MinMaxInfo->MinWidth = minmax.DefWidth * _font(obj)->tf_XSize / 8 + 8;
-		msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
-		msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
-	    }
-	    else
-	    {
-		msg->MinMaxInfo->MinWidth = 8;
-		msg->MinMaxInfo->MaxWidth = 10008;
-		msg->MinMaxInfo->DefWidth = minmax.DefWidth + 8;
-	    }
+	    msg->MinMaxInfo->MinWidth += minmax.MinWidth;
+	    msg->MinMaxInfo->MaxWidth += minmax.MaxWidth;
+	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
 	}
 	else
 	{
-	    if (data->flags & MIF_FONTMATCHWIDTH)
-	    {
-		msg->MinMaxInfo->MinWidth = minmax.DefWidth * _font(obj)->tf_XSize / 8 + 8;
-		msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
-		msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
-	    }
-	    else
-	    {
-		msg->MinMaxInfo->MinWidth = 8;
-		msg->MinMaxInfo->MaxWidth = 8;
-		msg->MinMaxInfo->DefWidth = minmax.DefWidth + 8;
-	    }
+	    msg->MinMaxInfo->MinWidth += minmax.DefWidth;
+	    msg->MinMaxInfo->MaxWidth += minmax.DefWidth;
+	    msg->MinMaxInfo->DefWidth += minmax.DefWidth;
 	}
-	
+
+	if (data->flags & MIF_FONTMATCHWIDTH)
+	{
+	    msg->MinMaxInfo->DefWidth *= _font(obj)->tf_XSize / 8;
+	}
+
+
 	if (data->flags & MIF_FREEVERT)
 	{
-	    if (data->flags & MIF_FONTMATCHHEIGHT)
-	    {
-		msg->MinMaxInfo->MinHeight = minmax.DefHeight * _font(obj)->tf_YSize / 8 + 6;
-		msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
-		msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
-	    }
-	    else
-	    {
-		msg->MinMaxInfo->MinHeight = 6;
-		msg->MinMaxInfo->MaxHeight = 10006;
-		msg->MinMaxInfo->DefHeight = minmax.DefHeight + 6;
-	    }
+	    msg->MinMaxInfo->MinHeight += minmax.MinHeight;
+	    msg->MinMaxInfo->MaxHeight += minmax.MaxHeight;
+	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
 	}
 	else
 	{
-	    if (data->flags & MIF_FONTMATCHHEIGHT)
-	    {
-		msg->MinMaxInfo->MinHeight = minmax.DefHeight * _font(obj)->tf_YSize / 8 + 6;
-		msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
-		msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
-	    }
-	    else
-	    {
-		msg->MinMaxInfo->MinHeight = 6;
-		msg->MinMaxInfo->MaxHeight = 6;
-		msg->MinMaxInfo->DefHeight = minmax.DefHeight + 6;
-	    }
+	    msg->MinMaxInfo->MinHeight += minmax.DefHeight;
+	    msg->MinMaxInfo->MaxHeight += minmax.DefHeight;
+	    msg->MinMaxInfo->DefHeight += minmax.DefHeight;
+	}
+
+	if (data->flags & MIF_FONTMATCHHEIGHT)
+	{
+	    msg->MinMaxInfo->DefHeight *= _font(obj)->tf_YSize / 8;
 	}
     }
     else if (data->old_image)
