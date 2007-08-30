@@ -90,7 +90,7 @@
 
     if (co->co_Node.ln_Type == CX_BROKER)
     {
-	CxNotify(NULL, CXCMD_LIST_CHG);
+	BrokerCommand(NULL, CXCMD_LIST_CHG);
     }
 
     return temp;

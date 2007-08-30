@@ -6,13 +6,14 @@ FILES := commodities_inputhandler eventfuncs
 FUNCS := activatecxobj \
 	 addievents \
 	 attachcxobj \
+	 brokercommand \
 	 clearcxobjerror \
+	 copybrokerlist \
 	 createcxobj \
 	 cxbroker \
 	 cxmsgdata \
 	 cxmsgid \
 	 cxmsgtype \
-	 cxnotify \
 	 cxobjerror \
 	 cxobjtype \
 	 deletecxobj \
@@ -21,7 +22,6 @@ FUNCS := activatecxobj \
 	 divertcxmsg \
 	 enqueuecxobj \
 	 freebrokerlist \
-	 getbrokerlist \
 	 insertcxobj \
 	 invertkeymap \
 	 matchix \

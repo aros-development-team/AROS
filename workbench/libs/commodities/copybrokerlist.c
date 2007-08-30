@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: copybrokerlist.c 16054 2002-12-15 13:54:26Z stegerg $
 
     Desc:
     Lang: English
@@ -18,7 +18,7 @@
 #include <proto/exec.h>
 #include <proto/commodities.h>
 
-    AROS_LH1(LONG, GetBrokerList,
+    AROS_LH1(LONG, CopyBrokerList,
 
 /*  SYNOPSIS */
 
@@ -43,6 +43,8 @@
 
     NOTES
 
+    This function is present in AmigaOS too but undocumented.
+
     EXAMPLE
 
     BUGS
@@ -50,8 +52,6 @@
     SEE ALSO
 
     INTERNALS
-
-    Private function.
 
     HISTORY
 
@@ -98,4 +98,4 @@
     return count;
 
     AROS_LIBFUNC_EXIT
-} /* GetBrokerList */
+} /* CopyBrokerList */

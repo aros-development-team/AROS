@@ -10,7 +10,6 @@
 #ifndef COMMODITIES_BASE_H
 #define COMMODITIES_BASE_H
 
-#define COF_ACTIVE (1<<1)	/* Object is active */
 #define COF_VALID  (1<<0)	/* Object is inserted in a commodity list */
 
 #define cxm_MaxLevel 32		/* Maximum routing level */
@@ -40,6 +39,9 @@ enum { CXM_SINGLE, CXM_DOUBLE };
 #   include <proto/exec.h>
 #endif
 
+/* Note that this is structurally the same as the BrokerCopy
+ * in commodities.h and make sure to keep it so as
+ * GetBrokerList() currently depends on this. */
 struct BrokerExt
 {
     char            bext_Name[CBD_NAMELEN];
@@ -105,27 +107,6 @@ struct GeneratedInputEvent
     struct InputEvent ie;
     struct MinNode    node;
 };
-
-
-/* Nodes of the list got from GetBrokerList(). This function is used by
- * Exchange to get the current brokers. Note that the beginning of this is
- * structurally the same as the BrokerExt and make sure to keep it so as
- * GetBrokerList() currently depends on this. */
-#pragma pack(2)
-struct BrokerCopy
-{
-    struct Node     bc_Node;
-    char            bc_Name[CBD_NAMELEN];
-    char            bc_Title[CBD_TITLELEN];
-    char            bc_Descr[CBD_DESCRLEN];
-    struct Task    *bc_Task;
-    struct MsgPort *bc_Port;
-    UWORD           bc_Dummy;
-    ULONG           bc_Flags;
-};
-#pragma pack()
-
-
 
 struct CommoditiesBase
 {

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: brokercommand.c 16054 2002-12-15 13:54:26Z stegerg $
 
     Desc:
     Lang: English
@@ -22,7 +22,7 @@
 #include <proto/exec.h>
 #include <libraries/commodities.h>
 
-    AROS_LH2(ULONG, CxNotify,
+    AROS_LH2(ULONG, BrokerCommand,
 
 /*  SYNOPSIS */
 
@@ -51,6 +51,8 @@
 
     NOTES
 
+    This function is present in AmigaOS too but undocumented.
+
     EXAMPLE
 
     BUGS
@@ -58,8 +60,6 @@
     SEE ALSO
 
     INTERNALS
-
-    Private function which is used by Exchange.
 
     HISTORY
 
@@ -92,7 +92,7 @@
     return error;
 
     AROS_LIBFUNC_EXIT
-} /* CxNotify */
+} /* BrokerCommand */
 
 
 ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase)
