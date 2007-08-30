@@ -45,6 +45,7 @@ struct NewBroker
 
 /* nb_Flags */
 #define COF_SHOW_HIDE (1<<2)
+#define COF_ACTIVE    (1<<1)	/* Object is active - undocumented in AmigaOS */
 
 #define CBD_NAMELEN  24 /* length of nb_Name */
 #define CBD_TITLELEN 40 /* length of nb_Title */
@@ -119,5 +120,22 @@ typedef struct InputXpression IX;
 #define IXSYM_ALTMASK   (IEQUALIFIER_LALT   | IEQUALIFIER_RALT)
 
 #define NULL_IX(ix) ((ix)->ix_Class == IECLASS_NULL)
+
+/* Nodes of the list got from CopyBrokerList(). This function is used by
+ * Exchange to get the current brokers. This structure is the same as
+ * in AmigaOS and MorphOS, but it is undocumented there. */
+#pragma pack(2)
+struct BrokerCopy
+{
+    struct Node     bc_Node;
+    char            bc_Name[CBD_NAMELEN];
+    char            bc_Title[CBD_TITLELEN];
+    char            bc_Descr[CBD_DESCRLEN];
+    struct Task    *bc_Task;	/* Private, do not use this */
+    struct MsgPort *bc_Port;	/* Private, do not use this */
+    UWORD           bc_Dummy;
+    ULONG           bc_Flags;
+};
+#pragma pack()
 
 #endif /* LIBRARIES_COMMODITIES_H */

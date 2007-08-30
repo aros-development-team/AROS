@@ -82,7 +82,7 @@ VOID RemoveHandler(struct CommoditiesBase *CxBase);
 	else
 	{
 	    /* Tell Exchange what happened */
-	    CxNotify(NULL, CXCMD_LIST_CHG);
+	    BrokerCommand(NULL, CXCMD_LIST_CHG);
 	}
     }
 

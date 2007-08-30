@@ -36,6 +36,8 @@
 
     NOTES
 
+    This function is present in AmigaOS too, but undocumented.
+
     EXAMPLE
 
     BUGS

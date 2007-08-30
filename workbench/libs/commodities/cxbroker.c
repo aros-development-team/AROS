@@ -137,7 +137,7 @@ extern struct InputEvent *cxIHandler();
 		}
 		else
 		{
-		    CxNotify(NULL, CXCMD_LIST_CHG);
+		    BrokerCommand(NULL, CXCMD_LIST_CHG);
 		}
 		
 		Enqueue(&GPB(CxBase)->cx_BrokerList, (struct Node *)co);

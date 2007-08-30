@@ -43,17 +43,22 @@
 
 ******************************************************************************/
 
+#define AROS_ALMOST_COMPATIBLE
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef __AROS__
 #include <cxintern.h>
+#endif
 
 //#define DEBUG 1
 #include <aros/debug.h>
+#include <aros/asmcall.h>
 #include <aros/symbolsets.h>
+#include <libraries/iffparse.h>
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
 #include <proto/locale.h>
@@ -68,10 +73,14 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
+#ifdef __AROS__
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
+#else
+#define CATALOG_NAME     "System/Tools/Exchange.catalog"
+#endif
 #define CATALOG_VERSION  2
 
-TEXT version[] = "$VER: Exchange 0.6 (03.04.2007)";
+TEXT version[] = "$VER: Exchange 1.0 (28.08.2007)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt h"
@@ -106,7 +115,7 @@ static void GetArguments(int argc, char **argv);
 static void HandleAll(void);
 static void InitMenus(void);
 static VOID Locale_Deinitialize(VOID);
-static BOOL Locale_Initialize(VOID);
+static int Locale_Initialize(VOID);
 static void MakeGUI(void);
 static void showSimpleMessage(CONST_STRPTR msgString);
 static void update_list(void);
@@ -130,7 +139,7 @@ static CONST_STRPTR _(ULONG id)
 
 /*********************************************************************************************/
 
-static BOOL Locale_Initialize(VOID)
+static int Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
@@ -143,8 +152,13 @@ static BOOL Locale_Initialize(VOID)
     {
 	catalog = NULL;
     }
-
-    return TRUE;
+/* Note that in AROS constructors should return value opposite to the standard one.
+   Probably it's a misdesign, but we can do nothing with it. */
+#ifdef __AROS__
+    return -1;
+#else
+    return 0;
+#endif
 }
 
 /*********************************************************************************************/
@@ -260,7 +274,7 @@ static void showSimpleMessage(CONST_STRPTR msgString)
 static void update_list(void)
 {
     struct BrokerCopy *node;
-    GetBrokerList(&brokerList);
+    CopyBrokerList(&brokerList);
 
     nnset(textgad1, MUIA_Text_Contents, NULL);
     nnset(textgad2, MUIA_Text_Contents, NULL);
@@ -353,7 +367,7 @@ AROS_UFH3(void, inform_broker_func,
     if (bc)
     {
 	D(bug("Exchange: Broker inform %s\n", bc->bc_Node.ln_Name));
-	CxNotify(bc->bc_Node.ln_Name, *command);
+	BrokerCommand(bc->bc_Node.ln_Name, *command);
     }
 
     AROS_USERFUNC_EXIT
@@ -363,16 +377,19 @@ AROS_UFH3(void, inform_broker_func,
 
 static void MakeGUI(void)
 {
+    Object *menu;
+    static TEXT wintitle[100];
+    CxObj *popfilter;
+
     cyclestrings[0] = _(MSG_EXCHANGE_CYCLE_ACTIVE);
     cyclestrings[1] = _(MSG_EXCHANGE_CYCLE_INACTIVE);
-    Object *menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
+    menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
 
-    broker_hook.h_Entry = (HOOKFUNC)broker_func;
-    list_disp_hook.h_Entry = (HOOKFUNC)list_display_func;
-    list_select_hook.h_Entry = (HOOKFUNC)list_select_func;
-    inform_broker_hook.h_Entry = (HOOKFUNC)inform_broker_func;
+    broker_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(broker_func);
+    list_disp_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_display_func);
+    list_select_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_select_func);
+    inform_broker_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(inform_broker_func);
     
-    static TEXT wintitle[100];
     snprintf(wintitle, sizeof(wintitle), _(MSG_EXCHANGE_WINTITLE), cx_popkey);
     
     app = ApplicationObject,
@@ -405,8 +422,10 @@ static void MakeGUI(void)
 		    MUIA_HorizWeight, 150,
 		    Child, (IPTR)(VGroup,
 			GroupFrameT(_(MSG_EXCHANGE_INFO)),
-			Child, (IPTR)(textgad1 = TextObject, StringFrame, End),
-			Child, (IPTR)(textgad2 = TextObject, StringFrame, End),
+			Child, (IPTR)(textgad1 = TextObject, TextFrame,
+				MUIA_Background, MUII_TextBack, End),
+			Child, (IPTR)(textgad2 = TextObject, TextFrame,
+				MUIA_Background, MUII_TextBack, End),
 		    End),
 		    Child, (IPTR)HVSpace,
 		    Child, (IPTR)(ColGroup(2),
@@ -429,9 +448,9 @@ static void MakeGUI(void)
     get(app, MUIA_Application_Broker, &broker);
     get(app, MUIA_Application_BrokerPort, &brokermp);
     if ( ! broker || ! brokermp)
-	Cleanup(_(MSG_CANT_CREATE_GADGET));
+	Cleanup(_(MSG_CANT_CREATE_BROKER));
 
-    CxObj *popfilter = CxFilter(cx_popkey);
+    popfilter = CxFilter(cx_popkey);
     if (popfilter)
     {
 	CxObj *popsig = CxSignal(maintask, SIGBREAKB_CTRL_F);
@@ -487,10 +506,10 @@ static void MakeGUI(void)
 
 static void HandleAll(void)
 {
+    ULONG sigs = 0;
+
     if (cx_popup)
 	set(wnd, MUIA_Window_Open, TRUE);
-    
-    ULONG sigs = 0;
     while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
 	    != MUIV_Application_ReturnID_Quit)
     {
@@ -530,6 +549,7 @@ static void Cleanup(CONST_STRPTR txt)
 
 int main(int argc, char **argv)
 {
+    D(bug("Exchange started\n"));
     NewList(&brokerList);
     GetArguments(argc, argv);
     InitMenus();    
