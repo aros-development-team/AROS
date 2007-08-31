@@ -126,9 +126,12 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent) {
     struct DirEntry de;
     ULONG parent_cluster;
 
-    /* the root has no parent */
-    if (lock == NULL || lock->gl == &glob->sb->root_lock)
-        return ERROR_OBJECT_NOT_FOUND;
+    /* the root has no parent, but as a special case we have to return success
+     * with the zero lock */
+    if (lock == NULL || lock->gl == &glob->sb->root_lock) {
+        *parent = NULL;
+        return 0;
+    }
 
     /* if we're in the root directory, then the root is our parent */
     if (lock->gl->dir_cluster == glob->sb->rootdir_cluster)
