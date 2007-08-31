@@ -160,8 +160,8 @@ void About(void)
     EasyRequest(win, &es, NULL, (IPTR)VERSION,
 				(IPTR)REVISION,
 				(IPTR)DATESTR, 
-				(IPTR)"2005",
-				(IPTR)"AROS");
+				(IPTR)"2005-2007",
+				(IPTR)"AROS Development Team");
 
 }
 

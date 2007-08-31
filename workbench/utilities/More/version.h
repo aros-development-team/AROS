@@ -8,6 +8,6 @@
 
 
 #define VERSION 	1
-#define REVISION 	0
-#define DATESTR 	"07.03.2005"
-#define VERSIONSTR	"$VER: More 1.0 (" DATESTR ")"
+#define REVISION 	1
+#define DATESTR 	"01.09.2007"
+#define VERSIONSTR	"$VER: More 1.1 (" DATESTR ")"
