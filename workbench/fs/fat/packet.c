@@ -104,6 +104,11 @@ void ProcessPackets(void) {
                 if ((err = OpLockParent(fl, &lock)) == 0)
                     res = MKBADDR(lock);
 
+                /* special case. when parent is called on the root lock, we
+                 * should return success and the implied root lock */
+                else if (err == ERROR_OBJECT_NOT_FOUND)
+                    err = res = 0;
+
                 break;
             }
 
