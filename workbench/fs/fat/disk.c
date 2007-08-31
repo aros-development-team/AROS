@@ -120,7 +120,14 @@ void DoDiskInsert(void) {
 
                     sb->doslist = ptr->doslist;
                     ptr->doslist = NULL;
+
+#ifdef AROS_FAST_BPTR
+                    /* ReadFATSuper() sets a null byte * after the string, so
+                     * this should be fine */
+                    sb->doslist->dol_Name = (BSTR)MKBADDR(&(sb->volume.name[1]));
+#else
                     sb->doslist->dol_Name = (BSTR)MKBADDR(&sb->volume.name);
+#endif
 
                     if (prev)
                         prev->next = ptr->next;
