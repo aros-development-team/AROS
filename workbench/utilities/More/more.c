@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,6 +16,7 @@
 
 #include <graphics/gfx.h>
 #include <utility/hooks.h>
+#include <workbench/startup.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -137,6 +138,9 @@ static BOOL		in_main_loop;
 
 static IPTR 		Args[NUM_ARGS];
 
+static BPTR		oldlock = (BPTR)-1;
+static BPTR		parentlock = (BPTR)-1;
+
 /*********************************************************************************************/
 
 WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
@@ -203,6 +207,8 @@ VOID Cleanup(CONST_STRPTR msg)
 
     if (fh) Close(fh);
 
+    if (oldlock != (BPTR)-1) CurrentDir(oldlock);
+
     if (GadToolsBase) CloseLibrary(GadToolsBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
     if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
@@ -228,14 +234,31 @@ static void DosError(void)
 
 /****************************************************************************************/
 
-static void GetArguments(void)
+static void GetArguments(int argc, char **argv)
 {
-    if (!(MyArgs = ReadArgs(ARG_TEMPLATE, Args, 0)))
+    if (argc)
     {
-	DosError();
-    }
+	if (!(MyArgs = ReadArgs(ARG_TEMPLATE, Args, 0)))
+	{
+	    DosError();
+	}
 
-    filename = (char *)Args[ARG_FILE];
+	filename = (char *)Args[ARG_FILE];
+    }
+    else
+    {
+	struct WBStartup *startup = (struct WBStartup *) argv;
+	if (startup->sm_NumArgs > 1)
+	{
+	    parentlock = startup->sm_ArgList[1].wa_Lock;
+	    filename   = startup->sm_ArgList[1].wa_Name;
+	    if ((parentlock == NULL) || (filename == NULL))
+		Cleanup(NULL);
+
+	    oldlock = CurrentDir(parentlock);
+	}
+	
+    }
     if (!filename) filename = GetFile();
     if (!filename) Cleanup(NULL);
     
@@ -1533,11 +1556,11 @@ static void HandleAll(void)
 
 /****************************************************************************************/
 
-int main(void)
+int main(int argc, char **argv)
 {
     InitLocale("System/Utilities/More.catalog", 1);
     InitMenus();
-    GetArguments();
+    GetArguments(argc, argv);
     OpenLibs();
     OpenFile();
     GetVisual();
