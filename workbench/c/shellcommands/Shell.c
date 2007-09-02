@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -1218,7 +1218,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
         if(IoErr())
         {
 	    cli->cli_Result2 = IoErr();
-	    PrintFault(IoErr(), cli->cli_CommandName);
+	    PrintFault(IoErr(), command);
         }
     }
 
