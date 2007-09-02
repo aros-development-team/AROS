@@ -40,6 +40,5 @@ AROS_LH1(void, Cause,
     }
     Enable();
 
-
     AROS_LIBFUNC_EXIT
 } /* Cause() */
