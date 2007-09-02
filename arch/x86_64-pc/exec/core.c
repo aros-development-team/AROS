@@ -2,8 +2,12 @@
 #include <asm/cpu.h>
 #include <asm/segments.h>
 #include <exec/resident.h>
+#include <exec/execbase.h>
+#include <exec/tasks.h>
+#include <exec/lists.h>
 #include <stdio.h>
 #include "core.h"
+#include "exec_intern.h"
 
 const struct Resident Core_resident =
 {
@@ -28,6 +32,7 @@ static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &
 static uint64_t stack[STACK_SIZE] __attribute__((used));
 static uint64_t stack_panic[STACK_SIZE] __attribute__((used));
 static uint64_t stack_super[STACK_SIZE] __attribute__((used));
+static uint64_t stack_ring1[STACK_SIZE] __attribute__((used));
 static const uint64_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
 
 static const void *target_address __attribute__((section(".text"),used)) = (void*)exec_main;
@@ -62,7 +67,7 @@ char tab[512];
 #undef rkprintf
 #endif
 #define rkprintf(x...) scr_RawPutChars(tab, snprintf(tab, 510, x))
-    
+
 asm(".section .aros.init,\"ax\"\n\t"
     ".globl start64\n\t"
     ".type start64,@function\n"
@@ -82,8 +87,6 @@ asm(".text\n\t"
     ".type core_DefaultIRETQ,@function\n"
 "core_DefaultIRETQ: iretq");
 
-
-
 void core_SetupGDT()
 {
     /* Supervisor segments */
@@ -95,14 +98,14 @@ void core_SetupGDT()
     GDT.super_cs.limit_low=0xffff;
     GDT.super_cs.limit_high=0xf;
     GDT.super_cs.g=1;
-    
+
     GDT.super_ds.type=0x12;     /* data segment */
     GDT.super_ds.p=1;           /* present */
     GDT.super_ds.limit_low=0xffff;
     GDT.super_ds.limit_high=0xf;
     GDT.super_ds.g=1;
     GDT.super_ds.d=1;
-    
+
     /* User mode segments */
     GDT.user_cs.type=0x1a;      /* code segment */
     GDT.user_cs.dpl=3;          /* User level */
@@ -121,7 +124,7 @@ void core_SetupGDT()
     GDT.user_cs32.limit_low=0xffff;
     GDT.user_cs32.limit_high=0xf;
     GDT.user_cs32.g=1;
-    
+
     GDT.user_ds.type=0x12;      /* data segment */
     GDT.user_ds.dpl=3;    /* user elvel */
     GDT.user_ds.p=1;            /* present */
@@ -129,7 +132,7 @@ void core_SetupGDT()
     GDT.user_ds.limit_high=0xf;
     GDT.user_ds.g=1;
     GDT.user_ds.d=1;
-    
+
     /* Task State Segment */
     GDT.tss_low.type=0x09;      /* 64-bit TSS */
     GDT.tss_low.limit_low=sizeof(TSS)-1;
@@ -140,10 +143,11 @@ void core_SetupGDT()
     GDT.tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
     GDT.tss_low.base_high=(((unsigned int)&TSS) >> 24) & 0xff;
     GDT.tss_high.base_ext = 0;  /* is within 4GB :-D */
-    
+
     TSS.ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
     TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
-    
+    TSS.rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
+
     rkprintf("Reloading the GDT and the Task Register\n");
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG));
@@ -157,23 +161,23 @@ void core_SetupGDT()
 
 #define BUILD_IRQ(nr) \
     void IRQ_NAME(nr); \
-asm(".balign 8  ,0x90\n\t" \
-    ".globl IRQ" STR(nr) "_intr\n\t" \
-    ".type IRQ" STR(nr) "_intr,@function\n" \
-    "IRQ" STR(nr) "_intr: pushq $0; pushq $" #nr "\n\t" \
-    "jmp core_EnterInterrupt\n\t" \
-    ".size IRQ" STR(nr) "_intr, . - IRQ" STR(nr) "_intr" \
-);
+    asm(".balign 8  ,0x90\n\t" \
+        ".globl IRQ" STR(nr) "_intr\n\t" \
+        ".type IRQ" STR(nr) "_intr,@function\n" \
+        "IRQ" STR(nr) "_intr: pushq $0; pushq $" #nr "\n\t" \
+        "jmp core_EnterInterrupt\n\t" \
+        ".size IRQ" STR(nr) "_intr, . - IRQ" STR(nr) "_intr" \
+    );
 
 #define BUILD_IRQ_ERR(nr) \
     void IRQ_NAME(nr); \
-asm(".balign 8  ,0x90\n\t" \
-    ".globl IRQ" STR(nr) "_intr\n\t" \
-    ".type IRQ" STR(nr) "_intr,@function\n" \
-    "IRQ" STR(nr) "_intr: pushq $" #nr "\n\t" \
-    "jmp core_EnterInterrupt\n\t" \
-    ".size IRQ" STR(nr) "_intr, . - IRQ" STR(nr) "_intr" \
-);
+    asm(".balign 8  ,0x90\n\t" \
+        ".globl IRQ" STR(nr) "_intr\n\t" \
+        ".type IRQ" STR(nr) "_intr,@function\n" \
+        "IRQ" STR(nr) "_intr: pushq $" #nr "\n\t" \
+        "jmp core_EnterInterrupt\n\t" \
+        ".size IRQ" STR(nr) "_intr, . - IRQ" STR(nr) "_intr" \
+    );
 
 BUILD_IRQ(0x00)         // Divide-By-Zero Exception
 BUILD_IRQ(0x01)         // Debug Exception
@@ -207,28 +211,150 @@ BUILD_IRQ(0x1c) BUILD_IRQ(0x1d) BUILD_IRQ(0x1e) BUILD_IRQ(0x1f)
 B16(0x2)
 BUILD_IRQ(0x80)
 
+
+#define SAVE_REGS        \
+        "pushq %rax; pushq %rbp; pushq %rbx; pushq %rdi; pushq %rsi; pushq %rdx;"  \
+        "pushq %rcx; pushq %r8; pushq %r9; pushq %r10; pushq %r11; pushq %r12;"  \
+        "pushq %r13; pushq %r14; pushq %r15; mov %ds,%eax; pushq %rax;"
+        
+#define RESTORE_REGS    \
+        "popq %rax; mov %ax,%ds; mov %ax,%es; popq %r15; popq %r14; popq %r13;"  \
+        "popq %r12; popq %r11; popq %r10; popq %r9; popq %r8; popq %rcx;" \
+        "popq %rdx; popq %rsi; popq %rdi; popq %rbx; popq %rbp; popq %rax"
+
+asm(
+"                .balign 32,0x90      \n"
+"                .globl core_EnterInterrupt \n"
+"                .type core_EnterInterrupt,@function \n"
+"core_EnterInterrupt: \n\t" SAVE_REGS "\n"
+"                movl    $" STR(KERNEL_DS) ",%eax \n"
+"                mov     %ax,%ds \n"
+"                mov     %ax,%es \n"
+"                movq    %rsp,%rdi \n"
+"                call    core_IRQHandle \n"
+"                movq    %rsp,%rdi \n"
+"                jmp     core_ExitInterrupt \n"
+"                .size core_EnterInterrupt, .-core_EnterInterrupt"      
+); 
+
+asm(
+"                .balign 32,0x90      \n"
+"                .globl core_LeaveInterrupt \n"
+"                .type core_LeaveInterrupt,@function \n"
+"core_LeaveInterrupt: movq %rdi,%rsp \n\t" RESTORE_REGS "\n"                
+"                addq $16,%rsp \n"
+"                iretq \n"
+"                .size core_LeaveInterrupt, .-core_LeaveInterrupt"
+);
+
+void core_foo()
+{
+    rkprintf("foo\n");
+}
+void core_bar()
+{
+    rkprintf("bar\n");
+}
+
+void core_Cause(struct ExecBase *SysBase);
+void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
+void core_Switch(regs_t *regs) __attribute__((noreturn));
+void core_Schedule(regs_t *regs) __attribute__((noreturn));
+void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn)); 
+void core_IRQHandle(regs_t regs);
+
+void Exec_Dispatch()
+{
+    
+}
+
+void core_Switch(regs_t *regs)
+{
+    
+    core_LeaveInterrupt(regs);
+}
+
+void core_Schedule(regs_t *regs)
+{
+    struct ExecBase *SysBase;
+    struct Task *t;
+
+    __asm__ __volatile__("cli");
+    SysBase = *(struct ExecBase **)4UL;
+
+    SysBase->AttnResched &= ~ARF_AttnSwitch;
+    t = SysBase->ThisTask;
+
+    if (!(t->tc_Flags & TF_EXCEPT))
+    {
+        if (IsListEmpty(&SysBase->TaskReady))
+            core_LeaveInterrupt(regs);
+
+        /* Add some code here */
+    }
+
+    t->tc_State = TS_READY;
+    Enqueue(&SysBase->TaskReady, t);
+    core_Switch(regs);
+}
+
+void core_ExitInterrupt(regs_t *regs) 
+{
+    struct ExecBase *SysBase;
+
+    if (regs->ds == KERNEL_DS)
+        core_LeaveInterrupt(regs);
+    else
+    {
+        SysBase = *(struct ExecBase **)4UL;
+
+        if (SysBase->SysFlags & SFF_SoftInt)
+            core_Cause(SysBase);
+
+        if (SysBase->TDNestCnt > 0)
+            core_LeaveInterrupt(regs);
+        else
+        {
+
+            if (SysBase->AttnResched & ARF_AttnSwitch)
+            {
+                core_Schedule(regs);
+            }
+            else 
+                core_LeaveInterrupt(regs);
+        }
+    }
+}
+
 void core_IRQHandle(regs_t regs)
 {
     rkprintf("IRQ %02x:", regs.irq_number);
     rkprintf("  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
              regs.return_ss, regs.return_rsp, regs.return_rflags, 
              regs.return_cs, regs.return_rip, regs.error_code);
-    
+
     if (regs.irq_number == 0x20)
         asm ("int $0x21");
+
+}
+
+void core_Cause(struct ExecBase *SysBase)
+{
+    rkprintf("core_Cause()\n");
+
 }
 
 #define IRQ(x,y) \
-        (const void (*)(void))IRQ##x##y##_intr
+    (const void (*)(void))IRQ##x##y##_intr
 
 #define IRQLIST_16(x) \
-        IRQ(x,0), IRQ(x,1), IRQ(x,2), IRQ(x,3), \
-        IRQ(x,4), IRQ(x,5), IRQ(x,6), IRQ(x,7), \
-        IRQ(x,8), IRQ(x,9), IRQ(x,a), IRQ(x,b), \
-        IRQ(x,c), IRQ(x,d), IRQ(x,e), IRQ(x,f)
+    IRQ(x,0), IRQ(x,1), IRQ(x,2), IRQ(x,3), \
+    IRQ(x,4), IRQ(x,5), IRQ(x,6), IRQ(x,7), \
+    IRQ(x,8), IRQ(x,9), IRQ(x,a), IRQ(x,b), \
+    IRQ(x,c), IRQ(x,d), IRQ(x,e), IRQ(x,f)
 
 const void __attribute__((section(".text"))) (*interrupt[256])(void) = {
-        IRQLIST_16(0x0), IRQLIST_16(0x1), IRQLIST_16(0x2)
+    IRQLIST_16(0x0), IRQLIST_16(0x1), IRQLIST_16(0x2)
 };
 
 
@@ -237,7 +363,7 @@ void core_SetupIDT()
     int i;
     uintptr_t off;
     rkprintf("Setting all interrupt handlers to default value\n");
-    
+
     for (i=0; i < 256; i++)
     {
         if (interrupt[i])
@@ -246,7 +372,7 @@ void core_SetupIDT()
             off = (uintptr_t)&IRQ0x80_intr;
         else
             off = (uintptr_t)&core_DefaultIRETQ;
-        
+
         IGATES[i].offset_low = off & 0xffff;
         IGATES[i].offset_mid = (off >> 16) & 0xffff;
         IGATES[i].offset_high = (off >> 32) & 0xffffffff;
@@ -256,6 +382,6 @@ void core_SetupIDT()
         IGATES[i].selector = KERNEL_CS;
         IGATES[i].ist = 0;
     }
-    
+
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }

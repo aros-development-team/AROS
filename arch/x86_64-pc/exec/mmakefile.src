@@ -5,13 +5,13 @@ CFILES          := \
         core exec_init cause disable enable preparecontext stackswap rawputchar serialrawio screen \
         initcode alert dispatch
 
-AFILES		:= lowlevel
+AFILES		:= 
 
 #MM kernel-exec : kernel-exec-pc-x86_64
 #MM kernel-exec-pc-x86_64 : kernel-exec-includes includes-asm_h-x86_64
 
-USER_CFLAGS     := -I$(TOP)/rom/exec
-USER_AFLAGS     := -I$(TOP)/rom/exec -I$(GENINCDIR)
+USER_CFLAGS     := -I$(TOP)/rom/exec -Os
+USER_AFLAGS     := -I$(TOP)/rom/exec -I$(GENINCDIR) -Os
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-x86_64 \
   files=$(CFILES) asmfiles=$(AFILES) modulename=exec
