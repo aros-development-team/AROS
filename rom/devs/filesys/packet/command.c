@@ -777,9 +777,10 @@ AROS_UFH3(void, packet_reply,
                 break;
 
             case ACTION_PARENT:
-                /* no error means we're returning a handle on the root */
+                /* no error means they tried to go up past the root. The
+                 * packet system allows this, IOFS does not */
                 if (iofs->io_DosError == 0)
-                    iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
+                    iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
                 break;
         }
 
