@@ -63,4 +63,22 @@ typedef struct regs {
     uint64_t    return_ss;
 } regs_t;
 
+/* Syscalls */
+#define SC_CAUSE        0
+#define SC_DISPATCH     1
+#define SC_SWITCH       2
+#define SC_SCHEDULE     3
+
+#define CoreCause() \
+    do { asm volatile("int $0x80"::"eax"(SC_CAUSE)); } while(0)
+
+#define CoreDispatch() \
+    do { asm volatile("int $0x80"::"eax"(SC_DISPATCH)); } while(0)
+
+#define CoreSwitch() \
+    do { asm volatile("int $0x80"::"eax"(SC_SWITCH)); } while(0)
+
+#define CoreSchedule() \
+    do { asm volatile("int $0x80"::"eax"(SC_SCHEDULE)); } while(0)
+
 #endif /*CORE_H_*/

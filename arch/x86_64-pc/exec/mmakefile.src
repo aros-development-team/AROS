@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 CFILES          := \
         core exec_init cause disable enable preparecontext stackswap rawputchar serialrawio screen \
-        initcode alert dispatch
+        initcode alert dispatch permit newaddtask remtask reschedule setexcept settaskpri signal wait prepareexecbase
 
 AFILES		:= 
 

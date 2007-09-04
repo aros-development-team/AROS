@@ -14,10 +14,9 @@
 //#include <asm/segments.h>
 #include <proto/exec.h>
 #include "exec_intern.h"
+#include "core.h"
 
 #include "x86_64.h"
-
-void Exec_Permit_Supervisor();
 
 #undef  Exec
 #ifdef UseExecstubs
@@ -42,9 +41,9 @@ AROS_LH0(void, Enable,
 	   so we check it manually here in Enable() == same stuff as
 	   in Permit(). */
 	   
-	if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & 0x80))
+	if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & ARF_AttnSwitch))
 	{
-	    if (IN_USER_MODE) Supervisor(Exec_Permit_Supervisor);	    
+	    if (IN_USER_MODE) CoreSchedule();	    
 	}
 	
 	if (SysBase->SysFlags & SFF_SoftInt)
@@ -52,7 +51,7 @@ AROS_LH0(void, Enable,
 	    if (IN_USER_MODE)
 	    {
 	    	/* sys_Cause */
-                __asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
+                CoreCause();
 	    }
 	}
     }

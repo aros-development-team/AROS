@@ -5,6 +5,7 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <dos/bptr.h>
+#include <dos/dosextens.h>
 
 #include <aros/arossupportbase.h>
 #include <aros/libcall.h>
@@ -15,6 +16,9 @@
 #include <asm/cpu.h>
 #include <asm/segments.h>
 
+#include <hardware/intbits.h>
+#include <hardware/custom.h>
+
 #include <proto/exec.h>
 
 #include <string.h>
@@ -22,6 +26,9 @@
 
 #include "../bootstrap/multiboot.h"
 #include "core.h"
+#include "etask.h"
+#include "exec_intern.h"
+#include "exec_util.h"
 
 #define __text      __attribute__((section(".text")))
 #define __no_ret    __attribute__((noreturn))
@@ -34,6 +41,21 @@ void exec_DefaultTaskExit();
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 IPTR **exec_RomTagScanner(struct TagItem *msg);
 int exec_main(struct TagItem *msg, void *entry);
+
+AROS_UFP5(void, SoftIntDispatch,
+          AROS_UFPA(ULONG, intReady, D1),
+          AROS_UFPA(struct Custom *, custom, A0),
+          AROS_UFPA(IPTR, intData, A1),
+          AROS_UFPA(IPTR, intCode, A5),
+          AROS_UFPA(struct ExecBase *, SysBase, A6));
+
+AROS_UFP5S(void, IntServer,
+    AROS_UFPA(ULONG, intMask, D0),
+    AROS_UFPA(struct Custom *, custom, A0),
+    AROS_UFPA(struct List *, intList, A1),
+    AROS_UFPA(APTR, intCode, A5),
+    AROS_UFPA(struct ExecBase *, SysBase, A6));
+
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
@@ -68,6 +90,8 @@ const struct __text Resident Exec_resident =
 
 void scr_RawPutChars(char *, int);
 void clr();
+void vesa_init(int width, int height, int depth, void *base);
+
 char tab[512];
 #ifdef rkprintf
 #undef rkprintf
@@ -75,7 +99,6 @@ char tab[512];
 #define rkprintf(x...) scr_RawPutChars(tab, snprintf(tab, 510, x))
 
 void _aros_not_implemented(char *string) {}
-void Exec_Permit_Supervisor() {}
 
 const char exec_chipname[] = "Chip Memory";
 const char exec_fastname[] = "Fast Memory";
@@ -206,6 +229,13 @@ int exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase;
     int i;
+    struct vbe_mode *mode;
+    
+//    if ((mode=krnGetTagData(KRN_VBEModeInfo, 0, msg)))
+//    {
+//        vesa_init(mode->x_resolution, mode->y_resolution, 
+//            mode->bits_per_pixel, (void*)mode->phys_base);
+//    }
 
     clr();
     rkprintf("AROS64 - The AROS Research OS, 64-bit version\nCompiled %s\n\n",__DATE__);
@@ -214,12 +244,10 @@ int exec_main(struct TagItem *msg, void *entry)
     core_SetupGDT();
     core_SetupIDT();
     
-    asm("int $0x20");
-    
     /* Setu the 8259 up */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
-        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
+    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs at 0x28 - 0x2f */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave */
@@ -250,6 +278,9 @@ int exec_main(struct TagItem *msg, void *entry)
     SysBase->KickTagPtr = NULL;
     SysBase->KickCheckSum = NULL;
 
+    /* How about clearing most of ExecBase structure? */
+    bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
+    
     /*
      * Now everything is prepared to store ExecBase at the location 4UL and set
      * it complement in ExecBase structure
@@ -385,7 +416,143 @@ int exec_main(struct TagItem *msg, void *entry)
     
     rkprintf("ExecBase=%012p\n", SysBase);
 
-    rkprintf("Leaving supervisor mode\n");
+    for (i=0; i<16; i++)
+    {
+        if( (1<<i) & (INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
+        {
+            struct Interrupt *is;
+            struct SoftIntList *sil;
+            is = AllocMem
+            (
+                sizeof(struct Interrupt) + sizeof(struct SoftIntList),
+                MEMF_CLEAR | MEMF_PUBLIC
+            );
+            if( is == NULL )
+            {
+                rkprintf("ERROR: Cannot install Interrupt Servers!\n");
+            }
+            sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
+
+            is->is_Code = &IntServer;
+            is->is_Data = sil;
+            NEWLIST((struct List *)sil);
+            SetIntVector(i,is);
+        }
+        else
+        {
+            struct Interrupt *is;
+            switch (i)
+            {
+                case INTB_SOFTINT :
+                    is = AllocMem
+                    (
+                        sizeof(struct Interrupt),
+                        MEMF_CLEAR | MEMF_PUBLIC
+                    );
+                    if (is == NULL)
+                    {
+                        rkprintf("Error: Cannot install Interrupt Servers!\n");
+                        // Alert(AT_DeadEnd | AN_IntrMem);
+                    }
+                    is->is_Node.ln_Type = NT_SOFTINT;   //INTERRUPT;
+                    is->is_Node.ln_Pri = 0;
+                    is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+                    is->is_Data = NULL;
+                    is->is_Code = (void *)SoftIntDispatch;
+                    SetIntVector(i,is);
+                    break;
+            }
+        }
+    }
+
+    /* Enable interrupts and set int disable level to -1 */
+    asm("sti");
+    SysBase->TDNestCnt = -1;
+    SysBase->IDNestCnt = -1;
+
+    /* Now it's time to calculate exec checksum. It will be used
+     * in future to distinguish whether we'd had proper execBase
+     * before restart */
+    {
+        UWORD sum=0, *ptr = &SysBase->SoftVer;
+        int i=((IPTR)&SysBase->IntVects[0] - (IPTR)&SysBase->SoftVer) / 2,
+            j;
+
+        /* Calculate sum for every static part from SoftVer to ChkSum */
+        for (j=0;j < i;j++)
+        {
+            sum+=*(ptr++);
+        }
+
+        SysBase->ChkSum = ~sum;
+    }
+
+    rkprintf("Creating the very first task...");
+
+    /* Create boot task.  Sigh, we actually create a Process sized Task,
+        since DOS needs to call things which think it has a Process and
+        we don't want to overwrite memory with something strange do we?
+
+        We do this until at least we can boot dos more cleanly.
+    */
+    {
+        struct Task    *t;
+        struct MemList *ml;
+
+        ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+        t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
+
+        if( !ml || !t )
+        {
+            rkprintf("ERROR: Cannot create Boot Task!\n");
+        }
+        ml->ml_NumEntries = 1;
+        ml->ml_ME[0].me_Addr = t;
+        ml->ml_ME[0].me_Length = sizeof(struct Process);
+
+        NEWLIST(&t->tc_MemEntry);
+        NEWLIST(&((struct Process *)t)->pr_MsgPort.mp_MsgList);
+
+        /* It's the boot process that RunCommand()s the boot shell, so we
+           must have this list initialized */
+        NEWLIST((struct List *)&((struct Process *)t)->pr_LocalVars);
+
+        AddHead(&t->tc_MemEntry,&ml->ml_Node);
+
+        t->tc_Node.ln_Name = exec_name;
+        t->tc_Node.ln_Pri = 0;
+        t->tc_Node.ln_Type = NT_TASK;
+        t->tc_State = TS_RUN;
+        t->tc_SigAlloc = 0xFFFF;
+        t->tc_SPLower = 0;          /* This is the system's stack */
+        t->tc_SPUpper = (APTR)~0UL;
+        t->tc_Flags |= TF_ETASK;
+
+        if (t->tc_Flags & TF_ETASK)
+        {
+            t->tc_UnionETask.tc_ETask = AllocTaskMem(t, sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
+
+            if (!t->tc_UnionETask.tc_ETask)
+            {
+                rkprintf("Not enough memory for first task\n");
+            }
+
+            GetIntETask(t)->iet_Context = AllocTaskMem(t
+                , SIZEOF_ALL_REGISTERS
+                , MEMF_PUBLIC|MEMF_CLEAR
+            );
+
+            if (!GetIntETask(t)->iet_Context)
+            {
+                rkprintf("Not enough memory for first task\n");
+            }
+        }
+
+        SysBase->ThisTask = t;
+    }
+    
+    rkprintf("Done. SysBase->ThisTask = 0x%012p\nLeaving supervisor mode\n", SysBase->ThisTask);
+    
     asm volatile (
             "mov %[user_ds],%%ds\n\t"    // Load DS and ES
             "mov %[user_ds],%%es\n\t"
@@ -397,13 +564,15 @@ int exec_main(struct TagItem *msg, void *entry)
             "pushq $1f\n\t iretq\n 1:"
             ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
     rkprintf("Done?!\n");
-    asm("int $0x20");
         
+    SysBase->TDNestCnt++;
+    Permit();
+
     /* Scan for valid RomTags */
     SysBase->ResModules = exec_RomTagScanner(msg);
 
-//    InitCode(RTF_SINGLETASK, 0);
-//    InitCode(RTF_COLDSTART, 0);
+    InitCode(RTF_SINGLETASK, 0);
+    InitCode(RTF_COLDSTART, 0);
 
             
     rkprintf("I should never get here...\n");
@@ -584,6 +753,8 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
     return RomTag;
 }
 
+
+
 /*
     We temporarily redefine kprintf() so we use the real version in case
     we have one of these two fn's called before AROSSupportBase is ready.
@@ -614,6 +785,42 @@ struct Library * PrepareAROSSupportBase(void)
 
     return (struct Library *)AROSSupportBase;
 }
+
+/* IntServer:
+    This interrupt handler will send an interrupt to a series of queued
+    interrupt servers. Servers should return D0 != 0 (Z clear) if they
+    believe the interrupt was for them, and no further interrupts will
+    be called. This will only check the value in D0 for non-m68k systems,
+    however it SHOULD check the Z-flag on 68k systems.
+
+    Hmm, in that case I would have to separate it from this file in order
+    to replace it...
+*/
+AROS_UFH5S(void, IntServer,
+    AROS_UFHA(ULONG, intMask, D0),
+    AROS_UFHA(struct Custom *, custom, A0),
+    AROS_UFHA(struct List *, intList, A1),
+    AROS_UFHA(APTR, intCode, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct Interrupt * irq;
+
+    ForeachNode(intList, irq)
+    {
+        if( AROS_UFC4(int, irq->is_Code,
+                AROS_UFCA(struct Custom *, custom, A0),
+                AROS_UFCA(APTR, irq->is_Data, A1),
+                AROS_UFCA(APTR, irq->is_Code, A5),
+                AROS_UFCA(struct ExecBase *, SysBase, A6)
+        ))
+            break;
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 {
