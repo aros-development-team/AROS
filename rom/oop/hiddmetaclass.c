@@ -70,7 +70,7 @@ struct hiddmeta_inst
     } data;
 };
 
-#define OOPBase	(cl->OOPBasePtr)
+#define OOPBase	((struct IntOOPBase *)cl->OOPBasePtr)
    
 /**********************
 **  HIDDMeta::New()  **

@@ -85,7 +85,7 @@
     	/* If so, it has been stored in the hashtable, and we have 
     	** to return the same numeric ID now.
 	*/
-	if (idb->attrbase == -1UL)
+	if (idb->attrbase == (ULONG)-1)
 	{
 	    idb->attrbase = GetOBase(OOPBase)->ob_CurrentAttrBase ++;
 	}

@@ -56,8 +56,9 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     */
 
     tstate = msg->attrList;
+
     while ((tag = NextTagItem((const struct TagItem **)&tstate)))
-    {
+    {    
         if (IS_META_ATTR(tag->ti_Tag, idx))
 	{
 	    D(bug("Got meta attr %lx with TagIdx %ld\n",

@@ -76,7 +76,7 @@
     	/* If so, it has been stored in the hashtable, and we have 
     	** to return the same numeric ID now.
 	*/
-	if (idb->attrbase == -1UL)
+	if (idb->attrbase == (ULONG)-1)
 	{
 	    /* The AttrBase has not yet been inited with ObtainAttrBase.
 	       I COULD init the attrbase now with the line below,

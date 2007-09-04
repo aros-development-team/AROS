@@ -273,6 +273,8 @@ struct IntOOPBase
 {
     struct Library		 ob_LibNode;
 
+    struct Library       *utilityBase;
+
     struct SignalSemaphore	 ob_ClassListLock;
     struct MinList		 ob_ClassList;
     
@@ -314,6 +316,8 @@ struct IntOOPBase
     /* An array of the interface IDs used internally. */
     ULONG			 ob_InternIDs[NUM_Indexes];
 };
+
+#define UtilityBase (OOPBase->utilityBase)
 
 #define ROOTCLASSPTR (& (OOPBase)->ob_RootClassObject.inst.data.public)
 #define BASEMETAPTR (& (OOPBase)->ob_BaseMetaObject.inst.data.public)

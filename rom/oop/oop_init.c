@@ -44,6 +44,8 @@ static void FreeAllClasses(struct Library *BOOPIBase)
 static int OOPInit(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("Enter OOPInit\n"));
+
+    UtilityBase = OpenLibrary("utility.library", 0);
     
     NEWLIST(&LIBBASE->ob_ClassList);
     InitSemaphore(&LIBBASE->ob_ClassListLock);

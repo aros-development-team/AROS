@@ -78,7 +78,7 @@
     /* Should throw exception here */
     
     /* The ID must be left-shifted to make place for method offsets */
-    ReturnInt ("OOP_GetMethodID", ULONG, -1UL);
+    ReturnInt ("OOP_GetMethodID", ULONG, -1);
     
     AROS_LIBFUNC_EXIT
 
