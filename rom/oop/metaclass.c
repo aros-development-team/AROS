@@ -372,7 +372,7 @@ static struct IFMethod *ifmeta_iterateifs(OOP_Class *cl, OOP_Object *o, struct P
     
     UWORD bucket_no = 0; /* keep compiler happy */
     EnterFunc(bug("IFMeta::iterateifs(cl=%s, o=%s)\n",
-    	cl->ClassNode.ln_Name, ((Class *)o)->ClassNode.ln_Name ));
+    	cl->ClassNode.ln_Name, ((OOP_Class *)o)->ClassNode.ln_Name ));
 	
     D(bug("last_idx: %ld, last_bucket_no=%ld\n", last_idx, last_bucket_no));
     

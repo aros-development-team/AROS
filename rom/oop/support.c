@@ -123,7 +123,7 @@ BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_pt
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interface_id, (struct IntOOPBase *)OOPBase);
     if (idb)
     {
-	if (idb->methodbase == -1UL)
+	if (idb->methodbase == (ULONG)-1)
 	{
 	    idb->methodbase = methodbase;
 	}
