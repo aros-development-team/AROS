@@ -79,13 +79,13 @@ void emit_sets(setnode *setlist, FILE *out)
         {
             setname_big[i] = toupper(setlist->secname[setlist->off_setname + i]);
         } while (setlist->secname[setlist->off_setname + i++]);
-
+        
         fprintf
         (
             out,
             "    __%s_LIST__ = .;\n"
-            "    LONG((__%s_END__ - __%s_LIST__) / %d - 2)\n",
-	    setname_big, setname_big, setname_big, sizeof(long)
+            "    %s((__%s_END__ - __%s_LIST__) / %d - 2)\n",
+	    setname_big, sizeof(long)==4?"LONG":"QUAD", setname_big, setname_big, sizeof(long)
 	);
 
 	do
@@ -105,9 +105,9 @@ void emit_sets(setnode *setlist, FILE *out)
 	(
 	    out,
             "    KEEP(*(%s))\n"
-            "    LONG(0)\n"
+            "    %s(0)\n"
             "    __%s_END__ = .;\n",
-            oldnode->secname, setname_big
+            oldnode->secname, sizeof(long)==4?"LONG":"QUAD", setname_big
         );
     }
 }
