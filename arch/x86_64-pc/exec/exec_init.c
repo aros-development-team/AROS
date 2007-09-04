@@ -231,11 +231,11 @@ int exec_main(struct TagItem *msg, void *entry)
     int i;
     struct vbe_mode *mode;
     
-//    if ((mode=krnGetTagData(KRN_VBEModeInfo, 0, msg)))
-//    {
-//        vesa_init(mode->x_resolution, mode->y_resolution, 
-//            mode->bits_per_pixel, (void*)mode->phys_base);
-//    }
+    if ((mode=krnGetTagData(KRN_VBEModeInfo, 0, msg)))
+    {
+        vesa_init(mode->x_resolution, mode->y_resolution, 
+            mode->bits_per_pixel, (void*)mode->phys_base);
+    }
 
     clr();
     rkprintf("AROS64 - The AROS Research OS, 64-bit version\nCompiled %s\n\n",__DATE__);
