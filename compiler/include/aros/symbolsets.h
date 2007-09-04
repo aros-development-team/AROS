@@ -118,7 +118,7 @@ const LONG bname##_version = ver
 #define ForeachElementInSet(set, direction, pos, elem)                       \
 for                                                                          \
 (                                                                            \
-    pos = (direction >= 0) ? 1 : ((int *)(set))[0];                          \
+    pos = (direction >= 0) ? 1 : ((long *)(set))[0];                         \
     elem = (void *)(set)[pos], (direction >= 0) ? elem != NULL : (pos) != 0; \
     pos += (direction >= 0) ? 1 : -1                                         \
 ) 
