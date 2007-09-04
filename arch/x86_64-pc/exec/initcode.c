@@ -8,7 +8,7 @@
 #include "exec_intern.h"
 #include <exec/resident.h>
 #include <proto/exec.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -58,10 +58,10 @@
 	while(*list)
 	{
 	    /*
-		If bit 31 is set, this doesn't point to a Resident module, but
+		If bit 0 is set, this doesn't point to a Resident module, but
 		to another list of modules.
 	    */
-	    if(*list & 0x8000000000000000) list = (IPTR *)(*list & 0x7fffffffffffffff);
+	    if(*list & 0x0000000000000001) list = (IPTR *)(*list & 0xfffffffffffffffe);
 
 	    if( (((struct Resident *)*list)->rt_Version >= (UBYTE)version)
 	     && (((struct Resident *)*list)->rt_Flags & (UBYTE)startClass) )
