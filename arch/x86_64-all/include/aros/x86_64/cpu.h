@@ -64,8 +64,8 @@ struct JumpVec
     unsigned char vec[8];
 };
 /* Internal macros */
-#define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
-#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
+#define __AROS_SET_VEC(v,a)             (*(unsigned long*)(v)->vec=(unsigned long)(a))
+#define __AROS_GET_VEC(v)               ((void *)(*(unsigned long*)(v)->vec))
 
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
