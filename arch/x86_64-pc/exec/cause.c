@@ -16,8 +16,8 @@
 #include <exec_intern.h>
 
 AROS_LH1(void, Cause,
-    AROS_LHA(struct Interrupt *, softint, A1),
-    struct ExecBase *, SysBase, 30, Exec)
+         AROS_LHA(struct Interrupt *, softint, A1),
+         struct ExecBase *, SysBase, 30, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -42,3 +42,52 @@ AROS_LH1(void, Cause,
 
     AROS_LIBFUNC_EXIT
 } /* Cause() */
+
+
+AROS_UFH5(void, SoftIntDispatch,
+          AROS_UFHA(ULONG, intReady, D1),
+          AROS_UFHA(struct Custom *, custom, A0),
+          AROS_UFHA(IPTR, intData, A1),
+          AROS_UFHA(IPTR, intCode, A5),
+          AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct Interrupt *intr = 0;
+    BYTE i;
+
+    if( SysBase->SysFlags & SFF_SoftInt )
+    {
+        /* Clear the Software interrupt pending flag. */
+        SysBase->SysFlags &= ~(SFF_SoftInt);
+
+        for(;;)
+        {
+            for(i=4; i>=0; i--)
+            {
+                asm volatile("cli");
+                intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
+
+                if (intr)
+                {
+                    intr->is_Node.ln_Type = NT_INTERRUPT;
+
+                    asm volatile("sti");
+
+                    /* Call the software interrupt. */
+                    AROS_UFC3(void, intr->is_Code,
+                              AROS_UFCA(APTR, intr->is_Data, A1),
+                              AROS_UFCA(APTR, intr->is_Code, A5),
+                              AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+                    /* Get out and start loop *all* over again *from scratch*! */
+                    break;
+                }
+            }
+
+            if (!intr) break;
+        }
+    }
+    AROS_USERFUNC_EXIT
+}
+

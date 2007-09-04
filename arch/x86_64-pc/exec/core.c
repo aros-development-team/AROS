@@ -1,13 +1,17 @@
 #include <inttypes.h>
 #include <asm/cpu.h>
 #include <asm/segments.h>
+#include <aros/asmcall.h>
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <exec/lists.h>
+#include <hardware/intbits.h>
 #include <stdio.h>
+#include <asm/cpu.h>
 #include "core.h"
 #include "exec_intern.h"
+#include "etask.h"
 
 const struct Resident Core_resident =
 {
@@ -27,6 +31,8 @@ int exec_main(struct TagItem *msg, void *entry);
 
 static uint64_t __attribute__((used)) tmp_stack[128]={01,};
 static const uint64_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[120];
+
+static tls_t system_tls;
 
 #define STACK_SIZE 8192
 static uint64_t stack[STACK_SIZE] __attribute__((used));
@@ -144,6 +150,19 @@ void core_SetupGDT()
     GDT.tss_low.base_high=(((unsigned int)&TSS) >> 24) & 0xff;
     GDT.tss_high.base_ext = 0;  /* is within 4GB :-D */
 
+    intptr_t tls_ptr = (intptr_t)&system_tls;
+    
+    GDT.gs.type=0x12;      /* data segment */
+    GDT.gs.dpl=3;    /* user elvel */
+    GDT.gs.p=1;            /* present */
+    GDT.gs.base_low = tls_ptr & 0xffff;
+    GDT.gs.base_mid = (tls_ptr >> 16) & 0xff;
+    GDT.gs.base_high = (tls_ptr >> 24) & 0xff;   
+    GDT.gs.g=1;
+    GDT.gs.d=1;
+
+    system_tls.SysBase = (struct ExecBase *)0x12345678;
+    
     TSS.ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
     TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
     TSS.rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
@@ -151,6 +170,7 @@ void core_SetupGDT()
     rkprintf("Reloading the GDT and the Task Register\n");
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG));
+    asm volatile ("mov %0,%%gs"::"a"(SEG_GS));
 }
 
 #define STR_(x) #x
@@ -260,62 +280,188 @@ void core_Cause(struct ExecBase *SysBase);
 void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_Switch(regs_t *regs) __attribute__((noreturn));
 void core_Schedule(regs_t *regs) __attribute__((noreturn));
+void core_Dispatch(regs_t *regs) __attribute__((noreturn));
 void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn)); 
 void core_IRQHandle(regs_t regs);
 
-void Exec_Dispatch()
+/*
+ * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
+ */
+void core_Dispatch(regs_t *regs)
 {
+    struct ExecBase *SysBase;
+    struct Task *task;
+    SysBase = *(struct ExecBase **)4UL;
     
+    __asm__ __volatile__("cli;");
+    
+    /* 
+     * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
+     * It should be extended by some plugin mechanism which would put CPU and whole machine
+     * into some more sophisticated sleep states (ACPI?)
+     */
+    while (IsListEmpty(&SysBase->TaskReady))
+    {
+        SysBase->IdleCount++;
+        SysBase->AttnResched |= ARF_AttnSwitch;
+        
+        /* Sleep almost forever ;) */
+        __asm__ __volatile__("sti; hlt; cli");
+        
+        if (SysBase->SysFlags & SFF_SoftInt)
+        {
+            core_Cause(SysBase);
+        }
+    }
+
+    SysBase->DispCount++;
+    
+    /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
+    task = (struct Task *)REMHEAD(&SysBase->TaskReady);
+    SysBase->ThisTask = task;  
+    SysBase->Elapsed = SysBase->Quantum;
+    SysBase->SysFlags &= ~0x2000;
+    task->tc_State = TS_RUN;
+    SysBase->IDNestCnt = task->tc_IDNestCnt;
+   
+    /* Handle tasks's flags */
+    if (task->tc_Flags & TF_EXCEPT)
+        Exception();
+    
+    if (task->tc_Flags & TF_LAUNCH)
+    {
+        AROS_UFC1(void, task->tc_Launch,
+                  AROS_UFCA(struct ExecBase *, SysBase, A6));       
+    }
+    
+    /* Restore the task's state */
+    bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
+    /* Copy the fpu, mmx, xmm state */
+#warning FIXME: Change to the lazy saving of the XMM state!!!!
+    asm volatile("fxrstor (%0)"::"D"((char *)GetIntETask(task)->iet_Context + sizeof(regs_t)));
+    
+    /* Leave interrupt and jump to the new task */
+    core_LeaveInterrupt(regs);
 }
 
 void core_Switch(regs_t *regs)
 {
+    struct ExecBase *SysBase;
+    struct Task *task;
     
-    core_LeaveInterrupt(regs);
+    /* Disable interrupts for a while */
+    __asm__ __volatile__("cli; cld;");
+        
+    SysBase = *(struct ExecBase **)4UL;
+    task = SysBase->ThisTask;
+    
+    /* Copy current task's context into the ETask structure */
+    bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));
+    
+    /* Copy the fpu, mmx, xmm state */
+#warning FIXME: Change to the lazy saving of the XMM state!!!!
+    asm volatile("fxsave (%0)"::"D"((char *)GetIntETask(task)->iet_Context + sizeof(regs_t)));
+    
+    /* store IDNestCnt into tasks's structure */  
+    task->tc_IDNestCnt = SysBase->IDNestCnt;
+    task->tc_SPReg = regs->return_rsp;
+    
+    /* And enable interrupts */
+    SysBase->IDNestCnt = -1;
+    __asm__ __volatile__("sti;");
+    
+    /* TF_SWITCH flag set? Call the switch routine */
+    if (task->tc_Flags & TF_SWITCH)
+    {
+        AROS_UFC1(void, task->tc_Switch,
+                  AROS_UFCA(struct ExecBase *, SysBase, A6));
+    }
+    
+    core_Dispatch(regs);
 }
 
+/*
+ * Schedule the currently running task away. Put it into the TaskReady list 
+ * in some smart way. This function is subject of change and it will be probably replaced
+ * by some plugin system in the future
+ */ 
 void core_Schedule(regs_t *regs)
 {
     struct ExecBase *SysBase;
-    struct Task *t;
+    struct Task *task;
 
+    /* Disable interrupts for a while */
     __asm__ __volatile__("cli");
+
     SysBase = *(struct ExecBase **)4UL;
+    task = SysBase->ThisTask;
 
+    /* Clear the pending switch flag. */
     SysBase->AttnResched &= ~ARF_AttnSwitch;
-    t = SysBase->ThisTask;
 
-    if (!(t->tc_Flags & TF_EXCEPT))
+    /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
+    if (!(task->tc_Flags & TF_EXCEPT))
     {
+        /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
         if (IsListEmpty(&SysBase->TaskReady))
             core_LeaveInterrupt(regs);
 
-        /* Add some code here */
+        /* Does the TaskReady list contains tasks with priority equal or lower than current task?
+         * If so, then check further... */
+        if (((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
+        {
+            /* If the running task did not used it's whole quantum yet, let it work */
+            if (!(SysBase->SysFlags & 0x2000))
+            {
+                core_LeaveInterrupt(regs);
+            }
+        }
     }
 
-    t->tc_State = TS_READY;
-    Enqueue(&SysBase->TaskReady, t);
+    /* 
+     * If we got here, then the rescheduling is necessary. 
+     * Put the task into the TaskReady list.
+     */
+    task->tc_State = TS_READY;
+    Enqueue(&SysBase->TaskReady, (struct Node *)task);
+    
+    /* Select new task to run */
     core_Switch(regs);
 }
 
+/*
+ * Leave the interrupt. This function recieves the register frame used to leave the supervisor
+ * mode. It never returns and reschedules the task if it was asked for.
+ */
 void core_ExitInterrupt(regs_t *regs) 
 {
     struct ExecBase *SysBase;
 
+    /* Going back into supervisor mode? Then exit immediatelly */
     if (regs->ds == KERNEL_DS)
+    {
         core_LeaveInterrupt(regs);
+    }
     else
     {
+        /* Prepare to go back into user mode */
         SysBase = *(struct ExecBase **)4UL;
 
+        /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(SysBase);
 
+        /* If task switching is disabled, leave immediatelly */
         if (SysBase->TDNestCnt > 0)
+        {
             core_LeaveInterrupt(regs);
+        }
         else
         {
-
+            /* 
+             * Do not disturb task if it's not necessary. 
+             * Reschedule only if switch pending flag is set. Exit otherwise.
+             */
             if (SysBase->AttnResched & ARF_AttnSwitch)
             {
                 core_Schedule(regs);
@@ -328,6 +474,8 @@ void core_ExitInterrupt(regs_t *regs)
 
 void core_IRQHandle(regs_t regs)
 {
+    struct ExecBase *SysBase = *(struct ExecBase **)4;
+    
     rkprintf("IRQ %02x:", regs.irq_number);
     rkprintf("  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
              regs.return_ss, regs.return_rsp, regs.return_rflags, 
@@ -336,12 +484,70 @@ void core_IRQHandle(regs_t regs)
     if (regs.irq_number == 0x20)
         asm ("int $0x21");
 
+    
+    if (regs.irq_number == 0x03)        /* Debug */
+    {
+        rkprintf("  INT3 debug fault!\n");
+        rkprintf("  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+    }
+    else if (regs.irq_number == 0x0D)        /* GPF */
+    {
+        rkprintf("  GENERAL PROTECTION FAULT!\n");
+        rkprintf("  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        while(1);
+    }
+    else if (regs.irq_number == 0x0e)        /* Page fault */
+    {
+        void *ptr = rdcr(cr2);
+        
+        rkprintf("  PAGE FAULT EXCEPTION! %016p\n",ptr);
+        while(1);
+    }
+    else if (regs.irq_number == 0x80) /* Syscall? */
+    {
+        switch (regs.rax)
+        {
+            case SC_CAUSE:
+                core_Cause(SysBase);
+                break;
+
+            case SC_DISPATCH:
+                core_Dispatch(&regs);
+                break;
+                
+            case SC_SWITCH:
+                core_Switch(&regs);
+                break;
+            
+            case SC_SCHEDULE:
+                if (regs.ds != KERNEL_DS)
+                    core_Schedule(&regs);
+                break;
+        }
+    }
 }
 
 void core_Cause(struct ExecBase *SysBase)
 {
-    rkprintf("core_Cause()\n");
+    struct IntVector *iv = &SysBase->IntVects[INTB_SOFTINT];
 
+    /* If the SoftInt vector in SysBase is set, call it. It will do the rest for us */
+    if (iv->iv_Code)
+    {
+        AROS_UFC5(void, iv->iv_Code,
+            AROS_UFCA(ULONG, 0, D1),
+            AROS_UFCA(ULONG, 0, A0),
+            AROS_UFCA(APTR, 0, A1),
+            AROS_UFCA(APTR, iv->iv_Code, A5),
+            AROS_UFCA(struct ExecBase *, SysBase, A6)
+        );
+    }
 }
 
 #define IRQ(x,y) \
