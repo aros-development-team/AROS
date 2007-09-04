@@ -135,7 +135,9 @@
 
 /* 4. Macros for debugging and development */
 #if defined(__GNUC__) || defined(__INTEL_COMPILER) || (defined(__STDC__) && __STDC_VERSION__ >= 199901L)
+#if !defined(AROS_64BIT_TYPE)
 #   define AROS_64BIT_TYPE long long
+#endif
 #   define AROS_HAVE_LONG_LONG
 #endif
 
