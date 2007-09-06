@@ -328,6 +328,8 @@
      * we're waiting for them to insert something */
 
     res = DisplayError(format, idcmp, &args);
+
+    SetIoErr(code);
    
     return res == 0 ? DOSFALSE : DOSTRUE;
 
