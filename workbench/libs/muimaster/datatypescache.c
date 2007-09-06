@@ -1,5 +1,5 @@
 /*
-    Copyright  2002, The AROS Development Team. 
+    Copyright  2002-2007, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -538,12 +538,18 @@ void dt_dispose_picture(struct dt_node *node)
 
 int dt_width(struct dt_node *node)
 {
-    return node->width;
+    if (node)
+	return node->width;
+    else
+	return 0;
 }
 
 int dt_height(struct dt_node *node)
 {
-    return node->height;
+    if (node)
+	return node->height;
+    else
+	return 0;
 }
 
 
