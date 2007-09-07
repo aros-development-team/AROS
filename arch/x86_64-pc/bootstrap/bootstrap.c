@@ -19,8 +19,6 @@
 #include "support.h"
 #include "vesa.h"
 
-#include "../kernel/startup.h"
-
 /*
     The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
     therefore it will be packed into the .aros.startup section. I hope, that turning debug on
