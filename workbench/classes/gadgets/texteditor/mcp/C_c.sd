@@ -68,7 +68,7 @@ void CloseCat(void)
 void OpenCat(void)
 {
   static const struct TagItem tags[] = {
-                                         { OC_BuiltInLanguage, (ULONG)%l },
+                                         { OC_BuiltInLanguage, (APTR)%l },
                                          { OC_Version,         %v },
                                          { TAG_DONE,           0  }
                                        };
