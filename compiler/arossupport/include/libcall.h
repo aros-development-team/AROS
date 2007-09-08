@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -1209,6 +1209,59 @@ typedef unsigned long (*ULONG_FUNC)();
     bn))
 #endif
 
+#ifndef AROS_CALL9
+#define AROS_CALL9(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LP_BASE(bt,bn)))\
+    (void *)(a))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    __AROS_LCA(a8),\
+    __AROS_LCA(a9),\
+    bn))
+#endif
+
+#ifndef AROS_CALL10
+#define AROS_CALL10(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPA(a4),\
+    __AROS_LPA(a5),\
+    __AROS_LPA(a6),\
+    __AROS_LPA(a7),\
+    __AROS_LPA(a8),\
+    __AROS_LPA(a9),\
+    __AROS_LPA(a10),\
+    __AROS_LP_BASE(bt,bn)))\
+    (void *)(a))(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    __AROS_LCA(a8),\
+    __AROS_LCA(a9),\
+    __AROS_LCA(a10),\
+    bn))
+#endif
 /* Special calls: Call a library function without the name just by the OFFSET */
 
 #ifndef AROS_LVO_CALL0
@@ -1289,6 +1342,36 @@ typedef unsigned long (*ULONG_FUNC)();
 #ifndef AROS_LVO_CALL7NR
 #define AROS_LVO_CALL7NR(a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
     AROS_CALL7(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),bt,bn)
+#endif
+
+#ifndef AROS_LVO_CALL8
+#define AROS_LVO_CALL8(t,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+    AROS_CALL8(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCA(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),bt,bn)
+#endif
+
+#ifndef AROS_LVO_CALL8NR
+#define AROS_LVO_CALL8NR(a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+    AROS_CALL8(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),bt,bn)
+#endif
+
+#ifndef AROS_LVO_CALL9
+#define AROS_LVO_CALL9(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    AROS_CALL9(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCA(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),bt,bn)
+#endif
+
+#ifndef AROS_LVO_CALL9NR
+#define AROS_LVO_CALL9NR(a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    AROS_CALL9(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),bt,bn)
+#endif
+
+#ifndef AROS_LVO_CALL10
+#define AROS_LVO_CALL10(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+    AROS_CALL10(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCA(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),AROS_LCA(a10),bt,bn)
+#endif
+
+#ifndef AROS_LVO_CALL10NR
+#define AROS_LVO_CALL10NR(a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    AROS_CALL10(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),AROS_LCA(a10),bt,bn)
 #endif
 #endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) && !defined(__AROS_MACHINE_H_DEFINES_LIBCALLS) */
 
