@@ -136,11 +136,11 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 	    Close(cli->cli_CurrentInput);
 	    if (AROS_BSTR_strlen(cli->cli_CommandFile))
-	        DeleteFile(BADDR(cli->cli_CommandFile));
+	        DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
 
 	    {
 	        LONG len = strlen(tmpname);
-	        CopyMem(tmpname, BADDR(cli->cli_CommandFile), len);
+	        CopyMem(tmpname, AROS_BSTR_ADDR(cli->cli_CommandFile), len);
 	        AROS_BSTR_setstrlen(cli->cli_CommandFile, len);
 	    }
 

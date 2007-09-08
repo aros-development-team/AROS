@@ -467,7 +467,7 @@ LONG interact(void)
 
 	        if (AROS_BSTR_strlen(cli->cli_CommandFile))
 		{
-	            DeleteFile(BADDR(cli->cli_CommandFile));
+	            DeleteFile(AROS_BSTR_ADDR(cli->cli_CommandFile));
 		    AROS_BSTR_setstrlen(cli->cli_CommandFile, 0);
 		}
 
