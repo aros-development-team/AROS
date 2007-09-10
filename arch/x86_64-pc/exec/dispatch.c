@@ -13,16 +13,19 @@
 #include <exec/alerts.h>
 
 #include <proto/arossupport.h>
+#include <proto/kernel.h>
 #include <aros/asmcall.h>
+#include <aros/kernel.h>
 
-#include "core.h"
 
 AROS_LH0(void, Dispatch,
          struct ExecBase *, SysBase, 10, Exec)
 {
     AROS_LIBFUNC_INIT
-    
-    CoreDispatch();
+
+    void *KernelBase = TLS_GET(KernelBase);
+
+    KrnDispatch();
     
     AROS_LIBFUNC_EXIT
 }

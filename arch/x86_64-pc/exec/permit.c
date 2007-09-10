@@ -13,8 +13,9 @@
 #include <aros/debug.h>
 #include <asm/segments.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
-#include "core.h"
+
 #include "x86_64.h"
 
 #undef Exec
@@ -68,6 +69,8 @@ HISTORY
 {
     AROS_LIBFUNC_INIT
 
+    void *KernelBase = TLS_GET(KernelBase);
+
     /*
         Task switches are allowed again, if a switch is pending, we
         should allow it.
@@ -85,7 +88,7 @@ HISTORY
            Clear the Switch() pending flag.
          */
 
-        if (IN_USER_MODE) CoreSchedule();
+        if (IN_USER_MODE) KrnSchedule();
     }
 
     AROS_LIBFUNC_EXIT

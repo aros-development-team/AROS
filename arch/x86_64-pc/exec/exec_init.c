@@ -20,12 +20,13 @@
 #include <hardware/custom.h>
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <string.h>
 #include <stdio.h>
 
 #include "../bootstrap/multiboot.h"
-#include "core.h"
+
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
@@ -103,33 +104,7 @@ void _aros_not_implemented(char *string) {}
 const char exec_chipname[] = "Chip Memory";
 const char exec_fastname[] = "Fast Memory";
 
-void __clear_bss(struct TagItem *msg)
-{
-    struct KernelBSS *bss;
-    bss = krnGetTagData(KRN_KernelBss, 0, msg);
-    
-    if (bss)
-    {
-        while (bss->addr)
-        {
-            bzero(bss->addr, bss->len);
-            bss++;
-        }   
-    }
-}
 
-static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
-static struct tss_64bit TSS __attribute__((used,aligned(128)));
-static struct {
-    struct segment_desc seg0;      /* seg 0x00 */
-    struct segment_desc super_cs;  /* seg 0x08 */
-    struct segment_desc super_ds;  /* seg 0x10 */
-    struct segment_desc user_cs32; /* seg 0x18 */
-    struct segment_desc user_ds;   /* seg 0x20 */
-    struct segment_desc user_cs;   /* seg 0x28 */
-    struct segment_desc tss_low;   /* seg 0x30 */
-    struct segment_ext  tss_high;
-} GDT __attribute__((used,aligned(128)));
 /*
     The MMU pages and directories. They are stored at fixed location and may be either reused in the 
     64-bit kernel, or replaced by it. Four PDE directories (PDE2M structures) are enough to map whole
@@ -240,24 +215,6 @@ int exec_main(struct TagItem *msg, void *entry)
     clr();
     rkprintf("AROS64 - The AROS Research OS, 64-bit version\nCompiled %s\n\n",__DATE__);
 
-    /* Set TSS, GDT, LDT and MMU up */
-    core_SetupGDT();
-    core_SetupIDT();
-    
-    /* Setu the 8259 up */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs at 0x28 - 0x2f */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0x21)); /* 8086 mode for both */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0xa1));
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0x21)); /* Enable cascade int */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
-
-    rkprintf("Interrupts redirected\n");
-
     /* Prepare the exec base */
 
     ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
@@ -290,7 +247,10 @@ int exec_main(struct TagItem *msg, void *entry)
 
     *(struct ExecBase **)4 = SysBase;
     SysBase->ChkBase = ~(ULONG)SysBase;
-
+    
+    /* Store sysbase in TLS */
+    TLS_SET(SysBase, SysBase);
+    
     /* Set up system stack */
     //    tss->ssp = (extmem) ? extmem : locmem;  /* Either in FAST or in CHIP */
 //    SysBase->SysStkUpper = (APTR)stack_end;
@@ -571,7 +531,12 @@ int exec_main(struct TagItem *msg, void *entry)
     /* Scan for valid RomTags */
     SysBase->ResModules = exec_RomTagScanner(msg);
 
+
+    
+    rkprintf("InitCode(RTF_SINGLETASK)\n");
     InitCode(RTF_SINGLETASK, 0);
+    
+    rkprintf("InitCode(RTF_COLDSTART)\n");
     InitCode(RTF_COLDSTART, 0);
 
             
@@ -586,9 +551,6 @@ void exec_DefaultTaskExit()
     struct ExecBase *SysBase = *(struct ExecBase **)4UL;
     RemTask(SysBase->ThisTask);
 }
-
-/* Small delay routine used by exec_cinit initializer */
-asm("\ndelay:\t.short   0x00eb\n\tretq");
 
 
 AROS_LH1(struct ExecBase *, open,
@@ -645,7 +607,7 @@ struct rt_node
 
 IPTR **exec_RomTagScanner(struct TagItem *msg)
 {
-    struct ExecBase *SysBase = *(struct ExecBase **)4UL;
+    struct ExecBase *SysBase = TLS_GET(SysBase); //*(struct ExecBase **)4UL;
 
     struct List     rtList;             /* List of modules */
     UWORD           *ptr = (UWORD*)krnGetTagData(KRN_KernelLowest, 0, msg);  /* Start looking here */
@@ -822,59 +784,4 @@ AROS_UFH5S(void, IntServer,
 }
 
 
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
-{
-    if (!(*tagListPtr)) return 0;
-
-    while(1)
-    {
-        switch((*tagListPtr)->ti_Tag)
-        {
-            case TAG_MORE:
-                if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
-                    return NULL;
-                continue;
-            case TAG_IGNORE:
-                break;
-
-            case TAG_END:
-                (*tagListPtr) = 0;
-                return NULL;
-
-            case TAG_SKIP:
-                (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
-                continue;
-
-            default:
-                return (struct TagItem *)(*tagListPtr)++;
-
-        }
-
-        (*tagListPtr)++;
-    }
-}
-
-struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
-{
-    struct TagItem *tag;
-    const struct TagItem *tagptr = tagList;
-
-    while((tag = krnNextTagItem(&tagptr)))
-    {
-        if (tag->ti_Tag == tagValue)
-            return tag;
-    }
-
-    return 0;
-}
-
-IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
-{
-    struct TagItem *ti = 0;
-
-    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
-        return ti->ti_Data;
-
-        return defaultVal;
-}
 

@@ -10,8 +10,8 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/atomic.h>
+#include <proto/kernel.h>
 
-#include "core.h"
 
 /*****i***********************************************************************
 
@@ -73,7 +73,9 @@
     {
 	if (SysBase->IDNestCnt < 0)	    	/* And interrupts enabled */
 	{
-	    CoreSchedule();
+	    void *KernelBase = TLS_GET(KernelBase);
+
+	    KrnSchedule();
 	}
 	else if (!(flag & 0x80))		/* Generate software interrupt */
 	{
