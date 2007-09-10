@@ -3,9 +3,9 @@
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <sigcore.h>
+#include <asm/cpu.h>
 #include "etask.h"
 #include "exec_util.h"
-#include "core.h"
 
 #include <aros/libcall.h>
 #include <asm/segments.h>

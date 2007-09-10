@@ -13,8 +13,8 @@
 #include <aros/debug.h>
 //#include <asm/segments.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include "exec_intern.h"
-#include "core.h"
 
 #include "x86_64.h"
 
@@ -29,6 +29,8 @@ AROS_LH0(void, Enable,
 #undef Exec
     AROS_LIBFUNC_INIT
 
+    void *KernelBase = TLS_GET(KernelBase);
+    
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     
     if(SysBase->IDNestCnt < 0)
@@ -43,7 +45,7 @@ AROS_LH0(void, Enable,
 	   
 	if ((SysBase->TDNestCnt < 0) && (SysBase->AttnResched & ARF_AttnSwitch))
 	{
-	    if (IN_USER_MODE) CoreSchedule();	    
+	    if (IN_USER_MODE) KrnSchedule();	    
 	}
 	
 	if (SysBase->SysFlags & SFF_SoftInt)
@@ -51,7 +53,7 @@ AROS_LH0(void, Enable,
 	    if (IN_USER_MODE)
 	    {
 	    	/* sys_Cause */
-                CoreCause();
+                KrnCause();
 	    }
 	}
     }

@@ -8,8 +8,8 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
-#include "core.h"
 
 /*****************************************************************************
 
@@ -61,6 +61,7 @@ extern void Exec_Switch();
 
     ULONG rcvd;
     struct Task *me;
+    void *KernelBase = TLS_GET(KernelBase);
 
     /* Get pointer to current task - I'll need it very often */
     me = FindTask (NULL);
@@ -98,7 +99,7 @@ extern void Exec_Switch();
 	Enqueue(&SysBase->TaskWait,&me->tc_Node);
 
 	/* And switch to the next ready task. */
-	CoreSwitch();
+	KrnSwitch();
 
 //	Reschedule(me);
 

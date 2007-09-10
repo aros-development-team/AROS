@@ -9,8 +9,9 @@
 #include <exec/tasks.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
-#include "core.h"
+
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
 #   define DEBUG_RemTask 0
@@ -98,7 +99,9 @@ extern void Exec_Dispatch();
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
-	/* Can't do that - let the dispatcher do it. */
+        void *KernelBase = TLS_GET(KernelBase);
+
+        /* Can't do that - let the dispatcher do it. */
 	task->tc_State=TS_REMOVED;
 
 	/*
@@ -116,7 +119,7 @@ extern void Exec_Dispatch();
 	   could already have been freed by the FreeEntry() call
 	   above!!! */
 	   
-	CoreDispatch();
+	KrnDispatch();
 	/* Does not return. */
     }
 

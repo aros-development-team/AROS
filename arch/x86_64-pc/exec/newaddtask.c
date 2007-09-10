@@ -12,7 +12,7 @@
 #include <proto/exec.h>
 #include "etask.h"
 #include "exec_util.h"
-#include "core.h"
+
 #include "exec_debug.h"
 
 #ifndef DEBUG_AddTask
