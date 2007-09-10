@@ -1,0 +1,11 @@
+# $Id:  $
+include $(TOP)/config/make.cfg
+
+FILES          := \
+	kernel_init intr apic scheduler
+
+#MM kernel-kernel-x86_64
+%build_module mmake=kernel-kernel-x86_64 	\
+  modname=kernel modtype=resource		\
+  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  files=$(FILES) uselibs="rom"
