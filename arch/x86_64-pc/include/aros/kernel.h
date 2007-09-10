@@ -23,6 +23,40 @@ struct TagItem{
 
 #endif
 
+typedef enum {
+    SCHED_RR = 1
+} KRN_SchedType;
+
+typedef struct tls {
+    struct Task         *ThisTask;
+    struct ExecBase     *SysBase;
+    void *              *KernelBase;    /* Base of kernel.resource */
+} tls_t;
+
+#define TLS_GET(name) \
+    ({ \
+        tls_t *__tls = (tls_t *)0; \
+        typeof(__tls -> name) __ret; \
+        switch (sizeof(__tls -> name)) { \
+case 2: asm volatile("movw %%gs:%P1,%0":"=r"(__ret):"n"(&__tls -> name):"memory"); break; \
+case 4: asm volatile("movl %%gs:%P1,%0":"=r"(__ret):"n"(&__tls -> name):"memory"); break; \
+case 8: asm volatile("movq %%gs:%P1,%0":"=r"(__ret):"n"(&__tls -> name):"memory"); break; \
+        } \
+        __ret;  \
+    })
+
+#define TLS_SET(name, val) \
+    do { \
+        tls_t *__tls = (tls_t *)0; \
+        typeof(__tls -> name) __set = val; \
+        switch (sizeof(__tls -> name)) { \
+case 2: asm volatile("movw %0,%%gs:%P1"::"r"(__set),"n"(&__tls -> name):"memory"); break; \
+case 4: asm volatile("movl %0,%%gs:%P1"::"r"(__set),"n"(&__tls -> name):"memory"); break; \
+case 8: asm volatile("movq %0,%%gs:%P1"::"r"(__set),"n"(&__tls -> name):"memory"); break; \
+        } \
+    } while(0);
+
+
 #define KRN_Dummy               (TAG_USER + 0x03d00000)
 #define KRN_KernelBase          (KRN_Dummy + 1)
 #define KRN_KernelLowest        (KRN_Dummy + 2)
