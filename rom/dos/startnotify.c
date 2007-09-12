@@ -144,7 +144,7 @@
     /* send the request, with error reporting */
     do {
         DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port));
+    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port) == DOSFALSE);
 
     SetIoErr(iofs.io_DosError);
 
