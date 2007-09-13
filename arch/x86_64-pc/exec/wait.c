@@ -15,9 +15,6 @@
 
     NAME */
 
-extern void Exec_Switch();
-
-
 	AROS_LH1(ULONG, Wait,
 
 /*  SYNOPSIS */

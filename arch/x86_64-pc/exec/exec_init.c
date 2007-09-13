@@ -124,7 +124,7 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
     /* Scenario 1: Kernel area outside the affected area. */
     if (kernHigh < lower || kernLow > upper)
     {
-        rkprintf("  Adding %012p - %012p\n", lower, upper);
+        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
     
         if (lower < 0x01000000)
             AddMemList(upper-lower+1,
@@ -143,7 +143,7 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
     /* Scenario 2: Kernel area completely inside the memory region */
     else if (kernLow >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh <= upper)
     {
-        rkprintf("  Adding %012p - %012p\n", lower, upper);
+        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
     
         if (lower < 0x01000000)
             AddMemList(upper-lower+1,
@@ -157,14 +157,14 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
                        0,
                        (APTR)lower,
                        (STRPTR)exec_fastname);
-        rkprintf("  rejecting %012p - %012p\n", kernLow, kernHigh);
+        rkprintf("[exec]    rejecting %012p - %012p\n", kernLow, kernHigh);
         AllocAbs(kernHigh-kernLow+1, kernLow);
     }
     /* Scenario 3: Kernel in lower portion of memory region */
     else if (kernLow <= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh <= upper)
     {
         lower = (kernHigh + 4095) & ~4095;
-        rkprintf("  Adding %012p - %012p\n", lower, upper);
+        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
             
                 if (lower < 0x01000000)
                     AddMemList(upper-lower+1,
@@ -183,7 +183,7 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
     else if (kernLow >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh >= upper)
     {
         upper = kernLow & ~4095;
-        rkprintf("  Adding %012p - %012p\n", lower, upper);
+        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
             
                 if (lower < 0x01000000)
                     AddMemList(upper-lower+1,
@@ -213,20 +213,20 @@ int exec_main(struct TagItem *msg, void *entry)
     }
 
     clr();
-    rkprintf("AROS64 - The AROS Research OS, 64-bit version\nCompiled %s\n\n",__DATE__);
+    rkprintf("[exec] AROS64 - The AROS Research OS, 64-bit version\n[exec] Compiled %s\n",__DATE__);
 
     /* Prepare the exec base */
 
     ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
     void  **fp      = Exec_FuncTable; //LIBFUNCTABLE;  /* pointer to a function in the table */
 
-    rkprintf("Preparing the ExecBase...\n");
+    rkprintf("[exec] Preparing the ExecBase...\n");
 
     /* Calculate the size of the vector table */
     while (*fp++ != (APTR) -1) negsize += LIB_VECTSIZE;
     SysBase = (struct ExecBase *)(0x1000 + negsize);
 
-    rkprintf("Clearing ExecBase\n");
+    rkprintf("[exec] Clearing ExecBase\n");
 
     /* How about clearing most of ExecBase structure? */
     bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
@@ -243,7 +243,7 @@ int exec_main(struct TagItem *msg, void *entry)
      * it complement in ExecBase structure
      */
 
-    rkprintf("Initializing library...\n");
+    rkprintf("[exec] Initializing library...\n");
 
     *(struct ExecBase **)4 = SysBase;
     SysBase->ChkBase = ~(ULONG)SysBase;
@@ -323,7 +323,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
     SumLibrary((struct Library *)SysBase);
 
-    rkprintf("Adding memory\n");
+    rkprintf("[exec] Adding memory\n");
     struct mb_mmap *mmap;
     uint32_t len = krnGetTagData(KRN_MMAPLength, 0, msg);
 
@@ -345,7 +345,7 @@ int exec_main(struct TagItem *msg, void *entry)
                     size -= (tmp-addr);
                     addr = tmp;
                 }
-                rkprintf("  %012p - %012p\n", addr, addr+size-1);
+                rkprintf("[exec]   %012p - %012p\n", addr, addr+size-1);
 
                 if (addr < 0x01000000 && (addr+size) <= 0x01000000)
                 {
@@ -374,7 +374,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase();
     
-    rkprintf("ExecBase=%012p\n", SysBase);
+    rkprintf("[exec] ExecBase=%012p\n", SysBase);
 
     for (i=0; i<16; i++)
     {
@@ -389,7 +389,7 @@ int exec_main(struct TagItem *msg, void *entry)
             );
             if( is == NULL )
             {
-                rkprintf("ERROR: Cannot install Interrupt Servers!\n");
+                rkprintf("[exec] ERROR: Cannot install Interrupt Servers!\n");
             }
             sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
 
@@ -411,7 +411,7 @@ int exec_main(struct TagItem *msg, void *entry)
                     );
                     if (is == NULL)
                     {
-                        rkprintf("Error: Cannot install Interrupt Servers!\n");
+                        rkprintf("[exec] Error: Cannot install Interrupt Servers!\n");
                         // Alert(AT_DeadEnd | AN_IntrMem);
                     }
                     is->is_Node.ln_Type = NT_SOFTINT;   //INTERRUPT;
@@ -447,7 +447,7 @@ int exec_main(struct TagItem *msg, void *entry)
         SysBase->ChkSum = ~sum;
     }
 
-    rkprintf("Creating the very first task...");
+    rkprintf("[exec] Creating the very first task...");
 
     /* Create boot task.  Sigh, we actually create a Process sized Task,
         since DOS needs to call things which think it has a Process and
@@ -464,7 +464,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
         if( !ml || !t )
         {
-            rkprintf("ERROR: Cannot create Boot Task!\n");
+            rkprintf("[exec] ERROR: Cannot create Boot Task!\n");
         }
         ml->ml_NumEntries = 1;
         ml->ml_ME[0].me_Addr = t;
@@ -494,7 +494,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
             if (!t->tc_UnionETask.tc_ETask)
             {
-                rkprintf("Not enough memory for first task\n");
+                rkprintf("[exec] Not enough memory for first task\n");
             }
 
             GetIntETask(t)->iet_Context = AllocTaskMem(t
@@ -504,14 +504,14 @@ int exec_main(struct TagItem *msg, void *entry)
 
             if (!GetIntETask(t)->iet_Context)
             {
-                rkprintf("Not enough memory for first task\n");
+                rkprintf("[exec] Not enough memory for first task\n");
             }
         }
 
         SysBase->ThisTask = t;
     }
     
-    rkprintf("Done. SysBase->ThisTask = 0x%012p\nLeaving supervisor mode\n", SysBase->ThisTask);
+    rkprintf("[exec] Done. SysBase->ThisTask = 0x%012p\n[exec] Leaving supervisor mode\n", SysBase->ThisTask);
     
     asm volatile (
             "mov %[user_ds],%%ds\n\t"    // Load DS and ES
@@ -523,7 +523,7 @@ int exec_main(struct TagItem *msg, void *entry)
             "pushq %[cs]\n\t"      // CS
             "pushq $1f\n\t iretq\n 1:"
             ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
-    rkprintf("Done?!\n");
+    rkprintf("[exec] Done?! Still here?\n");
         
     SysBase->TDNestCnt++;
     Permit();
@@ -533,19 +533,19 @@ int exec_main(struct TagItem *msg, void *entry)
 
 
     
-    rkprintf("InitCode(RTF_SINGLETASK)\n");
+    rkprintf("[exec] InitCode(RTF_SINGLETASK)\n");
     InitCode(RTF_SINGLETASK, 0);
     
-    rkprintf("stupid delay to let you admire the debug log :)\n");
+    rkprintf("[exec] ---> stupid delay to let you admire the debug log :) <---\n");
     
     for (i=0; i < 800000000; i++) asm volatile("nop");
     
-    rkprintf("InitCode(RTF_COLDSTART)\n");
+    rkprintf("[exec] InitCode(RTF_COLDSTART)\n");
     InitCode(RTF_COLDSTART, 0);
 
             
-    rkprintf("I should never get here...\n");
-    while(1);
+    rkprintf("[exec] I should never get here...\n");
+    while(1) asm volatile("nop");
     return 0;
 }
 
@@ -624,7 +624,7 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
     /* Initialize list */
     NEWLIST(&rtList);
 
-    rkprintf("Resident modules (addr: pri version name):\n");
+    rkprintf("[exec] Resident modules (addr: pri version name):\n");
 
     /* Look in whole kernel for resident modules */
     do
@@ -705,7 +705,7 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
         for (j=0; j<i; j++)
         {
             n = (struct rt_node *)RemHead(&rtList);
-            rkprintf("+ 0x%012lx: %4d %3d \"%s\"\n",
+            rkprintf("[exec] + 0x%012lx: %4d %3d \"%s\"\n",
                 n->module,
                 n->node.ln_Pri,
                 n->module->rt_Version,

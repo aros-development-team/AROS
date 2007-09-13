@@ -11,6 +11,7 @@
 #include <aros/libcall.h>
 #include <aros/atomic.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #undef  Exec
 #ifdef UseExecstubs
@@ -22,10 +23,11 @@ AROS_LH0(void, Disable,
 {
 #undef Exec
     AROS_LIBFUNC_INIT
-
+    void *KernelBase = TLS_GET(KernelBase);
+    
     /* Georg Steger */
-
-	__asm__ __volatile__ ("cli");
+    if (KernelBase)
+        KrnCli();
 
     AROS_ATOMIC_INC(SysBase->IDNestCnt);
 

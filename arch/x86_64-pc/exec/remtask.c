@@ -22,8 +22,6 @@
 #endif
 #include <aros/debug.h>
 
-extern void Exec_Dispatch();
-
 /*****************************************************************************
 
     NAME */
@@ -70,7 +68,7 @@ extern void Exec_Dispatch();
     if (task==NULL)
 	task=SysBase->ThisTask;
 
-    D(bug("Call RemTask (%012lx (\"%s\"))\n", task, task->tc_Node.ln_Name));
+    D(bug("[exec] Call RemTask (%012lx (\"%s\"))\n", task, task->tc_Node.ln_Name));
 
     /*
 	Since it's possible that the following will free a task

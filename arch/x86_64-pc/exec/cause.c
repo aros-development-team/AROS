@@ -8,10 +8,12 @@
 
 #include <exec/execbase.h>
 #include <aros/asmcall.h>
+#include <aros/kernel.h>
 #include <exec/interrupts.h>
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 #include <exec_intern.h>
 
@@ -53,6 +55,8 @@ AROS_UFH5(void, SoftIntDispatch,
 {
     AROS_USERFUNC_INIT
 
+    void *KernelBase = TLS_GET(KernelBase);
+    
     struct Interrupt *intr = 0;
     BYTE i;
 
@@ -65,14 +69,14 @@ AROS_UFH5(void, SoftIntDispatch,
         {
             for(i=4; i>=0; i--)
             {
-                asm volatile("cli");
+                KrnCli();
                 intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
 
                 if (intr)
                 {
                     intr->is_Node.ln_Type = NT_INTERRUPT;
 
-                    asm volatile("sti");
+                    KrnSti();
 
                     /* Call the software interrupt. */
                     AROS_UFC3(void, intr->is_Code,

@@ -35,7 +35,8 @@ AROS_LH0(void, Enable,
     
     if(SysBase->IDNestCnt < 0)
     {
-    	__asm__ __volatile__ ("sti");
+        if (KernelBase)
+            KrnSti();
 
 	/* There's no dff09c like thing in x86 native which would allow
 	   us to set delayed (mark it as pending but it gets triggered
