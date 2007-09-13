@@ -18,10 +18,11 @@
 static void core_XTPIC_DisableIRQ(uint8_t irqnum);
 static void core_XTPIC_EnableIRQ(uint8_t irqnum);
 
-AROS_LH3(void *, KrnAddIRQHandler,
+AROS_LH4(void *, KrnAddIRQHandler,
          AROS_LHA(uint8_t, irq, D0),
          AROS_LHA(void *, handler, A0),
          AROS_LHA(void *, handlerData, A1),
+         AROS_LHA(void *, handlerData2, A2),
          struct KernelBase *, KernelBase, 7, Kernel)
 {
     AROS_LIBFUNC_INIT
@@ -43,6 +44,7 @@ AROS_LH3(void *, KrnAddIRQHandler,
         {
             handle->in_Handler = handler;
             handle->in_HandlerData = handlerData;
+            handle->in_HandlerData2 = handlerData2;
             
             Disable();
             ADDHEAD(&KernelBase->kb_Intr[irq], &handle->in_Node);

@@ -24,6 +24,7 @@ struct IntrNode {
     struct MinNode      in_Node;
     void                (*in_Handler)(void *);
     void                *in_HandlerData;
+    void                *in_HandlerData2;
 };
 
 #define STACK_SIZE 8192
