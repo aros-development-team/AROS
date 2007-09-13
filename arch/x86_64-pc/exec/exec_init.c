@@ -536,6 +536,10 @@ int exec_main(struct TagItem *msg, void *entry)
     rkprintf("InitCode(RTF_SINGLETASK)\n");
     InitCode(RTF_SINGLETASK, 0);
     
+    rkprintf("stupid delay to let you admire the debug log :)\n");
+    
+    for (i=0; i < 800000000; i++) asm volatile("nop");
+    
     rkprintf("InitCode(RTF_COLDSTART)\n");
     InitCode(RTF_COLDSTART, 0);
 
@@ -668,7 +672,7 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
                         Enqueue(&rtList,(struct Node*)node);
                     }
                 }
-                ptr+=sizeof(struct Resident)/sizeof(UWORD       );
+                ptr+=sizeof(struct Resident)/sizeof(UWORD);
                 continue;
             }
         }
