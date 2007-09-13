@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <exec/nodes.h>
+#include <exec/lists.h>
 #include <aros/kernel.h>
 #include <utility/tagitem.h>
 #include <asm/cpu.h>
@@ -11,6 +12,18 @@
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
+    struct List         kb_Intr[256];
+    uint16_t            kb_XTPIC_Mask;
+};
+
+#define KBL_INTERNAL    0
+#define KBL_XTPIC       1
+#define KBL_APIC        2
+
+struct IntrNode {
+    struct MinNode      in_Node;
+    void                (*in_Handler)(void *);
+    void                *in_HandlerData;
 };
 
 #define STACK_SIZE 8192

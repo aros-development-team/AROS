@@ -5,6 +5,7 @@
 #include <asm/segments.h>
 #include <inttypes.h>
 #include <aros/symbolsets.h>
+#include <exec/lists.h>
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
@@ -49,16 +50,37 @@ void __clear_bss(struct TagItem *msg)
 
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
+    int i;
     TLS_SET(KernelBase, LIBBASE);
     struct ExecBase *SysBase = TLS_GET(SysBase);
+    
+    LIBBASE->kb_XTPIC_Mask = 0xffff;
      
+    for (i=0; i < 256; i++)
+    {
+        NEWLIST(&LIBBASE->kb_Intr[i]);
+        switch(i)
+        {
+            case 0x20 ... 0x2f:
+                LIBBASE->kb_Intr[i].lh_Type = KBL_XTPIC;
+                break;
+            case 0xfe:
+                LIBBASE->kb_Intr[i].lh_Type = KBL_APIC;
+                break;
+            default:
+                LIBBASE->kb_Intr[i].lh_Type = KBL_INTERNAL;
+                break;
+        }
+    }
+     
+    
     uint32_t *localAPIC = (uint32_t*)0xfee00320;
-    int i;
+
     D(bug("[Kernel] Post-exec init\n"));
     
     LIBBASE->kb_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
     D(bug("[Kernel] MemPool=%012p\n", LIBBASE->kb_MemPool));
-    
+/*    
     asm volatile ("movl %0,(%1)"::"r"(0),"r"(0xfee000b0));
     
     D(bug("[Kernel] APIC SVR=%08x\n", *(uint32_t*)0xfee000f0));
@@ -68,14 +90,14 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[Kernel] APIC Timer divide=%08x\n", *(uint32_t*)0xfee003e0));
     D(bug("[Kernel] APIC Timer config=%08x\n", *(uint32_t*)0xfee00320));
     
-    asm volatile ("movl %0,(%1)"::"r"(0x00000003),"r"(0xfee00320));
+    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"(0xfee00320));
     //*(volatile uint32_t *)localAPIC = 0x000000fe;
     D(bug("[Kernel] APIC Timer config=%08x\n", *(uint32_t*)0xfee00320));
     
     D(bug("[Kernel] APIC Initial count=%08x\n", *(uint32_t*)0xfee00380));
     D(bug("[Kernel] APIC Current count=%08x\n", *(uint32_t*)0xfee00390));
     *(uint32_t*)0xfee00380 = 0x11111111;
-    asm volatile ("movl %0,(%1)"::"r"(0x00020003),"r"(0xfee00320));
+    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"(0xfee00320));
     D(bug("[Kernel] APIC Timer config=%08x\n", *(uint32_t*)0xfee00320));
     
     for (i=0; i < 0x10000000; i++) asm volatile("nop;");
@@ -86,7 +108,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[Kernel] APIC Initial count=%08x\n", *(uint32_t*)0xfee00380));
     D(bug("[Kernel] APIC Current count=%08x\n", *(uint32_t*)0xfee00390));
 
-    for (i=0; i < 0x1000000; i++) asm volatile("nop;");
+    for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 }
 
 ADD2INITLIB(Kernel_Init, 0)
