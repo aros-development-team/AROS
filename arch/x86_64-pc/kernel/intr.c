@@ -18,7 +18,6 @@
 static void core_XTPIC_DisableIRQ(uint8_t irqnum);
 static void core_XTPIC_EnableIRQ(uint8_t irqnum);
 
-
 AROS_LH3(void *, KrnAddIRQHandler,
          AROS_LHA(uint8_t, irq, D0),
          AROS_LHA(void *, handler, A0),
@@ -64,6 +63,34 @@ AROS_LH1(void, KrnRemIRQHandler,
 {
     AROS_LIBFUNC_INIT
 
+    struct IntrNode *h = handle;
+    
+    Disable();
+    REMOVE(h);
+    Enable();
+
+    FreeVecPooled(KernelBase->kb_MemPool, h);
+    
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0I(void, KrnCli,
+         struct KernelBase *, KernelBase, 9, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    asm volatile("cli");
+    
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0I(void, KrnSti,
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    asm volatile("sti");
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -186,7 +213,7 @@ void core_SetupIDT()
 {
     int i;
     uintptr_t off;
-    rkprintf("Setting all interrupt handlers to default value\n");
+    rkprintf("[Kernel] Setting all interrupt handlers to default value\n");
 
     for (i=0; i < 256; i++)
     {
@@ -296,44 +323,45 @@ void core_IRQHandle(regs_t regs)
     
     if (regs.irq_number == 0x03)        /* Debug */
     {
-        rkprintf("  INT3 debug fault!\n");
+        rkprintf("[Kernel] INT3 debug fault!\n");
 
-        rkprintf("  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
+        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
                  regs.return_cs, regs.return_rip, regs.error_code);
 
-        rkprintf("  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
     }
     else if (regs.irq_number == 0x0D)        /* GPF */
     {
-        rkprintf("  GENERAL PROTECTION FAULT!\n");
+        rkprintf("[Kernel] GENERAL PROTECTION FAULT!\n");
 
-        rkprintf("  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
+        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
                  regs.return_cs, regs.return_rip, regs.error_code);
 
-        rkprintf("  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
         die = 1;
     }
     else if (regs.irq_number == 0x0e)        /* Page fault */
     {
         void *ptr = rdcr(cr2);
 
-        rkprintf("  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
+        rkprintf("[Kernel] PAGE FAULT EXCEPTION! %016p\n",ptr);
+
+        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
                  regs.return_cs, regs.return_rip, regs.error_code);
         
-        rkprintf("  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        rkprintf("  PAGE FAULT EXCEPTION! %016p\n",ptr);
+        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
         die = 1;
     }
     else if (regs.irq_number == 0x80) /* Syscall? */

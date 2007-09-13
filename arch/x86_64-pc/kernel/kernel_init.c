@@ -115,6 +115,8 @@ ADD2INITLIB(Kernel_Init, 0)
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
+    rkprintf("[Kernel] Booting into kernel.resource...");
+
     /* Set TSS, GDT, LDT and MMU up */
     core_SetupGDT();
     core_SetupIDT();
@@ -133,8 +135,8 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0x21)); /* Enable cascade int */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
 
-    rkprintf("Interrupts redirected\n");
-
+    rkprintf("[Kernel] Interrupts redirected. We will go back in a minute ;)\n");
+    rkprintf("[Kernel] Booting exec.library\n\n");
 
     return exec_main(msg, entry);
 }
@@ -251,7 +253,7 @@ void core_SetupGDT()
     TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
     TSS.rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
 
-    rkprintf("Reloading the GDT and the Task Register\n");
+    rkprintf("[Kernel] Reloading the GDT and the Task Register\n");
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG));
     asm volatile ("mov %0,%%gs"::"a"(SEG_GS));
