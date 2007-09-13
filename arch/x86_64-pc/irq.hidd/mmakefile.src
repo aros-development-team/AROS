@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 24262 2006-04-05 20:32:55Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM kernel-pc-x86_64-irq-kobj : hidd-irq-stubs
+#MM kernel-pc-x86_64-irq : hidd-irq-stubs
+
+FILES       := irq_init irqclass
+
+%build_module mmake=kernel-pc-x86_64-irq \
+  modname=irq modtype=hidd \
+  files=$(FILES)
