@@ -1,24 +1,58 @@
 #include <inttypes.h>
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <stdio.h>
 #include <asm/cpu.h>
+#include <asm/io.h>
 #include <asm/segments.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
+
+#include <proto/exec.h>
+
 #include "kernel_intern.h"
 
+static void core_XTPIC_DisableIRQ(uint8_t irqnum);
+static void core_XTPIC_EnableIRQ(uint8_t irqnum);
 
-AROS_LH2(void *, KrnAddIRQHandler,
+
+AROS_LH3(void *, KrnAddIRQHandler,
          AROS_LHA(uint8_t, irq, D0),
          AROS_LHA(void *, handler, A0),
+         AROS_LHA(void *, handlerData, A1),
          struct KernelBase *, KernelBase, 7, Kernel)
 {
     AROS_LIBFUNC_INIT
     
-    void *handle = NULL;
+    struct ExecBase *SysBase = TLS_GET(SysBase);
+    struct IntrNode *handle = NULL;
+    D(bug("[Kernel] KrnAddIRQHandler(%02x, %012p, %012p):\n", irq, handler, handlerData));
     
+    if (irq >=0 && irq <= 0xff)
+    {
     
+        handle = AllocVecPooled(KernelBase->kb_MemPool, sizeof(struct IntrNode));
+        
+#warning TODO: Add IP range checking
+        
+        D(bug("[Kernel]   handle=%012p\n", handle));
+        
+        if (handle)
+        {
+            handle->in_Handler = handler;
+            handle->in_HandlerData = handlerData;
+            
+            Disable();
+            ADDHEAD(&KernelBase->kb_Intr[irq], &handle->in_Node);
+            Enable();
+            
+            if (KernelBase->kb_Intr[irq].lh_Type == KBL_XTPIC)
+                core_XTPIC_EnableIRQ(irq);
+        }
+    }
     return handle;
     
     AROS_LIBFUNC_EXIT
@@ -196,15 +230,69 @@ void core_Cause(struct ExecBase *SysBase)
     }
 }
 
+static void core_APIC_AckIntr(uint8_t intnum)
+{
+    asm volatile ("movl %0,(%1)"::"r"(0),"r"(0xfee000b0));
+}
+
+static void core_XTPIC_DisableIRQ(uint8_t irqnum)
+{
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    irqnum &= 15;
+    KernelBase->kb_XTPIC_Mask |= 1 << irqnum;
+
+    if (irqnum >= 8)
+    {
+        outb((KernelBase->kb_XTPIC_Mask >> 8) & 0xff, 0xA1);
+    }
+    else
+    {
+        outb(KernelBase->kb_XTPIC_Mask & 0xff, 0x21);
+    }
+}
+
+static void core_XTPIC_EnableIRQ(uint8_t irqnum)
+{
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    irqnum &= 15;
+    KernelBase->kb_XTPIC_Mask &= ~(1 << irqnum);    
+
+    if (irqnum >= 8)
+    {
+        outb((KernelBase->kb_XTPIC_Mask >> 8) & 0xff, 0xA1);
+    }
+    else
+    {
+        outb(KernelBase->kb_XTPIC_Mask & 0xff, 0x21);
+    }
+}
+
+static void core_XTPIC_AckIntr(uint8_t intnum)
+{
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    intnum &= 15;
+    KernelBase->kb_XTPIC_Mask |= 1 << intnum;
+
+    if (intnum >= 8)
+    {
+        outb((KernelBase->kb_XTPIC_Mask >> 8) & 0xff, 0xA1);
+        outb(0x62, 0x20);
+        outb(0x20, 0xa0);
+    }
+    else
+    {
+        outb(KernelBase->kb_XTPIC_Mask & 0xff, 0x21);
+        outb(0x20, 0x20);
+    }
+}
 
 void core_IRQHandle(regs_t regs)
 {
     struct ExecBase *SysBase = TLS_GET(SysBase);        // *(struct ExecBase **)4;
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    int die = 0;
     
-    rkprintf("IRQ %02x:", regs.irq_number);
-    
-    if (regs.irq_number == 0xfe)
-        while(1);
+//    rkprintf("IRQ %02x:", regs.irq_number);
     
     if (regs.irq_number == 0x03)        /* Debug */
     {
@@ -231,7 +319,7 @@ void core_IRQHandle(regs_t regs)
         rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
         rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        while(1);
+        die = 1;
     }
     else if (regs.irq_number == 0x0e)        /* Page fault */
     {
@@ -240,9 +328,13 @@ void core_IRQHandle(regs_t regs)
         rkprintf("  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
                  regs.return_cs, regs.return_rip, regs.error_code);
-
+        
+        rkprintf("  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
         rkprintf("  PAGE FAULT EXCEPTION! %016p\n",ptr);
-        while(1);
+        die = 1;
     }
     else if (regs.irq_number == 0x80) /* Syscall? */
     {
@@ -266,6 +358,32 @@ void core_IRQHandle(regs_t regs)
                 break;
         }
     }
+    
+    if (KernelBase)
+    {
+        if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_APIC)
+            core_APIC_AckIntr(regs.irq_number);
+        
+        if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_XTPIC)
+            core_XTPIC_AckIntr(regs.irq_number);
+        
+        
+        if (!IsListEmpty(&KernelBase->kb_Intr[regs.irq_number]))
+        {
+            struct IntrNode *in, *in2;
+
+            ForeachNodeSafe(&KernelBase->kb_Intr[regs.irq_number], in, in2)
+            {
+                if (in->in_Handler)
+                    in->in_Handler(in->in_HandlerData);
+            }
+            
+            if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_XTPIC)
+                core_XTPIC_EnableIRQ(regs.irq_number);
+        }
+    }
+    
+    while (die) asm volatile ("hlt");
 }
 
 asm(".text\n\t"
