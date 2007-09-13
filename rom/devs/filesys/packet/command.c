@@ -824,6 +824,10 @@ AROS_UFH3(void, packet_reply,
         case ACTION_FINDUPDATE: {
             struct FileHandle *fh = (struct FileHandle *) BADDR(dp->dp_Arg1);
 
+            /* XXX this is wrong. if we can't get the memory, we still have an
+             * open file which gets leaked. this handle needs to be allocated
+             * before the call goes out to the handler, or we need to schedule
+             * ACTION_END to clean up the file */
             handle = (struct ph_handle *) AllocMem(sizeof(struct ph_handle), MEMF_PUBLIC | MEMF_CLEAR);
             if (handle == NULL) {
                 iofs->io_DosError = ERROR_NO_FREE_STORE;
