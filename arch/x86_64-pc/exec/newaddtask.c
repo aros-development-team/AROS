@@ -83,7 +83,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     AROS_LIBFUNC_INIT
     /* APTR sp; */
 
-    D(bug("Call NewAddTask (%012lx (\"%s\"), %012lx, %012lx)\n"
+    D(bug("[exec] Call NewAddTask (%012lx (\"%s\"), %012lx, %012lx)\n"
 	, task
 	, task->tc_Node.ln_Name
 	, initialPC

@@ -193,7 +193,7 @@ void kprintf(const char *, ...);
     task = FindTask (NULL);
 
     /* since this is an emulation, we just show the bug in the console */
-    kprintf ( "GURU Meditation %04lx %04lx\n"
+    kprintf ( "[exec] GURU Meditation %04lx %04lx\n[exec] "
 	, alertNum >> 16
 	, alertNum & 0xFFFF
     );
@@ -263,7 +263,7 @@ void kprintf(const char *, ...);
 	kprintf ("*unknown*/*unknown*");
     }
 
-    kprintf ("\nTask: %p (%s)\n"
+    kprintf ("\n[exec] Task: %p (%s)\n"
 	, task
 	, (task && task->tc_Node.ln_Name) ?
 	    task->tc_Node.ln_Name
