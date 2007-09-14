@@ -19,7 +19,7 @@
 
 #include "irq.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
@@ -46,51 +46,57 @@ BOOL Irq__Hidd_IRQ__AddHandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IRQ_
         switch (msg->id)
         {
             case vHidd_IRQ_Timer:
-                irqnum = 0;
+                irqnum = 0x20;
                 break;
 
             case vHidd_IRQ_Keyboard:
-                irqnum = 1;
+                irqnum = 0x21;
                 break;
 
             case vHidd_IRQ_Serial2:
-                irqnum = 3;
+                irqnum = 0x23;
                 break;
 
             case vHidd_IRQ_Serial1:
-                irqnum = 4;
+                irqnum = 0x24;
                 break;
 
             case vHidd_IRQ_Floppy:
-                irqnum = 6;
+                irqnum = 0x26;
                 break;
 
             case vHidd_IRQ_RTC:
-                irqnum = 8;
+                irqnum = 0x28;
                 break;
 
             case vHidd_IRQ_Mouse:
-                irqnum = 12;
+                irqnum = 0x2c;
                 break;
 
             case vHidd_IRQ_HDD1:
-                irqnum = 14;
+                irqnum = 0x2e;
                 break;
 
             case vHidd_IRQ_HDD2:
-                irqnum = 15;
+                irqnum = 0x2f;
                 break;
         }
     }
 
     D(bug("Translated IRQ number is %d\n", irqnum));
 
-    if (irqnum >= 0 && irqnum < 16)
+    if (irqnum >= 0x20 && irqnum <= 0xfe)
     {
-        /* Adding an IRQ handler has to be atomic */
-        Disable();
-        Enqueue((struct List *)&ISD(cl)->irqlist[irqnum],(struct Node *)msg->handlerinfo);
-        Enable();
+        void *KernelBase = TLS_GET(KernelBase);
+        static HIDDT_IRQ_HwInfo dummy;
+        dummy.sysBase = TLS_GET(SysBase);
+        dummy.Error = 0;
+        
+        /*
+         * The interrupts are added through the kernel.resource now. I will store the Handle in 
+         * Node structure of HIDDT_IRQ_Handler, which is not used anymore :)
+         */
+        msg->handlerinfo->h_Node.ln_Succ = KrnAddIRQHandler(irqnum, msg->handlerinfo->h_Code, msg->handlerinfo, &dummy);
 
         ReturnInt("HIDDIRQ::AddHandler", ULONG, TRUE);
     }
@@ -105,10 +111,16 @@ VOID Irq__Hidd_IRQ__RemHandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IRQ_
     EnterFunc(bug("HIDDIRQ::RemHandler()\n"));
     D(bug("Removing handler %s\n",msg->handlerinfo->h_Node.ln_Name));
 
-    Disable();
-    Remove((struct Node *)msg->handlerinfo);
-    Enable();
-
+    void *KernelBase = TLS_GET(KernelBase);
+    
+    /* If ln_Succ is not empty then it surely points to the Handle returned from KrnAddIRQHandler().
+     * Use it to remove the handler by kernel.resource now */
+    
+    if (msg->handlerinfo && msg->handlerinfo->h_Node.ln_Succ)
+        KrnRemIRQHandler(msg->handlerinfo->h_Node.ln_Succ);
+    
+    msg->handlerinfo->h_Node.ln_Succ = NULL;
+    
     ReturnVoid("HIDDIRQ::RemHandler");
 }
 
