@@ -48,7 +48,7 @@ struct DosEnvec
                             */
     IPTR de_MaxTransfer;    /* How many bytes may be transferred together? */
     IPTR de_Mask;           /* Memory address mask for DMA devices. */
-    LONG de_BootPri;        /* Priority of Autoboot. */
+    SIPTR de_BootPri;        /* Priority of Autoboot. */
     IPTR de_DosType;        /* Type of disk. See <dos/dos.h> for definitions.
                             */
     IPTR de_Baud;           /* Baud rate to use. */
