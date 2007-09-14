@@ -54,7 +54,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     TLS_SET(KernelBase, LIBBASE);
     struct ExecBase *SysBase = TLS_GET(SysBase);
     
-    LIBBASE->kb_XTPIC_Mask = 0xffff;
+    LIBBASE->kb_XTPIC_Mask = 0xfffb;
      
     for (i=0; i < 256; i++)
     {
