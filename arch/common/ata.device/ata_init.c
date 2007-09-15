@@ -51,7 +51,7 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 {
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
-    ULONG *pp;
+    IPTR *pp;
     static int volnum;
 
     ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
@@ -75,7 +75,7 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 default:
                     D(bug("IDE: AddVolume called on unknown devicetype\n"));
             }
-            pp[1] = (ULONG)MOD_NAME_STRING;
+            pp[1] = (IPTR)MOD_NAME_STRING;
             pp[2] = unit->au_UnitNum;
             pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
             pp[DE_SIZEBLOCK + 4] = 1 << (unit->au_SectorShift - 2);
@@ -148,6 +148,9 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     D(bug("[ATA] ata.device initialization\n"));
 
     BootLoaderBase = OpenResource("bootloader.resource");
+
+    D(bug("[ATA] BootloaderBase = %p\n", BootLoaderBase));
+    
     if (BootLoaderBase != NULL)
     {
 	struct List *list;
@@ -194,6 +197,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
 	    ab.ab_Port = Buses[i].port;
 	    ab.ab_Irq  = Buses[i].irq;
 	    ata_ScanBus(&ab);
+  D(bug("go on..\n"));
 	    
 	    /* Is at least one of the devices there? */
 	    if ((ab.ab_Dev[0] > DEV_UNKNOWN) | (ab.ab_Dev[1] > DEV_UNKNOWN))
