@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <inttypes.h>
 #include <aros/debug.h>
