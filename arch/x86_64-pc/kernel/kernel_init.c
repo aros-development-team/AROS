@@ -7,6 +7,8 @@
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
 
+#include <utility/tagitem.h>
+
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
@@ -113,10 +115,14 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(Kernel_Init, 0)
 
+struct TagItem *BootMsg;
+
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
     rkprintf("[Kernel] Booting into kernel.resource...");
 
+    BootMsg = msg;
+    
     /* Set TSS, GDT, LDT and MMU up */
     core_SetupGDT();
     core_SetupIDT();
@@ -314,4 +320,14 @@ IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagL
         return ti->ti_Data;
 
         return defaultVal;
+}
+
+AROS_LH0I(struct TagItem *, KrnGetBootInfo,
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    return BootMsg;
+    
+    AROS_LIBFUNC_EXIT
 }

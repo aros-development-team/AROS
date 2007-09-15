@@ -8,6 +8,7 @@
 #include <utility/tagitem.h>
 #include <asm/cpu.h>
 
+#include <stdio.h>
 
 struct KernelBase {
     struct Node         kb_Node;
@@ -22,7 +23,7 @@ struct KernelBase {
 
 struct IntrNode {
     struct MinNode      in_Node;
-    void                (*in_Handler)(void *);
+    void                (*in_Handler)(void *, void *);
     void                *in_HandlerData;
     void                *in_HandlerData2;
 };

@@ -3,6 +3,7 @@
 #include "exec_intern.h"
 #include "etask.h"
 
+#include <exec/lists.h>
 #include <exec/types.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
@@ -193,7 +194,7 @@ void core_Schedule(regs_t *regs)
     {
         /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
         if (IsListEmpty(&SysBase->TaskReady))
-            core_LeaveInterrupt(regs);
+            core_LeaveInterrupt(regs);         
 
         /* Does the TaskReady list contains tasks with priority equal or lower than current task?
          * If so, then check further... */
@@ -241,7 +242,7 @@ void core_ExitInterrupt(regs_t *regs)
             core_Cause(SysBase);
 
         /* If task switching is disabled, leave immediatelly */
-        if (SysBase->TDNestCnt > 0)
+        if (SysBase->TDNestCnt >= 0)
         {
             core_LeaveInterrupt(regs);
         }

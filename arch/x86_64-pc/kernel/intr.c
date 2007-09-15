@@ -29,7 +29,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
     
     struct ExecBase *SysBase = TLS_GET(SysBase);
     struct IntrNode *handle = NULL;
-    D(bug("[Kernel] KrnAddIRQHandler(%02x, %012p, %012p):\n", irq, handler, handlerData));
+    D(bug("[Kernel] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
     
     if (irq >=0 && irq <= 0xff)
     {
@@ -321,7 +321,7 @@ void core_IRQHandle(regs_t regs)
     struct KernelBase *KernelBase = TLS_GET(KernelBase);
     int die = 0;
     
-//    rkprintf("IRQ %02x:", regs.irq_number);
+    //rkprintf("IRQ %02x:", regs.irq_number);
     
     if (regs.irq_number == 0x03)        /* Debug */
     {
@@ -405,7 +405,7 @@ void core_IRQHandle(regs_t regs)
             ForeachNodeSafe(&KernelBase->kb_Intr[regs.irq_number], in, in2)
             {
                 if (in->in_Handler)
-                    in->in_Handler(in->in_HandlerData);
+                    in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
             }
             
             if (KernelBase->kb_Intr[regs.irq_number].lh_Type == KBL_XTPIC)
