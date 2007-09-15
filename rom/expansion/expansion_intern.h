@@ -31,7 +31,7 @@ struct IntExpansionBase
     UBYTE                   eb_Flags;
     UBYTE                   eb_pad;
     struct ExecBase        *eb_SysBase;
-    ULONG                   eb_SegList;
+    IPTR                    eb_SegList;
     struct CurrentBinding   eb_CurrentBinding;
     struct List             eb_BoardList;
     struct List             eb_MountList;
