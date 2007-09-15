@@ -120,7 +120,7 @@
     }
 
     /* This is the environment structure */
-    de = (struct DosEnvec *)((ULONG *)parmPacket + 4);
+    de = (struct DosEnvec *)((IPTR *)parmPacket + 4);
     
     dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC);
     
@@ -147,12 +147,12 @@
        For the first string 3 for longword align
     */
 
-    strLen1 = strlen((STRPTR)((ULONG *)parmPacket)[0]) + 5;
+    strLen1 = strlen((STRPTR)((IPTR *)parmPacket)[0]) + 5;
 
     /* There doesn't have to exist an underlying block device */
-    if ((STRPTR)((ULONG *)parmPacket)[1] != NULL)
+    if ((STRPTR)((IPTR *)parmPacket)[1] != NULL)
     {
-	strLen2 = 2 + strlen((STRPTR)((ULONG *)parmPacket)[1]);
+	strLen2 = 2 + strlen((STRPTR)((IPTR *)parmPacket)[1]);
     }
     else
     {
@@ -170,26 +170,26 @@
     }
     
     /* We have no more allocations */
-    s2 = (STRPTR)(((ULONG)s1 + strLen1) & ~3);
+    s2 = (STRPTR)(((IPTR)s1 + strLen1) & ~3);
 
     for (i = 0; i < strLen1 - 5; i++)
     {
-	AROS_BSTR_putchar(s1, i, ((STRPTR)((ULONG *)parmPacket)[0])[i]);
+	AROS_BSTR_putchar(s1, i, ((STRPTR)((IPTR *)parmPacket)[0])[i]);
     }
 
     for (i = 0; i < strLen2 - 2; i++)
     {
-	AROS_BSTR_putchar(s2, i, ((STRPTR)((ULONG *)parmPacket)[1])[i]);
+	AROS_BSTR_putchar(s2, i, ((STRPTR)((IPTR *)parmPacket)[1])[i]);
     }
     
     AROS_BSTR_setstrlen(s1, (strLen1 - 5) > 255 ? 255 : (strLen1 - 5));
     AROS_BSTR_setstrlen(s2, (strLen2 - 2) > 255 ? 255 : (strLen2 - 2));
     
     /* Strings are done, now the FileSysStartupMsg */
-    fssm->fssm_Unit = ((ULONG *)parmPacket)[2];
+    fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
     fssm->fssm_Device = MKBADDR(s2);
     fssm->fssm_Environ = MKBADDR(de);
-    fssm->fssm_Flags = ((ULONG *)parmPacket)[3];
+    fssm->fssm_Flags = ((IPTR *)parmPacket)[3];
     
     /* FSSM is done, now the DeviceNode */
     dn->dn_Handler = MKBADDR(s1);
