@@ -82,6 +82,8 @@ BOOL Irq__Hidd_IRQ__AddHandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IRQ_
                 break;
         }
     }
+    else if (msg->id >= 0 && msg->id <= 15)
+        irqnum = msg->id + 0x20;
 
     D(bug("Translated IRQ number is %d\n", irqnum));
 
