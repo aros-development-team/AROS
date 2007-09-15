@@ -107,6 +107,8 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     UBYTE current_xmm[SIZEOF_FPU_CONTEXT];
     
     asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fxrstor (%0);"::"r"(current_xmm),"r"(&regs[1]));
+    
+    return sp;
 }
 
 
