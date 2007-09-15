@@ -5,7 +5,7 @@ USER_INCLUDES := -I.. -I$(TOP)/rom/timer
 
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
-  arch=pc-i386 modulename=timer \
+  arch=pc-x86_64 modulename=timer \
   files="timer_init beginio ticks readeclock timervblank getsystime"
 
 %common

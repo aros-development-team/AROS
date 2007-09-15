@@ -5,13 +5,13 @@
     Desc: VBlank server for the timer.device/timer.hidd
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
 #include <aros/debug.h>
-
 #include "ticks.h"
 #undef SysBase
 
@@ -29,6 +29,7 @@
 
 BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
 
+/*
 AROS_UFH4(ULONG, VBlankInt,
     AROS_UFHA(ULONG, dummy, A0),
     AROS_UFHA(struct TimerBase *, TimerBase, A1),
@@ -37,7 +38,9 @@ AROS_UFH4(ULONG, VBlankInt,
     )
 {
     AROS_USERFUNC_INIT
-
+*/
+void VBlankInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
+{
     struct timerequest *tr, *next;
 
     EClockUpdate(TimerBase);
@@ -124,7 +127,7 @@ AROS_UFH4(ULONG, VBlankInt,
 
     Timer0Setup(TimerBase);
     
-    return 0;
-    AROS_USERFUNC_EXIT
+/*    return 0;
+    AROS_USERFUNC_EXIT */
 }
 	

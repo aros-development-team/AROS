@@ -19,6 +19,7 @@
 
 #include <proto/exec.h>
 #include <proto/timer.h>
+#include <proto/kernel.h>
 
 #include <aros/symbolsets.h>
 
@@ -31,17 +32,19 @@
 //#include "timer_intern.h"
 #include LC_LIBDEFS_FILE
 
-AROS_UFP4(ULONG, VBlankInt,
+/*AROS_UFP4(ULONG, VBlankInt,
     AROS_UFPA(ULONG, dummy, A0),
     AROS_UFPA(struct TimerBase *, TimerBase, A1),
     AROS_UFPA(ULONG, dummy2, A5),
     AROS_UFPA(struct ExecBase *, SysBase, A6)
-);
+);*/
+void VBlankInt(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 /****************************************************************************************/
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
+    void *KernelBase = TLS_GET(KernelBase);
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
@@ -78,7 +81,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
     LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
 
-    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
+//    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
+    KrnAddIRQHandler(0x20, VBlankInt, LIBBASE, SysBase);
 
     /* VBlank EMU */
     
