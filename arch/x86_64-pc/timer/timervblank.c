@@ -71,6 +71,14 @@ void VBlankInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 		    );
 		}
 		
+		/* Decrease SysBase->Elapsed */
+		if (SysBase->Elapsed == 0)
+        	{
+		    SysBase->SysFlags |= 0x2000;
+        	    SysBase->AttnResched |= 0x80;
+        	}
+        	else SysBase->Elapsed--;
+
 		/* Automatically requeue/reactivate request */
 		
 		Remove((struct Node *)tr);
