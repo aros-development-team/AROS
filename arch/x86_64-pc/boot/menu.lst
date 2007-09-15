@@ -1,0 +1,16 @@
+# [B] (DO NOT REMOVE THIS LINE!)
+
+timeout 5
+default 0
+
+title AROS + relocate
+    kernel /boot/aros-x86_64 base_address=02000000
+    module /boot/kernel
+    module /boot/kernel.pkg
+
+title AROS + vesa
+    kernel /boot/aros-x86_64 vesa=800x600x16
+    module /boot/kernel
+    module /boot/kernel.pkg
+
+# [E] (DO NOT REMOVE THIS LINE!)
