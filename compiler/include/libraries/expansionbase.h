@@ -47,7 +47,7 @@ struct ExpansionBase
     struct Library      LibNode;
     UBYTE               Flags;          /* Flags, read only */
     UBYTE               eb_Private1;
-    ULONG               eb_Private2[6];
+    IPTR                eb_Private2[6];
     struct List         eb_Private3;
     struct List         MountList;      /* BootNode entries - public */
 };
