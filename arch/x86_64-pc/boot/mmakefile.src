@@ -27,7 +27,7 @@ kernel-package-x86_64:
 
 bootiso-pc-x86_64: $(OSGENDIR)/boot/aros.iso
 
-$(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/grub/menu.lst
+$(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
@@ -46,4 +46,4 @@ $(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/grub/menu.lst
 
 
 $(BINDIR)/boot/grub/menu.lst:
-		$(CP) menu.lst $(BINDIR)/boot/grub/  
+		$(CP) menu.lst $(BINDIR)/boot/grub/
