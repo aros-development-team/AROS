@@ -536,10 +536,6 @@ int exec_main(struct TagItem *msg, void *entry)
     rkprintf("[exec] InitCode(RTF_SINGLETASK)\n");
     InitCode(RTF_SINGLETASK, 0);
     
-    rkprintf("[exec] ---> stupid delay to let you admire the debug log :) <---\n");
-    
-    for (i=0; i < 800000000; i++) asm volatile("nop");
-    
     rkprintf("[exec] InitCode(RTF_COLDSTART)\n");
     InitCode(RTF_COLDSTART, 0);
 
