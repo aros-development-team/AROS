@@ -51,7 +51,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \
   files="dos_init $(FUNCTIONS) $(FILES)" \
-  noref=lddemon
+  noref=lddemon uselibs="rom"
 
 TESTS := datetostr runprocess strtodate splitname readargs
 TEST_DEPLIBS := arossupport arosc amiga
