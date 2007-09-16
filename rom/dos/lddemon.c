@@ -219,6 +219,24 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     return NULL;
 }
 
+struct Library *(*__OpenLibrary)();
+BYTE		(*__OpenDevice)();
+
+#define ExecOpenLibrary(libname, version)                         \
+AROS_CALL2(struct Library *, __OpenLibrary,                       \
+    AROS_LCA(STRPTR, libname, A1),                                \
+    AROS_LCA(ULONG, version, D0),                                 \
+    struct ExecBase *, SysBase)
+
+#define ExecOpenDevice(devname, unitNumber, iORequest, flags)     \
+AROS_CALL4(BYTE, __OpenDevice,                                    \
+    AROS_LCA(STRPTR, devname, A0),                                \
+    AROS_LCA(ULONG, unitNumber, D0),                              \
+    AROS_LCA(struct IORequest *, iORequest, A1),                  \
+    AROS_LCA(ULONG, flags, D1),                                   \
+    struct ExecBase *, SysBase)
+
+/*
 struct Library *AROS_SLIB_ENTRY(OpenLibrary, Exec)();
 BYTE            AROS_SLIB_ENTRY(OpenDevice,  Exec)();
 
@@ -235,6 +253,7 @@ AROS_CALL4(BYTE, &AROS_SLIB_ENTRY(OpenDevice, Exec),              \
     AROS_LCA(struct IORequest *, iORequest, A1),                  \
     AROS_LCA(ULONG, flags, D1),                                   \
     struct ExecBase *, SysBase)
+*/
 
 struct LDObjectNode
 {
@@ -868,16 +887,16 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
     ObtainSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
 #define SetFunc(offs,ptr) \
-    (void)SetFunction(&SysBase->LibNode, (offs)*LIB_VECTSIZE, \
+    SetFunction(&SysBase->LibNode, (offs)*LIB_VECTSIZE, \
     			AROS_SLIB_ENTRY(ptr,Dos))
 
     /* Do not set the vectors until you have initialised everything else. */
-    SetFunc(-92, OpenLibrary);
-    SetFunc(-74, OpenDevice);
-    SetFunc(-69, CloseLibrary);
-    SetFunc(-75, CloseDevice);
-    SetFunc(-67, RemLibrary);
-    SetFunc(-73, RemLibrary);
+    __OpenLibrary = SetFunc(-92, OpenLibrary);
+    __OpenDevice = SetFunc(-74, OpenDevice);
+    (void)SetFunc(-69, CloseLibrary);
+    (void)SetFunc(-75, CloseDevice);
+    (void)SetFunc(-67, RemLibrary);
+    (void)SetFunc(-73, RemLibrary);
 
     if( !(DOSBase->dl_LDDemonTask = CreateNewProc((struct TagItem *)tags)) )
     {
