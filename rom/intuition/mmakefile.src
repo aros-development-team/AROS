@@ -169,6 +169,6 @@ USER_INCLUDES := -I$(TOP)/rom/dos
 
 %build_module mmake=kernel-intuition \
   modname=intuition modtype=library \
-  files="intuition_init $(FUNCS) $(FILES)"
+  files="intuition_init $(FUNCS) $(FILES)" uselibs="rom"
 
 
