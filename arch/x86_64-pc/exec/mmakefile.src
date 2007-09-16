@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 CFILES          := \
         exec_init cause disable enable preparecontext stackswap rawputchar serialrawio screen \
-        initcode alert dispatch permit newaddtask remtask reschedule setexcept settaskpri signal wait prepareexecbase
+        initcode alert dispatch permit newaddtask remtask reschedule setexcept settaskpri \
+        findresident signal wait prepareexecbase
 
 AFILES		:= 
 
