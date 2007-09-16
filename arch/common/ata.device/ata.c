@@ -13,6 +13,7 @@
 #include <exec/exec.h>
 #include <exec/resident.h>
 #include <utility/utility.h>
+#include <utility/tagitem.h>
 #include <oop/oop.h>
 
 #include <dos/bptr.h>
@@ -672,6 +673,11 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 {
     struct Task	    *t;
     struct MemList  *ml;
+
+    struct TagItem tags[] = {
+      { TASKTAG_ARG1,   (IPTR)LIBBASE },
+      { TAG_DONE, 0}
+    };
     
     /* Get some memory */
     t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
@@ -683,7 +689,6 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 	t->tc_SPLower = sp;
 	t->tc_SPUpper = sp + STACK_SIZE;
 	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	((APTR *)t->tc_SPUpper)[-1] = LIBBASE;
 
 	ml->ml_NumEntries = 2;
 	ml->ml_ME[0].me_Addr = t;
@@ -700,7 +705,7 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 	
 	LIBBASE->ata_Daemon = t;
 
-	AddTask(t, DaemonCode, NULL);
+	NewAddTask(t, DaemonCode, NULL, &tags);
     }
 
     return (t != NULL);
@@ -813,6 +818,11 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 {
     struct Task	    *t;
     struct MemList  *ml;
+
+    struct TagItem tags[] = {
+      { TASKTAG_ARG1,   (IPTR)bus },
+      { TAG_DONE, 0}
+    };
     
     /*
 	Need some memory. I don't know however, wheter it wouldn't be better
@@ -828,7 +838,6 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 	t->tc_SPLower = sp;
 	t->tc_SPUpper = sp + STACK_SIZE;
 	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	((APTR *)t->tc_SPUpper)[-1] = bus;
 
 	/* Message port receiving all the IO requests */
 	bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
@@ -858,7 +867,7 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 	bus->ab_Task = t;
 
 	/* Wake up the task */
-	AddTask(t, TaskCode, NULL);
+	NewAddTask(t, TaskCode, NULL, &tags);
     }
 
     return (t != NULL);
