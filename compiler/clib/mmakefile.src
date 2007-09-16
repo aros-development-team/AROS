@@ -321,6 +321,7 @@ ROM_COMMON := \
 	strcmp \
 	strcpy \
 	strcspn \
+	strerror_rom \
 	strlen \
 	strlcat \
 	strlcpy \
