@@ -117,6 +117,8 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                     D(bug("-Adding volume %s with SC=%d, EC=%d\n",
                           &(devnode->dn_Ext.dn_AROS.dn_DevName[0]), StartCyl, EndCyl));
                     AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
+                    D(bug("done\n"));
+                    
                     volnum++;
 
                     return TRUE;
@@ -197,7 +199,6 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
 	    ab.ab_Port = Buses[i].port;
 	    ab.ab_Irq  = Buses[i].irq;
 	    ata_ScanBus(&ab);
-  D(bug("go on..\n"));
 	    
 	    /* Is at least one of the devices there? */
 	    if ((ab.ab_Dev[0] > DEV_UNKNOWN) | (ab.ab_Dev[1] > DEV_UNKNOWN))
