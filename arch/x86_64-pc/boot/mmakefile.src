@@ -11,13 +11,14 @@ include $(TOP)/config/make.cfg
 #MM	kernel-ata \
 #MM	kernel-keyboard \
 #MM	kernel-pc-i386-vga \
+#MM	kernel-battclock \
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
 #MM	kernel-dos \
 #MM	kernel-boot
 
 PKG_LIBS := arosc aros boot mathieeesingbas partition dos
-PKG_RSRC := bootloader
+PKG_RSRC := bootloader battclock
 PKG_DEVS := ata timer keyboard
 PKG_HIDDS:= vgah
 
