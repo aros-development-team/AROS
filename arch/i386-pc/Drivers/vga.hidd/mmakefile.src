@@ -5,4 +5,4 @@ FILES	:=	vga_init vgaclass vgahw offbitmap onbitmap
 
 %build_module mmake=kernel-pc-i386-vga \
   modname=vgah modtype=hidd \
-  files=$(FILES)
+  files=$(FILES) uselibs="hiddgraphicsstubs oop"
