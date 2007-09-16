@@ -115,12 +115,22 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(Kernel_Init, 0)
 
-struct TagItem *BootMsg;
+static struct TagItem *BootMsg;
+static char cmdLine[200];
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
     rkprintf("[Kernel] Booting into kernel.resource...");
-
+    struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
+    
+    if (tag)
+    {
+        if (tag->ti_Data != (IPTR)cmdLine) {
+            strncpy(cmdLine, tag->ti_Data, 200);
+            tag->ti_Data = (IPTR)cmdLine;
+        }
+    }
+    
     BootMsg = msg;
     
     /* Set TSS, GDT, LDT and MMU up */
