@@ -18,14 +18,17 @@ include $(TOP)/config/make.cfg
 #MM	kernel-pci-pcipc \
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
-#MM	kernel-dos \
 #MM	kernel-graphics \
 #MM	kernel-layers \
+#MM	kernel-keymap \
+#MM	kernel-intuition \
+#MM	kernel-input \
+#MM	kernel-dos \
 #MM	kernel-boot
 
-PKG_LIBS := arosc aros boot mathieeesingbas partition dos graphics layers
+PKG_LIBS := arosc aros boot mathieeesingbas partition dos graphics layers keymap intuition
 PKG_RSRC := bootloader battclock misc
-PKG_DEVS := ata timer keyboard gameport
+PKG_DEVS := ata timer keyboard gameport input
 PKG_HIDDS:= vgah pci pcipc
 
 MODULES := \
