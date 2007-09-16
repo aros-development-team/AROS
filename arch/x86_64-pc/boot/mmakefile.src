@@ -10,18 +10,22 @@ include $(TOP)/config/make.cfg
 #MM	kernel-timer \
 #MM	kernel-ata \
 #MM	kernel-keyboard \
+#MM	kernel-gameport \
 #MM	kernel-pc-i386-vga \
 #MM	kernel-battclock \
+#MM	kernel-misc \
 #MM	kernel-pci \
 #MM	kernel-pci-pcipc \
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
 #MM	kernel-dos \
+#MM	kernel-graphics \
+#MM	kernel-layers \
 #MM	kernel-boot
 
-PKG_LIBS := arosc aros boot mathieeesingbas partition dos
-PKG_RSRC := bootloader battclock
-PKG_DEVS := ata timer keyboard
+PKG_LIBS := arosc aros boot mathieeesingbas partition dos graphics layers
+PKG_RSRC := bootloader battclock misc
+PKG_DEVS := ata timer keyboard gameport
 PKG_HIDDS:= vgah pci pcipc
 
 MODULES := \
