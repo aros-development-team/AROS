@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-package-x86_64: \
 #MM	linklibs-clib \
 #MM	kernel-aros \
+#MM	kernel-bootloader-pc-x86_64 \
 #MM	kernel-timer \
 #MM	kernel-ata \
 #MM	kernel-keyboard \
@@ -16,12 +17,14 @@ include $(TOP)/config/make.cfg
 #MM	kernel-boot
 
 PKG_LIBS := arosc aros boot mathieeesingbas partition dos
+PKG_RSRC := bootloader
 PKG_DEVS := ata timer keyboard
 PKG_HIDDS:= vgah
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
 
 kernel-package-x86_64:
