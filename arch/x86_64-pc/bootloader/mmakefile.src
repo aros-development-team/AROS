@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-bootloader-pc-x86_64 \
     modname=bootloader modtype=resource \
-    files="bootloader_init getbootinfo" uselibs="oop"
+    files="bootloader_init getbootinfo" uselibs="rom utility"
 
 #MM kernel-bootloader-pc-x86_64 : includes
 #MM kernel-bootloader-pc-x86_64-kobj : includes

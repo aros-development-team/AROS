@@ -17,7 +17,6 @@
 #include <proto/bootloader.h>
 #include <proto/utility.h>
 #include <proto/kernel.h>
-#include <proto/oop.h>
 
 #include <aros/symbolsets.h>
 #include <aros/bootloader.h>
@@ -37,7 +36,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
 
-    D(bug("[BootLdr] Init\n"));
+    D(bug("[BootLdr] Init. msg=%p\n", msg));
     
     /* Right. Now we extract the data currently placed in 0x1000 by exec */
     if (msg)
@@ -61,16 +60,19 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	}
 #endif
         tmp = GetTagData(KRN_CmdLine, 0, msg);
+        D(bug("[BootLdr] KRN_CmdLine=%p\n", tmp));
 	if (tmp)
 	{
 	    STRPTR cmd,buff;
 	    ULONG temp;
 	    struct Node *node;
 	    
+	    D(bug("[BootLdr] CmdLine=\"%s\"\n", (STRPTR)tmp));
+	    
 	    /* First make a working copy of the command line */
 	    if ((buff = AllocMem(200,MEMF_ANY|MEMF_CLEAR)))
 	    {
-		strcpy(buff, (STRPTR)tmp);
+		strncpy(buff, (STRPTR)tmp, 200);
 		/* remove any leading spaces */
 		cmd = stpblk(buff);
 		while(cmd[0])
