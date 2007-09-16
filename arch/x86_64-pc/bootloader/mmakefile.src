@@ -1,0 +1,10 @@
+# $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-bootloader-pc-x86_64 \
+    modname=bootloader modtype=resource \
+    files="bootloader_init getbootinfo" uselibs="oop"
+
+#MM kernel-bootloader-pc-x86_64 : includes
+#MM kernel-bootloader-pc-x86_64-kobj : includes
+
