@@ -319,8 +319,12 @@ void core_IRQHandle(regs_t regs)
 {
     struct ExecBase *SysBase = TLS_GET(SysBase);        // *(struct ExecBase **)4;
     struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    struct Task *t = NULL;
     int die = 0;
-    
+
+    if (SysBase)
+        t = SysBase->ThisTask;
+
     //rkprintf("IRQ %02x:", regs.irq_number);
     
     if (regs.irq_number == 0x03)        /* Debug */
@@ -339,7 +343,13 @@ void core_IRQHandle(regs_t regs)
     else if (regs.irq_number == 0x0D)        /* GPF */
     {
         rkprintf("[Kernel] GENERAL PROTECTION FAULT!\n");
-
+        
+        if (t)
+        {
+            rkprintf("[Kernel]  %s %p '%s'\n",
+                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+        }
+        
         rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
                  regs.return_cs, regs.return_rip, regs.error_code);
@@ -355,6 +365,12 @@ void core_IRQHandle(regs_t regs)
         void *ptr = rdcr(cr2);
 
         rkprintf("[Kernel] PAGE FAULT EXCEPTION! %016p\n",ptr);
+
+        if (t)
+        {
+            rkprintf("[Kernel]  %s %p '%s'\n",
+                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+        }
 
         rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
                  regs.return_ss, regs.return_rsp, regs.return_rflags, 
