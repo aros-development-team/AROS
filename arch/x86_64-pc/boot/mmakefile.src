@@ -18,23 +18,32 @@ include $(TOP)/config/make.cfg
 #MM	kernel-pci-pcipc \
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
+#MM	workbench-hidd-graphics \
 #MM	kernel-graphics \
 #MM	kernel-layers \
 #MM	kernel-keymap \
 #MM	kernel-intuition \
 #MM	kernel-input \
 #MM	kernel-dos \
+#MM	kernel-console \
+#MM	kernel-fs-packet \
+#MM	kernel-fs-con \
+#MM	workbench-fs-nil \
+#MM	workbench-fs-ram \
+#MM	contrib-cdvdfs \
 #MM	kernel-boot
 
-PKG_LIBS := arosc aros boot mathieeesingbas partition dos graphics layers keymap intuition
+PKG_LIBS := aros boot mathieeesingbas partition dos graphics layers keymap intuition
 PKG_RSRC := bootloader battclock misc
-PKG_DEVS := ata timer keyboard gameport input
-PKG_HIDDS:= vgah pci pcipc
+PKG_DEVS := ata timer keyboard gameport input console
+PKG_HANDLERS := cdrom packet con nil ram
+PKG_HIDDS:= vgah pci pcipc graphics
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
 
 kernel-package-x86_64:
