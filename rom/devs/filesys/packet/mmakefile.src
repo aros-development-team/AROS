@@ -6,4 +6,4 @@ FILES := init command
 
 %build_module mmake=kernel-fs-packet \
     modname=packet modtype=device modsuffix=handler \
-    files="$(FILES)"
+    files="$(FILES)" uselibs="rom"
