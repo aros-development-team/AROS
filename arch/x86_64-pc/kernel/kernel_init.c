@@ -122,6 +122,9 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 {
     rkprintf("[Kernel] Booting into kernel.resource...");
     struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
+
+    /* Enable fxsave/fxrstor */ 
+    wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
     
     if (tag)
     {
