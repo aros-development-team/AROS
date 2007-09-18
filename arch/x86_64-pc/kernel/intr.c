@@ -325,7 +325,8 @@ void core_IRQHandle(regs_t regs)
     if (SysBase)
         t = SysBase->ThisTask;
 
-    //rkprintf("IRQ %02x:", regs.irq_number);
+    if (regs.irq_number < 0x20)
+        rkprintf("IRQ %02x:", regs.irq_number);
     
     if (regs.irq_number == 0x03)        /* Debug */
     {
@@ -339,6 +340,26 @@ void core_IRQHandle(regs_t regs)
         rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
         rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+    }
+    else if (regs.irq_number == 0x07)        /* GPF */
+    {
+        rkprintf("[Kernel] Device Not Available!\n");
+        
+        if (t)
+        {
+            rkprintf("[Kernel]  %s %p '%s'\n",
+                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+        }
+        
+        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
+                 regs.return_ss, regs.return_rsp, regs.return_rflags, 
+                 regs.return_cs, regs.return_rip, regs.error_code);
+
+        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        die = 1;
     }
     else if (regs.irq_number == 0x0D)        /* GPF */
     {
