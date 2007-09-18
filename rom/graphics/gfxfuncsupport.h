@@ -181,7 +181,7 @@ ULONG do_pixel_func(struct RastPort *rp, LONG x, LONG y,
 		    APTR funcdata, struct GfxBase *GfxBase);
 
 LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
-    	    	      HIDDT_Pixel pix, ULONG drmd, struct GfxBase *GfxBase);
+    	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, struct GfxBase *GfxBase);
 
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
 	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
