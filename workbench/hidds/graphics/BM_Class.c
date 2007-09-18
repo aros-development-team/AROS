@@ -199,7 +199,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 	    	    }
 		    else
 		    {
-	    		ULONG width, height;
+	    		IPTR width, height;
 
 	    		/* Update the bitmap with data from the modeid */
 			OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
@@ -1586,7 +1586,7 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 VOID BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Clear *msg)
 {
     WORD  x, y;
-    ULONG width, height;
+    IPTR width, height;
 
     EnterFunc(bug("BitMap::Clear()\n"));
 
@@ -1610,7 +1610,7 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
 {
     OOP_Object *pf;
     struct HIDDBitMapData *data;
-    IPTR bpp = -1;
+    SIPTR bpp = -1;
 
     data = OOP_INST_DATA(cl, o);
 

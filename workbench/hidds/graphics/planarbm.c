@@ -32,7 +32,7 @@
 
 OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    ULONG width, height, depth;
+    IPTR width, height, depth;
     
     BOOL  ok = TRUE;   
      
