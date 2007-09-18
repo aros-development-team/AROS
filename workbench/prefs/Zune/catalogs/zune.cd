@@ -631,9 +631,18 @@ Navigation
 MSG_DSC_SPECIAL (//)
 Special
 ;
+MSG_DSC_FRAMES (//)
+Frames
+;
 ;=============================
 ; zunestuff.c
 ;------------
 MSG_ADJUST_PEN (//)
 Adjust Pen
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES (//)
+Customframes
 ;

@@ -2,7 +2,7 @@
 #define _ZUNE_ZUNESTUFF_H
 
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,6 +19,7 @@ Object *MakePopframe(void);
 Object *MakePoppen(void);
 Object *MakeString(void);
 Object *MakePopfont(BOOL fixed);
+Object *MakePopfile(BOOL fixed, CONST_STRPTR pattern);
 
 long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struct TagItem *tags);
 
