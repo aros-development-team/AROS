@@ -180,7 +180,6 @@ BOOL HIDD_Gfx_GetMode(OOP_Object *obj, HIDDT_ModeID modeID, OOP_Object **syncPtr
     STATIC_MID;
     struct pHidd_Gfx_GetMode p, *msg = &p;
 
-    
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
         
     p.mID = mid;
@@ -343,7 +342,7 @@ BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, 
 
 /***************************************************************/
 
-ULONG HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y, ULONG val)
+ULONG HIDD_BM_PutPixel(OOP_Object *obj, WORD x, WORD y, HIDDT_Pixel val)
 {
     STATIC_MID;
     struct pHidd_BitMap_PutPixel p, *msg = &p;
@@ -375,7 +374,7 @@ ULONG HIDD_BM_DrawPixel(OOP_Object *obj, OOP_Object *gc, WORD x, WORD y)
 }
 /***************************************************************/
 
-ULONG HIDD_BM_GetPixel(OOP_Object *obj, WORD x, WORD y)
+HIDDT_Pixel HIDD_BM_GetPixel(OOP_Object *obj, WORD x, WORD y)
 {
     STATIC_MID;
     struct pHidd_BitMap_GetPixel p, *msg = &p;
