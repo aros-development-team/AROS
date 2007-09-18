@@ -181,6 +181,25 @@ struct ZunePrefsNew
     UWORD    screen_width;
     UWORD    screen_height;
     ULONG    screenaddress;
+
+    CONST_STRPTR customframe_config_1;
+    CONST_STRPTR customframe_config_2;
+    CONST_STRPTR customframe_config_3;
+    CONST_STRPTR customframe_config_4;
+    CONST_STRPTR customframe_config_5;
+    CONST_STRPTR customframe_config_6;
+    CONST_STRPTR customframe_config_7;
+    CONST_STRPTR customframe_config_8;
+    CONST_STRPTR customframe_config_9;
+    CONST_STRPTR customframe_config_10;
+    CONST_STRPTR customframe_config_11;
+    CONST_STRPTR customframe_config_12;
+    CONST_STRPTR customframe_config_13;
+    CONST_STRPTR customframe_config_14;
+    CONST_STRPTR customframe_config_15;
+    CONST_STRPTR customframe_config_16;
+
+
 };
 
 #endif

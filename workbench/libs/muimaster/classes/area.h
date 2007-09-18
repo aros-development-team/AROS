@@ -174,6 +174,7 @@ struct MUI_AreaData
     BYTE               mad_subwidth;       /* additional width (frame & innerspacing) */
     BYTE               mad_subheight;      /* additional height (frame & innerspacing) */
     ULONG              mad_Flags;          /* some flags; see below */
+    ULONG              mad_Flags2;
 // 40 bytes up to here
 
     /* The following data is private */

@@ -30,6 +30,7 @@ extern struct Library *MUIMasterBase;
 #include "font.h"
 #include "textengine.h"
 #include "bubbleengine.h"
+#include "datatypescache.h"
 
 
 //#define MYDEBUG 1
@@ -279,6 +280,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case    MUIA_Background:
+
                 data->mad_Flags |= MADF_OWNBG;
                 if (data->mad_BackgroundSpec)
                 {
@@ -838,7 +840,7 @@ static IPTR Area__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_Ask
     const struct MUI_FrameSpec_intern *frame;
 
     frame = get_intframe(obj, data);
-    zframe = zune_zframe_get(frame);
+    zframe = zune_zframe_get(obj, frame);
 
     area_update_msizes(obj, data, frame, zframe);
     
@@ -966,8 +968,16 @@ static void Area_Draw_handle_background(Object *obj, struct MUI_AreaData *data, 
     else
         background = data->mad_SelBack;
 
+    if (zframe->customframe)
+    {
+        bgtop = _top(obj) + data->mad_TitleHeightAbove;
+    }
+    else
+    {
+        bgtop = _top(obj) + data->mad_TitleHeightAbove + zframe->itop;
+    }
+
     bgleft = _left(obj);
-    bgtop = _top(obj) + data->mad_TitleHeightAbove + zframe->itop;
     bgw = _width(obj);
     bgh = _height(obj) - bgtop + _top(obj);
 
@@ -1068,7 +1078,7 @@ static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
     /* no frametitle, just draw frame and return */
     if (!data->mad_FrameTitle)
     {
-        zframe->draw(muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj));
+        zframe->draw(zframe->customframe, muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), _width(obj), _height(obj));
         return;
     }
     
@@ -1118,7 +1128,7 @@ static void Area_Draw_handle_frame(Object *obj, struct MUI_AreaData *data,
         textdrawclip = MUI_AddClipRegion(muiRenderInfo(obj),region);
     }
 
-    zframe->draw(muiRenderInfo(obj), _left(obj), frame_top, _width(obj), frame_height);
+    zframe->draw(zframe->customframe, muiRenderInfo(obj), _left(obj), frame_top, _width(obj), frame_height, _left(obj), frame_top, _width(obj), frame_height);
 
     if (region && textdrawclip != (APTR)-1)
     {
@@ -1209,6 +1219,7 @@ static IPTR Area__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *ms
         state ^= 1;
 
     zframe = zune_zframe_get_with_state(
+    obj,
         &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], state);
     /* update innersizes as there are frames which have different inner spacings in selected state */
     area_update_msizes(obj, data, frame, zframe);
@@ -1286,6 +1297,10 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
     state = IDS_NORMAL;
     }
 
+    const struct ZuneFrameGfx *zframe;
+    const struct MUI_FrameSpec_intern *frame;
+
+
     if (!bg)
     {
     Object *parent;
@@ -1293,14 +1308,45 @@ static IPTR Area__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUI
 
     D(bug("Area_DrawBackground(%p) : MUIM_DrawParentBackground\n",
         obj));
+
     return DoMethod(obj, MUIM_DrawParentBackground, msg->left, msg->top,
             msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
-    }
 
+    }
+    frame = get_intframe(obj, data);
+
+    int xstate = frame->state;
+    if ((data->mad_Flags & MADF_SELECTED) && (data->mad_Flags & MADF_SHOWSELSTATE))
+        xstate ^= 1;
+
+    zframe = zune_zframe_get_with_state(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame], xstate);
+
+    if (zframe->customframe == NULL)
+    {
 /*      D(bug("Area_DrawBackground(%p): draw bg\n", obj)); */
     zune_imspec_draw(bg, data->mad_RenderInfo,
             msg->left, msg->top, msg->width, msg->height,
             msg->xoffset, msg->yoffset, state);
+
+//     if (!data->mad_FrameTitle)
+//     {
+
+    }
+    else
+    {
+        if (zframe->noalpha == FALSE)
+        {
+            zune_imspec_draw(bg, data->mad_RenderInfo,
+                msg->left, msg->top, msg->width, msg->height,
+                msg->xoffset, msg->yoffset, state);
+
+        }
+    }
+
+        if (zframe->customframe)
+        {
+            zframe->draw(zframe->customframe, muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj), msg->left, msg->top, msg->width, msg->height);
+        }
 
     return TRUE;
 }
@@ -1392,7 +1438,7 @@ static void set_title_sizes (Object *obj, struct MUI_AreaData *data)
     const struct MUI_FrameSpec_intern *frame;
 
     frame = get_intframe(obj, data);
-    zframe = zune_zframe_get(frame);
+    zframe = zune_zframe_get(obj, frame);
 
     _font(obj) = zune_font_get(obj, MUIV_Font_Title);
 
@@ -1441,7 +1487,7 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     set_title_sizes(obj, data);
 
     frame = get_intframe(obj, data);
-    zframe = zune_zframe_get(frame);
+    zframe = zune_zframe_get(obj, frame);
 
     area_update_msizes(obj, data, frame, zframe);
 
@@ -2077,7 +2123,7 @@ static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MU
         const struct ZuneFrameGfx *zframe;
         LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap,BMA_DEPTH);
 
-        zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
+        zframe = zune_zframe_get(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Drag]);
 
         img->width = _width(obj) + zframe->ileft + zframe->iright;
         img->height = _height(obj) + zframe->itop + zframe->ibottom;
@@ -2092,7 +2138,7 @@ static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MU
             ClipBlit(_rp(obj),_left(obj),_top(obj),&temprp,zframe->ileft,zframe->itop,_width(obj),_height(obj),0xc0);
 
             muiRenderInfo(obj)->mri_RastPort = &temprp;
-            zframe->draw(muiRenderInfo(obj), 0, 0, img->width, img->height);
+            zframe->draw(zframe->customframe, muiRenderInfo(obj), 0, 0, img->width, img->height, 0, 0, img->width, img->height);
             muiRenderInfo(obj)->mri_RastPort = rp_save;
         
             DeinitRastPort(&temprp);
@@ -2171,10 +2217,25 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 /*  	D(bug("area_update_msizes(%p) : ileft=%ld itop=%ld\n", obj, zframe->ileft, zframe->itop)); */
 /*      } */
 
-    data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
-    data->mad_subwidth = data->mad_addleft + data->mad_InnerRight + zframe->iright;
-    data->mad_addtop = data->mad_InnerTop + data->mad_TitleHeightAdd + zframe->itop;
-    data->mad_subheight = data->mad_addtop + data->mad_InnerBottom + zframe->ibottom;
+    struct dt_frame_image *fi = zframe->customframe;
+
+    if (fi != NULL)
+    {
+        UWORD   w = fi->tile_left + fi->tile_right;
+        UWORD   h = fi->tile_top + fi->tile_bottom;
+
+        data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
+        data->mad_subwidth = data->mad_addleft + data->mad_InnerRight + zframe->iright;
+        data->mad_addtop = data->mad_InnerTop + data->mad_TitleHeightAdd + zframe->itop;
+        data->mad_subheight = data->mad_addtop + data->mad_InnerBottom + zframe->ibottom;
+    }
+    else
+    {
+        data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
+        data->mad_subwidth = data->mad_addleft + data->mad_InnerRight + zframe->iright;
+        data->mad_addtop = data->mad_InnerTop + data->mad_TitleHeightAdd + zframe->itop;
+        data->mad_subheight = data->mad_addtop + data->mad_InnerBottom + zframe->ibottom;
+    }
 
     if (data->mad_Flags & MADF_FRAMEPHANTOM)
     {
@@ -2211,7 +2272,7 @@ static IPTR Area__MUIM_UpdateInnerSizes(struct IClass *cl, Object *obj, struct M
     if (_flags(obj) & MADF_SETUP)
     {
     frame = get_intframe(obj, data);
-    zframe = zune_zframe_get(frame);
+    zframe = zune_zframe_get(obj, frame);
         area_update_msizes(obj, data, frame, zframe);
     }
     return 1;

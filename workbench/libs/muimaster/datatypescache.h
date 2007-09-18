@@ -26,6 +26,22 @@ struct	  NewImage
 #define MODE_DEFAULT    0
 #define MODE_PROP       1
 
+struct dt_frame_image
+{
+    Object *o;
+    struct NewImage *img_up;
+    struct NewImage *img_down;
+    short  tile_left;
+    short  tile_top;
+    short  tile_right;
+    short  tile_bottom;
+    short  inner_left;
+    short  inner_top;
+    short  inner_right;
+    short  inner_bottom;
+    BOOL   noalpha;
+};
+
 struct dt_node
 {
     struct MinNode node;
@@ -78,6 +94,8 @@ void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp, int x, in
 
 void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1, int y1, int x2, int y2, int xoffset, int yoffset);
 void dt_put_on_rastport_quicktiled(struct RastPort *rp, struct dt_node *node, UWORD x, UWORD y, UWORD w, UWORD h);
+struct dt_frame_image * load_custom_frame(CONST_STRPTR filename, struct Screen *scr);
+void dispose_custom_frame(struct dt_frame_image * fi);
 
 #if AROS_BIG_ENDIAN
 #define GET_A(rgb) ((rgb >> 24) & 0xff)

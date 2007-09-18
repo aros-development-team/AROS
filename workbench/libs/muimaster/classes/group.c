@@ -1,6 +1,6 @@
 /*
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$

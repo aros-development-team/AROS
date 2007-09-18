@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -436,7 +436,7 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     data->popitemheight += 2;
     }
     
-    zframe = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp]);
+    zframe = zune_zframe_get(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp]);
     
     data->popitemoffx = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_PopUp].innerLeft +
                         zframe->ileft;
@@ -512,7 +512,7 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
 
     saverp = _rp(obj);
     _rp(obj) = rp;
-    zframe->draw(muiRenderInfo(obj), 0, 0, winw, winh);    
+    zframe->draw(zframe->customframe, muiRenderInfo(obj), 0, 0, winw, winh, 0, 0, winw, winh);    
 
     /* FIXME: Render with popup background */
     

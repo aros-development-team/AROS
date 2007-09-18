@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -624,7 +624,8 @@ enum {
     MUII_MARKSHINE      = 143,
     MUII_MARKHALFSHINE  = 144,
     MUII_MARKBACKGROUND = 145,
-    MUII_LASTPAT        = 146
+    MUII_LASTPAT        = 146,
+
 };
 
 /**************************************************************************

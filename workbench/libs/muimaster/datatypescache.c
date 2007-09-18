@@ -220,6 +220,11 @@ int GetInt(char *v) {
     return atol(c);
 }
 
+BOOL GetBool(char *v, char *id)
+{
+    if (strstr(v, id)) return TRUE; else return FALSE;
+}
+
 void GetIntegers(char *v, int *v1, int *v2) {
     char *c;
     char va1[32], va2[32];
@@ -441,6 +446,105 @@ void FreePropConfig(struct dt_node *data)
     DisposeImageContainer(data->img_left);
     DisposeImageContainer(data->img_right);
 
+}
+
+BOOL ReadFrameConfig(STRPTR filename, struct dt_frame_image *fi, struct Screen *scr) {
+    
+    char    buffer[256];
+    char    *line, *v;
+    BPTR    file;
+    
+    fi->noalpha = FALSE;
+
+    file = Open(filename, MODE_OLDFILE);
+    if (file) {
+        do {
+            line = FGets(file, buffer, 256);
+            if (line) {
+                if ((v = strstr(line, "TileLeft ")) == line) {
+                    fi->tile_left = GetInt(v);
+                } else if ((v = strstr(line, "TileTop ")) == line) {
+                    fi->tile_top = GetInt(v);
+                } else if ((v = strstr(line, "TileRight ")) == line) {
+                    fi->tile_right = GetInt(v);
+                } else if ((v = strstr(line, "TileBottom ")) == line) {
+                    fi->tile_bottom = GetInt(v);
+                } else if ((v = strstr(line, "InnerLeft ")) == line) {
+                    fi->inner_left = GetInt(v);
+                } else if ((v = strstr(line, "InnerTop ")) == line) {
+                    fi->inner_top = GetInt(v);
+                } else if ((v = strstr(line, "InnerRight ")) == line) {
+                    fi->inner_right = GetInt(v);
+                } else if ((v = strstr(line, "InnerBottom ")) == line) {
+                    fi->inner_bottom = GetInt(v);
+                }  else if ((v = strstr(line, "NoAlpha ")) == line) {
+                    fi->noalpha = GetBool(v, "Yes");
+                }
+            }
+        } while(line);
+        Close(file);
+    }
+
+    STRPTR path = allocPath(filename);
+    if (path)
+    {
+        BPTR lock = Lock(path, ACCESS_READ);
+        if (lock)
+        {
+            BPTR oldcd = CurrentDir(lock);
+            fi->img_up = GetImageFromFile("up/default", scr);
+            fi->img_down = GetImageFromFile("down/default", scr);
+
+            CurrentDir(oldcd);
+            UnLock(lock);
+            
+        }
+        freeString(path);
+    }
+    if (fi->img_up && fi->img_down) return TRUE;
+    return FALSE;
+}
+
+void FreeFrameConfig(struct dt_frame_image *fi)
+{
+    if (fi != NULL)
+    {
+        DisposeImageContainer(fi->img_up);
+        DisposeImageContainer(fi->img_down);
+    }
+}
+
+void dispose_custom_frame(struct dt_frame_image * fi)
+{
+    if (fi != NULL)
+    {
+        FreeFrameConfig(fi);
+        FreeVec(fi);
+    }
+}
+
+struct dt_frame_image * load_custom_frame(CONST_STRPTR filename, struct Screen *scr)
+{
+    struct dt_frame_image *fi = AllocVec(sizeof(struct dt_frame_image), MEMF_ANY);
+
+    if (fi)
+    {
+        if (Stricmp(FilePart(filename), "frame.config") == 0) /* special configuration image for prop gadgets */
+        {
+            if (ReadFrameConfig(filename, fi, scr))
+            {
+                return fi;
+            }
+            else
+            {
+                FreeFrameConfig(fi);
+                FreeVec(fi);
+                return NULL;
+            }
+        }
+        FreeVec(fi);
+    }
+    return NULL;
 }
 
 struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr)
