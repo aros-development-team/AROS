@@ -8,5 +8,5 @@ USER_INCLUDES := -I../../include
 %build_module mmake=kernel-pc-i386-mouse \
   modname=mouse modtype=hidd \
   files=$(FILES) \
-  uselibs=hiddstubs
+  uselibs="hiddstubs oop"
 
