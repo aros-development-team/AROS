@@ -7,8 +7,37 @@
 */
 
 #include "kbd.h"
+#define TIMER_RPROK 3599597124UL
 
-void mouse_usleep(ULONG usec);
+static ULONG usec2tick(ULONG usec)
+{
+    ULONG ret;
+    ULONG prok = TIMER_RPROK;
+    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(prok));
+    return ret;
+}
+
+static void mouse_usleep(LONG usec)
+{
+    int oldtick, tick;
+    usec = usec2tick(usec);
+
+    outb(0x80, 0x43);
+    oldtick = inb(0x42);
+    oldtick += inb(0x42) << 8;
+
+    while (usec > 0)
+    {
+        outb(0x80, 0x43);
+        tick = inb(0x42);
+        tick += inb(0x42) << 8;
+
+        usec -= (oldtick - tick);
+        if (tick > oldtick) usec -= 0x10000;
+        oldtick = tick;
+    }
+}
+
 
 unsigned char handle_kbd_event(void)
 {
