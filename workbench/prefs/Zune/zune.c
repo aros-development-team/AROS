@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -32,6 +32,7 @@
 #include "stringsp.h"
 #include "specialp.h"
 #include "navigationp.h"
+#include "framesp.h"
 #include "zunestuff.h"
 
 /************************************************************************/
@@ -55,7 +56,7 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 #endif
 #endif
 
-#define ZUNEVERSION "$VER: Zune 0.2 (22.02.2006) ©AROS Dev Team"
+#define ZUNEVERSION "$VER: Zune 0.2 (22.02.2006) AROS Dev Team"
 
 APTR *appaddr;
 
@@ -180,6 +181,7 @@ struct page_entry main_page_entries[MAX_PAGE_ENTRIES + 1] =
     { "",   NULL, NULL, &_MUIP_Strings_desc    },
     { "",   NULL, NULL, &_MUIP_Navigation_desc },
     { "",   NULL, NULL, &_MUIP_Special_desc    },
+    { "",   NULL, NULL, &_MUIP_Frames_desc     },
     { NULL, NULL, NULL, NULL                   },
 };
 
@@ -442,6 +444,7 @@ int init_gui(void)
     main_page_entries[ 7].name = (char *)_(MSG_DSC_STRINGS);
     main_page_entries[ 8].name = (char *)_(MSG_DSC_NAVIGATION);
     main_page_entries[ 9].name = (char *)_(MSG_DSC_SPECIAL);
+    main_page_entries[10].name = (char *)_(MSG_DSC_FRAMES);
 
     static struct Hook page_display_hook;
 
@@ -466,7 +469,7 @@ int init_gui(void)
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR) "Zune",
         MUIA_Application_Version, (IPTR) ZUNEVERSION,
-        MUIA_Application_Copyright, (IPTR) "© 2006, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR) " 2006, The AROS Development Team",
         MUIA_Application_Description, wintitle,
         MUIA_Application_Base, "ZUNEPREF",
 	MUIA_Application_Menustrip, MenuitemObject,

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2006, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -152,6 +152,18 @@ Object *MakePopfont(BOOL fixed)
         ASLFO_FixedWidthOnly,          fixed ? TRUE : FALSE,
         MUIA_Popstring_String, (IPTR)  MakeString(),
         MUIA_Popstring_Button, (IPTR)  PopButton(MUII_PopUp),
+    End;
+}
+
+Object *MakePopfile(BOOL fixed, CONST_STRPTR pattern)
+{
+    return PopaslObject,
+        ASLFR_InitialPattern,          (IPTR) pattern,
+        ASLFR_RejectIcons,             TRUE,
+        ASLFO_MaxHeight,               100,
+        ASLFO_FixedWidthOnly,          fixed ? TRUE : FALSE,
+        MUIA_Popstring_String, (IPTR)  MakeString(),
+        MUIA_Popstring_Button, (IPTR)  PopButton(MUII_PopFile),
     End;
 }
 
