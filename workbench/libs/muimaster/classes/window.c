@@ -32,6 +32,7 @@
 #include "classes/window.h"
 #include "classes/area.h"
 #include "imspec.h"
+#include "datatypescache.h"
 #include "prefs.h"
 #include "dragndrop.h"
 
@@ -215,6 +216,46 @@ static void EnqueueByPriAndAddress(struct List *list, struct Node *node)
     Insert(list, (struct Node *)node, scannode->ln_Pred);
 }
 
+static BOOL InitCustomFrames(Object *obj, struct MUI_RenderInfo *mri)
+{
+    int i;
+
+    for (i = 0; i < 16; i++)
+    {
+        mri->mri_FrameImage[i] = NULL;
+    }
+
+    mri->mri_FrameImage[0] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_1, mri->mri_Screen);
+    mri->mri_FrameImage[1] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_2, mri->mri_Screen);
+    mri->mri_FrameImage[2] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_3, mri->mri_Screen);
+    mri->mri_FrameImage[3] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_4, mri->mri_Screen);
+    mri->mri_FrameImage[4] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_5, mri->mri_Screen);
+    mri->mri_FrameImage[5] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_6, mri->mri_Screen);
+    mri->mri_FrameImage[6] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_7, mri->mri_Screen);
+    mri->mri_FrameImage[7] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_8, mri->mri_Screen);
+    mri->mri_FrameImage[8] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_9, mri->mri_Screen);
+    mri->mri_FrameImage[9] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_10, mri->mri_Screen);
+    mri->mri_FrameImage[10] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_11, mri->mri_Screen);
+    mri->mri_FrameImage[11] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_12, mri->mri_Screen);
+    mri->mri_FrameImage[12] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_13, mri->mri_Screen);
+    mri->mri_FrameImage[13] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_14, mri->mri_Screen);
+    mri->mri_FrameImage[14] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_15, mri->mri_Screen);
+    mri->mri_FrameImage[15] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_16, mri->mri_Screen);
+
+    return TRUE;
+}
+
+static void DisposeCustomFrames(struct MUI_RenderInfo *mri)
+{
+    int i;
+
+    for (i = 0; i < 16; i++)
+    {
+        dispose_custom_frame((struct dt_frame_image *) mri->mri_FrameImage[i]);
+        
+        mri->mri_FrameImage[i] = NULL;
+    }
+}
 
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
@@ -269,6 +310,16 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 	    data->wd_Flags &= ~MUIWF_SCREENLOCKED;
 	}
 	return FALSE;
+    }
+
+    if (!InitCustomFrames(obj, mri))
+    {
+        if (data->wd_Flags & MUIWF_SCREENLOCKED)
+        {
+            UnlockPubScreen(NULL,mri->mri_Screen);
+            data->wd_Flags &= ~MUIWF_SCREENLOCKED;
+        }
+        return FALSE;
     }
 
     mri->mri_Colormap     = mri->mri_Screen->ViewPort.ColorMap;
@@ -387,6 +438,8 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data, struct M
 {
     int i;
     
+    DisposeCustomFrames(mri);
+
     if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
     if (mri->mri_RightImage){DisposeObject(mri->mri_RightImage);mri->mri_RightImage=NULL;};
     if (mri->mri_UpImage) {DisposeObject(mri->mri_UpImage);mri->mri_UpImage=NULL;};

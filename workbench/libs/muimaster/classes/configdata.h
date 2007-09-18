@@ -149,6 +149,23 @@
 #define MUICFG_WindowPos                0x509
 #define MUICFG_Window_Buttons           0x50a
 
+#define MUICFG_CustomFrame_1            0x600
+#define MUICFG_CustomFrame_2            0x601
+#define MUICFG_CustomFrame_3            0x602
+#define MUICFG_CustomFrame_4            0x603
+#define MUICFG_CustomFrame_5            0x604
+#define MUICFG_CustomFrame_6            0x605
+#define MUICFG_CustomFrame_7            0x606
+#define MUICFG_CustomFrame_8            0x607
+#define MUICFG_CustomFrame_9            0x608
+#define MUICFG_CustomFrame_10           0x609
+#define MUICFG_CustomFrame_11           0x60a
+#define MUICFG_CustomFrame_12           0x60b
+#define MUICFG_CustomFrame_13           0x60c
+#define MUICFG_CustomFrame_14           0x60d
+#define MUICFG_CustomFrame_15           0x60e
+#define MUICFG_CustomFrame_16           0x60f
+
 #define MUIM_Configdata_GetWindowPos    (MUIB_Configdata | 0x0000002A)
 #define MUIM_Configdata_SetWindowPos    (MUIB_Configdata | 0x0000002B)
 

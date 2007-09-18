@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -100,7 +100,7 @@ IPTR Numericbutton__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     if (retval)
     {
-    	//knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
+    	//knob_frame = zune_zframe_get(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
 
     	data->knob_bg = zune_imspec_setup(MUII_ButtonBack, muiRenderInfo(obj));
 
@@ -307,7 +307,7 @@ static BOOL MakePopupWin(Object *obj, struct Numericbutton_DATA *data)
     LONG    	    	    	 framew, frameh;
     LONG    	    	    	 min, max;
     
-    zframe = zune_zframe_get_with_state(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Slider],
+    zframe = zune_zframe_get_with_state(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Slider],
     	    	    	    	    	muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Slider].state);
     
     data->pop_innerx = zframe->ileft;			
@@ -366,7 +366,7 @@ static BOOL MakePopupWin(Object *obj, struct Numericbutton_DATA *data)
 
     saverp = _rp(obj);
     _rp(obj) = rp;
-    zframe->draw(muiRenderInfo(obj), 0, 0, winw, winh);    
+    zframe->draw(zframe->customframe, muiRenderInfo(obj), 0, 0, winw, winh, 0, 0, winw, winh);    
 
     DrawKnob(obj, data, TRUE);
     

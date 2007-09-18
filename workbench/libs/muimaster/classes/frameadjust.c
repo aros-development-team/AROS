@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -104,7 +104,7 @@ static Object *MakeFrameDisplay(int i, int state)
     char fs[10];
     Object *obj;
 
-    if (i < 0 || i > 10)
+    if (i < 0 || i > (10+16))
 	return HVSpace;
 
     fsi.innerTop = fsi.innerLeft = fsi.innerBottom = fsi.innerRight = 9;
@@ -113,8 +113,8 @@ static Object *MakeFrameDisplay(int i, int state)
     zune_frame_intern_to_spec(&fsi, fs);
 
     obj = MUI_NewObject(MUIC_Framedisplay,
-			MUIA_FixWidth, 12,
-			MUIA_FixHeight, 12,
+// 			MUIA_FixWidth, 12,
+// 			MUIA_FixHeight, 12,
 			ButtonFrame,
 			InnerSpacing(6, 6),
 			MUIA_Background, MUII_ButtonBack,
@@ -132,7 +132,9 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *FD_display;
     Object *SL_top, *SL_left, *SL_right, *SL_bottom;
     Object *GR_fd;
-    int lut[] = { 0, 1, 2, 3, 4, 6, 9, 10, 8, 7, 5 };
+    Object *GR_fd1;
+    Object *GR_fd2;
+    int lut[] = { 0, 1, 2, 3, 4, 6, 9, 10, 8, 7, 5 , 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
     int i;
 
     obj = (Object *) DoSuperNewTags
@@ -151,6 +153,8 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, (IPTR) VGroup,
             MUIA_Group_VertSpacing, 10,
             Child, (IPTR) (GR_fd = RowGroup(2), End), /* RowGroup */
+            Child, (IPTR) (GR_fd1 = RowGroup(2), End), /* RowGroup */
+            Child, (IPTR) (GR_fd2 = RowGroup(2), End), /* RowGroup */
             Child, (IPTR) HGroup,
                 Child, (IPTR) Label("Inner Spacing:"),
                 Child, (IPTR) RowGroup(2),
@@ -205,6 +209,54 @@ IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		 MUIM_CallHook, (IPTR)&data->frames_hook, lut[i], 1, (IPTR)data);
 	DoMethod(GR_fd, OM_ADDMEMBER, (IPTR)obj);
     }
+
+
+
+
+
+
+    for (i = 11; i < (11+8); i++)
+    {
+    Object *obj;
+
+    obj = MakeFrameDisplay(lut[i], 0);
+    DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 5,
+         MUIM_CallHook, (IPTR)&data->frames_hook, lut[i], 0, (IPTR)data);
+    DoMethod(GR_fd1, OM_ADDMEMBER, (IPTR)obj);
+    }
+
+    for (i = 11; i < (11+8); i++)
+    {
+    Object *obj;
+
+    obj = MakeFrameDisplay(lut[i], 1);
+    DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 5,
+         MUIM_CallHook, (IPTR)&data->frames_hook, lut[i], 1, (IPTR)data);
+    DoMethod(GR_fd1, OM_ADDMEMBER, (IPTR)obj);
+    }
+
+
+    for (i = 19; i < (19+8); i++)
+    {
+    Object *obj;
+
+    obj = MakeFrameDisplay(lut[i], 0);
+    DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 5,
+         MUIM_CallHook, (IPTR)&data->frames_hook, lut[i], 0, (IPTR)data);
+    DoMethod(GR_fd2, OM_ADDMEMBER, (IPTR)obj);
+    }
+
+    for (i = 19; i < (19+8); i++)
+    {
+    Object *obj;
+
+    obj = MakeFrameDisplay(lut[i], 1);
+    DoMethod(obj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 5,
+         MUIM_CallHook, (IPTR)&data->frames_hook, lut[i], 1, (IPTR)data);
+    DoMethod(GR_fd2, OM_ADDMEMBER, (IPTR)obj);
+    }
+
+
 
 
     /* parse initial taglist */

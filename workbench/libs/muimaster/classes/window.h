@@ -209,6 +209,8 @@ struct MUI_RenderInfo
     /* buffering */
     struct RastPort mri_BufferRP;
     struct BitMap  *mri_BufferBM;
+
+    IPTR            mri_FrameImage[16];
 };
 
 #define MUIMRI_RECTFILL (1<<0)

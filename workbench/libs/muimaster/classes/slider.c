@@ -1,6 +1,6 @@
 /*
-    Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright  1999, David Le Corfec.
+    Copyright  2002-2006, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -161,7 +161,7 @@ IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
 	return FALSE;
 
-    knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
+    knob_frame = zune_zframe_get(obj, &muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
     data->knob_bg = zune_imspec_setup(MUII_SliderKnob, muiRenderInfo(obj));
 
     InitRastPort(&rp);
@@ -341,10 +341,11 @@ IPTR Slider__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     knob_frame_state = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].state;
     if (data->state)
 	knob_frame_state ^= 1;
-    knob_frame = zune_zframe_get_with_state(
+    knob_frame = zune_zframe_get_with_state(obj, 
 	&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob], knob_frame_state);
-    knob_frame->draw(muiRenderInfo(obj), data->knob_left, data->knob_top, data->knob_width,
-		     data->knob_height);
+    knob_frame->draw(knob_frame->customframe, muiRenderInfo(obj), data->knob_left, data->knob_top, data->knob_width,
+             data->knob_height, data->knob_left, data->knob_top, data->knob_width,
+             data->knob_height);
 
     SetFont(_rp(obj),_font(obj));
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);

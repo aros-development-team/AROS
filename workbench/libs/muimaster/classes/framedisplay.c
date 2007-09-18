@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -120,11 +120,13 @@ IPTR Framedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
     if (!(msg->flags & MADF_DRAWOBJECT))
 	return 0;
 
-    zframe = zune_zframe_get(&data->fs_intern);
+    zframe = zune_zframe_get(obj, &data->fs_intern);
     if (!zframe)
 	return 0;
-    zframe->draw(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
-		 _mwidth(obj), _mheight(obj));
+    zframe->draw(zframe->customframe, muiRenderInfo(obj), _mleft(obj), _mtop(obj),
+         _mwidth(obj), _mheight(obj), _mleft(obj), _mtop(obj),
+         _mwidth(obj), _mheight(obj));
+
     ileft = _mleft(obj) + zframe->ileft + data->fs_intern.innerLeft;
     itop = _mtop(obj) + zframe->itop + data->fs_intern.innerTop;
     iright = _mright(obj) - zframe->iright - data->fs_intern.innerRight;

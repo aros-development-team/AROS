@@ -472,6 +472,24 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	else data->prefs.muikeys[i].ix_well = 0;
     }
 
+    /*---------- CustomFrames ----------*/
+    data->prefs.customframe_config_1 = GetConfigString(obj, MUICFG_CustomFrame_1);
+    data->prefs.customframe_config_2 = GetConfigString(obj, MUICFG_CustomFrame_2);
+    data->prefs.customframe_config_3 = GetConfigString(obj, MUICFG_CustomFrame_3);
+    data->prefs.customframe_config_4 = GetConfigString(obj, MUICFG_CustomFrame_4);
+    data->prefs.customframe_config_5 = GetConfigString(obj, MUICFG_CustomFrame_5);
+    data->prefs.customframe_config_6 = GetConfigString(obj, MUICFG_CustomFrame_6);
+    data->prefs.customframe_config_7 = GetConfigString(obj, MUICFG_CustomFrame_7);
+    data->prefs.customframe_config_8 = GetConfigString(obj, MUICFG_CustomFrame_8);
+    data->prefs.customframe_config_9 = GetConfigString(obj, MUICFG_CustomFrame_9);
+    data->prefs.customframe_config_10 = GetConfigString(obj, MUICFG_CustomFrame_10);
+    data->prefs.customframe_config_11 = GetConfigString(obj, MUICFG_CustomFrame_11);
+    data->prefs.customframe_config_12 = GetConfigString(obj, MUICFG_CustomFrame_12);
+    data->prefs.customframe_config_13 = GetConfigString(obj, MUICFG_CustomFrame_13);
+    data->prefs.customframe_config_14 = GetConfigString(obj, MUICFG_CustomFrame_14);
+    data->prefs.customframe_config_15 = GetConfigString(obj, MUICFG_CustomFrame_15);
+    data->prefs.customframe_config_16 = GetConfigString(obj, MUICFG_CustomFrame_16);
+
     /*---------- Special ----------*/
     /* all taken care of in frames and images */
 
