@@ -10,14 +10,14 @@
 #include <string.h>    // memset() prototype
 
 #undef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
-    ULONG width, height;
+    IPTR width, height;
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
     

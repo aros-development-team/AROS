@@ -31,7 +31,7 @@
 #include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "bitmap.h"
@@ -147,7 +147,7 @@ OOP_Object *PCVGAOffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 		if (XSD(cl)->activecallback)
 		    XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
 
-		ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
+		ReturnPtr("VGAGfx.BitMap::New()", OOP_Object *, o);
 	    }
 	} /* if got data->VideoData */
 
