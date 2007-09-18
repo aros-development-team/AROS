@@ -234,7 +234,7 @@ void PCI__Hidd_PCI__EnumDevices(OOP_Class *cl, OOP_Object *o, struct pHidd_PCI_E
     ULONG   VendorID, ProductID, RevisionID, Interface, _Class, SubClass, 
 	    SubsystemVendorID, SubsystemID;
     
-    ULONG   value;
+    IPTR   value;
     struct  DriverNode	*dn;
     struct  PciDevice	*dev;
     BOOL    ok;

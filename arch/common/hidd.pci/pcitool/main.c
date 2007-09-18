@@ -148,7 +148,7 @@ AROS_UFH3(void, display_function,
     AROS_USERFUNC_INIT
 
     static char buf[20];
-    unsigned int bus, dev, sub;
+    IPTR bus, dev, sub;
 
     if (obj)
     {
@@ -196,7 +196,7 @@ AROS_UFH3(void, select_function,
     active = xget(object, MUIA_List_Active);
     if (active != MUIV_List_Active_Off)
     {
-	unsigned int val, val2, val3;
+	IPTR val, val2, val3;
 	static char buf[80];
 
 	static char ranges[6][60];
@@ -385,7 +385,7 @@ AROS_UFH3(void, select_function,
 
 	}
     {
-		ULONG io, mem, master, snoop, is66;
+		IPTR io, mem, master, snoop, is66;
 		OOP_GetAttr(obj, aHidd_PCIDevice_isIO, (APTR)&io);
 		OOP_GetAttr(obj, aHidd_PCIDevice_isMEM, (APTR)&mem);
 		OOP_GetAttr(obj, aHidd_PCIDevice_isMaster, (APTR)&master);
