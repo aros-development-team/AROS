@@ -55,7 +55,7 @@
 		return (APTR)&(BootLoaderBase->Args);
 	    break;
 	case BL_Drives:
-	    if (BootLoaderBase->Flags * MB_FLAGS_DRIVES)
+	    if (BootLoaderBase->Flags & MB_FLAGS_DRIVES)
 		return (APTR)&(BootLoaderBase->DriveInfo);
 	    break;
 	default:
