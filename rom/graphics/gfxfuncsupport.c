@@ -281,7 +281,7 @@ ULONG do_pixel_func(struct RastPort *rp
     if (NULL == L)
     {
 	OOP_Object *bm_obj;
-	ULONG width, height;
+	IPTR width, height;
 	
 	bm_obj = OBTAIN_HIDD_BM(bm);
 	if (NULL == bm_obj)
