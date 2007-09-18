@@ -67,7 +67,7 @@
 	
 	if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf))
 	{
-	    ULONG width, height, depth;
+	    IPTR width, height, depth;
 	    
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp,	&width);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);

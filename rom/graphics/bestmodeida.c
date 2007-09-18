@@ -123,8 +123,8 @@
     {
 	OOP_Object *sync, *pf;
 	
-	ULONG redmask, greenmask, bluemask;
-	ULONG gm_depth, gm_width, gm_height;
+	IPTR redmask, greenmask, bluemask;
+	IPTR gm_depth, gm_width, gm_height;
 	ULONG found_depth, found_width, found_height;
 	hiddmode = HIDD_Gfx_NextModeID(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf);
 	if (vHidd_ModeID_Invalid == hiddmode)

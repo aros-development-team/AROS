@@ -60,7 +60,7 @@ VOID destroy_dispinfo_db(APTR dispinfo_db, struct GfxBase *GfxBase)
 APTR build_dispinfo_db(struct GfxBase *GfxBase)
 {
     struct displayinfo_db *db;
-    ULONG numsyncs;
+    IPTR numsyncs;
     
     db = AllocMem(sizeof (struct displayinfo_db), MEMF_PUBLIC | MEMF_CLEAR);
     if (NULL != db) {
@@ -172,7 +172,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	    
 	struct CyberModeNode *cmnode;
 	UWORD *cyberpixfmts;
-	ULONG width, height, depth;
+	IPTR width, height, depth;
 	OOP_Object *sync, *pf;
 	
 	if (!HIDD_Gfx_GetMode(gfxhidd, *hmptr, &sync, &pf)) {
@@ -339,7 +339,7 @@ ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase)
 ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 {
     /* First lookup the pixfmt for the ID */
-    ULONG retval;
+    IPTR retval;
     OOP_Object *sync, *pf;
     HIDDT_ModeID hiddmode;
     
@@ -348,7 +348,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
     retval = (ULONG)-1;
     
     if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf)) {
-        ULONG depth;
+        IPTR depth;
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
     
 	if (depth < 8) {
@@ -424,11 +424,12 @@ HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase)
     OOP_Object *gfxhidd;
     HIDDT_ModeID *modes, *m;
     struct TagItem querytags[] = { { TAG_DONE, 0UL } };
-    
+
     gfxhidd = SDD(GfxBase)->gfxhidd;
     
     /* Query the gfxhidd for all modes */
     modes = HIDD_Gfx_QueryModeIDs(gfxhidd, querytags);
+
     if (NULL != modes) {
 	ULONG best_resolution = 0;
 	ULONG best_depth = 0;

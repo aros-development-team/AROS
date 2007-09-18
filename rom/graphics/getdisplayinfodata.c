@@ -196,7 +196,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	case DTAG_DIMS:
 	{
 	    struct DimensionInfo *di;
-	    ULONG depth, width, height;
+	    IPTR depth, width, height;
 	    
 	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp,   &width);
