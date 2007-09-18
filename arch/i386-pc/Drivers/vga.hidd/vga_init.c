@@ -25,7 +25,7 @@ extern struct vgaModeDesc vgaDefMode[];
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 static OOP_AttrBase HiddPixFmtAttrBase;	// = 0;

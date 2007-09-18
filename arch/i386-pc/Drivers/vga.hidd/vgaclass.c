@@ -32,7 +32,7 @@
 
 #include LC_LIBDEFS_FILE
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define ONLY640
@@ -779,7 +779,7 @@ static int PCVGA_InitAttrs(LIBBASETYPEPTR LIBBASE)
 /*************** free_vgaclass()  **********************************/
 static int PCVGA_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
-    EnterFunc(bug("PCVGA_Expunge\n", xsd));
+    EnterFunc(bug("PCVGA_Expunge\n"));
 
     OOP_ReleaseAttrBases(attrbases);
     
