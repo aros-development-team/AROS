@@ -3,4 +3,4 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-pc-i386-kbd \
     modname=kbd modtype=hidd \
-    files="kbd_init kbdclass kbd_common"
+    files="kbd_init kbdclass kbd_common" uselibs="oop hiddstubs"
