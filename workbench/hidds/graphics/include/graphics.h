@@ -151,11 +151,11 @@ typedef enum
     
 } HIDDT_DPMSLevel;
 
-typedef ULONG HIDDT_StdPixFmt;
-typedef ULONG HIDDT_DrawMode;
-typedef ULONG HIDDT_ColorModel;
-typedef ULONG HIDDT_BitMapType;
-typedef ULONG HIDDT_ModeID;
+typedef IPTR HIDDT_StdPixFmt;
+typedef IPTR HIDDT_DrawMode;
+typedef IPTR HIDDT_ColorModel;
+typedef IPTR HIDDT_BitMapType;
+typedef IPTR HIDDT_ModeID;
 
 #define vHidd_ModeID_Invalid ((HIDDT_ModeID)-1)
 
@@ -312,7 +312,7 @@ enum
 
 
 typedef UWORD HIDDT_ColComp;	/* Color component */
-typedef ULONG HIDDT_Pixel;
+typedef IPTR  HIDDT_Pixel;
 
 	
 typedef struct

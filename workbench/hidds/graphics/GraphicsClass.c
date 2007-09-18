@@ -343,7 +343,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     }
     else
     { /* if (displayable) */
-	ULONG width, height;
+	IPTR width, height;
     
 	/* To get a pixfmt for an offscreen bitmap we either need 
 	    (ModeID || ( (Width && Height) && StdPixFmt) || ( (Width && Height) && Friend))
@@ -1150,7 +1150,8 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
     };
     struct HIDDGraphicsData *data;
     IPTR    	    	    width, height;
-    ULONG   	    	    i, numentries;
+    ULONG   	    	    i;
+    IPTR                    numentries;
     OOP_Object      	    *src_colmap;
     APTR		    psrc_colmap = &src_colmap;
     
@@ -1370,7 +1371,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     
 #if 0
     {
-	ULONG sw, sh, dw, dh;
+	IPTR sw, sh, dw, dh;
 	D(bug("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
 	    , obj, msg->dest, msg->width, msg->height));
 
