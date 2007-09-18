@@ -159,9 +159,9 @@ AROS_UFH3(void, Enumerator,
 {
     AROS_USERFUNC_INIT
 
-    ULONG buf;
-    ULONG size;
-    ULONG Vendor;
+    IPTR buf;
+    IPTR size;
+    IPTR Vendor;
     OOP_Object *driver;
     struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
     struct HWData *sd = hook->h_Data;
