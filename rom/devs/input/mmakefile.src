@@ -8,5 +8,5 @@ FILES := processevents support
 
 %build_module mmake=kernel-input \
   modname=input modtype=device \
-  files="input $(FUNCS) $(FILES)" \
-  objdir=$(GENDIR)/rom/input
+  files="input $(FUNCS) $(FILES)"
+
