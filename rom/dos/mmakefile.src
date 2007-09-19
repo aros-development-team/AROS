@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(TOP)/rom/devs
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
-IMAGE_TYPES := aos aout elf elf_aros
+IMAGE_TYPES := aos aout elf elf64 elf_aros
 FILES	  := dosboot errorlist inithidds lddemon runprocess \
 	     filesystem_support match_misc newcliproc rootnode dosdoio\
 	     patternmatching internalseek internalflush \
