@@ -7,7 +7,6 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 
 %build_module mmake=kernel-gameport \
   modname=gameport modtype=device \
-  objdir=$(GENDIR)/rom/gameport \
   files=gameport uselibs="oop"
 
 #MM includes-copy

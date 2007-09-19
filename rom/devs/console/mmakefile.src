@@ -10,8 +10,7 @@ FUNCS	:=  cdinputhandler rawkeyconvert
 %build_module mmake=kernel-console \
   modname=console modtype=device \
   files="console $(FUNCS) $(FILES)" \
-  uselibs="amiga rom" \
-  objdir=$(GENDIR)/rom/console
+  uselibs="amiga rom"
 
 #MM includes-copy
 
