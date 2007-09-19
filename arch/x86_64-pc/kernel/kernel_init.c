@@ -120,7 +120,7 @@ static char cmdLine[200];
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
-    rkprintf("[Kernel] Booting into kernel.resource...");
+    rkprintf("[Kernel] Booting into kernel.resource...\n");
     struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
 
     /* Enable fxsave/fxrstor */ 
