@@ -33,8 +33,8 @@ struct hunk
 
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
-                         LONG * funcarray,
-                         LONG * stack,
+                         SIPTR * funcarray,
+                         SIPTR * stack,
                          struct DosLibrary * DOSBase)
 {
   #define ERROR(a)    { *error=a; goto end; }
