@@ -9,7 +9,7 @@
                 Original file was created by digulla.
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -233,6 +233,10 @@ static void * load_block
     struct DosLibrary *DOSBase
 )
 {
+    D(bug("[ELF Loader] Load Block\n"));
+    D(bug("[ELF Loader] (size=%d)\n",size));
+    D(bug("[ELF Loader] (funcarray=0x%x)\n",funcarray));
+    D(bug("[ELF Loader] (funcarray[1]=0x%x)\n",funcarray[1]));
     void *block = MyAlloc(size, MEMF_ANY);
     if (block)
     {
@@ -261,15 +265,19 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
+    D(bug("[ELF Loader] ELF object\n"));
 
     if
     (
-        eh->ident[EI_CLASS]   != ELFCLASS32  ||
+        #if defined(__x86_64__)
+            eh->ident[EI_CLASS]   != ELFCLASS64  ||
+	#else
+            eh->ident[EI_CLASS]   != ELFCLASS32  ||
+	#endif
         eh->ident[EI_VERSION] != EV_CURRENT  ||
         eh->type              != ET_REL      ||
 
         #if defined(__i386__)
-
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
 
@@ -278,23 +286,29 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 	    eh->machine        != EM_X86_64
 	    
         #elif defined(__mc68000__)
-
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
+
         #elif defined(__ppc__) || defined(__powerpc__)
 	    eh->ident[EI_DATA] != ELFDATA2MSB ||
 	    eh->machine        != EM_PPC
+
         #elif defined(__arm__)
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_ARM
 #warning ARM has not been tested, yet!
+
         #else
         #    error Your architecture is not supported
         #endif
     )
     {
         D(bug("[ELF Loader] Object is of wrong type\n"));
-        D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32));
+        #if defined(__x86_64__)
+            D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS64));
+	#else
+            D(bug("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32));
+	#endif
         D(bug("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT));
         D(bug("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL));
 #if defined (__i386__)
