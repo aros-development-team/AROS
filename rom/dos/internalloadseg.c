@@ -83,6 +83,7 @@
     static const segfunc_t funcs[] = 
     {
         SEGFUNC(ELF),
+        SEGFUNC(ELF64),
     #if !defined(__mc68000__) && !defined(__arm__)
         SEGFUNC(ELF_AROS),
     #endif      
