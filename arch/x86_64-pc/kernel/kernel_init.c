@@ -139,6 +139,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     /* Set TSS, GDT, LDT and MMU up */
     core_SetupGDT();
     core_SetupIDT();
+    core_SetupMMU();
 
     (rkprintf("[Kernel] APIC_BASE_MSR=%016p\n", rdmsrq(27)));
 
@@ -343,4 +344,82 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
     return BootMsg;
     
     AROS_LIBFUNC_EXIT
+}
+
+/*
+    The MMU pages and directories. They are stored at fixed location and may be either reused in the 
+    64-bit kernel, or replaced by it. Four PDE directories (PDE2M structures) are enough to map whole
+    4GB address space.
+*/
+static struct PML4E PML4[512] __attribute__((used,aligned(4096)));
+static struct PDPE PDP[512] __attribute__((used,aligned(4096)));
+static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096)));
+
+void core_SetupMMU()
+{
+    int i;
+    struct PDE2M *pdes[] = { &PDE[0], &PDE[1], &PDE[2], &PDE[3] };
+    
+    rkprintf("[Kernel] Re-creating the MMU pages for first 4GB area\n");
+
+    /* PML4 Entry - we need only the first out of 16 entries */
+    PML4[0].p  = 1; /* present */
+    PML4[0].rw = 1; /* read/write */
+    PML4[0].us = 1; /* accessible for user */
+    PML4[0].pwt= 0; /* write-through cache */
+    PML4[0].pcd= 0; /* cache enabled */
+    PML4[0].a  = 0; /* not yet accessed */
+    PML4[0].mbz= 0; /* must be zero */
+    PML4[0].base_low = (unsigned int)PDP >> 12;
+    PML4[0].avl= 0;
+    PML4[0].nx = 0;
+    PML4[0].avail = 0;
+    PML4[0].base_high = 0;
+
+    /*
+        PDP Entries. There are four of them used in order to define 2048 pages of 2MB each.
+     */
+    for (i=0; i < 4; i++)
+    {
+        int j;
+        
+        /* Set the PDP entry up and point to the PDE table */
+        PDP[i].p  = 1;
+        PDP[i].rw = 1;
+        PDP[i].us = 1;
+        PDP[i].pwt= 0;
+        PDP[i].pcd= 0;
+        PDP[i].a  = 0;
+        PDP[i].mbz= 0;
+        PDP[i].base_low = (unsigned int)pdes[i] >> 12;
+
+        PDP[i].nx = 0;
+        PDP[i].avail = 0;
+        PDP[i].base_high = 0;
+
+        for (j=0; j < 512; j++)
+        {
+            /* Set PDE entries - use 2MB memory pages, with full supervisor and user access */
+            
+            struct PDE2M *PDE = pdes[i];
+            PDE[j].p  = 1;
+            PDE[j].rw = 1;
+            PDE[j].us = 1;
+            PDE[j].pwt= 0;  // 1
+            PDE[j].pcd= 0;  // 1
+            PDE[j].a  = 0;
+            PDE[j].d  = 0;
+            PDE[j].g  = 0;
+            PDE[j].pat= 0;
+            PDE[j].ps = 1;
+            PDE[j].base_low = ((i << 30) + (j << 21)) >> 13;
+            
+            PDE[j].avail = 0;
+            PDE[j].nx = 0;
+            PDE[j].base_high = 0;
+        }
+    }
+    
+    wrcr(cr3, &PML4);
+    rkprintf("[Kernel] PML4 @ %012p\n", &PML4);
 }

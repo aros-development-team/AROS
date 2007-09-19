@@ -45,6 +45,7 @@ void core_IRQHandle(regs_t regs);
 void core_Cause(struct ExecBase *SysBase);
 void core_SetupIDT();
 void core_SetupGDT();
+void core_SetupMMU();
 void core_DefaultIRETQ();
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
