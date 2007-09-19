@@ -748,28 +748,27 @@ ProcessMenuItem( UWORD id )
 
 TEXT    FileName[ 108 ];
 
-ULONG RTTags[] =
+struct TagItem RTTags[] =
 {
-    RTFI_Flags,        0,
-    RT_Window,        0,
-    RT_LockWindow,        TRUE,
-    RT_ShareIDCMP,        TRUE,
-    RT_IntuiMsgFunc,     NULL,
+    {RTFI_Flags,        0},
+    {RT_Window,        0},
+    {RT_LockWindow,        TRUE},
+    {RT_ShareIDCMP,        TRUE},
+    {RT_IntuiMsgFunc,     &IntuiHook},
     TAG_END
 };
 
-#define TAG_FLAGS    1
-#define TAG_WINDOW    3
+#define TAG_FLAGS    0
+#define TAG_WINDOW    1
 
 
 LONG
 GetFilename( STRPTR file, STRPTR hail, ULONG flags )
 {
-    RTTags[ 9  ] = &IntuiHook;
-    RTTags[ TAG_FLAGS  ] = flags;
-    RTTags[ TAG_WINDOW ] = ( ULONG ) WindowPtr;
+    RTTags[ TAG_FLAGS  ].ti_Data = flags;
+    RTTags[ TAG_WINDOW ].ti_Data = WindowPtr;
 
-    if( rtFileRequestA( FileReq, FileName, hail, ( struct TagItem * ) RTTags ) )
+    if( rtFileRequestA( FileReq, FileName, hail, RTTags ) )
     {
         strcpy( file, FileReq->Dir );
         return( ( LONG ) AddPart( file, FileName, 256 ) );

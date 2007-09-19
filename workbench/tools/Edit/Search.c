@@ -42,9 +42,9 @@ struct NewWindow NewSWin =						/* Main window information */
 };
 
 WORD  SWinZoom[4];
-ULONG SWinTags[] = {
-	WA_Zoom,NULL,
-	WA_NewLookMenus,TRUE,
+struct TagItem SWinTags[] = {
+	{WA_Zoom,SWinZoom},
+	{WA_NewLookMenus,TRUE},
 	TAG_DONE
 };
 
@@ -162,8 +162,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		NewSWin.TopEdge = 50;
 
 	/** Setting up GUI **/
-	SWinTags[1] = SWinZoom;
-	if(NULL != (swin = (APTR) OpenWindowTagList(&NewSWin, (struct TagItem *)SWinTags)))
+	if(NULL != (swin = (APTR) OpenWindowTagList(&NewSWin, SWinTags)))
 	{
 		UWORD I;
 		rep = search = sgads = NULL;

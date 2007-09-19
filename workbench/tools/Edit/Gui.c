@@ -183,8 +183,8 @@ struct Scroll ScrollBar = {
 };
 
 /* Menu color information */
-ULONG MenuTags[] = {
-	GTMN_FrontPen, 0L,
+struct TagItem MenuTags[] = {
+	{GTMN_FrontPen, 0L},
 	TAG_DONE
 };
 
@@ -485,11 +485,11 @@ void load_pens( void )
 
 		fginfo = (prefs.use_pub ? 0 : di->dri_Pens[FILLTEXTPEN]);
 		bginfo = (prefs.use_pub ? 1 : di->dri_Pens[FILLPEN]);
-		MenuTags[1] = di->dri_Pens[BARDETAILPEN];
+		MenuTags[0].ti_Data = di->dri_Pens[BARDETAILPEN];
 
 		/* This one is only available on system V39+ */
 		if(di->dri_Version>=2 && prefs.backdrop && prefs.use_pub != 0)
-			fginfo = MenuTags[1], bginfo = di->dri_Pens[BARBLOCKPEN];
+			fginfo = MenuTags[0].ti_Data, bginfo = di->dri_Pens[BARBLOCKPEN];
 
 		/* Get screen depth-arrange image width */
 		if((dummy = (struct Image *) NewObject(NULL, "sysiclass",
@@ -530,7 +530,7 @@ long setup( void )
 	if(Vi || (Vi = (void *) GetVisualInfoA(Scr,NULL)))
 	{
 		/* Build the menu-strip and compute menu items size */
-		if(Menu || (Menu = (void *) CreateMenusA(newmenu, (struct TagItem *)MenuTags)))
+		if(Menu || (Menu = (void *) CreateMenusA(newmenu, MenuTags)))
 		{
 			if( LayoutMenus(Menu, Vi, GTMN_TextAttr, (ULONG)&prefs.attrscr, TAG_DONE) )
 			{
