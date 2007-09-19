@@ -263,9 +263,9 @@ void StopError(struct Window *W)
 
 /** Getting standard busy pointer **/
 ULONG IDCMPFlags;
-ULONG busy_pointer_tags[] =
+struct TagItem busy_pointer_tags[] =
 {
-	WA_BusyPointer,TRUE,
+	{WA_BusyPointer,TRUE},
 	TAG_END
 };
 
@@ -279,7 +279,7 @@ void BusyWindow(struct Window *W)
 		ModifyIDCMP(W,0);
 		/* Change window's pointer (OS 3.0+ only) */
 		if(IntuitionBase->LibNode.lib_Version >= 39)
-			SetWindowPointerA(W,(struct TagItem *)busy_pointer_tags);
+			SetWindowPointerA(W,busy_pointer_tags);
 	}
 }
 
