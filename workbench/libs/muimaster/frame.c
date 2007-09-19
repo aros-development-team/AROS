@@ -48,7 +48,7 @@ void DrawPartToImage(struct NewImage *src, struct NewImage *dest, UWORD sx, UWOR
 }
 
 
-static void  DrawTileToImage(BOOL alpha, struct RastPort *rp, struct NewImage *ni, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh, UWORD posx, UWORD posy)
+static void  DrawTileToImage(BOOL alpha, BOOL tc, struct RastPort *rp, struct NewImage *ni, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh, UWORD posx, UWORD posy)
 {
 
     ULONG dy, dx;
@@ -74,13 +74,29 @@ static void  DrawTileToImage(BOOL alpha, struct RastPort *rp, struct NewImage *n
             if ((width-dw)<0) dw = width;
             width -= dw;
 
-            if (dest != NULL)
+            if (tc)
             {
-                DrawPartToImage(ni, dest, _sx, _sy, dw, dh, dx, dy);
+                if (dest != NULL)
+                {
+                    DrawPartToImage(ni, dest, _sx, _sy, dw, dh, dx, dy);
+                }
+                else
+                {
+                    if (alpha) WritePixelArrayAlpha(ni->data, _sx, _sy, ni->w*4, rp, dx + posx, dy + posy, dw, dh, 0xffffffff); else WritePixelArray(ni->data, _sx, _sy, ni->w*4, rp, dx + posx, dy + posy, dw, dh, RECTFMT_ARGB);
+                }
             }
             else
             {
-                if (alpha) WritePixelArrayAlpha(ni->data, _sx, _sy, ni->w*4, rp, dx + posx, dy + posy, dw, dh, 0xffffffff); else WritePixelArray(ni->data, _sx, _sy, ni->w*4, rp, dx + posx, dy + posy, dw, dh, RECTFMT_ARGB);
+                if (ni->bitmap != NULL)
+                {
+                    if (alpha) {
+                        if (ni->mask) BltMaskBitMapRastPort(ni->bitmap, _sx, _sy, rp, dx + posx, dy + posy, dw, dh, 0xe0, (PLANEPTR) ni->mask); else BltBitMapRastPort(ni->bitmap, _sx, _sy, rp, dx + posx, dy + posy, dw, dh, 0xc0);
+                    }
+                    else
+                    {
+                        BltBitMapRastPort(ni->bitmap, _sx, _sy, rp, dx + posx, dy + posy, dw, dh, 0xc0);
+                    }
+                }
             }
             dx += dw;
         }
@@ -88,10 +104,11 @@ static void  DrawTileToImage(BOOL alpha, struct RastPort *rp, struct NewImage *n
     }
 }
 
-static void  draw_tile_frame(struct RastPort *rport, BOOL direct, BOOL alpha, struct dt_frame_image *fi, struct NewImage *src, struct NewImage *dest, int gl, int gt, int gw, int gh, int left, int top, int width, int height)
+static void  draw_tile_frame(struct RastPort *rport, BOOL tc, BOOL direct, BOOL alpha, struct dt_frame_image *fi, struct NewImage *src, struct NewImage *dest, int gl, int gt, int gw, int gh, int left, int top, int width, int height)
 {
     int lw, rw, th, bh, right, bottom, gr, gb, lp, tp, rp, bp, mw, mh;
 
+    
     right = left + width;
     bottom = top + height;
 
@@ -153,18 +170,18 @@ static void  draw_tile_frame(struct RastPort *rport, BOOL direct, BOOL alpha, st
     
     if (direct) d = NULL; else d = dest;
     
-    DrawTileToImage(alpha, rport, src, d, lp, tp, lw, th, 0 , 0, lw, th, left, top);
-    DrawTileToImage(alpha, rport, src, d, lp, bp, lw, bh, 0 , height - bh, lw, bh, left, top);
-    DrawTileToImage(alpha, rport, src, d, rp, tp, rw, th, width - rw, 0, rw, th, left, top);
-    DrawTileToImage(alpha, rport, src, d, rp, bp, rw, bh, width - rw , height - bh, rw, bh, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, lp, tp, lw, th, 0 , 0, lw, th, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, lp, bp, lw, bh, 0 , height - bh, lw, bh, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, rp, tp, rw, th, width - rw, 0, rw, th, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, rp, bp, rw, bh, width - rw , height - bh, rw, bh, left, top);
       
-    DrawTileToImage(alpha, rport, src, d, fi->tile_left, tp, src->w - fi->tile_left - fi->tile_right, th, lw, 0, mw, th, left, top);
-    DrawTileToImage(alpha, rport, src, d, fi->tile_left, bp, src->w - fi->tile_left - fi->tile_right, bh, lw, height - bh, mw, bh, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, fi->tile_left, tp, src->w - fi->tile_left - fi->tile_right, th, lw, 0, mw, th, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, fi->tile_left, bp, src->w - fi->tile_left - fi->tile_right, bh, lw, height - bh, mw, bh, left, top);
 
-    DrawTileToImage(alpha, rport, src, d, lp, fi->tile_top, lw, src->h - fi->tile_bottom - fi->tile_top, 0 , th, lw, mh, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, lp, fi->tile_top, lw, src->h - fi->tile_bottom - fi->tile_top, 0 , th, lw, mh, left, top);
 
-    DrawTileToImage(alpha, rport, src, d, rp, fi->tile_top, rw,  src->h - fi->tile_bottom - fi->tile_top, width - rw, th, rw, mh, left, top);
-    DrawTileToImage(alpha, rport, src, d, fi->tile_left, fi->tile_top, src->w - fi->tile_left - fi->tile_right, src->h - fi->tile_bottom - fi->tile_top, lw, th, mw, mh, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, rp, fi->tile_top, rw,  src->h - fi->tile_bottom - fi->tile_top, width - rw, th, rw, mh, left, top);
+    DrawTileToImage(alpha, tc, rport, src, d, fi->tile_left, fi->tile_top, src->w - fi->tile_left - fi->tile_right, src->h - fi->tile_bottom - fi->tile_top, lw, th, mw, mh, left, top);
 }
 
 struct FrameFillInfo
@@ -192,6 +209,12 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
 
     struct FrameFillInfo *FFI = (struct FrameFillInfo *)Hook; // get the data for our backfillhook
 
+    ULONG   depth = (ULONG) GetBitMapAttr(RP->BitMap, BMA_DEPTH);
+
+    BOOL    truecolor = TRUE;
+
+    if (depth < 15) truecolor = FALSE;
+    
     int left = BFM->Bounds.MinX;
     int top = BFM->Bounds.MinY;
     int width = BFM->Bounds.MaxX - left + 1;
@@ -203,12 +226,14 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
     BOOL    alpha = !FFI->fi->noalpha;
     BOOL    direct = FALSE;
 
+    if (!truecolor) direct = TRUE;
+
     if (!direct)
     {
         struct NewImage *dest = NewImageContainer(width, height);
         if (dest != NULL)
         {
-            draw_tile_frame(NULL, FALSE, alpha, FFI->fi, FFI->ni, dest, FFI->gl, FFI->gt, FFI->gw, FFI->gh, left, top, width, height);
+            draw_tile_frame(NULL, truecolor, FALSE, alpha, FFI->fi, FFI->ni, dest, FFI->gl, FFI->gt, FFI->gw, FFI->gh, left, top, width, height);
             if (FFI->fi->noalpha) WritePixelArray(dest->data, 0, 0, dest->w*4, RP, left, top, width, height, RECTFMT_ARGB); else WritePixelArrayAlpha(dest->data, 0, 0, dest->w*4, RP, left, top, width, height, 0xffffffff);
 
             DisposeImageContainer(dest);
@@ -217,7 +242,7 @@ AROS_UFH3S(void, WindowPatternBackFillFunc,
 
     if (direct)
     {
-        draw_tile_frame(RP, FALSE, alpha, FFI->fi, FFI->ni, NULL, FFI->gl, FFI->gt, FFI->gw, FFI->gh, left, top, width, height);
+        draw_tile_frame(RP, truecolor, FALSE, alpha, FFI->fi, FFI->ni, NULL, FFI->gl, FFI->gt, FFI->gw, FFI->gh, left, top, width, height);
     }
     
  AROS_USERFUNC_EXIT
