@@ -195,7 +195,7 @@ static int read_block
     ULONG              offset,
     APTR               buffer,
     ULONG              size,
-    LONG              *funcarray,
+    SIPTR              *funcarray,
     struct DosLibrary *DOSBase
 )
 {
@@ -229,7 +229,7 @@ static void * load_block
     BPTR               file,
     ULONG              offset,
     ULONG              size,
-    LONG              *funcarray,
+    SIPTR             *funcarray,
     struct DosLibrary *DOSBase
 )
 {
@@ -343,7 +343,7 @@ static int load_hunk
     BPTR                 file,
     BPTR               **next_hunk_ptr,
     struct sheader      *sh,
-    LONG                *funcarray,
+    SIPTR               *funcarray,
     BOOL                 do_align,
     struct DosLibrary   *DOSBase
 )
@@ -591,8 +591,8 @@ BPTR InternalLoadSeg_ELF
 (
     BPTR               file,
     BPTR               table __unused,
-    LONG              *funcarray,
-    LONG              *stack __unused,
+    SIPTR             *funcarray,
+    SIPTR             *stack __unused,
     struct DosLibrary *DOSBase
 )
 {

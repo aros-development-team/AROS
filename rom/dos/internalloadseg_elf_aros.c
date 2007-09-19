@@ -409,8 +409,8 @@ BPTR InternalLoadSeg_ELF_AROS
 (
     BPTR               file,
     BPTR               table __unused,
-    LONG              *funcarray,
-    LONG              *stack __unused,
+    SIPTR             *funcarray,
+    SIPTR             *stack __unused,
     struct DosLibrary *DOSBase
 )
 {

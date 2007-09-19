@@ -149,8 +149,8 @@ static LONG relocate(   struct aout_hdr *head,
 
 BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR table,
-                          LONG * functionarray,
-                          LONG * stack,
+                          SIPTR * functionarray,
+                          SIPTR * stack,
                           struct DosLibrary * DOSBase)
 {
 /* Currently the only parameter passed to this function that is
