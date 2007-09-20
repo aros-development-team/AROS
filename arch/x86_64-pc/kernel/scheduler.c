@@ -128,7 +128,8 @@ void core_Dispatch(regs_t *regs)
     bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
     /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the XMM state!!!!
-    asm volatile("fxrstor (%0)"::"D"((char *)GetIntETask(task)->iet_Context + sizeof(regs_t)));
+    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
+    asm volatile("fxrstor (%0)"::"D"(sse_ctx));
     
     /* Leave interrupt and jump to the new task */
     core_LeaveInterrupt(regs);
@@ -150,7 +151,8 @@ void core_Switch(regs_t *regs)
     
     /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the XMM state!!!!
-    asm volatile("fxsave (%0)"::"D"((char *)GetIntETask(task)->iet_Context + sizeof(regs_t)));
+    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
+    asm volatile("fxsave (%0)"::"D"(sse_ctx));
     
     /* store IDNestCnt into tasks's structure */  
     task->tc_IDNestCnt = SysBase->IDNestCnt;
