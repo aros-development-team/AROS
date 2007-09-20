@@ -61,7 +61,7 @@ do \
 
 struct JumpVec
 {
-    unsigned char vec[4];
+    unsigned char vec[8];
 };
 /* Internal macros */
 #define __AROS_SET_VEC(v,a)             (*(unsigned long*)(v)->vec=(unsigned long)(a))
