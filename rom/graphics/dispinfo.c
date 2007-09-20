@@ -450,6 +450,7 @@ HIDDT_ModeID get_best_resolution_and_depth(struct GfxBase *GfxBase)
 		res = width * height;
 		if (res > best_resolution) {
 		    ret = *m;
+                    best_resolution = res;
 		}
 		
 	    	best_depth = depth;
