@@ -5,7 +5,7 @@ TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 KOBJS 		:=
 FILES		:= bootstrap screen elfloader support
 
-#MM kernel-bootstrap-x86_64: kernel-kernel-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-pc-x86_64-irq-kobj kernel-pc-i386-kbd-kobj kernel-pc-i386-mouse-kobj
+#MM kernel-bootstrap-x86_64: kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-pc-x86_64-irq-kobj kernel-pc-i386-kbd-kobj kernel-pc-i386-mouse-kobj
 kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-x86_64
 
 setup-pc-x86_64 :
