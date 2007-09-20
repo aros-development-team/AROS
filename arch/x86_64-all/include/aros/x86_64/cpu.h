@@ -49,19 +49,19 @@ register unsigned char * AROS_GET_SP asm("%rsp");
 struct FullJumpVec
 {
     unsigned char jmp;
-    unsigned char vec[8];
+    unsigned char vec[4];
 };
 #define __AROS_SET_FULLJMP(v,a) \
 do \
 {  \
     struct FullJumpVec *_v = v; \
     _v->jmp = 0xE9; \
-    *((ULONG *)(_v->vec))=(ULONG)(a)-(ULONG)(_v)-5;\
+    *((unsigned int *)(_v->vec))=(unsigned int)(a)-(unsigned int)(_v)-5;\
 } while (0)
 
 struct JumpVec
 {
-    unsigned char vec[8];
+    unsigned char vec[4];
 };
 /* Internal macros */
 #define __AROS_SET_VEC(v,a)             (*(unsigned long*)(v)->vec=(unsigned long)(a))
