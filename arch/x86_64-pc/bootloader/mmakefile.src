@@ -1,10 +1,11 @@
 # $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
 include $(TOP)/config/make.cfg
 
+#MM kernel-bootloader-pc-x86_64 : kernel-kernel-pc-x86_64-includes includes
+#MM kernel-bootloader-pc-x86_64-kobj : kernel-kernel-pc-x86_64-includes includes
+#MM kernel-bootloader-pc-x86_64-includes : kernel-kernel-pc-x86_64-includes
+
 %build_module mmake=kernel-bootloader-pc-x86_64 \
     modname=bootloader modtype=resource \
     files="bootloader_init getbootinfo" uselibs="rom utility"
-
-#MM kernel-bootloader-pc-x86_64 : includes
-#MM kernel-bootloader-pc-x86_64-kobj : includes
 
