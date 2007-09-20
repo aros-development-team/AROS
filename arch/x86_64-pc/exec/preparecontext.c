@@ -7,7 +7,10 @@
 #include "etask.h"
 #include "exec_util.h"
 
+#define DEBUG 1
+
 #include <aros/libcall.h>
+#include <aros/debug.h>
 #include <asm/segments.h>
 
 #define Regs(t) ((struct regs_t *)(GetIntETask(t)->iet_Context))
@@ -65,6 +68,8 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
         , MEMF_PUBLIC|MEMF_CLEAR
     );
 
+    D(bug("[exec] PrepareContext: iet_Context = %012p\n", GetIntETask (task)->iet_Context));
+    
     if (!(regs = (ULONG*)GetIntETask (task)->iet_Context))
         return NULL;
 
@@ -104,9 +109,12 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     
     task->tc_SPReg = sp;
  
-    UBYTE current_xmm[SIZEOF_FPU_CONTEXT];
+    UBYTE current_xmm[512+16], *curr = current_xmm;
     
-    asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fxrstor (%0);"::"r"(current_xmm),"r"(&regs[1]));
+    curr = (UBYTE*)(((IPTR)curr + 15) & ~15);
+    IPTR sse_ctx = ((IPTR)regs + sizeof(regs_t) + 15) & ~15;
+    
+    asm volatile("fxsave (%0); fninit; fwait; fxsave (%1); fxrstor (%0);"::"r"(curr),"r"(sse_ctx));
     
     return sp;
 }
