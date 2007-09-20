@@ -24,7 +24,7 @@
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
 #define SIZEOF_FPU_CONTEXT      512
-#define SIZEOF_ALL_REGISTERS    (184 + SIZEOF_FPU_CONTEXT)
+#define SIZEOF_ALL_REGISTERS    (184 + SIZEOF_FPU_CONTEXT + 16)
 
 #define AROS_32BIT_TYPE		int
 #define AROS_64BIT_TYPE		long
