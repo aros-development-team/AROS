@@ -83,7 +83,8 @@ FILES := \
     setfilesize \
     timeport \
     getdeviceproc \
-    minicat
+    minicat \
+    hostlib
 
 EXEDIR := $(AROS_TESTS)
 

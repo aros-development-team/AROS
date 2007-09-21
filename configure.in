@@ -141,6 +141,11 @@ case "$host_os" in
 		aros_host_cpu="$host_cpu"
 		;;
 	esac
+
+        dnl bring in dlopen() and friends. doing this directly sucks, but
+        dnl it always exists on linux and its not clear to me where the
+        dnl appropriate place for a test would be. this file is a mess.
+        aros_host_ldflags="$aros_host_ldflags -ldl"
         ;;
 
     freebsd*)
