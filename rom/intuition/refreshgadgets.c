@@ -56,7 +56,7 @@ AROS_LH3(void, RefreshGadgets,
 {
     AROS_LIBFUNC_INIT
 
-    RefreshGList (gadgets, window, requester, ~0L);
+    RefreshGList (gadgets, window, requester, ~0);
 
     AROS_LIBFUNC_EXIT
 } /* RefreshGadgets */
