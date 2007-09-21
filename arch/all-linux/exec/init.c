@@ -44,6 +44,7 @@ extern const struct Resident
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
+    HostLib_ROMTag,
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
@@ -91,6 +92,7 @@ static const struct Resident *romtagList[] =
     &OOP_ROMTag,			/* ColdStart,   94	 */
     &HIDDCl_ROMTag,			/* ColdStart,   92	 */
     &UXIO_ROMTag,			/* ColdStart,   91	 */
+    &HostLib_ROMTag,                    /* ColdStart,   91       */
 #if defined(__i386__) || defined(__x86_64__)
     &PCI_ROMTag,                        /* ColdStart,   90       */
 //    &PCILx_ROMTag,                      /* ColdStart,   89       */
