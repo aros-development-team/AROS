@@ -74,12 +74,9 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     NSCMD_TD_READ64, TD_READ64 implementation. Basically the same, just packs 
     the 64 bit offset in both io_Offset (31:0) and io_Actual (63:32)
 */
- void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
+static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
-    
-    bug("cmd_Read64: io_Offset=%p, io_Actual=%p, io_Length=%p\n",
-      IOStdReq(io)->io_Offset, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Length);
     
     UQUAD block = (UQUAD)(IOStdReq(io)->io_Offset & 0xffffffff) |
 	((UQUAD)(IOStdReq(io)->io_Actual)) << 32;
@@ -93,7 +90,6 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-    bug("%08x%08x %08x %d\n", block>>32, block, count, unit->au_SectorShift);
 	block >>= unit->au_SectorShift;
 	count >>= unit->au_SectorShift;
 	ULONG cnt = 0;
