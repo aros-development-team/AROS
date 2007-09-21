@@ -31,7 +31,7 @@
 #include LC_LIBDEFS_FILE
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "bitmap.h"
