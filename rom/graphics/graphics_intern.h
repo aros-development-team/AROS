@@ -84,7 +84,7 @@
 struct RegionRectangleExt
 {
     struct RegionRectangle     RR;
-    ULONG                      Counter;
+    IPTR                       Counter;
 };
 
 struct RegionRectangleExtChunk
