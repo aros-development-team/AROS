@@ -48,7 +48,7 @@
 {
   AROS_LIBFUNC_INIT
 
-  long depth, WordsPerPlane, WordsPerLine, count;
+  LONG depth, WordsPerPlane, WordsPerLine, count;
   /* is this a Bob or a VSprite? */
   if (0 != (vs -> Flags & VSPRITE))
   {
@@ -69,7 +69,7 @@
   {
     WORD * PlaneData = vs -> ImageData;
     WORD Data = PlaneData[count];
-    long z;
+    LONG z;
     for (z = 1; z < depth; z++)
     	Data |= PlaneData[count + z*WordsPerPlane];
     (vs -> CollMask)[count] = Data;
@@ -81,7 +81,7 @@
   {
   	WORD * CollMask = vs -> CollMask;
   	WORD Data = CollMask[count];
-  	long z;
+  	LONG z;
   	for (z = 1; z < vs-> Height; z++)
   	  Data |= CollMask[count + z*WordsPerLine];
   	(vs -> BorderLine)[count] = Data;

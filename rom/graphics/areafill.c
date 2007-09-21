@@ -565,7 +565,7 @@ void areafillellipse(struct RastPort  * rp,
   /* intermediate terms to speed up loop */
   LONG t1 = CurVctr[2] * CurVctr[2], t2 = t1 << 1, t3 = t2 << 1;
   LONG t4 = CurVctr[3] * CurVctr[3], t5 = t4 << 1, t6 = t5 << 1;
-  LONG t7 = CurVctr[2] * t5, t8 = t7 << 1, t9 = 0L;
+  LONG t7 = CurVctr[2] * t5, t8 = t7 << 1, t9 = 0;
   LONG d1 = t2 - t7 + (t4 >> 1);  /* error terms */
   LONG d2 = (t1 >> 1) - t8 + t5;
 
