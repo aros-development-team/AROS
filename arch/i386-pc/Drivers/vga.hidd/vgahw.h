@@ -30,12 +30,12 @@
 	__asm__ __volatile__ ("outw %%ax,%%dx"::"a"(__value),"d"(port)); })
 
 #define inl(port) \
-    ({	long __value;	\
+    ({	LONG __value;	\
 	__asm__ __volatile__ ("inl %%dx,%%eax":"=a"(__value):"d"(port));	\
 	__value;	})
 
 #define outl(port,val) \
-    ({	long __value=(val);	\
+    ({	LONG __value=(val);	\
 	__asm__ __volatile__ ("outl %%eax,%%dx"::"a"(__value),"d"(port)); })
 
 #define DACDelay \

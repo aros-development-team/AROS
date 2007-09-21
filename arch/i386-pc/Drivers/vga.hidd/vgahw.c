@@ -501,9 +501,9 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
 void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
 {
     int     	    	    width, height, FBPitch, left, right, i, j, SRCPitch, phase;
-    register unsigned long  m;
+    register ULONG          m;
     unsigned char   	    s1, s2, s3, s4;
-    unsigned long   	    *src, *srcPtr;
+    ULONG              	    *src, *srcPtr;
     unsigned char   	    *dst, *dstPtr;
    
     FBPitch  = bmap->width >> 3;
@@ -522,10 +522,10 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
     {
         width  = (right - left + 1) >> 3;
         height = pbox->y2 - pbox->y1 + 1;
-        src    = (unsigned long*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
+        src    = (ULONG*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
         dst    = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
 
-	if((phase = ((long)dst & 3L)))
+	if((phase = ((LONG)dst & 3L)))
 	{
 	    phase = 4 - phase;
 	    if(phase > width) phase = width;
@@ -557,7 +557,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
  		s3 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
 		m = (srcPtr[7] & 0x01010101) | ((srcPtr[6] & 0x01010101) << 4);
  		s4 = (m >> 24) | (m >> 15) | (m >> 6) | (m << 3);
-		*((unsigned long*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
@@ -593,7 +593,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
  		s3 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
 		m = (srcPtr[7] & 0x02020202) | ((srcPtr[6] & 0x02020202) << 4);
  		s4 = (m >> 25) | (m >> 16) | (m >> 7) | (m << 2);
-		*((unsigned long*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
@@ -628,7 +628,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
  		s3 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
 		m = (srcPtr[7] & 0x04040404) | ((srcPtr[6] & 0x04040404) << 4);
  		s4 = (m >> 26) | (m >> 17) | (m >> 8) | (m << 1);
-		*((unsigned long*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;
@@ -664,7 +664,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
  		s3 = (m >> 27) | (m >> 18) | (m >> 9) | m;
 		m = (srcPtr[7] & 0x08080808) | ((srcPtr[6] & 0x08080808) << 4);
  		s4 = (m >> 27) | (m >> 18) | (m >> 9) | m;
-		*((unsigned long*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
+		*((ULONG*)dstPtr) = s1 | (s2 << 8) | (s3 << 16) | (s4 << 24);
 		srcPtr += 8;
 		dstPtr += 4;
 		i -= 4;

@@ -416,7 +416,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
     	if ((msg->srcY > msg->destY) || ((msg->srcY == msg->destY) && (msg->srcX >= msg->destX)))
 	{
-	    if ((phase = ((long)s_start & 3L)))
+	    if ((phase = ((LONG)s_start & 3L)))
 	    {
 		phase = 4 - phase;
 		if (phase > width) phase = width;
@@ -429,7 +429,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	    s_start += (cnt - 1) * data->width + width;
 	    d_start += (cnt - 1) * ddata->width + width;
 
-	    phase = ((long)s_start & 3L);
+	    phase = ((LONG)s_start & 3L);
 	    if (phase > width) phase = width;
 	    width -= phase;
 	    
@@ -465,7 +465,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
                 	}
 	        	while (i >= 4)
 	        	{
-		            *((unsigned long*)d_start) &= *((unsigned long*)s_start);
+		            *((ULONG*)d_start) &= *((ULONG*)s_start);
 		            d_start += 4;
 		            s_start += 4;
 		            i -= 4;
@@ -492,7 +492,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	        	{
 		            d_start -= 4;
 		            s_start -= 4;
-		            *((unsigned long*)d_start) &= *((unsigned long*)s_start);
+		            *((ULONG*)d_start) &= *((ULONG*)s_start);
 		            i -= 4;
 	        	}
 	        	while (i--)
@@ -519,7 +519,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
                 	}
 	        	while (i >= 4)
 	        	{
-		            *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
+		            *((ULONG*)d_start) ^= *((ULONG*)s_start);
 		            d_start += 4;
 		            s_start += 4;
 		            i -= 4;
@@ -546,7 +546,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	        	{
 		            d_start -= 4;
 		            s_start -= 4;
-		            *((unsigned long*)d_start) ^= *((unsigned long*)s_start);
+		            *((ULONG*)d_start) ^= *((ULONG*)s_start);
 		            i -= 4;
 	        	}
 	        	while (i--)
@@ -572,7 +572,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
                 	}
 	        	while (i >= 4)
 	        	{
-		            *((unsigned long*)d_start) = 0;
+		            *((ULONG*)d_start) = 0;
 		            d_start += 4;
 		            i -= 4;
 	        	}
@@ -596,7 +596,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	        	while (i >= 4)
 	        	{
 		            d_start -= 4;
-		            *((unsigned long*)d_start) = 0;
+		            *((ULONG*)d_start) = 0;
 		            i -= 4;
 	        	}
 	        	while (i--)
@@ -622,7 +622,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
                 	}
 	        	while (i >= 4)
 	        	{
-		            *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		            *((ULONG*)d_start) = ~*((ULONG*)d_start);
 		            d_start += 4;
 		            i -= 4;
 	        	}
@@ -648,7 +648,7 @@ VOID PCVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 	        	while (i >= 4)
 	        	{
 		            d_start -= 4;
-		            *((unsigned long*)d_start) = ~*((unsigned long*)d_start);
+		            *((ULONG*)d_start) = ~*((ULONG*)d_start);
 		            i -= 4;
 	        	}
 	        	while (i--)

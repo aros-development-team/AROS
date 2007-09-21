@@ -44,9 +44,9 @@ struct bitmap_data
 {
     struct vgaHWRec	*Regs;		/* Registers */
     unsigned char	*VideoData;	/* Pointing to video data */
-    unsigned long	width;		/* Width of bitmap */
-    unsigned long	height;		/* Height of bitmap */
-    unsigned long	cmap[16];	/* ColorMap */
+    unsigned int	width;		/* Width of bitmap */
+    unsigned int 	height;		/* Height of bitmap */
+    unsigned int 	cmap[16];	/* ColorMap */
     char		bpp;    	/* 8 -> chunky; planar otherwise */
     char		disp;		/* !=0 - displayable */
 };
