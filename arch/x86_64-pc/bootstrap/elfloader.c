@@ -230,6 +230,7 @@ void load_elf_file(void *file, unsigned long long virt)
     struct elfheader eh;
     struct sheader *sh;
     long i;
+    int addr_displayed = 0;
     
     D(kprintf("[ELF Loader] Loading ELF module from address %p\n", (unsigned int)file));
     
@@ -260,6 +261,11 @@ void load_elf_file(void *file, unsigned long long virt)
             if (!load_hunk(file, &sh[i]))
             {
                 kprintf("[ELF Loader] Error at loading of the hunk!\n");
+            }
+            else if (!addr_displayed)
+            {
+                kprintf("%p", sh[i].addr);
+                addr_displayed = 1;
             }
         }	
     }

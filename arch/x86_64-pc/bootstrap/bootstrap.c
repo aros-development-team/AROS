@@ -548,8 +548,9 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         struct module *m;
         for (m = mod; module_count > 0; module_count--, m++)
         {
-            kprintf("[BOOT] Loading %s\n", m->name);
+            kprintf("[BOOT] Loading %s... ", m->name);
             load_elf_file(m->address, 0);
+            kprintf("\n");
         }
     }
     
