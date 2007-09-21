@@ -97,7 +97,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
 
     LOCKWINDOWLAYERS(window);
 
-    if (windowTitle == (CONST_STRPTR)~0L)
+    if (windowTitle == (CONST_STRPTR)~0)
     {
          change = FALSE;
     }
@@ -119,7 +119,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     /* Change screen's title */
     change = TRUE;
 
-    if ((screenTitle == window->ScreenTitle) || (screenTitle == (CONST_STRPTR)~0L)) change = FALSE;
+    if ((screenTitle == window->ScreenTitle) || (screenTitle == (CONST_STRPTR)~0)) change = FALSE;
 
     if (change)
     {

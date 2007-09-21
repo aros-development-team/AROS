@@ -124,7 +124,7 @@ AROS_LH6(void, DrawImageState,
             UWORD * bits[8];
             WORD    xoff, yoff, plane;
 
-    	#define START_BITMASK   0x8000L
+    	#define START_BITMASK   0x8000
 
             /* Change RastPort to the mode I need */
             SetDrMd (rp, JAM1);

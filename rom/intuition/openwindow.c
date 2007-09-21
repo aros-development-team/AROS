@@ -115,8 +115,8 @@ AROS_LH1(struct Window *, OpenWindow,
     STRPTR          	    	 pubScreenName = NULL;
     UBYTE           	    	*screenTitle = NULL;
     BOOL            	    	 autoAdjust = FALSE, pubScreenFallBack = FALSE;
-    ULONG           	    	 innerWidth = ~0L;
-    ULONG           	    	 innerHeight = ~0L;
+    ULONG           	    	 innerWidth = ~0;
+    ULONG           	    	 innerHeight = ~0;
     WORD            	    	 mousequeue = DEFAULTMOUSEQUEUE;
     WORD            	    	 repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
     ULONG           	    	 moreFlags = 0;
@@ -851,8 +851,8 @@ moreFlags |= (name); else moreFlags &= ~(name)
     IW(w)->DefaultWindowShapeHook.h_SubEntry = (HOOKFUNC)w;
     IW(w)->DefaultWindowShapeHook.h_Data = (APTR)IntuitionBase;
 
-    if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
-    if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
+    if (innerWidth != ~0) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
+    if (innerHeight != ~0) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
 
     {
         LONG parentwidth;
@@ -1131,7 +1131,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
 #endif
 
     if (screenTitle != NULL)
-        SetWindowTitles (w, (CONST_STRPTR)~0L, screenTitle);
+        SetWindowTitles (w, (CONST_STRPTR)~0, screenTitle);
 
     UpdateMouseCoords(w);
 
@@ -1172,7 +1172,7 @@ failexit:
 
     if (w)
     {
-        ModifyIDCMP (w, 0L);
+        ModifyIDCMP (w, 0);
 
         /* nlorentz: Freeing the rasport is now intui_CloseWindow()'s task.
 

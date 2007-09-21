@@ -347,7 +347,7 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     D(bug("sysi_new,: obj=%p\n", obj));
 
     data = INST_DATA(cl, obj);
-    data->type = 0L;
+    data->type = 0;
     data->dri = NULL;
     data->frame = NULL;
     data->flags = 0;

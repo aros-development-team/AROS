@@ -7,7 +7,6 @@
 #define	DEBUG_BUILDSYSREQUEST(x)	x;
 
 /**********************************************************************************************/
-
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
