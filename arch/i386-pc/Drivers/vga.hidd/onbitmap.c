@@ -64,7 +64,7 @@ void free_onbmclass(struct vga_staticdata *);
 #define MNAME_BM(x) PCVGAOnBM__Hidd_BitMap__ ## x
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define OnBitmap 1
