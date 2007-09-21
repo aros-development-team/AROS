@@ -740,7 +740,7 @@ static ULONG getbitmappixel(struct BitMap *bm
     ULONG idx;
 
     ULONG mask;
-    ULONG pen = 0L;
+    ULONG pen = 0;
 
     idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
     mask = XCOORD_TO_MASK( x );

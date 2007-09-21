@@ -85,7 +85,7 @@
 
     while (NULL != CurAnimComp)
     {
-      long coord;
+      LONG coord;
       struct AnimComp * CurSeqAnimComp = CurAnimComp;
       struct VSprite * CurVSprite, * NewVSprite;
 
