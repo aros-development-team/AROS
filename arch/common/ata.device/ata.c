@@ -13,7 +13,6 @@
 #include <exec/exec.h>
 #include <exec/resident.h>
 #include <utility/utility.h>
-#include <utility/tagitem.h>
 #include <oop/oop.h>
 
 #include <dos/bptr.h>
@@ -414,11 +413,6 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 #define N_TD_SEEK64	2
 #define N_TD_FORMAT64	3
 
-#define TD_READ64	24  /* taken from TD64 extension */
-#define TD_WRITE64	25
-#define TD_SEEK64	26
-#define TD_FORMAT64	27
-
 static void (*map64[])(struct IORequest *, LIBBASETYPEPTR) = {
     [N_TD_READ64]   = cmd_Read64,
     [N_TD_WRITE64]  = cmd_Write64,
@@ -673,11 +667,6 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 {
     struct Task	    *t;
     struct MemList  *ml;
-
-    struct TagItem tags[] = {
-      { TASKTAG_ARG1,   (IPTR)LIBBASE },
-      { TAG_DONE, 0}
-    };
     
     /* Get some memory */
     t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
@@ -689,6 +678,7 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 	t->tc_SPLower = sp;
 	t->tc_SPUpper = sp + STACK_SIZE;
 	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+	((APTR *)t->tc_SPUpper)[-1] = LIBBASE;
 
 	ml->ml_NumEntries = 2;
 	ml->ml_ME[0].me_Addr = t;
@@ -705,7 +695,7 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 	
 	LIBBASE->ata_Daemon = t;
 
-	NewAddTask(t, DaemonCode, NULL, &tags);
+	AddTask(t, DaemonCode, NULL);
     }
 
     return (t != NULL);
@@ -818,11 +808,6 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 {
     struct Task	    *t;
     struct MemList  *ml;
-
-    struct TagItem tags[] = {
-      { TASKTAG_ARG1,   (IPTR)bus },
-      { TAG_DONE, 0}
-    };
     
     /*
 	Need some memory. I don't know however, wheter it wouldn't be better
@@ -838,6 +823,7 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 	t->tc_SPLower = sp;
 	t->tc_SPUpper = sp + STACK_SIZE;
 	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+	((APTR *)t->tc_SPUpper)[-1] = bus;
 
 	/* Message port receiving all the IO requests */
 	bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
@@ -867,7 +853,7 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 	bus->ab_Task = t;
 
 	/* Wake up the task */
-	NewAddTask(t, TaskCode, NULL, &tags);
+	AddTask(t, TaskCode, NULL);
     }
 
     return (t != NULL);

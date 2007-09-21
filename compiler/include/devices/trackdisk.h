@@ -53,6 +53,12 @@ struct IOExtTD
 #define TD_EJECT        (CMD_NONSTD + 14)
 #define TD_LASTCOMM     (CMD_NONSTD + 15)
 
+/* TD64 commands */
+#define TD_READ64	(CMD_NONSTD + 15)
+#define TD_WRITE64	(CMD_NONSTD + 16)
+#define TD_SEEK64	(CMD_NONSTD + 17)
+#define TD_FORMAT64	(CMD_NONSTD + 18)
+
 /* extended commands */
 #define TDF_EXTCOM (1<<15)
 #define ETD_READ     (CMD_READ     | TDF_EXTCOM)
