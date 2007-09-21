@@ -82,7 +82,7 @@ struct RastPort
     UWORD             TxBaseline;
     WORD              TxSpacing;
     APTR            * RP_User;
-    ULONG             longreserved[2];
+    IPTR              longreserved[2];
     UWORD             wordreserved[7];
     UBYTE             reserved[8];
 };
