@@ -64,11 +64,11 @@ typedef void (*VOID_FUNC)();
 #endif
 #ifndef __typedef_LONG_FUNC
 #define __typedef_LONG_FUNC
-typedef long (*LONG_FUNC)();
+typedef int (*LONG_FUNC)();
 #endif
 #ifndef __typedef_ULONG_FUNC
 #define __typedef_ULONG_FUNC
-typedef unsigned long (*ULONG_FUNC)();
+typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef __AROS_MACHINE_H_DEFINES_ASMCALLS
