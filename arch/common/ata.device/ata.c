@@ -13,6 +13,7 @@
 #include <exec/exec.h>
 #include <exec/resident.h>
 #include <utility/utility.h>
+#include <utility/tagitem.h>
 #include <oop/oop.h>
 
 #include <dos/bptr.h>
@@ -73,12 +74,15 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     NSCMD_TD_READ64, TD_READ64 implementation. Basically the same, just packs 
     the 64 bit offset in both io_Offset (31:0) and io_Actual (63:32)
 */
-static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
+ void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
     
-    UQUAD block = (IOStdReq(io)->io_Offset) |
-	(UQUAD)(IOStdReq(io)->io_Actual) << 32;
+    bug("cmd_Read64: io_Offset=%p, io_Actual=%p, io_Length=%p\n",
+      IOStdReq(io)->io_Offset, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Length);
+    
+    UQUAD block = (UQUAD)(IOStdReq(io)->io_Offset & 0xffffffff) |
+	((UQUAD)(IOStdReq(io)->io_Actual)) << 32;
     ULONG count = IOStdReq(io)->io_Length;
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
@@ -89,6 +93,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     }
     else
     {
+    bug("%08x%08x %08x %d\n", block>>32, block, count, unit->au_SectorShift);
 	block >>= unit->au_SectorShift;
 	count >>= unit->au_SectorShift;
 	ULONG cnt = 0;
@@ -668,6 +673,11 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
     struct Task	    *t;
     struct MemList  *ml;
     
+    struct TagItem tags[] = {
+        { TASKTAG_ARG1,     (IPTR)LIBBASE },
+        { TAG_DONE, 0 }
+    };
+    
     /* Get some memory */
     t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
     ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
@@ -678,7 +688,6 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 	t->tc_SPLower = sp;
 	t->tc_SPUpper = sp + STACK_SIZE;
 	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	((APTR *)t->tc_SPUpper)[-1] = LIBBASE;
 
 	ml->ml_NumEntries = 2;
 	ml->ml_ME[0].me_Addr = t;
@@ -695,7 +704,7 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 	
 	LIBBASE->ata_Daemon = t;
 
-	AddTask(t, DaemonCode, NULL);
+	NewAddTask(t, DaemonCode, NULL, &tags);
     }
 
     return (t != NULL);
@@ -809,6 +818,11 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
     struct Task	    *t;
     struct MemList  *ml;
     
+    struct TagItem tags[] = {
+        { TASKTAG_ARG1,     (IPTR)bus },
+        { TAG_DONE, 0 }
+    };
+    
     /*
 	Need some memory. I don't know however, wheter it wouldn't be better
 	to take some RAM from device's memory pool.
@@ -823,7 +837,6 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 	t->tc_SPLower = sp;
 	t->tc_SPUpper = sp + STACK_SIZE;
 	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	((APTR *)t->tc_SPUpper)[-1] = bus;
 
 	/* Message port receiving all the IO requests */
 	bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
@@ -853,7 +866,7 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
 	bus->ab_Task = t;
 
 	/* Wake up the task */
-	AddTask(t, TaskCode, NULL);
+	NewAddTask(t, TaskCode, NULL, &tags);
     }
 
     return (t != NULL);
