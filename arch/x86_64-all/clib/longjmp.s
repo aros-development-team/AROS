@@ -72,18 +72,13 @@
 	.set	retaddr, 0
 
 AROS_CDEFNAME(longjmp):
-	/* Fetch the address of the env-structure off the stack.
-	    The address is stored in %eax which is not preserved
-	    because it's contents are overwritten anyway by the
-	    return code */
-	mov env(%rsp),%rax
 
-	/* Read return value into %ebx and make sure it's not 0 */
-	mov val(%rsp),%rbx
-	cmp $0,%rbx
+    mov %rdi, %rax
+	/* Make sure return value is not 0 */
+	cmp $0,%rsi
 	jne  1f
 
-	mov $1,%rbx
+	mov $1,%rsi
 1:
 	/* Restore stack pointer and all registers from env */
 	mov 120(%rax),%rsp /* Restore original stack */
@@ -91,7 +86,7 @@ AROS_CDEFNAME(longjmp):
 	mov 0(%rax),%rcx
 	mov %rcx,retaddr(%rsp) /* Restore return address */
 
-	push %rbx /* Save return value on new stack */
+	push %rsi /* Save return value on new stack */
 
 	/* Restore all registers */
 	mov 8(%rax),%rbx /* %ebx */
