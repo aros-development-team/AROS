@@ -234,7 +234,7 @@ int main(void)
         {
           memset(args,0,sizeof(args));
 
-          if ((rda = ReadArgs("DEVICE/M,FROM/K", (LONG *)args, NULL)))
+          if ((rda = ReadArgs("DEVICE/M,FROM/K", (IPTR *)args, NULL)))
           {
             STRPTR	*MyDevPtr;
             int		len;
