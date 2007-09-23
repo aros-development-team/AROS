@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: argentina.c 12891 2002-01-01 17:08:57Z ahg $
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Country data for argentina
 */
@@ -10,8 +10,6 @@
 #include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
-/* brasil.country: stegerg */
-   
 struct CountryPrefs argentinaPrefs =
 {
     /* Reserved */
