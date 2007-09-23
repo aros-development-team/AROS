@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for brasil
+    Desc: Country data for Brasil
 */
 
 #include <exec/types.h>
@@ -10,8 +10,6 @@
 #include <libraries/iffparse.h>
 #include <prefs/locale.h>
 
-/* united_states.country: jdias */
-   
 struct CountryPrefs brasilPrefs =
 {
     /* Reserved */
