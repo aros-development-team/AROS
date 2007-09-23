@@ -63,40 +63,28 @@
 	.globl	AROS_CDEFNAME(setjmp)
 	_FUNCTION(AROS_CDEFNAME(setjmp))
 
-	.set	FirstArg, 8 /* Skip Return-Adress */
-	.set	env, FirstArg
 	.set	retaddr, 0
 
 AROS_CDEFNAME(setjmp):
-	/* Fetch the address of the env-structure off the stack.
-	    The address is stored in %eax which is not preserved
-	    because it's contents are overwritten anyway by the
-	    return code */
-	mov env(%rsp),%rax
-
 	/* Save stack pointer and all registers into env */
-	mov %rbx,8(%rax) /* %ebx */
-	mov %rcx,16(%rax) /* %ecx */
-	mov %rdx,24(%rax) /* %edx */
-	mov %rsi,32(%rax) /* %esi */
-	mov %rdi,40(%rax) /* %edi */
-	mov %rbp,48(%rax) /* %ebp */
-	mov %rsp,56(%rax) /* %esp */
-	mov %r8,64(%rax)
-	mov %r9,72(%rax)
-	mov %r10,80(%rax)
-	mov %r11,88(%rax)
-	mov %r12,96(%rax)
-	mov %r13,104(%rax)
-	mov %r14,112(%rax)
-	mov %r15,120(%rax)
+	mov %rbx,8(%rdi) /* %ebx */
+	mov %rcx,16(%rdi) /* %ecx */
+	mov %rdx,24(%rdi) /* %edx */
+	mov %rsi,32(%rdi) /* %esi */
+	mov %rdi,40(%rdi) /* %edi */
+	mov %rbp,48(%rdi) /* %ebp */
+	mov %r8,56(%rdi)
+	mov %r9,64(%rdi)
+	mov %r10,72(%rdi)
+	mov %r11,80(%rdi)
+	mov %r12,88(%rdi)
+	mov %r13,96(%rdi)
+	mov %r14,104(%rdi)
+	mov %r15,112(%rdi)
+	mov %rsp,120(%rdi) /* %esp */
 
-	push %rbx
-
-	mov retaddr+8(%rsp),%rbx /* Save return address (%esp has changed) */
-	mov %rbx,0(%rax)
-
-	pop %rbx
+	mov retaddr(%rsp),%rax /* Save return address (%esp has changed) */
+	mov %rax,0(%rdi)
 
 	xor %rax,%rax /* Return 0 */
 	ret
