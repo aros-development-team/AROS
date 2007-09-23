@@ -7,4 +7,4 @@ include $(TOP)/config/make.cfg
 %build_module mmake=kernel-kernel-pc-x86_64 	\
   modname=kernel modtype=resource		\
   cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
-  files="kernel_init intr apic scheduler" uselibs="rom"
+  files="kernel_init intr apic scheduler mmu" uselibs="rom"
