@@ -469,7 +469,7 @@ struct DeviceList
     BPTR             dl_LockList;
     /* Type of the disk. (see <dos/dos.h> for definitions) */
     LONG             dl_DiskType;
-    IPTR             dl_unused; /* PRIVATE */
+    BPTR             dl_unused; /* PRIVATE */
     
     /* In DevInfo we have three pointers and three longwords,
      * in this structu two pointers and for longwords,
@@ -477,7 +477,7 @@ struct DeviceList
      * FIXME: ptr alignment not taking into account
      */
 #if AROS_SIZEOFPTR > AROS_SIZEOFULONG
-    UBYTE            dl_unused2[AROS_SIZEOFPTR-AROS_SIZEOFULONG];
+//    UBYTE            dl_unused2[(AROS_SIZEOFPTR-AROS_SIZEOFULONG)];
 #endif
 
     BSTR dl_Name;
@@ -521,7 +521,6 @@ struct DevInfo
         struct DosListAROSExt dvi_AROS;
     } dvi_Ext;
 };
-
 
 /* Dos list scanning and locking modes as used in LockDosList() */
 /* Specify either LDF_READ, if you want a non-exclusive lock, or LDF_WRITE,
