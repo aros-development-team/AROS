@@ -32,6 +32,7 @@ struct CountryEntry
 
 extern struct CountryPrefs
     andorraPrefs,
+    argentinaPrefs,
     australiaPrefs,
     belgiePrefs,
     belgiquePrefs,
@@ -85,6 +86,7 @@ extern struct CountryPrefs
 struct CountryEntry CountryArray[] =
 {
     { "andorra"     	, &andorraPrefs     	},
+    { "argentina"     	, &argentinaPrefs     	},
     { "australia"   	, &australiaPrefs 	},
     { "belgië"	    	, &belgiePrefs    	},
     { "belgique"    	, &belgiquePrefs  	},
