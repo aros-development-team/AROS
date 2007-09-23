@@ -617,7 +617,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                 if ((flags[arg] & TYPEMASK) == NUMERIC)
                 {
                     STRPTR *p;
-                    LONG *q;
+                    SIPTR *q;
 
                     if (multnum * 2 > multmax)
                     {
@@ -640,7 +640,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
                     array[arg] = (IPTR) multvec;
                     p = multvec;
-                    q = (LONG *) (multvec + multnum);
+                    q = (SIPTR *) (multvec + multnum);
 
                     while (*p)
                     {
