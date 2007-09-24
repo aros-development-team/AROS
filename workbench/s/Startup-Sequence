@@ -11,8 +11,6 @@ Assign ENV:     RAM:ENV
 Assign T:       RAM:T
 Assign CLIPS:   RAM:Clipboards
 
-Mount >NIL: DEVS:DOSDrivers/~(#?.info)
-
 Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
@@ -23,6 +21,8 @@ Assign THEMES:  SYS:System/Themes
 Assign IMAGES:  SYS:System/Images DEFER
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
+
+Mount >NIL: DEVS:DOSDrivers/~(#?.info)
 
 If EXISTS SYS:Classes/USB
     Assign USBCLASSES: SYS:Classes/USB
