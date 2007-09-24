@@ -46,7 +46,8 @@ const static char LDSCRIPT_PART1[] =
 "  {\n"
 "    *(.data)\n"
 "    *(.data.*)\n"
-"    *(.gnu.linkonce.d.*)\n";
+"    *(.gnu.linkonce.d.*)\n"
+"    . = ALIGN(0x10);\n";
 
 
 static const char LDSCRIPT_PART2[] =
