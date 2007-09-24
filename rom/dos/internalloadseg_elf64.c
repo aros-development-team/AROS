@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -64,9 +64,9 @@
 #define ELFCLASS32      1
 #define ELFCLASS64      2               /* 64-bit objects */
 
-#define ELF64_R_SYM(i)      (unsigned long)((i) >> 32)
-#define ELF64_R_TYPE(i)     (unsigned long)((i) & 0xffffffffULL)
-#define ELF64_R_INFO(sym, type) (((unsigned long long)(sym) << 32) + (type))
+#define ELF64_R_SYM(i)      (ULONG)((i) >> 32)
+#define ELF64_R_TYPE(i)     (ULONG)((i) & 0xffffffffULL)
+#define ELF64_R_INFO(sym, type) (((UQUAD)(sym) << 32) + (type))
 
 struct elfheader
 {
@@ -158,6 +158,8 @@ struct hunk
         AROS_LCA(ULONG,  size, D0), \
         struct ExecBase *, SysBase  \
     )
+
+#if defined (__x86_64__)
 
 static int read_block
 (
@@ -275,8 +277,12 @@ static int load_hunk
     struct hunk *hunk;
     ULONG   hunk_size;
 
+    D(bug("[dos:ELF64] load_hunk. Do align=%d\n", do_align));
+    
     if (!sh->size)
         return 1;
+    
+    D(bug("[dos:ELF64] sh->size=%d, sh->addraligh=%d\n", sh->size, sh->addralign));
 
     /* The size of the hunk is the size of the section, plus
        the size of the hunk structure, plus the size of the alignment (if necessary)*/
@@ -284,18 +290,21 @@ static int load_hunk
 
     if (do_align)
     {
-         hunk_size += sh->addralign;
+        hunk_size += sh->addralign;
 
-         /* Also create space for a trampoline, if necessary */
-         if (sh->flags & SHF_EXECINSTR)
-             hunk_size += sizeof(struct FullJumpVec);
+        /* Also create space for a trampoline, if necessary */
+        if (sh->flags & SHF_EXECINSTR)
+            hunk_size += sizeof(struct FullJumpVec);
     }
 
     hunk = MyAlloc(hunk_size, MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
+    
+    D(bug("[dos:ELF64] hunk=%012p\n", hunk));
+    
     if (hunk)
     {
         hunk->next = 0;
-	hunk->size = hunk_size;
+        hunk->size = hunk_size;
 
         /* In case we are required to honour alignment, and If this section contains
 	   executable code, create a trampoline to its beginning, so that even if the
@@ -303,20 +312,24 @@ static int load_hunk
 	   hunk structure, the code can still be reached in the usual way.  */
         if (do_align)
         {
-	    if (sh->flags & SHF_EXECINSTR)
+            if (sh->flags & SHF_EXECINSTR)
             {
-	        sh->addr = (char *)AROS_ROUNDUP2
+                sh->addr = (char *)AROS_ROUNDUP2
                 (
-                    (ULONG)hunk->data + sizeof(struct FullJumpVec), sh->addralign
+                 (ULONG)hunk->data + sizeof(struct FullJumpVec), sh->addralign
                 );
                 __AROS_SET_FULLJMP((struct FullJumpVec *)hunk->data, sh->addr);
             }
             else
-                sh->addr = (char *)AROS_ROUNDUP2((ULONG)hunk->data, sh->addralign);
-	}
-	else
-	    sh->addr = hunk->data;
+                sh->addr = (char *)AROS_ROUNDUP2((IPTR)hunk->data, sh->addralign);
+                
+            D(bug("[dos:ELF64] align. %012p -> %012p\n", hunk->data, sh->addr));
+        }
+        else
+            sh->addr = hunk->data;
 
+        D(bug("[dos:ELF64] sh->addr = %012p\n", sh->addr));
+        
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
 
@@ -327,7 +340,6 @@ static int load_hunk
             return read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
 
         return 1;
-
     }
 
     SetIoErr(ERROR_NO_FREE_STORE);
@@ -351,6 +363,8 @@ static int relocate
     struct relo   *rel      = (struct relo *)shrel->addr;
     char          *section  = toreloc->addr;
 
+    D(bug("[dos:ELF64] Relocating section at %012p\n", section));
+    
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
 
@@ -360,7 +374,7 @@ static int relocate
     {
         struct symbol *sym = &symtab[ELF64_R_SYM(rel->info)];
         ULONG *p = (ULONG *)&section[rel->offset];
-	UQUAD  s;
+  	UQUAD  s;
 
         switch (sym->shindex)
         {
@@ -439,6 +453,8 @@ static int relocate
     return 1;
 }
 
+#endif
+
 BPTR InternalLoadSeg_ELF64
 (
     BPTR               file,
@@ -454,6 +470,8 @@ BPTR InternalLoadSeg_ELF64
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
+
+#if defined (__x86_64__)
 
     /* Load Elf Header and Section Headers */
     if
@@ -561,6 +579,8 @@ end:
 
     /* Free the section headers */
     MyFree(sh, eh.shnum * eh.shentsize);
+
+#endif
 
     return hunks;
 }
