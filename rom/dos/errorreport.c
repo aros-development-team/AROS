@@ -24,7 +24,7 @@
 /*  SYNOPSIS */
 	AROS_LHA(LONG            , code  , D1),
 	AROS_LHA(LONG            , type  , D2),
-	AROS_LHA(ULONG           , arg1  , D3),
+	AROS_LHA(IPTR            , arg1  , D3),
 	AROS_LHA(struct MsgPort *, device, D4),
 
 /*  LOCATION */
