@@ -24,6 +24,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-keymap \
 #MM	kernel-intuition \
 #MM	kernel-input \
+#MM	kernel-cgfx-kobj \
 #MM	kernel-dos \
 #MM	kernel-console \
 #MM	kernel-fs-packet \
@@ -50,6 +51,9 @@ kernel-package-x86_64:
 	$(RM) -rf $(BINDIR)/.pkg
 	%mkdirs_q $(BINDIR)/.pkg
 	@mv $(MODULES) $(BINDIR)/.pkg/
+	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
+	$(LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
+	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
 
 bootiso-pc-x86_64: $(OSGENDIR)/boot/aros.iso
