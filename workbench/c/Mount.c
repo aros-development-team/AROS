@@ -223,6 +223,10 @@ int main(void)
   struct RDArgs	*rda;
   char dirname[512];
 
+
+asm volatile("int3");
+
+
   if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
   {
     if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
@@ -233,7 +237,6 @@ int main(void)
 	if (!_WBenchMsg)
         {
           memset(args,0,sizeof(args));
-
           if ((rda = ReadArgs("DEVICE/M,FROM/K", (IPTR *)args, NULL)))
           {
             STRPTR	*MyDevPtr;
@@ -1470,7 +1473,7 @@ ULONG			MyPatchFlags;
 #define	FLAGS_INDEX	 3
 #define	ENVIROMENT_INDEX 4
 
-struct DeviceNode *MyMakeDosNode(char *DosName, ULONG *ParameterPkt, char *StartupName)
+struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *StartupName)
 {
   int DosNameSize;
   int ExecNameSize;
@@ -1480,7 +1483,7 @@ struct DeviceNode *MyMakeDosNode(char *DosName, ULONG *ParameterPkt, char *Start
   struct DosEnvec *MyDosEnvec = NULL;
   char *MyString = NULL;
   ULONG Status = FALSE;
-  DEBUG_MAKEDOSNODE(Printf("MakeDosNode: Pkt 0x%lx\n",(ULONG)ParameterPkt));
+  DEBUG_MAKEDOSNODE(Printf("MakeDosNode: Pkt 0x%lx\n",(IPTR)ParameterPkt));
   
   if (ParameterPkt)
   {
@@ -1493,7 +1496,7 @@ struct DeviceNode *MyMakeDosNode(char *DosName, ULONG *ParameterPkt, char *Start
   }
   else
   {
-    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: DosName <%s> Startup <%s>\n", (ULONG)DosName, (ULONG)StartupName));
+    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: DosName <%s> Startup <%s>\n", (IPTR)DosName, (IPTR)StartupName));
   }
 
   DosNameSize =	strlen(DosName);
@@ -1508,7 +1511,7 @@ struct DeviceNode *MyMakeDosNode(char *DosName, ULONG *ParameterPkt, char *Start
     {
       ExecNameSize = 0;
     }
-    MyEnvSize =	(ParameterPkt[ENVIROMENT_INDEX] + 1) * sizeof(ULONG);
+    MyEnvSize =	(ParameterPkt[ENVIROMENT_INDEX] + 1) * sizeof(IPTR);
   }
   else
   {
@@ -1532,13 +1535,13 @@ struct DeviceNode *MyMakeDosNode(char *DosName, ULONG *ParameterPkt, char *Start
       {
 	if ((MyFileSysStartupMsg = AllocVec(sizeof(struct FileSysStartupMsg), MEMF_PUBLIC | MEMF_CLEAR)))
         {
-	  DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyFileSysStartupMsg 0x%lx\n", (ULONG)MyFileSysStartupMsg));
+	  DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyFileSysStartupMsg 0x%lx\n", (IPTR)MyFileSysStartupMsg));
 
 	  if ((MyDosEnvec = AllocVec(MyEnvSize, MEMF_PUBLIC | MEMF_CLEAR)))
           {
 	    char *ExecNamePtr;
 
-	    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyDosEnvec 0x%lx\n", (ULONG)MyDosEnvec));
+	    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: MyDosEnvec 0x%lx\n", (IPTR)MyDosEnvec));
 	    ExecNamePtr	= &MyString[(1 + DosNameSize + BSTR_EXTRA + 3) & ~3];
 
             /* .device name must absolutely **NOT** include the 0 in the
