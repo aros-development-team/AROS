@@ -186,14 +186,15 @@ LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 
     while(seg)
     {
-	STRPTR addr= (STRPTR)((LONG)BADDR(seg)-sizeof(ULONG));
+	STRPTR addr= (STRPTR)((IPTR)BADDR(seg)-sizeof(ULONG));
 	ULONG size = *(ULONG *)addr;
 
 	for(
 	    addr += sizeof(BPTR) + sizeof(ULONG),
 		size -= sizeof(BPTR) + sizeof(ULONG);
 	    size >= sizeof(struct Resident) ;
-	    size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
+	    size -= 2, addr += 2
+//	    size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
 	)
 	{
 	    struct Resident *res = (struct Resident *)addr;
