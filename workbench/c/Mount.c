@@ -159,7 +159,7 @@ typedef struct UtilityBase *UtilityBase_t;
 #ifdef __PPC__
 #define ARGS(ap) ap->overflow_arg_area
 #else
-#define ARGS(ap) (ULONG *)ap
+#define ARGS(ap) (IPTR *)ap
 #endif
 
 #ifdef __AROS__
@@ -222,10 +222,6 @@ int main(void)
   LONG error = RETURN_FAIL;
   struct RDArgs	*rda;
   char dirname[512];
-
-
-asm volatile("int3");
-
 
   if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",37))!=0)
   {
