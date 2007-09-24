@@ -261,7 +261,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 {
     ULONG rgbtable[3 * 3];
     Object *temp_obj;
-    ULONG val;
+    IPTR val;
     int i;
     screenmode=muiGlobalInfo(obj)->mgi_Prefs->screenmodeid;
 
