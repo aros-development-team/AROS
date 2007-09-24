@@ -96,6 +96,9 @@ void core_ProtPage(intptr_t addr)
         struct PTE *pte = Pages4K[used_page++];
         struct PDE2M *pde2 = (struct PDE2M *)pde;
         
+        /* work on local copy of the affected PDE */
+        struct PDE4K tmp_pde = pde[(addr >> 21) & 0x1ff]; 
+        
         intptr_t base = pde2[(addr >> 21) & 0x1ff].base_low << 13;
         int i;
         
@@ -114,10 +117,10 @@ void core_ProtPage(intptr_t addr)
             base += 4096;
         }
         
-        pde[(addr >> 21) & 0x1ff].ps = 0;
-        pde[(addr >> 21) & 0x1ff].base_low = ((intptr_t)pte) >> 12;
+        tmp_pde.ps = 0;
+        tmp_pde.base_low = ((intptr_t)pte) >> 12;
         
-        asm volatile ("invlpg (%0)"::"r"(addr));
+        pde[(addr >> 21) & 0x1ff] = tmp_pde;
     }
             
     struct PTE *pte = pde[(addr >> 21) & 0x1ff].base_low << 12;

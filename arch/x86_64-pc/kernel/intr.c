@@ -409,6 +409,7 @@ void core_IRQHandle(regs_t regs)
         rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
         rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
         die = 1;
     }
     else if (regs.irq_number == 0x0e)        /* Page fault */
@@ -431,6 +432,7 @@ void core_IRQHandle(regs_t regs)
         rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
         rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
         die = 1;
     }
     else if (regs.irq_number == 0x80) /* Syscall? */
