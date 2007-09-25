@@ -162,7 +162,7 @@ AROS_UFP3(IPTR, HookEntry,
 #endif /* AROS_SLOWSTACKMETHODS */
 
 #ifdef AROS_SLOWSTACKTAGS
-    struct TagItem * GetTagsFromStack  (ULONG firstTag, va_list args);
+    struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
     void	     FreeTagsFromStack (struct TagItem * tags);
 #endif /* AROS_SLOWSTACKTAGS */
 
