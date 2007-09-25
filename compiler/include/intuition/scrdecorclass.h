@@ -51,13 +51,13 @@
 struct sdpGetDefSizeSysImage
 {
     STACKULONG	     MethodID;
-    BOOL             sdp_TrueColor;
+    STACKBYTE        sdp_TrueColor;
     struct DrawInfo *sdp_Dri;
     struct TextFont *sdp_ReferenceFont; /* In: */
     STACKULONG	     sdp_Which;  	/* In: SDEPTHIMAGE */
     STACKULONG	     sdp_SysiSize;	/* In: lowres/medres/highres */
-    STACKULONG	    *sdp_Width;  	/* Out */
-    STACKULONG	    *sdp_Height; 	/* Out */
+    ULONG	        *sdp_Width;  	/* Out */
+    ULONG	        *sdp_Height; 	/* Out */
     STACKULONG	     sdp_Flags;
     STACKIPTR	     sdp_UserBuffer;
 };
@@ -67,7 +67,7 @@ struct sdpGetDefSizeSysImage
 struct sdpDrawSysImage
 {
     STACKULONG	     MethodID;
-    BOOL             sdp_TrueColor;
+    STACKBYTE        sdp_TrueColor;
     struct DrawInfo *sdp_Dri;
     struct RastPort *sdp_RPort;
     STACKLONG	     sdp_X;
@@ -83,7 +83,7 @@ struct sdpDrawSysImage
 struct sdpDrawScreenBar
 {
     STACKULONG	     MethodID;
-    BOOL             sdp_TrueColor;
+    STACKBYTE        sdp_TrueColor;
     struct DrawInfo *sdp_Dri;
     struct Layer    *sdp_Layer;
     struct RastPort *sdp_RPort;
@@ -95,7 +95,7 @@ struct sdpDrawScreenBar
 struct sdpLayoutScreenGadgets
 {
     STACKULONG	     MethodID;
-    BOOL             sdp_TrueColor;
+    STACKBYTE        sdp_TrueColor;
     struct DrawInfo *sdp_Dri;
     struct Layer    *sdp_Layer;
     struct Gadget   *sdp_Gadgets;
@@ -106,7 +106,7 @@ struct sdpLayoutScreenGadgets
 struct sdpInitScreen
 {
     STACKULONG	     MethodID;
-    BOOL             sdp_TrueColor;
+    STACKBYTE        sdp_TrueColor;
     struct DrawInfo *sdp_Dri;
     struct Screen   *sdp_Screen;
     STACKULONG       sdp_FontHeight;
@@ -126,7 +126,7 @@ struct sdpInitScreen
 struct sdpExitScreen
 {
     STACKULONG       MethodID;
-    BOOL             sdp_TrueColor;
+    STACKBYTE        sdp_TrueColor;
     STACKIPTR	     sdp_UserBuffer;
 };
 /* ScrDecor LayoutScreenGadgets Flags */
