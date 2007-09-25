@@ -478,7 +478,7 @@ struct IOFileSys
     {
         struct {
             STRPTR             io_DeviceName; /* Name of the device to open. */
-            ULONG              io_Unit;       /* Number of unit to open. */
+            IPTR               io_Unit;       /* Number of unit to open. */
             IPTR *             io_Environ;    /* Pointer to environment array.
                                                  (see <dos/filehandler.h> */
             STRPTR             io_DosName;    /* The name with wich the
