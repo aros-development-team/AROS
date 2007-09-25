@@ -528,44 +528,63 @@ AROS_UFH2(void, putchr,
 
 #warning these work only with stack growing downwards and should therefore be fixed to use macros in utility/tagitem.h
 
+#define AROS_TAGRETURNTYPE ULONG
 ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...)
 {
-    return SetAttrsA(object, (struct TagItem *)&firstTag);
+    AROS_SLOWSTACKTAGS_PRE(firstTag)
+    retval = SetAttrsA(object, (struct TagItem *)&firstTag);
+    AROS_SLOWSTACKTAGS_POST
 }
+#undef  AROS_TAGRETURNTYPE
 
-
+#define AROS_TAGRETURNTYPE ULONG
 ULONG Do_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
 		   struct GadgetInfo *ginfo, ULONG flags, Tag firstTag,...)
 {
-    struct opUpdate opu;
+/*    struct opUpdate opu;
     
     opu.MethodID = OM_NOTIFY;
     opu.opu_AttrList = (struct TagItem *)&firstTag;
     opu.opu_GInfo = ginfo;
     opu.opu_Flags = flags;
     
-    return DoMethodA(object, (Msg)&opu);
+    return DoMethodA(object, (Msg)&opu); */
+    
+    AROS_SLOWSTACKTAGS_PRE(firstTag)
+    retval = DoMethod(object, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(firstTag), ginfo, flags);
+    AROS_SLOWSTACKTAGS_POST
 }
+#undef  AROS_TAGRETURNTYPE
 
 
+#define AROS_TAGRETURNTYPE ULONG
 ULONG DoGad_OM_NOTIFY(struct Library *DataTypesBase, Object *object,
 		      struct Window *win, struct Requester *req,
 		      ULONG flags, Tag firstTag, ...)
 {
-    return(dogadgetmethod(DataTypesBase, (struct Gadget*)object, win, req, OM_NOTIFY,
-			  &firstTag, NULL, flags));
+//    return(dogadgetmethod(DataTypesBase, (struct Gadget*)object, win, req, OM_NOTIFY,
+//			  &firstTag, NULL, flags));
+    AROS_SLOWSTACKTAGS_PRE(firstTag)
+    retval = DoGadgetMethod((struct Gadget*)object, win, req, OM_NOTIFY, AROS_SLOWSTACKTAGS_ARG(firstTag), NULL, flags);
+    AROS_SLOWSTACKTAGS_POST
 }
+#undef  AROS_TAGRETURNTYPE
 
 
-ULONG dogadgetmethod(struct Library *DataTypesBase, struct Gadget *gad,
-		     struct Window *win, struct Requester *req,
-		     ULONG MethodID, ...)
-{
-    return(DoGadgetMethodA(gad, win, req, (Msg)&MethodID));
-}
+//ULONG dogadgetmethod(struct Library *DataTypesBase, struct Gadget *gad,
+//		     struct Window *win, struct Requester *req,
+//		     ULONG MethodID, ...)
+//{
+//    return(DoGadgetMethodA(gad, win, req, (Msg)&MethodID));
+//}
 
+#define AROS_TAGRETURNTYPE struct Catalog *
 struct Catalog *opencatalog(struct Library *DataTypesBase, struct Locale *locale,
 			    STRPTR name, Tag firstTag, ...)
 {
-    return(OpenCatalogA(locale, name, (struct TagItem *)&firstTag));
+//    return(OpenCatalogA(locale, name, (struct TagItem *)&firstTag));
+    AROS_SLOWSTACKTAGS_PRE(firstTag)
+    retval = OpenCatalogA(locale, name, AROS_SLOWSTACKTAGS_ARG(firstTag));
+    AROS_SLOWSTACKTAGS_POST
 }
+#undef  AROS_TAGRETURNTYPE
