@@ -20,8 +20,8 @@
 
 #define MUIM_WandererPrefs_ViewSettings_GetNotifyObject      (MUIB_WandererPrefs | 0x000000E0) /* --G */
 #define MUIM_WandererPrefs_ViewSettings_GetAttribute         (MUIB_WandererPrefs | 0x000000E1) /* --G */
-struct  MUIP_WandererPrefs_ViewSettings_GetNotifyObject      {ULONG MethodID; char *Background_Name;};
-struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {ULONG MethodID; char *Background_Name; ULONG AttributeID;};
+struct  MUIP_WandererPrefs_ViewSettings_GetNotifyObject      {STACKULONG MethodID; char *Background_Name;};
+struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {STACKULONG MethodID; char *Background_Name; STACKULONG AttributeID;};
 
 #define WP_GLOBALTAGCOUNT 8
 

@@ -23,7 +23,7 @@
 #define MUIM_Wanderer_HandleCommand       (MUIB_Wanderer | 0x00000001)
 #define MUIM_Wanderer_HandleNotify        (MUIB_Wanderer | 0x00000002)
 #define MUIM_Wanderer_CreateDrawerWindow  (MUIB_Wanderer | 0x000000010)
-struct  MUIP_Wanderer_CreateDrawerWindow  {ULONG MethodID; CONST_STRPTR drawer;};
+struct  MUIP_Wanderer_CreateDrawerWindow  {STACKULONG MethodID; CONST_STRPTR drawer;};
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *Wanderer_CLASS;
