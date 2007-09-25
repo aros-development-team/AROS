@@ -130,7 +130,7 @@
 	struct TagItem * GetTagsFromStack (
 
 /*  SYNOPSIS */
-	ULONG	firstTag,
+	IPTR	firstTag,
 	va_list args)
 
 /*  FUNCTION
