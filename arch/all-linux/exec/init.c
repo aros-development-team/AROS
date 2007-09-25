@@ -140,7 +140,7 @@ static const struct Resident *romtagList[] =
 static struct MemHeaderExt mhe;
 struct MemHeader *mh  = &mhe.mhe_MemHeader;
 UBYTE *memory, *space;
-int memSize = 8;
+int memSize = 32;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
