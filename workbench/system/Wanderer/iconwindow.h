@@ -33,11 +33,11 @@
 #define MUIM_IconWindow_BackFill_ProcessBackground         (MUIB_IconWindow | 0x0000001a)
 #define MUIM_IconWindow_BackFill_DrawBackground            (MUIB_IconWindow | 0x0000001b)
 
-struct  MUIP_IconWindow_BackFill_Register                  {ULONG MethodID; struct IconWindow_BackFill_Descriptor *register_Node;};
-struct  MUIP_IconWindow_BackFill_Setup                     {ULONG MethodID;};
-struct  MUIP_IconWindow_BackFill_Cleanup                   {ULONG MethodID; IPTR BackFill_Data;};
-struct  MUIP_IconWindow_BackFill_ProcessBackground         {ULONG MethodID; IPTR BackFill_Data; Object *BackFill_Root;};
-struct  MUIP_IconWindow_BackFill_DrawBackground            {ULONG MethodID; IPTR BackFill_Data; struct IconWindowBackFillMsg *draw_BFM; IPTR draw_RastPort;};
+struct  MUIP_IconWindow_BackFill_Register                  {STACKULONG MethodID; struct IconWindow_BackFill_Descriptor *register_Node;};
+struct  MUIP_IconWindow_BackFill_Setup                     {STACKULONG MethodID;};
+struct  MUIP_IconWindow_BackFill_Cleanup                   {STACKULONG MethodID; IPTR BackFill_Data;};
+struct  MUIP_IconWindow_BackFill_ProcessBackground         {STACKULONG MethodID; IPTR BackFill_Data; Object *BackFill_Root;};
+struct  MUIP_IconWindow_BackFill_DrawBackground            {STACKULONG MethodID; IPTR BackFill_Data; struct IconWindowBackFillMsg *draw_BFM; IPTR draw_RastPort;};
 /*** Private Constants ********************************************************/
 
 extern struct MUI_CustomClass                     *IconWindow_CLASS;
