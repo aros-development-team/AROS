@@ -124,6 +124,10 @@
 #endif /* AROS_SLOWSTACKMETHODS */
 
 #ifdef AROS_SLOWSTACKTAGS
+#include <stdarg.h>
+#include <utility/tagitem.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
 /******************************************************************************
 
     NAME */
@@ -173,7 +177,7 @@
 ******************************************************************************/
 {
     struct TagItem * ti;
-    ULONG	     tag;
+    IPTR	     tag;
     ULONG	     size;
     va_list	     ap;
 
@@ -201,7 +205,7 @@
 
 	    while (skip --)
 	    {
-		(void) va_arg(args, ULONG);
+		(void) va_arg(args, IPTR);
 		(void) va_arg(args, IPTR);
 	    }
 
@@ -211,12 +215,12 @@
 	    (void) va_arg(args, IPTR);
 	}
 
-	tag = va_arg (args, ULONG);
+	tag = va_arg (args, IPTR);
     }
 
     tag  = firstTag;
 
-    if ((msg = AllocVec (size*sizeof(TagItem), MEMF_ANY)))
+    if ((ti = AllocVec (size*sizeof(struct TagItem), MEMF_ANY)))
     {
 	for (size=0;;size++)
 	{
@@ -243,7 +247,7 @@
 
 		while (skip --)
 		{
-		    (void) va_arg(ap, ULONG);
+		    (void) va_arg(ap, IPTR);
 		    (void) va_arg(ap, IPTR);
 		}
 
@@ -253,11 +257,11 @@
 		ti[size].ti_Data = va_arg(ap, IPTR);
 	    }
 
-	    tag = va_arg (ap, ULONG);
+	    tag = va_arg (ap, IPTR);
 	}
     }
     va_end(ap);
-    return msg;
+    return ti;
 } /* GetTagsFromStack */
 
 /******************************************************************************
