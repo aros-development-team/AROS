@@ -1,0 +1,10 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 22035 2004-08-12 18:06:01Z NicJA $
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-locale-help : workbench-locale-help-español
+#MM workbench-locale-help-español : setup
+
+workbench-locale-help-español : files-copy
+%copy_files_q files=LICENSE src=$(TOP) dst=$(AROS_HELP)/Español
