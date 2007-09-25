@@ -23,6 +23,9 @@
 #define AROS_DOUBLEALIGN	   8 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
+#define AROS_SLOWSTACKTAGS      1
+//#define AROS_SLOWSTACKMETHODS   1
+
 #define SIZEOF_FPU_CONTEXT      512
 #define SIZEOF_ALL_REGISTERS    (184 + SIZEOF_FPU_CONTEXT + 16)
 
