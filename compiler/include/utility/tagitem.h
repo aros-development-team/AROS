@@ -24,6 +24,11 @@ struct TagItem
     STACKIPTR ti_Data; /* Tag-specific data */
 };
 
+#ifdef AROS_SLOWSTACKTAGS
+    struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
+    void             FreeTagsFromStack (struct TagItem * tags);
+#endif
+
 /* constants for Tag.ti_Tag, control tag values */
 #define TAG_DONE   (0L)   /* terminates array of TagItems. ti_Data unused */
 #define TAG_END    (0L)   /* synonym for TAG_DONE                         */
