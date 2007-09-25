@@ -52,13 +52,13 @@
 struct wdpGetDefSizeSysImage
 {
     STACKULONG	     MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     struct DrawInfo *wdp_Dri;
     struct TextFont *wdp_ReferenceFont; /* In: */
     STACKULONG	     wdp_Which;  	/* In: One of CLOSEIMAGE, SIZEIMAGE, ... */
     STACKULONG	     wdp_SysiSize;	/* In: lowres/medres/highres */
-    STACKULONG	    *wdp_Width;  	/* Out */
-    STACKULONG	    *wdp_Height; 	/* Out */
+    ULONG	        *wdp_Width;  	/* Out */
+    ULONG	        *wdp_Height; 	/* Out */
     STACKULONG	     wdp_Flags;
     STACKIPTR        wdp_UserBuffer;
     
@@ -69,7 +69,7 @@ struct wdpGetDefSizeSysImage
 struct wdpDrawSysImage
 {
     STACKULONG	     MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     struct DrawInfo *wdp_Dri;
     struct RastPort *wdp_RPort;
     STACKLONG	     wdp_X;
@@ -85,7 +85,7 @@ struct wdpDrawSysImage
 struct wdpDrawWinBorder
 {
     STACKULONG	     MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     struct DrawInfo *wdp_Dri;
     struct Window   *wdp_Window;
     struct RastPort *wdp_RPort;
@@ -96,7 +96,7 @@ struct wdpDrawWinBorder
 struct wdpLayoutBorderGadgets
 {
     STACKULONG	     MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     struct DrawInfo *wdp_Dri;
     struct Window   *wdp_Window;
     struct Gadget   *wdp_Gadgets;
@@ -108,7 +108,7 @@ struct wdpLayoutBorderGadgets
 struct wdpDrawBorderPropBack
 {
     STACKULONG	      MethodID;
-    BOOL              wdp_TrueColor;
+    STACKBYTE         wdp_TrueColor;
     struct DrawInfo  *wdp_Dri;
     struct Window    *wdp_Window;
     struct RastPort  *wdp_RPort;
@@ -123,7 +123,7 @@ struct wdpDrawBorderPropBack
 struct wdpDrawBorderPropKnob
 {
     STACKULONG	      MethodID;
-    BOOL              wdp_TrueColor;
+    STACKBYTE         wdp_TrueColor;
     struct DrawInfo  *wdp_Dri;
     struct Window    *wdp_Window;
     struct RastPort  *wdp_RPort;
@@ -137,7 +137,7 @@ struct wdpDrawBorderPropKnob
 struct wdpInitWindow
 {
     STACKULONG	     MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     STACKIPTR        wdp_UserBuffer;
     struct Screen   *wdp_Screen;
     STACKIPTR        wdp_ScreenUserBuffer;
@@ -146,14 +146,14 @@ struct wdpInitWindow
 struct wdpExitWindow
 {
     STACKULONG       MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     STACKIPTR	     wdp_UserBuffer;
 };
 
 struct wdpWindowShape
 {
     STACKULONG       MethodID;
-    BOOL             wdp_TrueColor;
+    STACKBYTE        wdp_TrueColor;
     struct Window   *wdp_Window;
     STACKLONG        wdp_Width;
     STACKLONG        wdp_Height;

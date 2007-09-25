@@ -46,20 +46,20 @@
 struct mdpGetDefSizeSysImage
 {
     STACKULONG	     MethodID;
-    BOOL             mdp_TrueColor;
+    STACKBYTE        mdp_TrueColor;
     struct DrawInfo *mdp_Dri;
     struct TextFont *mdp_ReferenceFont; /* In: */
     STACKULONG	     mdp_Which;  	/* In: One of CLOSEIMAGE, SIZEIMAGE, ... */
     STACKULONG	     mdp_SysiSize;	/* In: lowres/medres/highres */
-    STACKULONG	    *mdp_Width;  	/* Out */
-    STACKULONG	    *mdp_Height; 	/* Out */
+    ULONG	        *mdp_Width;  	/* Out */
+    ULONG	        *mdp_Height; 	/* Out */
     STACKULONG	     mdp_Flags;
 };
 
 struct mdpDrawSysImage
 {
     STACKULONG	     MethodID;
-    BOOL             mdp_TrueColor;
+    STACKBYTE        mdp_TrueColor;
     struct DrawInfo *mdp_Dri;
     struct RastPort *mdp_RPort;
     STACKLONG	     mdp_X;
@@ -75,7 +75,7 @@ struct mdpDrawSysImage
 struct mdpGetMenuSpaces
 {
     STACKLONG	     MethodID;
-    BOOL             mdp_TrueColor;
+    STACKBYTE        mdp_TrueColor;
     STACKLONG	     mdp_InnerLeft;  	/* Out */
     STACKLONG	     mdp_InnerTop; 	/* Out */
     STACKLONG	     mdp_InnerRight;
@@ -93,7 +93,7 @@ struct mdpGetMenuSpaces
 struct mdpDrawBackground
 {
     STACKULONG	     MethodID;
-    BOOL             mdp_TrueColor;
+    STACKBYTE        mdp_TrueColor;
     struct RastPort *mdp_RPort;
     STACKLONG	     mdp_X;
     STACKLONG	     mdp_Y;
@@ -110,7 +110,7 @@ struct mdpDrawBackground
 struct mdpInitMenu
 {
     STACKLONG	     MethodID;
-    BOOL             mdp_TrueColor;
+    STACKBYTE        mdp_TrueColor;
     struct RastPort *mdp_RPort;
     struct Screen   *mdp_Screen;
     STACKULONG       mdp_Left;
@@ -124,7 +124,7 @@ struct mdpInitMenu
 struct mdpExitMenu
 {
     STACKLONG	     MethodID;
-    BOOL             mdp_TrueColor;
+    STACKBYTE        mdp_TrueColor;
     STACKIPTR        mdp_UserBuffer;
     
 };
