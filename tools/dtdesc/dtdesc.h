@@ -33,4 +33,18 @@ struct DataTypeHeader
  uint16_t  dth_Priority;
 };
 
+struct FileDataTypeHeader
+{
+ uint32_t  dth_Name;
+ uint32_t  dth_BaseName;
+ uint32_t  dth_Pattern;
+ uint32_t  dth_Mask;
+ uint32_t  dth_GroupID;
+ uint32_t  dth_ID;
+ uint16_t  dth_MaskLen;
+ uint16_t  dth_Pad;
+ uint16_t  dth_Flags;
+ uint16_t  dth_Priority;
+};
+
 #endif /* DTDESC_H */

@@ -427,7 +427,7 @@ void Work(struct DTDesc *TheDTDesc)
 int WriteOutDTD(struct DTDesc *TheDTDesc)
 {
  struct IFFHandle *IH;
- struct DataTypeHeader FileDTH;
+ struct FileDataTypeHeader FileDTH;
  int i;
 
  if(!TheDTDesc)
@@ -509,10 +509,10 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   return(FALSE);
  }
 
- FileDTH.dth_Name     = (uint8_t *)  (((unsigned int) sizeof(struct DataTypeHeader)));
- FileDTH.dth_BaseName = (uint8_t *)  (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
- FileDTH.dth_Pattern  = (uint8_t *)  (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
- FileDTH.dth_Mask     = (uint16_t *) (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
+ FileDTH.dth_Name     = (((unsigned int) sizeof(struct DataTypeHeader)));
+ FileDTH.dth_BaseName = (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
+ FileDTH.dth_Pattern  = (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
+ FileDTH.dth_Mask     = (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
  FileDTH.dth_GroupID  = TheDTDesc->DTH.dth_GroupID;
  FileDTH.dth_ID       = TheDTDesc->DTH.dth_ID;
  FileDTH.dth_MaskLen  = TheDTDesc->DTH.dth_MaskLen;
@@ -520,10 +520,10 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
  FileDTH.dth_Flags    = TheDTDesc->DTH.dth_Flags;
  FileDTH.dth_Priority = TheDTDesc->DTH.dth_Priority;
 
- FileDTH.dth_Name     = (uint8_t *)  Swap32IfLE(((uint32_t) FileDTH.dth_Name));
- FileDTH.dth_BaseName = (uint8_t *)  Swap32IfLE(((uint32_t) FileDTH.dth_BaseName));
- FileDTH.dth_Pattern  = (uint8_t *)  Swap32IfLE(((uint32_t) FileDTH.dth_Pattern));
- FileDTH.dth_Mask     = (uint16_t *) Swap32IfLE(((uint32_t) FileDTH.dth_Mask));
+ FileDTH.dth_Name     = Swap32IfLE(((uint32_t) FileDTH.dth_Name));
+ FileDTH.dth_BaseName = Swap32IfLE(((uint32_t) FileDTH.dth_BaseName));
+ FileDTH.dth_Pattern  = Swap32IfLE(((uint32_t) FileDTH.dth_Pattern));
+ FileDTH.dth_Mask     = Swap32IfLE(((uint32_t) FileDTH.dth_Mask));
  FileDTH.dth_GroupID  = Swap32IfLE(FileDTH.dth_GroupID);
  FileDTH.dth_ID       = Swap32IfLE(FileDTH.dth_ID);
  FileDTH.dth_MaskLen  = Swap16IfLE(FileDTH.dth_MaskLen);
@@ -531,7 +531,7 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
  FileDTH.dth_Flags    = Swap16IfLE(FileDTH.dth_Flags);
  FileDTH.dth_Priority = Swap16IfLE(FileDTH.dth_Priority);
 
- if(WriteChunkData(IH, (char *) &FileDTH, sizeof(struct DataTypeHeader))<=0)
+ if(WriteChunkData(IH, (char *) &FileDTH, sizeof(struct FileDataTypeHeader))<=0)
  {
   EndChunk(IH);
   CloseIFF(IH);
