@@ -509,7 +509,7 @@ int WriteOutDTD(struct DTDesc *TheDTDesc)
   return(FALSE);
  }
 
- FileDTH.dth_Name     = (((unsigned int) sizeof(struct DataTypeHeader)));
+ FileDTH.dth_Name     = (((unsigned int) sizeof(struct FileDataTypeHeader)));
  FileDTH.dth_BaseName = (((unsigned int) FileDTH.dth_Name) + strlen(TheDTDesc->DTH.dth_Name) + 1);
  FileDTH.dth_Pattern  = (((unsigned int) FileDTH.dth_BaseName) + strlen(TheDTDesc->DTH.dth_BaseName) + 1);
  FileDTH.dth_Mask     = (((unsigned int) FileDTH.dth_Pattern) + strlen(TheDTDesc->DTH.dth_Pattern) + 1);
