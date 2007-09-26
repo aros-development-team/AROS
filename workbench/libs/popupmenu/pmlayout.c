@@ -54,8 +54,8 @@ UWORD PM_ItemWidth(struct PM_Window *a, struct PopupMenu *pm)
         if(GET_TXTMODE(pm)==NPX_TXTBOOPSI) {
         } else {
             STRPTR title=pm->Title;
-
-            if(GET_TXTMODE(pm)==NPX_TXTLOCALE) title=(STRPTR)CallHook(a->p->LocaleHook, (Object *)pm, pm->TitleID, 123);
+            IPTR args[] = {(IPTR)pm->TitleID, 123};
+            if(GET_TXTMODE(pm)==NPX_TXTLOCALE) title=(STRPTR)CallHookA(a->p->LocaleHook, (Object *)pm, args);
 
             if(title) tmp=TextLength(&tmprp,title,strlen(title));
         }
