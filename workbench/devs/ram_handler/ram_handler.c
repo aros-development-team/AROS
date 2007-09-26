@@ -8,7 +8,7 @@
 #define  INKERNEL 1
 
 
-#define  DEBUG 0
+#define  DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/errors.h>
@@ -308,7 +308,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
 			        }
 			    }
 			    else
- 			    if (AddTask(task, deventry, NULL) != NULL)
+ 			    if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
 		    		return TRUE;
 
 			    FreeMem(semaphore, sizeof(struct SignalSemaphore));
