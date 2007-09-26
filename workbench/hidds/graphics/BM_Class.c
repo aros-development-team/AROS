@@ -2074,7 +2074,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *bitarray;
-    ULONG    	    	    *buf, *xbuf, bitmask;
+    HIDDT_Pixel	    	    *buf, *xbuf, bitmask;
     OOP_Object	    	    *gc = msg->gc;
     struct HIDDBitMapData   *data;
     WORD    	    	     type = 0;
@@ -2106,13 +2106,13 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
     bitarray = msg->template + ((msg->srcx / 16) * 2);
     bitmask = 0x8000 >> (msg->srcx & 0xF);
     
-    PIXBUF_ALLOC(buf, msg->width * sizeof(ULONG), msg->height);
+    PIXBUF_ALLOC(buf, msg->width * sizeof(HIDDT_Pixel), msg->height);
     
     if (buf)
     {
     	HIDDT_DrawMode   old_drmd = GC_DRMD(msg->gc);
-    	ULONG	     	 fg = GC_FG(msg->gc);
-	ULONG	    	 bg = GC_BG(msg->gc);
+    	HIDDT_Pixel	     	 fg = GC_FG(msg->gc);
+	HIDDT_Pixel	    	 bg = GC_BG(msg->gc);
 	
 	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
 
@@ -2130,7 +2130,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
 		
 		HIDD_BM_GetImage(o,
 	    	    		 (UBYTE *)buf,
-				 msg->width * sizeof(ULONG),
+				 msg->width * sizeof(HIDDT_Pixel),
 				 msg->x,
 				 y,
 				 msg->width,
@@ -2246,7 +2246,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o,
 		HIDD_BM_PutImage(o,
 	    	    		 msg->gc,
 				 (UBYTE *)buf,
-				 msg->width * sizeof(ULONG),
+				 msg->width * sizeof(HIDDT_Pixel),
 				 msg->x,
 				 y - height + 1,
 				 msg->width,

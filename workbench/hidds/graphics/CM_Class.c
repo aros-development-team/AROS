@@ -258,7 +258,7 @@ HIDDT_Pixel CM__Hidd_ColorMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 		data->clut.entries));
 	
     	// *((ULONG *)0) = 0;
-	return (HIDDT_Pixel)-1L;
+	return (HIDDT_Pixel)-1;
 	
     }
     
