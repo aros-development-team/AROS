@@ -135,7 +135,7 @@ int PM_NewDrawItem(struct PM_Window *a, struct PopupMenu *pm, BOOL Selected, BOO
 	if(pm->Flags&NPM_HIDDEN) return 0;
 
 	if(GET_TXTMODE(pm)==NPX_TXTLOCALE)
-		pmtitle=(STRPTR)CallHook(a->p->LocaleHook, (Object *)pm, (Object *)pm->TitleID);
+		pmtitle=(STRPTR)CallHookA(a->p->LocaleHook, (Object *)pm, &pm->TitleID);
 
 	if(Selected) {
 		SetAPen(a->RPort, FILL(a->p));

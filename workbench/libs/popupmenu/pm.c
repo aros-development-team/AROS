@@ -533,7 +533,8 @@ struct PM_Window *PM_SetupSubWindow(struct PM_Window *parent, struct PM_Root *p,
 			if(newwin->MenuLevel>4) newwin->MenuLevel = 4;
 
 			if(parent->SubMenuParent->SubConstruct) {
-				newwin->PM.Sub = (struct PopupMenu *)CallHook(parent->SubMenuParent->SubConstruct, (Object *)parent->Selected, parent);
+                IPTR p = (IPTR)parent;
+				newwin->PM.Sub = (struct PopupMenu *)CallHookA(parent->SubMenuParent->SubConstruct, (Object *)parent->Selected, &p);
 			}
 		} else {
 			newwin->AltXPos = newwin->MenuX = p->Scr->MouseX;
@@ -558,7 +559,7 @@ void PM_FreeSubWindow(struct PM_Window *parent, struct PM_Window *window)
 	if(window) {
 		if(parent) {
 			if(parent->SubMenuParent->SubDestruct) {
-				CallHook(parent->SubMenuParent->SubDestruct, (Object *)parent->SubMenuParent);
+				CallHookA(parent->SubMenuParent->SubDestruct, (Object *)parent->SubMenuParent, NULL);
 			}
 		}
 
@@ -853,7 +854,7 @@ APTR __saveds ASM PM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
                                                         if(p->AutoSetPtr) *p->AutoSetPtr=TRUE;
                                                 }
                                         }
-        	                        if(MenuHandler) CallHook(MenuHandler, (Object *)p);
+        	                        if(MenuHandler) CallHookA(MenuHandler, (Object *)p, NULL);
 	                                return p->UserData;
                                 }
                         }
@@ -878,7 +879,7 @@ APTR __saveds ASM PM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
                                                         if(p->AutoSetPtr) *p->AutoSetPtr=TRUE;
                                                 }
                                         }
-        	                        if(MenuHandler) CallHook(MenuHandler, (Object *)p);
+        	                        if(MenuHandler) CallHookA(MenuHandler, (Object *)p, NULL);
 	                                return p->UserData;
                                 }
                         }
@@ -896,7 +897,8 @@ void PM_DoSelected(struct PM_Root *p, struct PopupMenu *pm)
 
         while(z) {
                 if(z->Flags&NPM_ISSELECTED) {
-                        if(p->DoMultiSel) CallHook(p->MenuHandler, (Object *)z, 0);
+                        IPTR v = 0;
+                        if(p->DoMultiSel) CallHookA(p->MenuHandler, (Object *)z, &v);
                         z->Flags&=~NPM_ISSELECTED;
                         if(z->Flags&NPM_CHECKED)
                             z->Flags|=NPM_INITIAL_CHECKED;
