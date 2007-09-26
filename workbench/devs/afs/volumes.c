@@ -9,6 +9,7 @@
 
 #include "os.h"
 #include "bitmap.h"
+#include "checksums.h"
 #include "error.h"
 #include "afsblocks.h"
 #include "baseredef.h"
@@ -28,6 +29,15 @@ struct BlockCache *blockbuffer;
 UWORD i;
 LONG error;
 
+	/* Check validity of root block first, since boot block may be left over
+	   from an overwritten partition of a different size */
+	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+	if (blockbuffer == NULL)
+		return ERROR_UNKNOWN;
+	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0 ||
+		OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
+		return ERROR_NOT_A_DOS_DISK;
+
 	blockbuffer=getBlock(afsbase, volume,0);
 	if (blockbuffer == NULL)
 		return ERROR_UNKNOWN;
@@ -43,8 +53,6 @@ LONG error;
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
 	if (blockbuffer == NULL)
 		return ERROR_UNKNOWN;
-	if (OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
-		return ERROR_NOT_A_DOS_DISK;
 	for (i=0;i<=24;i++)
 	{
 		volume->bitmapblockpointers[i]=OS_BE2LONG
