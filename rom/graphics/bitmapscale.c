@@ -161,7 +161,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
 
         if (TRUE == success && TRUE == colmaps_ok)
         {
-            ULONG old_drmd;
+            HIDDT_DrawMode old_drmd;
 	    struct TagItem cbtags[] = {
     		{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
     		{ TAG_DONE, 0 }

@@ -80,7 +80,7 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
     FIX_GFXCOORD(y);
    
     if(!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return ((ULONG)-1L);
+	return ((ULONG)-1);
 	
     if (IS_HIDD_BM(rp->BitMap))
     	prlrd.pixlut = &pixlut;
