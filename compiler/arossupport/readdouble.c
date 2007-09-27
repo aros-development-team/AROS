@@ -57,7 +57,8 @@
     DOUBLE  value;
     UBYTE * ptr;
     LONG    c;
-
+    struct BEIOM_Read rd = {BEIO_READ};
+    
     ptr = (UBYTE *)&value;
 
 #if AROS_BIG_ENDIAN
@@ -68,7 +69,7 @@
 #endif
 
 #define READ_ONE_BYTE		    \
-    if ((c = CallHook (hook, stream, BEIO_READ)) == EOF) \
+    if ((c = CallHookA (hook, stream, &rd)) == EOF) \
 	return FALSE;		    \
 				    \
     *ptr NEXT = c

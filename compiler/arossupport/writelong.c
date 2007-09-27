@@ -52,6 +52,7 @@
 ******************************************************************************/
 {
     UBYTE * ptr;
+    struct BEIOM_Write wr={BEIO_WRITE, };
 
 #if AROS_BIG_ENDIAN
     ptr = (UBYTE *)&data;
@@ -62,7 +63,8 @@
 #endif
 
 #define WRITE_ONE_CHAR			\
-    if (CallHook (hook, stream, BEIO_WRITE, *ptr NEXT) == EOF) \
+    wr.Data = *ptr NEXT;    \
+    if (CallHookA (hook, stream, &wr) == EOF) \
 	return FALSE
 
     WRITE_ONE_CHAR;

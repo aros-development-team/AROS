@@ -51,9 +51,11 @@
 
 ******************************************************************************/
 {
-    if (CallHook (hook, stream, BEIO_WRITE, data >> 8) == EOF)
+    struct BEIOM_Write wr = { BEIO_WRITE, data >>8 };
+    if (CallHookA (hook, stream, &wr) == EOF)
 	return FALSE;
 
-    return (CallHook (hook, stream, BEIO_WRITE, data & 0xFF) != EOF);
+    wr.Data = data & 0xff;
+    return (CallHookA (hook, stream, &wr) != EOF);
 } /* WriteWord */
 

@@ -55,7 +55,9 @@
 {
     LONG value;
 
-    value = CallHook (hook, stream, BEIO_READ);
+    struct BEIOM_Read rd = {BEIO_READ};
+    
+    value = CallHookA (hook, stream, &rd);
 
     if (value != EOF)
 	*dataptr = value;
