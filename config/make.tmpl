@@ -553,14 +553,16 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
 #------------------------------------------------------------------------------
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in %(uselibs) and the host libraries in %(usehostlibs)
-%define rule_linkmodule module=/A objs=/A endobj=/A err=/A uselibs= usehostlibs=
+%define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
+    uselibs= usehostlibs=
 
 %(module) : OBJS := %(objs)
 %(module) : ENDTAG := %(endobj)
 %(module) : ERR := %(err)
+%(module) : OBJDIR := %(objdir)
 %(module) : LIBS := $(addprefix -l,%(uselibs)) -lautoinit -llibinit -L/usr/lib $(addprefix -l,%(usehostlibs))
 %(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS)
+	%link_module_q err=$(ERR) endtag=$(ENDTAG) objs=$(OBJS) libs=$(LIBS) objdir=$(OBJDIR)
 
 %end
 #------------------------------------------------------------------------------
@@ -1113,7 +1115,7 @@ BD_KOBJ := $(KOBJSDIR)/%(modname)_%(modtype).o
 # The module is linked from all the compiled .o files
 BD_OBJS       := $(addprefix %(objdir)/, $(addsuffix .o,%(files)))
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
-		 endobj= err=%(modname).err \
+		 endobj= err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -1362,7 +1364,7 @@ BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))
 
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
-		 endobj=$(BD_ENDOBJS) err=$(BD_MODNAME).err \
+		 endobj=$(BD_ENDOBJS) err=%(modname).err objdir=%(objdir) \
 		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
