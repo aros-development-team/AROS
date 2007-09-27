@@ -52,7 +52,7 @@
     AROS_LIBFUNC_INIT
     LONG retval=1;
 
-    if (root->table == 0)
+    if (root->table == NULL)
     {
     struct PTFunctionTable **pst;
 
@@ -76,7 +76,7 @@
                         if (retval != 0)
                         {
                             FreeMem(root->table, sizeof(struct PartitionTableHandler));
-                            root->table = 0;
+                            root->table = NULL;
                         }
                         return retval;
                     }

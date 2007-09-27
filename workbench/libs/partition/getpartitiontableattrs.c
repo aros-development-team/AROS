@@ -32,9 +32,9 @@
     INPUTS
     ph      - PartitionHandle of the partition table
     taglist - list of attributes; unknown tags are ignored
-        PTT_DOSENVEC - struct DosEnvec *; get DosEnvec values
-        PTT_TYPE     - LONG *           ; get partition table type
-        PTT_RESERVED - LONG *           ; get number of reserved blocks
+        PTT_TYPE     - ULONG *           ; get partition table type
+        PTT_MAXLEADIN     - LONG *
+        PTT_RESERVED - ULONG *           ; get number of reserved blocks
 
     RESULT
 

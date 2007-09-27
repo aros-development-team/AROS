@@ -24,7 +24,7 @@
 
 /*  FUNCTION
 	Open a partition table. On success root->list will be filled with a
-	list of PartitionHandle's. If one partition contains more
+	list of PartitionHandles. If one partition contains more
 	subpartitions, the caller should call OpenPartitionTable() on the
 	PartitionHandle recursively.
 
