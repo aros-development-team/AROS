@@ -33,8 +33,8 @@
     ph      - PartitionHandle
     taglist - list of attributes; unknown tags are ignored
         PT_DOSENVEC - struct DosEnvec *; get DosEnvec values
-        PT_TYPE     - LONG *           ; get partition type (MBR-PC)
-        PT_POSITION - LONG *           ; position of partition (MBR-PC)
+        PT_TYPE     - struct PartitionType *           ; get partition type (MBR-PC)
+        PT_POSITION - ULONG *           ; position of partition (MBR-PC)
         PT_ACTIVE   - LONG *           ; is partition active
         PT_NAME     - STRPTR    ; get name of partition (max 31 Bytes + NULL-byte)
 

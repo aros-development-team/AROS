@@ -24,7 +24,7 @@
    struct Library *, PartitionBase, 5, Partition)
 
 /*  FUNCTION
-    create a root handle, open device/unit
+    Create a root handle by opening a trackdisk-compatible device.
 
     INPUTS
     Device - name of the block device

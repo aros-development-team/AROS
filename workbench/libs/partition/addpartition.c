@@ -23,7 +23,7 @@
    struct Library *, PartitionBase, 11, Partition)
 
 /*  FUNCTION
-    add a new partition
+    Add a new partition.
 
     INPUTS
     root - PartitionHandle, where to add the new partition

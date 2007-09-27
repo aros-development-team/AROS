@@ -20,7 +20,7 @@
    struct Library *, PartitionBase, 12, Partition)
 
 /*  FUNCTION
-    delete a partition with it's subpartitions
+    Delete a partition with its subpartitions
 
     INPUTS
     ph - PartitionHandle to delete

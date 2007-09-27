@@ -22,7 +22,7 @@
    struct Library *, PartitionBase, 9, Partition)
 
 /*  FUNCTION
-    write a partition table; writing this partition table doesn't affect
+    Write a partition table; writing this partition table doesn't affect
     subpartition tables
 
     INPUTS

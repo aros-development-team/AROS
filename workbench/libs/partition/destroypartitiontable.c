@@ -23,7 +23,7 @@
    struct Library *, PartitionBase, 19, Partition)
 
 /*  FUNCTION
-    Destroy a partition table by immediatly overwriting table data on disk.
+    Destroy a partition table by immediately overwriting table data on disk.
 
     INPUTS
     root - partition table to destroy
@@ -34,7 +34,7 @@
     NOTES
     After calling this function the state of the PartitionHandle will be the
     same as before calling OpenPartitionTable(). Therefore do not reference
-    any children PartitionHandles anymore.
+    any child PartitionHandles any more.
 
     EXAMPLE
 
