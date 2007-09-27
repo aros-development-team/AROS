@@ -150,7 +150,7 @@ static ULONG GetOffset(struct PartitionBase *PartitionBase,
     while (ph->root)
     {
         GetPartitionAttrs(ph, (struct TagItem *)tags);
-        offset += de.de_LowCyl;
+        offset += de.de_LowCyl * de.de_Surfaces * de.de_BlocksPerTrack;
         ph = ph->root;
     }
     return offset;
@@ -167,7 +167,7 @@ static VOID AddPartitionVolume
     )
 {
     UBYTE name[32];
-    ULONG i;
+    ULONG i, blockspercyl;
     const struct PartitionAttribute *attrs;
     STACKIPTR tags[7];
     IPTR *pp;
@@ -218,6 +218,8 @@ static VOID AddPartitionVolume
                 name[i++] = '0' + (UBYTE)(fssm->fssm_Unit / 10);
             name[i++] = '0' + (UBYTE)(fssm->fssm_Unit % 10);
             name[i++] = 'P';
+            if (table->table->type == PHPTT_EBR)
+                ppos += 4;
             if ((ppos / 10))
                 name[i++] = '0' + (UBYTE)(ppos / 10);
             name[i++] = '0' + (UBYTE)(ppos % 10);
@@ -248,6 +250,10 @@ static VOID AddPartitionVolume
         pp[2] = fssm->fssm_Unit;
         pp[3] = fssm->fssm_Flags;
         i = GetOffset(PartitionBase, pn);
+        blockspercyl = pp[4 + DE_BLKSPERTRACK] * pp[4 + DE_NUMHEADS];
+        if (i % blockspercyl != 0)
+            return;
+        i /= blockspercyl;
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 

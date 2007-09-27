@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES := \
 	partition_support \
+	partitionebr \
 	partitionmbr \
 	partitionrdb
 
@@ -27,6 +28,8 @@ FUNCS := \
 #MM    kernel-exec-includes \
 #MM    includes-copy
 #MM- workbench-libs-partition : linklibs
+
+USER_CFLAGS := -DDEBUG=0
 
 %build_module mmake=workbench-libs-partition \
     modname=partition modtype=library \
