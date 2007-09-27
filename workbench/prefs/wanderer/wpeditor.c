@@ -1,5 +1,5 @@
 /*
-    Copyright  2004, The AROS Development Team. All rights reserved.
+    Copyright  2004-2007, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -1428,25 +1428,26 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk()\n"));
 	{
 		if (cont)
 		{
-			switch ((int)global_chunk[i].ti_Tag)
+                        /* prefs file is stored in little endian */
+			switch ((int)AROS_LE2LONG(global_chunk[i].ti_Tag))
 			{
 				case MUIA_IconWindowExt_Toolbar_Enabled:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_Enabled, val = %d\n", i, global_chunk[i].ti_Data));
-					SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)global_chunk[i].ti_Data); 
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_Enabled, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, (BOOL)AROS_LE2LONG(global_chunk[i].ti_Data)); 
 					break;
 				}
 				case MUIA_IconWindowExt_Toolbar_NavigationMethod:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_NavigationMethod, val = %d\n", i, global_chunk[i].ti_Data));
-					SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);   
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_Toolbar_NavigationMethod, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
 				}
 #if defined(DEBUG_SHOWUSERFILES)
 				case MUIA_IconWindowExt_UserFiles_ShowFilesFolder:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_UserFiles_ShowFilesFolder, val = %d\n", i, global_chunk[i].ti_Data));
-					SET(data->wped_cm_EnableUserFiles, MUIA_Selected, (BOOL)global_chunk[i].ti_Data);
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_UserFiles_ShowFilesFolder, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET(data->wped_cm_EnableUserFiles, MUIA_Selected, (BOOL)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
 				}
 #endif
@@ -1454,29 +1455,29 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconWindowExt_User
 /* The Following attributes will be moved to the ViewSettings Specific Chunks */
 				case MUIA_IconList_IconListMode:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_IconListMode, val = %d\n", i, global_chunk[i].ti_Data));
-					SET( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_IconListMode, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET( data->wped_icon_listmode, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
 				}
 				case MUIA_IconList_LabelText_Mode:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_Mode, val = %d\n", i, global_chunk[i].ti_Data));
-					SET( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)global_chunk[i].ti_Data);
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_Mode, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET( data->wped_icon_textmode, MUIA_Cycle_Active, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
 				}
 				case MUIA_IconList_LabelText_MaxLineLen:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_MaxLineLen, val = %d\n", i, global_chunk[i].ti_Data));
-					SET(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)global_chunk[i].ti_Data);
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_MaxLineLen, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET(data->wped_icon_textmaxlen, MUIA_String_Integer, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
 				}
 #if defined(DEBUG_MULTLINE)
 				case MUIA_IconList_LabelText_MultiLine:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_MultiLine, val = %d\n", i, global_chunk[i].ti_Data));
-					if ((IPTR)global_chunk[i].ti_Data > 1)
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_MultiLine, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					if ((IPTR)AROS_LE2LONG(global_chunk[i].ti_Data) > 1)
 					{
-						SET(data->wped_icon_multilineno, MUIA_String_Integer, (IPTR)global_chunk[i].ti_Data);
+						SET(data->wped_icon_multilineno, MUIA_String_Integer, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data));
 						SET(data->wped_icon_textmultiline, MUIA_Selected, TRUE);
 					}
 					else
@@ -1488,8 +1489,8 @@ D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText
 				}
 				case MUIA_IconList_LabelText_MultiLineOnFocus:
 				{
-D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_MultiLineOnFocus, val = %d\n", i, global_chunk[i].ti_Data));
-					SET(data->wped_icon_multilineonfocus, MUIA_Selected, (BOOL)global_chunk[i].ti_Data);
+D(bug("[WPEditor] WPEditor_ProccessGlobalChunk: Tag %d = MUIA_IconList_LabelText_MultiLineOnFocus, val = %d\n", i, AROS_LE2LONG(global_chunk[i].ti_Data)));
+					SET(data->wped_icon_multilineonfocus, MUIA_Selected, (BOOL)AROS_LE2LONG(global_chunk[i].ti_Data));
 					break;
 				}
 #endif
@@ -1512,7 +1513,7 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
     SETUP_WPEDITOR_INST_DATA;
 
 	struct TagItem *network_tags = _viewSettings_Chunk;
-	SET(data->wped_cm_EnableNetworkBrowser, MUIA_Selected, network_tags[0].ti_Data);
+	SET(data->wped_cm_EnableNetworkBrowser, MUIA_Selected, AROS_LE2LONG(network_tags[0].ti_Data));
 
 	return TRUE;
 }
@@ -1720,7 +1721,8 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Context %x\n", context));
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
 					struct WandererPrefsIFFChunkHeader *this_header = (struct WandererPrefsIFFChunkHeader *) chunk_buffer;
 					char                               *this_chunk_name = NULL;
-					IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
+                                        /* prefs file is stored in little endian */
+					IPTR                               this_chunk_size = AROS_LE2LONG(this_header->wpIFFch_ChunkSize);
 						
 					
 					if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1, MEMF_ANY|MEMF_CLEAR)))
@@ -1883,73 +1885,88 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Prepare 'global' Wanderer
 			/* save toolbar state*/
 			struct TagItem	*_wp_GlobalTags = AllocVec(((WP_GLOBALTAGCOUNT + 1) * sizeof(struct TagItem)), MEMF_ANY|MEMF_CLEAR);
 			ULONG           _wp_GlobalTagCounter = 0;
+                        /* helper to convert to little endian */
+                        STACKIPTR       ti_Data;
 
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconWindowExt_Toolbar_Enabled;
-			GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_Enabled @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_Toolbar_Enabled);
+			GET(data->wped_cm_ToolbarEnabled, MUIA_Selected, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_Enabled @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 			_wp_GlobalTagCounter += 1;
 
-			if ((BOOL)_wp_GlobalTags[_wp_GlobalTagCounter - 1].ti_Data == TRUE)
+			if ((BOOL)ti_Data == TRUE)
 			{
 				/* save navigation bahaviour */
-				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconWindowExt_Toolbar_NavigationMethod;
-				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_NavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_Toolbar_NavigationMethod);
+				GET(data->wped_c_NavigationMethod, MUIA_Cycle_Active, &ti_Data);
+                                _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_Toolbar_NavigationMethod @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 				_wp_GlobalTagCounter += 1;
 			}
 			
 			/* save the icon listing method */
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_IconListMode;
-			GET(data->wped_icon_listmode, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_IconListMode @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconList_IconListMode);
+			GET(data->wped_icon_listmode, MUIA_Cycle_Active, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_IconListMode @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 			_wp_GlobalTagCounter += 1;
 
 			/* save the icon text mode */
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_LabelText_Mode;
-			GET(data->wped_icon_textmode, MUIA_Cycle_Active, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_Mode @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_Mode);
+			GET(data->wped_icon_textmode, MUIA_Cycle_Active, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_Mode @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 			_wp_GlobalTagCounter += 1;
 
 			/* save the max length of icons */
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_LabelText_MaxLineLen;
-			GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MaxLineLen @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter ].ti_Data));
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_MaxLineLen);
+			GET(data->wped_icon_textmaxlen, MUIA_String_Integer, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MaxLineLen @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 			_wp_GlobalTagCounter += 1;
 
 #if defined(DEBUG_SHOWUSERFILES)
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconWindowExt_UserFiles_ShowFilesFolder;
-			GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_UserFiles_ShowFilesFolder @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconWindowExt_UserFiles_ShowFilesFolder);
+			GET(data->wped_cm_EnableUserFiles, MUIA_Selected, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconWindowExt_UserFiles_ShowFilesFolder @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
 			_wp_GlobalTagCounter += 1;
 #endif
 
 #if defined(DEBUG_MULTLINE)
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_LabelText_MultiLine;
-			GET(data->wped_icon_textmultiline, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-			if ((BOOL)_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data == TRUE)
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_MultiLine);
+			GET(data->wped_icon_textmultiline, MUIA_Selected, &ti_Data);
+                        _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+			if ((BOOL)ti_Data == TRUE)
 			{
-				GET(data->wped_icon_multilineno, MUIA_String_Integer, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
-				if ((IPTR)_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data < 2)
-					_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = 1;
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MultiLine @ Tag %d, data = %d\n", _wp_GlobalTagCounter, _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data));
-					_wp_GlobalTagCounter += 1;
+				GET(data->wped_icon_multilineno, MUIA_String_Integer, &ti_Data);
+                                _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+				if ((IPTR)ti_Data < 2)
+                                {
+                                        ti_Data = 1;
+					_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
+                                }
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MultiLine @ Tag %d, data = %d\n", _wp_GlobalTagCounter, ti_Data));
+				_wp_GlobalTagCounter += 1;
 
-				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = MUIA_IconList_LabelText_MultiLineOnFocus;
-				GET(data->wped_icon_multilineonfocus, MUIA_Selected, &_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data);
+				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_MultiLineOnFocus);
+				GET(data->wped_icon_multilineonfocus, MUIA_Selected, &ti_Data);
+                                _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
 
 				_wp_GlobalTagCounter += 1;
 
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MultiLineOnFocus @ Tag %d, data = %d\n", _wp_GlobalTagCounter - 1, _wp_GlobalTags[_wp_GlobalTagCounter - 1].ti_Data));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MultiLineOnFocus @ Tag %d, data = %d\n", _wp_GlobalTagCounter - 1, ti_Data));
 			}
 			else
 			{
-				_wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = 1;
+                                ti_Data = 1;
+                                _wp_GlobalTags[_wp_GlobalTagCounter].ti_Data = AROS_LONG2LE(ti_Data);
 				
 				_wp_GlobalTagCounter += 1;
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MultiLine @ Tag %d, data = %d\n", _wp_GlobalTagCounter - 1, _wp_GlobalTags[_wp_GlobalTagCounter - 1].ti_Data));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' MUIA_IconList_LabelText_MultiLine @ Tag %d, data = %d\n", _wp_GlobalTagCounter - 1, ti_Data));
 			}
 #endif
-			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = TAG_DONE;
+			_wp_GlobalTags[_wp_GlobalTagCounter].ti_Tag = AROS_LONG2LE(TAG_DONE);
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'global' Marked Tag %d as TAG_DONE\n", _wp_GlobalTagCounter));
 
 			ULONG globaldatasize = (_wp_GlobalTagCounter + 1) * sizeof(struct TagItem);
@@ -1958,7 +1975,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'global' Wanderer P
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
 			{
 				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:global");
-				wanderer_chunkdata.wpIFFch_ChunkSize = globaldatasize;
+				wanderer_chunkdata.wpIFFch_ChunkSize = AROS_LONG2LE(globaldatasize);
 				
 				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 				
@@ -1997,7 +2014,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'network' Wanderer 
 			if ((error = PushChunk(handle, ID_PREF, ID_WANDR, sizeof(struct WandererPrefsIFFChunkHeader))) == 0)
 			{
 				sprintf(wanderer_chunkdata.wpIFFch_ChunkType, "%s" , "wanderer:network");
-				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(struct TagItem);
+				wanderer_chunkdata.wpIFFch_ChunkSize = AROS_LONG2LE(sizeof(struct TagItem));
 				
 				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 				
@@ -2020,7 +2037,8 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'network' Wanderer 
 
 				/* save network options*/
 				__wp_networkconfig[0].ti_Tag = MUIA_IconWindowExt_NetworkBrowser_Show;
-				GET(data->wped_cm_EnableNetworkBrowser, MUIA_Selected, &__wp_networkconfig[0].ti_Data);
+				GET(data->wped_cm_EnableNetworkBrowser, MUIA_Selected, &ti_Data);
+                                __wp_networkconfig[0].ti_Data = AROS_LONG2LE(ti_Data);
 
 				error = WriteChunkBytes(handle, __wp_networkconfig, sizeof(struct TagItem));
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'network' Data Chunk | Wrote %d bytes (data size = %d bytes)\n", error, sizeof(struct TagItem)));
@@ -2049,7 +2067,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'screentitle' Wande
 				GET(data->wped_s_screentitle, MUIA_String_Contents, &screentitlestr);
 				screentitlesize = strlen(screentitlestr);
 				
-				wanderer_chunkdata.wpIFFch_ChunkSize = sizeof(UBYTE)*screentitlesize+1;
+				wanderer_chunkdata.wpIFFch_ChunkSize = AROS_LONG2LE(sizeof(UBYTE)*screentitlesize+1);
 				
 				WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 				
@@ -2169,7 +2187,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Stri
 					}
 					_viewSettings_ChunkSize += (_viewSettings_TagCount * sizeof(struct TagItem));
 
-					wanderer_chunkdata.wpIFFch_ChunkSize = _viewSettings_ChunkSize;
+					wanderer_chunkdata.wpIFFch_ChunkSize = AROS_LONG2LE(_viewSettings_ChunkSize);
 
 					WriteChunkBytes(handle, &wanderer_chunkdata, sizeof(struct WandererPrefsIFFChunkHeader));
 
@@ -2190,8 +2208,8 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_Backg
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' Writing data for %d Tags @ %x\n", _viewSettings_TagCount, dest_tag));
 							do
 							{
-								dest_tag[_viewSettings_TagCount - 1].ti_Tag = _viewSettings_TagList[_viewSettings_TagCount - 1].ti_Tag;
-								dest_tag[_viewSettings_TagCount - 1].ti_Data = _viewSettings_TagList[_viewSettings_TagCount - 1].ti_Data;
+								dest_tag[_viewSettings_TagCount - 1].ti_Tag  = AROS_LONG2LE(_viewSettings_TagList[_viewSettings_TagCount - 1].ti_Tag);
+								dest_tag[_viewSettings_TagCount - 1].ti_Data = AROS_LONG2LE(_viewSettings_TagList[_viewSettings_TagCount - 1].ti_Data);
 								_viewSettings_TagCount -= 1;
 							}while(_viewSettings_TagCount > 0);
 						}

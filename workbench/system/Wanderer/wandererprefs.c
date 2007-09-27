@@ -1,5 +1,5 @@
 /*
-    Copyright  2004, The AROS Development Team. All rights reserved.
+    Copyright  2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define DEBUG 0
@@ -506,8 +506,9 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
 	{
 		if (cont)
 		{
-			if ((IPTR)global_chunk[i].ti_Tag == TAG_DONE) cont = FALSE;
-			else SET(self, (IPTR)global_chunk[i].ti_Tag, (IPTR)global_chunk[i].ti_Data);
+                        /* prefs file is stored in little endian */
+			if (AROS_LE2LONG(global_chunk[i].ti_Tag) == TAG_DONE) cont = FALSE;
+			else SET(self, AROS_LE2LONG(global_chunk[i].ti_Tag), AROS_LE2LONG(global_chunk[i].ti_Data));
 		}
 	}
 
@@ -519,7 +520,7 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
     //SETUP_INST_DATA;
 
 	struct TagItem *network_tags =(struct TagItem *) _viewSettings_Chunk;
-	SET(self, network_tags[0].ti_Tag, network_tags[0].ti_Data);
+	SET(self, AROS_LE2LONG(network_tags[0].ti_Tag), AROS_LE2LONG(network_tags[0].ti_Data));
 
 	return TRUE;
 }
@@ -625,8 +626,8 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to 
 		int i = 0;
 		for (i = 0; i < _viewSettings_TagCount; i++)
 		{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Setting Tag %x Value %d\n", _viewSettings_Node->wpbn_Options[i].ti_Tag, _viewSettings_Node->wpbn_Options[i].ti_Data));
-			SET(_viewSettings_Node->wpbn_NotifyObject, _viewSettings_Node->wpbn_Options[i].ti_Tag, _viewSettings_Node->wpbn_Options[i].ti_Data);
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Setting Tag %x Value %d\n", AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag), AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data)));
+			SET(_viewSettings_Node->wpbn_NotifyObject, AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag), AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data));
 		}
 	}
 	return TRUE;
@@ -672,7 +673,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context %x\n",
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
 					struct WandererPrefsIFFChunkHeader *this_header =(struct WandererPrefsIFFChunkHeader *) chunk_buffer;
 					char                               *this_chunk_name = NULL;
-					IPTR                               this_chunk_size = this_header->wpIFFch_ChunkSize;
+					IPTR                               this_chunk_size = AROS_LE2LONG(this_header->wpIFFch_ChunkSize);
 						
 
 					if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
