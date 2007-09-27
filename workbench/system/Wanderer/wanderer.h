@@ -28,10 +28,25 @@ struct  MUIP_Wanderer_CreateDrawerWindow  {STACKULONG MethodID; CONST_STRPTR dra
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *Wanderer_CLASS;
 
-struct AppW {
-  struct Node n;
-  char *name;
+struct AppW 
+{
+    struct Node n;
+    char *name;
 };
+
+struct Wanderer_FileEntry 
+{
+    struct Node	wfe_Node;
+    char filename[1024];
+};
+
+struct Wanderer_FilelistMsg 
+{
+    struct List	files;
+    char source_string[1024];		
+    char destination_string[1024];	
+};
+
 
 /*** Macros *****************************************************************/
 #define WandererObject BOOPSIOBJMACRO_START(Wanderer_CLASS->mcc_Class)

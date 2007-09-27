@@ -107,9 +107,6 @@ AROS_UFH3
 )
 {
     AROS_USERFUNC_INIT
-    
-    char     *c = NULL;
-    unsigned int difftime;
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
 
@@ -271,6 +268,56 @@ AROS_UFH3
     AROS_USERFUNC_EXIT
 }
 
+
+void copy_dropentries()
+{
+	/* get filelist from user message */
+	struct Wanderer_FilelistMsg *message_filelist = FindTask(NULL)->tc_UserData;
+
+	D(bug("[WANDERER COPY] CopyContent \n" ));
+
+        if (message_filelist)
+        {
+               
+            struct MUIDisplayObjects dobjects;
+            struct Hook displayCopyHook;
+            struct Hook displayDelHook;
+
+            displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
+            displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
+            
+            struct Wanderer_FileEntry *currententry;
+
+            if (CreateCopyDisplay(ACTION_COPY, &dobjects))
+            {
+   
+                /* process all selected entries */
+                while ( (currententry = (struct Wanderer_FileEntry *)RemTail(&message_filelist->files)) != NULL )
+                {
+
+                        /* copy via filesystems.c */
+			D(bug("[WANDERER COPY] CopyContent \"%s\" to \"%s\"\n", &currententry->filename, 
+										&message_filelist->destination_string ));
+
+                     	CopyContent(NULL, (char*)&currententry->filename, (char*)&message_filelist->destination_string, TRUE, 
+					ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
+
+			FreeVec( currententry );
+                } 
+              	
+		/* delete copy window */
+                DisposeCopyDisplay(&dobjects);
+            }
+
+        }
+
+	/* free msg memory */
+	FreeMem( message_filelist, sizeof(struct Wanderer_FilelistMsg) );
+
+	return;
+}
+
+
 AROS_UFH3
 (
     void, Wanderer__HookFunc_ActionFunc,
@@ -413,52 +460,50 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
     } 
     else if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
-        IPTR destination_path;
+	struct Process *child;
 
-        struct IconList_Drop *drop = (struct IconList_Drop *)msg->drop;
+	struct IconList_Drop *drop = (struct IconList_Drop *)msg->drop;
+        struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+	struct Wanderer_FileEntry *file_recordtmp;
 
-        if (drop)
-        {
-            /* get path of DESTINATION iconlist*/
-            destination_path = drop->destination_string;
+	struct Wanderer_FilelistMsg *message_filelist = AllocMem( sizeof(struct Wanderer_FilelistMsg), MEMF_CLEAR|MEMF_PUBLIC );
 
-            if ( !destination_path ) return;
-                
-            /* get SOURCE entries */
+	if (message_filelist != NULL)
+	{
+		strcpy( (char*)&message_filelist->destination_string, drop->destination_string);
 
-            struct MUIDisplayObjects dobjects;
-            struct Hook displayCopyHook;
-            struct Hook displayDelHook;
+		NEWLIST(&message_filelist->files);
 
-            displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
-            displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
-            
+	        /* process all selected entries */
+	        do
+	        {
+	                DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
 
-            if (CreateCopyDisplay(ACTION_COPY, &dobjects))
-            {
-                struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-    
-                /* process all selected entries */
-                do
-                {
-                    DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
+	                /* if not end of selection, process */
+	                if ( (int)ent != MUIV_IconList_NextSelected_End )
+	                {
+				file_recordtmp = AllocVec( sizeof(struct Wanderer_FileEntry), MEMF_CLEAR|MEMF_PUBLIC );
+ 				strcpy( (char*)&file_recordtmp->filename, ent->filename);
+				AddTail(&message_filelist->files, (struct Node *)file_recordtmp);
+	                }
+	        } 
+	        while ( (int)ent != MUIV_IconList_NextSelected_End );
 
-                    /* if not end of selection, process */
-                    if ( (int)ent != MUIV_IconList_NextSelected_End )
-                    {
-D(bug("[WANDERER] drop entry: %s dropped in %s\n", ent->filename, destination_path));
+		/* create process and copy files within */
+		child = CreateNewProcTags(
+			NP_Entry,	copy_dropentries,
+			NP_UserData,	(IPTR)message_filelist,
+			NP_Name,	(ULONG)"wanderer copy",
+			NP_StackSize,	40000,			
+			TAG_DONE);
 
-                        /* copy via filesystems.c */
-D(bug("[WANDERER] CopyContent \"%s\" to \"%s\"\n", ent->filename, destination_path ));
-                        CopyContent(NULL, ent->filename, destination_path, TRUE, ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
-                    }
-                } 
-                while ( (int)ent != MUIV_IconList_NextSelected_End );
-                DisposeCopyDisplay(&dobjects);
-            }
-            /* update list contents */
-            DoMethod(drop->destination_iconlistobj,MUIM_IconList_Update);
-        }
+	        /* FIXME: update list contents */
+		/* this one should be solved through file notofications, as files are copied in a seperate process now  */
+
+	}
+
+
+
     }
     else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
     {
@@ -1279,8 +1324,8 @@ void DisposeCopyDisplay(struct MUIDisplayObjects *d)
 {
     if (d->copyApp) 
     {
-        SET(d->win,MUIA_Window_Open,FALSE);
-        MUI_DisposeObject(d->copyApp);
+        //SET(d->win,MUIA_Window_Open,FALSE);
+       MUI_DisposeObject(d->copyApp);
     }
 }
 
