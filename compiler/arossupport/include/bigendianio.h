@@ -23,19 +23,19 @@
 /* Big endian streamhook mathods */
 struct BEIOM_Read
 {
-    ULONG MethodID; /* BEIO_READ */
+    STACKULONG MethodID; /* BEIO_READ */
 };
 
 struct BEIOM_Write
 {
-    ULONG MethodID; /* BEIO_WRITE */
-    ULONG Data;     /* One byte to emit (0..255) */
+    STACKULONG MethodID; /* BEIO_WRITE */
+    STACKULONG Data;     /* One byte to emit (0..255) */
 };
 
 struct BEIOM_Ignore
 {
-    ULONG MethodID; /* BEIO_IGNORE */
-    ULONG Count;    /* How many bytes */
+    STACKULONG MethodID; /* BEIO_IGNORE */
+    STACKULONG Count;    /* How many bytes */
 };
 
 /* Big endian streamhook access modes */
