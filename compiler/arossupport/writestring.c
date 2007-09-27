@@ -51,9 +51,11 @@
 
 ******************************************************************************/
 {
+    struct BEIOM_Write wr = {BEIO_WRITE,};
     do
     {
-	if (CallHook (hook, stream, BEIO_WRITE, *data) == EOF)
+      wr.Data = *data;
+	if (CallHookA (hook, stream, &wr) == EOF)
 	    return FALSE;
     } while (*data ++);
 

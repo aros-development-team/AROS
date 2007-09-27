@@ -51,6 +51,7 @@
 
 ******************************************************************************/
 {
-    return (CallHook (hook, stream, BEIO_WRITE, data) != EOF);
+    struct BEIOM_Write wr = {BEIO_WRITE, data};
+    return (CallHookA (hook, stream, &wr) != EOF);
 } /* WriteByte */
 

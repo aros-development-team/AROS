@@ -210,12 +210,13 @@ struct WriteLevel
 
 	case SDT_IGNORE: {   /* Ignore x bytes */
 	    ULONG count;
-
+        struct BEIOM_Write wr = {BEIO_WRITE, 0};
+    
 	    count = IDESC;
 
 	    while (count --)
 	    {
-		if (CallHook (hook, stream, BEIO_WRITE, 0) == EOF)
+		if (CallHookA (hook, stream, &wr) == EOF)
 		    goto error;
 	    }
 
@@ -231,13 +232,15 @@ struct WriteLevel
 	    UBYTE value;
 	    IPTR  count;
 
+        struct BEIOM_Write wr = {BEIO_WRITE, 0};
+
 	    offset = IDESC;
 	    value  = IDESC;
 	    count  = IDESC;
 
 	    while (count --)
 	    {
-		if (CallHook (hook, stream, BEIO_WRITE, 0) == EOF)
+		if (CallHookA (hook, stream, &wr) == EOF)
 		    goto error;
 	    }
 
@@ -247,6 +250,7 @@ struct WriteLevel
 	    IPTR  offset;
 	    UBYTE value;
 	    IPTR  count;
+        struct BEIOM_Write wr = {BEIO_WRITE, 0};
 
 	    offset = IDESC;
 	    value  = IDESC;
@@ -256,7 +260,7 @@ struct WriteLevel
 
 	    while (count --)
 	    {
-		if (CallHook (hook, stream, BEIO_WRITE, 0) == EOF)
+		if (CallHookA (hook, stream, &wr) == EOF)
 		    goto error;
 	    }
 

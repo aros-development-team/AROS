@@ -207,11 +207,12 @@ struct ReadLevel
 
 	    break; }
 
-	case SDT_IGNORE:     /* Ignore x bytes */
-	    if (CallHook (hook, stream, BEIO_IGNORE, IDESC) == EOF)
+	case SDT_IGNORE: {   /* Ignore x bytes */
+        struct BEIOM_Ignore ig = {BEIO_IGNORE, IDESC};
+	    if (CallHookA (hook, stream, &ig) == EOF)
 		goto error;
 
-	    break;
+	    break; }
 
 	case SDT_FILL_BYTE: { /* Fill x bytes */
 	    IPTR  offset;
@@ -249,7 +250,9 @@ struct ReadLevel
 	    value  = IDESC;
 	    count  = IDESC;
 
-	    if (CallHook (hook, stream, BEIO_IGNORE, count) == EOF)
+        struct BEIOM_Ignore ig = {BEIO_IGNORE, count};
+
+	    if (CallHookA (hook, stream, &ig) == EOF)
 		goto error;
 
 	    memset (curr->s + offset, value, count);
@@ -265,7 +268,9 @@ struct ReadLevel
 	    value = IDESC;
 	    count = IDESC;
 
-	    if (CallHook (hook, stream, BEIO_IGNORE, count<<2) == EOF)
+        struct BEIOM_Ignore ig = {BEIO_IGNORE, count << 2};
+
+	    if (CallHookA (hook, stream, &ig) == EOF)
 		goto error;
 
 	    while (count --)

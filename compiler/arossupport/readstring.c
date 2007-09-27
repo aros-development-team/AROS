@@ -67,7 +67,8 @@
 
     for (;;)
     {
-	c = CallHook (hook, stream, BEIO_READ);
+      struct BEIOM_Read rd = {BEIO_READ};
+	c = CallHookA (hook, stream, &rd);
 
 	if (c == EOF)
 	{

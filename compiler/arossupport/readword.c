@@ -55,18 +55,20 @@
 {
     LONG value, c;
 
+    struct BEIOM_Read rd = {BEIO_READ};
+
     assert (hook);
     assert (stream);
     assert (dataptr);
 
     /* High byte */
-    c = CallHook (hook, stream, BEIO_READ);
+    c = CallHookA (hook, stream, &rd);
 
     if (c == EOF)
 	return FALSE;
 
     /* Low byte */
-    value = CallHook (hook, stream, BEIO_READ);
+    value = CallHookA (hook, stream, &rd);
 
     if (value == EOF)
 	return FALSE;
