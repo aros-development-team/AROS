@@ -2,7 +2,7 @@
 #define PARTITION_H
 
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -61,6 +61,7 @@ struct PartitionType
 #define PHPTT_UNKNOWN (0)
 #define PHPTT_RDB     (1)
 #define PHPTT_MBR     (2)
+#define PHPTT_EBR     (3)
 
 /* partition types */
 //nothing defined here ...
@@ -69,6 +70,8 @@ struct PartitionType
 
 /* Tags for partition tables */
 #define PTT_TYPE           (TAG_USER |  1L) /* ULONG - partition table type */
+#define PTT_MAXLEADIN      (TAG_USER |  3L) /* ULONG - maximum number of
+    reserved blocks that may be need to precede a partition for metadata */
 #define PTT_RESERVED       (TAG_USER | 32L) /* ULONG - number of reserved blocks at
                                                        begining of a partition table */
 #define PTT_MAX_PARTITIONS (TAG_USER | 33L) /* ULONG - max number of partitions in table */
@@ -78,6 +81,8 @@ struct PartitionType
 #define PT_GEOMETRY  (TAG_USER |  1L) /* struct DriveGeometry * - geometry of partition */
 #define PT_DOSENVEC  (TAG_USER |  2L) /* struct DosEnvec * - partition layout info */
 #define PT_TYPE      (TAG_USER |  3L) /* struct PartitionType * - type of partition */
+#define PT_LEADIN    (TAG_USER |  4L) /* ULONG - number of reserved blocks
+                                         preceding partition for metadata */
 #define PT_POSITION  (TAG_USER | 32L) /* ULONG - 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
 #define PT_ACTIVE    (TAG_USER | 33L) /* BOOL - MBR: set/get partition as active */
 #define PT_NAME      (TAG_USER | 34L) /* STRPTR - name of partition */
@@ -100,6 +105,7 @@ struct PartitionAttribute
 /* partition table attributes */
 #define PTTA_DONE             0 /* no more attributes */
 #define PTTA_TYPE           100 /* partition table type */
+#define PTTA_MAXLEADIN        1
 #define PTTA_RESERVED       101 /* reserved blocks */
 #define PTTA_MAX_PARTITIONS 102 /* max numbers of partitions in table */
 
@@ -108,6 +114,7 @@ struct PartitionAttribute
 #define PTA_GEOMETRY          1 /* geometry of partition (virtual HD) */
 #define PTA_DOSENVEC          2 /* whole struct DosEnvec support */
 #define PTA_DOSENVEC_GEOMETRY 3 /* only low/high cyl, sizeblock support in struct DosEnvec */
+#define PTA_LEADIN            4
 #define PTA_TYPE            100 /* type of partition */
 #define PTA_POSITION        101 /* position of table within partition table */
 #define PTA_ACTIVE          102 /* make partition active (whatever that means ;) */

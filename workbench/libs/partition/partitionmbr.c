@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -12,6 +12,7 @@
 #include <libraries/partition.h>
 
 #include "partition_support.h"
+#include "partitionmbr.h"
 #include "platform.h"
 
 #ifndef DEBUG
@@ -19,34 +20,12 @@
 #endif
 #include "debug.h"
 
-#define MBR_MAX_PARTITIONS (4)
-#define MBRT_EXTENDED      (0x05)
-
-struct PCPartitionTable {
-   UBYTE status;
-   UBYTE start_head;
-   UBYTE start_sector;
-   UBYTE start_cylinder;
-   UBYTE type;
-   UBYTE end_head;
-   UBYTE end_sector;
-   UBYTE end_cylinder;
-   ULONG first_sector;
-   ULONG count_sector;
-};
-
-struct MBR {
-   BYTE boot_data[0x1BE];
-   struct PCPartitionTable pcpt[4];
-   UWORD magic;
-} __attribute__((packed));
-
 struct MBRData {
     struct PCPartitionTable *entry;
     UBYTE position;
 };
 
-LONG PartitionMBRCheckPartitionTable
+static LONG PartitionMBRCheckPartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
@@ -70,20 +49,19 @@ struct MBRData *data;
                 data = root->data;
                 if (
                         (root->root->table->type == PHPTT_MBR) &&
-                        (data->entry->type != MBRT_EXTENDED)
+                        (data->entry->type == MBRT_EXTENDED)
                     )
                 {
                     return 0;
                 }
             }
             return 1;
-#warning "TODO: some more checks"
         }
     }
     return 0;
 }
 
-struct PartitionHandle *PartitionMBRNewHandle
+static struct PartitionHandle *PartitionMBRNewHandle
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root,
@@ -94,7 +72,7 @@ struct PartitionHandle *PartitionMBRNewHandle
 struct PartitionHandle *ph;
 ULONG cylsecs;
 
-    if (entry->first_sector)
+    if (entry->first_sector != 0)
     {
         ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
         if (ph)
@@ -116,18 +94,26 @@ ULONG cylsecs;
                 /* Check if partition starts and ends on a cylinder boundary */
                 CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
                 if (
-                        (AROS_LE2LONG(data->entry->first_sector) % cylsecs) ||
-                        (AROS_LE2LONG(data->entry->count_sector) % cylsecs)
+                        (AROS_LE2LONG(data->entry->first_sector) % cylsecs != 0) ||
+                        (AROS_LE2LONG(data->entry->count_sector) % cylsecs != 0)
                     )
                 {
-                    /* It doesn't. We could find the highest common factor of
-                       first_sector and count_sector here, but currently we
-                       simply use one block per cylinder */
+                    /* Treat each track as a cylinder if possible */
                     ph->de.de_Surfaces = 1;
-                    ph->de.de_BlocksPerTrack = 1;
                     cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
+                    if (
+       	                (AROS_LE2LONG(data->entry->first_sector) % cylsecs != 0) ||
+               	        (AROS_LE2LONG(data->entry->count_sector) % cylsecs != 0)
+                    )
+                    {
+                        /* We can't. We could find the highest common factor of
+                           first_sector and count_sector here, but currently we
+                           simply use one block per cylinder */
+                        ph->de.de_BlocksPerTrack = 1;
+                        cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
+                    }
                 }
-                ph->de.de_LowCyl = AROS_LE2LONG(data->entry->first_sector)/cylsecs;
+                ph->de.de_LowCyl = AROS_LE2LONG(data->entry->first_sector) / cylsecs;
                 ph->de.de_HighCyl =
                     ph->de.de_LowCyl+
                     (AROS_LE2LONG(data->entry->count_sector)/cylsecs)-1;
@@ -149,7 +135,7 @@ ULONG cylsecs;
     return NULL;
 }
 
-LONG PartitionMBROpenPartitionTable
+static LONG PartitionMBROpenPartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
@@ -179,19 +165,18 @@ UBYTE i;
     return 1;
 }
 
-void PartitionMBRFreeHandle
+static void PartitionMBRFreeHandle
     (
         struct Library *PartitionBase,
         struct PartitionHandle *ph
     )
 {
     ClosePartitionTable(ph);
-    Remove(&ph->ln);
     FreeMem(ph->data, sizeof(struct MBRData));
     FreeMem(ph, sizeof(struct PartitionHandle));
 }
 
-void PartitionMBRClosePartitionTable
+static void PartitionMBRClosePartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
@@ -204,7 +189,7 @@ struct PartitionHandle *ph;
     FreeMem(root->table->data, root->de.de_SizeBlock<<2);
 }
 
-LONG PartitionMBRWritePartitionTable
+static LONG PartitionMBRWritePartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
@@ -218,14 +203,13 @@ LONG PartitionMBRWritePartitionTable
     return 0;
 }
 
-LONG PartitionMBRCreatePartitionTable
+static LONG PartitionMBRCreatePartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *ph
     )
 {
 struct MBR *mbr;
-UBYTE i;
 
     mbr = AllocMem(ph->de.de_SizeBlock<<2, MEMF_PUBLIC);
     if (mbr)
@@ -233,12 +217,7 @@ UBYTE i;
         if (readBlock(PartitionBase, ph, 0, mbr) == 0)
         {
             ph->table->data = mbr;
-            for (i=0;i<4;i++)
-            {
-                mbr->pcpt[i].status = 0;
-                mbr->pcpt[i].first_sector = 0;
-                mbr->pcpt[i].count_sector = 0;
-            }
+            fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
             mbr->magic = AROS_WORD2LE(0xAA55);
             NEWLIST(&ph->table->list);
             return 0;
@@ -248,40 +227,34 @@ UBYTE i;
     return 1;
 }
 
-void PartitionMBRSetDosEnvec
+void PartitionMBRSetGeometry
     (
         struct PartitionHandle *root,
         struct PCPartitionTable *entry,
-        struct DosEnvec *de
+        ULONG sector,
+        ULONG count,
+        ULONG relative_sector
     )
 {
-ULONG sector;
 ULONG track;
 ULONG cyl;
+
+    /* Store LBA start block and block count */
+
+    entry->first_sector = AROS_LONG2LE(sector - relative_sector);
+    entry->count_sector = AROS_LONG2LE(count);
 
     /* Store CHS-address of start block. The upper two bits of the cylinder
        number are stored in the upper two bits of the sector field */
 
-    entry->first_sector =
-        AROS_LONG2LE(de->de_LowCyl*de->de_Surfaces*de->de_BlocksPerTrack);
-    entry->count_sector = AROS_LONG2LE
-        (
-            (de->de_HighCyl-de->de_LowCyl+1)*
-            de->de_Surfaces*
-            de->de_BlocksPerTrack
-        );
-    track = AROS_LE2LONG(entry->first_sector)/root->de.de_BlocksPerTrack;
+    track = sector/root->de.de_BlocksPerTrack;
     cyl = track/root->de.de_Surfaces;
     if (cyl<1024)
     {
         entry->start_head = track % root->de.de_Surfaces;
         entry->start_sector =
-            (
-                (AROS_LE2LONG(entry->first_sector)
-                    % root->de.de_BlocksPerTrack)+1
-                )
-                | ((cyl & 0x300)>>2
-            );
+            ((sector % root->de.de_BlocksPerTrack) + 1)
+            | ((cyl & 0x300) >> 2);
         entry->start_cylinder = (cyl & 0xFF);
     }
     else
@@ -293,8 +266,7 @@ ULONG cyl;
 
     /* Store CHS-address of last block */
 
-    sector = AROS_LE2LONG(entry->first_sector)
-        + AROS_LE2LONG(entry->count_sector) - 1;
+    sector += count - 1;
     track = sector/root->de.de_BlocksPerTrack;
     cyl = track/root->de.de_Surfaces;
     if (cyl<1024)
@@ -312,8 +284,23 @@ ULONG cyl;
     }
 }
 
+static void PartitionMBRSetDosEnvec
+    (
+        struct PartitionHandle *root,
+        struct PCPartitionTable *entry,
+        struct DosEnvec *de
+    )
+{
+ULONG sector, count;
 
-struct PartitionHandle *PartitionMBRAddPartition
+    sector = de->de_LowCyl * de->de_Surfaces * de->de_BlocksPerTrack;
+    count = (de->de_HighCyl - de->de_LowCyl + 1) *
+            de->de_Surfaces *
+            de->de_BlocksPerTrack;
+    PartitionMBRSetGeometry(root, entry, sector, count, 0);
+}
+
+static struct PartitionHandle *PartitionMBRAddPartition
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root,
@@ -328,13 +315,25 @@ struct TagItem *tag;
     struct PCPartitionTable *entry;
     struct PartitionHandle *ph;
     struct DosEnvec *de;
-    UBYTE pos;
+    WORD pos = -1, i;
 
         de =  (struct DosEnvec *)tag->ti_Data;
         tag = findTagItem(PT_POSITION, taglist);
-        if (tag)
-        {
+        if (tag != NULL)
             pos = tag->ti_Data;
+        else
+        {
+            // Find an unused slot
+            for (i = 0; i < MBR_MAX_PARTITIONS && pos == -1; i++)
+            {
+                entry = &((struct MBR *)root->table->data)->pcpt[i];
+                if (entry->type == 0)
+                    pos = i;
+            }
+        }
+
+        if (pos != -1)
+        {
             entry = &((struct MBR *)root->table->data)->pcpt[pos];
             tag = findTagItem(PT_ACTIVE, taglist);
             if (tag)
@@ -351,24 +350,18 @@ struct TagItem *tag;
             else
                 entry->type = 0;
             PartitionMBRSetDosEnvec(root, entry, de);
-            ph = PartitionMBRNewHandle(PartitionBase,   root, pos, entry);
+            ph = PartitionMBRNewHandle(PartitionBase, root, pos, entry);
             if (ph != NULL)
                 Enqueue(&root->table->list, &ph->ln);
             else
                 fillMem((BYTE *)entry, sizeof(struct PCPartitionTable), 0);
-            ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
-            ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
-            ph->dg.dg_Heads = ph->de.de_Surfaces;
-            ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
-            ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
-            ph->dg.dg_BufMemType = ph->de.de_BufMemType;
             return ph;
         }
     }
     return NULL;
 }
 
-void PartitionMBRDeletePartition
+static void PartitionMBRDeletePartition
     (
         struct Library *PartitionBase,
         struct PartitionHandle *ph
@@ -378,10 +371,11 @@ struct MBRData *data;
 
     data = (struct MBRData *)ph->data;
     fillMem((BYTE *)data->entry, sizeof(struct PCPartitionTable), 0);
+    Remove(&ph->ln);
     PartitionMBRFreeHandle(PartitionBase, ph);
 }
 
-LONG PartitionMBRGetPartitionTableAttrs
+static LONG PartitionMBRGetPartitionTableAttrs
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root,
@@ -399,7 +393,7 @@ LONG PartitionMBRGetPartitionTableAttrs
             break;
         case PTT_RESERVED:
             *((LONG *)taglist[0].ti_Data) =
-                root->de.de_Surfaces*root->de.de_BlocksPerTrack; /* one cylinder */
+                root->de.de_BlocksPerTrack; /* One track */
             break;
         case PTT_MAX_PARTITIONS:
             *((LONG *)taglist[0].ti_Data) = MBR_MAX_PARTITIONS;
@@ -409,7 +403,7 @@ LONG PartitionMBRGetPartitionTableAttrs
     return 0;
 }
 
-LONG PartitionMBRSetPartitionTableAttrs
+static LONG PartitionMBRSetPartitionTableAttrs
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root,
@@ -428,7 +422,7 @@ LONG PartitionMBRSetPartitionTableAttrs
     return 0;
 }
 
-LONG PartitionMBRGetPartitionAttrs
+static LONG PartitionMBRGetPartitionAttrs
     (
         struct Library *PartitionBase,
         struct PartitionHandle *ph,
@@ -471,7 +465,7 @@ LONG PartitionMBRGetPartitionAttrs
     return 0;
 }
 
-LONG PartitionMBRSetPartitionAttrs
+static LONG PartitionMBRSetPartitionAttrs
     (
         struct Library *PartitionBase,
         struct PartitionHandle *ph,
@@ -537,7 +531,7 @@ posbreak:
     return 0;
 }
 
-struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
+static struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
 {
     {PTTA_TYPE,           PLAM_READ},
     {PTTA_RESERVED,       PLAM_READ},
@@ -545,12 +539,12 @@ struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
     {PTTA_DONE,           0}
 };
 
-struct PartitionAttribute *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
+static struct PartitionAttribute *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
 {
     return PartitionMBRPartitionTableAttrs;
 }
 
-struct PartitionAttribute PartitionMBRPartitionAttrs[]=
+static struct PartitionAttribute PartitionMBRPartitionAttrs[]=
 {
     {PTA_GEOMETRY, PLAM_READ},
     {PTA_TYPE,     PLAM_READ | PLAM_WRITE},
@@ -564,18 +558,22 @@ struct PartitionAttribute *PartitionMBRQueryPartitionAttrs(struct Library *Parti
     return PartitionMBRPartitionAttrs;
 }
 
-ULONG PartitionMBRDestroyPartitionTable
+static ULONG PartitionMBRDestroyPartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
     )
 {
 struct MBR *mbr;
+struct PartitionHandle *ph;
 
     mbr = root->table->data;
     fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
     if (writeBlock(PartitionBase, root, 0, root->table->data))
         return 1;
+    while ((ph = (struct PartitionHandle *)RemTail(&root->table->list)))
+        PartitionMBRFreeHandle(PartitionBase, ph);
+    FreeMem(root->table->data, root->de.de_SizeBlock<<2);
     return 0;
 }
 

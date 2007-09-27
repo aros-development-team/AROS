@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -17,10 +17,12 @@
 #endif
 #include "debug.h"
 
+extern struct PTFunctionTable PartitionEBR;
 extern struct PTFunctionTable PartitionMBR;
 extern struct PTFunctionTable PartitionRDB;
 
-struct PTFunctionTable *PartitionSupport[]={&PartitionRDB, &PartitionMBR, 0};
+struct PTFunctionTable *PartitionSupport[] =
+    {&PartitionRDB, &PartitionMBR, &PartitionEBR, 0};
 
 /* get geometry */
 LONG PartitionGetGeometry
