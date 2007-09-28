@@ -74,7 +74,7 @@ BOOL _ValidateIntVSprite(struct IntVSprite * ivs,
 	 * Check whether the ImageData pointer has changed
 	 */
 	if (vs->ImageData != ivs->OrigImageData ||
-	    TRUE == force_change) {
+	    force_change) {
 		struct BitMap bm;
 
 #if 0

@@ -107,7 +107,7 @@ VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase)
     
     /* Check if all elements in the object cache are unused */
     for (i = 0; i < oc->num_objects; i ++) {
-	    if (oc->cache[i].used == TRUE) {
+	    if (oc->cache[i].used) {
 		D(bug("!!!! TRYING TO DELETE AN OBJECT CACHE WITH USED OBJECTS !!!!\n"));
     		ReleaseSemaphore(&oc->lock);
 		return;
@@ -164,7 +164,7 @@ OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBas
 */    	if (NULL == ci->obj) {
 	    break;
 	} else {
-	    if (FALSE == ci->used) {
+	    if (!ci->used) {
 	  	obj = ci->obj;
 		ci->used = TRUE;
 		break;

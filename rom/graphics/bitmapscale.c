@@ -159,7 +159,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
             }
         }
 
-        if (TRUE == success && TRUE == colmaps_ok)
+        if (success && colmaps_ok)
         {
             HIDDT_DrawMode old_drmd;
 	    struct TagItem cbtags[] = {

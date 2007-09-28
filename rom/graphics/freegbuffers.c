@@ -114,7 +114,7 @@
       }
 
       /* were we using double buffering for this AnimOb? */
-      if (TRUE == db && NULL != CurBob -> DBuffer)
+      if (db && NULL != CurBob -> DBuffer)
       {
         /* BufBuffer needed as much memory as SaveBuffer */
         /* memsize still contains the size of memory required for SaveBuffer */

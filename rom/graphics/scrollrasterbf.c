@@ -127,7 +127,7 @@
     }
 
 
-     if (FALSE == MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
+     if (!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
         return;
 
     /*
