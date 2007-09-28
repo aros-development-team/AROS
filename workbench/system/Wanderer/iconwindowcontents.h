@@ -3,7 +3,7 @@
 
 /*
     Copyright  2004, The AROS Development Team. All rights reserved.
-    $Id: iconwindowiconlist.h 25432 2007-03-14 18:05:52Z NicJA $
+    $Id$
 */
 
 #include <exec/types.h>

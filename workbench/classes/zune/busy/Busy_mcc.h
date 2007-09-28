@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id: clock.h 17862 2003-06-04 09:21:00Z chodorowski $
+    $Id$
 */
 
 #include <libraries/mui.h>

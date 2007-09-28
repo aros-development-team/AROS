@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: allocmem.c 15089 2002-08-04 19:48:12Z verhaegs $
+    $Id$
 
     Desc: Returns NULL pointer
     Lang: English

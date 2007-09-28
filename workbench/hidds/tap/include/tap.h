@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: tap.h 23815 2005-12-20 14:26:33Z stegerg $
+    $Id$
 
     Desc: Definitions for the Tap HIDD system.
     Lang: english

@@ -3,7 +3,7 @@
 
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
-    $Id: virtgroup.h 22045 2004-08-13 11:08:21Z stegerg $
+    $Id$
 */
 
 /*** Name *******************************************************************/

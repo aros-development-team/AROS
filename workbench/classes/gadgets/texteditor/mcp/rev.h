@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: rev.h,v 1.13 2005/12/06 23:57:34 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

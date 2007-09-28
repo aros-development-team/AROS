@@ -3,7 +3,7 @@
 
 /*
     Copyright  2004, The AROS Development Team. All rights reserved.
-    $Id: iconwindow_attributes.h.h 25733 2007-04-12 16:16:04Z NicJA $
+    $Id$
 */
 
 /*** Identifier Base ********************************************************/

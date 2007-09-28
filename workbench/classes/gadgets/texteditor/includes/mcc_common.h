@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor_mcc
 
- $Id: mcc_common.h,v 1.2 2005/06/24 18:10:57 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

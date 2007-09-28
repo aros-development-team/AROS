@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2007, The AROS Development Team.
-    $Id: decorations.c 25497 2007-03-21 02:59:06Z dariusb, stegerg $
+    $Id$
 */
 
 #include <clib/alib_protos.h>

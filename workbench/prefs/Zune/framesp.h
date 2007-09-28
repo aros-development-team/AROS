@@ -2,7 +2,7 @@
     Copyright  2002, The AROS Development Team. 
     All rights reserved.
     
-    $Id: framesp.h 14810 2002-06-15 11:21:48Z dariusb $
+    $Id$
 */
 
 #ifndef _ZUNE_FRAMESP_H

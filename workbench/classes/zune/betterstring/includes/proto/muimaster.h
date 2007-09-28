@@ -2,7 +2,7 @@
 #define PROTO_MUIMASTER_H
 
 /*
-**	$Id: muimaster.h,v 1.1 2005/04/21 20:52:04 damato Exp $
+**	$Id$
 **	Includes Release 50.1
 **
 **	Prototype/inline/pragma header file combo
