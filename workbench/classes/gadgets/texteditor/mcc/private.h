@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: private.h,v 1.16 2005/08/16 21:21:01 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

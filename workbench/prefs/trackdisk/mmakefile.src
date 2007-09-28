@@ -1,5 +1,5 @@
 # Copyright © 2007, The AROS Development Team. All rights reserved.
-# $Id: mmakefile.src 20943 2007-03-18 13:10:52Z sonic $
+# $Id$
 
 include $(TOP)/config/make.cfg
 

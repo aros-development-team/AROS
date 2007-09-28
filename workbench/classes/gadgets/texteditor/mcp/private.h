@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: private.h,v 1.9 2005/12/09 13:03:47 gnikl Exp $
+ $Id$
 
 ***************************************************************************/
 

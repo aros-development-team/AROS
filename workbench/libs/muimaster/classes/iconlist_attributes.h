@@ -3,7 +3,7 @@
 
 /*
     Copyright  2002-2007, The AROS Development Team. All rights reserved.
-    $Id: iconlist_attributes.h 25886 2007-04-23 05:25:57Z NicJA $
+    $Id$
 */
 
 /*** Identifier base ********************************************************/

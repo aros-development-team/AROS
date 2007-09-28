@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: copybrokerlist.c 16054 2002-12-15 13:54:26Z stegerg $
+    $Id$
 
     Desc:
     Lang: English

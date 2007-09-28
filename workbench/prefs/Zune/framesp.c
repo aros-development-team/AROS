@@ -1,6 +1,6 @@
 /*
     Copyright  2002-2006, The AROS Development Team. All rights reserved.
-    $Id: buttonsp.c 24100 2006-02-23 00:42:13Z mazze $
+    $Id$
 */
 
 #include <string.h>

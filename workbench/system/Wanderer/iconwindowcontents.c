@@ -1,6 +1,6 @@
 /*
     Copyright  2004-2006, The AROS Development Team. All rights reserved.
-    $Id: iconwindowiconlist.c 25432 2007-03-14 18:05:52Z NicJA $
+    $Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG

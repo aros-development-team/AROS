@@ -21,7 +21,7 @@
  YAM Official Support Site :  http://www.yam.ch
  YAM OpenSource project    :  http://sourceforge.net/projects/yamos/
 
- $Id: default-align.h,v 1.1 2005/03/28 11:29:48 damato Exp $
+ $Id$
 
 ***************************************************************************/
 

@@ -1,6 +1,6 @@
 /*
    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
-   $Id: wandererprefsintern.h 24537 2006-06-12 20:29:02Z NicJA $
+   $Id$
 */
 
 #include <prefs/prefhdr.h>

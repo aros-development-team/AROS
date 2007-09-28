@@ -2,7 +2,7 @@
     Copyright (C) 2004, The AROS Development Team. All rights reserved.
     $Id$
     
-    Desc: Waits upto 10 seconds for a user specified Port to become available
+    Desc: Waits up to 10 seconds for a user specified Port to become available
     Lang: English
 */
 
@@ -15,7 +15,7 @@
 
 #include <aros/debug.h>
 
-const char version[] = "$VER: WaitForPort 0.0.1 (26.12.2005)";
+const char version[] = "$VER: WaitForPort 0.1 (26.12.2005)";
 
 const char WaitForPort_ArgTemplate[] = "P=PORT/A";
 IPTR       WaitForPort_Arguments[2];

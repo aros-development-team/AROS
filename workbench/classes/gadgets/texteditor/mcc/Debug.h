@@ -16,7 +16,7 @@
 
  TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
 
- $Id: Debug.h,v 1.4 2005/08/02 12:16:00 itix Exp $
+ $Id$
 
 ***************************************************************************/
 

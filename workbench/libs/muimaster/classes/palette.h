@@ -3,7 +3,7 @@
 
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
-    $Id: cycle.h 17866 2003-06-04 12:23:25Z chodorowski $
+    $Id$
 */
 
 /*** Name *******************************************************************/
