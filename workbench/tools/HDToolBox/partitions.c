@@ -219,6 +219,7 @@ struct HDTBPartition *addPartition
 struct HDTBPartition *partition;
 struct HDTBPartition *pn;
 struct TableTypeNode *ttn;
+ULONG leadin = 0, blocks_per_cyl;
 
 	partition = newPartition(&table->listnode, table);
 	if (partition)
@@ -260,6 +261,14 @@ struct TableTypeNode *ttn;
 			strcpy(partition->listnode.ln.ln_Name, "DH0");
 		else
 			setPartitionName(partition);
+		GetPartitionTableAttrsA
+		(
+			table->ph,
+			PTT_MAXLEADIN, &leadin,
+			TAG_DONE
+		);
+		blocks_per_cyl = de->de_Surfaces * de->de_BlocksPerTrack;
+		de->de_LowCyl += (leadin + blocks_per_cyl - 1) / blocks_per_cyl;
 		partition->ph = AddPartitionA
 		(
 			table->ph,

@@ -98,7 +98,7 @@ struct PTableData {
 	struct DrawInfo *dri;
 	struct Image *frame;
 	struct HDTBPartition *table;
-	struct HDTBPartition *active; /* active partition */
+	struct HDTBPartition *active; /* active partition, or the DE for free space */
 	struct DosEnvec gap;
 	struct ColorMap *cm;
 	ULONG block;
@@ -214,9 +214,9 @@ struct TagItem tags[]=
 	{TAG_DONE			}
 };
 
-	dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+	dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, (IPTR)NULL, msg->ops_AttrList);
 	if (!dri)
-		return NULL;
+		return (IPTR)NULL;
 	tags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
 	tags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
 	table = (struct HDTBPartition *)GetTagData(PTCT_PartitionTable, 0, msg->ops_AttrList);
@@ -224,7 +224,7 @@ struct TagItem tags[]=
 	tags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
 	frame = (struct Image *) NewObjectA(NULL, FRAMEICLASS, tags);
 	if (!frame)
-		return NULL;
+		return (IPTR)NULL;
 
 	tags[0].ti_Tag = GA_Image;
 	tags[0].ti_Data = (IPTR) frame;
@@ -234,14 +234,14 @@ struct TagItem tags[]=
 	if (!obj)
 	{
 		DisposeObject(frame);
-		return NULL;
+		return (IPTR)NULL;
 	}
 	data = INST_DATA(cl, obj);
 	data->dri = dri;
 	data->frame = frame;
 	data->table = table;
 	data->flags = flags;
-	data->active = 0;
+	data->active = NULL;
 	data->move = FALSE;
 	data->selected = FALSE;
 	data->firstdraw = TRUE;
@@ -253,7 +253,7 @@ STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg) {
 IPTR retval = 0UL;
 struct PTableData *data;
 struct TagItem *tag;
-struct TagItem *taglist;
+const struct TagItem *taglist;
 struct RastPort *rport;
 
 	if (msg->MethodID != OM_NEW)
@@ -385,6 +385,10 @@ ULONG last=0xFFFFFFFF;
 	return de;
 }
 
+/*
+ * Find the partition containing the currently selected block, or the DE
+ * describing the empty space.
+ */
 struct HDTBPartition *getActive(struct PTableData *data) {
 struct HDTBPartition *pn;
 
@@ -564,16 +568,17 @@ WORD	    	 drawtype;
 		}
 		else
 		{
-		    	drawtype = DPTYPE_USED;
+			drawtype = DPTYPE_USED;
 			de = &data->active->de;
 		}
 		DrawPartition(rport, data, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	data->active = getActive(data);
+bug("Old selection: %ld -> %ld\n", de->de_LowCyl, de->de_HighCyl);
 
 	if ((struct DosEnvec *)data->active == &data->gap)
 	{
-	    	drawtype = DPTYPE_EMPTY_SELECTED;
+		drawtype = DPTYPE_EMPTY_SELECTED;
 		de = &data->gap;
 	}
 	else
@@ -581,7 +586,7 @@ WORD	    	 drawtype;
 		drawtype = DPTYPE_USED_SELECTED;
 		de = &data->active->de;
 		if (data->flags & PTCTF_EmptySelectOnly)
-			data->active=0;
+			data->active = NULL;
 	}
 	data->selected = TRUE;
 	notify_all(cl, obj, msg->gpi_GInfo, TRUE, TRUE);
@@ -1091,7 +1096,7 @@ Class *makePTClass(void) {
 		{
 			ptcl->cl_Dispatcher.h_Entry = AROS_ASMSYMNAME(dispatch_ptclass);
 			ptcl->cl_Dispatcher.h_SubEntry = NULL;
-			ptcl->cl_UserData = NULL;
+			ptcl->cl_UserData = (IPTR)NULL;
 		}
 	}
 	return ptcl;
