@@ -9,7 +9,8 @@
 #include "args.h"
 
 /*** Global Variables *******************************************************/
-STATIC CONST_STRPTR   TEMPLATE    = "DEVICE,UNIT/N,FORCE/S,QUIET/S";
+STATIC CONST_STRPTR TEMPLATE =
+    "DEVICE,UNIT/N,SYSSIZE/K/N,WORKSIZE/K/N,MAXWORK/S,WIPE/S,FORCE/S,QUIET/S";
 STATIC CONST LONG     DEFAULT_UNIT = 0;
 STATIC IPTR           args[COUNT] = {(IPTR) "ata.device", (IPTR) &DEFAULT_UNIT};
 STATIC struct RDArgs *rdargs;
