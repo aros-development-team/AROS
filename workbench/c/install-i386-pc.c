@@ -32,6 +32,10 @@
 /* BIOS drive flag */
 #define BIOS_HDISK_FLAG	    0x80
 
+#define MBR_MAX_PARTITIONS 4
+#define MBRT_EXTENDED      0x05
+#define MBRT_EXTENDED2     0x0f
+
 struct Volume {
    struct MsgPort *mp;
    struct IOExtTD *iotd;
@@ -55,14 +59,12 @@ struct BlockNode {
 	UWORD seg_adr;
 };
 
-#warning "TODO: Rename FORCELBA to USELBA and add a FORCE switch that causes install to not check for existing bootloader"
 char *template =
 	"DEVICE/A,"
 	"UNIT/N/K/A,"
-	"PARTITIONNUMBER=PN/K/N,"
+	"PARTITIONNUMBER=PN/K/N,"	/* Partition whose boot block we should install stage1 in */
 	"GRUB/K/A,"
-	"KERNEL/K/A,"
-   "FORCELBA/S";
+	"FORCELBA/S";
 IPTR myargs[7] = {0,0,0,0,0,0};
 
 struct FileSysStartupMsg *getDiskFSSM(STRPTR path) {
@@ -305,8 +307,8 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 		{
 			if (OpenPartitionTable(ph) == 0)
 			{
-			struct TagItem tags[2];
-			ULONG type;
+			struct TagItem tags[3];
+			IPTR type;
 
 				tags[1].ti_Tag = TAG_DONE;
 				tags[0].ti_Tag = PTT_TYPE;
@@ -316,30 +318,84 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 				{
 				struct PartitionHandle *pn;
 				struct DosEnvec de;
+				struct PartitionHandle *extph = NULL;
 
 					tags[0].ti_Tag = PT_DOSENVEC;
 					tags[0].ti_Data = (STACKIPTR)&de;
+					tags[1].ti_Tag = PT_TYPE;
+					tags[1].ti_Data = (STACKIPTR)&type;
+					tags[2].ti_Tag = TAG_DONE;
 					pn = (struct PartitionHandle *)ph->table->list.lh_Head;
 					while (pn->ln.ln_Succ)
 					{
 					ULONG scp;
 
 						GetPartitionAttrs(pn, tags);
-						scp = de.de_Surfaces*de.de_BlocksPerTrack;
-						if (
-								(volume->startblock>=(de.de_LowCyl*scp)) &&
-								(volume->startblock<=(((de.de_HighCyl+1)*scp)-1))
-							)
-							break;
+						if (type == MBRT_EXTENDED || type == MBRT_EXTENDED2)
+							extph = pn;
+						else
+						{
+							scp = de.de_Surfaces*de.de_BlocksPerTrack;
+							if (
+									(volume->startblock>=(de.de_LowCyl*scp)) &&
+									(volume->startblock<=(((de.de_HighCyl+1)*scp)-1))
+								)
+								break;
+						}
 						pn = (struct PartitionHandle *)pn->ln.ln_Succ;
 					}
 					if (pn->ln.ln_Succ)
 					{
 						tags[0].ti_Tag = PT_POSITION;
 						tags[0].ti_Data = (STACKIPTR)&type;
+						tags[1].ti_Tag = TAG_DONE;
 						GetPartitionAttrs(pn, tags);
 						volume->partnum = (UBYTE)type;
 						retval = TRUE;
+						D(bug("[install-i386] Primary partition found: partnum=%ld\n", volume->partnum));
+					}
+					else if (extph != NULL)
+					{
+						if (OpenPartitionTable(extph) == 0)
+						{
+							tags[0].ti_Tag = PTT_TYPE;
+							tags[0].ti_Data = (STACKIPTR)&type;
+							tags[1].ti_Tag = TAG_DONE;
+							GetPartitionTableAttrs(extph, tags);
+							if (type == PHPTT_EBR)
+							{
+								tags[0].ti_Tag = PT_DOSENVEC;
+								tags[0].ti_Data = (STACKIPTR)&de;
+								tags[1].ti_Tag = TAG_DONE;
+								pn = (struct PartitionHandle *)extph->table->list.lh_Head;
+								while (pn->ln.ln_Succ)
+								{
+								ULONG offset, scp;
+
+									offset = extph->de.de_LowCyl
+										* extph->de.de_Surfaces
+										* extph->de.de_BlocksPerTrack;
+									GetPartitionAttrs(pn, tags);
+									scp = de.de_Surfaces*de.de_BlocksPerTrack;
+									if (
+											(volume->startblock>=offset+(de.de_LowCyl*scp)) &&
+											(volume->startblock<=offset+(((de.de_HighCyl+1)*scp)-1))
+										)
+										break;
+									pn = (struct PartitionHandle *)pn->ln.ln_Succ;
+								}
+								if (pn->ln.ln_Succ)
+								{
+									tags[0].ti_Tag = PT_POSITION;
+									tags[0].ti_Data = (STACKIPTR)&type;
+									GetPartitionAttrs(pn, tags);
+									volume->partnum = MBR_MAX_PARTITIONS + (UBYTE)type;
+									retval = TRUE;
+									D(bug("[install-i386] Logical partition found: partnum=%ld\n", volume->partnum));
+								}
+							}
+							ClosePartitionTable(extph);
+						}
 					}
 				}
 				else
@@ -698,99 +754,15 @@ LONG left;
 	return 0;
 }
 
-BOOL setUpMenu(BPTR fh, struct Volume *volume)
-{
-    LONG    length   = 0;
-    LONG    config_length = 0;
-    LONG    read     = 0;
-    UBYTE  *buffer   = NULL;
-    UBYTE  *start    = NULL;
-    UBYTE  *stop     = NULL;
-    UBYTE  *position = NULL;
-    STRPTR  line     = 
-        "timeout 0\n"
-        "default 0\n"
-        "\n"
-        "title AROS HD\n"
-        "root (hd%ld,%ld)\n"
-        "configfile /dh0/boot/grub/menu.lst\n";
-    
-D(bug("[install-i386] setUpMenu(%x, %x)\n", fh, volume));
-    
-    /* Get the filesize and reset the position */
-    Seek(fh, 0, OFFSET_END);
-    length = Seek(fh, 0, OFFSET_BEGINNING);
-    
-    /* Allocate memory for file data */
-    buffer = AllocVec(length, MEMF_ANY);
-    if (buffer == NULL) goto error;
-    
-    /* Read in the entire file */
-    read = Read(fh, buffer, length);
-    if (read < length)
-    {
-        printf("ERROR: Could not read entire file.\n");
-        goto error;
-    }
-    
-    /* Find begin marker */
-    start = memstr(buffer, "# [B] (DO NOT REMOVE THIS LINE!)", length);
-    if (start == NULL)
-    {
-        printf("ERROR: Could not find start marker!?\n");
-        goto error;
-    }
-    start += strlen("# [B] (DO NOT REMOVE THIS LINE!)") + 2;
-    
-    /* Find end marker */
-    stop = memstr(buffer, "# [E] (DO NOT REMOVE THIS LINE!)", length);
-    if (stop == NULL)
-    {
-        printf("ERROR: Could not find stop marker!?\n");
-        goto error;
-    }
-    
-    /* Write the new menu config */
-    config_length = snprintf(start, stop - start - 1, line,
-        volume->unitnum, volume->partnum);
-    
-    /* Check if there was enough space */
-    if ((stop - start) <= config_length)
-    {
-        printf("ERROR: Not enough space to set up menu.\n");
-        goto error;
-    }
-    
-    /* Blank the rest */
-    for (position = start + config_length; position < stop; position++)
-    {
-        *position = '\n';
-    }
-    
-    /* Write the new file out */
-    Seek(fh, 0, OFFSET_BEGINNING);
-    Write(fh, buffer, length);
-    
-    FreeVec(buffer);
-    
-    return TRUE;
-    
-error:
-    if (buffer != NULL) FreeVec(buffer);
-    
-    return FALSE;
-}
-
 BOOL writeStage2
 	(
 		BPTR fh,
 		UBYTE *buffer,
-		STRPTR kernelpath,
+		STRPTR grubpath,
 		struct Volume *volume
 	)
 {
 BOOL retval = FALSE;
-UBYTE menupath[256];
 char *menuname;
 
 D(bug("[install-i386] writeStage2(%x)\n", volume));
@@ -811,14 +783,13 @@ D(bug("[install-i386] writeStage2(%x)\n", volume));
 				/* get ptr to version string */
 				menuname = buffer+18;
 				while (*menuname++); /* skip version string */
-				copyRootPath(menuname, menupath, volume->flags & VF_IS_RDB);
+				copyRootPath(menuname, grubpath, volume->flags & VF_IS_RDB);
 				strcat(menuname, "/menu.lst");
 				/* write second stage2 block back */
 				if (Seek(fh, -512, OFFSET_CURRENT) != -1)
 				{
 					if (Write(fh, buffer, 512) == 512)
 					{
-						setUpMenu(fh, volume);
 						retval = TRUE;
 					}
 					else
@@ -840,8 +811,7 @@ D(bug("[install-i386] writeStage2(%x)\n", volume));
 
 ULONG changeStage2
 	(
-		STRPTR stage2path,     /* path of stage2 file */
-		STRPTR kernelpath,     /* path of the kernel image */
+		STRPTR grubpath,     /* path of grub dir */
 		struct Volume *volume, /* volume stage2 is on */
 		ULONG *buffer          /* a buffer of at least 512 bytes */
 	)
@@ -849,9 +819,12 @@ ULONG changeStage2
 ULONG block = 0;
 struct FileInfoBlock fib;
 BPTR fh;
+char stage2path[256];
 
 D(bug("[install-i386] changeStage2(%x)\n", volume));
 
+	AddPart(stage2path, grubpath, 256);
+	AddPart(stage2path, "stage2", 256);
 	fh = Open(stage2path, MODE_OLDFILE);
 	if (fh)
 	{
@@ -868,7 +841,7 @@ D(bug("[install-i386] changeStage2(%x)\n", volume));
 
 				if (block)
 				{
-					if (!writeStage2(fh, (UBYTE *)buffer, kernelpath, volume))
+					if (!writeStage2(fh, (UBYTE *)buffer, grubpath, volume))
 						block = 0;
 				}
 			}
@@ -939,7 +912,7 @@ D(bug("[install-i386] writeStage1: stage2 pointer = %x\n", stage2_sector_start[0
 	 			stage2_sector_start[0] += s2vol->startblock;
 D(bug("[install-i386] writeStage1: + offset [%d] = %x\n", s2vol->startblock, stage2_sector_start[0]));	
 	 			
-	 			if (myargs[5]!=0)
+	 			if (myargs[4]!=0)
 	 			{
 D(bug("[install-i386] writeStage1: Forcing LBA\n"));
    	 			 ((char *)volume->blockbuffer)[GRUB_FORCE_LBA] = 1;
@@ -994,7 +967,6 @@ BOOL installStageFiles
 	(
 		struct Volume *s2vol, /* stage2 volume */
 		STRPTR stagepath,     /* path to stage* files */
-		STRPTR kernelpath,    /* path to kernel image */
 		ULONG unit,           /* unit stage2 is on */
 		struct Volume *s1vol  /* device on which stage1 will be stored */
 	)
@@ -1005,13 +977,10 @@ ULONG block;
 
 D(bug("[install-i386] installStageFiles(%x)\n", s1vol));
 
-	/* Flush GRUB and kernel volumes' caches */
+	/* Flush GRUB volume's cache */
 	flushFS(stagepath);
-	flushFS(kernelpath);
 
-	AddPart(stagename, stagepath, 256);
-	AddPart(stagename, "stage2", 256);
-	block = changeStage2(stagename, kernelpath, s2vol, s1vol->blockbuffer);
+	block = changeStage2(stagepath, s2vol, s1vol->blockbuffer);
 	if (block)
 	{
 		AddPart(stagename, stagepath, 256);
@@ -1034,14 +1003,13 @@ D(bug("[install-i386] main()\n"));
 	rdargs = ReadArgs(template, myargs, NULL);
 	if (rdargs)
 	{
-D(bug("[install-i386] FORCELBA = %d\n",myargs[5]));
+D(bug("[install-i386] FORCELBA = %d\n",myargs[4]));
 
 		fssm = getDiskFSSM((STRPTR)myargs[3]);
-		if ((fssm) && (getDiskFSSM((STRPTR)myargs[4])))
+		if (fssm != NULL)
 		{
 			if (
 					(strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),(char*)myargs[0])==0)
-//					&& (fssm->fssm_Unit == *((LONG *)myargs[1]))
 				)
 			{
 				grubvol = getGrubStageVolume
@@ -1083,7 +1051,6 @@ D(bug("[install-i386] FORCELBA = %d\n",myargs[5]));
 								(
 									grubvol,
 									(STRPTR)myargs[3], /* grub path (stage1/2) */
-									(STRPTR)myargs[4], /* kernel path */
 									fssm->fssm_Unit,
 									bbvol
 								);
