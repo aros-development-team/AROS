@@ -3,8 +3,6 @@
 
 include $(TOP)/config/make.cfg
 
-GRUBOPTS := --enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst
-
 ifneq ($(AROS_TARGET_VARIANT),tiny)
 GRUBOPTS += --enable-affs
 else
