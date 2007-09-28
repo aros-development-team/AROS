@@ -1,7 +1,6 @@
 [Devices]
 scsi.device
 ata.device
-fdsk.device
 
 [TableIDs]
 TableType = "PC-MBR"
