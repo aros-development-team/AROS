@@ -154,8 +154,8 @@
         	}
 
 	    #if DEBUG
-        	if (FALSE==found)
-        	    D(bug("Error in RealsePen() pen = %d!\n",n));
+        	if (!found)
+        	    D(bug("Error in ReleasePen() pen = %d!\n",n));
 	    #endif
 
 	    } /* if (no further app needs this pen) */

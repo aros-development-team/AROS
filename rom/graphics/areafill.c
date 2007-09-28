@@ -99,14 +99,14 @@ void FillScan(UWORD StartIndex,
   while (i < EndIndex)
   {
     /* simply draw a line */
-      while (FALSE == AreaBound[i].Valid)
+      while (!AreaBound[i].Valid)
       {
         i++;
         if (i > EndIndex) return;
       }
       x1=AreaBound[i].RightX+1;
 
-      while (FALSE == AreaBound[i+1].Valid)
+      while (!AreaBound[i+1].Valid)
       {
         i++;
         if (i > EndIndex) return;
@@ -182,10 +182,10 @@ UWORD UpdateXValues(UWORD StartIndex,
     /* Test whether this one is still to be considered */
     // CHANGED <= to <
     if ( VctTbl[AreaBound[i].EndIndex+1] <=  scan ||
-         AreaBound[i].Valid == FALSE )
+         !AreaBound[i].Valid )
     {
 /*
-if (AreaBound[i].Valid == FALSE)
+if (!AreaBound[i].Valid)
   kprintf ("already marked as invalid! ");
 else
   kprintf("marking %d as anvalid! ",i);
@@ -195,7 +195,7 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
                             VctTbl[AreaBound[i].EndIndex+1]);
 */
       AreaBound[i].Valid = FALSE;
-      if (FALSE == foundvalid)
+      if (!foundvalid)
         StartIndex += 1; 
     } else {
       /* It is still to be considered!! */
@@ -523,7 +523,7 @@ kprintf("at end!\n");
       int x = StartEdge;
       while (x <= EndEdge)
       { 
-        if (TRUE == AreaBound[x].Valid)
+        if (AreaBound[x].Valid)
         {
           kprintf("(%d,%d)-(%d,%d) currently at: Left: %d Right: %d\n",
                       StartVctTbl[AreaBound[x].StartIndex],

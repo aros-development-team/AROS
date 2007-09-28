@@ -164,7 +164,7 @@
                                                 	       BytesPerRow);
 	  */
 #if 1
-        		if (TRUE == areafillpolygon(rp,
+        		if (areafillpolygon(rp,
                                         	    &bounds, 
                                         	    first_idx, 
                                         	    last_idx,

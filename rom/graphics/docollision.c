@@ -207,7 +207,7 @@
               line++;
             }
 
-            if (TRUE == collision)
+            if (collision)
             {
               UWORD mask = CurVSprite->MeMask & _CurVSprite->HitMask;
               int i = 0;

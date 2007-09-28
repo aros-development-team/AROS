@@ -233,10 +233,7 @@ static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr )
 /* D(bug("gettmpraspixel (%d, %d, %d): idx=%d, mask=%d, rasptr[idx]=%d, state=%d\n"
 		,x, y, bpr, idx, mask, rasptr[idx], rasptr[idx] & mask));
 */
-    if ((rasptr[idx] & mask) != 0)
-	state = TRUE;
-    else
-    	state = FALSE;
+    state = ((rasptr[idx] & mask) != 0);
 
 /* D(bug("Returning %d\n", state));    
 */
@@ -249,11 +246,9 @@ static BOOL gettmpraspixel(BYTE *rasptr, LONG x, LONG y,  ULONG bpr )
 
 static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
 {
-
-
     BOOL fill;
 
-    if (TRUE == gettmpraspixel(fi->rasptr, x, y, fi->bpr))
+    if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
     {
 /*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
 	fill = FALSE;
@@ -263,16 +258,10 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
     }
     else
     {
-    
-	if (fi->fillpen == ReadPixel(fi->rp, x, y))
-	   fill = TRUE;
-	else
-	    fill = FALSE;
-	    
+	fill = (fi->fillpen == ReadPixel(fi->rp, x, y));
     }
 	
     return fill;
-       
 }
 
 static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
@@ -281,7 +270,7 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
 /*    EnterFunc(bug("outline_isfillable(fi=%p, x=%d, y=%d)\n",
     	fi, x, y));
 */    
-    if (TRUE == gettmpraspixel(fi->rasptr, x, y, fi->bpr))
+    if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
     {
 /*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
 	fill = FALSE;
@@ -291,11 +280,7 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
     }
     else
     {
-
-	if (fi->fillpen != ReadPixel(fi->rp, x, y))
-	   fill = TRUE;
-	else
-	   fill = FALSE;
+	fill = (fi->fillpen != ReadPixel(fi->rp, x, y));
     }
 	
 /*    D(bug("fillpen: %d, pen: %d\n", fi->fillpen, ReadPixel(fi->rp, x, y)));

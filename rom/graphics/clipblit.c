@@ -221,7 +221,7 @@
                         	  GfxBase);
 
         	/* and now I invert the Region with the source rectangle */
-        	if (FALSE == XorRectRegion(R, &Rect))
+        	if (!XorRectRegion(R, &Rect))
         	{
         	    /* too bad! no more memory */
         	    DisposeRegion(R);

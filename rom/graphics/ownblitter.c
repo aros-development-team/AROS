@@ -98,7 +98,7 @@
          It will be moved to the ready list by the blitterinterrupt 
          handler. 
       */
-      if (TRUE == first)
+      if (first)
       {
         AddTail(&GfxBase->BlitWaitQ, &me->tc_Node);
         /* The next time I will put this task  at the beginning

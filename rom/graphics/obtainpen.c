@@ -150,7 +150,7 @@
         	       whether the color is the same.
         	       ??? Is this necessary for a shared pen?
         	    */
-        	    if (TRUE == color_equal(cm,r,g,b,n))
+        	    if (color_equal(cm,r,g,b,n))
         	    {
         		/* increase the RefCnt */
         		PALEXTRA_REFCNT(pe, n)++;
@@ -254,7 +254,7 @@
         	index = (PalExtra_AllocList_Type)pe->pe_FirstShared;
         	while ((PalExtra_AllocList_Type)-1 != index)
         	{
-        	    if (TRUE == color_equal(cm,r,g,b,index))
+        	    if (color_equal(cm,r,g,b,index))
         	    {
         		/* That's a good one */
         		retval = index;
@@ -289,7 +289,7 @@
 	
     } /* if (NULL != pe && (n <= pe->pe_SharableColors || -1 == n )) */
 
-    if (-1 != retval && 0 == (flags & PENF_NO_SETCOLOR) && FALSE == was_shared)
+    if (-1 != retval && 0 == (flags & PENF_NO_SETCOLOR) && !was_shared)
     {
         /* Change the rgb values for the selected pen */
 	

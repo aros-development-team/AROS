@@ -116,7 +116,7 @@
         return FALSE;
 
       /* are we using double buffering for this AnimOb? */
-      if (TRUE == db)
+      if (db)
       {
         /* allocate a DBufPacket structure */
         if (NULL ==(CurBob -> DBuffer = AllocMem(sizeof(struct DBufPacket),

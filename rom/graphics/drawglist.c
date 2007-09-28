@@ -168,7 +168,7 @@
 		 * If yes then follow it to its end.
 		 */
 	 
-		if (TRUE == followdrawpath) {
+		if (followdrawpath) {
 			if (NULL != PrevVSprite)
 				PrevVSprite->ClearPath = CurVSprite;
 			PrevVSprite = CurVSprite;

@@ -142,7 +142,7 @@
         	** Return -1 if the user is strict with color matching.
         	** In the other case retval is not changed.
         	*/
-        	if (TRUE == defaults[1].ti_Data)
+        	if (defaults[1].ti_Data)
 		{
         	    retval = -1;
 		}
