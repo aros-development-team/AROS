@@ -13,6 +13,10 @@ enum Argument
 {
     DEVICE,
     UNIT,
+    SYSSIZE, /* Size of System partition in MBs */
+    WORKSIZE, /* Size of Work partition in MBs */
+    MAXWORK, /* Create maximum-sized Work partition */
+    WIPE,   /* Destroy all existing partitions */
     FORCE,  /* Don't ask the user for permission */
     QUIET,  /* Don't print anything */
     COUNT   /* Number of arguments */
