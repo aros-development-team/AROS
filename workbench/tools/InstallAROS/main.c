@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -107,7 +107,20 @@ Object* 			check_formatwork = NULL;
 Object* 			dest_volume = NULL;
 Object* 			work_volume = NULL;
 
+Object* 			dest_device = NULL;
+Object* 			dest_unit = NULL;
+Object* 			show_sizesys = NULL;
+Object* 			show_sizework = NULL;
+Object* 			check_sizesys = NULL;
+Object* 			check_sizework = NULL;
+Object* 			check_creatework = NULL;
+Object* 			sys_size = NULL;
+Object* 			work_size = NULL;
+
+Object *reboot_group = NULL;
+
 //extern ULONG InitTask(void);
+static LONG FindWindowsPartition(STRPTR device, LONG unit);
 int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *copy_files[], TEXT *destination_Path);
 int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir, TEXT *destination_Path);
 
@@ -179,7 +192,7 @@ IPTR Install__OM_NEW
 	set(data->welcomeMsg, MUIA_Text_Contents, KMsgWelcome);
 	set(data->back, MUIA_Disabled, TRUE);
 
-	data->instc_stage_next     		= ELicenseStage;
+	data->instc_stage_next     		= EPartitionOptionsStage;
 
 	data->inst_success  		= FALSE;
 	data->disable_back  		= FALSE;
@@ -538,15 +551,18 @@ IPTR Install__MUIM_IC_NextStep
 			next_stage = ELicenseStage;
 			break;
 		}
-		/* if no license we ignore this step... and go to dest options */
+		/* if no license we ignore this step... and go to partition options */
+
+	case EPartitionOptionsStage:
+		if(data->drive_set)
+		{
+			set(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, 2);
+		}
+		data->instc_stage_next = EPartitioningStage;
+		next_stage = EPartitionOptionsStage;
+		break;
 
 	case EInstallOptionsStage:
-		if(!data->drive_set)
-		{
-			set(data->instc_options_main->opt_partition,MUIA_Selected,TRUE);
-			set(data->instc_options_main->opt_partition,MUIA_Disabled,TRUE);
-		}
-
 		set(data->welcomeMsg, MUIA_Text_Contents, KMsgInstallOptions);
 		data->instc_stage_next = EDestOptionsStage;
 		next_stage = EInstallOptionsStage;
@@ -651,7 +667,11 @@ IPTR Install__MUIM_IC_NextStep
 			}
 		}
 
-		set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
+		if (XGET(check_formatsys, MUIA_Selected)
+			|| XGET(check_formatwork, MUIA_Selected))
+			set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
+		else
+			set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithoutPartition);
 		data->instc_stage_next = EInstallStage;
 		next_stage =  EMessageStage;
 		break;
@@ -674,22 +694,26 @@ IPTR Install__MUIM_IC_NextStep
 					data->instc_stage_next = EPartitioningStage;
 					return 0;
 				}
+				next_stage = EDoneStage;
+				DoMethod(data->page, MUIM_Group_InitChange);
+				set(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
+				set(reboot_group, MUIA_ShowMe, TRUE);
+				set(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
+				DoMethod(data->page, MUIM_Group_ExitChange);
+				set(data->back, MUIA_Disabled, TRUE);
+				set(data->cancel, MUIA_Disabled, TRUE);
+				data->instc_stage_next = EDoneStage;
+				break;
+			case 2:
+				data->disable_back = FALSE;
+				data->instc_stage_next = EDestOptionsStage;
+				next_stage = EInstallOptionsStage;
 				break;
 			default:
 				D(bug("[INSTALLER] Launching QuickPart...\n"));
 				Execute("SYS:Tools/QuickPart", NULL, NULL);
 				break;
 		}
-
-		next_stage = EDoneStage;
-
-		DoMethod(data->page, MUIM_Group_InitChange);
-		set(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
-		DoMethod(data->page, MUIM_Group_ExitChange);
-
-		set(data->back, MUIA_Disabled, TRUE);
-		set(data->cancel, MUIA_Disabled, TRUE);
-		data->instc_stage_next = EDoneStage;
 		break;
 
 	case EInstallStage:
@@ -757,13 +781,13 @@ IPTR Install__MUIM_IC_PrevStep
 		}
 		break;
 
-	case EInstallOptionsStage:
+	case EPartitionOptionsStage:
 		if (data->instc_lic_file)
 		{
 			set(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
 			set(data->proceed, MUIA_Disabled, TRUE);
-			set(data->page,MUIA_Group_ActivePage, ELicenseStage);
-			data->instc_stage_prev = EMessageStage;
+			set(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
+			data->instc_stage_prev = ELicenseStage;
 			break;
 		}
 
@@ -775,22 +799,19 @@ IPTR Install__MUIM_IC_PrevStep
 		data->instc_stage_prev = EMessageStage;
 		break;
 
+	case EInstallOptionsStage:
+		set(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
+		set(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
+		data->instc_stage_prev = ELicenseStage;
+		break;
+
 	case EDestOptionsStage:
 		set(data->page,MUIA_Group_ActivePage, EInstallOptionsStage);
 		data->instc_stage_next = EDestOptionsStage;
 		data->instc_stage_prev = EMessageStage;
 		break;
 
-	case EPartitionOptionsStage:
-		set(data->welcomeMsg, MUIA_Text_Contents, KMsgInstallOptions);
-		set(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
-		data->instc_options_main->partitioned = FALSE;
-		data->instc_stage_next = EInstallMessageStage;
-		data->instc_stage_prev = EInstallOptionsStage;
-		break;
-
 	case EGrubOptionsStage:
-		set(data->welcomeMsg, MUIA_Text_Contents, KMsgInstallOptions);
 		set(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
 		data->instc_options_main->bootloaded = FALSE;
 		data->instc_stage_next = EInstallMessageStage;
@@ -1013,37 +1034,49 @@ IPTR Install__MUIM_Partition
 		set(data->back, MUIA_Disabled, TRUE);
 		set(data->proceed, MUIA_Disabled, TRUE);
 
-		char tmpcmd[100];
-		get(check_work, MUIA_Selected, &option);
-		if (!option)
+		char tmpcmd[100], tmparg[100];
+		get(dest_device, MUIA_String_Contents, &tmp);
+		get(dest_unit, MUIA_String_Integer, &option);
+		sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
+			tmp, option);
+
+		/* Specify SYS size */
+		get(check_sizesys, MUIA_Selected, &option);
+		if (option)
 		{
-			get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
-			if (option==0)
+			get(sys_size, MUIA_String_Integer, &tmp);
+			sprintf(&tmparg, " SYSSIZE=%ld", tmp);
+			strcat(tmpcmd, tmparg);
+		}
+
+		/* Specify Work size */
+		get(check_creatework, MUIA_Selected, &option);
+		if (option)
+		{
+			get(check_sizework, MUIA_Selected, &option);
+			if (option)
 			{
-				D(bug("[INSTALLER] Partitioning Free Space...\n"));
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d PART0=%s ONLYFREE FORCE QUIET",boot_Device,boot_Unit,dest_Path);
+				get(work_size, MUIA_String_Integer, &tmp);
+				sprintf(tmparg, " WORKSIZE=%ld", tmp);
+				strcat(tmpcmd, tmparg);
 			}
 			else
 			{
-				D(bug("[INSTALLER] Partitioning EVERYTHING! MUAHAHAHA...\n"));
-//				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d PART0=%s FORCE QUIET",boot_Device,boot_Unit,dest_Path);
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d FORCE QUIET",boot_Device,0);
+				strcat(tmpcmd, " MAXWORK");
 			}
+		}
+
+		/* Specify whether to wipe disk or not */
+		get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
+			&option);
+		if (option == 1)
+		{
+			D(bug("[INSTALLER] Partitioning EVERYTHING! MUAHAHAHA...\n"));
+			strcat(tmpcmd, " WIPE");
 		}
 		else
-		{
-			get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
-			if (option==0)
-			{
-				D(bug("[INSTALLER] Partitioning Free Space...\n"));
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d ANYDISK PART0=%s USEWORK PART1=%s ONLYFREE FORCE QUIET",boot_Device,boot_Unit,dest_Path,work_Path);	
-			}
-			else
-			{
-				D(bug("[INSTALLER] Partitioning EVERYTHING! MUAHAHAHA...\n"));
-				sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%d ANYDISK PART0=%s USEWORK PART1=%s FORCE QUIET",boot_Device,boot_Unit,dest_Path,work_Path);	
-			}
-		}
+			D(bug("[INSTALLER] Partitioning Free Space...\n"));
+
 		D(bug("[INSTALLER] ### Executing '%s'\n",&tmpcmd));
 		tmp = SystemTagList(&tmpcmd, NULL);
 
@@ -1119,6 +1152,11 @@ IPTR Install__MUIM_IC_Install
 	IPTR option = FALSE;
 	int	fixupdir_count=0;
 
+	get(dest_volume, MUIA_String_Contents, &option);
+	strcpy(dest_Path, (STRPTR)option);
+	get(work_volume, MUIA_String_Contents, &option);
+	strcpy(work_Path, (STRPTR)option);
+
 	set(data->back, MUIA_Disabled, TRUE);
 	set(data->proceed, MUIA_Disabled, TRUE);
 
@@ -1153,7 +1191,7 @@ IPTR Install__MUIM_IC_Install
 	if((strcmp(dest_Path, work_Path)!=0))
 	{
 		char tmp[100];
-		sprintf(tmp,"%s:",kDstWorkName);
+		sprintf(tmp,"%s:", work_Path);
 		D(bug("[INSTALLER] Install : SYS Part != Work Part - checking validity..."));
 		if((lock = Lock(tmp, SHARED_LOCK)))     /* check the dest dir exists */
 		{
@@ -1424,6 +1462,7 @@ localecopydone:
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		int numgrubfiles = 3,file_count = 0;
+		LONG part_no;
 		ULONG srcLen = strlen(source_Path);
 		ULONG dstLen = (strlen(dest_Path)+1);
 
@@ -1470,10 +1509,29 @@ localecopydone:
 
 			file_count += 2;
 		}
+
+		/* Add entry to boot MS Windows if present */
 		TEXT tmp[200];
+		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
+		{
+			STRPTR menu_file_path = "boot/grub/menu.lst";
+			sprintf(tmp, "%s:%s", dest_Path, menu_file_path);
+			BPTR menu_file = Open(tmp, MODE_READWRITE);
+			if (menu_file != NULL)
+			{
+				Seek(menu_file, 0, OFFSET_END);
+				FPrintf(menu_file,
+					"\ntitle Microsoft Windows\nrootnoverify (hd%ld,%ld)\nchainloader +1\n",
+					boot_Unit, part_no);
+				Close(menu_file);
+			}
+			D(bug("[INSTALLER] Windows partition found."
+				" Adding Windows option to GRUB menu.\n"));
+			Execute(tmp, NULL, NULL);
+		}
+
 		sprintf(tmp,
 			"C:install-i386-pc DEVICE %s UNIT %d "
-			"KERNEL %s:boot/aros-pc-i386.gz "
 			"GRUB %s:boot/grub FORCELBA",
 			boot_Device, boot_Unit, dest_Path, dest_Path);
 		Execute(tmp, NULL, NULL);
@@ -1633,6 +1691,40 @@ IPTR Install__MUIM_RefreshWindow
 	else MUI_Redraw(data->contents, MADF_DRAWOBJECT);
 
 	return 0;
+}
+
+static LONG FindWindowsPartition(STRPTR device, LONG unit)
+{
+	IPTR active, id;
+	struct PartitionType type;
+	struct PartitionHandle *root, *partition;
+	LONG partition_no = -1, i = 0;
+
+	if((root = OpenRootPartition(device, unit)) != NULL)
+	{
+		if (OpenPartitionTable(root) == 0)
+		{
+			/* Look for an active partition with a Windows FS */
+			ForeachNode(&root->table->list, partition)
+			{
+				GetPartitionAttrsTags
+				(
+					partition,
+					PT_ACTIVE, (IPTR) &active,
+					PT_TYPE, (IPTR) &type,
+					TAG_DONE
+				);
+				id = type.id[0];
+				if (active && id == 0x7 || id == 0xb)
+					partition_no = i;
+				i++;
+			}
+			ClosePartitionTable(root);
+		}
+		CloseRootPartition(root);
+	}
+
+	return partition_no;
 }
 
 int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir, TEXT * destination_Path) 
@@ -1813,7 +1905,7 @@ IPTR Install__MUIM_Format
 #endif
 		if (success)
 		{
-				sprintf(tmp,"%s:",kDstWorkName);
+				sprintf(tmp, "%s:", work_Path);
 				set(data->gauge2, MUIA_Gauge_Current, 100);
 				lock = Lock(tmp, SHARED_LOCK);     /* check the dest dir exists */
 				if(lock == 0)
@@ -2508,19 +2600,14 @@ int main(int argc,char *argv[])
 	Object			*LicenseMandGrp = NULL;
 	Object			*check_license = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
 
-	Object* check_afreepart = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
-	Object* check_autopart = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
-	Object* check_manualpart = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
-
-	Object* check_part = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
-	Object* check_format = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected, TRUE , End;
+	Object* check_format = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected, TRUE, End;
 	Object* check_locale = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
 	Object* check_core = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
 	Object* check_dev = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
 	Object* check_extras = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
 	Object* check_bootloader = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
 
-	Object* check_reboot = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
+	Object* check_reboot = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, End;
 
 	Object* gauge1 = (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 0, End);
 	Object* gauge2 = (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 0, End);
@@ -2528,7 +2615,13 @@ int main(int argc,char *argv[])
 /**/
 
 	Object				*label=NULL;
-	static char 			*opt_partentries[] = {"Let AROS Use only free space on my disks!","Let AROS Wipe My Disks!","Let ME Select & Format Partitions...",NULL};
+	static char *opt_partentries[] =
+	{
+		"Only use free space",
+		"Wipe disk",
+		"Use existing AROS partitions (on any drive)",
+		NULL
+	};
 	struct Install_Options  	*install_opts = NULL;
 	struct Grub_Options  	*grub_opts = NULL;
 	char					*source_path = NULL;
@@ -2537,11 +2630,26 @@ int main(int argc,char *argv[])
 
 	IPTR				pathend = 0;
 
-	check_copytowork = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
+	check_copytowork = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Disabled, TRUE, End;
 	check_work = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
 	check_formatsys  = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
-	check_formatwork  = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,TRUE , End;
+	check_formatwork  = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Disabled, TRUE, End;
 	
+	check_sizesys = ImageObject, ImageButtonFrame, MUIA_InputMode,
+		MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
+		MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
+		MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, End;
+	check_sizework = ImageObject, ImageButtonFrame, MUIA_InputMode,
+		MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
+		MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
+		MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, MUIA_Disabled, TRUE,
+		End;
+	check_creatework = ImageObject, ImageButtonFrame, MUIA_InputMode,
+		MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark,
+		MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack,
+		MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, MUIA_Disabled, TRUE,
+		End;
+
 	install_opts = AllocMem( sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	grub_opts = AllocMem( sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	source_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
@@ -2594,10 +2702,10 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.4 (30.10.2006)",
-		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2006, The AROS Development Team. All rights reserved.",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.5 (1.9.2007)",
+		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2007, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson & Nic Andrews",
-		MUIA_Application_Description, (IPTR) "Installs AROS onto your PC.",
+		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
 		MUIA_Application_Base,        (IPTR) "INSTALLER",
 
 		SubWindow, (IPTR) (wnd = WindowObject,
@@ -2624,7 +2732,6 @@ int main(int argc,char *argv[])
 							MUIA_Scrollgroup_Contents, (IPTR) (page = VGroup,
 								MUIA_Group_PageMode, TRUE,
 								ReadListFrame,
-								MUIA_Background, MUII_SHINE,
 
 			    /* each page represents an install time page... you must have one for each enumerated install progress page */
 
@@ -2647,25 +2754,91 @@ int main(int argc,char *argv[])
 									End,
 								End,
 
+								/* Partitioning options */
+								Child, (IPTR) VGroup,
+									Child, (IPTR) VGroup,
+										Child, (IPTR) CLabel(KMsgPartitionOptions),
+										Child, (IPTR) HVSpace,
+
+										Child, (IPTR) ColGroup(5),
+											Child, (IPTR) ColGroup(2),
+												Child, (IPTR) LLabel("Device:"),
+												Child, (IPTR) (dest_device =
+													StringObject,
+													MUIA_String_Contents, (IPTR) "ata.device",
+													MUIA_String_Reject, " \"\'*",
+													MUIA_HorizWeight, 200,
+													End),
+												Child, (IPTR) HVSpace,
+												Child, (IPTR) LLabel("Unit:"),
+												Child, (IPTR) (dest_unit =
+													StringObject,
+													MUIA_String_Integer, 0,
+													MUIA_String_Accept, "0123456789",
+													MUIA_HorizWeight, 20,
+													End),
+											End,
+										End,
+
+										Child, (IPTR) HVSpace,
+										Child, (IPTR) (radio_part = RadioObject, 
+											GroupFrame,
+											MUIA_Radio_Entries, (IPTR) opt_partentries,
+										End),
+										Child, (IPTR) HVSpace,
+										Child, (IPTR) ColGroup(2),
+											Child, (IPTR) ColGroup(2),
+												Child, (IPTR) LLabel(KMsgDestPartition),
+												Child, (IPTR) HVSpace,
+											End,
+										End,
+										Child, (IPTR) ColGroup(6),
+											Child, (IPTR) LLabel("Size:"),
+											Child, (IPTR) (sys_size = StringObject,
+												MUIA_String_Accept, "0123456789",
+												MUIA_String_Integer, 0,
+												MUIA_Disabled, TRUE, End),
+											Child, (IPTR) LLabel("MB"),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) check_sizesys,
+											Child, (IPTR) LLabel("Specify Size"),
+										End,
+										Child, (IPTR) HVSpace,
+										Child, (IPTR) ColGroup(4),
+											Child, (IPTR) LLabel(KMsgWorkPartition),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) check_creatework,
+											Child, (IPTR) LLabel("Create"),
+										End,
+										Child, (IPTR) ColGroup(6),
+											Child, (IPTR) LLabel("Size:"),
+											Child, (IPTR) (work_size = StringObject,
+												MUIA_String_Accept, "0123456789",
+												MUIA_String_Integer, 0,
+												MUIA_Disabled, TRUE, End),
+											Child, (IPTR) LLabel("MB"),
+											Child, (IPTR) HVSpace,
+											Child, (IPTR) check_sizework,
+											Child, (IPTR) LLabel("Specify Size"),
+										End,
+									End,
+								End,
+
 								Child, (IPTR) VGroup,
 									Child, (IPTR) VGroup,
 										Child, (IPTR) CLabel(KMsgInstallOptions),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) ColGroup(2),
-											Child, (IPTR) LLabel("Show Partitioning Options"),
-											Child, (IPTR) check_part,
-											Child, (IPTR) LLabel("Format Partitions"),
-											Child, (IPTR) check_format,
-											Child, (IPTR) LLabel("Choose Language Options"),
 											Child, (IPTR) check_locale,
-											Child, (IPTR) LLabel("Install AROS Core System"),
+											Child, (IPTR) LLabel("Choose Language Options"),
 											Child, (IPTR) check_core,
-											Child, (IPTR) LLabel("Install Extra Software"),
+											Child, (IPTR) LLabel("Install AROS Core System"),
 											Child, (IPTR) check_extras,
-											Child, (IPTR) LLabel("Install Development Software"),
+											Child, (IPTR) LLabel("Install Extra Software"),
 											Child, (IPTR) check_dev,
-											Child, (IPTR) LLabel("Install Bootloader"),
+											Child, (IPTR) LLabel("Install Development Software"),
 											Child, (IPTR) check_bootloader,
+											Child, (IPTR) LLabel("Install Bootloader"),
 										End,
 										Child, (IPTR) HVSpace,
 									End,
@@ -2681,53 +2854,40 @@ int main(int argc,char *argv[])
 												Child, (IPTR) HVSpace,
 											End,
 											Child, (IPTR) (show_formatsys = ColGroup(2),
-												Child, (IPTR) LLabel("Format Partition:"),
 												Child, (IPTR) check_formatsys,
+												Child, (IPTR) LLabel("Format Partition"),
 											End),
 										End,
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (dest_volume = StringObject,
 											MUIA_String_Contents, (IPTR) dest_Path,
-											MUIA_Disabled, TRUE, End), /* Disabled because changes are ignored */
+											End),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) ColGroup(2),
-#if 0	/* C:Partition doesn't allow choice of number of partitions */
-											Child, (IPTR) LLabel("Use 'Work' Partition..."),
 											Child, (IPTR) check_work,
-											Child, (IPTR) LLabel("Copy Extras and Developer Files to Work?"),
+											Child, (IPTR) LLabel("Use 'Work' Partition"),
 											Child, (IPTR) check_copytowork,
-#endif
+											Child, (IPTR) LLabel("Copy Extras and Developer Files to Work"),
 										End,
 										Child, (IPTR) HVSpace,
 
-#if 0	/* C:Partition doesn't allow choice of number of partitions */
 										Child, (IPTR) ColGroup(2),
 											Child, (IPTR) ColGroup(2),
 												Child, (IPTR) LLabel(KMsgWorkVolume),
 												Child, (IPTR) HVSpace,
 											End,
 											Child, (IPTR) (show_formatwork = ColGroup(2),
-												Child, (IPTR) LLabel("Format Partition:"),
 												Child, (IPTR) check_formatwork,
+												Child, (IPTR) LLabel("Format Partition"),
 											End),
 										End,
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) (work_volume = StringObject, MUIA_String_Contents, (IPTR) work_Path,End),
-										Child, (IPTR) HVSpace,
-#endif
-									End,
-								End,
-
-								/* Partitioning options */
-								Child, (IPTR) VGroup,
-									Child, (IPTR) VGroup,
-										Child, (IPTR) CLabel(KMsgPartitionOptions),
-										Child, (IPTR) HVSpace,
-										Child, (IPTR) (radio_part = RadioObject, 
-											GroupFrame,
-											MUIA_Radio_Entries, (IPTR) opt_partentries,
-											MUIA_Disabled, TRUE, MUIA_Radio_Active, 1, //Remove this line when other partitioning methods are supported
-										End),
+										Child, (IPTR) (work_volume =
+											StringObject,
+											MUIA_String_Contents,
+											(IPTR) work_Path,
+											MUIA_Disabled, TRUE,
+											End),
 										Child, (IPTR) HVSpace,
 									End,
 								End,
@@ -2765,7 +2925,7 @@ int main(int argc,char *argv[])
 
 								Child, (IPTR) VGroup,
 									Child, (IPTR) VGroup,
-										Child, (IPTR) CLabel(KMsgPartitioningWipe),
+										Child, (IPTR) CLabel(KMsgPartitioning),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, (IPTR) gauge3, End,
 										Child, (IPTR) ScaleObject, End,
@@ -2793,11 +2953,12 @@ int main(int argc,char *argv[])
 										MUIA_Group_SameHeight, FALSE,
 										Child, (IPTR) (doneMsg = FreeCLabel(KMsgDone)),
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) ColGroup(2),
+										Child, (IPTR) reboot_group = (ColGroup(2),
 											MUIA_Weight,0,
-											Child, (IPTR) LLabel("Reboot AROS now?"),
+											MUIA_ShowMe, FALSE,
 											Child, (IPTR) check_reboot,
-										End,
+											Child, (IPTR) LLabel("Reboot AROS now"),
+										End),
 									End,
 								End,
 							End),
@@ -2842,19 +3003,65 @@ int main(int argc,char *argv[])
 		exit(5);
 	}
 
-	set(check_autopart,MUIA_Disabled,TRUE);
+	/* Update GUI in response to certain user actions */
+	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 0,
+		(IPTR) check_sizesys, 3, MUIM_Set,
+		MUIA_Disabled, FALSE);
+	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 1,
+		(IPTR) check_sizesys, 3, MUIM_Set,
+		MUIA_Disabled, FALSE);
+	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
+		(IPTR) check_sizesys, 3, MUIM_Set,
+		MUIA_Disabled, TRUE);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_creatework, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_creatework, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_sizework, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_sizework, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) sys_size, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_sizework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) work_size, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
 
-	DoMethod(check_work,MUIM_Notify,MUIA_Selected,FALSE, (IPTR) check_copytowork,3,MUIM_Set,MUIA_Disabled,TRUE);
-	DoMethod(check_work,MUIM_Notify,MUIA_Selected,FALSE, (IPTR) work_volume,3,MUIM_Set,MUIA_Disabled,TRUE);
+#if 0	/* Notification doesn't seem to work on String gadgets */
+	DoMethod(dest_volume, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+		(IPTR) dest_volume, 3, MUIM_WriteString,
+		MUIV_TriggerValue, dest_Path);
+#endif
 
-	DoMethod(check_work,MUIM_Notify,MUIA_Selected,TRUE, (IPTR) check_copytowork,3,MUIM_Set,MUIA_Disabled,FALSE);
-	DoMethod(check_work,MUIM_Notify,MUIA_Selected,TRUE, (IPTR) work_volume,3,MUIM_Set,MUIA_Disabled,FALSE);    
+	DoMethod(check_core, MUIM_Notify, MUIA_Selected, FALSE,
+		(IPTR) check_formatsys, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+	DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_copytowork, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_copytowork, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+	DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_formatwork, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_formatwork, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+	DoMethod(check_work, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) work_volume, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+
 /**/
 	install_opts->opt_license = check_license;
 		install_opts->opt_lic_box = LicenseMsg;
 		install_opts->opt_lic_mgrp = LicenseMandGrp;
 
-	install_opts->opt_partition = check_part;
 		install_opts->opt_partmethod = radio_part;
 
 	install_opts->opt_format = check_format;
@@ -2910,6 +3117,7 @@ int main(int argc,char *argv[])
 
 	TAG_DONE);
 
+#if 0
 /** Start - NEW!! this is part of the "class" change ;) **/
 if (0)
 {
@@ -3007,6 +3215,7 @@ if (0)
 
 }
 /** End - NEW!! this is part of the "class" change ;) **/
+#endif
 
 	DoMethod(wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE, app,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
 

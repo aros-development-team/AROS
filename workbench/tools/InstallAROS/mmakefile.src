@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 FILES   := main
 EXEDIR  := $(AROS_TOOLS)
+USER_CFLAGS := -w
 
 #MM- workbench-tools : workbench-tools-installaros
 #MM workbench-tools-installaros : contrib-zune-classes-nfloattext-class
