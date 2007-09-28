@@ -4,18 +4,11 @@
 static const char* KMsgWelcome =
 MUIX_L " " MUIX_B"\nWelcome to the AROS Research OS\n"
 "installer.\n\n" MUIX_N
-"This program allows you to install.\n"
+"This program allows you to install\n"
 "the " MUIX_B "pre-alpha" MUIX_N " version of AROS\n"
-"onto your computer system.\n\n"
+"on to your computer's hard drive.\n\n"
 "Since it is still in pre-alpha state, performance\n"
 "may be sluggish - and stability isn't guaranteed\n\n";
-
-static const char* KMsgPartitionDH0 =
-"You do not have a DH0: partition.\n"
-"Select Continue to have your master disk on\n"
-"the first IDE channel turned into an\n"
-"AROS disk. This step is NOT reversible!\n\n"
-"You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n";
 
 static const char* KMsgInstallOptions =
 "\nPlease choose your installation options.\n\n";
@@ -25,20 +18,18 @@ static const char* KMsgDestOptions =
 "If you are unsure, then use the defaults";
 
 static const char* KMsgDestVolume =
-"Destination Drive\n"
-"[default:DH0]";
+"Destination Partition";
 
 static const char* KMsgWorkVolume =
-"Work Drive\n"
-"[default:DH1]";
+"Work Partition";
 
 static const char* KMsgBeginWithPartition =
-"OK, we are ready to begin...\n\n"
+"OK, we are ready to begin.\n\n"
 "Since you've selected to format the partition,\n"
 "you will no longer be able to undo changes\n"
-"after this point,\n\n"
-"You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n"
-"\n Press Proceed to begin installation...";
+"after this point.\n\n"
+"You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n\n"
+"Select Proceed to begin installation.";
 
 static const char* KMsgBeginWithoutPartition =
 "OK, we are ready to begin...\n\n"
@@ -53,33 +44,35 @@ static const char* KMsgLanguage =
 "Choose the settings that are relevant to you\n";
 
 static const char* KMsgPartitionOptions =
-"We will now partition your drives\n\n"
+"We will now create AROS partitions on your hard drive\n\n"
 "Please select how you would like to proceed...\n";
 
+static const char* KMsgDestPartition =
+"System Partition (DH0)";
+
+static const char* KMsgWorkPartition =
+"Work Partition (DH1)";
+
 static const char* KMsgGrubOptions =
-"AROS uses the GRUB Bootloader.\n\n"
+"AROS uses the GRUB bootloader.\n\n"
 "The Installer will install it to the first\n"
 "drive on your system, and configure it\n"
-"to boot AROS...\n";
+"to boot AROS.\n";
 
 static const char* KMsgGrubDrive =
-"Drive GRUB Will Install on:";
+"Drive GRUB will install on:";
 
 static const char* KMsgGrubGOptions =
 MUIX_B "Grub Settings" MUIX_N;
 
 static const char* KMsgGrubGrub =
-"Path to GRUB Files:";
+"Path to GRUB files:";
 
 static const char* KMsgGrubKernel =
-"Path to AROS Kernel:";
+"Path to AROS kernel:";
 
 static const char* KMsgPartitioning =
 "Partition your drives...\n\n";
-
-static const char* KMsgPartitioningWipe =
-"Now erasing the contents of the master\n"
-"disk on the first IDE channel.\n\n";
 
 static const char* KMsgInstall =
 "Copying files to the hard disk.\n\n"
@@ -90,21 +83,25 @@ static const char* KMsgBootLoader =
 "hard drive, and installing...\n";
 
 static const char* KMsgDoneReboot =
-"DH0 is now prepared for use!\n"
-"To continue installation, AROS\n"
-"must be rebooted, and this installer\n"
-"application re-run\n\n"
-"Press Proceed To Finish\n";
+"AROS partitions have now been created!\n"
+"To continue installation, you must\n"
+"reboot AROS, and re-run\n"
+"this installer application\n\n"
+"Select Proceed to finish\n";
 
 static const char* KMsgDone =
 "Congratulations, you now have AROS installed!\n\n"
-"Press Proceed To Finish\n";
+"To boot AROS from the hard drive,\n"
+"remove the installation media and\n"
+"restart your computer using the\n"
+"power switch or reset button.\n\n"
+"Select Proceed to finish\n";
 
 static const char* KMsgNoDrives =
 "It appears you do not have a hard\n"
-"drive installed in your PC\n\n"
-"Installation of AROS can only be performed onto\n"
-"a hard disk just now. Sorry.\n\nPress Proceed To Exit\n";
+"drive installed in your PC.\n\n"
+"Installation of AROS can only be performed on to\n"
+"a hard drive just now. Sorry.\n\nPress Proceed To Exit\n";
 
 static const char* KMsgCancelOK =
 "Are you sure you wish to cancel\n"
@@ -231,9 +228,9 @@ enum EStage
 {
     EMessageStage,
 	ELicenseStage,
+	EPartitionOptionsStage,
     EInstallOptionsStage,
     EDestOptionsStage,
-	EPartitionOptionsStage,
     EGrubOptionsStage,
     EInstallMessageStage,
     EPartitioningStage,
