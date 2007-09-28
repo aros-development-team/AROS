@@ -52,6 +52,8 @@ struct TypeNode *findPartitionType(struct PartitionType *type, ULONG tabletype) 
 struct TableTypeNode *ttn;
 struct TypeNode *tn;
 
+	if (tabletype == PHPTT_EBR)
+		tabletype = PHPTT_MBR;    // EBR uses same types as MBR
 	ttn = findTableTypeNode(tabletype);
 	if (ttn)
 	{
@@ -96,6 +98,7 @@ ULONG id_len=0;
 WORD current=0;
 WORD line=1;
 
+while(TRUE);
 	while (csrc.CS_CurChr < csrc.CS_Length)
 	{
 		res = ReadItem(ident, 256, &csrc);
@@ -139,7 +142,7 @@ WORD line=1;
 							}
 							if (ttn == 0)
 							{
-								printf("LINE %d: Unkown Table %s\n", line, ident);
+								printf("LINE %d: Unknown Table %s\n", line, ident);
 								return 0;
 							}
 						}
