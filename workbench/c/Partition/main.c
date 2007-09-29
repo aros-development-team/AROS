@@ -24,11 +24,11 @@ static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowCyl,
     ULONG *gapHighCyl);
 static VOID CheckGap(struct PartitionHandle *root, ULONG partHighCyl,
     ULONG *gapLowCyl, ULONG *gapHighCyl);
-struct PartitionHandle *CreateRootTable(CONST_STRPTR device, LONG unit);
-struct PartitionHandle *CreateMBRPartition(struct PartitionHandle *parent,
-    ULONG lowcyl, ULONG highcyl, UBYTE id);
-struct PartitionHandle *CreateRDBPartition(struct PartitionHandle *parent,
-    ULONG lowcyl, ULONG highcyl, CONST_STRPTR name, BOOL bootable);
+static struct PartitionHandle *CreateMBRPartition(
+    struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl, UBYTE id);
+static struct PartitionHandle *CreateRDBPartition(
+    struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl,
+    CONST_STRPTR name, BOOL bootable);
 static ULONG MBsToCylinders(ULONG size, struct DosEnvec *de);
 
 /*** Functions **************************************************************/
@@ -343,32 +343,6 @@ static VOID CheckGap(struct PartitionHandle *root, ULONG partHighBlock,
     }
 
     return;
-}
-
-static struct PartitionHandle *CreateRootTable(CONST_STRPTR device, LONG unit)
-{
-    struct PartitionHandle *root;
-    
-    if ((root = OpenRootPartition(device, unit)) != NULL)
-    {
-        /* Destroy the existing partitiontable, if any exists */
-        if (OpenPartitionTable(root) == 0)
-            DestroyPartitionTable(root);
-        
-        /* Create a root MBR partition table */
-        if (CreatePartitionTable(root, PHPTT_MBR) != 0)       
-        {
-            PutStr("*** ERROR: Creating partition table failed.\n");
-            CloseRootPartition(root);
-            root = NULL;
-        }
-    }
-    else
-    {
-        PutStr("*** Could not open root partition!\n");
-    }
-    
-    return root;
 }
 
 static struct PartitionHandle *CreateMBRPartition
