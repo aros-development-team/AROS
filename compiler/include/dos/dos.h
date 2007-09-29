@@ -282,8 +282,8 @@ struct InfoData
 #define ERROR_READ_PROTECTED		224
   /* Accessed disk is unreadable. */
 #define ERROR_NOT_A_DOS_DISK		225
-  /* You tried to perform an action on a device, which has no volume mounted
-     (eg an empty disk drive). */
+  /* You tried to perform an action on a device that has no volume mounted
+     (eg. an empty disk drive). */
 #define ERROR_NO_DISK			226
   /* This does not indicate an error, but is returned by several functions to
      indicate that the last entry of a list was reached. */
