@@ -123,7 +123,7 @@ struct IFS_FILE_MODE
       /* The new mode to apply to the filehandle. See below for definitions.
          The filehandler fills this with the old mode bits. */
     ULONG io_FileMode;
-      /* This mask defines, which flags are to be changed. */
+      /* This mask defines which flags are to be changed. */
     ULONG io_Mask;
 };
 
@@ -324,7 +324,7 @@ struct IFS_MOUNT_MODE
     ULONG  io_MountMode;
       /* This mask defines, which flags are to be changed. */
     ULONG  io_Mask;
-      /* A passwort, which is needed, if MMF_LOCKED is set. */
+      /* A password, which is needed if MMF_LOCKED is set. */
     STRPTR io_Password;
 };
 
