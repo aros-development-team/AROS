@@ -33,7 +33,7 @@
 
 #define SKIPBYTE(ptr)	ptr ++;
 
-#define SKIPPTR(ptr) 	ptr += sizeof(APTR)
+#define SKIPPTR(ptr) 	ptr += sizeof(LONG)
 
 #define CONVLONG(ptr, destlong)  \
 destlong = ptr[0] << 24 |ptr[1] << 16 | ptr[2] << 8 | ptr[3]; \
@@ -62,7 +62,7 @@ SKIPPTR(ptr);
 #else
 
 #define COPYPTR(ptr,destptr) \
-(destptr) = *((APTR *)(ptr)); \
+(destptr) = (APTR)(*((ULONG *)(ptr))); \
 SKIPPTR(ptr);
 #endif
 /****************************************************************************************/
@@ -108,7 +108,7 @@ struct DiskFontHeader *ConvDiskFont(BPTR seglist, CONST_STRPTR fontname, BOOL do
     memset(&tmp_dfh, 0, sizeof (struct DiskFontHeader));
 
     /* Get start of diskfontheader. (Go past the dummy exe header) */ 
-    ptr = UB(BADDR(seglist)) + sizeof (ULONG) * 2;
+    ptr = UB(BADDR(seglist)) + sizeof (ULONG) + sizeof(BPTR);
 
     /* Skip the whole DiskFontHeader */
     SKIPPTR(ptr);	    	    	    /* dfh_TF.ln_Succ	*/
