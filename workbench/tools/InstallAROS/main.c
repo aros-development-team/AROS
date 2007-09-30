@@ -2953,7 +2953,7 @@ int main(int argc,char *argv[])
 										MUIA_Group_SameHeight, FALSE,
 										Child, (IPTR) (doneMsg = FreeCLabel(KMsgDone)),
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) reboot_group = (ColGroup(2),
+										Child, (IPTR) (reboot_group = ColGroup(2),
 											MUIA_Weight,0,
 											MUIA_ShowMe, FALSE,
 											Child, (IPTR) check_reboot,
