@@ -24,7 +24,7 @@
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
 #define AROS_SLOWSTACKTAGS      1
-//#define AROS_SLOWSTACKMETHODS   1
+#define AROS_SLOWSTACKMETHODS   1
 
 #define SIZEOF_FPU_CONTEXT      512
 #define SIZEOF_ALL_REGISTERS    (184 + SIZEOF_FPU_CONTEXT + 16)
@@ -95,8 +95,8 @@ struct JumpVec
 		"#define EMITSTUB(fname, bname, vec) " \
 		".weak fname ; "                       \
 		"fname : "                             \
-		"mov bname , %%rax; "                  \
-		"jmp *vec(%%rax);\n"                   \
+		"movq bname , %%r11; "                  \
+		"jmp *vec(%%r11);\n"                   \
 	        "#define EMITALIAS(fname, alias) "     \
 	        ".weak alias; .set alias, fname\n"
 #define STUBCODE                                       \
