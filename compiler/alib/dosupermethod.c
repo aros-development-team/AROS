@@ -58,10 +58,11 @@
 } /* DoSuperMethodA() */
 
 
-IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
+IPTR DoSuperMethod (Class * cl, Object * obj, STACKULONG MethodID, ...)
 {
     if ((!obj) || (!cl))
         return 0L;
-    
-    return CALLHOOKPKT((struct Hook *)cl->cl_Super, obj, &MethodID);
+    AROS_SLOWSTACKMETHODS_PRE(MethodID)    
+    retval = CALLHOOKPKT((struct Hook *)cl->cl_Super, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
+    AROS_SLOWSTACKMETHODS_POST
 } /* DoSuperMethod()*/
