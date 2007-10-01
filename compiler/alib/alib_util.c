@@ -63,7 +63,6 @@
 
 ******************************************************************************/
 {
-#if !AROS_STACK_GROWS_DOWNWARDS
     ULONG size;
     Msg   msg;
 
@@ -71,7 +70,7 @@
 
     if ((msg = AllocVec (size * sizeof (STACKULONG), MEMF_CLEAR)))
     {
-	STACKULONG * ulptr = (STACKULONG * msg);
+	STACKULONG * ulptr = (STACKULONG *)msg;
 
 	*ulptr ++ = MethodID;
 
@@ -82,9 +81,6 @@
     }
 
     return msg;
-#else
-    return NULL;
-#endif
 } /* GetMsgFromStack */
 
 /******************************************************************************
