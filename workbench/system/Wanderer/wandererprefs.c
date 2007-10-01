@@ -33,6 +33,11 @@
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
 
+struct TagItem32 {
+    ULONG ti_Tag;
+    ULONG ti_Data;
+};
+
 /*** Instance Data **********************************************************/
 struct WandererPrefs_DATA
 {
@@ -57,7 +62,7 @@ struct WandererPrefs_ViewSettingsNode
 	struct Node    wpbn_Node;
 	char           *wpbn_Name;
 	IPTR		   wpbn_Background;
-    struct TagItem *wpbn_Options;
+    struct TagItem32 *wpbn_Options;
 	Object         *wpbn_NotifyObject;
 };
 
@@ -358,10 +363,14 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitleleng=%d\n", screent
 Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
+
+D(bug("WandererPrefs::New()\n"));
     
     if (self != NULL)
     {
 		SETUP_INST_DATA;
+
+D(bug("WandererPrefs::New - reloading\n"));
 
 		NewList(&data->wpd_ViewSettings);
         DoMethod(self, MUIM_WandererPrefs_Reload);
@@ -492,7 +501,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__GET@@@@@@@@@: SCREENTITLE= %s\n", data->w
     return rv;
 }
 
-BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem *global_chunk)
+BOOL WandererPrefs_ProccessGlobalChunk(Class *CLASS, Object *self, struct TagItem32 *global_chunk)
 {
     //SETUP_INST_DATA;
 
@@ -519,7 +528,7 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 {
     //SETUP_INST_DATA;
 
-	struct TagItem *network_tags =(struct TagItem *) _viewSettings_Chunk;
+	struct TagItem *network_tags =(struct TagItem32 *) _viewSettings_Chunk;
 	SET(self, AROS_LE2LONG(network_tags[0].ti_Tag), AROS_LE2LONG(network_tags[0].ti_Data));
 
 	return TRUE;
@@ -604,7 +613,7 @@ D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length unalined - rou
 D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length doesnt need aligned (length %d) \n", strlen(_viewSettings_Chunk) + 1));
 		}
 
-		IPTR _viewSettings_TagCount  = ((chunk_size - _viewSettings_TagOffset)/sizeof(struct TagItem));
+		IPTR _viewSettings_TagCount  = ((chunk_size - _viewSettings_TagOffset)/sizeof(struct TagItem32));
 
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: %d Tags at offset %d ..\n", _viewSettings_TagCount, _viewSettings_TagOffset));
 
@@ -615,10 +624,10 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Freeing old bac
 			_viewSettings_Node->wpbn_Options = NULL;
 		}
 		
-		_viewSettings_Node->wpbn_Options = AllocVec((_viewSettings_TagCount + 1) * sizeof(struct TagItem), MEMF_CLEAR|MEMF_PUBLIC);
+		_viewSettings_Node->wpbn_Options = AllocVec((_viewSettings_TagCount + 1) * sizeof(struct TagItem32), MEMF_CLEAR|MEMF_PUBLIC);
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: New tag storage @ %x\n", _viewSettings_Node->wpbn_Options));
 
-		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem));
+		CopyMem(_viewSettings_Chunk + _viewSettings_TagOffset, _viewSettings_Node->wpbn_Options, (_viewSettings_TagCount) * sizeof(struct TagItem32));
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to storage \n"));
 
 		_viewSettings_Node->wpbn_Options[_viewSettings_TagCount].ti_Tag = TAG_DONE;
@@ -644,6 +653,8 @@ IPTR WandererPrefs__MUIM_WandererPrefs_Reload
     LONG                   error;
     IPTR                   iff_parse_mode = IFFPARSE_SCAN;
     UBYTE                  chunk_buffer[IFF_CHUNK_BUFFER_SIZE];
+
+D(bug("WandererPrefs::Reload\n"));
 
     if (!(handle = AllocIFF()))
         return FALSE;
@@ -703,7 +714,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
 									if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
 									{
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
-										WandererPrefs_ProccessGlobalChunk(CLASS, self,(struct TagItem *) chunk_buffer);
+										WandererPrefs_ProccessGlobalChunk(CLASS, self,(struct TagItem32 *) chunk_buffer);
 									}
 									else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
 									{
