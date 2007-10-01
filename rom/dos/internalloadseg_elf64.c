@@ -580,6 +580,8 @@ end:
     /* Free the section headers */
     MyFree(sh, eh.shnum * eh.shentsize);
 
+#else
+    SetIoErr(ERROR_NOT_EXECUTABLE);
 #endif
 
     return hunks;
