@@ -60,6 +60,8 @@ IPTR DoSuperNewTags
 {
     if (CLASS == NULL || object == NULL)
         return NULL;
-
-    return DoSuperNewTagList(CLASS, object, gadgetInfo, (struct TagItem *) &tag1);
+        
+    AROS_SLOWSTACKMETHODS_PRE(tag1)
+    retval = DoSuperNewTagList(CLASS, object, gadgetInfo, (struct TagItem *) AROS_SLOWSTACKMETHODS_ARG(tag1));
+    AROS_SLOWSTACKMETHODS_POST
 } /* DoSuperNewTags() */

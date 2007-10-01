@@ -9,13 +9,15 @@
 #include "alib_intern.h"
 
 #ifdef AROS_SLOWSTACKMETHODS
+#include <intuition/classusr.h>
+#include <proto/exec.h>
 /******************************************************************************
 
     NAME */
 	Msg GetMsgFromStack (
 
 /*  SYNOPSIS */
-	ULONG	MethodID,
+	STACKULONG	MethodID,
 	va_list args)
 
 /*  FUNCTION
@@ -67,15 +69,15 @@
 
     size = 21;
 
-    if ((msg = AllocVec (size * sizeof (ULONG), MEMF_CLEAR)))
+    if ((msg = AllocVec (size * sizeof (STACKULONG), MEMF_CLEAR)))
     {
-	ULONG * ulptr = (ULONG * msg);
+	STACKULONG * ulptr = (STACKULONG * msg);
 
 	*ulptr ++ = MethodID;
 
 	while (-- size)
 	{
-	    *ulptr ++ = va_arg (args, ULONG);
+	    *ulptr ++ = va_arg (args, STACKULONG);
 	}
     }
 

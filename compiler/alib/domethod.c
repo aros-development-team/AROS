@@ -60,12 +60,16 @@
     return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, message);
 } /* DoMethodA */
 
-IPTR DoMethod (Object * obj, ULONG MethodID, ...)
+IPTR DoMethod (Object * obj, IPTR MethodID, ...)
 {
     ASSERT_VALID_PTR(obj);
     if (!obj)
     	return 0L;
 
     ASSERT_VALID_PTR(OCLASS(obj));
-    return CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, &MethodID);
+
+    AROS_SLOWSTACKMETHODS_PRE(MethodID)
+    retval = CALLHOOKPKT((struct Hook *) OCLASS(obj), obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
+    AROS_SLOWSTACKMETHODS_POST
 } /* DoMethod() */
+
