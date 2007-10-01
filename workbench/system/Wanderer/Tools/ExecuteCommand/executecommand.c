@@ -30,7 +30,7 @@
 
 /*** Private methods ********************************************************/
 #define MUIM_ExecuteCommand_ExecuteCommand  (TAG_USER | 0x20000000)
-struct  MUIP_ExecuteCommand_ExecuteCommand  { ULONG MethodID; ULONG delayed; };
+struct  MUIP_ExecuteCommand_ExecuteCommand  { STACKULONG MethodID; STACKULONG delayed; };
 
 /*** Instance data **********************************************************/
 struct ExecuteCommand_DATA
