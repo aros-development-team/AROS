@@ -176,7 +176,7 @@ struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, struct DiskfontBase
                 Seek
                 (
                     fh, 
-                    -(numtags * sizeof(struct TagItem)), /*  sizeof (struct TagItem) = 8 */
+                    -(numtags * 8), /*  sizeof (struct TagItem) = 8 */
                     OFFSET_CURRENT
                 );
 
