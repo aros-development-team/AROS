@@ -102,34 +102,34 @@ struct AnimHeader
 
 struct adtFrame
 {
-    ULONG	     MethodID;
-    ULONG	     alf_TimeStamp;
-    ULONG	     alf_Frame;
-    ULONG	     alf_Duration;
+    STACKULONG	     MethodID;
+    STACKULONG	     alf_TimeStamp;
+    STACKULONG	     alf_Frame;
+    STACKULONG	     alf_Duration;
     struct BitMap   *alf_BitMap;
     struct ColorMap *alf_CMap;
     BYTE	    *alf_Sample;
-    ULONG	     alf_SampleLength;
-    ULONG	     alf_Period;
+    STACKULONG	     alf_SampleLength;
+    STACKULONG	     alf_Period;
     APTR	     alf_UserData;
 };
 
 struct adtNewFormatFrame
 {
-    ULONG	     MethodID;
-    ULONG	     alf_TimeStamp;
-    ULONG	     alf_Frame;
-    ULONG	     alf_Duration;
+    STACKULONG	     MethodID;
+    STACKULONG	     alf_TimeStamp;
+    STACKULONG	     alf_Frame;
+    STACKULONG	     alf_Duration;
     struct BitMap   *alf_BitMap;
     struct ColorMap *alf_CMap;
     BYTE    	    *alf_Sample;
-    ULONG	     alf_SampleLength;
-    ULONG	     alf_Period;
+    STACKULONG	     alf_SampleLength;
+    STACKULONG	     alf_Period;
     APTR	     alf_UserData;
-    ULONG	     alf_Size;
+    STACKULONG	     alf_Size;
     BYTE    	    *alf_LeftSample;
     BYTE    	    *alf_RightSample;
-    ULONG	     alf_SamplesPerSec;
+    STACKULONG	     alf_SamplesPerSec;
 };
 
 struct adtStart

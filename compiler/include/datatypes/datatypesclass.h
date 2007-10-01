@@ -247,7 +247,7 @@ struct DTMethod
 {
     STRPTR	 dtm_Label;
     STRPTR	 dtm_Command;
-    ULONG	 dtm_Method;
+    STACKULONG	 dtm_Method;
 };
 
 
