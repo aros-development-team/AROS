@@ -72,7 +72,7 @@ BOOL ReadPrefs(struct Picture_Data *pd)
 	if((fh = Open(FILENAME, MODE_OLDFILE)))
 	{
 		UBYTE buf[256];
-		ULONG para[ARG_MAX];
+		IPTR para[ARG_MAX];
 		LONG i;
 
 		D(bug("picture.datatype/ReadPrefs: File %s opened\n",FILENAME));
@@ -88,14 +88,14 @@ BOOL ReadPrefs(struct Picture_Data *pd)
 				for(i=0 ; i<ARG_MAX ; i++)
 					para[i]=0;
 
-				if((args = ReadArgs(PREFSTEMPLATE,(LONG *) para,rdargs)))
+				if((args = ReadArgs(PREFSTEMPLATE,(IPTR *) para,rdargs)))
 				{
 					if(para[ARG_MAXPENS])
-						pd->MaxDitherPens = *((LONG *) para[ARG_MAXPENS]);
+						pd->MaxDitherPens = *((IPTR *) para[ARG_MAXPENS]);
 					if(para[ARG_DITHERQ])
-						pd->DitherQuality = *((LONG *) para[ARG_DITHERQ]);
+						pd->DitherQuality = *((IPTR *) para[ARG_DITHERQ]);
 					if(para[ARG_SCALEQ])
-						pd->ScaleQuality = *((LONG *) para[ARG_SCALEQ]);
+						pd->ScaleQuality = *((IPTR *) para[ARG_SCALEQ]);
 					if(para[ARG_FREESRC])
 						pd->FreeSource = para[ARG_FREESRC];
 					if(para[ARG_USECM])
