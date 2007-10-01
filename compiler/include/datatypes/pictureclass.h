@@ -138,22 +138,22 @@ struct ColorRegister
 
 struct pdtBlitPixelArray
 {
-	ULONG   MethodID;
+	STACKULONG   MethodID;
 	APTR    pbpa_PixelData;
-	ULONG   pbpa_PixelFormat;
-	ULONG   pbpa_PixelArrayMod;
-	ULONG   pbpa_Left;
-	ULONG   pbpa_Top;
-	ULONG   pbpa_Width;
-	ULONG   pbpa_Height;
+	STACKULONG   pbpa_PixelFormat;
+	STACKULONG   pbpa_PixelArrayMod;
+	STACKULONG   pbpa_Left;
+	STACKULONG   pbpa_Top;
+	STACKULONG   pbpa_Width;
+	STACKULONG   pbpa_Height;
 };
 
 struct pdtScale
 {
-	ULONG MethodID;
-	ULONG ps_NewWidth;
-	ULONG ps_NewHeight;
-	ULONG ps_Flags;
+	STACKULONG MethodID;
+	STACKULONG ps_NewWidth;
+	STACKULONG ps_NewHeight;
+	STACKULONG ps_Flags;
 };
 
 /* Flags for ps_Flags, for AROS only */
