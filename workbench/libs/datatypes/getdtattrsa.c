@@ -71,7 +71,7 @@
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	opGet.opg_AttrID  = tag->ti_Tag;
-	opGet.opg_Storage = (ULONG *)tag->ti_Data;
+	opGet.opg_Storage = (IPTR *)tag->ti_Data;
 	
 	if(DoMethodA(o, (Msg)&opGet))
 	    result++;
