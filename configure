@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld aros_host_aclocal aros_host_autoconf aros_host_autoheader aros_host_automake aros_host_ar aros_host_ranlib aros_host_strip RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON FLEX PNGTOPNM PPMTOILBM SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST CMP EGREP LIBOBJS DISTCC CCACHE aros_kernel_cc aros_target_as_ln aros_kernel_ld aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln aros_target_nostdinc_cflags aros_target_nostartup_ldflags aros_target_nix_ldflags aros_target_detach_ldflags aros_target_nostdlib_ldflags aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_cc_pre aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_ar aros_target_ranlib aros_kernel_nm aros_target_cc aros_target_as aros_target_ld aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_nm aros_shared_default aros_shared_ld aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_target_strip_flags GUI_FLAVOUR_X11 GUI_FLAVOUR_LINUX aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags x11_hidd_target aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT DO_VIDMODE_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld aros_host_aclocal aros_host_autoconf aros_host_autoheader aros_host_automake aros_host_ar aros_host_ranlib aros_host_strip RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON FLEX PNGTOPNM PPMTOILBM SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST CMP EGREP LIBOBJS DISTCC CCACHE aros_kernel_cc aros_target_as_ln aros_kernel_ld aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln aros_target_nostdinc_cflags aros_target_nostartup_ldflags aros_target_nix_ldflags aros_target_detach_ldflags aros_target_nostdlib_ldflags aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_cc_pre aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_ar aros_target_ranlib aros_kernel_nm aros_target_cc aros_target_as aros_target_ld aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_nm aros_shared_default aros_shared_ld aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_target_strip_flags aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags x11_hidd_target aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT DO_VIDMODE_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -6787,9 +6787,6 @@ aros_nesting_supervisor="0"
 # Collect-aros stuff: "-ius" to ignore undefined symbols
 ignore_undefined_symbols=""
 
-GUI_FLAVOUR_X11="0"
-GUI_FLAVOUR_LINUX="0"
-
 #-----------------------------------------------------------------------------
 
 echo "$as_me:$LINENO: checking for type of build" >&5
@@ -9796,9 +9793,6 @@ echo "${ECHO_T}$dbus" >&6
 
 
 
-
-
-
 # Native version related
 
 
@@ -10692,8 +10686,6 @@ s,@aros_debug_aflags@,$aros_debug_aflags,;t t
 s,@aros_debug_ldflags@,$aros_debug_ldflags,;t t
 s,@aros_target_genmap@,$aros_target_genmap,;t t
 s,@aros_target_strip_flags@,$aros_target_strip_flags,;t t
-s,@GUI_FLAVOUR_X11@,$GUI_FLAVOUR_X11,;t t
-s,@GUI_FLAVOUR_LINUX@,$GUI_FLAVOUR_LINUX,;t t
 s,@aros_gui_libdir@,$aros_gui_libdir,;t t
 s,@aros_gui_ldflags@,$aros_gui_ldflags,;t t
 s,@aros_gui_libflags@,$aros_gui_libflags,;t t

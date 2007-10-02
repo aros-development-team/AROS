@@ -405,9 +405,6 @@ aros_nesting_supervisor="0"
 # Collect-aros stuff: "-ius" to ignore undefined symbols
 ignore_undefined_symbols=""
 
-GUI_FLAVOUR_X11="0"
-GUI_FLAVOUR_LINUX="0"
-
 #-----------------------------------------------------------------------------
 
 AC_MSG_CHECKING([for type of build])
@@ -1313,9 +1310,6 @@ AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
 
 # Graphics Related
-AC_SUBST(GUI_FLAVOUR_X11)
-AC_SUBST(GUI_FLAVOUR_LINUX)
-
 AC_SUBST(aros_gui_libdir)
 AC_SUBST(aros_gui_ldflags)
 AC_SUBST(aros_gui_libflags)
