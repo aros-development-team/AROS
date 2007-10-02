@@ -2,7 +2,7 @@
 #define HOSTLIB_INTERN_H
 
 #ifndef EXEC_NODES_H
-#include <exec/libraries.h>
+#include <exec/nodes.h>
 #endif
 
 struct HostLibBase {
