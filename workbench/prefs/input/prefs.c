@@ -8,138 +8,115 @@
 
 /*********************************************************************************************/
 
-#include "global.h"
-#include <aros/macros.h>
+#define SHOWFLAGS 0  /* Set to 1 to show Flags in the keylist */
+
+#include <proto/keymap.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "prefs.h"
 
 /*********************************************************************************************/
 
-#define ARRAY_TO_LONG(x) ( ((x)[0] << 24UL) + ((x)[1] << 16UL) + ((x)[2] << 8UL) + ((x)[3]) )
-#define ARRAY_TO_WORD(x) ( ((x)[0] << 8UL) + ((x)[1]) )
-
-#define LONG_TO_ARRAY(x,y) (y)[0] = (UBYTE)(ULONG)((x) >> 24UL); \
-    	    	    	   (y)[1] = (UBYTE)(ULONG)((x) >> 16UL); \
-			   (y)[2] = (UBYTE)(ULONG)((x) >>  8UL); \
-			   (y)[3] = (UBYTE)(ULONG)((x));
-
-#define WORD_TO_ARRAY(x,y) (y)[0] = (UBYTE)(ULONG)((x) >>  8UL); \
-			   (y)[1] = (UBYTE)(ULONG)((x));
-			   
-/*********************************************************************************************/
-
-struct FilePrefHeader
-{
-    UBYTE ph_Version;
-    UBYTE ph_Type;
-    UBYTE ph_Flags[4];
-};
-
-struct FileInputPrefs
-{
-    char    ip_Keymap[16];
-    UBYTE   ip_PointerTicks[2];
-    UBYTE   ip_DoubleClick_secs[4];
-    UBYTE   ip_DoubleClick_micro[4];
-    UBYTE   ip_KeyRptDelay_secs[4];
-    UBYTE   ip_KeyRptDelay_micro[4];
-    UBYTE   ip_KeyRptSpeed_secs[4];
-    UBYTE   ip_KeyRptSpeed_micro[4];
-    UBYTE   ip_MouseAccel[2];
-};
-
-/*********************************************************************************************/
-
-static APTR 	    	    mempool;
-
-/*********************************************************************************************/
-
-struct nameexp
-{
-    STRPTR shortname;
-    STRPTR longname;
-};
-
+IPTR                mempool;
+BOOL                inputdev_changed = FALSE;
+struct List         keymap_list;
+struct InputPrefs   inputprefs;
+struct InputPrefs   restore_prefs;
+struct MsgPort     *InputMP;
+struct timerequest *InputIO;
+BPTR                testkeymap_seg = NULL;
 /*********************************************************************************************/
 
 struct nameexp model_expansion_table[] =
 {
-    {"pc105", "PC 105"},
-    {"pc104", "PC 104/101"},
-    {NULL   ,  NULL   }
+    {"pc105", "PC 105"     , NULL},
+    {"pc104", "PC 104/101" , NULL},
+    {NULL   ,  NULL        , NULL}
 };
 
 /*********************************************************************************************/
 
 struct nameexp layout_expansion_table[] =
 {
-    {"al"   , "Albanian"    	    },
-    {"usa1" , "American"    	    },
-    {"usa"  , "American"    	    },
-    {"us"   , "American (PC)"	    },
-    {"usx"  , "American Extended"   },
-    {"d"    , "Deutsch"     	    },
-    {"be"   , "Belge"     	    },
-    {"br"   , "Brasileiro"     	    },
-    {"gb"   , "British"     	    },
-    {"gbx"  , "British Extended"    },
-    {"cdn"  , "Canadien Français"   },
-    {"ca"   , "Canadien Français"   },
-    {"cz"   , "Czech"	    	    },
-    {"dk"   , "Dansk"	    	    },
-    {"ne"   , "Dutch"	    	    },
-    {"dvx"  , "Dvorak"              },
-    {"usa2" , "Dvorak"	    	    },
-    {"dvl"  , "Dvorak Left-handed"  },
-    {"dvr"  , "Dvorak Right-handed" },
-    {"ir"   , "English Ireland"     },
-    {"e"    , "Español"     	    },
-    {"sp"   , "Español no deadkeys" },
-    {"et"   , "Estonian"    	    },
-    {"fi"   , "Finnish"    	    },
-    {"f"    , "Français"    	    },
-    {"ic"   , "Icelandic"    	    },
-    {"i"    , "Italiana"    	    },
-    {"la"   , "Latin American"      },
-    {"lv"   , "Latvian"             },
-    {"lt"   , "Lithuanian"          },
-    {"hu"   , "Magyar"    	    },
-    {"n"    , "Norsk"	    	    },
-    {"pl"   , "Polski"		    },
-    {"po"   , "Português"   	    },
-    {"ru"   , "Russian"     	    },
-    {"sg"   , "Schweiz"     	    },
-    {"ch2"  , "Schweiz"     	    },
-    {"sl"   , "Slovak"     	    },
-    {"sf"   , "Suisse"	    	    },
-    {"ch1"  , "Suisse"	    	    },
-    {"s"    , "Svenskt"     	    },
-    {"ur"   , "Ucranian"     	    },
-    {NULL   , NULL  	    	    }
+    {"al"   , "Albanian"    	    , NULL },
+    {"usa1" , "American"    	    , "United_States"   },
+    {"usa"  , "American"    	    , "United_States"   },
+    {"us"   , "American (PC)"	    , "United_States"   },
+    {"usx"  , "American Extended"   , "United_States"   },
+    {"d"    , "Deutsch"     	    , "Deutschland"     },
+    {"be"   , "Belge"     	        , "Belgique"        },
+    {"br"   , "Brasileiro"     	    , "Brasil"          },
+    {"gb"   , "British"     	    , "United_Kingdom"  },
+    {"gbx"  , "British Extended"    , "United_Kingdom"  },
+    {"cdn"  , "Canadien Français"   , "Canada"          },
+    {"ca"   , "Canadien Français"   , "Canada_Français" },
+    {"cz"   , "Czech"	    	    , "Cesko"           },
+    {"dk"   , "Dansk"	    	    , "Danmark"         },
+    {"ne"   , "Dutch"	    	    , "Nederland"       },
+    {"dvx"  , "Dvorak"              , "Espana"          },
+    {"usa2" , "Dvorak"	    	    , NULL },
+    {"dvl"  , "Dvorak Left-handed"  , NULL },
+    {"dvr"  , "Dvorak Right-handed" , NULL },
+    {"ir"   , "English Ireland"     , "Ireland"        },
+    {"e"    , "Español"     	    , "España" },
+    {"sp"   , "Español no deadkeys" , "España" },
+    {"et"   , "Estonian"    	    , NULL },
+    {"fi"   , "Finnish"    	        , "Suomi"            },
+    {"f"    , "Français"    	    , "France"           },
+    {"ic"   , "Icelandic"    	    , "Island"           },
+    {"i"    , "Italiana"    	    , "Italia"           },
+    {"la"   , "Latin American"      , NULL },
+    {"lv"   , "Latvian"             , NULL },
+    {"lt"   , "Lithuanian"          , NULL },
+    {"hu"   , "Magyar"    	        , NULL },
+    {"n"    , "Norsk"	    	    , "Norge"            },
+    {"pl"   , "Polski"		        , "Polska"           },
+    {"po"   , "Português"   	    , "Portugal"         },
+    {"ru"   , "Russian"     	    , "Rossija"          },
+    {"sg"   , "Schweiz"     	    , "Suisse"           },
+    {"ch2"  , "Schweiz"     	    , "Suisse"           },
+    {"sl"   , "Slovak"     	        , "Slovakia"         },
+    {"sf"   , "Suisse"	    	    , "Suisse"           },
+    {"ch1"  , "Suisse"	    	    , "Suisse"           },
+    {"s"    , "Svenskt"     	    , "Sverige"          },
+    {"ur"   , "Ucranian"     	    , "Ukrajina"         },
+    {NULL   , NULL  	    	    , NULL }
 };
 
 /*********************************************************************************************/
 
-static void ExpandName(STRPTR name, struct nameexp *exp)
+static void ExpandName(STRPTR name, STRPTR flag, struct nameexp *exp)
 {
     for(; exp->shortname; exp++)
     {
     	if (stricmp(exp->shortname, name) == 0)
 	{
-	    strcpy(name, exp->longname);
-	    break;
-	}
+        strcpy(name, exp->longname);
+        if (exp->flag != NULL) strcpy(flag, exp->flag);
+        break;
+	   }
     }
 }
 
 /*********************************************************************************************/
 
-static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
+
+void SortInNode(struct List *list, struct Node *node)
+{
+    struct Node *sort, *prev = NULL;
+
+    ForeachNode(list, sort)
+    {
+        if (Stricmp(node->ln_Name, sort->ln_Name) < 0) break;
+        prev = sort;
+    }
+
+    Insert(list, node, prev);
+}
+
+void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 {
     struct AnchorPath 	    ap;
     struct ListviewEntry    *entry, *entry2;
@@ -176,8 +153,8 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 		    strcpy(entry->modelname, "Amiga");
 		    strcpy(entry->layoutname, entry->realname);
 		}
-		ExpandName(entry->modelname, model_expansion_table);
-		ExpandName(entry->layoutname, layout_expansion_table);
+		ExpandName(entry->modelname, entry->flagname, model_expansion_table);
+		ExpandName(entry->layoutname, entry->flagname, layout_expansion_table);
 		AddTail(&templist, &entry->node);
 	    }
 	}
@@ -252,139 +229,103 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 	
     } /* ForeachNodeSafe(&templist, entry, entry2) */
     
-#if 0
     ForeachNode(list, entry)
     {
-    	kprintf("%s%s\n", (entry->modelnode ? "* " : "   "), entry->node.ln_Name);
-    }
+        if (!entry->modelnode)
+        {
+#if SHOWFLAGS == 1
+            sprintf(entry->displayname, "\033I[5:Locale:Flags/Countries/%s]%s", entry->flagname, entry->node.ln_Name);
+#else
+            sprintf(entry->displayname, "%s", entry->node.ln_Name);
 #endif
+        }
+        else
+        {
+            sprintf(entry->displayname, "%s", entry->node.ln_Name);
+
+        }
+    }
 }
 
 /*********************************************************************************************/
 
-void InitPrefs(STRPTR filename, BOOL use, BOOL save)
-{
-           
-    NewList(&keymap_list);
-
-    mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
-    if (!mempool) Cleanup("Out of memory!");
-
-    ScanDirectory("DEVS:Keymaps/#?_~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));    
-    
-    if (!LoadPrefs(filename))
-    {
-    	if (!DefaultPrefs())
-	{
-	}
-    }
-    
-    restore_prefs = inputprefs;
-    
-    if (use || save)
-    {
-    	SavePrefs(CONFIGNAME_ENV);
-    }
-    
-    if (save)
-    {
-    	SavePrefs(CONFIGNAME_ENVARC);
-    }
-    
-    if (use || save) Cleanup(NULL);
-}
-
-/*********************************************************************************************/
-
-void CleanupPrefs(void)
-{
-    if (mempool) DeletePool(mempool);
-}
-
-/*********************************************************************************************/
-
-BOOL LoadPrefs(STRPTR filename)
+BOOL LoadPrefs(BPTR fh)
 {
     static struct FileInputPrefs    loadprefs;
-    struct IFFHandle 	    	    *iff;    
+    struct IFFHandle 	    	    *iff;
     BOOL    	    	    	    retval = FALSE;
     
     D(bug("LoadPrefs: Trying to open \"%s\"\n", filename));
     
     if ((iff = AllocIFF()))
     {
-    	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE)))
-	{
-    	    D(bug("LoadPrefs: stream opened.\n"));
+        iff->iff_Stream = fh;
+        if (fh != NULL)
+        {
+            D(bug("LoadPrefs: stream opened.\n"));
 	    
-	    InitIFFasDOS(iff);
+            InitIFFasDOS(iff);
 	    
-	    if (!OpenIFF(iff, IFFF_READ))
-	    {
-    	    	D(bug("LoadPrefs: OpenIFF okay.\n"));
+            if (!OpenIFF(iff, IFFF_READ))
+            {
+                D(bug("LoadPrefs: OpenIFF okay.\n"));
 		
-	    	if (!StopChunk(iff, ID_PREF, ID_INPT))
-		{
-    	    	    D(bug("LoadPrefs: StopChunk okay.\n"));
+                if (!StopChunk(iff, ID_PREF, ID_INPT))
+                {
+                    D(bug("LoadPrefs: StopChunk okay.\n"));
 		    
-		    if (!ParseIFF(iff, IFFPARSE_SCAN))
-		    {
-			struct ContextNode *cn;
+                    if (!ParseIFF(iff, IFFPARSE_SCAN))
+                    {
+                        struct ContextNode *cn;
 			
-    	    	    	D(bug("LoadPrefs: ParseIFF okay.\n"));
+                        D(bug("LoadPrefs: ParseIFF okay.\n"));
 			
-			cn = CurrentChunk(iff);
+                        cn = CurrentChunk(iff);
 
-			if (cn->cn_Size == sizeof(struct FileInputPrefs))
-			{
-   	    	    	    D(bug("LoadPrefs: ID_INPT chunk size okay.\n"));
+                        if (cn->cn_Size == sizeof(struct FileInputPrefs))
+                        {
+                            D(bug("LoadPrefs: ID_INPT chunk size okay.\n"));
 			    
-		    	    if (ReadChunkBytes(iff, &loadprefs, sizeof(struct FileInputPrefs)) == sizeof(struct FileInputPrefs))
-			    {
-   	    	    	    	D(bug("LoadPrefs: Reading chunk successful.\n"));
+                            if (ReadChunkBytes(iff, &loadprefs, sizeof(struct FileInputPrefs)) == sizeof(struct FileInputPrefs))
+                            {
+                                D(bug("LoadPrefs: Reading chunk successful.\n"));
 
-    	    	    	    	TellGUI(PAGECMD_PREFS_CHANGING);
+                                CopyMem(loadprefs.ip_Keymap, inputprefs.ip_Keymap, sizeof(loadprefs.ip_Keymap));
+                                inputprefs.ip_PointerTicks         = ARRAY_TO_WORD(loadprefs.ip_PointerTicks);
+                                inputprefs.ip_DoubleClick.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_secs);
+                                inputprefs.ip_DoubleClick.tv_micro = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_micro);
+                                inputprefs.ip_KeyRptDelay.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_secs);
+                                inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
+                                inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
+                                inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
+                                inputprefs.ip_MouseAccel    	   = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
 
-    				CopyMem(loadprefs.ip_Keymap, inputprefs.ip_Keymap, sizeof(loadprefs.ip_Keymap));	
-				inputprefs.ip_PointerTicks         = ARRAY_TO_WORD(loadprefs.ip_PointerTicks);
-				inputprefs.ip_DoubleClick.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_secs);
-				inputprefs.ip_DoubleClick.tv_micro = ARRAY_TO_LONG(loadprefs.ip_DoubleClick_micro);
-				inputprefs.ip_KeyRptDelay.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_secs);
-				inputprefs.ip_KeyRptDelay.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptDelay_micro);
-				inputprefs.ip_KeyRptSpeed.tv_secs  = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_secs);
-				inputprefs.ip_KeyRptSpeed.tv_micro = ARRAY_TO_LONG(loadprefs.ip_KeyRptSpeed_micro);
-				inputprefs.ip_MouseAccel    	   = ARRAY_TO_WORD(loadprefs.ip_MouseAccel);
-
-   	    	    	    	TellGUI(PAGECMD_PREFS_CHANGED);
-			    
-   	    	    	    	D(bug("LoadPrefs: Everything okay :-)\n"));
+                                D(bug("LoadPrefs: Everything okay :-)\n"));
 				
-				retval = TRUE;
-			    }
-			}
+                                retval = TRUE;
+                            }
+                        }
 			
-		    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
+                    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
 		    
-		} /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
+                } /* if (!StopChunk(iff, ID_PREF, ID_INPT)) */
 		
-	    	CloseIFF(iff);
+                CloseIFF(iff);
 				
-	    } /* if (!OpenIFF(iff, IFFF_READ)) */
+            } /* if (!OpenIFF(iff, IFFF_READ)) */
 	    
-	    Close((BPTR)iff->iff_Stream);
-	    
-	} /* if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE))) */
+        } /* if (fh != NULL) */
 	
-	FreeIFF(iff);
+        FreeIFF(iff);
 	
     } /* if ((iff = AllocIFF())) */
     
-    return retval;
-}
+        return retval;
+    }
 
 /*********************************************************************************************/
 
-BOOL SavePrefs(STRPTR filename)
+BOOL SavePrefs(BPTR fh)
 {
     static struct FileInputPrefs    saveprefs;
     struct IFFHandle 	     	    *iff;    
@@ -404,7 +345,8 @@ BOOL SavePrefs(STRPTR filename)
     
     if ((iff = AllocIFF()))
     {
-    	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_NEWFILE)))
+        iff->iff_Stream = fh;
+    	if (iff->iff_Stream)
 	{
     	    D(bug("SavePrefs: stream opened.\n"));
 	    
@@ -471,18 +413,17 @@ BOOL SavePrefs(STRPTR filename)
 				
 	    } /* if (!OpenIFF(iff, IFFFWRITE)) */
 	    
-	    Close((BPTR)iff->iff_Stream);
 	    
-	} /* if ((iff->iff_Stream = (IPTR)Open(filename, MODE_NEWFILE))) */
+	} /* if (iff->iff_Stream)) */
 	
 	FreeIFF(iff);
 	
     } /* if ((iff = AllocIFF())) */
     
-    if (!retval && delete_if_error)
-    {
-    	DeleteFile(filename);
-    }
+//     if (!retval && delete_if_error)
+//     {
+//     	DeleteFile(filename);
+//     }
     
     return retval;    
 }
@@ -491,8 +432,6 @@ BOOL SavePrefs(STRPTR filename)
 
 BOOL DefaultPrefs(void)
 {
-    TellGUI(PAGECMD_PREFS_CHANGING);
-    
     strcpy(inputprefs.ip_Keymap, "amiga_usa0");
     inputprefs.ip_PointerTicks         = 1;
     inputprefs.ip_DoubleClick.tv_secs  = 0;
@@ -503,18 +442,139 @@ BOOL DefaultPrefs(void)
     inputprefs.ip_KeyRptSpeed.tv_micro = 40000;
     inputprefs.ip_MouseAccel           = 1;
     
-    TellGUI(PAGECMD_PREFS_CHANGED);
-    
     return TRUE;
 }
 
 /*********************************************************************************************/
 
+void CopyPrefs(struct InputPrefs *s, struct InputPrefs *d)
+{
+    CopyMem(s, d, sizeof(struct InputPrefs));
+}
+
 void RestorePrefs(void)
 {
-    TellGUI(PAGECMD_PREFS_CHANGING);
-    inputprefs = restore_prefs;
-    TellGUI(PAGECMD_PREFS_CHANGED);   
+    CopyPrefs(&restore_prefs, &inputprefs);
 }
 
 /*********************************************************************************************/
+
+void update_inputdev(void)
+{
+    if (InputIO)
+    {
+        if (InputIO->tr_node.io_Device)
+        {
+            InputIO->tr_node.io_Command = IND_SETPERIOD;
+            InputIO->tr_time = inputprefs.ip_KeyRptSpeed;
+            DoIO(&InputIO->tr_node);
+
+            InputIO->tr_node.io_Command = IND_SETTHRESH;
+            InputIO->tr_time = inputprefs.ip_KeyRptDelay;
+            DoIO(&InputIO->tr_node);
+
+            inputdev_changed = TRUE;
+            
+        }
+    }
+}
+
+void try_setting_mousespeed(void)
+{
+    struct Preferences p;
+    
+    GetPrefs(&p, sizeof(p));
+    p.PointerTicks = inputprefs.ip_PointerTicks;
+    p.DoubleClick  = inputprefs.ip_DoubleClick;
+    p.KeyRptDelay  = inputprefs.ip_KeyRptDelay;
+    p.KeyRptSpeed  = inputprefs.ip_KeyRptSpeed;
+    if (inputprefs.ip_MouseAccel)
+    {
+        p.EnableCLI |= MOUSE_ACCEL;
+    }
+    else
+    {
+        p.EnableCLI &= ~MOUSE_ACCEL;
+    }
+    
+    SetPrefs(&p, sizeof(p), FALSE);
+}
+
+void try_setting_test_keymap(void)
+{
+    struct KeyMapResource *KeyMapResource;
+    struct Library        *KeymapBase;
+    struct KeyMapNode	  *kmn = NULL;
+    struct Node     	  *node;
+    BPTR    	    	   lock, seg, olddir, oldseg = 0;
+
+    if ((KeyMapResource = OpenResource("keymap.resource")))
+    {
+        Forbid();
+	
+        ForeachNode(&KeyMapResource->kr_List, node)
+        {
+            if (!stricmp(inputprefs.ip_Keymap, node->ln_Name))
+            {
+                kmn = (struct KeyMapNode *)node;
+                break;
+            }
+        }
+	
+        Permit();
+
+    }
+
+    if (!kmn)
+    {
+        lock = Lock("DEVS:Keymaps", SHARED_LOCK);
+
+        if (lock)
+        {
+            olddir = CurrentDir(lock);
+
+            if ((seg = LoadSeg(inputprefs.ip_Keymap)))
+            {
+                kmn = (struct KeyMapNode *) (((UBYTE *)BADDR(seg)) + sizeof(APTR));
+                oldseg = testkeymap_seg;
+                testkeymap_seg = seg;
+
+            }
+	    
+            CurrentDir(olddir);
+            UnLock(lock);
+        }
+    }
+
+    if (kmn)
+    {
+        KeymapBase = OpenLibrary("keymap.library", 0);
+        if (KeymapBase)
+        {
+            SetKeyMapDefault((IPTR)&kmn->kn_KeyMap);
+            CloseLibrary(KeymapBase);
+        }
+    }
+    if (oldseg) UnLoadSeg(oldseg);
+    
+}
+
+void kbd_cleanup(void)
+{
+    if (inputdev_changed)
+    {
+        InputIO->tr_node.io_Command = IND_SETPERIOD;
+        InputIO->tr_time = restore_prefs.ip_KeyRptSpeed;
+        DoIO(&InputIO->tr_node);
+	
+        InputIO->tr_node.io_Command = IND_SETTHRESH;
+        InputIO->tr_time = restore_prefs.ip_KeyRptDelay;
+        DoIO(&InputIO->tr_node);
+        inputdev_changed = FALSE;
+    }
+    
+    if (testkeymap_seg)
+    {
+        UnLoadSeg(testkeymap_seg);
+    }
+}

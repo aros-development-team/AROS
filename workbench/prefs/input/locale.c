@@ -1,49 +1,52 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <exec/types.h>
+#include <proto/locale.h>
 
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#include "global.h"
+#define CATALOG_NAME     "System/Prefs/Input.catalog"
+#define CATALOG_VERSION  0
 
-/*********************************************************************************************/
+/*** Variables **************************************************************/
+struct Catalog *catalog;
 
-void InitLocale(STRPTR catname, ULONG version)
+
+/*** Functions **************************************************************/
+/* Main *********************************************************************/
+CONST_STRPTR _(ULONG id)
 {
-#ifdef __AROS__
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
-#else
-    LocaleBase = (struct Library    *)OpenLibrary("locale.library", 39);
-#endif
-    if (LocaleBase)
+    if (LocaleBase != NULL && catalog != NULL)
     {
-	catalog = OpenCatalog(NULL, catname, OC_Version, version,
-					     TAG_DONE);
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    } 
+    else 
+    {
+	return CatCompArray[id].cca_Str;
     }
 }
 
-/*********************************************************************************************/
-
-void CleanupLocale(void)
+/* Setup ********************************************************************/
+VOID Locale_Initialize(VOID)
 {
-    if (catalog) CloseCatalog(catalog);
-    if (LocaleBase) CloseLibrary((struct Library *)LocaleBase);
-}
-
-/*********************************************************************************************/
-
-CONST_STRPTR MSG(ULONG id)
-{
-    if (catalog)
+    if (LocaleBase != NULL)
     {
-        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        catalog = OpenCatalog
+        ( 
+            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+        );
     }
     else
     {
-	    return CatCompArray[id].cca_Str;
+        catalog = NULL;
     }
 }
 
-/*********************************************************************************************/
+VOID Locale_Deinitialize(VOID)
+{
+    if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+}

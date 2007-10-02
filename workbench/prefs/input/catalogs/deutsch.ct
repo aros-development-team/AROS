@@ -1,80 +1,73 @@
-## version $VER: inputprefs.catalog 1.0 (15.10.2001)
-## codeset 0
+## version $VER: inputprefs.catalog 1.1 (25.9.2007)
 ## language deutsch
+## codeset 0
 ;
-MSG_CANT_OPEN_LIB
-Kann %s V%ld nicht öffnen!\n
 ;
-MSG_CANT_LOCK_SCR
-Kann public Screen nicht locken!
+MSG_ERROR_CANT_CREATE_APPLICATION
+Kann Application-Objekt nicht erzeugen.
+; Can't create application object.
 ;
-MSG_CANT_GET_DRI
-Kann DrawInfo nicht ermitteln!
+MSG_CANT_CREATE_REQ
+Kann Datei Requester nicht erzeugen!
+; Can't open create filerequester!
 ;
-MSG_CANT_GET_VI
-Kann VisualInfo nicht ermitteln!
+MSG_CANT_CREATE_CONTEXT
+Kann Kontext fr Gadtools nicht erzeugen!
+; Can't create context for Gadtools!
 ;
-MSG_CANT_CREATE_GADGET
-Kann Gadgets nicht erzeugen!
+MSG_CANT_OPEN_STREAM
+Kann IFF Stream nicht ï¿½fnen!
+; Can't open IFF stream!
 ;
-MSG_CANT_CREATE_MENUS
-Kann Menus nicht erzeugen!
+MSG_CANT_WRITE_PREFFILE
+Fehler beim Schreiben der Voreinstellungen!
+; Can't write preferences!
 ;
-MSG_CANT_CREATE_WIN
-Kann Fenster nicht erzeugen!
+MSG_CANT_READ_PREFFILE
+Fehler beim Lesen der Voreinstellungen!
+; Can't read preferences!
 ;
-MSG_WINTITLE
+MSG_CANT_ALLOCATE_IFFPTR
+Kann IFF Handle nicht allozieren!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Kann Anwendungs-Speicher nicht allozieren (%s)!
+; Can't allocate application memory (%s)!
+;
+MSG_NAME
 Eingabe-Voreinsteller (Input)
+; Input Preferences
 ;
-MSG_MEN_PROJECT
-Projekt
-;
-MSG_MEN_PROJECT_OPEN
-O\0Öffnen ...
-;
-MSG_MEN_PROJECT_SAVEAS
-A\0Speichern als ...
-;
-MSG_MEN_PROJECT_QUIT
-Q\0Beenden
-;
-MSG_MEN_EDIT
+MSG_MENU_PREFERENCES
 Vorgaben
+; Preferences
 ;
-MSG_MEN_EDIT_DEFAULT
-D\0Auf Vorgaben zurücksetzen
+MSG_MENU_PREFERENCES_IMPORT
+I\0Import...
+; I\0Import...
 ;
-MSG_MEN_EDIT_LASTSAVED
-L\0Auf zuletzt gespeichertes
-;
-MSG_MEN_EDIT_RESTORE
-R\0Auf vorherigen Stand
-;
-MSG_MEN_SETTINGS
-Einstellungen
-;
-MSG_MEN_SETTINGS_CREATEICONS
-I\0Piktogramme erzeugen?
+MSG_MENU_PREFERENCES_EXPORT
+E\0Export...
+; E\0Export...
 ;
 MSG_ASL_OPEN_TITLE
-Laden Eingabe-Vorgaben
+Lade Eingabe-Vorgaben
+; Load Input Preferences
 ;
 MSG_ASL_SAVE_TITLE
-Speichern Eingabe-Vorgaben
+Speichere Eingabe-Vorgaben
+; Save Input Preferences
 ;
 MSG_OK
 Ok
+; Ok
 ;
-MSG_GAD_SAVE
-Speichern
+MSG_DESCRIPTION
+Eingabe-Vorgaben
+; Input preferences
 ;
-MSG_GAD_USE
-Benutzen
-;
-MSG_GAD_CANCEL
-Abbrechen
-;
-MSG_GAD_TAB_MOUSE
+;MSG_GAD_TAB_MOUSE
 Maus
 ;
 MSG_GAD_TAB_KEYBOARD
@@ -90,7 +83,7 @@ MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
 Pause Doppelklick
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-Wiederhol-Verzögerung
+Wiederhol-Verzï¿½erung
 ;
 MSG_GAD_KEY_REPEAT_RATE
 Wiederhol-Geschwindigkeit
@@ -111,7 +104,7 @@ MSG_GAD_MOUSE_MAPPING_SELECT
 Auswahl
 ;
 MSG_GAD_MOUSE_MAPPING_MENU
-Menü
+Men
 ;
 MSG_GAD_MOUSE_MAPPING_THIRD
 Dritte
@@ -127,4 +120,13 @@ Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
 Schnell
+;
+MSG_GAD_MOUSE_LEFT
+Linke Taste
+;
+MSG_GAD_MOUSE_MIDDLE
+Mittlere Taste
+;
+MSG_GAD_MOUSE_RIGHT
+Rechte Taste
 ;
