@@ -57,14 +57,15 @@ kernel-package-x86_64:
 	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
 
-bootiso-pc-x86_64: $(OSGENDIR)/boot/aros.iso
+bootiso-pc-x86_64: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
-$(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
+$(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
+	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
-                -o $(OSGENDIR)/boot/aros.iso \
+                -o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
                 -b boot/grub/iso9660_stage1_5 \
                 -c boot/boot.catalog \
                 -no-emul-boot \
