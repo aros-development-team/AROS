@@ -16,7 +16,7 @@ KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
 #Disabled RSRC cpu
 #Disabled HIDD vmwaregfx usbuhci
 
-.PHONY: $(OSGENDIR)/boot/aros.iso
+.PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
@@ -163,20 +163,21 @@ $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 
 #MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM bootiso-pc-i386 : AROS-pc-i386
-bootiso-pc-i386: $(OSGENDIR)/boot/aros.iso
+bootiso-pc-i386: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 #MM bootiso-pc-i386-quick :
-bootiso-pc-i386-quick: $(OSGENDIR)/boot/aros.iso
+bootiso-pc-i386-quick: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 GNUCOMMON=$(AROSDIR)/Development
 GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
 
 #TODO: it depend on all files in workbench dir
-$(OSGENDIR)/boot/aros.iso: $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
+$(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso: $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
+	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
-		-o $(OSGENDIR)/boot/aros.iso \
+		-o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
 		-b boot/grub/iso9660_stage1_5 \
 		-c boot/boot.catalog \
                 -no-emul-boot \

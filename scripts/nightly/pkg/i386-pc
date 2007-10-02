@@ -5,6 +5,7 @@ source $SP/setup
 setl   i386-pc.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+BUILDTARGET=pc-i386
 
 printi "Creating AROS/i386-pc binary packages..."
 
@@ -13,9 +14,10 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=pc-i386 --enable-build-type=nightly
+execute ./configure --target=$BUILDTARGET --enable-build-type=nightly
 make
 
+ISOFILE=aros-$BUILDTARGET.iso
 PACKAGE=$BASENAME-i386-pc-boot-iso
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
@@ -33,7 +35,7 @@ fi
 cd      $BUILD_BASE/AROS
 make    bootiso
 makedir $BUILD_BASE/$PACKAGE
-copy    $BUILD_BASE/AROS/bin/pc-i386/gen/rom/boot/aros.iso $BUILD_BASE/$PACKAGE
+copy    $BUILD_BASE/AROS/distfiles/$ISOFILE $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
