@@ -1,11 +1,12 @@
 # $Id$
 
 #MM- kernel-unix : \
-#MM     graphics-$(GFXSYSTEM) kernel-x11gfx-kobj workbench-hidd-graphics    \
-#MM     intuition-$(GFXSYSTEM)                                              \
-#MM     kernel-unixio-kobj kernel-hostlib-kobj                              \
-#MM     kernel-fs-emul-kobj                                                 \
-#MM     workbench-hidd-unix-parallel-kobj                                   \
+#MM     kernel-unixio-kobj kernel-hostlib-kobj        \
+#MM     graphics-$(GFXSYSTEM) workbench-hidd-graphics \
+#MM     $(X11_HIDD_TARGET)                            \
+#MM     intuition-$(GFXSYSTEM)                        \
+#MM     kernel-fs-emul-kobj                           \
+#MM     workbench-hidd-unix-parallel-kobj             \
 #MM     workbench-hidd-unix-serial-kobj
 
 #MM- workbench-unix : workbench-hidd-unix

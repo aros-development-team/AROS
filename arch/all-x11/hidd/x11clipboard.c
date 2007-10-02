@@ -47,7 +47,7 @@
 #include "x11.h"
 #include "x11gfx_intern.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef XSD
@@ -68,7 +68,7 @@ STATIC VOID listen_for_xevent(struct x11_staticdata *xsd, long event, BOOL yesno
     XWindowAttributes xwa;
 
     LOCK_X11
-    XGetWindowAttributes(xsd->display,
+    XCALL(XGetWindowAttributes, xsd->display,
 			 xsd->dummy_window_for_creating_pixmaps,
 			 &xwa);
     if (yesno)
@@ -80,7 +80,7 @@ STATIC VOID listen_for_xevent(struct x11_staticdata *xsd, long event, BOOL yesno
     	event = xwa.your_event_mask &~ event;
     }
     
-    XSelectInput(xsd->display, xsd->dummy_window_for_creating_pixmaps, event);
+    XCALL(XSelectInput, xsd->display, xsd->dummy_window_for_creating_pixmaps, event);
     UNLOCK_X11
 }
 
@@ -140,7 +140,7 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
 	    if ((xsd->hostclipboard_readstate == HOSTCLIPBOARDSTATE_IDLE))
 	    {
 		LOCK_X11
-		XConvertSelection(xsd->display,
+		XCALL(XConvertSelection, xsd->display,
 		    	    	  xsd->clipboard_atom,
 				  XA_STRING,
 				  xsd->clipboard_property_atom,
@@ -175,7 +175,7 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
 		xsd->hostclipboard_writebuffer_size = size;
 		
 		LOCK_X11
-		XSetSelectionOwner(xsd->display, xsd->clipboard_atom,
+		XCALL(XSetSelectionOwner, xsd->display, xsd->clipboard_atom,
 		    	    	   xsd->dummy_window_for_creating_pixmaps, xsd->x_time);
 		UNLOCK_X11
 		
@@ -231,7 +231,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		unsigned char  *buffer, *arosbuffer;
 
 		LOCK_X11
-		XGetWindowProperty(xsd->display,
+		XCALL(XGetWindowProperty, xsd->display,
 				   xsd->dummy_window_for_creating_pixmaps,
 				   xsd->clipboard_property_atom,
 				   0,
@@ -243,17 +243,17 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 				   &nitems,
 				   &bytes_after,
 				   &buffer);
-		XFree(buffer);
+		XCALL(XFree, buffer);
 		UNLOCK_X11
 
 		if (actual_type == xsd->clipboard_incr_atom)
 		{
 		    LOCK_X11
 		    listen_for_xevent(xsd, PropertyChangeMask, TRUE);
-		    XDeleteProperty(xsd->display,
+		    XCALL(XDeleteProperty, xsd->display,
 				    xsd->dummy_window_for_creating_pixmaps,
 				    xsd->clipboard_property_atom);
-    	    	    XFlush(xsd->display);
+    	    	    XCALL(XFlush, xsd->display);
 		    UNLOCK_X11;
 
 		    xsd->hostclipboard_readstate = HOSTCLIPBOARDSTATE_READ_INCR;
@@ -271,7 +271,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		}
 
 		LOCK_X11
-		XGetWindowProperty(xsd->display,
+		XCALL(XGetWindowProperty, xsd->display,
 				   xsd->dummy_window_for_creating_pixmaps,
 				   xsd->clipboard_property_atom,
 				   0,
@@ -284,7 +284,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 				   &bytes_after,
 				   &buffer);
 
-		XDeleteProperty(xsd->display,
+		XCALL(XDeleteProperty, xsd->display,
 				xsd->dummy_window_for_creating_pixmaps,
 				xsd->clipboard_property_atom);
 
@@ -294,7 +294,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		    memcpy(arosbuffer, buffer, nitems);
 		    arosbuffer[nitems] = '\0';
 		}
-    		XFree(buffer);
+    		XCALL(XFree, buffer);
 		UNLOCK_X11;
 
     	    	D(bug("X11CLIPBOARD: SelectionNotify - terminating READ request with %s\n", arosbuffer ? "success" : "failure"));
@@ -321,7 +321,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
     	    	    D(bug("X11CLIPBOARD: PropertyNotify - property event okay\n"));
 
 		    LOCK_X11
-		    XGetWindowProperty(xsd->display,
+		    XCALL(XGetWindowProperty, xsd->display,
 			    	       xsd->dummy_window_for_creating_pixmaps,
 				       xsd->clipboard_property_atom,
 				       0,
@@ -333,7 +333,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 				       &nitems,
 				       &bytes_after,
 				       &buffer);
-		    XFree(buffer);
+		    XCALL(XFree, buffer);
 		    UNLOCK_X11
 
 		    if (actual_format == 8)
@@ -355,7 +355,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 			else
 			{
 			    LOCK_X11
-			    XGetWindowProperty(xsd->display,
+			    XCALL(XGetWindowProperty, xsd->display,
 			    	    	       xsd->dummy_window_for_creating_pixmaps,
 					       xsd->clipboard_property_atom,
 					       0,
@@ -426,7 +426,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 				
 			    } /* if (!xsd->hostclipboard_incrbuffer) else ... */
 
-			    XFree(buffer);
+			    XCALL(XFree, buffer);
 			    UNLOCK_X11
 
 			} /* if (bytes_after == 0) else ... */
@@ -434,10 +434,10 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		    } /* if (actual_format == 8) */
 
 		    LOCK_X11
-		    XDeleteProperty(xsd->display,
+		    XCALL(XDeleteProperty, xsd->display,
 				    xsd->dummy_window_for_creating_pixmaps,
 				    xsd->clipboard_property_atom);
-		    XFlush(xsd->display);
+		    XCALL(XFlush, xsd->display);
 		    UNLOCK_X11
 		    
 		} /* if it's right property and the property has new value */
@@ -471,7 +471,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		    long supported_targets[] = {XA_STRING};
 
 		    LOCK_X11
-		    XChangeProperty(xsd->display,
+		    XCALL(XChangeProperty, xsd->display,
 		    	    	    xsd->hostclipboard_writerequest_window,
 				    xsd->hostclipboard_writerequest_property,
 				    xsd->clipboard_targets_atom,
@@ -486,7 +486,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		{
 
 		    LOCK_X11
-		    xsd->hostclipboard_write_chunks = XMaxRequestSize(xsd->display) * 4 / 2;
+		    xsd->hostclipboard_write_chunks = XCALL(XMaxRequestSize, xsd->display) * 4 / 2;
 		    
 		    /* FIXME TODO: Use INCR protocol for large requests */
 		    if (1)// && xsd->hostclipboard_writebuffer_size <= xsd->hostclipboard_write_chunks)
@@ -495,7 +495,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 
 			//D(bug("[%s]\n", xsd->hostclipboard_writebuffer));
 
-			XChangeProperty(xsd->display,
+			XCALL(XChangeProperty, xsd->display,
 		    	    		xsd->hostclipboard_writerequest_window,
 					xsd->hostclipboard_writerequest_property,
 					XA_STRING,
@@ -520,12 +520,12 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
     	    	D(bug("X11CLIPBOARD: SelectionRequest Event - sending SelectionNotify event to clipboard requestor\n"));
 					
 		LOCK_X11
-		XSendEvent(xsd->display,
+		XCALL(XSendEvent, xsd->display,
 		    	   xsd->hostclipboard_writerequest_window,
 			   False,
 			   NoEventMask,
 			   &e);
-		XFlush(xsd->display);
+		XCALL(XFlush, xsd->display);
 		UNLOCK_X11
 	    }
 	    break;

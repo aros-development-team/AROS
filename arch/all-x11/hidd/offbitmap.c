@@ -74,7 +74,6 @@ static struct OOP_ABDescr attrbases[] =
 /* !!! Include methods whose implementation is eqaul for windows and pixmaps
  (except the DRAWABLE) */
 
-
 #include "bitmap_common.c"
 
 /****************************************************************************************/
@@ -153,8 +152,8 @@ OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     D(bug("Creating X Pixmap, %p, %d, %d, %d\n", friend_drawable, width, height, depth));
 	
     LOCK_X11	
-    d = XCreatePixmap( display, friend_drawable, width, height, depth);	
-    XFlush(display);
+    d = XCALL(XCreatePixmap,  display, friend_drawable, width, height, depth);	
+    XCALL(XFlush, display);
     UNLOCK_X11
 
     if (0 == d)
@@ -191,7 +190,7 @@ OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	gcval.graphics_exposures = False;
 	 
     	LOCK_X11	    
-	data->gc = XCreateGC( data->display, DRAWABLE(data),
+	data->gc = XCALL(XCreateGC,  data->display, DRAWABLE(data),
 	    	    	      GCPlaneMask | GCGraphicsExposures, &gcval);
 
     	UNLOCK_X11
@@ -199,7 +198,7 @@ OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	if (data->gc)
 	{
     	    LOCK_X11	    
-	    XFlush(data->display);
+	    XCALL(XFlush, data->display);
     	    UNLOCK_X11
 	}
 	else
@@ -224,8 +223,8 @@ OOP_Object *X11OffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 dispose_pixmap:    
     LOCK_X11
-    XFreePixmap(display, d);
-    XFlush(display);
+    XCALL(XFreePixmap, display, d);
+    XCALL(XFlush, display);
     UNLOCK_X11
     
     ReturnPtr("X11Gfx.OffBitMap::New()", OOP_Object *, NULL);
@@ -243,15 +242,15 @@ VOID X11OffBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (data->gc)
     {
     	LOCK_X11
-    	XFreeGC(data->display, data->gc);
+    	XCALL(XFreeGC, data->display, data->gc);
     	UNLOCK_X11	
     }
     
     if (DRAWABLE(data))
     {
     	LOCK_X11	
-    	XFreePixmap( GetSysDisplay(), DRAWABLE(data));
-	XFlush( GetSysDisplay() );
+    	XCALL(XFreePixmap,  GetSysDisplay(), DRAWABLE(data));
+	XCALL(XFlush,  GetSysDisplay() );
     	UNLOCK_X11	
     }
     
@@ -273,10 +272,10 @@ VOID X11OffBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
     
     LOCK_X11 
-    XSetForeground(data->display, data->gc, GC_BG(msg->gc));
-    XFillRectangle(data->display, DRAWABLE(data), data->gc,
+    XCALL(XSetForeground, data->display, data->gc, GC_BG(msg->gc));
+    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
     	    	   0 , 0, width, height);    
-    XFlush(data->display);
+    XCALL(XFlush, data->display);
     UNLOCK_X11
     
 }

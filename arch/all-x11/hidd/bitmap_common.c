@@ -42,7 +42,7 @@
 #define SWAP32(x) AROS_LONG2BE(x)
 #endif
 
-#define XFLUSH(x) XFlush(x)
+#define XFLUSH(x) XCALL(XFlush, x)
 //#define XFLUSH(x)
 
 /****************************************************************************************/
@@ -146,7 +146,7 @@ BOOL MNAME(Hidd_BitMap__SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	    xcol.pixel = xc_i;
 	    xcol.flags = DoRed | DoGreen | DoBlue;
 	    
-	    XStoreColor(data->display, data->colmap, &xcol);
+	    XCALL(XStoreColor, data->display, data->colmap, &xcol);
 
 	}
 	
@@ -166,8 +166,8 @@ VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
      
     LOCK_X11
      
-    XSetForeground(data->display, data->gc, msg->pixel);
-    XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
+    XCALL(XSetForeground, data->display, data->gc, msg->pixel);
+    XCALL(XDrawPoint, data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
     XFLUSH(data->display);
 
     UNLOCK_X11
@@ -183,9 +183,9 @@ HIDDT_Pixel MNAME(Hidd_BitMap__GetPixel)(OOP_Class *cl, OOP_Object *o, struct pH
 
     LOCK_X11
     
-    XSync(data->display, False);
+    XCALL(XSync, data->display, False);
     
-    image = XGetImage(data->display, DRAWABLE(data), msg->x, msg->y,
+    image = XCALL(XGetImage, data->display, DRAWABLE(data), msg->x, msg->y,
     	    	      1, 1, AllPlanes, ZPixmap);
     
     if (image)
@@ -212,8 +212,8 @@ ULONG MNAME(Hidd_BitMap__DrawPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     gcval.background = GC_BG(msg->gc);
 
     LOCK_X11
-    XChangeGC(data->display, data->gc, GCFunction | GCForeground | GCBackground, &gcval);    
-    XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
+    XCALL(XChangeGC, data->display, data->gc, GCFunction | GCForeground | GCBackground, &gcval);    
+    XCALL(XDrawPoint, data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
     XFLUSH(data->display); /* stegerg: uncommented */
     UNLOCK_X11    
     
@@ -237,9 +237,9 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     gcval.background = GC_BG(msg->gc);
 
     LOCK_X11
-    XChangeGC(data->display, data->gc, GCFunction | GCForeground | GCBackground, &gcval);
+    XCALL(XChangeGC, data->display, data->gc, GCFunction | GCForeground | GCBackground, &gcval);
     
-    XFillRectangle(data->display, DRAWABLE(data), data->gc,
+    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
     	    	   msg->minX, msg->minY,
 		   msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1);
 
@@ -601,7 +601,7 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     OOP_GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
     LOCK_X11
-    image = XGetImage(data->display, DRAWABLE(data), x, y,
+    image = XCALL(XGetImage, data->display, DRAWABLE(data), x, y,
     	    	      width, height, AllPlanes, ZPixmap);
     UNLOCK_X11
     	
@@ -614,7 +614,7 @@ static void getimage_xlib(OOP_Class *cl, OOP_Object *o, LONG x, LONG y,
     	SwapImageEndianess(image);
 	
     	LOCK_X11
-        XInitImage(image);
+        XCALL(XInitImage, image);
     	UNLOCK_X11
     }    
 #endif
@@ -1011,7 +1011,7 @@ static void putimage_xshm(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
 	    	    	    	lines_to_copy, depth, toimage_data);
 	
     	LOCK_X11	
-	XSetFunction(data->display, data->gc, GC_DRMD(gc));
+	XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
 
 	put_xshm_ximage(data->display,
 	    	    	DRAWABLE(data),
@@ -1062,7 +1062,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     OOP_GetAttr(pf, aHidd_PixFmt_Depth,  &depth);
 
     LOCK_X11	
-    image = XCreateImage(data->display,
+    image = XCALL(XCreateImage, data->display,
     	    	    	 DefaultVisual(data->display, data->screen),
 			 depth,
 			 ZPixmap,
@@ -1083,7 +1083,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     	image->byte_order = AROS_BYTEORDER;
 	
     	LOCK_X11
-	XInitImage(image);
+	XCALL(XInitImage, image);
     	UNLOCK_X11
     }
 #endif
@@ -1099,7 +1099,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     if (!image->data)
     {
     	LOCK_X11	
-	XFree(image);
+	XCALL(XFree, image);
     	UNLOCK_X11
 		    
     	ReturnVoid("X11Gfx.BitMap::PutImage(malloc(image data) failed)");
@@ -1108,8 +1108,8 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
     toimage_func(cl, o, pixarray, image, width, height, depth, toimage_data);
 	
     LOCK_X11
-    XSetFunction(data->display, data->gc, GC_DRMD(gc));
-    XPutImage(data->display, DRAWABLE(data), data->gc, image,
+    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
+    XCALL(XPutImage, data->display, DRAWABLE(data), data->gc, image,
     	      0, 0, x, y, width, height);
     XFLUSH(data->display);
     UNLOCK_X11 
@@ -1121,7 +1121,7 @@ static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc,
 #endif
     
     LOCK_X11    
-    XFree(image);
+    XCALL(XFree, image);
     UNLOCK_X11   
 
 }
@@ -1216,14 +1216,14 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
     {
     	LOCK_X11    
 
-	XSetForeground(data->display, data->gc, fg);
+	XCALL(XSetForeground, data->display, data->gc, fg);
 		
     	if (cemd & vHidd_GC_ColExp_Opaque)  
 	{
-	    XSetBackground(data->display, data->gc, bg);
-	    XSetFunction(data->display, data->gc, GXcopy);
+	    XCALL(XSetBackground, data->display, data->gc, bg);
+	    XCALL(XSetFunction, data->display, data->gc, GXcopy);
 	    
-	    XCopyPlane(data->display, d, DRAWABLE(data), data->gc,
+	    XCALL(XCopyPlane, data->display, d, DRAWABLE(data), data->gc,
 	    	       msg->srcX, msg->srcY, msg->width, msg->height,
 		       msg->destX, msg->destY, 0x01);
 	}
@@ -1238,16 +1238,16 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
 	    val.ts_y_origin	= msg->destY - msg->srcY;
 	    val.fill_style	= FillStippled;
 
-	    XSetFunction(data->display, data->gc, GC_DRMD(msg->gc));
+	    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(msg->gc));
 	    
-	    XChangeGC(data->display, data->gc,
+	    XCALL(XChangeGC, data->display, data->gc,
 	    	      GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle,
 		      &val);
 		      
-	    XFillRectangle(data->display, DRAWABLE(data), data->gc,
+	    XCALL(XFillRectangle, data->display, DRAWABLE(data), data->gc,
 	    	    	   msg->destX, msg->destY, msg->width, msg->height);
 	    
-	    XSetFillStyle(data->display, data->gc, FillSolid);
+	    XCALL(XSetFillStyle, data->display, data->gc, FillSolid);
 
 	}
 	
@@ -1261,7 +1261,7 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
 	*/
 
     	LOCK_X11    
-	dest_im = XGetImage(data->display, DRAWABLE(data),
+	dest_im = XCALL(XGetImage, data->display, DRAWABLE(data),
 	    	    	    msg->destX, msg->destY, msg->width, msg->height,
 			    AllPlanes, ZPixmap);    	
     	UNLOCK_X11   
@@ -1299,8 +1299,8 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
 	/* Put image back into display */
 
     	LOCK_X11    
-	XSetFunction(data->display, data->gc, GC_DRMD(msg->gc));
-	XPutImage(data->display, DRAWABLE(data), data->gc, dest_im,
+	XCALL(XSetFunction, data->display, data->gc, GC_DRMD(msg->gc));
+	XCALL(XPutImage, data->display, DRAWABLE(data), data->gc, dest_im,
 	    	  0, 0, msg->destX, msg->destY, msg->width, msg->height);
     	XDestroyImage(dest_im);
     	UNLOCK_X11
@@ -1375,19 +1375,19 @@ VOID MNAME(Hidd_BitMap__DrawLine)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 	cr.width  = GC_CLIPX2(gc) - cr.x + 1;
 	cr.height = GC_CLIPY2(gc) - cr.y + 1;
     
-    	XSetClipRectangles(data->display, data->gc,
+    	XCALL(XSetClipRectangles, data->display, data->gc,
 	    	    	   0, 0, &cr, 1, Unsorted);
     }
     
-    XSetForeground(data->display, data->gc, GC_FG(gc));
-    XSetFunction(data->display, data->gc, GC_DRMD(gc));
+    XCALL(XSetForeground, data->display, data->gc, GC_FG(gc));
+    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
     
-    XDrawLine(data->display, DRAWABLE(data), data->gc,
+    XCALL(XDrawLine, data->display, DRAWABLE(data), data->gc,
     	      msg->x1, msg->y1, msg->x2, msg->y2);
 	
     if (GC_DOCLIP(gc))
     {
-    	XSetClipMask(data->display, data->gc, None);
+    	XCALL(XSetClipMask, data->display, data->gc, None);
     }	
     
     XFLUSH(data->display);
@@ -1417,25 +1417,25 @@ VOID MNAME(Hidd_BitMap__DrawEllipse)(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	cr.width  = GC_CLIPX2(gc) - cr.x + 1;
 	cr.height = GC_CLIPY2(gc) - cr.y + 1;
     
-    	XSetClipRectangles(data->display, data->gc,
+    	XCALL(XSetClipRectangles, data->display, data->gc,
 	    	    	   0, 0, &cr, 1, Unsorted);
     }
     
-    XSetForeground(data->display, data->gc, GC_FG(gc));
-    XSetFunction(data->display, data->gc, GC_DRMD(gc));
+    XCALL(XSetForeground, data->display, data->gc, GC_FG(gc));
+    XCALL(XSetFunction, data->display, data->gc, GC_DRMD(gc));
     
     /* kprintf("X11::Drawllipse: coord %d %d %d %d\n"
 	    	, msg->x, msg->y, msg->rx, msg->ry);
    
     */	
     
-    XDrawArc(data->display, DRAWABLE(data), data->gc,
+    XCALL(XDrawArc, data->display, DRAWABLE(data), data->gc,
     	     msg->x - msg->rx, msg->y - msg->ry,
 	     msg->rx * 2, msg->ry * 2, 0, 360 * 64);
 	
     if (GC_DOCLIP(gc))
     {
-    	XSetClipMask(data->display, data->gc, None);
+    	XCALL(XSetClipMask, data->display, data->gc, None);
     }	
     
     XFLUSH(data->display);

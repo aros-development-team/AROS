@@ -45,7 +45,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define XFLUSH(x) XFlush(x)
+#define XFLUSH(x) XCALL(XFlush, x)
 //#define XFLUSH(x)
 
 /****************************************************************************************/
@@ -228,7 +228,6 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ TAG_MORE  	    	, (IPTR)msg->attrList 	}
     };
     struct pRoot_New mymsg = { msg->mID, mytags };
-    struct x11_staticdata *xsd = NULL;
 
     EnterFunc(bug("X11Gfx::New()\n"));
 
@@ -263,7 +262,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     else
     {
 	kprintf("!!! UNHANDLED COLOR MODEL IN X11Gfx:New(): %d !!!\n", XSD(cl)->vi.class);
-	cleanupx11stuff(xsd);
+	cleanupx11stuff(XSD(cl));
 	ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
     }
 	    
@@ -289,7 +288,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	data->depth	= DisplayPlanes( data->display, data->screen );
 	data->colmap	= DefaultColormap( data->display, data->screen );
 	/* Create cursor */
-        data->cursor = XCreateFontCursor( data->display, XC_top_left_arrow);
+        data->cursor = XCALL(XCreateFontCursor,  data->display, XC_top_left_arrow);
 
 	fg.pixel = BlackPixel(data->display, data->screen);
 	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
@@ -298,7 +297,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
 	bg.flags = (DoRed | DoGreen | DoBlue);
 
-	XRecolorCursor(data->display, data->cursor, &fg, &bg);
+	XCALL(XRecolorCursor, data->display, data->cursor, &fg, &bg);
 	
 	switch(DoesBackingStore(ScreenOfDisplay(data->display, data->screen)))
 	{
@@ -642,9 +641,9 @@ VOID X11Cl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     */
     bmdata = OOP_INST_DATA(XSD(cl)->onbmclass, msg->src);
 
-    XSetFunction(data->display, bmdata->gc, mode);
+    XCALL(XSetFunction, data->display, bmdata->gc, mode);
     
-    XCopyArea(data->display
+    XCALL(XCopyArea, data->display
     	, src			/* src	*/
 	, dest			/* dest */
 	, bmdata->gc
@@ -728,21 +727,21 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     LOCK_X11	
 
     /* Get some info on the display */
-    template.visualid = XVisualIDFromVisual(DefaultVisual(xsd->display, DefaultScreen(xsd->display)));
+    template.visualid = XCALL(XVisualIDFromVisual, DefaultVisual(xsd->display, DefaultScreen(xsd->display)));
     template_mask = VisualIDMask;
 
-    visinfo = XGetVisualInfo(xsd->display, template_mask, &template, &numvisuals);
+    visinfo = XCALL(XGetVisualInfo, xsd->display, template_mask, &template, &numvisuals);
 
     if (numvisuals > 1)
     {
     	    kprintf("!!! GOT MORE THAN ONE VISUAL FROM X !!!\n");
-//    	    kill(getpid(), SIGSTOP);
+//    	    CCALL(raise, SIGSTOP);
     }
 
     if (NULL == visinfo)
     {
     	    kprintf("!!! COULD NOT GET X VISUAL INFO !!!\n");
-    	    kill(getpid(), SIGSTOP);
+    	    CCALL(raise, SIGSTOP);
     	    
     	    ok = FALSE;
     }
@@ -752,7 +751,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
 	memcpy(&xsd->vi, visinfo, sizeof (XVisualInfo));
 	
-	XFree(visinfo);
+	XCALL(XFree, visinfo);
 	
 	visinfo = &xsd->vi;
 	
@@ -780,7 +779,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 		
 	    default:
 	    	kprintf("!!! GFX HIDD only supports truecolor and pseudocolor diplays for now !!!\n");
-	    	kill(getpid(), SIGSTOP);
+	    	CCALL(raise, SIGSTOP);
 	}
 
 	xsd->depth = 0;
@@ -790,12 +789,12 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 	{
 	    XWindowAttributes win_attributes;
 
-    	    if (!XGetWindowAttributes(xsd->display,
+    	    if (!XCALL(XGetWindowAttributes, xsd->display,
 	    	    	    	      RootWindow(xsd->display, DefaultScreen(xsd->display)),
 				      &win_attributes))
     	    {
 	    	kprintf("!!! X11gfx could not get bits per pixel\n");
-	    	kill(getpid(), SIGSTOP);
+	    	CCALL(raise, SIGSTOP);
 	    }
 	    xsd->depth = win_attributes.depth;
 	    kprintf("\n");
@@ -806,7 +805,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
  	}
 
 	/* Create a dummy X image to get bits per pixel */
-	testimage = XGetImage(xsd->display, RootWindow(xsd->display,
+	testimage = XCALL(XGetImage, xsd->display, RootWindow(xsd->display,
 	    	    	      DefaultScreen(xsd->display)), 0, 0, 1, 1,
 			      AllPlanes, ZPixmap);
 	
@@ -818,7 +817,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 	else
 	{
 	    kprintf("!!! X11gfx could not get bits per pixel\n");
-	    kill(getpid(), SIGSTOP);
+	    CCALL(raise, SIGSTOP);
 	}
 	
 	if (PseudoColor == xsd->vi.class)
@@ -830,7 +829,7 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
 
     /* Create a dummy window for pixmaps */
 
-    xsd->dummy_window_for_creating_pixmaps = XCreateSimpleWindow(xsd->display,
+    xsd->dummy_window_for_creating_pixmaps = XCALL(XCreateSimpleWindow, xsd->display,
     	    	    	    	    	    	    	    	 DefaultRootWindow(xsd->display),
 								 0, 0, 100, 100,
 								 0,
@@ -842,23 +841,19 @@ static BOOL initx11stuff(struct x11_staticdata *xsd)
     }
 
 #if USE_XSHM    	    
-    if (xsd->local_display)
-    {
-	/* Do we have Xshm support ? */
-	xsd->xshm_info = init_shared_mem(xsd->display);
+    /* Do we have Xshm support ? */
+    xsd->xshm_info = init_shared_mem(xsd->display);
 	
-	if (NULL == xsd->xshm_info)
-	{
-    	    /* ok = FALSE; */
-    	    kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
-	}
-	else
-	{
-
-    	    InitSemaphore(&xsd->shm_sema);
-    	    xsd->use_xshm = TRUE;
-	}    	
+    if (NULL == xsd->xshm_info)
+    {
+        /* ok = FALSE; */
+        kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
     }
+    else
+    {
+        InitSemaphore(&xsd->shm_sema);
+        xsd->use_xshm = TRUE;
+    }    	
 #endif
 
 
@@ -877,7 +872,7 @@ static VOID cleanupx11stuff(struct x11_staticdata *xsd)
     /* Do nothing for now */
     if (0 != xsd->dummy_window_for_creating_pixmaps)
     {
-    	XDestroyWindow(xsd->display, xsd->dummy_window_for_creating_pixmaps);
+    	XCALL(XDestroyWindow, xsd->display, xsd->dummy_window_for_creating_pixmaps);
     }
     
 #if USE_XSHM

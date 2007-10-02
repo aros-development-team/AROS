@@ -14,12 +14,12 @@ USER_CFLAGS := -D__AROS__
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
-FILES	   := x11_init x11 support x11gfx onbitmap offbitmap x11kbd x11mouse x11clipboard xshm fullscreen
+FILES	   := x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap x11kbd x11mouse x11clipboard xshm fullscreen
 
 %build_module mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd \
   files=$(FILES) compiler=host \
-  uselibs=oop
+  uselibs="oop hiddgraphicsstubs"
 
 #MM- kernel-x11gfx-kobj: default-x11keymaptable
 

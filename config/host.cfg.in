@@ -52,6 +52,8 @@ GUI_LIBFLAGS	:= @aros_gui_libflags@
 GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CFLAGS	:= @aros_gui_ccflags@
 
+X11_HIDD_TARGET := @x11_hidd_target@
+
 # DBUS flags
 ENABLE_DBUS		:= @ENABLE_DBUS@
 DBUS_CFLAGS		:= @DBUS_CFLAGS@

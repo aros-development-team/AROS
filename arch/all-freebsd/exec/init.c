@@ -46,7 +46,6 @@ extern const struct Resident
     Keymap_ROMTag,
     Input_ROMTag,
     Intuition_ROMTag,
-    X11Cl_ROMTag,
     Cybergraphics_ROMTag,
     Console_ROMTag,
     Mathffp_ROMTag,
