@@ -174,7 +174,6 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *m
 
     /* Prefs overrides default, but application overrides Prefs */
     ReadPrefs(pd);
-
     while((ti=NextTagItem(&attrs)))
     {
         switch (ti->ti_Tag)
@@ -1085,11 +1084,11 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
 
     /* Copy picture data */
     {
-        long line, lines;
+        LONG line, lines;
         STRPTR srcstart;
         STRPTR deststart;
-        long srcwidth, numbytes;
-        long srcmod, destmod;
+        ULONG srcwidth, numbytes;
+        ULONG srcmod, destmod;
 
         /* Now copy the new source data to the ChunkyBuffer line by line */
         pixelbytes = pd->SrcPixelBytes;
@@ -1100,7 +1099,6 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
         deststart = pd->SrcBuffer + msg->pbpa_Left * pixelbytes + msg->pbpa_Top * destmod;
         lines = msg->pbpa_Height;
         numbytes = srcwidth * pixelbytes;
-
 	/* simply copy data */
 	for( line=0; line<lines; line++ )
 	{
