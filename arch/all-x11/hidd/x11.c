@@ -110,7 +110,7 @@ static int unixio_callback(int displayfd, struct x11_staticdata *xsd)
     int pending;
     
     LOCK_X11    
-    pending = XPending(xsd->display);
+    pending = XCALL(XPending, xsd->display);
     UNLOCK_X11
 
     return pending;
@@ -285,7 +285,7 @@ D(bug("Got input from unixio\n"));
 #endif
     	if (sigs & quitsig)
 	{
-    	    raise(SIGINT);
+    	    CCALL(raise, SIGINT);
 	}
 
 	if (sigs & xtp.kill_signal)
@@ -317,7 +317,7 @@ D(bug("Got input from unixio\n"));
 			else
 			{
 		    	    kprintf("!!!! CANNOT GET MEMORY FOR X11 WIN NODE\n");
-		    	    kill(getpid(), 19);
+		    	    CCALL(raise, 19);
 			}
 
 			ReplyMsg((struct Message *)nmsg);
@@ -326,9 +326,9 @@ D(bug("Got input from unixio\n"));
 		
 		    case NOTY_MAPWINDOW:
     	    		LOCK_X11		
-	        	XMapWindow (nmsg->xdisplay, nmsg->xwindow);
+	        	XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
     	    	    #if ADJUST_XWIN_SIZE
-			XMapRaised (nmsg->xdisplay, nmsg->masterxwindow);
+			XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
     	    	    #endif
     	    		UNLOCK_X11
 
@@ -351,12 +351,12 @@ D(bug("Got input from unixio\n"));
 			{
 			    x11_fullscreen_switchmode(nmsg->xdisplay, &xwc.width, &xwc.height);   
 			}	
-			XConfigureWindow(nmsg->xdisplay
+			XCALL(XConfigureWindow, nmsg->xdisplay
 		    	    , nmsg->masterxwindow
 		    	    , CWWidth | CWHeight
 			    , &xwc
 			);
-			XFlush(nmsg->xdisplay);
+			XCALL(XFlush, nmsg->xdisplay);
     	    		UNLOCK_X11
 			
     	    	    #if DELAY_XWIN_MAPPING	
@@ -367,17 +367,17 @@ D(bug("Got input from unixio\n"));
 				if (!node->window_mapped)
 				{
 		    		    LOCK_X11
-				    XMapWindow(nmsg->xdisplay, nmsg->xwindow);
+				    XCALL(XMapWindow, nmsg->xdisplay, nmsg->xwindow);
 	    			#if ADJUST_XWIN_SIZE
-		    		    XMapRaised(nmsg->xdisplay, nmsg->masterxwindow);
+		    		    XCALL(XMapRaised, nmsg->xdisplay, nmsg->masterxwindow);
 				#endif
 				    if (xsd->fullscreen)
 				    {
-    	    	    	    	    	XGrabKeyboard(nmsg->xdisplay,nmsg->xwindow,False,GrabModeAsync,GrabModeAsync,CurrentTime);
-    	    	    	    	    	XGrabPointer (nmsg->xdisplay,nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
+    	    	    	    	    	XCALL(XGrabKeyboard, nmsg->xdisplay,nmsg->xwindow,False,GrabModeAsync,GrabModeAsync,CurrentTime);
+    	    	    	    	    	XCALL(XGrabPointer, nmsg->xdisplay,nmsg->xwindow, 1, PointerMotionMask | ButtonPressMask | ButtonReleaseMask,
 		    	    	    	    	      GrabModeAsync, GrabModeAsync, nmsg->xwindow, None, CurrentTime);
 				    }
-				    XFlush(nmsg->xdisplay);		
+				    XCALL(XFlush, nmsg->xdisplay);		
 				    UNLOCK_X11
 
     	    	    	    	    nmsg->notify_type = NOTY_MAPWINDOW;
@@ -436,9 +436,9 @@ D(bug("Got input from unixio\n"));
 	    BOOL    	     window_found = FALSE;
 
     	    LOCK_X11
-	    XFlush(xsd->display);
-	    XSync(xsd->display, FALSE);
-	    pending = XEventsQueued(xsd->display, QueuedAlready);
+	    XCALL(XFlush, xsd->display);
+	    XCALL(XSync, xsd->display, FALSE);
+	    pending = XCALL(XEventsQueued, xsd->display, QueuedAlready);
     	    UNLOCK_X11
 	    
 	    if (pending == 0)
@@ -446,7 +446,7 @@ D(bug("Got input from unixio\n"));
 	    #if BETTER_REPEAT_HANDLING
 	    	if (keyrelease_pending)
 		{
-		    if (XLookupKeysym((XKeyEvent *)&keyrelease_event, 0) == XK_F12)
+		    if (XCALL(XLookupKeysym, (XKeyEvent *)&keyrelease_event, 0) == XK_F12)
 		    {
 			f12_down = FALSE;
 		    }
@@ -466,7 +466,7 @@ D(bug("Got input from unixio\n"));
 	    }
 	    
     	    LOCK_X11
-	    XNextEvent(xsd->display, &event);
+	    XCALL(XNextEvent, xsd->display, &event);
     	    UNLOCK_X11
 
 	    D(bug("Got Event for X=%d\n", event.xany.window));
@@ -497,7 +497,7 @@ D(bug("Got input from unixio\n"));
 		}
 		
 		LOCK_X11
-		if (XLookupKeysym((XKeyEvent *)&keyrelease_event, 0) == XK_F12)
+		if (XCALL(XLookupKeysym, (XKeyEvent *)&keyrelease_event, 0) == XK_F12)
 		{
 		    f12_down = FALSE;
 		}
@@ -515,7 +515,7 @@ D(bug("Got input from unixio\n"));
 	    if (event.type == MappingNotify)
 	    {
     	    	LOCK_X11
-		XRefreshKeyboardMapping ((XMappingEvent*)&event);
+		XCALL(XRefreshKeyboardMapping, (XMappingEvent*)&event);
     	    	UNLOCK_X11
 
 		continue;
@@ -528,7 +528,7 @@ D(bug("Got input from unixio\n"));
 	    if ((event.type == ClientMessage) &&
 	        (event.xclient.data.l[0] == xsd->delete_win_atom))
 	    {
-		kill(getpid(), SIGINT);
+		CCALL(raise, SIGINT);
 	    }
     	#endif	    
 
@@ -621,7 +621,7 @@ D(bug("Got input from unixio\n"));
 		    case FocusOut:
 		    #if !BETTER_REPEAT_HANDLING
     	    	    	LOCK_X11
-			XAutoRepeatOn(xsd->display);
+			XCALL(XAutoRepeatOn, xsd->display);
     	    	    	UNLOCK_X11
 		    #endif
 		    
@@ -653,16 +653,16 @@ D(bug("Got input from unixio\n"));
 			
     	    	    	LOCK_X11
 		    #if !BETTER_REPEAT_HANDLING
-    			XAutoRepeatOff(XSD(cl)->display);
+    			XCALL(XAutoRepeatOff, XSD(cl)->display);
 		    #endif		    
-		    	ks = XLookupKeysym ((XKeyEvent *)&event, 0);
+		    	ks = XCALL(XLookupKeysym, (XKeyEvent *)&event, 0);
 			if (ks == XK_F12)
 			{
 			    f12_down = TRUE;
 			}
 			else if (f12_down && ((ks == XK_Q) || (ks == XK_q)))
 			{
-			    raise(SIGINT);
+			    CCALL(raise, SIGINT);
 			}
     	    	    	UNLOCK_X11	
 
@@ -683,11 +683,11 @@ D(bug("Got input from unixio\n"));
 			keyrelease_event = event;
 		    #else		    
     	    	    	LOCK_X11
-		    	if (XLookupKeysym (&event, 0) == XK_F12)
+		    	if (XCALL(XLookupKeysym, &event, 0) == XK_F12)
 			{
 			    f12_down = FALSE;
 			}
-			XAutoRepeatOn(XSD(cl)->display);
+			XCALL(XAutoRepeatOn, XSD(cl)->display);
     	    	    	UNLOCK_X11
 
 	    		ObtainSemaphoreShared( &xsd->sema );
@@ -747,7 +747,7 @@ D(bug("Got input from unixio\n"));
          	    case ClientMessage:
             		if (event.xclient.data.l[0] == xsd->delete_win_atom)
 			{
-		            raise(SIGINT);
+		            CCALL(raise, SIGINT);
 			}
 			break;
     	    	#endif

@@ -141,11 +141,6 @@ case "$host_os" in
 		aros_host_cpu="$host_cpu"
 		;;
 	esac
-
-        dnl bring in dlopen() and friends. doing this directly sucks, but
-        dnl it always exists on linux and its not clear to me where the
-        dnl appropriate place for a test would be. this file is a mess.
-        aros_host_ldflags="$aros_host_ldflags -ldl"
         ;;
 
     freebsd*)
@@ -369,9 +364,6 @@ AC_CHECK_FUNCS([getpagesize kqueue statfs statvfs \
 
 AC_FUNC_MMAP
 
-# Find X
-AC_PATH_X
-
 
 dnl --------------------------------------------------------------------
 dnl Target Configuration Section
@@ -413,9 +405,8 @@ aros_nesting_supervisor="0"
 # Collect-aros stuff: "-ius" to ignore undefined symbols
 ignore_undefined_symbols=""
 
-# X11 Xshm
-DO_XSHM_SUPPORT="1"
-DO_VIDMODE_SUPPORT="1"
+GUI_FLAVOUR_X11="0"
+GUI_FLAVOUR_LINUX="0"
 
 #-----------------------------------------------------------------------------
 
@@ -995,45 +986,6 @@ aros_target_nm="${prefix}-nm $aros_target_nm_flags"
 aros_kernel_nm="${prefix}-nm"
 aros_target_strip=${prefix}-strip
 
-#-----------------------------------------------------------------------------
-# See if we can compile SHM support
-HAVE_XSHM_SUPPORT=0
-if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
-  AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
-  if test -z "$x_includes" ; then
-    CFLAGS=""
-  else
-    CFLAGS="-I $x_includes"
-  fi
-  LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
-  AC_TRY_LINK([
-#include <sys/types.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/cursorfont.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <X11/extensions/XShm.h>],[
-static XShmSegmentInfo shminfo;
-static Display *display;
-XShmAttach(display, &shminfo);
-XSync(display,0);
-shmctl(shminfo.shmid, IPC_RMID, 0);
-],
-HAVE_XSHM_SUPPORT=1
-AC_MSG_RESULT(yes),
-HAVE_XSHM_SUPPORT=0
-AC_MSG_RESULT(no))
-fi
-
-#-----------------------------------------------------------------------------
-# See if we can compile VIDMODE support
-HAVE_VIDMODE_SUPPORT=0
-if [[ "x$no_x" != "xyes" ]]; then
-  LIBS=""
-  AC_CHECK_LIB(Xxf86vm, XF86VidModeQueryExtension, HAVE_VIDMODE_SUPPORT=1, HAVE_VIDMODE_SUPPORT=0, [ -L/usr/X11R6/lib -lXext -lX11 ])
-fi
 
 
 # Find the system include path. We can suggest that an alternative is
@@ -1140,29 +1092,135 @@ fi
 AC_MSG_RESULT($nesting_supervisor)
 
 
+dnl things specifically required for hosted flavours
+if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
 
-if test "$HAVE_XSHM_SUPPORT" = "1" ; then
-  dnl See if the user wants the X11 MIT-SHM extension to be enabled
-  AC_MSG_CHECKING([if X11 MIT-SHM extension is enabled])
-  AC_ARG_ENABLE(xshm_extension,AC_HELP_STRING([--enable-xshm-extension],[Enable X11 MIT-SHM extension (default=yes)]),xshm_extension="$enableval",xshm_extension="yes")
-  if test "$xshm_extension" = "no" ; then
-      DO_XSHM_SUPPORT="0"
-  fi
-  AC_MSG_RESULT($xshm_extension)
-else
-  DO_XSHM_SUPPORT="0"
-fi
+    dnl some kind of dynamic library access system is required for hostlib.resource
+    AC_CHECK_FUNC(dlopen, have_dl="yes", have_dl="no")
+    if test "x-$have_dl" = "x-no" ; then
+        AC_CHECK_LIB(dl, dlopen, [have_dl="yes"
+                                  aros_host_ldflags="$aros_host_ldflags -ldl"],
+                                 have_dl="no")
+    fi
+    if test "x-$have_dl" = "x-no" ; then
+         AC_MSG_ERROR([dlopen() dynamic linker functions not available])
+    fi
 
-if test "$HAVE_VIDMODE_SUPPORT" = "1" ; then
-  dnl See if the user wants the X11 vidmode extension to be enabled
-  AC_MSG_CHECKING([if vidmode extension is enabled])
-  AC_ARG_ENABLE(vidmodeextension,AC_HELP_STRING([--enable-vidmode-extension],[Enable X11 vidmode extension (default=yes)]),vidmode_extension="$enableval",vidmode_extension="yes")
-  if test "$vidmode_extension" = "no" ; then
-      DO_VIDMODE_SUPPORT="0"
-  fi
-  AC_MSG_RESULT($vidmode_extension)
-else
-  DO_VIDMODE_SUPPORT="0"
+    dnl x11 hidd
+    AC_ARG_ENABLE(x11_hidd, AC_HELP_STRING([--enable-x11-hidd],
+                                           [build X11 hidd for hosted (default=auto)]),
+                                           x11_hidd="$enableval",
+                                           x11_hidd="auto")
+    case "x-$x11_hidd" in
+        x-yes|x-no|x-auto)                 ;;
+        *)                 x11_hidd="auto" ;;
+    esac
+
+    dnl they want it
+    if test "x-$x11_hidd" != "x-no" ; then
+
+        dnl find x11 stuff
+        AC_PATH_X
+
+        if test "x-$no_x" = "x-yes" ; then
+
+            dnl didn't find it
+            if test "x-$x11_hidd" != "x-auto" ; then
+                dnl and they explicitly asked for it, bail out
+                AC_MSG_ERROR([X11 libs/headers not found, cannot build X11 hidd as requested])
+            fi
+        
+        else
+            dnl found it, setup the metatarget
+            x11_hidd_target=kernel-x11gfx
+
+
+            dnl setup shared memory extensions
+            AC_ARG_ENABLE(x11_shm, AC_HELP_STRING([--enable-x11-shm],
+                                                  [use X11 shared memory (default=auto)]),
+                                                  x11_hidd_shm="$enableval",
+                                                  x11_hidd_shm="auto")
+            case "x-$x11_hidd_shm" in
+                x-yes|x-no|x-auto)                     ;;
+                *)                 x11_hidd_shm="auto" ;;
+            esac
+
+            have_xshm=no
+
+            dnl they want it
+            if test "x-$x11_hidd_shm" != "x-no" ; then
+
+                dnl system shm headers
+                AC_CHECK_HEADERS(sys/ipc.h)
+                AC_CHECK_HEADERS(sys/shm.h)
+
+                dnl got them
+                if test "x-$ac_cv_header_sys_ipc_h" = "x-yes" -a "x-$ac_cv_header_sys_shm_h" = "x-yes" ; then
+
+                    dnl make sure X libs have shm functions
+                    save_libs="$LIBS"
+                    save_cflags="$CFLAGS"
+                    LIBS="$x_libraries"
+                    CFLAGS="$x_includes"
+                    AC_CHECK_LIB(Xext, XShmQueryExtension, have_xshm=yes)
+                    LIBS="$save_libs"
+                    CFLAGS="$save_cflags"
+                fi
+            fi
+
+            dnl detection done, prepare output
+            if test "x-$have_xshm" = "x-yes" ; then
+                dnl we can do shm
+                DO_XSHM_SUPPORT="1"
+            elif test "x-$x11_hidd_shm" = "x-yes" ; then
+                dnl they explicitly asked for it, but we can't do it
+                AC_MSG_ERROR([X11 has no support for shared memory, cannot enable it as requested])
+            else
+                dnl otherwise just disable it
+                DO_XSHM_SUPPORT="0"
+            fi
+
+            
+            dnl setup vidmode (fullscreen) extensions
+            AC_ARG_ENABLE(x11_vidmode, AC_HELP_STRING([--enable-x11-vidmode],
+                                                      [use X11 vidmode extension (default=auto)]),
+                                                      x11_hidd_vidmode="$enableval",
+                                                      x11_hidd_vidmode="auto")
+            case "x-$x11_hidd_vidmode" in
+                x-yes|x-no|x-auto)                         ;;
+                *)                 x11_hidd_vidmode="auto" ;;
+            esac
+
+            have_vidmode=no
+
+            dnl they want it
+            if test "x-$x11_hidd_vidmode" != "x-no" ; then
+
+                dnl make sure X libs have vidmode functions
+                save_libs="$LIBS"
+                save_cflags="$CFLAGS"
+                LIBS="$x_libraries"
+                CFLAGS="$x_includes"
+                AC_CHECK_LIB(Xxf86vm, XF86VidModeQueryExtension, have_vidmode=yes)
+                LIBS="$save_libs"
+                CFLAGS="$save_cflags"
+            fi
+
+            dnl detection done, prepare output
+            if test "x-$have_vidmode" = "x-yes" ; then
+                dnl we can do vidmode
+                DO_VIDMODE_SUPPORT="1"
+            elif test "x-$x11_hidd_vidmode" = "x-yes" ; then
+                dnl they explicitly asked for it, but we can't do it
+                AC_MSG_ERROR([X11 vidmode extension not available, cannot enable it as requested])
+            else
+                dnl otherwise just disable it
+                DO_VIDMODE_SUPPORT="0"
+            fi
+        fi
+
+    fi
+
 fi
 
 
@@ -1255,11 +1313,16 @@ AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
 
 # Graphics Related
+AC_SUBST(GUI_FLAVOUR_X11)
+AC_SUBST(GUI_FLAVOUR_LINUX)
+
 AC_SUBST(aros_gui_libdir)
 AC_SUBST(aros_gui_ldflags)
 AC_SUBST(aros_gui_libflags)
 AC_SUBST(aros_gui_incdir)
 AC_SUBST(aros_gui_ccflags)
+
+AC_SUBST(x11_hidd_target)
 
 AC_SUBST(aros_default_wbwidth)
 AC_SUBST(aros_default_wbheight)
@@ -1319,28 +1382,16 @@ ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 esac
 
 if test -z "$aros_gui_basedir" ; then
-    dnl Use X as the default GUI
-    aros_gui_libdir="$x_libraries"
-    if test -z "$x_libraries" ; then
-	aros_gui_ldflags=""
-    else
-	aros_gui_ldflags="-L $x_libraries"
+
+    if test "x-$aros_gui_flavour" = "x-x11" ; then
+        aros_gui_incdir="$x_includes"
+        if test -z "$x_includes" ; then
+            aros_gui_ccflags=""
+        else
+            aros_gui_ccflags="-I $x_includes"
+        fi
     fi
-    if test "$HAVE_XSHM_SUPPORT" = "1" ; then
-      aros_gui_libflags="-lX11 -lXext"
-    else
-      aros_gui_libflags="-lX11"
-    fi
-    if test "$HAVE_VIDMODE_SUPPORT" = "1"; then
-      aros_gui_libflags="$aros_gui_libflags -lXxf86vm"
-    fi
-    
-    aros_gui_incdir="$x_includes"
-    if test -z "$x_includes" ; then
-	aros_gui_ccflags=""
-    else
-	aros_gui_ccflags="-I $x_includes"
-    fi
+
 else
     if test -n "$aros_gui_basedir" ; then
 	aros_gui_libdir="${aros_gui_basedir}/lib"

@@ -54,7 +54,6 @@ extern const struct Resident
     Keymap_ROMTag,
     Input_ROMTag,
     Intuition_ROMTag,
-    X11Cl_ROMTag,
     LinuxFB_ROMTag,
     Cybergraphics_ROMTag,
     Console_ROMTag,
@@ -106,7 +105,6 @@ static const struct Resident *romtagList[] =
     &Keymap_ROMTag,			/* ColdStart,   40	 */
     &Input_ROMTag,			/* ColdStart,   30	 */
     &Intuition_ROMTag,			/* ColdStart,   10	 */
-    &X11Cl_ROMTag,			/* ColdStart,   9	 */
     &LinuxFB_ROMTag,			/* ColdStart,   9	 */
     &Cybergraphics_ROMTag,		/* ColdStart,   8	 */
     &Console_ROMTag,			/* ColdStart,   5	 */

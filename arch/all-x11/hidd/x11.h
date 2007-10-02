@@ -34,8 +34,9 @@
 
 #include "xshm.h"
 
-
 #define X11_LOAD_KEYMAPTABLE	    1
+
+#include "x11_hostlib.h"
 
 
 /***** X11Mouse HIDD *******************/

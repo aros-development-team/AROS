@@ -18,6 +18,8 @@ conflicts between AROS includes and system includes */
 #include "xshm.h"
 #include <aros/debug.h>
 
+#include <aros/symbolsets.h>
+
 /****************************************************************************************/
 
 /* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
@@ -47,6 +49,59 @@ static void dummy_func()
 #include <sys/ipc.h>
 #include <X11/extensions/XShm.h>
 
+#include "x11_hostlib.h"
+
+#include <proto/hostlib.h>
+
+static void *xext_handle = NULL;
+static void *shm_handle = NULL;
+
+static struct {
+    Status (*XShmDetach) ( Display* , XShmSegmentInfo* );
+    Status (*XShmPutImage) ( Display* , Drawable , GC , XImage* , int , int , int , int , unsigned int , unsigned int , Bool );
+    Status (*XShmGetImage) ( Display* , Drawable , XImage* , int , int , unsigned long );
+    XImage * (*XShmCreateImage) ( Display* , Visual* , unsigned int , int , char* , XShmSegmentInfo* , unsigned int , unsigned int );
+    Bool (*XShmQueryVersion) ( Display* , int* , int* , Bool* );
+    Status (*XShmAttach) ( Display* , XShmSegmentInfo* );
+} xext_func;
+
+static const char *xext_func_names[] = {
+    "XShmDetach",
+    "XShmPutImage",
+    "XShmGetImage",
+    "XShmCreateImage",
+    "XShmQueryVersion",
+    "XShmAttach"
+};
+
+#define XEXT_SOFILE "libXext.so"
+
+#define XEXTCALL(func,...) (xext_func.func(__VA_ARGS__))
+
+extern void *x11_hostlib_load_so(const char *, const char **, int, void **);
+
+static int xext_hostlib_init(void *libbase) {
+    D(bug("[x11] xext hostlib init\n"));
+
+    if ((xext_handle = x11_hostlib_load_so(XEXT_SOFILE, xext_func_names, 6, (void **) &xext_func)) == NULL)
+        return FALSE;
+
+    return TRUE;
+}
+
+static int xext_hostlib_expunge(void *libbase) {
+    D(bug("[x11] xext hostlib expunge\n"));
+
+    if (xext_handle != NULL)
+        HostLib_Close(xext_handle, NULL);
+
+    return TRUE;
+}
+
+ADD2INITLIB(xext_hostlib_init, 1)
+ADD2EXPUNGELIB(xext_hostlib_expunge, 1)
+
+
 /****************************************************************************************/
 
 void *init_shared_mem(Display *display)
@@ -57,7 +112,7 @@ void *init_shared_mem(Display *display)
     int     	     xshm_major, xshm_minor;
     Bool    	     xshm_pixmaps;
     
-    if (XShmQueryVersion(display, &xshm_major, &xshm_minor, &xshm_pixmaps))
+    if (XEXTCALL(XShmQueryVersion, display, &xshm_major, &xshm_minor, &xshm_pixmaps))
     {
 	#if NO_MALLOC
 	shminfo = (XShmSegmentInfo *)AllocVec(sizeof(*shminfo), MEMF_PUBLIC);
@@ -77,7 +132,7 @@ void *init_shared_mem(Display *display)
 	     *	since the inode number isn't likely to change all that
 	     *	often.
 	     */
-	    key = ftok("./C", 'A');
+	    key = CCALL(ftok, "./C", 'A');
 	    if(key == -1)
 	    {
 		kprintf("Hmm, path \"./C\" doesn't seem to exist?\n");
@@ -91,24 +146,24 @@ void *init_shared_mem(Display *display)
 	    memset(shminfo, 0, sizeof (*shminfo));
 		
 	    /* Allocate shared memory */
-	    shminfo->shmid = shmget(key,XSHM_MEMSIZE, IPC_CREAT|0777);
+	    shminfo->shmid = CCALL(shmget, key, XSHM_MEMSIZE, IPC_CREAT|0777);
 			
 	    if (shminfo->shmid >= 0)
 	    {
 		/* Attach the mem to our process */
-		shminfo->shmaddr = shmat(shminfo->shmid, NULL, 0);
+		shminfo->shmaddr = CCALL(shmat, shminfo->shmid, NULL, 0);
 		if (NULL != shminfo->shmaddr)
 		{
 		    shminfo->readOnly = False;
-		    if (XShmAttach(display, shminfo))
+		    if (XEXTCALL(XShmAttach, display, shminfo))
 		    {
 		    	return shminfo;
 			
 		    }
-		    shmdt(shminfo->shmaddr);
+		    CCALL(shmdt, shminfo->shmaddr);
 		    
 		}
-		shmctl(shminfo->shmid, IPC_RMID, NULL);
+		CCALL(shmctl, shminfo->shmid, IPC_RMID, NULL);
 	    }
 	#if NO_MALLOC
 	    FreeVec(shminfo);
@@ -133,9 +188,9 @@ void cleanup_shared_mem(Display *display, void *meminfo)
     if (NULL == meminfo)
     	return;
     
-    XShmDetach(display, shminfo);
-    shmdt(shminfo->shmaddr);
-    shmctl(shminfo->shmid, IPC_RMID, 0);
+    XEXTCALL(XShmDetach, display, shminfo);
+    CCALL(shmdt, shminfo->shmaddr);
+    CCALL(shmctl, shminfo->shmid, IPC_RMID, 0);
     
 #if NO_MALLOC
     FreeVec(shminfo);
@@ -155,8 +210,8 @@ XImage *create_xshm_ximage(Display *display, Visual *visual, int depth, int form
     
     shminfo = (XShmSegmentInfo *)xshminfo;
     
-    image = XShmCreateImage(display, visual, depth, format, shminfo->shmaddr,
-    	    	    	    shminfo, width, height);
+    image = XEXTCALL(XShmCreateImage, display, visual, depth, format, shminfo->shmaddr,
+    	    	    	              shminfo, width, height);
     
     return image;
 }
@@ -167,19 +222,17 @@ void put_xshm_ximage(Display *display, Drawable d, GC gc, XImage *image,
     	    	     int xsrc,  int ysrc, int xdest, int ydest,
 		     int width, int height, Bool send_event)
 {
-    XShmPutImage(display, d, gc, image, xsrc, ysrc, xdest, ydest,
-    	    	 width, height, send_event);
-
-    XSync(display, False);	
-
+    XEXTCALL(XShmPutImage, display, d, gc, image, xsrc, ysrc, xdest, ydest,
+    	    	           width, height, send_event);
+    XCALL(XSync, display, False);
 }
 
 /****************************************************************************************/
 
 void get_xshm_ximage(Display *display, Drawable d, XImage *image, int x, int y)
 {
-    XSync(display, False);
-    XShmGetImage(display, d, image, x, y, AllPlanes);
+    XCALL(XSync, display, False);
+    XEXTCALL(XShmGetImage, display, d, image, x, y, AllPlanes);
 }
 
 /****************************************************************************************/

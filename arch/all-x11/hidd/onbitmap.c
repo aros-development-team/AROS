@@ -128,7 +128,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	    Colormap cm;
 	    
     	    LOCK_X11
-	    cm = XCreateColormap(GetSysDisplay(),
+	    cm = XCALL(XCreateColormap, GetSysDisplay(),
 				 RootWindow(GetSysDisplay(), GetSysScreen()),
 				 XSD(cl)->vi.visual,
 				 AllocAll);				 
@@ -205,7 +205,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 		valuemask |= CWColormap;
 	    }
 	    
-	    MASTERWIN(data) = XCreateWindow( GetSysDisplay(),
+	    MASTERWIN(data) = XCALL(XCreateWindow,  GetSysDisplay(),
 	    	    	      	    	     rootwin,
 					     0,	/* leftedge 	*/
 			    	    	     0,	/* topedge	*/
@@ -222,7 +222,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	if (MASTERWIN(data)) 
     #endif	
 
-	DRAWABLE(data) = XCreateWindow( GetSysDisplay(),
+	DRAWABLE(data) = XCALL(XCreateWindow,  GetSysDisplay(),
     	    	    	    	    #if ADJUST_XWIN_SIZE
 	    		    	    	MASTERWIN(data),
     	    	    	    	    #else
@@ -256,8 +256,8 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     	    LOCK_X11
 	    
-	    XStoreName   (GetSysDisplay(), MASTERWIN(data), "AROS");
-	    XSetIconName (GetSysDisplay(), MASTERWIN(data), "AROS Screen");
+	    XCALL(XStoreName, GetSysDisplay(), MASTERWIN(data), "AROS");
+	    XCALL(XSetIconName, GetSysDisplay(), MASTERWIN(data), "AROS Screen");
 		    
     	#if !ADJUST_XWIN_SIZE
 	    sizehint.flags      = PMinSize | PMaxSize;
@@ -266,10 +266,10 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	    sizehint.max_width  = width;
 	    sizehint.max_height = height;
 	    
-	    XSetWMNormalHints (GetSysDisplay(), MASTERWIN(data), &sizehint);
+	    XCALL(XSetWMNormalHints, GetSysDisplay(), MASTERWIN(data), &sizehint);
     	#endif
 	    
-	    XSetWMProtocols (GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
+	    XCALL(XSetWMProtocols, GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
 
     	    icon = init_icon(GetSysDisplay(),
 	    	    	     MASTERWIN(data),
@@ -283,7 +283,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 		hints.icon_pixmap = icon;
 		hints.flags = IconPixmapHint;
 
-		XSetWMHints(GetSysDisplay(), MASTERWIN(data), &hints);
+		XCALL(XSetWMHints, GetSysDisplay(), MASTERWIN(data), &hints);
 	    }
 	    
 
@@ -304,7 +304,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	   This caused the freezes which sometimes happened during
 	   startup when the Workbench screen was opened.
 	   
-	   //XMapRaised (GetSysDisplay(), DRAWABLE(data));
+	   //XCALL(XMapRaised, GetSysDisplay(), DRAWABLE(data));
 */
 
     	    UNLOCK_X11	 
@@ -334,7 +334,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 		msg->execmsg.mn_ReplyPort = port;
 		
     	    	LOCK_X11
-		XSync(GetSysDisplay(), FALSE);
+		XCALL(XSync, GetSysDisplay(), FALSE);
     	    	UNLOCK_X11
 
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
@@ -355,7 +355,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 		msg->execmsg.mn_ReplyPort = port;
 
     	    	LOCK_X11
-		XSync(GetSysDisplay(), FALSE);
+		XCALL(XSync, GetSysDisplay(), FALSE);
     	    	UNLOCK_X11
 		
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
@@ -371,7 +371,7 @@ OOP_Object *X11OnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	    	gcval.graphics_exposures = False;
 		
     	    	LOCK_X11	 
-	    	data->gc = XCreateGC(data->display, DRAWABLE(data),
+	    	data->gc = XCALL(XCreateGC, data->display, DRAWABLE(data),
 		    	    	     GCPlaneMask | GCGraphicsExposures, &gcval);
     	    	UNLOCK_X11	
 			
@@ -434,12 +434,12 @@ VOID X11OnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     /* Someone is trying to dispose the framefuffer. This should really
     never happen in AROS. */
     
-    //kill(getpid(), 19);
+    //CCALL(raise, 19);
     
     if (data->gc)
     {
     	LOCK_X11
-    	XFreeGC(data->display, data->gc);
+    	XCALL(XFreeGC, data->display, data->gc);
     	UNLOCK_X11	
     }
 
@@ -454,7 +454,7 @@ VOID X11OnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	if (NULL == port || NULL == msg)
 	{
 	    kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n");
-    	    //kill(getpid(), 19);
+    	    //CCALL(raise, 19);
 	}
 	
 	msg->notify_type = NOTY_WINDISPOSE;
@@ -472,8 +472,8 @@ VOID X11OnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	DeleteMsgPort(port);
 
     	LOCK_X11	
-    	XDestroyWindow( GetSysDisplay(), DRAWABLE(data));
-	XFlush( GetSysDisplay() );
+    	XCALL(XDestroyWindow,  GetSysDisplay(), DRAWABLE(data));
+	XCALL(XFlush,  GetSysDisplay() );
     	UNLOCK_X11		
     }
 
@@ -481,8 +481,8 @@ VOID X11OnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (MASTERWIN(data))
     {
     	LOCK_X11
-        XDestroyWindow( GetSysDisplay(), MASTERWIN(data));
-	XFlush( GetSysDisplay() );
+        XCALL(XDestroyWindow,  GetSysDisplay(), MASTERWIN(data));
+	XCALL(XFlush,  GetSysDisplay() );
     	UNLOCK_X11
     }
 #endif
@@ -490,7 +490,7 @@ VOID X11OnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (data->flags & BMDF_COLORMAP_ALLOCED)
     {
     	LOCK_X11
-	XFreeColormap(GetSysDisplay(), data->colmap);
+	XCALL(XFreeColormap, GetSysDisplay(), data->colmap);
     	UNLOCK_X11
     }
     
@@ -516,15 +516,15 @@ VOID X11OnBM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
     winattr.background_pixel = GC_BG(msg->gc);
 
     LOCK_X11    
-    XChangeWindowAttributes(data->display, DRAWABLE(data),
+    XCALL(XChangeWindowAttributes, data->display, DRAWABLE(data),
     	    	    	    CWBackPixel, &winattr);
     
-    XClearArea (data->display, DRAWABLE(data),
+    XCALL(XClearArea, data->display, DRAWABLE(data),
 	    0, 0,
 	    width, height,
 	    FALSE);
     
-    XFlush(data->display);
+    XCALL(XFlush, data->display);
     UNLOCK_X11            
 }
 
@@ -573,20 +573,20 @@ static void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd)
     width = height = 1;
 
     LOCK_X11    
-    p = XCreatePixmap( xsd->display, w, width, height, 1);
+    p = XCALL(XCreatePixmap,  xsd->display, w, width, height, 1);
     UNLOCK_X11    
 
 
     if (0 != p)
     {
     	LOCK_X11    
-	mask = XCreatePixmap( xsd->display
+	mask = XCALL(XCreatePixmap,  xsd->display
 		, w
 		, width
 		, height
 		, 1
     	);
-	XFlush(xsd->display);	
+	XCALL(XFlush, xsd->display);	
     	UNLOCK_X11    
 	
 	if (0 != mask)
@@ -597,15 +597,15 @@ static void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd)
 	    int    x, y;
 
     	    LOCK_X11
-	    XSetForeground(xsd->display, gc, 0);
-	    XSetFunction(xsd->display, gc, GXcopy);	    
+	    XCALL(XSetForeground, xsd->display, gc, 0);
+	    XCALL(XSetFunction, xsd->display, gc, GXcopy);	    
     	#if 0	    
-	    XFillRectangle(xsd->display, p, gc, 1, 1, 1, 1);
+	    XCALL(XFillRectangle, xsd->display, p, gc, 1, 1, 1, 1);
 	    for (y = 0; y < height; y ++)
 	    {
 	    	for (x = 0; x < width; x ++)
 		{
-		    XDrawPoint(xsd->display, mask, gc, x, y);
+		    XCALL(XDrawPoint, xsd->display, mask, gc, x, y);
 		}
 	    }
     	#endif	    
@@ -624,23 +624,23 @@ static void init_empty_cursor(Window w, GC gc, struct x11_staticdata *xsd)
 	    bg.flags	= DoRed | DoGreen | DoBlue;
 
     	    LOCK_X11
-	    c = XCreatePixmapCursor(xsd->display, p, mask, &fg, &bg, 0, 0);
+	    c = XCALL(XCreatePixmapCursor, xsd->display, p, mask, &fg, &bg, 0, 0);
     	    UNLOCK_X11
 	    	    
 	    if (0 != c)
 	    {
     	    	LOCK_X11	    
-	    	XDefineCursor(xsd->display, w, c);
+	    	XCALL(XDefineCursor, xsd->display, w, c);
     	    	UNLOCK_X11		
 	    }
 	    
     	    LOCK_X11	    
-	    XFreePixmap(xsd->display, mask);
+	    XCALL(XFreePixmap, xsd->display, mask);
     	    UNLOCK_X11	    
 	}
 
     	LOCK_X11	
-	XFreePixmap(xsd->display, p);
+	XCALL(XFreePixmap, xsd->display, p);
     	UNLOCK_X11
     }
   	
@@ -659,7 +659,7 @@ static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x1
     #define SHIFT_PIX(pix, shift)	\
 	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
     
-    Pixmap   icon = XCreatePixmap(d, w, width, height, depth);
+    Pixmap   icon = XCALL(XCreatePixmap, d, w, width, height, depth);
     char    *data = header_data;
     LONG     red_shift, green_shift, blue_shift;
     GC       gc;
@@ -670,7 +670,7 @@ static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x1
     
     if (icon)
     {
-    	gc = XCreateGC(d, icon, 0, 0);
+    	gc = XCALL(XCreateGC, d, icon, 0, 0);
 	
 	if (gc)
 	{
@@ -700,18 +700,18 @@ static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth, struct x1
 			xcol.blue  = (rgb[2] << 8) + rgb[2];
 			xcol.flags = DoRed | DoGreen | DoBlue;
 			
-			if (XAllocColor(d, cm, &xcol))
+			if (XCALL(XAllocColor, d, cm, &xcol))
 			{
 			    pixel = xcol.pixel;
 			}
 		    }
 		    
-    	    	    XSetForeground(d, gc, pixel);
-		    XDrawPoint(d, icon, gc, x, y);
+    	    	    XCALL(XSetForeground, d, gc, pixel);
+		    XCALL(XDrawPoint, d, icon, gc, x, y);
 		}
 	    }
 	    
-	    XFreeGC(d, gc);
+	    XCALL(XFreeGC, d, gc);
 	    
 	} /* if (gc) */
 	

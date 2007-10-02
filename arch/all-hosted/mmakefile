@@ -12,7 +12,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap mathffp \
       	   mathieeesingbas expansion oop layers workbench cybergraphics
 KDEVS   := timer input keyboard console gameport
 KHNDLRS := con nil packet emul ram
-KHIDDS  := hiddclass unixio x11gfx parallel serial
+KHIDDS  := hiddclass unixio parallel serial
 ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
     ifeq ("$(AROS_HOST_CPU)","i386")

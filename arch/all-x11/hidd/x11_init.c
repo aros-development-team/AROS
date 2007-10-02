@@ -26,7 +26,7 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -85,18 +85,15 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 {
     char buffer[256];
 
-    XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
+    XCALL(XGetErrorText, display, errevent->error_code, buffer, sizeof (buffer));
 
-    fprintf(stderr,
-    	    "XError %d (Major=%d, Minor=%d) task = %s\n%s\n",
+    kprintf("XError %d (Major=%d, Minor=%d) task = %s\n%s\n",
 	    errevent->error_code,
 	    errevent->request_code,
 	    errevent->minor_code,
 	    FindTask(0)->tc_Node.ln_Name,
 	    buffer);
 	     
-    fflush (stderr);
-
     return 0;
 }
 
@@ -105,7 +102,6 @@ static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 static int MySysErrorHandler (Display * display)
 {
     perror ("X11-Error");
-    fflush (stderr);
 
     // *((ULONG *)0) = 0;
 
@@ -117,47 +113,49 @@ static int MySysErrorHandler (Display * display)
 static int X11_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct x11_staticdata *xsd = &LIBBASE->xsd;
-    STRPTR displayname;
 
     D(bug("Entering X11_Init\n"));
     
     InitSemaphore( &xsd->sema );
     InitSemaphore( &xsd->x11sema );
 		
-    /* Try to get the display */
-    if (!(displayname = (STRPTR)getenv("DISPLAY")))
-	displayname =":0.0";
-
-    if ((strncmp(displayname, ":", 1) == 0) ||
-	(strncmp(displayname, "unix:", 5) == 0))
-    {
-	xsd->local_display = TRUE;
-    }
-		    
-		    
     /* Do not need to singlethead this
      * since no other tasks are using X currently
      */
 
-    xsd->display = XOpenDisplay(displayname);
+    xsd->display = XCALL(XOpenDisplay, NULL);
     if (xsd->display)
     {
 	struct x11task_params 	 xtp;
 	struct Task 	    	*x11task;
 
-	XSetErrorHandler (MyErrorHandler);
-	XSetIOErrorHandler (MySysErrorHandler);
+	XCALL(XSetErrorHandler, MyErrorHandler);
+	XCALL(XSetIOErrorHandler, MySysErrorHandler);
 
-	if (getenv("AROS_X11_FULLSCREEN"))
+        /*
+         * XXX on my system, getenv() is declared:
+         *
+         * extern char *getenv (__const char *__name) __THROW __nonnull ((1)) * __wur;
+         *
+         * the attributes appear to change the calling convention, so a naive
+         * prototype like char *getenv(char *) causes carshes as the returned
+         * address is not a valid pointer.
+         *
+         * ideally this configration variable would be brought in via a
+         * bootloader.resource, which hosted doesn't have yet
+         */
+        /*
+	if (getenv, "AROS_X11_FULLSCREEN")
 	{
 	    xsd->fullscreen = x11_fullscreen_supported(xsd->display);
 	}
+        */
 	
-	xsd->delete_win_atom         = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
-	xsd->clipboard_atom          = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
-	xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
-	xsd->clipboard_incr_atom     = XInternAtom(xsd->display, "INCR", FALSE);
-	xsd->clipboard_targets_atom  = XInternAtom(xsd->display, "TARGETS", FALSE);
+	xsd->delete_win_atom         = XCALL(XInternAtom, xsd->display, "WM_DELETE_WINDOW", FALSE);
+	xsd->clipboard_atom          = XCALL(XInternAtom, xsd->display, "CLIPBOARD", FALSE);
+	xsd->clipboard_property_atom = XCALL(XInternAtom, xsd->display, "AROS_HOSTCLIP", FALSE);
+	xsd->clipboard_incr_atom     = XCALL(XInternAtom, xsd->display, "INCR", FALSE);
+	xsd->clipboard_targets_atom  = XCALL(XInternAtom, xsd->display, "TARGETS", FALSE);
 	
 	xtp.parent = FindTask(NULL);
 	xtp.ok_signal	= SIGBREAKF_CTRL_E;
@@ -176,7 +174,7 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 	    Signal(x11task, xtp.kill_signal);
 	}
 
-	XCloseDisplay(xsd->display);
+	XCALL(XCloseDisplay, xsd->display);
 
     }
     
