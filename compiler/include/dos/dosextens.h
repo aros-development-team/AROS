@@ -291,7 +291,7 @@ struct CommandLineInterface
 
 /* CLI_DEFAULTSTACK_UNIT * cli_DefaultStack = stack in bytes */
 
-#define CLI_DEFAULTSTACK_UNIT	sizeof(LONG)
+#define CLI_DEFAULTSTACK_UNIT	sizeof(IPTR)
 
 /* Devices process structure as returned by GetDeviceProc(). */
 struct DevProc

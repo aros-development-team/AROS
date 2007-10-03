@@ -64,22 +64,22 @@
 
 struct AROSP_List_Insert
 {
-    STACKULONG 	MethodID;
-    APTR	*ItemArray;
-    STACKLONG	Position;
+    STACKED ULONG 	MethodID;
+    STACKED APTR	*ItemArray;
+    STACKED LONG	Position;
 };
 
 struct AROSP_List_InsertSingle
 {
-    STACKULONG	MethodID;
-    APTR	Item;
-    STACKLONG	Position;
+    STACKED ULONG	MethodID;
+    STACKED APTR	Item;
+    STACKED LONG	Position;
 };
 
 struct AROSP_List_Remove
 {
-    STACKULONG		MethodID;
-    STACKLONG		Position;
+    STACKED ULONG		MethodID;
+    STACKED LONG		Position;
 };
 
 #define AROSV_List_Remove_First -1L
@@ -87,25 +87,25 @@ struct AROSP_List_Remove
 
 struct AROSP_List_GetEntry
 {
-    STACKULONG	MethodID;
-    STACKLONG	Position;
-    APTR	*ItemPtr;
+    STACKED ULONG	MethodID;
+    STACKED LONG	Position;
+    STACKED APTR	*ItemPtr;
 };
 
 
 
 struct AROSP_List_Select
 {
-    STACKULONG	MethodID;
-    STACKLONG	Position;
-    STACKLONG	SelType;
-    LONG	*State;
+    STACKED ULONG	MethodID;
+    STACKED LONG	Position;
+    STACKED LONG	SelType;
+    STACKED LONG	*State;
 };
 
 struct AROSP_List_NextSelected
 {
-    STACKULONG	MethodID;
-    LONG	*Position;
+    STACKED ULONG	MethodID;
+    STACKED LONG	*Position;
 };
 
 #endif /* GADGETS_AROSLISTVIEW_H */

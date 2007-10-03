@@ -216,16 +216,16 @@
 #define GM_HITTEST 0UL
 struct gpHitTest
 {
-    STACKULONG		MethodID;   /* GM_HITEST or GM_HELPTEST */
-    struct GadgetInfo  *gpht_GInfo; /* see <intuition/cghooks.h> */
+    STACKED ULONG		MethodID;   /* GM_HITEST or GM_HELPTEST */
+    STACKED struct GadgetInfo  *gpht_GInfo; /* see <intuition/cghooks.h> */
 
       /* These values are relative to the gadget select box for GM_HITTEST. For
          GM_HELPTEST they are relative to the bounding box (which is often
          equal to the select box). */
-    struct
+    STACKED struct
     {
-	STACKWORD X;
-	STACKWORD Y;
+	STACKED WORD X;
+	STACKED WORD Y;
     }			gpht_Mouse;
 };
 #define GMR_GADGETHIT 0x00000004
@@ -235,11 +235,11 @@ struct gpHitTest
 #define GM_RENDER 1     /* draw yourself in the right state */
 struct gpRender
 {
-    STACKULONG		MethodID;   /* GM_RENDER */
-    struct GadgetInfo  *gpr_GInfo;  /* see <intuition/cghooks.h> */
-    struct RastPort    *gpr_RPort;  /* RastPort (see <graphics/rastport.h>) to
+    STACKED ULONG		MethodID;   /* GM_RENDER */
+    STACKED struct GadgetInfo  *gpr_GInfo;  /* see <intuition/cghooks.h> */
+    STACKED struct RastPort    *gpr_RPort;  /* RastPort (see <graphics/rastport.h>) to
                                        render into. */
-    STACKLONG		gpr_Redraw; /* see below */
+    STACKED LONG		gpr_Redraw; /* see below */
 };
 /* gpr_Redraw. Not all of these values make sense for all gadgets. */
 #define GREDRAW_TOGGLE 0 /* Just toggle the status. */
@@ -257,28 +257,28 @@ struct gpRender
 #define GM_HANDLEINPUT 3
 struct gpInput
 {
-    STACKULONG		 MethodID;        /* GM_GOACTIVE or GM_HANDLEINPUT */
-    struct GadgetInfo  * gpi_GInfo;       /* see <intuition/cghooks.h> */
+    STACKED ULONG		 MethodID;        /* GM_GOACTIVE or GM_HANDLEINPUT */
+    STACKED struct GadgetInfo  * gpi_GInfo;       /* see <intuition/cghooks.h> */
       /* Pointer to the InputEvent (see <devices/inputevent.h>) that caused
          the method to be invoked. */
-    struct InputEvent  * gpi_IEvent;
+    STACKED struct InputEvent  * gpi_IEvent;
       /* Pointer to a variable that is to be set by the gadget class, if
          GMR_VERIFY is returned. The lower 16 bits of this value are returned
          in the Code field of the IntuiMessage (see <intuition/intuition.h>)
          passed back to the application. */
-    LONG	       * gpi_Termination;
+    STACKED LONG	       * gpi_Termination;
 
       /* This struct defines the current mouse position, relative to the
          gadgets' bounding box. */
-    struct
+    STACKED struct
     {
-	STACKWORD X;
-	STACKWORD Y;
+	STACKED WORD X;
+	STACKED WORD Y;
     }			gpi_Mouse;
       /* Pointer to TabletData structure (see <intuition/intuition.h>) or NULL,
          if this input event did not originate from a tablet that is capable of
          sending IESUBCLASS_NEWTABLET events. */
-    struct TabletData * gpi_TabletData;
+    STACKED struct TabletData * gpi_TabletData;
 };
 
 /* Return codes for GM_GOACTIVE and GM_HANDLEINPUT. These are actually flags
@@ -304,12 +304,12 @@ struct gpInput
 #define GM_GOINACTIVE 4
 struct gpGoInactive
 {
-    STACKULONG		MethodID;   /* GM_GOINACTIVE */
-    struct GadgetInfo  *gpgi_GInfo; /* see <intuition/cghooks.h> */
+    STACKED ULONG		MethodID;   /* GM_GOINACTIVE */
+    STACKED struct GadgetInfo  *gpgi_GInfo; /* see <intuition/cghooks.h> */
       /* Boolean field to indicate, who wanted the gadget to go inactive. If
          this is 1 this method was sent, because intution wants the gadget to
          go inactive, if it is 0, it was the gadget itself that wanted it. */
-    STACKULONG		gpgi_Abort;
+    STACKED ULONG		gpgi_Abort;
 };
 
 
@@ -336,12 +336,12 @@ struct gpGoInactive
 #define GM_LAYOUT 6
 struct gpLayout
 {
-    STACKULONG		 MethodID;    /* GM_LAYOUT */
-    struct GadgetInfo  * gpl_GInfo;   /* see <intuition/cghooks.h> */
+    STACKED ULONG		 MethodID;    /* GM_LAYOUT */
+    STACKED struct GadgetInfo  * gpl_GInfo;   /* see <intuition/cghooks.h> */
       /* Boolean that indicated, if this method was invoked, when you are added
          to a window (TRUE) or if it is called, because the window was resized
          (FALSE). */
-    STACKULONG		 gpl_Initial;
+    STACKED ULONG		 gpl_Initial;
 };
 
 
@@ -350,12 +350,12 @@ struct gpLayout
 #define GM_DOMAIN 7
 struct gpDomain
 {
-    STACKULONG	        MethodID;   /* GM_DOMAIN */
-    struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
-    struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
-    STACKLONG	        gpd_Which;  /* see below */
-    struct IBox         gpd_Domain; /* Resulting domain. */
-    struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
+    STACKED ULONG	        MethodID;   /* GM_DOMAIN */
+    STACKED struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
+    STACKED struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
+    STACKED LONG	        gpd_Which;  /* see below */
+    STACKED struct IBox         gpd_Domain; /* Resulting domain. */
+    STACKED struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
                                        yet. */
 };
 

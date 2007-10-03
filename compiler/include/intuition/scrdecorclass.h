@@ -50,84 +50,84 @@
 
 struct sdpGetDefSizeSysImage
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        sdp_TrueColor;
-    struct DrawInfo *sdp_Dri;
-    struct TextFont *sdp_ReferenceFont; /* In: */
-    STACKULONG	     sdp_Which;  	/* In: SDEPTHIMAGE */
-    STACKULONG	     sdp_SysiSize;	/* In: lowres/medres/highres */
-    ULONG	        *sdp_Width;  	/* Out */
-    ULONG	        *sdp_Height; 	/* Out */
-    STACKULONG	     sdp_Flags;
-    STACKIPTR	     sdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        sdp_TrueColor;
+    STACKED struct DrawInfo *sdp_Dri;
+    STACKED struct TextFont *sdp_ReferenceFont; /* In: */
+    STACKED ULONG	     sdp_Which;  	/* In: SDEPTHIMAGE */
+    STACKED ULONG	     sdp_SysiSize;	/* In: lowres/medres/highres */
+    STACKED ULONG	        *sdp_Width;  	/* Out */
+    STACKED ULONG	        *sdp_Height; 	/* Out */
+    STACKED ULONG	     sdp_Flags;
+    STACKED IPTR	     sdp_UserBuffer;
 };
 
 /* This struct must match wdpDrawSysImage struct in windecorclass.h! */
 
 struct sdpDrawSysImage
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        sdp_TrueColor;
-    struct DrawInfo *sdp_Dri;
-    struct RastPort *sdp_RPort;
-    STACKLONG	     sdp_X;
-    STACKLONG	     sdp_Y;
-    STACKLONG	     sdp_Width;
-    STACKLONG	     sdp_Height;
-    STACKULONG	     sdp_Which;
-    STACKULONG	     sdp_State;
-    STACKULONG	     sdp_Flags;
-    STACKIPTR	     sdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        sdp_TrueColor;
+    STACKED struct DrawInfo *sdp_Dri;
+    STACKED struct RastPort *sdp_RPort;
+    STACKED LONG	     sdp_X;
+    STACKED LONG	     sdp_Y;
+    STACKED LONG	     sdp_Width;
+    STACKED LONG	     sdp_Height;
+    STACKED ULONG	     sdp_Which;
+    STACKED ULONG	     sdp_State;
+    STACKED ULONG	     sdp_Flags;
+    STACKED IPTR	     sdp_UserBuffer;
 };
 
 struct sdpDrawScreenBar
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        sdp_TrueColor;
-    struct DrawInfo *sdp_Dri;
-    struct Layer    *sdp_Layer;
-    struct RastPort *sdp_RPort;
-    struct Screen   *sdp_Screen;
-    STACKULONG	     sdp_Flags;
-    STACKIPTR	     sdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        sdp_TrueColor;
+    STACKED struct DrawInfo *sdp_Dri;
+    STACKED struct Layer    *sdp_Layer;
+    STACKED struct RastPort *sdp_RPort;
+    STACKED struct Screen   *sdp_Screen;
+    STACKED ULONG	     sdp_Flags;
+    STACKED IPTR	     sdp_UserBuffer;
 };
 
 struct sdpLayoutScreenGadgets
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        sdp_TrueColor;
-    struct DrawInfo *sdp_Dri;
-    struct Layer    *sdp_Layer;
-    struct Gadget   *sdp_Gadgets;
-    STACKULONG	     sdp_Flags;
-    STACKIPTR	     sdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        sdp_TrueColor;
+    STACKED struct DrawInfo *sdp_Dri;
+    STACKED struct Layer    *sdp_Layer;
+    STACKED struct Gadget   *sdp_Gadgets;
+    STACKED ULONG	     sdp_Flags;
+    STACKED IPTR	     sdp_UserBuffer;
 };
 
 struct sdpInitScreen
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        sdp_TrueColor;
-    struct DrawInfo *sdp_Dri;
-    struct Screen   *sdp_Screen;
-    STACKULONG       sdp_FontHeight;
-    STACKLONG        sdp_TitleHack;
-    STACKULONG       sdp_BarHeight;
-    STACKULONG       sdp_BarVBorder;
-    STACKULONG       sdp_BarHBorder;
-    STACKULONG       sdp_MenuVBorder;
-    STACKULONG       spd_MenuHBorder;
-    STACKBYTE        sdp_WBorTop;
-    STACKBYTE        sdp_WBorLeft;
-    STACKBYTE        sdp_WBorRight;
-    STACKBYTE        sdp_WBorBottom;
-    STACKIPTR        sdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        sdp_TrueColor;
+    STACKED struct DrawInfo *sdp_Dri;
+    STACKED struct Screen   *sdp_Screen;
+    STACKED ULONG       sdp_FontHeight;
+    STACKED LONG        sdp_TitleHack;
+    STACKED ULONG       sdp_BarHeight;
+    STACKED ULONG       sdp_BarVBorder;
+    STACKED ULONG       sdp_BarHBorder;
+    STACKED ULONG       sdp_MenuVBorder;
+    STACKED ULONG       spd_MenuHBorder;
+    STACKED BYTE        sdp_WBorTop;
+    STACKED BYTE        sdp_WBorLeft;
+    STACKED BYTE        sdp_WBorRight;
+    STACKED BYTE        sdp_WBorBottom;
+    STACKED IPTR        sdp_UserBuffer;
 };
 
 struct sdpExitScreen
 {
-    STACKULONG       MethodID;
-    STACKBYTE        sdp_TrueColor;
-    STACKIPTR	     sdp_UserBuffer;
+    STACKED ULONG       MethodID;
+    STACKED BYTE        sdp_TrueColor;
+    STACKED IPTR	     sdp_UserBuffer;
 };
 /* ScrDecor LayoutScreenGadgets Flags */
 #define SDF_LSG_INITIAL     	1   /* First time == During OpenScreen */

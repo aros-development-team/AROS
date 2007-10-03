@@ -203,4 +203,8 @@
 #define AROS_COMPAT_SETD0(x) (void)x
 #endif /* AROS_COMPAT_SETD0 */
 
+#ifndef STACKED
+#define STACKED __attribute__((aligned(4))) 
+#endif
+
 #endif /* AROS_CPU_H */

@@ -138,59 +138,59 @@
 /* IM_FRAMEBOX	*/
 struct impFrameBox
 {
-    STACKULONG	      MethodID;
-    struct IBox     * imp_ContentsBox;	/* in: relative box of contents */
-    struct IBox     * imp_FrameBox;	/* out: rel. box of enclosing frame */
-    struct DrawInfo * imp_DrInfo;	/* May be NULL */
-    STACKULONG	      imp_FrameFlags;
+    STACKED ULONG	      MethodID;
+    STACKED struct IBox     * imp_ContentsBox;	/* in: relative box of contents */
+    STACKED struct IBox     * imp_FrameBox;	/* out: rel. box of enclosing frame */
+    STACKED struct DrawInfo * imp_DrInfo;	/* May be NULL */
+    STACKED ULONG	      imp_FrameFlags;
 };
 
 #define FRAMEF_SPECIFY	(1<<0)
 
 struct impPos
 {
-    STACKWORD	 X;
-    STACKWORD	 Y;
+    STACKED WORD	 X;
+    STACKED WORD	 Y;
 };
 
 struct impSize
 {
-    STACKWORD	 Width;
-    STACKWORD	 Height;
+    STACKED WORD	 Width;
+    STACKED WORD	 Height;
 };
 
 /* IM_DRAW, IM_DRAWFRAME */
 struct impDraw
 {
-    STACKULONG		MethodID;
-    struct RastPort    *imp_RPort;
-    struct impPos	imp_Offset;
-    STACKULONG		imp_State;
-    struct DrawInfo    *imp_DrInfo;    /* May be NULL */
+    STACKED ULONG		MethodID;
+    STACKED struct RastPort    *imp_RPort;
+    STACKED struct impPos	imp_Offset;
+    STACKED ULONG		imp_State;
+    STACKED struct DrawInfo    *imp_DrInfo;    /* May be NULL */
 
     /* Only valid for IM_DRAWFRAME */
-    struct impSize	imp_Dimensions;
+    STACKED struct impSize	imp_Dimensions;
 };
 
 /* IM_ERASE, IM_ERASEFRAME	*/
 /* NOTE: This is a subset of impDraw	*/
 struct impErase
 {
-    STACKULONG		MethodID;
-    struct RastPort    *imp_RPort;
-    struct impPos	imp_Offset;
+    STACKED ULONG		MethodID;
+    STACKED struct RastPort    *imp_RPort;
+    STACKED struct impPos	imp_Offset;
 
     /* Only valid for IM_ERASEFRAME */
-    struct impSize	imp_Dimensions;
+    STACKED struct impSize	imp_Dimensions;
 };
 
 /* IM_HITTEST, IM_HITFRAME	*/
 struct impHitTest {
-    STACKULONG		MethodID;
-    struct impPos	imp_Point;
+    STACKED ULONG		MethodID;
+    STACKED struct impPos	imp_Point;
 
     /* Only valid for IM_HITFRAME */
-    struct impSize	imp_Dimensions;
+    STACKED struct impSize	imp_Dimensions;
 };
 
 #endif /* INTUITION_IMAGECLASS_H */

@@ -102,40 +102,40 @@ struct AnimHeader
 
 struct adtFrame
 {
-    STACKULONG	     MethodID;
-    STACKULONG	     alf_TimeStamp;
-    STACKULONG	     alf_Frame;
-    STACKULONG	     alf_Duration;
-    struct BitMap   *alf_BitMap;
-    struct ColorMap *alf_CMap;
-    BYTE	    *alf_Sample;
-    STACKULONG	     alf_SampleLength;
-    STACKULONG	     alf_Period;
-    APTR	     alf_UserData;
+    STACKED ULONG	     MethodID;
+    STACKED ULONG	     alf_TimeStamp;
+    STACKED ULONG	     alf_Frame;
+    STACKED ULONG	     alf_Duration;
+    STACKED struct BitMap   *alf_BitMap;
+    STACKED struct ColorMap *alf_CMap;
+    STACKED BYTE	    *alf_Sample;
+    STACKED ULONG	     alf_SampleLength;
+    STACKED ULONG	     alf_Period;
+    STACKED APTR	     alf_UserData;
 };
 
 struct adtNewFormatFrame
 {
-    STACKULONG	     MethodID;
-    STACKULONG	     alf_TimeStamp;
-    STACKULONG	     alf_Frame;
-    STACKULONG	     alf_Duration;
-    struct BitMap   *alf_BitMap;
-    struct ColorMap *alf_CMap;
-    BYTE    	    *alf_Sample;
-    STACKULONG	     alf_SampleLength;
-    STACKULONG	     alf_Period;
-    APTR	     alf_UserData;
-    STACKULONG	     alf_Size;
-    BYTE    	    *alf_LeftSample;
-    BYTE    	    *alf_RightSample;
-    STACKULONG	     alf_SamplesPerSec;
+    STACKED ULONG	     MethodID;
+    STACKED ULONG	     alf_TimeStamp;
+    STACKED ULONG	     alf_Frame;
+    STACKED ULONG	     alf_Duration;
+    STACKED struct BitMap   *alf_BitMap;
+    STACKED struct ColorMap *alf_CMap;
+    STACKED BYTE    	    *alf_Sample;
+    STACKED ULONG	     alf_SampleLength;
+    STACKED ULONG	     alf_Period;
+    STACKED APTR	     alf_UserData;
+    STACKED ULONG	     alf_Size;
+    STACKED BYTE    	    *alf_LeftSample;
+    STACKED BYTE    	    *alf_RightSample;
+    STACKED ULONG	     alf_SamplesPerSec;
 };
 
 struct adtStart
 {
-    STACKULONG	    MethodID;
-    STACKULONG	    asa_Frame;
+    STACKED ULONG	    MethodID;
+    STACKED ULONG	    asa_Frame;
 };
 
 #endif  /* DATATYPES_ANIMATIONCLASS_H */

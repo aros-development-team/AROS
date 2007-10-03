@@ -51,16 +51,16 @@
 
 struct wdpGetDefSizeSysImage
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        wdp_TrueColor;
-    struct DrawInfo *wdp_Dri;
-    struct TextFont *wdp_ReferenceFont; /* In: */
-    STACKULONG	     wdp_Which;  	/* In: One of CLOSEIMAGE, SIZEIMAGE, ... */
-    STACKULONG	     wdp_SysiSize;	/* In: lowres/medres/highres */
-    ULONG	        *wdp_Width;  	/* Out */
-    ULONG	        *wdp_Height; 	/* Out */
-    STACKULONG	     wdp_Flags;
-    STACKIPTR        wdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED struct DrawInfo *wdp_Dri;
+    STACKED struct TextFont *wdp_ReferenceFont; /* In: */
+    STACKED ULONG	     wdp_Which;  	/* In: One of CLOSEIMAGE, SIZEIMAGE, ... */
+    STACKED ULONG	     wdp_SysiSize;	/* In: lowres/medres/highres */
+    STACKED ULONG	        *wdp_Width;  	/* Out */
+    STACKED ULONG	        *wdp_Height; 	/* Out */
+    STACKED ULONG	     wdp_Flags;
+    STACKED IPTR        wdp_UserBuffer;
     
 };
 
@@ -68,96 +68,96 @@ struct wdpGetDefSizeSysImage
 
 struct wdpDrawSysImage
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        wdp_TrueColor;
-    struct DrawInfo *wdp_Dri;
-    struct RastPort *wdp_RPort;
-    STACKLONG	     wdp_X;
-    STACKLONG	     wdp_Y;
-    STACKLONG	     wdp_Width;
-    STACKLONG	     wdp_Height;
-    STACKULONG	     wdp_Which;
-    STACKULONG	     wdp_State;
-    STACKULONG	     wdp_Flags;
-    STACKIPTR        wdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED struct DrawInfo *wdp_Dri;
+    STACKED struct RastPort *wdp_RPort;
+    STACKED LONG	     wdp_X;
+    STACKED LONG	     wdp_Y;
+    STACKED LONG	     wdp_Width;
+    STACKED LONG	     wdp_Height;
+    STACKED ULONG	     wdp_Which;
+    STACKED ULONG	     wdp_State;
+    STACKED ULONG	     wdp_Flags;
+    STACKED IPTR        wdp_UserBuffer;
 };
 
 struct wdpDrawWinBorder
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        wdp_TrueColor;
-    struct DrawInfo *wdp_Dri;
-    struct Window   *wdp_Window;
-    struct RastPort *wdp_RPort;
-    STACKULONG	     wdp_Flags;
-    STACKIPTR        wdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED struct DrawInfo *wdp_Dri;
+    STACKED struct Window   *wdp_Window;
+    STACKED struct RastPort *wdp_RPort;
+    STACKED ULONG	     wdp_Flags;
+    STACKED IPTR        wdp_UserBuffer;
 };
 
 struct wdpLayoutBorderGadgets
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        wdp_TrueColor;
-    struct DrawInfo *wdp_Dri;
-    struct Window   *wdp_Window;
-    struct Gadget   *wdp_Gadgets;
-    STACKULONG	     wdp_Flags;
-    STACKULONG       wdp_ExtraButtons;
-    STACKIPTR        wdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED struct DrawInfo *wdp_Dri;
+    STACKED struct Window   *wdp_Window;
+    STACKED struct Gadget   *wdp_Gadgets;
+    STACKED ULONG	     wdp_Flags;
+    STACKED ULONG       wdp_ExtraButtons;
+    STACKED IPTR        wdp_UserBuffer;
 };
 
 struct wdpDrawBorderPropBack
 {
-    STACKULONG	      MethodID;
-    STACKBYTE         wdp_TrueColor;
-    struct DrawInfo  *wdp_Dri;
-    struct Window    *wdp_Window;
-    struct RastPort  *wdp_RPort;
-    struct Gadget    *wdp_Gadget;
-    struct Rectangle *wdp_RenderRect;
-    struct Rectangle *wdp_PropRect;
-    struct Rectangle *wdp_KnobRect;
-    STACKULONG	      wdp_Flags;
-    STACKIPTR         wdp_UserBuffer;
+    STACKED ULONG	      MethodID;
+    STACKED BYTE         wdp_TrueColor;
+    STACKED struct DrawInfo  *wdp_Dri;
+    STACKED struct Window    *wdp_Window;
+    STACKED struct RastPort  *wdp_RPort;
+    STACKED struct Gadget    *wdp_Gadget;
+    STACKED struct Rectangle *wdp_RenderRect;
+    STACKED struct Rectangle *wdp_PropRect;
+    STACKED struct Rectangle *wdp_KnobRect;
+    STACKED ULONG	      wdp_Flags;
+    STACKED IPTR         wdp_UserBuffer;
 };
 
 struct wdpDrawBorderPropKnob
 {
-    STACKULONG	      MethodID;
-    STACKBYTE         wdp_TrueColor;
-    struct DrawInfo  *wdp_Dri;
-    struct Window    *wdp_Window;
-    struct RastPort  *wdp_RPort;
-    struct Gadget    *wdp_Gadget;
-    struct Rectangle *wdp_RenderRect;
-    struct Rectangle *wdp_PropRect;
-    STACKULONG	      wdp_Flags;
-    STACKIPTR         wdp_UserBuffer;
+    STACKED ULONG	      MethodID;
+    STACKED BYTE         wdp_TrueColor;
+    STACKED struct DrawInfo  *wdp_Dri;
+    STACKED struct Window    *wdp_Window;
+    STACKED struct RastPort  *wdp_RPort;
+    STACKED struct Gadget    *wdp_Gadget;
+    STACKED struct Rectangle *wdp_RenderRect;
+    STACKED struct Rectangle *wdp_PropRect;
+    STACKED ULONG	      wdp_Flags;
+    STACKED IPTR         wdp_UserBuffer;
 };
 
 struct wdpInitWindow
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        wdp_TrueColor;
-    STACKIPTR        wdp_UserBuffer;
-    struct Screen   *wdp_Screen;
-    STACKIPTR        wdp_ScreenUserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED IPTR        wdp_UserBuffer;
+    STACKED struct Screen   *wdp_Screen;
+    STACKED IPTR        wdp_ScreenUserBuffer;
 };
 
 struct wdpExitWindow
 {
-    STACKULONG       MethodID;
-    STACKBYTE        wdp_TrueColor;
-    STACKIPTR	     wdp_UserBuffer;
+    STACKED ULONG       MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED IPTR	     wdp_UserBuffer;
 };
 
 struct wdpWindowShape
 {
-    STACKULONG       MethodID;
-    STACKBYTE        wdp_TrueColor;
-    struct Window   *wdp_Window;
-    STACKLONG        wdp_Width;
-    STACKLONG        wdp_Height;
-    STACKIPTR        wdp_UserBuffer;
+    STACKED ULONG       MethodID;
+    STACKED BYTE        wdp_TrueColor;
+    STACKED struct Window   *wdp_Window;
+    STACKED LONG        wdp_Width;
+    STACKED LONG        wdp_Height;
+    STACKED IPTR        wdp_UserBuffer;
 };
 
 /* WinDecor DrawWindowBorder Flags */ 

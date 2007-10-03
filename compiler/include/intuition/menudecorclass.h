@@ -45,87 +45,87 @@
 
 struct mdpGetDefSizeSysImage
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        mdp_TrueColor;
-    struct DrawInfo *mdp_Dri;
-    struct TextFont *mdp_ReferenceFont; /* In: */
-    STACKULONG	     mdp_Which;  	/* In: One of CLOSEIMAGE, SIZEIMAGE, ... */
-    STACKULONG	     mdp_SysiSize;	/* In: lowres/medres/highres */
-    ULONG	        *mdp_Width;  	/* Out */
-    ULONG	        *mdp_Height; 	/* Out */
-    STACKULONG	     mdp_Flags;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        mdp_TrueColor;
+    STACKED struct DrawInfo *mdp_Dri;
+    STACKED struct TextFont *mdp_ReferenceFont; /* In: */
+    STACKED ULONG	     mdp_Which;  	/* In: One of CLOSEIMAGE, SIZEIMAGE, ... */
+    STACKED ULONG	     mdp_SysiSize;	/* In: lowres/medres/highres */
+    STACKED ULONG	        *mdp_Width;  	/* Out */
+    STACKED ULONG	        *mdp_Height; 	/* Out */
+    STACKED ULONG	     mdp_Flags;
 };
 
 struct mdpDrawSysImage
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        mdp_TrueColor;
-    struct DrawInfo *mdp_Dri;
-    struct RastPort *mdp_RPort;
-    STACKLONG	     mdp_X;
-    STACKLONG	     mdp_Y;
-    STACKLONG	     mdp_Width;
-    STACKLONG	     mdp_Height;
-    STACKULONG	     mdp_Which;
-    STACKULONG	     mdp_State;
-    STACKULONG	     mdp_Flags;
-    IPTR             mdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        mdp_TrueColor;
+    STACKED struct DrawInfo *mdp_Dri;
+    STACKED struct RastPort *mdp_RPort;
+    STACKED LONG	     mdp_X;
+    STACKED LONG	     mdp_Y;
+    STACKED LONG	     mdp_Width;
+    STACKED LONG	     mdp_Height;
+    STACKED ULONG	     mdp_Which;
+    STACKED ULONG	     mdp_State;
+    STACKED ULONG	     mdp_Flags;
+    STACKED IPTR             mdp_UserBuffer;
 };
 
 struct mdpGetMenuSpaces
 {
-    STACKLONG	     MethodID;
-    STACKBYTE        mdp_TrueColor;
-    STACKLONG	     mdp_InnerLeft;  	/* Out */
-    STACKLONG	     mdp_InnerTop; 	/* Out */
-    STACKLONG	     mdp_InnerRight;
-    STACKLONG        mdp_InnerBottom;
-    STACKLONG        mdp_ItemInnerLeft;
-    STACKLONG        mdp_ItemInnerTop;
-    STACKLONG        mdp_ItemInnerRight;
-    STACKLONG        mdp_ItemInnerBottom;
-    STACKLONG        mdp_MinWidth;
-    STACKLONG        mdp_MinHeight;
+    STACKED LONG	     MethodID;
+    STACKED BYTE        mdp_TrueColor;
+    STACKED LONG	     mdp_InnerLeft;  	/* Out */
+    STACKED LONG	     mdp_InnerTop; 	/* Out */
+    STACKED LONG	     mdp_InnerRight;
+    STACKED LONG        mdp_InnerBottom;
+    STACKED LONG        mdp_ItemInnerLeft;
+    STACKED LONG        mdp_ItemInnerTop;
+    STACKED LONG        mdp_ItemInnerRight;
+    STACKED LONG        mdp_ItemInnerBottom;
+    STACKED LONG        mdp_MinWidth;
+    STACKED LONG        mdp_MinHeight;
 };
 
 /* The sdpDrawSysImage struct in scrdecorclass.h must match this one!!! */
 
 struct mdpDrawBackground
 {
-    STACKULONG	     MethodID;
-    STACKBYTE        mdp_TrueColor;
-    struct RastPort *mdp_RPort;
-    STACKLONG	     mdp_X;
-    STACKLONG	     mdp_Y;
-    STACKLONG	     mdp_Width;
-    STACKLONG	     mdp_Height;
-    STACKLONG        mdp_ItemLeft;
-    STACKLONG        mdp_ItemTop;
-    STACKLONG        mdp_ItemWidth;
-    STACKLONG        mdp_ItemHeight;
-    STACKUWORD       mdp_Flags;
-    STACKIPTR        mdp_UserBuffer;
+    STACKED ULONG	     MethodID;
+    STACKED BYTE        mdp_TrueColor;
+    STACKED struct RastPort *mdp_RPort;
+    STACKED LONG	     mdp_X;
+    STACKED LONG	     mdp_Y;
+    STACKED LONG	     mdp_Width;
+    STACKED LONG	     mdp_Height;
+    STACKED LONG        mdp_ItemLeft;
+    STACKED LONG        mdp_ItemTop;
+    STACKED LONG        mdp_ItemWidth;
+    STACKED LONG        mdp_ItemHeight;
+    STACKED UWORD       mdp_Flags;
+    STACKED IPTR        mdp_UserBuffer;
 };
 
 struct mdpInitMenu
 {
-    STACKLONG	     MethodID;
-    STACKBYTE        mdp_TrueColor;
-    struct RastPort *mdp_RPort;
-    struct Screen   *mdp_Screen;
-    STACKULONG       mdp_Left;
-    STACKULONG       mdp_Top;
-    STACKULONG       mdp_Width;
-    STACKLONG        mdp_Height;
-    STACKIPTR        mdp_UserBuffer;
-    STACKIPTR        mdp_ScreenUserBuffer;
+    STACKED LONG	     MethodID;
+    STACKED BYTE        mdp_TrueColor;
+    STACKED struct RastPort *mdp_RPort;
+    STACKED struct Screen   *mdp_Screen;
+    STACKED ULONG       mdp_Left;
+    STACKED ULONG       mdp_Top;
+    STACKED ULONG       mdp_Width;
+    STACKED LONG        mdp_Height;
+    STACKED IPTR        mdp_UserBuffer;
+    STACKED IPTR        mdp_ScreenUserBuffer;
 };
 
 struct mdpExitMenu
 {
-    STACKLONG	     MethodID;
-    STACKBYTE        mdp_TrueColor;
-    STACKIPTR        mdp_UserBuffer;
+    STACKED LONG	     MethodID;
+    STACKED BYTE        mdp_TrueColor;
+    STACKED IPTR        mdp_UserBuffer;
     
 };
 
