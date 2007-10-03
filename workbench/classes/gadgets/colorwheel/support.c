@@ -1001,7 +1001,7 @@ BOOL getPens( struct ColorWheelData *data )
 			if( ( *p++ = ObtainBestPenA( cm,
 		            	(r*range)*0x01010101, 
 			        (g*range)*0x01010101,
-			        (b*range)*0x01010101, tags ) ) == -1L )
+			        (b*range)*0x01010101, tags ) ) == -1 )
 			{
 			    WORD	*p2 = data->pens;
 
