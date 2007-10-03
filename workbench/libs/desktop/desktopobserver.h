@@ -19,8 +19,8 @@ struct DesktopObserverClassData
 
 struct doDeleteWindow
 {
-    Msg             MethodID;
-    Object         *icObs;
+    STACKED Msg             MethodID;
+    STACKED Object         *icObs;
 };
 
 // struct icoAddIcon
