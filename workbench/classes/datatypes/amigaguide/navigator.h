@@ -43,10 +43,10 @@ struct NavigatorStatus
 
 struct npChangeStatus
 {
-   ULONG MethodID;
-   struct GadgetInfo *np_GInfo;
-   ULONG np_NumCommands;
-   struct NavigatorStatus *np_Commands;
+   STACKED ULONG MethodID;
+   STACKED struct GadgetInfo *np_GInfo;
+   STACKED ULONG np_NumCommands;
+   STACKED struct NavigatorStatus *np_Commands;
 };
 
 #define NVS_ENABLE        0x0000
