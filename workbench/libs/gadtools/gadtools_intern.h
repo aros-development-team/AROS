@@ -392,12 +392,12 @@ struct GT_GenericGadget
 #define GM_DOMAIN 7
 struct gpDomain
 {
-    STACKULONG          MethodID;   /* GM_DOMAIN */
-    struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
-    struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
-    STACKLONG           gpd_Which;  /* see below */
-    struct IBox         gpd_Domain; /* Resulting domain. */
-    struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
+    STACKED ULONG          MethodID;   /* GM_DOMAIN */
+    STACKED struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
+    STACKED struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
+    STACKED LONG           gpd_Which;  /* see below */
+    STACKED struct IBox         gpd_Domain; /* Resulting domain. */
+    STACKED struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
                                        yet. */
 };
 
