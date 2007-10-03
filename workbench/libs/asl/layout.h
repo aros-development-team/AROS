@@ -180,11 +180,11 @@ struct AslBase_intern;
 
 struct ASLLVDrawMsg
 {
-    ULONG              lvdm_MethodID; /* LV_DRAW */
-    struct RastPort  * lvdm_RastPort;
-    struct DrawInfo  * lvdm_DrawInfo;
-    struct Rectangle   lvdm_Bounds;
-    ULONG              lvdm_State;
+    STACKED ULONG              lvdm_MethodID; /* LV_DRAW */
+    STACKED struct RastPort  * lvdm_RastPort;
+    STACKED struct DrawInfo  * lvdm_DrawInfo;
+    STACKED struct Rectangle   lvdm_Bounds;
+    STACKED ULONG              lvdm_State;
 };
 
 struct ASLLVFileReqNode
