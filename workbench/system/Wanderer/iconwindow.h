@@ -46,28 +46,28 @@ extern struct MUI_CustomClass                     *IconWindow_CLASS;
 
 struct BackFillMsg
 {
-	struct Layer    *Layer;
-	struct Rectangle Bounds;
-	LONG             OffsetX;
-	LONG             OffsetY;
+	STACKED struct Layer    *Layer;
+	STACKED struct Rectangle Bounds;
+	STACKED LONG             OffsetX;
+	STACKED LONG             OffsetY;
 };
 
 struct IconWindowBackFillMsg
 {
-	struct Layer    *Layer;
-	struct Rectangle AreaBounds;
-	struct Rectangle DrawBounds;
-	LONG             OffsetX;
-	LONG             OffsetY;
+	STACKED struct Layer    *Layer;
+	STACKED struct Rectangle AreaBounds;
+	STACKED struct Rectangle DrawBounds;
+	STACKED LONG             OffsetX;
+	STACKED LONG             OffsetY;
 };
 
 struct IconWindow_ActionMsg
 {
-    int type;
-    Object *iconlist;
-    int isroot;
-    struct IconList_Click *click;
-    struct IconList_Drop *drop;
+    STACKED int type;
+    STACKED Object *iconlist;
+    STACKED int isroot;
+    STACKED struct IconList_Click *click;
+    STACKED struct IconList_Drop *drop;
     /* to be continued...*/
 };
 
