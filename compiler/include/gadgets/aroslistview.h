@@ -62,39 +62,39 @@
 
 struct AROSP_Listview_Insert
 {
-    STACKULONG 	MethodID;
-    struct GadgetInfo *GInfo;
-    APTR	*ItemArray;
-    STACKLONG	Position;
+    STACKED ULONG 	MethodID;
+    STACKED struct GadgetInfo *GInfo;
+    STACKED APTR	*ItemArray;
+    STACKED LONG	Position;
 };
 
 struct AROSP_Listview_InsertSingle
 {
-    STACKULONG	MethodID;
-    struct GadgetInfo *GInfo;
-    APTR	Item;
-    STACKLONG	Position;
+    STACKED ULONG	MethodID;
+    STACKED struct GadgetInfo *GInfo;
+    STACKED APTR	Item;
+    STACKED LONG	Position;
 };
 
 struct AROSP_Listview_Remove
 {
-    STACKULONG		MethodID;
-    struct GadgetInfo 	*GInfo;
-    STACKLONG		Position;
+    STACKED ULONG		MethodID;
+    STACKED struct GadgetInfo 	*GInfo;
+    STACKED LONG		Position;
 };
 
 struct AROSP_Listview_DoubleClick
 {
-    STACKULONG		MethodID;
-    struct GadgetInfo 	*GInfo;
-    STACKLONG		Position;
+    STACKED ULONG		MethodID;
+    STACKED struct GadgetInfo 	*GInfo;
+    STACKED LONG		Position;
 };
 
 struct AROSP_Listview_SingleClick
 {
-    STACKULONG		MethodID;
-    struct GadgetInfo 	*GInfo;
-    STACKLONG		Position;
+    STACKED ULONG		MethodID;
+    STACKED struct GadgetInfo 	*GInfo;
+    STACKED LONG		Position;
 };
 
 

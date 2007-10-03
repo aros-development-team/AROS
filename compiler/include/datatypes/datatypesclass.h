@@ -245,9 +245,9 @@ struct DTSpecialInfo
 
 struct DTMethod
 {
-    STRPTR	 dtm_Label;
-    STRPTR	 dtm_Command;
-    STACKULONG	 dtm_Method;
+    STACKED STRPTR	 dtm_Label;
+    STACKED STRPTR	 dtm_Command;
+    STACKED ULONG	 dtm_Method;
 };
 
 
@@ -314,45 +314,45 @@ struct FrameInfo
 /* DTM_REMOVEDTOBJECT, DTM_CLEARSELECTED, DTM_COPY, DTM_ABORTPRINT */
 struct dtGeneral
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dtg_GInfo;
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dtg_GInfo;
 };
 
 /* DTM_SELECT */
 struct dtSelect
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dts_GInfo;
-    struct Rectangle   dts_Select;
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dts_GInfo;
+    STACKED struct Rectangle   dts_Select;
 };
 
 /* DTM_FRAMEBOX */
 struct dtFrameBox
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dtf_GInfo;
-    struct FrameInfo  *dtf_ContentsInfo;        /* Input */
-    struct FrameInfo  *dtf_FrameInfo;           /* Output */
-    STACKULONG         dtf_SizeFrameInfo;
-    STACKULONG         dtf_FrameFlags;
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dtf_GInfo;
+    STACKED struct FrameInfo  *dtf_ContentsInfo;        /* Input */
+    STACKED struct FrameInfo  *dtf_FrameInfo;           /* Output */
+    STACKED ULONG         dtf_SizeFrameInfo;
+    STACKED ULONG         dtf_FrameFlags;
 };
 
 /* DTM_GOTO */
 struct dtGoto
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dtg_GInfo;
-    STRPTR             dtg_NodeName;          /* Node to goto */
-    struct TagItem    *dtg_AttrList;          /* Additional attributes */
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dtg_GInfo;
+    STACKED STRPTR             dtg_NodeName;          /* Node to goto */
+    STACKED struct TagItem    *dtg_AttrList;          /* Additional attributes */
 };
 
 /* DTM_TRIGGER */
 struct dtTrigger
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dtt_GInfo;
-    STACKULONG         dtt_Function;
-    APTR               dtt_Data;
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dtt_GInfo;
+    STACKED ULONG         dtt_Function;
+    STACKED APTR               dtt_Data;
 };
 
 
@@ -405,43 +405,43 @@ union printerIO
 /* DTM_PRINT */
 struct dtPrint
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dtp_GInfo;           /* Gadget information */
-    union printerIO   *dtp_PIO;             /* Printer IO request */
-    struct TagItem    *dtp_AttrList;        /* Additional attributes */
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dtp_GInfo;           /* Gadget information */
+    STACKED union printerIO   *dtp_PIO;             /* Printer IO request */
+    STACKED struct TagItem    *dtp_AttrList;        /* Additional attributes */
 };
 
 /* DTM_DRAW */
 struct dtDraw
 {
-    STACKULONG       MethodID;
-    struct RastPort *dtd_RPort;
-    STACKLONG        dtd_Left;
-    STACKLONG        dtd_Top;
-    STACKLONG        dtd_Width;
-    STACKLONG        dtd_Height;
-    STACKLONG        dtd_TopHoriz;
-    STACKLONG        dtd_TopVert;
-    struct TagItem  *dtd_AttrList;         /* Additional attributes */
+    STACKED ULONG       MethodID;
+    STACKED struct RastPort *dtd_RPort;
+    STACKED LONG        dtd_Left;
+    STACKED LONG        dtd_Top;
+    STACKED LONG        dtd_Width;
+    STACKED LONG        dtd_Height;
+    STACKED LONG        dtd_TopHoriz;
+    STACKED LONG        dtd_TopVert;
+    STACKED struct TagItem  *dtd_AttrList;         /* Additional attributes */
 };
 
 /* DTM_RELEASEDRAWINFO */
 struct dtReleaseDrawInfo
 
 {
-    STACKULONG   MethodID;
-    APTR         dtr_Handle;		   /* Handle as returned by DTM_OBTAINDRAWINFO */
+    STACKED ULONG   MethodID;
+    STACKED APTR         dtr_Handle;		   /* Handle as returned by DTM_OBTAINDRAWINFO */
 };
 
 
 /* DTM_WRITE */
 struct dtWrite
 {
-    STACKULONG         MethodID;
-    struct GadgetInfo *dtw_GInfo;          /* Gadget information */
-    BPTR               dtw_FileHandle;     /* File handle to write to */
-    STACKULONG         dtw_Mode;
-    struct TagItem    *dtw_AttrList;       /* Additional attributes */
+    STACKED ULONG         MethodID;
+    STACKED struct GadgetInfo *dtw_GInfo;          /* Gadget information */
+    STACKED BPTR               dtw_FileHandle;     /* File handle to write to */
+    STACKED ULONG         dtw_Mode;
+    STACKED struct TagItem    *dtw_AttrList;       /* Additional attributes */
 };
 
 

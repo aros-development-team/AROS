@@ -27,7 +27,7 @@
 #   define __typedef_Msg
     typedef struct _struct_Msg
     {
-        STACKULONG MethodID;
+        STACKED ULONG MethodID;
     } *Msg;
 #endif
 
@@ -67,30 +67,30 @@
 
 struct opSet
 {
-    STACKULONG          MethodID;
-    struct TagItem    * ops_AttrList;
-    struct GadgetInfo * ops_GInfo;
+    STACKED ULONG          MethodID;
+    STACKED struct TagItem    * ops_AttrList;
+    STACKED struct GadgetInfo * ops_GInfo;
 };
 
 struct opGet
 {
-    STACKULONG  MethodID;
-    Tag         opg_AttrID;
-    IPTR      * opg_Storage;
+    STACKED ULONG  MethodID;
+    STACKED Tag         opg_AttrID;
+    STACKED IPTR      * opg_Storage;
 };
 
 struct opAddTail
 {
-    STACKULONG    MethodID;
-    struct List * opat_List;
+    STACKED ULONG    MethodID;
+    STACKED struct List * opat_List;
 };
 
 struct opUpdate
 {
-    STACKULONG          MethodID;
-    struct TagItem    * opu_AttrList;
-    struct GadgetInfo * opu_GInfo;
-    STACKULONG          opu_Flags;    /* see below */
+    STACKED ULONG          MethodID;
+    STACKED struct TagItem    * opu_AttrList;
+    STACKED struct GadgetInfo * opu_GInfo;
+    STACKED ULONG          opu_Flags;    /* see below */
 };
 
 /* opu_Flags */
@@ -98,8 +98,8 @@ struct opUpdate
 
 struct opMember
 {
-    STACKULONG MethodID;
-    Object   * opam_Object;
+    STACKED ULONG MethodID;
+    STACKED Object   * opam_Object;
 };
 #define opAddMember opMember
 
