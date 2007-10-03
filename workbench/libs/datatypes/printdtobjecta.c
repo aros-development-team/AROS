@@ -195,11 +195,11 @@ void AsyncPrinter(void)
 	    Tags[0].ti_Tag  = NP_StackSize;
 	    Tags[0].ti_Data = 4096;
 	    Tags[1].ti_Tag  = NP_Entry;
-	    Tags[1].ti_Data = (ULONG)&AsyncPrinter;
+	    Tags[1].ti_Data = (IPTR)&AsyncPrinter;
 	    Tags[2].ti_Tag  = NP_Priority;
 	    Tags[2].ti_Data = 0;
 	    Tags[3].ti_Tag  = NP_Name;
-	    Tags[3].ti_Data = (ULONG)"AsyncPrintDaemon";
+	    Tags[3].ti_Data = (IPTR)"AsyncPrintDaemon";
 	    Tags[4].ti_Tag  = TAG_DONE;
 	 
 	    if((PrintProcess = CreateNewProc(Tags)))

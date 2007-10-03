@@ -72,7 +72,7 @@
 
     opGet.MethodID    = OM_GET;
     opGet.opg_AttrID  = DTA_TriggerMethods;
-    opGet.opg_Storage = (ULONG *)&dtm;
+    opGet.opg_Storage = (IPTR *)&dtm;
     
     if(!DoMethodA(object, (Msg)&opGet))
 	dtm = NULL;
