@@ -72,7 +72,7 @@ struct AROS_cpu_context
 #define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
 #define GetCpuContext(task)	((struct AROS_cpu_context *)\
 				(GetIntETask(task)->iet_Context))
-#define GetSP(task)		((SP_TYPE*)(task->tc_SPReg))
+#define GetSP(task)		(*(SP_TYPE **)(&task->tc_SPReg))
 
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
