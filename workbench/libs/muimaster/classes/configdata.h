@@ -13,7 +13,7 @@
 #define MUIB_Configdata  (MUIB_ZUNE | 0x00000900)
 
 /* The config items for MUIM_GetConfigItem */
-#define MUICFG_Invalid                  (-1L)
+#define MUICFG_Invalid                  (-1)
 #define MUICFG_Window_Spacing_Left      0x01  /* ULONG, horiz pixels (def=4) */
 #define MUICFG_Window_Spacing_Right     0x02  /* ULONG, horiz pixels (def=4) */
 #define MUICFG_Window_Spacing_Top       0x03  /* ULONG, vert pixels (def=3) */
@@ -181,16 +181,16 @@
 #define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007) /* Zune 20030320 */
 #define MUIM_Configdata_SetPenspec     (MUIB_Configdata | 0x00000008) /* Zune 20030714 */
 #define MUIM_Configdata_SetString      (MUIB_Configdata | 0x00000009) /* Zune 20030808 */
-struct MUIP_Configdata_GetString       {ULONG MethodID; ULONG id; };
-struct MUIP_Configdata_GetULong        {ULONG MethodID; ULONG id; };
-struct MUIP_Configdata_SetULong        {ULONG MethodID; ULONG id; ULONG val; };
-struct MUIP_Configdata_SetImspec       {ULONG MethodID; ULONG id; CONST_STRPTR imspec; };
-struct MUIP_Configdata_SetFramespec    {ULONG MethodID; ULONG id; CONST_STRPTR framespec; };
-struct MUIP_Configdata_SetFont         {ULONG MethodID; ULONG id; CONST_STRPTR font; };
-struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; };
-struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
-struct MUIP_Configdata_SetPenspec      {ULONG MethodID; ULONG id; CONST_STRPTR penspec; };
-struct MUIP_Configdata_SetString       {ULONG MethodID; ULONG id; CONST_STRPTR string; };
+struct MUIP_Configdata_GetString       {STACKED ULONG MethodID; STACKED ULONG id; };
+struct MUIP_Configdata_GetULong        {STACKED ULONG MethodID; STACKED ULONG id; };
+struct MUIP_Configdata_SetULong        {STACKED ULONG MethodID; STACKED ULONG id; STACKED ULONG val; };
+struct MUIP_Configdata_SetImspec       {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR imspec; };
+struct MUIP_Configdata_SetFramespec    {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR framespec; };
+struct MUIP_Configdata_SetFont         {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR font; };
+struct MUIP_Configdata_Save            {STACKED ULONG MethodID; STACKED CONST_STRPTR filename; };
+struct MUIP_Configdata_Load            {STACKED ULONG MethodID; STACKED CONST_STRPTR filename; };
+struct MUIP_Configdata_SetPenspec      {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR penspec; };
+struct MUIP_Configdata_SetString       {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR string; };
 
 /*** Attributes *************************************************************/
 #define MUIA_Configdata_Application     (MUIB_Configdata | 0x00000000) /* ZV1: i..  Object * */

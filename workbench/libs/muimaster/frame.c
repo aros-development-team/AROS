@@ -194,10 +194,10 @@ struct FrameFillInfo
 
 struct BackFillMsg
 {
-    struct Layer    *Layer;
-    struct Rectangle Bounds;
-    LONG             OffsetX;
-    LONG             OffsetY;
+    STACKED struct Layer    *Layer;
+    STACKED struct Rectangle Bounds;
+    STACKED LONG             OffsetX;
+    STACKED LONG             OffsetY;
 };
 
 AROS_UFH3S(void, WindowPatternBackFillFunc,

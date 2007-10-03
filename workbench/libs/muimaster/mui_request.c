@@ -167,7 +167,7 @@ AROS_UFH2S(void, len_func,
     	    char *current = gadgs;
 	    int active = -1;
 	    int num_gads = 0;
-	    LONG isopen;
+	    IPTR isopen;
 
 //	    set(app, MUIA_Application_Sleep, TRUE);
 	    DoMethod(app, OM_ADDMEMBER, (IPTR)req_wnd);

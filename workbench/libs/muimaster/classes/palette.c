@@ -72,7 +72,7 @@ static void NotifyGun(Object *obj, struct MUI_PaletteData *data, LONG gun)
     CoerceMethod(data->notifyclass, obj, OM_SET, (IPTR)tags, NULL);
 }
 
-static LONG setcolor_func(struct Hook *hook, APTR *obj, ULONG *notify)
+static LONG setcolor_func(struct Hook *hook, APTR *obj, STACKULONG *notify)
 {
     ULONG   val;
     ULONG mode = *notify++;

@@ -16,7 +16,7 @@
 /*** Methods ****************************************************************/
 
 #define MUIM_Dirlist_ReRead         (MUIB_MUI|0x00422d71) /* MUI: V4  */
-struct  MUIP_Dirlist_ReRead         {ULONG MethodID;};
+struct  MUIP_Dirlist_ReRead         {STACKED ULONG MethodID;};
 
 /*** Attributes *************************************************************/
 #define MUIA_Dirlist_AcceptPattern  (MUIB_MUI|0x0042760a) /* MUI: V4  is. STRPTR        */

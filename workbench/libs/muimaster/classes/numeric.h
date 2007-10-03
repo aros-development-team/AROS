@@ -19,12 +19,12 @@
 #define MUIM_Numeric_SetDefault    (MUIB_MUI|0x0042ab0a) /* MUI: V11 */
 #define MUIM_Numeric_Stringify     (MUIB_MUI|0x00424891) /* MUI: V11 */
 #define MUIM_Numeric_ValueToScale  (MUIB_MUI|0x00423e4f) /* MUI: V11 */
-struct MUIP_Numeric_Decrease       {ULONG MethodID; LONG amount;};
-struct MUIP_Numeric_Increase       {ULONG MethodID; LONG amount;};
-struct MUIP_Numeric_ScaleToValue   {ULONG MethodID; LONG scalemin; LONG scalemax; LONG scale;};
-struct MUIP_Numeric_SetDefault     {ULONG MethodID;};
-struct MUIP_Numeric_Stringify      {ULONG MethodID; LONG value;};
-struct MUIP_Numeric_ValueToScale   {ULONG MethodID; LONG scalemin; LONG scalemax;};
+struct MUIP_Numeric_Decrease       {STACKED ULONG MethodID; STACKED LONG amount;};
+struct MUIP_Numeric_Increase       {STACKED ULONG MethodID; STACKED LONG amount;};
+struct MUIP_Numeric_ScaleToValue   {STACKED ULONG MethodID; STACKED LONG scalemin; STACKED LONG scalemax; STACKED LONG scale;};
+struct MUIP_Numeric_SetDefault     {STACKED ULONG MethodID;};
+struct MUIP_Numeric_Stringify      {STACKED ULONG MethodID; STACKED LONG value;};
+struct MUIP_Numeric_ValueToScale   {STACKED ULONG MethodID; STACKED LONG scalemin; STACKED LONG scalemax;};
 
 /*** Attributes *************************************************************/
 #define MUIA_Numeric_CheckAllSizes (MUIB_MUI|0x00421594) /* MUI: V11 isg BOOL   */
@@ -38,7 +38,7 @@ struct MUIP_Numeric_ValueToScale   {ULONG MethodID; LONG scalemin; LONG scalemax
 #define MUIA_Numeric_Value         (MUIB_MUI|0x0042ae3a) /* MUI: V11 isg LONG   */
 
 #define MUIM_Numeric_ValueToScaleExt (MUIB_Numeric | 0x00000000) /* ZUNE only */
-struct MUIP_Numeric_ValueToScaleExt   {ULONG MethodID; LONG value; LONG scalemin; LONG scalemax;};
+struct MUIP_Numeric_ValueToScaleExt   {STACKED ULONG MethodID; STACKED LONG value; STACKED LONG scalemin; STACKED LONG scalemax;};
 
 extern const struct __MUIBuiltinClass _MUI_Numeric_desc; /* PRIV */
 

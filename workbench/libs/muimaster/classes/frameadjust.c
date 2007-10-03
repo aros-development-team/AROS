@@ -41,8 +41,8 @@ static Object*MakeSpacingSlider (void)
 
 struct SliderFuncMsg
 {
-    Object *slider;
-    struct Frameadjust_DATA *data;
+    STACKED Object *slider;
+    STACKED struct Frameadjust_DATA *data;
 };
 
 static void SliderFunc(struct Hook *hook, Object *obj, struct SliderFuncMsg *msg)
@@ -82,9 +82,9 @@ static void SliderFunc(struct Hook *hook, Object *obj, struct SliderFuncMsg *msg
 
 struct FramesFuncMsg
 {
-    ULONG type;
-    ULONG state;
-    struct Frameadjust_DATA *data;
+    STACKED ULONG type;
+    STACKED ULONG state;
+    STACKED struct Frameadjust_DATA *data;
 };
 
 static void FramesFunc(struct Hook *hook, Object *obj, struct FramesFuncMsg *msg)

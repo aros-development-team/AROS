@@ -15,8 +15,8 @@
 /*** Methods ****************************************************************/
 #define MUIM_Prop_Decrease  (MUIB_MUI|0x00420dd1) /* MUI: V16 */
 #define MUIM_Prop_Increase  (MUIB_MUI|0x0042cac0) /* MUI: V16 */
-struct  MUIP_Prop_Decrease  {ULONG MethodID; LONG amount;};
-struct  MUIP_Prop_Increase  {ULONG MethodID; LONG amount;};
+struct  MUIP_Prop_Decrease  {STACKED ULONG MethodID; STACKED LONG amount;};
+struct  MUIP_Prop_Increase  {STACKED ULONG MethodID; STACKED LONG amount;};
 
 /*** Attributes *************************************************************/
 #define MUIA_Prop_Entries        (MUIB_MUI|0x0042fbdb) /* MUI: V4  isg LONG */

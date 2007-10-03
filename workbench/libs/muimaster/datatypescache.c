@@ -41,10 +41,10 @@ static int dt_initialized;
 /* A BltBitMaskPort() replacement which blits masks for interleaved bitmaps correctly */
 struct LayerHookMsg
 {
-	struct Layer *layer;
-	struct Rectangle bounds;
-	LONG offsetx;
-	LONG offsety;
+	STACKED struct Layer *layer;
+	STACKED struct Rectangle bounds;
+	STACKED LONG offsetx;
+	STACKED LONG offsety;
 };
 
 struct BltMaskHook

@@ -29,21 +29,21 @@
 #define MUIM_List_Select              (MUIB_MUI|0x004252d8) /* MUI: V4  */
 #define MUIM_List_Sort                (MUIB_MUI|0x00422275) /* MUI: V4  */
 #define MUIM_List_TestPos             (MUIB_MUI|0x00425f48) /* MUI: V11 */
-struct MUIP_List_Clear                {ULONG MethodID;};
-struct MUIP_List_CreateImage          {ULONG MethodID; Object *obj; ULONG flags;};
-struct MUIP_List_DeleteImage          {ULONG MethodID; APTR listimg;};
-struct MUIP_List_Exchange             {ULONG MethodID; LONG pos1; LONG pos2;};
-struct MUIP_List_GetEntry             {ULONG MethodID; LONG pos; APTR *entry;};
-struct MUIP_List_Insert               {ULONG MethodID; APTR *entries; LONG count; LONG pos;};
-struct MUIP_List_InsertSingle         {ULONG MethodID; APTR entry; LONG pos;};
-struct MUIP_List_Jump                 {ULONG MethodID; LONG pos;};
-struct MUIP_List_Move                 {ULONG MethodID; LONG from; LONG to;};
-struct MUIP_List_NextSelected         {ULONG MethodID; LONG *pos;};
-struct MUIP_List_Redraw               {ULONG MethodID; LONG pos;};
-struct MUIP_List_Remove               {ULONG MethodID; LONG pos;};
-struct MUIP_List_Select               {ULONG MethodID; LONG pos; LONG seltype; LONG *state;};
-struct MUIP_List_Sort                 {ULONG MethodID;};
-struct MUIP_List_TestPos              {ULONG MethodID; LONG x; LONG y; struct MUI_List_TestPos_Result *res;};
+struct MUIP_List_Clear                {STACKED ULONG MethodID;};
+struct MUIP_List_CreateImage          {STACKED ULONG MethodID; STACKED Object *obj; STACKED ULONG flags;};
+struct MUIP_List_DeleteImage          {STACKED ULONG MethodID; STACKED APTR listimg;};
+struct MUIP_List_Exchange             {STACKED ULONG MethodID; STACKED LONG pos1; STACKED LONG pos2;};
+struct MUIP_List_GetEntry             {STACKED ULONG MethodID; STACKED LONG pos; STACKED APTR *entry;};
+struct MUIP_List_Insert               {STACKED ULONG MethodID; STACKED APTR *entries; STACKED LONG count; STACKED LONG pos;};
+struct MUIP_List_InsertSingle         {STACKED ULONG MethodID; STACKED APTR entry; STACKED LONG pos;};
+struct MUIP_List_Jump                 {STACKED ULONG MethodID; STACKED LONG pos;};
+struct MUIP_List_Move                 {STACKED ULONG MethodID; STACKED LONG from; STACKED LONG to;};
+struct MUIP_List_NextSelected         {STACKED ULONG MethodID; STACKED LONG *pos;};
+struct MUIP_List_Redraw               {STACKED ULONG MethodID; STACKED LONG pos;};
+struct MUIP_List_Remove               {STACKED ULONG MethodID; STACKED LONG pos;};
+struct MUIP_List_Select               {STACKED ULONG MethodID; STACKED LONG pos; STACKED LONG seltype; STACKED LONG *state;};
+struct MUIP_List_Sort                 {STACKED ULONG MethodID;};
+struct MUIP_List_TestPos              {STACKED ULONG MethodID; STACKED LONG x; STACKED LONG y; STACKED struct MUI_List_TestPos_Result *res;};
 
 #define MUIM_List_Construct           (MUIB_List | 0x00000000) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_Destruct            (MUIB_List | 0x00000001) /* Zune: V1 same like NList, PRIV for now! */
@@ -51,12 +51,12 @@ struct MUIP_List_TestPos              {ULONG MethodID; LONG x; LONG y; struct MU
 #define MUIM_List_Display             (MUIB_List | 0x00000003) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_SelectChange        (MUIB_List | 0x00000004) /* Zune: V1 same like NLIST, PRIV for now! */
 #define MUIM_List_InsertSingleAsTree  (MUIB_List | 0x00000005) /* Zune: V1 */
-struct MUIP_List_Construct            {ULONG MethodID; APTR entry; APTR pool;};
-struct MUIP_List_Destruct             {ULONG MethodID; APTR entry; APTR pool;};
-struct MUIP_List_Compare              {ULONG MethodID; APTR entry1; APTR entry2; LONG sort_type1; LONG sort_type2;};
-struct MUIP_List_Display              {ULONG MethodID; APTR entry; LONG entry_pos; STRPTR *strings; STRPTR *preparses;};
-struct MUIP_List_SelectChange         {ULONG MethodID; LONG pos; LONG state; ULONG flags;};
-struct MUIP_List_InsertSingleAsTree   {ULONG MethodID; APTR entry; LONG parent; LONG rel_entry_pos; ULONG flags;};
+struct MUIP_List_Construct            {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
+struct MUIP_List_Destruct             {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
+struct MUIP_List_Compare              {STACKED ULONG MethodID; STACKED APTR entry1; STACKED APTR entry2; STACKED LONG sort_type1; STACKED LONG sort_type2;};
+struct MUIP_List_Display              {STACKED ULONG MethodID; STACKED APTR entry; STACKED LONG entry_pos; STACKED STRPTR *strings; STACKED STRPTR *preparses;};
+struct MUIP_List_SelectChange         {STACKED ULONG MethodID; STACKED LONG pos; STACKED LONG state; STACKED ULONG flags;};
+struct MUIP_List_InsertSingleAsTree   {STACKED ULONG MethodID; STACKED APTR entry; STACKED LONG parent; STACKED LONG rel_entry_pos; STACKED ULONG flags;};
 
 /*** Attributes *************************************************************/
 #define MUIA_List_Active              (MUIB_MUI|0x0042391c) /* MUI: V4  isg LONG          */

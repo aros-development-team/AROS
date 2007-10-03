@@ -49,17 +49,17 @@
 #define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000033) /* Zune: V1 */
 #define MUIM_IconList_ViewIcon          (MUIB_IconList | 0x00000034) /* Zune: V1 */
 
-struct MUIP_IconList_Clear              {ULONG MethodID;};
-struct MUIP_IconList_Update             {ULONG MethodID;};
-struct MUIP_IconList_RethinkDimensions  {ULONG MethodID; struct IconEntry *singleicon;};
-struct MUIP_IconList_CreateEntry        {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib; struct DiskObject *icon_dob;};/* void *udata; More file attrs to add };*/
-struct MUIP_IconList_DestroyEntry       {ULONG MethodID; struct IconEntry *icon;};
-struct MUIP_IconList_DrawEntry          {ULONG MethodID; struct IconEntry *icon; IPTR drawmode;};
-struct MUIP_IconList_DrawEntryLabel     {ULONG MethodID; struct IconEntry *icon; IPTR drawmode;};
-struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
-struct MUIP_IconList_Sort               {ULONG MethodID;};
-struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
-struct MUIP_IconList_ViewIcon           {ULONG MethodID; struct IconEntry *icon;};
+struct MUIP_IconList_Clear              {STACKED ULONG MethodID;};
+struct MUIP_IconList_Update             {STACKED ULONG MethodID;};
+struct MUIP_IconList_RethinkDimensions  {STACKED ULONG MethodID; STACKED struct IconEntry *singleicon;};
+struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED char *filename; STACKED char *label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *icon_dob;};/* void *udata; More file attrs to add };*/
+struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
+struct MUIP_IconList_DrawEntry          {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
+struct MUIP_IconList_DrawEntryLabel     {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
+struct MUIP_IconList_NextSelected       {STACKED ULONG MethodID; STACKED struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
+struct MUIP_IconList_Sort               {STACKED ULONG MethodID;};
+struct MUIP_IconList_PositionIcons      {STACKED ULONG MethodID;};
+struct MUIP_IconList_ViewIcon           {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry
