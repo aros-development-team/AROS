@@ -14,17 +14,13 @@
 
 #include <proto/exec.h>
 
-#include <aros/host-conf.h>
-
-#ifdef HAS_MMAP_H
-#include <sys/mmap.h>
-#endif
-
-#include <memory.h>     /* From $(TOP)/rom/exec */
-
+#define _XOPEN_SOURCE 600L
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/termios.h>
+#include <string.h>
+#include <termios.h>
+
+#include "../../../rom/exec/memory.h"
 
 char *malloc_options;
 
@@ -37,6 +33,7 @@ extern const struct Resident
     OOP_ROMTag,
     HIDDCl_ROMTag,
     UXIO_ROMTag,
+    HostLib_ROMTag,
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
@@ -48,6 +45,9 @@ extern const struct Resident
     Intuition_ROMTag,
     Cybergraphics_ROMTag,
     Console_ROMTag,
+#if ENABLE_DBUS == 1
+    Dbus_ROMTag,
+#endif
     Mathffp_ROMTag,
     Mathieeesingbas_ROMTag,
     Workbench_ROMTag,
@@ -67,56 +67,59 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_ROMTag,                      /* SingleTask,  110  */
-    &Exec_resident,                         /* SingleTask,  105  */
-    &Utility_ROMTag,                        /* ColdStart,   103  */
-    &Aros_ROMTag,                           /* ColdStart,   102  */
-    &Mathieeesingbas_ROMTag,                /* ColdStart,   101  */
+    &Expansion_ROMTag,                  /* SingleTask,  110  */
+    &Exec_resident,                     /* SingleTask,  105  */
+    &Utility_ROMTag,                    /* ColdStart,   103  */
+    &Aros_ROMTag,                       /* ColdStart,   102  */
+    &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
 #if 0
-    &BOOPSI_resident,                       /* ColdStart,   95   */
+    &BOOPSI_resident,                   /* ColdStart,   95       */
 #endif
-    &OOP_ROMTag,                            /* ColdStart,   94   */
-    &HIDDCl_ROMTag,                         /* ColdStart,   92   */
-    &UXIO_ROMTag,                           /* ColdStart,   91   */
-    &Graphics_ROMTag,                       /* ColdStart,   65   */
-    &Layers_ROMTag,                         /* ColdStart,   60   */
-    &Timer_ROMTag,                          /* ColdStart,   50   */
-    &Battclock_ROMTag,                      /* ColdStart,   45   */
-    &Keyboard_ROMTag,                       /* ColdStart,   44   */
-    &Gameport_ROMTag,                       /* ColdStart,   43   */
-    &Keymap_ROMTag,                         /* ColdStart,   40   */
-    &Input_ROMTag,                          /* ColdStart,   30   */
-    &Intuition_ROMTag,                      /* ColdStart,   10   */
-    &X11Cl_ROMTag,                          /* ColdStart,   9    */
-    &Cybergraphics_ROMTag,                  /* ColdStart,   8    */
-    &Console_ROMTag,                        /* ColdStart,   5    */
-    &emul_handler_ROMTag,                   /* ColdStart,   0    */
-    &Packet_ROMTag,                         /* ColdStart,   0    */
-    &UXSer_ROMTag,                          /* ColdStart,   0    */
-    &UXPar_ROMTag,                          /* ColdStart,   0    */
-    &Workbench_ROMTag,                      /* ColdStart,  -120  */
-    &Mathffp_ROMTag,                        /* ColdStart,  -120  */
+    &OOP_ROMTag,                        /* ColdStart,   94       */
+    &HIDDCl_ROMTag,                     /* ColdStart,   92       */
+    &UXIO_ROMTag,                       /* ColdStart,   91       */
+    &HostLib_ROMTag,                    /* ColdStart,   91       */
+    &Graphics_ROMTag,                   /* ColdStart,   65       */
+    &Layers_ROMTag,                     /* ColdStart,   60       */
+    &Timer_ROMTag,                      /* ColdStart,   50       */
+    &Battclock_ROMTag,                  /* ColdStart,   45       */
+    &Keyboard_ROMTag,                   /* ColdStart,   44       */
+    &Gameport_ROMTag,                   /* ColdStart,   43       */
+    &Keymap_ROMTag,                     /* ColdStart,   40       */
+    &Input_ROMTag,                      /* ColdStart,   30       */
+    &Intuition_ROMTag,                  /* ColdStart,   10       */
+    &Cybergraphics_ROMTag,              /* ColdStart,   8        */
+    &Console_ROMTag,                    /* ColdStart,   5        */
+#if ENABLE_DBUS ==1
+    &Dbus_ROMTag,                       /* ColdStart,   0        */
+#endif
+    &emul_handler_ROMTag,               /* ColdStart,   0        */
+    &Packet_ROMTag,                     /* ColdStart,   0    */
+    &UXSer_ROMTag,                      /* ColdStart,   0    */
+    &UXPar_ROMTag,                      /* ColdStart,   0    */
+    &Workbench_ROMTag,                  /* ColdStart,  -120  */
+    &Mathffp_ROMTag,                    /* ColdStart,  -120  */
 
     /*
         NOTE: You must not put anything between these two; the code
         which initialized boot_resident will directly call
         Dos_resident and anything between the two will be skipped.
     */
-    &boot_resident,                         /* ColdStart,  -50   */
-    &Dos_ROMTag,                            /* None,       -120  */
-    &LDDemon_resident,                      /* AfterDOS,   -125  */
-    &Con_ROMTag,                            /* AfterDOS,   -126  */
-    &Nil_ROMTag,                            /* AfterDOS,   -127  */
-    &Ram_ROMTag,                            /* AfterDOS,   -128  */
+    &boot_resident,                     /* ColdStart,  -50   */
+    &Dos_ROMTag,                        /* None,       -120  */
+    &LDDemon_resident,                  /* AfterDOS,   -125  */
+    &Con_ROMTag,                        /* AfterDOS,   -126  */
+    &Nil_ROMTag,                        /* AfterDOS,   -127  */
+    &Ram_ROMTag,                        /* AfterDOS,   -128  */
 
     NULL
 };
 
 /* So we can examine the memory */
-struct MemHeaderExt mhe;
-struct MemHeader *mh = &mhe.mhe_MemHeader;
+static struct MemHeaderExt mhe;
+static struct MemHeader *mh = &mhe.mhe_MemHeader;
 UBYTE *memory, *space;
-int memSize = 8;
+int memSize = 32;
 
 extern void InitCore(void);
 extern struct ExecBase *PrepareExecBase(struct MemHeader *mh);
@@ -148,7 +151,7 @@ int main(int argc, char **argv)
     int psize = 0;
     int i = 0, x;
     BOOL mapSysBase = FALSE;
-    
+
     while (i < argc)
     {
       if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
