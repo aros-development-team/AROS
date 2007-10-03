@@ -41,23 +41,22 @@
 
 struct hmFreeData 
 {
-
-    STACKULONG		Method;
-    struct TagItem     *AttrList;
+    STACKED ULONG		Method;
+    STACKED struct TagItem     *AttrList;
 };
 
 struct hmValueToString
 {
-    STACKULONG		Method;
-    Tag			tag;
-    STACKIPTR		value;		/* NULL for HIDDM_GetTagName */
+    STACKED ULONG		Method;
+    STACKED Tag			tag;
+    STACKED IPTR		value;		/* NULL for HIDDM_GetTagName */
 };
 
 struct hmStringToValue
 {	
-    STACKULONG		Method;
-    Tag			tag;
-    STRPTR		string;
+    STACKED ULONG		Method;
+    STACKED Tag			tag;
+    STACKED STRPTR		string;
 };
 
 #endif /* HIDD_CONFIG_H */

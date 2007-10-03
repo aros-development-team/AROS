@@ -105,40 +105,40 @@ enum {
 /* Used for HIDDM_BeginIO, HIDDM_AbortIO */
 typedef struct hmIO
 {
-    STACKULONG		MethodID;
-    struct IORequest   *hmi_ioRequest;
+    STACKED ULONG		MethodID;
+    STACKED struct IORequest   *hmi_ioRequest;
 } hmIO;
 
 #if 0
 /* Used for HIDDM_LoadConfigPlugin */
 typedef struct hmPlugin
 {
-    STACKULONG		MethodID;
-    STACKIPTR		hmp_PluginData;
+    STACKED ULONG		MethodID;
+    STACKED IPTR		hmp_PluginData;
 } hmPlugin;
 #endif
 
 /* Combined structure for HIDDM_Lock, HIDDM_Unlock */
 typedef struct hmLock
 {
-    STACKULONG		MethodID;
-    STACKULONG		hml_LockMode;
-    STACKIPTR		hml_LockData;
+    STACKED ULONG		MethodID;
+    STACKED ULONG		hml_LockMode;
+    STACKED IPTR		hml_LockData;
 } hmLock;
 
 /* Used for HIDDM_AddHidd, HIDDM_RemoveHidd */
 typedef struct hmAdd
 {
-    STACKULONG		MethodID;
-    APTR 		*hma_Class;
+    STACKED ULONG		MethodID;
+    STACKED APTR 		*hma_Class;
 } hmAdd;
 
 /* Used for HIDDM_FindHIDD */
 typedef struct hmFind
 {
-    STACKULONG		MethodID;
-    STACKUWORD		hmf_Type;	/* Use vHidd_Type_Any to match all */
-    STACKUWORD		hmf_Subtype;	/* Use vHidd_Subtype_Any to match all */
+    STACKED ULONG		MethodID;
+    STACKED UWORD		hmf_Type;	/* Use vHidd_Type_Any to match all */
+    STACKED UWORD		hmf_Subtype;	/* Use vHidd_Subtype_Any to match all */
 } hmFind;
 
 #endif /* HIDD_HIDD_H */
