@@ -23,7 +23,7 @@
 struct WandererPrefsIFFChunkHeader
 {
 	char	wpIFFch_ChunkType[100];
-	IPTR    wpIFFch_ChunkSize;
+	ULONG   wpIFFch_ChunkSize;
 };
 
 struct WandererPrefs
