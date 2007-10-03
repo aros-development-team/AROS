@@ -139,7 +139,7 @@ void AsyncLayouter(void)
     {
 	dtsi->si_Flags |= DTSIF_NEWSIZE;
 	
-	if(GetAttr(DTA_LayoutProc, object, (ULONG *)&LayoutProc))
+	if(GetAttr(DTA_LayoutProc, object, (IPTR *)&LayoutProc))
 	{
 	    if(LayoutProc != NULL)
 		Signal((struct Task *)LayoutProc, SIGBREAKF_CTRL_C);
@@ -173,11 +173,11 @@ void AsyncLayouter(void)
 	    Tags[0].ti_Tag  = NP_StackSize;
 	    Tags[0].ti_Data = AROS_STACKSIZE;
 	    Tags[1].ti_Tag  = NP_Entry;
-	    Tags[1].ti_Data = (ULONG)&AsyncLayouter;
+	    Tags[1].ti_Data = (IPTR)&AsyncLayouter;
 	    Tags[2].ti_Tag  = NP_Priority;
 	    Tags[2].ti_Data = 0;
 	    Tags[3].ti_Tag  = NP_Name;
-	    Tags[3].ti_Data = (ULONG)"AsyncLayoutDaemon";
+	    Tags[3].ti_Data = (IPTR)"AsyncLayoutDaemon";
 	    Tags[4].ti_Tag  = TAG_DONE;
 	 
 	    if((LayoutProc = CreateNewProc(Tags)))
