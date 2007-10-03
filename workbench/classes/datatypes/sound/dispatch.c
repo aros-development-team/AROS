@@ -1247,7 +1247,7 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
 		break;
 		
 		case SDTA_SignalBitMask: // aka SDTA_SignalBit
-			data = (IPTR) ( id->SignalBit == -1L ) ? 0L : ( 1L << id->SignalBit );
+			data = (IPTR) ( id->SignalBit == -1 ) ? 0L : ( 1L << id->SignalBit );
 			dbug( kprintf("SDTA_SignalBit(Mask)\n"); )
 		break;
 		
@@ -1919,13 +1919,13 @@ IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
 			
 			}
 				
-			SetAPen( rp, ( bgpen == -1L ) ? pens[TEXTPEN] : bgpen );
+			SetAPen( rp, ( bgpen == -1 ) ? pens[TEXTPEN] : bgpen );
 			RectFill( rp, x,y, w+x-1, h+y-1 );
 
 			x += 4; y += 2;
 			w -= 8; h -= 4;
 				
-			SetAPen( rp, ( wfpen == -1L ) ? pens[HIGHLIGHTTEXTPEN] : wfpen );		
+			SetAPen( rp, ( wfpen == -1 ) ? pens[HIGHLIGHTTEXTPEN] : wfpen );		
 			
 			DrawWaveform( cb, rp, id, x, y, w, h );
 		}
@@ -2029,13 +2029,13 @@ IPTR __regargs Sound_DRAW( Class *cl, Object *o, struct dtDraw *dtd )
 			ReleaseSemaphore( &cb->cb_LibLock );
 		}
 				
-		SetAPen( rp, ( bgpen == -1L ) ? pens[TEXTPEN] : bgpen );
+		SetAPen( rp, ( bgpen == -1 ) ? pens[TEXTPEN] : bgpen );
 		RectFill( rp, x,y, w+x-1, h+y-1 );
 	
 		x += 4; y += 2;
 		w -= 8; h -= 4;
 				
-		SetAPen( rp, ( wfpen == -1L ) ? pens[HIGHLIGHTTEXTPEN] : wfpen );		
+		SetAPen( rp, ( wfpen == -1 ) ? pens[HIGHLIGHTTEXTPEN] : wfpen );		
 			
 		DrawWaveform( cb, rp, id, x, y, w, h );
 			
@@ -3560,7 +3560,7 @@ void PlayerProc( void )
 					
 					SetTDMode( cb, id, BUT_STOP );
 					
-					if( id->SignalTask && id->SignalBit != -1L )
+					if( id->SignalTask && id->SignalBit != -1 )
 					{
 						Signal( id->SignalTask, 1L << id->SignalBit );
 					}
@@ -3706,7 +3706,7 @@ void PlayerProc( void )
 						if( id->Continuous )
 						{
 							/* notify */
-							if( id->SignalTask && id->SignalBit != -1L )
+							if( id->SignalTask && id->SignalBit != -1 )
 							{
 								Signal( id->SignalTask, 1L << id->SignalBit );
 							}
