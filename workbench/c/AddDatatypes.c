@@ -219,7 +219,7 @@ int main(void)
 	{
 	    struct RDArgs *RDArgs;
 
-	    if(!(RDArgs = ReadArgs(Template, (LONG*)&AA, NULL)))
+	    if(!(RDArgs = ReadArgs(Template, (SIPTR*)&AA, NULL)))
 	    {
 		PrintFault(IoErr(), NULL);
 	    }
