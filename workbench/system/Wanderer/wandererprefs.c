@@ -807,6 +807,60 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotify
 	return (IPTR) current_Node->wpbn_NotifyObject;
 }
 
+#warning "TODO: Replace with propper 64bit check"
+/* 32bit replacements for utility.library tag funcs */
+struct TagItem32 *  NextTag32Item(struct TagItem32 ** tagListPtr)
+{
+    if(!(*tagListPtr)) return NULL;
+
+    while (TRUE)
+    {
+	switch ((*tagListPtr)->ti_Tag)
+	{
+	case TAG_IGNORE:
+	    break;
+
+	case TAG_END:
+	    (*tagListPtr) = NULL;
+	    return NULL;
+
+	case TAG_SKIP:
+	    (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
+	    continue;
+
+	default:
+	    /* Use post-increment (return will return the current value and
+		then tagListPtr will be incremented) */
+	    return (struct TagItem32 *)(*tagListPtr)++;
+	}
+
+	(*tagListPtr) ++;
+    }
+}
+
+struct TagItem32 * FindTag32Item(ULONG tagValue, struct TagItem32 *tagList)
+{
+    struct TagItem32 *tag;
+    const struct TagItem32 *tagptr = tagList;
+
+    while( (tag = NextTag32Item(&tagptr)) )
+    {
+	if(tag->ti_Tag == tagValue) return tag;
+    }
+
+    return NULL;
+
+}
+
+IPTR GetTag32Data(ULONG tagValue, ULONG defaultVal, struct TagItem32 *tagList)
+{
+    struct TagItem32 *ti = NULL;
+
+    if ((tagList != NULL) && (ti = FindTag32Item(tagValue, tagList)))
+	return ti->ti_Data;
+
+    return defaultVal;
+}
 
 IPTR WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute
 (
@@ -827,7 +881,16 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
 		}
 		else if (current_Node->wpbn_Options)
 		{
-			return GetTagData(message->AttributeID, (IPTR)-1, current_Node->wpbn_Options);
+			if (sizeof(IPTR) > 4)
+			{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Using internal GetTag32Data()\n"));
+				return GetTag32Data(message->AttributeID, (IPTR)-1, current_Node->wpbn_Options);
+			}
+			else
+			{
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Using utility.library->GetTagData()\n"));
+				return GetTagData(message->AttributeID, (IPTR)-1, current_Node->wpbn_Options);
+			}
 		}
 	}
 	return -1;
