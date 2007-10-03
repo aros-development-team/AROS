@@ -401,8 +401,8 @@ ULONG ASM SAVEDS PropReqHandler (
 			{
 			    if (glob->flags & FREQF_DOWILDFUNC)
 			    {
-				if (CallHook (fontreq->Hook, (Object *)fontreq,
-					      REQHOOK_WILDFONT, &af->af_Attr))
+                  IPTR args[] = { REQHOOK_WILDFONT, (IPTR)&af->af_Attr };
+				if (CallHookA (fontreq->Hook, (Object *)fontreq, args ))
 				    continue;
 			    }
 			}
@@ -533,8 +533,9 @@ ULONG ASM SAVEDS PropReqHandler (
 	    {
 		if (glob->flags & FREQF_DOWILDFUNC)
 		{
+            IPTR args[] = { REQHOOK_WILDFILE, &glob->fib};
 		    SetDrawerAndFileFields (glob);
-		    val = CallHook (freq->Hook, (Object *)freq, REQHOOK_WILDFILE, &glob->fib);
+		    val = CallHookA (freq->Hook, (Object *)freq, args);
 		    ResetDrawerAndFileFields (glob);
 		    
 		    if (val) goto skipfile;
