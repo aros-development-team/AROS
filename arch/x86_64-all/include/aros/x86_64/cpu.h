@@ -33,6 +33,8 @@
 #define AROS_64BIT_TYPE		long
 #define AROS_64BIT_STACKTYPE	long
 
+#define STACKED __attribute__((aligned(8)))
+
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP asm("%rsp");
 #endif
