@@ -6,11 +6,13 @@
     Lang: english
 */
 
+#include <exec/libraries.h>
+#undef __const
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <aros/cpu.h>
-#include <exec/libraries.h>
 
 #define SYSTEM_CALL(name, alias...) { #name , #alias }, 
 

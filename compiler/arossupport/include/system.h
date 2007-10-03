@@ -88,12 +88,12 @@
 #   define	    restrict
 #endif
 
-#ifdef __GNUC__
-#    if defined __cplusplus && __GNUC_PREREQ (2,8)
-#        define __THROW       throw ()
-#    else
-#        define __THROW
-#    endif
+#if defined(__GNUC__) && !defined(THROW)
+#   if defined __cplusplus && __GNUC_PREREQ (2,8)
+#       define __THROW       throw ()
+#   else
+#       define __THROW
+#   endif
 #endif
 
 /* 3. Macros for making things more efficient */
