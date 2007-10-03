@@ -43,28 +43,28 @@ struct MUI_NotifyData
 #define MUIM_SetUDataOnce        (MUIB_MUI|0x0042ca19) /* MUI: V11 */
 #define MUIM_WriteLong           (MUIB_MUI|0x00428d86) /* MUI: V6  */
 #define MUIM_WriteString         (MUIB_MUI|0x00424bf4) /* MUI: V6  */
-struct MUIP_CallHook             {ULONG MethodID; struct Hook *Hook; ULONG param1; /* more might follow */};
-struct MUIP_Export               {ULONG MethodID; Object *dataspace;};
-struct MUIP_FindUData            {ULONG MethodID; ULONG udata;};
-struct MUIP_GetConfigItem        {ULONG MethodID; ULONG id; ULONG *storage;};
-struct MUIP_GetUData             {ULONG MethodID; ULONG udata; ULONG attr; ULONG *storage;};
-struct MUIP_Import               {ULONG MethodID; Object *dataspace;};
-struct MUIP_KillNotify           {ULONG MethodID; ULONG TrigAttr;};
-struct MUIP_KillNotifyObj        {ULONG MethodID; ULONG TrigAttr; Object *dest;};
-struct MUIP_MultiSet             {ULONG MethodID; ULONG attr; ULONG val; APTR obj; /* more might follow */};
-struct MUIP_NoNotifySet          {ULONG MethodID; ULONG attr; ULONG val; /* more might follow */};
-struct MUIP_Notify               {ULONG MethodID; ULONG TrigAttr; ULONG TrigVal; APTR DestObj; ULONG FollowParams; /* more might follow */};
-struct MUIP_Set                  {ULONG MethodID; ULONG attr; ULONG val;};
-struct MUIP_SetAsString          {ULONG MethodID; ULONG attr; char *format; ULONG val; /* more might follow */};
-struct MUIP_SetUData             {ULONG MethodID; ULONG udata; ULONG attr; ULONG val;};
-struct MUIP_SetUDataOnce         {ULONG MethodID; ULONG udata; ULONG attr; ULONG val;};
-struct MUIP_WriteLong            {ULONG MethodID; ULONG val; ULONG *memory;};
-struct MUIP_WriteString          {ULONG MethodID; char *str; char *memory;};
+struct MUIP_CallHook             {STACKED ULONG MethodID; STACKED struct Hook *Hook; STACKED ULONG param1; /* more might follow */};
+struct MUIP_Export               {STACKED ULONG MethodID; STACKED Object *dataspace;};
+struct MUIP_FindUData            {STACKED ULONG MethodID; STACKED ULONG udata;};
+struct MUIP_GetConfigItem        {STACKED ULONG MethodID; STACKED ULONG id; STACKED ULONG *storage;};
+struct MUIP_GetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG *storage;};
+struct MUIP_Import               {STACKED ULONG MethodID; STACKED Object *dataspace;};
+struct MUIP_KillNotify           {STACKED ULONG MethodID; STACKED ULONG TrigAttr;};
+struct MUIP_KillNotifyObj        {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED Object *dest;};
+struct MUIP_MultiSet             {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val; STACKED APTR obj; /* more might follow */};
+struct MUIP_NoNotifySet          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val; /* more might follow */};
+struct MUIP_Notify               {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED ULONG TrigVal; STACKED APTR DestObj; STACKED ULONG FollowParams; /* more might follow */};
+struct MUIP_Set                  {STACKED ULONG MethodID; STACKED ULONG attr; STACKED ULONG val;};
+struct MUIP_SetAsString          {STACKED ULONG MethodID; STACKED ULONG attr; STACKED char *format; STACKED ULONG val; /* more might follow */};
+struct MUIP_SetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG val;};
+struct MUIP_SetUDataOnce         {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG val;};
+struct MUIP_WriteLong            {STACKED ULONG MethodID; STACKED ULONG val; STACKED ULONG *memory;};
+struct MUIP_WriteString          {STACKED ULONG MethodID; STACKED char *str; STACKED char *memory;};
 
 #define MUIM_ConnectParent       (MUIB_Notify | 0x00000000) /* Zune: V1 */
 #define MUIM_DisconnectParent    (MUIB_Notify | 0x00000001) /* Zune: V1 */
-struct MUIP_ConnectParent        {ULONG MethodID; Object *parent;};
-struct MUIP_DisconnectParent     {ULONG MethodID;};
+struct MUIP_ConnectParent        {STACKED ULONG MethodID; STACKED Object *parent;};
+struct MUIP_DisconnectParent     {STACKED ULONG MethodID;};
 
 /*** Attributes *************************************************************/
 #define MUIA_ApplicationObject   (MUIB_MUI|0x0042d3ee) /* MUI: V4  ..g Object *            */

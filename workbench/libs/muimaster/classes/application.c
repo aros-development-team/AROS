@@ -1579,7 +1579,7 @@ static IPTR Application__MUIM_OpenConfigWindow(struct IClass *cl, Object *obj,
 
 static IPTR Application__MUIM_Execute(Class *CLASS, Object *self, Msg message)
 {
-    ULONG signals = 0L;
+    IPTR signals = 0L;
     
     while
     ( 

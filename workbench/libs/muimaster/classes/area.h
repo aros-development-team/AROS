@@ -55,34 +55,34 @@
 #define MUIM_Hide		    (MUIB_MUI|0x0042f20f) /* MUI: V4  */ /* For Custom Classes only */ 
 #define MUIM_Setup		    (MUIB_MUI|0x00428354) /* MUI: V4  */ /* For Custom Classes only */ 
 #define MUIM_Show		    (MUIB_MUI|0x0042cc84) /* MUI: V4  */ /* For Custom Classes only */ 
-struct MUIP_AskMinMax		    {ULONG MethodID; struct MUI_MinMax *MinMaxInfo;};
-struct MUIP_Cleanup		    {ULONG MethodID;};
-struct MUIP_ContextMenuBuild	    {ULONG MethodID; LONG mx; LONG my;};
-struct MUIP_ContextMenuChoice	    {ULONG MethodID; Object *item;};
-struct MUIP_CreateBubble	    {ULONG MethodID; LONG x; LONG y; char *txt; ULONG flags;};
-struct MUIP_CreateDragImage	    {ULONG MethodID; LONG touchx; LONG touchy; ULONG flags;};
-struct MUIP_CreateShortHelp	    {ULONG MethodID; LONG mx; LONG my;};
-struct MUIP_CustomBackfill 	    {ULONG MethodID; LONG left; LONG top; LONG right; LONG bottom; LONG xoffset; LONG yoffset;};
-struct MUIP_DeleteBubble	    {ULONG MethodID; APTR bubble;};
-struct MUIP_DeleteDragImage	    {ULONG MethodID; struct MUI_DragImage *di;};
-struct MUIP_DeleteShortHelp	    {ULONG MethodID; STRPTR help; };
-struct MUIP_DoDrag          	    {ULONG MethodID; LONG touchx; LONG touchy; ULONG flags;};
-struct MUIP_UnknownDropDestination  {ULONG MethodID; struct IntuiMessage *imsg; };
-struct MUIP_DragBegin               {ULONG MethodID; Object *obj;};
-struct MUIP_DragDrop                {ULONG MethodID; Object *obj; LONG x; LONG y;};
-struct MUIP_DragFinish              {ULONG MethodID; Object *obj;};
-struct MUIP_DragQuery               {ULONG MethodID; Object *obj;};
-struct MUIP_DragReport              {ULONG MethodID; Object *obj; LONG x; LONG y; LONG update;};
-struct MUIP_Draw                    {ULONG MethodID; ULONG flags;};
-struct MUIP_DrawBackground          {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
-struct MUIP_DrawBackgroundBuffered  {ULONG MethodID; struct RastPort *rp; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
-struct MUIP_GoActive                {ULONG MethodID;};
-struct MUIP_GoInacrive              {ULONG MethodID;};
-struct MUIP_HandleEvent             {ULONG MethodID; struct IntuiMessage *imsg; LONG muikey;};
-struct MUIP_HandleInput             {ULONG MethodID; struct IntuiMessage *imsg; LONG muikey;};
-struct MUIP_Hide                    {ULONG MethodID;};
-struct MUIP_Setup                   {ULONG MethodID; struct MUI_RenderInfo *RenderInfo;};
-struct MUIP_Show                    {ULONG MethodID;};
+struct MUIP_AskMinMax		    {STACKED ULONG MethodID; STACKED struct MUI_MinMax *MinMaxInfo;};
+struct MUIP_Cleanup		    {STACKED ULONG MethodID;};
+struct MUIP_ContextMenuBuild	    {STACKED ULONG MethodID; STACKED LONG mx; STACKED LONG my;};
+struct MUIP_ContextMenuChoice	    {STACKED ULONG MethodID; STACKED Object *item;};
+struct MUIP_CreateBubble	    {STACKED ULONG MethodID; STACKED LONG x; STACKED LONG y; STACKED char *txt; STACKED ULONG flags;};
+struct MUIP_CreateDragImage	    {STACKED ULONG MethodID; STACKED LONG touchx; STACKED LONG touchy; STACKED ULONG flags;};
+struct MUIP_CreateShortHelp	    {STACKED ULONG MethodID; STACKED LONG mx; STACKED LONG my;};
+struct MUIP_CustomBackfill 	    {STACKED ULONG MethodID; STACKED LONG left; STACKED LONG top; STACKED LONG right; STACKED LONG bottom; STACKED LONG xoffset; STACKED LONG yoffset;};
+struct MUIP_DeleteBubble	    {STACKED ULONG MethodID; STACKED APTR bubble;};
+struct MUIP_DeleteDragImage	    {STACKED ULONG MethodID; STACKED struct MUI_DragImage *di;};
+struct MUIP_DeleteShortHelp	    {STACKED ULONG MethodID; STACKED STRPTR help; };
+struct MUIP_DoDrag          	    {STACKED ULONG MethodID; STACKED LONG touchx; STACKED LONG touchy; STACKED ULONG flags;};
+struct MUIP_UnknownDropDestination  {STACKED ULONG MethodID; STACKED struct IntuiMessage *imsg; };
+struct MUIP_DragBegin               {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_DragDrop                {STACKED ULONG MethodID; STACKED Object *obj; STACKED LONG x; STACKED LONG y;};
+struct MUIP_DragFinish              {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_DragQuery               {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_DragReport              {STACKED ULONG MethodID; STACKED Object *obj; STACKED LONG x; STACKED LONG y; STACKED LONG update;};
+struct MUIP_Draw                    {STACKED ULONG MethodID; STACKED ULONG flags;};
+struct MUIP_DrawBackground          {STACKED ULONG MethodID; STACKED LONG left; STACKED LONG top; STACKED LONG width; STACKED LONG height; STACKED LONG xoffset; STACKED LONG yoffset; STACKED LONG flags;};
+struct MUIP_DrawBackgroundBuffered  {STACKED ULONG MethodID; STACKED struct RastPort *rp; STACKED LONG left; STACKED LONG top; STACKED LONG width; STACKED LONG height; STACKED LONG xoffset; STACKED LONG yoffset; STACKED LONG flags;};
+struct MUIP_GoActive                {STACKED ULONG MethodID;};
+struct MUIP_GoInacrive              {STACKED ULONG MethodID;};
+struct MUIP_HandleEvent             {STACKED ULONG MethodID; STACKED struct IntuiMessage *imsg; STACKED LONG muikey;};
+struct MUIP_HandleInput             {STACKED ULONG MethodID; STACKED struct IntuiMessage *imsg; STACKED LONG muikey;};
+struct MUIP_Hide                    {STACKED ULONG MethodID;};
+struct MUIP_Setup                   {STACKED ULONG MethodID; STACKED struct MUI_RenderInfo *RenderInfo;};
+struct MUIP_Show                    {STACKED ULONG MethodID;};
 
 #define MUIM_Layout                 (MUIB_Area | 0x00000000)
 #define MUIM_DrawParentBackground   (MUIB_Area | 0x00000001)
@@ -91,12 +91,12 @@ struct MUIP_Show                    {ULONG MethodID;};
 #define MUIM_UpdateInnerSizes       (MUIB_Area | 0x00000004) /* PRIV for now */
 #define MUIM_FindAreaObject         (MUIB_Area | 0x00000005) /* PRIV */
 #define MUIM_DrawBackgroundBuffered (MUIB_Area | 0x00000006) /* PRIV */
-struct  MUIP_Layout                 {ULONG MethodID;};
-struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
-struct  MUIP_DragQueryExtended      {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
-struct  MUIP_Timer                  {ULONG MethodID; }; /* PRIV */
-struct  MUIP_UpdateInnerSizes       {ULONG MethodID; }; /* PRIV */
-struct  MUIP_FindAreaObject         {ULONG MethodID; Object *obj;}; /* PRIV */
+struct  MUIP_Layout                 {STACKED ULONG MethodID;};
+struct  MUIP_DrawParentBackground   {STACKED ULONG MethodID; STACKED LONG left; STACKED LONG top; STACKED LONG width; STACKED LONG height; STACKED LONG xoffset; STACKED LONG yoffset; STACKED LONG flags;};
+struct  MUIP_DragQueryExtended      {STACKED ULONG MethodID; STACKED Object *obj; STACKED LONG x; STACKED LONG y;}; /* PRIV */
+struct  MUIP_Timer                  {STACKED ULONG MethodID; }; /* PRIV */
+struct  MUIP_UpdateInnerSizes       {STACKED ULONG MethodID; }; /* PRIV */
+struct  MUIP_FindAreaObject         {STACKED ULONG MethodID; STACKED Object *obj;}; /* PRIV */
 
 struct MUI_DragImage
 {

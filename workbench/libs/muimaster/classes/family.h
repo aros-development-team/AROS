@@ -22,12 +22,12 @@
 #define MUIM_Family_Remove     (MUIB_MUI|0x0042f8a9) /* MUI: V8  */
 #define MUIM_Family_Sort       (MUIB_MUI|0x00421c49) /* MUI: V8  */
 #define MUIM_Family_Transfer   (MUIB_MUI|0x0042c14a) /* MUI: V8  */
-struct MUIP_Family_AddHead     {ULONG MethodID; Object *obj;};
-struct MUIP_Family_AddTail     {ULONG MethodID; Object *obj;};
-struct MUIP_Family_Insert      {ULONG MethodID; Object *obj; Object *pred;};
-struct MUIP_Family_Remove      {ULONG MethodID; Object *obj;};
-struct MUIP_Family_Sort        {ULONG MethodID; Object *obj[1];};
-struct MUIP_Family_Transfer    {ULONG MethodID; Object *family;};
+struct MUIP_Family_AddHead     {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_Family_AddTail     {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_Family_Insert      {STACKED ULONG MethodID; STACKED Object *obj; STACKED Object *pred;};
+struct MUIP_Family_Remove      {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_Family_Sort        {STACKED ULONG MethodID; STACKED Object *obj[1];};
+struct MUIP_Family_Transfer    {STACKED ULONG MethodID; STACKED Object *family;};
 
 /*** Attributes *************************************************************/
 #define MUIA_Family_Child      (MUIB_MUI|0x0042c696) /* MUI: V8  i.. Object *          */

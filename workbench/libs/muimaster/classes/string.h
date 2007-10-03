@@ -55,9 +55,9 @@ enum {
 
 #define MUIR_String_FileNameStart_Volume    0xffffffff
 
-struct MUIP_String_ClearSelected {ULONG MethodID;};
-struct MUIP_String_FileNameStart {ULONG MethodID; STRPTR buffer; LONG pos;};
-struct MUIP_String_Insert        {ULONG MethodID; STRPTR text; LONG pos;};
+struct MUIP_String_ClearSelected {STACKED ULONG MethodID;};
+struct MUIP_String_FileNameStart {STACKED ULONG MethodID; STACKED STRPTR buffer; STACKED LONG pos;};
+struct MUIP_String_Insert        {STACKED ULONG MethodID; STACKED STRPTR text; STACKED LONG pos;};
 
 extern const struct __MUIBuiltinClass _MUI_String_desc; /* PRIV */
 

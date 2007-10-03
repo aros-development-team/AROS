@@ -26,16 +26,16 @@
 #define MUIM_Window_Snapshot        (MUIB_MUI|0x0042945e) /* MUI: V11 */
 #define MUIM_Window_ToBack          (MUIB_MUI|0x0042152e) /* MUI: V4  */
 #define MUIM_Window_ToFront         (MUIB_MUI|0x0042554f) /* MUI: V4  */
-struct  MUIP_Window_ActionIconify   {ULONG MethodID;};
-struct  MUIP_Window_AddEventHandler {ULONG MethodID; struct MUI_EventHandlerNode *ehnode;};
-struct  MUIP_Window_Cleanup         {ULONG MethodID;};
-struct  MUIP_Window_RemEventHandler {ULONG MethodID; struct MUI_EventHandlerNode *ehnode;};
-struct  MUIP_Window_ScreenToBack    {ULONG MethodID;};
-struct  MUIP_Window_ScreenToFront   {ULONG MethodID;};
-struct  MUIP_Window_Setup           {ULONG MethodID;};
-struct  MUIP_Window_Snapshot        {ULONG MethodID; LONG flags;};
-struct  MUIP_Window_ToBack          {ULONG MethodID;};
-struct  MUIP_Window_ToFront         {ULONG MethodID;};
+struct  MUIP_Window_ActionIconify   {STACKED ULONG MethodID;};
+struct  MUIP_Window_AddEventHandler {STACKED ULONG MethodID; STACKED struct MUI_EventHandlerNode *ehnode;};
+struct  MUIP_Window_Cleanup         {STACKED ULONG MethodID;};
+struct  MUIP_Window_RemEventHandler {STACKED ULONG MethodID; STACKED struct MUI_EventHandlerNode *ehnode;};
+struct  MUIP_Window_ScreenToBack    {STACKED ULONG MethodID;};
+struct  MUIP_Window_ScreenToFront   {STACKED ULONG MethodID;};
+struct  MUIP_Window_Setup           {STACKED ULONG MethodID;};
+struct  MUIP_Window_Snapshot        {STACKED ULONG MethodID; STACKED LONG flags;};
+struct  MUIP_Window_ToBack          {STACKED ULONG MethodID;};
+struct  MUIP_Window_ToFront         {STACKED ULONG MethodID;};
 
 #define MUIM_Window_AddControlCharHandler  (MUIB_Window | 0x00000000) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_AllocGadgetID          (MUIB_Window | 0x00000001) /* Zune: V1 - allocate a GadgetID for BOOPSI gadgets */
@@ -45,14 +45,14 @@ struct  MUIP_Window_ToFront         {ULONG MethodID;};
 #define MUIM_Window_RecalcDisplay          (MUIB_Window | 0x00000005) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_RemControlCharHandler  (MUIB_Window | 0x00000006) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_UpdateMenu             (MUIB_Window | 0x00000007) /* Zune: V1, PRIV dont' use it! */
-struct  MUIP_Window_AddControlCharHandler  { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
-struct  MUIP_Window_AllocGadgetID          { ULONG MethodID; }; /* Custom Class - returns the Gadget ID */
-struct  MUIP_Window_DrawBackground         { ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
-struct  MUIP_Window_DragObject             { ULONG MethodID; Object *obj; LONG touchx; LONG touchy; ULONG flags; };
-struct  MUIP_Window_FreeGadgetID           { ULONG MethodID; LONG gadgetid; }; /* Custom Class */
-struct  MUIP_Window_RecalcDisplay          { ULONG MethodID; Object *originator; };
-struct  MUIP_Window_RemControlCharHandler  { ULONG MethodID; struct MUI_EventHandlerNode *ccnode; };
-struct  MUIP_Window_UpdateMenu             { ULONG MethodID; };
+struct  MUIP_Window_AddControlCharHandler  { STACKED ULONG MethodID; STACKED struct MUI_EventHandlerNode *ccnode; };
+struct  MUIP_Window_AllocGadgetID          { STACKED ULONG MethodID; }; /* Custom Class - returns the Gadget ID */
+struct  MUIP_Window_DrawBackground         { STACKED ULONG MethodID; STACKED LONG left; STACKED LONG top; STACKED LONG width; STACKED LONG height; STACKED LONG xoffset; STACKED LONG yoffset; STACKED LONG flags;};
+struct  MUIP_Window_DragObject             { STACKED ULONG MethodID; STACKED Object *obj; STACKED LONG touchx; STACKED LONG touchy; STACKED ULONG flags; };
+struct  MUIP_Window_FreeGadgetID           { STACKED ULONG MethodID; STACKED LONG gadgetid; }; /* Custom Class */
+struct  MUIP_Window_RecalcDisplay          { STACKED ULONG MethodID; STACKED Object *originator; };
+struct  MUIP_Window_RemControlCharHandler  { STACKED ULONG MethodID; STACKED struct MUI_EventHandlerNode *ccnode; };
+struct  MUIP_Window_UpdateMenu             { STACKED ULONG MethodID; };
 
 #ifdef MUI_OBSOLETE
 #define MUIM_Window_GetMenuCheck    (MUIB_MUI|0x00420414) /* MUI: V4  */
@@ -60,11 +60,11 @@ struct  MUIP_Window_UpdateMenu             { ULONG MethodID; };
 #define MUIM_Window_SetCycleChain   (MUIB_MUI|0x00426510) /* MUI: V4  */
 #define MUIM_Window_SetMenuCheck    (MUIB_MUI|0x00422243) /* MUI: V4  */
 #define MUIM_Window_SetMenuState    (MUIB_MUI|0x00422b5e) /* MUI: V4  */
-struct  MUIP_Window_GetMenuCheck    {ULONG MethodID; ULONG MenuID;};
-struct  MUIP_Window_GetMenuState    {ULONG MethodID; ULONG MenuID;};
-struct  MUIP_Window_SetCycleChain   {ULONG MethodID; Object *obj[1];};
-struct  MUIP_Window_SetMenuCheck    {ULONG MethodID; ULONG MenuID; LONG stat;};
-struct  MUIP_Window_SetMenuState    {ULONG MethodID; ULONG MenuID; LONG stat;};
+struct  MUIP_Window_GetMenuCheck    {STACKULONG MethodID; STACKED ULONG MenuID;};
+struct  MUIP_Window_GetMenuState    {STACKULONG MethodID; STACKED ULONG MenuID;};
+struct  MUIP_Window_SetCycleChain   {STACKULONG MethodID; STACKED Object *obj[1];};
+struct  MUIP_Window_SetMenuCheck    {STACKULONG MethodID; STACKED ULONG MenuID; STACKED LONG stat;};
+struct  MUIP_Window_SetMenuState    {STACKULONG MethodID; STACKED ULONG MenuID; STACKED LONG stat;};
 #endif /* MUI_OBSOLETE */
 
 /*** Attributes *************************************************************/

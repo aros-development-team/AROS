@@ -45,27 +45,27 @@
 #define MUIM_Application_Execute                (MUIB_Application | 0x00000003)
 #define MUIM_Application_UpdateMenus            (MUIB_Application | 0x00000004) /* Zune 20070712 */
 /* Method Structures */
-struct MUIP_Application_AboutMUI		{ ULONG MethodID; Object *refwindow; };
-struct MUIP_Application_AddInputHandler	{ ULONG MethodID; struct MUI_InputHandlerNode *ihnode; };
-struct MUIP_Application_CheckRefresh		{ ULONG MethodID; };
-struct MUIP_Application_GetMenuCheck		{ ULONG MethodID; ULONG MenuID; };
-struct MUIP_Application_GetMenuState		{ ULONG MethodID; ULONG MenuID; };
-struct MUIP_Application_Input			{ ULONG MethodID; ULONG *signal; };
-struct MUIP_Application_InputBuffered		{ ULONG MethodID; };
-struct MUIP_Application_Load			{ ULONG MethodID; STRPTR name; };
-struct MUIP_Application_NewInput		{ ULONG MethodID; ULONG *signal; };
-struct MUIP_Application_OpenConfigWindow	{ ULONG MethodID; ULONG flags; };
-struct MUIP_Application_PushMethod		{ ULONG MethodID; Object *dest; LONG count; /* more elements may follow */ };
-struct MUIP_Application_RemInputHandler	{ ULONG MethodID; struct MUI_InputHandlerNode *ihnode; };
-struct MUIP_Application_ReturnID		{ ULONG MethodID; ULONG retid; };
-struct MUIP_Application_Save			{ ULONG MethodID; STRPTR name; };
-struct MUIP_Application_SetConfigItem		{ ULONG MethodID; ULONG item; APTR data; };
-struct MUIP_Application_SetMenuCheck		{ ULONG MethodID; ULONG MenuID; LONG stat; };
-struct MUIP_Application_SetMenuState		{ ULONG MethodID; ULONG MenuID; LONG stat; };
-struct MUIP_Application_ShowHelp		{ ULONG MethodID; Object *window; char *name; char *node; LONG line; };
-struct MUIP_Application_SetConfigdata		{ ULONG MethodID; APTR configdata; };
-struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
-struct MUIP_Application_UpdateMenus             { ULONG MethodID; };
+struct MUIP_Application_AboutMUI		{ STACKED ULONG MethodID; STACKED Object *refwindow; };
+struct MUIP_Application_AddInputHandler	{ STACKED ULONG MethodID; STACKED struct MUI_InputHandlerNode *ihnode; };
+struct MUIP_Application_CheckRefresh		{ STACKED ULONG MethodID; };
+struct MUIP_Application_GetMenuCheck		{ STACKED ULONG MethodID; STACKED ULONG MenuID; };
+struct MUIP_Application_GetMenuState		{ STACKED ULONG MethodID; STACKED ULONG MenuID; };
+struct MUIP_Application_Input			{ STACKED ULONG MethodID; STACKED ULONG *signal; };
+struct MUIP_Application_InputBuffered		{ STACKED ULONG MethodID; };
+struct MUIP_Application_Load			{ STACKED ULONG MethodID; STACKED STRPTR name; };
+struct MUIP_Application_NewInput		{ STACKED ULONG MethodID; STACKED ULONG *signal; };
+struct MUIP_Application_OpenConfigWindow	{ STACKED ULONG MethodID; STACKED ULONG flags; };
+struct MUIP_Application_PushMethod		{ STACKED ULONG MethodID; STACKED Object *dest; STACKED LONG count; /* more elements may follow */ };
+struct MUIP_Application_RemInputHandler	{ STACKED ULONG MethodID; STACKED struct MUI_InputHandlerNode *ihnode; };
+struct MUIP_Application_ReturnID		{ STACKED ULONG MethodID; STACKED ULONG retid; };
+struct MUIP_Application_Save			{ STACKED ULONG MethodID; STACKED STRPTR name; };
+struct MUIP_Application_SetConfigItem		{ STACKED ULONG MethodID; STACKED ULONG item; STACKED APTR data; };
+struct MUIP_Application_SetMenuCheck		{ STACKED ULONG MethodID; STACKED ULONG MenuID; STACKED LONG stat; };
+struct MUIP_Application_SetMenuState		{ STACKED ULONG MethodID; STACKED ULONG MenuID; STACKED LONG stat; };
+struct MUIP_Application_ShowHelp		{ STACKED ULONG MethodID; STACKED Object *window; STACKED char *name; STACKED char *node; STACKED LONG line; };
+struct MUIP_Application_SetConfigdata		{ STACKED ULONG MethodID; STACKED APTR configdata; };
+struct MUIP_Application_OpenWindows		{ STACKED ULONG MethodID; };
+struct MUIP_Application_UpdateMenus             { STACKED ULONG MethodID; };
 
 /*** Attributes *************************************************************/
 #define MUIA_Application_Active             	(MUIB_MUI|0x004260ab) /* MUI: V4  isg BOOL              */

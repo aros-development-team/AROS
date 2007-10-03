@@ -15,8 +15,8 @@
 /*** Methods ****************************************************************/
 #define MUIM_Settingsgroup_ConfigToGadgets (MUIB_MUI|0x00427043) /* MUI: V11 */
 #define MUIM_Settingsgroup_GadgetsToConfig (MUIB_MUI|0x00425242) /* MUI: V11 */
-struct MUIP_Settingsgroup_ConfigToGadgets  {ULONG MethodID; Object *configdata; };
-struct MUIP_Settingsgroup_GadgetsToConfig  {ULONG MethodID; Object *configdata; };
+struct MUIP_Settingsgroup_ConfigToGadgets  {STACKED ULONG MethodID; STACKED Object *configdata; };
+struct MUIP_Settingsgroup_GadgetsToConfig  {STACKED ULONG MethodID; STACKED Object *configdata; };
 
 
 extern const struct __MUIBuiltinClass _MUI_Settingsgroup_desc; /* PRIV */
