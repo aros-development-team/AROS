@@ -67,47 +67,47 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_ROMTag,			    /* SingleTask,  110  */
-    &Exec_resident,			    /* SingleTask,  105  */
-    &Utility_ROMTag,			    /* ColdStart,   103  */
-    &Aros_ROMTag,			    /* ColdStart,   102  */
+    &Expansion_ROMTag,                      /* SingleTask,  110  */
+    &Exec_resident,                         /* SingleTask,  105  */
+    &Utility_ROMTag,                        /* ColdStart,   103  */
+    &Aros_ROMTag,                           /* ColdStart,   102  */
     &Mathieeesingbas_ROMTag,                /* ColdStart,   101  */
 #if 0
-    &BOOPSI_resident,			    /* ColdStart,   95	 */
+    &BOOPSI_resident,                       /* ColdStart,   95   */
 #endif
-    &OOP_ROMTag,			    /* ColdStart,   94	 */
-    &HIDDCl_ROMTag,			    /* ColdStart,   92	 */
-    &UXIO_ROMTag,			    /* ColdStart,   91	 */
-    &Graphics_ROMTag, 			    /* ColdStart,   65	 */
-    &Layers_ROMTag,			    /* ColdStart,   60   */
-    &Timer_ROMTag,			    /* ColdStart,   50	 */
-    &Battclock_ROMTag,			    /* ColdStart,   45	 */
-    &Keyboard_ROMTag,			    /* ColdStart,   44	 */
-    &Gameport_ROMTag,			    /* ColdStart,   43	 */
-    &Keymap_ROMTag,			    /* ColdStart,   40	 */
-    &Input_ROMTag,			    /* ColdStart,   30	 */
-    &Intuition_ROMTag,			    /* ColdStart,   10	 */
-    &X11Cl_ROMTag,			    /* ColdStart,   9	 */
-    &Cybergraphics_ROMTag,		    /* ColdStart,   8	 */
-    &Console_ROMTag,			    /* ColdStart,   5	 */
-    &emul_handler_ROMTag,		    /* ColdStart,   0	 */
+    &OOP_ROMTag,                            /* ColdStart,   94   */
+    &HIDDCl_ROMTag,                         /* ColdStart,   92   */
+    &UXIO_ROMTag,                           /* ColdStart,   91   */
+    &Graphics_ROMTag,                       /* ColdStart,   65   */
+    &Layers_ROMTag,                         /* ColdStart,   60   */
+    &Timer_ROMTag,                          /* ColdStart,   50   */
+    &Battclock_ROMTag,                      /* ColdStart,   45   */
+    &Keyboard_ROMTag,                       /* ColdStart,   44   */
+    &Gameport_ROMTag,                       /* ColdStart,   43   */
+    &Keymap_ROMTag,                         /* ColdStart,   40   */
+    &Input_ROMTag,                          /* ColdStart,   30   */
+    &Intuition_ROMTag,                      /* ColdStart,   10   */
+    &X11Cl_ROMTag,                          /* ColdStart,   9    */
+    &Cybergraphics_ROMTag,                  /* ColdStart,   8    */
+    &Console_ROMTag,                        /* ColdStart,   5    */
+    &emul_handler_ROMTag,                   /* ColdStart,   0    */
     &Packet_ROMTag,                         /* ColdStart,   0    */
-    &UXSer_ROMTag,	   	    	    /* ColdStart,   0    */
-    &UXPar_ROMTag,	   	    	    /* ColdStart,   0    */
-    &Workbench_ROMTag,			    /* ColdStart,  -120  */
-    &Mathffp_ROMTag,			    /* ColdStart,  -120  */
+    &UXSer_ROMTag,                          /* ColdStart,   0    */
+    &UXPar_ROMTag,                          /* ColdStart,   0    */
+    &Workbench_ROMTag,                      /* ColdStart,  -120  */
+    &Mathffp_ROMTag,                        /* ColdStart,  -120  */
 
     /*
-	NOTE: You must not put anything between these two; the code
+        NOTE: You must not put anything between these two; the code
         which initialized boot_resident will directly call
         Dos_resident and anything between the two will be skipped.
     */
-    &boot_resident,			    /* ColdStart,  -50	 */
-    &Dos_ROMTag,			    /* None,	   -120  */
-    &LDDemon_resident,			    /* AfterDOS,   -125  */
-    &Con_ROMTag,			    /* AfterDOS,   -126  */
-    &Nil_ROMTag,			    /* AfterDOS,   -127	 */
-    &Ram_ROMTag,			    /* AfterDOS,   -128	 */
+    &boot_resident,                         /* ColdStart,  -50   */
+    &Dos_ROMTag,                            /* None,       -120  */
+    &LDDemon_resident,                      /* AfterDOS,   -125  */
+    &Con_ROMTag,                            /* AfterDOS,   -126  */
+    &Nil_ROMTag,                            /* AfterDOS,   -127  */
+    &Ram_ROMTag,                            /* AfterDOS,   -128  */
 
     NULL
 };
@@ -134,13 +134,13 @@ extern char _start, _end;
 int main(int argc, char **argv)
 {
     /*  Well, if you want you can take in command line arguments here,
-	but that is not necessary, or perhaps rather complex...
+        but that is not necessary, or perhaps rather complex...
 
-	eg: say you wished to allow people to specify the root directory
-	    arosshell --rootdir /usr/local/AROS --memsize 4
+        eg: say you wished to allow people to specify the root directory
+            arosshell --rootdir /usr/local/AROS --memsize 4
 
-	For an example, you could ask how much memory you want for the
-	system, chip/fast whatever...
+        For an example, you could ask how much memory you want for the
+        system, chip/fast whatever...
     */
 
     struct ExecBase *SysBase;
@@ -199,15 +199,15 @@ int main(int argc, char **argv)
     space = malloc(4096);
     if(space)
     {
-	int size = 4096/sizeof(ULONG);
-	while(--size)
-	    *space++ = 0xDEADBEEF;
+        int size = 4096/sizeof(ULONG);
+        while(--size)
+            *space++ = 0xDEADBEEF;
     }
 #endif
     /*
-	Magic, this makes FreeBSD's malloc() print out lots of extra
-	debugging information, and more to the point, call abort()
-	when something naughty happens.
+        Magic, this makes FreeBSD's malloc() print out lots of extra
+        debugging information, and more to the point, call abort()
+        when something naughty happens.
     */
     malloc_options = "A";
 
@@ -215,8 +215,8 @@ int main(int argc, char **argv)
     memory = malloc((memSize << 20) + MEMCHUNK_TOTAL);
     if( !memory )
     {
-	 /*fprintf(stderr, "Cannot allocate any memory!\n");*/
-	 exit(20);
+         /*fprintf(stderr, "Cannot allocate any memory!\n");*/
+         exit(20);
     }
 
     /* Prepare the first mem header */
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
     mh->mh_Node.ln_Pri = -5;
     mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
     mh->mh_First = (struct MemChunk *)
-	    (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
+            (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
     mh->mh_First->mc_Next = NULL;
     mh->mh_First->mc_Bytes = memSize << 20;
     mh->mh_Lower = memory;
@@ -232,8 +232,8 @@ int main(int argc, char **argv)
     mh->mh_Free = mh->mh_First->mc_Bytes;
 
     /*
-	This will prepare enough of ExecBase to allow us to
-	call functions, it will also set up the memory list.
+        This will prepare enough of ExecBase to allow us to
+        call functions, it will also set up the memory list.
     */
     SysBase = PrepareExecBase(mh);
 
@@ -262,17 +262,17 @@ int main(int argc, char **argv)
     */
 #if defined(__linux__) && defined(__mc68000__)
     if( mmap((APTR)0, getpagesize(), PROT_READ|PROT_WRITE,
-	MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0) != (APTR)0 )
+        MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0) != (APTR)0 )
     {
-	perror("mmap: Can't map page 0\n");
-	exit(10);
+        perror("mmap: Can't map page 0\n");
+        exit(10);
     }
 
     *(APTR *)4 = SysBase;
     if(mprotect((APTR)0,getpagesize(), PROT_READ))
     {
-	perror("mprotect");
-	exit(10);
+        perror("mprotect");
+        exit(10);
     }
 #endif
 
@@ -287,9 +287,9 @@ int main(int argc, char **argv)
     tcsetattr(0, TCSANOW|TCSASOFT, &t);
 
     /*  There is nothing more system dependant to set up,
-	so lets start that ball rolling...
+        so lets start that ball rolling...
     
-	The InitCode() call should never return in a working system.
+        The InitCode() call should never return in a working system.
     */
     SysBase->ResModules = romtagList;
     InitCode(RTF_SINGLETASK, 0);

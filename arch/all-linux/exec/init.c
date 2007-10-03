@@ -17,9 +17,9 @@
 
 #if (AROS_BIG_ENDIAN == 0)
 #define SWAP(x) ((((ULONG)x >> 24) & 0x000000ff) |\
-		 (((ULONG)x >> 8 ) & 0x0000ff00) |\
-		 (((ULONG)x << 8 ) & 0x00ff0000) |\
-		 (((ULONG)x << 24) & 0xff000000)    )
+                 (((ULONG)x >> 8 ) & 0x0000ff00) |\
+                 (((ULONG)x << 8 ) & 0x00ff0000) |\
+                 (((ULONG)x << 24) & 0xff000000)    )
 #else
 #define SWAP(x) x
 #endif
@@ -33,7 +33,7 @@
 #include <sys/mman.h>
 #include <sys/termios.h>
 
-#include "../../../rom/exec/memory.h"	/* From $(TOP)/rom/exec */
+#include "../../../rom/exec/memory.h"   /* From $(TOP)/rom/exec */
 
 extern const struct Resident
     Expansion_ROMTag,
@@ -80,55 +80,55 @@ extern const struct Resident
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_ROMTag,			/* SingleTask,  110  */
-    &Exec_resident,			/* SingleTask,  105  */
-    &Utility_ROMTag,			/* ColdStart,   103  */
-    &Aros_ROMTag,			/* ColdStart,   102  */
+    &Expansion_ROMTag,                  /* SingleTask,  110  */
+    &Exec_resident,                     /* SingleTask,  105  */
+    &Utility_ROMTag,                    /* ColdStart,   103  */
+    &Aros_ROMTag,                       /* ColdStart,   102  */
     &Mathieeesingbas_ROMTag,            /* ColdStart,   101  */
 #if 0
-    &BOOPSI_resident,			/* ColdStart,   95	 */
+    &BOOPSI_resident,                   /* ColdStart,   95       */
 #endif
-    &OOP_ROMTag,			/* ColdStart,   94	 */
-    &HIDDCl_ROMTag,			/* ColdStart,   92	 */
-    &UXIO_ROMTag,			/* ColdStart,   91	 */
+    &OOP_ROMTag,                        /* ColdStart,   94       */
+    &HIDDCl_ROMTag,                     /* ColdStart,   92       */
+    &UXIO_ROMTag,                       /* ColdStart,   91       */
     &HostLib_ROMTag,                    /* ColdStart,   91       */
 #if defined(__i386__) || defined(__x86_64__)
     &PCI_ROMTag,                        /* ColdStart,   90       */
 //    &PCILx_ROMTag,                      /* ColdStart,   89       */
 #endif
-    &Graphics_ROMTag, 			/* ColdStart,   65	 */
-    &Layers_ROMTag,			/* ColdStart,   60       */
-    &Timer_ROMTag,			/* ColdStart,   50	 */
-    &Battclock_ROMTag,			/* ColdStart,   45	 */
-    &Keyboard_ROMTag,			/* ColdStart,   44	 */
-    &Gameport_ROMTag,			/* ColdStart,   43	 */
-    &Keymap_ROMTag,			/* ColdStart,   40	 */
-    &Input_ROMTag,			/* ColdStart,   30	 */
-    &Intuition_ROMTag,			/* ColdStart,   10	 */
-    &LinuxFB_ROMTag,			/* ColdStart,   9	 */
-    &Cybergraphics_ROMTag,		/* ColdStart,   8	 */
-    &Console_ROMTag,			/* ColdStart,   5	 */
+    &Graphics_ROMTag,                   /* ColdStart,   65       */
+    &Layers_ROMTag,                     /* ColdStart,   60       */
+    &Timer_ROMTag,                      /* ColdStart,   50       */
+    &Battclock_ROMTag,                  /* ColdStart,   45       */
+    &Keyboard_ROMTag,                   /* ColdStart,   44       */
+    &Gameport_ROMTag,                   /* ColdStart,   43       */
+    &Keymap_ROMTag,                     /* ColdStart,   40       */
+    &Input_ROMTag,                      /* ColdStart,   30       */
+    &Intuition_ROMTag,                  /* ColdStart,   10       */
+    &LinuxFB_ROMTag,                    /* ColdStart,   9        */
+    &Cybergraphics_ROMTag,              /* ColdStart,   8        */
+    &Console_ROMTag,                    /* ColdStart,   5        */
 #if ENABLE_DBUS == 1
-    &Dbus_ROMTag,			/* ColdStart,   0	 */
+    &Dbus_ROMTag,                       /* ColdStart,   0        */
 #endif
-    &emul_handler_ROMTag,		/* ColdStart,   0	 */
+    &emul_handler_ROMTag,               /* ColdStart,   0        */
     &Packet_ROMTag,                     /* ColdStart,   0    */
-    &UXSer_ROMTag,	   	    	/* ColdStart,   0    */
-    &UXPar_ROMTag,	   	    	/* ColdStart,   0    */
-    &Workbench_ROMTag,			/* ColdStart,  -120  */
-    &Mathffp_ROMTag,			/* ColdStart,  -120  */
+    &UXSer_ROMTag,                      /* ColdStart,   0    */
+    &UXPar_ROMTag,                      /* ColdStart,   0    */
+    &Workbench_ROMTag,                  /* ColdStart,  -120  */
+    &Mathffp_ROMTag,                    /* ColdStart,  -120  */
 
     /*
-	NOTE: You must not put anything between these two; the code
+        NOTE: You must not put anything between these two; the code
         which initialized boot_resident will directly call
         Dos_resident and anything between the two will be skipped.
     */
-    &boot_resident,			/* ColdStart,  -50	 */
-    &Dos_ROMTag,			/* None,	   -120  */
-    &LDDemon_resident,			/* AfterDOS,   -125  */
-    &Con_ROMTag,			/* AfterDOS,   -126  */
-    &Nil_ROMTag,			/* AfterDOS,   -127	 */
-    &Ram_ROMTag,			/* AfterDOS,   -128	 */
+    &boot_resident,                     /* ColdStart,  -50       */
+    &Dos_ROMTag,                        /* None,           -120  */
+    &LDDemon_resident,                  /* AfterDOS,   -125  */
+    &Con_ROMTag,                        /* AfterDOS,   -126  */
+    &Nil_ROMTag,                        /* AfterDOS,   -127      */
+    &Ram_ROMTag,                        /* AfterDOS,   -128      */
 //    &Partition_ROMTag,                     
 
     NULL
@@ -178,7 +178,7 @@ static ULONG myAvail(struct MemHeaderExt *mhe, ULONG flags)
 {
     if (flags & MEMF_TOTAL)
         return memSize << 20;
-	 
+         
     return mhe->mhe_MemHeader.mh_Free;
 }
 
@@ -216,8 +216,8 @@ static APTR ReAllocVec(APTR old, size_t size, ULONG flags)
     if (new)
     {
         ULONG oldsize = *(ULONG *)((char *)old - AROS_ALIGN(sizeof(ULONG)));
-	
-	memcpy(new, old, oldsize > size ? size : oldsize);
+        
+        memcpy(new, old, oldsize > size ? size : oldsize);
         FreeVec(old);
         old = new;
     }
@@ -245,14 +245,14 @@ extern char _start, _end;
 
 int main(int argc, char **argv)
 {
-    /*	Well, if you want you can take in command line arguments here,
-	but that is not necessary, or perhaps rather complex...
+    /*  Well, if you want you can take in command line arguments here,
+        but that is not necessary, or perhaps rather complex...
 
-	eg: say you wished to allow people to specify the root directory
-	    arosshell --rootdir /usr/local/AROS --memsize 4
+        eg: say you wished to allow people to specify the root directory
+            arosshell --rootdir /usr/local/AROS --memsize 4
 
-	For an example, you could ask how much memory you want for the
-	system, chip/fast whatever...
+        For an example, you could ask how much memory you want for the
+        system, chip/fast whatever...
     */
 
     struct ExecBase *SysBase;
@@ -268,26 +268,26 @@ int main(int argc, char **argv)
       if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h"))
       {
         printf
-	(
-	    "AROS for Linux\n"
+        (
+            "AROS for Linux\n"
             "usage: %s [options]\n"
             " -h                 show this page\n"
             " -m <size>          allocate <size> Megabytes of memory for AROS\n"
             " -M                 allows programs to read SysBase from Address $4; SysBase is\n"
             "                    found there in big endian format\n"
-	    " -t <value>         timer ticks per second. Must be Multiple of 50; max value\n"
-	    "                    working on 2.4 kernels is 100; on 2.6 kernels it is 1000;\n"
-	    "                    default is 100.\n"
+            " -t <value>         timer ticks per second. Must be Multiple of 50; max value\n"
+            "                    working on 2.4 kernels is 100; on 2.6 kernels it is 1000;\n"
+            "                    default is 100.\n"
             " --help             same as '-h'\n"
             " --memsize <size>   same as '-m <size>'\n"
             " --mapsysbase       same as '-M'\n"
-	    " --tickrate <value> same as '-t <value>'\n"
-	    " --hostmem          Let AROS use the host operating system's facilities to\n"
-	    "                    manage memory, rather than the AROS' builtin ones.\n"
+            " --tickrate <value> same as '-t <value>'\n"
+            " --hostmem          Let AROS use the host operating system's facilities to\n"
+            "                    manage memory, rather than the AROS' builtin ones.\n"
             "\n"
-	    "Please report bugs to the AROS development team. http://www.aros.org/\n",
-	    argv[0]
-	);
+            "Please report bugs to the AROS development team. http://www.aros.org/\n",
+            argv[0]
+        );
         return 0;
       }
       else
@@ -347,18 +347,18 @@ int main(int argc, char **argv)
     {
       psize = getpagesize();
       space = mmap((APTR)0, (memSize << 20), PROT_READ|PROT_WRITE,
-  		   MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0);
+                   MAP_ANON|MAP_PRIVATE|MAP_FIXED, -1, 0);
       if (space != (UBYTE *)-1)
       {
-	int size = psize/sizeof(ULONG);
-	memory = (UBYTE *)((ULONG)space + psize);
-	while(--size)
-	    ((ULONG *)space)[size] = 0xDEADBEEF;
+        int size = psize/sizeof(ULONG);
+        memory = (UBYTE *)((ULONG)space + psize);
+        while(--size)
+            ((ULONG *)space)[size] = 0xDEADBEEF;
       }
       else
       {
-	perror("mmap");
-	exit(20);
+        perror("mmap");
+        exit(20);
       }
     }
     else
@@ -370,17 +370,17 @@ int main(int argc, char **argv)
       /* We allocate memSize megabytes */
       if( posix_memalign(&memory, getpagesize(), (memSize << 20)) != 0 )
       {
-	 /*fprintf(stderr, "Cannot allocate any memory!\n");*/
-	 exit(20);
+         /*fprintf(stderr, "Cannot allocate any memory!\n");*/
+         exit(20);
       }
       /* Make whole AROS memory area executable */
       if (mprotect(memory, memSize << 20, PROT_READ | PROT_WRITE | PROT_EXEC) != 0)
-	 perror("mprotect failed");
+         perror("mprotect failed");
     }
     else
     {
         /* The host system is going to allocate memory through AROS,
-	   allocate some more memory for it.  */
+           allocate some more memory for it.  */
         memSize += 8;
     }
 /*
@@ -391,17 +391,17 @@ int main(int argc, char **argv)
     mh->mh_Node.ln_Name  = "chip memory";
     mh->mh_Node.ln_Pri   = -5;
     mh->mh_Attributes    = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL |
-			   MEMF_24BITDMA | MEMF_KICK;
-			    
+                           MEMF_24BITDMA | MEMF_KICK;
+                            
     if (_use_hostmem)
     {
         mh->mh_Attributes |= MEMF_MANAGED;
         mh->mh_First       = NULL;
-	mh->mh_Lower       = (char *)&_end + 1;
-	mh->mh_Upper       = (APTR)(~(IPTR)0 / 2); /* Should use getrlimit here. */
-	mh->mh_Free        = memSize << 20;
-	
-	((struct MemHeaderExt *)mh)->mhe_Alloc = myAlloc;
+        mh->mh_Lower       = (char *)&_end + 1;
+        mh->mh_Upper       = (APTR)(~(IPTR)0 / 2); /* Should use getrlimit here. */
+        mh->mh_Free        = memSize << 20;
+        
+        ((struct MemHeaderExt *)mh)->mhe_Alloc = myAlloc;
         ((struct MemHeaderExt *)mh)->mhe_Free  = myFree;
         ((struct MemHeaderExt *)mh)->mhe_Avail = myAvail;
     }
@@ -411,14 +411,14 @@ int main(int argc, char **argv)
         mh->mh_First->mc_Next  = NULL;
         mh->mh_First->mc_Bytes = (memSize << 20) - psize;
         
-	mh->mh_Lower           = mh->mh_First;
+        mh->mh_Lower           = mh->mh_First;
         mh->mh_Upper           = (APTR)(memory + (memSize << 20) - psize);
         mh->mh_Free            = mh->mh_First->mc_Bytes;
     }
 
     /*
-	This will prepare enough of ExecBase to allow us to
-	call functions, it will also set up the memory list.
+        This will prepare enough of ExecBase to allow us to
+        call functions, it will also set up the memory list.
     */
     SysBase = PrepareExecBase(mh);
     SysBase->PowerSupplyFrequency = ticrate / SysBase->VBlankFrequency;
@@ -430,17 +430,17 @@ int main(int argc, char **argv)
      */
     if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
     {
-	/* These symbols are provided by the linker on most platforms */
-	mh->mh_Node.ln_Type = NT_MEMORY;
-	mh->mh_Node.ln_Name = "rom memory";
-	mh->mh_Node.ln_Pri = -128;
-	mh->mh_Attributes = MEMF_KICK;
-	mh->mh_First = NULL;
-	mh->mh_Lower = (APTR)&_start;
-	mh->mh_Upper = (APTR)&_end;
-	mh->mh_Free = 0;			/* Never allocate from this chunk! */
-	Forbid();
-	Enqueue(&SysBase->MemList, &mh->mh_Node);
+        /* These symbols are provided by the linker on most platforms */
+        mh->mh_Node.ln_Type = NT_MEMORY;
+        mh->mh_Node.ln_Name = "rom memory";
+        mh->mh_Node.ln_Pri = -128;
+        mh->mh_Attributes = MEMF_KICK;
+        mh->mh_First = NULL;
+        mh->mh_Lower = (APTR)&_start;
+        mh->mh_Upper = (APTR)&_end;
+        mh->mh_Free = 0;                        /* Never allocate from this chunk! */
+        Forbid();
+        Enqueue(&SysBase->MemList, &mh->mh_Node);
     }
     /* Ok, lets start up the kernel, we are probably using the UNIX
        kernel, or a variant of that (see config/unix).
@@ -458,8 +458,8 @@ int main(int argc, char **argv)
       *(APTR *)4 = (APTR)SWAP(SysBase);
       if (mprotect((APTR)0, psize, PROT_READ))
       {
-	perror("mprotect");
-	exit(10);
+        perror("mprotect");
+        exit(10);
       }
     }
 /*
@@ -476,10 +476,10 @@ int main(int argc, char **argv)
 #endif
     tcsetattr(0, TCSANOW|TCSASOFT, &t);
 #endif
-    /*	There is nothing more system dependant to set up,
-	so lets start that ball rolling...
+    /*  There is nothing more system dependant to set up,
+        so lets start that ball rolling...
 
-	The InitCode() call should never return in a working system.
+        The InitCode() call should never return in a working system.
     */
     SysBase->ResModules = romtagList;
     InitCode(RTF_SINGLETASK, 0);
