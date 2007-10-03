@@ -85,7 +85,7 @@
     /* Parse the taglist. Since we reimplement NexTagItem() instead
        of calling it this hould be really fast. */
     while (!done) {
-    	register ULONG tag = tags->ti_Tag;
+    	register IPTR tag = tags->ti_Tag;
 	
 	/* Instead of having a default: in switch we have an if test
 	   here because tag > TAG_SKIP is the most-often case.
@@ -98,7 +98,7 @@
 	    /* Get the attribute offset */
 	    /* Look for same attrbase */
 	    if ((tag & (~METHOD_MASK)) == attrbase) {
-	    	register ULONG offset;
+	    	register IPTR offset;
 		
 		offset = tag & METHOD_MASK;
 		if (offset >= numattrs)
