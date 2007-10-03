@@ -15,9 +15,9 @@ struct OperationClassData
 
 struct opExecute
 {
-    ULONG           MethodID;
-    Object         *target;
-    ULONG           operationCode;
+    STACKED ULONG           MethodID;
+    STACKED Object         *target;
+    STACKED ULONG           operationCode;
 };
 
 #endif
