@@ -57,6 +57,8 @@ struct IPEditor_DATA
     Object *iped_DoubleClickDelay;
 };
 
+BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data);
+
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IPEditor_DATA *data = INST_DATA(CLASS, self)
 
@@ -240,6 +242,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         }
 
+        /* Set default Values */
+        
+        InputPrefs2Gadgets(data);
+
         DoMethod(RepeatRate, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(RepeatDelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
         DoMethod(DoubleClickDelay, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
@@ -300,7 +306,7 @@ BOOL Gadgets2InputPrefs
 
     GET(data->iped_KeyTypes, MUIA_NListtree_Active, &node);
 
-    if (val != NULL)
+    if (node != NULL)
     {
         struct ListviewEntry *kmn = (struct ListviewEntry *) node->tn_Name;
         if (kmn != NULL)
