@@ -21,6 +21,7 @@
 #define AROS_SIZEOFPTR		   4 /* Size of a PTR */
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
 #define AROS_LONGALIGN		   4 /* Alignment for LONG */
+#define AROS_QUADALIGN		   8 /* Alignment for QUAD */
 #define AROS_PTRALIGN		   4 /* Alignment for PTR */
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
