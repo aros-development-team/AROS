@@ -3,7 +3,7 @@
 
 /*
     Copyright  1995-2001, The AROS Development Team. All rights reserved.
-    $Id: windecorclass.h 12757 2001-12-08 22:23:57Z dariusb $
+    $Id$
 
     Desc: Headerfile for Intuitions' WINDECORCLASS
     Lang: english

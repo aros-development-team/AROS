@@ -1,7 +1,7 @@
 /*
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
-    $Id: changedecorationa.c 23476 2005-07-31 17:07:04Z stegerg, dariusb $
+    $Id$
 */
 
 #include <proto/utility.h>

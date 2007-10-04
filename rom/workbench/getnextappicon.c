@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: getnextappicon.c 19008 2003-07-30 22:53:38Z craid-hjb $
+    $Id$
 
     Desc: Accesses AppIcon information from workbench.library.
     Lang: English

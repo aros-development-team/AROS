@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
-    $Id: sendappwindowmessage.c 19008 2007-01-30 22:53:38Z dariusb $
+    $Id$
 
     Desc: check if the given window is an app window and send a list of files to it
     Lang: English

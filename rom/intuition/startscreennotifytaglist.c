@@ -1,7 +1,7 @@
 /*
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
-    $Id: startscreennotifytaglist.c 20651 2006-12-30 20:57:12Z d.brewka $
+    $Id$
  
     Add a Intuition Notification.
 */

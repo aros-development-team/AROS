@@ -82,8 +82,8 @@
     if (numattrs > 32)
     	return ooperr_ParseAttrs_TooManyAttrs;
 
-    /* Parse the taglist. Since we reimplement NexTagItem() instead
-       of calling it this hould be really fast. */
+    /* Parse the taglist. Since we reimplement NextTagItem() instead
+       of calling it this should be really fast. */
     while (!done) {
     	register IPTR tag = tags->ti_Tag;
 	

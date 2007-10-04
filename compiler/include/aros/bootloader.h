@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: bootloader.h 25411 2007-03-12 06:54:19Z sonic $
+    $Id$
 
     Desc: bootloader.resource general defines
     Lang: english

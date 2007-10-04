@@ -1,7 +1,7 @@
 /*
     Copyright  1995-2005, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
-    $Id: imageclass.c 20651 2004-01-17 20:57:12Z chodorowski $
+    $Id$
 */
 
 
