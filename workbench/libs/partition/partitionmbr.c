@@ -46,14 +46,7 @@ struct MBRData *data;
         {
             if (root->root)
             {
-                data = root->data;
-                if (
-                        (root->root->table->type == PHPTT_MBR) &&
-                        (data->entry->type == MBRT_EXTENDED)
-                    )
-                {
                     return 0;
-                }
             }
             return 1;
         }
