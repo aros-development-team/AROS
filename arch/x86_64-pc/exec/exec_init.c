@@ -245,7 +245,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
     rkprintf("[exec] Initializing library...\n");
 
-    *(struct ExecBase **)4 = SysBase;
+    //*(struct ExecBase **)4 = SysBase;
     SysBase->ChkBase = ~(ULONG)SysBase;
     
     /* Store sysbase in TLS */
