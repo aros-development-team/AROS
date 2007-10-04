@@ -325,7 +325,7 @@ void core_IRQHandle(regs_t regs)
     if (SysBase)
         t = SysBase->ThisTask;
 
-    if (regs.irq_number < 0x20)
+    if ((regs.irq_number < 0x20) && regs.irq_number != 0x0e)
         rkprintf("IRQ %02x:", regs.irq_number);
     
     if (regs.irq_number == 0x03)        /* Debug */
@@ -340,6 +340,14 @@ void core_IRQHandle(regs_t regs)
         rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
         rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
         rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+        
+        rkprintf("[Kenrel] Stack:\n");
+        int i;
+        uint64_t *ptr = (void*)regs.return_rsp;
+        for (i=0; i < 10; i++)
+        {
+            rkprintf("[Kernel]   %02x: %016p\n", i*8, ptr[i]);
+        }
     }
     else if (regs.irq_number == 0x06)        /* GPF */
     {
@@ -415,25 +423,171 @@ void core_IRQHandle(regs_t regs)
     else if (regs.irq_number == 0x0e)        /* Page fault */
     {
         void *ptr = rdcr(cr2);
-
-        rkprintf("[Kernel] PAGE FAULT EXCEPTION! %016p\n",ptr);
-
-        if (t)
-        {
-            rkprintf("[Kernel]  %s %p '%s'\n",
-                     t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
-        }
-
-        rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
-                 regs.return_ss, regs.return_rsp, regs.return_rflags, 
-                 regs.return_cs, regs.return_rip, regs.error_code);
+        unsigned char *ip = regs.return_rip;
+        int i;
         
-        rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
-        rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
-        rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
-        rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
-        rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
         die = 1;
+        
+        if (ptr == (void*)4)
+        {
+//            rkprintf("[Kernel] ** Code at %012lx is trying to access the SysBase at 4UL.\n", regs.return_rip);
+            
+            if (   (ip[0] & 0xfb) == 0x48 &&
+                    ip[1]         == 0x8b && 
+                   (ip[2] & 0xc7) == 0x04 &&
+                    ip[3]         == 0x25
+               )
+            {
+                int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
+                
+                switch(reg)
+                {
+                    case 0:
+                        regs.rax = SysBase;
+                        break;
+                    case 1:
+                        regs.rcx = SysBase;
+                        break;
+                    case 2:
+                        regs.rdx = SysBase;
+                        break;
+                    case 3:
+                        regs.rbx = SysBase;
+                        break;
+//                    case 4:   /* Cannot put SysBase into rSP register */
+//                        regs.return_rsp = SysBase;
+//                        break;
+                    case 5:
+                        regs.rbp = SysBase;
+                        break;
+                    case 6:
+                        regs.rsi = SysBase;
+                        break;
+                    case 7:
+                        regs.rdi = SysBase;
+                        break;
+                    case 8:
+                        regs.r8 = SysBase;
+                        break;
+                    case 9:
+                        regs.r9 = SysBase;
+                        break;
+                    case 10:
+                        regs.r10 = SysBase;
+                        break;
+                    case 11:
+                        regs.r11 = SysBase;
+                        break;
+                    case 12:
+                        regs.r12 = SysBase;
+                        break;
+                    case 13:
+                        regs.r13 = SysBase;
+                        break;
+                    case 14:
+                        regs.r14 = SysBase;
+                        break;
+                    case 15:
+                        regs.r15 = SysBase;
+                        break;
+                }
+                
+                regs.return_rip += 8;
+                
+                die = 0;
+            }
+            else if (   (ip[0] & 0xfb) == 0x48 &&
+                    ip[1]         == 0x8b && 
+                   (ip[2] & 0xc7) == 0x05
+               )
+            {
+                int reg = ((ip[2] >> 3) & 0x07) | ((ip[0] & 0x04) << 1);
+                
+                switch(reg)
+                {
+                    case 0:
+                        regs.rax = SysBase;
+                        break;
+                    case 1:
+                        regs.rcx = SysBase;
+                        break;
+                    case 2:
+                        regs.rdx = SysBase;
+                        break;
+                    case 3:
+                        regs.rbx = SysBase;
+                        break;
+//                    case 4:   /* Cannot put SysBase into rSP register */
+//                        regs.return_rsp = SysBase;
+//                        break;
+                    case 5:
+                        regs.rbp = SysBase;
+                        break;
+                    case 6:
+                        regs.rsi = SysBase;
+                        break;
+                    case 7:
+                        regs.rdi = SysBase;
+                        break;
+                    case 8:
+                        regs.r8 = SysBase;
+                        break;
+                    case 9:
+                        regs.r9 = SysBase;
+                        break;
+                    case 10:
+                        regs.r10 = SysBase;
+                        break;
+                    case 11:
+                        regs.r11 = SysBase;
+                        break;
+                    case 12:
+                        regs.r12 = SysBase;
+                        break;
+                    case 13:
+                        regs.r13 = SysBase;
+                        break;
+                    case 14:
+                        regs.r14 = SysBase;
+                        break;
+                    case 15:
+                        regs.r15 = SysBase;
+                        break;
+                }
+                
+                regs.return_rip += 7;
+                
+                die = 0;
+            }
+        }
+        
+        if (die)
+        {
+            rkprintf("IRQ %02x:", regs.irq_number);
+            rkprintf("[Kernel] PAGE FAULT EXCEPTION! %016p\n",ptr);
+
+            if (t)
+            {
+                rkprintf("[Kernel]  %s %p '%s'\n",
+                         t->tc_Node.ln_Type == NT_TASK?"task":"process", t, t->tc_Node.ln_Name);
+            }
+
+            rkprintf("[Kernel]  stack=%04x:%012x rflags=%016x ip=%04x:%012x err=%08x\n",
+                     regs.return_ss, regs.return_rsp, regs.return_rflags, 
+                     regs.return_cs, regs.return_rip, regs.error_code);
+            
+            rkprintf("[Kernel]  rax=%016lx rbx=%016lx rcx=%016lx rdx=%016lx\n", regs.rax, regs.rbx, regs.rcx, regs.rdx);
+            rkprintf("[Kernel]  rsi=%016lx rdi=%016lx rbp=%016lx rsp=%016lx\n", regs.rsi, regs.rdi, regs.rbp, regs.return_rsp);
+            rkprintf("[Kernel]  r08=%016lx r09=%016lx r10=%016lx r11=%016lx\n", regs.r8, regs.r9, regs.r10, regs.r11);
+            rkprintf("[Kernel]  r12=%016lx r13=%016lx r14=%016lx r15=%016lx\n", regs.r12, regs.r13, regs.r14, regs.r15);
+            rkprintf("[Kernel]  *rsp=%016lx\n", *(uint64_t *)regs.return_rsp);
+            
+            rkprintf("[Kernel]  Insn: ");
+            for (i = 0; i < 16; i++)
+                rkprintf("%02x ", ip[i]);
+            rkprintf("\n");
+
+        }
     }
     else if (regs.irq_number == 0x80) /* Syscall? */
     {

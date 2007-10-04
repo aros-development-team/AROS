@@ -83,7 +83,7 @@ void core_SetupMMU()
 static struct PTE Pages4K[32][512] __attribute__((used,aligned(4096)));
 static int used_page;
 
-void core_ProtPage(intptr_t addr)
+void core_ProtPage(intptr_t addr, char p, char rw, char us)
 {
     struct PML4E *pml4 = rdcr(cr3);
     struct PDPE *pdpe = pml4[(addr >> 39) & 0x1ff].base_low << 12;
@@ -124,17 +124,19 @@ void core_ProtPage(intptr_t addr)
     }
             
     struct PTE *pte = pde[(addr >> 21) & 0x1ff].base_low << 12;
-    pte[(addr >> 12) & 0x1ff].rw = 0;
+    pte[(addr >> 12) & 0x1ff].rw = rw ? 1:0;
+    pte[(addr >> 12) & 0x1ff].us = us ? 1:0;
+    pte[(addr >> 12) & 0x1ff].p = p ? 1:0;
     asm volatile ("invlpg (%0)"::"r"(addr));   
 }
 
-void core_ProtKernelArea(intptr_t addr, intptr_t length)
+void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us)
 {
     rkprintf("[Kernel] Protecting area %012p-%012p\n", addr, addr + length - 1);
 
     while (length > 0)
     {
-        core_ProtPage(addr);
+        core_ProtPage(addr, p, rw, us);
         addr += 4096;
         length -= 4096;
     }
