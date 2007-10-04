@@ -3443,6 +3443,7 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
 {
     struct BitScaleArgs *bsa = msg->bsa;
     ULONG *srcbuf, *dstbuf;
+    LONG srcline = -1;
     UWORD *linepattern;
     ULONG count;
     UWORD ys = bsa->bsa_SrcY;
@@ -3455,43 +3456,57 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
     ULONG dys = bsa->bsa_SrcHeight;
     LONG accuyd = - (dys >> 1);
     LONG accuxd = - (dxs >> 1);
-    ULONG y;
+    ULONG x;
 
-    srcbuf = AllocVec(bsa->bsa_SrcWidth * sizeof(ULONG) * bsa->bsa_SrcHeight, 0);
-    dstbuf = AllocVec(bsa->bsa_DestWidth * sizeof(ULONG) * bsa->bsa_DestHeight, 0);
+    if ((srcbuf = AllocVec(bsa->bsa_SrcWidth * sizeof(ULONG), 0)) == NULL)
+        return;
 
-    HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY, bsa->bsa_SrcWidth, bsa->bsa_SrcHeight, vHidd_StdPixFmt_Native32);
-
-    linepattern = (UWORD *) AllocVec(bsa->bsa_DestHeight * sizeof(UWORD), 0);
-
-    count = 0;
-    while (count < bsa->bsa_DestHeight) {
-        accuyd += dys;
-        while (accuyd > accuys) {
-            ys++;
-            accuys += dyd;
-        }
-        linepattern[count] = ys;
-        count++;
+    if ((dstbuf = AllocVec(bsa->bsa_DestWidth * sizeof(ULONG), 0)) == NULL) {
+        FreeVec(srcbuf);
+        return;
     }
 
-    count = bsa->bsa_DestX;
-    while (count < bsa->bsa_DestWidth + bsa->bsa_DestX) {
+    if ((linepattern = (UWORD *) AllocVec(bsa->bsa_DestWidth * sizeof(UWORD), 0)) == NULL) {
+        FreeVec(dstbuf);
+        FreeVec(srcbuf);
+        return;
+    }
+
+    count = 0;
+    while (count < bsa->bsa_DestWidth) {
         accuxd += dxs;
         while (accuxd > accuxs) {
             xs++;
             accuxs += dxd;
         }
 
-        for (y = 0; y < bsa->bsa_DestHeight; y++)
-            dstbuf[(bsa->bsa_DestWidth * y) + count] = srcbuf[(bsa->bsa_SrcWidth * linepattern[y]) + xs];
+        linepattern[count] = xs;
+
+        count++;
+    }
+
+    count = bsa->bsa_DestY;
+    while (count < bsa->bsa_DestHeight + bsa->bsa_DestY) {
+        accuyd += dys;
+        while (accuyd > accuys) {
+            ys++;
+            accuys += dyd;
+        }
+
+        if (srcline != ys) {
+            HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY + ys, bsa->bsa_SrcWidth, 1, vHidd_StdPixFmt_Native32);
+            srcline = ys;
+
+            for (x = 0; x < bsa->bsa_DestWidth; x++)
+                dstbuf[x] = srcbuf[linepattern[x]];
+        }
+
+        HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY + count, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
 
         count++;
     }
 
     FreeVec(linepattern);
-
-    HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY, bsa->bsa_DestWidth, bsa->bsa_DestHeight, vHidd_StdPixFmt_Native32);
 
     FreeVec(dstbuf);
     FreeVec(srcbuf);
