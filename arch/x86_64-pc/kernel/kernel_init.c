@@ -15,6 +15,7 @@
 #include <stdio.h>
 
 #include "kernel_intern.h"
+#include "../bootstrap/multiboot.h"
 #include LC_LIBDEFS_FILE
 
 /* Pre-exec init */
@@ -116,7 +117,10 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 ADD2INITLIB(Kernel_Init, 0)
 
 static struct TagItem *BootMsg;
+static struct vbe_controller vbectrl;
+static struct vbe_mode vbemd;
 static char cmdLine[200];
+
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
@@ -136,6 +140,24 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         }
     }
     
+    tag = krnFindTagItem(KRN_VBEModeInfo, msg);
+    if (tag)
+    {
+        if (tag->ti_Data != (IPTR)&vbemd) {
+            bcopy(tag->ti_Data, &vbemd, sizeof(vbemd));
+            tag->ti_Data = (IPTR)&vbemd;
+        }
+    }
+
+    tag = krnFindTagItem(KRN_VBEControllerInfo, msg);
+    if (tag)
+    {
+        if (tag->ti_Data != (IPTR)&vbectrl) {
+            bcopy(tag->ti_Data, &vbectrl, sizeof(vbectrl));
+            tag->ti_Data = (IPTR)&vbectrl;
+        }
+    }
+    
     BootMsg = msg;
     
     /* Set TSS, GDT, LDT and MMU up */
@@ -143,7 +165,10 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     core_SetupIDT();
     core_SetupMMU();
 
-    core_ProtKernelArea(addr, len);
+    core_ProtKernelArea(addr, len, 1, 0, 1);
+    
+    /* Lock page 0! */
+    core_ProtKernelArea(0, 1, 0, 0, 0);
     
     (rkprintf("[Kernel] APIC_BASE_MSR=%016p\n", rdmsrq(27)));
 
@@ -152,7 +177,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs at 0x28 - 0x2f */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
+    asm("outb   %b0,%b1\n\tcall delay": :"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0x21)); /* 8086 mode for both */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0xa1));

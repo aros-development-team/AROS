@@ -32,6 +32,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     void *KernelBase = TLS_GET(KernelBase);
     struct TagItem *msg = KrnGetBootInfo();
     IPTR tmp;
+    struct vbe_mode *vmi;
+    struct vbe_controller *vci;
     
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
@@ -92,31 +94,35 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 		BootLoaderBase->Flags |= MB_FLAGS_CMDLINE;
 	    }
 	}
-#if 0
-	if (mb->flags & MB_FLAGS_GFX)
+	vmi = (struct vbe_mode *)GetTagData(KRN_VBEModeInfo, 0, msg);
+	vci = (struct vbe_controller *)GetTagData(KRN_VBEControllerInfo, 0, msg);
+
+	if (vmi && vci)
 	{
 	    ULONG masks [] = { 0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff };
+	    UWORD mode = GetTagData(KRN_VBEMode, 0, msg);
+	    UBYTE palwidth = GetTagData(KRN_VBEPaletteWidth, 6, msg);
 
-	    BootLoaderBase->Vesa.FrameBuffer = (APTR)mb->vmi.phys_base;
-	    BootLoaderBase->Vesa.FrameBufferSize = mb->vci.total_memory * 64; /* FrameBufferSize is in KBytes! */
-	    BootLoaderBase->Vesa.XSize = mb->vmi.x_resolution;
-	    BootLoaderBase->Vesa.YSize = mb->vmi.y_resolution;
-	    BootLoaderBase->Vesa.BytesPerLine = mb->vmi.bytes_per_scanline;
-	    BootLoaderBase->Vesa.BitsPerPixel = mb->vmi.bits_per_pixel;
-	    BootLoaderBase->Vesa.ModeNumber = mb->vbe_mode;
-	    BootLoaderBase->Vesa.Masks[VI_Red] = masks[mb->vmi.red_mask_size-1]<<mb->vmi.red_field_position;
-	    BootLoaderBase->Vesa.Masks[VI_Blue] = masks[mb->vmi.blue_mask_size-1]<<mb->vmi.blue_field_position;
-	    BootLoaderBase->Vesa.Masks[VI_Green] = masks[mb->vmi.green_mask_size-1]<<mb->vmi.green_field_position;
-	    BootLoaderBase->Vesa.Masks[VI_Alpha] = masks[mb->vmi.reserved_mask_size-1]<<mb->vmi.reserved_field_position;
-	    BootLoaderBase->Vesa.Shifts[VI_Red] = 32 - mb->vmi.red_field_position - mb->vmi.red_mask_size;
-	    BootLoaderBase->Vesa.Shifts[VI_Blue] = 32 - mb->vmi.blue_field_position - mb->vmi.blue_mask_size;
-	    BootLoaderBase->Vesa.Shifts[VI_Green] = 32 - mb->vmi.green_field_position - mb->vmi.green_mask_size;
-	    BootLoaderBase->Vesa.Shifts[VI_Alpha] = 32 - mb->vmi.reserved_field_position - mb->vmi.reserved_mask_size;
-	    BootLoaderBase->Vesa.PaletteWidth = mb->vbe_palette_width;
+	    BootLoaderBase->Vesa.FrameBuffer = (APTR)vmi->phys_base;
+	    BootLoaderBase->Vesa.FrameBufferSize = vci->total_memory * 64; /* FrameBufferSize is in KBytes! */
+	    BootLoaderBase->Vesa.XSize = vmi->x_resolution;
+	    BootLoaderBase->Vesa.YSize = vmi->y_resolution;
+	    BootLoaderBase->Vesa.BytesPerLine = vmi->bytes_per_scanline;
+	    BootLoaderBase->Vesa.BitsPerPixel = vmi->bits_per_pixel;
+	    BootLoaderBase->Vesa.ModeNumber = mode; /* FIXME! */
+	    BootLoaderBase->Vesa.Masks[VI_Red] = masks[vmi->red_mask_size-1]<<vmi->red_field_position;
+	    BootLoaderBase->Vesa.Masks[VI_Blue] = masks[vmi->blue_mask_size-1]<<vmi->blue_field_position;
+	    BootLoaderBase->Vesa.Masks[VI_Green] = masks[vmi->green_mask_size-1]<<vmi->green_field_position;
+	    BootLoaderBase->Vesa.Masks[VI_Alpha] = masks[vmi->reserved_mask_size-1]<<vmi->reserved_field_position;
+	    BootLoaderBase->Vesa.Shifts[VI_Red] = 32 - vmi->red_field_position - vmi->red_mask_size;
+	    BootLoaderBase->Vesa.Shifts[VI_Blue] = 32 - vmi->blue_field_position - vmi->blue_mask_size;
+	    BootLoaderBase->Vesa.Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;
+	    BootLoaderBase->Vesa.Shifts[VI_Alpha] = 32 - vmi->reserved_field_position - vmi->reserved_mask_size;
+	    BootLoaderBase->Vesa.PaletteWidth = palwidth;
 	    BootLoaderBase->Flags |= MB_FLAGS_GFX;
 	    if (BootLoaderBase->Vesa.ModeNumber != 3)
 	    {
-		D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08lx\n", mb->vci.capabilities));
+		D(bug("[BootLdr] Init: Vesa card capability flags: 0x%08lx\n", vci->capabilities));
 	    	D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n",
 				BootLoaderBase->Vesa.ModeNumber,
 				BootLoaderBase->Vesa.XSize,BootLoaderBase->Vesa.YSize,
@@ -125,14 +131,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 			    	BootLoaderBase->Vesa.FrameBuffer,
 				BootLoaderBase->Vesa.FrameBufferSize));
 		D(bug("[BootLdr] Init: Vesa mode palette width: %d\n", BootLoaderBase->Vesa.PaletteWidth));
-		D(bug("[BootLdr] Init: Vesa mode direct color flags %02x\n", mb->vmi.direct_color_mode_info));
+		D(bug("[BootLdr] Init: Vesa mode direct color flags %02x\n", vmi->direct_color_mode_info));
 	    }
 	    else
 	    {
 		D(bug("[BootLdr] Init: Textmode graphics\n"));
 	    }
 	}
-
+#if 0
 	if (mb->flags & MB_FLAGS_DRIVES)
 	{
 	    struct mb_drive *curr;                                                                                                  

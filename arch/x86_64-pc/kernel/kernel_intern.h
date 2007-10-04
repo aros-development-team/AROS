@@ -46,7 +46,7 @@ void core_Cause(struct ExecBase *SysBase);
 void core_SetupIDT();
 void core_SetupGDT();
 void core_SetupMMU();
-void core_ProtKernelArea(intptr_t addr, intptr_t length);
+void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
