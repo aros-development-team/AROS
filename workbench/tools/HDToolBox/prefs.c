@@ -98,7 +98,6 @@ ULONG id_len=0;
 WORD current=0;
 WORD line=1;
 
-while(TRUE);
 	while (csrc.CS_CurChr < csrc.CS_Length)
 	{
 		res = ReadItem(ident, 256, &csrc);
