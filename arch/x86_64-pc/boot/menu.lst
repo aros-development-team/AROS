@@ -9,7 +9,7 @@ title AROS + relocate
     module /boot/kernel.pkg
 
 title AROS + vesa
-    kernel /boot/aros-x86_64 vesa=800x600x16
+    kernel /boot/aros-x86_64 vesa=800x600x16 base_address=02000000
     module /boot/kernel
     module /boot/kernel.pkg
 
