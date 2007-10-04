@@ -69,7 +69,7 @@ MSG_MEN_SC_NEWDRAW
 N
 ;
 MSG_MEN_OPENPAR
-Apri Cassetto Padre
+Apri precedente
 ;
 MSG_MEN_CLOSE
 Chiudi
@@ -93,7 +93,7 @@ MSG_MEN_SC_CLRSEL
 A
 ;
 MSG_MEN_SNAPSHT
-Fotografa
+Fissa
 ;
 MSG_MEN_ALL
 Tutto
@@ -108,10 +108,10 @@ MSG_MEN_DCVIEW
 Vista dettagliata
 ;
 MSG_MEN_ALLFIL
-Tutti i files
+Tutti i file
 ;
 MSG_MEN_SORTIC
-Ordinato
+Ordina
 ;
 MSG_MEN_CLNUP
 Pulisci
