@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 //#define USE_FORMAT64
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
