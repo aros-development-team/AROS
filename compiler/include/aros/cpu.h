@@ -193,7 +193,7 @@
 
 /*
     The SP_OFFSET should be defined *ONLY* when not defined before.
-    Otherwise it would redefine daults from cpu-arch.h or machine.h file
+    Otherwise it would redefine defaults from cpu-arch.h or machine.h file
 */
 #ifndef SP_OFFSET
 #define SP_OFFSET       0

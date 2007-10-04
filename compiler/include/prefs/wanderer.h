@@ -3,7 +3,7 @@
 
 /*
     Copyright  1995-2001, The AROS Development Team. All rights reserved.
-    $Id: wanderer.h 23386 2005-06-23 08:17:21Z NicJA $
+    $Id$
 
     Desc: wanderer prefs definitions
     Lang: English

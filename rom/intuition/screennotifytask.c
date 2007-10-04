@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
-    $Id: screennotifytask.c 20886 2006-12-31 18:51:21Z dariusb $
+    $Id$
 */
 
 #include <proto/exec.h>

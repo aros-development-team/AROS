@@ -3,7 +3,7 @@
 
 /*
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
-    $Id: screennotifytask.h 23866 2006-12-31 12:09:51Z dariusb $
+    $Id$
 */
 
 #define SCREENNOTIFYTASK_NAME 	    	" Screennotify Handler "

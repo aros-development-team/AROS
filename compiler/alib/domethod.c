@@ -23,19 +23,19 @@
 	Msg	 message)
 
 /*  FUNCTION
-	Invokes a method on a BOOPSI object. The dispatcher of the class, the
-	object is inherited from, is called. For more information about methods
+	Invokes a method on a BOOPSI object. The dispatcher of the class the
+	object is inherited from is called. For more information about methods
 	a class supports, see the class documentation.
 
     INPUTS
-	obj - The object, on which the method is to be performed on.
+	obj - The object on which the method is to be performed.
 	message - The message. The first field is the same for all methods and
-		  specifies which method is to be invokes (see
+		  specifies which method is to be invoked (see
 		  <intuition/classusr.h>).
 
     RESULT
-	Class and method depending. See the class documentation. A value of 0
-	can mean a valid return code but can also mean that a method was not
+	Class and method dependent. See the class documentation. A value of 0
+	can be a valid return code but can also mean that a method is not
 	supported.
 
     NOTES

@@ -1,7 +1,7 @@
 /*
     Copyright  1995-2007, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
-    $Id: endscreennotify.c 20651 2007-01-01 20:57:12Z d.brewka $
+    $Id$
  
     Remove a Intuition Notification.
 */
