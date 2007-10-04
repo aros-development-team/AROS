@@ -12,11 +12,11 @@ Kann Datei Requester nicht erzeugen!
 ; Can't open create filerequester!
 ;
 MSG_CANT_CREATE_CONTEXT
-Kann Kontext fr Gadtools nicht erzeugen!
+Kann Kontext für Gadtools nicht erzeugen!
 ; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
-Kann IFF Stream nicht ï¿½fnen!
+Kann IFF Stream nicht öffnen!
 ; Can't open IFF stream!
 ;
 MSG_CANT_WRITE_PREFFILE
@@ -83,7 +83,7 @@ MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY
 Pause Doppelklick
 ;
 MSG_GAD_KEY_REPEAT_DELAY
-Wiederhol-Verzï¿½erung
+Wiederhol-Verzögerung
 ;
 MSG_GAD_KEY_REPEAT_RATE
 Wiederhol-Geschwindigkeit
@@ -104,7 +104,7 @@ MSG_GAD_MOUSE_MAPPING_SELECT
 Auswahl
 ;
 MSG_GAD_MOUSE_MAPPING_MENU
-Men
+Menü
 ;
 MSG_GAD_MOUSE_MAPPING_THIRD
 Dritte
