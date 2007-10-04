@@ -49,6 +49,8 @@ static int PCVesa_Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&xsd->framebufferlock);
 #endif
     InitSemaphore(&xsd->HW_acc);
+
+  bug("\03");
     
     if (initVesaGfxHW(&xsd->data))
     {
