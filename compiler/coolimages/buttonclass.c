@@ -323,7 +323,7 @@ BOOL InitCoolButtonClass(struct Library *CyberGfxBase)
     
     cool_cybergfxbase = CyberGfxBase;
     
-    if (IntuitionBase && GfxBase && UtilityBase && SysBase)
+    if (IntuitionBase && GfxBase && UtilityBase) // && SysBase)
     {
     	if (!cool_buttonclass)
 	{
