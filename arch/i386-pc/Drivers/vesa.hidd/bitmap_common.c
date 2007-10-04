@@ -23,7 +23,7 @@ VOID MNAME_BM(PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPix
 #if defined(OnBitmap) && defined(BUFFERED_VRAM)
     ULONG   	       offset2;
 #endif
-    ULONG   	       pixel = msg->pixel;
+    HIDDT_Pixel       pixel = msg->pixel;
     UBYTE   	      *mem;
 #if defined(OnBitmap) && defined(BUFFERED_VRAM)
     UBYTE   	      *mem2;
