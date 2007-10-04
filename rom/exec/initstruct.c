@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize a structure.
@@ -7,7 +7,6 @@
 */
 #include "exec_intern.h"
 #include <aros/libcall.h>
-#include <exec/alerts.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -41,9 +40,10 @@
 			  0 - LONGs
 			  1 - WORDs
 			  2 - BYTEs
+			  3 - QUADs
 		       cccc is the element count-1
 
-	Instruction bytes must follow the same alignement restrictions as LONGs,
+	Instruction bytes must follow the same alignment restrictions as LONGs;
 	the following elements are aligned to their particular restrictions.
 
 	A 0 instruction ends the init table.
@@ -51,7 +51,7 @@
     INPUTS
 	initTable - Pointer to init table.
 	memory	  - Pointer to uninitialized structure.
-	size	  - Size of memory area to 0 out before decoding or 0
+	size	  - Size of memory area to zero out before decoding or 0
 		    for no filling.
 
     RESULT
@@ -71,7 +71,8 @@
     AROS_LIBFUNC_INIT
 
     LONG  cnt;
-    ULONG offset=0,src;
+    ULONG offset=0;
+    QUAD src;
     UBYTE *it,*dst;
     int   s,t;
 
@@ -153,15 +154,11 @@
 	    case 2:
 		/* Nothing to do for bytes */
 		break;
-	    default:
-		/* And an Alert for nibbles ;-) */
-		Alert(ACPU_AddressErr);
-
-		/*
-		    Tell the compiler that he doesn't need to
-		    care about side effects of Alert()
-		*/
-		return;
+	    case 3:
+		/* Align pointer to QUAD requirements */
+		it =(UBYTE *)(((IPTR)it +AROS_QUADALIGN-1)&~(AROS_QUADALIGN-1));
+		dst=(UBYTE *)(((IPTR)dst+AROS_QUADALIGN-1)&~(AROS_QUADALIGN-1));
+		break;
 	}
 
 	/* Switch over action */
@@ -199,6 +196,14 @@
 			    *dst++=*it++;
 			while(--cnt>=0);
 			break;
+		    case 3:
+			do
+			{
+			    *(QUAD *)dst=*(QUAD *)it;
+			    dst+=sizeof(QUAD);
+			    it +=sizeof(QUAD);
+			}while(--cnt>=0);
+			break;
 		}
 		break;
 	    case 1:
@@ -231,6 +236,15 @@
 			do
 			    *dst++=src;
 			while(--cnt>=0);
+			break;
+		    case 3:
+			src=*(QUAD *)it;
+			it +=sizeof(QUAD);
+			do
+			{
+			    *(QUAD *)dst=src;
+			    dst+=sizeof(QUAD);
+			}while(--cnt>=0);
 			break;
 		}
 		break;
