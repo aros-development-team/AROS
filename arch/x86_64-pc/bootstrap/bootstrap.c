@@ -387,9 +387,33 @@ void setupVesa(const char *str)
 
         if (modeinfo->mode_attributes & 0x80)
             mode |= 0x4000;
-
+        
         kprintf("%x\n",mode);
-        setVbeMode(mode);
+        if (setVbeMode(mode) == 0x004f)
+        {
+            unsigned char palwidth = 0;
+            
+            if (controllerinfo->capabilities & 0x01)
+                paletteWidth(0x0800, &palwidth);
+            else
+                palwidth = 6;
+
+            tag->ti_Tag = KRN_VBEModeInfo;
+            tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEModeInfo;
+            tag++;
+            
+            tag->ti_Tag = KRN_VBEControllerInfo;
+            tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEControllerInfo;
+            tag++;
+            
+            tag->ti_Tag = KRN_VBEMode;
+            tag->ti_Data = mode;
+            tag++;
+
+            tag->ti_Tag = KRN_VBEPaletteWidth;
+            tag->ti_Data = palwidth;
+            tag++;
+        }
             
         memcpy((void *)0x1000, __vesa_buffer, sizeof(__vesa_buffer));
         kprintf("[VESA] Module uninstalled\n");
@@ -465,13 +489,7 @@ void prepare_message(struct multiboot *mb)
     
     if (VBEModeInfo.mode_attributes)
     {
-        tag->ti_Tag = KRN_VBEModeInfo;
-        tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEModeInfo;
-        tag++;
-        
-        tag->ti_Tag = KRN_VBEControllerInfo;
-        tag->ti_Data = KERNEL_OFFSET | (unsigned long long)&VBEControllerInfo;
-        tag++;
+
     }
 
     tag->ti_Tag = KRN_ProtAreaStart;
