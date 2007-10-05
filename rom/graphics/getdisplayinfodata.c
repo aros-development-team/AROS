@@ -156,7 +156,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
     	case DTAG_DISP:
 	{
 	    struct DisplayInfo *di;
-	    HIDDT_Pixel redmask, greenmask, bluemask;
+	    IPTR redmask, greenmask, bluemask;
 	    
 	    di = (struct DisplayInfo *)buf;
 	    

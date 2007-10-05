@@ -419,7 +419,7 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
     LONG    	    	pixwritten = 0;
     
     HIDDT_DrawMode  	old_drmd;
-    HIDDT_Pixel     	old_fg;
+    IPTR             	old_fg;
     OOP_Object      	*gc;
     struct Rectangle 	rr;
 
@@ -575,7 +575,7 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, L
 	{
     	     
 	    HIDDT_DrawMode old_drmd;
-	    HIDDT_Pixel old_fg;
+	    IPTR old_fg;
 	    
     	    struct TagItem frtags[] =
 	    {

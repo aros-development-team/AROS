@@ -135,7 +135,7 @@ static void calllayerhook(struct Hook *h, struct RastPort *rp,
 	{
 	
 	     HIDDT_DrawMode old_drmd;
-	     HIDDT_Pixel old_fg;
+	     IPTR old_fg;
 	     
 	     struct TagItem gc_tags[] =
 	     {
