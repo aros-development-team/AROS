@@ -26,7 +26,7 @@ AROS_LH2(void *, HostLib_Open,
     handle = dlopen((char *) filename, RTLD_NOW);
 
     if (error != NULL)
-        *error = handle != NULL ? dlerror() : NULL;
+        *error = handle == NULL ? dlerror() : NULL;
 
     return handle;
 
