@@ -193,6 +193,7 @@
 	switch (tag)
 	{
 	case TAG_IGNORE:
+        (void) va_arg(args, IPTR);
 	    size --; /* Don't copy this tag */
 	    break;
 
@@ -235,6 +236,7 @@
 	    switch (tag)
 	    {
 	    case TAG_IGNORE:
+        (void) va_arg(ap, IPTR);
 		size --; /* Don't copy this tag */
 		break;
 
