@@ -59,7 +59,7 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 
     if (ExpansionBase)
     {
-        pp = AllocMem(24*4, MEMF_PUBLIC | MEMF_CLEAR);
+        pp = AllocMem(24*sizeof(IPTR), MEMF_PUBLIC | MEMF_CLEAR);
 
         if (pp)
         {
