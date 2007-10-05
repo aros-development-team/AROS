@@ -312,7 +312,7 @@ enum
 
 
 typedef UWORD HIDDT_ColComp;	/* Color component */
-typedef IPTR  HIDDT_Pixel;
+typedef ULONG HIDDT_Pixel;
 
 	
 typedef struct
