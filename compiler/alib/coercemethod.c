@@ -5,10 +5,10 @@
 
 #define INTUITION_NO_INLINE_STDARG
 
+#include <aros/debug.h>
 #include <intuition/classes.h>
-#include <stdarg.h>
-#include "alib_intern.h"
 #include <proto/alib.h>
+#include "alib_intern.h"
 
 /******************************************************************************
 
@@ -50,15 +50,26 @@
 
 ******************************************************************************/
 {
-    if ((!obj) || (!cl))
-        return 0L;
-    return CALLHOOKPKT((struct Hook *) cl, obj, message);
+	ASSERT_VALID_PTR(obj);
+	ASSERT_VALID_PTR(cl);
+
+	if ((!obj) || (!cl))
+		return 0L;
+
+	ASSERT_VALID_PTR(message);
+
+	return CALLHOOKPKT((struct Hook *) cl, obj, message);
 } /* CoerceMethodA() */
 
-IPTR CoerceMethod (Class * cl, Object * obj, STACKULONG MethodID, ...)
+IPTR CoerceMethod (Class * cl, Object * obj, IPTR MethodID, ...)
 {
-    if ((!obj) || (!cl))
-        return 0L;
+	ASSERT_VALID_PTR(obj);
+	ASSERT_VALID_PTR(cl);
 
-    return CALLHOOKPKT((struct Hook *) cl, obj, &MethodID);
+	if ((!obj) || (!cl))
+		return 0L;
+
+	AROS_SLOWSTACKMETHODS_PRE(MethodID)
+	retval = CALLHOOKPKT((struct Hook *) cl, obj, AROS_SLOWSTACKMETHODS_ARG(MethodID));
+	AROS_SLOWSTACKMETHODS_POST
 } /* CoerceMethod() */
