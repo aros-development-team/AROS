@@ -6,9 +6,6 @@
     Lang: english
 */
 
-#define AROS_TAGRETURNTYPE void
-#define AROS_TAGRETURNTYPEVOID
-
 #include "alib_intern.h"
 
 extern struct Library * GadToolsBase;
@@ -52,7 +49,7 @@ extern struct Library * GadToolsBase;
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(tag1)
+    AROS_NR_SLOWSTACKTAGS_PRE(tag1)
     GT_SetGadgetAttrsA (gad, win, req, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
+    AROS_NR_SLOWSTACKTAGS_POST
 } /* GT_SetGadgetAttrs */

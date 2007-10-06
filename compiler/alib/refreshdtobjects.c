@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_TAGRETURNTYPEVOID
 #include <intuition/classusr.h>
 #include <utility/tagitem.h>
 
@@ -49,7 +48,7 @@ extern struct Library *DataTypesBase;
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(tag1)
+    AROS_NR_SLOWSTACKTAGS_PRE(tag1)
     RefreshDTObjectA (o, win, req, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
+    AROS_NR_SLOWSTACKTAGS_POST
 } /* RefreshDTObjects */

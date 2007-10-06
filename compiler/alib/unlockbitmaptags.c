@@ -3,7 +3,6 @@
     $Id$
 */
 
-#define AROS_TAGRETURNTYPEVOID
 #include "alib_intern.h"
 
 extern struct Library * CyberGfxBase;
@@ -41,7 +40,7 @@ extern struct Library * CyberGfxBase;
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(tag1)
+    AROS_NR_SLOWSTACKTAGS_PRE(tag1)
     UnLockBitMapTagList(handle, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
+    AROS_NR_SLOWSTACKTAGS_POST
 } /* UnLockBitMapTags */
