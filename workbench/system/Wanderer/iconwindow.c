@@ -1241,7 +1241,7 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_DrawBackground
 	return (iconwindow_BackFill_Active->bfd_MUIM_IconWindow_BackFill_DrawBackground)(CLASS, self, message);
 }
 
-BOOL IconWindow__SetupClass()
+IPTR IconWindow__SetupClass()
 {
     D(bug("[IconWindow] IconWindow__SetupClass()\n"));
 	
@@ -1275,3 +1275,5 @@ ICONWINDOW_CUSTOMCLASS
 	MUIM_IconWindow_BackFill_ProcessBackground, struct MUIP_IconWindow_BackFill_ProcessBackground *,
 	MUIM_IconWindow_BackFill_DrawBackground,    struct MUIP_IconWindow_BackFill_DrawBackground *
 );
+
+ADD2INIT(IconWindow__SetupClass, 0);

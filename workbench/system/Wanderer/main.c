@@ -17,10 +17,6 @@
 #include "locale.h"
 #include "wanderer.h"
 
-/* External Calls to configure our inbuilt classes */
-extern BOOL	         IconWindow__SetupClass();
-extern BOOL	         ImageBackFill__SetupClass();
-
 /* global variables */
 Object 				 *_WandererIntern_AppObj = NULL;
 Class 				 *_WandererIntern_CLASS = NULL;
@@ -35,10 +31,6 @@ int main(void)
 D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
 
     OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", 0, 0);
-
-	/* To be moved at a later date .. */
-	IconWindow__SetupClass();
-	ImageBackFill__SetupClass();
 	
     if ((_WandererIntern_AppObj = WandererObject, End) != NULL)
     {
