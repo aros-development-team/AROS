@@ -151,9 +151,11 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
     
     if ((nnode->nn_Params = (IPTR *)mui_alloc(paramsize * sizeof(IPTR))))
     {
+      IPTR *par = (IPTR *)&msg->FollowParams;
+      
 	for (i = 0; i < msg->FollowParams; i++)
 	{
-	    nnode->nn_Params[i] = *(&msg->FollowParams + i + 1);
+	    nnode->nn_Params[i] = *(par + i + 1);
 	}
 
         if (msg->TrigVal == MUIV_EveryTime)
@@ -161,7 +163,7 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
     	    nnode->nn_NewParams = nnode->nn_Params + msg->FollowParams + 1;
 	    for (i = 0; i < msg->FollowParams; i++)
 	    {
-		nnode->nn_NewParams[i] = *(&msg->FollowParams + i + 1);
+		nnode->nn_NewParams[i] = *(par + i + 1);
 	    }
         }
 
