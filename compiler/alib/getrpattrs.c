@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define AROS_TAGRETURNTYPEVOID
 #include <graphics/rastport.h>
 #include <utility/tagitem.h>
 
@@ -46,7 +45,7 @@
 
 *****************************************************************************/
 {
-    AROS_SLOWSTACKTAGS_PRE(tag1)
+    AROS_NR_SLOWSTACKTAGS_PRE(tag1)
     GetRPAttrsA (rp, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
+    AROS_NR_SLOWSTACKTAGS_POST
 } /* GetRPAttrs */

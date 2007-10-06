@@ -63,9 +63,9 @@ struct TagItem
 #ifndef AROS_TAGRETURNTYPE
 #   define AROS_TAGRETURNTYPE IPTR
 #endif
-#ifdef AROS_TAGRETURNTYPEVOID
-#   ifdef AROS_SLOWSTACKTAGS
-#	define AROS_SLOWSTACKTAGS_PRE(arg)		\
+
+#ifdef AROS_SLOWSTACKTAGS
+#	define AROS_NR_SLOWSTACKTAGS_PRE(arg)		\
 	    va_list		  args;			\
 	    struct TagItem	* tags;			\
 							\
@@ -73,21 +73,7 @@ struct TagItem
 							\
 	    if ((tags = GetTagsFromStack (arg, args)))	\
 	    {
-#	define AROS_SLOWSTACKTAGS_ARG(arg) tags
-#	define AROS_SLOWSTACKTAGS_POST			\
-		FreeTagsFromStack (tags);		\
-	    }						\
-							\
-	    va_end (args);				\
-							\
-	    return;
-#   else
-#	define AROS_SLOWSTACKTAGS_PRE(arg)
-#	define AROS_SLOWSTACKTAGS_ARG(arg) ((struct TagItem *)&(arg))
-#	define AROS_SLOWSTACKTAGS_POST     return;
-#   endif
-#else /* AROS_TAGRETURNTYPEVOID */
-#   ifdef AROS_SLOWSTACKTAGS
+
 #	define AROS_SLOWSTACKTAGS_PRE(arg)		\
 	    AROS_TAGRETURNTYPE	  retval;		\
 	    va_list		  args;			\
@@ -98,7 +84,9 @@ struct TagItem
 	    if ((tags = GetTagsFromStack (arg, args)))	\
 	    {						\
 		retval =
+
 #	define AROS_SLOWSTACKTAGS_ARG(arg) tags
+
 #	define AROS_SLOWSTACKTAGS_POST			\
 		FreeTagsFromStack (tags);		\
 	    }						\
@@ -108,11 +96,18 @@ struct TagItem
 	    va_end (args);				\
 							\
 	    return retval;
-#   else
+	    
+#	define AROS_NR_SLOWSTACKTAGS_POST		\
+		FreeTagsFromStack (tags);		\
+	    }						\
+							\
+	    va_end (args);
+#else
+#	define AROS_NR_SLOWSTACKTAGS_PRE(arg)
 #	define AROS_SLOWSTACKTAGS_PRE(arg) AROS_TAGRETURNTYPE retval;
 #	define AROS_SLOWSTACKTAGS_ARG(arg) ((struct TagItem *)&(arg))
 #	define AROS_SLOWSTACKTAGS_POST     return retval;
-#   endif
-#endif /* AROS_TAGRETURNTYPEVOID */
+#	define AROS_NR_SLOWSTACKTAGS_POST     return retval;
+#endif
 
 #endif /* UTILITY_TAGITEM_H */
