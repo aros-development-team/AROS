@@ -134,7 +134,7 @@ AROS_UFP3(IPTR, HookEntry,
 #ifdef AROS_SLOWSTACKMETHODS
     Msg  GetMsgFromStack  (STACKULONG MethodID, va_list args);
     void FreeMsgFromStack (Msg msg);
-
+#ifndef AROS_SLOWSTACKNORETURN
 #   define AROS_SLOWSTACKMETHODS_PRE(arg)       \
     AROS_METHODRETURNTYPE retval;		\
 						\
@@ -156,9 +156,31 @@ AROS_UFP3(IPTR, HookEntry,
 						\
     return retval;
 #else
+#   define AROS_SLOWSTACKMETHODS_PRE(arg)       \
+    va_list args;				\
+    Msg     msg;				\
+						\
+    va_start (args, arg);                       \
+						\
+    if ((msg = GetMsgFromStack (arg, args)))    \
+    {
+#   define AROS_SLOWSTACKMETHODS_ARG(arg) msg
+#   define AROS_SLOWSTACKMETHODS_POST		\
+	FreeMsgFromStack (msg);                 \
+    }						\
+						\
+    va_end (args);
+#endif
+#else
+#ifndef AROS_SLOWSTACKNORETURN
 #   define AROS_SLOWSTACKMETHODS_PRE(arg)   AROS_METHODRETURNTYPE retval;
 #   define AROS_SLOWSTACKMETHODS_ARG(arg)   ((Msg)&(arg))
 #   define AROS_SLOWSTACKMETHODS_POST	    return retval;
+#else
+#   define AROS_SLOWSTACKMETHODS_PRE(arg)
+#   define AROS_SLOWSTACKMETHODS_ARG(arg)   ((Msg)&(arg))
+#   define AROS_SLOWSTACKMETHODS_POST
+#endif
 #endif /* AROS_SLOWSTACKMETHODS */
 
 #ifdef AROS_SLOWSTACKTAGS
