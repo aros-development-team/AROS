@@ -35,7 +35,7 @@ static const char *xvm_func_names[] = {
     "XF86VidModeGetAllModeLines"
 };
 
-#define XVM_SOFILE "libXxf86vm.so"
+#define XVM_SOFILE "libXxf86vm.so.1"
 
 #define XVMCALL(func,...)   (xvm_func.func(__VA_ARGS__))
 

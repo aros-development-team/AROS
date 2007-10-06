@@ -74,7 +74,7 @@ static const char *xext_func_names[] = {
     "XShmAttach"
 };
 
-#define XEXT_SOFILE "libXext.so"
+#define XEXT_SOFILE "libXext.so.6"
 
 #define XEXTCALL(func,...) (xext_func.func(__VA_ARGS__))
 
