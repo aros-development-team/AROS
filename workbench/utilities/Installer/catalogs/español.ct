@@ -3,10 +3,11 @@
 ## codeset 0
 ;
 MSG_OK
-OK
+Aceptar
+; OK
 ;
 MSG_CANCEL
-Cancel
+Cancelar
 ;
 MSG_MESSAGE
 Mensaje
@@ -15,7 +16,7 @@ MSG_PROMPT
 Pregunta
 ;
 MSG_YES
-Si
+Sí
 ;
 MSG_NO
 No

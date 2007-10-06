@@ -1,0 +1,129 @@
+## version $VER: wanderer.catalog 1.0 (23.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_NAME
+Preferencias del Wanderer
+;Wanderer Prefs
+;
+MSG_DESCRIPTION
+Preferencias del Wanderer
+;Wanderer preferences
+;
+MSG_BACKGROUNDS
+Fondos
+;Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Cajones
+;Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Elija el Fondo para el Workbench
+;Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Elija el Fondo para el Cajón
+;Select Drawer Background
+;
+MSG_GENERAL
+General
+;
+MSG_APPEARANCE
+Apariencia
+;Appearance
+;
+MSG_TOOLBAR
+Barra de Herramientas
+;Toolbar
+;
+MSG_CLASSIC
+Clásico
+;Classic
+;
+MSG_ENHANCED
+Mejorado
+;Enhanced
+;
+MSG_NAVIGATION
+Navegación
+;Navigation
+;
+MSG_METHOD
+Método
+;Method
+;
+MSG_OBJECTS
+Objetos
+;Objects
+;
+MSG_PREVIEW
+Vista previa
+;Preview
+;
+MSG_TOOLBAR_ENABLED
+Barra habilitada
+;Toolbar Enabled
+;
+MSG_ICONSPREFS
+Aspecto y sensación de los íconos
+;Icons look and feel
+;
+MSG_ICONLISTMODE
+Tipos de listas
+;Icon listmode
+;
+MSG_ICONLISTMODE_PLAIN
+Vertical
+;Normal
+;List icons plainly
+;
+MSG_ICONLISTMODE_GRID
+Rectangular
+;En cuadrícula
+;List icons by grid
+;
+MSG_ICONTEXTMODE
+Dibujo del texto
+;Modo del texto
+;Modo de dibujar el texto
+;Icons text drawmode
+;
+MSG_ICONTEXTMODE_OUTLINE
+Con borde
+;Outline
+;
+MSG_ICONTEXTMODE_PLAIN
+Normal
+;Plain
+;
+MSG_ICONTEXTLENGTH
+Largo máximo
+;Longitud máxima del texto
+;Max icon textlength
+;
+MSG_DOUBLEBUFFERED
+con doble búfer
+;double buffering
+;
+MSG_MISC
+misceláneo
+;misc
+;
+MSG_BUBBLESCREENTITLE 
+%pc = Ram de Chip libre\n\
+%pf = Ram Fast libre\n\
+%pt = Total de Ram libre\n\
+%PC = Ram de Chip\n\
+%PF = Ram Fast\n\
+%PT = Ram Total\n\
+%os = Versión de AROS\n\
+%wb = Versión del Wanderer\n\
+%ov = Versión exacta de AROS\n\
+%wv = Versión exacta de workbench.library
+;

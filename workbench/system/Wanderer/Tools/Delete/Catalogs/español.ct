@@ -1,0 +1,52 @@
+## version $VER: delete.catalog 1.0 (30.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_TITLE
+Borrar
+;Delete
+;
+MSG_DELETE_REQUEST
+¿Borrar?
+;Delete?
+;
+MSG_DELETE_CHOICE
+Borrar|Cancelar
+;Delete|Cancel
+;
+MSG_REQUEST
+¿Estás seguro de borrar '%s'?
+;Are you sure you want to delete '%s'?
+;
+MSG_ERROR
+Error
+;
+MSG_OK
+Aceptar
+;OK
+;
+MSG_COULDNT_DELETE
+No se pudo borrar el archivo.
+;Could not delete file.
+;
+MSG_COULDNT_ALLOCATE
+No se pudo asignar memoria.
+;Could not allocate memory.
+;
+MSG_COULDNT_LOCK
+No se pudo bloquear el archivo para borrar.
+;Could not lock file for deletion.
+;
+MSG_INFO
+Info
+;
+MSG_WRONG_ARGS
+Error: Cantidad equivocada de argumentos.
+;Error: Wrong number of arguments.
+;
+MSG_WB_ONLY
+Error: Debe ser iniciado desde el Wanderer.\n
+;Error: Must be started from Wanderer.\n
+;

@@ -1,0 +1,100 @@
+## version $VER: ScreenGrabber.catalog 1.1 (13.08.2006)
+## language español
+## codeset 0
+;
+; Translated by ahg - (30.09.2007)
+;
+MSG_WINDOW_TITLE
+Capturador de Pantalla
+;ScreenGrabber
+;
+MSG_REFRESH
+Rehacer la lista
+;Refresh list
+;
+MSG_SCREEN_INFO
+Información de la Pantalla
+;Info. de la pantalla
+;Screen info
+;
+MSG_SIZE
+Tamaño
+;Dimensiones
+;Talla
+;Size
+;
+MSG_TITLE
+Título
+;Title
+;
+MSG_DEFAULT_TITLE
+Título inicial
+;Título predefinido
+;Default title
+;
+MSG_GRABBING_OPTIONS
+Opciones de captura
+;Grabbing options
+;
+MSG_DELAY
+Retardo (s)
+;Delay (s)
+;
+MSG_HIDE
+Ocultar la ventana del capturador
+;Ocultar la ventana del grabber
+;Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Grabar las opciones
+;Save options
+;
+MSG_SAVE_FILE
+Grabar en el archivo
+;Save file
+;
+MSG_SCREENSHOT
+Captura de pantalla
+;Screenshot
+;
+MSG_SCREEN_PARM
+%d x %d, depth=%d
+;
+MSG_OVERWRITE
+El archivo '%s' ya existe.\n¿Quieres sobrescribirlo?
+;File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+Error del Capturador de Pantalla
+;Error del Screengrabber
+;Screengrabber Error
+;
+MSG_GAD_OK
+_Aceptar
+;_OK
+;
+MSG_GAD_YESNO
+SÍ|NO
+;YES|NO
+;
+MSG_ERR_DATATYPE
+¡No se puede crear el objeto datatype!
+;Can't create datatype object!
+;
+MSG_NORAM
+¡No se puede asignar RAM!
+;Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+Escribir '%s' falló con\n\
+el Error de E/S %ld!
+;Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+¡El archivo '%s' no se puede abrir para salida!
+;Can't open file '%s' for output!
+;
+MSG_ERR_APP
+¡No se puede crear la aplicación!
+;Can't create application object!
+;

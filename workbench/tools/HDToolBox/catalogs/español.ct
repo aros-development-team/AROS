@@ -1,0 +1,174 @@
+## version $VER: hdtoolbox.catalog 1.0 (13.08.2006))
+## codeset 0
+## language español
+;
+; Translated by ahg - (30.09.2007)
+;
+WORD_Active
+Activa
+;Active
+;
+WORD_AddEntry
+Agregar Entrada
+;Agregar
+;Add Entry
+;
+WORD_All
+Todo
+;All
+;
+WORD_Automount
+Montaje automático
+;Automontaje
+;Automount
+;
+WORD_Bootable
+Para arrancar
+;Bootable
+;
+WORD_BootPri
+Prioridad de arranque
+;Boot Priority
+;
+WORD_Cancel
+Cancelar
+;Cancel
+;
+WORD_Changed
+Modificado
+;Changed
+;
+WORD_Change_Type
+Cambiar Tipo
+;Change Type
+;
+WORD_Create_Table
+Crear Tabla
+;Create Table
+;
+WORD_Devices
+Dispositivos
+;Periféricos
+;Unidades
+;Devices
+;
+WORD_DosEnvec
+DosEnvec
+;
+WORD_Exit
+Salir
+;Exit
+;
+WORD_Geometry
+Geometría
+;Geometry
+;
+WORD_Name
+Nombre
+;Name
+;
+WORD_Switches
+Switches
+;
+WORD_Ok
+Aceptar
+;Ok
+;
+WORD_Parent
+Atrás
+;Volver
+;Nivel previo
+;Parent
+;
+WORD_Partitions
+Particiones
+;Partitions
+;
+WORD_Partition_Table
+Tabla de Partición
+;Partition Table
+;
+WORD_Partition_Table_Type
+Tipo de Tabla
+;Partition Table Type
+;
+WORD_Partition_Type
+Tipo de Partición
+;Partition Type
+;
+WORD_RemoveEntry
+Quitar Entrada
+;Remove Entry
+;
+WORD_Rename
+Renombrar
+;Rename
+;
+WORD_Resize_Move
+Ajustar/Mover
+;Resize/Move
+;
+WORD_Save_Changes
+Grabar los Cambios
+;Save Changes
+;
+WORD_Size
+Tamaño
+;Size
+;
+WORD_Unit
+Unidad
+;Unit
+;
+WORD_Units
+Unidades
+;Units
+;
+WORD_Unknown
+Desconocida
+;Unknown
+;
+WORD_MENU_Project
+Proyecto
+;Project
+;
+WORD_MENU_About
+Acerca de...
+;About
+;
+WORD_MENU_Quit
+Salir
+;Quit
+;
+MSG_ASK_SAVE
+¡Todos los datos en las particiones modificadas\nse borrarán! ¿Estás seguro en escribir los cambios\n a la tabla de partición '%s'?
+;All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY
+No hay memoria suficiente
+;Not enough memory
+;
+MSG_PARTITION_TABLE_FULL
+Tabla de partición llena
+;Partition table full
+;
+MSG_Select_Empty_Area
+Elige un área vacía
+;Select empty area
+;
+MSG_Select_Partition_Resize_Move
+Elige una partición y ajusta su tamaño o muévela
+;Select a partition and resize/move it
+;
+MSG_Welcome
+¡Bienvenido a la herramienta para particiones!
+;Welcome to the partitioning tool
+;
+MSG_WriteTableError
+Error al escribir en la tabla de partición
+;Error while writing partition table
+;
+MSG_CreateTableError
+Error al crear la tabla de partición
+;Error while creating partition table
+;

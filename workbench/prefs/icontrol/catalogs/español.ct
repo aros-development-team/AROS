@@ -1,0 +1,135 @@
+## version $VER: icontrolprefs.catalog 1.1 (30.09.2007)
+## codeset 0
+## language español
+;
+; Traslated by ahg
+;
+MSG_CANT_OPEN_LIB
+¡No se puede abrir %s V%ld!\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+¡No se puede crear la aplicación!
+;Can't create application object!
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+No se puede crear la clase propia\n\
+de la ventana de preferencias
+;Can't create custom preferenceswindow class
+;
+MSG_WINTITLE
+Preferencias de IControl
+;IControl Preferences
+;
+MSG_MEN_PROJECT
+Proyecto
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Abrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+G\0Guardar como...
+;A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+S\0Salir
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Editar
+;Modifica (italiano)
+;Modifier (francés)
+;Edit
+;
+MSG_MEN_EDIT_DEFAULT
+F\0Valores de fábrica
+;D\0Rirpistina valori iniziali (italiano)
+;D\0Configuration par défaut (francés)
+;D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Valores previos
+;L\0A los últimos grabados
+;L\0Ultima versione salvata (italiano)
+;L\0Dernière sauvegarde (francés)
+;L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Restaurar
+;R\0Ripristina (italiano)
+;R\0Revenir à l'initial (francés)
+;R\0Restore
+;
+MSG_MEN_SETTINGS
+Configuraciones
+;Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0¿Crear Íconos?
+;I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Cargar las Preferencias para IControl
+;Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE
+Guardar las Preferencias para IControl
+;Save IControl Preferences
+;
+MSG_OK
+Aceptar
+;Ok
+;
+MSG_MENUS_GROUP
+Menús
+;Menus
+;
+MSG_MENUS_TYPE
+Tipo
+;Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Descendente
+;Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Emergente
+;Pop-Up
+;
+MSG_MENUS_LOOK
+Aspecto
+;Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Clásico
+;Classic
+;
+MSG_MENUS_LOOK_3D
+3D
+;
+MSG_WINDOWS
+Ventanas
+;Windows
+;
+MSG_OFFSCREEN_MOVE
+Mover afuera de la pantalla:
+;Offscreen move:
+;
+MSG_SCREENS
+Pantallas
+;Screens
+;
+MSG_FRONTMOST_DEFAULT
+La del frente es la pant. públ. predet.:
+;Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC
+Dejar que las ventanas salgan\ndel área visible
+;Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Que la pant. públ. del frente\nsea la pant. públ. predet.
+;Make the frontmost public screen\nthe default public screen
+;

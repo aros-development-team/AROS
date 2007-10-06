@@ -1,0 +1,34 @@
+## version $VER: screenmodeprefs.catalog 1.0 (29.09.2007)
+## codeset 0
+## language español
+;
+; Translated by ahg
+;
+MSG_NAME
+Preferencias para el Modo de Pantalla
+;ScreenMode Preferences
+; 
+MSG_WIDTH
+\33lAncho:
+;\33lWidth:
+;
+MSG_DEFAULT
+\33l_predeterminado
+;\33l_default
+;
+MSG_HEIGHT
+\33lAlto:
+;\33lHeight:
+;
+MSG_DEPTH
+\33lProfundidad:
+;\33lDepth:
+;
+MSG_AUTOSCROLL
+\33lDesplazamiento automático
+;\33lAutoscroll
+;
+MSG_SELECT
+Elija un Modo de Pantalla
+;Select a Screen Mode
+;

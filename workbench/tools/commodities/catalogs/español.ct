@@ -1,15 +1,17 @@
-## version $VER: Commodities.catalog 1.0 (12.08.2006)
+## version $VER: Commodities.catalog 1.2 (29.09.2007)
 ## language español
 ## codeset 0
 ;
 ; FIXME: This file requires updating. When done, bump revision to 2
+; FIXME: Aún faltan unos renglones y hacer concordar las personas (ahg)
+;
 ;
 MSG_CANT_OPEN_LIB
 ¡No puedo abrir %s V%ld!\n
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_OPEN_INPUTDEVICE
-
+No puedo abrir 'input.device'
 ; Can't open 'input.device'
 ;
 ; ***NEW***
@@ -31,7 +33,8 @@ MSG_CANT_CREATE_MENUS
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-!No puedo layout los menús!\n
+¡No puedo acomodar los menús!\n
+;!No puedo layout los menús!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
@@ -39,7 +42,8 @@ MSG_CANT_CREATE_WIN
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-¡No puedo reservar memory para la aplicación\n
+¡No puedo reservar memoria para la aplicación\n
+;¡No puedo reservar memory para la aplicación\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
@@ -55,7 +59,8 @@ MSG_CANT_CREATE_CUSTOM
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
-OK
+Aceptar
+;OK
 ; Ok
 ;
 MSG_MEN_PROJECT
@@ -63,13 +68,13 @@ Proyecto
 ; Project
 ;
 MSG_MEN_PROJECT_HIDE
-
+O\0Ocultar
 ; H\0Hide
 ;
 ; ***NEW***
 ;
 MSG_MEN_PROJECT_ICONIFY
-
+I\0Convertir en ícono
 ; I\0Iconify
 ;
 ; ***NEW***
@@ -94,7 +99,8 @@ Controla system commodities
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
-Cambio
+Cambio: Tecla asignada = <%s>
+;Cambio
 ; Exchange: Hot Key = <%s>
 ;
 MSG_EXCHANGE_LISTVIEW
@@ -118,11 +124,13 @@ Quita
 ; Remove
 ;
 MSG_EXCHANGE_CYCLE_ACTIVE
-activo
+Activo
+;activo
 ; Active
 ;
 MSG_EXCHANGE_CYCLE_INACTIVE
-inactivo
+Inactivo
+;inactivo
 ; Inactive
 ;
 ; ===============================================
@@ -133,11 +141,13 @@ Blanker
 ; Blanker
 ;
 MSG_BLANKER_CXTITLE
-System Screen Blanker
+Oscurecedor de la Pantalla del Sistema
+;System Screen Blanker
 ; System Screen Blanker
 ;
 MSG_BLANKER_CXDESCR
-Ennegrece pantalla cuando el system esta inactivo
+Oscurece la pantalla durante la inactividad
+;Ennegrece pantalla cuando el system esta inactivo
 ; Blanks screen when system inactive
 ;
 ; ===============================================
@@ -148,7 +158,8 @@ ClickToFront
 ; ClickToFront
 ;
 MSG_CLICK2FNT_CXTITLE
-ClickToFront
+Traer al Frente
+;ClickToFront
 ; Click To Front Utility
 ;
 MSG_CLICK2FNT_CXDESCR
@@ -178,26 +189,31 @@ AutoPoint
 ; AutoPoint
 ;
 MSG_AUTOPOINT_CXTITLE
-Foco automatico
+Enfoque automático
+;Foco automatico
 ; Autopointer
 ;
 MSG_AUTOPOINT_CXDESCR
-Activa la ventana debajo de la mouse
+Activa la ventana debajo del ratón
+;Activa la ventana debajo de la mouse
 ; Activates the window under the mouse
 ;
 ; ===============================================
 ; STARTMENU
 ;
 MSG_STARTMENU_CXNAME
-StartMenú
+Menú Iniciar
+;StartMenú
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
-System Programm Starter
+Iniciador de Programas
+;System Programm Starter
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Lanza programas del menú
+Lanza programas desde el menú
+;Lanza programas del menú
 ; Program launch commodity
 ;
 ; ===============================================
@@ -216,7 +232,8 @@ Asignar funciones a teclas
 ; Attach special functions to keys
 ;
 MSG_FKEY_WINTITLE
-FKey: Hot Key = <%s>
+FKey: Tecla Funcional = <%s>
+;FKey: Hot Key = <%s>
 ; FKey: Hot Key = <%s>
 ;
 MSG_FKEY_DEFINED_KEYS
@@ -232,7 +249,7 @@ _Borrar tecla
 ; _Delete Key
 ;
 MSG_FKEY_SAVE_KEY
-
+Guardar las Teclas Definidas
 ; Save Defined Keys
 ;
 ; ***NEW***
@@ -258,7 +275,8 @@ Agrandar ventana
 ; Enlarge Window
 ;
 MSG_FKEY_CMD_SHRINK_WIN
-Empqueñecer ventana
+Encoger ventana
+;Empqueñecer ventana
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
@@ -272,7 +290,8 @@ MSG_FKEY_CMD_RESCUE_WIN
 ; ***NEW***
 ;
 MSG_FKEY_CMD_INSERT_TEXT
-Rellenar texto
+Intercalar texto
+;Rellenar texto
 ; Insert Text
 ;
 MSG_FKEY_CMD_RUN_PROG
@@ -280,31 +299,47 @@ Lanza programa
 ; Run Program
 ;
 MSG_FKEY_CMD_RUN_AREXX
-Lanza ARexx-Script
+Lanza un Guión ARexx
+;Lanza ARexx-Script
 ; Run Arexx Script
 ;
 MSG_FKEY_MEN_PROJECT_SAVE
-S\0Grabar teclas
+G\0Grabar teclas
 ; S\0Save Defined Keys
 ;
 ; ===============================================
 ; NOCAPSLOCK
 ;
 MSG_NOCAPSLOCK_CXNAME
-
+Sin bloqueo en mayúsculas
 ; NoCapsLock
 ;
 ; ***NEW***
 ;
 MSG_NOCAPSLOCK_CXTITLE
-
+Sin bloqueo en mayúsculas
 ; NoCapsLock:
 ;
 ; ***NEW***
 ;
 MSG_NOCAPSLOCK_CXDESCR
-
+Desactiva la tecla BLOQ-MAYÚS
 ; Renders the CAPS LOCK key ineffective
 ;
 ; ***NEW***
+;
+; ===============================================
+; DepthMenu
+;
+MSG_DEPTHMENU_CXNAME
+Menú Profundidad
+;DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+Menú Profundidad:
+;DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR
+Menú de los gadgets profundidad
+;Popup menu for depth gadgets
 ;

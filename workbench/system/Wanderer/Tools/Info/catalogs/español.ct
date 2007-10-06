@@ -1,0 +1,182 @@
+## version $VER: info.catalog 1.0 (30.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_TITLE
+Informaciones
+;Informations
+;
+MSG_DESCRIPTION
+Informaciones del ícono
+;Icon informations
+;
+MSG_COPYRIGHT
+Info. del ícono\n©AROS Dev Team
+;Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Ícono
+;Icon
+;
+MSG_NAME
+Nombre
+;Name
+;
+MSG_COMMENT
+Comentario
+;Comment
+;
+MSG_STACK
+Pila
+;Stack
+;
+MSG_DEFTOOL
+Herramienta
+;Tool
+;
+MSG_ICONTYPE
+Tipo del ícono
+;Icon type
+;
+MSG_DISK
+Disco
+;Disk
+;
+MSG_DRAWER
+Cajón
+;Drawer
+;
+MSG_TOOL
+Herramienta
+;Tool
+;
+MSG_PROJECT
+Proyecto
+;Project
+;
+MSG_GARBAGE
+Basura
+;Garbage
+;
+MSG_DEVICE
+Dispositivo
+;Device
+;
+MSG_KICK
+Kick
+;
+MSG_APPICON
+AppIcon
+;
+MSG_INFORMATION
+Información
+;Information
+;
+MSG_PROTECTION
+Protección
+;Protection
+;
+MSG_TOOLTYPES
+Tipo de herramienta
+;Tooltypes
+;Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Error: No se pudo iniciar desde el shell
+;Error: Cannot be started from shell
+;
+MSG_ABOUT
+Acerca de...
+;About...
+;
+MSG_QUIT
+Salir
+;Quit
+;
+MSG_READ
+Leer
+;Read
+;
+MSG_WRITE
+Escribir
+;Write
+;
+MSG_EXECUTE
+Ejecutar
+;Execute
+;
+MSG_DELETE
+Borrar
+;Delete
+;
+MSG_SCRIPT
+Guión
+;Script
+;
+MSG_PURE
+Puro
+;Pure
+;
+MSG_ARCHIVED
+Comprimido
+;Archived
+;
+MSG_STICKY
+Adhesivo
+;Sticky
+;
+MSG_SIZE
+Tamaño
+;Talla
+;Size
+;
+MSG_VERSION
+Versión
+;Version
+;
+MSG_OWNERID
+ID del dueño
+;Owner ID
+;
+MSG_GROUPID
+ID del grupo
+;Group ID
+;
+MSG_OWNERNAME
+Dueño
+;Owner
+;
+MSG_GROUPNAME
+Grupo
+;Group
+;
+MSG_TYPE
+Tipo
+;Type
+;
+MSG_DATE
+Fecha
+;Date
+;
+MSG_NEW_KEY
+Nueva tecla
+;New key
+;
+MSG_DELETE_KEY
+Borrar tecla
+;Delete key
+;
+MSG_SAVE
+_Guardar
+;_Save
+;
+MSG_CANCEL
+_Cancelar
+;_Cancel
+;
+MSG_OK
+Aceptar
+;Ok
+;

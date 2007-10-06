@@ -1,0 +1,443 @@
+## version $VER: JanoEditor.catalog 1.0 (27.09.2006).
+## codeset 0
+## language español
+;
+; Translated by ahg
+;
+; Catalog description for JanoEditor
+; JanoEditor.cd
+;
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Project Menu
+;
+MSG_PROJECTTITLE
+Proyecto
+;Project
+;
+MSG_NEWEMPTYFILE
+Nuevo
+;New
+;
+MSG_OPENNEWFILE
+Abrir el archivo...
+;Open file...
+;
+MSG_LOADINPRJ
+Cargar el archivo...
+;Load file...
+;
+MSG_SAVEFILE
+Guardar
+;Save
+;
+MSG_SAVEFILEAS
+Guardar como...
+;Save as...
+;
+MSG_SAVECHANGES
+Guardar los cambios
+;Save changes
+;
+MSG_PRINTFILE
+Imprimir
+;Print
+;
+MSG_INFORMATION
+Información...
+;Information...
+;
+MSG_CLOSE
+Cerrar
+;Close
+;
+MSG_QUIT
+Salir
+;Quit
+;
+; Edit Menu
+;
+MSG_EDITTITLE
+Editar
+;Edit
+;
+MSG_CUT
+Cortar
+;Cut
+;
+MSG_COPY
+Copiar
+;Copy
+;
+MSG_PASTE
+Pegar
+;Paste
+;
+MSG_MARK
+Marcar un párrafo
+;Mark
+;
+MSG_MARKCOLUMN
+Marcar en columna
+;Mark columnar
+;
+MSG_SELECTALL
+Seleccionar todo
+;Elegir a todos
+;Select all
+;
+MSG_DELLINE
+Borrar el renglón
+;Del line
+;
+MSG_SUBTOOLS
+Herramientas
+;Tools
+;
+MSG_INDENT
+Poner sangría
+;Indent
+;
+MSG_UNINDENT
+Quitar sangría
+;Unindent
+;
+MSG_UPPERCASE
+Mayúsculas
+;Upper case
+;
+MSG_LOWERCASE
+Minúsculas
+;Lower case
+;
+MSG_TOGGLECASE
+Intercambiar
+;Toggle case
+;
+MSG_INSERTFILE
+Insertar el archivo...
+;Insert file...
+;
+MSG_UNDO
+Deshacer
+;Undo
+;
+MSG_REDO
+Rehacer
+;Redo
+;
+; Search Menu
+;
+MSG_SEARCHTITLE
+Buscar
+;Search
+;
+MSG_FIND
+Buscar por...
+;Find...
+;
+MSG_REPLACE
+Reemplazar...
+;Replace...
+;
+MSG_SUBFIND
+Buscar
+;Find
+;
+MSG_NEXTFIND
+Siguiente
+;Next
+;
+MSG_PREVFIND
+Anterior
+;Previous
+;
+MSG_NEXTREPLACE
+Reemplazar
+;Replace
+;
+MSG_PREVPAGE
+Pág. previa
+;Prev page
+;
+MSG_NEXTPAGE
+Sig. pág.
+;Next page
+;
+MSG_GOTOLINE
+Ir al renglón...
+;Goto line...
+;
+MSG_FINDBRACKET
+Revisar corchetes
+;Matching bracket
+;
+MSG_LASTMODIF
+Cambio reciente
+;Last modification
+;
+MSG_BEGOFLINE
+Inicio de renglón
+;Start of line
+;
+MSG_ENDOFLINE
+Fin de renglón
+;End of line
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Macro
+;
+MSG_STARTRECORD
+Empezar a grabar
+;Start recording
+;
+MSG_STOPRECORD
+Dejar de grabar
+;Stop recording
+;
+MSG_PLAYMACRO
+Ejecutar la macro
+;Execute macro
+;
+MSG_REPEATMACRO
+Repetir la macro...
+;Repeat macro...
+;
+; Environment Menu
+;
+MSG_ENVTITLE
+Ambiente
+;Environment
+;
+MSG_SCRMODE
+Modo de pantalla...
+;Screen mode...
+;
+MSG_FONTS
+Fuentes...
+;Fonts...
+;
+MSG_PREFS
+Prefs. grales. ...
+;General prefs...
+;
+MSG_LOADPREFS
+Cargar prefs. ...
+;Load prefs...
+;
+MSG_SAVEPREFS
+Grabar prefs. 
+;Save prefs
+;
+MSG_SAVEPREFSAS
+Grabar prefs. como...
+;Save prefs as...
+;
+;
+;
+; *****************************
+;  Possible error messages
+; *****************************
+;
+ERR_BADOS
+OS obsoleto. Instale la v2.0 o superior.
+;Obsolete OS. Install v2.0 or better.
+;
+ERR_NOASLREQ
+¡No se puede asignar el requester ASL!
+;Cannot alloc ASL requester!
+;
+ERR_NOMEM
+¡No hay memoria!
+;Out of memory!
+;
+ERR_NOGUI
+¡La interfaz principal no se abre!
+;Main interface failed to open!
+;
+ERR_NONAME
+Sin descripción
+;No title
+; Not really an error but simplify translation
+;
+ERR_WRITECLIP
+Error al escribir al dispositivo clipboard
+;Write error into clipboard device
+;
+ERR_OPENCLIP
+¡No se puede abrir el clipboard!
+;Unable to open clipboard!
+;
+ERR_LOADFILE
+No se puede cargar el archivo solicitado
+;Unable to load requested file
+;
+ERR_NOTXTINCLIP
+No hay texto en el clipboard
+;No text in clipboard
+;
+ERR_WRONG_TYPE
+¡El objeto es un directorio!
+;Object is a directory!
+;
+ERR_READCLIP
+Lectura incompleta quizás por falta de memoria
+;Read operation incomplete due to probably a lack of memory
+;
+ERR_NOBRACKET
+¡No hay un paréntesis en el cursor!
+;No parenthesis under cursor!
+;
+ERR_NOT_FOUND
+El patrón '%s' no se halla
+;Pattern `%s' not found
+;
+ERR_LOADFONT
+¡No se puede abrir la fuente deseada!
+;Can't open desired font!
+;
+ERR_NOPREFEDITOR
+¡No se halla al editor de prefs.!
+;Can't find preference editor!
+;
+ERR_BADPREFSFILE
+Mal formato del archivo de prefs.
+;Bad preference file format.
+;
+ERR_FILEMODIFIED
+%s ha cambiado.\n¿Estás seguro de cerrarlo?
+;%s has been modified.\nAre you sure want to close it?
+;
+ERR_SLC
+Grabar|Cerrar|Cancelar
+;Save|Close|Cancel
+;
+ERR_NOSEARCHTEXT
+¡No texto para buscar!
+;No text to search for!
+;
+ERR_FILEEXISTS
+El archivo ya existe. ¿Sobrescribirlo?
+;This file already exists. Overwrite it?
+;
+ERR_OC
+Sí|¡No!
+;Yes|No!
+;
+WARN_RECORD
+Empieza la grabación
+;Start recording macro
+;
+WARN_RECORDED
+Macro grabada
+;Macro recorded
+;
+WARN_REC
+[GRABAR]
+;[REC]
+;
+;
+; *************************************
+;  Information window related messages
+; *************************************
+;
+MSG_ABOUT
+Información
+;Information
+;
+MSG_FORMATINFO
+%s para %s\nDiseñado por T.Pierron y C.Guillaume © 2000\n\nArchivo editdo : %s\nLongitud : %ld %s, %ld %s.
+;%s for %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited : %s\nLength : %ld %s, %ld %s.
+;
+MSG_CONTINUE
+Seguir
+;Continue
+;
+MSG_BYTE
+caracter
+;byte
+;
+MSG_BYTES
+caracteres
+;bytes
+;
+MSG_LINE
+renglón
+;line
+;
+MSG_LINES
+renglones
+;lines
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Buscar el patrón
+;Search pattern
+;
+MSG_REPLACEWINDOW
+Hallar y sustituir
+;Search & Replace
+;
+MSG_SEARCHSTRING
+Hallar:
+;Locate:
+;
+MSG_REPLACESTRING
+Cambiar por:
+;Replace:
+;
+MSG_OPTCASE
+May./min. iguales
+;Match case
+;
+MSG_OPTWORDS
+Palabras enteras
+;Whole words
+;LISTO
+;
+;
+MSG_BUTTONREPLACE
+_Cambiar
+;_Replace
+;
+MSG_BUTTONREPALL
+_Cambiar todas
+;Replace _All
+;
+MSG_BUTTONSEARCH
+Buscar
+;Search
+;
+MSG_NEXTSEARCH
+_Previo
+;_Previous
+;
+MSG_USESEARCH
+_Usar
+;_Use
+;
+MSG_CANCELSEARCH
+_Cancelar
+;_Cancel
+;
+MSG_REPLACEALL
+%ld %s de '%s' reemplazados
+;%ld %s of `%s' replaced
+;
+MSG_OCCURENCY
+ocurrencia
+;occurency
+;
+MSG_OCCURENCIES
+ocurrencias
+;occurencies
+;

@@ -1,0 +1,137 @@
+;
+;	$VER: Security.cd 1.0 (30.09.2007)
+;
+; Translated by ahg
+;
+; misc. strings
+;
+MSG_OK
+Aceptar
+;OK
+;
+MSG_RESUME
+Continuar
+;Resume
+;
+MSG_WARNING_GUI
+Advertencia de Seguridad
+;Security Warning
+;
+MSG_LOGINREQ_GUI
+Petición de Acceso de Seguridad
+;Pedido de Acceso Seguro
+;Security Login Request
+;
+MSG_LOGINPROMPT_GUI
+\33cBienvenido al AROS Research OS\n\
+Versión de AROS: %s\n\n\
+Escriba sus datos de usuario\n\
+para ingresar en %s.
+;\33cWelcome to the AROS Research OS\nAROS Version: %s\n\nPlease fill in your user details\nto log onto %s.
+;
+MSG_LOGINREQ_CON
+\033[0;0H\033[J\n\n\n     AROS %s at %s\n
+;
+MSG_LOGINPROMPT_CON
+\n\nUsuario..:
+;\n\nLogin    :
+;
+MSG_PASSWDPROMPT_GUI
+Escriba su Contraseña
+;Enter your Password
+;
+MSG_PASSWDPROMPT_CON
+Contraseña :
+;Password :
+;
+MSG_LOGINFAIL_GUI
+Usuario Incorrecto
+;Login Incorrect
+;
+MSG_LOGINFAIL_CON
+\n....¡Usuario Incorrecto!\n
+;\n    Login Incorrect !!\n
+;
+MSG_LASTLOGIN
+Ingreso en %s, %s en %s.\n\nEl último ingreso en %s, %s fue en %s.
+;Logged in on %s, %s at %s.\n\nLast login on %s, %s at %s.
+;
+MSG_FIRSTLOGIN
+Ingreso en %s, %s en %s.\n\nNunca antes ingresó.
+;Logged in on %s, %s at %s.\n\nNever logged in before.
+;
+; warning strings
+;
+MSG_NOMUFS
+Debes tener al menos una partición\n\
+con el Sistema de Archivos AFFS
+;You must have at least one partition with the AFFS FileSystem
+;
+MSG_NOCONFIGFILE
+No se puede cargar el archivo de configuración\n\
+Usando la configuración predeterminada
+;Couldn't load the configuration file\nUsing the default configuration
+;
+MSG_BADKEYFILE
+Violación de Seguridad:\n\
+El archivo de claves está mal\n\
+o es inconsistente
+;Security violation: Bad or inconsistent keyfile(s) found
+;
+MSG_BADENTRY_PASSWD
+La entrada del renglón %ld del archivo\n\
+de contraseñas está mal. Será ignorada
+;Bad entry found on line %ld of the password file\nThis line will be ignored
+;
+MSG_BADENTRY_GROUP
+La entrada del renglón %ld del archivo \n\
+de grupos está mal. Será ignorada
+;Bad entry found on line %ld of the group file\nThis line will be ignored
+;
+MSG_BADVALUE_CONFIG
+El valor en el renglón %ld del archivo\n\
+de configuración está mal. Será ignorado
+;Bad value(s) found on line %ld of the configuration file\n\
+;This value will be ignored
+;
+MSG_BADOPTION_CONFIG
+La opción en el renglón %ld del archivo\n\
+de configuración está mal. Será ignorado
+;Bad option found on line %ld of the configuration file\nThis line will be ignored
+;
+MSG_TOOMANYSECGROUPS
+Demasiados grupos secundarios para el usuario con uid %ld\n\
+Se ignorará el renglón %ld del archivo de grupos
+;Too many secondary groups for user with uid %ld\n\
+;Line %ld of the group file will be ignored
+;
+; logfile strings
+;
+MSG_LOG_STARTUP
+Inicio
+;Startup
+;
+MSG_LOG_LOGIN
+Ingreso desde %ld a \'%s\'
+;Login from %ld to \'%s\'
+;
+MSG_LOG_LOGINFAIL
+Falló el ingreso desde %ld a \'%s\'
+;Login from %ld to \'%s\' failed
+;
+MSG_LOG_PASSWD
+Contraseña para %ld
+;Passwd for %ld
+;
+MSG_LOG_PASSWDFAIL
+Falló la contraseña para %ld
+;Passwd for %ld failed
+;
+MSG_LOG_CHECKPASSWD
+Comprobación de la Contraseña para %ld
+;CheckPasswd for %ld
+;
+MSG_LOG_CHECKPASSWDFAIL
+Falló la Comprobación de la Contraseña para %ld
+;CheckPasswd for %ld failed
+;

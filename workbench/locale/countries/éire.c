@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Country data for Éire (Ireland).
 */
