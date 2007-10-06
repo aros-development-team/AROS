@@ -1,0 +1,257 @@
+## version $VER: dos.catalog 1.1 (28.09.2007)
+## codeset 0
+## language español
+;
+MSG_ERROR_NO_FREE_STORE (103//)
+no hay suficiente memoria libre
+;not enough memory available
+;
+MSG_ERROR_TASK_TABLE_FULL (105//)
+tabla de procesos llena
+;process table full
+;
+MSG_ERROR_BAD_TEMPLATE (114//)
+plantilla incorrecta
+;bad template
+;
+MSG_ERROR_BAD_NUMBER (115//)
+número incorrecto
+;bad number
+;
+MSG_ERROR_REQUIRED_ARG_MISSING (116//)
+falta un argumento requerido
+;required argument missing
+;
+MSG_ERROR_KEY_NEEDS_ARG (117//)
+falta el valor después de la palabra clave
+;value after keyword missing
+;
+MSG_ERROR_TOO_MANY_ARGS (118//)
+cantidad equivocada de argumentos
+;wrong number of arguments
+;
+MSG_ERROR_UNMATCHED_QUOTES (119//)
+comillas faltantes
+;comillas desparejas
+unmatched quotes
+;
+MSG_ERROR_LINE_TOO_LONG (120//)
+renglón de argumento inválido o demasiado largo
+;argument line invalid or too long
+;
+MSG_ERROR_FILE_NOT_OBJECT (121//)
+el archivo no es ejecutable
+;file is not executable
+;
+MSG_ERROR_INVALID_RESIDENT_LIBRARY (122//)
+biblioteca residente inválida
+;invalid resident library
+;
+MSG_ERROR_NO_DEFAULT_DIR (201//)
+error 201
+;
+MSG_ERROR_OBJECT_IN_USE (202//)
+el objeto está en uso
+;object is in use
+;
+MSG_ERROR_OBJECT_EXISTS (203//)
+el objeto ya existe
+;object already exists
+;
+MSG_ERROR_DIR_NOT_FOUND (204//)
+no se halló al directorio
+;directory not found
+;
+MSG_ERROR_OBJECT_NOT_FOUND (205//)
+no se halló al objeto
+;object not found
+;
+MSG_ERROR_BAD_STREAM_NAME (206//)
+descripción de ventana inválida
+;invalid window description
+;
+MSG_ERROR_OBJECT_TOO_LARGE (207//)
+el objeto es demasiado grande
+;object too large
+;
+MSG_ERROR_ACTION_NOT_KNOWN (209//)
+tipo de acción del sistema de archivos desconocido
+;filesystem action type unknown
+;
+MSG_ERROR_INVALID_COMPONENT_NAME (210//)
+nombre de objeto inválido
+;object name invalid
+;
+MSG_ERROR_INVALID_LOCK (211//)
+bloqueo de objeto inválido
+;invalid object lock
+;
+MSG_ERROR_OBJECT_WRONG_TYPE (212//)
+el objeto no es del tipo requerido
+;object is not of required type
+;
+MSG_ERROR_DISK_NOT_VALIDATED (213//)
+el disco no está validado
+;disk not validated
+;
+MSG_ERROR_DISK_WRITE_PROTECTED (214//)
+el disco está protegido contra escritura
+;disk is write-protected
+;
+MSG_ERROR_RENAME_ACROSS_DEVICES (215//)
+se intentó renombrar los dispositivos
+;rename across devices attempted
+;
+MSG_ERROR_DIRECTORY_NOT_EMPTY (216//)
+el directorio no está vacío
+;directory not empty
+;
+MSG_ERROR_TOO_MANY_LEVELS (217//)
+son demasiados niveles
+;too many levels
+;
+MSG_ERROR_DEVICE_NOT_MOUNTED (218//)
+el dispositivo (o volumen) no está montado
+;device (or volume) is not mounted
+;
+MSG_ERROR_SEEK_ERROR (219//)
+ocurrió una falla en la búsqueda
+;seek failure
+;
+MSG_ERROR_COMMENT_TOO_BIG (220//)
+el comentario es demasiado largo
+;comment is too long
+;
+MSG_ERROR_DISK_FULL (221//)
+el disco está lleno
+;disk is full
+;
+MSG_ERROR_DELETE_PROTECTED (222//)
+el objeto está protegido de ser borrado
+;object is protected from deletion
+;
+MSG_ERROR_WRITE_PROTECTED (223//)
+el archivo está protegido contra la escritura
+;file is write protected
+;
+MSG_ERROR_READ_PROTECTED (224//)
+el archivo está protegido contra la lectura
+;file is read protected
+;
+MSG_ERROR_NOT_A_DOS_DISK (225//)
+no es un disco DOS válido
+;not a valid DOS disk
+;
+MSG_ERROR_NO_DISK (226//)
+no hay un disco en la unidad
+;no disk in drive
+;
+MSG_ERROR_NO_MORE_ENTRIES (232//)
+no hay más entradas en el directorio
+;no more entries in directory
+;
+MSG_ERROR_IS_SOFT_LINK (233//)
+el objeto es un softlink
+;object is soft link
+;
+MSG_ERROR_OBJECT_LINKED (234//)
+el objeto está enlazado
+;object is linked
+;
+MSG_ERROR_BAD_HUNK (235//)
+bad loadfile hunk
+;
+MSG_ERROR_NOT_IMPLEMENTED (236//)
+la función no está implementada
+;function not implemented
+;
+MSG_ERROR_RECORD_NOT_LOCKED (240//)
+el registro no está bloqueado
+;record not locked
+;
+MSG_ERROR_LOCK_COLLISION (241//)
+colisión en el bloqueo del registro
+;record lock collision
+;
+MSG_ERROR_LOCK_TIMEOUT (242//)
+vencido el bloqueo del registro
+;record lock timeout
+;
+MSG_ERROR_UNLOCK_ERROR (243//)
+error al desbloquear el registro
+;record unlock error
+;
+MSG_ERROR_BUFFER_OVERFLOW (303//)
+desbordamiento del búfer
+;buffer overflow
+;
+MSG_ERROR_BREAK (304//)
+***Break
+;
+MSG_ERROR_NOT_EXECUTABLE (305//)
+el archivo no es ejecutable
+;file not executable
+;
+MSG_STRING_DISK_NOT_VALIDATED (4000//)
+El volumen "%s" no está validado
+;Volume "%s" is not validated
+;
+MSG_STRING_DISK_WRITE_PROTECTED (4001//)
+El volumen "%s" está protegido contra la escritura
+;Volume "%s" is write protected
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT (4002//)
+Por favor inserte el volumen "%s" en alguna unidad
+;Please insert volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE (4003//)
+Por favor reemplace al volumen "%s" en cualquier unidad
+;Please replace volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET (4004//)
+Por favor reemplace al volumen "%s" en "%s"
+;Please replace volume "%s" in "%s"
+;
+MSG_STRING_DISK_FULL (4005//)
+El volumen "%s" está lleno
+;Volume "%s" is full
+;
+MSG_STRING_NOT_A_DOS_DISK (4006//)
+No es un disco DOS el que está en "%s"
+;Not a DOS disk in "%s"
+;
+MSG_STRING_NO_DISK (4007//)
+No hay un disco en "%s"
+;No disk present in "%s"
+;
+MSG_STRING_ABORT_BUSY (4008//)
+¡DEBES reemplazar el volumen "%s" en "%s"!
+;You MUST replace volume "%s" in "%s"!
+;
+MSG_STRING_ABORT_DISK_ERROR (4009//)
+El volumen "%s" tiene un error de lectura/escritura
+;Volume "%s" has a read/write error
+;
+MSG_STRING_RETRY (5000//)
+Intentar de nuevo
+;Retry
+;
+MSG_STRING_CANCEL (5001//)
+Cancelar
+;Cancel
+;
+MSG_STRING_REQUESTTITLE (5002//)
+Requester del sistema
+;System requester
+;
+MSG_ERROR_NO_MATCHING_ELSEENDIF (10000//)
+no matching Else or EndIf
+;
+MSG_ERROR_SCRIPT_ONLY (10001//)
+se supone que este comando se use solamente en archivos de comandos
+;this command is supposed to be used in command files only
+;
+MSG_ERROR_UNKNOWN (100//)
+error indefinido
+;undefined error
+;
