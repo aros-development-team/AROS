@@ -837,7 +837,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_DrawBackground
 
 /*** SPECIAL : Early Setup ****************************************************************/
 
-BOOL ImageBackFill__SetupClass()
+IPTR ImageBackFill__SetupClass()
 {
 	struct MUIP_IconWindow_BackFill_Register message;
 
@@ -860,3 +860,6 @@ BOOL ImageBackFill__SetupClass()
 	
 	return TRUE;
 }
+
+/* Make sure and run _AFTER_ IconWindow__SetupClass() */
+ADD2INIT(ImageBackFill__SetupClass, 10);
