@@ -178,7 +178,7 @@ struct MQNode {
     struct MinNode    mq_Node;
     Object           *mq_Dest;
     LONG              mq_Count;
-    ULONG            *mq_Msg;
+    IPTR             *mq_Msg;
 };
 
 /*
@@ -188,12 +188,12 @@ static struct MQNode *CreateMQNode(LONG count)
 {
     struct MQNode *mq;
 
-    mq = (struct MQNode *)mui_alloc(sizeof(struct MQNode) + (count * sizeof(ULONG)));
+    mq = (struct MQNode *)mui_alloc(sizeof(struct MQNode) + (count * sizeof(IPTR)));
     if (!mq)
 	return NULL;
 
     mq->mq_Count = count;
-    mq->mq_Msg   = (ULONG *)(((char *)mq)+sizeof(struct MQNode));
+    mq->mq_Msg   = (IPTR *)(((char *)mq)+sizeof(struct MQNode));
     return mq;
 }
 
@@ -1356,6 +1356,7 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj, struct 
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MQNode *mq;
     LONG          i;
+    IPTR    *m = (IPTR *)&msg->count;   /* Warning, it will break on 64-bit BigEndian systems!!! */
 
     mq = CreateMQNode(msg->count);
     if (!mq) return 0;
@@ -1363,7 +1364,7 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj, struct 
 
     /* fill msg */
     for (i = 0; i < msg->count; i++)
-	mq->mq_Msg[i] = (ULONG)*(&msg->count + 1 + i);
+	mq->mq_Msg[i] = *(m + 1 + i);
 
     /* enqueue method */
     ObtainSemaphore(&data->app_MethodSemaphore);
