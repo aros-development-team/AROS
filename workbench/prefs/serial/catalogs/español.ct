@@ -1,0 +1,148 @@
+## version $VER: Serialpref.catalog 1.0 (02.10.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_CANT_OPEN_LIB
+¡Imposible abrir %s V%ld!\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+¡Imposible abrir la pantalla pública!
+;Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+¡No se pueden crear los gadgets!
+;Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+¡No se pueden crear los menús!
+;Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+¡No se puede crear la ventana!
+;Can't create window!
+;
+MSG_WINTITLE
+Preferencias para el Puerto Serie
+;Serial Preferences
+;
+MSG_MEN_PROJECT
+Proyecto
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Abrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+G\0Guardar como...
+;A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+S\0Salir
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Editar
+;Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Valores de fábrica
+;D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Valores previos
+;L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Restaurar
+;R\0Restore
+;
+MSG_MEN_SETTINGS
+Configuraciones
+;Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0¿Crear íconos?
+;I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Cargar las Preferencias para el puerto serie
+;Load Serial Preferences
+;
+MSG_ASL_SAVE_TITLE
+Guardar las Preferencias para el puerto serie
+;Save Serial Preferences
+;
+MSG_OK
+Aceptar
+;Ok
+;
+MSG_GAD_SAVE
+Guardar
+;Save
+;
+MSG_GAD_USE
+Usar
+;Use
+;
+MSG_GAD_CANCEL
+Cancel
+;Cancel
+;
+MSG_GAD_BAUDRATE
+Baudios
+;Baudrate
+;
+MSG_GAD_PARITY
+Paridad
+;Parity
+;
+MSG_GAD_STOPBITS
+Bits de parada
+;Stop Bits
+;
+MSG_GAD_DATABITS
+Bits de datos
+;Data Bits
+;
+MSG_GAD_INPUTBUFFERSIZE
+Tamaño del búfer de entrada
+;Dimensioni buffer d'ingresso
+;Taille du tampon d'entrée
+;Input Buffer Size
+;
+MSG_GAD_OUTPUTBUFFERSIZE
+Tamaño del búfer de salida
+;Dimensioni buffer d'uscita
+;Taille du tampon de sorti
+;Output Buffer Size
+;
+MSG_PARITY_NONE
+Ninguna
+;None
+;
+MSG_PARITY_EVEN
+Par
+;Even
+;
+MSG_PARITY_ODD
+Impar
+;Odd
+;
+MSG_PARITY_MARK
+Marca
+;Mark
+;
+MSG_PARITY_SPACE
+Espacio
+;Space
+;

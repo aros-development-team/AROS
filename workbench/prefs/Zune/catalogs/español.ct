@@ -1,0 +1,834 @@
+## version $VER: Zune.catalog 0.1 (23.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+; FIXME: check and complete
+;
+;=================================================
+; buttonsp.c
+;-----------
+MSG_GENERAL
+General
+;
+MSG_BACKGROUND_COLON
+Fondo:
+;Background:
+;
+MSG_BACKGROUND_PRESSED
+Fondo cuando\n\
+es apretado:
+;Background in\npressed state:
+;
+MSG_TEXT_BUTTONS
+Texto del botón
+;Text Buttons
+;
+MSG_FRAME_COLON
+Marco:
+;Frame:
+;
+MSG_FONT
+Fuente:
+;Font:
+;
+MSG_IMAGE_BUTTONS
+Imagen del botón
+;Image Buttons
+;
+MSG_ADJUST_FRAME
+Ajustar al marco
+;Adjust Frame
+;
+MSG_CHECKMARKS
+Casillas de verific.
+;Checkmarks
+;
+MSG_LOOK_COLON
+Aspecto
+;Look:
+;
+MSG_CHECKMARK
+Casilla de verific.
+Checkmark
+;
+MSG_RADIO_BUTTONS
+Botones de opción
+;Radio Buttons
+;
+MSG_RADIOBUTTON
+Botón de opción
+;Radiobutton
+;
+MSG_LOOK
+Aspecto
+;Look
+;
+MSG_H
+H
+;
+MSG_V
+V
+;
+MSG_SPACING
+Espaciado
+;Spacing
+;
+;=============================
+; cyclesp.c
+;----------
+MSG_BELOW
+Abajo
+;below
+;
+MSG_ON_ACTIVE
+Activo
+;on active
+;
+MSG_CYCLE_GADGET_DESIGN
+Aspecto del Gadget Ciclo
+;Cycle Gadget Design
+;
+MSG_CYCLE
+Ciclo
+;Cycle
+;
+MSG_POPUP_MENU_CONTROL
+Control de menú emergente
+;Popup Menu Control
+;
+MSG_POSITION
+Posición:
+;Position:
+;
+MSG_LEVEL
+Nivel:
+;Level:
+;
+MSG_SPEED
+Velocidad:
+;Speed:
+;
+MSG_POPUP_MENU_DESIGN
+Diseño del menú emergente
+;Popup Menu Design
+;
+MSG_FRAME
+Marco
+;Frame
+;
+MSG_ADJUST_BACKGROUND
+Ajustar el fondo
+;Adjust Background
+;
+MSG_BACKGROUND
+Fondo
+;Background
+;
+MSG_RECESSED_ENTRIES
+Encastrados:
+;Recessed Entries:
+;
+;=============================
+; groupsp.c
+;__________
+MSG_ABOVE
+Arriba
+;above
+;
+MSG_CENTERED
+centrado
+;centered
+;
+MSG_STANDARD
+normal
+;standard
+;
+MSG_HILITE
+hilite
+;
+MSG_3D
+3d
+;
+MSG_OUTLINE
+contorno
+;outline
+;
+MSG_TITLE
+Título
+;Title
+;
+MSG_COLOR
+Color:
+;
+MSG_HORIZONTAL
+Horizontal:
+;
+MSG_VERTICAL
+Vertical:
+;
+MSG_REGISTER
+Registro
+;Register
+;
+MSG_DEFAULT_SIZE_TRUNCATE_TITLES
+Tamaño para truncar los títulos:
+;Default size truncate titles:
+;
+MSG_NORMAL
+Normal
+;
+MSG_VIRTUAL
+Virtual
+;
+MSG_FRAMED
+Enmarcado
+;Framed
+;
+MSG_PAGE
+Página
+;Page
+;
+;=============================
+; listviewsp.c
+;-------------
+MSG_SHIFTED
+corrido
+;shifted
+;
+MSG_ALWAYS
+siempre
+;always
+;
+MSG_LINEAR
+lineal
+;linear
+;
+MSG_MIXED
+mezclado
+;mixed
+;
+MSG_CONTROL
+Control
+;
+MSG_MULTI
+Multi:
+;
+MSG_REFRESH
+Refrescar:
+;Refresh:
+;
+MSG_SMOOTH
+Suavizar:
+;Smooth:
+;
+MSG_FONTS
+Fuentes
+;Fonts
+;
+MSG_NORMAL_COLON
+Normal:
+;
+MSG_FIXED
+Fijo:
+;Fixed:
+;
+MSG_LEADING
+Al inicio
+;Leading
+;
+MSG_DESIGN
+Diseño
+;Design
+;
+MSG_INPUT_LISTS
+Listas de\nEntrada:
+;Input \nLists:
+;
+MSG_READONLY_LISTS
+Listas de\nsolo-lectura:
+;Readonly \nLists:
+;
+MSG_CURSOR
+Cursor
+;
+MSG_ACTIVE
+Activo:
+;Active:
+;
+MSG_ACTIVE_SELECTED
+Activo &\nSeleccionado:
+;Active &\nSelected:
+;
+MSG_SELECTED
+Seleccionado:
+;Selected:
+;
+;=============================
+; navigationp.c
+;______________
+MSG_ALWAYS_SOLID
+siempre lleno
+;always solid
+;
+MSG_GHOSTED_ON_BOX
+translúcido en la caja
+;fantasmal en la caja
+;ghosted on box
+;
+MSG_GHOSTED_OUTSIDE_BOX
+translúcido fuera de la caja
+;fantasmal afuera de la caja
+;ghosted outside box
+;
+MSG_ALWAYS_GHOSTED
+siempre translúcido
+;siempre fantasmal
+;always ghosted
+;
+MSG_SHOW_FRAMES
+mostrar los marcos
+;show frames
+;
+MSG_SHOW_OBJECTS
+mostrar los objetos
+;show objects
+;
+MSG_KL_PRESS
+Apriete:
+;Press:
+;
+MSG_KL_TOGGLE
+Intercambiar:
+;Toggle:
+;
+MSG_KL_UP
+Arriba:
+;Up:
+;
+MSG_KL_DOWN
+Abajo:
+;Down:
+;
+MSG_KL_PAGE_UP
+Pág. ant.:
+;Page up:
+;
+MSG_KL_PAGE_DOWN
+Pág. sig.:
+;Page down:
+;
+MSG_KL_TOP
+Inicio
+;Top:
+;
+MSG_KL_BOTTOM
+Final:
+;Bottom:
+;
+MSG_KL_LEFT
+Izquierda:
+;Left:
+;
+MSG_KL_RIGHT
+Derecha:
+;Right:
+;
+MSG_KL_WORD_LEFT
+A la izq. de la palabra
+;Word left:
+;
+MSG_KL_WORD_RIGHT
+A la der. de la palabra
+;Word right:
+;
+MSG_KL_LINE_START
+Inicio del renglón:
+;Line start:
+;
+MSG_KL_LINE_END
+Final del renglón:
+;Line end:
+;
+MSG_KL_NEXT_GADGET
+El sig. gadget:
+;Next gadget:
+;
+MSG_KL_PREV_GADGET
+El ant. gadget:
+;Prev. gadget:
+;
+MSG_KL_GADGET_OFF
+Gadget desactivado
+;Gadget off:
+;
+MSG_KL_CLOSE_WINDOW
+Cerrar la ventana:
+;Close window:
+;
+MSG_KL_NEXT_WINDOW
+Sig. ventana:
+;Next window:
+;
+MSG_KL_PREV_WINDOW
+Ant. ventana:
+;Prev. window:
+;
+MSG_KL_HELP
+Ayuda:
+;Help:
+;
+MSG_KL_POPUP
+Emergente:
+;Popup:
+;
+MSG_DRAG_DROP
+Arrastrar y Soltar
+;Drag & Drop
+;
+MSG_LEFT_BUTTON
+Botón izq.:
+;Left Button:
+;
+MSG_MIDDLE_BUTTON
+Botón del medio:
+;Middle Button:
+;
+MSG_AUTOSTART
+Inicio automático:
+;Autostart:
+;
+MSG_PIXEL
+%ld pixel
+;
+MSG_BALANCING_GROUPS
+Equilibrar los Grupos
+;Balancing Groups
+;
+MSG_EXAMPLE
+Ejemplo:
+;Example:
+;
+MSG_TRY_WITH
+Probar con
+;Try with
+;
+MSG_SHIFT
+desplazar
+;shift
+;
+MSG_TOO
+también!
+;too!
+;
+MSG_KEYBOARD_CONTROL
+Control del Teclado
+;Keyboard Control
+;
+MSG_COLOR_ACTIVE_OBJ
+Color del objeto activo:
+;Color of active object:
+;
+MSG_NEWLOOK
+nuevo aspecto
+;newlook
+;
+MSG_CUSTOM
+;custom
+;
+MSG_ARROWS
+Flechas
+;Arrows
+;
+MSG_UP
+arriba
+;up
+;
+MSG_ARROW_UP
+Flecha arriba
+;Arrow up
+;
+MSG_ARROW_DOWN
+Flecha abajo
+;Arrow down
+;
+MSG_DOWN
+abajo
+;down
+;
+MSG_LEFT
+izq.
+;left
+;
+MSG_ARROW_LEFT
+Flecha a la izq.
+;Arrow left
+;
+MSG_ARROW_RIGHT
+Flecha a la der.
+;Arrow right
+;
+MSG_RIGHT
+derecha
+;right
+;
+MSG_BAR
+Barra
+;Bar
+;
+MSG_GADGET_TYPE
+Tipo de Gadget:
+;Gadget Type:
+;
+MSG_SCROLLER
+Scroller
+;
+MSG_KNOB
+Knob
+;
+MSG_ARRANGEMENT
+Disposición
+;Arrangement
+;
+;=============================
+; slidersp.c
+;-----------
+MSG_CONTAINER_DESIGN
+Diseño del contenedor
+;Container Design
+;
+MSG_KNOB_DESIGN
+;Knob Design
+;
+MSG_EXAMPLE_SLIDERS
+Deslizadores de ejemplo
+;Example Sliders
+;
+;=============================
+; specialp.c
+;-----------
+MSG_TEXT_FIELDS
+Campos de Texto
+;Text fields
+;
+MSG_EXAMPLE_TEXTFIELD
+Campo de Texto de ejemplo
+;Example Textfield
+;
+MSG_PROGRESS_INDICATOR
+Indicador de progreso
+;Progress Indicator
+;
+MSG_DEVICE_IMAGES
+Imágenes de dispositivos
+;Device Images
+;
+MSG_DRAWER
+Cajón
+;Drawer
+;
+MSG_HARDDISK
+Disco Duro
+;Harddisk
+;
+MSG_DISK
+Disco
+;Disk
+;
+MSG_RAM
+RAM
+;
+MSG_VOLUME
+Volúmen
+;Volume
+;
+MSG_NETWORK
+Red
+;Network
+;
+MSG_ASSIGN
+Asignación
+;Assign
+;
+MSG_TAPE_IMAGES
+Imágenes de cintas
+;Tape Images
+;
+MSG_TAPE_PLAY
+Reproducir
+;Tape play
+;
+MSG_TAPE_PLAYBACK
+rebobinar
+;Tape playback
+;
+MSG_TAPE_PAUSE
+Pausar
+;Tape pause
+;
+MSG_TAPE_STOP
+Detener
+;Tape stop
+;
+MSG_TAPE_RECORD
+Grabar
+;Tape record
+;
+MSG_TAPE_UP
+Al comienzo
+;Tape up
+;
+MSG_TAPE_DOWN
+Al final
+;Tape down
+;
+;=============================
+; stringsp.c
+;-----------
+MSG_STRING_FRAME
+Marco de la Cadena
+;String Frame
+;
+MSG_SPECIAL_POPUP_BUTTONS
+Botones Especiales Emergentes
+;Special Popup Buttons
+;
+MSG_POPUP
+Emergente
+;Popup
+;
+MSG_DEFAULT
+Predeterminado
+;Default
+;
+MSG_FILE
+Archivo
+;File
+;
+MSG_POPUP_FILE
+Archivo emergente
+;Popup file
+;
+MSG_POPUP_DRAWER
+Cajón emergente
+;Popup drawer
+;
+MSG_INACTIVE_STRING_COLORS
+Colores de Cadena inactiva
+;Inactive String Colors
+;
+MSG_TEXT
+Texto
+;Text
+;
+MSG_ACTIVE_STRING_COLORS
+Colores de Cadena activa
+;Active String Colors
+;
+MSG_MARKED_STRING_COLORS
+Colores de Cadena marcada
+;Marked String Colors
+;
+MSG_EXAMPLE_STRING_GADGET
+Ejemplo del Gadget Cadena
+;Example String Gadget
+;
+;=============================
+; windowp.c
+;----------
+MSG_FORGET_ON_EXIT
+olvidar al salir
+;forget on exit
+;
+MSG_REMEMBER_ON_EXIT
+recordar al salir
+;remember on exit
+;
+MSG_SAVE_ON_EXIT
+guardar al salir
+;save on exit
+;
+MSG_SMART
+inteligente
+;smart
+;
+MSG_SIMPLE
+simple
+;
+MSG_WITHOUT_CLEAR
+sin borrar
+;without clear
+;
+MSG_WITH_CLEAR
+borrar
+;with clear
+;
+MSG_POSITIONS
+Posiciones:
+;Positions:
+;
+MSG_REDRAW
+Dibujar de nuevo:
+;Redraw:
+;
+MSG_TINY
+Pequeño:
+;Tiny:
+;
+MSG_BIG
+Grande:
+;Big:
+;
+MSG_WINDOW
+Ventana
+;Window
+;
+MSG_REQUESTER
+Requester
+;
+MSG_L
+L
+;
+MSG_T
+T
+;
+MSG_R
+R
+;
+MSG_B
+B
+;
+MSG_BUTTONS
+Botones
+;Buttons
+;
+;=============================
+; zune.c
+;-------
+MSG_WINTITLE1
+Zune - Prefs Globales
+;Zune - Global Prefs
+;
+MSG_WINTITLE2
+Zune - Prefs para: %s
+;Zune - Prefs for : %s
+;
+MSG_MEN_PROJECT
+Proyecto
+;Project
+;
+MSG_MEN_OPEN
+Abrir...
+;Open ...
+;
+MSG_MEN_OPEN_SC
+O
+;
+MSG_MEN_APPEND
+Agregar...
+;Append ...
+;
+MSG_MEN_SAVEAS
+Guardar como...
+;Save As ...
+;
+MSG_MEN_SAVEAS_SC
+A
+;
+MSG_MEN_ABOUT
+Acerca de Zune...
+;About Zune ...
+;
+MSG_MEN_ABOUT_SC
+?
+;
+MSG_MEN_QUIT
+Salir
+;Quit
+;
+MSG_MEN_QUIT_SC
+Q
+;
+MSG_FRAME_CLIPBOARD
+Clipboard del marco
+;Frame Clipboard
+;
+MSG_IMAGE_CLIPBOARD
+Clipboard de la imagen
+;Image Clipboard
+;
+MSG_GAD_TEST
+_Probar
+;_Test
+;
+MSG_GAD_SAVE
+_Guardar
+;_Save
+;
+MSG_GAD_USE
+_Usar
+;_Use
+;
+MSG_GAD_CANCEL
+_Cancelar
+;_Cancel
+;
+MSG_DSC_WINDOWS
+Ventanas
+;Windows
+;
+MSG_DSC_GROUPS
+Grupos
+;Groups
+;
+MSG_DSC_BUTTONS
+Botones
+;Buttons
+;
+MSG_DSC_CYCLES
+Ciclos
+;Cycles
+;
+MSG_DSC_SLIDERS
+Deslizadores
+;Sliders
+;
+MSG_DSC_SCROLLBARS
+Barras de desplazamiento
+;Scrollbars
+;
+MSG_DSC_LISTVIEWS
+Vistas de lista
+;Listviews
+;
+MSG_DSC_STRINGS
+Cadenas
+;Strings
+;
+MSG_DSC_NAVIGATION
+Navegación
+;Navigation
+;
+MSG_DSC_SPECIAL
+Especial
+;Special
+;
+MSG_DSC_FRAMES
+Marcos
+;Frames
+;
+;=============================
+; zunestuff.c
+;------------
+MSG_ADJUST_PEN
+Ajustar Pincel
+;Adjust Pen
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES
+Marcos personales
+;Customframes
+;

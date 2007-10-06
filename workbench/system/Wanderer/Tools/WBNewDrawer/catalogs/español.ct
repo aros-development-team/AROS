@@ -1,0 +1,83 @@
+## version $VER: wbnewdrawer.catalog 1.0 (30.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_TITLE
+WBNewDrawer
+;WBNuevoCajón
+;
+MSG_DESCRIPTION
+Crea un cajón con un ícono optativo
+;Creates new drawer with optional icon
+;
+MSG_COPYRIGHT
+©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Crear un cajón
+;Create new drawer
+;
+MSG_LINE
+Escriba el nombre del nuevo cajón
+;Enter the name of the new drawer
+;
+MSG_NAME
+Nombre del cajón:
+;New drawer name:
+;
+MSG_ICON
+Ícono
+;Icon
+;
+MSG_OK
+_Aceptar
+;_OK
+;
+MSG_CANCEL
+Ca_ncel
+;
+MSG_BASENAME
+Renómbrame
+;Rename_Me
+;
+MSG_ERROR_TITLE
+WBNuevoCajón: Error
+;WBNewDrawer: Error
+;
+MSG_ALREADY_EXIST
+¡'%s' ya existe!
+;'%s' already exists!
+;
+MSG_CANT_CREATE
+¡No se pudo crear el cajón '%s'!
+;Can't create drawer '%s'!
+;
+MSG_INFO_ALREADY
+¡'%s'.info ya existe!
+;'%s'.info already exists!
+;
+MSG_ILLEGAL_CHARS
+¡'%s' contiene caracteres ilegales!
+;'%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+¡Se necesitan dos argumentos!
+;Need 2 arguments!
+;
+MSG_INVALID_LOCK
+¡Bloqueo inválido del directorio!
+;Invalid directory lock!
+;
+MSG_WB_ONLY
+¡No se pudo iniciar desde el shell!\n
+;Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+¡Falló la creación de la Aplicación!
+;Failed to create Application!
+;
+MSG_WRONG_ICON_TYPE
+¡El archivo de ícono '%s'.info no es del tipo del Cajón!
+;The existing icon file '%s'.info isn't of type Drawer!

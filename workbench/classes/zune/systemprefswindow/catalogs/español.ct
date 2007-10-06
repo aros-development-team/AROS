@@ -1,0 +1,38 @@
+## version $VER: SystemPrefsWindow.catalog 1.0 (30.09.2007)
+## codeset 0
+## language español
+;
+; Translated by ahg
+;
+MSG_MENU_PREFS
+Preferencias
+;Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importar...
+;I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Exportar...
+;E\0Export...
+;
+MSG_MENU_PREFS_TEST
+P\0Probar
+;T\0Test
+;
+MSG_MENU_PREFS_REVERT
+A\0Anular
+;R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+G\0Guardar
+;S\0Save
+;
+MSG_MENU_PREFS_USE
+U\0Usar
+;U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+C\0Cancelar
+;C\0Cancel
+;

@@ -1,0 +1,138 @@
+## version $VER: localeprefs.catalog 1.0 (30.09.2007)
+## codeset 0
+## language español
+;
+; Translated by ahg
+;
+MSG_CANT_OPEN_LIB
+No se pudo abrir %s V%ld!\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+No se pudo bloquer la pantalla pública!
+;Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+No se pudieron crear los gadgets!
+;Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+No se pudieron crear los menús!
+;Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+No se pudo crear la ventana!
+;Can't create window!
+;
+MSG_WINTITLE
+Preferencias para el Locale
+;Locale Preferences
+;
+MSG_MEN_PROJECT
+Proyecto
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Abrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+G\0Guardar como...
+;A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+S\0Salir
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Editar
+;Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Valores de fábrica
+;E\0Restaurar valores
+;D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Valores previos
+;U\0Últimos guardados
+;L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Restaurar
+;R\0Restore
+;
+MSG_MEN_SETTINGS
+Configuraciones
+;Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Crear Íconos?
+;I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Cargar las Preferencias para el Locale
+;Load Locale Preferences
+;
+MSG_ASL_SAVE_TITLE
+Guardar las Preferencias para el Locale
+;Save Locale Preferences
+;
+MSG_OK
+Aceptar
+;Ok
+;
+MSG_GAD_AVAIL_LANGUAGES
+Idiomas disponibles
+;Available Languages
+;
+MSG_GAD_PREF_LANGUAGES
+Idiomas preferidos
+;Preferred Languages
+;
+MSG_GAD_CLEAR_LANGUAGES
+Quitar Idiomas
+;Clear Languages
+;
+MSG_GAD_SAVE
+Guardar
+;Save
+;
+MSG_GAD_USE
+Usar
+;Use
+;
+MSG_GAD_CANCEL
+Cancelar
+;Cancel
+;
+MSG_GAD_TAB_LANGUAGE
+Idioma
+;Language
+;
+MSG_GAD_TAB_COUNTRY
+País
+;Country
+;
+MSG_GAD_TAB_TIMEZONE
+Husos Horarios
+;Time Zone
+;
+MSG_TIMEZONE_1HOUR
+Huso Horario: 1 Hora menos que GMT
+;Time Zone: 1 Hour from GMT
+;
+MSG_TIMEZONE_HOURS
+Huso Horario: %ld horas menos que GMT
+;Time Zone: %ld Hours from GMT
+;
+MSG_TIMEZONE_HOURSMINS
+Huso Horario: %ld horas, %ld minutos menos que GMT
+;Time Zone: %ld Hours, %ld Minutes from GMT
+;

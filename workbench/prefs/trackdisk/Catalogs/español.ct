@@ -1,0 +1,49 @@
+## version $VER: Trackdisk.catalog 1.0 (23.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg (trackdisk same that in french - disquette?)
+;
+MSG_NAME
+;Disquete
+;Trackdisk
+
+;
+MSG_TITLE
+Preferencias para el Disquete
+;Preferencias para el Trackdisk
+;Trackdisk prefs
+;
+MSG_SAVE
+Guardar
+;Save
+;
+MSG_USE
+Usar
+;Use
+;
+MSG_CANCEL
+Cancelar
+;Cancel
+;
+MSG_DESCRIPTION
+Editor de las preferencias de trackdisk.device
+;trackdisk.device preferences editor
+;
+MSG_WINDOW_TITLE
+Preferencias para trackdisk.device
+;trackdisk.device preferences
+;
+MSG_DRIVE
+Unidad %u
+;Drive %u
+;
+MSG_NOCLICK
+Sin apretar:
+;Anti-click:
+;No click:
+;
+MSG_RETRIES
+Intentos:
+;Retries:
+;

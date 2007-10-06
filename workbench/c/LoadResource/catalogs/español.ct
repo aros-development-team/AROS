@@ -1,0 +1,10 @@
+## version $VER: loadresource.catalog 1.0 (03.10.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_ERROR_OPEN_LIBRARY
+No se puede abrir la biblioteca %s.
+;Couldn't open library %s.
+;

@@ -1,0 +1,400 @@
+## version $VER: asl.catalog 1.0 (29.09.2007)
+## codeset 0
+## language español
+;
+; Translated by ahg
+;
+MSG_FILEREQ_TITLE
+Elegir un archivo
+;Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+Aceptar
+;Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Cancelar
+;Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Volúmenes
+;Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Atrás
+;Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Patrón
+;Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Cajón
+;Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+Archivo
+;File
+;
+MSG_FILEREQ_LV_DRAWER
+Cajón
+;Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Asignar
+;Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Borrar un archivo
+;Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Aviso: ¡No podrás recuperar\nlo que borraste! ¿Seguro de borrar\n%s?
+;Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Borrar|Cancelar
+;Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Cambiar el nombre
+;Rename
+;
+MSG_FILEREQ_RENAME_OK
+Renombrar
+;Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Cancelar
+;Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Crear un cajón
+;Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Crear
+;Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Cancelar
+;Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+Renómbra_me
+;Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Elegir según el patrón
+;Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Elegir
+;Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Cancelar
+;Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Controlar
+;Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+A\0Nombre ant.
+;L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+S\0Nombre sig.
+;N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Restaurar
+;R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+T\0Atrás
+P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+V\0Volúmenes
+;V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+U\0Actualizar
+;U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+B\0Borrar
+;D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+J\0Crear un nuevo cajón...
+;T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+E\0Renombrar...
+;E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Elegir...
+;#\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+A\0Aceptar
+O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Cancelar
+;C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Lista de archivos
+;File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Ordenar por nombre
+;1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Ordenar por fecha
+;2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Ordenar por tamaño
+;3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\0Orden ascendente
+;+\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\0Orden descendente
+;-\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Ver los cajones primero
+;4\0Mostrar los cajones primero
+4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Ver los cajones con archivos
+;5\0Mostrar los cajones con archivos
+5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Ver los cajones al final
+;6\0Mostrar los cajones al final
+6\0Show drawers last
+;
+MSG_MODEREQ_TITLE
+Elegir el Modo de Pantalla
+;Select Screen Mode
+;
+MSG_MODEREQ_POSITIVE_GAD
+Aceptar
+;Ok
+;
+MSG_MODEREQ_NEGATIVE_GAD
+Cancelar
+;Cancel
+;
+MSG_MODEREQ_OVERSCAN_LABEL
+Overscan
+;
+MSG_MODEREQ_OVERSCAN_TEXT
+Tamaño del texto
+;Text Size
+;
+MSG_MODEREQ_OVERSCAN_GRAPHICS
+Tamaño de los gráficos
+;Graphics Size
+;
+MSG_MODEREQ_OVERSCAN_EXTREME
+Tamaño extremo
+;Extreme Size
+;
+MSG_MODEREQ_OVERSCAN_MAXIMUM
+Tamaño máximo
+;Maximum Size
+;
+MSG_MODEREQ_WIDTH_LABEL
+Ancho
+;Width
+;
+MSG_MODEREQ_HEIGHT_LABEL
+Alto
+;Height
+;
+MSG_MODEREQ_COLORS_LABEL
+Colores
+;Colors
+;
+MSG_MODEREQ_AUTOSCROLL_LABEL
+AutoScroll
+;
+MSG_MODEREQ_AUTOSCROLL_OFF
+Desactivado
+;OFF
+;
+MSG_MODEREQ_AUTOSCROLL_ON
+Activado
+;ON
+;
+MSG_MODEREQ_PROPERTIES_TITLE
+Propiedades del modo
+;Mode Properties
+;
+MSG_MODEREQ_PROPERTIES_NOTWB
+No soporta al Workbench
+;Does not support Workbench
+;
+MSG_MODEREQ_PROPERTIES_NOTGENLOCK
+No soporta al genlock
+;Does not support genlock
+;
+MSG_MODEREQ_PROPERTIES_NOTDRAG
+No se puede arrastrar
+;Not draggable
+;
+MSG_MODEREQ_PROPERTIES_HAM
+Hold & Modify
+;
+MSG_MODEREQ_PROPERTIES_EHB
+Extra-HalfBright
+;
+MSG_MODEREQ_PROPERTIES_LACE
+Entrelazado
+;Interlaced
+;
+MSG_MODEREQ_PROPERTIES_ECS
+Necesita del ECS
+;Requires ECS
+;
+MSG_MODEREQ_PROPERTIES_WB
+Soporta al Workbench
+;Supports Workbench
+;
+MSG_MODEREQ_PROPERTIES_GENLOCK
+Supports genlock
+;
+MSG_MODEREQ_PROPERTIES_DRAG
+Se puede arrastrar
+;Draggable
+;
+MSG_MODEREQ_PROPERTIES_DPFPRI2
+DualPlayfield de prioridad 2
+;DualPlayfield Priority 2
+;
+MSG_MODEREQ_PROPERTIES_REFRESHRATE
+%ldHz, %ld,%ldkHz
+;
+MSG_MODEREQ_MEN_CONTROL
+Control
+;
+MSG_MODEREQ_MEN_CONTROL_LASTMODE
+L\0Modo ant.
+;L\0Last Mode
+;
+MSG_MODEREQ_MEN_CONTROL_NEXTMODE
+N\0Modo sig.
+N\0Next Mode
+;
+MSG_MODEREQ_MEN_CONTROL_PROPERTIES
+?\0Lista de propiedades...
+;?\0Property List...
+;
+MSG_MODEREQ_MEN_CONTROL_RESTORE
+R\0Restaurar
+;R\0Restore
+;
+MSG_MODEREQ_MEN_CONTROL_OK
+A\0Aceptar
+;O\0Ok
+;
+MSG_MODEREQ_MEN_CONTROL_CANCEL
+C\0Cancelar
+;C\0Cancel
+;
+MSG_FONTREQ_TITLE
+Elegir la fuente
+;Select Font
+;
+MSG_FONTREQ_POSITIVE_GAD
+Aceptar
+;Ok
+;
+MSG_FONTREQ_NEGATIVE_GAD
+Cancelar
+;Cancel
+;
+MSG_FONTREQ_MEN_CONTROL
+Control
+;
+MSG_FONTREQ_MEN_CONTROL_LASTFONT
+L\0Fuente ant.
+L\0Last Font
+;
+MSG_FONTREQ_MEN_CONTROL_NEXTFONT
+N\0Fuente sig.
+N\0Next Font
+;
+MSG_FONTREQ_MEN_CONTROL_RESTORE
+R\0Restaurar
+;R\0Restore
+;
+MSG_FONTREQ_MEN_CONTROL_RESCAN
+D\0Releer el disco
+D\0Rescan Disk
+;
+MSG_FONTREQ_MEN_CONTROL_OK
+A\0Aceptar
+;O\0Ok
+;
+MSG_FONTREQ_MEN_CONTROL_CANCEL
+C\0Cancelar
+;C\0Cancel
+;
+MSG_FONTREQ_MODE_LABEL
+Modo
+;Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Texto
+;Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Texto+Campo
+;Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Complemento
+;Complement
+;
+MSG_FONTREQ_STYLE_LABEL
+Estilo
+;Style
+;
+MSG_FONTREQ_STYLE_BOLD
+N
+;B
+;
+MSG_FONTREQ_STYLE_ITALIC
+C
+;I
+;
+MSG_FONTREQ_STYLE_UNDERLINED
+S
+;U
+;
+MSG_FONTREQ_COLOR_LABEL_FG
+Color
+;
+MSG_FONTREQ_COLOR_LABEL_BG
+Color del fondo
+;BG Color
+;
+MSG_FONTREQ_COLOR_LABEL_FGBG
+Colores
+;Colors
+;

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2006 The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
     
     Desc: A very primitive clib replacements.
     Lang: English

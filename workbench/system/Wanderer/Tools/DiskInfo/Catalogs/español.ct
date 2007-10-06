@@ -1,0 +1,48 @@
+## version $VER: diskinfo.catalog 1.0 (30.09.2007)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_TITLE
+Información del Disco
+;Info. del Disco
+;Disk Info
+;
+MSG_ERROR_HEADER
+ERROR
+;
+MSG_ERROR_OK
+_Aceptar
+;_OK
+;
+MSG_ERROR_LOCALE
+No se puede inicializar el locale.
+;Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+No se pueden inicializar las clases propias.
+;Can't initialize custom classes.
+;
+MSG_DESCRIPTION
+Información del Disco
+;Disk Icon Informations
+;
+MSG_PERCENTFULL
+%ld %% Lleno
+;%ld %% Full
+;
+MSG_FORMAT
+Formatear
+;Format
+;
+MSG_UNKNOWN
+Desconocido
+;Unknown
+;
+MSG_AUTHOR
+Olivier Adam
+;
+MSG_COPYRIGHT
+©2006 AROS Dev Team
+;

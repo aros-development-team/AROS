@@ -1,0 +1,140 @@
+## version $VER: more.catalog 1.0 (13.08.2006)
+## codeset 0
+## language español
+;
+; Translated by ahg - (30.09.2007)
+;
+MSG_CANT_OPEN_LIB
+¡No se puede abrir %s V%ld!
+;Can't open %s V%ld!
+;
+MSG_NO_MEM
+¡No hay memoria!
+;Out of memory!
+;
+MSG_CANT_LOCK_SCR
+¡No se puede bloquear\nla pantalla pública!
+;Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+¡No se pudieron crear\nlas imágenes SYSICLASS!
+;Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET
+¡No se pudieron crear los gadgets!
+;Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+¡No se pudieron crear los menús!
+;Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+¡No se pudo crear la ventana!
+;Can't create window!
+;
+MSG_MEN_PROJECT
+Proyecto
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Abrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+G\0Guardar como...
+;A\0Save as...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Imprimir
+;P\0Print
+;
+MSG_MEN_PROJECT_ABOUT
+?\0Acerca de...
+;?\0About...
+;
+MSG_MEN_PROJECT_QUIT
+S\0Salir
+;Q\0Quit
+;
+MSG_MEN_NAVIGATION
+Navegación
+;Navigation
+;
+MSG_MEN_NAVIGATION_FIND
+B\0Buscar...
+;F\0Find...
+;
+MSG_MEN_NAVIGATION_FIND_NEXT
+.\0Buscar el Sig.
+;.\0Find Next
+;
+MSG_MEN_NAVIGATION_FIND_PREV
+,\0Buscar el Ant.
+;,\0Find Prev
+;
+MSG_MEN_NAVIGATION_JUMP
+S\0Saltar...
+;J\0Jump...
+;
+MSG_ASL_OPEN_TITLE
+Elegir el Archivo para Abrir
+;Select File to Open
+;
+MSG_ASL_SAVE_TITLE
+Elegir el Archivo dónde Guardar
+;Select File to Save to
+;
+MSG_ABOUT
+More V%ld.%ld\n (%s)\nCopyright © %s by %s
+;
+MSG_ABOUT_TITLE
+More
+;
+MSG_CONTINUE
+Proseguir
+;Continue
+;
+MSG_JUMP_TITLE
+Ir al renglón...
+;Go to Line ...
+;
+MSG_FIND_TITLE
+Buscar
+;Search
+;
+MSG_OK
+Aceptar
+;Ok
+;
+MSG_CANCEL
+Cancelar
+;Cancel
+;
+MSG_WIN_TITLE
+More: %s (%ld renglones - %ld Bytes)
+;More: %s (%ld Lines - %ld Bytes)
+;
+MSG_SHORTCUT_TOP
+T
+;
+MSG_SHORTCUT_BOTTOM
+B
+;
+MSG_SHORTCUT_JUMP
+GJ
+;
+MSG_SHORTCUT_FIND
+FS
+;
+MSG_SHORTCUT_NEXT
+N
+;
+MSG_SHORTCUT_PREV
+P
+;

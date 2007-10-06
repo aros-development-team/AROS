@@ -1,0 +1,72 @@
+## version $VER: wbrename.catalog 0.1 (12.09.2006)
+## language español
+## codeset 0
+;
+; Translated by ahg
+;
+MSG_TITLE
+WBRename
+;WBRename
+;
+MSG_DESCRIPTION
+Renombra los archivos y cajones
+;Renames files and drawers
+;
+MSG_COPYRIGHT
+©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Renombrar
+;Rename
+;
+MSG_LINE
+Escriba el nuevo nombre
+;Enter a new name
+;
+MSG_NAME
+Nombre:
+;New name:
+;
+MSG_OK
+_Aceptar
+;_OK
+;
+MSG_CANCEL
+Ca_ncelar
+;Ca_ncel
+;
+MSG_ERROR_TITLE
+WBRename: Error
+;
+MSG_ALREADY_EXIST
+¡'%s' ya existe!
+;'%s' already exists!
+;
+MSG_FAILED
+¡El cambio de nombre de '%s' falló con el error:\'%s'!
+;Rename of '%s' failed with error:\n'%s'!
+;
+MSG_ILLEGAL_CHARS
+¡'%s' contiene caracteres ilegales!
+;'%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+¡Se necesitan dos argumentos!
+;Need 2 arguments!
+;
+MSG_INVALID_LOCK
+¡Bloqueo inválido del directorio!
+;Invalid directory lock!
+;
+MSG_WB_ONLY
+¡No se puede iniciar desde el shell!\n
+;Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+¡Falló la creación de la Aplicación!
+;Failed to create Application!
+;
+MSG_OUTOFMEMORY
+¡No se pudo asignar RAM!
+;Can't allocate RAM!
+;

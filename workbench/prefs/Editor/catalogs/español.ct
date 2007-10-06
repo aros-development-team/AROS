@@ -1,0 +1,153 @@
+##version $VER: JanoPrefs.catalog 1.0 (30.09.2007).
+##codeset 0
+##language español
+;
+; Translated by ahg
+;
+; FIXME: Rest translate the msg MSG_COLOR_*
+;
+; Catalog description for JanoPrefs
+; JanoPrefs.cd
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Valores de fábrica
+;Valores predeterminados
+;Default values
+;
+MSG_LASTSAVED
+Valores previos
+;Valores guardados
+;Últimos valores guardados
+;Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN
+Configuración global
+;Configuración principal
+;Main setup
+;
+MSG_TAB
+Tabulación:
+;Tabulation:
+;
+MSG_SEPARATORS
+Separadores:
+;Separators:
+;
+MSG_TXTFONT
+Fuente del texto:
+;Text font:
+;
+MSG_SCRFONT
+Fuente de la pantalla:
+;Screen font:
+;
+MSG_PUBSCREEN
+Modo de la pantalla:
+;Screen mode:
+;
+MSG_BACKDROP
+Telón de fondo
+;Backdrop
+;
+MSG_LEFTMARGIN
+Margen izquierdo
+;Left margin
+;
+MSG_AUTOINDENT
+Sangría automática
+;Auto indent
+;
+MSG_EXTEND
+Teclado numérico extendido
+;Tastierino numerico esteso
+;Extended numeric pad
+;
+MSG_PREFSSAVE
+Guardar
+;Save
+;
+MSG_USEPREFS
+Usar
+;Use
+;
+MSG_DISCARDPREFS
+Cancelar
+;Cancel
+;
+MSG_USEDEF
+Usar el de fábrica
+;Usar el predeterminado
+;Uso predeterminado
+;Use Default
+;
+MSG_CHOOSEIT
+Elige uno...
+;Choose one...
+;
+MSG_CLONEPARENT
+Clonar al anterior
+;Clonar al ancestro
+;Clone parent
+;
+MSG_COLOR_BACK
+Fondo
+;Background
+;
+MSG_COLOR_TEXT
+Texto común
+;Texto normal
+;Standard text
+;
+MSG_COLOR_FILLTXT
+Texto elegido para llenar
+;Selected fill text
+;
+MSG_COLOR_FILLSEL
+Texto elegido
+;Selected text
+;
+MSG_COLOR_MARGINBACK
+Fondo del margen
+;Margin background
+;
+MSG_COLOR_MARGINTXT
+Margen del texto
+;Margine del testo
+;Texto del margen
+;Margin text
+;
+MSG_COLOR_SHINE
+Brillo del panel
+;Panel shine
+;
+MSG_COLOR_SHADE
+Sombra del panel
+;Ombra del pannello
+;Panel shade
+;
+MSG_COLOR_PANELBACK
+Fondo del panel
+;Panel back
+;
+MSG_COLOR_PANELTEXT
+Texto del panel
+;Panel text
+;
+MSG_COLOR_GLYPH
+Decoración del panel
+;Panel glyph
+;
+MSG_COLOR_MARKEDLINES
+Panel activo
+;Active panel
+;

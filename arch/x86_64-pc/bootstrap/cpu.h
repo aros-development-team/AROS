@@ -3,7 +3,7 @@
 
 /*
     Copyright (C) 2006 The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
 
     Desc: Nice macros for low-level assembly support in C/C++ languages
 */

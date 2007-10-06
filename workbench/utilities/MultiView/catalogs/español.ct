@@ -1,0 +1,197 @@
+## version $VER: multiview.catalog 1.0 (13.08.2006)
+## codeset 0
+## language español
+;
+; Translated by ahg - (30.09.2007)
+;
+; FIXME : Revisar las trad. de dithering, wordwarp,
+;         forcemapping
+;
+MSG_CANT_OPEN_LIB
+¡No se pudo abrir %s V%ld!\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_IC
+¡No se pudieron crear los objetos de interconexión!
+;Can't create interconnection objects!
+;
+MSG_CANT_LOCK_SCR
+¡No se pudo bloquear la pantalla pública!
+;Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+¡No se pudieron crear las imágenes SYSICLASS!
+;Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET
+¡No se pudieron crear los gadgets!
+;Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+¡No se pudieron crear los menús!
+;Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+¡No se pudo crear la ventana!
+;Can't create window!
+;
+MSG_SAVE_FAILED
+¡El guardar falló!
+;Saving to file failed!
+;
+MSG_MEN_PROJECT
+Proyecto
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Abrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+G\0Guardar como...
+;A\0Save as...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Guardar como IFF...
+;I\0Save as IFF...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Imprimir
+;P\0Print
+;
+MSG_MEN_PROJECT_ABOUT
+?\0Acerca de ...
+;?\0About...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Salir
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Editar
+;Edit
+;
+MSG_MEN_EDIT_MARK
+M\0Marcar
+;B\0Mark
+;
+MSG_MEN_EDIT_COPY
+C\0Copiar
+;C\0Copy
+;
+MSG_MEN_EDIT_SELECTALL
+[\0Elegir a Todos
+;[\0Select All
+;
+MSG_MEN_EDIT_CLEARSELECTED
+]\0Quitar la selección
+;]\0Clear Selected
+;
+MSG_MEN_WINDOW
+Ventana
+;Window
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0Usar una Pantalla propia
+; \0Use Separate Screen
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Minimizar
+; \0Minimize
+;
+MSG_MEN_WINDOW_NORMAL
+ \0Normal
+; \0Normal
+;
+MSG_MEN_WINDOW_MAXIMIZE
+ \0Maximizar
+; \0Maximize
+;
+MSG_MEN_SETTINGS
+Configuraciones
+;Settings
+;
+MSG_MEN_SETTINGS_SAVEDEF
+D\0Guardar como Predet.
+;D\0Save As Defaults
+;
+MSG_MEN_PICT
+Imagen
+;Picture
+;
+MSG_MEN_PICT_ZOOM_IN
+ \0Acercar
+; \0Zoom in
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Alejar
+; \0Zoom out
+;
+MSG_MEN_PICT_RESET
+ \0Al Tamaño Original
+; \0Reset Size
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Ajustar a la Ventana
+; \0Fit to Window
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Conservar las proporciones
+; \0Keep Aspect Ratio
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Conversión de colores forzada
+; \0Force Palette Mapping
+;
+MSG_MEN_PICT_DITHER
+ \0Dithering
+;
+MSG_MEN_TEXT
+Texto
+;Text
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0Cortar los renglones
+; \0Ajustar a la ventana
+; \0Enable Word Wrap
+;
+MSG_MEN_TEXT_SEARCH
+ \0Buscar por...
+; \0Search for...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Buscar por el ant.
+; \0Search for previous
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Buscar por el sig.
+; \0Search for next
+;
+MSG_ASL_OPEN_TITLE
+Elegir el Archivo para Abrir
+;Select File to Open
+;
+MSG_ASL_SAVE_TITLE
+Elegir el Archivo dónde Guardar
+;Select File to Save to
+;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+MultiView
+;
+MSG_CONTINUE
+Proseguir
+;Continue
+;
+MSG_OK
+Aceptar
+;Ok
+;
