@@ -10,7 +10,7 @@ USER_INCLUDES := -I$(GENINCDIR)
 ifdef GUI_INCDIR
 USER_INCLUDES += -I$(GUI_INCDIR)
 endif
-USER_CFLAGS := -D__AROS__
+USER_CFLAGS := -D__AROS__ $(GUI_CFLAGS)
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
@@ -64,6 +64,6 @@ setup-x11keymaptable :
 	%mkdirs_q $(AROS_DEVS)/Keymaps $(AROS_DEVS)/Keymaps/X11
 		
 $(TOOLDIR)/makexkeytable: makexkeytable.c
-	$(HOST_CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
-
+	$(HOST_CC) $(USER_CCFLAGS) $(USER_INCLUDES) $(GUI_LDFLAGS) \
+	  -lX11 $< -o $@ 
 %common
