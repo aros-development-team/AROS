@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,7 +16,7 @@
 #include "patches.h"
 #include "locale.h"
 
-#define VERSION "$VER: Snoopy 0.5 (9.9.2006) © 2006 The AROS Dev Team"
+#define VERSION "$VER: Snoopy 0.6 (07.10.2007) © 2006-2007 The AROS Dev Team"
 
 static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
 static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM;
