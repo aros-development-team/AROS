@@ -114,7 +114,7 @@ R\0Restaurar
 ;
 MSG_FILEREQ_MEN_CONTROL_PARENT
 T\0Atrás
-P\0Parent
+;P\0Parent
 ;
 MSG_FILEREQ_MEN_CONTROL_VOLUMES
 V\0Volúmenes
@@ -142,7 +142,7 @@ MSG_FILEREQ_MEN_CONTROL_SELECT
 ;
 MSG_FILEREQ_MEN_CONTROL_OK
 A\0Aceptar
-O\0Ok
+;O\0Ok
 ;
 MSG_FILEREQ_MEN_CONTROL_CANCEL
 C\0Cancelar
@@ -175,17 +175,17 @@ MSG_FILEREQ_MEN_FILELIST_SORTDOWN
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
 4\0Ver los cajones primero
 ;4\0Mostrar los cajones primero
-4\0Show drawers first
+;4\0Show drawers first
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
 5\0Ver los cajones con archivos
 ;5\0Mostrar los cajones con archivos
-5\0Show drawers with files
+;5\0Show drawers with files
 ;
 MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
 6\0Ver los cajones al final
 ;6\0Mostrar los cajones al final
-6\0Show drawers last
+;6\0Show drawers last
 ;
 MSG_MODEREQ_TITLE
 Elegir el Modo de Pantalla
@@ -298,7 +298,7 @@ L\0Modo ant.
 ;
 MSG_MODEREQ_MEN_CONTROL_NEXTMODE
 N\0Modo sig.
-N\0Next Mode
+;N\0Next Mode
 ;
 MSG_MODEREQ_MEN_CONTROL_PROPERTIES
 ?\0Lista de propiedades...
@@ -333,11 +333,11 @@ Control
 ;
 MSG_FONTREQ_MEN_CONTROL_LASTFONT
 L\0Fuente ant.
-L\0Last Font
+;L\0Last Font
 ;
 MSG_FONTREQ_MEN_CONTROL_NEXTFONT
 N\0Fuente sig.
-N\0Next Font
+;N\0Next Font
 ;
 MSG_FONTREQ_MEN_CONTROL_RESTORE
 R\0Restaurar
@@ -345,7 +345,7 @@ R\0Restaurar
 ;
 MSG_FONTREQ_MEN_CONTROL_RESCAN
 D\0Releer el disco
-D\0Rescan Disk
+;D\0Rescan Disk
 ;
 MSG_FONTREQ_MEN_CONTROL_OK
 A\0Aceptar
