@@ -502,7 +502,7 @@ static const struct Command
 };
 
 
-#define PARAM_BUF_SIZE 2
+#define PARAM_BUF_SIZE MAX_COMMAND_PARAMS
 /* Parameters for commands are parsed and filled into this one */
 struct cmd_params
 {
