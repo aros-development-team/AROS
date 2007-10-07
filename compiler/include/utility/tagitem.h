@@ -104,10 +104,10 @@ struct TagItem
 	    va_end (args);
 #else
 #	define AROS_NR_SLOWSTACKTAGS_PRE(arg)
+#	define AROS_NR_SLOWSTACKTAGS_POST
 #	define AROS_SLOWSTACKTAGS_PRE(arg) AROS_TAGRETURNTYPE retval;
 #	define AROS_SLOWSTACKTAGS_ARG(arg) ((struct TagItem *)&(arg))
 #	define AROS_SLOWSTACKTAGS_POST     return retval;
-#	define AROS_NR_SLOWSTACKTAGS_POST     return retval;
 #endif
 
 #endif /* UTILITY_TAGITEM_H */
