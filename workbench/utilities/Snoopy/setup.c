@@ -94,6 +94,13 @@ static CONST_STRPTR opts[] =
     "OptionLen"
 };
 
+static void setup_write_parameter(BPTR fh, int argindex, int value)
+{
+    static char buffer[50];
+    sprintf(buffer, "%s %d\n", opts[argindex], value);
+    FPuts(fh, (STRPTR)buffer);
+}
+
 void setup_init(void)
 {
     setup_reset();
@@ -143,46 +150,46 @@ void setup_reset(void)
 
 BOOL setup_save(void)
 {
-    FILE *fh = fopen(PREFFILE, "w");
+    BPTR fh = Open(PREFFILE, MODE_NEWFILE);
     if (!fh) return FALSE;
 
-    fprintf(fh, "%s %d\n", opts[onlyShowFailsOpt], setup.onlyShowFails);
-    fprintf(fh, "%s %d\n", opts[useDevNamesOpt],   setup.useDevNames);
-    fprintf(fh, "%s %d\n", opts[showPathsOpt],     setup.showPaths);
-    fprintf(fh, "%s %d\n", opts[showCliNrOpt],     setup.showCliNr);
-    fprintf(fh, "%s %d\n", opts[ignoreWBOpt],      setup.ignoreWB);
+    setup_write_parameter(fh, onlyShowFailsOpt, setup.onlyShowFails);
+    setup_write_parameter(fh, useDevNamesOpt,   setup.useDevNames);
+    setup_write_parameter(fh, showPathsOpt,     setup.showPaths);
+    setup_write_parameter(fh, showCliNrOpt,     setup.showCliNr);
+    setup_write_parameter(fh, ignoreWBOpt,      setup.ignoreWB);
 
-    fprintf(fh, "%s %d\n", opts[ChangeDirOpt],     setup.enableChangeDir);
-    fprintf(fh, "%s %d\n", opts[DeleteOpt],        setup.enableDelete);
-    fprintf(fh, "%s %d\n", opts[ExecuteOpt],       setup.enableExecute);
-    fprintf(fh, "%s %d\n", opts[GetVarOpt],        setup.enableGetVar);
-    fprintf(fh, "%s %d\n", opts[LoadSegOpt],       setup.enableLoadSeg);
-    fprintf(fh, "%s %d\n", opts[LockOpt],          setup.enableLock);
-    fprintf(fh, "%s %d\n", opts[MakeDirOpt],       setup.enableMakeDir);
-    fprintf(fh, "%s %d\n", opts[MakeLinkOpt],      setup.enableMakeLink);
-    fprintf(fh, "%s %d\n", opts[OpenOpt],          setup.enableOpen);
-    fprintf(fh, "%s %d\n", opts[RenameOpt],        setup.enableRename);
-    fprintf(fh, "%s %d\n", opts[RunCommandOpt],    setup.enableRunCommand);
-    fprintf(fh, "%s %d\n", opts[SetVarOpt],        setup.enableSetVar);
-    fprintf(fh, "%s %d\n", opts[SystemOpt],        setup.enableSystem);
+    setup_write_parameter(fh, ChangeDirOpt,     setup.enableChangeDir);
+    setup_write_parameter(fh, DeleteOpt,        setup.enableDelete);
+    setup_write_parameter(fh, ExecuteOpt,       setup.enableExecute);
+    setup_write_parameter(fh, GetVarOpt,        setup.enableGetVar);
+    setup_write_parameter(fh, LoadSegOpt,       setup.enableLoadSeg);
+    setup_write_parameter(fh, LockOpt,          setup.enableLock);
+    setup_write_parameter(fh, MakeDirOpt,       setup.enableMakeDir);
+    setup_write_parameter(fh, MakeLinkOpt,      setup.enableMakeLink);
+    setup_write_parameter(fh, OpenOpt,          setup.enableOpen);
+    setup_write_parameter(fh, RenameOpt,        setup.enableRename);
+    setup_write_parameter(fh, RunCommandOpt,    setup.enableRunCommand);
+    setup_write_parameter(fh, SetVarOpt,        setup.enableSetVar);
+    setup_write_parameter(fh, SystemOpt,        setup.enableSystem);
 
-    fprintf(fh, "%s %d\n", opts[FindPortOpt],      setup.enableFindPort);
-    fprintf(fh, "%s %d\n", opts[FindResidentOpt],  setup.enableFindResident);
-    fprintf(fh, "%s %d\n", opts[FindSemaphoreOpt], setup.enableFindSemaphore);
-    fprintf(fh, "%s %d\n", opts[FindTaskOpt],      setup.enableFindTask);
-    fprintf(fh, "%s %d\n", opts[LockScreenOpt],    setup.enableLockScreen);
-    fprintf(fh, "%s %d\n", opts[OpenDeviceOpt],    setup.enableOpenDevice);
-    fprintf(fh, "%s %d\n", opts[OpenFontOpt],      setup.enableOpenFont);
-    fprintf(fh, "%s %d\n", opts[OpenLibraryOpt],   setup.enableOpenLibrary);
-    fprintf(fh, "%s %d\n", opts[OpenResourceOpt],  setup.enableOpenResource);
-    fprintf(fh, "%s %d\n", opts[ReadToolTypesOpt], setup.enableReadToolTypes);
+    setup_write_parameter(fh, FindPortOpt,      setup.enableFindPort);
+    setup_write_parameter(fh, FindResidentOpt,  setup.enableFindResident);
+    setup_write_parameter(fh, FindSemaphoreOpt, setup.enableFindSemaphore);
+    setup_write_parameter(fh, FindTaskOpt,      setup.enableFindTask);
+    setup_write_parameter(fh, LockScreenOpt,    setup.enableLockScreen);
+    setup_write_parameter(fh, OpenDeviceOpt,    setup.enableOpenDevice);
+    setup_write_parameter(fh, OpenFontOpt,      setup.enableOpenFont);
+    setup_write_parameter(fh, OpenLibraryOpt,   setup.enableOpenLibrary);
+    setup_write_parameter(fh, OpenResourceOpt,  setup.enableOpenResource);
+    setup_write_parameter(fh, ReadToolTypesOpt, setup.enableReadToolTypes);
 
-    fprintf(fh, "%s %d\n", opts[nameLenOpt],       setup.nameLen);
-    fprintf(fh, "%s %d\n", opts[actionLenOpt],     setup.actionLen);
-    fprintf(fh, "%s %d\n", opts[targetLenOpt],     setup.targetLen);
-    fprintf(fh, "%s %d\n", opts[optionLenOpt],     setup.optionLen);
+    setup_write_parameter(fh, nameLenOpt,       setup.nameLen);
+    setup_write_parameter(fh, actionLenOpt,     setup.actionLen);
+    setup_write_parameter(fh, targetLenOpt,     setup.targetLen);
+    setup_write_parameter(fh, optionLenOpt,     setup.optionLen);
 
-    fclose(fh);
+    Close(fh);
     return TRUE;
 }
 
@@ -192,10 +199,10 @@ BOOL setup_open(void)
     char buffer[60];
     char option[60];
     int value;
-    FILE *fh = fopen(PREFFILE, "r");
+    BPTR fh = Open(PREFFILE, MODE_OLDFILE);
     if (!fh) return FALSE;
     D(bug("Snoopy: File open\n"));
-    while (fgets(buffer, sizeof(buffer), fh))
+    while (FGets(fh, buffer, sizeof(buffer)))
     {
 	D(bug("Snoopy: %s read\n", buffer));
 	if (sscanf(buffer,"%59s %d", option, &value) == 2)
@@ -271,7 +278,7 @@ BOOL setup_open(void)
 	    retval = FALSE;
 	}
     } // while
-    fclose(fh);
+    Close(fh);
     return retval;
 }
 

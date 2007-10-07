@@ -3,8 +3,6 @@
     $Id$
 */
 
-// Some code was taken from the SnoopDos program from Eddy Carroll
-
 #include <stdio.h>
 
 #include <aros/debug.h>

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,13 +19,13 @@
 
 int main(void)
 {
-	Locale_Initialize();
+    Locale_Initialize();
     setup_init();
     gui_init();
     patches_init();
     gui_handleevents();
     clean_exit(NULL);
-	Locale_Deinitialize();
+    Locale_Deinitialize();
     return RETURN_OK;
 }
 
