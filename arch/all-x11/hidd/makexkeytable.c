@@ -42,6 +42,7 @@ from the X Consortium.
 #include <X11/Xproto.h>
 #include <X11/keysym.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -53,6 +54,10 @@ from the X Consortium.
 #define OUTER_WINDOW_DEF_Y 100
 				
 /***************************************************************************/
+
+static void
+set_sizehints (XSizeHints *hintp, int min_width, int min_height,
+               int defwidth, int defheight, int defx, int defy, char *geom);
 
 typedef unsigned long Pixel;
 
@@ -137,7 +142,7 @@ void doaskuser(char *title,int rawkeystart, int numkeys, KeySym k);
 
 /***************************************************************************/
 
-usage ()
+void usage ()
 {
     static char *msg[] = {
 "    -display displayname                X server to contact",
@@ -171,7 +176,7 @@ static int MySysErrorHandler (Display * display)
 
 /***************************************************************************/
 
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
     char *displayname = NULL;
     char *geom = NULL;
@@ -354,8 +359,9 @@ void doaskuser(char *title,int rawkeystart, int numkeys, KeySym k)
 
 /***************************************************************************/
 
+static void
 set_sizehints (XSizeHints *hintp, int min_width, int min_height,
-	       int defwidth, int defheight, int defx, int defy, char *geom)
+               int defwidth, int defheight, int defx, int defy, char *geom)
 {
     int geom_result;
 
