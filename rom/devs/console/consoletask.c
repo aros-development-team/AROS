@@ -309,7 +309,7 @@ static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *Consol
     	
     	for (i = 0; i < ICU(unit)->numStoredChars; i ++)
     	{
-    	    ICU(unit)->inputBuf[i] = ICU(unit)->inputBuf[i] + req->io_Actual;
+    	    ICU(unit)->inputBuf[i] = ICU(unit)->inputBuf[i + req->io_Actual];
     	}
     }
     else
