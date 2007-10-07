@@ -82,10 +82,7 @@
 #   include "emul_handler_gcc.h"
 #endif
 
-#include <aros/debug.h>
 #include <string.h>
-
-#include "/usr/include/signal.h"
 
 #include LC_LIBDEFS_FILE
 
