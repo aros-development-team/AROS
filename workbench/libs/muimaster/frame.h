@@ -69,7 +69,7 @@ struct MUI_FrameSpec_intern
 
 
 struct MUI_RenderInfo;
-
+struct dt_frame_image;
 typedef void (*ZFDrawFunc)(struct dt_frame_image *fi, struct MUI_RenderInfo *mri,
 			   int globleft, int globtop, int globwidth, int globheight, int left, int top, int width, int height);
 
