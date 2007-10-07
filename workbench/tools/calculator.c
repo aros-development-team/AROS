@@ -126,7 +126,7 @@ static struct Gadget *gadlist, *gad[NUM_BUTTONS + 2];
 static struct Window *win;
 static struct RDArgs *MyArgs;
 static APTR vi;
-static FILE *tapefh;
+static BPTR tapefh;
 
 static WORD win_borderleft,win_bordertop;
 static WORD buttonwidth,buttonheight,ledheight;
@@ -143,9 +143,9 @@ static char ledstring[256],visledstring[256],
 
 static char *deftapename = "RAW:%ld/%ld/%ld/%ld/Calculator Tape/INACTIVE/SCREEN%s";
 
-UBYTE version[] = "$VER: Calculator 1.2 (30.07.2007)";
+UBYTE version[] = "$VER: Calculator 1.3 (07.10.2007) © AROS Dev Team";
 
-static LONG Args[NUM_ARGS];
+static IPTR Args[NUM_ARGS];
 
 static void Cleanup(char *msg)
 {
@@ -159,7 +159,7 @@ static void Cleanup(char *msg)
 	rc = RETURN_OK;
     }
     
-    if (tapefh) fclose(tapefh);
+    if (tapefh) Close(tapefh);
     
     if (win) CloseWindow(win);
     
@@ -207,7 +207,7 @@ static void OpenLibs(void)
 
 static void GetArguments(void)
 {
-    if (!(MyArgs = ReadArgs(ARG_TEMPLATE,(LONG *)Args,0)))
+    if (!(MyArgs = ReadArgs(ARG_TEMPLATE,(IPTR *)Args,0)))
     {
 	DosError();
     }
@@ -440,7 +440,7 @@ static void OpenTape(void)
 	sprintf(tapename,deftapename,x,y,w,h,scrname);
     }
     
-    if (!(tapefh = fopen(tapename,"w")))
+    if (!(tapefh = Open(tapename,MODE_NEWFILE)))
     {
 	DisplayBeep(scr);
     }
@@ -514,7 +514,7 @@ static char *DoOperation(void)
 	break;
     }
     
-    if (leftval > 9999999999999) // because of MAX_VAL_LEN
+    if (leftval > 9999999999999.0) // because of MAX_VAL_LEN
     {
 	matherr = "Buffer overflow!";
     }
@@ -623,7 +623,7 @@ static void HandleButton(WORD type)
 	strcpy(ledstring,"0");
 	refresh_led = TRUE;
 	
-	if (tapefh) fputs("\n",tapefh);
+	if (tapefh) FPutC(tapefh, '\n');
 	break;
 	
     case BTYPE_CE:
@@ -694,8 +694,10 @@ static void HandleButton(WORD type)
 	    
 	    if (tapefh)
 	    {
-	        fprintf(tapefh,"\t%s\n",visledstring);
-		fflush(tapefh);
+		FPutC(tapefh, '\t');
+		FPuts(tapefh, visledstring);
+		FPutC(tapefh, '\n');
+	        Flush(tapefh);
 	    }
 	    break;
 
@@ -711,11 +713,15 @@ static void HandleButton(WORD type)
 	    
 	    if (tapefh)
 	    {
-	    	fprintf(tapefh,"%s\t%s\n",(operation == BTYPE_ADD) ? "+" :
+		FPuts(tapefh,
+				(operation == BTYPE_ADD) ? "+" :
 				(operation == BTYPE_SUB) ? "-" :
 				(operation == BTYPE_DIV) ? ":" :
-				"×" ,visledstring);
-		fflush(tapefh);
+				"×");
+		FPutC(tapefh, '\t');
+		FPuts(tapefh, visledstring);
+		FPutC(tapefh, '\n');
+		Flush(tapefh);
 	    }
 	    break;
 	    
@@ -730,8 +736,10 @@ static void HandleButton(WORD type)
 	    GetLeftValue();
 	    if (tapefh)
 	    {
-	    	fprintf(tapefh,"\t%s\n",visledstring);
-		fflush(tapefh);
+		FPutC(tapefh, '\t');
+		FPuts(tapefh, visledstring);
+		FPutC(tapefh, '\n');
+		Flush(tapefh);
 	    }
 	}	
 	else if (state == STATE_RIGHTVAL)
@@ -739,11 +747,15 @@ static void HandleButton(WORD type)
 	    GetRightValue();
 	    if (tapefh)
 	    {
-	        fprintf(tapefh,"%s\t%s\n",(operation == BTYPE_ADD) ? "+" :
+		FPuts(tapefh, 
+				(operation == BTYPE_ADD) ? "+" :
 				(operation == BTYPE_SUB) ? "-" :
 				(operation == BTYPE_DIV) ? ":" :
-				"×" ,visledstring);
-		fflush(tapefh);
+				"×");
+		FPutC(tapefh, '\t');
+		FPuts(tapefh, visledstring);
+		FPutC(tapefh, '\n');
+		Flush(tapefh);
 	    }
 	}
 	
@@ -757,8 +769,10 @@ static void HandleButton(WORD type)
 	    RefreshLED();
 	    if (tapefh)
 	    {
-	        fprintf(tapefh,"=\t%s\n",visledstring);
-		fflush(tapefh);
+		FPuts(tapefh, "=\t");
+		FPuts(tapefh, visledstring);
+		FPutC(tapefh, '\n');
+		Flush(tapefh);
 	    }
 	} else {
 	    refresh_led = TRUE;
