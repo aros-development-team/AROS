@@ -6,12 +6,11 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
-#include <proto/utility.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"
 
- #define MYDEBUG 1 
+/* #define MYDEBUG 1 */
 #include "debug.h"
 
 /*****************************************************************************
@@ -50,15 +49,6 @@
     AROS_LIBFUNC_INIT
 
     Class  *cl;
-
-bug("[MUI_NewObject] NewObject('%s',\n", classid);
-struct TagItem *t = tags, *ti;
-while(ti = NextTagItem(&t))
-{
-  bug("[MUI_NewObject]    ti_Tag=%016lx, ti_Data=%016lx\n", ti->ti_Tag, ti->ti_Data);
-}
-bug("[MUI_NewObject] );\n");
-
 
     cl = MUI_GetClass(classid);
     if (cl)

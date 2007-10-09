@@ -8,7 +8,6 @@
 #define AROS_TAGRETURNTYPE Object *
 #include <utility/tagitem.h>
 #include <proto/alib.h>
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -46,7 +45,6 @@ extern struct Library * MUIMasterBase;
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
 
-bug("[MUI_NewObject] variadic call, ret addr = %016lx\n", __builtin_return_address(0));    
     retval = MUI_NewObjectA(classname, AROS_SLOWSTACKTAGS_ARG(tag1));
     
     AROS_SLOWSTACKTAGS_POST
