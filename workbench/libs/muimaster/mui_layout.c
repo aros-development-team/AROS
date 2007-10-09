@@ -64,7 +64,7 @@
     if (_flags(parent) & MADF_ISVIRTUALGROUP)
     {
 	/* I'm not yet sure what to do by virtual groups in virtual groups, eighter add their offsets too or not, will be tested soon */
-	LONG val;
+	IPTR val;
 	get(parent,MUIA_Virtgroup_Left,&val);
 	left -= val;
 	get(parent,MUIA_Virtgroup_Top,&val);

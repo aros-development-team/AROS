@@ -15,6 +15,8 @@
 #include <proto/keymap.h>
 #include <proto/utility.h>
 
+#include <aros/debug.h>
+
 #include "mui.h"
 #include "support.h"
 #include "muimaster_intern.h"
@@ -72,6 +74,7 @@ IPTR XGET(Object *obj, Tag attr)
 IPTR DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
 {
     /* MUI set the correct render info *before* it calls MUIM_Setup so please only use this function instead of DoMethodA() */
+bug("DoSetupMethod: mri=%p\n", info);
     muiRenderInfo(obj) = info;
     return DoMethod(obj, MUIM_Setup, (IPTR)info);
 }

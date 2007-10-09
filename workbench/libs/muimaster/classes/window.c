@@ -3359,8 +3359,12 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
     if (!data->wd_RootObject)
 	return FALSE;
 
+bug("[WINDOW] ** Calling MUIM_Window_Setup\n");
+
     if (!DoMethod(obj, MUIM_Window_Setup))
 	return FALSE;
+
+bug("[WINDOW] ** Calling MUIM_Setup\n");
 
     /* I got display info, so calculate your display dependant data */
     if (!DoSetupMethod(data->wd_RootObject, &data->wd_RenderInfo))
@@ -3368,6 +3372,8 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
 	DoMethod(obj, MUIM_Window_Cleanup);
 	return FALSE;
     }
+
+bug("[WINDOW] ** DONE!\n");
 
     /* inquire about sizes */
     WindowMinMax(obj,data);

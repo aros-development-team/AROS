@@ -33,7 +33,7 @@ extern struct Library *MUIMasterBase;
 #include "datatypescache.h"
 
 
-//#define MYDEBUG 1
+#define MYDEBUG 1
 #include "debug.h"
 
 /*
@@ -266,12 +266,18 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
 
+D(bug("[Area] Area__OM_NEW.\n"));
+
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
 
     data->mad_Flags = MADF_FILLAREA | MADF_SHOWME | MADF_SHOWSELSTATE | MADF_DROPABLE;
     data->mad_HorizWeight = data->mad_VertWeight = 100;
     data->mad_InputMode = MUIV_InputMode_None;
+
+D(bug("[Area] Area__OM_NEW: self = %lx, mri = %lx\n", obj, muiRenderInfo(obj)));
+
+
 
     /* parse initial taglist */
 
@@ -1468,6 +1474,8 @@ static IPTR Area__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *zframe;
     const struct MUI_FrameSpec_intern *frame;
+
+bug("[AREA::MUIM_Setup] obj=%p, msg->RenderInfo=%p\n", obj, msg->RenderInfo);
 
     muiRenderInfo(obj) = msg->RenderInfo;
 
