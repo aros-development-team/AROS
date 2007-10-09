@@ -3,8 +3,7 @@
 Copyright  2002-2007, The AROS Development Team. All rights reserved.
 $Id$
 */
-#define DEBUG 1
-#define MYDEBUG
+  //#define MYDEBUG
 #include "debug.h"
 
 //#define DEBUG_ILC_EVENTS
@@ -1262,7 +1261,6 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 
 			case MUIA_IconListview_ScaledBackground:
 				data->icld__Option_IconListScaledBackground = (BOOL)tag->ti_Data;
-bug("SetAttr: MUIA_IconListview_Scaledbackground = %d", tag->ti_Data);
                 break;
 
 			/* We also listen for this and manually adjust for known stuff */
@@ -3259,7 +3257,6 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 
                         if (DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros) && data->icld_SelectionLast == new_selected)
                         {
-bug("SET(%012lx, MUIA_IconList_DoubleClick, TRUE);\n", obj);
                             SET(obj, MUIA_IconList_DoubleClick, TRUE);
                             data->icld_SelectionLast = NULL;
                         }
