@@ -328,7 +328,7 @@ static int load_hunk
         else
             sh->addr = hunk->data;
 
-        D(bug("[dos:ELF64] sh->addr = %012p\n", sh->addr));
+        (bug("[dos:ELF64] sh->addr = %012lx - %012lx\n", sh->addr, sh->addr + sh->size - 1));
         
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
