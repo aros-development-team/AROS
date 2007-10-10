@@ -5,8 +5,11 @@
     Desc: DOS function LoadSeg()
     Lang: english
 */
-
+#ifdef __x86_64__
+#define DEBUG 1
+#else
 #define DEBUG 0
+#endif
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
