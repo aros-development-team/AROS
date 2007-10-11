@@ -538,8 +538,6 @@ IPTR Image__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
     }
     else if (data->img)
     {
-	DoMethod(obj, MUIM_DrawParentBackground, _left(obj), _top(obj), _width(obj), _height(obj), _left(obj), _top(obj), 0);
-
 	zune_imspec_draw(data->img, muiRenderInfo(obj),
 		_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
 		0, 0, data->state);
