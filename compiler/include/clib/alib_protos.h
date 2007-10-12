@@ -133,7 +133,7 @@ AROS_UFP3(IPTR, HookEntry,
 #endif
 
 #ifdef AROS_SLOWSTACKMETHODS
-    Msg  GetMsgFromStack  (STACKULONG MethodID, va_list args);
+    Msg  GetMsgFromStack  (IPTR MethodID, va_list args);
     void FreeMsgFromStack (Msg msg);
 
 #   define AROS_NR_SLOWSTACKMETHODS_PRE(arg)    \
