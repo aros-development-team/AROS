@@ -17,7 +17,7 @@
 	Msg GetMsgFromStack (
 
 /*  SYNOPSIS */
-	STACKULONG	MethodID,
+	IPTR	MethodID,
 	va_list args)
 
 /*  FUNCTION
@@ -68,15 +68,15 @@
 
     size = 21;
 
-    if ((msg = AllocVec (size * sizeof (STACKULONG), MEMF_CLEAR)))
+    if ((msg = AllocVec (size * sizeof (IPTR), MEMF_CLEAR)))
     {
-	STACKULONG * ulptr = (STACKULONG *)msg;
+	IPTR * ulptr = (IPTR *)msg;
 
 	*ulptr ++ = MethodID;
 
 	while (-- size)
 	{
-	    *ulptr ++ = va_arg (args, STACKULONG);
+	    *ulptr ++ = va_arg (args, IPTR);
 	}
     }
 
