@@ -60,24 +60,28 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     while(lang == NULL && i < 10)
     {
 	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
+        ULONG ret;
+
+    if (lName != NULL) {
 
 	/* Is this english? If not try and load the language */
     #ifdef __MORPHOS__  /*I had some ugly problems with the macros adding a space before _Gate so I had to do it this way*/
-    if( NULL != lName &&
-    	    AROS_UFC4(ULONG, &LIB_strcompare_Gate,
-		AROS_UFCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
-		AROS_UFCA(STRPTR, lName, A2),
-		AROS_UFCA(ULONG, 7, D0),
-		AROS_UFCA(ULONG, SC_ASCII, D1)) != 0)
+    ret = AROS_UFC4(ULONG, &LIB_strcompare_Gate,
+                    AROS_UFCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
+                    AROS_UFCA(STRPTR, lName, A2),
+                    AROS_UFCA(ULONG, 7, D0),
+                    AROS_UFCA(ULONG, SC_ASCII, D1));
     #else
-    if( NULL != lName &&
-    	    AROS_CALL4(ULONG, AROS_SLIB_ENTRY(strcompare, english),
-		AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
-		AROS_LCA(STRPTR, lName, A2),
-		AROS_LCA(ULONG, 7, D0),
-		AROS_LCA(ULONG, SC_ASCII, D1),
-                struct LocaleBase *, LocaleBase) != 0)
+    void *fn = AROS_SLIB_ENTRY(strcompare, english);
+    ret = AROS_CALL4(ULONG, fn,
+                     AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
+                     AROS_LCA(STRPTR, lName, A2),
+                     AROS_LCA(ULONG, 7, D0),
+                     AROS_LCA(ULONG, SC_ASCII, D1),
+                     struct LocaleBase *, LocaleBase);
     #endif
+
+    if (ret != 0)
 	{
     	    #warning FIXME: watch out for buffer overflows here!
 	    strcpy(fileBuf, lName);
@@ -142,6 +146,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 	    
     	    /* If it is still no good, then we have no hope */
 	}
+    }
 	i++;
     }
 
