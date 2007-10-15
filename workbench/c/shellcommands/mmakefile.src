@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 FILES	:= \
     Alias \
     Ask \
-    Assign \
     CD \
     Echo \
     Else \
