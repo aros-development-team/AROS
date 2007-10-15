@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 FILES := \
     AddBuffers \
     AddDatatypes \
+    Assign \
     Avail \
     Beep \
     Break \
