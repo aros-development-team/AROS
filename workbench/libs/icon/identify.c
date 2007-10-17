@@ -24,8 +24,8 @@
 
 /*** Prototypes *************************************************************/
 BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, struct DosLibrary *DOSBase);
-struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, struct TagItem *tags, struct Library *IconBase);
-struct DiskObject *__GetDefaultIconFromType_WB(LONG type, struct TagItem *tags, struct Library *IconBase);
+struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct TagItem *tags, struct Library *IconBase);
+struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct Library *IconBase);
 
 /*** Macros *****************************************************************/
 #define FindDeviceName(buffer, length, volume) (__FindDeviceName_WB((buffer), (length), (volume), DOSBase))
@@ -398,7 +398,7 @@ BOOL __FindDeviceName_WB
 
 struct DiskObject *__GetDefaultIconFromName_WB
 (
-    CONST_STRPTR name, struct TagItem *tags, struct Library *IconBase
+    CONST_STRPTR name, const struct TagItem *tags, struct Library *IconBase
 )
 {
     return GetIconTags
@@ -411,7 +411,7 @@ struct DiskObject *__GetDefaultIconFromName_WB
 
 struct DiskObject *__GetDefaultIconFromType_WB
 (
-    LONG type, struct TagItem *tags, struct Library *IconBase
+    LONG type, const struct TagItem *tags, struct Library *IconBase
 )
 {
     return GetIconTags
