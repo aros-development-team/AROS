@@ -161,7 +161,7 @@ OOP_Object *PCSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
     /* initilize the UART */
     serial_outp(data, UART_LCR, get_lcr(data));
      
-    serial_outp(data, UART_MCR, UART_MCR_OUT2 | UART_MCR_DTR);
+    serial_outp(data, UART_MCR, UART_MCR_OUT2 | UART_MCR_DTR | UART_MCR_RTS);
     serial_outp(data, UART_IER, UART_IER_RDI | UART_IER_THRI | UART_IER_RLSI | UART_IER_MSI);
      
     /* clear the interrupt registers again ... */

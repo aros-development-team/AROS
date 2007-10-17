@@ -540,7 +540,13 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
     else if(len > 1)
     {
         if(!mouse_pnpparse(&pnpid, buf, len))
+        {
+            // theowl: !HACK! Even though PnP failed, check for a non-PnP serial mouse.
+            if(buf[0] == 77) 
+                return 0;
+                
             return -1;
+        }
         if ((t = mouse_pnpproto(&pnpid)) == NULL)
             return -1;
     }
