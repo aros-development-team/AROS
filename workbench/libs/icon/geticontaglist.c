@@ -4,8 +4,6 @@
 */
 
 #include <workbench/icon.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "icon_intern.h"
 #include "support.h"
@@ -20,14 +18,30 @@
 	AROS_LH2(struct DiskObject *, GetIconTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR,     name, A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+	AROS_LHA(CONST_STRPTR, name, A0),
+	AROS_LHA(const struct TagItem *, tags, A1),
 /*  LOCATION */
 	struct Library *, IconBase, 30, Icon)
 
 /*  FUNCTION
 
     INPUTS
+
+    TAGS
+	ICONA_ErrorCode (LONG *)
+	ICONGETA_GetDefaultType (LONG) - Default icon type to get. This
+		overrides the "name" paramter.
+	ICONGETA_GetDefaultName (STRPTR) - Name of default icon to get. This
+		overrides the "name" paramter.
+	ICONGETA_FailIfUnavailable (BOOL)
+	ICONGETA_GetPaletteMappedIcon (BOOL)
+	ICONGETA_IsDefaultIcon (LONG *) - Upon completion of this function, the
+	    referenced LONG will be set to a boolean value indicating whether
+	    the returned icon is a default icon.
+	ICONGETA_RemapIcon (BOOL)
+	ICONGETA_GenerateImageMasks (BOOL)
+	ICONGETA_Label (STRPTR)
+	ICONGETA_Screen (struct Screen *)
 
     RESULT
 
@@ -46,41 +60,40 @@
     AROS_LIBFUNC_INIT
 
     const struct TagItem *tstate            = tags;
-    struct TagItem       *tag;
+    const struct TagItem *tag;
     struct DiskObject    *icon              = NULL;
     LONG                  defaultType       = -1;
-    STRPTR                defaultName       = NULL;
-    BOOL                  failIfUnavailable = TRUE;
+    CONST_STRPTR          defaultName       = NULL;
+    IPTR                  failIfUnavailable = TRUE;
     LONG                 *isDefaultIcon     = NULL;
     
-    BOOL                  getPaletteMappedIcon = TRUE; // FIXME: not used
-    BOOL                  remapIcon            = TRUE; // FIXME: not used
-    BOOL                  generateImageMasks   = TRUE; // FIXME: not used
+    IPTR                  getPaletteMappedIcon = TRUE; // FIXME: not used
+    IPTR                  remapIcon            = TRUE; // FIXME: not used
+    IPTR                  generateImageMasks   = TRUE; // FIXME: not used
     struct Screen        *screen               = NULL; // FIXME: not used
     STRPTR                label                = NULL; // FIXME: not used
-    LONG                 *errorCode            = NULL; // FIXME: not used
+    LONG                 error                 = 0;
+    LONG                 *errorCode            = NULL;
     
 #   define SET_ISDEFAULTICON(value) (isDefaultIcon != NULL ? *isDefaultIcon = (value) : (value))
-#   define SET_ERRORCODE(value)     (errorCode     != NULL ? *errorCode     = (value) : (value))
-    
+
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
             case ICONGETA_GetDefaultType:
-                defaultType = tag->ti_Data; 
-                tag->ti_Tag = TAG_IGNORE; /* avoid recursion */
+                if (defaultType == -1)
+                    defaultType = tag->ti_Data; 
                 break;
                 
             case ICONGETA_GetDefaultName:
-                defaultName = (STRPTR) tag->ti_Data; 
-                tag->ti_Tag = TAG_IGNORE; /* avoid recursion */
+                if (defaultName == NULL)
+                    defaultName = (CONST_STRPTR) tag->ti_Data; 
                 break;
                 
             case ICONGETA_FailIfUnavailable:
                 failIfUnavailable = tag->ti_Data;
-                tag->ti_Tag = TAG_IGNORE; /* avoid recursion */
                 break;
                 
             case ICONGETA_IsDefaultIcon:
@@ -110,7 +123,6 @@
                 
             case ICONA_ErrorCode:
                 errorCode = (LONG *) tag->ti_Data;
-                SET_ERRORCODE(0);
                 break;
         }
     }
@@ -213,7 +225,7 @@
                         
                         if (icon == NULL)
                         {
-                            /* Fallback to the default identify function */
+                            /* Fall back to the default identify function */
                             icon = FindDefaultIcon(&iim);
                         }
                         
@@ -225,19 +237,23 @@
                 }
                 else
                 {
-                    SetIoErr(ERROR_NO_FREE_STORE);
+                    error = IoErr();
                 }
                 
                 UnLockObject(iim.iim_FileLock);
             }
         }
     }
-    
+
+    /* Set error code */
+    if (errorCode != NULL)
+        *errorCode = error;
+    SetIoErr(error);
+
     return icon;
 
     AROS_LIBFUNC_EXIT
 
 #   undef SET_ISDEFAULTICON
-#   undef SET_ERRORCODE
 
 } /* GetIconTagList() */
