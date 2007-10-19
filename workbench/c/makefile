@@ -1,14 +1,14 @@
 CFLAGS = -O2
 
-FILES = Assign.c
+PURE_FILES = Assign.c
 
-PROGS = $(FILES:.c=)
+PURE_PROGS = $(PURE_FILES:.c=)
 
-$(PROGS): %: %.c
-	gcc $(CFLAGS) $< -o $@
+$(PURE_PROGS): %: %.c
+	gcc $(CFLAGS) $< -o $@ -nostartfiles
 
 clean:
-	Delete $(PROGS)
+	Delete $(PURE_PROGS)
 
 install:
-	Copy $(PROGS) TO C:
+	Copy $(PURE_PROGS) TO C:
