@@ -6,6 +6,7 @@ PURE_PROGS = $(PURE_FILES:.c=)
 
 $(PURE_PROGS): %: %.c
 	gcc $(CFLAGS) $< -o $@ -nostartfiles
+	Protect $@ +p
 
 clean:
 	Delete $(PURE_PROGS)
