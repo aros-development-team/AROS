@@ -129,55 +129,36 @@
 #define AROS_ASMSYMNAME(s) (&s)
 
 static const int __abox__ = 1;
-static const char version[] = "\0$VER: Assign unofficial 50.8 (24.09.07) © AROS" ;
+static const char version[] = "\0$VER: Assign unofficial 50.9 (18.10.07) © AROS" ;
 #else
-static const char version[] = "\0$VER: Assign 50.8 (24.09.07) © AROS" ;
-#endif
-
-#ifdef __AROS__
-int __nocommandline = 1;
+static const char version[] = "\0$VER: Assign 50.9 (18.10.07) © AROS" ;
 #endif
 
 struct localdata
 {
-/* TODO: Under MorphOS this utility is pure and can be made resident.
-	 Under AROS we are not pure because startup code is used.
-	 Removing this limitation requires rewrite of the mmakefile.src
-	 and some changes in the code for safe startup. */
-#ifndef __AROS__
 	struct ExecBase     *ld_SysBase;
-#endif
 	struct DosLibrary   *ld_DOSBase;
 	struct MinList      ld_DeferList;
 };
 
-#ifndef __AROS__
 #define SysBase   ld->ld_SysBase
-#endif
 #define DOSBase   ld->ld_DOSBase
 #define DeferList ld->ld_DeferList
 
 
 /* Prototypes */
 
-static
-int checkAssign(struct localdata *ld, STRPTR name);
-static
-int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
+static int Main(struct ExecBase *sBase);
+static int checkAssign(struct localdata *ld, STRPTR name);
+static int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, BOOL defer, BOOL path,
              BOOL add, BOOL remove);
-static
-void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices);
-static
-int removeAssign(struct localdata *ld, STRPTR name);
-static
-STRPTR GetFullPath(struct localdata *ld, BPTR lock);
+static void showAssigns(struct localdata *ld, BOOL vols, BOOL dirs, BOOL devices);
+static int removeAssign(struct localdata *ld, STRPTR name);
+static STRPTR GetFullPath(struct localdata *ld, BPTR lock);
 
-static
-void _DeferPutStr(struct localdata *ld, CONST_STRPTR str);
-static
-void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, IPTR *args);
-static
-void _DeferFlush(struct localdata *ld, BPTR fh);
+static void _DeferPutStr(struct localdata *ld, CONST_STRPTR str);
+static void _DeferVPrintf(struct localdata *ld, CONST_STRPTR fmt, IPTR *args);
+static void _DeferFlush(struct localdata *ld, BPTR fh);
 
 #define DeferPutStr(str) _DeferPutStr(ld,str)
 #define DeferPrintf(fmt,args...) \
@@ -217,7 +198,27 @@ struct ArgList
     IPTR devices;
 };
 
-int main(void)
+#ifdef __AROS__
+AROS_UFH3(__used static int, Start,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  AROS_UFHA(struct ExecBase *, sBase, A6))
+{
+	AROS_USERFUNC_INIT
+	return Main(sBase);
+	AROS_USERFUNC_EXIT
+}
+#else
+int Start(void)
+{
+	struct ExecBase *sBase;
+
+	sBase = *((struct ExecBase **) 4);
+	return Main(sBase);
+}
+#endif
+
+static int Main(struct ExecBase *sBase)
 {
 	struct localdata _ld, *ld = &_ld;
 	struct RDArgs *readarg;
@@ -225,10 +226,7 @@ int main(void)
 	struct ArgList *MyArgList = &arglist;
 	int error = RETURN_OK;
 
-#ifndef __AROS__
-	SysBase = *((struct ExecBase **) 4);
-#endif
-
+	SysBase = sBase;
 	DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",37);
 	if (DOSBase)
 	{
@@ -479,11 +477,14 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 	BOOL cancel = FALSE;
         BOOL success = TRUE;
 
-/* TODO: AROS currently doesn't support packet handlers directly
-      	 and we currently don't support shutting down IOFS handlers */
-#ifndef __AROS__
 	if (dismount)
 	{
+#ifdef __AROS__
+/* TODO: AROS currently doesn't support packet handlers directly
+      	 and we currently don't support shutting down IOFS handlers */
+		success = DOSFALSE;
+		ioerr = ERROR_ACTION_NOT_KNOWN;
+#else
         	struct MsgPort *dp;
         	struct Process *tp;
 
@@ -494,10 +495,11 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
         	if (dp)
         	{
                 	success = DoPkt(dp,ACTION_DIE,0,0,0,0,0);
+			ioerr = IoErr();
                 	DEBUG_ASSIGN(Printf("doassign: ACTION_DIE returned %ld\n",success));
 		}
-	}
 #endif
+	}
 
 	colon = strchr(name, ':');
 
@@ -511,19 +513,29 @@ int doAssign(struct localdata *ld, STRPTR name, STRPTR *target, BOOL dismount, B
 
 	if (dismount)
         {
-		struct DosList *dl;
-		struct DosList *fdl;
+		if ((!success) && (ioerr == ERROR_ACTION_NOT_KNOWN))
+		{
+			struct DosList *dl;
+			struct DosList *fdl;
 
-		DEBUG_ASSIGN(PutStr("Removing device node\n"));
-		dl = LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+			DEBUG_ASSIGN(PutStr("Removing device node\n"));
+			dl = LockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
 
-		fdl = FindDosEntry(dl, name, LDF_VOLUMES | LDF_DEVICES);
+			fdl = FindDosEntry(dl, name, LDF_VOLUMES | LDF_DEVICES);
 
-		/* Note the ! for conversion to boolean value */
-		if (fdl)
-			success = RemDosEntry(fdl);
+			/* Note the ! for conversion to boolean value */
+			if (fdl)
+			{
+				success = RemDosEntry(fdl);
+				if (success)
+					FreeDosEntry(fdl);
+				else
+					ioerr = ERROR_OBJECT_IN_USE;
+			} else
+				ioerr = ERROR_OBJECT_NOT_FOUND;
 
-		UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+			UnLockDosList(LDF_VOLUMES | LDF_DEVICES | LDF_WRITE);
+		}
         }
         else
         {

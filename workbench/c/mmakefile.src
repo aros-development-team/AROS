@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 FILES := \
     AddBuffers \
     AddDatatypes \
-    Assign \
     Avail \
     Beep \
     Break \
@@ -60,16 +59,24 @@ FILES := \
     WaitForPort \
     Which
 
+PURE_FILES := \
+    Assign
+
 USER_CFLAGS     := -I$(TOP)/rom/dos
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs contrib-cdvdfs-checkcd
+#MM workbench-c : includes linklibs workbench-c-pure contrib-cdvdfs-checkcd
+#MM workbench-c-quick : workbench-c-pure-quick
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
     uselibs="arossupport amiga arosc m"
+
+%build_progs mmake=workbench-c-pure \
+    files=$(PURE_FILES) targetdir=$(AROS_C) \
+    uselibs="arossupport amiga arosc m" usestartup=no
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...
