@@ -292,14 +292,14 @@ const STRPTR __spanish_strings[] =
     "ene", "feb", "mar", "abr", "may", "jun",
     "jul", "ago", "sep", "oct", "nov", "dic",
 
-    "Si", /* Yes, affirmative response */
+    "Sí", /* Yes, affirmative response */
     "No", /* No/negative response */
 
     /* AM/PM strings AM 0000 -> 1159, PM 1200 -> 2359 */
     "AM", "PM",
 
     /* Soft and hard hyphens */
-    "-", "-",
+    "\xAD", "-",
 
     /* Open and close quotes */
     "\"", "\"",
