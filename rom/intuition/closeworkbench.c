@@ -113,7 +113,7 @@ AROS_LH0(LONG, CloseWorkBench,
     if( wbscreen != NULL )
     {
         DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: CloseScreen\n"));
-        if( CloseScreen( wbscreen ) == TRUE )
+        if (CloseScreen(wbscreen))
         {
             DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: CloseScreen worked\n"));
             GetPrivIBase(IntuitionBase)->WorkBench = NULL;
@@ -144,7 +144,7 @@ AROS_LH0(LONG, CloseWorkBench,
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: wbscreen 0x%lx retval %ld\n",
                                  (ULONG) wbscreen,
                                  (ULONG) retval));
-    if (wbscreen && (retval == FALSE))
+    if (wbscreen && !retval)
     {
         /* Don't call this function while pub screen list is locked! */
         DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: Tell WB to reopen windows\n"));

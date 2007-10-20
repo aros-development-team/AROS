@@ -78,7 +78,7 @@ AROS_LH1(void, BeginRefresh,
     if (IW(window)->specialflags & SPFLAG_WANTBUFFER) mode = DOUBLEBUFFER;
 
     /* I don't think I ever have to update the BorderRPort's layer */
-    if (FALSE == BeginUpdate(WLAYER(window)))
+    if (!BeginUpdate(WLAYER(window)))
     {
         EndUpdate(WLAYER(window), FALSE);
 

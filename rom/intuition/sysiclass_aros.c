@@ -174,7 +174,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
         	/* private tags */
 
             case SYSIA_WithBorder:
-        	if (tag->ti_Data == FALSE)
+        	if (!tag->ti_Data)
         	{
                     data->flags |= SYSIFLG_NOBORDER;
         	}
