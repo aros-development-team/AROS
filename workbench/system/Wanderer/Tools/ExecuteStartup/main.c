@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Executes programs in sys:WBStartup
@@ -56,9 +56,10 @@ struct InfoNode
     BOOL donotwait;
 };
 
-const TEXT version_string[] = "$VER: ExecuteStartup 0.2 (29.1.2006)";
+const TEXT version_string[] = "$VER: ExecuteStartup 0.2 (20.10.2007) © AROS Dev Team";
 
 static TEXT fileNameBuffer[MAXFILENAMELENGTH];
+static APTR poolmem;
 
 static BOOL checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait);
 static BOOL searchInfo(struct List *infoList);
@@ -88,7 +89,7 @@ checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait)
 	return FALSE;
     }
 
-    if (dobj->do_Type == WBTOOL)
+    if ((dobj->do_Type == WBTOOL) || (dobj->do_Type == WBPROJECT))
     {
 	const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
 	STRPTR s;
@@ -118,7 +119,7 @@ searchInfo(struct List *infoList)
 {
     BOOL retvalue = TRUE;
     LONG error;
-    struct AnchorPath *ap = AllocVec(sizeof(struct AnchorPath), MEMF_ANY | MEMF_CLEAR);
+    struct AnchorPath *ap = AllocPooled(poolmem, sizeof(struct AnchorPath));
     if (ap)
     {
 	error = MatchFirst(STARTUPDIR "?#?.info", ap);
@@ -133,7 +134,7 @@ searchInfo(struct List *infoList)
 	    BOOL notwait;
 	    if (checkIcon(fileNameBuffer, &pri, &time, &notwait))
 	    {
-		struct InfoNode *newnode = AllocVec(sizeof (*newnode), MEMF_ANY | MEMF_CLEAR);
+		struct InfoNode *newnode = AllocPooled(poolmem, sizeof (*newnode));
 		if (newnode == NULL)
 		{
 		    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
@@ -142,7 +143,7 @@ searchInfo(struct List *infoList)
 		    retvalue = FALSE;
 		    goto exit;
 		}
-		newnode->node.ln_Name = AllocVec(strlen(fileNameBuffer) + 1, MEMF_ANY);
+		newnode->node.ln_Name = AllocPooled(poolmem, strlen(fileNameBuffer) + 1);
 		if (newnode->node.ln_Name == NULL)
 		{
 		    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
@@ -178,7 +179,6 @@ searchInfo(struct List *infoList)
 	retvalue = FALSE;
     }
 exit:
-    FreeVec(ap);
     return retvalue;
 }
 
@@ -214,7 +214,7 @@ executeWBStartup(void)
     BPTR startupdir = 0;
 
     struct FileInfoBlock *fib = AllocDosObjectTags(DOS_FIB, TAG_END);
-    
+    poolmem = CreatePool(MEMF_ANY | MEMF_CLEAR, sizeof(struct InfoNode) * 10, sizeof(struct InfoNode) * 5);
  
     while (TRUE) /*Cicle loop to avoid the use of goto; It uses now break instruction;*/
     {
@@ -222,6 +222,14 @@ executeWBStartup(void)
         {
 	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
 	       "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
+	   EasyRequest(0, &es, 0);
+	   break;
+        }
+
+        if (poolmem == NULL)
+        {
+	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+		"Error", "ExecuteStartup\nCouldn't create pool memory", "OK"};
 	   EasyRequest(0, &es, 0);
 	   break;
         }
@@ -263,14 +271,7 @@ executeWBStartup(void)
     if (startupdir) UnLock(startupdir);
     if (olddir != (BPTR)-1) CurrentDir(olddir);
     if (fib) FreeDosObject(DOS_FIB, fib);
-
-    struct Node *node;
-    while ((node = GetHead(&infoList)))
-    {
-	FreeVec(node->ln_Name);
-	Remove(node);
-	FreeVec(node);
-    }
+    if (poolmem) DeletePool(poolmem);
 
     return retvalue;
 }
