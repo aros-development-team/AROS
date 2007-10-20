@@ -124,13 +124,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem           *tagState = tags;
-    struct TagItem           *tag;
+    const struct TagItem           *tagState = tags;
+    const struct TagItem           *tag;
 
     struct AppWindowDropZone *dropZone;
 
-    dropZone = AllocVec(sizeof(struct AppWindowDropZone),
-			MEMF_ANY | MEMF_CLEAR);
+    dropZone = AllocVec(sizeof(struct AppWindowDropZone), MEMF_CLEAR);
 
     if (dropZone == NULL)
     {
