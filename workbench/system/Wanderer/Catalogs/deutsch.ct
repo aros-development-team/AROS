@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.1 (9.2.2006)
+## version $VER: wanderer.catalog 1.2 (20.10.2007)
 ## language deutsch
 ## codeset 0
 ;
@@ -45,7 +45,7 @@ B
 ;
 MSG_MEN_EXECUTE
 Befehl ausführen ...
-; Execute ...
+; Execute...
 ;
 MSG_MEN_SC_EXECUTE
 E
@@ -53,7 +53,7 @@ E
 ;
 MSG_MEN_SHELL
 Shell öffnen
-; Shell ...
+; Shell...
 ;
 MSG_MEN_SC_SHELL
 W
@@ -61,11 +61,11 @@ W
 ;
 MSG_MEN_GUISET
 Benutzeroberfläche einstellen ...
-; GUI Settings ...
+; GUI Settings...
 ;
 MSG_MEN_ABOUT
 Über
-; About ...
+; About...
 ;
 MSG_MEN_SC_ABOUT
 ?
@@ -73,7 +73,7 @@ MSG_MEN_SC_ABOUT
 ;
 MSG_MEN_QUIT
 Wanderer beenden ...
-; Quit ...
+; Quit...
 ;
 MSG_MEN_SC_QUIT
 Q
@@ -85,7 +85,7 @@ Fenster
 ;
 MSG_MEN_NEWDRAW
 Neue Schublade anlegen ...
-; New Drawer ...
+; New Drawer...
 ;
 MSG_MEN_SC_NEWDRAW
 N
@@ -193,6 +193,7 @@ O
 ;
 MSG_MEN_RENAME
 Umbenennen ...
+; Rename...
 ;
 MSG_MEN_SC_RENAME
 R
@@ -200,7 +201,7 @@ R
 ;
 MSG_MEN_INFO
 Informationen anzeigen ...
-; Information ...
+; Information...
 ;
 MSG_MEN_SC_INFO
 I
@@ -208,7 +209,7 @@ I
 ;
 MSG_MEN_DELETE
 Löschen ...
-; Delete ...
+; Delete...
 ;
 MSG_MEN_TOOLS
 Hilfsmittel
@@ -226,3 +227,8 @@ MSG_DUMMY
 DUMMY
 ; DUMMY
 ; DUMMY :)
+;
+MSG_USERSCREENTITLE
+Wanderer %pc Grafikspeicher %pf sonstiger Speicher
+; Wanderer %pc graphics mem %pf other mem
+;
