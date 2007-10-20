@@ -71,7 +71,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
     AROS_LIBFUNC_INIT
 
     BOOL                  success       = FALSE;
-    SIPTR                 isDefaultIcon = 42;
+    LONG                  isDefaultIcon = 42;
 
     struct DiskObject    *icon          = GetIconTags
     (
@@ -99,7 +99,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     Application to open the corresponding drawer.
                 */
 
-                D(bug("OpenWorkbenchObject: it's a DISK, DRAWER or GARGABE\n"));
+                D(bug("OpenWorkbenchObject: it's a DISK, DRAWER or GARBAGE\n"));
 
                 {
                     struct WBCommandMessage *wbcm     = NULL;
@@ -186,7 +186,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                 break;
 
             case WBPROJECT:
-                /* It's a project; try to launch it via it's default tool. */
+                /* It's a project; try to launch it via its default tool. */
 
                 D(bug("OpenWorkbenchObject: it's a PROJECT\n"));
                 D(bug("OpenWorkbenchObject: default tool: %s\n", icon->do_DefaultTool));
