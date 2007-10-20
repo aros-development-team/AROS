@@ -197,9 +197,8 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     && strlen(icon->do_DefaultTool) > 0
                 )
                 {
-                    BPTR lock = (BPTR)NULL, lock2 = (BPTR)NULL,
-                        parent = (BPTR)NULL, parent2 = (BPTR)NULL;
-                    
+                    BPTR lock = (BPTR)NULL, parent = (BPTR)NULL;
+
                     lock = Lock(name, ACCESS_READ);
                     if (lock != (BPTR)NULL)
                         parent = ParentDir(lock);
@@ -307,8 +306,8 @@ STRPTR __CLI_BuildCommandLine
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    struct TagItem *tstate   = tags;
-    struct TagItem *tag      = NULL;
+    const struct TagItem *tstate   = tags;
+    const struct TagItem *tag      = NULL;
     BPTR            lastLock = NULL;
     STRPTR          buffer   = NULL;
     ULONG           length   = strlen(command) + 3 /* NULL + 2 '"' */;
@@ -454,7 +453,7 @@ BOOL __WB_BuildArguments
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    struct TagItem *tstate   = tags,
+    const struct TagItem *tstate   = tags,
                    *tag      = NULL;
     BPTR            lastLock = NULL;
     struct WBArg   *args     = NULL;

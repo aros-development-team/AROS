@@ -84,12 +84,12 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem     *tagState = taglist;
-    struct TagItem     *tag;
+    const struct TagItem     *tagState = taglist;
+    const struct TagItem     *tag;
 
     struct AppMenuItem *appMenuItem;
 
-    appMenuItem = AllocVec(sizeof(struct AppMenuItem), MEMF_ANY | MEMF_CLEAR);
+    appMenuItem = AllocVec(sizeof(struct AppMenuItem), MEMF_CLEAR);
 
     if (appMenuItem == NULL)
     {

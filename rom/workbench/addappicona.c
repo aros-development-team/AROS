@@ -207,8 +207,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tagState = taglist;
-    struct TagItem *tag;
+    const struct TagItem *tagState = taglist;
+    const struct TagItem *tag;
     struct AppIcon *appIcon;
 
     if (diskobj == NULL || msgport == NULL ||
@@ -235,84 +235,84 @@
         switch (tag->ti_Tag)
 	{
 	case WBAPPICONA_SupportsOpen:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsOpen;
 	    }
 	    break;
 
 	case WBAPPICONA_SupportsCopy:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsCopy;
 	    }
 	    break;
 
 	case WBAPPICONA_SupportsRename:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsRename;
 	    }
 	    break;
 
 	case WBAPPICONA_SupportsInformation:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsInformation;
 	    }
 	    break;
 
 	case WBAPPICONA_SupportsSnapshot:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsSnapshot;
 	    }
 	    break;
 
 	case WBAPPICONA_SupportsUnSnapshot:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsUnSnapshot;
 	    }
 	    break;
 	    
 	case WBAPPICONA_SupportsLeaveOut:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsLeaveOut;
 	    }
 	    break;
 	    
 	case WBAPPICONA_SupportsPutAway:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsPutAway;
 	    }
 	    break;
 
 	case WBAPPICONA_SupportsDelete:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsDelete;
 	    }
 	    break;
 	    
 	case WBAPPICONA_SupportsFormatDisk:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsFormatDisk;
 	    }
 	    break;
 	    
 	case WBAPPICONA_SupportsEmptyTrash:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_SupportsEmptyTrash;
 	    }
 	    break;
 	    
 	case WBAPPICONA_PropagatePosition:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_PropagatePosition;
 	    }
@@ -326,7 +326,7 @@
 	    break;
 	    
 	case WBAPPICONA_NotifySelectState:
-	    if (tag->ti_Data == TRUE)
+	    if (tag->ti_Data)
 	    {
 		appIcon->ai_Flags |= WBAPPICONF_NotifySelectState;
 	    }
