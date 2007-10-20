@@ -54,7 +54,7 @@ AROS_LH2(void, EndRefresh,
     AROS_ATOMIC_AND(window->Flags, ~WFLG_WINDOWREFRESH);
 
     /* I reset this one only if Complete is TRUE!?! */
-    if (TRUE == complete)
+    if (complete)
         WLAYER(window)->Flags &= ~LAYERREFRESH;
 
     /* Unlock the layers. */

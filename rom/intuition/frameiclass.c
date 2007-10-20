@@ -93,7 +93,7 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
     Draw(rport, left + width, top + height);
     Draw(rport, left + 1, top + height);
 
-    if (thicken != FALSE)
+    if (thicken)
     {
         if (FRAME_SIZE == 1)
         {
@@ -145,11 +145,11 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
         switch(tag->ti_Tag)
         {
             case IA_Recessed:
-        	fid->fid_Recessed   = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
+        	fid->fid_Recessed   = (BOOL)( tag->ti_Data ? TRUE : FALSE );
         	break;
 
             case IA_EdgesOnly:
-        	fid->fid_EdgesOnly  = (BOOL)( ( tag->ti_Data != FALSE ) ? TRUE : FALSE );
+        	fid->fid_EdgesOnly  = (BOOL)( tag->ti_Data ? TRUE : FALSE );
         	break;
 
             case IA_FrameType:
@@ -288,9 +288,9 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
             I'm so clever :) We want to check if either of selected or
             recessed is TRUE, and if so, swap the pens. However, if both
             are true, they effectivly cancel each other out and we do
-            nothing. Rather than two compares against TRUE and a OR of the
-            results, pls the additional check to ignore the case where both
-            are TRUE, we will do an XOR of the bool's and check the result.
+            nothing. Rather than two compares against TRUE and an OR of the
+            results, plus the additional check to ignore the case where both
+            are TRUE, we will do an XOR of the bools and check the result.
             This should prove most efficient too.
 
 
@@ -306,7 +306,7 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
             ------|------|-------
         */
 
-        if ( (fid->fid_Recessed ^ selected) != FALSE )
+        if ( (fid->fid_Recessed ^ selected) != 0 )
         {
             /* swap pens */
             UWORD tmp;
@@ -358,7 +358,7 @@ static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, W
 
         } /* switch */
 
-        if(fid->fid_EdgesOnly == FALSE)
+        if(!fid->fid_EdgesOnly)
         {
             if(selected)
             {

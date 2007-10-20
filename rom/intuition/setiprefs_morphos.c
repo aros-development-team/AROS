@@ -174,7 +174,7 @@ AROS_LH3(ULONG, SetIPrefs,
             }
 
 
-            if ((RecalcID == TRUE) && (CyberGfxBase = OpenLibrary("cybergraphics.library",40)))
+            if (RecalcID && (CyberGfxBase = OpenLibrary("cybergraphics.library",40)))
             {
                 //ULONG ID;
 
