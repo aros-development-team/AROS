@@ -407,6 +407,17 @@ ignore_undefined_symbols=""
 
 #-----------------------------------------------------------------------------
 
+AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -fno-stack-protector"
+AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
+AC_MSG_RESULT($use_no_stack_protector)
+if test "x-$use_no_stack_protector" = "x-yes" ; then
+    aros_config_cflags="$aros_config_cflags -fno-stack-protector"
+fi
+
+#-----------------------------------------------------------------------------
+
 AC_MSG_CHECKING([for type of build])
 AC_ARG_ENABLE(build_type,AC_HELP_STRING([--enable-build-type=TYPE],[Select the build type. Available types are: personal, nightly, snapshot, milestone, release. Do NOT use this option unless you know what you are doing! (default=personal)]),build_type=$enableval,build_type="personal")
 
