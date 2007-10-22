@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Lietuva (Lithuania).
@@ -20,7 +20,7 @@ struct CountryPrefs lietuvaPrefs =
     { 0, 0, 0, 0 },
 
     /* Country code (licence plate number), telephone code, measuring system */
-    MAKE_ID('I','R','L',0), 370, MS_ISO,
+    MAKE_ID('L','T',0,0), 370, MS_ISO,
 
     /* Date time format, date format, time format */
     "%A %e %B %Y  %H:%M",
@@ -55,7 +55,7 @@ struct CountryPrefs lietuvaPrefs =
     2, 2,
 
     /* Currency symbol, Small currency symbol */
-    "Lt", "",
+    "Lt", "Centas",
 
     /* Int CS, this is the ISO 4217 symbol, followed by the character to
        separate that symbol from the rest of the money. (\x00 for none).
