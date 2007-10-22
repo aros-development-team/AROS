@@ -51,7 +51,7 @@
 
 ******************************************************************************/
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -70,7 +70,7 @@
 #define DEFWAIT   (2 * 50) // two seconds
 #define DEFUSHELL (TRUE)
 
-static const char version[] = "\0$VER: IconX 1.1 (24.03..2007) © by The AROS Development Team";
+static const char version[] = "\0$VER: IconX 1.1 (24.03.2007) © by The AROS Development Team";
 int __forceerrorrequester = 1;
 static TEXT errbuffer[255];
 
