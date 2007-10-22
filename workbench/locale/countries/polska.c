@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Poland
@@ -26,7 +26,7 @@ struct CountryPrefs polskaPrefs =
     */
 
     /* Country code (left justify), telephone code, measuring system */
-    MAKE_ID('P','O','L',0), 49, MS_ISO,
+    MAKE_ID('P','L',0,0), 48, MS_ISO,
 
     /* Date time format, date format, time format */
     "%A %e. %B %Y %q:%M",
@@ -61,12 +61,12 @@ struct CountryPrefs polskaPrefs =
     2, 2,
 
     /* Currency symbol, Small currency symbol */
-    "Z³", "Gr",
+    "z\263", "gr",
 
     /* Int CS, this is the ISO 4217 symbol, followed by the character to
        separate that symbol from the rest of the money. (\x00 for none).
     */
-    "PLZ",
+    "PLN",
 
     /* Mon +ve sign, +ve space sep, +ve sign pos, +ve cs pos */
     "", SS_NOSPACE, SP_PREC_ALL, CSP_SUCCEEDS,
