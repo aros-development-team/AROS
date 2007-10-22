@@ -199,7 +199,7 @@ struct ArgList
 };
 
 #ifdef __AROS__
-AROS_UFH3(__used static int, Start,
+AROS_UFH3(__startup static int, Start,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
 	  AROS_UFHA(struct ExecBase *, sBase, A6))
