@@ -7883,6 +7883,7 @@ echo "${ECHO_T}$use_no_stack_protector" >&6; }
 if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_config_cflags="$aros_config_cflags -fno-stack-protector"
 fi
+CFLAGS="$save_cflags"
 
 #-----------------------------------------------------------------------------
 
