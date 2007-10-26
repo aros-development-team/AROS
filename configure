@@ -758,6 +758,7 @@ aros_target_cc
 aros_target_as
 aros_target_ld
 aros_target_cc_includes
+aros_target_cc_options
 aros_target_cc_path
 aros_target_objdump
 aros_target_objcopy
@@ -3897,6 +3898,7 @@ case "$aros_host_cc" in
 esac
 
 aros_target_cc_includes=""
+aros_target_cc_options=""
 
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
@@ -7881,7 +7883,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 { echo "$as_me:$LINENO: result: $use_no_stack_protector" >&5
 echo "${ECHO_T}$use_no_stack_protector" >&6; }
 if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_config_cflags="$aros_config_cflags -fno-stack-protector"
+    aros_target_cc_options="-fno-stack-protector"
 fi
 CFLAGS="$save_cflags"
 
@@ -11208,6 +11210,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Graphics Related
 
 
@@ -12156,6 +12159,7 @@ aros_target_cc!$aros_target_cc$ac_delim
 aros_target_as!$aros_target_as$ac_delim
 aros_target_ld!$aros_target_ld$ac_delim
 aros_target_cc_includes!$aros_target_cc_includes$ac_delim
+aros_target_cc_options!$aros_target_cc_options$ac_delim
 aros_target_cc_path!$aros_target_cc_path$ac_delim
 aros_target_objdump!$aros_target_objdump$ac_delim
 aros_target_objcopy!$aros_target_objcopy$ac_delim
@@ -12204,7 +12208,6 @@ aros_stack_debug!$aros_stack_debug$ac_delim
 aros_modules_debug!$aros_modules_debug$ac_delim
 ignore_undefined_symbols!$ignore_undefined_symbols$ac_delim
 gcc_target_cpu!$gcc_target_cpu$ac_delim
-LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12239,6 +12242,50 @@ N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
 ' >>$CONFIG_STATUS <conf$$subs.sed
 rm -f conf$$subs.sed
 cat >>$CONFIG_STATUS <<_ACEOF
+CEOF$ac_eof
+_ACEOF
+
+
+ac_delim='%!_!# '
+for ac_last_try in false false false false false :; do
+  cat >conf$$subs.sed <<_ACEOF
+LTLIBOBJS!$LTLIBOBJS$ac_delim
+_ACEOF
+
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 1; then
+    break
+  elif $ac_last_try; then
+    { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
+echo "$as_me: error: could not make $CONFIG_STATUS" >&2;}
+   { (exit 1); exit 1; }; }
+  else
+    ac_delim="$ac_delim!$ac_delim _$ac_delim!! "
+  fi
+done
+
+ac_eof=`sed -n '/^CEOF[0-9]*$/s/CEOF/0/p' conf$$subs.sed`
+if test -n "$ac_eof"; then
+  ac_eof=`echo "$ac_eof" | sort -nru | sed 1q`
+  ac_eof=`expr $ac_eof + 1`
+fi
+
+cat >>$CONFIG_STATUS <<_ACEOF
+cat >"\$tmp/subs-3.sed" <<\CEOF$ac_eof
+/@[a-zA-Z_][a-zA-Z_0-9]*@/!b end
+_ACEOF
+sed '
+s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g
+s/^/s,@/; s/!/@,|#_!!_#|/
+:n
+t n
+s/'"$ac_delim"'$/,g/; t
+s/$/\\/; p
+N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
+' >>$CONFIG_STATUS <conf$$subs.sed
+rm -f conf$$subs.sed
+cat >>$CONFIG_STATUS <<_ACEOF
+:end
+s/|#_!!_#|//g
 CEOF$ac_eof
 _ACEOF
 
@@ -12481,7 +12528,7 @@ s&@builddir@&$ac_builddir&;t t
 s&@abs_builddir@&$ac_abs_builddir&;t t
 s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 $ac_datarootdir_hack
-" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed 's/|#_!!_#|//g' >$tmp/out
+" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed -f "$tmp/subs-3.sed" >$tmp/out
 
 test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
   { ac_out=`sed -n '/\${datarootdir}/p' "$tmp/out"`; test -n "$ac_out"; } &&

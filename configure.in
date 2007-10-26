@@ -113,6 +113,7 @@ esac
 
 dnl Despite the name, this is really a host configuration variable.
 aros_target_cc_includes=""
+aros_target_cc_options=""
 
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
@@ -413,7 +414,7 @@ CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
 AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_config_cflags="$aros_config_cflags -fno-stack-protector"
+    aros_target_cc_options="-fno-stack-protector"
 fi
 CFLAGS="$save_cflags"
 
@@ -1328,6 +1329,7 @@ AC_SUBST(aros_target_as)
 AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
 AC_SUBST(aros_target_cc_includes)
+AC_SUBST(aros_target_cc_options)
 AC_SUBST(aros_target_cc_path)
 AC_SUBST(aros_target_objdump)
 AC_SUBST(aros_target_objcopy)
