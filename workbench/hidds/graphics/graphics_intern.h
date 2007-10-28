@@ -293,7 +293,6 @@ struct HIDDGCData
 
 struct class_static_data
 {
-    struct ExecBase      * sysbase;
     struct Library       * utilitybase;
  
     OOP_AttrBase    	 hiddPixFmtAttrBase;

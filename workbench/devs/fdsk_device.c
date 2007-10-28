@@ -386,12 +386,6 @@ AROS_UFH2(void, putchr,
 
 /****************************************************************************************/
 
-#ifdef SysBase
-#undef SysBase
-#endif
-
-/****************************************************************************************/
-
 AROS_UFH3(LONG, unitentry,
  AROS_UFHA(STRPTR, argstr, A0),
  AROS_UFHA(ULONG, arglen, D0),
