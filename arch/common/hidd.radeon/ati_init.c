@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -249,8 +249,6 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
             InitSemaphore(&LIBBASE->sd.HWLock);
             InitSemaphore(&LIBBASE->sd.MultiBMLock);
         
-            LIBBASE->sd.sysbase = LIBBASE->sysbase;
-    
             if ((LIBBASE->sd.PCIObject = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)))
             {
                 struct Hook FindHook = {

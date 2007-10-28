@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ATI radeon driver. BIOS part.
@@ -36,7 +36,6 @@
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
-#define SysBase         (sd->sysbase)
 #define HiddPCIDeviceAttrBase   (sd->pciAttrBase)
 #define HiddATIBitMapAttrBase   (sd->atiBitMapAttrBase)
 #define HiddBitMapAttrBase  (sd->bitMapAttrBase)
