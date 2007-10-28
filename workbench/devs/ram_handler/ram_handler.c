@@ -2055,7 +2055,7 @@ void processFSM(struct rambase *rambase)
 		struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 		
 		D(kprintf("Adding notification for entity (nr = %s)\n",
-			  nr->nr_Name));
+			  nr->nr_FullName));
 		
 		ok = Notify_addNotification(rambase, fh->node, nr);
 
@@ -2382,16 +2382,11 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 {
     struct dnode *dnTemp = dn;
     HashTable *ht = rambase->notifications;
-    STRPTR  name = nr->nr_FullName;
-    STRPTR  colon;
+    STRPTR  name = nr->nr_FullName, colon;
 
     colon = strchr(name, ':');
-   
-    /* Take care of absolute names in nr_Name */
     if (colon != NULL)
-    {
 	name = colon + 1;
-    }
 
     /* First: Check if the file is opened */
 
@@ -2441,7 +2436,7 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 	
 	rr->nr = nr;
 
-	HashTable_insert(rambase, ht, nr->nr_FullName, rr);
+	HashTable_insert(rambase, ht, name, rr);
 
 	return TRUE;
     }
