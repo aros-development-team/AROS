@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2007, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -46,18 +46,12 @@
 struct CoolImagesBase_intern
 {
     struct Library		library;
-    struct ExecBase		*sysbase;
-    BPTR			seglist;
 };
 
 /****************************************************************************************/
 
 #undef CIB
 #define CIB(b)	((struct CoolImagesBase_intern *)(b))
-
-#undef SysBase
-#define SysBase     	(CIB(CoolImagesBase)->sysbase)
-
 
 /****************************************************************************************/
 

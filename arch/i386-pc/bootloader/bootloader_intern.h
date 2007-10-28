@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal data structures for bootloader.resource
@@ -25,7 +25,6 @@
 struct BootLoaderBase
 {
     struct Node		 bl_Node;
-    struct ExecBase	*bl_SysBase;
     ULONG		 Flags;
     STRPTR		 LdrName;
     struct List		 Args;

@@ -2,7 +2,7 @@
 #define  CLIPBOARD_INTERN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,10 +18,8 @@
 struct ClipboardBase
 {
     struct Device      cb_device;
-    struct ExecBase   *cb_sysBase;
     struct Library    *cb_DosBase;
     struct Library    *cb_UtilityBase;
-    BPTR               cb_seglist;
     
     struct SignalSemaphore  cb_SignalSemaphore;
     struct MinList          cb_UnitList;
@@ -61,11 +59,6 @@ struct ClipboardUnit
     struct SignalSemaphore  cu_UnitLock;
 
 };
-
-#ifdef SysBase
-#undef SysBase
-#endif
-#define SysBase CBBase->cb_sysBase
 
 #ifdef DOSBase
 #undef DOSBase

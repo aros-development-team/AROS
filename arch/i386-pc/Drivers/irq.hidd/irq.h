@@ -2,7 +2,7 @@
 #define _HIDD_IRQ_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the irq system HIDD.
@@ -46,8 +46,6 @@ struct irq_staticdata
 struct irqbase
 {
     struct Library          library;
-    struct ExecBase         *sysbase;
-    BPTR                    seglist;
     struct irq_staticdata   isd;
 };
 

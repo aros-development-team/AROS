@@ -2,7 +2,7 @@
 #define PIPEFS_HANDLER_GCC_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,16 +14,10 @@
 struct pipefsbase
 {
     struct Device      device;
-    struct ExecBase   *sysbase;
     struct DosLibrary *dosbase;
     struct Process    *proc;
-    BPTR               seglist;
 };
 
-#ifdef SysBase
-    #undef SysBase
-#endif
-#define SysBase pipefsbase->sysbase
 #ifdef DOSBase
     #undef DOSBase
 #endif

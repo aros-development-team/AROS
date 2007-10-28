@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -71,8 +71,6 @@ struct mouse_staticdata
 struct mousebase
 {
     struct Library library;
-    struct ExecBase *sysbase;
-    BPTR   seglist;
     
     struct mouse_staticdata msd;
 };

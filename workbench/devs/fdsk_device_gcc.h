@@ -2,7 +2,7 @@
 #define FDSK_DEVICE_GCC_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,8 +16,6 @@
 struct fdskbase
 {
     struct Device 		device;
-    struct ExecBase 		*sysbase;
-    APTR 			seglist;
     struct SignalSemaphore 	sigsem;
     struct MsgPort 		port;
     struct MinList 		units;

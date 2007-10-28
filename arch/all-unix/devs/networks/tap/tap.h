@@ -119,9 +119,6 @@ struct tap_unit {
 struct tap_base {
     struct Device               tap_device;
 
-    struct ExecBase             *sysbase;
-    BPTR                        seglist;
-
     struct tap_unit             unit[MAX_TAP_UNITS];
 };
 

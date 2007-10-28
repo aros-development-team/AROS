@@ -2,7 +2,7 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved
     $Id$
 
     Desc: ata.device main private include file
@@ -61,7 +61,6 @@ struct PRDEntry {
 /* ata.device base */
 struct ataBase {
     struct Device	    ata_Device;
-    struct ExecBase	    *ata_SysBase;
     
     struct Task		    *ata_Daemon;
     struct ata_Bus	    *ata_Buses[MAX_BUS];

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __MATHIEEEDOUBBAS_INTERN_H__
@@ -40,20 +40,11 @@
     Library, and use the mathieeedoubbas.library functions to get information.
 */
 
-extern struct ExecBase * SysBase;
-
 struct MathIeeeDoubBasBase
 {
     struct Library     library;
-    struct ExecBase  * sysbase;
     BPTR               seglist;
 };
-
-/*
-#define MSTB(mstb) ((struct MathIeeeDoubBasBase*)mstb)
-#undef  SysBase
-#define SysBase (MSTB(MathIeeeDoubBasBase) -> sysbase)
-*/
 
 
 #define Zero_Bit     0x00000004  /* Flags of the 680xx CPU */

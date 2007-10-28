@@ -1,7 +1,7 @@
 #ifndef PARALLEL_INTERN_H
 #define PARALLEL_INTERN_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private definitions for Parallel device.
@@ -52,9 +52,6 @@ struct ParallelUnit * findUnit(struct parallelbase * ParallelDevice,
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
 ULONG WBE_InterruptHandler(ULONG unitum, APTR userdata);
 
-extern struct ExecBase * SysBase;
-
-
 
 
 #define MINBUFSIZE 512
@@ -62,8 +59,6 @@ extern struct ExecBase * SysBase;
 struct parallelbase
 {
     struct Device      device;
-    struct ExecBase *  sysBase;
-    BPTR               seglist;
     
     struct List        UnitList;
     ULONG              Status;

@@ -2,7 +2,7 @@
 #define HIDD_VMWAREGFXCLASS_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VMWareGfx useful data.
@@ -36,8 +36,6 @@ struct VMWareGfx_staticdata {
 struct VMWareGfxBase
 {
     struct Library library;
-    struct ExecBase *sysBase;
-    BPTR	SegList;
     
     struct VMWareGfx_staticdata vsd;    
 };

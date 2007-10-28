@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix filedescriptor/socket IO include file
@@ -37,7 +37,6 @@ struct uio_data
 struct unixio_base
 {
     struct Library		  uio_lib;
-    struct ExecBase		* uio_SysBase;
     BPTR			  uio_SegList;
     
     OOP_Class			* uio_unixioclass;

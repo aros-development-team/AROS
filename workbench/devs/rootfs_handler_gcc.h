@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Header file for a virtual filesystem that emulates the unixish root dir
@@ -17,10 +17,6 @@
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct rootfsbase *, rootfsbase, 3, rootfs_handler)
 
-#ifdef SysBase
-    #undef SysBase
-#endif
-#define SysBase rootfsbase->sysbase
 #ifdef DOSBase
     #undef DOSBase
 #endif

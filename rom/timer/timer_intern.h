@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
@@ -46,9 +46,6 @@ struct TimerBase
 {
     /* Required by the system */
     struct Device	 tb_Device;
-    struct ExecBase	*tb_SysBase;
-//    struct Library	*tb_BOOPSIBase;
-    BPTR		 tb_SegList;
 
     struct IClass	*tb_TimerHIDD;
     ULONG		 tb_MiscFlags;		/* miscellaneous flags */

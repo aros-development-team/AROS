@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -153,7 +153,6 @@ struct x11_staticdata
     */
     struct MsgPort  	    *x11task_notify_port;
     struct MsgPort  	    *x11task_quit_port;
-    struct ExecBase 	    *sysbase;
     
     Display 	    	    *display;
     BOOL    	    	     local_display;
@@ -220,7 +219,6 @@ struct x11_staticdata
 struct x11clbase
 {
     struct Library        library;
-    BPTR	          seglist;
     
     struct x11_staticdata xsd;
 };

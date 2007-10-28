@@ -2,7 +2,7 @@
 #define _ATI_H
 
 /*
-    Copyright Â© 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -82,8 +82,6 @@ typedef struct __bm {
 } atiBitMap;
 
 struct ati_staticdata {
-    struct ExecBase         *sysbase;
-
     struct SignalSemaphore  HWLock;     /* Hardware exclusive semaphore */
     struct SignalSemaphore  MultiBMLock;    /* To lock more than one bitmap at a time */
 
@@ -140,8 +138,6 @@ struct ati_staticdata {
 
 struct atibase {
     struct Library          LibNode;
-    struct ExecBase         *sysbase;
-    BPTR                    seglist;
     struct ati_staticdata   sd;
 };
 

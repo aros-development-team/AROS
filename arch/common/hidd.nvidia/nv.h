@@ -1,7 +1,7 @@
 #ifndef _NV_H
 #define _NV_H
 /*
-    Copyright © 2004-6, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: private header file
@@ -286,9 +286,7 @@ struct planarbm_data
 
 LIBBASETYPE {
     struct Library	LibNode;
-    struct ExecBase	*sysbase;
-    BPTR		segList;
-    APTR		memPool;    
+    APTR		memPool;
     struct staticdata	sd;
     struct MemHeader	mh;
 };

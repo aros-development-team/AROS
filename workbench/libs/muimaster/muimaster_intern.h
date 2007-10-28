@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -52,11 +52,12 @@
 struct MUIMasterBase_intern
 {
     struct Library		library;
+#ifndef __AROS__
+    /* On AROS these fields are handled by the system */
     struct ExecBase		*sysbase;
     BPTR			seglist;
 
     /* On AROS autoopened libraries are used */
-#ifndef __AROS__
     struct DosLibrary  	    	*dosbase;
     struct UtilityBase		*utilitybase;
     struct Library  	    	*aslbase;

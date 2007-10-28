@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -85,8 +85,6 @@ struct HIDDSerialUnitData
 struct IntHIDDSerialBase
 {
     struct Library            hdg_LibNode;
-    BPTR                      hdg_SegList;
-    struct ExecBase          *hdg_SysBase;
 
     struct class_static_data  hdg_csd;
 };
