@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal defs for trackdisk
@@ -58,7 +58,6 @@ struct TDU
 struct TrackDiskBase
 {
     struct Device           	td_device;
-    struct ExecBase         	*sysbase;		/* Useless for native but... */
     struct TaskData		*td_TaskData;
     struct TDU			*td_Units[TD_NUMUNITS];
     struct timerequest  	*td_TimerIO;

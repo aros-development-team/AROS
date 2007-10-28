@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -486,12 +486,6 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     
     return 0;
 }
-
-/****************************************************************************************/
-
-#ifdef SysBase
-#undef SysBase
-#endif
 
 /****************************************************************************************/
 

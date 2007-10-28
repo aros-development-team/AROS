@@ -191,13 +191,9 @@ struct filehandle
 };
 
 /* Use This from now on */
-#ifdef SysBase
-    #undef SysBase
-#endif
 #ifdef DOSBase
     #undef DOSBase
 #endif
-#define SysBase rambase->sysbase
 #define DOSBase rambase->dosbase
 
 static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs);

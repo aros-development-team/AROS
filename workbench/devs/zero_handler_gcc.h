@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ZERO: handler
@@ -16,18 +16,12 @@
 struct zerobase
 {
     struct Device device;
-    struct ExecBase *sysbase;
     struct DosLibrary *dosbase;
-    BPTR seglist;
 };
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct zerobase *, zerobase, 3, zero_handler)
 
-#ifdef SysBase
-    #undef SysBase
-#endif
-#define SysBase zerobase->sysbase
 #ifdef DOSBase
     #undef DOSBase
 #endif

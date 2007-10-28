@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,15 +15,10 @@
 struct nilbase
 {
     struct Device device;
-    struct ExecBase *sysbase;
     struct DosLibrary *dosbase;
     BPTR seglist;
 };
 
-#ifdef SysBase
-    #undef SysBase
-#endif
-#define SysBase nilbase->sysbase
 #ifdef DOSBase
     #undef DOSBase
 #endif

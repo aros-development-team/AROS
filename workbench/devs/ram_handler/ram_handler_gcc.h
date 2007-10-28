@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,7 +20,6 @@ struct vnode;			/* Predeclaration */
 struct rambase
 {
     struct Device device;
-    struct ExecBase *sysbase;
     struct DosLibrary *dosbase;
     struct UtilityBase *utilitybase;
     BPTR seglist;

@@ -2,7 +2,7 @@
 #define HIDD_VESAGFXCLASS_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VesaGfx useful data.
@@ -44,8 +44,6 @@ struct VesaGfx_staticdata
 struct VesaGfxBase
 {
     struct Library library;
-    struct ExecBase *sysBase;
-    BPTR	SegList;
     
     struct VesaGfx_staticdata vsd;
 };

@@ -20,8 +20,6 @@
 #include LC_LIBDEFS_FILE
 
 struct pci_staticdata {
-    BPTR		slist;
-
     OOP_AttrBase	hiddPCIDriverAB;
     OOP_AttrBase	hiddAB;
 
@@ -33,7 +31,6 @@ struct pci_staticdata {
 struct pcibase {
     struct Library	    LibNode;
     struct pci_staticdata   psd;
-    struct ExecBase	    *sysBase;
 };
 
 OOP_Class *init_pcidriverclass(struct pci_staticdata *);

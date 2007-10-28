@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -39,8 +39,6 @@ struct HIDDTapData
 
 struct class_static_data
 {
-    struct ExecBase      * sysbase;
-
     OOP_Class		 *taphiddclass;
     OOP_Class		 *tapunitclass;
 };
@@ -73,8 +71,6 @@ struct HIDDTapUnitData
 struct IntHIDDTapBase
 {
     struct Library            hdg_LibNode;
-    BPTR                      hdg_SegList;
-    struct ExecBase          *hdg_SysBase;
 
     struct class_static_data  hdg_csd;
 };

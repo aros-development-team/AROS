@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -143,8 +143,6 @@ struct kbd_staticdata
 struct kbdbase
 {
     struct Library library;
-    struct ExecBase *sysbase;
-    BPTR	seglist;
     
     struct kbd_staticdata ksd;
 };

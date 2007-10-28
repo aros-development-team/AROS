@@ -2,7 +2,7 @@
 #define LINUX_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux hidd for AROS
@@ -143,8 +143,6 @@ struct linux_staticdata {
 struct linux_base
 {
     struct Library library;
-    struct ExecBase *sysbase;
-    BPTR	seglist;
     struct linux_staticdata lsd;
 };
 

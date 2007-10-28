@@ -39,8 +39,6 @@ typedef struct DevInstData {
 } tDevData;
 
 struct i2c_staticdata {
-    struct ExecBase	        *sysbase;
-    
     struct SignalSemaphore  driver_lock;
     struct MinList          devices;
 
@@ -73,8 +71,6 @@ struct i2c_staticdata {
 
 struct i2cbase {
     struct Library 		    LibNode;
-    struct ExecBase		    *sysbase;
-    BPTR			        seglist;
     APTR			        MemPool;
     struct i2c_staticdata	sd;
 };

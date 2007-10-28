@@ -27,8 +27,6 @@ struct pci_staticdata {
 struct pcibase {
     struct Library	    LibNode;
     struct pci_staticdata   psd;
-    struct ExecBase	    *sysBase;
-    BPTR		    slist;
 };
 
 #define PCI_AddressPort	0x0cf8

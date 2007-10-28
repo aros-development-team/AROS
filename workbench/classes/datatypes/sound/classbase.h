@@ -11,8 +11,10 @@ struct ClassBase
 	/* std library stuff */
 	struct Library			LibNode;
  	UWORD				pad_word;
+#ifndef __AROS__
  	BPTR				LibSegment;
-	struct ExecBase			*cb_SysBase;
+        struct ExecBase			*cb_SysBase;
+#endif
  	struct SignalSemaphore	cb_LibLock;
  	/* library bases */
 #if !defined(__MAXON__) && !defined(__AROS__)

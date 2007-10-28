@@ -1,7 +1,7 @@
 #ifndef SERIAL_INTERN_H
 #define SERIAL_INTERN_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private definitions for Serial device.
@@ -59,8 +59,6 @@ ULONG WBE_InterruptHandler(ULONG unitum, APTR userdata);
 struct serialbase
 {
     struct Device      device;
-    struct ExecBase *  sysBase;
-    BPTR               seglist;
     
     struct List        UnitList;
     ULONG              Status;
@@ -133,11 +131,6 @@ struct SerialUnit
                                        dropped until somebody reads the contents
                                        of the buffer.
                                     */
-
-#ifdef SysBase
-    #undef SysBase
-#endif
-//#define SysBase SerialDevice->sysBase
 
 #ifdef OOPBase
     #undef OOPBase

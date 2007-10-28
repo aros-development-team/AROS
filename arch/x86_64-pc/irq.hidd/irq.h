@@ -29,8 +29,6 @@ struct irq_staticdata
 struct irqbase
 {
     struct Library          library;
-    struct ExecBase         *sysbase;
-    BPTR                    seglist;
     struct irq_staticdata   isd;
 };
 

@@ -2,7 +2,7 @@
 #define HIDD_VGA_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the vga gfx HIDD.
@@ -90,9 +90,7 @@ struct vga_staticdata
 struct vgabase
 {
     struct Library library;
-    struct ExecBase *sysbase;
-    BPTR	seglist;
-    
+
     struct vga_staticdata vsd;
 };
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __MATHIEEEDOUBTRANS_INTERN_H__
@@ -44,7 +44,6 @@
     Library, and use the mathieeedoubtrans.library functions to get information.
 */
 
-extern struct ExecBase * SysBase;
 extern struct Library * MathIeeeDoubBasBase;
 
 struct MathIeeeDoubTransBase
@@ -57,13 +56,6 @@ struct MathIeeeDoubTransBase
 /* Internal prototypes */
 QUAD intern_IEEEDPLd(struct MathIeeeDoubTransBase * MathIeeeDoubTransBase, QUAD fnum);
 LONG intern_IEEEDPisodd(QUAD fnum);
-
-
-/*
-#define MSTB(mstb) ((struct MathIeeeDoubTransBase*)mstb)
-#undef  SysBase
-#define SysBase (MSTB(MathIeeeDoubTransBase) -> sysbase)
-*/
 
 
 #define Zero_Bit     0x00000004  /* Flags of the 680xx CPU */

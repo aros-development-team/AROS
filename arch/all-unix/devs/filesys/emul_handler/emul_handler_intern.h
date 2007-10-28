@@ -1,7 +1,7 @@
 #ifndef __EMUL_HANDLER_INTERN_H
 #define __EMUL_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -27,13 +27,11 @@ struct emulbase
     struct Unit       		* eb_stdin;
     struct Unit       		* eb_stdout;
     struct Unit       		* eb_stderr;
-    struct ExecBase  		* sysbase;
     struct SignalSemaphore 	  sem;
     struct SignalSemaphore	  memsem;
     char    	    	    	* current_volume;
     APTR			  mempool;
     HIDD			  unixio;
-    BPTR 			  seglist;
 };
 
 
