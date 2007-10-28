@@ -602,14 +602,12 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 void TD_DevTask(struct TrackDiskBase *tdb)
 {
     struct TaskData		*td;
-    struct ExecBase		*sysBase;
     struct IOExtTD		*iotd;
     struct TDU			*tdu;
     ULONG			tasig,tisig,sigs,i;
     UBYTE			dir;
 
     td = tdb->td_TaskData;
-    sysBase = tdb->sysbase;
 
     tdb->td_IntBit = AllocSignal(-1);
     tdb->td_TmoBit = AllocSignal(-1);
