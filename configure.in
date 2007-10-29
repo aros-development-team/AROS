@@ -415,7 +415,7 @@ ignore_undefined_symbols=""
 #
 # We use two methods to disable it. For the host compiler (used to compile
 # some hosted modules), we test to see if the compiler supports stack
-# protection, and if it does we disable it in AROS_HOST_CFLAGS. This should
+# protection, and if it does we disable it in AROS_CONFIG_CFLAGS. This should
 # work on all platforms.
 #
 # For the "cross" compiler we clear the "ssp_default" spec in config/specs.in
@@ -433,7 +433,7 @@ CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
 AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_host_cflags="$aros_host_cflags -fno-stack-protector"
+    aros_config_cflags="$aros_config_cflags -fno-stack-protector"
 fi
 CFLAGS="$save_cflags"
 
