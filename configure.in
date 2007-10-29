@@ -113,7 +113,6 @@ esac
 
 dnl Despite the name, this is really a host configuration variable.
 aros_target_cc_includes=""
-aros_target_cc_options=""
 
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
@@ -408,13 +407,33 @@ ignore_undefined_symbols=""
 
 #-----------------------------------------------------------------------------
 
+#
+# GCC 4.1+ has a stack protection feature that requires OS support. Ubuntu has
+# it switched on by default, and we use the host compiler, so it compiles AROS
+# code with this enabled resulting in link failures as we don't have support
+# for it.
+#
+# We use two methods to disable it. For the host compiler (used to compile
+# some hosted modules), we test to see if the compiler supports stack
+# protection, and if it does we disable it in AROS_HOST_CFLAGS. This should
+# work on all platforms.
+#
+# For the "cross" compiler we clear the "ssp_default" spec in config/specs.in
+# (this is done unconditionally, as it should have no effect on compilers
+# without the stack protection feature). This may be specific to the way that
+# Ubuntu enables the feature, so may not work everywhere. My specs-fu isn't
+# strong enough to disable it in a generic way though, so we'll live with it
+# until another vendor ships GCC with it enabled in a different way, and deal
+# with it then.
+#
+
 AC_MSG_CHECKING([whether ${CC} accepts -fno-stack-protector])
 save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
 AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_target_cc_options="-fno-stack-protector"
+    aros_host_cflags="$aros_host_cflags -fno-stack-protector"
 fi
 CFLAGS="$save_cflags"
 
@@ -1329,7 +1348,6 @@ AC_SUBST(aros_target_as)
 AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
 AC_SUBST(aros_target_cc_includes)
-AC_SUBST(aros_target_cc_options)
 AC_SUBST(aros_target_cc_path)
 AC_SUBST(aros_target_objdump)
 AC_SUBST(aros_target_objcopy)
