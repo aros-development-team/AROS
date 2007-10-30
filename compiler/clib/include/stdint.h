@@ -92,6 +92,14 @@ typedef LONG	intmax_t;
 typedef ULONG	uintmax_t;
 #endif
 
+#if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
+
+#define SIG_ATOMIC_MIN  AROS_SIG_ATOMIC_MIN
+#define SIG_ATOMIC_MAX  AROS_SIG_ATOMIC_MAX
+
+#endif
+
+
 /*
         TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 
