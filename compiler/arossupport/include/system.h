@@ -157,8 +157,11 @@
 #   define __section(x)    __attribute__((__section__(x)))
 #endif
 
+#if __GNUC__ > 3
 #define __startup __section(".aros.startup") __used
-
+#else
+#define __startup __used
+#endif
 
 /* 5. Calculated #defines */
 #if !AROS_STACK_GROWS_DOWNWARDS
