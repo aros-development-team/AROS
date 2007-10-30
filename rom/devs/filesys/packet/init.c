@@ -50,7 +50,8 @@ AROS_UFH3(void, packet_startup,
 
     D(bug("[packet] calling handler\n"));
 
-    AROS_UFC0(void, (LONG_FUNC) ((BPTR *) BADDR(mount->seglist)+1));
+    AROS_UFC1(void, (LONG_FUNC) ((BPTR *) BADDR(mount->seglist)+1),
+	      AROS_UFCA(struct ExecBase *, SysBase, A6));
     
     D(bug("[packet] handler returned\n"));
 
