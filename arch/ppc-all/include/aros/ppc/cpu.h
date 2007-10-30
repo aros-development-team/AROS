@@ -27,6 +27,11 @@
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm __attribute__((stackparm))
 
+/* types and limits for sig_atomic_t */
+#define AROS_SIG_ATOMIC_T       int
+#define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
+#define AROS_SIG_ATOMIC_MAX     0x7fffffff
+
 register unsigned char* AROS_GET_SP asm("%sp");
 
 #define FLUSH_CACHES 1

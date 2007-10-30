@@ -36,6 +36,11 @@
 
 #define STACKED __attribute__((aligned(8)))
 
+/* types and limits for sig_atomic_t */
+#define AROS_SIG_ATOMIC_T       int
+#define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
+#define AROS_SIG_ATOMIC_MAX     0x7fffffff
+
 #ifndef __TINYC__
 register unsigned char * AROS_GET_SP asm("%rsp");
 #endif

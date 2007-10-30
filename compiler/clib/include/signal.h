@@ -21,10 +21,7 @@ typedef void __sighandler_t (int);
 #endif
 #define SIG_ERR	    ((__sighandler_t *)-1)  /* return from signal() on error */
 
-/* XXX Make sure that this agrees with the length in inttypes.h */
-#if 0
-typedef AROS_ATOMIC_TYPE    sig_atomic_t;
-#endif
+typedef AROS_SIG_ATOMIC_T   sig_atomic_t;
 
 /* Definitions to make signal manipulation easier. From FreeBSD */
 #define _SIG_WORDS		4
