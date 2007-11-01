@@ -1,10 +1,12 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Initialize the interface to the "hardware".
     Lang: english
 */
+
+#include <exec_intern.h>
 
 #include <exec/types.h>
 #include <exec/interrupts.h>
@@ -185,12 +187,13 @@ static void sighandler(int sig, sigcontext_t * sc)
 #if AROS_NESTING_SUPERVISOR
     if (supervisor == 1)
 #endif    
-    if (SysBase->AttnResched & 0x8000)
+    if (SysBase->AttnResched & ARF_AttnDispatch)
     {
     #if AROS_NESTING_SUPERVISOR
     	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif
-    	AROS_ATOMIC_AND(SysBase->AttnResched, ~0x8000);
+        CONST UWORD u = (UWORD) ~(ARF_AttnDispatch);
+    	AROS_ATOMIC_AND(SysBase->AttnResched, u);
 
 	/* Save registers for this task (if there is one...) */
 	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
