@@ -62,6 +62,7 @@
     struct DevProc *dvp;
     UBYTE buf[MAXFILENAMELENGTH+1], *buf2, *p;
     ULONG len, len2;
+    BPTR lock = NULL;
 
     /* set up some defaults */
     notify->nr_MsgCount = 0;
@@ -84,7 +85,6 @@
      * device or volume root), then get the handler to resolve the name of the
      * device root lock */
     if (dvp->dvp_Lock == NULL) {
-        BPTR lock;
         UBYTE name[MAXFILENAMELENGTH+1], *src, *dst;
         struct FileInfoBlock *fib;
 
@@ -127,8 +127,6 @@
         /* use the root lock we just got as the relative lock */
         iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(lock))->fh_Unit;
 
-        UnLock(lock);
-
         FreeDosObject(DOS_FIB, fib);
     }
 
@@ -143,9 +141,6 @@
         /* use the assign base lock as the relative lock */
         iofs.IOFS.io_Unit = ((struct FileHandle *) BADDR(dvp->dvp_Lock))->fh_Unit;
     }
-
-    /* done with this */
-    FreeDeviceProc(dvp);
 
     len = strlen(buf);
 
@@ -174,6 +169,12 @@
 
     if ((buf2 = AllocVec(len + len2 + 1, MEMF_PUBLIC)) == NULL) {
         SetIoErr(ERROR_NO_FREE_STORE);
+
+        /* cleanup */
+        if (dvp->dvp_Lock != NULL)
+            UnLock(lock);
+        FreeDeviceProc(dvp);
+
         return DOSFALSE;
     }
 
@@ -190,6 +191,11 @@
     } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_LOCK, 0, dvp->dvp_Port) == DOSFALSE);
 
     SetIoErr(iofs.io_DosError);
+
+    /* cleanup */
+    if (dvp->dvp_Lock != NULL)
+        UnLock(lock);
+    FreeDeviceProc(dvp);
 
     /* something broke, clean up */
     if (iofs.io_DosError != 0) {
