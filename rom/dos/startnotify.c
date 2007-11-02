@@ -171,7 +171,7 @@
         SetIoErr(ERROR_NO_FREE_STORE);
 
         /* cleanup */
-        if (dvp->dvp_Lock != NULL)
+        if (lock != NULL)
             UnLock(lock);
         FreeDeviceProc(dvp);
 
@@ -193,7 +193,7 @@
     SetIoErr(iofs.io_DosError);
 
     /* cleanup */
-    if (dvp->dvp_Lock != NULL)
+    if (lock != NULL)
         UnLock(lock);
     FreeDeviceProc(dvp);
 
