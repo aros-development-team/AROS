@@ -116,6 +116,7 @@ void *calloc(size_t count, size_t size);
 void *realloc(void *oldmem, size_t newsize);
 void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
 void  free(void *memory);
+int   posix_memalign(void **memptr, size_t alignment, size_t size);
 
 /* Communication with the environment */
 void  abort (void) __noreturn;

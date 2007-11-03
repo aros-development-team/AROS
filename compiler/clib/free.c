@@ -6,6 +6,7 @@
 */
 
 #include "__arosc_privdata.h"
+#include "__memalign.h"
 
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -52,9 +53,14 @@
 	size_t         size;
 
         mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
-	size = *((size_t *)mem) + AROS_ALIGN(sizeof(size_t));
 
-	FreePooled (__startup_mempool, mem, size);
+        size = *((size_t *) mem);
+        if (size == MEMALIGN_MAGIC)
+            free(((void **) mem)[-1]);
+        else {
+            size += AROS_ALIGN(sizeof(size_t));
+	    FreePooled (__startup_mempool, mem, size);
+        }
     }
 
 } /* free */
