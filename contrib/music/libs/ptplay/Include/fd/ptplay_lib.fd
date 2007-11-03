@@ -1,0 +1,11 @@
+##base _PtPlayBase
+##bias 30
+##public
+PtInit(buf,bufsize,frequency,modtype)(a1,d0,d1,d2)
+PtRender(mod,destbuf1,destbuf2,bufmodulo,numsp,scale,depth,channels)(a0,a1,a2,d0,d1,d2,d3,d4)
+PtTest(filename,buf,bufsize)(a0,a1,d0)
+PtCleanup(mod)(a0)
+PtSetAttrs(mod,taglist)(a0,a1)
+PtGetAttr(mod,tagitem,storagePtr)(a0,d0,a1)
+PtSeek(mod,time)(a0,d0)
+##end

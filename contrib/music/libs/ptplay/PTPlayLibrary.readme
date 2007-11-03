@@ -1,0 +1,24 @@
+Short:        Play ("decode") protracker modules
+Author:       Ronald Hof, Timm S. Mueller, Per Johansson, Ilkka Lehtoranta (ilkleht@isoveli.org)
+Uploader:     Ilkka Lehtoranta (ilkleht@isoveli.org)
+Type:         mus/play
+Version:      2.6
+Architecture: m68k-amigaos; ppc-morphos
+
+Changes in 2.6:
+ - fixed division by zero exception on 680x0 CPUs (reported by Thilo Köhler)
+
+
+ptplay.library is a library to play protracker modules. It is based on
+work of Ronald Hof, Timm Mueller and Per Johansson with my own additions:
+
+  - shared library
+  - support for SoundTracker modules
+
+However SoundTracker support is unfinished but since there are better
+MOD player libraries for MorphOS I havent got motivation to finish it.
+I also started working on SoundFX player but since Mahendra Tallur
+created geronto.library my work is done ;)
+
+This source code has been rotting on my HD about two years now so I think
+it is about time to release it. AmigaOS users might find it interesting still.
