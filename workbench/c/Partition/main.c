@@ -20,10 +20,10 @@
 
 
 /*** Prototypes *************************************************************/
-static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowCyl,
-    ULONG *gapHighCyl);
-static VOID CheckGap(struct PartitionHandle *root, ULONG partHighCyl,
-    ULONG *gapLowCyl, ULONG *gapHighCyl);
+static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowBlock,
+    ULONG *gapHighBlock);
+static VOID CheckGap(struct PartitionHandle *root, ULONG partLimitBlock,
+    ULONG *gapLowBlock, ULONG *gapHighBlock);
 static struct PartitionHandle *CreateMBRPartition(
     struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl, UBYTE id);
 static struct PartitionHandle *CreateRDBPartition(
@@ -288,24 +288,24 @@ static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowBlock,
     ULONG *gapHighBlock)
 {
     struct PartitionHandle *partition;
-    SIPTR reservedBlocks = 0;
-    ULONG partHighBlock;
+    LONG reservedBlocks = 0;
+    ULONG partLimitBlock;
 
     /* Check gap between start of disk and first partition, or until end of
        disk if there are no partitions */
     GetPartitionTableAttrsTags(root, PTT_RESERVED, (IPTR) &reservedBlocks,
         TAG_DONE);
-    partHighBlock = reservedBlocks - 1;
-    CheckGap(root, partHighBlock, gapLowBlock, gapHighBlock);
+    partLimitBlock = reservedBlocks;
+    CheckGap(root, partLimitBlock, gapLowBlock, gapHighBlock);
 
     /* Check gap between each partition and the next one (or end of disk for
        the last partition)*/
     ForeachNode(&root->table->list, partition)
     {
-        partHighBlock = (partition->de.de_HighCyl + 1)
+        partLimitBlock = (partition->de.de_HighCyl + 1)
             * partition->de.de_Surfaces
-            * partition->de.de_BlocksPerTrack - 1;
-        CheckGap(root, partHighBlock, gapLowBlock, gapHighBlock);
+            * partition->de.de_BlocksPerTrack;
+        CheckGap(root, partLimitBlock, gapLowBlock, gapHighBlock);
     }
 
     return;
@@ -314,7 +314,7 @@ static VOID FindLargestGap(struct PartitionHandle *root, ULONG *gapLowBlock,
 /* Check if the gap between the end of the current partition and the start of
    the next one is bigger than the biggest gap previously found. If so, it is
    stored as the new biggest gap. */
-static VOID CheckGap(struct PartitionHandle *root, ULONG partHighBlock,
+static VOID CheckGap(struct PartitionHandle *root, ULONG partLimitBlock,
     ULONG *gapLowBlock, ULONG *gapHighBlock)
 {
     struct PartitionHandle *nextPartition;
@@ -328,7 +328,7 @@ static VOID CheckGap(struct PartitionHandle *root, ULONG partHighBlock,
         lowBlock = nextPartition->de.de_LowCyl
            * nextPartition->de.de_Surfaces
            * nextPartition->de.de_BlocksPerTrack;
-        if (lowBlock > partHighBlock && lowBlock < nextLowBlock)
+        if (lowBlock >= partLimitBlock && lowBlock < nextLowBlock)
         {
             nextLowBlock = lowBlock;
         }
@@ -336,9 +336,9 @@ static VOID CheckGap(struct PartitionHandle *root, ULONG partHighBlock,
 
     /* Check if the gap between the current pair of partitions is the
        biggest gap so far */
-    if (nextLowBlock - partHighBlock - 1 > *gapHighBlock - *gapLowBlock + 1)
+    if (nextLowBlock - partLimitBlock > *gapHighBlock - *gapLowBlock + 1)
     {
-        *gapLowBlock = partHighBlock + 1;
+        *gapLowBlock = partLimitBlock;
         *gapHighBlock = nextLowBlock - 1;
     }
 
