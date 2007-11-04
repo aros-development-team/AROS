@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 //#define USE_FORMAT64
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -1793,7 +1793,7 @@ int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *c
 		AddPart(srcDirs, copy_files[dir_count], newSrcLen);
 		AddPart(dstDirs, copy_files[dir_count+1], newDstLen);
 
-//		set(data->actioncurrent, MUIA_Text_Contents, srcDirs); // CRASH?
+		set(data->actioncurrent, MUIA_Text_Contents, srcDirs);
 
 retrycdadir:
 		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
@@ -2095,7 +2095,7 @@ IPTR Install__MUIM_IC_CopyFiles
 						if(AddPart(srcFile, ead->ed_Name, newSrcLen) && AddPart(dstFile, ead->ed_Name, newDstLen))
 						{
 							//D(bug("[INSTALLER] R: %s -> %s \n", srcFile, dstFile));
-	//                        set(data->actioncurrent, MUIA_Text_Contents, srcFile); // CRASH?
+							set(data->actioncurrent, MUIA_Text_Contents, srcFile);
 
 							DoMethod(data->installer,MUIM_Application_InputBuffered);
 
