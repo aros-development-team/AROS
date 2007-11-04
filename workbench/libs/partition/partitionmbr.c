@@ -32,7 +32,6 @@ static LONG PartitionMBRCheckPartitionTable
     )
 {
 struct MBR mbr;
-struct MBRData *data;
 
     if (readBlock(PartitionBase, root, 0, &mbr) == 0)
     {
@@ -558,7 +557,6 @@ static ULONG PartitionMBRDestroyPartitionTable
     )
 {
 struct MBR *mbr;
-struct PartitionHandle *ph;
 
     mbr = root->table->data;
     fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
