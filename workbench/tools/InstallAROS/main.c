@@ -1715,7 +1715,7 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
 					TAG_DONE
 				);
 				id = type.id[0];
-				if (active && id == 0x7 || id == 0xb)
+				if (active && (id == 0x7 || id == 0xb))
 					partition_no = i;
 				i++;
 			}
