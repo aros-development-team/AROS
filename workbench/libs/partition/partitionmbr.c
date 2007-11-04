@@ -564,9 +564,6 @@ struct PartitionHandle *ph;
     fillMem((BYTE *)mbr->pcpt, sizeof(mbr->pcpt), 0);
     if (writeBlock(PartitionBase, root, 0, root->table->data))
         return 1;
-    while ((ph = (struct PartitionHandle *)RemTail(&root->table->list)))
-        PartitionMBRFreeHandle(PartitionBase, ph);
-    FreeMem(root->table->data, root->de.de_SizeBlock<<2);
     return 0;
 }
 
