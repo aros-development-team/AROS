@@ -193,6 +193,12 @@
     END OF IMPORTANT STUFF
  ****************************************************************************/
 
+/* These are taken (more or less) from FreeBSD sys/cdefs.h */
+#define __strong_reference(sym,aliassym) \
+    extern __typeof__ (sym) aliassym __attribute__ ((alias (#sym)))
+#define __weak_reference(sym,aliassym)   \
+    extern __typeof__ (sym) aliassym __attribute__ ((weak, alias (#sym)))
+
 #include <endian.h>
 
 #endif /* _SYS_CDEFS_H_ */
