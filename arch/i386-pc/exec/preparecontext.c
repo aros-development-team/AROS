@@ -152,3 +152,29 @@ BOOL Exec_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, 
 
 }
 
+BOOL Exec_PrepareContext_SSE(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
+{
+    ULONG *regs;
+    BOOL  retval = FALSE;
+    
+    if ((regs = PrepareContext_Common(task, entryPoint, fallBack, tagList, SysBase)))    
+    {    
+    	UBYTE this_ssestate[SIZEOF_FPU_STATE + 15], *ptr = this_ssestate;
+	regs = (ULONG*)(((IPTR)regs+15)&~15);
+	ptr = (UBYTE*)(((IPTR)ptr+15)&~15);
+	
+	asm volatile("fxsave (%0)\n\t"
+                     "fninit\n\t"
+                     "fwait\n\t"
+                     "fxsave (%1)\n\t"
+                     "fxrstor (%0)\n\t"
+                     :
+		     : "r" (ptr), "r" (regs) 
+		     : "memory");
+	
+	retval = TRUE;
+    }
+    
+    return retval;
+
+}
