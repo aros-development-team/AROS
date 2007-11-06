@@ -26,8 +26,8 @@
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   4 /* Worst case alignment */
 
-#define SIZEOF_FPU_STATE	108  /* 108 bytes are needed to store FPU */
-#define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE)  /* Size of iet_Context */
+#define SIZEOF_FPU_STATE	512  /* 108 bytes are needed to store FPU, 512 bytes are needed to store SSE */
+#define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE + 16)  /* Size of iet_Context */
 
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
