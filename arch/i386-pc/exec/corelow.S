@@ -287,6 +287,8 @@ Exec_Switch_SSE:    cli
                     rep
                     movsl
 
+		    addl    $15,%edi
+		    andl    $~15,%edi
                     fxsave  (%edi)
 
                     movl    $Exec_Restore_SSE,%edi
@@ -348,7 +350,7 @@ Exec_Dispatch_x:    cli
 		    movw    Quantum(%ebp),%ax
 		    movw    %ax,Elapsed(%ebp)
 
-                    andl    $~0x2000,SysFlags(%ebp) /* stegerg: fixme, should be andw!! */
+                    andw    $~0x2000,SysFlags(%ebp) /* stegerg: fixme, should be andw!! */
                     movb    $TS_RUN,tc_State(%ecx)
                     movb    tc_IDNestCnt(%ecx),%al
                     movb    %al,IDNestCnt(%ebp)
@@ -396,6 +398,8 @@ Exec_Restore_SSE:   movl    %esp,%edi
                     movl    $14,%ecx
                     rep
                     movsl
+		    addl    $15,%esi
+		    andl    $~15,%esi
                     fxrstor (%esi)
                     RESTORE_ALL
                     iret

@@ -106,6 +106,16 @@
 #define __no_ret    __attribute__((noreturn))
 #define __packed    __attribute__((packed))
 
+#define rdcr(reg) \
+    ({ long val; asm volatile("mov %%" #reg ",%0":"=r"(val)); val; })
+
+#define wrcr(reg, val) \
+    do { asm volatile("mov %0,%%" #reg::"r"(val)); } while(0)
+
+#define cpuid(num, eax, ebx, ecx, edx) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+
+
 /*
  * Some declarations
  */
@@ -136,6 +146,10 @@ extern void Exec_SerialRawPutChar(UBYTE chr);
 extern void Exec_Switch_FPU();
 extern void Exec_PrepareContext_FPU();
 extern void Exec_Dispatch_FPU();
+
+extern void Exec_Switch_SSE();
+extern void Exec_PrepareContext_SSE();
+extern void Exec_Dispatch_SSE();
 
 extern ULONG Exec_MakeFunctions(APTR, APTR, APTR, APTR);
 
@@ -948,7 +962,60 @@ void exec_cinit(unsigned long magic, unsigned long addr)
         ExecBase->ThisTask = t;
     }
 
-    rkprintf("Done\nJumping out from Supervisor mode...");
+    rkprintf("Done\n");
+
+    /*
+	Check whether the CPU supports SSE and FXSAVE.
+	
+	Dirty check, without use of any defines and human readable constants. The
+	cpuid instruction with %eax=1 will return some essential cpu informations in %eax back, 
+	including:
+	- bit 24: CPU does support FXSAVE and FXRSTOR for MMX/FPU/SSE context saving and restoring
+	- bit 25: CPU supports SSE
+	- bit 26: CPU supports SSE2
+    
+    */
+    ULONG v1,v2,v3,v4;
+    cpuid(1, v1,v2,v3,v4);
+
+    rkprintf("cpuid 1 = %08x %08x %08x %08x\n", v1, v2, v3, v4);
+    
+    if (v4 & (1 << 24))
+    {
+	rkprintf("The CPU supports FXSAVE and FXRSTOR. Good.\n");
+	rkprintf("CPU Supports ");
+	
+	if (v4 & (1 << 25))
+	    rkprintf("SSE");
+	if (v4 & (3 << 25))
+	    rkprintf(" and SSE2");
+	
+	rkprintf("\n");
+	
+        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec));
+        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec));
+        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
+	
+	/* tell the CPU that we will support SSE */
+	wrcr(cr4, rdcr(cr4) | (3 << 9));
+	/* Clear the EM and MP flags of CR0 */
+	wrcr(cr0, rdcr(cr0) & ~6);
+	
+	rkprintf("SSE enabled.\n");
+    }
+    else
+    { 
+#if ASSUME_FPU
+        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_FPU, Exec));
+        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_FPU, Exec));
+        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_FPU, Exec));
+
+	rkprintf("FPU enabled.\n");
+#endif
+    }
+
+
+    rkprintf("Jumping out from Supervisor mode...");
 
 #if 0
 
@@ -994,11 +1061,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     RawIOInit();
 #endif
 
-#if ASSUME_FPU
-    SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_FPU, Exec));
-    SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_FPU, Exec));
-    SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_FPU, Exec));
-#endif
     
     /* Scan for valid RomTags */
     ExecBase->ResModules = exec_RomTagScanner();
