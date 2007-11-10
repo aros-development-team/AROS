@@ -1444,57 +1444,56 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 %define build_linklib mmake=/A libname=/A files="$(basename $(wildcard *.c))" \
   asmfiles= cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
 
-%buildid targets="%(mmake) %(mmake)-clean"
-
 # assign and generate the local variables used in this macro
-BD_LIBNAME$(BDID)    := %(libname)
-OBJDIR               ?= $(GENDIR)/$(CURDIR)
-BD_OBJDIR$(BDID)     := %(objdir)
-BD_LIBDIR$(BDID)     := %(libdir)
+OBJDIR        ?= $(GENDIR)/$(CURDIR)
 
-BD_FILES$(BDID)      := %(files)
-BD_ASMFILES$(BDID)   := %(asmfiles)
-BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)) $(BD_ASMFILES$(BDID)))))
-BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)))
+BD_FILES      := %(files)
+BD_ASMFILES   := %(asmfiles)
 
-BD_CFLAGS$(BDID)     := %(cflags)
+BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
+BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
+BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
+
+BD_OBJS       := $(BD_ARCHOBJS) $(addsuffix .o,$(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES) $(BD_ASMFILES))))
+BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
+
+BD_CFLAGS     := %(cflags)
 ifeq (%(dflags),)
-BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
+BD_DFLAGS     := $(BD_CFLAGS)
 else
-BD_DFLAGS$(BDID)     := %(dflags)
+BD_DFLAGS     := %(dflags)
 endif
-BD_AFLAGS$(BDID)     := %(aflags)
+BD_AFLAGS     := %(aflags)
 
-BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
+BD_LINKLIB    := %(libdir)/lib%(libname).a
 
 .PHONY : %(mmake) %(mmake)-clean
 
 #MM %(mmake) : includes-generate-deps
-%(mmake) : $(BD_LINKLIB$(BDID))
+%(mmake) : $(BD_LINKLIB)
 
 #MM
 %(mmake)-clean ::
-	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID))
+	@$(RM) $(BD_OBJS) $(BD_DEPS)
 
 ifeq ($(TARGET),%(mmake))
-ifneq ($(dir $(BD_FILES$(BDID))),./)
-vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
+ifneq ($(dir $(BD_FILES)),./)
+vpath %.c $(filter-out ./,$(dir $(BD_FILES)))
 endif
 
-%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-	      cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_assemble basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-	      aflags=$(BD_AFLAGS$(BDID))
+%rule_compile basename=% targetdir=%(objdir) \
+	      cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
+%rule_assemble basename=% targetdir=%(objdir) \
+	      aflags=$(BD_AFLAGS)
 endif
 
-%rule_link_linklib libname=%(libname) objs=$(BD_OBJS$(BDID)) libdir=$(BD_LIBDIR$(BDID))
+%rule_link_linklib libname=%(libname) objs=$(BD_OBJS) libdir=%(libdir)
 
-%include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
+%include_deps depstargets=%(mmake) deps=$(BD_DEPS)
 
-$(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) : | $(BD_OBJDIR$(BDID))
-$(BD_LINKLIB$(BDID)) : | $(BD_LIBDIR$(BDID))
-GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))
+$(BD_OBJS) $(BD_DEPS) : | %(objdir)
+$(BD_LINKLIB) : | %(libdir)
+GLOB_MKDIRS += %(objdir) %(libdir)
 
 %end
 #------------------------------------------------------------------------------
