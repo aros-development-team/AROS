@@ -292,8 +292,9 @@ $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
 endif
 
+$(TMP_TARGETBASE).o : CFLAGS := %(cflags)
 $(TMP_TARGETBASE).o : %(basename).c
-	%compile_q opt="%(cflags)" cmd=$(TMP_CMD)
+	%compile_q cmd=$(TMP_CMD)
 
 ifeq (%(dflags),)
 $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
@@ -428,12 +429,14 @@ $(TMP_TARGETBASE).so : %(basename).c
 %define rule_assemble basename=/A aflags=$(AFLAGS) targetdir=
 
 ifeq (%(targetdir),)
+%(basename).o : AFLAGS := %(aflags)
 %(basename).o : %(basename).s
-	%assemble_q opt=%(aflags)
+	%assemble_q
 
 else
+%(targetdir)/$(notdir %(basename)).o : AFLAGS := %(aflags)
 %(targetdir)/$(notdir %(basename)).o : %(basename).s
-	%assemble_q opt=%(aflags)
+	%assemble_q
 
 endif
 %end
