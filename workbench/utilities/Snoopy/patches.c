@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -365,8 +365,14 @@ AROS_UFH3(BPTR, New_Lock,
 	else                                 opt = MSG(MSG_READ_ASK);
 
 	CONST_STRPTR curname = name;
-	if ( ! setup.showPaths &&  *curname == '\0')
+	if ( ! curname)
+	{
+	    curname="NULL";
+	}
+	else if ( ! setup.showPaths &&  *curname == '\0')
+	{
 	    curname = "\"\"";
+	}
 
 	main_output("Lock", curname, opt, (LONG)result);
     }
