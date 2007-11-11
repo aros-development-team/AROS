@@ -837,12 +837,6 @@ AROS_UFH3(ULONG, AROS_SLIB_ENTRY(Init, LDDemon),
 {
     AROS_USERFUNC_INIT
 
-    struct Library *AROS_SLIB_ENTRY(OpenLibrary,Dos)();
-    BYTE AROS_SLIB_ENTRY(OpenDevice,Dos)();
-    void AROS_SLIB_ENTRY(CloseLibrary,Dos)();
-    void AROS_SLIB_ENTRY(CloseDevice,Dos)();
-    void AROS_SLIB_ENTRY(RemLibrary,Dos)();
-
     struct DosLibrary *DOSBase;
     struct TagItem tags[] =
     {
