@@ -91,7 +91,7 @@ typedef unsigned int (*ULONG_FUNC)();
 #   define AROS_SLIB_ENTRY(n,s)   __AROS_SLIB_ENTRY(n,s)
 #endif
 
-#if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) && !defined(__AROS_MACHINE_H_DEFINES_LIBCALLS)
+#if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) && !defined(__AROS_CPU_SPECIFIC_LIBCALLS)
 /* Library functions which need the libbase */
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s)(\
@@ -1373,7 +1373,7 @@ typedef unsigned int (*ULONG_FUNC)();
 #define AROS_LVO_CALL10NR(a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
     AROS_CALL10(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),AROS_LCA(a10),bt,bn)
 #endif
-#endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) && !defined(__AROS_MACHINE_H_DEFINES_LIBCALLS) */
+#endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) && !defined(__AROS_CPU_SPECIFIC_LIBCALLS) */
 
 #ifdef __AROS_USE_MACROS_FOR_LIBCALL
 #   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
@@ -1487,7 +1487,7 @@ typedef unsigned int (*ULONG_FUNC)();
 	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15)
 #endif
 
-#ifndef __AROS_MACHINE_H_DEFINES_LIBCALLS
+#ifndef __AROS_CPU_SPECIFIC_LIBCALLS
 
 /* Declarations for library functions which need the libbase */
 #   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
@@ -1804,7 +1804,7 @@ typedef unsigned int (*ULONG_FUNC)();
 	__AROS_LDA(a13), \
 	__AROS_LDA(a14), \
 	__AROS_LDA(a15))
-#endif /* !__AROS_MACHINE_H_DEFINES_LIBCALLS */
+#endif /* !__AROS_CPU_SPECIFIC_LIBCALLS */
 
 #define AROS_LHA(type,name,reg) type,name,reg
 #define AROS_LPA(type,name,reg) type,name,reg
