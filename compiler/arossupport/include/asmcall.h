@@ -71,7 +71,7 @@ typedef int (*LONG_FUNC)();
 typedef unsigned int (*ULONG_FUNC)();
 #endif
 
-#ifndef __AROS_MACHINE_H_DEFINES_ASMCALLS
+#ifndef __AROS_CPU_SPECIFIC_ASMCALLS
 
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) /* Function headers for user functions */
 #define AROS_UFH0(t,n) \
@@ -750,7 +750,7 @@ typedef unsigned int (*ULONG_FUNC)();
 	__AROS_UFPA(a14),\
 	__AROS_UFPA(a15))
 
-#endif /* !__AROS_MACHINE_H_DEFINES_ASMCALLS */
+#endif /* !__AROS_CPU_SPECIFIC_ASMCALLS */
 #define AROS_UFHA(type,name,reg)    type,name,reg
 #define AROS_UFPA(type,name,reg)    type,name,reg
 #define AROS_UFCA(type,name,reg)    type,name,reg
