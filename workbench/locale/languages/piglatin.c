@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: piglatin.language description file.
@@ -31,7 +31,9 @@
 #define LANGREV     1           /* Revision number of language */
 #define LANGTAG     "\0$VER: piglatin.language 41.1 (20.2.1997)"
 
-STRPTR AROS_SLIB_ENTRY(getlangstring,language)();
+AROS_LD1(STRPTR, getlangstring,
+    AROS_LHA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language);
 
 /* ----------------------------------------------------------------------- */
 
@@ -57,11 +59,13 @@ extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language)();
-extern struct Language *AROS_SLIB_ENTRY(open,language)();
-extern BPTR AROS_SLIB_ENTRY(close,language)();
-extern BPTR AROS_SLIB_ENTRY(expunge,language)();
-extern int AROS_SLIB_ENTRY(null,language)();
-extern ULONG AROS_SLIB_ENTRY(mask,language)();
+AROS_LD1(struct Language *, open,
+    AROS_LHA(ULONG, version, D0),
+    struct Language *, language, 1, language);
+AROS_LD0(BPTR, close, struct Language *, language, 2, language);
+AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
+AROS_LD0I(int, null, struct Language *, language, 4, language);
+AROS_LD0(ULONG, mask, struct Language *, language, 5, language);
 extern const char end;
 
 int entry(void)
