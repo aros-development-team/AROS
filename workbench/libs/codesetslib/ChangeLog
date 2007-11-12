@@ -1,0 +1,316 @@
+----------------------------------------------------------
+codesets.library - Library for handling different codesets
+----------------------------------------------------------
+
+$Id: ChangeLog 88 2007-09-05 18:09:40Z thboeckel $
+$URL: https://codesetslib.svn.sourceforge.net/svnroot/codesetslib/trunk/ChangeLog $
+
+2007-09-05  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: fixed a signedness warning.
+  * codesets.c: changed all CSA_SourceLen occurences to default to the string
+    length of the given CSA_Source. Additionally CSA_Source is checked to be a
+    valid pointer. A NULL pointer will result in a length of zero.
+  * codesets.doc: updated the docs to reflect the meaning of CSA_SourceLen.
+
+2007-08-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * libinit.c: adapted library initialization interface to match the
+    changes done in e.g. TextEditor.mcc and which should mainly fix stack
+    related issues on MorphOS systems.
+
+#### 6.4 RELEASE #########################################################
+
+2007-07-17  Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: we use inline assembler for defining a new generic
+    stackswap_call() function that will be used to surround the initBase()
+    call by StackSwap() uses. This inline assembler should guarantee that
+    the function will not be inlined by the compiler and work properly on
+    all different supported platforms.
+
+2007-07-04  Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: the StackSwapStruct is now placed on the stack instead of
+    allocating it in one block with the new stack itself, as that caused instant
+    crashes.
+
+2007-07-04  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: CSA_ErrPtr can now be specified in the CodesetsUTF8ToStrA()
+    function to get informed about the amount of not convertable characters
+    found during the conversion. This fullfils feature request #1724860.
+  * libinit.c: initBase() will now be called in LibInit() again as this is
+    the smoother variant. But a StackSwap() construct protects us from stack
+    overruns on OS3/MOS machines.
+
+2007-07-01  Jens Langner <Jens.Langner@light-speed.de>
+
+  * libinit.c: reworked library manager interface to use inline asm-based obtain
+    and release functions according to the latest output of idltool 52.7
+  * codesets.doc: applied patch for CodesetsUTF8ToStrA() function kindly provided
+    by Steffen Gutmann.
+
+2007-06-13  Thore Böckelmann <tboeckel@gmx.de>
+
+  * debug.c: unified the _DPRINTF() functions for all platforms.
+
+2007-06-10  Jens Langner <Jens.Langner@light-speed.de>
+
+  * #?/Makefile: minor update/optimization on Makefiles.
+  * libinit.c: partly reintroduced the initialization of codesets.library in
+    LibOpen() via a seperate init locking variable due to occuring stack issues
+    on OS3.
+  * debug.c: removed <proto/intuition.h> as it isn't required at all.
+
+2007-06-09  Jens Langner <Jens.Langner@light-speed.de>
+
+  * libinit.c, misc: reworked library init code to call the initBase/freeBase()
+    function in the respective LibInit/LibExpunge() function instead and just deal
+    with the open counter and the late expunge flag in the LibOpen/LibClose()
+    functions. This should make the library initialization more clear and
+    hopefully also less error prone.
+
+2007-06-05  Thore Böckelmann <tboeckel@gmx.de>
+
+  * debug.c: fixed the variable parsing and the final output of the debug flags.
+  * developer/examples/makefile.os4: removed the -pipe option from the command
+    line as the OS4 native GCC does not support this yet.
+
+2007-05-24  Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: the open counter is now bump as first action in LibOpen(), right
+    before calling baseInit(). baseInit() may scan some directories which may
+    take an unpredictable amount of time. While this happens the system may
+    invoke LibExpunge() which will immediately remove the library again from the
+    system, becasue the open counter is still zero. This should fix the random
+    crashes that some people were experiencing. Maybe a semaphore protected
+    LibExpunge() could do the same...
+
+#### 6.3 RELEASE #########################################################
+
+2007-01-27  Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: replaced the single target makefiles with a general Makefile
+    that contains HOST and TARGET os identification code via 'uname'.
+    This way we can easily compile codesets.library with a single makefile
+    for all our platforms.
+  * misc: bumped the year to 2007
+
+2007-01-11  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * base64.c: fixed bug #1608004 where b64 encoder never null terminated
+    the output string (when encoding to a string buffer).
+
+2006-12-04  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: added alternative names to all ISO based codeset names as
+    some applications might want to query for these abbreviations instead.
+  * misc: fixed all still pending compiler warnings
+
+2006-09-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * makefile.#?: added -Wwrite-string warning option to let the compiler
+    more easily find const/non-const issues.
+  * include/SDI_#?: update the sdi headers to latest versions.
+  * include/interfaces: fixed minor bug #1560515 where the interface
+    definition was slightly wrong.
+
+2006-09-06  Jens Langner <Jens.Langner@light-speed.de>
+
+  * developer/include/inline: added a VBCC inline version of our current
+    codesets API.
+
+#### 6.2 RELEASE #########################################################
+
+2006-05-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: reworked the whole API of the CodesetsFindBestA() function which
+    was more or less unused until today. The function now only accepts a
+    variable tagitem list. All former fixed arguments have to be set via
+    TagItems now. This should make the function more flexible for the
+    future. In addition, I added the cyrillic codeset autodetection code
+    kindly provided by Alexey Ivanov. codesets.library can now be used
+    together with the new CSA_CodesetsFamily attribute to specify the
+    family to which against the supplied text should be matched. This will
+    also allow to add more different codeset families in future to the
+    autodetection. Revised the autodocs and includes of CodesetsFindBest()
+    accordingly.
+
+2006-04-11  Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile.os4, libinit.c: reworked the OS4 library interface to
+    cleanly compile with newlib instead of clib2. Future OS4 version will
+    be built for newlib only as that is the standard runtime library for
+    AmigaOS4.
+
+2006-04-05  Jens Langner <Jens.Langner@light-speed.de>
+
+  * libinit.c: slightly reworked the library init/expunge code to act a
+    bit more robust and don't use any semaphore during the library expunge
+    phase which in fact should cure the crashing on MorphOS during
+    expunging of the library.
+
+#### 6.1 RELEASE #########################################################
+
+2006-03-27  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: replaced the underscore char '_' use for an unknown char
+    during an UTF-8 conversion by a questionmark '?' as this might be
+    a more proper replacement and it doesn't trigger YAM's text
+    highlighting routines.
+  * codesets.c: slightly reworked the ReadTable() function. Reworked
+    the CodesetsUTF8ToStrA() function to correctly take respect of the
+    CSA_SourceLen attribute as documented. Previously it always
+    converted until strlen(src). Now in case the SourceLen is specified
+    it will stop converting the UTF8 string.
+  * libinit.c, base.h: moved the internal charset table initialization
+    routine from the LibInit() function to the first call of the
+    LibOpen(). This in fact should fix the various strange crash bugs
+    reported since the release of 6.0.
+  * init.c: changed the library base definitions to use "extern" and
+    also define "__UtilityBase" to please constraints of clib2.
+
+2006-03-14  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: switched from CVS to the new SVN (subversion) services of
+    sf.net. Should should definitly increase our project's flexibility.
+
+2006-02-28  Jens Langner <Jens.Langner@light-speed.de>
+
+  * utils.c: removed the unnecessary snprintf()/sprintf() stuff as it
+    is not required anymore.
+  * codesets.c: fixed some minor compiler warnings and added some more
+    debug output.
+  * include/SDI_lib.h: updated to latest SDI_lib.h, which fixes some
+    compiler issues with GCC3+ under OS3.
+
+#### 6.0 RELEASE #########################################################
+
+2006-02-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.0 release preparations.
+  * codesets.doc: updated the autodocs according to our latest changes
+    sind the open-source release of the library. Added some common
+    examples and also restructed it.
+  * codesets.c: changed all "struct MinList *" related functions to use
+    the newly defined "struct codesetList *" instead. This new type
+    instead of the public MinList type keeps those functions more
+    flexible in future.
+  * codesets.c: changed CodesetsListDelete() to be a tagitem receiving
+    function. This should make it much more usable in future.
+  * codesets.c: modified all CodesetsListX() functions to return a
+    boolean value to signal if an operating succeeded or not.
+  * libraries/codesets.h: changed all tag items to carry the shortcut
+    CSA instead of the long CODESETSA_XXXX string. This should make the
+    use of codesets.library more intuitive.
+
+2006-02-21  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: changed the scandir function to use ExAll() instead
+    of using the FileInfoBlock structures. This should be slightly
+    faster and more consistent.
+  * codesets.c: replaced the previously added internal private
+    codeset list management functions with a more transparent
+    approach using separate functions (CodesetsListCreateA(),
+    CodesetsListDelete(), etc.). Now a user may generate an
+    unlimited number of own private codesets lists allowing him
+    to load additional codesets on runtime from either a directory,
+    file or already existing codesets.
+
+2006-02-15  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: added a new internal "findPrivateCodesetList()"
+    function and made CodesetsFindA()/CodesetsFindBestA() aware of
+    the newly added CODESETSA_RefTask attribute which will allow a
+    user to directly specify the referencing task for searching for
+    a private codesets list. This in fact may only be used in
+    multithreaded applications where functions like CodesetsFindA()
+    are used from a different task/thread than the OpenLibrary()
+    of codesets.library was done.
+
+2006-02-14  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: implemented a private codeset management facility. Now
+    codeset.library will automatically scan an eventually existing
+    PROGDIR:Charsets and if present will load those codesets in a
+    per-task private list of codesets which will be added to the
+    global list of supported codesets as well.
+  * misc: implemented new CodesetsConvertStrA() library function which
+    will allow to specify a source and destination codeset as well as
+    a source string. The source string is then automatically converted
+    to the supplied destination string. This in turn should give a
+    plenty transparent method to convert strings from one codeset
+    to another.
+  * added the UTF-8 codeset to the internal list of supported codesets.
+    However, as the UTF-8 codeset is a very central codeset it is
+    treated special in such case that if UTF8Create() is used with a
+    string that is already encoded in UTF8, false will be returned.
+
+2005-12-16  Jens Langner <Jens.Langner@light-speed.de>
+
+  * init.c: changed the system default charset identification routines
+    to use the GetDiskFontCtrl() function on AmigaOS4 to find out
+    the currently active system charset. In addition, if this
+    identification fails it will try to find out the charset by falling
+    back to checking ENV:CHARSET, then using ENV:LANGUAGE to parse ther
+    internal language<>codeset list and if this also fails it will
+    directly use locale.library to find out the language to check
+    our own internal fallback tables for default charset<>language
+    mapping.
+  * codesets.c: if running on AmigaOS4, codesets.library will now
+    automatically query diskfont.library for the existing codesets
+    and also load all existing mapping tables accordingly. It will
+    also check if all internally known codesets are already present
+    and if one of it was not loaded through diskfont.library, the
+    internal mapping tables will be used as well.
+  * debug.c,h: added a whole debugging output system adapted and
+    relicensed from the YAM project. Now an environment variable
+    can be usd (ENV:codesets.library.debug) to place debugging
+    tags and allow to differniate which output should be displayed
+    during runtime and which one not. This should hopefully make
+    the debugging of the library much more easier.
+
+2005-12-14  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c, codesets_table.h: updated internal codesets
+    implementations in accordance to the latest implementation in
+    SimpleMail. Now codesets.library also supports the Amiga-1251
+    and ISO-8859-16.
+  * misc: did some general housekeeping code cleanups.
+
+2005-12-11  Jens Langner <Jens.Langner@light-speed.de>
+
+  * developer/examples: ported the demo1.c application to all our
+    supported platforms
+  * include/SDI_*.h: update SDI headers to latest versions.
+
+2005-12-08  Jens Langner <Jens.Langner@light-speed.de>
+
+  * bumped version to v6 as the GCC/OS4 porting may introduce some
+    oddities which we might eliminate during the v6 release cycle.
+    Please note that this first OS3/GCC and OS4 porting effort may
+    still contain some oddities here and there as large portions are
+    still untested. However, we may have some time to fix step by step
+    until we can prepare a v6.0 release.
+  * got rid of all common compiler warnings which should make bug
+    hunting much more easier.
+  * restructed sources to use othe latest SDI-headers for easily
+    maintaining the sources for all three platforms without
+    introducing heaps to #ifdef's.
+  * dropped all "register" attribute usages as modern compilers like
+    GCC normally know where to put variables on registers and where not
+    so these attributes are anyway not necessary.
+  * dropped smakefile and all 68k ASM parts as we are moving towards
+    building with GCC for all targets.
+  * restructed the build environment of codesets.library to use
+    GCC for all three major platforms (OS3/OS4/MOS). Also dropped
+    the SAS/C build process. Sorry, but SAS/C is really way too old
+    and too buggy to still be considered a sensible compiler and
+    maintaining codesets.library for the very same compiler should
+    eliminate some problems in future, too.
+  * partly applied OS4 porting patch supplied by Alexandre Balaban.
+
+2005-11-23  Alfonso Ranieri <alforan@tin.it>
+
+  * initial checkin of LGPLed sources
