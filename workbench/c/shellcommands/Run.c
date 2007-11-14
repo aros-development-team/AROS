@@ -68,15 +68,11 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     struct CommandLineInterface *cli = Cli();
     BPTR cis = NULL, cos = NULL, ces = NULL;
     LONG CliNum;
-    LONG stacksize;
+
 
     if (cli)
     {
 	BPTR toclone, olddir;
-
-	stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
-	if (stacksize < AROS_STACKSIZE)
-	    stacksize = AROS_STACKSIZE;
 
 	if (IsInteractive(Input()))
 	    toclone = Input();
@@ -119,7 +115,6 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 	    { SYS_Asynch,     TRUE          },
 	    { SYS_CliNumPtr,  (IPTR)&CliNum },
 	    { SYS_UserShell,  TRUE          },
-	    { NP_StackSize,   stacksize     },
 	    { TAG_DONE,       0             }
         };
 
