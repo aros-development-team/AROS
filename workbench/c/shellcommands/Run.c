@@ -49,7 +49,7 @@
     HISTORY
 
 ******************************************************************************/
-#include <aros/debug.h>
+
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/filesystem.h>
@@ -77,7 +77,7 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 	stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 	if (stacksize < AROS_STACKSIZE)
 	    stacksize = AROS_STACKSIZE;
-bug("[Run] Defaultstack %d\n", stacksize);
+
 	if (IsInteractive(Input()))
 	    toclone = Input();
 	else
