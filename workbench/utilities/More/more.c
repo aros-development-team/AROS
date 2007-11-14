@@ -116,7 +116,7 @@ static struct LineNode 	*linearray;
 
 static UBYTE 		*filebuffer;
 
-static char 		*filename, s[256], *searchtext;
+static char 		*filename, *fillename_dest, s[256], *searchtext;
 
 static BPTR 		fh;
 
@@ -259,7 +259,7 @@ static void GetArguments(int argc, char **argv)
 	}
 	
     }
-    if (!filename) filename = GetFile();
+    if (!filename) filename = GetFile(TRUE);
     if (!filename) Cleanup(NULL);
     
     strncpy(filenamebuffer, filename, 299);
@@ -1436,10 +1436,16 @@ static BOOL HandleWin(void)
 		    {
 			switch((ULONG)GTMENUITEM_USERDATA(item))
 			{
+			    case MSG_MEN_PROJECT_SAVEAS:
+			    	fillename_dest = GetFile(FALSE);
+				if (!fillename_dest)
+				    break;
+
 			    case MSG_MEN_PROJECT_PRINT:
-				sprintf(s, "Run >NIL: Type >PRT: %s", filename);
+				sprintf(s, "Run >NIL: Type \"%s\" TO \"%s\"", filenamebuffer, fillename_dest ? fillename_dest : "PRT:");
 				if (System(s, TAG_END))
 				    DisplayBeep(NULL);
+			    	fillename_dest = NULL;
 				break;
 
 			    case MSG_MEN_PROJECT_ABOUT:
@@ -1451,7 +1457,7 @@ static BOOL HandleWin(void)
 				break;
 
 			    case MSG_MEN_PROJECT_OPEN:
-			    	if ((filename = GetFile()))
+			    	if ((filename = GetFile(TRUE)))
 				{
 				    if (OpenFile())
 				    {

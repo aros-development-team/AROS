@@ -34,7 +34,7 @@ CONST_STRPTR MSG(ULONG id);
 void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
-STRPTR GetFile(void);
+STRPTR GetFile(BOOL);
 void About(void);
 
 /****************************************************************************************/
