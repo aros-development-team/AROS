@@ -234,7 +234,14 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	{
 	    { NP_Entry      , (IPTR) NewCliProc             }, /* 0  */
 	    { NP_Priority   , me->pr_Task.tc_Node.ln_Pri    }, /* 1  */
-	    { NP_StackSize  , AROS_STACKSIZE                }, /* 2  */
+	    
+	    /*
+		Disabled, because CreateNewProc() already handles NP_StackSize,
+		i.e. it uses either AROS_STACKSIZE or the stack from the parent
+		process.
+	    */
+	    // { NP_StackSize  , AROS_STACKSIZE                },
+	    { TAG_IGNORE    , 0                             }, /* 2  */
 	    { NP_Name       , isBoot ? (IPTR)"Boot Shell" :
 	                      isBackground ?
 			      (IPTR)"Background CLI" :
