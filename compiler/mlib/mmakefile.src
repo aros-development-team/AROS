@@ -99,7 +99,6 @@ FILES := \
     s_floorl \
     s_fma \
     s_fmaf \
-    s_fmal \
     s_fmax \
     s_fmaxf \
     s_fmaxl \
@@ -108,7 +107,6 @@ FILES := \
     s_fminl \
     s_frexp \
     s_frexpf \
-    s_frexpl \
     s_ilogb \
     s_ilogbf \
     s_ilogbl \
@@ -135,8 +133,6 @@ FILES := \
     s_nearbyint \
     s_nextafter \
     s_nextafterf \
-    s_nextafterl \
-    s_nexttoward \
     s_nexttowardf \
     s_remquo \
     s_remquof \
@@ -148,7 +144,6 @@ FILES := \
     s_scalbln \
     s_scalbn \
     s_scalbnf \
-    s_scalbnl \
     s_signbit \
     s_signgam \
     s_significand \
@@ -168,6 +163,15 @@ FILES := \
     w_dremf \
     infinity \
     fenv
+
+# If long double != double use these; otherwise, we alias the double versions
+# These are architectures that have LDBL_MANT_DIG == 53 in float.h
+# XXX use configure to determine this
+ifneq ($AROS_TARGET_CPU), ppc)
+ifneq ($AROS_TARGET_CPU), arm)
+FILES += s_fmal s_frexpl s_nextafterl s_nexttoward s_scalbnl
+endif
+endif
 
 #MM includes-copy : setup-includes
 includes-copy : $(AROS_INCLUDES)/math.h
