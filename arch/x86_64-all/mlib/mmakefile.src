@@ -8,4 +8,4 @@ include $(TOP)/config/make.cfg
   mainmmake=linklibs-mlib-hasfpu \
   maindir=compiler/mlib \
   arch=x86_64 \
-  files="fenv"
+  files="fenv infinity"

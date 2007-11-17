@@ -51,7 +51,6 @@ FILES := \
     e_sinhf \
     e_sqrt \
     e_sqrtf \
-    infinity \
     k_cos \
     k_cosf \
     k_rem_pio2 \
@@ -167,6 +166,7 @@ FILES := \
     w_cabsf \
     w_drem \
     w_dremf \
+    infinity \
     fenv
 
 #MM includes-copy : setup-includes
