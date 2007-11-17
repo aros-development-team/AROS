@@ -1,12 +1,12 @@
 /* k_tanf.c -- float version of k_tan.c
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Optimized by Bruce D. Evans.
  */
 
 /*
  * ====================================================
- * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ * Copyright 2004 Sun Microsystems, Inc.  All Rights Reserved.
  *
- * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
  * software is freely granted, provided that this notice
  * is preserved.
@@ -15,7 +15,7 @@
 
 #ifndef INLINE_KERNEL_TANDF
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tanf.c,v 1.5 1999/08/28 00:06:42 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tanf.c,v 1.20 2005/11/28 11:46:20 bde Exp $";
 #endif
 #endif
 

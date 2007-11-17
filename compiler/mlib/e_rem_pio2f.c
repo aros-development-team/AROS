@@ -1,5 +1,6 @@
 /* e_rem_pio2f.c -- float version of e_rem_pio2.c
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Debugged and optimized by Bruce D. Evans.
  */
 
 /*
@@ -14,7 +15,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_rem_pio2f.c,v 1.6 1999/08/28 00:06:37 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_rem_pio2f.c,v 1.19 2005/11/23 03:03:09 bde Exp $";
 #endif
 
 /* __ieee754_rem_pio2f(x,y)

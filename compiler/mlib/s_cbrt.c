@@ -8,10 +8,12 @@
  * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
+ *
+ * Optimized by Bruce D. Evans.
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrt.c,v 1.5 1999/08/28 00:06:44 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrt.c,v 1.14 2005/12/20 01:21:30 bde Exp $";
 #endif
 
 #include "math.h"

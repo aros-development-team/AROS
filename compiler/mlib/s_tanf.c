@@ -1,5 +1,6 @@
 /* s_tanf.c -- float version of s_tan.c.
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Optimized by Bruce D. Evans.
  */
 
 /*
@@ -14,7 +15,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanf.c,v 1.5 1999/08/28 00:06:56 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanf.c,v 1.14 2005/11/28 05:35:32 bde Exp $";
 #endif
 
 #include "math.h"

@@ -1,5 +1,6 @@
 /* k_sinf.c -- float version of k_sin.c
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Optimized by Bruce D. Evans.
  */
 
 /*
@@ -15,7 +16,7 @@
 
 #ifndef INLINE_KERNEL_SINDF
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_sinf.c,v 1.5 1999/08/28 00:06:41 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_sinf.c,v 1.13 2005/11/30 11:51:17 bde Exp $";
 #endif
 #endif
 
