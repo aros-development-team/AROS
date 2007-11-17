@@ -25,7 +25,11 @@
  */
 
 #include <sys/cdefs.h>
+#ifndef __AROS__
 #include <sys/limits.h>
+#else
+#include <limits.h>
+#endif
 #include <fenv.h>
 #include <math.h>
 

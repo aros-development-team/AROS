@@ -28,8 +28,11 @@
 
 #include <complex.h>
 
+/* AROS has this as a macro in complex.h */
+#ifndef creal
 double
 creal(double complex z)
 {
 	return z;
 }
+#endif
