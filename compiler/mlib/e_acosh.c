@@ -53,9 +53,9 @@ __ieee754_acosh(double x)
 	    return 0.0;			/* acosh(1) = 0 */
 	} else if (hx > 0x40000000) {	/* 2**28 > x > 2 */
 	    t=x*x;
-	    return __ieee754_log(2.0*x-one/(x+__ieee754_sqrt(t-one)));
+	    return __ieee754_log(2.0*x-one/(x+sqrt(t-one)));
 	} else {			/* 1<x<2 */
 	    t = x-one;
-	    return log1p(t+__ieee754_sqrt(2.0*t+t*t));
+	    return log1p(t+sqrt(2.0*t+t*t));
 	}
 }

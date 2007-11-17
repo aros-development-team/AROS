@@ -90,7 +90,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_sqrt.c,v 1.6 1999/08/28 00:0
 static	const double	one	= 1.0, tiny=1.0e-300;
 
 double
-__generic___ieee754_sqrt(double x)
+__ieee754_sqrt(double x)
 {
 	double z;
 	int32_t sign = (int)0x80000000;

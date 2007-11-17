@@ -26,7 +26,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_fmod.c,v 1.6 1999/08/28 00:0
 static const double one = 1.0, Zero[] = {0.0, -0.0,};
 
 double
-__generic___ieee754_fmod(double x, double y)
+__ieee754_fmod(double x, double y)
 {
 	int32_t n,hx,hy,hz,ix,iy,sx,i;
 	u_int32_t lx,ly,lz;

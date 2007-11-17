@@ -152,7 +152,7 @@ __ieee754_pow(double x, double y)
 	    if(hy==0x40000000) return x*x; /* y is  2 */
 	    if(hy==0x3fe00000) {	/* y is  0.5 */
 		if(hx>=0)	/* x >= +0 */
-		return __ieee754_sqrt(x);
+		return sqrt(x);	
 	    }
 	}
 

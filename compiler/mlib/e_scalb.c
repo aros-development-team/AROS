@@ -25,10 +25,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_scalb.c,v 1.6 1999/08/28 00:
 
 #ifdef _SCALB_INT
 double
-__generic___ieee754_scalb(double x, int fn)
+__ieee754_scalb(double x, int fn)
 #else
 double
-__generic___ieee754_scalb(double x, double fn)
+__ieee754_scalb(double x, double fn)
 #endif
 {
 #ifdef _SCALB_INT

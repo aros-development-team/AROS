@@ -29,7 +29,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceil.c,v 1.6 1999/08/28 00:0
 static const double huge = 1.0e300;
 
 double
-__generic_ceil(double x)
+ceil(double x)
 {
 	int32_t i0,i1,j0;
 	u_int32_t i,j;

@@ -49,7 +49,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cos.c,v 1.6 1999/08/28 00:06
 #include "math_private.h"
 
 double
-__generic_cos(double x)
+cos(double x)
 {
 	double y[2],z=0.0;
 	int32_t n, ix;
