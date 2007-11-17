@@ -24,6 +24,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_frexp.c,v 1.6 1999/08/28 00:
  * with *exp=0.
  */
 
+#include <sys/cdefs.h>
+#include <float.h>
+
 #include "math.h"
 #include "math_private.h"
 

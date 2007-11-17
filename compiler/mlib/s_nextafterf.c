@@ -23,6 +23,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafterf.c,v 1.5 1999/08/2
 float
 nextafterf(float x, float y)
 {
+	volatile float t;
 	int32_t hx,hy,ix,iy;
 
 	GET_FLOAT_WORD(hx,x);
@@ -33,11 +34,11 @@ nextafterf(float x, float y)
 	if((ix>0x7f800000) ||   /* x is nan */
 	   (iy>0x7f800000))     /* y is nan */
 	   return x+y;
-	if(x==y) return x;		/* x=y, return x */
+	if(x==y) return y;		/* x=y, return y */
 	if(ix==0) {				/* x == 0 */
 	    SET_FLOAT_WORD(x,(hy&0x80000000)|1);/* return +-minsubnormal */
-	    y = x*x;
-	    if(y==x) return y; else return x;	/* raise underflow flag */
+	    t = x*x;
+	    if(t==x) return t; else return x;	/* raise underflow flag */
 	}
 	if(hx>=0) {				/* x > 0 */
 	    if(hx>hy) {				/* x > y, x -= ulp */
@@ -55,8 +56,8 @@ nextafterf(float x, float y)
 	hy = hx&0x7f800000;
 	if(hy>=0x7f800000) return x+x;	/* overflow  */
 	if(hy<0x00800000) {		/* underflow */
-	    y = x*x;
-	    if(y!=x) {		/* raise underflow flag */
+	    t = x*x;
+	    if(t!=x) {		/* raise underflow flag */
 	        SET_FLOAT_WORD(y,hx);
 		return y;
 	    }

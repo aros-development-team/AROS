@@ -88,7 +88,7 @@ recompute:
 	    iq[jz-1] -= i<<(8-q0);
 	    ih = iq[jz-1]>>(7-q0);
 	}
-	else if(q0==0) ih = iq[jz-1]>>8;
+	else if(q0==0) ih = iq[jz-1]>>7;
 	else if(z>=(float)0.5) ih=2;
 
 	if(ih>0) {	/* q > 0.5 */
@@ -169,6 +169,7 @@ recompute:
 	    case 2:
 		fw = 0.0;
 		for (i=jz;i>=0;i--) fw += fq[i];
+		fw = *(volatile float *)&fw;	/* clip any extra precision */
 		y[0] = (ih==0)? fw: -fw;
 		fw = fq[0]-fw;
 		for (i=1;i<=jz;i++) fw += fq[i];

@@ -74,10 +74,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_lgamma_r.c,v 1.5 1999/08/28 
  *
  *   5. Special Cases
  *		lgamma(2+s) ~ s*(1-Euler) for tiny s
- *		lgamma(1)=lgamma(2)=0
- *		lgamma(x) ~ -log(x) for tiny x
- *		lgamma(0) = lgamma(inf) = inf
- *	 	lgamma(-integer) = +-inf
+ *		lgamma(1) = lgamma(2) = 0
+ *		lgamma(x) ~ -log(|x|) for tiny x
+ *		lgamma(0) = lgamma(neg.integer) = inf and raise divide-by-zero
+ *		lgamma(inf) = inf
+ *		lgamma(-inf) = inf (bug for bug compatible with C99!?)
  *
  */
 
@@ -203,11 +204,12 @@ double
 __ieee754_lgamma_r(double x, int *signgamp)
 {
 	double t,y,z,nadj,p,p1,p2,p3,q,r,w;
-	int i,hx,lx,ix;
+	int32_t hx;
+	int i,lx,ix;
 
 	EXTRACT_WORDS(hx,lx,x);
 
-    /* purge off +-inf, NaN, +-0, and negative arguments */
+    /* purge off +-inf, NaN, +-0, tiny and negative arguments */
 	*signgamp = 1;
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) return x*x;

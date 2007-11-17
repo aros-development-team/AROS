@@ -21,6 +21,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbn.c,v 1.6 1999/08/28 00
  * exponentiation or a multiplication.
  */
 
+#include <sys/cdefs.h>
+#include <float.h>
+
 #include "math.h"
 #include "math_private.h"
 
