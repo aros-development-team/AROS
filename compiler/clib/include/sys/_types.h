@@ -35,6 +35,8 @@ typedef char *                  __caddr_t;          /* Not POSIX */
 typedef __int32_t               __clockid_t;
 typedef unsigned long           __clock_t;
 typedef __uintptr_t             __dev_t;
+typedef double                  __double_t;
+typedef double                  __float_t;
 typedef __int32_t               __fsblkcnt_t;
 typedef __int32_t               __fsfilcnt_t;
 typedef __uint32_t              __gid_t;

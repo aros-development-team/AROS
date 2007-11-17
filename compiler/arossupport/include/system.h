@@ -133,6 +133,8 @@
 #    define __const
 #endif
 
+#define __pure2 __const
+
 /* 4. Macros for debugging and development */
 #if defined(__GNUC__) || defined(__INTEL_COMPILER) || (defined(__STDC__) && __STDC_VERSION__ >= 199901L)
 #if !defined(AROS_64BIT_TYPE)
