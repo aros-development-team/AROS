@@ -64,3 +64,8 @@ scalbn (double x, int n)
 __weak_reference(scalbn, ldexpl);
 __weak_reference(scalbn, scalbnl);
 #endif
+
+/* FreeBSD has ldexp() in libc */
+#ifdef __AROS__
+__strong_reference(scalbn, ldexp);
+#endif

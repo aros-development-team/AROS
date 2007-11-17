@@ -77,3 +77,9 @@ nextafter(double x, double y)
 	INSERT_WORDS(x,hx,lx);
 	return x;
 }
+
+#if (LDBL_MANT_DIG == 53)
+__weak_reference(nextafter, nexttoward);
+__weak_reference(nextafter, nexttowardl);
+__weak_reference(nextafter, nextafterl);
+#endif
