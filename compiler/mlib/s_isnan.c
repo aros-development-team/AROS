@@ -33,13 +33,17 @@
 /* FreeBSD has this in libc */
 #ifdef __AROS__
 int
-isnan(double d)
+__isnan(double d)
 {
 	union IEEEd2bits u;
 
 	u.d = d;
 	return (u.bits.exp == 2047 && (u.bits.manl != 0 || u.bits.manh != 0));
 }
+
+/* isnan is now a macro in math.h, but we need to keep a proper symbol around
+ * for anyone linking to us without recompiling with new headers */
+__weak_reference(__isnan, isnan);
 #endif
 
 int
