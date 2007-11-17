@@ -31,5 +31,5 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_isnanf.c,v 1.5 1999/08/28 00
 	GET_FLOAT_WORD(ix,x);
 	ix &= 0x7fffffff;
 	ix = 0x7f800000 - ix;
-	return (int)(((uint32_t)(ix))>>31);
+	return (int)(((u_int32_t)(ix))>>31);
 }

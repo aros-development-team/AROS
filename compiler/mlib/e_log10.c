@@ -63,7 +63,7 @@ __generic___ieee754_log10(double x)
 {
 	double y,z;
 	int32_t i,k,hx;
-	uint32_t lx;
+	u_int32_t lx;
 
 	EXTRACT_WORDS(hx,lx,x);
 
@@ -77,7 +77,7 @@ __generic___ieee754_log10(double x)
         }
 	if (hx >= 0x7ff00000) return x+x;
 	k += (hx>>20)-1023;
-	i  = ((uint32_t)k&0x80000000)>>31;
+	i  = ((u_int32_t)k&0x80000000)>>31;
         hx = (hx&0x000fffff)|((0x3ff-i)<<20);
         y  = (double)(k+i);
 	SET_HIGH_WORD(x,hx);

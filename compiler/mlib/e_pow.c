@@ -102,7 +102,7 @@ __ieee754_pow(double x, double y)
 	double y1,t1,t2,r,s,t,u,v,w;
 	int32_t i,j,k,yisint,n;
 	int32_t hx,hy,ix,iy;
-	uint32_t lx,ly;
+	u_int32_t lx,ly;
 
 	EXTRACT_WORDS(hx,lx,x);
 	EXTRACT_WORDS(hy,ly,y);
@@ -177,7 +177,7 @@ __ieee754_pow(double x, double y)
 	if((((hx>>31)+1)|yisint)==0) return (x-x)/(x-x);
        but ANSI C says a right shift of a signed negative quantity is
        implementation defined.  */
-	if(((((uint32_t)hx>>31)-1)|yisint)==0) return (x-x)/(x-x);
+	if(((((u_int32_t)hx>>31)-1)|yisint)==0) return (x-x)/(x-x);
 
     /* |y| is huge */
 	if(iy>0x41e00000) { /* if |y| > 2**31 */
@@ -248,7 +248,7 @@ __ieee754_pow(double x, double y)
 	}
 
 	s = one; /* s (sign of result -ve**odd) = -1 else = 1 */
-	if(((((uint32_t)hx>>31)-1)|(yisint-1))==0)
+	if(((((u_int32_t)hx>>31)-1)|(yisint-1))==0)
 	    s = -one;/* (-ve)**(odd int) */
 
     /* split up y into y1+y2 and compute (y1+y2)*(t1+t2) */

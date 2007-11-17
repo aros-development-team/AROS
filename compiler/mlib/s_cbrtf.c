@@ -39,8 +39,8 @@ cbrtf(float x)
 {
 	float r,s,t;
 	int32_t hx;
-	uint32_t sign;
-	uint32_t high;
+	u_int32_t sign;
+	u_int32_t high;
 
 	GET_FLOAT_WORD(hx,x);
 	sign=hx&0x80000000; 		/* sign= sign(x) */

@@ -33,7 +33,7 @@ double
 __generic___ieee754_remainder(double x, double p)
 {
 	int32_t hx,hp;
-	uint32_t sx,lx,lp;
+	u_int32_t sx,lx,lp;
 	double p_half;
 
 	EXTRACT_WORDS(hx,lx,x);

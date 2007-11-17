@@ -32,7 +32,7 @@ double
 __generic_ceil(double x)
 {
 	int32_t i0,i1,j0;
-	uint32_t i,j;
+	u_int32_t i,j;
 	EXTRACT_WORDS(i0,i1,x);
 	j0 = ((i0>>20)&0x7ff)-0x3ff;
 	if(j0<20) {
@@ -53,7 +53,7 @@ __generic_ceil(double x)
 	    if(j0==0x400) return x+x;	/* inf or NaN */
 	    else return x;		/* x is integral */
 	} else {
-	    i = ((uint32_t)(0xffffffff))>>(j0-20);
+	    i = ((u_int32_t)(0xffffffff))>>(j0-20);
 	    if((i1&i)==0) return x;	/* x is integral */
 	    if(huge+x>0.0) { 		/* raise inexact flag */
 		if(i0>0) {
