@@ -196,8 +196,9 @@
 /* These are taken (more or less) from FreeBSD sys/cdefs.h */
 #define __strong_reference(sym,aliassym) \
     extern __typeof__ (sym) aliassym __attribute__ ((alias (#sym)))
-#define __weak_reference(sym,aliassym)   \
-    extern __typeof__ (sym) aliassym __attribute__ ((weak, alias (#sym)))
+#define __weak_reference(sym,alias)        \
+        __asm__(".weak " #alias);          \
+        __asm__(".equ "  #alias ", " #sym)
 
 #include <endian.h>
 
