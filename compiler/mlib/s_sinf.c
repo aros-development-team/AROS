@@ -1,5 +1,6 @@
 /* s_sinf.c -- float version of s_sin.c.
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Optimized by Bruce D. Evans.
  */
 
 /*
@@ -14,7 +15,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sinf.c,v 1.5 1999/08/28 00:06:55 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_sinf.c,v 1.14 2005/11/28 06:15:10 bde Exp $";
 #endif
 
 #include "math.h"

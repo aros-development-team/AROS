@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbn.c,v 1.6 1999/08/28 00:06:54 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbn.c,v 1.11 2005/03/07 21:27:37 das Exp $";
 #endif
 
 /*
@@ -59,3 +59,8 @@ scalbn (double x, int n)
 	SET_HIGH_WORD(x,(hx&0x800fffff)|(k<<20));
         return x*twom54;
 }
+
+#if (LDBL_MANT_DIG == 53)
+__weak_reference(scalbn, ldexpl);
+__weak_reference(scalbn, scalbnl);
+#endif

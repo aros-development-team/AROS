@@ -1,9 +1,9 @@
-/* @(#)e_exp.c 5.1 93/09/24 */
+
+/* @(#)e_exp.c 1.6 04/04/22 */
 /*
  * ====================================================
- * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ * Copyright (C) 2004 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
  * software is freely granted, provided that this notice
  * is preserved.
@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_exp.c,v 1.7 1999/08/28 00:06:30 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_exp.c,v 1.10 2005/02/04 18:26:05 das Exp $";
 #endif
 
 /* __ieee754_exp(x)

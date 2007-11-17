@@ -1,5 +1,6 @@
 /* k_cosf.c -- float version of k_cos.c
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Debugged and optimized by Bruce D. Evans.
  */
 
 /*
@@ -15,7 +16,7 @@
 
 #ifndef INLINE_KERNEL_COSDF
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_cosf.c,v 1.5 1999/08/28 00:06:40 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_cosf.c,v 1.15 2005/11/30 11:51:17 bde Exp $";
 #endif
 #endif
 

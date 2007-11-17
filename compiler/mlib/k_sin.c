@@ -1,9 +1,10 @@
-/* @(#)k_sin.c 5.1 93/09/24 */
+
+/* @(#)k_sin.c 1.3 95/01/18 */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
- * Developed at SunPro, a Sun Microsystems, Inc. business.
+ * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
  * software is freely granted, provided that this notice
  * is preserved.
@@ -11,7 +12,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_sin.c,v 1.5 1999/08/28 00:06:41 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_sin.c,v 1.10 2005/11/02 13:06:49 bde Exp $";
 #endif
 
 /* __kernel_sin( x, y, iy)

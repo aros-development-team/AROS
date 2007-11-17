@@ -1,5 +1,6 @@
 /* s_cbrtf.c -- float version of s_cbrt.c.
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Debugged and optimized by Bruce D. Evans.
  */
 
 /*
@@ -14,7 +15,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrtf.c,v 1.5 1999/08/28 00:06:44 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrtf.c,v 1.17 2007/05/29 07:13:07 bde Exp $";
 #endif
 
 #include "math.h"

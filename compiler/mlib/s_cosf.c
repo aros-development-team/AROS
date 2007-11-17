@@ -1,5 +1,6 @@
 /* s_cosf.c -- float version of s_cos.c.
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
+ * Optimized by Bruce D. Evans.
  */
 
 /*
@@ -14,7 +15,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cosf.c,v 1.5 1999/08/28 00:06:46 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cosf.c,v 1.15 2005/11/30 06:47:18 bde Exp $";
 #endif
 
 #include "math.h"

@@ -1,17 +1,18 @@
-/* @(#)k_tan.c 5.1 93/09/24 */
+/* @(#)k_tan.c 1.5 04/04/22 SMI */
+
 /*
  * ====================================================
- * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ * Copyright 2004 Sun Microsystems, Inc.  All Rights Reserved.
  *
- * Developed at SunPro, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
  * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
+/* INDENT OFF */
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tan.c,v 1.5 1999/08/28 00:06:42 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/k_tan.c,v 1.12 2005/11/02 14:01:45 bde Exp $";
 #endif
 
 /* __kernel_tan( x, y, k )

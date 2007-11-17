@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.6 1999/08/28 00:06:49 peter Exp $";
+static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.9 2004/10/09 17:14:28 stefanf Exp $";
 #endif
 
 /* ilogb(double x)
