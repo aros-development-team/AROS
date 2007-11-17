@@ -22,7 +22,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_finite.c,v 1.6 1999/08/28 00
 #include "math.h"
 #include "math_private.h"
 
-	int __generic_finite(double x)
+	int finite(double x)
 {
 	int32_t hx;
 	GET_HIGH_WORD(hx,x);

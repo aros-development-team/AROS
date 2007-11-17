@@ -24,7 +24,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_copysign.c,v 1.6 1999/08/28 
 #include "math_private.h"
 
 double
-__generic_copysign(double x, double y)
+copysign(double x, double y)
 {
 	u_int32_t hx,hy;
 	GET_HIGH_WORD(hx,x);
