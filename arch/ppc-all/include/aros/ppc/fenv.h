@@ -29,6 +29,9 @@
 #ifndef	_FENV_H_
 #define	_FENV_H_
 
+#ifdef __AROS__
+#include <sys/cdefs.h>
+#endif
 #include <sys/_types.h>
 
 typedef	__uint32_t	fenv_t;
