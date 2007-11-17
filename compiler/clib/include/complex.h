@@ -18,8 +18,6 @@
 #define complex		_Complex
 #define I		_Complex_I
 
-#warning AROS does not implement complex.h functions.
-#if 0
 __BEGIN_DECLS
 double complex cacos(double complex z);
 float complex cacosf(float complex z);
@@ -66,8 +64,7 @@ float complex cprojf(float complex z);
 double creal(double complex z);
 float crealf(float complex z);
 
-/* long double is not necessary implemented */
-#if defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
+/* C99 long double variants */
 long double complex cacosl(long double complex z);
 long double complex casinl(long double complex z);
 long double complex catanl(long double complex z);
@@ -90,9 +87,7 @@ long double cimagl(long double complex z);
 long double complex conjl(long double complex z);
 long double complex cprojl(long double complex z);
 long double creall(long double complex z);
-#endif
 __END_DECLS
-#endif
 
 #ifdef __GNUC__
 #define	cimag(z)	(__imag__ (z))
