@@ -28,7 +28,7 @@ double
 nextafter(double x, double y)
 {
 	int32_t hx,hy,ix,iy;
-	uint32_t lx,ly;
+	u_int32_t lx,ly;
 
 	EXTRACT_WORDS(hx,lx,x);
 	EXTRACT_WORDS(hy,ly,y);

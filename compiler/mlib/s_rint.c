@@ -44,7 +44,7 @@ double
 __generic_rint(double x)
 {
 	int32_t i0,j0,sx;
-	uint32_t i,i1;
+	u_int32_t i,i1;
 	double w,t;
 	EXTRACT_WORDS(i0,i1,x);
 	sx = (i0>>31)&1;
@@ -74,7 +74,7 @@ __generic_rint(double x)
 	    if(j0==0x400) return x+x;	/* inf or NaN */
 	    else return x;		/* x is integral */
 	} else {
-	    i = ((uint32_t)(0xffffffff))>>(j0-20);
+	    i = ((u_int32_t)(0xffffffff))>>(j0-20);
 	    if((i1&i)==0) return x;	/* x is integral */
 	    i>>=1;
 	    if((i1&i)!=0) i1 = (i1&(~i))|((0x40000000)>>(j0-20));

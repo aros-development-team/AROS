@@ -57,7 +57,7 @@ __generic___ieee754_atan2(double y, double x)
 {
 	double z;
 	int32_t k,m,hx,hy,ix,iy;
-	uint32_t lx,ly;
+	u_int32_t lx,ly;
 
 	EXTRACT_WORDS(hx,lx,x);
 	ix = hx&0x7fffffff;
@@ -110,7 +110,7 @@ __generic___ieee754_atan2(double y, double x)
 	switch (m) {
 	    case 0: return       z  ;	/* atan(+,+) */
 	    case 1: {
-	    	      uint32_t zh;
+	    	      u_int32_t zh;
 		      GET_HIGH_WORD(zh,z);
 		      SET_HIGH_WORD(z,zh ^ 0x80000000);
 		    }

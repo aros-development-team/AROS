@@ -36,7 +36,7 @@ float
 rintf(float x)
 {
 	int32_t i0,j0,sx;
-	uint32_t i,i1;
+	u_int32_t i,i1;
 	float w,t;
 	GET_FLOAT_WORD(i0,x);
 	sx = (i0>>31)&1;

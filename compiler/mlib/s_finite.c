@@ -26,5 +26,5 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_finite.c,v 1.6 1999/08/28 00
 {
 	int32_t hx;
 	GET_HIGH_WORD(hx,x);
-	return (int)((uint32_t)((hx&0x7fffffff)-0x7ff00000)>>31);
+	return (int)((u_int32_t)((hx&0x7fffffff)-0x7ff00000)>>31);
 }

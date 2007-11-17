@@ -20,7 +20,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cbrt.c,v 1.5 1999/08/28 00:0
 /* cbrt(x)
  * Return cube root of x
  */
-static const uint32_t
+static const u_int32_t
 	B1 = 715094163, /* B1 = (682-0.03306235651)*2**20 */
 	B2 = 696219795; /* B2 = (664-0.03306235651)*2**20 */
 
@@ -36,8 +36,8 @@ cbrt(double x)
 {
 	int32_t	hx;
 	double r,s,t=0.0,w;
-	uint32_t sign;
-	uint32_t high,low;
+	u_int32_t sign;
+	u_int32_t high,low;
 
 	GET_HIGH_WORD(hx,x);
 	sign=hx&0x80000000; 		/* sign= sign(x) */

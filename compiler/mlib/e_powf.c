@@ -121,7 +121,7 @@ __ieee754_powf(float x, float y)
 	}
 
     /* (x<0)**(non-int) is NaN */
-	if(((((uint32_t)hx>>31)-1)|yisint)==0) return (x-x)/(x-x);
+	if(((((u_int32_t)hx>>31)-1)|yisint)==0) return (x-x)/(x-x);
 
     /* |y| is huge */
 	if(iy>0x4d000000) { /* if |y| > 2**27 */
@@ -192,7 +192,7 @@ __ieee754_powf(float x, float y)
 	}
 
 	s = one; /* s (sign of result -ve**odd) = -1 else = 1 */
-	if(((((uint32_t)hx>>31)-1)|(yisint-1))==0)
+	if(((((u_int32_t)hx>>31)-1)|(yisint-1))==0)
 	    s = -one;	/* (-ve)**(odd int) */
 
     /* split up y into y1+y2 and compute (y1+y2)*(t1+t2) */

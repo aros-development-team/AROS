@@ -21,6 +21,10 @@
 #include <aros/system.h>
 #include <stdint.h>
 
+/* Upstream code uses u_int32_t a lot, but AROS does not define it. Defining
+ *  * it here means we can keep changes to the code to a minimum. */
+#define u_int32_t uint32_t
+
 /* The original fdlibm code used statements like:
 	n0 = ((*(int*)&one)>>29)^1;		* index of high word *
 	ix0 = *(n0+(int*)&x);			* high word of x *
@@ -42,8 +46,8 @@ typedef union
   double value;
   struct
   {
-    uint32_t msw;
-    uint32_t lsw;
+    u_int32_t msw;
+    u_int32_t lsw;
   } parts;
 } ieee_double_shape_type;
 
@@ -56,8 +60,8 @@ typedef union
   double value;
   struct
   {
-    uint32_t	lsw;
-    uint32_t	msw;
+    u_int32_t	lsw;
+    u_int32_t	msw;
   } parts;
 } ieee_double_shape_type;
 
@@ -127,7 +131,7 @@ do {								\
 typedef union
 {
   float value;
-  uint32_t word;
+  u_int32_t word;
 } ieee_float_shape_type;
 
 /* Get a 32 bit int from a float.  */
