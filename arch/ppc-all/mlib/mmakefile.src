@@ -8,4 +8,4 @@ include $(TOP)/config/make.cfg
   mainmmake=linklibs-arosm-hasfpu \
   maindir=compiler/mlib \
   arch=ppc \
-  files="fenv"
+  files="fenv infinity"
