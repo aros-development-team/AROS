@@ -28,8 +28,11 @@
 
 #include <complex.h>
 
+/* AROS has this as a macro in complex.h */
+#ifndef cimag
 double
 cimag(double complex z)
 {
 	return -z * I;
 }
+#endif
