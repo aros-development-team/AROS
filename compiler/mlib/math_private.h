@@ -11,35 +11,39 @@
 
 /*
  * from: @(#)fdlibm.h 5.1 93/09/24
- * from: $FreeBSD: src/lib/msun/src/math_private.h,v 1.6 1999/08/28 00:06:43 peter Exp $
- * $Id$
+ * $FreeBSD: src/lib/msun/src/math_private.h,v 1.20 2005/11/28 04:58:57 bde Exp $
  */
 
 #ifndef _MATH_PRIVATE_H_
 #define _MATH_PRIVATE_H_
 
+#ifndef __AROS__
+#include <sys/types.h>
+#include <machine/endian.h>
+#else
 #include <aros/system.h>
 #include <stdint.h>
+#endif
 
-/* Upstream code uses u_int32_t a lot, but AROS does not define it. Defining
- *  * it here means we can keep changes to the code to a minimum. */
-#define u_int32_t uint32_t
+/*
+ * The original fdlibm code used statements like:
+ *	n0 = ((*(int*)&one)>>29)^1;		* index of high word *
+ *	ix0 = *(n0+(int*)&x);			* high word of x *
+ *	ix1 = *((1-n0)+(int*)&x);		* low word of x *
+ * to dig two 32 bit words out of the 64 bit IEEE floating point
+ * value.  That is non-ANSI, and, moreover, the gcc instruction
+ * scheduler gets it wrong.  We instead use the following macros.
+ * Unlike the original code, we determine the endianness at compile
+ * time, not at run time; I don't see much benefit to selecting
+ * endianness at run time.
+ */
 
-/* The original fdlibm code used statements like:
-	n0 = ((*(int*)&one)>>29)^1;		* index of high word *
-	ix0 = *(n0+(int*)&x);			* high word of x *
-	ix1 = *((1-n0)+(int*)&x);		* low word of x *
-   to dig two 32 bit words out of the 64 bit IEEE floating point
-   value.  That is non-ANSI, and, moreover, the gcc instruction
-   scheduler gets it wrong.  We instead use the following macros.
-   Unlike the original code, we determine the endianness at compile
-   time, not at run time; I don't see much benefit to selecting
-   endianness at run time.  */
+/*
+ * A union which permits us to convert between a double and two 32 bit
+ * ints.
+ */
 
-/* A union which permits us to convert between a double and two 32 bit
-   ints.  */
-
-#if AROS_BIG_ENDIAN == 1
+#if AROS_BIG_ENDIAN
 
 typedef union
 {
@@ -53,7 +57,7 @@ typedef union
 
 #endif
 
-#if AROS_BIG_ENDIAN == 0
+#if !AROS_BIG_ENDIAN
 
 typedef union
 {
@@ -125,13 +129,16 @@ do {								\
   (d) = sl_u.value;						\
 } while (0)
 
-/* A union which permits us to convert between a float and a 32 bit
-   int.  */
+/*
+ * A union which permits us to convert between a float and a 32 bit
+ * int.
+ */
 
 typedef union
 {
   float value;
-  u_int32_t word;
+  /* FIXME: Assumes 32 bit int.  */
+  unsigned int word;
 } ieee_float_shape_type;
 
 /* Get a 32 bit int from a float.  */
@@ -152,113 +159,139 @@ do {								\
   (d) = sf_u.value;						\
 } while (0)
 
-/* ieee style elementary functions */
-extern double __ieee754_sqrt (double);
-extern double __ieee754_acos (double);
-extern double __ieee754_acosh (double);
-extern double __ieee754_log (double);
-extern double __ieee754_atanh (double);
-extern double __ieee754_asin (double);
-extern double __ieee754_atan2 (double,double);
-extern double __ieee754_exp (double);
-extern double __ieee754_cosh (double);
-extern double __ieee754_fmod (double,double);
-extern double __ieee754_pow (double,double);
-extern double __ieee754_lgamma_r (double,int *);
-extern double __ieee754_gamma_r (double,int *);
-extern double __ieee754_lgamma (double);
-extern double __ieee754_gamma (double);
-extern double __ieee754_log10 (double);
-extern double __ieee754_sinh (double);
-extern double __ieee754_hypot (double,double);
-extern double __ieee754_j0 (double);
-extern double __ieee754_j1 (double);
-extern double __ieee754_y0 (double);
-extern double __ieee754_y1 (double);
-extern double __ieee754_jn (int,double);
-extern double __ieee754_yn (int,double);
-extern double __ieee754_remainder (double,double);
-extern int32_t __ieee754_rem_pio2 (double,double*);
-extern double __ieee754_scalb (double,double);
+#ifdef _COMPLEX_H
+/*
+ * Inline functions that can be used to construct complex values.
+ *
+ * The C99 standard intends x+I*y to be used for this, but x+I*y is
+ * currently unusable in general since gcc introduces many overflow,
+ * underflow, sign and efficiency bugs by rewriting I*y as
+ * (0.0+I)*(y+0.0*I) and laboriously computing the full complex product.
+ * In particular, I*Inf is corrupted to NaN+I*Inf, and I*-0 is corrupted
+ * to -0.0+I*0.0.
+ */
+static __inline float complex
+cpackf(float x, float y)
+{
+	float complex z;
+
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
+}
+
+static __inline double complex
+cpack(double x, double y)
+{
+	double complex z;
+
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
+}
+
+static __inline long double complex
+cpackl(long double x, long double y)
+{
+	long double complex z;
+
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
+}
+#endif /* _COMPLEX_H */
+
+/*
+ * ieee style elementary functions
+ *
+ * We rename functions here to improve other sources' diffability
+ * against fdlibm.
+ */
+#define	__ieee754_sqrt	sqrt
+#define	__ieee754_acos	acos
+#define	__ieee754_acosh	acosh
+#define	__ieee754_log	log
+#define	__ieee754_atanh	atanh
+#define	__ieee754_asin	asin
+#define	__ieee754_atan2	atan2
+#define	__ieee754_exp	exp
+#define	__ieee754_cosh	cosh
+#define	__ieee754_fmod	fmod
+#define	__ieee754_pow	pow
+#define	__ieee754_lgamma lgamma
+#define	__ieee754_gamma	gamma
+#define	__ieee754_lgamma_r lgamma_r
+#define	__ieee754_gamma_r gamma_r
+#define	__ieee754_log10	log10
+#define	__ieee754_sinh	sinh
+#define	__ieee754_hypot	hypot
+#define	__ieee754_j0	j0
+#define	__ieee754_j1	j1
+#define	__ieee754_y0	y0
+#define	__ieee754_y1	y1
+#define	__ieee754_jn	jn
+#define	__ieee754_yn	yn
+#define	__ieee754_remainder remainder
+#define	__ieee754_scalb	scalb
+#define	__ieee754_sqrtf	sqrtf
+#define	__ieee754_acosf	acosf
+#define	__ieee754_acoshf acoshf
+#define	__ieee754_logf	logf
+#define	__ieee754_atanhf atanhf
+#define	__ieee754_asinf	asinf
+#define	__ieee754_atan2f atan2f
+#define	__ieee754_expf	expf
+#define	__ieee754_coshf	coshf
+#define	__ieee754_fmodf	fmodf
+#define	__ieee754_powf	powf
+#define	__ieee754_lgammaf lgammaf
+#define	__ieee754_gammaf gammaf
+#define	__ieee754_lgammaf_r lgammaf_r
+#define	__ieee754_gammaf_r gammaf_r
+#define	__ieee754_log10f log10f
+#define	__ieee754_sinhf	sinhf
+#define	__ieee754_hypotf hypotf
+#define	__ieee754_j0f	j0f
+#define	__ieee754_j1f	j1f
+#define	__ieee754_y0f	y0f
+#define	__ieee754_y1f	y1f
+#define	__ieee754_jnf	jnf
+#define	__ieee754_ynf	ynf
+#define	__ieee754_remainderf remainderf
+#define	__ieee754_scalbf scalbf
+
+/* Under FreeBSD, int32_t and int are the same thing. On AROS it may not be,
+ * which causes the build to fail. This is a FreeBSD bug (prototypes don't
+ * match the functions proper), so we work around it with defines below. */
 
 /* fdlibm kernel function */
-extern double __kernel_standard (double,double,int);
-extern double __kernel_sin (double,double,int);
-extern double __kernel_cos (double,double);
-extern double __kernel_tan (double,double,int);
-extern int    __kernel_rem_pio2 (double*,double*,int,int,int,const int32_t*);
-
-
-/* ieee style elementary float functions */
-extern float __ieee754_sqrtf (float);
-extern float __ieee754_acosf (float);
-extern float __ieee754_acoshf (float);
-extern float __ieee754_logf (float);
-extern float __ieee754_atanhf (float);
-extern float __ieee754_asinf (float);
-extern float __ieee754_atan2f (float,float);
-extern float __ieee754_expf (float);
-extern float __ieee754_coshf (float);
-extern float __ieee754_fmodf (float,float);
-extern float __ieee754_powf (float,float);
-extern float __ieee754_lgammaf_r (float,int *);
-extern float __ieee754_gammaf_r (float,int *);
-extern float __ieee754_lgammaf (float);
-extern float __ieee754_gammaf (float);
-extern float __ieee754_log10f (float);
-extern float __ieee754_sinhf (float);
-extern float __ieee754_hypotf (float,float);
-extern float __ieee754_j0f (float);
-extern float __ieee754_j1f (float);
-extern float __ieee754_y0f (float);
-extern float __ieee754_y1f (float);
-extern float __ieee754_jnf (int,float);
-extern float __ieee754_ynf (int,float);
-extern float __ieee754_remainderf (float,float);
-extern int32_t __ieee754_rem_pio2f (float,float*);
-extern float __ieee754_scalbf (float,float);
+#ifndef __AROS__
+int	__ieee754_rem_pio2(double,double*);
+#else
+int32_t	__ieee754_rem_pio2(double,double*);
+#endif
+double	__kernel_sin(double,double,int);
+double	__kernel_cos(double,double);
+double	__kernel_tan(double,double,int);
+#ifndef __AROS__
+int	__kernel_rem_pio2(double*,double*,int,int,int,const int*);
+#else
+int	__kernel_rem_pio2(double*,double*,int,int,int,const int32_t*);
+#endif
 
 /* float versions of fdlibm kernel functions */
-extern float __kernel_sinf (float,float,int);
-extern float __kernel_cosf (float,float);
-extern float __kernel_tanf (float,float,int);
-extern int   __kernel_rem_pio2f (float*,float*,int,int,int,const int32_t*);
-
-/*
-    This is how to specify which are implemented in assembler,
-    unfortunately we do not do this quite yet.
-#ifdef	__alpha__
-*/
-#define __generic___ieee754_acos	__ieee754_acos
-#define __generic___ieee754_asin	__ieee754_asin
-#define __generic___ieee754_atan2	__ieee754_atan2
-#define __generic___ieee754_exp		__ieee754_exp
-#define __generic___ieee754_fmod	__ieee754_fmod
-#define __generic___ieee754_log		__ieee754_log
-#define __generic___ieee754_log10	__ieee754_log10
-#define __generic___ieee754_remainder	__ieee754_remainder
-#define __generic___ieee754_scalb	__ieee754_scalb
-#define __generic___ieee754_sqrt	__ieee754_sqrt
-#define	__generic_atan			atan
-#define	__generic_ceil			ceil
-#define	__generic_copysign		copysign
-#define	__generic_cos			cos
-#define	__generic_finite		finite
-#define	__generic_floor			floor
-#define	__generic_ilogb			ilogb
-#define	__generic_log1p			log1p
-#define	__generic_logb			logb
-#define	__generic_rint			rint
-#define	__generic_scalbn		scalbn
-#define	__generic_significand		significand
-#define	__generic_sin			sin
-#define	__generic_tan			tan
-/*
+#ifndef __AROS__
+int	__ieee754_rem_pio2f(float,float*);
+#else
+int32_t	__ieee754_rem_pio2f(float,float*);
 #endif
-*/
-
 float  __kernel_sindf(double);
 float  __kernel_cosdf(double);
 float  __kernel_tandf(double,int);
+#ifndef __AROS__
+int	__kernel_rem_pio2f(float*,float*,int,int,int,const int*);
+#else
+int	__kernel_rem_pio2f(float*,float*,int,int,int,const int32_t*);
+#endif
 
-#endif /* _MATH_PRIVATE_H_ */
+#endif /* !_MATH_PRIVATE_H_ */
