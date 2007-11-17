@@ -23,12 +23,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ilogb.c,v 1.6 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 	int __generic_ilogb(double x)
-#else
-	int __generic_ilogb(x)
-	double x;
-#endif
 {
 	int32_t hx,lx,ix;
 

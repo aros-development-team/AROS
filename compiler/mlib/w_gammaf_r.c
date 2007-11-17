@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_gammaf_r.c,v 1.5 1999/08/28 
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float gammaf_r(float x, int *signgamp) /* wrapper lgammaf_r */
-#else
-	float gammaf_r(x,signgamp)              /* wrapper lgammaf_r */
-        float x; int *signgamp;
-#endif
+float
+gammaf_r(float x, int *signgamp) /* wrapper lgammaf_r */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_gammaf_r(x,signgamp);

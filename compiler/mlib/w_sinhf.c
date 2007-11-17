@@ -24,12 +24,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_sinhf.c,v 1.5 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float sinhf(float x)		/* wrapper sinhf */
-#else
-	float sinhf(x)			/* wrapper sinhf */
-	float x;
-#endif
+float
+sinhf(float x)		/* wrapper sinhf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_sinhf(x);

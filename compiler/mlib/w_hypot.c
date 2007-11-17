@@ -22,12 +22,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_hypot.c,v 1.5 1999/08/28 00:
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	double hypot(double x, double y)/* wrapper hypot */
-#else
-	double hypot(x,y)		/* wrapper hypot */
-	double x,y;
-#endif
+double
+hypot(double x, double y)/* wrapper hypot */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_hypot(x,y);

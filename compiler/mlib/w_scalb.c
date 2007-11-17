@@ -25,12 +25,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_scalb.c,v 1.5 1999/08/28 00:
 
 #include <errno.h>
 
-#ifdef __STDC__
 #ifdef _SCALB_INT
-	double scalb(double x, int fn)		/* wrapper scalb */
-#else
-	double scalb(double x, double fn)	/* wrapper scalb */
-#endif
+double
+scalb(double x, int fn)		/* wrapper scalb */
 #else
 	double scalb(x,fn)			/* wrapper scalb */
 #ifdef _SCALB_INT

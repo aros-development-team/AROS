@@ -20,18 +20,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_cosf.c,v 1.5 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const float one=1.0;
-#else
-static float one=1.0;
-#endif
 
-#ifdef __STDC__
-	float cosf(float x)
-#else
-	float cosf(x)
-	float x;
-#endif
+float
+cosf(float x)
 {
 	float y[2],z=0.0;
 	int32_t n,ix;

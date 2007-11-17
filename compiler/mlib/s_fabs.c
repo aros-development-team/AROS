@@ -21,12 +21,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_fabs.c,v 1.5 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double fabs(double x)
-#else
-	double fabs(x)
-	double x;
-#endif
+double
+fabs(double x)
 {
 	uint32_t high;
 	GET_HIGH_WORD(high,x);

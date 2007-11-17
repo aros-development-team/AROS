@@ -26,18 +26,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_ceil.c,v 1.6 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const double huge = 1.0e300;
-#else
-static double huge = 1.0e300;
-#endif
 
-#ifdef __STDC__
-	double __generic_ceil(double x)
-#else
-	double __generic_ceil(x)
-	double x;
-#endif
+double
+__generic_ceil(double x)
 {
 	int32_t i0,i1,j0;
 	uint32_t i,j;

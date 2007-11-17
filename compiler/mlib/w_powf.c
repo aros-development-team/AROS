@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_powf.c,v 1.5 1999/08/28 00:0
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float powf(float x, float y)	/* wrapper powf */
-#else
-	float powf(x,y)			/* wrapper powf */
-	float x,y;
-#endif
+float
+powf(float x, float y)	/* wrapper powf */
 {
 #ifdef _IEEE_LIBM
 	return  __ieee754_powf(x,y);

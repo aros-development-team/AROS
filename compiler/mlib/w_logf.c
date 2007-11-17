@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_logf.c,v 1.5 1999/08/28 00:0
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float logf(float x)		/* wrapper logf */
-#else
-	float logf(x)			/* wrapper logf */
-	float x;
-#endif
+float
+logf(float x)		/* wrapper logf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_logf(x);

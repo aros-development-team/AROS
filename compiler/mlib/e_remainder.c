@@ -26,19 +26,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_remainder.c,v 1.6 1999/08/28
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const double zero = 0.0;
-#else
-static double zero = 0.0;
-#endif
 
 
-#ifdef __STDC__
-	double __generic___ieee754_remainder(double x, double p)
-#else
-	double __generic___ieee754_remainder(x,p)
-	double x,p;
-#endif
+double
+__generic___ieee754_remainder(double x, double p)
 {
 	int32_t hx,hp;
 	uint32_t sx,lx,lp;

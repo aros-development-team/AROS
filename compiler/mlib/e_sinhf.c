@@ -20,18 +20,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_sinhf.c,v 1.5 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const float one = 1.0, shuge = 1.0e37;
-#else
-static float one = 1.0, shuge = 1.0e37;
-#endif
 
-#ifdef __STDC__
-	float __ieee754_sinhf(float x)
-#else
-	float __ieee754_sinhf(x)
-	float x;
-#endif
+float
+__ieee754_sinhf(float x)
 {
 	float t,w,h;
 	int32_t ix,jx;

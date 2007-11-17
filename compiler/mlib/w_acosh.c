@@ -21,12 +21,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_acosh.c,v 1.5 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double acosh(double x)		/* wrapper acosh */
-#else
-	double acosh(x)			/* wrapper acosh */
-	double x;
-#endif
+double
+acosh(double x)		/* wrapper acosh */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_acosh(x);

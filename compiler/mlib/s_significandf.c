@@ -20,12 +20,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_significandf.c,v 1.5 1999/08
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float significandf(float x)
-#else
-	float significandf(x)
-	float x;
-#endif
+float
+significandf(float x)
 {
 	return __ieee754_scalbf(x,(float) -ilogbf(x));
 }

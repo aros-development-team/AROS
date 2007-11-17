@@ -22,12 +22,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_acos.c,v 1.5 1999/08/28 00:0
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	double acos(double x)		/* wrapper acos */
-#else
-	double acos(x)			/* wrapper acos */
-	double x;
-#endif
+double
+acos(double x)		/* wrapper acos */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_acos(x);

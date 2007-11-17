@@ -20,12 +20,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_hypotf.c,v 1.7 1999/08/28 00
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float __ieee754_hypotf(float x, float y)
-#else
-	float __ieee754_hypot(x,y)
-	float x, y;
-#endif
+float
+__ieee754_hypotf(float x, float y)
 {
 	float a=x,b=y,t1,t2,y1,y2,w;
 	int32_t j,k,ha,hb;

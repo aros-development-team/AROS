@@ -20,22 +20,14 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbnf.c,v 1.5 1999/08/28 0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const float
-#else
-static float
-#endif
 two25   =  3.355443200e+07,	/* 0x4c000000 */
 twom25  =  2.9802322388e-08,	/* 0x33000000 */
 huge   = 1.0e+30,
 tiny   = 1.0e-30;
 
-#ifdef __STDC__
-	float scalbnf (float x, int n)
-#else
-	float scalbn (x,n)
-	float x; int n;
-#endif
+float
+scalbnf (float x, int n)
 {
 	int32_t k,ix;
 	GET_FLOAT_WORD(ix,x);

@@ -25,12 +25,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_isnanf.c,v 1.5 1999/08/28 00
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 	int isnanf(float x)
-#else
-	int isnanf(x)
-	float x;
-#endif
 {
 	int32_t ix;
 	GET_FLOAT_WORD(ix,x);
