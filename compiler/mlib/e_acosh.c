@@ -31,20 +31,12 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_acosh.c,v 1.6 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const double
-#else
-static double
-#endif
 one	= 1.0,
 ln2	= 6.93147180559945286227e-01;  /* 0x3FE62E42, 0xFEFA39EF */
 
-#ifdef __STDC__
-	double __ieee754_acosh(double x)
-#else
-	double __ieee754_acosh(x)
-	double x;
-#endif
+double
+__ieee754_acosh(double x)
 {
 	double t;
 	int32_t hx;

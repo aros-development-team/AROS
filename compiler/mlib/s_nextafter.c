@@ -24,12 +24,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafter.c,v 1.5 1999/08/28
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double nextafter(double x, double y)
-#else
-	double nextafter(x,y)
-	double x,y;
-#endif
+double
+nextafter(double x, double y)
 {
 	int32_t hx,hy,ix,iy;
 	uint32_t lx,ly;

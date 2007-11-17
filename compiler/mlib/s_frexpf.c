@@ -20,19 +20,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_frexpf.c,v 1.6 1999/08/28 00
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const float
-#else
-static float
-#endif
 two25 =  3.3554432000e+07; /* 0x4c000000 */
 
-#ifdef __STDC__
-	float frexpf(float x, int *eptr)
-#else
-	float frexpf(x, eptr)
-	float x; int *eptr;
-#endif
+float
+frexpf(float x, int *eptr)
 {
 	int32_t hx,ix,*phx = &hx;
 	float *ret = (float *)phx;

@@ -26,12 +26,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_asinf.c,v 1.5 1999/08/28 00:
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float asinf(float x)		/* wrapper asinf */
-#else
-	float asinf(x)			/* wrapper asinf */
-	float x;
-#endif
+float
+asinf(float x)		/* wrapper asinf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_asinf(x);

@@ -23,12 +23,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_logb.c,v 1.6 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double __generic_logb(double x)
-#else
-	double __generic_logb(x)
-	double x;
-#endif
+double
+__generic_logb(double x)
 {
 	int32_t lx,ix;
 	EXTRACT_WORDS(ix,lx,x);

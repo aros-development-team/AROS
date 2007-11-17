@@ -49,12 +49,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_hypot.c,v 1.6 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double __ieee754_hypot(double x, double y)
-#else
-	double __ieee754_hypot(x,y)
-	double x, y;
-#endif
+double
+__ieee754_hypot(double x, double y)
 {
 	double a=x,b=y,t1,t2,y1,y2,w;
 	int32_t j,k,ha,hb;

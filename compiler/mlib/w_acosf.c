@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_acosf.c,v 1.5 1999/08/28 00:
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float acosf(float x)		/* wrapper acosf */
-#else
-	float acosf(x)			/* wrapper acosf */
-	float x;
-#endif
+float
+acosf(float x)		/* wrapper acosf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_acosf(x);

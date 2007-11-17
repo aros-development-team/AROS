@@ -20,12 +20,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafterf.c,v 1.5 1999/08/2
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float nextafterf(float x, float y)
-#else
-	float nextafterf(x,y)
-	float x,y;
-#endif
+float
+nextafterf(float x, float y)
 {
 	int32_t hx,hy,ix,iy;
 

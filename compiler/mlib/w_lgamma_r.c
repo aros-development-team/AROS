@@ -22,12 +22,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_lgamma_r.c,v 1.5 1999/08/28 
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	double lgamma_r(double x, int *signgamp) /* wrapper lgamma_r */
-#else
-	double lgamma_r(x,signgamp)              /* wrapper lgamma_r */
-        double x; int *signgamp;
-#endif
+double
+lgamma_r(double x, int *signgamp) /* wrapper lgamma_r */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_lgamma_r(x,signgamp);

@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_acoshf.c,v 1.5 1999/08/28 00
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float acoshf(float x)		/* wrapper acoshf */
-#else
-	float acoshf(x)			/* wrapper acoshf */
-	float x;
-#endif
+float
+acoshf(float x)		/* wrapper acoshf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_acoshf(x);

@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_gamma.c,v 1.5 1999/08/28 00:
 
 extern int signgam;
 
-#ifdef __STDC__
-	double gamma(double x)
-#else
-	double gamma(x)
-	double x;
-#endif
+double
+gamma(double x)
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_gamma_r(x,&signgam);

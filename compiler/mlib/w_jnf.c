@@ -20,12 +20,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_jnf.c,v 1.6 1999/08/28 00:07
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float jnf(int n, float x)	/* wrapper jnf */
-#else
-	float jnf(n,x)			/* wrapper jnf */
-	float x; int n;
-#endif
+float
+jnf(int n, float x)	/* wrapper jnf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_jnf(n,x);

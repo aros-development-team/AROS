@@ -17,12 +17,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_matherr.c,v 1.5 1999/08/28 0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	int matherr(struct exception *x)
-#else
-	int matherr(x)
-	struct exception *x;
-#endif
+int matherr(struct exception *x)
 {
 	int n=0;
 	if(x->arg1!=x->arg1) return 0;

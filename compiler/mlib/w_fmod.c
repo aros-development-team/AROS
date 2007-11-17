@@ -22,12 +22,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_fmod.c,v 1.5 1999/08/28 00:0
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	double fmod(double x, double y)	/* wrapper fmod */
-#else
-	double fmod(x,y)		/* wrapper fmod */
-	double x,y;
-#endif
+double
+fmod(double x, double y)	/* wrapper fmod */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_fmod(x,y);

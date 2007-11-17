@@ -20,18 +20,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_coshf.c,v 1.5 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const float one = 1.0, half=0.5, huge = 1.0e30;
-#else
-static float one = 1.0, half=0.5, huge = 1.0e30;
-#endif
 
-#ifdef __STDC__
-	float __ieee754_coshf(float x)
-#else
-	float __ieee754_coshf(x)
-	float x;
-#endif
+float
+__ieee754_coshf(float x)
 {
 	float t,w;
 	int32_t ix;

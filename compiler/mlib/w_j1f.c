@@ -24,12 +24,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_j1f.c,v 1.6 1999/08/28 00:07
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float j1f(float x)		/* wrapper j1f */
-#else
-	float j1f(x)			/* wrapper j1f */
-	float x;
-#endif
+float
+j1f(float x)		/* wrapper j1f */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_j1f(x);

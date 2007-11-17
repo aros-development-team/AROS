@@ -20,12 +20,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanf.c,v 1.5 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float tanf(float x)
-#else
-	float tanf(x)
-	float x;
-#endif
+float
+tanf(float x)
 {
 	float y[2],z=0.0;
 	int32_t n, ix;

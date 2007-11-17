@@ -28,12 +28,9 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_scalbf.c,v 1.5 1999/08/28 00
 
 #include <errno.h>
 
-#ifdef __STDC__
 #ifdef _SCALB_INT
-	float scalbf(float x, int fn)		/* wrapper scalbf */
-#else
-	float scalbf(float x, float fn)		/* wrapper scalbf */
-#endif
+float
+scalbf(float x, int fn)		/* wrapper scalbf */
 #else
 	float scalbf(x,fn)			/* wrapper scalbf */
 #ifdef _SCALB_INT

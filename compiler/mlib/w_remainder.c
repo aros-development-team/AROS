@@ -21,12 +21,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_remainder.c,v 1.5 1999/08/28
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double remainder(double x, double y)	/* wrapper remainder */
-#else
-	double remainder(x,y)			/* wrapper remainder */
-	double x,y;
-#endif
+double
+remainder(double x, double y)	/* wrapper remainder */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_remainder(x,y);

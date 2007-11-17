@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_atan2f.c,v 1.5 1999/08/28 00
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float atan2f(float y, float x)		/* wrapper atan2f */
-#else
-	float atan2f(y,x)			/* wrapper atan2 */
-	float y,x;
-#endif
+float
+atan2f(float y, float x)		/* wrapper atan2f */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_atan2f(y,x);

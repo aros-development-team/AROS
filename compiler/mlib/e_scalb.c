@@ -24,19 +24,11 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_scalb.c,v 1.6 1999/08/28 00:
 #include "math_private.h"
 
 #ifdef _SCALB_INT
-#ifdef __STDC__
-	double __generic___ieee754_scalb(double x, int fn)
+double
+__generic___ieee754_scalb(double x, int fn)
 #else
-	double __generic___ieee754_scalb(x,fn)
-	double x; int fn;
-#endif
-#else
-#ifdef __STDC__
-	double __generic___ieee754_scalb(double x, double fn)
-#else
-	double __generic___ieee754_scalb(x,fn)
-	double x, fn;
-#endif
+double
+__generic___ieee754_scalb(double x, double fn)
 #endif
 {
 #ifdef _SCALB_INT

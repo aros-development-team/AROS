@@ -26,22 +26,14 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_rintf.c,v 1.6 1999/08/28 00:
  * precision and doesn't clip them to float precision when they are
  * assigned and returned.
  */
-#ifdef __STDC__
 static const double
-#else
-static double
-#endif
 TWO23[2]={
   8.3886080000e+06, /* 0x4b000000 */
  -8.3886080000e+06, /* 0xcb000000 */
 };
 
-#ifdef __STDC__
-	float rintf(float x)
-#else
-	float rintf(x)
-	float x;
-#endif
+float
+rintf(float x)
 {
 	int32_t i0,j0,sx;
 	uint32_t i,i1;

@@ -41,18 +41,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_tanh.c,v 1.5 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const double one=1.0, two=2.0, tiny = 1.0e-300;
-#else
-static double one=1.0, two=2.0, tiny = 1.0e-300;
-#endif
 
-#ifdef __STDC__
-	double tanh(double x)
-#else
-	double tanh(x)
-	double x;
-#endif
+double
+tanh(double x)
 {
 	double t,z;
 	int32_t jx,ix;

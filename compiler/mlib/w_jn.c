@@ -21,12 +21,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_jn.c,v 1.7 1999/08/28 00:07:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double jn(int n, double x)	/* wrapper jn */
-#else
-	double jn(n,x)			/* wrapper jn */
-	double x; int n;
-#endif
+double
+jn(int n, double x)	/* wrapper jn */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_jn(n,x);

@@ -27,18 +27,10 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_modf.c,v 1.5 1999/08/28 00:0
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
 static const double one = 1.0;
-#else
-static double one = 1.0;
-#endif
 
-#ifdef __STDC__
-	double modf(double x, double *iptr)
-#else
-	double modf(x, iptr)
-	double x,*iptr;
-#endif
+double
+modf(double x, double *iptr)
 {
 	int32_t i0,i1,j0;
 	uint32_t i;

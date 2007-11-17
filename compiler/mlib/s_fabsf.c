@@ -24,12 +24,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_fabsf.c,v 1.5 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float fabsf(float x)
-#else
-	float fabsf(x)
-	float x;
-#endif
+float
+fabsf(float x)
 {
 	uint32_t ix;
 	GET_FLOAT_WORD(ix,x);

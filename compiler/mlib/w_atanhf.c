@@ -25,12 +25,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_atanhf.c,v 1.5 1999/08/28 00
 #include "math_private.h"
 
 
-#ifdef __STDC__
-	float atanhf(float x)		/* wrapper atanhf */
-#else
-	float atanhf(x)			/* wrapper atanhf */
-	float x;
-#endif
+float
+atanhf(float x)		/* wrapper atanhf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_atanhf(x);

@@ -28,12 +28,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_lgammaf.c,v 1.5 1999/08/28 0
 
 extern int signgam;
 
-#ifdef __STDC__
-	float __ieee754_lgammaf(float x)
-#else
-	float __ieee754_lgammaf(x)
-	float x;
-#endif
+float
+__ieee754_lgammaf(float x)
 {
 	return __ieee754_lgammaf_r(x,&signgam);
 }

@@ -24,12 +24,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/w_sqrtf.c,v 1.5 1999/08/28 00:
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	float sqrtf(float x)		/* wrapper sqrtf */
-#else
-	float sqrt(x)			/* wrapper sqrtf */
-	float x;
-#endif
+float
+sqrtf(float x)		/* wrapper sqrtf */
 {
 #ifdef _IEEE_LIBM
 	return __ieee754_sqrtf(x);

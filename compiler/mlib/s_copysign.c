@@ -23,12 +23,8 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_copysign.c,v 1.6 1999/08/28 
 #include "math.h"
 #include "math_private.h"
 
-#ifdef __STDC__
-	double __generic_copysign(double x, double y)
-#else
-	double __generic_copysign(x,y)
-	double x,y;
-#endif
+double
+__generic_copysign(double x, double y)
 {
 	uint32_t hx,hy;
 	GET_HIGH_WORD(hx,x);
