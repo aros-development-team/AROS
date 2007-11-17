@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-INCLUDE_FILES := aros/x86_64/cpu.h aros/x86_64/_fpmath.h
+INCLUDE_FILES := aros/x86_64/cpu.h aros/x86_64/_fpmath.h aros/x86_64/fenv.h
 %copy_includes mmake=compiler-includes
 
 INCLUDE_FILES := jmpdefs.h

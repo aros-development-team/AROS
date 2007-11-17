@@ -168,7 +168,8 @@ FILES := \
         w_y1 \
         w_y1f \
         w_yn \
-        w_ynf
+        w_ynf \
+        fenv
 
 #MM includes-copy : setup-includes
 includes-copy : $(AROS_INCLUDES)/math.h

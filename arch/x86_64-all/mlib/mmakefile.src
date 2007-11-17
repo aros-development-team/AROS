@@ -4,3 +4,8 @@ include $(TOP)/config/make.cfg
 
 #MM- linklibs-arosm-x86_64 : linklibs-arosm-hasfpu
 
+%build_archspecific \
+  mainmmake=linklibs-mlib-hasfpu \
+  maindir=compiler/mlib \
+  arch=x86_64 \
+  files="fenv"
