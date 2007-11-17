@@ -167,8 +167,8 @@ FILES := \
 # If long double != double use these; otherwise, we alias the double versions
 # These are architectures that have LDBL_MANT_DIG == 53 in float.h
 # XXX use configure to determine this
-ifneq ($AROS_TARGET_CPU), ppc)
-ifneq ($AROS_TARGET_CPU), arm)
+ifneq ($(AROS_TARGET_CPU), ppc)
+ifneq ($(AROS_TARGET_CPU), arm)
 FILES += s_fmal s_frexpl s_nextafterl s_nexttoward s_scalbnl
 endif
 endif
