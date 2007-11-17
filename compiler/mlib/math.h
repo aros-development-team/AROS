@@ -17,11 +17,22 @@
 #ifndef _MATH_H_
 #define _MATH_H_
 
+#include <sys/cdefs.h>
+#include <sys/types.h>
+#include <limits.h>
+
+#define __INT_MAX INT_MAX
+
 /*
  * ANSI/POSIX
  */
 extern char __infinity[];
 #define HUGE_VAL	(*(double *) __infinity)
+
+#if __ISO_C_VISIBLE >= 1999
+#define        FP_ILOGB0       (-__INT_MAX)
+#define        FP_ILOGBNAN     __INT_MAX
+#endif /* __ISO_C_VISIBLE >= 1999 */
 
 /*
  * XOPEN/SVID

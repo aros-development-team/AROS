@@ -31,7 +31,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/e_exp.c,v 1.7 1999/08/28 00:06
  *	the interval [0,0.34658]:
  *	Write
  *	    R(r**2) = r*(exp(r)+1)/(exp(r)-1) = 2 + r*r/6 - r**4/360 + ...
- *      We use a special Reme algorithm on [0,0.34658] to generate
+ *      We use a special Remes algorithm on [0,0.34658] to generate 
  * 	a polynomial of degree 5 to approximate R. The maximum error
  *	of this polynomial approximation is bounded by 2**-59. In
  *	other words,
@@ -128,7 +128,7 @@ __ieee754_exp(double x)	/* default IEEE double exp */
 	    if(hx < 0x3FF0A2B2) {	/* and |x| < 1.5 ln2 */
 		hi = x-ln2HI[xsb]; lo=ln2LO[xsb]; k = 1-xsb-xsb;
 	    } else {
-		k  = invln2*x+halF[xsb];
+		k  = (int)(invln2*x+halF[xsb]);
 		t  = k;
 		hi = x - t*ln2HI[0];	/* t*ln2HI is exact here */
 		lo = t*ln2LO[0];

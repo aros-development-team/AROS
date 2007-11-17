@@ -257,4 +257,8 @@ extern int   __kernel_rem_pio2f (float*,float*,int,int,int,const int32_t*);
 #endif
 */
 
+float  __kernel_sindf(double);
+float  __kernel_cosdf(double);
+float  __kernel_tandf(double,int);
+
 #endif /* _MATH_PRIVATE_H_ */
