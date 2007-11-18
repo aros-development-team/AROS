@@ -4283,9 +4283,18 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
 /**************************************************************************/
 
 /// CodesetsSupportedA()
+#ifdef __AROS__
+AROS_LH1(STRPTR *, CodesetsSupportedA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 15, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 STRPTR *LIBFUNC
 CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
 {
+#endif
   STRPTR *array = NULL;
   struct TagItem *tstate = attrs;
   struct TagItem *tag;
@@ -4342,8 +4351,12 @@ CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
 
   RETURN(array);
   return array;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsSupportedA, STRPTR*, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -4352,6 +4365,7 @@ LIBSTUB(CodesetsSupportedA, STRPTR*, REG(a0, struct TagItem *attrs))
   return CodesetsSupportedA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsSupported, STRPTR*, ...)
@@ -4369,18 +4383,32 @@ LIBSTUBVA(CodesetsSupported, STRPTR*, ...)
 
 ///
 /// CodesetsFreeA()
+#ifdef __AROS__
+AROS_LH2(void, CodesetsFreeA, 
+    AROS_LHA(APTR, obj, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct CodesetsBase *, library, 14, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 void LIBFUNC
 CodesetsFreeA(REG(a0, APTR obj),
               REG(a1, UNUSED struct TagItem *attrs))
 {
+#endif
   ENTER();
 
   if(obj)
     freeArbitrateVecPooled(obj);
 
   LEAVE();
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsFreeA, void, REG(a0, APTR obj), REG(a1, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -4389,6 +4417,7 @@ LIBSTUB(CodesetsFreeA, void, REG(a0, APTR obj), REG(a1, struct TagItem *attrs))
   return CodesetsFreeA(obj, attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsFree, void, REG(a0, APTR obj), ...)
@@ -4403,10 +4432,20 @@ LIBSTUBVA(CodesetsFree, void, REG(a0, APTR obj), ...)
 
 ///
 /// CodesetsSetDefaultA()
+#ifdef __AROS__
+AROS_LH2(struct codeset *, CodesetsSetDefaultA, 
+    AROS_LHA(STRPTR, name, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct CodesetsBase *, library, 13, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct codeset *LIBFUNC
 CodesetsSetDefaultA(REG(a0, STRPTR name),
                     REG(a1, struct TagItem *attrs))
 {
+#endif
   struct codeset *codeset;
 
   ENTER();
@@ -4426,8 +4465,12 @@ CodesetsSetDefaultA(REG(a0, STRPTR name),
 
   RETURN(codeset);
   return codeset;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsSetDefaultA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -4436,6 +4479,7 @@ LIBSTUB(CodesetsSetDefaultA, struct codeset *, REG(a0, STRPTR name), REG(a1, str
   return CodesetsSetDefaultA(name, attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsSetDefault, struct codeset *, REG(a0, STRPTR name), ...)
@@ -4453,9 +4497,19 @@ LIBSTUBVA(CodesetsSetDefault, struct codeset *, REG(a0, STRPTR name), ...)
 
 ///
 /// CodesetsFindA()
+#ifdef __AROS__
+AROS_LH2(struct codeset *, CodesetsFindA, 
+    AROS_LHA(STRPTR, name, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct CodesetsBase *, library, 16, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct codeset *LIBFUNC
 CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 {
+#endif
   struct codeset *codeset = NULL;
 
   ENTER();
@@ -4498,8 +4552,12 @@ CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 
   RETURN(codeset);
   return codeset;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsFindA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -4508,6 +4566,7 @@ LIBSTUB(CodesetsFindA, struct codeset *, REG(a0, STRPTR name), REG(a1, struct Ta
   return CodesetsFindA(name, attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsFind, struct codeset *, REG(a0, STRPTR name), ...)
@@ -4524,9 +4583,18 @@ LIBSTUBVA(CodesetsFind, struct codeset *, REG(a0, STRPTR name), ...)
 #endif
 ///
 /// CodesetsFindBestA()
+#ifdef __AROS__
+AROS_LH1(struct codeset *, CodesetsFindBestA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 17, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct codeset *LIBFUNC
 CodesetsFindBestA(REG(a0, struct TagItem *attrs))
 {
+#endif
   struct codeset *codeset = NULL;
 
   ENTER();
@@ -4560,8 +4628,12 @@ CodesetsFindBestA(REG(a0, struct TagItem *attrs))
 
   RETURN(codeset);
   return codeset;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsFindBestA, struct codeset *, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -4570,6 +4642,7 @@ LIBSTUB(CodesetsFindBestA, struct codeset *, REG(a0, struct TagItem *attrs))
   return CodesetsFindBestA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsFindBest, struct codeset *, ...)
@@ -4588,9 +4661,18 @@ LIBSTUBVA(CodesetsFindBest, struct codeset *, ...)
 /// CodesetsUTF8Len()
 // Returns the number of characters a utf8 string has. This is not
 // identically with the size of memory is required to hold the string.
+#ifdef __AROS__
+AROS_LH1(ULONG, CodesetsUTF8Len, 
+    AROS_LHA(const UTF8 *, str, A0),
+    struct CodesetsBase *, library, 18, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsUTF8Len(REG(a0, UTF8 *str))
 {
+#endif
   int           len;
   unsigned char c;
 
@@ -4609,8 +4691,12 @@ CodesetsUTF8Len(REG(a0, UTF8 *str))
 
   RETURN((ULONG)len);
   return (ULONG)len;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8* str))
 {
   #ifdef __MORPHOS__
@@ -4619,12 +4705,24 @@ LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8* str))
   return CodesetsUTF8Len(str);
   #endif
 }
+#endif
+
 ///
 /// CodesetsStrLenA()
+#ifdef __AROS__
+AROS_LH2(ULONG, CodesetsStrLenA, 
+    AROS_LHA(STRPTR, str, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct CodesetsBase *, library, 23, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsStrLenA(REG(a0, STRPTR str),
                 REG(a1, struct TagItem *attrs))
 {
+#endif
   struct codeset *codeset;
   int            len, res;
   STRPTR         src;
@@ -4648,8 +4746,12 @@ CodesetsStrLenA(REG(a0, STRPTR str),
 
   RETURN((ULONG)res);
   return (ULONG)res;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsStrLenA, ULONG, REG(a0, STRPTR str),
                                 REG(a1, struct TagItem *attrs))
 {
@@ -4659,6 +4761,7 @@ LIBSTUB(CodesetsStrLenA, ULONG, REG(a0, STRPTR str),
   return CodesetsStrLenA(str, attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsStrLen, ULONG, REG(a0, STRPTR str), ...)
@@ -4679,9 +4782,18 @@ LIBSTUBVA(CodesetsStrLen, ULONG, REG(a0, STRPTR str), ...)
 // written to dest excluding the NULL byte (which is always ensured by this
 // function; it means a NULL str will produce "" as dest; anyway you should
 // check NULL str to not waste your time!).
+#ifdef __AROS__
+AROS_LH1(STRPTR, CodesetsUTF8ToStrA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 19, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 STRPTR LIBFUNC
 CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 {
+#endif
   UTF8 *src;
   ULONG srcLen;
   ULONG *destLenPtr;
@@ -4856,8 +4968,12 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 
   RETURN(dest);
   return dest;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsUTF8ToStrA, STRPTR, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -4866,6 +4982,7 @@ LIBSTUB(CodesetsUTF8ToStrA, STRPTR, REG(a0, struct TagItem *attrs))
   return CodesetsUTF8ToStrA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsUTF8ToStr, STRPTR, ...)
@@ -4886,9 +5003,18 @@ LIBSTUBVA(CodesetsUTF8ToStr, STRPTR, ...)
 // Converts a string and a charset to an UTF8. Returns the UTF8.
 // If a destination hook is supplied always return 0.
 // If from is NULL, it returns NULL and doesn't call the hook.
+#ifdef __AROS__
+AROS_LH1(UTF8 *, CodesetsUTF8CreateA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 20, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 UTF8 *LIBFUNC
 CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
 {
+#endif
   UTF8   *from;
   UTF8   *dest;
   ULONG  fromLen, *destLenPtr;
@@ -5026,8 +5152,12 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
 
   RETURN(dest);
   return dest;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsUTF8CreateA, UTF8*, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -5036,6 +5166,7 @@ LIBSTUB(CodesetsUTF8CreateA, UTF8*, REG(a0, struct TagItem *attrs))
   return CodesetsUTF8CreateA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsUTF8Create, UTF8*, ...)
@@ -5057,10 +5188,18 @@ LIBSTUBVA(CodesetsUTF8Create, UTF8*, ...)
      ((c) >= 160 && ((c) & ~0x3ff) != 0xd800 && \
       (c) != 0xfeff && (c) != 0xfffe && (c) != 0xffff)
 
-
+#ifdef __AROS__
+AROS_LH1(BOOL, CodesetsIsValidUTF8, 
+    AROS_LHA(STRPTR, s, A0),
+    struct CodesetsBase *, library, 24, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 BOOL LIBFUNC
 CodesetsIsValidUTF8(REG(a0, STRPTR s))
 {
+#endif
   STRPTR t = s;
   int n;
 
@@ -5077,8 +5216,12 @@ CodesetsIsValidUTF8(REG(a0, STRPTR s))
 
   RETURN(TRUE);
   return TRUE;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsIsValidUTF8, BOOL, REG(a0, STRPTR s))
 {
   #ifdef __MORPHOS__
@@ -5087,13 +5230,24 @@ LIBSTUB(CodesetsIsValidUTF8, BOOL, REG(a0, STRPTR s))
   return CodesetsIsValidUTF8(s);
   #endif
 }
+#endif
+
 ///
 /// CodesetsConvertStrA()
 // Converts a given string from one source Codeset to a given destination
 // codeset and returns the convert string
+#ifdef __AROS__
+AROS_LH1(STRPTR, CodesetsConvertStrA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 26, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 STRPTR LIBFUNC
 CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 {
+#endif
   STRPTR srcStr;
   STRPTR dstStr = NULL;
   ULONG srcLen;
@@ -5210,8 +5364,12 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 
   RETURN(dstStr);
   return dstStr;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertStrA, STRPTR, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -5220,6 +5378,7 @@ LIBSTUB(CodesetsConvertStrA, STRPTR, REG(a0, struct TagItem *attrs))
   return CodesetsConvertStrA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsConvertStr, STRPTR, ...)
@@ -5237,11 +5396,22 @@ LIBSTUBVA(CodesetsConvertStr, STRPTR, ...)
 
 ///
 /// CodesetsFreeVecPooledA()
+#ifdef __AROS__
+AROS_LH3(void, CodesetsFreeVecPooledA, 
+    AROS_LHA(APTR, pool, A0),
+    AROS_LHA(APTR, mem, A1),
+    AROS_LHA(struct TagItem *, attrs, A2),
+    struct CodesetsBase *, library, 25, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 void LIBFUNC
 CodesetsFreeVecPooledA(REG(a0, APTR pool),
                        REG(a1, APTR mem),
                        REG(a2, struct TagItem *attrs))
 {
+#endif
   ENTER();
 
   if(pool && mem)
@@ -5258,8 +5428,12 @@ CodesetsFreeVecPooledA(REG(a0, APTR pool),
   }
 
   LEAVE();
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsFreeVecPooledA, void, REG(a0, APTR pool),
                                       REG(a1, APTR mem),
                                       REG(a2, struct TagItem *attrs))
@@ -5270,6 +5444,7 @@ LIBSTUB(CodesetsFreeVecPooledA, void, REG(a0, APTR pool),
   return CodesetsFreeVecPooledA(pool, mem, attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsFreeVecPooled, void, REG(a0, APTR pool),
@@ -5284,9 +5459,18 @@ LIBSTUBVA(CodesetsFreeVecPooled, void, REG(a0, APTR pool),
 #endif
 ///
 /// CodesetsListCreateA()
+#ifdef __AROS__
+AROS_LH1(struct codesetList *, CodesetsListCreateA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 27, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct codesetList *LIBFUNC
 CodesetsListCreateA(REG(a0, struct TagItem *attrs))
 {
+#endif
   struct codesetList *csList = NULL;
 
   ENTER();
@@ -5347,8 +5531,12 @@ CodesetsListCreateA(REG(a0, struct TagItem *attrs))
 
   RETURN(csList);
   return csList;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsListCreateA, struct codesetList *, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -5357,6 +5545,7 @@ LIBSTUB(CodesetsListCreateA, struct codesetList *, REG(a0, struct TagItem *attrs
   return CodesetsListCreateA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsListCreate, struct codesetList *, ...)
@@ -5374,9 +5563,18 @@ LIBSTUBVA(CodesetsListCreate, struct codesetList *, ...)
 
 ///
 /// CodesetsListDeleteA()
+#ifdef __AROS__
+AROS_LH1(BOOL, CodesetsListDeleteA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 28, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 BOOL LIBFUNC
 CodesetsListDeleteA(REG(a0, struct TagItem *attrs))
 {
+#endif
   BOOL result = FALSE;
   ENTER();
 
@@ -5421,8 +5619,12 @@ CodesetsListDeleteA(REG(a0, struct TagItem *attrs))
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsListDeleteA, BOOL, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -5431,6 +5633,7 @@ LIBSTUB(CodesetsListDeleteA, BOOL, REG(a0, struct TagItem *attrs))
   return CodesetsListDeleteA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsListDelete, BOOL, ...)
@@ -5448,10 +5651,20 @@ LIBSTUBVA(CodesetsListDelete, BOOL, ...)
 
 ///
 /// CodesetsListAddA()
+#ifdef __AROS__
+AROS_LH2(BOOL, CodesetsListAddA, 
+    AROS_LHA(struct codesetList *, csList, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct CodesetsBase *, library, 29, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 BOOL LIBFUNC
 CodesetsListAddA(REG(a0, struct codesetList *csList),
                  REG(a1, struct TagItem *attrs))
 {
+#endif
   BOOL result = FALSE;
   ENTER();
 
@@ -5498,8 +5711,12 @@ CodesetsListAddA(REG(a0, struct codesetList *csList),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsListAddA, BOOL, REG(a0, struct codesetList *csList), REG(a1, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -5508,6 +5725,7 @@ LIBSTUB(CodesetsListAddA, BOOL, REG(a0, struct codesetList *csList), REG(a1, str
   return CodesetsListAddA(csList, attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsListAdd, BOOL, struct codesetList *csList, ...)
@@ -5525,9 +5743,18 @@ LIBSTUBVA(CodesetsListAdd, BOOL, struct codesetList *csList, ...)
 
 ///
 /// CodesetsListRemoveA()
+#ifdef __AROS__
+AROS_LH1(BOOL, CodesetsListRemoveA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct CodesetsBase *, library, 30, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 BOOL LIBFUNC
 CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
 {
+#endif
   BOOL result = FALSE;
   ENTER();
 
@@ -5590,8 +5817,12 @@ CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsListRemoveA, BOOL, REG(a0, struct TagItem *attrs))
 {
   #ifdef __MORPHOS__
@@ -5600,6 +5831,7 @@ LIBSTUB(CodesetsListRemoveA, BOOL, REG(a0, struct TagItem *attrs))
   return CodesetsListRemoveA(attrs);
   #endif
 }
+#endif
 
 #ifdef __amigaos4__
 LIBSTUBVA(CodesetsListRemove, BOOL, ...)
