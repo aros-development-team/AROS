@@ -42,6 +42,10 @@ typedef struct {
 	__uint32_t		__mxcsr;
 } fenv_t;
 
+#define __INITIAL_FPUCW__       0x037F
+#define __INITIAL_MXCSR__       0x1F80
+#define __INITIAL_MXCSR_MASK__  0xFFBF
+ 
 typedef	__uint16_t	fexcept_t;
 
 /* Exception flags */
