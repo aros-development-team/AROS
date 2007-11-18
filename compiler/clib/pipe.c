@@ -38,14 +38,13 @@ int pipe(int *pipedes)
         return -1;
     }
 
-    pipedes[0] = __getfirstfd(0);
-    pipedes[1] = __getfirstfd(pipedes[0]);
-
+    pipedes[0] = __getfdslot(__getfirstfd(0));
     rdesc->fh        = reader;
     rdesc->flags     = O_RDONLY;
     rdesc->opencount = 1;
     __setfdesc(pipedes[0], rdesc);
 
+    pipedes[1] = __getfdslot(__getfirstfd(pipedes[0]));
     wdesc->fh        = writer;
     wdesc->flags     = O_WRONLY;
     wdesc->opencount = 1;
