@@ -3,14 +3,23 @@
     $Id$
 */
 
-#include <aros/debug.h>
-
 #include <unistd.h>
+#include <sys/types.h>
 
-pid_t getppid()
+#include <exec/tasks.h>
+#include <proto/exec.h>
+
+#include <assert.h>
+
+pid_t getppid(void)
 {
-#   warning Implement getppid()
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+  struct Task *ThisTask, *ParentTask;
+  struct ETask *eThisTask;
 
-    return 0;
+  ThisTask = FindTask(NULL);
+  eThisTask = GetETask(ThisTask);
+  assert(eThisTask);
+  ParentTask = (struct Task *)eThisTask->et_Parent;
+  return (pid_t)ParentTask;
 }
+
