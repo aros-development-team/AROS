@@ -28,7 +28,9 @@
 
 #include <sys/cdefs.h>
 #include <sys/types.h>
+#ifndef __AROS__
 #include <machine/fpu.h>
+#endif
 #include <fenv.h>
 
 const fenv_t __fe_dfl_env = {
