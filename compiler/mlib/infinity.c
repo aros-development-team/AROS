@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2002, The AROS Development Team. All rights reserved.
     $Id$
 
     Definition of infinity and NaN.
@@ -10,11 +10,11 @@
 
 #include <aros/system.h>
 #include <math.h>
--
+
 #if AROS_BIG_ENDIAN
-const union __infinity_un __infinity[] = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 } };
+const union __infinity_un __infinity = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 } };
 #else
-const union __infinity_un __infinity[] = { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f };
+const union __infinity_un __infinity = { {0, 0, 0, 0, 0, 0, 0xf0, 0x7f} };
 #endif
 
 #if AROS_BIG_ENDIAN
