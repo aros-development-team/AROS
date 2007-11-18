@@ -59,6 +59,18 @@ static const UTF32 halfMask = 0x3FFUL;
 
 /***********************************************************************/
 
+#ifdef __AROS__
+AROS_LH5(ULONG, CodesetsConvertUTF32toUTF16, 
+    AROS_LHA(const UTF32 **, sourceStart, A0),
+    AROS_LHA(const UTF32 *, sourceEnd, A1),
+    AROS_LHA(UTF16 **, targetStart, A2),
+    AROS_LHA(UTF16 *, targetEnd, A3),
+    AROS_LHA(ULONG, flags, D0),
+    struct CodesetsBase *, library, 5, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsConvertUTF32toUTF16(REG(a0, const UTF32 ** sourceStart),
                             REG(a1, const UTF32 * sourceEnd),
@@ -66,6 +78,7 @@ CodesetsConvertUTF32toUTF16(REG(a0, const UTF32 ** sourceStart),
                             REG(a3, UTF16 * targetEnd),
                             REG(d0, ULONG flags))
 {
+#endif
   ULONG result = CSR_ConversionOK;
   const UTF32 *source = *sourceStart;
   UTF16 *target = *targetStart;
@@ -136,8 +149,12 @@ CodesetsConvertUTF32toUTF16(REG(a0, const UTF32 ** sourceStart),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertUTF32toUTF16, ULONG, REG(a0, const UTF32 ** sourceStart),
                                             REG(a1, const UTF32 * sourceEnd),
                                             REG(a2, UTF16 ** targetStart),
@@ -150,9 +167,22 @@ LIBSTUB(CodesetsConvertUTF32toUTF16, ULONG, REG(a0, const UTF32 ** sourceStart),
   return CodesetsConvertUTF32toUTF16(sourceStart, sourceEnd, targetStart, targetEnd, flags);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
+#ifdef __AROS__
+AROS_LH5(ULONG, CodesetsConvertUTF16toUTF32, 
+    AROS_LHA(const  UTF16 **, sourceStart, A0),
+    AROS_LHA(const UTF16 *, sourceEnd, A1),
+    AROS_LHA(UTF32 **, targetStart, A2),
+    AROS_LHA(UTF32 *, targetEnd, A3),
+    AROS_LHA(ULONG, flags, D0),
+    struct CodesetsBase *, library, 6, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsConvertUTF16toUTF32(REG(a0, const UTF16 ** sourceStart),
                             REG(a1, const UTF16 * sourceEnd),
@@ -160,6 +190,7 @@ CodesetsConvertUTF16toUTF32(REG(a0, const UTF16 ** sourceStart),
                             REG(a3, UTF32 * targetEnd),
                             REG(d0, ULONG flags))
 {
+#endif
   ULONG result = CSR_ConversionOK;
   const UTF16 *source = *sourceStart;
   UTF32 *target = *targetStart;
@@ -240,8 +271,12 @@ CodesetsConvertUTF16toUTF32(REG(a0, const UTF16 ** sourceStart),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertUTF16toUTF32, ULONG, REG(a0, const UTF16 ** sourceStart),
                                             REG(a1, const UTF16 * sourceEnd),
                                             REG(a2, UTF32 ** targetStart),
@@ -254,6 +289,7 @@ LIBSTUB(CodesetsConvertUTF16toUTF32, ULONG, REG(a0, const UTF16 ** sourceStart),
   return CodesetsConvertUTF16toUTF32(sourceStart, sourceEnd, targetStart, targetEnd, flags);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
@@ -306,6 +342,18 @@ static const UTF8 firstByteMark[7] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC 
 
 /***********************************************************************/
 
+#ifdef __AROS__
+AROS_LH5(ULONG, CodesetsConvertUTF16toUTF8, 
+    AROS_LHA(const UTF16 **, sourceStart, A0),
+    AROS_LHA(const UTF16 *, sourceEnd, A1),
+    AROS_LHA(UTF8 **, targetStart, A2),
+    AROS_LHA(UTF8 *, targetEnd, A3),
+    AROS_LHA(ULONG, flags, D0),
+    struct CodesetsBase *, library, 7, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
                            REG(a1, const UTF16 * sourceEnd),
@@ -313,6 +361,7 @@ CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
                            REG(a3, UTF8 * targetEnd),
                            REG(d0, ULONG flags))
 {
+#endif
   ULONG result = CSR_ConversionOK;
   const UTF16 *source = *sourceStart;
   UTF8 *target = *targetStart;
@@ -432,8 +481,12 @@ CodesetsConvertUTF16toUTF8(REG(a0, const UTF16 ** sourceStart),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG, REG(a0, const UTF16 ** sourceStart),
                                            REG(a1, const UTF16 * sourceEnd),
                                            REG(a2, UTF8 ** targetStart),
@@ -446,6 +499,7 @@ LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG, REG(a0, const UTF16 ** sourceStart),
   return CodesetsConvertUTF16toUTF8(sourceStart, sourceEnd, targetStart, targetEnd, flags);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
@@ -460,10 +514,20 @@ LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG, REG(a0, const UTF16 ** sourceStart),
  * definition of UTF-8 goes up to 4-byte sequences.
  */
 
+#ifdef __AROS__
+AROS_LH2(BOOL, CodesetsIsLegalUTF8, 
+    AROS_LHA(const UTF8 *, source, A0),
+    AROS_LHA(ULONG, length, D0),
+    struct CodesetsBase *, library, 8, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 BOOL LIBFUNC
 CodesetsIsLegalUTF8(REG(a0, const UTF8 * source),
 		                REG(d0, ULONG length))
 {
+#endif
   UTF8 a;
   const UTF8 *srcptr = source + length;
 
@@ -556,8 +620,12 @@ CodesetsIsLegalUTF8(REG(a0, const UTF8 * source),
 
   RETURN(TRUE);
   return TRUE;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsIsLegalUTF8, BOOL, REG(a0, const UTF8 * source),
                 		                REG(d0, ULONG length))
 {
@@ -567,6 +635,7 @@ LIBSTUB(CodesetsIsLegalUTF8, BOOL, REG(a0, const UTF8 * source),
   return CodesetsIsLegalUTF8(source, length);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
@@ -575,10 +644,20 @@ LIBSTUB(CodesetsIsLegalUTF8, BOOL, REG(a0, const UTF8 * source),
  * This is not used here; it's just exported.
  */
 
+#ifdef __AROS__
+AROS_LH2(BOOL, CodesetsIsLegalUTF8Sequence, 
+    AROS_LHA(const UTF8 *, source, A0),
+    AROS_LHA(const UTF8 *, sourceEnd, D1),
+    struct CodesetsBase *, library, 9, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 BOOL LIBFUNC
 CodesetsIsLegalUTF8Sequence(REG(a0, const UTF8 * source),
                             REG(a1, const UTF8 * sourceEnd))
 {
+#endif
   int length = trailingBytesForUTF8[*source] + 1;
   BOOL res = FALSE;
 
@@ -594,8 +673,12 @@ CodesetsIsLegalUTF8Sequence(REG(a0, const UTF8 * source),
 
   RETURN(res);
   return res;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsIsLegalUTF8Sequence, BOOL, REG(a0, const UTF8 * source),
                                             REG(a1, const UTF8 * sourceEnd))
 {
@@ -605,9 +688,22 @@ LIBSTUB(CodesetsIsLegalUTF8Sequence, BOOL, REG(a0, const UTF8 * source),
   return CodesetsIsLegalUTF8Sequence(source, sourceEnd);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
+#ifdef __AROS__
+AROS_LH5(ULONG, CodesetsConvertUTF8toUTF16, 
+    AROS_LHA(const UTF8 **, sourceStart, A0),
+    AROS_LHA(const UTF8 *, sourceEnd, A1),
+    AROS_LHA(UTF16 **, targetStart, A2),
+    AROS_LHA(UTF16 *, targetEnd, A3),
+    AROS_LHA(ULONG, flags, D0),
+    struct CodesetsBase *, library, 10, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
                            REG(a1, const UTF8 * sourceEnd),
@@ -615,6 +711,7 @@ CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
                            REG(a3, UTF16 * targetEnd),
                            REG(d0, ULONG flags))
 {
+#endif
   ULONG result = CSR_ConversionOK;
   const UTF8 *source = *sourceStart;
   UTF16 *target = *targetStart;
@@ -737,8 +834,12 @@ CodesetsConvertUTF8toUTF16(REG(a0, const UTF8 ** sourceStart),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertUTF8toUTF16, ULONG, REG(a0, const UTF8 ** sourceStart),
                                            REG(a1, const UTF8 * sourceEnd),
                                            REG(a2, UTF16 ** targetStart),
@@ -751,9 +852,22 @@ LIBSTUB(CodesetsConvertUTF8toUTF16, ULONG, REG(a0, const UTF8 ** sourceStart),
   return CodesetsConvertUTF8toUTF16(sourceStart, sourceEnd, targetStart, targetEnd, flags);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
+#ifdef __AROS__
+AROS_LH5(ULONG, CodesetsConvertUTF32toUTF8, 
+    AROS_LHA(const UTF32 **, sourceStart, A0),
+    AROS_LHA(const UTF32 *, sourceEnd, A1),
+    AROS_LHA(UTF8 **, targetStart, A2),
+    AROS_LHA(UTF8 *, targetEnd, A3),
+    AROS_LHA(ULONG, flags, D0),
+    struct CodesetsBase *, library, 11, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsConvertUTF32toUTF8(REG(a0, const UTF32 ** sourceStart),
                            REG(a1, const UTF32 * sourceEnd),
@@ -761,6 +875,7 @@ CodesetsConvertUTF32toUTF8(REG(a0, const UTF32 ** sourceStart),
                            REG(a3, UTF8 * targetEnd),
                            REG(d0, ULONG flags))
 {
+#endif
   ULONG result = CSR_ConversionOK;
   const UTF32 *source = *sourceStart;
   UTF8 *target = *targetStart;
@@ -851,8 +966,12 @@ CodesetsConvertUTF32toUTF8(REG(a0, const UTF32 ** sourceStart),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertUTF32toUTF8, ULONG, REG(a0, const UTF32 ** sourceStart),
                                            REG(a1, const UTF32 * sourceEnd),
                                            REG(a2, UTF8 ** targetStart),
@@ -865,9 +984,22 @@ LIBSTUB(CodesetsConvertUTF32toUTF8, ULONG, REG(a0, const UTF32 ** sourceStart),
   return CodesetsConvertUTF32toUTF8(sourceStart, sourceEnd, targetStart, targetEnd, flags);
   #endif
 }
+#endif
 
 /***********************************************************************/
 
+#ifdef __AROS__
+AROS_LH5(ULONG, CodesetsConvertUTF8toUTF32, 
+    AROS_LHA(const UTF8 **, sourceStart, A0),
+    AROS_LHA(const UTF8 *, sourceEnd, A1),
+    AROS_LHA(UTF32 **, targetStart, A2),
+    AROS_LHA(UTF32 *, targetEnd, A3),
+    AROS_LHA(ULONG, flags, D0),
+    struct CodesetsBase *, library, 12, Codesets
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBFUNC
 CodesetsConvertUTF8toUTF32(REG(a0, const UTF8 ** sourceStart),
                            REG(a1, const UTF8 * sourceEnd),
@@ -875,6 +1007,7 @@ CodesetsConvertUTF8toUTF32(REG(a0, const UTF8 ** sourceStart),
                            REG(a3, UTF32 * targetEnd),
                            REG(d0, ULONG flags))
 {
+#endif
   ULONG result = CSR_ConversionOK;
   const UTF8 *source = *sourceStart;
   UTF32 *target = *targetStart;
@@ -976,8 +1109,12 @@ CodesetsConvertUTF8toUTF32(REG(a0, const UTF8 ** sourceStart),
 
   RETURN(result);
   return result;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
+#ifndef __AROS__
 LIBSTUB(CodesetsConvertUTF8toUTF32, ULONG, REG(a0, const UTF8 ** sourceStart),
                                            REG(a1, const UTF8 * sourceEnd),
                                            REG(a2, UTF32 ** targetStart),
@@ -990,6 +1127,7 @@ LIBSTUB(CodesetsConvertUTF8toUTF32, ULONG, REG(a0, const UTF8 ** sourceStart),
   return CodesetsConvertUTF8toUTF32(sourceStart, sourceEnd, targetStart, targetEnd, flags);
   #endif
 }
+#endif
 
 /***********************************************************************
 

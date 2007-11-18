@@ -48,6 +48,9 @@ extern struct Library *__UtilityBase;
 extern struct UtilityIFace*  __IUtility;
 #endif
 
+#elif defined(__AROS__)
+struct DosLibrary *DOSBase = NULL;
+struct UtilityBase *UtilityBase = NULL;
 #else
 struct DosLibrary *DOSBase = NULL;
 struct Library *UtilityBase = NULL;
@@ -291,7 +294,7 @@ initBase(struct LibraryHeader *lib)
     {
       // we have to please the internal utilitybase
       // pointers of libnix and clib2
-      #if !defined(__NEWLIB__)
+      #if !defined(__NEWLIB__) && !defined(__AROS__)
         __UtilityBase = (APTR)UtilityBase;
         #if defined(__amigaos4__)
         __IUtility = IUtility;
