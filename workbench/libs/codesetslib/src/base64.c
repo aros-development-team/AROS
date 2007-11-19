@@ -22,7 +22,9 @@
 
 #include "lib.h"
 
+#ifndef __AROS__
 #include "SDI_stdarg.h"
+#endif /* __AROS__ */
 
 #include "debug.h"
 
@@ -287,7 +289,7 @@ insig(struct b64 *b64)
 #ifdef __AROS__
 AROS_LH1(ULONG, CodesetsEncodeB64A, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 21, Codesets
+    struct LibraryHeader *, library, 21, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -519,7 +521,7 @@ LIBSTUBVA(CodesetsEncodeB64, ULONG, ...)
 #ifdef __AROS__
 AROS_LH1(ULONG, CodesetsDecodeB64A, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 22, Codesets
+    struct LibraryHeader *, library, 22, Codesets
 )
 {
     AROS_LIBFUNC_INIT

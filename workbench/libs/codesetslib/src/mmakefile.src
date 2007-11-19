@@ -9,10 +9,7 @@ FILES := \
     codesets \
     debug
 
-#    init \
-
-USER_INCLUDES := -I../include
-
+#MM- workbench-libs-codesets : workbench-libs-codesets-lib
 
 #MM- workbench-libs-codesets-lib : linklibs
 
@@ -27,6 +24,10 @@ USER_INCLUDES := -I../include
     files=$(FILES) \
     uselibs="amiga rom"
 
-%copy_includes includes=../include/libraries/codesets.h dir=../include path=
+#MM workbench-libs-codesets-clean : workbench-libs-codesets-lib-clean
+
+#MM
+workbench-libs-codesets-clean :
+	$(RM) $(GENDIR)/workbench/libs/codesetslib
 
 %common

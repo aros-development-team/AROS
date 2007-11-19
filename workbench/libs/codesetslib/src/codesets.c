@@ -37,7 +37,9 @@
 #include "codesets_table.h"
 #include "convertUTF.h"
 
+#ifndef __AROS__
 #include "SDI_stdarg.h"
+#endif /* __AROS__ */
 
 #include "debug.h"
 
@@ -4286,7 +4288,7 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
 #ifdef __AROS__
 AROS_LH1(STRPTR *, CodesetsSupportedA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 15, Codesets
+    struct LibraryHeader *, library, 15, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4387,7 +4389,7 @@ LIBSTUBVA(CodesetsSupported, STRPTR*, ...)
 AROS_LH2(void, CodesetsFreeA, 
     AROS_LHA(APTR, obj, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
-    struct CodesetsBase *, library, 14, Codesets
+    struct LibraryHeader *, library, 14, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4436,7 +4438,7 @@ LIBSTUBVA(CodesetsFree, void, REG(a0, APTR obj), ...)
 AROS_LH2(struct codeset *, CodesetsSetDefaultA, 
     AROS_LHA(STRPTR, name, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
-    struct CodesetsBase *, library, 13, Codesets
+    struct LibraryHeader *, library, 13, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4501,7 +4503,7 @@ LIBSTUBVA(CodesetsSetDefault, struct codeset *, REG(a0, STRPTR name), ...)
 AROS_LH2(struct codeset *, CodesetsFindA, 
     AROS_LHA(STRPTR, name, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
-    struct CodesetsBase *, library, 16, Codesets
+    struct LibraryHeader *, library, 16, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4586,7 +4588,7 @@ LIBSTUBVA(CodesetsFind, struct codeset *, REG(a0, STRPTR name), ...)
 #ifdef __AROS__
 AROS_LH1(struct codeset *, CodesetsFindBestA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 17, Codesets
+    struct LibraryHeader *, library, 17, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4664,7 +4666,7 @@ LIBSTUBVA(CodesetsFindBest, struct codeset *, ...)
 #ifdef __AROS__
 AROS_LH1(ULONG, CodesetsUTF8Len, 
     AROS_LHA(const UTF8 *, str, A0),
-    struct CodesetsBase *, library, 18, Codesets
+    struct LibraryHeader *, library, 18, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4713,7 +4715,7 @@ LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8* str))
 AROS_LH2(ULONG, CodesetsStrLenA, 
     AROS_LHA(STRPTR, str, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
-    struct CodesetsBase *, library, 23, Codesets
+    struct LibraryHeader *, library, 23, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -4785,7 +4787,7 @@ LIBSTUBVA(CodesetsStrLen, ULONG, REG(a0, STRPTR str), ...)
 #ifdef __AROS__
 AROS_LH1(STRPTR, CodesetsUTF8ToStrA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 19, Codesets
+    struct LibraryHeader *, library, 19, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5006,7 +5008,7 @@ LIBSTUBVA(CodesetsUTF8ToStr, STRPTR, ...)
 #ifdef __AROS__
 AROS_LH1(UTF8 *, CodesetsUTF8CreateA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 20, Codesets
+    struct LibraryHeader *, library, 20, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5191,7 +5193,7 @@ LIBSTUBVA(CodesetsUTF8Create, UTF8*, ...)
 #ifdef __AROS__
 AROS_LH1(BOOL, CodesetsIsValidUTF8, 
     AROS_LHA(STRPTR, s, A0),
-    struct CodesetsBase *, library, 24, Codesets
+    struct LibraryHeader *, library, 24, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5239,7 +5241,7 @@ LIBSTUB(CodesetsIsValidUTF8, BOOL, REG(a0, STRPTR s))
 #ifdef __AROS__
 AROS_LH1(STRPTR, CodesetsConvertStrA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 26, Codesets
+    struct LibraryHeader *, library, 26, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5401,7 +5403,7 @@ AROS_LH3(void, CodesetsFreeVecPooledA,
     AROS_LHA(APTR, pool, A0),
     AROS_LHA(APTR, mem, A1),
     AROS_LHA(struct TagItem *, attrs, A2),
-    struct CodesetsBase *, library, 25, Codesets
+    struct LibraryHeader *, library, 25, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5462,7 +5464,7 @@ LIBSTUBVA(CodesetsFreeVecPooled, void, REG(a0, APTR pool),
 #ifdef __AROS__
 AROS_LH1(struct codesetList *, CodesetsListCreateA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 27, Codesets
+    struct LibraryHeader *, library, 27, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5566,7 +5568,7 @@ LIBSTUBVA(CodesetsListCreate, struct codesetList *, ...)
 #ifdef __AROS__
 AROS_LH1(BOOL, CodesetsListDeleteA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 28, Codesets
+    struct LibraryHeader *, library, 28, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5655,7 +5657,7 @@ LIBSTUBVA(CodesetsListDelete, BOOL, ...)
 AROS_LH2(BOOL, CodesetsListAddA, 
     AROS_LHA(struct codesetList *, csList, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
-    struct CodesetsBase *, library, 29, Codesets
+    struct LibraryHeader *, library, 29, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -5746,7 +5748,7 @@ LIBSTUBVA(CodesetsListAdd, BOOL, struct codesetList *csList, ...)
 #ifdef __AROS__
 AROS_LH1(BOOL, CodesetsListRemoveA, 
     AROS_LHA(struct TagItem *, attrs, A0),
-    struct CodesetsBase *, library, 30, Codesets
+    struct LibraryHeader *, library, 30, Codesets
 )
 {
     AROS_LIBFUNC_INIT
