@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -353,7 +353,7 @@ struct FileHandle
 #define  fh_Arg1  fh_CompatibilityHack
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
-#define FHF_WRITE (~0UL/2+1)
+#define FHF_WRITE   0x80000000
 #define FHF_BUF     1
 #define FHF_APPEND  2
 #define FHF_LINEBUF 4
@@ -660,7 +660,7 @@ struct DosPacket
 
 #define ACTION_SERIALIZE_DISK 4200
 
-/* Structure for easy handling of DosPackets. DosPackets don´t have to be in
+/* Structure for easy handling of DosPackets. DosPackets donï¿½t have to be in
    this structure, but this struture may ease the use of it. */
 struct StandardPacket
 {
