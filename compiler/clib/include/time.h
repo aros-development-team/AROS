@@ -101,10 +101,10 @@ time_t     time(time_t *);
 #endif
 
 #if __POSIX_VISIBLE >= 199506
-/* NOTIMPL char      *asctime_r(const struct tm *, char *); */
-/* NOTIMPL char      *ctime_r(const time_t *, char *); */
-/* NOTIMPL struct tm *gmtime_r(const time_t *, struct tm *); */
-/* NOTIMPL struct tm *localtime_r(const time_t *, struct tm *); */
+char      *asctime_r(const struct tm *, char *);
+char      *ctime_r(const time_t *, char *);
+struct tm *gmtime_r(const time_t *, struct tm *);
+struct tm *localtime_r(const time_t *, struct tm *);
 #endif
 
 #if __XSI_VISIBLE
