@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Return the current time in seconds.
@@ -17,24 +17,21 @@
 
 /*  FUNCTION
 	The ctime() function converts the broken-down time value tt
-	into a string with this format:
+	into a string.
 
-	    "Wed Jun 30 21:49:08 1993\n"
-
-	The return value points to a statically allocated string which
-	might be overwritten by subsequent calls to any of the date and
-	time functions.
+        See ctime_r() for details.
 
     INPUTS
 	tt - Convert this time.
 
     RESULT
 	A statically allocated buffer with the converted time. Note that
-	there is a newline at the end of the buffer and that the contents
-	of the buffer might get lost with the call of any of the date
-	and time functions.
+        the contents of the buffer might get lost with the call of any of the
+        date and time functions.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application. Use ctime_r() instead.
 
     EXAMPLE
 	time_t tt;
@@ -49,7 +46,7 @@
     BUGS
 
     SEE ALSO
-	time(), asctime(), localtime()
+	time(), asctime(), gmtime(), localtime()
 
     INTERNALS
 

@@ -112,6 +112,7 @@ SHARED	:= \
 	abs \
 	access \
 	asctime \
+        asctime_r \
 	atexit \
 	atof \
 	atoi \
@@ -123,6 +124,7 @@ SHARED	:= \
 	chown \
 	clearerr \
 	ctime \
+        ctime_r \
 	clock \
 	close \
 	closedir \
@@ -188,6 +190,7 @@ SHARED	:= \
     getw \
 	getloadavg \
     gmtime \
+    gmtime_r \
 	isatty \
     ioctl \
 	jrand48 \
@@ -196,6 +199,7 @@ SHARED	:= \
 	lcong48 \
 	link \
 	localtime \
+        localtime_r \
 	localeconv \
 	lrand48 \
 	lseek \

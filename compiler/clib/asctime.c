@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a time into a string.
@@ -17,24 +17,21 @@
 
 /*  FUNCTION
 	The asctime() function converts the broken-down time value tm
-	into a string with this format:
+	into a string.
 
-	    "Wed Jun 30 21:49:08 1993\n"
-
-	The return value points to a statically allocated string which
-	might be overwritten by subsequent calls to any of the date and
-	time functions.
+        See asctime_r() for details.
 
     INPUTS
 	tm - The broken down time
 
     RESULT
 	A statically allocated buffer with the converted time. Note that
-	there is a newline at the end of the buffer and that the contents
-	of the buffer might get lost with the call of any of the date
-	and time functions.
+	the contents of the buffer might get lost with the call of any of the
+        date and time functions.
 
     NOTES
+        This function must not be used in a shared library or
+        in a threaded application. Use asctime_r() instead.
 
     EXAMPLE
 	time_t	    tt;
@@ -53,7 +50,7 @@
     BUGS
 
     SEE ALSO
-	time(), ctime(), localtime()
+	time(), ctime(), gmtime(), localtime()
 
     INTERNALS
 
@@ -61,7 +58,7 @@
 {
     static char buffer[26];
 
-    strftime (buffer, sizeof (buffer), "%C\n", tm);
+    asctime_r (tm, buffer);
 
     return buffer;
 } /* asctime */
