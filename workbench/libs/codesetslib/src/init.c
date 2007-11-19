@@ -340,3 +340,13 @@ initBase(struct LibraryHeader *lib)
 }
 
 /***********************************************************************/
+
+#ifdef __AROS__
+
+#include <aros/symbolsets.h>
+ADD2INITLIB(initBase, 0);
+ADD2EXPUNGELIB(freeBase, 0);
+
+#endif
+
+/***********************************************************************/

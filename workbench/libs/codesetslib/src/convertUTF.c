@@ -41,7 +41,9 @@
 #include "lib.h"
 #include "convertUTF.h"
 
+#ifndef __AROS__
 #include "SDI_lib.h"
+#endif /* __AROS__ */
 
 #include "debug.h"
 
@@ -66,7 +68,7 @@ AROS_LH5(ULONG, CodesetsConvertUTF32toUTF16,
     AROS_LHA(UTF16 **, targetStart, A2),
     AROS_LHA(UTF16 *, targetEnd, A3),
     AROS_LHA(ULONG, flags, D0),
-    struct CodesetsBase *, library, 5, Codesets
+    struct LibraryHeader *, library, 5, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -178,7 +180,7 @@ AROS_LH5(ULONG, CodesetsConvertUTF16toUTF32,
     AROS_LHA(UTF32 **, targetStart, A2),
     AROS_LHA(UTF32 *, targetEnd, A3),
     AROS_LHA(ULONG, flags, D0),
-    struct CodesetsBase *, library, 6, Codesets
+    struct LibraryHeader *, library, 6, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -349,7 +351,7 @@ AROS_LH5(ULONG, CodesetsConvertUTF16toUTF8,
     AROS_LHA(UTF8 **, targetStart, A2),
     AROS_LHA(UTF8 *, targetEnd, A3),
     AROS_LHA(ULONG, flags, D0),
-    struct CodesetsBase *, library, 7, Codesets
+    struct LibraryHeader *, library, 7, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -518,7 +520,7 @@ LIBSTUB(CodesetsConvertUTF16toUTF8, ULONG, REG(a0, const UTF16 ** sourceStart),
 AROS_LH2(BOOL, CodesetsIsLegalUTF8, 
     AROS_LHA(const UTF8 *, source, A0),
     AROS_LHA(ULONG, length, D0),
-    struct CodesetsBase *, library, 8, Codesets
+    struct LibraryHeader *, library, 8, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -648,7 +650,7 @@ LIBSTUB(CodesetsIsLegalUTF8, BOOL, REG(a0, const UTF8 * source),
 AROS_LH2(BOOL, CodesetsIsLegalUTF8Sequence, 
     AROS_LHA(const UTF8 *, source, A0),
     AROS_LHA(const UTF8 *, sourceEnd, D1),
-    struct CodesetsBase *, library, 9, Codesets
+    struct LibraryHeader *, library, 9, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -699,7 +701,7 @@ AROS_LH5(ULONG, CodesetsConvertUTF8toUTF16,
     AROS_LHA(UTF16 **, targetStart, A2),
     AROS_LHA(UTF16 *, targetEnd, A3),
     AROS_LHA(ULONG, flags, D0),
-    struct CodesetsBase *, library, 10, Codesets
+    struct LibraryHeader *, library, 10, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -863,7 +865,7 @@ AROS_LH5(ULONG, CodesetsConvertUTF32toUTF8,
     AROS_LHA(UTF8 **, targetStart, A2),
     AROS_LHA(UTF8 *, targetEnd, A3),
     AROS_LHA(ULONG, flags, D0),
-    struct CodesetsBase *, library, 11, Codesets
+    struct LibraryHeader *, library, 11, Codesets
 )
 {
     AROS_LIBFUNC_INIT
@@ -995,7 +997,7 @@ AROS_LH5(ULONG, CodesetsConvertUTF8toUTF32,
     AROS_LHA(UTF32 **, targetStart, A2),
     AROS_LHA(UTF32 *, targetEnd, A3),
     AROS_LHA(ULONG, flags, D0),
-    struct CodesetsBase *, library, 12, Codesets
+    struct LibraryHeader *, library, 12, Codesets
 )
 {
     AROS_LIBFUNC_INIT

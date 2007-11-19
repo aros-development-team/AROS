@@ -28,7 +28,9 @@
 ** Some useful macros
 */
 
+#ifndef __AROS__
 #include "SDI_compiler.h"
+#endif
 
 #if defined(__amigaos4__)
 #define GETINTERFACE(iface, base)	(iface = (APTR)GetInterface((struct Library *)(base), "main", 1L, NULL))
