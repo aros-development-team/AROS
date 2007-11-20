@@ -74,13 +74,13 @@
 
     if(inc != NULL)
     {
-	while(*inc++ != ~0UL)
+	while(*inc++ != ~0)
 	    nMethods++;
     }
 
     if(exc != NULL)
     {
-	while(*exc != ~0UL)
+	while(*exc != ~0)
 	{
 	    if(FindMethod(methods, *exc) != NULL)
 		nMethods--;
@@ -89,7 +89,7 @@
 	}
     }
 
-    while(*met++ != ~0UL)
+    while(*met++ != ~0)
 	nMethods++;
 
     newM = AllocVec((nMethods + 1)*sizeof(ULONG), MEMF_PUBLIC);
@@ -104,12 +104,12 @@
     /* Copy new methods */
     if(include != NULL)
     {
-	while(*include != ~0UL)
+	while(*include != ~0)
 	    *newmets++ = *include++;
     }
  
     /* Copy old methods except the excluded ones */
-    while(*met != ~0UL)
+    while(*met != ~0)
     {
 	if(FindMethod(exclude, *met) == NULL)
 	    *newmets++ = *met;
