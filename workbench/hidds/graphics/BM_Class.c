@@ -544,7 +544,7 @@ ULONG BM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *obj,
     mode      = GC_DRMD(gc);
 
 #if OPTIMIZE_DRAWPIXEL_FOR_COPY
-    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0UL)
+    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0)
     {
 	val = src;
     }
