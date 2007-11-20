@@ -1062,7 +1062,7 @@ static LONG lock(struct dnode *dir, ULONG mode)
 	    return ERROR_OBJECT_IN_USE;
 	}
 	
-	dir->usecount = ~0ul/2 + 1;
+	dir->usecount = ((ULONG)~0)/2 + 1;
     }
     else
     {
@@ -1266,7 +1266,7 @@ static LONG create_dir(struct rambase *rambase, struct filehandle **handle,
 		new->protect = protect;
 		new->volume = dir->volume;
 		new->volume->volcount++;
-		new->usecount = ~0ul/2 + 2;
+		new->usecount = ((ULONG)~0)/2 + 2;
 		NewList((struct List *)&new->list);
 		NewList((struct List *)&new->receivers);
 		AddTail((struct List *)&dir->list, (struct Node *)new);
@@ -1293,7 +1293,7 @@ static LONG free_lock(struct rambase *rambase, struct filehandle *filehandle)
 {
     struct dnode *dnode = filehandle->node;
 
-    dnode->usecount = (dnode->usecount - 1) & ~0ul/2;
+    dnode->usecount = (dnode->usecount - 1) & ((ULONG)~0)/2;
     FreeMem(filehandle, sizeof(struct filehandle));
     dnode->volume->volcount--;
 
