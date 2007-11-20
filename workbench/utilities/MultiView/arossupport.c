@@ -54,7 +54,7 @@ struct DTMethod *FindTriggerMethod(struct DTMethod *methods, STRPTR command, ULO
 		}
 	    }
 
-	    if(method != ~0UL)
+	    if(method != ~0)
 	    {
 		if(methods->dtm_Method == method)
 		{
