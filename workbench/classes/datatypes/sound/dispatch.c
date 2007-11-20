@@ -505,7 +505,7 @@ LONG __regargs Sound_SELECT( Class *cl, Object *o, struct dtSelect *dts )
 	
 		for( i = w; i; i-- ) 
 		{
-			if( x >= minX && startSample == ~0L )
+			if( x >= minX && startSample == ~0 )
 			{
 				startSample = c;
 			} 
@@ -533,7 +533,7 @@ LONG __regargs Sound_SELECT( Class *cl, Object *o, struct dtSelect *dts )
 		{
 			if( error > 0 )
 			{
-				if( x >= minX && startSample == ~0L )
+				if( x >= minX && startSample == ~0 )
 				{
 					startSample = i;
 				}
@@ -550,7 +550,7 @@ LONG __regargs Sound_SELECT( Class *cl, Object *o, struct dtSelect *dts )
 		}
 	}
 	/* some corrections */
-	if( endSample == ~0L )
+	if( endSample == ~0 )
 	{
 		endSample = samplelength;
 	}
@@ -1310,8 +1310,8 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
 				/* create Methods array */
 				DoSuperMethod( cl, o, OM_GET, DTA_Methods, (IPTR) &superMethods );
 				
-				for( cntSuper = 0; superMethods[ cntSuper ] != ~0L; cntSuper++ ) {}
-				for( cntMethods = 0; Methods[ cntMethods ] != ~0L; cntMethods++ ) {}
+				for( cntSuper = 0; superMethods[ cntSuper ] != ~0; cntSuper++ ) {}
+				for( cntMethods = 0; Methods[ cntMethods ] != ~0; cntMethods++ ) {}
 				
 				cb->cb_Methods = // For any reasons, GNUC seems to have problems here !
 				newMethods = (ULONG *) AllocVec( ( cntSuper+cntMethods+1UL ) * sizeof( ULONG ), MEMF_PUBLIC );
@@ -1811,7 +1811,7 @@ void __regargs DrawWaveform( struct ClassBase *cb, struct RastPort *rp, struct I
 			for( i = 0; i < w; i++ ) 
 			{
 				/* get minX and maxX for highlighting */
-				if( sampleStart != ~0L )
+				if( sampleStart != ~0 )
 				{
 					if( i >= sampleStart && minX == ~0 )
 					{
@@ -1845,7 +1845,7 @@ void __regargs DrawWaveform( struct ClassBase *cb, struct RastPort *rp, struct I
 				if( error > 0 )
 				{
 					/* get minX and maxX for highlighting */
-					if( sampleStart != ~0L )
+					if( sampleStart != ~0 )
 					{
 						if( i >= sampleStart && minX == ~0 )
 						{
@@ -2276,7 +2276,7 @@ IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
 					/* start mark mode */
 					else if( ie->ie_Code == IECODE_LBUTTON )
 					{	
-						if( id->MinX != ~0L )
+						if( id->MinX != ~0 )
 						{
 							DoMethod( o, DTM_CLEARSELECTED, (IPTR) gpi->gpi_GInfo );
 						}
@@ -2371,7 +2371,7 @@ IPTR __regargs Sound_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt )
 		break;
 	}
 		
-	if( cmd != ~0L )
+	if( cmd != ~0 )
 	{
 		SendObjectMsg( id, cmd, data );
 	}
@@ -2511,7 +2511,7 @@ LONG __regargs WriteAIFF( struct ClassBase *cb, Object *o, struct IFFHandle *iff
 		ULONG			sampleLength = id->SampleLength;
 		BYTE			*sample = id->Sample;
 
-		if( id->StartSample != ~0L )
+		if( id->StartSample != ~0 )
 		{
 			sample = &sample[ UMult32( id->StartSample, bytesPerPoint[ sampleType ] ) ];
 			sampleLength = id->EndSample - id->StartSample;
@@ -2563,7 +2563,7 @@ LONG __regargs WriteSVX( struct ClassBase *cb, Object *o, struct IFFHandle *iff,
 	CopyMem( &id->VoiceHeader, &vhdr, sizeof( vhdr ) );
 	vhdr.vh_Compression = ( ( id->VoiceHeader.vh_Compression == CMP_FIBDELTA ) || ( cb->cb_Compress ) ) && ( sampletype <= SDTST_S8S );
 							
-	if( id->StartSample != ~0L )
+	if( id->StartSample != ~0 )
 	{
 		sample = &sample[ UMult( id->StartSample, bytesPerPoint[ sampletype ] ) ];
 		sampleLength = id->EndSample - id->StartSample;
