@@ -77,16 +77,8 @@
     /* we might have a value to get */
     else
     {
-    	*ptr = '\0'; /*terminate the name string */
-	for (value=++ptr; *ptr!='\0'; ptr++)
-    	{
-	    if (isspace(*ptr))
-	    {
-	    	errno = EINVAL;
-	    	goto err;
-     	    }
-    	}
-
+    	*ptr = '\0'; /* terminate the name string */
+	value = ++ptr;
 	res = setenv(name, value, 1);
     }
 
