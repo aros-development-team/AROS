@@ -20,6 +20,7 @@ size_t strlen (const char * str);
 int    strcasecmp (const char * s1, const char * s2);
 int    strcmp (const char * s1, const char * s2);
 int    strncasecmp (const char *str1, const char * str2, size_t n);
+char * strcasestr (const char * buf, const char * str);
 int    strncmp (const char * s1, const char * s2, size_t n);
 char * strdup (const char * str);
 char * strcpy (char * restrict dest, const char * restrict src);
