@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "__errno.h"
+#include "__upath.h"
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -57,6 +58,7 @@
 ******************************************************************************/
 {
     char pathname[FILENAME_MAX];
+    char *tpath;
     BPTR lock;
   
     lock = CurrentDir(NULL);
@@ -66,6 +68,9 @@
 	errno = IoErr2errno (IoErr ());
 	return NULL;
     }
+
+    tpath = __path_a2u(pathname);
+    strcpy(pathname, tpath);
 
     if (buf != NULL)
     {
