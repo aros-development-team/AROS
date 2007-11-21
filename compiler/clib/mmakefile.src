@@ -53,11 +53,13 @@ COMMON	:= \
 	memmove \
 	memset \
 	putchar \
+	regex_globals \
 	stccpy \
 	stpblk \
 	stpcpy \
 	stpsym \
 	strcasecmp \
+	strcasestr \
 	strcat \
 	strchr \
 	strcmp \
@@ -117,6 +119,7 @@ SHARED	:= \
 	atof \
 	atoi \
 	atol \
+	basename \
 	bsearch \
 	calloc \
 	chdir \
@@ -130,6 +133,8 @@ SHARED	:= \
 	closedir \
 	creat \
 	difftime \
+	dirfd \
+	dirname \
 	drand48 \
 	dup \
 	dup2 \
@@ -152,6 +157,7 @@ SHARED	:= \
 	fgetpos \
 	fgets \
 	fileno \
+	fnmatch \
 	fopen \
 	fprintf \
 	fscanf \
@@ -165,7 +171,7 @@ SHARED	:= \
 	fsetpos \
 	fstat \
 	ftell \
-    ftime \
+	ftime \
 	ftruncate \
 	fwrite \
 	gcvt \
@@ -187,12 +193,13 @@ SHARED	:= \
         getpwent \
         getpwnam \
         getpwuid \
-    getw \
+	getw \
 	getloadavg \
-    gmtime \
+	glob \
+	gmtime \
     gmtime_r \
 	isatty \
-    ioctl \
+	ioctl \
 	jrand48 \
         kill \
 	labs \
@@ -232,6 +239,7 @@ SHARED	:= \
 	readlink \
 	realloc \
 	realloc_nocopy \
+	regex \
 	remove \
 	rename \
 	rewind \
@@ -327,6 +335,7 @@ ROM_COMMON := \
 	stpblk \
 	stpcpy \
 	strcasecmp \
+	strcasestr \
 	strcat \
 	strchr \
 	strcmp \
