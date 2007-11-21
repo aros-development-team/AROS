@@ -220,7 +220,7 @@ success:
 
     __setfdesc(wanted_fd, currdesc);
 
-    D(bug("__open: exiting\n"));
+    D(bug("__open: exiting fd=%d\n", wanted_fd));
 
     return wanted_fd;
 
@@ -273,13 +273,13 @@ int __init_stdfiles(void)
     return 1;
 }
 
-
 void __exit_stdfiles(void)
 {
     int i = __numslots;
     while (i)
     {
-	close(--i);
+	if (__fd_array[--i])
+	    close(i);
     }
 }
 
