@@ -52,6 +52,9 @@ int IoErr2errno (int ioerr)
 
 	case ERROR_DIR_NOT_FOUND:
 	    return ENOTDIR;
+
+	case ERROR_RENAME_ACROSS_DEVICES:
+	    return EXDEV;
     }
 
     return MAX_ERRNO+ioerr;
