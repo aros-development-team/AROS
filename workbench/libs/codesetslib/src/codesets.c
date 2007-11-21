@@ -3380,16 +3380,16 @@ defaultCodeset(ULONG sem)
   ENTER();
 
   if(sem)
-    ObtainSemaphoreShared(&CodesetsBase->libSem);
+    ObtainSemaphoreShared(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   *buf = 0;
   GetVar("codeset_default",buf,sizeof(buf),GVF_GLOBAL_ONLY);
 
-  if(!*buf || !(codeset = codesetsFind(&CodesetsBase->codesets,buf)))
-    codeset = CodesetsBase->systemCodeset;
+  if(!*buf || !(codeset = codesetsFind(&((struct LibraryHeader *)CodesetsBase)->codesets,buf)))
+    codeset = ((struct LibraryHeader *)CodesetsBase)->systemCodeset;
 
   if(sem)
-    ReleaseSemaphore(&CodesetsBase->libSem);
+    ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   RETURN(codeset);
   return codeset;
@@ -3425,7 +3425,7 @@ codesetsReadTable(struct codesetList *csList, STRPTR name)
   {
     struct codeset *codeset;
 
-    if((codeset = (struct codeset *)allocVecPooled(CodesetsBase->pool, sizeof(struct codeset))))
+    if((codeset = (struct codeset *)allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset))))
     {
       int i;
       char buf[512];
@@ -3554,7 +3554,7 @@ codesetsScanDir(struct codesetList *csList, const char *dirPath)
         eac->eac_MatchString = NULL;
         eac->eac_MatchFunc = NULL;
 
-        if((eabuffer = allocVecPooled(CodesetsBase->pool, 10*sizeof(struct ExAllData))))
+        if((eabuffer = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, 10*sizeof(struct ExAllData))))
         {
           char filePath[620];
 
@@ -3585,7 +3585,7 @@ codesetsScanDir(struct codesetList *csList, const char *dirPath)
           }
           while(more);
 
-          freeVecPooled(CodesetsBase->pool, eabuffer);
+          freeVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, eabuffer);
         }
 
         FreeDosObject(DOS_EXALLCONTROL, eac);
@@ -3613,19 +3613,19 @@ codesetsInit(struct codesetList *csList)
 
   ENTER();
 
-  ObtainSemaphore(&CodesetsBase->poolSem);
+  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
-  NewList((struct List *)&CodesetsBase->codesets);
+  NewList((struct List *)&((struct LibraryHeader *)CodesetsBase)->codesets);
 
   // to make the list of the supported codesets complete we also add a
   // fake 'UTF-8' only so that our users can query for that codeset as well.
-  if(!(codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset)))) goto end;
+  if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset)))) goto end;
   codeset->name 	          = mystrdup("UTF-8");
   codeset->alt_name 	      = NULL;
   codeset->characterization = mystrdup("Unicode");
   codeset->read_only 	      = 0;
   AddTail((struct List *)csList, (struct Node *)&codeset->node);
-  CodesetsBase->utf8Codeset = codeset;
+  ((struct LibraryHeader *)CodesetsBase)->utf8Codeset = codeset;
 
   // on AmigaOS4 we can use diskfont.library to inquire charset information as
   // it comes with a quite rich implementation of different charsets.
@@ -3648,7 +3648,7 @@ codesetsInit(struct codesetList *csList)
     {
       D(DBF_STARTUP, "loading charset '%s' from diskfont.library...", mimename);
 
-      if(!(codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset)))) goto end;
+      if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset)))) goto end;
       codeset->name 	          = mystrdup(mimename);
       codeset->alt_name 	      = NULL;
       codeset->characterization = mystrdup(ianaName);
@@ -3690,7 +3690,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-1 + EURO
   if(!(codesetsFind(csList, "ISO-8859-1 + Euro")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-1 + Euro");
     codeset->alt_name 	      = NULL;
     codeset->characterization = mystrdup("West European (with EURO)");
@@ -3719,7 +3719,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-1
   if(!(codesetsFind(csList, "ISO-8859-1")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-1");
     codeset->alt_name 	      = mystrdup("ISO8859-1");
     codeset->characterization = mystrdup("West European");
@@ -3745,7 +3745,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-2
   if(!(codesetsFind(csList, "ISO-8859-2")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-2");
     codeset->alt_name 	      = mystrdup("ISO8859-2");
     codeset->characterization = mystrdup("Central/East European");
@@ -3774,7 +3774,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-3
   if(!(codesetsFind(csList, "ISO-8859-3")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool, sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-3");
     codeset->alt_name 	      = mystrdup("ISO8859-3");
     codeset->characterization = mystrdup("South European");
@@ -3803,7 +3803,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-4
   if(!(codesetsFind(csList, "ISO-8859-4")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-4");
     codeset->alt_name 	      = mystrdup("ISO8859-4");
     codeset->characterization = mystrdup("North European");
@@ -3832,7 +3832,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-5
   if(!(codesetsFind(csList, "ISO-8859-5")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-5");
     codeset->alt_name 	      = mystrdup("ISO8859-5");
     codeset->characterization = mystrdup("Slavic languages");
@@ -3861,7 +3861,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-9
   if(!(codesetsFind(csList, "ISO-8859-9")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-9");
     codeset->alt_name 	      = mystrdup("ISO8859-9");
     codeset->characterization = mystrdup("Turkish");
@@ -3890,7 +3890,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-15
   if(!(codesetsFind(csList, "ISO-8859-15")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("ISO-8859-15");
     codeset->alt_name 	      = mystrdup("ISO8859-15");
     codeset->characterization = mystrdup("West European II");
@@ -3919,7 +3919,7 @@ codesetsInit(struct codesetList *csList)
   // ISO-8859-16
   if(!(codesetsFind(csList, "ISO-8859-16")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
 	  codeset->name             = mystrdup("ISO-8859-16");
   	codeset->alt_name         = mystrdup("ISO8869-16");
 	  codeset->characterization = mystrdup("South-Eastern European");
@@ -3948,7 +3948,7 @@ codesetsInit(struct codesetList *csList)
   // KOI8-R
   if(!(codesetsFind(csList, "KOI8-R")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
     codeset->name 	            = mystrdup("KOI8-R");
     codeset->alt_name 	        = NULL;
     codeset->characterization   = mystrdup("Russian");
@@ -3977,7 +3977,7 @@ codesetsInit(struct codesetList *csList)
   // AmigaPL
   if(!(codesetsFind(csList, "AmigaPL")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
     codeset->name 	          = mystrdup("AmigaPL");
     codeset->alt_name 	      = NULL;
     codeset->characterization = mystrdup("Polish (Amiga)");
@@ -4006,7 +4006,7 @@ codesetsInit(struct codesetList *csList)
   // Amiga-1251
   if(!(codesetsFind(csList, "Amiga-1251")))
   {
-    if(!(codeset = allocVecPooled(CodesetsBase->pool,sizeof(struct codeset)))) goto end;
+    if(!(codeset = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool,sizeof(struct codeset)))) goto end;
 	  codeset->name             = mystrdup("Amiga-1251");
   	codeset->alt_name         = mystrdup("Ami1251");
 	  codeset->characterization = mystrdup("Cyrillic (Amiga)");
@@ -4033,7 +4033,7 @@ codesetsInit(struct codesetList *csList)
   }
 
 end:
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   RETURN(codeset != 0);
   return codeset != NULL;
@@ -4202,7 +4202,7 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
       // if we still haven't found the matching codeset
       // we search the internal list
       if(best_codeset == NULL)
-        best_codeset = codesetsFind(&CodesetsBase->codesets, search[Nmax-1].name);
+        best_codeset = codesetsFind(&((struct LibraryHeader *)CodesetsBase)->codesets, search[Nmax-1].name);
 
       best_errors = 0;
 
@@ -4222,7 +4222,7 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
     {
       if(lastIteration == TRUE || (tag->ti_Tag == CSA_CodesetList && tag->ti_Data != 0))
       {
-        struct codesetList *csList = (lastIteration ? &CodesetsBase->codesets : (struct codesetList *)tag->ti_Data);
+        struct codesetList *csList = (lastIteration ? &((struct LibraryHeader *)CodesetsBase)->codesets : (struct codesetList *)tag->ti_Data);
         struct codeset *codeset = (struct codeset *)csList->list.mlh_Head;
 
         // the following identification/detection routines is NOT really smart.
@@ -4232,7 +4232,7 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
 
         while(codeset)
         {
-          if(!codeset->read_only && codeset != CodesetsBase->utf8Codeset)
+          if(!codeset->read_only && codeset != ((struct LibraryHeader *)CodesetsBase)->utf8Codeset)
           {
             char *text_ptr = text;
             int i;
@@ -4306,7 +4306,7 @@ CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
 
   // first we need to check how many codesets our supplied
   // lists carry.
-  numCodesets = countCodesets(&CodesetsBase->codesets);
+  numCodesets = countCodesets(&((struct LibraryHeader *)CodesetsBase)->codesets);
   while((tag = NextTagItem(&tstate)))
   {
     if(tag->ti_Tag == CSA_CodesetList && tag->ti_Data != 0)
@@ -4326,11 +4326,11 @@ CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
       // reset the tstate
       tstate = attrs;
 
-      ObtainSemaphoreShared(&CodesetsBase->libSem);
+      ObtainSemaphoreShared(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
       // first we walk through the internal codesets list and
       // add the names
-      for(code = (struct codeset *)CodesetsBase->codesets.list.mlh_Head; (succ = (struct codeset *)code->node.mln_Succ); code = succ, i++)
+      for(code = (struct codeset *)((struct LibraryHeader *)CodesetsBase)->codesets.list.mlh_Head; (succ = (struct codeset *)code->node.mln_Succ); code = succ, i++)
         array[i] = code->name;
 
       // then we also iterate through our private codesets list
@@ -4347,7 +4347,7 @@ CodesetsSupportedA(REG(a0, UNUSED struct TagItem * attrs))
 
       array[i] = NULL;
 
-      ReleaseSemaphore(&CodesetsBase->libSem);
+      ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->libSem);
     }
   }
 
@@ -4452,9 +4452,9 @@ CodesetsSetDefaultA(REG(a0, STRPTR name),
 
   ENTER();
 
-  ObtainSemaphoreShared(&CodesetsBase->libSem);
+  ObtainSemaphoreShared(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
-  if((codeset = codesetsFind(&CodesetsBase->codesets,name)))
+  if((codeset = codesetsFind(&((struct LibraryHeader *)CodesetsBase)->codesets,name)))
   {
     ULONG flags;
 
@@ -4463,7 +4463,7 @@ CodesetsSetDefaultA(REG(a0, STRPTR name),
     SetVar("codeset_default",codeset->name,strlen(codeset->name),flags);
   }
 
-  ReleaseSemaphore(&CodesetsBase->libSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   RETURN(codeset);
   return codeset;
@@ -4516,7 +4516,7 @@ CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
 
   ENTER();
 
-  ObtainSemaphoreShared(&CodesetsBase->libSem);
+  ObtainSemaphoreShared(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   // if no name pointer was supplied we have to return
   // the default codeset only.
@@ -4524,7 +4524,7 @@ CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
   {
     // we first walk through our internal list and check if we
     // can find the requested codeset
-    codeset = codesetsFind(&CodesetsBase->codesets, name);
+    codeset = codesetsFind(&((struct LibraryHeader *)CodesetsBase)->codesets, name);
 
     if(codeset == NULL && attrs != NULL)
     {
@@ -4550,7 +4550,7 @@ CodesetsFindA(REG(a0, STRPTR name), REG(a1, struct TagItem *attrs))
   if(codeset == NULL && (attrs == NULL || GetTagData(CSA_FallbackToDefault, TRUE, attrs)))
     codeset = defaultCodeset(FALSE);
 
-  ReleaseSemaphore(&CodesetsBase->libSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   RETURN(codeset);
   return codeset;
@@ -4601,7 +4601,7 @@ CodesetsFindBestA(REG(a0, struct TagItem *attrs))
 
   ENTER();
 
-  ObtainSemaphoreShared(&CodesetsBase->libSem);
+  ObtainSemaphoreShared(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   if(attrs)
   {
@@ -4626,7 +4626,7 @@ CodesetsFindBestA(REG(a0, struct TagItem *attrs))
     }
   }
 
-  ReleaseSemaphore(&CodesetsBase->libSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->libSem);
 
   RETURN(codeset);
   return codeset;
@@ -5289,7 +5289,7 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 
       // if the source codeset is UTF-8 we don't have to use the UTF8Create()
       // function and can directly call the UTF8ToStr() function
-      if(srcCodeset != CodesetsBase->utf8Codeset)
+      if(srcCodeset != ((struct LibraryHeader *)CodesetsBase)->utf8Codeset)
       {
         struct TagItem tags[] = { { CSA_SourceCodeset,  (ULONG)srcCodeset  },
                                   { CSA_Source,         (ULONG)srcStr      },
@@ -5310,7 +5310,7 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
       // in case the destination codeset is UTF-8 we don't have to actually
       // use the UTF8ToStr() function and can immediately return our
       // UTF8 string
-      if(utf8str && utf8strLen > 0 && dstCodeset != CodesetsBase->utf8Codeset)
+      if(utf8str && utf8strLen > 0 && dstCodeset != ((struct LibraryHeader *)CodesetsBase)->utf8Codeset)
       {
         struct TagItem tags[] = { { CSA_DestCodeset, (ULONG)dstCodeset  },
                                   { CSA_Source,      (ULONG)utf8str     },
@@ -5477,10 +5477,10 @@ CodesetsListCreateA(REG(a0, struct TagItem *attrs))
 
   ENTER();
 
-  ObtainSemaphore(&CodesetsBase->poolSem);
+  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   // no matter what, we create a codesets list we will return to the user
-  if((csList = allocVecPooled(CodesetsBase->pool, sizeof(struct codesetList))))
+  if((csList = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, sizeof(struct codesetList))))
   {
     BOOL scanProgDir = TRUE;
     struct TagItem *tstate = attrs;
@@ -5529,7 +5529,7 @@ CodesetsListCreateA(REG(a0, struct TagItem *attrs))
       codesetsScanDir(csList, "PROGDIR:Charsets");
   }
 
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   RETURN(csList);
   return csList;
@@ -5580,7 +5580,7 @@ CodesetsListDeleteA(REG(a0, struct TagItem *attrs))
   BOOL result = FALSE;
   ENTER();
 
-  ObtainSemaphore(&CodesetsBase->poolSem);
+  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   if(attrs != NULL)
   {
@@ -5617,7 +5617,7 @@ CodesetsListDeleteA(REG(a0, struct TagItem *attrs))
     }
   }
 
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   RETURN(result);
   return result;
@@ -5670,7 +5670,7 @@ CodesetsListAddA(REG(a0, struct codesetList *csList),
   BOOL result = FALSE;
   ENTER();
 
-  ObtainSemaphore(&CodesetsBase->poolSem);
+  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   if(csList != NULL && attrs != NULL)
   {
@@ -5709,7 +5709,7 @@ CodesetsListAddA(REG(a0, struct codesetList *csList),
     }
   }
 
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   RETURN(result);
   return result;
@@ -5760,7 +5760,7 @@ CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
   BOOL result = FALSE;
   ENTER();
 
-  ObtainSemaphore(&CodesetsBase->poolSem);
+  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   if(attrs != NULL)
   {
@@ -5790,7 +5790,7 @@ CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
             while(mstate->mln_Succ)
               mstate = mstate->mln_Succ;
 
-            if(mstate != CodesetsBase->codesets.list.mlh_Tail)
+            if(mstate != ((struct LibraryHeader *)CodesetsBase)->codesets.list.mlh_Tail)
             {
               Remove((struct Node *)&cs->node);
 
@@ -5815,7 +5815,7 @@ CodesetsListRemoveA(REG(a0, struct TagItem *attrs))
     }
   }
 
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
 
   RETURN(result);
   return result;
