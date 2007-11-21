@@ -28,6 +28,10 @@
 #include <process.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fnmatch.h>
+#include <glob.h>
+#include <libgen.h>
+#include <regex.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
 #include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */
