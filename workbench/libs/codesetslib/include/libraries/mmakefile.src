@@ -1,5 +1,7 @@
 # $Id$
 
+# AROS metamakefile for codesetslib
+
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES 	 := codesets.h

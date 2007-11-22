@@ -29,78 +29,13 @@
 #include <stdio.h>
 #include <string.h>
 
-// plain:   "�������"
-#define STR "öäüÖÄÜß" \
-            "öäüÖÄÜß" \
-            "öäüÖÄÜß" \
-            "öäüÖÄÜß" \
-            "öäüÖÄÜß" \
-            "öäüÖÄÜß"
-
-#ifdef __AROS__
-#include <aros/asmcall.h>
-#else
-#include "SDI_hook.h"
-#endif
-
-struct Library *CodesetsBase = NULL;
-#if defined(__amigaos4__)
-struct CodesetsIFace* ICodesets = NULL;
-#endif
-
-#if defined(__amigaos4__)
-#define GETINTERFACE(iface, base)	(iface = (APTR)GetInterface((struct Library *)(base), "main", 1L, NULL))
-#define DROPINTERFACE(iface)			(DropInterface((struct Interface *)iface), iface = NULL)
-#else
-#define GETINTERFACE(iface, base)	TRUE
-#define DROPINTERFACE(iface)
-#endif
-
-#ifdef __AROS__
-
-AROS_UFH3S(ULONG, destFunc,
-AROS_UFHA(struct Hook *, h, A0),
-AROS_UFHA(struct convertMsg *, msg, A2),
-AROS_UFHA(STRPTR, buf, A1))
-{
-    AROS_USERFUNC_INIT
-    printf("[%3ld] [%s]\n",msg->len,buf);
-
-    if(msg->state == CSV_End)
-      printf("\n");
-
-    return 0;
-    AROS_USERFUNC_EXIT
-}
-
-static struct Hook destHook;
-
-#else /* __AROS__ */
-
-HOOKPROTONH(destFunc, ULONG, struct convertMsg* msg, STRPTR buf)
-{
-    printf("[%3ld] [%s]\n",msg->len,buf);
-
-    if(msg->state == CSV_End)
-      printf("\n");
-
-    return 0;
-}
-MakeStaticHook(destHook, destFunc);
-
-#endif /* __AROS__ */
 
 int main(int argc,char **argv)
 {
-    int            res;
-
-    #ifdef __AROS__
-    destHook.h_Entry = (HOOKFUNC)destFunc;
-    #endif
-    
-    if((CodesetsBase = OpenLibrary(CODESETSNAME,CODESETSVER)) &&
-        GETINTERFACE(ICodesets, CodesetsBase))
+    int res = 0;
+    if((CodesetsBase = OpenLibrary(CODESETSNAME,CODESETSVER)))
     {
+#if 0
         char *str;
 
         if(argc>1)
@@ -121,8 +56,7 @@ int main(int argc,char **argv)
           printf("Error: example string wasn't recognized as UTF8!\n");
 
         res = 0;
-
-        DROPINTERFACE(ICodesets);
+#endif
         CloseLibrary(CodesetsBase);
         CodesetsBase = NULL;
     }
@@ -131,6 +65,5 @@ int main(int argc,char **argv)
         printf("can't open %s %d+\n",CODESETSNAME,CODESETSVER);
         res = 20;
     }
-
     return res;
 }

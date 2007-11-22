@@ -50,9 +50,9 @@ allocArbitratePooled(ULONG s)
 {
   APTR mem;
 
-  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
-  mem = AllocPooled(((struct LibraryHeader *)CodesetsBase)->pool, s);
-  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
+  ObtainSemaphore(&CodesetsBase->poolSem);
+  mem = AllocPooled(CodesetsBase->pool, s);
+  ReleaseSemaphore(&CodesetsBase->poolSem);
 
   return mem;
 }
@@ -62,9 +62,9 @@ allocArbitratePooled(ULONG s)
 void
 freeArbitratePooled(APTR mem,ULONG s)
 {
-  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
-  FreePooled(((struct LibraryHeader *)CodesetsBase)->pool, mem, s);
-  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
+  ObtainSemaphore(&CodesetsBase->poolSem);
+  FreePooled(CodesetsBase->pool, mem, s);
+  ReleaseSemaphore(&CodesetsBase->poolSem);
 }
 
 /****************************************************************************/
@@ -74,9 +74,9 @@ allocArbitrateVecPooled(ULONG size)
 {
   ULONG *mem;
 
-  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
-  mem = allocVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, size);
-  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
+  ObtainSemaphore(&CodesetsBase->poolSem);
+  mem = allocVecPooled(CodesetsBase->pool, size);
+  ReleaseSemaphore(&CodesetsBase->poolSem);
 
   return mem;
 }
@@ -86,9 +86,9 @@ allocArbitrateVecPooled(ULONG size)
 void
 freeArbitrateVecPooled(APTR mem)
 {
-  ObtainSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
-  freeVecPooled(((struct LibraryHeader *)CodesetsBase)->pool, mem);
-  ReleaseSemaphore(&((struct LibraryHeader *)CodesetsBase)->poolSem);
+  ObtainSemaphore(&CodesetsBase->poolSem);
+  freeVecPooled(CodesetsBase->pool, mem);
+  ReleaseSemaphore(&CodesetsBase->poolSem);
 }
 
 /****************************************************************************/
