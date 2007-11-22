@@ -24,6 +24,7 @@
 #define _LIB_PROTOS_H
 
 #ifdef __AROS__
+#define __CODESETS_NOLIBBASE__
 #include <proto/codesets.h>
 #else /* __AROS__ */
 #include "SDI_lib.h"

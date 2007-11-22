@@ -1,4 +1,7 @@
 #   $Id$
+
+#   AROS metamakefile for codesetslib
+
 include $(TOP)/config/make.cfg
 
 FILES := \
@@ -22,7 +25,7 @@ FILES := \
 %build_module mmake=workbench-libs-codesets-lib \
     modname=codesets modtype=library \
     files=$(FILES) \
-    uselibs="amiga rom"
+    uselibs="amiga rom codesets"
 
 #MM workbench-libs-codesets-clean : workbench-libs-codesets-lib-clean
 
