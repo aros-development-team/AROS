@@ -5,6 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
+    libinit-aros \
     init \
     utils \
     base64 \
