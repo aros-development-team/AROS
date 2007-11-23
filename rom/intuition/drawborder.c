@@ -84,10 +84,10 @@ AROS_LH4(void, DrawBorder,
 {
     AROS_LIBFUNC_INIT
 
-    ULONG  apen;
-    ULONG  bpen;
-    ULONG  drmd;
-    ULONG  penmode;
+    IPTR   apen;
+    IPTR   bpen;
+    IPTR   drmd;
+    IPTR   penmode;
     WORD  *ptr;
     WORD   x, y;
     WORD   xoff, yoff;

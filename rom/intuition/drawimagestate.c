@@ -76,7 +76,7 @@ AROS_LH6(void, DrawImageState,
 {
     AROS_LIBFUNC_INIT
 
-    ULONG apen, bpen, drmd, penmode;
+    IPTR apen, bpen, drmd, penmode;
 
     EXTENDWORD(leftOffset);
     EXTENDWORD(topOffset);
