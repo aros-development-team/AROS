@@ -79,7 +79,7 @@ AROS_LH4(void, EraseImage,
         if (image->Depth == CUSTOMIMAGEDEPTH)
         {
             struct impErase method;
-            ULONG penmode;
+            IPTR penmode;
 
     	#ifdef __MORPHOS__
             GetRPAttrs(rp,RPTAG_PenMode,(ULONG)&penmode,TAG_DONE);
