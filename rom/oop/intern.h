@@ -2,7 +2,7 @@
 #define INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -150,7 +150,7 @@ struct iid_bucket
 struct IFBucket
 {
     struct IFBucket *Next;
-    ULONG InterfaceID;
+    IPTR InterfaceID;
     STRPTR GlobalInterfaceID;
     struct IFMethod *MethodTable;
     ULONG NumMethods;
