@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP metaclass
@@ -93,7 +93,6 @@ static ULONG calc_ht_entries(struct ifmeta_inst *cl
 ********************/
 static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-
     IPTR (*domethod)(OOP_Object *, OOP_Msg) = NULL;
     IPTR (*coercemethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
     IPTR (*dosupermethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
@@ -267,7 +266,7 @@ static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_all
 	    /* Lookup hashtable to see if interface has been copied from superclass */
 	    ifb = (struct IFBucket *)inst->data.iftable->Lookup(
 	    		  inst->data.iftable
-			, iid
+			, (IPTR)iid
 			, OOPBase);
 
 	    D(bug("tried to find bucket in hashtable: %p\n", ifb));
@@ -342,7 +341,7 @@ static struct IFMethod *ifmeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct P_
     iid = OOP_GetMethodID(msg->interface_id, 0);
     
     /* Try looking it up in the class' table */
-    b = (struct IFBucket *)inst->data.iftable->Lookup(inst->data.iftable, iid, OOPBase);
+    b = (struct IFBucket *)inst->data.iftable->Lookup(inst->data.iftable, (IPTR)iid, OOPBase);
     {
     	*(msg->num_methods_ptr) = b->NumMethods;
 	
@@ -668,7 +667,7 @@ static struct IFBucket *createbucket(
 	if (ifb->MethodTable)
 	{
 	    /* Get correct ID for the interface (string ID => interface ID mapping) */
-
+	    ifb->InterfaceID = 0;
 	    if (init_mi_methodbase(interface_id, &(ifb->InterfaceID), OOPBase))
 	    {
 	    	/* Save number of methods in the interface */
