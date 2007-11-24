@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -660,7 +660,7 @@ struct DosPacket
 
 #define ACTION_SERIALIZE_DISK 4200
 
-/* Structure for easy handling of DosPackets. DosPackets donï¿½t have to be in
+/* Structure for easy handling of DosPackets. DosPackets don't have to be in
    this structure, but this struture may ease the use of it. */
 struct StandardPacket
 {
