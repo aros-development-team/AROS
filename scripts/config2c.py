@@ -12,10 +12,11 @@ import glob
 import sys
 
 lvo = 5                      # 1st functions has always LVO of 5
-libtype = "struct Library *" # default
+libtype = "struct Library"   # default
 libvar = "library"           # default 
 mode = ""
 tab = "    "                 # tabulator for identation
+wrapped = False              # set to True if you want wrapping by "#ifdef __AROS__"
 
 # regex for splitting line into rettype, retval, args, regs
 linepatt = re.compile('(.+?)\s*(\w*)\s*\((.*?)\)\s*\((.*?)\)')
@@ -31,7 +32,7 @@ if len(infiles) != 1:
     sys.stderr.write("There must be one *.conf in current directory")
     sys.exit(1)
 
-libname = infiles[0].split(".")
+libname = infiles[0].rsplit(".")
 libname = libname[0].capitalize()
 
 infile = open(infiles[0], "r")
@@ -53,19 +54,22 @@ for line in infile:
             args = res.group(3).split(",")
             regs = res.group(4).split(",")
             argcnt = len(args)
-            print "#ifdef __AROS__"
+            if wrapped:
+                print "#ifdef __AROS__"
             print "AROS_LH%d(%s, %s, " %(argcnt, rettype, funcname)
             for i in range(argcnt):
                 argres = argpatt.match(args[i])
                 print "%sAROS_LHA(%s, %s, %s)," %(tab, argres.group(1), argres.group(2), regs[i])
-            print "%s%s, %s, %d, %s" %(tab, libtype, libvar, lvo, libname)
+            print "%s%s *, %s, %d, %s" %(tab, libtype, libvar, lvo, libname)
             print ")\n{"
             print "%sAROS_LIBFUNC_INIT" %(tab)
-            print "#else"
-            print "#endif\n"
-            print "#ifdef __AROS__"
+            if wrapped:
+                print "#else"
+                print "#endif\n"
+                print "#ifdef __AROS__"
             print "%sAROS_LIBFUNC_EXIT" %(tab)
-            print "#endif"
+            if wrapped:
+                print "#endif"
             print "}\n"
   
         # even empty line increase LVO
