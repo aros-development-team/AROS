@@ -464,8 +464,8 @@ IPTR Install__MUIM_FindDrives
 					/* First drive in system - save its info for grub */
 					D(bug("[INSTALLER.fd] First DRIVE found [%s unit %d]...\n",StartMess->fssm_Device, StartMess->fssm_Unit));
 					founddisk = TRUE;
-					boot_Device = StartMess->fssm_Device;
-					boot_Unit = StartMess->fssm_Unit;
+//					boot_Device = StartMess->fssm_Device;
+//					boot_Unit = StartMess->fssm_Unit;
 				}
 
 				if (OpenPartitionTable(root) == 0)
