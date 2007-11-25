@@ -121,6 +121,12 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
     uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
     uintptr_t kernHigh = krnGetTagData(KRN_KernelHighest, 0, msg);
     
+    if (lower >= 0x100000000L)
+      return;
+    
+    if (upper >= 0x100000000L)
+      upper = 0xffffffff;
+    
     /* Scenario 1: Kernel area outside the affected area. */
     if (kernHigh < lower || kernLow > upper)
     {
@@ -338,6 +344,9 @@ int exec_main(struct TagItem *msg, void *entry)
                 uintptr_t addr = (mmap->addr_low | ((intptr_t)mmap->addr_high << 32));
                 uintptr_t size = (mmap->len_low | ((intptr_t)mmap->len_high << 32));
                 uintptr_t tmp;
+
+#warning TODO: Add proper handling of the memory above 4GB!
+    
 
                 if (addr < (uintptr_t)SysBase)
                 {
