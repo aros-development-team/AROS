@@ -40,6 +40,9 @@ BOOL LibInit(struct LibraryHeader *base)
 {
   BOOL success = FALSE;
 
+  // Init global library base
+  CodesetsBase = base;
+  
   InitSemaphore(&base->libSem);
   InitSemaphore(&base->poolSem);
 
@@ -70,6 +73,8 @@ void LibExpunge(struct LibraryHeader *base)
   
   // unprotect
   ReleaseSemaphore(&base->libSem);
+
+  CodesetsBase = NULL;
 }
 
 /****************************************************************************/
