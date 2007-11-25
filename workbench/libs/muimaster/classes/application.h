@@ -192,7 +192,7 @@ struct MUI_InputHandlerNode
  Special Values MUIM_Application_ReturnID. Usally programm should leave
  the event loop if this is set
 **************************************************************************/
-#define MUIV_Application_ReturnID_Quit (-1)
+#define MUIV_Application_ReturnID_Quit ((ULONG)-1)
 
 
 
