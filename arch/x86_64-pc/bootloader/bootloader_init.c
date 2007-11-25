@@ -34,6 +34,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     IPTR tmp;
     struct vbe_mode *vmi;
     struct vbe_controller *vci;
+
+    BootLoaderBase->Flags = 0;
     
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
