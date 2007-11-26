@@ -27,8 +27,6 @@
 #undef DEBUG
 // #define SDEBUG 1
 // #define DEBUG 1
-#define SDEBUG 1
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
