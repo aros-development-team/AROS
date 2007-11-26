@@ -21,11 +21,14 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
+#include <devices/timer.h>
 
 #undef SDEBUG
 #undef DEBUG
 // #define SDEBUG 1
 // #define DEBUG 1
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
@@ -161,7 +164,15 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 {
     struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
-    EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, iofs->io_Union.io_WRITE.io_Buffer));
+#if DEBUG
+    EnterFunc(bug("con_write(fh=%p, buf=", fh));
+    {
+	int i, len = iofs->io_Union.io_WRITE.io_Length;
+	for (i = 0; i < len; ++i)
+	    bug("%c", iofs->io_Union.io_WRITE.io_Buffer[i]);
+	bug(")\n");
+    }
+#endif
 
 #if 0
 
@@ -332,6 +343,13 @@ VOID HandlePendingReads(struct conbase *conbase, struct filehandle *fh)
 
 /****************************************************************************************/
 
+struct TimedReq
+{
+    struct timerequest req;
+    struct IOFileSys *iofs;
+    struct TimedReq *next;
+};
+
 AROS_UFH3(VOID, conTaskEntry,
     AROS_UFHA(STRPTR, argstr, A0),
     AROS_UFHA(ULONG, arglen, D0),
@@ -352,6 +370,11 @@ AROS_UFH3(VOID, conTaskEntry,
     LONG    	    	err = 0;
 
     BOOL    	    	ok = FALSE;
+
+    struct MsgPort *timermp = NULL;
+    struct TimedReq *timereq = NULL;
+    struct Library *TimerBase = NULL;;
+    const LONG treqsize = sizeof(struct TimedReq);
 
     D(bug("conTaskEntry: taskparams = %x  conbase = %x  iofs = %x  filename = \"%s\"\n",
     			param, conbase, iofs, filename));
@@ -461,6 +484,14 @@ AROS_UFH3(VOID, conTaskEntry,
         Wait(0);
     }
 
+    timermp = CreateMsgPort();
+    timereq = (struct TimedReq *)CreateIORequest(timermp, treqsize);
+    timereq->iofs = NULL;
+    timereq->next = NULL;
+
+    OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)timereq, 0);
+    TimerBase = (struct Library *)timereq->req.tr_node.io_Device;
+
     D(bug("con task: initialization okay. entering main loop.\n"));
 
     /* Main Loop */
@@ -473,6 +504,7 @@ AROS_UFH3(VOID, conTaskEntry,
     {
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
 	ULONG contaskmask = 1L << fh->contaskmp->mp_SigBit;
+	ULONG timermask   = 1L << timermp->mp_SigBit;
 	ULONG sigs;
 
     	if (fh->usecount == 0)
@@ -491,13 +523,49 @@ AROS_UFH3(VOID, conTaskEntry,
 	    (fh->inputpos == fh->inputstart) &&
 	    ((fh->inputsize - fh->inputstart) == 0))
 	{
-	    sigs = CheckSignal(conreadmask | contaskmask);
+	    sigs = CheckSignal(conreadmask | contaskmask | timermask);
 	}
 	else
 #endif
 	{
-	    D(bug("contask: waiting for sigs %x\n",conreadmask | contaskmask));
-	    sigs = Wait(conreadmask | contaskmask);
+	    D(bug("contask: waiting for sigs 0x%x\n",
+		  conreadmask | contaskmask | timermask));
+	    sigs = Wait(conreadmask | contaskmask | timermask);
+	}
+
+	if (sigs & timermask)
+	{
+	    struct TimedReq *treq, *treq1;
+
+	    D(bug("contask: received timer signal 0x%x\n", sigs));
+	    while ((treq = (struct TimedReq *)GetMsg(timermp)))
+	    {
+		iofs = treq->iofs;
+
+		if (iofs->IOFS.io_Command == FSA_WAIT_CHAR)
+		{
+		    iofs->io_Union.io_WAIT_CHAR.io_Success = 0;
+		    iofs->io_DosError = 0;
+		}
+		else
+		    iofs->io_DosError = ERROR_UNKNOWN;
+
+		ReplyMsg(&iofs->IOFS.io_Message);
+
+		/* remove from pending timers list */
+		treq1 = timereq;
+		while (treq1->next)
+		{
+		    if (treq1->next == treq)
+		    {
+			treq1->next = treq->next;
+			break;
+		    }
+		    treq1 = treq1->next;
+		}
+
+		DeleteIORequest((struct IORequest *)treq);
+	    }
 	}
 
 	if (sigs & contaskmask)
@@ -557,6 +625,45 @@ AROS_UFH3(VOID, conTaskEntry,
     	    	    	ReplyMsg(&iofs->IOFS.io_Message);
 		    	break;
 
+    	    	    case FSA_WAIT_CHAR:
+			{
+			    struct IFS_WAIT_CHAR *wc;
+			    wc = &iofs->io_Union.io_WAIT_CHAR;
+
+			    if (fh->inputsize > 0)
+			    {
+				iofs->io_DosError = 0;
+				wc->io_Success = 1;
+    	    	    		ReplyMsg(&iofs->IOFS.io_Message);
+			    }
+			    else
+			    {
+				struct TimedReq *treq, *treq1;
+				struct IORequest *ioreq;
+				LONG sec = wc->io_Timeout / 1000000;
+				LONG usec = wc->io_Timeout % 1000000;
+
+				ioreq = CreateIORequest(timermp, treqsize);
+				treq = (struct TimedReq *)ioreq;
+				*treq = *timereq;
+
+				treq->req.tr_node.io_Command = TR_ADDREQUEST;
+				treq->req.tr_time.tv_secs = sec;
+				treq->req.tr_time.tv_micro = usec;
+				treq->iofs = iofs;
+				treq->next = NULL;
+				/* Remove((struct Node *)iofs); */
+
+				treq1 = timereq;
+				while (treq1->next)
+				    treq1 = treq1->next;
+				treq1->next = treq;
+bug("CONTASK: AddTail treq=%x\n", (unsigned)treq);
+
+				SendIO(ioreq);
+			    }
+			}
+		    	break;
 		} /* switch(iofs->IOFS.io_Command) */
 
 	    } /* while((iofs = (struct IOFileSys *)GetMsg(fh->contaskmp))) */
@@ -565,6 +672,7 @@ AROS_UFH3(VOID, conTaskEntry,
 
 	if (sigs & conreadmask)
 	{
+	    struct TimedReq *treq, *treq1;
 	    UBYTE c;
 	    WORD inp;
 
@@ -578,6 +686,23 @@ AROS_UFH3(VOID, conTaskEntry,
 
 	    /* terminate with 0 char */
 	    fh->consolebuffer[fh->conbuffersize] = '\0';
+
+	    /* notify FSA_WAIT_CHAR callers */
+	    treq = timereq->next;
+	    while (treq)
+	    {
+bug("CONTASK: treq=%x\n", (unsigned)treq);
+		treq1 = treq->next;
+		iofs = treq->iofs;
+		AbortIO((struct IORequest *)treq);
+		WaitIO((struct IORequest *)treq);
+		DeleteIORequest((struct IORequest *)treq);
+		iofs->io_Union.io_WAIT_CHAR.io_Success = 1;
+		iofs->io_DosError = 0;
+		ReplyMsg(&iofs->IOFS.io_Message);
+		treq = treq1;
+	    }
+	    timereq->next = NULL;
 
     	    if (fh->flags & FHFLG_RAW)
 	    {
@@ -908,6 +1033,25 @@ AROS_UFH3(VOID, conTaskEntry,
 	} /* if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart) && (fh->inputsize == 0)) */
 
     } /* for(;;) */
+
+    /* pending timers cleanup */
+    {
+	struct TimedReq *treq, *treq1;
+
+	treq = timereq->next;
+	while (treq)
+	{
+	    treq1 = treq->next;
+	    AbortIO((struct IORequest *)treq);
+	    WaitIO((struct IORequest *)treq);
+	    DeleteIORequest((struct IORequest *)treq);
+	    treq = treq1;
+	}
+    }
+
+    DeleteIORequest((struct IORequest *)timereq);
+    CloseDevice((struct IORequest *)timereq);
+    DeleteMsgPort(timermp);
 
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
     {
