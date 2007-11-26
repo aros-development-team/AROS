@@ -1565,6 +1565,41 @@ static LONG examine_all(struct filehandle *dir,
 }
 
 
+static LONG rename_object(struct rambase *rambase,
+			  struct filehandle *filehandle,
+			  CONST_STRPTR oldname, CONST_STRPTR newname)
+{
+    struct dnode *file = filehandle->node;
+    LONG error;
+
+    error = findname(rambase, &oldname, &file);
+    if (error)
+	return error;
+
+    if ((struct dnode *)file->volume == file)
+        return ERROR_OBJECT_WRONG_TYPE;
+
+    if (file->usecount != 0)
+        return ERROR_OBJECT_IN_USE;
+
+    Strfree(rambase, file->name);
+    file->name = Strdup(rambase, newname);
+
+    switch (file->type)
+    {
+    case ST_FILE:
+	Notify_fileChange(rambase, NOTIFY_Add, (struct fnode *)file);
+	break;
+    case ST_USERDIR:
+	Notify_directoryChange(rambase, NOTIFY_Add, file);
+	break;
+    default:
+	break;
+    }
+
+    return error;
+}
+
 static LONG delete_object(struct rambase *rambase,
 			  struct filehandle *filehandle, STRPTR name)
 {
@@ -2072,6 +2107,17 @@ void processFSM(struct rambase *rambase)
 		Notify_removeNotification(rambase, nr);
 	    }
 	    break;
+
+	case FSA_RENAME:
+	    error = rename_object(rambase,
+				  (struct filehandle *)iofs->IOFS.io_Unit,
+				  iofs->io_Union.io_RENAME.io_Filename,
+				  iofs->io_Union.io_RENAME.io_NewName);
+	    break;
+
+	case FSA_IS_INTERACTIVE:
+	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = 0;
+            break;
 	    
 	default:
 	    error = ERROR_NOT_IMPLEMENTED;
@@ -2104,7 +2150,6 @@ void processFSM(struct rambase *rambase)
    STRPTR name;   softlink name
    STRPTR target; target name
    
-   FSA_RENAME
    FSA_READ_LINK
    FSA_SERIALIZE_DISK
    FSA_WAIT_CHAR
@@ -2201,7 +2246,7 @@ void Notify_fileChange(struct rambase *rambase, NType type, struct fnode *file)
 	break;
 
     case NOTIFY_Write:
-	// kprintf("Setting write flag!\n");
+	D(bug("Setting write flag!\n"));
 	file->flags |= FILEFLAGS_Changed;
 	break;
 
@@ -2209,7 +2254,7 @@ void Notify_fileChange(struct rambase *rambase, NType type, struct fnode *file)
 	/* Only notify in case the file was changed */
 	if (file->flags & FILEFLAGS_Changed)
 	{
-	    // kprintf("Notification on close (file was changed).\n");
+	    D(bug("Notification on close (file was changed).\n"));
 	    file->flags &= ~FILEFLAGS_Changed;
 	    Notify_notifyTasks(rambase, &file->receivers);
 	}
@@ -2380,10 +2425,6 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
     HashTable *ht = rambase->notifications;
     STRPTR  name = nr->nr_FullName, colon;
 
-    colon = strchr(name, ':');
-    if (colon != NULL)
-	name = colon + 1;
-
     /* First: Check if the file is opened */
 
     D(kprintf("Checking existence of %s\n", name));
@@ -2539,8 +2580,7 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 	return getAbsoluteName(rambase, name);
     }
 
-
-    length = strlen(name) + 1 + 1 + 1;  /* Add trailing 0 byte and possible '/' */
+    length = strlen(name) + 1 + 1;  /* Add trailing 0 byte and possible '/' */
     length += strlen(dn->name) + 1;
 
     while (findname(rambase, &slash, &dnTemp) == 0)
@@ -2560,23 +2600,16 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
     fullNameTemp = fullName;
 
     dnTemp = dn;
-    fullName += length - 1 - 1;
-
-    {
-	int temp = strlen(name);
-
-	if (temp > 0 && name[temp - 1] != '/')
-	{
-	    *fullName = '/';
-	}
-    }
+    fullName += length - 1;
 
     fullName -= strlen(name);
     strncpy(fullName, name, strlen(name));
 
     fullName -= strlen(dn->name) + 1;
     strcpy(fullName, dn->name);
-    fullName[strlen(dn->name)] = '/';
+
+    if (name[0] != '\0')
+	fullName[strlen(dn->name)] = '/';
 
     {
 	ULONG  partLen;
@@ -2590,7 +2623,10 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 	    
 	    fullName -= partLen + 1;
 	    strcpy(fullName, dnTemp->name);
-	    fullName[partLen] = '/';      /* Replace 0 with '/' */
+	    if (dnTemp == dnTemp->volume)
+		fullName[partLen] = ':';      /* Root of Ram Disk */
+	    else
+		fullName[partLen] = '/';      /* Replace 0 with '/' */
 	}
     }
 
