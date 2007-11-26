@@ -243,6 +243,7 @@ AROS_LH1(void, beginio,
 	case FSA_WRITE:
 	case FSA_CONSOLE_MODE:
 	case FSA_CHANGE_SIGNAL:
+	case FSA_WAIT_CHAR:
 	    iofs->IOFS.io_Flags	&= ~IOF_QUICK;
 	    request_queued = TRUE;
 
@@ -260,9 +261,6 @@ AROS_LH1(void, beginio,
 	    error = ERROR_NOT_IMPLEMENTED;
 	    break;
 
-	case FSA_WAIT_CHAR:
-	    /* We could manually wait for a character to arrive, but this is
-	       currently not implemented. FIXME */
 	case FSA_FILE_MODE:
 #warning FIXME: not supported yet
 	    error=ERROR_ACTION_NOT_KNOWN;
