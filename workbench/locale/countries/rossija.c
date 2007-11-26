@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for Rossija (Russia).
@@ -33,7 +33,7 @@ struct CountryPrefs rossijaPrefs =
     "%H:%M",
 
     /* Decimal point, group separator, frac group separator */
-    ".", ",", "",
+    ",", ".", "",
 
     /* For grouping rules, see <libraries/locale.h> */
 
@@ -41,7 +41,7 @@ struct CountryPrefs rossijaPrefs =
     { 3 }, { 0 },
 
     /* Mon dec pt, mon group sep, mon frac group sep */
-    ".", ",", "",
+    ",", ".", "",
 
     /* Mon Grouping, Mon frac grouping */
     { 3 }, { 0 },
@@ -66,7 +66,7 @@ struct CountryPrefs rossijaPrefs =
     "", SS_NOSPACE, SP_PREC_ALL, CSP_PRECEDES,
 
     /* Mon -ve sign, -ve space sep, -ve sign pos, -ve cs pos */
-    "", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
+    "-", SS_NOSPACE, SP_PARENS, CSP_PRECEDES,
 
     /* Calendar type */
     CT_7SUN
