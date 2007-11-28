@@ -1047,8 +1047,8 @@ bug("CONTASK: treq=%x\n", (unsigned)treq);
 	}
     }
 
-    DeleteIORequest((struct IORequest *)timereq);
     CloseDevice((struct IORequest *)timereq);
+    DeleteIORequest((struct IORequest *)timereq);
     DeleteMsgPort(timermp);
 
     if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
