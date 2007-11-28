@@ -630,7 +630,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "\n"
 		    "        CopyMem(lh, newlib, possize);\n"
 		    "\n"
-		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) )\n"
+		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib) )\n"
 		    "    {\n"
 		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
 		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
