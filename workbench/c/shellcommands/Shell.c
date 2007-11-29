@@ -135,6 +135,7 @@ struct ShellState
     BOOL  homeDirChanged;
 #endif
     BOOL  residentCommand;	/* The last command executed was resident */
+    BOOL  script;
 };
 
 
@@ -1108,7 +1109,19 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	        ss->homeDirChanged = TRUE;
 	    }
 	}
+	else
         #endif
+	{
+	    struct FileInfoBlock fib;
+	    if (Examine(file, &fib) && fib.fib_Protection & FIBF_SCRIPT)
+	    {
+        	commandSeg = LoadSeg("C:Execute");
+		if (commandSeg)
+		{
+		    ss->script = TRUE;
+		}
+	    }
+	}
 
 	Close(file);
     }
@@ -1125,6 +1138,10 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     BPTR              module;
     LONG              error = 0;
     struct ShellState ss = {FALSE};
+    char cmd[4096];
+
+    ss.script = FALSE;
+
 /*
   if ss->residentCommand isn't initialized as FALSE, it's value is rather
   random ( loadCommand doesn't change it ) so unloadCommand almost always
@@ -1148,7 +1165,21 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	LONG mem_before;
 
 	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module;
-	D(bug("Command loaded!\n"));
+
+	STRPTR dst = cmd, src;
+	LONG len = 0;
+
+if (command[0] == 't') asm("int $3");
+
+        if (ss.script)
+            for (src = command; *src != '\0'; ++dst, ++src, ++len)
+                *dst = *src;
+
+        for (src = commandArgs; *src != '\0'; ++dst, ++src, ++len)
+            *dst = *src;
+	*dst = '\0';
+
+	D(bug("Command loaded: len=%d, %s\n", len, cmd));
 
 	SetIoErr(0);        	    	 /* Clear error before we execute this command */
 	SetSignal(0, SIGBREAKF_CTRL_C);
@@ -1168,7 +1199,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	}
 
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
-					 commandArgs, strlen(commandArgs));
+					 cmd, len);
 	if (__debug_mem)
 	{
 	    LONG mem_after;
