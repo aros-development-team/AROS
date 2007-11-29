@@ -81,7 +81,14 @@
            	    
     if(task != SysBase->ThisTask)
     {
+        /* disable interrupts when changing the task lists */
+        Disable();
     	Remove(&task->tc_Node);    	
+        Enable();
+
+        /* force the task into the removed state, otherwise a received signal
+         * can bring it back to life */
+	task->tc_State = TS_REMOVED;
     }
 
     /* Free all memory in the tc_MemEntry list. */
