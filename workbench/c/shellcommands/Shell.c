@@ -558,14 +558,13 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE);
 
-	    D(bug("Output stream opened\n"));
-
 	    if(BADDR(rd->newOut) == NULL)
 	    {
+		PrintFault(IoErr(), rd->outFileName);
 		goto exit;
 	    }
 
-
+	    D(bug("Output stream opened\n"));
     	    SelectOutput(rd->newOut);
 	}
 
@@ -575,9 +574,11 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	    if(BADDR(rd->newOut) == NULL)
 	    {
+		PrintFault(IoErr(), rd->outFileName);
 	        goto exit;
 	    }
 
+	    D(bug("Output stream opened (append)\n"));
     	    SelectOutput(rd->newOut);
 	}
 
@@ -587,9 +588,11 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	    if(BADDR(rd->newIn) == NULL)
 	    {
-	       goto exit;
+		PrintFault(IoErr(), rd->inFileName);
+		goto exit;
 	    }
 
+	    D(bug("Input stream opened\n"));
     	    SelectInput(rd->newIn);
 	}
 
