@@ -14,7 +14,6 @@ struct rambase;
 #include  <dos/notify.h>
 #include  <exec/nodes.h>
 #include  <exec/lists.h>
-#include  <stdio.h>
 
 struct Receiver
 {
@@ -114,7 +113,8 @@ void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key);
  *                       was no element corresponding to 'key'
  *
  */
-struct List *HashTable_find(struct rambase *rambase, HashTable *ht, void *key);
+struct List *HashTable_find(struct rambase *rambase, HashTable *ht,
+			    const void *key);
 
 
 /* HashTable_size

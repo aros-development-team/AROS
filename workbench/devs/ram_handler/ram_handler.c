@@ -5,9 +5,6 @@
     RAM: handler.
 */
 
-#define  INKERNEL 1
-
-
 #define  DEBUG 0
 #include <aros/debug.h>
 
@@ -17,6 +14,7 @@
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <utility/tagitem.h>
+#include <utility/utility.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
@@ -34,11 +32,10 @@
 #endif
 #include <stddef.h>
 #include <string.h>
-#include <ctype.h>
 
 #include  "HashTable.h"
 
-extern void deventry();
+static void deventry();
 
 #include LC_LIBDEFS_FILE
 
@@ -50,12 +47,12 @@ struct cnode
 {
     struct MinNode node;
     LONG type;			/* ST_LINKDIR */
-    char *name; 		/* Link's name */
+    STRPTR name; 		/* Link's name */
     struct cnode *self; 	/* Pointer to top of structure */
     struct hnode *link; 	/* NULL */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* 0 */
-    char *comment;		/* NULL */
+    STRPTR comment;		/* NULL */
     struct vnode *volume;	/* Pointer to volume */
     struct DosList *doslist;	/* Pointer to doslist entry */
 };
@@ -65,12 +62,12 @@ struct vnode
 {
     struct MinNode node;
     LONG type;			/* ST_USERDIR */
-    char *name; 		/* Directory name */
+    STRPTR name; 		/* Directory name */
     struct vnode *self; 	/* Points to top of structure */
     struct hnode *link; 	/* This one is linked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* 0 */
-    char *comment;		/* NULL */
+    STRPTR comment;		/* NULL */
     struct MinList receivers;
     struct MinList list;	/* Contents of directory */
     ULONG volcount;		/* number of handles on this volume */
@@ -82,12 +79,12 @@ struct dnode
 {
     struct MinNode node;
     LONG type;			/* ST_USERDIR */
-    char *name; 		/* Directory name */
+    STRPTR name; 		/* Directory name */
     struct vnode *volume;	/* Volume's root directory */
     struct hnode *link; 	/* This one is linked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
-    char *comment;		/* Some comment */
+    STRPTR comment;		/* Some comment */
     struct MinList receivers;
     struct MinList list;	/* Contents of directory */
 };
@@ -97,12 +94,12 @@ struct fnode
 {
     struct MinNode node;
     LONG type;			/* ST_FILE */
-    char *name; 		/* Filename */
+    STRPTR name; 		/* Filename */
     struct vnode *volume;	/* Volume's root directory */
     struct hnode *link; 	/* This one is linked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
-    char *comment;		/* Some file comment */
+    STRPTR comment;		/* Some file comment */
     struct MinList receivers;
     ULONG          flags;
     LONG size;			/* Filesize */
@@ -117,12 +114,12 @@ struct snode
 {
     struct MinNode node;
     LONG type;			/* ST_SOFTLINK */
-    char *name; 		/* Link's name */
+    STRPTR name; 		/* Link's name */
     struct vnode *volume;	/* Volume's root directory */
     struct hnode *link; 	/* This one is hardlinked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
-    char *comment;		/* Some file comment */
+    STRPTR comment;		/* Some file comment */
     char *contents;		/* Contents of soft link */
 };
 
@@ -131,12 +128,12 @@ struct hnode
 {
     struct MinNode node;
     LONG type;			/* ST_LINKDIR */
-    char *name; 		/* Link's name */
+    STRPTR name; 		/* Link's name */
     struct vnode *volume;	/* Volume's root directory */
     struct hnode *link; 	/* This one is hardlinked to me */
     LONG usecount;		/* >0 usecount locked:+(~0ul/2+1) */
     ULONG protect;		/* protection bits */
-    char *comment;		/* Some file comment */
+    STRPTR comment;		/* Some file comment */
     struct hnode *orig; 	/* original object */
 };
 
@@ -144,7 +141,7 @@ struct hnode
 
 #define  FILEFLAGS_Changed  1
 
-STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name);
+static STRPTR getName(struct rambase *rambase, struct dnode *dn);
 
 typedef enum
 {
@@ -152,7 +149,7 @@ typedef enum
     NOTIFY_Delete,
     NOTIFY_Write,
     NOTIFY_Close,
-    NOTIFY_Open
+    NOTIFY_Open,
 } NType;
 
 void Notify_notifyTasks(struct rambase *rambase,
@@ -169,14 +166,6 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 			    struct NotifyRequest *nr);
 void Notify_removeNotification(struct rambase *rambase,
 			       struct NotifyRequest *nr);
-
-typedef struct _HashNode
-{
-    struct Node  node;
-    void        *key;
-    struct List  requests;
-} HashNode;
-
 
 /****************************************************************************/
 
@@ -207,13 +196,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
     struct SignalSemaphore *semaphore;
     APTR stack;
 
-    rambase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library",39);
+    rambase->dosbase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
 
     if (rambase->dosbase != NULL)
     {
-	rambase->utilitybase = (struct UtilityBase *)OpenLibrary("utility.library",39);
+	rambase->utilitybase = (struct UtilityBase *)OpenLibrary(UTILITYNAME, 39);
 
-	if (rambase->utilitybase!=NULL)
+	if (rambase->utilitybase != NULL)
 	{
 	    port = (struct MsgPort *)AllocMem(sizeof(struct MsgPort),
 					      MEMF_PUBLIC | MEMF_CLEAR);
@@ -376,9 +365,10 @@ my_strcasecmp(struct rambase *rambase, const void *s1, const void *s2)
 /****************************************************************************/
 
 
-static STRPTR Strdup(struct rambase *rambase, STRPTR string)
+STRPTR Strdup(struct rambase *rambase, CONST_STRPTR string)
 {
-    STRPTR s2 = string,s3;
+    CONST_STRPTR s2 = string;
+    STRPTR s3;
 
     while(*s2++)
 	;
@@ -394,7 +384,7 @@ static STRPTR Strdup(struct rambase *rambase, STRPTR string)
 }
 
 
-static void Strfree(struct rambase *rambase, STRPTR string)
+void Strfree(struct rambase *rambase, STRPTR string)
 {
     FreeVec(string);
 }
@@ -700,7 +690,7 @@ static void delete(struct rambase *rambase, struct fnode *file)
 {
     struct hnode *link, *new, *more;
     struct Node *node;
-    
+
     Strfree(rambase, file->name);
     Strfree(rambase, file->comment);
     Remove((struct Node *)file);
@@ -781,7 +771,7 @@ static void delete(struct rambase *rambase, struct fnode *file)
 }
 
 
-static int fstrcmp(struct rambase *rambase, char *s1, char *s2)
+static int fstrcmp(struct rambase *rambase, CONST_STRPTR s1, CONST_STRPTR s2)
 {
     for (;;)
     {
@@ -802,11 +792,11 @@ static int fstrcmp(struct rambase *rambase, char *s1, char *s2)
 
 
 /* Find a node for a given name */
-static LONG findname(struct rambase *rambase, STRPTR *name,
+static LONG findname(struct rambase *rambase, CONST_STRPTR *name,
 		     struct dnode **dnode)
 {
     struct dnode *cur = *dnode;
-    char *rest = *name;
+    CONST_STRPTR rest = *name;
 
     for (;;)
     {
@@ -1080,7 +1070,7 @@ static LONG lock(struct dnode *dir, ULONG mode)
 
 
 static LONG open_(struct rambase *rambase, struct filehandle **handle,
-		  STRPTR name, ULONG mode)
+		  CONST_STRPTR name, ULONG mode)
 {
     struct dnode *dir = (*handle)->node;
     struct filehandle *fh;
@@ -1128,7 +1118,7 @@ static LONG open_(struct rambase *rambase, struct filehandle **handle,
 
 
 static LONG open_file(struct rambase *rambase, struct filehandle **handle,
-		      STRPTR name, ULONG mode, ULONG protect)
+		      CONST_STRPTR name, ULONG mode, ULONG protect)
 {
     struct dnode *dir = (*handle)->node;
     struct filehandle *fh;
@@ -1142,7 +1132,7 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle,
 
 	if ((mode & FMF_CREATE) && error == ERROR_OBJECT_NOT_FOUND)
 	{
-	    char *s = name;
+	    CONST_STRPTR s = name;
 	    struct fnode *file;
 
 	    while (*s)
@@ -1222,7 +1212,7 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle,
 
 
 static LONG create_dir(struct rambase *rambase, struct filehandle **handle,
-		       STRPTR name, ULONG protect)
+		       CONST_STRPTR name, ULONG protect)
 {
     struct dnode *dir = (*handle)->node, *new;
     struct filehandle *fh;
@@ -1567,12 +1557,19 @@ static LONG examine_all(struct filehandle *dir,
 
 static LONG rename_object(struct rambase *rambase,
 			  struct filehandle *filehandle,
-			  CONST_STRPTR oldname, CONST_STRPTR newname)
+			  CONST_STRPTR namea, CONST_STRPTR nameb)
 {
     struct dnode *file = filehandle->node;
-    LONG error;
+    LONG error = 0, i;
 
-    error = findname(rambase, &oldname, &file);
+    struct dnode *nodea = filehandle->node, *nodeb;
+    STRPTR dira, dirb, pos = nameb;
+
+    error = findname(rambase, &pos, &nodea);
+    if (!error)
+	return ERROR_OBJECT_EXISTS;
+
+    error = findname(rambase, &namea, &file);
     if (error)
 	return error;
 
@@ -1582,26 +1579,78 @@ static LONG rename_object(struct rambase *rambase,
     if (file->usecount != 0)
         return ERROR_OBJECT_IN_USE;
 
-    Strfree(rambase, file->name);
-    file->name = Strdup(rambase, newname);
+    dira = Strdup(rambase, namea);
+    dirb = Strdup(rambase, nameb);
+
+    pos = strrchr(dira, '/');
+    if (pos)
+    {
+	*pos = '\0';
+	namea = ++pos;
+    }
+    else
+	*dira = '\0';
+
+    pos = strrchr(dirb, '/');
+    if (pos)
+    {
+	*pos = '\0';
+	nameb = ++pos;
+    }
+    else
+	*dirb = '\0';
+
+    D(bug("[Ram] rename (%s,%s)=>(%s,%s)\n", dira, namea, dirb, nameb));
+
+    if (*dira == '\0' && *dirb == '\0')
+    {
+	Strfree(rambase, file->name);
+	file->name = Strdup(rambase, nameb);
+    }
+    else
+    {
+	nodea = filehandle->node;
+	error = findname(rambase, &dira, &nodea);
+	if (error)
+	    goto cleanup;
+
+	nodeb = filehandle->node;
+	error = findname(rambase, &dirb, &nodeb);
+	if (error)
+	    goto cleanup;
+
+	if (nodeb != nodea)
+	{
+	    Remove((struct Node *)file);
+	    AddTail((struct List *)&nodeb->list, (struct Node *)file);
+	}
+
+	Strfree(rambase, file->name);
+	file->name = Strdup(rambase, nameb);
+    }
 
     switch (file->type)
     {
     case ST_FILE:
+	Notify_fileChange(rambase, NOTIFY_Delete, (struct fnode *)file);
 	Notify_fileChange(rambase, NOTIFY_Add, (struct fnode *)file);
 	break;
     case ST_USERDIR:
+    default:
+	Notify_directoryChange(rambase, NOTIFY_Delete, file);
 	Notify_directoryChange(rambase, NOTIFY_Add, file);
 	break;
-    default:
-	break;
     }
+
+cleanup:
+    Strfree(rambase, dirb);
+    Strfree(rambase, dira);
 
     return error;
 }
 
 static LONG delete_object(struct rambase *rambase,
-			  struct filehandle *filehandle, STRPTR name)
+			  struct filehandle *filehandle, CONST_STRPTR name)
 {
     struct dnode *file = filehandle->node;
     LONG error;
@@ -1704,7 +1753,7 @@ static int GM_UNIQUENAME(Close)
 void processFSM(struct rambase *rambase);
 
 
-void deventry(struct rambase *rambase)
+static void deventry(struct rambase *rambase)
 {
     ULONG notifyMask;
     ULONG fileOpMask;
@@ -1940,10 +1989,10 @@ void processFSM(struct rambase *rambase)
 		  ULONG protect; new protection bits
 		*/
 		
-		STRPTR realName = iofs->io_Union.io_SET_PROTECT.io_Filename;
+		CONST_STRPTR name = iofs->io_Union.io_SET_PROTECT.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		error = findname(rambase, &realName, &dir);
+		error = findname(rambase, &name, &dir);
 		
 		if (!error)
 		{
@@ -1963,10 +2012,10 @@ void processFSM(struct rambase *rambase)
 		  ULONG GID;
 		*/
 		
-		STRPTR realName = iofs->io_Union.io_SET_OWNER.io_Filename;
+		CONST_STRPTR name = iofs->io_Union.io_SET_OWNER.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		error = findname(rambase, &realName, &dir);
+		error = findname(rambase, &name, &dir);
 		
 		if(!error)
 		{
@@ -1986,10 +2035,10 @@ void processFSM(struct rambase *rambase)
 		  ULONG ticks;   timestamp
 		*/
 		
-		STRPTR realName = iofs->io_Union.io_SET_DATE.io_Filename;
+		CONST_STRPTR name = iofs->io_Union.io_SET_DATE.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		error = findname(rambase, &realName, &dir);
+		error = findname(rambase, &name, &dir);
 		
 		if(!error)
 		{
@@ -2007,10 +2056,10 @@ void processFSM(struct rambase *rambase)
 		  STRPTR comment; NUL terminated C string or NULL.
 		*/
 
-		STRPTR realName = iofs->io_Union.io_SET_COMMENT.io_Filename;
+		CONST_STRPTR name = iofs->io_Union.io_SET_COMMENT.io_Filename;
 		
 		dir = ((struct filehandle *)iofs->IOFS.io_Unit)->node;
-		error = findname(rambase, &realName, &dir);
+		error = findname(rambase, &name, &dir);
 		
 		if (!error)
 		{
@@ -2265,11 +2314,11 @@ void Notify_fileChange(struct rambase *rambase, NType type, struct fnode *file)
 	    STRPTR fullName;
 	    struct List *receivers;
 	    
-	    fullName = getName(rambase, (struct dnode *)file, "");
+	    fullName = getName(rambase, (struct dnode *)file);
 
 	    D(kprintf("Found full name: %s\n", fullName));
 
-	    receivers = HashTable_find(rambase, rambase->notifications, 
+	    receivers = HashTable_find(rambase, rambase->notifications,
 				       fullName);      
 
 	    if (receivers != NULL)
@@ -2284,6 +2333,9 @@ void Notify_fileChange(struct rambase *rambase, NType type, struct fnode *file)
 	    }
 
 	    HashTable_remove(rambase, rambase->notifications, fullName);
+
+	    D(bug("Notifying file receivers!\n"));
+	    Notify_notifyTasks(rambase, &file->receivers);
 
 	    FreeVec(fullName);
 	}
@@ -2310,7 +2362,7 @@ void Notify_directoryChange(struct rambase *rambase, NType type,
 	{
 	    STRPTR fullName;
 
-	    fullName = getName(rambase, dir, "");
+	    fullName = getName(rambase, dir);
 
 	    /* TODO:    HashTable_apply(ht, fullName, dir); */
 
@@ -2323,11 +2375,11 @@ void Notify_directoryChange(struct rambase *rambase, NType type,
 	    STRPTR fullName;
 	    struct List *receivers;
 
-	    fullName = getName(rambase, dir, "");
+	    fullName = getName(rambase, dir);
 
 	    D(kprintf("Found full name: %s\n", fullName));
 
-	    receivers = HashTable_find(rambase, rambase->notifications, 
+	    receivers = HashTable_find(rambase, rambase->notifications,
 				       fullName);      
 
 	    if (receivers != NULL)
@@ -2346,7 +2398,7 @@ void Notify_directoryChange(struct rambase *rambase, NType type,
 	    FreeVec(fullName);
 	}
 
-	D(kprintf("Notifying receivers!\n"));
+	D(kprintf("Notifying dir receivers!\n"));
 	Notify_notifyTasks(rambase, &dir->receivers);
 	break;
 
@@ -2417,19 +2469,29 @@ void Notify_notifyTasks(struct rambase *rambase, struct MinList *notifications)
     }
 }
 
+/* also defined in rom/dos/filesystem_support.c */
+STRPTR RamStripVolume(STRPTR name)
+{
+    STRPTR path = strchr(name, ':');
+    if (path != NULL)
+        path++; 
+    else
+        path = name;
+    return path;
+}
 
 BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn, 
 			    struct NotifyRequest *nr)
 {
     struct dnode *dnTemp = dn;
     HashTable *ht = rambase->notifications;
-    STRPTR  name = nr->nr_FullName, colon;
+    STRPTR name = nr->nr_FullName;
+    CONST_STRPTR  tname = RamStripVolume(name);
 
     /* First: Check if the file is opened */
+    D(bug("Checking existence of %s\n", tname));
 
-    D(kprintf("Checking existence of %s\n", name));
-
-    if (findname(rambase, &name, &dnTemp) == 0)
+    if (findname(rambase, &tname, &dnTemp) == 0)
     {
 	/* This file was already opened (or at least known by the file
 	   system) */
@@ -2485,21 +2547,12 @@ void Notify_removeNotification(struct rambase *rambase,
 {
     struct dnode *dn = (struct dnode *)rambase->root;
     struct Receiver *rr, *rrTemp;
-    /*    STRPTR name = strchr(nr->nr_FullName, '/') + 1; */
     STRPTR name = nr->nr_FullName;
+    CONST_STRPTR  tname = RamStripVolume(name);
     struct List *receivers;
     BOOL  fromTable = FALSE;
-    STRPTR  colon;
 
-    colon = strchr(name, ':');
-   
-    /* Take care of absolute names in nr_Name */
-    if (colon != NULL)
-    {
-	name = colon + 1;
-    }
-
-    if (findname(rambase, &name, &dn) == 0)
+    if (findname(rambase, &tname, &dn) == 0)
     {
 	receivers = (struct List *)&dn->receivers;
     }
@@ -2510,13 +2563,12 @@ void Notify_removeNotification(struct rambase *rambase,
 
 	if (receivers == NULL)
 	{
-	    kprintf("Ram: This should not happen! -- buggy application...\n");
+	    D(bug("Ram: This should not happen! -- buggy application...\n"));
 	    return;
 	}
 
 	fromTable = TRUE;
     }
-
 
     ForeachNodeSafe(&receivers, rr, rrTemp)
     {
@@ -2540,48 +2592,18 @@ void Notify_removeNotification(struct rambase *rambase,
     }
 }
 
-
-STRPTR getAbsoluteName(struct rambase *rambase, STRPTR name)
-{
-    int length = strlen(name) + 1 + 1;
-    STRPTR fullName = AllocVec(length, MEMF_CLEAR | MEMF_PUBLIC);
-
-    if (fullName == NULL)
-    {
-	return NULL;
-    }
-
-    strcpy(fullName, name);
-    *strchr(fullName, ':') = '/';
-
-    if (fullName[strlen(fullName) - 1] != '/')
-    {
-	strcat(fullName, "/");
-    }
-
-    return fullName;
-}
-
-
-STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
+static STRPTR getName(struct rambase *rambase, struct dnode *dn)
 {
     struct dnode *dnTemp = dn;
 
     ULONG   length;
     STRPTR  fullName;
-    STRPTR  fullNameTemp;
-    STRPTR  slash = "/";
-    STRPTR  nextSlash = slash;
+    CONST_STRPTR  slash = "/";
+    CONST_STRPTR  nextSlash = slash;
+    ULONG   partLen;
 
     /* First, calculate the size of the complete filename */
-
-    if (strchr(name, ':') != NULL)
-    {
-	return getAbsoluteName(rambase, name);
-    }
-
-    length = strlen(name) + 1 + 1;  /* Add trailing 0 byte and possible '/' */
-    length += strlen(dn->name) + 1;
+    length = strlen(dn->name) + 2; /* Add trailing 0 byte and possible '/' */
 
     while (findname(rambase, &slash, &dnTemp) == 0)
     {
@@ -2597,218 +2619,29 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 	return NULL;
     }
 
-    fullNameTemp = fullName;
-
     dnTemp = dn;
     fullName += length - 1;
-
-    fullName -= strlen(name);
-    strncpy(fullName, name, strlen(name));
 
     fullName -= strlen(dn->name) + 1;
     strcpy(fullName, dn->name);
 
-    if (name[0] != '\0')
-	fullName[strlen(dn->name)] = '/';
-
+    slash = "/";
+    nextSlash = slash;
+    while (findname(rambase, &slash, &dnTemp) != ERROR_OBJECT_NOT_FOUND)
     {
-	ULONG  partLen;
-	STRPTR slash = "/";
-	STRPTR nextSlash = slash;
-
-	while (findname(rambase, &slash, &dnTemp) != ERROR_OBJECT_NOT_FOUND)
-	{
-	    slash = nextSlash;
-	    partLen = strlen(dnTemp->name);
+	slash = nextSlash;
+	partLen = strlen(dnTemp->name);
 	    
-	    fullName -= partLen + 1;
-	    strcpy(fullName, dnTemp->name);
-	    if (dnTemp == dnTemp->volume)
-		fullName[partLen] = ':';      /* Root of Ram Disk */
-	    else
-		fullName[partLen] = '/';      /* Replace 0 with '/' */
-	}
+	fullName -= partLen + 1;
+	strcpy(fullName, dnTemp->name);
+
+	if ((struct vnode *)dnTemp == dnTemp->volume)
+	     fullName[partLen] = ':';      /* Root of Ram Disk */
+	else
+	     fullName[partLen] = '/';      /* Replace 0 with '/' */
     }
 
-    if (fullName != fullNameTemp)
-    {
-    	length = 0;
-    	while((fullNameTemp[length] = fullName[length])) length++;
-    }
-
-    return fullNameTemp;
-}
-
-
-HashNode *find(struct rambase *rambase, HashTable *ht,
-    void *key, struct List *list);
-
-
-HashTable *HashTable_new(struct rambase *rambase, ULONG size,
-			 ULONG (*hash)(struct rambase *rambase,
-					const void *key),
-			 int (*compare)(struct rambase *rambase,
-					const void *key1,
-					const void *key2),
-			 void (*delete)(struct rambase *rambase,
-					void *key,
-					struct List *list))
-{
-    ULONG       i;		/* Loop variable */
-    HashTable *ht = AllocVec(sizeof(HashTable), MEMF_ANY);
-
-    if (ht == NULL)
-    {
-	return NULL;
-    }
-
-    ht->size = size;
-    ht->nElems = 0;
-    ht->array = AllocVec(sizeof(struct List)*size, MEMF_ANY);
-
-    if (ht->array == NULL)
-    {
-	FreeVec(ht);
-
-	return NULL;
-    }
-
-    ht->hash = hash;
-    ht->compare = compare;
-    ht->delete = delete;
-
-    for (i = 0; i < size; i++)
-    {
-	NewList(&ht->array[i]);
-    }
-    
-    return ht;
-}
-
-
-/* TODO: Fix the double list thing, remove the (void *) hack */
-void HashTable_delete(struct rambase *rambase, HashTable *ht)
-{
-    ULONG i;
-
-    for (i = 0; i < ht->size; i++)
-    {
-	while (!IsListEmpty(&ht->array[i]))
-	{
-	    HashNode *hn = (HashNode *)RemHead(&ht->array[i]);
-	    
-	    ht->delete(rambase, hn->key, (void *)&hn->requests);
-	    FreeVec(hn);
-	}
-    }
-
-    FreeVec(ht);
-}
-
-
-void HashTable_insert(struct rambase *rambase, HashTable *ht, void *key,
-		      struct Receiver *rr)
-{
-    ULONG      pos;
-    HashNode *hn;
-
-    pos = ht->hash(rambase, key) % ht->size;
-
-    hn = find(rambase, ht, key, &ht->array[pos]);
-
-    if (hn == NULL)
-    {
-	/* There was no previous request for this entity */
-	hn = AllocVec(sizeof(HashNode), MEMF_ANY);
-
-	if (hn == NULL)
-	{
-	    return;
-	}
-
-	hn->key = Strdup(rambase, key);
-
-	if (hn->key == NULL)
-	{
-	    FreeVec(hn);
-	    return;
-	}
-
-	NewList(&hn->requests);
-	AddHead(&ht->array[pos], &hn->node);
-    }
-
-    AddHead(&hn->requests, &rr->node);
-
-    ht->nElems++;
-}
-
-
-void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key)
-{
-    HashNode    *hn;
-    ULONG        pos;
-    struct Node *tempNode;
-    struct List *list;
-
-    pos = ht->hash(rambase, key) % ht->size;
-    list = &ht->array[pos];
-
-    ForeachNodeSafe(list, hn, tempNode)
-    {
-	if (ht->compare(rambase, key, hn->key) == 0)
-	{
-	    Remove(&hn->node);
-	    ht->delete(rambase, hn->key, (void *)&hn->requests);
-	    FreeVec(hn);
-	    break;
-	}
-    }
-}
-
-
-HashNode *find(
-    struct rambase *rambase, HashTable *ht,
-    void *key, struct List *list)
-{
-    HashNode *hn;		/* Loop variable */
-
-    ForeachNode(list, hn)
-    {
-	if (ht->compare(rambase, key, hn->key) == 0)
-	{
-	    return hn;
-	}
-    }
-
-    return NULL;
-}
-
-
-struct List *HashTable_find(struct rambase *rambase, HashTable *ht, void *key)
-{
-    HashNode *hn;
-    ULONG      pos;
-
-    pos = ht->hash(rambase, key) % ht->size;
-    hn = find(rambase, ht, key, &ht->array[pos]);
-
-    if (hn != NULL)
-    {
-	return &hn->requests;
-    }
-    else
-    {
-	return NULL;
-    }
-
-    return NULL;		/* Make the compiler happy */
-}
-
-
-inline ULONG HashTable_size(HashTable *ht)
-{
-    return ht->nElems;
+    return fullName;
 }
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)
