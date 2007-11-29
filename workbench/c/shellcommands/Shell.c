@@ -1169,8 +1169,6 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	STRPTR dst = cmd, src;
 	LONG len = 0;
 
-if (command[0] == 't') asm("int $3");
-
         if (ss.script)
             for (src = command; *src != '\0'; ++dst, ++src, ++len)
                 *dst = *src;
