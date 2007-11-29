@@ -83,8 +83,10 @@
     LONG                res;
 
     /* do nothing if errors are disabled */
-    if (me->pr_WindowPtr == (APTR) -1)
+    if (me->pr_WindowPtr == (APTR) -1) {
+        SetIoErr(err);
         return DOSTRUE;
+    }
 
     /* first setup the error format and work out which args we need */
     switch (code) {
