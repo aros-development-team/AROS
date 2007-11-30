@@ -135,7 +135,8 @@ struct ShellState
     BOOL  homeDirChanged;
 #endif
     BOOL  residentCommand;	/* The last command executed was resident */
-    BOOL  script;
+    BOOL  script;		/* This command has the script bit set */
+    BPTR  scriptLock;
 };
 
 
@@ -1119,6 +1120,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 		if (commandSeg)
 		{
 		    ss->script = TRUE;
+		    ss->scriptLock = Lock(commandName, SHARED_LOCK);
 		}
 	    }
 	}
@@ -1170,11 +1172,22 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 	LONG len = 0;
 
         if (ss.script)
-            for (src = command; *src != '\0'; ++dst, ++src, ++len)
-                *dst = *src;
+	{
+	    *dst++ = '"';
+	    NameFromLock(ss.scriptLock, dst, sizeof(cmd));
+	    while (*dst != '\0')
+	    {
+		++dst;
+		++len;
+	    }
+	    *dst++ = '"';
+	    *dst++ = ' ';
+	    UnLock(ss.scriptLock);
+	    len += 2;
+	}
 
         for (src = commandArgs; *src != '\0'; ++dst, ++src, ++len)
-            *dst = *src;
+           *dst = *src;
 	*dst = '\0';
 
 	D(bug("Command loaded: len=%d, %s\n", len, cmd));
