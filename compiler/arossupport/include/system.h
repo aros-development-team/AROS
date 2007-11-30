@@ -159,7 +159,7 @@
 #   define __section(x)    __attribute__((__section__(x)))
 #endif
 
-#if __GNUC__ > 3
+#if __GNUC_PREREQ(3,3)
 #define __startup __section(".aros.startup") __used
 #else
 #define __startup __used
