@@ -91,7 +91,7 @@ int main(void)
         MUIA_Application_Description, __(MSG_DESCRIPTION),
 	    MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Title, __(MSG_NAME),
-        MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.4 (17.04.2007) ©2007 Pavel Fedin",
+        MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.5 (30.11.2007) ©2007 Pavel Fedin",
 	    MUIA_Application_Window,
 	    MainWin = MUI_NewObject("Window.mui", MUIA_Window_ID, MAKE_ID('M', 'A', 'I', 'N'),
             MUIA_Window_Title,__(MSG_WINDOW_TITLE),
@@ -103,7 +103,7 @@ int main(void)
 	    DoMethod(UseButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, 2);
 	    DoMethod(CancelButton, MUIM_Notify, MUIA_Pressed, FALSE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	    DoMethod(MainWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-	    SetAttrs(MainWin, MUIA_Window_Open, TRUE);
+	    SetAttrs(MainWin, MUIA_Window_Open, TRUE, TAG_DONE);
 	    while (retval != MUIV_Application_ReturnID_Quit) {
 		    retval = DoMethod(App, MUIM_Application_NewInput, &signals);
 		    if (retval && (retval != MUIV_Application_ReturnID_Quit)) {
