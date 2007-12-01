@@ -1,0 +1,338 @@
+TABLE OF CONTENTS
+
+openurl.library/--background--
+openurl.library/--rexxhost--
+openurl.library/URL_FreePrefsA
+openurl.library/URL_GetPrefsA
+openurl.library/URL_LaunchPrefsAppA
+openurl.library/URL_OpenA
+openurl.library/URL_SetPrefsA
+
+openurl.library/--background--
+
+    PURPOSE
+
+      The openurl.library provides a means whereby developers can
+      easily add "send URL to browser" functionality their
+      applications.
+
+      Users may configure their preferred browser(s) through the
+      preference program.
+
+      To utilise the library, you only need the URL_Open() call.
+      All other function calls are only useful if you're making
+      a preferences program.
+
+      If you want to program your own preferences program, read
+      this documentation and study the included source to the MUI
+      preference program. If you have any questions, contact me.
+
+      Troels Walsted Hansen
+      troels@thule.no
+      Ultima Thule Software
+
+      Troels put OpenURL in the pubblic domain.
+
+      Since version 3.1, OpenURL is developed by:
+      - Alfonso Ranieri <alforan@tin.it>
+      - Stefan Kost <ensonic@sonicpulse.de>
+
+      Since version 7.2, OpenURL has been made open source and
+      is developped by the OpenURL Team.
+
+openurl.library/--rexxhost--
+
+    HOST INTERFACE
+
+    openurl.library provides an ARexx function host interface
+    that enables ARexx programs to use it. The functions provided
+    by the interface are directly related to the functions
+    described herein, with the differences mostly being in the
+    way they are called.
+
+    The function host library vector is located at offset -66
+    from the library. This is the value you provide to ARexx in
+    the AddLib() function call. Note that this is different from
+    the usual -30 offset of other libraries! Also, be sure to ask
+    for version 3 of the library when you AddLib() it. See below
+    for an example of how to use it properly.
+
+    FUNCTIONS
+      success = OPENURLPREFS()
+
+      success = OPENURL(URL/A,SHOW/S,NOSHOW/S,TOFRONT/S,NOTOFRONT/S,NEWWIN/S,
+                        NONEWWIN/S,LAUNCH/S,NOLAUNCH/S)
+
+    EXAMPLE
+      /* OpenURL.rexx */
+      PARSE ARG url
+      OPTIONS RESULTS
+
+      /* Load the openurl.library as a function host */
+      IF ~SHOW('L','openurl.library') THEN
+        CALL ADDLIB('openurl.library',3,-66)
+
+      IF url="" THEN DO
+        SAY "Usage:"
+        SAY "  rx OpenURL <url>"
+        EXIT
+      END
+
+      SAY "Opening URL in new browser window..."
+      success = OpenURL(url, SHOW, TOFRONT, NEWWIN, LAUNCH)
+
+      IF success=0 THEN
+        SAY "Failed to open URL"
+      ELSE
+        SAY "Succeeded in opening URL"
+
+      SAY "Launching OpenURL prefs program..."
+      success = OpenURLPrefs()
+
+      IF success=0 THEN
+        SAY "Failed to launch OpenURL prefs program"
+      ELSE
+        SAY "Succeeded in launching OpenURL prefs program"
+
+      EXIT
+
+openurl.library/URL_FreePrefsA
+
+    NAME
+      URL_FreePrefsA - Free a copy of openurl.library preferences. (V1)
+
+    SYNOPSIS
+      URL_FreePrefsA(prefs,attrs)
+                     a0    a1
+
+      void URL_FreePrefsA(struct URL_Prefs *,struct TagItem *);
+
+      URL_FreePrefsA(prefs,tag,...)
+                     a0    a1
+
+      void URL_FreePrefs(struct URL_Prefs *,Tag,...);
+
+    FUNCTION
+      Free a copy of openurl.library preferences. Call this when
+      you're done with the prefs that URL_GetPrefsA() gave you.
+      Currently no attribute is defined.
+
+    INPUTS
+      prefs - pointer to URL_Prefs structure
+      attrs - attributes list
+
+    SEE ALSO
+      URL_GetPrefsA()
+
+openurl.library/URL_GetPrefsA
+
+    NAME
+      URL_GetPrefsA - Get a copy of openurl.library preferences.
+
+    SYNOPSIS
+      prefs = URL_GetPrefsA(attrs)
+      d0                    a0
+
+      struct URL_Prefs *URL_GetPrefsA(struct TagItem *);
+
+      prefs = URL_GetPrefsA(tag1,...)
+      d0                    a0
+
+      struct URL_Prefs *URL_GetPrefs(Tag,...);
+
+    FUNCTION
+      Get a copy of openurl.library preferences. Call this to get
+      your own copy of the preferences to read from. When you're
+      done you have to use URL_FreePrefs() to free it.
+
+      The attributes defined are:
+
+      - URL_GetPrefs_Mode (ULONG)
+        One of:
+
+        - URL_GetPrefs_Mode_Default
+          You get gefault values
+
+        - URL_GetPrefs_Mode_LastSaveds
+          You get what in ENVARC:OpenURL.prefs
+
+        - URL_GetPrefs_Mode_Restore
+          You get what in ENV:OpenURL.prefs
+
+      - URL_GetPrefs_FallBack (BOOL)
+        If TRUE, the functions fails iff no mem
+        If FALSE, the functions may fail if the
+        prefs are not found.
+
+    INPUTS
+      tags - attributes
+
+    RESULT
+      Returns a valid pointer to a URL_Prefs structure, or NULL
+      for failure.
+
+    NOTES
+      Remember to check the version number of the structure you
+      get in return! Do not make any assumptions about the
+      structure if it doesn't match the version that you handle.
+
+    SEE ALSO
+      URL_FreePrefsA() URL_SetPrefsA()
+
+openurl.library/URL_LaunchPrefsAppA
+
+    NAME
+      URL_LaunchPrefsAppA - Launch openurl.library prefs program (V3)
+
+    SYNOPSIS
+      success = URL_LaunchPrefsAppA(attrs)
+      d0                            a1
+
+      ULONG URL_LaunchPrefsAppA(struct TagItem *)
+
+      success = URL_LaunchPrefsApp(tag1,...)
+      d0                           a1
+
+      ULONG URL_LaunchPrefsApp(Tag,...)
+
+    FUNCTION
+      Use this function if you want to offer a way to configure
+      openurl.library from inside your application. Currently no
+      attribute is defined.
+
+    INPUTS
+      attrs - attributes list
+
+    RESULT
+      TRUE for success, FALSE for error.
+
+openurl.library/URL_GetAttr
+
+    NAME
+      URL_GetAttr - Obtains one OpenURL attribute
+
+    SYNOPSIS
+      res = URL_GetAttr(attr,storage)
+      d0                d0   a0
+
+      ULONG URL_GetAttr(ULONG,ULONG *)
+
+    FUNCTION
+      Obtains one OpenURL attribute.
+
+      attr is one of:
+
+      - URL_GetAttr_Version (ULONG)
+        openurl.library version
+
+      - URL_GetAttr_Revision (ULONG)
+        openurl.library revision
+
+      - URL_GetAttr_VerString (STRPTR)
+        openurl.library version string,
+        e.g. "openurl.library 5.0 (20.3.2003)"
+
+      - URL_GetAttr_PrefsVer (ULONG)
+        openurl.library preferences version
+
+    INPUTS
+      attr - the attribute to read
+      storage - where to store the value of attr
+
+    RESULT
+      TRUE if the attribute may be obtained, FALSE otherwise.
+
+openurl.library/URL_OpenA
+
+    NAME
+      URL_OpenA - Open an URL by sending it to a browser.      (V1)
+
+    SYNOPSIS
+      success = URL_OpenA(url, tags)
+      d0                  a0   a1
+
+      ULONG URL_OpenA(STRPTR, struct TagItem *);
+
+      success = URL_Open(url, firsttag, ...)
+
+    FUNCTION
+      Open URL, optionally uniconify browser, bringing its screen
+      to front, opening the URL in a new browser window and
+      launching the browser if it isn't running.
+
+    INPUTS
+      url - The URL.
+      tags - see below for allowed ones.
+
+    TAGS
+      The defaults shown next to each tag is the "default
+      default", users may configure their own defaults starting
+      with V2.
+
+      - URL_Show (BOOL)
+        show/uniconify browser, default TRUE.
+
+      - URL_BringToFront (BOOL)
+        bring browser to front, default TRUE.
+
+      - URL_NewWindow (BOOL)
+        open URL in new window, default FALSE.
+
+      - URL_Launch (BOOL)
+        launch browser when not running, default TRUE.
+
+    RESULT
+     Returns TRUE for success, and FALSE for failure to
+     contact/start any browser.
+
+    NOTES
+     From V2, the ARexx commands used to display URLs are sent
+     asynchronously, in other words, the functions returns
+     immediatedly, even if the browser is slow in replying the
+     ARexx message, or possibly crashed and not replying at all.
+
+    EXAMPLE
+     See the included OpenURL.c.
+
+openurl.library/URL_SetPrefsA
+
+    NAME
+      URL_SetPrefsA - Set openurl.library preferences.            (V1)
+
+    SYNOPSIS
+      success = URL_PrefsA(prefs,attrs)
+      d0                   a0    a0
+
+      ULONG URL_SetPrefs(struct URL_Prefs *,struct TagItem *);
+
+      success = URL_SetPrefsA(prefs,Tag1,...)
+      d0                      a0    a0
+
+      ULONG URL_SetPrefs(struct URL_Prefs *,Tag,...);
+
+    FUNCTION
+      Set openurl.library preferences. Call this when the user
+      has finished editing the preferences and pressed Save or
+      Use in your preference program.
+
+      The attributes defined are:
+
+      - URL_SetPrefs_Save (BOOL)
+        If TRUE, preferences are saved to ENVARC: and ENV:
+        If FALSE, preferences are saved only to ENV:
+        Default FALSE
+
+    INPUTS
+      prefs - pointer to URL_Prefs structure
+      attrs - attributes
+
+    RESULT
+      TRUE for success, FALSE for error.
+
+    NOTES
+      The whole structure, including linked list is copied, so you
+      must free your own copy.
+
+    SEE ALSO
+      URL_GetPrefsA()
+

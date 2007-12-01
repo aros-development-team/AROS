@@ -1,0 +1,178 @@
+@database OpenURL
+@author OpenURL Team
+
+@Node "Main" "OpenURL"
+
+  @{b}OpenURL@{ub}
+
+
+  @{b}@{fg fill}Introduction@{fg text}@{ub}
+
+    This library was created to make it easier for application
+    programmers to include clickable URLs in their applications,
+    about windows, etc. Current solutions to this problem
+    typically are to launch an ARexx script or just support a few
+    webbrowsers, with no room for configuration. This leads to
+    countless reinventions of the wheel (how many
+    SendURLToBrowser.rexx scripts do you have on your harddisk?).
+
+    This library solves the problem by giving application
+    programmers a very simple API to handle (one function) and
+    the user gets configurability with the included preferences
+    program.
+
+    Original authors liked and use @{fg shine}MUI@{fg text}, therefore the included
+    preference program uses MUI. This library is meant to be
+    completely universal though, so programmers preferring other
+    GUI engines are encouraged to program their own preference
+    editor and send it to us, we'll happily include it.
+
+
+  @{b}@{fg fill}Requirements@{fg text}@{ub}
+
+    - AmigaOS 3.0 or higher, AmigaOS 4.0 or MorphOS.
+    - MUI 3.8 or higher, for the preference program only.
+
+
+  @{b}@{fg fill}Features@{fg text}@{ub}
+
+    - Sends URL by ARexx if your browser is launched, if not, the
+      library will launch the browser.
+
+    - Configuration supports a list of installed browsers, no
+      Wind*ws "default browser" nonsense.
+
+    - mailto: URLs can optionally be handled by an email
+      application.
+
+    - ftp: URLs can optionnaly be handled by an FTP client.
+
+    - Extremely simple API for applications.
+
+    - API also available for use from ARexx scripts.
+
+    - Complete source available for your enjoyment.
+
+
+  @{b}@{fg fill}Installation@{fg text}@{ub}
+
+    To install the library, prefs and shell-tool do:
+
+    - backup LIBS:openurl.library, sys:Prefs/OpenURL, C:OpenURL
+    - copy openurl.library LIBS:
+    - copy Prefs/OpenURL sys:Prefs/
+    - copy Prefs/OpenURL.info sys:Prefs/
+    - copy OpenURL C:
+
+    or better use the installation script.
+
+
+  @{b}@{fg fill}Preference Usage@{fg text}@{ub}
+
+    Using the preference program should hopefully be very easy. A
+    few tips might be helpful though. The library will try
+    contacting the browsers from top to bottom of the list, so
+    put your favourite browser at the top (drag and drop).
+
+    The ARexx portname should be set to "BROWSER" even for
+    browsers that call their ports "BROWSER.1", "BROWSER.2", etc.
+    The library will look for any port named "BROWSER.x" where
+    "x" is a number and ".x" is optional.
+
+    For developers: see autodocs.
+
+  @{b}@{fg fill}Command-line Usage@{fg text}@{ub}
+
+    Using the OpenURL command opens the openurl.library to pass
+    URLs to the appropriate application depending on the URL's
+    protocol and the specified OpenURL prefs settings. It can be
+    executed from a Shell, AmigaDOS script, ARexx script or as a
+    default tool in the icon for an html file. For example: entering
+        @{i}OpenURL http://www.os4depot.net@{ui}
+    in a shell will open the specified URL in the browser set in
+    your OpenURL prefs.
+
+    OpenURL can be used as the default tool in an html project icon.
+    Several Tooltypes, equivalant to the shell arguments, can also be
+    used in a project icon. Refer to the Tooltype section below for a
+    list of available Tooltypes. It can also be used as the default
+    tool in a default project icon like "def_html" in the Prefs/Env-
+    Archive/Sys (ENVARC:Sys) drawer. You can then open an html file
+    that lacks a "real" icon by double-clicking on the html default
+    icon that will be displayed when a WorkBench window is set to
+    "Show All Files". OpenURL is not a WorkBench program and cannot
+    be opened with a tool icon unless "Start From:" is set to "Shell"
+    and "Prompt for input:" is selected.
+
+    The PUBSCREEN argument/tooltype will have no effect with most Amiga
+    browsers since they have not option to open the browser on a named
+    public screen with a Shell argument or WorkBench Tooltype. The URL
+    and FILE Shell arguments have no WorkBench tooltype counterparts
+    because the "URL" is the "FILE" represented by the project icon
+    containing OpenURL as a default tool.
+
+    @{"u"}@{"b"}OpenURL Shell/Arguments@{"ub"}@{"uu"}
+
+      @{"b"}Format:@{"ub"} OpenURL [URL] <name> [NOWSHOW] [NOFRONT] [NEWWIN] [NOLAUNCH] [PUBSCREEN <name>] [FILE]
+
+      @{"b"}Template:@{"ub"} URL/A,NOSHOW/S,NOFRONT/S,NEWWIN/S,NOLAUNCH/S,PUBSCREEN/K,FILE/S
+
+      @{"b"}Example:@{"ub"} OpenURL "ram:openurl.html" NEWWIN FILE (Open a local html file)
+
+      @{"b"}Example:@{"ub"} OpenURL "www.os4depot" NEWWIN NOLAUNCH (Open Internet page)
+
+      @{"b"}ARGUMENT@{"ub"}     @{"b"}TYPE@{"ub"}    @{"b"}PRESENCE@{"ub"}        @{"b"}FUNCTION@{"ub"}
+      URL/A        Text    Required        Quoted URL text ("www.os4depot.net")
+      NOSHOW/S     Switch  Not Required    Do not uniconify browser
+      NOFRONT/S    Switch  Not Required    Do not bring browser screen to front
+      NEWWIN/S     Switch  Not Required    Open the URL in a new browser window
+      NOLAUNCH/S   Switch  Not Required    Do not start browser if not open
+      PUBSCREEN/K  Text    Not Required    Screen to open browser on
+      FILE/S       Switch  Not Required    URL is a file
+
+
+    @{"u"}@{"b"}OpenURL WorkBench/Tooltypes@{"ub"}@{"uu"}
+
+      @{"b"}Project Icon - Default Tool:@{"ub"} OpenURL
+
+      @{"b"}Project Icon - Start from:@{"ub"} WorkBench
+
+      @{"b"}TOOLTYPE@{"ub"}     @{"b"}TYPE@{"ub"}    @{"b"}PRESENCE@{"ub"}        @{"b"}FUNCTION@{"ub"}
+      NOSHOW/S     Switch  Not Required    Do not uniconify browser
+      NOFRONT/S    Switch  Not Required    Do not bring browser screen to front
+      NEWWIN/S     Switch  Not Required    Open the URL in a new browser window
+      NOLAUNCH/S   Switch  Not Required    Do not start browser if not open
+      PUBSCREEN/K  Text    Not Required    Screen to open browser on
+
+    @{u}@{i}@{fg fill}Important Note@{fg text}@{ui}@{uu}: If the OpenURL prefs program is in your Shell command path
+    ( SYS:Prefs ) you must use the complete path to the OpenURL command <C:OpenURL>
+    instead of the <OpenURL> command name alone. Otherwise the OpenURL prefs
+    will be opened instead of the OpenURL comand. This applies to ToolType
+    usage as well as Shell execution.
+
+  @{b}@{fg fill}Legal stuff@{fg text}@{ub}
+
+    The openurl package is placed in the public domain. We assume
+    no responsibility for what these programs might do, you are
+    using them at your own risk.
+
+
+  @{b}@{fg fill}Authors@{fg text}@{ub}
+    Since version 7.2 :
+    @{b}@{fg shine}OpenURL Team @{fg text}@{ub}
+      Web: http://sourceforge.net/openurllib
+
+    @{b}@{fg shine}Troels Walsted Hansen@{fg text}@{ub}
+      SnailMail: O.L. Aunesgate 15
+                 9009 Tromsø
+                 NORWAY
+      Email:     troels@thule.no
+      IRC nick:  Troels
+
+    @{b}@{fg shine}Alfonso Ranieri @{fg text}@{ub}
+      Email:     alforan@tin.it
+
+    @{b}@{fg shine}Stefan Kost@{fg text}@{ub}
+      Email:     ensonic@sonicpulse.de
+@EndNode
+

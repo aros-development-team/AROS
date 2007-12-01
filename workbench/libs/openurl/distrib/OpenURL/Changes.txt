@@ -1,0 +1,52 @@
+OpenURL 7.2
+
+- OpenURL is now open source and further developped by the
+OpenURL Team, on Sourceforge.
+
+OpenURL 7.0
+
+- Many to tell you
+
+
+OpenURL 6.5
+
+- A bug in lamp class rendering fixed
+
+
+OpenURL 6.4
+
+- Big one
+- Removed support for old prefs versions
+- Changed tags
+- MUI 4 support
+- Fixed a *bad* bug in About page disposing
+- Changed page layout
+- Back to only List.mui and String.mui classes
+- Fixed "Edit" not working with list.mui
+- Removed all external classes need
+- Various bug fixes and optimizations
+
+OpenURL 6.3
+
+- I lost OpenURL6.2 soutces so this was build over OpenURL 6.0 :p
+- A signal was not freed, leading to any kind of strange bugs hummm :)
+
+OpenURL 6.2
+
+- Let's say prefs routines was a little bit bugged
+- Added disabled state to browsers, mailers and ftp clients
+- Some other minor changes and bug fix
+
+
+OpenURL 6.1
+
+- Many changes in api.c and prefs.c
+- PopupPort is an internal MUI class now
+
+
+OpenURL 6
+
+- Added FTP clients preferences - Removed OpenURL-Handler as
+foreign task
+
+

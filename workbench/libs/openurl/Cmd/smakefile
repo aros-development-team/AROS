@@ -1,0 +1,36 @@
+# OpenURL smake file
+
+# Target
+TARGET = C:OpenURL
+
+# Compiler
+C_COMPILER = sc
+C_COMPILER_OPTS = NOSTACKCHECK STRINGMERGE NOCHECKABORT COMMENTNEST\
+OPTIMIZE OPTIMIZERINLINELOCAL OPTIMIZERSCHEDULER OPTIMIZERTIME\
+IGNORE=315 IGNORE=317 IDIR=/include
+
+# Linker
+LINKER = slink
+LINKER_OPTS = NOICONS SC SD ND
+
+# Objects
+OBJECTS = OpenURL.o SmartReadArgs.o
+
+# Libs
+LIBS = LIB:sc.lib LIB:amiga.lib
+
+# Built file
+$(TARGET): $(OBJECTS) $(LIBS)
+
+        $(LINKER) <with <
+FROM LIB:c.o $(OBJECTS) TO $(TARGET) LIB $(LIBS) $(LINKER_OPTS)
+<
+
+# Rules
+.c.o:
+      $(C_COMPILER) $(C_COMPILER_OPTS) $*.c
+
+# Dependences
+
+OpenURL.o:       OpenURL.c SmartReadArgs.h OpenURL_rev.h
+SmartReadArgs.o: SmartReadArgs.c debug.h SmartReadArgs.h

@@ -1,0 +1,16 @@
+; project configuration (do not delete)
+
+(compiler
+
+    (alias "gcc/amigaos4/latest")
+
+    (makefile "Langages:Sources/OpenURL/Cmd/makefile-os4")
+
+    (make "make -f %makefile %target")
+
+    (target "")
+
+    (executable "Langages:Sources/OpenURL/Cmd/OpenURL")
+
+    (arguments "")
+)
