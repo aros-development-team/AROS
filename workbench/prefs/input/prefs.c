@@ -8,7 +8,7 @@
 
 /*********************************************************************************************/
 
-#define SHOWFLAGS 0  /* Set to 1 to show Flags in the keylist */
+#define SHOWFLAGS 1  /* Set to 1 to show Flags in the keylist */
 
 #include <proto/keymap.h>
 
@@ -27,24 +27,15 @@ struct InputPrefs   restore_prefs;
 struct MsgPort     *InputMP;
 struct timerequest *InputIO;
 BPTR                testkeymap_seg = NULL;
-/*********************************************************************************************/
-
-struct nameexp model_expansion_table[] =
-{
-    {"pc105", "PC 105"     , NULL},
-    {"pc104", "PC 104/101" , NULL},
-    {NULL   ,  NULL        , NULL}
-};
 
 /*********************************************************************************************/
 
 struct nameexp layout_expansion_table[] =
 {
     {"al"   , "Albanian"    	    , NULL },
-    {"usa1" , "American"    	    , "United_States"   },
-    {"usa"  , "American"    	    , "United_States"   },
-    {"us"   , "American (PC)"	    , "United_States"   },
-    {"usx"  , "American Extended"   , "United_States"   },
+    {"usa"  , "American (Sun 5c)"   , "United_States"   },
+    {"us"   , "American (PC 104)"   , "United_States"   },
+    {"usx"  , "American (PC 105)"   , "United_States"   },
     {"d"    , "Deutsch"     	    , "Deutschland"     },
     {"be"   , "Belge"     	        , "Belgique"        },
     {"br"   , "Brasileiro"     	    , "Brasil"          },
@@ -135,25 +126,19 @@ void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 	    entry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
 	    if (entry)
 	    {
-	    	entry->node.ln_Name = entry->modelname;
+	    	entry->node.ln_Name = entry->layoutname;
 		strncpy(entry->realname, ap.ap_Info.fib_FileName, sizeof(entry->realname));
-		
-		// entry->name[0] = ToUpper(entry->name[0]);
 		
 		sp = strchr(entry->realname, '_');
 		if (sp)
 		{
 		    sp[0] = '\0';
-		    strcpy(entry->modelname, entry->realname);
 		    strcpy(entry->layoutname, sp + 1);
 		    sp[0] = '_';
 		}
 		else
-		{
-		    strcpy(entry->modelname, "Amiga");
 		    strcpy(entry->layoutname, entry->realname);
-		}
-		ExpandName(entry->modelname, entry->flagname, model_expansion_table);
+
 		ExpandName(entry->layoutname, entry->flagname, layout_expansion_table);
 		AddTail(&templist, &entry->node);
 	    }
@@ -162,88 +147,22 @@ void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
     }
     MatchEnd(&ap);
     
-    /* Sort by Model Name */
+    /* Sort by Layout Name */
     
     ForeachNodeSafe(&templist, entry, entry2)
     {
     	Remove(&entry->node);
     	SortInNode(list, &entry->node);
     }
-    
-    /* Fix ln_Name to point to Layout Name */
-    
-    ForeachNode(list, entry)
-    {
-    	entry->node.ln_Name = entry->layoutname;
-    }
-    
-    /* Move back to temp list */
-    
-    NewList(&templist);
-    
-    ForeachNodeSafe(list, entry, entry2)
-    {
-    	Remove(&entry->node);
-	AddTail(&templist, &entry->node);
-    }
-    
-    /* Create Model ~tree nodes + sort by Layout Name in each Model ~tree */
-    
-    NewList(list);
-    
-    ForeachNodeSafe(&templist, entry, entry2)
-    {
-    	struct ListviewEntry    *modelentry, *layoutentry;
-	struct List 	    	layoutlist;
 
-	modelentry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
-	if (!modelentry) break;
-	
-	modelentry->modelnode    = TRUE;
-	modelentry->node.ln_Name = entry->modelname;
-	
-	AddTail(list, &modelentry->node);
-	
-	/* Create a sorted list of layouts for this model ~tree */
-	
-	NewList(&layoutlist);
-	for(; (entry2 = (struct ListviewEntry *)entry->node.ln_Succ); entry = entry2)
-	{
-	    if (stricmp(entry->modelname, modelentry->node.ln_Name) != 0)
-	    {
-	    	entry2 = entry;
-	    	break;
-	    }
-	    Remove(&entry->node);
-	    SortInNode(&layoutlist, &entry->node);
-	}
-	
-	/* Add the sorted list of layouts to the final list */
-	
-	while((layoutentry = (struct ListviewEntry *)RemHead(&layoutlist)))
-	{
-	    AddTail(list, &layoutentry->node);
-	}
- 
-    	if (!entry2) break; 
-	
-    } /* ForeachNodeSafe(&templist, entry, entry2) */
-    
     ForeachNode(list, entry)
     {
-        if (!entry->modelnode)
-        {
 #if SHOWFLAGS == 1
-            sprintf(entry->displayname, "\033I[5:Locale:Flags/Countries/%s]%s", entry->flagname, entry->node.ln_Name);
+	sprintf(entry->displayname, "\033I[5:Locale:Flags/Countries/%s]%s", entry->flagname, entry->node.ln_Name);
 #else
-            sprintf(entry->displayname, "%s", entry->node.ln_Name);
+	sprintf(entry->displayname, "%s", entry->node.ln_Name);
 #endif
-        }
-        else
-        {
-            sprintf(entry->displayname, "%s", entry->node.ln_Name);
-
-        }
+	D(bug("IPrefs: kbd entry flag: %s\n", entry->flagname));
     }
 }
 
@@ -254,8 +173,6 @@ BOOL LoadPrefs(BPTR fh)
     static struct FileInputPrefs    loadprefs;
     struct IFFHandle 	    	    *iff;
     BOOL    	    	    	    retval = FALSE;
-    
-    D(bug("LoadPrefs: Trying to open \"%s\"\n", filename));
     
     if ((iff = AllocIFF()))
     {
@@ -341,8 +258,6 @@ BOOL SavePrefs(BPTR fh)
     LONG_TO_ARRAY(inputprefs.ip_KeyRptSpeed.tv_micro, saveprefs.ip_KeyRptSpeed_micro);
     WORD_TO_ARRAY(inputprefs.ip_MouseAccel, saveprefs.ip_MouseAccel);    
 	
-    D(bug("SavePrefs: Trying to open \"%s\"\n", filename));
-    
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = fh;
