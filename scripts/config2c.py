@@ -54,6 +54,8 @@ for line in infile:
             args = res.group(3).split(",")
             regs = res.group(4).split(",")
             argcnt = len(args)
+            if argcnt == 1 and args[0].strip() == "":
+                argcnt = 0
             if wrapped:
                 print "#ifdef __AROS__"
             print "AROS_LH%d(%s, %s, " %(argcnt, rettype, funcname)
