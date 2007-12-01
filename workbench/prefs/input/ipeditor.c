@@ -23,10 +23,9 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <aros/debug.h>
 
-#include <mui/NListtree_mcc.h>
-#include <mui/NListview_mcc.h>
+#define DEBUG 0
+#include <aros/debug.h>
 
 #include "misc.h"
 #include "locale.h"
@@ -36,7 +35,6 @@
 extern struct List          keymap_list;
 extern struct InputPrefs    inputprefs;
 extern struct InputPrefs    restore_prefs;
-struct Hook                 keytypes_display_hook;
 
 extern struct MUI_CustomClass *StringifyClass;
 
@@ -65,39 +63,14 @@ BOOL InputPrefs2Gadgets(struct IPEditor_DATA *data);
 /****************************************************************
  The display function for the KeyTypes listview
 *****************************************************************/
-AROS_UFH3
-(
-    void, keytypes_display_func,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(ULONG, nop, A2),
-    AROS_UFHA(struct MUIP_NListtree_DisplayMessage *, msg, A1)
-)
+static void keytypes_display_func(struct Hook *h, char **array, struct ListviewEntry * entry)
 {
-    AROS_USERFUNC_INIT
-
-    if ( msg->TreeNode != NULL )
-    {
-        struct ListviewEntry *entry;
-
-        entry = (struct ListviewEntry *) msg->TreeNode->tn_Name;
-        
-        *msg->Array = &entry->displayname;
-
-        if ((msg->TreeNode->tn_Flags & TNF_SELECTED) == TNF_SELECTED) *msg->Preparse = (STRPTR) "\033b";
-
-    }
-
-    AROS_USERFUNC_EXIT
-
+    *array++ = entry->displayname;
 }
-//     struct  MUI_NListtree_TreeNode *TreeNode;
-//     LONG    EntryPos;
-//     STRPTR  *Array;
-//     STRPTR  *Preparse;
+
 /*** Methods ****************************************************************/
 Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-
     Object *keyTypes;
     Object *RepeatRate;
     Object *RepeatDelay;
@@ -106,8 +79,10 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *DoubleClickDelay;
 
     struct ListviewEntry *entry;
+    static struct Hook display_hook;
 
-    keytypes_display_hook.h_Entry = (HOOKFUNC)keytypes_display_func;
+    display_hook.h_Entry = HookEntry;
+    display_hook.h_SubEntry = (HOOKFUNC)keytypes_display_func;
 
     InputTabs[0] = __(MSG_GAD_TAB_KEYBOARD);
     InputTabs[1] = __(MSG_GAD_TAB_MOUSE);
@@ -132,22 +107,17 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, HGroup,
                     Child, VGroup,
                         GroupFrameT(__(MSG_GAD_KEY_TYPE)),
-                        MUIA_Weight, 40,
-                        Child, NListviewObject,
-                            MUIA_NListview_NList,	keyTypes = NListtreeObject,
+                        MUIA_Weight, 45,
+			Child, ListviewObject,
+				MUIA_Listview_Input, FALSE,
+				MUIA_Listview_List, keyTypes = ListObject,
                                 InputListFrame,
-                                MUIA_NListtree_EmptyNodes, FALSE,
-                                MUIA_NListtree_AutoVisible, MUIV_NListtree_AutoVisible_Expand,
-                                MUIM_NListtree_Select, MUIV_NListtree_Select_Active,
-                                MUIA_NListtree_DupNodeName, FALSE,
-                                MUIA_NListtree_DragDropSort, FALSE,
-                                MUIA_NListtree_MultiSelect, MUIV_NListtree_MultiSelect_None,
-                                MUIA_NListtree_DisplayHook, (IPTR) &keytypes_display_hook,
-                            End,
-                        End,
+				MUIA_List_DisplayHook, &display_hook,
+				End,
+			End,
                     End,
                     Child, VGroup,
-                        MUIA_Weight, 60,
+                        MUIA_Weight, 55,
                         Child, HGroup,
                             GroupFrameT(__(MSG_GAD_KEY_REPEAT_RATE)),
                             Child, RepeatRate = NewObject(StringifyClass->mcc_Class,0,
@@ -227,19 +197,14 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->iped_MouseSpeed = GadMouseSpeed;
         data->iped_DoubleClickDelay = DoubleClickDelay;
 
-        IPTR    pos = MUIV_NListtree_Insert_ListNode_Root;
-        IPTR    root = MUIV_NListtree_Insert_ListNode_Root;
-        IPTR    Flags;
+	IPTR root;
+
         ForeachNode(&keymap_list, entry)
         {
-            Flags = 0;
-            if (entry->modelnode) {pos = MUIV_NListtree_Insert_ListNode_Root; Flags = TNF_LIST; }
-
-            root = DoMethod(keyTypes, MUIM_NListtree_Insert, entry, 0, pos, MUIV_NListtree_Insert_PrevNode_Tail, Flags);
-            entry->Node = root;
-
-            if (pos == MUIV_NListtree_Insert_ListNode_Root) pos = root;
-
+	    root = DoMethod(keyTypes,
+			    MUIM_List_InsertSingle,
+			    (IPTR)entry,
+			    MUIV_List_Insert_Bottom);
         }
 
         /* Set default Values */
@@ -252,7 +217,7 @@ Object *IPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         DoMethod(GadMouseSpeed, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
 
-        DoMethod(keyTypes, MUIM_Notify, MUIA_NListtree_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+	DoMethod(keyTypes, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
 
         DoMethod(Accelerated, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, (IPTR) self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
 
@@ -302,17 +267,17 @@ BOOL Gadgets2InputPrefs
 
     inputprefs.ip_PointerTicks = 1 << (2 - val);
 
-    struct MUI_NListtree_TreeNode *node;
+    struct ListviewEntry *entry;
 
-    GET(data->iped_KeyTypes, MUIA_NListtree_Active, &node);
+    DoMethod(data->iped_KeyTypes,
+	     MUIM_List_GetEntry,
+	     MUIV_List_GetEntry_Active,
+	     &entry);
 
-    if (node != NULL)
+    if (entry != NULL)
     {
-        struct ListviewEntry *kmn = (struct ListviewEntry *) node->tn_Name;
-        if (kmn != NULL)
-        {
-            strncpy(inputprefs.ip_Keymap, kmn->realname, sizeof(inputprefs.ip_Keymap));
-        }
+	D(bug("IPrefs: selected %s\n", entry->realname));
+	strncpy(inputprefs.ip_Keymap, entry->realname, sizeof(inputprefs.ip_Keymap));
     }
 
     return TRUE;
@@ -333,21 +298,17 @@ BOOL InputPrefs2Gadgets
     NNSET(data->iped_Accelerated, MUIA_Selected, (IPTR) (inputprefs.ip_MouseAccel != 0) ? TRUE : FALSE);
 
     struct ListviewEntry *entry;
-    struct ListviewEntry *kmn = NULL;
+    LONG pos = 0;
 
     ForeachNode(&keymap_list, entry)
     {
-
         if (!stricmp(inputprefs.ip_Keymap, entry->realname))
         {
-            kmn = entry;
+            NNSET(data->iped_KeyTypes, MUIA_List_Active, pos);
             break;
         }
-    }
 
-    if (kmn != NULL)
-    {
-        NNSET(data->iped_KeyTypes, MUIA_NListtree_Active, (IPTR) kmn->Node);
+	++pos;
     }
 
     IPTR    active = 0;

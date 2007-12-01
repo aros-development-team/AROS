@@ -14,8 +14,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <mui/NListtree_mcc.h>
-
 #include "global.h"
 
 /*********************************************************************************************/
@@ -65,12 +63,9 @@ struct ListviewEntry
 {
     struct Node node;
     UBYTE                           layoutname[30];
-    UBYTE                           modelname[30];
     UBYTE                           realname[30];
     UBYTE                           flagname[30];
     UBYTE                           displayname[128];
-BOOL                            modelnode;
-    struct  MUI_NListtree_TreeNode *Node;
 };
 
 struct KeymapEntry
