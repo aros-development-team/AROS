@@ -1,0 +1,13 @@
+Short:    OpenURL - Get that URL!
+Uploader: OpenURL Team
+Author:   OpenURL Team on sourceforge
+Type:     com/www
+
+This library was created to make it easier for application
+programmers to include clickable URLs in their applications,
+about windows, etc. Current solutions to this problem typically
+are to launch an ARexx script or just support a few webbrowsers,
+with no room for configuration. This leads to countless
+reinventions of the wheel (how many SendURLToBrowser.rexx scripts
+do you have on your harddisk?).
+

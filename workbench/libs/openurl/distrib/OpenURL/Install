@@ -1,0 +1,88 @@
+; $VER: Install OpenURL 6.3 (17.4.2005)
+;
+
+(set #exitmsg "\n\nIf you are a developer and wish to use\nopenurl.library, check out the included\ndocumentation and source code.")
+
+; Welcome screen
+
+(welcome "\nThis installer script will install openurl.library and tools.\nopenurl.library is a universal URL display and browser launcher library.")
+
+; Copy openurl.library
+
+(copylib
+    (prompt "Installing the library")
+    (help @copyfiles-help)
+    (source "libs/openurl.library")
+    (dest "Libs:")
+)
+
+; Copy OpenURL preferences program
+
+(copyfiles
+	(prompt "Installing the preference program")
+	(help @copyfiles-help)
+	(source "Prefs/OpenURL")
+	(dest "SYS:Prefs")
+)
+
+(copyfiles
+	(prompt "Installing the preference program")
+	(help @copyfiles-help)
+	(source "Prefs/OpenURL.info")
+	(dest "SYS:Prefs")
+	(infos)
+	(noposition)
+)
+
+; Copy catalogs
+
+(set #catSourceDir (tackon "Catalogs" @language))
+(set #catDestDir (tackon "Locale:" (tackon "Catalogs" @language)))
+(if (= (and (= (exists (#catSourceDir)) 2) (= (exists (#catDestDir)) 2)) 1)
+    (foreach #catSourceDir "#?"
+        (copylib
+            (source (tackon #catSourceDir @each-name))
+            (dest #catDestDir)
+        )
+    )
+)
+
+; Copy OpenURL command
+
+(copyfiles
+	(prompt "Installing the optional commandline tool")
+	(help "This is a small tool that allows you to open URLs from the commandline.")
+	(source "C/OpenURL")
+	(dest "C:")
+	(confirm)
+)
+
+; Set environment variable
+
+(run "Echo SYS:Prefs/OpenURL >ENV:OpenURL_Prefs_Path")
+(run "Echo SYS:Prefs/OpenURL >ENVARC:OpenURL_Prefs_Path")
+
+; Flush
+
+(message "Before proceeding, you must quit all programs using openurl.library, so that the old version can be flushed from memory.")
+(run "Avail FLUSH")
+
+; Ask whether to run prefs program
+
+(if
+	(=
+		(askbool
+			(prompt "You should run the preferences program now to set your browser path(s) and other preferences. Would you like me to launch it?")
+			(help "")
+			(default 1)
+		)
+
+		1
+	)
+
+	(run "SYS:Prefs/OpenURL")
+)
+
+; Exit
+
+(exit #exitmsg (quiet))

@@ -1,0 +1,526 @@
+## version $VER: OpenURL.catalog 7.0 (29.7.2005)
+## codeset 0
+## language français
+;
+; CATCOMP OpenURL.cd OpenURL_ita.ct NOOPTIM CATALOG Locale:Catalogs/français/OpenURL.catalog
+;
+MSG_ErrReqTitle
+Erreur OpenURL
+; OpenURL Error
+;
+MSG_ErrReqGadget
+_Annuler
+; _Abort
+;
+MSG_Err_NoMem
+Mémoire insuffisante
+; Too few memory
+;
+MSG_Err_NoMUI
+Impossible d'ouvrir muimaster.library\n\
+version %ld.%ld ou supérieure.
+; Can't open muimaster.library\nversion 19 or higher
+;
+MSG_Err_NoIntuition
+Impossible d'ouvrir intuition.library\n\
+version %ld.%ld ou supérieure.
+; Can't open intuition.library\nversion 37 or higher
+;
+MSG_Err_NoUtility
+Impossible d'ouvrir utility.library\n\
+version %ld.%ld ou supérieure.
+; Can't open utility.library\nversion 37 or higher
+;
+MSG_Err_NoGfx
+Impossible d'ouvrir graphics.library\n\
+version %ld.%ld ou supérieure.
+; Can't open graphics.library version 37 or higher
+;
+MSG_Err_NoIcon
+Impossible d'ouvrir icon.library\n\
+version %ld.%ld ou supérieure.
+; Can't open icon.library\nversion 37 or higher
+;
+MSG_Err_NoOpenURL
+Impossible d'ouvrir openurl.library\n\
+version %ld.%ld ou supérieure.
+; Can't open openurl.library\nversion 6 or higher
+;
+MSG_Err_NoAppClass
+Impossible de créer la classe application.
+; Can't create AppClass
+;
+MSG_Err_NoWinClass
+Impossible de créer la classe Win.
+;
+MSG_Err_NoPensClass
+Impossible de créer la classe Pens.
+;
+MSG_Err_NoAppListClass
+Impossible de créer la classe AppList.
+; Can't create AppListClass
+;
+MSG_Err_NoBrowserEditWinClass
+Impossible de créer la classe BrowserEditWin.
+; Can't create BrowserEditWinClass
+;
+MSG_Err_NoMailerEditWinClass
+Impossible de créer la classe MailerEditWin.
+; Can't create MailerEditWinClass
+;
+MSG_Err_NoFTPEditWinClass
+Impossible de créer la classe FTPEdit.
+; Can't create FTPEditWinClass
+;
+MSG_Err_PopupPortClass
+Impossible de créer la classe PopupPort.
+; Can't create PopupPortClass
+;
+MSG_Err_PopphClass
+Impossible de créer la classe Popph.
+; Can't create PopupPortClass
+;
+MSG_Err_NoApp
+Impossible de créer l'application MUI.
+; Can't create MUI application object
+;
+MSG_Err_NoPrefs
+Impossible d'obtenir les préférences de openurl.library.
+; Can't obtain prefs from\nopenurl.library
+;
+MSG_Err_BadPrefs
+Cette version du programme ne sait pas comment\n\
+prendre en charge les préférences openurl.library\n\
+version %ld.
+; This version of this program doesn't know how\nto handle openurl.library prefs version %ld
+;
+MSG_Err_FailedSave
+Impossible de sauver les préférences.
+; Can't save prefs
+;
+MSG_App_Description
+Application de préférences OpenURL.
+; OpenURL preferences application
+;
+MSG_App_Copyright
+OpenURL est un logiciel en Domaine Public.
+; Public Domain Software
+;
+MSG_App_ScreenTitle
+OpenURL
+;
+MSG_Menu_Project
+Projet
+; Project
+;
+MSG_Menu_About
+?\0À propos...
+; ?\0About...
+;
+MSG_Menu_AboutMUI
+!\0À propos de MUI...
+; !\0About MUI...
+;
+MSG_Menu_Hide
+H\0Cacher
+; H\0Hide
+;
+MSG_Menu_Quit
+Q\0Quitter
+; Q\0Quit
+;
+MSG_Menu_Prefs
+Préférences
+; Preferences
+;
+MSG_Menu_Save
+S\0Sauver
+;
+MSG_Menu_Use
+U\0Utiliser
+;
+MSG_Menu_LastSaveds
+L\0Dernières valeurs sauvées
+;
+MSG_Menu_Restore
+R\0Restaurer
+;
+MSG_Menu_Defaults
+D\0Valeurs par défaut
+;
+MSG_Menu_Pens
+P\0Modification stylos...
+;
+MSG_Menu_MUI
+M\0MUI...
+;
+MSG_Win_WinTitle
+OpenURL
+; OpenURL
+;
+MSG_Win_Labels_Browsers
+Navigateurs
+; Browsers
+;
+MSG_Win_Labels_Mailers
+Logiciels de courrier
+; Mailers
+;
+MSG_Win_Labels_FTPs
+Clients FTP
+; FTPs
+;
+MSG_Win_Labels_Misc
+Divers
+; Miscellaneous
+;
+MSG_Win_Save
+_Sauver
+; _Save
+;
+MSG_Win_Save_Help
+Sauve les préférences.
+; _Save
+;
+MSG_Win_Use
+_Utiliser
+; _Use
+;
+MSG_Win_Use_Help
+Utilise les préférences.
+; _Save
+;
+MSG_Win_Apply
+_Appliquer
+; _Apply
+;
+MSG_Win_Apply_Help
+Utilise les préférences,\n\
+sans fermer la fenêtre.
+; _Save
+;
+MSG_Win_Cancel
+_Annuler
+; _Cancel
+;
+MSG_Win_Cancel_Help
+Ferme la fenêtre, en perdant les\n\
+modifications des préférences.
+; _Save
+;
+MSG_About_Descr
+OpenURL est une bibliothèque partagée permettant\n\
+d'envoyer facilement des URLs depuis des applications\n\
+vers des navigateurs, des logiciels de courrier et\n\
+des clients FTP. OpenURL est mis dans le Domaine Public.
+;
+MSG_AppList_Add
+A_jouter
+; A_dd
+;
+MSG_AppList_Add_Help
+Ajoute une nouvelle entrée.
+; A_dd
+;
+MSG_AppList_Edit
+Édit_er
+; _Edit
+;
+MSG_AppList_Edit_Help
+Edite l'entrée sélectionnée.
+; _Edit
+;
+MSG_AppList_Clone
+Dup_liquer
+; C_lone
+;
+MSG_AppList_Clone_Help
+Duplique l'entrée sélectionnée.
+; C_lone
+;
+MSG_AppList_Delete
+_Supprimer
+; Dele_te
+;
+MSG_AppList_Delete_Help
+Supprime l'entrée sélectionnée.
+; Dele_te
+;
+MSG_AppList_Disable
+_Désactiver
+; D_isable
+;
+MSG_AppList_Disable_Help
+Désactive l'entrée sélectionnée.
+; D_isable
+;
+MSG_AppList_MoveUp_Help
+Déplace vers le haut\n\
+l'entrée sélectionnée.
+;
+MSG_AppList_MoveDown_Help
+Déplace vers le bas\n\
+l'entrée sélectionnée.
+;
+MSG_Edit_Use
+_Utiliser
+;
+MSG_Edit_Use_Help
+Utilise les préférences.
+;
+MSG_Edit_Cancel
+_Annuler
+;
+MSG_Edit_Cancel_Help
+Ferme la fenêtre.
+;
+MSG_Edit_ListName
+Nom
+;
+MSG_Edit_ListPath
+Chemin
+;
+MSG_Edit_Definitions
+Définitions
+;
+MSG_Edit_ARexx
+Commandes ARexx
+;
+MSG_Edit_PopURL
+URL
+;
+MSG_Edit_PopScreen
+Nom de l'écran public
+;
+MSG_Edit_Name
+_Nom
+;
+MSG_Edit_Name_Help
+Nom de l'entrée.
+;
+MSG_Edit_Path
+_Chemin
+;
+MSG_Edit_Path_Help
+Chemin complet de l'application
+;
+MSG_Edit_Port
+Port _ARexx
+;
+MSG_Edit_Port_Help
+Nom du port ARexx de l'application\n\
+auquel envoyer les commandes.
+;
+MSG_Edit_Show
+_Montrer
+;
+MSG_Edit_Show_Help
+Commande ARexx pour désiconifier\n\
+la fenêtre de l'application.
+;
+MSG_Edit_Screen
+Écran au _premier plan
+;
+MSG_Edit_Screen_Help
+Commande ARexx pour passer l'écran\n\
+de l'application au premier plan.
+;
+MSG_Edit_OpenURL
+Ouvrir _URL
+;
+MSG_Edit_OpenURL_Help
+Commande ARexx pour atteindre une URL.
+;
+MSG_Edit_NewWin
+Nouvelle _fenêtre
+;
+MSG_Edit_NewWin_Help
+Commande ARexx pour atteindre une URL\n\
+dans une nouvelle fenêtre (ou onglet).
+;
+MSG_Browser_List_Help
+Navigateurs.
+;
+MSG_Browser_WinTitle
+Édition du navigateur
+;
+MSG_Browser_NewBrowser
+Nouveau navigateur
+;
+;
+MSG_Mailer_List_Help
+Logiciels de courrier.
+;
+MSG_Mailer_WinTitle
+Édition logiciel de courrier
+;
+MSG_Mailer_NewMailer
+Nouveau logiciel de courrier
+;
+MSG_Mailer_Write
+Écrire _message
+;
+MSG_Mailer_Write_Help
+Commande ARexx pour ouvrir une fenêtre\n\
+\"Ecriture d'un nouveau message\".
+;
+MSG_Mailer_PopAddress
+Adresse
+;
+MSG_Mailer_Popsubject
+Sujet
+;
+MSG_Mailer_PopBodyText
+Texte
+;
+MSG_Mailer_PopBodyFile
+Fichier corps
+;
+MSG_FTP_List_Help
+Clients FTP.
+;
+MSG_FTP_WinTitle
+Édition client FTP
+;
+MSG_FTP_NewFTP
+Nouveau client FTP
+;
+MSG_FTP_RemoveURLQualifier
+Suppri_me \"ftp://\"
+;
+MSG_FTP_RemoveURLQualifier_Help
+Supprime le texte \"ftp://\"\n\
+de l'URL si activé.
+;
+MSG_Misc_Options
+Options
+;
+MSG_Misc_Defaults
+Défauts
+;
+MSG_Misc_Prepend
+_Ajouter  \"http://\" aux URLs sans préfixe
+;
+MSG_Misc_Prepend_Help
+Ajoute \"http://\" aux URLs sans protocole,\n\
+de manière à les ouvrir dans un navigateur.
+;
+MSG_Misc_UseMailer
+Envoyer les URLs _mailto: au logiciel de courrier
+;
+MSG_Misc_UseMailer_Help
+Si activé, les URLs avec le protocole \"mailto:\"\n\
+sont envoyées au logiciel de courrier, sinon\n\
+elles sont envoyées au navigateur.
+;
+MSG_Misc_UseFTP
+Envoyer les URLs \"ftp://\" au client FTP
+;
+MSG_Misc_UseFTP_Help
+Si activé, les URLs avec le protocole \"ftp:\"\n\
+sont envoyées au client FTP, sinonc elles sont\n\
+envoyées au navigateur.
+;
+MSG_Misc_Show
+Montrer/dés_iconifier l'application
+;
+MSG_Misc_Show_Help
+Si activé, l'application est désiconifiée\n\
+avant de lui transmettre l'URL.
+;
+MSG_Misc_Bring
+Passer l'écran de l'application au _premier plan
+;
+MSG_Misc_Bring_Help
+Si activé, l'écran de l'application est passé\n\
+au premier plan avant de lui transmettre l'URL.
+;
+MSG_Misc_Open
+Ouvrir l'URl dans une nouvelle _fenêtre
+;
+MSG_Misc_Open_Help
+Si activé, l'URL est ouverte dans\n\
+une nouvelle application ou onglet.
+;
+MSG_Misc_Launch
+_Lancer l'application
+;
+MSG_Misc_Launch_Help
+Si activé, une nouvelle application est\n\
+lancée, si aucune ne fonctionne déjà.
+;
+MSG_Pens_WinTitle
+Édition des couleurs
+;
+MSG_Pens_EnabledPen
+_Activé
+;
+MSG_Pens_EnabledPen_Help
+Couleur du voyant des entrées activées.
+;
+MSG_Pens_EnabledPen_WinTitle
+Voyant "activé"
+;
+MSG_Pens_DisabledPen
+_Désactivé
+;
+MSG_Pens_DisabledPen_Help
+Couleur du voyant des entrées désactivées.
+;
+MSG_Pens_DisabledPen_WinTitle
+Voyant "désactivé"
+;
+MSG_Pens_DetailPen
+Détail
+;
+MSG_Pens_DetailPen_Help
+Couleur du voyant des entrées ayant des détails.
+;
+MSG_Pens_DetailPen_WinTitle
+Voyant "détail"
+;
+MSG_About_WinTitle
+À propos de OpenURL
+;
+MSG_About_Info
+Informations
+; Information
+;
+MSG_About_Version
+Version :
+; Version:
+;
+MSG_About_Authors
+Auteurs :
+; Authors:
+;
+MSG_About_Support
+Support :
+; Support:
+;
+MSG_About_ThirdParts
+Participations :
+; Third parts
+;
+MSG_About_OfCourse
+, bien sûr !
+; , of course!
+;
+MSG_About_Translation
+Traduction française par
+;
+;
+MSG_About_Translator
+Alexandre Balaban\n\
+et l'Ours
+;
+;
+MSG_About_TranslatorURL
+http://www.balaban.name/\n\
+http://www.noname.fr/amiga-francophonage
+;
+;
+MSG_About_OK
+_OK
+; _OK
+;
