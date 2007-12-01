@@ -67,18 +67,18 @@ CONST struct KeyMapNode km =
 STATIC CONST UBYTE lokeymaptypes[] =
 {
     S, 		/* 00 */
-    S, 		/* 01 */
+    S|A,	/* 01 */
     S|A,	/* 02 */
     S|A,	/* 03 */
-    S|A,	/* 04 */
+    S,		/* 04 */
     S,		/* 05 */
-    S,		/* 06 */
-    S,	    	/* 07 */
-    S,	    	/* 08 */
+    S|A,	/* 06 */
+    S|A,    	/* 07 */
+    S|A,    	/* 08 */
     S,	    	/* 09 */
     S,	    	/* 0A */
-    S,	    	/* 0B */
-    S, 		/* 0C */
+    S|A,    	/* 0B */
+    S|A,	/* 0C */
     N, 		/* 0D */
     N, 		/* 0E */
     S|A, 	/* 0F */
@@ -92,7 +92,7 @@ STATIC CONST UBYTE lokeymaptypes[] =
     V,	 	/* 17 i */
     V,	 	/* 18 o */
     V,	 	/* 19 p */
-    S, 		/* 1A */
+    S|A,	/* 1A */
     S|A, 	/* 1B */
     S|A, 	/* 1C */
     S|A, 	/* 1D */
@@ -108,8 +108,8 @@ STATIC CONST UBYTE lokeymaptypes[] =
     V, 		/* 27 k */
     V,	 	/* 28 l */
     S, 		/* 29 */
-    S, 		/* 2A */
-    S, 		/* 2B */
+    S|A,	/* 2A */
+    S|A,	/* 2B */
     N, 		/* 2C */
     N, 		/* 2D */
     N, 		/* 2E */
@@ -222,13 +222,13 @@ STATIC CONST IPTR lokeymap[] =
 {
     /*---- 1st QWERTY row - 0x00 to 0x0F */
     BYTES(0x93,0x84,0xB0,0xA7),
-    BYTES(0x94,0xA6,'+' ,'1' ),
+    BYTES(0x94,0x7C,'+' ,'1' ),
     BYTES(0x99,'@' ,0x22,'2' ),
     BYTES(0xB6,'#' ,'*' ,'3' ),
     BYTES(0xA3,0xB0,0xE7,'4' ),
     BYTES(0xBC,0xA7,'%' ,'5' ),
     BYTES(0xBD,0xAC,'&' ,'6' ),
-    BYTES(0xBE,0x7C,0x2F,'7' ),
+    BYTES(0xBE,0xA6,0x2F,'7' ),
     BYTES('.' ,0xA2,'(' ,'8' ),
     BYTES('.' ,0x83,')' ,'9' ),
     BYTES(0xAF,'.' ,'=' ,'0' ),
