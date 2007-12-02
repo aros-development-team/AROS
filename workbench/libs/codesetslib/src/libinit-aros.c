@@ -64,7 +64,7 @@ BOOL LibInit(struct LibraryHeader *base)
 
 /****************************************************************************/
 
-void LibExpunge(struct LibraryHeader *base)
+int LibExpunge(struct LibraryHeader *base)
 {
   // free all our private data and stuff.
   ObtainSemaphore(&base->libSem);
@@ -75,6 +75,8 @@ void LibExpunge(struct LibraryHeader *base)
   ReleaseSemaphore(&base->libSem);
 
   CodesetsBase = NULL;
+
+  return TRUE;
 }
 
 /****************************************************************************/

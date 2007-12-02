@@ -32,6 +32,6 @@ FILES := \
 
 #MM
 workbench-libs-codesets-clean :
-	$(RM) $(GENDIR)/workbench/libs/codesetslib
+	$(RM) $(GENDIR)/workbench/libs/codesets-extern
 
 %common
