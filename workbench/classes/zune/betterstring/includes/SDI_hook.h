@@ -184,6 +184,67 @@
   #endif
 
   #define ENTRY(func) (APTR)&Gate_##func
+#elif defined __AROS__
+  #define AROS_HOOKPROTO(name, ret, objtype, obj, paramtype, param) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, hook, A0), \
+      AROS_UFHA(objtype, obj, A2), \
+      AROS_UFHA(paramtype, param, A1))
+  #define AROS_HOOKPROTONO(name, ret, paramtype, param) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, hook, A0), \
+      AROS_UFHA(APTR, unused_obj, A2), \
+      AROS_UFHA(paramtype, param, A1))
+  #define AROS_HOOKPROTONP(name, ret, objtype, obj) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, hook, A0), \
+      AROS_UFHA(objtype, obj, A2), \
+      AROS_UFHA(APTR, unused_param, A1))
+  #define AROS_HOOKPROTONONP(name, ret) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, hook, A0), \
+      AROS_UFHA(APTR, unused_obj, A2), \
+      AROS_UFHA(APTR, unused_param, A1))
+  #define AROS_HOOKPROTONH(name, ret, objtype, obj, paramtype, param) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, unused_hook, A0), \
+      AROS_UFHA(objtype, obj, A2), \
+      AROS_UFHA(paramtype, param, A1))
+  #define AROS_HOOKPROTONHNO(name, ret, paramtype, param) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, unused_hook, A0), \
+      AROS_UFHA(APTR, unused_obj, A2), \
+      AROS_UFHA(paramtype, param, A1))
+  #define AROS_HOOKPROTONHNP(name, ret, objtype, obj) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, hook, A0), \
+      AROS_UFHA(objtype, obj, A2), \
+      AROS_UFHA(APTR, unused_param, A1))
+  #define AROS_HOOKPROTONHNONP(name, ret) \
+    AROS_UFH3S(ret, name, \
+      AROS_UFHA(struct Hook *, unused_hook, A0), \
+      AROS_UFHA(APTR, unused_obj, A2), \
+      AROS_UFHA(APTR, unused_param, A1))
+
+  #define HOOK_INIT AROS_USERFUNC_INIT
+  #define HOOK_EXIT AROS_USERFUNC_EXIT
+
+  #define DISPATCHERPROTO(name) \
+    AROS_UFH3(IPTR, name, \
+      AROS_UFHA(struct IClass *, cl, A0), \
+      AROS_UFHA(Object *, obj, A2), \
+      AROS_UFHA(Msg, msg, A1))
+
+  #define DISPATCHER_INIT AROS_USERFUNC_INIT
+  #define DISPATCHER_EXIT AROS_USERFUNC_EXIT
+
+  #define ENTRY(func) (APTR)func
+  #define MakeHook(hookname, funcname) struct Hook hookname = {{NULL, NULL}, \
+    (HOOKFUNC)funcname, NULL, NULL}
+  #define MakeHookWithData(hookname, funcname, data) struct Hook hookname =  \
+    {{NULL, NULL}, (HOOKFUNC)funcname, NULL, (APTR)data}
+  #define MakeStaticHook(hookname, funcname) static struct Hook hookname =   \
+    {{NULL, NULL}, (HOOKFUNC)funcname, NULL, NULL}
 #else
   #define DISPATCHERPROTO(name) SAVEDS ASM ULONG  name(REG(a0,               \
     struct IClass * cl), REG(a2, Object * obj), REG(a1, Msg msg))

@@ -61,8 +61,10 @@ struct NewMenu PopupMenuData[] =
 };
 */
 
-#ifndef MUIM_Backfill
+#ifndef MUIA_CustomBackfill
 #define MUIA_CustomBackfill                 0x80420a63
+#endif
+#ifndef MUIM_Backfill
 #define MUIM_Backfill                       0x80428d73
 struct  MUIP_Backfill { ULONG MethodID; LONG left; LONG top; LONG right; LONG bottom; LONG xoffset; LONG yoffset; };
 #endif

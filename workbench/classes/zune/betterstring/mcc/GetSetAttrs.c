@@ -172,7 +172,7 @@ ULONG Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 			case MUIA_String_Integer:
 				tag->ti_Tag = TAG_IGNORE;
-				snprintf(IntegerString, 11, "%ld", ti_Data);
+				snprintf(IntegerString, 11, "%d", ti_Data);
 				ti_Data = (ULONG)IntegerString;
 				/* The missing break is intended! */
 
