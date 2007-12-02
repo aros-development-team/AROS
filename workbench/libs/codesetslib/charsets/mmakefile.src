@@ -1,0 +1,13 @@
+#   $Id$
+
+#   AROS metamakefile for codesetslib
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-libs-codesets : workbench-libs-codesets-charsets
+
+#MM workbench-libs-codesets-charsets
+
+%copy_dir_recursive mmake=workbench-libs-codesets-charsets src=$(TOP)/$(CURDIR) dst=$(AROS_LIBS)/Charsets
+
+%common
