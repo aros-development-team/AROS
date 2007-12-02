@@ -79,6 +79,17 @@ EndIf
 
 C:Decoration <NIL: >NIL: 
 
+Assign EXISTS Extras: >nil:
+If WARN
+    If Exists $EXTRASPATH
+        Assign Extras: $EXTRASPATH
+    EndIf
+Endif
+Assign EXISTS Extras: >nil:
+If WARN
+    Assign Extras: sys:Extras
+EndIf
+
 If EXISTS ENV:SYS/Packages
     List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS $SYS/Packages/%s*NCD $SYS/Packages/%s*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
     Execute T:P
