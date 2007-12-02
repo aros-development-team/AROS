@@ -42,12 +42,6 @@
 #include "TextEditor_mcc.h"
 #include "private.h"
 
-#ifdef __AROS__
-#include "mui/NFloattext_mcc.h"
-#undef FloattextObject
-#define FloattextObject NFloattextObject
-#endif
-
 #if !defined(__amigaos4__) || (INCLUDE_VERSION < 50)
 struct PathNode
 {
