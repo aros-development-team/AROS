@@ -1,0 +1,38 @@
+#   $Id$
+
+#   AROS metamakefile for openurl
+
+include $(TOP)/config/make.cfg
+
+FILES := \
+    libinit-aros \
+    init \
+    api \
+    handler \
+    prefs \
+    utils
+
+USER_INCLUDES := -I../include/aros
+
+#MM- workbench-libs-openurl : workbench-libs-openurl-lib
+
+#MM- workbench-libs-openurl-lib : linklibs
+
+#MM workbench-libs-openurl-lib-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+
+%build_module mmake=workbench-libs-openurl-lib \
+    modname=openurl modtype=library \
+    files=$(FILES) \
+    uselibs="amiga rom"
+
+#MM workbench-libs-openurl-clean : workbench-libs-openurl-lib-clean
+
+#MM
+workbench-libs-openurl-clean :
+	$(RM) $(GENDIR)/workbench/libs/openurl
+
+%common

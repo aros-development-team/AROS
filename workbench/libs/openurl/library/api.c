@@ -16,11 +16,27 @@
 #include "openurl.library_rev.h"
 #include <exec/execbase.h>
 
+#ifdef __AROS__
+// MAXRMARG doesn't exist in AROS's headers
+// The value 15 comes from the AOS3.9 SDK
+#define MAXRMARG (15)
+#endif
+
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH2(ULONG, URL_OpenA, 
+    AROS_LHA(STRPTR, URL, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct Library *, library, 5, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBCALL
 URL_OpenA(REG(a0,UBYTE *URL),REG(a1,struct TagItem *attrs))
 {
+#endif
     struct List portList;
     UBYTE       buf[256], *fullURL = NULL, *pubScreenName;
     ULONG       res, show, toFront, newWindow, launch, httpPrepend = FALSE;
@@ -93,13 +109,26 @@ done:
     if (httpPrepend && fullURL && fullURL!=buf) freeVecPooled(fullURL);
 
     return res;
+
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH1(struct URL_Prefs *, URL_GetPrefsA, 
+    AROS_LHA(struct TagItem *, attrs, A0),
+    struct Library *, library, 12, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct URL_Prefs * LIBCALL
 URL_GetPrefsA(REG(a0,struct TagItem *attrs))
 {
+#endif
     struct URL_Prefs *p;
     ULONG            mode;
 
@@ -144,21 +173,45 @@ URL_GetPrefsA(REG(a0,struct TagItem *attrs))
     ReleaseSemaphore(&lib_prefsSem);
 
     return p;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH0(struct URL_Prefs *, URL_OldGetPrefs, 
+    struct Library *, library, 6, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct URL_Prefs * LIBCALL
 URL_OldGetPrefs(void)
 {
+#endif
     return URL_GetPrefsA(NULL);
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH2(VOID, URL_FreePrefsA, 
+    AROS_LHA(struct URL_Prefs *, p, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct Library *, library, 13, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 void LIBCALL
 URL_FreePrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
 {
+#endif
     if (p)
     {
         freeList((struct List *)&p->up_BrowserList,sizeof(struct URL_BrowserNode));
@@ -166,21 +219,46 @@ URL_FreePrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
         freeList((struct List *)&p->up_FTPList,sizeof(struct URL_FTPNode));
         freePooled(p,sizeof(*p));
     }
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH1(VOID, URL_OldFreePrefs, 
+    AROS_LHA(struct URL_Prefs *, p, A0),
+    struct Library *, library, 7, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 void LIBCALL
 URL_OldFreePrefs(REG(a0,struct URL_Prefs *p))
 {
+#endif
     URL_FreePrefsA(p,NULL);
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH2(ULONG, URL_SetPrefsA, 
+    AROS_LHA(struct URL_Prefs *, p, A0),
+    AROS_LHA(struct TagItem *, attrs, A1),
+    struct Library *, library, 14, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBCALL
 URL_SetPrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
 {
+#endif
     ULONG res = FALSE;
 
     if (p->up_Version==PREFS_VERSION)
@@ -189,7 +267,7 @@ URL_SetPrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
 
         ObtainSemaphore(&lib_prefsSem);
 
-        if (newp = copyPrefs(p))
+        if ((newp = copyPrefs(p)))
         {
             newp->up_Version = PREFS_VERSION;
             newp->up_Flags &= ~UPF_ISDEFAULTS;
@@ -197,7 +275,7 @@ URL_SetPrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
             URL_FreePrefsA(lib_prefs,NULL);
             lib_prefs = newp;
 
-            if (res = savePrefs(DEF_ENV,lib_prefs))
+            if ((res = savePrefs(DEF_ENV,lib_prefs)))
             {
                 if (GetTagData(URL_SetPrefs_Save,FALSE,attrs))
                 {
@@ -210,52 +288,88 @@ URL_SetPrefsA(REG(a0,struct URL_Prefs *p),REG(a1,struct TagItem *attrs))
     }
 
     return res;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH2(ULONG, URL_OldSetPrefs, 
+    AROS_LHA(struct URL_Prefs *, p, A0),
+    AROS_LHA(BOOL, save, D0),
+    struct Library *, library, 8, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBCALL
 URL_OldSetPrefs(REG(a0,struct URL_Prefs *p),REG(d0,ULONG save))
 {
-    struct TagItem stags[] = {URL_SetPrefs_Save,0,TAG_DONE};
+#endif
+    struct TagItem stags[] = { {URL_SetPrefs_Save,0} , {TAG_DONE} };
 
     stags[0].ti_Data = save;
 
     return URL_SetPrefsA(p,stags);
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH0(struct URL_Prefs *, URL_OldGetDefaultPrefs, 
+    struct Library *, library, 9, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 struct URL_Prefs * LIBCALL
 URL_OldGetDefaultPrefs(void)
 {
-    struct TagItem gtags[] = {URL_GetPrefs_Mode,URL_GetPrefs_Mode_Default,TAG_DONE};
+#endif
+    struct TagItem gtags[] = { {URL_GetPrefs_Mode,URL_GetPrefs_Mode_Default} , {TAG_DONE} };
 
     return URL_GetPrefsA(gtags);
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH1(ULONG, URL_LaunchPrefsAppA, 
+    AROS_LHA(struct TagItem *, tags, A0),
+    struct Library *, library, 15, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBCALL
 URL_LaunchPrefsAppA(REG(a0,struct TagItem *attrs))
 {
+#endif
     BPTR in;
 
-    if (in  = Open("NIL:",MODE_OLDFILE))
+    if ((in  = Open("NIL:",MODE_OLDFILE)))
     {
         BPTR out;
 
-        if (out = Open("NIL:",MODE_OLDFILE))
+        if ((out = Open("NIL:",MODE_OLDFILE)))
         {
             UBYTE      name[256];
-            struct TagItem stags[] = {SYS_Input,       0,
-                                      SYS_Output,      0,
-                                      NP_StackSize,    16000,
-                                      SYS_Asynch,      TRUE,
+            struct TagItem stags[] = {{SYS_Input,       0},
+                                      {SYS_Output,      0},
+                                      {NP_StackSize,    16000},
+                                      {SYS_Asynch,      TRUE},
                                       #ifdef __MORPHOS__
-                                      NP_PPCStackSize, 32000,
+                                      {NP_PPCStackSize, 32000},
                                       #endif
-                                      TAG_DONE};
+                                      {TAG_DONE}};
 
             if (GetVar("OpenURL_Prefs_Path",name,sizeof(name),GVF_GLOBAL_ONLY)<=0)
                 strcpy(name,"Sys:Prefs/OpenURL");
@@ -271,21 +385,45 @@ URL_LaunchPrefsAppA(REG(a0,struct TagItem *attrs))
     }
 
     return FALSE;
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH0(ULONG, URL_OldLaunchPrefsApp, 
+    struct Library *, library, 10, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBCALL
 URL_OldLaunchPrefsApp(void)
 {
+#endif
     return URL_LaunchPrefsAppA(NULL);
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH2(ULONG, URL_GetAttr, 
+    AROS_LHA(ULONG, attr, D0),
+    AROS_LHA(ULONG *, storage, A0),
+    struct Library *, library, 16, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+#else
 ULONG LIBCALL
 URL_GetAttr(REG(d0,ULONG attr),REG(a0,ULONG *storage))
 {
+#endif
     switch (attr)
     {
         case URL_GetAttr_Version:          *storage = VERSION;        return TRUE;
@@ -300,6 +438,9 @@ URL_GetAttr(REG(d0,ULONG attr),REG(a0,ULONG *storage))
 
         default: return FALSE;
     }
+#ifdef __AROS__
+    AROS_LIBFUNC_EXIT
+#endif
 }
 
 /**************************************************************************/
@@ -308,6 +449,11 @@ URL_GetAttr(REG(d0,ULONG attr),REG(a0,ULONG *storage))
 LONG dispatch(void)
 {
     struct RexxMsg *msg = (struct RexxMsg *)REG_A0;
+#elif defined(__AROS__)
+// FIXME: implement me correctly
+LONG dispatch(void)
+{
+    struct RexxMsg *msg = 0;
 #else
 LONG ASM SAVEDS dispatch(REG(a0,struct RexxMsg *msg),REG(a1,UBYTE **resPtr))
 {
@@ -364,6 +510,8 @@ LONG ASM SAVEDS dispatch(REG(a0,struct RexxMsg *msg),REG(a1,UBYTE **resPtr))
 
 #ifdef __MORPHOS__
     return (REG_A0 = (ULONG)CreateArgstring(res ? "1" : "0",1)) ? 0 : 3;
+#elif defined(__AROS__)
+    return 0; // FIXME: implement me correctly
 #else
     return (*resPtr = CreateArgstring(res ? "1" : "0",1)) ? 0 : 3;
 #endif
@@ -371,3 +519,16 @@ LONG ASM SAVEDS dispatch(REG(a0,struct RexxMsg *msg),REG(a1,UBYTE **resPtr))
 
 /**************************************************************************/
 
+#ifdef __AROS__
+AROS_LH1(VOID, DoFunction, 
+    AROS_LHA(STRPTR, rxmsg, A0),
+    struct Library *, library, 11, Openurl
+)
+{
+    AROS_LIBFUNC_INIT
+// FIXME: implement my correctly
+    AROS_LIBFUNC_EXIT
+}
+#endif
+
+/**************************************************************************/

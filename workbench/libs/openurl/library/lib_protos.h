@@ -18,6 +18,9 @@ void freeBase ( void );
 ULONG initBase ( void );
 
 /* api.c */
+#ifdef __AROS__
+#include <proto/openurl.h>
+#else /* __AROS__ */
 ULONG LIBCALL URL_OpenA ( REG (a0 ,UBYTE *URL ), REG (a1 ,struct TagItem *attrs ));
 struct URL_Prefs *LIBCALL URL_GetPrefsA ( REG (a0 ,struct TagItem *attrs ));
 struct URL_Prefs *LIBCALL URL_OldGetPrefs ( void );
@@ -34,6 +37,7 @@ LONG dispatch ( void );
 #else
 LONG LIBCALL dispatch ( REG (a0 , struct RexxMsg *msg ) , REG (a1 , UBYTE **resPtr ));
 #endif
+#endif /* __AROS__ */
 
 #ifdef __MORPHOS__
 /* morphos.c */
@@ -71,7 +75,7 @@ LONG               VARARGS68K OS4_dispatch ( struct OpenURLIFace * Self, struct 
 #endif
 
 /* handler.c */
-#ifdef __MORPHOS__
+#if defined(__MORPHOS__) || defined(__AROS__)
 void handler ( void );
 #else
 void SAVEDS handler ( void );
@@ -100,6 +104,8 @@ void freeVecPooled ( APTR mem );
 #define msprintf(to, fmt, ...) ({ ULONG _tags[] = { __VA_ARGS__ }; RawDoFmt(fmt, _tags, (void (*)(void)) 0, to); })
 #elif defined(__amigaos4__)
 void VARARGS68K msprintf ( UBYTE *to , UBYTE *fmt , ...);
+#elif defined(__AROS__)
+#define msprintf __sprintf
 #else
 void STDARGS msprintf ( UBYTE *to , UBYTE *fmt , ...);
 #endif

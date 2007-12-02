@@ -65,11 +65,13 @@ freeBase(void)
         UtilityBase = NULL;
     }
 
+#if defined(__amigaos4__)
     if( IDOS )
     {
         DropInterface( (struct Interface*)IDOS );
         IDOS = NULL;
     }
+#endif
 
     if (DOSBase)
     {
