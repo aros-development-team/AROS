@@ -1,0 +1,19 @@
+README.aros
+===========
+
+The codesets.library is hosted on Sourceforge:
+http://sourceforge.net/projects/codesetslib/
+
+Avoid by all means that the AROS port is modified independently from
+the original Sourceforge project.
+
+TODO
+----
+* Tests (endianness etc.)
+* Adopt SDI macros to AROS and remove AROS compatibility macros
+* Use stackswap code from libint.c for AROS
+* Merge libinit-aros.c into libinit.c
+
+LEGAL
+-----
+codesets.library is released under the GNU Lesser General Public License.

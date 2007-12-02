@@ -1,0 +1,12 @@
+# $Id$
+
+# AROS metamakefile for codesetslib
+
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES 	 := codesets.h
+
+#MM includes-copy
+%copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=libraries
+
+%common
