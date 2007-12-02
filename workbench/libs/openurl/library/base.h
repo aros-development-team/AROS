@@ -39,7 +39,11 @@ extern ULONG                  lib_revision;
 
 extern struct ExecBase        *SysBase;
 extern struct DosLibrary      *DOSBase;
+#ifdef __AROS__
+extern struct UtilityBase     *UtilityBase;
+#else
 extern struct Library         *UtilityBase;
+#endif
 extern struct Library         *IFFParseBase;
 extern struct RxsLib          *RexxSysBase;
 

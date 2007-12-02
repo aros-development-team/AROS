@@ -12,9 +12,10 @@
 **  Ported to OS4 by Alexandre Balaban <alexandre@balaban.name>
 */
 
-
+#ifndef __AROS__
 #define __NOLIBBASE__
 #define __USE_SYSBASE
+#endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -24,7 +25,9 @@
 #include <proto/rexxsyslib.h>
 
 #include <clib/alib_protos.h>
+#ifndef __AROS__
 #include <clib/debug_protos.h>
+#endif
 
 #include <libraries/openurl.h>
 
@@ -33,6 +36,7 @@
 #include <ctype.h>
 
 #include "base.h"
+
 #include <macros.h>
 
 /**************************************************************************/

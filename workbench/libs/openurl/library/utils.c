@@ -857,7 +857,7 @@ isdigits(UBYTE *str)
 
 /**************************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__amigaos4__)
+#if !defined(__MORPHOS__) && !defined(__amigaos4__) && !defined(__AROS__)
 static UWORD fmtfunc[] = { 0x16c0, 0x4e75 };
 void STDARGS
 msprintf(UBYTE *buf,UBYTE *fmt,...)

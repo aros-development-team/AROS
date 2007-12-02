@@ -1,5 +1,16 @@
 /* Debuggin defines used by SmartReadArgs */
 
+#ifdef __AROS__
+
+#ifdef DEBUG_CODE
+#define DEBUG 1
+#endif /* DEBUG_CODE */
+
+#define DEBUG 1
+#include <aros/debug.h>
+
+#else /* __AROS__ */
+
 #ifdef __GNUC__
 /* Debug output goes to stdout for GCC as debug.lib doesn't seem to be
  * included in Geek Gadgets' distribution */
@@ -18,4 +29,4 @@ extern void kprintf(char *fmt,...);
 #define D(x)
 #endif
 
-
+#endif /* __AROS__ */

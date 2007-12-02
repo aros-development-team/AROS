@@ -93,9 +93,13 @@
 
 /* --------------------------- library bases ------------------------------ */
 extern struct Library *IconBase;
+#ifdef __AROS__
+extern struct UtilityBase *UtilityBase;
+#else
 extern struct Library *UtilityBase;
+#endif
 
-#if defined(__GNUC__) && !defined(__amigaos4__)
+#if defined(__GNUC__) && !defined(__amigaos4__) && !defined(__AROS__)
 extern struct WBStartup *_WBenchMsg;
 #endif
 
@@ -265,7 +269,7 @@ int main(int argc, STRPTR argv[])
 
    /* Obtain WBStartup; depends on your compiler environment */
    struct WBStartup *wb_startup = NULL;
-#if defined(__GNUC__) && !defined(__amigaos4__)
+#if defined(__GNUC__) && !defined(__amigaos4__) && !defined(__AROS__)
    wb_startup = _WBenchMsg;
 #else
    if (argc == 0)
