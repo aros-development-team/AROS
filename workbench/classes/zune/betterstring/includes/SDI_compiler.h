@@ -123,7 +123,7 @@
     #define INLINE static __inline __attribute__((always_inline))
   #endif
   /* we have to distinguish between AmigaOS4 and MorphOS */
-  #if defined(__PPC__)
+  #if defined(__PPC__) || defined(__AROS__)
     #define REG(reg,arg) arg
     #define SAVEDS
     #define STDARGS
