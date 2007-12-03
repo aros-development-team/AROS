@@ -1123,6 +1123,8 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 		    ss->scriptLock = Lock(commandName, SHARED_LOCK);
 		}
 	    }
+	    else
+		SetIoErr(ERROR_FILE_NOT_OBJECT);
 	}
 
 	Close(file);
