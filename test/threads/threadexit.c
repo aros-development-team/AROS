@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 void *thread_main(void *data) {
-    ThreadIdentifier id = CurrentThread();
+    uint32_t id = CurrentThread();
 
     printf("[%d] starting\n", id);
 
@@ -17,7 +17,7 @@ void *thread_main(void *data) {
 
 int main (int argc, char **argv) {
     int i;
-    ThreadIdentifier id[10], ret;
+    uint32_t id[10], ret;
 
     for (i = 0; i < 10; i++) {
         id[i] = CreateThread(thread_main, NULL);

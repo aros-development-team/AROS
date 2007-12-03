@@ -20,7 +20,7 @@
         AROS_LH1(void, SignalCondition,
 
 /*  SYNOPSIS */
-        AROS_LHA(Condition, cond, A0),
+        AROS_LHA(void *, cond, A0),
 
 /*  LOCATION */
         struct ThreadBase *, ThreadBase, 18, Thread)
@@ -63,14 +63,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    _Condition c = (_Condition) cond;
-    _CondWaiter waiter;
+    struct _Condition *c = (struct _Condition *) cond;
+    struct _CondWaiter *waiter;
 
     assert(c != NULL);
 
     /* safely remove a waiter from the list */
     ObtainSemaphore(&c->lock);
-    waiter = (_CondWaiter) REMHEAD(&c->waiters);
+    waiter = (struct _CondWaiter *) REMHEAD(&c->waiters);
     if (waiter != NULL)
         c->count--;
     ReleaseSemaphore(&c->lock);

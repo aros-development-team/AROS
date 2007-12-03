@@ -19,7 +19,7 @@
         AROS_LH1(void, UnlockMutex,
 
 /*  SYNOPSIS */
-        AROS_LHA(Mutex, mutex, A0),
+        AROS_LHA(void *, mutex, A0),
 
 /*  LOCATION */
         struct ThreadBase *, ThreadBase, 14, Thread)

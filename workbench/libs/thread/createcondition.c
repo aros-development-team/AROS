@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(Condition, CreateCondition,
+        AROS_LH0(void *, CreateCondition,
 
 /*  SYNOPSIS */
 
@@ -49,7 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    _Condition c;
+    struct _Condition *c;
 
     /* allocate */
     if ((c = AllocMem(sizeof(struct _Condition), MEMF_PUBLIC)) == NULL)
@@ -60,7 +60,7 @@
     NEWLIST(&c->waiters);
     c->count = 0;
 
-    return (Condition) c;
+    return (void *) c;
 
     AROS_LIBFUNC_EXIT
 } /* CreateCondition */

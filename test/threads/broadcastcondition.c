@@ -7,13 +7,13 @@
 #include <stdint.h>
 
 struct thread_data {
-    Mutex mutex;
-    Condition cond;
+    void *mutex;
+    void *cond;
 };
 
 void *waiter_thread(void *data) {
     struct thread_data *td = (struct thread_data *) data;
-    ThreadIdentifier id = CurrentThread();
+    uint32_t id = CurrentThread();
 
     printf("[%d] starting, locking the mutex\n", id);
     LockMutex(td->mutex);

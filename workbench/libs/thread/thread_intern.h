@@ -17,18 +17,9 @@
 #include <exec/semaphores.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
-#include <stdint.h>
 
 #include <libraries/thread.h>
-
-/* internal definitions of mutexes and conditions (they're void * in the
- * public header */
-typedef struct SignalSemaphore  *_Mutex;
-typedef struct _Condition       *_Condition;
-
-/* internal types */
-typedef struct _Thread          *_Thread;
-typedef struct _CondWaiter      *_CondWaiter;
+#include <stdint.h>
 
 /* a single thread */
 struct _Thread {
@@ -36,7 +27,7 @@ struct _Thread {
 
     struct SignalSemaphore  lock;       /* lock for the this thread data */
 
-    ThreadIdentifier        id;         /* numerical thread id. read only,
+    uint32_t                id;         /* numerical thread id. read only,
                                          * no need to acquire the lock */
 
     struct Task             *task;      /* the exec task for this thread, or 
@@ -45,9 +36,9 @@ struct _Thread {
     void                    *result;    /* storage for the thread exit value
                                          * for thread completion waiters */
 
-    _Condition              exit;       /* condition for threads waiting for
+    struct _Condition       *exit;      /* condition for threads waiting for
                                          * this thread to finish */
-    _Mutex                  exit_mutex; /* associated mutex */
+    void                    *exit_mutex; /* associated mutex */
     int                     exit_count; /* number of threads waitering */
 
     BOOL                    detached;   /* flag, thread is detached */
@@ -76,15 +67,15 @@ struct ThreadBase {
 
     struct SignalSemaphore  lock;       /* lock for this base */
 
-    ThreadIdentifier        nextid;     /* numeric identifier to be issued to
+    uint32_t                nextid;     /* numeric identifier to be issued to
                                          * the next thread created */
 
     struct List             threads;    /* list of threads */
 };
 
 /* helper functions for finding thread data */
-static inline _Thread _getthreadbyid(ThreadIdentifier id, struct ThreadBase *ThreadBase) {
-    _Thread thread, next;
+static inline struct _Thread *_getthreadbyid(uint32_t id, struct ThreadBase *ThreadBase) {
+    struct _Thread *thread, *next;
     ForeachNodeSafe(&ThreadBase->threads, thread, next) {
         if (thread->id == id)
             return thread;
@@ -92,8 +83,8 @@ static inline _Thread _getthreadbyid(ThreadIdentifier id, struct ThreadBase *Thr
     return NULL;
 }
 
-static inline _Thread _getthreadbytask(struct Task *task, struct ThreadBase *ThreadBase) {
-    _Thread thread, next;
+static inline struct _Thread *_getthreadbytask(struct Task *task, struct ThreadBase *ThreadBase) {
+    struct _Thread *thread, *next;
     ForeachNodeSafe(&ThreadBase->threads, thread, next) {
         if (thread->task == task)
             return thread;

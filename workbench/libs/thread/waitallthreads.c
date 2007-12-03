@@ -48,7 +48,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    _Thread thread, next;
+    struct _Thread *thread, *next;
 
     ForeachNodeSafe(&ThreadBase->threads, thread, next)
         WaitThread(thread->id, NULL);
