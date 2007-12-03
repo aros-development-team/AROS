@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Country data for cesko
@@ -51,7 +51,7 @@ struct CountryPrefs ceskoPrefs =
     2, 2,
 
     /* Currency symbol, Small currency symbol */
-    "Kç", "h",
+    "Kè", "h",
 
     /* Int CS, this is the ISO 4217 symbol, followed by the character to
        separate that symbol from the rest of the money. (\x00 for none).
