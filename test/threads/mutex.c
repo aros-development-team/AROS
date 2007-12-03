@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 void *locker_thread(void *data) {
-    Mutex mutex = (Mutex) data;
-    ThreadIdentifier id = CurrentThread();
+    void *mutex = data;
+    uint32_t id = CurrentThread();
 
     printf("[%d] starting, locking the mutex\n", id);
     LockMutex(mutex);
@@ -23,8 +23,8 @@ void *locker_thread(void *data) {
 }
 
 void *waiter_thread(void *data) {
-    Mutex mutex = (Mutex) data;
-    ThreadIdentifier id = CurrentThread();
+    void *mutex = data;
+    uint32_t id = CurrentThread();
 
     printf("[%d] starting, locking the mutex\n", id);
     LockMutex(mutex);
@@ -38,8 +38,8 @@ void *waiter_thread(void *data) {
 }
 
 int main (int argc, char **argv) {
-    Mutex mutex;
-    ThreadIdentifier tl, tw;
+    void *mutex;
+    uint32_t tl, tw;
 
     printf("creating mutex\n");
     mutex = CreateMutex();

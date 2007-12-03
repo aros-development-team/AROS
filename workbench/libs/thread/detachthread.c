@@ -18,7 +18,7 @@
         AROS_LH1(BOOL, DetachThread,
 
 /*  SYNOPSIS */
-        AROS_LHA(ThreadIdentifier, thread_id, D0),
+        AROS_LHA(uint32_t, thread_id, D0),
 
 /*  LOCATION */
         struct ThreadBase *, ThreadBase, 8, Thread)
@@ -68,7 +68,7 @@
     assert(thread_id);
 
     /* get thread data */
-    _Thread thread = _getthreadbyid(thread_id, ThreadBase);
+    struct _Thread *thread = _getthreadbyid(thread_id, ThreadBase);
     if (thread == NULL)
         return FALSE;
 

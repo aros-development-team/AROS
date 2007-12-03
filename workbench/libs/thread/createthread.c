@@ -19,11 +19,11 @@
 #include <assert.h>
 
 struct trampoline_data {
-    struct ThreadBase       *ThreadBase;
-    struct Task             *parent;
-    ThreadFunction          entry;
-    void                    *data;
-    ThreadIdentifier        id;
+    struct ThreadBase   *ThreadBase;
+    struct Task         *parent;
+    ThreadEntryFunction entry;
+    void                *data;
+    uint32_t            id;
 };
 
 static void entry_trampoline(void);
@@ -31,11 +31,11 @@ static void entry_trampoline(void);
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(ThreadIdentifier, CreateThread,
+        AROS_LH2(uint32_t, CreateThread,
 
 /*  SYNOPSIS */
-        AROS_LHA(ThreadFunction, entry, A0),
-        AROS_LHA(void *,         data,  A1),
+        AROS_LHA(ThreadEntryFunction, entry, A0),
+        AROS_LHA(void *,              data,  A1),
 
 /*  LOCATION */
         struct ThreadBase *, ThreadBase, 5, Thread)
@@ -54,7 +54,7 @@ static void entry_trampoline(void);
     NOTES
 
     EXAMPLE
-        ThreadIdentifier id = CreateThread(entry, data);
+        uint32_t id = CreateThread(entry, data);
         if (id < 0)
             printf("thread creation failed\n");
         else
@@ -77,7 +77,7 @@ static void entry_trampoline(void);
 
     struct trampoline_data *td;
     struct Task *task;
-    ThreadIdentifier id;
+    uint32_t id;
 
     assert(entry != NULL);
 
@@ -134,7 +134,7 @@ static void entry_trampoline(void) {
     struct trampoline_data *td = task->tc_UserData;
     struct ThreadBase *ThreadBase = td->ThreadBase;
     struct Library *aroscbase;
-    _Thread thread;
+    struct _Thread *thread;
     void *result;
 
     /* wait for the parent to let us go */

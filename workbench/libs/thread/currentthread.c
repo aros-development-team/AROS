@@ -14,7 +14,7 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(ThreadIdentifier, CurrentThread,
+        AROS_LH0(uint32_t, CurrentThread,
 
 /*  SYNOPSIS */
 
@@ -33,7 +33,7 @@
     NOTES
 
     EXAMPLE
-        ThreadIdentifier id = CurrentThread();
+        uint32_t id = CurrentThread();
         printf("this is thread %d\n", id);
 
     BUGS
@@ -48,7 +48,7 @@
     AROS_LIBFUNC_INIT
 
     /* find it */
-    _Thread thread = _getthreadbytask(FindTask(NULL), ThreadBase);
+    struct _Thread *thread = _getthreadbytask(FindTask(NULL), ThreadBase);
     if (thread == NULL)
         return 0;
 

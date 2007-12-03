@@ -30,7 +30,7 @@ static int GM_UNIQUENAME(Open)(struct ThreadBase *ThreadBase) {
 
 static int GM_UNIQUENAME(Close)(struct ThreadBase *ThreadBase) {
     int nthreads, nattached;
-    _Thread thread, next;
+    struct _Thread *thread, *next;
     struct Task *task;
 
     /* we're most likely here because main() exited. if there are remaining

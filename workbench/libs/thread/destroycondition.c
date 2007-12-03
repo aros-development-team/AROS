@@ -19,7 +19,7 @@
         AROS_LH1(BOOL, DestroyCondition,
 
 /*  SYNOPSIS */
-        AROS_LHA(Condition, cond, A0),
+        AROS_LHA(void *, cond, A0),
 
 /*  LOCATION */
         struct ThreadBase *, ThreadBase, 16, Thread)
@@ -52,7 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    _Condition c = (_Condition) cond;
+    struct _Condition *c = (struct _Condition *) cond;
 
     assert(c != NULL);
 

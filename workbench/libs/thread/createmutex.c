@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(Mutex, CreateMutex,
+        AROS_LH0(void *, CreateMutex,
 
 /*  SYNOPSIS */
 
@@ -56,7 +56,7 @@
 
     InitSemaphore(sem);
 
-    return (Mutex) sem;
+    return (void *) sem;
 
     AROS_LIBFUNC_EXIT
 } /* CreateMutex */

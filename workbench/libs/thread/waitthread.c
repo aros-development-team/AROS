@@ -21,8 +21,8 @@
         AROS_LH2(BOOL, WaitThread,
 
 /*  SYNOPSIS */
-        AROS_LHA(ThreadIdentifier, thread_id, D0),
-        AROS_LHA(void **,          result,    A1),
+        AROS_LHA(uint32_t, thread_id, D0),
+        AROS_LHA(void **,  result,    A1),
 
 /*  LOCATION */
         struct ThreadBase *, ThreadBase, 6, Thread)
@@ -65,7 +65,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    _Thread thread;
+    struct _Thread *thread;
 
     assert(thread_id);
 
