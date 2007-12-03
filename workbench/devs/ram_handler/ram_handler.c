@@ -69,6 +69,7 @@ struct vnode
     ULONG protect;		/* 0 */
     STRPTR comment;		/* NULL */
     struct MinList receivers;
+    struct DateStamp date;
     struct MinList list;	/* Contents of directory */
     ULONG volcount;		/* number of handles on this volume */
     struct DosList *doslist;	/* Pointer to doslist entry */
@@ -86,6 +87,7 @@ struct dnode
     ULONG protect;		/* protection bits */
     STRPTR comment;		/* Some comment */
     struct MinList receivers;
+    struct DateStamp date;
     struct MinList list;	/* Contents of directory */
 };
 
@@ -101,6 +103,7 @@ struct fnode
     ULONG protect;		/* protection bits */
     STRPTR comment;		/* Some file comment */
     struct MinList receivers;
+    struct DateStamp date;
     ULONG          flags;
     LONG size;			/* Filesize */
     UBYTE *blocks[16];		/* Upto 0x1000 bytes */
@@ -1018,6 +1021,7 @@ static LONG write(struct rambase *rambase, struct filehandle *handle,
 
     *numbytes = (UBYTE *)buffer - buf;
     handle->position += *numbytes;
+    DateStamp(&file->date);
 
     if (handle->position > file->size)
     {
@@ -1144,6 +1148,7 @@ static LONG open_file(struct rambase *rambase, struct filehandle **handle,
 	    }
 
 	    file = (struct fnode *)AllocMem(sizeof(struct fnode), MEMF_CLEAR);
+	    DateStamp(&file->date);
 
 	    if (file != NULL)
 	    {
@@ -1262,8 +1267,9 @@ static LONG create_dir(struct rambase *rambase, struct filehandle **handle,
 		AddTail((struct List *)&dir->list, (struct Node *)new);
 		fh->node = new;
 		*handle = fh;
+		DateStamp(&new->date);
 
-		// kprintf("New (%p): Name = %s\n", new, new->name);
+		D(bug("New (%p): Name = %s\n", new, new->name));
 		Notify_directoryChange(rambase, NOTIFY_Add, new);
 
 		return 0;
@@ -1409,9 +1415,9 @@ static LONG examine(struct fnode *file,
 
 	/* Fall through */
     case ED_DATE:
-	ead->ed_Days = 0;
-	ead->ed_Mins = 0;
-	ead->ed_Ticks = 0;
+	ead->ed_Days = file->date.ds_Days;
+	ead->ed_Mins = file->date.ds_Minute;
+	ead->ed_Ticks = file->date.ds_Tick;
 
 	/* Fall through */
     case ED_PROTECTION:
@@ -1473,9 +1479,9 @@ static LONG examine_next(struct rambase *rambase,
     FIB->fib_OwnerUID	    = 0;
     FIB->fib_OwnerGID	    = 0;
     
-    FIB->fib_Date.ds_Days   = 0;
-    FIB->fib_Date.ds_Minute = 0;
-    FIB->fib_Date.ds_Tick   = 0;
+    FIB->fib_Date.ds_Days   = file->date.ds_Days;
+    FIB->fib_Date.ds_Minute = file->date.ds_Minute;
+    FIB->fib_Date.ds_Tick   = file->date.ds_Tick;
     FIB->fib_Protection	    = file->protect;
     FIB->fib_Size	    = file->size;
     FIB->fib_DirEntryType   = file->type;
@@ -1628,6 +1634,8 @@ static LONG rename_object(struct rambase *rambase,
 	Strfree(rambase, file->name);
 	file->name = Strdup(rambase, nameb);
     }
+
+    DateStamp(&file->date);
 
     switch (file->type)
     {
@@ -1810,11 +1818,10 @@ void processFSM(struct rambase *rambase)
 
     LONG   error = 0;
 
-
     /* Get and process the messages. */
     while ((iofs = (struct IOFileSys *)GetMsg(rambase->port)) != NULL)
     {
-	// kprintf("Ram.handler initialized %u\n", iofs->IOFS.io_Command);
+	D(bug("Ram.handler initialized %u\n", iofs->IOFS.io_Command));
 
 	switch (iofs->IOFS.io_Command)
 	{
@@ -2042,6 +2049,7 @@ void processFSM(struct rambase *rambase)
 		
 		if(!error)
 		{
+		    dir->date = iofs->io_Union.io_SET_DATE.io_Date;
 		}
 		
 		break;
@@ -2519,6 +2527,8 @@ BOOL Notify_addNotification(struct rambase *rambase, struct dnode *dn,
 
 	/* Add the receiver node to the file's/directory's list of receivers */
 	AddTail((struct List *)&dnTemp->receivers, &rr->node);
+
+	D(bug("Notification added to node: %s\n", name));
 
 	return TRUE;
     }
