@@ -1,0 +1,58 @@
+README for thread.library
+
+Author: Robert Norris <rob@cataclysm.cx>
+Last update: 2007-11-30
+
+This is trivial library to provide basic threads and synchronisation
+primitives to higher-level libraries and applications. It currently provides
+the following:
+
+ - Threads
+ - Mutexes
+ - Condition variables
+
+This is a work-in-progress. Expect freakish things to happen if you use it.
+Please let me know if something doesn't work the way you want or expect it to.
+Both the interface and semantics are fluid, so you can get things changed if
+you want, but on the other hand you'll need to track changes to the library in
+your app.
+
+This library is deliberately designed not to be POSIX threads. My hope is that
+it could be used to implement them, but it won't ever be that all by itself.
+POSIX thread semantics are more complicated than I want to deal with at this
+level.
+
+The biggest omission at this stage is a way to force a thread to exit. Its
+hard to do because there's no way to know what resources the thread currently
+has open in order to close them. I have some ideas, but I don't know that it
+can be done well without proper task resource tracking.
+
+In a similar vein, when your application or library closes thread.library (in
+an app, this will typically happen when main() exits), it will wait for any
+threads that are still running to finish. You'll get some warnings in the
+kernel log when this happens. The main process can't be allowed to exit while
+threads are still running as the main thread is usually holding resources that
+the threads need that will be deallocated when the thread exits, eg the
+program code itself. As long as the threads run in the same address space as
+the main process there's very little that can be done about this.
+
+This also makes detached threads rather meaningless. The detached thread
+semantics are provided in the hope they can be fully implemented in the future.
+
+TODO
+
+ - A way to gracefully ask a thread to exit (giving the thread opportunity to
+   clean up)
+
+ - A way to wait for all threads to finish (including detached threads, so
+   this can be used usefully to wait for threads before exiting in main()).
+
+ - A true way to detach running threads such that they can exist after the
+   main process exits.
+
+ - Can exiting the main process while threads are still running be handled
+   better?
+
+ - Read/write ("promotable") mutexes, where you can request to obtain a lock
+   exclusively while already holding it as a shared lock. This can avoid races
+   in some situations.
