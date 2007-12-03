@@ -12,6 +12,7 @@
 #include <exec/libraries.h>
 #include <exec/tasks.h>
 #include <exec/memory.h>
+#include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -112,10 +113,10 @@ static void entry_trampoline(void);
     }
 
     /* signal the task to kick it off */
-    Signal(task, SIGF_SINGLE);
+    Signal(task, SIGBREAKF_CTRL_C);
 
     /* wait for them to tell us that they're ready */
-    Wait(SIGF_SINGLE);
+    Wait(SIGBREAKF_CTRL_C);
 
     /* get the new id of the thread that they passed back */
     id = td->id;
@@ -138,21 +139,21 @@ static void entry_trampoline(void) {
     void *result;
 
     /* wait for the parent to let us go */
-    Wait(SIGF_SINGLE);
+    Wait(SIGBREAKF_CTRL_C);
 
     /* allocate space for the thread */
     if ((thread = AllocVec(sizeof(struct _Thread), MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
 
         /* in case of failure, set a negative id and tell the parent so they
          * can inform the caller */
-        Signal(td->parent, SIGF_SINGLE);
+        Signal(td->parent, SIGBREAKF_CTRL_C);
         return;
     }
 
     /* give each thread its own C library, so it can reliably printf() etc */
     if ((aroscbase = OpenLibrary("arosc.library", 0)) == NULL) {
         FreeVec(thread);
-        Signal(td->parent, SIGF_SINGLE);
+        Signal(td->parent, SIGBREAKF_CTRL_C);
         return;
     }
 
@@ -175,7 +176,7 @@ static void entry_trampoline(void) {
     ReleaseSemaphore(&ThreadBase->lock);
 
     /* inform the parent that we're ready to go */
-    Signal(td->parent, SIGF_SINGLE);
+    Signal(td->parent, SIGBREAKF_CTRL_C);
 
     /* call the actual thread entry */
     result = AROS_UFC1(void *, td->entry,
