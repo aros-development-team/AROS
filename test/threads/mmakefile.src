@@ -1,0 +1,19 @@
+include $(TOP)/config/make.cfg
+
+FILES := \
+    twothreads \
+    threadexit \
+    cleanupatexit \
+    mutex \
+    signalcondition \
+    broadcastcondition
+
+EXEDIR := $(AROS_TESTS)/threads
+
+#MM- test : test-threads
+
+%build_progs mmake=test-threads \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="thread"
+
+%common
