@@ -393,7 +393,7 @@ CLASSINCLUDES := $(foreach f, $(CLASSES), classes/$(f).h) \
                  $(foreach f, $(EXTCLASSES), classes/$(f).h)
 FILES         := $(FILES) $(CLASSFILES)
 
-#MM- workbench-libs-muimaster : includes linklibs
+#MM- workbench-libs-muimaster : includes linklibs workbench-libs-coolimages
 
 %build_module mmake=workbench-libs-muimaster \
     modname=muimaster modtype=library \
