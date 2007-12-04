@@ -251,6 +251,14 @@ USER_LIBS   := amiga rom m mui
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0" \
     uselibs=$(USER_LIBS)
 
+#MM workbench-classes-zune-floattext : includes
+%build_module \
+    mmake=workbench-classes-zune-floattext \
+    modname=Floattext modtype=mui files=floattext \
+    conffile=floattext.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_FLOATTEXT=0" \
+    uselibs=$(USER_LIBS)
+
 #MM workbench-classes-zune-volumelist : includes
 %build_module \
     mmake=workbench-classes-zune-volumelist \
