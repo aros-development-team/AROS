@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-system : workbench-system-ftmanager
-#MM workbench-system-ftmanager : workbench-libs-freetype-module
+#MM workbench-system-ftmanager : workbench-libs-freetype-module workbench-libs-codesets
 
 FILES  := ftmanager
 EXEDIR := $(AROS_SYSTEM)
