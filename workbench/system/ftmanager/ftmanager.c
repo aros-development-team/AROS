@@ -23,6 +23,7 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #undef NO_INLINE_STDARG
+#include <proto/codesets.h>
 #include <proto/freetype2.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -100,7 +101,8 @@ Object *app;
 FT_Library ftlibrary;
 BPTR destdir;
 UWORD codepage[256];
-
+STRPTR *codesetentries;
+STRPTR *codesetsupported;
 BOOL IsDefaultCodePage(void);
 
 /***********************************************************************/
@@ -2092,6 +2094,10 @@ void Cleanup(void)
 
 	FT_Done_Library(ftlibrary);
 
+	if (codesetsupported)
+		CodesetsFreeA(codesetsupported, NULL);
+	FreeVec(codesetentries);
+
 	UnLock(destdir);
 }
 
@@ -2137,47 +2143,29 @@ BOOL IsDefaultCodePage(void)
 	return TRUE;
 }
 
-BOOL LoadCodePage(const char *filename)
+BOOL LoadCodePage(int entryindex)
 {
-	BOOL ret = FALSE;
-	BPTR file;
-	UBYTE buf[256];
-
 	SetDefaultCodePage();
 
-	file = Open(filename, MODE_OLDFILE);
-	if (file)
+	if (entryindex == 0) // 1st entry means keep code page
 	{
-		ret = TRUE;
-
-		while (FGets(file, buf, sizeof(buf)))
-		{
-			STRPTR p = buf;
-			LONG index, unicode;
-			LONG chars;
-
-			if (*p == '#')
-				continue;
-
-			chars = StrToLong(p, &index);
-
-			if (chars <= 0 || index < 0 || index > 255)
-				continue;
-
-			p += chars;
-
-			chars = StrToLong(p, &unicode);
-
-			if (chars <= 0)
-				continue;
-
-			codepage[index] = (UWORD)unicode;
-		}
-
-		Close(file);
+		return TRUE;
 	}
 
-	return ret;
+	struct codeset * cs = CodesetsFind(codesetentries[entryindex],
+		CSA_FallbackToDefault, FALSE, TAG_DONE);
+	
+	if (cs)
+	{
+		LONG index;
+		for (index = 0 ; index < 256 ; index++)
+		{
+			codepage[index] = (UWORD)cs->table[index].ucs4;
+		}
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 
@@ -2189,16 +2177,41 @@ BOOL LoadCodePage(const char *filename)
 int main(void)
 {
 	int ret = RETURN_FAIL;
-	Object *win, *src, *dest, *fontlist, *fontlv, *codepagestr, *quit;
+	Object *win, *src, *dest, *fontlist, *fontlv, *codepagecycle, *quit;
+	int countfrom, countto;
 
 	if (!Init())
 		return RETURN_FAIL;
 
 	SetDefaultCodePage();
 
+	codesetsupported = CodesetsSupportedA(NULL); // Available codesets
+	countfrom = 0;
+	while (codesetsupported[countfrom])
+	{
+		countfrom++;
+	}
+	codesetentries = AllocVec((sizeof (STRPTR)) * (countfrom + 2), MEMF_CLEAR);
+	if (!codesetentries)
+	{
+	    Cleanup();
+	    return RETURN_FAIL;
+	}
+	codesetentries[0] = "----";
+	countfrom = 0;
+	countto = 1;
+	while (codesetsupported[countfrom])
+	{
+		if (strcmp(codesetsupported[countfrom], "UTF-8"))
+		{
+			codesetentries[countto] = codesetsupported[countfrom];
+			countto++;
+		}
+		countfrom++;
+	}
 	app = ApplicationObject,
 		MUIA_Application_Title, "FTManager",
-		MUIA_Application_Version, "$VER: FTManager 1.1 (17.1.2003)",
+		MUIA_Application_Version, "$VER: FTManager 1.2 (4.12.2007)",
 		MUIA_Application_Copyright, "Copyright 2002-2003 by Emmanuel Lesueur",
 		MUIA_Application_Author, "Emmanuel Lesueur",
 		MUIA_Application_Description, "FreeType font manager",
@@ -2241,15 +2254,8 @@ int main(void)
 						ASLFR_RejectIcons, TRUE,
 						End,
 					Child, Label2("Codepage"),
-					Child, PopaslObject,
-						MUIA_Popasl_Type, ASL_FileRequest,
-						MUIA_Popstring_String, codepagestr = StringObject,
-							StringFrame,
-							MUIA_String_AdvanceOnCR, TRUE,
-							MUIA_CycleChain, TRUE,
-							End,
-						MUIA_Popstring_Button, PopButton(MUII_PopFile),
-						ASLFR_RejectIcons, TRUE,
+					Child, codepagecycle = CycleObject,
+						MUIA_Cycle_Entries, codesetentries,
 						End,
 					End,
 				Child, quit = SimpleButton("_Quit"),
@@ -2269,7 +2275,7 @@ int main(void)
 		DoMethod(dest, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
 				app, 2, MUIM_Application_ReturnID, ID_SetDestDir);
 
-		DoMethod(codepagestr, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+		DoMethod(codepagecycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
 				app, 2, MUIM_Application_ReturnID, ID_SetCodePage);
 
 		DoMethod(fontlv, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
@@ -2348,10 +2354,9 @@ int main(void)
 
 					case ID_SetCodePage:
 						{
-							STRPTR filename;
-
-							get(codepagestr, MUIA_String_Contents, &filename);
-							LoadCodePage(filename);
+							IPTR entry;
+							get(codepagecycle, MUIA_Cycle_Active, &entry);
+							LoadCodePage(entry);
 						}
 						break;
 				}
