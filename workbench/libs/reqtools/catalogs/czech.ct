@@ -1,0 +1,250 @@
+## version $VER: reqtools.catalog 2.12 (28.11.2007)
+## language czech
+## codeset 0
+;
+;******************
+;
+;   ReqTools V38
+;
+;******************
+;
+;
+; *** General ***
+;
+; Note: there are two spaces around the Ok string to make it 4 chars wide.
+MSG_OK
+ _OK 
+;  _Ok
+;
+MSG_CANCEL
+_Zru¹it
+; _Cancel
+;
+; *** EZRequester ***
+;
+MSG_OK_BAR_CANCEL
+ _OK |_Zru¹it
+;  _Ok |_Cancel
+;
+MSG_LAST_BAR_CANCEL
+_Poslední|_Zru¹it
+; _Last|_Cancel
+;
+MSG_REQUEST
+®ádost
+; Request
+;
+MSG_INFORMATION
+Informace
+; Information
+;
+; *** GetLong Requester ***
+;
+; Note: there are two spaces around the next three strings!
+MSG_MIN_FMT
+ Min: %ld 
+;  Min: %ld
+;
+MSG_MAX_FMT
+ Max: %ld 
+;  Max: %ld
+;
+MSG_MIN_MAX_FMT
+ Min: %ld, Max: %ld 
+;  Min: %ld, Max: %ld
+;
+MSG_TOO_SMALL
+Pøíli¹ malé!
+; Too small!
+;
+MSG_TOO_BIG
+Pøíli¹ velké!
+; Too big!
+;
+; *** Palette Requester ***
+;
+MSG_PALETTE_COLORS
+_Paleta barev:
+; _Palette Colors:
+;
+MSG_RED
+Èervená _R:
+; _Red:
+;
+MSG_GREEN
+Zelená _G:
+; _Green:
+;
+MSG_BLUE
+Modrá _B:
+; _Blue:
+;
+MSG_COPY
+Z_kopírovat
+; Cop_y
+;
+MSG_SWAP
+Pro_hodit
+; _Swap
+;
+MSG_SPREAD
+Roz_etøít
+; Spr_ead
+;
+MSG_UNDO
+Zpì_t
+; _Undo
+;
+; ** 2.5 **
+;
+MSG_COPY_TITLE
+Zkopírovat do...
+; Copy to...
+;
+MSG_SWAP_TITLE
+Prohodit s...
+; Swap with...
+;
+MSG_SPREAD_TITLE
+Rozetøít kam...
+; Spread to...
+;
+; *** File Requester ***
+;
+MSG_CREATE_DRAWER
+Adresáø "%s" neexistuje.\nChcete ho vytvoøit?
+; Drawer '%s' does\nnot exist. Create it?
+;
+MSG_DIR_ERROR
+Nesprávný adresáø!
+; Directory error!
+;
+MSG_MATCH_WINTITLE
+Zadání masky
+; Match...
+;
+MSG_DRAWER
+adresáø
+; Drawer
+;
+MSG_ASSIGN
+pøiøazení
+; Assign
+;
+MSG_ALL
+V¹_e
+; _All
+;
+MSG_MATCH
+Vy_brat...
+; _Match..
+;
+MSG_CLEAR
+N_ic
+; C_lear
+;
+MSG_VOLUMES
+Z_aøízení
+; _Volumes
+;
+MSG_PARENT
+V_y¹¹í
+; _Parent
+;
+MSG_PATTERN
+_Maska
+; Pa_ttern:
+;
+MSG_GET
+_Nový
+; _Get
+;
+MSG_DOT_INFO
+.in_fo
+; ._info
+;
+MSG_SELECTED
+Vybráno:
+; Selected:
+;
+MSG_FULL
+Zaplnìno z %ld %%
+; %ld%% full
+;
+; *** Font Requester ***
+;
+MSG_COULDNT_OPEN_FONT
+Po¾adované písmo nelze otevøít!
+; Couldn't open font!
+;
+MSG_BOLD
+_Tuèný
+; _Bold
+;
+MSG_ITALIC
+_Kurzíva
+; _Italic
+;
+MSG_UNDERLINE
+_Podtr¾ený
+; _Underline
+;
+; *** ScreenMode Requester ***
+;
+MSG_DASH_INTERLACED
+-prokládaný
+; -Interlaced
+;
+MSG_DASH_HAM
+-re¾im HAM
+; -HAM
+;
+MSG_DASH_EHB
+-re¾im EHB
+; -EHB
+;
+MSG_REGULAR_SIZE
+Standardní velikost
+; Regular Size
+;
+MSG_TEXT_SIZE
+Textový re¾im
+; Text Size
+;
+MSG_GFX_SIZE
+Grafický re¾im
+; Graphics Size
+;
+MSG_MAX_SIZE
+Zobrazitelné maximum
+; Maximum Size
+;
+MSG_OVERSCAN
+O_verscan:
+; O_verscan:
+;
+MSG_WIDTH
+©íøk_a:
+; _Width:
+;
+MSG_HEIGHT
+Vý¹_ka:
+; _Height:
+;
+;
+MSG_DEFAULT
+Výchozí
+; Default
+;
+MSG_COLORS
+Poèet _barev:
+; Co_lors:
+;
+MSG_MAX
+Max:
+; Max:
+;
+MSG_AUTOSCROLL
+_Rolování:
+; _AutoScroll:
+;
