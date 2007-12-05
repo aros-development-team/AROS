@@ -16,12 +16,6 @@
 #include "openurl.library_rev.h"
 #include <exec/execbase.h>
 
-#ifdef __AROS__
-// MAXRMARG doesn't exist in AROS's headers
-// The value 15 comes from the AOS3.9 SDK
-#define MAXRMARG (15)
-#endif
-
 /**************************************************************************/
 
 #ifdef __AROS__
@@ -46,7 +40,7 @@ URL_OpenA(REG(a0,UBYTE *URL),REG(a1,struct TagItem *attrs))
 
 
     /* parse arguments */
-    pubScreenName = (UBYTE *)GetTagData(URL_PubScreenName,(ULONG)"Workbench",attrs);
+    pubScreenName = (UBYTE *)GetTagData(URL_PubScreenName,(IPTR)"Workbench",attrs);
     show          = GetTagData(URL_Show,lib_prefs->up_DefShow,attrs);
     toFront       = GetTagData(URL_BringToFront,lib_prefs->up_DefBringToFront,attrs);
     newWindow     = GetTagData(URL_NewWindow,lib_prefs->up_DefNewWindow,attrs);
@@ -91,7 +85,7 @@ URL_OpenA(REG(a0,UBYTE *URL),REG(a1,struct TagItem *attrs))
         }
         else fullURL = buf;
 
-        msprintf(fullURL,"http://%s",(ULONG)URL);
+        msprintf(fullURL,"http://%s",(IPTR)URL);
     }
     else fullURL = URL;
 
@@ -374,8 +368,8 @@ URL_LaunchPrefsAppA(REG(a0,struct TagItem *attrs))
             if (GetVar("OpenURL_Prefs_Path",name,sizeof(name),GVF_GLOBAL_ONLY)<=0)
                 strcpy(name,"Sys:Prefs/OpenURL");
 
-            stags[0].ti_Data = (ULONG)in;
-            stags[1].ti_Data = (ULONG)out;
+            stags[0].ti_Data = (IPTR)in;
+            stags[1].ti_Data = (IPTR)out;
             SystemTagList(name,stags);
 
             return TRUE;
@@ -414,7 +408,7 @@ URL_OldLaunchPrefsApp(void)
 #ifdef __AROS__
 AROS_LH2(ULONG, URL_GetAttr, 
     AROS_LHA(ULONG, attr, D0),
-    AROS_LHA(ULONG *, storage, A0),
+    AROS_LHA(IPTR *, storage, A0),
     struct Library *, library, 16, Openurl
 )
 {
@@ -428,13 +422,13 @@ URL_GetAttr(REG(d0,ULONG attr),REG(a0,ULONG *storage))
     {
         case URL_GetAttr_Version:          *storage = VERSION;        return TRUE;
         case URL_GetAttr_Revision:         *storage = REVISION;       return TRUE;
-        case URL_GetAttr_VerString:        *storage = (ULONG)PRGNAME; return TRUE;
+        case URL_GetAttr_VerString:        *storage = (IPTR)PRGNAME;  return TRUE;
 
         case URL_GetAttr_PrefsVer:         *storage = PREFS_VERSION;  return TRUE;
 
         case URL_GetAttr_HandlerVersion:   *storage = 0;              return TRUE;
         case URL_GetAttr_HandlerRevision:  *storage = 0;              return TRUE;
-        case URL_GetAttr_HandlerVerString: *storage = (ULONG)"";      return TRUE;
+        case URL_GetAttr_HandlerVerString: *storage = (IPTR)"";       return TRUE;
 
         default: return FALSE;
     }
@@ -445,15 +439,11 @@ URL_GetAttr(REG(d0,ULONG attr),REG(a0,ULONG *storage))
 
 /**************************************************************************/
 
+#ifndef __AROS__
 #ifdef __MORPHOS__
 LONG dispatch(void)
 {
     struct RexxMsg *msg = (struct RexxMsg *)REG_A0;
-#elif defined(__AROS__)
-// FIXME: implement me correctly
-LONG dispatch(void)
-{
-    struct RexxMsg *msg = 0;
 #else
 LONG ASM SAVEDS dispatch(REG(a0,struct RexxMsg *msg),REG(a1,UBYTE **resPtr))
 {
@@ -510,25 +500,11 @@ LONG ASM SAVEDS dispatch(REG(a0,struct RexxMsg *msg),REG(a1,UBYTE **resPtr))
 
 #ifdef __MORPHOS__
     return (REG_A0 = (ULONG)CreateArgstring(res ? "1" : "0",1)) ? 0 : 3;
-#elif defined(__AROS__)
-    return 0; // FIXME: implement me correctly
 #else
     return (*resPtr = CreateArgstring(res ? "1" : "0",1)) ? 0 : 3;
 #endif
 }
+#endif /* !__AROS__ */
 
 /**************************************************************************/
 
-#ifdef __AROS__
-AROS_LH1(VOID, DoFunction, 
-    AROS_LHA(STRPTR, rxmsg, A0),
-    struct Library *, library, 11, Openurl
-)
-{
-    AROS_LIBFUNC_INIT
-// FIXME: implement my correctly
-    AROS_LIBFUNC_EXIT
-}
-#endif
-
-/**************************************************************************/

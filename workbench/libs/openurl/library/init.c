@@ -61,7 +61,7 @@ freeBase(void)
 
     if (UtilityBase)
     {
-        CloseLibrary(UtilityBase);
+        CloseLibrary((struct Library*)UtilityBase);
         UtilityBase = NULL;
     }
 
@@ -95,7 +95,7 @@ initBase(void)
 {
     if ((lib_pool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR,16384,8192)) &&
         (DOSBase = (struct DosLibrary *)OpenLibrary("dos.library",36)) &&
-        (UtilityBase = OpenLibrary("utility.library",36)) &&
+        (UtilityBase = (struct UtilityBase*)OpenLibrary("utility.library",36)) &&
         (IFFParseBase = OpenLibrary("iffparse.library",36)) &&
         (RexxSysBase = (struct RxsLib *)OpenLibrary("rexxsyslib.library",33)) &&
 #if defined(__amigaos4__)

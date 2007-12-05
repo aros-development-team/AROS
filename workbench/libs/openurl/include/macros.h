@@ -104,6 +104,10 @@
 #undef BOOLSAME
 #define BOOLSAME(a,b) (((a) ? TRUE : FALSE)==((b) ? TRUE : FALSE))
 
+#ifndef __AROS__
+typedef ULONG IPTR;
+#endif
+
 /****************************************************************************/
 
 #endif /* _MACROS_H */

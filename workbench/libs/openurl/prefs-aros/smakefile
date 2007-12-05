@@ -1,0 +1,59 @@
+# OpenURL Preferences Application smake file
+
+# Target
+TARGET = OpenURL
+
+# Compiler
+C_COMPILER = sc
+
+C_OPTIMIZE = OPTIMIZE OPTSCHEDULE NOOPTSIZE OPTTIME\
+OPTINLINE OPTINLOCAL OPTLOOP NOOPTALIAS OPTPEEP\
+OPTRDEPTH=5 OPTDEPTH=5 OPTCOMPLEXITY=8
+
+C_COMPILER_OPTS = PARAMS=r NOCHECKABORT NOSTACKCHECK NOSTACKEXTEND STRINGMERGE\
+COMMENTNEST IDLEN=128 IGNORE=315 IGNORE=317 INCLUDEDIR=/include\
+$(C_OPTIMIZE)
+
+# Assembler
+ASSEMBLER = a68k
+ASSEMBLER_OPTS = -iainc:
+
+# Linker
+LINKER = slink
+LINKER_OPTS = NOICONS SC SD ND
+
+# Objects
+OBJECTS = OpenURL.o loc.o utils.o popport.o popph.o ftpeditwin.o mailereditwin.o browsereditwin.o applist.o win.o pens.o about.o app.o
+
+# Libs
+LIBS = LIB:sc.lib LIB:amiga.lib
+
+# Built module
+$(TARGET): $(OBJECTS) $(LIBS)
+         $(LINKER) <with <
+FROM LIB:c.o $(OBJECTS) TO $(TARGET) LIB $(LIBS) $(LINKER_OPTS)
+<
+         avail flush
+
+# Rules
+.c.o:
+        $(C_COMPILER) $*.c $(C_COMPILER_OPTS)
+
+.asm.o:
+        $(ASSEMBLER) $(ASSEMBLER_OPTS) $*.asm
+
+# Dependences
+OpenURL.o: 	  OpenURL.c OpenURL.h loc.h OpenURL_protos.h
+loc.o: 		  loc.c OpenURL.h loc.h OpenURL_protos.h
+utils.o: 	  utils.c OpenURL.h OpenURL_protos.h
+popport.o: 	  popport.c OpenURL.h OpenURL_protos.h
+popph.o: 	  popph.c OpenURL.h OpenURL_protos.h
+ftpeditwin.o: 	  ftpeditwin.c OpenURL.h loc.h OpenURL_protos.h
+mailereditwin.o:  mailereditwin.c OpenURL.h loc.h OpenURL_protos.h
+browsereditwin.o: browsereditwin.c OpenURL.h loc.h OpenURL_protos.h
+applist.o: 	  applist.c OpenURL.h loc.h OpenURL_protos.h
+win.o: 	     	  win.c OpenURL.h loc.h OpenURL_protos.h
+pens.o: 	  pens.c OpenURL.h loc.h OpenURL_protos.h
+about.o: 	  about.c OpenURL.h loc.h OpenURL_rev.h OpenURL_protos.h
+app.o: 		  app.c OpenURL.h loc.h OpenURL_rev.h OpenURL_protos.h
+
