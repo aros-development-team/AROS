@@ -1,0 +1,136 @@
+## version $VER: about.catalog 1.4 (4.12.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+O systému AROS
+; About AROS
+;
+MSG_PERSONAL_BUILD
+Osobní sestavení
+; Personal Build
+;
+MSG_NIGHTLY_BUILD
+Noèní sestavení
+; Nightly Build
+;
+MSG_SNAPSHOT
+Sestavení
+; Snapshot
+;
+MSG_MILESTONE
+Milník
+; Milestone
+;
+MSG_RELEASE
+Vydání
+; Release
+;
+MSG_COPYRIGHT
+Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+; Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+;
+MSG_LICENSE_1
+Vydáváno na základì licence
+; Released under the terms of the
+;
+MSG_LICENSE_2
+AROS Public License
+; AROS Public License
+;
+MSG_LICENSE_3
+, verze 1.1
+; , version 1.1.
+;
+MSG_MORE_INFORMATION
+Dal¹í informace najdete na stránkách http://www.aros.org/.
+; Please visit http://www.aros.org/ for more information.
+;
+MSG_PAGE_AUTHORS
+Autoøi
+; Authors
+;
+MSG_PAGE_SPONSORS
+Sponzoøi
+; Sponsors
+;
+MSG_PAGE_ACKNOWLEDGEMENTS
+Podìkování
+; Acknowledgements
+;
+MSG_SECTION_COORDINATION
+Koordinace
+; Coordination
+;
+MSG_SECTION_EVANGELISM
+Propagace
+; Evangelism
+;
+MSG_SECTION_HIDD
+Systém HIDD
+; HIDD subsystem
+;
+MSG_SECTION_INTUITION
+Intuition
+; Intuition
+;
+MSG_SECTION_GRAPHICS
+Graphics
+; Graphics
+;
+MSG_SECTION_SHELL_COMMANDS
+Shell
+; Shell Commands
+;
+MSG_SECTION_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_SECTION_TOOLS
+Nástroje
+; Tools
+;
+MSG_SECTION_PREFERENCES
+Nastavení
+; Preferences
+;
+MSG_SECTION_BGUI
+BGUI
+; BGUI
+;
+MSG_SECTION_ZUNE
+Zune
+; Zune
+;
+MSG_SECTION_KERNEL
+Kernel
+; Kernel
+;
+MSG_SECTION_DOS
+DOS
+; DOS
+;
+MSG_SECTION_LIBC_POSIX
+Knihovna libc a vrstva POSIX
+; C link library and POSIX layer
+;
+MSG_SECTION_DOCUMENTATION
+Dokumentace
+; Documentation
+;
+MSG_SECTION_TRANSLATION
+Pøeklad
+; Translation
+;
+MSG_SECTION_ARTISTRY
+Design
+; Artistry
+;
+MSG_SECTION_WEBSITE
+Webové stránky
+; Website
+;
+MSG_SECTION_DATATYPES
+Datové typy
+; Datatypes
