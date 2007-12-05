@@ -23,8 +23,8 @@
 
 #define LANGSTR     "czech"    /* String version of above */
 #define LANGVER     41          /* Version number of language */
-#define LANGREV     0           /* Revision number of language */
-#define LANGTAG     "\0$VER: czech.language 41.0 (22.11.2007)"
+#define LANGREV     1           /* Revision number of language */
+#define LANGTAG     "\0$VER: czech.language 41.1 (3.12.2007)"
 
 AROS_LD1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
@@ -35,8 +35,8 @@ AROS_LD1(STRPTR, getlangstring,
 /* Bit masks for locale .language functions. Only implement GetString() */
 #define LF_GetLangStr       (1L << 3)
 
-/* Arrays for German character type/conversion */
-extern const STRPTR __polish_strings[];
+/* Arrays for Czech character type/conversion */
+extern const STRPTR __czech_strings[];
 
 /* -------------------------------------------------------------------------
    Library definition, you should not need to change any of this.
@@ -232,7 +232,7 @@ AROS_LH1(STRPTR, getlangstring,
     //kprintf("\nWe have got to getlangstring\n");
 
     if(id < MAXSTRMSG)
-        return __polish_strings[id];
+        return __czech_strings[id];
     else
         return NULL;
 
@@ -269,7 +269,7 @@ void *const functable[] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __polish_strings[] =
+const STRPTR __czech_strings[] =
 {
     /* A blank string */
     "",
