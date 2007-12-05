@@ -1,0 +1,45 @@
+## version $VER: Trackdisk.catalog 1.2 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_NAME
+Trackdisk
+; Trackdisk
+;
+MSG_TITLE
+Nastavení disket
+; Trackdisk prefs
+;
+MSG_SAVE
+Ulo¾it
+; Save
+;
+MSG_USE
+Pou¾ít
+; Use
+;
+MSG_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_DESCRIPTION
+Editor nastavení disket
+; trackdisk.device preferences editor
+;
+MSG_WINDOW_TITLE
+Nastavení disket
+; trackdisk.device preferences
+;
+MSG_DRIVE
+Zaøízení %u
+; Drive %u
+;
+MSG_NOCLICK
+Potichu:
+; No click:
+;
+MSG_RETRIES
+Opakování:
+; Retries:
+;

@@ -1,0 +1,135 @@
+## version $VER: Wanderer.catalog 1.2 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_NAME
+Nastavení systému Wanderer
+; Wanderer Prefs
+;
+MSG_DESCRIPTION
+Nastavení systému Wanderer
+; Wanderer preferences
+;
+MSG_BACKGROUNDS
+Pozadí
+; Backgrounds
+;
+MSG_BACKGROUND_WORKBENCH
+Plocha
+; Workbench
+;
+MSG_BACKGROUND_DRAWERS
+Adresáøe
+; Drawers
+;
+MSG_SELECT_WORKBENCH_BACKGROUND
+Výbìr pozadí plochy
+; Select Workbench Background
+;
+MSG_SELECT_DRAWER_BACKGROUND
+Výbìr pozadí adresáøù
+; Select Drawer Background
+;
+MSG_GENERAL
+Obecné
+; General
+;
+MSG_APPEARANCE
+Vzhled
+; Appearance
+;
+MSG_TOOLBAR
+Li¹ta
+; Toolbar
+;
+MSG_CLASSIC
+Klasická
+; Classic
+;
+MSG_ENHANCED
+Vylep¹ená
+; Enhanced
+;
+MSG_NAVIGATION
+Ovládání
+; Navigation
+;
+MSG_METHOD
+Metoda??
+; Method
+;
+MSG_OBJECTS
+Objekty
+; Objects
+;
+MSG_PREVIEW
+Náhled
+; Preview
+;
+MSG_TOOLBAR_ENABLED
+Zapnout horní li¹tu
+; Toolbar Enabled
+;
+MSG_ICONSPREFS
+Vzhled a chování ikon
+; Icons look and feel
+;
+MSG_ICONLISTMODE
+Re¾im zobrazení
+; Icon listmode
+;
+MSG_ICONLISTMODE_PLAIN
+Umístit ikony volnì
+; List icons plainly
+;
+MSG_ICONLISTMODE_GRID
+Umístit ikony do møí¾ky
+; List icons by grid
+;
+MSG_ICONTEXTMODE
+Text s popisem ikon
+; Icons text drawmode
+;
+MSG_ICONTEXTMODE_OUTLINE
+Obrysový
+; Outline
+;
+MSG_ICONTEXTMODE_PLAIN
+Standardní
+; Plain
+;
+MSG_ICONTEXTLENGTH
+Max. délka názvu
+; Max icon textlength
+;
+MSG_DOUBLEBUFFERED
+Zrychlené??
+; double buffering
+;
+MSG_MISC
+Ostatní
+; misc
+;
+MSG_BUBBLESCREENTITLE
+%pc = grafická pamì», aktuálnì\n\
+%pf = ostatní pamì», aktuálnì\n\
+%pt = ve¹kerá pamì», aktuálnì\n\
+%PC = grafická pamì», celkem\n\
+%PF = ostatní pamì», celkem\n\
+%PT = ve¹kerá pamì», celkem\n\
+%os = AROS, verze\n\
+%wb = Wanderer, verze\n\
+%ov = AROS, interní verze\n\
+%wv = workbench.library, interní verze
+; %pc = Chip Ram free\n\
+; %pf = Fast Ram free\n\
+; %pt = Total Ram free\n\
+; %PC = Chip Ram\n\
+; %PF = Fast Ram\n\
+; %PT = Total Ram\n\
+; %os = AROS version\n\
+; %wb = Wanderer version\n\
+; %ov = Exact AROS version\n\
+; %wv = Exact workbench.library version
+;

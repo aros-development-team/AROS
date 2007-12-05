@@ -1,0 +1,125 @@
+## version $VER: icontrol.catalog 1.1 (27.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nelze otevøít knihovnu %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Nelze vytvoøit objekt application!
+; Can't create application object!
+;
+MSG_CANT_CREATE_CUSTOM_CLASS
+Nelze vytvoøit po¾adovanou tøídu objektu.
+; Can't create custom preferenceswindow class
+;
+MSG_WINTITLE
+Vzhled programù (editor IControl)
+; IControl Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otevøít...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Ulo¾it jako...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Úpravy
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Obnovit výchozí
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Naposledy ulo¾ené
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Obnovit pøedchozí
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Nastavení
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Vytváøet ikony?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Naètení nastavení
+; Load IControl Preferences
+;
+MSG_ASL_SAVE_TITLE
+Ulo¾ení nastavení
+; Save IControl Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MENUS_GROUP
+Menu
+; Menus
+;
+MSG_MENUS_TYPE
+Druh
+; Type
+;
+MSG_MENUS_TYPE_PULLDOWN
+Globální
+; Pull-Down
+;
+MSG_MENUS_TYPE_POPUP
+Lokální
+; Pop-Up
+;
+MSG_MENUS_LOOK
+Vzhled
+; Look
+;
+MSG_MENUS_LOOK_CLASSIC
+Standardní
+; Classic
+;
+MSG_MENUS_LOOK_3D
+Prostorové
+; 3D
+;
+MSG_WINDOWS
+Okna
+; Windows
+;
+MSG_OFFSCREEN_MOVE
+Pøesun mimo okraje
+; Offscreen move:
+;
+MSG_SCREENS
+Obrazovky
+; Screens
+;
+MSG_FRONTMOST_DEFAULT
+Frontmost set as DefaultPubScreen:??
+; Frontmost set as DefaultPubScreen:
+;
+MSG_OFFSCREEN_DESC
+Allow windows to be moved out of\nthe visible area??
+; Allow windows to be moved out of\nthe visible area
+;
+MSG_FRONTMOST_DEFAULT_DESC
+Make the frontmost public screen\nthe default public screen??
+; Make the frontmost public screen\nthe default public screen
+;
