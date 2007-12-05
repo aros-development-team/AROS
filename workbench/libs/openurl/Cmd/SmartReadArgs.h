@@ -32,7 +32,7 @@ struct SmartArgs
    STRPTR sa_Template;        
 
    /* Pointer to the parameter array */
-   LONG *sa_Parameter;        
+   IPTR *sa_Parameter;        
 
    /* Specifies which parameter should contain the files passed with the
     * WBStartup message; use -1 for none */

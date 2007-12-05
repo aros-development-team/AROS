@@ -65,13 +65,13 @@ ULONG ulong_max(ULONG a, ULONG b)
  */
 int main(int argc,char **argv)
 {
-   register int              return_code = RETURN_FAIL;
-   register LONG             error_code = 0;
-   register STRPTR           error_cause = NULL;
-   register struct WBStartup *wb_startup = NULL;
-   register UBYTE            error_buffer[MAXIMUM_ERROR_LENGTH] = {NULL};
+   int              return_code = RETURN_FAIL;
+   LONG             error_code = 0;
+   STRPTR           error_cause = NULL;
+   struct WBStartup *wb_startup = NULL;
+   UBYTE            error_buffer[MAXIMUM_ERROR_LENGTH] = {NULL};
 
-   if (OpenURLBase = OpenLibrary("openurl.library",OPENURL_VERSION))
+   if ((OpenURLBase = OpenLibrary("openurl.library",OPENURL_VERSION)))
    {
       #if defined(__amigaos4__)
       if( (IOpenURL = (struct OpenURLIFace *)GetInterface(OpenURLBase,"main",1L,NULL)) )
@@ -79,7 +79,7 @@ int main(int argc,char **argv)
       #endif
       struct TagItem tags[8] = {0};
       struct SmartArgs smart_args = {NULL};
-      LONG             args[A_MAX] = {0};
+      IPTR             args[A_MAX] = {0};
       STRPTR           real_url = NULL, filename = NULL;
 
       /* Prepare argument parsing */

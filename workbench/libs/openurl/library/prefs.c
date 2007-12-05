@@ -39,7 +39,7 @@ copyPrefs(struct URL_Prefs *old)
     ver = old->up_Version;
     if (ver!=PREFS_VERSION) return FALSE;
 
-    if (new = allocPooled(sizeof(struct URL_Prefs)))
+    if ((new = allocPooled(sizeof(struct URL_Prefs))))
     {
         ULONG res;
 
@@ -50,14 +50,14 @@ copyPrefs(struct URL_Prefs *old)
         NEWLIST(&new->up_MailerList);
         NEWLIST(&new->up_FTPList);
 
-        if (res = copyList((struct List *)&new->up_BrowserList,(struct List *)&old->up_BrowserList,sizeof(struct URL_BrowserNode)))
+        if ((res = copyList((struct List *)&new->up_BrowserList,(struct List *)&old->up_BrowserList,sizeof(struct URL_BrowserNode))))
         {
             new->up_DefShow         = old->up_DefShow;
             new->up_DefBringToFront = old->up_DefBringToFront;
             new->up_DefNewWindow    = old->up_DefNewWindow;
             new->up_DefLaunch       = old->up_DefLaunch;
 
-            if (res = copyList((struct List *)&new->up_MailerList,(struct List *)&old->up_MailerList,sizeof(struct URL_MailerNode)))
+            if ((res = copyList((struct List *)&new->up_MailerList,(struct List *)&old->up_MailerList,sizeof(struct URL_MailerNode))))
                 res = copyList((struct List *)&new->up_FTPList,(struct List *)&old->up_FTPList,sizeof(struct URL_FTPNode));
 
             if (res) return new;
@@ -194,9 +194,9 @@ savePrefs(UBYTE *filename,struct URL_Prefs *p)
     struct IFFHandle *iffh;
     ULONG            res = FALSE;
 
-    if (iffh = AllocIFF())
+    if ((iffh = AllocIFF()))
     {
-        if (iffh->iff_Stream = Open(filename,MODE_NEWFILE))
+        if ((iffh->iff_Stream = Open(filename,MODE_NEWFILE)))
         {
             InitIFFasDOS(iffh);
 
@@ -289,7 +289,7 @@ loadPrefs(struct URL_Prefs *p,ULONG mode)
 
     initPrefs(p);
 
-    if (iffh = AllocIFF())
+    if ((iffh = AllocIFF()))
     {
         UBYTE *fileName;
         BPTR  file;
@@ -299,7 +299,7 @@ loadPrefs(struct URL_Prefs *p,ULONG mode)
         if (!(file = Open(fileName,MODE_OLDFILE)))
             if (mode==LOADPREFS_ENV) file = Open(DEF_ENVARC,MODE_OLDFILE);
 
-        if (iffh->iff_Stream = file)
+        if ((iffh->iff_Stream = file))
         {
             InitIFFasDOS(iffh);
 
@@ -432,7 +432,7 @@ loadPrefsNotFail(void)
 {
     struct URL_Prefs *p;
 
-    if (p = allocPooled(sizeof(struct URL_Prefs)))
+    if ((p = allocPooled(sizeof(struct URL_Prefs))))
     {
         if (!loadPrefs(p,LOADPREFS_ENV))
             setDefaultPrefs(p);

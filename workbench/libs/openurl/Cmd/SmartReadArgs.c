@@ -279,7 +279,7 @@ int main(int argc, STRPTR argv[])
 #endif
 
    smart_args.sa_Template = "FILES/M/A,VERBOSE";
-   smart_args.sa_Parameter = argument;
+   smart_args.sa_Parameter = (IPTR *)argument;
    smart_args.sa_FileParameter = 0;
    smart_args.sa_Window = "CON:////My WB-Window/AUTO/CLOSE/WAIT";
 

@@ -160,23 +160,23 @@ sendRexxMsg(UBYTE *rxport,UBYTE *rxcmd)
     if ((sig = AllocSignal(-1))>=0)
     {
         struct Process *proc;
-        struct TagItem attrs[] = {NP_Entry,        (ULONG)handler,
+        struct TagItem attrs[] = {NP_Entry,        (IPTR)handler,
                                   #ifdef __MORPHOS__
                                   NP_CodeType,     CODETYPE_PPC,
                                   NP_PPCStackSize, 8192,
                                   #endif
                                   NP_StackSize,    4196,
-                                  NP_Name,         (ULONG)"OpenURL - Handler",
+                                  NP_Name,         (IPTR)"OpenURL - Handler",
                                   NP_CopyVars,     FALSE,
-											 NP_Input,        (ULONG)NULL,
+											 NP_Input,        (IPTR)NULL,
                                   NP_CloseInput,   FALSE,
-											 NP_Output,       (ULONG)NULL,
+											 NP_Output,       (IPTR)NULL,
                                   NP_CloseOutput,  FALSE,
-											 NP_Error,        (ULONG)NULL,
+											 NP_Error,        (IPTR)NULL,
                                   NP_CloseError,   FALSE,
                                   TAG_DONE};
 
-        if (proc = CreateNewProcTagList(attrs))
+        if ((proc = CreateNewProcTagList(attrs)))
         {
             struct MsgPort  port;
             struct startMsg smsg;
@@ -601,7 +601,7 @@ sendToMailer(UBYTE *URL,
         start = end;
     }
 
-    if (body) msprintf(fileName,"T:OpenURL-MailBody.%08lx",(ULONG)FindTask(NULL));
+    if (body) msprintf(fileName,"T:OpenURL-MailBody.%08lx",(IPTR)FindTask(NULL));
     else
     {
         written = TRUE;
@@ -909,7 +909,7 @@ allocVecPooled(ULONG size)
     ULONG *mem;
 
     ObtainSemaphore(&lib_memSem);
-    if (mem = AllocPooled(lib_pool,size = size+sizeof(ULONG))) *mem++ = size;
+    if ((mem = AllocPooled(lib_pool,size = size+sizeof(ULONG)))) *mem++ = size;
     ReleaseSemaphore(&lib_memSem);
 
     return mem;

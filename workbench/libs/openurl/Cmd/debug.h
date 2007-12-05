@@ -6,7 +6,6 @@
 #define DEBUG 1
 #endif /* DEBUG_CODE */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #else /* __AROS__ */

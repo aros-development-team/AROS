@@ -19,17 +19,17 @@ sendRexxMsg(struct MsgPort *reply,UBYTE *rxport,UBYTE *rxcmd)
 {
     struct RexxMsg *rxmsg;
 
-    if (rxmsg = CreateRexxMsg(reply,NULL,NULL))
+    if ((rxmsg = CreateRexxMsg(reply,NULL,NULL)))
     {
         rxmsg->rm_Action = RXCOMM|RXFF_STRING|RXFF_NOIO;
 
-        if (rxmsg->rm_Args[0] = CreateArgstring(rxcmd,strlen(rxcmd)))
+        if ((rxmsg->rm_Args[0] = CreateArgstring(rxcmd,strlen(rxcmd))))
         {
             struct MsgPort *port;
 
             Forbid();
 
-            if (port = FindPort(rxport))
+            if ((port = FindPort(rxport)))
             {
                 PutMsg(port,(struct Message *)rxmsg);
                 Permit();
