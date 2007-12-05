@@ -1,0 +1,9 @@
+## version $VER: loadresource.catalog 1.0 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_ERROR_OPEN_LIBRARY
+Nelze otevøít knihovnu %s.
+; Couldn't open library %s.
+;
