@@ -1,0 +1,49 @@
+## version $VER: time.catalog 1.0 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nelze otevøít knihovnu %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_APP
+Nelze vytvoøit objekt application!
+; Can't create application object!
+;
+MSG_WINTITLE
+Datum a èas (editor Time)
+; Time Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Úpravy
+; Edit
+;
+MSG_MEN_EDIT_RESTORE
+R\0Obnovit pøedchozí
+; R\0Restore
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_GAD_SAVE
+Ulo¾it
+; Save
+;
+MSG_GAD_USE
+Pou¾ít
+; Use
+;
+MSG_GAD_CANCEL
+Zru¹it
+; Cancel
+;

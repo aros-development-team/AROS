@@ -1,0 +1,137 @@
+## version $VER: locale.catalog 1.1 (23.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nelze otevøít knihovnu %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Nelze zamknout veøejnou obrazovku!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Nelze naèíst strukturu DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Nelze naèíst strukturu VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Nelze vytvoøit tlaèítka!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Nelze vytvoøit menu!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Nelze vytvoøit okno!
+; Can't create window!
+;
+MSG_WINTITLE
+Národní prostøedí (editor Locale)
+; Locale Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otevøít...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Ulo¾it jako...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Úpravy
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Obnovit výchozí
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Naposledy ulo¾ené
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Obnovit pøedchozí
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Nastavení
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Vytváøet ikony?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Naètení nastavení
+; Load Locale Preferences
+;
+MSG_ASL_SAVE_TITLE
+Ulo¾ení nastavení
+; Save Locale Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_GAD_AVAIL_LANGUAGES
+Pøehled jazykù k dispozici
+; Available Languages
+;
+MSG_GAD_PREF_LANGUAGES
+Vybrané jazyky dle priority
+; Preferred Languages
+;
+MSG_GAD_CLEAR_LANGUAGES
+Vymazat vybrané
+; Clear Languages
+;
+MSG_GAD_SAVE
+Ulo¾it
+; Save
+;
+MSG_GAD_USE
+Pou¾ít
+; Use
+;
+MSG_GAD_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_GAD_TAB_LANGUAGE
+Jazyk
+; Language
+;
+MSG_GAD_TAB_COUNTRY
+Zemì
+; Country
+;
+MSG_GAD_TAB_TIMEZONE
+Èasové pásmo
+; Time Zone
+;
+MSG_TIMEZONE_1HOUR
+Èasové pásmo: 1 hod. od UTC
+; Time Zone: 1 Hour from GMT
+;
+MSG_TIMEZONE_HOURS
+Èasové pásmo: %ld hod. od UTC
+; Time Zone: %ld Hours from GMT
+;
+MSG_TIMEZONE_HOURSMINS
+Èasové pásmo: %ld hod., %ld min. od UTC
+; Time Zone: %ld Hours, %ld Minutes from GMT
+;

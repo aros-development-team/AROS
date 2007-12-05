@@ -1,0 +1,138 @@
+## version $VER: EditorPrefs.catalog 1.3 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+; Catalog description for JanoPrefs
+; JanoPrefs.cd
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Obnovit výchozí
+; Default values
+;
+MSG_LASTSAVED
+Naposledy ulo¾ené
+; Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN
+Nastavení editoru
+; Main setup
+;
+MSG_TAB
+Tabulátor:
+; Tabulation:
+;
+MSG_SEPARATORS
+Oddìlovaèe:
+; Separators:
+;
+MSG_TXTFONT
+Písmo pro text:
+; Text font:
+;
+MSG_SCRFONT
+Písmo pro obrazovku:
+; Screen font:
+;
+MSG_PUBSCREEN
+Rozli¹ení obrazovky:
+; Screen mode:
+;
+MSG_BACKDROP
+Pozadí
+; Backdrop
+;
+MSG_LEFTMARGIN
+Levý okraj
+; Left margin
+;
+MSG_AUTOINDENT
+Automatické odsazení
+; Auto indent
+;
+MSG_EXTEND
+Vylep¹ený numerický blok
+; Extended numeric pad
+;
+MSG_PREFSSAVE
+Ulo¾it
+; Save
+;
+MSG_USEPREFS
+Pou¾ít
+; Use
+;
+MSG_DISCARDPREFS
+Zru¹it
+; Cancel
+;
+MSG_USEDEF
+Výchozí
+; Use Default
+;
+MSG_CHOOSEIT
+Vybrat...
+; Choose one...
+;
+MSG_CLONEPARENT
+Dle nadøazené
+; Clone parent
+;
+MSG_COLOR_BACK
+Barva pozadí
+; Background
+;
+MSG_COLOR_TEXT
+Bì¾ný text
+; Standard text
+;
+MSG_COLOR_FILLTXT
+Selected fill text??
+; Selected fill text
+;
+MSG_COLOR_FILLSEL
+Oznaèený text
+; Selected text
+;
+MSG_COLOR_MARGINBACK
+Margin background??
+; Margin background
+;
+MSG_COLOR_MARGINTXT
+Margin text??
+; Margin text
+;
+MSG_COLOR_SHINE
+Panel shine??
+; Panel shine
+;
+MSG_COLOR_SHADE
+Panel shade??
+; Panel shade
+;
+MSG_COLOR_PANELBACK
+Pozadí panelu
+; Panel back
+;
+MSG_COLOR_PANELTEXT
+Text na panelu
+; Panel text
+;
+MSG_COLOR_GLYPH
+Symbol panelu
+; Panel glyph
+;
+MSG_COLOR_MARKEDLINES
+Aktivní panel
+; Active panel
+;
