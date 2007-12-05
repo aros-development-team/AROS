@@ -1,0 +1,37 @@
+## version $VER: systemprefswindow.catalog 1.0 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_MENU_PREFS
+Projekt
+; Preferences
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importovat...
+; I\0Import...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Exportovat...
+; E\0Export...
+;
+MSG_MENU_PREFS_TEST
+T\0Vyzkou¹et
+; T\0Test
+;
+MSG_MENU_PREFS_REVERT
+R\0Obnovit pøedchozí
+; R\0Revert
+;
+MSG_MENU_PREFS_SAVE
+S\0Ulo¾it
+; S\0Save
+;
+MSG_MENU_PREFS_USE
+U\0Pou¾ít
+; U\0Use
+;
+MSG_MENU_PREFS_CANCEL
+C\0Zru¹it
+; C\0Cancel
+;

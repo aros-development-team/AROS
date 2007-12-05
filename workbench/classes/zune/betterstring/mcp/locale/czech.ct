@@ -1,0 +1,48 @@
+## version $VER: BetterString_mcp.catalog 2.1 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+; BetterString_mcp.cd - BetterString MUI custom prefs catalog description file
+; $Id$
+;
+;#version 2
+;#language english
+;
+;
+MSG_Label_Active
+Aktivní:
+; Active:
+;
+MSG_Label_Background
+Pozadí
+; Background
+;
+MSG_Label_Cursor
+Kurzor:
+; Cursor:
+;
+MSG_Label_Fonts
+Písmo:
+; Font:
+;
+MSG_Label_Frame
+Rámeèek:
+; Frame:
+;
+MSG_Label_Inactive
+Neaktivní:
+; Inactive:
+;
+MSG_Label_Marked
+Oznaèený:
+; Marked:
+;
+MSG_Label_Text
+Text
+; Text
+;
+MSG_String_TestString
+Vyzkou¹ejte v¹echno, co BetterString nabízí!
+; Test the power of BetterString here!
+;
