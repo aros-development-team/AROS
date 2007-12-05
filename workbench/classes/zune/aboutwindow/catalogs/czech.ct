@@ -1,0 +1,25 @@
+## version $VER: aboutwindow.catalog 1.0 (07.06.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_ABOUT
+O programu
+; About
+;
+MSG_AUTHORS
+Autoøi
+; Authors
+;
+MSG_SPONSORS
+Sponzoøi
+; Sponsors
+;
+MSG_SECTION_PROGRAMMING
+Vývoj
+; Programming
+;
+MSG_SECTION_TRANSLATING
+Pøeklad
+; Translating
+;

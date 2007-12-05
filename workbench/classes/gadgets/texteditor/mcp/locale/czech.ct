@@ -1,0 +1,585 @@
+## version $VER: TextEditor_mcp.catalog 2.4 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+; TextEditor_mcp.cd - TextEditor MUI custom prefs catalog description file
+; $Id$
+;
+;#version 2
+;#language english
+;
+;
+HelpBubble_BlockQual
+Nastavení klávesy, jejím¾ souèasným stisknutím zároveò\n\
+s kurzorovými klávesami oznaèíte text.
+; Move the cursor key and hold down the qualifier\n\
+; that you set here to mark text.
+;
+HelpBubble_CheckWord
+Tímto zapnete kontrolu, pøi které editor prochází\n\
+text, a pokud nalezne chybu, zobrazí návrh na opravu.
+; If enabled, then the editor will lookup the word,\n\
+; and only show suggestions if the word is misspelled.
+;
+HelpBubble_Smooth
+Tímto zapnete plynulé bodové rolování.
+; This will enable pixel smooth scrolling.
+;
+HelpBubble_TypeNSpell
+Tímto zapnete kontrolu slov ji¾ bìhem psaní\n\
+samotného textu.
+; Enable this to let the editor\n\
+; lookup the words while you type them.
+;
+HelpBubble_UndoLevel
+Jeden krok zpìt vy¾aduje 10 bajtù pamìti. Funkce\n\
+pro práci se schránkou vy¾adují o nìco více; závisí\n\
+na velikosti bloku.
+; Each undo eats 10 bytes of memory.\n\
+; Cut and Copy takes a little more,\n\
+; depends on the block size!
+;
+MSG_Button_DefaultKeys
+Výchozí _klávesy
+; Default _keys
+;
+MSG_Button_Delete
+_Smazat
+; _Delete
+;
+MSG_Button_Insert
+Vlo¾_it
+; _Insert
+;
+MSG_ConfigMenu_CheckWord
+Kontrola textu
+; Check word
+;
+MSG_ConfigMenu_TypeNSpell
+Kontrola pøi psaní
+; Type'n'spell
+;
+MSG_CycleItem_Alt
+Alt
+; Alt
+;
+MSG_CycleItem_Ctrl
+Control
+; Control
+;
+MSG_CycleItem_Mouse
+(jen my¹í)
+; (mouse only)
+;
+MSG_CycleItem_Shift
+Shift
+; Shift
+;
+MSG_Execution_ARexx
+ARexx
+; ARexx
+;
+MSG_Execution_CLI
+CLI
+; CLI
+;
+MSG_Function_BOL
+Zaèátek øádku
+; Begin Of Line
+;
+MSG_Function_Backspace
+Backspace
+; Backspace
+;
+MSG_Function_Bottom
+Na konec
+; Bottom
+;
+MSG_Function_Copy
+Zkopírovat
+; Copy
+;
+MSG_Function_Cut
+Vyjmout
+; Cut
+;
+MSG_Function_DelBOL
+Smazat do zaèátku øádku
+; Delete to BOL
+;
+MSG_Function_DelBOW
+Smazat do zaèátku slova
+; Delete to BOW
+;
+MSG_Function_DelEOL
+Smazat do konce øádku
+; Delete to EOL
+;
+MSG_Function_DelEOW
+Smazat do konce slova
+; Delete to EOW
+;
+MSG_Function_Delete
+Smazat
+; Delete
+;
+MSG_Function_Down
+Dolù
+; Down
+;
+MSG_Function_EOL
+Konec øádku
+; End Of Line
+;
+MSG_Function_Left
+Doleva
+; Left
+;
+MSG_Function_NextGadget
+Dal¹í tlaèítko
+; Next gadget
+;
+MSG_Function_NxtPage
+Dal¹í strana
+; Next Page
+;
+MSG_Function_NxtPara
+Dal¹í odstavec
+; Next Paragraph
+;
+MSG_Function_NxtSent
+Dal¹í vìta
+; Next Sentence
+;
+MSG_Function_NxtWord
+Dal¹í slovo
+; Next Word
+;
+MSG_Function_Paste
+Vlo¾it
+; Paste
+;
+MSG_Function_PrvPage
+Pøedchozí strana
+; Prev Page
+;
+MSG_Function_PrvPara
+Pøedchozí odstavec
+; Prev Paragraph
+;
+MSG_Function_PrvSent
+Pøedchozí vìta
+; Prev Sentence
+;
+MSG_Function_PrvWord
+Pøedchozí slovo
+; Prev Word
+;
+MSG_Function_Redo
+Znovu
+; Redo
+;
+MSG_Function_Return
+Enter
+; Return
+;
+MSG_Function_Right
+Doprava
+; Right
+;
+MSG_Function_SuggestSpelling
+Nabídka kontroly
+; Suggest spelling
+;
+MSG_Function_Tab
+Tabelátor
+; Tab
+;
+MSG_Function_Top
+Na zaèátek
+; Top
+;
+MSG_Function_Undo
+Zpìt
+; Undo
+;
+MSG_Function_Up
+Nahoru
+; Up
+;
+MSG_GroupTitle_Control
+Ovládání
+; Control
+;
+MSG_GroupTitle_Cursor
+Kurzor
+; Cursor
+;
+MSG_GroupTitle_Design
+Vzhled
+; Design
+;
+MSG_GroupTitle_Fonts
+Písma
+; Fonts
+;
+MSG_GroupTitle_Separator
+Oddìlovaè
+; Separator
+;
+MSG_HelpTxt_SpellChecker
+ \33u Struèný popis \33n\n\
+\n\
+Prvek TextEditor vám umo¾ní jednoduchou integraci externí kontroly, která \
+dovoluje kontrolu jak právì psaných slov, tak i døíve napsaných slov.\n\
+\n\
+ \33u Pøíkaz pro kontrolu \33n\n\
+\n\
+Pro kontrolu psaných slov mù¾ete jako pøíkaz pro kontrolu pou¾ít dávku, \
+která zkontroluje slovo a nastaví promìnnou prostøedí "Found" na 0 \
+(pro nenalezeno) nebo 1 (pro nalezeno).\n\
+Zvolil jsem tento zpùsob, jeliko¾ je standardní pro AlphaSpell.\n\
+Napi¹te %s na místì, kde má být slovo.\n\
+Pokud pou¾ijete AlphaSpell, pak mù¾ete napsat:\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Czech.ald\"\n\
+\n\
+Zde \33bnesmíte\33n zapomenout uvozovky, které jsou nezbytné pro odli¹ení \
+arexxové dávky od pøíkazu.\n\
+\n\
+ \33u Pøíkaz pro návrh opravy \33n\n\
+\n\
+Pokud stisknete klávesu HELP v blízkosti urèitého slova, editor spustí tento \
+pøíkaz a opìt nahradí slovo øetìzcem %s.\n\
+Daná dávka vytvoøí soubor v T: nazvaný \"Matches\". Tento soubor poté naète \
+prvek TextEditor a zobrazí jeho obsah v rolovacím tlaèítku, ze kterého si \
+vyberete slovo, kterým nahradíte pùvodní chybné slovo.\n\
+U¾ivateli programu AlphaSpell staèí napsat:\n\
+\33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Czech.ald\"\n\
+\n\
+Pokud pou¾ijete vý¹e uvedenou metodu, pak musíte program AlphaSpell spustit \
+s parametrem \"ARexx\".\n\
+V pøípadì, ¾e zvolíte kontrolu pøi psaní slov, doporuèujeme umístit slovník \
+do pamìti RAM.
+;  \33u Intro \33n\n\
+; \n\
+; The TextEditor gadget offers you easy integration of external spell checkers, \
+; this allows you to have both type'n'spell and also normal word-guessing.\n\
+; \n\
+;  \33u Lookup command \33n\n\
+; \n\
+; For the type'n'spell you'll have to set the lookup command to a script that \
+; will lookup the word and set the environment variable \"Found\" to either 0 \
+; (for not found) or 1 (for a match).\n\
+; I have chosen this behavior because it is the default for AlphaSpell.\n\
+; You write %s where you want the word.\n\
+; If you use AlphaSpell, then you can write:\n\
+; \33bARexx:\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\
+; \n\
+; You \33bmust\33n remember the quotes, this will let ARexx execute it \
+; as a command instead of a script.\n\
+; \n\
+;  \33u Suggest command \33n\n\
+; \n\
+; If you press HELP over a word, then the editor will launch this command, \
+; again with %s substituted with the current word.\n\
+; Your script should produce a file in T: named \"Matches\". This file are \
+; then read by the gadget, and the contents are shown in a popup-listview, \
+; from where you can choose a word which will replace the misspelled one.\n\
+; Again, AlphaSpell users can write:\n\
+; \33bARexx:\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\
+; \n\
+; If you use the methods described above, then you must start AlphaSpell \
+; with the \"ARexx\" switch.\n\
+; \n\
+; It is advised to keep your dictionary in RAM if you enable \
+; the type'n'spell feature.
+;
+MSG_LVLabel_Action
+\33c\0333Akce:
+; \33c\0333Action:
+;
+MSG_LVLabel_Key
+\33c\0333Klávesa:
+; \33c\0333Key:
+;
+MSG_Label_Background
+Pozadí
+; Background
+;
+MSG_Label_BlinkSpeed
+Rychlost blikání
+; Blinkspeed
+;
+MSG_Label_BlkQual
+Oznaèení bloku
+; Block qualifier
+;
+MSG_Label_Cursor
+Kurzor
+; Cursor
+;
+MSG_Label_Fixed
+Fixní
+; Fixed
+;
+MSG_Label_Frame
+Rámeèek
+; Frame
+;
+MSG_Label_Highlight
+Zvýraznìní
+; Highlight
+;
+MSG_Label_LookupCmd
+Pøíkaz pro kontrolu
+; Lookup command
+;
+MSG_Label_LookupWords
+Kontrola slova pøed návrhem?
+; Lookup word before suggesting?
+;
+MSG_Label_Normal
+Normální
+; Normal
+;
+MSG_Label_Selected
+Vybraný
+; Selected
+;
+MSG_Label_SeparatorShadow
+Tmavý
+; Shadow
+;
+MSG_Label_SeparatorShine
+Svìtlý
+; Shine
+;
+MSG_Label_Smooth
+Plynulé
+; Smooth
+;
+MSG_Label_SpellNType
+Kontrola pøi psaní?
+; Spell check as you type?
+;
+MSG_Label_SuggestCmd
+Pøíkaz pro návrh opravy
+; Suggest command
+;
+MSG_Label_TabSize
+Tabelátor
+; Tab size
+;
+MSG_Label_Text
+Text
+; Text
+;
+MSG_Label_UndoLevel
+Poèet krokù zpìt
+; Undo levels
+;
+MSG_Label_Width
+©íøka
+; Width
+;
+MSG_MenuItem_Background
+Pozadí
+; Background
+;
+MSG_MenuItem_Bold
+Tuèné
+; Bold
+;
+MSG_MenuItem_Center
+Na støed
+; Center
+;
+MSG_MenuItem_Copy
+Zkopírovat
+; Copy
+;
+MSG_MenuItem_Cut
+Vyjmout
+; Cut
+;
+MSG_MenuItem_Delete
+Odstranit
+; Delete
+;
+MSG_MenuItem_Fill
+Vyplòovací
+; Fill
+;
+MSG_MenuItem_Halfshadow
+Polostínová
+; Halfshadow
+;
+MSG_MenuItem_Halfshine
+Polosvìtlá
+; Halfshine
+;
+MSG_MenuItem_Italic
+Kurzíva
+; Italic
+;
+MSG_MenuItem_Left
+Vlevo
+; Left
+;
+MSG_MenuItem_Mark
+Pro výbìr
+; Mark
+;
+MSG_MenuItem_Normal
+Normální
+; Normal
+;
+MSG_MenuItem_Paste
+Vlo¾it
+; Paste
+;
+MSG_MenuItem_Redo
+Odvolat zpìt
+; Redo
+;
+MSG_MenuItem_Right
+Vpravo
+; Right
+;
+MSG_MenuItem_Shadow
+Stínová
+; Shadow
+;
+MSG_MenuItem_Shine
+Svìtlá
+; Shine
+;
+MSG_MenuItem_Text
+Text
+; Text
+;
+MSG_MenuItem_Underline
+Podtr¾ené
+; Underline
+;
+MSG_MenuItem_Undo
+Zpìt
+; Undo
+;
+MSG_MenuSubTitle_Alignment
+Zarovnat
+; Alignment
+;
+MSG_MenuSubTitle_Color
+Barva
+; Color
+;
+MSG_MenuTitle_Edit
+Upravit
+; Edit
+;
+MSG_Page_Keybindings
+Klávesy
+; Keybindings
+;
+MSG_Page_Sample
+Pøíklad
+; Sample
+;
+MSG_Page_Settings
+Prostøedí
+; Settings
+;
+MSG_Page_SpellChecker
+Kontrola textu
+; Spell checker
+;
+MSG_PopWinTitle_Background
+Vyberte pozadí
+; Select background
+;
+MSG_PopWinTitle_Cursor
+Vyberte barvu kurzoru
+; Select cursor color
+;
+MSG_PopWinTitle_Frame
+Vyberte rámeèek
+; Select frame
+;
+MSG_PopWinTitle_Highlight
+Vyberte barvu zvýraznìní
+; Select highlight color
+;
+MSG_PopWinTitle_Selected
+Vyberte barvu bloku
+; Select block color
+;
+MSG_PopWinTitle_SeparatorShadow
+Vyberte barvu tmavých oddìlovaèù
+; Select separators shadow color
+;
+MSG_PopWinTitle_SeparatorShine
+Vyberte barvu svìtlých oddìlovaèù
+; Select separators shine color
+;
+MSG_PopWinTitle_Text
+Vyberte barvu textu
+; Select text color
+;
+MSG_SliderText_MaxWidth
+Jako znak
+; Same as char
+;
+MSG_SliderText_MinSpeed
+-vyp-
+; Off
+;
+MSG_SliderText_MinWidth
+1 pix.
+; 1 pixel
+;
+MSG_SliderText_StdSpeed
+\33r%ld ms
+; \33r%ld ms
+;
+MSG_SliderText_StdWidth
+%ld pix.
+; %ld pixels
+;
+MSG_SliderText_TabSize
+%ld mezer
+; %ld spaces
+;
+MSG_Function_GotoBookmark1
+Pøejít na zálo¾ku è.1
+; Goto Bookmark 1
+;
+MSG_Function_GotoBookmark2
+Pøejít na zálo¾ku è.2
+; Goto Bookmark 2
+;
+MSG_Function_GotoBookmark3
+Pøejít na zálo¾ku è.3
+; Goto Bookmark 3
+;
+MSG_Function_SetBookmark1
+Vytvoøit zálo¾ku è.1
+; Set Bookmark 1
+;
+MSG_Function_SetBookmark2
+Vytvoøit zálo¾ku è.2
+; Set Bookmark 2
+;
+MSG_Function_SetBookmark3
+Vytvoøit zálo¾ku è.3
+; Set Bookmark 3
+;
+MSG_Button_Snoop
+Zachytit
+; Snoop
+;
+MSG_Function_DelLine
+Smazat øádek
+; Delete line
+;

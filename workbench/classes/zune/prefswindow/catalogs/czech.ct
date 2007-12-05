@@ -1,0 +1,25 @@
+## version $VER: prefswindow.catalog 1.0 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TEST
+Zkusi_t
+; _Test
+;
+MSG_REVERT
+V_rátit
+; _Revert
+;
+MSG_SAVE
+_Ulo¾it
+; _Save
+;
+MSG_USE
+_Pou¾ít
+; _Use
+;
+MSG_CANCEL
+_Zru¹it
+; _Cancel
+;
