@@ -1,0 +1,404 @@
+## version $VER: asl.catalog 1.0 (20.11.2007)
+## language czech
+## codeset 0
+;
+MSG_FILEREQ_TITLE
+Výbìr souboru
+; Select File
+;
+MSG_FILEREQ_POSITIVE_GAD
+OK
+; Ok
+;
+MSG_FILEREQ_NEGATIVE_GAD
+Zru¹it
+; Cancel
+;
+MSG_FILEREQ_VOLUMES_GAD
+Média
+; Volumes
+;
+MSG_FILEREQ_PARENT_GAD
+Vy¹¹í
+; Parent
+;
+MSG_FILEREQ_PATTERN_LABEL
+Maska
+; Pattern
+;
+MSG_FILEREQ_DRAWER_LABEL
+Adresáø
+; Drawer
+;
+MSG_FILEREQ_FILE_LABEL
+Soubor
+; File
+;
+MSG_FILEREQ_LV_DRAWER
+Adresáø
+; Drawer
+;
+MSG_FILEREQ_LV_ASSIGN
+Pøiøazení
+; Assign
+;
+MSG_FILEREQ_DELETE_TITLE
+Smazání objektu
+; Delete File
+;
+MSG_FILEREQ_DELETE_MSG
+Upozornìní: Opravdu chcete smazat vybraný objekt\n\%s?
+; Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
+;
+MSG_FILEREQ_DELETE_OKCANCEL
+Smazat|Zru¹it
+; Delete|Cancel
+;
+MSG_FILEREQ_RENAME_TITLE
+Pøejmenování objektu
+; Rename
+;
+MSG_FILEREQ_RENAME_OK
+Pøejmenovat
+; Rename
+;
+MSG_FILEREQ_RENAME_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_TITLE
+Nový adresáø
+; Create Drawer
+;
+MSG_FILEREQ_CREATEDRAWER_OK
+Vytvoøit
+; Create
+;
+MSG_FILEREQ_CREATEDRAWER_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_FILEREQ_CREATEDRAWER_DEFNAME
+nový_adresáø
+; Rename_Me
+;
+MSG_FILEREQ_SELECT_TITLE
+Výbìr pomocí masky
+; Select by pattern
+;
+MSG_FILEREQ_SELECT_OK
+Vybrat
+; Select
+;
+MSG_FILEREQ_SELECT_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_FILEREQ_MEN_CONTROL
+Projekt
+; Control
+;
+MSG_FILEREQ_MEN_CONTROL_LASTNAME
+L\0Pøedchozí polo¾ka
+; L\0Last Name
+;
+MSG_FILEREQ_MEN_CONTROL_NEXTNAME
+N\0Následující polo¾ka
+; N\0Next Name
+;
+MSG_FILEREQ_MEN_CONTROL_RESTORE
+R\0Obnovit pøedchozí
+; R\0Restore
+;
+MSG_FILEREQ_MEN_CONTROL_PARENT
+P\0Adresáø o úroveò vý¹
+; P\0Parent
+;
+MSG_FILEREQ_MEN_CONTROL_VOLUMES
+V\0Seznam médií
+; V\0Volumes
+;
+MSG_FILEREQ_MEN_CONTROL_UPDATE
+U\0Aktualizovat obsah
+; U\0Update
+;
+MSG_FILEREQ_MEN_CONTROL_DELETE
+D\0Smazat
+; D\0Delete
+;
+MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER
+T\0Vytvoøit nový adresáø...
+; T\0Create new drawer...
+;
+MSG_FILEREQ_MEN_CONTROL_RENAME
+E\0Pøejmenovat...
+; E\0Rename...
+;
+MSG_FILEREQ_MEN_CONTROL_SELECT
+#\0Vybrat polo¾ky...
+; #\0Select...
+;
+MSG_FILEREQ_MEN_CONTROL_OK
+O\0Potvrdit
+; O\0Ok
+;
+MSG_FILEREQ_MEN_CONTROL_CANCEL
+C\0Zru¹it
+; C\0Cancel
+;
+MSG_FILEREQ_MEN_FILELIST
+Výpis
+; File list
+;
+MSG_FILEREQ_MEN_FILELIST_SORTNAME
+1\0Øadit dle názvu
+; 1\0Sort by name
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDATE
+2\0Øadit dle data
+; 2\0Sort by date
+;
+MSG_FILEREQ_MEN_FILELIST_SORTSIZE
+3\0Øadit dle velikosti
+; 3\0Sort by size
+;
+MSG_FILEREQ_MEN_FILELIST_SORTUP
++\0Øadit vzestupnì
+; +\0Ascending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDOWN
+-\0Øadit sestupnì
+; -\0Descending order
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST
+4\0Adresáøe jako první
+; 4\0Show drawers first
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME
+5\0Adresáøe i soubory dohromady
+; 5\0Show drawers with files
+;
+MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST
+6\0Adresáøe jako poslední
+; 6\0Show drawers last
+;
+MSG_MODEREQ_TITLE
+Výbìr rozli¹ení obrazovky
+; Select Screen Mode
+;
+MSG_MODEREQ_POSITIVE_GAD
+Potvrdit
+; Ok
+;
+MSG_MODEREQ_NEGATIVE_GAD
+Zru¹it
+; Cancel
+;
+MSG_MODEREQ_OVERSCAN_LABEL
+Overscan
+; Overscan
+;
+MSG_MODEREQ_OVERSCAN_TEXT
+Textový re¾im
+; Text Size
+;
+MSG_MODEREQ_OVERSCAN_GRAPHICS
+Grafický re¾im
+; Graphics Size
+;
+MSG_MODEREQ_OVERSCAN_EXTREME
+Zpracovatelné maximum
+; Extreme Size
+;
+MSG_MODEREQ_OVERSCAN_MAXIMUM
+Zobrazitelné maximum
+; Maximum Size
+;
+MSG_MODEREQ_WIDTH_LABEL
+©íøka
+; Width
+;
+MSG_MODEREQ_HEIGHT_LABEL
+Vý¹ka
+; Height
+;
+MSG_MODEREQ_COLORS_LABEL
+Poèet barev
+; Colors
+;
+MSG_MODEREQ_AUTOSCROLL_LABEL
+Rolování obrazovky
+; AutoScroll
+;
+MSG_MODEREQ_AUTOSCROLL_OFF
+vyp
+; OFF
+;
+MSG_MODEREQ_AUTOSCROLL_ON
+zap
+; ON
+;
+MSG_MODEREQ_PROPERTIES_TITLE
+Pøehled vlastností
+; Mode Properties
+;
+MSG_MODEREQ_PROPERTIES_NOTWB
+Nepodporuje Workbench
+; Does not support Workbench
+;
+MSG_MODEREQ_PROPERTIES_NOTGENLOCK
+Nepodporuje genlock
+; Does not support genlock
+;
+MSG_MODEREQ_PROPERTIES_NOTDRAG
+Nelze pøesouvat
+; Not draggable
+;
+MSG_MODEREQ_PROPERTIES_HAM
+Re¾im HAM
+; Hold & Modify
+;
+MSG_MODEREQ_PROPERTIES_EHB
+Re¾im EHB
+; Extra-HalfBright
+;
+MSG_MODEREQ_PROPERTIES_LACE
+Prokládaný
+; Interlaced
+;
+MSG_MODEREQ_PROPERTIES_ECS
+Vy¾aduje ECS
+; Requires ECS
+;
+MSG_MODEREQ_PROPERTIES_WB
+Podporuje Workbench
+; Supports Workbench
+;
+MSG_MODEREQ_PROPERTIES_GENLOCK
+Podporuje genlock
+; Supports genlock
+;
+MSG_MODEREQ_PROPERTIES_DRAG
+Lze pøesouvat
+; Draggable
+;
+MSG_MODEREQ_PROPERTIES_DPFPRI2
+DualPlayfield 2
+; DualPlayfield Priority 2
+;
+MSG_MODEREQ_PROPERTIES_REFRESHRATE
+%ld Hz, %ld,%ld kHz
+; %ldHz, %ld,%ldkHz
+;
+MSG_MODEREQ_MEN_CONTROL
+Projekt
+; Control
+;
+MSG_MODEREQ_MEN_CONTROL_LASTMODE
+L\0Pøedchozí polo¾ka
+; L\0Last Mode
+;
+MSG_MODEREQ_MEN_CONTROL_NEXTMODE
+N\0Následující polo¾ka
+; N\0Next Mode
+;
+MSG_MODEREQ_MEN_CONTROL_PROPERTIES
+?\0Pøehled vlastností...
+; ?\0Property List...
+;
+MSG_MODEREQ_MEN_CONTROL_RESTORE
+R\0Obnovit pøedchozí
+; R\0Restore
+;
+MSG_MODEREQ_MEN_CONTROL_OK
+O\0Potvrdit
+; O\0Ok
+;
+MSG_MODEREQ_MEN_CONTROL_CANCEL
+C\0Zru¹it
+; C\0Cancel
+;
+MSG_FONTREQ_TITLE
+Výbìr písma
+; Select Font
+;
+MSG_FONTREQ_POSITIVE_GAD
+Potvrdit
+; Ok
+;
+MSG_FONTREQ_NEGATIVE_GAD
+Zru¹it
+; Cancel
+;
+MSG_FONTREQ_MEN_CONTROL
+Projekt
+; Control
+;
+MSG_FONTREQ_MEN_CONTROL_LASTFONT
+L\0Pøedchozí polo¾ka
+; L\0Last Font
+;
+MSG_FONTREQ_MEN_CONTROL_NEXTFONT
+N\0Následující polo¾ka
+; N\0Next Font
+;
+MSG_FONTREQ_MEN_CONTROL_RESTORE
+R\0Obnovit pøedchozí
+; R\0Restore
+;
+MSG_FONTREQ_MEN_CONTROL_RESCAN
+D\0Aktualizovat seznam
+; D\0Rescan Disk
+;
+MSG_FONTREQ_MEN_CONTROL_OK
+O\0Potvrdit
+; O\0Ok
+;
+MSG_FONTREQ_MEN_CONTROL_CANCEL
+C\0Zru¹it
+; C\0Cancel
+;
+MSG_FONTREQ_MODE_LABEL
+Re¾im
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Text
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Text s pozadím
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Komplementární
+; Complement
+;
+MSG_FONTREQ_STYLE_LABEL
+Øez písma
+; Style
+;
+MSG_FONTREQ_STYLE_BOLD
+T
+; B
+;
+MSG_FONTREQ_STYLE_ITALIC
+K
+; I
+;
+MSG_FONTREQ_STYLE_UNDERLINED
+P
+; U
+;
+MSG_FONTREQ_COLOR_LABEL_FG
+Barva
+; Color
+;
+MSG_FONTREQ_COLOR_LABEL_BG
+Barva pozadí
+; BG Color
+;
+MSG_FONTREQ_COLOR_LABEL_FGBG
+Barvy
+; Colors
+;
