@@ -1,0 +1,161 @@
+## version $VER: pcitool.catalog 1.0 (29.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+PCI Tool
+; PCI Tool
+;
+MSG_WINTITLE
+PCI Tool
+; PCI Tool
+;
+MSG_DESCRIPTION
+Pøehled stavu sbìrnice PCI
+; PCI querying and managment
+;
+MSG_ERROR_LOCALE
+Nelze inicializovat systém lokalizace.
+; Can't open locale
+;
+MSG_ERROR_OK
+OK
+; Ok
+;
+MSG_ERROR_HEADER
+Chyba
+; ERROR
+;
+MSG_DRIVER_INFO
+Informace o ovladaèi
+; Driver info
+;
+MSG_DRIVER_NAME
+Název:
+; Driver name:
+;
+MSG_DIRECT_BUS
+Direct bus:??
+; Direct bus:
+;
+MSG_HARDWARE_INFO
+Hardware:
+; Hardware info:
+;
+MSG_PCI_DEVICE_INFO
+Informace o zaøízení
+; PCI device info
+;
+MSG_DEVICE_DESCRIPTION
+Popis:
+; Description:
+;
+MSG_VENDORNAME
+Výrobce:
+; Vendor Name:
+;
+MSG_PRODUCTNAME
+Název:
+; Product Name:
+;
+MSG_SUBSYSTEM
+Podsystém:
+; Subsystem:
+;
+MSG_VENDORID
+VendorID:
+; VendorID:
+;
+MSG_PRODUCTID
+ProductID:
+; ProductID:
+;
+MSG_REVISIONID
+RevisionID:
+; RevisionID:
+;
+MSG_INTERFACE
+Rozhraní:
+; Interface:
+;
+MSG_CLASS
+Tøída:
+; Class:
+;
+MSG_SUBCLASS
+Podtøída:
+; Subclass:
+;
+MSG_IRQ
+IRQ:
+; IRQ:
+;
+MSG_ROM_BASE
+Adresa ROM:
+; ROM Base:
+;
+MSG_ROM_SIZE
+Velikost ROM:
+; ROM Size:
+;
+MSG_BRIDGE
+Zaøízení typu Bridge, sbìrnice %d (ISA %s zapnuto, VGA %s zapnuto)
+; Bridge handles bus %d (ISA %senabled, VGA %senabled)
+;
+MSG_MEMORY_RANGE
+Rozsah pamìti: %08x - %08x
+; Memory ranges from %08x to %08x
+;
+MSG_PREFETCHABLE_MEMORY
+Rozsah ??Prefetchable pamìti: %08x - %08x
+; Prefetchable ranges memory from %08x to %08x
+;
+MSG_IO_RANGE
+Rozsah IO: %04x - %04x
+; IO ranges from %04x to %04x
+;
+MSG_IO_MSG
+IO: %s, Pamì»: %s, Master: %s, PaletteSnoop: %s, 66 MHz: %s
+; IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s
+;
+MSG_IO
+I/O
+; I/O
+;
+MSG_MEMORY
+Pamì»
+; Memory
+;
+MSG_PREFETCHABLE
+Prefetchable?? pamì»
+; Prefetchable Memory
+;
+MSG_YES
+ano
+; yes
+;
+MSG_NO
+ne
+; no
+;
+MSG_NA
+---
+; N/A
+;
+MSG_NOT
+není
+; not
+;
+MSG_SIZE4
+%s na adrese 0x%04x (velikost: 0x%04x)
+; %s at 0x%04x (size 0x%04x)
+;
+MSG_SIZE8
+%s na adrese 0x%08x (velikost: 0x%08x)
+; %s at 0x%08x (size 0x%08x)
+;
+MSG_UNUSED
+-nepou¾ito-
+; --unused--
+;
