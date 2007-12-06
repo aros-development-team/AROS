@@ -1,0 +1,53 @@
+## version $VER: executecommand.catalog 1.1 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+Spustit
+; Execute
+;
+MSG_DESCRIPTION
+Spu¹tìní pøíkazu
+; Execute Command
+;
+MSG_LABEL_COMMANDLINE
+Pøíkazový øádek:
+; Command and arguments:
+;
+MSG_BUTTON_EXECUTE
+_Spustit
+; _Execute
+;
+MSG_BUTTON_CANCEL
+_Zru¹it
+; _Cancel
+;
+MSG_CONSOLE_TITLE
+Výstupní informace pøíkazu
+; Command Output
+;
+MSG_ERROR_HEADER
+Chyba
+; ERROR
+;
+MSG_ERROR_OK
+*OK
+; *OK
+;
+MSG_ERROR_LOCALE
+Nelze inicializovat systém lokalizace.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Nelze inicializovat vlastní tøídy objektu.
+; Can't initialize custom classes.
+;
+MSG_ERROR_OPEN_CONSOLE
+Nelze otevøít konzolové okno.
+; Can't open console window.
+;
+MSG_ERROR_EXECUTE
+Zadaný pøíkaz nelze spustit.
+; Can't execute command.
+;

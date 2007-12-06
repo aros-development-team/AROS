@@ -1,0 +1,49 @@
+## version $VER: diskinfo.catalog 1.3 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+Informace o disku
+; Disk Info
+;
+MSG_ERROR_HEADER
+Chyba
+; ERROR
+;
+MSG_ERROR_OK
+_OK
+; _OK
+;
+MSG_ERROR_LOCALE
+Nelze inicializovat systém lokalizace.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Nelze inicializovat vlastní tøídy objektu.
+; Can't initialize custom classes.
+;
+MSG_DESCRIPTION
+Informace o disku
+; Disk Icon Informations
+;
+MSG_PERCENTFULL
+Zaplnìno z %ld %%
+; %ld %% Full
+;
+MSG_FORMAT
+Formát
+; Format
+;
+MSG_UNKNOWN
+neznámý
+; Unknown
+;
+MSG_AUTHOR
+Olivier Adam
+; Olivier Adam
+;
+MSG_COPYRIGHT
+Copyright (C) 2006 AROS Dev Team
+; ©2006 AROS Dev Team
+;

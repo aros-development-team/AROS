@@ -1,0 +1,72 @@
+## version $VER: wbrename.catalog 1.1 (22.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+WBRename
+; WBRename
+;
+MSG_DESCRIPTION
+Pøejmenuje vybraný objekt
+; Renames files and drawers
+;
+MSG_COPYRIGHT
+Copyright (C) AROS Dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Pøejmenování objektu
+; Rename
+;
+MSG_LINE
+Zadejte nový název
+; Enter a new name
+;
+MSG_NAME
+Název:
+; New name:
+;
+MSG_OK
+_Potvrdit
+; _OK
+;
+MSG_CANCEL
+_Zru¹it
+; Ca_ncel
+;
+MSG_ERROR_TITLE
+WBRename :: Chyba
+; WBRename: Error
+;
+MSG_ALREADY_EXIST
+Objekt s názvem "%s" ji¾ existuje!
+; '%s' already exists!
+;
+MSG_FAILED
+Chyba pøi pøejmenování objektu "%s".\n%s
+; Rename of '%s' failed with error:\n'%s'!
+;
+MSG_ILLEGAL_CHARS
+Název "%s" obsahuje neplatné znaky!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Program vy¾aduje 2 argumenty!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Vybraný adresáø nelze zamknout!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Tento program nelze spustit z pøíkazového øádku!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Nelze vytvoøit objekt application!
+; Failed to create Application!
+;
+MSG_OUTOFMEMORY
+Nedostatek volné pamìti!
+; Can't allocate RAM!
