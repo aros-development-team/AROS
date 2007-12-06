@@ -1,0 +1,169 @@
+## version $VER: HDToolBox.catalog 1.2 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+WORD_Active
+Aktivní
+; Active
+;
+WORD_AddEntry
+Pøidat
+; Add Entry
+;
+WORD_All
+V¹e
+; All
+;
+WORD_Automount
+Autom. pøipojit
+; Automount
+;
+WORD_Bootable
+Spustitelný
+; Bootable
+;
+WORD_BootPri
+Priorita
+; Boot Priority
+;
+WORD_Cancel
+Zru¹it
+; Cancel
+;
+WORD_Changed
+Zmìnìný
+; Changed
+;
+WORD_Change_Type
+Druh zmìny
+; Change Type
+;
+WORD_Create_Table
+Vytvoøit tabulku
+; Create Table
+;
+WORD_Devices
+Zaøízení
+; Devices
+;
+WORD_DosEnvec
+DosEnvec
+; DosEnvec
+;
+WORD_Exit
+Ukonèit
+; Exit
+;
+WORD_Geometry
+Geometrie
+; Geometry
+;
+WORD_Name
+Název
+; Name
+;
+WORD_Switches
+Pøíznaky
+; Switches
+;
+WORD_Ok
+OK
+; Ok
+;
+WORD_Parent
+Parent??
+; Parent
+;
+WORD_Partitions
+Oddíly
+; Partitions
+;
+WORD_Partition_Table
+Seznam oddílù
+; Partition Table
+;
+WORD_Partition_Table_Type
+Druh tabulky s oddíly
+; Partition Table Type
+;
+WORD_Partition_Type
+Druh oddílu
+; Partition Type
+;
+WORD_RemoveEntry
+Odebrat
+; Remove Entry
+;
+WORD_Rename
+Pøejmenovat
+; Rename
+;
+WORD_Resize_Move
+Zmìnit velikost/Pøesunout
+; Resize/Move
+;
+WORD_Save_Changes
+Ulo¾it zmìny
+; Save Changes
+;
+WORD_Size
+Velikost
+; Size
+;
+WORD_Unit
+Jednotka
+; Unit
+;
+WORD_Units
+Jednotky
+; Units
+;
+WORD_Unknown
+neznámý
+; Unknown
+;
+WORD_MENU_Project
+Projekt
+; Project
+;
+WORD_MENU_About
+O programu...
+; About
+;
+WORD_MENU_Quit
+Ukonèit
+; Quit
+;
+MSG_ASK_SAVE
+Ve¹kerá data na zmìnìných oddílech budou ztracena!\nOpravdu chcete zapsat provedené zmìny do tabulky "%s"?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY
+Nedostatek volné pamìti! 
+; Not enough memory
+;
+MSG_PARTITION_TABLE_FULL
+Tabulka se seznamem oddílù je zaplnìna!
+; Partition table full
+;
+MSG_Select_Empty_Area
+Vyberte prázdnou oblast
+; Select empty area
+;
+MSG_Select_Partition_Resize_Move
+Vyberte oddíl a zmìòte jeho velikost, pøíp. pøesuòte
+; Select a partition and resize/move it
+;
+MSG_Welcome
+Vítejte v programu pro pøípravu pevného disku
+; Welcome to the partitioning tool
+;
+MSG_WriteTableError
+Chyba pøi zápisu do tabulky se seznamem oddílù.
+; Error while writing partition table
+;
+MSG_CreateTableError
+Chyba pøi vytváøení tabulky se seznamem oddílù.
+; Error while creating partition table
+;

@@ -1,0 +1,93 @@
+## version $VER: screengrabber.catalog 1.1 (23.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_WINDOW_TITLE
+ScreenGrabber
+; ScreenGrabber
+;
+MSG_REFRESH
+Aktualizovat seznam
+; Refresh list
+;
+MSG_SCREEN_INFO
+Informace o obrazovce
+; Screen info
+;
+MSG_SIZE
+Velikost:
+; Size
+;
+MSG_TITLE
+Text záhlaví:
+; Title
+;
+MSG_DEFAULT_TITLE
+Výchozí text:
+; Default title
+;
+MSG_GRABBING_OPTIONS
+Mo¾nosti snímání
+; Grabbing options
+;
+MSG_DELAY
+Zpo¾dìní (sek.):
+; Delay (s)
+;
+MSG_HIDE
+Pøi snímání skrýt okno programu
+; Hide the grabber window
+;
+MSG_SAVE_OPTIONS
+Mo¾nosti ukládání
+; Save options
+;
+MSG_SAVE_FILE
+Ulo¾it snímek
+; Save file
+;
+MSG_SCREENSHOT
+Snímek obrazovky
+; Screenshot
+;
+MSG_SCREEN_PARM
+%d × %d, barevná hloubka: %d
+; %d x %d, depth=%d
+;
+MSG_OVERWRITE
+Soubor "%s" ji¾ existuje.\nOpravdu chcete tento soubor pøepsat?
+; File '%s' already exists.\nDo you really want to overwrite it?
+;
+MSG_ERROR_TITLE
+Screengrabber :: Chyba
+; Screengrabber Error
+;
+MSG_GAD_OK
+_OK
+; _OK
+;
+MSG_GAD_YESNO
+Ano|Ne
+; YES|NO
+;
+MSG_ERR_DATATYPE
+Nelze vytvoøit objekt datatype!
+; Can't create datatype object!
+;
+MSG_NORAM
+Nedostatek volné pamìti!
+; Can't allocate RAM!
+;
+MSG_ERR_DATATYPEIO
+Chyba pøi zápisu do souboru "%s"!\nÈíslo chyby: %ld.
+; Writing of '%s' failed with IO Error %ld!
+;
+MSG_ERR_OPENFILE
+Nelze zapsat do souboru "%s"!
+; Can't open file '%s' for output!
+;
+MSG_ERR_APP
+Nelze vytvoøit objekt application!
+; Can't create application object!
+;
