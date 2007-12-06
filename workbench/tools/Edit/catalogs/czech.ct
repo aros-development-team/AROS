@@ -1,0 +1,440 @@
+## version $VER: Editor.catalog 1.2 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+; Catalog description for JanoEditor
+; JanoEditor.cd
+;
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Project Menu
+;
+MSG_PROJECTTITLE
+Projekt
+; Project
+;
+MSG_NEWEMPTYFILE
+Nový
+; New
+;
+MSG_OPENNEWFILE
+Otevøít...
+; Open file...
+;
+MSG_LOADINPRJ
+Pøipojit...
+; Load file...
+;
+MSG_SAVEFILE
+Ulo¾it
+; Save
+;
+MSG_SAVEFILEAS
+Ulo¾it jako...
+; Save as...
+;
+MSG_SAVECHANGES
+Ulo¾it zmìny
+; Save changes
+;
+MSG_PRINTFILE
+Tisknout
+; Print
+;
+MSG_INFORMATION
+Informace...
+; Information...
+;
+MSG_CLOSE
+Zavøít
+; Close
+;
+MSG_QUIT
+Ukonèit
+; Quit
+;
+; Edit Menu
+;
+MSG_EDITTITLE
+Úpravy
+; Edit
+;
+MSG_CUT
+Vyjmout
+; Cut
+;
+MSG_COPY
+Zkopírovat
+; Copy
+;
+MSG_PASTE
+Vlo¾it
+; Paste
+;
+MSG_MARK
+Oznaèit
+; Mark
+;
+MSG_MARKCOLUMN
+Oznaèit sloupec
+; Mark columnar
+;
+MSG_SELECTALL
+Oznaèit v¹e
+; Select all
+;
+MSG_DELLINE
+Smazat øádek
+; Del line
+;
+MSG_SUBTOOLS
+Nástroje
+; Tools
+;
+MSG_INDENT
+Odsadit
+; Indent
+;
+MSG_UNINDENT
+Zru¹it odsazení
+; Unindent
+;
+MSG_UPPERCASE
+Pøevést na VELKÁ písmena
+; Upper case
+;
+MSG_LOWERCASE
+Pøevést na malá písmena
+; Lower case
+;
+MSG_TOGGLECASE
+Prohodit malá a VELKÁ
+; Toggle case
+;
+MSG_INSERTFILE
+Vlo¾it soubor...
+; Insert file...
+;
+MSG_UNDO
+Zpìt
+; Undo
+;
+MSG_REDO
+Odvolat zpìt
+; Redo
+;
+; Search Menu
+;
+MSG_SEARCHTITLE
+Hledání
+; Search
+;
+MSG_FIND
+Najít...
+; Find...
+;
+MSG_REPLACE
+Nahradit...
+; Replace...
+;
+MSG_SUBFIND
+Najít
+; Find
+;
+MSG_NEXTFIND
+Dal¹í
+; Next
+;
+MSG_PREVFIND
+Pøedchozí
+; Previous
+;
+MSG_NEXTREPLACE
+Nahradit
+; Replace
+;
+MSG_PREVPAGE
+Pøedchozí strana
+; Prev page
+;
+MSG_NEXTPAGE
+Dal¹í strana
+; Next page
+;
+MSG_GOTOLINE
+Pøejít na øádek...
+; Goto line...
+;
+MSG_FINDBRACKET
+Odpovídající závorka
+; Matching bracket
+;
+MSG_LASTMODIF
+Poslední zmìna
+; Last modification
+;
+MSG_BEGOFLINE
+Zaèátek øádku
+; Start of line
+;
+MSG_ENDOFLINE
+Konec øádku
+; End of line
+;
+; Macro Menu
+;
+MSG_MACROTITLE
+Makro
+; Macro
+;
+MSG_STARTRECORD
+Zaèít nahrávání
+; Start recording
+;
+MSG_STOPRECORD
+Zastavit nahrávání
+; Stop recording
+;
+MSG_PLAYMACRO
+Spustit makro
+; Execute macro
+;
+MSG_REPEATMACRO
+Opakovat makro...
+; Repeat macro...
+;
+; Environment Menu
+;
+MSG_ENVTITLE
+Nastavení
+; Environment
+;
+MSG_SCRMODE
+Rozli¹ení...
+; Screen mode...
+;
+MSG_FONTS
+Písma...
+; Fonts...
+;
+MSG_PREFS
+Mo¾nosti...
+; General prefs...
+;
+MSG_LOADPREFS
+Naèíst...
+; Load prefs...
+;
+MSG_SAVEPREFS
+Ulo¾it
+; Save prefs
+;
+MSG_SAVEPREFSAS
+Ulo¾it jako...
+; Save prefs as...
+;
+;
+;
+; *****************************
+;  Possible error messages
+; *****************************
+;
+ERR_BADOS
+Tento program vy¾aduje AmigaOS 2.0 nebo novìj¹í.
+; Obsolete OS. Install v2.0 or better.
+;
+ERR_NOASLREQ
+Nelze otevøít dialogové okno ASL!
+; Cannot alloc ASL requester!
+;
+ERR_NOMEM
+Nedostatek volné pamìti!
+; Out of memory!
+;
+ERR_NOGUI
+Nelze otevøít u¾ivatelské rozhraní programu!
+; Main interface failed to open!
+;
+ERR_NONAME
+bez názvu
+; No title
+; Not really an error but simplify translation
+;
+ERR_WRITECLIP
+Chyba pøi zápisu do schránky.
+; Write error into clipboard device
+;
+ERR_OPENCLIP
+Nelze otevøít zaøízení clipboard.device!
+; Unable to open clipboard!
+;
+ERR_LOADFILE
+Po¾adovaný soubor nelze naèíst.
+; Unable to load requested file
+;
+ERR_NOTXTINCLIP
+Schránka neobsahuje text.
+; No text in clipboard
+;
+ERR_WRONG_TYPE
+Vybraný objekt je adresáø!
+; Object is a directory!
+;
+ERR_READCLIP
+Po¾adovanou operaci nelze dokonèit pro nedostatek volné pamìti.
+; Read operation incomplete due to probably a lack of memory
+;
+ERR_NOBRACKET
+Na pozici kurzoru se nenachází závorka!
+; No parenthesis under cursor!
+;
+ERR_NOT_FOUND
+Text dle zadané masky "%s" nelze najít.
+; Pattern `%s' not found
+;
+ERR_LOADFONT
+Po¾adované písmo nelze otevøít!
+; Can't open desired font!
+;
+ERR_NOPREFEDITOR
+Nelze najít editor nastavení programu!
+; Can't find preference editor!
+;
+ERR_BADPREFSFILE
+Formát konfiguraèního souboru je neplatný.
+; Bad preference file format.
+;
+ERR_FILEMODIFIED
+Obsah souboru %s byl zmìnìn.\nOpravdu chcete tento soubor zavøít?
+; %s has been modified.\nAre you sure want to close it?
+;
+ERR_SLC
+Ulo¾it|Zavøít|Zru¹it
+; Save|Close|Cancel
+;
+ERR_NOSEARCHTEXT
+Zadejte prosím po¾adovaný text!
+; No text to search for!
+;
+ERR_FILEEXISTS
+Tento soubor ji¾ existuje. Opravdu ho chcete pøepsat?
+; This file already exists. Overwrite it?
+;
+ERR_OC
+Ano|Ne
+; Yes|No!
+;
+WARN_RECORD
+Zaèátek záznamu makra
+; Start recording macro
+;
+WARN_RECORDED
+Záznam makra byl dokonèen
+; Macro recorded
+;
+WARN_REC
+[REC]
+; [REC]
+;
+;
+; *************************************
+;  Information window related messages
+; *************************************
+;
+MSG_ABOUT
+Informace
+; Information
+;
+MSG_FORMATINFO
+%s pro %s\nAutoøi: T.Pierron a C.Guillaume\nCopyright (C) 2000\n\nOtevøený soubor: %s\Statistika: %ld %s, %ld %s.
+; %s for %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited : %s\nLength : %ld %s, %ld %s.
+;
+MSG_CONTINUE
+OK
+; Continue
+;
+MSG_BYTE
+bajt
+; byte
+;
+MSG_BYTES
+bajtù
+; bytes
+;
+MSG_LINE
+øádek
+; line
+;
+MSG_LINES
+øádkù
+; lines
+;
+;
+; *************************
+;  Search & replace window
+; *************************
+;
+MSG_SEARCHWINDOW
+Hledání textu
+; Search pattern
+;
+MSG_REPLACEWINDOW
+Nahrazení textu
+; Search & Replace
+;
+MSG_SEARCHSTRING
+Najít:
+; Locate:
+;
+MSG_REPLACESTRING
+Nahradit:
+; Replace:
+;
+MSG_OPTCASE
+Rozli¹ovat malá/VELKÁ
+; Match case
+;
+MSG_OPTWORDS
+Celá slova
+; Whole words
+;
+MSG_BUTTONREPLACE
+Nah_radit
+; _Replace
+;
+MSG_BUTTONREPALL
+N_ahradit v¹e
+; Replace _All
+;
+MSG_BUTTONSEARCH
+Najít
+; Search
+;
+MSG_NEXTSEARCH
+_Pøedchozí
+; _Previous
+;
+MSG_USESEARCH
+Po_u¾ít
+; _Use
+;
+MSG_CANCELSEARCH
+_Zru¹it
+; _Cancel
+;
+MSG_REPLACEALL
+Nahrazeno %ld %s textu "%s".
+; %ld %s of `%s' replaced
+;
+MSG_OCCURENCY
+polo¾ka
+; occurency
+;
+MSG_OCCURENCIES
+polo¾ek
+; occurencies
+;

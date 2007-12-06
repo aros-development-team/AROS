@@ -1,0 +1,308 @@
+## version $VER: commodities.catalog 1.4 (29.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nelze otevøít knihovnu %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+Nelze otevøít zaøízení input.device.
+; Can't open 'input.device'
+;
+MSG_CANT_LOCK_SCR
+Nelze zamknout veøejnou obrazovku!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Nelze naèíst strukturu VisualInfo!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Nelze vytvoøit tlaèítka!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Nelze vytvoøit menu!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Nelze sestavit menu!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Nelze vytvoøit okno!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Nelze alokovat dostatek pamìti!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Nelze vytvoøit message port!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Nelze vytvoøit objekt CxBroker!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Nelze vytvoøit objekt CxCustom!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_HIDE
+H\0Skrýt
+; H\0Hide
+;
+MSG_MEN_PROJECT_ICONIFY
+I\0Ikonifikovat
+; I\0Iconify
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Správce komodit
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Správce programù typu komodita
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange: klávesová zkratka = <%s>
+; Exchange: Hot Key = <%s>
+;
+MSG_EXCHANGE_LISTVIEW
+Pøehled spu¹tìných komodit
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Informace
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Zobrazit
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Skrýt
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Odstranit
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Aktivní
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Neaktivní
+; Inactive
+;
+; ===============================================
+; BLANKER
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+©etøiè obrazovky
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Spustí standardní ¹etøiè obrazovky
+; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+Pøesun oken do popøedí
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Umo¾ní pøenést okno do popøedí
+; Click windows to front
+;
+; ===============================================
+; OPAQUE
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Pøesun oken s obsahem
+; Solid Windows
+;
+MSG_OPAQUE_CXDESCR
+Umo¾ní pøesouvat okna i s obsahem
+; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Automatická aktivace oken
+; Autopointer
+;
+MSG_AUTOPOINT_CXDESCR
+Aktivuje okno pod ¹ipkou my¹i
+; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Spou¹tìcí menu
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Umo¾ní pohodlné spou¹tìní programù
+; Program launch commodity
+;
+; ===============================================
+; FKEY
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Klávesové zkratky
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Umo¾ní klávesám pøiøadit rùzné funkce
+; Attach special functions to keys
+;
+MSG_FKEY_WINTITLE
+FKey: klávesová zkratka = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Pøehled definovaných zkratek
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+Pøid_at
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+Odeb_rat
+; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+Ulo¾it
+; Save Defined Keys
+;
+MSG_FKEY_COMMAND
+Pøíkaz
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Argumenty pøíkazu
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Procházet okny
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Procházet obrazovky
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Zvìt¹it okno
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Zmen¹it okno
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Pøepnout velikost okna
+; Toggle Window Size
+;
+MSG_FKEY_CMD_RESCUE_WIN
+Vrátit okno na plochu
+; Rescue Window
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Vlo¾it text
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Spustit program
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Spustit skript (Arexx)
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+S\0Ulo¾it
+; S\0Save Defined Keys
+;
+; ===============================================
+; NOCAPSLOCK
+;
+MSG_NOCAPSLOCK_CXNAME
+NoCapsLock
+; NoCapsLock
+;
+MSG_NOCAPSLOCK_CXTITLE
+CapsLock? U¾ ne!
+; NoCapsLock:
+;
+MSG_NOCAPSLOCK_CXDESCR
+Vypíná funkci klávesy Caps Lock
+; Renders the CAPS LOCK key ineffective
+;
+; ===============================================
+; DepthMenu
+;
+MSG_DEPTHMENU_CXNAME
+DepthMenu
+; DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+Seznam oken a obrazovek
+; DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR
+Pøesune okno nebo obrazovku do popøedí
+; Popup menu for depth gadgets
+;
