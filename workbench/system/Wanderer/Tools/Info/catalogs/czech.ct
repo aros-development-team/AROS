@@ -1,0 +1,181 @@
+## version $VER: info.catalog 1.1 (27.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+Information
+; Informations
+;
+MSG_DESCRIPTION
+Informace o objektu
+; Icon informations
+;
+MSG_COPYRIGHT
+Informace o objektu\nCopyright (C) AROS Dev Team
+; Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Ikona
+; Icon
+;
+MSG_NAME
+Název
+; Name
+;
+MSG_COMMENT
+Komentáø
+; Comment
+;
+MSG_STACK
+Zásobník
+; Stack
+;
+MSG_DEFTOOL
+Výchozí program
+; Tool
+;
+MSG_ICONTYPE
+Druh
+; Icon type
+;
+MSG_DISK
+Disk
+; Disk
+;
+MSG_DRAWER
+Adresáø
+; Drawer
+;
+MSG_TOOL
+Program
+; Tool
+;
+MSG_PROJECT
+Projekt
+; Project
+;
+MSG_GARBAGE
+Ko¹
+; Garbage
+;
+MSG_DEVICE
+Zaøízení
+; Device
+;
+MSG_KICK
+Kickstart
+; Kick
+;
+MSG_APPICON
+Aplikaèní ikona
+; AppIcon
+;
+MSG_INFORMATION
+Informace
+; Information
+;
+MSG_PROTECTION
+Pøíznaky
+; Protection
+;
+MSG_TOOLTYPES
+Argumenty
+; Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Tento program nelze spustit z pøíkazového øádku.
+; Error: Cannot be started from shell
+;
+MSG_ABOUT
+O programu...
+; About...
+;
+MSG_QUIT
+Ukonèit
+; Quit
+;
+MSG_READ
+Lze èíst
+; Read
+;
+MSG_WRITE
+Lze zapsat
+; Write
+;
+MSG_EXECUTE
+Lze spustit
+; Execute
+;
+MSG_DELETE
+Lze smazat
+; Delete
+;
+MSG_SCRIPT
+Skript
+; Script
+;
+MSG_PURE
+Reentrantní
+; Pure
+;
+MSG_ARCHIVED
+Archivovaný
+; Archived
+;
+MSG_STICKY
+Sticky??
+; Sticky
+;
+MSG_SIZE
+Velikost
+; Size
+;
+MSG_VERSION
+Verze
+; Version
+;
+MSG_OWNERID
+Vlastník ID
+; Owner ID
+;
+MSG_GROUPID
+Skupina ID
+; Group ID
+;
+MSG_OWNERNAME
+Vlastník
+; Owner
+;
+MSG_GROUPNAME
+Skupina
+; Group
+;
+MSG_TYPE
+Druh
+; Type
+;
+MSG_DATE
+Datum
+; Date
+;
+MSG_NEW_KEY
+New key??
+; New key
+;
+MSG_DELETE_KEY
+Delete key??
+; Delete key
+;
+MSG_SAVE
+_Ulo¾it
+; _Save
+;
+MSG_CANCEL
+_Zru¹it
+; _Cancel
+;
+MSG_OK
+OK
+; Ok
+;

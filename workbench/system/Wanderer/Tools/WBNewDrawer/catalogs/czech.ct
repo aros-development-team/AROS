@@ -1,0 +1,84 @@
+## version $VER: wbnewdrawer.catalog 1.1 (22.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+WBNewDrawer
+; WBNewDrawer
+;
+MSG_DESCRIPTION
+Vytvoøí nový adresáø, podle potøeby i s ikonou
+; Creates new drawer with optional icon
+;
+MSG_COPYRIGHT
+Copyright (C) AROS Dev Team
+; ©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE
+Vytvoøení nového adresáøe
+; Create new drawer
+;
+MSG_LINE
+Zadejte název nového adresáøe
+; Enter the name of the new drawer
+;
+MSG_NAME
+Název:
+; New drawer name:
+;
+MSG_ICON
+S ikonou
+; Icon
+;
+MSG_OK
+_Potvrdit
+; _OK
+;
+MSG_CANCEL
+_Zru¹it
+; Ca_ncel
+;
+MSG_BASENAME
+nový_adresáø
+; Rename_Me
+;
+MSG_ERROR_TITLE
+WBNewDrawer :: Chyba
+; WBNewDrawer: Error
+;
+MSG_ALREADY_EXIST
+Objekt s názvem "%s" ji¾ existuje!
+; '%s' already exists!
+;
+MSG_CANT_CREATE
+Adresáø "%s" nelze vytvoøit!
+; Can't create drawer '%s'!
+;
+MSG_INFO_ALREADY
+Soubor %s.info (ikona) ji¾ existuje!
+; '%s'.info already exists!
+;
+MSG_ILLEGAL_CHARS
+Název "%s" obsahuje neplatné znaky!
+; '%s' contains illegal characters!
+;
+MSG_NEEDS_MORE_ARGS
+Program vy¾aduje 2 argumenty!
+; Need 2 arguments!
+;
+MSG_INVALID_LOCK
+Vybraný adresáø nelze zamknout!
+; Invalid directory lock!
+;
+MSG_WB_ONLY
+Tento program nelze spustit z pøíkazového øádku!\n
+; Cannot be started from shell!\n
+;
+MSG_FAILED_CREATE_APP
+Nelze vytvoøit objekt application!
+; Failed to create Application!
+;
+MSG_WRONG_ICON_TYPE
+Existující ikona %s.info není typu adresáø!
+; The existing icon file '%s'.info isn't of type Drawer!
