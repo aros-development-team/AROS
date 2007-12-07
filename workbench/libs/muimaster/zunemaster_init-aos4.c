@@ -30,7 +30,7 @@ struct Library *TextClibBase;
 struct Library *MUIMasterBase; /* this library */
 
 struct Interface *IGraphics;
-struct Interface *IIntuition;
+struct IntuitionIFace *IIntuition;
 struct UtilityIFace *IUtility;
 struct Interface *ILayers;
 struct Interface *IGadTools;
@@ -39,7 +39,7 @@ struct Interface *ICommodities;
 struct Interface *IIFFParse;
 struct Interface *IDiskfont;
 struct Interface *ITextClip;
-struct Interface *IDOS;
+struct DOSIFace *IDOS;
 struct Interface *IAsl;
 struct Interface *IKeymap;
 struct Interface *IDataTypes;
