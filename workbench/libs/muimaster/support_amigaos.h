@@ -52,7 +52,9 @@
 #define ZUNE_BUILTIN_SETTINGSGROUP 1
 #define ZUNE_BUILTIN_VIRTGROUP 1
 
+#ifdef __SASC
 #include <dos.h>
+#endif
 
 #ifndef PI
 #define PI 3.1415
@@ -130,6 +132,7 @@ VOID FreeVecPooled(APTR pool, APTR memory);
     typedef long          STACKLONG;
     typedef unsigned long STACKULONG;
     typedef void (*VOID_FUNC)();
+#define STACKED 
 #endif /* __AROS_TYPES_DEFINED__ */
 
 /*** AROS list macros *******************************************************/
