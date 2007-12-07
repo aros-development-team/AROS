@@ -1,0 +1,233 @@
+## version $VER: wanderer.catalog 1.0 (22.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+Wanderer
+; Wanderer
+;
+MSG_DESCRIPTION
+Správce souborù
+; File Manager
+;
+MSG_SCREENTITLE
+Wanderer   %s grafické pamìti  %s ostatní pamìti
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+; B
+;
+MSG_MEM_K
+KB
+; K
+;
+MSG_MEM_M
+MB
+; M
+;
+MSG_MEM_G
+GB
+; G
+;
+MSG_MEN_WANDERER
+Wanderer
+; Wanderer
+;
+MSG_MEN_BACKDROP
+Pozadí
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+; B
+;
+MSG_MEN_EXECUTE
+Spustit...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+E
+; E
+;
+MSG_MEN_SHELL
+Shell...
+; Shell...
+;
+MSG_MEN_SC_SHELL
+W
+; W
+;
+MSG_MEN_GUISET
+Vzhled systému...
+; GUI Settings...
+;
+MSG_MEN_ABOUT
+O programu...
+; About...
+;
+MSG_MEN_SC_ABOUT
+?
+; ?
+;
+MSG_MEN_QUIT
+Ukonèit...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+; Q
+;
+MSG_MEN_WINDOW
+Okno
+; Window
+;
+MSG_MEN_NEWDRAW
+Nový adresáø...
+; New Drawer...
+;
+MSG_MEN_SC_NEWDRAW
+N
+; N
+;
+MSG_MEN_OPENPAR
+Vy¹¹í adresáø
+; Open Parent
+;
+MSG_MEN_CLOSE
+Zavøít
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+; K
+;
+MSG_MEN_UPDATE
+Aktualizovat
+; Update
+;
+MSG_MEN_CONTENTS
+Vybrat v¹e
+; Select Contents
+;
+MSG_MEN_SC_CONTENTS
+A
+; A
+;
+MSG_MEN_CLRSEL
+Zru¹it výbìr
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+; Z
+;
+MSG_MEN_SNAPSHT
+Ulo¾it pozici
+; Snapshot
+;
+MSG_MEN_ALL
+V¹e
+; All
+;
+MSG_MEN_VIEW
+Pohledy
+; View
+;
+MSG_MEN_ICVIEW
+Ikony
+; Icon view
+;
+MSG_MEN_DCVIEW
+Podrobnosti
+; Detail view
+;
+MSG_MEN_ALLFIL
+V¹echny objekty
+; All files
+;
+MSG_MEN_SORTIC
+Seøadit
+; Sorted
+;
+MSG_MEN_CLNUP
+Srovnat ikony
+; Clean Up
+;
+MSG_MEN_SC_CLNUP
+U
+; U
+;
+MSG_MEN_BYNAME
+Dle názvu
+; By name
+;
+MSG_MEN_BYDATE
+Dle data
+; By Date
+;
+MSG_MEN_BYSIZE
+Dle velikosti
+; By size
+;
+MSG_MEN_REVERSE
+Obrácenì
+; Reverse
+;
+MSG_MEN_DRWFRST
+Adresáøe jako první
+; Drawers first
+;
+MSG_MEN_ICON
+Ikony
+; Icon
+;
+MSG_MEN_OPEN
+Otevøít
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+; O
+;
+MSG_MEN_RENAME
+Pøejmenovat...
+; Rename...
+;
+MSG_MEN_SC_RENAME
+R
+; R
+;
+MSG_MEN_INFO
+Informace...
+; Information...
+;
+MSG_MEN_SC_INFO
+I
+; I
+;
+MSG_MEN_DELETE
+Smazat...
+; Delete...
+;
+MSG_MEN_TOOLS
+Nástroje
+; Tools
+;
+MSG_REALLYQUIT
+Opravdu chcete ukonèit systém Wanderer?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Ano|Ne
+; *Yes|No
+;
+MSG_DUMMY
+DUMMY
+; DUMMY
+; DUMMY :)
+MSG_USERSCREENTITLE
+Wanderer   %pc grafické pamìti  %pf ostatní pamìti
+; Wanderer %pc graphics mem %pf other mem
+;
