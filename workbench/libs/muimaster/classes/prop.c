@@ -14,8 +14,10 @@
 #include <proto/muimaster.h>
 #include <proto/cybergraphics.h>
 
+#ifdef __AROS__
 #include <intuition/windecorclass.h>
-#include <libraries/cybergraphics.h>
+#endif
+#include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
 
 #include "../datatypescache.h"
@@ -498,6 +500,7 @@ int WriteTiledImageVertical(struct NewImage *dst, struct RastPort *maprp, struct
     return y;
 }
 
+#ifdef __AROS__
 AROS_UFH3
 (
     void, CustomPropRenderFunc,
@@ -628,6 +631,7 @@ AROS_UFH3
 
     AROS_USERFUNC_EXIT
 }
+#endif
 
 IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
@@ -636,9 +640,9 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     struct MUI_ImageSpec_intern *spec = adata->mad_Background;
 
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
-
+#ifdef __AROS__
     data->dhook.h_Entry = (HOOKFUNC) CustomPropRenderFunc;
-
+#endif
     if (!data->usewinborder)
     {
 	BOOL isnewlook, completely_visible = TRUE;;
@@ -679,7 +683,7 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 
             ULONG  width = _mwidth(obj);
             ULONG  height = _mheight(obj);
-
+#ifdef __AROS__
             struct Hook *dhook = NULL;
 
             ULONG depth = (ULONG) GetBitMapAttr(_window(obj)->RPort->BitMap, BMA_DEPTH);
@@ -746,14 +750,16 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
                     }
                 }
             }
-
+#endif
 	    if ((data->prop_object = NewObject(NULL, "propgclass",
 			    GA_Left, _mleft(obj),
 			    GA_Top, _mtop(obj),
 			    GA_Width, width,
 			    GA_Height, height,
 			    GA_ID, data->gadgetid,
+#ifdef __AROS__
                             PGA_DisplayHook, dhook, /* custom prop gadget impementation (not yet finished) */
+#endif
 			    PGA_Freedom, data->horiz?FREEHORIZ:FREEVERT,
 			    PGA_Total, downscale(data, data->entries),
 			    PGA_Visible, downscale(data, data->visible),
