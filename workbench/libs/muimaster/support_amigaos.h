@@ -37,7 +37,7 @@
 #define ZUNE_BUILTIN_FRAMEADJUST 1
 #define ZUNE_BUILTIN_FRAMEDISPLAY 1
 #define ZUNE_BUILTIN_GAUGE 1
-#define ZUNE_BUILTIN_ICONLISTVIEW 1
+#define ZUNE_BUILTIN_ICONLISTVIEW 0
 #define ZUNE_BUILTIN_IMAGEADJUST 1
 #define ZUNE_BUILTIN_IMAGEDISPLAY 1
 #define ZUNE_BUILTIN_PENADJUST 1
@@ -64,8 +64,12 @@
 #define M_PI PI
 #endif
 
+#define AROS_STACKSIZE 65536
+
 char *StrDup(const char *x);
-size_t strlcat(char *buf, const char *src, size_t len);
+#ifdef __SASC /* PRIV */
+size_t strlcat(char *buf, const char *src, size_t len); /* PRIV */
+#endif /* PRIV */
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
 Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...);
 int VARARGS68K SPrintf(char *buf, const char *fmt, ...);
@@ -74,6 +78,13 @@ int VARARGS68K SPrintf(char *buf, const char *fmt, ...);
 #define snprintf SNPrintf /* PRIV */
 #define sprintf SPrintf   /* PRIV */
 #endif                    /* PRIV */
+
+#ifdef __amigaos4__       /* PRIV */
+#ifndef WritePixelArrayAlpha /* PRIV */
+#define WritePixelArrayAlpha(srcRect, SrcX, SrcY, SrcMod, RastPort, DestX, DestY, SizeX, SizeY, globalAlpha) ICyberGfx->WritePixelArrayAlpha(srcRect, SrcX, SrcY, SrcMod, RastPort, DestX, DestY, SizeX, SizeY, globalAlpha) /* PRIV */
+#endif /* PRIV */
+#endif /* PRIV */
+
 
 /*** HookEntry for OS4 (is only a dummy) ************************************/
 #ifdef __amigaos4__
