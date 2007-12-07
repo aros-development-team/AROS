@@ -13,7 +13,9 @@
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
+#ifdef __AROS__
 #include <intuition/extensions.h>
+#endif
 #include <clib/alib_protos.h>
 #include <graphics/gfxmacros.h>
 #include <proto/exec.h>
@@ -653,10 +655,12 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_InnerHeight,         (IPTR) data->wd_Height,
         WA_AutoAdjust,          (IPTR) TRUE,
         WA_NewLookMenus,        (IPTR) TRUE,
+#ifdef __AROS__
         WA_ExtraGadget_MUI,     (IPTR) ((buttons & MUIV_Window_Button_MUI) != 0) ? TRUE : FALSE,
         WA_ExtraGadget_PopUp,   (IPTR) ((buttons & MUIV_Window_Button_Popup) != 0) ? TRUE : FALSE,
         WA_ExtraGadget_Snapshot,(IPTR) ((buttons & MUIV_Window_Button_Snapshot) != 0) ? TRUE : FALSE,
         WA_ExtraGadget_Iconify, (IPTR) ((buttons & MUIV_Window_Button_Iconify) != 0) ? TRUE : FALSE,
+#endif
         data->wd_NoMenus ?
             WA_RMBTrap   :
             TAG_IGNORE,         (IPTR) TRUE,
@@ -1859,9 +1863,14 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
     ie.ie_Code      	    	= event->Code;
     ie.ie_Qualifier 	    	= event->Qualifier;
     ie.ie_EventAddress      	= (APTR)*(ULONG *)event->IAddress;
+#ifdef __AMIGAOS4__
+    ie.ie_TimeStamp.Seconds      = event->Seconds;
+    ie.ie_TimeStamp.Microseconds = event->Micros;
+#else
     ie.ie_TimeStamp.tv_secs     = event->Seconds;
     ie.ie_TimeStamp.tv_micro    = event->Micros;
-    
+#endif
+
     set(win, MUIA_Window_InputEvent, (IPTR)&ie);
         
     /* get the vanilla key for control char */
@@ -2240,11 +2249,12 @@ void _zune_window_message(struct IntuiMessage *imsg)
 	    HandleRawkey(oWin, data, imsg);
 	else if (IDCMP_GADGETUP == imsg->Class)
     {
-        
+#ifdef __AROS__
         if (ETI_MUI == ((struct Gadget *) imsg->IAddress)->GadgetID)
         {
             DoMethod(_app(oWin), MUIM_Application_OpenConfigWindow);
         }
+#endif
     }
     else
     {
@@ -2617,7 +2627,10 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
         case MUIA_Window_ToolBox:
+/* TODO: Implement me on AmigaOS4 */
+#ifdef __AROS__
         _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_TOOLBOX);
+#endif
         break;
 
 	    case MUIA_Window_CloseGadget:
