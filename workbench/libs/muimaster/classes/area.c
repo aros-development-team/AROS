@@ -11,6 +11,7 @@
 #include <exec/types.h>
 #include <graphics/gfxmacros.h>
 #include <intuition/imageclass.h>
+#include <libraries/gadtools.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
