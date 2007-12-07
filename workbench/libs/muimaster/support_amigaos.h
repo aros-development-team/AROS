@@ -70,8 +70,10 @@ Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct Tag
 Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...);
 int VARARGS68K SPrintf(char *buf, const char *fmt, ...);
 
+#ifdef __SASC             /* PRIV */
 #define snprintf SNPrintf /* PRIV */
 #define sprintf SPrintf   /* PRIV */
+#endif                    /* PRIV */
 
 /*** HookEntry for OS4 (is only a dummy) ************************************/
 #ifdef __amigaos4__
