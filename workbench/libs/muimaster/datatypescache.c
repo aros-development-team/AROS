@@ -24,8 +24,6 @@
 #include <proto/layers.h>
 #include <proto/cybergraphics.h>
 
-#include	<libraries/cybergraphics.h>
-
 #define MYDEBUG 1 
 #include "debug.h"
 #include "support.h"
