@@ -1,0 +1,30 @@
+## version $VER: installer.catalog 1.0 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+;
+MSG_OK
+OK
+; OK
+;
+MSG_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_MESSAGE
+Zpráva
+; Message
+;
+MSG_PROMPT
+Otázka
+; Prompt
+;
+MSG_YES
+Ano
+; Yes
+;
+MSG_NO
+Ne
+; No
+;

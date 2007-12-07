@@ -1,0 +1,149 @@
+## version $VER: More.catalog 1.3 (30.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nelze otevøít knihovnu %s V%ld!
+; Can't open %s V%ld!
+;
+MSG_NO_MEM
+Nelze alokovat dostatek pamìti!
+; Out of memory!
+;
+MSG_CANT_LOCK_SCR
+Nelze zamknout veøejnou obrazovku!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Nelze naèíst strukturu DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Nelze naèíst strukturu VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+Nelze vytvoøit obrázky tøídy SysIClass!
+; Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET
+Nelze vytvoøit tlaèítka!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Nelze vytvoøit menu!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Nelze vytvoøit okno!
+; Can't create window!
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otevøít...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Ulo¾it jako...
+; A\0Save as...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Tisknout
+; P\0Print
+;
+MSG_MEN_PROJECT_ABOUT
+?\0O programu...
+; ?\0About...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+MSG_MEN_NAVIGATION
+Hledání
+; Navigation
+;
+MSG_MEN_NAVIGATION_FIND
+F\0Najít...
+; F\0Find...
+;
+MSG_MEN_NAVIGATION_FIND_NEXT
+.\0Najít dal¹í
+; .\0Find Next
+;
+MSG_MEN_NAVIGATION_FIND_PREV
+,\0Najít pøedchozí
+; ,\0Find Prev
+;
+MSG_MEN_NAVIGATION_JUMP
+J\0Pøejít na øádek...
+; J\0Jump...
+;
+MSG_ASL_OPEN_TITLE
+Otevøení souboru
+; Select File to Open
+;
+MSG_ASL_SAVE_TITLE
+Ulo¾ení souboru
+; Select File to Save to
+;
+MSG_ABOUT
+More V%ld.%ld\n (%s)\nCopyright (C) %s %s
+; More V%ld.%ld\n (%s)\nCopyright © %s by %s
+;
+MSG_ABOUT_TITLE
+More
+; More
+;
+MSG_CONTINUE
+Pokraèovat
+; Continue
+;
+MSG_JUMP_TITLE
+Pøejít na øádek
+; Go to Line ...
+;
+MSG_FIND_TITLE
+Hledat
+; Search
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_WIN_TITLE
+More: %s (øádkù: %ld, velikost: %ld B)
+; More: %s (%ld Lines - %ld Bytes)
+;
+MSG_SHORTCUT_TOP
+T
+; T
+;
+MSG_SHORTCUT_BOTTOM
+B
+; B
+;
+MSG_SHORTCUT_JUMP
+GJ
+; GJ
+;
+MSG_SHORTCUT_FIND
+FS
+; FS
+;
+MSG_SHORTCUT_NEXT
+N
+; N
+;
+MSG_SHORTCUT_PREV
+P
+; P
+;

@@ -1,0 +1,177 @@
+## version $VER: snoopy.catalog 1.0 (23.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_TITLE
+Snoopy
+; Snoopy
+;
+MSG_COPYRIGHT
+Copyright (C) 2006, The AROS Development Team
+; © 2006, The AROS Development Team
+;
+MSG_AUTHOR
+The AROS Development Team
+; The AROS Development Team
+;
+MSG_PORTNAME
+SNOOPY
+; SNOOPY
+;
+MSG_DESCRIPTION
+Jednoduchý monitor systému
+; Simple system monitor
+;
+MSG_SETTINGS
+Nastavení
+; Settings
+;
+MSG_SHOW_FAILS
+Zobrazit pouze chyby
+; Only show fails
+;
+MSG_CLI_NUMBER
+Zobrazit èíslo CLI
+; Show CLI number
+;
+MSG_FULL_PATH
+Zobrazit úplnou cestu
+; Show full paths
+;
+MSG_DEVICE
+Zobrazit název zaøízení
+; Use device names
+;
+MSG_IGNORE_WB
+Ignorovat Wanderer/Shell
+; Ignore Workbench/Shell
+;
+MSG_SYSTEM_FUNC
+Funkce systému
+; System Functions
+;
+MSG_DOS_FUNC
+Funkce AmigaDOS
+; AmigaDOS Functions
+;
+MSG_SAVE
+Ulo¾it
+; Save
+;
+MSG_OPEN
+Otevøít
+; Open
+;
+MSG_USE
+Pou¾ít
+; Use
+;
+MSG_UNDO
+Zpìt
+; Undo
+;
+MSG_RESET
+Výchozí stav
+; Reset
+;
+MSG_CANCEL
+Zru¹it
+; Cancel
+;
+MSG_OUTPUT_FIELD
+©íøka výstupního okna
+; Output Field Width
+;
+MSG_NAME
+Název
+; Name
+;
+MSG_ACTION
+Operace
+; Action
+;
+MSG_TARGET
+Cíl
+; Target
+;
+MSG_OPTION
+Mo¾nost
+; Option
+;
+MSG_OK
+OK
+; OK
+;
+MSG_FAIL
+Chyba
+; Fail
+;
+MSG_ERROR_SAVE
+Chyba pøi ukládání do souboru %s
+; An error happened when saving to %s
+;
+MSG_ERROR_LOAD
+Chyba pøi naèítání ze souboru %s
+; An error happened when loading from %s
+;
+MSG_RESET_PATCHES
+Pøestat|Zru¹it
+; Reset Patches|Cancel
+;
+MSG_ASK_RESET
+Opravdu chcete pøestat s monitorováním systému?
+; Do you really want to reset the patches to their original functions?
+;
+MSG_REMOVE_SNOOP
+Odstranit|Ponechat
+; Remove|Keep
+;
+MSG_ASK_REMOVE
+Upozornìní: Tato akce mù¾e skonèit pádem systému,\nproto¾e jiný program u¾ mezitím zmìnil úpravy\nsystému zavedené programem Snoopy.\n\nOpravdu chcete odstranit program Snoopy?
+; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+;
+MSG_GLOBAL
+Globální
+; Global
+;
+MSG_LOCAL
+Lokální
+; Local
+;
+MSG_ALIAS
+Alias
+; Alias
+;
+MSG_UNKNOWN
+neznámý
+; Unknown
+;
+MSG_ANY
+cokoli
+; Any
+;
+MSG_READ
+Ètení
+; Read
+;
+MSG_WRITE
+Zápis
+; Write
+;
+MSG_READ_ASK
+Ètení???
+; Read???
+;
+MSG_MODIFY
+Zmìna
+; Modify
+;
+MSG_VERSION
+Verze %ld
+; Version %ld
+;
+MSG_SIZE
+Velikost %s
+; Size %d
+;
