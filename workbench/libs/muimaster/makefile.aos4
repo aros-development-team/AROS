@@ -25,13 +25,13 @@ RANLIB = $(CROSS_COMPILE)ranlib
 STRIP  = $(CROSS_COMPILE)strip
 
 # Change these as required
-OPTIMIZE = -O3
+OPTIMIZE = -O0 # -O3
 DEBUG = #-g #-DMYDEBUG #-ggdb # -g -DDEBUG
 INC = -I include -I .
-CFLAGS = -D__AMIGAOS4__ -DNDEBUG -D__USE_INLINE__ -Wall -fno-strict-aliasing -c $(OPTIMIZE) $(DEBUG) $(INC)
+CFLAGS = -D__AMIGAOS4__ -D__USE_OLD_TIMEVAL__ -DNDEBUG -D__USE_INLINE__ -Wall -fno-strict-aliasing  -mcrt=clib2 -c $(OPTIMIZE) $(DEBUG) $(INC)
 
 # Flags passed to gcc during linking
-LINK = -nostartfiles
+LINK = -nostartfiles -mcrt=clib2
 
 # Name of the "thing" to build
 TARGET = zunemaster.library
@@ -66,8 +66,6 @@ CLASSSRCS=aboutmui.c\
 	framedisplay.c \
 	gauge.c \
 	group.c \
-	iconlist.c \
-	iconlistview.c \
 	image.c \
 	imageadjust.c \
 	imagedisplay.c \
@@ -107,6 +105,8 @@ CLASSSRCS=aboutmui.c\
 	virtgroup.c \
 	volumelist.c \
 	window.c
+#	iconlist.c \
+#	iconlistview.c \
 
 BASEARCHSRCS=\
 	bubbleengine.c \
@@ -175,7 +175,7 @@ buildincludes: buildincludes.c
 includes: dirs buildincludes
 	-$(RM) include-generated
 	-$(MKDIR) include-generated include-generated/libraries include-generated/proto include-generated/inline4 include-generated/interfaces
-	buildincludes >include-generated/libraries/mui.h
+	./buildincludes >include-generated/libraries/mui.h
 	cp include/proto/zunemaster.h include-generated/proto
 	cp include/proto/muimaster.h include-generated/proto
 	cp include/inline4/zunemaster.h include-generated/inline4
@@ -185,6 +185,7 @@ includes: dirs buildincludes
 $(TARGET): $(OBJS) $(AOBJS)
 	$(CC) $(LINK) -o $@.debug $(OBJS) $(AOBJS) $(LIBS) -Wl,--cref,-M,-Map=$@.map
 	$(STRIP) --strip-all -o $@ $@.debug
+	cp zunemaster.library.debug "/cygdrive/c/Dokumente und Einstellungen/sba/Eigene Dateien/AmigaOne/zunemaster.library"
 
 ppc-amigaos-objs/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
