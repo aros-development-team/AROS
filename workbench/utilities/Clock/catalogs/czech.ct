@@ -1,0 +1,25 @@
+## version $VER: clock.catalog 1.1 (21.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_ERROR_CANT_CREATE_APPLICATION
+Nelze vytvoøit objekt application.
+; Error: Can't create application object.
+;
+MSG_WINDOW_TITLE
+Hodiny
+; Clock
+;
+MSG_DESCRIPTION
+Hodiny pro Wanderer
+; Wanderer Clock
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_ERROR_DISKOBJECT
+Nelze vytvoøit objekt disk.
+; Error: Can't create diskobject
+;

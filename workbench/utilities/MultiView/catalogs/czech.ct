@@ -1,0 +1,197 @@
+## version $VER: multiview.catalog 1.0 (23.11.2007)
+## language czech
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Nelze otevøít knihovnu %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_CREATE_IC
+Nelze vytvoøit po¾adované objekty!
+; Can't create interconnection objects!
+;
+MSG_CANT_LOCK_SCR
+Nelze zamknout veøejnou obrazovku!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Nelze naèíst strukturu DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Nelze naèíst strukturu VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_SYSIMAGE
+Nelze vytvoøit obrázky tøídy SysIClass!
+; Can't create SYSICLASS images!
+;
+MSG_CANT_CREATE_GADGET
+Nelze vytvoøit tlaèítka!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Nelze vytvoøit menu!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Nelze vytvoøit okno!
+; Can't create window!
+;
+MSG_SAVE_FAILED
+Chyba pøi ukládání souboru!
+; Saving to file failed!
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Otevøít...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Ulo¾it jako...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_SAVEAS_IFF
+I\0Ulo¾it jako IFF...
+; I\0Save as IFF...
+;
+MSG_MEN_PROJECT_PRINT
+P\0Tisknout
+; P\0Print
+;
+MSG_MEN_PROJECT_ABOUT
+?\0O programu...
+; ?\0About...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Ukonèit
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Úpravy
+; Edit
+;
+MSG_MEN_EDIT_MARK
+B\0Oznaèit
+; B\0Mark
+;
+MSG_MEN_EDIT_COPY
+C\0Zkopírovat
+; C\0Copy
+;
+MSG_MEN_EDIT_SELECTALL
+[\0Oznaèit v¹e
+; [\0Select All
+;
+MSG_MEN_EDIT_CLEARSELECTED
+]\0Zru¹it oznaèení
+; ]\0Clear Selected
+;
+MSG_MEN_WINDOW
+Okno
+; Window
+;
+MSG_MEN_WINDOW_SEPSCREEN
+ \0Pou¾ít vlastní obrazovku
+;  \0Use Separate Screen
+;
+MSG_MEN_WINDOW_MINIMIZE
+ \0Minimalizovat
+;  \0Minimize
+;
+MSG_MEN_WINDOW_NORMAL
+ \0Normální velikost
+;  \0Normal
+;
+MSG_MEN_WINDOW_MAXIMIZE
+ \0Maximalizovat
+;  \0Maximize
+;
+MSG_MEN_SETTINGS
+Nastavení
+; Settings
+;
+MSG_MEN_SETTINGS_SAVEDEF
+D\0Ulo¾it jako výchozí
+; D\0Save As Defaults
+;
+MSG_MEN_PICT
+Obrázek
+; Picture
+;
+MSG_MEN_PICT_ZOOM_IN
+ \0Zvìt¹it
+;  \0Zoom in
+;
+MSG_MEN_PICT_ZOOM_OUT
+ \0Zmen¹it
+;  \0Zoom out
+;
+MSG_MEN_PICT_RESET
+ \0Výchozí velikost
+;  \0Reset Size
+;
+MSG_MEN_PICT_FIT_WIN
+ \0Velikost dle okna
+;  \0Fit to Window
+;
+MSG_MEN_PICT_KEEP_ASPECT
+ \0Dodr¾et pomìr stran
+;  \0Keep Aspect Ratio
+;
+MSG_MEN_PICT_FORCE_MAP
+ \0Upravit v rámci palety
+;  \0Force Palette Mapping
+;
+MSG_MEN_PICT_DITHER
+ \0Vylep¹it pøechody barev
+;  \0Dithering
+;
+MSG_MEN_TEXT
+Text
+; Text
+;
+MSG_MEN_TEXT_WORDWRAP
+ \0Zapnout zalomení textu
+;  \0Enable Word Wrap
+;
+MSG_MEN_TEXT_SEARCH
+ \0Hledat...
+;  \0Search for...
+;
+MSG_MEN_TEXT_SEARCH_PREV
+ \0Hledat pøedchozí
+;  \0Search for previous
+;
+MSG_MEN_TEXT_SEARCH_NEXT
+ \0Hledat dal¹í
+;  \0Search for next
+;
+MSG_ASL_OPEN_TITLE
+Otevøení souboru
+; Select File to Open
+;
+MSG_ASL_SAVE_TITLE
+Ulo¾ení souboru
+; Select File to Save to
+;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+; MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+MultiView
+; MultiView
+;
+MSG_CONTINUE
+OK
+; Continue
+;
+MSG_OK
+OK
+; Ok
+;
