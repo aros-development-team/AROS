@@ -65,9 +65,11 @@ static const struct __MUIBuiltinClass * const builtins[] =
     ZUNE_POPIMAGE_DESC
     ZUNE_SCALE_DESC
     ZUNE_RADIO_DESC
+#if __AROS__
     &_MUI_IconList_desc,
     &_MUI_IconDrawerList_desc,
     &_MUI_IconVolumeList_desc,
+#endif
     ZUNE_ICONLISTVIEW_DESC
     ZUNE_BALANCE_DESC
     ZUNE_COLORFIELD_DESC
