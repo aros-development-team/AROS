@@ -7,12 +7,11 @@
 */
 
 #include <exec/types.h>
+#include <cybergraphx/cybergraphics.h>
 
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/layers.h>
-#include <stdio.h>
-#include <libraries/cybergraphics.h>
 
 #include "muimaster_intern.h"
 #include "datatypescache.h"
@@ -866,28 +865,21 @@ static const struct ZuneFrameGfx __builtinFrameGfx[] = {
 **************************************************************************/
 const struct ZuneFrameGfx *zune_zframe_get (Object *obj, const struct MUI_FrameSpec_intern *frameSpec)
 {
-    struct ZuneFrameGfx * frame = NULL;
     struct dt_frame_image *fi = NULL;
 
     if (frameSpec->type >= FST_CUSTOM1)
     {
         struct MUI_RenderInfo *mri = muiRenderInfo(obj);
-        fi = (struct dt_frame_image *) mri->mri_FrameImage[frameSpec->type - FST_CUSTOM1];
-        if (fi== NULL)
-        {
-            frame = &__builtinFrameGfx[2 * FST_RECT];
-            return frame;
-        }
+        if (!(fi = mri->mri_FrameImage[frameSpec->type - FST_CUSTOM1]))
+        	return &__builtinFrameGfx[2 * FST_RECT];
     }
 
-    if (frameSpec->type >= FST_COUNT) 
-    {
-        frame = &__builtinFrameGfx[2 * FST_RECT];
-        frame->customframe = NULL;
-        return frame;
-    }
+    if (frameSpec->type >= FST_COUNT)
+    	return &__builtinFrameGfx[2 * FST_RECT];
 
-    frame = &__builtinFrameGfx[2 * frameSpec->type + frameSpec->state];
+    return &__builtinFrameGfx[2 * frameSpec->type + frameSpec->state];
+
+#if 0
     frame->customframe = NULL;
 
     if ((fi != NULL) && (frame != NULL))
@@ -902,46 +894,25 @@ const struct ZuneFrameGfx *zune_zframe_get (Object *obj, const struct MUI_FrameS
     }
 
     return frame;
+#endif
 }
 
 const struct ZuneFrameGfx *zune_zframe_get_with_state (Object *obj, const struct MUI_FrameSpec_intern *frameSpec,
 						 UWORD state)
 {
-    struct ZuneFrameGfx * frame = NULL;
     struct dt_frame_image *fi = NULL;
 
     if (frameSpec->type >= FST_CUSTOM1)
     {
         struct MUI_RenderInfo *mri = muiRenderInfo(obj);
-        fi = (struct dt_frame_image *) mri->mri_FrameImage[frameSpec->type - FST_CUSTOM1];
-        if (fi== NULL)
-        {
-            frame = &__builtinFrameGfx[2 * FST_RECT];
-            return frame;
-        }
+        if (!(fi = mri->mri_FrameImage[frameSpec->type - FST_CUSTOM1]))
+        	return &__builtinFrameGfx[2 * FST_RECT];
     }
 
     if (frameSpec->type >= FST_COUNT)
-    {
-        frame = &__builtinFrameGfx[2 * FST_RECT];
-        frame->customframe = NULL;
-        return frame;
-    }
+    	return &__builtinFrameGfx[2 * FST_RECT];
 
-    frame = &__builtinFrameGfx[2 * frameSpec->type + state];
-    frame->customframe = NULL;
-
-    if ((fi != NULL) && (frame != NULL))
-    {
-        frame->customframe = fi;
-        frame->ileft = fi->inner_left;
-        frame->itop = fi->inner_top;
-        frame->iright = fi->inner_right;
-        frame->ibottom = fi->inner_bottom;
-        frame->noalpha = fi->noalpha;
-    }
-
-    return frame;
+    return &__builtinFrameGfx[2 * frameSpec->type + state];
 }
 
 /*------------------------------------------------------------------------*/
