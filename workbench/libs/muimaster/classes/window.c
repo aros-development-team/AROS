@@ -553,7 +553,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     struct Window *win;
     ULONG flags = data->wd_CrtFlags;
     struct IBox altdims;
-    ULONG backfill;
+    ULONG backfill, buttons;
 
     struct Menu *menu = NULL;
     struct NewMenu *newmenu = NULL;
@@ -641,6 +641,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     }                                        
 
     gadgets = (data->wd_VertProp != NULL) ? data->wd_VertProp : data->wd_HorizProp;
+    buttons = muiGlobalInfo(obj)->mgi_Prefs->window_buttons;
 
     win = OpenWindowTags
     (
