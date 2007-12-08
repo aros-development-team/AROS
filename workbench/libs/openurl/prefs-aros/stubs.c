@@ -15,7 +15,7 @@
 #include "OpenURL.h"
 
 /***********************************************************************/
-#if !defined(__amigaos4__)
+#if !defined(__amigaos4__) && !defined(__AROS__)
 
 APTR
 NewObject(struct IClass *classPtr,UBYTE *classID,... )
@@ -48,6 +48,8 @@ MUI_NewObject(UBYTE *classID,... )
 
 /***********************************************************************/
 
+#ifndef __AROS__
+
 #if defined(__amigaos4__)
 #include <stdarg.h>
 #endif
@@ -69,6 +71,8 @@ DoSuperNew(struct IClass *cl,Object *obj,...)
 
     return (ULONG)res;
 }
+
+#endif /* !__AROS__ */
 
 /***********************************************************************/
 

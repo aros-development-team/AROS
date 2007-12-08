@@ -24,7 +24,11 @@
 */
 
 static struct MUI_CustomClass *lampClass = NULL;
+#ifdef __AROS__
+#define lampObject BOOPSIOBJMACRO_START(lampClass->mcc_Class)
+#else
 #define lampObject NewObject(lampClass->mcc_Class,NULL
+#endif
 
 struct lampData
 {
@@ -256,7 +260,11 @@ disposeLampClass(void)
 */
 
 static struct MUI_CustomClass *listClass = NULL;
+#ifdef __AROS__
+#define listObject BOOPSIOBJMACRO_START(listClass->mcc_Class)
+#else
 #define listObject NewObject(listClass->mcc_Class,NULL
+#endif
 
 struct listData
 {
@@ -294,6 +302,13 @@ conFun(void)
     struct Hook     *hook = (struct Hook *)REG_a0;
     APTR            pool = (APTR)REG_A2;
     struct URL_Node *node = (struct URL_Node *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(struct URL_Node *, conFun,
+AROS_UFHA(struct Hook *    , hook, A0),
+AROS_UFHA(APTR             , pool, A2),
+AROS_UFHA(struct URL_Node *, node, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static struct URL_Node * SAVEDS ASM
 conFun(REG(a0,struct Hook *hook),REG(a2,APTR pool),REG(a1,struct URL_Node *node))
@@ -310,6 +325,9 @@ conFun(REG(a0,struct Hook *hook),REG(a2,APTR pool),REG(a1,struct URL_Node *node)
     else if (new = AllocPooled(pool,data->nodeSize)) CopyMem(node,new,data->nodeSize);
 
     return new;
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -328,6 +346,13 @@ destFun(void)
     struct Hook     *hook = (struct Hook *)REG_a0;
     APTR            pool   = (APTR)REG_A2;
     struct URL_Node *node = (struct URL_Node *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, destFun,
+AROS_UFHA(struct Hook *    , hook, A0),
+AROS_UFHA(APTR             , pool, A2),
+AROS_UFHA(struct URL_Node *, node, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 destFun(REG(a0,struct Hook *hook),REG(a2,APTR pool),REG(a1,struct URL_Node *node))
@@ -336,6 +361,9 @@ destFun(REG(a0,struct Hook *hook),REG(a2,APTR pool),REG(a1,struct URL_Node *node
     struct listData *data = hook->h_Data;
 
     FreePooled(pool,node,data->nodeSize);
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -354,6 +382,13 @@ dispFun(void)
     struct Hook     *hook = (struct Hook *)REG_a0;
     STRPTR          *array = (STRPTR *)REG_A2;
     struct URL_Node *node = (struct URL_Node *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, dispFun,
+AROS_UFHA(struct Hook *    , hook , A0),
+AROS_UFHA(STRPTR *         , array, A2),
+AROS_UFHA(struct URL_Node *, node , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 dispFun(REG(a0,struct Hook *hook),REG(a2,STRPTR *array),REG(a1,struct URL_Node *node))
@@ -382,6 +417,9 @@ dispFun(REG(a0,struct Hook *hook),REG(a2,STRPTR *array),REG(a1,struct URL_Node *
         *array++ = getString(MSG_Edit_ListName);
         *array   = getString(MSG_Edit_ListPath);
     }
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__

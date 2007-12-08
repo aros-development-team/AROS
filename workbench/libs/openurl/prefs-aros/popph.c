@@ -24,7 +24,11 @@
 */
 
 static struct MUI_CustomClass *listClass = NULL;
+#ifdef __AROS__
+#define listObject BOOPSIOBJMACRO_START(listClass->mcc_Class)
+#else
 #define listObject NewObject(listClass->mcc_Class,NULL
+#endif
 
 struct listData
 {
@@ -40,12 +44,22 @@ static ULONG
 conFun(void)
 {
     ULONG num = REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(ULONG, conFun,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR         , pool, A2),
+AROS_UFHA(ULONG        , num , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static ULONG SAVEDS ASM
 conFun(REG(a0,struct Hook *hook),REG(a2,APTR pool),REG(a1,ULONG num))
 {
 #endif
     return num+1;
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -64,6 +78,13 @@ dispFun(void)
     struct Hook  *hook = (struct Hook *)REG_a0;
     UBYTE        **array = (UBYTE **)REG_A2;
     ULONG        num = REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, dispFun,
+AROS_UFHA(struct Hook *, hook , A0),
+AROS_UFHA(UBYTE **     , array, A2),
+AROS_UFHA(ULONG        , num  , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 dispFun(REG(a0,struct Hook *hook),REG(a2,UBYTE **array),REG(a1,ULONG num))
@@ -78,6 +99,9 @@ dispFun(REG(a0,struct Hook *hook),REG(a2,UBYTE **array),REG(a1,ULONG num))
         *array++ = data->phs[num];
         *array   = data->names[num];
     }
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -181,12 +205,22 @@ windowFun(void)
     //struct Hook *hook = (struct Hook *)REG_A0;
     Object      *pop = (Object *)REG_A2;
     Object      *win = (Object *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, windowFun,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(Object *     , pop , A2),
+AROS_UFHA(Object *     , win , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 windowFun(REG(a0,struct Hook *hook),REG(a2,Object *pop),REG(a1,Object *win))
 {
 #endif
     set(win,MUIA_Window_DefaultObject,pop);
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -204,6 +238,13 @@ static void closeFun(void)
     struct Hook *hook = (struct Hook *)REG_A0;
     Object      *list = (Object *)REG_A2;
     Object      *str = (Object *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, closeFun,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(Object *     , list, A2),
+AROS_UFHA(Object *     , str , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 closeFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
@@ -233,6 +274,9 @@ closeFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
             FreePooled(g_pool,buf,lx+l+1);
         }
     }
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -332,6 +376,13 @@ reqIntuiFun(void)
 {
     struct Hook     *hook = (struct Hook *)REG_A0;
     struct IntuiMessage *imsg = (struct IntuiMessage *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, reqIntuiFun,
+AROS_UFHA(struct Hook *        , hook, A0),
+AROS_UFHA(Object *             , dummy, A2),
+AROS_UFHA(struct IntuiMessage *, imsg, A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 reqIntuiFun(REG(a0,struct Hook *hook),REG(a1,struct IntuiMessage *imsg))
@@ -339,6 +390,9 @@ reqIntuiFun(REG(a0,struct Hook *hook),REG(a1,struct IntuiMessage *imsg))
 #endif
     if (imsg->Class==IDCMP_REFRESHWINDOW)
     DoMethod(hook->h_Data,MUIM_Application_CheckRefresh);
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__

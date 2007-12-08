@@ -28,7 +28,11 @@ LONG                   __stack = 32000; /* I think this is OK in every env */
 struct IntuitionBase   *IntuitionBase = NULL;
 struct GfxBase         *GfxBase = NULL;
 struct Library         *MUIMasterBase = NULL;
+#ifdef __AROS__
+struct UtilityBase     *UtilityBase = NULL;
+#else
 struct Library         *UtilityBase = NULL;
+#endif
 struct Library         *IconBase = NULL;
 struct Library         *OpenURLBase = NULL;
 struct LocaleBase      *LocaleBase = NULL;

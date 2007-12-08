@@ -31,6 +31,10 @@ void SetAmiUpdateENVVariable( CONST_STRPTR varname );
 ULONG DoSuperNew ( struct IClass *cl , Object *obj , ... ) VARARGS68K;
 void msprintf ( STRPTR to , STRPTR fmt , ... ) VARARGS68K;
 int msnprintf ( STRPTR buf , int size , STRPTR fmt , ... ) VARARGS68K;
+#elif defined(__AROS__)
+#define DoSuperNew DoSuperNewTags
+void STDARGS msprintf ( STRPTR to , STRPTR fmt , ... );
+int STDARGS msnprintf ( STRPTR buf , int size , STRPTR fmt , ... );
 #else
 ULONG STDARGS DoSuperNew ( struct IClass *cl , Object *obj , ... );
 void STDARGS msprintf ( STRPTR to , STRPTR fmt , ... );

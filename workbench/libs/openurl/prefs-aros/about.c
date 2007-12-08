@@ -74,14 +74,16 @@
 static Object *
 ourltext(STRPTR url,STRPTR text)
 {
-    Object *o;
+    Object *o = NULL;
 
+#ifndef __AROS__
     o = UrltextObject,
         MUIA_Urltext_Text,           text,
         MUIA_Urltext_Url,            url,
         MUIA_Urltext_SetMax,         FALSE,
         MUIA_Urltext_NoOpenURLPrefs, TRUE,
     End;
+#endif
 
     if (!o) o = TextObject, MUIA_Text_SetMax, FALSE, MUIA_Text_Contents, text ? text : url, End;
 
