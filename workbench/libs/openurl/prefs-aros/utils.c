@@ -26,7 +26,7 @@
 
 /***********************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__amigaos4__)
+#if !defined(__MORPHOS__) && !defined(__amigaos4__) && !defined(__AROS__)
 ULONG STDARGS
 DoSuperNew(struct IClass *cl,Object *obj,ULONG tag1,...)
 {
@@ -342,6 +342,12 @@ msnprintfStuff(void)
 {
     register struct stream *s = (struct stream *)REG_A3;
     register UBYTE         c  = (TEXT)REG_D0;
+#elif defined(__AROS__)
+AROS_UFH2S(void, msnprintfStuff,
+AROS_UFHA(TEXT           , c, D0),
+AROS_UFHA(struct stream *, s, A3))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 msnprintfStuff(REG(d0,TEXT c),REG(a3,struct stream *s))
@@ -356,6 +362,9 @@ msnprintfStuff(REG(d0,TEXT c),REG(a3,struct stream *s))
         }
         else *(s->buf++) = c;
     }
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__

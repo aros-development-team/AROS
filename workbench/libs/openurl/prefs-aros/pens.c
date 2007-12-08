@@ -23,7 +23,11 @@
 */
 
 static struct MUI_CustomClass *penClass = NULL;
+#ifdef __AROS__
+#define penObject BOOPSIOBJMACRO_START(penClass->mcc_Class)
+#else
 #define penObject NewObject(penClass->mcc_Class,NULL
+#endif
 
 struct penData
 {

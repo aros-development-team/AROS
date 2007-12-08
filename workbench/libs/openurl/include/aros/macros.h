@@ -10,16 +10,17 @@
 #define STDARGS
 #define INLINE          inline
 #define VARARGS68k  __stackparm
-//#define REG(x,p)        p
+#define REG(x,p)        p
 //#define LIBCALL
 
-#define M_DISP(n) static ULONG _##n(void)
-#define M_DISPSTART \
-    struct IClass *cl = (struct IClass *)REG_A0; \
-    Object        *obj = (Object *)REG_A2; \
-    Msg            msg  = (Msg)REG_A1;
-#define M_DISPEND(n) static struct EmulLibEntry n = {TRAP_LIB,0,(void *)_##n};
-#define DISP(n) ((APTR)&n)
+#define M_DISP(n) static BOOPSI_DISPATCHER(ULONG,n,cl,obj,msg)
+
+//static ULONG SAVEDS ASM n(REG(a0,struct IClass *cl),REG(a2,Object *obj),REG(a1,Msg msg))
+
+#define M_DISPSTART
+#define M_DISPEND(n) BOOPSI_DISPATCHER_END
+#define DISP(n) (n)
+
 
 #undef NODE
 #define NODE(a) ((struct Node *)(a))

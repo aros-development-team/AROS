@@ -24,7 +24,11 @@
 */
 
 static struct MUI_CustomClass *listClass = NULL;
+#ifdef __AROS__
+#define listObject BOOPSIOBJMACRO_START(listClass->mcc_Class)
+#else
 #define listObject NewObject(listClass->mcc_Class,NULL
+#endif
 
 static ULONG
 mListNew(struct IClass *cl,Object *obj,struct opSet *msg)
@@ -102,12 +106,22 @@ windowFun(void)
     //struct Hook *hook = (struct Hook *)REG_A0;
     Object      *pop = (Object *)REG_A2;
     Object      *win = (Object *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, windowFun,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(Object *     , pop , A2),
+AROS_UFHA(Object *     , win , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 windowFun(REG(a0,struct Hook *hook),REG(a2,Object *pop),REG(a1,Object *win))
 {
 #endif
     set(win,MUIA_Window_DefaultObject,pop);
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -126,6 +140,13 @@ openFun(void)
     //struct Hook *hook = (struct Hook *)REG_A0;
     Object      *list = (Object *)REG_A2;
     Object      *str = (Object *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(ULONG, openFun,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(Object *     , list, A2),
+AROS_UFHA(Object *     , str , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static ULONG SAVEDS ASM
 openFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
@@ -153,6 +174,9 @@ openFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
     }
 
     return TRUE;
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__
@@ -170,6 +194,13 @@ static void closeFun(void)
     //struct Hook *hook = (struct Hook *)REG_A0;
     Object      *list = (Object *)REG_A2;
     Object      *str = (Object *)REG_A1;
+#elif defined(__AROS__)
+AROS_UFH3S(void, closeFun,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(Object *     , list, A2),
+AROS_UFHA(Object *     , str , A1))
+{
+    AROS_USERFUNC_INIT
 #else
 static void SAVEDS ASM
 closeFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
@@ -204,6 +235,9 @@ closeFun(REG(a0,struct Hook *hook),REG(a2,Object *list),REG(a1,Object *str))
     }
 
     set(str,MUIA_String_Contents,port);
+#ifdef __AROS__
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 #ifdef __MORPHOS__

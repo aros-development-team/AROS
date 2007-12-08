@@ -12,9 +12,14 @@
 **  Main includes and definitions
 */
 
+#ifdef __AROS__
+#define MUIMASTER_YES_INLINE_STDARG
+#endif
 
+#ifndef __AROS__
 #define __NOLIBBASE__
 #define __USE_SYSBASE
+#endif
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -32,13 +37,17 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <libraries/iffparse.h>
+#include <libraries/mui.h>
 
 #include <clib/alib_protos.h>
+
+#ifndef __AROS__
 #include <clib/debug_protos.h>
 
 #include <mui/Textinput_mcc.h>
 #include <mui/Urltext_mcc.h>
 #include <mui/MUIundoc.h>
+#endif
 
 #include <string.h>
 #include <ctype.h>
@@ -55,7 +64,11 @@ extern struct DosLibrary      *DOSBase;
 extern struct IntuitionBase   *IntuitionBase;
 extern struct GfxBase         *GfxBase;
 extern struct Library         *MUIMasterBase;
+#ifdef __AROS__
+extern struct UtilityBase     *UtilityBase;
+#else
 extern struct Library         *UtilityBase;
+#endif
 extern struct Library         *IconBase;
 extern struct LocaleBase      *LocaleBase;
 extern struct Library         *OpenURLBase;
@@ -120,7 +133,11 @@ struct URL_Node
 ** App class
 */
 
+#ifdef __AROS__
+#define appObject BOOPSIOBJMACRO_START(g_appClass->mcc_Class)
+#else
 #define appObject NewObject(g_appClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_App_OpenWin    (TAGBASE_APP+0)
@@ -178,14 +195,22 @@ struct MUIP_App_CloseWin
 ** About class
 */
 
+#ifdef __AROS__
+#define aboutObject BOOPSIOBJMACRO_START(g_aboutClass->mcc_Class)
+#else
 #define aboutObject NewObject(g_aboutClass->mcc_Class,NULL
+#endif
 
 /**************************************************************************/
 /*
 ** Win class
 */
 
+#ifdef __AROS__
+#define winObject BOOPSIOBJMACRO_START(g_winClass->mcc_Class)
+#else
 #define winObject NewObject(g_winClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_Win_GetPrefs   (TAGBASE_WIN+0)
@@ -234,7 +259,11 @@ struct MUIP_Win_Delete
 ** AppList class
 */
 
+#ifdef __AROS__
+#define appListObject BOOPSIOBJMACRO_START(g_appListClass->mcc_Class)
+#else
 #define appListObject NewObject(g_appListClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_AppList_Add           (TAGBASE_APPLIST+0)
@@ -282,7 +311,11 @@ enum
 ** BrowserEditWin class
 */
 
+#ifdef __AROS__
+#define browserEditWinObject BOOPSIOBJMACRO_START(g_browserEditWinClass->mcc_Class)
+#else
 #define browserEditWinObject NewObject(g_browserEditWinClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_BrowserEditWin_Use (TAGBASE_BROWSEREDITWIN+0)
@@ -296,7 +329,11 @@ enum
 ** MailerEditWin class
 */
 
+#ifdef __AROS__
+#define mailerEditWinObject BOOPSIOBJMACRO_START(g_mailerEditWinClass->mcc_Class)
+#else
 #define mailerEditWinObject NewObject(g_mailerEditWinClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_MailerEditWin_Use (TAGBASE_MAILEREDITWIN+0)
@@ -310,7 +347,11 @@ enum
 ** FTPEditWin class
 */
 
+#ifdef __AROS__
+#define FTPEditWinObject BOOPSIOBJMACRO_START(g_FTPEditWinClass->mcc_Class)
+#else
 #define FTPEditWinObject NewObject(g_FTPEditWinClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_FTPEditWin_Use (TAGBASE_FTPEDITWIN+0)
@@ -324,7 +365,11 @@ enum
 ** Popport class
 */
 
+#ifdef __AROS__
+#define popportObject BOOPSIOBJMACRO_START(g_popportClass->mcc_Class)
+#else
 #define popportObject NewObject(g_popportClass->mcc_Class,NULL
+#endif
 
 /* Attributes */
 #define MUIA_Popport_Key     (TAGBASE_POPPORT+0)
@@ -343,7 +388,11 @@ enum
 ** Popph class
 */
 
+#ifdef __AROS__
+#define popphObject BOOPSIOBJMACRO_START(g_popphClass->mcc_Class)
+#else
 #define popphObject NewObject(g_popphClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_Popph_RequestFile  (TAGBASE_POPPH)
@@ -361,7 +410,11 @@ enum
 ** Pens class
 */
 
+#ifdef __AROS__
+#define pensObject BOOPSIOBJMACRO_START(g_pensClass->mcc_Class)
+#else
 #define pensObject NewObject(g_pensClass->mcc_Class,NULL
+#endif
 
 /* Methods */
 #define MUIM_Pens_Change        (TAGBASE_PENS)
