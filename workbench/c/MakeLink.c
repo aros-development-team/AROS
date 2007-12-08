@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -59,7 +59,7 @@
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 
-static const char version[] = "$VER: MakeLink 41.1 (02.06.2000)\n";
+const TEXT version[] = "$VER: MakeLink 41.1 (2.6.2000)\n";
 
 enum { ARG_FROM = 0, ARG_TO, ARG_HARD, ARG_FORCE };
 

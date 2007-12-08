@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock - Set the write protect status of a device.
@@ -74,7 +74,7 @@
 #define ARG_PASSKEY	3
 #define TOTAL_ARGS	4
 
-static const char version[]= "$VER: Lock 41.2 (16.1.1999)";
+const TEXT version[] = "$VER: Lock 41.2 (16.1.1999)";
 static const char exthelp[] =
     "Lock : Set the write-protect state of a volume\n"
     "\tDRIVE/A   The name of the volume to lock\n"

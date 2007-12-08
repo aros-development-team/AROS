@@ -1,3 +1,11 @@
+/*
+    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Format CLI command
+    Lang: English
+*/
+
 #define DEBUG 0
 
 #include <proto/dos.h>
@@ -16,7 +24,7 @@
 
 AROS_SH8
 (
-    Format, 0.2,
+    Format, 41.1,
     AROS_SHA(STRPTR, , DRIVE, /K/A, NULL),
     AROS_SHA(STRPTR, , NAME,  /K/A, NULL),
     AROS_SHA(BOOL, ,   OFS,   /S,   FALSE),

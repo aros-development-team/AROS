@@ -1,5 +1,5 @@
 /*
-    Copyright © 2000, The AROS Development Team. All rights reserved.
+    Copyright © 2000-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Probe installed CPUs and display relevant information
@@ -35,7 +35,7 @@
 		    Version Information
  ********************************************/
 
-static const char version[] = VERSTAG;
+const TEXT version[] = VERSTAG;
 BOOL    VERBOSE=FALSE;
 
 /********************************************

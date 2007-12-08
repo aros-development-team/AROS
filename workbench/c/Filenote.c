@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filenote CLI command
@@ -110,7 +110,7 @@
 
 #define MAX_PATH_LEN    512
 
-static const char version[] = "$VER: Filenote 41.1 (29.08.1998)\n";
+const TEXT version[] = "$VER: Filenote 41.1 (29.8.1998)\n";
 
 int Do_Filenote(struct AnchorPath *, STRPTR, STRPTR, LONG, LONG);
 

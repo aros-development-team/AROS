@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc: Eval CLI command
     Lang: English
 */
 
@@ -99,7 +99,7 @@
 #include  <proto/exec.h>
 
 
-static const char version[] = "$VER: Eval 41.1 (01.01.2001)\n";
+const TEXT version[] = "$VER: Eval 41.1 (1.1.2001)\n";
 
 #define  ARG_TEMPLATE  "VALUE1/A,OP,VALUE2/M,TO/K,LFORMAT/K"
 enum 

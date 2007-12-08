@@ -179,7 +179,7 @@ typedef struct UtilityBase *UtilityBase_t;
 #endif
 
 static const int __nocommandline;
-static const char version[] = "\0$VER: " PROGNAME " 50.13 (21.05.07) © Pavel Fedin";
+const TEXT version[] = "\0$VER: " PROGNAME " 50.13 (21.5.2007)";
 
 ULONG CheckDevice(char *name);
 void  InitParams(IPTR *params);
@@ -304,7 +304,7 @@ int main(void)
 			  DEBUG_MOUNT(Printf("Mount: try File <%s>\n", (ULONG)dirname));
 
 			  error=readmountfile(params, dirname);
-			  DEBUG_MOUNT(Printf("Mount: readmountile returned %ld\n", error));
+			  DEBUG_MOUNT(Printf("Mount: readmountfile returned %ld\n", error));
 			  if (error != ERROR_OBJECT_NOT_FOUND)
 			    break;
                         }
@@ -493,7 +493,7 @@ ULONG		Status;
   }
   UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
 
-  DEBUG_CHECK(Printf("CheckDevice: object %sexists\n", Status ? "" : "doesn't "));
+  DEBUG_CHECK(Printf("CheckDevice: object %sexist\n", Status ? "does" : "doesn't "));
 
   return Status;
 }

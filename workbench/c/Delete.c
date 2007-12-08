@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Delete CLI Command.
@@ -88,7 +88,7 @@ enum
 /* Maximum file path length */
 #define MAX_PATH_LEN    2048
 
-static const char version[] = "$VER: Delete 41.2 (6.1.2000)\n";
+const TEXT version[] = "$VER: Delete 41.2 (6.1.2000)\n";
 static char cmdname[] = "Delete";
 
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Version CLI command
@@ -406,7 +406,7 @@ void Transform(register ULONG *buf,register ULONG *in)
 /*==[end md5.c]============================================================*/
 
 
-static const char version[] = "$VER: Version 42.1 (12.11.2006)\n";
+const TEXT version[] = "$VER: Version 42.1 (12.11.2006)\n";
 
 static const char ERROR_HEADER[] = "Version";
 

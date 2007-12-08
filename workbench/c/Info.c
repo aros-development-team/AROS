@@ -32,7 +32,7 @@
 
     DISKS     --  show information on file system devices
     VOLS      --  show information on volumes
-    ALL       --  show information bad devices or volumes
+    ALL       --  show information on bad devices or volumes
     BLOCKS    --  show additional block size and usage information
     DEVICES   --  device names to show information about
 
@@ -129,7 +129,7 @@ ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod);
 void doInfo();
 
 
-STRPTR VersionStr = "$VER: Info 41.1 (16.11.2000)";
+const TEXT VersionStr[] = "$VER: Info 41.1 (16.11.2000)";
 
 struct Catalog	*cat;
 struct Locale   *loc = NULL;

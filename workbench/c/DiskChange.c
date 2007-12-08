@@ -1,9 +1,17 @@
+/*
+    Copyright © 2007, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: DiskChange CLI command
+    Lang: English
+*/
+
 #include <proto/dos.h>
 
 #include <dos/dos.h>
 #include <exec/types.h>
 
-const char __version__[] = "\0$VER: DiskChange 1.0 (08.04.2007)";
+const TEXT __version__[] = "\0$VER: DiskChange 41.1 (8.12.2007)";
 int __nocommandline;
 
 int main(void)
