@@ -160,6 +160,9 @@ struct  MUIP_Window_SetMenuState    {STACKULONG MethodID; STACKED ULONG MenuID; 
 #define MUIV_Window_Menu_NoMenu     (-1)
 #endif /* MUI_OBSOLETE */
 
+/* Forward declaration for application opaque custom frame specification */
+struct dt_frame_image;
+
 /**************************************************************************
  Info about the display environment on which all Area Objects have a
  reference to it.
@@ -210,7 +213,7 @@ struct MUI_RenderInfo
     struct RastPort mri_BufferRP;
     struct BitMap  *mri_BufferBM;
 
-    IPTR            mri_FrameImage[16];
+    struct dt_frame_image *mri_FrameImage[16];
 };
 
 #define MUIMRI_RECTFILL (1<<0)

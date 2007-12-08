@@ -227,22 +227,22 @@ static BOOL InitCustomFrames(Object *obj, struct MUI_RenderInfo *mri)
         mri->mri_FrameImage[i] = NULL;
     }
 
-    mri->mri_FrameImage[0] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_1, mri->mri_Screen);
-    mri->mri_FrameImage[1] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_2, mri->mri_Screen);
-    mri->mri_FrameImage[2] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_3, mri->mri_Screen);
-    mri->mri_FrameImage[3] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_4, mri->mri_Screen);
-    mri->mri_FrameImage[4] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_5, mri->mri_Screen);
-    mri->mri_FrameImage[5] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_6, mri->mri_Screen);
-    mri->mri_FrameImage[6] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_7, mri->mri_Screen);
-    mri->mri_FrameImage[7] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_8, mri->mri_Screen);
-    mri->mri_FrameImage[8] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_9, mri->mri_Screen);
-    mri->mri_FrameImage[9] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_10, mri->mri_Screen);
-    mri->mri_FrameImage[10] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_11, mri->mri_Screen);
-    mri->mri_FrameImage[11] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_12, mri->mri_Screen);
-    mri->mri_FrameImage[12] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_13, mri->mri_Screen);
-    mri->mri_FrameImage[13] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_14, mri->mri_Screen);
-    mri->mri_FrameImage[14] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_15, mri->mri_Screen);
-    mri->mri_FrameImage[15] = (IPTR) load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_16, mri->mri_Screen);
+    mri->mri_FrameImage[0] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_1, mri->mri_Screen);
+    mri->mri_FrameImage[1] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_2, mri->mri_Screen);
+    mri->mri_FrameImage[2] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_3, mri->mri_Screen);
+    mri->mri_FrameImage[3] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_4, mri->mri_Screen);
+    mri->mri_FrameImage[4] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_5, mri->mri_Screen);
+    mri->mri_FrameImage[5] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_6, mri->mri_Screen);
+    mri->mri_FrameImage[6] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_7, mri->mri_Screen);
+    mri->mri_FrameImage[7] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_8, mri->mri_Screen);
+    mri->mri_FrameImage[8] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_9, mri->mri_Screen);
+    mri->mri_FrameImage[9] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_10, mri->mri_Screen);
+    mri->mri_FrameImage[10] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_11, mri->mri_Screen);
+    mri->mri_FrameImage[11] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_12, mri->mri_Screen);
+    mri->mri_FrameImage[12] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_13, mri->mri_Screen);
+    mri->mri_FrameImage[13] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_14, mri->mri_Screen);
+    mri->mri_FrameImage[14] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_15, mri->mri_Screen);
+    mri->mri_FrameImage[15] = load_custom_frame(muiGlobalInfo(obj)->mgi_Prefs->customframe_config_16, mri->mri_Screen);
 
     return TRUE;
 }
@@ -253,7 +253,7 @@ static void DisposeCustomFrames(struct MUI_RenderInfo *mri)
 
     for (i = 0; i < 16; i++)
     {
-        dispose_custom_frame((struct dt_frame_image *) mri->mri_FrameImage[i]);
+        dispose_custom_frame(mri->mri_FrameImage[i]);
         
         mri->mri_FrameImage[i] = NULL;
     }
