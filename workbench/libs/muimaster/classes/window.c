@@ -160,6 +160,7 @@ struct MUI_WindowData
 #define MUIWF_OPENONUNHIDE      (1<<14) /* Open the window when unhiding */
 #define MUIWF_SCREENLOCKED  	(1<<15) /* A pub screen was locked in SetupRenderInfo. Unlock it in CleanupRenderInfo! */
 #define MUIWF_OBJECTGOACTIVESENT (1<<16) /* A MUIM_GoActive msg was sent to window's active object */
+#define MUIWF_TOOLBOX			(1<<17) /* Window should be opened as ToolBox */
 
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
@@ -469,7 +470,7 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data, struct M
     if (data->wd_UserScreen)
     {
         BOOL screenclose = TRUE;
-        Object _app = _app(obj);
+        Object *_app = _app(obj);
         if (_app != NULL)
         {
             struct List *store = NULL;
@@ -558,10 +559,18 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     struct NewMenu *newmenu = NULL;
     APTR visinfo = NULL;
 
+    Object *gadgets;
+
     if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
     {
         flags |= WFLG_ACTIVATE;
     }
+
+    /* Toolboxes are handled differently on AmigaOS */
+#ifdef __AROS__
+    if (data->wd_Flags & MUIWF_TOOLBOX)
+    	flags |= WFLG_TOOLBOX;
+#endif
 
     if 
     (
@@ -631,11 +640,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 
     }                                        
 
-    struct Gadget *gadgets = NULL;
-    
     gadgets = (data->wd_VertProp != NULL) ? data->wd_VertProp : data->wd_HorizProp;
-
-    ULONG   buttons = muiGlobalInfo(obj)->mgi_Prefs->window_buttons;
 
     win = OpenWindowTags
     (
@@ -655,6 +660,9 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         WA_InnerHeight,         (IPTR) data->wd_Height,
         WA_AutoAdjust,          (IPTR) TRUE,
         WA_NewLookMenus,        (IPTR) TRUE,
+#ifdef __AMIGAOS4__
+        WA_ToolBox,				(IPTR) !!(data->wd_Flags & MUIWF_TOOLBOX),
+#endif
 #ifdef __AROS__
         WA_ExtraGadget_MUI,     (IPTR) ((buttons & MUIV_Window_Button_MUI) != 0) ? TRUE : FALSE,
         WA_ExtraGadget_PopUp,   (IPTR) ((buttons & MUIV_Window_Button_Popup) != 0) ? TRUE : FALSE,
@@ -691,7 +699,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
             data->wd_MinMax.MaxHeight + vborders
         );
 
-        win->UserData = (char*)data->wd_RenderInfo.mri_WindowObject;
+        win->UserData = (BYTE*)data->wd_RenderInfo.mri_WindowObject;
         win->UserPort = muiGlobalInfo(obj)->mgi_WindowsPort; /* Same port for all windows */
         ModifyIDCMP(win, data->wd_Events);
 
@@ -2618,7 +2626,7 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -2627,10 +2635,7 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
         case MUIA_Window_ToolBox:
-/* TODO: Implement me on AmigaOS4 */
-#ifdef __AROS__
-        _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_TOOLBOX);
-#endif
+        _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_TOOLBOX);
         break;
 
 	    case MUIA_Window_CloseGadget:
@@ -2820,9 +2825,9 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct TagItem        *tags = msg->ops_AttrList;
-    struct TagItem        *tag;
+    const struct TagItem        *tag;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
