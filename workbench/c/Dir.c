@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: Dir CLI command
@@ -102,9 +102,9 @@
  
 ******************************************************************************/
 
-#define	VERSTAG	"\0$VER: Dir 50.8 (27.11.2004) © AROS"
+#define	VERSTAG	"\0$VER: Dir 50.8 (27.11.2004)"
 
-static const char version[] = VERSTAG;
+const TEXT version[] = VERSTAG;
 
 struct table
 {

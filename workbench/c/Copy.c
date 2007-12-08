@@ -1,5 +1,5 @@
- /* copy t:AmiTCP.#? big: buf=2000000 verbose
-    Copyright © 2001, The AROS Development Team. All rights reserved.
+/*
+    Copyright © 2001-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy CLI command
@@ -298,8 +298,6 @@
 
 ******************************************************************************/
 
-static const char version[] = "\0$VER: Copy 50.16 (07.03.2007) © AROS";
-
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
 
 #define  DEBUG  0
@@ -334,6 +332,8 @@ typedef ULONG IPTR;
 
 #include <string.h>
 #include <stdio.h>
+
+const TEXT version[] = "\0$VER: Copy 50.16 (7.3.2007)";
 
 static const UBYTE *PARAM =
 "FROM/M,TO,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"

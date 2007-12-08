@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -64,7 +64,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static const char version[] = "$VER: SetKeyboard 41.2 (16.01.2000)\n";
+const TEXT version[] = "$VER: SetKeyboard 41.2 (16.1.2000)\n";
 
 #define ARG_TEMPLATE "KEYMAP/A"
 

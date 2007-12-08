@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     List the contents of a directory.
@@ -124,7 +124,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-static const char version[] = "$VER: list 41.5 (3.12.2000)\n";
+const TEXT version[] = "$VER: List 41.5 (3.12.2000)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 

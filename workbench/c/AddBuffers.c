@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AddBuffers CLI command
@@ -58,7 +58,7 @@
 #include <dos/dos.h>
 
 
-static const char version[] = "$VER: AddBuffers 41.1 (18.2.1997)\n";
+const TEXT version[] = "$VER: AddBuffers 41.1 (18.2.1997)\n";
 
 #define ARG_TEMPLATE "DRIVE/A,BUFFERS/N"
 

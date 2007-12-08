@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Rename CLI command.
@@ -101,7 +101,7 @@ enum
 
 #define MAX_PATH_LEN	2048
 
-static const char version[] = "$VER: Rename 41.2 (23.11.2000)\n";
+const TEXT version[] = "$VER: Rename 41.2 (23.11.2000)\n";
 
 
 int doRename(STRPTR *from, STRPTR to, BOOL quiet);

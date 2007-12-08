@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RequestChoice CLI command
@@ -107,7 +107,7 @@
  */
 #define NOT_SET         0
 
-static const char version[] = "$VER: RequestChoice 41.1 (08.09.1997)\n";
+const TEXT version[] = "$VER: RequestChoice 41.1 (8.9.1997)\n";
 
 static char ERROR_HEADER[] = "RequestChoice";
 

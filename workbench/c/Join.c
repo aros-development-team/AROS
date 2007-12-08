@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Join - Create a single file from several.
@@ -77,7 +77,7 @@
 
 /****** Version- and error-header ***************************************/
 
-static const char version[] = "$VER: Join 41.1 (07.09.1999)";
+const TEXT version[] = "$VER: Join 41.1 (7.9.1999)";
 static char ERROR_HEADER[]  = "Join";
 
 /****** Prototypes for local functions **********************************/

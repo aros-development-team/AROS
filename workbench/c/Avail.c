@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Avail CLI command
@@ -64,7 +64,7 @@
 #include <utility/tagitem.h>
 #include <string.h>
 
-static const char version[] = "$VER: Avail 42.0 (13.9.2005)\n";
+const TEXT version[] = "$VER: Avail 42.1 (8.12.2007)\n";
 
 
 #define  ARG_TEMPLATE  "CHIP/S,FAST/S,TOTAL/S,FLUSH/S,H=HUMAN/S"

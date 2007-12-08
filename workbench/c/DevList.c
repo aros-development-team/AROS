@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -14,7 +14,7 @@
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
-static const char version[] = "$VER: liblist 41.1 (14.3.1997)\n";
+const TEXT version[] = "$VER: DevList 41.1 (14.3.1997)\n";
 
 struct dev
 {

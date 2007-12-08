@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -99,7 +99,7 @@ void FreeFunc(UBYTE *memory, ULONG size);
 
 /********************************* CONSTANTS *********************************/
 
-UBYTE Version[]="$VER: AddDatatypes 42.0";
+const TEXT Version[] = "$VER: AddDatatypes 42.1 (8.12.2007)\n";
 
 #define EXCL_LEN 18
 UBYTE ExcludePattern[] = "#?.(info|backdrop)";
@@ -276,7 +276,7 @@ int main(void)
 						argarray[0] = dth->dth_BaseName;
 						argarray[1] = dth->dth_Name;
 
-						VPrintf("%s, \"%s\"\n",argarray);
+						VPrintf("%s, \"%s\"\n", (IPTR *)argarray);
 						node = node->ln_Succ;
 					}
 				}

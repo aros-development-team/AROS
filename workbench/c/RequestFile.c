@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     RequestFile CLI command.
@@ -87,7 +87,7 @@ enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
        ARG_MULTISELECT, ARG_DRAWERSONLY, ARG_NOICONS, ARG_PUBSCREEN,
        ARG_INITIALVOLUMES, TOTAL_ARGS };
 
-static const char version[] = "$VER: RequestFile 42.1 (18.10.2005)\n";
+const TEXT version[] = "$VER: RequestFile 42.1 (18.10.2005)\n";
 
 extern struct Library *AslBase;
 

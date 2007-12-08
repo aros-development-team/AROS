@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,7 +49,7 @@
 #include <proto/exec.h>
 #include <string.h>
 
-static const char version[] = "$VER: Relabel 41.1 (02.06.2000)\n";
+const TEXT version[] = "$VER: Relabel 41.1 (2.6.2000)\n";
 
 enum { ARG_DRIVE = 0, ARG_NAME };
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Change the priority of a task.
@@ -62,7 +62,7 @@
 #define ARG_PROCESS	1
 #define TOTAL_ARGS	2
 
-static const char version[] = "$VER: ChangeTaskPri 41.2 (13.09.2005)";
+const TEXT version[] = "$VER: ChangeTaskPri 41.2 (13.9.2005)";
 static const char exthelp[] =
     "ChangeTaskPri : Change the priority of a CLI task\n"
     "\tPRI=PRIORITY/A/N      New priority of task\n"

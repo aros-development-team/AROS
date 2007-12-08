@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Break - send a signal to a process.
@@ -76,7 +76,7 @@
 #define ARG_ALL		6
 #define TOTAL_ARGS	7
 
-static const char version[] = "$VER: Break 42.0 (13.09.2005)";
+const TEXT version[] = "$VER: Break 42.1 (8.12.2007)";
 
 static const char exthelp[] =
     "Break: Send break signal(s) to a CLI process\n"

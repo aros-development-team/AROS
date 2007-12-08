@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Wait CLI Command.
@@ -58,7 +58,7 @@
 #include <string.h>
 #include <stdio.h>
 
-static const char version[] = "$VER: Wait 41.2 (30.04.2000)\n";
+const TEXT version[] = "$VER: Wait 41.2 (30.4.2000)\n";
 
 int __nocommandline;
 

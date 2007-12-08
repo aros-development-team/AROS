@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Type CLI command
@@ -60,7 +60,7 @@
 
 #include <string.h>
 
-static const char version[] = "$VER: Type 42.0 (20.10.2005)\n";
+const TEXT version[] = "$VER: Type 42.1 (20.10.2005)\n";
 
 #define BUFSIZE 8192
 #define MAX_PATH_LEN	512

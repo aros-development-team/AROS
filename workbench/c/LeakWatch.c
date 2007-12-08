@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: show deltas of resources usage
@@ -39,7 +39,7 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-static const char version[] = "$VER: LeakWatch 0.1 (25.12.2002)\n";
+const TEXT version[] = "$VER: LeakWatch 0.1 (25.12.2002)\n";
 
 static struct Library *GadToolsBase;
 

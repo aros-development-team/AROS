@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Date CLI command
@@ -63,7 +63,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static const char version[] = "$VER: Date 41.4 (5.3.2000)\n";
+const TEXT version[] = "$VER: Date 41.4 (5.3.2000)\n";
 
 #define ARG_STRING "DAY,DATE,TIME,TO=VER/K"
 #define ARG_DAY 0

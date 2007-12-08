@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Beep
@@ -34,9 +34,7 @@
 #include <proto/intuition.h>
 #include <intuition/screens.h>
 
-#include <stdio.h>
-
-static const char version[] = "$VER: Beep 41.0 (30.12.2000)";
+const TEXT version[] = "$VER: Beep 41.1 (30.12.2000)";
 
 int IntuitionBase_version = 0;
 

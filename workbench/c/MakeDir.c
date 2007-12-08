@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     MakeDir CLI command.
@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-static const char version[] = "$VER: MakeDir 42.4 (17.10.2005)\n";
+const TEXT version[] = "$VER: MakeDir 42.4 (17.10.2005)\n";
 
 /******************************************************************************
 

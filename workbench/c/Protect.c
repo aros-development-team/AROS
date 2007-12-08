@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Protect CLI command
@@ -123,7 +123,7 @@ enum
 
 #define MAX_PATH_LEN    512
 
-static const char version[] = "$VER: Protect 41.1 (2.12.2000)\n";
+const TEXT version[] = "$VER: Protect 41.1 (2.12.2000)\n";
 
 struct UtilityBase *UtilityBase;
 

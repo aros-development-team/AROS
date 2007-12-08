@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -65,7 +65,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static const char version[] = "$VER: SetDefaultFont 41.0 (01.02.2001)\n";
+const TEXT version[] = "$VER: SetDefaultFont 41.1 (1.2.2001)\n";
 
 #define ARG_TEMPLATE "FONTNAME/A,FONTSIZE/N/A,SCREEN/S"
 
