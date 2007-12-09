@@ -456,7 +456,7 @@ int exec_main(struct TagItem *msg, void *entry)
         SysBase->ChkSum = ~sum;
     }
 
-    rkprintf("[exec] Creating the very first task...");
+    rkprintf("[exec] Creating the very first task...\n");
 
     /* Create boot task.  Sigh, we actually create a Process sized Task,
         since DOS needs to call things which think it has a Process and
