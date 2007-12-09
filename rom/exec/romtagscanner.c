@@ -65,7 +65,7 @@ ULONG **AROS_SLIB_ENTRY(RomTagScanner,Exec)
 	ptr = *ranges++;
 	end = *ranges++;
 
-	D(bug("RomTagScanner: Start = %p, End = %p\n", ptr, end));
+	kprintf("RomTagScanner: Start = %p, End = %p\n", ptr, end);
 	do
 	{
 	    res = (struct Resident *)ptr;
