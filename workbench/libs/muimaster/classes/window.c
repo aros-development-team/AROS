@@ -2999,7 +2999,7 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Window_Height:
-		data->wd_ReqWidth = (LONG)tag->ti_Data;
+		data->wd_ReqHeight = (LONG)tag->ti_Data;
 		data->wd_Height = 0;
 		break;
 		
