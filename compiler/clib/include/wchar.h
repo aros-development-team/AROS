@@ -20,8 +20,9 @@
 #include <stdint.h>
 
 /* FreeBSD 5.x headers do not define wchar_t */
-#ifndef wint_t
-typedef unsigned int wint_t;
+#ifndef __AROS_WINT_T_DECLARED
+#define __AROS_WINT_T_DECLARED
+typedef __wint_t wint_t;
 #endif
 
 __BEGIN_DECLS

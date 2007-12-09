@@ -14,6 +14,11 @@
 #define __need_wint_t
 #include <stddef.h>
 
+#ifndef __AROS_WINT_T_DECLARED
+#define __AROS_WINT_T_DECLARED
+typedef __wint_t wint_t;
+#endif
+
 #ifndef WEOF
 #define	WEOF	((wint_t)-1)
 #endif
