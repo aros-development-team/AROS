@@ -176,11 +176,11 @@ struct ZunePrefsNew
     /* Scrollbars */
     ScrollbarType        scrollbar_type;
     ScrollbarArrangement scrollbar_arrangement;
+
     ULONG    screenmode;
     ULONG    screenmodeid;
     UWORD    screen_width;
     UWORD    screen_height;
-    ULONG    screenaddress;
 
     CONST_STRPTR customframe_config_1;
     CONST_STRPTR customframe_config_2;

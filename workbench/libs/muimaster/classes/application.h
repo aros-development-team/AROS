@@ -209,6 +209,7 @@ struct MUI_GlobalInfo
     struct MsgPort      *mgi_WindowsPort; /* application-wide IDCMP port */ /* PRIV */
     Object              *mgi_Configdata; /* The config data */ /* PRIV */
     struct ZunePrefsNew *mgi_Prefs; /* For faster access */ /* PRIV */
+    struct Screen       *mgi_CustomScreen; /* Screen opened customly by the application */ /* PRIV */
 };
 
 

@@ -114,7 +114,7 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
     for (i = 0; DefImspecValues[i].defspec; i++)
     {
 	CONST_STRPTR imspec;
-	struct spec_cfg *img = DefImspecValues + i;
+	const struct spec_cfg *img = DefImspecValues + i;
 
 	imspec = GetConfigString(obj, img->cfgid);
 /*  	D(bug("init_imspecs: %ld %lx %s ...\n", img->muiv, img->cfgid, imspec)); */
@@ -159,7 +159,7 @@ static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
     for (i = 0; DefFramespecValues[i].defspec; i++)
     {
 	CONST_STRPTR framespec;
-	struct spec_cfg *fcfg = DefFramespecValues + i;
+	const struct spec_cfg *fcfg = DefFramespecValues + i;
 
 	framespec = GetConfigString(obj, fcfg->cfgid);
 	zune_frame_spec_to_intern(framespec,
@@ -292,7 +292,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -361,9 +361,6 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.screen_width = GetConfigULong(obj, MUICFG_Screen_Width);
     data->prefs.screen_height = GetConfigULong(obj, MUICFG_Screen_Height);
     data->prefs.window_buttons = GetConfigULong(obj, MUICFG_Window_Buttons);
-    data->prefs.screenaddress = 0;
-    
-
     
     /*---------- group stuff ----------*/
 
@@ -553,7 +550,8 @@ static IPTR Configdata_SetWindowPos(struct IClass *cl, Object * obj,
     	get(data->app,MUIA_Application_GetWinPosAddr, &addr);
     	get(data->app,MUIA_Application_GetWinPosSize, &size);
     	DoMethod(obj, MUIM_Dataspace_Add,addr,size,MUICFG_WindowPos);
-    }       
+    }
+    return 0;
 }
 
 
