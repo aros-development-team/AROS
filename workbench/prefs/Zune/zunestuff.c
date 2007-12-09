@@ -49,9 +49,8 @@ long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struc
         {
             if (AslRequest(fr, NULL))
             {
-                      
-                strncpy(dirpart,fr->rf_Dir,498);
-                strncpy(filepart,fr->rf_File,498);
+                strncpy(dirpart,fr->fr_Drawer,498);
+                strncpy(filepart,fr->fr_File,498);
                 strncpy(fullname,dirpart,498);
                 AddPart(fullname,filepart,998);
                 FreeAslRequest(fr);
