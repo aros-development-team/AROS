@@ -1,5 +1,5 @@
 #
-# Makefile for zunemaster.library
+# Makefile for the Zune prefs application
 #
 
 # If Kickstart isn't defined, we don't run on AmigaOS
@@ -27,7 +27,7 @@ STRIP  = $(CROSS_COMPILE)strip
 # Change these as required
 OPTIMIZE = #-O3
 DEBUG = -g #-DMYDEBUG #-ggdb # -g -DDEBUG
-INC = -I include -I . -I /cygdrive/d/Sources/zune-new/include-generated
+INC = -I include -I . -I $(ZUNE_INC)
 CFLAGS = -D__AMIGAOS4__ -DNDEBUG -D__USE_INLINE__ -Wall -fno-strict-aliasing -c $(OPTIMIZE) $(DEBUG) $(INC)
 
 # Flags passed to gcc during linking
@@ -37,7 +37,7 @@ LINK =
 TARGET = Zune
 
 # Additional linker libraries
-LIBS = -ldebug -lauto
+LIBS = -lauto #-ldebug -lauto
 
 # Version of the binary to build
 VERSION = 0
@@ -48,8 +48,10 @@ VERSION = 0
 SRCS=\
 	buttonsp.c \
 	cyclesp.c \
+	framesp.c \
 	groupsp.c \
 	listviewsp.c \
+	locale.c \
 	navigationp.c \
 	prefsio.c \
 	scrollbarsp.c \
