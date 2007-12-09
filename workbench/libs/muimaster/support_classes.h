@@ -214,8 +214,7 @@
 
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
-Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
-Class *ZUNE_MakeBuiltinClass(ClassID className, struct Library *mb);
+
 
 #define ZUNE_AddBuiltinClass(cl, mb)                                         \
 do                                                                           \
@@ -225,7 +224,11 @@ do                                                                           \
 } while (0)
 
 #define ZUNE_RemoveBuiltinClass(cl, mb) \
-    (void)Remove((struct Node *)(cl))
+do                                      \
+{                                       \
+	(cl)->cl_Flags &= ~CLF_INLIST;      \
+    (void)Remove((struct Node *)(cl));  \
+} while (0)
 
 AROS_UFP3
 (

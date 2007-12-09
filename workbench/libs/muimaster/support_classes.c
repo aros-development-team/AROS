@@ -142,7 +142,7 @@ Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)
 }
 
 /**************************************************************************/
-Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
+static Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
 {
     Class *cl = NULL, *cl2;
 
@@ -158,33 +158,7 @@ Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
     return cl;
 }
 
-Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
-{
-    Class *cl;
-
-    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
-    cl = ZUNE_FindBuiltinClass(classid, mb);
-
-    if (!cl)
-    {
-        cl = ZUNE_MakeBuiltinClass(classid, mb);
-
-	if (cl)
-	{
-	    ZUNE_AddBuiltinClass(cl, mb);
-
-	    /* Increase the reference counter */
-	    cl->cl_Dispatcher.h_Data++;
-	}
-    }
-
-    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
-
-    return cl;
-}
-
-Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
+static Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
 {
     int i;
     Class *cl          = NULL;
@@ -244,6 +218,32 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
 
     if (!cl && mb)
         CloseLibrary(mb);
+
+    return cl;
+}
+
+Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
+{
+    Class *cl;
+
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
+    cl = ZUNE_FindBuiltinClass(classid, mb);
+
+    if (!cl)
+    {
+        cl = ZUNE_MakeBuiltinClass(classid, mb);
+
+	if (cl)
+	{
+	    ZUNE_AddBuiltinClass(cl, mb);
+
+	    /* Increase the reference counter */
+	    cl->cl_Dispatcher.h_Data++;
+	}
+    }
+
+    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
     return cl;
 }
