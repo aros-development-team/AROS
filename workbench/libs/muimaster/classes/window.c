@@ -165,9 +165,6 @@ struct MUI_WindowData
 #define BUBBLEHELP_TICKER_FIRST 10
 #define BUBBLEHELP_TICKER_LATER 3
 
-ULONG screenmode;
-
-
 struct __dummyXFC3__
 {
 	struct MUI_NotifyData mnd;
@@ -266,27 +263,31 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     Object *temp_obj;
     IPTR val;
     int i;
-    screenmode=muiGlobalInfo(obj)->mgi_Prefs->screenmodeid;
 
-    if (screenmode != -1)
+    /* TODO: Move this whole screen locking/opening stuff into the application class
+     * by creating methods for this purpose  */
+    
+    /* If no user screen has been specified try to open the application specifc screen */
+    if (!data->wd_UserScreen)
     {
-	if (muiGlobalInfo(obj)->mgi_Prefs->screenaddress)
-	    data->wd_UserScreen=muiGlobalInfo(obj)->mgi_Prefs->screenaddress; 
-	else             
-	    data->wd_UserScreen = OpenScreenTags (
-		    0, 
-		    // SA_Width, 1280,
-		    // SA_Height, 1024,
-		    // SA_Depth, 24,
-		    SA_DisplayID,screenmode,
-		    SA_SharePens, TRUE,
-		    SA_FullPalette, TRUE,
-		    SA_LikeWorkbench,TRUE,
-		    TAG_DONE
-		    );
-	muiGlobalInfo(obj)->mgi_Prefs->screenaddress=data->wd_UserScreen; // so screen is open only once          
-    }
+        ULONG screenmodeid = muiGlobalInfo(obj)->mgi_Prefs->screenmodeid;
+        
+        if (screenmodeid != ~0)
+        {
+        	if (!muiGlobalInfo(obj)->mgi_CustomScreen)
+        	{
+                muiGlobalInfo(obj)->mgi_CustomScreen = OpenScreenTags(NULL,
+                        SA_DisplayID, screenmodeid,
+                        SA_SharePens, TRUE,
+                        SA_FullPalette, TRUE,
+                        SA_LikeWorkbench,TRUE,
+                        TAG_DONE);
+                /* It's fine if this fails as there is a back fall case below */
+            }
 
+            data->wd_UserScreen = muiGlobalInfo(obj)->mgi_CustomScreen;
+        }
+    }
 
     if (data->wd_UserScreen)
     {
@@ -467,7 +468,9 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data, struct M
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
-    if (data->wd_UserScreen)
+    /* If a custom screen has been opened by zune, close it as soon as
+     * zero windows are opened. See above for comments about refactorization. */ 
+    if (muiGlobalInfo(obj)->mgi_CustomScreen)
     {
         BOOL screenclose = TRUE;
         Object *_app = _app(obj);
@@ -480,7 +483,15 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data, struct M
                 if (!IsListEmpty(store)) screenclose = FALSE;
             }
         }
-	    if (screenclose) CloseScreen(mri->mri_Screen);
+	    if (screenclose)
+	    {
+	    	/* If the window's user screen really was the custom screen, clear the reference */
+	    	if (data->wd_UserScreen == muiGlobalInfo(obj)->mgi_CustomScreen)
+	    		data->wd_UserScreen = NULL;
+
+	    	CloseScreen(muiGlobalInfo(obj)->mgi_CustomScreen);
+	    	muiGlobalInfo(obj)->mgi_CustomScreen = NULL;
+	    }
     }    
 
 
