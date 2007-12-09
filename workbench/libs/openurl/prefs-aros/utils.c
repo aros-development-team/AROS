@@ -26,7 +26,7 @@
 
 /***********************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__amigaos4__) && !defined(__AROS__)
+#if !defined(__MORPHOS__) && !defined(__amigaos4__)
 ULONG STDARGS
 DoSuperNew(struct IClass *cl,Object *obj,ULONG tag1,...)
 {
