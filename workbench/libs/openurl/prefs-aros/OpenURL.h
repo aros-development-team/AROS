@@ -41,13 +41,15 @@
 
 #include <clib/alib_protos.h>
 
-#ifndef __AROS__
+#ifdef __AROS__
+#include <mui/NList_mcc.h>
+#else /* __AROS__ */
 #include <clib/debug_protos.h>
 
 #include <mui/Textinput_mcc.h>
 #include <mui/Urltext_mcc.h>
 #include <mui/MUIundoc.h>
-#endif
+#endif /* __AROS__ */
 
 #include <string.h>
 #include <ctype.h>
@@ -453,6 +455,7 @@ enum
 #undef set
 #undef get
 #undef nnset
+#undef nfset
 #define get(obj,attr,store)            GetAttr((ULONG)(attr),(Object *)obj,(ULONG *)(store))
 #define set(obj,attr,value)            SetAttrs((Object *)(obj),(ULONG)(attr),(ULONG)(value),TAG_DONE)
 #define nnset(obj,attr,value)          SetAttrs((Object *)(obj),MUIA_NoNotify,TRUE,(ULONG)(attr),(ULONG)(value),TAG_DONE)

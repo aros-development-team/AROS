@@ -1,0 +1,16 @@
+README.aros
+===========
+
+OpenURL is hosted on Sourceforge:
+http://sourceforge.net/projects/openurllib/
+
+Avoid by all means that the AROS port is modified independently from
+the original Sourceforge project.
+
+
+TODO
+----
+Some ULONG to IPTR changes for 64 bit AROS.
+Find out why using Lamp_mcc crashes.
+Ensure that the preferences are writtin in big-endian.
+Tests.

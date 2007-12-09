@@ -77,6 +77,7 @@ ourltext(STRPTR url,STRPTR text)
     Object *o = NULL;
 
 #ifndef __AROS__
+    // FIXME: Port UrltextMCC to AROS
     o = UrltextObject,
         MUIA_Urltext_Text,           text,
         MUIA_Urltext_Url,            url,
