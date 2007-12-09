@@ -3,8 +3,6 @@
 
 #ifndef BOOTSTRAP
 
-#include <stddef.h>
-
 #include <inttypes.h>
 #include <utility/tagitem.h>
 
@@ -35,7 +33,7 @@ typedef struct tls {
     void *              *KernelBase;    /* Base of kernel.resource */
 } tls_t;
 
-#define TLS_OFFSET(name) offsetof(tls_t, name)
+#define TLS_OFFSET(name) (((char *)&((tls_t *)0)->name)-(char *)0)
 
 #define TLS_GET(name) \
     ({ \
