@@ -518,29 +518,32 @@ static int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath
 /* Make unix protection bits out of AROS protection bits. */
 mode_t prot_a2u(ULONG protect)
 {
-    mode_t uprot = 0000;
+    mode_t uprot = 0;
 
-    if ((protect & FIBF_SCRIPT))
-	uprot |= 0111;
     /* The following three flags are low-active! */
     if (!(protect & FIBF_EXECUTE))
-	uprot |= 0100;
+	uprot |= S_IXUSR;
     if (!(protect & FIBF_WRITE))
-	uprot |= 0200;
+	uprot |= S_IWUSR;
     if (!(protect & FIBF_READ))
-	uprot |= 0400;
+	uprot |= S_IRUSR;
+
     if ((protect & FIBF_GRP_EXECUTE))
-	uprot |= 0010;
+	uprot |= S_IXGRP;
     if ((protect & FIBF_GRP_WRITE))
-	uprot |= 0020;
+	uprot |= S_IWGRP;
     if ((protect & FIBF_GRP_READ))
-	uprot |= 0040;
+	uprot |= S_IRGRP;
+
     if ((protect & FIBF_OTR_EXECUTE))
-	uprot |= 0001;
+	uprot |= S_IXOTH;
     if ((protect & FIBF_OTR_WRITE))
-	uprot |= 0002;
+	uprot |= S_IWOTH;
     if ((protect & FIBF_OTR_READ))
-	uprot |= 0004;
+	uprot |= S_IROTH;
+
+    if ((protect & FIBF_SCRIPT))
+        uprot |= S_ISVTX;
 
     return uprot;
 }
@@ -550,7 +553,7 @@ mode_t prot_a2u(ULONG protect)
 /* Make AROS protection bits out of unix protection bits. */
 ULONG prot_u2a(mode_t protect)
 {
-    ULONG aprot = FIBF_SCRIPT;
+    ULONG aprot = 0;
 
     /* The following three (AROS) flags are low-active! */
     if (!(protect & S_IRUSR))
@@ -567,12 +570,16 @@ ULONG prot_u2a(mode_t protect)
 	aprot |= FIBF_GRP_WRITE;
     if ((protect & S_IXGRP))
 	aprot |= FIBF_GRP_EXECUTE;
+
     if ((protect & S_IROTH))
 	aprot |= FIBF_OTR_READ;
     if ((protect & S_IWOTH))
 	aprot |= FIBF_OTR_WRITE;
     if ((protect & S_IXOTH))
 	aprot |= FIBF_OTR_EXECUTE;
+
+    if ((protect & S_ISVTX))
+        aprot |= FIBF_SCRIPT;
 
     return aprot;
 }
