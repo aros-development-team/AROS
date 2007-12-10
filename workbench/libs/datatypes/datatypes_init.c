@@ -12,7 +12,7 @@
 
 #include <proto/exec.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "datatypes_intern.h"
