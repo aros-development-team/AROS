@@ -25,15 +25,15 @@
 #define MUIM_PrefsEditor_Use       (MUIB_PrefsEditor | 0x00000003)
 #define MUIM_PrefsEditor_Cancel    (MUIB_PrefsEditor | 0x00000004)
 #define MUIM_PrefsEditor_Import    (MUIB_PrefsEditor | 0x00000005)
-struct  MUIP_PrefsEditor_Import    {ULONG MethodID; CONST_STRPTR filename;};
+struct  MUIP_PrefsEditor_Import    {STACKED ULONG MethodID; STACKED CONST_STRPTR filename;};
 #define MUIM_PrefsEditor_Export    (MUIB_PrefsEditor | 0x00000006)
-struct  MUIP_PrefsEditor_Export    {ULONG MethodID; CONST_STRPTR filename;};
+struct  MUIP_PrefsEditor_Export    {STACKED ULONG MethodID; STACKED CONST_STRPTR filename;};
 
 /*** Public (Abstract) Methods **********************************************/
 #define MUIM_PrefsEditor_ImportFH  (MUIB_PrefsEditor | 0x00000007)
-struct  MUIP_PrefsEditor_ImportFH  {ULONG MethodID; BPTR fh;};
+struct  MUIP_PrefsEditor_ImportFH  {STACKED ULONG MethodID; STACKED BPTR fh;};
 #define MUIM_PrefsEditor_ExportFH  (MUIB_PrefsEditor | 0x00000008)
-struct  MUIP_PrefsEditor_ExportFH  {ULONG MethodID; BPTR fh;};
+struct  MUIP_PrefsEditor_ExportFH  {STACKED ULONG MethodID; STACKED BPTR fh;};
 
 /*** Public Attributes ******************************************************/
 #define MUIA_PrefsEditor_Name      (MUIB_PrefsEditor | 0x00000000) /* --G  CONST_STRPTR */
