@@ -61,9 +61,9 @@ extern "C" {
 
 #define MUIR_BetterString_FileNameStart_Volume  -1
 
-struct MUIP_BetterString_ClearSelected {ULONG MethodID; };
-struct MUIP_BetterString_FileNameStart {ULONG MethodID; STRPTR buffer; LONG pos; };
-struct MUIP_BetterString_Insert        {ULONG MethodID; STRPTR text; LONG pos; };
+struct MUIP_BetterString_ClearSelected {STACKED ULONG MethodID; };
+struct MUIP_BetterString_FileNameStart {STACKED ULONG MethodID; STACKED STRPTR buffer; STACKED LONG pos; };
+struct MUIP_BetterString_Insert        {STACKED ULONG MethodID; STACKED STRPTR text; STACKED LONG pos; };
 
 #ifdef __GNUC__
   #ifdef __PPC__

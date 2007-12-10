@@ -26,7 +26,7 @@
 
 struct MUIP_Busy_Move
 {
-    ULONG MethodID;
+    STACKED ULONG MethodID;
 };
 
 /*** Macros *****************************************************************/
