@@ -855,6 +855,27 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 
 /*********************************************************************************************/
 
+static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
+			STRPTR file, ULONG aprot)
+{
+    LONG ret = 0;
+    char *filename = NULL;
+
+    if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
+    if (ret = makefilename(emulbase, &filename, fh->name, file))
+        return ret;
+
+    if (chmod(filename, prot_a2u(aprot)))
+        ret = err_u2a();
+
+    emul_free(emulbase, filename);
+
+    return ret;
+}
+
+/*********************************************************************************************/
+
 static LONG startup(struct emulbase *emulbase)
 {
     struct Library *ExpansionBase;
@@ -1996,6 +2017,13 @@ AROS_LH1(void, beginio,
 			      iofs->io_Union.io_DELETE_OBJECT.io_Filename);
 	break;
 	
+    case FSA_SET_PROTECT:
+	error = set_protect(emulbase,
+			    (struct filehandle *)iofs->IOFS.io_Unit,
+			    iofs->io_Union.io_SET_PROTECT.io_Filename,
+			    iofs->io_Union.io_SET_PROTECT.io_Protection);
+        break;
+
     case FSA_PARENT_DIR:
 	/* error will always be 0 */
 	error = parent_dir(emulbase,
@@ -2035,7 +2063,6 @@ AROS_LH1(void, beginio,
 	}
 	
     case FSA_SET_COMMENT:
-    case FSA_SET_PROTECT:
     case FSA_SET_OWNER:
     case FSA_SET_DATE:
     case FSA_MORE_CACHE:
