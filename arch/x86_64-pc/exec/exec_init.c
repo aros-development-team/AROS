@@ -116,7 +116,7 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096)));
 
 void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
 {
-    struct ExecBase *SysBase = *(struct ExecBase **)4UL;
+    struct ExecBase *SysBase = TLS_GET(SysBase); //*(struct ExecBase **)4UL;
     
     uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
     uintptr_t kernHigh = krnGetTagData(KRN_KernelHighest, 0, msg);
@@ -557,7 +557,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
 void exec_DefaultTaskExit()
 {
-    struct ExecBase *SysBase = *(struct ExecBase **)4UL;
+    struct ExecBase *SysBase = TLS_GET(SysBase); //*(struct ExecBase **)4UL;
     RemTask(SysBase->ThisTask);
 }
 
@@ -741,7 +741,7 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
 
 struct Library * PrepareAROSSupportBase(void)
 {
-    struct ExecBase *SysBase = *(struct ExecBase **)4UL;
+    struct ExecBase *SysBase = TLS_GET(SysBase); //*(struct ExecBase **)4UL;
 
     struct AROSSupportBase *AROSSupportBase =
         AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR);
