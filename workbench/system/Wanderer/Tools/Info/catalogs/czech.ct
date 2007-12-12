@@ -1,6 +1,6 @@
-## version $VER: info.catalog 1.1 (27.11.2007)
+## version $VER: Info.catalog 1.2 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -124,7 +124,7 @@ Archivovaný
 ; Archived
 ;
 MSG_STICKY
-Sticky??
+Dìdìný
 ; Sticky
 ;
 MSG_SIZE
@@ -160,11 +160,11 @@ Datum
 ; Date
 ;
 MSG_NEW_KEY
-New key??
+Pøidat klávesu
 ; New key
 ;
 MSG_DELETE_KEY
-Delete key??
+Odebrat klávesu
 ; Delete key
 ;
 MSG_SAVE
