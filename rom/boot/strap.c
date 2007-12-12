@@ -173,7 +173,7 @@ static VOID AddPartitionVolume
     IPTR *pp;
     struct DeviceNode *devnode;
     struct PartitionType ptyp;
-    IPTR ppos;
+    LONG ppos;
     TEXT *devname;
 
     pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4,
