@@ -976,13 +976,12 @@ AROS_UFH3S(ULONG, ProcessNewDrawerData,
 {
     AROS_USERFUNC_INIT
 
+    IPTR rev = (IPTR)DO(data->sdd_Dest)->do_Gadget.UserData & WB_DISKREVISIONMASK;
 #if 0
 kprintf ("ProcessNewDrawerData\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_DrawerData &&
-    	((LONG)DO(data->sdd_Dest)->do_Gadget.UserData > 0) &&
-	((LONG)DO(data->sdd_Dest)->do_Gadget.UserData <= WB_DISKREVISION))
+    if (DO(data->sdd_Dest)->do_DrawerData && (rev > 0) && (rev <= WB_DISKREVISION))
     {
 	switch (data->sdd_Mode)
 	{
