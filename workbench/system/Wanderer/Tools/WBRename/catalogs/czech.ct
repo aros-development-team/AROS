@@ -1,6 +1,6 @@
-## version $VER: wbrename.catalog 1.1 (22.11.2007)
+## version $VER: WBRename.catalog 1.2 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -68,5 +68,5 @@ Nelze vytvoøit objekt application!
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
-Nedostatek volné pamìti!
+Není dostatek volné pamìti!
 ; Can't allocate RAM!
