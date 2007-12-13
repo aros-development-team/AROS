@@ -32,6 +32,7 @@
 #define SHT_RELA        4
 #define SHT_NOBITS      8
 #define SHT_REL         9
+#define SHT_SYMTAB_SHNDX 18
 
 #define ET_REL          1
 
@@ -68,9 +69,12 @@
 #define STT_OBJECT      1
 #define STT_FUNC        2
 
+#define SHN_UNDEF       0
+#define SHN_LORESERVE   0xff00
 #define SHN_ABS         0xfff1
 #define SHN_COMMON      0xfff2
-#define SHN_UNDEF       0
+#define SHN_XINDEX      0xffff
+#define SHN_HIRESERVE   0xffff
 
 #define SHF_ALLOC            (1 << 1)
 #define SHF_EXECINSTR        (1 << 2)
@@ -109,6 +113,14 @@ struct elfheader
     UWORD shentsize;
     UWORD shnum;
     UWORD shstrndx;
+
+    /* these are internal, and not part of the header proper. they are wider
+     * versions of shnum and shstrndx for when they don't fit in the header
+     * and we need to get them from the first section header. see
+     * load_header() for details
+     */
+    ULONG int_shnum;
+    ULONG int_shstrndx;
 };
 
 struct sheader
@@ -153,6 +165,14 @@ struct hunk
 
 #define BPTR2HUNK(bptr) ((struct hunk *)((char *)BADDR(bptr) - offsetof(struct hunk, next)))
 #define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
+
+/* convert section header number to array index */
+#define SHINDEX(n) \
+    ((n) < SHN_LORESERVE ? (n) : ((n) <= SHN_HIRESERVE ? 0 : (n) - (SHN_HIRESERVE + 1 - SHN_LORESERVE)))
+
+/* convert section header array index to section number */
+#define SHNUM(i) \
+    ((i) < SHN_LORESERVE ? (i) : (i) + (SHN_HIRESERVE + 1 - SHN_LORESERVE))
 
 #undef MyRead
 #undef MyAlloc
@@ -251,21 +271,55 @@ static void * load_block
     return NULL;
 }
 
-static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
-{
-    if
-    (
-        eh->ident[0] != 0x7f ||
-        eh->ident[1] != 'E'  ||
-        eh->ident[2] != 'L'  ||
-        eh->ident[3] != 'F'
-    )
-    {
+static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct DosLibrary *DOSBase) {
+    if (!read_block(file, 0, eh, offsetof(struct elfheader, int_shnum), funcarray, DOSBase))
+        return 0;
+
+    if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
+        eh->ident[2] != 'L'  || eh->ident[3] != 'F') {
 	D(bug("[ELF Loader] Not an ELF object\n"));
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
     D(bug("[ELF Loader] ELF object\n"));
+
+    eh->int_shnum = eh->shnum;
+    eh->int_shstrndx = eh->shstrndx;
+
+    /* the ELF header only uses 16 bits to store the count of section headers,
+     * so it can't handle more than 65535 headers. if the count is 0, and an
+     * offset is defined, then the real count can be found in the first
+     * section header (which always exists).
+     *
+     * similarly, if the string table index is SHN_XINDEX, then the actual
+     * index is found in the first section header also.
+     *
+     * see the System V ABI 2001-04-24 draft for more details.
+     */
+    if (eh->int_shnum == 0 || eh->int_shstrndx == SHN_XINDEX) {
+        if (eh->shoff == 0) {
+            SetIoErr(ERROR_NOT_EXECUTABLE);
+            return 0;
+        }
+
+        struct sheader sh;
+        if (!read_block(file, eh->shoff, &sh, sizeof(sh), funcarray, DOSBase))
+            return 0;
+
+        /* wider section header count is in the size field */
+        if (eh->int_shnum == 0)
+            eh->int_shnum = sh.size;
+
+        /* wider string table index is in the link field */
+        if (eh->int_shstrndx == SHN_XINDEX)
+            eh->int_shstrndx = sh.link;
+
+        /* sanity, if they're still invalid then this isn't elf */
+        if (eh->int_shnum == 0 || eh->int_shstrndx == SHN_XINDEX) {
+            SetIoErr(ERROR_NOT_EXECUTABLE);
+            return 0;
+        }
+    }
 
     if
     (
@@ -412,16 +466,22 @@ static int relocate
     struct elfheader  *eh,
     struct sheader    *sh,
     ULONG              shrel_idx,
+    struct sheader    *symtab_shndx,
     struct DosLibrary *DOSBase
 )
 {
     struct sheader *shrel    = &sh[shrel_idx];
-    struct sheader *shsymtab = &sh[shrel->link];
-    struct sheader *toreloc  = &sh[shrel->info];
+    struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
+    struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
 
     struct symbol *symtab   = (struct symbol *)shsymtab->addr;
     struct relo   *rel      = (struct relo *)shrel->addr;
     char          *section  = toreloc->addr;
+
+    /* this happens if the target section has no allocation. that can happen
+     * eg. with a .debug PROGBITS and a .rel.debug section */
+    if (section == NULL)
+        return 1;
 
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
@@ -433,21 +493,34 @@ static int relocate
         struct symbol *sym = &symtab[ELF32_R_SYM(rel->info)];
         ULONG *p = (ULONG *)&section[rel->offset];
 	ULONG  s;
+        ULONG shindex;
 
-        switch (sym->shindex)
+        if (sym->shindex != SHN_XINDEX)
+            shindex = sym->shindex;
+
+        else {
+            if (symtab_shndx == NULL) {
+                D(bug("[ELF Loader] got symbol with shndx 0xfff, but there's no symtab shndx table\n"));
+                SetIoErr(ERROR_BAD_HUNK);
+                return 0;
+            }
+            shindex = ((ULONG *)symtab_shndx->addr)[ELF32_R_SYM(rel->info)];
+        }
+
+        switch (shindex)
         {
 
             case SHN_UNDEF:
                 D(bug("[ELF Loader] Undefined symbol '%s' while relocating the section '%s'\n",
-		      (STRPTR)sh[shsymtab->link].addr + sym->name,
-		      (STRPTR)sh[eh->shstrndx].addr + toreloc->name));
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name,
+		      (STRPTR)sh[SHINDEX(eh->int_shstrndx)].addr + toreloc->name));
                       SetIoErr(ERROR_BAD_HUNK);
                 return 0;
 
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s' while relocating the section '%s'\n",
-		      (STRPTR)sh[shsymtab->link].addr + sym->name,
-		      (STRPTR)sh[eh->shstrndx].addr + toreloc->name));
+		      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name,
+		      (STRPTR)sh[SHINDEX(eh->int_shstrndx)].addr + toreloc->name));
                       SetIoErr(ERROR_BAD_HUNK);
 		      
                 return 0;
@@ -455,7 +528,7 @@ static int relocate
             case SHN_ABS:
 	        if (SysBase_sym == NULL)
 		{
-		    if (strncmp((STRPTR)sh[shsymtab->link].addr + sym->name, "SysBase", 8) == 0)
+		    if (strncmp((STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name, "SysBase", 8) == 0)
 		    {
 		        SysBase_sym = sym;
 			goto SysBase_yes;
@@ -473,7 +546,7 @@ static int relocate
                 break;
 
   	    default:
-		s = (ULONG)sh[sym->shindex].addr + sym->value;
+		s = (ULONG)sh[SHINDEX(shindex)].addr + sym->value;
  	}
 
         switch (ELF32_R_TYPE(rel->info))
@@ -594,24 +667,22 @@ BPTR InternalLoadSeg_ELF
 {
     struct elfheader  eh;
     struct sheader   *sh;
+    struct sheader   *symtab_shndx = NULL;
     BPTR   hunks         = 0;
     BPTR  *next_hunk_ptr = &hunks;
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
 
-    /* Load Elf Header and Section Headers */
-    if
-    (
-        !read_block(file, 0, &eh, sizeof(eh), funcarray, DOSBase) ||
-        !check_header(&eh, DOSBase) ||
-        !(sh = load_block(file, eh.shoff, eh.shnum * eh.shentsize, funcarray, DOSBase))
-    )
-    {
+    /* load and validate ELF header */
+    if (!load_header(file, &eh, funcarray, DOSBase))
         return 0;
-    }
+
+    /* load section headers */
+    if (!(sh = load_block(file, eh.shoff, eh.int_shnum * eh.shentsize, funcarray, DOSBase)))
+        return 0;
 
     /* Iterate over the section headers in order to do some stuff... */
-    for (i = 0; i < eh.shnum; i++)
+    for (i = 0; i < eh.int_shnum; i++)
     {
         /*
            Load the symbol and string table(s).
@@ -620,11 +691,18 @@ BPTR InternalLoadSeg_ELF
                    that only one symbol table per file is allowed. However, it
                    also states that this may change in future... we already handle it.
         */
-        if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB)
+        if (sh[i].type == SHT_SYMTAB || sh[i].type == SHT_STRTAB || sh[i].type == SHT_SYMTAB_SHNDX)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
             if (!sh[i].addr)
                 goto error;
+
+            if (sh[i].type == SHT_SYMTAB_SHNDX) {
+                if (symtab_shndx == NULL)
+                    symtab_shndx = &sh[i];
+                else
+                    D(bug("[ELF Loader] file contains multiple symtab shndx tables. only using the first one\n"));
+            }
         }
         else
         /* Load the section in memory if needed, and make an hunk out of it */
@@ -648,7 +726,7 @@ BPTR InternalLoadSeg_ELF
     }
 
     /* Relocate the sections */
-    for (i = 0; i < eh.shnum; i++)
+    for (i = 0; i < eh.int_shnum; i++)
     {
         if
         (
@@ -681,7 +759,7 @@ BPTR InternalLoadSeg_ELF
         )
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
-            if (!sh[i].addr || !relocate(&eh, sh, i, DOSBase))
+            if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
                 goto error;
 
             MyFree(sh[i].addr, sh[i].size);
@@ -715,14 +793,14 @@ end:
     }
     
     /* deallocate the symbol tables */
-    for (i = 0; i < eh.shnum; i++)
+    for (i = 0; i < eh.int_shnum; i++)
     {
         if (((sh[i].type == SHT_SYMTAB) || (sh[i].type == SHT_STRTAB)) && (sh[i].addr != NULL))
             MyFree(sh[i].addr, sh[i].size);
     }
 
     /* Free the section headers */
-    MyFree(sh, eh.shnum * eh.shentsize);
+    MyFree(sh, eh.int_shnum * eh.shentsize);
 
     return hunks;
 }
