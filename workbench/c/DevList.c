@@ -107,7 +107,7 @@ int main(void)
                 args[4] = (IPTR)devs2->flags;
 		args[5] = (IPTR)devs2->name;
 
-		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t\t0x%lx\t%s\n", args);
+		VPrintf("0x%08.lx\t%ld\t%ld\t%ld\t0x%lx\t%s\n", args);
                 if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
                 {
                         error = RETURN_FAIL;
