@@ -1,6 +1,6 @@
-## version $VER: icontrol.catalog 1.1 (27.11.2007)
+## version $VER: IControl.catalog 1.2 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -104,7 +104,7 @@ Okna
 ; Windows
 ;
 MSG_OFFSCREEN_MOVE
-Pøesun mimo okraje
+Pøesun oken mimo plochu
 ; Offscreen move:
 ;
 MSG_SCREENS
@@ -112,14 +112,14 @@ Obrazovky
 ; Screens
 ;
 MSG_FRONTMOST_DEFAULT
-Frontmost set as DefaultPubScreen:??
+Aktivní obrazovka = výchozí veøejná
 ; Frontmost set as DefaultPubScreen:
 ;
 MSG_OFFSCREEN_DESC
-Allow windows to be moved out of\nthe visible area??
+Povolit vysunutí oken mimo viditelnou\nplochu obrazovky
 ; Allow windows to be moved out of\nthe visible area
 ;
 MSG_FRONTMOST_DEFAULT_DESC
-Make the frontmost public screen\nthe default public screen??
+Pøiøadit právì aktivní obrazovce funkci\nvýchozí veøejné obrazovky
 ; Make the frontmost public screen\nthe default public screen
 ;
