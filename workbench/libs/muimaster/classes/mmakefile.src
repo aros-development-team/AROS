@@ -12,6 +12,7 @@ USER_LIBS   := amiga rom m mui
 #MM     workbench-classes-zune-boopsi \
 #MM     workbench-classes-zune-coloradjust \
 #MM     workbench-classes-zune-colorfield \
+#MM	workbench-classes-zune-floattext \
 ##MM     workbench-classes-zune-frameadjust \
 ##MM     workbench-classes-zune-framedisplay \
 ##MM     workbench-classes-zune-gauge \
