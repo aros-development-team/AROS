@@ -1,6 +1,6 @@
-## version $VER: screengrabber.catalog 1.1 (23.11.2007)
+## version $VER: ScreenGrabber.catalog 1.2 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_WINDOW_TITLE
@@ -76,7 +76,7 @@ Nelze vytvoøit objekt datatype!
 ; Can't create datatype object!
 ;
 MSG_NORAM
-Nedostatek volné pamìti!
+Není dostatek volné pamìti!
 ; Can't allocate RAM!
 ;
 MSG_ERR_DATATYPEIO

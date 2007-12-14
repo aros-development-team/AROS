@@ -1,6 +1,6 @@
-## version $VER: commodities.catalog 1.4 (29.11.2007)
+## version $VER: Commodities.catalog 1.5 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -36,7 +36,7 @@ Nelze vytvoøit okno!\n
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-Nelze alokovat dostatek pamìti!\n
+Není dostatek volné pamìti!\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
