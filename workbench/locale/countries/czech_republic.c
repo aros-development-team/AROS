@@ -1,16 +1,16 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (c) 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Country data for cesko
+    Desc: Country data for Czech Republic (Èeská republika)
 */
 
 #include <libraries/locale.h>
 #include <prefs/locale.h>
 
-/* cesko.country: V44 */
+/* czech_republic.country: V44 */
    
-struct CountryPrefs ceskoPrefs =
+struct CountryPrefs czech_republicPrefs =
 {
     /* Reserved */
     { 0, 0, 0, 0 },

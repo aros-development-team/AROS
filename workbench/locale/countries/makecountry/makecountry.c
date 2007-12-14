@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Program that makes country files
@@ -41,7 +41,7 @@ extern struct CountryPrefs
     brasilPrefs,
     canadaPrefs,
     canada_francaisPrefs,
-    ceskoPrefs,
+    czech_republicPrefs,
     danmarkPrefs,
     deutschPrefs,
     eirePrefs,
@@ -95,7 +95,7 @@ struct CountryEntry CountryArray[] =
     { "bulgarija"	, &bulgarijaPrefs	},
     { "canada"	    	, &canadaPrefs    	},
     { "canada_français" , &canada_francaisPrefs },
-    { "cesko"	    	, &ceskoPrefs	    	},
+    { "czech_republic" 	, &czech_republicPrefs 	},
     { "danmark"     	, &danmarkPrefs   	},
     { "deutschland" 	, &deutschPrefs   	},
     { "éire"		, &eirePrefs		},
