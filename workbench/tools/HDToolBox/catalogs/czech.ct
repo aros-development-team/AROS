@@ -1,6 +1,6 @@
-## version $VER: HDToolBox.catalog 1.2 (30.11.2007)
+## version $VER: HDToolBox.catalog 1.3 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 WORD_Active
@@ -72,7 +72,7 @@ OK
 ; Ok
 ;
 WORD_Parent
-Parent??
+Vy¹¹í
 ; Parent
 ;
 WORD_Partitions
@@ -140,7 +140,7 @@ Ve¹kerá data na zmìnìných oddílech budou ztracena!\nOpravdu chcete zapsat proved
 ; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
-Nedostatek volné pamìti! 
+Není dostatek volné pamìti! 
 ; Not enough memory
 ;
 MSG_PARTITION_TABLE_FULL
