@@ -1248,6 +1248,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             fi
         fi
 
+        aros_host_x11_includes=$x_includes 
+        aros_host_x11_libdirs=$x_libraries
     fi
 
 
@@ -1278,6 +1280,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         else
             dnl found it, setup the metatarget
             sdl_hidd_target=kernel-hidd-sdl
+            aros_host_sdl_cflags=SDL_CFLAGS
+            aros_host_sdl_libs=SDL_LIBS
         fi
     fi
 
@@ -1373,12 +1377,6 @@ AC_SUBST(aros_target_genmap)
 AC_SUBST(aros_target_strip_flags)
 
 # Graphics Related
-AC_SUBST(aros_gui_libdir)
-AC_SUBST(aros_gui_ldflags)
-AC_SUBST(aros_gui_libflags)
-AC_SUBST(aros_gui_incdir)
-AC_SUBST(aros_gui_ccflags)
-
 AC_SUBST(x11_hidd_target)
 AC_SUBST(sdl_hidd_target)
 
@@ -1387,6 +1385,11 @@ AC_SUBST(aros_default_wbheight)
 AC_SUBST(aros_default_wbdepth)
 AC_SUBST(DO_XSHM_SUPPORT)
 AC_SUBST(DO_VIDMODE_SUPPORT)
+
+AC_SUBST(aros_host_x11_includes)
+AC_SUBST(aros_host_x11_libdirs)
+AC_SUBST(aros_host_sdl_cflags)
+AC_SUBST(aros_host_sdl_libs)
 
 # Native version related
 AC_SUBST(aros_bochs_hack)
@@ -1438,37 +1441,6 @@ mac68knative)   aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION
 ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="ppcnative" ;;
 esac
-
-dnl XXX I guess this is some legacy stuff, since aros_gui_basedir isn't
-dnl defined anywhere
-
-dnl if test -z "$aros_gui_basedir" ; then
-dnl 
-dnl         aros_gui_incdir="$x_includes"
-dnl         if test -z "$x_includes" ; then
-dnl             aros_gui_ccflags=""
-dnl         else
-dnl             aros_gui_ccflags="-I $x_includes"
-dnl         fi
-dnl     fi
-dnl 
-dnl else
-dnl     if test -n "$aros_gui_basedir" ; then
-dnl 	aros_gui_libdir="${aros_gui_basedir}/lib"
-dnl 	aros_gui_incdir="${aros_gui_basedir}/include"
-dnl     fi
-dnl 
-dnl     if test -n "$aros_gui_libdir" ; then
-dnl 	aros_gui_ldflags="-L ${aros_gui_libdir}"
-dnl     fi
-dnl 
-dnl     if test -n "$aros_gui_incdir" ; then
-dnl 	aros_gui_ccflags="-I ${aros_gui_incdir}"
-dnl     else
-dnl 	aros_gui_incdir="${aros_sysincludes}"
-dnl 	aros_gui_ccflags=""
-dnl     fi
-dnl fi
 
 if test ! -d ${aros_inc_dir} ; then
     ${MKDIR} ${aros_inc_dir}

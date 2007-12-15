@@ -25,6 +25,11 @@ HOST_STRIP	:= @aros_host_strip@
 HOST_EXE_SUFFIX	:= @aros_host_exe_suffix@
 HOST_LIB_SUFFIX := @aros_host_lib_suffix@
 
+HOST_X11_CFLAGS := $(addprefix -I,@aros_host_x11_includes@)
+HOST_X11_LIBS   := $(addprefix -L,@aros_host_x11_libdirs@) -lX11
+HOST_SDL_CFLAGS := @aros_host_sdl_cflags@
+HOST_SDL_LIBS   := @aros_host_sdl_libs@
+
 MMAKE		:= @MMAKE@
 AWK		:= @AWK@
 RM		:= @RM@

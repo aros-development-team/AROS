@@ -47,7 +47,7 @@ LIBS :=	-L$(LIBDIR) \
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
 	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \
-		$(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)
+		-o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)
 
 $(GENDIR)/aros.o : aros.c
 	$(HOST_CC) $(CFLAGS) -Dmain=submain $< -c -o $@
