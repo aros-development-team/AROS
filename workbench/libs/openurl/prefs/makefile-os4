@@ -1,0 +1,42 @@
+
+CC 	= ppc-amigaos-gcc
+CDEFS   = -DUSE_INLINE_STDARG -D__USE_INLINE__
+CFLAGS  = $(CDEFS) $(CWARN) -g -fomit-frame-pointer -mcpu=750 -mstring -mmultiple -fstrict-aliasing -I../include/
+LDFLAGS =
+CWARN   = -Wall\
+	  -Wno-missing-braces\
+	  -Wno-parentheses\
+          -Wno-switch\
+          -Wstrict-prototypes\
+	  -Werror-implicit-function-declaration\
+          -Wpointer-arith
+
+OBJS    = OpenURL.o loc.o utils.o stubs.o popport.o popph.o ftpeditwin.o mailereditwin.o browsereditwin.o applist.o win.o pens.o about.o app.o
+TARGET=Open\ URL
+
+all: $(TARGET)
+
+$(TARGET): $(TARGET).dbg
+	strip "$<" -o "$@"
+
+$(TARGET).dbg: $(OBJS)
+	$(CC) $(LDFLAGS) -o "$@" $(OBJS)
+
+clean:
+	@delete $(OBJS) $(TARGET) $(TARGET).dbg
+
+OpenURL.o: 	  OpenURL.c OpenURL.h loc.h OpenURL_protos.h
+loc.o: 		  loc.c OpenURL.h loc.h OpenURL_protos.h
+utils.o: 	  utils.c OpenURL.h OpenURL_protos.h
+stubs.o: 	  stubs.c OpenURL.h OpenURL_protos.h
+popport.o: 	  popport.c OpenURL.h OpenURL_protos.h
+popph.o: 	  popph.c OpenURL.h OpenURL_protos.h
+ftpeditwin.o: 	  ftpeditwin.c OpenURL.h loc.h OpenURL_protos.h
+mailereditwin.o:  mailereditwin.c OpenURL.h loc.h OpenURL_protos.h
+browsereditwin.o: browsereditwin.c OpenURL.h loc.h OpenURL_protos.h
+applist.o: 	  applist.c OpenURL.h loc.h OpenURL_protos.h
+win.o: 	     	  win.c OpenURL.h loc.h OpenURL_protos.h
+pens.o: 	  pens.c OpenURL.h loc.h OpenURL_protos.h
+about.o: 	  about.c OpenURL.h loc.h OpenURL_rev.h OpenURL_protos.h
+app.o: 		  app.c OpenURL.h loc.h OpenURL_rev.h OpenURL_protos.h
+
