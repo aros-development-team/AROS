@@ -56,7 +56,12 @@ mListSetup(struct IClass *cl,Object *obj,Msg msg)
     Forbid();
 
     for (mstate = SysBase->PortList.lh_Head; mstate->ln_Succ; mstate = mstate->ln_Succ)
+#ifdef __AROS__
+        // Zune Listclass doesn't support Insert_Sorted
+        DoSuperMethod(cl,obj,MUIM_List_InsertSingle,(ULONG)mstate->ln_Name,MUIV_List_Insert_Bottom);
+#else
         DoSuperMethod(cl,obj,MUIM_List_InsertSingle,(ULONG)mstate->ln_Name,MUIV_List_Insert_Sorted);
+#endif
 
     Permit();
 
@@ -86,14 +91,7 @@ M_DISPEND(listDispatcher)
 static ULONG
 initListClass(void)
 {
-    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,
-#ifdef __AROS__
-        // Zune Listclass is too buggy
-        MUIC_NList,
-#else
-        MUIC_List,
-#endif
-        NULL,0,DISP(listDispatcher)));
+    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,MUIC_List,NULL,0,DISP(listDispatcher)));
 }
 
 /**************************************************************************/

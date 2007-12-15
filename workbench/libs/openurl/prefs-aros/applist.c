@@ -398,17 +398,14 @@ dispFun(REG(a0,struct Hook *hook),REG(a2,STRPTR *array),REG(a1,struct URL_Node *
 
     if (node)
     {
-#ifndef __AROS__
-	// AROS segfaults in the "set ..." line
-        if (data->lamp)
+        if (data->lamp && data->olamp)
         {
-            set(data->lamp,MUIA_Lamp_Disabled,node->Flags & UNF_DISABLED);
+            set(data->olamp,MUIA_Lamp_Disabled,node->Flags & UNF_DISABLED);
             //msprintf(data->col0buf,"\33O[%08lx] %s",(ULONG)data->lamp,(ULONG)((UBYTE *)node+data->nameOfs));
             msprintf(data->col0buf,"\33O[%08lx]",(ULONG)data->lamp);
             *array++ = data->col0buf;
         }
         else
-#endif /* !__AROS__*/
             *array++ = "+";
         //msprintf(data->col0buf,"%s %s",(ULONG)((node->Flags & UNF_DISABLED) ? " " : ">"),(ULONG)
 
@@ -606,11 +603,16 @@ static ULONG
 mListCheckSave(struct IClass *cl,Object *obj,Msg msg)
 {
     struct listData *data = INST_DATA(cl,obj);
+#ifdef __AROS__
+    // Zune doesn't have MUIA_List_Format
+    return 1;
+#else
     UBYTE           *f;
 
     get(obj,MUIA_List_Format,&f);
 
     return (ULONG)strcmp((STRPTR)f,(STRPTR)&data->format);
+#endif
 }
 
 /**************************************************************************/
@@ -643,14 +645,7 @@ M_DISPEND(listDispatcher)
 static ULONG
 initListClass(void)
 {
-    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,
-#ifdef __AROS__
-        // Zune Listclass is too buggy
-        MUIC_NList,
-#else
-        MUIC_List,
-#endif
-        NULL,sizeof(struct listData),DISP(listDispatcher)));
+    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,MUIC_List,NULL,sizeof(struct listData),DISP(listDispatcher)));
 }
 
 /**************************************************************************/

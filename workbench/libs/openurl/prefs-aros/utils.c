@@ -309,7 +309,7 @@ openWindow(Object *app,Object *win)
 
 /***********************************************************************/
 
-#ifndef __MORPHOS__
+#if !defined(__MORPHOS__) && !defined(__AROS__)
 static ULONG fmtfunc = 0x16C04E75;
 
 void STDARGS
