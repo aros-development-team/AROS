@@ -2,8 +2,8 @@
 codesets.library - Library for handling different codesets
 ----------------------------------------------------------
 
-$Id: ChangeLog 89 2007-11-25 19:57:57Z marust $
-$URL: https://codesetslib.svn.sourceforge.net/svnroot/codesetslib/trunk/ChangeLog $
+$Id$
+$URL$
 
 2007-11-25  Matthias Rustler <mrustler@gmx.de>
 
