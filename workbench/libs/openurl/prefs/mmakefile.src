@@ -1,0 +1,45 @@
+#   $Id$
+#
+#   Makefile for the OpenURL Pref. editor of openurl.library
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-libs-openurl : workbench-libs-openurl-prefs
+
+#MM workbench-libs-openurl-prefs : includes linklibs \
+#MM   workbench-libs-openurl-lib
+
+EXE := OpenURL
+EXEDIR := $(AROS_PREFS)
+
+USER_INCLUDES := -I../include/aros
+
+USER_CFLAGS := -Wall \
+	  -Wno-missing-braces \
+	  -Wno-parentheses \
+          -Wno-switch \
+          -Wstrict-prototypes \
+	  -Werror-implicit-function-declaration \
+          -Wpointer-arith
+
+FILES := \
+    OpenURL \
+    loc \
+    stubs \
+    popport \
+    popph \
+    ftpeditwin \
+    mailereditwin \
+    browsereditwin \
+    applist \
+    win \
+    pens \
+    about \
+    app \
+    utils
+
+%build_prog mmake=workbench-libs-openurl-prefs \
+    progname=$(EXE) files=$(FILES) \
+    targetdir=$(EXEDIR) uselibs="amiga openurl mui"
+
+%common
