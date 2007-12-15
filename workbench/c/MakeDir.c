@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 
-const TEXT version[] = "$VER: MakeDir 42.4 (17.10.2005)\n";
+const TEXT version[] = "$VER: MakeDir 42.5 (15.12.2007)\n";
 
 /******************************************************************************
 
@@ -84,7 +84,7 @@ int main(void)
 
 	if((name == NULL) || (*name == NULL))
 	{
-	    PutStr("No name given\n");
+	    SetIoErr(ERROR_REQUIRED_ARG_MISSING);
 	    error = RETURN_FAIL;
 	}
 	else
@@ -107,9 +107,11 @@ int main(void)
 		}
 		else
 		{
+		    LONG lasterr = IoErr(); // We don't want error from PutStr()
 		    PutStr("Cannot create directory ");
 		    PutStr(name[i]);
 		    PutStr("\n");
+		    SetIoErr(lasterr);
 		    error = RETURN_ERROR;
 		}
 	    }
@@ -121,7 +123,7 @@ int main(void)
 	error = RETURN_FAIL;
 
     if(error != RETURN_OK)
-	PrintFault(IoErr(), NULL);
+	PrintFault(IoErr(), "MakeDir");
 
     return error;
 }
