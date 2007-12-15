@@ -33,7 +33,7 @@ void msprintf ( STRPTR to , STRPTR fmt , ... ) VARARGS68K;
 int msnprintf ( STRPTR buf , int size , STRPTR fmt , ... ) VARARGS68K;
 #elif defined(__AROS__)
 ULONG DoSuperNew ( struct IClass *cl , Object *obj , ULONG tag1, ... );
-void msprintf ( STRPTR to , STRPTR fmt , ... );
+#define msprintf __sprintf
 int msnprintf ( STRPTR buf , int size , STRPTR fmt , ... );
 #else
 ULONG STDARGS DoSuperNew ( struct IClass *cl , Object *obj , ... );

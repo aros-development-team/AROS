@@ -172,14 +172,7 @@ M_DISPEND(listDispatcher)
 static ULONG
 initListClass(void)
 {
-    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,
-#ifdef __AROS__
-        // Zune Listclass is too buggy    
-        MUIC_NList,
-#else
-        MUIC_List,
-#endif
-        NULL,sizeof(struct listData),DISP(listDispatcher)));
+    return (ULONG)(listClass = MUI_CreateCustomClass(NULL,MUIC_List,NULL,sizeof(struct listData),DISP(listDispatcher)));
 }
 
 /**************************************************************************/

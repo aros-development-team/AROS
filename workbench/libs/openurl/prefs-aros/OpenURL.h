@@ -41,15 +41,13 @@
 
 #include <clib/alib_protos.h>
 
-#ifdef __AROS__
-#include <mui/NList_mcc.h>
-#else /* __AROS__ */
+#ifndef __AROS__
 #include <clib/debug_protos.h>
 
 #include <mui/Textinput_mcc.h>
 #include <mui/Urltext_mcc.h>
 #include <mui/MUIundoc.h>
-#endif /* __AROS__ */
+#endif /* !__AROS__ */
 
 #include <string.h>
 #include <ctype.h>
