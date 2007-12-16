@@ -37,7 +37,7 @@ examinedtdesc: $(OBJDIR)/examinedtdesc.o c_iff/libc_iff.a
 	@$(HOST_CC) -o examinedtdesc $(OBJDIR)/examinedtdesc.o -Lc_iff/ -lc_iff
 
 $(OBJDIR)/%.o : %.c
-	@$(HOST_CC) $(HOST_CFLAGS) $(GUI_CFLAGS) $(INCL) -c $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(INCL) -c $< -o $@
 
 c_iff/libc_iff.a:
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc/c_iff -f Makefile.aros TOP=$(TOP)
