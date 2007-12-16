@@ -45,7 +45,7 @@ OBJS = \
 	writechunkdata.o
 
 %.o : %.c
-	@$(HOST_CC) $(HOST_CFLAGS) $(GUI_CFLAGS) -I. -c $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) -I. -c $< -o $@
 
 all : libc_iff.a
 doc : c_iff.txt

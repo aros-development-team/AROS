@@ -51,12 +51,6 @@ PPMTOILBM   	:= @PPMTOILBM@
 SED		:= @SED@
 CHMOD		:= @CHMOD@
 
-GUI_LIBDIR	:= @aros_gui_libdir@
-GUI_LDFLAGS	:= @aros_gui_ldflags@
-GUI_LIBFLAGS	:= @aros_gui_libflags@
-GUI_INCDIR	:= @aros_gui_incdir@
-GUI_CFLAGS	:= @aros_gui_ccflags@
-
 X11_HIDD_TARGET := @x11_hidd_target@
 SDL_HIDD_TARGET := @sdl_hidd_target@
 
