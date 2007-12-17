@@ -1,9 +1,9 @@
-## version $VER: Dos.catalog 1.1 (4.12.2007)
+## version $VER: Dos.catalog 1.2 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 MSG_ERROR_NO_FREE_STORE
-nedostatek volné pamìti
+není dostatek volné pamìti
 ; not enough memory available
 ;
 MSG_ERROR_TASK_TABLE_FULL
@@ -207,11 +207,11 @@ Vlo¾te disk "%s" do libovolného zaøízení.
 ; Please insert volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE
-Please replace volume "%s" in any drive??
+Vlo¾te disk "%s" do libovolného zaøízení.
 ; Please replace volume "%s" in any drive
 ;
 MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET
-Please replace volume "%s" in "%s"??
+Vlo¾te disk "%s" zpìt do zaøízení "%s".
 ; Please replace volume "%s" in "%s"
 ;
 MSG_STRING_DISK_FULL
@@ -227,7 +227,7 @@ V zaøízení %s není vlo¾en disk.
 ; No disk present in "%s"
 ;
 MSG_STRING_ABORT_BUSY
-Disk "%s" je nutno vrátit zpìt do zaøízení %s.
+Vra»te disk "%s" zpìt do zaøízení %s.
 ; You MUST replace volume "%s" in "%s"!
 ;
 MSG_STRING_ABORT_DISK_ERROR
