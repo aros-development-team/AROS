@@ -1,6 +1,6 @@
-## version $VER: pcitool.catalog 1.0 (29.11.2007)
+## version $VER: PCITool.catalog 1.1 (10.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -36,7 +36,7 @@ Název:
 ; Driver name:
 ;
 MSG_DIRECT_BUS
-Direct bus:??
+Pøímo na sbìrnici:
 ; Direct bus:
 ;
 MSG_HARDWARE_INFO
@@ -108,7 +108,7 @@ Rozsah pamìti: %08x - %08x
 ; Memory ranges from %08x to %08x
 ;
 MSG_PREFETCHABLE_MEMORY
-Rozsah ??Prefetchable pamìti: %08x - %08x
+Rozsah vyrovnávací pamìti: %08x - %08x
 ; Prefetchable ranges memory from %08x to %08x
 ;
 MSG_IO_RANGE
@@ -128,7 +128,7 @@ Pamì»
 ; Memory
 ;
 MSG_PREFETCHABLE
-Prefetchable?? pamì»
+Vyrovnávací pamì»
 ; Prefetchable Memory
 ;
 MSG_YES
