@@ -1,6 +1,6 @@
-## version $VER: More.catalog 1.3 (30.11.2007)
+## version $VER: More.catalog 1.4 (7.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -8,7 +8,7 @@ Nelze otevøít knihovnu %s V%ld!
 ; Can't open %s V%ld!
 ;
 MSG_NO_MEM
-Nelze alokovat dostatek pamìti!
+Není dostatek volné pamìti!
 ; Out of memory!
 ;
 MSG_CANT_LOCK_SCR
