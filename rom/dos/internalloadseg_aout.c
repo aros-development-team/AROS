@@ -151,6 +151,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR table,
                           SIPTR * functionarray,
                           SIPTR * stack,
+                          struct MinList *seginfos,
                           struct DosLibrary * DOSBase)
 {
 /* Currently the only parameter passed to this function that is

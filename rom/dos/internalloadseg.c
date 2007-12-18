@@ -22,13 +22,14 @@
     NAME */
 #include <proto/dos.h>
 
-        AROS_LH4(BPTR, InternalLoadSeg,
+        AROS_LH5(BPTR, InternalLoadSeg,
 
 /*  SYNOPSIS */
         AROS_LHA(BPTR     , fh           , D0),
         AROS_LHA(BPTR     , table        , A0),
         AROS_LHA(LONG_FUNC, functionarray, A1),
         AROS_LHA(LONG *   , stack        , A2),
+	AROS_LHA(struct MinList *, seginfos, A3),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 126, Dos)
@@ -74,11 +75,12 @@
 
     typedef struct _segfunc_t
     {
-        BPTR (*func)(BPTR, BPTR, LONG *, LONG *, struct DosLibrary *);
+        BPTR (*func)(BPTR, BPTR, SIPTR *, SIPTR *,
+		     struct MinList *, struct DosLibrary *);
         D(CONST_STRPTR format;)
     } segfunc_t;
 
-    #define SEGFUNC(format) { InternalLoadSeg_##format D(, #format)}
+    #define SEGFUNC(format) { InternalLoadSeg_##format D(, (STRPTR)#format)}
     
     static const segfunc_t funcs[] = 
     {
@@ -102,7 +104,8 @@
 	{
 	    SetIoErr(0);
 	   
-	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (LONG *)functionarray, NULL, DOSBase);
+	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (LONG *)functionarray,
+				    NULL, seginfos, DOSBase);
             
 	    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",
 	          segs ? "Succeeded" : "FAILED", fh, funcs[i].format));

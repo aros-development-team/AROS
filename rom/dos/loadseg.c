@@ -80,9 +80,21 @@ struct MinList debug_seglist, free_debug_segnodes;
 
     if (file)
     {
+	struct MinList *pseginfos;
+#if AROS_MODULES_DEBUG
+	struct MinList seginfos;
+
+	NEWLIST(&seginfos);
+	pseginfos = &seginfos;
+#else
+	pseginfos = NULL;
+#endif
+
 	D(bug("[LoadSeg] Loading '%s'...\n", name));
 
-	segs = InternalLoadSeg (file, NULL, (void *)FunctionArray, NULL);
+
+	segs = InternalLoadSeg(file, NULL, (void *)FunctionArray, NULL,
+			       pseginfos);
 
 	if (segs)
         {
@@ -95,9 +107,17 @@ struct MinList debug_seglist, free_debug_segnodes;
 
 	    if (segnode)
             {
+		struct seginfo *si;
+
                 NameFromFH(file, segnode->name, sizeof(segnode->name));
 
                 segnode->seglist = segs;
+
+	        /* copy the segments info list */
+		NEWLIST(&segnode->seginfos);
+		while ((si = REMHEAD(&seginfos)))
+                    ADDTAIL(&segnode->seginfos, si);
+
 #if defined(__AROS_SET_START_ADDR)
 		__AROS_SET_START_ADDR(segnode);
 #else
