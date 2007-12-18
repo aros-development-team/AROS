@@ -9,7 +9,7 @@ FILES := reqtools gui misc rtstrings ver
 EXEDIR := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-reqtools
-#MM workbench-prefs-reqtools : includes linklibs setup-prefs-reqtools-catalogs
+#MM workbench-prefs-reqtools : includes linklibs workbench-prefs-reqtools-catalogs
 
 %build_prog mmake=workbench-prefs-reqtools \
     progname=ReqTools targetdir=$(EXEDIR) \
