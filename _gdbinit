@@ -253,3 +253,77 @@ end
 document printtaglist
 end
     
+define log_to_file
+  set logging file $arg0
+  set logging redirect on
+  set logging overwrite $arg1
+  set logging on
+end
+
+define end_log
+  set logging off
+end
+
+define loadseg
+  dont-repeat
+  set $cont = 1
+  if debug_seglist
+    set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
+    while ($segnode->node.mln_Succ != 0) && $cont
+      set $nextseg = $segnode->seglist
+      while $nextseg && $cont
+        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
+          log_to_file segname.tmp on
+          printf "%s", $segnode->name
+          end_log
+          shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+          log_to_file loadseg.tmp on
+          printf "add-symbol-file "
+          end_log
+          shell head -n1 segname.tmp >>loadseg.tmp
+          log_to_file loadseg.tmp off
+          set $seginfo = (struct seginfo *)$segnode->seginfos.mlh_Head
+          while ($seginfo->node.mln_Succ != 0)
+            if (strcmp($seginfo->name, ".text") == 0)
+              printf " 0x%08x", $seginfo->addr
+              set $cont = 0
+            else
+              printf " -s %s 0x%08x", $seginfo->name, $seginfo->addr
+            end
+            set $seginfo = (struct seginfo *)$seginfo->node.mln_Succ
+          end
+          end_log
+          if $cont == 0
+            source loadseg.tmp
+          end
+          set $cont = 0
+        end
+        set $nextseg = *(BPTR *)$nextseg
+      end
+      set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
+    end
+  end
+  if $cont
+    printf "No matching module for this address\n"
+  end
+end
+document loadseg
+Loads the module that contains the given address
+end
+
+define seglistdump
+    set $nextseg = $arg0
+    set $count   = 1
+
+    printf "Hunk num. | Start addr | Size       \n"
+    printf "----------+------------+------------\n"
+    while $nextseg
+        printf "%9d | 0x%08x | %10d\n", $count, $nextseg + sizeof(BPTR), *((ULONG *)$nextseg - 1) - sizeof(BPTR)
+
+        set $nextseg = *(BPTR *)$nextseg
+        set $count = $count+1
+    end
+end
+document seglistdump
+Shows the segments chain of the given seglist
+end

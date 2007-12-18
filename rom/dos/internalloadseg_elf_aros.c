@@ -411,6 +411,7 @@ BPTR InternalLoadSeg_ELF_AROS
     BPTR               table __unused,
     SIPTR             *funcarray,
     SIPTR             *stack __unused,
+    struct MinList    *seginfos,
     struct DosLibrary *DOSBase
 )
 {

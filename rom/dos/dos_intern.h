@@ -209,12 +209,20 @@ struct markerarray
 #define  __is_task(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_TASK)
 #define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)
 
+struct seginfo
+{
+    struct MinNode node;
+    APTR           addr;
+    char           name[32];
+};
+
 struct debug_segnode
 {
     struct MinNode node;
     UBYTE          name[200];
     BPTR           seglist;
     IPTR	   start_address; // start address of loaded executable segment
+    struct MinList seginfos;
 };
 
 struct InternalExAllControl

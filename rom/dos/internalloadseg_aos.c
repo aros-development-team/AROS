@@ -35,6 +35,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
                          SIPTR * funcarray,
                          SIPTR * stack,
+                         struct MinList *seginfos,
                          struct DosLibrary * DOSBase)
 {
   #define ERROR(a)    { *error=a; goto end; }
