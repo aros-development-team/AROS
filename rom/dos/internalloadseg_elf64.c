@@ -611,7 +611,7 @@ BPTR InternalLoadSeg_ELF64
             #endif
 
             /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
-            sh[sh[i].info].addr
+            sh[SHINDEX(sh[i].info)].addr
         )
         {
 	    sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, DOSBase);
