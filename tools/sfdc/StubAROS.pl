@@ -44,8 +44,8 @@ BEGIN {
 		print "  ";
 	    }
 
-	    printf "AROS_LC%d%s($prototype->{return}, $prototype->{funcname},\n",
-	    $prototype->{numargs}, $prototype->{nb} ? "I" : "";
+	    printf "AROS_LC%d($prototype->{return}, $prototype->{funcname},\n",
+	    $prototype->{numargs};
 	}
 	else {
 	    $self->SUPER::function_start (@_);
