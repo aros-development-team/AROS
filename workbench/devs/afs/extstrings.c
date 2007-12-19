@@ -36,14 +36,6 @@ LONG StrCmp(STRPTR str1, STRPTR str2) {
 	return 0;
 }
 
-ULONG StrLen(STRPTR str) {
-ULONG length=0;
-
-	while (*str++)
-		length++;
-	return length;
-}
-
 void StrCpyToBstr(char *src, char *dst, int maxlen) {
 UWORD len=0;
 

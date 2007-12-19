@@ -7,11 +7,7 @@
 */
 
 #include "os.h"
-
-#ifdef strlen
-#undef strlen
-#endif
-#define strlen StrLen
+#include <string.h>
 
 UBYTE capitalch(UBYTE, UBYTE);
 LONG noCaseStrCmp(char *, char *, UBYTE, int);

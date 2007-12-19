@@ -12,7 +12,7 @@ ULONG getHashKey(STRPTR name,ULONG tablesize, UBYTE flags) {
 ULONG result;
 UWORD length, i;
 
-	length=StrLen(name);
+	length=strlen(name);
 	if (length>MAX_NAME_LENGTH)
 		length=MAX_NAME_LENGTH;
 	result=length;

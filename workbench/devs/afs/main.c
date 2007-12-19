@@ -208,8 +208,8 @@ LONG retval;
 								);
 							break;
 						#warning FIXME: Disabled FSA_EXAMINE_ALL support since it seems to have bugs
-	                                        #if 0
-	                                        case FSA_EXAMINE_ALL :
+						#if 0
+						case FSA_EXAMINE_ALL :
 							error=examineAll
 								(
 									afsbase,
@@ -220,7 +220,7 @@ LONG retval;
 									iofs->io_Union.io_EXAMINE_ALL.io_Mode
 								);
 							break;
-	                                        #endif 
+						#endif 
 						case FSA_EXAMINE_NEXT :
 							error=examineNext
 								(
