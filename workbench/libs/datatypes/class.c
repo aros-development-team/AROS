@@ -76,12 +76,12 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
     LONG VisHoriz = dtsi->si_VisHoriz;
     LONG TotHoriz = dtsi->si_TotHoriz;
    
-    struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
+    const struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
     struct TagItem *tag;
    
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
-	LONG data = tag->ti_Data;
+	SIPTR data = tag->ti_Data;
 	
 	switch(tag->ti_Tag)
 	{
@@ -107,7 +107,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		dto->dto_ObjName = NULL;
 	    }
 
-	    if(data != NULL)
+	    if((APTR)data != NULL)
 		if((dto->dto_ObjName = AllocVec((ULONG)strlen((UBYTE *)data) + 1,
 						MEMF_PUBLIC | MEMF_CLEAR)))
 		    strcpy(dto->dto_ObjName,(UBYTE *)data);
@@ -121,7 +121,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		dto->dto_ObjAuthor = NULL;
 	    }
 
-	    if(data)
+	    if((APTR)data != NULL)
 		if((dto->dto_ObjAuthor = AllocVec((ULONG)strlen((UBYTE *)data)+1,
 						  MEMF_PUBLIC | MEMF_CLEAR)))
 		    strcpy(dto->dto_ObjAuthor, (UBYTE *)data);
@@ -135,7 +135,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		dto->dto_ObjAnnotation = NULL;
 	    }
 
-	    if(data != NULL)
+	    if((APTR)data != NULL)
 		if((dto->dto_ObjAnnotation = AllocVec((ULONG)strlen((UBYTE*)data) + 1,
 						     MEMF_PUBLIC | MEMF_CLEAR)))
 		    strcpy(dto->dto_ObjAnnotation, (UBYTE *)data);
@@ -149,7 +149,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		dto->dto_ObjCopyright=NULL;
 	    }
 
-	    if(data != NULL)
+	    if((APTR)data != NULL)
 		if((dto->dto_ObjCopyright = AllocVec((ULONG)strlen((UBYTE*)data) + 1,
 						     MEMF_PUBLIC | MEMF_CLEAR)))
 		    strcpy(dto->dto_ObjCopyright, (UBYTE *)data);
@@ -163,7 +163,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
 		dto->dto_ObjVersion = NULL;
 	    }
 	    
-	    if(data != NULL)
+	    if((APTR)data != NULL)
 		if((dto->dto_ObjVersion = AllocVec((ULONG)strlen((UBYTE*)data) + 1,
 						  MEMF_PUBLIC | MEMF_CLEAR)))
 		    strcpy(dto->dto_ObjVersion, (UBYTE *)data);
@@ -312,7 +312,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		
 		newdto->dto_SourceType = GetTagData(DTA_SourceType, DTST_FILE,
 						    attrs);
-		handle = (APTR)GetTagData(DTA_Handle, NULL, attrs);
+		handle = (APTR)GetTagData(DTA_Handle, (IPTR)NULL, attrs);
 		
 		if(!(nametag = FindTagItem(DTA_Name, attrs)))
 		    SetIoErr(ERROR_REQUIRED_ARG_MISSING);
@@ -344,7 +344,7 @@ AROS_UFH3(IPTR, Dispatcher,
 				break;				
 			}
 			    
-			if(!(newdto->dto_DataType = (struct DataType *)GetTagData(DTA_DataType, NULL, attrs)))
+			if(!(newdto->dto_DataType = (struct DataType *)GetTagData(DTA_DataType, (IPTR)NULL, attrs)))
 			    Success = TRUE;
 			else
 			{
@@ -469,7 +469,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		if (dtsi->si_Flags & DTSIF_HIGHLIGHT)
 		    *store = (IPTR)&dto->dto_SelectDomain;
 		else
-		    *store = NULL;
+		    *store = (IPTR)NULL;
 		break;
 		
 	    case DTA_TotalPVert:    *store = dto->dto_TotalPVert;   break;
@@ -911,7 +911,7 @@ AROS_UFH3(IPTR, Dispatcher,
 		    switch(dto->dto_DataType->dtn_Header->dth_Flags & DTF_TYPE_MASK)
 		    {
 		    case DTF_IFF:
-			if(((struct IFFHandle*)handle)->iff_Stream != NULL)
+			if(((struct IFFHandle*)handle)->iff_Stream != (IPTR)NULL)
 			{
 			    CloseIFF((struct IFFHandle *)handle);
 			    Close((BPTR)((struct IFFHandle *)handle)->iff_Stream);
