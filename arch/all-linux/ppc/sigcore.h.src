@@ -24,7 +24,10 @@
 #define _PUSH(sp,val)	(*--sp = (SP_TYPE)(val))
 #define _POP(sp)	(*sp++)
 
-#include <asm/sigcontext.h>
+#ifndef _SIGNAL_H
+#define _SIGNAL_H
+#endif
+#include <bits/sigcontext.h>
 
 /* sigcontext_t is the type of the signals' context. Linux offers no way
    to get this context in a legal way, so I have to use tricks. */
