@@ -825,11 +825,11 @@ end:
             MyFree(sh[i].addr, sh[i].size);
     }
 
-    /* Free the section headers */
-    MyFree(sh, eh.int_shnum * eh.shentsize);
-
     /* Free the string table */
     MyFree(st, shstr->size);
+
+    /* Free the section headers */
+    MyFree(sh, eh.int_shnum * eh.shentsize);
 
     return hunks;
 }
