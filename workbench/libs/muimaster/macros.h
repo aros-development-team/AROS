@@ -2,7 +2,7 @@
 #define _MUI_MACROS_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Macros available in original MUI and also some additional ones.
@@ -154,8 +154,8 @@
  These macros will create a simple button. It's simply calling
  MUI_MakeObject()
 **************************************************************************/
-#define SimpleButton(label) MUI_MakeObject(MUIO_Button,(IPTR)label)
-#define ImageButton(label, imagePath) MUI_MakeObject(MUIO_ImageButton, (IPTR) label, (IPTR) imagePath)
+#define SimpleButton(label) MUI_MakeObject(MUIO_Button,(IPTR)(label))
+#define ImageButton(label, imagePath) MUI_MakeObject(MUIO_ImageButton, (IPTR) (label), (IPTR) (imagePath))
 
 #define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), (IPTR)(image), 0)
 #define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), imageid, MUIO_CoolButton_CoolImageID)
@@ -284,12 +284,12 @@
 })
 #endif /* __GNUC__ */
 
-#define set(obj,attr,value) SetAttrs(obj,attr,(IPTR)value,TAG_DONE)
-#define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,(IPTR)value,TAG_DONE)
+#define set(obj,attr,value) SetAttrs(obj,attr,(IPTR)(value),TAG_DONE)
+#define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,(IPTR)(value),TAG_DONE)
 
 /* Zune */
-#define nfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,attr,(IPTR)value,TAG_DONE)
-#define nnfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,MUIA_NoNotify,TRUE,attr,(IPTR)value,TAG_DONE)
+#define nfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,attr,(IPTR)(value),TAG_DONE)
+#define nnfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,MUIA_NoNotify,TRUE,attr,(IPTR)(value),TAG_DONE)
 
 /* Some aliases... */
 #define GET(obj,attr,store) get(obj,attr,store)
@@ -300,7 +300,7 @@
 
 #define setmutex(obj,n)     set(obj,MUIA_Radio_Active,n)
 #define setcycle(obj,n)     set(obj,MUIA_Cycle_Active,n)
-#define setstring(obj,s)    set(obj,MUIA_String_Contents,(IPTR)s)
+#define setstring(obj,s)    set(obj,MUIA_String_Contents,(IPTR)(s))
 #define setcheckmark(obj,b) set(obj,MUIA_Selected,b)
 #define setslider(obj,l)    set(obj,MUIA_Numeric_Value,l)
 
