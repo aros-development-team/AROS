@@ -40,8 +40,8 @@ BEGIN {
 	my $sfd       = $self->{SFD};
 
 	if ($$prototype{'type'} eq 'function') {
-	    printf "	AROS_LC%d%s(%s, %s, \\\n",
-	    $$prototype{'numargs'}, $prototype->{nb} ? "I" : "",
+	    printf "	AROS_LC%d(%s, %s, \\\n",
+	    $$prototype{'numargs'},
 	    $$prototype{'return'}, $$prototype{'funcname'};
 	}
 	else {
