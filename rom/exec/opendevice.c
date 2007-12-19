@@ -105,7 +105,7 @@ char *const inputname = "input.device";
 	iORequest->io_Unit = NULL;
 
 	/* Call Open vector. */
-	AROS_LVO_CALL3NR(
+	AROS_LVO_CALL3NR(void,
 	    AROS_LCA(struct IORequest *,iORequest,A1),
 	    AROS_LCA(ULONG,unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),

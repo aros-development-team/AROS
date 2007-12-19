@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: amiga.lib function BeginIO()
@@ -43,7 +43,7 @@
 ******************************************************************************/
 {
     /* Call BeginIO() vector */
-    AROS_LVO_CALL1NR(
+    AROS_LVO_CALL1NR(void,
 	AROS_LCA(struct IORequest *,ioReq,A1),
 	struct Device *,ioReq->io_Device,5,
     );

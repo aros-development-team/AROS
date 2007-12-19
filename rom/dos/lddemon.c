@@ -623,7 +623,7 @@ AROS_LH4(BYTE, OpenDevice,
   	    D(bug("[LDCaller] Calling devOpen() of %s unit %ld\n",
 		    iORequest->io_Device->dd_Library.lib_Node.ln_Name, unitNumber));
 
-	    AROS_LVO_CALL3(void,
+	    AROS_LVO_CALL3NR(void,
 	        AROS_LCA(struct IORequest *, iORequest, A1),
 	        AROS_LCA(ULONG, unitNumber, D0),
 	        AROS_LCA(ULONG, flags, D1),

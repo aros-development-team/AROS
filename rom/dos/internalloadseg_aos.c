@@ -427,7 +427,7 @@ end:
     for (t = 0 /* first */; t < numhunks /* last */; t++)
       if (hunktab[t].memory != NULL)
       {
-	AROS_CALL2(void , funcarray[2] /* FreeMem*/,
+	AROS_CALL2NR(void, funcarray[2] /* FreeMem*/,
 	  AROS_LCA(void * , hunktab[t].memory-sizeof(ULONG)-sizeof(BPTR), A1),
 	  AROS_LCA(ULONG  , hunktab[t].size                             , D0),
 	  struct Library *, (struct Library *)SysBase);

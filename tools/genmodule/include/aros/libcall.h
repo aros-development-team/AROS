@@ -661,23 +661,6 @@ typedef unsigned long (*ULONG_FUNC)();
 #define AROS_LP14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
 #define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
 
-#define AROS_LP0I(t,n,bt,bn,o,s)
-#define AROS_LP1I(t,n,a1,bt,bn,o,s)
-#define AROS_LP2I(t,n,a1,a2,bt,bn,o,s)
-#define AROS_LP3I(t,n,a1,a2,a3,bt,bn,o,s)
-#define AROS_LP4I(t,n,a1,a2,a3,a4,bt,bn,o,s)
-#define AROS_LP5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
-#define AROS_LP6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
-#define AROS_LP7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
-#define AROS_LP8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
-#define AROS_LP9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
-#define AROS_LP10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
-#define AROS_LP11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
-#define AROS_LP12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
-#define AROS_LP13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
-#define AROS_LP14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
-#define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
-
 #define AROS_LD0(t,n,bt,bn,o,s)
 #define AROS_LD1(t,n,a1,bt,bn,o,s)
 #define AROS_LD2(t,n,a1,a2,bt,bn,o,s)
@@ -729,22 +712,22 @@ typedef unsigned long (*ULONG_FUNC)();
 #define AROS_LC14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) ((void*)NULL)
 #define AROS_LC15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) ((void*)NULL)
 
-#define AROS_LC0I(t,n,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC1I(t,n,a1,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC2I(t,n,a1,a2,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC3I(t,n,a1,a2,a3,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC4I(t,n,a1,a2,a3,a4,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) ((void*)NULL)
-#define AROS_LC15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC0NR(t,n,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC1NR(t,n,a1,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC2NR(t,n,a1,a2,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC3NR(t,n,a1,a2,a3,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC4NR(t,n,a1,a2,a3,a4,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC5NR(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC6NR(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC7NR(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC8NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC9NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC10NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC11NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC12NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC13NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC14NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) ((void*)NULL)
+#define AROS_LC15NR(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) ((void*)NULL)
 
 #define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
 #define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s)
@@ -752,40 +735,92 @@ typedef unsigned long (*ULONG_FUNC)();
 #define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) ((void*)NULL)
 #define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) ((void*)NULL)
 
-#   ifndef AROS_CALL0
+#ifndef AROS_CALL0
 #define AROS_CALL0(returntype,address,basetype,basename) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL0NR
+#define AROS_CALL0NR(returntype,address,basetype,basename) ((void*)NULL)
 #endif
 
 #ifndef AROS_CALL1
 #define AROS_CALL1(t,a,a1,bt,bn) ((void*)NULL)
 #endif
 
+#ifndef AROS_CALL1NR
+#define AROS_CALL1NR(t,a,a1,bt,bn) ((void*)NULL)
+#endif
+
 #ifndef AROS_CALL2
 #define AROS_CALL2(t,a,a1,a2,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL2NR
+#define AROS_CALL2NR(t,a,a1,a2,bt,bn) ((void*)NULL)
 #endif
 
 #ifndef AROS_CALL3
 #define AROS_CALL3(t,a,a1,a2,a3,bt,bn) ((void*)NULL)
 #endif
 
+#ifndef AROS_CALL3NR
+#define AROS_CALL3NR(t,a,a1,a2,a3,bt,bn) ((void*)NULL)
+#endif
+
 #ifndef AROS_CALL4
 #define AROS_CALL4(t,a,a1,a2,a3,a4,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL4NR
+#define AROS_CALL4NR(t,a,a1,a2,a3,a4,bt,bn) ((void*)NULL)
 #endif
 
 #ifndef AROS_CALL5
 #define AROS_CALL5(t,a,a1,a2,a3,a4,a5,bt,bn) ((void*)NULL)
 #endif
 
+#ifndef AROS_CALL5NR
+#define AROS_CALL5NR(t,a,a1,a2,a3,a4,a5,bt,bn) ((void*)NULL)
+#endif
+
 #ifndef AROS_CALL6
 #define AROS_CALL6(t,a,a1,a2,a3,a4,a5,a6,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL6NR
+#define AROS_CALL6NR(t,a,a1,a2,a3,a4,a5,a6,bt,bn) ((void*)NULL)
 #endif
 
 #ifndef AROS_CALL7
 #define AROS_CALL7(t,a,a1,a2,a3,a4,a5,a6,a7,bt,bn) ((void*)NULL)
 #endif
 
+#ifndef AROS_CALL7NR
+#define AROS_CALL7NR(t,a,a1,a2,a3,a4,a5,a6,a7,bt,bn) ((void*)NULL)
+#endif
+
 #ifndef AROS_CALL8
 #define AROS_CALL8(t,a,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL8NR
+#define AROS_CALL8NR(t,a,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL9
+#define AROS_CALL9(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL9NR
+#define AROS_CALL9NR(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL10
+#define AROS_CALL10(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn) ((void*)NULL)
+#endif
+
+#ifndef AROS_CALL10NR
+#define AROS_CALL10NR(t,a,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn) ((void*)NULL)
 #endif
 
 #ifndef AROS_LVO_CALL0
@@ -793,7 +828,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL0NR
-#define AROS_LVO_CALL0NR(basetype,basename,offset,system) ((void*)NULL)
+#define AROS_LVO_CALL0NR(returntype,basetype,basename,offset,system) ((void*)NULL)
 #endif
 
 #ifndef AROS_LVO_CALL1
@@ -801,7 +836,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL1NR
-#define AROS_LVO_CALL1NR(a1,bt,bn,o,s) ((void*)NULL)
+#define AROS_LVO_CALL1NR(t,a1,bt,bn,o,s) ((void*)NULL)
 #endif
 
 #ifndef AROS_LVO_CALL2
@@ -809,7 +844,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL2NR
-#define AROS_LVO_CALL2NR(a1,a2,bt,bn,o,s) ((void*)NULL)
+#define AROS_LVO_CALL2NR(t,a1,a2,bt,bn,o,s) ((void*)NULL)
 #endif
 
 #ifndef AROS_LVO_CALL3
@@ -817,7 +852,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL3NR
-#define AROS_LVO_CALL3NR(a1,a2,a3,bt,bn,o,s) ((void*)NULL)
+#define AROS_LVO_CALL3NR(t,a1,a2,a3,bt,bn,o,s) ((void*)NULL)
 #endif
 
 #ifndef AROS_LVO_CALL4
@@ -825,7 +860,7 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL4NR
-#define AROS_LVO_CALL4NR(a1,a2,a3,a4,bt,bn,o,s) ((void*)NULL)
+#define AROS_LVO_CALL4NR(t,a1,a2,a3,a4,bt,bn,o,s) ((void*)NULL)
 #endif
 
 #ifndef AROS_LVO_CALL5
@@ -833,7 +868,47 @@ typedef unsigned long (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL5NR
-#define AROS_LVO_CALL5NR(a1,a2,a3,a4,a5,bt,bn,o,s) ((void*)NULL)
+#define AROS_LVO_CALL5NR(t,a1,a2,a3,a4,a5,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL6
+#define AROS_LVO_CALL6(t,a1,a2,a3,a4,a5,a6,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL6NR
+#define AROS_LVO_CALL6NR(t,a1,a2,a3,a4,a5,a6,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL7
+#define AROS_LVO_CALL7(t,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL7NR
+#define AROS_LVO_CALL7NR(t,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL8
+#define AROS_LVO_CALL8(t,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL8NR
+#define AROS_LVO_CALL8NR(t,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL9
+#define AROS_LVO_CALL9(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL9NR
+#define AROS_LVO_CALL9NR(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL10
+#define AROS_LVO_CALL10(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) ((void*)NULL)
+#endif
+
+#ifndef AROS_LVO_CALL10NR
+#define AROS_LVO_CALL10NR(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) ((void*)NULL)
 #endif
 
 #define AROS_LIBFUNC_INIT

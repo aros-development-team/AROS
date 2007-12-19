@@ -923,7 +923,7 @@ AROS_UFH3(LONG, rootfsproc,
 	        msg->iofs.newiofs.IOFS.io_Message.mn_ReplyPort = &(me->pr_MsgPort);
 
 		/* Call BeginIO() vector */
-		AROS_LVO_CALL1NR(
+		AROS_LVO_CALL1NR(void,
 	            AROS_LCA(struct IORequest *,&(msg->iofs.newiofs.IOFS),A1),
 	            struct Device *, msg->iofs.newiofs.IOFS.io_Device,5,
 		);

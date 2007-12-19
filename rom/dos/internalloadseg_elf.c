@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -201,7 +201,7 @@ struct hunk
 
 
 #define MyFree(addr, size)          \
-    AROS_CALL2                      \
+    AROS_CALL2NR                    \
     (                               \
         void, funcarray[2],         \
         AROS_LCA(void *, addr, A1), \

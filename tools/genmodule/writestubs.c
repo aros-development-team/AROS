@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write module_stubs.c. Part of genmodule.
@@ -71,6 +71,9 @@ void writestubs(struct config *cfg)
 	{
 	    if (funclistit->libcall != STACK)
 	    {
+		int isvoid = strcmp(funclistit->type, "void") == 0
+		    || strcmp(funclistit->type, "VOID") == 0;
+
 		fprintf(out,
 			"\n"
 			"%s %s(",
@@ -85,12 +88,15 @@ void writestubs(struct config *cfg)
 			fprintf(out, ", ");
 		    fprintf(out, "%s", arglistit->arg);
 		}
+
 		fprintf(out,
 			")\n"
 			"{\n"
-			"    return AROS_LC%d(%s, %s,\n",
-			funclistit->argcount, funclistit->type, funclistit->name
+			"    return AROS_LC%d%s(%s, %s,\n",
+			funclistit->argcount, (isvoid) ? "NR" : "",
+			funclistit->type, funclistit->name
 		);
+
 		for (arglistit = funclistit->arguments;
 		     arglistit!=NULL;
 		     arglistit = arglistit->next
