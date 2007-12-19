@@ -104,7 +104,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     }
 
     
-    AROS_LC0(void, CacheClearU,
+    AROS_LC0NR(void, CacheClearU,
 	struct ExecBase *, SysBase, 106, Exec);
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;

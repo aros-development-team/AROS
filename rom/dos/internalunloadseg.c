@@ -55,7 +55,7 @@ extern void Exec_FreeMem();
     {
       next = *(BPTR *)BADDR(seglist);
 
-      AROS_CALL2(void, freefunc,
+      AROS_CALL2NR(void, freefunc,
         AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
         AROS_LCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
         struct Library *, (struct Library *)SysBase

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start an asynchronous I/O request.
@@ -52,7 +52,7 @@
     iORequest->io_Message.mn_Node.ln_Type=0;
 
     /* Call BeginIO() vector */
-    AROS_LVO_CALL1NR(
+    AROS_LVO_CALL1NR(void,
 	AROS_LCA(struct IORequest *,iORequest,A1),
 	struct Device *,iORequest->io_Device,5,
     );

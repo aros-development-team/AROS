@@ -44,8 +44,10 @@ BEGIN {
 		print "  ";
 	    }
 
-	    printf "AROS_LC%d($prototype->{return}, $prototype->{funcname},\n",
-	    $prototype->{numargs};
+	    printf "AROS_LC%d%s($prototype->{return}, $prototype->{funcname},\n",
+	    $prototype->{numargs},
+	    $$prototype{'return'} eq 'void'
+		|| $$prototype{'return'} eq 'VOID' ? "NR" : "";
 	}
 	else {
 	    $self->SUPER::function_start (@_);

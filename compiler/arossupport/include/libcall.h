@@ -762,12 +762,34 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a15),\
     __AROS_LC_BASE(bt,bn)))
 
+/* Macros for calling library functions without a return value. These macros should
+ * always be used when a library function has no return value but can also be used
+ * when the return value is not used
+ */
+#define AROS_LC0NR AROS_LC0
+#define AROS_LC1NR AROS_LC1
+#define AROS_LC2NR AROS_LC2
+#define AROS_LC3NR AROS_LC3
+#define AROS_LC4NR AROS_LC4
+#define AROS_LC5NR AROS_LC5
+#define AROS_LC6NR AROS_LC6
+#define AROS_LC7NR AROS_LC7
+#define AROS_LC8NR AROS_LC8
+#define AROS_LC9NR AROS_LC9
+#define AROS_LC10NR AROS_LC10
+#define AROS_LC11NR AROS_LC11
+#define AROS_LC12NR AROS_LC12
+#define AROS_LC13NR AROS_LC13
+#define AROS_LC14NR AROS_LC14
+#define AROS_LC15NR AROS_LC15
+
 
 /* Special calls: Call a library function without the name just by the ADDRESS */
 #ifndef AROS_CALL0
 #define AROS_CALL0(returntype,address,basetype,basename) \
     (((__AROS_LC_PREFIX returntype(*)(__AROS_LP_BASE(basetype,basename)))\
     (void *)(address))(basename))
+#define AROS_CALL0NR AROS_CALL0
 #endif
 
 #ifndef AROS_CALL1
@@ -778,6 +800,7 @@ typedef unsigned int (*ULONG_FUNC)();
     (void *)(a))(\
     __AROS_LCA(a1),\
     bn))
+#define AROS_CALL1NR AROS_CALL1
 #endif
 
 #ifndef AROS_CALL2
@@ -790,7 +813,9 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     bn))
+#define AROS_CALL2NR AROS_CALL2
 #endif
+
 #ifndef AROS_CALL3
 #define AROS_CALL3(t,a,a1,a2,a3,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
@@ -803,7 +828,9 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
     bn))
+#define AROS_CALL3NR AROS_CALL3
 #endif
+
 #ifndef AROS_CALL4
 #define AROS_CALL4(t,a,a1,a2,a3,a4,bt,bn) \
     (((__AROS_LC_PREFIX t(*)(\
@@ -818,6 +845,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a3),\
     __AROS_LCA(a4),\
     bn))
+#define AROS_CALL4NR AROS_CALL4
 #endif
 
 #ifndef AROS_CALL5
@@ -836,6 +864,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a4),\
     __AROS_LCA(a5),\
     bn))
+#define AROS_CALL5NR AROS_CALL5
 #endif
 
 #ifndef AROS_CALL6
@@ -856,6 +885,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a5),\
     __AROS_LCA(a6),\
     bn))
+#define AROS_CALL6NR AROS_CALL6
 #endif
 
 #ifndef AROS_CALL7
@@ -878,6 +908,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a6),\
     __AROS_LCA(a7),\
     bn))
+#define AROS_CALL7NR AROS_CALL7
 #endif
 
 #ifndef AROS_CALL8
@@ -902,6 +933,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a7),\
     __AROS_LCA(a8),\
     bn))
+#define AROS_CALL8NR AROS_CALL8
 #endif
 
 #ifndef AROS_CALL9
@@ -928,6 +960,7 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a8),\
     __AROS_LCA(a9),\
     bn))
+#define AROS_CALL9NR AROS_CALL9
 #endif
 
 #ifndef AROS_CALL10
@@ -956,7 +989,9 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a9),\
     __AROS_LCA(a10),\
     bn))
+#define AROS_CALL10NR AROS_CALL10
 #endif
+
 /* Special calls: Call a library function without the name just by the OFFSET */
 
 #ifndef AROS_LVO_CALL0
@@ -965,8 +1000,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL0NR
-#define AROS_LVO_CALL0NR(basetype,basename,offset,system) \
-    AROS_CALL0(void,__AROS_GETVECADDR(basename,offset),basetype,basename)
+#define AROS_LVO_CALL0NR(returntype,basetype,basename,offset,system) \
+    AROS_CALL0NR(returntype,__AROS_GETVECADDR(basename,offset),basetype,basename)
 #endif
 
 #ifndef AROS_LVO_CALL1
@@ -975,8 +1010,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL1NR
-#define AROS_LVO_CALL1NR(a1,bt,bn,o,s) \
-    AROS_CALL1(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),bt,bn)
+#define AROS_LVO_CALL1NR(t,a1,bt,bn,o,s) \
+    AROS_CALL1NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL2
@@ -985,8 +1020,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL2NR
-#define AROS_LVO_CALL2NR(a1,a2,bt,bn,o,s) \
-    AROS_CALL2(void,AROS_LCA(a1),AROS_LCA(a2),bt,bn)
+#define AROS_LVO_CALL2NR(t,a1,a2,bt,bn,o,s) \
+    AROS_CALL2NR(t,AROS_LCA(a1),AROS_LCA(a2),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL3
@@ -995,8 +1030,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL3NR
-#define AROS_LVO_CALL3NR(a1,a2,a3,bt,bn,o,s) \
-    AROS_CALL3(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),bt,bn)
+#define AROS_LVO_CALL3NR(t,a1,a2,a3,bt,bn,o,s) \
+    AROS_CALL3NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL4
@@ -1005,8 +1040,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL4NR
-#define AROS_LVO_CALL4NR(a1,a2,a3,a4,bt,bn,o,s) \
-    AROS_CALL4(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),bt,bn)
+#define AROS_LVO_CALL4NR(t,a1,a2,a3,a4,bt,bn,o,s) \
+    AROS_CALL4NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL5
@@ -1015,8 +1050,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL5NR
-#define AROS_LVO_CALL5NR(a1,a2,a3,a4,a5,bt,bn,o,s) \
-    AROS_CALL5(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),bt,bn)
+#define AROS_LVO_CALL5NR(t,a1,a2,a3,a4,a5,bt,bn,o,s) \
+    AROS_CALL5NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL6
@@ -1025,8 +1060,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL6NR
-#define AROS_LVO_CALL6NR(a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
-    AROS_CALL6(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),bt,bn)
+#define AROS_LVO_CALL6NR(t,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+    AROS_CALL6NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL7
@@ -1035,8 +1070,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL7NR
-#define AROS_LVO_CALL7NR(a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
-    AROS_CALL7(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),bt,bn)
+#define AROS_LVO_CALL7NR(t,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+    AROS_CALL7NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL8
@@ -1045,8 +1080,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL8NR
-#define AROS_LVO_CALL8NR(a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
-    AROS_CALL8(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),bt,bn)
+#define AROS_LVO_CALL8NR(t,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+    AROS_CALL8NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL9
@@ -1055,8 +1090,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL9NR
-#define AROS_LVO_CALL9NR(a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
-    AROS_CALL9(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),bt,bn)
+#define AROS_LVO_CALL9NR(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    AROS_CALL9NR(t,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),bt,bn)
 #endif
 
 #ifndef AROS_LVO_CALL10
@@ -1065,8 +1100,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif
 
 #ifndef AROS_LVO_CALL10NR
-#define AROS_LVO_CALL10NR(a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
-    AROS_CALL10(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),AROS_LCA(a10),bt,bn)
+#define AROS_LVO_CALL10NR(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    AROS_CALL10NR(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),AROS_LCA(a10),bt,bn)
 #endif
 #endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) && !defined(__AROS_CPU_SPECIFIC_LIBCALLS) */
 
