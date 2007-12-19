@@ -1090,23 +1090,6 @@ typedef unsigned int (*ULONG_FUNC)();
 #   define AROS_LP13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
 #   define AROS_LP14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
 #   define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
-
-#   define AROS_LP0I(t,n,bt,bn,o,s)
-#   define AROS_LP1I(t,n,a1,bt,bn,o,s)
-#   define AROS_LP2I(t,n,a1,a2,bt,bn,o,s)
-#   define AROS_LP3I(t,n,a1,a2,a3,bt,bn,o,s)
-#   define AROS_LP4I(t,n,a1,a2,a3,a4,bt,bn,o,s)
-#   define AROS_LP5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
-#   define AROS_LP6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
-#   define AROS_LP7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
-#   define AROS_LP8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
-#   define AROS_LP9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
-#   define AROS_LP10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
-#   define AROS_LP11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
-#   define AROS_LP12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
-#   define AROS_LP13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
-#   define AROS_LP14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
-#   define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
 #else
 /* Prototypes for library functions which need the libbase */
 #   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
@@ -1146,40 +1129,6 @@ typedef unsigned int (*ULONG_FUNC)();
 	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,__AROS_LP_BASE(bt,bn))
 #   define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
 	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,__AROS_LP_BASE(bt,bn))
-
-/* Prototypes for library functions which don't need the libbase */
-#   define AROS_LP0I(t,n,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (void)
-#   define AROS_LP1I(t,n,a1,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1)
-#   define AROS_LP2I(t,n,a1,a2,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1,a2)
-#   define AROS_LP3I(t,n,a1,a2,a3,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1,a2,a3)
-#   define AROS_LP4I(t,n,a1,a2,a3,a4,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1,a2,a3,a4)
-#   define AROS_LP5I(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5)
-#   define AROS_LP6I(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6)
-#   define AROS_LP7I(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7)
-#   define AROS_LP8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8)
-#   define AROS_LP9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9)
-#   define AROS_LP10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10)
-#   define AROS_LP11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11)
-#   define AROS_LP12I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
-#   define AROS_LP13I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13)
-#   define AROS_LP14I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14)
-#   define AROS_LP15I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
-	__AROS_LP_PREFIX t AROS_SLIB_ENTRY(n,s) (a1, a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15)
 #endif
 
 #ifndef __AROS_CPU_SPECIFIC_LIBCALLS
