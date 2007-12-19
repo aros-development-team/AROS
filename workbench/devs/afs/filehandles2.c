@@ -129,7 +129,7 @@ struct BlockCache *blockbuffer;
 	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
 	if (ah->volume->state != ID_VALIDATED)
 		return ERROR_DISK_WRITE_PROTECTED;
-	if (StrLen(comment) >= MAXCOMMENTLENGTH)
+	if (strlen(comment) >= MAXCOMMENTLENGTH)
 		return ERROR_COMMENT_TOO_BIG;
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
@@ -374,7 +374,7 @@ UBYTE buffer[256];
 		end++;
 	CopyMem(name, buffer, end-name);
 	buffer[end-name] = 0;
-	len = StrLen(name)+name-end;
+	len = strlen(name)+name-end;
 	CopyMem(end, entryname, len);	/* skip backslash or colon */
 	entryname[len] = 0;
 	return findBlock(afsbase, ah, buffer, &block);
