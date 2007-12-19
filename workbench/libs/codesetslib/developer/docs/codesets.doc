@@ -6,6 +6,7 @@ codesets.library/CodesetsFindA
 codesets.library/CodesetsFindBestA
 codesets.library/CodesetsConvertStrA
 codesets.library/CodesetsFreeA
+codesets.library/CodesetsFreeVecPooledA
 codesets.library/CodesetsSetDefaultA
 codesets.library/CodesetsListCreateA
 codesets.library/CodesetsListDeleteA
@@ -491,6 +492,58 @@ codesets.library/CodesetsEncodeB64A
     codesets.library/CodesetsSupportedA
     codesets.library/CodesetsConvertStrA
 
+codesets.library/CodesetsFreeVecPooledA
+
+   NAME
+    CodesetsFreeVecPooledA - frees objects previously allocated
+                             by methods supporting CSA_Pool
+
+   SYNOPSIS
+    CodesetsFreeVecPooledA(pool, obj, attrs)
+                           A0    A1   A2
+    void CodesetsFreeVecPooledA(APTR, APTR, struct TagItem *);
+
+    CodesetsFreeVecPooled(pool, obj, tag1, ...);
+                          A0    A1   A2
+    void CodesetsFreeVecPooled(APTR, APTR, Tag, ...);
+
+   FUNCTION
+    Frees object previously allocated by codesets.library via a
+    private memory pool which was previously used on codesets
+    functions via the CSA_Pool tag.
+
+   INPUTS
+    pool - pointer to the private memory pool
+    obj - the object to free
+    attrs - a list of additional tag items. Valid tags are:
+
+      CSA_PoolSem (struct SignalSemaphore *)
+        A semaphore to lock when using CSA_Pool
+
+   RESULT
+    no result
+
+   EXAMPLE
+
+    -- cut here --
+    UTF8   *utf8;
+    STRPTR str;
+    APTR   pool;
+
+    if((utf8 = CodesetsUTF8Create(CSA_Source,     str,
+                                  CSA_Pool,       pool,
+                                  TAG_DONE)))
+    {
+        ...
+
+        CodesetsFreeVecPooledA(pool,utf8,NULL);
+    }
+    -- cut here --
+
+   SEE ALSO
+    codesets.library/CodesetsUTF8CreateA
+    codesets.library/CodesetsUTF8ToStrA
+
 codesets.library/CodesetsSetDefaultA
 
    NAME
@@ -873,12 +926,13 @@ codesets.library/CodesetsEncodeB64A
         Default: TRUE
 
       CSA_Pool (APTR)
-        If a new destination buffer is to be allocated (it happens
+        If a new destination buffer needs to be allocated (it happens
         if and only if CSA_DestHook is not used, CSA_AllocIfNeeded
-        is TRUE, CSA_Dest buffer is too small for the utf8) this pool
-        is used. The result is to be freed via FreePooled(pool, utf8).
-        If it is not supplied, the destination buffer is allocated
-        from the internal memory pool and must be freed with
+        is TRUE, or if CSA_Dest buffer is too small for the utf8) this
+        pool is used. The result must be freed via
+        CodesetsFreeVecPooledA(pool, utf8, NULL).
+        If CSA_Pool is not supplied, the destination buffer is allocated
+        from the internal memory pool and must be freed via
         CodesetsFreeA(utf8, NULL).
 
       CSA_PoolSem (struct SignalSemaphore *)
@@ -912,13 +966,13 @@ codesets.library/CodesetsEncodeB64A
     STRPTR str;
     APTR   pool;
 
-    if((utf8 = CodesetsUTF8Create(CSA_Source, str,
-                                  CSA_Pool,   pool,
+    if((utf8 = CodesetsUTF8Create(CSA_Source,     str,
+                                  CSA_Pool,       pool,
                                   TAG_DONE)))
     {
         ...
 
-        FreeVecPooled(pool,utf,NULL);
+        CodesetsFreeVecPooledA(pool,utf8,NULL);
     }
     -- cut here --
 
@@ -930,14 +984,14 @@ codesets.library/CodesetsEncodeB64A
     APTR   pool;
     struct SignalSemaphore *sem;
 
-    if((utf8 = CodesetsUTF8Create(CSA_Source,  str,
-                                  CSA_Pool,    pool,
-                                  CSA_PoolSem, sem,
+    if((utf8 = CodesetsUTF8Create(CSA_Source,     str,
+                                  CSA_Pool,       pool,
+                                  CSA_PoolSem,    sem,
                                   TAG_DONE)))
     {
         ...
 
-        FreeVecPooled(pool,utf,NULL);
+        CodesetsFreeVecPooledA(pool,utf8,NULL);
     }
     -- cut here --
 
@@ -1103,12 +1157,13 @@ codesets.library/CodesetsEncodeB64A
         Default: TRUE
 
       CSA_Pool (APTR)
-        If a new destination buffer is to be allocated (it happens
+        If a new destination buffer needs to be allocated (it happens
         if and only if CSA_DestHook is not used, CSA_AllocIfNeeded
-        is TRUE, CSA_Dest buffer is too small for the string) this pool
-        is used. The result is to be freed via FreePooled(pool, string).
-        If it is not supplied, the destination buffer is allocated
-        from the internal memory pool and must be freed with
+        is TRUE, or if CSA_Dest buffer is too small for the utf8) this
+        pool is used. The result must be freed via
+        CodesetsFreeVecPooledA(pool, string, NULL).
+        If CSA_Pool is not supplied, the destination buffer is allocated
+        from the internal memory pool and must be freed via
         CodesetsFreeA(string, NULL).
 
       CSA_PoolSem (struct SignalSemaphore *)
