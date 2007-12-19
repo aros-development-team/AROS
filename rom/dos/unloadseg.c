@@ -62,14 +62,11 @@ extern void Exec_FreeMem();
         {
             if (segnode->seglist == seglist)
             {
-		/* use the same free function as loadseg */
-		void (*MyFree)(void *, ULONG, struct ExecBase *);
-		MyFree = __AROS_GETVECADDR(SysBase,35);
-
+		/* use the same free function as loadseg ! */
 		struct seginfo *si;
-		ForeachNode(&segnode->seginfos, si)
+		while ((si = (struct seginfo *)REMHEAD(&segnode->seginfos)))
 		{
-		    MyFree(si, sizeof(struct seginfo), SysBase);
+		    FreeMem(si, sizeof(struct seginfo));
 		}
 
                 REMOVE(segnode);
