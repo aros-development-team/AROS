@@ -5,9 +5,20 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+#### 6.5 RELEASE #########################################################
+
+2007-12-18  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: preparations for upcoming v6.5 release.
+  * docs: added the missing documentation about the CodesetsFreeVecPooled()
+    function and corrected the examples accordingly. This should fix
+    fix bug #1823214.
+
 2007-11-25  Matthias Rustler <mrustler@gmx.de>
 
-  * AROS port
+  * misc: ported sources to AROS. The final build is currently only
+    available with the AROS project itself and this is still work in
+    progress.
 
 2007-09-05  Thore Böckelmann <tboeckel@gmx.de>
 

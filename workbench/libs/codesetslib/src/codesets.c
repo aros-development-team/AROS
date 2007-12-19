@@ -5077,10 +5077,9 @@ CodesetsUTF8CreateA(REG(a0, struct TagItem *attrs))
           if((pool = (APTR)GetTagData(CSA_Pool, 0, attrs)))
           {
             if((sem = (struct SignalSemaphore *)GetTagData(CSA_PoolSem, 0, attrs)))
-            {
               ObtainSemaphore(sem);
-            }
 
+            // allocate the destination buffer
             dest = allocVecPooled(pool,len+1);
 
             if(sem)
