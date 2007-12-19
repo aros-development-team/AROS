@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -94,7 +94,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 	          ((struct Process *)FindTask(NULL))->pr_TaskNum,
 		  ds.ds_Days, ds.ds_Minute, ds.ds_Tick);
 
-	tmpfile = Open(tmpname, FMF_WRITE|FMF_READ|FMF_CREATE|FMF_CLEAR);
+	tmpfile = Open(tmpname, MODE_NEWFILE);
 
 	if (tmpfile)
 	{
