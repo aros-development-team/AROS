@@ -1,11 +1,11 @@
 #!/bin/sh
 
-if [ ! -f /usr/include/asm/sigcontext.h ] ; then
-    echo "Could not find asm/sigcontext.h"
+if [ ! -f /usr/include/bits/sigcontext.h ] ; then
+    echo "Could not find bits/sigcontext.h"
     exit 20
 fi
 
-type=`${CC} -E /usr/include/asm/sigcontext.h | grep "^struct sigcontext" | sed 's/{//'`
+type=`${CC} -D_SIGNAL_H -E /usr/include/bits/sigcontext.h | grep "^struct sigcontext" | sed 's/{//'`
 
 handler=__sighandler_t
 if [ ${CPU} = "m68k" ]; then
