@@ -4,7 +4,7 @@
     $Id$
 */
 
-#define	DEBUG_BUILDEASYREQUEST(x)	x;
+#define	DEBUG_BUILDEASYREQUEST(x)	D(x);
 
 /**********************************************************************************************/
 
@@ -23,6 +23,7 @@
 #include <graphics/rastport.h>
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
+#include <aros/debug.h>
 #include "intuition_intern.h"
 
 #define OUTERSPACING_X		4
