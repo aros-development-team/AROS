@@ -91,7 +91,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     ULONG origRequirements = requirements;
 #endif
 
-    D(bug("Call AllocMem (%d, %08lx)\n", byteSize, requirements));
+    D(if (SysBase->DebugAROSBase))
+    D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements));
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
@@ -220,7 +221,14 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
     }
 #endif /* AROS_MUNGWALL_DEBUG */
 
+#if DEBUG
+    if (SysBase->DebugAROSBase)
+	ReturnPtr ("AllocMem", APTR, res)
+    else
+	return res;
+#else
     ReturnPtr ("AllocMem", APTR, res);
+#endif
     
     AROS_LIBFUNC_EXIT
     
