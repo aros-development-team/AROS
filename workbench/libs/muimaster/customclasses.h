@@ -31,13 +31,13 @@ int name ## _Initialize(void)                                         \
     name ## _CLASS = MUI_CreateCustomClass                            \
     (                                                                 \
         base, parent_name, parent_class,                              \
-        sizeof(struct name ## _DATA), name ## _Dispatcher             \
+        sizeof(struct name ## _DATA), (APTR) name ## _Dispatcher      \
     );                                                                \
                                                                       \
     if (!name ## _CLASS)                                              \
     {                                                                 \
         __showerror                                                   \
-	(                                                             \
+	( (char *)                                                    \
 	    "Could not create Zune custom class `" #name "'.", NULL   \
 	);                                                            \
                                                                       \
