@@ -807,7 +807,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 
 			if((SegList = InternalLoadSeg((BPTR)sv, NULL,
 						      (LONG_FUNC)FunctionArray,
-						      &DefaultStack, NULL)))
+						      &DefaultStack)))
 			{
 			    cdt->SegList = SegList;
 			    cdt->Function = (APTR)((((ULONG)SegList) << 2) + 4);
@@ -1000,7 +1000,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 					    HookBufSize = cdt->DTCDSize;
 					    HookPosition = 0;
 
-					    if((SegList = InternalLoadSeg((BPTR)sv, NULL, (LONG_FUNC)FunctionArray, &DefaultStack, NULL)))
+					    if((SegList = InternalLoadSeg((BPTR)sv, NULL, (LONG_FUNC)FunctionArray, &DefaultStack)))
 					    {
 						cdt->SegList = SegList;
 						cdt->Function = (APTR)((((ULONG)SegList)<<2)+4);

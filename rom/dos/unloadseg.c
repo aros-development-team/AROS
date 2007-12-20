@@ -11,8 +11,6 @@
 #include <exec/types.h>
 #include "dos_intern.h"
 
-extern void Exec_FreeMem();
-
 /*****************************************************************************
 
     NAME */
@@ -52,30 +50,6 @@ extern void Exec_FreeMem();
 
     if (seglist)
     {
-#if AROS_MODULES_DEBUG
-        extern struct MinList debug_seglist;
-        extern struct MinList free_debug_segnodes;
-        struct debug_segnode *segnode;
-
-    	Forbid();
-        ForeachNode(&debug_seglist, segnode)
-        {
-            if (segnode->seglist == seglist)
-            {
-		/* use the same free function as loadseg ! */
-		struct seginfo *si;
-		while ((si = (struct seginfo *)REMHEAD(&segnode->seginfos)))
-		{
-		    FreeMem(si, sizeof(struct seginfo));
-		}
-
-                REMOVE(segnode);
-		ADDHEAD(&free_debug_segnodes, segnode);
-                break;
-            }
-        }
-	Permit();
-#endif
         return InternalUnLoadSeg(seglist, __AROS_GETVECADDR(SysBase, 35));
     }
 
