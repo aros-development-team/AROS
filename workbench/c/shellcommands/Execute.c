@@ -56,7 +56,8 @@
 
 #include <aros/shcommands.h>
 
-
+#define DEBUG 1
+#include <aros/debug.h>
 
 AROS_SH1(Execute, 41.1,
 AROS_SHA(STRPTR, ,NAME,/A,NULL))
@@ -87,14 +88,18 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     {
 	struct DateStamp ds;
 	BYTE tmpname[2+3+10+10+2+2+1];
-	BPTR tmpfile;
+	BPTR tmpfile = NULL;
+        int count = 0;
+
 	DateStamp(&ds);
 
-	__sprintf(tmpname, "T:Tmp%lu%lu%lu%lu",
-	          ((struct Process *)FindTask(NULL))->pr_TaskNum,
-		  ds.ds_Days, ds.ds_Minute, ds.ds_Tick);
-
-	tmpfile = Open(tmpname, MODE_NEWFILE);
+        do {
+            count++;
+            __sprintf(tmpname, "T:Tmp%lu%lu%lu%lu%d",
+                      ((struct Process *)FindTask(NULL))->pr_TaskNum,
+                      ds.ds_Days, ds.ds_Minute, ds.ds_Tick, count);
+	    tmpfile = Open(tmpname, MODE_NEWFILE);
+        } while (tmpfile == NULL && IoErr() == ERROR_OBJECT_IN_USE);
 
 	if (tmpfile)
 	{
