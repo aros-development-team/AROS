@@ -56,9 +56,6 @@
 
 #include <aros/shcommands.h>
 
-#define DEBUG 1
-#include <aros/debug.h>
-
 AROS_SH1(Execute, 41.1,
 AROS_SHA(STRPTR, ,NAME,/A,NULL))
 {
