@@ -428,7 +428,7 @@ int main(int argc, char **argv)
     LONG  returnid = 0;
     ULONG protection;
     char stack[16];
-    char deftool[MAX_PATH_LEN] ;
+    char deftool[MAX_PATH_LEN];
     char comment[MAXCOMMENTLENGTH];
     char size[10];
     char date[LEN_DATSTRING];
@@ -555,7 +555,10 @@ D(bug("[WBInfo] file has icon\n"));
         type = (char *) typeNames[icon->do_Type];
 D(bug("[WBInfo] icon type is: %s\n", type));
         sprintf(stack, "%ld", icon->do_StackSize);
-        if (icon->do_DefaultTool) sprintf(deftool, "%s", icon->do_DefaultTool);
+        if (icon->do_DefaultTool)
+            sprintf(deftool, "%s", icon->do_DefaultTool);
+        else
+            *deftool = '\0';
     } else {
         FreeVec(ap);
         PrintFault(ERROR_OBJECT_WRONG_TYPE, argv[0]);
