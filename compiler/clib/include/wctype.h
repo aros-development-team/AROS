@@ -11,7 +11,6 @@
 #include <sys/_types.h>
 
 #define __need_wchar_t
-#define __need_wint_t
 #include <stddef.h>
 
 #ifndef __AROS_WINT_T_DECLARED
