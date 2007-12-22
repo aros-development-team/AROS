@@ -44,6 +44,7 @@ typedef	struct _project				/* MAIN PROJECT STRUCTURE */
 	WORD    labwid, labsize;			/* Label width in pixels and size in bytes */
 
 	STRPTR  path, name;					/* Access path */
+	LONG    protection;					/* protection flags */
 	UBYTE   state;							/* See below */
 	LINE   *show,*the_line;				/* First shown & first line */
 	LINE   *edited;						/* Line being edited */
