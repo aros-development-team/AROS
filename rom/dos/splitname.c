@@ -28,7 +28,7 @@
 	AROS_LH5(LONG, SplitName,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(ULONG , seperator, D2),
 	AROS_LHA(STRPTR, buf, D3),
 	AROS_LHA(LONG  , oldpos, D4),
