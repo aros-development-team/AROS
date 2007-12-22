@@ -42,11 +42,6 @@ struct NewWindow NewSWin =						/* Main window information */
 };
 
 WORD  SWinZoom[4];
-struct TagItem SWinTags[] = {
-	{WA_Zoom,SWinZoom},
-	{WA_NewLookMenus,TRUE},
-	TAG_DONE
-};
 
 UBYTE SearchStr[60], SLen=0;		/* Saved search and replace string */
 UBYTE ReplaceStr[60],RLen=0;
@@ -104,6 +99,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		TAG_DONE
 	};
 	WORD Wid[6];
+	WORD innerWidth, innerHeight;
 
 	/** If window is already opened, but isn't to the required type **/
 	if( (rep ? 0:1) == replace )
@@ -126,8 +122,8 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 
 	/** Compute optimal window width **/
 	{
-		register WORD len,sum,*wid;
-		register UBYTE **str;
+		WORD len,sum,*wid;
+		UBYTE **str;
 		for(str=SWinTxt+(replace ? 6:8), sum=0, wid=Wid; *str; str++)
 		{
 			len=TextLength(&RPT,*str,strlen(*str))+20;
@@ -140,14 +136,14 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 			len = sum*4+50;
 			Wid[0] = sum;
 		} else len = sum + 70;
-		NewSWin.Width = len;
+		innerWidth = len;
 	}
 	/* Window too large ? */
-	if(NewSWin.Width > Scr->Width) NewSWin.Width = Scr->Width;
-	NewSWin.Height   = Scr->BarHeight + (replace ?
+	if(innerWidth > Scr->Width) innerWidth = Scr->Width;
+	innerHeight = (replace ?
 		prefs.scrfont->tf_YSize * 4 + 40 :
 		prefs.scrfont->tf_YSize * 3 + 32);
-	NewSWin.LeftEdge = (Scr->Width - NewSWin.Width) / 2;
+	NewSWin.LeftEdge = (Scr->Width - innerWidth) / 2;
 	NewSWin.Screen   = Scr;
 	NewSWin.Title    = SWinTxt[replace ? 1 : 0];
 
@@ -158,11 +154,16 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 	SWinZoom[1] = 0;
 
 	/** Let the cursor visible **/
-	if( (NewSWin.TopEdge = Wnd->TopEdge + p->ycurs + 10)+NewSWin.Height > Scr->Height )
+	if( (NewSWin.TopEdge = Wnd->TopEdge + p->ycurs + 10)+innerHeight > Scr->Height )
 		NewSWin.TopEdge = 50;
 
 	/** Setting up GUI **/
-	if(NULL != (swin = (APTR) OpenWindowTagList(&NewSWin, SWinTags)))
+	if(NULL != (swin = (APTR) OpenWindowTags(&NewSWin,
+		WA_Zoom, SWinZoom,
+		WA_NewLookMenus,TRUE,
+		WA_InnerWidth, innerWidth,
+		WA_InnerHeight, innerHeight,
+		TAG_DONE)))
 	{
 		UWORD I;
 		rep = search = sgads = NULL;
@@ -180,7 +181,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		    (I              = TextLength(&RPT,SWinTxt[3],strlen(SWinTxt[3]))) )
 			NG.ng_LeftEdge = I;
 		NG.ng_TopEdge    = swin->BorderTop+5;
-		NG.ng_Width      = swin->Width - 10 - (NG.ng_LeftEdge += 20);
+		NG.ng_Width      = swin->Width-swin->BorderLeft-swin->BorderRight-(NG.ng_LeftEdge += 20);
 		NG.ng_Height     = prefs.scrfont->tf_YSize+6;
 		NG.ng_Flags      = PLACETEXT_LEFT;
 		NG.ng_TextAttr   = &prefs.attrscr;
@@ -219,14 +220,14 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 
 		/** Check box gadgets **/
 		NG.ng_TopEdge += NG.ng_Height+4;
-		for(NG.ng_LeftEdge = 10, I=4; I<6; I++)
+		for(NG.ng_LeftEdge = swin->BorderLeft + 10, I=4; I<6; I++)
 		{
 			NG.ng_Flags      = (I&1 ? PLACETEXT_LEFT : PLACETEXT_RIGHT);
 			NG.ng_GadgetText = SWinTxt[I];
 			NG.ng_GadgetID   = I;
 			SGadTags[1]      = (&prefs.matchcase)[I-4];
 			sg = (void *) CreateGadgetA(CHECKBOX_KIND, sg, &NG, (struct TagItem *)SGadTags);
-			sg->LeftEdge     = (I&1 ? swin->Width-10-sg->Width : 10);
+			sg->LeftEdge     = (I&1 ? swin->Width-swin->BorderRight-10-sg->Width : swin->BorderLeft + 10);
 			if(I&1) NG.ng_TopEdge += NG.ng_Height;
 		}
 
@@ -235,7 +236,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		NG.ng_Flags    = PLACETEXT_IN;
 		NG.ng_Height  -= 2;
 		if(replace == 0) I+=2;
-		for(NG.ng_LeftEdge = 10; I<12; I++)
+		for(NG.ng_LeftEdge = swin->BorderLeft + 10; I<12; I++)
 		{
 			NG.ng_Width = (replace ? Wid[I-6] : Wid[0]);
 			NG.ng_GadgetText = SWinTxt[I];

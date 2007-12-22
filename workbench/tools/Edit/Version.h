@@ -1,7 +1,7 @@
 /*** Constants identifying the prog: ***/
 #define	APPNAME		"JanoEditor"
-#define	DATE			"nov 29, 2001"
-#define	VERSION		"v1.01"
+#define	DATE			"29.11.2001"
+#define	VERSION		"1.1"
 
 /*** Processor target type ***/
 #if defined(__GNUC__) || defined(__SASC__)
@@ -23,6 +23,11 @@
 
 #endif
 
+#ifdef __AROS__
+#define TARGET "AROS"
+#else
 #define	TARGET		"CBM-AmigaDOS-" ARCH
+#endif
+
 #define	SVERID		APPNAME " " VERSION " http://perso.wanadoo.fr/cyrille.guillaume/"
-#define	SVER			"$VER: " APPNAME " " VERSION " on " DATE " for " TARGET
+#define	SVER			"$VER: " APPNAME " " VERSION " (" DATE ") for " TARGET
