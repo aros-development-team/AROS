@@ -67,7 +67,7 @@ BYTE get_full_path( STRPTR filename, STRPTR *dest )
 	/* Be sure the locked object is of the desired type */
 	if(lock != NULL)
 	{
-		register struct FileInfoBlock *fib;
+		struct FileInfoBlock *fib;
 		if((fib = (void *) AllocVec(sizeof(*fib), MEMF_PUBLIC)) && Examine(lock, fib))
 		{
 			/* That's particularly nasty, but prevent user of doing mistakes */
@@ -110,7 +110,7 @@ void split_path(AskArgs *src, STRPTR *dir, STRPTR *file)
 	if( src->dir != NULL )
 	{
 		/* TODO cleanup */
-		register UWORD Len = src->file - src->dir;
+		UWORD Len = src->file - src->dir;
 		if(dir != NULL) {
 			if(Len >= sizeof(BufTxt)) Len = sizeof(BufTxt)-1;
 			CopyMem(src->dir, BufTxt, Len); BufTxt[Len] = '\0';
@@ -209,7 +209,7 @@ char myFWrite(BPTR file, STRPTR buf, ULONG size)
 
 char myFClose( BPTR file )
 {
-	register char retcode = 1;
+	char retcode = 1;
 	/* Flush buffer before closing */
 	if(buffer) {
 		/* Everything must be controlled */
@@ -235,11 +235,11 @@ char myFClose( BPTR file )
 #define	FClose(x)			myFClose(x)
 
 /*** Write the lines svg in the file `name', returns 1 if all's OK ***/
-BYTE save_file(STRPTR name, LINE *svg, unsigned char eol)
+BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 {
-	register STRPTR buf;
-	register LONG   i;
-	register BYTE   szeol = szEOL[eol];
+	STRPTR buf;
+	LONG   i;
+	BYTE   szeol = szEOL[eol];
 	LINE *ln; BPTR fh;
 
 	BusyWindow(Wnd);
@@ -278,6 +278,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol)
 	else
 		ThrowDOSError(Wnd, name);
 
+	SetProtection(name, protection);
 	WakeUp(Wnd);
 	return 1;
 }
@@ -323,16 +324,18 @@ WORD read_file( LoadFileArgs *args, ULONG *len )
 
 	args->buffer = NULL;
 	args->lines  = NULL;
+	args->protection = 0;
 	*len         = 0;
 
 	if( ( fh = Open(args->filename, MODE_OLDFILE) ) )
 	{
 		/* First: Get file size */
-		register struct FileInfoBlock *fib;
+		struct FileInfoBlock *fib;
 		if( ( fib = (APTR) AllocDosObject( DOS_FIB, NULL ) ) )
 		{
 			if( ExamineFH(fh, fib) )
 			{
+				args->protection = fib->fib_Protection;
 				/* Then reads it in one large buffer */
 				if( (*len = fib->fib_Size) > 0 )
 				{
@@ -368,8 +371,8 @@ WORD load_file( LoadFileArgs *args )
 	/* We have read the file in a buffer: create the lines */
 	if( RETURN_OK == (err = read_file( args, &len )) )
 	{
-		register STRPTR p, q; char eol = '\n';
-		register ULONG  i;
+		STRPTR p, q; char eol = '\n';
+		ULONG  i;
 
 		args->eol = AMIGA_EOL;
 		/* Search in the very first line, the End Of Line type */

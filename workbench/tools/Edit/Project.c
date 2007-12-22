@@ -47,6 +47,7 @@ Project new_project(Project ins, PREFS *prefs)
 			new->max_lines  = 1;
 			new->undo.prj   = new->redo.prj = (APTR) new;
 			new->redo.rbtype = 1;
+			new->protection = 0;
 			set_project_name(new, NULL);
 		}
 		else FreeVec(new),new = NULL;
@@ -85,6 +86,7 @@ WORD load_in_project( Project p, STRPTR path )
 		p->buffer    = args.buffer;
 		p->max_lines = args.nblines;
 		p->eol       = args.eol;
+		p->protection= args.protection &= ~FIBF_ARCHIVE;
 	}
 	else ThrowError(Wnd, ErrMsg(err));
 
@@ -222,7 +224,7 @@ char save_project(Project p, char refresh, char ask)
 		SetTitle(Wnd, p->path),
 		update_panel_name( p );
 
-	return save_file(p->path, p->the_line, p->eol);
+	return save_file(p->path, p->the_line, p->eol, p->protection);
 }
 
 /*** Save all modified projects ***/

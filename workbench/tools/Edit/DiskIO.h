@@ -19,11 +19,12 @@ typedef	struct
 	LINE  *lines;
 	ULONG  nblines;
 	char   eol;
+	LONG protection;
 }	LoadFileArgs;
 
 WORD load_file     ( LoadFileArgs * );
 WORD read_file     ( LoadFileArgs *, ULONG * );
-BYTE save_file     ( STRPTR, LINE *, unsigned char eol );
+BYTE save_file     ( STRPTR, LINE *, unsigned char eol, LONG protection );
 BYTE get_full_path ( STRPTR, STRPTR * );
 
 #ifndef	INTUITION_INTUITION_H
