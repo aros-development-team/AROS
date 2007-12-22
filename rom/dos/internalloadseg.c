@@ -1,4 +1,3 @@
-
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
@@ -52,9 +51,9 @@ struct MinList debug_seglist, free_debug_segnodes;
     INPUTS
         fh            : Filehandle to load from
         table         : ignored
-        functionarray : Array of function to be used fro read, alloc and free
-           FuncTable[0] -> bytes  = ReadFunc(readhandle, buffer, length),DOSBase
-                           D0                D1          A0      D0      A6
+        functionarray : array of functions to be used for read, alloc and free
+           FuncTable[0] -> bytes  = ReadFunc(readhandle, buffer, length), DOSBase
+                           D0                D1          A0      D0       A6
            FuncTable[1] -> Memory = AllocFunc(size,flags), ExecBase
                            D0                 D0   D1      A6
            FuncTable[2] -> FreeFunc(memory, size), ExecBase
@@ -121,7 +120,7 @@ struct MinList debug_seglist, free_debug_segnodes;
 	{
 	    SetIoErr(0);
 	   
-	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (LONG *)functionarray,
+	    segs = (*funcs[i].func)(fh, MKBADDR(NULL), (SIPTR *)functionarray,
 				    NULL, pseginfos, DOSBase);
             
 	    D(bug("[InternalLoadSeg] %s loading %p as an %s object.\n",

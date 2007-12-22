@@ -21,7 +21,7 @@
 #include "dos_intern.h"
 #include "internalloadseg.h"
 
-static int read_block(BPTR file, APTR buffer, ULONG size, LONG * funcarry, struct DosLibrary * DOSBase);
+static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct DosLibrary * DOSBase);
 
 struct hunk
 {
@@ -439,7 +439,7 @@ end:
 } /* InternalLoadSeg */
 
 
-static int read_block(BPTR file, APTR buffer, ULONG size, LONG * funcarray, struct DosLibrary * DOSBase)
+static int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct DosLibrary * DOSBase)
 {
   LONG subsize;
   UBYTE *buf=(UBYTE *)buffer;

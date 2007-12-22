@@ -184,7 +184,7 @@ static int read_block
     ULONG              offset,
     APTR               buffer,
     ULONG              size,
-    LONG              *funcarray,
+    SIPTR              *funcarray,
     struct DosLibrary *DOSBase
 )
 {
@@ -222,7 +222,7 @@ static void * load_block
     BPTR               file,
     ULONG              offset,
     ULONG              size,
-    LONG              *funcarray,
+    SIPTR              *funcarray,
     struct DosLibrary *DOSBase
 )
 {
@@ -329,7 +329,7 @@ static int load_hunk
     BPTR                file,
     BPTR              **next_hunk_ptr,
     struct pheader     *ph,
-    LONG               *funcarray,
+    SIPTR              *funcarray,
     struct DosLibrary  *DOSBase
 )
 {
@@ -353,7 +353,7 @@ static int load_hunk
         ph->paddr = hunk->data;
 
         /* Link the new hunk with the old next one. This makes it possible
-           handle insertion */
+           to handle insertion */
         hunk->next = BPTR2HUNK(*next_hunk_ptr)->next;
         
         /* Link the previous one with the new one */
@@ -439,7 +439,7 @@ BPTR InternalLoadSeg_ELF_AROS
     /* Iterate over the program headers in order to do some stuff... */
     for (i = 0; i < eh.phnum; i++)
     {
-        /* Load the segment in memory if needed, and make an hunk out of it */
+        /* Load the segment in memory if needed, and make a hunk out of it */
         if (ph[i].type == PT_LOAD)
         {
             if (!load_hunk(file, &next_hunk_ptr, &ph[i], funcarray, DOSBase))
@@ -511,7 +511,7 @@ BPTR InternalLoadSeg_ELF_AROS
 
 error:
 
-    /* There were some errors, deallocate The hunks */
+    /* There were some errors, deallocate the hunks */
     
     InternalUnLoadSeg(hunks, (VOID_FUNC)funcarray[2]);
     hunks = 0;
