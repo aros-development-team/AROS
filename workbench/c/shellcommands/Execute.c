@@ -64,7 +64,6 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     BPTR from;
     struct CommandLineInterface *cli = Cli();
 
-
     if (!cli)
     {
         return RETURN_ERROR;
@@ -84,7 +83,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     if (!cli->cli_Interactive)
     {
 	struct DateStamp ds;
-	BYTE tmpname[2+3+10+10+2+2+1];
+	BYTE tmpname[256];
 	BPTR tmpfile = NULL;
         int count = 0;
 
@@ -134,7 +133,6 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 		return RETURN_FAIL;
 	    }
-
 
 	    Close(cli->cli_CurrentInput);
 	    if (AROS_BSTR_strlen(cli->cli_CommandFile))
