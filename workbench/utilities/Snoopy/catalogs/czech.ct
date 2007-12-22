@@ -1,6 +1,6 @@
-## version $VER: snoopy.catalog 1.0 (23.11.2007)
+## version $VER: Snoopy.catalog 1.1 (20.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -48,11 +48,11 @@ Ignorovat Wanderer/Shell
 ; Ignore Workbench/Shell
 ;
 MSG_SYSTEM_FUNC
-Funkce systému
+Systémové funkce
 ; System Functions
 ;
 MSG_DOS_FUNC
-Funkce AmigaDOS
+Dosové funkce
 ; AmigaDOS Functions
 ;
 MSG_SAVE
@@ -96,7 +96,7 @@ Cíl
 ; Target
 ;
 MSG_OPTION
-Mo¾nost
+Výsledek
 ; Option
 ;
 MSG_OK
@@ -132,15 +132,15 @@ Upozornìní: Tato akce mù¾e skonèit pádem systému,\nproto¾e jiný program u¾ mezit
 ; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
 ;
 MSG_GLOBAL
-Globální
+globální
 ; Global
 ;
 MSG_LOCAL
-Lokální
+lokální
 ; Local
 ;
 MSG_ALIAS
-Alias
+alias
 ; Alias
 ;
 MSG_UNKNOWN
@@ -152,26 +152,26 @@ cokoli
 ; Any
 ;
 MSG_READ
-Ètení
+ètení
 ; Read
 ;
 MSG_WRITE
-Zápis
+zápis
 ; Write
 ;
 MSG_READ_ASK
-Ètení???
+ètení???
 ; Read???
 ;
 MSG_MODIFY
-Zmìna
+zmìna
 ; Modify
 ;
 MSG_VERSION
-Verze %ld
+verze %ld
 ; Version %ld
 ;
 MSG_SIZE
-Velikost %s
+velikost %s
 ; Size %d
 ;
