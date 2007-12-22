@@ -1,10 +1,10 @@
-## version $VER: Wanderer.catalog 1.2 (30.11.2007)
+## version $VER: Wanderer.catalog 1.3 (20.12.2007)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_NAME
-Nastavení systému Wanderer
+Správce souborù (editor Wanderer)
 ; Wanderer Prefs
 ;
 MSG_DESCRIPTION
@@ -56,7 +56,7 @@ Ovládání
 ; Navigation
 ;
 MSG_METHOD
-Metoda??
+Metoda
 ; Method
 ;
 MSG_OBJECTS
