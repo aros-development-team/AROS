@@ -15,15 +15,19 @@
 /*** Public Attributes ******************************************************/
 #define MUIA_WandererPrefs_Processing                        (MUIB_WandererPrefs | 0x00000001) /* --G Set (TRUE) while processing/ cleared (FALSE) when complete*/
 
+#define Wanderer_Viewsetting_Workbench                       0
+#define Wanderer_Viewsetting_Drawer                          1
+
+#define Wanderer_VSF_SupportsBackfills                       (1<<0)
+#define Wanderer_VSF_SupportsIcons                           (1<<1)
+
 /*** Public Methods *********************************************************/
 #define MUIM_WandererPrefs_Reload                            (MUIB_WandererPrefs | 0x00000000)
 
 #define MUIM_WandererPrefs_ViewSettings_GetNotifyObject      (MUIB_WandererPrefs | 0x000000E0) /* --G */
 #define MUIM_WandererPrefs_ViewSettings_GetAttribute         (MUIB_WandererPrefs | 0x000000E1) /* --G */
-struct  MUIP_WandererPrefs_ViewSettings_GetNotifyObject      {STACKULONG MethodID; char *Background_Name;};
-struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {STACKULONG MethodID; char *Background_Name; STACKULONG AttributeID;};
-
-#define WP_GLOBALTAGCOUNT 8
+struct  MUIP_WandererPrefs_ViewSettings_GetNotifyObject      {STACKED ULONG MethodID; STACKED char *Background_Name;};
+struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {STACKED ULONG MethodID; STACKED char *Background_Name; STACKED ULONG AttributeID;};
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *WandererPrefs_CLASS;

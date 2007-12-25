@@ -2,12 +2,12 @@
 #define _MUI_CLASSES_ICONLIST_ATTRIBUTES_H
 
 /*
-    Copyright  2002-2007, The AROS Development Team. All rights reserved.
-    $Id$
+	Copyright  2002-2007, The AROS Development Team. All rights reserved.
+	$Id$
 */
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconList                   (MUIB_ZUNE | 0x00004200)
+#define MUIB_IconList                   (MUIB_ZUNE | 0x00042000)
 
 #define MUIV_IconList_NextSelected_Start 0
 #define MUIV_IconList_NextSelected_End   1
@@ -23,13 +23,13 @@
 #define MUIA_IconList_IconsMoved                            (MUIB_IconList | 0x00000007) /* Zune: V1 ..G (struct IconList_Entry *) */
 #define MUIA_IconList_AppWindowDrop                         (MUIB_IconList | 0x00000008) /* Zune: V1 ..G (struct IconList_Entry *) */
 
-#define MUIA_IconList_FocusIcon         					(MUIB_IconList | 0x00000010) /* Zune: V1 .SG (struct IconList_Entry *) */
+#define MUIA_IconList_FocusIcon                             (MUIB_IconList | 0x00000010) /* Zune: V1 .SG (struct IconList_Entry *) */
 
 #define MUIA_IconList_DisplayFlags                          (MUIB_IconList | 0x00000020) /* Zune: V1 ISG ULONG                     */
 #define MUIA_IconList_SortFlags                             (MUIB_IconList | 0x00000021) /* Zune: V1 ISG ULONG                     */
 
 /* Configuration Attributes */
-#define MUIB_IconList_ConfigTags                            (MUIB_IconList | 0x00000090)
+#define MUIB_IconList_ConfigTags                            (MUIB_IconList | 0x00000100)
 
 #define MUIA_IconList_IconListMode                          (MUIB_IconList_ConfigTags | 0x00000000) /* Zune: V1 ISG UBYTE */
 #define MUIA_IconList_LabelText_Mode                        (MUIB_IconList_ConfigTags | 0x00000001) /* Zune: V1 ISG UBYTE */
@@ -45,12 +45,18 @@
 #define MUIA_IconList_Icon_HorizontalSpacing                (MUIB_IconList_ConfigTags | 0x00000010) /* Zune: V1 ISG UBYTE  */
 #define MUIA_IconList_Icon_VerticalSpacing                  (MUIB_IconList_ConfigTags | 0x00000011) /* Zune: V1 ISG UBYTE  */
 #define MUIA_IconList_Icon_ImageSpacing                     (MUIB_IconList_ConfigTags | 0x00000012) /* Zune: V1 ISG UBYTE  */
-#define MUIA_IconList_LabelText_HorizontalSpacing           (MUIB_IconList_ConfigTags | 0x00000013) /* Zune: V1 ISG UBYTE  */
-#define MUIA_IconList_LabelText_VerticalSpacing             (MUIB_IconList_ConfigTags | 0x00000014) /* Zune: V1 ISG UBYTE  */
+#define MUIA_IconList_LabelText_HorizontalPadding           (MUIB_IconList_ConfigTags | 0x00000013) /* Zune: V1 ISG UBYTE  */
+#define MUIA_IconList_LabelText_VerticalPadding             (MUIB_IconList_ConfigTags | 0x00000014) /* Zune: V1 ISG UBYTE  */
 #define MUIA_IconList_LabelText_BorderWidth                 (MUIB_IconList_ConfigTags | 0x00000015) /* Zune: V1 ISG UBYTE  */
 #define MUIA_IconList_LabelText_BorderHeight                (MUIB_IconList_ConfigTags | 0x00000016) /* Zune: V1 ISG UBYTE  */
 
-#define MUIA_IconList_Rastport                              (MUIB_IconList | 0x000000FF) /* Zune: V1 ISG (struct RastPort *)       */
+#define MUIA_IconList_Rastport                              (MUIB_IconList | 0x000000FF)            /* Zune: V1 .SG (struct RastPort *)       */
+#define MUIA_IconList_BufferRastport                        (MUIB_IconList | 0x000000FE)            /* Zune: V1 ..G BOOL      */
+
+#define MUIA_IconList_BufferLeft                            (MUIB_IconList | 0x00000050)            /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_BufferTop                             (MUIB_IconList | 0x00000051)            /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_BufferWidth                           (MUIB_IconList | 0x00000052)            /* Zune: V1 ..G LONG                      */
+#define MUIA_IconList_BufferHeight                          (MUIB_IconList | 0x00000053)            /* Zune: V1 ..G LONG                      */
 
 /****************************************************************************/
 #define ICONENTRY_DRAWMODE_NONE      0         /* Do nothing .. */
@@ -61,7 +67,7 @@
 /* Internal Icon state flags */
 #define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state              */
 #define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state           */
-#define ICONENTRY_FLAG_VISIBLE		 (1<<3)		/* icon for entry should be drawn   */
+#define ICONENTRY_FLAG_VISIBLE       (1<<3)		/* icon for entry should be drawn   */
 #define ICONENTRY_FLAG_HASICON	     (1<<4)		/* entry has an '.info' file        */
 #define ICONENTRY_FLAG_TODAY	     (1<<7)		/* entry's timestamp is from today    */
 
@@ -69,7 +75,7 @@
 /* SORTFLAGS - a value of zero sets: sort by name + drawers at top */
 #define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/*mix folders and files when sorting*/
 #define ICONLIST_SORT_DRAWERS_LAST   (1<<1)		/*ignored if mixed is set*/
-#define ICONLIST_SORT_REVERSE		 (1<<2)		/*reverse sort direction*/
+#define ICONLIST_SORT_REVERSE        (1<<2)		/*reverse sort direction*/
 #define ICONLIST_SORT_BY_DATE	     (1<<3)		/*both date and size = sort by type*/
 #define ICONLIST_SORT_BY_SIZE	     (1<<4)		/*neither = sort by name*/
 
@@ -81,13 +87,51 @@
 #define ICONLIST_DISP_NOICONS	     (1<<8)		/* name only mode*/
 #define ICONLIST_DISP_DETAILS	     (1<<9)		/* name=details mode, icon=?? */
 
+#define ICONLIST_DISP_BUFFERED       (1<<15)            /* Iconlist uses buffered rendering */
+
+enum iconlist_ListViewModes
+{
+	ICON_LISTMODE_GRID = 0,
+	ICON_LISTMODE_ROUGH = 1,
+	iconlist_ListViewModesCount
+};
+
+enum iconlist_LabelRenderModes
+{
+	ICON_TEXTMODE_OUTLINE = 0,
+	ICON_TEXTMODE_PLAIN = 1,
+	ICON_TEXTMODE_DROPSHADOW = 2,
+	iconlist_LabelRenderModesCount
+};
+
+/* Default Icon label rendering settings */
+// Max no of characters to display on a single line
+#define ILC_ICONLABEL_MAXLINELEN_DEFAULT               10
+#define ILC_ICONLABEL_SHORTEST                         6
+
+/* Default Icon rendering settings */
+// Spacing between icons ..
+#define ILC_ICON_HORIZONTALMARGIN_DEFAULT              5
+#define ILC_ICON_VERTICALMARGIN_DEFAULT                5
+
+// Padding between Icon's "image" and label frame
+#define ILC_ICONLABEL_IMAGEMARGIN_DEFAULT              1
+
+// Padding between Icons label text and frame
+#define ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT     4
+#define ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT       4
+
+// Icon's Label frame dimensions
+#define ILC_ICONLABEL_BORDERWIDTH_DEFAULT              1
+#define ILC_ICONLABEL_BORDERHEIGHT_DEFAULT             1
+
 /*** Identifier base ********************************************************/
-#define MUIB_IconDrawerList         (MUIB_ZUNE | 0x00004300)  
+#define MUIB_IconDrawerList         (MUIB_ZUNE | 0x00043000)  
 
 /*** Attributes *************************************************************/
-#define MUIA_IconDrawerList_Drawer  (MUIB_IconDrawerList | 0x00000000) /* Zune: V1  isg LONG     */
+#define MUIA_IconDrawerList_Drawer                          (MUIB_IconDrawerList | 0x00000000)      /* Zune: V1  isg LONG     */
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconVolumeList         (MUIB_ZUNE | 0x00004400)  
+#define MUIB_IconVolumeList         (MUIB_ZUNE | 0x00044000)  
 
 #endif /* _MUI_CLASSES_ICONLIST_ATTRIBUTES_H */
