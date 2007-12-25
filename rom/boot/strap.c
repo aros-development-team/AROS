@@ -265,7 +265,7 @@ static VOID AddPartitionVolume
             devnode = MakeDosNode(pp);
             if (devnode)
             {
-                devnode->dn_Name = MKBADDR(AllocVec(strlen(name) + 2,
+                devnode->dn_Name = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(strlen(name)),
                     MEMF_PUBLIC | MEMF_CLEAR));
                 if (devnode->dn_Name)
                 {

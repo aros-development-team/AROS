@@ -136,23 +136,27 @@
 	    dir = AllocVec(defaults[0].ti_Data + 1, MEMF_PUBLIC | MEMF_CLEAR);
 	    ENOMEM_IF(dir == NULL);
 
+	    AROS_BSTR_setstrlen(MKBADDR(dir), 0);
 	    cli->cli_SetName = MKBADDR(dir);
 
 	    command = AllocVec(defaults[1].ti_Data + 1,
 			       MEMF_PUBLIC | MEMF_CLEAR);
 	    ENOMEM_IF(command == NULL);
 
+	    AROS_BSTR_setstrlen(MKBADDR(command), 0);
 	    cli->cli_CommandName = MKBADDR(command);
 
 	    file = AllocVec(defaults[2].ti_Data + 1, MEMF_PUBLIC | MEMF_CLEAR);
 	    ENOMEM_IF(file == NULL);
 
+	    AROS_BSTR_setstrlen(MKBADDR(file), 0);
 	    cli->cli_CommandFile = MKBADDR(file);
 
 	    prompt = AllocVec(defaults[3].ti_Data + 1,
 			      MEMF_PUBLIC | MEMF_CLEAR);
 	    ENOMEM_IF(prompt == NULL);
 
+	    AROS_BSTR_setstrlen(MKBADDR(prompt), 0);
 	    cli->cli_Prompt = MKBADDR(prompt);
 	    
 	    return cli;

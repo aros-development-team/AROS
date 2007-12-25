@@ -77,9 +77,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
      */
     for(i = 0; i < 2; i++)
     {
-	if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
+	if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
+                          MEMF_CLEAR|MEMF_PUBLIC)))
 	{
-	    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+	    BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 	    WORD   a;
 	    
 	    for(a = 0; a < 3; a++)
@@ -99,7 +100,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR conbase)
 	    dn->dn_Ext.dn_AROS.dn_Device	= &conbase->device;
 	    dn->dn_Handler	= NULL;
 	    dn->dn_Startup	= NULL;
-	    dn->dn_Name		= MKBADDR(s);
+	    dn->dn_Name		= s;
 	    dn->dn_Ext.dn_AROS.dn_DevName	= AROS_BSTR_ADDR(dn->dn_Name);
 
 	    if (AddDosEntry((struct DosList *)dn))

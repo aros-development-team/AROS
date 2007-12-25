@@ -128,7 +128,9 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 
 		if (devnode)
 		{
-		    devnode->dn_Name = MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR));
+		    devnode->dn_Name = MKBADDR(
+                        AllocMem(AROS_BSTR_MEMSIZE4LEN(3), MEMF_PUBLIC | MEMF_CLEAR)
+                    );
 
 		    if (devnode->dn_Name != NULL)
 		    {

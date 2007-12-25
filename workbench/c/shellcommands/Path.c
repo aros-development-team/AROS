@@ -165,7 +165,7 @@ AROS_SHA(BOOL, ,HEAD,/S,NULL))
         else    /* add */
         {
                 PathEntryPtr
-            insertAfter = PE(&cli->cli_CommandDir);
+            insertAfter = &cli->cli_CommandDir;
             
             if (!SHArg(HEAD))
             {

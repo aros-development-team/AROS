@@ -69,7 +69,7 @@
 	fh->fh_Pos = fh->fh_End = fh->fh_Buf;
 	
         /* Read mode. Try to seek back to the current position. */
-        if( InternalSeek( file, offset, OFFSET_CURRENT, DOSBase ) < 0 )
+        if( InternalSeek( fh, offset, OFFSET_CURRENT, DOSBase ) < 0 )
         {
             return FALSE;
         }

@@ -97,7 +97,11 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
             if (devnode)
             {
                 if ((devnode->dn_Name =
-                     MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR))))
+                     MKBADDR(AllocMem(AROS_BSTR_MEMSIZE4LEN(3),
+                                      MEMF_PUBLIC | MEMF_CLEAR
+                             )
+                     )
+                ))
                 {
                     if( !unit->au_DevType )
                     {

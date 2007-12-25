@@ -240,7 +240,7 @@ ULONG i;
 				dn = MakeDosNode(params);
 				if (dn)
 				{
-					dn->dn_Name = MKBADDR(AllocVec(strlen(name)+2, MEMF_PUBLIC));
+					dn->dn_Name = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(strlen(name)), MEMF_PUBLIC));
 					dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
 
 					i = 0;

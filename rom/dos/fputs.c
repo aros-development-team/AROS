@@ -47,7 +47,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    ASSERT_VALID_PTR(file);
+    ASSERT_VALID_PTR(BADDR(file));
     ASSERT_VALID_PTR(string);
 
         ULONG
