@@ -111,7 +111,8 @@
     struct FileSysStartupMsg *fssm;
     struct DosEnvec *de;
     STRPTR s1, s2 = 0;
-    int    strLen1, strLen2;
+    BSTR   bs1, bs2;
+    int    strLen1, strLen2, sz1, sz2;
     int    i;			/* Loop variable */
 
     if (parmPacket == NULL)
@@ -141,25 +142,24 @@
     
     /* To help prevent fragmentation I will allocate both strings in the
        same block of memory.
-       
-       Add for each string, 1 for null-termination
-       1 for BSTR size
-       For the first string 3 for longword align
     */
 
-    strLen1 = strlen((STRPTR)((IPTR *)parmPacket)[0]) + 5;
+    strLen1 = strlen((STRPTR)((ULONG *)parmPacket)[0]);
+    /* Round size to alloc to nearest mutiple of 4 */
+    sz1 = (AROS_BSTR_MEMSIZE4LEN(strLen1) + 3) & ~3;
 
     /* There doesn't have to exist an underlying block device */
     if ((STRPTR)((IPTR *)parmPacket)[1] != NULL)
     {
-	strLen2 = 2 + strlen((STRPTR)((IPTR *)parmPacket)[1]);
+	strLen2 = strlen((STRPTR)((ULONG *)parmPacket)[1]);
     }
     else
     {
-	strLen2 = 2;
+	strLen2 = 0;
     }
-    
-    s1 = AllocVec(strLen2 + strLen1, MEMF_CLEAR | MEMF_PUBLIC);
+    sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2);
+
+    s1 = AllocVec(sz1 + sz2, MEMF_CLEAR | MEMF_PUBLIC);
     
     if (s1 == NULL)
     {
@@ -170,29 +170,32 @@
     }
     
     /* We have no more allocations */
-    s2 = (STRPTR)(((IPTR)s1 + strLen1) & ~3);
+    s2 = (STRPTR)(((ULONG)s1 + sz1));
 
-    for (i = 0; i < strLen1 - 5; i++)
+    bs1 = MKBADDR(s1);
+    bs2 = MKBADDR(s2);
+    
+    for (i = 0; i < strLen1; i++)
     {
-	AROS_BSTR_putchar(s1, i, ((STRPTR)((IPTR *)parmPacket)[0])[i]);
+	AROS_BSTR_putchar(bs1, i, ((STRPTR)((ULONG *)parmPacket)[0])[i]);
     }
 
-    for (i = 0; i < strLen2 - 2; i++)
+    for (i = 0; i < strLen2; i++)
     {
-	AROS_BSTR_putchar(s2, i, ((STRPTR)((IPTR *)parmPacket)[1])[i]);
+	AROS_BSTR_putchar(bs2, i, ((STRPTR)((ULONG *)parmPacket)[1])[i]);
     }
     
-    AROS_BSTR_setstrlen(s1, (strLen1 - 5) > 255 ? 255 : (strLen1 - 5));
-    AROS_BSTR_setstrlen(s2, (strLen2 - 2) > 255 ? 255 : (strLen2 - 2));
-    
+    AROS_BSTR_setstrlen(bs1, strLen1 > 255 ? 255 : strLen1);
+    AROS_BSTR_setstrlen(bs2, strLen2 > 255 ? 255 : strLen2);
+
     /* Strings are done, now the FileSysStartupMsg */
     fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
-    fssm->fssm_Device = MKBADDR(s2);
+    fssm->fssm_Device = bs2;
     fssm->fssm_Environ = MKBADDR(de);
     fssm->fssm_Flags = ((IPTR *)parmPacket)[3];
     
     /* FSSM is done, now the DeviceNode */
-    dn->dn_Handler = MKBADDR(s1);
+    dn->dn_Handler = bs1;
     dn->dn_Startup = MKBADDR(fssm);
     dn->dn_Type = DLT_DEVICE;
 

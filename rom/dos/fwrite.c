@@ -83,7 +83,7 @@
 LONG
 FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase)
 {
-    ASSERT_VALID_PTR(file);
+    ASSERT_VALID_PTR(BADDR(file));
     ASSERT_VALID_PTR(buffer);
 
     /* Get pointer to filehandle. */

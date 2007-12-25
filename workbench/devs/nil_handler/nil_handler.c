@@ -40,13 +40,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
 	     * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
 	     */
 
-	    if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
+	    if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
+                              MEMF_CLEAR|MEMF_PUBLIC)))
 	    {
 	        struct IOFileSys dummyiofs;
 
 		if (OpenDev(nilbase, &dummyiofs))
 		{
-		    STRPTR s = (STRPTR)(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+		    BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 
 		    nilbase->device.dd_Library.lib_OpenCnt++;
 
@@ -60,7 +61,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
 	    	    dn->dn_Ext.dn_AROS.dn_Device  = dummyiofs.IOFS.io_Device;
 	    	    dn->dn_Handler = NULL;
 	    	    dn->dn_Startup = NULL;
-	    	    dn->dn_Name = MKBADDR(s);
+	    	    dn->dn_Name = s;
 	    	    dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
 
 		    if (AddDosEntry((struct DosList *)dn))

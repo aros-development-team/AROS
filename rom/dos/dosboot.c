@@ -335,6 +335,8 @@ BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
     
     strcpy( buffer, deviceName );        
     strcat( buffer, STARTUP_SEQUENCE_FILE );
+    
+    D(bug("Trying to get a lock on '%s'\n", buffer));
        
     if( (lock = Lock( buffer, SHARED_LOCK )) == 0 )
     {

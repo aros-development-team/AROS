@@ -18,14 +18,15 @@
 /* TODO: This can be done much better! */
 #ifndef AROS_FAST_BPTR
 #define  BStrtoCStr(bstr) ({ \
-                STRPTR cstr; \
-                cstr = AllocMem(AROS_BSTR_strlen(bstr)+1, MEMF_PUBLIC); \
-		if(cstr == NULL) \
-		    return; \
-	        CopyMem(AROS_BSTR_ADDR(bstr), cstr, AROS_BSTR_strlen(bstr)); \
- 	        cstr[AROS_BSTR_strlen(bstr)] = 0; \
-		return cstr;
-		});
+    STRPTR cstr; \
+    cstr = AllocMem(AROS_BSTR_strlen(bstr)+1, MEMF_PUBLIC); \
+    if(cstr) \
+    { \
+        CopyMem(AROS_BSTR_ADDR(bstr), cstr, AROS_BSTR_strlen(bstr)); \
+        cstr[AROS_BSTR_strlen(bstr)] = 0; \
+    }  \
+    cstr; \
+})
 #else
 #define  BStrtoCStr(bstr) ((STRPTR)bstr)
 #endif

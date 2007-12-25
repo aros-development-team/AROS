@@ -950,29 +950,30 @@ static LONG startup(struct emulbase *emulbase)
 			    emulbase->eb_stderr = (struct Unit *)fhe;
 
 			    /*
-				Allocate space for the string from same mem
-				Add 1 for BSTR size.
-				Add an extra 4 for alignment purposes.
+				Allocate space for the string from same mem,
+                                Use AROS_BSTR_MEMSIZE4LEN macro for space to
+                                to allocate and add an extra 4 for alignment
+                                purposes.
 			    */
 			    ret = ERROR_NO_FREE_STORE;
 
-			    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + sizeof(DEVNAME) + 1,
+			    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)),
 					   MEMF_CLEAR | MEMF_PUBLIC);
 
-			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + sizeof(VOLNAME) + 1,
+			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)),
 					    MEMF_CLEAR | MEMF_PUBLIC);
 
 			    if(dlv != NULL && dlv2 != NULL)
 			    {
-				STRPTR s;
-				STRPTR s2;
+				BSTR s;
+				BSTR s2;
     	    	    	    	WORD   i;
 
 				/*  We want s to point to the first 4-byte
 				    aligned memory after the structure.
 				*/
-				s = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 4) & ~3);
-				s2 = (STRPTR)(((IPTR)dlv2 + sizeof(struct DeviceNode) + 4) & ~3);
+				s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
+				s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
 				
     	    	    	    	for(i = 0; i < sizeof(DEVNAME) - 1; i++)
 				{
@@ -985,7 +986,7 @@ static LONG startup(struct emulbase *emulbase)
 				dlv->dn_Ext.dn_AROS.dn_Device  = &emulbase->device;
 				dlv->dn_Handler = NULL;
 				dlv->dn_Startup = NULL;
-				dlv->dn_Name    = MKBADDR(s);
+				dlv->dn_Name    = s;
 				dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
 
 				AddBootNode(0, 0, dlv, NULL);
@@ -1007,7 +1008,7 @@ static LONG startup(struct emulbase *emulbase)
 				dlv2->dn_Ext.dn_AROS.dn_Device  = &emulbase->device;
 				dlv2->dn_Handler = NULL;
 				dlv2->dn_Startup = NULL;
-				dlv2->dn_Name = MKBADDR(s2);
+				dlv2->dn_Name = s2;
 				dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
 
 				/* Make sure this is not booted from */

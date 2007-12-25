@@ -24,6 +24,13 @@
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
 
+/* Use C pointer and string for the BCPL pointers and strings
+ * For a normal ABI these should not be defined for maximum source code
+ * compatibility.
+ */
+#define AROS_FAST_BPTR 1
+#define AROS_FAST_BSTR 1
+
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm __attribute__((stackparm))
 

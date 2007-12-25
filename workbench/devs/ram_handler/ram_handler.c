@@ -269,14 +269,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
 
 	   			    if (OpenDev(rambase, &dummyiofs))
 	   			    {
-				        BSTR s = MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 4) & ~3);
+				        BSTR s = MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 
 					rambase->device.dd_Library.lib_OpenCnt++;
 					
 	    			        AROS_BSTR_putchar(s, 0, 'R');
 	    			        AROS_BSTR_putchar(s, 1, 'A');
 	    			        AROS_BSTR_putchar(s, 2, 'M');
-                                        AROS_BSTR_putchar(s, 3, 0);
 				        AROS_BSTR_setstrlen(s, 3);
 
 	    			        dn->dn_Type	    = DLT_DEVICE;

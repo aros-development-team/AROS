@@ -31,6 +31,13 @@
 
 #define AROS_32BIT_TYPE         int
 
+/* Use C pointer and string for the BCPL pointers and strings
+ * For a normal ABI these should not be defined for maximum source code
+ * compatibility.
+ */
+#define AROS_FAST_BPTR 1
+#define AROS_FAST_BSTR 1
+
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
 
@@ -75,7 +82,7 @@ do \
 do \
 {  \
     (debug_segnode)->start_address \
-	= (IPTR)((debug_segnode)->seglist + 4) + 5 + *(IPTR *)((char *)((debug_segnode)->seglist + 4) + 1); \
+	= (IPTR)(BADDR((debug_segnode)->seglist) + 4) + 5 + *(IPTR *)((char *)(BADDR((debug_segnode)->seglist) + 4) + 1); \
 } while (0)
 
 struct JumpVec

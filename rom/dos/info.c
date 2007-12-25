@@ -57,7 +57,7 @@
     AROS_LIBFUNC_INIT
 
     struct IOFileSys iofs;
-    struct FileHandle *fh = (struct FileHandle *)lock;
+    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
 
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_DISK_INFO, DOSBase);

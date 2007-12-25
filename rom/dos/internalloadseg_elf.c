@@ -670,7 +670,7 @@ BPTR InternalLoadSeg_ELF
     struct sheader   *sh;
     struct sheader   *symtab_shndx = NULL;
     BPTR   hunks         = 0;
-    BPTR  *next_hunk_ptr = &hunks;
+    BPTR  *next_hunk_ptr = MKBADDR(&hunks);
     ULONG  i;
     BOOL   exec_hunk_seen = FALSE;
 

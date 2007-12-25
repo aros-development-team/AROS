@@ -32,6 +32,13 @@
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
 
+/* Use C pointer and string for the BCPL pointers and strings
+ * For a normal ABI these should not be defined for maximum source code
+ * compatibility.
+ */
+#define AROS_FAST_BPTR 1
+#define AROS_FAST_BSTR 1
+
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
