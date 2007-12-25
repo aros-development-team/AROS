@@ -232,7 +232,7 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-D(bug("[IconListview] IconListview__OM_NEW: SELF = %x\n", obj));
+D(bug("[IconListview] IconListview__OM_NEW: SELF = 0x%p\n", obj));
 
     data->vert = vert;
     data->horiz = horiz;

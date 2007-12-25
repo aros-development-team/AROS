@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main locale wpeditor
+FILES 	    := main locale wpeditor entryelements
 EXEDIR      := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-wanderer

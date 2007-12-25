@@ -1,6 +1,6 @@
 /*
-    Copyright  2004-2006, The AROS Development Team. All rights reserved.
-    $Id$
+	Copyright  2004-2006, The AROS Development Team. All rights reserved.
+	$Id$
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -41,6 +41,7 @@
 #include "iconwindow.h"
 #include "iconwindowcontents.h"
 #include "iconwindowbackfill.h"
+#include "../../libs/muimaster/classes/iconlist_attributes.h"
 
 #include <prefs/wanderer.h>
 
@@ -77,11 +78,11 @@ static struct BackFillSourceImageBuffer *ImageBackFill_FindBufferRecord(struct B
 
 static void ImageBackFill_CloseSourceRecord(struct BackFillSourceImageRecord *this_Record)
 {
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceRecord()\n"));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceRecord()\n"));
 	if (this_Record->bfsir_OpenerCount >= 2)
 	{
 		this_Record->bfsir_OpenerCount -= 1;
-        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceRecord: %d Openers Remaining for '%s'\n", this_Record->bfsir_OpenerCount, this_Record->bfsir_SourceImage));
+		D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceRecord: %d Openers Remaining for '%s'\n", this_Record->bfsir_OpenerCount, this_Record->bfsir_SourceImage));
 		return;
 	}
 	else
@@ -89,7 +90,7 @@ static void ImageBackFill_CloseSourceRecord(struct BackFillSourceImageRecord *th
 		Remove((struct Node *)this_Record);
 		this_Record->bfsir_OpenerCount = 0;
 
-        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceRecord: Closing Record for '%s'\n", this_Record->bfsir_SourceImage));
+		D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceRecord: Closing Record for '%s'\n", this_Record->bfsir_SourceImage));
 
 		this_Record->bfsir_DTRastPort->BitMap = NULL;
 		FreeRastPort(this_Record->bfsir_DTRastPort);
@@ -101,18 +102,18 @@ static void ImageBackFill_CloseSourceRecord(struct BackFillSourceImageRecord *th
 
 static void ImageBackFill_CloseSourceBuffer(struct BackFillSourceImageRecord *this_Record, struct BackFillSourceImageBuffer *this_Buffer)
 {
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceBuffer()\n"));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceBuffer()\n"));
 	if (this_Buffer->bfsib_OpenerCount >= 2)
 	{
 		this_Buffer->bfsib_OpenerCount -= 1;
-        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceBuffer: %d Openers Remaining\n", this_Buffer->bfsib_OpenerCount));
+		D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceBuffer: %d Openers Remaining\n", this_Buffer->bfsib_OpenerCount));
 		return;
 	}
 	else
 	{
 		Remove((struct Node *)this_Buffer);
 		this_Buffer->bfsib_OpenerCount = 0;
-        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceBuffer: Closing Buffer [%d x %d] of '%s'\n", this_Buffer->bfsib_BitMapWidth, this_Buffer->bfsib_BitMapHeight, this_Record->bfsir_SourceImage));
+		D(bug("[IconWindow.ImageBackFill] ImageBackFill_CloseSourceBuffer: Closing Buffer [%d x %d] of '%s'\n", this_Buffer->bfsib_BitMapWidth, this_Buffer->bfsib_BitMapHeight, this_Record->bfsir_SourceImage));
 
 		this_Buffer->bfsib_BitMapRastPort->BitMap = NULL;
 		FreeRastPort(this_Buffer->bfsib_BitMapRastPort);
@@ -132,7 +133,7 @@ static void ImageBackFill_CopyScaledBitMap
 	ULONG blit_MODE
 )
 {
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyScaledBitMap()\n"));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyScaledBitMap()\n"));
 	struct BitScaleArgs		Scale_Args;
 
 	Scale_Args.bsa_SrcX = SrcOffsetX;
@@ -164,7 +165,7 @@ static void ImageBackFill_CopyTiledBitMap
 )
 {
 	
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", blit_MODE));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", blit_MODE));
 	
 	WORD FirstSizeX;  // the width of the rectangle to blit as the first column
 	WORD FirstSizeY;  // the height of the rectangle to blit as the first row
@@ -179,21 +180,21 @@ static void ImageBackFill_CopyTiledBitMap
 	struct BitMap *Src = SrcRast->BitMap;
 	struct BitMap *Dst = DstRast->BitMap;		
 
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: SrcRast @ %x, DstRast @ %x\n", SrcRast, DstRast));
-	    
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds @ %x, FillBounds @ %x\n", DstAreaBounds, DstFillBounds));
-    
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MinX %d\n", DstAreaBounds->MinX));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MinY %d\n", DstAreaBounds->MinY));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MaxX %d\n", DstAreaBounds->MaxX));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MaxY %d\n", DstAreaBounds->MaxY));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds Width %d Height %d\n", (DstAreaBounds->MaxX - DstAreaBounds->MinX) + 1, (DstAreaBounds->MaxY - DstAreaBounds->MinY) + 1));
-	    
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MinX %d\n", DstFillBounds->MinX));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MinY %d\n", DstFillBounds->MinY));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MaxX %d\n", DstFillBounds->MaxX));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MaxY %d\n", DstFillBounds->MaxY));
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds Width %d Height %d\n", (DstAreaBounds->MaxX - DstAreaBounds->MinX) + 1, (DstAreaBounds->MaxY - DstAreaBounds->MinY) + 1));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: SrcRast @ %x, DstRast @ %x\n", SrcRast, DstRast));
+		
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds @ %x, FillBounds @ %x\n", DstAreaBounds, DstFillBounds));
+	
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MinX %d\n", DstAreaBounds->MinX));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MinY %d\n", DstAreaBounds->MinY));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MaxX %d\n", DstAreaBounds->MaxX));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds.MaxY %d\n", DstAreaBounds->MaxY));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: AreaBounds Width %d Height %d\n", (DstAreaBounds->MaxX - DstAreaBounds->MinX) + 1, (DstAreaBounds->MaxY - DstAreaBounds->MinY) + 1));
+		
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MinX %d\n", DstFillBounds->MinX));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MinY %d\n", DstFillBounds->MinY));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MaxX %d\n", DstFillBounds->MaxX));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds.MaxY %d\n", DstFillBounds->MaxY));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: FillBounds Width %d Height %d\n", (DstAreaBounds->MaxX - DstAreaBounds->MinX) + 1, (DstAreaBounds->MaxY - DstAreaBounds->MinY) + 1));
 
 	FirstSizeX = MIN(SrcSizeX - SrcOffsetX, RECTSIZEX(DstFillBounds)); // the width of the first tile, this is either the rest of the tile right to SrcOffsetX or the width of the dest rect, if the rect is narrow
 	SecondMinX = DstFillBounds->MinX + FirstSizeX; // the start for the second tile (if used)
@@ -205,18 +206,18 @@ static void ImageBackFill_CopyTiledBitMap
 
 	if (blit_MODE == blit_MODE_Blit)  // blit the first piece of the tile
 	{
-        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 1st Tile Part @ %d,%d [%d x %d]\n", DstFillBounds->MinX, DstFillBounds->MinY, FirstSizeX, FirstSizeY));
+		D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 1st Tile Part @ %d,%d [%d x %d]\n", DstFillBounds->MinX, DstFillBounds->MinY, FirstSizeX, FirstSizeY));
 		BltBitMap(Src, 
 			  SrcOffsetX, SrcOffsetY,
-	          Dst,
-	          DstFillBounds->MinX, DstFillBounds->MinY,
+			  Dst,
+			  DstFillBounds->MinX, DstFillBounds->MinY,
 			  FirstSizeX, FirstSizeY,
 			  0xC0, -1, NULL); 
 
 
 		if (SecondSizeX > 0) // if SrcOffset was 0 or the dest rect was too narrow, we won't need a second column
 		{
-            D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 2nd Tile Part @ %d,%d [%d x %d]\n", SecondMinX, DstFillBounds->MinY, SecondSizeX, FirstSizeY));
+			D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 2nd Tile Part @ %d,%d [%d x %d]\n", SecondMinX, DstFillBounds->MinY, SecondSizeX, FirstSizeY));
 			BltBitMap(Src,
 					  0, SrcOffsetY,
 					  Dst,
@@ -227,7 +228,7 @@ static void ImageBackFill_CopyTiledBitMap
 
 		if (SecondSizeY > 0) // is a second row necessary?
 		{
-            D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 3rd Tile Part @ %d,%d [%d x %d]\n", DstFillBounds->MinX, SecondMinY, FirstSizeX, SecondSizeY));
+			D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 3rd Tile Part @ %d,%d [%d x %d]\n", DstFillBounds->MinX, SecondMinY, FirstSizeX, SecondSizeY));
 			BltBitMap(Src,
 					  SrcOffsetX, 0,
 					  Dst,
@@ -237,7 +238,7 @@ static void ImageBackFill_CopyTiledBitMap
 
 			if (SecondSizeX > 0)
 			{
-                D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 4th Tile Part @ %d,%d [%d x %d]\n", SecondMinX, SecondMinY, SecondSizeX, SecondSizeY));
+				D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: 4th Tile Part @ %d,%d [%d x %d]\n", SecondMinX, SecondMinY, SecondSizeX, SecondSizeY));
 				BltBitMap(Src,
 					  0, 0,
 					  Dst,
@@ -254,7 +255,7 @@ static void ImageBackFill_CopyTiledBitMap
 		for (PosX = DstFillBounds->MinX + SrcSizeX, SizeX = MIN(SrcSizeX, (DstFillBounds->MaxX - PosX) + 1);PosX <= DstFillBounds->MaxX;)
 		{
 #if defined(DEBUG)
-            D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row 1 Tile %d @ %d,%d [%d x %d]\n", xcount, PosX, DstFillBounds->MinY, SizeX, MIN(SrcSizeY, RECTSIZEY(DstFillBounds))));
+			D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row 1 Tile %d @ %d,%d [%d x %d]\n", xcount, PosX, DstFillBounds->MinY, SizeX, MIN(SrcSizeY, RECTSIZEY(DstFillBounds))));
 			xcount++;
 #endif
 			BltBitMap(Dst,
@@ -275,7 +276,7 @@ static void ImageBackFill_CopyTiledBitMap
 		for (PosY = DstFillBounds->MinY + SrcSizeY, SizeY = MIN(SrcSizeY, (DstFillBounds->MaxY - PosY) + 1);PosY <= DstFillBounds->MaxY;)
 		{
 #if defined(DEBUG)
-            D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row %d @ %d,%d [%d x %d]\n", ycount, DstFillBounds->MinX, PosY, MIN(SrcSizeX, RECTSIZEX(DstFillBounds)), SizeY));
+			D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: Row %d @ %d,%d [%d x %d]\n", ycount, DstFillBounds->MinX, PosY, MIN(SrcSizeX, RECTSIZEX(DstFillBounds)), SizeY));
 			ycount++;
 #endif
 			BltBitMap(Dst,
@@ -295,7 +296,7 @@ static void ImageBackFill_CopyTiledBitMap
 		{
 			for (SrcX = MOD(SrcOffsetX + MOD((DstFillBounds->MinX - DstAreaBounds->MinX), SrcSizeY - 1), SrcSizeX - 1), PosX = DstFillBounds->MinX, SizeX = MIN((SrcSizeX - SrcX), (DstFillBounds->MaxX - DstFillBounds->MinX ) + 1); PosX <= DstFillBounds->MaxX;)
 			{
-                D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: ClipBlit @ %d,%d [%d x %d]\n", PosX, PosY, SizeX, SizeY));
+				D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: ClipBlit @ %d,%d [%d x %d]\n", PosX, PosY, SizeX, SizeY));
 
 				ClipBlit(SrcRast,
 				  SrcX, SrcY,
@@ -322,13 +323,13 @@ static void ImageBackFill_CopyTiledBitMap
 
 IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 (
-    Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_ProcessBackground *message
+	Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_ProcessBackground *message
 )
 {
 
 	LONG                  Depth = 0;
-    Object                *_IconWindows_PrefsObj    = NULL,
-	                      *_IconWindows_WindowObj   = NULL;
+	Object                *_IconWindows_PrefsObj    = NULL,
+						  *_IconWindows_WindowObj   = NULL;
 	Object 				  *_IconWindows_IconListObj = NULL;
 
 	BOOL    			  options_changed = FALSE;
@@ -336,24 +337,24 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 	IPTR                  prefs_processing        = 0;
 	
 	IPTR                  BackGround_Attrib       = 0,
-	                      BackGround_Base         = 0,
-	                      BackGround_RenderMode   = 0,
-	                      BackGround_TileMode     = 0,
-	                      BackGround_XOffset      = 0,
-	                      BackGround_YOffset      = 0;
+						  BackGround_Base         = 0,
+						  BackGround_RenderMode   = 0,
+						  BackGround_TileMode     = 0,
+						  BackGround_XOffset      = 0,
+						  BackGround_YOffset      = 0;
 	
 	struct BackFillInfo   *this_BFI = message->BackFill_Data;
 
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground()\n"));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground()\n"));
 	
 	GET(_app(self), MUIA_Wanderer_Prefs, &_IconWindows_PrefsObj);
 
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: PrefsObj @ %x\n", _IconWindows_PrefsObj));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: PrefsObj @ %x\n", _IconWindows_PrefsObj));
 	
 	GET(self, MUIA_IconWindow_Window, &_IconWindows_WindowObj);
 	GET(self, MUIA_IconWindow_IconList, &_IconWindows_IconListObj);
 
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: MUIA_IconWindow_Window = %x\n", _IconWindows_WindowObj));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: MUIA_IconWindow_Window = %x\n", _IconWindows_WindowObj));
 
 	if ((_IconWindows_PrefsObj == NULL) || (_IconWindows_WindowObj == NULL) || (_IconWindows_IconListObj == NULL)) return FALSE;
 
@@ -362,13 +363,13 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 #if defined(DEBUG)
 	if (prefs_processing)
 	{
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderer Prefs (re)loading detected\n"));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderer Prefs (re)loading detected\n"));
 	}
 #endif
 	
 	GET(_IconWindows_WindowObj, MUIA_IconWindow_BackgroundAttrib, &BackGround_Attrib);
 	
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background Attrib = '%s'\n", BackGround_Attrib));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background Attrib = '%s'\n", BackGround_Attrib));
 
 	if (BackGround_Attrib == NULL) return FALSE;
 	
@@ -383,27 +384,27 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 	UBYTE                  *this_bgtype    = (UBYTE *)BackGround_Base;
 	char                  *this_ImageName = (char *)(BackGround_Base + 2);
 	
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo @ %x\n", this_BFI));
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background '%s', mode %d\n", BackGround_Base, BackGround_RenderMode));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo @ %x\n", this_BFI));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background '%s', mode %d\n", BackGround_Base, BackGround_RenderMode));
 
 	if ((this_bgtype[0] - 48) != 5)
 	{
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background is NOT an image - letting our windoclass handle it ..\n"));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background is NOT an image - letting our windoclass handle it ..\n"));
 		
 		goto pb_cleanup_buffer;
 	}
 	
 	GET(self, MUIA_Window_Screen, &this_BFI->bfi_Screen);
-	this_BFI->bfi_RastPort = _rp(message->BackFill_Root);
+	GET(_IconWindows_IconListObj, MUIA_IconList_BufferRastport, &this_BFI->bfi_RastPort);
 
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderers Screen @ %x, IconWindow RastPort @ %x\n", this_BFI->bfi_Screen, this_BFI->bfi_RastPort));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Wanderers Screen @ %x, Using RastPort @ %x\n", this_BFI->bfi_Screen, this_BFI->bfi_RastPort));
 	
 	if (this_BFI->bfi_Source)
 	{
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo has existing source record @ %x\n", this_BFI->bfi_Source));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo has existing source record @ %x\n", this_BFI->bfi_Source));
 		if ((strcmp(this_BFI->bfi_Source->bfsir_SourceImage, this_ImageName) == 0) && (this_BFI->bfi_Source->bfsir_BackGroundRenderMode == BackGround_RenderMode))
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: existing BackFillInfo Using the same background / mode\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: existing BackFillInfo Using the same background / mode\n"));
 			goto check_imagebuffer;
 		}
 		else
@@ -422,16 +423,16 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 
 	if (!(this_BFI->bfi_Source))
 	{
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Creating NEW ImageSource Record\n"));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Creating NEW ImageSource Record\n"));
 		if (!(this_BFI->bfi_Source = AllocMem(sizeof(struct BackFillSourceImageRecord), MEMF_CLEAR|MEMF_PUBLIC)))
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source record!\n"));			
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source record!\n"));			
 			return FALSE;
 		}
 
 		if (!(this_BFI->bfi_Source->bfsir_SourceImage = AllocVec(strlen(this_ImageName) +1, MEMF_CLEAR|MEMF_PUBLIC)))
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source image name store\n"));			
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Couldnt allocate enough mem for source image name store\n"));			
 			FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
 			return FALSE;
 		}
@@ -440,17 +441,17 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 		if (this_BFI->bfi_Source->bfsir_DTPictureObject = NewDTObject(this_BFI->bfi_Source->bfsir_SourceImage,
 													DTA_SourceType,         DTST_FILE,
 													DTA_GroupID,            GID_PICTURE,
-		                                            PDTA_DestMode,          PMODE_V43,
+													PDTA_DestMode,          PMODE_V43,
 													PDTA_Remap,             TRUE,
 													PDTA_Screen,            this_BFI->bfi_Screen,
 													PDTA_FreeSourceBitMap,  TRUE,
 													OBP_Precision,          PRECISION_IMAGE,
 													TAG_DONE))
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Opened Datatype Object @ %x for image '%s'\n", this_BFI->bfi_Source->bfsir_DTPictureObject, this_BFI->bfi_Source->bfsir_SourceImage));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Opened Datatype Object @ %x for image '%s'\n", this_BFI->bfi_Source->bfsir_DTPictureObject, this_BFI->bfi_Source->bfsir_SourceImage));
 			if (DoMethod(this_BFI->bfi_Source->bfsir_DTPictureObject, DTM_PROCLAYOUT, NULL, 1))
 			{
-                D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Caused Datatype Object LAYOUT\n"));
+				D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Caused Datatype Object LAYOUT\n"));
 
 				GetDTAttrs(this_BFI->bfi_Source->bfsir_DTPictureObject, PDTA_BitMapHeader, &this_BFI->bfi_Source->bfsir_DTBitMapHeader, TAG_DONE);
 				GetDTAttrs(this_BFI->bfi_Source->bfsir_DTPictureObject, PDTA_DestBitMap, &this_BFI->bfi_Source->bfsir_DTBitMap, TAG_DONE);
@@ -460,7 +461,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 			
 				if (this_BFI->bfi_Source->bfsir_DTBitMap)
 				{
-                    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Datatype Object BitMap @ %x\n", this_BFI->bfi_Source->bfsir_DTBitMap));
+					D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Datatype Object BitMap @ %x\n", this_BFI->bfi_Source->bfsir_DTBitMap));
 
 					if (this_BFI->bfi_Source->bfsir_DTRastPort = CreateRastPort())
 					{
@@ -482,7 +483,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 #if defined(DEBUG)
 		if (!this_BFI->bfi_Source->bfsir_DTRastPort)
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource RastPort\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource RastPort\n"));
 		}
 #endif
 		
@@ -494,7 +495,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 #if defined(DEBUG)
 		else
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource BitMap\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource BitMap\n"));
 		}
 #endif
 
@@ -506,10 +507,10 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 #if defined(DEBUG)
 		else
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Datatype Object\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Datatype Object\n"));
 		}
 #endif
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Record\n"));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create ImageSource Record\n"));
 		if (this_BFI->bfi_Source->bfsir_SourceImage) FreeVec(this_BFI->bfi_Source->bfsir_SourceImage);
 		FreeMem(this_BFI->bfi_Source, sizeof(struct BackFillSourceImageRecord));
 		this_BFI->bfi_Source = NULL;
@@ -517,7 +518,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 	}
 	else
 	{
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Using existing ImageSource Record\n"));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Using existing ImageSource Record\n"));
 		this_BFI->bfi_Source->bfsir_OpenerCount += 1;
 	}
 
@@ -531,7 +532,7 @@ check_imagebuffer:
 	{
 		case IconWindowExt_ImageBackFill_RenderMode_Scale:
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED mode\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED mode\n"));
 
 			this_BFI->bfi_Options.bfo_TileMode = IconWindowExt_ImageBackFill_TileMode_Fixed;
 			
@@ -540,16 +541,16 @@ check_imagebuffer:
 
 			if ((BOOL)XGET(self, MUIA_IconWindow_IsRoot))
 			{
-                D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Root Window = TRUE!\n"));
+				D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Root Window = TRUE!\n"));
 				this_BFI->bfi_CopyWidth = GetBitMapAttr(this_BFI->bfi_Screen->RastPort.BitMap, BMA_WIDTH);
 				this_BFI->bfi_CopyHeight = GetBitMapAttr(this_BFI->bfi_Screen->RastPort.BitMap, BMA_HEIGHT);
 
-                D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Base Dimensions (%d x %d)\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
+				D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Base Dimensions (%d x %d)\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
 
 				if (!((BOOL)XGET(self, MUIA_IconWindow_IsBackdrop)))
 				{
-                    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Adjusting for window border Dimensions ..\n"));
-                    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED -      WBorTop %d, WBorLeft %d, WBorRight %d, WBorBottom %d\n", this_BFI->bfi_Screen->WBorTop, this_BFI->bfi_Screen->WBorLeft, this_BFI->bfi_Screen->WBorRight, this_BFI->bfi_Screen->WBorBottom));
+					D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Adjusting for window border Dimensions ..\n"));
+					D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED -      WBorTop %d, WBorLeft %d, WBorRight %d, WBorBottom %d\n", this_BFI->bfi_Screen->WBorTop, this_BFI->bfi_Screen->WBorLeft, this_BFI->bfi_Screen->WBorRight, this_BFI->bfi_Screen->WBorBottom));
 					this_BFI->bfi_CopyWidth -= (this_BFI->bfi_Screen->WBorLeft + this_BFI->bfi_Screen->WBorRight);
 					this_BFI->bfi_CopyHeight -= (this_BFI->bfi_Screen->WBorTop + this_BFI->bfi_Screen->WBorBottom);;
 				}
@@ -579,14 +580,14 @@ check_imagebuffer:
 
 					if (!(this_Buffer->bfsib_BitMapRastPort = CreateRastPort()))
 					{
-                        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Failed to create RastPort for BackFill BitMap\n"));
+						D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Failed to create RastPort for BackFill BitMap\n"));
 						break;
 					}
 
 					if (this_Buffer->bfsib_BitMap = AllocBitMap(this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight, Depth, Depth == 8 ? BMF_MINPLANES : 0L, this_BFI->bfi_Screen->RastPort.BitMap))
 					{
 
-	                    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Scale Dimensions (%d x %d)\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
+						D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Scale Dimensions (%d x %d)\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
 
 						struct Rectangle CopyBounds;
 
@@ -622,11 +623,11 @@ check_imagebuffer:
 				}
 			}
 			// We arent the "ROOT" (desktop) window so only tile ...
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Drawer window scaling unsupported ...\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Drawer window scaling unsupported ...\n"));
 		}
 		default:
 		{
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
 			if ((BackGround_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
 																BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGTileMode)) == -1)
 				BackGround_TileMode = IconWindowExt_ImageBackFill_TileMode_Float;
@@ -679,7 +680,7 @@ check_imagebuffer:
 				}
 			}
 
-            D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Dimensions Width %d, Height %d\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Dimensions Width %d, Height %d\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
 			
 			if (!(this_Buffer = ImageBackFill_FindBufferRecord(this_BFI->bfi_Source, this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight)))
 			{
@@ -693,7 +694,7 @@ check_imagebuffer:
 
 					if (!(this_Buffer->bfsib_BitMapRastPort = CreateRastPort()))
 					{
-                        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED - Failed to create RastPort for BackFill BitMap\n"));
+						D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED - Failed to create RastPort for BackFill BitMap\n"));
 						break;
 					}
 
@@ -729,7 +730,7 @@ check_imagebuffer:
 		}
 	}
 
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create image datatype object\n"));	
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Failed to create image datatype object\n"));	
 	return FALSE;
 	
 pb_cleanup_buffer:
@@ -757,25 +758,25 @@ pb_backfillsetup_complete:
 
 IPTR ImageBackFill__MUIM_IconWindow_BackFill_Setup
 (
-    Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Setup *message
+	Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Setup *message
 )
 {
 	struct BackFillInfo			*this_BFI = NULL;
 
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Setup()\n"));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Setup()\n"));
 
 	this_BFI = AllocVec(sizeof(struct BackFillInfo), MEMF_CLEAR|MEMF_PUBLIC);
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Setup: Allocated BackFillInfo @ %x\n", this_BFI));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Setup: Allocated BackFillInfo @ %x\n", this_BFI));
 
 	return this_BFI;
 }
 
 IPTR ImageBackFill__MUIM_IconWindow_BackFill_Cleanup
 (
-    Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Cleanup *message
+	Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Cleanup *message
 )
 {
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Cleanup()\n"));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Cleanup()\n"));
 	struct BackFillInfo   *this_BFI = message->BackFill_Data;
 
 	if (this_BFI->bfi_Buffer)
@@ -789,33 +790,33 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_Cleanup
 		this_BFI->bfi_Source = NULL;
 	}
 
-    FreeVec(this_BFI);
-    return TRUE;
+	FreeVec(this_BFI);
+	return TRUE;
 }
 
 IPTR ImageBackFill__MUIM_IconWindow_BackFill_DrawBackground
 (
-    Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_DrawBackground *message
+	Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_DrawBackground *message
 )
 {
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground()\n"));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground()\n"));
 	struct BackFillInfo   *this_BFI = NULL;
 		
 	if ((this_BFI = message->BackFill_Data) != NULL)
 	{
-        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Got BackFill_Data @ %x\n", this_BFI));
+		D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Got BackFill_Data @ %x\n", this_BFI));
 		this_BFI->bfi_RastPort = message->draw_RastPort;
 
 		if ((this_BFI->bfi_Buffer) && (this_BFI->bfi_RastPort))
 		{
-	        D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: BackFill_Data has suitable Buffer and RastPort ..\n"));
+			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: BackFill_Data has suitable Buffer and RastPort ..\n"));
 #warning "TODO: Make Base Tile Offset preference settable"
 			WORD OffsetX = this_BFI->bfi_Options.bfo_OffsetX;         // the offset within the tile in x direction
 			WORD OffsetY = this_BFI->bfi_Options.bfo_OffsetY;         // the offset within the tile in y direction
 
 			if (this_BFI->bfi_Options.bfo_TileMode == IconWindowExt_ImageBackFill_TileMode_Float)
 			{
-                D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Rendering using floating backdrop mode\n"));
+				D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Rendering using floating backdrop mode\n"));
 				OffsetX += message->draw_BFM->OffsetX;
 				OffsetY += message->draw_BFM->OffsetY;
 			}
@@ -831,7 +832,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_DrawBackground
 			return (IPTR)TRUE;
 		}
 	}
-    D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Causing parent to render .. \n"));
+	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: Causing parent to render .. \n"));
 	return (IPTR)FALSE;
 }
 
@@ -841,7 +842,7 @@ IPTR ImageBackFill__SetupClass()
 {
 	struct MUIP_IconWindow_BackFill_Register message;
 
-    D(bug("[IconWindow.ImageBackFill] ImageBackFill__SetupClass()\n"));
+	D(bug("[IconWindow.ImageBackFill] ImageBackFill__SetupClass()\n"));
 	
 	image_backfill_descriptor.bfd_BackFillID = image_backfill_name;
 
