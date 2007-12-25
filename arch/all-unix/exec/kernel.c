@@ -70,6 +70,9 @@ static const int sig2trap[][2] =
     { SIGFPE,   13 }
 };
 
+/* On TF_EXCEPT make Exec_Exception being called. */
+extern void AROS_SLIB_ENTRY(Exception, Exec)();
+
 /* This is from sigcore.h - it brings in the definition of the
    systems initial signal handler, which simply calls
    sighandler(int signum, sigcontext_t sigcontext)
@@ -192,8 +195,8 @@ static void sighandler(int sig, sigcontext_t * sc)
     #if AROS_NESTING_SUPERVISOR
     	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif
-        CONST UWORD u = (UWORD) ~(ARF_AttnDispatch);
-    	AROS_ATOMIC_AND(SysBase->AttnResched, u);
+        UWORD u = (UWORD) ~(ARF_AttnDispatch);
+        AROS_ATOMIC_AND(SysBase->AttnResched, u);
 
 	/* Save registers for this task (if there is one...) */
 	if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
@@ -205,7 +208,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	Dispatch ();
 
 	/* Get the registers of the old task */
-	RESTOREREGS(SysBase->ThisTask,sc);
+	RESTOREREGS(SysBase->ThisTask, sc);
 
 	/* Make sure that the state of the interrupts is what the task
 	   expects.
@@ -218,13 +221,27 @@ static void sighandler(int sig, sigcontext_t * sc)
 	/* Ok, the next step is to either drop back to the new task, or
 	    give it its Exception() if it wants one... */
 
-	if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
-	{
-	    Disable();
-	    Exception();
-	    Enable();
-	}
+        if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
+        {
+            /* Exec_Exception will Enable() */
+            Disable();
+            /* Make room for the current cpu context. */
+            SysBase->ThisTask->tc_SPReg -= SIZEOF_ALL_REGISTERS;
+            GetCpuContext(SysBase->ThisTask)->sc = SysBase->ThisTask->tc_SPReg;
+            /* Copy current cpu context. */
+            memcpy(SysBase->ThisTask->tc_SPReg, GetCpuContext(SysBase->ThisTask), SIZEOF_ALL_REGISTERS);
+            /* Manipulate the current cpu context so Exec_Exception gets
+               excecuted after we leave the kernel resp. the signal handler. */
+            SP(sc) = (unsigned long) SysBase->ThisTask->tc_SPReg;
+            PC(sc) = (unsigned long) AROS_SLIB_ENTRY(Exception, Exec);
+            SETUP_EXCEPTION(sc, SysBase);
 
+            if (SysBase->ThisTask->tc_SPReg <= SysBase->ThisTask->tc_SPLower)
+            {
+                /* POW! */
+                Alert(AT_DeadEnd|AN_StackProbe);
+            }
+        }
 
 #if DEBUG_TT
 	if (lastTask != SysBase->ThisTask)
@@ -237,6 +254,26 @@ static void sighandler(int sig, sigcontext_t * sc)
     #if AROS_NESTING_SUPERVISOR
     	// Enable();  commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif	
+    }
+
+    /* Are we returning from Exec_Exception? Then restore the saved cpu context. */
+    if (SysBase->ThisTask && SysBase->ThisTask->tc_State == TS_EXCEPT)
+    {
+        SysBase->ThisTask->tc_SPReg = GetCpuContext(SysBase->ThisTask)->sc;
+        memcpy(GetCpuContext(SysBase->ThisTask), SysBase->ThisTask->tc_SPReg, SIZEOF_ALL_REGISTERS);
+        SysBase->ThisTask->tc_SPReg += SIZEOF_ALL_REGISTERS;
+
+        if (SysBase->ThisTask->tc_SPReg > SysBase->ThisTask->tc_SPUpper)
+        {
+            /* POW! */
+            Alert(AT_DeadEnd|AN_StackProbe);
+        }
+
+        /* Restore the signaled context. */
+        RESTOREREGS(SysBase->ThisTask,sc);
+
+        SysBase->ThisTask->tc_State = TS_RUN;
+        Enable();
     }
 
     /* Leave the interrupt. */

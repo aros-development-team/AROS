@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Unix version  of Switch().
@@ -29,8 +29,7 @@ AROS_LH0(void, Switch,
 
     Disable();
     
-    if( (this->tc_State != TS_RUN)
-		&& !(this->tc_Flags & TF_EXCEPT) )
+    if( this->tc_State != TS_RUN )
     {
 #if 0
 	if( SysBase->IDNestCnt >= 0 )

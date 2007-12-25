@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals
@@ -78,8 +78,9 @@ typedef @sighandler@ SignalHandler;
 
 struct AROS_cpu_context
 {
-    struct pt_regs regs;
-    double fpregs[32];
+    struct pt_regs            regs;
+    double                    fpregs[32];
+    struct AROS_cpu_context * sc;
 };
 
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
@@ -177,22 +178,31 @@ struct AROS_cpu_context
     GetCpuContext(task)->regs.nip    = pc;\
 }
 
+/* For PowerPc setting up a task exception
+    is just passing the SysBase as argument
+    to the Exec_Exception, which in turn will
+    call the users exception handler. */
+#define SETUP_EXCEPTION(sc,arg)\
+{\
+    sc->regs->gpr[3] = (unsigned long) arg;\
+}
+
 /* Prepare the cpu context
    Sys V PPC ABI says r2 is reserved
    so we copy the current one and it
    will never be changed again */
-#define PREPARE_INITIAL_CONTEXT(task,pc)		\
-{\
-    __asm__ __volatile__ (				\
-    "stw 2,%0 \n\t"	   				\
-    : "=m"(GetCpuContext(task)->regs.gpr[2])		\
-    :							\
-    : "memory");					\
-    {							\
-	long i;						\
-	for (i = 0; i < 32; i++)			\
-	    GetCpuContext(task)->fpregs[i] = 0.0;	\
-    }\
+#define PREPARE_INITIAL_CONTEXT(task,pc)          \
+{                                                 \
+    __asm__ __volatile__ (                        \
+    "stw 2,%0 \n\t"                               \
+    : "=m"(GetCpuContext(task)->regs.gpr[2])      \
+    :                                             \
+    : "memory");                                  \
+    {                                             \
+        long i;                                   \
+        for (i = 0; i < 32; i++)                  \
+            GetCpuContext(task)->fpregs[i] = 0.0; \
+    }                                             \
 }
 
 /* This macro is similar to PREPARE_INITIAL_FRAME() but also saves

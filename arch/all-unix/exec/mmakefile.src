@@ -1,7 +1,7 @@
-# $Id$
+# $Id: mmakefile.src 22438 2004-10-03 09:36:38Z verhaegs $
 include $(TOP)/config/make.cfg
 
-FILES := kernel alert cause disable enable preparecontext stackswap switch \
+FILES := kernel alert cause disable enable exception preparecontext stackswap switch \
       	 rawioinit rawputchar rawmaygetchar idletask
 
 USER_INCLUDES   := -I$(GENINCDIR) -I$(TOP)/rom/exec -I..
