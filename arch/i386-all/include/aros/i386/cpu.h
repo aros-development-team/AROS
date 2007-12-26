@@ -35,8 +35,8 @@
  * For a normal ABI these should not be defined for maximum source code
  * compatibility.
  */
-#define AROS_FAST_BPTR 1
-#define AROS_FAST_BSTR 1
+/*#define AROS_FAST_BPTR 1*/
+/*#define AROS_FAST_BSTR 1*/
 
 /* do we need a function attribute to get parameters on the stack? */
 #define __stackparm
