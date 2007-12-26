@@ -36,8 +36,8 @@
  * For a normal ABI these should not be defined for maximum source code
  * compatibility.
  */
-/*#define AROS_FAST_BPTR 1*/
-/*#define AROS_FAST_BSTR 1*/
+#define AROS_FAST_BPTR 1
+#define AROS_FAST_BSTR 1
 
 /* types and limits for sig_atomic_t */
 #define AROS_SIG_ATOMIC_T       int

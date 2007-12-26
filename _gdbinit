@@ -1,7 +1,5 @@
 handle SIGUSR1 pass noprint nostop
 
-set $dshift = 2
-
 define liblist
     set $lib = SysBase->LibList.lh_Head
 
@@ -140,7 +138,7 @@ define modlist
         set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
 
         while ($segnode->node.mln_Succ != 0)
-            printf "%08x %s\n", ($segnode->seglist << $dshift), $segnode->name
+            printf "%08x %s\n", $segnode->seglist, $segnode->name
 
             set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
         end
@@ -159,16 +157,16 @@ define findaddr
         set $segnode = (struct debug_segnode *)debug_seglist.mlh_Head
 
         while ($segnode->node.mln_Succ != 0) && $cont
-            set $nextseg = ($segnode->seglist << $dshift)
+            set $nextseg = $segnode->seglist
 
             while $nextseg && $cont
 	        if $arg0 >= $nextseg && $arg0 <= ($nextseg + *((ULONG *)$nextseg - 1) - sizeof(BPTR))
-                    printf "Address found in %s, which is loaded at 0x%08x.\nIf this is an executable, its .text section starts at 0x%08x.\n", $segnode->name, ($segnode->seglist << $dshift), $segnode->start_address
+                    printf "Address found in %s, which is loaded at 0x%08x.\nIf this is an executable, its .text section starts at 0x%08x.\n", $segnode->name, $segnode->seglist, $segnode->start_address
 
                     set $cont = 0
                 end
 
-                set $nextseg = (*(BPTR *)$nextseg << $dshift)
+                set $nextseg = *(BPTR *)$nextseg
      	    end
 
             set $segnode = (struct debug_segnode *)$segnode->node.mln_Succ
