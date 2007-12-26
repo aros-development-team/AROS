@@ -13,7 +13,7 @@ dnl Lang: english
 # ------------------------------------------------------------------------
 
 AC_INIT(mmakefile)
-AC_PREREQ(2.53)
+AC_PREREQ(2.61)
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 
 # Check what host we are running on.
