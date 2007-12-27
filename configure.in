@@ -276,6 +276,20 @@ case "$host_os" in
 		;;
 	esac
         ;;
+
+    mingw32*)
+        aros_host_arch="mingw32"
+	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	case "$host_cpu" in
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+        ;;
     *)
 	AC_MSG_ERROR([Unsupported host architecture $host])
 	;;
@@ -817,6 +831,25 @@ case "$target_os" in
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
+		;;
+	esac
+    ;;
+
+    mingw32*)
+        aros_target_arch="mingw32"
+	aros_shared_default="no"
+	case "$target_cpu" in
+	    *i?86*)
+		aros_target_cpu="i386"
+                aros_object_format="elf_i386"
+		aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+		aros_shared_cflags=""
+		aros_default_wbdepth=8
+		gcc_target_cpu="i386"
+		;;
+	    *)
+		AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
 		;;
 	esac
     ;;
