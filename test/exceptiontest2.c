@@ -37,6 +37,7 @@ static ULONG handler(
 static void entry(void)
 {
     sigbit2 = AllocSignal(-1);
+    /* signal the parent task via a task exceptions */
     Signal(parent, 1 << excbit);
     if (sigbit2 >= 0)
     {
@@ -74,14 +75,13 @@ int main(int argc, char* argv[])
         {
             Wait(1 << sigbit1);
             /* we only want to get exceptioned once not on
-               every new call to Signal */
+               every new call to Signal, so disable excbit */
             SetExcept(0, 1 << excbit);
             if (sigbit2 >= 0)
             {
                 int i;
                 for (i = 0; i < 10; i++)
                 {
-                    printf("test\n");
                     Signal(t, 1 << sigbit2);
                     printf("%d\n", cnt);
                 }
