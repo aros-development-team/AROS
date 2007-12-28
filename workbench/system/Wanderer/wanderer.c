@@ -1301,13 +1301,13 @@ void wanderer_menufunc_icon_information()
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextSelected_Start;
     
     do
     {
-        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR)&entry);
         
-        if ((int)entry != MUIV_IconList_NextSelected_End)
+        if ((IPTR)entry != MUIV_IconList_NextSelected_End)
         {
             BPTR lock   = Lock(entry->filename, ACCESS_READ);
             BPTR parent = ParentDir(lock);
