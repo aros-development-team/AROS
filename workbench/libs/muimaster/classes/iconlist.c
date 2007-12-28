@@ -3728,9 +3728,9 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 							}
 						}
 
-						/* No icon clicked on ... so enable the lasso */
 						if (new_selected == NULL)
 						{
+							/* No icon clicked on ... Start Lasso-selection */
 							data->icld_LassoActive = TRUE;
 							if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
 							{
@@ -3744,7 +3744,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 							data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
 							data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
  
-							/* draw initial lasso */
+							/* Draw initial Lasso frame */
 							IconList_InvertLassoOutlines(obj, &data->icld_LassoRectangle);
 						}
 						else
@@ -3765,7 +3765,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 									data->icld_FocusIcon = new_selected;
 								}
 							}
-							else if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+							else if (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
 							{
 								new_selected->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
 								update_icon = new_selected;
@@ -3790,7 +3790,6 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 						if (DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros) && (data->icld_SelectionLastClicked == new_selected))
 						{
 							SET(obj, MUIA_IconList_DoubleClick, TRUE);
-							//data->icld_SelectionLastSelected = NULL;
 						}
 						else if (!data->mouse_pressed)
 						{
@@ -3840,57 +3839,26 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 				{
 					if (message->imsg->Code == SELECTUP)
 					{
-						/*
-						// check if mouse released on iconlist aswell
-						if (((mx >= 0) && (mx < _width(obj))) && 
-							((my >= 0) && (my < _height(obj))) &&
-							(data->icld_LassoActive == FALSE))
-						{
-							struct IconEntry *node = NULL;
-							//struct IconEntry *new_selected = NULL;
-							struct Rectangle     rect;
-
-							data->icld_SelectionFirstClicked = NULL;
-
-							ForeachNode(&data->icld_IconList, node)
-							{
-								if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (node->ile_Flags & ICONENTRY_FLAG_SELECTED))
-								{
-									rect.MinX = node->ile_IconX;
-									rect.MaxX = node->ile_IconX + node->ile_AreaWidth - 1;
-									rect.MinY = node->ile_IconY;
-									rect.MaxY = node->ile_IconY + node->ile_AreaHeight - 1;
-									if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-										(node->ile_AreaWidth < data->icld_IconAreaLargestWidth))
-									{
-										rect.MinX += ((data->icld_IconAreaLargestWidth - node->ile_AreaWidth)/2);
-										rect.MaxX += ((data->icld_IconAreaLargestWidth - node->ile_AreaWidth)/2);
-									}
-
-									// unselect all other nodes if mouse released on
-									//icon and lasso was not selected during mouse press
-									if ((((mx + data->icld_ViewX) >= rect.MinX) && ((mx + data->icld_ViewX) <= rect.MaxX )) &&
-										(((my + data->icld_ViewY) >= rect.MinY) && ((my + data->icld_ViewY) <= rect.MaxY )) &&
-										(data->icld_LassoActive == FALSE))
-									{
-										  node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
-										  data->icld_UpdateMode = UPDATE_SINGLEICON;
-										  data->update_icon = node;
-										  MUI_Redraw(obj,MADF_DRAWUPDATE);
-									}
-								}
-							}
-						}                                           
-*/
-						/* stop lasso selection/drawing now */
 						if (data->icld_LassoActive == TRUE)
 						{
-							/* make lasso disappear again */
-							struct Rectangle old_lasso;
+							// End Lasso-selection
+							struct Rectangle   old_lasso;
+							struct IconEntry   *node = NULL;
+
+							//Clear Lasso Frame..
 							GetAbsoluteLassoRect(data, &old_lasso); 
 							IconList_InvertLassoOutlines(obj, &old_lasso);
 
 							data->icld_LassoActive = FALSE;
+
+							//Remove Lasso flag from affected icons..
+							ForeachNode(&data->icld_IconList, node)
+							{
+								if (node->ile_Flags & ICONENTRY_FLAG_LASSO)
+								{
+									node->ile_Flags &= ~ICONENTRY_FLAG_LASSO;
+								}
+							}
 						}
 
 						data->mouse_pressed &= ~LEFT_BUTTON;
@@ -3941,7 +3909,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 						struct IconEntry    *node = NULL;
 						struct IconEntry    *new_selected = NULL; 
 
-						/* remove previous lasso frame */
+						/* Remove previous Lasso frame */
 						GetAbsoluteLassoRect(data, &old_lasso);                          
 						IconList_InvertLassoOutlines(obj, &old_lasso);
 
@@ -3968,14 +3936,12 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 							}
 						} 
 
-						/* update lasso coordinates */
+						/* update Lasso coordinates */
 						data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
 						data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY;
 
-						/* get absolute lasso coordinates */
+						/* get absolute Lasso coordinates */
 						GetAbsoluteLassoRect(data, &new_lasso);
-
-//						data->icld_SelectionFirstClicked = NULL;
 
 						ForeachNode(&data->icld_IconList, node)
 						{
@@ -4012,7 +3978,6 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 										 node->ile_Flags |= ICONENTRY_FLAG_LASSO;
 										 update_icon = node;
 									 }
-									 //data->icld_SelectionFirstClicked = node;
 								} 
 								else if (node->ile_Flags & ICONENTRY_FLAG_LASSO)
 								{
@@ -4027,6 +3992,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 									}
 									node->ile_Flags &= ~ICONENTRY_FLAG_LASSO;
 									update_icon = node;
+
+#warning "TODO: We should ensure Icons which are no longer in the selection list are properly removed"
 								}
 								
 								if (update_icon)
@@ -4037,7 +4004,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 								}
 							}
 						}
-						/* set lasso borders */                         
+						/* Draw Lasso frame */                         
 						IconList_InvertLassoOutlines(obj, &new_lasso);                        
 					}
 							
