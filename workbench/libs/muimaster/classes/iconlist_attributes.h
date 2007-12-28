@@ -7,10 +7,10 @@
 */
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconList                   (MUIB_ZUNE | 0x00042000)
+#define MUIB_IconList                      (MUIB_ZUNE | 0x00042000)
 
-#define MUIV_IconList_NextSelected_Start 0
-#define MUIV_IconList_NextSelected_End   1
+#define MUIV_IconList_NextSelected_Start   0
+#define MUIV_IconList_NextSelected_End     1
 
 /*** Attributes *************************************************************/
 #define MUIA_IconList_DoubleClick                           (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL                      */
@@ -65,27 +65,45 @@
 #define ICONENTRY_DRAWMODE_BACKONLY  3         /* Draw operation should _only_ draw the background     */
 
 /* Internal Icon state flags */
-#define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state              */
-#define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state           */
-#define ICONENTRY_FLAG_VISIBLE       (1<<3)		/* icon for entry should be drawn   */
-#define ICONENTRY_FLAG_HASICON	     (1<<4)		/* entry has an '.info' file        */
+#define ICONENTRY_FLAG_SELECTED      (1<<1)		/* icon selected state                */
+#define ICONENTRY_FLAG_FOCUS         (1<<2)		/* icon input focus state             */
+#define ICONENTRY_FLAG_VISIBLE       (1<<3)		/* icon for entry should be drawn     */
+#define ICONENTRY_FLAG_HASICON	     (1<<4)		/* entry has an '.info' file          */
 #define ICONENTRY_FLAG_TODAY	     (1<<7)		/* entry's timestamp is from today    */
+#define ICONENTRY_FLAG_LASSO         (1<<8)		/* Icon is being altered by a lasso  */
 
 /* iconlist rendering control flags */
-/* SORTFLAGS - a value of zero sets: sort by name + drawers at top */
-#define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/*mix folders and files when sorting*/
-#define ICONLIST_SORT_DRAWERS_LAST   (1<<1)		/*ignored if mixed is set*/
-#define ICONLIST_SORT_REVERSE        (1<<2)		/*reverse sort direction*/
-#define ICONLIST_SORT_BY_DATE	     (1<<3)		/*both date and size = sort by type*/
-#define ICONLIST_SORT_BY_SIZE	     (1<<4)		/*neither = sort by name*/
+/* SORTFLAGS 
+	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == 0)
+																	 place icons with coords at fixed
+																	 locations and sort remainder by name
+
+	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_NAME)
+																	 sort icons by Name
+
+	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_DATE)
+																	 sort icons by Date
+
+	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_SIZE)
+																	 sort icons by Size
+																	 
+	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE))
+																	 sort icons by Type
+*/
+#define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/* mix folders and files when sorting  */
+#define ICONLIST_SORT_DRAWERS_LAST   (1<<1)		/* ignored if mixed is set             */
+#define ICONLIST_SORT_REVERSE        (1<<2)		/* reverse sort direction              */
+#define ICONLIST_SORT_BY_NAME	     (1<<4)
+#define ICONLIST_SORT_BY_DATE	     (1<<5)
+#define ICONLIST_SORT_BY_SIZE	     (1<<6)
 
 /* DISPLAYFLAGS */
-#define ICONLIST_DISP_SHOWHIDDEN     (1<<0)		/* show system "hidden" files */
+#define ICONLIST_DISP_SHOWHIDDEN     (1<<0)		/* show system "hidden" files          */
 #define ICONLIST_DISP_SHOWINFO	     (1<<1)		/* only show icon(s) which have *.info files */
 
-#define ICONLIST_DISP_VERTICAL	     (1<<7)		/* tile icons vertically */
-#define ICONLIST_DISP_NOICONS	     (1<<8)		/* name only mode*/
-#define ICONLIST_DISP_DETAILS	     (1<<9)		/* name=details mode, icon=?? */
+#define ICONLIST_DISP_VERTICAL	     (1<<7)		/* tile icons vertically               */
+#define ICONLIST_DISP_NOICONS	     (1<<8)		/* name only mode                      */
+#define ICONLIST_DISP_DETAILS	     (1<<9)		/* name=details mode, icon=??          */
 
 #define ICONLIST_DISP_BUFFERED       (1<<15)            /* Iconlist uses buffered rendering */
 
@@ -126,12 +144,12 @@ enum iconlist_LabelRenderModes
 #define ILC_ICONLABEL_BORDERHEIGHT_DEFAULT             1
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconDrawerList         (MUIB_ZUNE | 0x00043000)  
+#define MUIB_IconDrawerList           (MUIB_ZUNE | 0x00043000)  
 
 /*** Attributes *************************************************************/
-#define MUIA_IconDrawerList_Drawer                          (MUIB_IconDrawerList | 0x00000000)      /* Zune: V1  isg LONG     */
+#define MUIA_IconDrawerList_Drawer    (MUIB_IconDrawerList | 0x00000000)      /* Zune: V1  isg LONG     */
 
 /*** Identifier base ********************************************************/
-#define MUIB_IconVolumeList         (MUIB_ZUNE | 0x00044000)  
+#define MUIB_IconVolumeList           (MUIB_ZUNE | 0x00044000)  
 
 #endif /* _MUI_CLASSES_ICONLIST_ATTRIBUTES_H */

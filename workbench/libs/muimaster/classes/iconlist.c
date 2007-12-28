@@ -102,8 +102,9 @@ struct MUI_IconData
 
 
 	/* Selection & Drag/Drop Info .. */
-	struct IconEntry              *icld_SelectionFirst;               /* the icon which has been selected first or NULL */
-	struct IconEntry              *icld_SelectionLast;
+	struct IconEntry              *icld_SelectionFirstClicked;        /* the icon which has been selected first or NULL */
+	struct IconEntry              *icld_SelectionLastClicked;
+	struct IconEntry              *icld_SelectionLastSelected;
 	struct IconEntry              *icld_FocusIcon;
 
 	struct IconList_Drop          drop_entry;                         /* the icon where the icons have been dropped */
@@ -1209,6 +1210,14 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 			icon->ile_IconX = cur_x;
 			icon->ile_IconY = cur_y;
 	
+			if (icon->ile_Flags & ICONENTRY_FLAG_SELECTED)
+			{
+				if (data->icld_SelectionFirstClicked == NULL) data->icld_SelectionFirstClicked = icon;
+				if (data->icld_SelectionLastClicked == NULL) data->icld_SelectionLastClicked = icon;
+				if (data->icld_SelectionLastSelected == NULL) data->icld_SelectionLastSelected = icon;
+				if (data->icld_FocusIcon == NULL) data->icld_FocusIcon = icon;
+			}
+
 			if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
 			{
 				maxw = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
@@ -1373,7 +1382,7 @@ D(bug("[IconList] IconList__OM_NEW()\n"));
 	
 D(bug("[IconList] IconList__OM_NEW: SELF = 0x%p, muiRenderInfo = 0x%p\n", obj, muiRenderInfo(obj)));
 
-	data->icld_SelectionLast = NULL;
+	data->icld_SelectionLastSelected = NULL;
 	
 	NewList((struct List*)&data->icld_IconList);
 
@@ -2324,8 +2333,8 @@ IPTR IconList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MU
 D(bug("[IconList]: IconList__MUIM_IconList_Update()\n"));
 
 	data->icld_FocusIcon = NULL;
-	data->icld_SelectionFirst = NULL;
-	data->icld_SelectionLast = NULL;
+	data->icld_SelectionFirstClicked = NULL;
+	data->icld_SelectionLastSelected = NULL;
 
 	return 1;
 }
@@ -2345,7 +2354,7 @@ D(bug("[IconList]: IconList__MUIM_IconList_Clear()\n"));
 		DoMethod(obj, MUIM_IconList_DestroyEntry, node);
 	}
 
-	data->icld_SelectionFirst = NULL;
+	data->icld_SelectionFirstClicked = NULL;
 	data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
 
 	SetAttrs(obj, MUIA_IconList_Left, data->icld_ViewX,
@@ -2671,7 +2680,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Processing key up event\n"));
 D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_RETURN\n"));
 #endif
 
-							if (data->icld_SelectionFirst) active_entry = data->icld_SelectionFirst;
+							if (data->icld_SelectionFirstClicked) active_entry = data->icld_SelectionFirstClicked;
 							else if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
 
 							if (active_entry)
@@ -2683,8 +2692,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_RETURN\n"));
 									data->update_icon = active_entry;
 									MUI_Redraw(obj, MADF_DRAWUPDATE);
 								}
-								data->icld_SelectionFirst = active_entry;
-								data->icld_SelectionLast = active_entry;
+								data->icld_SelectionFirstClicked = active_entry;
+								data->icld_SelectionLastSelected = active_entry;
 								data->icld_FocusIcon = active_entry;
 
 								SET(obj, MUIA_IconList_DoubleClick, TRUE);
@@ -2699,9 +2708,9 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_SPACE\n"));
 #endif
 
 							if (data->icld_FocusIcon) active_entry = data->icld_FocusIcon;
-							else if (data->icld_SelectionFirst) active_entry = data->icld_SelectionFirst;
+							else if (data->icld_SelectionFirstClicked) active_entry = data->icld_SelectionFirstClicked;
 
-							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
+							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirstClicked)||(data->icld_SelectionLastSelected)))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: SPACE: Clearing selected icons ..\n"));
@@ -2714,7 +2723,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: SPACE: Clearing selected icons ..\
 								if (!(active_entry->ile_Flags & ICONENTRY_FLAG_SELECTED))
 								{
 									active_entry->ile_Flags |= ICONENTRY_FLAG_SELECTED;
-									data->icld_SelectionFirst = active_entry;
+									data->icld_SelectionFirstClicked = active_entry;
 								}
 								else
 									active_entry->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
@@ -2830,7 +2839,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: UP: using start_X %d, start_Y %d\n
 #endif
 							}
 
-							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
+							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirstClicked)||(data->icld_SelectionLastSelected)))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: UP: Clearing selected icons ..\n"));
@@ -3032,7 +3041,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: using start_X %d, start_Y %d
 #endif
 							}
 
-							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
+							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirstClicked)||(data->icld_SelectionLastSelected)))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: DOWN: Clearing selected icons ..\n"));
@@ -3250,7 +3259,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: using start_X %d, start_Y %d
 #endif
 							}
 
-							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
+							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirstClicked)||(data->icld_SelectionLastSelected)))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: LEFT: Clearing selected icons ..\n"));
@@ -3449,7 +3458,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: using start_X %d, start_Y %
 #endif
 							}
 
-							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirst)||(data->icld_SelectionLast)))
+							if (!(message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && ((data->icld_SelectionFirstClicked)||(data->icld_SelectionLastSelected)))
 							{
 #if defined(DEBUG_ILC_KEYEVENTS)
 D(bug("[IconList] IconList__MUIM_HandleEvent: RIGHT: Clearing selected icons ..\n"));
@@ -3643,26 +3652,24 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_END\n"));
 					/* check if mouse pressed on iconlist area */
 					if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj))
 					{
-						struct IconEntry *node = NULL;
-						struct IconEntry *new_selected = NULL;
+						struct IconEntry      *node = NULL;
+						struct IconEntry      *new_selected = NULL;
 						struct Rectangle     rect;
 
 						int selections = 0;
-		  
-						data->icld_SelectionFirst = NULL;
 
 						/* check if clicked on icon */
 						ForeachNode(&data->icld_IconList, node)
 						{
 							if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 							{
-								/* count all OLD selections */
-								if (node->ile_Flags & ICONENTRY_FLAG_SELECTED) selections++;
+								BOOL update_icon = FALSE;
 
 								rect.MinX = node->ile_IconX;
 								rect.MaxX = node->ile_IconX + node->ile_AreaWidth - 1;
 								rect.MinY = node->ile_IconY;
 								rect.MaxY = node->ile_IconY + node->ile_AreaHeight - 1;
+
 								if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
 									(node->ile_AreaWidth < data->icld_IconAreaLargestWidth))
 								{
@@ -3676,99 +3683,118 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: RAWKEY_END\n"));
 								{
 									new_selected = node;
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: New Icon clicked on ..\n"));
+D(bug("[IconList] IconList__MUIM_HandleEvent: Icon '%s' clicked on ..\n", node->ile_IconListEntry.label));
+#endif
+									if (data->icld_SelectionFirstClicked == NULL)
+									{
+#if defined(DEBUG_ILC_EVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: First Icon to be clicked!\n"));
+#endif
+										data->icld_SelectionFirstClicked = node;
+									}
+									data->icld_SelectionLastClicked = node;
+								}
+
+								if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+								{
+									if (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+									{
+										data->icld_SelectionLastSelected = node;
+										if (new_selected != node) 
+											selections++;                                 /* count all OLD selections */
+									}
+									else if (new_selected != node) 
+									{
+										node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
+										update_icon = TRUE;
+									}
+								}
+
+								if ((node->ile_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
+								{
+									node->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
+									update_icon = TRUE;
+								}
+
+								if (update_icon)
+								{
+									data->icld_UpdateMode = UPDATE_SINGLEICON;
+									data->update_icon = node;
+									MUI_Redraw(obj, MADF_DRAWUPDATE);
+#if defined(DEBUG_ILC_EVENTS)
+D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_IconListEntry.label));
 #endif
 								}
 							}
 						}
 
-						if (data->icld_FocusIcon)
-						{
-							if (!(new_selected) || (new_selected && (new_selected != data->icld_FocusIcon)))
-							{
-								data->icld_FocusIcon->ile_Flags &= ~(ICONENTRY_FLAG_FOCUS|ICONENTRY_FLAG_SELECTED);
-								if ((data->icld_SelectionLast == data->icld_FocusIcon) && selections < 2) data->icld_SelectionLast = NULL;
-								data->icld_UpdateMode = UPDATE_SINGLEICON;
-								data->update_icon = data->icld_FocusIcon;
-								MUI_Redraw(obj, MADF_DRAWUPDATE);
-								data->icld_FocusIcon = NULL;
-#if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: Cleared currently focused icon..\n"));
-#endif
-							}
-						}
-
-						if (data->icld_SelectionLast)
-						{
-							if (!(new_selected) || (new_selected && (new_selected != data->icld_SelectionLast) && selections < 2))
-							{
-								data->icld_SelectionLast->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
-								data->icld_UpdateMode = UPDATE_SINGLEICON;
-								data->update_icon = data->icld_SelectionLast;
-								MUI_Redraw(obj,MADF_DRAWUPDATE);
-#if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: ReDrawn last selected..\n"));
-#endif
-							}
-						}
-						
-						/* if not cliked on icon set lasso as active */
-						if (!new_selected)
+						/* No icon clicked on ... so enable the lasso */
+						if (new_selected == NULL)
 						{
 							data->icld_LassoActive = TRUE;
-
+							if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+							{
+								data->icld_SelectionFirstClicked = NULL;
+								data->icld_SelectionLastClicked = NULL;
+								data->icld_SelectionLastSelected = NULL;
+								data->icld_FocusIcon = NULL;
+							}
 							data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
 							data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
 							data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
 							data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
  
-							/* deselect old selection */
-							DoMethod(obj, MUIM_IconList_UnselectAll);
-
 							/* draw initial lasso */
 							IconList_InvertLassoOutlines(obj, &data->icld_LassoRectangle);
 						}
 						else
 						{
-							BOOL update_icon = FALSE;
+							struct IconEntry      *update_icon = NULL;
+
 							data->icld_LassoActive = FALSE;
 
 							if (!(new_selected->ile_Flags & ICONENTRY_FLAG_SELECTED))
 							{
 								new_selected->ile_Flags |= ICONENTRY_FLAG_SELECTED;
-								update_icon = TRUE;
+								update_icon = new_selected;
+
+								if (!(new_selected->ile_Flags & ICONENTRY_FLAG_FOCUS))
+								{
+									new_selected->ile_Flags |= ICONENTRY_FLAG_FOCUS;
+									update_icon = new_selected;
+									data->icld_FocusIcon = new_selected;
+								}
 							}
-							if (!(new_selected->ile_Flags & ICONENTRY_FLAG_FOCUS))
+							else if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
 							{
-								new_selected->ile_Flags |= ICONENTRY_FLAG_FOCUS;
-								update_icon = TRUE;
+								new_selected->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
+								update_icon = new_selected;
+								new_selected = NULL;
 							}
 
-							if (update_icon)
+							if (update_icon != NULL)
 							{
 								data->icld_UpdateMode = UPDATE_SINGLEICON;
-								data->update_icon = new_selected;
+								data->update_icon = update_icon;
 								MUI_Redraw(obj, MADF_DRAWUPDATE);
 #if defined(DEBUG_ILC_EVENTS)
-D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
+D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\n", update_icon->ile_IconListEntry.label));
 #endif
 							}
-							data->icld_SelectionFirst = new_selected;
-							data->icld_FocusIcon = new_selected;
 						}                       
 
 						data->icon_click.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
 						data->icon_click.entry = new_selected ? &new_selected->ile_IconListEntry : NULL;
 						SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icon_click);
 
-						if (DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros) && data->icld_SelectionLast == new_selected)
+						if (DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros) && (data->icld_SelectionLastClicked == new_selected))
 						{
 							SET(obj, MUIA_IconList_DoubleClick, TRUE);
-							data->icld_SelectionLast = NULL;
+							//data->icld_SelectionLastSelected = NULL;
 						}
 						else if (!data->mouse_pressed)
 						{
-							data->icld_SelectionLast = new_selected;
+							data->icld_SelectionLastSelected = new_selected;
 							data->last_secs = message->imsg->Seconds;
 							data->last_mics = message->imsg->Micros;
 			
@@ -3814,7 +3840,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 				{
 					if (message->imsg->Code == SELECTUP)
 					{
-						/* check if mose released on iconlist aswell */
+						/*
+						// check if mouse released on iconlist aswell
 						if (((mx >= 0) && (mx < _width(obj))) && 
 							((my >= 0) && (my < _height(obj))) &&
 							(data->icld_LassoActive == FALSE))
@@ -3823,7 +3850,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 							//struct IconEntry *new_selected = NULL;
 							struct Rectangle     rect;
 
-							data->icld_SelectionFirst = NULL;
+							data->icld_SelectionFirstClicked = NULL;
 
 							ForeachNode(&data->icld_IconList, node)
 							{
@@ -3840,7 +3867,8 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 										rect.MaxX += ((data->icld_IconAreaLargestWidth - node->ile_AreaWidth)/2);
 									}
 
-									/* unselect all other nodes if mouse released on icon and lasso was not selected during mouse press */
+									// unselect all other nodes if mouse released on
+									//icon and lasso was not selected during mouse press
 									if ((((mx + data->icld_ViewX) >= rect.MinX) && ((mx + data->icld_ViewX) <= rect.MaxX )) &&
 										(((my + data->icld_ViewY) >= rect.MinY) && ((my + data->icld_ViewY) <= rect.MaxY )) &&
 										(data->icld_LassoActive == FALSE))
@@ -3853,7 +3881,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 								}
 							}
 						}                                           
-
+*/
 						/* stop lasso selection/drawing now */
 						if (data->icld_LassoActive == TRUE)
 						{
@@ -3889,22 +3917,23 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 					LONG    move_x = mx;
 					LONG    move_y = my;
 
-					/* check if clicked on icon, or update lasso coords if lasso activated */
-					if (data->icld_SelectionFirst && (data->icld_LassoActive == FALSE) && 
+					if (data->icld_SelectionFirstClicked && (data->icld_LassoActive == FALSE) && 
 						((abs(move_x - data->click_x) >= 2) || (abs(move_y - data->click_y) >= 2)))
 					{
+						// Icon(s) being dragged ....
 						DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 						data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
 						DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			
 						data->mouse_pressed &= ~LEFT_BUTTON;
 			
-						data->touch_x = move_x + data->icld_ViewX - data->icld_SelectionFirst->ile_IconX;
-						data->touch_y = move_y + data->icld_ViewY - data->icld_SelectionFirst->ile_IconY;
+						data->touch_x = move_x + data->icld_ViewX - data->icld_SelectionFirstClicked->ile_IconX;
+						data->touch_y = move_y + data->icld_ViewY - data->icld_SelectionFirstClicked->ile_IconY;
 						DoMethod(obj,MUIM_DoDrag, data->touch_x, data->touch_y, 0);
 					}
-					else if (data->icld_LassoActive == TRUE) /* if no icon selected start lasso */
+					else if (data->icld_LassoActive == TRUE)
 					{
+						//Lasso active ..
 						struct Rectangle    new_lasso,
 											old_lasso;
 						struct Rectangle    iconrect;
@@ -3912,11 +3941,11 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 						struct IconEntry    *node = NULL;
 						struct IconEntry    *new_selected = NULL; 
 
-						/* unmark old lasso area */
+						/* remove previous lasso frame */
 						GetAbsoluteLassoRect(data, &old_lasso);                          
 						IconList_InvertLassoOutlines(obj, &old_lasso);
 
-						/* if mouse leaves iconlist area during lasso mode, scroll view */
+						/* if the mouse leaves our visible area scroll the view */
 						if (mx < 0 || mx >= _mwidth(obj) || my < 0 || my >= _mheight(obj))
 						{
 							LONG newleft = data->icld_ViewX;
@@ -3946,10 +3975,12 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 						/* get absolute lasso coordinates */
 						GetAbsoluteLassoRect(data, &new_lasso);
 
-						data->icld_SelectionFirst = NULL;
+//						data->icld_SelectionFirstClicked = NULL;
 
 						ForeachNode(&data->icld_IconList, node)
 						{
+							IPTR update_icon = NULL;
+
 							if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 							{
 								iconrect.MinX = node->ile_IconX;
@@ -3963,34 +3994,47 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered selected icon..\n"));
 									iconrect.MaxX += ((data->icld_IconAreaLargestWidth - node->ile_AreaWidth)/2);
 								}
 
-								 /* check if clicked on icon */
 								if ((((new_lasso.MaxX + data->icld_ViewX) >= iconrect.MinX) && ((new_lasso.MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
 									(((new_lasso.MaxY + data->icld_ViewY) >= iconrect.MinY) && ((new_lasso.MinY + data->icld_ViewY) <= iconrect.MaxY)))
 								{
-									 new_selected = node;
-
-									 /* check if icon was already selected before */
-									 if (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
+									//Icon is inside our lasso ..
+									 if (!(node->ile_Flags & ICONENTRY_FLAG_LASSO))
 									 {
-										 node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
-										 data->icld_UpdateMode = UPDATE_SINGLEICON;
-										 data->update_icon = node;
-										 data->icld_SelectionLast = node; // <- I'm the latest addition to your flock! =)
-										 MUI_Redraw(obj, MADF_DRAWUPDATE);
+										 /* check if icon was already selected before */
+										if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+										{
+											node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
+										}
+										else
+										{
+											node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+										}
+										 node->ile_Flags |= ICONENTRY_FLAG_LASSO;
+										 update_icon = node;
 									 }
-
-									 data->icld_SelectionFirst = node;
+									 //data->icld_SelectionFirstClicked = node;
 								} 
-								else
+								else if (node->ile_Flags & ICONENTRY_FLAG_LASSO)
 								{
-									if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)  /* if not catched by lasso and selected before -> unselect */
+									//Icon is no longer inside our lasso - revert its selected state
+									if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
 									{
 										node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
-										data->icld_UpdateMode = UPDATE_SINGLEICON;
-										data->update_icon = node;
-										MUI_Redraw(obj, MADF_DRAWUPDATE);
 									}
-								} 
+									else
+									{
+										node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+									}
+									node->ile_Flags &= ~ICONENTRY_FLAG_LASSO;
+									update_icon = node;
+								}
+								
+								if (update_icon)
+								{
+									data->icld_UpdateMode = UPDATE_SINGLEICON;
+									data->update_icon = update_icon;
+									MUI_Redraw(obj, MADF_DRAWUPDATE);
+								}
 							}
 						}
 						/* set lasso borders */                         
@@ -4039,48 +4083,43 @@ IPTR IconList__MUIM_IconList_NextSelected(struct IClass *CLASS, Object *obj, str
 	struct IconEntry       *node = NULL;
 	struct IconList_Entry  *ent = NULL;
 
-	if (!message->entry) return (IPTR)NULL;
+	if (message->entry == NULL) return (IPTR)NULL;
 	ent = *message->entry;
 
 D(bug("[IconList]: IconList__MUIM_IconList_NextSelected()\n"));
-	
-	if (((IPTR)ent) == MUIV_IconList_NextSelected_Start)
-	{
-		if (!(node = data->icld_SelectionLast))
-		{
-D(bug("[IconList] IconList__MUIM_IconList_NextSelected: No selected entries!!!\n"));
-			*message->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
-		} 
-		else
-		{
-			/* get the first selected entry in list */
-			node = (struct IconEntry *)GetHead(&data->icld_IconList);
-			while (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
-			{
-				node = (struct IconEntry *)GetSucc(node);
-			}
 
-			*message->entry = &node->ile_IconListEntry;
-		}
-		return 0;
+	if ((IPTR)ent == (IPTR)MUIV_IconList_NextSelected_Start)
+	{
+D(bug("[IconList] IconList__MUIM_IconList_NextSelected: Finding First Entry ..\n"));
+		node = (struct IconEntry *)GetHead(&data->icld_IconList);
 	}
-
-	node = (struct IconEntry *)GetHead(&data->icld_IconList); /* not really necessary but it avoids compiler warnings */
-
-	node = (struct IconEntry*)(((char*)ent) - ((char*)(&node->ile_IconListEntry) - (char*)node));
-	node = (struct IconEntry *)GetSucc(node);
-
-	while (node)
+	else if ((data->icld_SelectionLastSelected != NULL) && ((IPTR)ent == (IPTR)&data->icld_SelectionLastSelected->ile_IconListEntry))
 	{
-		if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
-		{
-			*message->entry = &node->ile_IconListEntry;
-			return 0;
-		}
+D(bug("[IconList] IconList__MUIM_IconList_NextSelected: At Last entry ..\n"));
+	} 
+	else
+	{
+		node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 		node = (struct IconEntry *)GetSucc(node);
 	}
 
-	*message->entry = (struct IconList_Entry*)MUIV_IconList_NextSelected_End;
+	while ((node != NULL) && (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED)))
+	{
+		node = (struct IconEntry *)GetSucc(node);
+	}
+	
+	if (node == NULL)
+	{
+D(bug("[IconList] IconList__MUIM_IconList_NextSelected: Returning MUIV_IconList_NextSelected_End\n"));
+
+		*message->entry = (struct IconList_Entry *)MUIV_IconList_NextSelected_End;
+	}
+	else
+	{
+D(bug("[IconList] IconList__MUIM_IconList_NextSelected: Returning entry for '%s'\n", node->ile_IconListEntry.label));
+
+		*message->entry = &node->ile_IconListEntry;
+	}
 
 	return (IPTR)NULL;
 }
@@ -4097,14 +4136,14 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 
 D(bug("[IconList]: IconList__MUIM_CreateDragImage()\n"));
 
-	if (!data->icld_SelectionFirst) DoSuperMethodA(CLASS, obj, (Msg)message);
+	if (!data->icld_SelectionFirstClicked) DoSuperMethodA(CLASS, obj, (Msg)message);
 
 	if ((img = (struct MUI_DragImage *)AllocVec(sizeof(struct MUIP_CreateDragImage), MEMF_CLEAR)))
 	{
 		struct IconEntry *node = NULL;
 		LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
 	
-		node = data->icld_SelectionFirst;
+		node = data->icld_SelectionFirstClicked;
 
 #if defined(CREATE_FULL_DRAGIMAGE)
 		ForeachNode(&data->icld_IconList, node)
@@ -4175,7 +4214,7 @@ IPTR IconList__MUIM_DeleteDragImage(struct IClass *CLASS, Object *obj, struct MU
 
 D(bug("[IconList]: IconList__MUIM_DeleteDragImage()\n"));
 
-	if (!data->icld_SelectionFirst) return DoSuperMethodA(CLASS,obj,(Msg)message);
+	if (!data->icld_SelectionFirstClicked) return DoSuperMethodA(CLASS,obj,(Msg)message);
 
 	if (message->di)
 	{
@@ -4225,7 +4264,7 @@ D(bug("[IconList]: IconList__MUIM_DragDrop()\n"));
 	/* check if dropped on same iconlist object */
 	if (message->obj == obj)
 	{
-		struct IconEntry *icon = data->icld_SelectionFirst;
+		struct IconEntry *icon = data->icld_SelectionFirstClicked;
 
 		if (icon)
 		{
@@ -4235,8 +4274,8 @@ D(bug("[IconList]: IconList__MUIM_DragDrop()\n"));
 			APTR    	        clip = NULL;
 
 			/* icon moved, dropped in the same window */
-			SET(obj, MUIA_IconList_IconsMoved, (IPTR) &(data->icld_SelectionFirst->ile_IconListEntry)); /* Now notify */
-D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window\n", data->icld_SelectionFirst->ile_IconListEntry.filename); )
+			SET(obj, MUIA_IconList_IconsMoved, (IPTR)&data->icld_SelectionFirstClicked->ile_IconListEntry); /* Now notify */
+D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window\n", data->icld_SelectionFirstClicked->ile_IconListEntry.filename); )
 				
 			IconList_GetIconAreaRectangle(obj, data, icon, &rect_old);
 
@@ -4248,9 +4287,9 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
 			icon->ile_IconX = message->x - _mleft(obj) + data->icld_ViewX - data->touch_x;
 			icon->ile_IconY = message->y - _mtop(obj) + data->icld_ViewY - data->touch_y;
 
-			DoMethod(obj, MUIM_IconList_RethinkDimensions, data->icld_SelectionFirst);
+			DoMethod(obj, MUIM_IconList_RethinkDimensions, data->icld_SelectionFirstClicked);
 
-			IconList_GetIconAreaRectangle(obj, data, data->icld_SelectionFirst, &rect_new);
+			IconList_GetIconAreaRectangle(obj, data, data->icld_SelectionFirstClicked, &rect_new);
 	
 			rect_new.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
 			rect_new.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
@@ -4379,19 +4418,27 @@ IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg 
 
 D(bug("[IconList]: IconList__MUIM_IconList_UnselectAll()\n"));
 
+	data->icld_SelectionFirstClicked = NULL;
+	data->icld_SelectionLastClicked = NULL;
+	data->icld_SelectionLastSelected = NULL;
+	data->icld_FocusIcon = NULL;
+
 	ForeachNode(&data->icld_IconList, node)
 	{
 		BOOL update_icon = FALSE;
 
-		if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+		if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 		{
-			node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
-			update_icon = TRUE;
-		}
-		if (node->ile_Flags & ICONENTRY_FLAG_FOCUS)
-		{
-			node->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
-			update_icon = TRUE;
+			if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+			{
+				node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
+				update_icon = TRUE;
+			}
+			if (node->ile_Flags & ICONENTRY_FLAG_FOCUS)
+			{
+				node->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
+				update_icon = TRUE;
+			}
 		}
 
 		if (update_icon)
@@ -4401,9 +4448,7 @@ D(bug("[IconList]: IconList__MUIM_IconList_UnselectAll()\n"));
 			MUI_Redraw(obj, MADF_DRAWUPDATE);
 		}
 	}
-	data->icld_FocusIcon = NULL;
-	data->icld_SelectionFirst = NULL;
-	data->icld_SelectionLast = NULL;
+
 	return 1;
 }
 
@@ -4419,33 +4464,55 @@ D(bug("[IconList]: IconList__MUIM_IconList_SelectAll()\n"));
 
 	node = (struct IconEntry *)GetHead(&data->icld_IconList);
 
-	if (node)
+	while (node != NULL)
 	{
-		data->icld_FocusIcon = node;
-		node->ile_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
-		node->ile_Flags |= ICONENTRY_FLAG_FOCUS;
-
-		while (node)
+		if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
 		{
 			BOOL update_icon = FALSE;
 
 			if (!(node->ile_Flags & ICONENTRY_FLAG_SELECTED))
 			{
+				node->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
 				node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+				update_icon = TRUE;
+				
+				if (data->icld_SelectionFirstClicked == NULL) data->icld_SelectionFirstClicked = node;
+				data->icld_SelectionLastClicked = node;
+			}
+			else if (node->ile_Flags & ICONENTRY_FLAG_FOCUS)
+			{
+				node->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
 				update_icon = TRUE;
 			}
 
+			if (node->ile_Flags & ICONENTRY_FLAG_SELECTED)
+			{
+				data->icld_SelectionLastSelected = node;
+			}
+			
 			if (update_icon)
 			{
 				data->icld_UpdateMode = UPDATE_SINGLEICON;
 				data->update_icon = node;
-				data->icld_SelectionLast = node;
 				MUI_Redraw(obj, MADF_DRAWUPDATE);
 			}
-			node = (struct IconEntry *)GetSucc(node);
 		}
+		node = (struct IconEntry *)GetSucc(node);
 	}
 
+	if ((data->icld_SelectionLastClicked) && (data->icld_SelectionLastClicked != data->icld_FocusIcon))
+	{
+		data->icld_FocusIcon = data->icld_SelectionLastClicked;
+		if (!(data->icld_FocusIcon->ile_Flags & ICONENTRY_FLAG_FOCUS))
+		{
+				data->icld_FocusIcon->ile_Flags &= ~ICONENTRY_FLAG_FOCUS;
+				data->icld_FocusIcon->ile_Flags |= ICONENTRY_FLAG_FOCUS;
+				data->icld_UpdateMode = UPDATE_SINGLEICON;
+				data->update_icon = data->icld_FocusIcon;
+				MUI_Redraw(obj, MADF_DRAWUPDATE);
+		}
+	}
+	
 	return 1;
 }
 
@@ -4789,7 +4856,15 @@ D(bug("[IconList] IconList__MUIM_IconList_Sort()\n"));
 			AddHead((struct List*)&list_VisibleIcons, (struct Node *)entry);
 			visible_count++;
 		}
-		else AddHead((struct List*)&list_HiddenIcons, (struct Node *)entry);
+		else
+		{
+			entry->ile_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
+			if (data->icld_SelectionFirstClicked == entry) data->icld_SelectionFirstClicked = NULL;
+			if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
+			if (data->icld_SelectionLastSelected == entry) data->icld_SelectionLastSelected = NULL;
+			if (data->icld_SelectionLastSelected == entry) data->icld_FocusIcon = NULL;
+			AddHead((struct List*)&list_HiddenIcons, (struct Node *)entry);
+		}
 	}
 	/* Copy each visible icon entry back to the main list, sorting as we go*/
 
