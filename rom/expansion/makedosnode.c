@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id$
+	Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+	$Id$
 
-    Desc: MakeDosNode() - Create a DOS DeviceNode structure.
-    Lang: English
+	Desc: MakeDosNode() - Create a DOS DeviceNode structure.
+	Lang: English
 */
 
 #include "expansion_intern.h"
@@ -18,7 +18,7 @@
 
 /*****************************************************************************
 
-    NAME */
+	NAME */
 #include <dos/filehandler.h>
 #include <proto/expansion.h>
 
@@ -44,165 +44,170 @@
 
 	You can use AddBootNode() to add a node to the system.
 
-    INPUTS
-	parmPacket  -   a longword array containing the device parameters
-			required to initialize the structures. This is a
-			variable length structure. See also the DosEnvec
-			structure in dos/filehandler.h
+	INPUTS
+	parmPacket  -   previously an array of LONGS - but changed to
+					an IPTR array for 64bit compatability containing
+					the device parameters required to initialize the
+					structures. This is a variable length structure.
+					See also the DosEnvec structure in dos/filehandler.h
 
-	    longword    description
-	    --------    -----------
-	    0           Exec string with dos handler name (eg ffs.handler)
-	    1           Exec string with exec device name (eg fdsk.device)
-	    2           unit number of device to open
-	    3           flags (for OpenDevice())
-	    4           length of the remaining data
-	    5-n         environment data - consists of:
+		longword    description
+		--------    -----------
+		0           Exec string with dos handler name (eg ffs.handler)
+		1           Exec string with exec device name (eg fdsk.device)
+		2           unit number of device to open
+		3           flags (for OpenDevice())
+		4           length of the remaining data
+		5-n         environment data - consists of:
 
-	    5           Size of standard device block in 32 bit longwords
-	    6           not used; 0
-	    7           # of heads - drive specific
-	    8           # of sectors per block - not used; 0
-	    9           # of blocks per track - drive specific
-	    10          # of reserved blocks at the start of the partition
-	    11          # of reserved blocks at the end of the partition
-	    12          device interleave
-	    13          starting cylinder of partition
-	    14          end cylinder of partition
-	    15          initial number of buffers
-	    16          type of memory for buffers (CHIP, FAST,...)
-	    17          max number of bytes to transfer at one time
-	    18          address mask allowable for DMA transfers
-	    19          boot priority for autobootable devices
-	    20          standard DOS filesystem ID (eg 'DOS\1')
-	    21          baud rate for serial handler
-	    22          control word for handler/filesystem
-	    23          number of boot blocks on this partition
+		5           Size of standard device block in 32 bit longwords
+		6           not used; 0
+		7           # of heads - drive specific
+		8           # of sectors per block - not used; 0
+		9           # of blocks per track - drive specific
+		10          # of reserved blocks at the start of the partition
+		11          # of reserved blocks at the end of the partition
+		12          device interleave
+		13          starting cylinder of partition
+		14          end cylinder of partition
+		15          initial number of buffers
+		16          type of memory for buffers (CHIP, FAST,...)
+		17          max number of bytes to transfer at one time
+		18          address mask allowable for DMA transfers
+		19          boot priority for autobootable devices
+		20          standard DOS filesystem ID (eg 'DOS\1')
+		21          baud rate for serial handler
+		22          control word for handler/filesystem
+		23          number of boot blocks on this partition
 
-    RESULT
+	RESULT
 	deviceNode  -   An initialized DeviceNode structure, or NULL if
 			the required memory could not be allocated. The
 			caller will have to modify this structure before
 			passing it to AddBootNode().
 
-    NOTES
+	NOTES
 	There are a number of fields of the DeviceNode structure that this
 	function cannot initialize due to a lack of information. You
 	should fill these in yourself.
 
-    EXAMPLE
+	EXAMPLE
 
-    BUGS
+	BUGS
 
-    SEE ALSO
+	SEE ALSO
 	AddBootNode(), AddDosNode(), dos/MakeDosEntry()
 
-    INTERNALS
+	INTERNALS
 
-    HISTORY
+	HISTORY
 	27-11-96    digulla automatically created from
-			    expansion_lib.fd and clib/expansion_protos.h
+				expansion_lib.fd and clib/expansion_protos.h
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
+	AROS_LIBFUNC_INIT
 
-    struct DeviceNode *dn;
-    struct FileSysStartupMsg *fssm;
-    struct DosEnvec *de;
-    STRPTR s1, s2 = 0;
-    BSTR   bs1, bs2;
-    int    strLen1, strLen2, sz1, sz2;
-    int    i;			/* Loop variable */
+	struct DeviceNode *dn;
+	struct FileSysStartupMsg *fssm;
+	struct DosEnvec *de;
+	STRPTR s1, s2 = 0;
+	BSTR   bs1, bs2;
+	int    strLen1, strLen2, sz1, sz2;
+	int    i;			/* Loop variable */
 
-    if (parmPacket == NULL)
-    {
-	return NULL;
-    }
+	if (parmPacket == NULL)
+	{
+		return NULL;
+	}
 
-    /* This is the environment structure */
-    de = (struct DosEnvec *)((IPTR *)parmPacket + 4);
-    
-    dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC);
-    
-    if (dn == NULL)
-    {
-	return NULL;
-    }
-    
-    fssm = AllocMem(sizeof(struct FileSysStartupMsg),
-		    MEMF_CLEAR | MEMF_PUBLIC);
-    
-    if (fssm == NULL)
-    {
-	FreeMem(dn, sizeof(struct DeviceNode));
+	/* This is the environment structure */
+	de = (struct DosEnvec *)((IPTR *)parmPacket + 4);
 	
-	return NULL;
-    }
-    
-    /* To help prevent fragmentation I will allocate both strings in the
-       same block of memory.
-    */
-
-    strLen1 = strlen((STRPTR)((ULONG *)parmPacket)[0]);
-    /* Round size to alloc to nearest mutiple of 4 */
-    sz1 = (AROS_BSTR_MEMSIZE4LEN(strLen1) + 3) & ~3;
-
-    /* There doesn't have to exist an underlying block device */
-    if ((STRPTR)((IPTR *)parmPacket)[1] != NULL)
-    {
-	strLen2 = strlen((STRPTR)((ULONG *)parmPacket)[1]);
-    }
-    else
-    {
-	strLen2 = 0;
-    }
-    sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2);
-
-    s1 = AllocVec(sz1 + sz2, MEMF_CLEAR | MEMF_PUBLIC);
-    
-    if (s1 == NULL)
-    {
-	FreeMem(dn, sizeof(struct DeviceNode));
-	FreeMem(fssm, sizeof(struct FileSysStartupMsg));
+	if ((dn = AllocMem(sizeof(struct DeviceNode), MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+	{
+		return NULL;
+	}
 	
-	return NULL;
-    }
-    
-    /* We have no more allocations */
-    s2 = (STRPTR)(((ULONG)s1 + sz1));
+	if ((fssm = AllocMem(sizeof(struct FileSysStartupMsg), MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+	{
+		FreeMem(dn, sizeof(struct DeviceNode));
+		
+		return NULL;
+	}
+	
+	/* To help prevent fragmentation I will allocate both strings in the
+	   same block of memory.
+	*/
+	/* There doesn't have to exist an underlying block device */
+	if ((STRPTR)((IPTR *)parmPacket)[0]  !=  NULL)
+	{
+		strLen1 = strlen((STRPTR)((IPTR *)parmPacket)[0]);
+	}
+	else
+	{
+		FreeMem(fssm, sizeof(struct FileSysStartupMsg));
+		FreeMem(dn, sizeof(struct DeviceNode));
+		return NULL;
+	}
 
-    bs1 = MKBADDR(s1);
-    bs2 = MKBADDR(s2);
-    
-    for (i = 0; i < strLen1; i++)
-    {
-	AROS_BSTR_putchar(bs1, i, ((STRPTR)((ULONG *)parmPacket)[0])[i]);
-    }
+	/* Round size to alloc to nearest mutiple of 4 */
+	sz1 = (AROS_BSTR_MEMSIZE4LEN(strLen1) + 3) & ~3;
 
-    for (i = 0; i < strLen2; i++)
-    {
-	AROS_BSTR_putchar(bs2, i, ((STRPTR)((ULONG *)parmPacket)[1])[i]);
-    }
-    
-    AROS_BSTR_setstrlen(bs1, strLen1 > 255 ? 255 : strLen1);
-    AROS_BSTR_setstrlen(bs2, strLen2 > 255 ? 255 : strLen2);
+	/* There doesn't have to exist an underlying block device */
+	if ((STRPTR)((IPTR *)parmPacket)[1]  !=  NULL)
+	{
+		strLen2 = strlen((STRPTR)((IPTR *)parmPacket)[1]);
+	}
+	else
+	{
+		strLen2 = 0;
+	}
 
-    /* Strings are done, now the FileSysStartupMsg */
-    fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
-    fssm->fssm_Device = bs2;
-    fssm->fssm_Environ = MKBADDR(de);
-    fssm->fssm_Flags = ((IPTR *)parmPacket)[3];
-    
-    /* FSSM is done, now the DeviceNode */
-    dn->dn_Handler = bs1;
-    dn->dn_Startup = MKBADDR(fssm);
-    dn->dn_Type = DLT_DEVICE;
+	sz2 = AROS_BSTR_MEMSIZE4LEN(strLen2);
 
-    /* Sorry, we can't fill in dn_DevName and dn_Name here, we simply
-       don't have that information */
+	if ((s1 = AllocVec(sz1 + sz2, MEMF_CLEAR | MEMF_PUBLIC)) == NULL)
+	{
+		FreeMem(dn, sizeof(struct DeviceNode));
+		FreeMem(fssm, sizeof(struct FileSysStartupMsg));
+	
+		return NULL;
+	}
 
-    return dn;
+	/* We have no more allocations */
+	s2 = (STRPTR)(((IPTR)s1 + sz1));
 
-    AROS_LIBFUNC_EXIT
+	bs1 = MKBADDR(s1);
+	bs2 = MKBADDR(s2);
+
+	for (i = 0; i < strLen1; i++)
+	{
+		AROS_BSTR_putchar(bs1, i, ((STRPTR)((IPTR *)parmPacket)[0])[i]);
+	}
+
+	for (i = 0; i < strLen2; i++)
+	{
+		AROS_BSTR_putchar(bs2, i, ((STRPTR)((IPTR *)parmPacket)[1])[i]);
+	}
+	
+	AROS_BSTR_setstrlen(bs1, strLen1 > 255 ? 255 : strLen1);
+	AROS_BSTR_setstrlen(bs2, strLen2 > 255 ? 255 : strLen2);
+
+	/* Strings are done, now the FileSysStartupMsg */
+	fssm->fssm_Unit = ((IPTR *)parmPacket)[2];
+	fssm->fssm_Device = bs2;
+	fssm->fssm_Environ = MKBADDR(de);
+	fssm->fssm_Flags = ((IPTR *)parmPacket)[3];
+	
+	/* FSSM is done, now the DeviceNode */
+	dn->dn_Handler = bs1;
+	dn->dn_Startup = MKBADDR(fssm);
+	dn->dn_Type = DLT_DEVICE;
+
+	/* Sorry, we can't fill in dn_DevName and dn_Name here, we simply
+	   don't have that information */
+
+	return dn;
+
+	AROS_LIBFUNC_EXIT
 } /* MakeDosNode */
