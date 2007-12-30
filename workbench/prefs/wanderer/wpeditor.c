@@ -101,6 +101,7 @@ struct WPEditor_AdvancedBackgroundWindow_DATA
 	Object	            *wpedabwd_Window_WindowObj,
 						*wpedabwd_Window_UseObj,
 						*wpedabwd_Window_CancelObj,
+						*wpedabwd_Window_BackgroundGrpObj,
 						*wpedabwd_Window_RenderModeGrpObj,
 						*wpedabwd_Window_RenderModeObj,
 						*wpedabwd_Window_RenderModePageObj,
@@ -311,7 +312,7 @@ AROS_UFH3(
 			if (_viewSettings_Node == _viewSettings_Current)
 			{
 D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings chunk for node we are editing\n"));
-				if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_RenderModeGrpObj, MUIA_ShowMe) == TRUE)
+				if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe) == TRUE)
 				{
 					ULONG current_RenderMode = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGRenderMode, IconWindowExt_ImageBackFill_RenderMode_Tiled, _viewSettings_Node->wpedbo_Options);
 					IPTR current_RenderMode_entry = NULL;
@@ -739,7 +740,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p reports image
 		{
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enabling Advanced Image options ..\n", _viewSettings_Current->wpedbo_Type));
 #if defined(DEBUG_ADVANCEDIMAGEOPTIONS)
-			SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_RenderModeGrpObj, MUIA_ShowMe, TRUE);
+			SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe, TRUE);
 #endif
 
 			for (newVS_OptionCount = 0; newVS_OptionCount < WP_MAX_BG_TAG_COUNT; newVS_OptionCount++)
@@ -856,7 +857,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newB
 		}
 		else
 		{
-			SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_RenderModeGrpObj, MUIA_ShowMe, FALSE);
+			SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe, FALSE);
 		}
 
 		newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_IconListMode;
@@ -1133,6 +1134,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 	Object	*_WP_AdvancedViewWindow = NULL,
 			*_WP_AdvancedViewWindowVGrp = NULL,
+			*_WP_AdvancedViewBackgroundGrpObj = NULL,
 			*_WP_AdvancedViewRenderModeGrpObj = NULL,
 			*_WP_AdvancedViewRenderModeObj = NULL,
 			*_WP_AdvancedView_RenderModePageObj = NULL,
@@ -1407,7 +1409,13 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 				End;
 
 	/*Draw Mode Group----------------------------------------------------*/    	
-	_WP_AdvancedViewRenderModeGrpObj = HGroup, Child, (IPTR) Label1("Draw Mode : "), End;
+	_WP_AdvancedViewBackgroundGrpObj = VGroup,
+					MUIA_FrameTitle, "Background Options ..",
+					MUIA_Frame, MUIV_Frame_Group,
+				End;
+
+	_WP_AdvancedViewRenderModeGrpObj = HGroup,
+					Child, (IPTR) Label1("Draw Mode : "), End;
 
 	/*AdvancedViewRenderMode cycle button------------------------*/
 	_WP_AdvancedViewRenderModeObj = HVSpace;
@@ -1639,8 +1647,10 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1("Label Frame Height"));	
 	DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_BorderHeightObj);
 
-	DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewRenderModeGrpObj);
-	DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_RenderModePageObj);
+	DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedViewRenderModeGrpObj);
+	DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedView_RenderModePageObj);
+
+	DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
 	DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_IconRenderGrpObj);
 	DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_ButtonGrpObj);
 /*END Add advanced view objects to AdvancedViewWindow object-----------------*/
@@ -1659,6 +1669,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ 0x%p\n", self));
 			advancedView_data->wpedabwd_Hook_DrawModeChage.h_Entry            = (HOOKFUNC) WandererPrefs_Hook_DrawModeChangeFunc;
 
 			advancedView_data->wpedabwd_Window_WindowObj                      = _WP_AdvancedViewWindow;
+			advancedView_data->wpedabwd_Window_BackgroundGrpObj               = _WP_AdvancedViewBackgroundGrpObj;
 			advancedView_data->wpedabwd_Window_RenderModeGrpObj               = _WP_AdvancedViewRenderModeGrpObj ;
 			advancedView_data->wpedabwd_Window_RenderModeObj                  = _WP_AdvancedViewRenderModeObj;
 			advancedView_data->wpedabwd_Window_RenderModePageObj              = _WP_AdvancedView_RenderModePageObj;
