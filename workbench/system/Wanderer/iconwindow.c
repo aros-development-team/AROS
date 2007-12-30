@@ -770,8 +770,7 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [0x%p]\n", data->iwd_W
 	if (focusicon)
 	{
 		D(bug("[iconwindow] IconWindow__OM_SET: Updating focused icon (@ 0x%p)\n", focusicon));
-		DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntry, focusicon, ICONENTRY_DRAWMODE_PLAIN);
-		DoMethod(data->iwd_IconListObj, MUIM_IconList_DrawEntryLabel, focusicon, ICONENTRY_DRAWMODE_PLAIN);
+		MUI_Redraw(data->iwd_IconListObj, MADF_DRAWOBJECT);
 	}
 
 	return rv;

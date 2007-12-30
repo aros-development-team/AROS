@@ -85,7 +85,8 @@ struct IconList_Drop
 
 struct IconEntry
 {
-	struct Node                   ile_Node;
+	struct Node                   ile_IconNode;
+	struct Node                   ile_SelectionNode;
 
 	struct IconList_Entry         ile_IconListEntry;
 
