@@ -1418,6 +1418,12 @@ localecopydone:
 
 		CopyDirArray( CLASS, self, data, extras_dirs, work_Path);
 		fixupdir_count +=2;
+		
+		// Set EXTRASPATH environment variable
+		if ( ! SetVar("EXTRASPATH", work_Path, strlen(work_Path), GVF_GLOBAL_ONLY | GVF_SAVE_VAR))
+		{
+			D(bug("[INSTALLER] SetVar EXTRASPATH  to \"%s\" returned error\n", work_Path));
+		}
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
