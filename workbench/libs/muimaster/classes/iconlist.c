@@ -4378,14 +4378,14 @@ MUIM_UnselectAll
 IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
 	struct MUI_IconData *data = INST_DATA(CLASS, obj);
-	struct Node         *node = NULL;
+	struct Node         *node = NULL, *next_node = NULL;
 
 D(bug("[IconList]: IconList__MUIM_IconList_UnselectAll()\n"));
 
 	data->icld_SelectionLastClicked = NULL;
 	data->icld_FocusIcon = NULL;
 
-	ForeachNode(&data->icld_SelectionList, node)
+	ForeachNodeSafe(&data->icld_SelectionList, node, next_node)
 	{
 		struct IconEntry    *entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ile_SelectionNode - (IPTR)entry));
 		BOOL                update_icon = FALSE;
