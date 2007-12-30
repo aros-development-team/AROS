@@ -37,8 +37,8 @@
 #define MUIMASTER_VLATEST 0
 #else
 #define MUIMASTER_NAME "muimaster.library"
-#define MUIMASTER_VMIN    41
-#define MUIMASTER_VLATEST 41
+#define MUIMASTER_VMIN    11
+#define MUIMASTER_VLATEST 19
 #endif
 
 /* START PRIV */
