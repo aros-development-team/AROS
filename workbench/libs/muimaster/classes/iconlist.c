@@ -164,6 +164,7 @@ struct MUI_IconData
 	BOOL                          icld__Option_IconListScaledBackground;         /* */
 	ULONG                         icld__Option_LabelTextMultiLine;               /* No. of lines to display for labels*/
 	BOOL                          icld__Option_LabelTextMultiLineOnFocus;        /* Only show "multiline" label for focused icon */
+	UBYTE                         icld__Option_IconBorderOverlap;
 	UBYTE                         icld__Option_IconHorizontalSpacing;            /* Horizontal/Vert Space between Icon "Areas" */
 	UBYTE                         icld__Option_IconVerticalSpacing;
 	UBYTE                         icld__Option_IconImageSpacing;                 /* Space between Icon Image and Label Frame */
@@ -350,9 +351,19 @@ D(bug("[IconList] IconList_InvertLassoOutlines()\n"));
 //We don't use icon.library's label drawing so we do this by hand
 static void IconList_GetIconImageRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
+	if (icon->ile_IconListEntry.label != NULL)
+	{
 #if defined(DEBUG_ILC_ICONPOSITIONING)
-D(bug("[IconList] IconList_GetIconImageRectangle()\n"));
+D(bug("[IconList] IconList_GetIconImageRectangle(icon '%s')\n", icon->ile_IconListEntry.label));
 #endif
+	}
+	else
+	{
+#if defined(DEBUG_ILC_ICONPOSITIONING)
+D(bug("[IconList] IconList_GetIconImageRectangle(icon @ %p)\n", icon));
+#endif
+	}
+	
 	/* Get basic width/height */    
 	GetIconRectangleA(NULL, icon->ile_DiskObj, NULL, rect, NULL);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
@@ -389,7 +400,7 @@ D(bug("[IconList] IconList_GetIconLabelRectangle()\n"));
 	}
 	
 	/* Get icon box width including text width */
-	if (icon->ile_IconListEntry.label && icon->ile_TxtBuf_DisplayedLabel)
+	if ((icon->ile_IconListEntry.label != NULL) && (icon->ile_TxtBuf_DisplayedLabel != NULL))
 	{
 		SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 		
@@ -1048,7 +1059,7 @@ D(bug("[IconList] IconList_RethinkDimensions()\n"));
 
 	if (!(_flags(obj) & MADF_SETUP)) return FALSE;
 
-	if (message->singleicon)
+	if (message->singleicon != NULL)
 	{
 		icon = message->singleicon;
 		maxx = data->icld_AreaWidth - 1,
@@ -1056,16 +1067,16 @@ D(bug("[IconList] IconList_RethinkDimensions()\n"));
 D(bug("[IconList] IconList_RethinkDimensions: SingleIcon - maxx = %d, maxy = %d\n", maxx, maxy));
 	}
 	else icon = (struct IconEntry *)GetHead(&data->icld_IconList);
+
+	struct Rectangle icon_rect;
 	
-	while (icon)
+	while (icon != NULL)
 	{
 		if (icon->ile_DiskObj &&
 			(icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
 			(icon->ile_IconX != NO_ICON_POSITION) &&
 			(icon->ile_IconY != NO_ICON_POSITION))
 		{
-			struct Rectangle icon_rect;
-
 			IconList_GetIconAreaRectangle(obj, data, icon, &icon_rect);
 
 			icon_rect.MaxX += icon->ile_IconX + data->icld__Option_IconHorizontalSpacing;
@@ -1196,6 +1207,7 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 #endif
 
 	BOOL  next;
+	struct Rectangle iconrect;
 
 	// Now go to the actual positioning
 	icon = (struct IconEntry *)GetHead(&data->icld_IconList);
@@ -1223,8 +1235,6 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 			}
 			else
 			{
-				struct Rectangle iconrect;
-
 				if (!(pass_first)) pass_first = icon;
 
 				IconList_GetIconAreaRectangle(obj, data, icon, &iconrect);
@@ -1257,7 +1267,7 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 				}
 			}
 		}
-		if ((icon = (struct IconEntry *)GetSucc(icon)) != NULL)
+		if ((icon = (struct IconEntry *)GetSucc(&icon->ile_IconNode)) != NULL)
 		{
 			if (next == TRUE)
 			{
@@ -1266,8 +1276,8 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 					cur_y += gridy;
 		
 					if ((cur_y >= data->icld_ViewHeight) ||
-						((data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH) && ((cur_y + icon->ile_AreaHeight - 5) >= data->icld_ViewHeight)) ||
-						((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) && ((cur_y + data->icld_IconAreaLargestHeight - 5) >= data->icld_ViewHeight)))
+						((data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH) && ((cur_y + icon->ile_AreaHeight - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight)) ||
+						((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) && ((cur_y + data->icld_IconAreaLargestHeight - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight)))
 					{
 						cur_x += maxw;
 						cur_y =  top;
@@ -1280,8 +1290,8 @@ D(bug("[IconList] IconList__MUIM_IconList_PositionIcons()\n"));
 					cur_x += gridx;
 			
 					if ((cur_x >= data->icld_ViewWidth) ||
-						((data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH) && ((cur_x + icon->ile_AreaWidth - 5) >= data->icld_ViewWidth)) ||
-						((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) && ((cur_x + data->icld_IconAreaLargestWidth - 5) >= data->icld_ViewWidth)))
+						((data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH) && ((cur_x + icon->ile_AreaWidth - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth)) ||
+						((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) && ((cur_x + data->icld_IconAreaLargestWidth - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth)))
 					{
 						cur_x =  left;
 						cur_y += maxh;
@@ -1383,6 +1393,8 @@ D(bug("[IconList] IconList__OM_NEW: SELF = 0x%p, muiRenderInfo = 0x%p\n", obj, m
 	data->icld_IconLabelFont = icl_WindowFont;	
 
 	// Get some initial values
+	data->icld__Option_IconBorderOverlap = 10;
+
 	data->icld__Option_IconListMode   = (UBYTE)GetTagData(MUIA_IconList_IconListMode, 0, message->ops_AttrList);
 	data->icld__Option_IconTextMode   = (UBYTE)GetTagData(MUIA_IconList_LabelText_Mode, 0, message->ops_AttrList);
 	data->icld__Option_IconTextMaxLen = (ULONG)GetTagData(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT, message->ops_AttrList);
@@ -1620,22 +1632,18 @@ D(bug("[IconList] IconList__OM_SET: MUIA_IconList_LabelText_BorderHeight %d\n", 
 				break;
 
 			case MUIA_IconList_LabelText_Pen:
-D(bug("[IconList] IconList__OM_SET: MUIA_IconList_LabelText_Pen %d\n", tag->ti_Data));
 				data->icld_LabelPen = (ULONG)tag->ti_Data;
 				break;
 
 			case MUIA_IconList_LabelText_ShadowPen:
-D(bug("[IconList] IconList__OM_SET: MUIA_IconList_LabelText_ShadowPen %d\n", tag->ti_Data));
 				data->icld_LabelShadowPen = (ULONG)tag->ti_Data;
 				break;
 
 			case MUIA_IconList_LabelInfoText_Pen:
-D(bug("[IconList] IconList__OM_SET: MUIA_IconList_LabelInfoText_Pen %d\n", tag->ti_Data));
 				data->icld_InfoPen = (ULONG)tag->ti_Data;
 				break;
 
 			case MUIA_IconList_LabelInfoText_ShadowPen:
-D(bug("[IconList] IconList__OM_SET: MUIA_IconList_LabelInfoText_ShadowPen %d\n", tag->ti_Data));
 				data->icld_InfoShadowPen = (ULONG)tag->ti_Data;
 				break;
 
@@ -1710,7 +1718,7 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 #define STORE *(message->opg_Storage)
 	struct MUI_IconData *data = INST_DATA(CLASS, obj);
 
-D(bug("[IconList] IconList__OM_GET(tagid=%x)\n", message->opg_AttrID));
+D(bug("[IconList] IconList__OM_GET()\n"));
 
 	switch (message->opg_AttrID)
 	{
@@ -2010,7 +2018,7 @@ IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *me
 
 	IPTR					draw_id = DrawCount++;
 	
-D(bug("[IconList] IconList__MUIM_Draw()\n"));
+D(bug("[IconList] IconList__MUIM_Draw(obj @ %p)\n", obj));
 
 D(bug("[IconList] IconList__MUIM_Draw: id %d\n", draw_id));
 	
@@ -3725,8 +3733,34 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 						data->icld_ClickEvent.entry = new_selected ? &new_selected->ile_IconListEntry : NULL;
 						SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icld_ClickEvent);
 
-						BOOL icon_doubleclicked = (BOOL)DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros);
-						
+						BOOL icon_doubleclicked = FALSE;
+
+						if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
+						{
+D(bug("[IconList] IconList__MUIM_HandleEvent: Icon double-clicked\n"));
+							icon_doubleclicked = TRUE;
+							SET(obj, MUIA_IconList_DoubleClick, TRUE);
+						}
+						else if (!data->mouse_pressed)
+						{
+							data->last_secs = message->imsg->Seconds;
+							data->last_mics = message->imsg->Micros;
+			
+							/* After a double click you often open a new window
+							* and since Zune doesn't not support the faking
+							* of SELECTUP events only change the Events
+							* if not doubleclicked */
+
+							data->mouse_pressed |= LEFT_BUTTON;
+
+							if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+							{
+								DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+								data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+								DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+							}
+						}
+
 						if (new_selected == NULL)
 						{
 							/* No icon clicked on ... Start Lasso-selection */
@@ -3763,7 +3797,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 									data->icld_FocusIcon = new_selected;
 								}
 							}
-							else if ((! icon_doubleclicked) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+							else if ((icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
 							{
 								Remove(&new_selected->ile_SelectionNode);
 								new_selected->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
@@ -3781,31 +3815,6 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 #endif
 							}
 						}                       
-
-						if ((icon_doubleclicked) && (data->icld_SelectionLastClicked == new_selected))
-						{
-D(bug("[IconList] IconList__MUIM_HandleEvent: Icon double-clicked\n"));
-							SET(obj, MUIA_IconList_DoubleClick, TRUE);
-						}
-						else if (!data->mouse_pressed)
-						{
-							data->last_secs = message->imsg->Seconds;
-							data->last_mics = message->imsg->Micros;
-			
-							/* After a double click you often open a new window
-							* and since Zune doesn't not support the faking
-							* of SELECTUP events only change the Events
-							* if not doubleclicked */
-
-							data->mouse_pressed |= LEFT_BUTTON;
-
-							if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
-							{
-								DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-								data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-								DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-							}
-						}
 
 						data->icld_SelectionLastClicked = new_selected;
 
@@ -5047,7 +5056,7 @@ D(bug("[IconList]: IconDrawerList__OM_NEW()\n"));
 		switch (tag->ti_Tag)
 		{
 			case    MUIA_IconDrawerList_Drawer:
-			data->drawer = StrDup((char*)tag->ti_Data);
+			data->drawer = StrDup((char *)tag->ti_Data);
 			break;
 		}
 	}
@@ -5063,10 +5072,17 @@ IPTR IconDrawerList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
 	struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: IconDrawerList__OM_DISPOSE()\n"));
+	
+	IPTR retval = DoSuperMethodA(CLASS, obj, message);
 
-	if (data->drawer) FreeVec(data->drawer);
+	if (data->drawer)
+	{
+D(bug("[IconList]: IconDrawerList__OM_DISPOSE: Freeing DIR name storage for '%s'\n", data->drawer));
 
-	return DoSuperMethodA(CLASS, obj, message);
+		FreeVec(data->drawer);
+	}
+
+	return retval;
 }
 
 /**************************************************************************
@@ -5078,7 +5094,7 @@ IPTR IconDrawerList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *mes
 	struct TagItem  	        *tag = NULL,
 								*tags = NULL;
 
-D(bug("[IconList]: IconDrawerList__OM_DISPOSE()\n"));
+D(bug("[IconList]: IconDrawerList__OM_SET()\n"));
 
 	/* parse initial taglist */
 	for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
@@ -5107,11 +5123,11 @@ IPTR IconDrawerList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *mes
 #define STORE *(message->opg_Storage)
 	struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
 
-D(bug("[IconList]: IconDrawerList__OM_GET()\n"));
+D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
 	switch (message->opg_AttrID)
 	{
-		case MUIA_IconDrawerList_Drawer: STORE = (unsigned long)data->drawer; return 1;
+		case MUIA_IconDrawerList_Drawer: STORE = (IPTR)data->drawer; return 1;
 	}
 
 	if (DoSuperMethodA(CLASS, obj, (Msg) message)) return 1;

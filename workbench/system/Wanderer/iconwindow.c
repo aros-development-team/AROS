@@ -708,14 +708,14 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [0x%p]\n", data->iwd_W
 			break;
 
 		case MUIA_IconWindow_Location:
-			strcpy(data->iwd_DirectoryPath, (IPTR)tag->ti_Data);
 			D(bug("[iconwindow] IconWindow__OM_SET: MUIA_IconWindow_Location [drawer '%s']\n", data->iwd_DirectoryPath));
 
-			SET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer, (IPTR) data->iwd_DirectoryPath);
 			if (!data->iwd_Flag_ISROOT)
 			{
+				strcpy(data->iwd_DirectoryPath, (IPTR)tag->ti_Data);
 				SET(self, MUIA_Window_Title, (IPTR)data->iwd_DirectoryPath);
 				SET(data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, (IPTR)data->iwd_DirectoryPath);
+				SET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer, (IPTR)data->iwd_DirectoryPath);
 			}
 			break;
 
@@ -775,7 +775,7 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [0x%p]\n", data->iwd_W
 	if (focusicon)
 	{
 		D(bug("[iconwindow] IconWindow__OM_SET: Updating focused icon (@ 0x%p)\n", focusicon));
-		MUI_Redraw(data->iwd_IconListObj, MADF_DRAWOBJECT);
+	//	MUI_Redraw(data->iwd_IconListObj, MADF_DRAWOBJECT);
 	}
 
 	return rv;

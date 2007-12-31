@@ -334,19 +334,23 @@ AROS_UFH3
 
 		struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 
-		DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
-		if ((int)ent == MUIV_IconList_NextSelected_End) return;
+		DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR)&ent);
+		if ((IPTR)ent == (IPTR)MUIV_IconList_NextSelected_End)
+		{
+D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSelected returned MUIV_IconList_NextSelected_End\n"));
+			return;
+		}
 
 		IPTR                  offset = strlen(ent->filename) - 5;
 
 		if ((msg->isroot) && (!Stricmp(ent->filename + offset, ":Disk")))
 		{
-			strcpy(buf,ent->label);
-			strcat(buf,":");
+			strcpy(buf, ent->label);
+			strcat(buf, ":");
 		}
 		else
 		{
-			strcpy(buf,ent->filename);
+			strcpy(buf, ent->filename);
 		}
 
 D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset = %d, buf = %s\n", offset, buf);)
