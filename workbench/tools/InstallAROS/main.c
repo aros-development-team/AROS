@@ -1143,20 +1143,27 @@ void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
 
 void create_extraspath_variable(CONST_STRPTR dest_path, CONST_STRPTR work_path)
 {
-	if ( (! dest_path) || ( ! work_path) )
+	if ((! dest_path) || ( ! work_path))
 	{
 		return;
 	}
 
-	TEXT variable[100];
-	sprintf(variable, "%s:Prefs/Env-Archive/EXTRASPATH", dest_path);
-	
-	BPTR fh = Open(variable, MODE_NEWFILE);
-	if (fh)
+	BPTR env_variable_fh = NULL;
+	TEXT env_variable[100];
+	TEXT extraspath[100];
+
+	sprintf(env_variable, "%s:", dest_path);
+	AddPart(env_variable, "Prefs/Env-Archive/EXTRASPATH", 100);
+
+	sprintf(extraspath, "%s:", work_path);
+	AddPart(extraspath, "Extras", 100);
+
+D(bug("[INSTALLER] create_extraspath_variable: Setting Var '%s' to '%s'\n", env_variable, extraspath));
+
+	if ((env_variable_fh = Open(env_variable, MODE_NEWFILE)) != NULL)
 	{
-		FPuts(fh, work_path);
-		FPuts(fh, ":Extras");
-		Close(fh);
+		FPuts(env_variable_fh, extraspath);
+		Close(env_variable_fh);
 	}
 }
 
