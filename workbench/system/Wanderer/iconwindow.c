@@ -375,6 +375,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	IPTR                            _newIconWin__WindowTop = 0;
 	IPTR                            _newIconWin__WindowLeft = 0;
 
+	IPTR                            _newIconWin__FSNotifyPort = NULL;
+
 	D(bug("[iconwindow] IconWindow__OM_NEW()\n"));
 	
 	/* More than one GetTagData is not very efficient, however since this isn't called very often... */
@@ -387,6 +389,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	actionHook = (struct Hook *)GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
 	_newIconWin__WindowFont = (struct TextFont *)GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
 	prefs = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
+
+	_newIconWin__FSNotifyPort = (Object *)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
 	/* Request the screen we should use .. */
 
@@ -444,6 +448,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 		_newIconWin__IconListObj = (IPTR)IconWindowIconDrawerListObject,
 			MUIA_Font, (IPTR)_newIconWin__WindowFont,
 			MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
+			MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
 		End;
 
 		_newIconWin__ExtensionGroupObj = GroupObject,

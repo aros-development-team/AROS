@@ -14,6 +14,7 @@
 
 /*** Public Attributes ******************************************************/
 #define MUIA_Wanderer_Prefs               (MUIB_Wanderer | 0x00000000)
+#define MUIA_Wanderer_FileSysNotifyPort   (MUIB_Wanderer | 0x00000001)
 #define MUIA_Wanderer_Screen              (MUIB_Wanderer | 0x00000010)
 #define MUIA_Wanderer_WorkbenchWindow     (MUIB_Wanderer | 0x00000020)
 #define MUIA_Wanderer_ActiveWindow        (MUIB_Wanderer | 0x00000021)

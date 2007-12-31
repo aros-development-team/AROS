@@ -3717,6 +3717,37 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 							}
 						}
 
+						data->icld_ClickEvent.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
+						data->icld_ClickEvent.entry = new_selected ? &new_selected->ile_IconListEntry : NULL;
+						SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icld_ClickEvent);
+
+						BOOL icon_doubleclicked = (BOOL)DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros);
+						
+						if ((icon_doubleclicked) && (data->icld_SelectionLastClicked == new_selected))
+						{
+D(bug("[IconList] IconList__MUIM_HandleEvent: Icon double-clicked\n"));
+							SET(obj, MUIA_IconList_DoubleClick, TRUE);
+						}
+						else if (!data->mouse_pressed)
+						{
+							data->last_secs = message->imsg->Seconds;
+							data->last_mics = message->imsg->Micros;
+			
+							/* After a double click you often open a new window
+							* and since Zune doesn't not support the faking
+							* of SELECTUP events only change the Events
+							* if not doubleclicked */
+
+							data->mouse_pressed |= LEFT_BUTTON;
+
+							if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+							{
+								DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+								data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+								DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+							}
+						}
+
 						if (new_selected == NULL)
 						{
 							/* No icon clicked on ... Start Lasso-selection */
@@ -3753,7 +3784,7 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered icon '%s'\n", node->ile_I
 									data->icld_FocusIcon = new_selected;
 								}
 							}
-							else if (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+							else if ((! icon_doubleclicked) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
 							{
 								Remove(&new_selected->ile_SelectionNode);
 								new_selected->ile_Flags &= ~ICONENTRY_FLAG_SELECTED;
@@ -3771,34 +3802,6 @@ D(bug("[IconList] IconList__MUIM_HandleEvent: Rendered 'new_selected' icon '%s'\
 #endif
 							}
 						}                       
-
-						data->icld_ClickEvent.shift = !!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT));
-						data->icld_ClickEvent.entry = new_selected ? &new_selected->ile_IconListEntry : NULL;
-						SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icld_ClickEvent);
-
-						if (DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros) && (data->icld_SelectionLastClicked == new_selected))
-						{
-							SET(obj, MUIA_IconList_DoubleClick, TRUE);
-						}
-						else if (!data->mouse_pressed)
-						{
-							data->last_secs = message->imsg->Seconds;
-							data->last_mics = message->imsg->Micros;
-			
-							/* After a double click you often open a new window
-							* and since Zune doesn't not support the faking
-							* of SELECTUP events only change the Events
-							* if not doubleclicked */
-
-							data->mouse_pressed |= LEFT_BUTTON;
-
-							if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
-							{
-								DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-								data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-								DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-							}
-						}
 
 						data->icld_SelectionLastClicked = new_selected;
 

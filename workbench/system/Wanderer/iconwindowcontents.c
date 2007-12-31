@@ -57,6 +57,16 @@ struct IconWindowIconList_DATA
 	Object                       *iwcd_ViewPrefs_NotificationObject;
 };
 
+struct IconWindowIconDrawerList_DATA
+{
+	Object                       *iwcd_IconWindow;
+	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
+	struct Hook					 iwcd_ProcessIconListPrefs_hook;
+	IPTR                         iwcd_ViewPrefs_ID;
+	Object                       *iwcd_ViewPrefs_NotificationObject;
+	struct NotifyRequest		 iwdcd_DrawerNotifyRequest;
+};
+
 struct IconWindowIconVolumeList_DATA
 {
 	Object                       *iwcd_IconWindow;
@@ -86,8 +96,6 @@ static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindowIconList_DATA *data = INST_DATA(CLASS, self)
-
-#define IconWindowIconDrawerList_DATA             IconWindowIconList_DATA
 
 /*** Hook functions *********************************************************/
 AROS_UFH3(
@@ -329,21 +337,31 @@ AROS_UFH3(
 Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
 	D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
-	
+
+	IPTR                            _newIconList__FSNotifyPort = NULL;
+
+	_newIconList__FSNotifyPort = (Object *)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
+
 	self = (Object *) DoSuperNewTags
 	(
 		CLASS, self, NULL,
 		MUIA_CycleChain, 1,
 		TAG_MORE, (IPTR) message->ops_AttrList
 	);
-	
+
 	if (self != NULL)
 	{
 		SETUP_INST_DATA;
 		D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: SELF = 0x%p\n", self));
 		data->iwcd_ProcessIconListPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowIconList__HookFunc_ProcessIconListPrefsFunc;
+		if (_newIconList__FSNotifyPort != NULL)
+		{
+			struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
+			drawerlist_data->iwdcd_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = _newIconList__FSNotifyPort;
+			D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: FS Notify Port @ 0x%p\n", _newIconList__FSNotifyPort));
+		}
 	}
-		
+
 	return self;
 }
 
@@ -569,6 +587,34 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notificat
 			D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Couldnt add IDCMP EventHandler!\n"));
 		}
 	}
+	else
+	{
+        /* Setup notification on the directory -------------------------------- */
+		STRPTR directory_path = NULL;
+		GET(self, MUIA_IconDrawerList_Drawer, &directory_path);
+
+		if (directory_path != NULL)
+		{
+			struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
+
+			if (drawerlist_data->iwdcd_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port != NULL)
+			{
+				drawerlist_data->iwdcd_DrawerNotifyRequest.nr_Name                 = directory_path;
+				drawerlist_data->iwdcd_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
+				drawerlist_data->iwdcd_DrawerNotifyRequest.nr_UserData             = self;
+
+				if (StartNotify(&drawerlist_data->iwdcd_DrawerNotifyRequest))
+				{
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Drawer-notification setup on '%s'\n", drawerlist_data->iwdcd_DrawerNotifyRequest.nr_Name));
+				}
+				else
+				{
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: FAILED to setup Drawer-notification!\n"));
+					drawerlist_data->iwdcd_DrawerNotifyRequest.nr_Name = NULL;
+				}
+			}
+		}
+	}
 
 	D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Window_Setup: Setup complete!\n"));
 	
@@ -662,6 +708,15 @@ IPTR IconWindowIconList__MUIM_Cleanup
 		}
 		D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup: (ROOT WINDOW) Removing our Disk Event Handler\n"));
 		DoMethod(_win(self), MUIM_Window_RemEventHandler, &data->iwcd_EventHandlerNode);
+	}
+	else
+	{
+		struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
+		if (drawerlist_data->iwdcd_DrawerNotifyRequest.nr_Name != NULL)
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Cleanup: (DRAWER WINDOW) Removing our Drawer Notification Request\n"));
+			EndNotify(&drawerlist_data->iwdcd_DrawerNotifyRequest);
+		}
 	}
 
 	return DoSuperMethodA(CLASS, self, message);
