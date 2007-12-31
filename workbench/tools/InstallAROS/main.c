@@ -1141,6 +1141,25 @@ void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
 	}
 }
 
+void create_extraspath_variable(CONST_STRPTR dest_path, CONST_STRPTR work_path)
+{
+	if ( (! dest_path) || ( ! work_path) )
+	{
+		return;
+	}
+
+	TEXT variable[100];
+	sprintf(variable, "%s:Prefs/Env-Archive/EXTRASPATH", dest_path);
+	
+	BPTR fh = Open(variable, MODE_NEWFILE);
+	if (fh)
+	{
+		FPuts(fh, work_path);
+		FPuts(fh, ":Extras");
+		Close(fh);
+	}
+}
+
 IPTR Install__MUIM_IC_Install
 (
 	Class *CLASS, Object *self, Msg message 
@@ -1420,10 +1439,7 @@ localecopydone:
 		fixupdir_count +=2;
 		
 		// Set EXTRASPATH environment variable
-		if ( ! SetVar("EXTRASPATH", work_Path, strlen(work_Path), GVF_GLOBAL_ONLY | GVF_SAVE_VAR))
-		{
-			D(bug("[INSTALLER] SetVar EXTRASPATH  to \"%s\" returned error\n", work_Path));
-		}
+		create_extraspath_variable(dest_Path, work_Path);
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
