@@ -81,7 +81,7 @@
 			    is NULL).
 
 	deviceNode  -   DOS device node for this device. Typically created
-			my MakeDosNode().
+			by MakeDosNode().
 
 	configDev   -   A valid expansion board ConfigDev structure, this
 			is required for an autoboot before DOS is running.

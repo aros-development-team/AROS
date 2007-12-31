@@ -56,6 +56,8 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
     IPTR *pp;
+    TEXT dosdevname[4] = "DF0", *handler = "afs.handler";
+    UWORD len;
 
     /* Try to get memory for structure */
     unit = AllocMem(sizeof(struct TDU), MEMF_PUBLIC | MEMF_CLEAR);
@@ -106,7 +108,8 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 
 	    if (pp)
 	    {
-		pp[0] = (IPTR)"afs.handler";
+                dosdevname[2] += num;
+		pp[0] = (IPTR)dosdevname;
 		pp[1] = (IPTR)MOD_NAME_STRING;
 		pp[2] = num;
 		pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
@@ -128,18 +131,16 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 
 		if (devnode)
 		{
-		    devnode->dn_Name = MKBADDR(
-                        AllocMem(AROS_BSTR_MEMSIZE4LEN(3), MEMF_PUBLIC | MEMF_CLEAR)
+                    len = strlen(handler);
+		    devnode->dn_Handler = MKBADDR(AllocMem(
+                        AROS_BSTR_MEMSIZE4LEN(len), MEMF_PUBLIC | MEMF_CLEAR)
                     );
 
 		    if (devnode->dn_Name != NULL)
 		    {
-			AROS_BSTR_putchar(devnode->dn_Name, 0, 'D');
-			AROS_BSTR_putchar(devnode->dn_Name, 1, 'F');
-			AROS_BSTR_putchar(devnode->dn_Name, 2, '0' + num);
-			AROS_BSTR_setstrlen(devnode->dn_Name, 3);
-			devnode->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devnode->dn_Name);
-
+                        CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler),
+                            len);
+                        AROS_BSTR_setstrlen(devnode->dn_Handler, len);
 			AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
 		    }
 		}
