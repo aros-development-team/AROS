@@ -23,6 +23,7 @@
 
 #include <dos/bptr.h>
 #include <dos/filehandler.h>
+#include <string.h>
 
 #include <proto/exec.h>
 #include <proto/timer.h>
@@ -53,6 +54,8 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     struct DeviceNode *devnode;
     IPTR *pp;
     static int volnum;
+    TEXT dosdevname[4] = "HD0", *handler;
+    UWORD len;
 
     ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
                                                         40L);
@@ -67,14 +70,15 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
             switch (unit->au_DevType)
             {
                 case DG_DIRECT_ACCESS:
-                    pp[0] = (ULONG)"afs.handler";
                     break;
                 case DG_CDROM:
-                    pp[0] = (ULONG)"cdrom.handler";
+                    dosdevname[0] = 'C';
                     break;
                 default:
                     D(bug("IDE: AddVolume called on unknown devicetype\n"));
             }
+            dosdevname[2] += volnum;
+            pp[0] = (IPTR)dosdevname;
             pp[1] = (IPTR)MOD_NAME_STRING;
             pp[2] = unit->au_UnitNum;
             pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
@@ -96,27 +100,20 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 
             if (devnode)
             {
-                if ((devnode->dn_Name =
-                     MKBADDR(AllocMem(AROS_BSTR_MEMSIZE4LEN(3),
+                if(unit->au_DevType == DG_DIRECT_ACCESS)
+                    handler = "afs.handler";
+                else
+                    handler = "cdrom.handler";
+                len = strlen(handler);
+                if ((devnode->dn_Handler =
+                     MKBADDR(AllocMem(AROS_BSTR_MEMSIZE4LEN(len),
                                       MEMF_PUBLIC | MEMF_CLEAR
                              )
                      )
                 ))
                 {
-                    if( !unit->au_DevType )
-                    {
-                        AROS_BSTR_putchar(devnode->dn_Name, 0, 'H');
-                        AROS_BSTR_putchar(devnode->dn_Name, 1, 'D');
-                        AROS_BSTR_putchar(devnode->dn_Name, 2, '0' + volnum);
-                    }
-                    else
-                    {
-                        AROS_BSTR_putchar(devnode->dn_Name, 0, 'C');
-                        AROS_BSTR_putchar(devnode->dn_Name, 1, 'D');
-                        AROS_BSTR_putchar(devnode->dn_Name, 2, '0' + volnum);
-                    }
-                    AROS_BSTR_setstrlen(devnode->dn_Name, 3);
-                    devnode->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devnode->dn_Name);
+                    CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler), len);
+                    AROS_BSTR_setstrlen(devnode->dn_Handler, len);
 
                     D(bug("-Adding volume %s with SC=%d, EC=%d\n",
                           &(devnode->dn_Ext.dn_AROS.dn_DevName[0]), StartCyl, EndCyl));
@@ -293,8 +290,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
 	{
 	    struct MsgPort *mp = CreateMsgPort();
 	    struct MsgPort2 *mp2 = CreateMsgPort();
-	    struct IOStdReq *ios = CreateIORequest(mp, sizeof(struct IOStdReq));
-	    struct timerequest *timerio = CreateIORequest(mp2, sizeof(struct timerequest));
+	    struct IOStdReq *ios =
+                (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq));
+	    struct timerequest *timerio =
+                (struct timerequest *)CreateIORequest(mp2,
+                sizeof(struct timerequest));
 	    struct Device *TimerBase;
 
 	    OpenDevice("timer.device", UNIT_VBLANK, timerio, 0);
@@ -311,11 +311,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
 			   LIBBASETYPEPTR, LIBBASE, 1, ata
 	    );
 		    
+#if 0
 	    int i;
 
-	    ULONG *buf = (ULONG*)buffer;
+	    ULONG *buf = (ULONG *)buffer;
 
-#if 0		    
 	    D(bug("[ATA.test] Store first 1MB of data in RAM\n"));
 	    ios->io_Command = CMD_READ;
 	    ios->io_Data = buf;

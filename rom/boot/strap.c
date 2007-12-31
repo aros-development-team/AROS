@@ -139,12 +139,12 @@ static IPTR MatchPartType(UBYTE PartType)
 static ULONG GetOffset(struct PartitionBase *PartitionBase,
     struct PartitionHandle *ph)
 {
-    STACKIPTR tags[3];
+    IPTR tags[3];
     struct DosEnvec de;
     ULONG offset = 0;
 
     tags[0] = PT_DOSENVEC;
-    tags[1] = (STACKIPTR)&de;
+    tags[1] = (IPTR)&de;
     tags[2] = TAG_DONE;
     ph = ph->root;
     while (ph->root)
@@ -169,12 +169,12 @@ static VOID AddPartitionVolume
     UBYTE name[32];
     ULONG i, blockspercyl;
     const struct PartitionAttribute *attrs;
-    STACKIPTR tags[7];
+    IPTR tags[7];
     IPTR *pp;
     struct DeviceNode *devnode;
     struct PartitionType ptyp;
     LONG ppos;
-    TEXT *devname;
+    TEXT *devname, *handler;
 
     pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4,
         MEMF_PUBLIC | MEMF_CLEAR);
@@ -187,9 +187,9 @@ static VOID AddPartitionVolume
         {
             /* partition has a name => RDB partition */
 	    tags[0] = PT_NAME;
-	    tags[1] = (STACKIPTR)name;
+	    tags[1] = (IPTR)name;
 	    tags[2] = PT_DOSENVEC;
-	    tags[3] = (STACKIPTR)&pp[4];
+	    tags[3] = (IPTR)&pp[4];
 	    tags[4] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
         }
@@ -197,11 +197,11 @@ static VOID AddPartitionVolume
         {
             /* partition doesn't have a name => MBR partition */
 	    tags[0] = PT_POSITION;
-	    tags[1] = (STACKIPTR)&ppos;
+	    tags[1] = (IPTR)&ppos;
 	    tags[2] = PT_TYPE;
-	    tags[3] = (STACKIPTR)&ptyp;
+	    tags[3] = (IPTR)&ptyp;
 	    tags[4] = PT_DOSENVEC;
-	    tags[5] = (STACKIPTR)&pp[4];
+	    tags[5] = (IPTR)&pp[4];
 	    tags[6] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
 
@@ -246,6 +246,7 @@ static VOID AddPartitionVolume
             }
         }
 
+        pp[0] = (IPTR)name;
         pp[1] = (IPTR)AROS_BSTR_ADDR(fssm->fssm_Device);
         pp[2] = fssm->fssm_Unit;
         pp[3] = fssm->fssm_Flags;
@@ -257,29 +258,29 @@ static VOID AddPartitionVolume
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 
-        pp[0] = MatchHandler(pp[4 + DE_DOSTYPE]);
+        handler = MatchHandler(pp[4 + DE_DOSTYPE]);
 
         /* Skip unknown partition types */
-        if (pp[0] != 0)
+        if (handler != NULL)
         {
             devnode = MakeDosNode(pp);
-            if (devnode)
+            if (devnode != NULL)
             {
-                devnode->dn_Name = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(strlen(name)),
-                    MEMF_PUBLIC | MEMF_CLEAR));
-                if (devnode->dn_Name)
+                devnode->dn_Handler = MKBADDR(AllocVec(AROS_BSTR_MEMSIZE4LEN(
+                    strlen(handler)), MEMF_PUBLIC | MEMF_CLEAR));
+                if (devnode->dn_Handler)
                 {
                     i = 0;
-                    while (name[i])
+                    while (handler[i] != '\0')
                     {
-                        AROS_BSTR_putchar(devnode->dn_Name, i, name[i]);
+                        AROS_BSTR_putchar(devnode->dn_Handler, i, handler[i]);
                         i++;
                     }
-                    AROS_BSTR_setstrlen(devnode->dn_Name, i);
-                    devnode->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(devnode->dn_Name);
+                    AROS_BSTR_setstrlen(devnode->dn_Handler, i);
                     AddBootNode(pp[4 + DE_BOOTPRI], 0, devnode, 0);
                     D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
-                        devnode->dn_Ext.dn_AROS.dn_DevName, pp[4 + DE_DOSTYPE], pp[0]));
+                        devnode->dn_Ext.dn_AROS.dn_DevName,
+                        pp[4 + DE_DOSTYPE], handler));
                     return;
                 }
             }

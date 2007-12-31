@@ -219,6 +219,7 @@ struct DosEnvec *nde;
 IPTR *params;
 ULONG i;
 
+#error TODO: pass DOS device name in params[0] and set handler name manually
 #warning "TODO: get filesystem"
 	if ((de->de_DosType & 0xFFFFFF00) == BBNAME_DOS)
 	{
