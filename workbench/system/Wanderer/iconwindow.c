@@ -451,6 +451,32 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 			MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
 		End;
 
+		if (_newIconWin__Title[strlen(_newIconWin__Title) - 1] == ':')
+		{
+D(bug("[iconwindow] IconWindow__OM_NEW: Opening Volume Root Window\n"));
+			BPTR                      volume_info_lock = NULL;
+			char                      *volume_info_name = NULL;
+
+			if ((volume_info_name = AllocVec(strlen(_newIconWin__Title) + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+			{
+				sprintf(volume_info_name, "%sdisk.info\0", _newIconWin__Title);
+				if ((volume_info_lock = Lock(volume_info_name, SHARED_LOCK)) != NULL)
+				{
+					UnLock(volume_info_lock);
+				}
+				else
+				{
+D(bug("[iconwindow] IconWindow__OM_NEW: No disk.info found - setting show all files\n"));
+					IPTR current_DispFlags = 0;
+
+					GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
+					current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+					SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, current_DispFlags);
+				}
+				FreeVec(volume_info_name);
+			}
+		}
+
 		_newIconWin__ExtensionGroupObj = GroupObject,
 			InnerSpacing(0,0),
 			MUIA_Frame, MUIV_Frame_None,
