@@ -968,7 +968,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 	Check whether the CPU supports SSE and FXSAVE.
 	
 	Dirty check, without use of any defines and human readable constants. The
-	cpuid instruction with %eax=1 will return some essential cpu informations in %eax back, 
+	cpuid instruction with %eax=1 will return some essential cpu informations in %edx back, 
 	including:
 	- bit 24: CPU does support FXSAVE and FXRSTOR for MMX/FPU/SSE context saving and restoring
 	- bit 25: CPU supports SSE
@@ -985,23 +985,32 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 	rkprintf("The CPU supports FXSAVE and FXRSTOR. Good.\n");
 	rkprintf("CPU Supports ");
 	
-	if (v4 & (1 << 25))
-	    rkprintf("SSE");
-	if (v4 & (3 << 25))
-	    rkprintf(" and SSE2");
-	
-	rkprintf("\n");
-	
-        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec));
-        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec));
-        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
-	
-	/* tell the CPU that we will support SSE */
-	wrcr(cr4, rdcr(cr4) | (3 << 9));
-	/* Clear the EM and MP flags of CR0 */
-	wrcr(cr0, rdcr(cr0) & ~6);
-	
-	rkprintf("SSE enabled.\n");
+	switch ((v4 >> 25) & 3)
+	{
+	    case 3:
+	    case 2:
+		rkprintf("SSE2 ");
+	    case 1:
+		rkprintf("SSE\n");
+		/* Patch exec with SSE-aware CPU context functions */
+	        SetFunction(&ExecBase->LibNode, -6*LIB_VECTSIZE, AROS_SLIB_ENTRY(PrepareContext_SSE, Exec));
+	        SetFunction(&ExecBase->LibNode, -9*LIB_VECTSIZE, AROS_SLIB_ENTRY(Switch_SSE, Exec));
+	        SetFunction(&ExecBase->LibNode, -10*LIB_VECTSIZE, AROS_SLIB_ENTRY(Dispatch_SSE, Exec));
+		/* tell the CPU that we will support SSE */
+		wrcr(cr4, rdcr(cr4) | (3 << 9));
+		/* Clear the EM and MP flags of CR0 */
+		wrcr(cr0, rdcr(cr0) & ~6);	
+		rkprintf("SSE enabled.\n");
+		break;
+
+	    default:
+		/* 
+		    Ha! Bloody PentiumII does supports MMX/FPU/SSE saving instructions,
+		    but it does not support SSE 
+		*/
+		rkprintf("no SSE. Sorry :)\n");
+		break;
+	}	
     }
     else
     { 
