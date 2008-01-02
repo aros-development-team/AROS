@@ -16,7 +16,8 @@
 /*
  * call this function to initiate validation
  */
-void launchValidator(struct AFSBase *afsbase, struct Volume *volume);
+LONG launchValidator(struct AFSBase *afsbase, struct Volume *volume);
+LONG checkValid(struct AFSBase *afs, struct Volume *vol);
 
 #ifdef __AROS__
 

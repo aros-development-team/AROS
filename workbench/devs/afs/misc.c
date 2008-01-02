@@ -2,6 +2,11 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
+/*
+ * -date------ -name------------------- -description-----------------------------
+ * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
+ */
+
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -15,6 +20,7 @@
 #include "checksums.h"
 #include "extstrings.h"
 #include "baseredef.h"
+#include "validator.h"
 
 extern ULONG error;
 
@@ -246,7 +252,7 @@ LONG relabel(struct AFSBase *afsbase, struct Volume *volume, STRPTR name) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 
-	if (volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, volume))
 	{
 		error = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
