@@ -10,12 +10,10 @@ MSG_TITLE
 MSG_PERSONAL_BUILD
 Personal Build
 ; Personal Build
-; FIXME: shall I translate this?
 ;
 MSG_NIGHTLY_BUILD
 Nightly Build
 ; Nightly Build
-; FIXME: shall I translate this?
 ;
 MSG_SNAPSHOT
 Schnappschuss
@@ -30,8 +28,8 @@ Ausgabe
 ; Release
 ;
 MSG_COPYRIGHT
-Copyright © 1995-2007, The AROS Development Team. Alle Rechte vorbehalten.
-; Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+Copyright © 1995-2008, The AROS Development Team. Alle Rechte vorbehalten.
+; Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Veröffentlicht gemäß den Richtlinien der
@@ -132,4 +130,8 @@ Kunstwerke
 MSG_SECTION_WEBSITE
 Webseiten
 ; Website
+;
+MSG_SECTION_DATATYPES
+Datatypes
+; Datatypes
 ;
