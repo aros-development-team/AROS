@@ -2,6 +2,11 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
+/*
+ * -date------ -name------------------- -description-----------------------------
+ * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
+ */
+
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -76,8 +81,9 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setData()\n"));
-	if (ah->volume->state != ID_VALIDATED)
+   if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
+   
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
 		return error;
@@ -104,7 +110,7 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setProtect(ah,%s,%ld)\n", name, mask));
-	if (ah->volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
@@ -128,7 +134,7 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setComment(ah,%s,%s)\n", name, comment));
-	if (ah->volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 	if (strlen(comment) >= MAXCOMMENTLENGTH)
 		return ERROR_COMMENT_TOO_BIG;
@@ -199,7 +205,7 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
 	if (blockbuffer == NULL)
 		return error;
-	if (ah->volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 	if (findHandle(ah->volume, blockbuffer->blocknum) != NULL)
 		return ERROR_OBJECT_IN_USE;
@@ -404,7 +410,7 @@ ULONG block,dirblocknum,lastblock;
 UBYTE newentryname[34];
 
 	D(bug("[afs] rename(%ld,%s,%s)\n", dirah->header_block, oname, newname));
-	if (dirah->volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, dirah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 	dirblock = getDirBlockBuffer(afsbase, dirah, newname, newentryname);
 	if (dirblock == NULL)
@@ -662,7 +668,7 @@ struct BlockCache *dirblock;
 char dirname[34];
 
 	D(bug("[afs] createDir(ah,%s,%ld)\n", filename, protection));
-	if (dirah->volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, dirah->volume))
 	{
 		error = ERROR_DISK_WRITE_PROTECTED;
 		return NULL;

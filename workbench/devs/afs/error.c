@@ -92,7 +92,7 @@ LONG showError(struct AFSBase *afsbase, ULONG error, ...)
 		{"No ioport", Req_Cancel },
 		{"Couldn't open device %s", Req_Cancel },
 		{"Couldn't add disk as dosentry", Req_Cancel },
-		{"Disk is not validated!\n", Req_CheckCancel },
+		{"Disk is not validated!", Req_CheckCancel },
 		{"Wrong data block %lu", Req_Cancel },
 		{"Wrong checksum on block %lu", Req_CheckCancel },
 		{"Missing some more bitmap blocks", Req_Cancel },

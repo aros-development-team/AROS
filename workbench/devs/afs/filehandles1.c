@@ -3,6 +3,11 @@
     $Id$
 */
 
+/*
+ * -date------ -name------------------- -description-----------------------------
+ * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
+ */
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -457,7 +462,7 @@ ULONG fileblocknum = -1;
 			dirah->header_block,name,mode,protection)
 		);
 	error = 0;
-	if (mode & FMF_CLEAR && dirah->volume->state != ID_VALIDATED)
+	if (mode & FMF_CLEAR && (0 == checkValid(afsbase, dirah->volume)))
 		error = ERROR_DISK_WRITE_PROTECTED;
 
 	/* get the directory the last component of "name" is in */
@@ -496,7 +501,7 @@ ULONG fileblocknum = -1;
 						dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
 						if (dirblock != NULL)
 						{
-							if (dirah->volume->state == ID_VALIDATED)
+							if (1 == checkValid(afsbase, dirah->volume))
 								fileblock = createNewEntry(afsbase, dirah->volume, ST_FILE, filename, dirblock, protection);
 							else
 								error = ERROR_DISK_WRITE_PROTECTED;
@@ -948,11 +953,12 @@ LONG writtenbytes;
 struct DateStamp ds;
 
 	D(bug("[afs] write(ah,buffer,%ld)\n", length));
-	if (ah->volume->state != ID_VALIDATED)
+	if (0 == checkValid(afsbase, ah->volume))
 	{
 		error = ERROR_DISK_WRITE_PROTECTED;
 		return 0;
 	}
+
 	invalidBitmap(afsbase, ah->volume);
 	writtenbytes = writeData(afsbase, ah, buffer, length);
 	if (writtenbytes != ENDSTREAMCH)

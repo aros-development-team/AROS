@@ -9,10 +9,11 @@
  */
 
 #include "validator.h"
+#include "volumes.h"
 
 #undef SDEBUG
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 
 #ifdef __AROS__
 #include <dos/dostags.h>
@@ -20,7 +21,6 @@
 #include <exec/ports.h>
 #include <exec/types.h>
 #include "afsblocks.h"
-#include "volumes.h"
 #include "cache.h"
 #include "error.h"
 #include <exec/ports.h>
@@ -31,6 +31,32 @@
 #endif
 
 /*******************************************
+ Name  : checkValid
+ Descr : verify whether disk is validated and therefore writable
+         since we need at least a stub function, it has to be
+         declared outside __AROS__ scope
+ Input : afsbase, volume
+ Output: 0 for unvalidated disc, 1 otherwise
+ Author: Tomasz Wiszkowski
+********************************************/
+LONG checkValid(struct AFSBase *afs, struct Volume *vol)
+{
+#ifdef __AROS__
+   if (vol->state == ID_VALIDATED)
+      return 1;
+
+   if (showError(afs, ERR_DISKNOTVALID))
+   {
+      if (vr_OK == launchValidator(afs, vol))
+         return 1;
+   }        
+   return 0;
+#else
+   return 1;
+#endif
+}
+
+/*******************************************
  Name  : launchValidator
  Descr : launch validation process for specified medium
          since we need at least a stub function, it has to be
@@ -39,7 +65,7 @@
  Output: none
  Author: Tomasz Wiszkowski
 ********************************************/
-void launchValidator(struct AFSBase *afsbase, struct Volume *volume)
+LONG launchValidator(struct AFSBase *afsbase, struct Volume *volume)
 {
 #ifdef __AROS__
    D(bug("[afs]: flushing cache...\n"));
@@ -49,9 +75,12 @@ void launchValidator(struct AFSBase *afsbase, struct Volume *volume)
     * initially this was meant to be a synchronous validation
     * but due to obvious problems with IO commands idea was eventually given up
     */
-   validate(afsbase, volume);
+   return validate(afsbase, volume);
+#else
+   return 0;
 #endif
 }
+
 
 
 
@@ -117,6 +146,24 @@ LONG validate(struct AFSBase *afs, struct Volume *vol)
          break;
    }
 
+   {
+      struct BlockCache *bc = getBlock(afs, vol, vol->rootblock);
+      ULONG* mem = bc->buffer;
+
+      if (res != vr_OK)
+      {
+         mem[BLK_BITMAP_VALID_FLAG(vol)] = 0;
+         vol->state = ID_VALIDATING;
+      }
+      else
+         vol->state = ID_VALIDATED;
+
+      if (verify_checksum(&ds, mem) != 0)
+      {
+         D(bug("[afs validate]: block checksum does not match.\n"));
+         bc->flags |= BCF_WRITE;
+      }
+   }
    /*
     * it's not neccessary here, but res is holding validation result
     * one may wish to open some requester at this point in the future
