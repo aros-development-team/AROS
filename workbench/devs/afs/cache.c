@@ -3,6 +3,11 @@
     $Id$
 */
 
+#undef DEBUG
+#define DEBUG 0
+#if defined(__AROS__)
+#include <aros/debug.h>
+#endif
 
 #include "os.h"
 #include "cache.h"
@@ -10,9 +15,6 @@
 #include "error.h"
 #include "afsblocks.h"
 #include "baseredef.h"
-#undef DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
 
 /********************************************************
  Name  : initCache
