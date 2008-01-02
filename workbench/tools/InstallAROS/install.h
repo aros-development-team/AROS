@@ -203,25 +203,25 @@ struct MUIP_Prepare
 */
 struct MUIP_Dir
 {
-    ULONG MethodID;
-    CONST_STRPTR srcDir;
-    CONST_STRPTR dstDir;
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR srcDir;
+    STACKED CONST_STRPTR dstDir;
 };
 
 struct MUIP_CopyFiles
 {
-    ULONG MethodID;
-    CONST_STRPTR srcDir;
-    CONST_STRPTR dstDir;
-    ULONG noOfFiles;
-    ULONG currFile;
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR srcDir;
+    STACKED CONST_STRPTR dstDir;
+    STACKED ULONG noOfFiles;
+    STACKED ULONG currFile;
 };
 
 struct MUIP_CopyFile
 {
-    ULONG MethodID;
-    CONST_STRPTR srcFile;
-    CONST_STRPTR dstFile;
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR srcFile;
+    STACKED CONST_STRPTR dstFile;
 };
 
 enum EStage
