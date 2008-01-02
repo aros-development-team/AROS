@@ -33,13 +33,14 @@ include $(TOP)/config/make.cfg
 #MM	kernel-workbench \
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
+#MM workbench-fs-afs \
 #MM	contrib-cdvdfs \
 #MM	kernel-boot
 
 PKG_LIBS := aros boot mathieeesingbas partition dos graphics layers keymap intuition workbench
 PKG_RSRC := bootloader battclock misc
 PKG_DEVS := ata timer keyboard gameport input console
-PKG_HANDLERS := cdrom packet con nil ram
+PKG_HANDLERS := cdrom packet con nil ram afs
 PKG_HIDDS:= vgah pci pcipc graphics vesagfx
 
 MODULES := \
