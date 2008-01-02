@@ -15,7 +15,8 @@ FILES := \
 	hashing \
 	misc \
 	os_unix_support \
-	volumes
+	volumes \
+	validator
 
 AFSSRCDIR := $(TOP)/workbench/devs/afs
 OBJDIR := $(GENDIR)/tools/host_afs
