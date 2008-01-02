@@ -351,23 +351,14 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 //We don't use icon.library's label drawing so we do this by hand
 static void IconList_GetIconImageRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
 {
-	if (icon->ile_IconListEntry.label != NULL)
-	{
 #if defined(DEBUG_ILC_ICONPOSITIONING)
-D(bug("[IconList] IconList_GetIconImageRectangle(icon '%s')\n", icon->ile_IconListEntry.label));
+D(bug("[IconList]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
 #endif
-	}
-	else
-	{
-#if defined(DEBUG_ILC_ICONPOSITIONING)
-D(bug("[IconList] IconList_GetIconImageRectangle(icon @ %p)\n", icon));
-#endif
-	}
-	
+
 	/* Get basic width/height */    
 	GetIconRectangleA(NULL, icon->ile_DiskObj, NULL, rect, NULL);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
-D(bug("[IconList] IconList_GetIconImageRectangle: MinX %d, MinY %d      MaxX %d, MaxY %d\n", rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
+D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 #endif
 	icon->ile_IconWidth  = (rect->MaxX - rect->MinX) + 1;
 	icon->ile_IconHeight = (rect->MaxY - rect->MinY) + 1;
