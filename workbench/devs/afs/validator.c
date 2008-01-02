@@ -10,6 +10,10 @@
 
 #include "validator.h"
 
+#undef SDEBUG
+#undef DEBUG
+#define DEBUG 1
+
 #ifdef __AROS__
 #include <dos/dostags.h>
 #include <utility/tagitem.h>
@@ -22,13 +26,9 @@
 #include <exec/ports.h>
 #include <exec/io.h>
 #include <dos/dos.h>
+#include <aros/debug.h>
 #include "misc.h"
 #endif
-
-#undef SDEBUG
-#undef DEBUG
-#define DEBUG 1
-#include <aros/debug.h>
 
 /*******************************************
  Name  : launchValidator
