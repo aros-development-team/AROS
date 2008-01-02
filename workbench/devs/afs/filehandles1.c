@@ -17,6 +17,7 @@
 #include "error.h"
 #include "afsblocks.h"
 #include "baseredef.h"
+#include "validator.h"
 
 extern ULONG error;
 
@@ -65,13 +66,17 @@ D
 );
 	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0)
 	{
-		showError(afsbase, ERR_CHECKSUM, blockbuffer->blocknum);
+		if (showError(afsbase, ERR_CHECKSUM, blockbuffer->blocknum))
+         launchValidator(afsbase, volume);
+
 		error = ERROR_UNKNOWN;
 		return NULL;
 	}
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
-		showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum);
+         if (showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum))
+            launchValidator(afsbase, volume);
+
 		error = ERROR_OBJECT_WRONG_TYPE;
 		return NULL;
 	}
@@ -108,13 +113,17 @@ D
 		}
 		if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0)
 		{
-			showError(afsbase, ERR_CHECKSUM,blockbuffer->blocknum);
+			if (showError(afsbase, ERR_CHECKSUM,blockbuffer->blocknum))
+            launchValidator(afsbase, volume);
+
 			error=ERROR_UNKNOWN;
 			return NULL;
 		}
 		if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 		{
-			showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum);
+			if (showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum))
+            launchValidator(afsbase, volume);
+
 			error = ERROR_OBJECT_WRONG_TYPE;
 			return NULL;
 		}
@@ -164,14 +173,18 @@ UBYTE buffer[32];
 	}
 	if (calcChkSum(dirah->volume->SizeBlock, blockbuffer->buffer) != 0)
 	{
-		showError(afsbase, ERR_CHECKSUM, *block);
+		if (showError(afsbase, ERR_CHECKSUM, *block))
+         launchValidator(afsbase, dirah->volume);
+
 		error = ERROR_UNKNOWN;
 		D(bug("[afs]    error checksum\n"));
 		return NULL;
 	}
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
-		showError(afsbase, ERR_BLOCKTYPE, *block);
+		if (showError(afsbase, ERR_BLOCKTYPE, *block))
+         launchValidator(afsbase, dirah->volume);
+
 		error = ERROR_OBJECT_WRONG_TYPE;
 		D(bug("[afs]    error wrong type\n"));
 		return NULL;
@@ -1042,3 +1055,4 @@ struct BlockCache *blockbuffer;
 	return old;
 }
 
+/* vim: set noet ts=3 ai fdm=marker fmr={,} :*/

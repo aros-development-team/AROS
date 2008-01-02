@@ -18,6 +18,7 @@
 #include "hashing.h"
 #include "misc.h"
 #include "baseredef.h"
+#include "validator.h"
 
 extern ULONG error;
 
@@ -226,7 +227,8 @@ struct BlockCache *blockbuffer, *priorbuffer;
 	if (calcChkSum(ah->volume->SizeBlock, priorbuffer->buffer) != 0)
 	{
 		blockbuffer->flags &= ~BCF_USED;
-		showError(afsbase, ERR_CHECKSUM, priorbuffer->blocknum);
+		if (showError(afsbase, ERR_CHECKSUM, priorbuffer->blocknum))
+			launchValidator(afsbase, ah->volume);
 		return ERROR_UNKNOWN;
 	}
 	priorbuffer->flags |= BCF_USED;
@@ -270,7 +272,8 @@ struct BlockCache *blockbuffer, *priorbuffer;
 			if (calcChkSum(ah->volume->SizeBlock, blockbuffer->buffer))
 			{
 				priorbuffer->flags &= ~BCF_USED;
-				showError(afsbase, ERR_CHECKSUM);
+				if (showError(afsbase, ERR_CHECKSUM))
+					launchValidator(afsbase, ah->volume);
 				return ERROR_UNKNOWN;
 			}
 			blockbuffer->flags |= BCF_USED;
