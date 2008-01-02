@@ -1,3 +1,13 @@
+/*
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
+ * -date------ -name------------------- -description-----------------------------
+ * 02-jan-2008 [Tomasz Wiszkowski]      added disk check option for broken disks
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +30,7 @@ va_list ap;
 	va_end(ap);
 }
 
-void showError(struct AFSBase *afsbase, ULONG error, ...) {
+LONG showError(struct AFSBase *afsbase, ULONG error, ...) {
 char *texts[]={0,
             "No ioport",
             "Couldn't open device %s",
@@ -31,12 +41,21 @@ char *texts[]={0,
             "Missing some more bitmap blocks",
             "Wrong blocktype on block %ld",
             "Read/Write Error (%ld)",
+		      "*** This may be a non-AFS disk. ***\n"
+			      "Any attempt to fix it in this case may render the original\n"
+			      "file system invalid, and its contents unrecoverable.\n\n"
+			      "Please select what to do.",
+            "Block %lu used twice",
+            "Block %lu is located outside volume scope\nand will be removed.",
+            "Repairing disk structure will lead to data loss.\n"
+               "It's best to make a backup before proceeding.\n\n"
+               "Please select what to do.",
             0,
             "Unknown error"
 };
 
    if (error==ERR_ALREADY_PRINTED)
-      return;
+      return 0;
    if (error>=ERR_UNKNOWN)
    {
       showText(afsbase, texts[ERR_UNKNOWN], error);
@@ -48,6 +67,7 @@ char *texts[]={0,
       showPtrArgsText(afsbase, texts[error], ap);
 		va_end(ap);
 	}
+   return 0;
 }
 
 LONG readDisk

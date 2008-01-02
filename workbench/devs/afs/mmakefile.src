@@ -14,7 +14,8 @@ FILES := main \
 	hashing \
 	misc \
 	os_aros_support \
-	volumes
+	volumes \
+   validator
 else
 FILES :=
 endif

@@ -3,8 +3,13 @@
     $Id$
 */
 
+/*
+ * -date------ -name------------------- -description-----------------------------
+ * 26-dec-2007 [Tomasz Wiszkowski]      added disk validation
+ */
+
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #endif
 
 #include "os.h"
@@ -13,6 +18,8 @@
 #include "error.h"
 #include "afsblocks.h"
 #include "baseredef.h"
+#include "validator.h"
+
 
 BOOL mediumPresent(struct IOHandle *ioh) {
 	return (ioh->ioflags & IOHF_DISK_IN)==IOHF_DISK_IN;
@@ -64,11 +71,19 @@ LONG error;
 		(
 			blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]
 		);
-	if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
+   if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
 	{
+		/* since our disk is invalid at this point, *
+		 * we want to spawn a new process that will *
+		 * perform disk validation while we move on */
+
 		volume->usedblockscount=0;
 		volume->state = ID_VALIDATING;
-		showError(afsbase, ERR_DISKNOTVALID);
+
+		if (showError(afsbase, ERR_DISKNOTVALID))
+      {
+   		launchValidator(afsbase, volume);
+      }        
 	}
 	else
 	{
@@ -191,3 +206,4 @@ void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
 	FreeMem(volume,sizeof(struct Volume));
 }
 
+/* vim: set noet ts=3 ai fdm=marker fmr={,} :*/
