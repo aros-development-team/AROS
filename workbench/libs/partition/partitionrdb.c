@@ -81,7 +81,7 @@ struct RigidDiskBlock *rdb = (struct RigidDiskBlock *)space;
     return 0;
 }
 
-void CopyBEDosEnvec(ULONG *src, ULONG *dst, ULONG size) {
+void CopyBE2HostDosEnvec(LONG *src, SIPTR *dst, ULONG size) {
 ULONG count=0;
 
     while (count != size)
@@ -90,6 +90,19 @@ ULONG count=0;
         src++;
         count++;
     }
+}
+
+void CopyHost2BEDosEnvec(SIPTR *src, ULONG *dst, ULONG size) {
+    
+    ULONG count=0;
+
+    while (count != size)
+    {
+        *dst++ = AROS_LONG2BE(*src);
+        src++;
+        count++;
+    }
+
 }
 
 struct BadBlockNode *PartitionRDBNewBadBlock
@@ -146,7 +159,7 @@ struct PartitionHandle *ph;
                     ph->data = pblock;
                     CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
                     ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
-                    CopyBEDosEnvec(pblock->pb_Environment, (ULONG *)&ph->de, AROS_BE2LONG(((struct DosEnvec *)pblock->pb_Environment)->de_TableSize)+1);
+                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(((struct DosEnvec *)pblock->pb_Environment)->de_TableSize)+1);
                     ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
                     ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
                     ph->dg.dg_Heads = ph->de.de_Surfaces;
@@ -680,8 +693,8 @@ LONG PartitionRDBSetPartitionAttrs
             {
             struct DosEnvec *de = (struct DosEnvec *)taglist[0].ti_Data;
 
-                CopyMem(de, &ph->de, (de->de_TableSize+1)*4);
-                CopyBEDosEnvec((ULONG *)de, data->pb_Environment, de->de_TableSize+1);
+                CopyMem(de, &ph->de, (de->de_TableSize+1)*sizeof(IPTR));
+                CopyHost2BEDosEnvec((SIPTR *)de, data->pb_Environment, de->de_TableSize+1);
             }
             break;
         case PT_TYPE:
