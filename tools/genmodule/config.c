@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
     
     Code to parse the command line options and the module config file for
@@ -26,7 +26,7 @@ getBanner(struct config* config)
         snprintf (banner, 255,
 "/*\n"
 "    *** Automatically generated from '%s'. Edits will be lost. ***\n"
-"    Copyright © 1995-2005, The AROS Development Team. All rights reserved.\n"
+"    Copyright © 1995-2008, The AROS Development Team. All rights reserved.\n"
 "*/\n", config->conffile
         );
     }
