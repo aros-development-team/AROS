@@ -26,7 +26,7 @@
     delete, press CTRL-C. Delete will notify the user of which files it
     weren't able to delete.
         Delete cannot delete directories which are not empty unless the
-    ALL option is used. To suppresss file and directory names from being
+    ALL option is used. To suppress file and directory names from being
     printed while deleted use the QUIET option. If the 'd' protection bit
     is cleared for a file or directory, it may not be deleted unless the
     FORCE option is used.
