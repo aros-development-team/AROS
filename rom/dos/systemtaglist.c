@@ -147,11 +147,11 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	        break;
 
 	    case SYS_Background:
-                isBackground = tag->ti_Data;
+                isBackground = tag->ti_Data ? TRUE : FALSE;
 		break;
 
 	    case SYS_Asynch:
-		isAsynch = tag->ti_Data;
+		isAsynch = tag->ti_Data ? TRUE : FALSE;
 		break;
 
 	    case SYS_CliNumPtr:
