@@ -6,6 +6,8 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      created disk validation procedures
+ * 03-jan-2008 [Tomasz Wiszkowski]      updated procedure to strip fake dircache blocks
+ *                                      no directory cache handling present here.
  */
 
 #include "validator.h"
@@ -206,7 +208,6 @@ ValidationResult start_superblock(DiskStructure *ds)
    if (res == vr_OK)
    {
       record_bitmap(ds);
-      //write_block(ds, ds->vol->rootblock - ds->vol->startblock, mem);
    }
 
    return res;
@@ -494,6 +495,19 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
       LONG i;
       ValidationResult res = vr_OK;
 
+      /*
+       * clear directory cache block.
+       * fancy thing about directory cache: it is the best way to run into inconsistencies between file trees.
+       * two trees, one kept for compatibility (which is not kept btw as dostype is different), and the other
+       * for 'faster directory listing', but not always in sync
+       */
+      if (mem[BLK_EXTENSION(ds->vol)] != 0)
+      {
+         D(bug("[afs validate]: clearing dircache pointer\n"));
+         mem[BLK_EXTENSION(ds->vol)] = 0;  
+         bc->flags |= BCF_WRITE;
+      }
+
       for (i=BLK_TABLE_START; i<=BLK_TABLE_END(ds->vol); i++)
       {
          id = OS_BE2LONG(mem[i]);
@@ -586,7 +600,14 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
                bc->flags |= BCF_WRITE;
                continue;
             }
-            ds->max_file_len += BLOCK_SIZE(ds->vol);
+            /*
+             * actually, the OFS uses BLOCK_SIZE-24
+             * but the case where file is short is rare
+             */
+            if ((ds->vol->dostype == ID_DOS_DISK) || (ds->vol->dostype == ID_INTER_DOS_DISK))
+               ds->max_file_len += BLOCK_SIZE(ds->vol) - 24;
+            else
+               ds->max_file_len += BLOCK_SIZE(ds->vol);
          }
       }
      
@@ -815,7 +836,7 @@ BitmapResult bm_mark_block(DiskStructure *ds, ULONG block)
       return st_OutOfRange;
    }
 
-   block -= ds->vol->bstartblock;
+   block -= ds->vol->bootblocks;
 
 #if AROS_BIG_ENDIAN
    if ((((ULONG*)ds->bitmap)[block >> 5] & (1 << (block & 31))) == 0)
