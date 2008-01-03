@@ -95,7 +95,7 @@
     	LockDosList(LDF_ALL | LDF_READ);
     }
 
-    /* otherwise we need find a place to start in the doslist based on the
+    /* otherwise we need to find a place to start in the doslist based on the
      * name they passed in */
     else {
 
@@ -176,7 +176,7 @@
         else
             cur = pr->pr_CurrentDir;
 
-        /* if we got NULL, then its relative to the system root lock */
+        /* if we got NULL, then it's relative to the system root lock */
         if (cur == NULL)
             cur = DOSBase->dl_SYSLock;
 
@@ -253,7 +253,7 @@
     }
 
     /* at this point, we have an allocated devproc in dp, the doslist is
-     * locked for read, and we have the the entry for the named "volume"
+     * locked for read, and we have the entry for the named "volume"
      * (device, assign, etc) in dl and a filename relative to that in name */
 
     /* late assign. we resolve the target and then promote the doslist entry
@@ -266,7 +266,7 @@
          * don't and need to bail out */
         UnLockDosList(LDF_ALL | LDF_READ);
 
-        /* XXX there's a race here. with the doslist unlocked, its possible
+        /* XXX there's a race here. with the doslist unlocked, it's possible
          * that some other process will add or remove this assign, blowing
          * everything up. need more tuits before attempting a fix */
 
@@ -372,7 +372,7 @@
         return dp;
     }
 
-    /* finally the tricky but - multidirectory assigns */
+    /* finally the tricky bit - multidirectory assigns */
 
     /* if we're pointing at the "primary" lock, then we just take the first
      * one in the list */
@@ -446,9 +446,12 @@ BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 	       In order to make use of this we should implement direct support for
 	       packet-style handlers in dos.library */
 	    fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
-	    iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
-	    iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
-	    iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
+	    if (fssm != NULL)
+	    {
+		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
+		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
+		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
+	    }
 	    iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_Ext.dn_AROS.dn_DevName;
 	    iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
 
