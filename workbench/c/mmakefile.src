@@ -69,7 +69,7 @@ USER_CFLAGS     := -I$(TOP)/rom/dos
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs workbench-c-pure contrib-cdvdfs-checkcd
+#MM workbench-c : includes linklibs workbench-c-pure contrib-cdvdfs-checkcd workbench-libs-uuid
 #MM workbench-c-quick : workbench-c-pure-quick
 
 %build_progs mmake=workbench-c \
