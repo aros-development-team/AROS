@@ -51,7 +51,7 @@
     SEE ALSO
 
     INTERNALS
-	Behavour of this function is slightly different from AmigaOS 3.x
+	Behaviour of this function is slightly different from AmigaOS 3.x
 	and MorphOS. Instead of LDF_WRITE it locks DosList with LDF_READ
 	flag. This is done because in AROS handlers are run with DosList
 	locked with LDF_READ flag and this could cause a lockup if we use
@@ -79,7 +79,7 @@
     D(bug("[AddDosEntry] Adding %b\n", dlist->dol_Name));
     dl = LockDosList(LDF_ALL | LDF_READ);
 
-    /* If the passed entry has dol_Task defined, then its a packet-based
+    /* If the passed entry has dol_Task defined, then it's a packet-based
      * handler, and probably doesn't have valid dol_DevName, dol_Device and
      * dol_Unit fields, which will be needed. So we search through the DOS
      * list looking for the packet.handler entry for the same process, and

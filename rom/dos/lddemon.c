@@ -335,7 +335,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 		  processes can attempt to open the same device/library Instead of
 		  locking a global semaphore until the opening is done, we lock a
 		  per-object semaphore, so that others libraries/devices can be opened
-		  in the meantime. Beofore a deadlock could happen if there was a
+		  in the meantime. Before a deadlock could happen if there was a
 		  situation like this:
 
 		  Process A opens L --------> LDDemon loads L and locks sem S
@@ -532,7 +532,7 @@ AROS_LH4(BYTE, OpenDevice,
     iORequest->io_Device = NULL;
 
     /*	We use FilePart() because the liblist is built from resident IDs,
-	and contain no path. Eg. The user can request gadgets/foo.gadget,
+	which contain no path. Eg. The user can request gadgets/foo.gadget,
 	but the resident only contains foo.gadget
     */
 

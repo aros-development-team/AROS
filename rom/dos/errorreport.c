@@ -51,7 +51,7 @@
 
     Locks and filehandles are the same in AROS so there is redundancy in
     the parameters. Furthermore, the 'device' argument is not cared about
-    as AROS don't build filesystems via handlers.
+    as AROS doesn't build filesystems with handlers.
 
     EXAMPLE
 

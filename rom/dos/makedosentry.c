@@ -28,7 +28,7 @@
 
 /*  FUNCTION
 	Create an entry for the dos list. Depending on the type this may
-	be a device a volume or an assign node.
+	be a device, a volume or an assign node.
 
     INPUTS
 	name  --  pointer to name
@@ -36,7 +36,7 @@
 
     RESULT
 
-        The new device entry or NULL in case it couldn't be created.
+        The new device entry, or NULL if it couldn't be created.
 
     NOTES
 
