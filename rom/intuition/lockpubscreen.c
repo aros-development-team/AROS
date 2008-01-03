@@ -29,7 +29,7 @@ AROS_LH1(struct Screen *, LockPubScreen,
     window is ready.
  
     If you try to lock the Workbench screen or the default public screen
-    and there isn'tany, the Workbench screen will be automatically opened
+    and there isn't any, the Workbench screen will be automatically opened
     and locked.
  
     INPUTS
