@@ -61,7 +61,7 @@ kernel-package-x86_64:
 
 bootiso-pc-x86_64: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
-$(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
+$(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0 $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
@@ -82,3 +82,6 @@ $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 $(BINDIR)/boot/grub/menu.lst:
 		$(CP) menu.lst $(BINDIR)/boot/grub/
+
+$(BINDIR)/boot/grub/menu.lst.DH0:
+		$(CP) menu.lst.DH0 $(BINDIR)/boot/grub/
