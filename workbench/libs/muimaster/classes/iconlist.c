@@ -5026,8 +5026,6 @@ IPTR IconDrawerList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 	
-	IPTR retval = DoSuperMethodA(CLASS, obj, message);
-
 	if (data->drawer)
 	{
 D(bug("[IconList] %s: Freeing DIR name storage for '%s'\n", __PRETTY_FUNCTION__, data->drawer));
@@ -5035,7 +5033,7 @@ D(bug("[IconList] %s: Freeing DIR name storage for '%s'\n", __PRETTY_FUNCTION__,
 		FreeVec(data->drawer);
 	}
 
-	return retval;
+	return DoSuperMethodA(CLASS, obj, message);
 }
 
 /**************************************************************************
