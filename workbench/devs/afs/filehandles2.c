@@ -202,11 +202,16 @@ ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
 
 	D(bug("[afs] delete(ah,%s)\n", name));
+   /*
+    * check disk validity *first*
+    * it may turn out, that during validation, invalid entry gets deleted either way.
+    */
+	if (0 == checkValid(afsbase, ah->volume))
+		return ERROR_DISK_WRITE_PROTECTED;
 	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
 	if (blockbuffer == NULL)
 		return error;
-	if (0 == checkValid(afsbase, ah->volume))
-		return ERROR_DISK_WRITE_PROTECTED;
+	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
 	if (findHandle(ah->volume, blockbuffer->blocknum) != NULL)
 		return ERROR_OBJECT_IN_USE;
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PROTECT(ah->volume)]) & FIBF_DELETE)

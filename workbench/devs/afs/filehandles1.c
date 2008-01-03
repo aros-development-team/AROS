@@ -6,11 +6,11 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
+ * 03-jan-2008 [Tomasz Wiszkowski]      fixed procedures to allow validation prior to disk write
  */
 
-#ifndef DEBUG
+#undef DEBUG
 #define DEBUG 0
-#endif
 
 #include "os.h"
 #include "filehandles1.h"
@@ -71,6 +71,10 @@ D
 );
 	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0)
 	{
+		/*
+		 * since we will not work on blockbuffer here any more, 
+		 * we don't have to preserve it.
+		 */
 		if (showError(afsbase, ERR_CHECKSUM, blockbuffer->blocknum))
          launchValidator(afsbase, volume);
 
@@ -79,8 +83,12 @@ D
 	}
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
-         if (showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum))
-            launchValidator(afsbase, volume);
+		/*
+		 * again, we don't work on blockbuffer any more
+		 * no need to preserve BlockCache structure.
+		 */
+		if (showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum))
+			launchValidator(afsbase, volume);
 
 		error = ERROR_OBJECT_WRONG_TYPE;
 		return NULL;
@@ -118,6 +126,10 @@ D
 		}
 		if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0)
 		{
+			/*
+			 * we won't work on blockbuffer any more
+			 * don't preserve the buffer.
+			 */
 			if (showError(afsbase, ERR_CHECKSUM,blockbuffer->blocknum))
             launchValidator(afsbase, volume);
 
@@ -126,6 +138,9 @@ D
 		}
 		if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 		{
+			/*
+			 * not working with blockbuffer :)
+			 */
 			if (showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum))
             launchValidator(afsbase, volume);
 
@@ -178,6 +193,10 @@ UBYTE buffer[32];
 	}
 	if (calcChkSum(dirah->volume->SizeBlock, blockbuffer->buffer) != 0)
 	{
+		/*
+		 * not working with blockbuffer any more.
+		 * otherwise we would need to preserve it (BCF_USED or one more time getBlock)
+		 */
 		if (showError(afsbase, ERR_CHECKSUM, *block))
          launchValidator(afsbase, dirah->volume);
 
@@ -187,6 +206,9 @@ UBYTE buffer[32];
 	}
 	if (OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT)
 	{
+		/*
+		 * read above comment
+		 */
 		if (showError(afsbase, ERR_BLOCKTYPE, *block))
          launchValidator(afsbase, dirah->volume);
 
@@ -456,65 +478,92 @@ ULONG block;
 ULONG dirblocknum;
 ULONG fileblocknum = -1;
 
-	D(bug
-		(
-			"[afs] openfile(%lu,%s,0x%lx,%lu)\n",
-			dirah->header_block,name,mode,protection)
-		);
+	/*
+	 * nicely say what's going on
+	 */
+	D(bug("[afs] openfile(%lu,%s,0x%lx,%lu)\n", dirah->header_block,name,mode,protection));
 	error = 0;
-	if (mode & FMF_CLEAR && (0 == checkValid(afsbase, dirah->volume)))
+	
+	/*
+	 * if user wants to delete or create a new file - make sure we can do that.
+	 */
+	if (((mode & FMF_CLEAR) || (mode & FMF_CREATE)) && (0 == checkValid(afsbase, dirah->volume)))
 		error = ERROR_DISK_WRITE_PROTECTED;
 
-	/* get the directory the last component of "name" is in */
+	/* 
+	 * get the directory the last component of "name" is in 
+	 */
 	dirblock = getDirBlockBuffer(afsbase, dirah, name, filename);
+
+	/*
+	 * if no error so far and directory block is found, move on.
+	 */
 	if (error == 0 && dirblock != NULL)
 	{
-		if (
-				(OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_USERDIR) ||
-				(OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_ROOT)
-			)
+		/*
+		 * only if the directory is of DIR or ROOT type
+		 */
+		if ((OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_USERDIR) || 
+			(OS_BE2LONG(dirblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)]) == ST_ROOT))
 		{
 			D(bug("[afs]    parent of %s is on block %lu\n", name, dirblock->blocknum));
 			dirblocknum = dirblock->blocknum;
-			/* get the header block of the file to open */
+
+			/* 
+			 * get the header block of the file to open 
+			 */
 			fileblock = getHeaderBlock(afsbase, dirah->volume, filename, dirblock, &block);
-			if (
-					(fileblock != NULL) &&
-					(OS_BE2LONG(fileblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_FILE)
-				)
+
+			/*
+			 * check if 'file' is really a FILE
+			 */
+			if ((fileblock != NULL) && (OS_BE2LONG(fileblock->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_FILE))
 			{
 				error = ERROR_OBJECT_WRONG_TYPE;
 			}
 			else
 			{
+				/*
+				 * get file block, if there was (is) a file
+				 */
 				if (fileblock != NULL)
 					fileblocknum = fileblock->blocknum;
+
+				/*
+				 * remove existing file if we are asked to clear its contents
+				 */
 				if (mode & FMF_CLEAR)
 					error = deleteObject(afsbase, dirah, name);
+
+				/*
+				 * if we cleared the file or there was no file at all, move on
+				 */
 				if ((error == 0) || (error == ERROR_OBJECT_NOT_FOUND))
 				{
-					if (
-							(mode & FMF_CREATE) &&
-							((fileblock == NULL) || (mode & FMF_CLEAR))
-						)
+					/*
+					 * in case we could not find existing file, or if we deleted this file previously, 
+					 * create a new one.
+					 */
+					if ((mode & FMF_CREATE) && ((fileblock == NULL) || (mode & FMF_CLEAR)))
 					{
-						dirblock = getBlock(afsbase, dirah->volume, dirblocknum);
-						if (dirblock != NULL)
-						{
-							if (1 == checkValid(afsbase, dirah->volume))
-								fileblock = createNewEntry(afsbase, dirah->volume, ST_FILE, filename, dirblock, protection);
-							else
-								error = ERROR_DISK_WRITE_PROTECTED;
-						}
-						else
-							error = ERROR_UNKNOWN;
+						/*
+						 * please note that dirblock may become invalid here
+						 */
+						fileblock = createNewEntry(afsbase, dirah->volume, ST_FILE, filename, dirblock, protection);
 					}
 					else
 					{
-						/* we read it before so fileblocknum is valid */
+						/* 
+						 * we should already have fileblock here
+						 * again, dirblock may become invalid here
+						 */
 						if (fileblock != NULL)
 							fileblock = getBlock(afsbase, dirah->volume, fileblocknum);
 					}
+
+					/*
+					 * create a handle for the file
+					 */
 					if (fileblock != NULL)
 					{
 						error = 0;

@@ -85,7 +85,13 @@ LONG error;
    		launchValidator(afsbase, volume);
       }        
 	}
-	else
+
+	/*
+	 * it's safe to assume that the block is still there
+	 */
+	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+	
+   if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
 	{
 		blockbuffer->flags |= BCF_USED;	// won't be cleared until volume is ejected
 		volume->usedblockscount=countUsedBlocks(afsbase, volume);
