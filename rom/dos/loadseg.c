@@ -32,7 +32,7 @@
 
 /*  FUNCTION
         Loads an executable file into memory. Each hunk of the loadfile
-        is loaded into his own memory section and a handle on all of them
+        is loaded into its own memory section and a handle on all of them
         is returned. The segments can be freed with UnLoadSeg().
 
     INPUTS
@@ -61,9 +61,9 @@
     void (* FunctionArray[3])();
     BPTR file, segs=0;
 
-    FunctionArray[0] = __AROS_GETVECADDR(DOSBase,7);
-    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33);
-    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35);
+    FunctionArray[0] = __AROS_GETVECADDR(DOSBase,7);  /* Read() */
+    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
+    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
 
     /* Open the file */
     D(bug("[LoadSeg] Opening '%s'...\n", name));
