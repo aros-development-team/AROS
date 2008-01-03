@@ -54,6 +54,7 @@ FILES := \
     TaskList \
     Touch \
     Type \
+    UUIDGen \
     Version \
     Wait \
     WaitForPort \
