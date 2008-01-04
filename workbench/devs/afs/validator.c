@@ -8,6 +8,8 @@
  * 02-jan-2008 [Tomasz Wiszkowski]      created disk validation procedures
  * 03-jan-2008 [Tomasz Wiszkowski]      updated procedure to strip fake dircache blocks
  *                                      no directory cache handling present here.
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected procedure to *ignore* data block sizes 
+ *                                      for OFS volumes since DOSTYPE does not differentiate them                                     
  */
 
 #include "validator.h"
@@ -604,10 +606,18 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
              * actually, the OFS uses BLOCK_SIZE-24
              * but the case where file is short is rare
              */
+            /*
+             * the DOSTYPE ID DOES NOT HOLD INFORMATION WHETHER WE DEAL WITH FFS OR OFS DISK
+             * THIS LEADS TO FILE TRUNCATION WHICH IS NOT DESIRED
+             * DO NOT UNCOMMENT THIS UNLESS YOU KNOW WHAT YOU ARE DEALING WITH
+             */
+            /*
             if ((ds->vol->dostype == ID_DOS_DISK) || (ds->vol->dostype == ID_INTER_DOS_DISK))
                ds->max_file_len += BLOCK_SIZE(ds->vol) - 24;
             else
                ds->max_file_len += BLOCK_SIZE(ds->vol);
+            */
+            ds->max_file_len += BLOCK_SIZE(ds->vol);
          }
       }
      
