@@ -3,16 +3,18 @@
 timeout 5
 default 0
 
-title AROS + relocate
+title AROS with VESA
     serial=9600
-    kernel /dh0/boot/aros-x86_64 base_address=02000000 
+    kernel /dh0/boot/aros-x86_64 vesa=800x600x16
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
 
-title AROS + vesa
+title AROS with SFS and FAT
     serial=9600
-    kernel /dh0/boot/aros-x86_64 vesa=800x600x16 base_address=02000000
+    kernel /dh0/boot/aros-x86_64 vesa=800x600x16
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/fat.handler
 
 # [E] (DO NOT REMOVE THIS LINE!)
