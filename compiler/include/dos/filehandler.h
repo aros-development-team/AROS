@@ -2,7 +2,7 @@
 #define DOS_FILEHANDLER_H
 
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Constants for filehandlers.
@@ -103,7 +103,7 @@ struct FileSysStartupMsg
     It is essentially the same structure as DevInfo, defined in
     <dos/dosextens.h>.
 
-    For AROS this is notable different, as filehandlers are no longer
+    For AROS this is notably different, as filehandlers are no longer
     DOS tasks (ie Processes), some of the fields here have no purpose
     and are ignored. The only fields retained are the dn_Next, dn_Type,
     dn_Startup and dn_Handler fields. */
