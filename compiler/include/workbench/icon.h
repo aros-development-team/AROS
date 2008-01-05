@@ -2,7 +2,7 @@
 #define WORKBENCH_ICON_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -168,7 +168,7 @@
 /* If possible, retrieve a palette mapped icon (BOOL) */
 #define ICONGETA_GetPaletteMappedIcon   (ICONA_BASE+48)
 
-/* Set if the icon returned is a default icon (BOOL *) */
+/* Set if the icon returned is a default icon (LONG *) */
 #define ICONGETA_IsDefaultIcon          (ICONA_BASE+49)
 
 /* Remap the icon to the default screen, if possible (BOOL) */
@@ -237,7 +237,7 @@ struct IconIdentifyMsg
                                                  * positioned right at the first byte.
                                                  * May be NULL.
                                                  */
-        struct TagItem *        iim_Tags;       /* Tags passed to GetIconTagList(). */
+        const struct TagItem *  iim_Tags;       /* Tags passed to GetIconTagList(). */
 };
 
 /*** Tags for use with DupDiskObjectA() *************************************/
