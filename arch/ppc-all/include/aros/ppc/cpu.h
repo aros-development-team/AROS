@@ -1,12 +1,12 @@
 #ifndef AROS_PPC_CPU_H
 #define AROS_PPC_CPU_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: machine.h include file for Linux/PPC
+    Desc: cpu.h include file for powerpc arch
     Lang: english
 */
 
@@ -23,6 +23,8 @@
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
 #define AROS_WORSTALIGN 	   8 /* Worst case alignment */
+
+#define AROS_32BIT_TYPE         int
 
 /* Use C pointer and string for the BCPL pointers and strings
  * For a normal ABI these should not be defined for maximum source code
@@ -117,18 +119,18 @@ struct JumpVec
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 /*
-   Code to use to generate stub functions.
-   It must be *printed* with a function like printf in a file
-   to be compiled with gcc.
+   Code used to generate stub functions.
+   It must be *printed* with a function like printf into
+   a file to be compiled with gcc.
 
    - The first parameter is the function name,
    - The second parameter is the basename,
      i.e. bname is the address of a pointer to the library base,
    - The third parameter is the library vector to be called.
 
-    It's value must be computed by the stub generator with this code:
-     &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
-     the library vectors list.
+   It's value must be computed by the stub generator with this code:
+   &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
+   the library vectors list.
 
 */
 #define STUBCODE_INIT                          \
