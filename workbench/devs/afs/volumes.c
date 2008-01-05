@@ -7,10 +7,12 @@
  * -date------ -name------------------- -description-----------------------------
  * 26-dec-2007 [Tomasz Wiszkowski]      added disk validation
  * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
+ * 05-jan-2008 [Tomasz Wiszkowski]		 removed requester prompting for validation
+ * 												 to allow volume validation during boot-up
  */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #include "os.h"
@@ -81,8 +83,7 @@ LONG error;
 		volume->usedblockscount=0;
 		volume->state = ID_VALIDATING;
 
-		if (showError(afsbase, ERR_DISKNOTVALID))
-			launchValidator(afsbase, volume);
+		launchValidator(afsbase, volume);
 	}
 
 	/*
