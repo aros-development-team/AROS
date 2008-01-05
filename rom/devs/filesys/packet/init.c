@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -41,7 +41,7 @@ AROS_UFH3(void, packet_startup,
     AROS_USERFUNC_INIT
 
     struct Process *me = (struct Process *) FindTask(NULL);
-    struct ph_mount *mount = (struct ph_mount *) me->pr_Task.tc_UserData;
+    BPTR seglist = (BPTR) me->pr_Task.tc_UserData;
 
     D(bug("[packet] in packet_startup\n"));
 
@@ -50,9 +50,9 @@ AROS_UFH3(void, packet_startup,
 
     D(bug("[packet] calling handler\n"));
 
-    AROS_UFC1(void, (LONG_FUNC) ((BPTR *) BADDR(mount->seglist)+1),
-	      AROS_UFCA(struct ExecBase *, SysBase, A6));
-    
+    AROS_UFC1(void, (LONG_FUNC) ((BPTR *) BADDR(seglist) + 1),
+              AROS_UFCA(struct ExecBase *, SysBase, A6));
+
     D(bug("[packet] handler returned\n"));
 
     AROS_USERFUNC_EXIT
@@ -66,6 +66,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
     char filename[MAXFILENAMELENGTH];
     int i;
     BPTR seglist;
+    BOOL loaded = FALSE;
     char pr_name[256];
     struct Message *msg;
     struct MsgPort *reply_port;
@@ -92,17 +93,18 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         }
     }
 
-    /* if we didn't find it then we have to load it up */
+    /* if we didn't find it then we have to set it up */
     if (mount == NULL) {
 
-        /* try to load the named handler from each dir in the search path */
-        seglist = NULL;
-        for (i = 0; search_path[i] != NULL; i++) {
+        /* try to load the named handler from each dir in the search path if
+         * not already loaded */
+        seglist = dn->dn_SegList;
+        for (i = 0; seglist == NULL && search_path[i] != NULL; i++) {
             snprintf(filename, MAXFILENAMELENGTH, search_path[i], dn->dn_Handler);
             seglist = LoadSeg(filename);
             if (seglist != NULL) {
+                loaded = TRUE;
                 D(bug("[packet] loaded %s\n", filename));
-                break;
             }
             else
                 D(bug("[packet] couldn't load %s\n", filename));
@@ -120,7 +122,9 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         strncpy(mount->handler_name, dn->dn_Handler, MAXFILENAMELENGTH);
         strncpy(mount->mount_point, iofs->io_Union.io_OpenDevice.io_DosName, MAXFILENAMELENGTH);
 
-        mount->seglist = seglist;
+        /* only store seg list for later unloading if we loaded it ourselves */
+        if (loaded)
+            mount->seglist = seglist;
 
         D(bug("[packet] starting handler process\n"));
 
@@ -130,7 +134,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
                                            NP_Name,      pr_name,
                                            NP_StackSize, dn->dn_StackSize,
                                            NP_Priority,  dn->dn_Priority,
-                                           NP_UserData,  (IPTR) mount,
+                                           NP_UserData,  (IPTR) seglist,
                                            TAG_DONE);
 
         reply_port = CreateMsgPort();
@@ -149,7 +153,8 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         if (mount->process == NULL) {
             kprintf("[packet] couldn't start filesys process for %s\n", mount->mount_point);
 
-            UnLoadSeg(seglist);
+            if (loaded)
+                UnLoadSeg(seglist);
             FreeVec(mount);
 
             iofs->IOFS.io_Error = IOERR_OPENFAIL;
@@ -162,10 +167,14 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         /* XXX gurubook p645 suggests dp_Arg1 may be "BPTR TO BSTR (file name)",
          * but I can't confirm this */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);
-        dp->dp_Arg2 = MKBADDR(((struct DeviceNode *) iofs->io_Union.io_OpenDevice.io_DeviceNode)->dn_Startup);
-        dp->dp_Arg3 = MKBADDR(iofs->io_Union.io_OpenDevice.io_DeviceNode);
+        dp->dp_Arg2 = (SIPTR)MKBADDR(dn->dn_Startup);
+        dp->dp_Arg3 = (SIPTR)MKBADDR(dn);
         dp->dp_Port = reply_port;
 
+        /* Set up device and unit in device node so handler can add volume
+         * node during start-up */
+        dn->dn_Ext.dn_AROS.dn_Device = iofs->IOFS.io_Device;
+        dn->dn_Ext.dn_AROS.dn_Unit = (struct Unit *) &(mount->root_handle);
         D(bug("[packet] sending startup packet\n"));
 
         PutMsg(&(mount->process->pr_MsgPort), dp->dp_Link);
@@ -178,11 +187,13 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
             D(bug("[packet] handler failed startup [%d]\n", dp->dp_Res2));
 
             iofs->IOFS.io_Error = dp->dp_Res2;
+            dn->dn_Ext.dn_AROS.dn_Device = NULL;
+            dn->dn_Ext.dn_AROS.dn_Unit = NULL;
         }
 
         else {
             /* hook the process up to the device node */
-            ((struct DeviceNode *) iofs->io_Union.io_OpenDevice.io_DeviceNode)->dn_Task = &(mount->process->pr_MsgPort);
+            dn->dn_Task = &(mount->process->pr_MsgPort);
 
             /* setup a handler function and port for replies */
             mount->reply_int.is_Code = packet_reply;
