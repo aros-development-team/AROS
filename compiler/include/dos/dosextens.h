@@ -340,14 +340,11 @@ struct FileHandle
     /* SDuvan: Added this and removed the #if below. This field allows us
                to emulate packets -- specifically it makes it possible
 	       to implement the ***Pkt() functions */
-    struct FileHandle *fh_CompatibilityHack;
+    SIPTR fh_CompatibilityHack;
 
       /* A private pointer to a device specific filehandle structure. See
          <dos/filesystems.h> for more information. */
     struct Unit   * fh_Unit;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    LONG            fh_NoAROS3; /* not used by AROS */
-#endif
 };
 
 #define  fh_Arg1  fh_CompatibilityHack
@@ -451,8 +448,8 @@ struct DosList
 
 /* The following structures are essentially the same as DosList above. The
    difference is that they support just one type of entry. You can use them
-   instead of DosList, if you have a list, containing just one type of
-   entries. For more information see above. */
+   instead of DosList if you have a list containing just one type of
+   entry. For more information see above. */
 
 struct DeviceList
 {
@@ -472,9 +469,9 @@ struct DeviceList
     BPTR             dl_unused; /* PRIVATE */
     
     /* In DevInfo we have three pointers and three longwords,
-     * in this structu two pointers and for longwords,
+     * in this structure two pointers and four longwords,
      * add some bytes if pointers are longer then longwords
-     * FIXME: ptr alignment not taking into account
+     * FIXME: ptr alignment not taken into account
      */
 #if AROS_SIZEOFPTR > AROS_SIZEOFULONG
 //    UBYTE            dl_unused2[(AROS_SIZEOFPTR-AROS_SIZEOFULONG)];
@@ -575,13 +572,13 @@ struct DosPacket
                     <dos/dos.h> for possible values. */
 
    /* The actual data. */
-   IPTR dp_Arg1;
-   IPTR dp_Arg2;
-   IPTR dp_Arg3;
-   IPTR dp_Arg4;
-   IPTR dp_Arg5;
-   IPTR dp_Arg6;
-   IPTR dp_Arg7;
+   SIPTR dp_Arg1;
+   SIPTR dp_Arg2;
+   SIPTR dp_Arg3;
+   SIPTR dp_Arg4;
+   SIPTR dp_Arg5;
+   SIPTR dp_Arg6;
+   SIPTR dp_Arg7;
 };
 #define dp_Action   dp_Type
 #define dp_Status   dp_Res1
