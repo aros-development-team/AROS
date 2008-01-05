@@ -5,6 +5,7 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 
@@ -81,9 +82,9 @@ ULONG block;
 struct BlockCache *blockbuffer;
 
 	D(bug("[afs] setData()\n"));
-   if (0 == checkValid(afsbase, ah->volume))
+	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
-   
+
 	blockbuffer = findBlock(afsbase, ah, name, &block);
 	if (blockbuffer == NULL)
 		return error;
@@ -202,10 +203,10 @@ ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
 
 	D(bug("[afs] delete(ah,%s)\n", name));
-   /*
-    * check disk validity *first*
-    * it may turn out, that during validation, invalid entry gets deleted either way.
-    */
+	/*
+	 * check disk validity *first*
+	 * it may turn out, that during validation, invalid entry gets deleted either way.
+	 */
 	if (0 == checkValid(afsbase, ah->volume))
 		return ERROR_DISK_WRITE_PROTECTED;
 	blockbuffer = findBlock(afsbase, ah, name, &lastblock);
@@ -565,7 +566,7 @@ UBYTE newentryname[34];
 *********************************************/
 struct BlockCache *createNewEntry
 	(
-		struct AFSBase *afsbase,
+	struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG entrytype,
 		STRPTR entryname,

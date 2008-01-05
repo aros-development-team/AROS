@@ -6,6 +6,7 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 26-dec-2007 [Tomasz Wiszkowski]      added disk validation
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 #ifndef DEBUG
@@ -71,7 +72,7 @@ LONG error;
 		(
 			blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]
 		);
-   if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
+	if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
 	{
 		/* since our disk is invalid at this point, *
 		 * we want to spawn a new process that will *
@@ -81,9 +82,7 @@ LONG error;
 		volume->state = ID_VALIDATING;
 
 		if (showError(afsbase, ERR_DISKNOTVALID))
-      {
-   		launchValidator(afsbase, volume);
-      }        
+			launchValidator(afsbase, volume);
 	}
 
 	/*
@@ -91,7 +90,7 @@ LONG error;
 	 */
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
 	
-   if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
+	if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
 	{
 		blockbuffer->flags |= BCF_USED;	// won't be cleared until volume is ejected
 		volume->usedblockscount=countUsedBlocks(afsbase, volume);
