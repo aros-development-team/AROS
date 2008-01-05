@@ -2211,8 +2211,9 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
             $(RM) $@ && \
 	    $(ECHO) "Building \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" && \
 	    cd $(%(mmake)-%(subpackage)-package-dir) && \
-            tar --remove-files -cvf $(%(mmake)-%(subpackage)-package-basename).tar * && \
+            tar -cvf $(%(mmake)-%(subpackage)-package-basename).tar * && \
             mkdir -p "$(%(mmake)-prefix)" && \
+	    cd .. && $(RM) -r $(%(mmake)-%(subpackage)-package-dir) && \
             tar -xf $(%(mmake)-%(subpackage)-package-basename).tar -C "%(prefix)"/ && \
             bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar && \
             cd .. && $(RM) $(%(mmake)-%(subpackage)-archbase); \
