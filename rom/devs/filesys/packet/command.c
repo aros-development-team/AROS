@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -202,12 +202,12 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
              * the file name, then look backwards through the full name
              * looking for '/' and going up the tree based on that.
              * FATFileSystem instead checks a flag inside the lock structure
-             * to see if the lock is a directory, and fails outright if its
+             * to see if the lock is a directory, and fails outright if it's
              * not.
              *
              * Here we intercept this special case and explicitly request the
              * current/parent directory. Unfortunately ACTION_PARENT can't
-             * take an lock parameter - it always returns a shared lock. Thats
+             * take a lock parameter - it always returns a shared lock. That's
              * sufficient for this case but is technically incorrect. The
              * real solution is for something other than FSA_OPEN to be used
              * to do this.
@@ -679,7 +679,8 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
 
             dp->dp_Type = ACTION_ADD_NOTIFY;
-            dp->dp_Arg1 = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+            dp->dp_Arg1 =
+                (SIPTR) iofs->io_Union.io_NOTIFY.io_NotificationRequest;
             break;
 
         case FSA_REMOVE_NOTIFY:
@@ -688,7 +689,8 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                   iofs->io_Union.io_NOTIFY.io_NotificationRequest->nr_FullName));
 
             dp->dp_Type = ACTION_REMOVE_NOTIFY;
-            dp->dp_Arg1 = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+            dp->dp_Arg1 =
+                (SIPTR) iofs->io_Union.io_NOTIFY.io_NotificationRequest;
             break;
 
         /* XXX implement */
@@ -887,8 +889,8 @@ AROS_UFH3(void, packet_reply,
 
             /* make sure we have enough room for everything that came back */
             if (size < sizeof(struct ExAllData) +
-                       (mode >= ED_COMMENT ? (comment_len = strlen(fib->fib_Comment)) : 0) +
-                       (mode >= ED_NAME    ? (filename_len = strlen(fib->fib_FileName)) : 0)) {
+                       (mode >= ED_COMMENT ? (comment_len = fib->fib_Comment[0]) : 0) +
+                       (mode >= ED_NAME    ? (filename_len = fib->fib_FileName[0]) : 0)) {
                 iofs->io_DosError = ERROR_BUFFER_OVERFLOW;
                 FreeMem(fib, sizeof(struct FileInfoBlock));
                 break;
@@ -904,7 +906,8 @@ AROS_UFH3(void, packet_reply,
                     /* store the comment in the spare space after the ead and
                      * the filename */
                     ead->ed_Comment = (UBYTE *) ead + sizeof(struct ExAllData) + filename_len + 1;
-                    strcpy(ead->ed_Comment, fib->fib_Comment);
+                    strcpy(ead->ed_Comment,
+                        mkcstr(pkt->pool, fib->fib_Comment));
 
                 case ED_DATE:
                     ead->ed_Days = fib->fib_Date.ds_Days;
@@ -923,7 +926,7 @@ AROS_UFH3(void, packet_reply,
                 case ED_NAME:
                     /* store the name in the spare space after the ead */
                     ead->ed_Name = (UBYTE *) ead + sizeof(struct ExAllData);
-                    strcpy(ead->ed_Name, fib->fib_FileName);
+                    strcpy(ead->ed_Name, mkcstr(pkt->pool, fib->fib_FileName));
                
                 case 0:
                     ead->ed_Next = NULL;
@@ -936,6 +939,13 @@ AROS_UFH3(void, packet_reply,
 
             FreeMem(fib, sizeof(struct FileInfoBlock));
 
+            break;
+        }
+
+        case ACTION_EXAMINE_NEXT: {
+            struct FileInfoBlock *fib = iofs->io_Union.io_EXAMINE_NEXT.io_fib;
+            strcpy(fib->fib_FileName, mkcstr(pkt->pool, fib->fib_FileName));
+            strcpy(fib->fib_Comment, mkcstr(pkt->pool, fib->fib_Comment));
             break;
         }
 
