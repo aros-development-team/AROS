@@ -6,6 +6,7 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      added disk check option for broken disks
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 
@@ -22,9 +23,9 @@
  */
 enum showReqType 
 {
-   Req_Cancel = 0,
-   Req_RetryCancel,
-   Req_CheckCancel,
+	Req_Cancel = 0,
+	Req_RetryCancel,
+	Req_CheckCancel,
 	Req_ContinueCancel,
 	Req_Continue
 };
@@ -36,8 +37,8 @@ enum showReqType
  */
 struct showReqStruct 
 {
-   char* text;
-   enum showReqType type;
+	char* text;
+	enum showReqType type;
 };
 
 /*
@@ -103,10 +104,10 @@ LONG showError(struct AFSBase *afsbase, ULONG error, ...)
 			"file system invalid, and its contents unrecoverable.\n\n"
 			"Please select what to do", Req_ContinueCancel },	
 		{"Block %lu used twice", Req_Cancel},
-      {"Block %lu is located outside volume scope\nand will be removed.", Req_Continue},
+		{"Block %lu is located outside volume scope\nand will be removed.", Req_Continue},
 		{"Repairing disk structure will lead to data loss.\n"
-         "It's best to make a backup before proceeding.\n\n"
-         "Please select what to do.", Req_ContinueCancel },
+			"It's best to make a backup before proceeding.\n\n"
+			"Please select what to do.", Req_ContinueCancel },
 		{NULL, Req_Cancel },
 		{"Unknown error", Req_Cancel}
 	};

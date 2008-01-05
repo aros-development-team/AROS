@@ -7,6 +7,7 @@
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
  * 03-jan-2008 [Tomasz Wiszkowski]      fixed procedures to allow validation prior to disk write
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 #undef DEBUG
@@ -131,7 +132,7 @@ D
 			 * don't preserve the buffer.
 			 */
 			if (showError(afsbase, ERR_CHECKSUM,blockbuffer->blocknum))
-            launchValidator(afsbase, volume);
+				launchValidator(afsbase, volume);
 
 			error=ERROR_UNKNOWN;
 			return NULL;
@@ -142,7 +143,7 @@ D
 			 * not working with blockbuffer :)
 			 */
 			if (showError(afsbase, ERR_BLOCKTYPE, blockbuffer->blocknum))
-            launchValidator(afsbase, volume);
+				launchValidator(afsbase, volume);
 
 			error = ERROR_OBJECT_WRONG_TYPE;
 			return NULL;
@@ -198,7 +199,7 @@ UBYTE buffer[32];
 		 * otherwise we would need to preserve it (BCF_USED or one more time getBlock)
 		 */
 		if (showError(afsbase, ERR_CHECKSUM, *block))
-         launchValidator(afsbase, dirah->volume);
+			launchValidator(afsbase, dirah->volume);
 
 		error = ERROR_UNKNOWN;
 		D(bug("[afs]    error checksum\n"));
@@ -210,7 +211,7 @@ UBYTE buffer[32];
 		 * read above comment
 		 */
 		if (showError(afsbase, ERR_BLOCKTYPE, *block))
-         launchValidator(afsbase, dirah->volume);
+			launchValidator(afsbase, dirah->volume);
 
 		error = ERROR_OBJECT_WRONG_TYPE;
 		D(bug("[afs]    error wrong type\n"));
@@ -1052,8 +1053,8 @@ struct BlockCache *blockbuffer;
 	{
 		if (offset == 0)
 		{
-		    error = 0;
-		    return ah->current.offset;
+			error = 0;
+			return ah->current.offset;
 		}
 		newoffset = ah->current.offset+offset;
 	}

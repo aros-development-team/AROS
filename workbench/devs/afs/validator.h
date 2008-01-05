@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: validator.h 25683 2007-04-09 05:45:37Z sonic $
+	 Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+	 $Id: validator.h 25683 2007-04-09 05:45:37Z sonic $
 */
 
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      created disk validation procedures
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 #ifndef VALIDATOR_H
@@ -26,17 +27,17 @@ LONG checkValid(struct AFSBase *afs, struct Volume *vol);
  ********************************************************/
 typedef struct
 {
-   struct AFSBase            *afs;
-   struct Volume             *vol;
-   void*                      bitmap;
-   LONG                       flags;
-   ULONG                     *bm_blocks;
-   LONG                       bm_lastblk;
-   ULONG                     *bme_blocks;
-   LONG                       bme_lastblk;
+	struct AFSBase            *afs;
+	struct Volume             *vol;
+	void*                      bitmap;
+	LONG                       flags;
+	ULONG                     *bm_blocks;
+	LONG                       bm_lastblk;
+	ULONG                     *bme_blocks;
+	LONG                       bme_lastblk;
 
-   /* elements regarding to currently validated file */
-   ULONG                      max_file_len;
+	/* elements regarding to currently validated file */
+	ULONG                      max_file_len;
 } DiskStructure;
 
 
@@ -45,29 +46,29 @@ typedef struct
  ********************************************************/
 typedef enum
 {
-   vr_OK,
-   vr_NoAccess,
-   vr_ReadError,
-   vr_UnknownDiskType,
-   vr_InvalidChksum,
-   vr_StructureDamaged,
-   vr_OutOfMemory,
-   vr_BlockUsedTwice,
-   vr_Aborted,
-   vr_BlockOutsideDisk,
+	vr_OK,
+	vr_NoAccess,
+	vr_ReadError,
+	vr_UnknownDiskType,
+	vr_InvalidChksum,
+	vr_StructureDamaged,
+	vr_OutOfMemory,
+	vr_BlockUsedTwice,
+	vr_Aborted,
+	vr_BlockOutsideDisk,
 } ValidationResult;
 
 typedef enum
 {
-   st_OK,
-   st_AlreadyInUse,
-   st_OutOfRange
+	st_OK,
+	st_AlreadyInUse,
+	st_OutOfRange
 } BitmapResult;
 
 typedef enum
 {
-   ValFlg_DisableReq_MaybeNotAFS      = 1,  /* consider these FLAGS */
-   ValFlg_DisableReq_DataLossImminent = 2,  /* next value = 4       */
+	ValFlg_DisableReq_MaybeNotAFS      = 1,  /* consider these FLAGS */
+	ValFlg_DisableReq_DataLossImminent = 2,  /* next value = 4       */
 } ValidationFlags;
 
 /*

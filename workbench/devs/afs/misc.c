@@ -5,6 +5,7 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 
@@ -99,31 +100,31 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
 	D(bug("[FFS] inhibit(%ld)\n", forbid));
 	if (forbid)
 	{
-	    if (volume->inhibitcounter++ == 0)
-	    {
-		D(bug("[FFS] inhibiting\n"));
-/*		if (exclusiveLocks(&volume->locklist)) return DOSFALSE; */
-		if (mediumPresent(&volume->ioh))
+		if (volume->inhibitcounter++ == 0)
 		{
-		    flush(afsbase, volume);
-		    osMediumFree(afsbase, volume, FALSE);
+			D(bug("[FFS] inhibiting\n"));
+/*		if (exclusiveLocks(&volume->locklist)) return DOSFALSE; */
+			if (mediumPresent(&volume->ioh))
+			{
+				flush(afsbase, volume);
+				osMediumFree(afsbase, volume, FALSE);
+			}
 		}
-	    }
 	}
 	else if (volume->inhibitcounter)
 	{
-	    if (--volume->inhibitcounter == 0)
-	    {
-		D(bug("[FFS] uninhibiting\n"));
-		if (diskPresent(afsbase, &volume->ioh))
+		if (--volume->inhibitcounter == 0)
 		{
-		    D(bug("[FFS] media inserted\n"));
-		    newMedium(afsbase, volume);
-		    volume->ioh.ioflags |= IOHF_DISK_IN;
+			D(bug("[FFS] uninhibiting\n"));
+			if (diskPresent(afsbase, &volume->ioh))
+			{
+				D(bug("[FFS] media inserted\n"));
+				newMedium(afsbase, volume);
+				volume->ioh.ioflags |= IOHF_DISK_IN;
+			}
+			else
+				volume->ioh.ioflags &= ~IOHF_DISK_IN;
 		}
-		else
-		    volume->ioh.ioflags &= ~IOHF_DISK_IN;
-	    }
 	}
 	return 0;
 }

@@ -6,6 +6,7 @@
 /*
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      added disk check option for broken disks
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
 #include <stdarg.h>
@@ -32,42 +33,42 @@ va_list ap;
 
 LONG showError(struct AFSBase *afsbase, ULONG error, ...) {
 char *texts[]={0,
-            "No ioport",
-            "Couldn't open device %s",
-            "Couldn't add disk as dosentry",
-            "Disk is not validated!\n",
-            "Wrong data block %ld",
-            "Wrong checksum on block %ld",
-            "Missing some more bitmap blocks",
-            "Wrong blocktype on block %ld",
-            "Read/Write Error (%ld)",
-		      "*** This may be a non-AFS disk. ***\n"
-			      "Any attempt to fix it in this case may render the original\n"
-			      "file system invalid, and its contents unrecoverable.\n\n"
-			      "Please select what to do.",
-            "Block %lu used twice",
-            "Block %lu is located outside volume scope\nand will be removed.",
-            "Repairing disk structure will lead to data loss.\n"
-               "It's best to make a backup before proceeding.\n\n"
-               "Please select what to do.",
-            0,
-            "Unknown error"
+				"No ioport",
+				"Couldn't open device %s",
+				"Couldn't add disk as dosentry",
+				"Disk is not validated!\n",
+				"Wrong data block %ld",
+				"Wrong checksum on block %ld",
+				"Missing some more bitmap blocks",
+				"Wrong blocktype on block %ld",
+				"Read/Write Error (%ld)",
+				"*** This may be a non-AFS disk. ***\n"
+					"Any attempt to fix it in this case may render the original\n"
+					"file system invalid, and its contents unrecoverable.\n\n"
+					"Please select what to do.",
+				"Block %lu used twice",
+				"Block %lu is located outside volume scope\nand will be removed.",
+				"Repairing disk structure will lead to data loss.\n"
+					"It's best to make a backup before proceeding.\n\n"
+					"Please select what to do.",
+				0,
+				"Unknown error"
 };
 
-   if (error==ERR_ALREADY_PRINTED)
-      return 0;
-   if (error>=ERR_UNKNOWN)
-   {
-      showText(afsbase, texts[ERR_UNKNOWN], error);
-   }
-   else
+	if (error==ERR_ALREADY_PRINTED)
+		return 0;
+	if (error>=ERR_UNKNOWN)
+	{
+		showText(afsbase, texts[ERR_UNKNOWN], error);
+	}
+	else
 	{
 		va_list ap;
 		va_start(ap, error);
-      showPtrArgsText(afsbase, texts[error], ap);
+		showPtrArgsText(afsbase, texts[error], ap);
 		va_end(ap);
 	}
-   return 0;
+	return 0;
 }
 
 LONG readDisk
@@ -199,27 +200,27 @@ struct tm as={0, 0, 0, 1, 0, 78, -1, -1, -1};
 STRPTR PathPart(STRPTR path) {
 STRPTR ptr;
 
-    /* '/' at the begining of the string really is part of the path */
-    while (*path == '/')
-    {
-        ++path;
-    }
-                                                                                
-    ptr = path;
-                                                                                
-    while (*ptr)
-    {
-        if (*ptr == '/')
-        {
-            path = ptr;
-        }
-        else if (*ptr == ':')
-        {
-            path = ptr + 1;
-        }
-                                                                                
-        ptr++;
-    }
-                                                                                
-    return path;
+	/* '/' at the begining of the string really is part of the path */
+	while (*path == '/')
+	{
+		++path;
+	}
+																				
+	ptr = path;
+																				
+	while (*ptr)
+	{
+		if (*ptr == '/')
+		{
+			path = ptr;
+		}
+		else if (*ptr == ':')
+		{
+			path = ptr + 1;
+		}
+																				
+		ptr++;
+	}
+																				
+	return path;
 }
