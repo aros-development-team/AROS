@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,7 +38,7 @@ struct Node
 		* ln_Pred;
     UBYTE	  ln_Type;
     BYTE	  ln_Pri;
-    /* AROS: pointer should be 32bit aligned, but we can not do this on
+    /* AROS: pointer should be 32bit aligned, but we cannot do this on
        the native machine because of binary compatibility.
     */
     char	* ln_Name;

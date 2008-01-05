@@ -2,7 +2,7 @@
 #define INTUITION_CLASSES_H
 
 /*
-    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     BOOPSI structures.
@@ -42,7 +42,7 @@ typedef struct IClass
 #define CLF_INLIST (1L<<0)
 
 /* This structure is situated before the pointer. It may grow in future,
-   but o_Class will always stay at the end, so that you can substract
+   but o_Class will always stay at the end, so that you can subtract
    the size of a pointer from the object-pointer to get a pointer to the
    pointer to the class of the object. */
 struct _Object
