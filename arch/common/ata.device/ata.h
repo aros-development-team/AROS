@@ -346,7 +346,7 @@ void ata_ResetBus(struct timerequest *, struct ata_Bus *);
 void ata_ScanBus(struct ata_Bus *);
 void ata_InitUnits(LIBBASETYPEPTR);
 
-int atapi_SendPacket(struct ata_Unit *, APTR, ULONG, BOOL);
+int atapi_SendPacket(struct ata_Unit *, APTR, BOOL, LONG);
 int atapi_TestUnitOK(struct ata_Unit *);
 
 int ata_DirectScsi(struct SCSICmd *, struct ata_Unit *);
