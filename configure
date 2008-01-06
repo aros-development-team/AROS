@@ -8390,6 +8390,36 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 	gcc_target_cpu="ppc"
 	;;
 
+    sam440)
+	aros_target_arch="sam440"
+	aros_shared_default="no"
+	aros_target_cpu="ppc"
+	aros_object_format="elf_ppc"
+	aros_flavour="ppcnative"
+	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+	aros_kernel_ldflags=""
+	aros_default_wbwidth=640
+	aros_default_wbheight=480
+	gcc_target_cpu="powerpc"
+	case "$target_cpu" in
+	    *cross*)
+		aros_target_cc="powerpc-linux-gcc -pipe"
+		aros_target_ld="powerpc-linux-ld"
+		aros_target_as="powerpc-linux-as"
+		aros_target_ar="powerpc-linux-ar"
+		aros_target_ranlib="powerpc-linux-ranlib"
+		aros_target_nm="powerpc-linux-nm"
+		aros_target_strip="powerpc-linux-strip"
+		aros_target_objcopy="powerpc-linux-objcopy"
+		aros_target_objdump="pwoerpc-linux-objdump"
+		aros_shared_ld="powerpc-linux-ld"
+		aros_kernel_ld="powerpc-linux-ld"
+		;;
+	    *)
+	        ;;
+	esac
+	;;
+
     amiga*)
 	aros_target_arch="amiga"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
