@@ -6,13 +6,13 @@
     Lang: english
 */
 
-#include <exec/libraries.h>
+#include "archspecific.h"
+
 #undef __const
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <aros/cpu.h>
 
 #define SYSTEM_CALL(name, alias...) { #name , #alias }, 
 
@@ -47,14 +47,14 @@ int main(int argc, char *argv[])
     for (n=0; syscalls[n].name != NULL; n++)
 	if (!strcmp(syscalls[n].name, argv[1]))
 	{
-	    printf(STUBCODE_INIT);
-	    printf(STUBCODE,
+	    printf(stubcode_init);
+	    printf(stubcode,
 	           syscalls[n].name, "aroscbase",
-	           &(__AROS_GETJUMPVEC(NULL, (n+1+LIB_RESERVED))->vec)
+	           jumpvec(n)
 	    );
 	    if (syscalls[n].alias[0] != '\0' )
 	    {
-	        printf(ALIASCODE,
+	        printf(aliascode,
 		       syscalls[n].name, syscalls[n].alias
 		);
 	    }
