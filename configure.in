@@ -801,7 +801,7 @@ case "$target_os" in
 	aros_kernel_ldflags=""
 	aros_default_wbwidth=640
 	aros_default_wbheight=480
-	aros_config_cflags="$aros_config_cflags -mcpu=440 -fno-asynchronous-unwind-tables"
+	aros_config_cflags="$aros_config_cflags -mcpu=440fp -fno-asynchronous-unwind-tables"
 	gcc_target_cpu="powerpc"
 	case "$target_cpu" in
 	    *powerpc*)
