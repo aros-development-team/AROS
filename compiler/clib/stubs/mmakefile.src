@@ -28,7 +28,10 @@ $(STUBSDIR)/%.S: $(STUBSDIR)/$(GENSTUBS)
 	@$(ECHO) Generating stub function for \'$$(basename $(notdir $@))\'...
 	@$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
-$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/cpu.h | $(STUBSDIR)
+$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/cpu.h archspecific.h | $(STUBSDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) $< -o $@
+
+archspecific.h: archspecific.c
+	@$(TARGET_CC) -E $< -o $@
 
 %common
