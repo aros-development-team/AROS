@@ -47,14 +47,14 @@ int main(int argc, char *argv[])
     for (n=0; syscalls[n].name != NULL; n++)
 	if (!strcmp(syscalls[n].name, argv[1]))
 	{
-	    printf(stubcode_init);
-	    printf(stubcode,
+	    printf(STUBCODE_INIT);
+	    printf(STUBCODE,
 	           syscalls[n].name, "aroscbase",
-	           jumpvec(n)
+	           JUMPVEC(n)
 	    );
 	    if (syscalls[n].alias[0] != '\0' )
 	    {
-	        printf(aliascode,
+	        printf(ALIASCODE,
 		       syscalls[n].name, syscalls[n].alias
 		);
 	    }
