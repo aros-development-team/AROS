@@ -12,6 +12,9 @@
  * ----------  ------------------  -------------------------------------------------------------------
  * 2006-12-20  T. Wiszkowski       Updated ATA Packet Interface to handle ATAPI/SCSI Commands
  * 2008-01-06  T. Wiszkowski       Corrected and completed ATA Packet Interface handling. PIO transfers fully operational.
+ * 2008-01-07  T. Wiszkowski       Added initial DMA support for Direct SCSI commands. Corrected atapi
+ *                                 READ and WRITE commands to pass proper transfer size to the atapi_SendPacket
+ *                                 as discovered by mschulz
  */
 
 #define DEBUG 0
@@ -198,6 +201,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
                         unit->au_Read64 = NULL;
                         unit->au_Write32 = atapi_Write;
                         unit->au_Write64 = NULL;
+			unit->au_DirectSCSI = ata_DirectSCSI;
                         unit->au_Eject = atapi_Eject;
 
                         unit->au_Flags |= AF_ATAPI | AF_DiscPresenceUnknown;
@@ -215,6 +219,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
                         unit->au_Read64 = ata_ReadSector64;
                         unit->au_Write32 = ata_WriteSector32;
                         unit->au_Write64 = ata_WriteSector64;
+			unit->au_DirectSCSI = ata_DirectSCSI;
                         unit->au_Eject = ata_Eject;
                 
                         ata_out(ATA_IDENTIFY_DEVICE, ata_Command, bus->ab_Port);
@@ -317,6 +322,7 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
                         unit->au_Read64 = ata_ReadMultiple64;
                         unit->au_Write32 = ata_WriteMultiple32;
                         unit->au_Write64 = ata_WriteMultiple64;
+			unit->au_DirectSCSI = ata_DirectSCSI;
                     }
 
                     {
@@ -348,11 +354,13 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
                                             unit->au_Write32 = ata_WriteDMA32;
                                             unit->au_Read64 = ata_ReadDMA64;
                                             unit->au_Write64 = ata_WriteDMA64;
+					    unit->au_DirectSCSI = ata_DirectSCSIDMA;
                                         }
                                         else
                                         {
                                             unit->au_Read32 = atapi_ReadDMA;
                                             unit->au_Write32= atapi_WriteDMA;
+					    unit->au_DirectSCSI = ata_DirectSCSIDMA;
                                         }
                                     }
                                 }
@@ -1445,7 +1453,7 @@ static ULONG ata_Eject(struct ata_Unit *unit)
     return TDERR_NotSpecified;
 }
 
-int ata_DirectScsi(struct SCSICmd *cmd, struct ata_Unit *unit)
+ULONG ata_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     ULONG port = unit->au_Bus->ab_Port;
     APTR buffer = cmd->scsi_Data;
@@ -1531,10 +1539,52 @@ int ata_DirectScsi(struct SCSICmd *cmd, struct ata_Unit *unit)
     }
 
     return atapi_ErrCmd();
-//    ata_out(ATA_RECALIBRATE, ata_Command, port);
-//    ata_WaitBusyLong(unit);
 }
 
+ULONG ata_DirectSCSIDMA(struct ata_Unit *unit, struct SCSICmd *cmd)
+{
+    ULONG port = unit->au_Bus->ab_Port;
+    APTR buffer = cmd->scsi_Data;
+    ULONG length = cmd->scsi_Length;
+    ULONG size = 0;
+    UBYTE status;
+    ULONG err = 0;
+
+    cmd->scsi_Actual = 0;
+
+    D(bug("[DSCSI] Sending packet!\n"));
+
+    if ((cmd->scsi_Flags & SCSIF_READ) == SCSIF_READ)
+    {
+	dma_SetupPRDSize(unit, buffer, length, TRUE);
+	CachePreDMA(buffer, &length, DMA_ReadFromRAM);
+    } 
+    else if ((cmd->scsi_Flags & SCSIF_WRITE) == SCSIF_WRITE)
+    {
+	dma_SetupPRDSize(unit, buffer, length, FALSE);
+    	CachePreDMA(buffer, &length, 0);
+    }
+
+    if (atapi_SendPacket(unit, cmd->scsi_Command, TRUE, cmd->scsi_Length)) 
+    {
+	if (ata_WaitSleepyStatus(unit, &status))
+	{
+	    status = ata_in(atapi_Status, port);
+	    D(bug("[DSCSI] Command status: %lx\n", status));
+	    cmd->scsi_Actual += size;
+            err = atapi_EndCmd(unit);
+	} 
+	else 
+	{
+	    D(bug("[DSCSI] ran out of time waiting for drive\n"));
+	    err = atapi_ErrCmd(unit);
+	}
+    }
+
+
+    CachePostDMA(buffer, &length, 0);
+    return err;
+}
 
 
 
