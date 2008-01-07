@@ -11,6 +11,7 @@
  * 04-jan-2008 [Tomasz Wiszkowski]      corrected procedure to *ignore* data block sizes 
  *                                      for OFS volumes since DOSTYPE does not differentiate them,
  *                                      corrected tabulation.
+ * 07-jan-2008 [Tomasz Wiszkowski]      partitioned procedures to prepare non-recursive scan
  */
 
 #include "validator.h"
@@ -273,104 +274,40 @@ ULONG verify_bm_checksum(DiskStructure *ds, ULONG *block)
 } 
 
 /*
- * as the name says: collect all bitmap blocks
+ * check single block - this procedure should do as much as possible
  */
-ValidationResult collect_bitmap_blocks(DiskStructure* ds, ULONG ext)
+ValidationResult check_block(DiskStructure* ds, struct BlockCache* block)
 {
-	struct BlockCache *bc;
-	ULONG *mem;
-	ULONG i;
-	ULONG blk;
-
-	/*
-	 * check range first
-	 */
-	if (0 == check_block_range(ds, ext))
-		return vr_BlockOutsideDisk;
-
-	/*
-	 * try to mark current block as used
-	 */
-	if (st_OK != bm_mark_block(ds, ext))
-		return vr_BlockUsedTwice;
-
-	bc = getBlock(ds->afs, ds->vol, ext);
-	mem = bc->buffer;
-
-	for (i=0; i<ds->vol->SizeBlock-1; i++)
-	{
-		blk = OS_BE2LONG(mem[i]);
-		if (blk == 0)
-			continue;
-
-		if (0 == check_block_range(ds, blk)) 
-		{
-			return vr_BlockOutsideDisk;
-		}
-
-		if (bm_mark_block(ds, blk) != st_OK)
-		{
-			return vr_BlockUsedTwice;
-		}
-
-		bm_add_bitmap_block(ds, blk);
-	}
-
-	blk = OS_BE2LONG(mem[i]);
-
-	if (blk != 0)
-		return collect_bitmap_blocks(ds, blk);
-
-	return vr_OK;
-}
-
-/*
- * collect directories
- */
-ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
-{
-	struct BlockCache *bc;
-	ULONG *mem;
-	LONG primary_type;
-	LONG entry_type;
+	ULONG* mem;
 	ULONG id;
 
-	D(bug("[afs validate]: analyzing block %lu\n", blk));
-
 	/*
-	 * check range first. Note that the whole process here is not 'reversible':
-	 * if you mark bitmap blocks as used, and then just return in the middle,
-	 * it won't get freed automagically, so mark it only when you know it should be there.
+	 * first check cache validity
 	 */
-	if (0 == check_block_range(ds, blk))
-		return vr_BlockOutsideDisk;
-
-	/*
-	 * read block from disk
-	 */
-	bc = getBlock(ds->afs, ds->vol, blk);
-	if (bc == 0)
+	if (0 == block)
 	{
-		D(bug("[afs validate]: NO BLOCK RETURNED!\n"));
+		D(bug("[afs validate] Error: no block passed.\n"));
+		return vr_ReadError;
 	}
 
-	bc->flags |= BCF_USED;
-	mem = bc->buffer;
+	if (0 == block->blocknum)
+	{
+		D(bug("[afs validate] Block could not be read.\n"));
+		return vr_ReadError;
+	}
+
+	mem = block->buffer;
 
 	/*
 	 * check types first: we expect block of T_SHORT (2) or T_LIST (16) type
 	 */
-	entry_type = OS_BE2LONG(mem[BLK_SECONDARY_TYPE(ds->vol)]);
-	primary_type = OS_BE2LONG(mem[BLK_PRIMARY_TYPE]);
-	if ((primary_type != T_SHORT) && 
-		 (primary_type != T_LIST))
+	id = OS_BE2LONG(mem[BLK_PRIMARY_TYPE]);
+	if ((id != T_SHORT) && 
+		 (id != T_LIST))
 	{
-		D(bug("[afs validate]: block is not of known-type (%08lx). asking whether to correct\n", primary_type));
+		D(bug("[afs validate]: block is not of known-type (%08lx). asking whether to correct\n", id));
 
-		bc->flags &= ~BCF_USED;
-		bc = 0;
-		mem = 0;
-		if (blk == ds->vol->rootblock)
+		if (block->blocknum == ds->vol->rootblock)
 		{
 			if ((0 == (ds->flags & ValFlg_DisableReq_MaybeNotAFS)) && (0 == showError(ds->afs, ERR_POSSIBLY_NOT_AFS)))
 				return vr_Aborted;
@@ -383,14 +320,223 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 	/*
 	 * set bitmap block (mark as used)
 	 */
-	if (bm_mark_block(ds, blk))
+	if (bm_mark_block(ds, block->blocknum))
 	{
-		D(bug("[afs validate]: block %lu used twice! aborting!\n", blk));
-		bc->flags &= ~BCF_USED;
-		bc = 0;
-		mem = 0;
+		D(bug("[afs validate]: block %lu used twice! aborting!\n", block->blocknum));
 		return vr_BlockUsedTwice;
 	}
+
+	return vr_OK;
+}
+
+ValidationResult collect_bitmap(DiskStructure* ds, struct BlockCache* block)
+{
+	ULONG strt=BLK_BITMAP_POINTERS_START(ds->vol),
+			stop=BLK_BITMAP_POINTERS_END(ds->vol),
+			ext =BLK_BITMAP_EXTENSION(ds->vol),
+			i, blk;
+
+	ULONG* mem = block->buffer;
+
+	do
+	{
+		for (i=strt; i<=stop; ++i)
+		{
+			blk = OS_BE2LONG(mem[i]);
+			if (blk == 0)
+				continue;
+
+			/*
+			 * verify whether bitmap block resides on disk
+			 * if the range validation fails, simply do not add the block to the list
+			 *
+			 * unfortunately bitmap block reallocation has not been implemented
+			 * since this is the most unlikely happening issue
+			 */
+			if (0 == check_block_range(ds, blk))
+				return vr_BlockOutsideDisk;
+
+			/*
+			 * mark block as used.
+			 * the bitmap blocks *could be reallocated* (and in fact should be)
+			 * if the bm_mark_block returns something else than st_OK (that is,
+			 * in case, when block is out of range, or simply used twice).
+			 *
+			 * i'm sorry, but this has not been introduced yet.
+			 */
+			if (bm_mark_block(ds, blk) != st_OK)
+			{
+				showError(ds->afs, ERR_BLOCK_USED_TWICE, blk);
+				return vr_BlockUsedTwice;
+			}
+
+			/*
+			 * add bitmap block to bitmap block set
+			 */
+			bm_add_bitmap_block(ds, blk);
+		}
+
+		/*
+		 * collect bitmap extension blocks
+		 */
+		if ((blk = OS_BE2LONG(mem[ext])) != 0) 
+		{
+			D(bug("[afs validate] Following to next bitmap extension block at %08lx\n", blk));
+			if (0 == check_block_range(ds, blk)) 
+				return vr_BlockOutsideDisk;
+
+			if (bm_mark_block(ds, blk) != st_OK)
+				return vr_BlockUsedTwice;
+
+			block = getBlock(ds->afs, ds->vol, blk);
+			mem = block->buffer;
+			strt = 0;
+			stop = ds->vol->SizeBlock-2;
+			ext  = ds->vol->SizeBlock-1;
+		}
+	}
+	while (blk != 0);
+
+	return vr_OK;
+}
+
+ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* block)
+{
+	ULONG i, blk, clr=0;
+	ULONG* mem = block->buffer;
+
+	ds->file_blocks = 0;
+
+	do
+	{
+		for (i=BLK_TABLE_END(ds->vol); i>=BLK_TABLE_START; --i)
+		{
+			if (clr != 0)
+			{
+				mem[i] = 0;
+				block->flags |= BCF_WRITE;
+				continue;
+			}
+
+			blk = OS_BE2LONG(mem[i]);
+
+			/*
+			 * if this was the last data block, purge rest
+			 */
+			if (blk == 0)
+			{
+				clr = 1;
+				continue;
+			}
+
+
+			/*
+			 * verify if block still belongs to this disk, purge if it doesn't
+			 */
+			if (0 == check_block_range(ds, blk))
+			{
+				D(bug("[afs validate] file data block outside range. truncating\n"));
+				block->flags |= BCF_WRITE;
+				clr = 1;
+				mem[i] = 0;
+				continue;
+			}
+
+			/*
+			 * mark block as used.
+			 */
+			if (bm_mark_block(ds, blk) != st_OK)
+			{
+				D(bug("[afs validate] file data block used twice. truncating\n"));
+				block->flags |= BCF_WRITE;
+				clr = 1;
+				mem[i] = 0;
+				continue;
+			}
+
+			++ds->file_blocks;
+		}
+
+		/*
+		 * if block is marked as 'write', make sure it holds correct sum.
+		 */
+		if (block->flags & BCF_WRITE)
+			verify_checksum(ds, block->buffer);
+		/*
+		 * collect bitmap extension blocks
+		 */
+		if ((blk = OS_BE2LONG(mem[BLK_EXTENSION(ds->vol)])) != 0) 
+		{
+			D(bug("[afs validate] Following to next file extension block at %08lx\n", blk));
+			if (0 == check_block_range(ds, blk)) 
+			{
+				D(bug("[afs validate] Extension block outside range. truncating file\n"));
+				mem[BLK_EXTENSION(ds->vol)] = 0;
+				block->flags |= BCF_WRITE;
+				blk = 0;
+			}
+			else if (bm_mark_block(ds, blk) != st_OK)
+			{
+				D(bug("[afs validate] Bitmap block already marked as used. truncating file\n"));
+				mem[BLK_EXTENSION(ds->vol)] = 0;
+				block->flags |= BCF_WRITE;
+				blk = 0;
+			}
+			else
+			{
+				block = getBlock(ds->afs, ds->vol, blk);
+				mem = block->buffer;
+			}
+		}
+
+		/*
+		 * update sum; if changed, mark block for writing
+		 */
+		if (0 != verify_checksum(ds, block->buffer))
+			block->flags |= BCF_WRITE;
+	}
+	while (blk != 0);
+
+	return vr_OK;
+}
+
+/*
+ * collect directories
+ */
+ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
+{
+	struct BlockCache *bc;
+	LONG primary_type;
+	LONG entry_type;
+	ULONG id;
+
+	D(bug("[afs validate]: analyzing block %lu\n", blk));
+
+	/*
+	 * check range. Note that the whole process here is not 'reversible':
+	 * if you mark bitmap blocks as used, and then just return in the middle,
+	 * it won't get freed automagically, so mark it only when you know it should be there.
+	 */
+	if (0 == check_block_range(ds, blk))
+		return vr_BlockOutsideDisk;
+	
+	/*
+	 * we don't set block usage flags: we will re-read the block anyways.
+	 */
+	bc = getBlock(ds->afs, ds->vol, blk);
+
+	/*
+	 * initial block analysis
+	 */
+	id = check_block(ds, bc);
+	if (id != vr_OK)
+		return id;
+
+	/*
+	 * collect types
+	 */
+	entry_type = OS_BE2LONG(bc->buffer[BLK_SECONDARY_TYPE(ds->vol)]);
+	primary_type = OS_BE2LONG(bc->buffer[BLK_PRIMARY_TYPE]);
 
 	/*
 	 * for root block: collect all bitmap blocks now
@@ -416,74 +562,17 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 	if (entry_type == 1)
 	{
 		D(bug("[afs validate]: Checking and collecting bitmap blocks\n"));
-		ULONG i;
-		ULONG blk;
-		ValidationResult res = vr_OK;
 
-		for (i=BLK_BITMAP_POINTERS_START(ds->vol); 
-			  i<=BLK_BITMAP_POINTERS_END(ds->vol);
-			  ++i)
-		{
-			blk = OS_BE2LONG(mem[i]);
-			if (blk == 0)
-				continue;
-		
-			/*
-			 * verify whether bitmap block resides on disk
-			 * if the range validation fails, simply do not add the block to the list
-			 *
-			 * unfortunately bitmap block reallocation has not been implemented
-			 * since this is the most unlikely happening issue
-			 */
-			if (0 == check_block_range(ds, blk))
-			{
-				bc->flags &= ~BCF_USED;
-				bc = 0;
-				mem = 0;
-				return vr_BlockOutsideDisk;
-			}
-
-			/*
-			 * mark block as used.
-			 * the bitmap blocks *could be reallocated* (and in fact should be)
-			 * if the bm_mark_block returns something else than st_OK (that is,
-			 * in case, when block is out of range, or simply used twice).
-			 *
-			 * i'm sorry, but this has not been introduced yet.
-			 */
-			if (bm_mark_block(ds, blk) != st_OK)
-			{
-				showError(ds->afs, ERR_BLOCK_USED_TWICE, blk);
-				bc->flags &= ~BCF_USED;
-				bc = 0;
-				mem = 0;
-				return vr_BlockUsedTwice;
-			}
-
-			/*
-			 * add bitmap block to bitmap block set
-			 */
-			bm_add_bitmap_block(ds, blk);
-		}
-
-		/*
-		 * collect bitmap extension blocks
-		 */
-		if ((blk = OS_BE2LONG(mem[BLK_BITMAP_EXTENSION(ds->vol)])) != 0) 
-			res = collect_bitmap_blocks(ds, blk);
-	  
-		if (res != vr_OK)
-		{
-			bc->flags &= ~BCF_USED;
-			bc = 0;
-			mem = 0;
-			return res;
-		}
+		id = collect_bitmap(ds, bc);
+		if (id != vr_OK)
+			return id;
 
 		/*
 		 * initially -- mark bitmap status as valid
 		 */
-		mem[BLK_BITMAP_VALID_FLAG(ds->vol)] = ~0;
+		bc = getBlock(ds->afs, ds->vol, blk);
+		bc->buffer[BLK_BITMAP_VALID_FLAG(ds->vol)] = ~0;
+		verify_checksum(ds, bc->buffer);
 		bc->flags |= BCF_WRITE;
 	}
 	
@@ -496,7 +585,6 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 	if ((entry_type == 1) || (entry_type == 2))	 // 1 = root, which is handled already, 3 = symlink, which we don't need, 4 = hardlink, which we don't want
 	{
 		LONG i;
-		ValidationResult res = vr_OK;
 
 		/*
 		 * clear directory cache block.
@@ -504,61 +592,48 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 		 * two trees, one kept for compatibility (which is not kept btw as dostype is different), and the other
 		 * for 'faster directory listing', but not always in sync
 		 */
-		if (mem[BLK_EXTENSION(ds->vol)] != 0)
+		if (bc->buffer[BLK_EXTENSION(ds->vol)] != 0)
 		{
 			D(bug("[afs validate]: clearing dircache pointer\n"));
-			mem[BLK_EXTENSION(ds->vol)] = 0;  
+			bc->buffer[BLK_EXTENSION(ds->vol)] = 0;  
+			verify_checksum(ds, bc->buffer);
 			bc->flags |= BCF_WRITE;
 		}
 
 		for (i=BLK_TABLE_START; i<=BLK_TABLE_END(ds->vol); i++)
 		{
-			id = OS_BE2LONG(mem[i]);
+			id = OS_BE2LONG(bc->buffer[i]);
 			if (id != 0)
 			{
-				/*
-				 * release current block
-				 */
-				bc->flags &= ~BCF_USED;
-				bc = 0;
-				mem = 0;
-
 				/* 
 				 * proceed with block collection. unless user decides to stop validation
 				 * move on and bug them about whatever is really bad
 				 */
-				res = collect_directory_blocks(ds, id);
-				if (res == vr_Aborted)
-					return res;
+				id = collect_directory_blocks(ds, id);
+				if (id == vr_Aborted)
+					return id;
 
 				/*
 				 * restore current block
 				 * this will work well if the modified block gets marked as BCF_WRITE
 				 */
 				bc = getBlock(ds->afs, ds->vol, blk);
-				bc->flags |= BCF_USED;
-				mem = bc->buffer;
 
-				if (vr_OK != res)
+				if (vr_OK != id)
 				{
 					/* it's a good idea to flag this requester, so it shows only once */
 					if ((0 == (ds->flags & ValFlg_DisableReq_DataLossImminent)) && (0 == showError(ds->afs, ERR_DATA_LOSS_POSSIBLE)))
-					{
-						bc->flags &= ~BCF_USED;
 						return vr_Aborted;
-					}
+
 					ds->flags |= ValFlg_DisableReq_DataLossImminent;
-					mem[i] = 0;
+					bc->buffer[i] = 0;
+					verify_checksum(ds, bc->buffer);
 					bc->flags |= BCF_WRITE;
 				}
 			}
 		}
 	}
 
-	if ((primary_type == T_SHORT) && (entry_type == -3))
-	{
-		ds->max_file_len = 0;
-	}
 	/*
 	 * collect file data blocks.
 	 * some files are too large to fit in a single list of data blocks
@@ -568,193 +643,49 @@ ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG blk)
 	 */
 	if (entry_type == -3) 
 	{
-		ValidationResult res = vr_OK;
-		LONG clear = 0;
-		LONG i;
-
-		/*
-		 * collect all file data blocks
-		 */
-		for (i=BLK_TABLE_START; i<=BLK_TABLE_END(ds->vol); i++)
+		collect_file_extensions(ds, bc);
+		bc = getBlock(ds->afs, ds->vol, blk);
+		id = OS_BE2LONG(bc->buffer[BLK_BYTE_SIZE(ds->vol)]);
+		if (id > (ds->file_blocks * ds->vol->SizeBlock << 2))
 		{
-			/*
-			 * if file is corrupted, then we will simply attempt to trim it.
-			 */
-			if (clear != 0)
-			{
-				mem[i] = 0;
-				bc->flags |= BCF_WRITE;
-				continue;
-			}
-			
-			/*
-			 * pick up next data block. see if it is within range and available for that file
-			 * if not - remove it and following blocks from the list (=truncate file), otherwise
-			 * increment maximum allowed file length
-			 */
-			id = OS_BE2LONG(mem[i]);
-			if (id != 0)
-			{
-				if ((0 == check_block_range(ds, id)) ||
-					 (st_OK != bm_mark_block(ds, id)))
-				{
-					clear = 1;
-					mem[i] = 0;
-					bc->flags |= BCF_WRITE;
-					continue;
-				}
-				/*
-				 * actually, the OFS uses BLOCK_SIZE-24
-				 * but the case where file is short is rare
-				 */
-				/*
-				 * the DOSTYPE ID DOES NOT HOLD INFORMATION WHETHER WE DEAL WITH FFS OR OFS DISK
-				 * THIS LEADS TO FILE TRUNCATION WHICH IS NOT DESIRED
-				 * DO NOT UNCOMMENT THIS UNLESS YOU KNOW WHAT YOU ARE DEALING WITH
-				 */
-				/*
-				if ((ds->vol->dostype == ID_DOS_DISK) || (ds->vol->dostype == ID_INTER_DOS_DISK))
-					ds->max_file_len += BLOCK_SIZE(ds->vol) - 24;
-				else
-					ds->max_file_len += BLOCK_SIZE(ds->vol);
-				*/
-				ds->max_file_len += BLOCK_SIZE(ds->vol);
-			}
-		}
-	  
-		/*
-		 * having collected all data blocks from this block, see if there is more available.
-		 * also, keep in mind, that truncating file means also removing redundant file extension blocks
-		 * so remove them upon truncate
-		 */
-		if (clear != 0)
-		{
-			mem[BLK_EXTENSION(ds->vol)] = 0;
+			bc->buffer[BLK_BYTE_SIZE(ds->vol)] = OS_LONG2BE(ds->file_blocks * ds->vol->SizeBlock << 2);
+			verify_checksum(ds, bc->buffer);
 			bc->flags |= BCF_WRITE;
 		}
-		else
-		{ 
-			/*
-			 * check file extension blocks
-			 */
-			D(bug("[afs validate]: checking file extension blocks\n"));
-
-			id = OS_BE2LONG(mem[BLK_EXTENSION(ds->vol)]);
-			if (id != 0)
-			{
-				/*
-				 * release current block
-				 */
-				bc->flags &= ~BCF_USED;
-				bc = 0;
-				mem = 0;
-
-				/* 
-				 * proceed with block collection. unless user decides to stop validation
-				 * move on and bug them about whatever is really bad
-				 */
-				res = collect_directory_blocks(ds, id);
-				if (res == vr_Aborted)
-					return res;
-
-				/*
-				 * restore current block
-				 * this will work well if the modified block gets marked as BCF_WRITE
-				 */
-				bc = getBlock(ds->afs, ds->vol, blk);
-				bc->flags |= BCF_USED;
-				mem = bc->buffer;
-
-				/*
-				 * if checking failed, it could only mean our block was outside range or already occupied
-				 * in this case - we truncate file.
-				 */
-
-				if (res != vr_OK)
-				{
-					D(bug("[afs validate]: file extension block is faulty. truncating file\n"));
-					mem[BLK_EXTENSION(ds->vol)] = 0;
-					bc->flags |= BCF_WRITE;
-					res = vr_OK;
-				}
-			}
-			else
-			{
-				D(bug("[afs validate]: no more file extension blocks found.\n"));
-			}
-		}
-	}
-
-	if ((primary_type == T_SHORT) && (entry_type == -3))
-	{
-		D(bug("[afs validate]: file length: %lu. max allowed file length: %lu\n", OS_BE2LONG(mem[BLK_BYTE_SIZE(ds->vol)]), ds->max_file_len));
-		if (OS_BE2LONG(mem[BLK_BYTE_SIZE(ds->vol)]) > ds->max_file_len)
-		{
-			mem[BLK_BYTE_SIZE(ds->vol)] = OS_LONG2BE(ds->max_file_len);
-			bc->flags |= BCF_WRITE;
-		}  
-		ds->max_file_len = 0;
 	}
 
 	/*
 	 * finally, move on to next file in this hash chain. IF next file suffers anything, remove it and following files from hash chain.
 	 */
-	id = OS_BE2LONG(mem[BLK_HASHCHAIN(ds->vol)]);
+	id = OS_BE2LONG(bc->buffer[BLK_HASHCHAIN(ds->vol)]);
 	if (id != 0)
 	{
-		ValidationResult res;
-		
 		D(bug("[afs validate]: collecting other items in this chain\n"));
-
-		/*
-		 * release current block
-		 */
-		bc->flags &= ~BCF_USED;
-		bc = 0;
-		mem = 0;
 
 		/*
 		 * collect other elements
 		 */
-		res = collect_directory_blocks(ds, id);
+		id = collect_directory_blocks(ds, id);
 
 		/*
 		 * if aborted, simply quit
 		 */
-		if (res == vr_Aborted)
+		if (id == vr_Aborted)
 		{
-			return res;
+			return id;
 		}
 
 		/*
 		 * otherwise alter structure
 		 */
-		if (res != 0)
+		if (id != 0)
 		{
-			bc = getBlock(ds->afs, ds->vol, blk);
-			mem = bc->buffer;
 			D(bug("[afs validate]: removing faulty chain\n"));
-			mem[BLK_HASHCHAIN(ds->vol)] = 0;
+			bc = getBlock(ds->afs, ds->vol, blk);
+			bc->buffer[BLK_HASHCHAIN(ds->vol)] = 0;
+			verify_checksum(ds, bc->buffer);
 			bc->flags |= BCF_WRITE;
 		}
-	}
-	else
-	{
-		bc->flags &= ~BCF_USED;
-		bc = 0;
-		mem = 0;
-	}
-
-	/*
-	 * check (and update) block checksum.
-	 */
-	bc = getBlock(ds->afs, ds->vol, blk);
-	mem = bc->buffer;
-
-	if (verify_checksum(ds, mem) != 0)
-	{
-		D(bug("[afs validate]: block checksum does not match.\n"));
-		bc->flags |= BCF_WRITE;
 	}
 
 	return vr_OK;

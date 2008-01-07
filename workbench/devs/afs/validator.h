@@ -7,6 +7,7 @@
  * -date------ -name------------------- -description-----------------------------
  * 02-jan-2008 [Tomasz Wiszkowski]      created disk validation procedures
  * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
+ * 07-jan-2008 [Tomasz Wiszkowski]      partitioned procedures to prepare non-recursive scan
  */
 
 #ifndef VALIDATOR_H
@@ -38,6 +39,7 @@ typedef struct
 
 	/* elements regarding to currently validated file */
 	ULONG                      max_file_len;
+   ULONG                      file_blocks;
 } DiskStructure;
 
 
@@ -92,10 +94,18 @@ ULONG verify_checksum(DiskStructure *ds, ULONG* block);
 ULONG verify_bm_checksum(DiskStructure *ds, ULONG* block);
 
 /*
+ * various per-block operations:
+ * - check_block does the most generic checks (checksum, block type, range and stuff like that)
+ * - collect_bitmap is called with root block where we begin root block acquisition - nonrecursive
+ */
+ValidationResult check_block(DiskStructure* ds, struct BlockCache* block);
+ValidationResult collect_bitmap(DiskStructure* ds, struct BlockCache* block);
+ValidationResult collect_file_extensions(DiskStructure* ds, struct BlockCache* block);
+
+/*
  * collect all bitmap blocks, starting with first extension block
  * all root blocks are already collected
  */
-ValidationResult collect_bitmap_blocks(DiskStructure* ds, ULONG ext);
 ValidationResult collect_directory_blocks(DiskStructure *ds, ULONG ext);
 
 /*
