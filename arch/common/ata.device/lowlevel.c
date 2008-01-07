@@ -1738,9 +1738,9 @@ static ULONG atapi_Read(struct ata_Unit *unit, ULONG block, ULONG count, APTR bu
     
     *act = 0;
 
-    if (atapi_SendPacket(unit, &cmd, FALSE, block << unit->au_SectorShift))
+    if (atapi_SendPacket(unit, &cmd, FALSE, count << unit->au_SectorShift))
     {
-        while(1)
+        while(1)            
         {
             if (ata_WaitBusySlow(unit))
             {
@@ -1784,7 +1784,7 @@ static ULONG atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count, APTR b
 
     *act = 0;
 
-    if (atapi_SendPacket(unit, &cmd, FALSE, block << unit->au_SectorShift))
+    if (atapi_SendPacket(unit, &cmd, FALSE, count << unit->au_SectorShift))
     {
         while(1)
         {
@@ -1855,7 +1855,7 @@ static ULONG atapi_ReadDMA(struct ata_Unit *unit, ULONG block, ULONG count, APTR
 
     CachePreDMA(buffer, &length, DMA_ReadFromRAM);
 
-    if (atapi_SendPacket(unit, &cmd, TRUE, block << unit->au_SectorShift))
+    if (atapi_SendPacket(unit, &cmd, TRUE, count << unit->au_SectorShift))
     {
         if (ata_WaitSleepyStatus(unit, &status))
         {
@@ -1894,7 +1894,7 @@ static ULONG atapi_WriteDMA(struct ata_Unit *unit, ULONG block, ULONG count, APT
 
     CachePreDMA(buffer, &length, 0);
 
-    if (atapi_SendPacket(unit, &cmd, TRUE, block << unit->au_SectorShift))
+    if (atapi_SendPacket(unit, &cmd, TRUE, count << unit->au_SectorShift))
     {
         if (ata_WaitSleepyStatus(unit, &status))
         {
