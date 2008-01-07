@@ -32,6 +32,8 @@ $(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_
 	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) $< -o $@
 
 archspecific.h: archspecific.c
-	@$(TARGET_CC) -E $< -o $@
+	@$(TARGET_CC) -S $< -o $@.$$$$
+	@grep "^[/#][*d]" $@.$$$$ | sed s/[$$]//g >$@
+	@rm $@.$$$$
 
 %common
