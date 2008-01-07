@@ -208,6 +208,7 @@ struct ata_Unit {
     ULONG		(*au_Read64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
     ULONG		(*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
     ULONG		(*au_Eject)(struct ata_Unit *);
+    ULONG		(*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
 
     VOID		(*au_ins)(APTR, UWORD, ULONG);
     VOID		(*au_outs)(APTR, UWORD, ULONG);
@@ -349,12 +350,14 @@ void ata_InitUnits(LIBBASETYPEPTR);
 int atapi_SendPacket(struct ata_Unit *, APTR, BOOL, LONG);
 int atapi_TestUnitOK(struct ata_Unit *);
 
-int ata_DirectScsi(struct SCSICmd *, struct ata_Unit *);
+ULONG ata_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
+ULONG ata_DirectSCSIDMA(struct ata_Unit*, struct SCSICmd *);
 
 int ata_InitBusTask(struct ata_Bus *, int);
 int ata_InitDaemonTask(LIBBASETYPEPTR);
 
 VOID dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
+VOID dma_SetupPRDSize(struct ata_Unit *, APTR, ULONG, BOOL);
 VOID dma_StartDMA(struct ata_Unit *);
 VOID dma_StopDMA(struct ata_Unit *);
 VOID dma_Init(struct ata_Bus *);

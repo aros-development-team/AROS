@@ -31,9 +31,13 @@
 */
 VOID dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
 {
+   dma_SetupPRDSize(unit, buffer, sectors << unit->au_SectorShift, io);
+}
+
+VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
+{
     struct PRDEntry *prd = unit->au_Bus->ab_PRD;
     IPTR ptr = (IPTR)buffer;
-    ULONG size = sectors << unit->au_SectorShift;
     int i;
 
     D(bug("[DMA] Setup PRD for %d bytes at %x\n",
