@@ -34,6 +34,9 @@
 #define AROS_64BIT_TYPE		long
 #define AROS_64BIT_STACKTYPE	long
 
+#define AROS_MAKE_INT64(i)  i ## L
+#define AROS_MAKE_UINT64(i) i ## UL
+
 #define STACKED __attribute__((aligned(8)))
 
 /* Use C pointer and string for the BCPL pointers and strings
