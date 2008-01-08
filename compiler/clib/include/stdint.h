@@ -97,6 +97,21 @@ typedef ULONG	uintmax_t;
 #define SIG_ATOMIC_MIN  AROS_SIG_ATOMIC_MIN
 #define SIG_ATOMIC_MAX  AROS_SIG_ATOMIC_MAX
 
+#define INT8_MIN    (-128)
+#define INT16_MIN   (-32767-1)
+#define INT32_MIN   (-2147483647-1)
+#define INT64_MIN   (-AROS_MAKE_INT64(9223372036854775807)-1)
+
+#define INT8_MAX    (127)
+#define INT16_MAX   (32767)
+#define INT32_MAX   (2147483647)
+#define INT64_MAX   (AROS_MAKE_INT64(9223372036854775807))
+
+#define UINT8_MAX   (255)
+#define UINT16_MAX  (65535)
+#define UINT32_MAX  (4294967295U)
+#define UINT64_MAX  (AROS_MAKE_UINT64(18446744073709551615))
+
 #endif
 
 
@@ -104,7 +119,6 @@ typedef ULONG	uintmax_t;
         TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 
 #if defined __cplusplus && defined __STDC_LIMIT_MACROS
-	    INT<N>_MAX, INT<N>_MIN, UINT<N>_MAX
 	    INT_LEAST<N>_MIN, INT_LEAST<N>_MAX, UINT_LEAST<N>_MAX
 	    INT_FAST<N>_MIN, INT_FAST<N>_MAX, UINT_FAST<N>_MAX
 	    INTPTR_MIN, INTPTR_MAX, UINTPTR_MAX
@@ -112,7 +126,6 @@ typedef ULONG	uintmax_t;
 	    INTMAX_MIN, INTMAX_MAX, UINTMAX_MAX
 
 	    PTRDIFF_MIN, _MAX
-	    SIG_ATOMIC_MIN, _MAX (must be <= -127 or >= 127, or unsig >= 255)
 	    SIZE_MAX
 	    WCHAR_MIN, _MAX (must be <= -127 or >= 127)
 	    WINT_MIN, _MAX (must be <= -65535 or >= 65535)

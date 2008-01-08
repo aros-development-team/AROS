@@ -203,6 +203,14 @@
 #define AROS_COMPAT_SETD0(x) (void)x
 #endif /* AROS_COMPAT_SETD0 */
 
+/* These macros will produce a value that can be stored in a AROS_64BIT_TYPE */
+#ifndef AROS_MAKE_INT64
+#define AROS_MAKE_INT64(i)  i ## LL
+#endif
+#ifndef AROS_MAKE_UINT64
+#define AROS_MAKE_UINT64(i) i ## ULL
+#endif
+
 #ifndef STACKED
 #define STACKED __attribute__((aligned(4))) 
 #endif
