@@ -3,6 +3,11 @@
 
 include $(TOP)/config/make.cfg
 
+#MM- arch-common-grub2 : grub2 grub2-copy-stages
+
+GRUB2MODDIR := $(AROSDIR)/boot/grub2
+GRUB2IMGDIR := $(CONTRIBDIR)/boot/grub2
+
 GRUB2DEFMENU := $(TOP)/$(CURDIR)/../menu.lst
 GRUB2OPTS := --enable-preset-menu=$(GRUB2DEFMENU)
 
@@ -23,24 +28,36 @@ export CFLAGS
 %build_with_configure mmake=grub2 compiler=host install_target= \
     extraoptions="$(GRUBOPTS)"
 
-GRUB2FILES := $(foreach                                         \
+GRUB2MODULES := $(foreach                                         \
                    f,                                           \
                    $(wildcard                                   \
                            $(GENDIR)/$(CURDIR)/*.mod            \
-                           $(GENDIR)/$(CURDIR)/*.img            \
                    ),                                           \
-                   $(subst $(GENDIR)/$(CURDIR)/,$(AROSDIR)/boot/grub2/,$f) \
+                   $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2MODDIR)/,$f) \
               )
 
-$(warning GRUB2FILES = $(GRUB2FILES))
+GRUB2IMAGES := $(foreach                                         \
+                   f,                                           \
+                   $(wildcard                                   \
+                           $(GENDIR)/$(CURDIR)/*.img            \
+                   ),                                           \
+                   $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2IMGDIR)/,$f) \
+              )
+
+$(warning GRUB2MODULES = $(GRUB2MODULES))
+$(warning GRUB2IMAGES = $(GRUB2IMAGES))
 
 #MM
-grub2-copy-stages : $(GRUB2FILES)
-   
-$(AROSDIR)/boot/grub2/%.mod: $(GENDIR)/$(CURDIR)/%.mod
+grub2-copy-stages : grub2-setup $(GRUB2MODULES) $(GRUB2IMAGES)
+
+$(GRUB2MODDIR)/%.mod: $(GENDIR)/$(CURDIR)/%.mod
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROSDIR)/boot/grub2/%.img: $(GENDIR)/$(CURDIR)/%.img
+$(GRUB2IMGDIR)/%.img: $(GENDIR)/$(CURDIR)/%.img
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
+
+#MM
+grub2-setup :
+	%mkdirs_q $(GRUB2MODDIR) $(GRUB2IMGDIR)
