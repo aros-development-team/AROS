@@ -1,21 +1,20 @@
 /* multiboot.c - boot a multiboot OS image. */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* 
@@ -33,8 +32,9 @@
 
 #include <grub/loader.h>
 #include <grub/machine/loader.h>
-#include <grub/machine/multiboot.h>
+#include <grub/multiboot.h>
 #include <grub/machine/init.h>
+#include <grub/machine/memory.h>
 #include <grub/elf.h>
 #include <grub/file.h>
 #include <grub/err.h>
@@ -44,7 +44,7 @@
 #include <grub/misc.h>
 #include <grub/gzio.h>
 
-static grub_dl_t my_mod;
+extern grub_dl_t my_mod;
 static struct grub_multiboot_info *mbi;
 static grub_addr_t entry;
 
@@ -108,7 +108,7 @@ grub_multiboot_load_elf32 (grub_file_t file, void *buffer)
     return grub_error (GRUB_ERR_UNKNOWN_OS, "invalid ELF file type");
   
   /* FIXME: Should we support program headers at strange locations?  */
-  if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > GRUB_MB_SEARCH)
+  if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > MULTIBOOT_SEARCH)
     return grub_error (GRUB_ERR_BAD_OS, "program header at a too high offset");
   
   entry = ehdr->e_entry;
@@ -121,13 +121,18 @@ grub_multiboot_load_elf32 (grub_file_t file, void *buffer)
       if (phdr->p_type == PT_LOAD)
         {
           /* The segment should fit in the area reserved for the OS.  */
-          if ((phdr->p_paddr < grub_os_area_addr)
-              || (phdr->p_paddr + phdr->p_memsz
-		  > grub_os_area_addr + grub_os_area_size))
+          if (phdr->p_paddr < grub_os_area_addr)
 	    return grub_error (GRUB_ERR_BAD_OS,
-			       "segment doesn't fit in memory reserved for the OS");
+			       "segment doesn't fit in memory reserved for the OS (0x%lx < 0x%lx)",
+			       phdr->p_paddr, grub_os_area_addr);
+          if (phdr->p_paddr + phdr->p_memsz > grub_os_area_addr + grub_os_area_size)
+	    return grub_error (GRUB_ERR_BAD_OS,
+			       "segment doesn't fit in memory reserved for the OS (0x%lx > 0x%lx)",
+			       phdr->p_paddr + phdr->p_memsz,
+			       grub_os_area_addr + grub_os_area_size);
 
-          if (grub_file_seek (file, phdr->p_offset) == -1)
+          if (grub_file_seek (file, (grub_off_t) phdr->p_offset)
+	      == (grub_off_t) -1)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "invalid offset in program header");
 	  
@@ -177,7 +182,7 @@ grub_multiboot_load_elf64 (grub_file_t file, void *buffer)
     return grub_error (GRUB_ERR_UNKNOWN_OS, "invalid ELF file type");
 
   /* FIXME: Should we support program headers at strange locations?  */
-  if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > GRUB_MB_SEARCH)
+  if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > MULTIBOOT_SEARCH)
     return grub_error (GRUB_ERR_BAD_OS, "program header at a too high offset");
 
   /* We still in 32-bit mode */
@@ -194,14 +199,19 @@ grub_multiboot_load_elf64 (grub_file_t file, void *buffer)
       if (phdr->p_type == PT_LOAD)
         {
           /* The segment should fit in the area reserved for the OS.  */
-          if ((phdr->p_paddr < (grub_uint64_t) grub_os_area_addr)
-              || (phdr->p_paddr + phdr->p_memsz
-		  > ((grub_uint64_t) grub_os_area_addr
-		     + (grub_uint64_t) grub_os_area_size)))
+          if (phdr->p_paddr < (grub_uint64_t) grub_os_area_addr)
 	    return grub_error (GRUB_ERR_BAD_OS,
-			       "segment doesn't fit in memory reserved for the OS");
+			       "segment doesn't fit in memory reserved for the OS (0x%lx < 0x%lx)",
+			       phdr->p_paddr, (grub_uint64_t) grub_os_area_addr);
+          if (phdr->p_paddr + phdr->p_memsz
+		  > (grub_uint64_t) grub_os_area_addr + (grub_uint64_t) grub_os_area_size)
+	    return grub_error (GRUB_ERR_BAD_OS,
+			       "segment doesn't fit in memory reserved for the OS (0x%lx > 0x%lx)",
+			       phdr->p_paddr + phdr->p_memsz,
+			       (grub_uint64_t) grub_os_area_addr + (grub_uint64_t) grub_os_area_size);
 	  
-	  if (grub_file_seek (file, phdr->p_offset) == -1)
+	  if (grub_file_seek (file, (grub_off_t) phdr->p_offset)
+	      == (grub_off_t) -1)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "invalid offset in program header");
 
@@ -235,15 +245,13 @@ grub_multiboot_load_elf (grub_file_t file, void *buffer)
 }
 
 void
-grub_rescue_cmd_multiboot (int argc, char *argv[])
+grub_multiboot (int argc, char *argv[])
 {
   grub_file_t file = 0;
-  char buffer[GRUB_MB_SEARCH], *cmdline = 0, *p;
+  char buffer[MULTIBOOT_SEARCH], *cmdline = 0, *p;
   struct grub_multiboot_header *header;
   grub_ssize_t len;
   int i;
-
-  grub_dl_ref (my_mod);
 
   grub_loader_unset ();
     
@@ -260,7 +268,7 @@ grub_rescue_cmd_multiboot (int argc, char *argv[])
       goto fail;
     }
 
-  len = grub_file_read (file, buffer, GRUB_MB_SEARCH);
+  len = grub_file_read (file, buffer, MULTIBOOT_SEARCH);
   if (len < 32)
     {
       grub_error (GRUB_ERR_BAD_OS, "File too small");
@@ -273,7 +281,7 @@ grub_rescue_cmd_multiboot (int argc, char *argv[])
        ((char *) header <= buffer + len - 12) || (header = 0);
        header = (struct grub_multiboot_header *) ((char *) header + 4))
     {
-      if (header->magic == GRUB_MB_MAGIC 
+      if (header->magic == MULTIBOOT_MAGIC 
 	  && !(header->magic + header->flags + header->checksum))
 	break;
     }
@@ -284,7 +292,7 @@ grub_rescue_cmd_multiboot (int argc, char *argv[])
       goto fail;
     }
 
-  if (header->flags & GRUB_MB_UNSUPPORTED)
+  if (header->flags & MULTIBOOT_UNSUPPORTED)
     {
       grub_error (GRUB_ERR_UNKNOWN_OS,
 		  "Unsupported flag: 0x%x", header->flags);
@@ -298,7 +306,7 @@ grub_rescue_cmd_multiboot (int argc, char *argv[])
   if (! mbi)
     goto fail;
 
-  mbi->flags = GRUB_MB_INFO_MEMORY;
+  mbi->flags = MULTIBOOT_INFO_MEMORY;
 
   /* Convert from bytes to kilobytes.  */
   mbi->mem_lower = grub_lower_mem / 1024;
@@ -320,13 +328,13 @@ grub_rescue_cmd_multiboot (int argc, char *argv[])
   /* Remove the space after the last word.  */
   *(--p) = '\0';
   
-  mbi->flags |= GRUB_MB_INFO_CMDLINE;
+  mbi->flags |= MULTIBOOT_INFO_CMDLINE;
   mbi->cmdline = (grub_uint32_t) cmdline;
 
-  mbi->flags |= GRUB_MB_INFO_BOOT_LOADER_NAME;
+  mbi->flags |= MULTIBOOT_INFO_BOOT_LOADER_NAME;
   mbi->boot_loader_name = (grub_uint32_t) grub_strdup (PACKAGE_STRING);
 
-  grub_loader_set (grub_multiboot_boot, grub_multiboot_unload);
+  grub_loader_set (grub_multiboot_boot, grub_multiboot_unload, 1);
 
  fail:
   if (file)
@@ -342,7 +350,7 @@ grub_rescue_cmd_multiboot (int argc, char *argv[])
 
 
 void
-grub_rescue_cmd_module  (int argc, char *argv[])
+grub_module  (int argc, char *argv[])
 {
   grub_file_t file = 0;
   grub_ssize_t size, len = 0;
@@ -367,7 +375,7 @@ grub_rescue_cmd_module  (int argc, char *argv[])
     goto fail;
 
   size = grub_file_size (file);
-  module = grub_memalign (GRUB_MB_MOD_ALIGN, size);
+  module = grub_memalign (MULTIBOOT_MOD_ALIGN, size);
   if (! module)
     goto fail;
 
@@ -393,7 +401,7 @@ grub_rescue_cmd_module  (int argc, char *argv[])
   /* Remove the space after the last word.  */
   *(--p) = '\0';
 
-  if (mbi->flags & GRUB_MB_INFO_MODS)
+  if (mbi->flags & MULTIBOOT_INFO_MODS)
     {
       struct grub_mod_list *modlist = (struct grub_mod_list *) mbi->mods_addr;
 
@@ -420,7 +428,7 @@ grub_rescue_cmd_module  (int argc, char *argv[])
       modlist->pad = 0;
       mbi->mods_count = 1;
       mbi->mods_addr = (grub_uint32_t) modlist;
-      mbi->flags |= GRUB_MB_INFO_MODS;
+      mbi->flags |= MULTIBOOT_INFO_MODS;
     }
 
  fail:
@@ -432,20 +440,4 @@ grub_rescue_cmd_module  (int argc, char *argv[])
       grub_free (module);
       grub_free (cmdline);
     }
-}
-
-
-GRUB_MOD_INIT
-{
-  grub_rescue_register_command ("multiboot", grub_rescue_cmd_multiboot,
-				"load a multiboot kernel");
-  grub_rescue_register_command ("module", grub_rescue_cmd_module,
-				"load a multiboot module");
-  my_mod = mod;
-}
-
-GRUB_MOD_FINI
-{
-  grub_rescue_unregister_command ("multiboot");
-  grub_rescue_unregister_command ("module");
 }

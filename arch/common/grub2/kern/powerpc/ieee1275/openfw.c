@@ -1,23 +1,24 @@
-/*  openfw.c -- Open firmware support funtions.  */
+/*  openfw.c -- Open firmware support functions.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005 Free Software Foundation, Inc.
+ *  Copyright (C) 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <alloca.h>
+#include <grub/types.h>
 #include <grub/err.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
@@ -38,12 +39,10 @@ grub_children_iterate (char *devpath,
   grub_ieee1275_phandle_t dev;
   grub_ieee1275_phandle_t child;
 
-  grub_ieee1275_finddevice (devpath, &dev);
-  if (dev == (grub_ieee1275_phandle_t) -1)
+  if (grub_ieee1275_finddevice (devpath, &dev))
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Unknown device");
 
-  grub_ieee1275_child (dev, &child);
-  if (child == (grub_ieee1275_phandle_t) -1)
+  if (grub_ieee1275_child (dev, &child))
     return grub_error (GRUB_ERR_BAD_DEVICE, "Device has no children");
 
   do
@@ -56,19 +55,16 @@ grub_children_iterate (char *devpath,
       struct grub_ieee1275_devalias alias;
       int actual;
 
-      grub_ieee1275_get_property (child, "device_type", &childtype,
-				  sizeof childtype, &actual);
-      if (actual == -1)
+      if (grub_ieee1275_get_property (child, "device_type", &childtype,
+				      sizeof childtype, &actual))
 	continue;
 
-      grub_ieee1275_package_to_path (child, childpath, sizeof childpath,
-      				     &actual);
-      if (actual == -1)
+      if (grub_ieee1275_package_to_path (child, childpath, sizeof childpath,
+					 &actual))
 	continue;
 
-      grub_ieee1275_get_property (child, "name", &childname,
-				  sizeof childname, &actual);
-      if (actual == -1)
+      if (grub_ieee1275_get_property (child, "name", &childname,
+				      sizeof childname, &actual))
 	continue;
 
       grub_sprintf (fullname, "%s/%s", devpath, childname);
@@ -88,67 +84,103 @@ grub_children_iterate (char *devpath,
 grub_err_t
 grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
 {
-  grub_ieee1275_phandle_t devalias;
+  grub_ieee1275_phandle_t aliases;
   char aliasname[32];
   int actual;
   struct grub_ieee1275_devalias alias;
 
-  if (grub_ieee1275_finddevice ("/aliases", &devalias))
+  if (grub_ieee1275_finddevice ("/aliases", &aliases))
     return -1;
 
-  /* XXX: Is this the right way to find the first property?  */
+  /* Find the first property.  */
   aliasname[0] = '\0';
 
-  /* XXX: Are the while conditions correct?  */
-  while (grub_ieee1275_next_property (devalias, aliasname, aliasname, &actual)
-	 || actual)
+  while (grub_ieee1275_next_property (aliases, aliasname, aliasname))
     {
       grub_ieee1275_phandle_t dev;
-      grub_size_t pathlen;
+      grub_ssize_t pathlen;
       char *devpath;
       /* XXX: This should be large enough for any possible case.  */
       char devtype[64];
-  
-      grub_ieee1275_get_property_length (devalias, aliasname, &pathlen);
+
+      grub_ieee1275_get_property_length (aliases, aliasname, &pathlen);
 
       /* The property `name' is a special case we should skip.  */
       if (!grub_strcmp (aliasname, "name"))
-	  continue;
-      
+	continue;
+
       devpath = grub_malloc (pathlen);
       if (! devpath)
 	return grub_errno;
 
-      if (grub_ieee1275_get_property (devalias, aliasname, devpath, pathlen,
+      if (grub_ieee1275_get_property (aliases, aliasname, devpath, pathlen,
 				      &actual))
-	{
-	  grub_free (devpath);
-	  continue;
-	}
-      
-      if (grub_ieee1275_finddevice (devpath, &dev)
-	  || dev == (grub_ieee1275_phandle_t) -1)
-	{
-	  grub_free (devpath);
-	  continue;
-	}
+	goto nextprop;
 
-      if (grub_ieee1275_get_property (dev, "device_type", devtype, sizeof devtype,
-				      &actual))
-	{
-	  grub_free (devpath);
-	  continue;
-	}
+      if (grub_ieee1275_finddevice (devpath, &dev))
+	goto nextprop;
+
+      if (grub_ieee1275_get_property (dev, "device_type", devtype,
+				      sizeof devtype, &actual))
+	goto nextprop;
 
       alias.name = aliasname;
-      alias.path= devpath;
+      alias.path = devpath;
       alias.type = devtype;
       hook (&alias);
-      
+
+nextprop:
       grub_free (devpath);
     }
 
   return 0;
+}
+
+grub_err_t grub_available_iterate (int (*hook) (grub_uint64_t, grub_uint64_t))
+{
+  grub_ieee1275_phandle_t root;
+  grub_ieee1275_phandle_t memory;
+  grub_uint32_t available[32];
+  int address_cells = 1;
+  int size_cells = 1;
+  unsigned int i;
+
+  /* Determine the format of each entry in `available'.  */
+  grub_ieee1275_finddevice ("/", &root);
+  grub_ieee1275_get_property (root, "#address-cells", &address_cells,
+	sizeof address_cells, 0);
+  grub_ieee1275_get_property (root, "#size-cells", &size_cells,
+	sizeof size_cells, 0);
+
+  /* Load `/memory/available'.  */
+  if (grub_ieee1275_finddevice ("/memory", &memory))
+    return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
+		       "Couldn't find /memory node");
+  if (grub_ieee1275_get_property (memory, "available", available,
+				  sizeof available, 0))
+    return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
+		       "Couldn't examine /memory/available property");
+
+  /* Decode each entry and call `hook'.  */
+  i = 0;
+  while (i < sizeof (available))
+    {
+      grub_uint64_t address;
+      grub_uint64_t size;
+
+      address = available[i++];
+      if (address_cells == 2)
+	address = (address << 32) | available[i++];
+
+      size = available[i++];
+      if (size_cells == 2)
+	size = (size << 32) | available[i++];
+
+      if (hook (address, size))
+	break;
+    }
+
+  return grub_errno;
 }
 
 /* Call the "map" method of /chosen/mmu.  */
@@ -231,7 +263,7 @@ grub_ieee1275_get_devname (const char *path)
       /* briQ firmware can change capitalization in /chosen/bootpath.  */
       if (! grub_strncasecmp (curalias->path, path, pathlen))
         {
-	  newpath = grub_strndup (curalias->name, grub_strlen (curalias->name));
+	  newpath = grub_strdup (curalias->name);
 	  return 1;
 	}
 
@@ -245,7 +277,7 @@ grub_ieee1275_get_devname (const char *path)
   grub_devalias_iterate (match_alias);
 
   if (! newpath)
-    newpath = grub_strdup (path);
+    newpath = grub_strndup (path, pathlen);
 
   return newpath;
 }
@@ -338,9 +370,9 @@ grub_ieee1275_encode_devname (const char *path)
     {
       unsigned int partno = grub_strtoul (partition, 0, 0);
 
-      /* GRUB partition numbering is 0-based.  */
-      if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_0_BASED_PARTITIONS))
-	partno--;
+      if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_0_BASED_PARTITIONS))
+	/* GRUB partition 1 is OF partition 0.  */
+	partno++;
 
       /* Assume partno will require less than five bytes to encode.  */
       encoding = grub_malloc (grub_strlen (device) + 3 + 5);

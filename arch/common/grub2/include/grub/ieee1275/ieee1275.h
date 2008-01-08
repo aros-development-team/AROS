@@ -1,21 +1,20 @@
 /* ieee1275.h - Access the Open Firmware client interface.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003, 2004, 2005, 2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRUB_IEEE1275_HEADER
@@ -80,6 +79,9 @@ enum grub_ieee1275_flag
   /* CHRP specifies partitions are numbered from 1 (partition 0 refers to the
      whole disk). However, CodeGen firmware numbers partitions from 0.  */
   GRUB_IEEE1275_FLAG_0_BASED_PARTITIONS,
+
+  /* CodeGen firmware does not correctly implement "output-device output" */
+  GRUB_IEEE1275_FLAG_BROKEN_OUTPUT,
 };
 
 extern int EXPORT_FUNC(grub_ieee1275_test_flag) (enum grub_ieee1275_flag flag);
@@ -96,8 +98,7 @@ int EXPORT_FUNC(grub_ieee1275_get_property) (grub_ieee1275_phandle_t phandle,
 					     grub_size_t size,
 					     grub_ssize_t *actual);
 int EXPORT_FUNC(grub_ieee1275_next_property) (grub_ieee1275_phandle_t phandle,
-					      char *prev_prop, char *prop,
-					      grub_ieee1275_cell_t *flags);
+					      char *prev_prop, char *prop);
 int EXPORT_FUNC(grub_ieee1275_get_property_length) 
      (grub_ieee1275_phandle_t phandle, const char *prop, grub_ssize_t *length);
 int EXPORT_FUNC(grub_ieee1275_instance_to_package) 
@@ -146,6 +147,8 @@ grub_err_t EXPORT_FUNC(grub_devalias_iterate)
      (int (*hook) (struct grub_ieee1275_devalias *alias));
 grub_err_t EXPORT_FUNC(grub_children_iterate) (char *devpath,
      int (*hook) (struct grub_ieee1275_devalias *alias));
+grub_err_t EXPORT_FUNC(grub_available_iterate)
+     (int (*hook) (grub_uint64_t, grub_uint64_t));
 int EXPORT_FUNC(grub_claimmap) (grub_addr_t addr, grub_size_t size);
 
 char *EXPORT_FUNC(grub_ieee1275_encode_devname) (const char *path);

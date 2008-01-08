@@ -1,25 +1,29 @@
 /* memory.h - describe the memory map */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRUB_MEMORY_MACHINE_HEADER
 #define GRUB_MEMORY_MACHINE_HEADER	1
+
+#include <grub/symbol.h>
+#ifndef ASM_FILE
+#include <grub/types.h>
+#endif
 
 /* The scratch buffer used in real mode code.  */
 #define GRUB_MEMORY_MACHINE_SCRATCH_ADDR	0x68000
@@ -37,7 +41,8 @@
 	(GRUB_MEMORY_MACHINE_SCRATCH_ADDR + GRUB_MEMORY_MACHINE_SCRATCH_SIZE \
 	 + GRUB_MEMORY_MACHINE_PROT_STACK_SIZE - 0x10)
 
-/* The memory area where GRUB uses its own purpose.  */
+/* The memory area where GRUB uses its own purpose. This part is not added
+   into free memory for dynamic allocations.  */
 #define GRUB_MEMORY_MACHINE_RESERVED_START	\
 	GRUB_MEMORY_MACHINE_SCRATCH_ADDR
 #define GRUB_MEMORY_MACHINE_RESERVED_END	\
@@ -63,5 +68,10 @@
 
 /* The data segment of the pseudo real mode.  */
 #define GRUB_MEMORY_MACHINE_PSEUDO_REAL_DSEG	0x20
+
+#ifndef ASM_FILE
+extern grub_size_t EXPORT_VAR(grub_lower_mem);
+extern grub_size_t EXPORT_VAR(grub_upper_mem);
+#endif
 
 #endif /* ! GRUB_MEMORY_MACHINE_HEADER */

@@ -1,21 +1,20 @@
 /* jfs.c - JFS.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/err.h>
@@ -166,11 +165,11 @@ struct grub_jfs_inode
   union
   {
     /* The tree describing the extents of the file.  */
-    struct
+    struct __attribute__ ((packed))
     {
       struct grub_jfs_treehead tree;
       struct grub_jfs_tree_extent extents[16];
-    } file __attribute__ ((packed));
+    } file;
     union
     {
       /* The tree describing the dirents.  */
@@ -342,7 +341,7 @@ grub_jfs_mount (grub_disk_t disk)
 		      sizeof (struct grub_jfs_sblock), (char *) &data->sblock))
     goto fail;
   
-  if (grub_strncmp (data->sblock.magic, "JFS1", 4))
+  if (grub_strncmp ((char *) (data->sblock.magic), "JFS1", 4))
     {
       grub_error (GRUB_ERR_BAD_FS, "not a jfs filesystem");
       goto fail;
@@ -398,7 +397,7 @@ grub_jfs_opendir (struct grub_jfs_data *data, struct grub_jfs_inode *inode)
     {
       diro->leaf = inode->dir.dirents;
       diro->next_leaf = (struct grub_jfs_leaf_next_dirent *) de;
-      diro->sorted = inode->dir.header.sorted;
+      diro->sorted = (char *) (inode->dir.header.sorted);
       diro->count = inode->dir.header.count;
       diro->dirpage = 0;
 
@@ -479,7 +478,7 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
     {
       unsigned int next;
       
-      /* If the inode contains the entrie tree or if this was the last
+      /* If the inode contains the entry tree or if this was the last
 	 node, there is nothing to read.  */
       if ((diro->inode->file.tree.flags & GRUB_JFS_TREE_LEAF)
 	  || !grub_le_to_cpu64 (diro->dirpage->header.nextb))
@@ -530,7 +529,7 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
   diro->index++;
 
   /* Convert the temporary UTF16 filename to UTF8.  */
-  *grub_utf16_to_utf8 (diro->name, filename, strpos) = '\0';
+  *grub_utf16_to_utf8 ((grub_uint8_t *) (diro->name), filename, strpos) = '\0';
   
   return 0;
 }
@@ -540,9 +539,9 @@ grub_jfs_getent (struct grub_jfs_diropen *diro)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_jfs_read_file (struct grub_jfs_data *data,
-		    void (*read_hook) (unsigned long sector,
+		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		    int pos, unsigned int len, char *buf)
+		    int pos, grub_size_t len, char *buf)
 {
   int i;
   int blockcnt;
@@ -703,7 +702,7 @@ grub_jfs_lookup_symlink (struct grub_jfs_data *data, int ino)
     return grub_error (GRUB_ERR_SYMLINK_LOOP, "too deep nesting of symlinks");
   
   if (size <= 128)
-    grub_strncpy (symlink, data->currinode.symlink.path, 128);
+    grub_strncpy (symlink, (char *) (data->currinode.symlink.path), 128);
   else if (grub_jfs_read_file (data, 0, 0, size, symlink) < 0)
     return grub_errno;
 
@@ -822,7 +821,7 @@ grub_jfs_open (struct grub_file *file, const char *name)
 
 
 static grub_ssize_t
-grub_jfs_read (grub_file_t file, char *buf, grub_ssize_t len)
+grub_jfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_jfs_data *data = 
     (struct grub_jfs_data *) file->data;
@@ -851,7 +850,7 @@ grub_jfs_label (grub_device_t device, char **label)
   data = grub_jfs_mount (device->disk);
   
   if (data)
-    *label = grub_strndup (data->sblock.volname, 11);
+    *label = grub_strndup ((char *) (data->sblock.volname), 11);
   else
     *label = 0;
   
@@ -870,27 +869,15 @@ static struct grub_fs grub_jfs_fs =
     .next = 0
   };
 
-#ifdef GRUB_UTIL
-void
-grub_jfs_init (void)
+GRUB_MOD_INIT(jfs)
 {
   grub_fs_register (&grub_jfs_fs);
-}
-
-void
-grub_jfs_fini (void)
-{
-  grub_fs_unregister (&grub_jfs_fs);
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
-{
-  grub_fs_register (&grub_jfs_fs);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(jfs)
 {
   grub_fs_unregister (&grub_jfs_fs);
 }
-#endif /* ! GRUB_UTIL */

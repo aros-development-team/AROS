@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2005 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2005,2006,2007 Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 
@@ -48,9 +47,10 @@
 #include <grub/machine/boot.h>
 #include <grub/machine/memory.h>
 #include <grub/machine/console.h>
-#include <grub/machine/linux.h>
+#include <grub/cpu/linux.h>
 #include <grub/machine/kernel.h>
-#include <grub/machine/multiboot.h>
+#include <multiboot.h>
+#include <multiboot2.h>
 		
 #define ABS(x)	((x) - EXT_C(start) + GRUB_BOOT_MACHINE_KERNEL_ADDR + 0x200)
 	
@@ -96,7 +96,7 @@ VARIABLE(grub_install_dos_part)
 VARIABLE(grub_install_bsd_part)
 	.long	0xFFFFFFFF
 VARIABLE(grub_prefix)
-	.string "/boot/grub"
+	/* to be filled by grub-mkimage */
 
 	/*
 	 *  Leave some breathing room for the prefix.
@@ -242,15 +242,13 @@ codestart:
 	 */
 	call EXT_C(grub_main)
 
+#include "../realmode.S"
 
 /*
  *  This is the area for all of the special variables.
  */
 
 	.p2align	2	/* force 4-byte alignment */
-
-protstack:
-	.long	GRUB_MEMORY_MACHINE_PROT_STACK
 
 VARIABLE(grub_boot_drive)
 	.long	0
@@ -271,65 +269,7 @@ VARIABLE(grub_apm_bios_info)
 	.word	0	/* cseg_16_len */
 	.word	0	/* dseg_16_len */
 	
-/*
- * This is the Global Descriptor Table
- *
- *  An entry, a "Segment Descriptor", looks like this:
- *
- * 31          24         19   16                 7           0
- * ------------------------------------------------------------
- * |             | |B| |A|       | |   |1|0|E|W|A|            |
- * | BASE 31..24 |G|/|L|V| LIMIT |P|DPL|  TYPE   | BASE 23:16 |  4
- * |             | |D| |L| 19..16| |   |1|1|C|R|A|            |
- * ------------------------------------------------------------
- * |                             |                            |
- * |        BASE 15..0           |       LIMIT 15..0          |  0
- * |                             |                            |
- * ------------------------------------------------------------
- *
- *  Note the ordering of the data items is reversed from the above
- *  description.
- */
-
 	.p2align	2	/* force 4-byte alignment */
-gdt:
-	.word	0, 0
-	.byte	0, 0, 0, 0
-
-	/* -- code segment --
-	 * base = 0x00000000, limit = 0xFFFFF (4 KiB Granularity), present
-	 * type = 32bit code execute/read, DPL = 0
-	 */
-	.word	0xFFFF, 0
-	.byte	0, 0x9A, 0xCF, 0
-
-	/* -- data segment --
-	 * base = 0x00000000, limit 0xFFFFF (4 KiB Granularity), present
-	 * type = 32 bit data read/write, DPL = 0 
-	 */
-	.word	0xFFFF, 0
-	.byte	0, 0x92, 0xCF, 0
-
-	/* -- 16 bit real mode CS --
-	 * base = 0x00000000, limit 0x0FFFF (1 B Granularity), present
-	 * type = 16 bit code execute/read only/conforming, DPL = 0
-	 */
-	.word	0xFFFF, 0
-	.byte	0, 0x9E, 0, 0
-
-	/* -- 16 bit real mode DS --
-	 * base = 0x00000000, limit 0x0FFFF (1 B Granularity), present
-	 * type = 16 bit data read/write, DPL = 0
-	 */
-	.word	0xFFFF, 0
-	.byte	0, 0x92, 0, 0
-
-
-/* this is the GDT descriptor */
-gdtdesc:
-	.word	0x27			/* limit */
-	.long	gdt			/* addr */
-
 	
 /*
  *  These next two routines, "real_to_prot" and "prot_to_real" are structured
@@ -381,69 +321,6 @@ protcseg:
 
 	/* return on the old (or initialized) stack! */
 	ret
-
-
-prot_to_real:
-	/* just in case, set GDT */
-	lgdt	gdtdesc
-
-	/* save the protected mode stack */
-	movl	%esp, %eax
-	movl	%eax, protstack
-
-	/* get the return address */
-	movl	(%esp), %eax
-	movl	%eax, GRUB_MEMORY_MACHINE_REAL_STACK
-
-	/* set up new stack */
-	movl	$GRUB_MEMORY_MACHINE_REAL_STACK, %eax
-	movl	%eax, %esp
-	movl	%eax, %ebp
-
-	/* set up segment limits */
-	movw	$GRUB_MEMORY_MACHINE_PSEUDO_REAL_DSEG, %ax
-	movw	%ax, %ds
-	movw	%ax, %es
-	movw	%ax, %fs
-	movw	%ax, %gs
-	movw	%ax, %ss
-
-	/* this might be an extra step */
-	/* jump to a 16 bit segment */
-	ljmp	$GRUB_MEMORY_MACHINE_PSEUDO_REAL_CSEG, $tmpcseg
-
-tmpcseg:
-	.code16
-
-	/* clear the PE bit of CR0 */
-	movl	%cr0, %eax
-	andl 	$(~GRUB_MEMORY_MACHINE_CR0_PE_ON), %eax
-	movl	%eax, %cr0
-
-	/* flush prefetch queue, reload %cs */
-	DATA32	ljmp	$0, $realcseg
-
-realcseg:
-	/* we are in real mode now
-	 * set up the real mode segment registers : DS, SS, ES
-	 */
-	/* zero %eax */
-	xorl	%eax, %eax
-
-	movw	%ax, %ds
-	movw	%ax, %es
-	movw	%ax, %fs
-	movw	%ax, %gs
-	movw	%ax, %ss
-
-	/* restore interrupts */
-	sti
-
-	/* return on new stack! */
-	DATA32	ret
-
-	.code32
-
 
 /*
  * grub_gate_a20(int on)
@@ -626,6 +503,19 @@ FUNCTION(grub_stop_floppy)
 	ret
 
 /*
+ * grub_exit()
+ *
+ * Exit the system.
+ */
+FUNCTION(grub_exit)
+	call	prot_to_real
+	.code16
+	/* Tell the BIOS a boot failure. If this does not work, reboot.  */
+	int	$0x18
+	jmp	cold_reboot
+	.code32
+	
+/*
  * grub_reboot()
  *
  * Reboot the system. At the moment, rely on BIOS.
@@ -633,6 +523,7 @@ FUNCTION(grub_stop_floppy)
 FUNCTION(grub_reboot)
 	call	prot_to_real
 	.code16
+cold_reboot:	
 	/* cold boot */
 	movw	$0x0472, %di
 	movw	%ax, (%di)
@@ -716,95 +607,8 @@ FUNCTION(grub_chainloader_real_boot)
 	ljmp	$0, $GRUB_MEMORY_MACHINE_BOOT_LOADER_ADDR
 	.code32
 
+#include "../loader.S"
 
-/*
- * void grub_linux_boot_zimage (void)
- */
-VARIABLE(grub_linux_prot_size)
-	.long	0
-VARIABLE(grub_linux_tmp_addr)
-	.long	0
-VARIABLE(grub_linux_real_addr)
-	.long	0
-	
-FUNCTION(grub_linux_boot_zimage)
-	/* copy the kernel */
-	movl	EXT_C(grub_linux_prot_size), %ecx
-	addl	$3, %ecx
-	shrl	$2, %ecx
-	movl	$GRUB_LINUX_BZIMAGE_ADDR, %esi
-	movl	$GRUB_LINUX_ZIMAGE_ADDR, %edi
-	cld
-	rep
-	movsl
-
-FUNCTION(grub_linux_boot_bzimage)
-	call	EXT_C(grub_dl_unload_all)
-	
-	movl	EXT_C(grub_linux_real_addr), %ebx
-
-	/* copy the real mode code */
-	movl	EXT_C(grub_linux_tmp_addr), %esi
-	movl	%ebx, %edi
-	movl	$GRUB_LINUX_SETUP_MOVE_SIZE, %ecx
-	cld
-	rep
-	movsb
-
-	/* change %ebx to the segment address */
-	shrl	$4, %ebx
-	movl	%ebx, %eax
-	addl	$0x20, %eax
-	movw	%ax, linux_setup_seg
-
-	/* XXX new stack pointer in safe area for calling functions */
-	movl	$0x4000, %esp
-	call	EXT_C(grub_stop_floppy)
-
-	/* final setup for linux boot */
-	call	prot_to_real
-	.code16
-
-	cli
-	movw	%bx, %ss
-	movw	$GRUB_LINUX_SETUP_STACK, %sp
-
-	movw	%bx, %ds
-	movw	%bx, %es
-	movw	%bx, %fs
-	movw	%bx, %gs
-
-	/* ljmp */
-	.byte	0xea
-	.word	0
-linux_setup_seg:
-	.word	0
-	.code32
-
-		
-/*
- * This starts the multiboot kernel.
- */
-
-FUNCTION(grub_multiboot_real_boot)
-	/* Push the entry address on the stack.  */
-	pushl	%eax
-	/* Move the address of the multiboot information structure to ebx.  */
-	movl	%edx,%ebx
-	
-	/* Unload all modules and stop the floppy driver.  */
-	call	EXT_C(grub_dl_unload_all)
-	call	EXT_C(grub_stop_floppy)
-
-	/* Interrupts should be disabled.  */
-	cli
-	
-	/* Move the magic value into eax and jump to the kernel.  */
-	movl	$GRUB_MB_MAGIC2,%eax
-	popl	%ecx
-	jmp 	*%ecx
-	
-	
 /*
  *   int grub_biosdisk_rw_int13_extensions (int ah, int drive, void *dap)
  *
@@ -1285,7 +1089,7 @@ xsmap:
  * character and the attribute, and restore the current position.
  *
  * The reason why this is so complicated is that there is no easy way to
- * get the height of the screen, and the TELETYPE OUPUT BIOS call doesn't
+ * get the height of the screen, and the TELETYPE OUTPUT BIOS call doesn't
  * support setting a background attribute.
  */
 FUNCTION(grub_console_real_putchar)
@@ -1758,14 +1562,15 @@ FUNCTION(grub_vga_get_font)
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_get_controller_info (struct grub_vbe_info_block *controller_info)
+ * grub_vbe_bios_status_t grub_vbe_get_controller_info (struct grub_vbe_info_block *controller_info)
  *
  * Register allocations for parameters:
  * %eax		*controller_info
  */
-FUNCTION(grub_vbe_get_controller_info)
+FUNCTION(grub_vbe_bios_get_controller_info)
 	pushl	%ebp
 	pushl	%edi
+	pushl	%edx
 
 	movw	%ax, %di	/* Store *controller_info to %edx:%di.  */
 	xorw	%ax, %ax
@@ -1791,19 +1596,20 @@ FUNCTION(grub_vbe_get_controller_info)
 	movl	%edx, %eax
 	andl	$0x0FFFF, %eax	/* Return value in %eax.  */
 	
+	pop	%edx
 	popl	%edi
 	popl	%ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_get_mode_info (grub_uint32_t mode,
- *					     struct grub_vbe_mode_info_block *mode_info)
+ * grub_vbe_status_t grub_vbe_bios_get_mode_info (grub_uint32_t mode,
+ *						  struct grub_vbe_mode_info_block *mode_info)
  *
  * Register allocations for parameters:
  * %eax		mode
  * %edx		*mode_info
  */
-FUNCTION(grub_vbe_get_mode_info)
+FUNCTION(grub_vbe_bios_get_mode_info)
 	pushl   %ebp
 	pushl   %edi
 
@@ -1837,16 +1643,17 @@ FUNCTION(grub_vbe_get_mode_info)
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_set_mode (grub_uint32_t mode,
- *					struct grub_vbe_crtc_info_block *crtc_info)
+ * grub_vbe_status_t grub_vbe_bios_set_mode (grub_uint32_t mode,
+ *					     struct grub_vbe_crtc_info_block *crtc_info)
  *
  * Register allocations for parameters:
  * %eax		mode
  * %edx		*crtc_info
  */
-FUNCTION(grub_vbe_set_mode)
+FUNCTION(grub_vbe_bios_set_mode)
 	pushl	%ebp
 	pushl	%ebx
+	pushl	%edi
 
 	movl	%eax, %ebx	/* Store mode in %ebx.  */
 
@@ -1874,19 +1681,22 @@ FUNCTION(grub_vbe_set_mode)
 	movw	%dx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edi
 	popl	%ebx
 	popl	%ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_get_mode (grub_uint32_t *mode)
+ * grub_vbe_status_t grub_vbe_bios_get_mode (grub_uint32_t *mode)
  *
  * Register allocations for parameters:
  * %eax		*mode
  */
-FUNCTION(grub_vbe_get_mode)
+FUNCTION(grub_vbe_bios_get_mode)
 	pushl   %ebp
 	pushl   %ebx
+	pushl	%edi
+	pushl	%edx
 	pushl	%eax		/* Push *mode to stack.  */
 
 	call    prot_to_real
@@ -1907,19 +1717,21 @@ FUNCTION(grub_vbe_get_mode)
 	movw	%dx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edx
+	popl	%edi
 	popl    %ebx
 	popl    %ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_set_memory_window (grub_uint32_t window,
- *						 grub_uint32_t position);
+ * grub_vbe_status_t grub_vbe_bios_set_memory_window (grub_uint32_t window,
+ *						      grub_uint32_t position);
  *
  * Register allocations for parameters:
  * %eax		window
  * %edx		position
  */
-FUNCTION(grub_vbe_set_memory_window)
+FUNCTION(grub_vbe_bios_set_memory_window)
 	pushl	%ebp
 	pushl	%ebx
 
@@ -1945,16 +1757,17 @@ FUNCTION(grub_vbe_set_memory_window)
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_get_memory_window (grub_uint32_t window,
- * 						 grub_uint32_t *position);
+ * grub_vbe_status_t grub_vbe_bios_get_memory_window (grub_uint32_t window,
+ * 						      grub_uint32_t *position);
  *
  * Register allocations for parameters:
  * %eax		window
  * %edx		*position
  */
-FUNCTION(grub_vbe_get_memory_window)
+FUNCTION(grub_vbe_bios_get_memory_window)
 	pushl   %ebp
 	pushl   %ebx
+	pushl	%edi
 	pushl	%edx		/* Push *position to stack.  */
 
 	movl	%eax, %ebx	/* Store window in %ebx.  */
@@ -1979,19 +1792,21 @@ FUNCTION(grub_vbe_get_memory_window)
 	movw	%bx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edi
 	popl    %ebx
 	popl    %ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_set_scanline_length (grub_uint32_t length)
+ * grub_vbe_status_t grub_vbe_bios_set_scanline_length (grub_uint32_t length)
  *
  * Register allocations for parameters:
  * %eax		length
  */
-FUNCTION(grub_vbe_set_scanline_length)
+FUNCTION(grub_vbe_bios_set_scanline_length)
 	pushl	%ebp
 	pushl	%ebx
+	pushl	%edx
 
 	movl	%eax, %ecx	/* Store length in %ecx.  */
 
@@ -2010,19 +1825,21 @@ FUNCTION(grub_vbe_set_scanline_length)
 	movw	%dx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edx
 	popl	%ebx
 	popl	%ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_get_scanline_length (grub_uint32_t *length)
+ * grub_vbe_status_t grub_vbe_bios_get_scanline_length (grub_uint32_t *length)
  *
  * Register allocations for parameters:
  * %eax		*length
  */
-FUNCTION(grub_vbe_get_scanline_length)
+FUNCTION(grub_vbe_bios_get_scanline_length)
 	pushl   %ebp
 	pushl   %ebx
+	pushl	%edi
 	pushl	%edx		/* Push *length to stack.  */
 
 	call    prot_to_real
@@ -2044,19 +1861,20 @@ FUNCTION(grub_vbe_get_scanline_length)
 	movw	%dx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edi
 	popl    %ebx
 	popl    %ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_set_display_start (grub_uint32_t x,
- *						 grub_uint32_t y)
+ * grub_vbe_status_t grub_vbe_bios_set_display_start (grub_uint32_t x,
+ *						      grub_uint32_t y)
  *
  * Register allocations for parameters:
  * %eax		x
  * %edx		y
  */
-FUNCTION(grub_vbe_set_display_start)
+FUNCTION(grub_vbe_bios_set_display_start)
 	pushl	%ebp
 	pushl	%ebx
 
@@ -2083,16 +1901,17 @@ FUNCTION(grub_vbe_set_display_start)
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_get_display_start (grub_uint32_t *x,
- *						 grub_uint32_t *y)
+ * grub_vbe_status_t grub_vbe_bios_get_display_start (grub_uint32_t *x,
+ *						      grub_uint32_t *y)
  *
  * Register allocations for parameters:
  * %eax		*x
  * %edx		*y
  */
-FUNCTION(grub_vbe_get_display_start)
+FUNCTION(grub_vbe_bios_get_display_start)
 	pushl   %ebp
 	pushl   %ebx
+	pushl	%edi
 	pushl	%eax		/* Push *x to stack.  */
 	pushl	%edx		/* Push *y to stack.  */
 
@@ -2119,23 +1938,25 @@ FUNCTION(grub_vbe_get_display_start)
 	movw	%bx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edi
 	popl    %ebx
 	popl    %ebp
 	ret
 
 /*
- * grub_vbe_status_t grub_vbe_set_palette_data (grub_uint32_t color_count,
- *						grub_uint32_t start_index,
- *						struct grub_vbe_palette_data *palette_data)
+ * grub_vbe_status_t grub_vbe_bios_set_palette_data (grub_uint32_t color_count,
+ *						     grub_uint32_t start_index,
+ *						     struct grub_vbe_palette_data *palette_data)
  *
  * Register allocations for parameters:
  * %eax		color_count
  * %edx		start_index
  * %ecx		*palette_data
  */
-FUNCTION(grub_vbe_set_palette_data)
+FUNCTION(grub_vbe_bios_set_palette_data)
 	pushl	%ebp
 	pushl	%ebx
+	pushl	%edi
 
 	movl	%eax, %ebx	/* Store color_count in %ebx.  */
 
@@ -2165,6 +1986,7 @@ FUNCTION(grub_vbe_set_palette_data)
 	movw	%dx, %ax
 	andl	$0xFFFF, %eax	/* Return value in %eax.  */
 
+	popl	%edi
 	popl	%ebx
 	popl	%ebp
 	ret

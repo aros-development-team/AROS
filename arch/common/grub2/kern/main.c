@@ -1,21 +1,20 @@
 /* main.c - the kernel main routine */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2003, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2006,2008  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/kernel.h>
@@ -79,6 +78,7 @@ grub_set_root_dev (void)
   const char *prefix;
 
   grub_register_variable_hook ("root", 0, grub_env_write_root);
+  grub_env_export ("root");
   
   prefix = grub_env_get ("prefix");
   
@@ -118,13 +118,14 @@ grub_main (void)
   grub_printf ("Welcome to GRUB!\n\n");
   grub_setcolorstate (GRUB_TERM_COLOR_STANDARD);
 
-  /* It is better to set the root device as soon as possible,
-     for convenience.  */
-  grub_set_root_dev ();
-
   /* Load pre-loaded modules and free the space.  */
   grub_register_exported_symbols ();
   grub_load_modules ();
+
+  /* It is better to set the root device as soon as possible,
+     for convenience.  */
+  grub_machine_set_prefix ();
+  grub_set_root_dev ();
 
   /* Load the normal mode module.  */
   grub_load_normal_mode ();

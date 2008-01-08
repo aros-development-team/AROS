@@ -1,21 +1,20 @@
 /* dl.h - types and prototypes for loadable module support */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRUB_DL_H
@@ -25,13 +24,19 @@
 #include <grub/err.h>
 #include <grub/types.h>
 
-#define GRUB_MOD_INIT	\
-static void grub_mod_init (grub_dl_t mod) __attribute__ ((used)); \
+#define GRUB_MOD_INIT(name)	\
+static void grub_mod_init (grub_dl_t mod __attribute__ ((unused))) __attribute__ ((used)); \
+void grub_##name##_init (void); \
+void \
+grub_##name##_init (void) { grub_mod_init (0); } \
 static void \
-grub_mod_init (grub_dl_t mod)
+grub_mod_init (grub_dl_t mod __attribute__ ((unused)))
 
-#define GRUB_MOD_FINI	\
+#define GRUB_MOD_FINI(name)	\
 static void grub_mod_fini (void) __attribute__ ((used)); \
+void grub_##name##_fini (void); \
+void \
+grub_##name##_fini (void) { grub_mod_fini (); } \
 static void \
 grub_mod_fini (void)
 

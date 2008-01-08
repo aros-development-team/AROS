@@ -1,21 +1,20 @@
 /* normal.h - prototypes for the normal mode */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRUB_NORMAL_HEADER
@@ -25,6 +24,7 @@
 #include <grub/symbol.h>
 #include <grub/err.h>
 #include <grub/arg.h>
+#include <grub/env.h>
 
 /* The maximum size of a command-line.  */
 #define GRUB_MAX_CMDLINE	1600
@@ -84,28 +84,17 @@ struct grub_command
 };
 typedef struct grub_command *grub_command_t;
 
-/* The command list.  */
-struct grub_command_list
-{
-  /* The string of a command.  */
-  char *command;
-
-  /* The next element.  */
-  struct grub_command_list *next;
-};
-typedef struct grub_command_list *grub_command_list_t;
-
 /* The menu entry.  */
 struct grub_menu_entry
 {
   /* The title name.  */
   const char *title;
 
-  /* The number of commands.  */
-  int num;
+    /* The commands associated with this menu entry.  */
+  struct grub_script *commands;
 
-  /* The list of commands.  */
-  grub_command_list_t command_list;
+  /* The sourcecode of the menu entry, used by the editor.  */
+  const char *sourcecode;
 
   /* The next element.  */
   struct grub_menu_entry *next;
@@ -115,15 +104,6 @@ typedef struct grub_menu_entry *grub_menu_entry_t;
 /* The menu.  */
 struct grub_menu
 {
-  /* The default entry number.  */
-  int default_entry;
-
-  /* The fallback entry number.  */
-  int fallback_entry;
-
-  /* The timeout to boot the default entry automatically.  */
-  int timeout;
-  
   /* The size of a menu.  */
   int size;
 
@@ -131,22 +111,6 @@ struct grub_menu
   grub_menu_entry_t entry_list;
 };
 typedef struct grub_menu *grub_menu_t;
-
-/* A list of menus.  */
-struct grub_menu_list
-{
-  grub_menu_t menu;
-  struct grub_menu_list *next;
-};
-typedef struct grub_menu_list *grub_menu_list_t;
-
-/* The context.  A context holds some global information.  */
-struct grub_context
-{
-  /* The menu list.  */
-  grub_menu_list_t menu_list;
-};
-typedef struct grub_context *grub_context_t;
 
 /* This is used to store the names of filesystem modules for auto-loading.  */
 struct grub_fs_module_list
@@ -185,13 +149,15 @@ void grub_menu_init_page (int nested, int edit);
 int grub_arg_parse (grub_command_t parser, int argc, char **argv,
 		    struct grub_arg_list *usr, char ***args, int *argnum);
 void grub_arg_show_help (grub_command_t cmd);
-grub_context_t grub_context_get (void);
-grub_menu_t grub_context_get_current_menu (void);
-grub_menu_t grub_context_push_menu (grub_menu_t menu);
-void grub_context_pop_menu (void);
 char *grub_normal_do_completion (char *buf, int *restore,
 				 void (*hook) (const char *item, grub_completion_type_t type, int count));
 grub_err_t grub_normal_print_device_info (const char *name);
+grub_err_t grub_normal_menu_addentry (const char *title,
+				      struct grub_script *script,
+				      const char *sourcecode);
+char *grub_env_write_color_normal (struct grub_env_var *var, const char *val);
+char *grub_env_write_color_highlight (struct grub_env_var *var, const char *val);
+void grub_wait_after_message (void);
 
 #ifdef GRUB_UTIL
 void grub_normal_init (void);
@@ -216,14 +182,14 @@ void grub_halt_init (void);
 void grub_halt_fini (void);
 void grub_reboot_init (void);
 void grub_reboot_fini (void);
-void grub_default_init (void);
-void grub_default_fini (void);
-void grub_timeout_init (void);
-void grub_timeout_fini (void);
 void grub_configfile_init (void);
 void grub_configfile_fini (void);
 void grub_search_init (void);
 void grub_search_fini (void);
+void grub_test_init (void);
+void grub_test_fini (void);
+void grub_blocklist_init (void);
+void grub_blocklist_fini (void);
 #endif
 
 #endif /* ! GRUB_NORMAL_HEADER */

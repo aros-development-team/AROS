@@ -1,22 +1,22 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002,2003,2004,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <grub/machine/machine.h>
 #include <grub/machine/serial.h>
 #include <grub/machine/console.h>
 #include <grub/term.h>
@@ -26,6 +26,7 @@
 #include <grub/normal.h>
 #include <grub/arg.h>
 #include <grub/terminfo.h>
+#include <grub/cpu/io.h>
 
 #define TEXT_WIDTH	80
 #define TEXT_HEIGHT	25
@@ -63,60 +64,45 @@ struct serial_port
 /* Serial port settings.  */
 static struct serial_port serial_settings;
 
-/* Read a byte from a port.  */
-static inline unsigned char
-inb (const unsigned short port)
-{
-  unsigned char value;
-
-  asm volatile ("inb    %w1, %0" : "=a" (value) : "Nd" (port));
-  asm volatile ("outb   %%al, $0x80" : : );
-
-  return value;
-}
-
-/* Write a byte to a port.  */
-static inline void
-outb (const unsigned short port, const unsigned char value)
-{
-  asm volatile ("outb   %b0, %w1" : : "a" (value), "Nd" (port));
-  asm volatile ("outb   %%al, $0x80" : : );
-}
+#ifdef GRUB_MACHINE_PCBIOS
+/* The BIOS data area.  */
+static const unsigned short *serial_hw_io_addr = (const unsigned short *) 0x0400;
+#else
+static const unsigned short serial_hw_io_addr[] = { 0x3f8, 0x2f8 };
+#endif
 
 /* Return the port number for the UNITth serial device.  */
 static inline unsigned short
 serial_hw_get_port (const unsigned short unit)
 {
-  /* The BIOS data area.  */
-  const unsigned short *addr = (const unsigned short *) 0x0400;
-  return addr[unit];
+  return serial_hw_io_addr[unit];
 }
 
 /* Fetch a key.  */
 static int
 serial_hw_fetch (void)
 {
-  if (inb (serial_settings.port + UART_LSR) & UART_DATA_READY)
-    return inb (serial_settings.port + UART_RX);
+  if (grub_inb (serial_settings.port + UART_LSR) & UART_DATA_READY)
+    return grub_inb (serial_settings.port + UART_RX);
 
   return -1;
 }
 
-/* Put a chararacter.  */
+/* Put a character.  */
 static void
 serial_hw_put (const int c)
 {
   unsigned int timeout = 100000;
 
   /* Wait until the transmitter holding register is empty.  */
-  while ((inb (serial_settings.port + UART_LSR) & UART_EMPTY_TRANSMITTER) == 0)
+  while ((grub_inb (serial_settings.port + UART_LSR) & UART_EMPTY_TRANSMITTER) == 0)
     {
       if (--timeout == 0)
         /* There is something wrong. But what can I do?  */
         return;
     }
 
-  outb (serial_settings.port + UART_TX, c);
+  grub_outb (c, serial_settings.port + UART_TX);
 }
 
 static void
@@ -287,27 +273,27 @@ serial_hw_init (void)
 {
   unsigned char status = 0;
 
-  /* Turn off the interupt.  */
-  outb (serial_settings.port + UART_IER, 0);
+  /* Turn off the interrupt.  */
+  grub_outb (0, serial_settings.port + UART_IER);
 
   /* Set DLAB.  */
-  outb (serial_settings.port + UART_LCR, UART_DLAB);
+  grub_outb (UART_DLAB, serial_settings.port + UART_LCR);
 
   /* Set the baud rate.  */
-  outb (serial_settings.port + UART_DLL, serial_settings.divisor & 0xFF);
-  outb (serial_settings.port + UART_DLH, serial_settings.divisor >> 8 );
+  grub_outb (serial_settings.divisor & 0xFF, serial_settings.port + UART_DLL);
+  grub_outb (serial_settings.divisor >> 8, serial_settings.port + UART_DLH);
 
   /* Set the line status.  */
   status |= (serial_settings.parity
 	     | serial_settings.word_len
 	     | serial_settings.stop_bits);
-  outb (serial_settings.port + UART_LCR, status);
+  grub_outb (status, serial_settings.port + UART_LCR);
 
   /* Enable the FIFO.  */
-  outb (serial_settings.port + UART_FCR, UART_ENABLE_FIFO);
+  grub_outb (UART_ENABLE_FIFO, serial_settings.port + UART_FCR);
 
   /* Turn on DTR, RTS, and OUT2.  */
-  outb (serial_settings.port + UART_MCR, UART_ENABLE_MODEM);
+  grub_outb (UART_ENABLE_MODEM, serial_settings.port + UART_MCR);
 
   /* Drain the input buffer.  */
   while (grub_serial_checkkey () != -1)
@@ -468,13 +454,6 @@ grub_serial_setcolorstate (const grub_term_color_state state)
 }
 
 static void
-grub_serial_setcolor (grub_uint8_t normal_color __attribute__ ((unused)),
-                      grub_uint8_t highlight_color __attribute__ ((unused)))
-{
-  /* FIXME */
-}
-
-static void
 grub_serial_setcursor (const int on)
 {
   if (on)
@@ -497,7 +476,6 @@ static struct grub_term grub_serial_term =
   .gotoxy = grub_serial_gotoxy,
   .cls = grub_serial_cls,
   .setcolorstate = grub_serial_setcolorstate,
-  .setcolor = grub_serial_setcolor,
   .setcursor = grub_serial_setcursor,
   .flags = 0,
   .next = 0
@@ -616,7 +594,7 @@ grub_cmd_serial (struct grub_arg_list *state,
   return hwiniterr;
 }
 
-GRUB_MOD_INIT
+GRUB_MOD_INIT(serial)
 {
   (void) mod;			/* To stop warning. */
   grub_register_command ("serial", grub_cmd_serial, GRUB_COMMAND_FLAG_BOTH,
@@ -629,7 +607,7 @@ GRUB_MOD_INIT
   serial_settings.stop_bits = UART_1_STOP_BIT;
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(serial)
 {
   grub_unregister_command ("serial");
   if (registered == 1)		/* Unregister terminal only if registered. */

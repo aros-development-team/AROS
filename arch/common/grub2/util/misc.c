@@ -1,21 +1,22 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,13 +25,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <malloc.h>
 #include <unistd.h>
 
 #include <grub/util/misc.h>
 #include <grub/mm.h>
 #include <grub/term.h>
 #include <grub/machine/time.h>
+
+/* Include malloc.h, only if memalign is available. It is known that
+   memalign is declared in malloc.h in all systems, if present.  */
+#ifdef HAVE_MEMALIGN
+# include <malloc.h>
+#endif
 
 char *progname = 0;
 int verbosity = 0;
@@ -47,6 +53,7 @@ grub_util_info (const char *fmt, ...)
       vfprintf (stderr, fmt, ap);
       va_end (ap);
       fputc ('\n', stderr);
+      fflush (stderr);
     }
 }
 
@@ -228,8 +235,16 @@ void *
 grub_memalign (grub_size_t align, grub_size_t size)
 {
   void *p;
-  
+
+#if defined(HAVE_POSIX_MEMALIGN)
+  if (posix_memalign (&p, align, size) != 0)
+    p = 0;
+#elif defined(HAVE_MEMALIGN)
   p = memalign (align, size);
+#else
+  grub_util_error ("grub_memalign is not supported");
+#endif
+  
   if (! p)
     grub_util_error ("out of memory");
   
@@ -249,7 +264,7 @@ grub_register_exported_symbols (void)
 }
 
 void
-grub_stop (void)
+grub_exit (void)
 {
   exit (1);
 }

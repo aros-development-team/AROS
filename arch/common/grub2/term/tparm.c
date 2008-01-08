@@ -164,9 +164,7 @@ get_space(grub_size_t need)
     if (need > out_size) {
 	out_size = need * 2;
 	out_buff = grub_realloc(out_buff, out_size*sizeof(char));
-	if (out_buff == 0)
-	    // FIX ME! OOM, what now?
-	    ;
+	/* FIX ME! handle out_buff == 0.  */
     }
 }
 

@@ -1,21 +1,20 @@
 /* mm.c - functions for memory manager */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -66,6 +65,13 @@
 #include <grub/types.h>
 #include <grub/disk.h>
 #include <grub/dl.h>
+
+#ifdef MM_DEBUG
+# undef grub_malloc
+# undef grub_realloc
+# undef grub_free
+# undef grub_memalign
+#endif
 
 /* Magic words.  */
 #define GRUB_MM_FREE_MAGIC	0x2d3c2808
@@ -158,7 +164,7 @@ grub_mm_init_region (void *addr, grub_size_t size)
   r->size = (h->size << GRUB_MM_ALIGN_LOG2);
 
   /* Find where to insert this region. Put a smaller one before bigger ones,
-     to prevent fragmentations.  */
+     to prevent fragmentation.  */
   for (p = &base, q = *p; q; p = &(q->next), q = *p)
     if (q->size > r->size)
       break;
@@ -388,7 +394,35 @@ grub_realloc (void *ptr, grub_size_t size)
   return q;
 }
 
-#if MM_DEBUG
+#ifdef MM_DEBUG
+int grub_mm_debug = 0;
+
+void
+grub_mm_dump_free (void)
+{
+  grub_mm_region_t r;
+
+  for (r = base; r; r = r->next)
+    {
+      grub_mm_header_t p;
+
+      /* Follow the free list.  */
+      p = r->first;
+      do
+	{
+	  if (p->magic != GRUB_MM_FREE_MAGIC)
+	    grub_fatal ("free magic is broken at %p: 0x%x", p, p->magic);
+
+	  grub_printf ("F:%p:%u:%p\n",
+		       p, (unsigned int) p->size << GRUB_MM_ALIGN_LOG2, p->next);
+	  p = p->next;
+	}
+      while (p != r->first);
+    }
+
+  grub_printf ("\n");
+}
+
 void
 grub_mm_dump (unsigned lineno)
 {
@@ -419,4 +453,52 @@ grub_mm_dump (unsigned lineno)
 
   grub_printf ("\n");
 }
+
+void *
+grub_debug_malloc (const char *file, int line, grub_size_t size)
+{
+  void *ptr;
+
+  if (grub_mm_debug)
+    grub_printf ("%s:%d: malloc (0x%x) = ", file, line, size);
+  ptr = grub_malloc (size);
+  if (grub_mm_debug)
+    grub_printf ("%p\n", ptr);
+  return ptr;
+}
+
+void
+grub_debug_free (const char *file, int line, void *ptr)
+{
+  if (grub_mm_debug)
+    grub_printf ("%s:%d: free (%p)\n", file, line, ptr);
+  grub_free (ptr);
+}
+
+void *
+grub_debug_realloc (const char *file, int line, void *ptr, grub_size_t size)
+{
+  if (grub_mm_debug)
+    grub_printf ("%s:%d: realloc (%p, 0x%x) = ", file, line, ptr, size);
+  ptr = grub_realloc (ptr, size);
+  if (grub_mm_debug)
+    grub_printf ("%p\n", ptr);
+  return ptr;
+}
+
+void *
+grub_debug_memalign (const char *file, int line, grub_size_t align,
+		    grub_size_t size)
+{
+  void *ptr;
+  
+  if (grub_mm_debug)
+    grub_printf ("%s:%d: memalign (0x%x, 0x%x) = ",
+		 file, line, align, size);
+  ptr = grub_memalign (align, size);
+  if (grub_mm_debug)
+    grub_printf ("%p\n", ptr);
+  return ptr;
+}
+
 #endif /* MM_DEBUG */

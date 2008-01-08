@@ -1,41 +1,42 @@
 #! /bin/sh
 
 # Install GRUB on your drive.
-# Copyright (C) 1999,2000,2001,2002,2003,2004,2005 Free Software Foundation, Inc.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
 #
-# This file is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# General Public License for more details.
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St - Suite 330, Boston, MA 02110, USA.
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
 # Initialize some variables.
+transform="@program_transform_name@"
+
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 sbindir=@sbindir@
-datadir=@datadir@
+bindir=@bindir@
+libdir=@libdir@
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_TARNAME=@PACKAGE_TARNAME@
 PACKAGE_VERSION=@PACKAGE_VERSION@
-host_cpu=@host_cpu@
-host_os=@host_os@
-host_vendor=@host_vendor@
-pkgdatadir=${datadir}/${PACKAGE_TARNAME}/${host_cpu}-${host_vendor}
+target_cpu=@target_cpu@
+platform=@platform@
+pkglibdir=${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`
 
-grub_setup=${sbindir}/grub-setup
-grub_mkimage=${sbindir}/grub-mkimage
-grub_mkdevicemap=${sbindir}/grub-mkdevicemap
-grub_probefs=${sbindir}/grub-probefs
+grub_setup=${sbindir}/`echo grub-setup | sed ${transform}`
+grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+grub_mkdevicemap=${sbindir}/`echo grub-mkdevicemap | sed ${transform}`
+grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
 rootdir=
-grub_prefix=/boot/grub
+grub_prefix=`echo /boot/grub | sed ${transform}`
 modules=
 
 install_device=
@@ -43,6 +44,9 @@ no_floppy=
 force_lba=
 recheck=no
 debug=no
+
+# for make_system_path_relative_to_its_root()
+. ${libdir}/grub/update-grub_lib
 
 # Usage: usage
 # Print the usage.
@@ -59,13 +63,13 @@ Install GRUB on your drive.
   --grub-setup=FILE       use FILE as grub-setup
   --grub-mkimage=FILE     use FILE as grub-mkimage
   --grub-mkdevicemap=FILE use FILE as grub-mkdevicemap
-  --grub-probefs=FILE     use FILE as grub-probefs
+  --grub-probe=FILE       use FILE as grub-probe
   --no-floppy             do not probe any floppy drive
   --recheck               probe a device map even if it already exists
 
 INSTALL_DEVICE can be a GRUB device name or a system device filename.
 
-grub-install copies GRUB images into the DIR/boot directory specfied by
+grub-install copies GRUB images into the DIR/boot directory specified by
 --root-directory, and uses grub-setup to install grub into the boot
 sector.
 
@@ -92,8 +96,8 @@ for option in "$@"; do
 	grub_mkimage=`echo "$option" | sed 's/--grub-mkimage=//'` ;;
     --grub-mkdevicemap=*)
 	grub_mkdevicemap=`echo "$option" | sed 's/--grub-mkdevicemap=//'` ;;
-    --grub-probefs=*)
-	grub_probefs=`echo "$option" | sed 's/--grub-probefs=//'` ;;
+    --grub-probe=*)
+	grub_probe=`echo "$option" | sed 's/--grub-probe=//'` ;;
     --no-floppy)
 	no_floppy="--no-floppy" ;;
     --recheck)
@@ -132,7 +136,7 @@ case "$host_os" in
 netbsd* | openbsd*)
     # Because /boot is used for the boot block in NetBSD and OpenBSD, use /grub
     # instead of /boot/grub.
-    grub_prefix=/grub
+    grub_prefix=`echo /grub | sed ${transform}`
     bootdir=${rootdir}
     ;;
 *)
@@ -141,7 +145,7 @@ netbsd* | openbsd*)
     ;;
 esac
 
-grubdir=${bootdir}/grub
+grubdir=${bootdir}/`echo grub | sed ${transform}`
 device_map=${grubdir}/device.map
 
 # Check if GRUB is installed.
@@ -198,26 +202,31 @@ fi
 
 # Copy the GRUB images to the GRUB directory.
 for file in ${grubdir}/*.mod ${grubdir}/*.lst ${grubdir}/*.img; do
-    if test -f $file; then
+    if test -f $file && [ "`basename $file`" != menu.lst ]; then
 	rm -f $file || exit 1
     fi
 done
-for file in ${pkgdatadir}/*.mod ${pkgdatadir}/*.lst ${pkgdatadir}/*.img; do
+for file in ${pkglibdir}/*.mod ${pkglibdir}/*.lst ${pkglibdir}/*.img; do
     cp -f $file ${grubdir} || exit 1
 done
 
-# Create the core image. First, auto-detect the filesystme module.
-fs_module=`$grub_probefs --device-map=${device_map} ${grubdir}`
+# Create the core image. First, auto-detect the filesystem module.
+fs_module=`$grub_probe --target=fs --device-map=${device_map} ${grubdir}`
 if test "x$fs_module" = x -a "x$modules" = x; then
     echo "Auto-detection of a filesystem module failed." 1>&2
-    echo "Please specify the module with the option `--modules' explicitly." 1>&2
+    echo "Please specify the module with the option \`--modules' explicitly." 1>&2
     exit 1
 fi
 
-# Typically, _chain and pc are required.
-modules="$modules $fs_module _chain pc"
+# Then the partition map module.  In order to support partition-less media,
+# this command is allowed to fail (--target=fs already grants us that the
+# filesystem will be accessible).
+partmap_module=`$grub_probe --target=partmap --device-map=${device_map} ${grubdir} 2> /dev/null`
 
-$grub_mkimage --output=${grubdir}/core.img $modules || exit 1
+# _chain is often useful
+modules="$modules $fs_module $partmap_module biosdisk _chain"
+
+$grub_mkimage --output=${grubdir}/core.img --prefix=`make_system_path_relative_to_its_root ${grubdir}` $modules || exit 1
 
 # Now perform the installation.
 $grub_setup --directory=${grubdir} --device-map=${device_map} \

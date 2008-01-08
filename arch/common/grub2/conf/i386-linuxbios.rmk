@@ -1,0 +1,157 @@
+# -*- makefile -*-
+
+COMMON_ASFLAGS	= -m32 -nostdinc -fno-builtin
+COMMON_CFLAGS	= -ffreestanding -mrtd -mregparm=3
+COMMON_LDFLAGS	= -nostdlib -static -lgcc
+
+# Images.
+pkglib_PROGRAMS = kernel.elf
+
+# For kernel.elf.
+kernel_elf_SOURCES = kern/i386/linuxbios/startup.S kern/i386/linuxbios/init.c \
+	kern/i386/linuxbios/table.c \
+	kern/main.c kern/device.c \
+	kern/disk.c kern/dl.c kern/file.c kern/fs.c kern/err.c \
+	kern/misc.c kern/mm.c kern/loader.c kern/rescue.c kern/term.c \
+	kern/i386/dl.c kern/parser.c kern/partition.c \
+	kern/env.c \
+	term/i386/pc/console.c \
+	term/i386/pc/at_keyboard.c term/i386/pc/vga_text.c \
+	symlist.c
+kernel_elf_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
+	env.h err.h file.h fs.h kernel.h loader.h misc.h mm.h net.h parser.h \
+	partition.h pc_partition.h rescue.h symbol.h term.h time.h types.h \
+	machine/boot.h machine/console.h machine/init.h \
+	machine/memory.h machine/loader.h
+kernel_elf_CFLAGS = $(COMMON_CFLAGS)
+kernel_elf_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-S,-Ttext,0x8200,-Bstatic
+
+MOSTLYCLEANFILES += symlist.c kernel_syms.lst
+DEFSYMFILES += kernel_syms.lst
+
+symlist.c: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h gensymlist.sh
+	/bin/sh gensymlist.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
+
+kernel_syms.lst: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h genkernsyms.sh
+	/bin/sh genkernsyms.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
+
+# Utilities.
+bin_UTILITIES = grub-mkimage
+sbin_UTILITIES = grub-mkdevicemap grub-probe
+ifeq ($(enable_grub_emu), yes)
+sbin_UTILITIES += grub-emu
+endif
+
+# For grub-mkimage.
+grub_mkimage_SOURCES = util/elf/grub-mkimage.c util/misc.c \
+	util/resolve.c
+grub_mkimage_LDFLAGS = $(LIBLZO)
+
+# For grub-mkdevicemap.
+grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c		\
+	util/i386/get_disk_name.c
+
+# For grub-probe.
+util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
+grub_probe_SOURCES = util/grub-probe.c	\
+	util/biosdisk.c	util/misc.c util/getroot.c	\
+	kern/device.c kern/disk.c kern/err.c kern/misc.c fs/fat.c	\
+	fs/ext2.c kern/parser.c kern/partition.c 			\
+	partmap/pc.c partmap/apple.c partmap/gpt.c 			\
+	fs/ufs.c fs/minix.c fs/hfs.c fs/jfs.c fs/ntfs.c fs/ntfscomp.c	\
+	fs/xfs.c fs/affs.c fs/sfs.c fs/hfsplus.c			\
+	kern/fs.c							\
+	kern/env.c fs/fshelp.c 	\
+	disk/lvm.c disk/raid.c grub_probe_init.c
+
+# For grub-emu.
+grub_emu_DEPENDENCIES = grub_script.tab.c grub_script.tab.h		\
+	grub_emu_init.h
+grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
+	commands/configfile.c commands/echo.c commands/help.c		\
+	commands/terminal.c commands/ls.c commands/test.c 		\
+	commands/search.c commands/blocklist.c commands/hexdump.c	\
+	commands/i386/pc/halt.c commands/i386/pc/reboot.c		\
+	commands/i386/cpuid.c						\
+	disk/host.c disk/loopback.c	disk/raid.c disk/lvm.c		\
+	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c	\
+	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c fs/hfsplus.c	\
+	fs/ntfs.c fs/ntfscomp.c	fs/cpio.c				\
+	io/gzio.c							\
+	kern/device.c kern/disk.c kern/dl.c kern/elf.c kern/env.c	\
+	kern/err.c							\
+	normal/execute.c kern/file.c kern/fs.c normal/lexer.c 		\
+	kern/loader.c kern/main.c kern/misc.c kern/parser.c		\
+	grub_script.tab.c kern/partition.c kern/rescue.c kern/term.c	\
+	normal/arg.c normal/cmdline.c normal/command.c normal/function.c\
+	normal/completion.c normal/main.c				\
+	normal/menu.c normal/menu_entry.c normal/misc.c normal/script.c	\
+	normal/color.c							\
+	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
+	partmap/acorn.c partmap/gpt.c					\
+	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
+	util/biosdisk.c util/getroot.c			\
+	util/i386/pc/misc.c grub_emu_init.c
+
+grub_emu_LDFLAGS = $(LIBCURSES)
+
+# Modules.
+pkglib_MODULES = _linux.mod linux.mod normal.mod	\
+	_multiboot.mod multiboot.mod play.mod		\
+	cpuid.mod serial.mod ata.mod
+
+# For _linux.mod.
+_linux_mod_SOURCES = loader/i386/pc/linux.c
+_linux_mod_CFLAGS = $(COMMON_CFLAGS)
+_linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For linux.mod.
+linux_mod_SOURCES = loader/i386/pc/linux_normal.c
+linux_mod_CFLAGS = $(COMMON_CFLAGS)
+linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For normal.mod.
+normal_mod_DEPENDENCIES = grub_script.tab.c grub_script.tab.h
+normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
+	normal/completion.c normal/execute.c		 		\
+	normal/function.c normal/lexer.c normal/main.c normal/menu.c	\
+	normal/menu_entry.c normal/misc.c grub_script.tab.c 		\
+	normal/script.c normal/i386/setjmp.S normal/color.c
+normal_mod_CFLAGS = $(COMMON_CFLAGS)
+normal_mod_ASFLAGS = $(COMMON_ASFLAGS)
+normal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For serial.mod.
+serial_mod_SOURCES = term/i386/pc/serial.c
+serial_mod_CFLAGS = $(COMMON_CFLAGS)
+serial_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For _multiboot.mod.
+_multiboot_mod_SOURCES = loader/i386/pc/multiboot.c \
+                         loader/i386/pc/multiboot2.c \
+                         loader/multiboot2.c \
+                         loader/multiboot_loader.c
+_multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
+_multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For multiboot.mod.
+multiboot_mod_SOURCES = loader/multiboot_loader_normal.c 
+multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
+multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For play.mod.
+play_mod_SOURCES = commands/i386/pc/play.c
+play_mod_CFLAGS = $(COMMON_CFLAGS)
+play_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For cpuid.mod.
+cpuid_mod_SOURCES = commands/i386/cpuid.c
+cpuid_mod_CFLAGS = $(COMMON_CFLAGS)
+cpuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ata.mod.
+ata_mod_SOURCES = disk/ata.c
+ata_mod_CFLAGS = $(COMMON_CFLAGS)
+ata_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+include $(srcdir)/conf/common.mk

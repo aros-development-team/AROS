@@ -1,22 +1,24 @@
 /* hfs.c - HFS.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+/* HFS is documented at
+   http://developer.apple.com/documentation/mac/Files/Files-2.html */
 
 #include <grub/err.h>
 #include <grub/file.h>
@@ -25,9 +27,10 @@
 #include <grub/disk.h>
 #include <grub/dl.h>
 #include <grub/types.h>
+#include <grub/hfs.h>
 
 #define	GRUB_HFS_SBLOCK		2
-#define GRUB_HFS_MAGIC		0x4244
+#define GRUB_HFS_EMBED_HFSPLUS_SIG 0x482B
 
 #define GRUB_HFS_BLKS		(data->blksz >> 9)
 
@@ -40,38 +43,7 @@ enum
     GRUB_HFS_FILETYPE_FILE = 2
   };
 
-/* A single extent.  A file consists of suchs extents.  */
-struct grub_hfs_extent
-{
-  /* The first physical block.  */
-  grub_uint16_t first_block;
-  grub_uint16_t count;
-};
-
-/* HFS stores extents in groups of 3.  */
-typedef struct grub_hfs_extent grub_hfs_datarecord_t[3];
-
-/* The HFS superblock (The official name is `Master Directory
-   Block').  */
-struct grub_hfs_sblock
-{
-  grub_uint16_t magic;
-  grub_uint8_t unused[18];
-  grub_uint32_t blksz;
-  grub_uint8_t unused2[4];
-  grub_uint16_t first_block;
-  grub_uint8_t unused4[6];
-
-  /* A pascal style string that holds the volumename.  */
-  grub_uint8_t volname[28];
-  
-  grub_uint8_t unused5[70];
-  grub_hfs_datarecord_t extent_recs;
-  grub_uint32_t catalog_size;
-  grub_hfs_datarecord_t catalog_recs;
-} __attribute__ ((packed));
-
-/* A node desciptor.  This is the header of every node.  */
+/* A node descriptor.  This is the header of every node.  */
 struct grub_hfs_node
 {
   grub_uint32_t next;
@@ -256,9 +228,9 @@ grub_hfs_block (struct grub_hfs_data *data, grub_hfs_datarecord_t dat,
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_hfs_read_file (struct grub_hfs_data *data,
-		    void (*read_hook) (unsigned long sector,
+		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		     int pos, unsigned int len, char *buf)
+		     int pos, grub_size_t len, char *buf)
 {
   int i;
   int blockcnt;
@@ -288,7 +260,7 @@ grub_hfs_read_file (struct grub_hfs_data *data,
 	  blockend = (len + pos) % data->blksz;
 	  
 	  /* The last portion is exactly EXT2_BLOCK_SIZE (data).  */
-	  if (!blockend)
+	  if (! blockend)
 	    blockend = data->blksz;
 	}
 
@@ -345,7 +317,14 @@ grub_hfs_mount (grub_disk_t disk)
   /* Check if this is a HFS filesystem.  */
   if (grub_be_to_cpu16 (data->sblock.magic) != GRUB_HFS_MAGIC)
     {
-      grub_error (GRUB_ERR_BAD_FS, "not a hfs filesystem");
+      grub_error (GRUB_ERR_BAD_FS, "not an HFS filesystem");
+      goto fail;
+    }
+
+  /* Check if this is an embedded HFS+ filesystem.  */
+  if (grub_be_to_cpu16 (data->sblock.embed_sig) == GRUB_HFS_EMBED_HFSPLUS_SIG)
+    {
+      grub_error (GRUB_ERR_BAD_FS, "embedded HFS+ filesystem");
       goto fail;
     }
   
@@ -377,7 +356,7 @@ grub_hfs_mount (grub_disk_t disk)
      volume name.  */
   key.parent_dir = grub_cpu_to_be32 (1);
   key.strlen = data->sblock.volname[0];
-  grub_strcpy (key.str, data->sblock.volname + 1);
+  grub_strcpy ((char *) key.str, (char *) (data->sblock.volname + 1));
   
   if (grub_hfs_find_node (data, (char *) &key, data->cat_root,
 			  0, (char *) &dir, sizeof (dir)) == 0)
@@ -413,7 +392,7 @@ grub_hfs_cmp_catkeys (struct grub_hfs_catalog_key *k1,
   if (cmp != 0)
     return cmp;
   
-  cmp = grub_strncasecmp (k1->str, k2->str, k1->strlen);
+  cmp = grub_strncasecmp ((char *) (k1->str), (char *) (k2->str), k1->strlen);
   
   /* This is required because the compared strings are not of equal
      length.  */
@@ -693,11 +672,11 @@ grub_hfs_find_dir (struct grub_hfs_data *data, const char *path,
       
       key.parent_dir = grub_cpu_to_be32 (inode);
       key.strlen = grub_strlen (path);
-      grub_strcpy (key.str, path);
+      grub_strcpy ((char *) (key.str), path);
       
       /* Lookup this node.  */
-      if (!grub_hfs_find_node (data, (char *) &key, data->cat_root,
-			       0, (char *) &frec, sizeof (frec)))
+      if (! grub_hfs_find_node (data, (char *) &key, data->cat_root,
+				0, (char *) &frec, sizeof (frec)))
 	{
 	  grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
 	  goto fail;
@@ -737,7 +716,7 @@ grub_hfs_dir (grub_device_t device, const char *path,
       char *filetype = rec->data;
       struct grub_hfs_catalog_key *ckey = rec->key;
       
-      grub_strncpy (fname, ckey->str, ckey->strlen);
+      grub_strncpy (fname, (char *) (ckey->str), ckey->strlen);
       
       if (*filetype == GRUB_HFS_FILETYPE_DIR)
 	return hook (fname, 1);
@@ -824,7 +803,7 @@ grub_hfs_open (struct grub_file *file, const char *name)
 }
 
 static grub_ssize_t
-grub_hfs_read (grub_file_t file, char *buf, grub_ssize_t len)
+grub_hfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_hfs_data *data = 
     (struct grub_hfs_data *) file->data;
@@ -854,7 +833,8 @@ grub_hfs_label (grub_device_t device, char **label)
   data = grub_hfs_mount (device->disk);
   
   if (data)
-    *label = grub_strndup (data->sblock.volname + 1, *data->sblock.volname);
+    *label = grub_strndup ((char *) (data->sblock.volname + 1),
+			   *data->sblock.volname);
   else
     *label = 0;
 
@@ -875,27 +855,15 @@ static struct grub_fs grub_hfs_fs =
     .next = 0
   };
 
-#ifdef GRUB_UTIL
-void
-grub_hfs_init (void)
+GRUB_MOD_INIT(hfs)
 {
   grub_fs_register (&grub_hfs_fs);
-}
-
-void
-grub_hfs_fini (void)
-{
-  grub_fs_unregister (&grub_hfs_fs);
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
-{
-  grub_fs_register (&grub_hfs_fs);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(hfs)
 {
   grub_fs_unregister (&grub_hfs_fs);
 }
-#endif /* ! GRUB_UTIL */

@@ -1,21 +1,20 @@
 /* fshelp.h -- Filesystem helper functions */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRUB_FSHELP_HEADER
@@ -64,12 +63,16 @@ EXPORT_FUNC(grub_fshelp_find_file) (const char *path,
    blocks have a size of LOG2BLOCKSIZE (in log2).  */
 grub_ssize_t
 EXPORT_FUNC(grub_fshelp_read_file) (grub_disk_t disk, grub_fshelp_node_t node,
-				    void (*read_hook) (unsigned long sector,
+				    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 						       unsigned offset,
 						       unsigned length),
-				    int pos, unsigned int len, char *buf,
+				    int pos, grub_size_t len, char *buf,
 				    int (*get_block) (grub_fshelp_node_t node,
 						      int block),
-				    unsigned int filesize, int log2blocksize);
-     
+				    grub_off_t filesize, int log2blocksize);
+
+unsigned int
+EXPORT_FUNC(grub_fshelp_log2blksize) (unsigned int blksize,
+				      unsigned int *pow);
+
 #endif /* ! GRUB_FSHELP_HEADER */

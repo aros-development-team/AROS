@@ -1,21 +1,20 @@
 /* sfs.c - Amiga Smart FileSystem.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/err.h>
@@ -259,9 +258,9 @@ grub_sfs_read_block (grub_fshelp_node_t node, int fileblock)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_sfs_read_file (grub_fshelp_node_t node,
-		    void (*read_hook) (unsigned long sector,
+		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		    int pos, unsigned int len, char *buf)
+		    int pos, grub_size_t len, char *buf)
 {
   return grub_fshelp_read_file (node->data->disk, node, read_hook,
 				pos, len, buf, grub_sfs_read_block,
@@ -288,7 +287,7 @@ grub_sfs_mount (grub_disk_t disk)
     goto fail;
 
   /* Make sure this is a sfs filesystem.  */
-  if (grub_strncmp (data->rblock.header.magic, "SFS", 4))
+  if (grub_strncmp ((char *) (data->rblock.header.magic), "SFS", 4))
     {
       grub_error (GRUB_ERR_BAD_FS, "not a sfs filesystem");
       goto fail;
@@ -296,7 +295,7 @@ grub_sfs_mount (grub_disk_t disk)
 
   data->blocksize = grub_be_to_cpu32 (data->rblock.blocksize);
   rootobjc_data = grub_malloc (data->blocksize);
-  if (!rootobjc_data)
+  if (! rootobjc_data)
     goto fail;
 
   /* Read the root object container.  */
@@ -312,11 +311,14 @@ grub_sfs_mount (grub_disk_t disk)
   data->diropen.block = blk;
   data->diropen.data = data;
   data->disk = disk;
-  data->label = grub_strdup (rootobjc->objects[0].filename);
+  data->label = grub_strdup ((char *) (rootobjc->objects[0].filename));
 
   return data;
 
  fail:
+  if (grub_errno == GRUB_ERR_OUT_OF_RANGE)
+    grub_error (GRUB_ERR_BAD_FS, "not an sfs filesystem");
+
   grub_free (data);
   grub_free (rootobjc_data);
   return 0;
@@ -403,7 +405,7 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
 	{
 	  struct grub_sfs_obj *obj;
 	  obj = (struct grub_sfs_obj *) ((char *) objc + pos);
-	  char *filename = obj->filename;
+	  char *filename = (char *) (obj->filename);
 	  int len;
 	  enum grub_fshelp_filetype type;
 	  unsigned int block;
@@ -512,7 +514,7 @@ grub_sfs_close (grub_file_t file)
 
 /* Read LEN bytes data from FILE into BUF.  */
 static grub_ssize_t
-grub_sfs_read (grub_file_t file, char *buf, grub_ssize_t len)
+grub_sfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_sfs_data *data = (struct grub_sfs_data *) file->data;
 
@@ -605,27 +607,15 @@ static struct grub_fs grub_sfs_fs =
     .next = 0
   };
 
-#ifdef GRUB_UTIL
-void
-grub_sfs_init (void)
+GRUB_MOD_INIT(sfs)
 {
   grub_fs_register (&grub_sfs_fs);
-}
-
-void
-grub_sfs_fini (void)
-{
-  grub_fs_unregister (&grub_sfs_fs);
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
-{
-  grub_fs_register (&grub_sfs_fs);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(sfs)
 {
   grub_fs_unregister (&grub_sfs_fs);
 }
-#endif /* ! GRUB_UTIL */

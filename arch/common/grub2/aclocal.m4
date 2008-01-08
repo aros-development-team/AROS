@@ -57,7 +57,7 @@ else
 fi
 grub_cv_prog_objcopy_absolute=yes
 for link_addr in 2000 8000 7C00; do
-  if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} -nostdlib -Wl,-N -Wl,-Ttext -Wl,$link_addr conftest.o -o conftest.exec]); then :
+  if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} ${LDFLAGS} -nostdlib -Wl,-N -Wl,-Ttext -Wl,$link_addr conftest.o -o conftest.exec]); then :
   else
     AC_MSG_ERROR([${CC-cc} cannot link at address $link_addr])
   fi
@@ -342,4 +342,23 @@ dnl So use regparm 2 until a better test is found.
 	[__attribute__ ((__regparm__ (2)))],
 	[Catch gcc bug])
 fi
+])
+
+dnl Check if the C compiler supports `-fstack-protector'.
+AC_DEFUN(grub_CHECK_STACK_PROTECTOR,[
+[# Smashing stack protector.
+ssp_possible=yes]
+AC_MSG_CHECKING([whether `$CC' accepts `-fstack-protector'])
+# Is this a reliable test case?
+AC_LANG_CONFTEST([[void foo (void) { volatile char a[8]; a[3]; }]])
+[# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
+# `ac_compile' like this correct, after all?
+if eval "$ac_compile -S -fstack-protector -o conftest.s" 2> /dev/null; then]
+  AC_MSG_RESULT([yes])
+  [# Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
+  rm -f conftest.s
+else
+  ssp_possible=no]
+  AC_MSG_RESULT([no])
+[fi]
 ])

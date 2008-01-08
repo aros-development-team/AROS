@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef GRUB_FILE_HEADER
@@ -35,16 +34,17 @@ struct grub_file
   grub_fs_t fs;
 
   /* The current offset.  */
-  grub_ssize_t offset;
+  grub_off_t offset;
 
   /* The file size.  */
-  grub_ssize_t size;
+  grub_off_t size;
 
   /* Filesystem-specific data.  */
   void *data;
 
   /* This is called when a sector is read. Used only for a disk device.  */
-  void (*read_hook) (unsigned long sector, unsigned offset, unsigned length);
+  void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
+		     unsigned offset, unsigned length);
 };
 typedef struct grub_file *grub_file_t;
 
@@ -53,18 +53,17 @@ char *EXPORT_FUNC(grub_file_get_device_name) (const char *name);
 
 grub_file_t EXPORT_FUNC(grub_file_open) (const char *name);
 grub_ssize_t EXPORT_FUNC(grub_file_read) (grub_file_t file, char *buf,
-					  grub_ssize_t len);
-grub_ssize_t EXPORT_FUNC(grub_file_seek) (grub_file_t file,
-					  grub_ssize_t offset);
+					  grub_size_t len);
+grub_off_t EXPORT_FUNC(grub_file_seek) (grub_file_t file, grub_off_t offset);
 grub_err_t EXPORT_FUNC(grub_file_close) (grub_file_t file);
 
-static inline grub_ssize_t
+static inline grub_off_t
 grub_file_size (const grub_file_t file)
 {
   return file->size;
 }
 
-static inline grub_ssize_t
+static inline grub_off_t
 grub_file_tell (const grub_file_t file)
 {
   return file->offset;

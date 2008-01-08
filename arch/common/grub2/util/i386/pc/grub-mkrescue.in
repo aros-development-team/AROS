@@ -1,0 +1,128 @@
+#! /bin/sh -e
+
+# Make GRUB rescue image
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+target_cpu=@target_cpu@
+platform=@platform@
+pkglibdir=${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`
+
+grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: grub-mkrescue [OPTION] output_image
+Make GRUB rescue image.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --modules=MODULES       pre-load specified modules MODULES
+  --pkglibdir=DIR         use images from directory DIR instead of ${pkglibdir}
+  --grub-mkimage=FILE     use FILE as grub-mkimage
+  --image-type=TYPE       select floppy or cdrom (default)
+
+grub-mkimage generates a bootable rescue image of the specified type.
+
+Report bugs to <grub-devel@gnu.org>.
+EOF
+}
+
+image_type=cdrom
+input_dir=${pkglibdir}
+grub_mkimage=grub-mkimage
+
+# Check the arguments.
+for option in "$@"; do
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "grub-install (GNU GRUB ${PACKAGE_VERSION})"
+	exit 0 ;;
+    --modules=*)
+	modules=`echo "$option" | sed 's/--modules=//'` ;;
+    --pkglibdir=*)
+	input_dir=`echo "$option" | sed 's/--pkglibdir=//'` ;;
+    --grub-mkimage=*)
+	grub_mkimage=`echo "$option" | sed 's/--grub-mkimage=//'` ;;
+    --image-type=*)
+    	image_type=`echo "$option" | sed 's/--image-type=//'`
+        case "$image_type" in
+          floppy|cdrom) ;;
+          *)
+            echo "Unknown image type \`$image_type'" 1>&2
+            exit 1 ;;
+        esac ;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    *)
+	if test "x$output_image" != x; then
+	    echo "Unrecognized option \`$option'" 1>&2
+	    usage
+	    exit 1
+	fi
+	output_image="${option}" ;;
+    esac
+done
+
+if test "x$output_image" = x; then
+  usage
+  exit 1
+fi
+
+if [ "x${modules}" = "x" ] ; then
+  modules=`cd ${input_dir}/ && ls *.mod`
+fi
+
+if [ "x${image_type}" = "xfloppy" ] ; then
+  floppy_image=${output_image}
+else
+  floppy_image=`mktemp`
+fi
+
+core_img=`mktemp`
+${grub_mkimage} -d ${input_dir}/ -o ${core_img} ${modules}
+cat ${input_dir}/boot.img ${core_img} /dev/zero | dd bs=1024 count=1440 > $floppy_image
+rm -f ${core_img}
+
+if [ "x${image_type}" = "xfloppy" ] ; then
+  exit 0
+fi
+
+iso_dir=`mktemp -d`
+cp $floppy_image ${iso_dir}/floppy.img
+genisoimage -b floppy.img -o ${output_image} -r ${iso_dir}
+rm -rf ${iso_dir}
+
+rm -f ${floppy_image}
+
+exit 0

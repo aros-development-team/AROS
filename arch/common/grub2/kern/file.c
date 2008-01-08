@@ -1,21 +1,20 @@
 /* file.c - file I/O functions */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/misc.h>
@@ -112,13 +111,17 @@ grub_file_open (const char *name)
 }
 
 grub_ssize_t
-grub_file_read (grub_file_t file, char *buf, grub_ssize_t len)
+grub_file_read (grub_file_t file, char *buf, grub_size_t len)
 {
   grub_ssize_t res;
   
   if (len == 0 || len > file->size - file->offset)
     len = file->size - file->offset;
 
+  /* Prevent an overflow.  */
+  if ((grub_ssize_t) len < 0)
+    len >>= 1;
+  
   if (len == 0)
     return 0;
   
@@ -141,12 +144,12 @@ grub_file_close (grub_file_t file)
   return grub_errno;
 }
 
-grub_ssize_t
-grub_file_seek (grub_file_t file, grub_ssize_t offset)
+grub_off_t
+grub_file_seek (grub_file_t file, grub_off_t offset)
 {
-  grub_ssize_t old;
+  grub_off_t old;
 
-  if (offset < 0 || offset > file->size)
+  if (offset > file->size)
     {
       grub_error (GRUB_ERR_OUT_OF_RANGE,
 		  "attempt to seek outside of the file");

@@ -1,21 +1,20 @@
 /*  console.c -- Ncurses console for GRUB.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -165,50 +164,50 @@ grub_ncurses_getkey (void)
   switch (c)
     {
     case KEY_LEFT:
-      c = GRUB_CONSOLE_KEY_LEFT;
+      c = 2;
       break;
 
     case KEY_RIGHT:
-      c = GRUB_CONSOLE_KEY_RIGHT;
+      c = 6;
       break;
       
     case KEY_UP:
-      c = GRUB_CONSOLE_KEY_UP;
+      c = 16;
       break;
 
     case KEY_DOWN:
-      c = GRUB_CONSOLE_KEY_DOWN;
+      c = 14;
       break;
 
     case KEY_IC:
-      c = GRUB_CONSOLE_KEY_IC;
+      c = 24;
       break;
 
     case KEY_DC:
-      c = GRUB_CONSOLE_KEY_DC;
+      c = 4;
       break;
 
     case KEY_BACKSPACE:
       /* XXX: For some reason ncurses on xterm does not return
 	 KEY_BACKSPACE.  */
     case 127: 
-      c = GRUB_CONSOLE_KEY_BACKSPACE;
+      c = 8;
       break;
 
     case KEY_HOME:
-      c = GRUB_CONSOLE_KEY_HOME;
+      c = 1;
       break;
 
     case KEY_END:
-      c = GRUB_CONSOLE_KEY_END;
+      c = 5;
       break;
 
     case KEY_NPAGE:
-      c = GRUB_CONSOLE_KEY_NPAGE;
+      c = 3;
       break;
 
     case KEY_PPAGE:
-      c = GRUB_CONSOLE_KEY_PPAGE;
+      c = 7;
       break;
     }
 

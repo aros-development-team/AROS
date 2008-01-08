@@ -1,0 +1,128 @@
+#! /bin/sh -e
+
+# update-grub helper script.
+# Copyright (C) 2006,2007  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+if [ "x${GRUB_DISTRIBUTOR}" = "" ] ; then
+  OS=GNU/Linux
+else
+  OS="${GRUB_DISTRIBUTOR} GNU/Linux"
+fi
+
+test_numeric ()
+{
+  local a=$1
+  local cmp=$2
+  local b=$3
+  if [ "$a" = "$b" ] ; then
+    case $cmp in
+      ge|eq|le) return 0 ;;
+      gt|lt) return 1 ;;
+    esac
+  fi
+  if [ "$cmp" = "lt" ] ; then
+    c=$a
+    a=$b
+    b=$c
+  fi
+  if (echo $a ; echo $b) | sort -n | head -n 1 | grep -qx $b ; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+test_gt ()
+{
+  local a=`echo $1 | sed -e "s/vmlinu[zx]-//g"`
+  local b=`echo $2 | sed -e "s/vmlinu[zx]-//g"`
+  local cmp=gt
+  if [ "x$b" = "x" ] ; then
+    return 0
+  fi
+  case $a:$b in
+    *.old:*.old) ;;
+    *.old:*) a=`echo -n $a | sed -e s/\.old$//g` ; cmp=gt ;;
+    *:*.old) b=`echo -n $b | sed -e s/\.old$//g` ; cmp=ge ;;
+  esac
+  test_numeric $a $cmp $b
+  return $?
+}
+
+find_latest ()
+{
+  local a=""
+  for i in $@ ; do
+    if test_gt "$i" "$a" ; then
+      a="$i"
+    fi
+  done
+  echo "$a"
+}
+
+list=`for i in /boot/vmlinu[xz]-* /vmlinu[xz]-* ; do
+        if test -e $i ; then echo -n "$i " ; fi
+      done`
+
+while [ "x$list" != "x" ] ; do
+  linux=`find_latest $list`
+  echo "Found linux image: $linux" >&2
+  basename=`basename $linux`
+  dirname=`dirname $linux`
+  grub_dirname=`echo ${dirname} | sed -e "s%^/boot%${GRUB_DRIVE_BOOT}%g"`
+  version=`echo $basename | sed -e "s,^[^0-9]*-,,g"`
+  alt_version=`echo $version | sed -e "s,\.old$,,g"`
+
+  initrd=
+  for i in "initrd.img-${version}" "initrd-${version}.img" \
+	   "initrd.img-${alt_version}" "initrd-${alt_version}.img"; do
+    if test -e "${dirname}/${i}" ; then
+      initrd="$i"
+      break
+    fi
+  done
+  if test -n "${initrd}" ; then
+    echo "Found initrd image: ${dirname}/${initrd}" >&2
+  fi
+
+  cat << EOF
+menuentry "${OS}, linux ${version}" {
+	linux	${grub_dirname}/${basename} root=${GRUB_DEVICE} ro ${GRUB_CMDLINE_LINUX}
+EOF
+  if test -n "${initrd}" ; then
+    cat << EOF
+	initrd	${grub_dirname}/${initrd}
+EOF
+  fi
+  cat << EOF
+}
+EOF
+
+  cat << EOF
+menuentry "${OS}, linux ${version} (single-user mode)" {
+	linux	${grub_dirname}/${basename} root=${GRUB_DEVICE} ro single ${GRUB_CMDLINE_LINUX}
+EOF
+  if test -n "${initrd}" ; then
+    cat << EOF
+	initrd	${grub_dirname}/${initrd}
+EOF
+  fi
+  cat << EOF
+}
+EOF
+
+  list=`echo $list | tr ' ' '\n' | grep -vx $linux | tr '\n' ' '`
+done

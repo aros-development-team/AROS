@@ -1,21 +1,20 @@
 /* xfs.c - XFS.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/err.h>
@@ -191,7 +190,7 @@ grub_xfs_read_inode (struct grub_xfs_data *data, grub_uint64_t ino,
 		      sizeof (struct grub_xfs_inode), (char *) inode))
     return grub_errno;
 
-  if (grub_strncmp (inode->magic, "IN", 2))
+  if (grub_strncmp ((char *) inode->magic, "IN", 2))
     return grub_error (GRUB_ERR_BAD_FS, "not a correct XFS inode.\n");
 
   return 0;
@@ -237,9 +236,9 @@ grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_xfs_read_file (grub_fshelp_node_t node,
-		     void (*read_hook) (unsigned long sector,
+		     void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 					unsigned offset, unsigned length),
-		     int pos, unsigned int len, char *buf)
+		     int pos, grub_size_t len, char *buf)
 {
   return grub_fshelp_read_file (node->data->disk, node, read_hook,
 				pos, len, buf, grub_xfs_read_block,
@@ -418,6 +417,8 @@ grub_xfs_iterate_dir (grub_fshelp_node_t dir,
 	    numread = grub_xfs_read_file (dir, 0,
 					  blk << dir->data->sblock.log2_bsize,
 					  dir->data->bsize, dirblock);
+	    if (numread != dir->data->bsize)
+	      return 0;
 
 	    entries = (grub_be_to_cpu32 (tail->leaf_count)
 		       - grub_be_to_cpu32 (tail->leaf_stale));
@@ -492,7 +493,7 @@ grub_xfs_mount (grub_disk_t disk)
 		      sizeof (struct grub_xfs_sblock), (char *) &data->sblock))
     goto fail;
   
-  if (grub_strncmp (data->sblock.magic, "XFSB", 4))
+  if (grub_strncmp ((char *) (data->sblock.magic), "XFSB", 4))
     {
       grub_error (GRUB_ERR_BAD_FS, "not a xfs filesystem");
       goto fail;
@@ -513,6 +514,9 @@ grub_xfs_mount (grub_disk_t disk)
   return data;
  fail:
   
+  if (grub_errno == GRUB_ERR_OUT_OF_RANGE)
+    grub_error (GRUB_ERR_BAD_FS, "not an xfs filesystem");
+
   grub_free (data);
   
   return 0;
@@ -626,7 +630,7 @@ grub_xfs_open (struct grub_file *file, const char *name)
 
 
 static grub_ssize_t
-grub_xfs_read (grub_file_t file, char *buf, grub_ssize_t len)
+grub_xfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_xfs_data *data = 
     (struct grub_xfs_data *) file->data;
@@ -661,7 +665,7 @@ grub_xfs_label (grub_device_t device, char **label)
 
   data = grub_xfs_mount (disk);
   if (data)
-    *label = grub_strndup (data->sblock.label, 12);
+    *label = grub_strndup ((char *) (data->sblock.label), 12);
   else
     *label = 0;
 
@@ -687,27 +691,16 @@ static struct grub_fs grub_xfs_fs =
     .next = 0
   };
 
-#ifdef GRUB_UTIL
-void
-grub_xfs_init (void)
+GRUB_MOD_INIT(xfs)
 {
   grub_fs_register (&grub_xfs_fs);
-}
-
-void
-grub_xfs_fini (void)
-{
-  grub_fs_unregister (&grub_xfs_fs);
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
-{
-  grub_fs_register (&grub_xfs_fs);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(xfs)
 {
   grub_fs_unregister (&grub_xfs_fs);
 }
-#endif /* ! GRUB_UTIL */
+

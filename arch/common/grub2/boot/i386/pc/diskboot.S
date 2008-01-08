@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002   Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2006,2007   Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/machine/boot.h>
@@ -71,7 +70,7 @@ _start:
 bootloop:
 
 	/* check the number of sectors to read */
-	cmpw	$0, 4(%di)
+	cmpw	$0, 8(%di)
 
 	/* if zero, go to the start function */
 	je	bootit
@@ -86,26 +85,28 @@ setup_sectors:
 lba_mode:	
 	/* load logical sector start */
 	movl	(%di), %ebx
+	movl	4(%di), %ecx
 
 	/* the maximum is limited to 0x7f because of Phoenix EDD */
 	xorl	%eax, %eax
 	movb	$0x7f, %al
 
 	/* how many do we really want to read? */
-	cmpw	%ax, 4(%di)	/* compare against total number of sectors */
+	cmpw	%ax, 8(%di)	/* compare against total number of sectors */
 
 	/* which is greater? */
 	jg	1f
 
 	/* if less than, set to total */
-	movw	4(%di), %ax
+	movw	8(%di), %ax
 
 1:	
 	/* subtract from total */
-	subw	%ax, 4(%di)
+	subw	%ax, 8(%di)
 
 	/* add into logical sector start */
 	addl	%eax, (%di)
+	adcl	$0, 4(%di)
 
 	/* set up disk address packet */
 
@@ -115,8 +116,9 @@ lba_mode:
 	/* the number of sectors */
 	movw	%ax, 2(%si)
 
-	/* the absolute address (low 32 bits) */
+	/* the absolute address */
 	movl	%ebx, 8(%si)
+	movl	%ecx, 12(%si)
 
 	/* the segment of buffer address */
 	movw	$GRUB_BOOT_MACHINE_BUFFER_SEG, 6(%si)
@@ -124,15 +126,8 @@ lba_mode:
 	/* save %ax from destruction! */
 	pushw	%ax
 
-	/* zero %eax */
-	xorl	%eax, %eax
-
 	/* the offset of buffer address */
-	movw	%ax, 4(%si)
-
-	/* the absolute address (high 32 bits) */
-	movl	%eax, 12(%si)
-
+	movw	$0, 4(%si)
 
 /*
  * BIOS call "INT 0x13 Function 0x42" to read sectors from disk into memory
@@ -152,6 +147,11 @@ lba_mode:
 	jmp	copy_buffer
 			
 chs_mode:	
+	/* load logical sector start (top half) */
+	movl	4(%di), %eax
+	orl	%eax, %eax
+	jnz	geometry_error
+
 	/* load logical sector start (bottom half) */
 	movl	(%di), %eax
 
@@ -184,21 +184,22 @@ chs_mode:
 	subb	10(%si), %al
 
 	/* how many do we really want to read? */
-	cmpw	%ax, 4(%di)	/* compare against total number of sectors */
+	cmpw	%ax, 8(%di)	/* compare against total number of sectors */
 
 
 	/* which is greater? */
 	jg	2f
 
 	/* if less than, set to total */
-	movw	4(%di), %ax
+	movw	8(%di), %ax
 
 2:	
 	/* subtract from total */
-	subw	%ax, 4(%di)
+	subw	%ax, 8(%di)
 
 	/* add into logical sector start */
 	addl	%eax, (%di)
+	adcl	$0, 4(%di)
 
 /*
  *  This is the loop for taking care of BIOS geometry translation (ugh!)
@@ -252,7 +253,7 @@ chs_mode:
 copy_buffer:	
 
 	/* load addresses for copy from disk buffer to destination */
-	movw	6(%di), %es	/* load destination segment */
+	movw	10(%di), %es	/* load destination segment */
 
 	/* restore %ax */
 	popw	%ax
@@ -260,7 +261,7 @@ copy_buffer:
 	/* determine the next possible destination address (presuming
 		512 byte sectors!) */
 	shlw	$5, %ax		/* shift %ax five bits to the left */
-	addw	%ax, 6(%di)	/* add the corrected value to the destination
+	addw	%ax, 10(%di)	/* add the corrected value to the destination
 				   address for next time */
 
 	/* save addressing regs */
@@ -288,7 +289,7 @@ copy_buffer:
 	popa
 
 	/* check if finished with this dataset */
-	cmpw	$0, 4(%di)
+	cmpw	$0, 8(%di)
 	jne	setup_sectors
 
 	/* update position to load from */
@@ -374,7 +375,7 @@ lastlist:
 blocklist_default_start:
 	/* this is the sector start parameter, in logical sectors from
 	   the start of the disk, sector 0 */
-	.long 2
+	.long 2, 0
 blocklist_default_len:
 	/* this is the number of sectors to read the command "install"
 	   will fill this up */

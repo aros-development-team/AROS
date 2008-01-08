@@ -1,21 +1,20 @@
 /* linux.c - boot Linux zImage or bzImage */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/loader.h>
@@ -30,25 +29,12 @@
 #include <grub/machine/memory.h>
 #include <grub/rescue.h>
 #include <grub/dl.h>
-#include <grub/machine/linux.h>
+#include <grub/cpu/linux.h>
 
 static grub_dl_t my_mod;
 
-static int big_linux;
 static grub_size_t linux_mem_size;
 static int loaded;
-
-static grub_err_t
-grub_linux_boot (void)
-{
-  if (big_linux)
-    grub_linux_boot_bzimage ();
-  else
-    grub_linux_boot_zimage ();
-
-  /* Never reach here.  */
-  return GRUB_ERR_NONE;
-}
 
 static grub_err_t
 grub_linux_unload (void)
@@ -81,9 +67,11 @@ grub_rescue_cmd_linux (int argc, char *argv[])
   if (! file)
     goto fail;
 
-  if (grub_file_size (file) > (grub_ssize_t) grub_os_area_size)
+  if ((grub_size_t) grub_file_size (file) > grub_os_area_size)
     {
-      grub_error (GRUB_ERR_OUT_OF_RANGE, "too big kernel");
+      grub_error (GRUB_ERR_OUT_OF_RANGE, "too big kernel (0x%x > 0x%x)",
+		  (grub_size_t) grub_file_size (file),
+		  grub_os_area_size);
       goto fail;
     }
 
@@ -105,14 +93,14 @@ grub_rescue_cmd_linux (int argc, char *argv[])
       goto fail;
     }
 
-  big_linux = 0;
+  grub_linux_is_bzimage = 0;
   setup_sects = lh.setup_sects;
   linux_mem_size = 0;
   
   if (lh.header == grub_cpu_to_le32 (GRUB_LINUX_MAGIC_SIGNATURE)
       && grub_le_to_cpu16 (lh.version) >= 0x0200)
     {
-      big_linux = (lh.loadflags & GRUB_LINUX_FLAG_BIG_KERNEL);
+      grub_linux_is_bzimage = (lh.loadflags & GRUB_LINUX_FLAG_BIG_KERNEL);
       lh.type_of_loader = GRUB_LINUX_BOOT_LOADER_TYPE;
       
       /* Put the real mode part at as a high location as possible.  */
@@ -157,23 +145,28 @@ grub_rescue_cmd_linux (int argc, char *argv[])
   
   grub_linux_tmp_addr = (char *) GRUB_LINUX_BZIMAGE_ADDR + prot_size;
 
-  if (! big_linux
-      && prot_size > (grub_size_t) (grub_linux_real_addr
-				    - (char *) GRUB_LINUX_ZIMAGE_ADDR))
+  if (! grub_linux_is_bzimage
+      && ((char *) GRUB_LINUX_ZIMAGE_ADDR + prot_size
+	  > (grub_size_t) grub_linux_real_addr))
     {
-      grub_error (GRUB_ERR_BAD_OS, "too big zImage, use bzImage instead");
+      grub_error (GRUB_ERR_BAD_OS, "too big zImage (0x%x > 0x%x), use bzImage instead",
+		  (char *) GRUB_LINUX_ZIMAGE_ADDR + prot_size,
+		  (grub_size_t) grub_linux_real_addr);
       goto fail;
     }
   
   if (grub_linux_real_addr + GRUB_LINUX_SETUP_MOVE_SIZE
       > (char *) grub_lower_mem)
     {
-      grub_error (GRUB_ERR_OUT_OF_RANGE, "too small lower memory");
+      grub_error (GRUB_ERR_OUT_OF_RANGE,
+		 "too small lower memory (0x%x > 0x%x)",
+		 grub_linux_real_addr + GRUB_LINUX_SETUP_MOVE_SIZE,
+		 (char *) grub_lower_mem);
       goto fail;
     }
 
   grub_printf ("   [Linux-%s, setup=0x%x, size=0x%x]\n",
-	       big_linux ? "bzImage" : "zImage", real_size, prot_size);
+	       grub_linux_is_bzimage ? "bzImage" : "zImage", real_size, prot_size);
 
   for (i = 1; i < argc; i++)
     if (grub_memcmp (argv[i], "vga=", 4) == 0)
@@ -273,7 +266,7 @@ grub_rescue_cmd_linux (int argc, char *argv[])
   if (grub_errno == GRUB_ERR_NONE)
     {
       grub_linux_prot_size = prot_size;
-      grub_loader_set (grub_linux_boot, grub_linux_unload);
+      grub_loader_set (grub_linux_boot, grub_linux_unload, 1);
       loaded = 1;
     }
 
@@ -320,11 +313,19 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
 
   /* Get the highest address available for the initrd.  */
   if (grub_le_to_cpu16 (lh->version) >= 0x0203)
-    addr_max = grub_cpu_to_le32 (lh->initrd_addr_max);
+    {
+      addr_max = grub_cpu_to_le32 (lh->initrd_addr_max);
+
+      /* XXX in reality, Linux specifies a bogus value, so
+	 it is necessary to make sure that ADDR_MAX does not exceed
+	 0x3fffffff.  */
+      if (addr_max > GRUB_LINUX_INITRD_MAX_ADDRESS)
+	addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
+    }
   else
     addr_max = GRUB_LINUX_INITRD_MAX_ADDRESS;
 
-  if (!linux_mem_size && linux_mem_size < addr_max)
+  if (linux_mem_size != 0 && linux_mem_size < addr_max)
     addr_max = linux_mem_size;
 
   /* Linux 2.3.xx has a bug in the memory range check, so avoid
@@ -368,7 +369,7 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
 }
 
 
-GRUB_MOD_INIT
+GRUB_MOD_INIT(linux)
 {
   grub_rescue_register_command ("linux",
 				grub_rescue_cmd_linux,
@@ -379,7 +380,7 @@ GRUB_MOD_INIT
   my_mod = mod;
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(linux)
 {
   grub_rescue_unregister_command ("linux");
   grub_rescue_unregister_command ("initrd");

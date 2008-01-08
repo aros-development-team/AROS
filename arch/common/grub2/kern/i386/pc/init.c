@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2003, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/kernel.h>
@@ -22,7 +21,6 @@
 #include <grub/machine/init.h>
 #include <grub/machine/memory.h>
 #include <grub/machine/console.h>
-#include <grub/machine/biosdisk.h>
 #include <grub/machine/kernel.h>
 #include <grub/types.h>
 #include <grub/err.h>
@@ -31,6 +29,7 @@
 #include <grub/loader.h>
 #include <grub/env.h>
 #include <grub/cache.h>
+#include <grub/time.h>
 
 struct mem_region
 {
@@ -47,6 +46,12 @@ grub_addr_t grub_os_area_addr;
 grub_size_t grub_os_area_size;
 grub_size_t grub_lower_mem, grub_upper_mem;
 
+void
+grub_millisleep (grub_uint32_t ms)
+{
+  grub_millisleep_generic (ms);
+}
+
 void 
 grub_arch_sync_caches (void *address __attribute__ ((unused)),
 		       grub_size_t len __attribute__ ((unused)))
@@ -59,19 +64,22 @@ make_install_device (void)
   /* XXX: This should be enough.  */
   char dev[100];
 
-  grub_sprintf (dev, "(%cd%u",
-		(grub_boot_drive & 0x80) ? 'h' : 'f',
-		grub_boot_drive & 0x7f);
-  
-  if (grub_install_dos_part >= 0)
-    grub_sprintf (dev + grub_strlen (dev), ",%u", grub_install_dos_part);
-
-  if (grub_install_bsd_part >= 0)
-    grub_sprintf (dev + grub_strlen (dev), ",%c", grub_install_bsd_part + 'a');
-
-  grub_sprintf (dev + grub_strlen (dev), ")%s", grub_prefix);
-  grub_strcpy (grub_prefix, dev);
-  
+  if (grub_install_dos_part != -2)
+    {
+      grub_sprintf (dev, "(%cd%u",
+		    (grub_boot_drive & 0x80) ? 'h' : 'f',
+		    grub_boot_drive & 0x7f);
+      
+      if (grub_install_dos_part >= 0)
+	grub_sprintf (dev + grub_strlen (dev), ",%u", grub_install_dos_part + 1);
+      
+      if (grub_install_bsd_part >= 0)
+	grub_sprintf (dev + grub_strlen (dev), ",%c", grub_install_bsd_part + 'a');
+      
+      grub_sprintf (dev + grub_strlen (dev), ")%s", grub_prefix);
+      grub_strcpy (grub_prefix, dev);
+    }
+      
   return grub_prefix;
 }
 
@@ -118,6 +126,7 @@ compact_mem_regions (void)
 	grub_memmove (mem_regions + j, mem_regions + j + 1,
 		      (num_regions - j - 1) * sizeof (struct mem_region));
 	i--;
+        num_regions--;
       }
 }
 
@@ -190,13 +199,8 @@ grub_machine_init (void)
 
       if (eisa_mmap)
 	{
-	  if ((eisa_mmap & 0xFFFF) == 0x3C00)
-	    add_mem_region (0x100000, (eisa_mmap << 16) + 0x100000 * 15);
-	  else
-	    {
-	      add_mem_region (0x100000, (eisa_mmap & 0xFFFF) << 10);
-	      add_mem_region (0x1000000, eisa_mmap << 16);
-	    }
+	  add_mem_region (0x100000, (eisa_mmap & 0xFFFF) << 10);
+	  add_mem_region (0x1000000, eisa_mmap & ~0xFFFF);
 	}
       else
 	add_mem_region (0x100000, grub_get_memsize (1) << 10);
@@ -223,11 +227,11 @@ grub_machine_init (void)
   
   if (! grub_os_area_addr)
     grub_fatal ("no upper memory");
-  
-  /* The memory system was initialized, thus register built-in devices.  */
-  grub_biosdisk_init ();
+}
 
-
+void
+grub_machine_set_prefix (void)
+{
   /* Initialize the prefix.  */
   grub_env_set ("prefix", make_install_device ());
 }
@@ -235,7 +239,6 @@ grub_machine_init (void)
 void
 grub_machine_fini (void)
 {
-  grub_biosdisk_fini ();
   grub_console_fini ();
 }
 

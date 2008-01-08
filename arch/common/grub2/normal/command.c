@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/normal.h>
@@ -24,6 +23,8 @@
 #include <grub/term.h>
 #include <grub/env.h>
 #include <grub/dl.h>
+#include <grub/parser.h>
+#include <grub/script.h>
 
 static grub_command_t grub_command_list;
 
@@ -150,6 +151,7 @@ grub_command_find (char *cmdline)
 		{
 		  grub_dl_ref (mod);
 		  count++;
+		  grub_free (module_name);
   		  goto again;
 		}
 
@@ -192,71 +194,33 @@ grub_command_execute (char *cmdline, int interactive)
       return grub_cmdline_get (">", *s, GRUB_MAX_CMDLINE, 0, 1);
     }
 
-  grub_command_t cmd;
   grub_err_t ret = 0;
   char *pager;
-  int num;
-  char **args;
-  struct grub_arg_list *state;
-  struct grub_arg_option *parser;
-  int maxargs = 0;
-  char **arglist;
-  int numargs;
-
-  if (grub_split_cmdline (cmdline, cmdline_get, &num, &args))
-    return 0;
-  
-  /* In case of an assignment set the environment accordingly instead
-     of calling a function.  */
-  if (num == 0 && grub_strchr (args[0], '='))
-    {
-      char *val;
-
-      if (! interactive)
-	grub_printf ("%s\n", cmdline);
-      
-      val = grub_strchr (args[0], '=');
-      val[0] = 0;
-      grub_env_set (args[0], val + 1);
-      val[0] = '=';
-      return 0;
-    }
-  
-  cmd = grub_command_find (args[0]);
-  if (! cmd)
-    return -1;
-
-  if (! (cmd->flags & GRUB_COMMAND_FLAG_NO_ECHO) && ! interactive)
-    grub_printf ("%s\n", cmdline);
+  struct grub_script *parsed_script;
   
   /* Enable the pager if the environment pager is set to 1.  */
   if (interactive)
     pager = grub_env_get ("pager");
   else
-    pager = 0;
+    pager = NULL;
   if (pager && (! grub_strcmp (pager, "1")))
     grub_set_more (1);
-  
-  parser = (struct grub_arg_option *) cmd->options;
-  while (parser && (parser++)->doc)
-    maxargs++;
 
-  state = grub_malloc (sizeof (struct grub_arg_list) * maxargs);
-  grub_memset (state, 0, sizeof (struct grub_arg_list) * maxargs);
-  if (! (cmd->flags & GRUB_COMMAND_FLAG_NO_ARG_PARSE))
+  /* Parse the script.  */
+  parsed_script = grub_script_parse (cmdline, cmdline_get);
+
+  if (parsed_script)
     {
-      if (grub_arg_parse (cmd, num, &args[1], state, &arglist, &numargs))
-	ret = (cmd->func) (state, numargs, arglist);
+      /* Execute the command(s).  */
+      grub_script_execute (parsed_script);
+
+      /* The parsed script was executed, throw it away.  */
+      grub_script_free (parsed_script);
     }
-  else
-    ret = (cmd->func) (state, num, &args[1]);
-  
-  grub_free (state);
 
   if (pager && (! grub_strcmp (pager, "1")))
     grub_set_more (0);
-  
-  grub_free (args);
+
   return ret;
 }
 
@@ -315,6 +279,18 @@ unset_command (struct grub_arg_list *state __attribute__ ((unused)),
 		       "no environment variable specified");
 
   grub_env_unset (args[0]);
+  return 0;
+}
+
+static grub_err_t
+export_command (struct grub_arg_list *state __attribute__ ((unused)),
+		int argc, char **args)
+{
+  if (argc < 1)
+    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+		       "no environment variable specified");
+
+  grub_env_export (args[0]);
   return 0;
 }
 
@@ -392,9 +368,6 @@ lsmod_command (struct grub_arg_list *state __attribute__ ((unused)),
 void
 grub_command_init (void)
 {
-  /* This is a special command, because this never be called actually.  */
-  grub_register_command ("title", 0, GRUB_COMMAND_FLAG_TITLE, 0, 0, 0);
-
   grub_register_command ("rescue", rescue_command, GRUB_COMMAND_FLAG_BOTH,
 			 "rescue", "Go back to the rescue mode.", 0);
 
@@ -404,6 +377,9 @@ grub_command_init (void)
 
   grub_register_command ("unset", unset_command, GRUB_COMMAND_FLAG_BOTH,
 			 "unset ENVVAR", "Remove an environment variable.", 0);
+
+  grub_register_command ("export", export_command, GRUB_COMMAND_FLAG_BOTH,
+			 "export ENVVAR", "Export a variable.", 0);
 
   grub_register_command ("insmod", insmod_command, GRUB_COMMAND_FLAG_BOTH,
 			 "insmod MODULE",

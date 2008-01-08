@@ -1,21 +1,20 @@
 /* misc.c - definitions of misc functions */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/misc.h>
@@ -24,6 +23,7 @@
 #include <stdarg.h>
 #include <grub/term.h>
 #include <grub/env.h>
+#include <grub/time.h>
 
 void *
 grub_memmove (void *dest, const void *src, grub_size_t n)
@@ -129,16 +129,18 @@ grub_printf (const char *fmt, ...)
 }  
 
 void
-grub_real_dprintf(const char *file, const int line, const char *condition,
-                  const char *fmt, ...)
+grub_real_dprintf (const char *file, const int line, const char *condition,
+		   const char *fmt, ...)
 {
   va_list args;
   const char *debug = grub_env_get ("debug");
+  
   if (! debug)
     return;
+  
   if (grub_strword (debug, "all") || grub_strword (debug, condition))
     {
-      grub_printf ("%s,%d : ", file, line);
+      grub_printf ("%s:%d: ", file, line);
       va_start (args, fmt);
       grub_vprintf (fmt, args);
       va_end (args);
@@ -172,7 +174,7 @@ grub_memcmp (const void *s1, const void *s2, grub_size_t n)
 
   return 0;
 }
-void *memcmp (const void *s1, const void *s2, grub_size_t n)
+int memcmp (const void *s1, const void *s2, grub_size_t n)
   __attribute__ ((alias ("grub_memcmp")));
 
 int
@@ -252,6 +254,52 @@ grub_strrchr (const char *s, int c)
     }
 
   return p;
+}
+
+/* Copied from gnulib.
+   Written by Bruno Haible <bruno@clisp.org>, 2005. */
+char *
+grub_strstr (const char *haystack, const char *needle)
+{
+  /* Be careful not to look at the entire extent of haystack or needle
+     until needed.  This is useful because of these two cases:
+       - haystack may be very long, and a match of needle found early,
+       - needle may be very long, and not even a short initial segment of
+       needle may be found in haystack.  */
+  if (*needle != '\0')
+    {
+      /* Speed up the following searches of needle by caching its first
+	 character.  */
+      char b = *needle++;
+      
+      for (;; haystack++)
+	{
+	  if (*haystack == '\0')
+	    /* No match.  */
+	    return NULL;
+	  if (*haystack == b)
+	    /* The first character matches.  */
+	    {
+	      const char *rhaystack = haystack + 1;
+	      const char *rneedle = needle;
+
+	      for (;; rhaystack++, rneedle++)
+		{
+		  if (*rneedle == '\0')
+		    /* Found a match.  */
+		    return (char *) haystack;
+		  if (*rhaystack == '\0')
+		    /* No match.  */
+		    return NULL;
+		  if (*rhaystack != *rneedle)
+		    /* Nothing in this round.  */
+		    break;
+		}
+	    }
+	}
+    }
+  else
+    return (char *) haystack;
 }
 
 int
@@ -336,10 +384,26 @@ grub_tolower (int c)
   return c;
 }
 
+
 unsigned long
 grub_strtoul (const char *str, char **end, int base)
 {
-  unsigned long num = 0;
+  unsigned long long num;
+
+  num = grub_strtoull (str, end, base);
+  if (num > ~0UL)
+    {
+      grub_error (GRUB_ERR_OUT_OF_RANGE, "overflow is detected");
+      return ~0UL;
+    }
+
+  return (unsigned long) num;
+}
+
+unsigned long long
+grub_strtoull (const char *str, char **end, int base)
+{
+  unsigned long long num = 0;
   int found = 0;
   
   /* Skip white spaces.  */
@@ -348,7 +412,7 @@ grub_strtoul (const char *str, char **end, int base)
   
   /* Guess the base, if not specified. The prefix `0x' means 16, and
      the prefix `0' means 8.  */
-  if (str[0] == '0')
+  if (base == 0 && str[0] == '0')
     {
       if (str[1] == 'x')
 	{
@@ -378,11 +442,12 @@ grub_strtoul (const char *str, char **end, int base)
 	}
 
       found = 1;
-      
-      if (num > (~0UL - digit) / base)
+
+      /* NUM * BASE + DIGIT > ~0ULL */
+      if (num > grub_divmod64 (~0ULL - digit, base, 0))
 	{
 	  grub_error (GRUB_ERR_OUT_OF_RANGE, "overflow is detected");
-	  return 0;
+	  return ~0ULL;
 	}
 
       num = num * base + digit;
@@ -499,6 +564,90 @@ grub_itoa (char *str, int c, unsigned n)
   return p;
 }
 
+/* Divide N by D, return the quotient, and store the remainder in *R.  */
+grub_uint64_t
+grub_divmod64 (grub_uint64_t n, grub_uint32_t d, grub_uint32_t *r)
+{
+  /* This algorithm is typically implemented by hardware. The idea
+     is to get the highest bit in N, 64 times, by keeping
+     upper(N * 2^i) = upper((Q * 10 + M) * 2^i), where upper
+     represents the high 64 bits in 128-bits space.  */
+  unsigned bits = 64;
+  unsigned long long q = 0;
+  unsigned m = 0;
+
+  /* Skip the slow computation if 32-bit arithmetic is possible.  */
+  if (n < 0xffffffff)
+    {
+      if (r)
+	*r = ((grub_uint32_t) n) % d;
+
+      return ((grub_uint32_t) n) / d;
+    }
+  
+  while (bits--)
+    {
+      m <<= 1;
+      
+      if (n & (1ULL << 63))
+	m |= 1;
+      
+      q <<= 1;
+      n <<= 1;
+      
+      if (m >= d)
+	{
+	  q |= 1;
+	  m -= d;
+	}
+    }
+
+  if (r)
+    *r = m;
+  
+  return q;
+}
+
+/* Convert a long long value to a string. This function avoids 64-bit
+   modular arithmetic or divisions.  */
+static char *
+grub_lltoa (char *str, int c, unsigned long long n)
+{
+  unsigned base = (c == 'x') ? 16 : 10;
+  char *p;
+  
+  if ((long long) n < 0 && c == 'd')
+    {
+      n = (unsigned long long) (-((long long) n));
+      *str++ = '-';
+    }
+
+  p = str;
+
+  if (base == 16)
+    do
+      {
+	unsigned d = (unsigned) (n & 0xf);
+	*p++ = (d > 9) ? d + 'a' - 10 : d + '0';
+      }
+    while (n >>= 4);
+  else
+    /* BASE == 10 */
+    do
+      {
+	unsigned m;
+	
+	n = grub_divmod64 (n, 10, &m);
+	*p++ = m + '0';
+      }
+    while (n);
+  
+  *p = 0;
+
+  grub_reverse (str);
+  return p;
+}
+
 static char *
 grub_ftoa (char *str, double f, int round)
 {
@@ -555,7 +704,7 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 	write_char (c);
       else
 	{
-	  char tmp[16];
+	  char tmp[32];
 	  char *p;
 	  unsigned int format1 = 0;
 	  unsigned int format2 = 3;
@@ -563,6 +712,7 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 	  int rightfill = 0;
 	  int n;
 	  int longfmt = 0;
+	  int longlongfmt = 0;
 
 	  if (*fmt && *fmt =='-')
 	    {
@@ -577,8 +727,9 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 
 	  if (p > fmt)
 	    {
-	      char s[p - fmt];
+	      char s[p - fmt + 1];
 	      grub_strncpy (s, fmt, p - fmt);
+	      s[p - fmt] = 0;
 	      if (s[0] == '0')
 		zerofill = '0';
 	      format1 = grub_strtoul (s, 0, 10);
@@ -605,6 +756,11 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 	    {
 	      longfmt = 1;
 	      c = *fmt++;
+	      if (c == 'l')
+		{
+		  longlongfmt = 1;
+		  c = *fmt++;
+		}
 	    }
 
 	  switch (c)
@@ -612,16 +768,27 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 	    case 'p':
 	      write_str ("0x");
 	      c = 'x';
+	      longlongfmt = (sizeof (void *) == sizeof (long long));
 	      /* fall through */
 	    case 'x':
 	    case 'u':
 	    case 'd':
-	      if (longfmt)
-		n = va_arg (args, long);
+	      if (longlongfmt)
+		{
+		  long long ll;
+
+		  ll = va_arg (args, long long);
+		  grub_lltoa (tmp, c, ll);
+		}
 	      else
-		n = va_arg (args, int);
-	      grub_itoa (tmp, c, n);
-	      if (!rightfill && grub_strlen (tmp) < format1)
+		{
+		  if (longfmt)
+		    n = va_arg (args, long);
+		  else
+		    n = va_arg (args, int);
+		  grub_itoa (tmp, c, n);
+		}
+	      if (! rightfill && grub_strlen (tmp) < format1)
 		write_fill (zerofill, format1 - grub_strlen (tmp));
 	      write_str (tmp);
 	      if (rightfill && grub_strlen (tmp) < format1)
@@ -794,8 +961,8 @@ grub_utf16_to_utf8 (grub_uint8_t *dest, grub_uint16_t *src,
 	    }
 	  else
 	    {
-	      *dest++ = (code >> 16) | 0xE0;
-	      *dest++ = ((code >> 12) & 0x3F) | 0x80;
+	      *dest++ = (code >> 12) | 0xE0;
+	      *dest++ = ((code >> 6) & 0x3F) | 0x80;
 	      *dest++ = (code & 0x3F) | 0x80;
 	    }
 	}
@@ -875,224 +1042,28 @@ grub_utf8_to_ucs4 (grub_uint32_t *dest, const grub_uint8_t *src,
   return p - dest;
 }
 
-grub_err_t
-grub_split_cmdline (const char *cmdline, grub_err_t (*getline) (char **),
-		    int *argc, char ***argv)
+void
+grub_millisleep_generic (grub_uint32_t ms)
 {
-  /* XXX: Fixed size buffer, perhaps this buffer should be dynamically
-     allocated.  */
-  char buffer[1024];
-  char *bp = buffer;
-  char *rd = (char *) cmdline;
-  char unputbuf;
-  int unput = 0;
-  char *args;
-  int i;
+  grub_uint32_t end_at;
 
-  auto char getchar (void);
-  auto void unputc (char c);
-  auto void getenvvar (void);
-  auto int getarg (void);
+  end_at = grub_get_rtc () + grub_div_roundup (ms * GRUB_TICKS_PER_SECOND, 1000);
 
-  /* Get one character from the commandline.  If the caller reads
-     beyond the end of the string a new line will be read.  This
-     function will not chech for errors, the caller has to check for
-     grub_errno.  */
-  char getchar (void)
-    {
-      int c;
-      if (unput)
-	{
-	  unput = 0;
-	  return unputbuf;
-	}
-
-      if (! rd)
-	{
-	  getline (&rd);
-	  /* Error is ignored here, the caller will check for this
-	     when it reads beyond the EOL.  */
-	  c = *(rd)++;
-	  return c;
-	}
-
-      c = *(rd)++;
-      if (! c)
-	{
-	  rd = 0;
-	  return '\n';
-	}
-
-      return c;
-    }
-
-  void unputc (char c)
-    {
-      unputbuf = c;
-      unput = 1;
-    }
-
-  /* Read a variable name from the commandline and insert its content
-     into the buffer.  */
-  void getenvvar (void)
-    {
-      char varname[100];
-      char *p = varname;
-      char *val;
-      char c;
-
-      c = getchar ();
-      if (c == '{')
-	while ((c = getchar ()) != '}')
-	  *(p++) = c;
-      else
-	{
-	  /* XXX: An env. variable can have characters and digits in
-	     its name, are more characters allowed here?  */
-	  while (c && (grub_isalpha (c) || grub_isdigit (c)))
-	    {
-	      *(p++) = c;
-	      c = getchar ();
-	    }
-	  unputc (c);
-	}
-      *p = '\0';
-
-      /* The variable does not exist.  */
-      val = grub_env_get (varname);
-      if (! val)
-	return;
-
-      /* Copy the contents of the variable into the buffer.  */
-      for (p = val; *p; p++)
-	*(bp++) = *p;
-    }
-
-  /* Read one argument.  Return 1 if no variables can be read anymore,
-     otherwise return 0.  If there is an error, return 1, the caller
-     has to check grub_errno.  */
-  int getarg (void)
-    {
-      char c;
-
-      /* Skip all whitespaces before an argument.  */
-      do {
-	c = getchar ();
-      } while (c == ' ' || c == '\t');
-
-      do {
-	switch (c)
-	  {
-	  case '"':
-	    /* Double quote.  */
-	    while ((c = getchar ()))
-	      {
-		if (grub_errno)
-		  return 1;
-		/* Read in an escaped character.  */
-		if (c == '\\')
-		  {
-		    c = getchar ();
-		    *(bp++) = c;
-		    continue;
-		  }
-		else if (c == '"')
-		  break;
-		/* Read a variable.  */
-		if (c == '$')
-		  {
-		    getenvvar ();
-		    continue;
-		  }
-		*(bp++) = c;
-	      }
-	    break;
-
-	  case '\'':
-	    /* Single quote.  */
-	    while ((c = getchar ()) != '\'')
-	      {
-		if (grub_errno)
-		  return 1;
-
-		*(bp++) = c;
-	      }
-	    break;
-
-	  case '\n':
-	    /* This was not a argument afterall.  */
-	    return 1;
-
-	  default:
-	    /* A normal option.  */
-	    while (c && (grub_isalpha (c)
-			 || grub_isdigit (c) || grub_isgraph (c)))
-	      {
-		/* Read in an escaped character.  */
-		if (c == '\\')
-		  {
-		    c = getchar ();
-		    *(bp++) = c;
-		    c = getchar ();
-		    continue;
-		  }
-		/* Read a variable.  */
-		if (c == '$')
-		  {
-		    getenvvar ();
-		    c = getchar ();
-		    continue;
-		  }
-		*(bp++) = c;
-		c = getchar ();
-	      }
-	    unputc (c);
-
-	    break;
-	  }
-      } while (! grub_isspace (c) && c != '\'' && c != '"');
-
-      return 0;
-    }
-
-  /* Read in all arguments and count them.  */
-  *argc = 0;
-  while (1)
-    {
-      if (getarg ())
-	break;
-      *(bp++) = '\0';
-      (*argc)++;
-    }
-
-  /* Check if there were no errors.  */
-  if (grub_errno)
-    return grub_errno;
-
-  /* Reserve memory for the return values.  */
-  args = grub_malloc (bp - buffer);
-  if (! args)
-    return grub_errno;
-  grub_memcpy (args, buffer, bp - buffer);
-  
-  *argv = grub_malloc (sizeof (char *) * (*argc + 1));
-  if (! *argv)
-    {
-      grub_free (args);
-      return grub_errno;
-    }
-
-  /* The arguments are separated with 0's, setup argv so it points to
-     the right values.  */
-  bp = args;
-  for (i = 0; i < *argc; i++)
-    {
-      (*argv)[i] = bp;
-      while (*bp)
-	bp++;
-      bp++;
-    }
-
-  (*argc)--;
-  return 0;
+  while (grub_get_rtc () < end_at)
+    grub_cpu_idle ();
 }
+
+/* Abort GRUB. This function does not return.  */
+void
+grub_abort (void)
+{
+  if (grub_term_get_current ())
+    {
+      grub_printf ("\nAborted. Press any key to exit.");
+      grub_getkey ();
+    }
+
+  grub_exit ();
+}
+/* GCC emits references to abort().  */
+void abort (void) __attribute__ ((alias ("grub_abort")));

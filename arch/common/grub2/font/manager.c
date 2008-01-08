@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/file.h>
@@ -121,13 +120,13 @@ remove_font (struct font *font)
 }
 
 /* Return the offset of the glyph corresponding to the codepoint CODE
-   in the font FONT. If no found, return zero.  */
+   in the font FONT.  If no found, return zero.  */
 static grub_uint32_t
 find_glyph (const struct font *font, grub_uint32_t code)
 {
   grub_uint32_t start = 0;
   grub_uint32_t end = font->num - 1;
-  struct entry *table = font->table;
+  const struct entry *table = font->table;
   
   /* This shouldn't happen.  */
   if (font->num == 0)
@@ -151,26 +150,27 @@ find_glyph (const struct font *font, grub_uint32_t code)
 
 /* Set the glyph to something stupid.  */
 static void
-fill_with_default_glyph (unsigned char bitmap[32], unsigned *width)
+fill_with_default_glyph (grub_font_glyph_t glyph)
 {
-  if (bitmap)
-    {
-      unsigned i;
+  unsigned i;
 
-      for (i = 0; i < 16; i++)
-	bitmap[i] = (i & 1) ? 0x55 : 0xaa;
-    }
-      
-  *width = 1;
+  for (i = 0; i < 16; i++)
+    glyph->bitmap[i] = (i & 1) ? 0x55 : 0xaa;
+
+  glyph->char_width = 1;
+  glyph->width = glyph->char_width * 8;
+  glyph->height = 16;
+  glyph->baseline = (16 * 3) / 4;
 }
 
-/* Get a glyph corresponding to the codepoint CODE. Always fill BITMAP
-   and WIDTH with something, even if no glyph is found.  */
+/* Get a glyph corresponding to the codepoint CODE.  Always fill glyph
+   information with something, even if no glyph is found.  */
 int
 grub_font_get_glyph (grub_uint32_t code,
-		     unsigned char bitmap[32], unsigned *width)
+		     grub_font_glyph_t glyph)
 {
   struct font *font;
+  grub_uint8_t bitmap[32];
 
   /* FIXME: It is necessary to cache glyphs!  */
   
@@ -183,12 +183,18 @@ grub_font_get_glyph (grub_uint32_t code,
       if (offset)
 	{
 	  grub_uint32_t w;
+	  int len;
+
+          /* Make sure we can find glyphs for error messages.  Push active
+             error message to error stack and reset error message.  */
+          grub_error_push ();
 	  
 	  grub_file_seek (font->file, offset);
-	  if (grub_file_read (font->file, (char *) &w, 4) != 4)
+	  if ((len = grub_file_read (font->file, (char *) &w, sizeof (w)))
+	      != sizeof (w))
 	    {
-	      remove_font (font);
-	      goto restart;
+              remove_font (font);
+              goto restart;
 	    }
 
 	  w = grub_le_to_cpu32 (w);
@@ -199,21 +205,30 @@ grub_font_get_glyph (grub_uint32_t code,
 	      goto restart;
 	    }
 
-	  if (bitmap
-	      && (grub_file_read (font->file, bitmap, w * 16)
-		  != (grub_ssize_t) w * 16))
+	  if (grub_file_read (font->file, (char *) bitmap, w * 16)
+	      != (grub_ssize_t) w * 16)
 	    {
 	      remove_font (font);
 	      goto restart;
 	    }
 
-	  *width = w;
+          /* Fill glyph with information.  */	    
+          grub_memcpy (glyph->bitmap, bitmap, w * 16);
+          
+	  glyph->char_width = w;
+	  glyph->width = glyph->char_width * 8;
+	  glyph->height = 16;
+	  glyph->baseline = (16 * 3) / 4;
+	  
+	  /* Restore old error message.  */
+          grub_error_pop ();
+          
 	  return 1;
 	}
     }
 
-  /* Uggh... No font was found.  */
-  fill_with_default_glyph (bitmap, width);
+  /* Uggh...  No font was found.  */
+  fill_with_default_glyph (glyph);
   return 0;
 }
 
@@ -232,15 +247,14 @@ font_command (struct grub_arg_list *state __attribute__ ((unused)),
   return 0;
 }
 
-GRUB_MOD_INIT
+GRUB_MOD_INIT(font_manager)
 {
-  (void) mod; /* Stop warning.  */
   grub_register_command ("font", font_command, GRUB_COMMAND_FLAG_BOTH,
 			 "font FILE...",
 			 "Specify one or more font files to display.", 0);
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(font_manager)
 {
   grub_unregister_command ("font");
 }

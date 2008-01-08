@@ -1,27 +1,27 @@
 /* of.c - Access the Open Firmware client interface.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/ieee1275/ieee1275.h>
 
-#define IEEE1275_PHANDLE_ROOT		((grub_ieee1275_phandle_t) 0)
-#define IEEE1275_PHANDLE_INVALID	((grub_ieee1275_phandle_t) -1)
+#define IEEE1275_PHANDLE_INVALID  ((grub_ieee1275_phandle_t) -1)
+#define IEEE1275_IHANDLE_INVALID  ((grub_ieee1275_ihandle_t) 0)
+#define IEEE1275_CELL_INVALID     ((grub_ieee1275_cell_t) -1)
 
 
 
@@ -52,6 +52,8 @@ grub_ieee1275_finddevice (char *name, grub_ieee1275_phandle_t *phandlep)
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *phandlep = args.phandle;
+  if (args.phandle == IEEE1275_PHANDLE_INVALID)
+    return -1;
   return 0;
 }
 
@@ -81,14 +83,14 @@ grub_ieee1275_get_property (grub_ieee1275_phandle_t phandle,
     return -1;
   if (actual)
     *actual = (grub_ssize_t) args.size;
-  if (args.size == (grub_ieee1275_cell_t) -1)
+  if (args.size == IEEE1275_CELL_INVALID)
     return -1;
   return 0;
 }
 
 int
 grub_ieee1275_next_property (grub_ieee1275_phandle_t phandle, char *prev_prop,
-			     char *prop, grub_ieee1275_cell_t *flags)
+			     char *prop)
 {
   struct get_property_args
   {
@@ -108,9 +110,7 @@ grub_ieee1275_next_property (grub_ieee1275_phandle_t phandle, char *prev_prop,
 
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
-  if (flags)
-    *flags = args.flags;
-  return 0;
+  return (int) args.flags;
 }
 
 int
@@ -134,6 +134,8 @@ grub_ieee1275_get_property_length (grub_ieee1275_phandle_t phandle,
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *length = args.length;
+  if (args.length == IEEE1275_CELL_INVALID)
+    return -1;
   return 0;
 }
 
@@ -155,6 +157,8 @@ grub_ieee1275_instance_to_package (grub_ieee1275_ihandle_t ihandle,
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *phandlep = args.phandle;
+  if (args.phandle == IEEE1275_PHANDLE_INVALID)
+    return -1;
   return 0;
 }
 
@@ -182,6 +186,8 @@ grub_ieee1275_package_to_path (grub_ieee1275_phandle_t phandle,
     return -1;
   if (actual)
     *actual = args.actual;
+  if (args.actual == IEEE1275_CELL_INVALID)
+    return -1;
   return 0;
 }
 
@@ -190,7 +196,7 @@ grub_ieee1275_instance_to_path (grub_ieee1275_ihandle_t ihandle,
 				char *path, grub_size_t len,
 				grub_ssize_t *actual)
 {
-  struct instance_to_package_args
+  struct instance_to_path_args
   {
     struct grub_ieee1275_common_hdr common;
     grub_ieee1275_ihandle_t ihandle;
@@ -209,6 +215,8 @@ grub_ieee1275_instance_to_path (grub_ieee1275_ihandle_t ihandle,
     return -1;
   if (actual)
     *actual = args.actual;
+  if (args.actual == IEEE1275_CELL_INVALID)
+    return -1;
   return 0;
 }
 
@@ -309,6 +317,8 @@ grub_ieee1275_peer (grub_ieee1275_phandle_t node,
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *result = args.result;
+  if (args.result == 0)
+    return -1;
   return 0;
 }
 
@@ -331,6 +341,8 @@ grub_ieee1275_child (grub_ieee1275_phandle_t node,
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *result = args.result;
+  if (args.result == 0)
+    return -1;
   return 0;
 }
 
@@ -425,6 +437,8 @@ grub_ieee1275_open (const char *path, grub_ieee1275_ihandle_t *result)
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *result = args.result;
+  if (args.result == IEEE1275_IHANDLE_INVALID)
+    return -1;
   return 0;
 }
 
@@ -468,13 +482,10 @@ grub_ieee1275_claim (grub_addr_t addr, grub_size_t size, unsigned int align,
 
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
-
   if (result)
     *result = args.base;
-
-  if (args.base == (grub_ieee1275_cell_t)-1)
+  if (args.base == IEEE1275_CELL_INVALID)
     return -1;
-
   return 0;
 }
 
@@ -495,7 +506,6 @@ grub_ieee1275_release (grub_addr_t addr, grub_size_t size)
   
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
-  
   return 0;
 }
 
@@ -524,6 +534,8 @@ grub_ieee1275_set_property (grub_ieee1275_phandle_t phandle,
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
   *actual = args.actual;
+  if ((args.actual == IEEE1275_CELL_INVALID) || (args.actual != args.size))
+    return -1;
   return 0;
 }
 
@@ -540,7 +552,7 @@ grub_ieee1275_set_color (grub_ieee1275_ihandle_t ihandle,
     grub_ieee1275_cell_t b;
     grub_ieee1275_cell_t g;
     grub_ieee1275_cell_t r;
-    grub_ieee1275_cell_t result;
+    grub_ieee1275_cell_t catch_result;
   }
   args;
 
@@ -554,8 +566,7 @@ grub_ieee1275_set_color (grub_ieee1275_ihandle_t ihandle,
 
   if (IEEE1275_CALL_ENTRY_FN (&args) == -1)
     return -1;
-  
-  return 0;
+  return args.catch_result;
 }
 
 int

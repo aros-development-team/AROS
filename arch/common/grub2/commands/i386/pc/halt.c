@@ -1,21 +1,20 @@
 /* halt.c - command to halt the computer.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/normal.h>
@@ -44,22 +43,7 @@ grub_cmd_halt (struct grub_arg_list *state,
 
 
 
-#ifdef GRUB_UTIL
-void
-grub_halt_init (void)
-{
-  grub_register_command ("halt", grub_cmd_halt, GRUB_COMMAND_FLAG_BOTH,
-			 "halt [OPTIONS...]",
-			 "Halt the system, if possible using APM", options);
-}
-
-void
-grub_halt_fini (void)
-{
-  grub_unregister_command ("halt");
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
+GRUB_MOD_INIT(halt)
 {
   (void)mod;			/* To stop warning. */
   grub_register_command ("halt", grub_cmd_halt, GRUB_COMMAND_FLAG_BOTH,
@@ -67,8 +51,7 @@ GRUB_MOD_INIT
 			 "Halt the system, if possible using APM", options);
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(halt)
 {
   grub_unregister_command ("halt");
 }
-#endif /* ! GRUB_UTIL */

@@ -1,0 +1,230 @@
+#! /bin/sh
+
+# Install GRUB on your drive.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+# This script uses `ofpathname', which is downloadable from
+# http://ppc64-utils.ozlabs.org .
+
+# Initialize some variables.
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+sbindir=@sbindir@
+bindir=@bindir@
+libdir=@libdir@
+PACKAGE_NAME=@PACKAGE_NAME@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+PACKAGE_VERSION=@PACKAGE_VERSION@
+target_cpu=@target_cpu@
+platform=@platform@
+pkglibdir=${libdir}/`echo ${PACKAGE_TARNAME}/${target_cpu}-${platform} | sed ${transform}`
+
+grub_mkimage=${bindir}/`echo grub-mkimage | sed ${transform}`
+grub_mkdevicemap=${sbindir}/`echo grub-mkdevicemap | sed ${transform}`
+grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
+rootdir=
+grub_prefix=`echo /boot/grub | sed ${transform}`
+modules=
+
+install_device=
+debug=no
+update_nvram=yes
+
+ofpathname=/usr/sbin/ofpathname
+nvsetenv=/sbin/nvsetenv
+
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: grub-install [OPTION] [install_device]
+Install GRUB on your drive.
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  --modules=MODULES       pre-load specified modules MODULES
+  --root-directory=DIR    install GRUB images under the directory DIR
+                          instead of the root directory
+  --grub-mkdevicemap=FILE use FILE as grub-mkdevicemap
+  --grub-mkimage=FILE     use FILE as grub-mkimage
+  --grub-probe=FILE       use FILE as grub-probe
+  --no-nvram              don't update the boot-device NVRAM variable
+
+grub-install copies GRUB images into the DIR/boot directory specified by
+--root-directory, and uses nvsetenv to set the Open Firmware boot-device
+variable.
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+# Check the arguments.
+for option in "$@"; do
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "grub-install (GNU GRUB ${PACKAGE_VERSION})"
+	exit 0 ;;
+    --modules=*)
+	modules=`echo "$option" | sed 's/--modules=//'` ;;
+    --root-directory=*)
+	rootdir=`echo "$option" | sed 's/--root-directory=//'` ;;
+    --grub-mkdevicemap=*)
+	grub_mkdevicemap=`echo "$option" | sed 's/--grub-mkdevicemap=//'` ;;
+    --grub-mkimage=*)
+	grub_mkimage=`echo "$option" | sed 's/--grub-mkimage=//'` ;;
+    --grub-probe=*)
+	grub_probe=`echo "$option" | sed 's/--grub-probe=//'` ;;
+    --no-nvram)
+	update_nvram=no ;;
+    # This is an undocumented feature...
+    --debug)
+	debug=yes ;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    *)
+	if test "x$install_device" != x; then
+	    echo "More than one install_devices?" 1>&2
+	    usage
+	    exit 1
+	fi
+	install_device="${option}" ;;
+    esac
+done
+
+# If the debugging feature is enabled, print commands.
+if test $debug = yes; then
+    set -x
+fi
+
+# Initialize these directories here, since ROOTDIR was initialized.
+bootdir=${rootdir}/boot
+grubdir=${bootdir}/`echo grub | sed ${transform}`
+device_map=${grubdir}/device.map
+
+set $grub_mkimage dummy
+if test -f "$1"; then
+    :
+else
+    echo "$1: Not found." 1>&2
+    exit 1
+fi
+
+# Find the partition at the right mount point.
+install_device=`$grub_mkdevicemap --device-map=/dev/stdout | $grub_probe --target=device --device-map=/dev/stdin ${grubdir}`
+
+if test "x$install_device" = "x`$grub_mkdevicemap --device-map=/dev/stdout | $grub_probe --target=device --device-map=/dev/stdin ${bootdir}`"; then
+    echo "$grubdir must be a mount point."
+    exit 1
+fi
+# XXX warn on firmware-unreadable filesystems?
+
+# Create the GRUB directory if it is not present.
+test -d "$bootdir" || mkdir "$bootdir" || exit 1
+test -d "$grubdir" || mkdir "$grubdir" || exit 1
+
+# Create the device map file if it is not present.
+if test -f "$device_map"; then
+    :
+else
+    # Create a safe temporary file.
+    test -n "$mklog" && log_file=`$mklog`
+
+    $grub_mkdevicemap --device-map=$device_map $no_floppy || exit 1
+fi
+
+# Copy the GRUB images to the GRUB directory.
+for file in ${grubdir}/*.mod ${grubdir}/*.lst ; do
+    if test -f $file; then
+	rm -f $file || exit 1
+    fi
+done
+for file in ${pkglibdir}/*.mod ${pkglibdir}/*.lst ; do
+    cp -f $file ${grubdir} || exit 1
+done
+
+# Create the core image. First, auto-detect the filesystem module.
+fs_module=`$grub_probe --target=fs --device-map=${device_map} ${grubdir}`
+if test "x$fs_module" = x -a "x$modules" = x; then
+    echo "Auto-detection of a filesystem module failed." 1>&2
+    echo "Please specify the module with the option \`--modules' explicitly." 1>&2
+    exit 1
+fi
+
+# Then the partition map module.  In order to support partition-less media,
+# this command is allowed to fail (--target=fs already grants us that the
+# filesystem will be accessible).
+partmap_module=`$grub_probe --target=partmap --device-map=${device_map} ${grubdir} 2> /dev/null`
+
+modules="$modules $fs_module $partmap_module"
+
+# Now perform the installation.
+"$grub_mkimage" --output=${grubdir}/grub $modules || exit 1
+
+if test $update_nvram = yes; then
+    set $ofpathname dummy
+    if test -f "$1"; then
+	:
+    else
+	echo "$1: Not found." 1>&2
+	exit 1
+    fi
+
+    set $nvsetenv dummy
+    if test -f "$1"; then
+	:
+    else
+	echo "$1: Not found." 1>&2
+	exit 1
+    fi
+
+    # Get the Open Firmware device tree path translation.
+    dev=`echo $install_device | sed -e 's/\/dev\///' -e 's/[0-9]\+//'`
+    partno=`echo $install_device | sed -e 's/.*[^0-9]\([0-9]\+\)$/\1/'`
+    ofpath=`$ofpathname $dev` || {
+	echo "Couldn't find Open Firmware device tree path for $dev."
+	echo "You will have to set boot-device manually."
+	exit 1
+    }
+
+    # Point boot-device at the new grub install
+    boot_device="boot-device $ofpath:$partno,\\grub"
+    "$nvsetenv" "$boot_device" || {
+	echo "$nvsetenv failed."
+	echo "You will have to set boot-device manually.  At the Open Firmware prompt, type:"
+	echo "  setenv $boot_device"
+	exit 1
+    }
+fi
+
+# Prompt the user to check if the device map is correct.
+echo "Installation finished. No error reported."
+echo "This is the contents of the device map $device_map."
+echo "Check if this is correct or not. If any of the lines is incorrect,"
+echo "fix it and re-run the script \`grub-install'."
+echo
+
+cat $device_map
+
+# Bye.
+exit 0
