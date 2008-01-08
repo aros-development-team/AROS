@@ -1,21 +1,20 @@
 /*  init.c -- Initialize GRUB on the Ultra Sprac (sparc64).  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005 Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/kernel.h>
@@ -28,8 +27,8 @@
 #include <grub/setjmp.h>
 #include <grub/env.h>
 #include <grub/misc.h>
+#include <grub/time.h>
 #include <grub/machine/console.h>
-#include <grub/machine/time.h>
 #include <grub/machine/kernel.h>
 #include <grub/ieee1275/ofdisk.h>
 #include <grub/ieee1275/ieee1275.h>
@@ -67,6 +66,12 @@ _start (uint64_t r0 __attribute__((unused)),
   /* Never reached.  */
 }
 
+void
+grub_millisleep (grub_uint32_t ms)
+{
+  grub_millisleep_generic (ms);
+}
+
 int
 grub_ieee1275_test_flag (enum grub_ieee1275_flag flag)
 {
@@ -77,13 +82,6 @@ void
 grub_ieee1275_set_flag (enum grub_ieee1275_flag flag)
 {
   grub_ieee1275_flags |= (1 << flag);
-}
-
-void
-abort (void)
-{
-  /* Trap to Open Firmware.  */
-  grub_ieee1275_enter ();
 }
 
 /* Translate an OF filesystem path (separated by backslashes), into a GRUB
@@ -101,8 +99,8 @@ grub_translate_ieee1275_path (char *filepath)
     }
 }
 
-static void
-grub_set_prefix (void)
+void
+grub_machine_set_prefix (void)
 {
   char bootpath[64]; /* XXX check length */
   char *filename;
@@ -163,8 +161,6 @@ grub_machine_init (void)
 		   grub_heap_len);
   grub_mm_init_region ((void *) grub_heap_start, grub_heap_len);
 
-  grub_set_prefix ();
-
   grub_ofdisk_init ();
 
   /* Process commandline.  */
@@ -215,9 +211,9 @@ grub_machine_fini (void)
 }
 
 void
-grub_stop (void)
+grub_exit (void)
 {
-  grub_ieee1275_exit ();
+  grub_ieee1275_enter ();
 }
 
 grub_uint32_t

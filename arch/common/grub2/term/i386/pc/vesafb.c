@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/machine/memory.h>
@@ -55,7 +54,7 @@ struct grub_colored_char
 
 struct grub_virtual_screen
 {
-  /* Dimensions of the virual screen.  */
+  /* Dimensions of the virtual screen.  */
   grub_uint32_t width;
   grub_uint32_t height;
 
@@ -78,7 +77,7 @@ struct grub_virtual_screen
   grub_uint8_t fg_color;
   grub_uint8_t bg_color;
 
-  /* Text buffer for virual screen. Contains (columns * rows) number
+  /* Text buffer for virtual screen. Contains (columns * rows) number
      of entries.  */
   struct grub_colored_char *text_buffer;
 };
@@ -142,7 +141,7 @@ grub_virtual_screen_setup (grub_uint32_t width,
 }
 
 static grub_err_t
-grub_vesafb_init (void)
+grub_vesafb_mod_init (void)
 {
   grub_uint32_t use_mode = GRUB_VBE_DEFAULT_VIDEO_MODE;
   struct grub_vbe_info_block controller_info;
@@ -200,7 +199,7 @@ grub_vesafb_init (void)
 }
 
 static grub_err_t
-grub_vesafb_fini (void)
+grub_vesafb_mod_fini (void)
 {
   grub_virtual_screen_free ();
 
@@ -377,7 +376,7 @@ scroll_up (void)
       virtual_screen.text_buffer[i].index = 0;
     }
 
-  /* Scroll frambuffer with one line to up.  */
+  /* Scroll framebuffer with one line to up.  */
   grub_memmove (framebuffer,
                 framebuffer
                 + bytes_per_scan_line * virtual_screen.char_height,
@@ -566,13 +565,6 @@ grub_virtual_screen_setcolorstate (grub_term_color_state state)
 }
 
 static void
-grub_virtual_screen_setcolor (grub_uint8_t normal_color __attribute__ ((unused)),
-			      grub_uint8_t highlight_color __attribute__ ((unused)))
-{
-  /* FIXME */
-}
-
-static void
 grub_vesafb_setcursor (int on)
 {
   if (virtual_screen.cursor_state != on)
@@ -589,8 +581,8 @@ grub_vesafb_setcursor (int on)
 static struct grub_term grub_vesafb_term =
   {
     .name = "vesafb",
-    .init = grub_vesafb_init,
-    .fini = grub_vesafb_fini,
+    .init = grub_vesafb_mod_init,
+    .fini = grub_vesafb_mod_fini,
     .putchar = grub_vesafb_putchar,
     .getcharwidth = grub_vesafb_getcharwidth,
     .checkkey = grub_console_checkkey,
@@ -600,19 +592,18 @@ static struct grub_term grub_vesafb_term =
     .gotoxy = grub_vesafb_gotoxy,
     .cls = grub_vesafb_cls,
     .setcolorstate = grub_virtual_screen_setcolorstate,
-    .setcolor = grub_virtual_screen_setcolor,
     .setcursor = grub_vesafb_setcursor,
     .flags = 0,
     .next = 0
   };
 
-GRUB_MOD_INIT
+GRUB_MOD_INIT(vesafb)
 {
   my_mod = mod;
   grub_term_register (&grub_vesafb_term);
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(vesafb)
 {
   grub_term_unregister (&grub_vesafb_term);
 }

@@ -1,3 +1,83 @@
+New in 1.96:
+
+* The license term is changed to GNU General Public License Version 3.
+
+* grub-emu is made optional.  Now you have to use
+  `--enable-grub-emu' to enable it.
+
+* Add Multiboot2 support.
+
+* grub-emu can access the host filesystem now.
+
+* Add support for the NTFS and Reiserfs filesystems.
+
+* Add support for ATA/ATAPI.
+
+New in 1.95 - 2006-10-15:
+
+* Number partitions from 1 instead of 0. For instance, the first
+  partition of "hd0" is now "hd0,1" but not "hd0,0".
+
+* grub-probefs is renamed to grub-probe, and supports printing a
+  guessed OS device name and a GRUB drive name.
+
+* RAID and LVM support is added.
+
+* New command, echo.
+
+* The disk API is changed to support 64-bit addressing.
+
+* A TGA loader is added for the video API.
+
+New in 1.94 - 2006-06-04:
+
+* Fix several serious bugs in HFS+.
+
+* Add experimental EFI support. Chainloading and Linux loading are
+  supported at the moment.
+
+* Add a new command "blocklist" to show a block list.
+
+* Use --with-platform to specify a boot environment. For now, efi,
+  ieee1275 and pc are supported.
+
+* Use the filename "kernel.elf" instead of "grubof" on ieee1275.
+
+* Install GRUB into pkglibdir instead of pkgdatadir.
+
+* Support environmental variables. You can export variables by the
+  command "export".
+
+* Remove the commands "default" and "timeout". They are now variables.
+
+* Add the commands "source" and "." to include a file.
+
+* Implement experimental Video API and a new terminal "gfxterm" based
+  on the Video API.
+
+
+New in 1.93 - 2006-03-10:
+
+* Add support for the HFS+ wrapper.
+
+* Major improvements to scripting support.
+
+* Menu entries are now scriptable.
+
+
+New in 1.92 - 2005-12-25:
+
+* Add support for GPT partition table format.
+
+* Add a new command "play" to play an audio file on PC.
+
+* Add support for Linux/ADFS partition table format.
+
+* Add support for BASH-like scripting.
+
+* Add support for Apple HFS+ filesystems.
+
+
 New in 1.91 - 2005-10-15:
 
 * Add support for LZO version 2.

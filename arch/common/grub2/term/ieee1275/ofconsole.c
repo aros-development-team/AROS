@@ -1,21 +1,20 @@
 /*  ofconsole.c -- Open Firmware console for GRUB.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005 Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/term.h>
@@ -27,6 +26,9 @@
 
 static grub_ieee1275_ihandle_t stdout_ihandle;
 static grub_ieee1275_ihandle_t stdin_ihandle;
+
+static grub_uint8_t grub_ofconsole_width;
+static grub_uint8_t grub_ofconsole_height;
 
 static int grub_curr_x;
 static int grub_curr_y;
@@ -79,7 +81,11 @@ grub_ofconsole_putchar (grub_uint32_t c)
       grub_curr_x = 0;
     }
   else
-    grub_curr_x++;
+    {
+      grub_curr_x++;
+      if (grub_curr_x > grub_ofconsole_width)
+	grub_putcode ('\n');
+    }
   grub_ieee1275_write (stdout_ihandle, &chr, 1, 0);
 }
 
@@ -121,6 +127,13 @@ grub_ofconsole_setcolor (grub_uint8_t normal_color,
 {
   fgcolor = normal_color;
   bgcolor = highlight_color;
+}
+
+static void
+grub_ofconsole_getcolor (grub_uint8_t *normal_color, grub_uint8_t *highlight_color)
+{
+  *normal_color = fgcolor;
+  *highlight_color = bgcolor;
 }
 
 static int
@@ -189,7 +202,7 @@ grub_ofconsole_checkkey (void)
       return 1;
     }
     
-  return 0;
+  return -1;
 }
 
 static int
@@ -220,50 +233,48 @@ grub_ofconsole_getwh (void)
   grub_ieee1275_ihandle_t options;
   char *val;
   grub_ssize_t lval;
-  static grub_uint8_t w, h;
 
-  /* Once we have them, don't ask them again.  */
-  if (!w || !h)
+  if (grub_ofconsole_width && grub_ofconsole_height)
+    return (grub_ofconsole_width << 8) | grub_ofconsole_height;
+
+  if (! grub_ieee1275_finddevice ("/options", &options)
+      && options != (grub_ieee1275_ihandle_t) -1)
     {
-      if (! grub_ieee1275_finddevice ("/options", &options)
-	  && options != (grub_ieee1275_ihandle_t) -1)
-        {
-          if (! grub_ieee1275_get_property_length (options, "screen-#columns",
-                                                   &lval) && lval != -1)
-            {
-	      val = grub_malloc (lval);
-	      if (val)
-                {
-                  if (! grub_ieee1275_get_property (options, "screen-#columns",
-                                                    val, lval, 0))
-                    w = (grub_uint8_t) grub_strtoul (val, 0, 10);
+      if (! grub_ieee1275_get_property_length (options, "screen-#columns",
+					       &lval) && lval != -1)
+	{
+	  val = grub_malloc (lval);
+	  if (val)
+	    {
+	      if (! grub_ieee1275_get_property (options, "screen-#columns",
+						val, lval, 0))
+		grub_ofconsole_width = (grub_uint8_t) grub_strtoul (val, 0, 10);
 
-                  grub_free (val);
-                }
-            }
-          if (! grub_ieee1275_get_property_length (options, "screen-#rows",
-                                                   &lval) && lval != -1)
-            {
-	      val = grub_malloc (lval);
-	      if (val)
-                {
-                  if (! grub_ieee1275_get_property (options, "screen-#rows",
-                                                    val, lval, 0))
-                    h = (grub_uint8_t) grub_strtoul (val, 0, 10);
+	      grub_free (val);
+	    }
+	}
+      if (! grub_ieee1275_get_property_length (options, "screen-#rows",
+					       &lval) && lval != -1)
+	{
+	  val = grub_malloc (lval);
+	  if (val)
+	    {
+	      if (! grub_ieee1275_get_property (options, "screen-#rows",
+						val, lval, 0))
+		grub_ofconsole_height = (grub_uint8_t) grub_strtoul (val, 0, 10);
 
-                  grub_free (val);
-                }
-            }
+	      grub_free (val);
+	    }
 	}
     }
 
   /* Use a small console by default.  */
-  if (! w)
-    w = 80;
-  if (! h)
-    h = 24;
+  if (! grub_ofconsole_width)
+    grub_ofconsole_width = 80;
+  if (! grub_ofconsole_height)
+    grub_ofconsole_height = 24;
 
-  return (w << 8) | h;
+  return (grub_ofconsole_width << 8) | grub_ofconsole_height;
 }
 
 static void
@@ -280,8 +291,10 @@ grub_ofconsole_gotoxy (grub_uint8_t x, grub_uint8_t y)
 static void
 grub_ofconsole_cls (void)
 {
-  /* Clear the screen.  */
-  grub_ofconsole_writeesc ("\e[2J");
+  /* Clear the screen.  Using serial console, screen(1) only recognizes the
+   * ANSI escape sequence.  Using video console, Apple Open Firmware (version
+   * 3.1.1) only recognizes the literal ^L.  So use both.  */
+  grub_ofconsole_writeesc ("\e[2J");
   grub_gotoxy (0, 0);
 }
 
@@ -303,6 +316,12 @@ grub_ofconsole_init (void)
   unsigned char data[4];
   grub_ssize_t actual;
   int col;
+
+  /* The latest PowerMacs don't actually initialize the screen for us, so we
+   * use this trick to re-open the output device (but we avoid doing this on
+   * platforms where it's known to be broken). */
+  if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_BROKEN_OUTPUT))
+    grub_ieee1275_interpret ("output-device output", 0);
 
   if (grub_ieee1275_get_property (grub_ieee1275_chosen, "stdout", data,
 				  sizeof data, &actual)
@@ -352,6 +371,7 @@ static struct grub_term grub_ofconsole_term =
     .cls = grub_ofconsole_cls,
     .setcolorstate = grub_ofconsole_setcolorstate,
     .setcolor = grub_ofconsole_setcolor,
+    .getcolor = grub_ofconsole_getcolor,
     .setcursor = grub_ofconsole_setcursor,
     .refresh = grub_ofconsole_refresh,
     .flags = 0,

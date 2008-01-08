@@ -1,21 +1,20 @@
 /* search.c - search devices based on a file or a filesystem label */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/types.h>
@@ -148,26 +147,7 @@ grub_cmd_search (struct grub_arg_list *state, int argc, char **args)
   return grub_errno;
 }
 
-#ifdef GRUB_UTIL
-void
-grub_search_init (void)
-{
-  grub_register_command ("search", grub_cmd_search, GRUB_COMMAND_FLAG_BOTH,
-			 "search [-f|-l|-s] NAME",
-			 "Search devices by a file or a filesystem label."
-			 " If --set is specified, the first device found is"
-			 " set to a variable. If no variable name is"
-			 " specified, \"root\" is used.",
-			 options);
-}
-
-void
-grub_search_fini (void)
-{
-  grub_unregister_command ("search");
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
+GRUB_MOD_INIT(search)
 {
   (void) mod;			/* To stop warning. */
   grub_register_command ("search", grub_cmd_search, GRUB_COMMAND_FLAG_BOTH,
@@ -179,8 +159,7 @@ GRUB_MOD_INIT
 			 options);
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(search)
 {
   grub_unregister_command ("search");
 }
-#endif /* ! GRUB_UTIL */

@@ -1,0 +1,313 @@
+# -*- makefile -*-
+
+# For the parser.
+grub_script.tab.c grub_script.tab.h: normal/parser.y
+	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/normal/parser.y
+DISTCLEANFILES += grub_script.tab.c grub_script.tab.h
+
+# For grub-emu.
+grub_emu_init.lst: geninit.sh $(filter-out grub_emu_init.c,$(grub_emu_SOURCES))
+	rm -f $@; grep GRUB_MOD_INIT $(filter %.c,$^) /dev/null > $@
+DISTCLEANFILES += grub_emu_init.lst
+
+grub_emu_init.h: grub_emu_init.lst $(filter-out grub_emu_init.c,$(grub_emu_SOURCES)) geninitheader.sh
+	rm -f $@; sh $(srcdir)/geninitheader.sh $< > $@
+DISTCLEANFILES += grub_emu_init.h
+
+grub_emu_init.c: grub_emu_init.lst $(filter-out grub_emu_init.c,$(grub_emu_SOURCES)) geninit.sh grub_emu_init.h
+	rm -f $@; sh $(srcdir)/geninit.sh $< $(filter %.c,$^) > $@
+DISTCLEANFILES += grub_emu_init.c
+
+# For grub-probe.
+grub_probe_init.lst: geninit.sh $(filter-out grub_probe_init.c,$(grub_probe_SOURCES))
+	rm -f $@; grep GRUB_MOD_INIT $(filter %.c,$^) /dev/null > $@
+DISTCLEANFILES += grub_probe_init.lst
+
+grub_probe_init.h: grub_probe_init.lst $(filter-out grub_probe_init.c,$(grub_probe_SOURCES)) geninitheader.sh
+	rm -f $@; sh $(srcdir)/geninitheader.sh $< > $@
+DISTCLEANFILES += grub_probe_init.h
+
+grub_probe_init.c: grub_probe_init.lst $(filter-out grub_probe_init.c,$(grub_probe_SOURCES)) geninit.sh grub_probe_init.h
+	rm -f $@; sh $(srcdir)/geninit.sh $< $(filter %.c,$^) > $@
+DISTCLEANFILES += grub_probe_init.c
+
+# For grub-setup.
+grub_setup_init.lst: geninit.sh $(filter-out grub_setup_init.c,$(grub_setup_SOURCES))
+	rm -f $@; grep GRUB_MOD_INIT $(filter %.c,$^) /dev/null > $@
+DISTCLEANFILES += grub_setup_init.lst
+
+grub_setup_init.h: grub_setup_init.lst $(filter-out grub_setup_init.c,$(grub_setup_SOURCES)) geninitheader.sh
+	rm -f $@; sh $(srcdir)/geninitheader.sh $< > $@
+DISTCLEANFILES += grub_setup_init.h
+
+grub_setup_init.c: grub_setup_init.lst $(filter-out grub_setup_init.c,$(grub_setup_SOURCES)) geninit.sh grub_setup_init.h
+	rm -f $@; sh $(srcdir)/geninit.sh $< $(filter %.c,$^) > $@
+DISTCLEANFILES += grub_setup_init.c
+
+# For update-grub
+update-grub: util/update-grub.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+sbin_SCRIPTS += update-grub
+CLEANFILES += update-grub
+
+update-grub_lib: util/update-grub_lib.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+lib_DATA += update-grub_lib
+CLEANFILES += update-grub_lib
+
+00_header: util/grub.d/00_header.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+update-grub_SCRIPTS += 00_header
+CLEANFILES += 00_header
+
+10_linux: util/grub.d/10_linux.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+update-grub_SCRIPTS += 10_linux
+CLEANFILES += 10_linux
+
+10_hurd: util/grub.d/10_hurd.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+update-grub_SCRIPTS += 10_hurd
+CLEANFILES += 10_hurd
+
+update-grub_DATA += util/grub.d/README
+
+
+# Filing systems.
+pkglib_MODULES += fshelp.mod fat.mod ufs.mod ext2.mod ntfs.mod		\
+	ntfscomp.mod minix.mod hfs.mod jfs.mod iso9660.mod xfs.mod	\
+	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod
+
+# For fshelp.mod.
+fshelp_mod_SOURCES = fs/fshelp.c
+fshelp_mod_CFLAGS = $(COMMON_CFLAGS)
+fshelp_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For fat.mod.
+fat_mod_SOURCES = fs/fat.c
+fat_mod_CFLAGS = $(COMMON_CFLAGS)
+fat_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ufs.mod.
+ufs_mod_SOURCES = fs/ufs.c
+ufs_mod_CFLAGS = $(COMMON_CFLAGS)
+ufs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ext2.mod.
+ext2_mod_SOURCES = fs/ext2.c
+ext2_mod_CFLAGS = $(COMMON_CFLAGS)
+ext2_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ntfs.mod.
+ntfs_mod_SOURCES = fs/ntfs.c
+ntfs_mod_CFLAGS = $(COMMON_CFLAGS)
+ntfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ntfscomp.mod.
+ntfscomp_mod_SOURCES = fs/ntfscomp.c
+ntfscomp_mod_CFLAGS = $(COMMON_CFLAGS)
+ntfscomp_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For minix.mod.
+minix_mod_SOURCES = fs/minix.c
+minix_mod_CFLAGS = $(COMMON_CFLAGS)
+minix_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For hfs.mod.
+hfs_mod_SOURCES = fs/hfs.c
+hfs_mod_CFLAGS = $(COMMON_CFLAGS)
+hfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For jfs.mod.
+jfs_mod_SOURCES = fs/jfs.c
+jfs_mod_CFLAGS = $(COMMON_CFLAGS)
+jfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For iso9660.mod.
+iso9660_mod_SOURCES = fs/iso9660.c
+iso9660_mod_CFLAGS = $(COMMON_CFLAGS)
+iso9660_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For xfs.mod.
+xfs_mod_SOURCES = fs/xfs.c
+xfs_mod_CFLAGS = $(COMMON_CFLAGS)
+xfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For affs.mod.
+affs_mod_SOURCES = fs/affs.c
+affs_mod_CFLAGS = $(COMMON_CFLAGS)
+affs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sfs.mod.
+sfs_mod_SOURCES = fs/sfs.c
+sfs_mod_CFLAGS = $(COMMON_CFLAGS)
+sfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For hfsplus.mod.
+hfsplus_mod_SOURCES = fs/hfsplus.c
+hfsplus_mod_CFLAGS = $(COMMON_CFLAGS)
+hfsplus_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For reiserfs.mod.
+reiserfs_mod_SOURCES = fs/reiserfs.c
+reiserfs_mod_CFLAGS = $(COMMON_CFLAGS)
+reiserfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For cpio.mod.
+cpio_mod_SOURCES = fs/cpio.c
+cpio_mod_CFLAGS = $(COMMON_CFLAGS)
+cpio_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Partition maps.
+pkglib_MODULES += amiga.mod apple.mod pc.mod sun.mod acorn.mod gpt.mod
+
+# For amiga.mod
+amiga_mod_SOURCES = partmap/amiga.c
+amiga_mod_CFLAGS = $(COMMON_CFLAGS)
+amiga_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For apple.mod
+apple_mod_SOURCES = partmap/apple.c
+apple_mod_CFLAGS = $(COMMON_CFLAGS)
+apple_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For pc.mod
+pc_mod_SOURCES = partmap/pc.c
+pc_mod_CFLAGS = $(COMMON_CFLAGS)
+pc_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sun.mod
+sun_mod_SOURCES = partmap/sun.c
+sun_mod_CFLAGS = $(COMMON_CFLAGS)
+sun_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For acorn.mod
+acorn_mod_SOURCES = partmap/acorn.c
+acorn_mod_CFLAGS = $(COMMON_CFLAGS)
+acorn_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gpt.mod
+gpt_mod_SOURCES = partmap/gpt.c
+gpt_mod_CFLAGS = $(COMMON_CFLAGS)
+gpt_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Special disk structures
+
+pkglib_MODULES += raid.mod lvm.mod
+
+# For raid.mod
+raid_mod_SOURCES = disk/raid.c
+raid_mod_CFLAGS = $(COMMON_CFLAGS)
+raid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For raid.mod
+lvm_mod_SOURCES = disk/lvm.c
+lvm_mod_CFLAGS = $(COMMON_CFLAGS)
+lvm_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Commands.
+pkglib_MODULES += hello.mod boot.mod terminal.mod ls.mod	\
+	cmp.mod cat.mod help.mod font.mod search.mod		\
+	loopback.mod configfile.mod				\
+	terminfo.mod test.mod blocklist.mod hexdump.mod
+
+# For hello.mod.
+hello_mod_SOURCES = hello/hello.c
+hello_mod_CFLAGS = $(COMMON_CFLAGS)
+hello_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For boot.mod.
+boot_mod_SOURCES = commands/boot.c
+boot_mod_CFLAGS = $(COMMON_CFLAGS)
+boot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For terminal.mod.
+terminal_mod_SOURCES = commands/terminal.c
+terminal_mod_CFLAGS = $(COMMON_CFLAGS)
+terminal_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For ls.mod.
+ls_mod_SOURCES = commands/ls.c
+ls_mod_CFLAGS = $(COMMON_CFLAGS)
+ls_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For cmp.mod.
+cmp_mod_SOURCES = commands/cmp.c
+cmp_mod_CFLAGS = $(COMMON_CFLAGS)
+cmp_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For cat.mod.
+cat_mod_SOURCES = commands/cat.c
+cat_mod_CFLAGS = $(COMMON_CFLAGS)
+cat_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For echo.mod
+echo_mod_SOURCES = commands/echo.c
+echo_mod_CFLAGS = $(COMMON_CFLAGS)
+echo_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For help.mod.
+help_mod_SOURCES = commands/help.c
+help_mod_CFLAGS = $(COMMON_CFLAGS)
+help_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For font.mod.
+font_mod_SOURCES = font/manager.c
+font_mod_CFLAGS = $(COMMON_CFLAGS)
+font_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For search.mod.
+search_mod_SOURCES = commands/search.c
+search_mod_CFLAGS = $(COMMON_CFLAGS)
+search_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For test.mod.
+test_mod_SOURCES = commands/test.c
+test_mod_CFLAGS = $(COMMON_CFLAGS)
+test_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For loopback.mod
+loopback_mod_SOURCES = disk/loopback.c
+loopback_mod_CFLAGS = $(COMMON_CFLAGS)
+loopback_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For configfile.mod
+configfile_mod_SOURCES = commands/configfile.c
+configfile_mod_CFLAGS = $(COMMON_CFLAGS)
+configfile_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For terminfo.mod.
+terminfo_mod_SOURCES = term/terminfo.c term/tparm.c
+terminfo_mod_CFLAGS = $(COMMON_CFLAGS)
+terminfo_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For blocklist.mod.
+blocklist_mod_SOURCES = commands/blocklist.c
+blocklist_mod_CFLAGS = $(COMMON_CFLAGS)
+blocklist_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For hexdump.mod.
+hexdump_mod_SOURCES = commands/hexdump.c
+hexdump_mod_CFLAGS = $(COMMON_CFLAGS)
+hexdump_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# Misc.
+pkglib_MODULES += gzio.mod elf.mod
+
+# For elf.mod.
+elf_mod_SOURCES = kern/elf.c
+elf_mod_CFLAGS = $(COMMON_CFLAGS)
+elf_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For gzio.mod.
+gzio_mod_SOURCES = io/gzio.c
+gzio_mod_CFLAGS = $(COMMON_CFLAGS)
+gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+
+

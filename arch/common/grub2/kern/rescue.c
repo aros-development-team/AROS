@@ -1,21 +1,20 @@
 /* rescue.c - rescue mode */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2003  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/kernel.h>
@@ -30,6 +29,7 @@
 #include <grub/dl.h>
 #include <grub/partition.h>
 #include <grub/env.h>
+#include <grub/parser.h>
 
 #define GRUB_RESCUE_BUF_SIZE	256
 #define GRUB_RESCUE_MAX_ARGS	20
@@ -579,6 +579,14 @@ grub_rescue_cmd_unset (int argc, char *argv[])
   grub_env_unset (argv[0]);
 }
 
+/* exit */
+static void
+grub_rescue_cmd_exit (int argc __attribute__ ((unused)),
+		      char *argv[] __attribute__ ((unused)))
+{
+  grub_exit ();
+}
+
 static void
 attempt_normal_mode (void)
 {
@@ -634,6 +642,8 @@ grub_enter_rescue_mode (void)
 				"set an environment variable");
   grub_rescue_register_command ("unset", grub_rescue_cmd_unset,
 				"remove an environment variable");
+  grub_rescue_register_command ("exit", grub_rescue_cmd_exit,
+				"exit from GRUB");
   
   while (1)
     {
@@ -650,7 +660,7 @@ grub_enter_rescue_mode (void)
       /* Get a command line.  */
       grub_rescue_get_command_line ("grub rescue> ");
 
-      if (grub_split_cmdline (line, getline, &n, &args) || n < 0)
+      if (grub_parser_split_cmdline (line, getline, &n, &args) || n < 0)
 	continue;
 
       /* In case of an assignment set the environment accordingly
@@ -661,6 +671,7 @@ grub_enter_rescue_mode (void)
 	  val[0] = 0;
 	  grub_env_set (args[0], val + 1);
 	  val[0] = '=';
+          grub_free (args[0]);
 	  continue;
 	}
 
@@ -669,7 +680,10 @@ grub_enter_rescue_mode (void)
 
       /* If nothing is specified, restart.  */
       if (*name == '\0')
-	continue;
+        {
+          grub_free (args[0]);
+          continue;
+        }
 
       /* Find the command and execute it.  */
       for (cmd = grub_rescue_command_list; cmd; cmd = cmd->next)
@@ -687,5 +701,7 @@ grub_enter_rescue_mode (void)
 	  grub_printf ("Unknown command `%s'\n", name);
 	  grub_printf ("Try `help' for usage\n");
 	}
+
+      grub_free (args[0]);
     }
 }

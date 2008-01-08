@@ -1,21 +1,20 @@
 /* ls.c - command to list files and devices */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/types.h>
@@ -106,7 +105,7 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 	    }
 
 	  if (! human)
-	    grub_printf ("%-12d", file->size);
+	    grub_printf ("%-12llu", file->size);
 	  else
 	    {
 	      float fsize = file->size;
@@ -127,10 +126,10 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 		  grub_printf ("%-12s", buf);
 		}
 	      else
-		grub_printf ("%-12d", file->size);
+		grub_printf ("%-12llu", file->size);
 	      
 	    }
-	  (fs->close) (file);
+	  grub_file_close (file);
       	}
       else
 	grub_printf ("%-12s", "DIR");
@@ -228,22 +227,7 @@ grub_cmd_ls (struct grub_arg_list *state, int argc, char **args)
   return 0;
 }
 
-#ifdef GRUB_UTIL
-void
-grub_ls_init (void)
-{
-  grub_register_command ("ls", grub_cmd_ls, GRUB_COMMAND_FLAG_BOTH,
-			 "ls [-l|-h|-a] [FILE]",
-			 "List devices and files.", options);
-}
-
-void
-grub_ls_fini (void)
-{
-  grub_unregister_command ("ls");
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
+GRUB_MOD_INIT(ls)
 {
   (void)mod;			/* To stop warning. */
   grub_register_command ("ls", grub_cmd_ls, GRUB_COMMAND_FLAG_BOTH,
@@ -251,8 +235,7 @@ GRUB_MOD_INIT
 			 "List devices and files.", options);
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(ls)
 {
   grub_unregister_command ("ls");
 }
-#endif /* ! GRUB_UTIL */

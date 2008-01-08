@@ -1,21 +1,20 @@
 /* apple.c - Read macintosh partition tables.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/disk.h>
@@ -102,7 +101,7 @@ apple_partition_map_iterate (grub_disk_t disk,
   struct grub_apple_part apart;
   struct grub_disk raw;
   int partno = 0;
-  int pos = GRUB_DISK_SECTOR_SIZE;
+  unsigned pos = GRUB_DISK_SECTOR_SIZE;
 
   /* Enforce raw disk access.  */
   raw = *disk;
@@ -113,32 +112,35 @@ apple_partition_map_iterate (grub_disk_t disk,
   for (;;)
     {
       if (grub_disk_read (&raw, pos / GRUB_DISK_SECTOR_SIZE,
-		      pos % GRUB_DISK_SECTOR_SIZE,
+			  pos % GRUB_DISK_SECTOR_SIZE,
 			  sizeof (struct grub_apple_part),  (char *) &apart))
 	return grub_errno;
 
-      if (apart.magic != GRUB_APPLE_PART_MAGIC)
+      if (grub_be_to_cpu16 (apart.magic) != GRUB_APPLE_PART_MAGIC)
 	{
 	  grub_dprintf ("partition",
 			"partition %d: bad magic (found 0x%x; wanted 0x%x\n",
-			partno, apart.magic, GRUB_APPLE_PART_MAGIC);
+			partno, grub_be_to_cpu16 (apart.magic),
+			GRUB_APPLE_PART_MAGIC);
 	  break;
 	}
 
-      part.start = apart.first_phys_block;
-      part.len = apart.blockcnt;
+      part.start = grub_be_to_cpu32 (apart.first_phys_block);
+      part.len = grub_be_to_cpu32 (apart.blockcnt);
       part.offset = pos;
       part.index = partno;
 
       grub_dprintf ("partition",
 		    "partition %d: name %s, type %s, start 0x%x, len 0x%x\n",
 		    partno, apart.partname, apart.parttype,
-		    apart.first_phys_block, apart.blockcnt);
+		    grub_be_to_cpu32 (apart.first_phys_block),
+		    grub_be_to_cpu32 (apart.blockcnt));
 
       if (hook (disk, &part))
 	return grub_errno;
 
-      if (apart.first_phys_block == GRUB_DISK_SECTOR_SIZE * 2)
+      if (grub_be_to_cpu32 (apart.first_phys_block)
+	  == GRUB_DISK_SECTOR_SIZE * 2)
 	return 0;
 
       pos += sizeof (struct grub_apple_part);
@@ -179,7 +181,7 @@ apple_partition_map_probe (grub_disk_t disk, const char *str)
     }
   
   /* Get the partition number.  */
-  partnum = grub_strtoul (s, 0, 10);
+  partnum = grub_strtoul (s, 0, 10) - 1;
   if (grub_errno)
     {
       grub_error (GRUB_ERR_BAD_FILENAME, "invalid partition");
@@ -206,7 +208,7 @@ apple_partition_map_get_name (const grub_partition_t p)
   if (! name)
     return 0;
 
-  grub_sprintf (name, "%d", p->index);
+  grub_sprintf (name, "%d", p->index + 1);
   return name;
 }
 
@@ -220,27 +222,16 @@ static struct grub_partition_map grub_apple_partition_map =
     .get_name = apple_partition_map_get_name
   };
 
-#ifdef GRUB_UTIL
-void
-grub_apple_partition_map_init (void)
+GRUB_MOD_INIT(apple_partition_map)
 {
   grub_partition_map_register (&grub_apple_partition_map);
-}
-
-void
-grub_apple_partition_map_fini (void)
-{
-  grub_partition_map_unregister (&grub_apple_partition_map);
-}
-#else
-GRUB_MOD_INIT
-{
-  grub_partition_map_register (&grub_apple_partition_map);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(apple_partition_map)
 {
   grub_partition_map_unregister (&grub_apple_partition_map);
 }
-#endif
+

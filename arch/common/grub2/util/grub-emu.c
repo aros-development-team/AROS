@@ -1,24 +1,22 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <stdlib.h>
-#include <malloc.h>
 #include <sys/stat.h>
 #include <argp.h>
 #include <string.h>
@@ -29,7 +27,7 @@
 #include <grub/mm.h>
 #include <grub/setjmp.h>
 #include <grub/fs.h>
-#include <grub/i386/pc/util/biosdisk.h>
+#include <grub/util/biosdisk.h>
 #include <grub/dl.h>
 #include <grub/machine/console.h>
 #include <grub/util/misc.h>
@@ -39,17 +37,13 @@
 #include <grub/env.h>
 #include <grub/partition.h>
 
-#ifdef __NetBSD__
-/* NetBSD uses /boot for its boot block.  */
-# define DEFAULT_DIRECTORY	"/grub"
-#else
-# define DEFAULT_DIRECTORY	"/boot/grub"
-#endif
-
-#define DEFAULT_DEVICE_MAP	DEFAULT_DIRECTORY "/device.map"
+#include <grub_emu_init.h>
 
 /* Used for going back to the main function.  */
 jmp_buf main_env;
+
+/* Store the prefix specified by an argument.  */
+static char *prefix = 0;
 
 grub_addr_t
 grub_arch_modules_addr (void)
@@ -79,6 +73,14 @@ grub_machine_init (void)
 {
   signal (SIGINT, SIG_IGN);
   grub_console_init ();
+}
+
+void
+grub_machine_set_prefix (void)
+{
+  grub_env_set ("prefix", prefix);
+  free (prefix);
+  prefix = 0;
 }
 
 void
@@ -145,8 +147,8 @@ static struct argp argp = {options, parse_opt, 0, doc, 0, 0, 0};
 int
 main (int argc, char *argv[])
 {
-  char *prefix = 0;
-  char rootprefix[100];
+  char *dir;
+  
   struct arguments args =
     {
       .dir = DEFAULT_DIRECTORY,
@@ -170,10 +172,21 @@ main (int argc, char *argv[])
       sleep (1);
     }
   
+  /* XXX: This is a bit unportable.  */
+  grub_util_biosdisk_init (args.dev_map);
+
+  grub_hostfs_init ();
+
+  grub_init_all ();
+
   /* Make sure that there is a root device.  */
   if (! args.root_dev)
     {
-      args.root_dev = grub_guess_root_device (args.dir ? : DEFAULT_DIRECTORY);
+      char *device_name = grub_guess_root_device (args.dir ? : DEFAULT_DIRECTORY);
+      if (! device_name)
+        grub_util_error ("cannot find a device for %s.\n", args.dir ? : DEFAULT_DIRECTORY);
+
+      args.root_dev = grub_util_get_grub_dev (device_name);
       if (! args.root_dev)
 	{
 	  grub_util_info ("guessing the root device failed, because of `%s'",
@@ -182,79 +195,18 @@ main (int argc, char *argv[])
 	}
     }
 
-  prefix = grub_get_prefix (args.dir ? : DEFAULT_DIRECTORY);
-  sprintf (rootprefix, "%s%s", args.root_dev, prefix);
-
-  grub_env_set ("prefix", rootprefix);
+  dir = grub_get_prefix (args.dir ? : DEFAULT_DIRECTORY);
+  prefix = xmalloc (strlen (args.root_dev) + strlen (dir) + 1);
+  sprintf (prefix, "%s%s", args.root_dev, dir);
+  free (dir);
   
-  /* XXX: This is a bit unportable.  */
-  grub_util_biosdisk_init (args.dev_map);
-  grub_pc_partition_map_init ();
-  grub_amiga_partition_map_init ();
-  grub_apple_partition_map_init ();
-  grub_sun_partition_map_init ();
-
-  /* Initialize the default modules.  */
-  grub_iso9660_init ();
-  grub_xfs_init ();
-  grub_fat_init ();
-  grub_ext2_init ();
-  grub_ufs_init ();
-  grub_minix_init ();
-  grub_hfs_init ();
-  grub_jfs_init ();
-  grub_xfs_init ();
-  grub_sfs_init ();
-  grub_affs_init ();
-  grub_ls_init ();
-  grub_boot_init ();
-  grub_cmp_init ();
-  grub_cat_init ();
-  grub_terminal_init ();
-  grub_loop_init ();
-  grub_help_init ();
-  grub_halt_init ();
-  grub_reboot_init ();
-  grub_default_init ();
-  grub_timeout_init ();
-  grub_configfile_init ();
-  grub_search_init ();
-  
-  /* XXX: Should normal mode be started by default?  */
-  grub_normal_init ();
-
   /* Start GRUB!  */
   if (setjmp (main_env) == 0)
     grub_main ();
 
-  grub_search_fini ();
-  grub_configfile_fini ();
-  grub_timeout_fini ();
-  grub_default_fini ();
-  grub_reboot_fini ();
-  grub_halt_fini ();
-  grub_help_fini ();
-  grub_loop_fini ();
-  grub_util_biosdisk_fini ();
-  grub_normal_fini ();
-  grub_affs_fini ();
-  grub_sfs_fini ();
-  grub_xfs_fini ();
-  grub_ufs_fini ();
-  grub_ext2_fini ();
-  grub_minix_fini ();
-  grub_hfs_fini ();
-  grub_jfs_fini ();
-  grub_fat_fini ();
-  grub_xfs_fini ();
-  grub_boot_fini ();
-  grub_cmp_fini ();
-  grub_cat_fini ();
-  grub_terminal_fini ();
-  grub_amiga_partition_map_fini ();
-  grub_pc_partition_map_fini ();
-  grub_apple_partition_map_fini ();
-  grub_sun_partition_map_fini ();
+  grub_fini_all ();
+
+  grub_hostfs_fini ();
 
   grub_machine_fini ();
   

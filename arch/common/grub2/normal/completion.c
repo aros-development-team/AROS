@@ -1,21 +1,20 @@
 /* completion.c - complete a command, a disk, a partition or a file */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/normal.h>
@@ -25,6 +24,7 @@
 #include <grub/partition.h>
 #include <grub/disk.h>
 #include <grub/file.h>
+#include <grub/parser.h>
 
 /* The current word.  */
 static char *current_word;
@@ -41,6 +41,8 @@ static const char *suffix;
 /* The callback function to print items.  */
 static void (*print_func) (const char *, grub_completion_type_t, int);
 
+/* The state the command line is in.  */
+static grub_parser_state_t cmdline_state;
 
 
 /* Add a string to the list of possible completions. COMPLETION is the
@@ -125,10 +127,18 @@ iterate_dir (const char *filename, int dir)
 {
   if (! dir)
     {
-      if (add_completion (filename, " ", GRUB_COMPLETION_TYPE_FILE))
+      const char *prefix;
+      if (cmdline_state == GRUB_PARSER_STATE_DQUOTE)
+	prefix = "\" ";
+      else if (cmdline_state == GRUB_PARSER_STATE_QUOTE)
+	prefix = "\' ";
+      else
+	prefix = " ";
+
+      if (add_completion (filename, prefix, GRUB_COMPLETION_TYPE_FILE))
 	return 1;
     }
-  else
+  else if (grub_strcmp (filename, ".") && grub_strcmp (filename, ".."))
     {
       char fname[grub_strlen (filename) + 2];
 
@@ -358,6 +368,19 @@ complete_arguments (char *command)
   return 0;
 }
 
+
+static grub_parser_state_t
+get_state (const char *cmdline)
+{
+  grub_parser_state_t state = GRUB_PARSER_STATE_TEXT;
+  char use;
+
+  while (*cmdline)
+    state = grub_parser_cmdline_state (state, *(cmdline++), &use);
+  return state;
+}
+
+
 /* Try to complete the string in BUF. Return the characters that
    should be added to the string.  This command outputs the possible
    completions by calling HOOK, in that case set RESTORE to 1 so the
@@ -366,7 +389,8 @@ char *
 grub_normal_do_completion (char *buf, int *restore,
 			   void (*hook) (const char *, grub_completion_type_t, int))
 {
-  char *first_word;
+  int argc;
+  char **argv;
 
   /* Initialize variables.  */
   match = 0;
@@ -375,45 +399,38 @@ grub_normal_do_completion (char *buf, int *restore,
   print_func = hook;
 
   *restore = 1;
-  
-  /* Find the first word.  */
-  for (first_word = buf; *first_word == ' '; first_word++)
-    ;
 
-  /* Find the delimeter of the current word.  */
-  for (current_word = first_word + grub_strlen (first_word);
-       current_word > first_word;
-       current_word--)
-    if (*current_word == ' ' || *current_word == '=')
-      break;
-  
-  if (current_word == first_word)
+  if (grub_parser_split_cmdline (buf, 0, &argc, &argv))
+    return 0;
+
+  current_word = argv[argc];
+
+  /* Determine the state the command line is in, depending on the
+     state, it can be determined how to complete.  */
+  cmdline_state = get_state (buf);
+
+  if (argc == 0)
     {
       /* Complete a command.  */
       if (grub_iterate_commands (iterate_command))
 	goto fail;
     }
+  else if (*current_word == '-')
+    {
+      if (complete_arguments (buf))
+	goto fail;
+    }
+  else if (*current_word == '(' && ! grub_strchr (current_word, ')'))
+    {
+      /* Complete a device.  */
+      if (complete_device ())
+	    goto fail;
+    }
   else
     {
-      current_word++;
-      
-      if (*current_word == '-')
-	{
-	  if (complete_arguments (buf))
-	    goto fail;
-	}
-      else if (*current_word == '(' && ! grub_strchr (current_word, ')'))
-	{
-	  /* Complete a device.  */
-	  if (complete_device ())
-	    goto fail;
-	}
-      else
-	{
-	  /* Complete a file.  */
-	  if (complete_file ())
-	    goto fail;
-	}
+      /* Complete a file.  */
+      if (complete_file ())
+	goto fail;
     }
 
   /* If more than one match is found those matches will be printed and
@@ -427,28 +444,48 @@ grub_normal_do_completion (char *buf, int *restore,
   if (match)
     {
       char *ret;
+      char *escstr;
+      char *newstr;
       int current_len;
       int match_len;
+      int spaces = 0;
 
       current_len = grub_strlen (current_word);
       match_len = grub_strlen (match);
-      ret = grub_malloc (match_len - current_len + grub_strlen (suffix) + 1);
-      grub_strcpy (ret, match + current_len);
+
+      /* Count the number of spaces that have to be escaped.  XXX:
+	 More than just spaces have to be escaped.  */
+      for (escstr = match + current_len; *escstr; escstr++)
+	if (*escstr == ' ')
+	  spaces++;
+
+      ret = grub_malloc (match_len - current_len + grub_strlen (suffix) + spaces + 1);
+      newstr = ret;
+      for (escstr = match + current_len; *escstr; escstr++)
+	{
+	  if (*escstr == ' ' && cmdline_state != GRUB_PARSER_STATE_QUOTE
+	      && cmdline_state != GRUB_PARSER_STATE_QUOTE)
+	    *(newstr++) = '\\';
+	  *(newstr++) = *escstr;
+	}
+      *newstr = '\0';
+
       if (num_found == 1)
 	grub_strcat (ret, suffix);
       
-      grub_free (match);
-
       if (*ret == '\0')
 	{
 	  grub_free (ret);
-	  return 0;
+          goto fail;
 	}
       
+      grub_free (argv[0]);
+      grub_free (match);
       return ret;
     }
 
  fail:
+  grub_free (argv[0]);
   grub_free (match);
   grub_errno = GRUB_ERR_NONE;
 

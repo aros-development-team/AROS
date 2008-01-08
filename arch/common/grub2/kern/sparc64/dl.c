@@ -1,21 +1,20 @@
 /* dl.c - arch-dependent part of loadable module support */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/dl.h>
@@ -30,9 +29,9 @@ grub_arch_dl_check_header (void *ehdr)
   Elf64_Ehdr *e = ehdr;
 
   /* Check the magic numbers.  */
-  if (e->e_ident[EI_CLASS] != ELFCLASS32
+  if (e->e_ident[EI_CLASS] != ELFCLASS64
       || e->e_ident[EI_DATA] != ELFDATA2MSB
-      || e->e_machine != EM_PPC)
+      || e->e_machine != EM_SPARCV9)
     return grub_error (GRUB_ERR_BAD_OS, "invalid arch specific ELF magic");
 
   return GRUB_ERR_NONE;
@@ -83,53 +82,53 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 		 rel < max;
 		 rel++)
 	      {
-		Elf64_Xword *addr;
+		Elf64_Word *addr;
 		Elf64_Sym *sym;
-		grub_uint64_t value;
+		Elf64_Addr value;
 		
 		if (seg->size < rel->r_offset)
 		  return grub_error (GRUB_ERR_BAD_MODULE,
 				     "reloc offset is out of the segment");
 		
-		addr = (Elf64_Xword *) ((char *) seg->addr + rel->r_offset);
+		addr = (Elf64_Word *) ((char *) seg->addr + rel->r_offset);
 		sym = (Elf64_Sym *) ((char *) symtab
-				     + entsize * ELF32_R_SYM (rel->r_info));
-		
-		/* On the PPC the value does not have an explicit
-		   addend, add it.  */
+				     + entsize * ELF64_R_SYM (rel->r_info));
+
 		value = sym->st_value + rel->r_addend;
-		switch (ELF32_R_TYPE (rel->r_info))
+		switch (ELF64_R_TYPE (rel->r_info))
 		  {
-		  case R_PPC_ADDR16_LO:
-		    *(Elf64_Half *) addr = value;
-		    break;
-		    
-		  case R_PPC_REL24:
-		    {
-		      Elf64_Sxword delta = value - (Elf64_Xword) addr;
-		      
-		      if (delta << 6 >> 6 != delta)
-			return grub_error (GRUB_ERR_BAD_MODULE, "Relocation overflow");
-		      *addr = (*addr & 0xfc000003) | (delta & 0x3fffffc);
-		      break;
-		    }
-		    
-		  case R_PPC_ADDR16_HA:
-		    *(Elf64_Half *) addr = (value + 0x8000) >> 16;
-		    break;
-		    
-		  case R_PPC_ADDR32:
-		    *addr = value;
-		    break;
-		    
-		  case R_PPC_REL32:
-		    *addr = value - (Elf64_Xword) addr;
-		    break;
-		    
+                  case R_SPARC_32: /* 3 V-word32 */
+                    if (value & 0xFFFFFFFF00000000)
+                      return grub_error (GRUB_ERR_BAD_MODULE,
+                                         "Address out of 32 bits range");
+                    *addr = value;
+                    break;
+                  case R_SPARC_WDISP30: /* 7 V-disp30 */
+                    if (((value - (Elf64_Addr) addr) & 0xFFFFFFFF00000000) &&
+                        ((value - (Elf64_Addr) addr) & 0xFFFFFFFF00000000
+                        != 0xFFFFFFFF00000000))
+                      return grub_error (GRUB_ERR_BAD_MODULE,
+                                         "Displacement out of 30 bits range");
+                    *addr = (*addr & 0xC0000000) |
+                      (((grub_int32_t) ((value - (Elf64_Addr) addr) >> 2)) &
+                       0x3FFFFFFF);
+                    break;
+                  case R_SPARC_HI22: /* 9 V-imm22 */
+                    if (((grub_int32_t) value) & 0xFF00000000)
+                      return grub_error (GRUB_ERR_BAD_MODULE,
+                                         "High address out of 22 bits range");
+                    *addr = (*addr & 0xFFC00000) | ((value >> 10) & 0x3FFFFF);
+                    break;
+                  case R_SPARC_LO10: /* 12 T-simm13 */
+                    *addr = (*addr & 0xFFFFFC00) | (value & 0x3FF);
+                    break;
+                  case R_SPARC_64: /* 32 V-xwords64 */
+                    *(Elf64_Xword *) addr = value;
+                    break;
 		  default:
 		    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 				       "This relocation (%d) is not implemented yet",
-				       ELF32_R_TYPE (rel->r_info));
+				       ELF64_R_TYPE (rel->r_info));
 		  }
 	      }
 	  }

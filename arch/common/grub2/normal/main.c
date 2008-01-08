@@ -1,21 +1,20 @@
 /* main.c - the normal mode main routine */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002,2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2003,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/kernel.h>
@@ -27,6 +26,8 @@
 #include <grub/mm.h>
 #include <grub/term.h>
 #include <grub/env.h>
+#include <grub/parser.h>
+#include <grub/script.h>
 
 grub_jmp_buf grub_exit_env;
 
@@ -35,13 +36,20 @@ static grub_fs_module_list_t fs_module_list = 0;
 #define GRUB_DEFAULT_HISTORY_SIZE	50
 
 /* Read a line from the file FILE.  */
-static int
-get_line (grub_file_t file, char cmdline[], int max_len)
+static char *
+get_line (grub_file_t file)
 {
   char c;
   int pos = 0;
   int literal = 0;
   int comment = 0;
+  char *cmdline;
+  int max_len = 64;
+
+  /* Initially locate some space.  */
+  cmdline = grub_malloc (max_len);
+  if (! cmdline)
+    return 0;
 
   while (1)
     {
@@ -92,206 +100,177 @@ get_line (grub_file_t file, char cmdline[], int max_len)
 	  if (c == '\n')
 	    break;
 
-	  if (pos < max_len)
-	    cmdline[pos++] = c;
+	  if (pos >= max_len)
+	    {
+	      char *old_cmdline = cmdline;
+	      max_len = max_len * 2;
+	      cmdline = grub_realloc (cmdline, max_len);
+	      if (! cmdline)
+		{
+		  grub_free (old_cmdline);
+		  return 0;
+		}
+	    }
+
+	  cmdline[pos++] = c;
 	}
     }
 
   cmdline[pos] = '\0';
+
+  /* If the buffer is empty, don't return anything at all.  */
+  if (pos == 0)
+    {
+      grub_free (cmdline);
+      cmdline = 0;
+    }
   
-  return pos;
+  return cmdline;
 }
 
 static void
 free_menu (grub_menu_t menu)
 {
   grub_menu_entry_t entry = menu->entry_list;
-  
+
   while (entry)
     {
       grub_menu_entry_t next_entry = entry->next;
-      grub_command_list_t cmd = entry->command_list;
-      
-      while (cmd)
-	{
-	  grub_command_list_t next_cmd = cmd->next;
 
-	  grub_free ((void *) cmd->command);
-	  cmd = next_cmd;
-	}
-
+      grub_script_free (entry->commands);
       grub_free ((void *) entry->title);
+      grub_free ((void *) entry->sourcecode);
       entry = next_entry;
     }
 
   grub_free (menu);
+  grub_env_unset_data_slot ("menu");
 }
 
-/* Read the config file CONFIG and return a menu. If no entry is present,
-   return NULL.  */
+grub_err_t
+grub_normal_menu_addentry (const char *title, struct grub_script *script,
+			   const char *sourcecode)
+{
+  const char *menutitle;
+  const char *menusourcecode;
+  grub_menu_t menu;
+  grub_menu_entry_t *last;
+
+  menu = grub_env_get_data_slot("menu");
+  if (! menu)
+    return grub_error (GRUB_ERR_MENU, "no menu context");
+
+  last = &menu->entry_list;
+
+  menusourcecode = grub_strdup (sourcecode);
+  if (! menusourcecode)
+    return grub_errno;
+
+  menutitle = grub_strdup (title);
+  if (! menutitle)
+    {
+      grub_free ((void *) menusourcecode);
+      return grub_errno;
+    }
+
+  /* Add the menu entry at the end of the list.  */
+  while (*last)
+    last = &(*last)->next;
+
+  *last = grub_malloc (sizeof (**last));
+  if (! *last)
+    {
+      grub_free ((void *) menutitle);
+      grub_free ((void *) menusourcecode);
+      return grub_errno;
+    }
+
+  (*last)->commands = script;
+  (*last)->title = menutitle;
+  (*last)->next = 0;
+  (*last)->sourcecode = menusourcecode;
+
+  menu->size++;
+
+  return GRUB_ERR_NONE;
+}
+
 static grub_menu_t
-read_config_file (const char *config)
+read_config_file (const char *config, int nested)
 {
   grub_file_t file;
-  static char cmdline[GRUB_MAX_CMDLINE];
-  grub_menu_t menu;
-  grub_menu_entry_t *next_entry, cur_entry = 0;
-  grub_command_list_t *next_cmd, cur_cmd;
+  auto grub_err_t getline (char **line);
+  int currline = 0;
+  int errors = 0;
   
+  grub_err_t getline (char **line)
+    {
+      currline++;
+
+      *line = get_line (file);
+      if (! *line)
+	return grub_errno;
+
+      return GRUB_ERR_NONE;
+    }
+
+  grub_menu_t newmenu;
+
+  newmenu = grub_env_get_data_slot ("menu");
+
+  if (nested || ! newmenu)
+    {
+      newmenu = grub_malloc (sizeof (*newmenu));
+      if (! newmenu)
+	return 0;
+      newmenu->size = 0;
+      newmenu->entry_list = 0;
+    }
+
   /* Try to open the config file.  */
   file = grub_file_open (config);
   if (! file)
     return 0;
 
-  /* Initialize the menu.  */
-  menu = (grub_menu_t) grub_malloc (sizeof (*menu));
-  if (! menu)
-    {
-      grub_file_close (file);
-      return 0;
-    }
-  menu->default_entry = 0;
-  menu->fallback_entry = -1;
-  menu->timeout = -1;
-  menu->size = 0;
-  menu->entry_list = 0;
+  grub_env_set_data_slot ("menu", newmenu);
 
-  if (! grub_context_push_menu (menu))
+  while (1)
     {
-      grub_print_error ();
-      grub_errno = GRUB_ERR_NONE;
+      struct grub_script *parsed_script;
+      int startline;
+      char *cmdline;
 
-      free_menu (menu);
-      grub_file_close (file);
-      
-      /* Wait until the user pushes any key so that the user
-	 can see what happened.  */
-      grub_printf ("\nPress any key to continue...");
-      (void) grub_getkey ();
-      return 0;
-    }
-  
-  next_entry = &(menu->entry_list);
-  next_cmd = 0;
-  
-  /* Read each line.  */
-  while (get_line (file, cmdline, sizeof (cmdline)))
-    {
-      grub_command_t cmd;
+      cmdline = get_line (file);
+      if (!cmdline)
+	break;
 
-      cmd = grub_command_find (cmdline);
-      grub_errno = GRUB_ERR_NONE;
-      
-      if (cur_entry)
+      startline = ++currline;
+
+      /* Execute the script, line for line.  */
+      parsed_script = grub_script_parse (cmdline, getline);
+
+      grub_free (cmdline);
+
+      if (! parsed_script)
 	{
-	  if (! cmd || ! (cmd->flags & GRUB_COMMAND_FLAG_TITLE))
-	    {
-	      cur_cmd = (grub_command_list_t) grub_malloc (sizeof (*cur_cmd));
-	      if (! cur_cmd)
-		goto fail;
-	      
-	      cur_cmd->command = grub_strdup (cmdline);
-	      if (! cur_cmd->command)
-		{
-		  grub_free (cur_cmd);
-		  goto fail;
-		}
-	      
-	      cur_cmd->next = 0;
-	      
-	      *next_cmd = cur_cmd;
-	      next_cmd = &(cur_cmd->next);
-	      
-	      cur_entry->num++;
-	      continue;
-	    }
-	}
-      
-      if (! cmd)
-	{
-	  grub_printf ("Unknown command `%s' is ignored.\n", cmdline);
+	  grub_printf ("(line %d-%d)\n", startline, currline);
+	  errors++;
 	  continue;
 	}
 
-      if (cmd->flags & GRUB_COMMAND_FLAG_TITLE)
-	{
-	  char *p;
-	  
-	  cur_entry = (grub_menu_entry_t) grub_malloc (sizeof (*cur_entry));
-	  if (! cur_entry)
-	    goto fail;
+      /* Execute the command(s).  */
+      grub_script_execute (parsed_script);
 
-	  p = grub_strchr (cmdline, ' ');
-	  if (p)
-	    cur_entry->title = grub_strdup (p);
-	  else
-	    cur_entry->title = grub_strdup ("");
-	  
-	  if (! cur_entry->title)
-	    {
-	      grub_free (cur_entry);
-	      goto fail;
-	    }
-	  
-	  cur_entry->num = 0;
-	  cur_entry->command_list = 0;
-	  cur_entry->next = 0;
-	  
-	  *next_entry = cur_entry;
-	  next_entry = &(cur_entry->next);
-
-	  next_cmd = &(cur_entry->command_list);
-	  
-	  menu->size++;
-	}
-      else
-	{
-	  /* Run the command if possible.  */
-	  if (cmd->flags & GRUB_COMMAND_FLAG_MENU)
-	    {
-	      grub_command_execute (cmdline, 0);
-	      if (grub_errno != GRUB_ERR_NONE)
-		{
-		  grub_print_error ();
-		  grub_errno = GRUB_ERR_NONE;
-		}
-	    }
-	  else
-	    {
-	      grub_printf ("Invalid command `%s' is ignored.\n", cmdline);
-	      continue;
-	    }
-	}
+      /* The parsed script was executed, throw it away.  */
+      grub_script_free (parsed_script);
     }
-
- fail:
 
   grub_file_close (file);
 
-  /* If no entry was found or any error occurred, return NULL.  */
-  if (menu->size == 0 || grub_errno != GRUB_ERR_NONE)
-    {
-      grub_context_pop_menu ();
-      free_menu (menu);
-      return 0;
-    }
+  if (errors > 0)
+    grub_wait_after_message ();
 
-  /* Check values of the default entry and the fallback one.  */
-  if (menu->fallback_entry >= menu->size)
-    menu->fallback_entry = -1;
-
-  if (menu->default_entry < 0 || menu->default_entry >= menu->size)
-    {
-      if (menu->fallback_entry < 0)
-	menu->default_entry = 0;
-      else
-	{
-	  menu->default_entry = menu->fallback_entry;
-	  menu->fallback_entry = -1;
-	}
-    }
-  
-  return menu;
+  return newmenu;
 }
 
 /* This starts the normal mode.  */
@@ -332,12 +311,14 @@ read_command_list (void)
 	  file = grub_file_open (filename);
 	  if (file)
 	    {
-	      char buf[80]; /* XXX arbitrary */
-
-	      while (get_line (file, buf, sizeof (buf)))
+	      while (1)
 		{
 		  char *p;
 		  grub_command_t cmd;
+		  char *buf = get_line (file);
+
+		  if (! buf)
+		    break;
 		  
 		  if (! grub_isgraph (buf[0]))
 		    continue;
@@ -357,11 +338,15 @@ read_command_list (void)
 					       GRUB_COMMAND_FLAG_NOT_LOADED,
 					       0, 0, 0);
 		  if (! cmd)
-		    continue;
+		    {
+		      grub_free (buf);
+		      continue;
+		    }
 
 		  cmd->module_name = grub_strdup (p);
 		  if (! cmd->module_name)
 		    grub_unregister_command (buf);
+		  grub_free (buf);
 		}
 
 	      grub_file_close (file);
@@ -414,14 +399,20 @@ read_fs_list (void)
 	  file = grub_file_open (filename);
 	  if (file)
 	    {
-	      char buf[80]; /* XXX arbitrary */
-
-	      while (get_line (file, buf, sizeof (buf)))
+	      while (1)
 		{
-		  char *p = buf;
-		  char *q = buf + grub_strlen (buf) - 1;
+		  char *buf;
+		  char *p;
+		  char *q;
 		  grub_fs_module_list_t fs_mod;
 		  
+		  buf = get_line (file);
+		  if (! buf)
+		    break;
+
+		  p = buf;
+		  q = buf + grub_strlen (buf) - 1;
+
 		  /* Ignore space.  */
 		  while (grub_isspace (*p))
 		    p++;
@@ -474,7 +465,7 @@ grub_normal_execute (const char *config, int nested)
   
   if (config)
     {
-      menu = read_config_file (config);
+      menu = read_config_file (config, nested);
 
       /* Ignore any error.  */
       grub_errno = GRUB_ERR_NONE;
@@ -483,8 +474,8 @@ grub_normal_execute (const char *config, int nested)
   if (menu)
     {
       grub_menu_run (menu, nested);
-      grub_context_pop_menu ();
-      free_menu (menu);
+      if (nested)
+	free_menu (menu);
     }
   else
     grub_cmdline_run (nested);
@@ -519,33 +510,11 @@ grub_rescue_cmd_normal (int argc, char *argv[])
     grub_enter_normal_mode (argv[0]);
 }
 
-#ifdef GRUB_UTIL
-void
-grub_normal_init (void)
-{
-  grub_set_history (GRUB_DEFAULT_HISTORY_SIZE);
-
-  /* Register a command "normal" for the rescue mode.  */
-  grub_rescue_register_command ("normal", grub_rescue_cmd_normal,
-				"enter normal mode");
-
-  /* This registers some built-in commands.  */
-  grub_command_init ();
-  
-}
-
-void
-grub_normal_fini (void)
-{
-  grub_set_history (0);
-  grub_rescue_unregister_command ("normal");
-
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
+GRUB_MOD_INIT(normal)
 {
   /* Normal mode shouldn't be unloaded.  */
-  grub_dl_ref (mod);
+  if (mod)
+    grub_dl_ref (mod);
 
   grub_set_history (GRUB_DEFAULT_HISTORY_SIZE);
 
@@ -553,13 +522,21 @@ GRUB_MOD_INIT
   grub_rescue_register_command ("normal", grub_rescue_cmd_normal,
 				"enter normal mode");
 
+  /* Reload terminal colors when these variables are written to.  */
+  grub_register_variable_hook ("color_normal", NULL, grub_env_write_color_normal);
+  grub_register_variable_hook ("color_highlight", NULL, grub_env_write_color_highlight);
+
+  /* Preserve hooks after context changes.  */
+  grub_env_export ("color_normal");
+  grub_env_export ("color_highlight");
+
   /* This registers some built-in commands.  */
   grub_command_init ();
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(normal)
 {
   grub_set_history (0);
   grub_rescue_unregister_command ("normal");
 }
-#endif /* ! GRUB_UTIL */
+

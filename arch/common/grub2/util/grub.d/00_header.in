@@ -1,0 +1,59 @@
+#! /bin/sh -e
+
+# update-grub helper script.
+# Copyright (C) 2006,2007  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+platform=@platform@
+
+# for convert_system_path_to_grub_path()
+. ${libdir}/grub/update-grub_lib
+
+if [ "x${GRUB_DEFAULT}" = "x" ] ; then GRUB_DEFAULT=0 ; fi
+if [ "x${GRUB_TIMEOUT}" = "x" ] ; then GRUB_TIMEOUT=5 ; fi
+
+cat << EOF
+set default=${GRUB_DEFAULT}
+set timeout=${GRUB_TIMEOUT}
+EOF
+
+if [ "x${GRUB_DRIVE}" = "x" ] ; then : ; else
+  echo "set root=${GRUB_DRIVE}"
+fi
+
+if [ "x${GRUB_FONT_PATH}" = "x" ] ; then : ; else
+  echo "font ${GRUB_FONT_PATH}"
+fi
+
+case ${platform}:${GRUB_TERMINAL} in
+  pc:gfxterm) cat << EOF
+set gfxmode=640x480
+insmod gfxterm
+insmod vbe
+EOF
+  ;;
+  *:serial)
+    if [ "x${GRUB_SERIAL_COMMAND}" = "x" ] ; then
+      echo "Warning, requested serial terminal but GRUB_SERIAL_COMMAND is unspecified. Default parameters will be used." >&2
+      GRUB_SERIAL_COMMAND=serial
+    fi
+    echo "${GRUB_SERIAL_COMMAND}"
+  ;;
+esac
+
+echo "terminal ${GRUB_TERMINAL}"

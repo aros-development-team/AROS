@@ -1,20 +1,19 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2006,2007,2008  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/normal.h>
@@ -22,6 +21,7 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/loader.h>
+#include <grub/script.h>
 
 enum update_mode
   {
@@ -335,7 +335,7 @@ insert_string (struct screen *screen, char *s, int update)
 	  int size;
 	  int orig_num, new_num;
 
-	  /* Find a string delimitted by LF.  */
+	  /* Find a string delimited by LF.  */
 	  p = grub_strchr (s, '\n');
 	  if (! p)
 	    p = s + grub_strlen (s);
@@ -413,7 +413,6 @@ static struct screen *
 make_screen (grub_menu_entry_t entry)
 {
   struct screen *screen;
-  grub_command_list_t cl;
 
   /* Initialize the screen.  */
   screen = grub_malloc (sizeof (*screen));
@@ -435,16 +434,8 @@ make_screen (grub_menu_entry_t entry)
   /* Initialize the first line which must be always present.  */
   if (! init_line (screen->lines))
     goto fail;
-  
-  /* Input the entry.  */
-  for (cl = entry->command_list; cl; cl = cl->next)
-    {
-      if (! insert_string (screen, cl->command, 0))
-	goto fail;
-      
-      if (! insert_string (screen, "\n", 0))
-	goto fail;
-    }
+
+  insert_string (screen, (char *) entry->sourcecode, 0);
 
   /* Reset the cursor position.  */
   screen->column = 0;
@@ -979,35 +970,58 @@ clear_completions (void)
 static int
 run (struct screen *screen)
 {
-  int i;
-  
-  grub_cls ();
-  grub_printf ("  Booting a command list\n\n");
-  
-  for (i = 0; i < screen->num_lines; i++)
+  struct grub_script *parsed_script = 0;
+  int currline = 0;
+  char *nextline;
+
+  auto grub_err_t editor_getline (char **line);
+  grub_err_t editor_getline (char **line)
     {
-      struct line *linep = screen->lines + i;
+      struct line *linep = screen->lines + currline;
       char *p;
-      
+
+      if (currline > screen->num_lines)
+	{
+	  *line = 0;
+	  return 0;
+	}
+
       /* Trim down space characters.  */
       for (p = linep->buf + linep->len - 1;
 	   p >= linep->buf && grub_isspace (*p);
 	   p--)
 	;
       *++p = '\0';
+
       linep->len = p - linep->buf;
-      
       for (p = linep->buf; grub_isspace (*p); p++)
 	;
-      
-      if (*p == '\0')
-	/* Ignore an empty command line.  */
-	continue;
-
-      if (grub_command_execute (p, 0) != 0)
-	break;
+      *line = p;
+      currline++;
+      return 0;
     }
   
+  grub_cls ();
+  grub_printf ("  Booting a command list\n\n");
+
+
+  /* Execute the script, line for line.  */
+  while (currline < screen->num_lines)
+    {
+      editor_getline (&nextline);
+      parsed_script = grub_script_parse (nextline, editor_getline);
+      if (parsed_script)
+	{
+	  /* Execute the command(s).  */
+	  grub_script_execute (parsed_script);
+	  
+	  /* The parsed script was executed, throw it away.  */
+	  grub_script_free (parsed_script);
+	}
+      else
+	break;
+    }
+
   if (grub_errno == GRUB_ERR_NONE && grub_loader_is_loaded ())
     /* Implicit execution of boot, only if something is loaded.  */
     grub_command_execute ("boot", 0);
@@ -1016,12 +1030,9 @@ run (struct screen *screen)
     {
       grub_print_error ();
       grub_errno = GRUB_ERR_NONE;
-      /* Wait until the user pushes any key so that the user
-	 can see what happened.  */
-      grub_printf ("\nPress any key to continue...");
-      (void) grub_getkey ();
+      grub_wait_after_message ();
     }
-  
+
   return 1;
 }
 

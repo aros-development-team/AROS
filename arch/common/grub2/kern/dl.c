@@ -1,21 +1,20 @@
 /* dl.c - loadable module support */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2003, 2004, 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2004,2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -30,7 +29,7 @@
 #include <grub/env.h>
 #include <grub/cache.h>
 
-#if GRUB_HOST_SIZEOF_VOID_P == 4
+#if GRUB_CPU_SIZEOF_VOID_P == 4
 
 typedef Elf32_Word Elf_Word;
 typedef Elf32_Addr Elf_Addr;
@@ -41,7 +40,7 @@ typedef Elf32_Sym Elf_Sym;
 # define ELF_ST_BIND(val)	ELF32_ST_BIND (val)
 # define ELF_ST_TYPE(val)	ELF32_ST_TYPE (val)
 
-#elif GRUB_HOST_SIZEOF_VOID_P == 8
+#elif GRUB_CPU_SIZEOF_VOID_P == 8
 
 typedef Elf64_Word Elf_Word;
 typedef Elf64_Addr Elf_Addr;
@@ -507,9 +506,14 @@ static void
 grub_dl_flush_cache (grub_dl_t mod)
 {
   grub_dl_segment_t seg;
-  
-  for (seg = mod->segment; seg; seg = seg->next)
-    grub_arch_sync_caches (seg->addr, seg->size);
+
+  for (seg = mod->segment; seg; seg = seg->next) {
+    if (seg->size) {
+      grub_dprintf ("modules", "flushing 0x%x bytes at %p\n", seg->size,
+		    seg->addr);
+      grub_arch_sync_caches (seg->addr, seg->size);
+    }
+  }
 }
 
 /* Load a module from core memory.  */
@@ -518,11 +522,12 @@ grub_dl_load_core (void *addr, grub_size_t size)
 {
   Elf_Ehdr *e;
   grub_dl_t mod;
-  
+
+  grub_dprintf ("modules", "module at %p, size 0x%x\n", addr, size);
   e = addr;
   if (grub_dl_check_header (e, size))
     return 0;
-  
+
   if (e->e_type != ET_REL)
     {
       grub_error (GRUB_ERR_BAD_MODULE, "invalid ELF file type");
@@ -547,6 +552,7 @@ grub_dl_load_core (void *addr, grub_size_t size)
   mod->init = 0;
   mod->fini = 0;
 
+  grub_dprintf ("modules", "relocating to %p\n", mod);
   if (grub_dl_resolve_name (mod, e)
       || grub_dl_resolve_dependencies (mod, e)
       || grub_dl_load_segments (mod, e)
@@ -559,15 +565,17 @@ grub_dl_load_core (void *addr, grub_size_t size)
     }
 
   grub_dl_flush_cache (mod);
-  
+
+  grub_dprintf ("modules", "module name: %s\n", mod->name);
+  grub_dprintf ("modules", "init function: %p\n", mod->init);
   grub_dl_call_init (mod);
-  
+
   if (grub_dl_add (mod))
     {
       grub_dl_unload (mod);
       return 0;
     }
-  
+
   return mod;
 }
 

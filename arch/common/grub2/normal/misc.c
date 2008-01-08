@@ -1,21 +1,20 @@
 /* misc.c - miscellaneous functions */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/normal.h>
@@ -41,7 +40,7 @@ grub_normal_print_device_info (const char *name)
   dev = grub_device_open (name);
   if (! dev)
     grub_printf ("Filesystem cannot be accessed");
-  else if (! dev->disk || ! dev->disk->has_partitions || dev->disk->partition)
+  else if (dev->disk)
     {
       char *label;
       grub_fs_t fs;
@@ -50,7 +49,12 @@ grub_normal_print_device_info (const char *name)
       /* Ignore all errors.  */
       grub_errno = 0;
 
-      grub_printf ("Filesystem type %s", fs ? fs->name : "unknown");
+      if (fs)
+	grub_printf ("Filesystem type %s", fs->name);
+      else if (! dev->disk->has_partitions || dev->disk->partition)
+	grub_printf ("Unknown filesystem");
+      else
+	grub_printf ("Partition table");
 	  
       if (fs && fs->label)
 	{

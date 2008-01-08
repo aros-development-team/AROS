@@ -1,0 +1,24 @@
+#! /bin/sh
+#
+# Copyright (C) 2002,2006  Free Software Foundation, Inc.
+#
+# This gensymlist.sh is free software; the author
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+### The configure script will replace these variables.
+
+srcdir=@srcdir@
+CC="@CC@"
+
+$CC -DGRUB_SYMBOL_GENERATOR=1 -E -I. -Iinclude -I$srcdir/include $* \
+  | grep -v '^#' \
+  | sed -n \
+        -e '/EXPORT_FUNC *([a-zA-Z0-9_]*)/{s/.*EXPORT_FUNC *(\([a-zA-Z0-9_]*\)).*/\1 kernel/;p;}' \
+        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/\1 kernel/;p;}' \
+  | sort -u

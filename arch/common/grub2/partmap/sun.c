@@ -1,21 +1,20 @@
 /* sun.c - Read SUN style partition tables.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2005 Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/partition.h>
@@ -78,9 +77,13 @@ grub_sun_is_valid (struct grub_sun_block *label)
 {
   grub_uint16_t *pos;
   grub_uint16_t sum = 0;
-  for (pos = (grub_uint16_t *) label; pos < (grub_uint16_t *) (label + 1); pos++)
+  
+  for (pos = (grub_uint16_t *) label;
+       pos < (grub_uint16_t *) (label + 1);
+       pos++)
     sum ^= *pos;
-  return !sum;
+  
+  return ! sum;
 }
 
 static grub_err_t
@@ -88,14 +91,16 @@ sun_partition_map_iterate (grub_disk_t disk,
                            int (*hook) (grub_disk_t disk,
 					const grub_partition_t partition))
 {
-  struct grub_partition *p;
+  grub_partition_t p;
   struct grub_disk raw;
   struct grub_sun_block block;
   int partnum;
+  
   raw = *disk;
   raw.partition = 0;
-  p = (struct grub_partition *) grub_malloc (sizeof (struct grub_partition));
-  if (!p)
+  
+  p = (grub_partition_t) grub_malloc (sizeof (struct grub_partition));
+  if (! p)
     return grub_errno;
 
   p->offset = 0;
@@ -105,21 +110,26 @@ sun_partition_map_iterate (grub_disk_t disk,
 		      (char *) &block) == GRUB_ERR_NONE)
     {
       if (GRUB_PARTMAP_SUN_MAGIC != grub_be_to_cpu16 (block.magic))
-	grub_error (GRUB_ERR_BAD_PART_TABLE, "not a sun partiton table");
-      if (!grub_sun_is_valid (&block))
+	grub_error (GRUB_ERR_BAD_PART_TABLE, "not a sun partition table");
+      
+      if (! grub_sun_is_valid (&block))
 	grub_error (GRUB_ERR_BAD_PART_TABLE, "invalid checksum");
+      
       /* Maybe another error value would be better, because partition
-	 table _is_ recognised but invalid.  */
+	 table _is_ recognized but invalid.  */
       for (partnum = 0; partnum < GRUB_PARTMAP_SUN_MAX_PARTS; partnum++)
 	{
-	  if (block.infos[partnum].id == 0 ||
-	      block.infos[partnum].id == GRUB_PARTMAP_SUN_WHOLE_DISK_ID)
+	  struct grub_sun_partition_descriptor *desc;
+	  
+	  if (block.infos[partnum].id == 0
+	      || block.infos[partnum].id == GRUB_PARTMAP_SUN_WHOLE_DISK_ID)
 	    continue;
-	  p->start = grub_be_to_cpu32
-	    (block.partitions[partnum].start_cylinder)
-	    * grub_be_to_cpu16 (block.ntrks)
-	    * grub_be_to_cpu16 (block.nsect);
-	  p->len = grub_be_to_cpu32 (block.partitions[partnum].num_sectors);
+
+	  desc = &block.partitions[partnum];
+	  p->start = ((grub_uint64_t) grub_be_to_cpu32 (desc->start_cylinder)
+		      * grub_be_to_cpu16 (block.ntrks)
+		      * grub_be_to_cpu16 (block.nsect));
+	  p->len = grub_be_to_cpu32 (desc->num_sectors);
 	  p->index = partnum;
 	  if (p->len)
 	    {
@@ -128,6 +138,7 @@ sun_partition_map_iterate (grub_disk_t disk,
 	    }
 	}
     }
+  
   grub_free (p);
 
   return grub_errno;
@@ -150,13 +161,15 @@ sun_partition_map_probe (grub_disk_t disk, const char *str)
           p = (grub_partition_t) grub_malloc (sizeof (*p));
           if (p)
             grub_memcpy (p, partition, sizeof (*p));
+	  
           return 1;
         }
+      
       return 0;
     }
 
   grub_errno = GRUB_ERR_NONE;
-  partnum = grub_strtoul (s, 0, 10);
+  partnum = grub_strtoul (s, 0, 10) - 1;
   if (grub_errno == GRUB_ERR_NONE)
     {
       if (sun_partition_map_iterate (disk, find_func))
@@ -170,6 +183,7 @@ sun_partition_map_probe (grub_disk_t disk, const char *str)
       grub_error (GRUB_ERR_BAD_FILENAME, "invalid partition");
       p = 0;
     }
+  
   return p;
 }
 
@@ -177,9 +191,11 @@ static char *
 sun_partition_map_get_name (const grub_partition_t p)
 {
   char *name;
+  
   name = grub_malloc (13);
   if (name)
-    grub_sprintf (name, "%d", p->index);
+    grub_sprintf (name, "%d", p->index + 1);
+  
   return name;
 }
 
@@ -192,27 +208,16 @@ static struct grub_partition_map grub_sun_partition_map =
     .get_name = sun_partition_map_get_name
   };
 
-#ifdef GRUB_UTIL
-void
-grub_sun_partition_map_init (void)
+GRUB_MOD_INIT(sun_partition_map)
 {
   grub_partition_map_register (&grub_sun_partition_map);
-}
-
-void
-grub_sun_partition_map_fini (void)
-{
-  grub_partition_map_unregister (&grub_sun_partition_map);
-}
-#else
-GRUB_MOD_INIT
-{
-  grub_partition_map_register (&grub_sun_partition_map);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(sun_partition_map)
 {
   grub_partition_map_unregister (&grub_sun_partition_map);
 }
-#endif
+

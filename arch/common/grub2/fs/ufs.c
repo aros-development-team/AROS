@@ -1,21 +1,20 @@
 /* ufs.c - Unix File System */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2004,2005,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/err.h>
@@ -232,7 +231,7 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, unsigned int blk)
 
 
   grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-	      "ufs does not support tripple indirect blocks");
+	      "ufs does not support triple indirect blocks");
   return 0;
 }
 
@@ -241,9 +240,9 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, unsigned int blk)
    POS.  Return the amount of read bytes in READ.  */
 static grub_ssize_t
 grub_ufs_read_file (struct grub_ufs_data *data,
-		    void (*read_hook) (unsigned long sector,
+		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		    int pos, unsigned int len, char *buf)
+		    int pos, grub_size_t len, char *buf)
 {
   struct grub_ufs_sblock *sblock = &data->sblock;
   int i;
@@ -363,7 +362,7 @@ grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
   
   if (INODE_SIZE (data) < (GRUB_UFS_DIRBLKS + GRUB_UFS_INDIRBLKS
 			  * INODE_BLKSZ (data)))
-    grub_strcpy (symlink, INODE (data, symlink));
+    grub_strcpy (symlink, (char *) INODE (data, symlink));
   else
     {
       grub_disk_read (data->disk, 
@@ -471,7 +470,7 @@ grub_ufs_find_file (struct grub_ufs_data *data, const char *path)
       }
       
       pos += grub_le_to_cpu16 (dirent.direntlen);
-    } while (pos < grub_le_to_cpu32 (INODE_SIZE (data)));
+    } while (pos < INODE_SIZE (data));
   
   grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
   return grub_errno;
@@ -631,7 +630,7 @@ grub_ufs_open (struct grub_file *file, const char *name)
 
 
 static grub_ssize_t
-grub_ufs_read (grub_file_t file, char *buf, grub_ssize_t len)
+grub_ufs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_ufs_data *data = 
     (struct grub_ufs_data *) file->data;
@@ -668,27 +667,16 @@ static struct grub_fs grub_ufs_fs =
     .next = 0
   };
 
-#ifdef GRUB_UTIL
-void
-grub_ufs_init (void)
+GRUB_MOD_INIT(ufs)
 {
   grub_fs_register (&grub_ufs_fs);
-}
-
-void
-grub_ufs_fini (void)
-{
-  grub_fs_unregister (&grub_ufs_fs);
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
-{
-  grub_fs_register (&grub_ufs_fs);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(ufs)
 {
   grub_fs_unregister (&grub_ufs_fs);
 }
-#endif /* ! GRUB_UTIL */
+

@@ -1,21 +1,20 @@
 /* boot.c - command to boot an operating system */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/normal.h>
@@ -38,29 +37,14 @@ grub_cmd_boot (struct grub_arg_list *state __attribute__ ((unused)),
 
 
 
-#ifdef GRUB_UTIL
-void
-grub_boot_init (void)
-{
-  grub_register_command ("boot", grub_cmd_boot, GRUB_COMMAND_FLAG_BOTH,
-			 "boot", "Boot an operating system.", 0);
-}
-
-void
-grub_boot_fini (void)
-{
-  grub_unregister_command ("boot");
-}
-#else /* ! GRUB_UTIL */
-GRUB_MOD_INIT
+GRUB_MOD_INIT(boot)
 {
   (void) mod;			/* To stop warning. */
   grub_register_command ("boot", grub_cmd_boot, GRUB_COMMAND_FLAG_BOTH,
 			 "boot", "Boot an operating system.", 0);
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(boot)
 {
   grub_unregister_command ("boot");
 }
-#endif /* ! GRUB_UTIL */

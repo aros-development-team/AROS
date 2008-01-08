@@ -1,0 +1,77 @@
+#! /bin/sh -e
+
+# update-grub helper script.
+# Copyright (C) 2006,2007  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+if [ "x${GRUB_DISTRIBUTOR}" = "" ] ; then
+  OS=GNU
+else
+  OS="${GRUB_DISTRIBUTOR} GNU/Hurd"
+fi
+
+at_least_one=false
+all_of_them=true
+
+# FIXME: add l4 here?
+kernel=
+for i in /boot/gnumach.gz /boot/gnumach ; do
+  if test -e $i ; then
+    basename=`basename $i`
+    dirname=`dirname $i`
+    grub_dirname=`echo ${dirname} | sed -e "s%^/boot%${GRUB_DRIVE_BOOT}%g"`
+    echo "Found GNU Mach: $i" >&2
+    kernel=${grub_dirname}/${basename}
+    at_least_one=true
+  fi
+done
+
+# FIXME: This works for ext2.  For other filesystems we might need special-casing
+case "${GRUB_FS}" in
+  *fs)	hurd_fs="${GRUB_FS}" ;;
+  *)	hurd_fs="${GRUB_FS}fs" ;;
+esac
+
+for i in /hurd/${hurd_fs}.static /hurd/exec ; do
+  if test -e "$i" ; then 
+    echo "Found Hurd module: $i" >&2
+    at_least_one=true
+  else
+    all_of_them=false
+  fi
+done
+
+if ${at_least_one} ; then : ; else
+  # no hurd here, aborting silently
+  exit 0
+fi
+
+if ${all_of_them} && test -e /lib/ld.so.1 ; then : ; else
+  echo "Some Hurd stuff found, but not enough to boot." >&2
+  exit 1
+fi
+
+cat << EOF
+menuentry "${OS}" {
+	multiboot ${kernel} root=device:${GRUB_DEVICE}
+	module /hurd/${hurd_fs}.static --readonly \\
+			--multiboot-command-line='\${kernel-command-line}' \\
+			--host-priv-port='\${host-port}' \\
+			--device-master-port='\${device-port}' \\
+			--exec-server-task='\${exec-task}' -T typed '\${root}' \\
+			'\$(task-create)' '\$(task-resume)'
+	module /lib/ld.so.1 /hurd/exec '\$(exec-task=task-create)'
+}
+EOF

@@ -1,21 +1,20 @@
 /* amiga.c - Read amiga partition tables (RDB).  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002, 2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/disk.h>
@@ -84,7 +83,7 @@ amiga_partition_map_iterate (grub_disk_t disk,
   struct grub_disk raw;
   int partno = 0;
   int next = -1;
-  int pos;
+  unsigned pos;
   
   /* Enforce raw disk access.  */
   raw = *disk;
@@ -94,11 +93,10 @@ amiga_partition_map_iterate (grub_disk_t disk,
   for (pos = 0; pos < 15; pos++)
     {
       /* Read the RDSK block which is a descriptor for the entire disk.  */
-      if (grub_disk_read (&raw, pos, 0,
-			  sizeof (rdsk),  (char *) &rdsk))
+      if (grub_disk_read (&raw, pos, 0, sizeof (rdsk), (char *) &rdsk))
 	return grub_errno;
       
-      if (!grub_strcmp (rdsk.magic, "RDSK"))
+      if (grub_strcmp ((char *) rdsk.magic, "RDSK") == 0)
 	{
 	  /* Found the first PART block.  */
 	  next = grub_be_to_cpu32 (rdsk.partitionlst);
@@ -116,8 +114,7 @@ amiga_partition_map_iterate (grub_disk_t disk,
       struct grub_amiga_partition apart;
      
       /* Read the RDSK block which is a descriptor for the entire disk.  */
-      if (grub_disk_read (&raw, next, 0,
-			  sizeof (apart),  (char *) &apart))
+      if (grub_disk_read (&raw, next, 0, sizeof (apart), (char *) &apart))
 	return grub_errno;
       
       /* Calculate the first block and the size of the partition.  */
@@ -129,7 +126,7 @@ amiga_partition_map_iterate (grub_disk_t disk,
 		  * grub_be_to_cpu32 (apart.heads)
 		  * grub_be_to_cpu32 (apart.block_per_track));
       
-      part.offset = next * 512;
+      part.offset = (grub_off_t) next * 512;
       part.index = partno;
       part.partmap = &grub_amiga_partition_map;
       
@@ -155,7 +152,7 @@ amiga_partition_map_probe (grub_disk_t disk, const char *str)
     
   int find_func (grub_disk_t d __attribute__ ((unused)),
 		 const grub_partition_t partition)
-      {
+    {
       if (partnum == partition->index)
 	{
 	  p = (grub_partition_t) grub_malloc (sizeof (*p));
@@ -170,7 +167,7 @@ amiga_partition_map_probe (grub_disk_t disk, const char *str)
     }
   
   /* Get the partition number.  */
-  partnum = grub_strtoul (s, 0, 10);
+  partnum = grub_strtoul (s, 0, 10) - 1;
   if (grub_errno)
     {
       grub_error (GRUB_ERR_BAD_FILENAME, "invalid partition");
@@ -197,7 +194,7 @@ amiga_partition_map_get_name (const grub_partition_t p)
   if (! name)
     return 0;
 
-  grub_sprintf (name, "%d", p->index);
+  grub_sprintf (name, "%d", p->index + 1);
   return name;
 }
 
@@ -211,27 +208,15 @@ static struct grub_partition_map grub_amiga_partition_map =
     .get_name = amiga_partition_map_get_name
   };
 
-#ifdef GRUB_UTIL
-void
-grub_amiga_partition_map_init (void)
+GRUB_MOD_INIT(amiga_partition_map)
 {
   grub_partition_map_register (&grub_amiga_partition_map);
-}
-
-void
-grub_amiga_partition_map_fini (void)
-{
-  grub_partition_map_unregister (&grub_amiga_partition_map);
-}
-#else
-GRUB_MOD_INIT
-{
-  grub_partition_map_register (&grub_amiga_partition_map);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(amiga_partition_map)
 {
   grub_partition_map_unregister (&grub_amiga_partition_map);
 }
-#endif

@@ -1,21 +1,20 @@
 /* grub-setup.c - make GRUB usable */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <config.h>
@@ -28,9 +27,14 @@
 #include <grub/partition.h>
 #include <grub/pc_partition.h>
 #include <grub/env.h>
-#include <grub/machine/util/biosdisk.h>
+#include <grub/util/biosdisk.h>
 #include <grub/machine/boot.h>
 #include <grub/machine/kernel.h>
+#include <grub/term.h>
+#include <grub/util/raid.h>
+#include <grub/util/lvm.h>
+
+#include <grub_setup_init.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -47,19 +51,10 @@
 #define DEFAULT_BOOT_FILE	"boot.img"
 #define DEFAULT_CORE_FILE	"core.img"
 
-#ifdef __NetBSD__
-/* NetBSD uses /boot for its boot block.  */
-# define DEFAULT_DIRECTORY	"/grub"
-#else
-# define DEFAULT_DIRECTORY	"/boot/grub"
-#endif
-
-#define DEFAULT_DEVICE_MAP	DEFAULT_DIRECTORY "/device.map"
-
 /* This is the blocklist used in the diskboot image.  */
 struct boot_blocklist
 {
-  grub_uint32_t start;
+  grub_uint64_t start;
   grub_uint16_t len;
   grub_uint16_t segment;
 } __attribute__ ((packed));
@@ -70,6 +65,18 @@ grub_putchar (int c)
   putchar (c);
 }
 
+int
+grub_getkey (void)
+{
+  return -1;
+}
+
+grub_term_t
+grub_term_get_current (void)
+{
+  return 0;
+}
+
 void
 grub_refresh (void)
 {
@@ -78,7 +85,7 @@ grub_refresh (void)
 static void
 setup (const char *prefix, const char *dir,
        const char *boot_file, const char *core_file,
-       const char *root, const char *dest)
+       const char *root, const char *dest, int must_embed)
 {
   char *boot_path, *core_path;
   char *boot_img, *core_img;
@@ -86,24 +93,25 @@ setup (const char *prefix, const char *dir,
   grub_uint16_t core_sectors;
   grub_device_t root_dev, dest_dev;
   grub_uint8_t *boot_drive;
-  grub_uint32_t *kernel_sector;
+  grub_disk_addr_t *kernel_sector;
   grub_uint16_t *boot_drive_check;
   struct boot_blocklist *first_block, *block;
   grub_int32_t *install_dos_part, *install_bsd_part;
   char *install_prefix;
   char *tmp_img;
   int i;
-  unsigned long first_sector;
+  grub_disk_addr_t first_sector;
   grub_uint16_t current_segment
     = GRUB_BOOT_MACHINE_KERNEL_SEG + (GRUB_DISK_SECTOR_SIZE >> 4);
   grub_uint16_t last_length = GRUB_DISK_SECTOR_SIZE;
   grub_file_t file;
   FILE *fp;
   unsigned long first_start = ~0UL;
+  int able_to_embed = 1;
   
-  auto void save_first_sector (unsigned long sector, unsigned offset,
+  auto void NESTED_FUNC_ATTR save_first_sector (grub_disk_addr_t sector, unsigned offset,
 			       unsigned length);
-  auto void save_blocklists (unsigned long sector, unsigned offset,
+  auto void NESTED_FUNC_ATTR save_blocklists (grub_disk_addr_t sector, unsigned offset,
 			     unsigned length);
 
   auto int find_first_partition_start (grub_disk_t disk,
@@ -122,10 +130,10 @@ setup (const char *prefix, const char *dir,
       return 0;
     }
   
-  void save_first_sector (unsigned long sector, unsigned offset,
+  void NESTED_FUNC_ATTR save_first_sector (grub_disk_addr_t sector, unsigned offset,
 			  unsigned length)
     {
-      grub_util_info ("the fist sector is <%lu,%u,%u>",
+      grub_util_info ("the first sector is <%llu,%u,%u>",
 		      sector, offset, length);
       
       if (offset != 0 || length != GRUB_DISK_SECTOR_SIZE)
@@ -134,23 +142,24 @@ setup (const char *prefix, const char *dir,
       first_sector = sector;
     }
 
-  void save_blocklists (unsigned long sector, unsigned offset, unsigned length)
+  void NESTED_FUNC_ATTR save_blocklists (grub_disk_addr_t sector, unsigned offset,
+			unsigned length)
     {
       struct boot_blocklist *prev = block + 1;
 
-      grub_util_info ("saving <%lu,%u,%u> with the segment 0x%x",
+      grub_util_info ("saving <%llu,%u,%u> with the segment 0x%x",
 		      sector, offset, length, (unsigned) current_segment);
       
       if (offset != 0 || last_length != GRUB_DISK_SECTOR_SIZE)
 	grub_util_error ("Non-sector-aligned data is found in the core file");
 
       if (block != first_block
-	  && (grub_le_to_cpu32 (prev->start)
+	  && (grub_le_to_cpu64 (prev->start)
 	      + grub_le_to_cpu16 (prev->len)) == sector)
 	prev->len = grub_cpu_to_le16 (grub_le_to_cpu16 (prev->len) + 1);
       else
 	{
-	  block->start = grub_cpu_to_le32 (sector);
+	  block->start = grub_cpu_to_le64 (sector);
 	  block->len = grub_cpu_to_le16 (1);
 	  block->segment = grub_cpu_to_le16 (current_segment);
 
@@ -174,7 +183,7 @@ setup (const char *prefix, const char *dir,
 
   /* Set the addresses of BOOT_DRIVE, KERNEL_SECTOR and BOOT_DRIVE_CHECK.  */
   boot_drive = (grub_uint8_t *) (boot_img + GRUB_BOOT_MACHINE_BOOT_DRIVE);
-  kernel_sector = (grub_uint32_t *) (boot_img
+  kernel_sector = (grub_disk_addr_t *) (boot_img
 				     + GRUB_BOOT_MACHINE_KERNEL_SECTOR);
   boot_drive_check = (grub_uint16_t *) (boot_img
 					+ GRUB_BOOT_MACHINE_DRIVE_CHECK);
@@ -204,9 +213,12 @@ setup (const char *prefix, const char *dir,
 		    + GRUB_KERNEL_MACHINE_PREFIX);
 
   /* Open the root device and the destination device.  */
-  root_dev = grub_device_open (root);
-  if (! root_dev)
-    grub_util_error ("%s", grub_errmsg);
+  if (!must_embed)
+    {
+      root_dev = grub_device_open (root);
+      if (! root_dev)
+	grub_util_error ("%s", grub_errmsg);
+    }
 
   dest_dev = grub_device_open (dest);
   if (! dest_dev)
@@ -253,7 +265,7 @@ setup (const char *prefix, const char *dir,
 	  grub_util_info ("will embed the core image into after the MBR");
 	  
 	  /* The first blocklist contains the whole sectors.  */
-	  first_block->start = grub_cpu_to_le32 (2);
+	  first_block->start = grub_cpu_to_le64 (2);
 	  first_block->len = grub_cpu_to_le16 (core_sectors - 1);
 	  first_block->segment
 	    = grub_cpu_to_le16 (GRUB_BOOT_MACHINE_KERNEL_SEG
@@ -266,23 +278,36 @@ setup (const char *prefix, const char *dir,
 	  block->segment = 0;
 
 	  /* Embed information about the installed location.  */
-	  if (root_dev->disk->partition)
+	  if (must_embed)
+	    *install_dos_part = *install_bsd_part = grub_cpu_to_le32 (-2);
+	  else if (root_dev->disk->partition)
 	    {
-	      struct grub_pc_partition *pcdata =
-		root_dev->disk->partition->data;
-	      
 	      if (strcmp (root_dev->disk->partition->partmap->name,
-			  "pc_partition_map") != 0)
+			  "pc_partition_map") == 0)
+		{
+		  struct grub_pc_partition *pcdata =
+		    root_dev->disk->partition->data;
+		  *install_dos_part
+		    = grub_cpu_to_le32 (pcdata->dos_part);
+		  *install_bsd_part
+		    = grub_cpu_to_le32 (pcdata->bsd_part);
+		}
+	      else if (strcmp (root_dev->disk->partition->partmap->name,
+			       "gpt_partition_map") == 0)
+		{
+		  *install_dos_part = grub_cpu_to_le32 (root_dev->disk->partition->index);
+		  *install_bsd_part = grub_cpu_to_le32 (-1);
+		}
+	      else
 		grub_util_error ("No PC style partitions found");
-	      
-	      *install_dos_part
-		= grub_cpu_to_le32 (pcdata->dos_part);
-	      *install_bsd_part
-		= grub_cpu_to_le32 (pcdata->bsd_part);
 	    }
 	  else
 	    *install_dos_part = *install_bsd_part = grub_cpu_to_le32 (-1);
 
+	  grub_util_info ("dos partition is %d, bsd partition is %d, prefix is %s",
+		  grub_le_to_cpu32 (*install_dos_part),
+		  grub_le_to_cpu32 (*install_bsd_part),
+		  prefix);
 	  strcpy (install_prefix, prefix);
 	  
 	  /* Write the core image onto the disk.  */
@@ -292,7 +317,7 @@ setup (const char *prefix, const char *dir,
 	  /* The boot image and the core image are on the same drive,
 	     so there is no need to specify the boot drive explicitly.  */
 	  *boot_drive = 0xff;
-	  *kernel_sector = grub_cpu_to_le32 (1);
+	  *kernel_sector = grub_cpu_to_le64 (1);
 
 	  /* Write the boot image onto the disk.  */
 	  if (grub_disk_write (dest_dev->disk, 0, 0, GRUB_DISK_SECTOR_SIZE,
@@ -301,7 +326,15 @@ setup (const char *prefix, const char *dir,
 
 	  goto finish;
 	}
+      else
+        able_to_embed = 0;
     }
+  else
+    able_to_embed = 0;
+
+  if (must_embed && !able_to_embed)
+    grub_util_error ("Can't embed the core image, but this is required when\n"
+		     "the root device is on a RAID array or LVM volume.");
   
   /* The core image must be put on a filesystem unfortunately.  */
   grub_util_info ("will leave the core image on the filesystem");
@@ -326,7 +359,7 @@ setup (const char *prefix, const char *dir,
       file = grub_file_open (core_path);
       if (file)
 	{
-	  if (grub_file_size (file) != (grub_ssize_t) core_size)
+	  if (grub_file_size (file) != core_size)
 	    grub_util_info ("succeeded in opening the core image but the size is different (%d != %d)",
 			    (int) grub_file_size (file), (int) core_size);
 	  else if (grub_file_read (file, tmp_img, core_size)
@@ -408,10 +441,12 @@ setup (const char *prefix, const char *dir,
       != (grub_ssize_t) core_size - GRUB_DISK_SECTOR_SIZE)
     grub_util_error ("Failed to read the rest sectors of the core image");
 
+  grub_file_close (file);
+  
   free (core_path);
   free (tmp_img);
   
-  *kernel_sector = grub_cpu_to_le32 (first_sector);
+  *kernel_sector = grub_cpu_to_le64 (first_sector);
 
   /* If the destination device is different from the root device,
      it is necessary to embed the boot drive explicitly.  */
@@ -426,19 +461,27 @@ setup (const char *prefix, const char *dir,
       struct grub_pc_partition *pcdata =
 	root_dev->disk->partition->data;
 
-      if (strcmp (root_dev->disk->partition->partmap->name,
-		  "pc_partition_map") != 0)
-	grub_util_error ("No PC style partitions found");
-      
-      *install_dos_part
-	= grub_cpu_to_le32 (pcdata->dos_part);
-      *install_bsd_part
-	= grub_cpu_to_le32 (pcdata->bsd_part);
+	if (strcmp (root_dev->disk->partition->partmap->name,
+		  "pc_partition_map") == 0)
+	  {
+	    *install_dos_part
+	      = grub_cpu_to_le32 (pcdata->dos_part);
+	    *install_bsd_part
+	      = grub_cpu_to_le32 (pcdata->bsd_part);
+	  }
+	else if (strcmp (root_dev->disk->partition->partmap->name,
+		  "gpt_partition_map") == 0)
+	  {
+	    *install_dos_part = grub_cpu_to_le32 (root_dev->disk->partition->index);
+	    *install_bsd_part = grub_cpu_to_le32 (-1);
+	  }
+	else
+	  grub_util_error ("No PC style partitions found");
     }
   else
     *install_dos_part = *install_bsd_part = grub_cpu_to_le32 (-1);
-  
-  grub_util_info ("dos partition is %u, bsd partition is %u, prefix is %s",
+
+  grub_util_info ("dos partition is %d, bsd partition is %d, prefix is %s",
 		  grub_le_to_cpu32 (*install_dos_part),
 		  grub_le_to_cpu32 (*install_bsd_part),
 		  prefix);
@@ -467,7 +510,8 @@ setup (const char *prefix, const char *dir,
   free (core_img);
   free (boot_img);
   grub_device_close (dest_dev);
-  grub_device_close (root_dev);
+  if (!must_embed)
+    grub_device_close (root_dev);
 }
 
 static struct option options[] =
@@ -493,7 +537,7 @@ usage (int status)
 Usage: grub-setup [OPTION]... DEVICE\n\
 \n\
 Set up images to boot from DEVICE.\n\
-DEVICE must be a GRUB device (e.g. ``(hd0,0)'').\n\
+DEVICE must be a GRUB device (e.g. ``(hd0,1)'').\n\
 \n\
   -b, --boot-image=FILE   use FILE as the boot image [default=%s]\n\
   -c, --core-image=FILE   use FILE as the core image [default=%s]\n\
@@ -534,6 +578,7 @@ main (int argc, char *argv[])
   char *root_dev = 0;
   char *prefix;
   char *dest_dev;
+  int must_embed = 0;
   
   progname = "grub-setup";
 
@@ -615,13 +660,15 @@ main (int argc, char *argv[])
 
   /* Initialize the emulated biosdisk driver.  */
   grub_util_biosdisk_init (dev_map ? : DEFAULT_DEVICE_MAP);
-  grub_pc_partition_map_init ();
 
+  /* Initialize all modules. */
+  grub_init_all ();
+  
   dest_dev = get_device_name (argv[optind]);
   if (! dest_dev)
     {
       /* Possibly, the user specified an OS device file.  */
-      dest_dev = grub_util_biosdisk_get_grub_dev (argv[optind]);
+      dest_dev = grub_util_get_grub_dev (argv[optind]);
       if (! dest_dev)
 	{
 	  fprintf (stderr, "Invalid device `%s'.\n", argv[optind]);
@@ -633,14 +680,6 @@ main (int argc, char *argv[])
     dest_dev = xstrdup (dest_dev);
 
   prefix = grub_get_prefix (dir ? : DEFAULT_DIRECTORY);
-  
-  /* Initialize filesystems.  */
-  grub_fat_init ();
-  grub_ext2_init ();
-  grub_ufs_init ();
-  grub_minix_init ();
-  grub_hfs_init ();
-  grub_jfs_init ();
   
   if (root_dev)
     {
@@ -655,7 +694,7 @@ main (int argc, char *argv[])
     }
   else
     {
-      root_dev = grub_guess_root_device (dir ? : DEFAULT_DIRECTORY);
+      root_dev = grub_util_get_grub_dev (grub_guess_root_device (dir ? : DEFAULT_DIRECTORY));
       if (! root_dev)
 	{
 	  grub_util_info ("guessing the root device failed, because of `%s'",
@@ -664,22 +703,53 @@ main (int argc, char *argv[])
 	}
     }
 
+#ifdef __linux__
+  if (grub_util_lvm_isvolume (root_dev))
+    {
+      char *newprefix;
+      must_embed = 1;
+
+      newprefix = xmalloc (1 + strlen (root_dev) + 1 + strlen (prefix) + 1);
+      sprintf (newprefix, "(%s)%s", root_dev, prefix);
+      free (prefix);
+      prefix = newprefix;
+    }
+    
+  if (dest_dev[0] == 'm' && dest_dev[1] == 'd'
+      && dest_dev[2] >= '0' && dest_dev[2] <= '9')
+    {
+      char **devicelist;
+      char *raid_prefix;
+      int i;
+
+      raid_prefix = xmalloc (1 + strlen (dest_dev) + 1 + strlen (prefix) + 1);
+
+      sprintf (raid_prefix, "(%s)%s", dest_dev, prefix);
+      
+      devicelist = grub_util_raid_getmembers (dest_dev);
+
+      for (i = 0; devicelist[i]; i++)
+	{
+	  setup (raid_prefix,
+		 dir ? : DEFAULT_DIRECTORY,
+		 boot_file ? : DEFAULT_BOOT_FILE,
+		 core_file ? : DEFAULT_CORE_FILE,
+		 root_dev, grub_util_get_grub_dev (devicelist[i]), 1);
+	}
+
+      free (raid_prefix);
+    }
+  else
+#endif
   /* Do the real work.  */
-  setup (prefix,
-	 dir ? : DEFAULT_DIRECTORY,
-	 boot_file ? : DEFAULT_BOOT_FILE,
-	 core_file ? : DEFAULT_CORE_FILE,
-	 root_dev, dest_dev);
+    setup (prefix,
+	   dir ? : DEFAULT_DIRECTORY,
+	   boot_file ? : DEFAULT_BOOT_FILE,
+	   core_file ? : DEFAULT_CORE_FILE,
+	   root_dev, dest_dev, must_embed);
 
   /* Free resources.  */
-  grub_ext2_fini ();
-  grub_fat_fini ();
-  grub_ufs_fini ();
-  grub_minix_fini ();
-  grub_hfs_fini ();
-  grub_jfs_fini ();
-  
-  grub_pc_partition_map_fini ();
+  grub_fini_all ();
   grub_util_biosdisk_fini ();
   
   free (boot_file);

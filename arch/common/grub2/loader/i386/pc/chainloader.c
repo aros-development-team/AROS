@@ -1,21 +1,20 @@
 /* chainloader.c - boot another boot loader */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2004  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2007  Free Software Foundation, Inc.
  *
- *  This program is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/loader.h>
@@ -34,42 +33,13 @@
 #include <grub/dl.h>
 
 static grub_dl_t my_mod;
+static int boot_drive;
+static void *boot_part_addr;
 
 static grub_err_t
 grub_chainloader_boot (void)
 {
-  grub_device_t dev;
-  int drive = -1;
-  void *part_addr = 0;
-  
-  /* Open the root device.  */
-  dev = grub_device_open (0);
-  if (dev)
-    {
-      grub_disk_t disk = dev->disk;
-      
-      if (disk)
-	{
-	  grub_partition_t p = disk->partition;
-	  
-	  /* In i386-pc, the id is equal to the BIOS drive number.  */
-	  drive = (int) disk->id;
-
-	  if (p)
-	    {
-	      grub_disk_read (disk, p->offset, 446, 64,
-			      (char *) GRUB_MEMORY_MACHINE_PART_TABLE_ADDR);
-	      
-	      /* Ignore errors. Perhaps it's not fatal.  */
-	      part_addr = (void *) (GRUB_MEMORY_MACHINE_PART_TABLE_ADDR
-				    + (p->index << 4));
-	    }
-	}
-
-      grub_device_close (dev);
-    }
-
-  grub_chainloader_real_boot (drive, part_addr);
+  grub_chainloader_real_boot (boot_drive, boot_part_addr);
 
   /* Never reach here.  */
   return GRUB_ERR_NONE;
@@ -87,6 +57,9 @@ grub_chainloader_cmd (const char *filename, grub_chainloader_flags_t flags)
 {
   grub_file_t file = 0;
   grub_uint16_t signature;
+  grub_device_t dev;
+  int drive = -1;
+  void *part_addr = 0;
 
   grub_dl_ref (my_mod);
   
@@ -114,7 +87,39 @@ grub_chainloader_cmd (const char *filename, grub_chainloader_flags_t flags)
     }
 
   grub_file_close (file);
-  grub_loader_set (grub_chainloader_boot, grub_chainloader_unload);
+
+  /* Obtain the partition table from the root device.  */
+  dev = grub_device_open (0);
+  if (dev)
+    {
+      grub_disk_t disk = dev->disk;
+      
+      if (disk)
+	{
+	  grub_partition_t p = disk->partition;
+	  
+	  /* In i386-pc, the id is equal to the BIOS drive number.  */
+	  drive = (int) disk->id;
+
+	  if (p)
+	    {
+	      grub_disk_read (disk, p->offset, 446, 64,
+			      (char *) GRUB_MEMORY_MACHINE_PART_TABLE_ADDR);
+	      part_addr = (void *) (GRUB_MEMORY_MACHINE_PART_TABLE_ADDR
+				    + (p->index << 4));
+	    }
+	}
+
+      grub_device_close (dev);
+    }
+  
+  /* Ignore errors. Perhaps it's not fatal.  */
+  grub_errno = GRUB_ERR_NONE;
+
+  boot_drive = drive;
+  boot_part_addr = part_addr;
+  
+  grub_loader_set (grub_chainloader_boot, grub_chainloader_unload, 1);
   return;
   
  fail:
@@ -145,7 +150,7 @@ grub_rescue_cmd_chainloader (int argc, char *argv[])
 
 static const char loader_name[] = "chainloader";
 
-GRUB_MOD_INIT
+GRUB_MOD_INIT(chainloader)
 {
   grub_rescue_register_command (loader_name,
 				grub_rescue_cmd_chainloader,
@@ -153,7 +158,7 @@ GRUB_MOD_INIT
   my_mod = mod;
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(chainloader)
 {
   grub_rescue_unregister_command (loader_name);
 }

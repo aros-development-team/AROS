@@ -1,21 +1,20 @@
 /* pc.c - Read PC style partition tables.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2004,2005 Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2005,2006,2007  Free Software Foundation, Inc.
  *
- *  GRUB is free software; you can redistribute it and/or modify
+ *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
+ *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
- *  This program is distributed in the hope that it will be useful,
+ *  GRUB is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License
- *  along with GRUB; if not, write to the Free Software
- *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <grub/partition.h>
@@ -55,8 +54,9 @@ grub_partition_parse (const char *str)
   /* Initialize some of the fields with invalid values.  */
   pcdata->bsd_part = pcdata->dos_type = pcdata->bsd_type = p->index = -1;
 
-  /* Get the DOS partition number.  */
-  pcdata->dos_part = grub_strtoul (s, &s, 0);
+  /* Get the DOS partition number. The number is counted from one for
+     the user interface, and from zero internally.  */
+  pcdata->dos_part = grub_strtoul (s, &s, 0) - 1;
   
   if (grub_errno)
     {
@@ -137,8 +137,12 @@ pc_partition_map_iterate (grub_disk_t disk,
 	  pcdata.bsd_type = -1;
 
 	  grub_dprintf ("partition",
-			"partition %d: flag 0x%x, type 0x%x, start 0x%lx, len 0x%lx\n",
+			"partition %d: flag 0x%x, type 0x%x, start 0x%llx, len 0x%llx\n",
 			p.index, e->flag, pcdata.dos_type, p.start, p.len);
+
+	  /* If this is a GPT partition, this MBR is just a dummy.  */
+	  if (e->type == GRUB_PC_PARTITION_TYPE_GPT_DISK && p.index == 0)
+	    return grub_error (GRUB_ERR_BAD_PART_TABLE, "dummy mbr");
 
 	  /* If this partition is a normal one, call the hook.  */
 	  if (! grub_pc_partition_is_empty (e->type)
@@ -233,6 +237,7 @@ pc_partition_map_probe (grub_disk_t disk, const char *str)
 		 const grub_partition_t partition)
     {
       struct grub_pc_partition *partdata = partition->data;
+
       if ((pcdata->dos_part == partdata->dos_part || pcdata->dos_part == -1)
 	  && pcdata->bsd_part == partdata->bsd_part)
 	{
@@ -279,9 +284,11 @@ pc_partition_map_get_name (const grub_partition_t p)
     return 0;
 
   if (pcdata->bsd_part < 0)
-    grub_sprintf (name, "%d", pcdata->dos_part);
+    grub_sprintf (name, "%d", pcdata->dos_part + 1);
+  else if (pcdata->dos_part < 0)
+    grub_sprintf (name, "%c", pcdata->bsd_part + 'a');
   else
-    grub_sprintf (name, "%d,%c", pcdata->dos_part, pcdata->bsd_part + 'a');
+    grub_sprintf (name, "%d,%c", pcdata->dos_part + 1, pcdata->bsd_part + 'a');
 
   return name;
 }
@@ -296,27 +303,15 @@ static struct grub_partition_map grub_pc_partition_map =
     .get_name = pc_partition_map_get_name
   };
 
-#ifdef GRUB_UTIL
-void
-grub_pc_partition_map_init (void)
+GRUB_MOD_INIT(pc_partition_map)
 {
   grub_partition_map_register (&grub_pc_partition_map);
-}
-
-void
-grub_pc_partition_map_fini (void)
-{
-  grub_partition_map_unregister (&grub_pc_partition_map);
-}
-#else
-GRUB_MOD_INIT
-{
-  grub_partition_map_register (&grub_pc_partition_map);
+#ifndef GRUB_UTIL
   my_mod = mod;
+#endif
 }
 
-GRUB_MOD_FINI
+GRUB_MOD_FINI(pc_partition_map)
 {
   grub_partition_map_unregister (&grub_pc_partition_map);
 }
-#endif
