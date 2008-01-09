@@ -56,6 +56,7 @@
 #define inputFile_path      	"Prefs/Input\""
 #define prefssrc_path      	"ENV:SYS"
 #define prefs_path          	"Prefs/Env-Archive/SYS"
+#define boot_path          	"Boot"
 
 #define locale_prfs_file		"locale.prefs"						/* please note the suffixed \" */
 #define input_prfs_file		"input.prefs"
@@ -653,11 +654,9 @@ IPTR Install__MUIM_IC_NextStep
 					else sprintf(tmp_device ,"Unknown Drive [%s unit %d]",boot_Device,boot_Unit);
 
 					sprintf(tmp_grub ,"%s:boot/GRUB",dest_Path);
-					sprintf(tmp_kernel ,"%s:boot/aros-pc-i386.gz",dest_Path);
 
 					set(data->instc_options_grub->gopt_drive, MUIA_Text_Contents, tmp_device);
 					set(data->instc_options_grub->gopt_grub, MUIA_Text_Contents, tmp_grub);
-					set(data->instc_options_grub->gopt_kernel, MUIA_Text_Contents, tmp_kernel);
 				}
 
 				data->instc_stage_next = EInstallMessageStage;
@@ -1494,18 +1493,25 @@ localecopydone:
 		LONG part_no;
 		ULONG srcLen = strlen(source_Path);
 		ULONG dstLen = (strlen(dest_Path)+1);
+		TEXT srcPath[srcLen + strlen(boot_path) + 1];
+		TEXT dstPath[dstLen + strlen(boot_path) + 2];
 
-		TEXT     *grub_files[((3+1)*2)+1] = 
+		TEXT *grub_files[] =
 		{
-			"boot/aros-pc-i386.gz",			"boot/aros-pc-i386.gz",
 			"boot/grub/stage1",			"boot/grub/stage1",
 			"boot/grub/stage2_hdisk",		"boot/grub/stage2",
 			"boot/grub/menu.lst.DH0",		"boot/grub/menu.lst",
 			NULL
 		};
 
-		CreateDestDIR( CLASS, self, "boot", dest_Path );
-		CreateDestDIR( CLASS, self, "boot/grub", dest_Path );
+		CreateDestDIR( CLASS, self, boot_path, dest_Path);
+		CreateDestDIR( CLASS, self, boot_path "/grub", dest_Path);
+
+		// Copy kernel files
+		CopyMem(source_Path, srcPath, srcLen + 1);
+		AddPart(srcPath, boot_path, srcLen + strlen(boot_path) + 1);
+		sprintf(dstPath, "%s:%s", dest_Path, boot_path);
+		DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, 3, 0, FALSE);
 
 		// Installing GRUB
 		D(bug("[INSTALLER] Installing Grub...\n"));
@@ -1847,7 +1853,7 @@ retrycdadir:
 		noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, srcDirs, dstDirs);
 
 		/* OK Now copy the contents */
-		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, noOfFiles, 0);
+		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, noOfFiles, 0, TRUE);
 
 		/* check if folder has an icon */
 		CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
@@ -2137,6 +2143,9 @@ IPTR Install__MUIM_IC_CopyFiles
 									break;
 
 								case ST_USERDIR:
+									if(!message->recursive)
+										break;
+
 					if(data->instc_undoenabled)
 					{
 						BPTR		dlock = 0;
@@ -2171,7 +2180,7 @@ IPTR Install__MUIM_IC_CopyFiles
 				
 						FreeVec(tmppath);
 					}
-									message->currFile = DoMethod(self, MUIM_IC_CopyFiles, srcFile, dstFile, message->noOfFiles, message->currFile);
+									message->currFile = DoMethod(self, MUIM_IC_CopyFiles, srcFile, dstFile, message->noOfFiles, message->currFile, TRUE);
 									break;
 							}
 							ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
@@ -2624,7 +2633,6 @@ int main(int argc,char *argv[])
 /**/
 	Object			*grub_drive = NULL;
 	Object			*grub_grub = NULL;
-	Object			*grub_kernel = NULL;
 
 	Object			*LicenseMandGrp = NULL;
 	Object			*check_license = ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected,FALSE , End;
@@ -2935,10 +2943,6 @@ int main(int argc,char *argv[])
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (grub_grub = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) LLabel(KMsgGrubKernel),
-										Child, (IPTR) HVSpace,
-										Child, (IPTR) (grub_kernel = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
-										Child, (IPTR) HVSpace,
 									End,
 								End,
 
@@ -3104,7 +3108,6 @@ int main(int argc,char *argv[])
 /**/
 	grub_opts->gopt_drive = grub_drive;
 	grub_opts->gopt_grub = grub_grub;
-	grub_opts->gopt_kernel = grub_kernel;
 /**/
 	struct MUI_CustomClass *mcc = MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct Install_DATA), Install_Dispatcher);
 	Object *installer = NewObject(mcc->mcc_Class, NULL,

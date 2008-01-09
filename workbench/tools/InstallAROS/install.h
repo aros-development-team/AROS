@@ -68,9 +68,6 @@ MUIX_B "Grub Settings" MUIX_N;
 static const char* KMsgGrubGrub =
 "Path to GRUB files:";
 
-static const char* KMsgGrubKernel =
-"Path to AROS kernel:";
-
 static const char* KMsgPartitioning =
 "Partition your drives...\n\n";
 
@@ -215,6 +212,7 @@ struct MUIP_CopyFiles
     STACKED CONST_STRPTR dstDir;
     STACKED ULONG noOfFiles;
     STACKED ULONG currFile;
+    STACKED BOOL recursive;
 };
 
 struct MUIP_CopyFile
@@ -227,8 +225,8 @@ struct MUIP_CopyFile
 enum EStage
 {
     EMessageStage,
-	ELicenseStage,
-	EPartitionOptionsStage,
+    ELicenseStage,
+    EPartitionOptionsStage,
     EInstallOptionsStage,
     EDestOptionsStage,
     EGrubOptionsStage,
@@ -241,29 +239,28 @@ enum EStage
 struct Install_Options
 {
     Object	*opt_license;
-		Object	*opt_lic_box;
-		Object	*opt_lic_mgrp;
+    Object	*opt_lic_box;
+    Object	*opt_lic_mgrp;
     Object	*opt_partition;
-		Object	*opt_partmethod;
+    Object	*opt_partmethod;
     Object	*opt_format;
-	Object	*opt_locale;
+    Object	*opt_locale;
     Object	*opt_copycore;
     Object	*opt_copyextra;
     Object	*opt_development;
     Object	*opt_bootloader;
 
-	Object	*opt_reboot;
+    Object	*opt_reboot;
 
-	BOOL	partitioned;
-	BOOL	bootloaded;
+    BOOL	partitioned;
+    BOOL	bootloaded;
 };
 
 struct Grub_Options
 {
     Object	*gopt_drive;
-	Object	*gopt_grub;
-    Object	*gopt_kernel;
-	BOOL	bootinfo;
+    Object	*gopt_grub;
+    BOOL	bootinfo;
 };
 
 struct InstallC_UndoRecord
