@@ -2,7 +2,7 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc: Info Cli Command
     Lang: English
 */
 
@@ -19,7 +19,7 @@
 
     LOCATION
 
-        Workbench:C
+        Sys:C
 
     FUNCTION
 
@@ -45,7 +45,7 @@
     Info
 
     Unit                 Size    Used    Free Full Errs   State    Type Name
-    Foreign harddisk:  964.1M  776.7M  187.4M  81%    0 read/write  OFS Workbench
+    Harddisk:        964.1M  776.7M  187.4M  81%    0 read/write  OFS AROS
     RAM:                 8.0M    7.1M    7.1M  12%    0 read/write  OFS Ram Disk
 
     BUGS
@@ -69,7 +69,7 @@
     Based on the original by:
     © 1997-1998 by Stephan Rupprecht
     All rights resevered
-*/
+******************************************************************************/
 
 #define  DEBUG  0
 #include <aros/debug.h>
