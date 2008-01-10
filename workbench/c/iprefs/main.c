@@ -1,9 +1,50 @@
 /*
     Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
+	
+    Desc: Iprefs
+    Lang: English
 */
+/******************************************************************************
 
-/*********************************************************************************************/
+
+    NAME
+
+        Iprefs
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+    Initialises preferences files on startup.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+    This is a command executed on startup by the s:startup-sequence script file.
+    So no actual need of the command afterwards…
+	
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	
+    Decoration
+	
+    INTERNALS
+
+    HISTORY
+	
+******************************************************************************/
 
 #include "global.h"
 #include "trackdiskprefs.h"
