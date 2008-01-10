@@ -18,7 +18,7 @@
 	DRIVE/A,ON/S,OFF/S,PASSKEY
 
     LOCATION
-	Workbench:c
+	Sys:c
 
     FUNCTION
 	Lock will cause the specified device or partition to be made write-
