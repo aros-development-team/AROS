@@ -18,14 +18,14 @@
 
     LOCATION
 
-    Workbench:C
+    Sys:C
 
     FUNCTION
 
     Join makes one big file of all listed files by putting them together
     in the order given. The destination file may not have the same name 
     as any of input files. You must supply a destination file name. The
-    original files remian unchanged. Any number of files can be Join:ed in
+    original files remain unchanged. Any number of files can be Join:ed in
     one operation.
 
     INPUTS
@@ -39,6 +39,9 @@
 
     EXAMPLE
 
+    Join Text1.doc Text2.doc AS Text.doc    
+    (This will merge the two text files into one.)
+	
     BUGS
 
     SEE ALSO
