@@ -1,6 +1,56 @@
 /*
     Copyright © 2004, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: File Identifier/starter
+    Lang: English	
 */
+/******************************************************************************
+
+
+    NAME
+
+        Identify
+
+    SYNOPSIS
+
+        FILE/M/A, VERBOSE/S
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Identifies the file type or directory
+
+    INPUTS
+
+        FILE    -- file to be recognized
+        VERBOSE   -- activates verbose output
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+	Identify s:startup-sequenceS:startup-sequence        
+	> Text/Ascii    
+	
+	(This will identify the startup-sequence as a text file.)
+	
+    BUGS
+
+    SEE ALSO
+
+        AddDatatypes
+	
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 #include <proto/dos.h>
 #include <proto/datatypes.h>
