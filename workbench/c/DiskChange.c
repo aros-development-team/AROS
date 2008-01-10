@@ -5,6 +5,52 @@
     Desc: DiskChange CLI command
     Lang: English
 */
+/******************************************************************************
+
+    NAME
+
+        Diskchange
+
+USAGE
+
+        Diskchange DEVICE
+  
+    SYNOPSIS
+
+        DEVICE/A
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+          Diskchange is intended only for removable media. For example if 
+      you have a internal floppy disk dive set to noclick AROS  will not 
+      perform disk presence check. So you have to manually update any 
+      disk change made.
+
+    INPUTS
+
+        DEVICE    --  The disk device unit.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        Diskchange df0:
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************//*****************************************************************************************/
 
 #include <proto/dos.h>
 
