@@ -32,10 +32,11 @@ USAGE
 
         DRIVE    --  The device disk unit designation
         NAME   --  Sets the volume name
-        OFS  --  Formats the drive withe the Old File system (not recommended for HD’s)
+        OFS  --  Formats the drive withe the Old File system (not recommended for HDs)
         FFS  --  Formats the drive withe the Fast File system.
         INTL  --  Enables the FFS support of international characters.
-        FORCE –QUIET – It will not display any output, ordinary or error messages.
+        FORCE
+        QUIET -- It will not display any output, ordinary or error messages.
 
     RESULT
 
@@ -46,8 +47,8 @@ USAGE
     EXAMPLE
 
         Format DRIVE=DF0: NAME="MyDisk" FFS
-        (This will format a disk present in the internal floppy drive with the name 
-        “Mydisk” and with Fast File System.)
+        (This will format a disk present in the internal floppy drive with the
+        name 'Mydisk' and with Fast File System.)
 	
     BUGS
 

@@ -1,9 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 /******************************************************************************
 
@@ -14,23 +11,23 @@
 
     SYNOPSIS
 
-        DEVICE/A, UNIT/K/K/A, PARTITIONNUMBER=PN/K/N, GRUB/K/A, FORCELBA/S
+        DEVICE/A, UNIT/N/K/A, PARTITIONNUMBER=PN/K/N, GRUB/K/A, FORCELBA/S
 
     LOCATION
 
-        Sys:C
+        SYS:C
 
     FUNCTION
 
-        Basically it makes a disk device or partition bootable. 
+        Installs the GRUB bootloader to the bootblock of the specified disk.
 
     INPUTS
 
-        DEVICE     --  device name (i.e.: ata.device)
+        DEVICE --  Device name (eg. ata.device)
         UNIT  --  Unit number
-        PN  --  Partition number (advice: the first AROS ffs partition)
-        GRUB – (?)
-        FORCELBA --  (?)
+        PN  --  Partition number (advice: the first AROS FFS partition)
+        GRUB -- Path to GRUB directory.
+        FORCELBA --  Force use of LBA mode.
 
     RESULT
 
@@ -38,8 +35,8 @@
 	
     EXAMPLE
 
-        install-i386-pc device ata.device unit 0 PN 1 grub dh0:boot/grub kernel dh0:boot/aros-i386.gz   
-	
+        install-i386-pc device ata.device unit 0 PN 1 grub dh0:boot/grub
+
     BUGS
 
     SEE ALSO
@@ -47,8 +44,6 @@
         Partition, Format
 	
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 
