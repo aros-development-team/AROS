@@ -2,11 +2,58 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc: Conclip CLI command
     Lang: English
 */
+/******************************************************************************
 
-/*****************************************************************************************/
+    NAME
+
+        Conclip
+
+USAGE
+
+        CONCLIP [ [UNIT | CLIPUNIT] <unitnumber>] [OFF]
+  
+    SYNOPSIS
+
+        CLIPUNIT=UNIT/N, ON/S, OFF/S
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+          Enable clipboard cut/copy/paste functionality in console windows
+      and string gadgets. This enables the use of a system global clipboard.
+
+    INPUTS
+
+        CLIPUNIT=UNIT -- the number associated to the clipboard exchange unit
+        ON/S    --  Activates conclip (default unit will be set to 1)
+        OFF/S   --  Deactivates Conclip
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        Conclip CLIPUNIT=1
+
+        This will set the global clipboard unit to 1. The available clipboards
+        can be checked in clips: dirDir Clips:
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************//*****************************************************************************************/
 
 #include <aros/asmcall.h>
 #include <dos/dos.h>
