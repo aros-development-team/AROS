@@ -5,7 +5,61 @@
     Desc: Format CLI command
     Lang: English
 */
+/******************************************************************************
 
+
+    NAME
+
+        Format
+
+USAGE
+
+        Format DRIVE=<Drive> [NAME=<name>] [OFS | FFS] [INTL | NOINTL] [FORCE] [QUIET]
+		
+    SYNOPSIS
+
+        DRIVE/K/A, NAME/K/A, OFS/S, FFS/S, INTL=INTERNTIONAL/S, NOINTL=NOINTERNATIONAL/S, FORCE/S, QUIET/S
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Format will initialise a disk to be useable by the AROS.
+
+    INPUTS
+
+        DRIVE    --  The device disk unit designation
+        NAME   --  Sets the volume name
+        OFS  --  Formats the drive withe the Old File system (not recommended for HD’s)
+        FFS  --  Formats the drive withe the Fast File system.
+        INTL  --  Enables the FFS support of international characters.
+        FORCE –QUIET – It will not display any output, ordinary or error messages.
+
+    RESULT
+
+    NOTES
+
+	This command only supports OFS and FFS filesystem.
+	
+    EXAMPLE
+
+        Format DRIVE=DF0: NAME="MyDisk" FFS
+        (This will format a disk present in the internal floppy drive with the name 
+        “Mydisk” and with Fast File System.)
+	
+    BUGS
+
+    SEE ALSO
+
+        SFSformat, Info
+	
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 #define DEBUG 0
 
 #include <proto/dos.h>
