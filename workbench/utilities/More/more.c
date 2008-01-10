@@ -324,19 +324,22 @@ static BOOL OpenFile(void)
     UBYTE 		*filepos;
     LONG 		flen, act_line;
 
+    BOOL                seekable;
+
     if (!(fh = Open(filename, MODE_OLDFILE)))
     {
 	DosError();
 	return FALSE;
     }
 
-    if (IsFileSystem(filename))
-    {
-	Seek(fh, 0, OFFSET_END);
+    if (Seek(fh, 0, OFFSET_END) >= 0) {
 	new_filelen = Seek(fh, 0, OFFSET_BEGINNING);
+        seekable = TRUE;
     }
-    else
+    else {
 	new_filelen = 0x10000;
+        seekable = FALSE;
+    }
 
     if (new_filelen < 0)
     {
@@ -356,7 +359,7 @@ static BOOL OpenFile(void)
 	Cleanup(MSG(MSG_NO_MEM));
     }
 
-    if ((flen=Read(fh, new_filebuffer, new_filelen)) != new_filelen && IsFileSystem(filename))
+    if ((flen=Read(fh, new_filebuffer, new_filelen)) != new_filelen && seekable)
     {
         FreeVec(new_filebuffer);
         Close(fh); fh = 0;
