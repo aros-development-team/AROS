@@ -15,10 +15,11 @@
 
     SYNOPSIS
 
+        FILE/A
 
     LOCATION
 
-        Workbench:C
+        Sys:C
 
     FUNCTION
 
@@ -27,6 +28,8 @@
 
     INPUTS
 
+        FILE - The script filename to execute.
+	
         Tooltypes for script icon:
 	    WINDOW	      -- Specification of the shell window
 	                         default: con:0/50//80/IconX/Auto
@@ -45,6 +48,8 @@
 
     SEE ALSO
 
+        Execute
+	
     INTERNALS
 
     HISTORY
