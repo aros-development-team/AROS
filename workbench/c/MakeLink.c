@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Sys:C
+        SYS:C
 
     FUNCTION
 
@@ -43,17 +43,13 @@
     EXAMPLE
 
         Makelink ls c:list
-         Creates a “ls” file with a symlink to the “list” command in c:)
+         Creates an 'ls' file with a symlink to the 'list' command in C:.
 	
     BUGS
 
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-
-    04.05.2000  SDuvan  implemented
 
 ******************************************************************************/
 
