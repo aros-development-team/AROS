@@ -1,7 +1,56 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc: 
+    Lang: English
 */
+/******************************************************************************
+
+
+    NAME
+
+        Install-i386-pc
+
+    SYNOPSIS
+
+        DEVICE/A, UNIT/K/K/A, PARTITIONNUMBER=PN/K/N, GRUB/K/A, FORCELBA/S
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Basically it makes a disk device or partition bootable. 
+
+    INPUTS
+
+        DEVICE     --  device name (i.e.: ata.device)
+        UNIT  --  Unit number
+        PN  --  Partition number (advice: the first AROS ffs partition)
+        GRUB – (?)
+        FORCELBA --  (?)
+
+    RESULT
+
+    NOTES
+	
+    EXAMPLE
+
+        install-i386-pc device ata.device unit 0 PN 1 grub dh0:boot/grub kernel dh0:boot/aros-i386.gz   
+	
+    BUGS
+
+    SEE ALSO
+
+        Partition, Format
+	
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
