@@ -10,6 +10,54 @@ exit
     Lang: English
 */
 
+/******************************************************************************
+
+    NAME
+
+        Mount
+
+    USAGE
+
+        Mount <Device> <From>
+		
+    SYNOPSIS
+
+        DEVICE/M, FROM/K
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Loads and mounts a device
+
+    INPUTS
+
+        DEVICE -- The device type to be mounted
+        FROM   --  (?)
+
+    RESULT
+
+        Standard DOS error codes.
+	
+    NOTES
+	
+    EXAMPLE
+
+        Mount DEVS:FAT0    
+        (Mounts a fat device defined on Sys:Devs/FAT0 file…)
+	
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <exec/devices.h>
 #include <exec/io.h>
 #include <exec/memory.h>
