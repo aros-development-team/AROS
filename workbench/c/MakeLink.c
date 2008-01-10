@@ -8,7 +8,6 @@
 
 /******************************************************************************
 
-
     NAME
 
         MakeLink
@@ -19,7 +18,7 @@
 
     LOCATION
 
-        Workbench:C
+        Sys:C
 
     FUNCTION
 
@@ -35,10 +34,17 @@
 
     RESULT
 
+        Standard DOS error codes.
+	
     NOTES
 
+        Avoid using hard links in FFS disk devices. AROS FFS may not hande these in proper manner
+	
     EXAMPLE
 
+        Makelink ls c:list
+         Creates a “ls” file with a symlink to the “list” command in c:)
+	
     BUGS
 
     SEE ALSO
