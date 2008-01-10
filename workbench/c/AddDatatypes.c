@@ -3,6 +3,55 @@
     $Id$
 */
 
+
+/******************************************************************************
+
+    NAME
+
+        AddDatatypes (files) [QUIET] [REFRESH] [LIST]
+
+    SYNOPSIS
+
+        FILES/M, QUIET/S, REFRESH/S, LIST/S
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+          AddDatatypes allows you to activate a set of specific datatypes.
+      This might be necessary if new datatypes were installed on your 
+      system or were not activated on startup.
+
+    INPUTS
+
+        FILES  --  The name of the file(s) of the corresponding datatype.
+        QUIET  --  Won’t output any messages
+      REFRESH  --  Refreshes the Datatype list?
+         LIST  --  This will display a list of current datatypes loaded in
+                   memory
+
+    RESULT
+
+        Standard DOS error codes.
+
+    NOTES
+
+    EXAMPLE
+
+        AddDataTypes gif.datatype REFRESH
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
 #include <aros/macros.h>
 #include <aros/bigendianio.h>
 #include <exec/types.h>
