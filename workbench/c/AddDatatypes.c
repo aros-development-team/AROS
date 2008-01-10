@@ -1,6 +1,9 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc: 
+    Lang: English
 */
 
 
