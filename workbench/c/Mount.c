@@ -1,6 +1,5 @@
 /*
-sc link debug=line idir=include: nostackcheck opt data=far nostartup mountnew.c
-exit
+sc link debug=line idir=include: nostackcheck opt data=far nostartup mountnew.c exit
     (C) 1995-2001 AROS - The Amiga Research OS
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
@@ -46,8 +45,8 @@ exit
     EXAMPLE
 
         Mount DEVS:FAT0    
-        (Mounts a fat device defined on Sys:Devs/FAT0 file…)
-	
+        (Mounts a FAT device defined on SYS:Devs/FAT0 file)
+
     BUGS
 
     SEE ALSO
@@ -129,6 +128,40 @@ const char *SearchTable[]=
  * startup,control need to be handled differently.
  */
 
+enum
+{
+	ARG_HANDLER,
+	ARG_EHANDLER,
+	ARG_FILESYSTEM,
+	ARG_DEVICE,
+	ARG_UNIT,
+	ARG_FLAGS,
+	ARG_BLOCKSIZE,
+	ARG_SURFACES,
+	ARG_BLOCKSPERTRACK,
+	ARG_SECTORSPERBLOCK,
+	ARG_RESERVED,
+	ARG_PREALLOC,
+	ARG_INTERLEAVE,
+	ARG_LOWCYL,
+	ARG_HIGHCYL,
+	ARG_BUFFERS,
+	ARG_BUFMEMTYPE,
+	ARG_MAXTRANSFER,
+	ARG_MASK,
+	ARG_BOOTPRI,
+	ARG_DOSTYPE,
+	ARG_BAUD,
+	ARG_CONTROL,
+	ARG_STACKSIZE,
+	ARG_PRIORITY,
+	ARG_GLOBVEC,
+	ARG_STARTUP,
+	ARG_ACTIVATE,
+	ARG_FORCELOAD,
+	NUM_ARGS
+};
+
 const UBYTE options[]=
 	"HANDLER/K,"
 	"EHANDLER/K,"
@@ -159,41 +192,6 @@ const UBYTE options[]=
 	"STARTUP/K,"
 	"MOUNT=ACTIVATE/K,"
 	"FORCELOAD/K";
-
-struct Args
-{
-	char	*Handler;
-	char	*EHandler;
-	char	*Filesystem;
-	char	*Device;
-	char	*Unit;
-	char	*Flags;
-
-	char	*BlockSize;
-	char	*Surfaces;
-	char	*BlocksPerTrack;
-	char	*SectorsPerBlock;
-	char	*Reserved;
-	char	*PreAlloc;
-	char	*Interleave;
-	char	*LowCyl;
-	char	*HighCyl;
-	char	*Buffers;
-	char	*BufMemType;
-	char	*MaxTransfer;
-	char	*Mask;
-	char	*BootPri;
-	char	*DosType;
-	char	*Baud;
-	char	*Control;
-
-	char	*StackSize;
-	char	*Priority;
-	char	*GlobalVec;
-	char	*Startup;
-	char	*Activate;
-	char	*ForceLoad;
-};
 
 #ifdef __MORPHOS__
 #define PROGNAME "Mount unofficial"
@@ -227,7 +225,7 @@ typedef struct UtilityBase *UtilityBase_t;
 #endif
 
 static const int __nocommandline;
-const TEXT version[] = "\0$VER: " PROGNAME " 50.13 (21.5.2007)";
+const TEXT version[] = "\0$VER: " PROGNAME " 50.14 (10.1.2008)";
 
 ULONG CheckDevice(char *name);
 void  InitParams(IPTR *params);
@@ -260,7 +258,7 @@ char *HandlerString;
 char *DeviceString;
 BOOL  IsEHandler, IsFilesystem;
 BOOL  IsCli;
-struct Args flagargs;
+BOOL flagargs[NUM_ARGS];
 extern struct WBStartup *_WBenchMsg;
 
 int main(void)
@@ -275,7 +273,7 @@ int main(void)
   {
     if ((UtilityBase = (UtilityBase_t)OpenLibrary("utility.library",37)))
     {
-	memset(&flagargs,0,sizeof(struct Args));
+	memset(&flagargs, 0, sizeof(flagargs));
 	IsEHandler = TRUE;
 	IsFilesystem = TRUE;
 	if (!_WBenchMsg)
@@ -428,7 +426,7 @@ int main(void)
                         DEBUG_MOUNT(Printf("Mount: try File <%s>\n",
                                            (ULONG)dirname));
 
-                        memset(&flagargs,0,sizeof(struct Args));
+                        memset(&flagargs, 0, sizeof(flagargs));
 			IsEHandler = TRUE;
 			IsFilesystem = TRUE;
 			error=readmountfile(params, dirname);
@@ -700,7 +698,7 @@ ULONG	Sign;
 ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 {
 	struct DosEnvec *vec;
-	struct Args args;
+	STRPTR args[NUM_ARGS];
 	struct RDArgs *MyRDA;
 	ULONG result = RETURN_OK;
 	int i;
@@ -708,9 +706,9 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
 	DEBUG_MOUNT(Printf("ReadMountArgs:\n%s\n\n",(ULONG)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
 
-	memset(&args,0,sizeof(struct Args));
+	memset(&args, 0, sizeof(args));
 
-	if (!(MyRDA=ReadArgs((STRPTR)options, (LONG*)&args, rda)))
+	if (!(MyRDA = ReadArgs((STRPTR)options, (IPTR *)args, rda)))
 	{
 		DEBUG_MOUNT(Printf("ReadMountArgs: ReadArgs failed\n"));
 		DEBUG_MOUNT(PrintFault(IoErr(),"ReadMountArgs"));
@@ -718,29 +716,29 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		return  ERR_INVALIDKEYWORD;
 	}
 
-	for (i=0;i<sizeof(args) / sizeof(IPTR);i++)
+	for (i = 0; i < NUM_ARGS; i++)
 	{
-		if (((ULONG*)&args)[i])
+		if (args[i] != NULL)
 		{
-			((ULONG*) &flagargs)[i]	= TRUE;
+			flagargs[i] = TRUE;
 		}
 	}
 
-	if (args.Handler)
+	if (args[ARG_HANDLER] != NULL)
 	{
-		s = args.Handler;
+		s = (STRPTR)args[ARG_HANDLER];
 		IsEHandler = FALSE;
 		IsFilesystem = FALSE;
 	}
-	else if (args.EHandler)
+	else if (args[ARG_EHANDLER] != NULL)
 	{
-		s = args.EHandler;
+		s = (STRPTR)args[ARG_EHANDLER];
 		IsEHandler = TRUE;
 		IsFilesystem = FALSE;
 	}
-	else if (args.Filesystem)
+	else if (args[ARG_FILESYSTEM] != NULL)
 	{
-		s = args.Filesystem;
+		s = (STRPTR)args[ARG_FILESYSTEM];
 		IsEHandler = TRUE;
 		IsFilesystem = TRUE;
 	} else
@@ -759,40 +757,38 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 			bstrcpy(HandlerString, s, len);
 		}
 	}
-	if (args.StackSize)
+	if (args[ARG_STACKSIZE] != NULL)
 	{
-		StackSize = GetValue(args.StackSize, NULL);
+		StackSize = GetValue(args[ARG_STACKSIZE], NULL);
 	}
 
-	if (args.Priority)
+	if (args[ARG_PRIORITY] != NULL)
 	{
-		Priority = GetValue(args.Priority, NULL);
+		Priority = GetValue(args[ARG_PRIORITY], NULL);
 	}
 
-	if (args.GlobalVec)
+	if (args[ARG_GLOBVEC] != NULL)
 	{
-		GlobalVec = GetValue(args.GlobalVec, NULL);
+		GlobalVec = GetValue(args[ARG_GLOBVEC], NULL);
 	}
 
-	if (args.ForceLoad)
+	if (args[ARG_FORCELOAD] != NULL)
 	{
-		ForceLoad = (ULONG)GetValue(args.ForceLoad, NULL);
+		ForceLoad = GetValue((STRPTR)args[ARG_FORCELOAD], NULL);
 	}
 
-	if (args.Activate)
+	if (args[ARG_ACTIVATE] != NULL)
 	{
-		Activate = GetValue(args.Activate, NULL);
+		Activate = GetValue(args[ARG_ACTIVATE], NULL);
 	}
 
-	if (args.Device)
+	if (args[ARG_DEVICE] != NULL)
 	{
 		int len;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Device <%s>\n",args.Device));
+		DEBUG_MOUNT(Printf("ReadMountArgs: Device <%s>\n",args[ARG_DEVICE]));
 
-		len = strlen(args.Device);
-
-		//Printf("found args.Device\n");
+		len = strlen((STRPTR)args[ARG_DEVICE]);
 
 		if (DeviceString)
 		{
@@ -802,31 +798,31 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		{
 			//Printf("copying...\n");
 
-			strcpy(DeviceString,args.Device);
+			strcpy(DeviceString, args[ARG_DEVICE]);
 		}
 	}
 
-	if (args.Unit)
+	if (args[ARG_UNIT] != NULL)
 	{
 		if (UnitString)
 		{
 			FreeVec(UnitString);
 			UnitString = NULL;
 		}
-		params[2] = GetValue(args.Unit, &s);
+		params[2] = GetValue(args[ARG_UNIT], &s);
 		if (*s)
 		{
 			int len;
 
-			len = strlen(args.Unit);
+			len = strlen(args[ARG_UNIT]);
 
 			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
 
 			if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				strcpy(UnitString,args.Unit);
-				params[2] = (ULONG)UnitString;
-				DEBUG_MOUNT(Printf("ReadMountArgs: Unit String <%s>\n",params[2]));
+				strcpy(UnitString, args[ARG_UNIT]);
+				params[2] = (IPTR)UnitString;
+				DEBUG_MOUNT(Printf("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
 			}
 			else
 			{
@@ -837,18 +833,18 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
         	else
 			DEBUG_MOUNT(Printf("ReadMountArgs: Unit Value %ld\n",params[2]));
 	}
-	if (args.Flags)
+	if (args[ARG_FLAGS] != NULL)
 	{
 //			char *String;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Flags <%s>\n",args.Flags));
+		DEBUG_MOUNT(Printf("ReadMountArgs: Flags <%s>\n",args[ARG_FLAGS]));
 		if (FlagsString)
 		{
 			FreeVec(FlagsString);
 			FlagsString = NULL;
 		}
 /*
-		String	=	args.Flags;
+		String	=	args[ARG_FLAGS];
 
 		if ((*String >= 0x30) && (*String <= 0x39))
 		{
@@ -857,20 +853,20 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		}
 		else
 */
-		params[3] = GetValue(args.Flags, &s);
+		params[3] = GetValue(args[ARG_FLAGS], &s);
 		if (*s)
 		{
 			int len;
 
-			len = strlen(args.Flags);
+			len = strlen(args[ARG_FLAGS]);
 
 			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
 
 			if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				strcpy(FlagsString,args.Flags);
-				params[3] = (ULONG) FlagsString;
-				DEBUG_MOUNT(Printf("ReadMountArgs: Flags String <%s>\n",params[3]));
+				strcpy(FlagsString, args[ARG_FLAGS]);
+				params[3] = (IPTR) FlagsString;
+				DEBUG_MOUNT(Printf("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
 			}
 			else
 			{
@@ -884,92 +880,87 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 
         vec = (struct DosEnvec *)&params[4];
 
-	if (args.BlockSize)
+	if (args[ARG_BLOCKSIZE] != NULL)
 	{
-		vec->de_SizeBlock = GetValue(args.BlockSize, NULL) >> 2;
+		vec->de_SizeBlock = GetValue(args[ARG_BLOCKSIZE], NULL) >> 2;
 	}
-	if (args.Surfaces)
+	if (args[ARG_SURFACES] != NULL)
 	{
-		vec->de_Surfaces = GetValue(args.Surfaces, NULL);
+		vec->de_Surfaces = GetValue(args[ARG_SURFACES], NULL);
 	}
-	if (args.SectorsPerBlock)
+	if (args[ARG_SECTORSPERBLOCK] != NULL)
 	{
-		vec->de_SectorPerBlock = GetValue(args.SectorsPerBlock, NULL);
+		vec->de_SectorPerBlock = GetValue(args[ARG_SECTORSPERBLOCK], NULL);
 	}
-	if (args.BlocksPerTrack)
+	if (args[ARG_BLOCKSPERTRACK] != NULL)
 	{
-		vec->de_BlocksPerTrack = GetValue(args.BlocksPerTrack, NULL);
+		vec->de_BlocksPerTrack = GetValue(args[ARG_BLOCKSPERTRACK], NULL);
 	}
-	if (args.Reserved)
+	if (args[ARG_RESERVED] != NULL)
 	{
-		vec->de_Reserved = GetValue(args.Reserved, NULL);
+		vec->de_Reserved = GetValue(args[ARG_RESERVED], NULL);
 	}
-	if (args.PreAlloc)
+	if (args[ARG_PREALLOC] != NULL)
 	{
-		vec->de_PreAlloc = GetValue(args.PreAlloc, NULL);
+		vec->de_PreAlloc = GetValue(args[ARG_PREALLOC], NULL);
 	}
-	if (args.Interleave)
+	if (args[ARG_INTERLEAVE] != NULL)
 	{
-		vec->de_Interleave = GetValue(args.Interleave, NULL);
+		vec->de_Interleave = GetValue(args[ARG_INTERLEAVE], NULL);
 	}
-	if (args.LowCyl)
+	if (args[ARG_LOWCYL] != NULL)
 	{
-		vec->de_LowCyl = GetValue(args.LowCyl, NULL);
+		vec->de_LowCyl = GetValue(args[ARG_LOWCYL], NULL);
 	}
-	if (args.HighCyl)
+	if (args[ARG_HIGHCYL] != NULL)
 	{
-		vec->de_HighCyl	= GetValue(args.HighCyl, NULL);
+		vec->de_HighCyl	= GetValue(args[ARG_HIGHCYL], NULL);
 	}
-	if (args.Buffers)
+	if (args[ARG_BUFFERS] != NULL)
 	{
-		vec->de_NumBuffers = GetValue(args.Buffers, NULL);
+		vec->de_NumBuffers = GetValue(args[ARG_BUFFERS], NULL);
 	}
-	if (args.BufMemType)
+	if (args[ARG_BUFMEMTYPE] != NULL)
 	{
-		vec->de_BufMemType = GetValue(args.BufMemType, NULL);
+		vec->de_BufMemType = GetValue(args[ARG_BUFMEMTYPE], NULL);
 	}
-	if (args.BootPri)
+	if (args[ARG_BOOTPRI] != NULL)
 	{
-		vec->de_BootPri	= GetValue(args.BootPri, NULL);
+		vec->de_BootPri	= GetValue(args[ARG_BOOTPRI], NULL);
 	}
-	if (args.Baud)
+	if (args[ARG_BAUD] != NULL)
 	{
-		vec->de_Baud = GetValue(args.Baud, NULL);
+		vec->de_Baud = GetValue(args[ARG_BAUD], NULL);
 	}
-	if (args.MaxTransfer)
+	if (args[ARG_MAXTRANSFER] != NULL)
 	{
-		vec->de_MaxTransfer = GetValue(args.MaxTransfer, NULL);
+		vec->de_MaxTransfer = GetValue(args[ARG_MAXTRANSFER], NULL);
 	}
-	if (args.Mask)
+	if (args[ARG_MASK] != NULL)
 	{
-		vec->de_Mask = GetValue(args.Mask, NULL);
-	}
-
-	if (args.DosType)
-	{
-		vec->de_DosType	= (IPTR)GetValue(args.DosType, NULL);
+		vec->de_Mask = GetValue(args[ARG_MASK], NULL);
 	}
 
-	if (args.BootPri)
+	if (args[ARG_DOSTYPE] != NULL)
 	{
-		vec->de_BootPri	= GetValue(args.BootPri, NULL);
+		vec->de_DosType	= (IPTR)GetValue(args[ARG_DOSTYPE], NULL);
 	}
 
-	if (args.Control)
+	if (args[ARG_CONTROL] != NULL)
 	{
 		int len;
-		DEBUG_MOUNT(Printf("ReadMountArgs: Control <%s>\n",args.Control));
+		DEBUG_MOUNT(Printf("ReadMountArgs: Control <%s>\n",args[ARG_CONTROL]));
 		if (ControlString)
 		{
 			FreeVec(ControlString);
 			ControlString =	NULL;
 		}
-		len = strlen(args.Control);
+		len = strlen(args[ARG_CONTROL]);
 		if (len < 0x100)
 		{
 			if ((ControlString=AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				bstrcpy(ControlString, args.Control, len);
+				bstrcpy(ControlString, args[ARG_CONTROL], len);
 				vec->de_Control	= (IPTR)MKBADDR((char*)ControlString);
 			}
 			else
@@ -988,36 +979,36 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 		}
 	}
 
-	if (args.Startup)
+	if (args[ARG_STARTUP] != NULL)
 	{
 //		      char *String;
 
-		DEBUG_MOUNT(Printf("ReadMountArgs: Startup <%s>\n",args.Startup));
+		DEBUG_MOUNT(Printf("ReadMountArgs: Startup <%s>\n",args[ARG_STARTUP]));
 		if (StartupString)
 		{
 			FreeVec(StartupString);
 			StartupString = NULL;
 		}
 /*
-		String = args.Startup;
+		String = args[ARG_STARTUP];
 		if ((*String >= 0x30) && (*String <= 0x39))
 		{
 			StartupValue = GetValue(String);
 		}
 		else
 */
-		StartupValue = GetValue(args.Startup, &s);
+		StartupValue = GetValue(args[ARG_STARTUP], &s);
 		if (*s)
 		{
 			int len;
 
-			len = strlen(args.Startup);
+			len = strlen(args[ARG_STARTUP]);
 
 			DEBUG_MOUNT(Printf("ReadMountArgs: len %ld\n",len));
 
 			if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
 			{
-				strcpy(StartupString,args.Startup);
+				strcpy(StartupString,args[ARG_STARTUP]);
 			}
 			else
 			{
@@ -1099,7 +1090,7 @@ STRPTR			MountListBuf;
 LONG			MountListBufSize;
 struct RDArgs		rda;
 ULONG			error = RETURN_FAIL;
-char			*nameptr;
+UBYTE			*nameptr;
 int			toollen;
 BOOL			mountinfo=FALSE;
 char			name[256+1];
@@ -1118,11 +1109,10 @@ char			name[256+1];
     lock = Lock(filename, SHARED_LOCK);
     if (lock)
     {
-      /* reusing name as fib, just to annoy certain guy ;-) */
-      struct FileInfoBlock *fib = (APTR) ((((ULONG) name) + 3) & ~3);
-      if (Examine(lock, fib))
+      struct FileInfoBlock fib;
+      if (Examine(lock, &fib))
       {
-        nameptr = fib->fib_FileName;
+        nameptr = fib.fib_FileName;
         memmove(name, nameptr, strlen(nameptr) + 1);
       }
       UnLock(lock);
@@ -1161,7 +1151,7 @@ char			name[256+1];
     if ((error = parsemountfile(params, MountListBuf, MountListBufSize))!=RETURN_OK)
     {
       DEBUG_MOUNT(Printf("ReadMountFile: parsemountfile error %ld\n", error));
-      ShowFault(IoErr(), "Mountfile '%s' is invalid", (ULONG)filename);
+      ShowFault(IoErr(), "Mountfile '%s' is invalid", filename);
     }
     else
     {
@@ -1243,7 +1233,7 @@ char			name[256+1];
 
   if (mountinfo)
   {
-    DEBUG_MOUNT(Printf("ReadMountFile: mount information exist\n"));
+    DEBUG_MOUNT(Printf("ReadMountFile: mount information exists\n"));
 
     if ((error = mount(params,name)) != RETURN_OK)
     {
@@ -1531,7 +1521,7 @@ struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *Startu
   
   if (ParameterPkt)
   {
-    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: DosName <%s> DeviceName <%s> Unit ",(ULONG)DosName, ParameterPkt[EXECNAME_INDEX]));
+    DEBUG_MAKEDOSNODE(Printf("MakeDosNode: DosName <%s> DeviceName <%s> Unit ", DosName, ParameterPkt[EXECNAME_INDEX]));
     DEBUG_MAKEDOSNODE(if (UnitString)
 			     Printf("<%s>",ParameterPkt[UNIT_INDEX]);
                       else
@@ -1654,13 +1644,13 @@ struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *Startu
 
 LONG parsemountfile(IPTR *params, STRPTR buf, LONG size)
 {
-struct Args	args;
+STRPTR args[NUM_ARGS];
 LONG   error;
 struct RDArgs rda;
 
     DEBUG_MOUNT(Printf("ParseMountFile:\n"));
 
-    memset(&args,0,sizeof(struct Args));
+    memset(&args, 0, sizeof(args));
     memset(&rda,0,sizeof(struct RDArgs));
 
     rda.RDA_Source.CS_Buffer = buf;
@@ -1687,7 +1677,7 @@ LONG	parsemountlist(IPTR		*params,
                        STRPTR		buf,
                        LONG		size)
 {
-struct Args	args;
+STRPTR args[NUM_ARGS];
 UBYTE  buffer[1024];
 LONG   error=RETURN_OK, res;
 STRPTR end = buf + size;
@@ -1697,7 +1687,7 @@ struct RDArgs rda;
 
     DEBUG_MOUNT(Printf("ParseMountList: <%s>\n",(ULONG)name));
 
-    memset(&args,0,sizeof(struct Args));
+    memset(&args,0,sizeof(args));
     memset(&rda,0,sizeof(struct RDArgs));
 
     rda.RDA_Source.CS_Buffer = buf;
@@ -1799,8 +1789,9 @@ struct DosEnvec *vec;
 
 	params[1] = (IPTR) DeviceString;
 
-        if (IsFilesystem && ((!flagargs.Device) || (!flagargs.Surfaces) ||
-	    (!flagargs.BlocksPerTrack) || (!flagargs.LowCyl) || (!flagargs.HighCyl)))
+        if (IsFilesystem && (!flagargs[ARG_DEVICE]
+            || !flagargs[ARG_SURFACES] || !flagargs[ARG_BLOCKSPERTRACK]
+            || !flagargs[ARG_LOWCYL] || !flagargs[ARG_HIGHCYL]))
 	{
 		ShowError("Could not find some of the following keywords:\n"
 		   "       Surfaces, BlocksPerTrack, LowCyl, HighCyl, Device");
@@ -1813,7 +1804,7 @@ struct DosEnvec *vec;
 	    return ERROR_BAD_NUMBER;
 	}
 
-	if (flagargs.GlobalVec)
+	if (flagargs[ARG_GLOBVEC])
 	{
 		if ((GlobalVec != -1) && (GlobalVec != -2))
 		{
@@ -1822,7 +1813,7 @@ struct DosEnvec *vec;
 		}
 	}
 
-	if ((flagargs.Startup) && (!StartupString))
+	if (flagargs[ARG_STARTUP] && !StartupString)
 	{
 		if (StartupValue >= 0x100)
 		{
