@@ -30,7 +30,7 @@
 
     NOTES
     This is a command executed on startup by the s:startup-sequence script file.
-    So no actual need of the command afterwards…
+    So no actual need of the command afterwards.
 	
     EXAMPLE
 
