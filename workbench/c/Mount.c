@@ -34,7 +34,7 @@ sc link debug=line idir=include: nostackcheck opt data=far nostartup mountnew.c 
     INPUTS
 
         DEVICE -- The device type to be mounted
-        FROM   --  (?)
+        FROM   -- Search device in this mountlist
 
     RESULT
 

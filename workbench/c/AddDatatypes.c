@@ -30,7 +30,7 @@
     INPUTS
 
         FILES  --  The name of the file(s) of the corresponding datatype.
-        QUIET  --  Won’t output any messages
+        QUIET  --  Won't output any messages
       REFRESH  --  Refreshes the Datatype list?
          LIST  --  This will display a list of current datatypes loaded in
                    memory
