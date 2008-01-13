@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -375,7 +375,8 @@ ULONG last=0xFFFFFFFF;
 	spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
 	if (first == 0)
 		first = table->table->reserved;
-	first /= spc;
+	if (first != 0)
+		first = (first - 1) / spc + 1;
 	last = ((last+1)/spc)-1;
 	if (last>=table->dg.dg_Cylinders)
 		last=table->dg.dg_Cylinders-1;
@@ -574,7 +575,6 @@ WORD	    	 drawtype;
 		DrawPartition(rport, data, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	data->active = getActive(data);
-bug("Old selection: %ld -> %ld\n", de->de_LowCyl, de->de_HighCyl);
 
 	if ((struct DosEnvec *)data->active == &data->gap)
 	{
