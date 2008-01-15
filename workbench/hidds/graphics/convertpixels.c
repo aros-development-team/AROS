@@ -28,7 +28,8 @@
 #define GETPIX24(s, pix)                \
     do                                  \
     {                                   \
-        pix = (((UBYTE *)s)[0] << 16) | \
+        pix = 0xFF000000              | \
+              (((UBYTE *)s)[0] << 16) | \
               (((UBYTE *)s)[1] << 8)  | \
 	       ((UBYTE *)s)[2];	        \
 	s = (UBYTE *)s + 3;             \
@@ -38,7 +39,8 @@
 #define GETPIX24(s, pix) 	\
     do                                  \
     {                                   \
-        pix = (((UBYTE *)s)[2] << 16) | \
+        pix = 0xFF000000              | \
+              (((UBYTE *)s)[2] << 16) | \
               (((UBYTE *)s)[1] << 8)  | \
 	       ((UBYTE *)s)[0];	        \
 	s = (UBYTE *)s + 3;             \
