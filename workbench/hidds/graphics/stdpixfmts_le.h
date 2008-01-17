@@ -14,14 +14,10 @@
 const HIDDT_PixelFormat stdpfs[] = 
 {
     {
-          /* 24-bit formats have a alpha mask set here to ensure that the 0xFF
-           * alpha returned by GETPIX24 is seen correctly when converting to a
-           * format that supports it */
-
     	  /* R8G8B8 */
 	     
 	  24, 24, 3
-	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
 	, 24, 16, 8, 0
 	, 0, 0
 	, vHidd_StdPixFmt_RGB24
@@ -30,7 +26,7 @@ const HIDDT_PixelFormat stdpfs[] =
     	  /* B8G8R8 */
 	  
 	  24, 24, 3
-	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
+	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
 	, 8, 16, 24, 0
 	, 0, 0
 	, vHidd_StdPixFmt_BGR24
