@@ -3,34 +3,28 @@ include $(TOP)/config/make.cfg
 
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 KOBJS 		:=
-FILES		:= bootstrap ubootstubs
+FILES		:= bootstrap
 
 #MM kernel-bootstrap-ppc-sam440:
-kernel-bootstrap-ppc-sam440: setup-sam440-ppc $(TARGETDIR)/mkimage $(BINDIR)/boot/arosboot.img
+kernel-bootstrap-ppc-sam440: setup-sam440-ppc $(BINDIR)/boot/AROSBootstrap
 
 setup-sam440-ppc :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 
-$(BINDIR)/boot/arosboot.img : $(TARGETDIR)/arosboot
-	$(TARGETDIR)/mkimage -A ppc -T standalone -C none -a 100000 -d $< $@
-
-$(TARGETDIR)/arosboot: $(TARGETDIR)/bootstrap.o
+$(BINDIR)/boot/AROSBootstrap: $(TARGETDIR)/bootstrap.o
 	$(KERNEL_LD) -N -e bootstrap -Map $(OSGENDIR)/boot/aros.map -Tldscript.lds \
 		-o $@ $< $(KOBJS) 
-	$(TARGET_OBJCOPY) -O binary $@
-	
-$(TARGETDIR)/mkimage: u-boot/crc32.c u-boot/mkimage.c
-	$(HOST_CC) -Iu-boot/include -DUSE_HOSTCC u-boot/mkimage.c u-boot/crc32.c -o $@
+	$(TARGET_STRIP) --strip-unneeded $@
 	 
 #MM
 clean ::
 	-$(RM) $(TESTS)
 
 $(TARGETDIR)/%.o : %.c
-	%compile_q opt="$(CFLAGS) -nostdinc -nostdlib"
+	%compile_q opt="$(CFLAGS)"
 
 $(TARGETDIR)/%.o : %.S
-	%compile_q opt="$(CFLAGS) -nostdinc -nostdlib"
+	%compile_q opt="$(CFLAGS)"
 
 $(TARGETDIR)/%.d : %.c
 	%mkdepend_q
