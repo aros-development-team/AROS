@@ -272,7 +272,7 @@ GLOB_MKDIRS += %(dirs)
 #   the same value as cflags will be used
 # - targetdir: the directory to put the .o file and the .d file. By default
 #   it is put in the same directory as the .c file
-%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target
+%define rule_compile basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target nix=no
 
 ifeq (%(targetdir),)
   TMP_TARGETBASE := %(basename)
@@ -292,14 +292,26 @@ $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
 endif
 
-$(TMP_TARGETBASE).o : CFLAGS := %(cflags)
+ifeq (%(nix),yes)
+  $(TMP_TARGETBASE).o : CFLAGS := -nix %(cflags)
+else
+  $(TMP_TARGETBASE).o : CFLAGS := %(cflags)
+endif
 $(TMP_TARGETBASE).o : %(basename).c
 	%compile_q cmd=$(TMP_CMD)
 
 ifeq (%(dflags),)
-$(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
+  ifeq (%(nix),yes)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(cflags)
+  else
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
+  endif
 else
-$(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
+  ifeq (%(nix),yes)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dflags)
+  else
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
+  endif
 endif
 $(TMP_TARGETBASE).d : %(basename).c
 	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
@@ -509,7 +521,7 @@ endif
 #------------------------------------------------------------------------------
 # Link %(progs) from object in %(objdir) to executables in %(targetdir) using
 # the AROS libraries in %(uselibs) and the host libraries in %(usehostlibs)
-%define rule_link_progs progs=/A targetdir=$(AROSDIR)/$(CURDIR) \
+%define rule_link_progs progs=/A targetdir=$(AROSDIR)/$(CURDIR) nix=%(nix) \
     objdir=$(GENDIR)/$(CURDIR) ldflags=$(LDFLAGS) uselibs= usehostlibs= \
     usestartup=yes detach=no
 
@@ -981,7 +993,7 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))
 #------------------------------------------------------------------------------
 # Build programs, for every C file an executable will be built with the same
 # 
-%define build_progs mmake=/A files=/A \
+%define build_progs mmake=/A files=/A nix=no \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
     uselibs= usehostlibs= usestartup=yes detach=no
@@ -1012,10 +1024,10 @@ BD_LDFLAGS$(BDID)   := %(ldflags)
 %(mmake) : $(BD_EXES$(BDID))
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
-%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) nix=%(nix) \
     cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 
-%rule_link_progs progs=$(BD_FILES$(BDID)) \
+%rule_link_progs progs=$(BD_FILES$(BDID)) nix=%(nix) \
     targetdir=$(BD_TARGETDIR$(BDID)) objdir=$(BD_OBJDIR$(BDID)) \
     ldflags=$(BD_LDFLAGS$(BDID)) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
