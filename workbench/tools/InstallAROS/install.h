@@ -63,7 +63,7 @@ static const char* KMsgGrubDrive =
 "Drive GRUB will install on:";
 
 static const char* KMsgGrubGOptions =
-MUIX_B "Grub Settings" MUIX_N;
+MUIX_B "GRUB Settings" MUIX_N;
 
 static const char* KMsgGrubGrub =
 "Path to GRUB files:";

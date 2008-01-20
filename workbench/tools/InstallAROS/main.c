@@ -92,8 +92,9 @@ struct	ExpansionBase		*ExpansionBase = NULL;
 char						*source_Path=NULL;		/* full path to source "tree" */
 char				*source_Name=NULL;
 
-char						*dest_Path=NULL;		/* VOLUME NAME of part used to store "aros" */
-char						*work_Path=NULL;		/* VOLUME NAME of part used to store "work" */
+char						*dest_Path=NULL;		/* DOS DEVICE NAME of part used to store "aros" */
+char						*work_Path=NULL;		/* DOS DEVICE NAME of part used to store "work" */
+TEXT						*extras_path = NULL;	/* DOS DEVICE NAME of part used to store extras */
 
 char				*boot_Device="ata.device";
 ULONG				boot_Unit = 0;
@@ -1122,7 +1123,7 @@ void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
 				{
 					D(bug("[INSTALLER] FixUpPackageFile() Found package path needing changed '%s'\n",oldpackageline));
 					//AllocVec(strlen(oldpackageline)-strlen(package_Path)+strlen(work_Path),MEMF_PUBLIC|MEMF_CLEAR);
-					sprintf(fixdirbuf, "%s", work_Path);
+					sprintf(fixdirbuf, "%s", extras_path);
 					AddPart( fixdirbuf, (IPTR)oldpackageline + strlen(package_Path), 1024);
 					D(bug("[INSTALLER] FixUpPackageFile() Corrected path = '%s'\n",fixdirbuf));
 					break;
@@ -1140,9 +1141,10 @@ void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
 	}
 }
 
-void create_extraspath_variable(CONST_STRPTR dest_path, CONST_STRPTR work_path)
+void create_extraspath_variable(CONST_STRPTR dest_path,
+	CONST_STRPTR extras_path)
 {
-	if ((! dest_path) || ( ! work_path))
+	if (dest_path == NULL || extras_path == NULL)
 	{
 		return;
 	}
@@ -1154,7 +1156,7 @@ void create_extraspath_variable(CONST_STRPTR dest_path, CONST_STRPTR work_path)
 	sprintf(env_variable, "%s:", dest_path);
 	AddPart(env_variable, "Prefs/Env-Archive/EXTRASPATH", 100);
 
-	sprintf(extraspath, "%s:", work_path);
+	sprintf(extraspath, "%s:", extras_path);
 	AddPart(extraspath, "Extras", 100);
 
 D(bug("[INSTALLER] create_extraspath_variable: Setting Var '%s' to '%s'\n", env_variable, extraspath));
@@ -1172,7 +1174,6 @@ IPTR Install__MUIM_IC_Install
 )
 {
 	struct Install_DATA *data = INST_DATA(CLASS, self);
-
 	BPTR lock   = NULL;
 	IPTR option = FALSE;
 	int	fixupdir_count=0;
@@ -1190,16 +1191,10 @@ IPTR Install__MUIM_IC_Install
 /** setup work name to use **/
 
 	get(check_copytowork, MUIA_Selected, &option);
-	if (!option && (data->inst_success == MUIV_Inst_InProgress))
-	{
-		work_Path = dest_Path;
-	}
-
-	get(check_work, MUIA_Selected, &option);
-	if (!option && (data->inst_success == MUIV_Inst_InProgress))
-	{
-		work_Path = dest_Path;
-	}
+	if (option && (data->inst_success == MUIV_Inst_InProgress))
+		extras_path = work_Path;
+	else
+		extras_path = dest_Path;
 
 /** STEP : FORMAT **/
 
@@ -1213,11 +1208,11 @@ IPTR Install__MUIM_IC_Install
 
 /* MAKE SURE THE WORK PART EXISTS TO PREVENT CRASHING! */
 
-	if((strcmp(dest_Path, work_Path)!=0))
+	if ((BOOL)XGET(check_work, MUIA_Selected))
 	{
 		char tmp[100];
 		sprintf(tmp,"%s:", work_Path);
-		D(bug("[INSTALLER] Install : SYS Part != Work Part - checking validity..."));
+		D(bug("[INSTALLER] Install : Using a Work partition - checking validity..."));
 		if((lock = Lock(tmp, SHARED_LOCK)))     /* check the dest dir exists */
 		{
 				D(bug("OK!\n"));
@@ -1226,13 +1221,13 @@ IPTR Install__MUIM_IC_Install
 		else
 		{
 			D(bug("FAILED!\n[INSTALLER] (Warning) INSTALL - Failed to locate chosen work partition '%s' : defaulting to sys only\n",work_Path));
-			work_Path = dest_Path;
+			extras_path = dest_Path;
 		}
 		lock = 0;
 	}
 	else
 	{
-		D(bug("[INSTALLER] Install: SYS Part (%s) == Work Part (%s)\n", dest_Path, work_Path));
+		D(bug("[INSTALLER] Install: Using SYS partition only (%s)\n", dest_Path));
 	}
 	
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
@@ -1438,14 +1433,14 @@ localecopydone:
 		};
 
 		// Copying Extras
-		D(bug("[INSTALLER] Copying Extras...\n"));
+		D(bug("[INSTALLER] Copying Extras to '%s'...\n"), extras_path);
 		set(data->label, MUIA_Text_Contents, "Copying Extra Software...");
 
-		CopyDirArray( CLASS, self, data, extras_dirs, work_Path);
+		CopyDirArray( CLASS, self, data, extras_dirs, extras_path);
 		fixupdir_count +=2;
 		
 		// Set EXTRASPATH environment variable
-		create_extraspath_variable(dest_Path, work_Path);
+		create_extraspath_variable(dest_Path, extras_path);
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
@@ -1476,7 +1471,7 @@ localecopydone:
 			D(bug("[INSTALLER] Copying Developer Files...\n"));
 			set(data->label, MUIA_Text_Contents, "Copying Developer Files...");
 
-			CopyDirArray( CLASS, self, data, developer_dirs, work_Path);
+			CopyDirArray(CLASS, self, data, developer_dirs, extras_path);
 			fixupdir_count +=2;
 		}
 		else D(bug("[INSTALLER] Couldn't locate Developer Files...\n"));
@@ -1577,7 +1572,7 @@ localecopydone:
 
 /** STEP : PACKAGE CLEANUP **/
 /*
-	if ( work_Path != dest_Path)
+	if ((BOOL)XGET(check_work, MUIA_Selected))
 	{
 		char		*fixuppackage_dirs = AllocVec((fixupdir_count+1)*sizeof(IPTR),MEMF_PUBLIC|MEMF_CLEAR);
 		int		curfixup = 0;
@@ -1946,7 +1941,7 @@ IPTR Install__MUIM_Format
 				if(lock == 0)
 				{
 					D(bug("[INSTALLER] (Warning) FORMAT: Failed for chosen work partition '%s' : defaulting to sys only\n", tmp));
-					work_Path = dest_Path;
+					extras_path = dest_Path;
 				}    
 				else
 				{
@@ -2934,11 +2929,11 @@ int main(int argc,char *argv[])
 									Child, (IPTR) VGroup,
 										Child, (IPTR) CLabel(KMsgGrubOptions),
 										Child, (IPTR) HVSpace,
+										Child, (IPTR) LLabel(KMsgGrubGOptions),
 										Child, (IPTR) LLabel(KMsgGrubDrive),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (grub_drive = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
 										Child, (IPTR) HVSpace,
-										Child, (IPTR) LLabel(KMsgGrubGOptions),
 										Child, (IPTR) LLabel(KMsgGrubGrub),
 										Child, (IPTR) HVSpace,
 										Child, (IPTR) (grub_grub = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
