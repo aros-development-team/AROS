@@ -1215,6 +1215,17 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
         dnl find x11 stuff
         AC_PATH_X
 
+        x_cflags=
+        for path in $x_libraries
+        do
+            x_cflags="$x_cflags -L$path"
+        done
+
+        for path in $x_includes
+        do
+            x_cflags="$x_cflags -I$path"
+        done
+        
         if test "x-$no_x" = "x-yes" ; then
 
             dnl didn't find it
@@ -1251,12 +1262,9 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 if test "x-$ac_cv_header_sys_ipc_h" = "x-yes" -a "x-$ac_cv_header_sys_shm_h" = "x-yes" ; then
 
                     dnl make sure X libs have shm functions
-                    save_libs="$LIBS"
                     save_cflags="$CFLAGS"
-                    LIBS="$x_libraries"
-                    CFLAGS="$x_includes"
+                    CFLAGS="$CFLAGS $x_cflags"
                     AC_CHECK_LIB(Xext, XShmQueryExtension, have_xshm=yes)
-                    LIBS="$save_libs"
                     CFLAGS="$save_cflags"
                 fi
             fi
@@ -1290,12 +1298,9 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             if test "x-$x11_hidd_vidmode" != "x-no" ; then
 
                 dnl make sure X libs have vidmode functions
-                save_libs="$LIBS"
                 save_cflags="$CFLAGS"
-                LIBS="$x_libraries"
-                CFLAGS="$x_includes"
+                CFLAGS="$CFLAGS $x_cflags"
                 AC_CHECK_LIB(Xxf86vm, XF86VidModeQueryExtension, have_vidmode=yes)
-                LIBS="$save_libs"
                 CFLAGS="$save_cflags"
             fi
 
