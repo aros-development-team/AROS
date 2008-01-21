@@ -8403,7 +8403,7 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 	aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
 	gcc_target_cpu="powerpc"
 	case "$target_cpu" in
-	    *cross*)
+	    *powerpc*)
 		aros_target_cc="powerpc-linux-gcc -pipe"
 		aros_target_ld="powerpc-linux-ld"
 		aros_target_as="powerpc-linux-as"
@@ -10366,6 +10366,17 @@ echo "${ECHO_T}libraries $x_libraries, headers $x_includes" >&6; }
 fi
 
 
+        x_cflags=
+        for path in $x_libraries
+        do
+            x_cflags="$x_cflags -L$path"
+        done
+
+        for path in $x_includes
+        do
+            x_cflags="$x_cflags -I$path"
+        done
+
         if test "x-$no_x" = "x-yes" ; then
 
                         if test "x-$x11_hidd" != "x-auto" ; then
@@ -10677,10 +10688,8 @@ done
 
                                 if test "x-$ac_cv_header_sys_ipc_h" = "x-yes" -a "x-$ac_cv_header_sys_shm_h" = "x-yes" ; then
 
-                                        save_libs="$LIBS"
-                    save_cflags="$CFLAGS"
-                    LIBS="$x_libraries"
-                    CFLAGS="$x_includes"
+                                        save_cflags="$CFLAGS"
+                    CFLAGS="$CFLAGS $x_cflags"
                     { echo "$as_me:$LINENO: checking for XShmQueryExtension in -lXext" >&5
 echo $ECHO_N "checking for XShmQueryExtension in -lXext... $ECHO_C" >&6; }
 if test "${ac_cv_lib_Xext_XShmQueryExtension+set}" = set; then
@@ -10746,7 +10755,6 @@ if test $ac_cv_lib_Xext_XShmQueryExtension = yes; then
   have_xshm=yes
 fi
 
-                    LIBS="$save_libs"
                     CFLAGS="$save_cflags"
                 fi
             fi
@@ -10778,10 +10786,8 @@ fi
 
                         if test "x-$x11_hidd_vidmode" != "x-no" ; then
 
-                                save_libs="$LIBS"
-                save_cflags="$CFLAGS"
-                LIBS="$x_libraries"
-                CFLAGS="$x_includes"
+                                save_cflags="$CFLAGS"
+                CFLAGS="$CFLAGS $x_cflags"
                 { echo "$as_me:$LINENO: checking for XF86VidModeQueryExtension in -lXxf86vm" >&5
 echo $ECHO_N "checking for XF86VidModeQueryExtension in -lXxf86vm... $ECHO_C" >&6; }
 if test "${ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension+set}" = set; then
@@ -10847,7 +10853,6 @@ if test $ac_cv_lib_Xxf86vm_XF86VidModeQueryExtension = yes; then
   have_vidmode=yes
 fi
 
-                LIBS="$save_libs"
                 CFLAGS="$save_cflags"
             fi
 
