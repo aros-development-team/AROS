@@ -5,6 +5,11 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2007-12-26  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * src/init.c: the system default charset is now identified by using
+    GetKeymapCodepage() function on MorphOS 2.0.
+
 #### 6.5 RELEASE #########################################################
 
 2007-12-18  Jens Langner <Jens.Langner@light-speed.de>
