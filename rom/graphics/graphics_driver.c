@@ -1541,6 +1541,10 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     	case RECTFMT_BGR16PC: srcfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
 	case RECTFMT_RGB24  : srcfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
     	case RECTFMT_BGR24  : srcfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
+    	case RECTFMT_0RGB32 : srcfmt_hidd = vHidd_StdPixFmt_0RGB32  ; break;
+    	case RECTFMT_BGR032 : srcfmt_hidd = vHidd_StdPixFmt_BGR032  ; break;
+    	case RECTFMT_RGB032 : srcfmt_hidd = vHidd_StdPixFmt_RGB032  ; break;
+    	case RECTFMT_0BGR32 : srcfmt_hidd = vHidd_StdPixFmt_0BGR32  ; break;
 	case RECTFMT_ARGB32 : srcfmt_hidd = vHidd_StdPixFmt_ARGB32  ; morphfmt_hidd = vHidd_StdPixFmt_0RGB32; break;
     	case RECTFMT_BGRA32 : srcfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
 	case RECTFMT_RGBA32 : srcfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
@@ -1694,6 +1698,10 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	case RECTFMT_BGR16PC: dstfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
 	case RECTFMT_RGB24  : dstfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
     	case RECTFMT_BGR24  : dstfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
+    	case RECTFMT_0RGB32 : dstfmt_hidd = vHidd_StdPixFmt_0RGB32  ; break;
+    	case RECTFMT_BGR032 : dstfmt_hidd = vHidd_StdPixFmt_BGR032  ; break;
+    	case RECTFMT_RGB032 : dstfmt_hidd = vHidd_StdPixFmt_RGB032  ; break;
+    	case RECTFMT_0BGR32 : dstfmt_hidd = vHidd_StdPixFmt_0BGR32  ; break;
 	case RECTFMT_ARGB32 : dstfmt_hidd = vHidd_StdPixFmt_ARGB32  ; morphfmt_hidd = vHidd_StdPixFmt_0RGB32; break;
     	case RECTFMT_BGRA32 : dstfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
 	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;

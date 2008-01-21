@@ -89,6 +89,10 @@ struct CyberModeNode
 /* AROS extensions */
 
 #define PIXFMT_ABGR32	100UL
+#define PIXFMT_0RGB32   101UL
+#define PIXFMT_BGR032   102UL
+#define PIXFMT_RGB032   103UL
+#define PIXFMT_0BGR32   104UL
 
 #define RECTFMT_RGB15	100UL
 #define RECTFMT_BGR15	101UL
@@ -104,6 +108,10 @@ struct CyberModeNode
 #define RECTFMT_BGRA32	111UL
 #define RECTFMT_RGBA32	RECTFMT_RGBA
 #define RECTFMT_ABGR32	113UL
+#define RECTFMT_0RGB32  114UL
+#define RECTFMT_BGR032  115UL
+#define RECTFMT_RGB032  116UL
+#define RECTFMT_0BGR32  117UL
 
 /* End AROS extensions */
 
