@@ -25,6 +25,7 @@
 #include <diskfont/glyph.h>
 #include <diskfont/diskfonttag.h>
 #include <proto/diskfont.h>
+#include <proto/keymap.h>
 #include <proto/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -181,6 +182,38 @@ getSystemCodeset(struct LibraryHeader *lib)
     foundCodeset = codesetsFind(&lib->codesets, charset);
 
     D(DBF_STARTUP, "%s system default codeset: '%s' (diskfont)", foundCodeset ? "found" : "not found", charset);
+  }
+  #endif
+
+  #ifdef __MORPHOS__
+  {
+    struct Library *KeymapBase;
+
+    KeymapBase = OpenLibrary("keymap.library", 51);
+
+    if (KeymapBase)
+    {
+      /* Since we requested V51 it is either V51 or newer */
+      if (KeymapBase->lib_Version > 51 || KeymapBase->lib_Revision >= 4)
+      {
+        #ifndef GetKeyMapCodepage
+        #define GetKeyMapCodepage(__p0) LP1(78, CONST_STRPTR , GetKeyMapCodepage, CONST struct KeyMap *, __p0, a0, , KEYMAP_BASE_NAME, 0, 0, 0, 0, 0, 0)
+        #endif
+
+        CONST_STRPTR codepage;
+
+        codepage = GetKeyMapCodepage(NULL);
+
+        if (codepage)
+        {
+          foundCodeset = codesetsFind(&lib->codesets, codepage);
+
+          D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "not found", codepage);
+        }
+      }
+
+      CloseLibrary(KeymapBase);
+    }
   }
   #endif
 
