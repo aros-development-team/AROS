@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 STUBSDIR	:= $(GENDIR)/compiler/clib/stubs
 FILES		:= $(shell ($(ECHO) '\#define SYSTEM_CALL(x, y...) x'; $(CAT) $(AROS_INCLUDES)/sys/syscall.def) | $(CPP) -P -)
-FILES		:= $(foreach f,$(FILES), $(STUBSDIR)/$(f))
-OBJS		:= $(foreach f,$(FILES), $(f).o)
-STUBS           := $(foreach f,$(FILES), $(f).S)
+FILES		:= $(addprefix $(STUBSDIR)/,$(FILES))
+OBJS		:= $(addsuffix .o,$(FILES))
+STUBS           := $(addsuffix .S,$(FILES))
 GENSTUBS	:= genstubs
 
 #MM
@@ -28,12 +28,11 @@ $(STUBSDIR)/%.S: $(STUBSDIR)/$(GENSTUBS)
 	@$(ECHO) Generating stub function for \'$$(basename $(notdir $@))\'...
 	@$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
-$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/cpu.h archspecific.h | $(STUBSDIR)
+$(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def \
+    $(AROS_INCLUDES)/aros/cpu.h $(STUBSDIR)/archspecific.h | $(STUBSDIR)
 	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) $< -o $@
 
-archspecific.h: archspecific.c
-	@$(TARGET_CC) -S $<
-	@grep "^[/#][*d]" archspecific.s | sed s/[$$]//g >$@
-	@rm archspecific.s
-
-%common
+$(STUBSDIR)/archspecific.h: archspecific.c $(GENINCDIR)/aros/$(AROS_TARGET_CPU)/cpu.h
+	@$(TARGET_CC) -S $< -o $(STUBSDIR)/archspecific.s
+	@grep "^[/#][*d]" $(STUBSDIR)/archspecific.s | $(SED) s/[$$]//g >$@
+	@$(RM) $(STUBSDIR)/archspecific.s
