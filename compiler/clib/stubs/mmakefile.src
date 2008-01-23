@@ -29,10 +29,10 @@ $(STUBSDIR)/%.S: $(STUBSDIR)/$(GENSTUBS)
 	@$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
 $(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def \
-    $(AROS_INCLUDES)/aros/cpu.h $(STUBSDIR)/archspecific.h | $(STUBSDIR)
-	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) $< -o $@
+    $(AROS_INCLUDES)/aros/cpu.h $(STUBSDIR)/archspecific.h
+	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) -I$(STUBSDIR) $< -o $@
 
-$(STUBSDIR)/archspecific.h: archspecific.c $(GENINCDIR)/aros/$(AROS_TARGET_CPU)/cpu.h
+$(STUBSDIR)/archspecific.h: archspecific.c $(GENINCDIR)/aros/$(AROS_TARGET_CPU)/cpu.h | $(STUBSDIR)
 	@$(TARGET_CC) -S $< -o $(STUBSDIR)/archspecific.s
 	@grep "^[/#][*d]" $(STUBSDIR)/archspecific.s | $(SED) s/[$$]//g >$@
 	@$(RM) $(STUBSDIR)/archspecific.s
