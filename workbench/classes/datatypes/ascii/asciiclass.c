@@ -295,9 +295,17 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
                      (i < bufferlen) && (bsig == 0) && !abort;
                      i++)
                 {
-		    /* Check for end of line */
-		    if (buffer[i] == '\n')	// && buffer[i+1]==10)
+                    /* Convert DOS and Mac line endings */
+                    if (buffer[i] == '\r')
+                    {
+                        if (buffer[i + 1] == '\n')
+                              i++;
+                        else
+                            buffer[i] = '\n';
+                    }
 
+		    /* Check for end of line */
+		    if (buffer[i] == '\n')
 		    {
 			newseg = linefeed = TRUE;
 			newanchor = i + 1;
