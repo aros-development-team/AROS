@@ -7,18 +7,19 @@
 */
 #include "battclock_intern.h"
 
-#define	ReadRTC(in,out)				\
-    asm volatile (				\
-    "outb	%%al,$0x70	\n\t"		\
-    "inb	$0x71,%%al	\n\t"		\
-    "movl	%%eax,%%ebx	\n\t"		\
-    "andl	$0x0f,%%eax	\n\t"		\
-    "shrl	$4,%%ebx	\n\t"		\
-    "imul	$10,%%ebx	\n\t"		\
-    "addl	%%ebx,%%eax"			\
-    : "=al"(out)				\
-    : "0"(in)					\
-    : "%ebx","cc");
+#define CENTURY		0x32
+#define YEAR		0x09
+#define MONTH		0x08
+#define MDAY		0x07
+#define HOUR		0x04
+#define MIN		0x02
+#define SEC		0x00
+#define STATUS_A	0x0A
+#define STATUS_B	0x0B
+#define HEALTH		0x0E
+
+inline unsigned char read_port(unsigned char port);
+inline int bcd_to_dec(int x);
 
 /*****************************************************************************
 
@@ -67,22 +68,31 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ClockData date;        
-#warning HACK: asm statements do not work with a single variable
-    struct __myyear { UWORD year; } myyear;
-//    UWORD  year;
+    struct ClockData date;
+    UWORD century;
+    UWORD status_b;
     ULONG  secs;
 
-//    ReadRTC(50,year);
-    ReadRTC(50,myyear.year);
-    ReadRTC(9,date.year);
-    ReadRTC(8,date.month);
-    ReadRTC(7,date.mday);
-    ReadRTC(4,date.hour);
-    ReadRTC(2,date.min);
-    ReadRTC(0,date.sec);
-//    date.year+=100*year;
-    date.year+=100*myyear.year;
+    date.sec   = read_port(SEC);
+    date.min   = read_port(MIN);
+    date.hour  = read_port(HOUR);
+    date.mday  = read_port(MDAY);
+    date.month = read_port(MONTH);
+    date.year  = read_port(YEAR);
+    century    = read_port(CENTURY);
+    status_b   = read_port(STATUS_B);
+
+    if ((status_b & 0x04) == 0) {
+	date.sec   = bcd_to_dec(date.sec);
+	date.min   = bcd_to_dec(date.min);
+	date.hour  = bcd_to_dec(date.hour);
+	date.mday  = bcd_to_dec(date.mday);
+	date.month = bcd_to_dec(date.month);
+	date.year  = bcd_to_dec(date.year);
+	century    = bcd_to_dec(century);
+    }
+
+    date.year = century * 100 + date.year;
 
     secs=Date2Amiga(&date);
 
@@ -90,3 +100,22 @@
 
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */
+
+/* help functions */
+unsigned char read_port(unsigned char port)
+{
+    unsigned char tmp;
+
+    asm volatile (
+    "outb	%1,$0x70	\n\t"		\
+    "inb	$0x71,%0"			\
+    : "=a"(tmp)				\
+    : "a"(port));
+
+    return tmp;
+}
+
+inline int bcd_to_dec(int x)
+{
+    return ( (x >> 4) * 10 + (x & 0x0f) );
+}
