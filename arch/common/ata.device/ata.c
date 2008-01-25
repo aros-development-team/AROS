@@ -5,8 +5,21 @@
     Desc:
     Lang: English
 */
+/*
+ * CHANGELOG:
+ * DATE        NAME                ENTRY
+ * ----------  ------------------  -------------------------------------------------------------------
+ * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
+ *                                 Enabled implementation to scan for other PCI IDE controllers
+ *                                 Implemented ATAPI Packet Support for both read and write
+ *                                 Corrected ATAPI DMA handling                            
+ *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
+ *                                 Compacted source and implemented major ATA support procedure
+ *                                 Improved DMA and Interrupt management
+ *                                 Removed obsolete code
+ */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -29,7 +42,7 @@
 static void cmd_Invalid(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[ATA] Invalid command %d for unit %04x\n", io->io_Command,
-	((struct ata_Unit*)io->io_Unit)->au_UnitNum));
+        ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
     io->io_Error = IOERR_NOCMD;
 }
 
@@ -48,25 +61,25 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
     /*
-	During this IO call it should be sure that both offset and
-	length are already aligned properly to sector boundaries.
+        During this IO call it should be sure that both offset and
+        length are already aligned properly to sector boundaries.
     */
     if ((block & mask) | (count & mask))
     {
-	D(bug("[ATA] offset or length not sector-aligned.\n"));
-	cmd_Invalid(io, LIBBASE);
+        D(bug("[ATA] offset or length not sector-aligned.\n"));
+        cmd_Invalid(io, LIBBASE);
     }
     else
     {
-	block >>= unit->au_SectorShift;
-	count >>= unit->au_SectorShift;
-	ULONG cnt = 0;
+        block >>= unit->au_SectorShift;
+        count >>= unit->au_SectorShift;
+        ULONG cnt = 0;
 
-	/* Call the Unit's access funtion */
-	io->io_Error = unit->au_Read32(unit, block, count,
-	    IOStdReq(io)->io_Data, &cnt);
-	
-	IOStdReq(io)->io_Actual = cnt;
+        /* Call the Unit's access funtion */
+        io->io_Error = unit->au_Read32(unit, block, count,
+            IOStdReq(io)->io_Data, &cnt);
+        
+        IOStdReq(io)->io_Actual = cnt;
     }
 }
 
@@ -79,34 +92,34 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct ata_Unit *unit = (struct ata_Unit *)IOStdReq(io)->io_Unit;
     
     UQUAD block = (UQUAD)(IOStdReq(io)->io_Offset & 0xffffffff) |
-	((UQUAD)(IOStdReq(io)->io_Actual)) << 32;
+        ((UQUAD)(IOStdReq(io)->io_Actual)) << 32;
     ULONG count = IOStdReq(io)->io_Length;
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
     if ((block & (UQUAD)mask) | (count & mask) | (count == 0))
     {
-	D(bug("[ATA] offset or length not sector-aligned.\n"));
-	cmd_Invalid(io, LIBBASE);
+        D(bug("[ATA] offset or length not sector-aligned.\n"));
+        cmd_Invalid(io, LIBBASE);
     }
     else
     {
-	block >>= unit->au_SectorShift;
-	count >>= unit->au_SectorShift;
-	ULONG cnt = 0;
+        block >>= unit->au_SectorShift;
+        count >>= unit->au_SectorShift;
+        ULONG cnt = 0;
 
-	/*
-	    If the sum of sector offset and the sector count doesn't overflow
-	    the 28-bit LBA address, use 32-bit access for speed and simplicity.
-	    Otherwise do the 48-bit LBA addressing.
-	*/
-	if ((block + count) < 0x0fffffff)
-	    io->io_Error = unit->au_Read32(unit, (ULONG)(block & 0x0fffffff), count,
-		IOStdReq(io)->io_Data, &cnt);
-	else
-	    io->io_Error = unit->au_Read64(unit, block, count,
-		IOStdReq(io)->io_Data, &cnt);
-		
- 	IOStdReq(io)->io_Actual = cnt;
+        /*
+            If the sum of sector offset and the sector count doesn't overflow
+            the 28-bit LBA address, use 32-bit access for speed and simplicity.
+            Otherwise do the 48-bit LBA addressing.
+        */
+        if ((block + count) < 0x0fffffff)
+            io->io_Error = unit->au_Read32(unit, (ULONG)(block & 0x0fffffff), count,
+                IOStdReq(io)->io_Data, &cnt);
+        else
+            io->io_Error = unit->au_Read64(unit, block, count,
+                IOStdReq(io)->io_Data, &cnt);
+                
+        IOStdReq(io)->io_Actual = cnt;
     }
 }
 
@@ -119,25 +132,25 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
     /*
-	During this IO call it should be sure that both offset and
-	length are already aligned properly to sector boundaries.
+        During this IO call it should be sure that both offset and
+        length are already aligned properly to sector boundaries.
     */
     if ((block & mask) | (count & mask))
     {
-	D(bug("[ATA] offset or length not sector-aligned.\n"));
-	cmd_Invalid(io, LIBBASE);
+        D(bug("[ATA] offset or length not sector-aligned.\n"));
+        cmd_Invalid(io, LIBBASE);
     }
     else
     {
-	block >>= unit->au_SectorShift;
-	count >>= unit->au_SectorShift;
-	ULONG cnt = 0;
+        block >>= unit->au_SectorShift;
+        count >>= unit->au_SectorShift;
+        ULONG cnt = 0;
 
-	/* Call the Unit's access funtion */
-	io->io_Error = unit->au_Write32(unit, block, count,
-	    IOStdReq(io)->io_Data, &cnt);
-	
-	IOStdReq(io)->io_Actual = cnt;
+        /* Call the Unit's access funtion */
+        io->io_Error = unit->au_Write32(unit, block, count,
+            IOStdReq(io)->io_Data, &cnt);
+        
+        IOStdReq(io)->io_Actual = cnt;
     }
 }
 
@@ -155,27 +168,27 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     if ((block & mask) | (count & mask) | (count==0))
     {
-	D(bug("[ATA] offset or length not sector-aligned.\n"));
-	cmd_Invalid(io, LIBBASE);
+        D(bug("[ATA] offset or length not sector-aligned.\n"));
+        cmd_Invalid(io, LIBBASE);
     }
     else
     {
-	block >>= unit->au_SectorShift;
-	count >>= unit->au_SectorShift;
-	ULONG cnt = 0;
+        block >>= unit->au_SectorShift;
+        count >>= unit->au_SectorShift;
+        ULONG cnt = 0;
 
-	/*
-	    If the sum of sector offset and the sector count doesn't overflow
-	    the 28-bit LBA address, use 32-bit access for speed and simplicity.
-	    Otherwise do the 48-bit LBA addressing.
-	*/
-	if ((block + count) < 0x0fffffff)
-	    io->io_Error = unit->au_Write32(unit, (ULONG)(block & 0x0fffffff), count,
-		IOStdReq(io)->io_Data, &cnt);
-	else
-	    io->io_Error = unit->au_Write64(unit, block, count,
-		IOStdReq(io)->io_Data, &cnt);
- 	IOStdReq(io)->io_Actual = cnt;
+        /*
+            If the sum of sector offset and the sector count doesn't overflow
+            the 28-bit LBA address, use 32-bit access for speed and simplicity.
+            Otherwise do the 48-bit LBA addressing.
+        */
+        if ((block + count) < 0x0fffffff)
+            io->io_Error = unit->au_Write32(unit, (ULONG)(block & 0x0fffffff), count,
+                IOStdReq(io)->io_Data, &cnt);
+        else
+            io->io_Error = unit->au_Write64(unit, block, count,
+                IOStdReq(io)->io_Data, &cnt);
+        IOStdReq(io)->io_Actual = cnt;
    }
 }
 
@@ -190,8 +203,8 @@ static void cmd_Flush(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     while((msg = (struct IORequest *)GetMsg((struct MsgPort *)bus->ab_MsgPort)))
     {
-	msg->io_Error = IOERR_ABORTED;
-	ReplyMsg((struct Message *)msg);
+        msg->io_Error = IOERR_ABORTED;
+        ReplyMsg((struct Message *)msg);
     }
 
     Permit();
@@ -206,79 +219,79 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
 
     /*
-	It's impossible to check media status in ATA harddrives :)
+        It's impossible to check media status in ATA harddrives :)
     */
-    if (unit->au_Flags & AF_ATAPI)
+    if (unit->au_XferModes & AF_XFER_PACKET)
     {
-	/* Don't bother with nonremovable ATAPI units */
-	if (unit->au_Flags & AF_Removable)
-	{
-	    struct IORequest *msg;
-	    UBYTE sense;
+        /* Don't bother with nonremovable ATAPI units */
+        if (unit->au_Flags & AF_Removable)
+        {
+            struct IORequest *msg;
+            UBYTE sense;
 
-	    /* Issue media check */
-	    if ((sense = atapi_TestUnitOK(unit)))
-	    {
-		/* 
-		    Clear the unknown flag. We do know already, that there
-		    is no media in drive
-		*/
-	        unit->au_Flags &= ~AF_DiscPresenceUnknown;
-		
-		/* Media not present */
-		if (!(unit->au_Flags & AF_DiscPresent))
-		{
-		    /*
-			Do status change since last call. Do almost
-			nothing. Clear the AF_Used flag as the drive cannot
-			be really used without media.
-		    */
-		    unit->au_Flags &= ~AF_Used;
-    		    return;
-		}
-		/* Clear the presence flag */
-		unit->au_Flags &= ~AF_DiscPresent;
-	    }
-	    else
-	    {
-		/*
-		    No more mystery, we know already that there is media in 
-		    drive. Clear this mysterious flag.
-		*/
-		unit->au_Flags &= ~AF_DiscPresenceUnknown;
+            /* Issue media check */
+            if ((sense = atapi_TestUnitOK(unit)))
+            {
+                /* 
+                    Clear the unknown flag. We do know already, that there
+                    is no media in drive
+                */
+                unit->au_Flags &= ~AF_DiscPresenceUnknown;
+                
+                /* Media not present */
+                if (!(unit->au_Flags & AF_DiscPresent))
+                {
+                    /*
+                        Do status change since last call. Do almost
+                        nothing. Clear the AF_Used flag as the drive cannot
+                        be really used without media.
+                    */
+                    unit->au_Flags &= ~AF_Used;
+                    return;
+                }
+                /* Clear the presence flag */
+                unit->au_Flags &= ~AF_DiscPresent;
+            }
+            else
+            {
+                /*
+                    No more mystery, we know already that there is media in 
+                    drive. Clear this mysterious flag.
+                */
+                unit->au_Flags &= ~AF_DiscPresenceUnknown;
 
-		/* Media present */
-		if (unit->au_Flags & AF_DiscPresent)
-		{
-		    /* No status change. Do nothing */
-		    return;
-		}
-		/* Set the presence flag */
-		unit->au_Flags |= AF_DiscPresent;
-	    }
-	    /*
-		If CPU came here, there was a change in media presence status.
-		First, increase the number of changes to satisfy the curiousity
-	    */
-	    unit->au_ChangeNum++;
+                /* Media present */
+                if (unit->au_Flags & AF_DiscPresent)
+                {
+                    /* No status change. Do nothing */
+                    return;
+                }
+                /* Set the presence flag */
+                unit->au_Flags |= AF_DiscPresent;
+            }
+            /*
+                If CPU came here, there was a change in media presence status.
+                First, increase the number of changes to satisfy the curiousity
+            */
+            unit->au_ChangeNum++;
 
-	    /*
-		And tell the truth to the world :D
-	    */
-	    Forbid();
+            /*
+                And tell the truth to the world :D
+            */
+            Forbid();
 
-	    /* old-fashioned RemoveInt call first */
-	    if (unit->au_RemoveInt)
-		Cause(unit->au_RemoveInt);
+            /* old-fashioned RemoveInt call first */
+            if (unit->au_RemoveInt)
+                Cause(unit->au_RemoveInt);
 
-	    /* And now the whole list of possible calls */
-	    ForeachNode(&unit->au_SoftList, msg)
-	    {
-		Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
-	    }
+            /* And now the whole list of possible calls */
+            ForeachNode(&unit->au_SoftList, msg)
+            {
+                Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
+            }
 
-	    Permit();
-	}
+            Permit();
+        }
     }
     unit->au_Flags &= ~AF_Used;
 }
@@ -293,9 +306,9 @@ static void cmd_Remove(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
 
     if (unit->au_RemoveInt)
-	io->io_Error = TDERR_DriveInUse;
+        io->io_Error = TDERR_DriveInUse;
     else
-	unit->au_RemoveInt = IOStdReq(io)->io_Data;
+        unit->au_RemoveInt = IOStdReq(io)->io_Data;
 }
 
 static void cmd_ChangeNum(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -310,7 +323,7 @@ static void cmd_ChangeState(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     if (unit->au_Flags & AF_DiscPresent)
         IOStdReq(io)->io_Actual = 0;
     else
-	IOStdReq(io)->io_Actual = 1;
+        IOStdReq(io)->io_Actual = 1;
 }
 
 static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -320,7 +333,7 @@ static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     if (unit->au_DevType)
         IOStdReq(io)->io_Actual = -1;
     else
-	IOStdReq(io)->io_Actual = 0;
+        IOStdReq(io)->io_Actual = 0;
 
 }
 
@@ -361,32 +374,32 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     if (IOStdReq(io)->io_Length == sizeof(struct DriveGeometry))
     {
-	struct DriveGeometry *dg = (struct DriveGeometry *)IOStdReq(io)->io_Data;
+        struct DriveGeometry *dg = (struct DriveGeometry *)IOStdReq(io)->io_Data;
 
-	dg->dg_SectorSize	= 1 << unit->au_SectorShift;
+        dg->dg_SectorSize       = 1 << unit->au_SectorShift;
 
-	if (unit->au_Capacity48 > unit->au_Capacity) {
-	    if ((unit->au_Capacity48 >> 32) != 0)
-	        dg->dg_TotalSectors	= 0xffffffff;
-	    else
-		dg->dg_TotalSectors	= unit->au_Capacity48;
-	}
-	else	dg->dg_TotalSectors	= unit->au_Capacity;
+        if (unit->au_Capacity48 > unit->au_Capacity) {
+            if ((unit->au_Capacity48 >> 32) != 0)
+                dg->dg_TotalSectors     = 0xffffffff;
+            else
+                dg->dg_TotalSectors     = unit->au_Capacity48;
+        }
+        else    dg->dg_TotalSectors     = unit->au_Capacity;
 
-	dg->dg_Cylinders		= unit->au_Cylinders;
-	dg->dg_CylSectors		= unit->au_Sectors * unit->au_Heads;
-	dg->dg_Heads			= unit->au_Heads;
-	dg->dg_TrackSectors		= unit->au_Sectors;
-	dg->dg_BufMemType		= MEMF_PUBLIC;
-	dg->dg_DeviceType		= unit->au_DevType;
-	dg->dg_Flags			= (unit->au_Flags & AF_Removable) ? DGF_REMOVABLE : 0;
-	dg->dg_Reserved			= 0;
+        dg->dg_Cylinders                = unit->au_Cylinders;
+        dg->dg_CylSectors               = unit->au_Sectors * unit->au_Heads;
+        dg->dg_Heads                    = unit->au_Heads;
+        dg->dg_TrackSectors             = unit->au_Sectors;
+        dg->dg_BufMemType               = MEMF_PUBLIC;
+        dg->dg_DeviceType               = unit->au_DevType;
+        dg->dg_Flags                    = (unit->au_Flags & AF_Removable) ? DGF_REMOVABLE : 0;
+        dg->dg_Reserved                 = 0;
 
-	IOStdReq(io)->io_Actual = sizeof(struct DriveGeometry);
+        IOStdReq(io)->io_Actual = sizeof(struct DriveGeometry);
     }
     else if (IOStdReq(io)->io_Length == 514)
     {
-	CopyMemQuick(unit->au_Drive, IOStdReq(io)->io_Data, 512);
+        CopyMemQuick(unit->au_Drive, IOStdReq(io)->io_Data, 512);
     }
     else io->io_Error = TDERR_NotSpecified;
 }
@@ -396,9 +409,9 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
 
     IOStdReq(io)->io_Actual = sizeof(struct SCSICmd);
-    if (unit->au_Flags & AF_ATAPI)
+    if (unit->au_XferModes & AF_XFER_PACKET)
     {
-	io->io_Error = unit->au_DirectSCSI(unit, (struct SCSICmd *)IOStdReq(io)->io_Data);
+        io->io_Error = unit->au_DirectSCSI(unit, (struct SCSICmd *)IOStdReq(io)->io_Data);
     }
     else io->io_Error = IOERR_BADADDRESS; 
 }
@@ -409,10 +422,10 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     command translation tables - used to call proper IO functions.
 */
 
-#define N_TD_READ64	0
-#define N_TD_WRITE64	1
-#define N_TD_SEEK64	2
-#define N_TD_FORMAT64	3
+#define N_TD_READ64     0
+#define N_TD_WRITE64    1
+#define N_TD_SEEK64     2
+#define N_TD_FORMAT64   3
 
 static void (*map64[])(struct IORequest *, LIBBASETYPEPTR) = {
     [N_TD_READ64]   = cmd_Read64,
@@ -423,31 +436,31 @@ static void (*map64[])(struct IORequest *, LIBBASETYPEPTR) = {
 
 static void (*map32[])(struct IORequest *, LIBBASETYPEPTR) = {
     [CMD_INVALID]   = cmd_Invalid,
-    [CMD_RESET]	    = cmd_Reset,
-    [CMD_READ]	    = cmd_Read32,
-    [CMD_WRITE]	    = cmd_Write32,
+    [CMD_RESET]     = cmd_Reset,
+    [CMD_READ]      = cmd_Read32,
+    [CMD_WRITE]     = cmd_Write32,
     [CMD_UPDATE]    = cmd_Update,
-    [CMD_CLEAR]	    = cmd_Reset,
-    [CMD_STOP]	    = cmd_Reset,
-    [CMD_START]	    = cmd_Reset,
-    [CMD_FLUSH]	    = cmd_Flush,
-    [TD_MOTOR]	    = cmd_Reset,
-    [TD_SEEK]	    = cmd_Reset,
-    [TD_FORMAT]	    = cmd_Write32,
-    [TD_REMOVE]	    = cmd_Remove,
+    [CMD_CLEAR]     = cmd_Reset,
+    [CMD_STOP]      = cmd_Reset,
+    [CMD_START]     = cmd_Reset,
+    [CMD_FLUSH]     = cmd_Flush,
+    [TD_MOTOR]      = cmd_Reset,
+    [TD_SEEK]       = cmd_Reset,
+    [TD_FORMAT]     = cmd_Write32,
+    [TD_REMOVE]     = cmd_Remove,
     [TD_CHANGENUM]  = cmd_ChangeNum,
     [TD_CHANGESTATE]= cmd_ChangeState,
     [TD_PROTSTATUS] = cmd_ProtStatus,
     [TD_RAWREAD]    = cmd_Invalid,
     [TD_RAWWRITE]   = cmd_Invalid,
-    [TD_GETNUMTRACKS]	    = cmd_GetNumTracks,
-    [TD_ADDCHANGEINT]	    = cmd_AddChangeInt,
-    [TD_REMCHANGEINT]	    = cmd_RemChangeInt,
+    [TD_GETNUMTRACKS]       = cmd_GetNumTracks,
+    [TD_ADDCHANGEINT]       = cmd_AddChangeInt,
+    [TD_REMCHANGEINT]       = cmd_RemChangeInt,
     [TD_GETGEOMETRY]= cmd_GetGeometry,
-    [TD_EJECT]	    = cmd_Eject,
-    [TD_READ64]	    = cmd_Read64,
+    [TD_EJECT]      = cmd_Eject,
+    [TD_READ64]     = cmd_Read64,
     [TD_WRITE64]    = cmd_Write64,
-    [TD_SEEK64]	    = cmd_Reset,
+    [TD_SEEK64]     = cmd_Reset,
     [TD_FORMAT64]   = cmd_Write64,
     [HD_SCSICMD]    = cmd_DirectScsi,
     [HD_SCSICMD+1]  = cmd_TestChanged,
@@ -499,53 +512,53 @@ static void HandleIO(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     /* Handle few commands directly here */
     switch (io->io_Command)
     {
-	/*
-	    New Style Devices query. Introduce self as trackdisk and provide list of
-	    commands supported
-	*/
-	case NSCMD_DEVICEQUERY:
-	    {
-		struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)IOStdReq(io)->io_Data;
-		nsdq->DevQueryFormat	= 0;
-		nsdq->SizeAvailable	= sizeof(struct NSDeviceQueryResult);
-		nsdq->DeviceType	= NSDEVTYPE_TRACKDISK;
-		nsdq->DeviceSubType	= 0;
-		nsdq->SupportedCommands	= (UWORD *)NSDSupported;
-	    }
-	    IOStdReq(io)->io_Actual = sizeof(struct NSDeviceQueryResult);
-	    break;
-	    
-	/*
-	    New Style Devices report here the 'NSTY' - only if such value is 
-	    returned here, the NSCMD_DEVICEQUERY might be called. Otherwice it should 
-	    report error.
-	*/
-	case TD_GETDRIVETYPE:
-	    IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
-	    break;
-	
-	/*
-	    Call all other commands using the command pointer tables for 32- and
-	    64-bit accesses. If requested function is defined call it, otherwise
-	    make the function cmd_Invalid.
-	*/
-	default:
-	    if (io->io_Command <= (HD_SCSICMD+1))
-	    {
-		if (map32[io->io_Command]) 
-		    map32[io->io_Command](io, LIBBASE);
-		else
-		    cmd_Invalid(io, LIBBASE);
-	    }
-	    else if (io->io_Command >= NSCMD_TD_READ64 && io->io_Command <= NSCMD_TD_FORMAT64)
-	    {
-		if (map64[io->io_Command - NSCMD_TD_READ64]) 
-		    map64[io->io_Command - NSCMD_TD_READ64](io, LIBBASE);
-		else
-		    cmd_Invalid(io, LIBBASE);
-	    }
-	    else cmd_Invalid(io, LIBBASE);
-	    break;
+        /*
+            New Style Devices query. Introduce self as trackdisk and provide list of
+            commands supported
+        */
+        case NSCMD_DEVICEQUERY:
+            {
+                struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)IOStdReq(io)->io_Data;
+                nsdq->DevQueryFormat    = 0;
+                nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
+                nsdq->DeviceType        = NSDEVTYPE_TRACKDISK;
+                nsdq->DeviceSubType     = 0;
+                nsdq->SupportedCommands = (UWORD *)NSDSupported;
+            }
+            IOStdReq(io)->io_Actual = sizeof(struct NSDeviceQueryResult);
+            break;
+            
+        /*
+            New Style Devices report here the 'NSTY' - only if such value is 
+            returned here, the NSCMD_DEVICEQUERY might be called. Otherwice it should 
+            report error.
+        */
+        case TD_GETDRIVETYPE:
+            IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
+            break;
+        
+        /*
+            Call all other commands using the command pointer tables for 32- and
+            64-bit accesses. If requested function is defined call it, otherwise
+            make the function cmd_Invalid.
+        */
+        default:
+            if (io->io_Command <= (HD_SCSICMD+1))
+            {
+                if (map32[io->io_Command]) 
+                    map32[io->io_Command](io, LIBBASE);
+                else
+                    cmd_Invalid(io, LIBBASE);
+            }
+            else if (io->io_Command >= NSCMD_TD_READ64 && io->io_Command <= NSCMD_TD_FORMAT64)
+            {
+                if (map64[io->io_Command - NSCMD_TD_READ64]) 
+                    map64[io->io_Command - NSCMD_TD_READ64](io, LIBBASE);
+                else
+                    cmd_Invalid(io, LIBBASE);
+            }
+            else cmd_Invalid(io, LIBBASE);
+            break;
     }
 }
 
@@ -555,13 +568,13 @@ static const ULONG IMMEDIATE_COMMANDS = 0x803ff1e3; // 1000000000111111111100011
 /* See whether the command can be done quick */
 BOOL isSlow(ULONG comm)
 {
-    BOOL slow = TRUE;	/* Assume alwasy slow command */
+    BOOL slow = TRUE;   /* Assume alwasy slow command */
 
     /* For commands with numbers <= 31 check the mask */
     if (comm <= 31)
     {
-	if (IMMEDIATE_COMMANDS & (1 << comm))
-	    slow = FALSE;
+        if (IMMEDIATE_COMMANDS & (1 << comm))
+            slow = FALSE;
     }
     else if (comm == NSCMD_TD_SEEK64) slow = FALSE;
 
@@ -586,38 +599,41 @@ AROS_LH1(void, BeginIO,
     /* Disable interrupts for a while to modify message flags */
     Disable();
 
+    D(bug("[>>ATA] Executing IO Command %lx\n", io->io_Command));
+
     /*
-	If the command is not-immediate, or presence of disc is still unknown,
-	let the bus task do the job.
+        If the command is not-immediate, or presence of disc is still unknown,
+        let the bus task do the job.
     */
     if (isSlow(io->io_Command) || (unit->au_Flags & AF_DiscPresenceUnknown))
     {
-	unit->au_Unit.unit_flags |= UNITF_ACTIVE | UNITF_INTASK;
-	io->io_Flags &= ~IOF_QUICK;
-	Enable();
-	
-	/* Put the message to the bus */
-	PutMsg(unit->au_Bus->ab_MsgPort, (struct Message *)io);
+        unit->au_Unit.unit_flags |= UNITF_ACTIVE | UNITF_INTASK;
+        io->io_Flags &= ~IOF_QUICK;
+        Enable();
+        
+        /* Put the message to the bus */
+        PutMsg(unit->au_Bus->ab_MsgPort, (struct Message *)io);
     }
     else
     {
-	/* Immediate command. Mark unit as active and do the command directly */
-	unit->au_Unit.unit_flags |= UNITF_ACTIVE;
-	Enable();
-	HandleIO(io, LIBBASE);
+        /* Immediate command. Mark unit as active and do the command directly */
+        unit->au_Unit.unit_flags |= UNITF_ACTIVE;
+        Enable();
+        HandleIO(io, LIBBASE);
 
-	unit->au_Unit.unit_flags &= ~UNITF_ACTIVE;
+        unit->au_Unit.unit_flags &= ~UNITF_ACTIVE;
 
-	/*
-	    If the command was not intended to be immediate and it was not the
-	    TD_ADDCHANGEINT, reply to confirm command execution now.
-	*/
+        /*
+            If the command was not intended to be immediate and it was not the
+            TD_ADDCHANGEINT, reply to confirm command execution now.
+        */
         if (!(io->io_Flags & IOF_QUICK) && (io->io_Command != TD_ADDCHANGEINT))
-	{
-	    ReplyMsg((struct Message *)io);
-	}
+        {
+            ReplyMsg((struct Message *)io);
+        }
     }
 
+    D(bug("[ATA>>] Done\n"));
     AROS_LIBFUNC_EXIT
 }
 
@@ -666,7 +682,7 @@ static void DaemonCode(LIBBASETYPEPTR LIBBASE);
 /* Create the daemon task */
 int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 {
-    struct Task	    *t;
+    struct Task     *t;
     struct MemList  *ml;
     
     struct TagItem tags[] = {
@@ -680,138 +696,163 @@ int ata_InitDaemonTask(LIBBASETYPEPTR LIBBASE)
 
     if (t && ml)
     {
-	UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-	t->tc_SPLower = sp;
-	t->tc_SPUpper = sp + STACK_SIZE;
-	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+        UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
+        t->tc_SPLower = sp;
+        t->tc_SPUpper = sp + STACK_SIZE;
+        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
 
-	ml->ml_NumEntries = 2;
-	ml->ml_ME[0].me_Addr = t;
-	ml->ml_ME[0].me_Length = sizeof(struct Task);
-	ml->ml_ME[1].me_Addr = sp;
-	ml->ml_ME[1].me_Length = STACK_SIZE;
+        ml->ml_NumEntries = 2;
+        ml->ml_ME[0].me_Addr = t;
+        ml->ml_ME[0].me_Length = sizeof(struct Task);
+        ml->ml_ME[1].me_Addr = sp;
+        ml->ml_ME[1].me_Length = STACK_SIZE;
 
-	NEWLIST(&t->tc_MemEntry);
-	AddHead(&t->tc_MemEntry, &ml->ml_Node);
+        NEWLIST(&t->tc_MemEntry);
+        AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-	t->tc_Node.ln_Name = "ATA.daemon";
-	t->tc_Node.ln_Type = NT_TASK;
-	t->tc_Node.ln_Pri  = TASK_PRI - 1;  /* The daemon should have a little bit lower Pri as handler tasks */
-	
-	LIBBASE->ata_Daemon = t;
+        t->tc_Node.ln_Name = "ATA.daemon";
+        t->tc_Node.ln_Type = NT_TASK;
+        t->tc_Node.ln_Pri  = TASK_PRI - 1;  /* The daemon should have a little bit lower Pri as handler tasks */
+        
+        LIBBASE->ata_Daemon = t;
 
-	NewAddTask(t, DaemonCode, NULL, &tags);
+        NewAddTask(t, DaemonCode, NULL, (struct TagItem*)&tags);
     }
 
     return (t != NULL);
 }
 
-/*
-    The daemon tries to send HD_SCSICMD+1 command (internal testchanged 
-    command) to all ATAPI devices in the system. They should already handle
-    the command further.
-*/
+/* 
+ * The daemon tries to send HD_SCSICMD+1 command (internal testchanged 
+ * command) to all ATAPI devices in the system. They should already handle 
+ * the command further.
+ */
 void DaemonCode(LIBBASETYPEPTR LIBBASE)
 {
-    struct MsgPort *mp;		// Message port used with timer.device
-    struct MsgPort *myport;	// Message port used with ata.device
-    struct timerequest *tr;	// timer's time request message
-    struct IOStdReq *ios[MAX_BUS*MAX_UNIT]; // Placeholer for unit messages
+    struct MsgPort *mp;         // Message port used with timer.device
+    struct MsgPort *myport;     // Message port used with ata.device
+    struct timerequest *tr;     // timer's time request message
+    struct IOStdReq *ios[64];   // Placeholer for unit messages
     int count = 0,b,d;
+    struct ata_Bus *bus;
 
-    D(bug("[%s] You woke up DAEMON\n",FindTask(NULL)->tc_Node.ln_Name));
+    D(bug("[ATA**] You woke up DAEMON\n"));
 
-    /* Prepare message ports and timer.device's request */
-    mp = CreateMsgPort();
-    myport = CreateMsgPort();
-    tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
+    /* 
+     * Prepare message ports and timer.device's request 
+     */
+    mp          = CreateMsgPort();
+    myport      = CreateMsgPort();
+    tr          = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
+    bus         = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
 
-    /* Look through all buses in the system */   
-    for (b=0; b < MAX_BUS; b++)
+    /*
+     * grab all buses, see if there is an atapi cdrom connected or anything alike
+     * TODO: good thing to consider putting extra code here for future hotplug support *if any*
+     */
+    while (bus->ab_Node.mln_Succ != NULL)
     {
-	/* Is there anything on the bus? */
-	if (LIBBASE->ata_Buses[b])
-	{
-	    /* Yeah, bus is active. Are there devices? */
-	    for (d=0; d < MAX_UNIT; d++)
-	    {
-		/* Is a device ATAPI? */
-		if (LIBBASE->ata_Buses[b]->ab_Dev[d] == DEV_ATAPI)
-		{
-		    /* Atapi device found. Create IOStdReq for it */
-		    ios[count] = (struct IOStdReq *)
-			CreateIORequest(myport, sizeof(struct IOStdReq));
-			
-		    ios[count]->io_Command = HD_SCSICMD + 1;
-		    
-		    /*
-			And force OpenDevice call. Don't use direct call as it's unsafe 
-			and not nice at all.
-		    */
-		    AROS_LVO_CALL3(void, 
-			AROS_LCA(struct IORequest *, (struct IORequest *)(ios[count]), A1),
-			AROS_LCA(ULONG, (b << 1) | d, D0),	// (b << 8) | d
-			AROS_LCA(ULONG, 0, D1),
-			LIBBASETYPEPTR, LIBBASE, 1, ata);
-			
-		    /* increase amount of ATAPI devices in system */
-		    count++;
-		}
-	    }
-	}
+       b = bus->ab_BusNum;
+       D(bug("[ATA++] Checking bus %d\n", b));
+
+       for (d=0; d < MAX_UNIT; d++)
+       {
+          /* 
+           * Is a device ATAPI? 
+           */
+          D(bug("[ATA++] Unit %d is of type %x\n", (b<<1)+d, bus->ab_Dev[d]));
+
+          if (bus->ab_Dev[d] >= DEV_ATAPI)
+          {
+             /* 
+              * Atapi device found. Create IOStdReq for it 
+              */
+             ios[count] = (struct IOStdReq *) CreateIORequest(myport, sizeof(struct IOStdReq));
+
+             ios[count]->io_Command = HD_SCSICMD + 1;
+                    
+             /*
+              * And force OpenDevice call. Don't use direct call as it's unsafe 
+              * and not nice at all.
+              *
+              * so THIS is an OpenDevice().....
+              */
+             D(bug("[ATA++] Opening ATAPI device, unit %d\n", (b<<1)|d));
+             AROS_LVO_CALL3(void, 
+                   AROS_LCA(struct IORequest *, (struct IORequest *)(ios[count]), A1),
+                   AROS_LCA(ULONG, (b << 1) | d, D0),   
+                   AROS_LCA(ULONG, 0, D1),
+                   LIBBASETYPEPTR, LIBBASE, 1, ata);
+                        
+             /* 
+              * increase amount of ATAPI devices in system 
+              */
+             count++;
+          }
+
+          /*
+           * INFO: we are only handling up to 64 atapi devices here
+           */
+          if (count == sizeof(ios) / sizeof(*ios))
+             break;
+
+       }
+       bus = (struct ata_Bus*)bus->ab_Node.mln_Succ;
     }
 
-    /* Are there any ATAPI devices found? */
+    D(bug("[ATA++] Starting sweep medium presence detection\n"));
+
     if (count)
     {
-	/* Ok, open the timer.device */
+        /* 
+         * Ok, open the timer.device 
+         */
         OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0);
 
-        /* Endless lop */
-	for (;;)
+        /* 
+         * Endless loop 
+         */
+        for (;;)
         {
-	    /* call separate IORequest for every ATAPI device */
-	    for (b=0; b < count; b++)
-		DoIO((struct IORequest *)ios[b]);
+            /* 
+             * call separate IORequest for every ATAPI device 
+             * we're calling HD_SCSICMD+1 command here -- anything like test unit ready?
+             */
+            D(bug("[ATA++] Detecting media presence\n"));
+            for (b=0; b < count; b++)
+                DoIO((struct IORequest *)ios[b]);
 
-	    /* And then hide and wait ;) */
-	    tr->tr_node.io_Command = TR_ADDREQUEST;
-	    tr->tr_time.tv_secs = 3;
-	    tr->tr_time.tv_micro = 0;
-	    DoIO((struct IORequest *)tr);
-	}
+            /* 
+             * And then hide and wait ;)
+             */
+            tr->tr_node.io_Command = TR_ADDREQUEST;
+            tr->tr_time.tv_secs = 3;
+            tr->tr_time.tv_micro = 0;
+            DoIO((struct IORequest *)tr);
+        }
     }
     else
     {
-	/* Well, when there are no ATAPI device, daemon is useless. Say goodbay and quit then */
-	D(bug("[%s] Deamon useless (no ATAPI devices in system). Bye\n",FindTask(NULL)->tc_Node.ln_Name));
-	DeleteMsgPort(myport);
-	DeleteMsgPort(mp);
-	DeleteIORequest((struct IORequest *)tr);
+        /* 
+         * Well, when there are no ATAPI device, daemon is useless. Say goodbay and quit then 
+         */
+        D(bug("[%s] Deamon useless (no ATAPI devices in system). Bye\n",FindTask(NULL)->tc_Node.ln_Name));
+        DeleteMsgPort(myport);
+        DeleteMsgPort(mp);
+        DeleteIORequest((struct IORequest *)tr);
     }
 }
-
-/*
-    As I duplicated task names are not really welcomed, use different names
-    for all buses.
-*/
-static char *TaskNames[] = {
-    "ATA.0",
-    "ATA.1",
-    "ATA.2",
-    "ATA.3",
-};
 
 static void TaskCode(struct ata_Bus *);
 static void ata_Interrupt(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 static void ata_Timeout(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
-/*
-    Make a task for given bus alive.
-*/
-int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
+/* 
+ * Make a task for given bus alive.
+ */
+int ata_InitBusTask(struct ata_Bus *bus)
 {
-    struct Task	    *t;
+    struct Task     *t;
     struct MemList  *ml;
     
     struct TagItem tags[] = {
@@ -820,49 +861,50 @@ int ata_InitBusTask(struct ata_Bus *bus, int bus_num)
     };
     
     /*
-	Need some memory. I don't know however, wheter it wouldn't be better
-	to take some RAM from device's memory pool.
+        Need some memory. I don't know however, wheter it wouldn't be better
+        to take some RAM from device's memory pool.
     */
     t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
     ml = AllocMem(sizeof(struct MemList) + 2*sizeof(struct MemEntry), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (t && ml)
     {
-	/* Setup stack and put the pointer to the bus as the only parameter */
-	UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
-	t->tc_SPLower = sp;
-	t->tc_SPUpper = sp + STACK_SIZE;
-	t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
+        /* Setup stack and put the pointer to the bus as the only parameter */
+        UBYTE *sp = AllocMem(STACK_SIZE, MEMF_PUBLIC | MEMF_CLEAR);
+        t->tc_SPLower = sp;
+        t->tc_SPUpper = sp + STACK_SIZE;
+        t->tc_SPReg   = (UBYTE*)t->tc_SPUpper - SP_OFFSET - sizeof(APTR);
 
-	/* Message port receiving all the IO requests */
-	bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
-	NEWLIST(&bus->ab_MsgPort->mp_MsgList);
-	bus->ab_MsgPort->mp_Node.ln_Type = NT_MSGPORT;
-	bus->ab_MsgPort->mp_Flags	 = PA_SIGNAL;
-	bus->ab_MsgPort->mp_SigBit	 = SIGBREAKB_CTRL_F;
-	bus->ab_MsgPort->mp_SigTask	 = t;
-	bus->ab_MsgPort->mp_Node.ln_Name = TaskNames[bus_num];
+        /* Message port receiving all the IO requests */
+        bus->ab_MsgPort = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC | MEMF_CLEAR);
+        NEWLIST(&bus->ab_MsgPort->mp_MsgList);
+        bus->ab_MsgPort->mp_Node.ln_Type = NT_MSGPORT;
+        bus->ab_MsgPort->mp_Flags        = PA_SIGNAL;
+        bus->ab_MsgPort->mp_SigBit       = SIGBREAKB_CTRL_F;
+        bus->ab_MsgPort->mp_SigTask      = t;
+        bus->ab_MsgPort->mp_Node.ln_Name = "ATA[PI] Subsystem";
 
-	/* Tell the System, which memory regions are to be freed upon a task completion */
-	ml->ml_NumEntries = 3;
-	ml->ml_ME[0].me_Addr = t;
-	ml->ml_ME[0].me_Length = sizeof(struct Task);
-	ml->ml_ME[1].me_Addr = sp;
-	ml->ml_ME[1].me_Length = STACK_SIZE;
-	ml->ml_ME[2].me_Addr = bus->ab_MsgPort;
-	ml->ml_ME[2].me_Length = sizeof(struct MsgPort);
 
-	NEWLIST(&t->tc_MemEntry);
-	AddHead(&t->tc_MemEntry, &ml->ml_Node);
+        /* Tell the System, which memory regions are to be freed upon a task completion */
+        ml->ml_NumEntries = 3;
+        ml->ml_ME[0].me_Addr = t;
+        ml->ml_ME[0].me_Length = sizeof(struct Task);
+        ml->ml_ME[1].me_Addr = sp;
+        ml->ml_ME[1].me_Length = STACK_SIZE;
+        ml->ml_ME[2].me_Addr = bus->ab_MsgPort;
+        ml->ml_ME[2].me_Length = sizeof(struct MsgPort);
 
-	t->tc_Node.ln_Name = TaskNames[bus_num];
-	t->tc_Node.ln_Type = NT_TASK;
-	t->tc_Node.ln_Pri  = TASK_PRI;
-	
-	bus->ab_Task = t;
+        NEWLIST(&t->tc_MemEntry);
+        AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
-	/* Wake up the task */
-	NewAddTask(t, TaskCode, NULL, &tags);
+        t->tc_Node.ln_Name = "ATA[PI] Subsystem";
+        t->tc_Node.ln_Type = NT_TASK;
+        t->tc_Node.ln_Pri  = TASK_PRI;
+        
+        bus->ab_Task = t;
+
+        /* Wake up the task */
+        NewAddTask(t, TaskCode, NULL, (struct TagItem*)&tags);
     }
 
     return (t != NULL);
@@ -877,44 +919,44 @@ static int CreateInterrupt(struct ata_Bus *bus)
     
     if (bus->ab_IntHandler && timeout_irq)
     {
-	/*
-	    Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
-	    it should work quite well
-	*/
-	bus->ab_IntHandler->h_Node.ln_Pri = 10;
-	bus->ab_IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
-	bus->ab_IntHandler->h_Code = ata_Interrupt;
-	bus->ab_IntHandler->h_Data = bus;
+        /*
+            Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
+            it should work quite well
+        */
+        bus->ab_IntHandler->h_Node.ln_Pri = 10;
+        bus->ab_IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
+        bus->ab_IntHandler->h_Code = ata_Interrupt;
+        bus->ab_IntHandler->h_Data = bus;
 
-	timeout_irq->h_Node.ln_Pri = 0;
-	timeout_irq->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
-	timeout_irq->h_Code = ata_Timeout;
-	timeout_irq->h_Data = bus;
+        timeout_irq->h_Node.ln_Pri = 0;
+        timeout_irq->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
+        timeout_irq->h_Code = ata_Timeout;
+        timeout_irq->h_Data = bus;
 
-	o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-	if (o)
-	{
-	    struct pHidd_IRQ_AddHandler __msg__ = {
-		mID:		OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-		handlerinfo:	bus->ab_IntHandler,
-		id:		bus->ab_Irq,
-	    }, *msg = &__msg__;
-	    
-	    if (OOP_DoMethod(o, (OOP_Msg)msg))
-	    {
-		msg->handlerinfo = timeout_irq;
-		msg->id = vHidd_IRQ_Timer;
-		
-		if (OOP_DoMethod(o, (OOP_Msg)msg))
-		{
-		    retval = 1;
-		}
-	    }
-	    
-	    
+        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+        if (o)
+        {
+            struct pHidd_IRQ_AddHandler __msg__ = {
+                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
+                handlerinfo:    bus->ab_IntHandler,
+                id:             bus->ab_Irq,
+            }, *msg = &__msg__;
+            
+            if (OOP_DoMethod(o, (OOP_Msg)msg))
+            {
+                msg->handlerinfo = timeout_irq;
+                msg->id = vHidd_IRQ_Timer;
+                
+                if (OOP_DoMethod(o, (OOP_Msg)msg))
+                {
+                    retval = 1;
+                }
+            }
+            
+            
 
-	    OOP_DisposeObject(o);
-	}
+            OOP_DisposeObject(o);
+        }
     }
 
     return retval;
@@ -928,61 +970,73 @@ static int CreateInterrupt(struct ata_Bus *bus)
 static void TaskCode(struct ata_Bus *bus)
 {
     ULONG sig;
+    int iter;
     struct IORequest *msg;
     
-    D(bug("[%s] Task started (IO: 0x%x)\n",bus->ab_Task->tc_Node.ln_Name,
-	bus->ab_Port));
+    D(bug("[ATA**] Task started (IO: 0x%x)\n", bus->ab_Port));
 
     /* 
-	Prepare timer.device in case some IO commands will try to wait using it
-	instead of busy loop delays.
-    */
+     * Prepare timer.device in case some IO commands will try to wait using it
+     * instead of busy loop delays.
+     */
     bus->ab_TimerMP = CreateMsgPort();
     bus->ab_TimerIO = (struct timerequest *)
-	CreateIORequest(bus->ab_TimerMP, sizeof(struct timerequest));
+        CreateIORequest(bus->ab_TimerMP, sizeof(struct timerequest));
 
     /* Get the signal used for sleeping */
     bus->ab_SleepySignal = AllocSignal(-1);
     /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
     if (bus->ab_SleepySignal < 0)
-	bus->ab_SleepySignal = SIGBREAKB_CTRL_E;
+        bus->ab_SleepySignal = SIGBREAKB_CTRL_E;
 
     if (!CreateInterrupt(bus))
     {
-	D(bug("[%s] Something wrong with creating interrupt?\n",
-	    bus->ab_Task->tc_Node.ln_Name));
+        D(bug("[%s] Something wrong with creating interrupt?\n",
+            bus->ab_Task->tc_Node.ln_Name));
     }
 
     OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)bus->ab_TimerIO, 0);
 
     sig = 1L << bus->ab_MsgPort->mp_SigBit;
 
+    for (iter=0; iter<MAX_UNIT; ++iter)
+    {
+       if (TRUE == ata_setup_unit(bus, iter))
+       {
+          if (bus->ab_Units[iter]->au_XferModes & AF_XFER_PACKET)
+             AddVolume(0, 0, bus->ab_Units[iter]);
+          else
+             AddVolume(0, bus->ab_Units[iter]->au_Capacity, bus->ab_Units[iter]);
+       }
+    }
+
+
     /* Wait forever and process messages */
     for (;;)
     {
-	Wait(sig);
-	
-	/* Even if you get new signal, do not process it until Unit is not active */
-	if (!(bus->ab_Flags & UNITF_ACTIVE))
-	{
-	    bus->ab_Flags |= UNITF_ACTIVE;
-	    
-	    /* Empty the request queue */
-	    while ((msg = (struct IORequest *)GetMsg(bus->ab_MsgPort)))
-	    {
-		/* And do IO's */
-		ObtainSemaphore(&bus->ab_Lock);
-		HandleIO(msg, bus->ab_Base);
-		ReleaseSemaphore(&bus->ab_Lock);
-		/* TD_ADDCHANGEINT doesn't require reply */
-		if (msg->io_Command != TD_ADDCHANGEINT)
-		{
-		    ReplyMsg((struct Message *)msg);
-	    	}
-	    }
+        Wait(sig);
+        
+        /* Even if you get new signal, do not process it until Unit is not active */
+        if (!(bus->ab_Flags & UNITF_ACTIVE))
+        {
+            bus->ab_Flags |= UNITF_ACTIVE;
+            
+            /* Empty the request queue */
+            while ((msg = (struct IORequest *)GetMsg(bus->ab_MsgPort)))
+            {
+                /* And do IO's */
+                ObtainSemaphore(&bus->ab_Lock);
+                HandleIO(msg, bus->ab_Base);
+                ReleaseSemaphore(&bus->ab_Lock);
+                /* TD_ADDCHANGEINT doesn't require reply */
+                if (msg->io_Command != TD_ADDCHANGEINT)
+                {
+                    ReplyMsg((struct Message *)msg);
+                }
+            }
 
-	    bus->ab_Flags &= ~(UNITF_INTASK | UNITF_ACTIVE);
-	}
+            bus->ab_Flags &= ~(UNITF_INTASK | UNITF_ACTIVE);
+        }
     }
 }
 
@@ -992,6 +1046,7 @@ static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     
     bus->ab_IntCnt++;
     Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
+    D(bug("[ATA  ] Got Intrq\n"));
 }
 
 static void ata_Timeout(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
@@ -1000,13 +1055,13 @@ static void ata_Timeout(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     
     if (bus->ab_Timeout > 0)
     {
-	bus->ab_Timeout--;
+        bus->ab_Timeout--;
 
-	if (!bus->ab_Timeout)
-	{
-	    D(bug("[ATA] They killed Kenny... Again... :(\n"));
-	    Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
-	}
+        if (!bus->ab_Timeout)
+        {
+            D(bug("[ATA  ] ERROR: Command timeout expired\n"));
+            Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
+        }
     }
 }
 

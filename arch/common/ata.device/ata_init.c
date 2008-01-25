@@ -5,8 +5,21 @@
     Desc:
     Lang: English
 */
+/*
+ * CHANGELOG:
+ * DATE        NAME                ENTRY
+ * ----------  ------------------  -------------------------------------------------------------------
+ * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
+ *                                 Enabled implementation to scan for other PCI IDE controllers
+ *                                 Implemented ATAPI Packet Support for both read and write
+ *                                 Corrected ATAPI DMA handling                            
+ *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
+ *                                 Compacted source and implemented major ATA support procedure
+ *                                 Improved DMA and Interrupt management
+ *                                 Removed obsolete code
+ */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
@@ -16,6 +29,7 @@
 #include <exec/resident.h>
 #include <exec/tasks.h>
 #include <exec/memory.h>
+#include <exec/nodes.h>
 #include <utility/utility.h>
 #include <oop/oop.h>
 #include <libraries/expansion.h>
@@ -30,25 +44,19 @@
 #include <proto/bootloader.h>
 #include <proto/expansion.h>
 
+#include <oop/oop.h>
+#include <hidd/pci.h>
+#include <proto/oop.h>
+
+
 #include "ata.h"
 #include LC_LIBDEFS_FILE
 
-/*
-    Scan only the buses listed here. I'll probably throw it away and let
-    specific driver modules do the thing
-*/
-static struct __bus {
-    ULONG port;
-    UBYTE irq;
-} Buses[MAX_BUS] = {
-    {0x1f0, 14},
-    {0x170, 15},
-    {0x168, 10},
-    {0x1e8, 11},
-};
+static struct ataBase *__ATABase;
+static OOP_AttrBase __IHidd_PCIDev;
 
 /* Add a bootnode using expansion.library */
-static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
+BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 {
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
@@ -91,7 +99,7 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
             pp[DE_HIGHCYL + 4] = EndCyl;
             pp[DE_NUMBUFFERS + 4] = 10;
             pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
-	    pp[DE_MAXTRANSFER + 4] = 0x00200000;
+            pp[DE_MAXTRANSFER + 4] = 0x00200000;
             pp[DE_MASK + 4] = 0x7FFFFFFE;
             pp[DE_BOOTPRI + 4] = ((!unit->au_DevType) ? 0 : 10);
             pp[DE_DOSTYPE + 4] = 0x444F5301;
@@ -133,6 +141,232 @@ static BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
+/*
+ * PCI BUS ENUMERATOR
+ *   collect ALL ata/ide capable devices (including SATA and other) and spawn consecutive tasks
+ */
+
+static
+AROS_UFH3(void, Enumerator,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(OOP_Object *,     Device, A2),
+    AROS_UFHA(APTR,             message,A1))
+{
+    AROS_USERFUNC_INIT
+
+    /*
+     * static list of io/irqs that we can handle
+     */
+    static struct __bus 
+    {
+        ULONG port;
+        UBYTE irq;
+    } Buses[] = 
+    {
+        {0x1f0, 14},
+        {0x170, 15},
+        {0x168, 10},
+        {0x1e8, 11},
+    };
+
+    /*
+     * current bus number - used to calculate ATA unit number
+     */
+    static int      current_bus = 0;
+
+    /*
+     * predefined bus number - i'm still not sure if that's the right way to handle this
+     * however it should work well. the regular IDE controllers send back no IO/IRQ data
+     */
+    static int      predef_bus = 0; 
+
+    /*
+     * ata bus - this is going to be created and linked to the master list here
+     */
+    struct ata_Bus *ab;
+
+    /*
+     * parameters we will want to acquire
+     */
+    IPTR            ProductID, 
+                    VendorID,
+                    DMABase,
+                    INTLine,
+                    IOBase;
+
+    /*
+     * new parameters for every device:
+     * - allow bus mastering
+     */
+    struct TagItem attrs[] = 
+    {
+        { aHidd_PCIDevice_isMaster, TRUE    },
+        { TAG_DONE,                 0UL     }
+    };
+
+    /*
+     * temporary variables
+     */
+    int             x;
+
+    /*
+     * obtain more or less useful data
+     */
+    OOP_GetAttr(Device, aHidd_PCIDevice_ProductID, &ProductID);
+    OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,  &VendorID);
+    OOP_GetAttr(Device, aHidd_PCIDevice_Base4,     &DMABase);
+
+    D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x DMA: %x\n", ProductID, VendorID, IOBase, DMABase));
+
+    /*
+     * we can have as many as four ports assigned to this device
+     */
+    for (x=0; x<4; x++)
+    {
+        /*
+         * obtain base and interrupt
+         */
+        switch (x)
+        {
+            case 0: OOP_GetAttr(Device, aHidd_PCIDevice_Base0, &IOBase); break;
+            case 1: OOP_GetAttr(Device, aHidd_PCIDevice_Base1, &IOBase); break;
+            case 2: OOP_GetAttr(Device, aHidd_PCIDevice_Base2, &IOBase); break;
+            case 3: OOP_GetAttr(Device, aHidd_PCIDevice_Base3, &IOBase); break;
+        }
+        OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
+
+        /*
+         * see if IO Base is valid. otherwise pick device from static list 
+         * (this most likely means the device is right there)
+         */
+        if (IOBase == 0)
+        {
+            if (predef_bus < (sizeof(Buses) / sizeof(Buses[0])))
+            {
+                /*
+                 * collect IOBase and interrupt from the above list
+                 */
+                IOBase  = Buses[predef_bus].port;
+                INTLine = Buses[predef_bus].irq;
+                predef_bus++;
+            }
+            else
+            {
+                /*
+                 * we're all done. no idea what else they want from us
+                 */
+                break;
+            }
+        }
+
+        /*
+         * initialize structure
+         */
+        ab = (struct ata_Bus*) AllocVecPooled(__ATABase->ata_MemPool, sizeof(struct ata_Bus));
+        if (ab == NULL)
+            return;
+
+        ab->ab_Base         = __ATABase;
+        ab->ab_Port         = IOBase;
+        ab->ab_Irq          = INTLine;
+        ab->ab_Dev[0]       = DEV_NONE;
+        ab->ab_Dev[1]       = DEV_NONE;
+        ab->ab_Flags        = 0;
+        ab->ab_SleepySignal = 0;
+        ab->ab_BusNum       = current_bus++;
+        ab->ab_Waiting      = 0;
+        ab->ab_Timeout      = 0;
+        ab->ab_Units[0]     = 0;
+        ab->ab_Units[1]     = 0;
+        ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(__ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
+        D(bug("[ATA  ] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
+
+        /*
+         * allocate DMA PRD
+         */
+        ab->ab_PRD          = AllocVecPooled(__ATABase->ata_MemPool, (PRD_MAX+1) * 2 * sizeof(struct PRDEntry));  
+        if ((0x10000 - ((ULONG)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
+            ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
+
+        InitSemaphore(&ab->ab_Lock);
+
+        /*
+         * scan bus - try to locate all devices
+         */
+        ata_ScanBus(ab);
+        if (ab->ab_Dev[0] > DEV_UNKNOWN)
+        {
+            ab->ab_Units[0] = AllocVecPooled(__ATABase->ata_MemPool, sizeof(struct ata_Unit));
+            ab->ab_Units[0]->au_DMAPort = (APTR)(DMABase != 0 ? DMABase + (x<<3) : 0);
+        }
+        if (ab->ab_Dev[1] > DEV_UNKNOWN)
+        {
+            ab->ab_Units[1] = AllocVecPooled(__ATABase->ata_MemPool, sizeof(struct ata_Unit));
+            ab->ab_Units[1]->au_DMAPort = (APTR)(DMABase != 0 ? DMABase + (x<<3) : 0);
+        }
+
+        D(bug("[ATA  ] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
+
+        /*
+         * start things up :)
+         * note: this happens no matter there are devices or not 
+         * sort of almost-ready-for-hotplug ;)
+         */
+        AddTail((struct List*)&__ATABase->ata_Buses, (struct Node*)ab);
+
+        ata_InitBusTask(ab);
+    }
+
+    /*
+     * check dma status
+     */
+    if (DMABase != 0)
+        D(bug("[ATA  ] Bus0 status says %02x, Bus1 status says %02x\n", inb(DMABase + 2), inb(DMABase + 10)));
+
+
+    OOP_SetAttrs(Device, attrs);
+    AROS_USERFUNC_EXIT
+}
+
+
+void ata_Scan(void)
+{
+    OOP_Object *pci;
+
+    D(bug("[ATA--] Enumerating devices\n"));
+
+    /*
+     * obtain attr base of pci devices i guess ;]
+     */
+    __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+
+    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+
+    if (pci)
+    {
+        struct Hook FindHook = {
+            h_Entry:    (IPTR (*)())Enumerator,
+        };
+
+        struct TagItem Requirements[] = {
+            {tHidd_PCI_Class,       0x01},
+            {tHidd_PCI_SubClass,    0x01}, 
+            {TAG_DONE,              0x00}
+        };
+
+        struct pHidd_PCI_EnumDevices enummsg = {
+            mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+            callback:       &FindHook,
+            requirements:   (struct TagItem *)&Requirements,
+        }, *msg = &enummsg;
+        
+        OOP_DoMethod(pci, (OOP_Msg)msg);
+        
+        OOP_DisposeObject(pci);
+    }
+    
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+}
 
 /*
     Here shall we start. Make function static as it shouldn't be visible from
@@ -143,298 +377,61 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     struct BootLoaderBase *BootLoaderBase;
 
     /*
-	I've decided to use memory pools again. Alloc everything needed from 
-	a pool, so that we avoid memory fragmentation.
-    */
+     * I've decided to use memory pools again. Alloc everything needed from 
+     * a pool, so that we avoid memory fragmentation.
+     */
     LIBBASE->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+    if (LIBBASE->ata_MemPool == NULL)
+        return FALSE;
 
-    D(bug("[ATA] ata.device initialization\n"));
+    /*
+     * store library pointer so we can use it later
+     */
+    __ATABase = LIBBASE;
 
+    /*
+     * start initialization: 
+     * obtain kernel parameters
+     */
+    D(bug("[ATA--] ata.device initialization\n"));
     BootLoaderBase = OpenResource("bootloader.resource");
-
-    D(bug("[ATA] BootloaderBase = %p\n", BootLoaderBase));
-    
+    D(bug("[ATA--] BootloaderBase = %p\n", BootLoaderBase));
     if (BootLoaderBase != NULL)
     {
-	struct List *list;
-	struct Node *node;
+        struct List *list;
+        struct Node *node;
 
-	list = (struct List *)GetBootInfo(BL_Args);
-	if (list)
-	{
-	    ForeachNode(list, node)
-	    {
-		if (strncmp(node->ln_Name, "ATA=", 4) == 0)
-		{
-		    if (strstr(node->ln_Name, "32bit"))
-		    {
-			D(bug("[ATA] Using 32-bit IO transfers\n"));
-			LIBBASE->ata_32bit = TRUE;
-		    }
-		    if (strstr(node->ln_Name, "forcedma"))
-		    {
-			D(bug("[ATA] DANGEROUS: Forcing DMA mode\n"));
-			LIBBASE->ata_ForceDMA = TRUE;
-		    }
-		}
-	    }
-	}
+        list = (struct List *)GetBootInfo(BL_Args);
+        if (list)
+        {
+            ForeachNode(list, node)
+            {
+                if (strncmp(node->ln_Name, "ATA=", 4) == 0)
+                {
+                    if (strstr(node->ln_Name, "32bit"))
+                    {
+                        D(bug("[ATA  ] Using 32-bit IO transfers\n"));
+                        LIBBASE->ata_32bit = TRUE;
+                    }
+                }
+            }
+        }
     }
 
-    if (LIBBASE->ata_MemPool)
-    {
-	int i;
-	struct ata_Bus ab;
-	ab.ab_Base = LIBBASE;
-	InitSemaphore(&ab.ab_Lock);
-		
-	/*
-	  Go through all buses available and look for devices.
-	  If at least one device is present, create ata_Bus structure
-	  there and proper ata_Unit things.
-	 */
+    /*
+     * Initialize BUS list
+     */
+    LIBBASE->ata_Buses.mlh_Head     = (struct MinNode*) &LIBBASE->ata_Buses.mlh_Tail;
+    LIBBASE->ata_Buses.mlh_Tail     = NULL;
+    LIBBASE->ata_Buses.mlh_TailPred = (struct MinNode*) &LIBBASE->ata_Buses.mlh_Head;
+                
+    ata_Scan();
     
-	for (i=0; i<MAX_BUS; i++)
-	{
-	    /* Scan a bus in order to find anything on it. */
-	    ab.ab_Port = Buses[i].port;
-	    ab.ab_Irq  = Buses[i].irq;
-	    ata_ScanBus(&ab);
-	    
-	    /* Is at least one of the devices there? */
-	    if ((ab.ab_Dev[0] > DEV_UNKNOWN) | (ab.ab_Dev[1] > DEV_UNKNOWN))
-	    {
-		/* 
-		   Yes, then prepare proper structures for it.  The 
-		   bus structure first.
-		 */
-		struct ata_Bus *bus = 
-		    (struct ata_Bus *)AllocPooled(LIBBASE->ata_MemPool, sizeof(struct ata_Bus));
-
-		/* Bus setup */
-		bus->ab_Base = LIBBASE;
-		InitSemaphore(&bus->ab_Lock);
-		bus->ab_Port = ab.ab_Port;
-		bus->ab_Irq  = ab.ab_Irq;
-		bus->ab_Dev[0] = ab.ab_Dev[0];
-		bus->ab_Dev[1] = ab.ab_Dev[1];
-		bus->ab_IntHandler = (HIDDT_IRQ_Handler *)AllocPooled(LIBBASE->ata_MemPool,
-								      sizeof(HIDDT_IRQ_Handler));
-
-		/* PRD will be used later on by DMA. It's the table of all memory transfer requests */
-		bus->ab_PRD = AllocPooled(LIBBASE->ata_MemPool, 8192 + 160);
-
-		/* 
-		   If PRD begins on one 64K page, but 514 prd entries (maximal transfer in
-		   LBA48 mode) would not fit on this page, move the pointer to the next page.
-
-		   We have allocated enough memory to be able to do that, allthough it's not
-		   nice at all.
-		 */
-		if ((((IPTR)bus->ab_PRD + 0x10000) & 0xffff0000) - (IPTR)bus->ab_PRD < 514*8)
-		{
-		    bus->ab_PRD = (APTR)(((IPTR)bus->ab_PRD + 0xffff) & ~0xffff);
-		}
-
-		/* If the master is there, alloc Unit structure for it */
-		if (bus->ab_Dev[0] > DEV_UNKNOWN) {
-		    bus->ab_Units[0] = AllocPooled(LIBBASE->ata_MemPool, sizeof(struct ata_Unit));
-		}
-		/* If the slave is there, do the same */
-		if (bus->ab_Dev[1] > DEV_UNKNOWN) {
-		    bus->ab_Units[1] = AllocPooled(LIBBASE->ata_MemPool, sizeof(struct ata_Unit));
-		}
-		/* And store pointer to the bus in device's base */
-		LIBBASE->ata_Buses[i] = bus;
-
-		/* Anything on the bus? Prepare a task handling it */
-		ata_InitBusTask(bus, i);
-	    }
-	}
-		
-	/*
-	   All buses scanned here. Now it's time to init units, gather 
-	   all information needed for device operation.
-	 */
-	ata_InitUnits(LIBBASE);
-	/* Try to setup daemon task looking for diskchanges */
-	ata_InitDaemonTask(LIBBASE);
-
-
-	if (1)
-	{
-	    UBYTE bus;
-	    for (bus=0; bus < MAX_BUS; bus++)
-	    {
-		UBYTE dev;
-
-		if (LIBBASE->ata_Buses[bus])
-		{
-		    for (dev=0; dev < MAX_UNIT; dev++)
-		    {
-			struct ata_Unit *unit = LIBBASE->ata_Buses[bus]->ab_Units[dev];
-			if (unit)
-			{
-			    if (unit->au_Flags & AF_ATAPI)
-				AddVolume(0,0,unit);
-			    else
-				AddVolume(0,unit->au_Capacity,unit);
-			}
-		    }
-		}
-	    }
-	}
-		
-	/* Dummy test removed later ;) */
-	if(0)
-	{
-	    struct MsgPort *mp = CreateMsgPort();
-	    struct MsgPort2 *mp2 = CreateMsgPort();
-	    struct IOStdReq *ios =
-                (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq));
-	    struct timerequest *timerio =
-                (struct timerequest *)CreateIORequest(mp2,
-                sizeof(struct timerequest));
-	    struct Device *TimerBase;
-
-	    OpenDevice("timer.device", UNIT_VBLANK, timerio, 0);
-	    TimerBase = timerio->tr_node.io_Device;
-
-	    UBYTE *buffer = AllocMem(1024 * 1024, MEMF_PUBLIC | MEMF_CLEAR);
-	    ULONG packet = 512;
-
-	    /* And force OpenDevice call */
-	    AROS_LVO_CALL3(void, 
-			   AROS_LCA(struct IORequest *, (struct IORequest *)ios, A1),
-			   AROS_LCA(ULONG, 0x0101, D0),
-			   AROS_LCA(ULONG, 0, D1),
-			   LIBBASETYPEPTR, LIBBASE, 1, ata
-	    );
-		    
-#if 0
-	    int i;
-
-	    ULONG *buf = (ULONG *)buffer;
-
-	    D(bug("[ATA.test] Store first 1MB of data in RAM\n"));
-	    ios->io_Command = CMD_READ;
-	    ios->io_Data = buf;
-	    ios->io_Offset = 0;
-	    ios->io_Length = 1024*1024;
-	    DoIO(ios);
-#endif
-#if 0
-	    for (i=0; i < 1024*1024/4; i++)
-		buf[i] = i*2 + 0xf0000000;
-    
-	    ios->io_Command = CMD_WRITE;
-	    ios->io_Data = buf;
-	    ios->io_Offset = 0;
-	    ios->io_Length = 1024*1024;
-	    DoIO(ios);
-#endif
-	    while (packet <= 1024*1024)
-	    {
-		int cnt = 0,count;
-		ULONG time;
-		struct timeval start, end;
-
-		D(bug("[ATA.test] Read linear 1MB in packets of %d bytes: ", packet));
-		ios->io_Command = CMD_READ;
-		ios->io_Data = buffer;
-			
-		GetSysTime(&start);
-		for (count=0; count < 10; count++)
-		{
-		    for (cnt=0; cnt < 1024*1024; cnt+=packet)
-		    {
-			ios->io_Offset = cnt;
-			ios->io_Length = packet;
-
-			DoIO(ios);
-		    }
-		}
-		GetSysTime(&end);
-		SubTime(&end,&start);
-
-		time = (end.tv_secs*1000000 + end.tv_micro) / 10;
-
-		D(bug("%dus, %dKB/s\n", time, (ULONG)(1024000000/time)));
-
-		packet *= 2;
-	    }
-#if 0
-	    D(bug("[ATA.test] Store first 1MB of data on drive again\n"));
-	    ios->io_Command = CMD_WRITE;
-	    ios->io_Data = buf;
-	    ios->io_Offset = 0;
-	    ios->io_Length = 1024*1024;
-	    DoIO(ios);
-#endif
-	    D(bug("[ATA.test] Read 1MB of data at once\n"));
-	    
-	    ios->io_Command = CMD_READ;
-	    ios->io_Data = buffer;
-	    ios->io_Offset = 0;
-	    ios->io_Length = 1024*1024;
-	    DoIO(ios);
-	    
-	    D(bug("[ATA.test] Read 1MB of data sector by sector\n"));
-
-	    UBYTE buff[512];
-	    ios->io_Data = buff;
-	    ios->io_Length = 512;
-	    for (packet = 0; packet < 1024*1024; packet += 512)
-	    {
-		int i;
-		BOOL changed = FALSE;
-		
-		ios->io_Offset = packet;
-		DoIO(ios);
-
-		for (i=0; i < 512; i++)
-		{
-		    if (buff[i] != buffer[packet + i])
-		    {
-			changed = TRUE;
-		    }
-		}
-		if (changed) {
-		    D(bug("[ATA.test] failed read sector %d\n", packet >> 9));
-
-//			    for (i=0; i<4; i++)
-//			    {
-//				D(bug("%02x : %02x ", buff[i], buffer[packet + i]));
-//			    }
-//			    while(1);
-		}
-	    }
-
-	    D(bug("[ATA] sector 0x1: %s\n",buffer + 512));
-
-	    D(bug("[ATA.test] all tests done\n"));
-		    
-	}
-
-	return TRUE;
-    }
-
-    DeletePool(LIBBASE->ata_MemPool);
-
-    return FALSE;
+    /* Try to setup daemon task looking for diskchanges */
+    ata_InitDaemonTask(LIBBASE);
+    return TRUE;
 }
 
-/*
-    Called from exec's OpenDevice call - Open a device
-
-    A note to device enumeration. I've decided not to could the devices one 
-    after another, but instead to use the unit number in more amiga-scsi-like
-    manner. The lowest 8 bits of the unit number defines the unit within one
-    bus, whereas the bits 15:8 define the bus number. That is, the master device
-    on bus 0 (0x1f0 IO address) would be the unit 0x0000, the slave on the same
-    bus would be 0x0001. Similary, the master and slave on the second bus (0x170
-    address) would be 0x0100 and 0x0101, respectively.
-*/
 static int open
 (
     LIBBASETYPEPTR LIBBASE,
@@ -443,40 +440,54 @@ static int open
     ULONG flags
 )
 {
+    /*
+     * device location
+     */
     ULONG bus, dev;
     
-    /* Assume it failed */
+    /* 
+     * Assume it failed 
+     */
     iorq->io_Error = IOERR_OPENFAIL;
 
-    /* Extract bus and device numbers */
-    bus = unitnum >> 1;			// 0xff00 >> 8
-    dev = (unitnum & 0x1);		// 0x00ff
+    /*
+     * actual bus
+     */
+    struct ata_Bus *b = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
 
-    /* Is the bus number within allowed range and is it allocated at all? */
-    if ((bus < MAX_BUS) && (LIBBASE->ata_Buses[bus] != NULL))
+    /* 
+     * Extract bus and device numbers
+     */
+    bus = unitnum >> 1;                 // 0xff00 >> 8
+    dev = (unitnum & 0x1);              // 0x00ff
+
+    /*
+     * locate bus
+     */
+    while (bus--)
     {
-	/* Yes - good. The bus exists and there is something on it */
-	struct ata_Bus *b = LIBBASE->ata_Buses[bus];
+        if (b->ab_Node.mln_Succ == NULL)
+            return FALSE;
 
-	/* Is the device within allowed range? Is memory allocated for it? */
-	if ((dev < MAX_UNIT) && (b->ab_Units[dev] != NULL))
-	{
-	    /* Cool. Got the device here. */
-	    struct ata_Unit *unit = b->ab_Units[dev];
-	    
-	    /* Prepare IORequest structure so that DoIO's will work */
-	    iorq->io_Device = (struct Device *)LIBBASE;
-	    iorq->io_Unit = (struct Unit *)unit;
-
-	    /* Increase use counters and clear delayed expunge flag */
-	    unit->au_Unit.unit_OpenCnt++;
-
-	    /* All fine, no errors */
-	    iorq->io_Error = 0;
-	}
+        b = (struct ata_Bus*)b->ab_Node.mln_Succ;
     }
-    
-    return iorq->io_Error == 0;
+
+    /*
+     * locate unit
+     */
+    if (b->ab_Units[dev] == NULL)
+        return FALSE;
+
+    /*
+     * set up iorequest
+     */
+    iorq->io_Device     = &LIBBASE->ata_Device;
+    iorq->io_Unit       = &b->ab_Units[dev]->au_Unit;
+    iorq->io_Error      = 0;
+
+    b->ab_Units[dev]->au_Unit.unit_OpenCnt++;
+
+    return TRUE;
 }
 
 /* Close given device */
