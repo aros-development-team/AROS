@@ -5,6 +5,19 @@
     Desc:
     Lang: English
 */
+/*
+ * CHANGELOG:
+ * DATE        NAME                ENTRY
+ * ----------  ------------------  -------------------------------------------------------------------
+ * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
+ *                                 Enabled implementation to scan for other PCI IDE controllers
+ *                                 Implemented ATAPI Packet Support for both read and write
+ *                                 Corrected ATAPI DMA handling                            
+ *                                 Fixed major IDE enumeration bugs severely handicapping transfers with more than one controller
+ *                                 Compacted source and implemented major ATA support procedure
+ *                                 Improved DMA and Interrupt management
+ *                                 Removed obsolete code
+ */
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -13,14 +26,9 @@
 #include <exec/exec.h>
 #include <exec/resident.h>
 #include <utility/utility.h>
-#include <oop/oop.h>
-
-#include <hidd/pci.h>
-
 #include <dos/bptr.h>
 
 #include <proto/exec.h>
-#include <proto/oop.h>
 
 #include "ata.h"
 
@@ -95,7 +103,7 @@ VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
     outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
     
     /*
-	If io set to TRUE, then sectors are readed, when set to FALSE, they are written
+	If io set to TRUE, then sectors are read, when set to FALSE, they are written
     */
     if (io)
 	outb(DMA_WRITE, unit->au_DMAPort + dma_Command);
@@ -120,98 +128,5 @@ VOID dma_StopDMA(struct ata_Unit *unit)
     inb(unit->au_DMAPort + dma_Command);
     inb(unit->au_DMAPort + dma_Status);
     outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
-}
-
-#define bus ((struct ata_Bus*)hook->h_Data)
-
-static
-AROS_UFH3(void, Enumerator,
-    AROS_UFHA(struct Hook *,	hook,	A0),
-    AROS_UFHA(OOP_Object *,	Device,	A2),
-    AROS_UFHA(APTR,		message,A1))
-{
-    AROS_USERFUNC_INIT
-
-    IPTR ProductID, VendorID;
-    IPTR IOBase;
-    OOP_AttrBase __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-
-    struct TagItem attrs[] = {
-	{ aHidd_PCIDevice_isMaster, TRUE },
-	{ TAG_DONE, 0UL}
-    };
-
-    D(bug("[ATA.scanbus] got device\n"));
-    
-    OOP_GetAttr(Device, aHidd_PCIDevice_ProductID, &ProductID);
-    OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,  &VendorID);
-    OOP_GetAttr(Device, aHidd_PCIDevice_Base4,  &IOBase);
-
-    D(bug("[ATA.scanbus] IDE device %04x:%04x - DMA registers at %x\n",
-	ProductID, VendorID, IOBase));
-
-    if (IOBase)
-    {
-	if (bus->ab_Port == 0x1f0)
-	{
-	    if (bus->ab_Units[0])
-		bus->ab_Units[0]->au_DMAPort = IOBase;
-	    if (bus->ab_Units[1])
-		bus->ab_Units[1]->au_DMAPort = IOBase;
-	}
-	else if (bus->ab_Port == 0x170)
-	{
-	    if (bus->ab_Units[0])
-		bus->ab_Units[0]->au_DMAPort = IOBase + 8;
-	    if (bus->ab_Units[1])
-		bus->ab_Units[1]->au_DMAPort = IOBase + 8;
-	}
-    }
-
-    D(bug("[ATA] Bus0 status says %02x, Bus1 status says %02x\n",
-	inb(IOBase + 2), inb(IOBase + 10)));
-
-    OOP_SetAttrs(Device, attrs);
-
-    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-
-    AROS_USERFUNC_EXIT
-}
-
-
-#undef bus
-
-VOID dma_Init(struct ata_Bus *bus)
-{
-    OOP_Object *pci;
-
-    D(bug("[ATA.DMA] Generic init\n"));
-
-    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-
-    if (pci)
-    {
-	struct Hook FindHook = {
-	    h_Entry:    (IPTR (*)())Enumerator,
-	    h_Data:	    bus,
-	};
-
-	struct TagItem Requirements[] = {
-	    {tHidd_PCI_Class,	    0x01},
-	    {tHidd_PCI_SubClass,    0x01},
-	    {TAG_DONE,		    0x00}
-	};
-
-	struct pHidd_PCI_EnumDevices enummsg = {
-	    mID:	    OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-	    callback:	    &FindHook,
-	    requirements:   (struct TagItem *)&Requirements,
-	}, *msg = &enummsg;
-	
-	OOP_DoMethod(pci, (OOP_Msg)msg);
-	
-	OOP_DisposeObject(pci);
-    }
-    
 }
 
