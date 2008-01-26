@@ -17,6 +17,9 @@
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
+ * 2008-01-26  T. Wiszkowski       Added 'nodma' flag for ata driver
+ *                                 Moved variables out of global scope
+ *                                 Replaced static variables
  */
 
 #define DEBUG 0
@@ -52,10 +55,13 @@
 #include "ata.h"
 #include LC_LIBDEFS_FILE
 
-static struct ataBase *__ATABase;
-static OOP_AttrBase ata__IHidd_PCIDev;
-#undef HiddPCIDeviceAttrBase
-#define HiddPCIDeviceAttrBase ata__IHidd_PCIDev;
+
+typedef struct 
+{
+    struct ataBase     *ATABase;
+    UWORD               CurrentBus;
+    UWORD               PredefBus;
+} EnumeratorArgs;
 
 /* Add a bootnode using expansion.library */
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
@@ -172,17 +178,6 @@ AROS_UFH3(void, Enumerator,
     };
 
     /*
-     * current bus number - used to calculate ATA unit number
-     */
-    static int      current_bus = 0;
-
-    /*
-     * predefined bus number - i'm still not sure if that's the right way to handle this
-     * however it should work well. the regular IDE controllers send back no IO/IRQ data
-     */
-    static int      predef_bus = 0; 
-
-    /*
      * ata bus - this is going to be created and linked to the master list here
      */
     struct ata_Bus *ab;
@@ -197,6 +192,11 @@ AROS_UFH3(void, Enumerator,
                     IOBase;
 
     /*
+     * the PCI Attr Base
+     */
+    OOP_AttrBase HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+
+    /*
      * new parameters for every device:
      * - allow bus mastering
      */
@@ -205,6 +205,11 @@ AROS_UFH3(void, Enumerator,
         { aHidd_PCIDevice_isMaster, TRUE    },
         { TAG_DONE,                 0UL     }
     };
+
+    /*
+     * enumerator params
+     */
+    EnumeratorArgs *a = (EnumeratorArgs*)hook->h_Data;
 
     /*
      * temporary variables
@@ -217,6 +222,9 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(Device, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,  &VendorID);
     OOP_GetAttr(Device, aHidd_PCIDevice_Base4,     &DMABase);
+
+    if (a->ATABase->ata_NoDMA)
+        DMABase = 0;
 
     D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x DMA: %x\n", ProductID, VendorID, IOBase, DMABase));
 
@@ -243,14 +251,14 @@ AROS_UFH3(void, Enumerator,
          */
         if (IOBase == 0)
         {
-            if (predef_bus < (sizeof(Buses) / sizeof(Buses[0])))
+            if (a->PredefBus < (sizeof(Buses) / sizeof(Buses[0])))
             {
                 /*
                  * collect IOBase and interrupt from the above list
                  */
-                IOBase  = Buses[predef_bus].port;
-                INTLine = Buses[predef_bus].irq;
-                predef_bus++;
+                IOBase  = Buses[a->PredefBus].port;
+                INTLine = Buses[a->PredefBus].irq;
+                a->PredefBus++;
             }
             else
             {
@@ -264,29 +272,29 @@ AROS_UFH3(void, Enumerator,
         /*
          * initialize structure
          */
-        ab = (struct ata_Bus*) AllocVecPooled(__ATABase->ata_MemPool, sizeof(struct ata_Bus));
+        ab = (struct ata_Bus*) AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Bus));
         if (ab == NULL)
             return;
 
-        ab->ab_Base         = __ATABase;
+        ab->ab_Base         = a->ATABase;
         ab->ab_Port         = IOBase;
         ab->ab_Irq          = INTLine;
         ab->ab_Dev[0]       = DEV_NONE;
         ab->ab_Dev[1]       = DEV_NONE;
         ab->ab_Flags        = 0;
         ab->ab_SleepySignal = 0;
-        ab->ab_BusNum       = current_bus++;
+        ab->ab_BusNum       = a->CurrentBus++;
         ab->ab_Waiting      = 0;
         ab->ab_Timeout      = 0;
         ab->ab_Units[0]     = 0;
         ab->ab_Units[1]     = 0;
-        ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(__ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
+        ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(a->ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
         D(bug("[ATA  ] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
 
         /*
          * allocate DMA PRD
          */
-        ab->ab_PRD          = AllocVecPooled(__ATABase->ata_MemPool, (PRD_MAX+1) * 2 * sizeof(struct PRDEntry));  
+        ab->ab_PRD          = AllocVecPooled(a->ATABase->ata_MemPool, (PRD_MAX+1) * 2 * sizeof(struct PRDEntry));  
         if ((0x10000 - ((ULONG)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
             ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
 
@@ -298,13 +306,13 @@ AROS_UFH3(void, Enumerator,
         ata_ScanBus(ab);
         if (ab->ab_Dev[0] > DEV_UNKNOWN)
         {
-            ab->ab_Units[0] = AllocVecPooled(__ATABase->ata_MemPool, sizeof(struct ata_Unit));
-            ab->ab_Units[0]->au_DMAPort = (APTR)(DMABase != 0 ? DMABase + (x<<3) : 0);
+            ab->ab_Units[0] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
+            ab->ab_Units[0]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
         }
         if (ab->ab_Dev[1] > DEV_UNKNOWN)
         {
-            ab->ab_Units[1] = AllocVecPooled(__ATABase->ata_MemPool, sizeof(struct ata_Unit));
-            ab->ab_Units[1]->au_DMAPort = (APTR)(DMABase != 0 ? DMABase + (x<<3) : 0);
+            ab->ab_Units[1] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
+            ab->ab_Units[1]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
         }
 
         D(bug("[ATA  ] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
@@ -314,7 +322,7 @@ AROS_UFH3(void, Enumerator,
          * note: this happens no matter there are devices or not 
          * sort of almost-ready-for-hotplug ;)
          */
-        AddTail((struct List*)&__ATABase->ata_Buses, (struct Node*)ab);
+        AddTail((struct List*)&a->ATABase->ata_Buses, (struct Node*)ab);
 
         ata_InitBusTask(ab);
     }
@@ -324,30 +332,34 @@ AROS_UFH3(void, Enumerator,
      */
     if (DMABase != 0)
         D(bug("[ATA  ] Bus0 status says %02x, Bus1 status says %02x\n", inb(DMABase + 2), inb(DMABase + 10)));
-
-
+    
     OOP_SetAttrs(Device, attrs);
+    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
+
     AROS_USERFUNC_EXIT
 }
 
 
-void ata_Scan(void)
+void ata_Scan(struct ataBase *base)
 {
     OOP_Object *pci;
 
     D(bug("[ATA--] Enumerating devices\n"));
 
-    /*
-     * obtain attr base of pci devices i guess ;]
-     */
-    HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
     if (pci)
     {
+        EnumeratorArgs Args=
+        {
+            base,
+            0,
+            0
+        };
+
         struct Hook FindHook = {
             h_Entry:    (IPTR (*)())Enumerator,
+            h_Data:     &Args
         };
 
         struct TagItem Requirements[] = {
@@ -355,6 +367,7 @@ void ata_Scan(void)
             {tHidd_PCI_SubClass,    0x01}, 
             {TAG_DONE,              0x00}
         };
+
 
         struct pHidd_PCI_EnumDevices enummsg = {
             mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
@@ -366,8 +379,6 @@ void ata_Scan(void)
         
         OOP_DisposeObject(pci);
     }
-    
-    OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
 }
 
 /*
@@ -389,7 +400,8 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     /*
      * store library pointer so we can use it later
      */
-    __ATABase = LIBBASE;
+    LIBBASE->ata_32bit = FALSE;
+    LIBBASE->ata_NoDMA = FALSE;
 
     /*
      * start initialization: 
@@ -415,6 +427,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                         D(bug("[ATA  ] Using 32-bit IO transfers\n"));
                         LIBBASE->ata_32bit = TRUE;
                     }
+                    if (strstr(node->ln_Name, "nodma"))
+                    {
+                        D(bug("[ATA  ] Disabled DMA transfers\n"));
+                        LIBBASE->ata_NoDMA = TRUE;
+                    }
                 }
             }
         }
@@ -427,7 +444,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->ata_Buses.mlh_Tail     = NULL;
     LIBBASE->ata_Buses.mlh_TailPred = (struct MinNode*) &LIBBASE->ata_Buses.mlh_Head;
                 
-    ata_Scan();
+    ata_Scan(LIBBASE);
     
     /* Try to setup daemon task looking for diskchanges */
     ata_InitDaemonTask(LIBBASE);

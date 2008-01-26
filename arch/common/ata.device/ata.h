@@ -92,6 +92,7 @@ struct ataBase
      * flags
      */
     UBYTE                   ata_32bit;
+    UBYTE                   ata_NoDMA;
 
     /*
      * memory pool
