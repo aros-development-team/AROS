@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd. Connects to the X server and receives events.
@@ -793,7 +793,7 @@ failexit:
 
 /****************************************************************************************/
 
-struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase)
+struct Task *create_x11task( struct x11task_params *params)
 {
     struct Task *task;
     APTR    	 stack;

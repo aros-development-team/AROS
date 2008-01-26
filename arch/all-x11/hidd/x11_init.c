@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: X11 hidd initialization code.
@@ -42,7 +42,7 @@
 
 static BOOL initclasses( struct x11_staticdata *xsd );
 static VOID freeclasses( struct x11_staticdata *xsd );
-struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase);
+struct Task *create_x11task( struct x11task_params *params);
 VOID x11task_entry(struct x11task_params *xtp);
 
 /****************************************************************************************/
@@ -163,7 +163,7 @@ static int X11_Init(LIBBASETYPEPTR LIBBASE)
 	xtp.kill_signal	= SIGBREAKF_CTRL_C;
 	xtp.xsd		= xsd;
 
-	if ((x11task = create_x11task(&xtp, SysBase)))
+	if ((x11task = create_x11task(&xtp)))
 	{			
 	    if (initclasses(xsd))
 	    {
