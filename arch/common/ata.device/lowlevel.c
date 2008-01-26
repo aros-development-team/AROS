@@ -24,6 +24,7 @@
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
  * 2008-01-26  T. Wiszkowski       Restored 32bit io
+ *                                 Removed memory dump upon RequestSense
  */
 
 #define DEBUG 0
@@ -940,7 +941,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
     if (((err != 0) || (status & ATAPIF_CHECK)) && (cmd->scsi_Flags & SCSIF_AUTOSENSE))
     {
        atapi_RequestSense(unit, cmd->scsi_SenseData, cmd->scsi_SenseLength);
-       dump(cmd->scsi_SenseData, cmd->scsi_SenseLength);
+       D(dump(cmd->scsi_SenseData, cmd->scsi_SenseLength));
     }
 
     return err;
