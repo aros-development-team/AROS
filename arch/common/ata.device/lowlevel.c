@@ -23,6 +23,7 @@
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
+ * 2008-01-26  T. Wiszkowski       Restored 32bit io
  */
 
 #define DEBUG 0
@@ -691,13 +692,18 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
             *dma = FALSE;
     }
 
+    while (l<=t)
+    {
+        cmd[l] = ((UBYTE*)packet)[l];
+        ++l;
+    }
+
     D({
         bug("[ATAPI] Sending %s ATA packet: ", (*dma) ? "DMA" : "PIO");
+        l=0;
         while (l<=t)
         {
-            bug("%02lx ", ((UBYTE*)packet)[l]);
-            cmd[l] = ((UBYTE*)packet)[l];
-            ++l;
+            bug("%02lx ", ((UBYTE*)cmd)[l]);
         }
         bug("\n");
 
@@ -752,7 +758,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
              * if we got here, it means that device most likely expects us to send exactly 12 bytes
              * of packet data. no more, and no less. 12 bytes.
              */
-            unit->au_outs(packet, port, 12);
+            unit->au_outs(cmd, port, 12);
             return 1;
         }
         else
@@ -990,8 +996,16 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
     unit->au_Drive      = AllocPooled(bus->ab_Base->ata_MemPool, sizeof(struct DriveIdent));
     unit->au_UnitNum    = bus->ab_BusNum << 1 | u;      // b << 8 | u
     unit->au_DevMask    = 0xa0 | (u << 4);
-    unit->au_ins        = insw;
-    unit->au_outs       = outsw;
+    if (bus->ab_Base->ata_32bit)
+    {
+        unit->au_ins        = insl;
+        unit->au_outs       = outsl;
+    }
+    else
+    {
+        unit->au_ins        = insw;
+        unit->au_outs       = outsw;
+    }
     unit->au_SectorShift= 9;    /* this really has to be set here. */
     unit->au_Flags      = 0;
     
