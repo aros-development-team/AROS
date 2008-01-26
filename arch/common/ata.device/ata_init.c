@@ -53,7 +53,9 @@
 #include LC_LIBDEFS_FILE
 
 static struct ataBase *__ATABase;
-static OOP_AttrBase __IHidd_PCIDev;
+static OOP_AttrBase ata__IHidd_PCIDev;
+#undef HiddPCIDeviceAttrBase
+#define HiddPCIDeviceAttrBase ata__IHidd_PCIDev;
 
 /* Add a bootnode using expansion.library */
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
@@ -338,7 +340,7 @@ void ata_Scan(void)
     /*
      * obtain attr base of pci devices i guess ;]
      */
-    __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+    HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
