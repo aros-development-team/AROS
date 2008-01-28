@@ -3032,6 +3032,12 @@ int main(int argc,char *argv[])
 	}
 
 	/* Update GUI in response to certain user actions */
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) dest_device, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) dest_unit, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
 	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 0,
 		(IPTR) check_sizesys, 3, MUIM_Set,
 		MUIA_Disabled, FALSE);
