@@ -406,3 +406,129 @@ struct GlyphMap *GetGlyph(FT_GlyphEngine *ge, int glyph_8bits)
 
     return ge->GMap;
 }
+
+/* muck which has to do with opening a face */
+static int OpenFace(FT_GlyphEngine *ge, char *new_ft_filename)
+{
+    FT_Error error;
+
+    ge->instance_changed=TRUE;	/* instance needs to be changed */
+
+    if(ge->face_established)
+    {
+	/* we have an existing face, if same file keep it */
+	if(stricmp(ge->ft_filename,new_ft_filename)==0)
+	    return set_last_error(ge,OTERR_Success);
+
+	/* it is different, free the old one first */
+	FT_Done_Face( ge->face );
+	//ge->KernPairs = -1;
+    }
+
+    ge->face_established=FALSE;
+
+    strcpy(ge->ft_filename,new_ft_filename);
+    D(bug("OpenFace %ls.\n",ge->ft_filename));
+
+    error = FT_New_Face(ge->engine, ge->ft_filename, ge->face_num, &ge->face);
+    if (error)
+    {
+	D(bug("Error while opening %s, error code = %lx.\n",
+	      ge->ft_filename, (LONG)error));
+	return set_last_error(ge,OTERR_BadFace);
+    }
+
+    if (ge->afm_filename[0])
+    {
+	error = FT_Attach_File(ge->face, ge->afm_filename);
+	if (error)
+	{
+	    D(bug("Error %d while attaching %s\n", error, ge->afm_filename));
+	    FT_Done_Face(ge->face);
+	    return set_last_error(ge,OTERR_BadFace);
+	}
+    }
+
+    ge->face_established=TRUE;
+
+    return set_last_error(ge,OTERR_Success);
+}
+
+void switch_family(FT_GlyphEngine *engine)
+{
+#if 0
+    int pick_bi;
+    
+    /* switch files for family support if needed */
+    pick_bi=engine->bold_sig + engine->italic_sig;
+
+    switch(pick_bi)
+    {
+    case 0: /* normal */
+	/* make sure we are set to base name */
+	if(strcmp(engine->base_filename,engine->ft_filename))
+	{
+	    OpenFace(engine,engine->base_filename);
+	    D(bug("switch_family: revert to base\n"));
+	}
+	break;
+	
+    case 1:	/* just italic */
+	if(strlen(engine->italic_filename))
+	{
+	    if(strcmp(engine->italic_filename,engine->ft_filename))
+	    {
+		OpenFace(engine,engine->italic_filename);
+		D(bug("switch_family: set italic\n"));
+	    }
+	    engine->do_shear=0;
+	}
+	break;
+	
+    case 2: /* just bold */
+	if(strlen(engine->bold_filename))
+	{
+	    if(strcmp(engine->bold_filename,engine->ft_filename))
+	    {
+		OpenFace(engine,engine->bold_filename);
+		D(bug("switch_family: set bold\n"));
+	    }
+	    engine->do_embold=0;
+	}
+	break;
+	
+    case 3: /* bold and italic */
+	if(strlen(engine->bold_italic_filename))
+	{
+	    if(strcmp(engine->bold_italic_filename,engine->ft_filename))
+	    {
+		OpenFace(engine,engine->bold_italic_filename);
+		D(bug("switch_family: set bold italic\n"));
+	    }
+	    engine->do_shear=0;
+	    engine->do_embold=0;
+	}
+	else
+	{ /* no file, choose other as basis? */
+	    /* we have a bold, use it and keep transform */
+	    if(strlen(engine->bold_filename))
+	    {
+		if(strcmp(engine->bold_filename,engine->ft_filename))
+		{
+		    OpenFace(engine,engine->bold_filename);
+		    D(bug("switch_family: set bold, algo italic\n"));
+		}
+		engine->do_embold=0;
+	    }
+	}
+	break;
+    }
+#endif
+
+    /* just incase we slip through */
+    if(engine->face_established==FALSE)
+	OpenFace(engine,engine->base_filename);
+
+    return;
+}
+
