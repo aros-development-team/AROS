@@ -41,6 +41,7 @@ static void scantags(FT_GlyphEngine *ge, struct TagItem *tags)
 	    strcpy(ge->base_filename,(char *)otagdata);
 	    /* clear all other names */
 	    ge->afm_filename[0] = '\0';
+            switch_family(ge);
 	    break;
 
 	case OT_Spec2_DefCodePage:	/* direct = use default */
