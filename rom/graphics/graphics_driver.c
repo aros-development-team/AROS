@@ -1929,13 +1929,24 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct GfxB
 	    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
 	    break;
 	
-   	case CYBRMATTR_PIXFMT: {
+   	case CYBRMATTR_PIXFMT:
+        case CYBRMATTR_PIXFMT_ALPHA: {
 	    IPTR stdpf;
 	    UWORD cpf;
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
 	    
 	    /* Convert to cybergfx */
 	    cpf = hidd2cyber_pixfmt(stdpf, GfxBase);
+
+            /* CYBRMATTR_PIXFMT doesn't know about non-alpha 32-bit modes */
+            if (attribute == CYBRMATTR_PIXFMT) {
+                switch (cpf) {
+                    case PIXFMT_0RGB32: cpf = PIXFMT_ARGB32; break;
+                    case PIXFMT_BGR032: cpf = PIXFMT_BGRA32; break;
+                    case PIXFMT_RGB032: cpf = PIXFMT_RGBA32; break;
+                    case PIXFMT_0BGR32: cpf = PIXFMT_ABGR32; break;
+                }
+            }
 	    
 	    if (cpf == (UWORD)-1) {
 	    	D(bug("!!! UNKNOWN PIXEL FORMAT IN GetCyberMapAttr()\n"));
