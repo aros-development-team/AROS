@@ -61,6 +61,8 @@
 #define R_PPC_ADDR16_HA 6
 #define R_PPC_REL24     10
 #define R_PPC_REL32	26
+#define R_PPC_REL16_LO  250
+#define R_PPC_REL16_HA  252
 
 #define R_ARM_NONE      0
 #define R_ARM_PC24      1
@@ -613,7 +615,24 @@ static int relocate
 		}
 		break;
 	    
-	    case R_PPC_REL24:
+            case R_PPC_REL16_LO:
+		{
+		    unsigned short *c = (unsigned short *) p;
+		    *c = (s + rel->addend - (ULONG) p) & 0xffff;
+		}
+		break;
+
+            case R_PPC_REL16_HA:
+		{
+		    unsigned short *c = (unsigned short *) p;
+		    ULONG temp = s + rel->addend - (ULONG) p;
+		    *c = temp >> 16;
+		    if ((temp & 0x8000) != 0)
+			(*c)++;
+		}
+		break;
+
+            case R_PPC_REL24:
 		*p &= ~0x3fffffc;
                 *p |= (s + rel->addend - (ULONG) p) & 0x3fffffc;
                 break;
