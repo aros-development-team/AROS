@@ -10,6 +10,7 @@
 #include <sys/timeb.h>
 #include <sys/times.h>
 #include <sys/mount.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <signal.h>
@@ -29,6 +30,8 @@
 #include <pwd.h>
 #include <grp.h>
 #include <libgen.h>
+#include <regex.h>
+#include <wctype.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
 #include "signalhack.h"     /* FIXME: Use <signal.h> when it is finished */

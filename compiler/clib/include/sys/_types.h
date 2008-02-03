@@ -46,9 +46,10 @@ typedef __int32_t               __key_t;
 typedef __uint16_t              __mode_t;
 typedef __uint16_t              __nlink_t;
 typedef __int32_t               __off_t;            /* XXX Large Files? */
-typedef __uintptr_t             __pid_t;
+typedef __intptr_t              __pid_t;
 typedef __intptr_t              __ptrdiff_t;        /* XXX __intptr_t? */
 typedef __uint8_t               __sa_family_t;
+#undef __size_t
 typedef unsigned int            __size_t;           /* XXX Large Files? */
 typedef __uint32_t              __socklen_t;
 typedef int                     __ssize_t;

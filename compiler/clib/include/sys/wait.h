@@ -12,11 +12,18 @@
 #include <sys/types.h>
 #endif
 
+#define WNOHANG         0x00000001
+#define WUNTRACED       0x00000002
+#define WSTOPPED        WUNTRACED
+#define WEXITED         0x00000004
+#define WCONTINUED      0x00000008
+
 pid_t wait(int *status);
-//pid_t   waitpid(pid_t, int *, int);
+pid_t waitpid(pid_t pid, int *status, int options);
 
 //struct rusage;
 //pid_t   wait3(int *, int, struct rusage *);
 //pid_t   wait4(pid_t, int *, int, struct rusage *);
 
 #endif /* SYS_WAIT_H_ */
+
