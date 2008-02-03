@@ -14,11 +14,7 @@
 */
 
 #include <sys/types.h>
-
-/* Apparently we look a bit like a BSD system. */
-#define	BSD	199506L
-#define BSD4_3	1
-#define BSD4_4	1
+#include <limits.h>
 
 #define MAXCOMLEN	19	    /* max command name remembered */
 #define MAXINTERP	32	    /* max interpreter file name length */
@@ -31,15 +27,8 @@
     MAXUPRC, NCARGS, NOGROUP, SPECNAMELEN
 */
 
-/* From <sys/syslimits.h> */
-#define NAME_MAX	32	    /* max bytes in a file name */
-#ifndef PATH_MAX
-#   define PATH_MAX	4095	    /* max bytes in a pathname */
-#endif
-#define IOV_MAX		1024	    /* max elements in i/o vector */
-#define LINE_MAX	2048	    /* max bytes in an input line */
-#define MAXPATHLEN	PATH_MAX    /* max path after symlink deref */
-#define MAXSYMLINKS	32	    /* max no of symlinks */
+#define MAXPATHLEN      PATH_MAX
+#define MAXSYMLINKS     32
 
 /* Others:
     ARG_MAX, CHILD_MAX, LINK_MAX, MAX_CANON, MAX_INPUT,

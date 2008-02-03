@@ -6,7 +6,9 @@ include $(TOP)/config/make.cfg
 #   and a link library from the same source, with only a small amount of
 #   overlap.
 #
-USER_CFLAGS :=	-Iinclude -I$(TOP)/rom/exec
+USER_CFLAGS := -I. -Iinclude -I$(TOP)/rom/exec	\
+	-D__mb_cur_max=MB_CUR_MAX		\
+	-DEFTYPE=EINVAL
 
 # We are trying to build:
 #   $(AROS_LIBS)/arosc.library	  from $(SHARED)
@@ -202,9 +204,35 @@ SHARED	:= \
 	labs \
 	lcong48 \
 	link \
+	locale/big5		\
+	locale/collate		\
+	locale/euc		\
+	locale/fix_grouping	\
+	locale/gb18030		\
+	locale/gb2312		\
+	locale/gbk		\
+	locale/iswctype		\
+	locale/ldpart		\
+	locale/localeconv	\
+	locale/lmessages	\
+	locale/lmonetary	\
+	locale/lnumeric		\
+	locale/mbsnrtowcs	\
+	locale/mskanji		\
+	locale/none		\
+	locale/rune		\
+	locale/runetype		\
+	locale/setlocale	\
+	locale/setrunelocale	\
+	locale/table		\
+	locale/tolower		\
+	locale/toupper		\
+	locale/utf8		\
+	locale/wcsnrtombs	\
+	locale/wctrans		\
+	locale/wctype		\
 	localtime \
         localtime_r \
-	localeconv \
 	lrand48 \
 	lseek \
 	malloc \
@@ -249,7 +277,6 @@ SHARED	:= \
 	setgid \
 	setgrent \
 	setlinebuf \
-        setlocale \
         setpwent \
 	setuid \
 	setvbuf \
@@ -278,6 +305,7 @@ SHARED	:= \
 	stch_l \
 	stco_l \
 	stcu_d \
+	stdtime/timelocal	\
 	strftime \
 	strerror \
 	strtol \
