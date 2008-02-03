@@ -2,7 +2,7 @@
 #define _SETJMP_H_
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file setjmp.h
@@ -10,7 +10,6 @@
 */
 
 #include <sys/cdefs.h>
-#include <signal.h>
 
 #ifdef __mc68000__
 #   define _JMPLEN 12
@@ -31,9 +30,8 @@ typedef struct __jmp_buf
 #if !defined(_ANSI_SOURCE)
 typedef struct __sigjmp_buf
 {
-    unsigned long retaddr;
-    unsigned long regs[_JMPLEN];
-    sigset_t      sigset;
+    unsigned long   retaddr;
+    unsigned long   regs[_JMPLEN];
 } sigjmp_buf[1];
 #endif /* !_ANSI_SOURCE */
 
@@ -44,8 +42,8 @@ void	longjmp (jmp_buf env, int val) __noreturn ;
 
 #if __BSD_VISIBLE || __POSIX_VISIBLE || __XSI_VISIBLE
 /* Unix functions */
-void    siglongjmp(sigjmp_buf, int) __noreturn ;
-int     sigsetjmp(sigjmp_buf, int);
+/* NOTIMPL void   siglongjmp(sigjmp_buf, int) __noreturn ; */
+/* NOTIMPL int    sigsetjmp(sigjmp_buf, int); */
 
 /* NOTIMPL void	_longjmp(jmp_buf, int) __noreturn ; */
 /* NOTIMPL int	_setjmp(jmp_buf); */
