@@ -42,7 +42,7 @@ __FBSDID("$FreeBSD: src/lib/libc/locale/setlocale.c,v 1.51 2007/01/09 00:28:00 i
 #include <errno.h>
 #include <limits.h>
 #include <locale.h>
-#ifdef __AROS_
+#ifdef __AROS__
 #define _PATH_LOCALE	"/Locale"
 #else
 #include <paths.h>	/* for _PATH_LOCALE */
