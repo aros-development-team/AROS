@@ -206,6 +206,7 @@ SHARED	:= \
 	link \
 	locale/big5		\
 	locale/collate		\
+	locale/collcmp		\
 	locale/euc		\
 	locale/fix_grouping	\
 	locale/gb18030		\
@@ -217,6 +218,7 @@ SHARED	:= \
 	locale/lmessages	\
 	locale/lmonetary	\
 	locale/lnumeric		\
+	locale/mbrtowc		\
 	locale/mbsnrtowcs	\
 	locale/mskanji		\
 	locale/none		\
@@ -228,6 +230,7 @@ SHARED	:= \
 	locale/tolower		\
 	locale/toupper		\
 	locale/utf8		\
+	locale/wcrtomb		\
 	locale/wcsnrtombs	\
 	locale/wctrans		\
 	locale/wctype		\
@@ -264,6 +267,10 @@ SHARED	:= \
 	readlink \
 	realloc \
 	realloc_nocopy \
+	regex/regerror	\
+	regex/regexec	\
+	regex/regcomp	\
+	regex/regfree	\
 	remove \
 	rename \
 	rewind \

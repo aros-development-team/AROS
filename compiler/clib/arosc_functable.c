@@ -31,6 +31,7 @@
 #include <grp.h>
 #include <libgen.h>
 #include <regex.h>
+#include <wchar.h>
 #include <wctype.h>
 
 #include <ioerr2errno.h>    /* FIXME: Should this really be public? */
