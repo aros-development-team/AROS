@@ -50,7 +50,7 @@ __FBSDID("$FreeBSD: src/lib/libc/regex/regcomp.c,v 1.36 2007/06/11 03:05:54 delp
 #include <wchar.h>
 #include <wctype.h>
 
-#include "collate.h"
+#include "locale/collate.h"
 
 #include "utils.h"
 #include "regex2.h"
