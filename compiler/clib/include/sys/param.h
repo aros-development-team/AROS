@@ -27,8 +27,8 @@
     MAXUPRC, NCARGS, NOGROUP, SPECNAMELEN
 */
 
-#define MAXPATHLEN      PATH_MAX
-#define MAXSYMLINKS     32
+#define MAXPATHLEN	PATH_MAX    /* max path after symlink deref */
+#define MAXSYMLINKS	32          /* max no of symlinks */
 
 /* Others:
     ARG_MAX, CHILD_MAX, LINK_MAX, MAX_CANON, MAX_INPUT,
