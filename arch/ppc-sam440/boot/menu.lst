@@ -1,0 +1,22 @@
+# menu.lst config file for PPC AROS. Test version ;)
+
+timeout 1
+default 0
+
+title AROS PowerPC test 1
+    kernel boot/aros-amcc440 arg1 argument_2 "some arg 3" another_one
+#    module Libs/expansion.library
+#    module Libs/utility.library
+#    module Libs/aros.library
+#    module Libs/oop.library
+#    module Libs/arosc.library
+#    module Devs/battclock.resource
+#    module Devs/misc.resource
+
+title AROS PPC test 2
+    kernel boot/aros-ppc2
+    module boot/modules.pkg
+    module boot/test2.module
+
+title AROS PPC third option
+    kernel boot/blah

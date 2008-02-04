@@ -1,0 +1,8 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM setup-sam440-ppc
+setup-sam440-ppc : 
+	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
+	$(CP) menu.lst $(BINDIR)/boot/
+#	$(CP) menu.lst.DH0 $(BINDIR)/boot/
