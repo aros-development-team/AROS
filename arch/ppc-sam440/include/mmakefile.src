@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
+
+#MM- includes-copy-sam440-ppc : includes-common-ppc
+
+%copy_includes mmake=includes-copy-sam440-ppc
+
+#MM- kernel-exec-includes-sam440-ppc : includes-copy-sam440-ppc
+
