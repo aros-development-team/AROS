@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include <exec/lists.h>
 #include <utility/tagitem.h>
-
+#include <asm/amcc440.h>
 #include <stdio.h>
 
 struct KernelBase {
