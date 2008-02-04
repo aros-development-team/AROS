@@ -1,0 +1,16 @@
+# $Id:  $
+include $(TOP)/config/make.cfg
+
+#MM kernel-sam440-ppc: setup-sam440-ppc kernel-kernel-sam440-ppc-kobj
+kernel-sam440-ppc: $(BINDIR)/boot/aros-amcc440
+
+$(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
+
+#MM kernel-kernel-sam440-ppc : includes
+#MM kernel-kernel-sam440-ppc-kobj : includes
+
+%build_module mmake=kernel-kernel-sam440-ppc 	\
+  modname=kernel modtype=resource		\
+  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  files="kernel_init scheduler intr" uselibs="rom"
