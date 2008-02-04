@@ -28,7 +28,7 @@ const TEXT version[] = "$VER: MakeDir 42.5 (15.12.2007)\n";
 
     LOCATION
 
-        Workbench:C
+        Sys:C
 
     FUNCTION
 

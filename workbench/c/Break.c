@@ -18,7 +18,7 @@
 	PROCESS/N,PORT,ALL/S,C/S,D/S,E/S,F/S
 
     LOCATION
-	Workbench:c
+	Sys:c
 
     FUNCTION
 	BREAK sends one or more signals to a CLI process.

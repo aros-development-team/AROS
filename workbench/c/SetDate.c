@@ -6,7 +6,7 @@
     Lang: English
 */
 
-/*
+/******************
     NAME
 
         SetDate
@@ -21,7 +21,7 @@
 
     LOCATION
 
-        Workbench:c
+        Sys:c
 
     FUNCTION
 

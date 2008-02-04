@@ -1,5 +1,24 @@
 #include <proto/exec.h>
 
+/**************************************************************************
+
+    NAME
+	QuitAROS
+
+    SYNOPSIS
+	(N/A)
+
+    LOCATION
+	Sys:c
+
+    FUNCTION
+           This command is only of interest if you're using a full-screen 
+            host system - for ease of use. 
+	It quits the Host client...
+
+**************************************************************************/
+
+
 int main(void)
 {
     struct MsgPort *port;

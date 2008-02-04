@@ -17,7 +17,7 @@
     SYNOPSIS
 
     LOCATION
-	Workbench:C
+	Sys:C
 
     FUNCTION
 	BEEP produces a beep via Intuition DisplayBeep(NULL).
