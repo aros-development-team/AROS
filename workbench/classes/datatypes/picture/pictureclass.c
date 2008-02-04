@@ -334,6 +334,11 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
                 DGS(bug("picture.datatype/OM_SET: Tag PDTA_ScaleQuality: %ld\n", (long)pd->ScaleQuality));
 	        break;
 
+    	    case PDTA_Remap:                
+                pd->Remap = (BOOL) ti->ti_Data;
+                DGS(bug("picture.datatype/OM_SET: Tag ID PDTA_Remap: %ld\n", (long)pd->Remap));
+                break;    
+		
 #ifdef __AROS__
 	    case PDTA_DelayedRead:
                 pd->DelayedRead = (BOOL) ti->ti_Data;
@@ -1044,6 +1049,11 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
                     pixelbytes = 4;
 		    pd->TrueColorSrc = TRUE;
                     break;
+                case PBPAFMT_RGBA:
+            	    InitRGBColTable( pd );
+                    pixelbytes = 4;
+            	    pd->TrueColorSrc = TRUE;
+                    break;    
                 default:
                     D(bug("picture.datatype/DTM_WRITEPIXELARRAY: Unknown PixelFormat mode %d !\n", pixelformat));
                     return FALSE;
@@ -1216,6 +1226,12 @@ STATIC IPTR PDT_ReadPixelArray(struct IClass *cl, struct Gadget *g, struct pdtBl
 			g = *srcptr++;
 			b = *srcptr++;
 			break;
+    	            case PBPAFMT_RGBA:
+    	                r = *srcptr++;
+    	                g = *srcptr++;
+    	                b = *srcptr++;   
+    	                a = *srcptr++;
+    	                break;
 		}
 		if( pixelformat == PBPAFMT_ARGB )
 		    *destptr++ = a;
