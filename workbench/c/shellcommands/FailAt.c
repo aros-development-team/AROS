@@ -18,7 +18,7 @@
 	RCLIM/N
 
     LOCATION
-	C:
+	Sys:C
 
     FUNCTION
 	FailAt sets the return code limit of the current shell script. If
