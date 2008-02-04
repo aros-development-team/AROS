@@ -17,7 +17,7 @@
 
     LOCATION
 
-        Workbench:C
+        Sys:C
 
     FUNCTION
 
