@@ -18,7 +18,7 @@
 	LOAD/S,SAVE/S,RESET/S
 
     LOCATION
-	C:SetClock
+	Sys:c
 
     FUNCTION
 	SetClock can be used to:

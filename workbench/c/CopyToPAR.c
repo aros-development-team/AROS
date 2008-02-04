@@ -5,7 +5,41 @@
     Desc: Copy file to parallel.device
     Lang: English
 */
+/*****************************************************************************
 
+    NAME
+
+        CopytoPAR
+
+    SYNOPSIS
+
+        FILE/A,QUIET/S
+
+    LOCATION
+
+        Sys:c
+
+    FUNCTION
+
+        Copies (or sends a) file to parallel.device.
+        
+    INPUTS
+
+        FILE   --  Either a file, a directory or a pattern to match.
+
+        QUIET  --  Suppresses any output to the shell.
+
+    RESULT
+
+        Standard DOS return codes.
+
+    NOTES
+
+    BUGS
+
+    INTERNALS
+
+******************************************************************************/
 #include <exec/io.h>
 #include <dos/dos.h>
 #include <devices/parallel.h>
