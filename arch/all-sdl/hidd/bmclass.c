@@ -383,7 +383,9 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
         default:
             D(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
-            OOP_Object *gfxhidd = OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR) &gfxhidd);
+            OOP_Object *gfxhidd;
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR) &gfxhidd);
+
             OOP_Object *pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 
             OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     (IPTR) &depth);
@@ -449,7 +451,9 @@ VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd
         default:
             D(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
-            OOP_Object *gfxhidd = OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR) &gfxhidd);
+            OOP_Object *gfxhidd;
+            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR) &gfxhidd);
+
             OOP_Object *pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 
             OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     (IPTR) &depth);
