@@ -3,6 +3,56 @@
     $Id$
 */
 
+/******************************************************************************
+
+    NAME
+
+        Partition
+
+    SYNOPSIS
+
+        DEVICE, UNIT/N, SYSSIZE/K/N, WORKSIZE/K/N, MAXWORK/S, WIPE/S, FORCE/S, QUIET/S
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Partition allocates the space on a given device (usually a hard 
+        drive) so that it can be formatted after.
+
+    INPUTS
+
+          DEVICE – Device type (ie. ata.device)
+	UNIT    --  The device disk unit designation
+	SYSSIZE   --  Sets the System (bootable) patition size.
+	WORKSIZE  --  Sets a secondary partition size.
+	MAXWORK  --  Sets the secondary partition with the rest of space available.
+	WIPE  --  Wipes all partitions defined earlier (CAUTION!)
+	FORCE – QUIET - - Won’t generate any kind of output 
+
+    RESULT
+
+        Standard DOS error codes.
+	
+    NOTES
+
+        This is a very dangerous command – Users should use the HDtoolbox in the utilities 
+         drawer instead.
+
+    EXAMPLE
+
+        Partition ata.device 1 WIPE
+	
+    BUGS
+
+    SEE ALSO
+	
+	Format, SFSFormat
+
+******************************************************************************/
+
 #include <utility/tagitem.h>
 #include <libraries/partition.h>
 #include <devices/trackdisk.h>
