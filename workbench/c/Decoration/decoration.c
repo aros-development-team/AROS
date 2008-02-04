@@ -3,6 +3,38 @@
     $Id$
 */
 
+/******************************************************************************
+
+    NAME
+
+        Decoration
+
+    SYNOPSIS
+
+        (N/A)
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Allows user definable skins for the intuition windows, menus and gadgets.
+    	
+    NOTES
+
+        Must be launched before Wanderer - usually in the S:startup-sequence
+	
+    BUGS
+
+    SEE ALSO
+
+	IPREFS
+	
+    INTERNALS
+
+******************************************************************************/
+
 #include <clib/alib_protos.h>
 
 #include <proto/exec.h>
