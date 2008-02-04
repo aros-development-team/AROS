@@ -3,6 +3,56 @@
     $Id$
 */
 
+/******************************************************************************
+
+    NAME
+
+        Unpack
+
+    SYNOPSIS
+
+        FILE/A, TO/A
+
+    LOCATION
+
+        Sys:C
+
+    FUNCTION
+
+        Command to unpack/unarchive AROS .pkg files.
+
+    INPUTS
+
+        NAME    - The name of the file to unpack.
+        TO – The drive or path to be unpacked.
+
+
+    RESULT
+
+        Standard DOS error codes.
+	
+    NOTES
+
+        This command is not a tool like lha, lzx or unzip. 
+        The .pkg files are not compressed.
+
+	
+    EXAMPLE
+
+        Unpack AROS.pkg TO Ram:
+	
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+    04.05.2000  SDuvan  implemented
+
+******************************************************************************/
+
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <proto/exec.h>
