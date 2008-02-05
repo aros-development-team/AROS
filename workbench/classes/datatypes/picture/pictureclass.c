@@ -833,19 +833,23 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
 	}
 	else
 	{
+	#if 0  // stegerg: CHECKME
 	    if( pd->SrcDepth > 8 )
 	    {
 		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Remap=FALSE option only for colormapped source !\n"));
 		ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
 		return FALSE;
 	    }
+	#endif
 	    if( pd->Scale )
 	    {
 		D(bug("picture.datatype/DTM_ASYNCLAYOUT: Scaling doesn't work with Remap=FALSE !\n"));
 		ReleaseSemaphore(&si->si_Lock);   /* unlock object data */
 		return FALSE;
 	    }
+	#if 0 // stegerg: CHECKME
 	    pd->DestScreen = NULL;
+	#endif
 	    pd->DestDepth = SrcDepth;
 	}
 
