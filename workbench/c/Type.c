@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Type CLI command
@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Sys:C
+        C:
 
     FUNCTION
 
@@ -39,16 +39,14 @@
 
     EXAMPLE
 
-	type abc.txt
-	type xyz.dat hex
-	
+	Type abc.txt
+	Type xyz.dat HEX
+
     BUGS
 
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 
@@ -67,7 +65,7 @@ const TEXT version[] = "$VER: Type 42.1 (20.10.2005)\n";
 
 enum
 {
-    ARG_FROM = 0,
+    ARG_FROM,
     ARG_TO,
     ARG_OPT,
     ARG_HEX,
@@ -381,10 +379,10 @@ static LONG processfile(CONST_STRPTR name, struct file *in, struct file *out, IP
 		(*numfiles)++;
 		in->cnt = 0;
 
-		if (args[2])
+		if (args[ARG_HEX])
 			error = hexdumpfile(in, out);
 		else
-			error = dumpfile(in, out, args[3]);
+			error = dumpfile(in, out, args[ARG_NUMBER]);
 
 		Close(in->fd);
 	}
@@ -430,8 +428,8 @@ int main (void)
 	apath.apath.ap_FoundBreak = 0;
 	apath.apath.ap_Flags      = 0;
 	apath.apath.ap_Strlen     = MAX_PATH_LEN;
-	if (args[1])
-		out->fd = Open((STRPTR) args[1], MODE_NEWFILE);
+	if (args[ARG_TO])
+		out->fd = Open((STRPTR) args[ARG_TO], MODE_NEWFILE);
 	else
 		out->fd=Output();
 	if (out->fd)
