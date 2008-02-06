@@ -211,6 +211,10 @@
 #define AROS_MAKE_UINT64(i) i ## ULL
 #endif
 
+#ifndef __WORDSIZE
+#define __WORDSIZE 32
+#endif
+
 #ifndef STACKED
 #define STACKED __attribute__((aligned(4))) 
 #endif

@@ -37,6 +37,8 @@
 #define AROS_MAKE_INT64(i)  i ## L
 #define AROS_MAKE_UINT64(i) i ## UL
 
+#define __WORDSIZE              64
+
 #define STACKED __attribute__((aligned(8)))
 
 /* Use C pointer and string for the BCPL pointers and strings
