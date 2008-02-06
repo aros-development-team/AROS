@@ -22,7 +22,8 @@
 
     SYNOPSIS
 
-        NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S, REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
+        NAME, TARGET/M, LIST/S, EXISTS/S, DISMOUNT/S, DEFER/S, PATH/S, ADD/S,
+        REMOVE/S, VOLS/S, DIRS/S, DEVICES/S
 
     LOCATION
 
@@ -48,7 +49,7 @@
         NAME     --  the name that should be assigned to a file or dir
         TARGET --  one or more files or directories to assign the NAME to
         LIST      --  list all assigns made
-        EXISTS    --  if NAME is already assigned, set the condition flag to
+        EXISTS    --  if NAME is not assigned, set the condition flag to
                           WARN
         DISMOUNT  --  remove the volume or device NAME from the dos list
         DEFER     --  make an ASSIGN to a path or directory that not need to
