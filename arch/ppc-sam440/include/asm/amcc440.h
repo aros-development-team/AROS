@@ -16,62 +16,113 @@ typedef struct regs {
 } regs_t;
 
 /* Machine State Register */
-#define MSR_AV  0x02000000
 #define MSR_POW 0x00040000
 #define MSR_CE  0x00020000
-#define MSR_ILE 0x00010000
 #define MSR_EE  0x00008000
 #define MSR_PR  0x00004000
 #define MSR_FP  0x00002000
 #define MSR_ME  0x00001000
 #define MSR_FE0 0x00000800
-#define MSR_SE  0x00000400
-#define MSR_BE  0x00000200
+#define MSR_DWE 0x00000400
+#define MSR_DE  0x00000200
 #define MSR_FE1 0x00000100
-#define MSR_IP  0x00000040
-#define MSR_IR  0x00000020
-#define MSR_DR  0x00000010
-#define MSR_PE  0x00000008
-#define MSR_PX  0x00000004
-#define MSR_RI  0x00000002
-#define MSR_LE  0x00000001
+#define MSR_IS  0x00000020
+#define MSR_DS  0x00000010
 
-/* SPR values */
-#define XER     1
-#define LR      8
-#define CTR     9
-#define DSISR   18
-#define DAR     19
-#define DEC     22
-#define SDR1    25
-#define SRR0    26
-#define SRR1    27
-#define SPRG0   272
-#define SPRG1   273
-#define SPRG2   274
-#define SPRG3   275
-#define EAR     282
-#define TBL     284
-#define TBU     285
-#define IBAT0U  528
-#define IBAT0L  529
-#define IBAT1U  530
-#define IBAT1L  531
-#define IBAT2U  532
-#define IBAT2L  533
-#define IBAT3U  534
-#define IBAT3L  535
-#define DBAT0U  536
-#define DBAT0L  537
-#define DBAT1U  538
-#define DBAT1L  539
-#define DBAT2U  540
-#define DBAT2L  541
-#define DBAT3U  542
-#define DBAT3L  543
-#define DABR    1013
-#define HID0    1008
-#define HID1    1009
+/* SPR registers */
+#define XER     0x001   /* Integer Exception Register */
+#define LR      0x008   /* Link Register */
+#define CTR     0x009   /* Count Register */
+#define DEC     0x016   /* Decrementer */
+#define SRR0    0x01A   /* Save/Restore Register 0 */
+#define SRR1    0x01B   /* Save/Restore Register 1 */
+#define PID     0x030   /* Process ID */
+#define DECAR   0x036   /* Decrementer Auto-Reload */
+#define CSRR0   0x03A   /* Critical Save/Restore Register 0 */
+#define CSRR1   0x03B   /* Critical Save/Restore Register 1 */
+#define DEAR    0x03D   /* Data Exception Address Register */
+#define ESR     0x03E   /* Exception Syndrome Register */
+#define IVPR    0x03F   /* Interrupt Vector Prefix Register */
+#define USPRG0  0x100   /* User Special Purpose Register General 0 */
+#define SPRG4   0x104   /* Special Purpose Register General 4 */
+#define SPRG5   0x105   /* Special Purpose Register General 5 */
+#define SPRG6   0x106   /* Special Purpose Register General 6 */
+#define SPRG7   0x107   /* Special Purpose Register General 7 */
+#define TBL     0x10C   /* Time Base Lower */
+#define TBU     0x10D   /* Time Base Upper */
+#define SPRG0   0x110   /* Special Purpose Register General 0 */
+#define SPRG1   0x111   /* Special Purpose Register General 1 */
+#define SPRG2   0x112   /* Special Purpose Register General 2 */
+#define SPRG3   0x113   /* Special Purpose Register General 3 */
+#define SPRG4   0x114   /* Special Purpose Register General 4 */
+#define SPRG5   0x115   /* Special Purpose Register General 5 */
+#define SPRG6   0x116   /* Special Purpose Register General 6 */
+#define SPRG7   0x117   /* Special Purpose Register General 7 */
+#define TBL     0x11C   /* Time Base Lower */
+#define TBU     0x11D   /* Time Base Upper */
+#define PIR     0x11E   /* Processor ID Register */
+#define PVR     0x11F   /* Processor Version Register */
+#define DBSR    0x130   /* Debug Status Register */
+#define DBCR0   0x134   /* Debug Control Register 0 */
+#define DBCR1   0x135   /* Debug Control Register 1 */
+#define DBCR2   0x136   /* Debug Control Register 2 */
+#define IAC1    0x138   /* Instruction Address Compare 1 */
+#define IAC2    0x139   /* Instruction Address Compare 2 */
+#define IAC3    0x13A   /* Instruction Address Compare 3 */
+#define IAC4    0x13B   /* Instruction Address Compare 4 */
+#define DAC1    0x13C   /* Data Address Compare 1 */
+#define DAC2    0x13D   /* Data Address Compare 2 */
+#define DVC1    0x13E   /* Data Value Compare 1 */
+#define DVC2    0x13F   /* Data Value Compare 2 */
+#define TSR     0x150   /* Timer Status Register */
+#define TCR     0x154   /* Timer Control Register */
+#define IVOR0   0x190   /* Interrupt Vector Offset Register 0 */
+#define IVOR1   0x191   /* Interrupt Vector Offset Register 1 */
+#define IVOR2   0x192   /* Interrupt Vector Offset Register 2 */
+#define IVOR3   0x193   /* Interrupt Vector Offset Register 3 */
+#define IVOR4   0x194   /* Interrupt Vector Offset Register 4 */
+#define IVOR5   0x195   /* Interrupt Vector Offset Register 5 */
+#define IVOR6   0x196   /* Interrupt Vector Offset Register 6 */
+#define IVOR7   0x197   /* Interrupt Vector Offset Register 7 */
+#define IVOR8   0x198   /* Interrupt Vector Offset Register 8 */
+#define IVOR9   0x199   /* Interrupt Vector Offset Register 9 */
+#define IVOR10  0x19A   /* Interrupt Vector Offset Register 10 */
+#define IVOR11  0x19B   /* Interrupt Vector Offset Register 11 */
+#define IVOR12  0x19C   /* Interrupt Vector Offset Register 12 */
+#define IVOR13  0x19D   /* Interrupt Vector Offset Register 13 */
+#define IVOR14  0x19E   /* Interrupt Vector Offset Register 14 */
+#define IVOR15  0x19F   /* Interrupt Vector Offset Register 15 */
+#define MCSRR0  0x23A   /* Machine Check Save Restore Register 0 */
+#define MCSRR1  0x23B   /* Machine Check Save Restore Register 1 */
+#define MCSR    0x23C   /* Machine Check Status Register */
+#define INV0    0x370   /* Instruction Cache Normal Victim 0 */
+#define INV1    0x371   /* Instruction Cache Normal Victim 1 */
+#define INV2    0x372   /* Instruction Cache Normal Victim 2 */
+#define INV3    0x373   /* Instruction Cache Normal Victim 3 */
+#define ITV0    0x374   /* Instruction Cache Transient Victim 0 */
+#define ITV1    0x375   /* Instruction Cache Transient Victim 1 */
+#define ITV2    0x376   /* Instruction Cache Transient Victim 2 */
+#define ITV3    0x377   /* Instruction Cache Transient Victim 3 */
+#define CCR1    0x378   /* Core Configuration Register 1 */
+#define DNV0    0x390   /* Data Cache Normal Victim 0 */
+#define DNV1    0x391   /* Data Cache Normal Victim 1 */
+#define DNV2    0x392   /* Data Cache Normal Victim 2 */
+#define DNV3    0x393   /* Data Cache Normal Victim 3 */
+#define DTV0    0x394   /* Data Cache Transient Victim 0 */
+#define DTV1    0x395   /* Data Cache Transient Victim 1 */
+#define DTV2    0x396   /* Data Cache Transient Victim 2 */
+#define DTV3    0x397   /* Data Cache Transient Victim 3 */
+#define DVLIM   0x398   /* Data Cache Victim Limit */
+#define IVLIM   0x399   /* Instruction Cache Victim Limit */
+#define RSTCFG  0x39B   /* Reset Configuration */
+#define DCDBTRL 0x39C   /* Data Cache Debug Tag Register Low */
+#define DCDBTRH 0x39D   /* Data Cache Debug Tag Register High */
+#define ICDBTRL 0x39E   /* Instruction Cache Debug Tag Register Low */
+#define ICDBTRH 0x39F   /* Instruction Cache Debug Tag Register High */
+#define MMUCR   0x3B2   /* Memory Management Unit Control Register */
+#define CCR0    0x3B3   /* Core Configuration Register 0 */
+#define ICDBDR  0x3D3   /* Instruction Cache Debug Data Register */
+#define DBDR    0x3F3   /* Debug Data Register */
 
 /* DCR registers */
 
