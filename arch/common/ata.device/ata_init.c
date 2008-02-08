@@ -20,6 +20,8 @@
  * 2008-01-26  T. Wiszkowski       Added 'nodma' flag for ata driver
  *                                 Moved variables out of global scope
  *                                 Replaced static variables
+ * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
+ *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
  */
 
 #define DEBUG 0
@@ -168,13 +170,14 @@ AROS_UFH3(void, Enumerator,
     static struct __bus 
     {
         ULONG port;
+        ULONG alt;
         UBYTE irq;
     } Buses[] = 
     {
-        {0x1f0, 14},
-        {0x170, 15},
-        {0x168, 10},
-        {0x1e8, 11},
+        {0x1f0, 0x3f0, 14},
+        {0x170, 0x370, 15},
+        {0x168, 0x368, 10},
+        {0x1e8, 0x3e8, 11},
     };
 
     /*
@@ -189,7 +192,8 @@ AROS_UFH3(void, Enumerator,
                     VendorID,
                     DMABase,
                     INTLine,
-                    IOBase;
+                    IOBase,
+                    IOAlt;
 
     /*
      * the PCI Attr Base
@@ -226,22 +230,24 @@ AROS_UFH3(void, Enumerator,
     if (a->ATABase->ata_NoDMA)
         DMABase = 0;
 
-    D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x DMA: %x\n", ProductID, VendorID, IOBase, DMABase));
-
     /*
      * we can have as many as four ports assigned to this device
      */
-    for (x=0; x<4; x++)
+    for (x=0; x<2; x++)
     {
         /*
          * obtain base and interrupt
          */
         switch (x)
         {
-            case 0: OOP_GetAttr(Device, aHidd_PCIDevice_Base0, &IOBase); break;
-            case 1: OOP_GetAttr(Device, aHidd_PCIDevice_Base1, &IOBase); break;
-            case 2: OOP_GetAttr(Device, aHidd_PCIDevice_Base2, &IOBase); break;
-            case 3: OOP_GetAttr(Device, aHidd_PCIDevice_Base3, &IOBase); break;
+            case 0: 
+               OOP_GetAttr(Device, aHidd_PCIDevice_Base0, &IOBase); 
+               OOP_GetAttr(Device, aHidd_PCIDevice_Base1, &IOAlt); 
+               break;
+            case 1:
+               OOP_GetAttr(Device, aHidd_PCIDevice_Base2, &IOBase); 
+               OOP_GetAttr(Device, aHidd_PCIDevice_Base3, &IOAlt); 
+               break;
         }
         OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
 
@@ -257,17 +263,25 @@ AROS_UFH3(void, Enumerator,
                  * collect IOBase and interrupt from the above list
                  */
                 IOBase  = Buses[a->PredefBus].port;
+                IOAlt   = Buses[a->PredefBus].alt;
                 INTLine = Buses[a->PredefBus].irq;
                 a->PredefBus++;
             }
             else
             {
+               IOBase  = 0;
+               IOAlt   = 0;
+               DMABase = 0;
+               INTLine = 0;
+               bug("[ATA  ] Found more controllers\n");
                 /*
                  * we're all done. no idea what else they want from us
                  */
-                break;
+               continue;
             }
         }
+    
+        D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x:%x DMA: %x\n", ProductID, VendorID, IOBase, IOAlt, DMABase));
 
         /*
          * initialize structure
@@ -278,6 +292,7 @@ AROS_UFH3(void, Enumerator,
 
         ab->ab_Base         = a->ATABase;
         ab->ab_Port         = IOBase;
+        ab->ab_Alt          = IOAlt;
         ab->ab_Irq          = INTLine;
         ab->ab_Dev[0]       = DEV_NONE;
         ab->ab_Dev[1]       = DEV_NONE;

@@ -25,6 +25,8 @@
  *                                 Removed obsolete code
  * 2008-01-26  T. Wiszkowski       Restored 32bit io
  *                                 Removed memory dump upon RequestSense
+ * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
+ *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
  */
 
 #define DEBUG 0
@@ -182,10 +184,10 @@ static ULONG ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
  */
 void ata_400ns()
 {
-    ata_in(ata_Control, 0x1f0);
-    ata_in(ata_Control, 0x1f0);
-    ata_in(ata_Control, 0x1f0);
-    ata_in(ata_Control, 0x1f0);
+    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, 0x3f6);
 }
 
 inline void ata_SelectUnit(struct ata_Unit* unit)
@@ -363,7 +365,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      * 
      * - select device
      */
-    ata_out(0x08, ata_Control, port);
+    ata_out(0x08, ata_AltControl, au->au_Bus->ab_Alt);
     D(bug("[ATA%02ld] Executing command %02lx\n", au->au_UnitNum, block->command));
     ata_out(au->au_DevMask, ata_DevHead, port);
 
@@ -705,6 +707,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
         while (l<=t)
         {
             bug("%02lx ", ((UBYTE*)cmd)[l]);
+            ++l;
         }
         bug("\n");
 
@@ -714,7 +717,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
         
     datalen = (datalen+1)&~1;
 
-    ata_out(0x08, ata_Control, port);
+    ata_out(0x08, ata_AltControl, unit->au_Bus->ab_Alt);
     ata_out(unit->au_DevMask, atapi_DevSel, port);
     if (ata_WaitBusyTO(unit, 10))
     {
@@ -783,7 +786,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
     ULONG size = 0;
     UBYTE status;
     UBYTE err = 0;
-    BOOL dma = TRUE;
+    BOOL dma = FALSE;
 
     cmd->scsi_Actual = 0;
 
@@ -792,8 +795,9 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 
     /*
      * setup DMA & push command
+     * it does not really mean we will use dma here btw
      */
-    if (unit->au_XferModes & AF_XFER_DMA)
+    if ((unit->au_XferModes & AF_XFER_DMA) && (cmd->scsi_Length !=0) && (cmd->scsi_Data != 0))
     {
         if ((cmd->scsi_Flags & SCSIF_READ) != 0)
         {
@@ -805,6 +809,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
             dma_SetupPRDSize(unit, cmd->scsi_Data, cmd->scsi_Length, FALSE);
             CachePreDMA(cmd->scsi_Data, &cmd->scsi_Length, 0);
         }
+        dma = TRUE;
     }
 
     if (atapi_SendPacket(unit, cmd->scsi_Command, cmd->scsi_Length, &dma, (cmd->scsi_Flags & SCSIF_READ) == 0)) 
@@ -2008,19 +2013,20 @@ void ata_usleep(struct timerequest *tr, ULONG usec)
 void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 {
     ULONG port = bus->ab_Port;
+    ULONG alt = bus->ab_Alt;
     int cnt;
 
     /* Exclusive use of ATA registers */
     ObtainSemaphore(&bus->ab_Lock);
 
     /* Disable IRQ */
-    ata_out(0x0a, ata_Control, port);
+    ata_out(0x0a, ata_AltControl, alt);
     /* Issue software reset */
-    ata_out(0x0e, ata_Control, port);
+    ata_out(0x0e, ata_AltControl, alt);
     /* wait a while */
     ata_usleep(tr, 400);
     /* Clear reset signal */
-    ata_out(0x0a, ata_Control, port);
+    ata_out(0x0a, ata_AltControl, alt);
     /* And wait again */
     ata_usleep(tr, 400);
     /* wait for dev0 to come online. Limited delay up to 30µs */
@@ -2051,7 +2057,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         }
     }
 
-    ata_out(0x08, ata_Control, port);
+    ata_out(0x08, ata_AltControl, alt);
     ReleaseSemaphore(&bus->ab_Lock);
 }
 
@@ -2075,7 +2081,7 @@ void ata_ScanBus(struct ata_Bus *bus)
     bus->ab_Dev[1] = DEV_NONE;
 
     /* Disable IDE IRQ */
-    ata_out(0x0a, ata_Control, port);
+    ata_out(0x0a, ata_AltControl, bus->ab_Alt);
 
     /* Select device 0 */
     ata_out(0xa0, ata_DevHead, port);
@@ -2196,7 +2202,7 @@ void ata_ScanBus(struct ata_Bus *bus)
     /*
      * restore IRQ
      */
-    ata_out(0x08, ata_Control, port);
+    ata_out(0x08, ata_AltControl, bus->ab_Alt);
     ReleaseSemaphore(&bus->ab_Lock);
 
     CloseDevice((struct IORequest *)tr);
@@ -2239,7 +2245,7 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
     /*
      * read alternate status register (per specs)
      */
-    status = ata_in(ata_AltStatus, unit->au_Bus->ab_Port);
+    status = ata_in(ata_AltStatus, unit->au_Bus->ab_Alt);
     D(bug("[ATAPI] Alternate status: %lx\n", status));
        
     status = ata_in(atapi_Status, unit->au_Bus->ab_Port);
