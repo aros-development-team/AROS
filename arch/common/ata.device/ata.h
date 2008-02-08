@@ -109,6 +109,7 @@ struct ata_Bus
     struct ataBase          *ab_Base;   /* device self */
     struct SignalSemaphore  ab_Lock;    /* Semaphore locking IO access */
     ULONG                   ab_Port;    /* IO port used */
+    ULONG                   ab_Alt;     /* alternate io port */
     UBYTE                   ab_Irq;     /* IRQ used */
     UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
     UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
@@ -241,7 +242,8 @@ typedef struct
     Unit structure describing given device on the bus. It contains all the
     necessary information unit/device may need.
 */
-struct ata_Unit {
+struct ata_Unit 
+{
     struct Unit         au_Unit;   /* exec's unit */
     struct DriveIdent  *au_Drive;  /* Drive Ident after IDENTIFY command */
     struct ata_Bus     *au_Bus;    /* Bus on which this unit is */
@@ -362,8 +364,8 @@ typedef enum
 #define ata_DevHead         6
 #define ata_Status          7
 #define ata_Command         7
-#define ata_AltStatus       0x206
-#define ata_Control         0x206
+#define ata_AltStatus       0x6
+#define ata_AltControl      0x6
 
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))
