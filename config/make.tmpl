@@ -1911,7 +1911,8 @@ DEPS := $(DEPS) $(STUBS_DEP)
 
 %define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
     aros_prefix= extraoptions= nix_dir_layout= nix=no compiler=target \
-    install_target=install postconfigure= postinstall=
+    install_target=install postconfigure= postinstall= \
+    install_env=
 
 ifneq (%(prefix),)
     %(mmake)-prefix := %(prefix)
@@ -1943,7 +1944,8 @@ endif
 
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
-%(mmake)-install_opts := prefix=$(%(mmake)-prefix) exec_prefix=$(%(mmake)-prefix)
+%(mmake)-install_opts := prefix=$(%(mmake)-prefix) \
+	exec_prefix=$(%(mmake)-prefix) %(install_env)
 
 # Check if chosen compiler is valid
 ifeq ($(findstring %(compiler),host target kernel),)
@@ -1970,8 +1972,10 @@ else
 
     %(mmake)-PROGDIR := $(%(mmake)-aros_prefix)
     
-    %(mmake)-install_opts := bindir=$(%(mmake)-prefix) sbindir=$(%(mmake)-prefix) \
-    libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) oldincludedir=$(AROS_INCLUDES)
+    %(mmake)-install_opts := bindir=$(%(mmake)-prefix) \
+	sbindir=$(%(mmake)-prefix) \
+	libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) \
+	oldincludedir=$(AROS_INCLUDES) %(install_env)
 endif
 
 
