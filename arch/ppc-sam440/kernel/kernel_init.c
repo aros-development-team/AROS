@@ -9,8 +9,6 @@
 
 #include "kernel_intern.h"
 
-#define STACK_SIZE 4096
-
 void __putc(char c)
 {
     while(!(inb(UART0_LSR) & UART_LSR_TEMT));
@@ -28,19 +26,6 @@ void __puts(char *str)
     }
 }
 
-static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
-{
-    int i;
-    uint32_t v1,v2,v3;
-    
-    rkprintf("[KRN] Kernel resource pre-exec init\n");
-    rkprintf("[KRN] MSR=%08x\n", rdmsr());
-    
-    /* Disable interrupts */
-    wrmsr(rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME));
-
-    
-}
 
 /* A very very very.....
  * ... very ugly code.
@@ -93,82 +78,64 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     struct KernelBSS *bss;
     
     bss =(struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
-    rkprintf("[KRN] Clearing BSS\n");
+    _rkprintf("[KRN] Clearing BSS\n");
 
     if (bss)
     {
         while (bss->addr && bss->len)
         {
-            rkprintf("[KRN]   %p-%p\n", bss->addr, (char*)bss->addr+bss->len-1);
+            _rkprintf("[KRN]   %p-%p\n", bss->addr, (char*)bss->addr+bss->len-1);
             bzero(bss->addr, bss->len);
             bss++;
         }   
     }
 }
 
-static uint32_t __attribute__((used)) tmp_stack[128]={1,};
-static const uint32_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_stack[120];
+static __attribute__((used,section(".data"))) union {
+    struct TagItem bootup_tags[64];
+    uint32_t  tmp_stack[128];
+} tmp_struct;
+static const uint32_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_struct.tmp_stack[120];
 static uint32_t stack[STACK_SIZE] __attribute__((used));
 static uint32_t stack_super[STACK_SIZE] __attribute__((used));
 static const uint32_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
 static const void *target_address __attribute__((used, section(".text"))) = (void*)kernel_cstart;
 static struct TagItem *BootMsg;
 
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
+static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
-    if (!(*tagListPtr)) return 0;
+    int i;
+    uint32_t v1,v2,v3;
+    
+    _rkprintf("[KRN] Kernel resource pre-exec init\n");
+    _rkprintf("[KRN] MSR=%08x\n", rdmsr());
+    
+    /* Disable interrupts */
+    wrmsr(rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME));
+    wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-16]);
+    
+    /* Do a slightly more sophisticated MMU map */
+    mmu_init(msg);
+    
+    intr_init();
+    
+    wrspr(DECAR, 0xffffffff);
+    
+    asm volatile("sync;isync;sc");
+    wrmsr(rdmsr() | (MSR_EE));
+    //wrmsr(rdmsr() | (MSR_PR));
+    asm volatile("sync;isync;sc");
+    
+    _rkprintf("[KRN] DEC=%08x DECAR=%08x\n", rdspr(DEC), rdspr(DECAR));
+    _rkprintf("[KRN] TCR=%08x TSR=%08x\n", rdspr(TCR), rdspr(TSR));
+    
+    wrmsr(rdmsr() | (MSR_PR));
+    asm volatile("sync;isync;sc");
 
-    while(1)
-    {
-        switch((*tagListPtr)->ti_Tag)
-        {
-            case TAG_MORE:
-                if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
-                    return NULL;
-                continue;
-            case TAG_IGNORE:
-                break;
-
-            case TAG_END:
-                (*tagListPtr) = 0;
-                return NULL;
-
-            case TAG_SKIP:
-                (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
-                continue;
-
-            default:
-                return (struct TagItem *)(*tagListPtr)++;
-
-        }
-
-        (*tagListPtr)++;
-    }
+    _rkprintf("[KRN] Interrupts enabled\n");
 }
 
-struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
-{
-    struct TagItem *tag;
-    const struct TagItem *tagptr = tagList;
 
-    while((tag = krnNextTagItem(&tagptr)))
-    {
-        if (tag->ti_Tag == tagValue)
-            return tag;
-    }
-
-    return 0;
-}
-
-IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
-{
-    struct TagItem *ti = 0;
-
-    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
-        return ti->ti_Data;
-
-        return defaultVal;
-}
 
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
          struct KernelBase *, KernelBase, 10, Kernel)

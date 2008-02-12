@@ -1,6 +1,8 @@
 # $Id:  $
 include $(TOP)/config/make.cfg
 
+FILES := kernel_init scheduler intr mmu tags syscall
+
 #MM kernel-sam440-ppc: setup-sam440-ppc kernel-kernel-sam440-ppc-kobj
 kernel-sam440-ppc: $(BINDIR)/boot/aros-amcc440
 
@@ -13,4 +15,4 @@ $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o
 %build_module mmake=kernel-kernel-sam440-ppc 	\
   modname=kernel modtype=resource		\
   cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
-  files="kernel_init scheduler intr" uselibs="rom"
+  files="$(FILES)" uselibs="rom"
