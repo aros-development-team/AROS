@@ -138,6 +138,38 @@ static inline void wrmsr(uint32_t msr) {
 #define ICDBDR  0x3D3   /* Instruction Cache Debug Data Register */
 #define DBDR    0x3F3   /* Debug Data Register */
 
+/* TCR register */
+#define TCR_WP          0xc0000000
+#define TCR_WP21        0x00000000
+#define TCR_WP25        0x40000000
+#define TCR_WP29        0x80000000
+#define TCR_WP33        0xc0000000
+#define TCR_WRC         0x30000000
+#define TCR_WRC_NORESET 0x00000000
+#define TCR_WRC_CORE    0x10000000
+#define TCR_WRC_CHIP    0x20000000
+#define TCR_WRC_SYSTEM  0x30000000
+#define TCR_WIE         0x08000000
+#define TCR_DIE         0x04000000
+#define TCR_FP          0x03000000
+#define TCR_FP_13       0x00000000
+#define TCR_FP_17       0x01000000
+#define TCR_FP_21       0x02000000
+#define TCR_FP_25       0x03000000
+#define TCR_FP_FIE      0x00800000
+#define TCR_FP_ARE      0x00400000
+
+/* TSR register */
+#define TSR_ENW         0x80000000
+#define TSR_WIS         0x40000000
+#define TSR_WRS         0x30000000
+#define TSR_WRS_NORESET 0x00000000
+#define TSR_WRS_CORE    0x10000000
+#define TSR_WRS_CHIP    0x20000000
+#define TSR_WRS_SYSTEM  0x30000000
+#define TSR_DIS         0x08000000
+#define TSR_FIS         0x04000000
+
 /* DCR registers */
 
 #define rddcr(reg) \
