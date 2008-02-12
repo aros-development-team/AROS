@@ -15,6 +15,11 @@ typedef struct regs {
     uint32_t    dsisr;
 } regs_t;
 
+typedef struct fpuregs {
+    double      fpr[32];
+    uint32_t    fpscr;
+} fpuregs_t;
+
 static inline uint32_t rdmsr() {
     uint32_t msr; asm volatile("mfmsr %0":"=r"(msr)); return msr;
 }
