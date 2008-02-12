@@ -11,7 +11,7 @@
 */
 
 #ifndef PI
-#define PI      ((float)3.141592653589793))
+#define PI      ((float)3.141592653589793)
 #endif
 
 #define TWO_PI  (((float) 2) * PI)
