@@ -91,13 +91,13 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     }
 }
 
-static __attribute__((used,section(".data"))) union {
+static __attribute__((used,section(".data"),aligned(16))) union {
     struct TagItem bootup_tags[64];
     uint32_t  tmp_stack[128];
 } tmp_struct;
 static const uint32_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_struct.tmp_stack[120];
-static uint32_t stack[STACK_SIZE] __attribute__((used));
-static uint32_t stack_super[STACK_SIZE] __attribute__((used));
+static uint32_t stack[STACK_SIZE] __attribute__((used,,aligned(16)));
+static uint32_t stack_super[STACK_SIZE] __attribute__((used,,aligned(16)));
 static const uint32_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
 static const void *target_address __attribute__((used, section(".text"))) = (void*)kernel_cstart;
 static struct TagItem *BootMsg;
