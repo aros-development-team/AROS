@@ -96,8 +96,8 @@ static __attribute__((used,section(".data"),aligned(16))) union {
     uint32_t  tmp_stack[128];
 } tmp_struct;
 static const uint32_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_struct.tmp_stack[120];
-static uint32_t stack[STACK_SIZE] __attribute__((used,,aligned(16)));
-static uint32_t stack_super[STACK_SIZE] __attribute__((used,,aligned(16)));
+static uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
+static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
 static const uint32_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
 static const void *target_address __attribute__((used, section(".text"))) = (void*)kernel_cstart;
 static struct TagItem *BootMsg;
@@ -119,18 +119,15 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     
     intr_init();
     
+    /* 
+     * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
+     * 1kHz DEC counter.
+     */
     wrspr(DECAR, 0xffffffff);
-    
-    asm volatile("sync;isync;sc");
+
     wrmsr(rdmsr() | (MSR_EE));
-    //wrmsr(rdmsr() | (MSR_PR));
-    asm volatile("sync;isync;sc");
-    
-    _rkprintf("[KRN] DEC=%08x DECAR=%08x\n", rdspr(DEC), rdspr(DECAR));
-    _rkprintf("[KRN] TCR=%08x TSR=%08x\n", rdspr(TCR), rdspr(TSR));
     
     wrmsr(rdmsr() | (MSR_PR));
-    asm volatile("sync;isync;sc");
 
     _rkprintf("[KRN] Interrupts enabled\n");
 }
