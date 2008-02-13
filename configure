@@ -8412,7 +8412,7 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 		aros_target_nm="powerpc-linux-nm"
 		aros_target_strip="powerpc-linux-strip"
 		aros_target_objcopy="powerpc-linux-objcopy"
-		aros_target_objdump="pwoerpc-linux-objdump"
+		aros_target_objdump="powerpc-linux-objdump"
 		aros_shared_ld="powerpc-linux-ld"
 		aros_kernel_ld="powerpc-linux-ld"
 		;;
