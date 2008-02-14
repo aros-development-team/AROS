@@ -63,10 +63,10 @@ static inline void wrmsr(uint32_t msr) {
 #define ESR     0x03E   /* Exception Syndrome Register */
 #define IVPR    0x03F   /* Interrupt Vector Prefix Register */
 #define USPRG0  0x100   /* User Special Purpose Register General 0 */
-#define SPRG4   0x104   /* Special Purpose Register General 4 */
-#define SPRG5   0x105   /* Special Purpose Register General 5 */
-#define SPRG6   0x106   /* Special Purpose Register General 6 */
-#define SPRG7   0x107   /* Special Purpose Register General 7 */
+#define SPRG4U  0x104   /* Special Purpose Register General 4. Usermode - read only */
+#define SPRG5U  0x105   /* Special Purpose Register General 5. Usermode - read only */
+#define SPRG6U  0x106   /* Special Purpose Register General 6. Usermode - read only */
+#define SPRG7U  0x107   /* Special Purpose Register General 7. Usermode - read only */
 #define TBL     0x10C   /* Time Base Lower */
 #define TBU     0x10D   /* Time Base Upper */
 #define SPRG0   0x110   /* Special Purpose Register General 0 */
