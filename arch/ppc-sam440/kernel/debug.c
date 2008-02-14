@@ -20,16 +20,6 @@ void __putc(char c)
     outb(c, UART0_THR);
 }
 
-void __puts(char *str)
-{
-    while (*str)
-    {
-        if (*str == '\n')
-            __putc('\r');
-        __putc(*str++);
-    }
-}
-
 static int krnPutC(int chr, struct PrivData *data)
 {
     __putc(chr);
