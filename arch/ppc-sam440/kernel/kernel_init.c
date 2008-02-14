@@ -44,7 +44,7 @@ asm(".section .aros.init,\"ax\"\n\t"
     "tlbwe %r10,%r0,1\n\t"
     "tlbwe %r11,%r0,2\n\t"
     "isync\n\t"                         /* Invalidate shadow TLB's */
-    "li %r9,0; mtspr 0x114,%r9; mtspr 0x115,%r9\n\t"
+    "li %r9,0; mtspr 0x114,%r9; mtspr 0x115,%r9; mttbl %r9; mttbu %r9; mttbl %r9\n\t"
     "lis %r9,tmp_stack_end@ha\n\t"      /* Use temporary stack while clearing BSS */
     "lwz %r1,tmp_stack_end@l(%r9)\n\t"
     "bl __clear_bss\n\t"                /* Clear 'em ALL!!! */
