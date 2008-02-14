@@ -7,6 +7,7 @@
 
 struct PrivData {
     struct KernelBase *kbase;
+    uint32_t tbu, tbl;
 };
 
 void __putc(char c)
@@ -33,8 +34,10 @@ AROS_LH2(void, KrnBug,
          struct KernelBase *, KernelBase, 11, Kernel)
 {
     AROS_LIBFUNC_INIT
-
+    uint32_t tmp;
     struct PrivData data;
+    
+    asm volatile("1: mftbu %0; mftbl %1; mftbu %2; cmpw %0,%2; bne- 1b":"=r"(data.tbu),"=r"(data.tbl), "=r"(tmp)::"cc");
     
     data.kbase = KernelBase;
     __vcformat(&data, krnPutC, format, args);
