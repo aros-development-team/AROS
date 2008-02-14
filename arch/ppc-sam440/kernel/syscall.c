@@ -4,9 +4,9 @@
 
 void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self)
 {
-    _rkprintf("[KRN] Exception %d handler. Context @ %p\n", exception, ctx);
-
-    _rkprintf("[KRN] SysCall handler. SC=%d\n", ctx->gpr[3]);
+    struct KernelBase *KernelBase = getKernelBase();
+    
+    D(bug("[KRN] SysCall handler. context @ %p SC=%d\n", ctx, ctx->gpr[3]));
     
     switch (ctx->gpr[3])
     {

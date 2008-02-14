@@ -6,5 +6,5 @@
 
 void mmu_init(struct TagItem *tags)
 {
-    _rkprintf("[KRN] MMU Init\n");
+    D(bug("[KRN] MMU Init\n"));
 }
