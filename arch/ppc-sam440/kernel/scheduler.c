@@ -77,9 +77,8 @@ AROS_LH0(void, KrnSchedule,
  */
 void core_Dispatch(regs_t *regs)
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = getSysBase();
     struct Task *task;
-    SysBase = *(struct ExecBase **)4UL;
     
     __asm__ __volatile__("wrteei 0;");
     
@@ -138,13 +137,12 @@ void core_Dispatch(regs_t *regs)
 
 void core_Switch(regs_t *regs)
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = getSysBase();
     struct Task *task;
     
     /* Disable interrupts for a while */
     __asm__ __volatile__("wrteei 0");
-        
-    SysBase = *(struct ExecBase **)4UL;
+
     task = SysBase->ThisTask;
     
     /* Copy current task's context into the ETask structure */
@@ -182,13 +180,12 @@ void core_Switch(regs_t *regs)
  */
 void core_Schedule(regs_t *regs)
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = getSysBase();
     struct Task *task;
 
     /* Disable interrupts for a while */
     __asm__ __volatile__("wrteei 0"); // CLI
 
-    SysBase = *(struct ExecBase **)4UL;
     task = SysBase->ThisTask;
 
     /* Clear the pending switch flag. */
@@ -231,8 +228,6 @@ void core_Schedule(regs_t *regs)
  */
 void core_ExitInterrupt(regs_t *regs) 
 {
-    struct ExecBase *SysBase;
-
     /* Going back into supervisor mode? Then exit immediatelly */
     if (!(regs->srr1 & MSR_PR))
     {
@@ -241,7 +236,7 @@ void core_ExitInterrupt(regs_t *regs)
     else
     {
         /* Prepare to go back into user mode */
-        SysBase = *(struct ExecBase **)4UL;
+        struct ExecBase *SysBase = getSysBase();
 
         /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt)

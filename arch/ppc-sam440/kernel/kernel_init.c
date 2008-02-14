@@ -1,5 +1,6 @@
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #include <inttypes.h>
 #include <exec/libraries.h>
 #include <utility/tagitem.h>
@@ -8,24 +9,9 @@
 #include <strings.h>
 
 #include "kernel_intern.h"
+#include LC_LIBDEFS_FILE
 
-void __putc(char c)
-{
-    while(!(inb(UART0_LSR) & UART_LSR_TEMT));
-    
-    outb(c, UART0_THR);
-}
-
-void __puts(char *str)
-{
-    while (*str)
-    {
-        if (*str == '\n')
-            __putc('\r');
-        __putc(*str++);
-    }
-}
-
+static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
 /* A very very very.....
  * ... very ugly code.
@@ -58,6 +44,7 @@ asm(".section .aros.init,\"ax\"\n\t"
     "tlbwe %r10,%r0,1\n\t"
     "tlbwe %r11,%r0,2\n\t"
     "isync\n\t"                         /* Invalidate shadow TLB's */
+    "li %r9,0; mtspr 0x114,%r9; mtspr 0x115,%r9\n\t"
     "lis %r9,tmp_stack_end@ha\n\t"      /* Use temporary stack while clearing BSS */
     "lwz %r1,tmp_stack_end@l(%r9)\n\t"
     "bl __clear_bss\n\t"                /* Clear 'em ALL!!! */
@@ -78,13 +65,13 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     struct KernelBSS *bss;
     
     bss =(struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
-    _rkprintf("[KRN] Clearing BSS\n");
+    D(bug("[KRN] Clearing BSS\n"));
 
     if (bss)
     {
         while (bss->addr && bss->len)
         {
-            _rkprintf("[KRN]   %p-%p\n", bss->addr, (char*)bss->addr+bss->len-1);
+            D(bug("[KRN]   %p-%p\n", bss->addr, (char*)bss->addr+bss->len-1));
             bzero(bss->addr, bss->len);
             bss++;
         }   
@@ -95,10 +82,10 @@ static __attribute__((used,section(".data"),aligned(16))) union {
     struct TagItem bootup_tags[64];
     uint32_t  tmp_stack[128];
 } tmp_struct;
-static const uint32_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_struct.tmp_stack[120];
+static const uint32_t *tmp_stack_end __attribute__((used, section(".text"))) = &tmp_struct.tmp_stack[124];
 static uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
-static const uint32_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-16];
+static const uint32_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-4];
 static const void *target_address __attribute__((used, section(".text"))) = (void*)kernel_cstart;
 static struct TagItem *BootMsg;
 
@@ -106,17 +93,19 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     int i;
     uint32_t v1,v2,v3;
-    
-    _rkprintf("[KRN] Kernel resource pre-exec init\n");
-    _rkprintf("[KRN] MSR=%08x\n", rdmsr());
+
+    wrspr(SPRG4, 0);    /* Clear KernelBase */
+    wrspr(SPRG5, 0);    /* Clear SysBase */
+
+    D(bug("[KRN] Kernel resource pre-exec init\n"));
+    D(bug("[KRN] MSR=%08x\n", rdmsr()));
     
     /* Disable interrupts */
     wrmsr(rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME));
-    wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-16]);
+    wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-4]);
     
     /* Do a slightly more sophisticated MMU map */
     mmu_init(msg);
-    
     intr_init();
     
     /* 
@@ -125,14 +114,12 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
      */
     wrspr(DECAR, 0xffffffff);
 
+    /* Questionable! */
     wrmsr(rdmsr() | (MSR_EE));
-    
     wrmsr(rdmsr() | (MSR_PR));
 
-    _rkprintf("[KRN] Interrupts enabled\n");
+    D(bug("[KRN] Interrupts enabled\n"));
 }
-
-
 
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
          struct KernelBase *, KernelBase, 10, Kernel)
@@ -143,3 +130,11 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 
     AROS_LIBFUNC_EXIT
 }
+
+
+static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
+{
+
+}
+
+ADD2INITLIB(Kernel_Init, 0)

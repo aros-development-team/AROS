@@ -69,7 +69,7 @@ void *__EXCEPTION_15_Prolog();
 
 void intr_init()
 {
-    _rkprintf("[KRN] Setting up exception handlers\n");
+    D(bug("[KRN] Setting up exception handlers\n"));
     wrspr(IVPR, ((uint32_t)&__EXCEPTION_0_Prolog) & 0xffff0000);
     
     wrspr(IVOR0, ((uint32_t)&__EXCEPTION_0_Prolog) & 0x0000fff0);
@@ -162,29 +162,30 @@ void intr_init()
 
 void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
 {
-    wrspr(TSR, TSR_DIS);
-    _rkprintf("[KRN] Exception %d handler. Context @ %p\n", exception, ctx);
-
-    asm volatile("li %%r3,%0; sc"::"i"(5):"r3");
+    struct KernelBase *KernelBase = getKernelBase();
     
+    /* Clear the DIS bit - we have received decrementer exception */
+    wrspr(TSR, TSR_DIS);
+    D(bug("[KRN] Decrementer handler. Context @ %p\n", ctx));
+
     core_LeaveInterrupt(ctx);
 }
 
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
 {
-
+    struct KernelBase *KernelBase = getKernelBase();
     
     
     
-    _rkprintf("[KRN] Exception %d handler. Context @ %p\n", exception, ctx);
-    _rkprintf("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
-             ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]);
-    _rkprintf("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
-             ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]);
-    _rkprintf("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
-             ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]);
-    _rkprintf("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%07x\n",
-             ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]);
+    D(bug("[KRN] Exception %d handler. Context @ %p\n", exception, ctx));
+    D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
+             ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
+    D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
+             ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]));
+    D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
+             ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
+    D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%07x\n",
+             ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
     core_LeaveInterrupt(ctx);
 }
 

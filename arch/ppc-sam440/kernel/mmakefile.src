@@ -1,7 +1,7 @@
 # $Id:  $
 include $(TOP)/config/make.cfg
 
-FILES := kernel_init scheduler intr mmu tags syscall
+FILES := kernel_init scheduler intr mmu tags syscall debug
 
 #MM kernel-sam440-ppc: setup-sam440-ppc kernel-kernel-sam440-ppc-kobj
 kernel-sam440-ppc: $(BINDIR)/boot/aros-amcc440
