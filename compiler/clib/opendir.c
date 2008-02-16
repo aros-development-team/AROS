@@ -9,12 +9,19 @@
 #include <proto/dos.h>
 
 #include <stdlib.h>
+#ifndef ExNext_IS_WORKING_WITHOUT_ASSIGN
+#include <stdio.h>
+#endif
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
 
 #include "__open.h"
 #include "__errno.h"
+#include "__upath.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -52,6 +59,11 @@
     DIR *dir;
     int fd;
     fdesc *desc;
+    BPTR lock;
+    char *aname;
+#ifndef ExNext_IS_WORKING_WITHOUT_ASSIGN
+    char assign[32];
+#endif
 
     if (!name)
     {
@@ -60,19 +72,46 @@
     }
 
     dir = malloc(sizeof(DIR));
-    if (!dir) goto err1;
-
-    dir->priv = malloc(sizeof(struct FileInfoBlock));
-    if (!dir->priv) goto err2;
-
-    fd = open(name, O_RDONLY);
-    desc = __getfdesc(fd);
-    if (!desc) goto err3;
-
-    if (!ExamineFH(desc->fh, dir->priv))
+    if (!dir)
     {
-        errno = IoErr2errno(IoErr());
-        goto err4;
+	errno = ENOMEM;
+	goto err1;
+    }
+
+    dir->priv = AllocDosObject(DOS_FIB, NULL);
+    if (!dir->priv)
+    {
+	errno = ENOMEM;
+	goto err2;
+    }
+
+    /* Lock is used instead of open to allow opening "" */
+    aname = __path_u2a(name);
+    lock = Lock(aname, SHARED_LOCK);
+    if (!lock)
+    {
+	errno = IoErr2errno(IoErr());
+	goto err3;
+    }
+
+#ifndef ExNext_IS_WORKING_WITHOUT_ASSIGN
+    sprintf(assign, "READDIR%x", (unsigned)dir);
+
+    if (!AssignLock(assign, DupLock(lock)))
+    {
+	D(bug("!AssignLock err=%d\n", IoErr()));
+    }
+
+    UnLock(lock);
+    lock = Lock(aname, SHARED_LOCK);
+
+    AssignLock(assign, NULL);
+#endif
+
+    if (!Examine(lock, dir->priv))
+    {
+	errno = IoErr2errno(IoErr());
+	goto err4;
     }
 
     if (((struct FileInfoBlock *)dir->priv)->fib_DirEntryType<=0)
@@ -81,18 +120,28 @@
 	goto err4;
     }
 
+    desc = malloc(sizeof(fdesc));
+    desc->fh = lock;
+    desc->flags = O_RDONLY;
+    desc->opencount = 1;
+
+    fd = __getfdslot(__getfirstfd(3));
+    __setfdesc(fd, desc);
+
     dir->fd = fd;
     dir->pos = 0;
     dir->ent.d_name[NAME_MAX] = '\0';
 
+    D(bug("opendir(%s) fd=%d\n", name, fd));
     return dir;
 
 err4:
-    close(fd);
+    UnLock(lock);
 err3:
-    free(dir->priv);
+    FreeDosObject(DOS_FIB, dir->priv);
 err2:
     free(dir);
 err1:
+    D(bug("opendir(%s) errno=%d\n", name, errno));
     return NULL;
 }

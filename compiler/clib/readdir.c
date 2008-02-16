@@ -17,6 +17,9 @@
 #include "__open.h"
 #include "__upath.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
@@ -64,8 +67,11 @@
     int const max = MAXFILENAMELENGTH > NAME_MAX ? NAME_MAX : MAXFILENAMELENGTH;
     fdesc *desc;
 
+    D(bug("readdir("));
+
     if (!dir)
     {
+        D(bug("null)=EFAULT\n"));
         errno = EFAULT;
 	return NULL;
     }
@@ -73,37 +79,48 @@
     desc = __getfdesc(dir->fd);
     if (!desc)
     {
+        D(bug("fd=%d)=EBADF\n", (int)dir->fd));
     	errno = EBADF;
     	return NULL;
     }
 
     if (__doupath && dir->pos == 0)
     {
+        dir->ent.d_type = DT_DIR;
         dir->ent.d_name[0]='.';
         dir->ent.d_name[1]='\0';
+        dir->ent.d_reclen = 1;
     } 
     else
     if (__doupath && dir->pos == 1)
     {
+        dir->ent.d_type = DT_DIR;
         dir->ent.d_name[0]='.';
     	dir->ent.d_name[1]='.';
     	dir->ent.d_name[2]='\0';
+        dir->ent.d_reclen = 2;
     }
     else
-    while (TRUE)
     {
-        if (!ExNext(desc->fh, dir->priv))
+        struct FileInfoBlock *fib = (struct FileInfoBlock *)dir->priv;
+
+        if (!ExNext(desc->fh, fib))
         {
 	    dir->pos--;
 	    if (IoErr() != ERROR_NO_MORE_ENTRIES)
+	    {
     	        errno = IoErr2errno(IoErr());
-
+		D(bug(") errno=%d\n", (int)errno));
+            }
+	    D(else
+		bug("NO_MORE_ENTRIES)\n"));
     	    return NULL;
         }
-        else
+
+        CONST_STRPTR name = fib->fib_FileName;
+        while (TRUE)
         {
-            CONST_STRPTR name = ((struct FileInfoBlock *)dir->priv)->fib_FileName;
-            
+
             if (__doupath && name[0] == '.')
             { 
                 if (name[1] == '.')
@@ -117,11 +134,35 @@
             }
           
             strncpy(dir->ent.d_name, name, max);
+            dir->ent.d_reclen = strlen(name);
+
+            switch (fib->fib_DirEntryType)
+            {
+            case ST_FILE:
+              dir->ent.d_type = DT_REG; 
+              break;
+            case ST_ROOT:
+            case ST_USERDIR:
+              dir->ent.d_type = DT_DIR; 
+              break;
+            case ST_SOFTLINK:
+            case ST_LINKFILE:
+            case ST_LINKDIR:
+              dir->ent.d_type = DT_LNK; 
+              break;
+            case ST_PIPEFILE:
+              dir->ent.d_type = DT_FIFO; 
+              break;
+            default:
+              dir->ent.d_type = DT_UNKNOWN; 
+              break;
+            }
             
             break;
         }
     }
-    
+   
+    D(bug("%s) d_type=%d\n", dir->ent.d_name, (int)dir->ent.d_type));
     dir->pos++;
     return &(dir->ent);
 }
