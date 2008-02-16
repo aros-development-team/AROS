@@ -81,7 +81,7 @@ AROS_LH5(UWORD, AddGList,
 
     D(bug("AddGList()\n"));
 
-    if (gadget->GadgetType & GTYP_REQGADGET)
+    if (requester && gadget->GadgetType & GTYP_REQGADGET)
     {
         for (last=gadget, count2 = numGad; last && count2--; last=last->NextGadget)
         {

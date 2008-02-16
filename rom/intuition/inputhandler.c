@@ -1663,7 +1663,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
             if (new_active_window)
             {
-                if (gadget &&
+                if (gadget && w &&
                     (!(GetPrivScreen(w->WScreen)->MenuVerifyMsgCount)) &&
                     (!(MENUS_ACTIVE)) && (!(SYSGADGET_ACTIVE)))
                 {
@@ -3599,10 +3599,11 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                 #define SECONDS(x) (x*50)
                 if (iihdata->HelpGadgetFindTime && (currenttime >= iihdata->HelpGadgetFindTime + SECONDS(1)))
                 {
+		    struct Gadget *lhg = iihdata->LastHelpGadget;
                     fire_intuimessage(iihdata->LastHelpWindow,
                                       IDCMP_GADGETHELP,
-                                      iihdata->LastHelpGadget->GadgetID, /* Don't know what it should be */
-                                      iihdata->LastHelpGadget,
+                                      lhg ? lhg->GadgetID : NULL, /* Don't know what it should be */
+                                      lhg,
                                       IntuitionBase);
                     iihdata->HelpGadgetFindTime = 0;
                 }
