@@ -89,6 +89,15 @@
 
 	for(;;)
 	{
+	    #if !defined(NO_CONSISTENCY_CHECKS)
+	    if (!mh)
+	    {
+		/* memory block is not in pool. */
+		Alert(AT_Recovery | AN_MemCorrupt);
+		break;
+	    }
+	    #endif
+
 	    /* The memory must be between the two borders */
 	    if(memory >= mh->mh_Lower && memory < mh->mh_Upper)
 	    {
