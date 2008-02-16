@@ -5,9 +5,12 @@
     POSIX function closedir().
 */
 
+#include <proto/dos.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+
+#include "__open.h"
 
 /*****************************************************************************
 
@@ -43,16 +46,25 @@
 
 ******************************************************************************/
 {
+    fdesc *desc;
+
     if (!dir)
     {
-        errno = EFAULT;
+	errno = EFAULT;
 	return -1;
     }
 
-    if (close(dir->fd) == -1)
-    	return -1;
+    desc = __getfdesc(dir->fd);
+    if (!desc)
+    {
+	errno = EBADF;
+	return -1;
+    }
 
-    free(dir->priv);
+    __setfdesc(dir->fd, NULL);
+
+    UnLock(desc->fh);
+    FreeDosObject(DOS_FIB, dir->priv);
     free(dir);
 
     return 0;
