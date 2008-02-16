@@ -7,6 +7,7 @@
 */
 #include <proto/exec.h>
 #include "dos_intern.h"
+#include <string.h>
 
 /*****************************************************************************
 
@@ -52,8 +53,63 @@
     struct DevProc *olddvp, *newdvp;
     struct IOFileSys iofs;
     LONG err;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    char buf1[256], vol[32];
+    char buf2[256];
+    int len;
 
     InitIOFS(&iofs, FSA_RENAME, DOSBase);
+
+    len = SplitName(oldName, ':', vol, 0, sizeof(vol) - 1);
+
+    if (len > 0)
+    {
+	/* get real name */
+	BPTR lock = Lock(oldName, SHARED_LOCK);
+	if (lock)
+	{
+	    if (NameFromLock(lock, buf1, sizeof(buf1) -1 ))
+		oldName = buf1;
+	    UnLock(lock);
+	}
+    }
+    else
+    {
+	/* convert to absolute path */
+	if (NameFromLock(me->pr_CurrentDir, buf1, sizeof(buf1) - 1))
+	{
+	    int namelen = strlen(oldName);
+	    len = strlen(buf1);
+	    if (len + namelen < sizeof(buf1))
+	    {
+		buf1[len++] = '/';
+		CopyMem(oldName, buf1 + len, namelen);
+		len += namelen;
+		buf1[len] = '\0';
+		oldName = buf1;
+	    }
+	}
+    }
+
+    len = SplitName(newName, ':', vol, 0, sizeof(vol) - 1);
+
+    if (len <= 0)
+    {
+	/* convert to absolute path */
+	if (NameFromLock(me->pr_CurrentDir, buf2, sizeof(buf2) - 1))
+	{
+	    int namelen = strlen(newName);
+	    len = strlen(buf2);
+	    if (len + namelen < sizeof(buf2))
+	    {
+		buf2[len++] = '/';
+		CopyMem(newName, buf2 + len, namelen);
+		len += namelen;
+		buf2[len] = '\0';
+		newName = buf2;
+	    }
+	}
+    }
 
     /* get device pointers */
     if ((olddvp = GetDeviceProc(oldName, NULL)) == NULL ||

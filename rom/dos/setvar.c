@@ -192,8 +192,9 @@
 	    if (lv->lv_Value)
 	    {
 		CopyMem(buffer, lv->lv_Value, lv->lv_Len);
-		
-		return DOSTRUE; 
+
+		if (flags & GVF_LOCAL_ONLY)
+		    return DOSTRUE;
 	    } /* memory for actual value */
 	} /* set a local variable */
 	
