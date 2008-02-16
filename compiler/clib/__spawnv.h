@@ -11,6 +11,13 @@
 
 #include <dos/bptr.h>
 
+typedef struct
+{
+    BPTR command;
+    LONG returncode;
+    int  parent_does_upath;
+} childdata_t;
+
 int __spawnv(int mode, BPTR seg, char *const argv[]);
 
 #endif

@@ -4,7 +4,7 @@
 
     spavnv() function, used to spawn new processes.
 */
-
+#define DEBUG 0
 #include "__arosc_privdata.h"
 
 #include <proto/dos.h>
@@ -21,20 +21,14 @@
 #include <sys/syscall.h>
 
 #include "__errno.h"
+#include "__spawnv.h"
 
-typedef struct
-{
-    BPTR command;
-    LONG returncode;
-    int  parent_does_upath;
-} childdata_t;
-
-AROS_UFP3(static LONG, wait_entry,
+AROS_UFP3(LONG, wait_entry,
 AROS_UFPA(char *, argstr,A0),
 AROS_UFPA(ULONG, argsize,D0),
 AROS_UFPA(struct ExecBase *,SysBase,A6));
 
-static BPTR DupFHFromfd(int fd, ULONG mode);
+BPTR DupFHFromfd(int fd, ULONG mode);
 static char *join_args(char * const *argv);
 /*****************************************************************************
 
@@ -192,7 +186,7 @@ static char *join_args(char * const *argv);
 }
 
 
-AROS_UFH3(static LONG, wait_entry,
+AROS_UFH3(LONG, wait_entry,
 AROS_UFHA(char *, argstr,A0),
 AROS_UFHA(ULONG, argsize,D0),
 AROS_UFHA(struct ExecBase *,SysBase,A6))
@@ -203,6 +197,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     struct Library *aroscbase;
     LONG rc = -1;
     childdata_t *childdata = (childdata_t *)FindTask(NULL)->tc_UserData;
+    struct CommandLineInterface *cli;
+    LONG stacksize;
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
     if (DOSBase == NULL)
@@ -212,14 +208,17 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     if (aroscbase == NULL)
         goto err2;
 
-    __get_arosc_privdata()->acpd_parent_does_upath = childdata->parent_does_upath;
-    __get_arosc_privdata()->acpd_spawned = 1;
+#define privdata __get_arosc_privdata()
+    privdata->acpd_parent_does_upath = childdata->parent_does_upath;
+    privdata->acpd_spawned = 1;
 
-    rc = RunCommand
-    (
-        childdata->command, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
-	argstr, argsize
-    );
+    cli = Cli();
+    if (cli)
+	stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+    else
+	stacksize = AROS_STACKSIZE;
+
+    rc = RunCommand(childdata->command, stacksize, argstr, argsize);
 
     CloseLibrary(aroscbase);
 
@@ -235,7 +234,7 @@ err1:
 }
 
 #include "__open.h"
-static BPTR DupFHFromfd(int fd, ULONG mode)
+BPTR DupFHFromfd(int fd, ULONG mode)
 {
     fdesc *fdesc = __getfdesc(fd);
     BPTR ret = MKBADDR(NULL);
