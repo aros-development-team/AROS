@@ -243,6 +243,46 @@ IPTR Popobject__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+
+IPTR Popobject__MUIM_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+      struct Popobject_DATA *data = INST_DATA(cl, obj);
+
+      switch (msg->opg_AttrID)
+      {
+              case MUIA_Popobject_Follow:
+                      *msg->opg_Storage = data->follow;
+              return TRUE;
+
+              case MUIA_Popobject_Light:
+                      *msg->opg_Storage = data->light;
+              return TRUE;
+
+              case MUIA_Popobject_Object:
+                      *msg->opg_Storage = (IPTR)data->object;
+              return TRUE;
+
+              case MUIA_Popobject_ObjStrHook:
+                      *msg->opg_Storage = (IPTR)data->objstr_hook;
+              return TRUE;
+
+              case MUIA_Popobject_StrObjHook:
+                      *msg->opg_Storage = (IPTR)data->strobj_hook;
+              return TRUE;
+
+              case MUIA_Popobject_Volatile:
+                      *msg->opg_Storage = data->volatile;
+              return TRUE;
+
+              case MUIA_Popobject_WindowHook:
+                      *msg->opg_Storage = (IPTR)data->window_hook;
+              return TRUE;
+      }
+
+      return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+
 IPTR Popobject__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Popobject_DATA *data = INST_DATA(cl, obj);
@@ -301,6 +341,7 @@ BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
 	case OM_NEW:        	return Popobject__OM_NEW(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE:    	return Popobject__OM_DISPOSE(cl, obj, msg);
 	case OM_SET:        	return Popobject__OM_SET(cl, obj, (struct opSet *)msg);
+      case OM_GET:            return Popobject__OM_GET(cl, obj, (struct opGet *)msg);
 	case MUIM_Cleanup:  	return Popobject__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
 	case MUIM_Show:     	return Popobject__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
 	case MUIM_Hide:     	return Popobject__MUIM_Hide(cl, obj, (struct MUIP_Hide*)msg);
