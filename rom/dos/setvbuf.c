@@ -83,10 +83,9 @@
         if (NULL != buff)
         {
             vbuf_free(fh);
-            
+
             fh->fh_Size = size;
-            fh->fh_Buf = fh->fh_Pos = buff;
-            fh->fh_End = buff + size;
+            fh->fh_Pos = fh->fh_Buf = fh->fh_End = buff;
         }
     	else
     	{
