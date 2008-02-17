@@ -69,6 +69,21 @@
     }
 
     /* how can we check whether a file exists without having read permission?? */
+
+    if (!(mode & X_OK))
+    {
+	amode = mode & W_OK ? ACCESS_WRITE : ACCESS_READ;
+	
+	if ((fh = Lock(__path_u2a(path), amode)))
+	{
+	    UnLock(fh);
+	    return 0;
+	}
+
+	errno = IoErr2errno(IoErr());
+	return -1;
+    }
+
     if (!mode) mode = R_OK;
 
     if (mode & R_OK) amode |= FMF_READ;
