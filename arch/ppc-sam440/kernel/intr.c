@@ -166,7 +166,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     
     /* Clear the DIS bit - we have received decrementer exception */
     wrspr(TSR, TSR_DIS);
-    D(bug("[KRN] Decrementer handler. Context @ %p\n", ctx));
+    //D(bug("[KRN] Decrementer handler. Context @ %p\n", ctx));
 
     core_LeaveInterrupt(ctx);
 }
@@ -174,10 +174,11 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    
+
     
     
     D(bug("[KRN] Exception %d handler. Context @ %p\n", exception, ctx));
+    D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
     D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
@@ -186,6 +187,16 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
              ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
     D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%07x\n",
              ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
+
+    D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
+             ctx->gpr[16],ctx->gpr[17],ctx->gpr[18],ctx->gpr[19]));
+    D(bug("[KRN] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
+             ctx->gpr[20],ctx->gpr[21],ctx->gpr[22],ctx->gpr[23]));
+    D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
+             ctx->gpr[24],ctx->gpr[25],ctx->gpr[26],ctx->gpr[27]));
+    D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%07x\n",
+             ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
+
     core_LeaveInterrupt(ctx);
 }
 
