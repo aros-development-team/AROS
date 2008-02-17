@@ -75,7 +75,7 @@
     if (mode & W_OK) amode |= FMF_WRITE;
     if (mode & X_OK) amode |= FMF_EXECUTE;
 
-    if (!(fh = Lock(__path_u2a(path), amode)))
+    if (!(fh = Open(__path_u2a(path), amode)))
     {
 	errno = IoErr2errno(IoErr());
 	return -1;
