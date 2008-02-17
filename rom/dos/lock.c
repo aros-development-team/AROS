@@ -92,8 +92,10 @@
         	    break;
         
         	default:
-        	    iofs.io_Union.io_OPEN.io_FileMode = accessMode;
-        	    break;
+		    D(bug("[Lock] incompatible mode %d\n", accessMode));
+	            FreeDosObject(DOS_FILEHANDLE, ret);
+		    SetIoErr(ERROR_ACTION_NOT_KNOWN);
+		    return NULL;
     	}
 
         /* catch the zero-length special case. we can't (currently) call
