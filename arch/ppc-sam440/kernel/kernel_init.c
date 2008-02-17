@@ -54,7 +54,7 @@ asm(".section .aros.init,\"ax\"\n\t"
     "lis %r9,stack_end@ha\n\t"          /* Use brand new stack to do evil things */
     "mtctr %r11\n\t"
     "lwz %r1,stack_end@l(%r9)\n\t"
-    "bctrl\n\t"                         /* And start the game... */
+    "bctr\n\t"                          /* And start the game... */
     "\n1: b 1b\n\t"
     ".string \"Native/CORE v3 (" __DATE__ ")\""
     "\n\t.text\n\t"
@@ -119,6 +119,12 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     wrmsr(rdmsr() | (MSR_PR));
 
     D(bug("[KRN] Interrupts enabled\n"));
+    
+    /* 
+     * Do never ever try to return. THis coude would attempt to go back to the physical address
+     * of asm trampoline, not the virtual one!
+     */
+    while(1);
 }
 
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
