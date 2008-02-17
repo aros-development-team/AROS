@@ -77,18 +77,7 @@
      *     CurrentDir(old);
      */
     if (*name == '\0')
-    {
-	BPTR old, new;
-
-	/* As DupLock does not have an accessMode parameter, use Lock()
-	 * to clone the handle.
-         */
-	old = CurrentDir(me->pr_CurrentDir);
-	new = Lock("", accessMode);
-	CurrentDir(old);
-
-	return OpenFromLock(new);
-    }
+	return OpenFromLock(DupLock(me->pr_CurrentDir));
     
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
