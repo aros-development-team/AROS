@@ -10,7 +10,7 @@ struct PrivData {
     uint32_t tbu, tbl;
 };
 
-void __putc(char c)
+static inline void __putc(char c)
 {
     if (c == '\n')
     {
@@ -37,9 +37,10 @@ AROS_LH2(void, KrnBug,
     uint32_t tmp;
     struct PrivData data;
     
+    /* Get store TimeBase of the Debug event in private data area */
     asm volatile("1: mftbu %0; mftbl %1; mftbu %2; cmpw %0,%2; bne- 1b":"=r"(data.tbu),"=r"(data.tbl), "=r"(tmp)::"cc");
-    
     data.kbase = KernelBase;
+
     __vcformat(&data, krnPutC, format, args);
 
     AROS_LIBFUNC_EXIT
