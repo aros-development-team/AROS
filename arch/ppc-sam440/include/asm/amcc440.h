@@ -42,6 +42,22 @@ static inline void wrmsr(uint32_t msr) {
 #define MSR_IS  0x00000020
 #define MSR_DS  0x00000010
 
+/* MMU TLB word 0 */
+#define TLB_V	0x00000200
+
+/* MMU protection bits (TLB word 2) */
+#define TLB_SR  0x00000001      /* Supervisor State Read Enable */
+#define TLB_SW  0x00000002      /* Supervisor State Write Enable */
+#define TLB_SX  0x00000004      /* Supervisor State Execute Enable */
+#define TLB_UR  0x00000008      /* User State Read Enable */
+#define TLB_UW  0x00000010      /* User State Write Enable */
+#define TLB_UX  0x00000020      /* User State Execute Enable */
+#define TLB_E   0x00000080      /* Little Endian Enable */
+#define TLB_G   0x00000100      /* Guarded */
+#define TLB_M   0x00000200      /* Memory Coherence Required */
+#define TLB_I   0x00000400      /* Caching Inhibited */
+#define TLB_W   0x00000800      /* Write Through */
+
 #define rdspr(reg) \
     ({ unsigned long val; asm volatile("mfspr %0,%1":"=r"(val):"i"(reg)); val; })
 
