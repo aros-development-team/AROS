@@ -271,7 +271,7 @@ IPTR Popobject__MUIM_Get(struct IClass *cl, Object *obj, struct opGet *msg)
               return TRUE;
 
               case MUIA_Popobject_Volatile:
-                      *msg->opg_Storage = data->volatile;
+                      *msg->opg_Storage = data->vol;
               return TRUE;
 
               case MUIA_Popobject_WindowHook:
@@ -341,7 +341,7 @@ BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
 	case OM_NEW:        	return Popobject__OM_NEW(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE:    	return Popobject__OM_DISPOSE(cl, obj, msg);
 	case OM_SET:        	return Popobject__OM_SET(cl, obj, (struct opSet *)msg);
-      case OM_GET:            return Popobject__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_GET:            return Popobject__MUIM_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Cleanup:  	return Popobject__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
 	case MUIM_Show:     	return Popobject__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
 	case MUIM_Hide:     	return Popobject__MUIM_Hide(cl, obj, (struct MUIP_Hide*)msg);
