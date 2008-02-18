@@ -255,6 +255,7 @@ static inline void wrmsr(uint32_t msr) {
 #define UIC0_MSR        0x00C6 /*   R     UIC 0 Masked Status Register */
 #define UIC0_VR         0x00C7 /*   R     UIC 0 Vector Register */
 #define UIC0_VCR        0x00C8 /*   W     UIC 0 Vector Configuration Register */
+
 /* Universal Interrupt Controller 1 */
 #define UIC1_SR         0x00D0 /* R/Clear UIC 1 Status Register */
 #define UIC1_SRS        0x00D1 /* W/Set   UIC 1 Status Register Set (reserved for debug only) */
@@ -265,6 +266,71 @@ static inline void wrmsr(uint32_t msr) {
 #define UIC1_MSR        0x00D6 /*   R     UIC 1 Masked Status Register */
 #define UIC1_VR         0x00D7 /*   R     UIC 1 Vector Register */
 #define UIC1_VCR        0x00D8 /*   W     UIC 1 Vector Configuration Register */
+
+/* External interrupt sources */
+#define INTR_U0         0       /* UART0 Interrupt Status*/
+#define INTR_U1         1       /* UART1 Interrupt Status*/
+#define INTR_IIC0       2       /* IIC0 Interrupt Status*/
+#define INTR_U2         3       /* UART2 Interrupt Status*/
+#define INTR_U3         4       /* UART3 Interrupt Status*/
+#define INTR_PCRW       5       /* PCI Command Register Write Interrupt Status */
+#define INTR_PPM        6       /* PCI Power Management Interrupt Status */
+#define INTR_IIC1       7       /* IIC1 Interrupt Status */
+#define INTR_SPI        8       /* SPI Interrupt Status */
+#define INTR_EPS        9       /* Ext PCI SERR Interrupt Status */
+#define INTR_MTE        10      /* MAL TX EOB Interrupt Status */
+#define INTR_MRE        11      /* MAL RX EOB Interrupt Status */
+#define INTR_D0         12      /* DMA2P30 Channel 0 Interrupt Status */
+#define INTR_D1         13      /* DMA2P30 Channel 1 Interrupt Status */
+#define INTR_D2         14      /* DMA2P30 Channel 2 Interrupt Status */
+#define INTR_D3         15      /* DMA2P30 Channel 3 Interrupt Status */
+#define INTR_CT5        16      /* GPT Compare Timer 5 Interrupt Status */
+#define INTR_CT6        17      /* GPT Compare Timer 6 Interrupt Status */
+#define INTR_CT0        18      /* GPT Compare Timer 0 Interrupt Status */
+#define INTR_CT1        19      /* GPT Compare Timer 1 Interrupt Status */
+#define INTR_CT2        20      /* GPT Compare Timer 2 Interrupt Status */
+#define INTR_CT3        21      /* GPT Compare Timer 3 Interrupt Status */
+#define INTR_CT4        22      /* GPT Compare Timer 4 Interrupt Status */
+#define INTR_EIR0       23      /* External IRQ 0 Interrupt Status */
+#define INTR_EIR1       24      /* External IRQ 1 Interrupt Status */
+#define INTR_EIR2       25      /* External IRQ 2 Interrupt Status */
+#define INTR_EIR3       26      /* External IRQ 3 Interrupt Status */
+#define INTR_EIR4       27      /* External IRQ 4 Interrupt Status */
+#define INTR_EIR5       28      /* External IRQ 5 Interrupt Status */
+#define INTR_EIR6       29      /* External IRQ 6 Interrupt Status */
+
+#define INTR_MS         30      /* MAL SERR Interrupt Status */
+#define INTR_MTDE       31      /* MAL TXDE Interrupt Status */
+#define INTR_MRDE       32      /* MAL RXDE Interrupt Status */
+#define INTR_DEUE       33      /* DDRSDRAM ECC Uncorrectable Error Interrupt Status */
+#define INTR_DECE       34      /* DDRSDRAM ECC Correctable Error Interrupt Status */
+#define INTR_EBC        35      /* EBC Interrupt Status */
+#define INTR_NDFC       36      /* NDFC Interrupt Status */
+#define INTR_OPB        37      /* OPB to PLB Bridge Interrupt Status */
+#define INTR_USB1H1     38      /* USB1.1 Host 1 Interrupt Status */
+#define INTR_USB1H2     39      /* USB1.1 Host 2 interrupt Status */
+#define INTR_P2P0       40      /* PLB3 to PLB4 Bridge 0 Interrupt Status */
+#define INTR_P2P1       41      /* PLB3 to PLB4 Bridge 1 Interrupt Status */
+#define INTR_P2P2       42      /* PLB3 to PLB4 Bridge 2 Interrupt Status */
+#define INTR_P2P3       43      /* PLB3 to PLB4 Bridge 3 Interrupt Status */
+#define INTR_P2P4       44      /* PLB3 to PLB4 Bridge 4 Interrupt Status */
+#define INTR_P2P5       45      /* PLB3 to PLB4 Bridge 5 Interrupt Status */
+#define INTR_UDMA0      46      /* UDMA0 Interrupt Status */
+#define INTR_UDMA1      47      /* UDMA1 Interrupt Status */
+#define INTR_EIR7       48      /* External IRQ 7 Interrupt Status */
+#define INTR_EIR8       49      /* External IRQ 8 Interrupt Status */
+#define INTR_EIR9       50      /* External IRQ 9 Interrupt Status */
+#define INTR_UDMA2      51      /* UDMA2 Interrupt Status */
+#define INTR_UDMA3      52      /* UDMA3 Interrupt Status */
+#define INTR_USBD       53      /* USB1.1 USB2.0 Device Interrupt Status */
+#define INTR_SRE        54      /* Serial ROM Error Interrupt Status */
+#define INTR_GDP        55      /* GPT Decrement Pulse Interrupt Status */
+#define INTR_PPM        56      /* PLB Performance Monitor Interrupt Status */
+#define INTR_EPP        57      /* EXT_PCI_PERR (parity) Interrupt Status */
+#define INTR_ETH0       58      /* Ethernet 0 Interrupt Status */
+#define INTR_EWU0       59      /* Ethernet 0 Wake-up Interrupt Status */
+#define INTR_ETH1       60      /* Ethernet 1 Interrupt Status */
+#define INTR_EWU1       61      /* Ethernet 1 Wake-up Interrupt Status */
 
 /* UART registers */
 
