@@ -17,13 +17,13 @@ BOOL set_atomic(
     BOOL success = FALSE;
     
     __asm__ __volatile__ (
-    "loop: lwarx  11,         0, %[addr] \n\t" /* load from memory and reserve storage location      */
+    "1:    lwarx  11,         0, %[addr] \n\t" /* load from memory and reserve storage location      */
     "      cmpw   %[old],    11          \n\t" /* has it been changed by another thread              */
-    "      bne-   exit                   \n\t" /* give up, caller can try again on the changed value */
+    "      bne-   2f                     \n\t" /* give up, caller can try again on the changed value */
     "      stwcx. %[new],     0, %[addr] \n\t" /* check that storage was not changed by other thread */
-    "      bne-   loop                   \n\t" /* in the meantime, then store, otherwise try again   */
+    "      bne-   1b                     \n\t" /* in the meantime, then store, otherwise try again   */
     "      li     %[success], 1          \n\t" /* atomic store successful, set success flag                  */
-    "exit:                               \n\t"
+    "2:                                  \n\t"
     : [success] "+r" (success)
     : [addr]    "r"  (addr),
       [old]     "r"  (old),
