@@ -7,5 +7,7 @@
 #define SC_SCHEDULE     3
 #define SC_CLI          4
 #define SC_STI          5
+#define SC_SUPERSTATE   6
+#define SC_ISSUPERSTATE 7
 
 #endif /*SYSCALL_H_*/
