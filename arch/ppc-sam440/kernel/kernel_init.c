@@ -10,6 +10,7 @@
 
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
+#include "syscall.h"
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 
@@ -55,7 +56,6 @@ asm(".section .aros.init,\"ax\"\n\t"
     "mtctr %r11\n\t"
     "lwz %r1,stack_end@l(%r9)\n\t"
     "bctr\n\t"                          /* And start the game... */
-    "\n1: b 1b\n\t"
     ".string \"Native/CORE v3 (" __DATE__ ")\""
     "\n\t.text\n\t"
 );
@@ -113,18 +113,16 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
      * 1kHz DEC counter.
      */
     wrspr(DECAR, 0xffffffff);
-
-    /* Questionable! */
-    wrmsr(rdmsr() | (MSR_EE));
-    wrmsr(rdmsr() | (MSR_PR));
-
-    D(bug("[KRN] Interrupts enabled\n"));
+    
+    /* Copy the boot message */
     
     /* 
      * Do never ever try to return. THis coude would attempt to go back to the physical address
      * of asm trampoline, not the virtual one!
      */
-    while(1);
+    while(1) {
+        wrmsr(rdmsr() | MSR_POW);
+    }
 }
 
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,
@@ -140,7 +138,35 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
+    struct ExecBase *SysBase = getSysBase();
+    int i;
+    
+    D(bug("[KRN] Kernel resource post-exec init\n"));
+    
+    /* 
+     * Set the KernelBase into SPRG4. At this stage the SPRG5 should be already set by
+     * exec.library itself.
+     */
+    wrspr(SPRG4, LIBBASE);
+    
+    for (i=0; i < 16; i++)
+        NEWLIST(&LIBBASE->kb_Exceptions[i]);
 
+    for (i=0; i < 62; i++)
+        NEWLIST(&LIBBASE->kb_Interrupts[i]);
+
+    /* Prepare private memory block */
+    LIBBASE->kb_SupervisorMem = (struct MemHeader *)0xff000000;
+    
+    /* 
+     * kernel.resource is ready to run. Enable external interrupts and leave 
+     * supervisor mode
+     */
+    wrmsr(rdmsr() | (MSR_EE));
+    D(bug("[KRN] Interrupts enabled\n"));
+    
+    wrmsr(rdmsr() | (MSR_PR));
+    D(bug("[KRN] Entered user mode \n"));
 }
 
 ADD2INITLIB(Kernel_Init, 0)

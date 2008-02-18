@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
+#include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <asm/amcc440.h>
 #include <stdio.h>
@@ -20,11 +21,19 @@ struct KernelBase {
     void *              kb_MemPool;
     struct List         kb_Exceptions[16];
     struct List         kb_Interrupts[62];
+    struct MemHeader    *kb_SupervisorMem;
 };
 
 struct KernelBSS {
     void *addr;
     uint32_t len;
+};
+
+struct IntrNode {
+    struct MinNode      in_Node;
+    void                (*in_Handler)(void *, void *);
+    void                *in_HandlerData;
+    void                *in_HandlerData2;
 };
 
 static inline struct KernelBase *getKernelBase()
@@ -51,6 +60,7 @@ void mmu_init(struct TagItem *tags);
 void intr_init();
 
 void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self);
+void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void *self);
 
 #ifdef bug
 #undef bug

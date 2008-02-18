@@ -50,6 +50,20 @@ AROS_LH0I(void, KrnSti,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH0I(void, KrnIsSuper,
+         struct KernelBase *, KernelBase, 12, Kernel)
+{
+    AROS_LIBFUNC_INIT
+    
+    register int retval asm ("r3");
+    
+    asm volatile("sc":"=r"(retval):"0"(SC_ISSUPERSTATE):"memory");
+
+    return retval;
+    
+    AROS_LIBFUNC_EXIT
+}
+
 void *__EXCEPTION_0_Prolog();
 void *__EXCEPTION_1_Prolog();
 void *__EXCEPTION_2_Prolog();
@@ -168,7 +182,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     wrspr(TSR, TSR_DIS);
     //D(bug("[KRN] Decrementer handler. Context @ %p\n", ctx));
 
-    core_LeaveInterrupt(ctx);
+    core_ExitInterrupt(ctx);
 }
 
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
@@ -213,7 +227,7 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
     PUT_INTR_TEMPLATE(1, generic_handler);
     PUT_INTR_TEMPLATE(2, generic_handler);
     PUT_INTR_TEMPLATE(3, generic_handler);
-    PUT_INTR_TEMPLATE(4, generic_handler);
+    PUT_INTR_TEMPLATE(4, uic_handler);
     PUT_INTR_TEMPLATE(5, generic_handler);
     PUT_INTR_TEMPLATE(6, generic_handler);
     PUT_INTR_TEMPLATE(7, generic_handler);
