@@ -1,6 +1,7 @@
 #include <asm/amcc440.h>
 #include <asm/io.h>
 #include <aros/kernel.h>
+#include <exec/memory.h>
 
 #include "kernel_intern.h"
 
@@ -132,6 +133,7 @@ void mmu_init(struct TagItem *tags)
     uintptr_t krn_lowest = krnGetTagData(KRN_KernelLowest, 0, tags) & 0xffff0000;
     uintptr_t krn_highest = (krnGetTagData(KRN_KernelHighest, 0, tags) + 0xffff) & 0xffff0000;
     uintptr_t krn_base = (krnGetTagData(KRN_KernelBase, 0, tags));
+    struct MemHeader *mh;
     
     D(bug("[KRN] MMU Init\n"));
     D(bug("[KRN] lowest = %p, highest = %p\n", krn_lowest, krn_highest));
@@ -146,6 +148,13 @@ void mmu_init(struct TagItem *tags)
     /* The low memory will be RW assigned to the supervisor mode. No access from usermode! */
     map_region(0, 0xff000000, krn_lowest, TLB_SR | TLB_SW);
     
+    /* Prepare the MemHeader structure for this region */
+    mh = (struct MemHeader *)0xff000000;
+    mh->mh_First = (struct MemChunk *)(mh+1);
+    mh->mh_Free = krn_lowest - sizeof(struct MemHeader);
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_First->mc_Bytes = mh->mh_Free;
+
     /* The regular RAM, make 1GB of it - amcc440 cannot do more. */
     map_region(krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX );
     
