@@ -79,58 +79,61 @@ void core_Dispatch(regs_t *regs)
 {
     struct ExecBase *SysBase = getSysBase();
     struct Task *task;
-    
-    __asm__ __volatile__("wrteei 0;");
-    
-    /* 
-     * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
-     * It should be extended by some plugin mechanism which would put CPU and whole machine
-     * into some more sophisticated sleep states (ACPI?)
-     */
-    while (IsListEmpty(&SysBase->TaskReady))
-    {
-        SysBase->IdleCount++;
-        SysBase->AttnResched |= ARF_AttnSwitch;
-        
-        /* Sleep almost forever ;) */
-        __asm__ __volatile__("wrteei 1");
-        wrmsr(rdmsr() | MSR_POW);
-        __asm__ __volatile__("wrteei 0");
-        
-        if (SysBase->SysFlags & SFF_SoftInt)
-        {
-            core_Cause(SysBase);
-        }
-    }
 
-    SysBase->DispCount++;
-    
-    /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
-    task = (struct Task *)REMHEAD(&SysBase->TaskReady);
-    SysBase->ThisTask = task;  
-    SysBase->Elapsed = SysBase->Quantum;
-    SysBase->SysFlags &= ~0x2000;
-    task->tc_State = TS_RUN;
-    SysBase->IDNestCnt = task->tc_IDNestCnt;
-   
-    /* Handle tasks's flags */
-    if (task->tc_Flags & TF_EXCEPT)
-        Exception();
-    
-    if (task->tc_Flags & TF_LAUNCH)
+    if (SysBase)
     {
-        AROS_UFC1(void, task->tc_Launch,
-                  AROS_UFCA(struct ExecBase *, SysBase, A6));       
-    }
+        __asm__ __volatile__("wrteei 0;");
+        
+        /* 
+         * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
+         * It should be extended by some plugin mechanism which would put CPU and whole machine
+         * into some more sophisticated sleep states (ACPI?)
+         */
+        while (IsListEmpty(&SysBase->TaskReady))
+        {
+            SysBase->IdleCount++;
+            SysBase->AttnResched |= ARF_AttnSwitch;
+            
+            /* Sleep almost forever ;) */
+            __asm__ __volatile__("wrteei 1");
+            wrmsr(rdmsr() | MSR_POW);
+            __asm__ __volatile__("wrteei 0");
+            
+            if (SysBase->SysFlags & SFF_SoftInt)
+            {
+                core_Cause(SysBase);
+            }
+        }
     
-    /* Restore the task's state */
-    bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
-    /* Copy the fpu, mmx, xmm state */
+        SysBase->DispCount++;
+        
+        /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */
+        task = (struct Task *)REMHEAD(&SysBase->TaskReady);
+        SysBase->ThisTask = task;  
+        SysBase->Elapsed = SysBase->Quantum;
+        SysBase->SysFlags &= ~0x2000;
+        task->tc_State = TS_RUN;
+        SysBase->IDNestCnt = task->tc_IDNestCnt;
+       
+        /* Handle tasks's flags */
+        if (task->tc_Flags & TF_EXCEPT)
+            Exception();
+        
+        if (task->tc_Flags & TF_LAUNCH)
+        {
+            AROS_UFC1(void, task->tc_Launch,
+                      AROS_UFCA(struct ExecBase *, SysBase, A6));       
+        }
+        
+        /* Restore the task's state */
+        bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
+        /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
 #warning TODO: No FPU support yet!!!!!!! Yay, it sucks! :-D
-//    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
-//    asm volatile("fxrstor (%0)"::"D"(sse_ctx));
-    
+    //    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
+    //    asm volatile("fxrstor (%0)"::"D"(sse_ctx));
+        
+    }
     /* Leave interrupt and jump to the new task */
     core_LeaveInterrupt(regs);
 }
@@ -140,33 +143,36 @@ void core_Switch(regs_t *regs)
     struct ExecBase *SysBase = getSysBase();
     struct Task *task;
     
-    /* Disable interrupts for a while */
-    __asm__ __volatile__("wrteei 0");
-
-    task = SysBase->ThisTask;
+    if (SysBase)
+    {
+        /* Disable interrupts for a while */
+        __asm__ __volatile__("wrteei 0");
     
-    /* Copy current task's context into the ETask structure */
-    bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));
-    
-    /* Copy the fpu, mmx, xmm state */
+        task = SysBase->ThisTask;
+        
+        /* Copy current task's context into the ETask structure */
+        bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));
+        
+        /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
 #warning TODO: Write the damn FPU handling at all!!!!!!!! ;-D LOL
-//    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
-//    asm volatile("fxsave (%0)"::"D"(sse_ctx));
-    
-    /* store IDNestCnt into tasks's structure */  
-    task->tc_IDNestCnt = SysBase->IDNestCnt;
-    task->tc_SPReg = regs->gpr[1];
-    
-    /* And enable interrupts */
-    SysBase->IDNestCnt = -1;
-    __asm__ __volatile__("wrteei 1");
-    
-    /* TF_SWITCH flag set? Call the switch routine */
-    if (task->tc_Flags & TF_SWITCH)
-    {
-        AROS_UFC1(void, task->tc_Switch,
-                  AROS_UFCA(struct ExecBase *, SysBase, A6));
+    //    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
+    //    asm volatile("fxsave (%0)"::"D"(sse_ctx));
+        
+        /* store IDNestCnt into tasks's structure */  
+        task->tc_IDNestCnt = SysBase->IDNestCnt;
+        task->tc_SPReg = regs->gpr[1];
+        
+        /* And enable interrupts */
+        SysBase->IDNestCnt = -1;
+        __asm__ __volatile__("wrteei 1");
+        
+        /* TF_SWITCH flag set? Call the switch routine */
+        if (task->tc_Flags & TF_SWITCH)
+        {
+            AROS_UFC1(void, task->tc_Switch,
+                      AROS_UFCA(struct ExecBase *, SysBase, A6));
+        }
     }
     
     core_Dispatch(regs);
@@ -183,39 +189,42 @@ void core_Schedule(regs_t *regs)
     struct ExecBase *SysBase = getSysBase();
     struct Task *task;
 
-    /* Disable interrupts for a while */
-    __asm__ __volatile__("wrteei 0"); // CLI
-
-    task = SysBase->ThisTask;
-
-    /* Clear the pending switch flag. */
-    SysBase->AttnResched &= ~ARF_AttnSwitch;
-
-    /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
-    if (!(task->tc_Flags & TF_EXCEPT))
+    if (SysBase)
     {
-        /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
-        if (IsListEmpty(&SysBase->TaskReady))
-            core_LeaveInterrupt(regs);         
-
-        /* Does the TaskReady list contains tasks with priority equal or lower than current task?
-         * If so, then check further... */
-        if (((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
+        /* Disable interrupts for a while */
+        __asm__ __volatile__("wrteei 0"); // CLI
+    
+        task = SysBase->ThisTask;
+    
+        /* Clear the pending switch flag. */
+        SysBase->AttnResched &= ~ARF_AttnSwitch;
+    
+        /* If task has pending exception, reschedule it so that the dispatcher may handle the exception */
+        if (!(task->tc_Flags & TF_EXCEPT))
         {
-            /* If the running task did not used it's whole quantum yet, let it work */
-            if (!(SysBase->SysFlags & 0x2000))
+            /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
+            if (IsListEmpty(&SysBase->TaskReady))
+                core_LeaveInterrupt(regs);         
+    
+            /* Does the TaskReady list contains tasks with priority equal or lower than current task?
+             * If so, then check further... */
+            if (((struct Task*)GetHead(&SysBase->TaskReady))->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
             {
-                core_LeaveInterrupt(regs);
+                /* If the running task did not used it's whole quantum yet, let it work */
+                if (!(SysBase->SysFlags & 0x2000))
+                {
+                    core_LeaveInterrupt(regs);
+                }
             }
         }
+    
+        /* 
+         * If we got here, then the rescheduling is necessary. 
+         * Put the task into the TaskReady list.
+         */
+        task->tc_State = TS_READY;
+        Enqueue(&SysBase->TaskReady, (struct Node *)task);
     }
-
-    /* 
-     * If we got here, then the rescheduling is necessary. 
-     * Put the task into the TaskReady list.
-     */
-    task->tc_State = TS_READY;
-    Enqueue(&SysBase->TaskReady, (struct Node *)task);
     
     /* Select new task to run */
     core_Switch(regs);
@@ -238,28 +247,33 @@ void core_ExitInterrupt(regs_t *regs)
         /* Prepare to go back into user mode */
         struct ExecBase *SysBase = getSysBase();
 
-        /* Soft interrupt requested? It's high time to do it */
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(SysBase);
-
-        /* If task switching is disabled, leave immediatelly */
-        if (SysBase->TDNestCnt >= 0)
+        if (SysBase)
         {
-            core_LeaveInterrupt(regs);
+            /* Soft interrupt requested? It's high time to do it */
+            if (SysBase->SysFlags & SFF_SoftInt)
+                core_Cause(SysBase);
+    
+            /* If task switching is disabled, leave immediatelly */
+            if (SysBase->TDNestCnt >= 0)
+            {
+                core_LeaveInterrupt(regs);
+            }
+            else
+            {
+                /* 
+                 * Do not disturb task if it's not necessary. 
+                 * Reschedule only if switch pending flag is set. Exit otherwise.
+                 */
+                if (SysBase->AttnResched & ARF_AttnSwitch)
+                {
+                    core_Schedule(regs);
+                }
+                else 
+                    core_LeaveInterrupt(regs);
+            }
         }
         else
-        {
-            /* 
-             * Do not disturb task if it's not necessary. 
-             * Reschedule only if switch pending flag is set. Exit otherwise.
-             */
-            if (SysBase->AttnResched & ARF_AttnSwitch)
-            {
-                core_Schedule(regs);
-            }
-            else 
-                core_LeaveInterrupt(regs);
-        }
+            core_LeaveInterrupt(regs);
     }
 }
 
