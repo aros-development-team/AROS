@@ -66,7 +66,7 @@ register unsigned char* AROS_GET_SP asm("%sp");
      or subtracted from the stack limits.
 */
 
-#define SP_OFFSET 0
+#define SP_OFFSET 0x10
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
