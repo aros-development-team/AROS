@@ -2,13 +2,14 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <aros/autoinit.h>
+
+#define DEBUG 1
 #include <aros/debug.h>
 
 int __nocommandline __attribute__((weak)) = 0;
@@ -22,6 +23,8 @@ extern int  __argc;
 
 static char *__args;
 static int  __argmax;
+
+static void process_cmdline(int *argc, char *args, char *argv[]);
 
 int __initcommandline(void)
 {
@@ -40,76 +43,15 @@ int __initcommandline(void)
     	while ((*ptr++ = *__argstr++)) {}
 
     	/* Find out how many arguments we have */
-	for (__argmax=1,ptr=__args; *ptr; )
-    	{
-	    if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
-	    {
-		/* Skip whitespace */
-		while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-		    ptr ++;
-	    }
-
-	    if (*ptr == '"')
-	    {
-		/* "..." argument ? */
-		__argmax ++;
-		ptr ++;
-
-		/* Skip until next " */
-		while (*ptr && *ptr != '"')
-		    ptr ++;
-
-		if (*ptr)
-		    ptr ++;
-	    }
-	    else if (*ptr)
-	    {
-		__argmax ++;
-
-		while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
-		    ptr ++;
-	    }
-	}
+	process_cmdline(&__argmax, __args, NULL);
 
 	if (!(__argv = AllocMem (sizeof (char *) * (__argmax+1), MEMF_ANY | MEMF_CLEAR)) )
 	    return 0;
 
+	D(bug("arg(%d)=\"%s\", argmax=%d\n", __argsize, __args, __argmax));
+
 	/* create argv */
-	for (__argc=1,ptr=__args; *ptr; )
-	{
-	    if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
-	    {
-		/* Skip whitespace */
-		while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-		    ptr ++;
-	    }
-
-	    if (*ptr == '"')
-	    {
-		/* "..." argument ? */
-		ptr ++;
-		__argv[__argc++] = ptr;
-
-		/* Skip until next " */
-		while (*ptr && *ptr != '"')
-		    ptr ++;
-
-		/* Terminate argument */
-		if (*ptr)
-		    *ptr ++ = 0;
-	    }
-	    else if (*ptr)
-	    {
-		__argv[__argc++] = ptr;
-
-		while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
-		    ptr ++;
-
-		/* Not at end of string ? Terminate arg */
-		if (*ptr)
-		    *ptr ++ = 0;
-	    }
-	}
+	process_cmdline(&__argc, __args, __argv);
     }
     else
     {
@@ -127,9 +69,9 @@ int __initcommandline(void)
      if (!__argv[0])
          return 0;
 
-#if 0 /* Debug argument parsing */
+#if DEBUG /* Debug argument parsing */
 
-    kprintf("arg(%d)=\"%s\", argmax=%d, argc=%d\n", __argsize, __argstr, __argmax, __argc);
+    kprintf("argc = %d\n", __argc);
     {
 	int t;
 	for (t=0; t<__argc; t++)
@@ -139,6 +81,97 @@ int __initcommandline(void)
 #endif
 
     return 1;
+}
+
+static void process_cmdline(int *pargc, char *args, char *argv[])
+{
+    int argc, quote = -1, qcount = 0;
+    char *ptr;
+
+    for (argc = 1, ptr = args; *ptr; )
+    {
+	if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
+	{
+	    /* Skip whitespace */
+	    ptr++;
+	    while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
+		ptr ++;
+	}
+
+	if (*ptr == '"')
+	{
+	    /* "..." argument ? */
+	    ptr ++;
+	    if (argv)
+		argv[argc++] = ptr;
+	    else
+		argc++;
+
+	    /* Skip until next " */
+	    while (*ptr && *ptr != '"')
+		ptr ++;
+
+	    if (*ptr)
+	    {
+		if (argv)
+		    *ptr ++ = 0;
+		else
+		    ptr ++;
+	    }
+	}
+	else if (*ptr)
+	{
+	    if (argv)
+		argv[argc++] = ptr;
+	    else
+		argc++;
+
+	/*
+	 * This code can now handle a command line like:
+	 * kpsewhich --format="web2c files" mktex.opt
+	 *
+	 * Not complete yet: we have to handle "\"blah\"" as well
+	 */
+
+	    while (*ptr)
+	    {
+		int exit_loop = 0;
+
+		switch (*ptr)
+		{
+		case '"':
+		case '\'':
+		    if (quote == *ptr)
+			quote = -1;
+		    else
+			quote = *ptr;
+
+		    ++qcount;
+		    ++ptr;
+		    break;
+		case ' ':
+		case '\t':
+		case '\n':
+		    if (quote == -1)
+			exit_loop = 1;
+		    else
+			++ptr;
+		    break;
+		default:
+		    ++ptr;
+		    break;
+		}
+
+		if (exit_loop)
+		    break;
+	    }
+
+	    if (argv && *ptr)
+		*ptr++ = 0;
+	}
+    }
+
+    *pargc = argc;
 }
 
 void __exitcommandline(void)
