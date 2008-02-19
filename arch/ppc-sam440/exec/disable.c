@@ -1,0 +1,37 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: i386unix version of Disable()
+    Lang: english
+*/
+
+#include <exec/tasks.h>
+#include <exec/execbase.h>
+#include <aros/libcall.h>
+#include <aros/atomic.h>
+#include <proto/exec.h>
+#include <proto/kernel.h>
+
+#include "../kernel/kernel_intern.h"
+
+#undef  Exec
+#ifdef UseExecstubs
+#    define Exec _Exec
+#endif
+
+AROS_LH0(void, Disable,
+    struct ExecBase *, SysBase, 20, Exec)
+{
+#undef Exec
+    AROS_LIBFUNC_INIT
+    void *KernelBase = getKernelBase();
+    
+    /* Georg Steger */
+    if (KernelBase)
+        KrnCli();
+
+    AROS_ATOMIC_INC(SysBase->IDNestCnt);
+
+    AROS_LIBFUNC_EXIT
+}
