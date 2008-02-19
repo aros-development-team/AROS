@@ -20,6 +20,13 @@ typedef struct fpuregs {
     uint32_t    fpscr;
 } fpuregs_t;
 
+typedef struct context {
+    regs_t      cpu;
+    fpuregs_t   fpu;
+} context_t;
+
+#define SIZEOF_ALL_REGISTERS (sizeof(context_t))
+
 static inline uint32_t rdmsr() {
     uint32_t msr; asm volatile("mfmsr %0":"=r"(msr)); return msr;
 }
