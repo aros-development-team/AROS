@@ -68,6 +68,8 @@ int __stat(BPTR lock, struct stat *sb)
         }
     }
 
+    /* With SAS/C++ 6.55 on the Amiga, `stat' sets the `st_nlink'
+       field to -1 for a file, or to 1 for a directory.  */
     switch (fib->fib_DirEntryType)
     {
         case ST_PIPEFILE:
@@ -77,7 +79,8 @@ int __stat(BPTR lock, struct stat *sb)
 
         case ST_ROOT:
         case ST_USERDIR:
-            sb->st_nlink = 2;
+        case ST_LINKDIR:
+            sb->st_nlink = 1;
             sb->st_mode |= S_IFDIR;
             break;
 
@@ -86,16 +89,10 @@ int __stat(BPTR lock, struct stat *sb)
             sb->st_mode |= S_IFLNK;
             break;
 
-        case ST_LINKDIR:
-            sb->st_nlink = 3;
-            sb->st_mode |= S_IFDIR;
-            break;
-
-        case ST_LINKFILE:
-            sb->st_nlink = 2;
-
         case ST_FILE:
+        case ST_LINKFILE:
         default:
+            sb->st_nlink = -1;
             sb->st_mode |= S_IFREG;
     }
 
