@@ -9,7 +9,7 @@
 #include <aros/symbolsets.h>
 #include <aros/autoinit.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 int __nocommandline __attribute__((weak)) = 0;
