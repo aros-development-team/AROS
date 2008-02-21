@@ -263,6 +263,8 @@
 
 
 /* Some macros */
+#ifndef __cplusplus
+
 #ifdef __GNUC__
 #define get(obj, attr, storage)                                         \
 ({                                                                      \
@@ -303,6 +305,9 @@
 #define setstring(obj,s)    set(obj,MUIA_String_Contents,(IPTR)(s))
 #define setcheckmark(obj,b) set(obj,MUIA_Selected,b)
 #define setslider(obj,l)    set(obj,MUIA_Numeric_Value,l)
+
+#endif /* __cplusplus */
+
 
 /* We need the notify and area Instace Data at least here, but this stuff should be placed at the button anywhy */
 #ifndef _MUI_CLASSES_NOTIFY_H
