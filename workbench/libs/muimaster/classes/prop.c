@@ -207,6 +207,11 @@ IPTR Prop__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
 
+    if (data->prop_object && !data->usewinborder) {
+        RemoveGadget(_window(obj), (struct Gadget *) data->prop_object);
+        DisposeObject(data->prop_object);
+    }
+
     DisposeImageContainer(data->buffer);
     DisposeImageContainer(data->temp);
     if (data->mapbuffer != NULL) FreeBitMap(data->mapbuffer);
@@ -751,6 +756,12 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
                 }
             }
 #endif
+
+            if (data->prop_object) {
+                RemoveGadget(_window(obj), (struct Gadget *) data->prop_object);
+                DisposeObject(data->prop_object);
+            }
+
 	    if ((data->prop_object = NewObject(NULL, "propgclass",
 			    GA_Left, _mleft(obj),
 			    GA_Top, _mtop(obj),
