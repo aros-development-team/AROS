@@ -22,6 +22,7 @@
  *                                 Replaced static variables
  * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
  *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
+ * 2008-02-24  T. Wiszkowski       Corrected unit open function
  */
 
 #define DEBUG 0
@@ -500,11 +501,13 @@ static int open
      */
     while (bus--)
     {
-        if (b->ab_Node.mln_Succ == NULL)
-            return FALSE;
-
         b = (struct ata_Bus*)b->ab_Node.mln_Succ;
+        if (b == NULL)
+            return FALSE;
     }
+
+    if (b->ab_Node.mln_Succ == NULL)
+        return FALSE;
 
     /*
      * locate unit
