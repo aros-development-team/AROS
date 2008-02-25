@@ -5,18 +5,26 @@ default 0
 
 title AROS PowerPC test 1
     kernel boot/aros-amcc440 arg1 argument_2 "some arg 3" another_one
-#    module Libs/expansion.library
-#    module Libs/utility.library
-#    module Libs/aros.library
-#    module Libs/oop.library
-#    module Libs/arosc.library
+    module boot/modules/expansion.library
+    module boot/modules/utility.library
+    module boot/modules/partition.library
+    module boot/modules/aros.library
+    module boot/modules/mathieeesingbas.library
+    module boot/modules/oop.library
+    module boot/modules/misc.resource
+    module boot/modules/graphics.hidd
+    module boot/modules/gfx.library
+    module boot/modules/keymap.library
+    module boot/modules/intuition.library
+    module boot/modules/layers.library
+    module boot/modules/input.device
 #    module Devs/battclock.resource
 #    module Devs/misc.resource
 
-title AROS PPC test 2
-    kernel boot/aros-ppc2
-    module boot/modules.pkg
-    module boot/test2.module
+#title AROS PPC test 2
+#    kernel boot/aros-ppc2
+#    module boot/modules.pkg
+#    module boot/test2.module
 
-title AROS PPC third option
-    kernel boot/blah
+#title AROS PPC third option
+#    kernel boot/blah
