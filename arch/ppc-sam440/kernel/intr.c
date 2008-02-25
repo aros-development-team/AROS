@@ -185,6 +185,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     core_ExitInterrupt(ctx);
 }
 
+
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
@@ -192,7 +193,7 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     
     
     D(bug("[KRN] Exception %d handler. Context @ %p\n", exception, ctx));
-    D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
+    D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x\n",ctx->srr0, ctx->srr1, rdspr(DEAR)));
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
     D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
@@ -211,8 +212,39 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%07x\n",
              ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
 
+    D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
+    
+    while(1) {
+        wrmsr(rdmsr() | MSR_POW);
+    }
+    
     core_LeaveInterrupt(ctx);
 }
+
+void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void *self)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+    
+    uint32_t insn = *(uint32_t *)ctx->srr0;
+    
+    /* SysBase access at 4UL? Occurs only with lwz instruction and DEAR=4 */
+    if ((insn & 0xfc000000) == 0x80000000 && rdspr(DEAR) == 4)
+    {
+        int reg = (insn & 0x03e00000) >> 21;
+        
+//        D(bug("[KRN] Pagefault exception. Someone tries to get SysBase (%08x) from 0x00000004 into r%d. EVIL EVIL EVIL!\n",
+//              getSysBase(), reg));
+
+        ctx->gpr[reg] = getSysBase();
+        ctx->srr0 += 4;
+        
+        core_LeaveInterrupt(ctx);
+    }
+    else 
+        generic_handler(ctx, exception, self);
+}
+
+
 
 static void __attribute__((used)) __EXCEPTION_Prolog_template()
 {
@@ -236,7 +268,7 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
     PUT_INTR_TEMPLATE(10, decrementer_handler);
     PUT_INTR_TEMPLATE(11, generic_handler);
     PUT_INTR_TEMPLATE(12, generic_handler); /* crit */
-    PUT_INTR_TEMPLATE(13, generic_handler);
+    PUT_INTR_TEMPLATE(13, mmu_handler);
     PUT_INTR_TEMPLATE(14, generic_handler);
     PUT_INTR_TEMPLATE(15, generic_handler); /* crit */
 }
@@ -373,10 +405,10 @@ static void __attribute__((used)) __core_LeaveInterrupt()
                  "lwz %%r10,%[gpr10](%%r3)      \n\t"
                  "lwz %%r9,%[gpr9](%%r3)        \n\t"
                  "lwz %%r8,%[gpr8](%%r3)        \n\t"
-                 "lwz %%r7,%[gpr11](%%r3)       \n\t"
-                 "lwz %%r6,%[gpr10](%%r3)       \n\t"
-                 "lwz %%r5,%[gpr9](%%r3)        \n\t"
-                 "lwz %%r4,%[gpr8](%%r3)        \n\t"
+                 "lwz %%r7,%[gpr7](%%r3)        \n\t"
+                 "lwz %%r6,%[gpr6](%%r3)        \n\t"
+                 "lwz %%r5,%[gpr5](%%r3)        \n\t"
+                 "lwz %%r4,%[gpr4](%%r3)        \n\t"
                  "lwz %%r0,%[gpr3](%%r3)        \n\t"
                  "mtsprg1 %%r0                  \n\t"
                  "lwz %%r2,%[gpr2](%%r3)        \n\t"
