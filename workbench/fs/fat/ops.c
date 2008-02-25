@@ -193,8 +193,8 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 
     /* no filename means they're trying to open whatever dirlock is (which
      * despite the name may not actually be a dir). since there's already an
-     * extant lock, its never going be possible to get an exclusive lock, so
-     * this will only work for FINDINPUT (read-only) */
+     * extant lock, it's never going to be possible to get an exclusive lock,
+     * so this will only work for FINDINPUT (read-only) */
     if (namelen == 0) {
         D(bug("[fat] trying to copy passed dir lock\n"));
 
@@ -209,7 +209,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
             return ERROR_OBJECT_WRONG_TYPE;
         }
 
-        /* its a file, just copy the lock */
+        /* it's a file, just copy the lock */
         return CopyLock(dirlock, filelock);
     }
 
@@ -279,7 +279,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 
     D(bug("[fat] trying to create '%.*s'\n", namelen, name));
 
-    /* otherwise its time to create the file. get a handle on the passed dir */
+    /* otherwise it's time to create the file. get a handle on the passed dir */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
         return err;
 

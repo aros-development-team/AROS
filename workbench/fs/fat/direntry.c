@@ -34,7 +34,8 @@
 LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
     /* dh may or may not be initialised when this is called. if it is, then it
      * probably has a valid cache block that we need to free, but we wouldn't
-     * know. we test the superblock pointer to figure out its valid or not */
+     * know. we test the superblock pointer to figure out if it's valid or
+     * not */
     if (dh->ioh.sb == sb) {
         D(bug("[fat] reusing directory handle\n"));
         if (dh->ioh.block != NULL) {
@@ -57,6 +58,8 @@ LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
     }
 
     RESET_DIRHANDLE(dh);
+    dh->ioh.cur_sector = dh->ioh.first_sector;
+    dh->ioh.sector_offset = 0;
 
     D(bug("[fat] initialised dir handle, first cluster is %ld, first sector is %ld\n", dh->ioh.first_cluster, dh->ioh.first_sector));
 
@@ -158,7 +161,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
      * entry #1 */
     GetDirEntry(dh, 1, de);
 
-    /* make sure its actually the parent dir entry */
+    /* make sure it's actually the parent dir entry */
     if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_DIRECTORY) ||
         strncmp((char *) de->e.entry.name, "..         ", 11) != 0) {
         D(bug("[fat] entry index 1 does not have name '..', can't go up\n"));
@@ -518,7 +521,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
 
     len = gl->name[0] <= 107 ? gl->name[0] : 107;
     CopyMem(gl->name, fib->fib_FileName, len + 1);
-    D(fib->fib_FileName[len] = '\0');
+    D(fib->fib_FileName[len + 1] = '\0');
     D(bug("\t\tname (len %ld) %s\n", len, fib->fib_FileName + 1));
 
     fib->fib_Protection = 0;

@@ -10,7 +10,7 @@
  */
 
 /* 
- * This is an attempt at a generic buffer cache for filesystems. Its a
+ * This is an attempt at a generic buffer cache for filesystems. It's a
  * traditional cache of the type described in Tanenbaum 2nd Ed. Eventually I
  * hope it will be a system-wide facility (eg cache.resource), but for the
  * moment its just part of fat.handler.

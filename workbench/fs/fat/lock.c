@@ -71,7 +71,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     ULONG dir_cluster;
     int i;
 
-    /* the base lock must be a directory. if its NULL, then its the root,
+    /* the base lock must be a directory. if it's NULL, then it's the root,
      * otherwise we check its attributes */
     if (fl != NULL && !(fl->gl->attr & ATTR_DIRECTORY))
         return ERROR_OBJECT_WRONG_TYPE;

@@ -45,7 +45,7 @@
 extern struct Globals *glob;
 
 #define DEF_POOL_SIZE 65536
-#define DEF_POOL_TRESHOLD DEF_POOL_SIZE
+#define DEF_POOL_THRESHOLD DEF_POOL_SIZE
 #define DEF_BUFF_LINES 128
 #define DEF_READ_AHEAD 16*1024
 
