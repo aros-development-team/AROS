@@ -3,16 +3,20 @@
 #include <aros/symbolsets.h>
 #include <inttypes.h>
 #include <exec/libraries.h>
+#include <exec/execbase.h>
 #include <utility/tagitem.h>
 #include <asm/amcc440.h>
 #include <asm/io.h>
 #include <strings.h>
+
+#include <proto/exec.h>
 
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
 #include "syscall.h"
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
+int exec_main(struct TagItem *msg, void *entry);
 
 /* A very very very.....
  * ... very ugly code.
@@ -116,6 +120,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     
     /* Copy the boot message */
     
+    
+    
+    /* Start exec.library up */
+    
+    exec_main(msg, NULL);
+    //exec_main(BootMsg, NULL);
+    
     /* 
      * Do never ever try to return. THis coude would attempt to go back to the physical address
      * of asm trampoline, not the virtual one!
@@ -138,16 +149,19 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
 
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct ExecBase *SysBase = getSysBase();
     int i;
-    
-    D(bug("[KRN] Kernel resource post-exec init\n"));
+    struct ExecBase *SysBase = getSysBase();
     
     /* 
      * Set the KernelBase into SPRG4. At this stage the SPRG5 should be already set by
      * exec.library itself.
      */
     wrspr(SPRG4, LIBBASE);
+
+    D(bug("[KRN] Kernel resource post-exec init\n"));
+
+    D(bug("[KRN] Allowing userspace to flush caches\n"));
+    wrspr(MMUCR,rdspr(MMUCR) & ~0x000c0000);
     
     for (i=0; i < 16; i++)
         NEWLIST(&LIBBASE->kb_Exceptions[i]);
@@ -167,6 +181,10 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     
     wrmsr(rdmsr() | (MSR_PR));
     D(bug("[KRN] Entered user mode \n"));
+    
+
+    Permit();
+
 }
 
 ADD2INITLIB(Kernel_Init, 0)

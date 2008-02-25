@@ -70,7 +70,7 @@ void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void 
 #endif
 #define D(x) x
 
-AROS_LD2(void, KrnBug,
+AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
          struct KernelBase *, KernelBase, 11, Kernel);
