@@ -90,11 +90,11 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
 
         /* move clusters if necessary */
         cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
-        if (ioh->cluster_offset != cluster_offset) {
+        if (ioh->cluster_offset != cluster_offset && ioh->first_cluster != 0) {
             ULONG i;
 
             /* if we're already ahead of the wanted cluster, then we need to
-             * back to the start of the cluster list */
+             * go back to the start of the cluster list */
             if (ioh->cluster_offset > cluster_offset) {
                 ioh->cur_cluster = ioh->first_cluster;
                 ioh->cluster_offset = 0;
@@ -128,7 +128,8 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
         }
 
         /* recalculate the sector location if we moved */
-        if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))) {
+        if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))
+            || ioh->first_cluster == 0) {
 
             /* work out how many sectors in we should be looking */
             ioh->sector_offset = sector_offset & (ioh->sb->cluster_sectors-1);
@@ -136,15 +137,14 @@ LONG ReadFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *dat
             /* simple math to find the absolute sector number */
             ioh->cur_sector = SECTOR_FROM_CLUSTER(ioh->sb, ioh->cur_cluster) + ioh->sector_offset;
 
-            /* if this is cluster 0 and the first sector has been set, adjust
-             * for it. this is hack to support fat12/16 root dirs, which live
-             * in the first cluster. there's no checks to make sure we have
-             * adjusted off the end of the cluster */
-            if (ioh->cur_cluster == 0 && ioh->first_sector > 0) {
+            /* if the first cluster is zero, we use sector addressing instead
+             * of clusters. this is a hack to support fat12/16 root dirs, which
+             * live before the data region */
+            if (ioh->first_cluster == 0) {
                 ioh->sector_offset = sector_offset - ioh->first_sector;
                 ioh->cur_sector = ioh->first_sector + sector_offset;
 
-                D(bug("[fat] adjusted for cluster 0, chunks starts in sector %ld\n", ioh->cur_sector));
+                D(bug("[fat] adjusted for cluster 0, chunk starts in sector %ld\n", ioh->cur_sector));
             }
             
             else
@@ -220,7 +220,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
 
         /* move clusters if necessary */
         cluster_offset = sector_offset >> ioh->sb->cluster_sectors_bits;
-        if (ioh->cluster_offset != cluster_offset) {
+        if (ioh->cluster_offset != cluster_offset && ioh->first_cluster != 0) {
             ULONG i;
 
             /* if we have no first cluster, this is a new file. we allocate
@@ -245,7 +245,7 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
             }
 
             /* if we're already ahead of the wanted cluster, then we need to
-             * back to the start of the cluster list */
+             * go back to the start of the cluster list */
             if (ioh->cluster_offset > cluster_offset) {
                 ioh->cur_cluster = ioh->first_cluster;
                 ioh->cluster_offset = 0;
@@ -294,7 +294,8 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
         }
 
         /* recalculate the sector location if we moved */
-        if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))) {
+        if (ioh->sector_offset != (sector_offset & (ioh->sb->cluster_sectors-1))
+            || ioh->first_cluster == 0) {
 
             /* work out how many sectors in we should be looking */
             ioh->sector_offset = sector_offset & (ioh->sb->cluster_sectors-1);
@@ -302,15 +303,14 @@ LONG WriteFileChunk(struct IOHandle *ioh, ULONG file_pos, ULONG nwant, UBYTE *da
             /* simple math to find the absolute sector number */
             ioh->cur_sector = SECTOR_FROM_CLUSTER(ioh->sb, ioh->cur_cluster) + ioh->sector_offset;
 
-            /* if this is cluster 0 and the first sector has been set, adjust
-             * for it. this is hack to support fat12/16 root dirs, which live
-             * in the first cluster. there's no checks to make sure we have
-             * adjusted off the end of the cluster */
-            if (ioh->cur_cluster == 0 && ioh->first_sector > 0) {
+            /* if the first cluster is zero, we use sector addressing instead
+             * of clusters. this is a hack to support fat12/16 root dirs, which
+             * live before the data region */
+            if (ioh->first_cluster == 0) {
                 ioh->sector_offset = sector_offset - ioh->first_sector;
                 ioh->cur_sector = ioh->first_sector + sector_offset;
 
-                D(bug("[fat] adjusted for cluster 0, chunks starts in sector %ld\n", ioh->cur_sector));
+                D(bug("[fat] adjusted for cluster 0, chunk starts in sector %ld\n", ioh->cur_sector));
             }
             
             else

@@ -95,7 +95,7 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
         val = AROS_LE2WORD(val);
     }
     else
-        val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n + n/2, NULL)));
+        val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL)));
 
     if (n & 1)
         val >>= 4;

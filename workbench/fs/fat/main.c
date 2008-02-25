@@ -60,7 +60,7 @@ void handler(void) {
             if ((UtilityBase = OpenLibrary("utility.library", 37))) {
                 glob->fssm = BADDR(startuppacket->dp_Arg2);
 
-                if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_TRESHOLD))) {
+                if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD))) {
                     ULONG diskchgsig_bit;
 
                     if ((error = InitDiskHandler(glob->fssm, &diskchgsig_bit)) == 0) {

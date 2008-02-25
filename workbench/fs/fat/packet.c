@@ -516,10 +516,10 @@ void ProcessPackets(void) {
                 while (! AttemptLockDosList(LDF_VOLUMES | LDF_WRITE))
                     ProcessPackets();
 
-                if ((err = SetVolumeName(glob->sb, name)) != 0)
-                    break;
-
+                err = SetVolumeName(glob->sb, name);
                 UnLockDosList(LDF_VOLUMES | LDF_WRITE);
+                if (err != 0)
+                    break;
 
                 SendEvent(IECLASS_DISKINSERTED);
 
