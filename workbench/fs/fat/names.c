@@ -49,11 +49,11 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
          * in that case we've already copied in all the spaces, and we have to
          * backup and insert the dot.
          *
-         * note that spaces (0x20) is allowed in the filename, just not as the
+         * note that spaces (0x20) are allowed in the filename, just not as the
          * first char. see FATdoc 1.03 p24 for the details. most people don't
          * know that about fat names. the point of this is to say that we
          * can't just flick forward in our copying at the first sight of a
-         * space, its technically incorrect.
+         * space, it's technically incorrect.
          *
          * XXX it occurs to me just now that AROS may not like spaces in its
          * names. in that case spaces should probably be converted to
@@ -94,7 +94,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
     UBYTE checksum;
     struct DirHandle dh;
     struct DirEntry de;
-    ULONG index;
+    LONG index;
     UBYTE order;
     LONG err;
 
@@ -128,7 +128,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
         if ((err = GetDirEntry(&dh, index, &de)) != 0)
             break;
 
-        /* make sure its valid */
+        /* make sure it's valid */
         if (!((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
             (de.e.long_entry.order & ~0x40) != order ||
             de.e.long_entry.checksum != checksum) {
