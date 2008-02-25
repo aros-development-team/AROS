@@ -130,14 +130,20 @@ void mmu_init(struct TagItem *tags)
      * regions to the 64KB boundary. It wastes a tiny bit of RAM but saves a lot of
      * TLB entries
      */
-    uintptr_t krn_lowest = krnGetTagData(KRN_KernelLowest, 0, tags) & 0xffff0000;
-    uintptr_t krn_highest = (krnGetTagData(KRN_KernelHighest, 0, tags) + 0xffff) & 0xffff0000;
-    uintptr_t krn_base = (krnGetTagData(KRN_KernelBase, 0, tags));
+    uintptr_t krn_lowest = krnGetTagData(KRN_KernelLowest, 0, tags);
+    uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, tags);
+    uintptr_t krn_base = krnGetTagData(KRN_KernelBase, 0, tags);
     struct MemHeader *mh;
     
     D(bug("[KRN] MMU Init\n"));
     D(bug("[KRN] lowest = %p, highest = %p\n", krn_lowest, krn_highest));
+    D(bug("[KRN] Kernel size: %dKB code, %dKB data\n", (krn_highest - krn_base)/1024, (krn_base - krn_lowest)/1024));
 
+    /* 4K granularity for data sections */
+    krn_lowest &= 0xfffff000;
+    /* 64K granularity for code sections */
+    krn_highest = (krn_highest + 0xffff) & 0xffff0000;
+    
     /* 
      * The very first entry has to cover the executable part of kernel, 
      * where exception handlers are located
