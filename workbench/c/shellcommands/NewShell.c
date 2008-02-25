@@ -98,7 +98,7 @@
 #include <aros/shcommands.h>
 
 AROS_SH2(NewShell, 41.1,
-AROS_SHA(STRPTR, ,WINDOW, ,"CON:10/10/640/480/AROS-Shell/CLOSE"),
+AROS_SHA(STRPTR, ,WINDOW, ,"CON:10/20/640/480/AROS-Shell/CLOSE"),
 AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
 {
     AROS_SHCOMMAND_INIT
