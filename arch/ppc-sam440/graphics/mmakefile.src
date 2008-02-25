@@ -1,0 +1,7 @@
+# $Id: mmakefile.src 23905 2005-12-29 17:24:07Z verhaegs $
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-graphics maindir=rom/graphics \
+  arch=sam440-ppc \
+  files="atomic"
