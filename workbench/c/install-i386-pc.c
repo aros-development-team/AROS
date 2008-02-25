@@ -363,11 +363,12 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 				struct PartitionHandle *pn;
 				struct DosEnvec de;
 				struct PartitionHandle *extph = NULL;
+				struct PartitionType ptype = {0};
 
 					tags[0].ti_Tag = PT_DOSENVEC;
 					tags[0].ti_Data = (STACKIPTR)&de;
 					tags[1].ti_Tag = PT_TYPE;
-					tags[1].ti_Data = (STACKIPTR)&type;
+					tags[1].ti_Data = (STACKIPTR)&ptype;
 					tags[2].ti_Tag = TAG_DONE;
 					pn = (struct PartitionHandle *)ph->table->list.lh_Head;
 					while (pn->ln.ln_Succ)
@@ -375,7 +376,7 @@ D(bug("[install-i386] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 					ULONG scp;
 
 						GetPartitionAttrs(pn, tags);
-						if (type == MBRT_EXTENDED || type == MBRT_EXTENDED2)
+						if (ptype.id[0] == MBRT_EXTENDED || ptype.id[0] == MBRT_EXTENDED2)
 							extph = pn;
 						else
 						{
