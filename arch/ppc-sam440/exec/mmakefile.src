@@ -2,7 +2,9 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        exec_init cause disable enable preparecontext stackswap
+        exec_init cause disable enable preparecontext stackswap rawputchar initcode alert \
+        findresident newaddtask permit prepareexecbase remtask reschedule setexcept settaskpri \
+        signal wait
 
 AFILES		:= 
 
