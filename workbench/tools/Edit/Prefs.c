@@ -121,10 +121,10 @@ void set_default_prefs( PREFS *prefs, struct Screen *def )
 	prefs->matchcase   = 1;
 	prefs->tabsize = 8;
 	prefs->scrfont = def->RastPort.Font;
-	prefs->width   = def->Width-(prefs->left<<1);
-	prefs->top     = (def->Height - (
-	prefs->height  = 27 * (
-	prefs->txtfont = GfxBase->DefaultFont)->tf_YSize)) >> 1;
+	prefs->txtfont = GfxBase->DefaultFont;
+	prefs->width   = prefs->txtfont->tf_XSize * 80;
+	prefs->top     = def->BarHeight + 1;
+	prefs->height  = def->Height - prefs->top;
 	prefs->modeid  = PAL_MONITOR_ID | HIRES_KEY;
 
 	/* Convert dynamic struct to static one */
