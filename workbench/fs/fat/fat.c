@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -89,10 +89,8 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
     if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
         D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
 
-        val =  ((UWORD) *GetFatEntryPtr(sb, offset, NULL)) << 8;
-        val |= ((UWORD) *GetFatEntryPtr(sb, offset+1, NULL));
-
-        val = AROS_LE2WORD(val);
+        val = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
+        val |= *GetFatEntryPtr(sb, offset, NULL);
     }
     else
         val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL)));
@@ -129,10 +127,8 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 
         D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
 
-        newval =  ((UWORD) *GetFatEntryPtr(sb, offset, NULL)) << 8;
-        newval |= ((UWORD) *GetFatEntryPtr(sb, offset+1, NULL));
-
-        newval = AROS_LE2WORD(newval);
+        newval = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
+        newval |= *GetFatEntryPtr(sb, offset, NULL);
     }
     else {
         fat = (UWORD *) GetFatEntryPtr(sb, offset, &b);
@@ -140,19 +136,16 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
     }
 
     if (n & 1) {
-        n <<= 4;
+        val <<= 4;
         newval = (newval & 0xf) | val;
     }
     else {
-        n &= 0xfff;
         newval = (newval & 0xf000) | val;
     }
 
     if (boundary) {
-        newval = AROS_WORD2LE(newval);
-
         /* XXX ideally we'd mark both blocks dirty at the same time or only do
-         * it once if they're same block. unfortunately b is essentially
+         * it once if they're the same block. unfortunately b is essentially
          * invalid after a call to GetFatEntryPtr, as it may have swapped the
          * previous cache out. This is probably safe enough. */
         *GetFatEntryPtr(sb, offset+1, &b) = newval >> 8;
