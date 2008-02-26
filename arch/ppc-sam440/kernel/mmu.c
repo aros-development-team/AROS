@@ -79,7 +79,7 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
     int i;
     int tlb;
     
-    D(bug("[KRN] map_region(%p, %p, %08x, %04x)\n", physbase, virtbase, length, prot));
+    D(bug("[KRN] map_region(%08x, %08x, %08x, %04x)\n", physbase, virtbase, length, prot));
     
     /* While there is still something to map */
     while (length)
@@ -107,14 +107,14 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
             return;
         }
         
-        D(bug("[KRN] TLB%02x: %08x - %08x : %08x - %08x: ", tlb, 
-              physbase, physbase + allowable_pages[i].mask,
-              virtbase, virtbase + allowable_pages[i].mask));
+//        D(bug("[KRN] TLB%02x: %08x - %08x : %08x - %08x: ", tlb, 
+//              physbase, physbase + allowable_pages[i].mask,
+//              virtbase, virtbase + allowable_pages[i].mask));
         
         /* Do really write to the tlb */
         asm volatile("tlbwe %0,%3,0; tlbwe %1,%3,1; tlbwe %2,%3,2"
                      ::"r"(virtbase | allowable_pages[i].code | TLB_V), "r"(physbase), "r"(prot), "r"(tlb));
-        D(bug("%08x %08x %08x\n", virtbase | allowable_pages[i].code | 0x200, physbase, prot));
+//        D(bug("%08x %08x %08x\n", virtbase | allowable_pages[i].code | 0x200, physbase, prot));
         
         length -= allowable_pages[i].mask + 1;
         physbase += allowable_pages[i].mask + 1;
