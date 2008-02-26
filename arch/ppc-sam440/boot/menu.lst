@@ -11,6 +11,7 @@ title AROS PowerPC test 1
     module boot/modules/aros.library
     module boot/modules/mathieeesingbas.library
     module boot/modules/oop.library
+    module boot/modules/hiddclass.hidd
     module boot/modules/misc.resource
     module boot/modules/graphics.hidd
     module boot/modules/gfx.library
@@ -18,6 +19,8 @@ title AROS PowerPC test 1
     module boot/modules/intuition.library
     module boot/modules/layers.library
     module boot/modules/input.device
+    module boot/modules/pci.hidd
+    module boot/modules/pci-amcc440.hidd
 #    module Devs/battclock.resource
 #    module Devs/misc.resource
 
