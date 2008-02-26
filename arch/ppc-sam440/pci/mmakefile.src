@@ -5,3 +5,8 @@ include $(TOP)/config/make.cfg
   mainmmake=kernel-pci maindir=arch/common/hidd.pci \
   arch=sam440-ppc \
   files="atomic"
+
+%build_module mmake=kernel-pci-amcc440 \
+  modname=pci-amcc440 modtype=hidd \
+  files="pci_amcc440_init driverclass" \
+  uselibs="rom amiga oop"
