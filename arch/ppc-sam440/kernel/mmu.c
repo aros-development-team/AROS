@@ -5,7 +5,8 @@
 
 #include "kernel_intern.h"
 
-static long tlb_bitmap[2] = { 0xffffffff, 0xffffffff };
+static long tlb_bitmap[2];
+static long tlb_free = 64;
 
 /* Alloc TLB in the bitmap. Returns -1 if the allocation cannot be done */
 static int alloc_tlb()
@@ -29,6 +30,7 @@ static int alloc_tlb()
     {
         tlb_bitmap[1] &= ~(0x80000000 >> (bit-32));
     }
+    tlb_free--;
     return bit;
 }
 
@@ -41,7 +43,10 @@ static int free_tlb(int entry)
             D(bug("[KRN] Freeing already free TLB!!!\n"));
         }
         else
+        {
             tlb_bitmap[0] |= (0x80000000 >> entry);
+            tlb_free++;
+        }
     }
     else if (entry < 64)
     {
@@ -51,7 +56,10 @@ static int free_tlb(int entry)
             D(bug("[KRN] Freeing already free TLB!!!\n"));
         }
         else
+        {
             tlb_bitmap[1] |= (0x80000000 >> entry);
+            tlb_free++;
+        }
     }
     else
     {
@@ -78,8 +86,9 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
 {
     int i;
     int tlb;
+    long tlb_temp = tlb_free;
     
-    D(bug("[KRN] map_region(%08x, %08x, %08x, %04x)\n", physbase, virtbase, length, prot));
+    D(bug("[KRN] map_region(%08x, %08x, %08x, %04x): ", physbase, virtbase, length, prot));
     
     /* While there is still something to map */
     while (length)
@@ -95,7 +104,7 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
         
         if (allowable_pages[i].code == 0xff)
         {
-            D(bug("[KRN] map_region failed\n"));
+            D(bug("\n[KRN] map_region failed\n"));
             return;
         }
         
@@ -103,7 +112,7 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
         tlb = alloc_tlb();
         if (tlb == -1)
         {
-            D(bug("[KRN] map_region: No more free TLB entries\n"));
+            D(bug("\n[KRN] map_region: No more free TLB entries\n"));
             return;
         }
         
@@ -121,10 +130,16 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
         virtbase += allowable_pages[i].mask + 1;
         
     }
+    tlb_temp -= tlb_free;
+    D(bug("%2d TLB%s\n", tlb_temp, tlb_temp > 1 ? "s":""));
 }
 
 void mmu_init(struct TagItem *tags)
 {
+    tlb_free = 64;
+    tlb_bitmap[0] = 0xffffffff;
+    tlb_bitmap[1] = 0xffffffff;
+    
     /* 
      * In order to reduce the usage of TLB entries, align the kernel 
      * regions to the 64KB boundary. It wastes a tiny bit of RAM but saves a lot of
@@ -170,6 +185,8 @@ void mmu_init(struct TagItem *tags)
     /* PCI control registers and onboard devices */
     map_region(0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
 
+    D(bug("[KRN] TLB status: %d used, %d free\n", 64 - tlb_free, tlb_free));
+    
     /* flush TLB shadow regs */
     asm volatile("isync;");
 }

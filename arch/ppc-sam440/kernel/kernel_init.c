@@ -127,6 +127,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     exec_main(msg, NULL);
     //exec_main(BootMsg, NULL);
     
+    asm volatile("li %%r3,%0; sc"::"i"(SC_SUPERSTATE):"memory","r3");
     /* 
      * Do never ever try to return. THis coude would attempt to go back to the physical address
      * of asm trampoline, not the virtual one!
