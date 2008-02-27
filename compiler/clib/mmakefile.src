@@ -175,6 +175,8 @@ SHARED	:= \
 	ftruncate \
 	fwrite \
 	gcvt \
+        getc \
+        getchar \
 	getcwd \
 	getenv \
 	getfsstat \
@@ -193,6 +195,7 @@ SHARED	:= \
         getpwent \
         getpwnam \
         getpwuid \
+        gets \
 	getw \
 	getloadavg \
 	gmtime \
@@ -256,6 +259,7 @@ SHARED	:= \
         posix_memalign \
 	printf \
 	putenv \
+        putc \
 	puts \
 	putw \
 	qsort \
