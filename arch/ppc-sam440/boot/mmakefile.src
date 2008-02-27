@@ -21,13 +21,21 @@ include $(TOP)/config/make.cfg
 #MM	kernel-keymap \
 #MM	kernel-intuition \
 #MM	kernel-input \
+#MM	kernel-gameport \
+#MM	kernel-keyboard \
+#MM	kernel-console \
+#MM	kernel-fs-con \
+#MM	kernel-fs-packet \
+#MM	kernel-workbench \
+#MM	workbench-fs-nil \
+#MM	workbench-fs-ram \
 #MM	workbench-libs-partition \
 #MM	workbench-hidd-graphics
 
-PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap
+PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench
 PKG_RSRC := misc 
-PKG_DEVS :=  input
-PKG_HANDLERS := 
+PKG_DEVS :=  input gameport keyboard console
+PKG_HANDLERS := con nil ram packet
 PKG_HIDDS:= graphics hiddclass pci pci-amcc440
 
 MODULES := \
