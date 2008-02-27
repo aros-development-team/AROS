@@ -3,6 +3,9 @@
 #include <asm/amcc440.h>
 #include <stddef.h>
 
+#include <proto/exec.h>
+#include <proto/kernel.h>
+
 #include "kernel_intern.h"
 #include "syscall.h"
 
@@ -15,7 +18,46 @@ AROS_LH4(void *, KrnAddIRQHandler,
 {
     AROS_LIBFUNC_INIT
 
-    return NULL;
+    struct ExecBase *SysBase = getSysBase();
+    struct IntrNode *handle = NULL;
+    D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
+
+    if (irq < 63)
+    {
+        /* Go to supervisor mode */
+        goSuper();
+        
+        handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
+        D(bug("[KRN]   handle=%012p\n", handle));
+        
+        if (handle)
+        {
+            handle->in_Handler = handler;
+            handle->in_HandlerData = handlerData;
+            handle->in_HandlerData2 = handlerData2;
+            handle->in_type = it_interrupt;
+            handle->in_nr = irq;
+            
+            Disable();
+            ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
+            
+            if (irq < 30)
+            {
+                wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
+            }
+            else
+            {
+                wrdcr(UIC1_ER, rddcr(UIC0_ER) | (0x80000000 >> (irq - 30)));
+                wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
+            }
+            
+            Enable();
+        }
+        
+        goUser();
+    }
+    
+    return handle;
 
     AROS_LIBFUNC_EXIT
 }
@@ -26,6 +68,100 @@ AROS_LH1(void, KrnRemIRQHandler,
 {
     AROS_LIBFUNC_INIT
 
+    struct ExecBase *SysBase = getSysBase();
+    struct IntrNode *h = handle;
+    uint8_t irq = h->in_nr;
+    
+    if (h && (h->in_type == it_interrupt))
+    {
+        goSuper();
+     
+        Disable();
+        REMOVE(h);
+        if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
+        {
+            if (irq < 30)
+            {
+                wrdcr(UIC0_ER, rddcr(UIC0_ER) & ~(0x80000000 >> irq));
+            }
+            else
+            {
+                wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 30)));
+            }
+        }
+        Enable();
+    
+        Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
+        
+        goUser();
+    }
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH4(void *, KrnAddExceptionHandler,
+         AROS_LHA(uint8_t, irq, D0),
+         AROS_LHA(void *, handler, A0),
+         AROS_LHA(void *, handlerData, A1),
+         AROS_LHA(void *, handlerData2, A2),
+         struct KernelBase *, KernelBase, 7, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    struct ExecBase *SysBase = getSysBase();
+    struct IntrNode *handle = NULL;
+    D(bug("[KRN] KrnAddExceptionHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
+
+    if (irq < 16)
+    {
+        /* Go to supervisor mode */
+        goSuper();
+        
+        handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
+        D(bug("[KRN]   handle=%012p\n", handle));
+        
+        if (handle)
+        {
+            handle->in_Handler = handler;
+            handle->in_HandlerData = handlerData;
+            handle->in_HandlerData2 = handlerData2;
+            handle->in_type = it_exception;
+            handle->in_nr = irq;
+            
+            Disable();
+            ADDHEAD(&KernelBase->kb_Exceptions[irq], &handle->in_Node);
+            Enable();
+        }
+        
+        goUser();
+    }
+    
+    return handle;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, KrnRemExceptionHandler,
+         AROS_LHA(void *, handle, A0),
+         struct KernelBase *, KernelBase, 8, Kernel)
+{
+    AROS_LIBFUNC_INIT
+    
+    struct ExecBase *SysBase = getSysBase();
+    struct IntrNode *h = handle;
+    
+    if (h && (h->in_type == it_exception))
+    {
+        goSuper();
+        
+        Disable();
+        REMOVE(h);
+        Enable();
+    
+        Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
+        
+        goUser();
+    }
 
     AROS_LIBFUNC_EXIT
 }
@@ -182,6 +318,17 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     wrspr(TSR, TSR_DIS);
     //D(bug("[KRN] Decrementer handler. Context @ %p\n", ctx));
 
+    if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+    {
+        struct IntrNode *in, *in2;
+
+        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
+        {
+            if (in->in_Handler)
+                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
+        }
+    }
+    
     core_ExitInterrupt(ctx);
 }
 
