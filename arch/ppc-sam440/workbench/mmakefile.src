@@ -1,0 +1,7 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-workbench maindir=rom/workbench \
+  arch=sam440-ppc \
+  files="atomic"
