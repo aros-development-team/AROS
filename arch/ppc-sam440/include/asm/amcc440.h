@@ -90,8 +90,8 @@ static inline void wrmsr(uint32_t msr) {
 #define SPRG5U  0x105   /* Special Purpose Register General 5. Usermode - read only */
 #define SPRG6U  0x106   /* Special Purpose Register General 6. Usermode - read only */
 #define SPRG7U  0x107   /* Special Purpose Register General 7. Usermode - read only */
-#define TBL     0x10C   /* Time Base Lower */
-#define TBU     0x10D   /* Time Base Upper */
+#define TBLU    0x10C   /* Time Base Lower */
+#define TBUU    0x10D   /* Time Base Upper */
 #define SPRG0   0x110   /* Special Purpose Register General 0 */
 #define SPRG1   0x111   /* Special Purpose Register General 1 */
 #define SPRG2   0x112   /* Special Purpose Register General 2 */
