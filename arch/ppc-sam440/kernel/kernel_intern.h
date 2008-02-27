@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "syscall.h"
+
 #define KERNEL_PHYS_BASE        0x00800000
 #define KERNEL_VIRT_BASE        0xff800000
 
@@ -29,11 +31,18 @@ struct KernelBSS {
     uint32_t len;
 };
 
+enum intr_types {
+    it_exception = 0xe0,
+    it_interrupt = 0xf0
+};
+
 struct IntrNode {
     struct MinNode      in_Node;
     void                (*in_Handler)(void *, void *);
     void                *in_HandlerData;
     void                *in_HandlerData2;
+    uint8_t             in_type;
+    uint8_t             in_nr;
 };
 
 static inline struct KernelBase *getKernelBase()
@@ -45,6 +54,15 @@ static inline struct KernelBase *getSysBase()
 {
     return (struct KernelBase *)rdspr(SPRG5U);
 }
+
+static inline void goSuper() {
+    asm volatile("li %%r3,%0; sc"::"i"(SC_SUPERSTATE):"memory","r3");
+}
+
+static inline void goUser() {
+    wrmsr(rdmsr() | (MSR_PR));
+}
+
 
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
