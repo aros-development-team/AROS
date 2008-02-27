@@ -2,6 +2,7 @@
 #include <asm/io.h>
 #include <aros/kernel.h>
 #include <exec/memory.h>
+#include "memory.h"
 
 #include "kernel_intern.h"
 
@@ -171,11 +172,11 @@ void mmu_init(struct TagItem *tags)
     
     /* Prepare the MemHeader structure for this region */
     mh = (struct MemHeader *)0xff000000;
-    mh->mh_First = (struct MemChunk *)(mh+1);
-    mh->mh_Free = krn_lowest - sizeof(struct MemHeader);
+    mh->mh_First = (struct MemChunk *)((uint8_t *)mh + MEMHEADER_TOTAL);
+    mh->mh_Free = (krn_lowest - MEMHEADER_TOTAL) & ~(MEMCHUNK_TOTAL-1);
     mh->mh_First->mc_Next = NULL;
     mh->mh_First->mc_Bytes = mh->mh_Free;
-
+    
     /* The regular RAM, make 1GB of it - amcc440 cannot do more. */
     map_region(krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX );
     
