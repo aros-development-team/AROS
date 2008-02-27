@@ -21,6 +21,14 @@ title AROS PowerPC test 1
     module boot/modules/input.device
     module boot/modules/pci.hidd
     module boot/modules/pci-amcc440.hidd
+    module boot/modules/keyboard.device
+    module boot/modules/gameport.device
+    module boot/modules/console.device
+    module boot/modules/workbench.library
+    module boot/modules/con.handler
+    module boot/modules/nil.handler
+    module boot/modules/ram.handler
+    module boot/modules/packet.handler
 #    module Devs/battclock.resource
 #    module Devs/misc.resource
 
