@@ -3,11 +3,11 @@ include $(TOP)/config/make.cfg
 
 FILES := kernel_init scheduler intr mmu tags syscall debug uic
 
-#MM kernel-sam440-ppc: setup-sam440-ppc kernel-kernel-sam440-ppc-kobj kernel-exec-kobj
+#MM kernel-sam440-ppc: setup-sam440-ppc kernel-kernel-sam440-ppc-kobj kernel-exec-kobj kernel-timer-kobj
 kernel-sam440-ppc: $(BINDIR)/boot/aros-amcc440
 
-$(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
+$(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/timer_device.o
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/timer_device.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
 
 #MM kernel-kernel-sam440-ppc : includes
 #MM kernel-kernel-sam440-ppc-kobj : includes
