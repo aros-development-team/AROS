@@ -85,8 +85,8 @@ int __initcommandline(void)
 
 static void process_cmdline(int *pargc, char *args, char *argv[])
 {
-    int argc, quote = -1, qcount = 0;
-    char *ptr;
+    int argc, exit_loop, quote;
+    char *ptr, prev;
 
     for (argc = 1, ptr = args; *ptr; )
     {
@@ -98,29 +98,13 @@ static void process_cmdline(int *pargc, char *args, char *argv[])
 		ptr ++;
 	}
 
-	if (*ptr == '"')
+	if (*ptr)
 	{
-	    /* "..." argument ? */
-	    ptr ++;
-	    if (argv)
-		argv[argc++] = ptr;
+	    if (*ptr == '"' || *ptr == '\'')
+		quote = *ptr++;
 	    else
-		argc++;
+		quote = -1;
 
-	    /* Skip until next " */
-	    while (*ptr && *ptr != '"')
-		ptr ++;
-
-	    if (*ptr)
-	    {
-		if (argv)
-		    *ptr ++ = 0;
-		else
-		    ptr ++;
-	    }
-	}
-	else if (*ptr)
-	{
 	    if (argv)
 		argv[argc++] = ptr;
 	    else
@@ -129,36 +113,81 @@ static void process_cmdline(int *pargc, char *args, char *argv[])
 	/*
 	 * This code can now handle a command line like:
 	 * kpsewhich --format="web2c files" mktex.opt
-	 *
-	 * Not complete yet: we have to handle "\"blah\"" as well
+	 * fontinfo "Vera Sans.font" 40
 	 */
 
+	    prev = -1;
 	    while (*ptr)
 	    {
-		int exit_loop = 0;
+		exit_loop = 0;
 
 		switch (*ptr)
 		{
 		case '"':
 		case '\'':
-		    if (quote == *ptr)
-			quote = -1;
-		    else
-			quote = *ptr;
+		    if (prev != '\\')
+		    {
+			if (quote == *ptr)
+			{
+			    quote = -1;
 
-		    ++qcount;
+			    if (argv)
+			    {
+				char *src = ptr + 1, *dst = ptr;
+				while (*src)
+				    *dst++ = *src++;
+				*dst = '\0';
+			    }
+
+			    exit_loop = 1;
+			}
+			else
+			    quote = *ptr++;
+
+			prev = quote;
+		    }
+		    else
+		    {
+			prev = *ptr;
+			if (argv)
+			{
+			    char *src = ptr, *dst = ptr - 1;
+			    while (*src)
+				*dst++ = *src++;
+			    *dst = '\0';
+			}
+			++ptr;
+		    }
+		    break;
+
+		case '\\':
+		    if (prev == '\\')
+		    {
+			if (argv)
+			{
+			    char *src = ptr + 1, *dst = ptr;
+			    while (*src)
+				*dst++ = *src++;
+			    *dst = '\0';
+			}
+			prev = -1;
+		    }
+		    else
+			prev = '\\';
 		    ++ptr;
 		    break;
+
 		case ' ':
 		case '\t':
 		case '\n':
 		    if (quote == -1)
 			exit_loop = 1;
 		    else
-			++ptr;
+			prev = *ptr++;
 		    break;
+
 		default:
-		    ++ptr;
+		    prev = *ptr++;
 		    break;
 		}
 
