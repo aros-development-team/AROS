@@ -5,6 +5,8 @@
     Desc: Rename a file
     Lang: english
 */
+#define DEBUG 1
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"
 #include <string.h>
@@ -68,7 +70,7 @@
 	BPTR lock = Lock(oldName, SHARED_LOCK);
 	if (lock)
 	{
-	    if (NameFromLock(lock, buf1, sizeof(buf1) -1 ))
+	    if (NameFromLock(lock, buf1, sizeof(buf1) - 1))
 		oldName = buf1;
 	    UnLock(lock);
 	}
@@ -80,12 +82,11 @@
 	{
 	    int namelen = strlen(oldName);
 	    len = strlen(buf1);
-	    if (len + namelen < sizeof(buf1))
+	    if (len + namelen < sizeof(buf1) - 1)
 	    {
-		buf1[len++] = '/';
-		CopyMem(oldName, buf1 + len, namelen);
-		len += namelen;
-		buf1[len] = '\0';
+		if (buf1[len - 1] != ':')
+		    buf1[len++] = '/';
+		CopyMem(oldName, buf1 + len, namelen + 1);
 		oldName = buf1;
 	    }
 	}
@@ -93,23 +94,55 @@
 
     len = SplitName(newName, ':', vol, 0, sizeof(vol) - 1);
 
-    if (len <= 0)
+    if (len > 0)
+    {
+	/* get real name of destination path */
+	BPTR lock;
+	char *pos;
+
+	strcpy(buf2, newName);
+	pos = strrchr(buf2, '/');
+	if (!pos)
+	    pos = buf2 + len;
+
+	*pos++ = '\0';
+	lock = Lock(buf2, SHARED_LOCK);
+	if (lock)
+	{
+	    if (NameFromLock(lock, buf2, sizeof(buf2) - 1))
+	    {
+		int namelen;
+		len = strlen(buf2);
+		pos = newName + (int)(pos - buf2);
+		namelen = strlen(pos);
+		if (len + namelen < sizeof(buf2) - 1)
+		{
+		    if (buf2[len - 1] != ':')
+			buf2[len++] = '/';
+		    CopyMem(pos, buf2 + len, namelen + 1);
+		    newName = buf2;
+		}
+	    }
+	}
+    }
+    else
     {
 	/* convert to absolute path */
 	if (NameFromLock(me->pr_CurrentDir, buf2, sizeof(buf2) - 1))
 	{
 	    int namelen = strlen(newName);
 	    len = strlen(buf2);
-	    if (len + namelen < sizeof(buf2))
+	    if (len + namelen < sizeof(buf2) - 1)
 	    {
-		buf2[len++] = '/';
-		CopyMem(newName, buf2 + len, namelen);
-		len += namelen;
-		buf2[len] = '\0';
+		if (buf2[len - 1] != ':')
+		    buf2[len++] = '/';
+		CopyMem(newName, buf2 + len, namelen + 1);
 		newName = buf2;
 	    }
 	}
     }
+
+D(bug("[Dos] rename %s %s\n", oldName, newName));
 
     /* get device pointers */
     if ((olddvp = GetDeviceProc(oldName, NULL)) == NULL ||
