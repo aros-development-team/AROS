@@ -47,20 +47,61 @@
 
 ******************************************************************************/
 {
-          char *aoldpath = strdup(__path_u2a(oldpath));
-    const char *anewpath =        __path_u2a(newpath);
+          STRPTR aoldpath = (STRPTR)strdup((const char*)__path_u2a(oldpath));
+    CONST_STRPTR anewpath = __path_u2a(newpath);
+    BPTR oldlock, newlock;
+
+    /* __path_u2a has resolved paths like /toto/../a */
+    if (anewpath[0] == '.')
+    {
+	if (anewpath[1] == '\0' || (anewpath[1] == '.' && anewpath[2] == '\0'))
+	{
+	    errno = EEXIST;
+	    free(aoldpath);
+	    return -1;
+	}
+    }
+
+    /* try to delete newpath first */
+    Forbid();
+
+    newlock = Lock(anewpath, SHARED_LOCK);
+    if (newlock)
+    {
+	UnLock(newlock);
+
+	oldlock = Lock(aoldpath, EXCLUSIVE_LOCK);
+	if (oldlock)
+	{
+	    UnLock(oldlock);
+
+	    /* DeleteFile returns an error if directory is non-empty */
+	    if (!DeleteFile(anewpath))
+	    {
+		LONG ioerr = IoErr();
+		errno = IoErr2errno(ioerr);
+		D(bug("rename(%s, %s) delete errno=%d, IoErr=%d\n",
+			aoldpath, anewpath, errno, ioerr));
+		free(aoldpath);
+		Permit();
+		return -1;
+	    }
+	}
+    }
 
     if (!Rename (aoldpath, anewpath))
     {
-	int ioerr = IoErr();
-	errno = IoErr2errno (ioerr);
-	D(bug("rename(%s, %s) errno=%d, IoErr=%d\n", aoldpath, anewpath,
-	      errno, ioerr));
+	LONG ioerr = IoErr();
+	errno = IoErr2errno(ioerr);
+	D(bug("rename(%s, %s) errno=%d, IoErr=%d\n",
+		aoldpath, anewpath, errno, ioerr));
 	free(aoldpath);
+	Permit();
 	return -1;
     }
 
     free(aoldpath);
+    Permit();
     return 0;
 
 } /* rename */
