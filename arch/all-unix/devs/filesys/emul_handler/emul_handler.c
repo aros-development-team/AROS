@@ -469,14 +469,22 @@ static int nocase_symlink(struct emulbase *emulbase, char *oldpath, char *newpat
 
 static int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath)
 {
+    struct stat st;
     int result;
     
     fixcase(emulbase, oldpath);
     fixcase(emulbase, newpath);
-    result = rename((const char *)oldpath, (const char *)newpath);
+
+    /* AmigaDOS Rename does not allow overwriting */
+    if (stat(newpath, &st) == 0)
+    {
+	errno = EEXIST;
+	result = -1;
+    }
+    else
+	result = rename((const char *)oldpath, (const char *)newpath);
     
     return result;
-    
 }
 
 /*-------------------------------------------------------------------------------------------*/
