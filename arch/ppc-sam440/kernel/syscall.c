@@ -37,6 +37,26 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
             else
                 ctx->gpr[3] = 1;
             break;
+        
+        case SC_CAUSE:
+            {
+                struct ExecBase *SysBase = getSysBase();
+                if (SysBase)
+                    core_Cause(SysBase);
+            }
+            break;
+        
+        case SC_DISPATCH:
+            core_Dispatch(ctx);
+            break;
+        
+        case SC_SWITCH:
+            core_Switch(ctx);
+            break;
+        
+        case SC_SCHEDULE:
+            core_Schedule(ctx);
+            break;
     }
     
     core_LeaveInterrupt(ctx);

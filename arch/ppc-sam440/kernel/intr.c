@@ -336,10 +336,14 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-
-    
+    struct ExecBase *SysBase = getSysBase();
     
     D(bug("[KRN] Exception %d handler. Context @ %p\n", exception, ctx));
+    if (SysBase)
+    {
+        struct Task *t = FindTask(NULL);
+        D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name));
+    }
     D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x\n",ctx->srr0, ctx->srr1, rdspr(DEAR)));
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
@@ -347,7 +351,7 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
              ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]));
     D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
              ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
-    D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%07x\n",
+    D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
              ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
 
     D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
@@ -356,7 +360,7 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
              ctx->gpr[20],ctx->gpr[21],ctx->gpr[22],ctx->gpr[23]));
     D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
              ctx->gpr[24],ctx->gpr[25],ctx->gpr[26],ctx->gpr[27]));
-    D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%07x\n",
+    D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
              ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
 
     D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
