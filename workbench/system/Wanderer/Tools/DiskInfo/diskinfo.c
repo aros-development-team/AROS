@@ -34,20 +34,16 @@
 #define ADVANCED 1
 #define EXPERT 2
 
-#ifndef ID_SFS_DISK
-#define ID_SFS_DISK AROS_MAKE_ID('S','F','S',0)
-#endif
-
 #ifndef ID_FAT12_DISK
 #define ID_FAT12_DISK      (0x46415400L)
 #define ID_FAT16_DISK      (0x46415401L)
 #define ID_FAT32_DISK      (0x46415402L)
 #endif
 
-static LONG dt[15]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
+static LONG dt[]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
     ID_DOS_DISK, ID_FFS_DISK, ID_INTER_DOS_DISK, ID_INTER_FFS_DISK,
     ID_FASTDIR_DOS_DISK, ID_FASTDIR_FFS_DISK, ID_NOT_REALLY_DOS,
-    ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_DISK,
+    ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_BE_DISK, ID_SFS_LE_DISK,
     ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK };
 
 /*** Instance data **********************************************************/
@@ -79,10 +75,10 @@ Object *DiskInfo__OM_NEW
                                 s1             = NULL,
                                 volname        = NULL;
 
-    static STRPTR disktypelist[15] = {"No Disk", "Unreadable",
+    static STRPTR disktypelist[] = {"No Disk", "Unreadable",
     "OFS", "FFS", "OFS-Intl", "FFS-Intl",
     "OFS-DC", "FFS-DC", "Not DOS",
-    "KickStart", "MSDOS", "SFS",
+    "KickStart", "MSDOS", "SFS", "sfs",
     "FAT12", "FAT16", "FAT32" };
 
     /* Parse initial taglist -----------------------------------------------*/
@@ -132,17 +128,22 @@ Object *DiskInfo__OM_NEW
     if (lock != NULL)
     {
         static struct InfoData id;
-        if(Info(lock, &id) == DOSTRUE)
+        if (Info(lock, &id) == DOSTRUE)
         {
-            percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
-
-            disktype = id.id_DiskType;
             ULONG i;
-            for( i = 0; disktype != dt[i]; i++);
-            if (i < sizeof(dt))
-                dtr = disktypelist[i];
-            else
-                dtr = __(MSG_UNKNOWN);
+
+	    percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
+	    disktype = id.id_DiskType;
+	    dtr = __(MSG_UNKNOWN);
+
+	    for (i = 0; i < sizeof(dt); ++i)
+	    {
+		if (disktype == dt[i])
+		{
+		    dtr = disktypelist[i];
+		    break;
+		}
+	    }
             D(bug("[DiskInfo] Disk Type: %s\n", dtr));
         }
     }
