@@ -54,10 +54,13 @@
 
 #define SH_GLOBAL_SYSBASE 1
 
+#define DEBUG 0
+#include <aros/debug.h>
 #include <aros/shcommands.h>
 
-AROS_SH1(Execute, 41.1,
-AROS_SHA(STRPTR, ,NAME,/A,NULL))
+AROS_SH2(Execute, 41.1,
+AROS_SHA(STRPTR, ,NAME     , /A, NULL),
+AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
 {
     AROS_SHCOMMAND_INIT
 
@@ -99,9 +102,11 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 	if (tmpfile)
 	{
-	    LONG c;
+	    LONG c, len;
+	    STRPTR arguments, s;
 
-	    while((c = FGetC(from)) != -1 && FPutC(tmpfile, c) != -1);
+	    if (FPuts(tmpfile, ".pushis\n") != -1)
+		while((c = FGetC(from)) != -1 && FPutC(tmpfile, c) != -1);
 
 	    c = IoErr();
 	    Close(from);
@@ -119,6 +124,8 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 	    c = '\n';
 	    FPutC(tmpfile, c);
+
+	    FPuts(tmpfile, ".popis\n");
 
 	    while((c = FGetC(cli->cli_CurrentInput)) != -1 && FPutC(tmpfile, c) != -1);
 
@@ -144,6 +151,19 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 	        AROS_BSTR_setstrlen(cli->cli_CommandFile, len);
 	    }
 
+	    arguments = SHArg(ARGUMENTS);
+	    if (arguments)
+	    {
+		s = AROS_BSTR_ADDR(cli->cli_CommandName);
+		len = strlen(arguments);
+
+		AROS_BSTR_setstrlen(cli->cli_CommandName, len + 1);
+		CopyMem((APTR)arguments, s, len);
+		s[len] = '\n';
+	    }
+	    else
+		AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
+
 	    cli->cli_CurrentInput = tmpfile;
 
 	    Seek(tmpfile, 0, OFFSET_BEGINNING);
@@ -164,6 +184,22 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     }
     else
     {
+	STRPTR arguments = SHArg(ARGUMENTS), s;
+	LONG len;
+
+	if (arguments)
+	{
+kprintf("[Execute] args: %s\n", arguments);
+	    s = AROS_BSTR_ADDR(cli->cli_CommandName);
+	    len = strlen(arguments);
+
+	    AROS_BSTR_setstrlen(cli->cli_CommandName, len + 1);
+	    CopyMem((APTR)arguments, s, len);
+	    s[len] = '\n';
+	}
+	else
+	    AROS_BSTR_setstrlen(cli->cli_CommandName, 0);
+
         cli->cli_Interactive  = FALSE;
         cli->cli_CurrentInput = from;
     }
