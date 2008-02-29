@@ -88,7 +88,6 @@
 
 #include <string.h>
 
-
 #define ID_MAC_DISK2       (0x4d414300L) /* MAC\0 - xfs mac disk */
 #define ID_MNX1_DISK       (0x4d4e5801L) /* MNX\1 - xfs minix disk */
 #define ID_MNX2_DISK       (0x4d4e5802L) /* MNX\2 - xfs minix disk */
@@ -202,6 +201,9 @@ struct DiskTypeList dtl[] =
     { ID_FAT12_DISK,       "FAT12" },
     { ID_FAT16_DISK,       "FAT16" },
     { ID_FAT32_DISK,       "FAT32" },
+    { ID_FAT32_DISK,       "FAT32" },
+    { ID_SFS_BE_DISK,      "SFS" },
+    { ID_SFS_LE_DISK,      "sfs" },
     { 0L, 0L }
 };
 
@@ -421,30 +423,24 @@ BOOL ScanDosList(STRPTR *filter)
 	}
 	else
 	{
-	    // struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(ndl->dol_misc.dol_handler.dol_Startup);
+	    BPTR ptr = BADDR(ndl->dol_misc.dol_handler.dol_Startup);
+	    struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)ptr;
 	    
 	    idn->DosType = ID_DOS_DISK;
 
 	    //  DLT_DEVICE
-	    if(len > MaxLen)
+	    if (len > MaxLen)
 		MaxLen = len;
 	    
-#if 0
-	    if(TypeOfMem(fssm))
+	    if (*(UBYTE *)fssm == 0 || *(UBYTE *)BADDR(fssm->fssm_Device) != 0) 
 	    {
-		if(*(UBYTE *)fssm == 0 || *(UBYTE *)BADDR(fssm->fssm_Device) != 0) 
-		{
-		    struct DosEnvec *de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
+		struct DosEnvec *de;
+		de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
 		    
-		    if(de != NULL && (de->de_TableSize & 0xffffff00) == 0L)
-		    {
-			if(de->de_DosType)
-			    idn->DosType = de->de_DosType;
-		    }
-		}
+		if (de && (de->de_TableSize & 0xffffff00) == 0)
+		    if (de->de_DosType)
+			idn->DosType = de->de_DosType;
 	    }
-#endif
-
 	}
 	
 	/* kinda insert sort */
