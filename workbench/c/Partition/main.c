@@ -78,7 +78,7 @@ static struct PartitionHandle *CreateMBRPartition(
     struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl, UBYTE id);
 static struct PartitionHandle *CreateRDBPartition(
     struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl,
-    CONST_STRPTR name, BOOL bootable);
+    CONST_STRPTR name, BOOL bootable, const struct PartitionType *type);
 static ULONG MBsToCylinders(ULONG size, struct DosEnvec *de);
 
 /*** Functions **************************************************************/
@@ -292,16 +292,26 @@ int main(void)
 
     if (error == 0)
     {
+	static const struct PartitionType dos3 = { "DOS\3", 4 };
+#if AROS_BIG_ENDIAN
+	static const struct PartitionType sfs0 = { "SFS\0", 4 };
+#else
+	/* atm, SFS is BE on AROS */
+	static const struct PartitionType sfs0 = { "SFS\0", 4 };
+#endif
+
         sysHighCyl = MBsToCylinders(sysSize, &diskPart->de);
 
         /* Create partitions in the RDB table */
-        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE);
+        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl,
+				     "DH0", TRUE, &dos3);
         if (sysPart == NULL)
             error = ERROR_UNKNOWN;
         if (sysSize != 0
             && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
         {
-            workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0, "DH1", FALSE);
+            workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
+					  "DH1", FALSE, &sfs0);
             if (workPart == NULL)
                 error = ERROR_UNKNOWN;
         }
@@ -463,13 +473,12 @@ static struct PartitionHandle *CreateMBRPartition
 static struct PartitionHandle *CreateRDBPartition
 (
     struct PartitionHandle *parent, ULONG lowcyl, ULONG highcyl,
-    CONST_STRPTR name, BOOL bootable
+    CONST_STRPTR name, BOOL bootable, const struct PartitionType *type
 )
 {
     struct DriveGeometry    parentDG    = {0};
     struct DosEnvec         parentDE    = {0},
                             partitionDE = {0};
-    struct PartitionType    type        = {"DOS\3", 4};
     struct PartitionHandle *partition;
         
     GetPartitionAttrsTags
@@ -528,7 +537,7 @@ static struct PartitionHandle *CreateRDBPartition
         parent,
         
         PT_DOSENVEC, (IPTR) &partitionDE,
-        PT_TYPE,     (IPTR) &type,
+        PT_TYPE,     (IPTR) type,
         PT_NAME,     (IPTR) name,
         PT_BOOTABLE,        bootable,
         PT_AUTOMOUNT,       TRUE,

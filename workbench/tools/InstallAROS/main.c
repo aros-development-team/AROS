@@ -11,6 +11,7 @@
 
 #include <libraries/mui.h>
 
+#include <dos/dos.h>
 #include <exec/types.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1867,13 +1868,13 @@ exitcdadir:
 	return ((dir_count/2) - skip_count);   /* Return no. of successfully copied dirs */
 }
 
-BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name)
+BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name, ULONG dostype)
 {
 	BOOL success = FALSE;
 
 	if (Inhibit(device, DOSTRUE))
 	{
-		success = Format(device, name, ID_INTER_FFS_DISK);
+		success = Format(device, name, dostype);
 		Inhibit(device, DOSFALSE);
 	}
 
@@ -1905,7 +1906,7 @@ IPTR Install__MUIM_Format
 	{
 #if	!defined(USE_FORMAT64)
 	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-	success = FormatPartition(dev_nametmp, kDstPartName);
+	success = FormatPartition(dev_nametmp, kDstPartName, ID_INTER_FFS_DISK);
 #else
 	sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS INTL QUICK",dev_nametmp, kDstPartName);
 	D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
@@ -1917,6 +1918,7 @@ IPTR Install__MUIM_Format
 	get(check_work, MUIA_Selected, &option);
 	if (option && XGET(check_formatwork,MUIA_Selected))
 	{
+BPTR in;
 		/* Format Vol1, if it's not already formated */
 		sprintf(fmt_nametmp,"Formatting '%s'...",work_Path);
 		D(bug("[INSTALLER] %s\n",fmt_nametmp));
@@ -1925,9 +1927,17 @@ IPTR Install__MUIM_Format
 		set(data->gauge2, MUIA_Gauge_Current, 0);
 
 		sprintf(dev_nametmp,"%s:",work_Path);
-#if	!defined(USE_FORMAT64)
+#if	!defined(USE_FFS_ON_WORK)
+		D(bug("[INSTALLER] (info) Using 'SFS' on Work\n"));
+#if AROS_BIG_ENDIAN
+		FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
+#else
+		/* atm, SFS is BE on AROS */
+		FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
+#endif
+#elif	!defined(USE_FORMAT64)
 		D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-		FormatPartition(dev_nametmp, kDstWorkName);
+		FormatPartition(dev_nametmp, kDstWorkName, ID_INTER_FFS_DISK);
 #else
 		sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",dev_nametmp,kDstWorkName);
 		D(bug("[INSTALLER] (info) Using '%s'\n",tmp));

@@ -107,6 +107,7 @@ IDLen = 4
 "DOS\000" = "Old Filesystem"
 "DOS\001" = "Fast Filesystem"
 "DOS\003" = "Fast Filesystem Intl"
-"SFS\000" = "Smart Filesystem"
+"SFS\000" = "Smart Filesystem - BE"
+"sfs\000" = "Smart Filesystem - LE"
 Default = "DOS\003"
 

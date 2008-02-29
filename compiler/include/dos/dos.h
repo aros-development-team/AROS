@@ -159,6 +159,8 @@ struct InfoData
 #define ID_NOT_REALLY_DOS   AROS_MAKE_ID('N','D','O','S')
 #define ID_KICKSTART_DISK   AROS_MAKE_ID('K','I','C','K')
 #define ID_MSDOS_DISK       AROS_MAKE_ID('M','S','D',0)
+#define ID_SFS_BE_DISK      AROS_MAKE_ID('S','F','S',0)
+#define ID_SFS_LE_DISK      AROS_MAKE_ID('s','f','s',0)
 
 /**********************************************************************
  **************** Program Execution and Error Handling ****************
