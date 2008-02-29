@@ -7,7 +7,7 @@
 
 /****************************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <exec/io.h>
@@ -121,6 +121,7 @@ static int GM_UNIQUENAME(Open)
         This fixes bug SF# 741580
     */
 
+    D(bug("[timer] OpenDevice(%d)\n", unitNum));
     switch(unitNum)
     {
         case UNIT_VBLANK:
@@ -153,6 +154,13 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 
 /****************************************************************************************/
 
+static int GM_UNIQUENAME(Op)(LIBBASETYPEPTR LIBBASE)
+{
+    return TRUE;
+}
+
+
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2OPENLIB(GM_UNIQUENAME(Op), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
