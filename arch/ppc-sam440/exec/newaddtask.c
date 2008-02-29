@@ -121,28 +121,18 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     if(task->tc_ExceptCode==NULL)
         task->tc_ExceptCode=SysBase->TaskExceptCode;
         
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-    /*
-        If you can't to store the registers on the signal stack, you
-        must set this flag.
-    */
     task->tc_Flags |= TF_ETASK;
-#endif
 
-    /* Allocate the ETask structure if requested */
-    if (task->tc_Flags & TF_ETASK)
-    {
-        task->tc_UnionETask.tc_ETask = AllocTaskMem (task
-            , sizeof (struct IntETask)
-            , MEMF_ANY|MEMF_CLEAR
-        );
+    task->tc_UnionETask.tc_ETask = AllocTaskMem (task
+        , sizeof (struct IntETask)
+        , MEMF_ANY|MEMF_CLEAR
+    );
 
-        if (!task->tc_UnionETask.tc_ETask)
-            return NULL;
+    if (!task->tc_UnionETask.tc_ETask)
+        return NULL;
 
-        /* I'm the parent task */
-        GetETask(task)->et_Parent = FindTask(NULL);
-    }
+    /* I'm the parent task */
+    GetETask(task)->et_Parent = FindTask(NULL);
 
     /* Get new stackpointer. */
     /* sp=task->tc_SPReg; */
