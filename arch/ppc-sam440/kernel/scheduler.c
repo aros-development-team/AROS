@@ -4,10 +4,11 @@
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 
-#include "kernel_intern.h"
 #include "exec_intern.h"
 #include "etask.h"
 #include "syscall.h"
+
+#include "kernel_intern.h"
 
 AROS_LH0(KRN_SchedType, KrnGetScheduler,
          struct KernelBase *, KernelBase, 1, Kernel)
@@ -94,6 +95,7 @@ void core_Dispatch(regs_t *regs)
             SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
             
+            D(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
             /* Sleep almost forever ;) */
             __asm__ __volatile__("wrteei 1");
             wrmsr(rdmsr() | MSR_POW);
@@ -114,7 +116,9 @@ void core_Dispatch(regs_t *regs)
         SysBase->SysFlags &= ~0x2000;
         task->tc_State = TS_RUN;
         SysBase->IDNestCnt = task->tc_IDNestCnt;
-       
+
+        D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
+
         /* Handle tasks's flags */
         if (task->tc_Flags & TF_EXCEPT)
             Exception();
@@ -149,6 +153,8 @@ void core_Switch(regs_t *regs)
         __asm__ __volatile__("wrteei 0");
     
         task = SysBase->ThisTask;
+        
+        D(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
         /* Copy current task's context into the ETask structure */
         bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));

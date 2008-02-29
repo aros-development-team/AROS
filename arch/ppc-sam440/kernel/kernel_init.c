@@ -177,7 +177,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      * kernel.resource is ready to run. Enable external interrupts and leave 
      * supervisor mode
      */
-    wrmsr(rdmsr() | (MSR_EE));
+    wrmsr(rdmsr() | (MSR_EE|MSR_FP));
     D(bug("[KRN] Interrupts enabled\n"));
     
     wrmsr(rdmsr() | (MSR_PR));
