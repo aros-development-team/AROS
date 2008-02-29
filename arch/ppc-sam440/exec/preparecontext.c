@@ -6,7 +6,7 @@
 #include "etask.h"
 #include "exec_util.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/libcall.h>
 #include <aros/debug.h>
@@ -62,11 +62,12 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     if (!(task->tc_Flags & TF_ETASK) )
         return NULL;
 
+    /* Get the memory for CPU context. Alloc it with MEMF_CLEAR flag */
     GetIntETask (task)->iet_Context = AllocTaskMem (task
         , SIZEOF_ALL_REGISTERS
         , MEMF_PUBLIC|MEMF_CLEAR
     );
-
+    
     D(bug("[exec] PrepareContext: iet_Context = %012p\n", GetIntETask (task)->iet_Context));
     
     if (!(ctx = (context_t *)GetIntETask (task)->iet_Context))
@@ -108,16 +109,27 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     ctx->cpu.gpr[1] = sp;
     
     task->tc_SPReg = sp;
+   
+    D(bug("[exec] New context:\n[exec] SRR0=%08x, SRR1=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1));
+    D(bug("[exec] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
+             ctx->cpu.gpr[0],ctx->cpu.gpr[1],ctx->cpu.gpr[2],ctx->cpu.gpr[3]));
+    D(bug("[exec] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
+             ctx->cpu.gpr[4],ctx->cpu.gpr[5],ctx->cpu.gpr[6],ctx->cpu.gpr[7]));
+    D(bug("[exec] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
+             ctx->cpu.gpr[8],ctx->cpu.gpr[9],ctx->cpu.gpr[10],ctx->cpu.gpr[11]));
+    D(bug("[exec] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
+             ctx->cpu.gpr[12],ctx->cpu.gpr[13],ctx->cpu.gpr[14],ctx->cpu.gpr[15]));
 
-    for (i=0; i < 32; i++)
-        ctx->fpu.fpr[i] = 0.0;
-    
-    ctx->fpu.fpscr = 0;
-        
+    D(bug("[exec] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
+             ctx->cpu.gpr[16],ctx->cpu.gpr[17],ctx->cpu.gpr[18],ctx->cpu.gpr[19]));
+    D(bug("[exec] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
+             ctx->cpu.gpr[20],ctx->cpu.gpr[21],ctx->cpu.gpr[22],ctx->cpu.gpr[23]));
+    D(bug("[exec] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
+             ctx->cpu.gpr[24],ctx->cpu.gpr[25],ctx->cpu.gpr[26],ctx->cpu.gpr[27]));
+    D(bug("[exec] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
+             ctx->cpu.gpr[28],ctx->cpu.gpr[29],ctx->cpu.gpr[30],ctx->cpu.gpr[31]));
     return sp;
 }
-
-
 
 AROS_LH4(BOOL, PrepareContext,
     AROS_LHA(struct Task *, task, A0),
