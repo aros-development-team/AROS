@@ -432,7 +432,7 @@ BOOL ScanDosList(STRPTR *filter)
 	    if (len > MaxLen)
 		MaxLen = len;
 	    
-	    if (*(UBYTE *)fssm == 0 || *(UBYTE *)BADDR(fssm->fssm_Device) != 0) 
+	    if (fssm) 
 	    {
 		struct DosEnvec *de;
 		de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
