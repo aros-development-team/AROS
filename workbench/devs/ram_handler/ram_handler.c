@@ -18,7 +18,9 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/alib.h>
+#include <proto/battclock.h>
 #include <proto/dos.h>
+#include <resources/battclock.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dosasl.h>
@@ -406,13 +408,31 @@ static int GM_UNIQUENAME(Open)
     return OpenDev(rambase, iofs);
 }
 
+static void GetCurrentDate(LIBBASETYPEPTR rambase, struct DateStamp *date)
+{
+    APTR BattClockBase = NULL;
+    ULONG secs = 0;
+
+    DateStamp(date);
+    if (date->ds_Days != 0)
+	return;
+
+    BattClockBase = OpenResource(BATTCLOCKNAME);
+    if (BattClockBase)
+	secs = ReadBattClock();
+
+    date->ds_Days = secs / (60 * 60 * 24);
+    secs %= (60 * 60 * 24);
+    date->ds_Minute = secs / 60;
+    date->ds_Tick = 0;
+}
 
 static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs)
 {
     struct filehandle *fhv, *fhc;
     struct vnode *vol;
     struct cnode *dev;
-    struct DosList *dlv;
+    struct DeviceList *dlv;
     
     iofs->IOFS.io_Error = ERROR_NO_FREE_STORE;
 
@@ -431,6 +451,7 @@ static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs)
 	    {
 		dev = (struct cnode *)AllocMem(sizeof(struct cnode),
 					       MEMF_CLEAR);
+		GetCurrentDate(rambase, &vol->date);
 
 		if (dev != NULL)
 		{
@@ -438,26 +459,28 @@ static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs)
 
 		    if (vol->name != NULL)
 		    {
-			dlv = MakeDosEntry("Ram Disk", DLT_VOLUME);
+			dlv = (struct DeviceList *)MakeDosEntry("Ram Disk",
+								DLT_VOLUME);
 
 			if (dlv != NULL)
 			{
 			    vol->type = ST_USERDIR;
 			    vol->self = vol;
-			    vol->doslist = dlv;
+			    vol->doslist = (struct DosList *)dlv;
 			    vol->protect = 0UL;
 			    NewList((struct List *)&vol->list);
 			    NewList((struct List *)&vol->receivers);
 			    fhv->node = (struct dnode *)vol;
-			    dlv->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)fhv;
-			    dlv->dol_Ext.dol_AROS.dol_Device = &rambase->device;
+			    dlv->dl_Ext.dl_AROS.dol_Unit = (struct Unit *)fhv;
+			    dlv->dl_Ext.dl_AROS.dol_Device = &rambase->device;
+			    dlv->dl_VolumeDate = vol->date;
 			    dev->type = ST_LINKDIR;
 			    dev->self = dev;
 			    dev->volume=vol;
 			    fhc->node = (struct dnode *)dev;
 			    iofs->IOFS.io_Unit = (struct Unit *)fhc;
 			    iofs->IOFS.io_Device = &rambase->device;
-			    AddDosEntry(dlv);
+			    AddDosEntry((struct DosList *)dlv);
 			    rambase->root = vol;
 			    iofs->IOFS.io_Error = 0;
 
