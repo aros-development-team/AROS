@@ -27,6 +27,8 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-con \
 #MM	kernel-fs-packet \
 #MM	kernel-workbench \
+#MM	hidd-i2c \
+#MM	hidd-radeon \
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
 #MM	workbench-libs-partition \
@@ -36,7 +38,7 @@ PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers
 PKG_RSRC := misc 
 PKG_DEVS :=  input gameport keyboard console
 PKG_HANDLERS := con nil ram packet
-PKG_HIDDS:= graphics hiddclass pci pci-amcc440
+PKG_HIDDS:= graphics hiddclass pci pci-amcc440 i2c radeon
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
