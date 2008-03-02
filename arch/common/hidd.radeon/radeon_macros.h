@@ -48,6 +48,8 @@
  */
 
 
+#include <aros/macros.h>
+
 #ifndef _RADEON_MACROS_H_
 #define _RADEON_MACROS_H_
 
@@ -63,11 +65,11 @@
 
 				/* Memory mapped register access macros */
 #define INREG8(addr)        (*(volatile UBYTE*)((UBYTE*)(RADEONMMIO)+(addr)))
-#define INREG16(addr)       (*(volatile UWORD*)((UBYTE*)(RADEONMMIO)+(addr)))
-#define INREG(addr)         (*(volatile ULONG*)((UBYTE*)(RADEONMMIO)+(addr)))
+#define INREG16(addr)       AROS_LE2WORD((*(volatile UWORD*)((UBYTE*)(RADEONMMIO)+(addr))))
+#define INREG(addr)         AROS_LE2LONG((*(volatile ULONG*)((UBYTE*)(RADEONMMIO)+(addr))))
 #define OUTREG8(addr, val)  (*(volatile UBYTE*)((UBYTE*)(RADEONMMIO)+(addr)) = (val))
-#define OUTREG16(addr, val) (*(volatile UWORD*)((UBYTE*)(RADEONMMIO)+(addr)) = (val))
-#define OUTREG(addr, val)   (*(volatile ULONG*)((UBYTE*)(RADEONMMIO)+(addr)) = (val))
+#define OUTREG16(addr, val) (*(volatile UWORD*)((UBYTE*)(RADEONMMIO)+(addr)) = AROS_WORD2LE((val)))
+#define OUTREG(addr, val)   (*(volatile ULONG*)((UBYTE*)(RADEONMMIO)+(addr)) = AROS_LONG2LE((val)))
 
 #define ADDRREG(addr)       ((volatile ULONG *)(APTR)(RADEONMMIO + (addr)))
 
