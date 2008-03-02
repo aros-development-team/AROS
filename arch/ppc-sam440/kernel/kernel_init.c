@@ -102,7 +102,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     wrspr(SPRG5, 0);    /* Clear SysBase */
 
     D(bug("[KRN] Kernel resource pre-exec init\n"));
-    D(bug("[KRN] MSR=%08x\n", rdmsr()));
+    D(bug("[KRN] MSR=%08x CRR0=%08x CRR1=%08x\n", rdmsr(), rdspr(CCR0), rdspr(CCR1)));
+    
+    /* Enable FPU */
+    wrspr(CCR0, rdspr(CCR0) & ~0x00100000);
     
     /* Disable interrupts */
     wrmsr(rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME));
