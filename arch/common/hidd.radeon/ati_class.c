@@ -37,14 +37,14 @@
 
 #if AROS_BIG_ENDIAN
 
-#define CURSOR_SWAPPING_DECL_MMIO
+#define CURSOR_SWAPPING_DECL_MMIO ULONG __temp_surface_cntl = INREG(RADEON_SURFACE_CNTL)
 #define CURSOR_SWAPPING_START() \
     OUTREG(RADEON_SURFACE_CNTL, \
-           (info->ModeReg.surface_cntl | \
+           (__temp_surface_cntl | \
             RADEON_NONSURF_AP0_SWP_32BPP) & \
            ~RADEON_NONSURF_AP0_SWP_16BPP)
 #define CURSOR_SWAPPING_END()   (OUTREG(RADEON_SURFACE_CNTL, \
-                                        info->ModeReg.surface_cntl))
+                                        __temp_surface_cntl))
 
 #else
 
@@ -341,6 +341,8 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
 
         ULONG       *curimg = (ULONG*)((IPTR)sd->Card.CursorStart + (IPTR)sd->Card.FrameBuffer);
 
+        CURSOR_SWAPPING_DECL_MMIO;
+        
         struct pHidd_BitMap_GetPixel __gp = {
             mID:    OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_GetPixel)
         }, *getpixel = &__gp;
