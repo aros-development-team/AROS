@@ -117,7 +117,7 @@ void core_Dispatch(regs_t *regs)
         task->tc_State = TS_RUN;
         SysBase->IDNestCnt = task->tc_IDNestCnt;
 
-        D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
+        //D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
         /* Handle tasks's flags */
         if (task->tc_Flags & TF_EXCEPT)
@@ -154,7 +154,7 @@ void core_Switch(regs_t *regs)
     
         task = SysBase->ThisTask;
         
-        D(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
+        //D(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
         /* Copy current task's context into the ETask structure */
         bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));
