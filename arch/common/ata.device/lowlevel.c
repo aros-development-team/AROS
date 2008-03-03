@@ -27,6 +27,7 @@
  *                                 Removed memory dump upon RequestSense
  * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
  *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
+ * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
  */
 
 #define DEBUG 0
@@ -1028,6 +1029,8 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
     unit->au_Eject      = ata_STUB;
     unit->au_DirectSCSI = ata_STUB_SCSI;
     unit->au_Identify   = ata_STUB;
+
+    ata_SelectUnit(unit);
 
     if (FALSE == ata_WaitBusyTO(unit, 10))
     {
