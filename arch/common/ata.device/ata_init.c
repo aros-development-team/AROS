@@ -23,6 +23,7 @@
  * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
  *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
  * 2008-02-24  T. Wiszkowski       Corrected unit open function
+ * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
  */
 
 #define DEBUG 0

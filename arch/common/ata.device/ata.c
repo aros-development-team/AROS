@@ -843,7 +843,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     }
 }
 
-static void TaskCode(struct ata_Bus *);
+static void TaskCode(struct ata_Bus *, struct Task*);
 static void ata_Interrupt(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 static void ata_Timeout(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
@@ -857,6 +857,7 @@ int ata_InitBusTask(struct ata_Bus *bus)
     
     struct TagItem tags[] = {
         { TASKTAG_ARG1,     (IPTR)bus },
+        { TASKTAG_ARG2,     (IPTR)FindTask(0) },
         { TAG_DONE, 0 }
     };
     
@@ -905,6 +906,7 @@ int ata_InitBusTask(struct ata_Bus *bus)
 
         /* Wake up the task */
         NewAddTask(t, TaskCode, NULL, (struct TagItem*)&tags);
+        Wait(SIGBREAKF_CTRL_C);
     }
 
     return (t != NULL);
@@ -967,7 +969,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
     in endless lopp and calls proper handling function. The IO is Semaphore-
     protected within a bus.
 */
-static void TaskCode(struct ata_Bus *bus)
+static void TaskCode(struct ata_Bus *bus, struct Task* parent)
 {
     ULONG sig;
     int iter;
@@ -1010,6 +1012,7 @@ static void TaskCode(struct ata_Bus *bus)
        }
     }
 
+    Signal(parent, SIGBREAKF_CTRL_C);
 
     /* Wait forever and process messages */
     for (;;)
