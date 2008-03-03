@@ -716,9 +716,9 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
 	newtask->tc_Node.ln_Pri  = 30;
 	newtask->tc_Node.ln_Name = "UnixIO.task";
 
-	newtask->tc_SPReg   = (APTR)((ULONG)ml->ml_ME[1].me_Addr + AROS_STACKSIZE);
+	newtask->tc_SPReg   = NULL;
 	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
-	newtask->tc_SPUpper = newtask->tc_SPReg;
+	newtask->tc_SPUpper = (APTR)((ULONG)ml->ml_ME[1].me_Addr + AROS_STACKSIZE);
 
 	newtask->tc_UserData = &LIBBASE->uio_csd;
 
