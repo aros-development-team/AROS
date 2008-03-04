@@ -746,6 +746,7 @@ aros_host_mkargs
 aros_host_exe_suffix
 aros_host_lib_suffix
 aros_tools_dir
+aros_target_bootloader
 aros_target_arch
 aros_target_cpu
 aros_target_variant
@@ -1410,6 +1411,8 @@ Optional Features:
                           (default=no).
   --enable-target-variant=NAME
                           Enable a specific target variant(default=none)
+  --enable-bootloader=NAME
+                          Enable a specific bootloader
   --enable-includes=dir   Alternative system include directory
   --enable-bochs-hack     Enable hacks to make BOCHS (partly) work
                           (default=no)
@@ -8175,6 +8178,8 @@ fi
 { echo "$as_me:$LINENO: result: $enableval" >&5
 echo "${ECHO_T}$enableval" >&6; }
 
+target_bootloader="none"
+
 #-----------------------------------------------------------------------------
 # This is the target configuration switch.
 case "$target_os" in
@@ -8225,6 +8230,7 @@ echo "$as_me: error: \"Unknown CPU for Linux -- $target_cpu\"" >&2;}
     pc)
 	aros_target_arch="pc"
 	aros_shared_default="no"
+	target_bootloader="grub"
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
@@ -8587,6 +8593,22 @@ echo "$as_me: error: Unsupported target architecture $target" >&2;}
 	;;
 esac
 
+{ echo "$as_me:$LINENO: checking which bootloader to use" >&5
+echo $ECHO_N "checking which bootloader to use... $ECHO_C" >&6; }
+# Check whether --enable-bootloader was given.
+if test "${enable_bootloader+set}" = set; then
+  enableval=$enable_bootloader; target_bootloader=$enableval
+else
+  target_bootloader=$target_bootloader
+fi
+
+if test "$target_bootloader" = "none"; then
+    aros_target_bootloader=""
+else
+    aros_target_bootloader="$target_bootloader"
+fi
+{ echo "$as_me:$LINENO: result: $target_bootloader" >&5
+echo "${ECHO_T}$target_bootloader" >&6; }
 
 # Find out if we are cross-compiling (ie. if we can't use the host compiler
 # for target code)
@@ -11303,6 +11325,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Graphics Related
 
 
@@ -12236,6 +12259,7 @@ aros_host_mkargs!$aros_host_mkargs$ac_delim
 aros_host_exe_suffix!$aros_host_exe_suffix$ac_delim
 aros_host_lib_suffix!$aros_host_lib_suffix$ac_delim
 aros_tools_dir!$aros_tools_dir$ac_delim
+aros_target_bootloader!$aros_target_bootloader$ac_delim
 aros_target_arch!$aros_target_arch$ac_delim
 aros_target_cpu!$aros_target_cpu$ac_delim
 aros_target_variant!$aros_target_variant$ac_delim
@@ -12298,7 +12322,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 96; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
