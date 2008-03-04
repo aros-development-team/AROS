@@ -582,6 +582,8 @@ else
 fi
 AC_MSG_RESULT($enableval)
 
+target_bootloader="none"
+
 #-----------------------------------------------------------------------------
 # This is the target configuration switch.
 case "$target_os" in
@@ -630,6 +632,7 @@ case "$target_os" in
     pc)
 	aros_target_arch="pc"
 	aros_shared_default="no"
+	target_bootloader="grub"
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
@@ -976,6 +979,14 @@ case "$target_os" in
 	;;
 esac
 
+AC_MSG_CHECKING([which bootloader to use])
+AC_ARG_ENABLE(bootloader,AC_HELP_STRING([--enable-bootloader=NAME],[Enable a specific bootloader]),target_bootloader=$enableval,target_bootloader=$target_bootloader)
+if test "$target_bootloader" = "none"; then
+    aros_target_bootloader=""
+else
+    aros_target_bootloader="$target_bootloader"
+fi
+AC_MSG_RESULT($target_bootloader)
 
 # Find out if we are cross-compiling (ie. if we can't use the host compiler
 # for target code)
@@ -1407,6 +1418,7 @@ AC_SUBST(aros_host_autoheader)
 AC_SUBST(aros_host_automake)
 
 # Target Related
+AC_SUBST(aros_target_bootloader)
 AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_variant)
