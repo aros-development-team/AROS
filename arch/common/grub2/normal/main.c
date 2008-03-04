@@ -261,6 +261,9 @@ read_config_file (const char *config, int nested)
       /* Execute the command(s).  */
       grub_script_execute (parsed_script);
 
+      /* Ignore errors.  */
+      grub_errno = GRUB_ERR_NONE;
+
       /* The parsed script was executed, throw it away.  */
       grub_script_free (parsed_script);
     }
@@ -471,7 +474,7 @@ grub_normal_execute (const char *config, int nested)
       grub_errno = GRUB_ERR_NONE;
     }
 
-  if (menu)
+  if (menu && menu->size)
     {
       grub_menu_run (menu, nested);
       if (nested)

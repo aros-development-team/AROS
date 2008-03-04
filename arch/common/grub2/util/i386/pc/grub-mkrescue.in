@@ -1,7 +1,7 @@
 #! /bin/sh -e
 
 # Make GRUB rescue image
-# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,13 +42,14 @@ Make GRUB rescue image.
   -h, --help              print this message and exit
   -v, --version           print the version information and exit
   --modules=MODULES       pre-load specified modules MODULES
+  --overlay=DIR           overlay directory DIR in the memdisk image
   --pkglibdir=DIR         use images from directory DIR instead of ${pkglibdir}
   --grub-mkimage=FILE     use FILE as grub-mkimage
   --image-type=TYPE       select floppy or cdrom (default)
 
 grub-mkimage generates a bootable rescue image of the specified type.
 
-Report bugs to <grub-devel@gnu.org>.
+Report bugs to <bug-grub@gnu.org>.
 EOF
 }
 
@@ -67,6 +68,8 @@ for option in "$@"; do
 	exit 0 ;;
     --modules=*)
 	modules=`echo "$option" | sed 's/--modules=//'` ;;
+    --overlay=*)
+	overlay=`echo "$option" | sed 's/--overlay=//'` ;;
     --pkglibdir=*)
 	input_dir=`echo "$option" | sed 's/--pkglibdir=//'` ;;
     --grub-mkimage=*)
@@ -99,30 +102,45 @@ if test "x$output_image" = x; then
   exit 1
 fi
 
-if [ "x${modules}" = "x" ] ; then
-  modules=`cd ${input_dir}/ && ls *.mod`
+aux_dir=`mktemp -d`
+mkdir -p ${aux_dir}/boot/grub
+
+cp ${input_dir}/*.mod \
+  ${input_dir}/command.lst ${input_dir}/moddep.lst ${input_dir}/fs.lst \
+  ${aux_dir}/boot/grub/
+
+if test "x$overlay" = x ; then : ; else
+  cp -dpR ${overlay}/* ${aux_dir}/
 fi
 
 if [ "x${image_type}" = "xfloppy" ] ; then
-  floppy_image=${output_image}
+  # build memdisk
+  memdisk_img=`mktemp`
+  tar -C ${aux_dir} -cf ${memdisk_img} boot
+  rm -rf ${aux_dir}
+
+  # build core.img
+  core_img=`mktemp`
+  ${grub_mkimage} -d ${input_dir}/ -m ${memdisk_img} -o ${core_img} memdisk cpio biosdisk ${modules}
+  rm -f ${memdisk_img}
+
+  # build floppy image
+  cat ${input_dir}/boot.img ${core_img} /dev/zero | dd bs=1024 count=1440 > $output_image
+  rm -f ${core_img}
 else
-  floppy_image=`mktemp`
+  # build core.img
+  core_img=`mktemp`
+  ${grub_mkimage} -d ${input_dir}/ -o ${core_img} biosdisk iso9660 ${modules}
+
+  # build grub_eltorito image
+  cat ${input_dir}/cdboot.img ${core_img} > ${aux_dir}/boot/grub/grub_eltorito
+  rm -f ${core_img}
+
+  # build iso image
+  genisoimage -b boot/grub/grub_eltorito \
+    -no-emul-boot -boot-load-size 4 -boot-info-table \
+    -o ${output_image} -r ${aux_dir}
+  rm -rf ${aux_dir}
 fi
-
-core_img=`mktemp`
-${grub_mkimage} -d ${input_dir}/ -o ${core_img} ${modules}
-cat ${input_dir}/boot.img ${core_img} /dev/zero | dd bs=1024 count=1440 > $floppy_image
-rm -f ${core_img}
-
-if [ "x${image_type}" = "xfloppy" ] ; then
-  exit 0
-fi
-
-iso_dir=`mktemp -d`
-cp $floppy_image ${iso_dir}/floppy.img
-genisoimage -b floppy.img -o ${output_image} -r ${iso_dir}
-rm -rf ${iso_dir}
-
-rm -f ${floppy_image}
 
 exit 0

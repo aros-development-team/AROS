@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Install GRUB on your drive.
-# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,9 +44,6 @@ no_floppy=
 force_lba=
 recheck=no
 debug=no
-
-# for make_system_path_relative_to_its_root()
-. ${libdir}/grub/update-grub_lib
 
 # Usage: usage
 # Print the usage.
@@ -119,6 +116,9 @@ for option in "$@"; do
 	install_device="${option}" ;;
     esac
 done
+
+# for make_system_path_relative_to_its_root()
+. ${libdir}/grub/update-grub_lib
 
 if test "x$install_device" = x; then
     echo "install_device not specified." 1>&2
@@ -223,8 +223,11 @@ fi
 # filesystem will be accessible).
 partmap_module=`$grub_probe --target=partmap --device-map=${device_map} ${grubdir} 2> /dev/null`
 
+# Device abstraction module, if any (lvm, raid).
+devabstraction_module=`$grub_probe --target=abstraction --device-map=${device_map} ${grubdir}`
+
 # _chain is often useful
-modules="$modules $fs_module $partmap_module biosdisk _chain"
+modules="$modules $fs_module $partmap_module biosdisk $devabstraction_module _chain"
 
 $grub_mkimage --output=${grubdir}/core.img --prefix=`make_system_path_relative_to_its_root ${grubdir}` $modules || exit 1
 

@@ -47,6 +47,8 @@ struct grub_xfs_sblock
   grub_uint8_t unused4[2];
   grub_uint8_t log2_inop;
   grub_uint8_t log2_agblk;
+  grub_uint8_t unused5[67];
+  grub_uint8_t log2_dirblk;
 } __attribute__ ((packed));
 
 struct grub_xfs_dir_header
@@ -72,6 +74,23 @@ struct grub_xfs_dir2_entry
 
 typedef grub_uint32_t grub_xfs_extent[4];
 
+struct grub_xfs_btree_node
+{
+  grub_uint8_t magic[4];
+  grub_uint16_t level;
+  grub_uint16_t numrecs;
+  grub_uint64_t left;
+  grub_uint64_t right;
+  grub_uint64_t keys[1];
+}  __attribute__ ((packed));
+
+struct grub_xfs_btree_root
+{
+  grub_uint16_t level;
+  grub_uint16_t numrecs;
+  grub_uint64_t keys[1];
+}  __attribute__ ((packed));
+
 struct grub_xfs_inode
 {
   grub_uint8_t magic[2];
@@ -80,7 +99,10 @@ struct grub_xfs_inode
   grub_uint8_t format;
   grub_uint8_t unused2[50];
   grub_uint64_t size;
-  grub_uint8_t unused3[36];
+  grub_uint64_t nblocks;
+  grub_uint32_t extsize;
+  grub_uint32_t nextents;
+  grub_uint8_t unused3[20];
   union
   {
     char raw[156];
@@ -90,6 +112,7 @@ struct grub_xfs_inode
       struct grub_xfs_dir_entry direntry[1];
     } dir;
     grub_xfs_extent extents[XFS_INODE_EXTENTS];
+    struct grub_xfs_btree_root btree;
   } data __attribute__ ((packed));
 } __attribute__ ((packed));
 
@@ -138,18 +161,18 @@ static grub_dl_t my_mod;
 #define GRUB_XFS_INO_AG(data,ino)		\
   (grub_be_to_cpu64 (ino) >> GRUB_XFS_INO_AGBITS (data))
 
-#define GRUB_XFS_EXTENT_OFFSET(inode,ex) \
-	((grub_be_to_cpu32 ((inode)->data.extents[ex][0]) & ~(1 << 31)) << 23 \
-	| grub_be_to_cpu32 ((inode)->data.extents[ex][1]) >> 9)
+#define GRUB_XFS_EXTENT_OFFSET(exts,ex) \
+	((grub_be_to_cpu32 (exts[ex][0]) & ~(1 << 31)) << 23 \
+	| grub_be_to_cpu32 (exts[ex][1]) >> 9)
 
-#define GRUB_XFS_EXTENT_BLOCK(inode,ex)		\
-  ((grub_uint64_t) (grub_be_to_cpu32 ((inode)->data.extents[ex][1]) \
-	  	  & (~255)) << 43 \
-   | (grub_uint64_t) grub_be_to_cpu32 ((inode)->data.extents[ex][2]) << 11 \
-   | grub_be_to_cpu32 ((inode)->data.extents[ex][3]) >> 21)
+#define GRUB_XFS_EXTENT_BLOCK(exts,ex)		\
+  ((grub_uint64_t) (grub_be_to_cpu32 (exts[ex][1]) \
+		  & (0x1ff)) << 43 \
+   | (grub_uint64_t) grub_be_to_cpu32 (exts[ex][2]) << 11 \
+   | grub_be_to_cpu32 (exts[ex][3]) >> 21)
 
-#define GRUB_XFS_EXTENT_SIZE(inode,ex)		\
-  (grub_be_to_cpu32 ((inode)->data.extents[ex][3]) & ((1 << 20) - 1))
+#define GRUB_XFS_EXTENT_SIZE(exts,ex)		\
+  (grub_be_to_cpu32 (exts[ex][3]) & ((1 << 20) - 1))
 
 #define GRUB_XFS_ROUND_TO_DIRENT(pos)	((((pos) + 8 - 1) / 8) * 8)
 #define GRUB_XFS_NEXT_DIRENT(pos,len)		\
@@ -200,9 +223,63 @@ grub_xfs_read_inode (struct grub_xfs_data *data, grub_uint64_t ino,
 static int
 grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
 {
-  int ex;
+  struct grub_xfs_btree_node *leaf = 0;
+  int ex, nrec;
+  grub_xfs_extent *exts;
+  grub_uint64_t ret = 0;
 
-  if (node->inode.format != XFS_INODE_FORMAT_EXT)
+  if (node->inode.format == XFS_INODE_FORMAT_BTREE)
+    {
+      grub_uint64_t *keys;
+
+      leaf = grub_malloc (node->data->sblock.bsize);
+      if (leaf == 0)
+        return 0;
+
+      nrec = grub_be_to_cpu16 (node->inode.data.btree.numrecs);
+      keys = &node->inode.data.btree.keys[0];
+      do
+        {
+          int i;
+
+          for (i = 0; i < nrec; i++)
+            {
+              if ((grub_uint64_t) fileblock < grub_be_to_cpu64 (keys[i]))
+                break;
+            }
+
+          /* Sparse block.  */
+          if (i == 0)
+            {
+              grub_free (leaf);
+              return 0;
+            }
+
+          if (grub_disk_read (node->data->disk,
+                              grub_be_to_cpu64 (keys[i - 1 + XFS_INODE_EXTENTS])
+                              << (node->data->sblock.log2_bsize
+                                  - GRUB_DISK_SECTOR_BITS),
+                              0, node->data->sblock.bsize, (char *) leaf))
+            return 0;
+
+          if (grub_strncmp ((char *) leaf->magic, "BMAP", 4))
+            {
+              grub_free (leaf);
+              grub_error (GRUB_ERR_BAD_FS, "not a correct XFS BMAP node.\n");
+              return 0;
+            }
+
+          nrec = grub_be_to_cpu16 (leaf->numrecs);
+          keys = &leaf->keys[0];
+        } while (leaf->level);
+      exts = (grub_xfs_extent *) keys;
+    }
+  else if (node->inode.format == XFS_INODE_FORMAT_EXT)
+    {
+      nrec = grub_be_to_cpu32 (node->inode.nextents);
+      exts = &node->inode.data.extents[0];
+    }
+  else
     {
       grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 		  "xfs does not support inode format %d yet",
@@ -212,23 +289,26 @@ grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
 
   /* Iterate over each extent to figure out which extent has
      the block we are looking for.  */
-  for (ex = 0; ex < XFS_INODE_EXTENTS; ex++)
+  for (ex = 0; ex < nrec; ex++)
     {
-      grub_uint64_t start = GRUB_XFS_EXTENT_BLOCK (&node->inode, ex);
-      int offset = GRUB_XFS_EXTENT_OFFSET (&node->inode, ex);
-      int size = GRUB_XFS_EXTENT_SIZE (&node->inode, ex);
+      grub_uint64_t start = GRUB_XFS_EXTENT_BLOCK (exts, ex);
+      int offset = GRUB_XFS_EXTENT_OFFSET (exts, ex);
+      int size = GRUB_XFS_EXTENT_SIZE (exts, ex);
 
-      unsigned int ag = start >> node->data->sblock.log2_agblk;
-      unsigned int block = start & ((1 << node->data->sblock.log2_agblk) - 1);
-
-      if (fileblock < offset + size)
-	return (fileblock - offset + block) + ag * node->data->agsize;
+      /* Sparse block.  */
+      if (fileblock < offset)
+        break;
+      else if (fileblock < offset + size)
+        {
+          ret = (fileblock - offset + start);
+          break;
+        }
     }
 
-  grub_error (GRUB_ERR_FILE_READ_ERROR,
-	      "xfs block %d for inode %d is not in an extent.\n",
-	      fileblock, grub_be_to_cpu64 (node->ino));
-  return 0;
+  if (leaf)
+    grub_free (leaf);
+
+  return ret;
 }
 
 
@@ -306,9 +386,9 @@ grub_xfs_iterate_dir (grub_fshelp_node_t dir,
 				grub_fshelp_node_t node))
 {
   struct grub_fshelp_node *diro = (struct grub_fshelp_node *) dir;
-  auto int call_hook (grub_uint64_t ino, char *filename);
+  auto int NESTED_FUNC_ATTR call_hook (grub_uint64_t ino, char *filename);
     
-  int call_hook (grub_uint64_t ino, char *filename)
+  int NESTED_FUNC_ATTR call_hook (grub_uint64_t ino, char *filename)
     {
       struct grub_fshelp_node *fdiro;
 
@@ -393,38 +473,43 @@ grub_xfs_iterate_dir (grub_fshelp_node_t dir,
 	grub_ssize_t numread;
 	char *dirblock;
 	grub_uint64_t blk;
+        int dirblk_size, dirblk_log2;
 
-	dirblock = grub_malloc (dir->data->bsize);
+        dirblk_log2 = (dir->data->sblock.log2_bsize
+                       + dir->data->sblock.log2_dirblk);
+        dirblk_size = 1 << dirblk_log2;
+
+	dirblock = grub_malloc (dirblk_size);
 	if (! dirblock)
 	  return 0;
 
 	/* Iterate over every block the directory has.  */
 	for (blk = 0;
 	     blk < (grub_be_to_cpu64 (dir->inode.size) 
-		    >> dir->data->sblock.log2_bsize);
+		    >> dirblk_log2);
 	     blk++)
 	  {
 	    /* The header is skipped, the first direntry is stored
 	       from byte 16.  */
 	    int pos = 16;
 	    int entries;
-	    int tail_start = (dir->data->bsize
+	    int tail_start = (dirblk_size
 			      - sizeof (struct grub_xfs_dirblock_tail));
 
 	    struct grub_xfs_dirblock_tail *tail;
 	    tail = (struct grub_xfs_dirblock_tail *) &dirblock[tail_start];
 
 	    numread = grub_xfs_read_file (dir, 0,
-					  blk << dir->data->sblock.log2_bsize,
-					  dir->data->bsize, dirblock);
-	    if (numread != dir->data->bsize)
+					  blk << dirblk_log2,
+					  dirblk_size, dirblock);
+	    if (numread != dirblk_size)
 	      return 0;
 
 	    entries = (grub_be_to_cpu32 (tail->leaf_count)
 		       - grub_be_to_cpu32 (tail->leaf_stale));
 
 	    /* Iterate over all entries within this block.  */
-	    while (pos < (dir->data->bsize
+	    while (pos < (dirblk_size
 			  - (int) sizeof (struct grub_xfs_dir2_entry)))
 	      {
 		struct grub_xfs_dir2_entry *direntry;
@@ -703,4 +788,3 @@ GRUB_MOD_FINI(xfs)
 {
   grub_fs_unregister (&grub_xfs_fs);
 }
-

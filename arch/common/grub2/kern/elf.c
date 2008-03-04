@@ -1,7 +1,7 @@
 /* elf.c - load ELF files */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005, 2006, 2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -85,9 +85,8 @@ grub_elf_file (grub_file_t file)
   return elf;
 
 fail:
-  grub_error_push ();
-  grub_elf_close (elf);
-  grub_error_pop ();
+  grub_free (elf->phdrs);
+  grub_free (elf);
   return 0;
 }
 
@@ -95,12 +94,17 @@ grub_elf_t
 grub_elf_open (const char *name)
 {
   grub_file_t file;
+  grub_elf_t elf;
 
   file = grub_gzfile_open (name, 1);
   if (! file)
     return 0;
 
-  return grub_elf_file (file);
+  elf = grub_elf_file (file);
+  if (! elf)
+    grub_file_close (file);
+
+  return elf;
 }
 
 
@@ -139,7 +143,7 @@ grub_elf32_load_phdrs (grub_elf_t elf)
 
 static grub_err_t
 grub_elf32_phdr_iterate (grub_elf_t elf,
-			 int (*hook) (grub_elf_t, Elf32_Phdr *, void *),
+			 int NESTED_FUNC_ATTR (*hook) (grub_elf_t, Elf32_Phdr *, void *),
 			 void *hook_arg)
 {
   Elf32_Phdr *phdrs;
@@ -177,8 +181,8 @@ grub_elf32_size (grub_elf_t elf)
 
   /* Run through the program headers to calculate the total memory size we
    * should claim.  */
-  auto int calcsize (grub_elf_t _elf, Elf32_Phdr *phdr, void *_arg);
-  int calcsize (grub_elf_t UNUSED _elf, Elf32_Phdr *phdr, void UNUSED *_arg)
+  auto int NESTED_FUNC_ATTR calcsize (grub_elf_t _elf, Elf32_Phdr *phdr, void *_arg);
+  int NESTED_FUNC_ATTR calcsize (grub_elf_t UNUSED _elf, Elf32_Phdr *phdr, void UNUSED *_arg)
     {
       /* Only consider loadable segments.  */
       if (phdr->p_type != PT_LOAD)
@@ -219,9 +223,8 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
   grub_size_t load_size = 0;
   grub_err_t err;
 
-  auto int grub_elf32_load_segment (grub_elf_t elf, Elf32_Phdr *phdr,
-				    void *hook);
-  int grub_elf32_load_segment (grub_elf_t elf, Elf32_Phdr *phdr, void *hook)
+  auto int NESTED_FUNC_ATTR grub_elf32_load_segment (grub_elf_t elf, Elf32_Phdr *phdr, void *hook);
+  int NESTED_FUNC_ATTR grub_elf32_load_segment (grub_elf_t elf, Elf32_Phdr *phdr, void *hook)
   {
     grub_elf32_load_hook_t load_hook = (grub_elf32_load_hook_t) hook;
     grub_addr_t load_addr;
@@ -229,9 +232,9 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
     if (phdr->p_type != PT_LOAD)
       return 0;
 
-    load_addr = phdr->p_paddr;
     if (load_hook && load_hook (phdr, &load_addr))
       return 1;
+    load_addr = phdr->p_paddr;
 
     if (load_addr < load_base)
       load_base = load_addr;
@@ -318,7 +321,7 @@ grub_elf64_load_phdrs (grub_elf_t elf)
 
 static grub_err_t
 grub_elf64_phdr_iterate (grub_elf_t elf,
-			 int (*hook) (grub_elf_t, Elf64_Phdr *, void *),
+			 int NESTED_FUNC_ATTR (*hook) (grub_elf_t, Elf64_Phdr *, void *),
 			 void *hook_arg)
 {
   Elf64_Phdr *phdrs;
@@ -356,8 +359,8 @@ grub_elf64_size (grub_elf_t elf)
 
   /* Run through the program headers to calculate the total memory size we
    * should claim.  */
-  auto int calcsize (grub_elf_t _elf, Elf64_Phdr *phdr, void *_arg);
-  int calcsize (grub_elf_t UNUSED _elf, Elf64_Phdr *phdr, void UNUSED *_arg)
+  auto int NESTED_FUNC_ATTR calcsize (grub_elf_t _elf, Elf64_Phdr *phdr, void *_arg);
+  int NESTED_FUNC_ATTR calcsize (grub_elf_t UNUSED _elf, Elf64_Phdr *phdr, void UNUSED *_arg)
     {
       /* Only consider loadable segments.  */
       if (phdr->p_type != PT_LOAD)
@@ -398,9 +401,9 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
   grub_size_t load_size = 0;
   grub_err_t err;
 
-  auto int grub_elf64_load_segment (grub_elf_t elf, Elf64_Phdr *phdr,
-				    void *hook);
-  int grub_elf64_load_segment (grub_elf_t elf, Elf64_Phdr *phdr, void *hook)
+  auto int NESTED_FUNC_ATTR grub_elf64_load_segment (grub_elf_t elf, Elf64_Phdr *phdr,
+						     void *hook);
+  int NESTED_FUNC_ATTR grub_elf64_load_segment (grub_elf_t elf, Elf64_Phdr *phdr, void *hook)
   {
     grub_elf64_load_hook_t load_hook = (grub_elf64_load_hook_t) hook;
     grub_addr_t load_addr;
@@ -408,9 +411,9 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
     if (phdr->p_type != PT_LOAD)
       return 0;
 
-    load_addr = phdr->p_paddr;
     if (load_hook && load_hook (phdr, &load_addr))
       return 1;
+    load_addr = phdr->p_paddr;
 
     if (load_addr < load_base)
       load_base = load_addr;

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <grub/machine/machine.h>
 #include <grub/machine/console.h>
 #include <grub/term.h>
 #include <grub/types.h>
@@ -148,6 +149,10 @@ static struct grub_term grub_console_term =
 void
 grub_console_init (void)
 {
+#ifdef GRUB_MACHINE_LINUXBIOS
+  grub_keyboard_controller_init ();
+#endif
+
   grub_term_register (&grub_console_term);
   grub_term_set_current (&grub_console_term);
 }

@@ -1,7 +1,7 @@
 /* gpt.c - Read GUID Partition Tables (GPT).  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,41 +23,14 @@
 #include <grub/partition.h>
 #include <grub/dl.h>
 #include <grub/pc_partition.h>
-
-struct grub_gpt_header
-{
-  grub_uint8_t magic[8];
-  grub_uint32_t version;
-  grub_uint32_t headersize;
-  grub_uint32_t crc32;
-  grub_uint32_t unused1;
-  grub_uint64_t primary;
-  grub_uint64_t backup;
-  grub_uint64_t start;
-  grub_uint64_t end;
-  grub_uint8_t guid[16];
-  grub_uint64_t partitions;
-  grub_uint32_t maxpart;
-  grub_uint32_t partentry_size;
-  grub_uint32_t partentry_crc32;
-} __attribute__ ((packed));
-
-struct grub_gpt_partentry
-{
-  grub_uint8_t type[16];
-  grub_uint8_t guid[16];
-  grub_uint64_t start;
-  grub_uint64_t end;
-  grub_uint8_t attrib;
-  char name[72];
-} __attribute__ ((packed));
+#include <grub/gpt_partition.h>
 
 static grub_uint8_t grub_gpt_magic[8] =
   {
-    45, 46, 49, 20, 50, 41, 52, 54
+    0x45, 0x46, 0x49, 0x20, 0x50, 0x41, 0x52, 0x54
   };
 
-static grub_uint8_t grub_gpt_partition_type_empty[16] = { 0 };
+static const grub_gpt_part_type_t grub_gpt_partition_type_empty = GRUB_GPT_PARTITION_TYPE_EMPTY;
 
 static struct grub_partition_map grub_gpt_partition_map;
 
@@ -78,7 +51,6 @@ gpt_partition_map_iterate (grub_disk_t disk,
   struct grub_disk raw;
   struct grub_pc_partition_mbr mbr;
   grub_uint64_t entries;
-  int partno = 0;
   unsigned int i;
   int last_offset = 0;
 
@@ -102,7 +74,7 @@ gpt_partition_map_iterate (grub_disk_t disk,
   if (grub_disk_read (&raw, 1, 0, sizeof (gpt), (char *) &gpt))
     return grub_errno;
 
-  if (! grub_memcmp (gpt.magic, grub_gpt_magic, sizeof (grub_gpt_magic)))
+  if (grub_memcmp (gpt.magic, grub_gpt_magic, sizeof (grub_gpt_magic)))
     return grub_error (GRUB_ERR_BAD_PART_TABLE, "no valid GPT header");
 
   grub_dprintf ("gpt", "Read a valid GPT header\n");
@@ -114,7 +86,7 @@ gpt_partition_map_iterate (grub_disk_t disk,
 			  sizeof (entry), (char *) &entry))
 	return grub_errno;
 
-      if (grub_memcmp (grub_gpt_partition_type_empty, entry.type,
+      if (grub_memcmp (&grub_gpt_partition_type_empty, &entry.type,
 		       sizeof (grub_gpt_partition_type_empty)))
 	{
 	  /* Calculate the first block and the size of the partition.  */
@@ -122,17 +94,17 @@ gpt_partition_map_iterate (grub_disk_t disk,
 	  part.len = (grub_le_to_cpu64 (entry.end)
 		      - grub_le_to_cpu64 (entry.start) + 1);
 	  part.offset = entries;
-	  part.index = partno;
+	  part.index = i;
 	  part.partmap = &grub_gpt_partition_map;
+	  part.data = &entry;
 
 	  grub_dprintf ("gpt", "GPT entry %d: start=%lld, length=%lld\n",
-			partno, part.start, part.len);
+			i, part.start, part.len);
 
 	  if (hook (disk, &part))
 	    return grub_errno;
 	}
 
-      partno++;
       last_offset += grub_le_to_cpu32 (gpt.partentry_size);
       if (last_offset == GRUB_DISK_SECTOR_SIZE)
 	{

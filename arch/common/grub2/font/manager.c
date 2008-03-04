@@ -40,6 +40,27 @@ struct font
 
 static struct font *font_list;
 
+/* Fill unknown glyph's with rounded question mark.  */
+static grub_uint8_t unknown_glyph[16] =
+{       /* 76543210 */
+  0x7C, /*  ooooo   */
+  0x82, /* o     o  */
+  0xBA, /* o ooo o  */
+  0xAA, /* o o o o  */
+  0xAA, /* o o o o  */
+  0x8A, /* o   o o  */
+  0x9A, /* o  oo o  */
+  0x92, /* o  o  o  */
+  0x92, /* o  o  o  */
+  0x92, /* o  o  o  */
+  0x92, /* o  o  o  */
+  0x82, /* o     o  */
+  0x92, /* o  o  o  */
+  0x82, /* o     o  */
+  0x7C, /*  ooooo   */
+  0x00  /*          */
+};
+
 static int
 add_font (const char *filename)
 {
@@ -154,8 +175,9 @@ fill_with_default_glyph (grub_font_glyph_t glyph)
 {
   unsigned i;
 
+  /* Use pre-defined pattern to fill unknown glyphs.  */
   for (i = 0; i < 16; i++)
-    glyph->bitmap[i] = (i & 1) ? 0x55 : 0xaa;
+    glyph->bitmap[i] = unknown_glyph[i];
 
   glyph->char_width = 1;
   glyph->width = glyph->char_width * 8;

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,22 @@
 
 #ifndef GRUB_TERM_HEADER
 #define GRUB_TERM_HEADER	1
+
+/* Internal codes used by GRUB to represent terminal input.  */
+#define GRUB_TERM_LEFT		2
+#define GRUB_TERM_RIGHT		6
+#define GRUB_TERM_UP		16
+#define GRUB_TERM_DOWN		14
+#define GRUB_TERM_HOME		1
+#define GRUB_TERM_END		5
+#define GRUB_TERM_DC		4
+#define GRUB_TERM_PPAGE		7
+#define GRUB_TERM_NPAGE		3
+#define GRUB_TERM_ESC		'\e'
+#define GRUB_TERM_TAB		'\t'
+#define GRUB_TERM_BACKSPACE	'\b'
+
+#ifndef ASM_FILE
 
 #include <grub/err.h>
 #include <grub/symbol.h>
@@ -210,5 +226,7 @@ void EXPORT_FUNC(grub_set_more) (int onoff);
 
 /* For convenience.  */
 #define GRUB_TERM_ASCII_CHAR(c)	((c) & 0xff)
+
+#endif /* ! ASM_FILE */
 
 #endif /* ! GRUB_TERM_HEADER */

@@ -1,7 +1,7 @@
 /* ieee1275.h - Access the Open Firmware client interface.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005, 2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@ typedef grub_ieee1275_cell_t grub_ieee1275_ihandle_t;
 typedef grub_ieee1275_cell_t grub_ieee1275_phandle_t;
 
 extern grub_ieee1275_phandle_t EXPORT_VAR(grub_ieee1275_chosen);
+extern grub_ieee1275_ihandle_t EXPORT_VAR(grub_ieee1275_mmu);
 extern int (* EXPORT_VAR(grub_ieee1275_entry_fn)) (void *);
 
 enum grub_ieee1275_flag
@@ -82,6 +83,12 @@ enum grub_ieee1275_flag
 
   /* CodeGen firmware does not correctly implement "output-device output" */
   GRUB_IEEE1275_FLAG_BROKEN_OUTPUT,
+
+  /* OLPC / XO firmware hangs when accessing USB devices.  */
+  GRUB_IEEE1275_FLAG_OFDISK_SDCARD_ONLY,
+
+  /* Open Hack'Ware stops when trying to set colors */
+  GRUB_IEEE1275_FLAG_CANNOT_SET_COLORS,
 };
 
 extern int EXPORT_FUNC(grub_ieee1275_test_flag) (enum grub_ieee1275_flag flag);
@@ -90,13 +97,16 @@ extern void EXPORT_FUNC(grub_ieee1275_set_flag) (enum grub_ieee1275_flag flag);
 
 
 
-grub_uint32_t EXPORT_FUNC(grub_ieee1275_decode_int_4) (unsigned char *p);
 int EXPORT_FUNC(grub_ieee1275_finddevice) (char *name,
 					   grub_ieee1275_phandle_t *phandlep);
 int EXPORT_FUNC(grub_ieee1275_get_property) (grub_ieee1275_phandle_t phandle,
 					     const char *property, void *buf,
 					     grub_size_t size,
 					     grub_ssize_t *actual);
+int EXPORT_FUNC(grub_ieee1275_get_integer_property) (grub_ieee1275_phandle_t phandle,
+						     const char *property, grub_uint32_t *buf,
+						     grub_size_t size,
+						     grub_ssize_t *actual);
 int EXPORT_FUNC(grub_ieee1275_next_property) (grub_ieee1275_phandle_t phandle,
 					      char *prev_prop, char *prop);
 int EXPORT_FUNC(grub_ieee1275_get_property_length) 

@@ -1,7 +1,7 @@
 /* getroot.c - Get root device */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 
 #include <grub/util/misc.h>
 #include <grub/util/biosdisk.h>
+#include <grub/util/getroot.h>
 
 static void
 strip_extra_slashes (char *dir)
@@ -227,9 +228,14 @@ grub_guess_root_device (const char *dir)
 #ifdef __linux__
   /* We first try to find the device in the /dev/mapper directory.  If
      we don't do this, we get useless device names like /dev/dm-0 for
-     LVM. */
+     LVM.  */
   os_dev = find_root_device ("/dev/mapper", st.st_dev);
-  if (!os_dev)
+
+  /* The same applies to /dev/evms directory (for EVMS volumes).  */
+  if (! os_dev)
+    os_dev = find_root_device ("/dev/evms", st.st_dev);
+
+  if (! os_dev)
 #endif
     {
       /* This might be truly slow, but is there any better way?  */
@@ -239,27 +245,42 @@ grub_guess_root_device (const char *dir)
   return os_dev;
 }
 
-char *
-grub_util_get_grub_dev (const char *os_dev)
+int
+grub_util_get_dev_abstraction (const char *os_dev)
 {
   /* Check for LVM.  */
   if (!strncmp (os_dev, "/dev/mapper/", 12))
-    {
-      char *grub_dev = xmalloc (strlen (os_dev) - 12 + 1);
-
-      strcpy (grub_dev, os_dev+12);
-
-      return grub_dev;
-    }
+    return GRUB_DEV_ABSTRACTION_LVM;
 
   /* Check for RAID.  */
   if (!strncmp (os_dev, "/dev/md", 7))
+    return GRUB_DEV_ABSTRACTION_RAID;
+
+  /* No abstraction found.  */
+  return GRUB_DEV_ABSTRACTION_NONE;
+}
+
+char *
+grub_util_get_grub_dev (const char *os_dev)
+{
+  char *grub_dev;
+
+  switch (grub_util_get_dev_abstraction (os_dev))
     {
-      const char *p;
-      char *grub_dev = xmalloc (20);
+    case GRUB_DEV_ABSTRACTION_LVM:
+      grub_dev = xmalloc (strlen (os_dev) - 12 + 1);
+
+      strcpy (grub_dev, os_dev + 12);
+
+      break;
+
+    case GRUB_DEV_ABSTRACTION_RAID:
+      grub_dev = xmalloc (20);
 
       if (os_dev[7] == '_' && os_dev[8] == 'd')
 	{
+	  const char *p;
+
 	  /* This a partitionable RAID device of the form /dev/md_dNNpMM. */
 	  int i;
 
@@ -297,17 +318,31 @@ grub_util_get_grub_dev (const char *os_dev)
 	}
       else if (os_dev[7] >= '0' && os_dev[7] <= '9')
 	{
-	  p = os_dev + 5;
-	  memcpy (grub_dev, p, 7);
+	  memcpy (grub_dev, os_dev + 5, 7);
 	  grub_dev[7] = '\0';
 	}
       else
 	grub_util_error ("Unknown kind of RAID device `%s'", os_dev);
 
+      break;
 
-      return grub_dev;
+    default:  /* GRUB_DEV_ABSTRACTION_NONE */
+      grub_dev = grub_util_biosdisk_get_grub_dev (os_dev);
     }
 
-  /* If it's not RAID or LVM, it should be a biosdisk.  */
-  return grub_util_biosdisk_get_grub_dev (os_dev);
+  return grub_dev;
+}
+
+char *
+grub_util_check_block_device (const char *blk_dev)
+{
+  struct stat st;
+
+  if (stat (blk_dev, &st) < 0)
+    grub_util_error ("Cannot stat `%s'", blk_dev);
+
+  if (S_ISBLK (st.st_mode))
+    return (blk_dev);
+  else
+    return 0;
 }

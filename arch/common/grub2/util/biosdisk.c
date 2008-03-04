@@ -167,7 +167,7 @@ grub_util_biosdisk_open (const char *name, grub_disk_t disk)
     int fd;
 
     fd = open (map[drive], O_RDONLY);
-    if (! fd)
+    if (fd == -1)
       return grub_error (GRUB_ERR_BAD_DEVICE, "cannot open `%s'", map[drive]);
 
     if (fstat (fd, &st) < 0 || ! S_ISBLK (st.st_mode))
@@ -254,7 +254,7 @@ linux_find_partition (char *dev, unsigned long sector)
       
       sprintf (p, format, i);
       fd = open (real_dev, O_RDONLY);
-      if (! fd)
+      if (fd == -1)
 	return 0;
 
       if (ioctl (fd, HDIO_GETGEO, &hdg))
@@ -773,7 +773,7 @@ grub_util_biosdisk_get_grub_dev (const char *os_dev)
       return name;
     
     fd = open (os_dev, O_RDONLY);
-    if (! fd)
+    if (fd == -1)
       {
 	grub_error (GRUB_ERR_BAD_DEVICE, "cannot open `%s'", os_dev);
 	free (name);

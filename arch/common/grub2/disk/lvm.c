@@ -52,6 +52,26 @@ grub_lvm_iterate (int (*hook) (const char *name))
   return 0;
 }
 
+#ifdef GRUB_UTIL
+static grub_disk_memberlist_t
+grub_lvm_memberlist (grub_disk_t disk)
+{
+  struct grub_lvm_lv *lv = disk->data;
+  grub_disk_memberlist_t list = NULL, tmp;
+  struct grub_lvm_pv *pv;
+
+  for (pv = lv->vg->pvs; pv; pv = pv->next)
+    {
+      tmp = grub_malloc (sizeof (*tmp));
+      tmp->disk = pv->disk;
+      tmp->next = list;
+      list = tmp;
+    }
+
+  return list;
+}
+#endif
+
 static grub_err_t
 grub_lvm_open (const char *name, grub_disk_t disk)
 {
@@ -479,6 +499,9 @@ static struct grub_disk_dev grub_lvm_dev =
     .close = grub_lvm_close,
     .read = grub_lvm_read,
     .write = grub_lvm_write,
+#ifdef GRUB_UTIL
+    .memberlist = grub_lvm_memberlist,
+#endif
     .next = 0
   };
 

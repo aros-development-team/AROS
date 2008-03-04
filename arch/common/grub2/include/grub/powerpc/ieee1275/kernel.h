@@ -23,6 +23,11 @@
 
 #define GRUB_MOD_ALIGN 0x1000
 
+/* Minimal gap between _end and the start of the modules.  It's a hack
+   for PowerMac to prevent "CLAIM failed" error.  The real fix is to
+   rewrite grub-mkimage to generate valid ELF files.  */
+#define GRUB_MOD_GAP 0x8000
+
 void EXPORT_FUNC (grub_reboot) (void);
 void EXPORT_FUNC (grub_halt) (void);
 

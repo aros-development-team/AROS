@@ -1,7 +1,7 @@
 /* memory.h - describe the memory map */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #define GRUB_MEMORY_MACHINE_HEADER	1
 
 #include <grub/symbol.h>
+#include <grub/machine/machine.h>
 #ifndef ASM_FILE
 #include <grub/types.h>
 #endif
@@ -36,6 +37,9 @@
 /* The size of the protect mode stack.  */
 #define GRUB_MEMORY_MACHINE_PROT_STACK_SIZE	0x8000
 
+/* The upper memory area (starting at 640 kiB).  */
+#define GRUB_MEMORY_MACHINE_UPPER		0xa0000
+
 /* The protected mode stack.  */
 #define GRUB_MEMORY_MACHINE_PROT_STACK	\
 	(GRUB_MEMORY_MACHINE_SCRATCH_ADDR + GRUB_MEMORY_MACHINE_SCRATCH_SIZE \
@@ -47,6 +51,9 @@
 	GRUB_MEMORY_MACHINE_SCRATCH_ADDR
 #define GRUB_MEMORY_MACHINE_RESERVED_END	\
 	(GRUB_MEMORY_MACHINE_PROT_STACK + 0x10)
+
+/* The area where GRUB is decompressed at early startup.  */
+#define GRUB_MEMORY_MACHINE_DECOMPRESSION_ADDR	0x100000
 
 /* The address of a partition table passed to another boot loader.  */
 #define GRUB_MEMORY_MACHINE_PART_TABLE_ADDR	0x7be
@@ -69,9 +76,11 @@
 /* The data segment of the pseudo real mode.  */
 #define GRUB_MEMORY_MACHINE_PSEUDO_REAL_DSEG	0x20
 
+#ifndef GRUB_MACHINE_IEEE1275
 #ifndef ASM_FILE
 extern grub_size_t EXPORT_VAR(grub_lower_mem);
 extern grub_size_t EXPORT_VAR(grub_upper_mem);
+#endif
 #endif
 
 #endif /* ! GRUB_MEMORY_MACHINE_HEADER */

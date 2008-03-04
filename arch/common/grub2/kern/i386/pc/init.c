@@ -22,6 +22,7 @@
 #include <grub/machine/memory.h>
 #include <grub/machine/console.h>
 #include <grub/machine/kernel.h>
+#include <grub/machine/biosdisk.h>
 #include <grub/types.h>
 #include <grub/err.h>
 #include <grub/dl.h>
@@ -64,11 +65,25 @@ make_install_device (void)
   /* XXX: This should be enough.  */
   char dev[100];
 
-  if (grub_install_dos_part != -2)
+  if (grub_memdisk_image_size)
     {
-      grub_sprintf (dev, "(%cd%u",
-		    (grub_boot_drive & 0x80) ? 'h' : 'f',
-		    grub_boot_drive & 0x7f);
+      grub_sprintf (dev, "(memdisk)%s", grub_prefix);
+      grub_strcpy (grub_prefix, dev);
+    }
+  else if (grub_install_dos_part != -2)
+    {
+      /* If the root drive is not set explicitly, assume that it is identical
+         to the boot drive.  */
+      if (grub_root_drive == 0xFF)
+        grub_root_drive = grub_boot_drive;
+      
+      if (grub_root_drive >= GRUB_BIOSDISK_MACHINE_CDROM_START)
+        grub_sprintf (dev, "(cd%u",
+		      grub_root_drive - GRUB_BIOSDISK_MACHINE_CDROM_START);
+      else
+        grub_sprintf (dev, "(%cd%u",
+		      (grub_root_drive & 0x80) ? 'h' : 'f',
+		      grub_root_drive & 0x7f);
       
       if (grub_install_dos_part >= 0)
 	grub_sprintf (dev + grub_strlen (dev), ",%u", grub_install_dos_part + 1);
@@ -247,4 +262,20 @@ grub_addr_t
 grub_arch_modules_addr (void)
 {
   return grub_end_addr;
+}
+
+/* Return the start of the memdisk image.  */
+grub_addr_t
+grub_arch_memdisk_addr (void)
+{
+  return GRUB_MEMORY_MACHINE_DECOMPRESSION_ADDR
+    + (grub_kernel_image_size - GRUB_KERNEL_MACHINE_RAW_SIZE)
+    + grub_total_module_size;
+}
+
+/* Return the size of the memdisk image.  */
+grub_off_t
+grub_arch_memdisk_size (void)
+{
+  return grub_memdisk_image_size;
 }

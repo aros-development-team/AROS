@@ -102,8 +102,8 @@ grub_load_normal_mode (void)
   /* Load the module.  */
   grub_dl_load ("normal");
   
-  /* Ignore any error, because we have the rescue mode anyway.  */
-  grub_errno = GRUB_ERR_NONE;
+  /* Something went wrong.  Print errors here to let user know why we're entering rescue mode.  */
+  grub_print_error ();
 }
 
 /* The main routine.  */

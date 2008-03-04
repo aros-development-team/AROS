@@ -1,7 +1,7 @@
 /* raid.c - module to read RAID arrays.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006, 2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,6 +67,26 @@ grub_raid_iterate (int (*hook) (const char *name))
   return 0;
 }
 
+#ifdef GRUB_UTIL
+static grub_disk_memberlist_t
+grub_raid_memberlist (grub_disk_t disk)
+{
+  struct grub_raid_array *array = disk->data;
+  grub_disk_memberlist_t list = NULL, tmp;
+  int i;
+  
+  for (i = 0; i < array->total_devs; i++)
+    {
+      tmp = grub_malloc (sizeof (*tmp));
+      tmp->disk = array->device[i];
+      tmp->next = list;
+      list = tmp;
+    }
+  
+  return list;
+}
+#endif
+
 static grub_err_t
 grub_raid_open (const char *name, grub_disk_t disk)
 {
@@ -86,6 +106,8 @@ grub_raid_open (const char *name, grub_disk_t disk)
   disk->id = array->number;
   disk->data = array;
 
+  grub_dprintf ("raid", "%s: total_devs=%d, disk_size=%d\n", name, array->total_devs, array->disk_size);
+
   switch (array->level)
     {
     case 0:
@@ -101,6 +123,8 @@ grub_raid_open (const char *name, grub_disk_t disk)
       disk->total_sectors = (array->total_devs - 1) * array->disk_size;
       break;
     }
+
+  grub_dprintf ("raid", "%s: level=%d, total_sectors=%d\n", name, array->level, disk->total_sectors);
   
   return 0;
 }
@@ -146,7 +170,7 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
 	  {
 	    grub_uint32_t i;
 
-	    err = grub_disk_read (array->device[disknr].disk, read_sector, 0,
+	    err = grub_disk_read (array->device[disknr], read_sector, 0,
 				  read_size << GRUB_DISK_SECTOR_BITS, buf);
 	    if (err)
 	      break;
@@ -189,9 +213,9 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
 	
 	for (i = 0; i < array->total_devs; i++)
 	  {
-	    if (array->device[i].disk)
+	    if (array->device[i])
 	      {
-		err = grub_disk_read (array->device[i].disk, sector, 0,
+		err = grub_disk_read (array->device[i], sector, 0,
 				      size << GRUB_DISK_SECTOR_BITS, buf);
 
 		if (!err)
@@ -234,8 +258,8 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
 	  {
 	    grub_uint32_t i;
 
-	    if (array->device[disknr].disk)
-	      err = grub_disk_read (array->device[disknr].disk, read_sector, 0,
+	    if (array->device[disknr])
+	      err = grub_disk_read (array->device[disknr], read_sector, 0,
 				    read_size << GRUB_DISK_SECTOR_BITS, buf);
 
 	    /* If an error occurs when we already have an degraded
@@ -243,7 +267,7 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
 	    if (err && ((array->total_devs - 1) == array->nr_devs))
 	      break;
 	    
-	    if (err || ! array->device[disknr].disk)
+	    if (err || ! array->device[disknr])
 	      {
 		/* Either an error occured or the disk is not
 		   available.  We have to compute this block from the
@@ -260,7 +284,7 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
 
 		    if (j != (unsigned int) disknr)
 		      {
-			err = grub_disk_read (array->device[j].disk, read_sector,
+			err = grub_disk_read (array->device[j], read_sector,
 					      0, buf_size, buf2);
 			if (err)
 			  return err;
@@ -332,6 +356,8 @@ grub_raid_scan_device (const char *name)
   struct grub_raid_super_09 sb;
   struct grub_raid_array *p, *array = NULL;
 
+  grub_dprintf ("raid", "Scanning for RAID devices\n");
+
   disk = grub_disk_open (name);
   if (!disk)
     return 0;
@@ -343,7 +369,10 @@ grub_raid_scan_device (const char *name)
   err = grub_disk_read (disk, sector, 0, GRUB_RAID_SB_BYTES, (char *) &sb);
   grub_disk_close (disk);
   if (err)
-    return 0;
+    {
+      grub_errno = GRUB_ERR_NONE;
+      return 0;
+    }
 
   /* Look whether there is a RAID superblock. */
   if (sb.md_magic != GRUB_RAID_SB_MAGIC)
@@ -410,7 +439,7 @@ grub_raid_scan_device (const char *name)
 	  return 0;
 	}
   
-      if (array->device[sb.this_disk.number].name != 0)
+      if (array->device[sb.this_disk.number] != NULL)
 	{
 	  /* We found multiple devices with the same number. Again,
 	     this shouldn't happen.*/
@@ -485,20 +514,39 @@ grub_raid_scan_device (const char *name)
 
       grub_sprintf (array->name, "md%d", array->number);
 
+      grub_dprintf ("raid", "Found array: %s\n", array->name);
+
       /* Add our new array to the list.  */
       array->next = array_list;
       array_list = array;
     }
 
   /* Add the device to the array. */
-  array->device[sb.this_disk.number].name = grub_strdup (name);
-  array->device[sb.this_disk.number].disk = grub_disk_open (name);
-  
-  if (! array->device[sb.this_disk.number].name
-      || ! array->device[sb.this_disk.number].disk)
-    {
-      grub_free (array->device[sb.this_disk.number].name);
+  array->device[sb.this_disk.number] = grub_disk_open (name);
 
+  if (array->disk_size != array->device[sb.this_disk.number]->total_sectors)
+    {
+      if (array->total_devs == 1)
+	{
+	  grub_dprintf ("raid", "Array contains only one disk, but its size (0x%llx) "
+			"doesn't match with size indicated by superblock (0x%llx).  "
+			"Assuming superblock is wrong.\n",
+			array->device[sb.this_disk.number]->total_sectors, array->disk_size);
+	  array->disk_size = array->device[sb.this_disk.number]->total_sectors;
+	}
+      else if (array->level == 1)
+	{
+	  grub_dprintf ("raid", "Array is RAID level 1, but the size of disk %d (0x%llx) "
+			"doesn't match with size indicated by superblock (0x%llx).  "
+			"Assuming superblock is wrong.\n",
+			sb.this_disk.number,
+			array->device[sb.this_disk.number]->total_sectors, array->disk_size);
+	  array->disk_size = array->device[sb.this_disk.number]->total_sectors;
+	}
+    }
+  
+  if (! array->device[sb.this_disk.number])
+    {
       /* Remove array from the list if we have just added it. */
       if (array->nr_devs == 0)
 	{
@@ -524,6 +572,9 @@ static struct grub_disk_dev grub_raid_dev =
     .close = grub_raid_close,
     .read = grub_raid_read,
     .write = grub_raid_write,
+#ifdef GRUB_UTIL
+    .memberlist = grub_raid_memberlist,
+#endif
     .next = 0
   };
 

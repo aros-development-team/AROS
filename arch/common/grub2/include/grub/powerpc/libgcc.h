@@ -38,6 +38,7 @@ void EXPORT_FUNC (__thenan_df) (void);
 void EXPORT_FUNC (__thenan_sf) (void);
 void EXPORT_FUNC (__trampoline_setup) (void);
 void EXPORT_FUNC (__truncdfsf2) (void);
+void EXPORT_FUNC (__ucmpdi2) (void);
 void EXPORT_FUNC (__unpack_d) (void);
 void EXPORT_FUNC (__unpack_f) (void);
 void EXPORT_FUNC (__floatdisf) (void);

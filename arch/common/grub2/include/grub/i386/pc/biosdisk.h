@@ -23,6 +23,10 @@
 #include <grub/types.h>
 
 #define GRUB_BIOSDISK_FLAG_LBA	1
+#define GRUB_BIOSDISK_FLAG_CDROM 2
+
+#define GRUB_BIOSDISK_MACHINE_CDROM_START	0xe0
+#define GRUB_BIOSDISK_MACHINE_CDROM_END		0xf0
 
 struct grub_biosdisk_data
 {

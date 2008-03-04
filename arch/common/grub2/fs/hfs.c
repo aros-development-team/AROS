@@ -43,6 +43,16 @@ enum
     GRUB_HFS_FILETYPE_FILE = 2
   };
 
+/* Catalog node ID (CNID).  */
+enum grub_hfs_cnid_type
+  {
+    GRUB_HFS_CNID_ROOT_PARENT = 1,
+    GRUB_HFS_CNID_ROOT = 2,
+    GRUB_HFS_CNID_EXT = 3,
+    GRUB_HFS_CNID_CAT = 4,
+    GRUB_HFS_CNID_BAD = 5
+  };
+
 /* A node descriptor.  This is the header of every node.  */
 struct grub_hfs_node
 {
@@ -447,7 +457,8 @@ grub_hfs_iterate_records (struct grub_hfs_data *data, int type, int idx,
       
       /* Read the node into memory.  */
       blk = grub_hfs_block (data, dat,
-			    0, idx / (data->blksz / nodesize), 0);
+                            (type == 0) ? GRUB_HFS_CNID_CAT : GRUB_HFS_CNID_EXT,
+			    idx / (data->blksz / nodesize), 0);
       blk += (idx % (data->blksz / nodesize));
       if (grub_errno)
 	return grub_errno;
@@ -481,10 +492,7 @@ grub_hfs_iterate_records (struct grub_hfs_data *data, int type, int idx,
 	    return 0;
 	}
       
-      if (idx % (data->blksz / nodesize) == 0)
-	idx = grub_be_to_cpu32 (node.node.next);
-      else
-	idx++;
+      idx = grub_be_to_cpu32 (node.node.next);
     } while (idx && this);
   
   return 0;
@@ -501,6 +509,7 @@ grub_hfs_find_node (struct grub_hfs_data *data, char *key,
 {
   int found = -1;
   int isleaf = 0;
+  int done = 0;
   
   auto int node_found (struct grub_hfs_node *, struct grub_hfs_record *);
     
@@ -532,6 +541,8 @@ grub_hfs_find_node (struct grub_hfs_data *data, char *key,
 	  /* Found it!!!!  */
 	  if (cmp == 0)
 	    {
+              done = 1;
+
 	      grub_memcpy (datar, rec->data,
 			   rec->datalen < datalen ? rec->datalen : datalen);
 	      return 1;
@@ -541,16 +552,20 @@ grub_hfs_find_node (struct grub_hfs_data *data, char *key,
       return 0;
     }
   
-  if (grub_hfs_iterate_records (data, type, idx, 0, node_found))
-    return 0;
-  
-  if (found == -1)
-    return 0;
+  do
+    {
+      found = -1;
 
-  if (isleaf)
-    return 1;
+      if (grub_hfs_iterate_records (data, type, idx, 0, node_found))
+        return 0;
   
-  return grub_hfs_find_node (data, key, found, type, datar, datalen);
+      if (found == -1)
+        return 0;
+
+      idx = found;
+    } while (! isleaf);
+  
+  return done;
 }
 
 
@@ -607,21 +622,23 @@ grub_hfs_iterate_dir (struct grub_hfs_data *data, grub_uint32_t root_idx,
       return hook (rec);
     }
   
-  if (grub_hfs_iterate_records (data, 0, root_idx, 0, node_found))
-    return grub_errno;
+  do
+    {
+      found = -1;
+
+      if (grub_hfs_iterate_records (data, 0, root_idx, 0, node_found))
+        return grub_errno;
   
-  if (found == -1)
-    return 0;
+      if (found == -1)
+        return 0;
   
+      root_idx = found;
+    } while (! isleaf);
+
   /* If there was a matching record in this leaf node, continue the
      iteration until the last record was found.  */
-  if (isleaf)
-    {
-      grub_hfs_iterate_records (data, 0, next, 1, it_dir);
-      return grub_errno;
-    }
-  
-  return grub_hfs_iterate_dir (data, found, dir, hook);
+  grub_hfs_iterate_records (data, 0, next, 1, it_dir);
+  return grub_errno;
 }
 
 

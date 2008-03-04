@@ -1,5 +1,42 @@
 # -*- makefile -*-
 
+# For grub-probe.
+sbin_UTILITIES += grub-probe
+util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
+grub_probe_SOURCES = util/grub-probe.c	\
+	util/biosdisk.c	util/misc.c util/getroot.c		\
+	kern/device.c kern/disk.c kern/err.c kern/misc.c	\
+	kern/parser.c kern/partition.c kern/file.c		\
+	\
+	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
+	fs/ufs.c fs/xfs.c					\
+	\
+	partmap/pc.c partmap/apple.c partmap/gpt.c 		\
+	kern/fs.c kern/env.c fs/fshelp.c			\
+	disk/lvm.c disk/raid.c grub_probe_init.c
+
+ifeq ($(enable_grub_fstest), yes)
+bin_UTILITIES += grub-fstest
+endif
+
+# For grub-fstest.
+util/grub-fstest.c_DEPENDENCIES = grub_fstest_init.h
+grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
+	kern/file.c kern/device.c kern/disk.c kern/err.c kern/misc.c	\
+	disk/host.c disk/loopback.c  normal/arg.c normal/misc.c		\
+	io/gzio.c commands/hexdump.c commands/blocklist.c commands/ls.c \
+	\
+	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
+	fs/ufs.c fs/xfs.c						\
+	\
+	kern/partition.c partmap/pc.c partmap/apple.c partmap/gpt.c 	\
+	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c	\
+	grub_fstest_init.c
+
 # For the parser.
 grub_script.tab.c grub_script.tab.h: normal/parser.y
 	$(YACC) -d -p grub_script_yy -b grub_script $(srcdir)/normal/parser.y
@@ -44,6 +81,19 @@ grub_setup_init.c: grub_setup_init.lst $(filter-out grub_setup_init.c,$(grub_set
 	rm -f $@; sh $(srcdir)/geninit.sh $< $(filter %.c,$^) > $@
 DISTCLEANFILES += grub_setup_init.c
 
+# For grub-fstest.
+grub_fstest_init.lst: geninit.sh $(filter-out grub_fstest_init.c,$(grub_fstest_SOURCES))
+	rm -f $@; grep GRUB_MOD_INIT $(filter %.c,$^) /dev/null > $@
+DISTCLEANFILES += grub_fstest_init.lst
+
+grub_fstest_init.h: grub_fstest_init.lst $(filter-out grub_fstest_init.c,$(grub_fstest_SOURCES)) geninitheader.sh
+	rm -f $@; sh $(srcdir)/geninitheader.sh $< > $@
+DISTCLEANFILES += grub_fstest_init.h
+
+grub_fstest_init.c: grub_fstest_init.lst $(filter-out grub_fstest_init.c,$(grub_fstest_SOURCES)) geninit.sh grub_fstest_init.h
+	rm -f $@; sh $(srcdir)/geninit.sh $< $(filter %.c,$^) > $@
+DISTCLEANFILES += grub_fstest_init.c
+
 # For update-grub
 update-grub: util/update-grub.in config.status
 	./config.status --file=$@:$<
@@ -81,7 +131,7 @@ update-grub_DATA += util/grub.d/README
 # Filing systems.
 pkglib_MODULES += fshelp.mod fat.mod ufs.mod ext2.mod ntfs.mod		\
 	ntfscomp.mod minix.mod hfs.mod jfs.mod iso9660.mod xfs.mod	\
-	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod
+	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod
 
 # For fshelp.mod.
 fshelp_mod_SOURCES = fs/fshelp.c
@@ -163,6 +213,11 @@ cpio_mod_SOURCES = fs/cpio.c
 cpio_mod_CFLAGS = $(COMMON_CFLAGS)
 cpio_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For udf.mod.
+udf_mod_SOURCES = fs/udf.c
+udf_mod_CFLAGS = $(COMMON_CFLAGS)
+udf_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # Partition maps.
 pkglib_MODULES += amiga.mod apple.mod pc.mod sun.mod acorn.mod gpt.mod
 
@@ -213,8 +268,9 @@ lvm_mod_LDFLAGS = $(COMMON_LDFLAGS)
 # Commands.
 pkglib_MODULES += hello.mod boot.mod terminal.mod ls.mod	\
 	cmp.mod cat.mod help.mod font.mod search.mod		\
-	loopback.mod configfile.mod				\
-	terminfo.mod test.mod blocklist.mod hexdump.mod
+	loopback.mod configfile.mod echo.mod			\
+	terminfo.mod test.mod blocklist.mod hexdump.mod		\
+	read.mod sleep.mod
 
 # For hello.mod.
 hello_mod_SOURCES = hello/hello.c
@@ -309,5 +365,12 @@ gzio_mod_SOURCES = io/gzio.c
 gzio_mod_CFLAGS = $(COMMON_CFLAGS)
 gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For read.mod.
+read_mod_SOURCES = commands/read.c
+read_mod_CFLAGS = $(COMMON_CFLAGS)
+read_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-
+# For sleep.mod.
+sleep_mod_SOURCES = commands/sleep.c
+sleep_mod_CFLAGS = $(COMMON_CFLAGS)
+sleep_mod_LDFLAGS = $(COMMON_LDFLAGS)

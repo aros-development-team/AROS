@@ -22,9 +22,6 @@
 #include <grub/types.h>
 #include <grub/symbol.h>
 
-extern grub_addr_t EXPORT_VAR(grub_os_area_addr);
-extern grub_size_t EXPORT_VAR(grub_os_area_size);
-
 /* Get the memory size in KB. If EXTENDED is zero, return conventional
    memory, otherwise return extended memory.  */
 grub_uint16_t grub_get_memsize (int extended);
@@ -43,7 +40,7 @@ struct grub_machine_mmap_entry
 
 /* Get a memory map entry. Return next continuation value. Zero means
    the end.  */
-grub_uint32_t grub_get_mmap_entry (struct grub_machine_mmap_entry *entry,
+grub_uint32_t EXPORT_FUNC(grub_get_mmap_entry) (struct grub_machine_mmap_entry *entry,
 				   grub_uint32_t cont);
 
 /* Turn on/off Gate A20.  */

@@ -625,8 +625,10 @@ grub_dl_load (const char *name)
   if (mod)
     return mod;
   
-  if (! grub_dl_dir)
-    grub_fatal ("module dir is not initialized yet");
+  if (! grub_dl_dir) {
+    grub_error (GRUB_ERR_FILE_NOT_FOUND, "\"prefix\" is not set");
+    return 0;
+  }
 
   filename = (char *) grub_malloc (grub_strlen (grub_dl_dir) + 1
 				   + grub_strlen (name) + 4 + 1);

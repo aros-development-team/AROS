@@ -313,7 +313,7 @@ grub_arg_parse (grub_command_t cmd, int argc, char **argv,
 	  if (grub_strlen (arg) == 2)
 	    {
 	      for (curarg++; curarg < argc; curarg++)
-		if (add_arg (arg) != 0)
+		if (add_arg (argv[curarg]) != 0)
 		  goto fail;
 	      break;
 	    }

@@ -18,6 +18,7 @@
 
 #include <grub/err.h>
 #include <grub/machine/memory.h>
+#include <grub/machine/vga.h>
 #include <grub/machine/vbe.h>
 #include <grub/machine/vbeblit.h>
 #include <grub/machine/vbefill.h>
@@ -193,7 +194,7 @@ grub_vbe_set_video_mode (grub_uint32_t mode,
   if (mode < 0x100)
     {
       /* If this is not a VESA mode, guess address.  */
-      framebuffer.ptr = (grub_uint8_t *) 0xA0000;
+      framebuffer.ptr = (grub_uint8_t *) GRUB_MEMORY_MACHINE_VGA_ADDR;
       framebuffer.index_color_mode = 1;
     }
   else

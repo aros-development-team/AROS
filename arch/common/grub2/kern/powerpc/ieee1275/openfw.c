@@ -1,7 +1,7 @@
 /*  openfw.c -- Open firmware support functions.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2004, 2005, 2007 Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007,2008 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -103,6 +103,8 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
       /* XXX: This should be large enough for any possible case.  */
       char devtype[64];
 
+      grub_dprintf ("devalias", "devalias name = %s\n", aliasname);
+
       grub_ieee1275_get_property_length (aliases, aliasname, &pathlen);
 
       /* The property `name' is a special case we should skip.  */
@@ -115,14 +117,23 @@ grub_devalias_iterate (int (*hook) (struct grub_ieee1275_devalias *alias))
 
       if (grub_ieee1275_get_property (aliases, aliasname, devpath, pathlen,
 				      &actual))
-	goto nextprop;
+	{
+	  grub_dprintf ("devalias", "get_property (%s) failed\n", aliasname);
+	  goto nextprop;
+	}
 
       if (grub_ieee1275_finddevice (devpath, &dev))
-	goto nextprop;
+	{
+	  grub_dprintf ("devalias", "finddevice (%s) failed\n", devpath);
+	  goto nextprop;
+	}
 
       if (grub_ieee1275_get_property (dev, "device_type", devtype,
 				      sizeof devtype, &actual))
-	goto nextprop;
+	{
+	  grub_dprintf ("devalias", "get device type failed\n");
+	  goto nextprop;
+	}
 
       alias.name = aliasname;
       alias.path = devpath;
@@ -141,29 +152,31 @@ grub_err_t grub_available_iterate (int (*hook) (grub_uint64_t, grub_uint64_t))
   grub_ieee1275_phandle_t root;
   grub_ieee1275_phandle_t memory;
   grub_uint32_t available[32];
+  grub_ssize_t available_size;
   int address_cells = 1;
   int size_cells = 1;
   unsigned int i;
 
   /* Determine the format of each entry in `available'.  */
   grub_ieee1275_finddevice ("/", &root);
-  grub_ieee1275_get_property (root, "#address-cells", &address_cells,
-	sizeof address_cells, 0);
-  grub_ieee1275_get_property (root, "#size-cells", &size_cells,
-	sizeof size_cells, 0);
+  grub_ieee1275_get_integer_property (root, "#address-cells", &address_cells,
+				      sizeof address_cells, 0);
+  grub_ieee1275_get_integer_property (root, "#size-cells", &size_cells,
+				      sizeof size_cells, 0);
 
   /* Load `/memory/available'.  */
   if (grub_ieee1275_finddevice ("/memory", &memory))
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
 		       "Couldn't find /memory node");
-  if (grub_ieee1275_get_property (memory, "available", available,
-				  sizeof available, 0))
+  if (grub_ieee1275_get_integer_property (memory, "available", available,
+					  sizeof available, &available_size))
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
 		       "Couldn't examine /memory/available property");
 
   /* Decode each entry and call `hook'.  */
   i = 0;
-  while (i < sizeof (available))
+  available_size /= sizeof (grub_uint32_t);
+  while (i < available_size)
     {
       grub_uint64_t address;
       grub_uint64_t size;
@@ -198,17 +211,10 @@ grub_map (grub_addr_t phys, grub_addr_t virt, grub_uint32_t size,
     grub_uint32_t phys;
     int catch_result;
   } args;
-  grub_ieee1275_ihandle_t mmu;
-  int len;
-
-  grub_ieee1275_get_property (grub_ieee1275_chosen, "mmu", &mmu, sizeof mmu,
-			      &len);
-  if (len != sizeof mmu)
-    return -1;
 
   INIT_IEEE1275_COMMON (&args.common, "call-method", 6, 1);
   args.method = "map";
-  args.ihandle = mmu;
+  args.ihandle = grub_ieee1275_mmu;
   args.phys = phys;
   args.virt = virt;
   args.size = size;
@@ -399,5 +405,8 @@ grub_reboot (void)
 void
 grub_halt (void)
 {
+  /* Not standarized.  We try both known commands.  */
+
   grub_ieee1275_interpret ("shut-down", 0);
+  grub_ieee1275_interpret ("power-off", 0);
 }

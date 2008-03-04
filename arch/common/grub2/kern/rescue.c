@@ -151,7 +151,7 @@ grub_rescue_cmd_cat (int argc, char *argv[])
 	{
 	  unsigned char c = buf[i];
 
-	  if (grub_isprint (c) || grub_isspace (c))
+	  if ((grub_isprint (c) || grub_isspace (c)) && c != '\r')
 	    grub_putchar (c);
 	  else
 	    {
@@ -618,7 +618,7 @@ grub_enter_rescue_mode (void)
   /* First of all, attempt to execute the normal mode.  */
   attempt_normal_mode ();
 
-  grub_printf ("Entering into rescue mode...\n");
+  grub_printf ("Entering rescue mode...\n");
   
   grub_rescue_register_command ("boot", grub_rescue_cmd_boot,
 				"boot an operating system");
@@ -659,6 +659,8 @@ grub_enter_rescue_mode (void)
 
       /* Get a command line.  */
       grub_rescue_get_command_line ("grub rescue> ");
+      if (line[0] == 0)
+	continue;
 
       if (grub_parser_split_cmdline (line, getline, &n, &args) || n < 0)
 	continue;

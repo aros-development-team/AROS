@@ -20,6 +20,7 @@
 #define GRUB_KERNEL_HEADER	1
 
 #include <grub/types.h>
+#include <grub/symbol.h>
 
 /* The module header.  */
 struct grub_module_header

@@ -1,7 +1,7 @@
 #! /bin/sh -e
 
 # Generate grub.cfg by inspecting /boot contents.
-# Copyright (C) 2006,2007  Free Software Foundation, Inc.
+# Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,41 @@ platform=@platform@
 grub_mkdevicemap=${sbindir}/`echo grub-mkdevicemap | sed ${transform}`
 grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
 
+# Usage: usage
+# Print the usage.
+usage () {
+    cat <<EOF
+Usage: $0 [OPTION]
+Generate /boot/grub/grub.cfg
+
+  -h, --help              print this message and exit
+  -v, --version           print the version information and exit
+  -y                      ignored for compatibility
+
+Report bugs to <bug-grub@gnu.org>.
+EOF
+}
+
+# Check the arguments.
+for option in "$@"; do
+    case "$option" in
+    -h | --help)
+	usage
+	exit 0 ;;
+    -v | --version)
+	echo "$0 (GNU GRUB ${PACKAGE_VERSION})"
+	exit 0 ;;
+    -y)
+        echo "$0: warning: Ignoring -y option (no longer needed)." >&2
+        ;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
+    esac
+done
+
 # for convert_system_path_to_grub_path(), font_path()
 . ${libdir}/grub/update-grub_lib
 
@@ -41,10 +76,6 @@ fi
 if [ "$UID" != 0 ] ; then
   echo "$0: You must run this as root" >&2
   exit 1
-fi
-
-if [ "$1" = "-y" ] ; then
-  echo "$0: warning: Ignoring -y option (no longer needed)." >&2
 fi
 
 set $grub_mkdevicemap dummy
@@ -93,17 +124,20 @@ fi
 # fallback to our default
 case ${platform}:${GRUB_TERMINAL} in
   pc:)				GRUB_TERMINAL=gfxterm ;;
-  pc:console | pc:serial)	;;
   ieee1275:)			GRUB_TERMINAL=ofconsole ;;
-  ieee1275:ofconsole)		;;
   *:)				GRUB_TERMINAL=console ;;
+  pc:console | pc:serial | ieee1275:ofconsole | ieee1275:console | *:gfxterm)
+				;;
   *:*)				echo "Invalid terminal \"${GRUB_TERMINAL}\"" >&2 ; exit 1 ;;
 esac
 
 # check for terminals that require fonts
 case ${GRUB_TERMINAL} in
   gfxterm)
-    if GRUB_FONT_PATH=`font_path` ; then : ; else
+    if path=`font_path` ; then
+      GRUB_FONT_PATH="`convert_system_path_to_grub_path ${path}`"
+      GRUB_PRELOAD_MODULES="`${GRUB_PRELOAD_MODULES} ${grub_probe} -t abstraction ${path}`"
+    else
       # fallback to console
       GRUB_TERMINAL=console
     fi
@@ -121,7 +155,7 @@ esac
 
 # These are defined in this script, export them here so that user can
 # override them.
-export GRUB_DEVICE GRUB_FS GRUB_DRIVE GRUB_DRIVE_BOOT GRUB_DRIVE_BOOT_GRUB GRUB_FONT_PATH
+export GRUB_DEVICE GRUB_FS GRUB_DRIVE GRUB_DRIVE_BOOT GRUB_DRIVE_BOOT_GRUB GRUB_FONT_PATH GRUB_PRELOAD_MODULES
 
 # These are optional, user-defined variables.
 export GRUB_DEFAULT GRUB_TIMEOUT GRUB_DISTRIBUTOR GRUB_CMDLINE_LINUX GRUB_TERMINAL GRUB_SERIAL_COMMAND
@@ -145,7 +179,7 @@ for i in ${update_grub_dir}/* ; do
     # emacsen backup files. FIXME: support other editors
     *~) ;;
     *)
-      if test -f "$i" && test -x "$i" ; then
+      if grub_file_is_not_garbage "$i" && test -x "$i" ; then
         echo
         echo "### BEGIN $i ###"
         "$i"

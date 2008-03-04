@@ -5,6 +5,12 @@ COMMON_ASFLAGS = -nostdinc
 COMMON_CFLAGS = -ggdb -ffreestanding -m64 -mno-app-regs
 COMMON_LDFLAGS = -melf64_sparc -nostdlib
 
+# Used by various components.  These rules need to precede them.
+normal/execute.c_DEPENDENCIES = grub_script.tab.h
+normal/command.c_DEPENDENCIES = grub_script.tab.h
+normal/function.c_DEPENDENCIES = grub_script.tab.h
+normal/lexer.c_DEPENDENCIES = grub_script.tab.h
+
 # Images.
 
 MOSTLYCLEANFILES += kernel_elf_symlist.c kernel_syms.lst
@@ -43,7 +49,7 @@ grub_mkimage_SOURCES = util/sparc64/ieee1275/grub-mkimage.c util/misc.c \
 #	commands/configfile.c commands/default.c commands/help.c	\
 #	commands/search.c commands/terminal.c commands/ls.c		\
 #	commands/timeout.c commands/test.c				\
-#	commands/ieee1275/halt.c commands/ieee1275/reboot.c		\
+#	commands/halt.c commands/reboot.c		\
 #	disk/loopback.c							\
 #	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c  \
 #	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c                  \
@@ -151,7 +157,6 @@ sfs_mod_LDFLAGS = $(COMMON_LDFLAGS)
 #linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For normal.mod.
-normal_mod_DEPENDENCIES = grub_script.tab.c grub_script.tab.h
 normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
 	normal/completion.c normal/execute.c				\
 	normal/function.c normal/lexer.c normal/main.c normal/menu.c	\
@@ -232,12 +237,12 @@ suspend_mod_CFLAGS = $(COMMON_CFLAGS)
 suspend_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For reboot.mod
-reboot_mod_SOURCES = commands/ieee1275/reboot.c
+reboot_mod_SOURCES = commands/reboot.c
 reboot_mod_CFLAGS = $(COMMON_CFLAGS)
 reboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For halt.mod
-halt_mod_SOURCES = commands/ieee1275/halt.c
+halt_mod_SOURCES = commands/halt.c
 halt_mod_CFLAGS = $(COMMON_CFLAGS)
 halt_mod_LDFLAGS = $(COMMON_LDFLAGS)
 

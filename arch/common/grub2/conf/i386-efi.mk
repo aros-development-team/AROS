@@ -4,9 +4,15 @@ COMMON_ASFLAGS = -nostdinc -fno-builtin -m32
 COMMON_CFLAGS = -fno-builtin -m32
 COMMON_LDFLAGS = -melf_i386 -nostdlib
 
+# Used by various components.  These rules need to precede them.
+normal/execute.c_DEPENDENCIES = grub_script.tab.h
+normal/command.c_DEPENDENCIES = grub_script.tab.h
+normal/function.c_DEPENDENCIES = grub_script.tab.h
+normal/lexer.c_DEPENDENCIES = grub_script.tab.h
+
 # Utilities.
 bin_UTILITIES = grub-mkimage
-sbin_UTILITIES = grub-mkdevicemap grub-probe
+sbin_UTILITIES = grub-mkdevicemap
 #ifeq ($(enable_grub_emu), yes)
 #sbin_UTILITIES += grub-emu
 #endif
@@ -63,161 +69,21 @@ grub_mkdevicemap-util_i386_get_disk_name.o: util/i386/get_disk_name.c $(util/i38
 -include grub_mkdevicemap-util_i386_get_disk_name.d
 
 
-# For grub-probe.
-util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
-grub_probe_SOURCES = util/grub-probe.c	\
-	util/biosdisk.c	util/misc.c util/getroot.c	\
-	kern/device.c kern/disk.c kern/err.c kern/misc.c fs/fat.c	\
-	fs/ext2.c kern/parser.c kern/partition.c 			\
-	partmap/pc.c partmap/apple.c partmap/gpt.c 			\
-	fs/ufs.c fs/minix.c fs/hfs.c fs/jfs.c fs/ntfs.c fs/ntfscomp.c	\
-	fs/xfs.c fs/affs.c fs/sfs.c fs/hfsplus.c kern/fs.c		\
-	kern/env.c fs/fshelp.c 	\
-	disk/lvm.c disk/raid.c grub_probe_init.c
-CLEANFILES += grub-probe grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-fs_ufs.o grub_probe-fs_minix.o grub_probe-fs_hfs.o grub_probe-fs_jfs.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_xfs.o grub_probe-fs_affs.o grub_probe-fs_sfs.o grub_probe-fs_hfsplus.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
-MOSTLYCLEANFILES += grub_probe-util_grub_probe.d grub_probe-util_biosdisk.d grub_probe-util_misc.d grub_probe-util_getroot.d grub_probe-kern_device.d grub_probe-kern_disk.d grub_probe-kern_err.d grub_probe-kern_misc.d grub_probe-fs_fat.d grub_probe-fs_ext2.d grub_probe-kern_parser.d grub_probe-kern_partition.d grub_probe-partmap_pc.d grub_probe-partmap_apple.d grub_probe-partmap_gpt.d grub_probe-fs_ufs.d grub_probe-fs_minix.d grub_probe-fs_hfs.d grub_probe-fs_jfs.d grub_probe-fs_ntfs.d grub_probe-fs_ntfscomp.d grub_probe-fs_xfs.d grub_probe-fs_affs.d grub_probe-fs_sfs.d grub_probe-fs_hfsplus.d grub_probe-kern_fs.d grub_probe-kern_env.d grub_probe-fs_fshelp.d grub_probe-disk_lvm.d grub_probe-disk_raid.d grub_probe-grub_probe_init.d
-
-grub-probe: $(grub_probe_DEPENDENCIES) grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-fs_ufs.o grub_probe-fs_minix.o grub_probe-fs_hfs.o grub_probe-fs_jfs.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_xfs.o grub_probe-fs_affs.o grub_probe-fs_sfs.o grub_probe-fs_hfsplus.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
-	$(CC) -o $@ grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-fs_ufs.o grub_probe-fs_minix.o grub_probe-fs_hfs.o grub_probe-fs_jfs.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_xfs.o grub_probe-fs_affs.o grub_probe-fs_sfs.o grub_probe-fs_hfsplus.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o $(LDFLAGS) $(grub_probe_LDFLAGS)
-
-grub_probe-util_grub_probe.o: util/grub-probe.c $(util/grub-probe.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_grub_probe.d
-
-grub_probe-util_biosdisk.o: util/biosdisk.c $(util/biosdisk.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_biosdisk.d
-
-grub_probe-util_misc.o: util/misc.c $(util/misc.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_misc.d
-
-grub_probe-util_getroot.o: util/getroot.c $(util/getroot.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_getroot.d
-
-grub_probe-kern_device.o: kern/device.c $(kern/device.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_device.d
-
-grub_probe-kern_disk.o: kern/disk.c $(kern/disk.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_disk.d
-
-grub_probe-kern_err.o: kern/err.c $(kern/err.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_err.d
-
-grub_probe-kern_misc.o: kern/misc.c $(kern/misc.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_misc.d
-
-grub_probe-fs_fat.o: fs/fat.c $(fs/fat.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_fat.d
-
-grub_probe-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ext2.d
-
-grub_probe-kern_parser.o: kern/parser.c $(kern/parser.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_parser.d
-
-grub_probe-kern_partition.o: kern/partition.c $(kern/partition.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_partition.d
-
-grub_probe-partmap_pc.o: partmap/pc.c $(partmap/pc.c_DEPENDENCIES)
-	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_pc.d
-
-grub_probe-partmap_apple.o: partmap/apple.c $(partmap/apple.c_DEPENDENCIES)
-	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_apple.d
-
-grub_probe-partmap_gpt.o: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES)
-	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_gpt.d
-
-grub_probe-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ufs.d
-
-grub_probe-fs_minix.o: fs/minix.c $(fs/minix.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_minix.d
-
-grub_probe-fs_hfs.o: fs/hfs.c $(fs/hfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_hfs.d
-
-grub_probe-fs_jfs.o: fs/jfs.c $(fs/jfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_jfs.d
-
-grub_probe-fs_ntfs.o: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ntfs.d
-
-grub_probe-fs_ntfscomp.o: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ntfscomp.d
-
-grub_probe-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_xfs.d
-
-grub_probe-fs_affs.o: fs/affs.c $(fs/affs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_affs.d
-
-grub_probe-fs_sfs.o: fs/sfs.c $(fs/sfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_sfs.d
-
-grub_probe-fs_hfsplus.o: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_hfsplus.d
-
-grub_probe-kern_fs.o: kern/fs.c $(kern/fs.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_fs.d
-
-grub_probe-kern_env.o: kern/env.c $(kern/env.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_env.d
-
-grub_probe-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_fshelp.d
-
-grub_probe-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-disk_lvm.d
-
-grub_probe-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-disk_raid.d
-
-grub_probe-grub_probe_init.o: grub_probe_init.c $(grub_probe_init.c_DEPENDENCIES)
-	$(CC) -I. -I$(srcdir)/. $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-grub_probe_init.d
-
-
 # For grub-emu.
-grub_emu_DEPENDENCIES = grub_script.tab.c grub_script.tab.h		\
-	grub_emu_init.h
+util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
 grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
 	commands/configfile.c commands/help.c				\
 	commands/terminal.c commands/ls.c commands/test.c 		\
 	commands/search.c commands/hexdump.c				\
-	commands/i386/pc/halt.c commands/i386/pc/reboot.c		\
+	commands/halt.c commands/reboot.c				\
 	commands/i386/cpuid.c						\
 	disk/loopback.c							\
-	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c	\
-	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c fs/hfsplus.c	\
-	fs/ntfs.c fs/ntfscomp.c	fs/cpio.c				\
+	\
+	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
+	fs/ufs.c fs/xfs.c						\
+	\
 	io/gzio.c							\
 	kern/device.c kern/disk.c kern/dl.c kern/elf.c kern/env.c	\
 	kern/err.c							\
@@ -231,8 +97,11 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
 	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
 	partmap/acorn.c partmap/gpt.c					\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
-	util/biosdisk.c util/getroot.c			\
-	util/i386/pc/misc.c grub_emu_init.c
+	util/biosdisk.c util/getroot.c					\
+	util/i386/pc/misc.c						\
+	\
+	disk/raid.c disk/lvm.c						\
+	grub_emu_init.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
 
@@ -243,14 +112,14 @@ sbin_SCRIPTS = grub-install
 grub_install_SOURCES = util/i386/efi/grub-install.in
 CLEANFILES += grub-install
 
-grub-install: util/i386/efi/grub-install.in config.status
+grub-install: util/i386/efi/grub-install.in $(util/i386/efi/grub-install.in_DEPENDENCIES) config.status
 	./config.status --file=grub-install:util/i386/efi/grub-install.in
 	chmod +x $@
 
 
 # Modules.
 pkglib_MODULES = kernel.mod normal.mod _chain.mod chain.mod \
-	_linux.mod linux.mod cpuid.mod
+	_linux.mod linux.mod cpuid.mod halt.mod reboot.mod
 
 # For kernel.mod.
 kernel_mod_EXPORTS = no
@@ -292,7 +161,7 @@ und-kernel.lst: pre-kernel.o
 	echo 'kernel' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-kernel_mod-kern_i386_efi_startup.o: kern/i386/efi/startup.S
+kernel_mod-kern_i386_efi_startup.o: kern/i386/efi/startup.S $(kern/i386/efi/startup.S_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386/efi -I$(srcdir)/kern/i386/efi $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(kernel_mod_ASFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_i386_efi_startup.d
 
@@ -300,14 +169,14 @@ CLEANFILES += cmd-kernel_mod-kern_i386_efi_startup.lst fs-kernel_mod-kern_i386_e
 COMMANDFILES += cmd-kernel_mod-kern_i386_efi_startup.lst
 FSFILES += fs-kernel_mod-kern_i386_efi_startup.lst
 
-cmd-kernel_mod-kern_i386_efi_startup.lst: kern/i386/efi/startup.S gencmdlist.sh
+cmd-kernel_mod-kern_i386_efi_startup.lst: kern/i386/efi/startup.S $(kern/i386/efi/startup.S_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/i386/efi -I$(srcdir)/kern/i386/efi $(TARGET_CPPFLAGS) $(TARGET_ASFLAGS) $(kernel_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_i386_efi_startup.lst: kern/i386/efi/startup.S genfslist.sh
+fs-kernel_mod-kern_i386_efi_startup.lst: kern/i386/efi/startup.S $(kern/i386/efi/startup.S_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/i386/efi -I$(srcdir)/kern/i386/efi $(TARGET_CPPFLAGS) $(TARGET_ASFLAGS) $(kernel_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_main.o: kern/main.c
+kernel_mod-kern_main.o: kern/main.c $(kern/main.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_main.d
 
@@ -315,14 +184,14 @@ CLEANFILES += cmd-kernel_mod-kern_main.lst fs-kernel_mod-kern_main.lst
 COMMANDFILES += cmd-kernel_mod-kern_main.lst
 FSFILES += fs-kernel_mod-kern_main.lst
 
-cmd-kernel_mod-kern_main.lst: kern/main.c gencmdlist.sh
+cmd-kernel_mod-kern_main.lst: kern/main.c $(kern/main.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_main.lst: kern/main.c genfslist.sh
+fs-kernel_mod-kern_main.lst: kern/main.c $(kern/main.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_device.o: kern/device.c
+kernel_mod-kern_device.o: kern/device.c $(kern/device.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_device.d
 
@@ -330,14 +199,14 @@ CLEANFILES += cmd-kernel_mod-kern_device.lst fs-kernel_mod-kern_device.lst
 COMMANDFILES += cmd-kernel_mod-kern_device.lst
 FSFILES += fs-kernel_mod-kern_device.lst
 
-cmd-kernel_mod-kern_device.lst: kern/device.c gencmdlist.sh
+cmd-kernel_mod-kern_device.lst: kern/device.c $(kern/device.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_device.lst: kern/device.c genfslist.sh
+fs-kernel_mod-kern_device.lst: kern/device.c $(kern/device.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_disk.o: kern/disk.c
+kernel_mod-kern_disk.o: kern/disk.c $(kern/disk.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_disk.d
 
@@ -345,14 +214,14 @@ CLEANFILES += cmd-kernel_mod-kern_disk.lst fs-kernel_mod-kern_disk.lst
 COMMANDFILES += cmd-kernel_mod-kern_disk.lst
 FSFILES += fs-kernel_mod-kern_disk.lst
 
-cmd-kernel_mod-kern_disk.lst: kern/disk.c gencmdlist.sh
+cmd-kernel_mod-kern_disk.lst: kern/disk.c $(kern/disk.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_disk.lst: kern/disk.c genfslist.sh
+fs-kernel_mod-kern_disk.lst: kern/disk.c $(kern/disk.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_dl.o: kern/dl.c
+kernel_mod-kern_dl.o: kern/dl.c $(kern/dl.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_dl.d
 
@@ -360,14 +229,14 @@ CLEANFILES += cmd-kernel_mod-kern_dl.lst fs-kernel_mod-kern_dl.lst
 COMMANDFILES += cmd-kernel_mod-kern_dl.lst
 FSFILES += fs-kernel_mod-kern_dl.lst
 
-cmd-kernel_mod-kern_dl.lst: kern/dl.c gencmdlist.sh
+cmd-kernel_mod-kern_dl.lst: kern/dl.c $(kern/dl.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_dl.lst: kern/dl.c genfslist.sh
+fs-kernel_mod-kern_dl.lst: kern/dl.c $(kern/dl.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_file.o: kern/file.c
+kernel_mod-kern_file.o: kern/file.c $(kern/file.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_file.d
 
@@ -375,14 +244,14 @@ CLEANFILES += cmd-kernel_mod-kern_file.lst fs-kernel_mod-kern_file.lst
 COMMANDFILES += cmd-kernel_mod-kern_file.lst
 FSFILES += fs-kernel_mod-kern_file.lst
 
-cmd-kernel_mod-kern_file.lst: kern/file.c gencmdlist.sh
+cmd-kernel_mod-kern_file.lst: kern/file.c $(kern/file.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_file.lst: kern/file.c genfslist.sh
+fs-kernel_mod-kern_file.lst: kern/file.c $(kern/file.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_fs.o: kern/fs.c
+kernel_mod-kern_fs.o: kern/fs.c $(kern/fs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_fs.d
 
@@ -390,14 +259,14 @@ CLEANFILES += cmd-kernel_mod-kern_fs.lst fs-kernel_mod-kern_fs.lst
 COMMANDFILES += cmd-kernel_mod-kern_fs.lst
 FSFILES += fs-kernel_mod-kern_fs.lst
 
-cmd-kernel_mod-kern_fs.lst: kern/fs.c gencmdlist.sh
+cmd-kernel_mod-kern_fs.lst: kern/fs.c $(kern/fs.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_fs.lst: kern/fs.c genfslist.sh
+fs-kernel_mod-kern_fs.lst: kern/fs.c $(kern/fs.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_err.o: kern/err.c
+kernel_mod-kern_err.o: kern/err.c $(kern/err.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_err.d
 
@@ -405,14 +274,14 @@ CLEANFILES += cmd-kernel_mod-kern_err.lst fs-kernel_mod-kern_err.lst
 COMMANDFILES += cmd-kernel_mod-kern_err.lst
 FSFILES += fs-kernel_mod-kern_err.lst
 
-cmd-kernel_mod-kern_err.lst: kern/err.c gencmdlist.sh
+cmd-kernel_mod-kern_err.lst: kern/err.c $(kern/err.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_err.lst: kern/err.c genfslist.sh
+fs-kernel_mod-kern_err.lst: kern/err.c $(kern/err.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_misc.o: kern/misc.c
+kernel_mod-kern_misc.o: kern/misc.c $(kern/misc.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_misc.d
 
@@ -420,14 +289,14 @@ CLEANFILES += cmd-kernel_mod-kern_misc.lst fs-kernel_mod-kern_misc.lst
 COMMANDFILES += cmd-kernel_mod-kern_misc.lst
 FSFILES += fs-kernel_mod-kern_misc.lst
 
-cmd-kernel_mod-kern_misc.lst: kern/misc.c gencmdlist.sh
+cmd-kernel_mod-kern_misc.lst: kern/misc.c $(kern/misc.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_misc.lst: kern/misc.c genfslist.sh
+fs-kernel_mod-kern_misc.lst: kern/misc.c $(kern/misc.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_mm.o: kern/mm.c
+kernel_mod-kern_mm.o: kern/mm.c $(kern/mm.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_mm.d
 
@@ -435,14 +304,14 @@ CLEANFILES += cmd-kernel_mod-kern_mm.lst fs-kernel_mod-kern_mm.lst
 COMMANDFILES += cmd-kernel_mod-kern_mm.lst
 FSFILES += fs-kernel_mod-kern_mm.lst
 
-cmd-kernel_mod-kern_mm.lst: kern/mm.c gencmdlist.sh
+cmd-kernel_mod-kern_mm.lst: kern/mm.c $(kern/mm.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_mm.lst: kern/mm.c genfslist.sh
+fs-kernel_mod-kern_mm.lst: kern/mm.c $(kern/mm.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_loader.o: kern/loader.c
+kernel_mod-kern_loader.o: kern/loader.c $(kern/loader.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_loader.d
 
@@ -450,14 +319,14 @@ CLEANFILES += cmd-kernel_mod-kern_loader.lst fs-kernel_mod-kern_loader.lst
 COMMANDFILES += cmd-kernel_mod-kern_loader.lst
 FSFILES += fs-kernel_mod-kern_loader.lst
 
-cmd-kernel_mod-kern_loader.lst: kern/loader.c gencmdlist.sh
+cmd-kernel_mod-kern_loader.lst: kern/loader.c $(kern/loader.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_loader.lst: kern/loader.c genfslist.sh
+fs-kernel_mod-kern_loader.lst: kern/loader.c $(kern/loader.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_rescue.o: kern/rescue.c
+kernel_mod-kern_rescue.o: kern/rescue.c $(kern/rescue.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_rescue.d
 
@@ -465,14 +334,14 @@ CLEANFILES += cmd-kernel_mod-kern_rescue.lst fs-kernel_mod-kern_rescue.lst
 COMMANDFILES += cmd-kernel_mod-kern_rescue.lst
 FSFILES += fs-kernel_mod-kern_rescue.lst
 
-cmd-kernel_mod-kern_rescue.lst: kern/rescue.c gencmdlist.sh
+cmd-kernel_mod-kern_rescue.lst: kern/rescue.c $(kern/rescue.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_rescue.lst: kern/rescue.c genfslist.sh
+fs-kernel_mod-kern_rescue.lst: kern/rescue.c $(kern/rescue.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_term.o: kern/term.c
+kernel_mod-kern_term.o: kern/term.c $(kern/term.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_term.d
 
@@ -480,14 +349,14 @@ CLEANFILES += cmd-kernel_mod-kern_term.lst fs-kernel_mod-kern_term.lst
 COMMANDFILES += cmd-kernel_mod-kern_term.lst
 FSFILES += fs-kernel_mod-kern_term.lst
 
-cmd-kernel_mod-kern_term.lst: kern/term.c gencmdlist.sh
+cmd-kernel_mod-kern_term.lst: kern/term.c $(kern/term.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_term.lst: kern/term.c genfslist.sh
+fs-kernel_mod-kern_term.lst: kern/term.c $(kern/term.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_i386_dl.o: kern/i386/dl.c
+kernel_mod-kern_i386_dl.o: kern/i386/dl.c $(kern/i386/dl.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386 -I$(srcdir)/kern/i386 $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_i386_dl.d
 
@@ -495,14 +364,14 @@ CLEANFILES += cmd-kernel_mod-kern_i386_dl.lst fs-kernel_mod-kern_i386_dl.lst
 COMMANDFILES += cmd-kernel_mod-kern_i386_dl.lst
 FSFILES += fs-kernel_mod-kern_i386_dl.lst
 
-cmd-kernel_mod-kern_i386_dl.lst: kern/i386/dl.c gencmdlist.sh
+cmd-kernel_mod-kern_i386_dl.lst: kern/i386/dl.c $(kern/i386/dl.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/i386 -I$(srcdir)/kern/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_i386_dl.lst: kern/i386/dl.c genfslist.sh
+fs-kernel_mod-kern_i386_dl.lst: kern/i386/dl.c $(kern/i386/dl.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/i386 -I$(srcdir)/kern/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_i386_efi_init.o: kern/i386/efi/init.c
+kernel_mod-kern_i386_efi_init.o: kern/i386/efi/init.c $(kern/i386/efi/init.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386/efi -I$(srcdir)/kern/i386/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_i386_efi_init.d
 
@@ -510,14 +379,14 @@ CLEANFILES += cmd-kernel_mod-kern_i386_efi_init.lst fs-kernel_mod-kern_i386_efi_
 COMMANDFILES += cmd-kernel_mod-kern_i386_efi_init.lst
 FSFILES += fs-kernel_mod-kern_i386_efi_init.lst
 
-cmd-kernel_mod-kern_i386_efi_init.lst: kern/i386/efi/init.c gencmdlist.sh
+cmd-kernel_mod-kern_i386_efi_init.lst: kern/i386/efi/init.c $(kern/i386/efi/init.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/i386/efi -I$(srcdir)/kern/i386/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_i386_efi_init.lst: kern/i386/efi/init.c genfslist.sh
+fs-kernel_mod-kern_i386_efi_init.lst: kern/i386/efi/init.c $(kern/i386/efi/init.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/i386/efi -I$(srcdir)/kern/i386/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_parser.o: kern/parser.c
+kernel_mod-kern_parser.o: kern/parser.c $(kern/parser.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_parser.d
 
@@ -525,14 +394,14 @@ CLEANFILES += cmd-kernel_mod-kern_parser.lst fs-kernel_mod-kern_parser.lst
 COMMANDFILES += cmd-kernel_mod-kern_parser.lst
 FSFILES += fs-kernel_mod-kern_parser.lst
 
-cmd-kernel_mod-kern_parser.lst: kern/parser.c gencmdlist.sh
+cmd-kernel_mod-kern_parser.lst: kern/parser.c $(kern/parser.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_parser.lst: kern/parser.c genfslist.sh
+fs-kernel_mod-kern_parser.lst: kern/parser.c $(kern/parser.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_partition.o: kern/partition.c
+kernel_mod-kern_partition.o: kern/partition.c $(kern/partition.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_partition.d
 
@@ -540,14 +409,14 @@ CLEANFILES += cmd-kernel_mod-kern_partition.lst fs-kernel_mod-kern_partition.lst
 COMMANDFILES += cmd-kernel_mod-kern_partition.lst
 FSFILES += fs-kernel_mod-kern_partition.lst
 
-cmd-kernel_mod-kern_partition.lst: kern/partition.c gencmdlist.sh
+cmd-kernel_mod-kern_partition.lst: kern/partition.c $(kern/partition.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_partition.lst: kern/partition.c genfslist.sh
+fs-kernel_mod-kern_partition.lst: kern/partition.c $(kern/partition.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_env.o: kern/env.c
+kernel_mod-kern_env.o: kern/env.c $(kern/env.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_env.d
 
@@ -555,14 +424,14 @@ CLEANFILES += cmd-kernel_mod-kern_env.lst fs-kernel_mod-kern_env.lst
 COMMANDFILES += cmd-kernel_mod-kern_env.lst
 FSFILES += fs-kernel_mod-kern_env.lst
 
-cmd-kernel_mod-kern_env.lst: kern/env.c gencmdlist.sh
+cmd-kernel_mod-kern_env.lst: kern/env.c $(kern/env.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_env.lst: kern/env.c genfslist.sh
+fs-kernel_mod-kern_env.lst: kern/env.c $(kern/env.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-symlist.o: symlist.c
+kernel_mod-symlist.o: symlist.c $(symlist.c_DEPENDENCIES)
 	$(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-symlist.d
 
@@ -570,14 +439,14 @@ CLEANFILES += cmd-kernel_mod-symlist.lst fs-kernel_mod-symlist.lst
 COMMANDFILES += cmd-kernel_mod-symlist.lst
 FSFILES += fs-kernel_mod-symlist.lst
 
-cmd-kernel_mod-symlist.lst: symlist.c gencmdlist.sh
+cmd-kernel_mod-symlist.lst: symlist.c $(symlist.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-symlist.lst: symlist.c genfslist.sh
+fs-kernel_mod-symlist.lst: symlist.c $(symlist.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_efi_efi.o: kern/efi/efi.c
+kernel_mod-kern_efi_efi.o: kern/efi/efi.c $(kern/efi/efi.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_efi_efi.d
 
@@ -585,14 +454,14 @@ CLEANFILES += cmd-kernel_mod-kern_efi_efi.lst fs-kernel_mod-kern_efi_efi.lst
 COMMANDFILES += cmd-kernel_mod-kern_efi_efi.lst
 FSFILES += fs-kernel_mod-kern_efi_efi.lst
 
-cmd-kernel_mod-kern_efi_efi.lst: kern/efi/efi.c gencmdlist.sh
+cmd-kernel_mod-kern_efi_efi.lst: kern/efi/efi.c $(kern/efi/efi.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_efi_efi.lst: kern/efi/efi.c genfslist.sh
+fs-kernel_mod-kern_efi_efi.lst: kern/efi/efi.c $(kern/efi/efi.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_efi_init.o: kern/efi/init.c
+kernel_mod-kern_efi_init.o: kern/efi/init.c $(kern/efi/init.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_efi_init.d
 
@@ -600,14 +469,14 @@ CLEANFILES += cmd-kernel_mod-kern_efi_init.lst fs-kernel_mod-kern_efi_init.lst
 COMMANDFILES += cmd-kernel_mod-kern_efi_init.lst
 FSFILES += fs-kernel_mod-kern_efi_init.lst
 
-cmd-kernel_mod-kern_efi_init.lst: kern/efi/init.c gencmdlist.sh
+cmd-kernel_mod-kern_efi_init.lst: kern/efi/init.c $(kern/efi/init.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_efi_init.lst: kern/efi/init.c genfslist.sh
+fs-kernel_mod-kern_efi_init.lst: kern/efi/init.c $(kern/efi/init.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-kern_efi_mm.o: kern/efi/mm.c
+kernel_mod-kern_efi_mm.o: kern/efi/mm.c $(kern/efi/mm.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-kern_efi_mm.d
 
@@ -615,14 +484,14 @@ CLEANFILES += cmd-kernel_mod-kern_efi_mm.lst fs-kernel_mod-kern_efi_mm.lst
 COMMANDFILES += cmd-kernel_mod-kern_efi_mm.lst
 FSFILES += fs-kernel_mod-kern_efi_mm.lst
 
-cmd-kernel_mod-kern_efi_mm.lst: kern/efi/mm.c gencmdlist.sh
+cmd-kernel_mod-kern_efi_mm.lst: kern/efi/mm.c $(kern/efi/mm.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-kern_efi_mm.lst: kern/efi/mm.c genfslist.sh
+fs-kernel_mod-kern_efi_mm.lst: kern/efi/mm.c $(kern/efi/mm.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Ikern/efi -I$(srcdir)/kern/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-term_efi_console.o: term/efi/console.c
+kernel_mod-term_efi_console.o: term/efi/console.c $(term/efi/console.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm/efi -I$(srcdir)/term/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-term_efi_console.d
 
@@ -630,14 +499,14 @@ CLEANFILES += cmd-kernel_mod-term_efi_console.lst fs-kernel_mod-term_efi_console
 COMMANDFILES += cmd-kernel_mod-term_efi_console.lst
 FSFILES += fs-kernel_mod-term_efi_console.lst
 
-cmd-kernel_mod-term_efi_console.lst: term/efi/console.c gencmdlist.sh
+cmd-kernel_mod-term_efi_console.lst: term/efi/console.c $(term/efi/console.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iterm/efi -I$(srcdir)/term/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-term_efi_console.lst: term/efi/console.c genfslist.sh
+fs-kernel_mod-term_efi_console.lst: term/efi/console.c $(term/efi/console.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iterm/efi -I$(srcdir)/term/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
-kernel_mod-disk_efi_efidisk.o: disk/efi/efidisk.c
+kernel_mod-disk_efi_efidisk.o: disk/efi/efidisk.c $(disk/efi/efidisk.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk/efi -I$(srcdir)/disk/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -MD -c -o $@ $<
 -include kernel_mod-disk_efi_efidisk.d
 
@@ -645,10 +514,10 @@ CLEANFILES += cmd-kernel_mod-disk_efi_efidisk.lst fs-kernel_mod-disk_efi_efidisk
 COMMANDFILES += cmd-kernel_mod-disk_efi_efidisk.lst
 FSFILES += fs-kernel_mod-disk_efi_efidisk.lst
 
-cmd-kernel_mod-disk_efi_efidisk.lst: disk/efi/efidisk.c gencmdlist.sh
+cmd-kernel_mod-disk_efi_efidisk.lst: disk/efi/efidisk.c $(disk/efi/efidisk.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Idisk/efi -I$(srcdir)/disk/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh kernel > $@ || (rm -f $@; exit 1)
 
-fs-kernel_mod-disk_efi_efidisk.lst: disk/efi/efidisk.c genfslist.sh
+fs-kernel_mod-disk_efi_efidisk.lst: disk/efi/efidisk.c $(disk/efi/efidisk.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Idisk/efi -I$(srcdir)/disk/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh kernel > $@ || (rm -f $@; exit 1)
 
 
@@ -671,7 +540,6 @@ kernel_syms.lst: $(addprefix include/grub/,$(kernel_mod_HEADERS)) config.h genke
 	/bin/sh genkernsyms.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
 
 # For normal.mod.
-normal_mod_DEPENDENCIES = grub_script.tab.c grub_script.tab.h
 normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
 	normal/completion.c normal/execute.c 		\
 	normal/function.c normal/lexer.c normal/main.c normal/menu.c	\
@@ -709,7 +577,7 @@ und-normal.lst: pre-normal.o
 	echo 'normal' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-normal_mod-normal_arg.o: normal/arg.c
+normal_mod-normal_arg.o: normal/arg.c $(normal/arg.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_arg.d
 
@@ -717,14 +585,14 @@ CLEANFILES += cmd-normal_mod-normal_arg.lst fs-normal_mod-normal_arg.lst
 COMMANDFILES += cmd-normal_mod-normal_arg.lst
 FSFILES += fs-normal_mod-normal_arg.lst
 
-cmd-normal_mod-normal_arg.lst: normal/arg.c gencmdlist.sh
+cmd-normal_mod-normal_arg.lst: normal/arg.c $(normal/arg.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_arg.lst: normal/arg.c genfslist.sh
+fs-normal_mod-normal_arg.lst: normal/arg.c $(normal/arg.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_cmdline.o: normal/cmdline.c
+normal_mod-normal_cmdline.o: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_cmdline.d
 
@@ -732,14 +600,14 @@ CLEANFILES += cmd-normal_mod-normal_cmdline.lst fs-normal_mod-normal_cmdline.lst
 COMMANDFILES += cmd-normal_mod-normal_cmdline.lst
 FSFILES += fs-normal_mod-normal_cmdline.lst
 
-cmd-normal_mod-normal_cmdline.lst: normal/cmdline.c gencmdlist.sh
+cmd-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_cmdline.lst: normal/cmdline.c genfslist.sh
+fs-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_command.o: normal/command.c
+normal_mod-normal_command.o: normal/command.c $(normal/command.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_command.d
 
@@ -747,14 +615,14 @@ CLEANFILES += cmd-normal_mod-normal_command.lst fs-normal_mod-normal_command.lst
 COMMANDFILES += cmd-normal_mod-normal_command.lst
 FSFILES += fs-normal_mod-normal_command.lst
 
-cmd-normal_mod-normal_command.lst: normal/command.c gencmdlist.sh
+cmd-normal_mod-normal_command.lst: normal/command.c $(normal/command.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_command.lst: normal/command.c genfslist.sh
+fs-normal_mod-normal_command.lst: normal/command.c $(normal/command.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_completion.o: normal/completion.c
+normal_mod-normal_completion.o: normal/completion.c $(normal/completion.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_completion.d
 
@@ -762,14 +630,14 @@ CLEANFILES += cmd-normal_mod-normal_completion.lst fs-normal_mod-normal_completi
 COMMANDFILES += cmd-normal_mod-normal_completion.lst
 FSFILES += fs-normal_mod-normal_completion.lst
 
-cmd-normal_mod-normal_completion.lst: normal/completion.c gencmdlist.sh
+cmd-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_completion.lst: normal/completion.c genfslist.sh
+fs-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_execute.o: normal/execute.c
+normal_mod-normal_execute.o: normal/execute.c $(normal/execute.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_execute.d
 
@@ -777,14 +645,14 @@ CLEANFILES += cmd-normal_mod-normal_execute.lst fs-normal_mod-normal_execute.lst
 COMMANDFILES += cmd-normal_mod-normal_execute.lst
 FSFILES += fs-normal_mod-normal_execute.lst
 
-cmd-normal_mod-normal_execute.lst: normal/execute.c gencmdlist.sh
+cmd-normal_mod-normal_execute.lst: normal/execute.c $(normal/execute.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_execute.lst: normal/execute.c genfslist.sh
+fs-normal_mod-normal_execute.lst: normal/execute.c $(normal/execute.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_function.o: normal/function.c
+normal_mod-normal_function.o: normal/function.c $(normal/function.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_function.d
 
@@ -792,14 +660,14 @@ CLEANFILES += cmd-normal_mod-normal_function.lst fs-normal_mod-normal_function.l
 COMMANDFILES += cmd-normal_mod-normal_function.lst
 FSFILES += fs-normal_mod-normal_function.lst
 
-cmd-normal_mod-normal_function.lst: normal/function.c gencmdlist.sh
+cmd-normal_mod-normal_function.lst: normal/function.c $(normal/function.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_function.lst: normal/function.c genfslist.sh
+fs-normal_mod-normal_function.lst: normal/function.c $(normal/function.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_lexer.o: normal/lexer.c
+normal_mod-normal_lexer.o: normal/lexer.c $(normal/lexer.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_lexer.d
 
@@ -807,14 +675,14 @@ CLEANFILES += cmd-normal_mod-normal_lexer.lst fs-normal_mod-normal_lexer.lst
 COMMANDFILES += cmd-normal_mod-normal_lexer.lst
 FSFILES += fs-normal_mod-normal_lexer.lst
 
-cmd-normal_mod-normal_lexer.lst: normal/lexer.c gencmdlist.sh
+cmd-normal_mod-normal_lexer.lst: normal/lexer.c $(normal/lexer.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_lexer.lst: normal/lexer.c genfslist.sh
+fs-normal_mod-normal_lexer.lst: normal/lexer.c $(normal/lexer.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_main.o: normal/main.c
+normal_mod-normal_main.o: normal/main.c $(normal/main.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_main.d
 
@@ -822,14 +690,14 @@ CLEANFILES += cmd-normal_mod-normal_main.lst fs-normal_mod-normal_main.lst
 COMMANDFILES += cmd-normal_mod-normal_main.lst
 FSFILES += fs-normal_mod-normal_main.lst
 
-cmd-normal_mod-normal_main.lst: normal/main.c gencmdlist.sh
+cmd-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_main.lst: normal/main.c genfslist.sh
+fs-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_menu.o: normal/menu.c
+normal_mod-normal_menu.o: normal/menu.c $(normal/menu.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_menu.d
 
@@ -837,14 +705,14 @@ CLEANFILES += cmd-normal_mod-normal_menu.lst fs-normal_mod-normal_menu.lst
 COMMANDFILES += cmd-normal_mod-normal_menu.lst
 FSFILES += fs-normal_mod-normal_menu.lst
 
-cmd-normal_mod-normal_menu.lst: normal/menu.c gencmdlist.sh
+cmd-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_menu.lst: normal/menu.c genfslist.sh
+fs-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_menu_entry.o: normal/menu_entry.c
+normal_mod-normal_menu_entry.o: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_menu_entry.d
 
@@ -852,14 +720,14 @@ CLEANFILES += cmd-normal_mod-normal_menu_entry.lst fs-normal_mod-normal_menu_ent
 COMMANDFILES += cmd-normal_mod-normal_menu_entry.lst
 FSFILES += fs-normal_mod-normal_menu_entry.lst
 
-cmd-normal_mod-normal_menu_entry.lst: normal/menu_entry.c gencmdlist.sh
+cmd-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_menu_entry.lst: normal/menu_entry.c genfslist.sh
+fs-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_misc.o: normal/misc.c
+normal_mod-normal_misc.o: normal/misc.c $(normal/misc.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_misc.d
 
@@ -867,14 +735,14 @@ CLEANFILES += cmd-normal_mod-normal_misc.lst fs-normal_mod-normal_misc.lst
 COMMANDFILES += cmd-normal_mod-normal_misc.lst
 FSFILES += fs-normal_mod-normal_misc.lst
 
-cmd-normal_mod-normal_misc.lst: normal/misc.c gencmdlist.sh
+cmd-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_misc.lst: normal/misc.c genfslist.sh
+fs-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-grub_script_tab.o: grub_script.tab.c
+normal_mod-grub_script_tab.o: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES)
 	$(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-grub_script_tab.d
 
@@ -882,14 +750,14 @@ CLEANFILES += cmd-normal_mod-grub_script_tab.lst fs-normal_mod-grub_script_tab.l
 COMMANDFILES += cmd-normal_mod-grub_script_tab.lst
 FSFILES += fs-normal_mod-grub_script_tab.lst
 
-cmd-normal_mod-grub_script_tab.lst: grub_script.tab.c gencmdlist.sh
+cmd-normal_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-grub_script_tab.lst: grub_script.tab.c genfslist.sh
+fs-normal_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_script.o: normal/script.c
+normal_mod-normal_script.o: normal/script.c $(normal/script.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_script.d
 
@@ -897,14 +765,14 @@ CLEANFILES += cmd-normal_mod-normal_script.lst fs-normal_mod-normal_script.lst
 COMMANDFILES += cmd-normal_mod-normal_script.lst
 FSFILES += fs-normal_mod-normal_script.lst
 
-cmd-normal_mod-normal_script.lst: normal/script.c gencmdlist.sh
+cmd-normal_mod-normal_script.lst: normal/script.c $(normal/script.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_script.lst: normal/script.c genfslist.sh
+fs-normal_mod-normal_script.lst: normal/script.c $(normal/script.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_i386_setjmp.o: normal/i386/setjmp.S
+normal_mod-normal_i386_setjmp.o: normal/i386/setjmp.S $(normal/i386/setjmp.S_DEPENDENCIES)
 	$(TARGET_CC) -Inormal/i386 -I$(srcdir)/normal/i386 $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(normal_mod_ASFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_i386_setjmp.d
 
@@ -912,14 +780,14 @@ CLEANFILES += cmd-normal_mod-normal_i386_setjmp.lst fs-normal_mod-normal_i386_se
 COMMANDFILES += cmd-normal_mod-normal_i386_setjmp.lst
 FSFILES += fs-normal_mod-normal_i386_setjmp.lst
 
-cmd-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S gencmdlist.sh
+cmd-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S $(normal/i386/setjmp.S_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal/i386 -I$(srcdir)/normal/i386 $(TARGET_CPPFLAGS) $(TARGET_ASFLAGS) $(normal_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S genfslist.sh
+fs-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S $(normal/i386/setjmp.S_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal/i386 -I$(srcdir)/normal/i386 $(TARGET_CPPFLAGS) $(TARGET_ASFLAGS) $(normal_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_color.o: normal/color.c
+normal_mod-normal_color.o: normal/color.c $(normal/color.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_color.d
 
@@ -927,10 +795,10 @@ CLEANFILES += cmd-normal_mod-normal_color.lst fs-normal_mod-normal_color.lst
 COMMANDFILES += cmd-normal_mod-normal_color.lst
 FSFILES += fs-normal_mod-normal_color.lst
 
-cmd-normal_mod-normal_color.lst: normal/color.c gencmdlist.sh
+cmd-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_color.lst: normal/color.c genfslist.sh
+fs-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
@@ -972,7 +840,7 @@ und-_chain.lst: pre-_chain.o
 	echo '_chain' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-_chain_mod-loader_efi_chainloader.o: loader/efi/chainloader.c
+_chain_mod-loader_efi_chainloader.o: loader/efi/chainloader.c $(loader/efi/chainloader.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/efi -I$(srcdir)/loader/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_chain_mod_CFLAGS) -MD -c -o $@ $<
 -include _chain_mod-loader_efi_chainloader.d
 
@@ -980,10 +848,10 @@ CLEANFILES += cmd-_chain_mod-loader_efi_chainloader.lst fs-_chain_mod-loader_efi
 COMMANDFILES += cmd-_chain_mod-loader_efi_chainloader.lst
 FSFILES += fs-_chain_mod-loader_efi_chainloader.lst
 
-cmd-_chain_mod-loader_efi_chainloader.lst: loader/efi/chainloader.c gencmdlist.sh
+cmd-_chain_mod-loader_efi_chainloader.lst: loader/efi/chainloader.c $(loader/efi/chainloader.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/efi -I$(srcdir)/loader/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_chain_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _chain > $@ || (rm -f $@; exit 1)
 
-fs-_chain_mod-loader_efi_chainloader.lst: loader/efi/chainloader.c genfslist.sh
+fs-_chain_mod-loader_efi_chainloader.lst: loader/efi/chainloader.c $(loader/efi/chainloader.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/efi -I$(srcdir)/loader/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_chain_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _chain > $@ || (rm -f $@; exit 1)
 
 
@@ -1024,7 +892,7 @@ und-chain.lst: pre-chain.o
 	echo 'chain' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-chain_mod-loader_efi_chainloader_normal.o: loader/efi/chainloader_normal.c
+chain_mod-loader_efi_chainloader_normal.o: loader/efi/chainloader_normal.c $(loader/efi/chainloader_normal.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/efi -I$(srcdir)/loader/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(chain_mod_CFLAGS) -MD -c -o $@ $<
 -include chain_mod-loader_efi_chainloader_normal.d
 
@@ -1032,10 +900,10 @@ CLEANFILES += cmd-chain_mod-loader_efi_chainloader_normal.lst fs-chain_mod-loade
 COMMANDFILES += cmd-chain_mod-loader_efi_chainloader_normal.lst
 FSFILES += fs-chain_mod-loader_efi_chainloader_normal.lst
 
-cmd-chain_mod-loader_efi_chainloader_normal.lst: loader/efi/chainloader_normal.c gencmdlist.sh
+cmd-chain_mod-loader_efi_chainloader_normal.lst: loader/efi/chainloader_normal.c $(loader/efi/chainloader_normal.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/efi -I$(srcdir)/loader/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(chain_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh chain > $@ || (rm -f $@; exit 1)
 
-fs-chain_mod-loader_efi_chainloader_normal.lst: loader/efi/chainloader_normal.c genfslist.sh
+fs-chain_mod-loader_efi_chainloader_normal.lst: loader/efi/chainloader_normal.c $(loader/efi/chainloader_normal.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/efi -I$(srcdir)/loader/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(chain_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh chain > $@ || (rm -f $@; exit 1)
 
 
@@ -1076,7 +944,7 @@ und-_linux.lst: pre-_linux.o
 	echo '_linux' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-_linux_mod-loader_i386_efi_linux.o: loader/i386/efi/linux.c
+_linux_mod-loader_i386_efi_linux.o: loader/i386/efi/linux.c $(loader/i386/efi/linux.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/i386/efi -I$(srcdir)/loader/i386/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_linux_mod_CFLAGS) -MD -c -o $@ $<
 -include _linux_mod-loader_i386_efi_linux.d
 
@@ -1084,10 +952,10 @@ CLEANFILES += cmd-_linux_mod-loader_i386_efi_linux.lst fs-_linux_mod-loader_i386
 COMMANDFILES += cmd-_linux_mod-loader_i386_efi_linux.lst
 FSFILES += fs-_linux_mod-loader_i386_efi_linux.lst
 
-cmd-_linux_mod-loader_i386_efi_linux.lst: loader/i386/efi/linux.c gencmdlist.sh
+cmd-_linux_mod-loader_i386_efi_linux.lst: loader/i386/efi/linux.c $(loader/i386/efi/linux.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/efi -I$(srcdir)/loader/i386/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _linux > $@ || (rm -f $@; exit 1)
 
-fs-_linux_mod-loader_i386_efi_linux.lst: loader/i386/efi/linux.c genfslist.sh
+fs-_linux_mod-loader_i386_efi_linux.lst: loader/i386/efi/linux.c $(loader/i386/efi/linux.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/efi -I$(srcdir)/loader/i386/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _linux > $@ || (rm -f $@; exit 1)
 
 
@@ -1128,7 +996,7 @@ und-linux.lst: pre-linux.o
 	echo 'linux' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-linux_mod-loader_i386_efi_linux_normal.o: loader/i386/efi/linux_normal.c
+linux_mod-loader_i386_efi_linux_normal.o: loader/i386/efi/linux_normal.c $(loader/i386/efi/linux_normal.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/i386/efi -I$(srcdir)/loader/i386/efi $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(linux_mod_CFLAGS) -MD -c -o $@ $<
 -include linux_mod-loader_i386_efi_linux_normal.d
 
@@ -1136,10 +1004,10 @@ CLEANFILES += cmd-linux_mod-loader_i386_efi_linux_normal.lst fs-linux_mod-loader
 COMMANDFILES += cmd-linux_mod-loader_i386_efi_linux_normal.lst
 FSFILES += fs-linux_mod-loader_i386_efi_linux_normal.lst
 
-cmd-linux_mod-loader_i386_efi_linux_normal.lst: loader/i386/efi/linux_normal.c gencmdlist.sh
+cmd-linux_mod-loader_i386_efi_linux_normal.lst: loader/i386/efi/linux_normal.c $(loader/i386/efi/linux_normal.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/efi -I$(srcdir)/loader/i386/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh linux > $@ || (rm -f $@; exit 1)
 
-fs-linux_mod-loader_i386_efi_linux_normal.lst: loader/i386/efi/linux_normal.c genfslist.sh
+fs-linux_mod-loader_i386_efi_linux_normal.lst: loader/i386/efi/linux_normal.c $(loader/i386/efi/linux_normal.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/efi -I$(srcdir)/loader/i386/efi $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh linux > $@ || (rm -f $@; exit 1)
 
 
@@ -1180,7 +1048,7 @@ und-cpuid.lst: pre-cpuid.o
 	echo 'cpuid' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-cpuid_mod-commands_i386_cpuid.o: commands/i386/cpuid.c
+cpuid_mod-commands_i386_cpuid.o: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpuid_mod_CFLAGS) -MD -c -o $@ $<
 -include cpuid_mod-commands_i386_cpuid.d
 
@@ -1188,14 +1056,118 @@ CLEANFILES += cmd-cpuid_mod-commands_i386_cpuid.lst fs-cpuid_mod-commands_i386_c
 COMMANDFILES += cmd-cpuid_mod-commands_i386_cpuid.lst
 FSFILES += fs-cpuid_mod-commands_i386_cpuid.lst
 
-cmd-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c gencmdlist.sh
+cmd-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cpuid > $@ || (rm -f $@; exit 1)
 
-fs-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c genfslist.sh
+fs-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cpuid > $@ || (rm -f $@; exit 1)
 
 
 cpuid_mod_CFLAGS = $(COMMON_CFLAGS)
 cpuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For halt.mod.
+halt_mod_SOURCES = commands/halt.c
+CLEANFILES += halt.mod mod-halt.o mod-halt.c pre-halt.o halt_mod-commands_halt.o und-halt.lst
+ifneq ($(halt_mod_EXPORTS),no)
+CLEANFILES += def-halt.lst
+DEFSYMFILES += def-halt.lst
+endif
+MOSTLYCLEANFILES += halt_mod-commands_halt.d
+UNDSYMFILES += und-halt.lst
+
+halt.mod: pre-halt.o mod-halt.o
+	-rm -f $@
+	$(TARGET_CC) $(halt_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ $^
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -R .note -R .comment $@
+
+pre-halt.o: $(halt_mod_DEPENDENCIES) halt_mod-commands_halt.o
+	-rm -f $@
+	$(TARGET_CC) $(halt_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ halt_mod-commands_halt.o
+
+mod-halt.o: mod-halt.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(halt_mod_CFLAGS) -c -o $@ $<
+
+mod-halt.c: moddep.lst genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'halt' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(halt_mod_EXPORTS),no)
+def-halt.lst: pre-halt.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 halt/' > $@
+endif
+
+und-halt.lst: pre-halt.o
+	echo 'halt' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+halt_mod-commands_halt.o: commands/halt.c $(commands/halt.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(halt_mod_CFLAGS) -MD -c -o $@ $<
+-include halt_mod-commands_halt.d
+
+CLEANFILES += cmd-halt_mod-commands_halt.lst fs-halt_mod-commands_halt.lst
+COMMANDFILES += cmd-halt_mod-commands_halt.lst
+FSFILES += fs-halt_mod-commands_halt.lst
+
+cmd-halt_mod-commands_halt.lst: commands/halt.c $(commands/halt.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(halt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh halt > $@ || (rm -f $@; exit 1)
+
+fs-halt_mod-commands_halt.lst: commands/halt.c $(commands/halt.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(halt_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh halt > $@ || (rm -f $@; exit 1)
+
+
+halt_mod_CFLAGS = $(COMMON_CFLAGS)
+halt_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For reboot.mod.
+reboot_mod_SOURCES = commands/reboot.c
+CLEANFILES += reboot.mod mod-reboot.o mod-reboot.c pre-reboot.o reboot_mod-commands_reboot.o und-reboot.lst
+ifneq ($(reboot_mod_EXPORTS),no)
+CLEANFILES += def-reboot.lst
+DEFSYMFILES += def-reboot.lst
+endif
+MOSTLYCLEANFILES += reboot_mod-commands_reboot.d
+UNDSYMFILES += und-reboot.lst
+
+reboot.mod: pre-reboot.o mod-reboot.o
+	-rm -f $@
+	$(TARGET_CC) $(reboot_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ $^
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -R .note -R .comment $@
+
+pre-reboot.o: $(reboot_mod_DEPENDENCIES) reboot_mod-commands_reboot.o
+	-rm -f $@
+	$(TARGET_CC) $(reboot_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ reboot_mod-commands_reboot.o
+
+mod-reboot.o: mod-reboot.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(reboot_mod_CFLAGS) -c -o $@ $<
+
+mod-reboot.c: moddep.lst genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'reboot' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(reboot_mod_EXPORTS),no)
+def-reboot.lst: pre-reboot.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 reboot/' > $@
+endif
+
+und-reboot.lst: pre-reboot.o
+	echo 'reboot' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+reboot_mod-commands_reboot.o: commands/reboot.c $(commands/reboot.c_DEPENDENCIES)
+	$(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(reboot_mod_CFLAGS) -MD -c -o $@ $<
+-include reboot_mod-commands_reboot.d
+
+CLEANFILES += cmd-reboot_mod-commands_reboot.lst fs-reboot_mod-commands_reboot.lst
+COMMANDFILES += cmd-reboot_mod-commands_reboot.lst
+FSFILES += fs-reboot_mod-commands_reboot.lst
+
+cmd-reboot_mod-commands_reboot.lst: commands/reboot.c $(commands/reboot.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(reboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh reboot > $@ || (rm -f $@; exit 1)
+
+fs-reboot_mod-commands_reboot.lst: commands/reboot.c $(commands/reboot.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Icommands -I$(srcdir)/commands $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(reboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh reboot > $@ || (rm -f $@; exit 1)
+
+
+reboot_mod_CFLAGS = $(COMMON_CFLAGS)
+reboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 include $(srcdir)/conf/common.mk

@@ -4,6 +4,12 @@ COMMON_ASFLAGS	= -m32 -nostdinc -fno-builtin
 COMMON_CFLAGS	= -ffreestanding -mrtd -mregparm=3
 COMMON_LDFLAGS	= -nostdlib -static -lgcc
 
+# Used by various components.  These rules need to precede them.
+normal/execute.c_DEPENDENCIES = grub_script.tab.h
+normal/command.c_DEPENDENCIES = grub_script.tab.h
+normal/function.c_DEPENDENCIES = grub_script.tab.h
+normal/lexer.c_DEPENDENCIES = grub_script.tab.h
+
 # Images.
 pkglib_PROGRAMS = kernel.elf
 
@@ -37,7 +43,7 @@ kernel_syms.lst: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h genke
 
 # Utilities.
 bin_UTILITIES = grub-mkimage
-sbin_UTILITIES = grub-mkdevicemap grub-probe
+sbin_UTILITIES = grub-mkdevicemap
 ifeq ($(enable_grub_emu), yes)
 sbin_UTILITIES += grub-emu
 endif
@@ -51,32 +57,21 @@ grub_mkimage_LDFLAGS = $(LIBLZO)
 grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c		\
 	util/i386/get_disk_name.c
 
-# For grub-probe.
-util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
-grub_probe_SOURCES = util/grub-probe.c	\
-	util/biosdisk.c	util/misc.c util/getroot.c	\
-	kern/device.c kern/disk.c kern/err.c kern/misc.c fs/fat.c	\
-	fs/ext2.c kern/parser.c kern/partition.c 			\
-	partmap/pc.c partmap/apple.c partmap/gpt.c 			\
-	fs/ufs.c fs/minix.c fs/hfs.c fs/jfs.c fs/ntfs.c fs/ntfscomp.c	\
-	fs/xfs.c fs/affs.c fs/sfs.c fs/hfsplus.c			\
-	kern/fs.c							\
-	kern/env.c fs/fshelp.c 	\
-	disk/lvm.c disk/raid.c grub_probe_init.c
-
 # For grub-emu.
-grub_emu_DEPENDENCIES = grub_script.tab.c grub_script.tab.h		\
-	grub_emu_init.h
+util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
 grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	commands/configfile.c commands/echo.c commands/help.c		\
 	commands/terminal.c commands/ls.c commands/test.c 		\
 	commands/search.c commands/blocklist.c commands/hexdump.c	\
-	commands/i386/pc/halt.c commands/i386/pc/reboot.c		\
 	commands/i386/cpuid.c						\
-	disk/host.c disk/loopback.c	disk/raid.c disk/lvm.c		\
-	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c	\
-	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c fs/hfsplus.c	\
-	fs/ntfs.c fs/ntfscomp.c	fs/cpio.c				\
+	disk/host.c disk/loopback.c					\
+	\
+	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
+	fs/ufs.c fs/xfs.c						\
+	\
+	fs/fshelp.c							\
 	io/gzio.c							\
 	kern/device.c kern/disk.c kern/dl.c kern/elf.c kern/env.c	\
 	kern/err.c							\
@@ -90,15 +85,18 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
 	partmap/acorn.c partmap/gpt.c					\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
-	util/biosdisk.c util/getroot.c			\
-	util/i386/pc/misc.c grub_emu_init.c
+	util/biosdisk.c util/getroot.c					\
+	util/i386/pc/misc.c 						\
+	\
+	disk/raid.c disk/lvm.c						\
+	grub_emu_init.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
 
 # Modules.
 pkglib_MODULES = _linux.mod linux.mod normal.mod	\
-	_multiboot.mod multiboot.mod play.mod		\
-	cpuid.mod serial.mod ata.mod
+	_multiboot.mod multiboot.mod aout.mod		\
+	play.mod cpuid.mod serial.mod ata.mod
 
 # For _linux.mod.
 _linux_mod_SOURCES = loader/i386/pc/linux.c
@@ -111,7 +109,6 @@ linux_mod_CFLAGS = $(COMMON_CFLAGS)
 linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For normal.mod.
-normal_mod_DEPENDENCIES = grub_script.tab.c grub_script.tab.h
 normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
 	normal/completion.c normal/execute.c		 		\
 	normal/function.c normal/lexer.c normal/main.c normal/menu.c	\
@@ -138,6 +135,11 @@ _multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 multiboot_mod_SOURCES = loader/multiboot_loader_normal.c 
 multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
 multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For aout.mod.
+aout_mod_SOURCES = loader/aout.c
+aout_mod_CFLAGS = $(COMMON_CFLAGS)
+aout_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For play.mod.
 play_mod_SOURCES = commands/i386/pc/play.c

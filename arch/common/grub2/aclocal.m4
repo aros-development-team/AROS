@@ -333,13 +333,13 @@ AC_MSG_RESULT([$grub_cv_i386_check_nested_functions])
 
 if test "x$grub_cv_i386_check_nested_functions" = xyes; then
   AC_DEFINE([NESTED_FUNC_ATTR], 
-	[__attribute__ ((__regparm__ (2)))],
+	[__attribute__ ((__regparm__ (1)))],
 	[Catch gcc bug])
 else
 dnl Unfortunately, the above test does not detect a bug in gcc-4.0.
 dnl So use regparm 2 until a better test is found.
   AC_DEFINE([NESTED_FUNC_ATTR], 
-	[__attribute__ ((__regparm__ (2)))],
+	[__attribute__ ((__regparm__ (1)))],
 	[Catch gcc bug])
 fi
 ])

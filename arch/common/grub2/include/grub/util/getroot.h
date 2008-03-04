@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003, 2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003, 2007, 2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,8 +19,16 @@
 #ifndef GRUB_UTIL_GETROOT_HEADER
 #define GRUB_UTIL_GETROOT_HEADER	1
 
+enum grub_dev_abstraction_types {
+  GRUB_DEV_ABSTRACTION_NONE,
+  GRUB_DEV_ABSTRACTION_LVM,
+  GRUB_DEV_ABSTRACTION_RAID,
+};
+
 char *grub_guess_root_device (const char *dir);
 char *grub_get_prefix (const char *dir);
+int grub_util_get_dev_abstraction (const char *os_dev);
 char *grub_util_get_grub_dev (const char *os_dev);
+char *grub_util_check_block_device (const char *blk_dev);
 
 #endif /* ! GRUB_UTIL_GETROOT_HEADER */

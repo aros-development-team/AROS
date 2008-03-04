@@ -79,6 +79,7 @@ UNIFONT_HEX = @UNIFONT_HEX@
 
 # Options.
 enable_grub_emu = @enable_grub_emu@
+enable_grub_fstest = @enable_grub_fstest@
 
 ### General variables.
 

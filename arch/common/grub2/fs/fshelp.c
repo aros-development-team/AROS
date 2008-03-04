@@ -282,7 +282,7 @@ grub_fshelp_read_file (grub_disk_t disk, grub_fshelp_node_t node,
 	    return -1;
 	}
       else
-	grub_memset (buf, blocksize - skipfirst, 0);
+	grub_memset (buf, 0, blockend);
 
       buf += blocksize - skipfirst;
     }
