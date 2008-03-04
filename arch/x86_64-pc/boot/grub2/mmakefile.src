@@ -1,0 +1,14 @@
+# $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM- bootloader-grub2-pc-x86_64: grub2-pc-x86_64
+
+#MM grub2-pc-x86_64: arch-common-grub2 grub2-iso-setup 
+
+grub2-pc-x86_64: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
+
+$(BINDIR)/boot/grub/menu.lst:
+		$(CP) menu.lst $(BINDIR)/boot/grub/
+
+$(BINDIR)/boot/grub/menu.lst.DH0:
+		$(CP) menu.lst.DH0 $(BINDIR)/boot/grub/
