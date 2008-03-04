@@ -715,9 +715,11 @@ AROS_LH1(void, RemLibrary,
     BPTR seglist;
 
     Forbid();
-    seglist = AROS_LVO_CALL1(BPTR,
-    	    	AROS_LCA(struct Library *, library, D0),
-    	    	struct Library *, library, 3, );
+    /* calling ExpungeLib: library ends up in D0 and A6 for compatibility */
+    seglist = AROS_CALL2(BPTR, __AROS_GETVECADDR(library, 3),
+		AROS_LCA(struct Library *, library, D0),
+		AROS_LCA(struct ExecBase *, SysBase, D1),
+		struct Library *, library);
     if( seglist )
     {
 	DOSBase->dl_LDReturn = MEM_TRY_AGAIN;
@@ -752,6 +754,8 @@ AROS_UFH3(LONG, LDFlush,
 	/* Flush libraries with a 0 open count */
 	if( ! library->lib_OpenCnt )
 	{
+	    /* the library list node will be wiped from memory */
+	    struct Library *nextLib = (struct Library *)library->lib_Node.ln_Succ;
 	    RemLibrary(library);
 	    /* Did it really go away? */
 	    if( DOSBase->dl_LDReturn != MEM_DID_NOTHING )
@@ -760,9 +764,13 @@ AROS_UFH3(LONG, LDFlush,
 		Permit();
 		return MEM_TRY_AGAIN;
 	    }
+	    library = nextLib;
 	}
-	/* Go on to next library. */
-	library = (struct Library *)library->lib_Node.ln_Succ;
+	else
+	{
+	    /* Go on to next library. */
+	    library = (struct Library *)library->lib_Node.ln_Succ;
+	}
     }
 
     /* Do the same with the device list. */
@@ -772,6 +780,7 @@ AROS_UFH3(LONG, LDFlush,
 	/* Flush libraries with a 0 open count */
 	if( ! library->lib_OpenCnt )
 	{
+	    struct Library *nextDev = (struct Library *)library->lib_Node.ln_Succ;
 	    RemDevice((struct Device *)library);
 	    /* Did it really go away? */
 	    if( DOSBase->dl_LDReturn != MEM_DID_NOTHING )
@@ -780,9 +789,13 @@ AROS_UFH3(LONG, LDFlush,
 		Permit();
 		return MEM_TRY_AGAIN;
 	    }
+	    library = nextDev;
 	}
-	/* Go on to next library. */
-	library = (struct Library *)library->lib_Node.ln_Succ;
+	else
+	{
+	    /* Go on to next library. */
+	    library = (struct Library *)library->lib_Node.ln_Succ;
+	}
     }
     Permit();
     return MEM_DID_NOTHING;
