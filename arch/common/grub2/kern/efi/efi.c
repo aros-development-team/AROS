@@ -1,7 +1,7 @@
 /* efi.c - generic EFI support */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -160,6 +160,22 @@ grub_exit (void)
   grub_efi_system_table->boot_services->exit (grub_efi_image_handle,
 					      GRUB_EFI_SUCCESS,
 					      0, 0);
+}
+
+void
+grub_reboot (void)
+{
+  grub_efi_fini ();
+  grub_efi_system_table->runtime_services->
+    reset_system (GRUB_EFI_RESET_COLD, GRUB_EFI_SUCCESS, 0, NULL);
+}
+
+void
+grub_halt (void)
+{
+  grub_efi_fini ();
+  grub_efi_system_table->runtime_services->
+    reset_system (GRUB_EFI_RESET_SHUTDOWN, GRUB_EFI_SUCCESS, 0, NULL);
 }
 
 int

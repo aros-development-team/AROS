@@ -768,7 +768,7 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 	    case 'p':
 	      write_str ("0x");
 	      c = 'x';
-	      longlongfmt = (sizeof (void *) == sizeof (long long));
+	      longlongfmt |= (sizeof (void *) == sizeof (long long));
 	      /* fall through */
 	    case 'x':
 	    case 'u':

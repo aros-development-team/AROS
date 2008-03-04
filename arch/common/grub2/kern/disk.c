@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2004,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2004,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -360,13 +360,15 @@ grub_disk_read (grub_disk_t disk, grub_disk_addr_t sector,
 {
   char *tmp_buf;
   unsigned real_offset;
+
+  grub_dprintf ("disk", "Reading `%s'...\n", disk->name);
   
   /* First of all, check if the region is within the disk.  */
   if (grub_disk_check_range (disk, &sector, &offset, size) != GRUB_ERR_NONE)
     {
       grub_error_push ();
-      grub_dprintf ("disk", "Read out of range: sector 0x%llx.\n",
-		    (unsigned long long) sector);
+      grub_dprintf ("disk", "Read out of range: sector 0x%llx (%s).\n",
+		    (unsigned long long) sector, grub_errmsg);
       grub_error_pop ();
       return grub_errno;
     }
@@ -498,6 +500,8 @@ grub_disk_write (grub_disk_t disk, grub_disk_addr_t sector,
 {
   unsigned real_offset;
   
+  grub_dprintf ("disk", "Writing `%s'...\n", disk->name);
+
   if (grub_disk_check_range (disk, &sector, &offset, size) != GRUB_ERR_NONE)
     return -1;
 

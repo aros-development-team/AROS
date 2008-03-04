@@ -1,7 +1,7 @@
 /* raid.h - On disk structures for RAID. */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,11 +37,7 @@ struct grub_raid_array
   char *name;              /* That will be "md<number>". */
   grub_uint64_t disk_size; /* Size of an individual disk, in 512 byte
 			      sectors. */
-  struct
-  {
-    char *name;            /* Name of the device */
-    grub_disk_t disk;      /* The device itself. */
-  } device[32];            /* Array of total_devs devices. */          
+  grub_disk_t device[32];  /* Array of total_devs devices. */          
   struct grub_raid_array *next;
 };
 

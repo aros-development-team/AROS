@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 #include <grub/symbol.h>
 
-/* This is destined to overflow when one minute passes by.  */
+/* This is destined to overflow when one hour passes by.  */
 #define GRUB_TICKS_PER_SECOND	((1UL << 31) / 60 / 60 * 2)
 
 /* Return the real time in ticks.  */

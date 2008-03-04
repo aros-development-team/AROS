@@ -1,7 +1,7 @@
 /* -*-Asm-*- */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include <grub/boot.h>
 #include <grub/machine/boot.h>
 #include <grub/machine/kernel.h>
+#include <multiboot.h>
 
         .file   "lnxboot.S"
 
@@ -36,22 +37,7 @@
         .globl  start, _start
 
 data_start:
-	pushw	%cs
-	popw	%ds
-	xorl	%eax, %eax
-	xorl	%ebx, %ebx
-	call	data_next
-
-data_next:
-	popw	%bx
-	movw	%cs, %ax
-	shll	$4, %eax
-	leal	0x200 + data_start - data_next(%ebx,%eax), %eax
-	movzbl	setup_sects - data_next(%bx), %ecx
-	shll	$9, %ecx
-	addl	%ecx, %eax
-	movl	%eax, code32_start - data_next(%bx)
-
+	xorl	%ebp, %ebp
 	jmp	linux_next
 
 	. = data_start + 0x1F1
@@ -76,29 +62,29 @@ boot_flag:
 start:
 _start:
 
-	jmp linux_code
+	jmp linux_init
 
-	.ascii	"HdrS"			// Header signature
-	.word	0x0203			// Header version number
+	.ascii	"HdrS"			/* Header signature.  */
+	.word	0x0203			/* Header version number.  */
 
 realmode_swtch:
-	.word	0, 0			// default_switch, SETUPSEG
+	.word	0, 0			/* default_switch, SETUPSEG.  */
 start_sys_seg:
-	.word	0x1000			// obsolete
+	.word	0x1000			/* Obsolete.  */
 version_ptr:
-	.word	0			// version string ptr
+	.word	0			/* Version string ptr.  */
 type_of_loader:
-	.byte	0			// Filled in by boot loader
+	.byte	0			/* Filled in by boot loader.  */
 loadflags:
-	.byte	1			// Please load high
+	.byte	1			/* Please load high.  */
 setup_move_size:
-	.word	0			// Unused
+	.word	0			/* Unused.  */
 code32_start:
-	.long	0x100000		// 32-bit start address
+	.long	0x100000		/* 32-bit start address.  */
 ramdisk_image:
-	.long	0			// Loaded ramdisk image address
+	.long	0			/* Loaded ramdisk image address.  */
 ramdisk_size:
-	.long	0			// Size of loaded ramdisk
+	.long	0			/* Size of loaded ramdisk.  */
 bootsect_kludge:
 	.word	0, 0
 heap_end_ptr:
@@ -106,37 +92,38 @@ heap_end_ptr:
 pad1:
 	.word	0
 cmd_line_ptr:
-	.long	0			// Command line
+	.long	0			/* Command line.  */
 ramdisk_max:
-	.long	0xffffffff		// Highest allowed ramdisk address
+	.long	0xffffffff		/* Highest allowed ramdisk address.  */
 
 gdt:
-	.long	0, 0, 0, 0		// Must be zero
-	.word	0xffff			// 64 K segment size
+	.long	0, 0, 0, 0		/* Must be zero.  */
+	.word	0xffff			/* 64 K segment size.  */
 gdt_src1:
-	.byte	0, 0 ,0			// Low 24 bits of source addy
-	.byte	0x93			// Access rights
-	.byte	0			// Extended access rights
+	.byte	0, 0 ,0			/* Low 24 bits of source address.  */
+	.byte	0x93			/* Access rights.  */
+	.byte	0			/* Extended access rights.  */
 gdt_src2:
-	.byte	0			// High 8 bits of source addy
-	.word	0xffff			// 64 K segment size
+	.byte	0			/* High 8 bits of source address.  */
+	.word	0xffff			/* 64 K segment size.  */
 gdt_dst1:
-	.byte	0, 0, 0			// Low 24 bits of target addy
-	.byte	0x93			// Access rights
-	.byte	0			// Extended access rights
+	.byte	0, 0, 0			/* Low 24 bits of target address.  */
+	.byte	0x93			/* Access rights.  */
+	.byte	0			/* Extended access rights.  */
 gdt_dst2:
-	.byte	0			// High 8 bits of source addy
-	.long	0, 0, 0, 0		// More space for the BIOS
+	.byte	0			/* High 8 bits of source address.  */
+	.long	0, 0, 0, 0		/* More space for the BIOS.  */
 
 reg_edx:
-	.byte	0x80,0,0xFF,0xFF
+	.byte	0x80, 0xFF, 0xFF, 0xFF
 
 data_leng:
 	.long	0
 
-linux_code:
+linux_init:
 
 	movw	%cs:(reg_edx - start), %dx
+	movl	%cs:(code32_start - start), %ebp
 
 linux_next:
 
@@ -150,7 +137,7 @@ normalize:
 	addw	%bx, %ax
 	pushw	%ax
 	pushw	$(real_code - start)
-	lret				// jump to real_code
+	lret				/* Jump to real_code.  */
 
 real_code:
 	subw	$0x20, %ax
@@ -158,16 +145,13 @@ real_code:
 	movw	(setup_sects - data_start), %cx
 	shlw	$7, %cx
 
-	// Setup stack
+	/* Setup stack.  */
 
 	xorw	%si, %si
 	movw	%si, %ss
 	movw	$(CODE_ADDR), %sp
 
-	pushl	%esi
-	pushl	%edi
-
-	// Move itself to 0:CODE_ADDR
+	/* Move itself to 0:CODE_ADDR.  */
 
 	cld
 	movw	%cs, %ax
@@ -183,19 +167,38 @@ real_code:
 
 real_code_2:
 
+	xchgl	%ebp, %esi
+	orl	%esi, %esi
+	jnz	1f
+	movw	%ds, %si
+	shll	$4, %esi
+	addl	%ebp, %esi
+1:
+
 	pushw	%es
 	popw	%ds
-
-	movl	(ramdisk_image - start), %esi
-	or	%esi, %esi
-	jnz	1f
-	movl	(code32_start - start), %esi
-1:
 
 	movl	$0x200, %ecx
 	addl	%ecx, %esi
 	movl	$DATA_ADDR, %edi
 
+	call	move_memory
+
+	/* Check for multiboot signature.  */
+	cmpl	$MULTIBOOT_MAGIC, %ss:(DATA_ADDR + 0x50)
+	jz	1f
+
+	movl	(ramdisk_image - start), %esi
+	movl	(ramdisk_size - start), %ecx
+	movl	$(DATA_ADDR - 0x200), %edi
+	jmp	2f
+
+1:
+
+	movl	%ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_COMPRESSED_SIZE), %ecx
+	addl	$(GRUB_KERNEL_MACHINE_RAW_SIZE - 0x200), %ecx
+
+2:
 	call	move_memory
 
 	movsbl	%dh, %eax
@@ -204,20 +207,15 @@ real_code_2:
 	movsbl	(reg_edx + 2 - start), %eax
 	movl	%eax, %ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART)
 
-	movl	%ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_COMPRESSED_SIZE), %ecx
-	addl	$(GRUB_KERNEL_MACHINE_RAW_SIZE - 0x200), %ecx
-
-	call	move_memory
-
-	popl	%edi
-	popl	%esi
-
 	ljmp	$(DATA_ADDR >> 4), $0
 
-// Parameters:
-//   esi: source address
-//   edi: target address
-//   ecx: number of bytes
+/*
+ * Parameters:
+ *   esi: source address
+ *   edi: target address
+ *   ecx: number of bytes
+ */
+
 move_memory:
 	incl	%ecx
 	andb	$0xFE, %cl
@@ -261,8 +259,8 @@ move_memory:
 
 2:
 
-	leal	(%esi, %eax), %esi
-	leal	(%edi, %eax), %edi
+	addl	%eax, %esi
+	addl	%eax, %edi
 	subl	%eax, %ecx
 	jnz	1b
 
@@ -270,8 +268,11 @@ move_memory:
 	popw	%dx
 	ret
 
-// Parameters:
-//   si: message
+/*
+ * Parameters:
+ *   si: message
+ */
+
 fail:
 	movb	$0x0e, %ah
 	xorw	%bx, %bx

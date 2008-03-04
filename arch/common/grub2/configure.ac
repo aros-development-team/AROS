@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (C) 2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+# Copyright (C) 2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
 #
 # This configure.ac is free software; the author
 # gives unlimited permission to copy and/or distribute it,
@@ -31,7 +31,7 @@ dnl (such as TARGET_CC, TARGET_CFLAGS, etc.) are used for the target
 dnl type.
 
 
-AC_INIT(GRUB, 1.95, [bug-grub@gnu.org])
+AC_INIT(GRUB, 1.96, [bug-grub@gnu.org])
 AC_PREREQ(2.53)
 AC_CONFIG_SRCDIR([include/grub/dl.h])
 AC_CONFIG_HEADER([config.h])
@@ -79,6 +79,7 @@ case "$target_cpu"-"$platform" in
   i386-efi) ;;
   i386-pc) ;;
   i386-linuxbios) ;;
+  i386-ieee1275) ;;
   powerpc-ieee1275) ;;
   sparc64-ieee1275) ;;
   *) AC_MSG_ERROR([unsupported machine type]) ;;
@@ -114,8 +115,9 @@ AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PROG_MAKE_SET
 
-# This is not a "must".
+# These are not a "must".
 AC_PATH_PROG(RUBY, ruby)
+AC_PATH_PROG(HELP2MAN, help2man)
 
 #
 # Checks for host programs.
@@ -252,11 +254,11 @@ fi
 
 # Smashing stack protector.
 grub_CHECK_STACK_PROTECTOR
-[# Need that, because some distributions ship compilers that include
+# Need that, because some distributions ship compilers that include
 # `-fstack-protector' in the default specs.
-if [ x"$ssp_possible" = xyes ]; then
-  TARGET_CFLAGS=$TARGET_CFLAGS\ -fno-stack-protector
-fi]
+if test "x$ssp_possible" = xyes; then
+  TARGET_CFLAGS="$TARGET_CFLAGS -fno-stack-protector"
+fi
 
 AC_SUBST(TARGET_CFLAGS)
 AC_SUBST(TARGET_CPPFLAGS)
@@ -318,6 +320,11 @@ AC_ARG_ENABLE([grub-emu],
 	[AC_MSG_ERROR([(n)curses header files are required to build `grub-emu'])])])])
 [fi]
 AC_SUBST([enable_grub_emu])
+
+AC_ARG_ENABLE([grub-fstest],
+	      [AS_HELP_STRING([--enable-grub-fstest],
+                             [build and install the `grub-fstest' debugging utility])])
+AC_SUBST([enable_grub_fstest])
 
 # Output files.
 AC_CONFIG_LINKS([include/grub/cpu:include/grub/$target_cpu

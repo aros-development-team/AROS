@@ -1,7 +1,7 @@
 /* cmain.c - Startup code for the PowerPC.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 int (*grub_ieee1275_entry_fn) (void *);
 
 grub_ieee1275_phandle_t grub_ieee1275_chosen;
+grub_ieee1275_ihandle_t grub_ieee1275_mmu;
 
 static grub_uint32_t grub_ieee1275_flags;
 
@@ -45,29 +46,40 @@ grub_ieee1275_set_flag (enum grub_ieee1275_flag flag)
   grub_ieee1275_flags |= (1 << flag);
 }
 
+#define SF "SmartFirmware(tm)"
+#define OHW "PPC Open Hack'Ware"
+
 static void
 grub_ieee1275_find_options (void)
 {
+  grub_ieee1275_phandle_t root;
   grub_ieee1275_phandle_t options;
   grub_ieee1275_phandle_t openprom;
+  grub_ieee1275_phandle_t bootrom;
   int rc;
   int realmode = 0;
   char tmp[32];
   int is_smartfirmware = 0;
+  int is_olpc = 0;
 
+  grub_ieee1275_finddevice ("/", &root);
   grub_ieee1275_finddevice ("/options", &options);
-  rc = grub_ieee1275_get_property (options, "real-mode?", &realmode,
-				   sizeof realmode, 0);
-  if ((rc >= 0) && realmode)
-    grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_REAL_MODE);
-
   grub_ieee1275_finddevice ("/openprom", &openprom);
+
+  rc = grub_ieee1275_get_integer_property (options, "real-mode?", &realmode,
+					   sizeof realmode, 0);
+  if (((rc >= 0) && realmode) || (grub_ieee1275_mmu == 0))
+    grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_REAL_MODE);
 
   rc = grub_ieee1275_get_property (openprom, "CodeGen-copyright",
 				   tmp,	sizeof (tmp), 0);
-#define SF "SmartFirmware(tm)"
   if (rc >= 0 && !grub_strncmp (tmp, SF, sizeof (SF) - 1))
     is_smartfirmware = 1;
+
+  rc = grub_ieee1275_get_property (root, "architecture",
+				   tmp,	sizeof (tmp), 0);
+  if (rc >= 0 && !grub_strcmp (tmp, "OLPC"))
+    is_olpc = 1;
 
   if (is_smartfirmware)
     {
@@ -100,15 +112,54 @@ grub_ieee1275_find_options (void)
 	    }
 	}
     }
+
+  if (is_olpc)
+    {
+      /* OLPC / XO laptops have three kinds of storage devices:
+
+	 - NAND flash.  These are accessible via OFW callbacks, but:
+	   - Follow strange semantics, imposed by hardware constraints.
+	   - Its ABI is undocumented, and not stable.
+	   They lack "device_type" property, which conveniently makes GRUB
+	   skip them.
+
+	 - USB drives.  Not accessible, because OFW shuts down the controller
+	   in order to prevent collisions with applications accessing it
+	   directly.  Even worse, attempts to access it will NOT return
+	   control to the caller, so we have to avoid probing them.
+
+	 - SD cards.  These work fine.
+
+	 To avoid brekage, we only need to skip USB probing.  However,
+	 since detecting SD cards is more reliable, we do that instead.
+      */
+
+      grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_OFDISK_SDCARD_ONLY);
+    }
+
+  if (! grub_ieee1275_finddevice ("/rom/boot-rom", &bootrom))
+    {
+      rc = grub_ieee1275_get_property (bootrom, "model", tmp, sizeof (tmp), 0);
+      if (rc >= 0 && !grub_strncmp (tmp, OHW, sizeof (OHW) - 1))
+	{
+	  grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_BROKEN_OUTPUT);
+	  grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_CANNOT_SET_COLORS);
+	}
+    }
 }
 
-void cmain (uint32_t r3, uint32_t r4, uint32_t r5);
-void
-cmain (UNUSED uint32_t r3, UNUSED uint32_t r4, uint32_t r5)
-{
-  grub_ieee1275_entry_fn = (int (*)(void *)) r5;
+#undef SF
+#undef OHW
 
+void cmain (void);
+void
+cmain (void)
+{
   grub_ieee1275_finddevice ("/chosen", &grub_ieee1275_chosen);
+
+  if (grub_ieee1275_get_integer_property (grub_ieee1275_chosen, "mmu", &grub_ieee1275_mmu,
+					  sizeof grub_ieee1275_mmu, 0) < 0)
+    grub_ieee1275_mmu = 0;
 
   grub_ieee1275_find_options ();
 

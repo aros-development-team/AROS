@@ -1,7 +1,7 @@
 /* fs.h - filesystem manager */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2004,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2004,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -70,27 +70,5 @@ void EXPORT_FUNC(grub_fs_register) (grub_fs_t fs);
 void EXPORT_FUNC(grub_fs_unregister) (grub_fs_t fs);
 void EXPORT_FUNC(grub_fs_iterate) (int (*hook) (const grub_fs_t fs));
 grub_fs_t EXPORT_FUNC(grub_fs_probe) (grub_device_t device);
-
-#ifdef GRUB_UTIL
-void grub_fat_init (void);
-void grub_fat_fini (void);
-void grub_ext2_init (void);
-void grub_ext2_fini (void);
-void grub_ufs_init (void);
-void grub_ufs_fini (void);
-void grub_minix_init (void);
-void grub_minix_fini (void);
-void grub_hfs_init (void);
-void grub_hfs_fini (void);
-void grub_jfs_init (void);
-void grub_jfs_fini (void);
-void grub_xfs_init (void);
-void grub_xfs_fini (void);
-void grub_affs_init (void);
-void grub_affs_fini (void);
-void grub_sfs_init (void);
-void grub_sfs_fini (void);
-void grub_iso9660_init (void);
-#endif /* GRUB_UTIL */
 
 #endif /* ! GRUB_FS_HEADER */

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,12 +26,15 @@
 #include <grub/err.h>
 #include <grub/term.h>
 
+static int cd_start = GRUB_BIOSDISK_MACHINE_CDROM_START;
+static int cd_count = 0;
+
 static int
 grub_biosdisk_get_drive (const char *name)
 {
   unsigned long drive;
 
-  if ((name[0] != 'f' && name[0] != 'h') || name[1] != 'd')
+  if ((name[0] != 'f' && name[0] != 'h' && name[0] != 'c') || name[1] != 'd')
     goto fail;
     
   drive = grub_strtoul (name + 2, 0, 10);
@@ -40,6 +43,8 @@ grub_biosdisk_get_drive (const char *name)
 
   if (name[0] == 'h')
     drive += 0x80;
+  else if (name[0] == 'c')
+    drive += cd_start;
   
   return (int) drive ;
 
@@ -53,7 +58,10 @@ grub_biosdisk_call_hook (int (*hook) (const char *name), int drive)
 {
   char name[10];
 
-  grub_sprintf (name, (drive & 0x80) ? "hd%d" : "fd%d", drive & (~0x80));
+  if (drive >= cd_start)
+    grub_sprintf (name, "cd%d", drive - cd_start);
+  else
+    grub_sprintf (name, (drive & 0x80) ? "hd%d" : "fd%d", drive & (~0x80));
   return hook (name);
 }
 
@@ -74,12 +82,19 @@ grub_biosdisk_iterate (int (*hook) (const char *name))
     {
       if (grub_biosdisk_rw_standard (0x02, drive, 0, 0, 1, 1,
 				     GRUB_MEMORY_MACHINE_SCRATCH_SEG) != 0)
-	break;
+	{
+	  grub_dprintf ("disk", "Read error when probing drive 0x%2x\n", drive);
+	  break;
+	}
       
       if (grub_biosdisk_call_hook (hook, drive))
 	return 1;
     }
-  
+
+  for (drive = cd_start; drive < cd_start + cd_count; drive++)
+    if (grub_biosdisk_call_hook (hook, drive))
+      return 1;
+
   return 0;
 }
 
@@ -94,7 +109,7 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
   if (drive < 0)
     return grub_errno;
 
-  disk->has_partitions = (drive & 0x80);
+  disk->has_partitions = ((drive & 0x80) && (drive < cd_start));
   disk->id = drive;
   
   data = (struct grub_biosdisk_data *) grub_malloc (sizeof (*data));
@@ -103,8 +118,14 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
   
   data->drive = drive;
   data->flags = 0;
-  
-  if (drive & 0x80)
+
+  if (drive >= cd_start)
+    {
+      data->flags = GRUB_BIOSDISK_FLAG_LBA | GRUB_BIOSDISK_FLAG_CDROM;
+      data->sectors = 32;
+      total_sectors = 9000000;  /* TODO: get the correct size.  */
+    }
+  else if (drive & 0x80)
     {
       /* HDD */
       int version;
@@ -133,17 +154,20 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
 	}
     }
 
-  if (grub_biosdisk_get_diskinfo_standard (drive,
-					   &data->cylinders,
-					   &data->heads,
-					   &data->sectors) != 0)
+  if (drive < cd_start)
     {
-      grub_free (data);
-      return grub_error (GRUB_ERR_BAD_DEVICE, "cannot get C/H/S values");
-    }
+      if (grub_biosdisk_get_diskinfo_standard (drive,
+					       &data->cylinders,
+					       &data->heads,
+					       &data->sectors) != 0)
+        {
+          grub_free (data);
+          return grub_error (GRUB_ERR_BAD_DEVICE, "cannot get C/H/S values");
+        }
 
-  if (! total_sectors)
-    total_sectors = data->cylinders * data->heads * data->sectors;
+      if (! total_sectors)
+        total_sectors = data->cylinders * data->heads * data->sectors;
+    }
 
   disk->total_sectors = total_sectors;
   disk->data = data;
@@ -160,6 +184,8 @@ grub_biosdisk_close (grub_disk_t disk)
 /* For readability.  */
 #define GRUB_BIOSDISK_READ	0
 #define GRUB_BIOSDISK_WRITE	1
+
+#define GRUB_BIOSDISK_CDROM_RETRY_COUNT 3
 
 static grub_err_t
 grub_biosdisk_rw (int cmd, grub_disk_t disk,
@@ -181,13 +207,31 @@ grub_biosdisk_rw (int cmd, grub_disk_t disk,
       dap->buffer = segment << 16;	/* The format SEGMENT:ADDRESS.  */
       dap->block = sector;
 
-      if (grub_biosdisk_rw_int13_extensions (cmd + 0x42, data->drive, dap))
-	{
-	  /* Fall back to the CHS mode.  */
-	  data->flags &= ~GRUB_BIOSDISK_FLAG_LBA;
-	  disk->total_sectors = data->cylinders * data->heads * data->sectors;
-	  return grub_biosdisk_rw (cmd, disk, sector, size, segment);
+      if (data->flags & GRUB_BIOSDISK_FLAG_CDROM)
+        {
+	  int i;
+
+	  if (cmd)
+	    return grub_error (GRUB_ERR_WRITE_ERROR, "can\'t write to cdrom");
+
+	  dap->blocks = (dap->blocks + 3) >> 2;
+	  dap->block >>= 2;
+
+	  for (i = 0; i < GRUB_BIOSDISK_CDROM_RETRY_COUNT; i++)
+            if (! grub_biosdisk_rw_int13_extensions (0x42, data->drive, dap))
+	      break;
+
+	  if (i == GRUB_BIOSDISK_CDROM_RETRY_COUNT)
+	    return grub_error (GRUB_ERR_READ_ERROR, "cdrom read error");
 	}
+      else
+        if (grub_biosdisk_rw_int13_extensions (cmd + 0x42, data->drive, dap))
+	  {
+	    /* Fall back to the CHS mode.  */
+	    data->flags &= ~GRUB_BIOSDISK_FLAG_LBA;
+	    disk->total_sectors = data->cylinders * data->heads * data->sectors;
+	    return grub_biosdisk_rw (cmd, disk, sector, size, segment);
+	  }
     }
   else
     {
@@ -320,6 +364,8 @@ grub_disk_biosdisk_fini (void)
 
 GRUB_MOD_INIT(biosdisk)
 {
+  int drive, found = 0;
+
   if (grub_disk_firmware_is_tainted)
     {
       grub_printf ("Firmware is marked as tainted, refusing to initialize.\n");
@@ -328,6 +374,24 @@ GRUB_MOD_INIT(biosdisk)
   grub_disk_firmware_fini = grub_disk_biosdisk_fini;
 
   grub_disk_dev_register (&grub_biosdisk_dev);
+
+  for (drive = GRUB_BIOSDISK_MACHINE_CDROM_START;
+       drive < GRUB_BIOSDISK_MACHINE_CDROM_END; drive++)
+    {
+      if (grub_biosdisk_check_int13_extensions (drive))
+        {
+	  if (! found)
+	    cd_start = drive;
+	  found++;
+	}
+      else
+        {
+	  if (found)
+            break;
+	}
+    }
+
+  cd_count = found;
 }
 
 GRUB_MOD_FINI(biosdisk)

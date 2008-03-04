@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2002,2005,2006,2007   Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2002,2005,2006,2007,2008   Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,6 +34,9 @@
 /* The offset of BOOT_DRIVE.  */
 #define GRUB_BOOT_MACHINE_BOOT_DRIVE	0x4c
 
+/* The offset of ROOT_DRIVE.  */
+#define GRUB_BOOT_MACHINE_ROOT_DRIVE	0x4d
+
 /* The offset of KERNEL_ADDRESS.  */
 #define GRUB_BOOT_MACHINE_KERNEL_ADDRESS	0x40
 
@@ -44,7 +47,7 @@
 #define GRUB_BOOT_MACHINE_KERNEL_SEGMENT	0x42
 
 /* The offset of BOOT_DRIVE_CHECK.  */
-#define GRUB_BOOT_MACHINE_DRIVE_CHECK	0x4e
+#define GRUB_BOOT_MACHINE_DRIVE_CHECK	0x4f
 
 /* The offset of a magic number used by Windows NT.  */
 #define GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC	0x1b8

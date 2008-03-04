@@ -21,7 +21,7 @@
  * Note: These functions defined in this file may be called from C.
  *       Be careful of that you must not modify some registers. Quote
  *       from gcc-2.95.2/gcc/config/i386/i386.h:
-	
+
    1 for registers not available across function calls.
    These must include the FIXED_REGISTERS and also any
    registers that can be used without being saved.
@@ -46,7 +46,7 @@
  */
 
 	.p2align	2	/* force 4-byte alignment */
-	
+
 /*
  * void grub_linux_boot_zimage (void)
  */
@@ -58,7 +58,7 @@ VARIABLE(grub_linux_real_addr)
 	.long	0
 VARIABLE(grub_linux_is_bzimage)
 	.long	0
-	
+
 FUNCTION(grub_linux_boot)
 	/* Must be done before zImage copy.  */
 	call	EXT_C(grub_dl_unload_all)
@@ -118,7 +118,7 @@ linux_setup_seg:
 	.word	0
 	.code32
 
-		
+
 /*
  * This starts the multiboot kernel.
  */
@@ -128,14 +128,14 @@ FUNCTION(grub_multiboot_real_boot)
 	pushl	%eax
 	/* Move the address of the multiboot information structure to ebx.  */
 	movl	%edx,%ebx
-	
+
 	/* Unload all modules and stop the floppy driver.  */
 	call	EXT_C(grub_dl_unload_all)
 	call	EXT_C(grub_stop_floppy)
 
 	/* Interrupts should be disabled.  */
 	cli
-	
+
 	/* Move the magic value into eax and jump to the kernel.  */
 	movl	$MULTIBOOT_MAGIC2,%eax
 	popl	%ecx
@@ -159,6 +159,30 @@ FUNCTION(grub_multiboot2_real_boot)
         cli
 
         /* Move the magic value into eax and jump to the kernel.  */
-        movl    $MULTIBOOT2_BOOTLOADER_MAGIC,%eax 
+        movl    $MULTIBOOT2_BOOTLOADER_MAGIC,%eax
         popl    %ecx
         jmp     *%ecx
+
+/*
+ * Use cdecl calling convention for *BSD kernels.
+ */
+
+FUNCTION(grub_unix_real_boot)
+
+        call    EXT_C(grub_dl_unload_all)
+        call    EXT_C(grub_stop_floppy)
+
+	/* Interrupts should be disabled.  */
+        cli
+
+	/* Discard `grub_unix_real_boot' return address.  */
+        popl    %eax
+
+        /* Fetch `entry' address ...  */
+        popl	%eax
+
+        /*
+         * ... and put our return address in its place. The kernel will
+         * ignore it, but it expects %esp to point to it.
+         */
+        call	*%eax

@@ -115,5 +115,11 @@ void
 grub_mb2_arch_boot (grub_addr_t entry_addr, void *tags)
 {
   kernel_entry_t entry = (kernel_entry_t) entry_addr;
+#if defined(__powerpc__)
   entry (MULTIBOOT2_BOOTLOADER_MAGIC, tags, grub_ieee1275_entry_fn, 0, 0);
+#elif defined(__i386__)
+  grub_multiboot2_real_boot (entry, tags);
+#else
+#error
+#endif
 }

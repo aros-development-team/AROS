@@ -33,12 +33,15 @@ extern grub_size_t EXPORT_VAR(grub_os_area_size);
 void EXPORT_FUNC(grub_linux_boot) (void) __attribute__ ((noreturn));
 
 /* The asm part of the multiboot loader.  */
-void EXPORT_FUNC(grub_multiboot_real_boot) (grub_addr_t entry, 
-					    struct grub_multiboot_info *mbi) 
+void EXPORT_FUNC(grub_multiboot_real_boot) (grub_addr_t entry,
+					    struct grub_multiboot_info *mbi)
      __attribute__ ((noreturn));
 void EXPORT_FUNC(grub_multiboot2_real_boot) (grub_addr_t entry,
                                              struct grub_multiboot_info *mbi)
      __attribute__ ((noreturn));
+void EXPORT_FUNC(grub_unix_real_boot) (grub_addr_t entry, ...)
+     __attribute__ ((cdecl,noreturn));
+
 
 /* It is necessary to export these functions, because normal mode commands
    reuse rescue mode commands.  */

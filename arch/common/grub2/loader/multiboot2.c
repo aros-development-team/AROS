@@ -371,6 +371,7 @@ grub_multiboot2 (int argc, char *argv[])
     }
   else
     {
+      grub_errno = 0;
       grub_dprintf ("loader", "Loading non-ELF multiboot 2 file.\n");
 
       if (header)

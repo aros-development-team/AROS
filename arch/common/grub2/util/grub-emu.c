@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <argp.h>
+#include <getopt.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -90,104 +90,115 @@ grub_machine_fini (void)
 }
 
 
-const char *argp_program_version = PACKAGE_STRING;
-const char *argp_program_bug_address = PACKAGE_BUGREPORT;
-static char doc[] = "GRUB emulator";
+static struct option options[] =
+  {
+    {"root-device", required_argument, 0, 'r'},
+    {"device-map", required_argument, 0, 'm'},
+    {"directory", required_argument, 0, 'd'},
+    {"hold", optional_argument, 0, 'H'},
+    {"help", no_argument, 0, 'h'},
+    {"version", no_argument, 0, 'V'},
+    {"verbose", no_argument, 0, 'v'},
+    { 0, 0, 0, 0 }
+  };
 
-static struct argp_option options[] = {
-  {"root-device", 'r', "DEV",  0, "use DEV as the root device [default=guessed]", 0},
-  {"device-map",  'm', "FILE", 0, "use FILE as the device map", 0},
-  {"directory",   'd', "DIR",  0, "use GRUB files in the directory DIR", 0},
-  {"verbose",     'v', 0     , 0, "print verbose messages", 0},
-  {"hold",        'H', "SECONDS", OPTION_ARG_OPTIONAL, "wait until a debugger will attach", 0},
-  { 0, 0, 0, 0, 0, 0 }
-};
-
-struct arguments
+static int 
+usage (int status)
 {
-  char *root_dev;
-  char *dev_map;
-  char *dir;
-  int hold;
-};
-
-static error_t
-parse_opt (int key, char *arg, struct argp_state *state)
-{
-  struct arguments *args = state->input;
-  
-  switch (key)
-    {
-    case 'r':
-      args->root_dev = arg;
-      break;
-    case 'd':
-      args->dir = arg;
-      break;
-    case 'm':
-      args->dev_map = arg;
-      break;
-    case 'v':
-      verbosity++;
-      break;
-    case 'H':
-      args->hold = arg ? atoi (arg) : -1;
-      break;
-    case ARGP_KEY_END:
-      break;
-    default:
-      return ARGP_ERR_UNKNOWN;
-    }
-  return 0;
+  if (status)
+    fprintf (stderr,
+	     "Try ``grub-emu --help'' for more information.\n");
+  else
+    printf (
+      "Usage: grub-emu [OPTION]...\n"
+      "\n"
+      "GRUB emulator.\n"
+      "\n"
+      "  -r, --root-device=DEV     use DEV as the root device [default=guessed]\n"
+      "  -m, --device-map=FILE     use FILE as the device map [default=%s]\n"
+      "  -d, --directory=DIR       use GRUB files in the directory DIR [default=%s]\n"
+      "  -v, --verbose             print verbose messages\n"
+      "  -H, --hold[=SECONDS]      wait until a debugger will attach\n"
+      "  -h, --help                display this message and exit\n"
+      "  -V, --version             print version information and exit\n"
+      "\n"
+      "Report bugs to <%s>.\n", DEFAULT_DEVICE_MAP, DEFAULT_DIRECTORY, PACKAGE_BUGREPORT);
+  return status;
 }
-
-static struct argp argp = {options, parse_opt, 0, doc, 0, 0, 0};
 
 
 int
 main (int argc, char *argv[])
 {
-  char *dir;
-  
-  struct arguments args =
-    {
-      .dir = DEFAULT_DIRECTORY,
-      .dev_map = DEFAULT_DEVICE_MAP,
-      .hold = 0
-    };
+  char *root_dev = 0;
+  char *dir = DEFAULT_DIRECTORY;
+  char *dev_map = DEFAULT_DEVICE_MAP;
+  volatile int hold = 0;
+  int opt;
   
   progname = "grub-emu";
-  
-  argp_parse (&argp, argc, argv, 0, 0, &args);
+
+  while ((opt = getopt_long (argc, argv, "r:d:m:vH:hV", options, 0)) != -1)
+    switch (opt)
+      {
+      case 'r':
+        root_dev = optarg;
+        break;
+      case 'd':
+        dir = optarg;
+        break;
+      case 'm':
+        dev_map = optarg;
+        break;
+      case 'v':
+        verbosity++;
+        break;
+      case 'H':
+        hold = (optarg ? atoi (optarg) : -1);
+        break;
+      case 'h':
+        return usage (0);
+      case 'V':
+        printf ("%s (%s) %s\n", progname, PACKAGE_NAME, PACKAGE_VERSION);
+        return 0;
+      default:
+        return usage (1);
+      }
+
+  if (optind < argc)
+    {
+      fprintf (stderr, "Unknown extra argument `%s'.\n", argv[optind]);
+      return usage (1);
+    }
 
   /* Wait until the ARGS.HOLD variable is cleared by an attached debugger. */
-  if (args.hold && verbosity > 0)
+  if (hold && verbosity > 0)
     printf ("Run \"gdb %s %d\", and set ARGS.HOLD to zero.\n",
             progname, (int) getpid ());
-  while (args.hold)
+  while (hold)
     {
-      if (args.hold > 0)
-        args.hold--;
+      if (hold > 0)
+        hold--;
 
       sleep (1);
     }
   
   /* XXX: This is a bit unportable.  */
-  grub_util_biosdisk_init (args.dev_map);
+  grub_util_biosdisk_init (dev_map);
 
   grub_hostfs_init ();
 
   grub_init_all ();
 
   /* Make sure that there is a root device.  */
-  if (! args.root_dev)
+  if (! root_dev)
     {
-      char *device_name = grub_guess_root_device (args.dir ? : DEFAULT_DIRECTORY);
+      char *device_name = grub_guess_root_device (dir);
       if (! device_name)
-        grub_util_error ("cannot find a device for %s.\n", args.dir ? : DEFAULT_DIRECTORY);
+        grub_util_error ("cannot find a device for %s.\n", dir);
 
-      args.root_dev = grub_util_get_grub_dev (device_name);
-      if (! args.root_dev)
+      root_dev = grub_util_get_grub_dev (device_name);
+      if (! root_dev)
 	{
 	  grub_util_info ("guessing the root device failed, because of `%s'",
 			  grub_errmsg);
@@ -195,9 +206,9 @@ main (int argc, char *argv[])
 	}
     }
 
-  dir = grub_get_prefix (args.dir ? : DEFAULT_DIRECTORY);
-  prefix = xmalloc (strlen (args.root_dev) + strlen (dir) + 1);
-  sprintf (prefix, "%s%s", args.root_dev, dir);
+  dir = grub_get_prefix (dir);
+  prefix = xmalloc (strlen (root_dev) + 2 + strlen (dir) + 1);
+  sprintf (prefix, "(%s)%s", root_dev, dir);
   free (dir);
   
   /* Start GRUB!  */

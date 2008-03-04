@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 #define CHAR_HEIGHT	16
 #define TEXT_WIDTH	(VGA_WIDTH / CHAR_WIDTH)
 #define TEXT_HEIGHT	(VGA_HEIGHT / CHAR_HEIGHT)
-#define VGA_MEM		((unsigned char *) 0xA0000)
+#define VGA_MEM		((grub_uint8_t *) GRUB_MEMORY_MACHINE_VGA_ADDR)
 #define PAGE_OFFSET(x)	((x) * (VGA_WIDTH * VGA_HEIGHT / 8))
 
 #define DEFAULT_FG_COLOR	0xa

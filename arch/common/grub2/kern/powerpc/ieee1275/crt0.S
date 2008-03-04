@@ -1,7 +1,7 @@
 /* crt0.S - Startup code for the PowerPC.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,6 +37,10 @@ _start:
 	mtctr	7
 2:	stwu	2, 4(6) /* We know r2 is already 0 from above.  */
 	bdnz	2b
+
+	/* Store r5 in grub_ieee1275_entry_fn.  */
+	lis	9, grub_ieee1275_entry_fn@ha
+	stw	5, grub_ieee1275_entry_fn@l(9)
 
 	bl	cmain
 1:	b	1b

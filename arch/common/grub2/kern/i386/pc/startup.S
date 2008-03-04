@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2005,2006,2007 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2005,2006,2007,2008 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,6 +49,7 @@
 #include <grub/machine/console.h>
 #include <grub/cpu/linux.h>
 #include <grub/machine/kernel.h>
+#include <grub/term.h>
 #include <multiboot.h>
 #include <multiboot2.h>
 		
@@ -95,6 +96,8 @@ VARIABLE(grub_install_dos_part)
 	.long	0xFFFFFFFF
 VARIABLE(grub_install_bsd_part)
 	.long	0xFFFFFFFF
+VARIABLE(grub_memdisk_image_size)
+	.long	0
 VARIABLE(grub_prefix)
 	/* to be filled by grub-mkimage */
 
@@ -160,6 +163,7 @@ multiboot_trampoline:
 	movl	%ebx, EXT_C(grub_install_bsd_part)
 2:
 	shrl	$24, %edx
+        movb    $0xFF, %dh
 	/* enter the usual booting */
 	call	prot_to_real
 	.code16
@@ -180,8 +184,9 @@ codestart:
 
 	sti		/* we're safe again */
 
-	/* save boot drive reference */
+	/* save boot and root drive references */
 	ADDR32	movb	%dl, EXT_C(grub_boot_drive)
+	ADDR32	movb	%dh, EXT_C(grub_root_drive)
 
 	/* reset disk system (%ah = 0) */
 	int	$0x13
@@ -196,7 +201,7 @@ codestart:
 	call	EXT_C(grub_gate_a20)
 	
 	/* decompress the compressed part and put the result at 1MB */
-	movl	$0x100000, %esi
+	movl	$GRUB_MEMORY_MACHINE_DECOMPRESSION_ADDR, %esi
 	movl	$(START_SYMBOL + GRUB_KERNEL_MACHINE_RAW_SIZE), %edi
 
 	pushl	%esi
@@ -251,6 +256,9 @@ codestart:
 	.p2align	2	/* force 4-byte alignment */
 
 VARIABLE(grub_boot_drive)
+	.long	0
+
+VARIABLE(grub_root_drive)
 	.long	0
 
 VARIABLE(grub_start_addr)
@@ -592,16 +600,16 @@ FUNCTION(grub_chainloader_real_boot)
 
 	call	EXT_C(grub_dl_unload_all)
 
+	/* Turn off Gate A20 */
+	xorl	%eax, %eax
+	call	EXT_C(grub_gate_a20)
+
 	/* set up to pass boot drive */
 	popl	%edx
 
 	/* ESI must point to a partition table entry */
 	popl	%esi
 
-	/* Turn off Gate A20 */
-	xorl	%eax, %eax
-	call	EXT_C(grub_gate_a20)
-	
 	call	prot_to_real
 	.code16
 	ljmp	$0, $GRUB_MEMORY_MACHINE_BOOT_LOADER_ADDR
@@ -1172,16 +1180,16 @@ FUNCTION(grub_console_real_putchar)
 
 /* this table is used in translate_keycode below */
 translation_table:
-	.word	GRUB_CONSOLE_KEY_LEFT, 2
-	.word	GRUB_CONSOLE_KEY_RIGHT, 6
-	.word	GRUB_CONSOLE_KEY_UP, 16
-	.word	GRUB_CONSOLE_KEY_DOWN, 14
-	.word	GRUB_CONSOLE_KEY_HOME, 1
-	.word	GRUB_CONSOLE_KEY_END, 5
-	.word	GRUB_CONSOLE_KEY_DC, 4
-	.word	GRUB_CONSOLE_KEY_BACKSPACE, 8
-	.word	GRUB_CONSOLE_KEY_PPAGE, 7
-	.word	GRUB_CONSOLE_KEY_NPAGE, 3
+	.word	GRUB_CONSOLE_KEY_LEFT, GRUB_TERM_LEFT
+	.word	GRUB_CONSOLE_KEY_RIGHT, GRUB_TERM_RIGHT
+	.word	GRUB_CONSOLE_KEY_UP, GRUB_TERM_UP
+	.word	GRUB_CONSOLE_KEY_DOWN, GRUB_TERM_DOWN
+	.word	GRUB_CONSOLE_KEY_HOME, GRUB_TERM_HOME
+	.word	GRUB_CONSOLE_KEY_END, GRUB_TERM_END
+	.word	GRUB_CONSOLE_KEY_DC, GRUB_TERM_DC
+	.word	GRUB_CONSOLE_KEY_BACKSPACE, GRUB_TERM_BACKSPACE
+	.word	GRUB_CONSOLE_KEY_PPAGE, GRUB_TERM_PPAGE
+	.word	GRUB_CONSOLE_KEY_NPAGE, GRUB_TERM_NPAGE
 	.word	0
 	
 /*

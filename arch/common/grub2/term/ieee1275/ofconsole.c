@@ -1,7 +1,7 @@
 /*  ofconsole.c -- Open Firmware console for GRUB.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -313,7 +313,6 @@ grub_ofconsole_refresh (void)
 static grub_err_t
 grub_ofconsole_init (void)
 {
-  unsigned char data[4];
   grub_ssize_t actual;
   int col;
 
@@ -323,27 +322,26 @@ grub_ofconsole_init (void)
   if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_BROKEN_OUTPUT))
     grub_ieee1275_interpret ("output-device output", 0);
 
-  if (grub_ieee1275_get_property (grub_ieee1275_chosen, "stdout", data,
-				  sizeof data, &actual)
-      || actual != sizeof data)
+  if (grub_ieee1275_get_integer_property (grub_ieee1275_chosen, "stdout", &stdout_ihandle,
+					  sizeof stdout_ihandle, &actual)
+      || actual != sizeof stdout_ihandle)
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Cannot find stdout");
 
-  stdout_ihandle = grub_ieee1275_decode_int_4 (data);
-  
-  if (grub_ieee1275_get_property (grub_ieee1275_chosen, "stdin", data,
-				  sizeof data, &actual)
-      || actual != sizeof data)
+  if (grub_ieee1275_get_integer_property (grub_ieee1275_chosen, "stdin", &stdin_ihandle,
+					  sizeof stdin_ihandle, &actual)
+      || actual != sizeof stdin_ihandle)
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Cannot find stdin");
 
-  stdin_ihandle = grub_ieee1275_decode_int_4 (data);
-
   /* Initialize colors.  */
-  for (col = 0; col < 7; col++)
-    grub_ieee1275_set_color (stdout_ihandle, col, colors[col].red,
-			     colors[col].green, colors[col].blue);
+  if (! grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_CANNOT_SET_COLORS))
+    {
+      for (col = 0; col < 7; col++)
+	grub_ieee1275_set_color (stdout_ihandle, col, colors[col].red,
+				 colors[col].green, colors[col].blue);
 
-  /* Set the right fg and bg colors.  */
-  grub_ofconsole_setcolorstate (GRUB_TERM_COLOR_NORMAL);
+    /* Set the right fg and bg colors.  */
+      grub_ofconsole_setcolorstate (GRUB_TERM_COLOR_NORMAL);
+    }
 
   return 0;
 }
@@ -363,8 +361,13 @@ static struct grub_term grub_ofconsole_term =
     .fini = grub_ofconsole_fini,
     .putchar = grub_ofconsole_putchar,
     .getcharwidth = grub_ofconsole_getcharwidth,
+#ifdef __i386__
+    .checkkey = grub_console_checkkey,
+    .getkey = grub_console_getkey,
+#else
     .checkkey = grub_ofconsole_checkkey,
     .getkey = grub_ofconsole_getkey,
+#endif
     .getxy = grub_ofconsole_getxy,
     .getwh = grub_ofconsole_getwh,
     .gotoxy = grub_ofconsole_gotoxy,

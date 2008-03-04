@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2005,2007   Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2005,2007,2008   Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,9 @@
 	/* Let's go */
 .globl _start; _start:
 
+        /* Root drive will default to boot drive */
+        movb    $0xFF, %dh
+        
 	/* Jump to the real world */
 	ljmp	$0, $0x8200
 

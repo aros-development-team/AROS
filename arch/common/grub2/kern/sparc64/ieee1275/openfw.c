@@ -183,8 +183,8 @@ grub_map (grub_addr_t phys, grub_addr_t virt, grub_uint32_t size,
   grub_ieee1275_ihandle_t mmu;
   grub_ssize_t len;
 
-  grub_ieee1275_get_property (grub_ieee1275_chosen, "mmu", &mmu, sizeof mmu,
-			      &len);
+  grub_ieee1275_get_integer_property (grub_ieee1275_chosen, "mmu", &mmu, sizeof mmu,
+				      &len);
   if (len != sizeof mmu)
     return -1;
 

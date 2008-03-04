@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@
 #define GRUB_VGA_MACHINE_HEADER	1
 
 #include <grub/symbol.h>
+#include <grub/machine/memory.h>
+
+/* The VGA (at the beginning of upper memory).  */
+#define GRUB_MEMORY_MACHINE_VGA_ADDR		GRUB_MEMORY_MACHINE_UPPER
 
 /* Set the video mode to MODE and return the previous mode.  */
 unsigned char EXPORT_FUNC(grub_vga_set_mode) (unsigned char mode);

@@ -3,30 +3,27 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- arch-common-grub2 : grub2 grub2-copy-stages
+#MM- arch-common-grub2 : grub2-host-quick grub2-menu-$(ARCH) grub2-copy-files
+##MM- arch-common-grub2 : grub2-native-quick grub2-menu-$(ARCH) grub2-copy-files
 
-GRUB2MODDIR := $(AROSDIR)/boot/grub2
-GRUB2IMGDIR := $(CONTRIBDIR)/boot/grub2
+#MM- bootloader-grub2 : arch-common-grub2
+#MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
 
-GRUB2DEFMENU := $(TOP)/$(CURDIR)/../menu.lst
-GRUB2OPTS := --enable-preset-menu=$(GRUB2DEFMENU)
+GRUBBOOTDIR := $(AROSDIR)/boot/grub
 
-ifneq ($(AROS_TARGET_VARIANT),tiny)
-GRUB2OPTS += 
-else
-GRUB2OPTS += --disable-fat --disable-ffs --disable-minix --disable-reiserfs \
-            --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
-            --disable-packet-retransmission --disable-ext2fs --disable-serial \
-            --disable-hercules
-endif
-
-#MM- config-native-boot-grub2 : grub2-quick grub2-copy-stages
+GRUB2DIR := $(CONTRIBDIR)/boot/Grub2
+GRUB2MODDIR := $(GRUB2DIR)/Modules
+GRUB2IMGDIR := $(GRUB2DIR)/Images
+GRUB2MISCDIR := $(GRUB2DIR)/Misc
 
 CFLAGS := -minline-all-stringops
 export CFLAGS
 
-%build_with_configure mmake=grub2 compiler=host install_target= \
-    extraoptions="$(GRUBOPTS)"
+%build_with_configure mmake=grub2-host compiler=host install_target= \
+    extraoptions="$(GRUB2OPTS)"
+
+##%build_with_configure mmake=grub2-native compiler=target install_target= \
+##    extraoptions="$(GRUB2OPTS)"
 
 GRUB2MODULES := $(foreach                                         \
                    f,                                           \
@@ -44,20 +41,40 @@ GRUB2IMAGES := $(foreach                                         \
                    $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2IMGDIR)/,$f) \
               )
 
-$(warning GRUB2MODULES = $(GRUB2MODULES))
-$(warning GRUB2IMAGES = $(GRUB2IMAGES))
+GRUB2MISC := $(foreach                                         \
+                   f,                                           \
+                   $(wildcard                                   \
+                           $(GENDIR)/$(CURDIR)/*.lst            \
+                   ),                                           \
+                   $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2MISCDIR)/,$f) \
+              )
 
 #MM
-grub2-copy-stages : grub2-setup $(GRUB2MODULES) $(GRUB2IMAGES)
+grub2-copy-files : grub2-setup $(GRUB2MODULES) $(GRUB2IMAGES) $(GRUB2MISC)
 
 $(GRUB2MODDIR)/%.mod: $(GENDIR)/$(CURDIR)/%.mod
-	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
 $(GRUB2IMGDIR)/%.img: $(GENDIR)/$(CURDIR)/%.img
-	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(GRUB2MISCDIR)/%.lst: $(GENDIR)/$(CURDIR)/%.lst
 	@$(CP) $< $@
 
 #MM
 grub2-setup :
-	%mkdirs_q $(GRUB2MODDIR) $(GRUB2IMGDIR)
+	%mkdirs_q $(GRUB2MODDIR) $(GRUB2IMGDIR) $(GRUB2MISCDIR)
+
+$(GRUBBOOTDIR)/%.mod: $(GRUB2MODDIR)/%.mod
+	@$(CP) $< $@
+
+#MM
+bootloader-grub2-isosetup : $(foreach f, $(wildcard $(GRUB2MODDIR)/*.mod ), $(subst $(GRUB2MODDIR)/,$(GRUBBOOTDIR)/,$f) )
+
+#MM
+grub2-iso-setup :
+	%mkdirs_q $(GRUBBOOTDIR)
+	@$(GENDIR)/$(CURDIR)/grub-mkimage -d $(GENDIR)/$(CURDIR)/ -o $(GRUB2IMGDIR)/core.img biosdisk iso9660
+	$(CAT) $(GRUB2IMGDIR)/cdboot.img $(GRUB2IMGDIR)/core.img > $(BINDIR)/boot/grub/grub2_eltorito
+
+

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Install GRUB on your drive.
-# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+# Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -176,7 +176,10 @@ fi
 # filesystem will be accessible).
 partmap_module=`$grub_probe --target=partmap --device-map=${device_map} ${grubdir} 2> /dev/null`
 
-modules="$modules $fs_module $partmap_module"
+# Device abstraction module, if any (lvm, raid).
+devabstraction_module=`$grub_probe --target=abstraction --device-map=${device_map} ${grubdir}`
+
+modules="$modules $fs_module $partmap_module $devabstraction_module"
 
 # Now perform the installation.
 "$grub_mkimage" --output=${grubdir}/grub $modules || exit 1

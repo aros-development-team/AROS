@@ -1,7 +1,7 @@
 /* cpio.c - cpio and tar filesystem.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2007 Free Software Foundation, Inc.
+ *  Copyright (C) 2007,2008 Free Software Foundation, Inc.
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -98,11 +98,6 @@ grub_cpio_find_file (struct grub_cpio_data *data, char **name,
 	return grub_error (GRUB_ERR_BAD_FS, "Invalid cpio archive");
 
       data->size = (((grub_uint32_t) hd.filesize_1) << 16) + hd.filesize_2;
-      if (data->size == 0)
-	{
-	  *ofs = 0;
-	  return GRUB_ERR_NONE;
-	}
 
       if (hd.namesize & 1)
 	hd.namesize++;
@@ -115,6 +110,13 @@ grub_cpio_find_file (struct grub_cpio_data *data, char **name,
 	{
 	  grub_free (*name);
 	  return grub_errno;
+	}
+
+      if (data->size == 0 && hd.mode == 0 && hd.namesize == 11 + 1
+	  && ! grub_memcmp(*name, "TRAILER!!!", 11))
+	{
+	  *ofs = 0;
+	  return GRUB_ERR_NONE;
 	}
 
       data->dofs = data->hofs + sizeof (hd) + hd.namesize;
@@ -188,7 +190,8 @@ grub_cpio_dir (grub_device_t device, const char *path,
 {
   struct grub_cpio_data *data;
   grub_uint32_t ofs;
-  char *prev, *name, *np;
+  char *prev, *name;
+  const char *np;
   int len;
 
 #ifndef GRUB_UTIL
@@ -275,7 +278,10 @@ grub_cpio_open (grub_file_t file, const char *name)
 	goto fail;
 
       if (!ofs)
-	break;
+	{
+	  grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
+	  break;
+	}
 
       if (grub_strcmp (name + 1, fn) == 0)
 	{

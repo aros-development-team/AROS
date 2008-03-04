@@ -4,6 +4,12 @@ COMMON_ASFLAGS	= -m32 -nostdinc -fno-builtin
 COMMON_CFLAGS	= -ffreestanding -mrtd -mregparm=3
 COMMON_LDFLAGS	= -nostdlib -static -lgcc
 
+# Used by various components.  These rules need to precede them.
+normal/execute.c_DEPENDENCIES = grub_script.tab.h
+normal/command.c_DEPENDENCIES = grub_script.tab.h
+normal/function.c_DEPENDENCIES = grub_script.tab.h
+normal/lexer.c_DEPENDENCIES = grub_script.tab.h
+
 # Images.
 pkglib_PROGRAMS = kernel.elf
 
@@ -24,95 +30,95 @@ MOSTLYCLEANFILES += kernel_elf-kern_i386_linuxbios_startup.d kernel_elf-kern_i38
 kernel.elf: $(kernel_elf_DEPENDENCIES) kernel_elf-kern_i386_linuxbios_startup.o kernel_elf-kern_i386_linuxbios_init.o kernel_elf-kern_i386_linuxbios_table.o kernel_elf-kern_main.o kernel_elf-kern_device.o kernel_elf-kern_disk.o kernel_elf-kern_dl.o kernel_elf-kern_file.o kernel_elf-kern_fs.o kernel_elf-kern_err.o kernel_elf-kern_misc.o kernel_elf-kern_mm.o kernel_elf-kern_loader.o kernel_elf-kern_rescue.o kernel_elf-kern_term.o kernel_elf-kern_i386_dl.o kernel_elf-kern_parser.o kernel_elf-kern_partition.o kernel_elf-kern_env.o kernel_elf-term_i386_pc_console.o kernel_elf-term_i386_pc_at_keyboard.o kernel_elf-term_i386_pc_vga_text.o kernel_elf-symlist.o
 	$(TARGET_CC) -o $@ kernel_elf-kern_i386_linuxbios_startup.o kernel_elf-kern_i386_linuxbios_init.o kernel_elf-kern_i386_linuxbios_table.o kernel_elf-kern_main.o kernel_elf-kern_device.o kernel_elf-kern_disk.o kernel_elf-kern_dl.o kernel_elf-kern_file.o kernel_elf-kern_fs.o kernel_elf-kern_err.o kernel_elf-kern_misc.o kernel_elf-kern_mm.o kernel_elf-kern_loader.o kernel_elf-kern_rescue.o kernel_elf-kern_term.o kernel_elf-kern_i386_dl.o kernel_elf-kern_parser.o kernel_elf-kern_partition.o kernel_elf-kern_env.o kernel_elf-term_i386_pc_console.o kernel_elf-term_i386_pc_at_keyboard.o kernel_elf-term_i386_pc_vga_text.o kernel_elf-symlist.o $(TARGET_LDFLAGS) $(kernel_elf_LDFLAGS)
 
-kernel_elf-kern_i386_linuxbios_startup.o: kern/i386/linuxbios/startup.S
+kernel_elf-kern_i386_linuxbios_startup.o: kern/i386/linuxbios/startup.S $(kern/i386/linuxbios/startup.S_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386/linuxbios -I$(srcdir)/kern/i386/linuxbios $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_i386_linuxbios_startup.d
 
-kernel_elf-kern_i386_linuxbios_init.o: kern/i386/linuxbios/init.c
+kernel_elf-kern_i386_linuxbios_init.o: kern/i386/linuxbios/init.c $(kern/i386/linuxbios/init.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386/linuxbios -I$(srcdir)/kern/i386/linuxbios $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_i386_linuxbios_init.d
 
-kernel_elf-kern_i386_linuxbios_table.o: kern/i386/linuxbios/table.c
+kernel_elf-kern_i386_linuxbios_table.o: kern/i386/linuxbios/table.c $(kern/i386/linuxbios/table.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386/linuxbios -I$(srcdir)/kern/i386/linuxbios $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_i386_linuxbios_table.d
 
-kernel_elf-kern_main.o: kern/main.c
+kernel_elf-kern_main.o: kern/main.c $(kern/main.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_main.d
 
-kernel_elf-kern_device.o: kern/device.c
+kernel_elf-kern_device.o: kern/device.c $(kern/device.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_device.d
 
-kernel_elf-kern_disk.o: kern/disk.c
+kernel_elf-kern_disk.o: kern/disk.c $(kern/disk.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_disk.d
 
-kernel_elf-kern_dl.o: kern/dl.c
+kernel_elf-kern_dl.o: kern/dl.c $(kern/dl.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_dl.d
 
-kernel_elf-kern_file.o: kern/file.c
+kernel_elf-kern_file.o: kern/file.c $(kern/file.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_file.d
 
-kernel_elf-kern_fs.o: kern/fs.c
+kernel_elf-kern_fs.o: kern/fs.c $(kern/fs.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_fs.d
 
-kernel_elf-kern_err.o: kern/err.c
+kernel_elf-kern_err.o: kern/err.c $(kern/err.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_err.d
 
-kernel_elf-kern_misc.o: kern/misc.c
+kernel_elf-kern_misc.o: kern/misc.c $(kern/misc.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_misc.d
 
-kernel_elf-kern_mm.o: kern/mm.c
+kernel_elf-kern_mm.o: kern/mm.c $(kern/mm.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_mm.d
 
-kernel_elf-kern_loader.o: kern/loader.c
+kernel_elf-kern_loader.o: kern/loader.c $(kern/loader.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_loader.d
 
-kernel_elf-kern_rescue.o: kern/rescue.c
+kernel_elf-kern_rescue.o: kern/rescue.c $(kern/rescue.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_rescue.d
 
-kernel_elf-kern_term.o: kern/term.c
+kernel_elf-kern_term.o: kern/term.c $(kern/term.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_term.d
 
-kernel_elf-kern_i386_dl.o: kern/i386/dl.c
+kernel_elf-kern_i386_dl.o: kern/i386/dl.c $(kern/i386/dl.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern/i386 -I$(srcdir)/kern/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_i386_dl.d
 
-kernel_elf-kern_parser.o: kern/parser.c
+kernel_elf-kern_parser.o: kern/parser.c $(kern/parser.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_parser.d
 
-kernel_elf-kern_partition.o: kern/partition.c
+kernel_elf-kern_partition.o: kern/partition.c $(kern/partition.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_partition.d
 
-kernel_elf-kern_env.o: kern/env.c
+kernel_elf-kern_env.o: kern/env.c $(kern/env.c_DEPENDENCIES)
 	$(TARGET_CC) -Ikern -I$(srcdir)/kern $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-kern_env.d
 
-kernel_elf-term_i386_pc_console.o: term/i386/pc/console.c
+kernel_elf-term_i386_pc_console.o: term/i386/pc/console.c $(term/i386/pc/console.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm/i386/pc -I$(srcdir)/term/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-term_i386_pc_console.d
 
-kernel_elf-term_i386_pc_at_keyboard.o: term/i386/pc/at_keyboard.c
+kernel_elf-term_i386_pc_at_keyboard.o: term/i386/pc/at_keyboard.c $(term/i386/pc/at_keyboard.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm/i386/pc -I$(srcdir)/term/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-term_i386_pc_at_keyboard.d
 
-kernel_elf-term_i386_pc_vga_text.o: term/i386/pc/vga_text.c
+kernel_elf-term_i386_pc_vga_text.o: term/i386/pc/vga_text.c $(term/i386/pc/vga_text.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm/i386/pc -I$(srcdir)/term/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-term_i386_pc_vga_text.d
 
-kernel_elf-symlist.o: symlist.c
+kernel_elf-symlist.o: symlist.c $(symlist.c_DEPENDENCIES)
 	$(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(kernel_elf_CFLAGS) -MD -c -o $@ $<
 -include kernel_elf-symlist.d
 
@@ -135,7 +141,7 @@ kernel_syms.lst: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h genke
 
 # Utilities.
 bin_UTILITIES = grub-mkimage
-sbin_UTILITIES = grub-mkdevicemap grub-probe
+sbin_UTILITIES = grub-mkdevicemap
 ifeq ($(enable_grub_emu), yes)
 sbin_UTILITIES += grub-emu
 endif
@@ -185,162 +191,21 @@ grub_mkdevicemap-util_i386_get_disk_name.o: util/i386/get_disk_name.c $(util/i38
 -include grub_mkdevicemap-util_i386_get_disk_name.d
 
 
-# For grub-probe.
-util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
-grub_probe_SOURCES = util/grub-probe.c	\
-	util/biosdisk.c	util/misc.c util/getroot.c	\
-	kern/device.c kern/disk.c kern/err.c kern/misc.c fs/fat.c	\
-	fs/ext2.c kern/parser.c kern/partition.c 			\
-	partmap/pc.c partmap/apple.c partmap/gpt.c 			\
-	fs/ufs.c fs/minix.c fs/hfs.c fs/jfs.c fs/ntfs.c fs/ntfscomp.c	\
-	fs/xfs.c fs/affs.c fs/sfs.c fs/hfsplus.c			\
-	kern/fs.c							\
-	kern/env.c fs/fshelp.c 	\
-	disk/lvm.c disk/raid.c grub_probe_init.c
-CLEANFILES += grub-probe grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-fs_ufs.o grub_probe-fs_minix.o grub_probe-fs_hfs.o grub_probe-fs_jfs.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_xfs.o grub_probe-fs_affs.o grub_probe-fs_sfs.o grub_probe-fs_hfsplus.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
-MOSTLYCLEANFILES += grub_probe-util_grub_probe.d grub_probe-util_biosdisk.d grub_probe-util_misc.d grub_probe-util_getroot.d grub_probe-kern_device.d grub_probe-kern_disk.d grub_probe-kern_err.d grub_probe-kern_misc.d grub_probe-fs_fat.d grub_probe-fs_ext2.d grub_probe-kern_parser.d grub_probe-kern_partition.d grub_probe-partmap_pc.d grub_probe-partmap_apple.d grub_probe-partmap_gpt.d grub_probe-fs_ufs.d grub_probe-fs_minix.d grub_probe-fs_hfs.d grub_probe-fs_jfs.d grub_probe-fs_ntfs.d grub_probe-fs_ntfscomp.d grub_probe-fs_xfs.d grub_probe-fs_affs.d grub_probe-fs_sfs.d grub_probe-fs_hfsplus.d grub_probe-kern_fs.d grub_probe-kern_env.d grub_probe-fs_fshelp.d grub_probe-disk_lvm.d grub_probe-disk_raid.d grub_probe-grub_probe_init.d
-
-grub-probe: $(grub_probe_DEPENDENCIES) grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-fs_ufs.o grub_probe-fs_minix.o grub_probe-fs_hfs.o grub_probe-fs_jfs.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_xfs.o grub_probe-fs_affs.o grub_probe-fs_sfs.o grub_probe-fs_hfsplus.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
-	$(CC) -o $@ grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-fs_fat.o grub_probe-fs_ext2.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-fs_ufs.o grub_probe-fs_minix.o grub_probe-fs_hfs.o grub_probe-fs_jfs.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_xfs.o grub_probe-fs_affs.o grub_probe-fs_sfs.o grub_probe-fs_hfsplus.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o $(LDFLAGS) $(grub_probe_LDFLAGS)
-
-grub_probe-util_grub_probe.o: util/grub-probe.c $(util/grub-probe.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_grub_probe.d
-
-grub_probe-util_biosdisk.o: util/biosdisk.c $(util/biosdisk.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_biosdisk.d
-
-grub_probe-util_misc.o: util/misc.c $(util/misc.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_misc.d
-
-grub_probe-util_getroot.o: util/getroot.c $(util/getroot.c_DEPENDENCIES)
-	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-util_getroot.d
-
-grub_probe-kern_device.o: kern/device.c $(kern/device.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_device.d
-
-grub_probe-kern_disk.o: kern/disk.c $(kern/disk.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_disk.d
-
-grub_probe-kern_err.o: kern/err.c $(kern/err.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_err.d
-
-grub_probe-kern_misc.o: kern/misc.c $(kern/misc.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_misc.d
-
-grub_probe-fs_fat.o: fs/fat.c $(fs/fat.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_fat.d
-
-grub_probe-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ext2.d
-
-grub_probe-kern_parser.o: kern/parser.c $(kern/parser.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_parser.d
-
-grub_probe-kern_partition.o: kern/partition.c $(kern/partition.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_partition.d
-
-grub_probe-partmap_pc.o: partmap/pc.c $(partmap/pc.c_DEPENDENCIES)
-	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_pc.d
-
-grub_probe-partmap_apple.o: partmap/apple.c $(partmap/apple.c_DEPENDENCIES)
-	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_apple.d
-
-grub_probe-partmap_gpt.o: partmap/gpt.c $(partmap/gpt.c_DEPENDENCIES)
-	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-partmap_gpt.d
-
-grub_probe-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ufs.d
-
-grub_probe-fs_minix.o: fs/minix.c $(fs/minix.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_minix.d
-
-grub_probe-fs_hfs.o: fs/hfs.c $(fs/hfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_hfs.d
-
-grub_probe-fs_jfs.o: fs/jfs.c $(fs/jfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_jfs.d
-
-grub_probe-fs_ntfs.o: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ntfs.d
-
-grub_probe-fs_ntfscomp.o: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_ntfscomp.d
-
-grub_probe-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_xfs.d
-
-grub_probe-fs_affs.o: fs/affs.c $(fs/affs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_affs.d
-
-grub_probe-fs_sfs.o: fs/sfs.c $(fs/sfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_sfs.d
-
-grub_probe-fs_hfsplus.o: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_hfsplus.d
-
-grub_probe-kern_fs.o: kern/fs.c $(kern/fs.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_fs.d
-
-grub_probe-kern_env.o: kern/env.c $(kern/env.c_DEPENDENCIES)
-	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-kern_env.d
-
-grub_probe-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-fs_fshelp.d
-
-grub_probe-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-disk_lvm.d
-
-grub_probe-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-disk_raid.d
-
-grub_probe-grub_probe_init.o: grub_probe_init.c $(grub_probe_init.c_DEPENDENCIES)
-	$(CC) -I. -I$(srcdir)/. $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
--include grub_probe-grub_probe_init.d
-
-
 # For grub-emu.
-grub_emu_DEPENDENCIES = grub_script.tab.c grub_script.tab.h		\
-	grub_emu_init.h
+util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
 grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	commands/configfile.c commands/echo.c commands/help.c		\
 	commands/terminal.c commands/ls.c commands/test.c 		\
 	commands/search.c commands/blocklist.c commands/hexdump.c	\
-	commands/i386/pc/halt.c commands/i386/pc/reboot.c		\
 	commands/i386/cpuid.c						\
-	disk/host.c disk/loopback.c	disk/raid.c disk/lvm.c		\
-	fs/affs.c fs/ext2.c fs/fat.c fs/fshelp.c fs/hfs.c fs/iso9660.c	\
-	fs/jfs.c fs/minix.c fs/sfs.c fs/ufs.c fs/xfs.c fs/hfsplus.c	\
-	fs/ntfs.c fs/ntfscomp.c	fs/cpio.c				\
+	disk/host.c disk/loopback.c					\
+	\
+	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
+	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
+	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
+	fs/ufs.c fs/xfs.c						\
+	\
+	fs/fshelp.c							\
 	io/gzio.c							\
 	kern/device.c kern/disk.c kern/dl.c kern/elf.c kern/env.c	\
 	kern/err.c							\
@@ -354,13 +219,16 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
 	partmap/acorn.c partmap/gpt.c					\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
-	util/biosdisk.c util/getroot.c			\
-	util/i386/pc/misc.c grub_emu_init.c
-CLEANFILES += grub-emu grub_emu-commands_boot.o grub_emu-commands_cat.o grub_emu-commands_cmp.o grub_emu-commands_configfile.o grub_emu-commands_echo.o grub_emu-commands_help.o grub_emu-commands_terminal.o grub_emu-commands_ls.o grub_emu-commands_test.o grub_emu-commands_search.o grub_emu-commands_blocklist.o grub_emu-commands_hexdump.o grub_emu-commands_i386_pc_halt.o grub_emu-commands_i386_pc_reboot.o grub_emu-commands_i386_cpuid.o grub_emu-disk_host.o grub_emu-disk_loopback.o grub_emu-disk_raid.o grub_emu-disk_lvm.o grub_emu-fs_affs.o grub_emu-fs_ext2.o grub_emu-fs_fat.o grub_emu-fs_fshelp.o grub_emu-fs_hfs.o grub_emu-fs_iso9660.o grub_emu-fs_jfs.o grub_emu-fs_minix.o grub_emu-fs_sfs.o grub_emu-fs_ufs.o grub_emu-fs_xfs.o grub_emu-fs_hfsplus.o grub_emu-fs_ntfs.o grub_emu-fs_ntfscomp.o grub_emu-fs_cpio.o grub_emu-io_gzio.o grub_emu-kern_device.o grub_emu-kern_disk.o grub_emu-kern_dl.o grub_emu-kern_elf.o grub_emu-kern_env.o grub_emu-kern_err.o grub_emu-normal_execute.o grub_emu-kern_file.o grub_emu-kern_fs.o grub_emu-normal_lexer.o grub_emu-kern_loader.o grub_emu-kern_main.o grub_emu-kern_misc.o grub_emu-kern_parser.o grub_emu-grub_script_tab.o grub_emu-kern_partition.o grub_emu-kern_rescue.o grub_emu-kern_term.o grub_emu-normal_arg.o grub_emu-normal_cmdline.o grub_emu-normal_command.o grub_emu-normal_function.o grub_emu-normal_completion.o grub_emu-normal_main.o grub_emu-normal_menu.o grub_emu-normal_menu_entry.o grub_emu-normal_misc.o grub_emu-normal_script.o grub_emu-normal_color.o grub_emu-partmap_amiga.o grub_emu-partmap_apple.o grub_emu-partmap_pc.o grub_emu-partmap_sun.o grub_emu-partmap_acorn.o grub_emu-partmap_gpt.o grub_emu-util_console.o grub_emu-util_hostfs.o grub_emu-util_grub_emu.o grub_emu-util_misc.o grub_emu-util_biosdisk.o grub_emu-util_getroot.o grub_emu-util_i386_pc_misc.o grub_emu-grub_emu_init.o
-MOSTLYCLEANFILES += grub_emu-commands_boot.d grub_emu-commands_cat.d grub_emu-commands_cmp.d grub_emu-commands_configfile.d grub_emu-commands_echo.d grub_emu-commands_help.d grub_emu-commands_terminal.d grub_emu-commands_ls.d grub_emu-commands_test.d grub_emu-commands_search.d grub_emu-commands_blocklist.d grub_emu-commands_hexdump.d grub_emu-commands_i386_pc_halt.d grub_emu-commands_i386_pc_reboot.d grub_emu-commands_i386_cpuid.d grub_emu-disk_host.d grub_emu-disk_loopback.d grub_emu-disk_raid.d grub_emu-disk_lvm.d grub_emu-fs_affs.d grub_emu-fs_ext2.d grub_emu-fs_fat.d grub_emu-fs_fshelp.d grub_emu-fs_hfs.d grub_emu-fs_iso9660.d grub_emu-fs_jfs.d grub_emu-fs_minix.d grub_emu-fs_sfs.d grub_emu-fs_ufs.d grub_emu-fs_xfs.d grub_emu-fs_hfsplus.d grub_emu-fs_ntfs.d grub_emu-fs_ntfscomp.d grub_emu-fs_cpio.d grub_emu-io_gzio.d grub_emu-kern_device.d grub_emu-kern_disk.d grub_emu-kern_dl.d grub_emu-kern_elf.d grub_emu-kern_env.d grub_emu-kern_err.d grub_emu-normal_execute.d grub_emu-kern_file.d grub_emu-kern_fs.d grub_emu-normal_lexer.d grub_emu-kern_loader.d grub_emu-kern_main.d grub_emu-kern_misc.d grub_emu-kern_parser.d grub_emu-grub_script_tab.d grub_emu-kern_partition.d grub_emu-kern_rescue.d grub_emu-kern_term.d grub_emu-normal_arg.d grub_emu-normal_cmdline.d grub_emu-normal_command.d grub_emu-normal_function.d grub_emu-normal_completion.d grub_emu-normal_main.d grub_emu-normal_menu.d grub_emu-normal_menu_entry.d grub_emu-normal_misc.d grub_emu-normal_script.d grub_emu-normal_color.d grub_emu-partmap_amiga.d grub_emu-partmap_apple.d grub_emu-partmap_pc.d grub_emu-partmap_sun.d grub_emu-partmap_acorn.d grub_emu-partmap_gpt.d grub_emu-util_console.d grub_emu-util_hostfs.d grub_emu-util_grub_emu.d grub_emu-util_misc.d grub_emu-util_biosdisk.d grub_emu-util_getroot.d grub_emu-util_i386_pc_misc.d grub_emu-grub_emu_init.d
+	util/biosdisk.c util/getroot.c					\
+	util/i386/pc/misc.c 						\
+	\
+	disk/raid.c disk/lvm.c						\
+	grub_emu_init.c
+CLEANFILES += grub-emu grub_emu-commands_boot.o grub_emu-commands_cat.o grub_emu-commands_cmp.o grub_emu-commands_configfile.o grub_emu-commands_echo.o grub_emu-commands_help.o grub_emu-commands_terminal.o grub_emu-commands_ls.o grub_emu-commands_test.o grub_emu-commands_search.o grub_emu-commands_blocklist.o grub_emu-commands_hexdump.o grub_emu-commands_i386_cpuid.o grub_emu-disk_host.o grub_emu-disk_loopback.o grub_emu-fs_affs.o grub_emu-fs_cpio.o grub_emu-fs_ext2.o grub_emu-fs_fat.o grub_emu-fs_hfs.o grub_emu-fs_hfsplus.o grub_emu-fs_iso9660.o grub_emu-fs_udf.o grub_emu-fs_jfs.o grub_emu-fs_minix.o grub_emu-fs_ntfs.o grub_emu-fs_ntfscomp.o grub_emu-fs_reiserfs.o grub_emu-fs_sfs.o grub_emu-fs_ufs.o grub_emu-fs_xfs.o grub_emu-fs_fshelp.o grub_emu-io_gzio.o grub_emu-kern_device.o grub_emu-kern_disk.o grub_emu-kern_dl.o grub_emu-kern_elf.o grub_emu-kern_env.o grub_emu-kern_err.o grub_emu-normal_execute.o grub_emu-kern_file.o grub_emu-kern_fs.o grub_emu-normal_lexer.o grub_emu-kern_loader.o grub_emu-kern_main.o grub_emu-kern_misc.o grub_emu-kern_parser.o grub_emu-grub_script_tab.o grub_emu-kern_partition.o grub_emu-kern_rescue.o grub_emu-kern_term.o grub_emu-normal_arg.o grub_emu-normal_cmdline.o grub_emu-normal_command.o grub_emu-normal_function.o grub_emu-normal_completion.o grub_emu-normal_main.o grub_emu-normal_menu.o grub_emu-normal_menu_entry.o grub_emu-normal_misc.o grub_emu-normal_script.o grub_emu-normal_color.o grub_emu-partmap_amiga.o grub_emu-partmap_apple.o grub_emu-partmap_pc.o grub_emu-partmap_sun.o grub_emu-partmap_acorn.o grub_emu-partmap_gpt.o grub_emu-util_console.o grub_emu-util_hostfs.o grub_emu-util_grub_emu.o grub_emu-util_misc.o grub_emu-util_biosdisk.o grub_emu-util_getroot.o grub_emu-util_i386_pc_misc.o grub_emu-disk_raid.o grub_emu-disk_lvm.o grub_emu-grub_emu_init.o
+MOSTLYCLEANFILES += grub_emu-commands_boot.d grub_emu-commands_cat.d grub_emu-commands_cmp.d grub_emu-commands_configfile.d grub_emu-commands_echo.d grub_emu-commands_help.d grub_emu-commands_terminal.d grub_emu-commands_ls.d grub_emu-commands_test.d grub_emu-commands_search.d grub_emu-commands_blocklist.d grub_emu-commands_hexdump.d grub_emu-commands_i386_cpuid.d grub_emu-disk_host.d grub_emu-disk_loopback.d grub_emu-fs_affs.d grub_emu-fs_cpio.d grub_emu-fs_ext2.d grub_emu-fs_fat.d grub_emu-fs_hfs.d grub_emu-fs_hfsplus.d grub_emu-fs_iso9660.d grub_emu-fs_udf.d grub_emu-fs_jfs.d grub_emu-fs_minix.d grub_emu-fs_ntfs.d grub_emu-fs_ntfscomp.d grub_emu-fs_reiserfs.d grub_emu-fs_sfs.d grub_emu-fs_ufs.d grub_emu-fs_xfs.d grub_emu-fs_fshelp.d grub_emu-io_gzio.d grub_emu-kern_device.d grub_emu-kern_disk.d grub_emu-kern_dl.d grub_emu-kern_elf.d grub_emu-kern_env.d grub_emu-kern_err.d grub_emu-normal_execute.d grub_emu-kern_file.d grub_emu-kern_fs.d grub_emu-normal_lexer.d grub_emu-kern_loader.d grub_emu-kern_main.d grub_emu-kern_misc.d grub_emu-kern_parser.d grub_emu-grub_script_tab.d grub_emu-kern_partition.d grub_emu-kern_rescue.d grub_emu-kern_term.d grub_emu-normal_arg.d grub_emu-normal_cmdline.d grub_emu-normal_command.d grub_emu-normal_function.d grub_emu-normal_completion.d grub_emu-normal_main.d grub_emu-normal_menu.d grub_emu-normal_menu_entry.d grub_emu-normal_misc.d grub_emu-normal_script.d grub_emu-normal_color.d grub_emu-partmap_amiga.d grub_emu-partmap_apple.d grub_emu-partmap_pc.d grub_emu-partmap_sun.d grub_emu-partmap_acorn.d grub_emu-partmap_gpt.d grub_emu-util_console.d grub_emu-util_hostfs.d grub_emu-util_grub_emu.d grub_emu-util_misc.d grub_emu-util_biosdisk.d grub_emu-util_getroot.d grub_emu-util_i386_pc_misc.d grub_emu-disk_raid.d grub_emu-disk_lvm.d grub_emu-grub_emu_init.d
 
-grub-emu: $(grub_emu_DEPENDENCIES) grub_emu-commands_boot.o grub_emu-commands_cat.o grub_emu-commands_cmp.o grub_emu-commands_configfile.o grub_emu-commands_echo.o grub_emu-commands_help.o grub_emu-commands_terminal.o grub_emu-commands_ls.o grub_emu-commands_test.o grub_emu-commands_search.o grub_emu-commands_blocklist.o grub_emu-commands_hexdump.o grub_emu-commands_i386_pc_halt.o grub_emu-commands_i386_pc_reboot.o grub_emu-commands_i386_cpuid.o grub_emu-disk_host.o grub_emu-disk_loopback.o grub_emu-disk_raid.o grub_emu-disk_lvm.o grub_emu-fs_affs.o grub_emu-fs_ext2.o grub_emu-fs_fat.o grub_emu-fs_fshelp.o grub_emu-fs_hfs.o grub_emu-fs_iso9660.o grub_emu-fs_jfs.o grub_emu-fs_minix.o grub_emu-fs_sfs.o grub_emu-fs_ufs.o grub_emu-fs_xfs.o grub_emu-fs_hfsplus.o grub_emu-fs_ntfs.o grub_emu-fs_ntfscomp.o grub_emu-fs_cpio.o grub_emu-io_gzio.o grub_emu-kern_device.o grub_emu-kern_disk.o grub_emu-kern_dl.o grub_emu-kern_elf.o grub_emu-kern_env.o grub_emu-kern_err.o grub_emu-normal_execute.o grub_emu-kern_file.o grub_emu-kern_fs.o grub_emu-normal_lexer.o grub_emu-kern_loader.o grub_emu-kern_main.o grub_emu-kern_misc.o grub_emu-kern_parser.o grub_emu-grub_script_tab.o grub_emu-kern_partition.o grub_emu-kern_rescue.o grub_emu-kern_term.o grub_emu-normal_arg.o grub_emu-normal_cmdline.o grub_emu-normal_command.o grub_emu-normal_function.o grub_emu-normal_completion.o grub_emu-normal_main.o grub_emu-normal_menu.o grub_emu-normal_menu_entry.o grub_emu-normal_misc.o grub_emu-normal_script.o grub_emu-normal_color.o grub_emu-partmap_amiga.o grub_emu-partmap_apple.o grub_emu-partmap_pc.o grub_emu-partmap_sun.o grub_emu-partmap_acorn.o grub_emu-partmap_gpt.o grub_emu-util_console.o grub_emu-util_hostfs.o grub_emu-util_grub_emu.o grub_emu-util_misc.o grub_emu-util_biosdisk.o grub_emu-util_getroot.o grub_emu-util_i386_pc_misc.o grub_emu-grub_emu_init.o
-	$(CC) -o $@ grub_emu-commands_boot.o grub_emu-commands_cat.o grub_emu-commands_cmp.o grub_emu-commands_configfile.o grub_emu-commands_echo.o grub_emu-commands_help.o grub_emu-commands_terminal.o grub_emu-commands_ls.o grub_emu-commands_test.o grub_emu-commands_search.o grub_emu-commands_blocklist.o grub_emu-commands_hexdump.o grub_emu-commands_i386_pc_halt.o grub_emu-commands_i386_pc_reboot.o grub_emu-commands_i386_cpuid.o grub_emu-disk_host.o grub_emu-disk_loopback.o grub_emu-disk_raid.o grub_emu-disk_lvm.o grub_emu-fs_affs.o grub_emu-fs_ext2.o grub_emu-fs_fat.o grub_emu-fs_fshelp.o grub_emu-fs_hfs.o grub_emu-fs_iso9660.o grub_emu-fs_jfs.o grub_emu-fs_minix.o grub_emu-fs_sfs.o grub_emu-fs_ufs.o grub_emu-fs_xfs.o grub_emu-fs_hfsplus.o grub_emu-fs_ntfs.o grub_emu-fs_ntfscomp.o grub_emu-fs_cpio.o grub_emu-io_gzio.o grub_emu-kern_device.o grub_emu-kern_disk.o grub_emu-kern_dl.o grub_emu-kern_elf.o grub_emu-kern_env.o grub_emu-kern_err.o grub_emu-normal_execute.o grub_emu-kern_file.o grub_emu-kern_fs.o grub_emu-normal_lexer.o grub_emu-kern_loader.o grub_emu-kern_main.o grub_emu-kern_misc.o grub_emu-kern_parser.o grub_emu-grub_script_tab.o grub_emu-kern_partition.o grub_emu-kern_rescue.o grub_emu-kern_term.o grub_emu-normal_arg.o grub_emu-normal_cmdline.o grub_emu-normal_command.o grub_emu-normal_function.o grub_emu-normal_completion.o grub_emu-normal_main.o grub_emu-normal_menu.o grub_emu-normal_menu_entry.o grub_emu-normal_misc.o grub_emu-normal_script.o grub_emu-normal_color.o grub_emu-partmap_amiga.o grub_emu-partmap_apple.o grub_emu-partmap_pc.o grub_emu-partmap_sun.o grub_emu-partmap_acorn.o grub_emu-partmap_gpt.o grub_emu-util_console.o grub_emu-util_hostfs.o grub_emu-util_grub_emu.o grub_emu-util_misc.o grub_emu-util_biosdisk.o grub_emu-util_getroot.o grub_emu-util_i386_pc_misc.o grub_emu-grub_emu_init.o $(LDFLAGS) $(grub_emu_LDFLAGS)
+grub-emu: $(grub_emu_DEPENDENCIES) grub_emu-commands_boot.o grub_emu-commands_cat.o grub_emu-commands_cmp.o grub_emu-commands_configfile.o grub_emu-commands_echo.o grub_emu-commands_help.o grub_emu-commands_terminal.o grub_emu-commands_ls.o grub_emu-commands_test.o grub_emu-commands_search.o grub_emu-commands_blocklist.o grub_emu-commands_hexdump.o grub_emu-commands_i386_cpuid.o grub_emu-disk_host.o grub_emu-disk_loopback.o grub_emu-fs_affs.o grub_emu-fs_cpio.o grub_emu-fs_ext2.o grub_emu-fs_fat.o grub_emu-fs_hfs.o grub_emu-fs_hfsplus.o grub_emu-fs_iso9660.o grub_emu-fs_udf.o grub_emu-fs_jfs.o grub_emu-fs_minix.o grub_emu-fs_ntfs.o grub_emu-fs_ntfscomp.o grub_emu-fs_reiserfs.o grub_emu-fs_sfs.o grub_emu-fs_ufs.o grub_emu-fs_xfs.o grub_emu-fs_fshelp.o grub_emu-io_gzio.o grub_emu-kern_device.o grub_emu-kern_disk.o grub_emu-kern_dl.o grub_emu-kern_elf.o grub_emu-kern_env.o grub_emu-kern_err.o grub_emu-normal_execute.o grub_emu-kern_file.o grub_emu-kern_fs.o grub_emu-normal_lexer.o grub_emu-kern_loader.o grub_emu-kern_main.o grub_emu-kern_misc.o grub_emu-kern_parser.o grub_emu-grub_script_tab.o grub_emu-kern_partition.o grub_emu-kern_rescue.o grub_emu-kern_term.o grub_emu-normal_arg.o grub_emu-normal_cmdline.o grub_emu-normal_command.o grub_emu-normal_function.o grub_emu-normal_completion.o grub_emu-normal_main.o grub_emu-normal_menu.o grub_emu-normal_menu_entry.o grub_emu-normal_misc.o grub_emu-normal_script.o grub_emu-normal_color.o grub_emu-partmap_amiga.o grub_emu-partmap_apple.o grub_emu-partmap_pc.o grub_emu-partmap_sun.o grub_emu-partmap_acorn.o grub_emu-partmap_gpt.o grub_emu-util_console.o grub_emu-util_hostfs.o grub_emu-util_grub_emu.o grub_emu-util_misc.o grub_emu-util_biosdisk.o grub_emu-util_getroot.o grub_emu-util_i386_pc_misc.o grub_emu-disk_raid.o grub_emu-disk_lvm.o grub_emu-grub_emu_init.o
+	$(CC) -o $@ grub_emu-commands_boot.o grub_emu-commands_cat.o grub_emu-commands_cmp.o grub_emu-commands_configfile.o grub_emu-commands_echo.o grub_emu-commands_help.o grub_emu-commands_terminal.o grub_emu-commands_ls.o grub_emu-commands_test.o grub_emu-commands_search.o grub_emu-commands_blocklist.o grub_emu-commands_hexdump.o grub_emu-commands_i386_cpuid.o grub_emu-disk_host.o grub_emu-disk_loopback.o grub_emu-fs_affs.o grub_emu-fs_cpio.o grub_emu-fs_ext2.o grub_emu-fs_fat.o grub_emu-fs_hfs.o grub_emu-fs_hfsplus.o grub_emu-fs_iso9660.o grub_emu-fs_udf.o grub_emu-fs_jfs.o grub_emu-fs_minix.o grub_emu-fs_ntfs.o grub_emu-fs_ntfscomp.o grub_emu-fs_reiserfs.o grub_emu-fs_sfs.o grub_emu-fs_ufs.o grub_emu-fs_xfs.o grub_emu-fs_fshelp.o grub_emu-io_gzio.o grub_emu-kern_device.o grub_emu-kern_disk.o grub_emu-kern_dl.o grub_emu-kern_elf.o grub_emu-kern_env.o grub_emu-kern_err.o grub_emu-normal_execute.o grub_emu-kern_file.o grub_emu-kern_fs.o grub_emu-normal_lexer.o grub_emu-kern_loader.o grub_emu-kern_main.o grub_emu-kern_misc.o grub_emu-kern_parser.o grub_emu-grub_script_tab.o grub_emu-kern_partition.o grub_emu-kern_rescue.o grub_emu-kern_term.o grub_emu-normal_arg.o grub_emu-normal_cmdline.o grub_emu-normal_command.o grub_emu-normal_function.o grub_emu-normal_completion.o grub_emu-normal_main.o grub_emu-normal_menu.o grub_emu-normal_menu_entry.o grub_emu-normal_misc.o grub_emu-normal_script.o grub_emu-normal_color.o grub_emu-partmap_amiga.o grub_emu-partmap_apple.o grub_emu-partmap_pc.o grub_emu-partmap_sun.o grub_emu-partmap_acorn.o grub_emu-partmap_gpt.o grub_emu-util_console.o grub_emu-util_hostfs.o grub_emu-util_grub_emu.o grub_emu-util_misc.o grub_emu-util_biosdisk.o grub_emu-util_getroot.o grub_emu-util_i386_pc_misc.o grub_emu-disk_raid.o grub_emu-disk_lvm.o grub_emu-grub_emu_init.o $(LDFLAGS) $(grub_emu_LDFLAGS)
 
 grub_emu-commands_boot.o: commands/boot.c $(commands/boot.c_DEPENDENCIES)
 	$(CC) -Icommands -I$(srcdir)/commands $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
@@ -410,14 +278,6 @@ grub_emu-commands_hexdump.o: commands/hexdump.c $(commands/hexdump.c_DEPENDENCIE
 	$(CC) -Icommands -I$(srcdir)/commands $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-commands_hexdump.d
 
-grub_emu-commands_i386_pc_halt.o: commands/i386/pc/halt.c $(commands/i386/pc/halt.c_DEPENDENCIES)
-	$(CC) -Icommands/i386/pc -I$(srcdir)/commands/i386/pc $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-commands_i386_pc_halt.d
-
-grub_emu-commands_i386_pc_reboot.o: commands/i386/pc/reboot.c $(commands/i386/pc/reboot.c_DEPENDENCIES)
-	$(CC) -Icommands/i386/pc -I$(srcdir)/commands/i386/pc $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-commands_i386_pc_reboot.d
-
 grub_emu-commands_i386_cpuid.o: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES)
 	$(CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-commands_i386_cpuid.d
@@ -430,17 +290,13 @@ grub_emu-disk_loopback.o: disk/loopback.c $(disk/loopback.c_DEPENDENCIES)
 	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-disk_loopback.d
 
-grub_emu-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-disk_raid.d
-
-grub_emu-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
-	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-disk_lvm.d
-
 grub_emu-fs_affs.o: fs/affs.c $(fs/affs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-fs_affs.d
+
+grub_emu-fs_cpio.o: fs/cpio.c $(fs/cpio.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-fs_cpio.d
 
 grub_emu-fs_ext2.o: fs/ext2.c $(fs/ext2.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
@@ -450,17 +306,21 @@ grub_emu-fs_fat.o: fs/fat.c $(fs/fat.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-fs_fat.d
 
-grub_emu-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-fs_fshelp.d
-
 grub_emu-fs_hfs.o: fs/hfs.c $(fs/hfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-fs_hfs.d
 
+grub_emu-fs_hfsplus.o: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-fs_hfsplus.d
+
 grub_emu-fs_iso9660.o: fs/iso9660.c $(fs/iso9660.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-fs_iso9660.d
+
+grub_emu-fs_udf.o: fs/udf.c $(fs/udf.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-fs_udf.d
 
 grub_emu-fs_jfs.o: fs/jfs.c $(fs/jfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
@@ -469,6 +329,18 @@ grub_emu-fs_jfs.o: fs/jfs.c $(fs/jfs.c_DEPENDENCIES)
 grub_emu-fs_minix.o: fs/minix.c $(fs/minix.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-fs_minix.d
+
+grub_emu-fs_ntfs.o: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-fs_ntfs.d
+
+grub_emu-fs_ntfscomp.o: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-fs_ntfscomp.d
+
+grub_emu-fs_reiserfs.o: fs/reiserfs.c $(fs/reiserfs.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-fs_reiserfs.d
 
 grub_emu-fs_sfs.o: fs/sfs.c $(fs/sfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
@@ -482,21 +354,9 @@ grub_emu-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-fs_xfs.d
 
-grub_emu-fs_hfsplus.o: fs/hfsplus.c $(fs/hfsplus.c_DEPENDENCIES)
+grub_emu-fs_fshelp.o: fs/fshelp.c $(fs/fshelp.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-fs_hfsplus.d
-
-grub_emu-fs_ntfs.o: fs/ntfs.c $(fs/ntfs.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-fs_ntfs.d
-
-grub_emu-fs_ntfscomp.o: fs/ntfscomp.c $(fs/ntfscomp.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-fs_ntfscomp.d
-
-grub_emu-fs_cpio.o: fs/cpio.c $(fs/cpio.c_DEPENDENCIES)
-	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
--include grub_emu-fs_cpio.d
+-include grub_emu-fs_fshelp.d
 
 grub_emu-io_gzio.o: io/gzio.c $(io/gzio.c_DEPENDENCIES)
 	$(CC) -Iio -I$(srcdir)/io $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
@@ -670,6 +530,14 @@ grub_emu-util_i386_pc_misc.o: util/i386/pc/misc.c $(util/i386/pc/misc.c_DEPENDEN
 	$(CC) -Iutil/i386/pc -I$(srcdir)/util/i386/pc $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-util_i386_pc_misc.d
 
+grub_emu-disk_raid.o: disk/raid.c $(disk/raid.c_DEPENDENCIES)
+	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-disk_raid.d
+
+grub_emu-disk_lvm.o: disk/lvm.c $(disk/lvm.c_DEPENDENCIES)
+	$(CC) -Idisk -I$(srcdir)/disk $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
+-include grub_emu-disk_lvm.d
+
 grub_emu-grub_emu_init.o: grub_emu_init.c $(grub_emu_init.c_DEPENDENCIES)
 	$(CC) -I. -I$(srcdir)/. $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_emu_CFLAGS) -MD -c -o $@ $<
 -include grub_emu-grub_emu_init.d
@@ -680,7 +548,8 @@ grub_emu_LDFLAGS = $(LIBCURSES)
 # Modules.
 pkglib_MODULES = _linux.mod linux.mod normal.mod	\
 	_multiboot.mod multiboot.mod play.mod		\
-	cpuid.mod serial.mod ata.mod
+	cpuid.mod serial.mod ata.mod			\
+	aout.mod
 
 # For _linux.mod.
 _linux_mod_SOURCES = loader/i386/pc/linux.c
@@ -716,7 +585,7 @@ und-_linux.lst: pre-_linux.o
 	echo '_linux' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-_linux_mod-loader_i386_pc_linux.o: loader/i386/pc/linux.c
+_linux_mod-loader_i386_pc_linux.o: loader/i386/pc/linux.c $(loader/i386/pc/linux.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_linux_mod_CFLAGS) -MD -c -o $@ $<
 -include _linux_mod-loader_i386_pc_linux.d
 
@@ -724,10 +593,10 @@ CLEANFILES += cmd-_linux_mod-loader_i386_pc_linux.lst fs-_linux_mod-loader_i386_
 COMMANDFILES += cmd-_linux_mod-loader_i386_pc_linux.lst
 FSFILES += fs-_linux_mod-loader_i386_pc_linux.lst
 
-cmd-_linux_mod-loader_i386_pc_linux.lst: loader/i386/pc/linux.c gencmdlist.sh
+cmd-_linux_mod-loader_i386_pc_linux.lst: loader/i386/pc/linux.c $(loader/i386/pc/linux.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _linux > $@ || (rm -f $@; exit 1)
 
-fs-_linux_mod-loader_i386_pc_linux.lst: loader/i386/pc/linux.c genfslist.sh
+fs-_linux_mod-loader_i386_pc_linux.lst: loader/i386/pc/linux.c $(loader/i386/pc/linux.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _linux > $@ || (rm -f $@; exit 1)
 
 
@@ -768,7 +637,7 @@ und-linux.lst: pre-linux.o
 	echo 'linux' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-linux_mod-loader_i386_pc_linux_normal.o: loader/i386/pc/linux_normal.c
+linux_mod-loader_i386_pc_linux_normal.o: loader/i386/pc/linux_normal.c $(loader/i386/pc/linux_normal.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(linux_mod_CFLAGS) -MD -c -o $@ $<
 -include linux_mod-loader_i386_pc_linux_normal.d
 
@@ -776,10 +645,10 @@ CLEANFILES += cmd-linux_mod-loader_i386_pc_linux_normal.lst fs-linux_mod-loader_
 COMMANDFILES += cmd-linux_mod-loader_i386_pc_linux_normal.lst
 FSFILES += fs-linux_mod-loader_i386_pc_linux_normal.lst
 
-cmd-linux_mod-loader_i386_pc_linux_normal.lst: loader/i386/pc/linux_normal.c gencmdlist.sh
+cmd-linux_mod-loader_i386_pc_linux_normal.lst: loader/i386/pc/linux_normal.c $(loader/i386/pc/linux_normal.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh linux > $@ || (rm -f $@; exit 1)
 
-fs-linux_mod-loader_i386_pc_linux_normal.lst: loader/i386/pc/linux_normal.c genfslist.sh
+fs-linux_mod-loader_i386_pc_linux_normal.lst: loader/i386/pc/linux_normal.c $(loader/i386/pc/linux_normal.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(linux_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh linux > $@ || (rm -f $@; exit 1)
 
 
@@ -787,7 +656,6 @@ linux_mod_CFLAGS = $(COMMON_CFLAGS)
 linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For normal.mod.
-normal_mod_DEPENDENCIES = grub_script.tab.c grub_script.tab.h
 normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
 	normal/completion.c normal/execute.c		 		\
 	normal/function.c normal/lexer.c normal/main.c normal/menu.c	\
@@ -825,7 +693,7 @@ und-normal.lst: pre-normal.o
 	echo 'normal' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-normal_mod-normal_arg.o: normal/arg.c
+normal_mod-normal_arg.o: normal/arg.c $(normal/arg.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_arg.d
 
@@ -833,14 +701,14 @@ CLEANFILES += cmd-normal_mod-normal_arg.lst fs-normal_mod-normal_arg.lst
 COMMANDFILES += cmd-normal_mod-normal_arg.lst
 FSFILES += fs-normal_mod-normal_arg.lst
 
-cmd-normal_mod-normal_arg.lst: normal/arg.c gencmdlist.sh
+cmd-normal_mod-normal_arg.lst: normal/arg.c $(normal/arg.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_arg.lst: normal/arg.c genfslist.sh
+fs-normal_mod-normal_arg.lst: normal/arg.c $(normal/arg.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_cmdline.o: normal/cmdline.c
+normal_mod-normal_cmdline.o: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_cmdline.d
 
@@ -848,14 +716,14 @@ CLEANFILES += cmd-normal_mod-normal_cmdline.lst fs-normal_mod-normal_cmdline.lst
 COMMANDFILES += cmd-normal_mod-normal_cmdline.lst
 FSFILES += fs-normal_mod-normal_cmdline.lst
 
-cmd-normal_mod-normal_cmdline.lst: normal/cmdline.c gencmdlist.sh
+cmd-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_cmdline.lst: normal/cmdline.c genfslist.sh
+fs-normal_mod-normal_cmdline.lst: normal/cmdline.c $(normal/cmdline.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_command.o: normal/command.c
+normal_mod-normal_command.o: normal/command.c $(normal/command.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_command.d
 
@@ -863,14 +731,14 @@ CLEANFILES += cmd-normal_mod-normal_command.lst fs-normal_mod-normal_command.lst
 COMMANDFILES += cmd-normal_mod-normal_command.lst
 FSFILES += fs-normal_mod-normal_command.lst
 
-cmd-normal_mod-normal_command.lst: normal/command.c gencmdlist.sh
+cmd-normal_mod-normal_command.lst: normal/command.c $(normal/command.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_command.lst: normal/command.c genfslist.sh
+fs-normal_mod-normal_command.lst: normal/command.c $(normal/command.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_completion.o: normal/completion.c
+normal_mod-normal_completion.o: normal/completion.c $(normal/completion.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_completion.d
 
@@ -878,14 +746,14 @@ CLEANFILES += cmd-normal_mod-normal_completion.lst fs-normal_mod-normal_completi
 COMMANDFILES += cmd-normal_mod-normal_completion.lst
 FSFILES += fs-normal_mod-normal_completion.lst
 
-cmd-normal_mod-normal_completion.lst: normal/completion.c gencmdlist.sh
+cmd-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_completion.lst: normal/completion.c genfslist.sh
+fs-normal_mod-normal_completion.lst: normal/completion.c $(normal/completion.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_execute.o: normal/execute.c
+normal_mod-normal_execute.o: normal/execute.c $(normal/execute.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_execute.d
 
@@ -893,14 +761,14 @@ CLEANFILES += cmd-normal_mod-normal_execute.lst fs-normal_mod-normal_execute.lst
 COMMANDFILES += cmd-normal_mod-normal_execute.lst
 FSFILES += fs-normal_mod-normal_execute.lst
 
-cmd-normal_mod-normal_execute.lst: normal/execute.c gencmdlist.sh
+cmd-normal_mod-normal_execute.lst: normal/execute.c $(normal/execute.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_execute.lst: normal/execute.c genfslist.sh
+fs-normal_mod-normal_execute.lst: normal/execute.c $(normal/execute.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_function.o: normal/function.c
+normal_mod-normal_function.o: normal/function.c $(normal/function.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_function.d
 
@@ -908,14 +776,14 @@ CLEANFILES += cmd-normal_mod-normal_function.lst fs-normal_mod-normal_function.l
 COMMANDFILES += cmd-normal_mod-normal_function.lst
 FSFILES += fs-normal_mod-normal_function.lst
 
-cmd-normal_mod-normal_function.lst: normal/function.c gencmdlist.sh
+cmd-normal_mod-normal_function.lst: normal/function.c $(normal/function.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_function.lst: normal/function.c genfslist.sh
+fs-normal_mod-normal_function.lst: normal/function.c $(normal/function.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_lexer.o: normal/lexer.c
+normal_mod-normal_lexer.o: normal/lexer.c $(normal/lexer.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_lexer.d
 
@@ -923,14 +791,14 @@ CLEANFILES += cmd-normal_mod-normal_lexer.lst fs-normal_mod-normal_lexer.lst
 COMMANDFILES += cmd-normal_mod-normal_lexer.lst
 FSFILES += fs-normal_mod-normal_lexer.lst
 
-cmd-normal_mod-normal_lexer.lst: normal/lexer.c gencmdlist.sh
+cmd-normal_mod-normal_lexer.lst: normal/lexer.c $(normal/lexer.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_lexer.lst: normal/lexer.c genfslist.sh
+fs-normal_mod-normal_lexer.lst: normal/lexer.c $(normal/lexer.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_main.o: normal/main.c
+normal_mod-normal_main.o: normal/main.c $(normal/main.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_main.d
 
@@ -938,14 +806,14 @@ CLEANFILES += cmd-normal_mod-normal_main.lst fs-normal_mod-normal_main.lst
 COMMANDFILES += cmd-normal_mod-normal_main.lst
 FSFILES += fs-normal_mod-normal_main.lst
 
-cmd-normal_mod-normal_main.lst: normal/main.c gencmdlist.sh
+cmd-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_main.lst: normal/main.c genfslist.sh
+fs-normal_mod-normal_main.lst: normal/main.c $(normal/main.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_menu.o: normal/menu.c
+normal_mod-normal_menu.o: normal/menu.c $(normal/menu.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_menu.d
 
@@ -953,14 +821,14 @@ CLEANFILES += cmd-normal_mod-normal_menu.lst fs-normal_mod-normal_menu.lst
 COMMANDFILES += cmd-normal_mod-normal_menu.lst
 FSFILES += fs-normal_mod-normal_menu.lst
 
-cmd-normal_mod-normal_menu.lst: normal/menu.c gencmdlist.sh
+cmd-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_menu.lst: normal/menu.c genfslist.sh
+fs-normal_mod-normal_menu.lst: normal/menu.c $(normal/menu.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_menu_entry.o: normal/menu_entry.c
+normal_mod-normal_menu_entry.o: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_menu_entry.d
 
@@ -968,14 +836,14 @@ CLEANFILES += cmd-normal_mod-normal_menu_entry.lst fs-normal_mod-normal_menu_ent
 COMMANDFILES += cmd-normal_mod-normal_menu_entry.lst
 FSFILES += fs-normal_mod-normal_menu_entry.lst
 
-cmd-normal_mod-normal_menu_entry.lst: normal/menu_entry.c gencmdlist.sh
+cmd-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_menu_entry.lst: normal/menu_entry.c genfslist.sh
+fs-normal_mod-normal_menu_entry.lst: normal/menu_entry.c $(normal/menu_entry.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_misc.o: normal/misc.c
+normal_mod-normal_misc.o: normal/misc.c $(normal/misc.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_misc.d
 
@@ -983,14 +851,14 @@ CLEANFILES += cmd-normal_mod-normal_misc.lst fs-normal_mod-normal_misc.lst
 COMMANDFILES += cmd-normal_mod-normal_misc.lst
 FSFILES += fs-normal_mod-normal_misc.lst
 
-cmd-normal_mod-normal_misc.lst: normal/misc.c gencmdlist.sh
+cmd-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_misc.lst: normal/misc.c genfslist.sh
+fs-normal_mod-normal_misc.lst: normal/misc.c $(normal/misc.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-grub_script_tab.o: grub_script.tab.c
+normal_mod-grub_script_tab.o: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES)
 	$(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-grub_script_tab.d
 
@@ -998,14 +866,14 @@ CLEANFILES += cmd-normal_mod-grub_script_tab.lst fs-normal_mod-grub_script_tab.l
 COMMANDFILES += cmd-normal_mod-grub_script_tab.lst
 FSFILES += fs-normal_mod-grub_script_tab.lst
 
-cmd-normal_mod-grub_script_tab.lst: grub_script.tab.c gencmdlist.sh
+cmd-normal_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-grub_script_tab.lst: grub_script.tab.c genfslist.sh
+fs-normal_mod-grub_script_tab.lst: grub_script.tab.c $(grub_script.tab.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -I. -I$(srcdir)/. $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_script.o: normal/script.c
+normal_mod-normal_script.o: normal/script.c $(normal/script.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_script.d
 
@@ -1013,14 +881,14 @@ CLEANFILES += cmd-normal_mod-normal_script.lst fs-normal_mod-normal_script.lst
 COMMANDFILES += cmd-normal_mod-normal_script.lst
 FSFILES += fs-normal_mod-normal_script.lst
 
-cmd-normal_mod-normal_script.lst: normal/script.c gencmdlist.sh
+cmd-normal_mod-normal_script.lst: normal/script.c $(normal/script.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_script.lst: normal/script.c genfslist.sh
+fs-normal_mod-normal_script.lst: normal/script.c $(normal/script.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_i386_setjmp.o: normal/i386/setjmp.S
+normal_mod-normal_i386_setjmp.o: normal/i386/setjmp.S $(normal/i386/setjmp.S_DEPENDENCIES)
 	$(TARGET_CC) -Inormal/i386 -I$(srcdir)/normal/i386 $(TARGET_CPPFLAGS) -DASM_FILE=1 $(TARGET_ASFLAGS) $(normal_mod_ASFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_i386_setjmp.d
 
@@ -1028,14 +896,14 @@ CLEANFILES += cmd-normal_mod-normal_i386_setjmp.lst fs-normal_mod-normal_i386_se
 COMMANDFILES += cmd-normal_mod-normal_i386_setjmp.lst
 FSFILES += fs-normal_mod-normal_i386_setjmp.lst
 
-cmd-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S gencmdlist.sh
+cmd-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S $(normal/i386/setjmp.S_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal/i386 -I$(srcdir)/normal/i386 $(TARGET_CPPFLAGS) $(TARGET_ASFLAGS) $(normal_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S genfslist.sh
+fs-normal_mod-normal_i386_setjmp.lst: normal/i386/setjmp.S $(normal/i386/setjmp.S_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal/i386 -I$(srcdir)/normal/i386 $(TARGET_CPPFLAGS) $(TARGET_ASFLAGS) $(normal_mod_ASFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
-normal_mod-normal_color.o: normal/color.c
+normal_mod-normal_color.o: normal/color.c $(normal/color.c_DEPENDENCIES)
 	$(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -MD -c -o $@ $<
 -include normal_mod-normal_color.d
 
@@ -1043,10 +911,10 @@ CLEANFILES += cmd-normal_mod-normal_color.lst fs-normal_mod-normal_color.lst
 COMMANDFILES += cmd-normal_mod-normal_color.lst
 FSFILES += fs-normal_mod-normal_color.lst
 
-cmd-normal_mod-normal_color.lst: normal/color.c gencmdlist.sh
+cmd-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh normal > $@ || (rm -f $@; exit 1)
 
-fs-normal_mod-normal_color.lst: normal/color.c genfslist.sh
+fs-normal_mod-normal_color.lst: normal/color.c $(normal/color.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Inormal -I$(srcdir)/normal $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(normal_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh normal > $@ || (rm -f $@; exit 1)
 
 
@@ -1088,7 +956,7 @@ und-serial.lst: pre-serial.o
 	echo 'serial' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-serial_mod-term_i386_pc_serial.o: term/i386/pc/serial.c
+serial_mod-term_i386_pc_serial.o: term/i386/pc/serial.c $(term/i386/pc/serial.c_DEPENDENCIES)
 	$(TARGET_CC) -Iterm/i386/pc -I$(srcdir)/term/i386/pc $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(serial_mod_CFLAGS) -MD -c -o $@ $<
 -include serial_mod-term_i386_pc_serial.d
 
@@ -1096,10 +964,10 @@ CLEANFILES += cmd-serial_mod-term_i386_pc_serial.lst fs-serial_mod-term_i386_pc_
 COMMANDFILES += cmd-serial_mod-term_i386_pc_serial.lst
 FSFILES += fs-serial_mod-term_i386_pc_serial.lst
 
-cmd-serial_mod-term_i386_pc_serial.lst: term/i386/pc/serial.c gencmdlist.sh
+cmd-serial_mod-term_i386_pc_serial.lst: term/i386/pc/serial.c $(term/i386/pc/serial.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iterm/i386/pc -I$(srcdir)/term/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(serial_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh serial > $@ || (rm -f $@; exit 1)
 
-fs-serial_mod-term_i386_pc_serial.lst: term/i386/pc/serial.c genfslist.sh
+fs-serial_mod-term_i386_pc_serial.lst: term/i386/pc/serial.c $(term/i386/pc/serial.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iterm/i386/pc -I$(srcdir)/term/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(serial_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh serial > $@ || (rm -f $@; exit 1)
 
 
@@ -1143,7 +1011,7 @@ und-_multiboot.lst: pre-_multiboot.o
 	echo '_multiboot' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-_multiboot_mod-loader_i386_pc_multiboot.o: loader/i386/pc/multiboot.c
+_multiboot_mod-loader_i386_pc_multiboot.o: loader/i386/pc/multiboot.c $(loader/i386/pc/multiboot.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -MD -c -o $@ $<
 -include _multiboot_mod-loader_i386_pc_multiboot.d
 
@@ -1151,14 +1019,14 @@ CLEANFILES += cmd-_multiboot_mod-loader_i386_pc_multiboot.lst fs-_multiboot_mod-
 COMMANDFILES += cmd-_multiboot_mod-loader_i386_pc_multiboot.lst
 FSFILES += fs-_multiboot_mod-loader_i386_pc_multiboot.lst
 
-cmd-_multiboot_mod-loader_i386_pc_multiboot.lst: loader/i386/pc/multiboot.c gencmdlist.sh
+cmd-_multiboot_mod-loader_i386_pc_multiboot.lst: loader/i386/pc/multiboot.c $(loader/i386/pc/multiboot.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
-fs-_multiboot_mod-loader_i386_pc_multiboot.lst: loader/i386/pc/multiboot.c genfslist.sh
+fs-_multiboot_mod-loader_i386_pc_multiboot.lst: loader/i386/pc/multiboot.c $(loader/i386/pc/multiboot.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
 
-_multiboot_mod-loader_i386_pc_multiboot2.o: loader/i386/pc/multiboot2.c
+_multiboot_mod-loader_i386_pc_multiboot2.o: loader/i386/pc/multiboot2.c $(loader/i386/pc/multiboot2.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -MD -c -o $@ $<
 -include _multiboot_mod-loader_i386_pc_multiboot2.d
 
@@ -1166,14 +1034,14 @@ CLEANFILES += cmd-_multiboot_mod-loader_i386_pc_multiboot2.lst fs-_multiboot_mod
 COMMANDFILES += cmd-_multiboot_mod-loader_i386_pc_multiboot2.lst
 FSFILES += fs-_multiboot_mod-loader_i386_pc_multiboot2.lst
 
-cmd-_multiboot_mod-loader_i386_pc_multiboot2.lst: loader/i386/pc/multiboot2.c gencmdlist.sh
+cmd-_multiboot_mod-loader_i386_pc_multiboot2.lst: loader/i386/pc/multiboot2.c $(loader/i386/pc/multiboot2.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
-fs-_multiboot_mod-loader_i386_pc_multiboot2.lst: loader/i386/pc/multiboot2.c genfslist.sh
+fs-_multiboot_mod-loader_i386_pc_multiboot2.lst: loader/i386/pc/multiboot2.c $(loader/i386/pc/multiboot2.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader/i386/pc -I$(srcdir)/loader/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
 
-_multiboot_mod-loader_multiboot2.o: loader/multiboot2.c
+_multiboot_mod-loader_multiboot2.o: loader/multiboot2.c $(loader/multiboot2.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -MD -c -o $@ $<
 -include _multiboot_mod-loader_multiboot2.d
 
@@ -1181,14 +1049,14 @@ CLEANFILES += cmd-_multiboot_mod-loader_multiboot2.lst fs-_multiboot_mod-loader_
 COMMANDFILES += cmd-_multiboot_mod-loader_multiboot2.lst
 FSFILES += fs-_multiboot_mod-loader_multiboot2.lst
 
-cmd-_multiboot_mod-loader_multiboot2.lst: loader/multiboot2.c gencmdlist.sh
+cmd-_multiboot_mod-loader_multiboot2.lst: loader/multiboot2.c $(loader/multiboot2.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
-fs-_multiboot_mod-loader_multiboot2.lst: loader/multiboot2.c genfslist.sh
+fs-_multiboot_mod-loader_multiboot2.lst: loader/multiboot2.c $(loader/multiboot2.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
 
-_multiboot_mod-loader_multiboot_loader.o: loader/multiboot_loader.c
+_multiboot_mod-loader_multiboot_loader.o: loader/multiboot_loader.c $(loader/multiboot_loader.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -MD -c -o $@ $<
 -include _multiboot_mod-loader_multiboot_loader.d
 
@@ -1196,10 +1064,10 @@ CLEANFILES += cmd-_multiboot_mod-loader_multiboot_loader.lst fs-_multiboot_mod-l
 COMMANDFILES += cmd-_multiboot_mod-loader_multiboot_loader.lst
 FSFILES += fs-_multiboot_mod-loader_multiboot_loader.lst
 
-cmd-_multiboot_mod-loader_multiboot_loader.lst: loader/multiboot_loader.c gencmdlist.sh
+cmd-_multiboot_mod-loader_multiboot_loader.lst: loader/multiboot_loader.c $(loader/multiboot_loader.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
-fs-_multiboot_mod-loader_multiboot_loader.lst: loader/multiboot_loader.c genfslist.sh
+fs-_multiboot_mod-loader_multiboot_loader.lst: loader/multiboot_loader.c $(loader/multiboot_loader.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(_multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh _multiboot > $@ || (rm -f $@; exit 1)
 
 
@@ -1240,7 +1108,7 @@ und-multiboot.lst: pre-multiboot.o
 	echo 'multiboot' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-multiboot_mod-loader_multiboot_loader_normal.o: loader/multiboot_loader_normal.c
+multiboot_mod-loader_multiboot_loader_normal.o: loader/multiboot_loader_normal.c $(loader/multiboot_loader_normal.c_DEPENDENCIES)
 	$(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(multiboot_mod_CFLAGS) -MD -c -o $@ $<
 -include multiboot_mod-loader_multiboot_loader_normal.d
 
@@ -1248,15 +1116,67 @@ CLEANFILES += cmd-multiboot_mod-loader_multiboot_loader_normal.lst fs-multiboot_
 COMMANDFILES += cmd-multiboot_mod-loader_multiboot_loader_normal.lst
 FSFILES += fs-multiboot_mod-loader_multiboot_loader_normal.lst
 
-cmd-multiboot_mod-loader_multiboot_loader_normal.lst: loader/multiboot_loader_normal.c gencmdlist.sh
+cmd-multiboot_mod-loader_multiboot_loader_normal.lst: loader/multiboot_loader_normal.c $(loader/multiboot_loader_normal.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh multiboot > $@ || (rm -f $@; exit 1)
 
-fs-multiboot_mod-loader_multiboot_loader_normal.lst: loader/multiboot_loader_normal.c genfslist.sh
+fs-multiboot_mod-loader_multiboot_loader_normal.lst: loader/multiboot_loader_normal.c $(loader/multiboot_loader_normal.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(multiboot_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh multiboot > $@ || (rm -f $@; exit 1)
 
 
 multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
 multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For aout.mod
+aout_mod_SOURCES = loader/aout.c
+CLEANFILES += aout.mod mod-aout.o mod-aout.c pre-aout.o aout_mod-loader_aout.o und-aout.lst
+ifneq ($(aout_mod_EXPORTS),no)
+CLEANFILES += def-aout.lst
+DEFSYMFILES += def-aout.lst
+endif
+MOSTLYCLEANFILES += aout_mod-loader_aout.d
+UNDSYMFILES += und-aout.lst
+
+aout.mod: pre-aout.o mod-aout.o
+	-rm -f $@
+	$(TARGET_CC) $(aout_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ $^
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -R .note -R .comment $@
+
+pre-aout.o: $(aout_mod_DEPENDENCIES) aout_mod-loader_aout.o
+	-rm -f $@
+	$(TARGET_CC) $(aout_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ aout_mod-loader_aout.o
+
+mod-aout.o: mod-aout.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -c -o $@ $<
+
+mod-aout.c: moddep.lst genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'aout' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(aout_mod_EXPORTS),no)
+def-aout.lst: pre-aout.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 aout/' > $@
+endif
+
+und-aout.lst: pre-aout.o
+	echo 'aout' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+aout_mod-loader_aout.o: loader/aout.c $(loader/aout.c_DEPENDENCIES)
+	$(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -MD -c -o $@ $<
+-include aout_mod-loader_aout.d
+
+CLEANFILES += cmd-aout_mod-loader_aout.lst fs-aout_mod-loader_aout.lst
+COMMANDFILES += cmd-aout_mod-loader_aout.lst
+FSFILES += fs-aout_mod-loader_aout.lst
+
+cmd-aout_mod-loader_aout.lst: loader/aout.c $(loader/aout.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh aout > $@ || (rm -f $@; exit 1)
+
+fs-aout_mod-loader_aout.lst: loader/aout.c $(loader/aout.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh aout > $@ || (rm -f $@; exit 1)
+
+
+aout_mod_CFLAGS = $(COMMON_CFLAGS)
+aout_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For play.mod.
 play_mod_SOURCES = commands/i386/pc/play.c
@@ -1292,7 +1212,7 @@ und-play.lst: pre-play.o
 	echo 'play' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-play_mod-commands_i386_pc_play.o: commands/i386/pc/play.c
+play_mod-commands_i386_pc_play.o: commands/i386/pc/play.c $(commands/i386/pc/play.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands/i386/pc -I$(srcdir)/commands/i386/pc $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(play_mod_CFLAGS) -MD -c -o $@ $<
 -include play_mod-commands_i386_pc_play.d
 
@@ -1300,10 +1220,10 @@ CLEANFILES += cmd-play_mod-commands_i386_pc_play.lst fs-play_mod-commands_i386_p
 COMMANDFILES += cmd-play_mod-commands_i386_pc_play.lst
 FSFILES += fs-play_mod-commands_i386_pc_play.lst
 
-cmd-play_mod-commands_i386_pc_play.lst: commands/i386/pc/play.c gencmdlist.sh
+cmd-play_mod-commands_i386_pc_play.lst: commands/i386/pc/play.c $(commands/i386/pc/play.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Icommands/i386/pc -I$(srcdir)/commands/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(play_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh play > $@ || (rm -f $@; exit 1)
 
-fs-play_mod-commands_i386_pc_play.lst: commands/i386/pc/play.c genfslist.sh
+fs-play_mod-commands_i386_pc_play.lst: commands/i386/pc/play.c $(commands/i386/pc/play.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Icommands/i386/pc -I$(srcdir)/commands/i386/pc $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(play_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh play > $@ || (rm -f $@; exit 1)
 
 
@@ -1344,7 +1264,7 @@ und-cpuid.lst: pre-cpuid.o
 	echo 'cpuid' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-cpuid_mod-commands_i386_cpuid.o: commands/i386/cpuid.c
+cpuid_mod-commands_i386_cpuid.o: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES)
 	$(TARGET_CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(cpuid_mod_CFLAGS) -MD -c -o $@ $<
 -include cpuid_mod-commands_i386_cpuid.d
 
@@ -1352,10 +1272,10 @@ CLEANFILES += cmd-cpuid_mod-commands_i386_cpuid.lst fs-cpuid_mod-commands_i386_c
 COMMANDFILES += cmd-cpuid_mod-commands_i386_cpuid.lst
 FSFILES += fs-cpuid_mod-commands_i386_cpuid.lst
 
-cmd-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c gencmdlist.sh
+cmd-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh cpuid > $@ || (rm -f $@; exit 1)
 
-fs-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c genfslist.sh
+fs-cpuid_mod-commands_i386_cpuid.lst: commands/i386/cpuid.c $(commands/i386/cpuid.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Icommands/i386 -I$(srcdir)/commands/i386 $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(cpuid_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh cpuid > $@ || (rm -f $@; exit 1)
 
 
@@ -1396,7 +1316,7 @@ und-ata.lst: pre-ata.o
 	echo 'ata' > $@
 	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
 
-ata_mod-disk_ata.o: disk/ata.c
+ata_mod-disk_ata.o: disk/ata.c $(disk/ata.c_DEPENDENCIES)
 	$(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(ata_mod_CFLAGS) -MD -c -o $@ $<
 -include ata_mod-disk_ata.d
 
@@ -1404,10 +1324,10 @@ CLEANFILES += cmd-ata_mod-disk_ata.lst fs-ata_mod-disk_ata.lst
 COMMANDFILES += cmd-ata_mod-disk_ata.lst
 FSFILES += fs-ata_mod-disk_ata.lst
 
-cmd-ata_mod-disk_ata.lst: disk/ata.c gencmdlist.sh
+cmd-ata_mod-disk_ata.lst: disk/ata.c $(disk/ata.c_DEPENDENCIES) gencmdlist.sh
 	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ata_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh ata > $@ || (rm -f $@; exit 1)
 
-fs-ata_mod-disk_ata.lst: disk/ata.c genfslist.sh
+fs-ata_mod-disk_ata.lst: disk/ata.c $(disk/ata.c_DEPENDENCIES) genfslist.sh
 	set -e; 	  $(TARGET_CC) -Idisk -I$(srcdir)/disk $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(ata_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh ata > $@ || (rm -f $@; exit 1)
 
 

@@ -1,6 +1,6 @@
 #! /usr/bin/ruby -w
 #
-# Copyright (C) 2002,2003,2004,2005,2006  Free Software Foundation, Inc.
+# Copyright (C) 2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
 #
 # This genmk.rb is free software; the author
 # gives unlimited permission to copy and/or distribute it,
@@ -70,7 +70,7 @@ MOSTLYCLEANFILES += #{deps_str}
       extra_flags = if /\.S$/ =~ src then '-DASM_FILE=1' else '' end
       dir = File.dirname(src)
       
-      "#{obj}: #{src}
+      "#{obj}: #{src} $(#{src}_DEPENDENCIES)
 	$(TARGET_CC) -I#{dir} -I$(srcdir)/#{dir} $(TARGET_CPPFLAGS) #{extra_flags} $(TARGET_#{flag}) $(#{prefix}_#{flag}) -MD -c -o $@ $<
 -include #{dep}
 
@@ -146,7 +146,7 @@ endif
       extra_flags = if /\.S$/ =~ src then '-DASM_FILE=1' else '' end
       dir = File.dirname(src)
 
-      "#{obj}: #{src}
+      "#{obj}: #{src} $(#{src}_DEPENDENCIES)
 	$(TARGET_CC) -I#{dir} -I$(srcdir)/#{dir} $(TARGET_CPPFLAGS) #{extra_flags} $(TARGET_#{flag}) $(#{prefix}_#{flag}) -MD -c -o $@ $<
 -include #{dep}
 
@@ -154,12 +154,12 @@ CLEANFILES += #{command} #{fs}
 COMMANDFILES += #{command}
 FSFILES += #{fs}
 
-#{command}: #{src} gencmdlist.sh
+#{command}: #{src} $(#{src}_DEPENDENCIES) gencmdlist.sh
 	set -e; \
 	  $(TARGET_CC) -I#{dir} -I$(srcdir)/#{dir} $(TARGET_CPPFLAGS) $(TARGET_#{flag}) $(#{prefix}_#{flag}) -E $< \
 	  | sh $(srcdir)/gencmdlist.sh #{symbolic_name} > $@ || (rm -f $@; exit 1)
 
-#{fs}: #{src} genfslist.sh
+#{fs}: #{src} $(#{src}_DEPENDENCIES) genfslist.sh
 	set -e; \
 	  $(TARGET_CC) -I#{dir} -I$(srcdir)/#{dir} $(TARGET_CPPFLAGS) $(TARGET_#{flag}) $(#{prefix}_#{flag}) -E $< \
 	  | sh $(srcdir)/genfslist.sh #{symbolic_name} > $@ || (rm -f $@; exit 1)
@@ -237,7 +237,7 @@ MOSTLYCLEANFILES += #{deps_str}
       dep = deps[i]
       dir = File.dirname(src)
 
-      "#{obj}: #{src}
+      "#{obj}: #{src} $(#{src}_DEPENDENCIES)
 	$(TARGET_CC) -I#{dir} -I$(srcdir)/#{dir} $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(#{prefix}_CFLAGS) -MD -c -o $@ $<
 -include #{dep}
 
@@ -264,7 +264,7 @@ class Script
 
     "CLEANFILES += #{@name}
 
-#{@name}: #{src} config.status
+#{@name}: #{src} $(#{src}_DEPENDENCIES) config.status
 	./config.status --file=#{name}:#{src}
 	chmod +x $@
 

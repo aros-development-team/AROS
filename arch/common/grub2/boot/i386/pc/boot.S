@@ -32,9 +32,6 @@
 	/* Print message string */
 #define MSG(x)	movw $ABS(x), %si; call message
 
-	/* XXX:	binutils-2.9.1.0.x doesn't produce a short opcode for this. */
-#define	MOV_MEM_TO_AL(x)	.byte 0xa0;  .word x
-	
 	.file	"boot.S"
 
 	.text
@@ -99,6 +96,8 @@ kernel_sector:
 boot_drive:	
 	.byte 0xff	/* the disk to load kernel from */
 			/* 0xff means use the boot drive */
+root_drive:
+        .byte 0xff
 
 after_BPB:
 
@@ -141,7 +140,9 @@ real_start:
 	/*
 	 *  Check if we have a forced disk reference here
 	 */
-	MOV_MEM_TO_AL(ABS(boot_drive))	/* movb	ABS(boot_drive), %al */
+        /* assign root_drive at the same time */
+        movw    ABS(boot_drive), %ax
+        movb    %ah, %dh
 	cmpb	$0xff, %al
 	je	1f
 	movb	%al, %dl
@@ -303,6 +304,7 @@ setup_sectors:
 
 	/* restore %dl */
 	popw	%dx
+        pushw   %dx
 
 	/* head start */
 	movb	%al, %dh
@@ -353,6 +355,7 @@ copy_buffer:
 
 	popw	%ds
 	popa
+        popw    %dx
 
 	/* boot kernel */
 	jmp	*(kernel_address)

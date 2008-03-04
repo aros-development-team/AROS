@@ -30,6 +30,33 @@ grub_ofdisk_iterate (int (*hook) (const char *name))
 
   int dev_iterate (struct grub_ieee1275_devalias *alias)
     {
+      grub_dprintf ("disk", "disk name = %s\n", alias->name);
+
+      if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_OFDISK_SDCARD_ONLY))
+	{
+	  grub_ieee1275_phandle_t dev;
+	  char tmp[8];
+
+	  if (grub_ieee1275_finddevice (alias->path, &dev))
+	    {
+	      grub_dprintf ("disk", "finddevice (%s) failed\n", alias->path);
+	      return 0;
+	    }
+
+	  if (grub_ieee1275_get_property (dev, "iconname", tmp,
+					  sizeof tmp, 0))
+	    {
+	      grub_dprintf ("disk", "get iconname failed\n");
+	      return 0;
+	    }
+
+	  if (grub_strcmp (tmp, "sdmmc"))
+	    {
+	      grub_dprintf ("disk", "device is not an SD card\n");
+	      return 0;
+	    }
+	}
+
       if (! grub_strcmp (alias->type, "block"))
 	hook (alias->name);
       else if ((! grub_strcmp (alias->type, "scsi"))
@@ -104,9 +131,11 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
   /* XXX: Read this, somehow.  */
   disk->has_partitions = 1;
   disk->data = (void *) dev_ihandle;
+  grub_free (devpath);
+  return 0;
 
  fail:
-  if (grub_errno && dev_ihandle)
+  if (dev_ihandle)
     grub_ieee1275_close (dev_ihandle);
   grub_free (devpath);
   return grub_errno;

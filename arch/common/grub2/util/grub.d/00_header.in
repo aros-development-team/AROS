@@ -1,7 +1,7 @@
 #! /bin/sh -e
 
 # update-grub helper script.
-# Copyright (C) 2006,2007  Free Software Foundation, Inc.
+# Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,12 @@ platform=@platform@
 # for convert_system_path_to_grub_path()
 . ${libdir}/grub/update-grub_lib
 
+# Do this as early as possible, since other commands might depend on it.
+# (e.g. the `font' command might need lvm or raid modules)
+for i in ${GRUB_PRELOAD_MODULES} ; do
+  echo "insmod $i"
+done
+
 if [ "x${GRUB_DEFAULT}" = "x" ] ; then GRUB_DEFAULT=0 ; fi
 if [ "x${GRUB_TIMEOUT}" = "x" ] ; then GRUB_TIMEOUT=5 ; fi
 
@@ -36,15 +42,14 @@ if [ "x${GRUB_DRIVE}" = "x" ] ; then : ; else
   echo "set root=${GRUB_DRIVE}"
 fi
 
-if [ "x${GRUB_FONT_PATH}" = "x" ] ; then : ; else
-  echo "font ${GRUB_FONT_PATH}"
-fi
-
 case ${platform}:${GRUB_TERMINAL} in
   pc:gfxterm) cat << EOF
-set gfxmode=640x480
-insmod gfxterm
-insmod vbe
+if font ${GRUB_FONT_PATH} ; then
+  set gfxmode=640x480
+  insmod gfxterm
+  insmod vbe
+  terminal gfxterm
+fi
 EOF
   ;;
   *:serial)
@@ -53,7 +58,9 @@ EOF
       GRUB_SERIAL_COMMAND=serial
     fi
     echo "${GRUB_SERIAL_COMMAND}"
+    echo "terminal serial"
+  ;;
+  *:*)
+    echo "terminal ${GRUB_TERMINAL}"
   ;;
 esac
-
-echo "terminal ${GRUB_TERMINAL}"

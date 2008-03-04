@@ -1,4 +1,4 @@
-New in 1.96:
+New in 1.96 - 2008-02-03:
 
 * The license term is changed to GNU General Public License Version 3.
 
@@ -9,9 +9,30 @@ New in 1.96:
 
 * grub-emu can access the host filesystem now.
 
-* Add support for the NTFS and Reiserfs filesystems.
+* Add support for the NTFS, cpio/tar and Reiserfs filesystems.
 
 * Add support for ATA/ATAPI.
+
+* Add update-grub script to generate grub.cfg.
+
+* Add grub-mkrescue script to generate floppy or ElTorito images
+  (i386-pc only).
+
+* Add support for background images in gfxterm (background_image command).
+
+* Add support for detection of 64-bit support in CPU (cpuid command).
+
+* GPT is now enabled in i386-pc target.
+
+* Add grub-install for EFI.
+
+* Ported to the following new platforms: Efika, coreboot (a.k.a. LinuxBIOS),
+  OLPC XO.
+
+* Add support for colored menu (menu_color_normal and menu_color_highlight
+  variables).
+
+* Fix support for loading Linux zImages (such as memtest86).
 
 New in 1.95 - 2006-10-15:
 
