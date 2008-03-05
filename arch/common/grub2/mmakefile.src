@@ -4,7 +4,6 @@
 include $(TOP)/config/make.cfg
 
 #MM- arch-common-grub2 : grub2-host-quick grub2-menu-$(ARCH) grub2-copy-files
-##MM- arch-common-grub2 : grub2-native-quick grub2-menu-$(ARCH) grub2-copy-files
 
 #MM- bootloader-grub2 : arch-common-grub2
 #MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
@@ -19,11 +18,8 @@ GRUB2MISCDIR := $(GRUB2DIR)/Misc
 # Workaround for Grub2;s currently buggy gensymlist.sh
 HOST_CC := gcc
 
-%build_with_configure mmake=grub2-host compiler=host install_target= \
-    extraoptions=
-
-##%build_with_configure mmake=grub2-native compiler=target install_target= \
-##    extraoptions=
+%build_with_configure mmake=grub2-host compiler=host nix=yes	\
+	prefix="$(GENDIR)/$(CURDIR)/host_binaries"
 
 GRUB2MODULES := $(foreach                                         \
                    f,                                           \
@@ -71,10 +67,13 @@ $(GRUBBOOTDIR)/%.mod: $(GRUB2MODDIR)/%.mod
 #MM
 bootloader-grub2-isosetup : $(foreach f, $(wildcard $(GRUB2MODDIR)/*.mod ), $(subst $(GRUB2MODDIR)/,$(GRUBBOOTDIR)/,$f) )
 
+GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
+		fshelp help iso9660 ls multiboot serial sfs	\
+		terminal
 #MM
 grub2-iso-setup :
 	%mkdirs_q $(GRUBBOOTDIR)
-	@$(GENDIR)/$(CURDIR)/grub-mkimage -d $(GENDIR)/$(CURDIR)/ -o $(GRUB2IMGDIR)/core.img biosdisk iso9660
-	$(CAT) $(GRUB2IMGDIR)/cdboot.img $(GRUB2IMGDIR)/core.img > $(BINDIR)/boot/grub/grub2_eltorito
-
+	@cd $(GENDIR)/$(CURDIR) && \
+	./grub-mkimage -d . -o core.img $(GRUB2_MODS) && \
+	$(CAT) cdboot.img core.img > $(GRUBBOOTDIR)/grub2_eltorito
 
