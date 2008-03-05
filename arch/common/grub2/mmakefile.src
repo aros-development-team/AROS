@@ -16,14 +16,14 @@ GRUB2MODDIR := $(GRUB2DIR)/Modules
 GRUB2IMGDIR := $(GRUB2DIR)/Images
 GRUB2MISCDIR := $(GRUB2DIR)/Misc
 
-CFLAGS := -minline-all-stringops
-export CFLAGS
+# Workaround for Grub2;s currently buggy gensymlist.sh
+HOST_CC := gcc
 
 %build_with_configure mmake=grub2-host compiler=host install_target= \
-    extraoptions="$(GRUB2OPTS)"
+    extraoptions=
 
 ##%build_with_configure mmake=grub2-native compiler=target install_target= \
-##    extraoptions="$(GRUB2OPTS)"
+##    extraoptions=
 
 GRUB2MODULES := $(foreach                                         \
                    f,                                           \
