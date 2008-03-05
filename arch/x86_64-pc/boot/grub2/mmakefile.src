@@ -5,10 +5,10 @@ include $(TOP)/config/make.cfg
 
 #MM grub2-pc-x86_64: arch-common-grub2 grub2-iso-setup 
 
-grub2-pc-x86_64: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
+grub2-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg $(BINDIR)/boot/grub/grub.cfg.DH0
 
-$(BINDIR)/boot/grub/menu.lst:
-		$(CP) menu.lst $(BINDIR)/boot/grub/
+$(BINDIR)/boot/grub/grub.cfg:
+		$(CP) grub.cfg $(BINDIR)/boot/grub/
 
-$(BINDIR)/boot/grub/menu.lst.DH0:
-		$(CP) menu.lst.DH0 $(BINDIR)/boot/grub/
+$(BINDIR)/boot/grub/grub.cfg.DH0:
+		$(CP) grub.cfg.DH0 $(BINDIR)/boot/grub/
