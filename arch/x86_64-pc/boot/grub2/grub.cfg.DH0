@@ -6,14 +6,14 @@ set default 0
 
 menuentry "AROS with VESA" {
     serial=9600
-    kernel /dh0/boot/aros-x86_64 vesa=800x600x16
+    multiboot /dh0/boot/aros-x86_64 vesa=800x600x16
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
 }
 
 menuentry "AROS with SFS and FAT" {
     serial=9600
-    kernel /dh0/boot/aros-x86_64 vesa=800x600x16
+    multiboot /dh0/boot/aros-x86_64 vesa=800x600x16
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
     module /dh0/Devs/sfs.handler
