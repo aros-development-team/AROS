@@ -44,6 +44,7 @@
 #include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/gzio.h>
+#include <grub/env.h>
 
 extern grub_dl_t my_mod;
 static struct grub_multiboot_info *mbi;
@@ -261,6 +262,51 @@ grub_multiboot_load_elf (grub_file_t file, void *buffer)
   return grub_error (GRUB_ERR_UNKNOWN_OS, "unknown ELF class");
 }
 
+static int
+grub_multiboot_get_bootdev (grub_uint32_t *bootdev)
+{
+  char *p;
+
+  p = grub_env_get ("root");
+  if ((p) && ((p[0] == 'h') || (p[0] == 'f')) && (p[1] == 'd') &&
+      (p[2] >= '0') && (p[2] <= '9'))
+    {
+      grub_uint32_t bd;
+
+      bd = (p[0] == 'h') ? 0x80 : 0;
+      bd += grub_strtoul (p + 2, &p, 0);
+      bd <<= 24;
+
+      if ((p) && (p[0] == ','))
+	{
+	  if ((p[1] >= '0') && (p[1] <= '9'))
+	    {
+
+	      bd += ((grub_strtoul (p + 1, &p, 0) - 1) & 0xFF) << 16;
+
+	      if ((p) && (p[0] == ','))
+		p++;
+	    }
+          else
+            bd += 0xFF0000;
+
+	  if ((p[0] >= 'a') && (p[0] <= 'z'))
+            bd += (p[0] - 'a') << 8;
+          else
+            bd += 0xFF00;
+	}
+      else
+        bd += 0xFFFF00;
+
+      bd += 0xFF;
+
+      *bootdev = bd;
+      return 1;
+    }
+
+  return 0;
+}
+
 void
 grub_multiboot (int argc, char *argv[])
 {
@@ -367,6 +413,9 @@ grub_multiboot (int argc, char *argv[])
 
   mbi->flags |= MULTIBOOT_INFO_BOOT_LOADER_NAME;
   mbi->boot_loader_name = (grub_uint32_t) grub_strdup (PACKAGE_STRING);
+
+  if (grub_multiboot_get_bootdev (&mbi->boot_device))
+    mbi->flags |= MULTIBOOT_INFO_BOOTDEV;
 
   grub_loader_set (grub_multiboot_boot, grub_multiboot_unload, 1);
 
