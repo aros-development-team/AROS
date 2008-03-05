@@ -115,7 +115,7 @@ gdt_dst2:
 	.long	0, 0, 0, 0		/* More space for the BIOS.  */
 
 reg_edx:
-	.byte	0x80, 0xFF, 0xFF, 0xFF
+	.byte	0x80, 0, 0xFF, 0xFF
 
 data_leng:
 	.long	0
@@ -206,6 +206,8 @@ real_code_2:
 
 	movsbl	(reg_edx + 2 - start), %eax
 	movl	%eax, %ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART)
+
+	movb	$0xFF, %dh
 
 	ljmp	$(DATA_ADDR >> 4), $0
 
