@@ -12,8 +12,6 @@ GRUBOPTS += --enable-affs --disable-fat --disable-ffs --disable-minix --disable-
             --disable-hercules
 endif
 
-#MM- config-i386-native-boot-grub : grub-quick grub-copy-stages
-
 #MM
 grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2 $(AROSDIR)/boot/grub/stage2_hdisk $(AROSDIR)/boot/grub/iso9660_stage1_5
 
