@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: SetDate CLI command
@@ -21,29 +21,30 @@
 
     LOCATION
 
-        Sys:c
+        C:
 
     FUNCTION
 
-        Changes the the date and time of the creation or last change of a
-        file or directory. With option ALL, it changes the date and time of
-        all files and directories (and files and subdirectories to those)
-	matching the specified pattern.
-            You may use the output from Date as input to SetDate.
-    
+        Changes the date and time of the creation or last change of a file or
+        directory. With option ALL, it also changes the date and time of all
+        files and subdirectories within directories matching the specified
+        pattern. If either the date or time is unspecified, the current date
+        or time is used.
+
     INPUTS
 
         FILE     --  File (or pattern) to change the date of.
 
 	WEEKDAY  --  Specification of the day of the date. This is locale
-	             sensitive, and you may use standard keywords as
+	             sensitive, and you may use standard keywords such as
 		     'Tomorrow' and 'Yesterday' (in the language used, of
 		     course).
 
-	DATE     --  A date described according to the locale specification
-	             of the currently used language.
+	DATE     --  A date in the format DD-MMM-YY.
+	             MMM is either the number or the first 3 letters of the
+	             month in English.
 
-	TIME     --  Time string in localized format.
+	TIME     --  Time string in the format HH:MM:SS or HH:MM.
 
 	ALL      --  Recurse through subdirectories.
 
@@ -55,12 +56,14 @@
 
     EXAMPLE
 
-        SetDate #? `Date` ALL
+        SetDate #? ALL
 
 	Sets the date for all files and directories in the current directory
 	and its subdirectories to the current date.
 
     BUGS
+
+	ALL flag does not work.
 
     SEE ALSO
 
@@ -68,9 +71,6 @@
 
     INTERNALS
 
-    HISTORY
-
-        26.12.99  SDuvan   implemented
 */
 
 #include <dos/datetime.h>
@@ -106,16 +106,16 @@ int main(void)
     DateStamp(&dt.dat_Stamp);
 
     dt.dat_Flags   = DTF_FUTURE;
-    dt.dat_Format  = FORMAT_DEF;
-    dt.dat_StrDate = (UBYTE *)args[ARG_DATE];
-    dt.dat_StrTime = (UBYTE *)args[ARG_TIME];
+    dt.dat_Format  = FORMAT_DOS;
+    dt.dat_StrDate = (TEXT *)args[ARG_DATE];
+    dt.dat_StrTime = (TEXT *)args[ARG_TIME];
 
     /* Change the defaults according to the user's specifications */
-    if(StrToDate(&dt) == DOSTRUE)
+    if(StrToDate(&dt))
     {
-	dt.dat_StrDate = (UBYTE *)args[ARG_WEEKDAY];
+	dt.dat_StrDate = (TEXT *)args[ARG_WEEKDAY];
 
-	if(StrToDate(&dt) == DOSFALSE)
+	if(!StrToDate(&dt))
 	    timeError = TRUE;
     }
     else
