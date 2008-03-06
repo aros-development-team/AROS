@@ -122,7 +122,7 @@ workbench-boot-pc-i386:
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
-#MM bootdisk-pc-i386 : software-pc-i386 workbench test
+#MM bootdisk-pc-i386 : software-pc-i386 workbench test config-i386-native-boot-grub
 bootdisk-pc-i386: $(OSGENDIR)/boot/aros.bin
 
 #MM
@@ -160,7 +160,7 @@ $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
 
-#MM bootiso-pc-i386 : AROS-pc-i386
+#MM bootiso-pc-i386 : AROS-pc-i386 config-i386-native-boot-grub
 bootiso-pc-i386: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 #MM bootiso-pc-i386-quick :
