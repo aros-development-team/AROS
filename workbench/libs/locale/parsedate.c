@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,23 +10,19 @@
 #include <aros/asmcall.h>
 #include "locale_intern.h"
 
-#define STOP_BRAIN_DAMAGE	1	/* Oh please, do single char numbers! - Piru */
-
 static const UWORD monthdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
 static const UBYTE monthday[12] =  { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-#if STOP_BRAIN_DAMAGE
 BOOL _getnum(LONG numchars,
              LONG *valPtr,
              ULONG *cPtr,
-             STRPTR *fmtTemplatePtr,
+             CONST_STRPTR *fmtTemplatePtr,
              BOOL *checkEOFPtr,
              struct Locale *locale,
              struct Hook *getCharFunc,
              struct LocaleBase *LocaleBase);
 #define get2num(x) _getnum(2, (x), &c, &fmtTemplate, &checkEOF, locale, getCharFunc, LocaleBase)
 #define get4num(x) _getnum(4, (x), &c, &fmtTemplate, &checkEOF, locale, getCharFunc, LocaleBase)
-#endif
 
 /*****************************************************************************
 
@@ -38,7 +34,7 @@ BOOL _getnum(LONG numchars,
 /*  SYNOPSIS */
 	AROS_LHA(struct Locale    *, locale, A0),
 	AROS_LHA(struct DateStamp *, date, A1),
-	AROS_LHA(STRPTR            , fmtTemplate, A2),
+	AROS_LHA(CONST_STRPTR      , fmtTemplate, A2),
 	AROS_LHA(struct Hook      *, getCharFunc, A3),
 
 /*  LOCATION */
@@ -85,13 +81,14 @@ BOOL _getnum(LONG numchars,
 	This has a few differences from the implementation in locale.library
 	v38. In particular:
 	    - %p does not have to be at the end of the line.
-	    - %d and %e are not effectively the same, ie %d requires a leading
-	      zero, but %e can not handle leading 0's.
+	    - %d and %e are not effectively the same: leading spaces are
+	      allowed before %e, but not before %d.
 
     EXAMPLE
 
     BUGS
-	%d, %e probably needs some work.
+	%p, %b, %A and probably others accept substrings and superstrings of
+	valid strings.
 
     SEE ALSO
 	FormatDate()
@@ -167,9 +164,9 @@ BOOL _getnum(LONG numchars,
 
 		    /* If we didn't get a valid day, fail */
 		    i = 0;
-		    while ((i < 7) && (dayOk[i++] == FALSE))
+		    while ((i < 7) && !dayOk[i++])
 			;
-		    if ((i == 7) && (dayOk[6] == FALSE))
+		    if ((i == 7) && !dayOk[6])
 			return FALSE;
 
 		    if (*fmtTemplate)    fmtTemplate++;
@@ -214,9 +211,9 @@ BOOL _getnum(LONG numchars,
 
 		    /* If we didn't get a valid month, fail */
 		    i = 0;
-		    while ((i < 12) && (monthOk[i++] == FALSE))
+		    while ((i < 12) && !monthOk[i++])
 			;
-		    if ((i == 12) && (monthOk[11] == FALSE))
+		    if ((i == 12) && !monthOk[11])
 			return FALSE;
 		    month = i;
 
@@ -226,170 +223,60 @@ BOOL _getnum(LONG numchars,
 		    break;
 		} /* case 'B': */
 
-#if 0
 		/* Day no */
 		case 'd':
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    day = (c - '0') * 10;
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    day += (c - '0');
-
-		    /* Day 0 is undefined. */
-		    if (day == 0)    return FALSE;
-		    day--;
-
-		    /* day is unsigned, so day < 0 is not possible */
-		    if (day > 31)
-			return FALSE;
-
-		    break;
-#endif
-#if 1
-		/* These are really the same - Piru. */
-
-		/* Day no */
-		case 'd':
-		/* Day no., leading spaces. */
-		case 'e':
 		    day = 0;
-
 		    c = GetChar();
-		    while (IsSpace(locale, c) == TRUE)
-			c = GetChar();
-
 		    if (!get2num(&day))
 			return FALSE;
-
-		    /* Day 0 is undefined. */
-		    if (day == 0)
-			return FALSE;
-		    day--;
-
-		    /* day is unsigned, so day < 0 is not possible */
-		    if (day > 31)
+		    if (day-- == 0)
 			return FALSE;
 
 		    break;
-#else
 		/* Day no., leading spaces. */
 		case 'e':
 		    day = 0;
-
 		    c = GetChar();
-		    while (IsSpace(locale, c) == TRUE)
+		    while (IsSpace(locale, c))
 			c = GetChar();
-
-		    if (IsDigit(locale, c) == FALSE)
+		    if (!get2num(&day))
 			return FALSE;
-		    day = (c - '0');
+		    if (day-- == 0)
+			return FALSE;
 
-		    c = GetChar();
-		    if (IsDigit(locale, c) == TRUE)
-		    {
-			day *= 10;
-			day += (c - '0');
-		    }
-		    else
-		    {
-			if (c != *fmtTemplate++)
-			    return FALSE;
-			if (c == '\0')
-			    checkEOF = FALSE;
-		    }
-		    if (day == 0)    return FALSE;
-		    day--;
 		    break;
-
-#endif
 
 		/* hour 24-hr style */
 		case 'H':
 		    ampm = FALSE;
-#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
 		    if (!get2num(&hour))
 			return FALSE;
-#else
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    c = c - '0';
-		    hour = c * 10;
-
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    hour += (c - '0');
-#endif
 		    if (hour > 23)    return FALSE;
 		    break;
 
 		/* hour 12-hr style */
 		case 'I':
-#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
 		    if (!get2num(&hour))
 			return FALSE;
-#else
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    c = c - '0';
-		    hour = c * 10;
-
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    hour += (c - '0');
-#endif
 		    if (hour > 11)    return FALSE;
 		    break;
 
 		/* month num */
 		case 'm':
-#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
 		    if (!get2num(&month))
 			return FALSE;
-#else
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    month = (c - '0') * 10;
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    month += (c - '0');
-#endif
 		    if ((month > 12) || (month == 0))
 			return FALSE;
 		    break;
 
 		/* minutes */
 		case 'M':
-#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
 		    if (!get2num(&min))
 			return FALSE;
-#else
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    min = (c - '0') * 10;
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    min += (c - '0');
-#endif
 
 		    if (min > 59)  return FALSE;
 		    break;
@@ -420,12 +307,11 @@ BOOL _getnum(LONG numchars,
 		    }
 
 		    /* End of stream in wrong place, or invalid */
-		    if (((c == '\0') && *fmtTemplate) || (c != *fmtTemplate))
+		    if (c != *fmtTemplate)
 			return FALSE;
 
 		    /* Check whether we got AM or PM */
-		    if (pmOk == TRUE)        ampm = TRUE;
-		    else if (amOk == TRUE)   ampm = FALSE;
+		    ampm = pmOk;
 
 		    if (*fmtTemplate)    fmtTemplate++;
 		    checkEOF = FALSE;
@@ -434,51 +320,24 @@ BOOL _getnum(LONG numchars,
 
 		/* the number of seconds */
 		case 'S':
-#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
 		    if (!get2num(&sec))
 			return FALSE;
-#else
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    sec = (c - '0') * 10;
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    sec += (c - '0');
-#endif
 		    if (sec > 59)  return FALSE;
 		    break;
 
 		/* the year using two or four digits */
 		case 'y':
-#if STOP_BRAIN_DAMAGE
 		    c = GetChar();
 		    if (!get4num(&year))
 			return FALSE;
 
+		    if (year >= 100 && year < 1978)
+			return FALSE;
 		    if (year < 78)
-		    {
 			year += 100;
-		    }
 		    if (year < 1900)
-		    {
 			year += 1900;
-		    }
-#else
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-
-		    year = (c - '0') * 10;
-		    c = GetChar();
-		    if (IsDigit(locale, c) == FALSE)
-			return FALSE;
-		    year += (c - '0');
-		    year += (year < 78) ? 2000 : 1900;
-#endif
 		    break;
 
 		/* the year using four digits */
@@ -528,8 +387,8 @@ BOOL _getnum(LONG numchars,
     leap = (((year % 400) == 0) ||
 	(((year % 4) == 0) && !((year % 100) == 0)));
 
-    /* Sanity check - Piru */
-    if (month && day >=
+    /* Sanity check */
+    if (month != 0 && day >=
     	(monthday[month - 1] + ((leap && (month == 2)) ? 1 : 0)))
     {
 	return FALSE;
@@ -537,13 +396,6 @@ BOOL _getnum(LONG numchars,
     
     if (date)
     {
-#if 1
-    	/* stegerg: based on dos.library/strtodate */
-
-	/* First year must be 1978 */
-	if (year < 1978)
-	    return FALSE;
-
 	/* Add the days for all years (without leap years) */
 	day += (year - 1978) * 365;
 
@@ -565,17 +417,6 @@ BOOL _getnum(LONG numchars,
 
 	date->ds_Days = day;
 
-#else
-	year -= 1978;
-
-	if (year > 2)
-	    day += (year-3) / 4 + 1;
-	else if ((year == 2) && (month > 2))
-	    day += 1;
-
-	date->ds_Days = year * 365 + day + monthdays[month - 1];
-#endif
-
 	date->ds_Minute = hour * 60 + min;
 	if ((hour < 12) && ampm)
 	    date->ds_Minute += 720;
@@ -587,12 +428,10 @@ BOOL _getnum(LONG numchars,
 } /* ParseDate */
 
 
-#if STOP_BRAIN_DAMAGE
-
 BOOL _getnum(LONG numchars,
              LONG *valPtr,
              ULONG *cPtr,
-             STRPTR *fmtTemplatePtr,
+             CONST_STRPTR *fmtTemplatePtr,
              BOOL *checkEOFPtr,
              struct Locale *locale,
              struct Hook *getCharFunc,
@@ -616,10 +455,12 @@ BOOL _getnum(LONG numchars,
 	else
 	{
 	    *cPtr = c;
-	    if (c != *(*fmtTemplatePtr)++)
+	    if (c != **fmtTemplatePtr)
 		return FALSE;
 	    if (c == '\0')
 		*checkEOFPtr = FALSE;
+	    else
+		(*fmtTemplatePtr)++;
 
 	    break;
 	}
@@ -629,5 +470,3 @@ BOOL _getnum(LONG numchars,
 
     return TRUE;
 }
-
-#endif
