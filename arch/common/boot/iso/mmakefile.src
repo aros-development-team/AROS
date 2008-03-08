@@ -2,4 +2,5 @@
 include $(TOP)/config/make.cfg
 
 #MM- bootiso : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- bootiso-quick : bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
 
