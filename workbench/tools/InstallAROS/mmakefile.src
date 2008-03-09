@@ -10,6 +10,8 @@ USER_CFLAGS := -w
 #MM- workbench-tools : workbench-tools-installaros
 #MM workbench-tools-installaros : contrib-zune-classes-nfloattext-class
 
+USER_CFLAGS := -DBOOTLOADER=$(AROS_TARGET_BOOTLOADER)
+
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="mui arossupport amiga arosc m"

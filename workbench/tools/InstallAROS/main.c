@@ -57,7 +57,7 @@
 #define inputFile_path      	"Prefs/Input\""
 #define prefssrc_path      	"ENV:SYS"
 #define prefs_path          	"Prefs/Env-Archive/SYS"
-#define boot_path          	"Boot"
+#define boot_path          	"boot"
 
 #define locale_prfs_file		"locale.prefs"						/* please note the suffixed \" */
 #define input_prfs_file		"input.prefs"
@@ -655,7 +655,7 @@ IPTR Install__MUIM_IC_NextStep
 					}
 					else sprintf(tmp_device ,"Unknown Drive [%s unit %d]",boot_Device,boot_Unit);
 
-					sprintf(tmp_grub ,"%s:boot/GRUB",dest_Path);
+					sprintf(tmp_grub ,"%s:boot/grub",dest_Path);
 
 					set(data->instc_options_grub->gopt_drive, MUIA_Text_Contents, tmp_device);
 					set(data->instc_options_grub->gopt_grub, MUIA_Text_Contents, tmp_grub);
@@ -1494,9 +1494,20 @@ localecopydone:
 
 		TEXT *grub_files[] =
 		{
-			"boot/grub/stage1",			"boot/grub/stage1",
-			"boot/grub/stage2_hdisk",		"boot/grub/stage2",
-			"boot/grub/menu.lst.DH0",		"boot/grub/menu.lst",
+#if BOOTLOADER == grub2
+			"boot/grub/boot.img",		"boot/grub/boot.img",
+			"boot/grub/core.img",		"boot/grub/core.img",
+			"boot/grub/grub.cfg.DH0",	"boot/grub/grub.cfg",
+			"boot/grub/normal.mod",		"boot/grub/normal.mod",
+			"boot/grub/command.lst",	"boot/grub/command.lst",
+			"boot/grub/fs.lst",		"boot/grub/fs.lst",
+#elif BOOTLOADER == grub
+			"boot/grub/stage1",		"boot/grub/stage1",
+			"boot/grub/stage2_hdisk",	"boot/grub/stage2",
+			"boot/grub/menu.lst.DH0",	"boot/grub/menu.
+#else
+#error bootloader not supported
+#endif
 			NULL
 		};
 
@@ -1541,8 +1552,14 @@ localecopydone:
 			file_count += 2;
 		}
 
-		/* Add entry to boot MS Windows if present */
 		TEXT tmp[200];
+#if BOOTLOADER == grub2
+		sprintf(tmp,
+			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
+			"GRUB %s:boot/grub",
+			boot_Device, boot_Unit, dest_Path, dest_Path);
+#elif BOOTLOADER == grub
+		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
 			STRPTR menu_file_path = "boot/grub/menu.lst";
@@ -1565,6 +1582,8 @@ localecopydone:
 			"C:install-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub FORCELBA",
 			boot_Device, boot_Unit, dest_Path, dest_Path);
+#endif
+		D(bug("[INSTALLER] execute: %s\n", tmp));
 		Execute(tmp, NULL, NULL);
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
