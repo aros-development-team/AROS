@@ -29,7 +29,9 @@
 #include <exec/alerts.h>
 #include <devices/input.h>
 #include <devices/inputevent.h>
+#include <proto/battclock.h>
 #include <proto/exec.h>
+#include <resources/battclock.h>
 #include <utility/tagitem.h>
 #include <dos/filesystem.h>
 #include <dos/exall.h>
@@ -883,12 +885,27 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
 }
 
 /*********************************************************************************************/
+static void GetCurrentDate(struct emulbase *emulbase, struct DateStamp *date)
+{
+    APTR BattClockBase = NULL;
+    ULONG secs = 0;
+
+    BattClockBase = OpenResource(BATTCLOCKNAME);
+    if (BattClockBase)
+        secs = ReadBattClock();
+
+    date->ds_Days = secs / (60 * 60 * 24);
+    secs %= (60 * 60 * 24);
+    date->ds_Minute = secs / 60;
+    date->ds_Tick = 0;
+}
 
 static LONG startup(struct emulbase *emulbase)
 {
     struct Library *ExpansionBase;
     struct filehandle *fhi, *fho, *fhe, *fhv;
-    struct DeviceNode *dlv, *dlv2;
+    struct DeviceNode *dlv;
+    struct DeviceList *dlv2;
     LONG ret = ERROR_NO_FREE_STORE;
 
     ExpansionBase = OpenLibrary("expansion.library",0);
@@ -937,6 +954,7 @@ static LONG startup(struct emulbase *emulbase)
 			    
 			    static const char *devname = DEVNAME;
 			    static const char *volname = VOLNAME;
+			    LONG len;
 
     	    	    	    fhv->volumename = VOLNAME;
 			    emulbase->current_volume = fhv->volume;
@@ -965,13 +983,12 @@ static LONG startup(struct emulbase *emulbase)
 			    */
 			    ret = ERROR_NO_FREE_STORE;
 
-			    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)),
-					   MEMF_CLEAR | MEMF_PUBLIC);
+			    len = AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME));
+			    dlv = AllocMem(sizeof(*dlv) + 4 + len, MEMF_CLEAR | MEMF_PUBLIC);
+			    len = AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME));
+			    dlv2 = AllocMem(sizeof(*dlv2) + 4 + len, MEMF_CLEAR | MEMF_PUBLIC);
 
-			    dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)),
-					    MEMF_CLEAR | MEMF_PUBLIC);
-
-			    if(dlv != NULL && dlv2 != NULL)
+			    if (dlv != NULL && dlv2 != NULL)
 			    {
 				BSTR s;
 				BSTR s2;
@@ -981,7 +998,7 @@ static LONG startup(struct emulbase *emulbase)
 				    aligned memory after the structure.
 				*/
 				s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
-				s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
+				s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceList) + 3) & ~3);
 				
     	    	    	    	for(i = 0; i < sizeof(DEVNAME) - 1; i++)
 				{
@@ -999,28 +1016,27 @@ static LONG startup(struct emulbase *emulbase)
 
 				AddBootNode(0, 0, dlv, NULL);
 
-
 				/* Unfortunately, we cannot do the stuff below
 				   as dos is not yet initialized... */
 				// AddDosEntry(MakeDosEntry("System", 
-				//			    DLT_VOLUME));
+				//                          DLT_VOLUME));
 
-   	    	    	    	for(i = 0; i < sizeof(VOLNAME) - 1; i++)
+    	    	    	    	for(i = 0; i < sizeof(VOLNAME) - 1; i++)
 				{
 				    AROS_BSTR_putchar(s2, i, volname[i]);
 				}
 				AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
 
-				dlv2->dn_Type    = DLT_VOLUME;
-				dlv2->dn_Ext.dn_AROS.dn_Unit    = (struct Unit *)fhv;
-				dlv2->dn_Ext.dn_AROS.dn_Device  = &emulbase->device;
-				dlv2->dn_Handler = NULL;
-				dlv2->dn_Startup = NULL;
-				dlv2->dn_Name = s2;
-				dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
+				dlv2->dl_Type = DLT_VOLUME;
+				dlv2->dl_Name = s2;
+				dlv2->dl_Ext.dl_AROS.dol_DevName = AROS_BSTR_ADDR(dlv2->dl_Name);
+				dlv2->dl_Ext.dl_AROS.dn_Unit     = (struct Unit *)fhv;
+				dlv2->dl_Ext.dl_AROS.dn_Device   = &emulbase->device;
+				dlv2->dl_DiskType = ID_DOS_DISK;
+				GetCurrentDate(emulbase, &dlv2->dl_VolumeDate);
 
 				/* Make sure this is not booted from */
-				AddBootNode(-128, 0, dlv2, NULL);
+				AddBootNode(-128, 0, (struct DeviceNode *)dlv2, NULL);
 
 				return 0;
 			    }
