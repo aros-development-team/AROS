@@ -10,9 +10,6 @@ AROS_HOST_ARCH      ?= @aros_host_arch@
 AROS_TARGET_CPU     ?= @aros_target_cpu@
 AROS_TARGET_ARCH    ?= @aros_target_arch@
 AROS_TARGET_VARIANT ?= @aros_target_variant@
-AROS_TARGET_BOOTLOADER ?= @aros_target_bootloader@
-
-export AROS_TARGET_BOOTLOADER := $(AROS_TARGET_BOOTLOADER)
 
 TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
