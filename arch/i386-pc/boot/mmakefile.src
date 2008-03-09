@@ -160,11 +160,22 @@ $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
 
-#MM bootiso-pc-i386 : AROS-pc-i386 bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
-bootiso-pc-i386: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
-#MM bootiso-pc-i386-quick :
-bootiso-pc-i386-quick: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+TARGET_ISO        := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
+TARGET_BOOTLOADER := bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+
+#MM bootiso-pc-i386 : AROS-pc-i386 bootiso-pc-i386-quick
+
+#MM
+bootiso-pc-i386-bootloader:
+	@cd $(TOP) && \
+	TOP=$(TOP) MMAKE_CONFIG=$(TOP)/mmake.config \
+	$(CALL) $(MMAKE) AROS.$(TARGET_BOOTLOADER)
+
+#MM
+bootiso-pc-i386-quick: bootiso-pc-i386-bootloader $(TARGET_ISO)
+
+.PHONY: bootiso-pc-i386-bootloader bootiso-pc-i386-quick
 
 GNUCOMMON=$(AROSDIR)/Development
 GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
@@ -181,12 +192,12 @@ endif
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 
 #TODO: it depend on all files in workbench dir
-$(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso: $(BINDIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
+$(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
 	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
-		-o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
+		-o $@ \
 		-b $(BOOTLOADER_ELTORITO_REL) \
 		-c boot/boot.catalog \
                 -no-emul-boot \
@@ -194,7 +205,8 @@ $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
                 -boot-info-table \
 		-allow-leading-dots \
                 -V "AROS Live CD" \
-		-publisher "AROS Development Team" -R -J -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+		-publisher "AROS Development Team" -R -J \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
 		-l -r \
 		$(AROSDIR)
 
