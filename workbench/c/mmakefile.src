@@ -27,6 +27,7 @@ FILES := \
     Info \
     Install \
     install-i386-pc \
+    Install-grub2-i386-pc \
     Join \
     LeakWatch \
     LibList \
