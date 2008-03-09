@@ -14,7 +14,7 @@
 ### The configure script will replace these variables.
 
 srcdir=@srcdir@
-CC=@CC@
+CC="@CC@"
 
 
 cat <<EOF

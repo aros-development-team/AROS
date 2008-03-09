@@ -24,6 +24,9 @@
 #include <grub/misc.h>
 #include <grub/dl.h>
 
+/* RDB partition tables for AROS */
+struct grub_partition_map *grub_rdb_partition_map = NULL;
+
 static struct grub_partition_map grub_pc_partition_map;
 
 #ifndef GRUB_UTIL
@@ -149,8 +152,42 @@ pc_partition_map_iterate (grub_disk_t disk,
 	      && ! grub_pc_partition_is_extended (e->type))
 	    {
 	      pcdata.dos_part++;
-	      
-	      if (hook (disk, &p))
+
+	     /* Check if this is a RDB partition table.  */
+	     if (grub_rdb_partition_map && grub_pc_partition_is_rdb(e->type))
+	     {
+		struct grub_partition p2;
+		struct grub_disk raw2;
+		int ok = 0;
+
+		auto int rdb_hook(grub_disk_t disk, const grub_partition_t p);
+
+		int rdb_hook(grub_disk_t disk __attribute__((unused)),
+			     const grub_partition_t part)
+		{
+		  p2 = *part;
+		  pcdata.bsd_part = part->index;
+
+		  p2.start  += p.start;
+		  p2.offset += p.offset;
+		  p2.data    = &pcdata;
+		  p2.partmap = &grub_pc_partition_map;
+
+		  grub_dprintf("partition", "RDB part %c start=%ld\n",
+			       (char)('a' + part->index), (long)p2.start);
+
+		  ok = hook(disk, &p2);
+		  return ok;
+		}
+
+		raw2 = raw;
+		raw2.partition = &p;
+
+		grub_rdb_partition_map->iterate(&raw2, rdb_hook);
+		if (ok)
+		    goto finish;
+	      }
+	      else if (hook (disk, &p))
 		goto finish;
 
 	      /* Check if this is a BSD partition.  */
