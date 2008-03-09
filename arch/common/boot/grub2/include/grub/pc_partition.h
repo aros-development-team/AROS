@@ -206,4 +206,10 @@ grub_pc_partition_is_bsd (int type)
 	  || type == GRUB_PC_PARTITION_TYPE_NETBSD);
 }
 
+static inline int
+grub_pc_partition_is_rdb(int type)
+{
+  return (type == 0x30);
+}
+
 #endif /* ! GRUB_PC_PARTITION_HEADER */

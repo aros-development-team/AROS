@@ -25,6 +25,9 @@
 #include <grub/dl.h>
 #include <grub/types.h>
 #include <grub/fshelp.h>
+#ifdef __AROS__
+#include <grub/partition.h>
+#endif
 
 /* The affs bootblock.  */
 struct grub_affs_bblock
@@ -209,8 +212,22 @@ grub_affs_mount (grub_disk_t disk)
   rblock = (struct grub_affs_rblock *) rootblock;
 
   /* Read the rootblock.  */
+#ifdef __AROS__
+  grub_uint64_t reservedblocks = 2;
+  grub_uint64_t countblocks;
+  if (disk->partition)
+    countblocks = disk->partition->len;
+  else
+    countblocks = disk->total_sectors;
+
+  grub_disk_addr_t rblknum = (countblocks - 1 + reservedblocks) / 2;
+
+  grub_disk_read (disk, rblknum, 0,
+		  GRUB_DISK_SECTOR_SIZE * 16, (char *) rootblock);
+#else
   grub_disk_read (disk, (disk->total_sectors >> 1) + blocksize, 0,
 		  GRUB_DISK_SECTOR_SIZE * 16, (char *) rootblock);
+#endif
   if (grub_errno)
     goto fail;
 
@@ -241,7 +258,11 @@ grub_affs_mount (grub_disk_t disk)
   data->disk = disk;
   data->htsize = grub_be_to_cpu32 (rblock->htsize);
   data->diropen.data = data;
+#ifdef __AROS__
+  data->diropen.block = rblknum;
+#else
   data->diropen.block = (disk->total_sectors >> 1);
+#endif
 
   grub_free (rootblock);
 

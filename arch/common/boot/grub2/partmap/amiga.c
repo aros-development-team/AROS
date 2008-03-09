@@ -87,7 +87,10 @@ amiga_partition_map_iterate (grub_disk_t disk,
   
   /* Enforce raw disk access.  */
   raw = *disk;
+#ifndef __AROS__
   raw.partition = 0;
+#endif
+  part.data = NULL;
   
   /* The RDSK block is one of the first 15 blocks.  */
   for (pos = 0; pos < 15; pos++)
@@ -210,7 +213,13 @@ static struct grub_partition_map grub_amiga_partition_map =
 
 GRUB_MOD_INIT(amiga_partition_map)
 {
+#ifdef __AROS__
+  extern struct grub_partition_map *grub_rdb_partition_map;
+  grub_rdb_partition_map = &grub_amiga_partition_map;
+#endif
+
   grub_partition_map_register (&grub_amiga_partition_map);
+
 #ifndef GRUB_UTIL
   my_mod = mod;
 #endif

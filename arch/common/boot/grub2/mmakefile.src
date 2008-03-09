@@ -10,70 +10,28 @@ include $(TOP)/config/make.cfg
 
 GRUBBOOTDIR := $(AROSDIR)/boot/grub
 
-GRUB2DIR := $(CONTRIBDIR)/boot/Grub2
-GRUB2MODDIR := $(GRUB2DIR)/Modules
-GRUB2IMGDIR := $(GRUB2DIR)/Images
-GRUB2MISCDIR := $(GRUB2DIR)/Misc
+CFLAGS1 := $(filter-out -Werror-implicit-function-declaration,$(CFLAGS))
 
-# Workaround for Grub2;s currently buggy gensymlist.sh
-HOST_CC := gcc
+export CFLAGS        := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
+export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 
 %build_with_configure mmake=grub2-host compiler=host nix=yes	\
-	prefix="$(GENDIR)/$(CURDIR)/host_binaries"
-
-GRUB2MODULES := $(foreach                                         \
-                   f,                                           \
-                   $(wildcard                                   \
-                           $(GENDIR)/$(CURDIR)/*.mod            \
-                   ),                                           \
-                   $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2MODDIR)/,$f) \
-              )
-
-GRUB2IMAGES := $(foreach                                         \
-                   f,                                           \
-                   $(wildcard                                   \
-                           $(GENDIR)/$(CURDIR)/*.img            \
-                   ),                                           \
-                   $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2IMGDIR)/,$f) \
-              )
-
-GRUB2MISC := $(foreach                                         \
-                   f,                                           \
-                   $(wildcard                                   \
-                           $(GENDIR)/$(CURDIR)/*.lst            \
-                   ),                                           \
-                   $(subst $(GENDIR)/$(CURDIR)/,$(GRUB2MISCDIR)/,$f) \
-              )
-
-#MM
-grub2-copy-files : grub2-setup $(GRUB2MODULES) $(GRUB2IMAGES) $(GRUB2MISC)
-
-$(GRUB2MODDIR)/%.mod: $(GENDIR)/$(CURDIR)/%.mod
-	@$(CP) $< $@
-
-$(GRUB2IMGDIR)/%.img: $(GENDIR)/$(CURDIR)/%.img
-	@$(CP) $< $@
-
-$(GRUB2MISCDIR)/%.lst: $(GENDIR)/$(CURDIR)/%.lst
-	@$(CP) $< $@
-
-#MM
-grub2-setup :
-	%mkdirs_q $(GRUB2MODDIR) $(GRUB2IMGDIR) $(GRUB2MISCDIR)
-
-$(GRUBBOOTDIR)/%.mod: $(GRUB2MODDIR)/%.mod
-	@$(CP) $< $@
-
-#MM
-bootloader-grub2-isosetup : $(foreach f, $(wildcard $(GRUB2MODDIR)/*.mod ), $(subst $(GRUB2MODDIR)/,$(GRUBBOOTDIR)/,$f) )
+	prefix="$(GENDIR)/$(CURDIR)/host_binaries"		\
+	extraoptions="--enable-grub-emu --enable-grub-fstest"
 
 GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
-		fshelp help iso9660 ls multiboot serial sfs	\
+		fshelp help iso9660 ls multiboot pc serial sfs	\
 		terminal
+
+LST_FILES  :=	command fs moddep
+
 #MM
 grub2-iso-setup :
 	%mkdirs_q $(GRUBBOOTDIR)
-	@cd $(GENDIR)/$(CURDIR) && \
-	./grub-mkimage -d . -o core.img $(GRUB2_MODS) && \
+	@cd $(GENDIR)/$(CURDIR)					&& \
+	./grub-mkimage -d . -o core.img $(GRUB2_MODS)		&& \
+	$(CP) *.img $(GRUBBOOTDIR)				&& \
+	$(CP) *.mod $(GRUBBOOTDIR)				&& \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(GRUBBOOTDIR)	&& \
 	$(CAT) cdboot.img core.img > $(GRUBBOOTDIR)/grub2_eltorito
 
