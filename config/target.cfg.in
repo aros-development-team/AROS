@@ -7,6 +7,8 @@
 # -------------------------------------------------------------------------- 
 # TARGET SECTION
 # -------------------------------------------------------------------------- 
+AROS_TARGET_BOOTLOADER	:= @aros_target_bootloader@
+
 FLAVOUR		:= @aros_flavour@
 SHARED_MOD	:= @aros_shared_default@
 SYS_INCLUDES	:= @aros_target_incl@
