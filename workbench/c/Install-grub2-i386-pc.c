@@ -324,12 +324,30 @@ ULONG writeBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
     return _readwriteBlock(volume, block, buffer, size, volume->writecmd);
 }
 
+static BOOL isKnownFs(ULONG dos_id)
+{
+    switch (dos_id)
+    {
+    case ID_FFS_DISK:
+    case ID_INTER_DOS_DISK:
+    case ID_INTER_FFS_DISK:
+    case ID_FASTDIR_DOS_DISK:
+    case ID_FASTDIR_FFS_DISK:
+    case ID_SFS_BE_DISK:
+    case ID_SFS_LE_DISK:
+	return TRUE;
+    }
+
+    return FALSE;
+}
+
 BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 		       ULONG unit)
 {
     BOOL retval = FALSE;
     struct PartitionBase *PartitionBase;
     struct PartitionHandle *ph;
+    ULONG dos_id;
 
     D(bug("[install] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
 
@@ -339,8 +357,9 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 	return FALSE;
     }
 
-    if (((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00) != 0x444F5300) ||
-	((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFF) == 0))
+    dos_id = AROS_BE2LONG(volume->blockbuffer[0]);
+
+    if (!isKnownFs(dos_id))
     {
 	/* first block has no DOS\x so we don't have RDB for sure */
 	volume->flags &= ~VF_IS_RDB;
@@ -349,9 +368,10 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 	    printf("Read Error\n");
 	    return FALSE;
 	}
-	if (((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00) !=
-	     0x444F5300)
-	    || ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFF) == 0))
+
+	dos_id = AROS_BE2LONG(volume->blockbuffer[0]);
+
+	if (!isKnownFs(dos_id))
 	    return FALSE;
     }
 
