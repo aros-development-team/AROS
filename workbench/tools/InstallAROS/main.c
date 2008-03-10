@@ -41,6 +41,10 @@
 
 #include "install.h"
 
+#ifndef BOOTLOADER
+#define BOOTLOADER grub2
+#endif
+
 #define kBufSize  		(4*65536)
 #define kExallBufSize  		(4096)
 
@@ -1505,7 +1509,7 @@ localecopydone:
 			"boot/grub/stage1",		"boot/grub/stage1",
 			"boot/grub/stage2_hdisk",	"boot/grub/stage2",
 			"boot/grub/menu.lst.DH0",	"boot/grub/menu.
-#else
+#elif BOOTLOADER != none
 #error bootloader not supported
 #endif
 			NULL
@@ -1583,8 +1587,11 @@ localecopydone:
 			"GRUB %s:boot/grub FORCELBA",
 			boot_Device, boot_Unit, dest_Path, dest_Path);
 #endif
+
+#if BOOTLOADER != none
 		D(bug("[INSTALLER] execute: %s\n", tmp));
 		Execute(tmp, NULL, NULL);
+#endif
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
