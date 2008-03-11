@@ -1,4 +1,4 @@
-# $Id:  $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := kernel_init scheduler intr mmu tags syscall debug uic
