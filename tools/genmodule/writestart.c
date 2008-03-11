@@ -122,6 +122,9 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "#endif\n"
 	    "\n"
 	    "#include <proto/exec.h>\n"
+            "#ifndef __AROS__\n"
+            "struct ExecBase *SysBase = NULL;\n"
+            "#endif\n"
 	    "\n",
 	    cfg->modulename
     );
@@ -326,15 +329,15 @@ static void writeresident(FILE *out, struct config *cfg)
 	    "AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFPA(LIBBASETYPEPTR, lh, D0),\n"
 	    "    AROS_UFPA(BPTR, segList, A0),\n"
-	    "    AROS_UFPA(struct ExecBase *, SysBase, A6)\n"
+	    "    AROS_UFPA(struct ExecBase *, sysBase, A6)\n"
 	    ");\n"
     );
     if (cfg->modtype != RESOURCE)
     {
 	fprintf(out,
 		"AROS_LP1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-		"    AROS_LPA(LIBBASETYPEPTR, lh, D0),\n"
-		"    struct ExecBase *, SysBase, 3, %s\n"
+		"    AROS_LPA(LIBBASETYPEPTR, extralh, D0),\n"
+		"    LIBBASETYPEPTR, lh, 3, %s\n"
 		");\n"
 		"\n",
 		cfg->basename
@@ -416,7 +419,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
 	    "    AROS_UFHA(BPTR, segList, A0),\n"
-	    "    AROS_UFHA(struct ExecBase *, SysBase, A6)\n"
+	    "    AROS_UFHA(struct ExecBase *, sysBase, A6)\n"
 	    ")\n"
 	    "{\n"
 	    "    AROS_USERFUNC_INIT\n"
@@ -424,6 +427,16 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    int ok;\n"
 	    "\n"
     );
+	
+    fprintf(out,
+            "#ifndef __AROS__\n"
+            "    SysBase = sysBase;\n"
+            "#endif\n"
+            "#ifdef GM_SYSBASE_FIELD\n"
+            "    GM_SYSBASE_FIELD(lh) = sysBase;\n"
+            "#endif\n"
+    );
+    
     if (cfg->modtype == RESOURCE)
     {
 	unsigned int funccount;
@@ -456,19 +469,10 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n",
 		funccount
 	);
-	
-	fprintf(out,
-	    	"#ifdef GM_SYSBASE_FIELD\n"
-		"    GM_SYSBASE_FIELD(lh) = SysBase;\n"
-		"#endif\n"
-	);
     }
     else
     {
 	fprintf(out,
-	    	"#ifdef GM_SYSBASE_FIELD\n"
-		"    GM_SYSBASE_FIELD(lh) = SysBase;\n"
-		"#endif\n"
 		"    ((struct Library *)lh)->lib_Revision = REVISION_NUMBER;\n"
 	);
     }
@@ -711,7 +715,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 		"    {\n"
 		"        return AROS_LC1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
 		"                   AROS_LCA(LIBBASETYPEPTR, lh, D0),\n"
-		"                   struct ExecBase *, SysBase, 3, %s\n"
+		"                   LIBBASETYPEPTR, lh, 3, %s\n"
 		"        );\n"
 		"    }\n",
 		cfg->basename
@@ -731,8 +735,8 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 {
     fprintf(out,
 	    "AROS_LH1 (BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-	    "    AROS_LHA(LIBBASETYPEPTR, lh, D0),\n"
-	    "    struct ExecBase *, SysBase, 3, %s\n"
+	    "    AROS_LHA(LIBBASETYPEPTR, extralh, D0),\n"
+	    "    LIBBASETYPEPTR, lh, 3, %s\n"
 	    ")\n",
 	    cfg->basename
     );
