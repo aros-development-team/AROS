@@ -716,10 +716,10 @@ AROS_LH1(void, RemLibrary,
 
     Forbid();
     /* calling ExpungeLib: library ends up in D0 and A6 for compatibility */
-    seglist = AROS_CALL2(BPTR, __AROS_GETVECADDR(library, 3),
+    seglist = AROS_CALL1(BPTR, __AROS_GETVECADDR(library, 3),
 		AROS_LCA(struct Library *, library, D0),
-		AROS_LCA(struct ExecBase *, SysBase, D1),
-		struct Library *, library);
+		struct Library *, library
+    );
     if( seglist )
     {
 	DOSBase->dl_LDReturn = MEM_TRY_AGAIN;
