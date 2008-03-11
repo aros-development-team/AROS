@@ -1327,12 +1327,16 @@ else
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
-BD_CCFILES := $(BD_NARCHFILES) $(BD_STARTFILES) \
-    $(BD_ENDFILES) $(BD_LINKLIBCFILES) %(linklibfiles)
+BD_CCFILES := $(BD_NARCHFILES) %(linklibfiles)
+BD_TARGETCCFILES := $(BD_STARTFILES) $(BD_ENDFILES) $(BD_LINKLIBCFILES) 
 
 %rule_compile_multi \
     basenames=$(BD_CCFILES) targetdir=%(objdir) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) \
+    compiler=%(compiler)
+%rule_compile_multi \
+    basenames=$(BD_TARGETCCFILES) targetdir=%(objdir) \
+    cflags="$(BD_CFLAGS) -D__AROS__" dflags=$(BD_DFLAGS) \
     compiler=%(compiler)
 
 ifneq ($(BD_LINKLIBAFILES),)
@@ -1406,7 +1410,7 @@ $(BD_KOBJ) : $(BD_OBJS) $(BD_ENDOBJS)
 
 ## Dependency fine-tuning
 ##
-BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES))))
+BD_DEPS := $(addsuffix .d,$(addprefix %(objdir)/,$(notdir $(BD_CCFILES) $(BD_TARGETCCFILES))))
 %include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps=$(BD_DEPS)
 
 $(BD_OBJS) $(BD_DEPS) $(BD_REFS) : | %(objdir)
