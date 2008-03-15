@@ -198,7 +198,7 @@ struct markerarray
 #define  STRING_CANCEL          -5001
 #define  STRING_REQUESTTITLE    -5002
 
-#include <dos_commanderrors.h>
+#include "dos_commanderrors.h"
 
 /* Force attempts to use DosLibrary->dl_Errors to fail. This is used by
    locale.library's replacement function for DosGetString() to peek

@@ -11,7 +11,7 @@
 #include <proto/utility.h>
 #include <exec/types.h>
 #include <exec/memory.h>
-#include <layers_intern.h>
+#include "layers_intern.h"
 #include <aros/libcall.h>
 #include <proto/graphics.h>
 #include <graphics/scale.h>
