@@ -162,9 +162,11 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
     GetDirEntry(dh, 1, de);
 
     /* make sure it's actually the parent dir entry */
-    if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_DIRECTORY) ||
+    if (((de->e.entry.attr & ATTR_DIRECTORY) == 0) ||
         strncmp((char *) de->e.entry.name, "..         ", 11) != 0) {
         D(bug("[fat] entry index 1 does not have name '..', can't go up\n"));
+        D(bug("[fat] actual name: '%.*s', attrs: 0x%x\n",
+            11, de->e.entry.name, de->e.entry.attr));
         return ERROR_OBJECT_NOT_FOUND;
     }
 
@@ -227,31 +229,6 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
             break;
         }
 
-    /* eat up leading slashes */
-    while (pathlen >= 0 && path[0] == '/') {
-        D(bug("[fat] leading '/', moving up to eat it\n"));
-
-        if ((err = GetParentDir(dh, de)) != 0)
-            return err;
-
-        path++;
-        pathlen--;
-
-        /* if we ate the whole path, bail out now with the current entry
-         * pointing to its parent dir */
-        if (pathlen == 0) {
-            D(bug("[fat] explicit request for parent dir, returning it\n"));
-            return 0;
-        }
-    }
-
-    /* eat up trailing slashes */
-    while (pathlen > 0) {
-        if (path[pathlen-1] != '/')
-            break;
-        pathlen--;
-    }
-
     D(bug("[fat] now looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->ioh.first_cluster));
 
     /* each time around the loop we find one dir/file in the full path */
@@ -260,29 +237,38 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         /* zoom forward and find the first dir separator */
         for (len = 0; len < pathlen && path[len] != '/'; len++);
 
-        D(bug("[fat] remaining path is '%.*s' (%d bytes), current chunk is '%.*s' (%d bytes)\n", pathlen, path, pathlen, len, path, len));
+        D(bug("[fat] remaining path is '%.*s' (%d bytes), "
+            "current chunk is '%.*s' (%d bytes)\n", pathlen, path, pathlen,
+            len, path, len));
 
         /* if the first character is a /, or they've asked for '..', then we
          * have to go up a level */
         if (len == 0) {
 
-            /* get the parent dir, and bail if we've gone past it (ie we are
+            /* get the parent dir, and bale if we've gone past it (ie we are
              * the root) */
             if ((err = GetParentDir(dh, de)) != 0)
-                break;
+                return err;
         }
 
         /* otherwise, we want to search the current directory for this name */
         else {
             if ((err = GetDirEntryByName(dh, path, len, de)) != 0)
                 return ERROR_OBJECT_NOT_FOUND;
+        }
 
-            /* if the current chunk if all the name we have left, then we found it */
-            if (len == pathlen) {
-                D(bug("[fat] found the entry, returning it\n"));
-                return 0;
-            }
+        /* move up the buffer */
+        path += len;
+        pathlen -= len;
 
+        /* a / here is either the path separator or the directory we just went
+         * up. either way, we have to ignore it */
+        if (pathlen > 0 && path[0] == '/') {
+            path++;
+            pathlen--;
+        }
+
+        if (pathlen > 0) {
             /* more to do, so this entry had better be a directory */
             if (!(de->e.entry.attr & ATTR_DIRECTORY)) {
                 D(bug("[fat] '%.*s' is not a directory, so can't go any further\n", len, path));
@@ -291,22 +277,11 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
 
             InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh);
         }
-
-        /* move up the buffer */
-        path += len;
-        pathlen -= len;
-
-        /* a / here is either the path seperator or the directory we just went
-         * up. either way, we have to ignore it */
-        if (pathlen > 0 && path[0] == '/') {
-            path++;
-            pathlen--;
-        }
     }
 
-    D(bug("[fat] empty path supplied, so naturally not found\n"));
-
-    return ERROR_OBJECT_NOT_FOUND;
+    /* nothing left, so we've found it */
+    D(bug("[fat] found the entry, returning it\n"));
+    return 0;
 }
 
 LONG UpdateDirEntry(struct DirEntry *de) {
@@ -363,7 +338,7 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
         if (err != 0)
             return err;
 
-        /* if its unused, make a note */
+        /* if it's unused, make a note */
         if (de->e.entry.name[0] == 0xe5) {
             nfound++;
             continue;
@@ -456,7 +431,7 @@ LONG DeleteDirEntry(struct DirEntry *de) {
     order = 1;
     while ((err = GetDirEntry(&dh, de->index-1, de)) == 0) {
 
-        /* see if this is a matching long name entry. if its not, we're done */
+        /* see if this is a matching long name entry. if it's not, we're done */
         if (!((de->e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_LONG_NAME) ||
             (de->e.long_entry.order & ~0x40) != order ||
             de->e.long_entry.checksum != checksum)
