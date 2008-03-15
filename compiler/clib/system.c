@@ -96,7 +96,7 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
 
 ******************************************************************************/
 {
-    const char *apath;
+    CONST_STRPTR apath;
     char *args, *cmd;
     BPTR seg;
     int ret;
@@ -142,7 +142,7 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
     {
 	struct CommandLineInterface *cli = Cli();
 	BPTR oldCurDir = CurrentDir(NULL);
-	BPTR *paths = BADDR(cli->cli_CommandDir);
+	BPTR *paths = cli ? BADDR(cli->cli_CommandDir) : NULL;
 
 	for (; seg == MKBADDR(NULL) && paths; paths = BADDR(paths[0]))
 	{
@@ -156,7 +156,6 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
 	    D(bug("system(cmd=%s, args=%s)=-1, errno=%d\n",
 		  cmd, args ? args : "", errno));
 	    CurrentDir(oldCurDir);
-	    /* UnLock(lockCurDir); */
 	    free(cmd);
 	    return -1;
 	}
