@@ -125,6 +125,17 @@ typedef __off_t                     off_t;      /* Offset (in files)        */
 typedef __pid_t                     pid_t;      /* Process ID               */
 #endif
 
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+#undef __size_t
+typedef __size_t                    size_t;
+#endif
+
+#ifndef __AROS_SOCKLEN_T_DECLARED
+#define __AROS_SOCKLEN_T_DECLARED
+typedef __socklen_t                 socklen_t;
+#endif
+
 #ifndef __AROS_SUSECONDS_T_DECLARED
 #define __AROS_SUSECONDS_T_DECLARED
 typedef __suseconds_t               suseconds_t;/* Signed no of usecs       */
