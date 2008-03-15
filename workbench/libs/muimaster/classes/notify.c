@@ -259,8 +259,39 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
     /* Is the notification already being performed? */
     if (nnode->nn_Active)
     {
-	D(bug("Notifyloop detected!\n"));
-        return;
+    #if DEBUG
+    	static int counter;
+	
+	D(bug("Notifyloop detected! (#%d)\n", counter++));
+	D(bug("  Source object: 0x%x", obj));
+
+	switch((IPTR)nnode->nn_DestObj)
+	{
+	    case MUIV_Notify_Application:
+		D(bug("  Dest object: 0x%x (MUIV_Notify_Application)\n", _app(obj)));
+		break;
+	    case MUIV_Notify_Self:
+		D(bug("  Dest object: 0x%x (MUIV_Notify_Self)\n", obj));
+		destobj = obj;
+		break;
+	    case MUIV_Notify_Window:
+	    	if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
+		{
+    	    	    D(bug("  Dest object: 0x%x (MUIV_Notify_Window)\n", _win(obj)));
+		}
+		else
+		{
+    	    	    D(bug("  Dest object: INVALID (MUIV_Notify_Window, but no muiRenderInfo)\n"));
+		}
+		break;
+	    default:
+		D(bug("  Dest object: 0x%x\n", nnode->nn_DestObj));
+		break;
+	}
+	D(bug("  Attribute: 0x%x   Value: 0x%x\n", tag->ti_Tag, tag->ti_Data));
+	
+    #endif
+            return;
     }
 
     if (nnode->nn_TrigVal == MUIV_EveryTime)
