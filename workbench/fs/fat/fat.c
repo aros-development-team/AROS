@@ -579,7 +579,7 @@ void ConvertFATDate(UWORD date, UWORD time, struct DateStamp *ds) {
      * this code is still being used then, feel free to fix it :) */
     nleap = year >> 2;
     
-    /* if this year is a leap year and its March or later, adjust for this
+    /* if this year is a leap year and it's March or later, adjust for this
      * year too */
     if (year & 0x03 && month >= 3)
         nleap++;
@@ -625,10 +625,10 @@ void ConvertAROSDate(struct DateStamp ds, UWORD *date, UWORD *time) {
     leap = (year & 0x03 && ds.ds_Days >= 60);
     
     /* find the month by checking it against the days-in-month array */
-    for (month = 1; month <= 12 && ds.ds_Days > mdays[month]; month++);
+    for (month = 1; month < 12 && ds.ds_Days > mdays[month]; month++);
 
     /* day of month is whatever's left (+1, since we count from the 1st) */
-    day = ds.ds_Days - mdays[month] + 1;
+    day = ds.ds_Days - mdays[month - 1] + 1;
 
     /* subtract a day if we're after march in a leap year */
     if (leap) {
