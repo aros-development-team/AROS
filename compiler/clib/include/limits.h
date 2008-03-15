@@ -237,4 +237,8 @@
 #define TRACE_USER_EVENT_MAX                    _POSIX_TRACE_USER_EVENT_MAX
 #endif
 
+#if __POSIX_VISIBLE >= 200112 || __XSI_VISIBLE
+#define SIZE_T_MAX	ULONG_MAX		/* max value for a size_t */
+#endif
+
 #endif /* _LIMITS_H_ */

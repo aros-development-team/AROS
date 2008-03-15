@@ -135,6 +135,7 @@
 #define MAX_ERRNO	122	/* Last errno */
 
 #define EDEADLOCK	EDEADLK
+#define ENOTSUP		EOPNOTSUPP
 
 #include <sys/arosc.h>
 __pure static __inline__ int *__get_errno_ptr(void);
