@@ -21,7 +21,7 @@ export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 
 GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
 		fshelp help iso9660 ls multiboot pc serial sfs	\
-		terminal
+		terminal ext2 fat ntfs _linux linux
 
 LST_FILES  :=	command fs moddep
 
