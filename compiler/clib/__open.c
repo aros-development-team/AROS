@@ -205,13 +205,22 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     /* the file exists and it's not a directory or the file doesn't exist */
 
-    if (!(fh = Open ((char *)pathname, openmode)) )
+    if (lock)
     {
-        errno = IoErr2errno (IoErr ());
-        goto err;
+	UnLock(lock);
+	lock = NULL;
     }
 
-    if (lock) UnLock(lock);
+    if (openmode & (FMF_APPEND | FMF_WRITE))
+	openmode |= FMF_READ; /* force filesystem ACTION_FINDUPDATE */
+
+    if (!(fh = Open ((char *)pathname, openmode)) )
+    {
+	ULONG ioerr = IoErr();
+	D(bug("[clib] Open ioerr=%d\n", ioerr));
+	errno = IoErr2errno(ioerr);
+        goto err;
+    }
 
 success:
     currdesc->fh        = fh;
