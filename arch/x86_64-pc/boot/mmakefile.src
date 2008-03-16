@@ -1,17 +1,9 @@
 # $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
 include $(TOP)/config/make.cfg
 
-TARGET_ISO        := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
-TARGET_BOOTLOADER := bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64
-
 #MM bootiso-pc-x86_64 :	kernel-bootstrap-x86_64		\
 #MM			kernel-package-x86_64		\
-#MM			bootiso-pc-x86_64-bootloader
-
-bootiso-pc-x86_64-bootloader:
-	@cd $(TOP) && \
-	TOP=$(TOP) MMAKE_CONFIG=$(TOP)/mmake.config \
-	$(CALL) $(MMAKE) AROS.$(TARGET_BOOTLOADER)
+#MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64
 
 #MM kernel-package-x86_64: \
 #MM	linklibs-clib \
@@ -68,6 +60,8 @@ kernel-package-x86_64:
 	$(LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
 	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
+
+TARGET_ISO := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
 
 bootiso-pc-x86_64: $(TARGET_ISO)
 
