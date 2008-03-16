@@ -164,13 +164,7 @@ $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 TARGET_ISO        := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 TARGET_BOOTLOADER := bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
 
-#MM- bootiso-pc-i386 : AROS-pc-i386 bootiso-pc-i386-quick
-
-#MM
-bootiso-pc-i386-bootloader:
-	@cd $(TOP) && \
-	TOP=$(TOP) MMAKE_CONFIG=$(TOP)/mmake.config \
-	$(CALL) $(MMAKE) AROS.$(TARGET_BOOTLOADER)
+#MM- bootiso-pc-i386 : AROS-pc-i386 bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
 
 #MM
 bootiso-pc-i386-quick: bootiso-pc-i386-bootloader $(TARGET_ISO)
