@@ -1315,8 +1315,8 @@ BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_CFLAGS     := %(cflags) -I%(objdir) -iquote $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
-BD_DFLAGS     := %(dflags) -I%(objdir) -iquote $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
+BD_CFLAGS     := %(cflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
+BD_DFLAGS     := %(dflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
 
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
