@@ -7,7 +7,7 @@
 #include "bootloader_intern.h"
 #include <proto/bootloader.h>
 #include <proto/utility.h>
-#include <../bootstrap/multiboot.h>
+#include "../bootstrap/multiboot.h"
 #include <aros/debug.h>
 
 /*****************************************************************************
