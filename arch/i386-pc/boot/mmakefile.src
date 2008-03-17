@@ -162,14 +162,15 @@ $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 
 
 TARGET_ISO        := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
-TARGET_BOOTLOADER := bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
 
-#MM- bootiso-pc-i386 : AROS-pc-i386 bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+#MM bootiso-pc-i386 : AROS-pc-i386 bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+
+bootiso-pc-i386: $(TARGET_ISO)
 
 #MM
-bootiso-pc-i386-quick: bootiso-pc-i386-bootloader $(TARGET_ISO)
+bootiso-pc-i386-quick: $(TARGET_ISO)
 
-.PHONY: bootiso-pc-i386-bootloader bootiso-pc-i386-quick
+.PHONY: bootiso-pc-i386-quick
 
 GNUCOMMON=$(AROSDIR)/Development
 GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
