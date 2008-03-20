@@ -1,0 +1,44 @@
+# $Id: mmakefile.src 28046 2008-03-17 23:02:42Z agreppin $
+include $(TOP)/config/make.cfg
+
+.PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+
+TARGET_ISO        := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
+
+#MM bootiso-pc-i386 : AROS-pc-i386 bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
+
+bootiso-pc-i386: $(TARGET_ISO)
+
+#MM
+bootiso-pc-i386-quick: $(TARGET_ISO)
+
+.PHONY: bootiso-pc-i386-quick
+
+ifeq ($(AROS_TARGET_BOOTLOADER),grub)
+BOOTLOADER_ELTORITO_REL := boot/grub/iso9660_stage1_5
+endif
+
+ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
+BOOTLOADER_ELTORITO_REL := boot/grub/grub2_eltorito
+endif
+
+$(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
+
+#TODO: it depend on all files in workbench dir
+$(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
+	@$(MKDIR) -p "$(PORTSDIR)"
+	@mkisofs -f \
+		-o $@ \
+		-b $(BOOTLOADER_ELTORITO_REL) \
+		-c boot/boot.catalog \
+                -no-emul-boot \
+                -boot-load-size 4 \
+                -boot-info-table \
+		-allow-leading-dots \
+                -V "AROS Live CD" \
+		-publisher "AROS Development Team" -R -J \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+		-l -r \
+		$(AROSDIR)
