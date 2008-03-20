@@ -1,13 +1,20 @@
 # $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
 include $(TOP)/config/make.cfg
 
+.PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
+
+TARGET_ISO := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
+
 #MM bootiso-pc-x86_64 :	kernel-bootstrap-x86_64		\
 #MM			kernel-package-x86_64		\
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64
 
-TARGET_ISO := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
-
 bootiso-pc-x86_64: $(TARGET_ISO)
+
+#MM
+bootiso-pc-x86_64-quick: $(TARGET_ISO)
+
+.PHONY: bootiso-pc-x86_64-quick
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
 BOOTLOADER_ELTORITO_REL := boot/grub/iso9660_stage1_5
