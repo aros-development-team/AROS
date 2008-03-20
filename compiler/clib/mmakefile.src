@@ -221,7 +221,9 @@ SHARED	:= \
 	locale/lmessages	\
 	locale/lmonetary	\
 	locale/lnumeric		\
+	locale/mbrlen		\
 	locale/mbrtowc		\
+	locale/mbsinit		\
 	locale/mbsnrtowcs	\
 	locale/mskanji		\
 	locale/none		\
