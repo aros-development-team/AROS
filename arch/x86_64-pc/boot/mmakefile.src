@@ -1,0 +1,59 @@
+# $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM kernel-package-x86_64: \
+#MM	linklibs-clib \
+#MM	kernel-aros \
+#MM	kernel-bootloader-pc-x86_64 \
+#MM	kernel-timer \
+#MM	kernel-ata \
+#MM	kernel-keyboard \
+#MM	kernel-gameport \
+#MM	kernel-pc-i386-vga \
+#MM	kernel-pc-i386-vesa \
+#MM	kernel-battclock \
+#MM	kernel-misc \
+#MM	kernel-pci \
+#MM	kernel-pci-pcipc \
+#MM	kernel-mathieeesingbas \
+#MM	workbench-libs-partition \
+#MM	workbench-hidd-graphics \
+#MM	kernel-graphics \
+#MM	kernel-layers \
+#MM	kernel-keymap \
+#MM	kernel-intuition \
+#MM	kernel-input \
+#MM	kernel-cgfx-kobj \
+#MM	kernel-dos \
+#MM	kernel-console \
+#MM	kernel-fs-packet \
+#MM	kernel-fs-con \
+#MM	kernel-workbench \
+#MM	workbench-fs-nil \
+#MM	workbench-fs-ram \
+#MM workbench-fs-afs \
+#MM	contrib-cdvdfs \
+#MM	kernel-boot
+
+PKG_LIBS := aros boot mathieeesingbas partition dos graphics layers keymap intuition workbench
+PKG_RSRC := bootloader battclock misc
+PKG_DEVS := ata timer keyboard gameport input console
+PKG_HANDLERS := cdrom packet con nil ram afs
+PKG_HIDDS:= vgah pci pcipc graphics vesagfx
+
+MODULES := \
+	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
+	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
+
+kernel-package-x86_64:
+	$(RM) -rf $(BINDIR)/.pkg
+	%mkdirs_q $(BINDIR)/.pkg
+	@mv $(MODULES) $(BINDIR)/.pkg/
+	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
+	$(LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
+	$(RM) $(BINDIR)/.pkg/graphics.library
+	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
+	$(RM) -rf $(BINDIR)/.pkg
