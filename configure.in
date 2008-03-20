@@ -1519,7 +1519,7 @@ palmnative)     aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION
 		aros_flavour="palmnative" ;;
 mac68knative)   aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
 		aros_flavour="mac68knative" ;;
-ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
+ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="ppcnative" ;;
 esac
 
