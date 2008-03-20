@@ -31,9 +31,11 @@ include $(TOP)/config/make.cfg
 #MM	kernel-workbench \
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
-#MM workbench-fs-afs \
-#MM	contrib-cdvdfs \
+#MM	workbench-fs-afs \
+#MM     kernel-contrib-necessary-pc-x86_64 \
 #MM	kernel-boot
+
+#MM- kernel-contrib-necessary-pc-x86_64 : contrib-necessary-pc-x86_64
 
 PKG_LIBS := aros boot mathieeesingbas partition dos graphics layers keymap intuition workbench
 PKG_RSRC := bootloader battclock misc
@@ -57,3 +59,4 @@ kernel-package-x86_64:
 	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
 	$(RM) -rf $(BINDIR)/.pkg
+

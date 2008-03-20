@@ -30,13 +30,12 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-bootmenu-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     workbench-fs-afs-kobj \
-#MM	contrib-sfs-kobj \
-#MM	contrib-amberram-kobj \
 #MM     workbench-hidd-graphics-kobj \
-#MM     contrib-cdvdfs-kobj \
 #MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers \
-#MM     hidd-usb
+#MM     kernel-contrib-necessary-pc-i386
+
+#MM- kernel-contrib-necessary-pc-i386 : contrib-necessary-pc-i386
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
