@@ -139,8 +139,8 @@ grub_multiboot_load_elf32 (grub_file_t file, void *buffer)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "invalid offset in program header");
 
-          if (grub_file_read (file, (void *) phdr->p_paddr, phdr->p_filesz)
-              != (grub_ssize_t) phdr->p_filesz)
+          if ((phdr->p_filesz > 0) && (grub_file_read (file, (void *) phdr->p_paddr, phdr->p_filesz)
+              != (grub_ssize_t) phdr->p_filesz))
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "couldn't read segment from file");
 
@@ -226,8 +226,8 @@ grub_multiboot_load_elf64 (grub_file_t file, void *buffer)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "invalid offset in program header");
 
-	  if (grub_file_read (file, (void *) ((grub_uint32_t) phdr->p_paddr),
-			      phdr->p_filesz)
+	  if ((phdr->p_filesz > 0) && (grub_file_read (file, (void *) ((grub_uint32_t) phdr->p_paddr),
+			      phdr->p_filesz))
               != (grub_ssize_t) phdr->p_filesz)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "couldn't read segment from file");

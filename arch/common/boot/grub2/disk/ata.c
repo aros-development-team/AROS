@@ -86,7 +86,7 @@ struct grub_ata_device
   grub_ata_addressing_t addr;
 
   /* Sector count.  */
-  grub_size_t size;
+  grub_uint64_t size;
 
   /* CHS maximums.  */
   grub_uint16_t cylinders;
@@ -214,8 +214,7 @@ grub_ata_dumpinfo (struct grub_ata_device *dev, char *info)
   grub_printf ("Model: %s\n", text);
 
   grub_printf ("Addressing: %d\n", dev->addr);
-  grub_printf ("#sectors: %d\n", dev->size);
-
+  grub_printf ("#sectors: 0x%llx\n", dev->size);
 }
 
 static grub_err_t
@@ -315,7 +314,7 @@ grub_ata_identify (struct grub_ata_device *dev)
   if (dev->addr != GRUB_ATA_LBA48)
     dev->size = grub_le_to_cpu32(*((grub_uint32_t *) &info16[60]));
   else
-    dev->size = grub_le_to_cpu64(*((grub_uint32_t *) &info16[100]));
+    dev->size = grub_le_to_cpu64(*((grub_uint64_t *) &info16[100]));
 
   /* Read CHS information.  */
   dev->cylinders = info16[1];

@@ -25,8 +25,17 @@
 #define GRUB_BIOSDISK_FLAG_LBA	1
 #define GRUB_BIOSDISK_FLAG_CDROM 2
 
-#define GRUB_BIOSDISK_MACHINE_CDROM_START	0xe0
+#define GRUB_BIOSDISK_MACHINE_CDROM_START	0x9f
 #define GRUB_BIOSDISK_MACHINE_CDROM_END		0xf0
+
+#define GRUB_BIOSDISK_CDTYPE_NO_EMUL	0
+#define GRUB_BIOSDISK_CDTYPE_1_2_M	1
+#define GRUB_BIOSDISK_CDTYPE_1_44_M	2
+#define GRUB_BIOSDISK_CDTYPE_2_88_M	3
+#define GRUB_BIOSDISK_CDTYPE_2_88_M	3
+#define GRUB_BIOSDISK_CDTYPE_HARDDISK	4
+
+#define GRUB_BIOSDISK_CDTYPE_MASK	0xF
 
 struct grub_biosdisk_data
 {
@@ -74,6 +83,23 @@ struct grub_biosdisk_drp
   grub_uint8_t dummy[16];
 } __attribute__ ((packed));
 
+struct grub_biosdisk_cdrp
+{
+  grub_uint8_t size;
+  grub_uint8_t media_type;
+  grub_uint8_t drive_no;
+  grub_uint8_t controller_no;
+  grub_uint32_t image_lba;
+  grub_uint16_t device_spec;
+  grub_uint16_t cache_seg;
+  grub_uint16_t load_seg;
+  grub_uint16_t length_sec512;
+  grub_uint8_t cylinders;
+  grub_uint8_t sectors;
+  grub_uint8_t heads;
+  grub_uint8_t dummy[16];
+} __attribute__ ((packed));
+
 /* Disk Address Packet.  */
 struct grub_biosdisk_dap
 {
@@ -90,6 +116,8 @@ int EXPORT_FUNC(grub_biosdisk_rw_standard) (int ah, int drive, int coff, int hof
 int EXPORT_FUNC(grub_biosdisk_check_int13_extensions) (int drive);
 int EXPORT_FUNC(grub_biosdisk_get_diskinfo_int13_extensions) (int drive,
            void *drp);
+int EXPORT_FUNC(grub_biosdisk_get_cdinfo_int13_extensions) (int drive,
+           void *cdrp);
 int EXPORT_FUNC(grub_biosdisk_get_diskinfo_standard) (int drive,
 					 unsigned long *cylinders,
 					 unsigned long *heads,

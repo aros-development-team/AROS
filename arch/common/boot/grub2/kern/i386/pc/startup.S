@@ -780,6 +780,17 @@ FUNCTION(grub_biosdisk_check_int13_extensions)
 
 
 /*
+ *   int grub_biosdisk_get_cdinfo_int13_extensions (int drive, void *cdrp)
+ *
+ *   Return the cdrom information of DRIVE in CDRP. If an error occurs,
+ *   then return non-zero, otherwise zero.
+ */
+
+FUNCTION(grub_biosdisk_get_cdinfo_int13_extensions)
+	movw	$0x4B01, %cx
+	jmp	1f
+
+/*
  *   int grub_biosdisk_get_diskinfo_int13_extensions (int drive, void *drp)
  *
  *   Return the geometry of DRIVE in a drive parameters, DRP. If an error
@@ -787,6 +798,8 @@ FUNCTION(grub_biosdisk_check_int13_extensions)
  */
 
 FUNCTION(grub_biosdisk_get_diskinfo_int13_extensions)
+	movb	$0x48, %ch
+1:
 	pushl	%ebp
 	pushl	%ebx
 	pushl	%esi
@@ -802,7 +815,7 @@ FUNCTION(grub_biosdisk_get_diskinfo_int13_extensions)
 	call	prot_to_real
 
 	.code16
-	movb	$0x48, %ah
+	movw	%cx, %ax
 	movw	%bx, %ds
 	int	$0x13		/* do the operation */
 	movb	%ah, %bl	/* save return value in %bl */
