@@ -61,7 +61,7 @@ BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
 #MM
 bootdisk-setup-pc-i386 :
-	-$(RM) -r $(BOOT_DEST_DIR)/*
+	-$(RM) -rf $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/C
 	%mkdirs_q $(BOOT_DEST_DIR)/S
