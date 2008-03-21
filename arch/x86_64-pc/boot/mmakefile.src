@@ -55,7 +55,7 @@ kernel-package-x86_64:
 	%mkdirs_q $(BINDIR)/.pkg
 	@mv $(MODULES) $(BINDIR)/.pkg/
 	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
-	$(LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
+	$(TARGET_LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
 	$(RM) $(BINDIR)/.pkg/graphics.library
 	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
 	$(RM) -rf $(BINDIR)/.pkg
