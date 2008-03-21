@@ -2,9 +2,6 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= libexec
-USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
-LIBS    := $(addprefix -l,$(USELIBS))
-DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
 BOOT_FILES := \
     C/Shell \
@@ -53,7 +50,6 @@ BOOT_TAR_FILES := \
     System/Themes/os3.1 System/Wanderer System.info \
     Tools/Editor Tools/HDToolBox Tools/HDToolBox.info Tools.info \
     Tools/Debug
-
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk

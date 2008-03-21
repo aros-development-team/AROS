@@ -39,6 +39,10 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
 
+USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libinit
+LIBS    := $(addprefix -l,$(USELIBS))
+DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
+
 KRSRCS  := bootloader battclock bootmenu misc
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   mathieeesingbas expansion oop layers workbench cybergraphics \
