@@ -61,6 +61,7 @@ BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
 #MM
 bootdisk-setup-pc-i386 :
+	%mkdirs_q "$(AROSDIR)/Tools/Boot Disks"
 	-$(RM) -rf $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/C
