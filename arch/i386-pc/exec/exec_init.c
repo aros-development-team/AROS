@@ -1114,7 +1114,7 @@ int exec_RamCheck_dma(struct arosmb *arosmb)
 {
     ULONG   volatile *ptr,tmp;
 
-    ptr = (ULONG *)(((int)&_end + 4095) &~4095);
+    ptr = (ULONG *)(((int)&_end + 0x0FFF) &~0x0FFF);
 
     if(arosmb->flags & MB_FLAGS_MEM)
     {
@@ -1127,15 +1127,15 @@ int exec_RamCheck_dma(struct arosmb *arosmb)
 		return 16<<20;
 	    }
 	    /* Lower 16MB is marked as DMA memory */
-	    tmp = (arosmb->mem_upper*1024) & 0x00ffffff;
-	    tmp += 1048576;
+	    tmp = (arosmb->mem_upper * 1024) & 0x00ffffff;
+	    tmp += 0x100000;
 	    return tmp;
 	}
 	else
 	{
 	    /* No upper memory, return only lower mem.
 	     * Most likely fatal, can't see aros working with less than one MB of ram */
-	    return (arosmb->mem_lower*1024);
+	    return (arosmb->mem_lower * 1024);
 	}
     }
     /* No memory info from bios, do a scan */
@@ -1161,12 +1161,12 @@ int exec_RamCheck_fast(struct arosmb *arosmb)
     if(arosmb->flags & MB_FLAGS_MEM)
     {
 	/* If less than 15MB upper, no fastmem here */
-	if (arosmb->mem_upper <= 15*1024)
+	if ((arosmb->mem_upper * 1024) <= 0xF00000)
 	{
 	    return 0;
 	}
 	/* Found memory, so we need to do some quick math */
-	tmp = (arosmb->mem_upper*1024)+1048576;
+	tmp = (arosmb->mem_upper * 1024) + 0x100000;
 	return tmp;
     }
     /* No memory info from bios, do a scan */
