@@ -162,6 +162,23 @@ GNUCOMMON=$(AROSDIR)/Development
 GCCSCRIPT=$(GNUCOMMON)/S/Package-Startup
 
 #MM
+install-bootdisk :
+	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
+	@read
+	@$(ECHO) "Writing AROS Image to floppy..."
+	@dd if=$(OSGENDIR)/boot/aros.bin of=/dev/fd0
+
+#MM
+install-pc-i386 :
+	@$(ECHO) -n "Copying aros kernel to /aros/boot directory... "
+	@cp $(BINDIR)/boot/aros-pc-i386 /aros/boot/
+	@$(ECHO) "Done."
+#	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
+#	@read
+#	@$(ECHO) "Writing AROS Image to floppy..."
+#	@dd if=$(OSGENDIR)/boot/aros.bin of=/dev/fd0
+
+#MM
 clean ::
 	-$(RM) $(TESTS)
 
