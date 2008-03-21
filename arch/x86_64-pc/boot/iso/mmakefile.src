@@ -29,7 +29,6 @@ $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 $(TARGET_ISO): $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
-	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
 	@$(MKDIR) -p "$(PORTSDIR)"
 	@mkisofs -f \
                 -o $@ \
