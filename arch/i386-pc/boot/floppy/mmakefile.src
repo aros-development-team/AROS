@@ -6,23 +6,6 @@ USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := bootloader battclock bootmenu misc
-KLIBS   := exec boot aros dos graphics utility intuition keymap \
-      	   mathieeesingbas expansion oop layers workbench cybergraphics \
-	   partition
-KDEVS   := timer input keyboard console gameport ata trackdisk
-KHNDLRS := con nil packet ram cdrom afs sfs
-KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
-#Disabled RSRC cpu
-#Disabled HIDD vmwaregfx usbuhci
-
-KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _device.o  ,$(KDEVS)  )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _handler.o ,$(KHNDLRS))) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _hidd.o    ,$(KHIDDS) )) \
-         $(addprefix $(KOBJSDIR)/,$(addsuffix _driver.o  ,$(KDRVRS) ))
-
 BOOT_FILES := \
     C/Shell \
     S/Startup-Sequence \
@@ -77,10 +60,7 @@ BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
 #MM
-setup-pc-i386 :
-	%mkdirs_q $(OSGENDIR)/boot
-	%mkdirs_q $(BINDIR)/boot
-	%mkdirs_q $(BINDIR)/boot/grub
+bootdisk-setup-pc-i386 :
 	-$(RM) -r $(BOOT_DEST_DIR)/*
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/C
@@ -89,17 +69,6 @@ setup-pc-i386 :
 	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive
 	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/SYS
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
-
-#MM kernel-link-pc-i386 : setup-pc-i386
-kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
-
-$(BINDIR)/boot/aros-pc-i386 : $(OBJS) $(DEPLIBS)
-	@$(KERNEL_LD) -N -e kernel_startup -Ttext 0x00100000 \
-	    -Map $(OSGENDIR)/boot/aros.map -o $@ $(KOBJS) -L$(LIBDIR) $(LIBS)
-	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
-
-$(BINDIR)/boot/aros-pc-i386.gz : $(BINDIR)/boot/aros-pc-i386
-	@gzip -9 -f $^
 
 $(BINDIR)/boot/grub/menu.lst : menu.lst
 	@$(CP) $^ $@
@@ -120,7 +89,7 @@ workbench-boot-pc-i386:
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
-#MM bootdisk-pc-i386 : software-pc-i386 workbench test bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM bootdisk-pc-i386 : bootdisk-setup-pc-i386 software-pc-i386 workbench test bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 bootdisk-pc-i386: $(OSGENDIR)/boot/aros.bin
 
 #MM
