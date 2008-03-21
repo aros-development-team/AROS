@@ -8,6 +8,7 @@ include $(TOP)/config/make.cfg
 #MM- AROS : workbench-complete
 
 #MM- workbench-complete : \
+#MM	    workbench-directories \
 #MM	    workbench-hidds \
 #MM	    workbench-classes-complete \
 #MM	    workbench-devs-complete \
@@ -19,9 +20,8 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-system \
 #MM	    workbench-utilities \
 #MM	    workbench-tools \
-#MM     workbench-prefs \
-#MM     workbench-directories \
-#MM     workbench-fs-fat
+#MM	    workbench-prefs \
+#MM	    workbench-fs-fat
 
 WBSTARTUPDIR := $(AROSDIR)/WBStartup
 WBSTORAGEDIR := $(AROSDIR)/Storage
