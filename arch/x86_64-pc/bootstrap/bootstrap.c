@@ -77,7 +77,7 @@ static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.
 static struct vbe_mode VBEModeInfo = {0, };
 static struct vbe_controller VBEControllerInfo = {0, };
 
-struct TagItem km[64] __attribute__((used, section(".bss.aros.tables")));
+struct TagItem km[KRN__TAGCOUNT * 4] __attribute__((used, section(".bss.aros.tables")));
 
 struct TagItem *tag = &km[0];
 
@@ -309,7 +309,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                 mo->name = s;
                 mo->address = (void*)mod->mod_start;
 
-                D(kprintf("[BOOT] * module %s\n", mo->name));
+                D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->name, mo->address));
             }
             else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x00)
             {
@@ -319,7 +319,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  */
                 void *file = p + 4;
 
-                D(kprintf("[BOOT] * package %s:\n", remove_path((char *)mod->string)));
+                D(kprintf("[BOOT] * package %s @ %p:\n", remove_path((char *)mod->string), mod->mod_start));
 
                 while (file < (void*)mod->mod_end)
                 {
@@ -333,7 +333,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                     
                     mo->name    = s;
                     mo->address = file;
-                    D(kprintf("[BOOT]   * module %s\n", mo->name));
+                    D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->name, mo->address));
                     
                     file += len;
                 }
@@ -537,7 +537,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)(mb->cmdline);
     tag++;
     tag->ti_Tag = TAG_DONE;
-    
+
     if (mb->mmap_length)
     {
         tag->ti_Tag = KRN_MMAPLength;
@@ -548,7 +548,17 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         tag++;
         tag->ti_Tag = TAG_DONE;                
     }
-    
+    else
+    {
+        tag->ti_Tag = KRN_MEMLower;
+        tag->ti_Data = mb->mem_lower;
+        tag++;
+        tag->ti_Tag = KRN_MEMUpper;
+        tag->ti_Data = mb->mem_upper;
+        tag++;
+        tag->ti_Tag = TAG_DONE;     
+    }
+
     /* Setup stage - prepare 64-bit environment */
     setup_tables();
     setup_mmu();
