@@ -76,7 +76,9 @@ case 8: asm volatile("movq %0,%%gs:%P1"::"r"(__set),"n"(TLS_OFFSET(name)):"memor
 #define KRN_ProtAreaEnd         (KRN_Dummy + 14)
 #define KRN_VBEMode             (KRN_Dummy + 15)
 #define KRN_VBEPaletteWidth     (KRN_Dummy + 16)
-
+#define KRN_MEMLower         (KRN_Dummy + 17)
+#define KRN_MEMUpper          (KRN_Dummy + 18)
+#define KRN__TAGCOUNT         (18)
 /*
  * The target base address of 64-bit kernel
  */
