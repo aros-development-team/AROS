@@ -112,7 +112,7 @@ $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
             oldpwd=$$PWD; \
             cd $(BOOT_SRC_DIR) && \
             for path in $(BOOT_TAR_FILES); do \
-                $(SH) $(TOP)/arch/i386-pc/boot/copypath $$path $(GENDIR)/gen/rom/bootdisk.compressed ; \
+                $(SH) $(TOP)/$(CURDIR)/copypath $$path $(GENDIR)/gen/rom/bootdisk.compressed ; \
             done && \
             cd $(GENDIR)/gen/rom && \
             $(RM) AROS.pkg && \
