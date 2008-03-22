@@ -232,7 +232,7 @@ int exec_main(struct TagItem *msg, void *entry)
     while (*fp++ != (APTR) -1) negsize += LIB_VECTSIZE;
     SysBase = (struct ExecBase *)(0x1000 + negsize);
 
-    rkprintf("[exec] Clearing ExecBase\n");
+    rkprintf("[exec] Clearing ExecBase [SysBase = %012p]\n", SysBase);
 
     /* How about clearing most of ExecBase structure? */
     bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
@@ -329,12 +329,13 @@ int exec_main(struct TagItem *msg, void *entry)
 
     SumLibrary((struct Library *)SysBase);
 
-    rkprintf("[exec] Adding memory\n");
+    rkprintf("[exec] Adding memory ..\n");
     struct mb_mmap *mmap;
     uint32_t len = krnGetTagData(KRN_MMAPLength, 0, msg);
 
     if (len)
     {
+	rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
         mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
 
         while(len >= sizeof(struct mb_mmap))
@@ -363,7 +364,7 @@ int exec_main(struct TagItem *msg, void *entry)
                 else if (addr < 0x01000000 && (addr+size) > 0x01000000)
                 {
                     exec_InsertMemory(msg, addr, 0x00ffffff);
-                    exec_InsertMemory(msg, 0x01000000, addr+size-1);
+                    exec_InsertMemory(msg, 0x01000000, addr + size - 1);
                 }
                 else
                 {
@@ -375,13 +376,54 @@ int exec_main(struct TagItem *msg, void *entry)
             mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap+4);
         }
     }
+    else
+    {
+        rkprintf("[exec] Registering mem_lower/mem_upper Memory Region\n");
 
-    
+	uintptr_t chip_start, chip_end, fast_start, fast_end, tmp;
+
+	uintptr_t addr_lower = krnGetTagData(KRN_MEMLower, 0, msg);
+	uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
+
+	if (addr_lower > 0)
+	{
+		chip_start = 0X2000;
+		chip_end = (addr_lower * 1024) - 1;
+
+                if (chip_start < chip_end)
+		{
+			rkprintf("[exec]   Registering Lower Mem Range (%012p - %012p)\n", chip_start, chip_end);
+			exec_InsertMemory(msg, chip_start, chip_end);
+		}
+	}
+
+	if (addr_upper > 0)
+	{
+		fast_start = 0x0000100000;
+		fast_end = (addr_upper * 1024) + (fast_start - 1);
+
+                if (fast_start < fast_end)
+		{
+			rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
+			exec_InsertMemory(msg, fast_start, fast_end);
+		}
+	}
+    }
+
+    rkprintf("[exec] MemLists (hopefully!) prepaired\n");
+
     SumLibrary((struct Library *)SysBase);
+
+    rkprintf("[exec] SumLibrary on SysBase finished\n");
 
     Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
 
-    SysBase->DebugAROSBase = PrepareAROSSupportBase();
+    rkprintf("[exec] SysBase Enqueued in Exec Liblist\n");
+    
+    if ((SysBase->DebugAROSBase = PrepareAROSSupportBase()) == NULL)
+    {
+	rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
+    }
     
     rkprintf("[exec] ExecBase=%012p\n", SysBase);
 
@@ -741,16 +783,21 @@ IPTR **exec_RomTagScanner(struct TagItem *msg)
 
 struct Library * PrepareAROSSupportBase(void)
 {
+    struct AROSSupportBase *AROSSupportBase;
     struct ExecBase *SysBase = TLS_GET(SysBase); //*(struct ExecBase **)4UL;
 
-    struct AROSSupportBase *AROSSupportBase =
-        AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR);
+    if ((AROSSupportBase = AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR)) != NULL)
+    {
+	AROSSupportBase->kprintf = (void *)kprintf;
+	AROSSupportBase->rkprintf = (void *)rkprintf;
+	AROSSupportBase->vkprintf = (void *)vkprintf;
 
-    AROSSupportBase->kprintf = (void *)kprintf;
-    AROSSupportBase->rkprintf = (void *)rkprintf;
-    AROSSupportBase->vkprintf = (void *)vkprintf;
-
-    NEWLIST(&AROSSupportBase->AllocMemList);
+	NEWLIST(&AROSSupportBase->AllocMemList);
+    }
+    else
+    {
+#warning "FIXME What should we do if we fail to allocate AROSSupportBase!?!?"
+    }
 
 #warning "FIXME Add code to read in the debug options"
 
