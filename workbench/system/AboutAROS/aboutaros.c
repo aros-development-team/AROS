@@ -183,8 +183,10 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                           *acknowledgementsList;
 
     STRPTR                 pages[4]       = { NULL };
-    STRPTR                 builddate;
-    STRPTR                 variant;
+    STRPTR                 str_builddate;
+    STRPTR                 str_variant;
+    STRPTR                 str_arosarch;
+    STRPTR                 str_buildtype;
     BOOL                   showLogotype;
     BPTR                   lock;
     APTR                   pool;
@@ -203,17 +205,21 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         showLogotype = FALSE;
     }
-
+   
     /* Retrieve the build date and the variant name ------------------------*/
-    ArosInquire(AI_ArosBuildDate, (IPTR) &builddate,
-                AI_ArosVariant, (IPTR) &variant,
+    ArosInquire(AI_ArosBuildDate, (IPTR) &str_builddate,
+                AI_ArosVariant, (IPTR) &str_variant,
+                AI_ArosArchitecture, (IPTR) &str_arosarch,
                 TAG_DONE);
+
+    str_buildtype = AllocPooled(pool, strlen(__(MSG_BUILD_TYPE)) + strlen(str_arosarch) + 1);
+    sprintf(str_buildtype, __(MSG_BUILD_TYPE), str_arosarch);
 
     /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
     pages[1] = _(MSG_PAGE_SPONSORS);
     pages[2] = _(MSG_PAGE_ACKNOWLEDGEMENTS);
-
+    
     /* Create application and window objects -------------------------------*/
     self = (Object *) DoSuperNewTags
     (
@@ -249,25 +255,26 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, (IPTR) VSpace(4),
                 Child, (IPTR) HGroup,
                     InnerSpacing(0,0),
-                    
+
                     GroupSpacing(6),
                     Child, (IPTR) HVSpace,
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) __(MSG_BUILD_TYPE),
+                        MUIA_Text_Contents, (IPTR) str_buildtype,
+                        MUIA_Weight,               0,
+                    End,
+
+                    Child, (IPTR) TextObject,
+                        MUIA_Font,                 MUIV_Font_Big,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents, (IPTR) str_variant,
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) variant,
-                        MUIA_Weight,               0,
-                    End,
-                    Child, (IPTR) TextObject,
-                        MUIA_Font,                 MUIV_Font_Big,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) builddate,
+                        MUIA_Text_Contents, (IPTR) str_builddate,
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) HVSpace,

@@ -6,11 +6,11 @@ MSG_TITLE
 Informazioni su AROS
 ;
 MSG_PERSONAL_BUILD
-Build Personale
+Build %s Personale
 ; Personal Build
 ;
 MSG_NIGHTLY_BUILD
-Build Notturna
+Build %s Notturna
 ; Nightly Build
 ;
 MSG_SNAPSHOT

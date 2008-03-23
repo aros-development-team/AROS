@@ -3,10 +3,10 @@ MSG_TITLE (//)
 About AROS
 ;
 MSG_PERSONAL_BUILD (//)
-Personal Build
+Personal %s Build
 ;
 MSG_NIGHTLY_BUILD (//)
-Nightly Build
+Nightly %s Build
 ;
 MSG_SNAPSHOT (//)
 Snapshot

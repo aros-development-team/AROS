@@ -7,11 +7,11 @@ Sobre AROS
 ; About AROS
 ;
 ;MSG_PERSONAL_BUILD
-;** Personal Build
+;** Personal %s Build
 ; Personal Build
 ;
 ;MSG_NIGHTLY_BUILD
-;** Nightly Build
+;** Nightly %s Build
 ; Nightly Build
 ;
 ;MSG_SNAPSHOT

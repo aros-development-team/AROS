@@ -8,12 +8,12 @@ MSG_TITLE
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Личная сборка
+Личная %s сборка
 ; Personal Build
 ; FIXME: shall I translate this?
 ;
 MSG_NIGHTLY_BUILD
-"Ночная" сборка
+"Ночная" %s сборка
 ; Nightly Build
 ; FIXME: shall I translate this?
 ;

@@ -6,10 +6,10 @@ MSG_TITLE
 À propos d'AROS
 ;
 MSG_PERSONAL_BUILD
-Moutûre personelle
+Moutûre %s personelle
 ;
 MSG_NIGHTLY_BUILD
-Moutûre quotidienne
+Moutûre %s quotidienne
 ;
 MSG_SNAPSHOT
 Instantané
