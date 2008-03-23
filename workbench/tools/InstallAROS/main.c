@@ -6,7 +6,7 @@
 #define INTUITION_NO_INLINE_STDARG
 //#define USE_FORMAT64
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -41,8 +41,8 @@
 
 #include "install.h"
 
-#ifndef BOOTLOADER
-#define BOOTLOADER grub2
+#ifndef GRUB
+#define GRUB 2
 #endif
 
 #define kBufSize  		(4*65536)
@@ -1498,18 +1498,18 @@ localecopydone:
 
 		TEXT *grub_files[] =
 		{
-#if BOOTLOADER == grub2
+#if GRUB == 2
 			"boot/grub/boot.img",		"boot/grub/boot.img",
 			"boot/grub/core.img",		"boot/grub/core.img",
 			"boot/grub/grub.cfg.DH0",	"boot/grub/grub.cfg",
 			"boot/grub/normal.mod",		"boot/grub/normal.mod",
 			"boot/grub/command.lst",	"boot/grub/command.lst",
 			"boot/grub/fs.lst",		"boot/grub/fs.lst",
-#elif BOOTLOADER == grub
+#elif GRUB == 1
 			"boot/grub/stage1",		"boot/grub/stage1",
 			"boot/grub/stage2_hdisk",	"boot/grub/stage2",
-			"boot/grub/menu.lst.DH0",	"boot/grub/menu.
-#elif BOOTLOADER != none
+			"boot/grub/menu.lst.DH0",	"boot/grub/menu.lst",
+#else
 #error bootloader not supported
 #endif
 			NULL
@@ -1557,12 +1557,12 @@ localecopydone:
 		}
 
 		TEXT tmp[200];
-#if BOOTLOADER == grub2
+#if GRUB == 2
 		sprintf(tmp,
 			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub",
 			boot_Device, boot_Unit, dest_Path, dest_Path);
-#elif BOOTLOADER == grub
+#elif GRUB == 1
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
@@ -1588,10 +1588,8 @@ localecopydone:
 			boot_Device, boot_Unit, dest_Path, dest_Path);
 #endif
 
-#if BOOTLOADER != none
 		D(bug("[INSTALLER] execute: %s\n", tmp));
 		Execute(tmp, NULL, NULL);
-#endif
 		set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
