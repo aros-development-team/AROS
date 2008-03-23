@@ -84,6 +84,10 @@ Ydin
 MSG_SECTION_DOS
 DOS
 ;
+MSG_SECTION_NETWORK (//)
+Networking Components
+;Networking Components
+;
 MSG_SECTION_LIBC_POSIX
 C-linkkikirjasto ja POSIX rajapinta
 ;

@@ -113,6 +113,10 @@ MSG_SECTION_DOS
 DOS
 ; DOS
 ;
+MSG_SECTION_NETWORK (//)
+Networking Components
+;Networking Components
+;
 MSG_SECTION_LIBC_POSIX
 Библиотеки C и POSIX Layer
 ; C link library and POSIX layer
