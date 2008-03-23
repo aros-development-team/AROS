@@ -103,9 +103,13 @@
 	strcpy(buf2, newName);
 	pos = strrchr(buf2, '/');
 	if (!pos)
+	{
 	    pos = buf2 + len;
-
-	*pos++ = '\0';
+	    *pos = '\0';
+	}
+	else
+	    *pos++ = '\0';
+	
 	lock = Lock(buf2, SHARED_LOCK);
 	if (lock)
 	{
