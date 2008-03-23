@@ -8,11 +8,11 @@ Over AROS
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Persoonlijke Build
+Persoonlijke %s Build
 ; Personal Build
 ;
 MSG_NIGHTLY_BUILD
-Nightly Build
+Nightly %s Build
 ; Nightly Build
 ;
 MSG_SNAPSHOT

@@ -8,11 +8,11 @@ O systému AROS
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Osobní sestavení
+Osobní %s sestavení
 ; Personal Build
 ;
 MSG_NIGHTLY_BUILD
-Noèní sestavení
+Noèní %s sestavení
 ; Nightly Build
 ;
 MSG_SNAPSHOT

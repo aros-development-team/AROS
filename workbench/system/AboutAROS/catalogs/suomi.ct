@@ -7,10 +7,10 @@ Tietoa AROS:ista
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Henkilökohtainen käännös
+Henkilökohtainen %s käännös
 ;
 MSG_NIGHTLY_BUILD
-Öinen käännös
+Öinen %s käännös
 ;
 MSG_SNAPSHOT
 Snapshot
