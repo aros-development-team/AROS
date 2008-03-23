@@ -32,7 +32,10 @@
 #define AI_ArosBuildDate	(AI_Base + 5)
 	/* STRPTR */
 
-#define AI_ArosVariant      (AI_Base + 6)
+#define AI_ArosVariant		(AI_Base + 6)
+    /* STRPTR */
+
+#define AI_ArosArchitecture	(AI_Base + 7)
     /* STRPTR */
 
 /* Architecture specific tags */
