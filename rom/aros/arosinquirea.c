@@ -83,6 +83,7 @@ IPTR kickbase(void);
 
 	AI_ArosBuildDate IPTR
 		Given in the format: <d>.<m>.<y>
+
 	AI_ArosVariant IPTR
 		Configure time variant name.
 
@@ -183,6 +184,10 @@ IPTR kickbase(void);
 
         case AI_ArosVariant:
             SetData (tag, IPTR, (IPTR) VARIANT);
+            break;
+
+	case AI_ArosArchitecture:
+            SetData (tag, IPTR, (IPTR) AROS_ARCHITECTURE);
             break;
 
         default:
