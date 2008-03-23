@@ -76,7 +76,7 @@ Workbench:
     Henning Kiel
     Sebastian Bauer
     Paul Smith
-    Nic Andrews
+    Nick Andrews (Kalamatee)
     Christoph Johann Szczecina
 
 Tools:
@@ -110,11 +110,21 @@ Kernel:
     Sebastian Heutling
     Fabio Alemagna
     Georg Steger
+    Nick Andrews (Kalamatee)
 
 DOS:
     Georg Steger
     Fabio Alemagna
     The MorphOS team
+    Rob Howard
+    Pavel Fedin
+
+NETWORKING:
+    Neil Cafferkey
+    Pavel Fedin
+    Michal Schulz
+    Nick Andrews (Kalamatee)
+    Alain Greppin
 
 C link library and POSIX layer:
     Aaron Digulla
