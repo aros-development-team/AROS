@@ -10,9 +10,12 @@ USER_CFLAGS := -w
 #MM- workbench-tools : workbench-tools-installaros
 #MM workbench-tools-installaros : contrib-zune-classes-nfloattext-class
 
-BOOTLOADER  := $(AROS_TARGET_BOOTLOADER)
-
-USER_CFLAGS := -DBOOTLOADER=$(if $(BOOTLOADER),$(BOOTLOADER),"none")
+ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub)
+USER_CFLAGS := -DGRUB=1
+endif
+ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2)
+USER_CFLAGS := -DGRUB=2
+endif
 
 %build_prog mmake=workbench-tools-installaros \
     progname=InstallAROS targetdir=$(EXEDIR) \
