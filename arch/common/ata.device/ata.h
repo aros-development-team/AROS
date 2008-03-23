@@ -20,6 +20,7 @@
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
+ * 2008-03-23  T. Wiszkowski       Corrected DMA PRD issue (x86_64 systems)
  */
 
 #include <exec/types.h>
@@ -62,8 +63,11 @@
 struct ata_Unit;
 struct ata_Bus;
 
+/*
+ * this **might** cause problems with PPC64, which **might** expect both to be 64bit.
+ */
 struct PRDEntry {
-    IPTR    prde_Address;
+    ULONG   prde_Address;
     ULONG   prde_Length;
 };
 
@@ -364,8 +368,8 @@ typedef enum
 #define ata_DevHead         6
 #define ata_Status          7
 #define ata_Command         7
-#define ata_AltStatus       0x6
-#define ata_AltControl      0x6
+#define ata_AltStatus       0x2
+#define ata_AltControl      0x2
 
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))

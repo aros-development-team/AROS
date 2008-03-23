@@ -24,6 +24,7 @@
  *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
  * 2008-02-24  T. Wiszkowski       Corrected unit open function
  * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
+ * 2008-03-23  T. Wiszkowski       Corrected Alternative Command block position
  */
 
 #define DEBUG 0
@@ -176,10 +177,10 @@ AROS_UFH3(void, Enumerator,
         UBYTE irq;
     } Buses[] = 
     {
-        {0x1f0, 0x3f0, 14},
-        {0x170, 0x370, 15},
-        {0x168, 0x368, 10},
-        {0x1e8, 0x3e8, 11},
+        {0x1f0, 0x3f4, 14},
+        {0x170, 0x374, 15},
+        {0x168, 0x36c, 10},
+        {0x1e8, 0x3ec, 11},
     };
 
     /*
