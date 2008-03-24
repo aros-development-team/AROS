@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
     
     Write the functionlist to a file that can be includes the .conf file.
@@ -123,5 +123,5 @@ void writefunclist(struct config *cfg)
         exit(20);
     }
     
-    close(out);
+    fclose(out);
 }

@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
     
     Print the library magic and init code in the file modname_start.c.
     This code is partly based on code in CLib37x.lha from Andreas R. Kleinert
 */
 #include "genmodule.h"
+#include "oopsupport.h"
 #include "muisupport.h"
 #include "dtsupport.h"
 #include "boopsisupport.h"
@@ -376,8 +377,8 @@ static void writeresident(FILE *out, struct config *cfg)
     }
     fprintf(out,
 	    "    RESIDENTPRI,\n"
-	    "    (char *)&GM_UNIQUENAME(LibName)[0],\n"
-	    "    (char *)&GM_UNIQUENAME(LibID)[6],\n"
+	    "    (CONST_STRPTR)&GM_UNIQUENAME(LibName)[0],\n"
+	    "    (CONST_STRPTR)&GM_UNIQUENAME(LibID)[6],\n"
     );
     if (cfg->modtype != RESOURCE)
     {
