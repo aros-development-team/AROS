@@ -1,7 +1,44 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	:= libexec
+USER_INCLUDES	:= -I$(GENINCDIR)
+
+#
+# Rule to create AROS for pc-i386
+#
+
+#MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386
+
+#MM- general-setup-pc-i386: setup-pc-i386 includes compiler
+
+#MM- kernel-pc-i386 : general-setup-pc-i386
+
+#MM- software-pc-i386 : general-setup binary-pc-i386 \
+#MM	    workbench-pc-i386 demos contrib-pc-i386
+
+#MM- workbench-pc-i386 : workbench-complete workbench workbench-boot-pc-i386
+
+#MM- contrib-pc-i386 : contrib-complete
+
+#
+# Kernel modules
+#
+
+#MM- kernel-pc-i386 : \
+#MM	kernel-misc-kobj \
+#MM	kernel-bootloader-pc-i386-kobj \
+#MM	kernel-bootmenu-kobj \
+#MM     workbench-libs-partition-kobj \
+#MM     workbench-fs-afs-kobj \
+#MM     workbench-hidd-graphics-kobj \
+#MM     kernel-cpu-pc-i386-kobj \
+#MM	kernel-pc-i386-drivers \
+#MM     kernel-contrib-necessary-pc-i386
+
+#MM- kernel-contrib-necessary-pc-i386 : contrib-necessary-pc-i386
+
+#MM- includes-pc-i386 : includes-common-i386 includes-copy-pc-i386 includes-copy
+
 
 BOOT_FILES := \
     C/Shell \
@@ -153,16 +190,5 @@ install-pc-i386 :
 clean ::
 	-$(RM) $(TESTS)
 
-$(OSGENDIR)/boot/%.o : %.c
-	%compile_q
-
-$(OSGENDIR)/boot/%.o : %.s
-	@as $(INCLUDES) $< -o $@
-
-$(OSGENDIR)/boot/%.o : $(LIBDIR)/%.a
-	@ld -r -d --whole-archive $< -o $@
-
-$(OSGENDIR)/boot/%.d : %.c
-	%mkdepend_q
-
+# %include_deps
 %common
