@@ -2,7 +2,7 @@
 #define FILEHANDLES_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,8 @@
 struct Position
 {
 	ULONG block;		// current extensionblock
-	UWORD filekey;		// pointer to next/current datablock to read
+	UWORD filekey;		// long offset within header/extension block of
+	                  // next/current datablock to read
 	UWORD byte;			// bytes left in a block to read
 	ULONG offset;		// offset in bytes within a file
 };
