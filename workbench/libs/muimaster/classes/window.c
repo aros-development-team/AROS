@@ -3735,13 +3735,12 @@ IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_
 	        return 0;
 	    }
     
-	    if (!(bmn = CreateBitMapNode(NULL, /* dummy */
+	    if (!(bmn = CreateBitMapNodeA(TAGLIST(
 		    GUI_BitMap, di->bm,
 		    GUI_LeftOffset, di->touchx,
 		    GUI_TopOffset, di->touchy,
 		    GUI_Width, di->width,
-		    GUI_Height, di->height,
-		    TAG_DONE)))
+		    GUI_Height, di->height))))
 	    {
 	        DoMethod(msg->obj, MUIM_DeleteDragImage, (IPTR)di);
 	        DeleteDragNDrop(dnd);
