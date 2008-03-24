@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Rename CLI command.
@@ -92,7 +92,7 @@
 
 enum
 {
-    ARG_FROM = 0,
+    ARG_FROM,
     ARG_TO,
     ARG_QUIET,
     NOOFARGS
@@ -123,7 +123,7 @@ int main(void)
     {
 	STRPTR *from  = (STRPTR *)args[ARG_FROM];
 	STRPTR  to    = (STRPTR)args[ARG_TO];
-	BOOL    quiet = (BOOL)args[ARG_QUIET];
+	BOOL    quiet = args[ARG_QUIET] != 0;
 	
 	retval = doRename(from, to, quiet);
 	
@@ -175,7 +175,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 		ioerr = IoErr();
 		if (ioerr == ERROR_OBJECT_NOT_FOUND)
 		{
-			Printf("Can't rename %s as %s because ", (ULONG)from[0], (ULONG)to);
+			Printf("Can't rename %s as %s because ", from[0], to);
 		}
 		ERROR(RETURN_FAIL);
 	}
@@ -221,7 +221,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	/* Check if dest is not a dir and src is pattern or multi */
 	if (!destIsDir && (itsWild || from[1]))
 	{
-		Printf("Destination \"%s\" is not a directory.\n", (ULONG)to);
+		Printf("Destination \"%s\" is not a directory.\n", to);
 		ERROR(RETURN_FAIL);
 	}
 
@@ -253,7 +253,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 		}
 
 		ioerr = IoErr();
-		Printf("Can't rename %s as %s because ", (ULONG)from[0], (ULONG)to);
+		Printf("Can't rename %s as %s because ", from[0], to);
 		ERROR(RETURN_FAIL);
 	}
 
@@ -310,7 +310,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 
 			if (!quiet)
 			{
-				Printf("Renaming %s as %s\n", (ULONG)ap->ap_Buf, (ULONG)pathName);
+				Printf("Renaming %s as %s\n", ap->ap_Buf, pathName);
 			}
 
 			if (!Rename(ap->ap_Buf, pathName))
@@ -318,7 +318,7 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 				ioerr = IoErr();
 				MatchEnd(ap);
 
-				Printf("Can't rename %s as %s because ", (ULONG)ap->ap_Buf, (ULONG)pathName);
+				Printf("Can't rename %s as %s because ", ap->ap_Buf, pathName);
 				ERROR(RETURN_FAIL);
 			}
 		}
