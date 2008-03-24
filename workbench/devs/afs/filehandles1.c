@@ -1,14 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-/*
- * -date------ -name------------------- -description-----------------------------
- * 02-jan-2008 [Tomasz Wiszkowski]      added disk validation
- * 03-jan-2008 [Tomasz Wiszkowski]      fixed procedures to allow validation prior to disk write
- * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
- */
 
 #undef DEBUG
 #define DEBUG 0
@@ -1070,10 +1063,15 @@ struct BlockCache *blockbuffer;
 		if (ah->volume->dosflags == 0)
 			blocksize -= (BLK_DATA_START*4);
 		newextblockindex = newoffset / blocksize;
-		tablesize = BLK_TABLE_END(ah->volume)-BLK_TABLE_START+1; /* hashtable size */
+		tablesize = BLK_TABLE_END(ah->volume)-BLK_TABLE_START+1;
 		filekey = BLK_TABLE_END(ah->volume)-(newextblockindex % tablesize);
 		newextblockindex /= tablesize; /* # of extensionblock we need */
 		byte = newoffset % blocksize;
+		if (newoffset != 0 && byte == 0 && filekey == BLK_TABLE_END(ah->volume))
+		{
+			newextblockindex--;
+			filekey = BLK_TABLE_START - 1;
+		}
 
 		/* Get index of current extension block */
 		extblockindex = (ah->current.offset / blocksize) / tablesize;
@@ -1111,4 +1109,3 @@ struct BlockCache *blockbuffer;
 	return old;
 }
 
-/* vim: set noet ts=3 ai fdm=marker fmr={,} :*/
