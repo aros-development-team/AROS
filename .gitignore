@@ -9,6 +9,9 @@
 /distfiles
 /config.status
 /contrib
+/.settings
+/.cproject
+/.project
 
 # arch
 
@@ -365,122 +368,240 @@
 
 # arch/common/ata.device/include
 
-# arch/common/grub2
-/arch/common/grub2/mmakefile
+# arch/common/boot
 
-# arch/common/grub2/boot
+# arch/common/boot/floppy
+/arch/common/boot/floppy/mmakefile
 
-# arch/common/grub2/boot/i386
+# arch/common/boot/grub
+/arch/common/boot/grub/Makefile
+/arch/common/boot/grub/config.status
+/arch/common/boot/grub/config.cache
+/arch/common/boot/grub/config.log
+/arch/common/boot/grub/stamp-h
+/arch/common/boot/grub/stamp-h1
+/arch/common/boot/grub/mmakefile
+/arch/common/boot/grub/.files-touched
+/arch/common/boot/grub/autom4te.cache
 
-# arch/common/grub2/boot/i386/pc
+# arch/common/boot/grub/docs
+/arch/common/boot/grub/docs/.deps
+/arch/common/boot/grub/docs/Makefile
+/arch/common/boot/grub/docs/*.info*
 
-# arch/common/grub2/commands
+# arch/common/boot/grub/grub
+/arch/common/boot/grub/grub/.deps
+/arch/common/boot/grub/grub/Makefile
+/arch/common/boot/grub/grub/grub
 
-# arch/common/grub2/commands/i386
+# arch/common/boot/grub/lib
+/arch/common/boot/grub/lib/.deps
+/arch/common/boot/grub/lib/Makefile
 
-# arch/common/grub2/commands/i386/pc
+# arch/common/boot/grub/netboot
+/arch/common/boot/grub/netboot/.deps
+/arch/common/boot/grub/netboot/Makefile
 
-# arch/common/grub2/commands/ieee1275
+# arch/common/boot/grub/stage1
+/arch/common/boot/grub/stage1/.deps
+/arch/common/boot/grub/stage1/Makefile
+/arch/common/boot/grub/stage1/stage1
+/arch/common/boot/grub/stage1/stage1.exec
 
-# arch/common/grub2/conf
+# arch/common/boot/grub/stage2
+/arch/common/boot/grub/stage2/.deps
+/arch/common/boot/grub/stage2/Makefile
+/arch/common/boot/grub/stage2/diskless
+/arch/common/boot/grub/stage2/diskless_size.h
+/arch/common/boot/grub/stage2/nbgrub
+/arch/common/boot/grub/stage2/nbloader
+/arch/common/boot/grub/stage2/pre_stage2
+/arch/common/boot/grub/stage2/pxegrub
+/arch/common/boot/grub/stage2/pxeloader
+/arch/common/boot/grub/stage2/stage2
+/arch/common/boot/grub/stage2/stage2_size.h
+/arch/common/boot/grub/stage2/start
+/arch/common/boot/grub/stage2/*.exec
+/arch/common/boot/grub/stage2/*_stage1_5
 
-# arch/common/grub2/disk
+# arch/common/boot/grub/util
+/arch/common/boot/grub/util/.deps
+/arch/common/boot/grub/util/Makefile
+/arch/common/boot/grub/util/grub-image
+/arch/common/boot/grub/util/grub-install
+/arch/common/boot/grub/util/grub-md5-crypt
+/arch/common/boot/grub/util/grub-terminfo
+/arch/common/boot/grub/util/mbchk
 
-# arch/common/grub2/disk/i386
+# arch/common/boot/grub2
+/arch/common/boot/grub2/mmakefile
 
-# arch/common/grub2/disk/i386/pc
+# arch/common/boot/grub2/boot
 
-# arch/common/grub2/disk/ieee1275
+# arch/common/boot/grub2/boot/i386
 
-# arch/common/grub2/font
+# arch/common/boot/grub2/boot/i386/pc
 
-# arch/common/grub2/fs
+# arch/common/boot/grub2/boot/powerpc
 
-# arch/common/grub2/hello
+# arch/common/boot/grub2/boot/powerpc/ieee1275
 
-# arch/common/grub2/include
+# arch/common/boot/grub2/bus
 
-# arch/common/grub2/include/grub
+# arch/common/boot/grub2/commands
 
-# arch/common/grub2/include/grub/i386
+# arch/common/boot/grub2/commands/i386
 
-# arch/common/grub2/include/grub/i386/pc
+# arch/common/boot/grub2/commands/i386/pc
 
-# arch/common/grub2/include/grub/i386/pc/util
+# arch/common/boot/grub2/commands/ieee1275
 
-# arch/common/grub2/include/grub/ieee1275
+# arch/common/boot/grub2/conf
 
-# arch/common/grub2/include/grub/powerpc
+# arch/common/boot/grub2/disk
 
-# arch/common/grub2/include/grub/powerpc/ieee1275
+# arch/common/boot/grub2/disk/efi
 
-# arch/common/grub2/include/grub/powerpc/ieee1275/util
+# arch/common/boot/grub2/disk/i386
 
-# arch/common/grub2/include/grub/sparc64
+# arch/common/boot/grub2/disk/i386/pc
 
-# arch/common/grub2/include/grub/sparc64/ieee1275
+# arch/common/boot/grub2/disk/ieee1275
 
-# arch/common/grub2/include/grub/util
+# arch/common/boot/grub2/disk/powerpc
 
-# arch/common/grub2/io
+# arch/common/boot/grub2/disk/powerpc/ieee1275
 
-# arch/common/grub2/kern
+# arch/common/boot/grub2/docs
 
-# arch/common/grub2/kern/i386
+# arch/common/boot/grub2/font
 
-# arch/common/grub2/kern/i386/pc
+# arch/common/boot/grub2/fs
 
-# arch/common/grub2/kern/ieee1275
+# arch/common/boot/grub2/hello
 
-# arch/common/grub2/kern/powerpc
+# arch/common/boot/grub2/include
 
-# arch/common/grub2/kern/powerpc/ieee1275
+# arch/common/boot/grub2/include/grub
 
-# arch/common/grub2/kern/sparc64
+# arch/common/boot/grub2/include/grub/efi
 
-# arch/common/grub2/kern/sparc64/ieee1275
+# arch/common/boot/grub2/include/grub/i386
 
-# arch/common/grub2/loader
+# arch/common/boot/grub2/include/grub/i386/efi
 
-# arch/common/grub2/loader/i386
+# arch/common/boot/grub2/include/grub/i386/ieee1275
 
-# arch/common/grub2/loader/i386/pc
+# arch/common/boot/grub2/include/grub/i386/linuxbios
 
-# arch/common/grub2/loader/powerpc
+# arch/common/boot/grub2/include/grub/i386/pc
 
-# arch/common/grub2/loader/powerpc/ieee1275
+# arch/common/boot/grub2/include/grub/i386/pc/util
 
-# arch/common/grub2/normal
+# arch/common/boot/grub2/include/grub/ieee1275
 
-# arch/common/grub2/normal/i386
+# arch/common/boot/grub2/include/grub/powerpc
 
-# arch/common/grub2/normal/powerpc
+# arch/common/boot/grub2/include/grub/powerpc/ieee1275
 
-# arch/common/grub2/partmap
+# arch/common/boot/grub2/include/grub/powerpc/ieee1275/util
 
-# arch/common/grub2/term
+# arch/common/boot/grub2/include/grub/sparc64
 
-# arch/common/grub2/term/i386
+# arch/common/boot/grub2/include/grub/sparc64/ieee1275
 
-# arch/common/grub2/term/i386/pc
+# arch/common/boot/grub2/include/grub/util
 
-# arch/common/grub2/term/ieee1275
+# arch/common/boot/grub2/io
 
-# arch/common/grub2/util
+# arch/common/boot/grub2/kern
 
-# arch/common/grub2/util/i386
+# arch/common/boot/grub2/kern/efi
 
-# arch/common/grub2/util/i386/pc
+# arch/common/boot/grub2/kern/i386
 
-# arch/common/grub2/util/powerpc
+# arch/common/boot/grub2/kern/i386/efi
 
-# arch/common/grub2/util/powerpc/ieee1275
+# arch/common/boot/grub2/kern/i386/linuxbios
 
-# arch/common/grub2/video
+# arch/common/boot/grub2/kern/i386/pc
 
-# arch/common/grub2/video/i386
+# arch/common/boot/grub2/kern/ieee1275
 
-# arch/common/grub2/video/i386/pc
+# arch/common/boot/grub2/kern/powerpc
+
+# arch/common/boot/grub2/kern/powerpc/ieee1275
+
+# arch/common/boot/grub2/kern/sparc64
+
+# arch/common/boot/grub2/kern/sparc64/ieee1275
+
+# arch/common/boot/grub2/loader
+
+# arch/common/boot/grub2/loader/efi
+
+# arch/common/boot/grub2/loader/i386
+
+# arch/common/boot/grub2/loader/i386/efi
+
+# arch/common/boot/grub2/loader/i386/pc
+
+# arch/common/boot/grub2/loader/powerpc
+
+# arch/common/boot/grub2/loader/powerpc/ieee1275
+
+# arch/common/boot/grub2/normal
+
+# arch/common/boot/grub2/normal/i386
+
+# arch/common/boot/grub2/normal/powerpc
+
+# arch/common/boot/grub2/normal/sparc64
+
+# arch/common/boot/grub2/partmap
+
+# arch/common/boot/grub2/term
+
+# arch/common/boot/grub2/term/efi
+
+# arch/common/boot/grub2/term/i386
+
+# arch/common/boot/grub2/term/i386/pc
+
+# arch/common/boot/grub2/term/ieee1275
+
+# arch/common/boot/grub2/term/powerpc
+
+# arch/common/boot/grub2/term/powerpc/ieee1275
+
+# arch/common/boot/grub2/util
+
+# arch/common/boot/grub2/util/elf
+
+# arch/common/boot/grub2/util/grub.d
+
+# arch/common/boot/grub2/util/i386
+
+# arch/common/boot/grub2/util/i386/efi
+
+# arch/common/boot/grub2/util/i386/pc
+
+# arch/common/boot/grub2/util/ieee1275
+
+# arch/common/boot/grub2/util/powerpc
+
+# arch/common/boot/grub2/util/powerpc/ieee1275
+
+# arch/common/boot/grub2/video
+
+# arch/common/boot/grub2/video/i386
+
+# arch/common/boot/grub2/video/i386/pc
+
+# arch/common/boot/grub2/video/readers
+
+# arch/common/boot/iso
+/arch/common/boot/iso/mmakefile
 
 # arch/common/hidd.i2c
 /arch/common/hidd.i2c/
@@ -611,65 +732,17 @@
 /arch/i386-pc/boot/stage2
 /arch/i386-pc/boot/install
 
+# arch/i386-pc/boot/floppy
+/arch/i386-pc/boot/floppy/mmakefile
+
 # arch/i386-pc/boot/grub
-/arch/i386-pc/boot/grub/Makefile
-/arch/i386-pc/boot/grub/config.status
-/arch/i386-pc/boot/grub/config.cache
-/arch/i386-pc/boot/grub/config.log
-/arch/i386-pc/boot/grub/stamp-h
-/arch/i386-pc/boot/grub/stamp-h1
 /arch/i386-pc/boot/grub/mmakefile
-/arch/i386-pc/boot/grub/.files-touched
-/arch/i386-pc/boot/grub/autom4te.cache
 
-# arch/i386-pc/boot/grub/docs
-/arch/i386-pc/boot/grub/docs/.deps
-/arch/i386-pc/boot/grub/docs/Makefile
-/arch/i386-pc/boot/grub/docs/*.info*
+# arch/i386-pc/boot/grub2
+/arch/i386-pc/boot/grub2/mmakefile
 
-# arch/i386-pc/boot/grub/grub
-/arch/i386-pc/boot/grub/grub/.deps
-/arch/i386-pc/boot/grub/grub/Makefile
-/arch/i386-pc/boot/grub/grub/grub
-
-# arch/i386-pc/boot/grub/lib
-/arch/i386-pc/boot/grub/lib/.deps
-/arch/i386-pc/boot/grub/lib/Makefile
-
-# arch/i386-pc/boot/grub/netboot
-/arch/i386-pc/boot/grub/netboot/.deps
-/arch/i386-pc/boot/grub/netboot/Makefile
-
-# arch/i386-pc/boot/grub/stage1
-/arch/i386-pc/boot/grub/stage1/.deps
-/arch/i386-pc/boot/grub/stage1/Makefile
-/arch/i386-pc/boot/grub/stage1/stage1
-/arch/i386-pc/boot/grub/stage1/stage1.exec
-
-# arch/i386-pc/boot/grub/stage2
-/arch/i386-pc/boot/grub/stage2/.deps
-/arch/i386-pc/boot/grub/stage2/Makefile
-/arch/i386-pc/boot/grub/stage2/diskless
-/arch/i386-pc/boot/grub/stage2/diskless_size.h
-/arch/i386-pc/boot/grub/stage2/nbgrub
-/arch/i386-pc/boot/grub/stage2/nbloader
-/arch/i386-pc/boot/grub/stage2/pre_stage2
-/arch/i386-pc/boot/grub/stage2/pxegrub
-/arch/i386-pc/boot/grub/stage2/pxeloader
-/arch/i386-pc/boot/grub/stage2/stage2
-/arch/i386-pc/boot/grub/stage2/stage2_size.h
-/arch/i386-pc/boot/grub/stage2/start
-/arch/i386-pc/boot/grub/stage2/*.exec
-/arch/i386-pc/boot/grub/stage2/*_stage1_5
-
-# arch/i386-pc/boot/grub/util
-/arch/i386-pc/boot/grub/util/.deps
-/arch/i386-pc/boot/grub/util/Makefile
-/arch/i386-pc/boot/grub/util/grub-image
-/arch/i386-pc/boot/grub/util/grub-install
-/arch/i386-pc/boot/grub/util/grub-md5-crypt
-/arch/i386-pc/boot/grub/util/grub-terminfo
-/arch/i386-pc/boot/grub/util/mbchk
+# arch/i386-pc/boot/iso
+/arch/i386-pc/boot/iso/mmakefile
 
 # arch/i386-pc/bootloader
 /arch/i386-pc/bootloader/mmakefile
@@ -778,6 +851,42 @@
 
 # arch/ppc-linux
 
+# arch/ppc-sam440
+
+# arch/ppc-sam440/boot
+/arch/ppc-sam440/boot/mmakefile
+
+# arch/ppc-sam440/exec
+/arch/ppc-sam440/exec/mmakefile
+
+# arch/ppc-sam440/graphics
+/arch/ppc-sam440/graphics/mmakefile
+
+# arch/ppc-sam440/hidd.radeon
+/arch/ppc-sam440/hidd.radeon/mmakefile
+
+# arch/ppc-sam440/include
+/arch/ppc-sam440/include/mmakefile
+
+# arch/ppc-sam440/include/aros
+
+# arch/ppc-sam440/include/asm
+
+# arch/ppc-sam440/intuition
+/arch/ppc-sam440/intuition/mmakefile
+
+# arch/ppc-sam440/kernel
+/arch/ppc-sam440/kernel/mmakefile
+
+# arch/ppc-sam440/pci
+/arch/ppc-sam440/pci/mmakefile
+
+# arch/ppc-sam440/timer
+/arch/ppc-sam440/timer/mmakefile
+
+# arch/ppc-sam440/workbench
+/arch/ppc-sam440/workbench/mmakefile
+
 # arch/x86_64-all
 /arch/x86_64-all/mmakefile
 
@@ -809,6 +918,15 @@
 
 # arch/x86_64-pc/boot
 /arch/x86_64-pc/boot/mmakefile
+
+# arch/x86_64-pc/boot/grub
+/arch/x86_64-pc/boot/grub/mmakefile
+
+# arch/x86_64-pc/boot/grub2
+/arch/x86_64-pc/boot/grub2/mmakefile
+
+# arch/x86_64-pc/boot/iso
+/arch/x86_64-pc/boot/iso/mmakefile
 
 # arch/x86_64-pc/bootloader
 /arch/x86_64-pc/bootloader/mmakefile
@@ -972,6 +1090,12 @@
 # compiler/clib/include
 
 # compiler/clib/include/sys
+
+# compiler/clib/locale
+
+# compiler/clib/regex
+
+# compiler/clib/stdtime
 
 # compiler/clib/stubs
 /compiler/clib/stubs/genstubs
