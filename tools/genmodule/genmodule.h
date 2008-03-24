@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc: global include for genmodule. Defines global variables and
           the function prototypes.
@@ -13,6 +13,7 @@
 #include "config.h"
 
 void readref(struct config *);
+void writemakefile(struct config *);
 void writeincproto(struct config *);
 void writeincclib(struct config *);
 void writeincdefines(struct config *);
@@ -21,3 +22,4 @@ void writestart(struct config *);
 void writeend(struct config *);
 void writeautoinit(struct config *);
 void writestubs(struct config *);
+void writefunclist(struct config *);
