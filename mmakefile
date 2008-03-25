@@ -7,6 +7,10 @@ include $(TOP)/config/make.cfg
 AROS : checkerr
 	@$(NOP)
 
+#MM AROS-complete : clean-errors AROS-complete-$(ARCH)-$(CPU) test
+AROS-complete : checkerr
+	@$(NOP)
+
 # Delete the global error file
 #MM
 clean-errors :
