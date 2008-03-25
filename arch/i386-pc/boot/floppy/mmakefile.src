@@ -96,15 +96,15 @@ bootdisk-pc-i386: $(OSGENDIR)/boot/aros-pc-i386.bin
 #MM
 bootdisk-pc-i386-quick : bootdisk-pc-i386
 
-$(OSGENDIR)/boot/aros-pc-i386.bin: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz install
+$(OSGENDIR)/boot/aros-pc-i386.bin: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
-	./install $@
+	.$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
 $(BOOT_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
-install: install.c
-	@$(HOST_CC) install.c -o install
+$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): install.c
+	@$(HOST_CC) install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 
 $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 	@$(RM) -rf $(OSGENDIR)/boot/bootdisk.compressed
