@@ -23,7 +23,7 @@ PACKAGE=$BASENAME-i386-pc-boot-floppy
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
 makedir $BUILD_BASE/$PACKAGE
-copy    $BUILD_BASE/AROS/bin/pc-i386-tiny/gen/rom/boot/aros.bin $BUILD_BASE/$PACKAGE
+copy    $BUILD_BASE/AROS/bin/pc-i386-tiny/gen/rom/boot/aros-pc-i386.bin $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
