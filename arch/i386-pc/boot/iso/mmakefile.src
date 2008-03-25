@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 TARGET_ISO := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 
-#MM bootiso-pc-i386 :	AROS		\
+#MM bootiso-pc-i386 :	AROS-complete		\
 #MM			kernel-package-pc-i386		\
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
 
