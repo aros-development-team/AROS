@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 .PHONY: $(OSGENDIR)/boot/aros-pc-i386.bin
 
-#MM bootdisk-pc-i386 : AROS		\
+#MM bootdisk-pc-i386 : AROS-complete		\
 #MM			bootdisk-setup-pc-i386 \
 #MM			kernel-package-pc-i386		\
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
