@@ -404,8 +404,19 @@ int exec_main(struct TagItem *msg, void *entry)
 
                 if (fast_start < fast_end)
 		{
-			rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
-			exec_InsertMemory(msg, fast_start, fast_end);
+			if (fast_end > 0x01000000)
+			{
+				rkprintf("[exec]   Registering Upper Chip Mem Range (%012p - %012p)\n", fast_start, 0x00ffffff);
+				exec_InsertMemory(msg, fast_start, 0x00ffffff);
+				rkprintf("[exec]   Registering Upper Fast Mem Range (%012p - %012p)\n", 0x01000000, fast_end);
+				exec_InsertMemory(msg, 0x01000000, fast_end);
+				
+			}
+			else
+			{
+				rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
+				exec_InsertMemory(msg, fast_start, fast_end);
+			}
 		}
 	}
     }
