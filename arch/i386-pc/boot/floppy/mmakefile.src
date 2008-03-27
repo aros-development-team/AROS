@@ -104,6 +104,7 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): install.c
+	@$(MKDIR) -p $(GENDIR)/$(CURDIR)
 	@$(HOST_CC) install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 
 $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
