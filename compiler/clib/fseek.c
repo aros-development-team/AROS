@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
 */
 
+#include <fcntl.h>
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -47,6 +48,8 @@
     EXAMPLE
 
     BUGS
+    Not fully compatible with iso fseek, especially in 'ab' and 'a+b'
+    modes
 
     SEE ALSO
 	fopen(), fwrite()
@@ -55,24 +58,16 @@
 
 ******************************************************************************/
 {
-    int  cnt;
-    BPTR fh;
+    int cnt = 0;
+    int finalseekposition = 0;
+    int eofposition = 0;
+    struct FileInfoBlock *fib = NULL;
+    BPTR fh = NULL;
     fdesc *fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)
     {
-	errno = EBADF;
-	return -1;
-    }
-
-    switch (whence)
-    {
-    	case SEEK_SET: whence = OFFSET_BEGINNING; break;
-    	case SEEK_CUR: whence = OFFSET_CURRENT; break;
-    	case SEEK_END: whence = OFFSET_END; break;
-
-	default:
-	    errno = EINVAL;
+	    errno = EBADF;
 	    return -1;
     }
 
@@ -80,7 +75,76 @@
 
     /* This is buffered IO, flush the buffer before any Seek */
     Flush (fh);
-    cnt = Seek (fh, offset, whence);
+    
+    /* Handling for fseek specific behaviour (not all cases handled) */
+    /* Get current position */
+    cnt = Seek (fh, 0, OFFSET_CURRENT);
+    if (cnt == -1)
+    {
+    	errno = IoErr2errno (IoErr ());
+        return -1;
+    }
+
+    /* Get file size */
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        errno = IoErr2errno(IoErr());
+        return -1;
+    }
+        
+    if (ExamineFH(fh, fib))
+        eofposition = fib->fib_Size;
+    else
+    {
+        /* Does not happen on sfs/affs */
+        FreeDosObject(DOS_FIB, fib);
+        fib = NULL;
+        errno = EBADF;
+        return -1;
+    }
+
+    FreeDosObject(DOS_FIB, fib);
+    fib = NULL;
+   
+    switch(whence)
+    {
+        case SEEK_SET: finalseekposition = offset; break;
+        case SEEK_CUR: finalseekposition = cnt + offset; break;
+        case SEEK_END: finalseekposition = eofposition + offset; break;
+        default:
+    	    errno = EINVAL;
+    	    return -1;
+    }
+
+    /* Check conditions */
+    /* Seek before beginning of file */
+    if (finalseekposition < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    
+    /* Seek beyond end of file and in write mode */
+    if (finalseekposition > eofposition)
+    {
+        if (fdesc->flags & O_WRITE)
+        {
+            /* Write '0' to fill up to requested size - compatible fseek does not write but allows write */
+            int i = 0;
+            int bytestowrite = finalseekposition - eofposition; 
+            int chunkcount = (bytestowrite)/128;
+            char zeroarray[128] = {0};
+
+            Seek (fh, 0, OFFSET_END);
+            for (i = 0; i < chunkcount; i++)
+                FWrite(fh, (STRPTR)zeroarray, 128, 1);
+            FWrite(fh, (STRPTR)zeroarray, bytestowrite - (chunkcount * 128), 1);
+            Flush (fh);
+        }
+    }
+
+    cnt = Seek (fh, finalseekposition, OFFSET_BEGINNING);
 
     if (cnt == -1)
     	errno = IoErr2errno (IoErr ());
