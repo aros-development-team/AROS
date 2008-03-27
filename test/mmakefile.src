@@ -87,6 +87,7 @@ COMMONTESTFILES := \
     minicat \
     time \
     waitforchar \
+    seektest \
     avltest
 
 HOSTEDTESTFILES :=  \
