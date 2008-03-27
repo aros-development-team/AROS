@@ -2098,6 +2098,10 @@ endif
 #                         in sequence, until the archive is found and fetching it 
 #                         succeeded. If not specified, the current directory is assumed.
 #     - archive         = the archive name. Mandatory.
+#     - suffixes        = a list of suffixes to append to the the package name plus the
+#                         version. Each one of them is tried until a matching archive is
+#                         found. They are appended to patches and these are tried the
+#                         same way as packages are.
 #     - destination     = the local directory where to put the archive and patches.
 #                         If not specified, the current directory is assumed.
 #     - patches_origins = list of locations where to find the patches. They are tried
@@ -2115,7 +2119,7 @@ endif
 #                         The patch_subdir and patch_opt fields are optional.
 
 %define fetch archive_origins=. archive=/A suffixes= destination=. patches_origins=. patches_specs=::
-	$(FETCH) -ao "%(archive_origins)" -a %(archive) -as "%(suffixes)" -d %(destination) \
+	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -d %(destination) \
         -po "%(patches_origins)" -p %(patches_specs)
 %end
 
@@ -2147,7 +2151,7 @@ endif
 #                     It gets appended to the package name to form the basename of the archive.
 #    - suffixes     = a list of suffixes to apped to the the package name plus the
 #                     version. Each one of them is tried until a matching archive is found.
-#                     Defaults to "tat.bz2 tar.gz".
+#                     Defaults to "tar.bz2 tar.gz".
 #    - destination  = same meaning as the one for the %fetch macro
 #    - package_repo = same meaning as the one of the %fetch macro's %(archive_origins) argument
 #    - patch        = "yes" or "no", depending on whether a patch for this package needs to be
