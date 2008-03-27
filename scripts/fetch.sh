@@ -6,7 +6,7 @@
 
 usage()
 {
-    error "Usage: $1 -a archive [-as archive_suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
+    error "Usage: $1 -a archive [-s suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
 sf_mirrors="aleron voxel heanet avh umn unc puzzle mesh"
@@ -216,7 +216,7 @@ while  test "x$1" != "x"; do
     case "$1" in
         -ao) archive_origins="$2";;
 	 -a) archive="$2";;
-	-as) archive_suffixes="$2";;
+	 -s) suffixes="$2";;
 	 -d) destination="$2";;
 	-po) patches_origins="$2";;
 	 -p) patches="$2";;
@@ -233,7 +233,7 @@ archive_origins=${archive_origins:-.}
 destination=${destination:-.}
 patches_origins=${patches_origins:-.}
 
-fetch_cached "$archive_origins" "$archive" "$archive_suffixes" "$destination" archive2
+fetch_cached "$archive_origins" "$archive" "$suffixes" "$destination" archive2
 test -z "$archive2" && error "Error while fetching the archive \`$archive'."
 archive="$archive2"
 
@@ -241,7 +241,11 @@ for patch in $patches; do
     patch=`echo $patch | cut -d: -f1`
     if test "x$patch" != "x"; then
         if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
-            error "Error while fetching the patch \`$patch'."
+	    fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz" "$destination" patch2
+            test -z "$patch2" && error "Error while fetching the patch \`$patch'."
+	    if ! unpack_cached "$destination" "$patch2"; then
+		error "Error while unpacking \`$patch2'."
+	    fi
         fi
     fi
 done
