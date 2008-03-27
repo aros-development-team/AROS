@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function access().
@@ -44,9 +44,6 @@
 	otherwise a 0 value is returned.
 
     NOTES
-	Even if a process has appropriate privileges and indicates
-	success for X_OK, the file may not actually have execute
-	permission bits set.  Likewise for R_OK and W_OK.
 
     EXAMPLE
 
@@ -59,43 +56,78 @@
 
 ******************************************************************************/
 {
-    ULONG amode = 0;
-    BPTR fh;
+    BPTR lock = NULL;
+    struct FileInfoBlock *fib = NULL;
+    int result = -1;
+    char vol[32];
+    struct DosList *dl = NULL;
 
     if (!path) /* safety check */
     {
     	errno = EFAULT;
-	return -1;
+        return -1;
     }
 
-    /* how can we check whether a file exists without having read permission?? */
-
-    if (!(mode & X_OK))
+    /* Check if the volume exists. Calling Lock on non-existing volume will bring up System Requester */
+    if (SplitName(__path_u2a(path), ':', vol, 0, sizeof(vol)-1) != -1)
     {
-	amode = mode & W_OK ? ACCESS_WRITE : ACCESS_READ;
-	
-	if ((fh = Lock(__path_u2a(path), amode)))
-	{
-	    UnLock(fh);
-	    return 0;
-	}
-
-	errno = IoErr2errno(IoErr());
-	return -1;
+        dl = LockDosList(LDF_ALL | LDF_READ);
+        dl = FindDosEntry(dl, vol, LDF_ALL);
+        UnLockDosList(LDF_ALL | LDF_READ);
+        /* Volume / Assign / Device not found */
+        if (dl == NULL)
+        {
+            errno = ENOENT;
+            return -1;
+        }
     }
 
-    if (!mode) mode = R_OK;
+    /* Create a lock and examine a lock */
 
-    if (mode & R_OK) amode |= FMF_READ;
-    if (mode & W_OK) amode |= FMF_WRITE;
-    if (mode & X_OK) amode |= FMF_EXECUTE;
-
-    if (!(fh = Open(__path_u2a(path), amode)))
+    lock = Lock(__path_u2a(path), SHARED_LOCK);
+    if (lock == NULL)
     {
-	errno = IoErr2errno(IoErr());
-	return -1;
+        errno = IoErr2errno(IoErr());
+        return -1;
     }
 
-    Close(fh);
-    return 0;
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+    {
+        errno = IoErr2errno(IoErr());
+        UnLock(lock);
+        return -1;
+    }
+        
+    if (Examine(lock, fib))
+    {
+        /* Notice : protection flags are 'low-active' (0 means access is granted) */
+        result = 0;
+        if ((mode & R_OK) && (result == 0) && (fib->fib_Protection & (1 << FIBB_READ)))
+        {
+            errno = EACCES;
+            result = -1;
+        }
+        if ((mode & W_OK) && (result == 0) && (fib->fib_Protection & (1 << FIBB_WRITE)))
+        {
+            errno = EACCES;
+            result = -1;
+        }
+        if ((mode & X_OK) && (result == 0) && (fib->fib_Protection & (1 << FIBB_EXECUTE)))
+        {
+            errno = EACCES;
+            result = -1;
+        }
+    }
+    else
+    {
+        errno = EBADF;
+        result = -1;
+    }
+
+    FreeDosObject(DOS_FIB, fib);
+    fib = NULL;
+
+    UnLock(lock);
+    return result;
 }
