@@ -38,9 +38,12 @@ $(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz
                 -boot-load-size 4 \
                 -boot-info-table \
 		-allow-leading-dots \
+		-input-charset iso8859-1 \
+		-iso-level 4 \
                 -V "AROS Live CD" \
-		-publisher "AROS Development Team" -R -J \
+                -publisher "AROS Dev Team" \
+		-p "The AROS Dev Team (www.aros.org)" \
 		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
-		-l -r \
+                -l -J -r -R \
 		$(AROSDIR)
 
