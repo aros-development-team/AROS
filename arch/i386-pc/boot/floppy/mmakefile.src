@@ -15,7 +15,7 @@ BOOT_FILES := \
 
 BOOT_EXTRA_FILES :=
 
-BOOT_TAR_FILES := \
+BOOT_TAR_EXECUTABLES := \
     C/AddBuffers C/AddDatatypes C/Alias C/Ask  C/Avail C/Break C/CD \
     C/ChangeTaskPri C/ConClip C/Copy C/Date C/Delete C/Dir C/Echo C/Else \
     C/EndCli C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote C/Format \
@@ -33,33 +33,57 @@ BOOT_TAR_FILES := \
     Classes/Zune/AboutWindow.mcc \
     Classes/Zune/IconImage.mcc Classes/Zune/PrefsWindow.mcc \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
-    Devs.info \
-    Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM \
-    Devs/DataTypes/FTXT \
-    Devs/Keymaps Devs/clipboard.device Devs/serial.device Devs/Mountlist \
+	Devs/clipboard.device Devs/serial.device \
     Devs/pipefs.handler \
-    Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 Fonts.info \
     Libs/arosc.library Libs/asl.library Libs/commodities.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
     Libs/icon.library Libs/iffparse.library Libs/locale.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
+    Prefs/Font \
+    Prefs/Time \
+    System/About System/FixFonts \
+    System/Wanderer/Wanderer \
+    System/Wanderer/Tools/Delete System/Wanderer/Tools/DiskInfo \
+    System/Wanderer/Tools/ExecuteCommand System/Wanderer/Tools/ExecuteStartup \
+    System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer System/Wanderer/Tools/WBRename \
+    Tools/HDToolBox \
+    Tools/Debug/sashimi
+
+BOOT_TAR_ICONS := \
+    Devs.info \
+    Fonts.info \
     Locale.info \
-    Locale/Countries Locale/Help \
-    Prefs/Font Prefs/Font.info \
-    Prefs/Time Prefs/Time.info \
-    Prefs.info Prefs/Env-Archive/SYS/font.prefs \
+    Prefs.info \
+    Prefs/Font.info \
+    Prefs/Time.info \
+    System.info \
+    System/FixFonts.info \
+    System/Wanderer/Wanderer.info \
+    System/Wanderer/Tools/Delete.info System/Wanderer/Tools/DiskInfo.info \
+    System/Wanderer/Tools/ExecuteCommand.info System/Wanderer/Tools/Info.info \
+	System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
+	Tools.info \
+    Tools/HDToolBox.info \
+    Tools/Debug/Sashimi.info
+
+BOOT_TAR_MISC := \
+    Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM \
+    Devs/DataTypes/FTXT \
+    Devs/Keymaps Devs/Mountlist \
+    Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 \
+	Locale/Countries Locale/Help \
+    Prefs/Env-Archive/SYS/font.prefs \
     S/Shell-Startup S/Startup-Sequence \
-    System/About System/FixFonts System/FixFonts.info System/Themes/Mason \
-    System/Themes/os3.1 System/Wanderer System.info \
-    Tools/HDToolBox Tools/HDToolBox.info Tools.info \
-    Tools/Debug
+    System/Themes/Mason \
+    System/Themes/os3.1
+
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
 BOOT_FILES += boot/grub/menu.lst boot/grub/stage1
-BOOT_TAR_FILES += boot/grub/menu.lst.DH0
+BOOT_TAR_MISC += boot/grub/menu.lst.DH0
 BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/boot/grub/stage2
 
 $(BOOT_DEST_DIR)/boot/grub/stage2:
@@ -68,8 +92,10 @@ endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
 BOOT_FILES += boot/grub/grub.cfg
-BOOT_TAR_FILES += boot/grub/grub.cfg.DH0
+BOOT_TAR_MISC += boot/grub/grub.cfg.DH0
 endif
+
+BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
 
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
@@ -98,7 +124,7 @@ bootdisk-pc-i386-quick : bootdisk-pc-i386
 
 $(OSGENDIR)/boot/aros-pc-i386.bin: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
-	.$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
+	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
 $(BOOT_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
@@ -115,7 +141,14 @@ $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 	@( \
             oldpwd=$$PWD; \
             cd $(BOOT_SRC_DIR) && \
-            for path in $(BOOT_TAR_FILES); do \
+            for path in $(BOOT_TAR_EXECUTABLES); do \
+                $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
+				strip --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/bootdisk.compressed/$$path ; \
+            done && \
+            for path in $(BOOT_TAR_ICONS); do \
+                $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
+            done && \
+            for path in $(BOOT_TAR_MISC); do \
                 $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
             done && \
             cd $(OSGENDIR)/boot/ && \
