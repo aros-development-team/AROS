@@ -1,14 +1,26 @@
 # $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
 include $(TOP)/config/make.cfg
 
-#MM- bootloader-grub2-pc-x86_64: grub2-pc-x86_64
+#MM bootloader-grub2-pc-x86_64: grub2-pc-x86_64
+#MM bootloader-grub2gfx-pc-x86_64: grub2-pc-x86_64
 
-#MM grub2-pc-x86_64: arch-common-grub2 grub2-iso-setup 
+#MM- grub2-pc-x86_64: arch-common-grub2 grub2-iso-setup 
 
-grub2-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg $(BINDIR)/boot/grub/grub.cfg.DH0
+bootloader-grub2-pc-x86_64: $(BINDIR)/boot/grub/grub.cfg $(BINDIR)/boot/grub/grub.cfg.DH0
 
 $(BINDIR)/boot/grub/grub.cfg:
 		$(CP) grub.cfg $(BINDIR)/boot/grub/
 
 $(BINDIR)/boot/grub/grub.cfg.DH0:
 		$(CP) grub.cfg.DH0 $(BINDIR)/boot/grub/
+
+bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/splash.png $(BINDIR)/boot/grub/grub.gfx.cfg $(BINDIR)/boot/grub/grub.gfx.cfg.DH0
+
+$(BINDIR)/boot/grub/splash.png:
+		$(CP) splash.png $(BINDIR)/boot/grub/
+
+$(BINDIR)/boot/grub/grub.gfx.cfg:
+		$(CP) grub.gfx.cfg $(BINDIR)/boot/grub/grub.cfg
+
+$(BINDIR)/boot/grub/grub.gfx.cfg.DH0:
+		$(CP) grub.gfx.cfg.DH0 $(BINDIR)/boot/grub/grub.cfg.DH0
