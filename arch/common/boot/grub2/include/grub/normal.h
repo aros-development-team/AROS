@@ -157,6 +157,7 @@ grub_err_t grub_normal_menu_addentry (const char *title,
 				      const char *sourcecode);
 char *grub_env_write_color_normal (struct grub_env_var *var, const char *val);
 char *grub_env_write_color_highlight (struct grub_env_var *var, const char *val);
+void grub_parse_color_name_pair (grub_uint8_t *ret, const char *name);
 void grub_wait_after_message (void);
 
 #ifdef GRUB_UTIL

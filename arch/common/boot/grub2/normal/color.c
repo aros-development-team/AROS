@@ -56,7 +56,7 @@ parse_color_name (grub_uint8_t *ret, char *name)
 }
 
 void
-grub_parse_color_name_pair (grub_uint8_t *ret, char *name)
+grub_parse_color_name_pair (grub_uint8_t *ret, const char *name)
 {
   grub_uint8_t fg, bg;
   char *fg_name, *bg_name;

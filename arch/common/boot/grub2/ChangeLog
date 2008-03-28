@@ -1,3 +1,57 @@
+2008-03-26  Pavel Roskin  <proski@gnu.org>
+
+	* normal/color.c (grub_parse_color_name_pair): Make `name' a
+	const.
+	* include/grub/normal.h: Add grub_parse_color_name_pair()
+	declaration.
+
+2008-03-24  Bean  <bean123ch@gmail.com>
+
+	* disk/i386/pc/biosdisk.c (cd_start): Removed.
+	(cd_count): Removed.
+	(cd_drive): New variable.
+	(grub_biosdisk_get_drive): Don't check for (cdN) device.
+	(grub_biosdisk_call_hook): Likewise.
+	(grub_biosdisk_iterate): Change cdrom detection method.
+	(grub_biosdisk_open): Replace cd_start with cd_drive.
+	(GRUB_MOD_INIT): Use grub_biosdisk_get_cdinfo_int13_extension to
+	detect cdrom device.
+
+	* include/grub/i386/pc/biosdisk.h (GRUB_BIOSDISK_MACHINE_CDROM_START):
+	Removed.
+	(GRUB_BIOSDISK_MACHINE_CDROM_END): Removed.
+	(GRUB_BIOSDISK_CDTYPE_NO_EMUL): New macro.
+	(GRUB_BIOSDISK_CDTYPE_1_2_M): Likewise.
+	(GRUB_BIOSDISK_CDTYPE_1_44_M): Likewise.
+	(GRUB_BIOSDISK_CDTYPE_2_88_M): Likewise.
+	(GRUB_BIOSDISK_CDTYPE_HARDDISK): Likewise.
+	(GRUB_BIOSDISK_CDTYPE_MASK): Likewise.
+	(grub_biosdisk_cdrp): New structure.
+	(grub_biosdisk_get_cdinfo_int13_extensions): New function.
+
+	* include/grub/i386/pc/kernel.h (grub_boot_drive): Export this variable.
+
+	* kern/i386/pc/init.c (make_install_device): Don't use (cdN) as root
+	device.
+
+	* kern/i386/pc/startup.S (grub_biosdisk_get_cdinfo_int13_extensions):
+	New function.
+
+2008-03-20  Robert Millan  <rmh@aybabtu.com>
+
+	Remove 2 TiB limit in ata.mod.
+	* disk/ata.c (grub_ata_device): Promote `size' to grub_uint64_t.
+	(grub_ata_dumpinfo): Print sector count with 0x%llx.
+	(grub_ata_identify): Interpret `&info16[100]' as a pointer to
+	grub_uint64_t instead of grub_uint32_t.
+
+2008-03-05  Bean  <bean123ch@gmail.com>
+
+	* loader/i386/pc/multiboot.c (grub_multiboot_get_bootdev): New function.
+	(grub_multiboot): Set boot device.
+
+	* boot/i386/pc/lnxboot.S (real_code_2): Set %dh to 0xFF.
+
 2008-03-02  Bean  <bean123ch@gmail.com>
 
 	* fs/reiserfs.c (grub_reiserfs_read_symlink): Add 0 at the end of

@@ -547,9 +547,8 @@ grub_emu_LDFLAGS = $(LIBCURSES)
 
 # Modules.
 pkglib_MODULES = _linux.mod linux.mod normal.mod	\
-	_multiboot.mod multiboot.mod play.mod		\
-	cpuid.mod serial.mod ata.mod			\
-	aout.mod
+	_multiboot.mod multiboot.mod aout.mod		\
+	play.mod cpuid.mod serial.mod ata.mod
 
 # For _linux.mod.
 _linux_mod_SOURCES = loader/i386/pc/linux.c
@@ -1126,7 +1125,7 @@ fs-multiboot_mod-loader_multiboot_loader_normal.lst: loader/multiboot_loader_nor
 multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
 multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For aout.mod
+# For aout.mod.
 aout_mod_SOURCES = loader/aout.c
 CLEANFILES += aout.mod mod-aout.o mod-aout.c pre-aout.o aout_mod-loader_aout.o und-aout.lst
 ifneq ($(aout_mod_EXPORTS),no)
