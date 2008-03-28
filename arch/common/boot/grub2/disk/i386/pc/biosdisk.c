@@ -27,6 +27,8 @@
 #include <grub/err.h>
 #include <grub/term.h>
 
+int cd_drive = 0;
+
 static int
 grub_biosdisk_get_drive (const char *name)
 {
@@ -54,7 +56,7 @@ grub_biosdisk_call_hook (int (*hook) (const char *name), int drive)
 {
   char name[10];
 
-  grub_sprintf (name, (drive & 0x80) ? "hd%d" : "fd%d", drive & (~0x80));
+    grub_sprintf (name, (drive & 0x80) ? "hd%d" : "fd%d", drive & (~0x80));
   return hook (name);
 }
 
@@ -71,8 +73,7 @@ grub_biosdisk_iterate (int (*hook) (const char *name))
       return 1;
   
   /* For hard disks, attempt to read the MBR.  */
-  for (drive = 0x80;
-       drive < GRUB_BIOSDISK_MACHINE_CDROM_START;  drive++)
+  for (drive = 0x80; drive < 0x90; drive++)
     {
       if (grub_biosdisk_rw_standard (0x02, drive, 0, 0, 1, 1,
 				     GRUB_MEMORY_MACHINE_SCRATCH_SEG) != 0)
@@ -85,30 +86,11 @@ grub_biosdisk_iterate (int (*hook) (const char *name))
 	return 1;
     }
 
-  if (grub_boot_drive >= GRUB_BIOSDISK_MACHINE_CDROM_START)
-    for (drive = grub_boot_drive;
-         drive < GRUB_BIOSDISK_MACHINE_CDROM_END; drive++)
-      {
-        struct grub_biosdisk_dap *dap;
-
-        dap = (struct grub_biosdisk_dap *) (GRUB_MEMORY_MACHINE_SCRATCH_ADDR
-                                            + (4 << GRUB_DISK_SECTOR_BITS));
-
-        dap->length = sizeof (*dap);
-        dap->reserved = 0;
-        dap->blocks = 1;
-        dap->buffer = GRUB_MEMORY_MACHINE_SCRATCH_SEG << 16;
-        dap->block = 0;
-
-        if (grub_biosdisk_rw_int13_extensions (0x42, drive, dap))
-          {
-            grub_dprintf ("disk", "Read error when probing cd 0x%2x\n", drive);
-            break;
-          }
-
-        if (grub_biosdisk_call_hook (hook, drive))
-          return 1;
-      }
+  if (cd_drive)
+    {
+      if (grub_biosdisk_call_hook (hook, cd_drive))
+      return 1;
+    }
 
   return 0;
 }
@@ -124,7 +106,7 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
   if (drive < 0)
     return grub_errno;
 
-  disk->has_partitions = ((drive & 0x80) != 0);
+  disk->has_partitions = ((drive & 0x80) && (drive != cd_drive));
   disk->id = drive;
   
   data = (struct grub_biosdisk_data *) grub_malloc (sizeof (*data));
@@ -134,51 +116,39 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
   data->drive = drive;
   data->flags = 0;
 
-  if (drive & 0x80)
+  if ((cd_drive) && (drive == cd_drive))
     {
-      struct grub_biosdisk_cdrp *cdrp
-        = (struct grub_biosdisk_cdrp *) GRUB_MEMORY_MACHINE_SCRATCH_ADDR;
+      data->flags = GRUB_BIOSDISK_FLAG_LBA | GRUB_BIOSDISK_FLAG_CDROM;
+      data->sectors = 32;
+      total_sectors = 9000000;  /* TODO: get the correct size.  */
+    }
+  else if (drive & 0x80)
+    {
+      /* HDD */
+      int version;
+      
+      version = grub_biosdisk_check_int13_extensions (drive);
+      if (version)
+	{
+	  struct grub_biosdisk_drp *drp
+	    = (struct grub_biosdisk_drp *) GRUB_MEMORY_MACHINE_SCRATCH_ADDR;
 
-      grub_memset (cdrp, 0, sizeof (*cdrp));
-      cdrp->size = sizeof (*cdrp);
-      if ((! grub_biosdisk_get_cdinfo_int13_extensions (drive, cdrp)) &&
-          (cdrp->drive_no == drive) &&
-          ((cdrp->media_type & GRUB_BIOSDISK_CDTYPE_MASK)
-           == GRUB_BIOSDISK_CDTYPE_NO_EMUL))
-        {
-          disk->has_partitions = 0;
-          data->flags = (GRUB_BIOSDISK_FLAG_LBA | GRUB_BIOSDISK_FLAG_CDROM);
-          data->sectors = 32;
-          total_sectors = 9000000;  /* TODO: get the correct size.  */
-        }
-      else
-        {
-          /* HDD */
-          int version;
+	  /* Clear out the DRP.  */
+	  grub_memset (drp, 0, sizeof (*drp));
+	  drp->size = sizeof (*drp);
+	  if (! grub_biosdisk_get_diskinfo_int13_extensions (drive, drp))
+	    {
+	      data->flags = GRUB_BIOSDISK_FLAG_LBA;
 
-          version = grub_biosdisk_check_int13_extensions (drive);
-          if (version)
-            {
-              struct grub_biosdisk_drp *drp
-                    = (struct grub_biosdisk_drp *) GRUB_MEMORY_MACHINE_SCRATCH_ADDR;
-
-              /* Clear out the DRP.  */
-              grub_memset (drp, 0, sizeof (*drp));
-              drp->size = sizeof (*drp);
-              if (! grub_biosdisk_get_diskinfo_int13_extensions (drive, drp))
-                {
-                  data->flags = GRUB_BIOSDISK_FLAG_LBA;
-
-                  if (drp->total_sectors)
-                    total_sectors = drp->total_sectors;
-                  else
-                    /* Some buggy BIOSes doesn't return the total sectors
-                       correctly but returns zero. So if it is zero, compute
-                       it by C/H/S returned by the LBA BIOS call.  */
-                    total_sectors = drp->cylinders * drp->heads * drp->sectors;
-                }
-            }
-        }
+	      if (drp->total_sectors)
+		total_sectors = drp->total_sectors;
+	      else
+                /* Some buggy BIOSes doesn't return the total sectors
+                   correctly but returns zero. So if it is zero, compute
+                   it by C/H/S returned by the LBA BIOS call.  */
+                total_sectors = drp->cylinders * drp->heads * drp->sectors;
+	    }
+	}
     }
 
   if (! (data->flags & GRUB_BIOSDISK_FLAG_CDROM))
@@ -391,12 +361,23 @@ grub_disk_biosdisk_fini (void)
 
 GRUB_MOD_INIT(biosdisk)
 {
+  struct grub_biosdisk_cdrp *cdrp
+        = (struct grub_biosdisk_cdrp *) GRUB_MEMORY_MACHINE_SCRATCH_ADDR;
+
   if (grub_disk_firmware_is_tainted)
     {
       grub_printf ("Firmware is marked as tainted, refusing to initialize.\n");
       return;
     }
   grub_disk_firmware_fini = grub_disk_biosdisk_fini;
+
+  grub_memset (cdrp, 0, sizeof (*cdrp));
+  cdrp->size = sizeof (*cdrp);
+  cdrp->media_type = 0xFF;
+  if ((! grub_biosdisk_get_cdinfo_int13_extensions (grub_boot_drive, cdrp)) &&
+      ((cdrp->media_type & GRUB_BIOSDISK_CDTYPE_MASK)
+       == GRUB_BIOSDISK_CDTYPE_NO_EMUL))
+    cd_drive = cdrp->drive_no;
 
   grub_disk_dev_register (&grub_biosdisk_dev);
 }

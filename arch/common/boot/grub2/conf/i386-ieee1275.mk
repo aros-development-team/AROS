@@ -569,7 +569,7 @@ grub_emu_LDFLAGS = $(LIBCURSES)
 
 # Modules.
 pkglib_MODULES = normal.mod halt.mod reboot.mod suspend.mod cpuid.mod	\
-	multiboot.mod _multiboot.mod serial.mod
+	multiboot.mod _multiboot.mod aout.mod serial.mod
 
 # For normal.mod.
 normal_mod_SOURCES = normal/arg.c normal/cmdline.c normal/command.c	\
@@ -973,6 +973,58 @@ fs-multiboot_mod-loader_multiboot_loader_normal.lst: loader/multiboot_loader_nor
 
 multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
 multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For aout.mod.
+aout_mod_SOURCES = loader/aout.c
+CLEANFILES += aout.mod mod-aout.o mod-aout.c pre-aout.o aout_mod-loader_aout.o und-aout.lst
+ifneq ($(aout_mod_EXPORTS),no)
+CLEANFILES += def-aout.lst
+DEFSYMFILES += def-aout.lst
+endif
+MOSTLYCLEANFILES += aout_mod-loader_aout.d
+UNDSYMFILES += und-aout.lst
+
+aout.mod: pre-aout.o mod-aout.o
+	-rm -f $@
+	$(TARGET_CC) $(aout_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ $^
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -R .note -R .comment $@
+
+pre-aout.o: $(aout_mod_DEPENDENCIES) aout_mod-loader_aout.o
+	-rm -f $@
+	$(TARGET_CC) $(aout_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ aout_mod-loader_aout.o
+
+mod-aout.o: mod-aout.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -c -o $@ $<
+
+mod-aout.c: moddep.lst genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'aout' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(aout_mod_EXPORTS),no)
+def-aout.lst: pre-aout.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 aout/' > $@
+endif
+
+und-aout.lst: pre-aout.o
+	echo 'aout' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+aout_mod-loader_aout.o: loader/aout.c $(loader/aout.c_DEPENDENCIES)
+	$(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -MD -c -o $@ $<
+-include aout_mod-loader_aout.d
+
+CLEANFILES += cmd-aout_mod-loader_aout.lst fs-aout_mod-loader_aout.lst
+COMMANDFILES += cmd-aout_mod-loader_aout.lst
+FSFILES += fs-aout_mod-loader_aout.lst
+
+cmd-aout_mod-loader_aout.lst: loader/aout.c $(loader/aout.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh aout > $@ || (rm -f $@; exit 1)
+
+fs-aout_mod-loader_aout.lst: loader/aout.c $(loader/aout.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Iloader -I$(srcdir)/loader $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(aout_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh aout > $@ || (rm -f $@; exit 1)
+
+
+aout_mod_CFLAGS = $(COMMON_CFLAGS)
+aout_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For suspend.mod
 suspend_mod_SOURCES = commands/ieee1275/suspend.c
