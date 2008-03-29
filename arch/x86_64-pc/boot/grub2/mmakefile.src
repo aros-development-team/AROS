@@ -14,10 +14,13 @@ $(BINDIR)/boot/grub/grub.cfg:
 $(BINDIR)/boot/grub/grub.cfg.DH0:
 		$(CP) grub.cfg.DH0 $(BINDIR)/boot/grub/
 
-bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/splash.png $(BINDIR)/boot/grub/grub.gfx.cfg $(BINDIR)/boot/grub/grub.gfx.cfg.DH0
+bootloader-grub2gfx-pc-x86_64: $(BINDIR)/boot/grub/splash.png $(BINDIR)/boot/grub/unifont.pff $(BINDIR)/boot/grub/grub.gfx.cfg $(BINDIR)/boot/grub/grub.gfx.cfg.DH0
 
 $(BINDIR)/boot/grub/splash.png:
 		$(CP) splash.png $(BINDIR)/boot/grub/
+
+$(BINDIR)/boot/grub/unifont.pff:
+		$(CP) unifont.pff $(BINDIR)/boot/grub/
 
 $(BINDIR)/boot/grub/grub.gfx.cfg:
 		$(CP) grub.gfx.cfg $(BINDIR)/boot/grub/grub.cfg
