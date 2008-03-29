@@ -7,7 +7,7 @@ set default=5
 if font /dh0/boot/grub/unifont.pff ; then
 	insmod /dh0/boot/grub/vbe.mod
 	insmod /dh0/boot/grub/gfxterm.mod
-	set gfxmode=800x600x16
+	set gfxmode=640x480
 	terminal gfxterm
 	insmod /dh0/boot/grub/png.mod
 	background_image /dh0/boot/grub/splash.png
