@@ -4,15 +4,14 @@ set timeout=5
 # Set default boot entry as VESA Gfx @ 800x600-16bpp
 set default=5
 
-insmod /dh0/boot/grub/video.mod
-insmod /dh0/boot/grub/vbe.mod
-insmod /dh0/boot/grub/font.mod
-insmod /dh0/boot/grub/gfxterm.mod
-set gfxmode=800x600x16
-insmod /dh0/boot/grub/png.mod
-splashimage=/dh0/boot/grub/splash.png
-font /dh0/boot/grub/unifont.pff
-terminal gfxterm
+if font /dh0/boot/grub/unifont.pff ; then
+	insmod /dh0/boot/grub/vbe.mod
+	insmod /dh0/boot/grub/gfxterm.mod
+	set gfxmode=800x600x16
+	terminal gfxterm
+	insmod /dh0/boot/grub/png.mod
+	background_image /dh0/boot/grub/splash.png
+fi
 
 menuentry "AROS64 with VESA Gfx @ 640x480-8bpp" {
     serial --speed=9600
