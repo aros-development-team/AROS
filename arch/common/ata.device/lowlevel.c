@@ -29,9 +29,10 @@
  *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
  * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
  * 2008-03-29  T. Wiszkowski       Restored error on 64bit R/W access to non-64bit capable atapi devices
+ *                                 cleared debug flag
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/exec.h>
