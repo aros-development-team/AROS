@@ -1,3 +1,20 @@
+2008-03-28  Pavel Roskin  <proski@gnu.org>
+
+	* kern/i386/pc/startup.S: Assert that uncompressed functions
+	don't spill beyond GRUB_KERNEL_MACHINE_RAW_SIZE.
+	* kern/i386/pc/lzo1x.S: Remove all .align directives in the
+	code, as they push parts of the code (error handlers) beyond
+	GRUB_KERNEL_MACHINE_RAW_SIZE.  Speed is not as important in this
+	code as correctness and size.
+
+2008-03-28  Pavel Roskin  <proski@gnu.org>
+
+	* kern/i386/pc/startup.S
+	(grub_biosdisk_get_diskinfo_int13_extensions): When converting
+	data block address to the real mode, keep offset minimal.  This
+	works around a bug in AWARD BIOS on old Athlon systems, which
+	makes CD detection hang.
+
 2008-03-26  Pavel Roskin  <proski@gnu.org>
 
 	* normal/color.c (grub_parse_color_name_pair): Make `name' a

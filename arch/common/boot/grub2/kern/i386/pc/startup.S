@@ -478,6 +478,11 @@ gate_a20_check_state:
 
 #include "lzo1x.S"
 
+/*
+ * The code beyond this point is compressed.  Assert that the uncompressed
+ * code fits GRUB_KERNEL_MACHINE_RAW_SIZE.
+ */
+	. = EXT_C(start) + GRUB_KERNEL_MACHINE_RAW_SIZE
 
 /*
  *  This call is special...  it never returns...  in fact it should simply
@@ -806,7 +811,7 @@ FUNCTION(grub_biosdisk_get_diskinfo_int13_extensions)
 
 	/* compute the address of drive parameters */
 	movw	%dx, %si
-	xorw	%dx, %dx
+	andl	$0xf, %esi
 	shrl	$4, %edx
 	movw	%dx, %bx	/* save the segment into %bx */
 	/* drive */

@@ -73,7 +73,6 @@ lzo1x_decompress:
 	jmp	3f
 
 
-	.align	8
 .L00:
 	LODSB
 .L01:
@@ -119,7 +118,6 @@ lzo1x_decompress:
 // M2
 ************************************************************************/
 
-	.align	8
 .LMATCH:
 	cmpb	$64, %al
 	jb	.LM3MATCH
@@ -156,7 +154,6 @@ lzo1x_decompress:
 	jmp	3f
 
 
-	.align	8
 .LM3MATCH:
 	cmpb	$32, %al
 	jb	.LM4MATCH
@@ -180,7 +177,6 @@ lzo1x_decompress:
 // copy match
 ************************************************************************/
 
-	.align	2
 .LCOPYLONG:			 /* copy match using longwords */
 	leal	-3(%edi,%ecx), %eax
 	shrl	$2, %ecx
@@ -202,7 +198,6 @@ lzo1x_decompress:
 	jmp	.LMATCH
 
 
-	.align	8
 .LCOPYBYTE:			 /* copy match using bytes */
 	xchgl	%edx,%esi
 	subl	N_3,%ecx
@@ -226,7 +221,6 @@ lzo1x_decompress:
 	jmp	3f
 
 
-	.align	8
 .LM4MATCH:
 	cmpb	$16, %al
 	jb	.LM1MATCH
@@ -252,7 +246,6 @@ lzo1x_decompress:
 // M1
 ************************************************************************/
 
-	.align	8
 .LM1MATCH:
 	/* a M1 match */
 	shrl	$2, %eax
