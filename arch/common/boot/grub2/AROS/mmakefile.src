@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM bootloader-grub2gfx-common : grub2-dirs
+
+bootloader-grub2gfx-common: $(BINDIR)/boot/grub/splash.png $(BINDIR)/boot/grub/unifont.pff
+
+$(BINDIR)/boot/grub/splash.png:
+		$(CP) splash.png $(BINDIR)/boot/grub/
+
+$(BINDIR)/boot/grub/unifont.pff:
+		$(CP) unifont.pff $(BINDIR)/boot/grub/
