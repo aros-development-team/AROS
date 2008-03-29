@@ -89,7 +89,8 @@ struct grub_png_data
 
   grub_uint32_t next_offset;
 
-  int image_width, image_height, bpp, raw_bytes;
+  int image_width, image_height, bpp, is_16bit, raw_bytes;
+  grub_uint8_t *image_data;
 
   int inside_idat, idat_remain;
 
@@ -211,6 +212,7 @@ static grub_err_t
 grub_png_decode_image_header (struct grub_png_data *data)
 {
   int color_type;
+  int color_bits;
 
   data->image_width = grub_png_get_dword (data);
   data->image_height = grub_png_get_dword (data);
@@ -218,8 +220,11 @@ grub_png_decode_image_header (struct grub_png_data *data)
   if ((!data->image_height) || (!data->image_width))
     return grub_error (GRUB_ERR_BAD_FILE_TYPE, "png: invalid image size");
 
-  if (grub_png_get_byte (data) != 8)
-    return grub_error (GRUB_ERR_BAD_FILE_TYPE, "png: bit depth must be 8");
+  color_bits = grub_png_get_byte (data);
+  if ((color_bits != 8) && (color_bits != 16))
+    return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+                       "png: bit depth must be 8 or 16");
+  data->is_16bit = (color_bits == 16);
 
   color_type = grub_png_get_byte (data);
   if (color_type == PNG_COLOR_TYPE_RGB)
@@ -242,9 +247,25 @@ grub_png_decode_image_header (struct grub_png_data *data)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
 		       "png: color type not supported");
 
+   if (data->is_16bit)
+    {
+      data->bpp <<= 1;
+
+      data->image_data = grub_malloc (data->image_height *
+                                      data->image_width *  data->bpp);
+      if (grub_errno)
+        return grub_errno;
+
+      data->cur_rgb = data->image_data;
+    }
+  else
+    {
+      data->image_data = 0;
+      data->cur_rgb = (*data->bitmap)->data;
+    }
+  
   data->raw_bytes = data->image_height * (data->image_width + 1) * data->bpp;
 
-  data->cur_rgb = (*data->bitmap)->data;
   data->cur_colume = 0;
   data->first_line = 1;
 
@@ -705,6 +726,21 @@ grub_png_decode_image_data (struct grub_png_data *data)
 static const grub_uint8_t png_magic[8] =
   { 0x89, 0x50, 0x4e, 0x47, 0xd, 0xa, 0x1a, 0x0a };
 
+static void
+grub_png_convert_image (struct grub_png_data *data)
+{
+  int i;
+  grub_uint8_t *d1, *d2;
+
+  d1 = (*data->bitmap)->data;
+  d2 = data->image_data + 1;
+
+  /* Only copy the upper 8 bit.  */
+  for (i = 0; i < (data->image_width * data->image_height * data->bpp >> 1);
+       i++, d1++, d2+=2)
+    *d1 = *d2;
+}
+  
 static grub_err_t
 grub_png_decode_png (struct grub_png_data *data)
 {
@@ -741,6 +777,9 @@ grub_png_decode_png (struct grub_png_data *data)
 	  break;
 
 	case PNG_CHUNK_IEND:
+          if (data->is_16bit)
+            grub_png_convert_image (data);
+
 	  return grub_errno;
 
 	default:
@@ -778,6 +817,7 @@ grub_video_reader_png (struct grub_video_bitmap **bitmap,
 
       grub_png_decode_png (data);
 
+      grub_free (data->image_data);
       grub_free (data);
     }
 
