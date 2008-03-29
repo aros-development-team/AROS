@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM- arch-common-grub2 : grub2-host-quick grub2-menu-$(ARCH) grub2-copy-files
 
 #MM- bootloader-grub2 : arch-common-grub2
-#MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
+#MM- bootloader-grub2-isosetup : grub2-dirs arch-common-grub2 grub2-iso-setup
 
 GRUBBOOTDIR := $(AROSDIR)/boot/grub
 
@@ -26,8 +26,11 @@ GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
 LST_FILES  :=	command fs moddep
 
 #MM
-grub2-iso-setup :
+grub2-dirs :
 	%mkdirs_q $(GRUBBOOTDIR)
+
+#MM
+grub2-iso-setup :
 	@cd $(GENDIR)/$(CURDIR)					&& \
 	./grub-mkimage -d . -o core.img $(GRUB2_MODS)		&& \
 	$(CP) *.img $(GRUBBOOTDIR)				&& \
