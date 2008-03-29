@@ -28,9 +28,10 @@
  * 2008-02-08  T. Wiszkowski       Fixed DMA accesses for direct scsi devices,
  *                                 Corrected IO Areas to allow ATA to talk to PCI controllers
  * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
+ * 2008-03-29  T. Wiszkowski       Restored error on 64bit R/W access to non-64bit capable atapi devices
  */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/exec.h>
@@ -169,7 +170,7 @@ static ULONG ata_STUB_IO32(struct ata_Unit *au, ULONG blk, ULONG len, APTR buf, 
 
 static ULONG ata_STUB_IO64(struct ata_Unit *au, UQUAD blk, ULONG len, APTR buf, ULONG* act)
 {
-    D(bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum));
+    bug("[ATA%02ld] CALLED STUB FUNCTION -- IO ACCESS TO BLOCK %08lx:%08lx, LENGTH %08lx. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum, (blk >> 32), (blk & 0xffffffff), len);
     return CDERR_NOCMD;
 }
 
@@ -1383,9 +1384,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
 
     unit->au_SectorShift    = 11;
     unit->au_Read32         = atapi_Read;
-    unit->au_Read64         = NULL;
     unit->au_Write32        = atapi_Write;
-    unit->au_Write64        = NULL;
     unit->au_DirectSCSI     = atapi_DirectSCSI;
     unit->au_Eject          = atapi_Eject;
     unit->au_Flags         |= AF_DiscPresenceUnknown;
@@ -2148,6 +2147,8 @@ void ata_ScanBus(struct ata_Bus *bus)
         bus->ab_Dev[0] = DEV_UNKNOWN;
         tmp1 = ata_in(ata_LBAMid, port);
         tmp2 = ata_in(ata_LBAHigh, port);
+        
+        D(bug("[ATA  ] Subtype check returned %02lx:%02lx\n", tmp1, tmp2));
     
         if ((tmp1 == 0x14) && (tmp2 == 0xeb))
         {
@@ -2183,6 +2184,8 @@ void ata_ScanBus(struct ata_Bus *bus)
         bus->ab_Dev[1] = DEV_UNKNOWN;
         tmp1 = ata_in(ata_LBAMid, port);
         tmp2 = ata_in(ata_LBAHigh, port);
+        
+        D(bug("[ATA  ] Subtype check returned %02lx:%02lx\n", tmp1, tmp2));
 
         if ((tmp1 == 0x14) && (tmp2 == 0xeb))
         {
