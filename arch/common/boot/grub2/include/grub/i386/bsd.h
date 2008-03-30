@@ -149,7 +149,7 @@ struct grub_openbsd_bios_mmap
   grub_uint64_t addr;
   grub_uint64_t len;
   grub_uint32_t type;
-} bios_memmap_t;
+};
 
 struct grub_openbsd_bootargs
 {

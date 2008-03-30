@@ -29,6 +29,7 @@
 #include <grub/util/biosdisk.h>
 #include <grub/util/getroot.h>
 #include <grub/term.h>
+#include <grub/env.h>
 
 #include <grub_probe_init.h>
 
@@ -134,15 +135,15 @@ probe (const char *path, char *device_name)
       char *abstraction_name;
       switch (abstraction_type)
 	{
-	case GRUB_DEV_ABSTRACTION_NONE:
-	  grub_util_info ("did not find LVM/RAID in %s, assuming raw device", device_name);
-	  goto end;
 	case GRUB_DEV_ABSTRACTION_LVM:
 	  abstraction_name = "lvm";
 	  break;
 	case GRUB_DEV_ABSTRACTION_RAID:
 	  abstraction_name = "raid";
 	  break;
+	default:
+	  grub_util_info ("did not find LVM/RAID in %s, assuming raw device", device_name);
+	  goto end;
 	}
       printf ("%s\n", abstraction_name);
       goto end;

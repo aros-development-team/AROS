@@ -1,3 +1,42 @@
+2008-03-30  Pavel Roskin  <proski@gnu.org>
+
+	* disk/host.c: Include grub/misc.h to fix a warning.
+	* util/hostfs.c: Use GRUB_MOD_INIT and GRUB_MOD_FINI to fix
+	warnings about implicit declarations.
+
+	* fs/udf.c (grub_udf_mount): Fix warning about a shadowing a
+	variable.
+	* include/grub/i386/loader.h: Change declaration of
+	grub_linux_boot() to match what grub_loader_set() expects.
+	* util/getroot.c (grub_guess_root_device): Return const char* to
+	fix a warning.
+	* util/grub-probe.c (probe): Fix a warning about uninitialized
+	abstraction_name variable.
+	* util/i386/get_disk_name.c (grub_util_get_disk_name): Mark
+	second argument as unused to fix a warning.
+
+	* loader/i386/pc/multiboot2.c (grub_mb2_arch_elf64_hook): Add
+	missing grub_error() call.
+
+	* util/update-grub_lib.in: Define datarootdir, since Autoconf
+	2.60 and newer uses it to define datadir.
+
+	* commands/sleep.c: Fix warning about implicit declaration.
+	* disk/memdisk.c: Likewise.
+	* loader/aout.c: Likewise.
+	* loader/i386/bsd_normal.c: Likewise.
+	* util/grub-probe.c: Likewise.
+
+	* commands/i386/cpuid.c (has_longmode): Make static.
+	* disk/i386/pc/biosdisk.c (cd_drive): Likewise.
+	* include/grub/i386/bsd.h (bios_memmap_t): Remove, it's unused.
+
+	* kern/i386/pc/startup.S (real_to_prot): Use %cs prefix to load
+	GDT.  This is more robust, as %ds can change.
+	(grub_biosdisk_rw_int13_extensions): Don't clear %ds before
+	calling real_to_prot().
+	(grub_biosdisk_get_diskinfo_int13_extensions): Likewise.
+
 2008-03-28  Pavel Roskin  <proski@gnu.org>
 
 	* kern/i386/pc/startup.S: Assert that uncompressed functions

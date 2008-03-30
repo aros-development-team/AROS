@@ -27,7 +27,7 @@
 #include <grub/err.h>
 #include <grub/term.h>
 
-int cd_drive = 0;
+static int cd_drive = 0;
 
 static int
 grub_biosdisk_get_drive (const char *name)

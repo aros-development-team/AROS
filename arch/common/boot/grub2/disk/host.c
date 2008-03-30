@@ -22,6 +22,7 @@
 
 #include <grub/dl.h>
 #include <grub/disk.h>
+#include <grub/misc.h>
 
 int grub_disk_host_i_want_a_reference;
 

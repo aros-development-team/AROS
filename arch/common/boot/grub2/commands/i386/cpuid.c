@@ -32,7 +32,7 @@
 
 #define bit_LM (1 << 29)
 
-unsigned char has_longmode = 0;
+static unsigned char has_longmode = 0;
 
 static const struct grub_arg_option options[] =
   {

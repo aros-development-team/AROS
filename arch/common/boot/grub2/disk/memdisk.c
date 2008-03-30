@@ -23,6 +23,7 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/types.h>
+#include <grub/machine/kernel.h>
 
 static grub_addr_t memdisk_addr;
 static grub_off_t memdisk_size = 0;

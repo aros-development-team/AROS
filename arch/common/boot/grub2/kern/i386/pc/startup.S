@@ -291,7 +291,7 @@ real_to_prot:
 	cli
 
 	/* load the GDT register */
-	DATA32	ADDR32	lgdt	gdtdesc
+	DATA32	ADDR32	lgdt	%cs:gdtdesc
 
 	/* turn on protected mode */
 	movl	%cr0, %eax
@@ -649,9 +649,6 @@ FUNCTION(grub_biosdisk_rw_int13_extensions)
 	movw	%cx, %ds
 	int	$0x13		/* do the operation */
 	movb	%ah, %dl	/* save return value */
-	/* clear the data segment */
-	xorw	%ax, %ax
-	movw	%ax, %ds
 	/* back to protected mode */
 	DATA32	call	real_to_prot
 	.code32
@@ -824,9 +821,6 @@ FUNCTION(grub_biosdisk_get_diskinfo_int13_extensions)
 	movw	%bx, %ds
 	int	$0x13		/* do the operation */
 	movb	%ah, %bl	/* save return value in %bl */
-	/* clear the data segment */
-	xorw	%ax, %ax
-	movw	%ax, %ds
 	/* back to protected mode */
 	DATA32	call	real_to_prot
 	.code32

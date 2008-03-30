@@ -19,6 +19,7 @@
 
 #include <grub/dl.h>
 #include <grub/term.h>
+#include <grub/time.h>
 #include <grub/types.h>
 #include <grub/misc.h>
 #include <grub/normal.h>

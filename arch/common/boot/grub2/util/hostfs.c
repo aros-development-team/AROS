@@ -21,6 +21,7 @@
 #include <grub/file.h>
 #include <grub/disk.h>
 #include <grub/misc.h>
+#include <grub/dl.h>
 
 #include <dirent.h>
 #include <stdio.h>
@@ -151,14 +152,12 @@ static struct grub_fs grub_hostfs_fs =
 
 
 
-void
-grub_hostfs_init (void)
+GRUB_MOD_INIT(hostfs)
 {
   grub_fs_register (&grub_hostfs_fs);
 }
 
-void
-grub_hostfs_fini (void)
+GRUB_MOD_FINI(hostfs)
 {
   grub_fs_unregister (&grub_hostfs_fs);
 }

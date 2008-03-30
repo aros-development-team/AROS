@@ -18,6 +18,7 @@
 #include <grub/file.h>
 #include <grub/err.h>
 #include <grub/dl.h>
+#include <grub/misc.h>
 #include <grub/aout.h>
 
 int

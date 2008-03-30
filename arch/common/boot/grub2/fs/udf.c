@@ -603,7 +603,7 @@ grub_udf_mount (grub_disk_t disk)
 	}
       else if (tag.tag_ident == GRUB_UDF_TAG_IDENT_LVD)
 	{
-	  int i;
+	  int k;
 
 	  struct grub_udf_partmap *ppm;
 
@@ -622,7 +622,7 @@ grub_udf_mount (grub_disk_t disk)
 	    }
 
 	  ppm = (struct grub_udf_partmap *) &data->lvd.part_maps;
-	  for (i = U32 (data->lvd.num_part_maps); i > 0; i--)
+	  for (k = U32 (data->lvd.num_part_maps); k > 0; k--)
 	    {
 	      if (ppm->type != GRUB_UDF_PARTMAP_TYPE_1)
 		{

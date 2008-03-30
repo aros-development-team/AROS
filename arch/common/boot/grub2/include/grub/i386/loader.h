@@ -20,6 +20,7 @@
 #define GRUB_LOADER_CPU_HEADER	1
 
 #include <grub/types.h>
+#include <grub/err.h>
 #include <grub/symbol.h>
 #include <grub/multiboot.h>
 
@@ -30,7 +31,7 @@ extern grub_int32_t EXPORT_VAR(grub_linux_is_bzimage);
 extern grub_addr_t EXPORT_VAR(grub_os_area_addr);
 extern grub_size_t EXPORT_VAR(grub_os_area_size);
 
-void EXPORT_FUNC(grub_linux_boot) (void) __attribute__ ((noreturn));
+grub_err_t EXPORT_FUNC(grub_linux_boot) (void);
 
 /* The asm part of the multiboot loader.  */
 void EXPORT_FUNC(grub_multiboot_real_boot) (grub_addr_t entry,
