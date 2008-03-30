@@ -21,6 +21,8 @@
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
  * 2008-03-23  T. Wiszkowski       Corrected DMA PRD issue (x86_64 systems)
+ * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
+ *                                 nForce and Intel SATA chipsets should now be operational.
  */
 
 #include <exec/types.h>
@@ -112,6 +114,7 @@ struct ata_Bus
     struct MinNode          ab_Node;    /* exec node */
     struct ataBase          *ab_Base;   /* device self */
     struct SignalSemaphore  ab_Lock;    /* Semaphore locking IO access */
+
     ULONG                   ab_Port;    /* IO port used */
     ULONG                   ab_Alt;     /* alternate io port */
     UBYTE                   ab_Irq;     /* IRQ used */
@@ -280,6 +283,8 @@ struct ata_Unit
 
     VOID                (*au_ins)(APTR, UWORD, ULONG);
     VOID                (*au_outs)(APTR, UWORD, ULONG);
+    
+    BOOL                (*au_CheckDeviceStateChange)(struct ata_Unit *); /* this has to be fast and efficient. called on irqs */
 
     /* If a HW driver is used with this unit, it may store its data here */
     APTR                au_DriverData;
@@ -297,6 +302,9 @@ struct ata_Unit
     UBYTE               au_DevMask;             /* device mask used to simplify device number coding */
     UBYTE               au_SenseKey;            /* Sense key from ATAPI devices */
     UBYTE               au_DevType;
+    BOOL                au_WaitReady;           /* set to TRUE when driver waits for device to come ready */    
+                                                /* will be implemented so that no race conditions show up */
+    
 };
 
 typedef enum
@@ -474,35 +482,9 @@ VOID dma_StartDMA(struct ata_Unit *);
 VOID dma_StopDMA(struct ata_Unit *);
 
 BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
+BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
  
-/*
-    ATAPI SCSI commands
-*/
-//#define SCSI_READ10   
-//#define SCSI_WRITE10
-//#define SCSI_STARTSTOP
-
-struct atapi_Read10
-{
-    UBYTE   command;
-    UBYTE   pad1;
-    UBYTE   lba[4];
-    UBYTE   pad2;
-    UBYTE   len[2];
-    UBYTE   pad3[3];
-};
-
-struct atapi_Write10
-{
-    UBYTE   command;
-    UBYTE   pad1;
-    UBYTE   lba[4];
-    UBYTE   pad2;
-    UBYTE   len[2];
-    UBYTE   pad3[3];
-};
-
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
 

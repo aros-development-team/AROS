@@ -30,6 +30,8 @@
  * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
  * 2008-03-29  T. Wiszkowski       Restored error on 64bit R/W access to non-64bit capable atapi devices
  *                                 cleared debug flag
+ * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
+ *                                 nForce and Intel SATA chipsets should now be operational (nForce confirmed)
  */
 
 #define DEBUG 0
@@ -68,8 +70,8 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *)
 static ULONG ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static ULONG ata_Eject(struct ata_Unit *);
+static BOOL ata_CheckDeviceStateChange(struct ata_Unit *unit);
 
-static ULONG atapi_ErrCmd();
 static ULONG atapi_EndCmd(struct ata_Unit *unit);
 
 static ULONG atapi_Read(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
@@ -204,6 +206,36 @@ inline void ata_ClearOldIRQ(struct ata_Unit *unit)
 }
 
 /*
+ * careful - this is called from IRQ!
+ */
+BOOL ata_CheckDeviceStateChange(struct ata_Unit *unit)
+{
+    register UBYTE st = 0;
+    register UBYTE dv = 0;
+    register BOOL res = FALSE;
+    
+    /*
+     * 1. select unit and remember old unit selection
+     */
+    dv = ata_in(ata_DevHead, unit->au_Bus->ab_Port);
+    ata_out(unit->au_DevMask, ata_DevHead, unit->au_Bus->ab_Port);
+
+    /*
+     * 2. capture unit status + set results
+     */
+    st = ata_in(ata_AltControl, unit->au_Bus->ab_Alt);
+    if (unit->au_WaitReady)
+        res = (st & ATAF_BUSY) == 0;
+
+    /*
+     * 3. restore unit selection and return status
+     */
+    ata_out(dv, ata_DevHead, unit->au_Bus->ab_Port);
+
+    return res;
+}
+
+/*
  * wait for timeout or drive ready
  */
 BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout)
@@ -247,6 +279,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout)
  */
 BOOL ata_WaitIRQ(struct ata_Unit *unit, UWORD tout)
 {
+    UBYTE status;
     SetSignal(0, SIGBREAKF_CTRL_C);
             
     Disable();
@@ -254,15 +287,25 @@ BOOL ata_WaitIRQ(struct ata_Unit *unit, UWORD tout)
     Enable();
 
     D(bug("[ATA%02ld] Awaiting IRQ.\n", unit->au_UnitNum));
+    unit->au_WaitReady = TRUE;
 
-    if (Wait((1<<unit->au_Bus->ab_SleepySignal) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    do
     {
-        D(bug("[ATA%02ld] Timed out.\n", unit->au_UnitNum));
-        return FALSE;
-    }
+        status = ata_in(ata_Status, unit->au_Bus->ab_Port);
+        D(bug("[ATA%02ld] Wait Status: %02lx\n", status));
+        if (0 == (status & ATAF_BUSY))
+            break;
+        
+        if (Wait((1<<unit->au_Bus->ab_SleepySignal) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+        {
+            D(bug("[ATA%02ld] Timed out.\n", unit->au_UnitNum));
+            return FALSE;
+        }
+    } while (1);
 
     D(bug("[ATA%02ld] Ready.\n", unit->au_UnitNum));
     Disable();
+    unit->au_WaitReady = FALSE;
     unit->au_Bus->ab_Timeout = 0;
     Enable();
             
@@ -922,7 +965,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
     }
     else
     {
-       err = atapi_ErrCmd();
+       err = CDERR_ABORTED;
     }
 
     /*
@@ -988,14 +1031,11 @@ static ULONG ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
 /*
  * Initial device configuration that suits *all* cases
  */
-BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
+BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u)
 {
     struct ata_Unit *unit=NULL;
 
-    /*
-     * this stuff always goes along the same way
-     */
-    D(bug("[ATA  ] setting up unit %ld\n", u));
+    D(bug("[ATA  ] Initializing unit %ld\n", u));
 
     unit = bus->ab_Units[u];
     if (NULL == unit)
@@ -1024,13 +1064,30 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
      * since the stack is always handled by caller
      * it's safe to stub all calls with one function
      */
-    unit->au_Read32     = ata_STUB_IO32;
-    unit->au_Read64     = ata_STUB_IO64;
-    unit->au_Write32    = ata_STUB_IO32;
-    unit->au_Write64    = ata_STUB_IO64;
-    unit->au_Eject      = ata_STUB;
-    unit->au_DirectSCSI = ata_STUB_SCSI;
-    unit->au_Identify   = ata_STUB;
+    unit->au_Read32                 = ata_STUB_IO32;
+    unit->au_Read64                 = ata_STUB_IO64;
+    unit->au_Write32                = ata_STUB_IO32;
+    unit->au_Write64                = ata_STUB_IO64;
+    unit->au_Eject                  = ata_STUB;
+    unit->au_DirectSCSI             = ata_STUB_SCSI;
+    unit->au_Identify               = ata_STUB;
+    unit->au_CheckDeviceStateChange = ata_CheckDeviceStateChange;
+
+    return TRUE;
+}
+
+BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
+{
+    struct ata_Unit *unit=NULL;
+
+    /*
+     * this stuff always goes along the same way
+     */
+    D(bug("[ATA  ] setting up unit %ld\n", u));
+
+    unit = bus->ab_Units[u];
+    if (NULL == unit)
+        return FALSE;
 
     ata_SelectUnit(unit);
 
@@ -1396,7 +1453,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
     ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
 
-    D(bug("[ATA%02ld] Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev));
+    bug("[ATA%02ld] Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
     common_DetectXferModes(unit);
     common_SetBestXferMode(unit);
 
@@ -1485,7 +1542,7 @@ ULONG ata_Identify(struct ata_Unit* unit)
     ata_strcpy(unit->au_Drive->id_SerialNumber, unit->au_SerialNumber, 20);
     ata_strcpy(unit->au_Drive->id_FirmwareRev, unit->au_FirmwareRev, 8);
 
-    D(bug("[ATA%02ld] Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev));
+    bug("[ATA%02ld] Unit info: %s / %s / %s\n", unit->au_UnitNum, unit->au_Model, unit->au_SerialNumber, unit->au_FirmwareRev);
     common_DetectXferModes(unit);
     common_SetBestXferMode(unit);
 
@@ -2238,11 +2295,6 @@ static const ULONG ErrorMap[] = {
     CDERR_NoSecHdr,
     CDERR_NotSpecified,
 };
-
-static ULONG atapi_ErrCmd()
-{
-    return CDERR_ABORTED;
-}
 
 static ULONG atapi_EndCmd(struct ata_Unit *unit)
 {

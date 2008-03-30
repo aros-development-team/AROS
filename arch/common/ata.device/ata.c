@@ -17,6 +17,8 @@
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
+ * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
+ *                                 nForce and Intel SATA chipsets should now be operational.
  */
 
 #define DEBUG 0
@@ -1046,16 +1048,26 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
 static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
-    
-    bus->ab_IntCnt++;
-    Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
-    D(bug("[ATA  ] Got Intrq\n"));
+    int i;
+
+    for (i=0; i<MAX_UNIT; i++)
+    {
+        /*
+         * units are always present, tho may have bad states.
+         */
+        if ((0 != bus->ab_Units[i]) && (FALSE != bus->ab_Units[i]->au_CheckDeviceStateChange(bus->ab_Units[i])))
+        {
+            D(bug("[ATA  ] Got Intrq\n"));
+            bus->ab_IntCnt++;
+            Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
+        }
+    }
 }
 
 static void ata_Timeout(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
-    
+
     if (bus->ab_Timeout > 0)
     {
         bus->ab_Timeout--;
@@ -1068,3 +1080,4 @@ static void ata_Timeout(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     }
 }
 
+/* vim: set ts=4 sw=4 :*/

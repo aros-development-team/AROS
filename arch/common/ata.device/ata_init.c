@@ -25,6 +25,8 @@
  * 2008-02-24  T. Wiszkowski       Corrected unit open function
  * 2008-03-03  T. Wiszkowski       Added drive reselection + setup delay on Init
  * 2008-03-23  T. Wiszkowski       Corrected Alternative Command block position
+ * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
+ *                                 nForce and Intel SATA chipsets should now be operational.
  */
 
 #define DEBUG 0
@@ -157,6 +159,8 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 /*
  * PCI BUS ENUMERATOR
  *   collect ALL ata/ide capable devices (including SATA and other) and spawn consecutive tasks
+ *
+ * This function is growing too large. It will shorten drasticly once this whole mess gets converted into c++
  */
 
 static
@@ -226,9 +230,9 @@ AROS_UFH3(void, Enumerator,
     /*
      * obtain more or less useful data
      */
-    OOP_GetAttr(Device, aHidd_PCIDevice_ProductID, &ProductID);
-    OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,  &VendorID);
-    OOP_GetAttr(Device, aHidd_PCIDevice_Base4,     &DMABase);
+    OOP_GetAttr(Device, aHidd_PCIDevice_ProductID,          &ProductID);
+    OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,           &VendorID);
+    OOP_GetAttr(Device, aHidd_PCIDevice_Base4,              &DMABase);
 
     if (a->ATABase->ata_NoDMA)
         DMABase = 0;
@@ -314,7 +318,7 @@ AROS_UFH3(void, Enumerator,
          */
         ab->ab_PRD          = AllocVecPooled(a->ATABase->ata_MemPool, (PRD_MAX+1) * 2 * sizeof(struct PRDEntry));  
         if ((0x10000 - ((ULONG)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
-            ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
+           ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
 
         InitSemaphore(&ab->ab_Lock);
 
@@ -326,11 +330,13 @@ AROS_UFH3(void, Enumerator,
         {
             ab->ab_Units[0] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
             ab->ab_Units[0]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
+            ata_init_unit(ab, 0);
         }
         if (ab->ab_Dev[1] > DEV_UNKNOWN)
         {
             ab->ab_Units[1] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
             ab->ab_Units[1]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
+            ata_init_unit(ab, 1);
         }
 
         D(bug("[ATA  ] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
@@ -551,3 +557,4 @@ ADD2INITLIB(ata_init, 0)
 ADD2OPENDEV(open, 0)
 ADD2CLOSEDEV(close, 0)
 ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
+/* vim: set ts=8 sts=4 et : */
