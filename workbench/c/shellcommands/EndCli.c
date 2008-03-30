@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Why CLI command
+    Desc: EndCLI CLI command
     Lang: English
 */
 
@@ -11,17 +11,17 @@
 
     NAME
 
-        EndCli
+        EndCLI
 
     SYNOPSIS
 
     LOCATION
 
-        Workbench:C
+        C:
 
     FUNCTION
 
-        Exits a CLI
+        Exits a Shell/CLI.
 
     INPUTS
 
@@ -48,7 +48,7 @@
 
 #include <aros/shcommands.h>
 
-AROS_SH0(EndCli, 41.3)
+AROS_SH0(EndCLI, 41.3)
 {
     AROS_SHCOMMAND_INIT
 
