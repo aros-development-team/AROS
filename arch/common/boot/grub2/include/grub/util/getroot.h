@@ -29,6 +29,6 @@ char *grub_guess_root_device (const char *dir);
 char *grub_get_prefix (const char *dir);
 int grub_util_get_dev_abstraction (const char *os_dev);
 char *grub_util_get_grub_dev (const char *os_dev);
-char *grub_util_check_block_device (const char *blk_dev);
+const char *grub_util_check_block_device (const char *blk_dev);
 
 #endif /* ! GRUB_UTIL_GETROOT_HEADER */

@@ -333,7 +333,7 @@ grub_util_get_grub_dev (const char *os_dev)
   return grub_dev;
 }
 
-char *
+const char *
 grub_util_check_block_device (const char *blk_dev)
 {
   struct stat st;

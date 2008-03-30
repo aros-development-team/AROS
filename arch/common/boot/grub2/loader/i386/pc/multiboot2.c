@@ -44,8 +44,8 @@ grub_mb2_arch_elf64_hook (Elf64_Phdr *phdr, UNUSED grub_addr_t *addr)
 
   if ((paddr < grub_os_area_addr)
       || (paddr + phdr->p_memsz > grub_os_area_addr + grub_os_area_size))
-    return (GRUB_ERR_OUT_OF_RANGE,"Address 0x%x is out of range",
-            paddr);
+    return grub_error (GRUB_ERR_OUT_OF_RANGE, "Address 0x%x is out of range",
+		       paddr);
 
   return GRUB_ERR_NONE;
 }

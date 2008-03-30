@@ -20,7 +20,7 @@
 #include <grub/util/misc.h>
 
 char *
-grub_util_get_disk_name (int disk, char *name)
+grub_util_get_disk_name (int disk, char *name  __attribute__ ((unused)))
 {
   char *p;
 

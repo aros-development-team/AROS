@@ -22,6 +22,7 @@
 #include <grub/normal.h>
 #include <grub/dl.h>
 #include <grub/aout.h>
+#include <grub/cpu/bsd.h>
 
 static grub_err_t
 grub_normal_freebsd_command (struct grub_arg_list *state
