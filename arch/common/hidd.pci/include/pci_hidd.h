@@ -5,6 +5,9 @@
     Copyright © 2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+/*
+ * 2008-03-30 T. Wiszkowski  Corrected typo and added InterruptStatus, CapabilitiesPresent attributes
+ */
 
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
@@ -166,6 +169,9 @@ enum
     aoHidd_PCIDevice_IOLimit,	/* [.SG] */
     aoHidd_PCIDevice_ISAEnable,	/* [.SG] Enable ISA-specific IO forwarding */
     aoHidd_PCIDevice_VGAEnable, /* [.SG] Enable VGA-specific IO/MEM forwarding regardless of limits */
+
+    aoHidd_PCIDevice_IRQStatus, /* [..G] Get current irq status (does device request irq?) */
+    aoHidd_PCIDevice_CapabilitiesPresent,   /* [..G] Use this to check if PCI features extra capabilities (such as PM, MSI, PCI-X, PCI-E) */
     
     num_Hidd_PCIDevice_Attrs
 };
@@ -228,6 +234,8 @@ enum
 #define aHidd_PCIDevice_IOLimit	    (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_IOLimit)
 #define aHidd_PCIDevice_ISAEnable   (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_ISAEnable)
 #define aHidd_PCIDevice_VGAEnable   (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_VGAEnable)
+#define aHidd_PCIDevice_IRQStatus   (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_IRQStatus)
+#define aHidd_PCIDevice_CapabilitiesPresent (HiddPCIDeviceAttrBase + aoHidd_PCIDevice_CapabilitiesPresent)
 
 #define IS_PCIDEV_ATTR(attr, idx) \
     (((idx) = (attr) - HiddPCIDeviceAttrBase) < num_Hidd_PCIDevice_Attrs)
