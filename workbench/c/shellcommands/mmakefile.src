@@ -10,9 +10,10 @@ FILES	:= \
     CD \
     Echo \
     Else \
-    EndCli \
+    EndCLI \
     EndIf \
     EndSkip \
+    EndShell \
     Execute \
     FailAt \
     Fault \
