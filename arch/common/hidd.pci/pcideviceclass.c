@@ -6,6 +6,10 @@
     Lang: English
 */
 
+/*
+ * 2008-03-30 T. Wiszkowski  Corrected typo and added InterruptStatus, CapabilitiesPresent attributes
+ */
+
 #include <exec/types.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
@@ -622,6 +626,20 @@ void PCIDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 	    case aoHidd_PCIDevice_InterfaceDesc:
 		*msg->storage = (IPTR)dev->strInterface;
+		break;
+
+            case aoHidd_PCIDevice_IRQStatus:
+       		*msg->storage = (
+		    (getWord(cl, o, PCICS_STATUS) &
+			PCISTF_INTERRUPT_STATUS)
+		    == PCISTF_INTERRUPT_STATUS);
+		break;
+
+            case aoHidd_PCIDevice_CapabilitiesPresent:
+       		*msg->storage = (
+		    (getWord(cl, o, PCICS_STATUS) &
+			PCISTF_CAPABILITIES)
+		    == PCISTF_CAPABILITIES);
 		break;
 
 	    default:

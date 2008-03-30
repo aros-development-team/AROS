@@ -6,6 +6,10 @@
     $Id$
 */
 
+/*
+ * 2008-03-30 T. Wiszkowski  Corrected typo and added InterruptStatus, CapabilitiesPresent attributes
+ */
+
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
@@ -172,6 +176,7 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCICMF_FASTB2B		(1 << PCICMB_FASTB2B)
 
 /* PCI Status register bits */
+#define PCISTB_INTERRUPT_STATUS 3       /* might be AHCI specific */
 #define PCISTB_CAPABILITES	4
 #define PCISTB_66MHZ		5
 #define PCISTB_FASTB2B		7
@@ -182,7 +187,8 @@ void free_pcideviceclass(struct pci_staticdata *, OOP_Class *cl);
 #define PCISTB_SIG_SYSERR	14
 #define PCISTB_PARITYERR	15
 
-#define PCISTF_CAPABILITES	(1 << PCISTB_CAPABILITES)
+#define PCISTF_INTERRUPT_STATUS (1 << PCISTB_INTERRUPT_STATUS) 
+#define PCISTF_CAPABILITIES	(1 << PCISTB_CAPABILITES)
 #define PCISTF_66MHZ		(1 << PCISTB_66MHZ)
 #define PCISTF_FASTB2B		(1 << PCISTB_FASTB2B)
 #define PCISTF_PARITY		(1 << PCISTB_PARITY)
