@@ -23,6 +23,7 @@
  * 2008-03-23  T. Wiszkowski       Corrected DMA PRD issue (x86_64 systems)
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational.
+ * 2008-03-31  M. Schulz           We do have asm/io.h include for ages... No need to define io functions here anymore.
  */
 
 #include <exec/types.h>
@@ -43,6 +44,7 @@
 #include "include/scsicmds.h"
 
 #include <hidd/irq.h>
+#include <asm/io.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -497,6 +499,7 @@ struct atapi_StartStop
     UBYTE   pad2[7];
 };
 
+#if 0
 /*
     Arch specific things to access IO space of drive. Shouldn't be here. Really.
 */
@@ -538,6 +541,7 @@ static inline VOID outb(UBYTE val, UWORD port)
 {
     asm volatile ("outb %0,%w1"::"a"(val),"Nd"(port));
 }
+#endif
 
 #endif // _ATA_H
 
