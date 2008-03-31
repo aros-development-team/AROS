@@ -24,6 +24,8 @@
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational.
  * 2008-03-31  M. Schulz           We do have asm/io.h include for ages... No need to define io functions here anymore.
+ *                                 Redefined ata_in and ata_out. On x86-like systems they use inb/outb directly. On other systems
+ *                                 they use pci_inb and pci_outb.
  */
 
 #include <exec/types.h>
@@ -381,8 +383,13 @@ typedef enum
 #define ata_AltStatus       0x2
 #define ata_AltControl      0x2
 
+#if defined(__i386__) || defined(__x86_64__)
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))
+#else
+#define ata_out(val, offset, port)  pci_outb((val), (offset)+(port))
+#define ata_in(offset, port)        pci_inb((offset)+(port))
+#endif
 
 #define atapi_Error         1
 #define atapi_Features      1
