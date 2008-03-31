@@ -11,16 +11,16 @@ grub_probe_SOURCES = util/grub-probe.c	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
-	fs/ufs.c fs/xfs.c					\
+	fs/ufs.c fs/xfs.c fs/afs.c				\
 	\
 	partmap/pc.c partmap/apple.c partmap/gpt.c 		\
 	kern/fs.c kern/env.c fs/fshelp.c			\
 	disk/lvm.c disk/raid.c grub_probe_init.c
-CLEANFILES += grub-probe grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
-MOSTLYCLEANFILES += grub_probe-util_grub_probe.d grub_probe-util_biosdisk.d grub_probe-util_misc.d grub_probe-util_getroot.d grub_probe-kern_device.d grub_probe-kern_disk.d grub_probe-kern_err.d grub_probe-kern_misc.d grub_probe-kern_parser.d grub_probe-kern_partition.d grub_probe-kern_file.d grub_probe-fs_affs.d grub_probe-fs_cpio.d grub_probe-fs_ext2.d grub_probe-fs_fat.d grub_probe-fs_hfs.d grub_probe-fs_hfsplus.d grub_probe-fs_iso9660.d grub_probe-fs_udf.d grub_probe-fs_jfs.d grub_probe-fs_minix.d grub_probe-fs_ntfs.d grub_probe-fs_ntfscomp.d grub_probe-fs_reiserfs.d grub_probe-fs_sfs.d grub_probe-fs_ufs.d grub_probe-fs_xfs.d grub_probe-partmap_pc.d grub_probe-partmap_apple.d grub_probe-partmap_gpt.d grub_probe-kern_fs.d grub_probe-kern_env.d grub_probe-fs_fshelp.d grub_probe-disk_lvm.d grub_probe-disk_raid.d grub_probe-grub_probe_init.d
+CLEANFILES += grub-probe grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
+MOSTLYCLEANFILES += grub_probe-util_grub_probe.d grub_probe-util_biosdisk.d grub_probe-util_misc.d grub_probe-util_getroot.d grub_probe-kern_device.d grub_probe-kern_disk.d grub_probe-kern_err.d grub_probe-kern_misc.d grub_probe-kern_parser.d grub_probe-kern_partition.d grub_probe-kern_file.d grub_probe-fs_affs.d grub_probe-fs_cpio.d grub_probe-fs_ext2.d grub_probe-fs_fat.d grub_probe-fs_hfs.d grub_probe-fs_hfsplus.d grub_probe-fs_iso9660.d grub_probe-fs_udf.d grub_probe-fs_jfs.d grub_probe-fs_minix.d grub_probe-fs_ntfs.d grub_probe-fs_ntfscomp.d grub_probe-fs_reiserfs.d grub_probe-fs_sfs.d grub_probe-fs_ufs.d grub_probe-fs_xfs.d grub_probe-fs_afs.d grub_probe-partmap_pc.d grub_probe-partmap_apple.d grub_probe-partmap_gpt.d grub_probe-kern_fs.d grub_probe-kern_env.d grub_probe-fs_fshelp.d grub_probe-disk_lvm.d grub_probe-disk_raid.d grub_probe-grub_probe_init.d
 
-grub-probe: $(grub_probe_DEPENDENCIES) grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
-	$(CC) -o $@ grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o $(LDFLAGS) $(grub_probe_LDFLAGS)
+grub-probe: $(grub_probe_DEPENDENCIES) grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o
+	$(CC) -o $@ grub_probe-util_grub_probe.o grub_probe-util_biosdisk.o grub_probe-util_misc.o grub_probe-util_getroot.o grub_probe-kern_device.o grub_probe-kern_disk.o grub_probe-kern_err.o grub_probe-kern_misc.o grub_probe-kern_parser.o grub_probe-kern_partition.o grub_probe-kern_file.o grub_probe-fs_affs.o grub_probe-fs_cpio.o grub_probe-fs_ext2.o grub_probe-fs_fat.o grub_probe-fs_hfs.o grub_probe-fs_hfsplus.o grub_probe-fs_iso9660.o grub_probe-fs_udf.o grub_probe-fs_jfs.o grub_probe-fs_minix.o grub_probe-fs_ntfs.o grub_probe-fs_ntfscomp.o grub_probe-fs_reiserfs.o grub_probe-fs_sfs.o grub_probe-fs_ufs.o grub_probe-fs_xfs.o grub_probe-fs_afs.o grub_probe-partmap_pc.o grub_probe-partmap_apple.o grub_probe-partmap_gpt.o grub_probe-kern_fs.o grub_probe-kern_env.o grub_probe-fs_fshelp.o grub_probe-disk_lvm.o grub_probe-disk_raid.o grub_probe-grub_probe_init.o $(LDFLAGS) $(grub_probe_LDFLAGS)
 
 grub_probe-util_grub_probe.o: util/grub-probe.c $(util/grub-probe.c_DEPENDENCIES)
 	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
@@ -130,6 +130,10 @@ grub_probe-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-fs_xfs.d
 
+grub_probe-fs_afs.o: fs/afs.c $(fs/afs.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
+-include grub_probe-fs_afs.d
+
 grub_probe-partmap_pc.o: partmap/pc.c $(partmap/pc.c_DEPENDENCIES)
 	$(CC) -Ipartmap -I$(srcdir)/partmap $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_probe_CFLAGS) -MD -c -o $@ $<
 -include grub_probe-partmap_pc.d
@@ -181,16 +185,16 @@ grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
-	fs/ufs.c fs/xfs.c						\
+	fs/ufs.c fs/xfs.c fs/afs.c					\
 	\
 	kern/partition.c partmap/pc.c partmap/apple.c partmap/gpt.c 	\
 	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c	\
 	grub_fstest_init.c
-CLEANFILES += grub-fstest grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-io_gzio.o grub_fstest-commands_hexdump.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-grub_fstest_init.o
-MOSTLYCLEANFILES += grub_fstest-util_grub_fstest.d grub_fstest-util_hostfs.d grub_fstest-util_misc.d grub_fstest-kern_file.d grub_fstest-kern_device.d grub_fstest-kern_disk.d grub_fstest-kern_err.d grub_fstest-kern_misc.d grub_fstest-disk_host.d grub_fstest-disk_loopback.d grub_fstest-normal_arg.d grub_fstest-normal_misc.d grub_fstest-io_gzio.d grub_fstest-commands_hexdump.d grub_fstest-commands_blocklist.d grub_fstest-commands_ls.d grub_fstest-fs_affs.d grub_fstest-fs_cpio.d grub_fstest-fs_ext2.d grub_fstest-fs_fat.d grub_fstest-fs_hfs.d grub_fstest-fs_hfsplus.d grub_fstest-fs_iso9660.d grub_fstest-fs_udf.d grub_fstest-fs_jfs.d grub_fstest-fs_minix.d grub_fstest-fs_ntfs.d grub_fstest-fs_ntfscomp.d grub_fstest-fs_reiserfs.d grub_fstest-fs_sfs.d grub_fstest-fs_ufs.d grub_fstest-fs_xfs.d grub_fstest-kern_partition.d grub_fstest-partmap_pc.d grub_fstest-partmap_apple.d grub_fstest-partmap_gpt.d grub_fstest-kern_fs.d grub_fstest-kern_env.d grub_fstest-fs_fshelp.d grub_fstest-disk_lvm.d grub_fstest-disk_raid.d grub_fstest-grub_fstest_init.d
+CLEANFILES += grub-fstest grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-io_gzio.o grub_fstest-commands_hexdump.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-grub_fstest_init.o
+MOSTLYCLEANFILES += grub_fstest-util_grub_fstest.d grub_fstest-util_hostfs.d grub_fstest-util_misc.d grub_fstest-kern_file.d grub_fstest-kern_device.d grub_fstest-kern_disk.d grub_fstest-kern_err.d grub_fstest-kern_misc.d grub_fstest-disk_host.d grub_fstest-disk_loopback.d grub_fstest-normal_arg.d grub_fstest-normal_misc.d grub_fstest-io_gzio.d grub_fstest-commands_hexdump.d grub_fstest-commands_blocklist.d grub_fstest-commands_ls.d grub_fstest-fs_affs.d grub_fstest-fs_cpio.d grub_fstest-fs_ext2.d grub_fstest-fs_fat.d grub_fstest-fs_hfs.d grub_fstest-fs_hfsplus.d grub_fstest-fs_iso9660.d grub_fstest-fs_udf.d grub_fstest-fs_jfs.d grub_fstest-fs_minix.d grub_fstest-fs_ntfs.d grub_fstest-fs_ntfscomp.d grub_fstest-fs_reiserfs.d grub_fstest-fs_sfs.d grub_fstest-fs_ufs.d grub_fstest-fs_xfs.d grub_fstest-fs_afs.d grub_fstest-kern_partition.d grub_fstest-partmap_pc.d grub_fstest-partmap_apple.d grub_fstest-partmap_gpt.d grub_fstest-kern_fs.d grub_fstest-kern_env.d grub_fstest-fs_fshelp.d grub_fstest-disk_lvm.d grub_fstest-disk_raid.d grub_fstest-grub_fstest_init.d
 
-grub-fstest: $(grub_fstest_DEPENDENCIES) grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-io_gzio.o grub_fstest-commands_hexdump.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-grub_fstest_init.o
-	$(CC) -o $@ grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-io_gzio.o grub_fstest-commands_hexdump.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-grub_fstest_init.o $(LDFLAGS) $(grub_fstest_LDFLAGS)
+grub-fstest: $(grub_fstest_DEPENDENCIES) grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-io_gzio.o grub_fstest-commands_hexdump.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-grub_fstest_init.o
+	$(CC) -o $@ grub_fstest-util_grub_fstest.o grub_fstest-util_hostfs.o grub_fstest-util_misc.o grub_fstest-kern_file.o grub_fstest-kern_device.o grub_fstest-kern_disk.o grub_fstest-kern_err.o grub_fstest-kern_misc.o grub_fstest-disk_host.o grub_fstest-disk_loopback.o grub_fstest-normal_arg.o grub_fstest-normal_misc.o grub_fstest-io_gzio.o grub_fstest-commands_hexdump.o grub_fstest-commands_blocklist.o grub_fstest-commands_ls.o grub_fstest-fs_affs.o grub_fstest-fs_cpio.o grub_fstest-fs_ext2.o grub_fstest-fs_fat.o grub_fstest-fs_hfs.o grub_fstest-fs_hfsplus.o grub_fstest-fs_iso9660.o grub_fstest-fs_udf.o grub_fstest-fs_jfs.o grub_fstest-fs_minix.o grub_fstest-fs_ntfs.o grub_fstest-fs_ntfscomp.o grub_fstest-fs_reiserfs.o grub_fstest-fs_sfs.o grub_fstest-fs_ufs.o grub_fstest-fs_xfs.o grub_fstest-fs_afs.o grub_fstest-kern_partition.o grub_fstest-partmap_pc.o grub_fstest-partmap_apple.o grub_fstest-partmap_gpt.o grub_fstest-kern_fs.o grub_fstest-kern_env.o grub_fstest-fs_fshelp.o grub_fstest-disk_lvm.o grub_fstest-disk_raid.o grub_fstest-grub_fstest_init.o $(LDFLAGS) $(grub_fstest_LDFLAGS)
 
 grub_fstest-util_grub_fstest.o: util/grub-fstest.c $(util/grub-fstest.c_DEPENDENCIES)
 	$(CC) -Iutil -I$(srcdir)/util $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -319,6 +323,10 @@ grub_fstest-fs_ufs.o: fs/ufs.c $(fs/ufs.c_DEPENDENCIES)
 grub_fstest-fs_xfs.o: fs/xfs.c $(fs/xfs.c_DEPENDENCIES)
 	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
 -include grub_fstest-fs_xfs.d
+
+grub_fstest-fs_afs.o: fs/afs.c $(fs/afs.c_DEPENDENCIES)
+	$(CC) -Ifs -I$(srcdir)/fs $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
+-include grub_fstest-fs_afs.d
 
 grub_fstest-kern_partition.o: kern/partition.c $(kern/partition.c_DEPENDENCIES)
 	$(CC) -Ikern -I$(srcdir)/kern $(CPPFLAGS) $(CFLAGS) -DGRUB_UTIL=1 $(grub_fstest_CFLAGS) -MD -c -o $@ $<
@@ -455,7 +463,8 @@ update-grub_DATA += util/grub.d/README
 # Filing systems.
 pkglib_MODULES += fshelp.mod fat.mod ufs.mod ext2.mod ntfs.mod		\
 	ntfscomp.mod minix.mod hfs.mod jfs.mod iso9660.mod xfs.mod	\
-	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod
+	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod	\
+	afs.mod
 
 # For fshelp.mod.
 fshelp_mod_SOURCES = fs/fshelp.c
@@ -1340,6 +1349,58 @@ fs-udf_mod-fs_udf.lst: fs/udf.c $(fs/udf.c_DEPENDENCIES) genfslist.sh
 
 udf_mod_CFLAGS = $(COMMON_CFLAGS)
 udf_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For afs.mod.
+afs_mod_SOURCES = fs/afs.c
+CLEANFILES += afs.mod mod-afs.o mod-afs.c pre-afs.o afs_mod-fs_afs.o und-afs.lst
+ifneq ($(afs_mod_EXPORTS),no)
+CLEANFILES += def-afs.lst
+DEFSYMFILES += def-afs.lst
+endif
+MOSTLYCLEANFILES += afs_mod-fs_afs.d
+UNDSYMFILES += und-afs.lst
+
+afs.mod: pre-afs.o mod-afs.o
+	-rm -f $@
+	$(TARGET_CC) $(afs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ $^
+	$(STRIP) --strip-unneeded -K grub_mod_init -K grub_mod_fini -R .note -R .comment $@
+
+pre-afs.o: $(afs_mod_DEPENDENCIES) afs_mod-fs_afs.o
+	-rm -f $@
+	$(TARGET_CC) $(afs_mod_LDFLAGS) $(TARGET_LDFLAGS) -Wl,-r,-d -o $@ afs_mod-fs_afs.o
+
+mod-afs.o: mod-afs.c
+	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -c -o $@ $<
+
+mod-afs.c: moddep.lst genmodsrc.sh
+	sh $(srcdir)/genmodsrc.sh 'afs' $< > $@ || (rm -f $@; exit 1)
+
+ifneq ($(afs_mod_EXPORTS),no)
+def-afs.lst: pre-afs.o
+	$(NM) -g --defined-only -P -p $< | sed 's/^\([^ ]*\).*/\1 afs/' > $@
+endif
+
+und-afs.lst: pre-afs.o
+	echo 'afs' > $@
+	$(NM) -u -P -p $< | cut -f1 -d' ' >> $@
+
+afs_mod-fs_afs.o: fs/afs.c $(fs/afs.c_DEPENDENCIES)
+	$(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS)  $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -MD -c -o $@ $<
+-include afs_mod-fs_afs.d
+
+CLEANFILES += cmd-afs_mod-fs_afs.lst fs-afs_mod-fs_afs.lst
+COMMANDFILES += cmd-afs_mod-fs_afs.lst
+FSFILES += fs-afs_mod-fs_afs.lst
+
+cmd-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) gencmdlist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/gencmdlist.sh afs > $@ || (rm -f $@; exit 1)
+
+fs-afs_mod-fs_afs.lst: fs/afs.c $(fs/afs.c_DEPENDENCIES) genfslist.sh
+	set -e; 	  $(TARGET_CC) -Ifs -I$(srcdir)/fs $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) $(afs_mod_CFLAGS) -E $< 	  | sh $(srcdir)/genfslist.sh afs > $@ || (rm -f $@; exit 1)
+
+
+afs_mod_CFLAGS = $(COMMON_CFLAGS)
+afs_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Partition maps.
 pkglib_MODULES += amiga.mod apple.mod pc.mod sun.mod acorn.mod gpt.mod

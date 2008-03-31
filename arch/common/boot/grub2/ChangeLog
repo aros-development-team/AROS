@@ -1,3 +1,40 @@
+2008-03-31  Bean  <bean123ch@gmail.com>
+
+	* video/reader/png.c (grub_png_data): New member is_16bit and
+	image_data.
+	(grub_png_decode_image_header): Detect 16 bit png image.
+	(grub_png_convert_image): New function to convert 16 bit image to 8 bit.
+	(grub_png_decode_png): Call grub_png_convert_image for 16 bit image.
+	(grub_video_reader_png): Release memory occupied by image_data.
+
+	* fs/ntfs.c (find_attr): Handle non-resident attribute list larger than
+	4096 bytes.
+	(grub_nfs_mount): Skip the test for sector per cluster.
+
+	* include/grub/ntfs.h (MAX_SPC): Removed.
+
+2008-03-31  Bean  <bean123ch@gmail.com>
+
+	* conf/common.rmk (pkgdata_MODULES): Add afs.mod.
+	(grub_probe_SOURCES): Add fs/afs.c.
+	(grub_fstest_SOURCES): Likewise.
+	(afs_mod_SOURCES): New variable.
+	(afs_mod_CFLAGS): Likewise.
+	(afs_mod_LDFLAGS): Likewise.
+
+	* conf/i386-pc.rmk (grub_setup_SOURCES): Add fs/afs.c.
+	(grub_emu_SOURCES): Likewise.
+
+	* conf/i386-efi.rmk (grub_emu_SOURCES): Likewise.
+
+	* conf/i386-ieee1275.rmk (grub_emu_SOURCES): Likewise.
+
+	* conf/i386-linuxbios.rmk (grub_emu_SOURCES): Likewise.
+
+	* conf/powerpc-ieee1275.rmk (grub_emu_SOURCES): Likewise.
+
+	* fs/afs.c: New file.
+
 2008-03-30  Pavel Roskin  <proski@gnu.org>
 
 	* disk/host.c: Include grub/misc.h to fix a warning.

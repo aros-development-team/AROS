@@ -11,7 +11,7 @@ grub_probe_SOURCES = util/grub-probe.c	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
-	fs/ufs.c fs/xfs.c					\
+	fs/ufs.c fs/xfs.c fs/afs.c				\
 	\
 	partmap/pc.c partmap/apple.c partmap/gpt.c 		\
 	kern/fs.c kern/env.c fs/fshelp.c			\
@@ -31,7 +31,7 @@ grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
-	fs/ufs.c fs/xfs.c						\
+	fs/ufs.c fs/xfs.c fs/afs.c					\
 	\
 	kern/partition.c partmap/pc.c partmap/apple.c partmap/gpt.c 	\
 	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c	\
@@ -131,7 +131,8 @@ update-grub_DATA += util/grub.d/README
 # Filing systems.
 pkglib_MODULES += fshelp.mod fat.mod ufs.mod ext2.mod ntfs.mod		\
 	ntfscomp.mod minix.mod hfs.mod jfs.mod iso9660.mod xfs.mod	\
-	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod
+	affs.mod sfs.mod hfsplus.mod reiserfs.mod cpio.mod udf.mod	\
+	afs.mod
 
 # For fshelp.mod.
 fshelp_mod_SOURCES = fs/fshelp.c
@@ -217,6 +218,11 @@ cpio_mod_LDFLAGS = $(COMMON_LDFLAGS)
 udf_mod_SOURCES = fs/udf.c
 udf_mod_CFLAGS = $(COMMON_CFLAGS)
 udf_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For afs.mod.
+afs_mod_SOURCES = fs/afs.c
+afs_mod_CFLAGS = $(COMMON_CFLAGS)
+afs_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # Partition maps.
 pkglib_MODULES += amiga.mod apple.mod pc.mod sun.mod acorn.mod gpt.mod

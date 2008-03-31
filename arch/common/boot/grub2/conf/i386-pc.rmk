@@ -90,7 +90,7 @@ grub_setup_SOURCES = util/i386/pc/grub-setup.c util/biosdisk.c	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c	\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c		\
-	fs/ufs.c fs/xfs.c					\
+	fs/ufs.c fs/xfs.c fs/afs.c				\
 	\
 	partmap/pc.c partmap/gpt.c				\
 	\
@@ -128,7 +128,7 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
 	fs/ntfs.c fs/ntfscomp.c fs/reiserfs.c fs/sfs.c			\
-	fs/ufs.c fs/xfs.c						\
+	fs/ufs.c fs/xfs.c fs/afs.c					\
 	\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
 	util/biosdisk.c util/getroot.c					\
