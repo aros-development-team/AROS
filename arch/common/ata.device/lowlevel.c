@@ -88,11 +88,25 @@ static void common_SetBestXferMode(struct ata_Unit* unit);
 /*
  * having an x86 assembly here i dare to assume that this is meant to be
  * an x86[_64] device only.
+ * 
+ * Not anymore.
+ * 
+ * This functions will stay here for some time *IF* and only if the code is compiled for
+ * x86 or x86_64 architecture. Otherwise, function declarations will be emitted and the
+ * one who ports the driver will be reponsible for adding the missing code.
  */
 
 /*
  * the outsl and insl commands improperly assumed that every transfer is sized to multiple of four
  */
+#if defined(__i386__) || defined(__x86_64__)
+
+/* Undefine the nasty macros which might have been defined in asm/io.h include file */
+#undef insw
+#undef insl
+#undef outsw
+#undef outsl
+
 static VOID insw(APTR address, UWORD port, ULONG count)
 {
     asm volatile ("cld; rep insw"::"Nd"(port),"c"(count >> 1),"D"(address):"memory");
@@ -112,6 +126,12 @@ static VOID outsl(APTR address, UWORD port, ULONG count)
 {
     asm volatile ("cld; testb $2,%%al; je _outsl_; outsw; _outsl_: rep outsl" ::"Nd"(port),"a"(count&2),"c"(count >> 2),"S"(address));
 }
+#else
+extern VOID insw(APTR address, UWORD port, ULONG count);
+extern VOID insl(APTR address, UWORD port, ULONG count);
+extern VOID outsw(APTR address, UWORD port, ULONG count);
+extern VOID outsl(APTR address, UWORD port, ULONG count);
+#endif
 
 static void dump(APTR mem, ULONG len)
 {
