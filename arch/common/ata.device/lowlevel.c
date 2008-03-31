@@ -32,6 +32,8 @@
  *                                 cleared debug flag
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational (nForce confirmed)
+ * 2008-03-31  M. Schulz           The ins/outs function definitions used only in case of x86 and x86_64 architectures. 
+ *                                 Otherwise, function declaratons are emitted.
  */
 
 #define DEBUG 0
