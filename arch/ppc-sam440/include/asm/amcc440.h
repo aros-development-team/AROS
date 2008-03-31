@@ -460,8 +460,15 @@ static inline void wrmsr(uint32_t msr) {
 #define UART_LSR_DDSR   0x02
 #define UART_LSR_DCTS   0x01
 
-
+#define PCIC0_IO        0xe8000000
 #define PCIC0_CFGADDR   0xeec00000
 #define PCIC0_CFGDATA   0xeec00004
+
+#define GPT0_TBC        0xef600000
+#define GPT0_DCT0       0xef600110
+#define GPT0_DCIS       0xef60011c
+#define GPT0_DCIS_DCIS  0x80000000
+
+
 
 #endif /*ASM_AMCC440_H*/
