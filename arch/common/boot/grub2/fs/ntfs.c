@@ -176,17 +176,15 @@ find_attr (struct grub_ntfs_attr *at, unsigned char attr)
       pa = at->attr_end;
       if (pa[8])
 	{
-	  if (u32at (pa, 0x28) > 4096)
-	    {
-	      grub_error (GRUB_ERR_BAD_FS,
-			  "Non-resident attribute list too large");
-	      return NULL;
-	    }
+          int n;
+
+          n = ((u32at (pa, 0x30) + GRUB_DISK_SECTOR_SIZE - 1)
+               & (~(GRUB_DISK_SECTOR_SIZE - 1)));
 	  at->attr_cur = at->attr_end;
-	  at->edat_buf = grub_malloc (u32at (pa, 0x28));
+	  at->edat_buf = grub_malloc (n);
 	  if (!at->edat_buf)
 	    return NULL;
-	  if (read_data (at, pa, at->edat_buf, 0, u32at (pa, 0x28), 0, 0))
+	  if (read_data (at, pa, at->edat_buf, 0, n, 0, 0))
 	    {
 	      grub_error (GRUB_ERR_BAD_FS,
 			  "Fail to read non-resident attribute list");
@@ -818,8 +816,7 @@ grub_ntfs_mount (grub_disk_t disk)
 
   data->mft_start = grub_le_to_cpu64 (bpb.mft_lcn) * data->spc;
 
-  if ((data->mft_size > MAX_MFT) || (data->idx_size > MAX_IDX) ||
-      (data->spc > MAX_SPC) || (data->spc > data->idx_size))
+  if ((data->mft_size > MAX_MFT) || (data->idx_size > MAX_IDX))
     goto fail;
 
   data->mmft.data = data;

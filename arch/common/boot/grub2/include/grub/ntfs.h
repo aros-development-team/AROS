@@ -71,7 +71,6 @@
 
 #define MAX_MFT		(1024 >> BLK_SHR)
 #define MAX_IDX		(16384 >> BLK_SHR)
-#define MAX_SPC		(4096 >> BLK_SHR)
 
 #define COM_LEN		4096
 #define COM_SEC		(COM_LEN >> BLK_SHR)

@@ -247,7 +247,7 @@ grub_png_decode_image_header (struct grub_png_data *data)
     return grub_error (GRUB_ERR_BAD_FILE_TYPE,
 		       "png: color type not supported");
 
-   if (data->is_16bit)
+  if (data->is_16bit)
     {
       data->bpp <<= 1;
 
@@ -263,7 +263,7 @@ grub_png_decode_image_header (struct grub_png_data *data)
       data->image_data = 0;
       data->cur_rgb = (*data->bitmap)->data;
     }
-  
+
   data->raw_bytes = data->image_height * (data->image_width + 1) * data->bpp;
 
   data->cur_colume = 0;
@@ -740,7 +740,7 @@ grub_png_convert_image (struct grub_png_data *data)
        i++, d1++, d2+=2)
     *d1 = *d2;
 }
-  
+
 static grub_err_t
 grub_png_decode_png (struct grub_png_data *data)
 {
