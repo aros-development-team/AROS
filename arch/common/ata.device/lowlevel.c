@@ -34,6 +34,7 @@
  *                                 nForce and Intel SATA chipsets should now be operational (nForce confirmed)
  * 2008-03-31  M. Schulz           The ins/outs function definitions used only in case of x86 and x86_64 architectures. 
  *                                 Otherwise, function declaratons are emitted.
+ * 2008-04-01  M. Schulz           Use C functions ata_ins[wl] ata_outs[wl]
  */
 
 #define DEBUG 0
@@ -48,6 +49,8 @@
 
 #include <proto/exec.h>
 #include <devices/timer.h>
+
+#include <asm/io.h>
 
 #include "ata.h"
 
@@ -103,36 +106,36 @@ static void common_SetBestXferMode(struct ata_Unit* unit);
  */
 #if defined(__i386__) || defined(__x86_64__)
 
-/* Undefine the nasty macros which might have been defined in asm/io.h include file */
-#undef insw
-#undef insl
-#undef outsw
-#undef outsl
-
-static VOID insw(APTR address, UWORD port, ULONG count)
+static VOID ata_insw(APTR address, UWORD port, ULONG count)
 {
-    asm volatile ("cld; rep insw"::"Nd"(port),"c"(count >> 1),"D"(address):"memory");
+    insw(port, address, count >> 1);
 }
 
-static VOID insl(APTR address, UWORD port, ULONG count)
+static VOID ata_insl(APTR address, UWORD port, ULONG count)
 {
-    asm volatile ("cld; testb $2,%%al; je _insl_; insw; _insl_: rep insl" ::"Nd"(port),"a"(count&2),"c"(count >> 2),"D"(address));
+    if (count & 2)
+        insw(port, address, count >> 1);
+    else
+        insl(port, address, count >> 2);
 }
 
-static VOID outsw(APTR address, UWORD port, ULONG count)
+static VOID ata_outsw(APTR address, UWORD port, ULONG count)
 {
-    asm volatile ("cld; rep outsw"::"Nd"(port),"c"(count >> 1),"S"(address));
+    outsw(port, address, count >> 1);
 }
 
-static VOID outsl(APTR address, UWORD port, ULONG count)
+static VOID ata_outsl(APTR address, UWORD port, ULONG count)
 {
-    asm volatile ("cld; testb $2,%%al; je _outsl_; outsw; _outsl_: rep outsl" ::"Nd"(port),"a"(count&2),"c"(count >> 2),"S"(address));
+    if (count & 2)
+        outsw(port, address, count >> 1);
+    else
+        outsw(port, address, count >> 2);
 }
 #else
-extern VOID insw(APTR address, UWORD port, ULONG count);
-extern VOID insl(APTR address, UWORD port, ULONG count);
-extern VOID outsw(APTR address, UWORD port, ULONG count);
-extern VOID outsl(APTR address, UWORD port, ULONG count);
+extern VOID ata_insw(APTR address, UWORD port, ULONG count);
+extern VOID ata_insl(APTR address, UWORD port, ULONG count);
+extern VOID ata_outsw(APTR address, UWORD port, ULONG count);
+extern VOID ata_outsl(APTR address, UWORD port, ULONG count);
 #endif
 
 static void dump(APTR mem, ULONG len)
@@ -1069,13 +1072,13 @@ BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u)
     unit->au_DevMask    = 0xa0 | (u << 4);
     if (bus->ab_Base->ata_32bit)
     {
-        unit->au_ins        = insl;
-        unit->au_outs       = outsl;
+        unit->au_ins        = ata_insl;
+        unit->au_outs       = ata_outsl;
     }
     else
     {
-        unit->au_ins        = insw;
-        unit->au_outs       = outsw;
+        unit->au_ins        = ata_insw;
+        unit->au_outs       = ata_outsw;
     }
     unit->au_SectorShift= 9;    /* this really has to be set here. */
     unit->au_Flags      = 0;
