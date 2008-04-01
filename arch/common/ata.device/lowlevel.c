@@ -129,7 +129,7 @@ static VOID ata_outsl(APTR address, UWORD port, ULONG count)
     if (count & 2)
         outsw(port, address, count >> 1);
     else
-        outsw(port, address, count >> 2);
+        outsl(port, address, count >> 2);
 }
 #else
 extern VOID ata_insw(APTR address, UWORD port, ULONG count);
