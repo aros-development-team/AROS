@@ -1,7 +1,7 @@
 # [B] (DO NOT REMOVE THIS LINE!)
 
 timeout 5
-default 0
+default 6
 
 title AROS with VESA Gfx @ 640x480-8bpp
 kernel /boot/aros-pc-i386.gz vesa=640x480x8 ATA=32bit,forcedma nofdc
