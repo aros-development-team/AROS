@@ -79,9 +79,8 @@ AROS_LH0(void, KrnSchedule,
  */
 void core_Dispatch(regs_t *regs)
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = TLS_GET(SysBase);
     struct Task *task;
-    SysBase = *(struct ExecBase **)4UL;
     
     __asm__ __volatile__("cli;");
     
@@ -137,13 +136,12 @@ void core_Dispatch(regs_t *regs)
 
 void core_Switch(regs_t *regs)
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = TLS_GET(SysBase);
     struct Task *task;
     
     /* Disable interrupts for a while */
     __asm__ __volatile__("cli; cld;");
         
-    SysBase = *(struct ExecBase **)4UL;
     task = SysBase->ThisTask;
     
     /* Copy current task's context into the ETask structure */
@@ -179,13 +177,12 @@ void core_Switch(regs_t *regs)
  */
 void core_Schedule(regs_t *regs)
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = TLS_GET(SysBase);
     struct Task *task;
 
     /* Disable interrupts for a while */
     __asm__ __volatile__("cli");
 
-    SysBase = *(struct ExecBase **)4UL;
     task = SysBase->ThisTask;
 
     /* Clear the pending switch flag. */
@@ -227,7 +224,7 @@ void core_Schedule(regs_t *regs)
  */
 void core_ExitInterrupt(regs_t *regs) 
 {
-    struct ExecBase *SysBase;
+    struct ExecBase *SysBase = TLS_GET(SysBase);
 
     /* Going back into supervisor mode? Then exit immediatelly */
     if (regs->ds == KERNEL_DS)
@@ -237,8 +234,6 @@ void core_ExitInterrupt(regs_t *regs)
     else
     {
         /* Prepare to go back into user mode */
-        SysBase = *(struct ExecBase **)4UL;
-
         /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(SysBase);
