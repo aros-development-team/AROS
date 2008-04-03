@@ -17,6 +17,8 @@
  *                                 Compacted source and implemented major ATA support procedure
  *                                 Improved DMA and Interrupt management
  *                                 Removed obsolete code
+ * 2008-04-03  M. Schulz           inb, outb and outl are not used directly anymore. Instead, the ata_* macros are taken.
+ *                                 PRD should be set in little endian mode up (at least I guess so...)
  */
 
 #define DEBUG 0
@@ -55,7 +57,7 @@ VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
 	The first PRD address is the buffer pointer self, doesn't have to be 
 	aligned to 64K boundary
     */
-    prd[0].prde_Address = ptr;
+    prd[0].prde_Address = AROS_LONG2LE(ptr);
 
     /*
 	All other PRD addresses are the next 64K pages, until the page address
@@ -63,24 +65,24 @@ VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
     */
     for (i=1; i < PRD_MAX; i++)
     {
-	prd[i].prde_Address = (prd[i-1].prde_Address & 0xffff0000) + 0x00010000;
+	prd[i].prde_Address = AROS_LONG2LE((AROS_LE2LONG(prd[i-1].prde_Address) & 0xffff0000) + 0x00010000);
 	prd[i].prde_Length = 0;
-	if (prd[i].prde_Address > ptr + size)
+	if (AROS_LE2LONG(prd[i].prde_Address) > ptr + size)
 	    break;
     }
 
-    if (size <= prd[1].prde_Address - prd[0].prde_Address)
+    if (size <= AROS_LE2LONG(prd[1].prde_Address) - AROS_LE2LONG(prd[0].prde_Address))
     {
-	prd[0].prde_Length = size;
+	prd[0].prde_Length = AROS_LONG2LE(size);
 	size = 0;
     }
     else
     {
-	prd[0].prde_Length = prd[1].prde_Address - prd[0].prde_Address;
-	size -= prd[0].prde_Length;
+	prd[0].prde_Length = AROS_LONG2LE(AROS_LE2LONG(prd[1].prde_Address) - AROS_LE2LONG(prd[0].prde_Address));
+	size -= AROS_LE2LONG(prd[0].prde_Length);
     }
     
-    prd[0].prde_Length &= 0x0000ffff;
+    prd[0].prde_Length &= AROS_LONG2LE(0x0000ffff);
 
     i = 1;
 
@@ -93,40 +95,40 @@ VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
 
     if (size > 0)
     {
-	prd[i].prde_Length = size;
+	prd[i].prde_Length = AROS_LONG2LE(size);
 	i++;
     }
 
-    prd[i-1].prde_Length |= 0x80000000;
+    prd[i-1].prde_Length |= AROS_LONG2LE(0x80000000);
 
-    outl((ULONG)prd, unit->au_DMAPort + dma_PRD);
-    outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
+    ata_outl((ULONG)prd, dma_PRD, unit->au_DMAPort);
+    ata_out(ata_in(dma_Status, unit->au_DMAPort) | DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
     
     /*
 	If io set to TRUE, then sectors are read, when set to FALSE, they are written
     */
     if (io)
-	outb(DMA_WRITE, unit->au_DMAPort + dma_Command);
+	ata_out(DMA_WRITE, dma_Command, unit->au_DMAPort);
     else
-	outb(DMA_READ, unit->au_DMAPort + dma_Command);
+	ata_out(DMA_READ, dma_Command, unit->au_DMAPort);
 }
 
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
-    inb(unit->au_DMAPort + dma_Command);
-    inb(unit->au_DMAPort + dma_Status);
-    outb(inb(unit->au_DMAPort + dma_Command) | DMA_START, unit->au_DMAPort + dma_Command);
-    inb(unit->au_DMAPort + dma_Command);
-    inb(unit->au_DMAPort + dma_Status);
+    ata_in(dma_Command, unit->au_DMAPort);
+    ata_in(dma_Status, unit->au_DMAPort);
+    ata_out(ata_in(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
+    ata_in(dma_Command, unit->au_DMAPort);
+    ata_in(dma_Status, unit->au_DMAPort);
 }
 
 VOID dma_StopDMA(struct ata_Unit *unit)
 {
-    inb(unit->au_DMAPort + dma_Command);
-    inb(unit->au_DMAPort + dma_Status);
-    outb(inb(unit->au_DMAPort) & ~DMA_START, unit->au_DMAPort + dma_Command);
-    inb(unit->au_DMAPort + dma_Command);
-    inb(unit->au_DMAPort + dma_Status);
-    outb(inb(unit->au_DMAPort + dma_Status) | DMAF_Error | DMAF_Interrupt, unit->au_DMAPort + dma_Status);
+    ata_in(dma_Command, unit->au_DMAPort);
+    ata_in(dma_Status, unit->au_DMAPort);
+    ata_out(ata_in(dma_Command, unit->au_DMAPort) & ~DMA_START, dma_Command, unit->au_DMAPort);
+    ata_in(dma_Command, unit->au_DMAPort);
+    ata_in(dma_Status, unit->au_DMAPort);
+    ata_out(ata_in(dma_Status, unit->au_DMAPort) | DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
 }
 
