@@ -35,6 +35,7 @@
  * 2008-03-31  M. Schulz           The ins/outs function definitions used only in case of x86 and x86_64 architectures. 
  *                                 Otherwise, function declaratons are emitted.
  * 2008-04-01  M. Schulz           Use C functions ata_ins[wl] ata_outs[wl]
+ * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  */
 
 #define DEBUG 0
@@ -75,7 +76,6 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *)
 static ULONG ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static ULONG ata_Eject(struct ata_Unit *);
-static BOOL ata_CheckDeviceStateChange(struct ata_Unit *unit);
 
 static ULONG atapi_EndCmd(struct ata_Unit *unit);
 
@@ -225,121 +225,125 @@ inline void ata_SelectUnit(struct ata_Unit* unit)
     ata_out(unit->au_DevMask, ata_DevHead, unit->au_Bus->ab_Port);
 }
 
-inline void ata_ClearOldIRQ(struct ata_Unit *unit)
-{
-    SetSignal(0, (1 << unit->au_Bus->ab_SleepySignal) | SIGBREAKF_CTRL_C);
-}
-
-/*
- * careful - this is called from IRQ!
- */
-BOOL ata_CheckDeviceStateChange(struct ata_Unit *unit)
-{
-    register UBYTE st = 0;
-    register UBYTE dv = 0;
-    register BOOL res = FALSE;
-    
-    /*
-     * 1. select unit and remember old unit selection
-     */
-    dv = ata_in(ata_DevHead, unit->au_Bus->ab_Port);
-    ata_out(unit->au_DevMask, ata_DevHead, unit->au_Bus->ab_Port);
-
-    /*
-     * 2. capture unit status + set results
-     */
-    st = ata_in(ata_AltControl, unit->au_Bus->ab_Alt);
-    if (unit->au_WaitReady)
-        res = (st & ATAF_BUSY) == 0;
-
-    /*
-     * 3. restore unit selection and return status
-     */
-    ata_out(dv, ata_DevHead, unit->au_Bus->ab_Port);
-
-    return res;
-}
-
 /*
  * wait for timeout or drive ready
+ * polling-in-a-loop, but it should be safe to remove this already
  */
-BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout)
+BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
 {
     UBYTE status;
+    ULONG sigs = SIGBREAKF_CTRL_C | (irq ? (1 << unit->au_Bus->ab_SleepySignal) : 0);
     ULONG step = 0;
+    BOOL res = TRUE;
             
-    SetSignal(0, SIGBREAKF_CTRL_C);
+    /*
+     * clear up all old signals
+     */
+    SetSignal(0, sigs);
 
+    /*
+     * set up bus timeout and irq
+     */
     Disable();
+    unit->au_Bus->ab_Waiting = irq;
     unit->au_Bus->ab_Timeout = tout;
     Enable();
 
-    do
-    {
-        status = ata_in(ata_Status, unit->au_Bus->ab_Port);
-        ++step;
-        if ((step & 16) == 0)
-        {
-            if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-            {
-                D(bug("[ATA%02ld] Device still busy after timeout. Aborting\n", unit->au_UnitNum));
-                return FALSE;   
-            }
-        }
-        D(bug("[ATA%02ld] Still waiting (%02lx)...\n", unit->au_UnitNum, status));
-    } while(status & ATAF_BUSY);
-
-    D(bug("[ATA%02ld] Ready.\n", unit->au_UnitNum));
-    Disable();
-    unit->au_Bus->ab_Timeout = 0;
-    Enable();
-            
-    SetSignal(0, SIGBREAKF_CTRL_C);
-
-    return TRUE;
-}
-
-/*
- * wait for timeout or IRQ
- */
-BOOL ata_WaitIRQ(struct ata_Unit *unit, UWORD tout)
-{
-    UBYTE status;
-    SetSignal(0, SIGBREAKF_CTRL_C);
-            
-    Disable();
-    unit->au_Bus->ab_Timeout = tout;
-    Enable();
-
-    D(bug("[ATA%02ld] Awaiting IRQ.\n", unit->au_UnitNum));
-    unit->au_WaitReady = TRUE;
+    /*
+     * this loop may experience one of two scenarios
+     * 1) we get a valid irq and the drive wanted to let us know that it's ready
+     * 2) we get an invalid irq due to some collissions. We may still want to go ahead and get some extra irq breaks
+     *    this would reduce system load a little
+     */
 
     do
     {
+        /*
+         * lets check if the drive is already good
+         */
         status = ata_in(ata_Status, unit->au_Bus->ab_Port);
-        D(bug("[ATA%02ld] Wait Status: %02lx\n", status));
         if (0 == (status & ATAF_BUSY))
             break;
-        
-        if (Wait((1<<unit->au_Bus->ab_SleepySignal) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
-        {
-            D(bug("[ATA%02ld] Timed out.\n", unit->au_UnitNum));
-            return FALSE;
-        }
-    } while (1);
 
-    D(bug("[ATA%02ld] Ready.\n", unit->au_UnitNum));
+        /*
+         * so we're stuck in a loop?
+         */
+        D(bug("[ATA%02ld] Waiting (Current status: %02lx)...\n", unit->au_UnitNum, status));
+
+        /*
+         * if IRQ wait is requested then allow either timeout or irq;
+         * then clear irq flag so we dont keep receiving more of these (especially when system suffers collissions)
+         */
+        if (irq)
+        {
+            /*
+             * wait for either IRQ or TIMEOUT
+             */
+            step = Wait(sigs);
+
+            /*
+             * now if we did reach timeout, then there's no point in going ahead.
+             */
+            if (SIGBREAKB_CTRL_C & step)
+            {
+                bug("[ATA%02ld] Timeout while waiting for device to complete operation\n", unit->au_UnitNum);
+                res = FALSE;
+                break;
+            }
+        }
+        else
+        { 
+            /*
+             * device not ready just yet. lets set whether we want an IRQ and move on - to polling or irq wait
+             */
+            ++step;
+
+            /*
+             * every 16n rounds do some extra stuff
+             */
+            if ((step & 16) == 0)
+            {
+                /*
+                 * huhm. so it's been 16n rounds already. any timeout yet?
+                 */
+                if (SetSignal(0, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                {
+                    D(bug("[ATA%02ld] Device still busy after timeout. Aborting\n", unit->au_UnitNum));
+                    res = FALSE;
+                    break;
+                }
+
+                /*
+                 * no timeout just yet, but it's not a good idea to keep spinning like that.
+                 * let's give the system some time.
+                 */
+                // TODO: Put some delay here!
+            }
+        }
+    } while(status & ATAF_BUSY);
+
+    /*
+     * be nice to frustrated developer
+     */
+    D(bug("[ATA%02ld] WaitBusy status: %ld\n", unit->au_UnitNum, res));
+
+    /*
+     * clear up all our expectations 
+     */
     Disable();
-    unit->au_WaitReady = FALSE;
+    unit->au_Bus->ab_Waiting = FALSE;
     unit->au_Bus->ab_Timeout = 0;
     Enable();
             
     /*
-     * clear signal just in case
+     * release old junk
      */
-    SetSignal(0, SIGBREAKF_CTRL_C);
+    SetSignal(0, sigs);
 
-    return TRUE;
+    /*
+     * and say it went fine (i mean it)
+     */
+    return res;
 }
 
 /*
@@ -356,6 +360,10 @@ void ata_Wait(struct ata_Unit *unit, UWORD tout)
     Wait(SIGBREAKF_CTRL_C);
 }
 
+UBYTE ata_ReadStatus(struct ata_Bus *bus)
+{
+    return ata_in(ata_Status, bus->ab_Port);
+}
 
 /*
  * Procedure for sending ATA command blocks
@@ -443,7 +451,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     /*
      * generally we could consider marking unit as 'retarded' upon three attempts or stuff like that
      */
-    if (ata_WaitBusyTO(au, 100) == FALSE)
+    if (ata_WaitBusyTO(au, 100, FALSE) == FALSE)
     {
         bug("[ATA%02ld] UNIT BUSY AT SELECTION\n", au->au_UnitNum);
         return IOERR_UNITBUSY;
@@ -531,9 +539,8 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         case CM_PIORead:
         case CM_NoData:
             D(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
-            ata_ClearOldIRQ(au);
             ata_out(block->command, ata_Command, port);
-            if (FALSE == ata_WaitIRQ(au, 1000))
+            if (FALSE == ata_WaitBusyTO(au, 1000, TRUE))
             {
                 D(bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum));
                 err = IOERR_UNITBUSY;
@@ -589,7 +596,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             /*
              * wait for drive to clear busy
              */
-            if (FALSE == ata_WaitBusyTO(au, 1000))
+            if (FALSE == ata_WaitBusyTO(au, 1000, FALSE))
             {
                 bug("[ATA%02ld] Device busy after timeout\n", au->au_UnitNum);
                 err = IOERR_UNITBUSY;
@@ -690,7 +697,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         /*
          * wait for interrupt
          */
-        if (FALSE == ata_WaitIRQ(au, 1000))
+        if (FALSE == ata_WaitBusyTO(au, 1000, TRUE))
         {
             bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum);
             err = IOERR_UNITBUSY;
@@ -790,7 +797,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
 
     ata_out(0x08, ata_AltControl, unit->au_Bus->ab_Alt);
     ata_out(unit->au_DevMask, atapi_DevSel, port);
-    if (ata_WaitBusyTO(unit, 10))
+    if (ata_WaitBusyTO(unit, 10, FALSE))
     {
         /*
          * since the device is now ready (~BSY) && (~DRQ), we can set up features and transfer size
@@ -806,9 +813,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
          * once we're done with that, we can go ahead and inform device that we're about to send atapi packet
          * after command is dispatched, we are obliged to give 400ns for the unit to parse command and set status
          */
-        ata_ClearOldIRQ(unit);
         ata_out(ATA_PACKET, atapi_Command, port);
-        if (ata_WaitBusyTO(unit, 50) == FALSE)
+        if (ata_WaitBusyTO(unit, 50, FALSE) == FALSE)
         {
             D(bug("[ATAPI] Unit not ready to accept command.\n"));
             return IOERR_UNITBUSY;
@@ -890,7 +896,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
          */
         if (FALSE == dma)
         {
-            if (ata_WaitIRQ(unit, 1000) == FALSE)
+            if (ata_WaitBusyTO(unit, 1000, TRUE) == FALSE)
             {
                 D(bug("[DSCSI] Command timed out.\n"));
                 err = IOERR_UNITBUSY;
@@ -963,7 +969,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 
             while (err == 0)
             {
-                if (FALSE == ata_WaitIRQ(unit, 300))
+                if (FALSE == ata_WaitBusyTO(unit, 300, TRUE))
                 {
                     err = IOERR_UNITBUSY;
                     break;
@@ -1096,8 +1102,6 @@ BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u)
     unit->au_Eject                  = ata_STUB;
     unit->au_DirectSCSI             = ata_STUB_SCSI;
     unit->au_Identify               = ata_STUB;
-    unit->au_CheckDeviceStateChange = ata_CheckDeviceStateChange;
-
     return TRUE;
 }
 
@@ -1116,7 +1120,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
 
     ata_SelectUnit(unit);
 
-    if (FALSE == ata_WaitBusyTO(unit, 10))
+    if (FALSE == ata_WaitBusyTO(unit, 10, FALSE))
     {
         D(bug("[ATA%02ld] ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
@@ -1452,7 +1456,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     };
 
     ata_SelectUnit(unit);
-    if (ata_WaitBusyTO(unit, 100) == FALSE)
+    if (ata_WaitBusyTO(unit, 100, FALSE) == FALSE)
     {
         bug("[ATA%02ld] Unit not ready after timeout. Aborting.\n", unit->au_UnitNum);
         return IOERR_UNITBUSY;

@@ -27,6 +27,7 @@
  * 2008-03-23  T. Wiszkowski       Corrected Alternative Command block position
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational.
+ * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  */
 
 #define DEBUG 0
@@ -306,7 +307,7 @@ AROS_UFH3(void, Enumerator,
         ab->ab_Flags        = 0;
         ab->ab_SleepySignal = 0;
         ab->ab_BusNum       = a->CurrentBus++;
-        ab->ab_Waiting      = 0;
+        ab->ab_Waiting      = FALSE;
         ab->ab_Timeout      = 0;
         ab->ab_Units[0]     = 0;
         ab->ab_Units[1]     = 0;
@@ -348,7 +349,6 @@ AROS_UFH3(void, Enumerator,
          */
         AddTail((struct List*)&a->ATABase->ata_Buses, (struct Node*)ab);
 
-        ata_InitBusTask(ab);
     }
 
     /*
@@ -367,6 +367,7 @@ AROS_UFH3(void, Enumerator,
 void ata_Scan(struct ataBase *base)
 {
     OOP_Object *pci;
+    struct Node* node;
 
     D(bug("[ATA--] Enumerating devices\n"));
 
@@ -402,6 +403,11 @@ void ata_Scan(struct ataBase *base)
         OOP_DoMethod(pci, (OOP_Msg)msg);
         
         OOP_DisposeObject(pci);
+    }
+            
+    ForeachNode(&base->ata_Buses, node)
+    {
+        ata_InitBusTask((struct ata_Bus*)node);
     }
 }
 

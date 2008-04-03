@@ -19,6 +19,7 @@
  *                                 Removed obsolete code
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational.
+ * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  */
 
 #define DEBUG 0
@@ -1048,19 +1049,17 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
 static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
-    int i;
 
-    for (i=0; i<MAX_UNIT; i++)
+    /*
+     * don't waste your time on checking other devices.
+     * pass irq ONLY if task is expecting one;
+     */
+    if (TRUE == bus->ab_Waiting)
     {
-        /*
-         * units are always present, tho may have bad states.
-         */
-        if ((0 != bus->ab_Units[i]) && (FALSE != bus->ab_Units[i]->au_CheckDeviceStateChange(bus->ab_Units[i])))
-        {
-            D(bug("[ATA  ] Got Intrq\n"));
-            bus->ab_IntCnt++;
-            Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
-        }
+        ata_ReadStatus(bus);
+        D(bug("[ATA  ] Got Intrq\n"));
+        bus->ab_IntCnt++;
+        Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
     }
 }
 
