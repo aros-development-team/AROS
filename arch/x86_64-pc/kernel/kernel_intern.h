@@ -47,7 +47,6 @@ void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_IRQHandle(regs_t regs);
 void core_Cause(struct ExecBase *SysBase);
 /** ACPI Functions **/
-IPTR core_ACPIProbeAPIC();
 ULONG core_ACPIInitialise();
 int core_ACPIIsBlacklisted();
 IPTR core_ACPIRootSystemDescriptionPointerLocate();
@@ -60,6 +59,9 @@ int core_ACPITableMADTParse(int, struct acpi_madt_entry_hook *);
 int core_ACPITableMADTFamParse(int, unsigned long, int, struct acpi_madt_entry_hook *);
 int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 /** CPU Functions **/
+IPTR core_APICProbe();
+IPTR core_APICGetMSRAPICBase();
+UBYTE core_APICGetID();
 void core_SetupIDT();
 void core_SetupGDT();
 void core_SetupMMU();

@@ -160,8 +160,12 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     
     BootMsg = msg;
 
-    if (core_ACPIProbeAPIC())
+    if (core_APICProbe())
+    {
+        rkprintf("[Kernel] Booting on APIC ID %d\n", core_APICGetID());
+        core_APICGetMSRAPICBase();
         core_ACPIInitialise();
+    }
     
     /* Set TSS, GDT, LDT and MMU up */
     core_SetupGDT();
