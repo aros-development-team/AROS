@@ -1438,6 +1438,10 @@ void common_DetectXferModes(struct ata_Unit* unit)
     }
 }
 
+#define SWAP_LE_WORD(x) (x) = AROS_LE2WORD((x))
+#define SWAP_LE_LONG(x) (x) = AROS_LE2LONG((x))
+#define SWAP_LE_QUAD(x) (x) = AROS_LE2LONG((x)>>32) | AROS_LE2LONG((x) & 0xffffffff) << 32
+
 ULONG atapi_Identify(struct ata_Unit* unit)
 {
     ata_CommandBlock acb =
@@ -1467,6 +1471,59 @@ ULONG atapi_Identify(struct ata_Unit* unit)
         return IOERR_OPENFAIL;
     }
 
+#ifdef AROS_BIG_ENDIAN
+    SWAP_LE_WORD(unit->au_Drive->id_General);
+    SWAP_LE_WORD(unit->au_Drive->id_OldCylinders);
+    SWAP_LE_WORD(unit->au_Drive->id_SpecificConfig);
+    SWAP_LE_WORD(unit->au_Drive->id_OldHeads);
+    SWAP_LE_WORD(unit->au_Drive->id_OldSectors);
+    SWAP_LE_WORD(unit->au_Drive->id_RWMultipleSize);
+    SWAP_LE_WORD(unit->au_Drive->id_Capabilities);
+    SWAP_LE_WORD(unit->au_Drive->id_OldCaps);
+    SWAP_LE_WORD(unit->au_Drive->id_OldPIO);
+    SWAP_LE_WORD(unit->au_Drive->id_ConfigAvailable);
+    SWAP_LE_WORD(unit->au_Drive->id_OldLCylinders);
+    SWAP_LE_WORD(unit->au_Drive->id_OldLHeads);
+    SWAP_LE_WORD(unit->au_Drive->id_OldLSectors);
+    SWAP_LE_WORD(unit->au_Drive->id_RWMultipleTrans);
+    SWAP_LE_WORD(unit->au_Drive->id_MWDMASupport);
+    SWAP_LE_WORD(unit->au_Drive->id_PIOSupport);
+    SWAP_LE_WORD(unit->au_Drive->id_MWDMA_MinCycleTime);
+    SWAP_LE_WORD(unit->au_Drive->id_MWDMA_DefCycleTime);
+    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTime);
+    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTImeIORDY);
+    SWAP_LE_WORD(unit->au_Drive->id_QueueDepth);
+    SWAP_LE_WORD(unit->au_Drive->id_ATAVersion);
+    SWAP_LE_WORD(unit->au_Drive->id_ATARevision);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands1);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands2);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands3);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands4);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands5);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands6);
+    SWAP_LE_WORD(unit->au_Drive->id_UDMASupport);
+    SWAP_LE_WORD(unit->au_Drive->id_SecurityEraseTime);
+    SWAP_LE_WORD(unit->au_Drive->id_EnchSecurityEraseTime);
+    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvowerMode);
+    SWAP_LE_WORD(unit->au_Drive->id_MasterPwdRevision);
+    SWAP_LE_WORD(unit->au_Drive->id_HWResetResult);
+    SWAP_LE_WORD(unit->au_Drive->id_AcousticManagement);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamMinimunReqSize);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamingTimeDMA);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamingLatency);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamingTimePIO);
+    SWAP_LE_WORD(unit->au_Drive->id_PhysSectorSize);
+    SWAP_LE_WORD(unit->au_Drive->id_RemMediaStatusNotificationFeatures);
+    SWAP_LE_WORD(unit->au_Drive->id_SecurityStatus);
+
+    SWAP_LE_LONG(unit->au_Drive->id_WordsPerLogicalSector);
+    SWAP_LE_LONG(unit->au_Drive->id_LBASectors);
+    SWAP_LE_LONG(unit->au_Drive->id_StreamingGranularity);
+
+    SWAP_LE_QUAD(unit->au_Drive->id_LBA48Sectors);
+#endif
+
+    
     D(dump(unit->au_Drive, sizeof(struct DriveIdent)));
 
     unit->au_SectorShift    = 11;
@@ -1554,6 +1611,58 @@ ULONG ata_Identify(struct ata_Unit* unit)
     {
         return IOERR_OPENFAIL;
     }
+
+#ifdef AROS_BIG_ENDIAN
+    SWAP_LE_WORD(unit->au_Drive->id_General);
+    SWAP_LE_WORD(unit->au_Drive->id_OldCylinders);
+    SWAP_LE_WORD(unit->au_Drive->id_SpecificConfig);
+    SWAP_LE_WORD(unit->au_Drive->id_OldHeads);
+    SWAP_LE_WORD(unit->au_Drive->id_OldSectors);
+    SWAP_LE_WORD(unit->au_Drive->id_RWMultipleSize);
+    SWAP_LE_WORD(unit->au_Drive->id_Capabilities);
+    SWAP_LE_WORD(unit->au_Drive->id_OldCaps);
+    SWAP_LE_WORD(unit->au_Drive->id_OldPIO);
+    SWAP_LE_WORD(unit->au_Drive->id_ConfigAvailable);
+    SWAP_LE_WORD(unit->au_Drive->id_OldLCylinders);
+    SWAP_LE_WORD(unit->au_Drive->id_OldLHeads);
+    SWAP_LE_WORD(unit->au_Drive->id_OldLSectors);
+    SWAP_LE_WORD(unit->au_Drive->id_RWMultipleTrans);
+    SWAP_LE_WORD(unit->au_Drive->id_MWDMASupport);
+    SWAP_LE_WORD(unit->au_Drive->id_PIOSupport);
+    SWAP_LE_WORD(unit->au_Drive->id_MWDMA_MinCycleTime);
+    SWAP_LE_WORD(unit->au_Drive->id_MWDMA_DefCycleTime);
+    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTime);
+    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTImeIORDY);
+    SWAP_LE_WORD(unit->au_Drive->id_QueueDepth);
+    SWAP_LE_WORD(unit->au_Drive->id_ATAVersion);
+    SWAP_LE_WORD(unit->au_Drive->id_ATARevision);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands1);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands2);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands3);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands4);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands5);
+    SWAP_LE_WORD(unit->au_Drive->id_Commands6);
+    SWAP_LE_WORD(unit->au_Drive->id_UDMASupport);
+    SWAP_LE_WORD(unit->au_Drive->id_SecurityEraseTime);
+    SWAP_LE_WORD(unit->au_Drive->id_EnchSecurityEraseTime);
+    SWAP_LE_WORD(unit->au_Drive->id_CurrentAdvowerMode);
+    SWAP_LE_WORD(unit->au_Drive->id_MasterPwdRevision);
+    SWAP_LE_WORD(unit->au_Drive->id_HWResetResult);
+    SWAP_LE_WORD(unit->au_Drive->id_AcousticManagement);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamMinimunReqSize);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamingTimeDMA);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamingLatency);
+    SWAP_LE_WORD(unit->au_Drive->id_StreamingTimePIO);
+    SWAP_LE_WORD(unit->au_Drive->id_PhysSectorSize);
+    SWAP_LE_WORD(unit->au_Drive->id_RemMediaStatusNotificationFeatures);
+    SWAP_LE_WORD(unit->au_Drive->id_SecurityStatus);
+
+    SWAP_LE_LONG(unit->au_Drive->id_WordsPerLogicalSector);
+    SWAP_LE_LONG(unit->au_Drive->id_LBASectors);
+    SWAP_LE_LONG(unit->au_Drive->id_StreamingGranularity);
+
+    SWAP_LE_QUAD(unit->au_Drive->id_LBA48Sectors);
+#endif
 
     D(dump(unit->au_Drive, sizeof(struct DriveIdent)));
 
