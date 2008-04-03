@@ -288,8 +288,6 @@ struct ata_Unit
     VOID                (*au_ins)(APTR, UWORD, ULONG);
     VOID                (*au_outs)(APTR, UWORD, ULONG);
     
-    BOOL                (*au_CheckDeviceStateChange)(struct ata_Unit *); /* this has to be fast and efficient. called on irqs */
-
     /* If a HW driver is used with this unit, it may store its data here */
     APTR                au_DriverData;
     
@@ -306,8 +304,6 @@ struct ata_Unit
     UBYTE               au_DevMask;             /* device mask used to simplify device number coding */
     UBYTE               au_SenseKey;            /* Sense key from ATAPI devices */
     UBYTE               au_DevType;
-    BOOL                au_WaitReady;           /* set to TRUE when driver waits for device to come ready */    
-                                                /* will be implemented so that no race conditions show up */
     
 };
 
@@ -484,6 +480,7 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 
 int ata_InitBusTask(struct ata_Bus *);
 int ata_InitDaemonTask(LIBBASETYPEPTR);
+UBYTE ata_ReadStatus(struct ata_Bus *bus);
 
 VOID dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
 VOID dma_SetupPRDSize(struct ata_Unit *, APTR, ULONG, BOOL);
