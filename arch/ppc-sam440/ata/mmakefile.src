@@ -1,0 +1,7 @@
+# $Id: mmakefile.src 27949 2008-03-02 21:54:29Z schulz $
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-ata maindir=arch/common/ata.device \
+  arch=sam440-ppc cflags="$(CFLAGS) -I$(TOP)/arch/common/ata.device"\
+  files="lowlevel_sam440"
