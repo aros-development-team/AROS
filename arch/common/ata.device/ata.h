@@ -382,9 +382,11 @@ typedef enum
 #if defined(__i386__) || defined(__x86_64__)
 #define ata_out(val, offset, port)  outb((val), (offset)+(port))
 #define ata_in(offset, port)        inb((offset)+(port))
+#define ata_outl(val, offset, port) outl((val), (offset)+(port))
 #else
 #define ata_out(val, offset, port)  pci_outb((val), (offset)+(port))
 #define ata_in(offset, port)        pci_inb((offset)+(port))
+#define ata_outl(val, offset, port) pci_outl_le((val), (offset)+(port))
 #endif
 
 #define atapi_Error         1
