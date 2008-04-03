@@ -355,7 +355,7 @@ AROS_UFH3(void, Enumerator,
      * check dma status
      */
     if (DMABase != 0)
-        D(bug("[ATA  ] Bus0 status says %02x, Bus1 status says %02x\n", inb(DMABase + 2), inb(DMABase + 10)));
+        D(bug("[ATA  ] Bus0 status says %02x, Bus1 status says %02x\n", ata_inb(2, DMABase), inb(10, DMABase)));
     
     OOP_SetAttrs(Device, attrs);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
