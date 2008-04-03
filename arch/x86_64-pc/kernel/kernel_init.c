@@ -159,6 +159,9 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     }
     
     BootMsg = msg;
+
+    if (core_ACPIProbeAPIC())
+        core_ACPIInitialise();
     
     /* Set TSS, GDT, LDT and MMU up */
     core_SetupGDT();

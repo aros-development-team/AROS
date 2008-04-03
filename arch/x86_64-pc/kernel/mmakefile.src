@@ -1,10 +1,12 @@
 # $Id:  $
 include $(TOP)/config/make.cfg
 
-#MM kernel-kernel-pc-x86_64 : includes
-#MM kernel-kernel-pc-x86_64-kobj : includes
+KERNELFILES := kernel_init intr apic acpi_tables acpi_parsers scheduler mmu
+
+#MM kernel-kernel-pc-x86_64 : includes kernel-kernel-pc-x86_64-includes
+#MM kernel-kernel-pc-x86_64-kobj : includes kernel-kernel-pc-x86_64-includes
 
 %build_module mmake=kernel-kernel-pc-x86_64 	\
   modname=kernel modtype=resource		\
   cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
-  files="kernel_init intr apic scheduler mmu" uselibs="rom"
+  files="$(KERNELFILES)" uselibs="rom"

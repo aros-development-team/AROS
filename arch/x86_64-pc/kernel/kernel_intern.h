@@ -10,6 +10,9 @@
 
 #include <stdio.h>
 
+#include "acpi.h"
+#include "apic.h"
+
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
@@ -43,16 +46,31 @@ void core_Dispatch(regs_t *regs) __attribute__((noreturn));
 void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn)); 
 void core_IRQHandle(regs_t regs);
 void core_Cause(struct ExecBase *SysBase);
+/** ACPI Functions **/
+IPTR core_ACPIProbeAPIC();
+ULONG core_ACPIInitialise();
+int core_ACPIIsBlacklisted();
+IPTR core_ACPIRootSystemDescriptionPointerLocate();
+IPTR core_ACPIRootSystemDescriptionPointerScan(IPTR, IPTR);
+IPTR core_ACPITableInit();
+int core_ACPITableChecksum(void *, unsigned long);
+IPTR core_ACPITableSDTGet(struct acpi_table_rsdp *);
+int core_ACPITableParse(int, struct acpi_table_hook *);
+int core_ACPITableMADTParse(int, struct acpi_madt_entry_hook *);
+int core_ACPITableMADTFamParse(int, unsigned long, int, struct acpi_madt_entry_hook *);
+int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
+/** CPU Functions **/
 void core_SetupIDT();
 void core_SetupGDT();
 void core_SetupMMU();
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
-
+/** Kernel Attribute Functions **/
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 
+/* Debug support .. */
 void scr_RawPutChars(char *, int);
 void clr();
 static char tab[512];
