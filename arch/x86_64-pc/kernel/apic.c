@@ -21,35 +21,6 @@ extern struct KernelACPIData KernACPIData;
 /**********************************************************
                             HOOKS
  **********************************************************/
-static const char str_APICsummit[] = "summit";
-
-AROS_UFH1(int, probe_APIC_summit,
-    AROS_UFHA(struct GenericAPIC *,	hook,	A0))
-{
-    AROS_USERFUNC_INIT
-
-	return 0; /* to be probed later in mptable/ACPI hooks */
-
-    AROS_USERFUNC_EXIT
-} 
-
-/**********************************************************/
-
-static const char str_APICbigsmp[] = "bigsmp";
-
-int dmi_bigsmp; /* can be set by dmi scanners */
-
-AROS_UFH1(int, probe_APIC_bigsmp,
-    AROS_UFHA(struct GenericAPIC *,	hook,	A0))
-{
-    AROS_USERFUNC_INIT
-
-    return dmi_bigsmp; 
-
-    AROS_USERFUNC_EXIT
-}
-
-/**********************************************************/
 static const char str_APICdefault[] = "default";
 
 AROS_UFH1(int, probe_APIC_default,
@@ -69,24 +40,10 @@ static const struct GenericAPIC apic_default = {
     probe : (APTR)probe_APIC_default,
 };
 
-/*
-static const struct GenericAPIC apic_summit = {
-    name : str_APICsummit,
-    probe : (APTR)probe_APIC_summit,
-};
-
-static const struct GenericAPIC apic_bigsmp = {
-    name : str_APICbigsmp,
-    probe : (APTR)probe_APIC_bigsmp,
-};
-*/
-
 /**********************************************************/
 
 static const void * const probe_APIC[] =
 { 
-//	&apic_summit,
-//	&apic_bigsmp, 
 	&apic_default, /* must be last */
 	NULL,
 };
@@ -97,7 +54,7 @@ static const void * const probe_APIC[] =
  ************************************************************************************************/
 /************************************************************************************************/
 
-IPTR core_ACPIProbeAPIC()
+IPTR core_APICProbe()
 {
 	int driver_count, retval, changed = 0;
 
@@ -113,12 +70,43 @@ IPTR core_ACPIProbeAPIC()
 
 	if (!changed)
     {
-        rkprintf("[Kernel] core_ACPIProbeAPIC: No suitable APIC driver found.\n");
+        rkprintf("[Kernel] core_APICProbe: No suitable APIC driver found.\n");
     }
     else
     {
-        rkprintf("[Kernel] core_ACPIProbeAPIC: Using APIC driver '%s'\n", ((struct GenericAPIC *) KernACPIData.kb_APIC_Driver)->name);
+        rkprintf("[Kernel] core_APICProbe: Using APIC driver '%s'\n", ((struct GenericAPIC *) KernACPIData.kb_APIC_Driver)->name);
     }
 
     return changed;
+}
+
+IPTR core_APICGetMSRAPICBase()
+{
+    IPTR  _apic_base = NULL;
+
+//    _apic_base = rdmsrq(27);
+
+    _apic_base = 0xfee00000;
+
+    rkprintf("[Kernel] core_APICGetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base);
+    return _apic_base;
+}
+
+UBYTE core_APICGetID()
+{
+    IPTR _apic_id = 0;
+
+    asm volatile
+    (
+        "movl	$1,%%eax\n\t"
+        "cpuid\n\t"
+        "movl	%%ebx,%0":"=m"(_apic_id):
+    );
+    
+    /* Mask out the APIC's ID Bits */
+    _apic_id &= 0xff000000;
+    _apic_id = _apic_id >> 24;
+    rkprintf("[Kernel] core_APICGetID: APIC ID %d\n", _apic_id);
+    
+    return (UBYTE)_apic_id & 0xff;
 }

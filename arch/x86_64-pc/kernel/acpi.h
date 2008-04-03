@@ -125,8 +125,6 @@ struct acpi_table_header                                        /* ACPI common t
 	ACPI_TABLE_HEADER_DEF
 };
 
-/********** ACPI DEFINITIONS ****************/
-
 /* Table Handlers */
 
 enum acpi_irq_model_id 
