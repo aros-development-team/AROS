@@ -42,12 +42,12 @@ $(TARGET_ISO): $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
                 -boot-load-size 4 \
                 -boot-info-table \
                 -allow-leading-dots \
-		-input-charset iso8859-1 \
-		-iso-level 4 \
+                -input-charset iso8859-1 \
+                -iso-level 4 \
                 -V "AROS Live CD" \
                 -publisher "The AROS Dev Team" \
-		-p "The AROS Dev Team (www.aros.org)" \
-		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -p "The AROS Dev Team (www.aros.org)" \
+                -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
                 -l -J -r \
                 $(AROSDIR)
 
