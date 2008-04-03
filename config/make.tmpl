@@ -1052,7 +1052,7 @@ GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
 # be used for compiling external code. For AROS code use %build_module
 %define build_module_simple mmake=/A modname=/A modtype=/A \
     files="$(basename $(wildcard *.c))" \
-    cflags=$(CFLAGS) dflags=$(BD_DEFDFLASGS) \
+    cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
     objdir=$(OBJDIR) moduledir= \
     uselibs= usehostlibs= compiler=target
 
@@ -1112,7 +1112,7 @@ ifeq ($(BD_MODDIR),)
   endif
 endif
 ifeq ($(BD_MODDIR),)
-  $(error Don't where to put the file for modtype %(modtype). Specify moduledir=)
+  $(error Don't know where to put the file for modtype %(modtype). Specify moduledir=)
 endif
 
 %rule_compile_multi \
