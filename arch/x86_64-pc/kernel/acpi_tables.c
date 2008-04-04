@@ -19,14 +19,6 @@
 #include "kernel_intern.h"
 
 /************************************************************************************************/
-extern struct acpi_table_hook ACPI_TableParse_MADT_hook;
-extern struct acpi_table_hook ACPI_TableParse_LAPIC_Addr_Ovr_hook;
-extern struct acpi_table_hook ACPI_TableParse_LAPIC_hook;
-extern struct acpi_table_hook ACPI_TableParse_LAPIC_NMI_hook;
-extern struct acpi_table_hook ACPI_TableParse_IOAPIC_hook;
-extern struct acpi_table_hook ACPI_TableParse_Int_Src_Ovr_hook;
-extern struct acpi_table_hook ACPI_TableParse_NMI_Src_hook;
-extern struct acpi_table_hook ACPI_TableParse_HPET_hook;
 
 struct KernelACPIData KernACPIData;
 struct acpi_table_sdt KernACPISDTEntries[ACPI_MAX_TABLES];
@@ -456,24 +448,37 @@ ULONG core_ACPIInitialise()
     int                         result = 0;
     rkprintf("[Kernel] core_ACPIInitialise()\n");
 
-    if ( KernACPIData.kb_ACPI_Disabled && !KernACPIData.kb_ACPI_HT ) return 1;
+    struct acpi_table_hook ACPI_TableParse_MADT_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_MADT_Parse
+    };
 
-    /*  Default to PIC(8259) interrupt routing model.  This gets overriden later if IOAPICs are enumerated */
-    KernACPIData.kb_APIC_IRQ_Model = ACPI_IRQ_MODEL_PIC;
+    struct acpi_table_hook ACPI_TableParse_LAPIC_Addr_Ovr_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Addr_Ovr_Parse
+    };
 
-    /* Initialize the ACPI boot-time table parser. */
-    result = core_ACPITableInit();
-    rkprintf("[Kernel] core_ACPIInitialise: core_ACPITableInit() returned %p\n", result);
-    if ( !result ) return result;
+    struct acpi_table_hook ACPI_TableParse_LAPIC_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Parse
+    };
 
-    result = core_ACPIIsBlacklisted();
-    rkprintf("[Kernel] core_ACPIInitialise: core_ACPIIsBlacklisted() returned %p\n", result);
-    if ( result )
-    {
-        rkprintf("[Kernel] core_ACPIInitialise: WARNING - BIOS listed in blacklist, disabling ACPI support\n");
-        KernACPIData.kb_ACPI_Disabled = 1;
-        return result;
-    }
+    struct acpi_table_hook ACPI_TableParse_LAPIC_NMI_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_LAPIC_NMI_Parse
+    };
+
+    struct acpi_table_hook ACPI_TableParse_IOAPIC_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_IOAPIC_Parse
+    };
+
+    struct acpi_table_hook ACPI_TableParse_Int_Src_Ovr_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_Int_Src_Ovr_Parse
+    };
+
+    struct acpi_table_hook ACPI_TableParse_NMI_Src_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_NMI_Src_Parse
+    };
+
+    struct acpi_table_hook ACPI_TableParse_HPET_hook = {
+        .h_Entry = (APTR)ACPI_hook_Table_HPET_Parse
+    };
 
     /*  MADT : If it exists, parse the Multiple APIC Description Table "MADT", 
         This table provides platform SMP configuration information [the successor to MPS tables]	*/
@@ -499,9 +504,6 @@ ULONG core_ACPIInitialise()
         rkprintf("[Kernel] core_ACPIInitialise: ERROR - Error parsing LAPIC address override entry\n");
         return result;
     }
-
-#warning "TODO: implement register LAPIC Address.."
-//	mp_register_lapic_address( KernACPIData.kb_ACPI_LAPIC_Addr );
 
     result = core_ACPITableMADTParse( ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_hook);
     rkprintf("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_LAPIC) returned %p\n", result);
@@ -652,37 +654,43 @@ int core_ACPITableChecksum(void * table_pointer, unsigned long table_length)
 }
 
 /**********************************************************/
-IPTR core_ACPITableInit()
+IPTR core_ACPIProbe()
 {
     struct acpi_table_rsdp	            *RSDP;
     IPTR             	                *RSDP_PhysAddr;
     int			                        checksum = 0;
 
-    rkprintf("[Kernel] core_ACPITableInit()\n");
+    rkprintf("[Kernel] core_ACPIProbe()\n");
 
     /* Locate the Root System Description Table (RSDP) */
     RSDP_PhysAddr = core_ACPIRootSystemDescriptionPointerLocate();
     if (RSDP_PhysAddr != NULL)
     {
         RSDP = RSDP_PhysAddr;
-        rkprintf("[Kernel] core_ACPITableInit: Root System Description Pointer @ %p\n", RSDP);
-        rkprintf("[Kernel] core_ACPITableInit: Root System Description Pointer [ v%3.3d '%6.6s' ]\n", RSDP->revision, RSDP->oem_id);
+        rkprintf("[Kernel] core_ACPIProbe: Root System Description Pointer @ %p\n", RSDP);
+        rkprintf("[Kernel] core_ACPIProbe: Root System Description Pointer [ v%3.3d '%6.6s' ]\n", RSDP->revision, RSDP->oem_id);
 
         if (RSDP->revision >= 2) checksum = core_ACPITableChecksum(RSDP, ((struct acpi20_table_rsdp *)RSDP)->length);
         else checksum = core_ACPITableChecksum(RSDP, sizeof(struct acpi_table_rsdp));
 
         if (checksum)
         {
-            rkprintf("[Kernel] core_ACPITableInit: ERROR: Invalid RSDP checksum (%d)\n", checksum);
+            rkprintf("[Kernel] core_ACPIProbe: ERROR: Invalid RSDP checksum (%d)\n", checksum);
             return NULL;
         }
 
         /* Locate and map the System Description table (RSDT/XSDT) */
         core_ACPITableSDTGet(RSDP);
+        
+        if (core_ACPIIsBlacklisted())
+        {
+            rkprintf("[Kernel] core_ACPIProbe: WARNING - BIOS listed in blacklist, disabling ACPI support\n");
+            return NULL;
+        }
     }
     else
     {
-        rkprintf("[Kernel] core_ACPITableInit: Unable to locate RSDP - no ACPI\n");
+        rkprintf("[Kernel] core_ACPIProbe: Unable to locate RSDP - no ACPI\n");
     }
 
     return RSDP;

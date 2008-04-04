@@ -51,6 +51,12 @@ void __clear_bss(struct TagItem *msg)
 
 /* Post exec init */
 
+IPTR              _kern_early_APICBase;
+IPTR              _kern_early_ACPIRSDP;
+UBYTE            _kern_early_BOOTAPICID;
+
+static char _kern_early_BOOTCmdLine[200];
+
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
@@ -77,39 +83,52 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     }
      
     
-    uint32_t *localAPIC = (uint32_t*)0xfee00320;
+    D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
 
-    D(bug("[Kernel] Post-exec init\n"));
+#warning "TODO: Check if NOACPI is set on the boot command line"
+    if (_kern_early_ACPIRSDP)
+    {
+        LIBBASE->kb_ACPIRSDP = _kern_early_ACPIRSDP;
+        LIBBASE->kb_BOOTAPICID = _kern_early_BOOTAPICID;
+        core_ACPIInitialise();
+    }
+
+    if (LIBBASE->kb_APICBase == NULL)
+        LIBBASE->kb_APICBase= _kern_early_APICBase;
+    
+    D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
+    
+    uint32_t *localAPIC = (uint32_t*)LIBBASE->kb_APICBase + 0x320;
     
     LIBBASE->kb_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
-    D(bug("[Kernel] MemPool=%012p\n", LIBBASE->kb_MemPool));
+    D(bug("[Kernel] Kernel_Init: MemPool @ %012p\n", LIBBASE->kb_MemPool));
 /*    
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"(0xfee000b0));
+    asm volatile ("movl %0,(%1)"::"r"(0),"r"((uint32_t*)LIBBASE->kb_APICBase + 0xb0));
     
-    D(bug("[Kernel] APIC SVR=%08x\n", *(uint32_t*)0xfee000f0));
-    D(bug("[Kernel] APIC ESR=%08x\n", *(uint32_t*)0xfee00280));
-    D(bug("[Kernel] APIC TPR=%08x\n", *(uint32_t*)0xfee00080));
-    D(bug("[Kernel] APIC ICR=%08x%08x\n", *(uint32_t*)0xfee00314, *(uint32_t*)0xfee00310));
-    D(bug("[Kernel] APIC Timer divide=%08x\n", *(uint32_t*)0xfee003e0));
-    D(bug("[Kernel] APIC Timer config=%08x\n", *(uint32_t*)0xfee00320));
+    D(bug("[Kernel] Kernel_Init: APIC SVR=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0xf0));
+    D(bug("[Kernel] Kernel_Init: APIC ESR=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x280));
+    D(bug("[Kernel] Kernel_Init: APIC TPR=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x80));
+    D(bug("[Kernel] Kernel_Init: APIC ICR=%08x%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x314, *(uint32_t*)LIBBASE->kb_APICBase + 0x310));
+    D(bug("[Kernel] Kernel_Init: APIC Timer divide=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x3e0));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x320));
     
-    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"(0xfee00320));
+    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((uint32_t*)LIBBASE->kb_APICBase + 0x320));
     //*(volatile uint32_t *)localAPIC = 0x000000fe;
-    D(bug("[Kernel] APIC Timer config=%08x\n", *(uint32_t*)0xfee00320));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x320));
     
-    D(bug("[Kernel] APIC Initial count=%08x\n", *(uint32_t*)0xfee00380));
-    D(bug("[Kernel] APIC Current count=%08x\n", *(uint32_t*)0xfee00390));
-    *(uint32_t*)0xfee00380 = 0x11111111;
-    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"(0xfee00320));
-    D(bug("[Kernel] APIC Timer config=%08x\n", *(uint32_t*)0xfee00320));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x380));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x390));
+    *(uint32_t*)LIBBASE->kb_APICBase + 0x380 = 0x11111111;
+    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((uint32_t*)LIBBASE->kb_APICBase + 0x320));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x320));
     
     for (i=0; i < 0x10000000; i++) asm volatile("nop;");
     
-    D(bug("[Kernel] APIC Initial count=%08x\n", *(uint32_t*)0xfee00380));
-    D(bug("[Kernel] APIC Current count=%08x\n", *(uint32_t*)0xfee00390));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x380));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x390));
     for (i=0; i < 0x1000000; i++) asm volatile("nop;");
-    D(bug("[Kernel] APIC Initial count=%08x\n", *(uint32_t*)0xfee00380));
-    D(bug("[Kernel] APIC Current count=%08x\n", *(uint32_t*)0xfee00390));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x380));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x390));
 
     for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 }
@@ -119,12 +138,10 @@ ADD2INITLIB(Kernel_Init, 0)
 static struct TagItem *BootMsg;
 static struct vbe_controller vbectrl;
 static struct vbe_mode vbemd;
-static char cmdLine[200];
-
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
-    rkprintf("[Kernel] Booting into kernel.resource...\n");
+    rkprintf("[Kernel] kernel_cstart: Booting into kernel.resource...\n");
     struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
     intptr_t addr = krnGetTagData(KRN_KernelBase, 0, msg);
     intptr_t len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
@@ -134,9 +151,9 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     
     if (tag)
     {
-        if (tag->ti_Data != (IPTR)cmdLine) {
-            strncpy(cmdLine, tag->ti_Data, 200);
-            tag->ti_Data = (IPTR)cmdLine;
+        if (tag->ti_Data != (IPTR)_kern_early_BOOTCmdLine) {
+            strncpy(_kern_early_BOOTCmdLine, tag->ti_Data, 200);
+            tag->ti_Data = (IPTR)_kern_early_BOOTCmdLine;
         }
     }
     
@@ -162,13 +179,18 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
     if (core_APICProbe())
     {
-        rkprintf("[Kernel] Booting on APIC ID %d\n", core_APICGetID());
-        core_APICGetMSRAPICBase();
-        core_ACPIInitialise();
+        _kern_early_BOOTAPICID = core_APICGetID();
+        rkprintf("[Kernel] kernel_cstart: Booting on APIC ID %d\n", _kern_early_BOOTAPICID);
+        _kern_early_APICBase = core_APICGetMSRAPICBase();
+        /* Initialize the ACPI boot-time table parser. */
     }
+
+    _kern_early_ACPIRSDP = core_ACPIProbe();
+    rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
     
     /* Set TSS, GDT, LDT and MMU up */
     core_SetupGDT();
+    core_CPUSetup();
     core_SetupIDT();
     core_SetupMMU();
 
@@ -177,7 +199,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     /* Lock page 0! */
     core_ProtKernelArea(0, 1, 0, 0, 0);
     
-    (rkprintf("[Kernel] APIC_BASE_MSR=%016p\n", rdmsrq(27)));
+    (rkprintf("[Kernel] kernel_cstart: APIC_BASE_MSR=%016p\n", rdmsrq(27)));
 
     /* Setu the 8259 up */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
@@ -191,8 +213,8 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0x21)); /* Enable cascade int */
     asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
 
-    rkprintf("[Kernel] Interrupts redirected. We will go back in a minute ;)\n");
-    rkprintf("[Kernel] Booting exec.library\n\n");
+    rkprintf("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n");
+    rkprintf("[Kernel] kernel_cstart: Booting exec.library\n\n");
 
     return exec_main(msg, entry);
 }
@@ -302,19 +324,27 @@ void core_SetupGDT()
     GDT.gs.base_high = (tls_ptr >> 24) & 0xff;   
     GDT.gs.g=1;
     GDT.gs.d=1;
+}
 
+
+void core_CPUSetup()
+{
+    UBYTE CPU_ID = 0;
+    CPU_ID = core_APICGetID();
+
+    rkprintf("[Kernel] core_CPUSetup(id:%d)\n", CPU_ID);
+    
     system_tls.SysBase = (struct ExecBase *)0x12345678;
     
     TSS.ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
     TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
     TSS.rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
 
-    rkprintf("[Kernel] Reloading the GDT and the Task Register\n");
+    rkprintf("[Kernel] core_CPUSetup: Reloading the GDT and the Task Register\n");
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG));
-    asm volatile ("mov %0,%%gs"::"a"(SEG_GS));
+    asm volatile ("mov %0,%%gs"::"a"(SEG_GS));    
 }
-
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 {
