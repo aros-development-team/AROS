@@ -261,7 +261,8 @@ void core_Cause(struct ExecBase *SysBase)
 
 static void core_APIC_AckIntr(uint8_t intnum)
 {
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"(0xfee000b0));
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    asm volatile ("movl %0,(%1)"::"r"(0),"r"(KernelBase->kb_APICBase + 0xb0));
 }
 
 static void core_XTPIC_DisableIRQ(uint8_t irqnum)

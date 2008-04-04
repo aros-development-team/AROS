@@ -29,10 +29,12 @@ AROS_UFH1(int, ACPI_hook_Table_MADT_Parse,
     rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse()\n");
 
 	struct acpi_table_madt	*madt = NULL;
+    
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
 
 	if (!table_hook->phys_addr || !table_hook->size)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Illegal MADT Addr/Size\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Illegal MADT Table Addr/Size\n");
         return 0;
     }
 
@@ -40,7 +42,8 @@ AROS_UFH1(int, ACPI_hook_Table_MADT_Parse,
 
 	if (madt->lapic_address)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Local APIC address 0x%08x\n", madt->lapic_address);
+        KernelBase->kb_APICBase = madt->lapic_address;
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_MADT_Parse: Local APIC address 0x%08x\n", KernelBase->kb_APICBase);
     }
 	return 1;
  
@@ -55,18 +58,24 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
 
     rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse()\n");
 
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
     struct acpi_table_lapic	*processor = NULL;
 
 	if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Illegal LAPIC Addr\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Illegal LAPIC Table Addr\n");
         return 0;
     }
 
     processor = (struct acpi_table_lapic *) table_hook->header;
     
     rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags);
-    
+
+    if ((KernelBase->kb_BOOTAPICID != processor->acpi_id) && processor->flags.enabled)
+    {
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering NEW APIC\n");
+#warning "TODO: Register APIC, and configure via IPI INIT trampoline"
+    }        
 	return 1;
     
     AROS_USERFUNC_EXIT
@@ -84,7 +93,7 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 
 	if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Illegal LAPIC_Addr_Ovr Addr\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Addr_Ovr_Parse: Illegal LAPIC_Addr_Ovr Table Addr\n");
         return 0;
     }
 
@@ -109,7 +118,7 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_NMI_Parse,
 
 	if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: Illegal LAPIC_NMI Addr\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_NMI_Parse: Illegal LAPIC_NMI Table  Addr\n");
         return 0;
     }
 
@@ -137,7 +146,7 @@ AROS_UFH1(int, ACPI_hook_Table_IOAPIC_Parse,
 
 	if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: Illegal IOAPIC Addr\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_IOAPIC_Parse: Illegal IOAPIC Table Addr\n");
         return 0;
     }
 
@@ -162,7 +171,7 @@ AROS_UFH1(int, ACPI_hook_Table_Int_Src_Ovr_Parse,
 
 	if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: Illegal Int_Src_Ovr Addr\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_Int_Src_Ovr_Parse: Illegal Int_Src_Ovr Table Addr\n");
         return 0;
     }
 
@@ -189,7 +198,7 @@ AROS_UFH1(int, ACPI_hook_Table_NMI_Src_Parse,
 
 	if (!table_hook->header)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_NMI_Src_Parse: Illegal NMI_Src Add\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_NMI_Src_Parse: Illegal NMI_Src Table Addr\n");
         return 0;
     }
 
@@ -212,7 +221,7 @@ AROS_UFH1(int, ACPI_hook_Table_HPET_Parse,
 
 	if (!table_hook->phys_addr || !table_hook->size)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: Illegal HPET Addr/Size\n");
+        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_HPET_Parse: Illegal HPET Table Addr/Size\n");
         return 0;
     }
 
@@ -232,36 +241,3 @@ AROS_UFH1(int, ACPI_hook_Table_HPET_Parse,
 }
 
 /************************************************************************************************/
-
-/* Hooks defining our callbacks */
-const struct acpi_table_hook ACPI_TableParse_MADT_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_MADT_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_LAPIC_Addr_Ovr_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Addr_Ovr_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_LAPIC_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_LAPIC_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_LAPIC_NMI_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_LAPIC_NMI_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_IOAPIC_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_IOAPIC_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_Int_Src_Ovr_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_Int_Src_Ovr_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_NMI_Src_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_NMI_Src_Parse
-};
-
-const struct acpi_table_hook ACPI_TableParse_HPET_hook = {
-    .h_Entry = (APTR)ACPI_hook_Table_HPET_Parse
-};

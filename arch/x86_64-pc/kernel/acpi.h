@@ -39,8 +39,6 @@ struct KernelACPIData {
     int                 kb_ACPI_LAPIC;
     int                 kb_ACPI_IOAPIC;
 
-    IPTR                kb_ACPI_LAPIC_addr;
-
     BOOL                kb_SMP_Enabled;
     int                 kb_SMP_Config;
 };
@@ -429,5 +427,24 @@ struct acpi_table_ecdt
 	unsigned char				        gpe_bit;
 	char				        ec_id[0];
 };
+
+/* ACPI Table Parser hook func protos */
+
+AROS_UFP1(int, ACPI_hook_Table_MADT_Parse,
+    AROS_UFPA(struct acpi_table_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_LAPIC_Parse,
+    AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
+    AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_LAPIC_NMI_Parse,
+    AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_IOAPIC_Parse,
+    AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_Int_Src_Ovr_Parse,
+    AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_NMI_Src_Parse,
+    AROS_UFPA(struct acpi_madt_entry_hook *,	table_hook,	A0));
+AROS_UFP1(int, ACPI_hook_Table_HPET_Parse,
+    AROS_UFPA(struct acpi_table_hook *,	table_hook,	A0));
 
 #endif /* __AROS_ACPI_H__ */

@@ -28,6 +28,9 @@ AROS_UFH1(int, probe_APIC_default,
 {
     AROS_USERFUNC_INIT
 
+    /*  Default to PIC(8259) interrupt routing model.  This gets overriden later if IOAPICs are enumerated */
+    KernACPIData.kb_APIC_IRQ_Model = ACPI_IRQ_MODEL_PIC;
+
 	return 1; /* should be called last. */
 
     AROS_USERFUNC_EXIT
@@ -84,7 +87,7 @@ IPTR core_APICGetMSRAPICBase()
 {
     IPTR  _apic_base = NULL;
 
-//    _apic_base = rdmsrq(27);
+#warning "TODO: Obtain APIC base from MSR"
 
     _apic_base = 0xfee00000;
 
