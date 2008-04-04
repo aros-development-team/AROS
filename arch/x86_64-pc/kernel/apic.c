@@ -17,6 +17,7 @@
 #include "kernel_intern.h"
 
 extern struct KernelACPIData KernACPIData;
+//KernAPICTrampolineBase = 0x0;
 
 /**********************************************************
                             HOOKS

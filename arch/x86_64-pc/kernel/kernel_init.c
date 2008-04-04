@@ -51,6 +51,10 @@ void __clear_bss(struct TagItem *msg)
 
 /* Post exec init */
 
+IPTR              _kern_initflags;
+
+#define        KERNBOOTFLAG_BOOTCPUSET                1
+
 IPTR              _kern_early_APICBase;
 IPTR              _kern_early_ACPIRSDP;
 UBYTE            _kern_early_BOOTAPICID;
@@ -138,85 +142,102 @@ ADD2INITLIB(Kernel_Init, 0)
 static struct TagItem *BootMsg;
 static struct vbe_controller vbectrl;
 static struct vbe_mode vbemd;
+intptr_t addr;
+intptr_t len;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
-    rkprintf("[Kernel] kernel_cstart: Booting into kernel.resource...\n");
-    struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
-    intptr_t addr = krnGetTagData(KRN_KernelBase, 0, msg);
-    intptr_t len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
-    
+    UBYTE kern_apic_id;
+    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p\n", kernel_cstart);
+
+    kern_apic_id = core_APICGetID();
+    rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d\n", kern_apic_id);
+
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
     
-    if (tag)
+    if (!(_kern_initflags & KERNBOOTFLAG_BOOTCPUSET))
     {
-        if (tag->ti_Data != (IPTR)_kern_early_BOOTCmdLine) {
-            strncpy(_kern_early_BOOTCmdLine, tag->ti_Data, 200);
-            tag->ti_Data = (IPTR)_kern_early_BOOTCmdLine;
-        }
-    }
-    
-    tag = krnFindTagItem(KRN_VBEModeInfo, msg);
-    if (tag)
-    {
-        if (tag->ti_Data != (IPTR)&vbemd) {
-            bcopy(tag->ti_Data, &vbemd, sizeof(vbemd));
-            tag->ti_Data = (IPTR)&vbemd;
-        }
-    }
+        _kern_early_BOOTAPICID = kern_apic_id;
+        _kern_initflags |= KERNBOOTFLAG_BOOTCPUSET;
 
-    tag = krnFindTagItem(KRN_VBEControllerInfo, msg);
-    if (tag)
-    {
-        if (tag->ti_Data != (IPTR)&vbectrl) {
-            bcopy(tag->ti_Data, &vbectrl, sizeof(vbectrl));
-            tag->ti_Data = (IPTR)&vbectrl;
+        struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
+        addr = krnGetTagData(KRN_KernelBase, 0, msg);
+        len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
+
+        if (tag)
+        {
+            if (tag->ti_Data != (IPTR)_kern_early_BOOTCmdLine) {
+                strncpy(_kern_early_BOOTCmdLine, tag->ti_Data, 200);
+                tag->ti_Data = (IPTR)_kern_early_BOOTCmdLine;
+            }
         }
-    }
-    
-    BootMsg = msg;
 
-    if (core_APICProbe())
-    {
-        _kern_early_BOOTAPICID = core_APICGetID();
-        rkprintf("[Kernel] kernel_cstart: Booting on APIC ID %d\n", _kern_early_BOOTAPICID);
-        _kern_early_APICBase = core_APICGetMSRAPICBase();
-        /* Initialize the ACPI boot-time table parser. */
-    }
+        tag = krnFindTagItem(KRN_VBEModeInfo, msg);
+        if (tag)
+        {
+            if (tag->ti_Data != (IPTR)&vbemd) {
+                bcopy(tag->ti_Data, &vbemd, sizeof(vbemd));
+                tag->ti_Data = (IPTR)&vbemd;
+            }
+        }
 
-    _kern_early_ACPIRSDP = core_ACPIProbe();
-    rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
-    
+        tag = krnFindTagItem(KRN_VBEControllerInfo, msg);
+        if (tag)
+        {
+            if (tag->ti_Data != (IPTR)&vbectrl) {
+                bcopy(tag->ti_Data, &vbectrl, sizeof(vbectrl));
+                tag->ti_Data = (IPTR)&vbectrl;
+            }
+        }
+
+        BootMsg = msg;
+
+        if (core_APICProbe())
+        {
+            _kern_early_APICBase = core_APICGetMSRAPICBase();
+            /* Initialize the ACPI boot-time table parser. */
+        }
+
+        _kern_early_ACPIRSDP = core_ACPIProbe();
+        rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
+
+        /* Prepair GDT */
+        core_SetupGDT();
+    }
     /* Set TSS, GDT, LDT and MMU up */
-    core_SetupGDT();
     core_CPUSetup();
     core_SetupIDT();
     core_SetupMMU();
 
     core_ProtKernelArea(addr, len, 1, 0, 1);
-    
+
     /* Lock page 0! */
     core_ProtKernelArea(0, 1, 0, 0, 0);
-    
-    (rkprintf("[Kernel] kernel_cstart: APIC_BASE_MSR=%016p\n", rdmsrq(27)));
 
-    /* Setu the 8259 up */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs at 0x28 - 0x2f */
-    asm("outb   %b0,%b1\n\tcall delay": :"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0x21)); /* 8086 mode for both */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0xa1));
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0x21)); /* Enable cascade int */
-    asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
+    (rkprintf("[Kernel] kernel_cstart[%d]: APIC_BASE_MSR=%016p\n", kern_apic_id, rdmsrq(27)));
 
-    rkprintf("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n");
-    rkprintf("[Kernel] kernel_cstart: Booting exec.library\n\n");
+    if (kern_apic_id == _kern_early_BOOTAPICID)
+    {
+        /* Setup the 8259 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0xa0)); /* Initialization sequence for 8259A-2 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x20),"i"(0x21)); /* IRQs at 0x20 - 0x27 */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x28),"i"(0xa1)); /* IRQs at 0x28 - 0x2f */
+        asm("outb   %b0,%b1\n\tcall delay": :"a"((char)0x04),"i"(0x21)); /* 8259A-1 is master */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x02),"i"(0xa1)); /* 8259A-2 is slave */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0x21)); /* 8086 mode for both */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x01),"i"(0xa1));
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0x21)); /* Enable cascade int */
+        asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0xff),"i"(0xa1)); /* Mask all interrupts */
 
-    return exec_main(msg, entry);
+        rkprintf("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n");
+        rkprintf("[Kernel] kernel_cstart: Booting exec.library\n\n");
+
+        return exec_main(msg, entry);
+    }
+#warning "TODO: launch idle task ..."
+    return exec_main(msg, entry);    
 }
 
 
