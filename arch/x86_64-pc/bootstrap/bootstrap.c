@@ -525,7 +525,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
     
     clr();
-    kprintf("[BOOT] AROS Bootstrap.\n");
+//    kprintf("[BOOT] Entered AROS Bootstrap @ %p [asm stub @ %p].\n", __bootstrap, kernel_bootstrap);
+        kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
     kprintf("[BOOT] Command line '%s'\n", mb->cmdline);
 
     set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
@@ -540,6 +541,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
     if (mb->mmap_length)
     {
+#warning "TODO: quickly scan the mmap and add set KRN_MEMLower to the first chunk < 1mb"
         tag->ti_Tag = KRN_MMAPLength;
         tag->ti_Data = mb->mmap_length;
         tag++;

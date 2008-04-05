@@ -18,6 +18,8 @@
 #include "../bootstrap/multiboot.h"
 #include LC_LIBDEFS_FILE
 
+//#define CONFIG_LAPICS
+
 /* Pre-exec init */
 
 asm(".section .aros.init,\"ax\"\n\t"
@@ -58,6 +60,7 @@ IPTR              _kern_initflags;
 IPTR              _kern_early_APICBase;
 IPTR              _kern_early_ACPIRSDP;
 UBYTE            _kern_early_BOOTAPICID;
+IPTR              _Kern_APICTrampolineBase;
 
 static char _kern_early_BOOTCmdLine[200];
 
@@ -85,8 +88,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
                 break;
         }
     }
-     
-    
+
     D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
 
 #warning "TODO: Check if NOACPI is set on the boot command line"
@@ -148,6 +150,7 @@ intptr_t len;
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
     UBYTE kern_apic_id;
+//    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p\n", kernel_cstart);
 
     kern_apic_id = core_APICGetID();
@@ -193,14 +196,30 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
         BootMsg = msg;
 
-        if (core_APICProbe())
-        {
-            _kern_early_APICBase = core_APICGetMSRAPICBase();
-            /* Initialize the ACPI boot-time table parser. */
-        }
+        core_APICProbe();
+        _kern_early_APICBase = core_APICGetMSRAPICBase();
 
+        /* Initialize the ACPI boot-time table parser. */
         _kern_early_ACPIRSDP = core_ACPIProbe();
         rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
+
+#warning "TODO: Allocate Trampoline page better"
+#define PAGE_SIZE	0x1000
+
+        IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+        if ((lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
+        {
+            _Kern_APICTrampolineBase = lowpages - PAGE_SIZE;
+            krnSetTagData(KRN_MEMLower, (_Kern_APICTrampolineBase - 1)/1024, msg);
+            rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase);
+
+#if defined(CONFIG_LAPICS)       
+            memcpy(_Kern_APICTrampolineBase, __APICTrampolineCode_start,
+                        __APICTrampolineCode_end - __APICTrampolineCode_start);
+
+            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", __APICTrampolineCode_start, __APICTrampolineCode_end - __APICTrampolineCode_start);
+#endif
+        }
 
         /* Prepair GDT */
         core_SetupGDT();
@@ -237,7 +256,9 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         return exec_main(msg, entry);
     }
 #warning "TODO: launch idle task ..."
-    return exec_main(msg, entry);    
+    rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", kern_apic_id);
+    while(1) asm volatile("nop");
+    return NULL;    
 }
 
 
@@ -361,7 +382,7 @@ void core_CPUSetup()
     TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
     TSS.rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
 
-    rkprintf("[Kernel] core_CPUSetup: Reloading the GDT and the Task Register\n");
+    rkprintf("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", CPU_ID);
     asm volatile ("lgdt %0"::"m"(GDT_sel));
     asm volatile ("ltr %w0"::"r"(TASK_SEG));
     asm volatile ("mov %0,%%gs"::"a"(SEG_GS));    
@@ -421,6 +442,14 @@ IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagL
         return ti->ti_Data;
 
         return defaultVal;
+}
+
+void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList)
+{
+    struct TagItem *ti = 0;
+
+    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
+        ti->ti_Data = newtagValue;
 }
 
 AROS_LH0I(struct TagItem *, KrnGetBootInfo,

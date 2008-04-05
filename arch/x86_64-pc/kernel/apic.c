@@ -16,8 +16,9 @@
 
 #include "kernel_intern.h"
 
+//#define CONFIG_LAPICS
+
 extern struct KernelACPIData KernACPIData;
-//KernAPICTrampolineBase = 0x0;
 
 /**********************************************************
                             HOOKS
@@ -113,4 +114,117 @@ UBYTE core_APICGetID()
     rkprintf("[Kernel] core_APICGetID: APIC ID %d\n", _apic_id);
     
     return (UBYTE)_apic_id & 0xff;
+}
+
+#if defined(CONFIG_LAPICS)
+asm (".globl __APICTrampolineCode_start\n\t"
+     ".globl __APICTrampolineCode_end\n\t"
+     ".type __APICTrampolineCode_start,@function\n"
+     "__APICTrampolineCode_start:\n\t"
+//     "movs	%cs,%ds\n\t"
+     "movl	$1,%ebx\n\t"         // Flag an SMP trampoline
+     "cli\n\t"
+     "movl	$1,%eax\n\t"
+//     "movw	%eax,%cr0\n\t"        // Enter protected mode
+     "jmp	flush_instr\n\t"
+     "flush_instr:\n\t"
+     "jmp %cs:100000\n\t" // jump into kernel resource ..
+     "__APICTrampolineCode_end:");
+#endif
+#define                 APICICR_INT_LEVELTRIG      0x8000
+#define                 APICICR_INT_ASSERT         0x4000
+#define                 APICICR_DM_INIT            0x500
+
+unsigned long core_APICIPIWake(UBYTE wake_apicid, IPTR wake_apicstartrip)
+{
+    struct KernelBase *KernelBase = TLS_GET(KernelBase);
+    unsigned long delay_time, status_ipisend, ipisend_timeout, status_ipirecv = 0;
+    unsigned int apic_ver, maxlvt, start_count, max_starts = 2;
+
+    rkprintf("[Kernel] core_APICIPIWake(%d @ %p)\n", wake_apicid, wake_apicstartrip);
+
+    /* Send the IPI by setting APIC_ICR : Set INIT on target APIC
+       by writing the apicid to the destfield of APIC_ICR2 */
+    *((uint32_t*)(KernelBase->kb_APICBase + 0x310)) = ((wake_apicid)<<24);
+    *((uint32_t*)(KernelBase->kb_APICBase + 0x300)) = APICICR_INT_LEVELTRIG | APICICR_INT_ASSERT | APICICR_DM_INIT;
+
+    rkprintf("[Kernel] core_APICIPIWake: Waiting for IPI INIT to complete...\n");
+    ipisend_timeout = 1000;
+    do {
+        delay_time = 100;
+        do {} while (delay_time--);
+
+        status_ipisend = *((uint32_t*)(KernelBase->kb_APICBase + 0x300)) & 0x1000;
+    } while (status_ipisend && (ipisend_timeout--));
+
+    delay_time = 10 * 1000;
+    do {} while (delay_time--);
+
+    /* Send the IPI by setting APIC_ICR */
+    *((uint32_t*)(KernelBase->kb_APICBase + 0x310)) = ((wake_apicid)<<24); /* Set the target APIC */
+    *((uint32_t*)(KernelBase->kb_APICBase + 0x300)) = APICICR_INT_LEVELTRIG | APICICR_DM_INIT;
+
+    rkprintf("[Kernel] core_APICIPIWake: Waiting for IPI INIT to deassert ...\n");
+    ipisend_timeout = 1000;
+    do {
+        delay_time = 100;
+        do {} while (delay_time--);
+
+        status_ipisend = *((uint32_t*)(KernelBase->kb_APICBase + 0x300)) & 0x1000;
+    } while (status_ipisend && (ipisend_timeout--));
+
+    /* memory barrier */
+    do { asm volatile("mfence":::"memory"); }while(0);
+
+    /* check for Pentium erratum 3AP .. */
+    apic_ver = (*((uint32_t*)(KernelBase->kb_APICBase + 0x30)) & 0xFF);
+    maxlvt = (apic_ver & 0xF0) ? ((*((uint32_t*)(KernelBase->kb_APICBase + 0x30)) >> 16) & 0xFF) : 2; /* 82489DXs doesnt report no. of LVT entries. */
+
+    /* Perform IPI STARTUP loop */
+    for (start_count = 1; start_count<=max_starts; start_count++)
+    {
+        rkprintf("[Kernel] core_APICIPIWake: Attempting STARTUP .. %d\n", start_count);
+        *((uint32_t*)(KernelBase->kb_APICBase + 0x280)) = 0;
+        status_ipisend = *(uint32_t*)(KernelBase->kb_APICBase + 0x280);
+        rkprintf("[Kernel] core_APICIPIWake: IPI STARTUP sent\n");
+
+        /* STARTUP IPI */
+        *((uint32_t*)(KernelBase->kb_APICBase + 0x310)) = ((wake_apicid)<<24); /* Set the target APIC */
+        *((uint32_t*)(KernelBase->kb_APICBase + 0x300)) = APICICR_DM_INIT | (wake_apicstartrip>>12);
+
+        /* Allow the target APIC to accept the IPI */
+        delay_time = 300;
+        do {} while (delay_time--);
+
+        rkprintf("[Kernel] core_APICIPIWake: Waiting for IPI STARTUP to complete...\n");
+        ipisend_timeout = 1000;
+        do {
+            delay_time = 100;
+            do {} while (delay_time--);
+
+            status_ipisend = *((uint32_t*)(KernelBase->kb_APICBase + 0x300)) & 0x1000;
+        } while (status_ipisend && (ipisend_timeout--));
+
+        /* Allow the target APIC to accept the IPI */
+        delay_time = 200;
+        do {} while (delay_time--);
+
+        if (maxlvt > 3)
+            *((uint32_t*)(KernelBase->kb_APICBase + 0x280)) = 0;
+
+        status_ipirecv = *((uint32_t*)(KernelBase->kb_APICBase + 0x280)) & 0xEF;
+        if (status_ipisend || status_ipirecv) break;
+    }
+    rkprintf("[Kernel] core_APICIPIWake: STARTUP run finished...\n");
+
+    if (status_ipisend)
+    {
+        rkprintf("[Kernel] core_APICIPIWake: APIC delivery failed\n");
+    }
+    if (status_ipirecv)
+    {
+        rkprintf("[Kernel] core_APICIPIWake: APIC delivery error (%lx)\n", status_ipirecv);
+    }
+
+    return (status_ipisend | status_ipirecv);
 }

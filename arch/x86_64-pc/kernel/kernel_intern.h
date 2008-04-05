@@ -65,6 +65,7 @@ int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 IPTR core_APICProbe();
 IPTR core_APICGetMSRAPICBase();
 UBYTE core_APICGetID();
+unsigned long core_APICIPIWake(UBYTE, IPTR);
 void core_SetupIDT();
 void core_SetupGDT();
 void core_SetupMMU();
@@ -75,6 +76,7 @@ void core_DefaultIRETQ();
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
+void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList);
 
 /* Debug support .. */
 void scr_RawPutChars(char *, int);
