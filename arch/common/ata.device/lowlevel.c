@@ -259,38 +259,6 @@ void ata_HandleIRQ(struct ata_Bus *bus)
 }
 
 /*
- * enable / disable IRQ; this manages interrupt requests more effectively in case of legacy emulation
- * as little code as there can be. and keep it that way.
- */
-void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable)
-{
-    bus->ab_Waiting = enable;
-    ata_out(enable ? 0x0 : 0x02, ata_AltControl, bus->ab_Alt);
-}
-
-/*
- * handle IRQ; still fast and efficient, supposed to verify if this irq is for us and take adequate steps
- * part of code moved here from ata.c to reduce containment
- */
-void ata_HandleIRQ(struct ata_Bus *bus)
-{
-    /*
-     * don't waste your time on checking other devices.
-     * pass irq ONLY if task is expecting one;
-     */
-    if (TRUE == bus->ab_Waiting)
-    {
-        if (0 == (ATAF_BUSY & ata_ReadStatus(bus)))
-        {
-            D(bug("[ATA  ] Got Intrq\n"));
-            ata_EnableIRQ(bus, FALSE);
-            bus->ab_IntCnt++;
-            Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
-        }
-    }
-}
-
-/*
  * wait for timeout or drive ready
  * polling-in-a-loop, but it should be safe to remove this already
  */
