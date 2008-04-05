@@ -710,6 +710,7 @@ EGREP
 LIBOBJS
 DISTCC
 CCACHE
+LIBLZO
 aros_kernel_cc
 aros_target_as_ln
 aros_kernel_ld
@@ -3888,14 +3889,14 @@ done
 
 case "$aros_host_cc" in
     *gcc*)
-	aros_host_cc_pipe="-pipe"
-	;;
+    aros_host_cc_pipe="-pipe"
+    ;;
     icc)
-	aros_host_cc_pipe=""
-	;;
+    aros_host_cc_pipe=""
+    ;;
     *)
-	aros_host_cc_pipe=""
-	;;
+    aros_host_cc_pipe=""
+    ;;
 esac
 
 aros_target_cc_includes=""
@@ -3907,89 +3908,89 @@ aros_target_cc_includes=""
 
 case "$host_os" in
     linux*)
-	aros_host_arch="linux"
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *x86_64*)
-	    	aros_host_cpu="x86_64"
-		;;
-	    *m68k*)
-		aros_host_cpu="m68k"
-		;;
-	    *powerpc*)
-	    	aros_host_cpu="ppc"
-		;;
-	    *)
-		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+    aros_host_arch="linux"
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *x86_64*)
+            aros_host_cpu="x86_64"
+        ;;
+        *m68k*)
+        aros_host_cpu="m68k"
+        ;;
+        *powerpc*)
+            aros_host_cpu="ppc"
+        ;;
+        *)
+        { echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
 
     freebsd*)
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
-	aros_host_make="gmake"
-	aros_host_arch="freebsd"
-	aros_host_cpu="i386"
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
+    aros_host_make="gmake"
+    aros_host_arch="freebsd"
+    aros_host_cpu="i386"
 
         aros_host_ldflags="$aros_host_ldflags -L/usr/local/lib -liconv"
 
 
-	        	case $host_os in
-	    freebsd[234]*)
-		aros_object_format="elf_i386"
+                case $host_os in
+        freebsd[234]*)
+        aros_object_format="elf_i386"
                 ;;
 
-	    *)
-		aros_object_format="elf_i386_fbsd"
+        *)
+        aros_object_format="elf_i386_fbsd"
                 ;;
-	esac
+    esac
 
-	;;
+    ;;
 
     darwin*)
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	aros_host_arch="darwin"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *powerpc*)
-	    	aros_host_cpu="ppc"
-		;;
-	    *)
-		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    aros_host_arch="darwin"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *powerpc*)
+            aros_host_cpu="ppc"
+        ;;
+        *)
+        { echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
 
         aros_host_ldflags="$aros_host_ldflags -liconv"
 
-	;;
+    ;;
 
     netbsd*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	aros_host_make="gmake"
+    aros_host_make="gmake"
         aros_host_arch="netbsd"
-	case "$host_cpu" in
+    case "$host_cpu" in
             *i?86*)
-        	aros_host_cpu="i386"
-        	;;
+            aros_host_cpu="i386"
+            ;;
             *m68k*)
-        	aros_host_cpu="m68k"
-        	;;
+            aros_host_cpu="m68k"
+            ;;
             *)
-        	{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+            { echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-        	aros_host_cpu="$host_cpu"
-        	;;
-	esac
-	aros_host_lib_suffix=".0.0"
+            aros_host_cpu="$host_cpu"
+            ;;
+    esac
+    aros_host_lib_suffix=".0.0"
         ;;
 
     openbsd*)
@@ -4024,66 +4025,66 @@ echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
         ;;
 
     morphos*)
-	aros_host_arch="morphos"
-	aros_host_cpu="ppc"
-	;;
+    aros_host_arch="morphos"
+    aros_host_cpu="ppc"
+    ;;
 
     amiga*)
-	aros_host_arch="amiga"
-	SORT="/gg/bin/sort"
-	TEST="/gg/bin/test"
-	UNIQ="/gg/bin/uniq"
-	FOR="for"
-	TOUCH="/gg/bin/touch"
-	case "$host_cpu" in
-	    *m68k*)
-		aros_host_cpu="m68k"
-		;;
-	    *powerpc*)
-		aros_host_cpu="ppc"
-		;;
-	    *)
-		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+    aros_host_arch="amiga"
+    SORT="/gg/bin/sort"
+    TEST="/gg/bin/test"
+    UNIQ="/gg/bin/uniq"
+    FOR="for"
+    TOUCH="/gg/bin/touch"
+    case "$host_cpu" in
+        *m68k*)
+        aros_host_cpu="m68k"
+        ;;
+        *powerpc*)
+        aros_host_cpu="ppc"
+        ;;
+        *)
+        { echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
 
     cygwin*)
-	aros_host_arch="cygwin"
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *)
-		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+    aros_host_arch="cygwin"
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *)
+        { echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
 
     mingw32*)
         aros_host_arch="mingw32"
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *)
-		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *)
+        { echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
 echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
     *)
-	{ { echo "$as_me:$LINENO: error: Unsupported host architecture $host" >&5
+    { { echo "$as_me:$LINENO: error: Unsupported host architecture $host" >&5
 echo "$as_me: error: Unsupported host architecture $host" >&2;}
    { (exit 1); exit 1; }; }
-	;;
+    ;;
 esac
 
 # Extract the first word of "ar", so it can be a program name with args.
@@ -7987,17 +7988,17 @@ if test "$debug" != "none"; then
     for d in $debug; do
         found="0"
         for d2 in $all_debug_types; do
-	    if test "$d2" = "$d"; then
-	        found="1"
-		break
-	    fi
-	done
-	if test "$found" = "0"; then
-	    { { echo "$as_me:$LINENO: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&5
+        if test "$d2" = "$d"; then
+            found="1"
+        break
+        fi
+    done
+    if test "$found" = "0"; then
+        { { echo "$as_me:$LINENO: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&5
 echo "$as_me: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&2;}
    { (exit 1); exit 1; }; }
-	fi
-	export aros_${d}_debug="1"
+    fi
+    export aros_${d}_debug="1"
     done
     aros_debug="yes"
 fi
@@ -8184,68 +8185,68 @@ target_bootloader="none"
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
-	aros_target_arch="linux"
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="emulcompat"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
-		aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
-		aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
-		gcc_target_cpu="mc68000"
-		;;
-	    *i?86*)
-		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		;;
-	    *x86_64*)
-		aros_target_cpu="x86_64"
-		aros_object_format="elf_x86_64"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
-		aros_default_wbdepth=8
-		gcc_target_cpu="x86_64"
-		;;
-	    *powerpc*)
-	    	aros_target_cpu="ppc"
-		aros_object_format="elf32ppc"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
-		aros_default_wbdepth=8
-		gcc_target_cpu="ppc"
-		;;
-	    *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for Linux -- $target_cpu\"" >&5
+    aros_target_arch="linux"
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="emulcompat"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
+        aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
+        aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
+        gcc_target_cpu="mc68000"
+        ;;
+        *i?86*)
+        aros_target_cpu="i386"
+        aros_object_format="elf_i386"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
+        aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+        ;;
+        *x86_64*)
+        aros_target_cpu="x86_64"
+        aros_object_format="elf_x86_64"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
+        aros_default_wbdepth=8
+        gcc_target_cpu="x86_64"
+        ;;
+        *powerpc*)
+            aros_target_cpu="ppc"
+        aros_object_format="elf32ppc"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
+        aros_default_wbdepth=8
+        gcc_target_cpu="ppc"
+        ;;
+        *)
+        { { echo "$as_me:$LINENO: error: \"Unknown CPU for Linux -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for Linux -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
-	esac
+        ;;
+    esac
     ;;
 
     pc)
-	aros_target_arch="pc"
-	aros_shared_default="no"
-	target_bootloader="grub"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
+    aros_target_arch="pc"
+    aros_shared_default="no"
+    target_bootloader="grub"
+    case "$target_cpu" in
+        *i?86*)
+        aros_target_cpu="i386"
 
 
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_i386"
                 fi
-		aros_flavour="standalone"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_kernel_ldflags=""
-		aros_default_wbwidth=640
-		aros_default_wbheight=480
-		gcc_target_cpu="i386"
-		;;
+        aros_flavour="standalone"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+        aros_kernel_ldflags=""
+        aros_default_wbwidth=640
+        aros_default_wbheight=480
+        gcc_target_cpu="i386"
+        ;;
             *x86_64*)
                 aros_target_cpu="x86_64"
                 if test "$aros_object_format" = "" ; then
@@ -8260,88 +8261,88 @@ echo "$as_me: error: \"Unknown CPU for Linux -- $target_cpu\"" >&2;}
                 gcc_target_cpu="x86_64"
                 ;;
             *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown native CPU -- $target_cpu\"" >&5
+        { { echo "$as_me:$LINENO: error: \"Unknown native CPU -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
-	esac
-	;;
+        ;;
+    esac
+    ;;
 
     prep)
-	aros_target_arch="prep"
-	aros_shared_default="no"
-	aros_target_cpu="ppc"
-	aros_object_format="elf32ppc"
-	aros_flavour="ppcnative"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
-	aros_kernel_ldflags=""
-	aros_default_wbwidth=640
-	aros_default_wbheight=480
-	gcc_target_cpu="ppc"
-	case "$target_cpu" in
-	    *cross*)
-		aros_target_cc="ppc-linux-gcc -pipe"
-		aros_target_ld="ppc-linux-ld"
-		aros_target_as="ppc-linux-as"
-		aros_target_ar="ppc-linux-ar"
-		aros_target_ranlib="ppc-linux-ranlib"
-		aros_target_nm="ppc-linux-nm"
-		aros_target_strip="ppc-linux-strip"
-		aros_target_objcopy="ppc-linux-objcopy"
-		aros_target_objdump="ppc-linux-objdump"
-		aros_shared_ld="ppc-linux-ld"
-		aros_kernel_ld="ppc-linux-ld"
-		;;
-	    *)
-	        ;;
-	esac
-	;;
+    aros_target_arch="prep"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf32ppc"
+    aros_flavour="ppcnative"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    aros_kernel_ldflags=""
+    aros_default_wbwidth=640
+    aros_default_wbheight=480
+    gcc_target_cpu="ppc"
+    case "$target_cpu" in
+        *cross*)
+        aros_target_cc="ppc-linux-gcc -pipe"
+        aros_target_ld="ppc-linux-ld"
+        aros_target_as="ppc-linux-as"
+        aros_target_ar="ppc-linux-ar"
+        aros_target_ranlib="ppc-linux-ranlib"
+        aros_target_nm="ppc-linux-nm"
+        aros_target_strip="ppc-linux-strip"
+        aros_target_objcopy="ppc-linux-objcopy"
+        aros_target_objdump="ppc-linux-objdump"
+        aros_shared_ld="ppc-linux-ld"
+        aros_kernel_ld="ppc-linux-ld"
+        ;;
+        *)
+            ;;
+    esac
+    ;;
 
     freebsd*)
-	aros_target_arch="freebsd"
-	aros_target_cpu="i386"
-	aros_flavour="emulation"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-	gcc_target_cpu="i386"
+    aros_target_arch="freebsd"
+    aros_target_cpu="i386"
+    aros_flavour="emulation"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+    gcc_target_cpu="i386"
 
-	aros_target_strip_flags="-x"
-	;;
+    aros_target_strip_flags="-x"
+    ;;
 
     darwin*)
-	aros_target_arch="darwin"
-	aros_target_cpu="i386"
-	aros_flavour="emulation"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-	gcc_target_cpu="i386"
+    aros_target_arch="darwin"
+    aros_target_cpu="i386"
+    aros_flavour="emulation"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+    gcc_target_cpu="i386"
 
-	aros_target_strip_flags="-x"
-	;;
+    aros_target_strip_flags="-x"
+    ;;
 
     netbsd*)
         aros_target_arch="netbsd"
-	case "$target_cpu" in
+    case "$target_cpu" in
             *m68k*)
-        	aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-        	aros_flavour="emulcompat"
-        	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
-		gcc_target_cpu="mc68000"
-        	;;
+            aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+            aros_flavour="emulcompat"
+            aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
+        gcc_target_cpu="mc68000"
+            ;;
             *i?86*)
-        	aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-        	aros_flavour="emulation"
-        	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
-        	aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-        	;;
+            aros_target_cpu="i386"
+        aros_object_format="elf_i386"
+            aros_flavour="emulation"
+            aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
+            aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+            ;;
             *)
-        	{ { echo "$as_me:$LINENO: error: \"Unknown CPU for NetBSD -- $target_cpu\"" >&5
+            { { echo "$as_me:$LINENO: error: \"Unknown CPU for NetBSD -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for NetBSD -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-        	;;
-	esac
-	aros_target_genmap="-Wl,-M -Xlinker >"
+            ;;
+    esac
+    aros_target_genmap="-Wl,-M -Xlinker >"
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         ;;
@@ -8351,10 +8352,10 @@ echo "$as_me: error: \"Unknown CPU for NetBSD -- $target_cpu\"" >&2;}
         case "$target_cpu" in
             *i?86*)
                 aros_target_cpu="i386"
-		aros_object_format="elf_i386"
+        aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
-		gcc_target_cpu="i386"
+        gcc_target_cpu="i386"
                 ;;
             *)
                 { { echo "$as_me:$LINENO: error: \"Unknown CPU for OpenBSD -- $target_cpu\"" >&5
@@ -8362,9 +8363,9 @@ echo "$as_me: error: \"Unknown CPU for OpenBSD -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
                 ;;
         esac
-	aros_target_genmap="-Wl,-M -Xlinker >"
+    aros_target_genmap="-Wl,-M -Xlinker >"
         aros_target_nm_flags="-u"
-	aros_flavour="emulation"
+    aros_flavour="emulation"
         ;;
 
     solaris*)
@@ -8372,9 +8373,9 @@ echo "$as_me: error: \"Unknown CPU for OpenBSD -- $target_cpu\"" >&2;}
         case "$target_cpu" in
             *sparc*)
                 aros_target_cpu="sparc"
-		aros_object_format="elf_sparc"
+        aros_object_format="elf_sparc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dsparc -D__Solaris__"
-		gcc_target_cpu="sparc"
+        gcc_target_cpu="sparc"
                 ;;
             *)
                 { { echo "$as_me:$LINENO: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&5
@@ -8387,210 +8388,210 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
         ;;
 
     morphos*)
-	aros_target_arch="morphos"
-	aros_shared_default="no"
-	aros_target_cpu="ppc"
-	aros_object_format="elf_ppc"
-	aros_flavour="nativecompat"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
-	gcc_target_cpu="ppc"
-	;;
+    aros_target_arch="morphos"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf_ppc"
+    aros_flavour="nativecompat"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    gcc_target_cpu="ppc"
+    ;;
 
     sam440)
-	aros_target_arch="sam440"
-	aros_shared_default="no"
-	aros_target_cpu="ppc"
-	aros_object_format="elf32ppc"
-	aros_flavour="ppcnative"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
-	aros_kernel_ldflags=""
-	aros_default_wbwidth=640
-	aros_default_wbheight=480
-	aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
-	gcc_target_cpu="powerpc"
-	case "$target_cpu" in
-	    *powerpc*)
-		aros_target_cc="powerpc-linux-gcc -pipe"
-		aros_target_ld="powerpc-linux-ld"
-		aros_target_as="powerpc-linux-as"
-		aros_target_ar="powerpc-linux-ar"
-		aros_target_ranlib="powerpc-linux-ranlib"
-		aros_target_nm="powerpc-linux-nm"
-		aros_target_strip="powerpc-linux-strip"
-		aros_target_objcopy="powerpc-linux-objcopy"
-		aros_target_objdump="powerpc-linux-objdump"
-		aros_shared_ld="powerpc-linux-ld"
-		aros_kernel_ld="powerpc-linux-ld"
-		;;
-	    *)
-	        ;;
-	esac
-	;;
+    aros_target_arch="sam440"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf32ppc"
+    aros_flavour="ppcnative"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    aros_kernel_ldflags=""
+    aros_default_wbwidth=640
+    aros_default_wbheight=480
+    aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
+    gcc_target_cpu="powerpc"
+    case "$target_cpu" in
+        *powerpc*)
+        aros_target_cc="powerpc-linux-gcc -pipe"
+        aros_target_ld="powerpc-linux-ld"
+        aros_target_as="powerpc-linux-as"
+        aros_target_ar="powerpc-linux-ar"
+        aros_target_ranlib="powerpc-linux-ranlib"
+        aros_target_nm="powerpc-linux-nm"
+        aros_target_strip="powerpc-linux-strip"
+        aros_target_objcopy="powerpc-linux-objcopy"
+        aros_target_objdump="powerpc-linux-objdump"
+        aros_shared_ld="powerpc-linux-ld"
+        aros_kernel_ld="powerpc-linux-ld"
+        ;;
+        *)
+            ;;
+    esac
+    ;;
 
     amiga*)
-	aros_target_arch="amiga"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
-	aros_shared_default="no"
+    aros_target_arch="amiga"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
+    aros_shared_default="no"
 
-	aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
+    aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
 
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="nativecompat"
-		gcc_target_cpu="mc68000"
-		;;
-	    *ppc*)
-		aros_cpu="ppc"
-		aros_flavour="native"
-		gcc_target_cpu="ppc"
-		;;
-	    *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for Amiga $target_cpu\"" >&5
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="nativecompat"
+        gcc_target_cpu="mc68000"
+        ;;
+        *ppc*)
+        aros_cpu="ppc"
+        aros_flavour="native"
+        gcc_target_cpu="ppc"
+        ;;
+        *)
+        { { echo "$as_me:$LINENO: error: \"Unknown CPU for Amiga $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for Amiga $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
+        ;;
         esac
-	;;
+    ;;
 
     cygwin*)
-	aros_target_arch="cygwin"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
-		aros_shared_cflags=""
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		;;
-	    *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&5
+    aros_target_arch="cygwin"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *i?86*)
+        aros_target_cpu="i386"
+        aros_object_format="elf_i386"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
+        aros_shared_cflags=""
+        aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+        ;;
+        *)
+        { { echo "$as_me:$LINENO: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
-	esac
+        ;;
+    esac
     ;;
 
     mingw32*)
         aros_target_arch="mingw32"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *i?86*)
+        aros_target_cpu="i386"
                 aros_object_format="elf_i386"
-		aros_flavour="emulation"
+        aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_shared_cflags=""
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		;;
-	    *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for Mingw32 -- $target_cpu\"" >&5
+        aros_shared_cflags=""
+        aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+        ;;
+        *)
+        { { echo "$as_me:$LINENO: error: \"Unknown CPU for Mingw32 -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for Mingw32 -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
-	esac
+        ;;
+    esac
     ;;
     pp*)
-	aros_target_arch="pp"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="palmnative"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-		aros_kernel_ldflags=""
-		aros_default_wbwidth=160
+    aros_target_arch="pp"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="palmnative"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+        aros_kernel_ldflags=""
+        aros_default_wbwidth=160
                 aros_default_wbheight=160
-		aros_default_wbdepth=1
+        aros_default_wbdepth=1
                 aros_target_cc="m68k-elf-gcc -pipe"
                 aros_target_ld="$(which m68k-elf-ld)"
-		aros_target_as="m68k-elf-gcc -pipe"
-		aros_shared_ld="m68k-elf-gcc"
-		aros_kernel_ld="m68k-elf-gcc"
-		aros_target_ar="m68k-elf-ar"
-		aros_target_ar_flags="cru"
-		aros_target_ranlib="m68k-elf-ranlib"
-		aros_target_nm="m68k-elf-nm"
-		aros_target_objcopy="m68k-elf-objcopy"
-		aros_target_objdump="m68k-elf-objdump"
-		aros_compiler_libs="-lgcc1"
-		aros_shared_default=no
-		aros_shared_cflags="-fpic"
-		aros_shared_aflags=""
-		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
-		aros_debug_aflags=""
-		aros_debug_ldflags="$aros_symbols_debug"
-		aros_mungwall_debug="0"
-		aros_modules_debug="0"
-		gcc_target_cpu="mc68000"
-		ignore_undefined_symbols="-ius"
-		;;
-	   *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for PalmPilot -- $target_cpu\"" >&5
+        aros_target_as="m68k-elf-gcc -pipe"
+        aros_shared_ld="m68k-elf-gcc"
+        aros_kernel_ld="m68k-elf-gcc"
+        aros_target_ar="m68k-elf-ar"
+        aros_target_ar_flags="cru"
+        aros_target_ranlib="m68k-elf-ranlib"
+        aros_target_nm="m68k-elf-nm"
+        aros_target_objcopy="m68k-elf-objcopy"
+        aros_target_objdump="m68k-elf-objdump"
+        aros_compiler_libs="-lgcc1"
+        aros_shared_default=no
+        aros_shared_cflags="-fpic"
+        aros_shared_aflags=""
+        aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+        aros_kernel_ldflags="-Wl,-rpath,./lib"
+        aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
+        aros_debug_aflags=""
+        aros_debug_ldflags="$aros_symbols_debug"
+        aros_mungwall_debug="0"
+        aros_modules_debug="0"
+        gcc_target_cpu="mc68000"
+        ignore_undefined_symbols="-ius"
+        ;;
+       *)
+        { { echo "$as_me:$LINENO: error: \"Unknown CPU for PalmPilot -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for PalmPilot -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
-	esac
-	;;
+        ;;
+    esac
+    ;;
 
     mac*)
-	aros_target_arch="mac"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="mac68knative"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-		aros_default_wbwidth=512
+    aros_target_arch="mac"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="mac68knative"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+        aros_default_wbwidth=512
                 aros_default_wbheight=384
-		aros_default_wbdepth=8
+        aros_default_wbdepth=8
                 aros_target_cc="m68k-elf-gcc -pipe"
                 aros_target_ld="$(which m68k-elf-ld)"
-		aros_target_as="m68k-elf-gcc -pipe"
-		aros_shared_ld="m68k-elf-gcc"
-		aros_kernel_ld="m68k-elf-gcc"
-		aros_target_ar="m68k-elf-ar"
-		aros_target_ar_flags="cru"
-		aros_target_ranlib="m68k-elf-ranlib"
-		aros_target_nm="m68k-elf-nm"
-		aros_target_objcopy="m68k-elf-objcopy"
-		aros_target_objdump="m68k-elf-objdump"
-		aros_compiler_libs="-lgcc1"
-		aros_shared_default=no
-		aros_shared_cflags="-fpic"
-		aros_shared_aflags=""
-		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000"
-		aros_debug_aflags=""
-		aros_debug_ldflags="$aros_symbols_debug"
-		aros_mungwall_debug="0"
-		aros_modules_debug="0"
-		gcc_target_cpu="mc68000"
-		ignore_undefined_symbols="-ius"
-		;;
-	   *)
-		{ { echo "$as_me:$LINENO: error: \"Unknown CPU for Mac68k -- $target_cpu\"" >&5
+        aros_target_as="m68k-elf-gcc -pipe"
+        aros_shared_ld="m68k-elf-gcc"
+        aros_kernel_ld="m68k-elf-gcc"
+        aros_target_ar="m68k-elf-ar"
+        aros_target_ar_flags="cru"
+        aros_target_ranlib="m68k-elf-ranlib"
+        aros_target_nm="m68k-elf-nm"
+        aros_target_objcopy="m68k-elf-objcopy"
+        aros_target_objdump="m68k-elf-objdump"
+        aros_compiler_libs="-lgcc1"
+        aros_shared_default=no
+        aros_shared_cflags="-fpic"
+        aros_shared_aflags=""
+        aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+        aros_kernel_ldflags="-Wl,-rpath,./lib"
+        aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000"
+        aros_debug_aflags=""
+        aros_debug_ldflags="$aros_symbols_debug"
+        aros_mungwall_debug="0"
+        aros_modules_debug="0"
+        gcc_target_cpu="mc68000"
+        ignore_undefined_symbols="-ius"
+        ;;
+       *)
+        { { echo "$as_me:$LINENO: error: \"Unknown CPU for Mac68k -- $target_cpu\"" >&5
 echo "$as_me: error: \"Unknown CPU for Mac68k -- $target_cpu\"" >&2;}
    { (exit 1); exit 1; }; }
-		;;
-	esac
-	;;
+        ;;
+    esac
+    ;;
 
     *)
-	{ { echo "$as_me:$LINENO: error: Unsupported target architecture $target" >&5
+    { { echo "$as_me:$LINENO: error: Unsupported target architecture $target" >&5
 echo "$as_me: error: Unsupported target architecture $target" >&2;}
    { (exit 1); exit 1; }; }
-	;;
+    ;;
 esac
 
 { echo "$as_me:$LINENO: checking which bootloader to use" >&5
@@ -8609,6 +8610,467 @@ else
 fi
 { echo "$as_me:$LINENO: result: $target_bootloader" >&5
 echo "${ECHO_T}$target_bootloader" >&6; }
+
+# Check LZO when compiling the grub2 bootloader on i386/x86_64.
+aros_liblzo_check="no"
+case "$aros_target_bootloader" in
+    grub2*)
+    case "$target_cpu" in
+        *i?86*)
+        aros_liblzo_check="yes"
+        ;;
+        *x86_64*)
+        aros_liblzo_check="yes"
+        ;;
+        *)
+        ;;
+    esac
+
+    ;;
+   *)
+    ;;
+esac
+
+if test "$aros_liblzo_check" = "yes"; then
+    # There are three possibilities. LZO version 2 installed with the name
+    # liblzo2, with the name liblzo, and LZO version 1.
+    { echo "$as_me:$LINENO: checking for __lzo_init_v2 in -llzo2" >&5
+echo $ECHO_N "checking for __lzo_init_v2 in -llzo2... $ECHO_C" >&6; }
+if test "${ac_cv_lib_lzo2___lzo_init_v2+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-llzo2  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char __lzo_init_v2 ();
+int
+main ()
+{
+return __lzo_init_v2 ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_lzo2___lzo_init_v2=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_lzo2___lzo_init_v2=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_lzo2___lzo_init_v2" >&5
+echo "${ECHO_T}$ac_cv_lib_lzo2___lzo_init_v2" >&6; }
+if test $ac_cv_lib_lzo2___lzo_init_v2 = yes; then
+  LIBLZO="-llzo2"
+else
+  { echo "$as_me:$LINENO: checking for __lzo_init_v2 in -llzo" >&5
+echo $ECHO_N "checking for __lzo_init_v2 in -llzo... $ECHO_C" >&6; }
+if test "${ac_cv_lib_lzo___lzo_init_v2+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-llzo  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char __lzo_init_v2 ();
+int
+main ()
+{
+return __lzo_init_v2 ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_lzo___lzo_init_v2=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_lzo___lzo_init_v2=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_lzo___lzo_init_v2" >&5
+echo "${ECHO_T}$ac_cv_lib_lzo___lzo_init_v2" >&6; }
+if test $ac_cv_lib_lzo___lzo_init_v2 = yes; then
+  LIBLZO="-llzo"
+else
+  { echo "$as_me:$LINENO: checking for __lzo_init2 in -llzo" >&5
+echo $ECHO_N "checking for __lzo_init2 in -llzo... $ECHO_C" >&6; }
+if test "${ac_cv_lib_lzo___lzo_init2+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-llzo  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char __lzo_init2 ();
+int
+main ()
+{
+return __lzo_init2 ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_lzo___lzo_init2=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_lzo___lzo_init2=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_lzo___lzo_init2" >&5
+echo "${ECHO_T}$ac_cv_lib_lzo___lzo_init2" >&6; }
+if test $ac_cv_lib_lzo___lzo_init2 = yes; then
+  LIBLZO="-llzo"
+else
+  { { echo "$as_me:$LINENO: error: LZO library version 1.02 or later is required" >&5
+echo "$as_me: error: LZO library version 1.02 or later is required" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+fi
+
+fi
+
+
+
+    LIBS="$LIBS $LIBLZO"
+    { echo "$as_me:$LINENO: checking for lzo1x_999_compress" >&5
+echo $ECHO_N "checking for lzo1x_999_compress... $ECHO_C" >&6; }
+if test "${ac_cv_func_lzo1x_999_compress+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define lzo1x_999_compress to an innocuous variant, in case <limits.h> declares lzo1x_999_compress.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define lzo1x_999_compress innocuous_lzo1x_999_compress
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char lzo1x_999_compress (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef lzo1x_999_compress
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char lzo1x_999_compress ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_lzo1x_999_compress || defined __stub___lzo1x_999_compress
+choke me
+#endif
+
+int
+main ()
+{
+return lzo1x_999_compress ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_func_lzo1x_999_compress=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_func_lzo1x_999_compress=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_func_lzo1x_999_compress" >&5
+echo "${ECHO_T}$ac_cv_func_lzo1x_999_compress" >&6; }
+if test $ac_cv_func_lzo1x_999_compress = yes; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: LZO1X-999 must be enabled" >&5
+echo "$as_me: error: LZO1X-999 must be enabled" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+
+    # LZO version 2 uses lzo/lzo1x.h, while LZO version 1 uses lzo1x.h.
+
+
+for ac_header in lzo/lzo1x.h lzo1x.h
+do
+as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  { echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+fi
+ac_res=`eval echo '${'$as_ac_Header'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+else
+  # Is the header compilable?
+{ echo "$as_me:$LINENO: checking $ac_header usability" >&5
+echo $ECHO_N "checking $ac_header usability... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+#include <$ac_header>
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_header_compiler=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_header_compiler=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
+echo "${ECHO_T}$ac_header_compiler" >&6; }
+
+# Is the header present?
+{ echo "$as_me:$LINENO: checking $ac_header presence" >&5
+echo $ECHO_N "checking $ac_header presence... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <$ac_header>
+_ACEOF
+if { (ac_try="$ac_cpp conftest.$ac_ext"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_cpp conftest.$ac_ext") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } >/dev/null && {
+	 test -z "$ac_c_preproc_warn_flag$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       }; then
+  ac_header_preproc=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+  ac_header_preproc=no
+fi
+
+rm -f conftest.err conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $ac_header_preproc" >&5
+echo "${ECHO_T}$ac_header_preproc" >&6; }
+
+# So?  What about this header?
+case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
+  yes:no: )
+    { echo "$as_me:$LINENO: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the compiler's result" >&2;}
+    ac_header_preproc=yes
+    ;;
+  no:yes:* )
+    { echo "$as_me:$LINENO: WARNING: $ac_header: present but cannot be compiled" >&5
+echo "$as_me: WARNING: $ac_header: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: $ac_header:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: $ac_header: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: $ac_header: in the future, the compiler will take precedence" >&2;}
+
+    ;;
+esac
+{ echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  eval "$as_ac_Header=\$ac_header_preproc"
+fi
+ac_res=`eval echo '${'$as_ac_Header'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+
+fi
+if test `eval echo '${'$as_ac_Header'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+fi
 
 # Find out if we are cross-compiling (ie. if we can't use the host compiler
 # for target code)
@@ -9842,27 +10304,27 @@ if test "$aros_target_cc_includes" = "" ; then
         #the directory doesn't exist, we need to do some more work
         aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
 
-	#these are the headers we're looling for
-	headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
-	         stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
-		 zutil.h"
+    #these are the headers we're looling for
+    headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+         zutil.h"
 
         dirs=
-	for h in $headers; do
-	    #which other headers each of the above headers needs?
-	    deps=$(echo "#include <$h>" | \
-	           $aros_host_cc -E -M - 2>/dev/null | \
-		   sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
+    for h in $headers; do
+        #which other headers each of the above headers needs?
+        deps=$(echo "#include <$h>" | \
+               $aros_host_cc -E -M - 2>/dev/null | \
+           sed 's/^.*://; s/\\$/ /g; s/[ \t]\+/ /g')
 
             #copy all the needed headers to a directory beneath gendir
-	    for d in $deps; do
-	        h=$(basename $d)
-	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
-		                                sed -n "s,^.*/include\(/.*\),\1,p")
-		! test -d $dir && mkdir -p $dir
-		! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
-	    done
-	done
+        for d in $deps; do
+            h=$(basename $d)
+            dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
+                                        sed -n "s,^.*/include\(/.*\),\1,p")
+        ! test -d $dir && mkdir -p $dir
+        ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+        done
+    done
     fi
 fi
 { echo "$as_me:$LINENO: result: $aros_target_cc_includes" >&5
@@ -11372,23 +11834,23 @@ echo "${ECHO_T}$dbus" >&6; }
 
 case "$aros_flavour" in
 emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION"
-		aros_flavour="emulation" ;;
+        aros_flavour="emulation" ;;
 emulcompat)	aros_flavour_uc="(AROS_FLAVOUR_EMULATION|AROS_FLAVOUR_BINCOMPAT)"
-		aros_flavour="emulation" ;;
+        aros_flavour="emulation" ;;
 standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE"
-		aros_flavour="standalone";;
+        aros_flavour="standalone";;
 native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE"
-		aros_flavour="native" ;;
+        aros_flavour="native" ;;
 nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
-		aros_flavour="native" ;;
+        aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
-		aros_flavour="linklib" ;;
+        aros_flavour="linklib" ;;
 palmnative)     aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
-		aros_flavour="palmnative" ;;
+        aros_flavour="palmnative" ;;
 mac68knative)   aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
-		aros_flavour="mac68knative" ;;
+        aros_flavour="mac68knative" ;;
 ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_BINCOMPAT)"
-		aros_flavour="ppcnative" ;;
+        aros_flavour="ppcnative" ;;
 esac
 
 if test ! -d ${aros_inc_dir} ; then
@@ -11981,13 +12443,13 @@ cat >>$CONFIG_STATUS <<_ACEOF
         aros_target_cpu=${aros_target_cpu}
         aros_target_arch=${aros_target_arch}
         aros_target_suffix=${aros_target_suffix}
-	aros_target_nm_ln=${aros_target_nm_ln}
-	aros_target_as_ln=${aros_target_as_ln}
-	aros_target_ar_ln=${aros_target_ar_ln}
-	aros_target_ranlib_ln=${aros_target_ranlib_ln}
-	aros_target_objdump_ln=${aros_target_objdump_ln}
-	aros_target_objcopy_ln=${aros_target_objcopy_ln}
-	aros_target_strip_ln=${aros_target_strip_ln}
+    aros_target_nm_ln=${aros_target_nm_ln}
+    aros_target_as_ln=${aros_target_as_ln}
+    aros_target_ar_ln=${aros_target_ar_ln}
+    aros_target_ranlib_ln=${aros_target_ranlib_ln}
+    aros_target_objdump_ln=${aros_target_objdump_ln}
+    aros_target_objcopy_ln=${aros_target_objcopy_ln}
+    aros_target_strip_ln=${aros_target_strip_ln}
 
 
 aros_scripts_dir=${aros_scripts_dir}
@@ -12223,6 +12685,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LIBLZO!$LIBLZO$ac_delim
 aros_kernel_cc!$aros_kernel_cc$ac_delim
 aros_target_as_ln!$aros_target_as_ln$ac_delim
 aros_kernel_ld!$aros_kernel_ld$ac_delim
@@ -12319,7 +12782,6 @@ aros_stack_debug!$aros_stack_debug$ac_delim
 aros_modules_debug!$aros_modules_debug$ac_delim
 ignore_undefined_symbols!$ignore_undefined_symbols$ac_delim
 gcc_target_cpu!$gcc_target_cpu$ac_delim
-LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12354,6 +12816,50 @@ N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
 ' >>$CONFIG_STATUS <conf$$subs.sed
 rm -f conf$$subs.sed
 cat >>$CONFIG_STATUS <<_ACEOF
+CEOF$ac_eof
+_ACEOF
+
+
+ac_delim='%!_!# '
+for ac_last_try in false false false false false :; do
+  cat >conf$$subs.sed <<_ACEOF
+LTLIBOBJS!$LTLIBOBJS$ac_delim
+_ACEOF
+
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 1; then
+    break
+  elif $ac_last_try; then
+    { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
+echo "$as_me: error: could not make $CONFIG_STATUS" >&2;}
+   { (exit 1); exit 1; }; }
+  else
+    ac_delim="$ac_delim!$ac_delim _$ac_delim!! "
+  fi
+done
+
+ac_eof=`sed -n '/^CEOF[0-9]*$/s/CEOF/0/p' conf$$subs.sed`
+if test -n "$ac_eof"; then
+  ac_eof=`echo "$ac_eof" | sort -nru | sed 1q`
+  ac_eof=`expr $ac_eof + 1`
+fi
+
+cat >>$CONFIG_STATUS <<_ACEOF
+cat >"\$tmp/subs-3.sed" <<\CEOF$ac_eof
+/@[a-zA-Z_][a-zA-Z_0-9]*@/!b end
+_ACEOF
+sed '
+s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g
+s/^/s,@/; s/!/@,|#_!!_#|/
+:n
+t n
+s/'"$ac_delim"'$/,g/; t
+s/$/\\/; p
+N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
+' >>$CONFIG_STATUS <conf$$subs.sed
+rm -f conf$$subs.sed
+cat >>$CONFIG_STATUS <<_ACEOF
+:end
+s/|#_!!_#|//g
 CEOF$ac_eof
 _ACEOF
 
@@ -12596,7 +13102,7 @@ s&@builddir@&$ac_builddir&;t t
 s&@abs_builddir@&$ac_abs_builddir&;t t
 s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 $ac_datarootdir_hack
-" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed 's/|#_!!_#|//g' >$tmp/out
+" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed -f "$tmp/subs-3.sed" >$tmp/out
 
 test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
   { ac_out=`sed -n '/\${datarootdir}/p' "$tmp/out"`; test -n "$ac_out"; } &&
@@ -12720,16 +13226,16 @@ echo "$as_me: executing $ac_file commands" >&6;}
   case $ac_file$ac_mode in
     "compiler_executable":C)
         prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
-	mkdir -p $prefix
-	prefix="${prefix}/${aros_target_cpu}-aros"
+    mkdir -p $prefix
+    prefix="${prefix}/${aros_target_cpu}-aros"
         prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 
-	echo ${prefix}
-	echo ${prefix2}
+    echo ${prefix}
+    echo ${prefix2}
         chmod a+x ${prefix2}-gcc ${prefix2}-ld
 
-	ln -sf ${prefix2}-gcc          ${prefix}-gcc
-	ln -sf ${prefix2}-ld           ${prefix}-ld
+    ln -sf ${prefix2}-gcc          ${prefix}-gcc
+    ln -sf ${prefix2}-ld           ${prefix}-ld
 
         ln -sf $aros_target_as_ln      ${prefix}-as
         ln -sf $aros_target_nm_ln      ${prefix}-nm

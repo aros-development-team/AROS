@@ -101,14 +101,14 @@ AC_CHECK_PROGS(aros_host_automake,[automake automake19])
 
 case "$aros_host_cc" in
     *gcc*)
-	aros_host_cc_pipe="-pipe"
-	;;
+    aros_host_cc_pipe="-pipe"
+    ;;
     icc)
-	aros_host_cc_pipe=""
-	;;
+    aros_host_cc_pipe=""
+    ;;
     *)
-	aros_host_cc_pipe=""
-	;;
+    aros_host_cc_pipe=""
+    ;;
 esac
 
 dnl Despite the name, this is really a host configuration variable.
@@ -121,91 +121,91 @@ aros_target_cc_includes=""
 
 case "$host_os" in
     linux*)
-	aros_host_arch="linux"
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *x86_64*)
-	    	aros_host_cpu="x86_64"
-		;;
-	    *m68k*)
-		aros_host_cpu="m68k"
-		;;
-	    *powerpc*)
-	    	aros_host_cpu="ppc"
-		;;
-	    *)
-		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+    aros_host_arch="linux"
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *x86_64*)
+            aros_host_cpu="x86_64"
+        ;;
+        *m68k*)
+        aros_host_cpu="m68k"
+        ;;
+        *powerpc*)
+            aros_host_cpu="ppc"
+        ;;
+        *)
+        AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
 
     freebsd*)
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
-	aros_host_make="gmake"
-	aros_host_arch="freebsd"
-	aros_host_cpu="i386"
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe -I/usr/local/include"
+    aros_host_make="gmake"
+    aros_host_arch="freebsd"
+    aros_host_cpu="i386"
 
         aros_host_ldflags="$aros_host_ldflags -L/usr/local/lib -liconv"
 
-	dnl Need to override this here, it's just too hard later.
+    dnl Need to override this here, it's just too hard later.
         dnl This shouldn't be here at all...
-	dnl aros_target_cc_includes="/usr/include"
+    dnl aros_target_cc_includes="/usr/include"
 
-	dnl FreeBSD 5.x (and later) has changed the default object format.
+    dnl FreeBSD 5.x (and later) has changed the default object format.
         dnl The double [[]] is necessary to get around m4's quoting rules.
-	case $host_os in
-	    freebsd[[234]]*)
-		aros_object_format="elf_i386"
+    case $host_os in
+        freebsd[[234]]*)
+        aros_object_format="elf_i386"
                 ;;
 
-	    *)
-		aros_object_format="elf_i386_fbsd"
+        *)
+        aros_object_format="elf_i386_fbsd"
                 ;;
-	esac
+    esac
 
-	;;
+    ;;
 
     darwin*)
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	aros_host_arch="darwin"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *powerpc*)
-	    	aros_host_cpu="ppc"
-		;;
-	    *)
-		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    aros_host_arch="darwin"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *powerpc*)
+            aros_host_cpu="ppc"
+        ;;
+        *)
+        AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
 
         aros_host_ldflags="$aros_host_ldflags -liconv"
 
-	;;
+    ;;
 
     netbsd*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	aros_host_make="gmake"
+    aros_host_make="gmake"
         aros_host_arch="netbsd"
-	case "$host_cpu" in
+    case "$host_cpu" in
             *i?86*)
-        	aros_host_cpu="i386"
-        	;;
+            aros_host_cpu="i386"
+            ;;
             *m68k*)
-        	aros_host_cpu="m68k"
-        	;;
+            aros_host_cpu="m68k"
+            ;;
             *)
-        	AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-        	aros_host_cpu="$host_cpu"
-        	;;
-	esac 	
-	aros_host_lib_suffix=".0.0"
+            AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+            aros_host_cpu="$host_cpu"
+            ;;
+    esac 	
+    aros_host_lib_suffix=".0.0"
         ;;
 
     openbsd*)
@@ -238,61 +238,61 @@ case "$host_os" in
         ;;
 
     morphos*)
-	aros_host_arch="morphos"
-	aros_host_cpu="ppc"
-	;;
+    aros_host_arch="morphos"
+    aros_host_cpu="ppc"
+    ;;
 
     amiga*)
-	aros_host_arch="amiga"
-	SORT="/gg/bin/sort"
-	TEST="/gg/bin/test"
-	UNIQ="/gg/bin/uniq"
-	FOR="for"
-	TOUCH="/gg/bin/touch"
-	case "$host_cpu" in
-	    *m68k*)
-		aros_host_cpu="m68k"
-		;;
-	    *powerpc*)
-		aros_host_cpu="ppc"
-		;;
-	    *)
-		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+    aros_host_arch="amiga"
+    SORT="/gg/bin/sort"
+    TEST="/gg/bin/test"
+    UNIQ="/gg/bin/uniq"
+    FOR="for"
+    TOUCH="/gg/bin/touch"
+    case "$host_cpu" in
+        *m68k*)
+        aros_host_cpu="m68k"
+        ;;
+        *powerpc*)
+        aros_host_cpu="ppc"
+        ;;
+        *)
+        AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
 
     cygwin*)
-	aros_host_arch="cygwin"
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *)
-		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+    aros_host_arch="cygwin"
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *)
+        AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
 
     mingw32*)
         aros_host_arch="mingw32"
-	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-	case "$host_cpu" in
-	    *i?86*)
-		aros_host_cpu="i386"
-		;;
-	    *)
-		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-		aros_host_cpu="$host_cpu"
-		;;
-	esac
+    aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+    case "$host_cpu" in
+        *i?86*)
+        aros_host_cpu="i386"
+        ;;
+        *)
+        AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+        aros_host_cpu="$host_cpu"
+        ;;
+    esac
         ;;
     *)
-	AC_MSG_ERROR([Unsupported host architecture $host])
-	;;
+    AC_MSG_ERROR([Unsupported host architecture $host])
+    ;;
 esac
 
 AROS_PROG(aros_host_ar,[ar],[cr])
@@ -502,15 +502,15 @@ if test "$debug" != "none"; then
     for d in $debug; do
         found="0"
         for d2 in $all_debug_types; do
-	    if test "$d2" = "$d"; then
-	        found="1"
-		break
-	    fi
-	done
-	if test "$found" = "0"; then
-	    AC_MSG_ERROR([unrecognized debug type "$d". Available types are: all none $all_debug_types])
-	fi
-	export aros_${d}_debug="1"
+        if test "$d2" = "$d"; then
+            found="1"
+        break
+        fi
+    done
+    if test "$found" = "0"; then
+        AC_MSG_ERROR([unrecognized debug type "$d". Available types are: all none $all_debug_types])
+    fi
+    export aros_${d}_debug="1"
     done
     aros_debug="yes"
 fi
@@ -588,54 +588,54 @@ target_bootloader="none"
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
-	aros_target_arch="linux"
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="emulcompat"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
-		aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
-		aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
-		gcc_target_cpu="mc68000"
-		;;
-	    *i?86*)
-		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		;;
-	    *x86_64*)
-		aros_target_cpu="x86_64"
-		aros_object_format="elf_x86_64"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
-		aros_default_wbdepth=8
-		gcc_target_cpu="x86_64"
-		;;
-	    *powerpc*)
-	    	aros_target_cpu="ppc"
-		aros_object_format="elf32ppc"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
-		aros_default_wbdepth=8
-		gcc_target_cpu="ppc"
-		;;
-	    *)
-		AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
-		;;
-	esac
+    aros_target_arch="linux"
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="emulcompat"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
+        aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
+        aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
+        gcc_target_cpu="mc68000"
+        ;;
+        *i?86*)
+        aros_target_cpu="i386"
+        aros_object_format="elf_i386"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
+        aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+        ;;
+        *x86_64*)
+        aros_target_cpu="x86_64"
+        aros_object_format="elf_x86_64"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64 -D__linux__"
+        aros_default_wbdepth=8
+        gcc_target_cpu="x86_64"
+        ;;
+        *powerpc*)
+            aros_target_cpu="ppc"
+        aros_object_format="elf32ppc"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
+        aros_default_wbdepth=8
+        gcc_target_cpu="ppc"
+        ;;
+        *)
+        AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
+        ;;
+    esac
     ;;
 
     pc)
-	aros_target_arch="pc"
-	aros_shared_default="no"
-	target_bootloader="grub"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
+    aros_target_arch="pc"
+    aros_shared_default="no"
+    target_bootloader="grub"
+    case "$target_cpu" in
+        *i?86*)
+        aros_target_cpu="i386"
 
                 dnl If somebody hasn't already set the target object
                 dnl format, then use this value. Mostly to support
@@ -645,13 +645,13 @@ case "$target_os" in
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_i386"
                 fi
-		aros_flavour="standalone"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_kernel_ldflags=""
-		aros_default_wbwidth=640
-		aros_default_wbheight=480
-		gcc_target_cpu="i386"
-		;;
+        aros_flavour="standalone"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+        aros_kernel_ldflags=""
+        aros_default_wbwidth=640
+        aros_default_wbheight=480
+        gcc_target_cpu="i386"
+        ;;
             *x86_64*)
                 aros_target_cpu="x86_64"
                 if test "$aros_object_format" = "" ; then
@@ -666,84 +666,84 @@ case "$target_os" in
                 gcc_target_cpu="x86_64"
                 ;;
             *)
-		AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
-		;;
-	esac
-	;;
+        AC_MSG_ERROR("Unknown native CPU -- $target_cpu")
+        ;;
+    esac
+    ;;
 
     prep)
-	aros_target_arch="prep"
-	aros_shared_default="no"
-	aros_target_cpu="ppc"
-	aros_object_format="elf32ppc"
-	aros_flavour="ppcnative"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
-	aros_kernel_ldflags=""
-	aros_default_wbwidth=640
-	aros_default_wbheight=480
-	gcc_target_cpu="ppc"
-	case "$target_cpu" in
-	    *cross*)
-		aros_target_cc="ppc-linux-gcc -pipe"
-		aros_target_ld="ppc-linux-ld"
-		aros_target_as="ppc-linux-as"
-		aros_target_ar="ppc-linux-ar"
-		aros_target_ranlib="ppc-linux-ranlib"
-		aros_target_nm="ppc-linux-nm"
-		aros_target_strip="ppc-linux-strip"
-		aros_target_objcopy="ppc-linux-objcopy"
-		aros_target_objdump="ppc-linux-objdump"
-		aros_shared_ld="ppc-linux-ld"
-		aros_kernel_ld="ppc-linux-ld"
-		;;
-	    *)
-	        ;;
-	esac
-	;;
+    aros_target_arch="prep"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf32ppc"
+    aros_flavour="ppcnative"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    aros_kernel_ldflags=""
+    aros_default_wbwidth=640
+    aros_default_wbheight=480
+    gcc_target_cpu="ppc"
+    case "$target_cpu" in
+        *cross*)
+        aros_target_cc="ppc-linux-gcc -pipe"
+        aros_target_ld="ppc-linux-ld"
+        aros_target_as="ppc-linux-as"
+        aros_target_ar="ppc-linux-ar"
+        aros_target_ranlib="ppc-linux-ranlib"
+        aros_target_nm="ppc-linux-nm"
+        aros_target_strip="ppc-linux-strip"
+        aros_target_objcopy="ppc-linux-objcopy"
+        aros_target_objdump="ppc-linux-objdump"
+        aros_shared_ld="ppc-linux-ld"
+        aros_kernel_ld="ppc-linux-ld"
+        ;;
+        *)
+            ;;
+    esac
+    ;;
 
     freebsd*)
-	aros_target_arch="freebsd"
-	aros_target_cpu="i386"
-	aros_flavour="emulation"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-	gcc_target_cpu="i386"
+    aros_target_arch="freebsd"
+    aros_target_cpu="i386"
+    aros_flavour="emulation"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+    gcc_target_cpu="i386"
 
-	aros_target_strip_flags="-x"
-	;;
+    aros_target_strip_flags="-x"
+    ;;
 
     darwin*)
-	aros_target_arch="darwin"
-	aros_target_cpu="i386"
-	aros_flavour="emulation"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-	gcc_target_cpu="i386"
+    aros_target_arch="darwin"
+    aros_target_cpu="i386"
+    aros_flavour="emulation"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+    gcc_target_cpu="i386"
 
-	aros_target_strip_flags="-x"
-	;;
+    aros_target_strip_flags="-x"
+    ;;
 
     netbsd*)
         aros_target_arch="netbsd"
-	case "$target_cpu" in
+    case "$target_cpu" in
             *m68k*)
-        	aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-        	aros_flavour="emulcompat"
-        	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
-		gcc_target_cpu="mc68000"
-        	;;
+            aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+            aros_flavour="emulcompat"
+            aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
+        gcc_target_cpu="mc68000"
+            ;;
             *i?86*)
-        	aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-        	aros_flavour="emulation"
-        	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
-        	aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-        	;;
+            aros_target_cpu="i386"
+        aros_object_format="elf_i386"
+            aros_flavour="emulation"
+            aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
+            aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+            ;;
             *)
-        	AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
-        	;;
-	esac
-	aros_target_genmap="-Wl,-M -Xlinker >"
+            AC_MSG_ERROR("Unknown CPU for NetBSD -- $target_cpu")
+            ;;
+    esac
+    aros_target_genmap="-Wl,-M -Xlinker >"
         aros_flavour="emulation"
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
         ;;   
@@ -753,18 +753,18 @@ case "$target_os" in
         case "$target_cpu" in
             *i?86*)
                 aros_target_cpu="i386"
-		aros_object_format="elf_i386"
+        aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
-		gcc_target_cpu="i386"
+        gcc_target_cpu="i386"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for OpenBSD -- $target_cpu")
                 ;;
         esac
-	aros_target_genmap="-Wl,-M -Xlinker >"
+    aros_target_genmap="-Wl,-M -Xlinker >"
         aros_target_nm_flags="-u"
-	aros_flavour="emulation"
+    aros_flavour="emulation"
         ;;
 
     solaris*)
@@ -772,9 +772,9 @@ case "$target_os" in
         case "$target_cpu" in
             *sparc*)
                 aros_target_cpu="sparc"
-		aros_object_format="elf_sparc"
+        aros_object_format="elf_sparc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dsparc -D__Solaris__"
-		gcc_target_cpu="sparc"
+        gcc_target_cpu="sparc"
                 ;;
             *)
                 AC_MSG_ERROR("Unknown CPU for Solaris -- $target_cpu")
@@ -785,198 +785,198 @@ case "$target_os" in
         ;;
 
     morphos*)
-	aros_target_arch="morphos"
-	aros_shared_default="no"
-	aros_target_cpu="ppc"
-	aros_object_format="elf_ppc"
-	aros_flavour="nativecompat"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
-	gcc_target_cpu="ppc"
-	;;
+    aros_target_arch="morphos"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf_ppc"
+    aros_flavour="nativecompat"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    gcc_target_cpu="ppc"
+    ;;
 
     sam440)
-	aros_target_arch="sam440"
-	aros_shared_default="no"
-	aros_target_cpu="ppc"
-	aros_object_format="elf32ppc"
-	aros_flavour="ppcnative"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
-	aros_kernel_ldflags=""
-	aros_default_wbwidth=640
-	aros_default_wbheight=480
-	aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
-	gcc_target_cpu="powerpc"
-	case "$target_cpu" in
-	    *powerpc*)
-		aros_target_cc="powerpc-linux-gcc -pipe"
-		aros_target_ld="powerpc-linux-ld"
-		aros_target_as="powerpc-linux-as"
-		aros_target_ar="powerpc-linux-ar"
-		aros_target_ranlib="powerpc-linux-ranlib"
-		aros_target_nm="powerpc-linux-nm"
-		aros_target_strip="powerpc-linux-strip"
-		aros_target_objcopy="powerpc-linux-objcopy"
-		aros_target_objdump="powerpc-linux-objdump"
-		aros_shared_ld="powerpc-linux-ld"
-		aros_kernel_ld="powerpc-linux-ld"
-		;;
-	    *)
-	        ;;
-	esac
-	;;
+    aros_target_arch="sam440"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf32ppc"
+    aros_flavour="ppcnative"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    aros_kernel_ldflags=""
+    aros_default_wbwidth=640
+    aros_default_wbheight=480
+    aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
+    gcc_target_cpu="powerpc"
+    case "$target_cpu" in
+        *powerpc*)
+        aros_target_cc="powerpc-linux-gcc -pipe"
+        aros_target_ld="powerpc-linux-ld"
+        aros_target_as="powerpc-linux-as"
+        aros_target_ar="powerpc-linux-ar"
+        aros_target_ranlib="powerpc-linux-ranlib"
+        aros_target_nm="powerpc-linux-nm"
+        aros_target_strip="powerpc-linux-strip"
+        aros_target_objcopy="powerpc-linux-objcopy"
+        aros_target_objdump="powerpc-linux-objdump"
+        aros_shared_ld="powerpc-linux-ld"
+        aros_kernel_ld="powerpc-linux-ld"
+        ;;
+        *)
+            ;;
+    esac
+    ;;
 
     amiga*)
-	aros_target_arch="amiga"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
-	aros_shared_default="no"
+    aros_target_arch="amiga"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
+    aros_shared_default="no"
 
-	aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
+    aros_config_cflags="$aros_config_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
 
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="nativecompat"
-		gcc_target_cpu="mc68000"
-		;;
-	    *ppc*)
-		aros_cpu="ppc"
-		aros_flavour="native"
-		gcc_target_cpu="ppc"
-		;;
-	    *)
-		AC_MSG_ERROR("Unknown CPU for Amiga $target_cpu")
-		;;
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="nativecompat"
+        gcc_target_cpu="mc68000"
+        ;;
+        *ppc*)
+        aros_cpu="ppc"
+        aros_flavour="native"
+        gcc_target_cpu="ppc"
+        ;;
+        *)
+        AC_MSG_ERROR("Unknown CPU for Amiga $target_cpu")
+        ;;
         esac
-	;;
+    ;;
 
     cygwin*)
-	aros_target_arch="cygwin"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
-		aros_object_format="elf_i386"
-		aros_flavour="emulation"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
-		aros_shared_cflags=""
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		;;
-	    *)
-		AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
-		;;
-	esac
+    aros_target_arch="cygwin"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *i?86*)
+        aros_target_cpu="i386"
+        aros_object_format="elf_i386"
+        aros_flavour="emulation"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
+        aros_shared_cflags=""
+        aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+        ;;
+        *)
+        AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
+        ;;
+    esac
     ;;
 
     mingw32*)
         aros_target_arch="mingw32"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *i?86*)
-		aros_target_cpu="i386"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *i?86*)
+        aros_target_cpu="i386"
                 aros_object_format="elf_i386"
-		aros_flavour="emulation"
+        aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-		aros_shared_cflags=""
-		aros_default_wbdepth=8
-		gcc_target_cpu="i386"
-		;;
-	    *)
-		AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
-		;;
-	esac
+        aros_shared_cflags=""
+        aros_default_wbdepth=8
+        gcc_target_cpu="i386"
+        ;;
+        *)
+        AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
+        ;;
+    esac
     ;;
     pp*)
-	aros_target_arch="pp"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="palmnative"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-		aros_kernel_ldflags=""
-		aros_default_wbwidth=160
+    aros_target_arch="pp"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="palmnative"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+        aros_kernel_ldflags=""
+        aros_default_wbwidth=160
                 aros_default_wbheight=160
-		aros_default_wbdepth=1
+        aros_default_wbdepth=1
                 aros_target_cc="m68k-elf-gcc -pipe"
                 aros_target_ld="$(which m68k-elf-ld)"
-		aros_target_as="m68k-elf-gcc -pipe"
-		aros_shared_ld="m68k-elf-gcc"
-		aros_kernel_ld="m68k-elf-gcc"
-		aros_target_ar="m68k-elf-ar"
-		aros_target_ar_flags="cru"
-		aros_target_ranlib="m68k-elf-ranlib"
-		aros_target_nm="m68k-elf-nm"
-		aros_target_objcopy="m68k-elf-objcopy"
-		aros_target_objdump="m68k-elf-objdump"
-		aros_compiler_libs="-lgcc1"
-		aros_shared_default=no
-		aros_shared_cflags="-fpic"
-		aros_shared_aflags=""
-		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
-		aros_debug_aflags=""
-		aros_debug_ldflags="$aros_symbols_debug"
-		aros_mungwall_debug="0"
-		aros_modules_debug="0"
-		gcc_target_cpu="mc68000"
-		ignore_undefined_symbols="-ius"
-		;;
-	   *)
-		AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
-		;;
-	esac
-	;;
+        aros_target_as="m68k-elf-gcc -pipe"
+        aros_shared_ld="m68k-elf-gcc"
+        aros_kernel_ld="m68k-elf-gcc"
+        aros_target_ar="m68k-elf-ar"
+        aros_target_ar_flags="cru"
+        aros_target_ranlib="m68k-elf-ranlib"
+        aros_target_nm="m68k-elf-nm"
+        aros_target_objcopy="m68k-elf-objcopy"
+        aros_target_objdump="m68k-elf-objdump"
+        aros_compiler_libs="-lgcc1"
+        aros_shared_default=no
+        aros_shared_cflags="-fpic"
+        aros_shared_aflags=""
+        aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+        aros_kernel_ldflags="-Wl,-rpath,./lib"
+        aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
+        aros_debug_aflags=""
+        aros_debug_ldflags="$aros_symbols_debug"
+        aros_mungwall_debug="0"
+        aros_modules_debug="0"
+        gcc_target_cpu="mc68000"
+        ignore_undefined_symbols="-ius"
+        ;;
+       *)
+        AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
+        ;;
+    esac
+    ;;
 
     mac*)
-	aros_target_arch="mac"
-	aros_shared_default="no"
-	case "$target_cpu" in
-	    *m68k*)
-		aros_target_cpu="m68k"
-		aros_object_format="m68kelf"
-		aros_flavour="mac68knative"
-		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
-		aros_default_wbwidth=512
+    aros_target_arch="mac"
+    aros_shared_default="no"
+    case "$target_cpu" in
+        *m68k*)
+        aros_target_cpu="m68k"
+        aros_object_format="m68kelf"
+        aros_flavour="mac68knative"
+        aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
+        aros_default_wbwidth=512
                 aros_default_wbheight=384
-		aros_default_wbdepth=8
+        aros_default_wbdepth=8
                 aros_target_cc="m68k-elf-gcc -pipe"
                 aros_target_ld="$(which m68k-elf-ld)"
-		aros_target_as="m68k-elf-gcc -pipe"
-		aros_shared_ld="m68k-elf-gcc"
-		aros_kernel_ld="m68k-elf-gcc"
-		aros_target_ar="m68k-elf-ar"
-		aros_target_ar_flags="cru"
-		aros_target_ranlib="m68k-elf-ranlib"
-		aros_target_nm="m68k-elf-nm"
-		aros_target_objcopy="m68k-elf-objcopy"
-		aros_target_objdump="m68k-elf-objdump"
-		aros_compiler_libs="-lgcc1"
-		aros_shared_default=no
-		aros_shared_cflags="-fpic"
-		aros_shared_aflags=""
-		aros_shared_ldflags="-Wl,-rpath,./lib -shared"
-		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000"
-		aros_debug_aflags=""
-		aros_debug_ldflags="$aros_symbols_debug"
-		aros_mungwall_debug="0"
-		aros_modules_debug="0"
-		gcc_target_cpu="mc68000"
-		ignore_undefined_symbols="-ius"
-		;;
-	   *)
-		AC_MSG_ERROR("Unknown CPU for Mac68k -- $target_cpu")
-		;;
-	esac
-	;;
+        aros_target_as="m68k-elf-gcc -pipe"
+        aros_shared_ld="m68k-elf-gcc"
+        aros_kernel_ld="m68k-elf-gcc"
+        aros_target_ar="m68k-elf-ar"
+        aros_target_ar_flags="cru"
+        aros_target_ranlib="m68k-elf-ranlib"
+        aros_target_nm="m68k-elf-nm"
+        aros_target_objcopy="m68k-elf-objcopy"
+        aros_target_objdump="m68k-elf-objdump"
+        aros_compiler_libs="-lgcc1"
+        aros_shared_default=no
+        aros_shared_cflags="-fpic"
+        aros_shared_aflags=""
+        aros_shared_ldflags="-Wl,-rpath,./lib -shared"
+        aros_kernel_ldflags="-Wl,-rpath,./lib"
+        aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000"
+        aros_debug_aflags=""
+        aros_debug_ldflags="$aros_symbols_debug"
+        aros_mungwall_debug="0"
+        aros_modules_debug="0"
+        gcc_target_cpu="mc68000"
+        ignore_undefined_symbols="-ius"
+        ;;
+       *)
+        AC_MSG_ERROR("Unknown CPU for Mac68k -- $target_cpu")
+        ;;
+    esac
+    ;;
 
     *)
-	AC_MSG_ERROR([Unsupported target architecture $target])
-	;;
+    AC_MSG_ERROR([Unsupported target architecture $target])
+    ;;
 esac
 
 AC_MSG_CHECKING([which bootloader to use])
@@ -987,6 +987,43 @@ else
     aros_target_bootloader="$target_bootloader"
 fi
 AC_MSG_RESULT($target_bootloader)
+
+# Check LZO when compiling the grub2 bootloader on i386/x86_64.
+aros_liblzo_check="no"
+case "$aros_target_bootloader" in
+    grub2*)
+    case "$target_cpu" in
+        *i?86*)
+        aros_liblzo_check="yes"
+        ;;
+        *x86_64*)
+        aros_liblzo_check="yes"
+        ;;
+        *)
+        ;;
+    esac
+
+    ;;
+   *)
+    ;;
+esac
+
+if test "$aros_liblzo_check" = "yes"; then
+    # There are three possibilities. LZO version 2 installed with the name
+    # liblzo2, with the name liblzo, and LZO version 1.
+    AC_CHECK_LIB(lzo2, __lzo_init_v2, [LIBLZO="-llzo2"],
+    AC_CHECK_LIB(lzo, __lzo_init_v2, [LIBLZO="-llzo"],
+                AC_CHECK_LIB(lzo, __lzo_init2, [LIBLZO="-llzo"],
+                AC_MSG_ERROR([LZO library version 1.02 or later is required]))))
+
+    AC_SUBST(LIBLZO)
+    LIBS="$LIBS $LIBLZO"
+    AC_CHECK_FUNC(lzo1x_999_compress, , 
+                [AC_MSG_ERROR([LZO1X-999 must be enabled])])
+
+    # LZO version 2 uses lzo/lzo1x.h, while LZO version 1 uses lzo1x.h.
+    AC_CHECK_HEADERS(lzo/lzo1x.h lzo1x.h)
+fi
 
 # Find out if we are cross-compiling (ie. if we can't use the host compiler
 # for target code)
@@ -1107,28 +1144,28 @@ if test "$aros_target_cc_includes" = "" ; then
     if ! test -d $aros_target_cc_includes; then
         #the directory doesn't exist, we need to do some more work
         aros_target_cc_includes=${PWD}/${aros_gendir}/cc_include
-	
-	#these are the headers we're looling for
-	headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
-	         stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
-		 zutil.h"
+    
+    #these are the headers we're looling for
+    headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
+             stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
+         zutil.h"
 
         dirs=
-	for h in $headers; do
-	    #which other headers each of the above headers needs?
-	    deps=$(echo "#include <$h>" | \
-	           $aros_host_cc -E -M - 2>/dev/null | \
-		   sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
-	    
+    for h in $headers; do
+        #which other headers each of the above headers needs?
+        deps=$(echo "#include <$h>" | \
+               $aros_host_cc -E -M - 2>/dev/null | \
+           sed 's/^.*://; s/\\$/ /g; s/[[ \t]]\+/ /g')
+        
             #copy all the needed headers to a directory beneath gendir
-	    for d in $deps; do
-	        h=$(basename $d)
-	        dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
-		                                sed -n "s,^.*/include\(/.*\),\1,p")
-		! test -d $dir && mkdir -p $dir
-		! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
-	    done
-	done	    
+        for d in $deps; do
+            h=$(basename $d)
+            dir=${aros_target_cc_includes}$(echo $(dirname $d) | \
+                                        sed -n "s,^.*/include\(/.*\),\1,p")
+        ! test -d $dir && mkdir -p $dir
+        ! test -f $dir/$h && { cp $d $dir; chmod u+w $dir/$h; }
+        done
+    done	    
     fi
 fi
 AC_MSG_RESULT($aros_target_cc_includes)
@@ -1504,23 +1541,23 @@ AC_SUBST(gcc_target_cpu)
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
 emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION"
-		aros_flavour="emulation" ;;
+        aros_flavour="emulation" ;;
 emulcompat)	aros_flavour_uc="(AROS_FLAVOUR_EMULATION|AROS_FLAVOUR_BINCOMPAT)"
-		aros_flavour="emulation" ;;
+        aros_flavour="emulation" ;;
 standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE"
-		aros_flavour="standalone";;
+        aros_flavour="standalone";;
 native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE"
-		aros_flavour="native" ;;
+        aros_flavour="native" ;;
 nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
-		aros_flavour="native" ;;
+        aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
-		aros_flavour="linklib" ;;
+        aros_flavour="linklib" ;;
 palmnative)     aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
-		aros_flavour="palmnative" ;;
+        aros_flavour="palmnative" ;;
 mac68knative)   aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_EMULATION)"
-		aros_flavour="mac68knative" ;;
+        aros_flavour="mac68knative" ;;
 ppcnative)	aros_flavour_uc="(AROS_FLAVOUR_STANDALONE|AROS_FLAVOUR_BINCOMPAT)"
-		aros_flavour="ppcnative" ;;
+        aros_flavour="ppcnative" ;;
 esac
 
 if test ! -d ${aros_inc_dir} ; then
@@ -1547,16 +1584,16 @@ AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h:config/host-conf.h.in)
 AC_CONFIG_COMMANDS([compiler_executable],
     [
         prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}
-	mkdir -p $prefix
-	prefix="${prefix}/${aros_target_cpu}-aros"
+    mkdir -p $prefix
+    prefix="${prefix}/${aros_target_cpu}-aros"
         prefix2=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros
 
-	echo ${prefix}
-	echo ${prefix2}
+    echo ${prefix}
+    echo ${prefix2}
         chmod a+x ${prefix2}-gcc ${prefix2}-ld
 
-	ln -sf ${prefix2}-gcc          ${prefix}-gcc
-	ln -sf ${prefix2}-ld           ${prefix}-ld
+    ln -sf ${prefix2}-gcc          ${prefix}-gcc
+    ln -sf ${prefix2}-ld           ${prefix}-ld
 
         ln -sf $aros_target_as_ln      ${prefix}-as
         ln -sf $aros_target_nm_ln      ${prefix}-nm
@@ -1579,13 +1616,13 @@ AC_CONFIG_COMMANDS([compiler_executable],
         aros_target_cpu=${aros_target_cpu}
         aros_target_arch=${aros_target_arch}
         aros_target_suffix=${aros_target_suffix}
-	aros_target_nm_ln=${aros_target_nm_ln}
-	aros_target_as_ln=${aros_target_as_ln}
-	aros_target_ar_ln=${aros_target_ar_ln}
-	aros_target_ranlib_ln=${aros_target_ranlib_ln}
-	aros_target_objdump_ln=${aros_target_objdump_ln}
-	aros_target_objcopy_ln=${aros_target_objcopy_ln}
-	aros_target_strip_ln=${aros_target_strip_ln}
+    aros_target_nm_ln=${aros_target_nm_ln}
+    aros_target_as_ln=${aros_target_as_ln}
+    aros_target_ar_ln=${aros_target_ar_ln}
+    aros_target_ranlib_ln=${aros_target_ranlib_ln}
+    aros_target_objdump_ln=${aros_target_objdump_ln}
+    aros_target_objcopy_ln=${aros_target_objcopy_ln}
+    aros_target_strip_ln=${aros_target_strip_ln}
     ]
 )
 AC_CONFIG_COMMANDS([genshared_executable],
