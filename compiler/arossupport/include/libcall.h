@@ -15,9 +15,14 @@
 	Some macros to build functions with registerized parameters on the
 	different compilers around. Usage:
 
-	AROS_LH<n><f>(type, name, type1,  name1, reg1, ...)
+	AROS_LH<n><f>(type, name,
+	    [AROS_LHA(type1,  name1, reg1),] ...
+	    libtype, libvariable, lvo, basename
+	)
 	{
+	    AROS_LIBFUNC_INIT
 	    \* Function starts here. *\
+	    AROS_LIBFUNC_EXIT
 	}
 
 	<n> - Number of arguments of the function (not including the
@@ -42,7 +47,7 @@
 		struct List *, list, A0,
 		struct ExecBase, SysBase, 43, Exec)
 	{
-	    // Hier *keine* ";" !!
+	    // No ";" !!
 	    AROS_LIBFUNC_INIT
 
 	    struct Node *node;
@@ -53,7 +58,7 @@
 	    Remove(node);
 	    return node;
 
-	    // NACH return !!
+	    // after return !!
 	    AROS_LIBFUNC_EXIT
 	}
 
