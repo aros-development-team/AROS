@@ -27,7 +27,7 @@ FILES := \
 
 endif
 
-USER_INCLUDES := -I. -IGeneric
+USER_INCLUDES := -I. -I$(AROS_INCLUDES)/adf -IGeneric
 
 %build_linklib mmake=linklibs-adf libname=adf files=$(FILES)
 
