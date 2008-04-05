@@ -7,17 +7,18 @@
 #include "exec_intern.h"
 #include "etask.h"
 
-#include <exec/lists.h>
-#include <exec/types.h>
-#include <exec/tasks.h>
-#include <exec/execbase.h>
-#include <aros/libcall.h>
+#include <stdio.h>
+#include <asm/cpu.h>
+#include <asm/io.h>
 #include <asm/segments.h>
-#include <aros/io.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
+#include <exec/execbase.h>
+#include <hardware/intbits.h>
 
 #include "kernel_intern.h"
 
-#define CONFIG_LAPICS
+//#define CONFIG_LAPICS
 
 /************************************************************************************************
                                     ACPI TABLE PARSING HOOKS
@@ -83,8 +84,12 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
         {
             rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering NEW APIC\n");
 
-            BYTEOUT(0x70, 0xf);
-            BYTEOUT(0x71, 0xa);
+            /* Allow access to page 0 again */
+            core_ProtKernelArea(0, 1, 1, 1, 1);
+
+            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting warm reset code ..\n");
+            outb(0xf, 0x70);
+            outb(0xa, 0x71);
 
             /* Flush TLB */
             do
@@ -96,12 +101,17 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
                         "movq %0, %%cr3":"=r"(scratchreg)::"memory");
             } while (0);
 
-            /* 0:467 set to _Kern_APICTrampolineBase so that APIC recieves it in CS:IP */
+            /* 40:67 set to _Kern_APICTrampolineBase so that APIC recieves it in CS:IP */
+            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting vector for trampoline @ %p ..\n", _Kern_APICTrampolineBase);
             *((volatile unsigned short *)0x469) = _Kern_APICTrampolineBase >> 4;
             *((volatile unsigned short *)0x467) = _Kern_APICTrampolineBase & 0xf;
 
             /* Start IPI sequence */
             unsigned long wakeresult = core_APICIPIWake(processor->acpi_id, _Kern_APICTrampolineBase);
+
+            /* Lock page 0 access again! */
+            core_ProtKernelArea(0, 1, 0, 0, 0);
+
             rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: core_APICIPIWake returns %d\n",wakeresult);
         }
         else

@@ -20,6 +20,10 @@
 
 //#define CONFIG_LAPICS
 
+extern const unsigned char start64[];
+extern const unsigned char __APICTrampolineCode_start[];
+extern const unsigned char __APICTrampolineCode_end[];
+
 /* Pre-exec init */
 
 asm(".section .aros.init,\"ax\"\n\t"
@@ -150,8 +154,7 @@ intptr_t len;
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
     UBYTE kern_apic_id;
-//    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
-    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p\n", kernel_cstart);
+    rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
 
     kern_apic_id = core_APICGetID();
     rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d\n", kern_apic_id);
@@ -209,7 +212,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
         if ((lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
         {
-            _Kern_APICTrampolineBase = lowpages - PAGE_SIZE;
+            _Kern_APICTrampolineBase = (lowpages - PAGE_SIZE) & 0xFF000;
             krnSetTagData(KRN_MEMLower, (_Kern_APICTrampolineBase - 1)/1024, msg);
             rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase);
 
