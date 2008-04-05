@@ -36,6 +36,7 @@
  *                                 Otherwise, function declaratons are emitted.
  * 2008-04-01  M. Schulz           Use C functions ata_ins[wl] ata_outs[wl]
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
+ * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  */
 
 #define DEBUG 0
@@ -226,6 +227,70 @@ inline void ata_SelectUnit(struct ata_Unit* unit)
 }
 
 /*
+ * enable / disable IRQ; this manages interrupt requests more effectively in case of legacy emulation
+ * as little code as there can be. and keep it that way.
+ */
+void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable)
+{
+    bus->ab_Waiting = enable;
+    ata_out(enable ? 0x0 : 0x02, ata_AltControl, bus->ab_Alt);
+}
+
+/*
+ * handle IRQ; still fast and efficient, supposed to verify if this irq is for us and take adequate steps
+ * part of code moved here from ata.c to reduce containment
+ */
+void ata_HandleIRQ(struct ata_Bus *bus)
+{
+    /*
+     * don't waste your time on checking other devices.
+     * pass irq ONLY if task is expecting one;
+     */
+    if (TRUE == bus->ab_Waiting)
+    {
+        if (0 == (ATAF_BUSY & ata_ReadStatus(bus)))
+        {
+            D(bug("[ATA  ] Got Intrq\n"));
+            ata_EnableIRQ(bus, FALSE);
+            bus->ab_IntCnt++;
+            Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
+        }
+    }
+}
+
+/*
+ * enable / disable IRQ; this manages interrupt requests more effectively in case of legacy emulation
+ * as little code as there can be. and keep it that way.
+ */
+void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable)
+{
+    bus->ab_Waiting = enable;
+    ata_out(enable ? 0x0 : 0x02, ata_AltControl, bus->ab_Alt);
+}
+
+/*
+ * handle IRQ; still fast and efficient, supposed to verify if this irq is for us and take adequate steps
+ * part of code moved here from ata.c to reduce containment
+ */
+void ata_HandleIRQ(struct ata_Bus *bus)
+{
+    /*
+     * don't waste your time on checking other devices.
+     * pass irq ONLY if task is expecting one;
+     */
+    if (TRUE == bus->ab_Waiting)
+    {
+        if (0 == (ATAF_BUSY & ata_ReadStatus(bus)))
+        {
+            D(bug("[ATA  ] Got Intrq\n"));
+            ata_EnableIRQ(bus, FALSE);
+            bus->ab_IntCnt++;
+            Signal(bus->ab_Task, 1L << bus->ab_SleepySignal);
+        }
+    }
+}
+
+/*
  * wait for timeout or drive ready
  * polling-in-a-loop, but it should be safe to remove this already
  */
@@ -245,7 +310,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
      * set up bus timeout and irq
      */
     Disable();
-    unit->au_Bus->ab_Waiting = irq;
+    ata_EnableIRQ(unit->au_Bus, irq);
     unit->au_Bus->ab_Timeout = tout;
     Enable();
 
@@ -288,8 +353,14 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
             {
                 bug("[ATA%02ld] Timeout while waiting for device to complete operation\n", unit->au_UnitNum);
                 res = FALSE;
-                break;
             }
+
+            /*
+             * if we get as far as this, there's no more signals to expect
+             * but we still want the status
+             */
+            status = ata_in(ata_Status, unit->au_Bus->ab_Port);
+            break;
         }
         else
         { 
@@ -331,7 +402,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
      * clear up all our expectations 
      */
     Disable();
-    unit->au_Bus->ab_Waiting = FALSE;
+    ata_EnableIRQ(unit->au_Bus, FALSE);
     unit->au_Bus->ab_Timeout = 0;
     Enable();
             
@@ -381,6 +452,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     APTR mem = block->buffer;
     BOOL dma = FALSE;
 
+    ata_SelectUnit(au);
 
     /*
      * initial checks and stuff
@@ -434,6 +506,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             return IOERR_NOCMD;
     }
 
+    ata_SelectUnit(au);
 
     block->actual = 0;
 
@@ -444,14 +517,12 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      * 
      * - select device
      */
-    ata_out(0x08, ata_AltControl, au->au_Bus->ab_Alt);
     D(bug("[ATA%02ld] Executing command %02lx\n", au->au_UnitNum, block->command));
-    ata_out(au->au_DevMask, ata_DevHead, port);
 
     /*
      * generally we could consider marking unit as 'retarded' upon three attempts or stuff like that
      */
-    if (ata_WaitBusyTO(au, 100, FALSE) == FALSE)
+    if (ata_WaitBusyTO(au, 100, TRUE) == FALSE)
     {
         bug("[ATA%02ld] UNIT BUSY AT SELECTION\n", au->au_UnitNum);
         return IOERR_UNITBUSY;
@@ -461,16 +532,6 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     {
         ata_out(block->feature, ata_Feature, port);
     }
-
-
-    /*
-     * - clear all old signals
-     */
-    //D(bug("[ATA%02ld] Clearing old signals\n", au->au_UnitNum));
-    SetSignal(0, (1 << au->au_Bus->ab_SleepySignal) | SIGBREAKF_CTRL_C);
-    ata_in(ata_Status, port);
-
-
 
     /*
      * - set LBA and sector count
@@ -574,7 +635,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             stat = ata_in(dma_Status, au->au_DMAPort);
             D(bug("[ATA%02ld] DMA status %02lx\n", au->au_UnitNum, stat));
 
-            if (stat & DMAF_Interrupt)
+            if (0 == (stat & DMAF_Active))
             {
                 //D(bug("[ATA%02ld] DMA transfer is now complete\n", au->au_UnitNum));
                 block->actual = block->length;
@@ -795,9 +856,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
         
     datalen = (datalen+1)&~1;
 
-    ata_out(0x08, ata_AltControl, unit->au_Bus->ab_Alt);
     ata_out(unit->au_DevMask, atapi_DevSel, port);
-    if (ata_WaitBusyTO(unit, 10, FALSE))
+    if (ata_WaitBusyTO(unit, 10, TRUE))
     {
         /*
          * since the device is now ready (~BSY) && (~DRQ), we can set up features and transfer size
@@ -981,7 +1041,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 
                 status = ata_in(dma_Status, unit->au_DMAPort);
                 D(bug("[ATAPI] DMA status: %lx\n", status));
-                if (0 == (status & DMAF_Interrupt))
+                if (0 == (status & DMAF_Active))
                 {
                     break;
                 }
@@ -2218,13 +2278,13 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
     ObtainSemaphore(&bus->ab_Lock);
 
     /* Disable IRQ */
-    ata_out(0x0a, ata_AltControl, alt);
+    ata_EnableIRQ(bus, FALSE);
     /* Issue software reset */
-    ata_out(0x0e, ata_AltControl, alt);
+    ata_out(0x04, ata_AltControl, alt);
     /* wait a while */
     ata_usleep(tr, 400);
     /* Clear reset signal */
-    ata_out(0x0a, ata_AltControl, alt);
+    ata_EnableIRQ(bus, FALSE);
     /* And wait again */
     ata_usleep(tr, 400);
     /* wait for dev0 to come online. Limited delay up to 30µs */
@@ -2255,7 +2315,6 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         }
     }
 
-    ata_out(0x08, ata_AltControl, alt);
     ReleaseSemaphore(&bus->ab_Lock);
 }
 
@@ -2279,7 +2338,7 @@ void ata_ScanBus(struct ata_Bus *bus)
     bus->ab_Dev[1] = DEV_NONE;
 
     /* Disable IDE IRQ */
-    ata_out(0x0a, ata_AltControl, bus->ab_Alt);
+    ata_EnableIRQ(bus, FALSE);
 
     /* Select device 0 */
     ata_out(0xa0, ata_DevHead, port);
@@ -2404,7 +2463,6 @@ void ata_ScanBus(struct ata_Bus *bus)
     /*
      * restore IRQ
      */
-    ata_out(0x08, ata_AltControl, bus->ab_Alt);
     ReleaseSemaphore(&bus->ab_Lock);
 
     CloseDevice((struct IORequest *)tr);
