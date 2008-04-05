@@ -13,12 +13,17 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <asm/segments.h>
+#include <aros/io.h>
 
 #include "kernel_intern.h"
+
+#define CONFIG_LAPICS
 
 /************************************************************************************************
                                     ACPI TABLE PARSING HOOKS
  ************************************************************************************************/
+
+extern IPTR              _Kern_APICTrampolineBase;
 
 /* Process the 'Multiple APIC Description Table' Table */
 AROS_UFH1(int, ACPI_hook_Table_MADT_Parse,
@@ -71,11 +76,41 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
     
     rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags);
 
+#if defined(CONFIG_LAPICS)
     if ((KernelBase->kb_BOOTAPICID != processor->acpi_id) && processor->flags.enabled)
     {
-        rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering NEW APIC\n");
-#warning "TODO: Register APIC, and configure via IPI INIT trampoline"
-    }        
+        if (_Kern_APICTrampolineBase != NULL)
+        {
+            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering NEW APIC\n");
+
+            BYTEOUT(0x70, 0xf);
+            BYTEOUT(0x71, 0xa);
+
+            /* Flush TLB */
+            do
+            {
+                unsigned long scratchreg;
+
+                asm volatile(
+                        "movq %%cr3, %0\n\t"
+                        "movq %0, %%cr3":"=r"(scratchreg)::"memory");
+            } while (0);
+
+            /* 0:467 set to _Kern_APICTrampolineBase so that APIC recieves it in CS:IP */
+            *((volatile unsigned short *)0x469) = _Kern_APICTrampolineBase >> 4;
+            *((volatile unsigned short *)0x467) = _Kern_APICTrampolineBase & 0xf;
+
+            /* Start IPI sequence */
+            unsigned long wakeresult = core_APICIPIWake(processor->acpi_id, _Kern_APICTrampolineBase);
+            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: core_APICIPIWake returns %d\n",wakeresult);
+        }
+        else
+        {
+            rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Warning - No APIC Trampoline.. Cannot start apic id %d\n", processor->acpi_id);
+            return 0;
+        }
+    }
+#endif
 	return 1;
     
     AROS_USERFUNC_EXIT

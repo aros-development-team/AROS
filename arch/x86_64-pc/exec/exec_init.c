@@ -335,7 +335,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
     if (len)
     {
-	rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
+        rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
         mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
 
         while(len >= sizeof(struct mb_mmap))
@@ -380,45 +380,45 @@ int exec_main(struct TagItem *msg, void *entry)
     {
         rkprintf("[exec] Registering mem_lower/mem_upper Memory Region\n");
 
-	uintptr_t chip_start, chip_end, fast_start, fast_end, tmp;
+        uintptr_t chip_start, chip_end, fast_start, fast_end, tmp;
 
-	uintptr_t addr_lower = krnGetTagData(KRN_MEMLower, 0, msg);
-	uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
+        uintptr_t addr_lower = krnGetTagData(KRN_MEMLower, 0, msg);
+        uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
 
-	if (addr_lower > 0)
-	{
-		chip_start = 0X2000;
-		chip_end = (addr_lower * 1024) - 1;
+        if (addr_lower > 0)
+        {
+            chip_start = 0X2000;
+            chip_end = (addr_lower * 1024) - 1;
 
-                if (chip_start < chip_end)
-		{
-			rkprintf("[exec]   Registering Lower Mem Range (%012p - %012p)\n", chip_start, chip_end);
-			exec_InsertMemory(msg, chip_start, chip_end);
-		}
-	}
+                    if (chip_start < chip_end)
+            {
+                rkprintf("[exec]   Registering Lower Mem Range (%012p - %012p)\n", chip_start, chip_end);
+                exec_InsertMemory(msg, chip_start, chip_end);
+            }
+        }
 
-	if (addr_upper > 0)
-	{
-		fast_start = 0x0000100000;
-		fast_end = (addr_upper * 1024) + (fast_start - 1);
+        if (addr_upper > 0)
+        {
+            fast_start = 0x0000100000;
+            fast_end = (addr_upper * 1024) + (fast_start - 1);
 
-                if (fast_start < fast_end)
-		{
-			if (fast_end > 0x01000000)
-			{
-				rkprintf("[exec]   Registering Upper Chip Mem Range (%012p - %012p)\n", fast_start, 0x00ffffff);
-				exec_InsertMemory(msg, fast_start, 0x00ffffff);
-				rkprintf("[exec]   Registering Upper Fast Mem Range (%012p - %012p)\n", 0x01000000, fast_end);
-				exec_InsertMemory(msg, 0x01000000, fast_end);
-				
-			}
-			else
-			{
-				rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
-				exec_InsertMemory(msg, fast_start, fast_end);
-			}
-		}
-	}
+                    if (fast_start < fast_end)
+            {
+                if (fast_end > 0x01000000)
+                {
+                    rkprintf("[exec]   Registering Upper Chip Mem Range (%012p - %012p)\n", fast_start, 0x00ffffff);
+                    exec_InsertMemory(msg, fast_start, 0x00ffffff);
+                    rkprintf("[exec]   Registering Upper Fast Mem Range (%012p - %012p)\n", 0x01000000, fast_end);
+                    exec_InsertMemory(msg, 0x01000000, fast_end);
+                    
+                }
+                else
+                {
+                    rkprintf("[exec]   Registering Upper Mem Range (%012p - %012p)\n", fast_start, fast_end);
+                    exec_InsertMemory(msg, fast_start, fast_end);
+                }
+            }
+        }
     }
 
     rkprintf("[exec] MemLists (hopefully!) prepaired\n");
@@ -433,7 +433,7 @@ int exec_main(struct TagItem *msg, void *entry)
     
     if ((SysBase->DebugAROSBase = PrepareAROSSupportBase()) == NULL)
     {
-	rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
+    rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
     }
     
     rkprintf("[exec] ExecBase=%012p\n", SysBase);
@@ -799,11 +799,11 @@ struct Library * PrepareAROSSupportBase(void)
 
     if ((AROSSupportBase = AllocMem(sizeof(struct AROSSupportBase), MEMF_CLEAR)) != NULL)
     {
-	AROSSupportBase->kprintf = (void *)kprintf;
-	AROSSupportBase->rkprintf = (void *)rkprintf;
-	AROSSupportBase->vkprintf = (void *)vkprintf;
+    AROSSupportBase->kprintf = (void *)kprintf;
+    AROSSupportBase->rkprintf = (void *)rkprintf;
+    AROSSupportBase->vkprintf = (void *)vkprintf;
 
-	NEWLIST(&AROSSupportBase->AllocMemList);
+    NEWLIST(&AROSSupportBase->AllocMemList);
     }
     else
     {
