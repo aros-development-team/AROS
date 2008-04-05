@@ -1,4 +1,4 @@
-#############################################################################
+############################################################################
 #############################################################################
 ##                                                                         ##
 ## Here are the mmakefile macros that are used as commands in the body     ##
@@ -509,11 +509,11 @@ endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
-%(prog) : EXTRA_LDFLAGS:=$(TMP_EXTRA_LDFLAGS)
+%(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
+%(prog) : LIBS := $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
 
 %(prog) : %(objs) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_q from="%(objs)" opt="%(ldflags) $(EXTRA_LDFLAGS)" \
-	    libs="$(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))"
+	%link_q from="%(objs)" opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
 
@@ -535,12 +535,12 @@ endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
-$(addprefix %(targetdir)/,%(progs)) : EXTRA_LDFLAGS:=$(TMP_EXTRA_LDFLAGS)
+$(addprefix %(targetdir)/,%(progs)) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
+$(addprefix %(targetdir)/,%(progs)) : LIBS:= $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
 
 $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
     $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_q from=$< opt="%(ldflags) $(EXTRA_LDFLAGS)" \
-	    libs="$(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))"
+	%link_q from=$< opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
 
@@ -853,7 +853,7 @@ $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
 $(TMP_TARGETS) : MODTYPE := %(modtype)
 $(TMP_TARGETS) : $(TMP_DEPS)
-	@$(ECHO) "Generating functable and support files for module $(BD_MODNAME$(BDID))"
+	@$(ECHO) "Generating functable and support files for module $(MODNAME$(BDID))"
 ifneq (%(conffile),lib.conf)
 	@$(IF) $(TEST) -f lib.conf; then \
 	  $(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
@@ -938,53 +938,57 @@ BDID := $(BDTARGETID)
 
 #------------------------------------------------------------------------------
 # Build a program
-%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) asmfiles= \
+%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
-    cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
+    cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no
 
 .PHONY : %(mmake)
 
-%buildid targets="%(mmake) %(mmake)-clean %(mmake)-quick"
+BD_PROGNAME  := %(progname)
+BD_OBJDIR    := %(objdir)
+BD_TARGETDIR := %(targetdir)
 
-BD_PROGNAME$(BDID)  := %(progname)
-BD_OBJDIR$(BDID)    := %(objdir)
-BD_TARGETDIR$(BDID) := %(targetdir)
+BD_FILES     := %(files)
+BD_ASMFILES  := %(asmfiles)
+BD_OBJS      := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_FILES) $(BD_ASMFILES)))
+BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
 
-BD_FILES$(BDID)     := %(files)
-BD_ASMFILES$(BDID)  := %(asmfiles)
-BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID)) $(BD_ASMFILES$(BDID))))
-BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
-
-BD_CFLAGS$(BDID)    := %(cflags)
-BD_AFLAGS$(BDID)    := %(aflags)
-BD_DFLAGS$(BDID)    := %(dflags)
-BD_LDFLAGS$(BDID)   := %(ldflags)
+BD_CFLAGS    := %(cflags)
+BD_AFLAGS    := %(aflags)
+BD_DFLAGS    := %(dflags)
+BD_LDFLAGS   := %(ldflags)
 
 #MM
 %(mmake)-quick : %(mmake)
 
 #MM %(mmake) : includes-generate-deps
-%(mmake) : $(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID))
+%(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
-%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) \
-    cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_assemble_multi basenames=$(BD_ASMFILES$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) \
-    aflags=$(BD_AFLAGS$(BDID))
+%rule_compile basename=% targetdir=$(BD_OBJDIR) \
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
+%rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
+    aflags=$(BD_AFLAGS)
 
-%rule_link_prog prog=$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) \
-    objs=$(BD_OBJS$(BDID)) ldflags=$(BD_LDFLAGS$(BDID)) \
+%rule_link_prog prog=$(BD_TARGETDIR)/$(BD_PROGNAME) \
+    objs=$(BD_OBJS) ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)"
 
 endif
 
-%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS)
 
-$(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) : | $(BD_OBJDIR$(BDID))
-$(BD_TARGETDIR$(BDID))/$(BD_PROGNAME$(BDID)) : | $(BD_TARGETDIR$(BDID))
-GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))
+$(BD_OBJS) $(BD_DEPS) : | $(BD_OBJDIR)
+$(BD_TARGETDIR)/$(BD_PROGNAME) : | $(BD_TARGETDIR)
+GLOB_MKDIRS += $(BD_OBJDIR) $(BD_TARGETDIR)
+
+%(mmake)-clean : FILES := $(BD_OBJS) $(BD_TARGETDIR)/$(BD_PROGNAME) $(BD_DEPS)
+#MM
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for metatarget %(mmake)"
+	@$(RM) $(FILES)
 
 %end
 #------------------------------------------------------------------------------
@@ -995,51 +999,52 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID)) $(BD_TARGETDIR$(BDID))
 # 
 %define build_progs mmake=/A files=/A nix=no \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
-    cflags=$(CFLAGS) dflags=$(BD_CFLAGS$(BDID)) ldflags=$(LDFLAGS) \
+    cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     uselibs= usehostlibs= usestartup=yes detach=no
 
 .PHONY : %(mmake)
 
-%buildid targets="%(mmake) %(mmake)-clean %(mmake)-quick"
+BD_OBJDIR    := %(objdir)
+BD_TARGETDIR := %(targetdir)
 
-BD_OBJDIR$(BDID)    := %(objdir)
-BD_TARGETDIR$(BDID) := %(targetdir)
+BD_FILES     := %(files)
+BD_OBJS      := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
+BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_FILES)))
+BD_EXES      := $(addprefix $(BD_TARGETDIR)/,$(BD_FILES))
 
-BD_FILES$(BDID)     := %(files)
-BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
-BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
-BD_EXES$(BDID)      := $(addprefix $(BD_TARGETDIR$(BDID))/,$(BD_FILES$(BDID)))
-
-BD_CFLAGS$(BDID)    := %(cflags)
-ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
-BD_CFLAGS$(BDID)    += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
-endif
-BD_DFLAGS$(BDID)    := %(dflags)
-BD_LDFLAGS$(BDID)   := %(ldflags)
+BD_CFLAGS    := %(cflags)
+BD_DFLAGS    := %(dflags)
+BD_LDFLAGS   := %(ldflags)
 
 #MM
 %(mmake)-quick : %(mmake)
 
 #MM %(mmake) : includes-generate-deps
-%(mmake) : $(BD_EXES$(BDID))
+%(mmake) : $(BD_EXES)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
-%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) nix=%(nix) \
-    cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=% targetdir=$(BD_OBJDIR) nix=%(nix) \
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 
-%rule_link_progs progs=$(BD_FILES$(BDID)) nix=%(nix) \
-    targetdir=$(BD_TARGETDIR$(BDID)) objdir=$(BD_OBJDIR$(BDID)) \
-    ldflags=$(BD_LDFLAGS$(BDID)) \
+%rule_link_progs progs=$(BD_FILES) nix=%(nix) \
+    targetdir=$(BD_TARGETDIR) objdir=$(BD_OBJDIR) \
+    ldflags=$(BD_LDFLAGS) \
     uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" \
     usestartup="%(usestartup)" detach="%(detach)"
 
 endif
 
-%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS)
 
-$(addprefix $(BD_TARGETDIR$(BDID))/,$(BD_FILES$(BDID))) : | $(BD_TARGETDIR$(BDID))
-$(BD_DEPS$(BDID)) $(BD_OBJS$(BDID)) : | $(BD_OBJDIR$(BDID))
-GLOB_MKDIRS += $(BD_TARGETDIR$(BDID)) $(BD_OBJDIR$(BDID))
+$(addprefix $(BD_TARGETDIR)/,$(BD_FILES)) : | $(BD_TARGETDIR)
+$(BD_DEPS) $(BD_OBJS) : | $(BD_OBJDIR)
+GLOB_MKDIRS += $(BD_TARGETDIR) $(BD_OBJDIR)
+
+%(mmake)-clean : FILES := $(BD_OBJS) $(BD_EXES) $(BD_DEPS)
+#MM
+%(mmake)-clean ::
+	@$(ECHO) "Cleaning up for metatarget %(mmake)"
+	@$(RM) $(FILES)
 
 %end
 #------------------------------------------------------------------------------
@@ -1161,7 +1166,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 %(mmake)-clean : FILES := $(BD_OBJS) $(BD_MODULE) $(BD_KOBJ) $(BD_DEPS)
 %(mmake)-clean ::
 	@$(ECHO) "Cleaning up for module %(modname)"
-	@$(RM) $(BD_OBJS) $(BD_KOBJ)
+	@$(RM) $(FILES)
 %end
 
 
@@ -1534,17 +1539,15 @@ GLOB_MKDIRS += %(objdir) %(libdir)
  description="$(basename $(wildcard *.cd))" dir=$(AROS_CATALOGS) \
  sourcedescription="$(TOOLDIR)/C_h_orig"
 
-%buildid targets="%(mmake) %(mmake)-clean"
-
-BD_SRCS$(BDID) := $(addsuffix .ct, %(catalogs))
-BD_OBJS$(BDID) := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, %(catalogs)))
-BD_DIRS$(BDID) := $(addsuffix /%(subdir), $(addprefix %(dir)/, %(catalogs)))
+BD_SRCS := $(addsuffix .ct, %(catalogs))
+BD_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, %(catalogs)))
+BD_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, %(catalogs)))
 
 #MM
-%(mmake) : $(BD_OBJS$(BDID)) %(source)
+%(mmake) : $(BD_OBJS) %(source)
 
-$(BD_OBJS$(BDID)) : | $(BD_DIRS$(BDID))
-GLOB_MKDIRS += $(BD_DIRS$(BDID))
+$(BD_OBJS) : | $(BD_DIRS)
+GLOB_MKDIRS += $(BD_DIRS)
 
 %(dir)/%/%(subdir)/%(name).catalog : %.ct %(description).cd
 	@$(ECHO) "Creating %(name) catalog for language $*."
@@ -1556,9 +1559,10 @@ ifneq (%(source),)
 	@$(FLEXCAT) %(description).cd %(source)=%(sourcedescription).sd
 endif
 
+%(mmake)-clean : FILES := $(BD_OJS) %(source)
 #MM
 %(mmake)-clean ::
-	$(RM) $(BD_OBJS$(BDID)) %(source)
+	$(RM) $(FILES)
 
 .PHONY: %(mmake) %(mmake-clean)
 
@@ -1575,25 +1579,24 @@ endif
 
 %define build_icons mmake=/A icons=/A dir=/A
 
-%buildid targets="%(mmake) %(mmake)-clean"
-
-BD_OBJS$(BDID) := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
+BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
 
 #MM
-%(mmake) : $(BD_OBJS$(BDID))
+%(mmake) : $(BD_OBJS)
 
 %(dir)/%.info : %.info.src %.png
 	@$(ECHO) Creating $(notdir $@)...
 	@$(ILBMTOICON) $+ $@
 
-$(BD_OBJS$(BDID)) : | %(dir)
+$(BD_OBJS) : | %(dir)
 GLOB_MKDIRS += %(dir)
 
+%(mmake)-clean : FILES := $(BD_OBJS)
 #MM
 %(mmake)-clean ::
-	@$(RM) $(BD_OBJS$(BDID))
+	@$(RM) $(FILES)
 
-.PHONY: %(mmake)
+.PHONY: %(mmake) %(mmake-clean)
 
 %end
 
