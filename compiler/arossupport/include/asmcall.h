@@ -15,16 +15,16 @@
 	Some macros to build and call functions with registerized parameters on
 	the different compilers around. Usage:
 
-	AROS_UFH<n><f>(type, name, type1,  name1, reg1, ...)
+	AROS_UFH<n><f>(type, name, [AROS_UFHA(type1,  name1, reg1),] ...)
 	{
-	    \* Function starts here. *\
+	    AROS_USERFUNC_INIT
+	    ...
+	    AROS_USERFUNC_EXIT
 	}
 
-	<n> - Number of arguments of the function (not including the
-	    library base).
+	<n> - Number of arguments of the function.
 
-	<f> - 'I' means: Function ignores library base.
-	    This is useful to get rid of warnings about unused arguments.
+	<f> - 'S' means: define function as static.
 
 	type - Returntype of the function.
 
@@ -36,20 +36,19 @@
 	    arguments. Register names are written uppercase because they
 	    are preprocessor symbols.
 
-	Example: Define a Exec compatible RemHead function.
+	Example: Define a function which can be used for a callback hook.
 
-	AROS_UFH1(struct Node *, RemHead,
-	    AROS_UFHA(struct List *, list, A0)
-	)
-	{
-	    struct Node *node;
+	AROS_UFH3(ULONG, myfunction,
+	    AROS_UFHA(struct Hook *, h, A0),
+	    AROS_UFHA(Object *, object, A2),
+	    AROS_UFHA(APTR, msg, A1))
+	    {
+		AROS_USERFUNC_INIT
+		...
+		return retval;
+		AROS_USERFUNC_EXIT
+	    }
 
-	    node=list->lh_Head;
-	    if(node->ln_Succ==NULL)
-		return NULL;
-	    Remove(node);
-	    return node;
-	}
 
 ******************************************************************************/
 
