@@ -509,11 +509,12 @@ endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
+%(prog) : OBJS := %(objs)
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
 %(prog) : LIBS := $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
 
 %(prog) : %(objs) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_q from="%(objs)" opt=$(LDFLAGS) libs=$(LIBS)
+	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
 
