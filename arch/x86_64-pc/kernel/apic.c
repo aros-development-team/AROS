@@ -122,13 +122,13 @@ asm (".globl __APICTrampolineCode_start\n\t"
      ".type __APICTrampolineCode_start,@function\n"
      "__APICTrampolineCode_start:\n\t"
 //     "movs	%cs,%ds\n\t"
-     "movl	$1,%ebx\n\t"         // Flag an SMP trampoline
+     "movl    $1,%ebx\n\t"         // Flag an SMP trampoline
      "cli\n\t"
-     "movl	$1,%eax\n\t"
+     "movl    $1,%eax\n\t"
 //     "movw	%eax,%cr0\n\t"        // Enter protected mode
-     "jmp	flush_instr\n\t"
+     "jmp    flush_instr\n\t"
      "flush_instr:\n\t"
-     "jmp %cs:100000\n\t" // jump into kernel resource ..
+     "jmp kernel_cstart\n\t" // jump into kernel resource ..
      "__APICTrampolineCode_end:");
 #endif
 #define                 APICICR_INT_LEVELTRIG      0x8000
