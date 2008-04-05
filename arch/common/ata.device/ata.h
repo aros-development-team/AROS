@@ -26,6 +26,7 @@
  * 2008-03-31  M. Schulz           We do have asm/io.h include for ages... No need to define io functions here anymore.
  *                                 Redefined ata_in and ata_out. On x86-like systems they use inb/outb directly. On other systems
  *                                 they use pci_inb and pci_outb.
+ * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  */
 
 #include <exec/types.h>
@@ -482,6 +483,7 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
 
 int ata_InitBusTask(struct ata_Bus *);
 int ata_InitDaemonTask(LIBBASETYPEPTR);
+void ata_HandleIRQ(struct ata_Bus *bus);
 UBYTE ata_ReadStatus(struct ata_Bus *bus);
 
 VOID dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
