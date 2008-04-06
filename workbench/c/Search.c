@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -104,7 +104,7 @@ int LocaleBase_version = LOCALE_VERSION;
 
 VOID  PrintFullName(TEXT *buffer, UWORD cut_off, struct AnchorPath *anchor);
 UWORD GetDirName(struct AnchorPath *anchor, TEXT *buffer);
-BOOL  FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
+BOOL  FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
 		 struct Locale *locale, UBYTE *pi);
 BOOL  MatchStringNoCase(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
 			struct Locale *locale);
@@ -116,7 +116,7 @@ BOOL MatchString(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
 
 const TEXT template[] =
      "FROM/M,SEARCH/A,ALL/S,NONUM/S,QUIET/S,QUICK/S,FILE/S,PATTERN/S,CASE/S,LINES/N";
-const TEXT version_string[] = "$VER: Search 42.3 (18.10.2005)";
+const TEXT version_string[] = "$VER: Search 42.4 (06.04.2008)";
 const TEXT locale_name[]    = "locale.library";
 
 const TEXT control_codes[]  = { 0x9b, 'K', 13 };
@@ -124,12 +124,13 @@ const TEXT wild_card[]      = { '#', '?'};
 const TEXT new_line[]       = "\n";
 const TEXT abandon_msg[]    = "** File abandoned\n";
 
+const STRPTR defaultfrom[] = {"", 0};
 
 int __nocommandline;
 
 int main(void)
 {
-    IPTR              *args;
+    IPTR              args[ARG_COUNT] = {0};
     struct RDArgs     *read_args;
     struct AnchorPath *anchor;
     LONG               error;
@@ -145,7 +146,6 @@ int main(void)
 
     spaces      = AllocMem(SPACES_SIZE, MEMF_CLEAR);
     anchor      = AllocMem(sizeof(struct AnchorPath), MEMF_CLEAR);
-    args        = AllocMem(ARG_COUNT*sizeof(APTR), MEMF_CLEAR);
     path_buffer = AllocMem(PATH_BUF_SIZE,MEMF_ANY);
 
     if(args && anchor && spaces && path_buffer)
@@ -160,6 +160,12 @@ int main(void)
 	
 	if(locale && read_args)
 	{
+	    if ( ! args[ARG_FROM] )
+	    {
+		/* /M ignores the default value, so we must set it after ReadARGS */
+		args[ARG_FROM] = (IPTR)defaultfrom;
+	    }
+	    
 	    /* Prepare the pattern to be matched */
 	    
 	    pat_length = strlen((TEXT *)args[ARG_SEARCH]);
@@ -376,8 +382,6 @@ int main(void)
     
     /* Free memory */
     
-    if(args)
-	FreeMem(args, ARG_COUNT*sizeof(APTR));
     if(anchor)
 	FreeMem(anchor, sizeof(struct AnchorPath));
     if(spaces)
@@ -429,7 +433,7 @@ UWORD GetDirName(struct AnchorPath *anchor, TEXT *buffer)
 }
 
 
-BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
+BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
 		struct Locale *locale, UBYTE *pi)
 {
     BOOL   found = FALSE, end_early = FALSE, line_matches, at_end;
@@ -554,7 +558,7 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
 			    else
 			    {
 				if(!args[ARG_NONUM])
-				    VPrintf("%6lu ", &line_count);
+				    VPrintf("%6lu ", (IPTR*)&line_count);
 				
 				/* Replace invisible characters with dots */
 				
