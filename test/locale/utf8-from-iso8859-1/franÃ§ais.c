@@ -6,8 +6,6 @@
     Lang: english
 */
 
-/*  Language file for the French language. */
-
 #include <exec/types.h>
 #include <aros/system.h>
 #include <exec/resident.h>
