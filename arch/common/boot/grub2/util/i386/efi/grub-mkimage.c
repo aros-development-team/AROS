@@ -829,7 +829,7 @@ make_header (FILE *out, Elf32_Addr text_address, Elf32_Addr data_address,
 			| GRUB_PE32_SCN_MEM_READ);
 
   /* Write them out.  */
-  if (fseek (out, 0, SEEK_SET) < 0)
+  if (fseeko (out, 0, SEEK_SET) < 0)
     grub_util_error ("seek failed");
 
   if (fwrite (&header, sizeof (header), 1, out) != 1

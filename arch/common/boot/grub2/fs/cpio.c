@@ -315,7 +315,7 @@ grub_cpio_read (grub_file_t file, char *buf, grub_size_t len)
 
   data = file->data;
   return (grub_disk_read (data->disk, 0, data->dofs + file->offset,
-			  len, buf)) ? -1 : len;
+			  len, buf)) ? -1 : (grub_ssize_t) len;
 }
 
 static grub_err_t

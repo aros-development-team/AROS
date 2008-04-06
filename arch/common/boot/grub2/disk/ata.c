@@ -615,7 +615,7 @@ grub_ata_open (const char *name, grub_disk_t disk)
   else
     disk->total_sectors = dev->size;
 
-  disk->id = (int) dev;
+  disk->id = (unsigned long) dev;
   
   disk->has_partitions = !dev->atapi;
   disk->data = dev;

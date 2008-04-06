@@ -17,16 +17,17 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
 #include <stdio.h>
 #include <grub/util/misc.h>
 
 char *
-grub_util_get_disk_name (int disk, char *name)
+grub_util_get_disk_name (int disk __attribute__ ((unused)), char *name)
 {
   int p[2];
 
   char *line = NULL;
-  int zero = 0;
+  size_t zero = 0;
   int len;
 
   pipe (p);

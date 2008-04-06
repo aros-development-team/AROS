@@ -34,12 +34,13 @@ grub_pci_iterate (grub_pci_iteratefunc_t hook)
   int func;
   grub_pci_address_t addr;
   grub_pci_id_t id;
+  grub_uint32_t hdr;
 
   for (bus = 0; bus < 256; bus++)
     {
       for (dev = 0; dev < 32; dev++)
 	{
-	  for (func = 0; func < 3; func++)
+	  for (func = 0; func < 8; func++)
 	    {
 	      addr = grub_pci_make_address (bus, dev, func, 0);
 	      id = grub_pci_read (addr);
@@ -50,6 +51,15 @@ grub_pci_iterate (grub_pci_iteratefunc_t hook)
 
 	      if (hook (bus, dev, func, id))
 		return;
+
+	      /* Probe only func = 0 if the device if not multifunction */
+	      if (func == 0)
+		{
+		  addr = grub_pci_make_address (bus, dev, func, 3);
+		  hdr = grub_pci_read (addr);
+		  if (!(hdr & 0x800000))
+		    break;
+		}
 	    }
 	}
     }

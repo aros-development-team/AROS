@@ -153,9 +153,9 @@ grub_err_t grub_available_iterate (int (*hook) (grub_uint64_t, grub_uint64_t))
   grub_ieee1275_phandle_t memory;
   grub_uint32_t available[32];
   grub_ssize_t available_size;
-  int address_cells = 1;
-  int size_cells = 1;
-  unsigned int i;
+  grub_uint32_t address_cells = 1;
+  grub_uint32_t size_cells = 1;
+  int i;
 
   /* Determine the format of each entry in `available'.  */
   grub_ieee1275_finddevice ("/", &root);

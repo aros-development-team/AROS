@@ -32,7 +32,7 @@ struct grub_pci_classname
 static const struct grub_pci_classname grub_pci_classes[] =
   {
     { 0, 0, "" },
-    { 1, 0, "SCSCI Controller" },
+    { 1, 0, "SCSI Controller" },
     { 1, 1, "IDE Controller" },
     { 1, 2, "Floppy Controller" },
     { 1, 3, "IPI Controller" },
@@ -74,7 +74,7 @@ static const struct grub_pci_classname grub_pci_classes[] =
     { 9, 4, "Gameport Controller" },
     { 9, 0x80, "Unknown Input Device" },
     { 10, 0, "Generic Docking Station" },
-    { 10, 0x80, "Unkown Docking Station" },
+    { 10, 0x80, "Unknown Docking Station" },
     { 11, 0, "80386 Processor" },
     { 11, 1, "80486 Processor" },
     { 11, 2, "Pentium Processor" },
@@ -82,19 +82,19 @@ static const struct grub_pci_classname grub_pci_classes[] =
     { 11, 0x20, "PowerPC Processor" },
     { 11, 0x30, "MIPS Processor" },
     { 11, 0x40, "Co-Processor" },
-    { 11, 0x80, "Unkown Processor" },
+    { 11, 0x80, "Unknown Processor" },
     { 12, 0x80, "Serial Bus Controller" },
     { 13, 0x80, "Wireless Controller" },
     { 14, 0, "I2O" },
-    { 15, 0, "iRDA Controller" },
+    { 15, 0, "IrDA Controller" },
     { 15, 1, "Consumer IR" },
     { 15, 0x10, "RF-Controller" },
     { 15, 0x80, "Satellite Communication Controller" },
     { 16, 0, "Network Decryption" },
     { 16, 1, "Entertainment Decryption" },
-    { 16, 0x80, "Unkown Decryption Controller" },
+    { 16, 0x80, "Unknown Decryption Controller" },
     { 17, 0, "Digital IO Module" },
-    { 17, 0x80, "Unkown Data Input System" },
+    { 17, 0x80, "Unknown Data Input System" },
     { 0, 0, 0 },
   };
 
@@ -120,7 +120,8 @@ grub_lspci_iter (int bus, int dev, int func, grub_pci_id_t pciid)
   const char *sclass;
   grub_pci_address_t addr;
 
-  grub_printf ("%02x:%02x.%x %04x:%04x.%d", 0, dev, func, pciid >> 16, pciid & 0xFFFF, func);
+  grub_printf ("%02x:%02x.%x %04x:%04x", bus, dev, func, pciid & 0xFFFF,
+	       pciid >> 16);
   addr = grub_pci_make_address (bus, dev, func, 2);
   class = grub_pci_read (addr);
 	  

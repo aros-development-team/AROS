@@ -255,8 +255,8 @@ cmd_cmp (char *src, char *dest)
       return;
     }
 
-  if ((skip) && (fseek (ff, skip, SEEK_SET)))
-    grub_util_error ("fseek error.\n");
+  if ((skip) && (fseeko (ff, skip, SEEK_SET)))
+    grub_util_error ("seek error.\n");
 
   read_file (src, cmp_hook);
   fclose (ff);
