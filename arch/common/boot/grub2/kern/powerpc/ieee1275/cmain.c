@@ -57,7 +57,7 @@ grub_ieee1275_find_options (void)
   grub_ieee1275_phandle_t openprom;
   grub_ieee1275_phandle_t bootrom;
   int rc;
-  int realmode = 0;
+  grub_uint32_t realmode = 0;
   char tmp[32];
   int is_smartfirmware = 0;
   int is_olpc = 0;

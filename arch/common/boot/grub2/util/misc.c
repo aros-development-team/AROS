@@ -145,8 +145,8 @@ grub_util_get_image_size (const char *path)
 void
 grub_util_read_at (void *img, size_t size, off_t offset, FILE *fp)
 {
-  if (fseek (fp, offset, SEEK_SET) == -1)
-    grub_util_error ("fseek failed");
+  if (fseeko (fp, offset, SEEK_SET) == -1)
+    grub_util_error ("seek failed");
 
   if (fread (img, 1, size, fp) != size)
     grub_util_error ("read failed");
@@ -199,7 +199,7 @@ void
 grub_util_write_image_at (const void *img, size_t size, off_t offset, FILE *out)
 {
   grub_util_info ("writing 0x%x bytes at offset 0x%x", size, offset);
-  if (fseek (out, offset, SEEK_SET) == -1)
+  if (fseeko (out, offset, SEEK_SET) == -1)
     grub_util_error ("seek failed");
   if (fwrite (img, 1, size, out) != size)
     grub_util_error ("write failed");

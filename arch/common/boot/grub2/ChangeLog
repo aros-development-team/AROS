@@ -1,3 +1,53 @@
+2008-04-05  Pavel Roskin  <proski@gnu.org>
+
+	* bus/pci.c (grub_pci_iterate): For multifunction devices, probe
+	all 8 functions.  Otherwise, probe function 0 only.
+
+2008-04-04  Pavel Roskin  <proski@gnu.org>
+
+	* commands/lspci.c (grub_lspci_iter): Print the bus number
+	correctly.
+
+	* commands/lspci.c (grub_pci_classes): Fix typos.
+	(grub_lspci_iter): Don't print func twice.  Print vendor ID
+	before device ID, as it's normally done.
+
+	* kern/powerpc/ieee1275/cmain.c (grub_ieee1275_find_options):
+	Fix signedness warnings.
+	* kern/powerpc/ieee1275/openfw.c (grub_available_iterate):
+	Likewise.
+	* util/ieee1275/get_disk_name.c: Include config.h so that
+	_GNU_SOURCE is defined and getline() is declared.  Mark an
+	unused argument as such.  Fix a signedness warning.
+
+2008-04-02  Pavel Roskin  <proski@gnu.org>
+
+	* genkernsyms.sh.in: Use more robust assignments for CC and
+	srcdir.  Quote srcdir.
+	* gensymlist.sh.in: Likewise.  Assert at the compile time that
+	the symbol table is not empty.
+
+	* disk/raid.c (grub_raid_memberlist): Fix a signedness warning.
+	* fs/cpio.c (grub_cpio_read): Likewise.
+
+2008-04-01  Pavel Roskin  <proski@gnu.org>
+
+	* disk/ata.c (grub_ata_open): Don't lose precision in disk->id.
+	* disk/host.c (grub_host_open): Likewise.
+	* disk/loopback.c (grub_loopback_open): Likewise.
+	* disk/memdisk.c (grub_memdisk_open): Use a string pointer for
+	disk->id as in disk/host.c, not a multi-character constant.
+
+	* util/grub-fstest.c (cmd_cmp): Use fseeko(), not fseek().  The
+	later is obsolete, potentially dangerous and sets a bad example.
+	* util/i386/efi/grub-mkimage.c (make_header): Likewise.
+	* util/misc.c (grub_util_get_image_size): Likewise.
+
+	* disk/loopback.c (options): Improve help for "--partitions".
+
+	* normal/arg.c (grub_arg_show_help): Fix spacing of the long
+	options to align them with the short options, e.g. "echo -e".
+
 2008-03-31  Bean  <bean123ch@gmail.com>
 
 	* video/reader/png.c (grub_png_data): New member is_16bit and

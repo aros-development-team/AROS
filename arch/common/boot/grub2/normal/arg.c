@@ -147,7 +147,7 @@ grub_arg_show_help (grub_command_t cmd)
 	  if (opt->longarg)
 	    {
 	      grub_printf ("--%s", opt->longarg);
-	      spacing -= grub_strlen (opt->longarg);
+	      spacing -= grub_strlen (opt->longarg) + 2;
 	      
 	      if (opt->arg)
 		{

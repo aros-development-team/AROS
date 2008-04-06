@@ -73,7 +73,7 @@ grub_raid_memberlist (grub_disk_t disk)
 {
   struct grub_raid_array *array = disk->data;
   grub_disk_memberlist_t list = NULL, tmp;
-  int i;
+  unsigned int i;
   
   for (i = 0; i < array->total_devs; i++)
     {
