@@ -152,7 +152,6 @@ void updatestdio(void);
 #define putc(c, stream) fputc(c, stream)
 #define getc(stream)    fgetc(stream)
 #define getchar()       getc(stdin)
-#define gets(s)         fgets(s, BUFSIZ, stdin)
 
 #if !defined(_ANSI_SOURCE)
 /* Unix Specific */

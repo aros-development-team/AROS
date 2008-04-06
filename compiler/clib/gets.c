@@ -13,6 +13,7 @@
 #include "__open.h"
 #include "__errno.h"
 
+#include <string.h>
 #include <stdio.h>
 #undef gets
 
@@ -30,8 +31,7 @@
 	Read one line of characters from the standard input stream into
         the buffer. Reading will stop, when a newline ('\n') is encountered,
         EOF or when the buffer is full. If a newline is read, then it is
-	put into the buffer. The last character in the buffer is always
-	'\0' (Therefore at most size-1 characters can be read in one go).
+	replaced by '\0'. The last character in the buffer is always '\0'.
 
     INPUTS
 	buffer - Write characters into this buffer
@@ -55,6 +55,15 @@
 
 ******************************************************************************/
 {
-    return fgets(buffer, BUFSIZ, stdin);
+    char *s = fgets(buffer, BUFSIZ, stdin);
+    if (s)
+    {
+	/* strip trailing \n */
+	size_t sl = strlen(s);
+	if ( (sl > 0) && (s[sl-1] == '\n') )
+	{
+	    s[sl-1] = '\0';
+	}
+    }
+    return s;
 } /* gets */
-
