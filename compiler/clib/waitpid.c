@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2004, The AROS Development Team. All rights reserved.
-    $Id: wait.c 21894 2008-01-11 09:02:07Z agreppin $
+    $Id$
 */
 
 #define DEBUG 0

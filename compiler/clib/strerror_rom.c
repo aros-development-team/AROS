@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: strerror.c 23082 2005-03-10 09:44:38Z jmj $
+    $Id$
 
     ANSI C function strerror().
 */
