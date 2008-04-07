@@ -38,6 +38,7 @@
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
+ *                                 increased failure timeout values to cover rainy day scenarios
  */
 
 #define DEBUG 0
@@ -626,7 +627,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             /*
              * wait for drive to clear busy
              */
-            if (FALSE == ata_WaitBusyTO(au, 10, FALSE))
+            if (FALSE == ata_WaitBusyTO(au, 30, FALSE))
             {
                 bug("[ATA%02ld] Device busy after timeout\n", au->au_UnitNum);
                 err = IOERR_UNITBUSY;
@@ -727,7 +728,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         /*
          * wait for interrupt
          */
-        if (FALSE == ata_WaitBusyTO(au, 10, TRUE))
+        if (FALSE == ata_WaitBusyTO(au, 30, TRUE))
         {
             bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum);
             err = IOERR_UNITBUSY;
@@ -925,7 +926,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
          */
         if (FALSE == dma)
         {
-            if (ata_WaitBusyTO(unit, 10, TRUE) == FALSE)
+            if (ata_WaitBusyTO(unit, 30, TRUE) == FALSE)
             {
                 D(bug("[DSCSI] Command timed out.\n"));
                 err = IOERR_UNITBUSY;
@@ -998,7 +999,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 
             while (err == 0)
             {
-                if (FALSE == ata_WaitBusyTO(unit, 10, TRUE))
+                if (FALSE == ata_WaitBusyTO(unit, 30, TRUE))
                 {
                     err = IOERR_UNITBUSY;
                     break;
