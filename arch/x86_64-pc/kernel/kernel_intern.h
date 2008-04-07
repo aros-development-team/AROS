@@ -17,10 +17,11 @@ struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
     struct List         kb_Intr[256];
-    IPTR                kb_APICBase;
     IPTR                kb_ACPIRSDP;
     uint16_t            kb_XTPIC_Mask;
-    UBYTE               kb_BOOTAPICID;
+    IPTR                kb_APICBase;
+    UBYTE               *kb_APICIDMap;
+    UBYTE               kb_APICCount;
 };
 
 #define KBL_INTERNAL    0
@@ -34,7 +35,8 @@ struct IntrNode {
     void                *in_HandlerData2;
 };
 
-#define STACK_SIZE 8192
+#define STACK_SIZE      8192
+#define PAGE_SIZE	    0x1000
 
 #define SC_CAUSE        0
 #define SC_DISPATCH     1

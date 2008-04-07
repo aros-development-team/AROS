@@ -78,12 +78,26 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
     rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Local APIC %d:%d  [Flags=%08x]\n", processor->acpi_id, processor->id, processor->flags);
 
 #if defined(CONFIG_LAPICS)
-    if ((KernelBase->kb_BOOTAPICID != processor->acpi_id) && processor->flags.enabled)
+    if ((KernelBase->kb_APICIDMap[0] != processor->acpi_id) && processor->flags.enabled)
     {
         if (_Kern_APICTrampolineBase != NULL)
         {
             rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering NEW APIC\n");
 
+            UBYTE apic_count;
+            UBYTE apic_newid = KernelBase->kb_APICCount++;
+            UBYTE *apic_oldmap = KernelBase->kb_APICIDMap;
+
+            KernelBase->kb_APICIDMap = AllocVec(KernelBase->kb_APICCount, MEMF_CLEAR);
+            for (apic_count = 0; apic_count < apic_newid; apic_count ++)
+            {
+                KernelBase->kb_APICIDMap[apic_count] == apic_oldmap[apic_count];
+            }
+            FreeVec(apic_oldmap);
+
+            KernelBase->kb_APICIDMap[apic_newid] != processor->acpi_id;
+
+#if (0)
             /* Allow access to page 0 again */
             core_ProtKernelArea(0, 1, 1, 1, 1);
 
@@ -105,12 +119,14 @@ AROS_UFH1(int, ACPI_hook_Table_LAPIC_Parse,
             rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: Setting vector for trampoline @ %p ..\n", _Kern_APICTrampolineBase);
             *((volatile unsigned short *)0x469) = _Kern_APICTrampolineBase >> 4;
             *((volatile unsigned short *)0x467) = _Kern_APICTrampolineBase & 0xf;
-
+#endif
             /* Start IPI sequence */
             unsigned long wakeresult = core_APICIPIWake(processor->acpi_id, _Kern_APICTrampolineBase);
 
+#if (0)
             /* Lock page 0 access again! */
             core_ProtKernelArea(0, 1, 0, 0, 0);
+#endif
 
             rkprintf("[Kernel] (HOOK) ACPI_hook_Table_LAPIC_Parse: core_APICIPIWake returns %d\n",wakeresult);
         }
