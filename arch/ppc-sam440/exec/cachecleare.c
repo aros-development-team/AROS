@@ -10,26 +10,6 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
-static void flush_cache(char *start, char *end)
-{
-    start = (char*)((unsigned long)start & 0xffffffe0);
-    end = (char*)((unsigned long)end & 0xffffffe0);
-    char *ptr;
-
-    for (ptr = start; ptr < end; ptr +=32)
-    {
-        asm volatile("dcbst 0,%0"::"r"(ptr));
-    }
-    asm volatile("sync");
-
-    for (ptr = start; ptr < end; ptr +=32)
-    {
-        asm volatile("icbi 0,%0"::"r"(ptr));
-    }
-
-    asm volatile("sync; isync; ");
-}
-
 /*****************************************************************************
 
     NAME */
