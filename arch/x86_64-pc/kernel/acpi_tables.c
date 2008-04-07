@@ -20,7 +20,7 @@
 
 /************************************************************************************************/
 
-struct KernelACPIData KernACPIData;
+struct KernelACPIData _Kern_ACPIData;
 struct acpi_table_sdt KernACPISDTEntries[ACPI_MAX_TABLES];
 char *                KernACPISDTSigs[ACPI_TABLE_COUNT] = 
 {
@@ -133,9 +133,9 @@ int core_ACPITableHeaderEarly(int id, struct acpi_table_header ** header)
     else temp_id = id;
 
     /* Locate the table. */
-    for (i = 0; i < KernACPIData.kb_ACPI_SDT_Count; i++)
+    for (i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++)
     {
-        header_tmp = KernACPIData.kb_ACPI_SDT_Entry[i];
+        header_tmp = _Kern_ACPIData.kb_ACPI_SDT_Entry[i];
         if (header_tmp->id != temp_id)
             continue;
 
@@ -184,9 +184,9 @@ int core_ACPITableMADTFamParse(int id, unsigned long madt_size, int entry_id, st
     if ( !entry_handler ) return NULL;
 
     /* Locate the MADT (if exists). There should only be one. */
-    for (i = 0; i < KernACPIData.kb_ACPI_SDT_Count; i++)
+    for (i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++)
     {
-        header_tmp = KernACPIData.kb_ACPI_SDT_Entry[i];
+        header_tmp = _Kern_ACPIData.kb_ACPI_SDT_Entry[i];
 
         if ( header_tmp->id != id)
             continue;
@@ -241,9 +241,9 @@ int core_ACPITableParse(int id, struct acpi_table_hook * header_handler)
 
     if ( !header_handler ) return NULL;
 
-    for ( i = 0; i < KernACPIData.kb_ACPI_SDT_Count; i++ )
+    for ( i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++ )
     {
-        header_tmp = KernACPIData.kb_ACPI_SDT_Entry[i];
+        header_tmp = _Kern_ACPIData.kb_ACPI_SDT_Entry[i];
 
         if ( header_tmp->id != id )	continue;
 
@@ -272,9 +272,9 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
 
         struct acpi_table_xsdt	*XSDT = NULL;
 
-        KernACPIData.kb_ACPI_SDT_Phys = ((struct acpi20_table_rsdp *)RSDP)->xsdt_address;
+        _Kern_ACPIData.kb_ACPI_SDT_Phys = ((struct acpi20_table_rsdp *)RSDP)->xsdt_address;
 
-        XSDT = (struct acpi_table_xsdt *)KernACPIData.kb_ACPI_SDT_Phys;
+        XSDT = (struct acpi_table_xsdt *)_Kern_ACPIData.kb_ACPI_SDT_Phys;
         if (!XSDT)
         {
             rkprintf("[Kernel] core_ACPITableSDTGet: ERROR - bad XSDT pointer\n");
@@ -294,17 +294,17 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
             return NULL;
         }
 
-        KernACPIData.kb_ACPI_SDT_Count = (header->length - sizeof(struct acpi_table_header)) >> 3;
-        if (KernACPIData.kb_ACPI_SDT_Count > ACPI_MAX_TABLES) 
+        _Kern_ACPIData.kb_ACPI_SDT_Count = (header->length - sizeof(struct acpi_table_header)) >> 3;
+        if (_Kern_ACPIData.kb_ACPI_SDT_Count > ACPI_MAX_TABLES) 
         {
-            rkprintf("[Kernel] core_ACPITableSDTGet: WARNING - Truncated %lu XSDT entries\n", (KernACPIData.kb_ACPI_SDT_Count - ACPI_MAX_TABLES));
-            KernACPIData.kb_ACPI_SDT_Count = ACPI_MAX_TABLES;
+            rkprintf("[Kernel] core_ACPITableSDTGet: WARNING - Truncated %lu XSDT entries\n", (_Kern_ACPIData.kb_ACPI_SDT_Count - ACPI_MAX_TABLES));
+            _Kern_ACPIData.kb_ACPI_SDT_Count = ACPI_MAX_TABLES;
         }
 
-        for (i = 0; i < KernACPIData.kb_ACPI_SDT_Count; i++)
+        for (i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++)
         {   
-            KernACPIData.kb_ACPI_SDT_Entry[i] = &KernACPISDTEntries[i];
-            ((struct acpi_table_sdt *)KernACPIData.kb_ACPI_SDT_Entry[i])->pa = (unsigned long)XSDT->entry[i];
+            _Kern_ACPIData.kb_ACPI_SDT_Entry[i] = &KernACPISDTEntries[i];
+            ((struct acpi_table_sdt *)_Kern_ACPIData.kb_ACPI_SDT_Entry[i])->pa = (unsigned long)XSDT->entry[i];
         }
     }
     else if (RSDP->rsdt_address)
@@ -314,9 +314,9 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
 
         struct acpi_table_rsdt	*RSDT = NULL;
 
-        KernACPIData.kb_ACPI_SDT_Phys = RSDP->rsdt_address;
+        _Kern_ACPIData.kb_ACPI_SDT_Phys = RSDP->rsdt_address;
 
-        RSDT = (struct acpi_table_rsdt *)KernACPIData.kb_ACPI_SDT_Phys;
+        RSDT = (struct acpi_table_rsdt *)_Kern_ACPIData.kb_ACPI_SDT_Phys;
         if (!RSDT)
         {
             rkprintf("[Kernel] core_ACPITableSDTGet: ERROR - bad RSDT pointer\n");
@@ -336,17 +336,17 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
             return NULL;
         }
 
-        KernACPIData.kb_ACPI_SDT_Count = (header->length - sizeof(struct acpi_table_header)) >> 2;
-        if (KernACPIData.kb_ACPI_SDT_Count > ACPI_MAX_TABLES)
+        _Kern_ACPIData.kb_ACPI_SDT_Count = (header->length - sizeof(struct acpi_table_header)) >> 2;
+        if (_Kern_ACPIData.kb_ACPI_SDT_Count > ACPI_MAX_TABLES)
         {
-            rkprintf("[Kernel] core_ACPITableSDTGet: WARNING - Truncated %lu RSDT entries\n", (KernACPIData.kb_ACPI_SDT_Count - ACPI_MAX_TABLES));
-            KernACPIData.kb_ACPI_SDT_Count = ACPI_MAX_TABLES;
+            rkprintf("[Kernel] core_ACPITableSDTGet: WARNING - Truncated %lu RSDT entries\n", (_Kern_ACPIData.kb_ACPI_SDT_Count - ACPI_MAX_TABLES));
+            _Kern_ACPIData.kb_ACPI_SDT_Count = ACPI_MAX_TABLES;
         }
 
-        for (i = 0; i < KernACPIData.kb_ACPI_SDT_Count; i++)
+        for (i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++)
         {   
-            KernACPIData.kb_ACPI_SDT_Entry[i] = &KernACPISDTEntries[i];
-            ((struct acpi_table_sdt *)KernACPIData.kb_ACPI_SDT_Entry[i])->pa = (unsigned long)RSDT->entry[i];
+            _Kern_ACPIData.kb_ACPI_SDT_Entry[i] = &KernACPISDTEntries[i];
+            ((struct acpi_table_sdt *)_Kern_ACPIData.kb_ACPI_SDT_Entry[i])->pa = (unsigned long)RSDT->entry[i];
         }
     }
     else 
@@ -355,15 +355,15 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
         return NULL;
     }
 
-    core_ACPITableDump(header, KernACPIData.kb_ACPI_SDT_Phys);
+    core_ACPITableDump(header, _Kern_ACPIData.kb_ACPI_SDT_Phys);
 
-    for (i = 0; i < KernACPIData.kb_ACPI_SDT_Count; i++) 
+    for (i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++) 
     {
-        header = (struct acpi_table_header *)(((struct acpi_table_sdt*)KernACPIData.kb_ACPI_SDT_Entry[i])->pa);
+        header = (struct acpi_table_header *)(((struct acpi_table_sdt*)_Kern_ACPIData.kb_ACPI_SDT_Entry[i])->pa);
         if (header == NULL)
             continue;
 
-        core_ACPITableDump(header, ((struct acpi_table_sdt *)KernACPIData.kb_ACPI_SDT_Entry[i])->pa);
+        core_ACPITableDump(header, ((struct acpi_table_sdt *)_Kern_ACPIData.kb_ACPI_SDT_Entry[i])->pa);
 
         if (core_ACPITableChecksum(header, header->length))
         {
@@ -371,14 +371,14 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
             continue;
         }
 
-        ((struct acpi_table_sdt *)KernACPIData.kb_ACPI_SDT_Entry[i])->size = header->length;
+        ((struct acpi_table_sdt *)_Kern_ACPIData.kb_ACPI_SDT_Entry[i])->size = header->length;
 
         /* Start at 1 to skip "unknown" */
         for (id = 1; id < ACPI_TABLE_COUNT; id++)
         {
             if (!strncmp((char *)&header->signature, KernACPISDTSigs[id], sizeof(header->signature)))
             {
-                ((struct acpi_table_sdt *)KernACPIData.kb_ACPI_SDT_Entry[i])->id = id;
+                ((struct acpi_table_sdt *)_Kern_ACPIData.kb_ACPI_SDT_Entry[i])->id = id;
             }
         }
     }
@@ -391,7 +391,7 @@ IPTR core_ACPITableSDTGet(struct acpi_table_rsdp * RSDP)
         core_ACPITableDump(header, 0);
     }
 
-    return KernACPIData.kb_ACPI_SDT_Phys;
+    return _Kern_ACPIData.kb_ACPI_SDT_Phys;
 }
 
 /**********************************************************/
@@ -529,12 +529,12 @@ ULONG core_ACPIInitialise()
         return result;
     }
 
-    KernACPIData.kb_ACPI_LAPIC = 1;
+    _Kern_ACPIData.kb_ACPI_LAPIC = 1;
 
     /*  I/O APIC : ACPI interpreter is required to complete interrupt setup,
         so if it is off, don't enumerate the io-apics with ACPI.
         If MPS is present, it will handle them, otherwise the system will stay in PIC mode */
-    if (KernACPIData.kb_ACPI_Disabled || !KernACPIData.kb_ACPI_IRQ) return 1;
+    if (_Kern_ACPIData.kb_ACPI_Disabled || !_Kern_ACPIData.kb_ACPI_IRQ) return 1;
 
     result = core_ACPITableMADTParse(ACPI_MADT_IOAPIC, &ACPI_TableParse_IOAPIC_hook);
     rkprintf("[Kernel] core_ACPIInitialise: core_ACPITableMADTParse(ACPI_MADT_IOAPIC) returned %p\n", result);
@@ -571,13 +571,13 @@ ULONG core_ACPIInitialise()
         return result;
     }
 
-    KernACPIData.kb_APIC_IRQ_Model = ACPI_IRQ_MODEL_IOAPIC;
+    _Kern_ACPIData.kb_APIC_IRQ_Model = ACPI_IRQ_MODEL_IOAPIC;
 
-    KernACPIData.kb_ACPI_IOAPIC = 1;
+    _Kern_ACPIData.kb_ACPI_IOAPIC = 1;
 
-    if ( KernACPIData.kb_ACPI_LAPIC && KernACPIData.kb_ACPI_IOAPIC )
+    if ( _Kern_ACPIData.kb_ACPI_LAPIC && _Kern_ACPIData.kb_ACPI_IOAPIC )
     {
-        KernACPIData.kb_SMP_Config = 1;
+        _Kern_ACPIData.kb_SMP_Config = 1;
         rkprintf("[Kernel] core_ACPIInitialise: SMP Configured by APIC\n");
 #warning "TODO: implement check for clustered apic's.."
         //core_APICClusteredCheck();
