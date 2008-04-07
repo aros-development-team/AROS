@@ -19,7 +19,7 @@ all : $(GENMODULE)
 
 GENMODULEINCLUDE := $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
 
-$(GENMODULE) : $(GENMODULE_DEPS) $(GENMODULEINCLUDE)
+$(GENMODULE) : archspecific.h $(GENMODULE_DEPS) $(GENMODULEINCLUDE)
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) -g $(HOST_CFLAGS) -I$(GENINCDIR) $(GENMODULE_SRCS) -o $@
 #	@$(HOST_STRIP) $@
@@ -27,6 +27,11 @@ $(GENMODULE) : $(GENMODULE_DEPS) $(GENMODULEINCLUDE)
 $(GENMODULEINCLUDE) : include/aros/libcall.h
 	@$(MKDIR) $(dir $@)
 	@$(CP) $< $@
+
+archspecific.h: archspecific.c
+	@$(TARGET_CC) -S $<
+	@grep "^[/#][*d]" archspecific.s | sed s/[$$]//g >$@
+	@rm archspecific.s
 
 clean :
 	@$(RM) $(GENMODULE) $(GENMODULEINCLUDE)

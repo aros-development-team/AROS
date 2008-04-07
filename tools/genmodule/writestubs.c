@@ -4,8 +4,7 @@
     
     Function to write module_stubs.c. Part of genmodule.
 */
-#include <aros/cpu.h>
-
+#include "archspecific.h"
 #include "genmodule.h"
 
 void writestubs(struct config *cfg)
@@ -125,7 +124,7 @@ void writestubs(struct config *cfg)
 			STUBCODE,
 			funclistit->name,
 			cfg->libbase,
-			&(__AROS_GETJUMPVEC(NULL, funclistit->lvo)->vec)
+			JUMPVEC(funclistit->lvo)
 		 );
 	    }
 	
