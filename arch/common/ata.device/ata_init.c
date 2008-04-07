@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved
+    Copyright © 2004-2008, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -34,7 +34,7 @@
  *                                 since ata.device may handle it in legacy mode without any issues.
  */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
