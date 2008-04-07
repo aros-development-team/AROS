@@ -19,6 +19,8 @@
  *                                 Removed obsolete code
  * 2008-04-03  M. Schulz           inb, outb and outl are not used directly anymore. Instead, the ata_* macros are taken.
  *                                 PRD should be set in little endian mode up (at least I guess so...)
+ * 2008-04-07  M. Schulz           Once PRD is ready one has to clear data caches. PRD might still be in cache only on
+ *                                 writeback systems otherwise 
  */
 
 #define DEBUG 0
@@ -101,6 +103,8 @@ VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
 
     prd[i-1].prde_Length |= AROS_LONG2LE(0x80000000);
 
+    CacheClearE(&prd[0], (i) * sizeof(struct PRDEntry), CACRF_ClearD);
+    
     ata_outl((ULONG)prd, dma_PRD, unit->au_DMAPort);
     ata_out(ata_in(dma_Status, unit->au_DMAPort) | DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
     
