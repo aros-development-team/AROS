@@ -27,6 +27,7 @@
  *                                 Redefined ata_in and ata_out. On x86-like systems they use inb/outb directly. On other systems
  *                                 they use pci_inb and pci_outb.
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
+ * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  */
 
 #include <exec/types.h>
@@ -129,7 +130,7 @@ struct ata_Bus
                                              /* for data requests/DMA */
     UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
     BOOL                    ab_Waiting;
-    ULONG                   ab_Timeout;
+    LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
     struct ata_Unit         *ab_Units[MAX_UNIT];    /* Units on the bus */
 
@@ -138,8 +139,6 @@ struct ata_Bus
 
     struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
     struct MsgPort          *ab_MsgPort;    /* Task's message port */
-    struct MsgPort          *ab_TimerMP;    /* Two fields used by bus task to do delays if needed */
-    struct timerequest      *ab_TimerIO;
     struct PRDEntry         *ab_PRD;
 };
 

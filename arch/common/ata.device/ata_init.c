@@ -28,6 +28,7 @@
  * 2008-03-30  T. Wiszkowski       Added workaround for interrupt collision handling; fixed SATA in LEGACY mode.
  *                                 nForce and Intel SATA chipsets should now be operational.
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
+ * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  */
 
 #define DEBUG 0

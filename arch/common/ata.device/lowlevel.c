@@ -37,6 +37,7 @@
  * 2008-04-01  M. Schulz           Use C functions ata_ins[wl] ata_outs[wl]
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
+ * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  */
 
 #define DEBUG 0
@@ -371,7 +372,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
      */
     Disable();
     ata_EnableIRQ(unit->au_Bus, FALSE);
-    unit->au_Bus->ab_Timeout = 0;
+    unit->au_Bus->ab_Timeout = -1;
     Enable();
             
     /*
@@ -490,7 +491,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     /*
      * generally we could consider marking unit as 'retarded' upon three attempts or stuff like that
      */
-    if (ata_WaitBusyTO(au, 100, TRUE) == FALSE)
+    if (ata_WaitBusyTO(au, 1, TRUE) == FALSE)
     {
         bug("[ATA%02ld] UNIT BUSY AT SELECTION\n", au->au_UnitNum);
         return IOERR_UNITBUSY;
@@ -569,7 +570,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         case CM_NoData:
             D(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
             ata_out(block->command, ata_Command, port);
-            if (FALSE == ata_WaitBusyTO(au, 1000, TRUE))
+            if (FALSE == ata_WaitBusyTO(au, 10, TRUE))
             {
                 D(bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum));
                 err = IOERR_UNITBUSY;
@@ -625,7 +626,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             /*
              * wait for drive to clear busy
              */
-            if (FALSE == ata_WaitBusyTO(au, 1000, FALSE))
+            if (FALSE == ata_WaitBusyTO(au, 10, FALSE))
             {
                 bug("[ATA%02ld] Device busy after timeout\n", au->au_UnitNum);
                 err = IOERR_UNITBUSY;
@@ -726,7 +727,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         /*
          * wait for interrupt
          */
-        if (FALSE == ata_WaitBusyTO(au, 1000, TRUE))
+        if (FALSE == ata_WaitBusyTO(au, 10, TRUE))
         {
             bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum);
             err = IOERR_UNITBUSY;
@@ -825,7 +826,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
     datalen = (datalen+1)&~1;
 
     ata_out(unit->au_DevMask, atapi_DevSel, port);
-    if (ata_WaitBusyTO(unit, 10, TRUE))
+    if (ata_WaitBusyTO(unit, 1, TRUE))
     {
         /*
          * since the device is now ready (~BSY) && (~DRQ), we can set up features and transfer size
@@ -924,7 +925,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
          */
         if (FALSE == dma)
         {
-            if (ata_WaitBusyTO(unit, 1000, TRUE) == FALSE)
+            if (ata_WaitBusyTO(unit, 10, TRUE) == FALSE)
             {
                 D(bug("[DSCSI] Command timed out.\n"));
                 err = IOERR_UNITBUSY;
@@ -997,7 +998,7 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
 
             while (err == 0)
             {
-                if (FALSE == ata_WaitBusyTO(unit, 300, TRUE))
+                if (FALSE == ata_WaitBusyTO(unit, 10, TRUE))
                 {
                     err = IOERR_UNITBUSY;
                     break;
@@ -1139,6 +1140,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
 
     /*
      * this stuff always goes along the same way
+     * WARNING: NO INTERRUPTS AT THIS POINT!
      */
     D(bug("[ATA  ] setting up unit %ld\n", u));
 
@@ -1148,7 +1150,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
 
     ata_SelectUnit(unit);
 
-    if (FALSE == ata_WaitBusyTO(unit, 10, FALSE))
+    if (FALSE == ata_WaitBusyTO(unit, 1, FALSE))
     {
         D(bug("[ATA%02ld] ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
@@ -1488,7 +1490,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
     };
 
     ata_SelectUnit(unit);
-    if (ata_WaitBusyTO(unit, 100, FALSE) == FALSE)
+    if (ata_WaitBusyTO(unit, 1, FALSE) == FALSE)
     {
         bug("[ATA%02ld] Unit not ready after timeout. Aborting.\n", unit->au_UnitNum);
         return IOERR_UNITBUSY;

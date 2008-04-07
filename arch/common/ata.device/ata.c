@@ -21,6 +21,7 @@
  *                                 nForce and Intel SATA chipsets should now be operational.
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
+ * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  */
 
 #define DEBUG 0
@@ -816,21 +817,38 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
         /* 
          * Endless loop 
          */
-        for (;;)
+        for (b=0;;++b)
         {
             /* 
              * call separate IORequest for every ATAPI device 
              * we're calling HD_SCSICMD+1 command here -- anything like test unit ready?
              */
-            D(bug("[ATA++] Detecting media presence\n"));
-            for (b=0; b < count; b++)
-                DoIO((struct IORequest *)ios[b]);
+            if (0 == (b & 3))
+            {
+                D(bug("[ATA++] Detecting media presence\n"));
+                for (d=0; d < count; d++)
+                    DoIO((struct IORequest *)ios[d]);
+            }
+
+            /*
+             * check / trigger all buses waiting for an irq
+             */
+            ForeachNode(&LIBBASE->ata_Buses, bus)
+            {
+                if (bus->ab_Timeout >= 0)
+                {
+                    if (0 > (--bus->ab_Timeout))
+                    {
+                        Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
+                    }
+                }
+            }
 
             /* 
-             * And then hide and wait ;)
+             * And then hide and wait for 1 second
              */
             tr->tr_node.io_Command = TR_ADDREQUEST;
-            tr->tr_time.tv_secs = 3;
+            tr->tr_time.tv_secs = 1;
             tr->tr_time.tv_micro = 0;
             DoIO((struct IORequest *)tr);
         }
@@ -849,7 +867,6 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
 
 static void TaskCode(struct ata_Bus *, struct Task*);
 static void ata_Interrupt(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-static void ata_Timeout(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 /* 
  * Make a task for given bus alive.
@@ -921,9 +938,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
     struct OOP_Object *o;
     int retval = 0;
 
-    HIDDT_IRQ_Handler *timeout_irq = AllocPooled(bus->ab_Base->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
-    
-    if (bus->ab_IntHandler && timeout_irq)
+    if (bus->ab_IntHandler)
     {
         /*
             Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
@@ -933,11 +948,6 @@ static int CreateInterrupt(struct ata_Bus *bus)
         bus->ab_IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
         bus->ab_IntHandler->h_Code = ata_Interrupt;
         bus->ab_IntHandler->h_Data = bus;
-
-        timeout_irq->h_Node.ln_Pri = 0;
-        timeout_irq->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
-        timeout_irq->h_Code = ata_Timeout;
-        timeout_irq->h_Data = bus;
 
         o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
         if (o)
@@ -949,17 +959,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
             }, *msg = &__msg__;
             
             if (OOP_DoMethod(o, (OOP_Msg)msg))
-            {
-                msg->handlerinfo = timeout_irq;
-                msg->id = vHidd_IRQ_Timer;
-                
-                if (OOP_DoMethod(o, (OOP_Msg)msg))
-                {
-                    retval = 1;
-                }
-            }
-            
-            
+                retval = 1;
 
             OOP_DisposeObject(o);
         }
@@ -981,14 +981,6 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
     
     D(bug("[ATA**] Task started (IO: 0x%x)\n", bus->ab_Port));
 
-    /* 
-     * Prepare timer.device in case some IO commands will try to wait using it
-     * instead of busy loop delays.
-     */
-    bus->ab_TimerMP = CreateMsgPort();
-    bus->ab_TimerIO = (struct timerequest *)
-        CreateIORequest(bus->ab_TimerMP, sizeof(struct timerequest));
-
     /* Get the signal used for sleeping */
     bus->ab_SleepySignal = AllocSignal(-1);
     /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
@@ -1000,8 +992,6 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
         D(bug("[%s] Something wrong with creating interrupt?\n",
             bus->ab_Task->tc_Node.ln_Name));
     }
-
-    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)bus->ab_TimerIO, 0);
 
     sig = 1L << bus->ab_MsgPort->mp_SigBit;
 
@@ -1052,22 +1042,6 @@ static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
 
     ata_HandleIRQ(bus);
-}
-
-static void ata_Timeout(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    struct ata_Bus *bus = (struct ata_Bus *)irq->h_Data;
-
-    if (bus->ab_Timeout > 0)
-    {
-        bus->ab_Timeout--;
-
-        if (!bus->ab_Timeout)
-        {
-            D(bug("[ATA  ] ERROR: Command timeout expired\n"));
-            Signal(bus->ab_Task, SIGBREAKF_CTRL_C);
-        }
-    }
 }
 
 /* vim: set ts=4 sw=4 :*/
