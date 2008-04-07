@@ -29,6 +29,9 @@
  *                                 nForce and Intel SATA chipsets should now be operational.
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
+ * 2008-04-07  M. Schulz           The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will 
+ *                                 not be find with the generic enumeration. Do an explicit search after it 
+ *                                 since ata.device may handle it in legacy mode without any issues.
  */
 
 #define DEBUG 0
@@ -394,13 +397,26 @@ void ata_Scan(struct ataBase *base)
             {TAG_DONE,              0x00}
         };
 
-
         struct pHidd_PCI_EnumDevices enummsg = {
             mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
             callback:       &FindHook,
             requirements:   (struct TagItem *)&Requirements,
         }, *msg = &enummsg;
         
+        OOP_DoMethod(pci, (OOP_Msg)msg);
+
+        /* 
+         * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be find
+         * with the enumeration above. Do an explicit search now since ata.device may handle it
+         * in legacy mode without any issues.
+         * 
+         * Note: This chip is used on Sam440 board.
+         */
+        Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+        Requirements[0].ti_Data = 0x1095;
+        Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+        Requirements[1].ti_Data = 0x3114;
+
         OOP_DoMethod(pci, (OOP_Msg)msg);
         
         OOP_DisposeObject(pci);
