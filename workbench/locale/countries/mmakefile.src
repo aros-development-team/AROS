@@ -30,7 +30,7 @@ $(MAKECOUNTRY) : $(OBJS)
 
 $(OBJS) $(DEPS) : | $(OBJDIR)
 %rule_compile_multi basenames="makecountry/makecountry $(COUNTRIES)" \
-       cflags="$(CFLAGS) -I$(AROS_INCLUDES)" targetdir=$(OBJDIR) compiler=host
+       cflags="$(HOST_CFLAGS) -I$(AROS_INCLUDES)" targetdir=$(OBJDIR) compiler=host
 
 %rule_makedirs dirs="$(OBJDIR) $(COUNTRYDIR)"
 
