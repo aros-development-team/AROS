@@ -49,8 +49,6 @@
 #define RETURNID_COMMENTACK 11
 #define RETURNID_VERSION    12
 
-//#define VERSION "$VER: Info 0.1 ("ADATE") © AROS Dev Team"
-
 #define  MAX_PATH_LEN  1024
 #define  MAX_TOOLTYPE_LINE 256
 #define BUFFERSIZE 1024
@@ -104,15 +102,11 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
     
     for(sp = contents, lines = 0; sp; lines++)
     {
-	    dst_ttypes[lines] = sp;
+	dst_ttypes[lines] = sp;
     	sp = strchr(sp, '\n');
 	if (sp)
 	{
 	    *sp++ = '\0';
-	}
-	else
-	{
-	    dst_ttypes[lines] = 0;
 	}
     }
     dst_ttypes[lines] = 0;
@@ -204,14 +198,14 @@ void SaveIcon(struct DiskObject *icon, STRPTR name, BPTR cd)
     }
 
     old_ttypes = (UBYTE **)icon->do_ToolTypes;
-    if ((ttypes = BuildToolTypes(old_ttypes)))
-    {
-        icon->do_ToolTypes = ttypes;
-    }
+    ttypes = BuildToolTypes(old_ttypes);
+    icon->do_ToolTypes = ttypes;
+
     PutIconTags(name, icon, TAG_DONE);
+    
+    icon->do_ToolTypes = old_ttypes;
     if (ttypes)
     {
-        icon->do_ToolTypes = old_ttypes;
         FreeToolTypes(ttypes);
     }
     CurrentDir(restored_cd);
@@ -567,7 +561,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 
     application = ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.2 ("ADATE") © AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.3 ("ADATE") © AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
@@ -797,7 +791,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 	    
             while ((tt = icon->do_ToolTypes[i]) != NULL)
             {
-	    	len = len + strlen(icon->do_ToolTypes[i]) + 1;
+	    	len += strlen(icon->do_ToolTypes[i]) + 1;
 		i++;
 	    }
 	    
@@ -806,11 +800,17 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 	    {
 	    	contents[0] = 0;
 		i = 0;
+		BOOL first = TRUE;
 
-        	while ((tt = icon->do_ToolTypes[i]) != NULL)
+        	while ((icon->do_ToolTypes[i]) != NULL)
         	{
+		    if ( ! first )
+		    {
+			strcat(contents, "\n");
+		    }
+		    first = FALSE;
 		    strcat(contents, icon->do_ToolTypes[i]);
-		    strcat(contents, "\n");
+
 		    i++;
 		}
 
@@ -966,7 +966,7 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                 if(signals & SIGBREAKF_CTRL_C) break;
             }
 
-        returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
+	    returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
         }
         SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
         MUI_DisposeObject(application);
