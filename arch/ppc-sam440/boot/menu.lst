@@ -9,6 +9,7 @@ title AROS PowerPC test 1
     module boot/modules/utility.library
     module boot/modules/partition.library
     module boot/modules/aros.library
+    module boot/modules/bootloader.resource
     module boot/modules/mathieeesingbas.library
     module boot/modules/oop.library
     module boot/modules/hiddclass.hidd
@@ -30,9 +31,13 @@ title AROS PowerPC test 1
     module boot/modules/nil.handler
     module boot/modules/ram.handler
     module boot/modules/packet.handler
+    module boot/modules/dos.library
+    module boot/modules/irq.hidd
+    module boot/modules/boot.library
+    module boot/modules/timer.device
     module boot/modules/radeon.hidd
-#    module Devs/battclock.resource
-#    module Devs/misc.resource
+    module boot/modules/ata.device
+    module boot/modules/cdrom.handler
 
 #title AROS PPC test 2
 #    kernel boot/aros-ppc2

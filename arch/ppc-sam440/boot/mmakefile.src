@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 
-#MM bootiso-sam440-ppc: kernel-sam440-ppc kernel-package-sam440-ppc
+#MM bootiso-sam440-ppc: kernel-sam440-ppc kernel-package-sam440-ppc workbench-complete
 
 #MM kernel-package-sam440-ppc: \
 #MM	linklibs-clib \
@@ -13,6 +13,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-mathieeesingbas \
 #MM	kernel-aros \
 #MM	kernel-misc \
+#MM	kernel-timer \
 #MM	kernel-pci \
 #MM	kernel-pci-amcc440 \
 #MM	kernel-graphics \
@@ -27,18 +28,25 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-con \
 #MM	kernel-fs-packet \
 #MM	kernel-workbench \
+#MM	kernel-bootloader-sam440-ppc \
+#MM	kernel-dos \
+#MM	kernel-boot \
+#MM	kernel-ata \
 #MM	hidd-i2c \
 #MM	hidd-radeon \
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
 #MM	workbench-libs-partition \
+#MM	kernel-sam440-ppc-irq \
+#MM	contrib-cdvdfs \
 #MM	workbench-hidd-graphics
 
-PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench
-PKG_RSRC := misc 
-PKG_DEVS :=  input gameport keyboard console
-PKG_HANDLERS := con nil ram packet
-PKG_HIDDS:= graphics hiddclass pci pci-amcc440 i2c radeon
+
+PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot
+PKG_RSRC := misc bootloader
+PKG_DEVS :=  input gameport keyboard console timer ata
+PKG_HANDLERS := con nil ram packet cdrom
+PKG_HIDDS:= graphics hiddclass pci pci-amcc440 i2c radeon irq
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
