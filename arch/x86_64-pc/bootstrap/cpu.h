@@ -169,7 +169,7 @@ struct PTE {
 #define cpuid(num, eax, ebx, ecx, edx) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
-inline void __attribute__((always_inline)) rdmsr(unsigned int msr_no, unsigned int *ret_lo, unsigned int *ret_hi)
+static inline void rdmsr(unsigned int msr_no, unsigned int *ret_lo, unsigned int *ret_hi)
 {
     unsigned int ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
@@ -177,19 +177,19 @@ inline void __attribute__((always_inline)) rdmsr(unsigned int msr_no, unsigned i
     *ret_hi=ret2;
 }
 
-inline long long __attribute__((always_inline)) rdmsrq(unsigned int msr_no)
+static inline long long rdmsrq(unsigned int msr_no)
 {
     unsigned int ret1,ret2;
     asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
     return ((long long)ret1 | ((long long)ret2 << 32));
 }
 
-inline void __attribute__((always_inline)) wrmsr(unsigned int msr_no, unsigned int val_lo, unsigned int val_hi)
+static inline void wrmsr(unsigned int msr_no, unsigned int val_lo, unsigned int val_hi)
 {
     asm volatile("wrmsr"::"a"(val_lo),"d"(val_hi),"c"(msr_no));
 }
 
-inline void __attribute__((always_inline)) wrmsrq(unsigned int msr_no, unsigned long long val)
+static inline void wrmsrq(unsigned int msr_no, unsigned long long val)
 {
     asm volatile("wrmsr"::"a"((unsigned int)(val & 0xffffffff)),"d"((unsigned int)(val >> 32)),"c"(msr_no));
 }
