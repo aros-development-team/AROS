@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2008, The AROS Development Team. All rights reserved.
     $Id: apic.c,v 1.7 2004/01/07 07:13:03 nicja Exp $
 */
 #include <inttypes.h>
@@ -154,6 +154,8 @@ UBYTE core_APICGetID()
 #define                 APICICR_DM_INIT            0x500
 #define                 APICICR_DM_STARTUP            0x600
 
+int kernel_cstart(struct TagItem *msg, void *entry);
+
 void core_APICInitialise(IPTR _APICBase)
 {
     uint32_t APIC_VAL;
@@ -217,6 +219,9 @@ unsigned long core_APICIPIWake(UBYTE wake_apicid, IPTR wake_apicstartrip)
     _APICStackBase = AllocMem(STACK_SIZE, MEMF_CLEAR);
     rkprintf("[Kernel] core_APICIPIWake: APIC stack allocated @ %p\n", _APICStackBase);
 
+    *(IPTR*)(wake_apicstartrip + 0x0018) = _APICStackBase + STACK_SIZE - SP_OFFSET;
+    *(IPTR*)(wake_apicstartrip + 0x0020) = kernel_cstart;
+    
     /* Store our startup function as the return address */
     //*(IPTR *)(_APICStackBase + STACK_SIZE - 1 - sizeof(IPTR)) = &kernel_cstart;
     /* Store pointer for this APICs stack on the trampoline's stack */
