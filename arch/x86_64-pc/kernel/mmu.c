@@ -11,6 +11,8 @@ static struct PML4E PML4[512] __attribute__((used,aligned(4096)));
 static struct PDPE PDP[512] __attribute__((used,aligned(4096)));
 static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096)));
 
+extern IPTR _Kern_APICTrampolineBase;
+
 void core_SetupMMU()
 {
     int i;
@@ -77,6 +79,10 @@ void core_SetupMMU()
     }
     
     wrcr(cr3, &PML4);
+    
+    /* HACK! Store the PML4 address in smp trampoline area */
+    *(ULONG *)(_Kern_APICTrampolineBase + 0x0014) = (ULONG)&PML4;
+    
     rkprintf("[Kernel] PML4 @ %012p\n", &PML4);
 }
 
