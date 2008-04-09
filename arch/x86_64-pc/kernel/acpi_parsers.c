@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2008, The AROS Development Team. All rights reserved.
     $Id: acpi_parsers.c,v 1.7 2004/01/07 07:13:03 nicja Exp $
 */
 #include <inttypes.h>
@@ -18,7 +18,7 @@
 
 #include "kernel_intern.h"
 
-//#define CONFIG_LAPICS
+#define CONFIG_LAPICS
 
 /************************************************************************************************
                                     ACPI TABLE PARSING HOOKS
