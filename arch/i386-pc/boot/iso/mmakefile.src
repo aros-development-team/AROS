@@ -29,6 +29,7 @@ BOOTLOADER_ELTORITO_REL := boot/grub/grub2_eltorito
 endif
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
+$(warning LANG = $(LANG))
 
 $(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz
 	%mkdirs_q $(AROSDIR)/S
@@ -42,7 +43,6 @@ $(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz
                 -boot-load-size 4 \
                 -boot-info-table \
 		-allow-leading-dots \
-		-input-charset iso8859-1 \
 		-iso-level 4 \
                 -V "AROS Live CD" \
                 -publisher "The AROS Dev Team" \
