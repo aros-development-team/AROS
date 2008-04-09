@@ -67,6 +67,7 @@ int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 IPTR core_APICProbe();
 IPTR core_APICGetMSRAPICBase();
 UBYTE core_APICGetID();
+void core_APICInitialise(IPTR);
 unsigned long core_APICIPIWake(UBYTE, IPTR);
 void core_SetupIDT();
 void core_SetupGDT();
