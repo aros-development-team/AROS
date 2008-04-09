@@ -18,7 +18,7 @@
 #include "../bootstrap/multiboot.h"
 #include LC_LIBDEFS_FILE
 
-#define CONFIG_LAPICS
+//#define CONFIG_LAPICS
 
 extern const unsigned char start64[];
 extern const unsigned char _binary_smpbootstrap_start[];
@@ -96,6 +96,57 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
 
+    if (LIBBASE->kb_APICBase == NULL)
+        LIBBASE->kb_APICBase= _kern_early_APICBase;   
+    D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
+   
+    uint32_t APIC_VAL;
+    unsigned int apic_ver, maxlvt;
+
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xE0) = 0xFFFFFFFF; /* Put the APIC into flat delivery mode */
+
+    /* Set up the logical destination ID.  */
+    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xD0) & ~(0xFF<<24);
+    APIC_VAL |= (1 << 24);
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xD0) = APIC_VAL;
+
+    /* Set Task Priority to 'accept all'. We never change this later on.  */
+    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase +  0x80) & ~0xFF;
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x80) = APIC_VAL;
+
+    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xF0) & ~0xFF;
+    APIC_VAL |= (1 << 8); /* Enable APIC */
+    APIC_VAL |= (1 << 9); /* Disable focus processor (bit==1) */
+    APIC_VAL |= 0xFF; /* Set spurious IRQ vector */
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xF0) = APIC_VAL;
+
+    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x350) & (1<<16);
+    APIC_VAL = 0x700;
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x350) = APIC_VAL;
+
+    /* only the BP should see the LINT1 NMI signal.  */
+    APIC_VAL = 0x400;
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x360) = APIC_VAL;
+
+    D(bug("[Kernel] Kernel_Init: APIC LVT0=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x350)));
+    D(bug("[Kernel] Kernel_Init: APIC LVT1=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x360)));
+
+    /* Due to the Pentium erratum 3AP. */
+    apic_ver = (*((volatile uint32_t*)(KernelBase->kb_APICBase + 0x30)) & 0xFF);
+    maxlvt = (apic_ver & 0xF0) ? ((*((volatile uint32_t*)(KernelBase->kb_APICBase + 0x30)) >> 16) & 0xFF) : 2; /* 82489DXs doesnt report no. of LVT entries. */
+    if (maxlvt > 3)
+       *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280) = 0;
+
+    D(bug("[Kernel] Kernel_Init: APIC ESR before enabling vector: %08lx\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
+ 
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x370) = 0xfe; /* Enable error sending */
+
+     /* spec says clear errors after enabling vector.  */
+     if (maxlvt > 3)
+       *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280) = 0;
+
+    D(bug("[Kernel] Kernel_Init: APIC ESR after enabling vector: %08lx\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
+
 #warning "TODO: Check if NOACPI is set on the boot command line"
     if (_kern_early_ACPIRSDP)
     {
@@ -107,42 +158,38 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
         core_ACPIInitialise();
     }
 
-    if (LIBBASE->kb_APICBase == NULL)
-        LIBBASE->kb_APICBase= _kern_early_APICBase;
-    
-    D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
-    
     uint32_t *localAPIC = (uint32_t*)LIBBASE->kb_APICBase + 0x320;
     
     LIBBASE->kb_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
     D(bug("[Kernel] Kernel_Init: MemPool @ %012p\n", LIBBASE->kb_MemPool));
+
 /*
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"((uint32_t*)(LIBBASE->kb_APICBase + 0xb0)));
+    asm volatile ("movl %0,(%1)"::"r"(0),"r"((volatile uint32_t*)(LIBBASE->kb_APICBase + 0xb0)));
     
-    D(bug("[Kernel] Kernel_Init: APIC SVR=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0xf0)));
-    D(bug("[Kernel] Kernel_Init: APIC ESR=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
-    D(bug("[Kernel] Kernel_Init: APIC TPR=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x80)));
-    D(bug("[Kernel] Kernel_Init: APIC ICR=%08x%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x314), *(uint32_t*)(LIBBASE->kb_APICBase + 0x310)));
-    D(bug("[Kernel] Kernel_Init: APIC Timer divide=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x3e0)));
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
+    D(bug("[Kernel] Kernel_Init: APIC SVR=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xf0)));
+    D(bug("[Kernel] Kernel_Init: APIC ESR=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
+    D(bug("[Kernel] Kernel_Init: APIC TPR=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x80)));
+    D(bug("[Kernel] Kernel_Init: APIC ICR=%08x%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x314), *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x310)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer divide=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x3e0)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     
-    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
+    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     //*(volatile uint32_t *)localAPIC = 0x000000fe;
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
-    *(uint32_t*)(LIBBASE->kb_APICBase + 0x380) = 0x11111111;
-    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
+    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380) = 0x11111111;
+    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     
     for (i=0; i < 0x10000000; i++) asm volatile("nop;");
     
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
     for (i=0; i < 0x1000000; i++) asm volatile("nop;");
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
 
     for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 }
@@ -222,10 +269,10 @@ int kernel_cstart(struct TagItem *msg, void *entry)
             rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase);
 
 #if defined(CONFIG_LAPICS)       
-            memcpy(_Kern_APICTrampolineBase, &_binary_smpbootstrap_start,
+            memcpy(_Kern_APICTrampolineBase, _binary_smpbootstrap_start,
                         _binary_smpbootstrap_size);
 
-            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", &_binary_smpbootstrap_start,
+            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", _binary_smpbootstrap_start,
                         _binary_smpbootstrap_size);
 #endif
         }
