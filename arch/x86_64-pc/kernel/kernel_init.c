@@ -61,11 +61,9 @@ IPTR           _kern_initflags;
 
 #define        KERNBOOTFLAG_BOOTCPUSET                1
 
-IPTR           _kern_early_APICBase;
 IPTR           _kern_early_ACPIRSDP;
 UBYTE          _kern_early_BOOTAPICID;
 IPTR           _Kern_APICTrampolineBase;
-IPTR           _Kern_APICTrampolineStackBase;
 
 static char _kern_early_BOOTCmdLine[200];
 
@@ -97,7 +95,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
 
     if (LIBBASE->kb_APICBase == NULL)
-        LIBBASE->kb_APICBase= _kern_early_APICBase;   
+        LIBBASE->kb_APICBase= core_APICGetMSRAPICBase();;   
     D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
 
     core_APICInitialise(LIBBASE->kb_APICBase);
@@ -162,7 +160,9 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     UBYTE kern_apic_id;
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
 
-    kern_apic_id = core_APICGetID();
+    IPTR _APICBase = core_APICGetMSRAPICBase();
+
+    kern_apic_id = core_APICGetID(_APICBase);
     rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d\n", kern_apic_id);
 
     /* Enable fxsave/fxrstor */ 
@@ -206,7 +206,6 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         BootMsg = msg;
 
         core_APICProbe();
-        _kern_early_APICBase = core_APICGetMSRAPICBase();
 
         /* Initialize the ACPI boot-time table parser. */
         _kern_early_ACPIRSDP = core_ACPIProbe();
@@ -236,7 +235,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         core_SetupGDT();
 
         /* Set TSS, GDT, LDT and MMU up */
-        core_CPUSetup();
+        core_CPUSetup(_APICBase);
         core_SetupIDT();
         core_SetupMMU();
 
@@ -247,7 +246,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     }
     else
     {
-        core_CPUSetup();
+        core_CPUSetup(_APICBase);
         core_SetupIDT();
     }
 
@@ -398,10 +397,10 @@ void core_SetupGDT()
 }
 
 
-void core_CPUSetup()
+void core_CPUSetup(IPTR _APICBase)
 {
     UBYTE CPU_ID = 0;
-    CPU_ID = core_APICGetID();
+    CPU_ID = core_APICGetID(_APICBase);
 
     rkprintf("[Kernel] core_CPUSetup(id:%d)\n", CPU_ID);
     

@@ -66,13 +66,13 @@ int core_ACPITableHeaderEarly(int, struct acpi_table_header **);
 /** CPU Functions **/
 IPTR core_APICProbe();
 IPTR core_APICGetMSRAPICBase();
-UBYTE core_APICGetID();
+UBYTE core_APICGetID(IPTR);
 void core_APICInitialise(IPTR);
 unsigned long core_APICIPIWake(UBYTE, IPTR);
 void core_SetupIDT();
 void core_SetupGDT();
 void core_SetupMMU();
-void core_CPUSetup();
+void core_CPUSetup(IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
 /** Kernel Attribute Functions **/
