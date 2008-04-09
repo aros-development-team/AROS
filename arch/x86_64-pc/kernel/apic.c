@@ -132,15 +132,10 @@ IPTR core_APICGetMSRAPICBase()
 
 UBYTE core_APICGetID()
 {
-    IPTR _apic_id = 0;
-
-    asm volatile
-    (
-        "movl	$1,%%eax\n\t"
-        "cpuid\n\t"
-        "movl	%%ebx,%0":"=m"(_apic_id):
-    );
+    ULONG _apic_id;
     
+    asm volatile("cpuid":"=b"(_apic_id):"a"(1):"ecx","edx");
+
     /* Mask out the APIC's ID Bits */
     _apic_id &= 0xff000000;
     _apic_id = _apic_id >> 24;
