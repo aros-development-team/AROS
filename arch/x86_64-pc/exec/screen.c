@@ -21,6 +21,8 @@
 #define __sti()			__asm__ __volatile__("sti": : :"memory")
 
 static int x,y, dead, vesa, w, wc=80, h, hc=25, bpp;
+static int scr_rpclock;
+
 void *fb;
 
 struct scr
@@ -190,7 +192,16 @@ void scr_RawPutChars(char *chr, int lim)
 {
     int i;
 
+    asm volatile ( "mov     $1, %%eax\n\t"
+                  "loop:"
+                   "xchg    %0, %%eax\n\t"
+                   "test    %%eax, %%eax\n\t"  
+                   "jnz     loop":"=m"(scr_rpclock):"m"(scr_rpclock));
+
     for (i=0; i<lim; i++)
-	Putc(*chr++);
+        Putc(*chr++);
+
+    asm volatile ( "mov     $0, %%eax\n\t"
+                   "xchg    %0, %%eax":"=m"(scr_rpclock):"m"(scr_rpclock));
 }
 
