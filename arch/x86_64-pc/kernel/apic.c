@@ -22,7 +22,6 @@
 extern int kernel_cstart(struct TagItem *msg, void *entry);
 
 extern struct KernelACPIData _Kern_ACPIData;
-extern IPTR                  _Kern_APICTrampolineStackBase;
 
 static ULONG usec2tick(ULONG usec)
 {
@@ -130,17 +129,12 @@ IPTR core_APICGetMSRAPICBase()
     return _apic_base;
 }
 
-UBYTE core_APICGetID()
+UBYTE core_APICGetID(IPTR _APICBase)
 {
-    ULONG _apic_id;
+    UBYTE _apic_id;
     
-    asm volatile("cpuid":"=b"(_apic_id):"a"(1):"ecx","edx");
-
-    /* Mask out the APIC's ID Bits */
-    _apic_id &= 0xff000000;
-    _apic_id = _apic_id >> 24;
+    _apic_id = (*(volatile uint32_t*)(_APICBase + 0x20) & 0xFF000000) >> 24;
     rkprintf("[Kernel] core_APICGetID: APIC ID %d\n", _apic_id);
-    
     return (UBYTE)_apic_id & 0xff;
 }
 
@@ -217,11 +211,6 @@ unsigned long core_APICIPIWake(UBYTE wake_apicid, IPTR wake_apicstartrip)
     *(IPTR*)(wake_apicstartrip + 0x0018) = _APICStackBase + STACK_SIZE - SP_OFFSET;
     *(IPTR*)(wake_apicstartrip + 0x0020) = kernel_cstart;
     
-    /* Store our startup function as the return address */
-    //*(IPTR *)(_APICStackBase + STACK_SIZE - 1 - sizeof(IPTR)) = &kernel_cstart;
-    /* Store pointer for this APICs stack on the trampoline's stack */
-    //*(IPTR *)(_Kern_APICTrampolineStackBase + PAGE_SIZE - 1 - sizeof(IPTR)) = (_APICStackBase + STACK_SIZE - 1);
-
     /* Send the IPI by setting APIC_ICR : Set INIT on target APIC
        by writing the apicid to the destfield of APIC_ICR2 */
     *((volatile uint32_t*)(KernelBase->kb_APICBase + 0x310)) = ((wake_apicid)<<24);
