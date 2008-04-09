@@ -18,7 +18,7 @@
 #include "../bootstrap/multiboot.h"
 #include LC_LIBDEFS_FILE
 
-//#define CONFIG_LAPICS
+#define CONFIG_LAPICS
 
 extern const unsigned char start64[];
 extern const unsigned char _binary_smpbootstrap_start[];
@@ -235,6 +235,13 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         /* Prepair GDT */
         core_SetupGDT();
     }
+    else
+    {
+        /* A temporary solution - the code for smp is not ready yet... */
+#warning "TODO: launch idle task ..."
+        rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", kern_apic_id);
+        while(1) asm volatile("hlt");
+    }
     /* Set TSS, GDT, LDT and MMU up */
     core_CPUSetup();
     core_SetupIDT();
@@ -266,9 +273,6 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
         return exec_main(msg, entry);
     }
-#warning "TODO: launch idle task ..."
-    rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", kern_apic_id);
-    while(1) asm volatile("nop");
     return NULL;    
 }
 
@@ -387,7 +391,7 @@ void core_CPUSetup()
 
     rkprintf("[Kernel] core_CPUSetup(id:%d)\n", CPU_ID);
     
-    system_tls.SysBase = (struct ExecBase *)0x12345678;
+//    system_tls.SysBase = (struct ExecBase *)0x12345678;
     
     TSS.ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
     TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];

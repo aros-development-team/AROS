@@ -17,7 +17,7 @@
 
 #include "kernel_intern.h"
 
-//#define CONFIG_LAPICS
+#define CONFIG_LAPICS
 
 extern int kernel_cstart(struct TagItem *msg, void *entry);
 
