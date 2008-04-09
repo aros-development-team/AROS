@@ -17,7 +17,7 @@
 
 #include "kernel_intern.h"
 
-//#define CONFIG_LAPICS
+#define CONFIG_LAPICS
 
 extern int kernel_cstart(struct TagItem *msg, void *entry);
 
@@ -150,6 +150,7 @@ UBYTE core_APICGetID()
 }
 
 #if defined(CONFIG_LAPICS)
+/*
 asm (".globl __APICTrampolineCode_start\n\t"
      ".globl __APICTrampolineCode_end\n\t"
      ".type __APICTrampolineCode_start,@function\n"
@@ -173,7 +174,7 @@ asm (".globl __APICTrampolineCode_start\n\t"
      "__APICTrampolineCode_Jmp:\n\t"
         "ret\n\t"
      "__APICTrampolineCode_end:\n"
-     "__APICTrampolineStackPtr:");
+     "__APICTrampolineStackPtr:");*/
 #endif
 #define                 APICICR_INT_LEVELTRIG      0x8000
 #define                 APICICR_INT_ASSERT         0x4000
