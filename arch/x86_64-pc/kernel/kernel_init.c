@@ -234,23 +234,22 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
         /* Prepair GDT */
         core_SetupGDT();
+
+        /* Set TSS, GDT, LDT and MMU up */
+        core_CPUSetup();
+        core_SetupIDT();
+        core_SetupMMU();
+
+        core_ProtKernelArea(addr, len, 1, 0, 1);
+
+        /* Lock page 0! */
+        core_ProtKernelArea(0, 1, 0, 0, 0);
     }
     else
     {
-        /* A temporary solution - the code for smp is not ready yet... */
-#warning "TODO: launch idle task ..."
-        rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", kern_apic_id);
-        while(1) asm volatile("hlt");
+        core_CPUSetup();
+        core_SetupIDT();
     }
-    /* Set TSS, GDT, LDT and MMU up */
-    core_CPUSetup();
-    core_SetupIDT();
-    core_SetupMMU();
-
-    core_ProtKernelArea(addr, len, 1, 0, 1);
-
-    /* Lock page 0! */
-    core_ProtKernelArea(0, 1, 0, 0, 0);
 
     (rkprintf("[Kernel] kernel_cstart[%d]: APIC_BASE_MSR=%016p\n", kern_apic_id, rdmsrq(27)));
 
@@ -273,6 +272,15 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
         return exec_main(msg, entry);
     }
+
+//    else
+    {
+        /* A temporary solution - the code for smp is not ready yet... */
+#warning "TODO: launch idle task ..."
+        rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", kern_apic_id);
+        while(1) asm volatile("hlt");
+    }
+
     return NULL;    
 }
 
@@ -291,7 +299,7 @@ static const uint64_t *stack_end __attribute__((used, section(".text"))) = &stac
 static const void *target_address __attribute__((section(".text"),used)) = (void*)kernel_cstart;
 
 static struct int_gate_64bit IGATES[256] __attribute__((used,aligned(256)));
-static struct tss_64bit TSS __attribute__((used,aligned(128)));
+static struct tss_64bit TSS[16] __attribute__((used,aligned(128)));
 static struct {
     struct segment_desc seg0;      /* seg 0x00 */
     struct segment_desc super_cs;  /* seg 0x08 */
@@ -299,10 +307,12 @@ static struct {
     struct segment_desc user_cs32; /* seg 0x18 */
     struct segment_desc user_ds;   /* seg 0x20 */
     struct segment_desc user_cs;   /* seg 0x28 */
-    struct segment_desc tss_low;   /* seg 0x30 */
-    struct segment_ext  tss_high;
-    struct segment_desc gs;        /* seg 0x40 */
-    struct segment_desc ldt;       /* seg 0x48 */
+    struct segment_desc gs;        /* seg 0x30 */
+    struct segment_desc ldt;       /* seg 0x38 */
+    struct {
+        struct segment_desc tss_low;   /* seg 0x40... */
+        struct segment_ext  tss_high;
+    } tss[16];        
 } GDT __attribute__((used,aligned(128)));
 
 const struct
@@ -316,6 +326,8 @@ static tls_t system_tls;
 
 void core_SetupGDT()
 {
+    int i;
+    
     /* Supervisor segments */
     GDT.super_cs.type=0x1a;     /* code segment */
     GDT.super_cs.dpl=0;         /* supervisor level */
@@ -360,17 +372,19 @@ void core_SetupGDT()
     GDT.user_ds.g=1;
     GDT.user_ds.d=1;
 
-    /* Task State Segment */
-    GDT.tss_low.type=0x09;      /* 64-bit TSS */
-    GDT.tss_low.limit_low=sizeof(TSS)-1;
-    GDT.tss_low.base_low=((unsigned int)&TSS) & 0xffff;
-    GDT.tss_low.base_mid=(((unsigned int)&TSS) >> 16) & 0xff;
-    GDT.tss_low.dpl=3;          /* User mode task */
-    GDT.tss_low.p=1;            /* present */
-    GDT.tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
-    GDT.tss_low.base_high=(((unsigned int)&TSS) >> 24) & 0xff;
-    GDT.tss_high.base_ext = 0;  /* is within 4GB :-D */
-
+    for (i=0; i < 16; i++)
+    {
+        /* Task State Segment */
+        GDT.tss[i].tss_low.type=0x09;      /* 64-bit TSS */
+        GDT.tss[i].tss_low.limit_low=sizeof(TSS)-1;
+        GDT.tss[i].tss_low.base_low=((unsigned int)&TSS[i]) & 0xffff;
+        GDT.tss[i].tss_low.base_mid=(((unsigned int)&TSS[i]) >> 16) & 0xff;
+        GDT.tss[i].tss_low.dpl=3;          /* User mode task */
+        GDT.tss[i].tss_low.p=1;            /* present */
+        GDT.tss[i].tss_low.limit_high=((sizeof(TSS)-1) >> 16) & 0x0f;
+        GDT.tss[i].tss_low.base_high=(((unsigned int)&TSS[i]) >> 24) & 0xff;
+        GDT.tss[i].tss_high.base_ext = 0;  /* is within 4GB :-D */
+    }
     intptr_t tls_ptr = (intptr_t)&system_tls;
     
     GDT.gs.type=0x12;      /* data segment */
@@ -393,13 +407,13 @@ void core_CPUSetup()
     
 //    system_tls.SysBase = (struct ExecBase *)0x12345678;
     
-    TSS.ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
-    TSS.rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
-    TSS.rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
+    TSS[CPU_ID].ist1 = (uint64_t)&stack_panic[STACK_SIZE-2];
+    TSS[CPU_ID].rsp0 = (uint64_t)&stack_super[STACK_SIZE-2];
+    TSS[CPU_ID].rsp1 = (uint64_t)&stack_ring1[STACK_SIZE-2];
 
     rkprintf("[Kernel] core_CPUSetup[%d]: Reloading the GDT and Task Register\n", CPU_ID);
     asm volatile ("lgdt %0"::"m"(GDT_sel));
-    asm volatile ("ltr %w0"::"r"(TASK_SEG));
+    asm volatile ("ltr %w0"::"r"(TASK_SEG + (CPU_ID << 4)));
     asm volatile ("mov %0,%%gs"::"a"(SEG_GS));    
 }
 
