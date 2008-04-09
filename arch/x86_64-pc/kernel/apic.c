@@ -135,7 +135,7 @@ UBYTE core_APICGetID(IPTR _APICBase)
     
     _apic_id = (*(volatile uint32_t*)(_APICBase + 0x20) & 0xFF000000) >> 24;
     rkprintf("[Kernel] core_APICGetID: APIC ID %d\n", _apic_id);
-    return (UBYTE)_apic_id & 0xff;
+    return _apic_id;
 }
 
 #define                 APICICR_INT_LEVELTRIG      0x8000

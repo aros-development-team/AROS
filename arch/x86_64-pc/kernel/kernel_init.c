@@ -157,13 +157,11 @@ intptr_t len;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
-    UBYTE kern_apic_id;
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
 
     IPTR _APICBase = core_APICGetMSRAPICBase();
-
-    kern_apic_id = core_APICGetID(_APICBase);
-    rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d\n", kern_apic_id);
+    UBYTE kern_apic_id = core_APICGetID(_APICBase);
+    rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", kern_apic_id, _APICBase);
 
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -399,9 +397,7 @@ void core_SetupGDT()
 
 void core_CPUSetup(IPTR _APICBase)
 {
-    UBYTE CPU_ID = 0;
-    CPU_ID = core_APICGetID(_APICBase);
-
+    UBYTE CPU_ID = core_APICGetID(_APICBase);
     rkprintf("[Kernel] core_CPUSetup(id:%d)\n", CPU_ID);
     
 //    system_tls.SysBase = (struct ExecBase *)0x12345678;
