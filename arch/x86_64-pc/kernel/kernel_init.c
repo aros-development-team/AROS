@@ -99,54 +99,9 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->kb_APICBase == NULL)
         LIBBASE->kb_APICBase= _kern_early_APICBase;   
     D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
-   
-    uint32_t APIC_VAL;
-    unsigned int apic_ver, maxlvt;
 
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xE0) = 0xFFFFFFFF; /* Put the APIC into flat delivery mode */
-
-    /* Set up the logical destination ID.  */
-    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xD0) & ~(0xFF<<24);
-    APIC_VAL |= (1 << 24);
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xD0) = APIC_VAL;
-
-    /* Set Task Priority to 'accept all'. We never change this later on.  */
-    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase +  0x80) & ~0xFF;
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x80) = APIC_VAL;
-
-    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xF0) & ~0xFF;
-    APIC_VAL |= (1 << 8); /* Enable APIC */
-    APIC_VAL |= (1 << 9); /* Disable focus processor (bit==1) */
-    APIC_VAL |= 0xFF; /* Set spurious IRQ vector */
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0xF0) = APIC_VAL;
-
-    APIC_VAL = *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x350) & (1<<16);
-    APIC_VAL = 0x700;
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x350) = APIC_VAL;
-
-    /* only the BP should see the LINT1 NMI signal.  */
-    APIC_VAL = 0x400;
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x360) = APIC_VAL;
-
-    D(bug("[Kernel] Kernel_Init: APIC LVT0=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x350)));
-    D(bug("[Kernel] Kernel_Init: APIC LVT1=%08x\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x360)));
-
-    /* Due to the Pentium erratum 3AP. */
-    apic_ver = (*((volatile uint32_t*)(KernelBase->kb_APICBase + 0x30)) & 0xFF);
-    maxlvt = (apic_ver & 0xF0) ? ((*((volatile uint32_t*)(KernelBase->kb_APICBase + 0x30)) >> 16) & 0xFF) : 2; /* 82489DXs doesnt report no. of LVT entries. */
-    if (maxlvt > 3)
-       *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280) = 0;
-
-    D(bug("[Kernel] Kernel_Init: APIC ESR before enabling vector: %08lx\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
- 
-    *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x370) = 0xfe; /* Enable error sending */
-
-     /* spec says clear errors after enabling vector.  */
-     if (maxlvt > 3)
-       *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280) = 0;
-
-    D(bug("[Kernel] Kernel_Init: APIC ESR after enabling vector: %08lx\n", *(volatile uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
-
+    core_APICInitialise(LIBBASE->kb_APICBase);
+    
 #warning "TODO: Check if NOACPI is set on the boot command line"
     if (_kern_early_ACPIRSDP)
     {

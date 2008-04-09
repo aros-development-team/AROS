@@ -149,37 +149,60 @@ UBYTE core_APICGetID()
     return (UBYTE)_apic_id & 0xff;
 }
 
-#if defined(CONFIG_LAPICS)
-/*
-asm (".globl __APICTrampolineCode_start\n\t"
-     ".globl __APICTrampolineCode_end\n\t"
-     ".type __APICTrampolineCode_start,@function\n"
-     "__APICTrampolineCode_start:\n\t"
-        "cli\n\t"
-        "mov    __APICTrampolineStackPtr(%rip),%ecx\n\t"
-        "movw	 (%ecx),%ss\n\t"
-        "movw    2(%ecx),%esp\n\t"           //Load the stack pointer
-
-        "lgdt    (%esp)\n\t"
-
-        "mov     %cr0, %eax\n\t"            //Enable protected mode
-        "or      $0x01,%eax\n\t"
-        "mov	 %eax,%cr0\n\t"
-        "ljmp    *flush_instr(%rip)\n"
-     "flush_instr:\n\t"
-        "mov    %cr0,%eax\n\t"
-        "or     $0x80000000,%eax\n\t"
-        "mov    %eax,%cr0\n\t"              //Enable paging
-        "jmp     *__APICTrampolineCode_Jmp(%rip)\n"                   //Jump into kernel resource ..
-     "__APICTrampolineCode_Jmp:\n\t"
-        "ret\n\t"
-     "__APICTrampolineCode_end:\n"
-     "__APICTrampolineStackPtr:");*/
-#endif
 #define                 APICICR_INT_LEVELTRIG      0x8000
 #define                 APICICR_INT_ASSERT         0x4000
 #define                 APICICR_DM_INIT            0x500
 #define                 APICICR_DM_STARTUP            0x600
+
+void core_APICInitialise(IPTR _APICBase)
+{
+    uint32_t APIC_VAL;
+    unsigned int apic_ver, maxlvt;
+
+    *(volatile uint32_t*)(_APICBase + 0xE0) = 0xFFFFFFFF; /* Put the APIC into flat delivery mode */
+
+    /* Set up the logical destination ID.  */
+    APIC_VAL = *(volatile uint32_t*)(_APICBase + 0xD0) & ~(0xFF<<24);
+    APIC_VAL |= (1 << 24);
+    *(volatile uint32_t*)(_APICBase + 0xD0) = APIC_VAL;
+
+    /* Set Task Priority to 'accept all' */
+    APIC_VAL = *(volatile uint32_t*)(_APICBase +  0x80) & ~0xFF;
+    *(volatile uint32_t*)(_APICBase + 0x80) = APIC_VAL;
+
+    APIC_VAL = *(volatile uint32_t*)(_APICBase + 0xF0) & ~0xFF;
+    APIC_VAL |= (1 << 8); /* Enable APIC */
+    APIC_VAL |= (1 << 9); /* Disable focus processor (bit==1) */
+    APIC_VAL |= 0xFF; /* Set spurious IRQ vector */
+    *(volatile uint32_t*)(_APICBase + 0xF0) = APIC_VAL;
+
+    APIC_VAL = *(volatile uint32_t*)(_APICBase + 0x350) & (1<<16);
+    APIC_VAL = 0x700;
+    *(volatile uint32_t*)(_APICBase + 0x350) = APIC_VAL;
+
+    /* only the BP should see the LINT1 NMI signal.  */
+    APIC_VAL = 0x400;
+    *(volatile uint32_t*)(_APICBase + 0x360) = APIC_VAL;
+
+    D(bug("[Kernel] core_APICInitialise: APIC LVT0=%08x\n", *(volatile uint32_t*)(_APICBase + 0x350)));
+    D(bug("[Kernel] core_APICInitialise: APIC LVT1=%08x\n", *(volatile uint32_t*)(_APICBase + 0x360)));
+
+    /* Due to the Pentium erratum 3AP. */
+    apic_ver = (*((volatile uint32_t*)(_APICBase + 0x30)) & 0xFF);
+    maxlvt = (apic_ver & 0xF0) ? ((*((volatile uint32_t*)(_APICBase + 0x30)) >> 16) & 0xFF) : 2; /* 82489DXs doesnt report no. of LVT entries. */
+    if (maxlvt > 3)
+       *(volatile uint32_t*)(_APICBase + 0x280) = 0;
+
+    D(bug("[Kernel] core_APICInitialise: APIC ESR before enabling vector: %08lx\n", *(volatile uint32_t*)(_APICBase + 0x280)));
+ 
+    *(volatile uint32_t*)(_APICBase + 0x370) = 0xfe; /* Enable error sending */
+
+     /* spec says clear errors after enabling vector.  */
+     if (maxlvt > 3)
+       *(volatile uint32_t*)(_APICBase + 0x280) = 0;
+
+    D(bug("[Kernel] core_APICInitialise: APIC ESR after enabling vector: %08lx\n", *(volatile uint32_t*)(_APICBase + 0x280)));
+}
 
 unsigned long core_APICIPIWake(UBYTE wake_apicid, IPTR wake_apicstartrip)
 {
