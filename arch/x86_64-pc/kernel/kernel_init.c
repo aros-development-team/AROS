@@ -18,11 +18,11 @@
 #include "../bootstrap/multiboot.h"
 #include LC_LIBDEFS_FILE
 
-//#define CONFIG_LAPICS
+#define CONFIG_LAPICS
 
 extern const unsigned char start64[];
-extern const unsigned char __APICTrampolineCode_start[];
-extern const unsigned char __APICTrampolineCode_end[];
+extern const unsigned char _binary_smpbootstrap_start[];
+extern const unsigned char _binary_smpbootstrap_size[];
 
 /* Pre-exec init */
 
@@ -116,33 +116,33 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     
     LIBBASE->kb_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
     D(bug("[Kernel] Kernel_Init: MemPool @ %012p\n", LIBBASE->kb_MemPool));
-/*    
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"((uint32_t*)LIBBASE->kb_APICBase + 0xb0));
+/*
+    asm volatile ("movl %0,(%1)"::"r"(0),"r"((uint32_t*)(LIBBASE->kb_APICBase + 0xb0)));
     
-    D(bug("[Kernel] Kernel_Init: APIC SVR=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0xf0));
-    D(bug("[Kernel] Kernel_Init: APIC ESR=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x280));
-    D(bug("[Kernel] Kernel_Init: APIC TPR=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x80));
-    D(bug("[Kernel] Kernel_Init: APIC ICR=%08x%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x314, *(uint32_t*)LIBBASE->kb_APICBase + 0x310));
-    D(bug("[Kernel] Kernel_Init: APIC Timer divide=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x3e0));
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x320));
+    D(bug("[Kernel] Kernel_Init: APIC SVR=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0xf0)));
+    D(bug("[Kernel] Kernel_Init: APIC ESR=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x280)));
+    D(bug("[Kernel] Kernel_Init: APIC TPR=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x80)));
+    D(bug("[Kernel] Kernel_Init: APIC ICR=%08x%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x314), *(uint32_t*)(LIBBASE->kb_APICBase + 0x310)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer divide=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x3e0)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     
-    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((uint32_t*)LIBBASE->kb_APICBase + 0x320));
+    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     //*(volatile uint32_t *)localAPIC = 0x000000fe;
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x320));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x380));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x390));
-    *(uint32_t*)LIBBASE->kb_APICBase + 0x380 = 0x11111111;
-    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((uint32_t*)LIBBASE->kb_APICBase + 0x320));
-    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x320));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
+    *(uint32_t*)(LIBBASE->kb_APICBase + 0x380) = 0x11111111;
+    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
+    D(bug("[Kernel] Kernel_Init: APIC Timer config=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x320)));
     
     for (i=0; i < 0x10000000; i++) asm volatile("nop;");
     
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x380));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x390));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
     for (i=0; i < 0x1000000; i++) asm volatile("nop;");
-    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x380));
-    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)LIBBASE->kb_APICBase + 0x390));
+    D(bug("[Kernel] Kernel_Init: APIC Initial count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x380)));
+    D(bug("[Kernel] Kernel_Init: APIC Current count=%08x\n", *(uint32_t*)(LIBBASE->kb_APICBase + 0x390)));
 
     for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
 }
@@ -216,69 +216,17 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         if ((lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
         {
             _Kern_APICTrampolineBase = (lowpages - PAGE_SIZE) & 0xFF000;
-            if ((lowpages - (_Kern_APICTrampolineBase + PAGE_SIZE)) > PAGE_SIZE)
-            {
-                _Kern_APICTrampolineStackBase = lowpages - PAGE_SIZE;
-                lowpages = (_Kern_APICTrampolineBase - 1)/1024;
-            }
-            else
-            {
-                _Kern_APICTrampolineStackBase = _Kern_APICTrampolineBase - PAGE_SIZE;
-                lowpages = (_Kern_APICTrampolineStackBase - 1)/1024;
-            }
+            lowpages = (_Kern_APICTrampolineBase - 1)/1024;
 
             krnSetTagData(KRN_MEMLower, lowpages, msg);
-            rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p, stack @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase, _Kern_APICTrampolineStackBase);
+            rkprintf("[Kernel] kernel_cstart: Allocated %d bytes for APIC Trampoline @ %p\n", PAGE_SIZE, _Kern_APICTrampolineBase);
 
 #if defined(CONFIG_LAPICS)       
-            memcpy(_Kern_APICTrampolineBase, __APICTrampolineCode_start,
-                        __APICTrampolineCode_end - __APICTrampolineCode_start);
+            memcpy(_Kern_APICTrampolineBase, &_binary_smpbootstrap_start,
+                        _binary_smpbootstrap_size);
 
-            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", __APICTrampolineCode_start, __APICTrampolineCode_end - __APICTrampolineCode_start);
-
-            IPTR _Kern_APICTrampolineStack = _Kern_APICTrampolineStackBase + PAGE_SIZE - 1;
-
-            /* Setup the Trampoline-Stack Pointers (segment:offset) */
-            *(ULONG *)(_Kern_APICTrampolineBase + (__APICTrampolineCode_end - __APICTrampolineCode_start)) = (_Kern_APICTrampolineStack/16) & 0xffff;
-            *(ULONG *)(_Kern_APICTrampolineBase + (__APICTrampolineCode_end - __APICTrampolineCode_start) + 2) = (_Kern_APICTrampolineStack - (_Kern_APICTrampolineStack/16)) & 0xffff;
-
-            _Kern_APICTrampolineStack -= sizeof(IPTR);
-
-            /* Store an initial GDT */
-            struct apic_bootGDT_sel
-            {
-                unsigned short size __attribute__((packed));
-                unsigned int base __attribute__((packed));
-            };
-
-            struct apic_bootGDT {
-                struct segment_desc seg0;           /* seg 0x00 */
-                struct segment_desc super_cs;       /* seg 0x08 */
-                struct segment_desc super_ds;       /* seg 0x10 */
-            };
-
-            struct apic_bootGDT_sel *apicGDT_sel = (_Kern_APICTrampolineStack - sizeof(struct apic_bootGDT_sel));
-
-            struct apic_bootGDT *apicGDT = (_Kern_APICTrampolineStack - sizeof(struct apic_bootGDT) - sizeof(struct apic_bootGDT_sel));
-
-            apicGDT->super_cs.type = 0x1a;	        /* code segment */
-            apicGDT->super_cs.dpl = 0;		        /* supervisor level */
-            apicGDT->super_cs.p = 1;		        /* present */
-            apicGDT->super_cs.l = 1;		        /* long (64-bit) one */
-            apicGDT->super_cs.d = 0;		        /* must be zero */
-            apicGDT->super_cs.limit_low = 0xffff;
-            apicGDT->super_cs.limit_high = 0xf;
-            apicGDT->super_cs.g = 1;
-
-            apicGDT->super_ds.type = 0x12;	        /* data segment */
-            apicGDT->super_ds.p = 1;		        /* present */
-            apicGDT->super_ds.limit_low = 0xffff;
-            apicGDT->super_ds.limit_high = 0xf;
-            apicGDT->super_ds.g = 1;
-            apicGDT->super_ds.d = 1;
-
-            apicGDT_sel->size = sizeof(struct apic_bootGDT) - 1;
-            apicGDT_sel->base = (unsigned int)apicGDT;
+            rkprintf("[Kernel] kernel_cstart: Copied APIC bootstrap code to Trampoline from %p, %d bytes\n", &_binary_smpbootstrap_start,
+                        _binary_smpbootstrap_size);
 #endif
         }
 
