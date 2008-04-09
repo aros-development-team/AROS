@@ -10,7 +10,7 @@ extern const struct {
     unsigned short target_sel __attribute__((packed));
 } smp_kernel_target;
 
-extern unsigned long smp_mmu, smp_arg1, smp_arg2, smp_arg3, smp_arg4;
+extern unsigned long smp_mmu, smp_arg1, smp_arg2, smp_arg3, smp_arg4, smp_baseaddr, smp_sp, smp_ip;
 
 asm (".code16           \n"
 "       .type   smpbootstrap_0,@function \n"
@@ -25,6 +25,9 @@ asm (".code16           \n"
 "smp_arg3:      .long 0         \n"     /* 0x000c */
 "smp_arg4:      .long 0         \n"     /* 0x0010 */
 "smp_mmu:       .long 0         \n"     /* 0x0014 */
+"smp_sp:        .long 0; .long 0 \n"    /* 0x0018 */
+"smp_ip:        .long 0; .long 0 \n"    /* 0x0020 */
+"smp_baseaddr:  .long 0         \n"
 "smp_gdt:       .short 0; .short 0; .short 0; .short 0 \n"
 "               .short 0x1000; .short 0x0000; .short 0x9a00; .short 0x0040 \n"
 "               .short 0x1000; .short 0x0000; .short 0x9200; .short 0x0040 \n"
@@ -40,6 +43,7 @@ asm (".code16           \n"
 "1:                             \n"
 "       mov %cs,%ax             \n"     /* Find out where the code resides */
 "       shl $4, %eax            \n"
+"       movl %eax,%cs:smp_baseaddr \n"  /* Store base address of the trampoline */
 "       leal smp_gdt(%eax), %ebx \n"    /* Load physical address of 32-bit gdt */
 "       movl %ebx, %cs:smp_gdt_sel+2\n" /* Set up 32-bit gdt address */
 "       leal smp_gdt64(%eax), %ebx \n"  /* Load physical address of 64-bit gdt */
@@ -112,7 +116,7 @@ static void __attribute__((used, noreturn)) smp_c_trampoline()
 
     asm volatile ("outb %b0,%w1"::"a"('f'),"Nd"(0x3f8));
     
-    asm volatile("ljmp *%0"::"m"(smp_kernel_target),"D"(smp_arg1),"S"(smp_arg2),"d"(smp_arg3),"c"(smp_arg4));
+    asm volatile("ljmp *%0"::"m"(smp_kernel_target),"b"(smp_baseaddr),"D"(smp_arg1),"S"(smp_arg2),"d"(smp_arg3),"c"(smp_arg4));
     while(1);
 }
 
@@ -122,6 +126,9 @@ asm (".code64\n"
 "       mov %ax,%ds     \n"
 "       mov %ax,%es     \n"
 "       mov %ax,%ss     \n"
+"       movq 0x18(%rbx), %rsp \n"
+"       movq 0x20(%rbx), %rax \n"
+"       jmp *%rax \n"
 "1:       hlt; jmp 1b       \n"
 "       .code32\n"
 );
