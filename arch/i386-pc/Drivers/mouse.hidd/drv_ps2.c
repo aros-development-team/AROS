@@ -41,20 +41,26 @@
 #define RIGHT_BUTTON 	2
 #define MIDDLE_BUTTON	4
 
+/****************************************************************************************/
+
+/* from Drivers/keyboard/kbd_common.c */
+
+#warning "it is probably better to get rid of calling functions from external module"
+
+int kbd_read_data(void);
+void kb_wait(void);
+void kbd_write_cmd(int cmd);
+void aux_write_ack(int val);
+void kbd_write_command_w(int data);
+
+/****************************************************************************************/
+
 void mouse_usleep(ULONG usec);
 
 /****************************************************************************************/
 
 void mouse_ps2int(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 int mouse_ps2reset(struct mouse_data *);
-
-/****************************************************************************************/
-
-/* from Drivers/keyboard/kbd_common.c */
-
-#warning: it is probably better to get rid of calling functions from external module
-
-int kbd_read_data(void);
 
 /****************************************************************************************/
 
@@ -118,15 +124,6 @@ struct mouse_data *data = OOP_INST_DATA(cl, o);
     ({	data->u.ps2.expected_mouse_acks++;	\
         aux_write_ack(val);			\
 	})
-
-/****************************************************************************************/
-
-unsigned char handle_kbd_event(void);
-void kb_wait(void);
-void kbd_write_cmd(int cmd);
-void aux_write_ack(int val);
-void kbd_write_output_w(int data);
-void kbd_write_command_w(int data);
 
 /****************************************************************************************/
 
