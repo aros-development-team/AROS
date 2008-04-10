@@ -175,12 +175,12 @@ OOP_Object *METHOD(I2CDev, Root, New)
         OOP_Object *driver = NULL;
         UWORD address = 0;
 
-        dev->HoldTime = -1;
-        dev->AcknTimeout = -1;
-        dev->BitTimeout = -1;
-        dev->ByteTimeout = -1;
-        dev->RiseFallTime = -1;
-        dev->StartTimeout = -1;
+        dev->HoldTime = 10;
+        dev->AcknTimeout = 10;
+        dev->BitTimeout = 10;
+        dev->ByteTimeout = 10;
+        dev->RiseFallTime = 10;
+        dev->StartTimeout = 10;
 
         dev->name = (STRPTR)"dev?";
 
@@ -235,47 +235,7 @@ OOP_Object *METHOD(I2CDev, Root, New)
             }
         }
         
-        if (driver && address)
-        {
-            IPTR val;
-            
-            if (dev->AcknTimeout == -1)
-            {
-                OOP_GetAttr(driver, aHidd_I2C_AcknTimeout, &val);
-                dev->AcknTimeout = val;
-            }
-            
-            if (dev->BitTimeout == -1)
-            {
-                OOP_GetAttr(driver, aHidd_I2C_BitTimeout, &val);
-                dev->BitTimeout = val;
-            }
-            
-            if (dev->ByteTimeout == -1)
-            {
-                OOP_GetAttr(driver, aHidd_I2C_ByteTimeout, &val);
-                dev->ByteTimeout = val;
-            }
-            
-            if (dev->HoldTime == -1)
-            {
-                OOP_GetAttr(driver, aHidd_I2C_HoldTime, &val);
-                dev->HoldTime = val;
-            }
-            
-            if (dev->RiseFallTime == -1)
-            {
-                OOP_GetAttr(driver, aHidd_I2C_RiseFallTime, &val);
-                dev->RiseFallTime = val;
-            }
-            
-            if (dev->StartTimeout == -1)
-            {
-                OOP_GetAttr(driver, aHidd_I2C_StartTimeout, &val);
-                dev->StartTimeout = val;
-            }          
-        }
-        else
+        if (!driver || !address)
         {
              OOP_MethodID disp_mid = OOP_GetMethodID((STRPTR)IID_Root, moRoot_Dispose);
              OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);

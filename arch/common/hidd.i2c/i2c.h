@@ -14,6 +14,8 @@
 #include <exec/semaphores.h>
 #include <dos/bptr.h>
 
+#include <devices/timer.h>
+
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
@@ -38,10 +40,14 @@ typedef struct DevInstData {
     ULONG   RiseFallTime;
 } tDevData;
 
-struct i2c_staticdata {
+typedef struct DrvInstData {
     struct SignalSemaphore  driver_lock;
+
     struct MinList          devices;
 
+    struct MsgPort          mp;
+    struct timerequest      tr;
+    
     STRPTR          name;
         
     ULONG           HoldTime;
@@ -50,7 +56,9 @@ struct i2c_staticdata {
     ULONG           AcknTimeout;
     ULONG           StartTimeout;
     ULONG           RiseFallTime;
-  
+} tDrvData;
+
+struct i2c_staticdata {  
     OOP_AttrBase	hiddAB;
     OOP_AttrBase	hiddI2CAB;
     OOP_AttrBase	hiddI2CDeviceAB;
@@ -83,8 +91,8 @@ struct i2cbase {
   base ## __ ## id ## __ ## name (OOP_Class *cl, OOP_Object *o, struct p ## id ## _ ## name *msg)
 
 
-#define LOCK_HW     ObtainSemaphore(&SD(cl)->driver_lock);
-#define UNLOCK_HW   ReleaseSemaphore(&SD(cl)->driver_lock);
+#define LOCK_HW     ObtainSemaphore(&drv->driver_lock);
+#define UNLOCK_HW   ReleaseSemaphore(&drv->driver_lock);
 
 #define I2C_Start(__o, __timeout) \
     ({ \
