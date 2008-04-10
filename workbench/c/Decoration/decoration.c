@@ -3055,12 +3055,21 @@ IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawBorderPr
     rp = CreateRastPort();
     if (rp)
     {
+    	struct Rectangle cliprect = {0, 0, bx1 - bx0, by1 - by0};
+    	struct TagItem rptags[] =
+	{
+	    {RPTAG_ClipRectangle, (IPTR)&cliprect},
+	    {TAG_DONE	    	    	    	 }
+	};
+	
         rp->BitMap = AllocBitMap(bx1 - bx0 + 1, by1 - by0 + 1, 1, 0, window->WScreen->RastPort.BitMap);
         if (rp->BitMap == NULL)
         {
             FreeRastPort(rp);
             return FALSE;
         }
+	
+	SetRPAttrsA(rp, rptags);
     }
     else return FALSE;
 
