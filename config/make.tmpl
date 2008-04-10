@@ -1246,8 +1246,8 @@ endif
 ifeq (%(genincludes),no)
     %(modname)_INCLUDES :=
 endif
-BD_LIBDEFSINC := %(objdir)/%(modname)_libdefs.h
-BD_DEFLIBDEFSINC := %(objdir)/%(modname)_deflibdefs.h
+BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
+BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
 
 %(mmake)-includes-quick : %(mmake)-includes
 %(mmake)-includes : $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
@@ -1285,16 +1285,16 @@ GLOB_MKDIRS += %(objdir)/dummyinc $(addprefix %(objdir)/dummyinc/,$(BD_INCDIRS))
 endif
 
 %rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
-		 	   modsuffix=%(modsuffix) targetdir=%(objdir) \
+		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
 		 	   conffile=%(conffile)
 
-BD_LIBDEFSINC := %(objdir)/%(modname)_libdefs.h
-
-%(objdir)/%(modname)_deflibdefs.h : FILENAME := $(BD_LIBDEFSINC)
-%(objdir)/%(modname)_deflibdefs.h :
+$(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
+$(BD_DEFLIBDEFSINC) :
 	@$(ECHO) "generating $@"
 	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
 
+$(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) : | %(objdir)/include
+GLOB_MKDIRS += %(objdir)/include
 
 ## Generation of the funclist file
 ##
@@ -1321,8 +1321,8 @@ BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_CFLAGS     := %(cflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
-BD_DFLAGS     := %(dflags) -I%(objdir) -idirafter $(TOP)/$(CURDIR) -include %(objdir)/%(modname)_deflibdefs.h
+BD_CFLAGS     := %(cflags) -I%(objdir)/include -idirafter $(TOP)/$(CURDIR) -include $(BD_DEFLIBDEFSINC)
+BD_DFLAGS     := %(dflags) -I%(objdir)/include -idirafter $(TOP)/$(CURDIR) -include $(BD_DEFLIBDEFSINC)
 
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
@@ -1426,22 +1426,24 @@ GLOB_MKDIRS += %(objdir) %(prefix)/%(moduledir) $(KOBJSDIR)
 
 # Some include files need to be generated before the .c can be parsed.
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj),) # Only for this target these deps are wanted
-BD_REFFILE_DEPS := $(BD_LIBDEFSINC) %(objdir)/%(modname)_deflibdefs.h \
+BD_REFFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
     $(addprefix %(objdir)/dummyinc/,$(%(modname)_INCLUDES))
 $(BD_REFS) : $(BD_REFFILE_DEPS) $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
 
-BD_DFILE_DEPS := $(BD_LIBDEFSINC) %(objdir)/%(modname)_deflibdefs.h \
+BD_DFILE_DEPS := $(BD_LIBDEFSINC) $(BD_DEFLIBDEFSINC) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES))
 $(BD_DEPS) : $(BD_DFILE_DEPS)
 endif
 
 BD_TOCLEAN := $(BD_OBJS) $(BD_DEPS) %(reffile) \
     $(BD_REFS) $(BD_MODULE) $(BD_LINKLIB) $(BD_KOBJ) \
+    %(objdir)/Makefile.%(modname) \
+    $(addprefix %(objdir)/include/,$(%(modname)_INCLUDES)) \
     $(addprefix $(GENINCDIR)/,$(%(modname)_INCLUDES)) \
     $(addprefix $(BD_INCDIR)/,$(%(modname)_INCLUDES)) \
-    $(addprefix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
-    %(objdir)/%(modname)_deflibdefs.h \
-    $(addsuffix .c,$(BD_STARTFILES) $(BD_ENDFILES)) \
+    %(objdir)/%(modname)_geninc %(objdir)/%(modname)_incs \
+    $(addsuffix .c,$(BD_LINKLIBFILES)) $(BD_LINKLIBOBJS) $(BD_LIBDEFSINC) \
+    $(BD_DEFLIBDEFSINC) $(addsuffix .c,$(BD_STARTFILES) $(BD_ENDFILES)) \
     $(BD_ENDOBJS)
 %(mmake)-clean : FILES := $(BD_TOCLEAN)
 %(mmake)-clean ::
@@ -1666,7 +1668,7 @@ $(BD_COBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
 endif
 ifneq (%(modulename),)
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) \
-                     --include $(GENDIR)/%(maindir)/%(modulename)_deflibdefs.h
+                     -include $(GENDIR)/%(maindir)/include/%(modulename)_deflibdefs.h
 else
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags)
 endif
