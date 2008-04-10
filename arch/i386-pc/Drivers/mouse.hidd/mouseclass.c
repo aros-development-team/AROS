@@ -40,22 +40,12 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-/* !!!!!!!!!! Remove all .data from file
-*/
+#warning "TODO: Remove all .data from file !"
+
 #ifdef HiddMouseAB
 #undef HiddMouseAB
 #endif
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
-/*
-static OOP_AttrBase HiddMouseAB;
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { IID_Hidd_Mouse, &HiddMouseAB },
-    { NULL, NULL }
-};
-
-*/
 
 /* Prototypes */
 
