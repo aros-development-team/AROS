@@ -12,6 +12,7 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <exec/semaphores.h>
+#include <exec/ports.h>
 #include <dos/bptr.h>
 
 #include <utility/utility.h>
@@ -27,7 +28,10 @@
 
 static int I2C_Init(LIBBASETYPEPTR LIBBASE)
 {
-    InitSemaphore(&LIBBASE->sd.driver_lock);
+    struct i2c_staticdata *sd = &LIBBASE->sd;
+    D(bug("[I2C] Init\n"));
+    
+    
     return TRUE;
 }
 
