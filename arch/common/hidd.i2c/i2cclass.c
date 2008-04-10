@@ -40,7 +40,7 @@ static void I2C_UDelay(tDrvData *drv, ULONG delay)
     drv->mp.mp_SigTask = FindTask(NULL);
     drv->tr.tr_node.io_Command = TR_ADDREQUEST;
     drv->tr.tr_time.tv_secs = delay / 100000;
-    drv->tr.tr_time.tv_micro = 100000 * (delay % 100000);
+    drv->tr.tr_time.tv_micro = 10 * (delay % 100000);
     
     DoIO((struct IORequest *)&drv->tr);
     
