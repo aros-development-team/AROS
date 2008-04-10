@@ -19,8 +19,8 @@ $(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o
 $(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o
 	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o -o $@
 
-$(BINDIR)/boot/kernel: setup-pc-x86_64 $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
+$(BINDIR)/boot/kernel: setup-pc-x86_64 $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/smpboot.bin.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/smpboot.bin.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
 
 $(TARGETDIR)/aros.bin.o: setup-pc-x86_64 $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
 	$(LD) -melf_x86_64 -r \

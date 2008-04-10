@@ -6,18 +6,18 @@ KERNELFILES := kernel_init intr apic acpi_tables acpi_parsers scheduler mmu
 #MM kernel-kernel-pc-x86_64 : includes kernel-kernel-pc-x86_64-includes
 #MM kernel-kernel-pc-x86_64-kobj : includes kernel-kernel-pc-x86_64-includes
 
-kernel-kernel-pc-x86_64 : $(GENDIR)/$(CURDIR)/arch/smpboot.bin.o
-kernel-kernel-pc-x86_64-kobj : $(GENDIR)/$(CURDIR)/arch/smpboot.bin.o
+kernel-kernel-pc-x86_64 : $(KOBJSDIR)/smpboot.bin.o
+kernel-kernel-pc-x86_64-kobj : $(KOBJSDIR)/smpboot.bin.o
 
 %build_module mmake=kernel-kernel-pc-x86_64 	\
   modname=kernel modtype=resource		\
   cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
   files="$(KERNELFILES)" uselibs="rom"
 
-$(GENDIR)/$(CURDIR)/arch/smpboot.bin.o : smpbootstrap.c
+$(KOBJSDIR)/smpboot.bin.o : smpbootstrap.c
 	%mkdirs_q $(GENDIR)/$(CURDIR)/arch		
 	$(TARGET_CC) $(CFLAGS) -m32 -fomit-frame-pointer -c smpbootstrap.c
 	$(KERNEL_LD) -melf_i386	-Ttext=0 -o smpbootstrap smpbootstrap.o
 	$(OBJCOPY) -O binary smpbootstrap
-	$(KERNEL_LD) -r --format binary smpbootstrap -o $(GENDIR)/$(CURDIR)/arch/smpboot.bin.o
+	$(KERNEL_LD) -r --format binary smpbootstrap -o $(KOBJSDIR)/smpboot.bin.o
 	rm smpbootstrap.o smpbootstrap
