@@ -42,6 +42,9 @@
 
 /* !!!!!!!!!! Remove all .data from file
 */
+#ifdef HiddMouseAB
+#undef HiddMouseAB
+#endif
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
 /*
 static OOP_AttrBase HiddMouseAB;

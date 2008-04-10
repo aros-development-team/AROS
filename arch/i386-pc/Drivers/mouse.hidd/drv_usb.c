@@ -24,6 +24,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#ifdef HiddMouseAB
+#undef HiddMouseAB
+#endif
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
 
 /* defines for buttonstate */

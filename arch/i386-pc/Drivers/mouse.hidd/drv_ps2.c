@@ -30,7 +30,9 @@
 
 /****************************************************************************************/
 
+#ifdef HiddMouseAB
 #undef HiddMouseAB
+#endif
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
 
 /* defines for buttonstate */
