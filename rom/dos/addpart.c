@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -35,10 +35,10 @@
     INPUTS
 	dirname     -   the path to add the new path to
 	filename    -   the path you wish added
-	size        -   The size of the dirname buffer, must NOT be 0
+	size        -   The size of the dirname buffer (must NOT be 0)
 
     RESULT
-	non-zero if everything succeed, FALSE if the buffer would have
+	Non-zero if everything succeeded, FALSE if the buffer would have
 	overflowed.
 
 	If the buffer would have overflowed, then dirname will not have
@@ -47,10 +47,10 @@
     NOTES
 
     EXAMPLE
-	UBYTE buffer[128];
+	UBYTE buffer[80];
 	buffer[0]='\0';
 	AddPart(buffer, "Work:", 80);
-	AddPart(buffer, "Programming/Include/exec");
+	AddPart(buffer, "Programming/Include/exec", 80);
 
 	FPuts(Output(), buffer);
 	--> Work:Programming/Include/exec
