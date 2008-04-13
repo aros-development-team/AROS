@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Converts a string into a date
@@ -355,15 +355,20 @@ const char *const Dos_SubstDateTable[]=
 
 	ptr += len;
 
-	if (*ptr++ != ':')
-	    return DOSFALSE;
+	if (*ptr != '\0')
+	{
+	    if (*ptr++ != ':')
+	        return DOSFALSE;
 
-	len = StrToLong (ptr, &t);
+	    len = StrToLong (ptr, &t);
 
-	if ((len == -1) || (t < 0) || (t > 59))
-	    return DOSFALSE;
+	    if ((len == -1) || (t < 0) || (t > 59))
+	        return DOSFALSE;
 
-	tick = t * TICKS_PER_SECOND;
+	    tick = t * TICKS_PER_SECOND;
+	}
+	else
+	    tick = 0;
 
 	datetime->dat_Stamp.ds_Minute = min;
 	datetime->dat_Stamp.ds_Tick   = tick;
