@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -162,7 +162,7 @@
     switch (type) {
         /* a filehandle */
         case REPORT_STREAM:
-            if (arg1 == NULL)
+            if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
 
             handler = ((struct FileHandle *) BADDR(arg1))->fh_Device;
@@ -176,7 +176,7 @@
         /* a lock */
         case REPORT_LOCK:
             /* if they provided a lock, just use it */
-            if (arg1 != NULL) {
+            if (arg1 != (IPTR)NULL) {
                 handler = ((struct FileHandle *) BADDR(arg1))->fh_Device;
                 unit = ((struct FileHandle *) BADDR(arg1))->fh_Unit;
             }
@@ -207,7 +207,7 @@
 
         /* a volume, ie a DeviceList */
         case REPORT_VOLUME:
-            if (arg1 == NULL)
+            if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
 
             dl = (struct DeviceList *) arg1;
@@ -215,7 +215,7 @@
             
         /* raw volume name */
         case REPORT_INSERT:
-            if (arg1 == NULL)
+            if (arg1 == (IPTR)NULL)
                 return DOSTRUE;
 
             volname = (STRPTR) arg1;
@@ -258,14 +258,14 @@
             fh->fh_Unit = unit;
 
             /* get the handler to give us the name */
-            if (NameFromLock(MKBADDR(fh), buf, 127) != DOSTRUE) {
-                FreeDosObject(fh, DOS_FILEHANDLE);
+            if (!NameFromLock(MKBADDR(fh), buf, 127)) {
+                FreeDosObject(DOS_FILEHANDLE, fh);
                 SetIoErr(err);
                 return DOSTRUE;
             }
 
             /* cleanup */
-            FreeDosObject(fh, DOS_FILEHANDLE);
+            FreeDosObject(DOS_FILEHANDLE, fh);
             SetIoErr(err);
 
             /* find the volume seperator */
