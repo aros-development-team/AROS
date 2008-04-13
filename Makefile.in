@@ -119,20 +119,19 @@ clean:
 # Clean the sources and tools
 arch-clean: clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2inline clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros clean TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros clean TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2inline clean TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma clean TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc clean TOP=$(TOP)
         
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
-	@$(RM) Makefile configure config.* mmake.cache mmake.config
+	@$(RM) Makefile config.* mmake.cache mmake.config
 
 # Dependencies don't work with .DEFAULT :-(
 docs : makedirs tools mmake
