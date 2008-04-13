@@ -229,13 +229,25 @@ void dispatch_events()
 					while(msgbuf.Code != MENUNULL)
 						if( (Item = ItemAddress( Menu, msgbuf.Code )) )
 						{
+							/* stegerg: get NextSelect here in case menu action causes screen
+							   to be closed/reopened in which case item becomes invalid.
+							   Also assuming here that user in such case will not use
+							   multiselection, ie. that nextselect will be MENUNULL.
+							   
+							   If that's not the case it would mean more trouble and to protect
+							   against that one would need to check if during handle_menu() the
+							   screen has been closed/reopened and in that case break out of
+							   the menu multiselection loop here. */
+							   							   
+							UWORD nextselect = Item->NextSelect;
+							
 							MenuId = (ULONG)GTMENUITEM_USERDATA( Item );
 							handle_menu( MenuId );
 
 							if(record) reg_act_com(MAC_ACT_COM_MENU, MenuId, msgbuf.Qualifier);
 							else record &= 0x7f;
 
-							msgbuf.Code = Item->NextSelect;
+							msgbuf.Code = nextselect;
 						}
 				}
 			}
