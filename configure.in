@@ -1040,6 +1040,15 @@ if test "$aros_liblzo_check" = "yes"; then
     AC_CHECK_HEADERS(lzo/lzo1x.h lzo1x.h)
 fi
 
+AC_MSG_CHECKING([which GUI Theme to use])
+AC_ARG_ENABLE(theme,AC_HELP_STRING([--enable-theme=NAME],[Enable a specific GUI Theme]),target_guitheme=$enableval,target_guitheme="default")
+if test "$target_guitheme" = "default"; then
+    aros_target_guitheme="Ice"
+else
+    aros_target_guitheme="$target_guitheme"
+fi
+AC_MSG_RESULT($aros_target_guitheme)
+
 # Find out if we are cross-compiling (ie. if we can't use the host compiler
 # for target code)
 cross_compiling=no
@@ -1469,6 +1478,7 @@ AC_SUBST(aros_host_autoheader)
 AC_SUBST(aros_host_automake)
 
 # Target Related
+AC_SUBST(aros_target_guitheme)
 AC_SUBST(aros_target_bootloader)
 AC_SUBST(aros_target_arch)
 AC_SUBST(aros_target_cpu)

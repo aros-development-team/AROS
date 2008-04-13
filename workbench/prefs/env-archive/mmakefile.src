@@ -6,8 +6,6 @@ include $(TOP)/config/make.cfg
 SUBDIRS := Zune SYS SYS/Packages
 FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(wildcard $(dir)/*)))
 
-AROS_GUI_THEME = "THEMES:Ice"
-
 #MM- workbench-prefs : workbench-prefs-envarc
 #MM- workbench-prefs-envarc : workbench-prefs-envarc-copyfiles workbench-prefs-envarc-theme
 #MM  workbench-prefs-envarc-copyfiles
@@ -22,4 +20,4 @@ $(AROS_ENVARC)/% : %
 
 #MM
 workbench-prefs-envarc-theme:
-	@echo $(AROS_GUI_THEME) > $(AROS_ENVARC)/SYS/theme.var
+	@echo "THEMES:$(AROS_GUI_THEME)" > $(AROS_ENVARC)/SYS/theme.var
