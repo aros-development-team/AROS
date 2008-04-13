@@ -153,6 +153,11 @@ static int GM_UNIQUENAME(Open)
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR afsbase)
 {
+#warning "FIXME FIXME FIXME FIXME: Disabled broken expunge code which does not take into account"
+#warning "that there might be an active time request hanging around. See AFS_work()."
+ 
+return FALSE;
+	
 	CloseDevice((struct IORequest *)afsbase->timer_request);
 	DeleteIORequest((struct IORequest *)afsbase->timer_request);
 	RemTask(afsbase->port.mp_SigTask);
