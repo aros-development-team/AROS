@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filenote CLI command
@@ -18,7 +18,7 @@
 
     LOCATION
 
-        Sys:C
+        C:
 
     FUNCTION
 
@@ -74,10 +74,6 @@
 
     INTERNALS
 
-    HISTORY
-
-        27-Jul-1997     laguest     Initial inclusion into the AROS tree
-
 ******************************************************************************/
 
 #include <proto/arossupport.h>
@@ -120,7 +116,7 @@ int main(void)
 {
     struct RDArgs     * rda;
     struct AnchorPath * apath;
-    IPTR                args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL};
+    IPTR                args[TOTAL_ARGS] = { NULL, (IPTR)"", NULL, NULL};
     int                 Return_Value;
 
     RT_Init();
