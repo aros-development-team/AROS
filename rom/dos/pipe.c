@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id: /aros/dos/src/rom/dos/open.c 26802 2007-06-11T21:17:31.715385Z rob  $
 
     Desc: Creates a pair of filehandles connected to each other
@@ -62,11 +62,9 @@
     LONG err;
 
     if ((rfh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL) {
-        SetIoErr(ERROR_NO_FREE_STORE);
         return DOSFALSE;
     }
     if ((wfh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL) {
-        SetIoErr(ERROR_NO_FREE_STORE);
         return DOSFALSE;
     }
 
@@ -74,8 +72,8 @@
     err = DoIOFS(&iofs, NULL, name, DOSBase);
 
     if (err != 0) {
-        FreeDosObject(rfh, DOS_FILEHANDLE);
-        FreeDosObject(rfh, DOS_FILEHANDLE);
+        FreeDosObject(DOS_FILEHANDLE, rfh);
+        FreeDosObject(DOS_FILEHANDLE, wfh);
         return DOSFALSE;
     }
 
