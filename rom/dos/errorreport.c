@@ -84,7 +84,7 @@
 
     /* do nothing if errors are disabled */
     if (me->pr_WindowPtr == (APTR) -1) {
-        SetIoErr(err);
+        SetIoErr(code);
         return DOSTRUE;
     }
 
