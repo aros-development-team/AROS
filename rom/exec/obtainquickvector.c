@@ -40,9 +40,6 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write exec/ObtainQuickVector()
-    aros_print_not_implemented ("ObtainQuickVector");
-
     return 0L;
     AROS_LIBFUNC_EXIT
 } /* ObtainQuickVector */
