@@ -38,7 +38,7 @@ struct TagItem
 #define TAG_SKIP   (3L)   /* skip this and the next ti_Data items         */
 
 /* What separates user tags from system tags */
-#define TAG_USER    ((ULONG)(1L<<31))
+#define TAG_USER    ((STACKULONG)(1L<<31))
 #define TAG_OS	    (16L)   /* The first tag used by the OS */
 
 /* Tag-Offsets for the OS */
