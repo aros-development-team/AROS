@@ -196,7 +196,7 @@ static void PrepareRP(struct RastPort *rp, struct PTableData *data, WORD dptype)
 
 STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg) 
 {
-    struct PTableData *data = INST_DATA(cl, obj);
+    struct PTableData *data;
     struct DrawInfo *dri;
     struct Image *frame;
     struct HDTBPartition *table;
@@ -238,6 +238,8 @@ STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg)
         return (IPTR)NULL;
     }
 
+    data = INST_DATA(cl, obj);
+    
     data->dri = dri;
     data->frame = frame;
     data->table = table;
