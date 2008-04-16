@@ -3,18 +3,21 @@
     $Id$
 */
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/gadtools.h>
 #include <proto/intuition.h>
+
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "debug.h"
 
+#define HDTB_HAVE_VARARGPROTOS
 #include "hdtoolbox_support.h"
 #include "platform.h"
 
@@ -83,8 +86,12 @@ void typestrncpy(STRPTR dst, STRPTR src, ULONG len)
     }
 }
 
-UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...)
-{
+#ifndef __AROS__
+UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...){
+#else
+UWORD strcpyESC(STRPTR dst, STRPTR fmt){
+#endif
+#warning "TODO: Check varargs usage is correct"
     UWORD count = 0;
 
     while (*fmt)
@@ -94,7 +101,7 @@ UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...)
             fmt++;
             if (isdigit(*fmt))
             {
-            ULONG val=0;
+                ULONG val=0;
 
                 for(;;)
                 {
@@ -108,7 +115,9 @@ UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...)
                 count++;
             }
             else
-                kprintf("%s-%ld: unknown escape sequence\n", __FILE__, __LINE__);
+            {
+                D(bug("[HDToolBox] strcpyESC:%s-%ld: unknown escape sequence\n", __FILE__, __LINE__));
+            }
         }
         else
         {
@@ -181,25 +190,37 @@ ULONG sizeStrToUL(STRPTR str)
     return size;
 }
 
-LONG GetPartitionAttrsA(struct PartitionHandle *ph, LONG tag, ...)
+LONG GetPartitionAttrsA(struct PartitionHandle *ph, IPTR tag, ... )
 {
-    D(bug("[HDToolBox] GetPartitionAttrsA()\n"));
-
+#ifdef __AROS__
+    AROS_SLOWSTACKTAGS_PRE(tag)
+    retval = GetPartitionAttrs(ph, AROS_SLOWSTACKTAGS_ARG(tag));
+    AROS_SLOWSTACKTAGS_POST
+#else
     return GetPartitionAttrs(ph, (struct TagItem *)&tag);
+#endif
 }
 
-LONG SetPartitionAttrsA(struct PartitionHandle *ph, LONG tag, ...)
+LONG SetPartitionAttrsA(struct PartitionHandle *ph, IPTR tag, ... )
 {
-    D(bug("[HDToolBox] SetPartitionAttrsA()\n"));
-
+#ifdef __AROS__
+    AROS_SLOWSTACKTAGS_PRE(tag)
+    retval = SetPartitionAttrs(ph, AROS_SLOWSTACKTAGS_ARG(tag));
+    AROS_SLOWSTACKTAGS_POST
+#else
     return SetPartitionAttrs(ph, (struct TagItem *)&tag);
+#endif
 }
 
-LONG GetPartitionTableAttrsA(struct PartitionHandle *ph, LONG tag, ...)
+LONG GetPartitionTableAttrsA(struct PartitionHandle *ph, IPTR tag, ... )
 {
-    D(bug("[HDToolBox] GetPartitionTableAttrsA()\n"));
-
+#ifdef __AROS__
+    AROS_SLOWSTACKTAGS_PRE(tag)
+    retval = GetPartitionTableAttrs(ph, AROS_SLOWSTACKTAGS_ARG(tag));
+    AROS_SLOWSTACKTAGS_POST
+#else
     return GetPartitionTableAttrs(ph, (struct TagItem *)&tag);
+#endif
 }
 
 ULONG getAttrInfo(struct PartitionAttribute *attrlist, ULONG attr)

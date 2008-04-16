@@ -5,10 +5,12 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -303,7 +305,7 @@ void LoadPrefs(STRPTR filename)
     LONG size;
     BPTR fh;
 
-    D(bug("[HDToolBox] LoadPrefs()\n"));
+    D(bug("[HDToolBox] LoadPrefs('%s')\n", filename));
 
     getTableTypeList(&tabletypelist);
     fh = Open(filename, MODE_OLDFILE);

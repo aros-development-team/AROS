@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
@@ -214,10 +215,9 @@ AROS_UFH3(void, hexidedit_function,
 
     D(bug("[HDToolBox] hexidedit_function()\n"));
 
-    kprintf("key press\n");
     if (*msg == SGH_KEY)
     {
-        kprintf("key press\n");
+        D(bug("[HDToolBox] hexidedit_function: KEY PRESS\n"));
     }
 
     AROS_USERFUNC_EXIT
@@ -290,7 +290,7 @@ LONG askSave(STRPTR name)
     };
     char yesno[32];
 
-    D(bug("[HDToolBox] askSave()\n"));
+    D(bug("[HDToolBox] askSave('%s')\n", name));
 
     sprintf(yesno, "%s|%s|%s", MSG_STD(YESSTR), MSG(WORD_All), MSG_STD(NOSTR));
     es.es_GadgetFormat = yesno;

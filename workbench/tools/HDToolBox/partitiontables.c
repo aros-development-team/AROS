@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <stdio.h>
-#include <string.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -19,6 +17,9 @@
 #include <exec/memory.h>
 #include <libraries/expansion.h>
 #include <libraries/partition.h>
+
+#include <stdio.h>
+#include <string.h>
 
 #include "partitiontables.h"
 #include "gui.h"
@@ -43,7 +44,7 @@ void getPartitionInfo(struct PartitionTable *table, struct PartitionHandle *ph)
         PTT_MAX_PARTITIONS, &table->max_partitions,
         TAG_DONE
     );
-    kprintf("type=%ld\n", table->type);
+    D(bug("[HDToolBox] getPartitionInfo:type=%ld\n", table->type));
 }
 
 struct PartitionTable *newPartitionTable(struct PartitionHandle *ph)
@@ -132,19 +133,14 @@ ULONG getOffset(struct PartitionHandle *ph)
          3 - reboot neccessary
              (FS important things changed like de_LowCyl)
 */
-WORD checkMount
-    (
-        struct HDTBPartition *table,
-        STRPTR name,
-        struct DosEnvec *de
-    )
+WORD checkMount(struct HDTBPartition *table, STRPTR name, struct DosEnvec *de)
 {
     WORD retval = 1;
     struct DosList *dl;
     struct DeviceNode *entry;
     ULONG i;
 
-    D(bug("[HDToolBox] checkMount()\n"));
+    D(bug("[HDToolBox] checkMount('%s')\n", name));
 
     dl = LockDosList(LDF_READ | LDF_DEVICES);
     if (dl)
@@ -218,14 +214,7 @@ WORD checkMount
     return retval;
 }
 
-
-void mount
-    (
-        struct HDTBPartition *table,
-        struct PartitionHandle *ph,
-        STRPTR name,
-        struct DosEnvec *de
-    )
+void mount(struct HDTBPartition *table, struct PartitionHandle *ph, STRPTR name, struct DosEnvec *de)
 {
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *dn;
@@ -233,7 +222,7 @@ void mount
     IPTR *params;
     ULONG i;
 
-    D(bug("[HDToolBox] mount()\n"));
+    D(bug("[HDToolBox] mount('%s')\n", name));
 
 #error "TODO: pass DOS device name in params[0] and set handler name manually"
 #warning "TODO: get filesystem"
