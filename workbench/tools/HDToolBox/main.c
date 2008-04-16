@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,20 +25,19 @@
 #include "ptclass.h"
 #include "prefs.h"
 
-#define DEBUG 0
 #include "debug.h"
 
-struct IntuitionBase *IntuitionBase=NULL;
-struct GfxBase *GfxBase=NULL;
-struct PartitionBase *PartitionBase=NULL;
-
 extern struct ListNode root;
+
+struct IntuitionBase    *IntuitionBase = NULL;
+struct GfxBase          *GfxBase = NULL;
+struct PartitionBase    *PartitionBase = NULL;
 
 LONG initEnv(char *device)
 {
     LONG retval;
 
-    D(bug("[HDToolBox] initEnv()\n"));
+    D(bug("[HDToolBox] initEnv('%s')\n", device));
 
     if (!InitListNode(&root, NULL))
         return ERR_MEMORY;
@@ -107,6 +106,7 @@ int main(int argc, char **argv)
     }
     else
         printf("Error %ld\n", error);
+
     uninitEnv();
     CleanupLocale();
     return 0;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,10 +13,10 @@
 #include "gui.h"
 #include "harddisks.h"
 
-#define DEBUG 0
 #include "debug.h"
 
 extern struct GUIGadgets gadgets;
+
 struct ListNode root;
 
 struct HDTBDevice *addDevice(struct ListNode *parent, STRPTR name)

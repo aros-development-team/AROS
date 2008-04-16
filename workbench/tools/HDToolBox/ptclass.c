@@ -25,7 +25,6 @@
 #include "partitiontables.h"
 #include "platform.h"
 
-#define DEBUG 0
 #include "debug.h"
 
 #define G(a) ((struct Gadget *)a)
@@ -111,7 +110,7 @@ struct PTableData {
     BOOL pensallocated;
 };
 
-STATIC UWORD pattern[]=
+STATIC UWORD pattern[] =
 {
     0xAAAA, 0xAAAA,
     0x5555, 0x5555
@@ -139,8 +138,7 @@ STATIC UWORD pattern2[] =
 
 #define SetPattern(r,p,s) {r->AreaPtrn = (UWORD *)p; r->AreaPtSz = s;}
 
-Class *ptcl=0;
-
+Class *ptcl = NULL;
 
 static void PrepareRP(struct RastPort *rp, struct PTableData *data, WORD dptype)
 {
@@ -149,84 +147,84 @@ static void PrepareRP(struct RastPort *rp, struct PTableData *data, WORD dptype)
     if (data->multicolor)
     {
         switch(dptype)
-    {
-        case DPTYPE_EMPTY:
-            SetPattern(rp, pattern2, 4);
-        SetABPenDrMd(rp, data->pens[PEN_EMPTY1], data->pens[PEN_EMPTY2], JAM2);
-        break;
-        
-        case DPTYPE_EMPTY_SELECTED:
-            SetPattern(rp, pattern2, 4);
-        SetABPenDrMd(rp, data->pens[PEN_EMPTY1_SEL], data->pens[PEN_EMPTY2_SEL], JAM2);
-        break;
-        
-        case DPTYPE_USED:
-            SetPattern(rp, NULL, 0);
-        SetABPenDrMd(rp, data->pens[PEN_USED], 0, JAM2);
-        break;
-        
-        case DPTYPE_USED_SELECTED:
-            SetPattern(rp, NULL, 0);
-        SetABPenDrMd(rp, data->pens[PEN_USED_SEL], 0, JAM2);
-            break;
-    }	
+        {
+            case DPTYPE_EMPTY:
+                SetPattern(rp, pattern2, 4);
+                SetABPenDrMd(rp, data->pens[PEN_EMPTY1], data->pens[PEN_EMPTY2], JAM2);
+                break;
+
+            case DPTYPE_EMPTY_SELECTED:
+                SetPattern(rp, pattern2, 4);
+                SetABPenDrMd(rp, data->pens[PEN_EMPTY1_SEL], data->pens[PEN_EMPTY2_SEL], JAM2);
+                break;
+
+            case DPTYPE_USED:
+                SetPattern(rp, NULL, 0);
+                SetABPenDrMd(rp, data->pens[PEN_USED], 0, JAM2);
+                break;
+
+            case DPTYPE_USED_SELECTED:
+                SetPattern(rp, NULL, 0);
+                SetABPenDrMd(rp, data->pens[PEN_USED_SEL], 0, JAM2);
+                break;
+        }
     } /* if (data->multicolor) */
     else
     {
         switch(dptype)
-    {
-        case DPTYPE_EMPTY:
-            SetPattern(rp, NULL, 0);
-        SetABPenDrMd(rp, 0, 0, JAM2);
-        break;
-        
-        case DPTYPE_EMPTY_SELECTED:
-            SetPattern(rp, pattern, 2);
-        SetABPenDrMd(rp, 1, 0, JAM2);
-        break;
-        
-        case DPTYPE_USED:
-            SetPattern(rp, pattern, 2);
-        SetABPenDrMd(rp, 2, 0, JAM2);
-        break;
-        
-        case DPTYPE_USED_SELECTED:
-            SetPattern(rp, pattern, 2);
-        SetABPenDrMd(rp, 3, 0, JAM2);
-            break;
-            
-    }
-    
+        {
+            case DPTYPE_EMPTY:
+                SetPattern(rp, NULL, 0);
+                SetABPenDrMd(rp, 0, 0, JAM2);
+                break;
+
+            case DPTYPE_EMPTY_SELECTED:
+                SetPattern(rp, pattern, 2);
+                SetABPenDrMd(rp, 1, 0, JAM2);
+                break;
+
+            case DPTYPE_USED:
+                SetPattern(rp, pattern, 2);
+                SetABPenDrMd(rp, 2, 0, JAM2);
+                break;
+
+            case DPTYPE_USED_SELECTED:
+                SetPattern(rp, pattern, 2);
+                SetABPenDrMd(rp, 3, 0, JAM2);
+                break;
+        }
     } /* if (data->multicolor) */
-    
 }
 
 STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg) 
 {
-    struct PTableData *data;
+    struct PTableData *data = INST_DATA(cl, obj);
     struct DrawInfo *dri;
     struct Image *frame;
     struct HDTBPartition *table;
     ULONG flags;
-    struct TagItem tags[]=
+
+    struct TagItem tags[] =
     {
-        {IA_Width	, 0UL		},
-        {IA_Height	, 0UL		},
-        {IA_Resolution	, 0UL		},
-        {IA_FrameType	, FRAME_BUTTON	},
-        {TAG_DONE			}
+        {IA_Width,      0UL             },
+        {IA_Height,     0UL             },
+        {IA_Resolution, 0UL             },
+        {IA_FrameType,  FRAME_BUTTON    },
+        {TAG_DONE                       }
     };
 
     D(bug("[HDToolBox] pt_new()\n"));
 
-    dri = (struct DrawInfo *) GetTagData(GA_DrawInfo, (IPTR)NULL, msg->ops_AttrList);
+    dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR)NULL, msg->ops_AttrList);
     if (!dri)
         return (IPTR)NULL;
+
     tags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList);
     tags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList);
     table = (struct HDTBPartition *)GetTagData(PTCT_PartitionTable, 0, msg->ops_AttrList);
     flags = GetTagData(PTCT_Flags, 0, msg->ops_AttrList);
     tags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
+
     frame = (struct Image *) NewObjectA(NULL, FRAMEICLASS, tags);
     if (!frame)
         return (IPTR)NULL;
@@ -241,7 +239,7 @@ STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg)
         DisposeObject(frame);
         return (IPTR)NULL;
     }
-    data = INST_DATA(cl, obj);
+
     data->dri = dri;
     data->frame = frame;
     data->table = table;
@@ -256,8 +254,8 @@ STATIC IPTR pt_new(Class *cl, Object *obj, struct opSet *msg)
 
 STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg) 
 {
+    struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = 0UL;
-    struct PTableData *data;
     struct TagItem *tag;
     const struct TagItem *taglist;
     struct RastPort *rport;
@@ -267,7 +265,6 @@ STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    data = INST_DATA(cl, obj);
     taglist = (struct TagItem *)msg->ops_AttrList;
     while ((tag = NextTagItem(&taglist)))
     {
@@ -307,7 +304,7 @@ STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg)
 
 STATIC IPTR pt_get(Class *cl, Object *obj, struct opGet *msg)
 {
-    struct PTableData *data=INST_DATA(cl, obj);
+    struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = 0;
 
     D(bug("[HDToolBox] pt_get()\n"));
@@ -334,6 +331,7 @@ STATIC IPTR pt_get(Class *cl, Object *obj, struct opGet *msg)
         
     case PTCT_Flags:
         break;
+
     default:
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
     }
@@ -349,8 +347,8 @@ struct DosEnvec *findSpace
 {
     struct HDTBPartition *pn;
     ULONG spc;
-    ULONG first=0;
-    ULONG last=0xFFFFFFFF;
+    ULONG first = 0;
+    ULONG last = 0xFFFFFFFF;
 
     D(bug("[HDToolBox] findSpace()\n"));
 
@@ -364,8 +362,8 @@ struct DosEnvec *findSpace
     pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
     while (pn->listnode.ln.ln_Succ != NULL)
     {
-    ULONG start;
-    ULONG end;
+        ULONG start;
+        ULONG end;
 
         if (pn->listnode.ln.ln_Type != LNT_Parent)
         {
@@ -385,14 +383,17 @@ struct DosEnvec *findSpace
         }
         pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
     }
+
     spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
     if (first == 0)
         first = table->table->reserved;
     if (first != 0)
         first = (first - 1) / spc + 1;
+
     last = ((last+1)/spc)-1;
     if (last>=table->dg.dg_Cylinders)
         last=table->dg.dg_Cylinders-1;
+
     de->de_LowCyl = first;
     de->de_HighCyl = last;
 
@@ -412,8 +413,8 @@ struct HDTBPartition *getActive(struct PTableData *data)
     pn = (struct HDTBPartition *)data->table->listnode.list.lh_Head;
     while (pn->listnode.ln.ln_Succ != NULL)
     {
-    ULONG start;
-    ULONG end;
+        ULONG start;
+        ULONG end;
 
         if (pn->listnode.ln.ln_Type != LNT_Parent)
         {
@@ -541,7 +542,7 @@ ULONG getBlock(UWORD mousex, UWORD width, struct HDTBPartition *table)
     ULONG block;
 
     if ((WORD)mousex < 0) mousex = 0;
-    
+
     block = mousex*(table->dg.dg_Cylinders-1)/width;
     block *= table->dg.dg_Heads*table->dg.dg_TrackSectors;
     block += table->table->reserved;
@@ -550,19 +551,20 @@ ULONG getBlock(UWORD mousex, UWORD width, struct HDTBPartition *table)
 
 STATIC VOID notify_all(Class *cl, Object *obj, struct GadgetInfo *gi, BOOL interim, BOOL userinput) 
 {
-    struct PTableData *data=INST_DATA(cl, obj);
+    struct PTableData *data = INST_DATA(cl, obj);
     struct opUpdate opu;
-    struct TagItem tags[]=
+
+    struct TagItem tags[] =
     {
-        {GA_ID,               G(obj)->GadgetID},
+        {GA_ID,               G(obj)->GadgetID     },
 #ifndef __AMIGAOS__
-        {GA_UserInput,        userinput},
+        {GA_UserInput,        userinput            },
 #endif
-        {PTCT_ActivePartition,(IPTR)data->active},
-        {PTCT_PartitionTable, (IPTR)data->table},
-        {PTCT_PartitionMove,  (IPTR)data->move},
-        {PTCT_Selected,       (IPTR)data->selected},
-        {TAG_DONE}
+        {PTCT_ActivePartition,(IPTR)data->active   },
+        {PTCT_PartitionTable, (IPTR)data->table    },
+        {PTCT_PartitionMove,  (IPTR)data->move     },
+        {PTCT_Selected,       (IPTR)data->selected },
+        {TAG_DONE                                  }
     };
 
     D(bug("[HDToolBox] notify_all()\n"));
@@ -576,15 +578,13 @@ STATIC VOID notify_all(Class *cl, Object *obj, struct GadgetInfo *gi, BOOL inter
 
 STATIC IPTR pt_goactive(Class *cl, Object *obj, struct gpInput *msg)
 {
+    struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = GMR_MEACTIVE;
-    struct PTableData *data;
     struct DosEnvec *de;
     struct RastPort *rport;
     WORD	    	 drawtype;
 
     D(bug("[HDToolBox] pt_goactive()\n"));
-
-    data = INST_DATA(cl, obj);
 
     data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH,data->table);
     rport = ObtainGIRPort(msg->gpi_GInfo);
@@ -632,15 +632,14 @@ STATIC IPTR pt_goactive(Class *cl, Object *obj, struct gpInput *msg)
 
 STATIC IPTR pt_goinactive(Class *cl, Object *obj, struct gpInput *msg)
 {
+    struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = TRUE;
-    struct PTableData *data;
     struct DosEnvec *de;
     struct RastPort *rport;
     WORD drawtype;
 
     D(bug("[HDToolBox] pt_goinactive()\n"));
 
-    data = INST_DATA(cl, obj);
     if (data->active)
     {
 //		data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
@@ -727,7 +726,7 @@ LONG getBetterDiff
     start = current->de.de_LowCyl*spc;
     end = ((current->de.de_HighCyl+1)*spc)-1;
     size = end-start;
-    if (diff>0)
+    if (diff > 0)
     {
         oldblock = end;
         block = overflow_add(end, diff);
@@ -739,7 +738,7 @@ LONG getBetterDiff
         block = underflow_add(start, diff);
         other = block+size; /* use correct partition size */
     }
-    if (block<table->table->reserved)
+    if (block < table->table->reserved)
     {
         diff = table->table->reserved-oldblock;
         if (diff == 0)
@@ -747,7 +746,7 @@ LONG getBetterDiff
         return getBetterDiff(table, current, diff);
     }
     spc = table->dg.dg_Heads*table->dg.dg_TrackSectors;
-    if (block>=((table->dg.dg_Cylinders)*spc))
+    if (block >= ((table->dg.dg_Cylinders)*spc))
     {
         diff = (((table->dg.dg_Cylinders)*spc)-1)-oldblock;
         if (diff == 0)
@@ -783,14 +782,13 @@ LONG getBetterDiff
 
 STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg) 
 {
+    struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = GMR_MEACTIVE;
     struct InputEvent *ie;
-    struct PTableData *data;
     struct RastPort *rport;
 
     D(bug("[HDToolBox] pt_handleinput()\n"));
 
-    data = INST_DATA(cl, obj);
     ie = msg->gpi_IEvent;
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {

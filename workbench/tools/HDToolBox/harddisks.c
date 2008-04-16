@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,6 @@
 #include <exec/memory.h>
 #include <stdio.h>
 
-#define DEBUG 0
 #include "debug.h"
 
 #include "harddisks.h"
@@ -37,7 +36,7 @@ BOOL identify(struct IOStdReq *ioreq, STRPTR name)
 {
     struct SCSICmd scsicmd;
     UWORD data[256];
-    UBYTE cmd=0xEC; /* identify */
+    UBYTE cmd = 0xEC; /* identify */
 
     D(bug("[HDToolBox] identify()\n"));
 
@@ -48,8 +47,10 @@ BOOL identify(struct IOStdReq *ioreq, STRPTR name)
     ioreq->io_Command = HD_SCSICMD;
     ioreq->io_Data = &scsicmd;
     ioreq->io_Length = sizeof(struct SCSICmd);
+
     if (DoIO((struct IORequest *)ioreq))
         return FALSE;
+
     w2strcpy(name, &data[27], 40);
     return TRUE;
 }
