@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 
 #include <stdio.h>
 #include <string.h>
@@ -26,7 +25,6 @@
 #include "hdtoolbox_support.h"
 #include "platform.h"
 
-#define DEBUG 0
 #include "debug.h"
 
 extern struct GUIGadgets gadgets;
@@ -113,7 +111,7 @@ BOOL makePartitionTable(struct HDTBPartition *table, ULONG type)
 ULONG getOffset(struct PartitionHandle *ph)
 {
     struct DosEnvec de;
-    ULONG offset=0;
+    ULONG offset = 0;
 
     D(bug("[HDToolBox] getOffset()\n"));
 
@@ -292,7 +290,7 @@ void mountPartitions(struct List *ptlist)
     struct PartitionTableNode *table;
     struct PartitionHandle *ph;
     WORD cm;
-    WORD reboot=0;
+    WORD reboot = 0;
 
     D(bug("[HDToolBox] mountPartitions()\n"));
 
@@ -338,7 +336,7 @@ void mountPartitions(struct List *ptlist)
         }
         table = (struct PartitionTableNode *)table->ln.ln_Succ;
     }
-    if (reboot>1)
+    if (reboot > 1)
     {
         if (reboot == 2)
         {

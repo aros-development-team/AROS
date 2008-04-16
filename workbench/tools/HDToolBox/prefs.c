@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#define DEBUG 0
 #include "debug.h"
 
 #include "prefs.h"
@@ -108,9 +107,9 @@ LONG parsePrefs(char *buffer, LONG size)
     struct CSource csrc = {buffer, size, 0};
     char ident[256];
     LONG res;
-    ULONG id_len=0;
-    WORD current=0;
-    WORD line=1;
+    ULONG id_len = 0;
+    WORD current = 0;
+    WORD line = 1;
 
     D(bug("[HDToolBox] parsePrefs()\n"));
 

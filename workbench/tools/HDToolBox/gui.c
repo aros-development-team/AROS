@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#define DEBUG 0
 #include "debug.h"
 
 #include "gui.h"
@@ -51,7 +50,7 @@
 #define IMAGEBUTTON(text,imgid) SIMPLEBUTTON(text)
 #endif
 
-struct Library *MUIMasterBase=NULL;
+struct Library *MUIMasterBase = NULL;
 
 Object *app;
 Object *mainwin;
@@ -147,8 +146,8 @@ struct MountBootGadgets {
     Object *cancel;
 } mountbootgadgets;
 
-char *editcycleentries[]={"0x", NULL};
-char *blocksizecycleentries[]={"512","1024","2048","4096", NULL};
+char *editcycleentries[] = {"0x", NULL};
+char *blocksizecycleentries[] = {"512","1024","2048","4096", NULL};
 
 void setChanged(struct ListNode *iln)
 {
@@ -231,10 +230,10 @@ AROS_UFH3(void, display_function,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("[HDToolBox] display_function()\n"));
-
     static char buf[16];
     static char bu2[64];
+
+    D(bug("[HDToolBox] display_function()\n"));
 
     if (entry)
     {
@@ -344,11 +343,11 @@ AROS_UFH3(void, buttons_function,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("[HDToolBox] buttons_function()\n"));
-
     LONG active;
     struct ListNode *iln;
     int i;
+
+    D(bug("[HDToolBox] buttons_function()\n"));
 
     for (i=GB_FIRST;i<=GB_LAST;i++)
         if (object == gadgets.buttons[i])
@@ -1269,11 +1268,11 @@ AROS_UFH3(void, lv_doubleclick,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("[HDToolBox] lv_doubleclick()\n"));
-
     LONG active;
     LONG type=-1;
     struct ListNode *iln;
+
+    D(bug("[HDToolBox] lv_doubleclick()\n"));
 
     get(object, MUIA_List_Active, &active);
     if (active != MUIV_List_Active_Off)
@@ -1358,12 +1357,12 @@ AROS_UFH3(void, lv_click,
 {
     AROS_USERFUNC_INIT
 
-    D(bug("[HDToolBox] lv_click()\n"));
-
     LONG active;
     struct ListNode *iln;
     char str[64];
     char sizestr[16];
+
+    D(bug("[HDToolBox] lv_click()\n"));
 
     get(object, MUIA_List_Active, &active);
     if (active != MUIV_List_Active_Off)
@@ -1896,8 +1895,10 @@ LONG initGUI(void)
             End,
         End,
     End;
+
     if (!app)
         return ERR_GADGETS;
+
     /* Main Window */
     DoMethod
     (

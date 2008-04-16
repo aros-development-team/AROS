@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
 
-#define DEBUG 0
 #include "debug.h"
 
 #include "hdtoolbox_support.h"
@@ -86,7 +85,7 @@ void typestrncpy(STRPTR dst, STRPTR src, ULONG len)
 
 UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...)
 {
-    UWORD count=0;
+    UWORD count = 0;
 
     while (*fmt)
     {
@@ -123,12 +122,12 @@ UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...)
 /* size in kB */
 void getSizeStr(STRPTR str, ULONG size)
 {
-    UBYTE c='M';
+    UBYTE c = 'M';
     ULONG r;
 
     r = size % 1024;
     size = size / 1024;
-    if (size>512)
+    if (size > 512)
     {
         c='G';
         r = size % 1024;
@@ -143,7 +142,7 @@ ULONG sizeStrToUL(STRPTR str)
 {
     char *end;
     ULONG size;
-    ULONG value=0;
+    ULONG value = 0;
     ULONG div;
 
     size = strtoul(str, &end, 0);
@@ -218,7 +217,7 @@ ULONG getAttrInfo(struct PartitionAttribute *attrlist, ULONG attr)
 
 UBYTE getBitNum(ULONG val)
 {
-    UBYTE count=0;
+    UBYTE count = 0;
 
     if (val==0)
         return 0xFF;

@@ -1,8 +1,7 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
-
 
 #include <stdio.h>
 #include <strings.h>
@@ -20,7 +19,6 @@
 #include "platform.h"
 #include "prefs.h"
 
-#define DEBUG 0
 #include "debug.h"
 
 void setPartitionName(struct HDTBPartition *pnode)
