@@ -2,7 +2,7 @@
 #define PDEBUG_H
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #ifndef __AROS__
