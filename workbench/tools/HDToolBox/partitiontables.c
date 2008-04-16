@@ -77,7 +77,7 @@ BOOL findPartitionTable(struct HDTBPartition *partition)
 void freePartitionTable(struct HDTBPartition *partition)
 {
     D(bug("[HDToolBox] freePartitionTable()\n"));
-    
+
     ClosePartitionTable(partition->ph);
     FreeMem(partition->table, sizeof(struct PartitionTable));
 }
