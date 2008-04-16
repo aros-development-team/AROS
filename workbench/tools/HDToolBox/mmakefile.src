@@ -24,7 +24,6 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
     progname=HDToolBox targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="mui amiga arosc m"
 
-
 #MM
 workbench-tools-hdtoolbox-prefs : $(BINDIR)/Prefs/Env-Archive/hdtoolbox.prefs
 

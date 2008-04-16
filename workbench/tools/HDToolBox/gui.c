@@ -1487,6 +1487,7 @@ LONG initGUI(void)
     ptclass = makePTClass();
     if (ptclass == NULL)
         return ERR_GADGETS;
+
     hook_display.h_Entry = (HOOKFUNC)display_function;
     hook_buttons.h_Entry = (HOOKFUNC)buttons_function;
     hook_lv_doubleclick.h_Entry = (HOOKFUNC)lv_doubleclick;
