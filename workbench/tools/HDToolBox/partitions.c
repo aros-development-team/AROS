@@ -3,16 +3,18 @@
     $Id$
 */
 
-#include <stdio.h>
-#include <strings.h>
 #include <proto/exec.h>
 #include <proto/gadtools.h>
 #include <proto/intuition.h>
 #include <proto/partition.h>
+#include <proto/alib.h>
 
 #include <devices/trackdisk.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
+
+#include <stdio.h>
+#include <strings.h>
 
 #include "partitions.h"
 #include "hdtoolbox_support.h"
@@ -39,11 +41,7 @@ void setPartitionName(struct HDTBPartition *pnode)
     }
 }
 
-struct HDTBPartition *newPartition
-    (
-        struct ListNode *parent,
-        struct HDTBPartition *partition
-    )
+struct HDTBPartition *newPartition(struct ListNode *parent, struct HDTBPartition *partition)
 {
     struct HDTBPartition *pn;
 
@@ -177,12 +175,7 @@ void freePartitionList(struct List *list)
     }
 }
 
-BOOL validValue
-    (
-        struct HDTBPartition *table,
-        struct HDTBPartition *current,
-        ULONG value
-    )
+BOOL validValue(struct HDTBPartition *table, struct HDTBPartition *current, ULONG value)
 {
     struct HDTBPartition *pn;
     ULONG spc;
@@ -212,23 +205,22 @@ BOOL validValue
     return TRUE;
 }
 
-struct PartitionHandle *AddPartitionA
-    (
-        struct PartitionHandle *root,
-        LONG tag,
-        ...
-    )
+struct PartitionHandle *AddPartitionA(struct PartitionHandle *root, IPTR tag, ...)
 {
-    D(bug("[HDToolBox] AddPartitionA()\n"));
+//    D(bug("[HDToolBox] AddPartitionA()\n"));
+#warning "TODO: Check varargs usage is correct"
+#ifdef __AROS__
+    AROS_SLOWSTACKMETHODS_PRE(tag)
+    retval = AddPartition(root, AROS_SLOWSTACKMETHODS_ARG(tag));
+    AROS_SLOWSTACKMETHODS_POST
 
+    return retval;
+#else
     return AddPartition(root, (struct TagItem *)&tag);
+#endif
 }
 
-struct HDTBPartition *addPartition
-    (
-        struct HDTBPartition *table,
-        struct DosEnvec *de
-    )
+struct HDTBPartition *addPartition(struct HDTBPartition *table, struct DosEnvec *de)
 {
     struct HDTBPartition *partition;
     struct HDTBPartition *pn;

@@ -5,9 +5,11 @@
 
 #include <proto/exec.h>
 #include <proto/partition.h>
+
 #include <devices/scsidisk.h>
 #include <exec/io.h>
 #include <exec/memory.h>
+
 #include <stdio.h>
 
 #include "debug.h"
@@ -38,7 +40,7 @@ BOOL identify(struct IOStdReq *ioreq, STRPTR name)
     UWORD data[256];
     UBYTE cmd = 0xEC; /* identify */
 
-    D(bug("[HDToolBox] identify()\n"));
+    D(bug("[HDToolBox] identify('%s')\n", name));
 
     scsicmd.scsi_Data = data;
     scsicmd.scsi_Length = 512;

@@ -7,6 +7,7 @@
 #define HDTOOLBOX_SUPPORT_H
 
 #include <proto/partition.h>
+#include <proto/alib.h>
 #include <exec/nodes.h>
 #include <exec/lists.h>
 
@@ -17,12 +18,21 @@ ULONG getNodeNum(struct Node *);
 ULONG countNodes(struct List *, UBYTE);
 LONG RequestList(struct List *, ULONG *);
 void typestrncpy(STRPTR, STRPTR, ULONG);
-UWORD strcpyESC(STRPTR, STRPTR, ...);
 void getSizeStr(STRPTR, ULONG);
 ULONG sizeStrToUL(STRPTR);
-LONG GetPartitionAttrsA(struct PartitionHandle *, LONG, ...) __stackparm;
-LONG SetPartitionAttrsA(struct PartitionHandle *, LONG, ...) __stackparm;
-LONG GetPartitionTableAttrsA(struct PartitionHandle *, LONG, ...) __stackparm;
+#ifdef __AROS__
+UWORD strcpyESC(STRPTR dst, STRPTR fmt);
+#ifndef HDTB_HAVE_VARARGPROTOS
+LONG GetPartitionAttrsA(struct PartitionHandle *, IPTR, ... );
+LONG SetPartitionAttrsA(struct PartitionHandle *, IPTR, ... );
+LONG GetPartitionTableAttrsA(struct PartitionHandle *, IPTR, ... );
+#endif
+#else
+UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...);
+LONG GetPartitionAttrsA(struct PartitionHandle *, IPTR, ... ) __stackparm;
+LONG SetPartitionAttrsA(struct PartitionHandle *, IPTR, ... ) __stackparm;
+LONG GetPartitionTableAttrsA(struct PartitionHandle *, IPTR, ... ) __stackparm;
+#endif
 ULONG getAttrInfo(struct PartitionAttribute *, ULONG);
 UBYTE getBitNum(ULONG);
 #endif

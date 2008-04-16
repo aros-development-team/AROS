@@ -3,8 +3,6 @@
     $Id$
 */
 
-#include <string.h>
-
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -338,12 +336,7 @@ STATIC IPTR pt_get(Class *cl, Object *obj, struct opGet *msg)
     return retval;
 }
 
-struct DosEnvec *findSpace
-    (
-        struct HDTBPartition *table,
-        struct DosEnvec *de,
-        ULONG block
-    )
+struct DosEnvec *findSpace(struct HDTBPartition *table, struct DosEnvec *de, ULONG block)
 {
     struct HDTBPartition *pn;
     ULONG spc;
@@ -429,7 +422,7 @@ struct HDTBPartition *getActive(struct PTableData *data)
 }
 
 void DrawBox(struct RastPort *rport, struct DrawInfo *dri,
-             UWORD sx, UWORD sy, UWORD ex, UWORD ey, BOOL recessed)
+            UWORD sx, UWORD sy, UWORD ex, UWORD ey, BOOL recessed)
 {
     D(bug("[HDToolBox] DrawBox()\n"));
 
@@ -442,12 +435,8 @@ void DrawBox(struct RastPort *rport, struct DrawInfo *dri,
     Draw(rport, ex, sy);
 }
 
-void DrawFilledBox
-(
-    struct RastPort *rport,
-    struct DrawInfo *dri,
-    UWORD sx, UWORD sy, UWORD ex, UWORD ey
-)
+void DrawFilledBox(struct RastPort *rport, struct DrawInfo *dri,
+            UWORD sx, UWORD sy, UWORD ex, UWORD ey)
 {
     D(bug("[HDToolBox] DrawFilledBox()\n"));
 
@@ -455,15 +444,8 @@ void DrawFilledBox
     DrawBox(rport, dri, sx, sy, ex, ey, FALSE);
 }
 
-void DrawPartition
-(
-    struct RastPort *rport,
-    struct PTableData *data,
-    struct Gadget *gadget,
-    struct HDTBPartition *table,
-    struct DosEnvec *pn,
-    WORD drawtype
-)
+void DrawPartition(struct RastPort *rport, struct PTableData *data,
+            struct Gadget *gadget, struct HDTBPartition *table, struct DosEnvec *pn, WORD drawtype)
 {
     ULONG start;
     ULONG end;
@@ -706,12 +688,7 @@ BOOL overlap(ULONG a, ULONG b, ULONG c, ULONG d)
         );
 }
 
-LONG getBetterDiff
-(
-    struct HDTBPartition *table,
-    struct HDTBPartition *current,
-    LONG diff
-)
+LONG getBetterDiff(struct HDTBPartition *table, struct HDTBPartition *current, LONG diff)
 {
     struct HDTBPartition *pn;
     ULONG spc;
@@ -862,7 +839,9 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
 #if DEBUG>0
                         }
                         else
-                            kprintf("!!!!!!!!!!!!!!!!!!!not valid\n");
+                        {
+                            D(bug("[HDToolBox] pt_handleinput: !!!!!!!!!!!!!!!!!!!not valid\n"));
+                        }
 #endif
 #endif
                     }
@@ -1090,8 +1069,7 @@ STATIC IPTR pt_hittest(Class *cl, Object *obj, struct gpHitTest *msg)
 AROS_UFH3S(IPTR, dispatch_ptclass,
       AROS_UFHA(Class *, cl, A0),
       AROS_UFHA(Object *, obj, A2),
-      AROS_UFHA(Msg, msg, A1)
-)
+      AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
 
@@ -1130,7 +1108,7 @@ AROS_UFH3S(IPTR, dispatch_ptclass,
         retval = pt_handleinput(cl, obj, (struct gpInput *)msg);
         break;
     default:
-        kprintf("default %ld\n", msg->MethodID);
+        D(bug("[HDToolBox] dispatch_ptclass:default %ld\n", msg->MethodID));
         retval = DoSuperMethodA(cl, obj, msg);
         break;
     }
