@@ -40,7 +40,6 @@ COMMONTESTFILES := \
     serialmousetest \
     serialtest \
     unixio \
-    librarytest \
     opendiskfont \
     partition \
     scantest \

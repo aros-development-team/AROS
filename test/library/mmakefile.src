@@ -1,0 +1,26 @@
+include $(TOP)/config/make.cfg
+
+#MM- test : test-library
+#MM- test-library : test-library-dummytest test-library-peropenertest
+#MM test-library-dummytest : test-library-dummylib
+#MM test-library-peropenertest : test-library-peropenerlib \
+#MM     test-library-peridlib
+
+TARGETDIR := $(AROSDIR)/Tests/Library
+
+USER_CFLAGS := -I$(TARGETDIR)/Development/include
+
+%build_prog mmake=test-library-dummytest \
+    progname=dummytest targetdir=$(TARGETDIR)
+
+%build_prog mmake=test-library-peropenertest \
+    progname=peropenertest targetdir=$(TARGETDIR)
+
+%build_module mmake=test-library-dummylib \
+    modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-peropenerlib \
+    modname=peropener modtype=library files=empty prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-peridlib \
+    modname=perid modtype=library files=empty prefix=$(TARGETDIR)
