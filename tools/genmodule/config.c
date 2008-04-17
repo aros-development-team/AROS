@@ -485,7 +485,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		"superclass_field", "residentpri", "options", "sysbase_field",
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
-		"initpri", "type"
+		"initpri", "type", "getidfunc"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -614,7 +614,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		{
 		    static const char *optionnames[] =
 		    {
-			"noautolib", "noexpunge", "noresident", "peropenerbase"
+			"noautolib", "noexpunge", "noresident", "peropenerbase", "peridbase"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -648,7 +648,12 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 			    cfg->options |= OPTION_NORESIDENT;
 			    cfg->firstlvo = 1;
 			    break;
+                        case 5: /* peridbase */
+                            cfg->options |= OPTION_DUPPERID;
+                            /* Fall through */
 			case 4: /* peropenerbase */
+                            if (cfg->options & OPTION_DUPBASE)
+                                exitfileerror(20, "Only one option peropenerbase or peridbase allowed\n");
 			    cfg->options |= OPTION_DUPBASE;
 			    break;
 			}
@@ -817,6 +822,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    exit(20);
 		}
 		break;
+            case 26: /* getidfunc */
+		cfg->getidfunc = strdup(s);
+                break;
 	    }
 	}
 	else /* Line starts with ## */
@@ -842,7 +850,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    atend = 1;
 	}
     }
-
+	    
     /* When not in a class section fill in default values for fields in cfg */
     if (!inclass)
     {
@@ -863,6 +871,11 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
 	if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	    exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
+        /* rootbase_field only allowed when duplicating base */
+        if (cfg->rootbase_field != NULL && !(cfg->options & OPTION_DUPBASE))
+            exitfileerror(20, "rootbasefield only valid for option peropenerbase or peridbase\n");
+        if (cfg->getidfunc != NULL && !(cfg->options & OPTION_DUPPERID))
+            exitfileerror(20, "getidfunc only valid for option peridbase\n");
 
 	/* Set default date to current date */
 	if (cfg->datestring == NULL)
@@ -965,7 +978,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	/* Only specify superclass or superclass_field */
 	if (cl->superclass != NULL && cl->superclass_field != NULL)
 	    exitfileerror(20, "Only specify one of superclass or superclass_field in config section\n");
-	    
+        
 	/* Give default value to superclass if it is not specified */
 	if (cl->superclass == NULL && cl->superclass == NULL)
 	{

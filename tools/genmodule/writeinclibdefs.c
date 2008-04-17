@@ -99,6 +99,8 @@ void writeinclibdefs(struct config *cfg)
 		"#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
 		cfg->seglist_field
 	);
+    if (cfg->getidfunc != NULL)
+        fprintf(out, "#define GM_GETID ((IPTR)%s())\n", cfg->getidfunc);
     for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
     {
 	int storeptr;
