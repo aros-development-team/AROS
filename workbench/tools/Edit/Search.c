@@ -114,7 +114,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 		if(swin->Height<=swin->BorderTop) ZipWindow(swin);
 		/* Copy selected part of text in string gadget */
 		if(p->ccp.select)
-			GetSI(search)->BufferPos = copy_mark_to_buf(p,GetSI(search)->Buffer,GetSI(search)->MaxChars),
+			GetSI(search)->BufferPos = copy_mark_to_buf(p,GetSI(search)->Buffer,GetSI(search)->MaxChars-1),
 			unmark_all(p,FALSE), inv_curs(p,TRUE);
 		ActivateGadget(search, swin, NULL);
 		return TRUE;
@@ -196,7 +196,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 #endif
 		/** If user has selected part of text, copy it in the `Search' string gadget **/
 		if(p->ccp.select)
-			GetSI(sg)->BufferPos = copy_mark_to_buf(p,GetSI(sg)->Buffer,GetSI(sg)->MaxChars),
+			GetSI(sg)->BufferPos = copy_mark_to_buf(p,GetSI(sg)->Buffer,GetSI(sg)->MaxChars-1),
 			unmark_all(p,FALSE), inv_curs(p,TRUE);
 		else
 			/* Copy the previous search string */
