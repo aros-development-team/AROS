@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 
     Desc: Define the C structure for storing the command line options and the
           module config data
@@ -19,14 +19,15 @@ enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GAD
 };
 
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
-	         BIT_DUPBASE
+	         BIT_DUPBASE, BIT_DUPPERID
 };
 enum optionflags
 {
     OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB,
     OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE,
     OPTION_NORESIDENT = 1<<BIT_NORESIDENT,
-    OPTION_DUPBASE = 1<<BIT_DUPBASE
+    OPTION_DUPBASE = 1<<BIT_DUPBASE,
+    OPTION_DUPPERID = 1<<BIT_DUPPERID
 };
 
 enum coptionbit { CBIT_PRIVATE };
@@ -118,6 +119,9 @@ struct config
 
     /* device specific data */
     char *beginiofunc, *abortiofunc;
+
+    /* For option peridbase */
+    char *getidfunc;
 
     /* The functions of this module */
     struct functionhead *funclist;

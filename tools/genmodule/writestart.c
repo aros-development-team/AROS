@@ -145,81 +145,134 @@ static void writedecl(FILE *out, struct config *cfg)
 		"#define GM_SEGLIST_FIELD(lh) (GM_UNIQUENAME(seglist))\n"
 		"#endif\n"
 	);
-	if (cfg->options & OPTION_DUPBASE)
-	    fprintf(out,
+    }
+    if (cfg->options & OPTION_DUPBASE)
+        fprintf(out,
 		"#ifndef GM_ROOTBASE_FIELD\n"
 		"static LIBBASETYPEPTR GM_UNIQUENAME(rootbase);\n"
 		"#define GM_ROOTBASE_FIELD(lh) (GM_UNIQUENAME(rootbase))\n"
 		"#endif\n"
-	    );
-	for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
-	{
-	    /* For the main class basename is the same a the module basename */
-	    if (strcmp(classlistit->basename, cfg->basename) == 0)
-	    {
-		if (classlistit->classptr_var == NULL)
-		{
-		    fprintf(out,
-			    "#if !defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
-			    "static APTR GM_UNIQUENAME(%sClass);\n"
-			    "#define GM_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
-			    "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
-			    "#define %s_STORE_CLASSPTR 1\n"
-			    "#elif defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
-			    "#define %s_CLASSPTR_FIELD(lh) (GM_CLASSPTR_FIELD(lh))\n"
-			    "#elif !defined(GM_CLASSPTR_FIELD) && defined(%s_CLASSPTR_FIELD)\n"
-			    "#define GM_CLASSPTR_FIELD(lh) (%s_CLASSPTR_FIELD(lh))\n"
-			    "#endif\n",
-			    classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename, classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename
-		    );
-		}
-		else
-		{
-		    fprintf(out,
-			    "#define GM_CLASSPTR_FIELD(lh) (%s)\n"
-			    "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
-			    "#define %s_STORE_CLASSPTR 1\n",
-			    classlistit->classptr_var,
-			    classlistit->basename, classlistit->classptr_var,
-			    classlistit->basename
-		    );
-		}
-	    }
-	    else
-	    {
-		if (classlistit->classptr_var == NULL)
-		{
-		    fprintf(out,
-			    "#if !defined(%s_CLASSPTR_FIELD)\n"
-			    "static APTR GM_UNIQUENAME(%sClass);\n"
-			    "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
-			    "#define %s_STORE_CLASSPTR 1\n"
-			    "#endif\n",
-			    classlistit->basename,
-			    classlistit->basename,
-			    classlistit->basename, classlistit->basename,
-			    classlistit->basename
-		    );
-		}
-		else
-		{
-		    fprintf(out,
-			    "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
-			    "#define %s_STORE_CLASSPTR 1\n",
-			    classlistit->basename, classlistit->classptr_var,
-			    classlistit->basename
-		    );
-		}
-	    }
-	}
+        );
+    if (cfg->options & OPTION_DUPPERID)
+        fprintf(out,
+                "#ifndef GM_GETID\n"
+                "#define GM_GETID ((IPTR)FindTask(NULL))\n"
+                "#endif\n"
+                "struct __GM_AVLNode {\n"
+                "    struct AVLNode node;\n"
+                "    struct Library *lh;\n"
+                "    IPTR libid;\n"
+                "    ULONG dupopencount;\n"
+                "};\n"
+                "struct __GM_BaseAVL {\n"
+                "    LIBBASETYPE base;\n"
+                "    struct __GM_AVLNode avlnode;\n"
+                "};\n"
+                "static AROS_UFH2(LONG, __GM_CompKey,\n"
+                "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode, A0),\n"
+                "    AROS_UFHA(IPTR, libid, A1)\n"
+                ")\n"
+                "{\n"
+                "    AROS_USERFUNC_INIT\n"
+                "\n"
+                "    if (gm_avlnode->libid == libid)\n"
+                "        return (LONG)0;\n"
+                "    else if (gm_avlnode->libid < libid)\n"
+                "        return (LONG)-1;\n"
+                "    else\n"
+                "        return (LONG)1;\n"
+                "\n"
+                "    AROS_USERFUNC_EXIT\n"
+                "}\n"
+                "static AROS_UFH2(LONG, __GM_CompNode,\n"
+                "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode1, A0),\n"
+                "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode2, A1)\n"
+                ")\n"
+                "{\n"
+                "    AROS_USERFUNC_INIT\n"
+                "\n"
+                "    if (gm_avlnode1->libid == gm_avlnode2->libid)\n"
+                "        return (LONG)0;\n"
+                "    else if (gm_avlnode1->libid < gm_avlnode2->libid)\n"
+                "        return (LONG)-1;\n"
+                "    else\n"
+                "        return (LONG)1;\n"
+                "\n"
+                "    AROS_USERFUNC_EXIT\n"
+                "}\n"
+                "#define LIBBASESIZE sizeof(struct __GM_BaseAVL)\n"
+                "struct AVLNode *__GM_AVLRoot = NULL;\n"
+        );
+    else
+        fprintf(out, "#define LIBBASESIZE sizeof(LIBBASETYPE)\n");
+    
+    for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
+    {
+        /* For the main class basename is the same a the module basename */
+        if (strcmp(classlistit->basename, cfg->basename) == 0)
+        {
+            if (classlistit->classptr_var == NULL)
+            {
+                fprintf(out,
+                        "#if !defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
+                        "static APTR GM_UNIQUENAME(%sClass);\n"
+                        "#define GM_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+                        "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+                        "#define %s_STORE_CLASSPTR 1\n"
+                        "#elif defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
+                        "#define %s_CLASSPTR_FIELD(lh) (GM_CLASSPTR_FIELD(lh))\n"
+                        "#elif !defined(GM_CLASSPTR_FIELD) && defined(%s_CLASSPTR_FIELD)\n"
+                        "#define GM_CLASSPTR_FIELD(lh) (%s_CLASSPTR_FIELD(lh))\n"
+                        "#endif\n",
+                        classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename, classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename
+                );
+            }
+            else
+            {
+                fprintf(out,
+                        "#define GM_CLASSPTR_FIELD(lh) (%s)\n"
+                        "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
+                        "#define %s_STORE_CLASSPTR 1\n",
+                        classlistit->classptr_var,
+                        classlistit->basename, classlistit->classptr_var,
+                        classlistit->basename
+		);
+            }
+        }
+        else
+        {
+            if (classlistit->classptr_var == NULL)
+            {
+                fprintf(out,
+                        "#if !defined(%s_CLASSPTR_FIELD)\n"
+                        "static APTR GM_UNIQUENAME(%sClass);\n"
+                        "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+                        "#define %s_STORE_CLASSPTR 1\n"
+                        "#endif\n",
+                        classlistit->basename,
+                        classlistit->basename,
+                        classlistit->basename, classlistit->basename,
+                        classlistit->basename
+		);
+            }
+            else
+            {
+                fprintf(out,
+                        "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
+                        "#define %s_STORE_CLASSPTR 1\n",
+                        classlistit->basename, classlistit->classptr_var,
+                        classlistit->basename
+                );
+            }
+        }
     }
     
     /* Write out the defines for the functions of the function table */
@@ -317,6 +370,13 @@ static void writeresident(FILE *out, struct config *cfg)
 		"do {\\\n"
 		"    UWORD negsize, possize;\\\n"
 		"    UBYTE *negptr = (UBYTE *)lh;\\\n"
+        );
+        if (cfg->options & OPTION_DUPPERID)
+            fprintf(out,
+                    "    struct __GM_AVLNode *avlnode = &((struct __GM_BaseAVL *)lh)->avlnode;\\\n"
+                    "    AVL_RemNodeByAddress(&__GM_AVLRoot, (struct AVLNode *)avlnode);\\\n"
+            );
+        fprintf(out,
 		"    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
 		"    negptr -= negsize;\\\n"
 		"    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
@@ -395,7 +455,7 @@ static void writeresident(FILE *out, struct config *cfg)
 		"}\n"
 		"const GM_UNIQUENAME(InitTable) =\n"
 		"{\n"
-		"    sizeof(LIBBASETYPE),\n"
+		"    LIBBASESIZE,\n"
 		"    &GM_UNIQUENAME(FuncTable)[0],\n"
 		"    NULL,\n"
 		"    (APTR)GM_UNIQUENAME(InitLib)\n"
@@ -518,7 +578,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     {
 	fprintf(out,
 		"\n"
-		"        FreeMem(mem, vecsize+sizeof(LIBBASETYPE));\n"
+		"        FreeMem(mem, vecsize+LIBBASESIZE);\n"
 	);
     }
     fprintf(out,
@@ -618,12 +678,28 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "\n"
 	    );
 	}
-	else
+	else /* OPTION_DUPBASE */
 	{
 	    fprintf(out,
-		    "        struct Library *newlib;\n"
-		    "        UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
+		    "    struct Library *newlib = NULL;\n"
+		    "    UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
+            );
+            if (cfg->options & OPTION_DUPPERID)
+                fprintf(out,
+                        "    IPTR libid = GM_GETID;\n"
+                        "    struct __GM_AVLNode *avlnode;\n"
+                        "\n"
+                        "    avlnode = (struct __GM_AVLNode *)AVL_FindNode(__GM_AVLRoot, (AVLKey)libid, (AVLKEYCOMP)__GM_CompKey);\n"
+                        "    if (avlnode != NULL)\n"
+                        "    {\n"
+                        "         newlib = avlnode->lh;\n"
+                        "         avlnode->dupopencount++;\n"
+                        "    }\n"
+                );
+            fprintf(out,
 		    "\n"
+                    "    if (newlib == NULL)\n"
+                    "    {\n"
 		    "        newlib = MakeLibrary(GM_UNIQUENAME(InitTable).FuncTable,\n"
 		    "                             GM_UNIQUENAME(InitTable).DataTable,\n"
 		    "                             NULL,\n"
@@ -631,9 +707,20 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "                             (BPTR)NULL\n"
 		    "        );\n"
 		    "        if (newlib == NULL)\n"
-		    "            return 0;\n"
+		    "            return NULL;\n"
 		    "\n"
 		    "        CopyMem(lh, newlib, possize);\n"
+            );
+            if (cfg->options & OPTION_DUPPERID)
+                fprintf(out,
+                        "        avlnode = &((struct __GM_BaseAVL *)newlib)->avlnode;\n"
+                        "        avlnode->lh = newlib;\n"
+                        "        avlnode->libid = libid;\n"
+                        "        avlnode->dupopencount = 1;\n"
+                        "        AVL_AddNode((struct AVLNode **)&__GM_AVLRoot, (struct AVLNode *)avlnode, (AVLNODECOMP)__GM_CompNode);\n"
+                );
+            fprintf(out,
+                    "    }\n"
 		    "\n"
 		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib) )\n"
 		    "    {\n"
@@ -695,11 +782,21 @@ static void writecloselib(FILE *out, struct config *cfg)
     else
     {
 	fprintf(out,
+		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
 		"    if (lh != GM_ROOTBASE_FIELD(lh))\n"
 		"    {\n"
 		"        LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
-		"        set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
-		"        __freebase(lh);\n"
+        );
+        if (cfg->options & OPTION_DUPPERID)
+            fprintf(out,
+                    "        struct __GM_AVLNode *avlnode = &((struct __GM_BaseAVL *)lh)->avlnode;\n"
+                    "        avlnode->dupopencount--;\n"
+                    "        if (avlnode->dupopencount == 0)\n"
+                    "            __freebase(lh);\n"
+            );
+        else
+            fprintf(out, "        __freebase(lh);\n");
+        fprintf(out,
 		"        lh = rootbase;\n"
 		"    }\n"
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
