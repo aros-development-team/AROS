@@ -200,7 +200,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 			unmark_all(p,FALSE), inv_curs(p,TRUE);
 		else
 			/* Copy the previous search string */
-			CopyMem(SearchStr, GetSI(search)->Buffer, GetSI(search)->BufferPos = SLen);
+			CopyMem(SearchStr, GetSI(search)->Buffer, (GetSI(search)->BufferPos = SLen) + 1);
 
 		/** `Replace' string gadget **/
 		if( replace )
@@ -215,7 +215,7 @@ BYTE setup_winsearch(Project p, UBYTE replace)
 				CreateGadgetA(STRING_KIND, sg, &NG, (ULONG)(SGadTags+2));
 #endif
 			/* Copy last replace string */
-			CopyMem(ReplaceStr, GetSI(rep)->Buffer, GetSI(rep)->BufferPos = RLen);
+			CopyMem(ReplaceStr, GetSI(rep)->Buffer, (GetSI(rep)->BufferPos = RLen) + 1);
 		}
 
 		/** Check box gadgets **/
