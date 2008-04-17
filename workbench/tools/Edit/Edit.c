@@ -21,7 +21,7 @@ LONG copy_mark_to_buf(Project p, UBYTE *Buf, LONG Max)
 	LINE *ln; long s,e, nbc;
 	ln = (p->ccp.yc < p->ccp.yp ? p->ccp.cline : p->ccp.line);
 
-	for(nbc=0; Max && ln->flags; ln=ln->next)
+	for(nbc=0; Max && ln && ln->flags; ln=ln->next)
 	{
 		s = (ln->flags & FIRSTSEL ? find_nbc(ln, p->ccp.startsel) : 0);
 		e = (ln->flags & LASTSEL  ? find_nbc(ln, p->ccp.endsel)   : ln->size);
