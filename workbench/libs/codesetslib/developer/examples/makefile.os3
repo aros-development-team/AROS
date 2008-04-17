@@ -101,11 +101,13 @@ $(BINDIR)/DetectCodeset: $(OBJDIR)/DetectCodeset.o
 	@printf '\033[32mLinking \033[1m$@\033[0m\n'
 	@$(CC) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
-$(BINDIR)/demo1: demo1.c
+$(BINDIR)/demo1: demo1.c vastubs.c
 	@printf '\033[32mCompiling demo1.c\033[0m\n'
 	@$(CC) $(CFLAGS) demo1.c -o $(OBJDIR)/demo1.o -DNO_INLINE_STDARG
+	@printf '\033[32mCompiling vastubs.c\033[0m\n'
+	@$(CC) $(CFLAGS) vastubs.c -o $(OBJDIR)/vastubs.o -DNO_INLINE_STDARG
 	@printf '\033[32mLinking \033[1m$@\033[0m\n'
-	@$(CC) $(LDFLAGS) -o $@.debug $(OBJDIR)/demo1.o $(LDLIBS) -lmui
+	@$(CC) $(LDFLAGS) -o $@.debug $(OBJDIR)/demo1.o $(OBJDIR)/vastubs.o $(LDLIBS) -lmui
 	@$(STRIP) -o $@ $@.debug
 
 #

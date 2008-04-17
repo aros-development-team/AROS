@@ -5,6 +5,11 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2008-04-15  Thore Böckelmann <tboeckel@gmx.de>
+
+  * developer/examples/vastubs.c, developer/examples/makefile.os3: added
+    vararg stubs for OS3 to be able to link against clib2.
+
 2007-12-26  Ilkka Lehtoranta <ilkleht@isoveli.org>
 
   * src/init.c: the system default charset is now identified by using
