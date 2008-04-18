@@ -70,7 +70,7 @@ $(COPYTOAFS) : $(AROS_SRC)/tools/copytoafs/copytoafs.c
 
 $(ILBMTOC) : $(AROS_SRC)/tools/ilbmtoc/ilbmtoc.c
 	@$(ECHO) Building ilbmtoc...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoc TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/ilbmtoc AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(ILBMTOICON) : $(AROS_SRC)/tools/ilbmtoicon/ilbmtoicon.c
 	@$(ECHO) Building ilbmtoicon...
