@@ -1,4 +1,4 @@
-include $(TOP)/config/make.cfg
+include $(AROS_SRC)/config/make.cfg
 
 SILENT := yes
 
@@ -18,8 +18,12 @@ FILES := \
 	volumes \
 	validator
 
-AFSSRCDIR := $(TOP)/workbench/devs/afs
-OBJDIR := $(GENDIR)/tools/host_afs
+AFSSRCDIR := $(AROS_SRC)/workbench/devs/afs
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/tools/host_afs
+else
+OBJDIR := ./tools/host_afs
+endif
 OBJS   := $(patsubst %, $(OBJDIR)/%.o, $(FILES))
 DEPS   := $(patsubst %, $(OBJDIR)/%.d, $(FILES))
 
