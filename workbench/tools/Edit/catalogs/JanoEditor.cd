@@ -60,13 +60,13 @@ MSG_MARK (//)
 Mark
 ;
 MSG_MARKCOLUMN (//)
-Mark columnar
+Mark column
 ;
 MSG_SELECTALL (//)
 Select all
 ;
 MSG_DELLINE (//)
-Del line
+Delete line
 ;
 MSG_SUBTOOLS (//)
 Tools
@@ -119,7 +119,7 @@ MSG_NEXTREPLACE (//)
 Replace
 ;
 MSG_PREVPAGE (//)
-Prev page
+Previous page
 ;
 MSG_NEXTPAGE (//)
 Next page
@@ -168,16 +168,16 @@ MSG_FONTS (//)
 Fonts...
 ;
 MSG_PREFS (//)
-General prefs...
+General preferences...
 ;
 MSG_LOADPREFS (//)
-Load prefs...
+Load preferences..
 ;
 MSG_SAVEPREFS (//)
-Save prefs
+Save preferences
 ;
 MSG_SAVEPREFSAS (//)
-Save prefs as...
+Save preferences as...
 ;
 ;
 ;
@@ -217,7 +217,7 @@ ERR_WRONG_TYPE (//)
 Object is a directory!
 ;
 ERR_READCLIP (//)
-Read operation incomplete due to probably a lack of memory
+Read operation incomplete
 ;
 ERR_NOBRACKET (//)
 No parenthesis under cursor!
@@ -250,10 +250,10 @@ ERR_OC (//)
 Yes|No!
 ;
 WARN_RECORD (//)
-Start recording macro
+Start recording macro
 ;
 WARN_RECORDED (//)
-Macro recorded
+Macro recorded
 ;
 WARN_REC (//)
 [REC]
@@ -326,7 +326,7 @@ MSG_CANCELSEARCH (//)
 _Cancel
 ;
 MSG_REPLACEALL (//)
-%ld %s of `%s' replaced
+%ld %s of `%s' replaced
 ;
 MSG_OCCURENCY (//)
 occurency
