@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2008, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -25,11 +25,16 @@
 #include <aros/debug.h>
 
 /* the following should go in a single include file which then only
-** constits of the public constants and members. Actually this is easiey
+** constits of the public constants and members. Actually this is easy
 */
 
+#define TEST_ICONLIST
+
 #include <libraries/mui.h>
-#include "../../workbench/libs/muimaster/classes/iconlist_attributes.h"
+#if TEST_ICONLIST
+#include "../../workbench/system/Wanderer/Classes/iconlist_attributes.h"
+#include "../../workbench/system/Wanderer/Classes/iconlist.h"
+#endif
 
 struct Library *MUIMasterBase;
 struct Library *ColorWheelBase;
@@ -212,6 +217,7 @@ AROS_UFH0(void, add_child_function)
     AROS_USERFUNC_EXIT
 }
 
+#if TEST_ICONLIST
 /* IconList callbacks */
 void volume_doubleclicked(void)
 {
@@ -233,6 +239,7 @@ void drawer_doubleclicked(void)
     if ((int)ent == MUIV_IconList_NextSelected_End) return;
     set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
 }
+#endif
 
 static IPTR create_balance_column(void)
 {
@@ -529,12 +536,13 @@ int main(void)
 		            Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
 	                    End,
 		        End,
+#if TEST_ICONLIST
 		    /* iconlist */
 	            Child, HGroup,
 	            	Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
 	            	Child, drawer_iconlist = MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
 	            	End,
-
+#endif
 	Child,HGroup,
 
 	Child, create_balance_column(),
@@ -635,9 +643,11 @@ Child, BalanceObject, End,
 	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 
+#if TEST_ICONLIST
         /* iconlist */
         DoMethod(volume_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, volume_iconlist, 3, MUIM_CallHook, &hook_standard, volume_doubleclicked);
         DoMethod(drawer_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard, drawer_doubleclicked);
+#endif
 
 	set(wnd,MUIA_Window_Open,TRUE);
 	set(wnd,MUIA_Window_ScreenTitle, "Zune Test application");
