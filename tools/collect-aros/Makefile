@@ -4,7 +4,7 @@
 # Makefile to build collect-aros.
 
 USER_CFLAGS := -Wall -Wunused -O2
--include $(TOP)/config/make.cfg
+-include $(AROS_SRC)/config/make.cfg
 
 HOST_CC	     ?= $(CC)
 HOST_STRIP   ?= strip
