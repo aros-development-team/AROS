@@ -44,7 +44,14 @@ fi
 AC_MSG_RESULT($target)
 
 #don't know where else to put this...
-TOPDIR=$PWD
+AC_MSG_CHECKING([Building AROS in .. ])
+AROS_BUILDDIR=$PWD
+AC_MSG_RESULT($AROS_BUILDDIR)
+
+AC_MSG_CHECKING([AROS Source in .. ])
+srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+AROS_SRCDIR=${srcpwd}
+AC_MSG_RESULT($AROS_SRCDIR)
 
 # Parse the target field into something useful.
 changequote(<<,>>)
@@ -1452,7 +1459,8 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
-AC_SUBST(TOPDIR)
+AC_SUBST(AROS_BUILDDIR)
+AC_SUBST(AROS_SRCDIR)
 
 # Host related
 AC_SUBST(aros_cc_pre)
