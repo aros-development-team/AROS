@@ -1,7 +1,7 @@
 # Copyright © 2003, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(AROS_SRC)/config/make.cfg
 
 USER_CFLAGS := -Wall -Wstrict-prototypes '-DVERSION="1.37"' -g -O2
 

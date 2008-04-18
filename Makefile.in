@@ -82,11 +82,11 @@ $(COLLECT-AROS) : $(wildcard $(AROS_SRC)/tools/collect-aros/*.[hc])
 
 $(FD2INLINE) : $(AROS_SRC)/tools/fd2inline/fd2inline.c
 	@$(ECHO) Building fd2inline...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2inline TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2inline AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(FD2PRAGMA) : $(AROS_SRC)/tools/fd2pragma/fd2pragma.c
 	@$(ECHO) Building fd2pragma...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2pragma AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(SFDC) : $(AROS_SRC)/tools/sfdc/*.pl 
 	@$(ECHO) Building sfdc...
