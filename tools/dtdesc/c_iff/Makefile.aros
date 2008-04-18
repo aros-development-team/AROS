@@ -3,13 +3,13 @@
 #
 #   Makefile for c_iff
 
--include $(TOP)/config/make.cfg
+-include $(AROS_SRC)/config/make.cfg
 
 .SUFFIXES:
 .SUFFIXES: .c .o
 
 # These are the compatibility variables. They will only be defined
-# if including $(TOP)/config/make.cfg fails (since they will then
+# if including $(AROS_SRC)/config/make.cfg fails (since they will then
 # be undefined.
 
 HOST_CC	    ?= $(CC)
@@ -18,7 +18,11 @@ MKDIR	    ?= mkdir
 HOST_CFLAGS ?= -Wall -g -O
 INCL	    := -I. -I c_iff
 TOOLDIR	    ?= .
-OBJDIR	    ?= $(TOOLDIR)/obj
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+else
+OBJDIR := $(TOOLDIR)/obj
+endif
 
 RM	    ?= rm -f
 AR	    ?= ar rv
