@@ -1,4 +1,4 @@
-include $(TOP)/config/make.cfg
+include $(AROS_SRC)/config/make.cfg
 
 SILENT := yes
 
@@ -6,8 +6,12 @@ DEBUG_OPTS := -g -DDEBUG=0
 
 FILES := copytoafs
 
-AFSSRCDIR := $(TOP)/workbench/devs/afs
-OBJDIR := $(GENDIR)/tools/host_copytoafs
+AFSSRCDIR := $(AROS_SRC)/workbench/devs/afs
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/tools/host_copytoafs
+else
+OBJDIR := ./tools/host_copytoafs
+endif
 OBJS   := $(patsubst %, $(OBJDIR)/%.o, $(FILES))
 DEPS   := $(patsubst %, $(OBJDIR)/%.d, $(FILES))
 
