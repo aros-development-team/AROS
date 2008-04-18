@@ -50,7 +50,7 @@ $(GENMF) : $(AROS_SRC)/tools/genmf/genmf.py
 
 $(ARCHTOOL) : $(AROS_SRC)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/archtools AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(FLEXCAT) : $(AROS_SRC)/tools/FlexCat/flexcat.c
 	@$(ECHO) Building flexcat...
