@@ -16,7 +16,6 @@ USER_LIBS   := amiga rom m mui
 ##MM     workbench-classes-zune-frameadjust \
 ##MM     workbench-classes-zune-framedisplay \
 ##MM     workbench-classes-zune-gauge \
-#MM     workbench-classes-zune-iconlistview \
 ##MM     workbench-classes-zune-imageadjust \
 ##MM     workbench-classes-zune-imagedisplay \
 ##MM     workbench-classes-zune-penadjust \
@@ -51,7 +50,6 @@ USER_LIBS   := amiga rom m mui
 #MM     workbench-classes-zune-frameadjust-clean \
 #MM     workbench-classes-zune-framedisplay-clean \
 #MM     workbench-classes-zune-gauge-clean \
-#MM     workbench-classes-zune-iconlistview-clean \
 #MM     workbench-classes-zune-imageadjust-clean \
 #MM     workbench-classes-zune-imagedisplay-clean \
 #MM     workbench-classes-zune-penadjust-clean \
@@ -140,14 +138,6 @@ USER_LIBS   := amiga rom m mui
     cflags="$(CFLAGS) -DZUNE_BUILTIN_GAUGE=0" \
     uselibs=$(USER_LIBS)
     
-#MM workbench-classes-zune-iconlistview : includes
-%build_module \
-    mmake=workbench-classes-zune-iconlistview \
-    modname=IconListview modtype=mui files=iconlistview \
-    conffile=iconlistview.conf \
-    cflags="$(CFLAGS) -DZUNE_BUILTIN_ICONLISTVIEW=0" \
-    uselibs=$(USER_LIBS)
-
 #MM workbench-classes-zune-imageadjust : includes
 %build_module \
     mmake=workbench-classes-zune-imageadjust \

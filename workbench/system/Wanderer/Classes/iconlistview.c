@@ -1,12 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
-    $Id$
+Copyright © 2002-2008, The AROS Development Team. 
+$Id$
 */
 
-//#define MYDEBUG
-#include "debug.h"
+#include <aros/debug.h>
 
 #include <exec/memory.h>
 #include <intuition/icclass.h>
@@ -17,9 +14,11 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
-#include "mui.h"
-#include "muimaster_intern.h"
-#include "support.h"
+#include <libraries/mui.h>
+//#include "muimaster_intern.h"
+//#include "support.h"
+#include "iconlist.h"
+#include "iconlistview.h"
 #include "iconlistview_private.h"
 
 extern struct Library *MUIMasterBase;
@@ -184,7 +183,7 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *iconlist = (Object*)GetTagData(MUIA_IconListview_IconList, NULL, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
 
-    struct Hook *layout_hook = mui_alloc_struct(struct Hook);
+    struct Hook *layout_hook = AllocVec(sizeof(struct Hook), MEMF_CLEAR);
     int usewinborder;
 
     if (!layout_hook) 
@@ -226,7 +225,7 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (!obj)
     {
-        mui_free(layout_hook);
+        FreeVec(layout_hook);
         return NULL;
     }
 
@@ -260,7 +259,7 @@ IPTR IconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct IconListview_DATA *data = INST_DATA(cl, obj);
 
-    mui_free(data->layout_hook);
+    FreeVec(data->layout_hook);
 
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -312,7 +311,7 @@ IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *m
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-#if ZUNE_BUILTIN_ICONLISTVIEW
+#if WANDERER_BUILTIN_ICONLISTVIEW
 BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

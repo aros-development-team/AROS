@@ -468,14 +468,6 @@ struct MUI_RGBcolor
 #include "classes/radio.h"
 #endif
 
-#ifndef _MUI_CLASSES_ICONLIST_H
-#include "classes/iconlist.h"
-#endif
-
-#ifndef _MUI_CLASSES_ICONLISTVIEW_H
-#include "classes/iconlistview.h"
-#endif
-
 #ifndef _MUI_CLASSES_BALANCE_H
 #include "classes/balance.h"
 #endif

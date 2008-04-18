@@ -13,6 +13,8 @@
 #include <proto/cybergraphics.h>
 #include <proto/layers.h>
 
+#include <stdio.h>
+
 #include "muimaster_intern.h"
 #include "datatypescache.h"
 #include "mui.h"

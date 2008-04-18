@@ -41,7 +41,8 @@
 #include "iconwindow.h"
 #include "iconwindowcontents.h"
 #include "iconwindowbackfill.h"
-#include "../../libs/muimaster/classes/iconlist_attributes.h"
+#include "Classes/iconlistview.h"
+#include "Classes/iconlist_attributes.h"
 
 #include <prefs/wanderer.h>
 

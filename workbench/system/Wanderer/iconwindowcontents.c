@@ -34,8 +34,8 @@
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
 
-#include "../../libs/muimaster/classes/iconlist.h"
-#include "../../libs/muimaster/classes/iconlist_attributes.h"
+#include "Classes/iconlist.h"
+#include "Classes/iconlist_attributes.h"
 
 #include "wanderer.h"
 #include "wandererprefs.h"

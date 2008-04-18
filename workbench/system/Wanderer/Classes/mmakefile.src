@@ -1,0 +1,46 @@
+# Copyright © 2008, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 27446 2007-12-13 18:17:25Z nicja $
+
+include $(TOP)/config/make.cfg
+
+USER_LIBS   := amiga rom m mui
+
+#MM-  workbench-system-wanderer-classes : \
+#MM  wanderer-classes-iconlist \
+#MM  wanderer-classes-icondrawerlist \
+#MM  wanderer-classes-iconvolumelist \
+#MM  wanderer-classes-iconlistview
+
+#MM wanderer-classes-iconlist : includes workbench-libs-muimaster
+#MM wanderer-classes-icondrawerlist : includes workbench-libs-muimaster
+#MM wanderer-classes-iconvolumelist : includes workbench-libs-muimaster
+#MM wanderer-classes-iconlistview : includes workbench-libs-muimaster
+
+%build_module \
+    mmake=wanderer-classes-iconlist \
+    modname=IconList modtype=mui files=iconlist \
+    conffile=iconlist.conf \
+    cflags="$(CFLAGS)" \
+    uselibs=$(USER_LIBS)
+
+%build_module \
+    mmake=wanderer-classes-icondrawerlist \
+    modname=IconDrawerList modtype=mui files=icondrawerlist \
+    conffile=icondrawerlist.conf \
+    cflags="$(CFLAGS)" \
+    uselibs=$(USER_LIBS)
+
+%build_module \
+    mmake=wanderer-classes-iconvolumelist \
+    modname=IconVolumeList modtype=mui files=iconvolumelist \
+    conffile=iconvolumelist.conf \
+    cflags="$(CFLAGS)" \
+    uselibs=$(USER_LIBS)
+
+%build_module \
+    mmake=wanderer-classes-iconlistview \
+    modname=IconListview modtype=mui files=iconlistview \
+    conffile=iconlistview.conf \
+    cflags="$(CFLAGS)" \
+    uselibs=$(USER_LIBS)
+
