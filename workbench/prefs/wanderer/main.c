@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2008, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -10,6 +10,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
