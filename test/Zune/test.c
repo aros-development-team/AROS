@@ -31,7 +31,7 @@
 #define TEST_ICONLIST
 
 #include <libraries/mui.h>
-#if TEST_ICONLIST
+#if defined(TEST_ICONLIST)
 #include "../../workbench/system/Wanderer/Classes/iconlist_attributes.h"
 #include "../../workbench/system/Wanderer/Classes/iconlist.h"
 #endif
@@ -217,7 +217,7 @@ AROS_UFH0(void, add_child_function)
     AROS_USERFUNC_EXIT
 }
 
-#if TEST_ICONLIST
+#if defined(TEST_ICONLIST)
 /* IconList callbacks */
 void volume_doubleclicked(void)
 {
@@ -536,7 +536,7 @@ int main(void)
 		            Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
 	                    End,
 		        End,
-#if TEST_ICONLIST
+#if defined(TEST_ICONLIST)
 		    /* iconlist */
 	            Child, HGroup,
 	            	Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
@@ -643,7 +643,7 @@ Child, BalanceObject, End,
 	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 
-#if TEST_ICONLIST
+#if defined(TEST_ICONLIST)
         /* iconlist */
         DoMethod(volume_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, volume_iconlist, 3, MUIM_CallHook, &hook_standard, volume_doubleclicked);
         DoMethod(drawer_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard, drawer_doubleclicked);
