@@ -4,6 +4,11 @@ AM_INIT_AUTOMAKE(MetaMake,0.6)
 AC_REVISION($Revision$)dnl
 AC_PREREQ(2.12)
 
+#don't know where else to put this...
+AC_MSG_CHECKING([Building MetaMake in .. ])
+METAMAKE_BUILDDIR=$PWD
+AC_MSG_RESULT($METAMAKE_BUILDDIR)
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
