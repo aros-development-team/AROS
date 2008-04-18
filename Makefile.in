@@ -90,7 +90,7 @@ $(FD2PRAGMA) : $(AROS_SRC)/tools/fd2pragma/fd2pragma.c
 
 $(SFDC) : $(AROS_SRC)/tools/sfdc/*.pl 
 	@$(ECHO) Building sfdc...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/sfdc AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
