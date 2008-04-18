@@ -8,7 +8,7 @@ SRC	= error filesup hash lineparser mystream \
 
 # Include the AROS build information. This will fail if $(TOP) is not
 # set, and build in the current directory.
--include $(TOP)/config/make.cfg
+-include $(AROS_SRC)/config/make.cfg
 
 # Values relating to stuff.
 PURIFY	= /home/digulla/AROS/compiler/purify/purify
@@ -17,12 +17,17 @@ PURIFY	= /home/digulla/AROS/compiler/purify/purify
 HOST_CC	?= $(CC)
 HOST_AR ?= $(AR) cru 
 TOOLDIR ?= .
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+else
+OBJDIR := $(TOOLDIR)/obj
+endif
 MKDIR ?= mkdir
 MECHO ?= echo
 TOOLLIB ?= $(TOOLDIR)/libtool.a
 HOST_CFLAGS := $(HOST_CFLAGS) -Wall -g -DHAVE_VSNPRINTF -I.. -O
 
-OBJDIR := $(TOOLDIR)/obj
+
 DEPS   := $(foreach f,$(SRC),$(OBJDIR)/$(f).d)
 
 all : depend $(OBJDIR) $(TOOLLIB)
