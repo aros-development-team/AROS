@@ -8,7 +8,6 @@ MAKE_BUILTIN_BALANCE       := no
 MAKE_BUILTIN_BOOPSI        := no
 MAKE_BUILTIN_COLORADJUST   := no
 MAKE_BUILTIN_COLORFIELD    := no
-MAKE_BUILTIN_ICONLISTVIEW  := no
 MAKE_BUILTIN_POPASL        := no
 MAKE_BUILTIN_POPFRAME      := no
 MAKE_BUILTIN_POPIMAGE      := no
@@ -23,7 +22,6 @@ MAKE_BUILTIN_BALANCE       := yes
 MAKE_BUILTIN_BOOPSI        := yes
 MAKE_BUILTIN_COLORADJUST   := yes
 MAKE_BUILTIN_COLORFIELD    := yes
-MAKE_BUILTIN_ICONLISTVIEW  := yes
 MAKE_BUILTIN_POPASL        := yes
 MAKE_BUILTIN_POPFRAME      := yes
 MAKE_BUILTIN_POPIMAGE      := yes
@@ -64,7 +62,6 @@ CLASSES := \
     dataspace \
     family \
     group \
-    iconlist \
     image \
     list \
     listview \
@@ -194,14 +191,6 @@ ifeq ($(MAKE_BUILTIN_GAUGE),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) gauge
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=0
-endif
-
-ifeq ($(MAKE_BUILTIN_ICONLISTVIEW),yes)
-    CLASSES     := $(CLASSES) iconlistview
-    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ICONLISTVIEW=1
-else
-    EXTCLASSES  := $(EXTCLASSES) iconlistview
-    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_ICONLISTVIEW=0
 endif
 
 ifeq ($(MAKE_BUILTIN_IMAGEADJUST),yes)

@@ -41,8 +41,8 @@
 #include "wandererprefsintern.h"
 #include "filesystems.h"
 #include "wanderer.h"
-#include "../../libs/muimaster/classes/iconlist.h"
-#include "../../libs/muimaster/classes/iconlist_attributes.h"
+#include "Classes/iconlist.h"
+#include "Classes/iconlist_attributes.h"
 #include "locale.h"
 
 #include "version.h"

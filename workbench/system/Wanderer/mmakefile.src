@@ -1,4 +1,4 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2008, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -6,12 +6,15 @@ include $(TOP)/config/make.cfg
 FILES := main locale support filesystems wanderer wandererprefs iconwindow iconwindowcontents iconwindowbackfill wandererprefsinternal
 
 #MM- workbench-system : workbench-system-wanderer
-#MM  workbench-system-wanderer : \
+#MM- workbench-system-wanderer : \
+#MM  workbench-libs-muimaster \
+#MM  workbench-system-wanderer-app \
+#MM  workbench-system-wanderer-classes \
 #MM  workbench-system-wanderer-catalogs \
 #MM  workbench-system-wanderer-icons \
 #MM  workbench-system-wanderer-tools
 
-%build_prog mmake=workbench-system-wanderer \
+%build_prog mmake=workbench-system-wanderer-app \
     progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
     uselibs="mui arossupport amiga rom m" detach=yes
 

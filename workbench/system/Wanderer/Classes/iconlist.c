@@ -3,8 +3,7 @@ Copyright  2002-2007, The AROS Development Team. All rights reserved.
 $Id$
 */
 
-//#define MYDEBUG
-#include "debug.h"
+#include <aros/debug.h>
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -57,12 +56,18 @@ $Id$
 
 #include <cybergraphx/cybergraphics.h>
 
-#include "mui.h"
-#include "muimaster_intern.h"
-#include "support.h"
-#include "imspec.h"
+#include <libraries/mui.h>
+//#include "muimaster_intern.h"
+//#include "support.h"
+//#include "imspec.h"
 #include "iconlist_attributes.h"
 #include "iconlist.h"
+#include "iconlist_private.h"
+#include "iconlistview.h"
+
+#define _between(a,x,b) ((x)>=(a) && (x)<=(b))
+#define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
+                          && _between(_mtop(obj) ,(y),_mbottom(obj)))
 
 extern struct Library *MUIMasterBase;
 
@@ -81,100 +86,6 @@ extern struct Library *MUIMasterBase;
 
 #define ICONLIST_DRAWMODE_NORMAL                       1
 #define ICONLIST_DRAWMODE_FAST                         2
-
-struct MUI_IconData
-{
-	APTR                          icld_Pool;                          /* Pool to allocate data from */
-
-	struct RastPort               *icld_DisplayRastPort;
-	struct RastPort               *icld_BufferRastPort;
-	struct TextFont               *icld_IconLabelFont;
-	struct TextFont               *icld_IconInfoFont;
-
-	struct List                   icld_IconList;                      /* IconEntry(s)     */
-	struct List                   icld_SelectionList;                 /* Selected Icon(s) */
-	struct IconEntry              *icld_SelectionLastClicked;
-	struct IconEntry              *icld_FocusIcon;
-
-	LONG                          icld_ViewX,                         /* the leftmost/upper coordinates of the view */
-								  icld_ViewY;
-	ULONG                         icld_ViewWidth,                     /* dimensions of the view (_mwidth(obj) and _mheight(obj)) */
-								  icld_ViewHeight,
-								  icld_AreaWidth,                     /* The whole width/height */
-								  icld_AreaHeight;
-
-	/* Drag/Drop Info .. */
-
-	struct IconList_Drop          icld_DragDropEvent;                         /* the icon where the icons have been dropped */
-	struct IconList_Click         icld_ClickEvent;
-
-	/* Input / Event Information */
-	struct MUI_EventHandlerNode   ehn;
-
-	LONG                          touch_x;
-	LONG                          touch_y;
-
-	LONG                          click_x;
-	LONG                          click_y;
-
-	ULONG                         last_secs;                          /* DoubleClick stuff */
-	ULONG                         last_mics;
-
-	/* RENDERING DATA! ###### */
-	LONG                          icld_DrawOffsetX,                   /* coordinates to render to */
-								  icld_DrawOffsetY;
-	ULONG                         icld_DisplayFlags;                  /* Internal Sorting related stuff */
-	ULONG                         icld_SortFlags;
-	ULONG                         icld_IconAreaLargestWidth;          /* Used for icon/label rendering & */
-	ULONG                         icld_IconAreaLargestHeight;         /* Positioning                     */
-	ULONG                         icld_IconLargestHeight;
-	ULONG                         icld_LabelLargestHeight;
-
-	/* values for icld_UpdateMode - :
-
-	   UPDATE_SINGLEICON = draw the given single icon only
-	   UPDATE_SCROLL     = scroll the view by update_scrolldx/update_scrolldy
-	   UPDATE_RESIZE    = resizing window                                   */
-
-	ULONG                         icld_UpdateMode;
-	WORD                          update_scrolldx;
-	WORD                          update_scrolldy;
-	WORD                          update_oldwidth;
-	WORD                          update_oldheight;
-	
-	struct IconEntry              *update_icon;
-	struct Rectangle              *update_rect1;
-	struct Rectangle              *update_rect2;
-	struct Rectangle              view_rect;
-	
-	struct Rectangle              icld_LassoRectangle;                /* lasso data */
-	BOOL                          icld_LassoActive;
-
-#warning "TODO: move config options to a seperate struct"
-	/* IconList configuration settings ... */
-	ULONG                         icld_LabelPen;		
-	ULONG                         icld_LabelShadowPen;
-	ULONG                         icld_InfoPen;
-	ULONG                         icld_InfoShadowPen;
-
-	ULONG                         icld__Option_IconTextMaxLen;                   /* max no. of chars to display in a line */
-	UBYTE                         icld__Option_IconListMode;                     /* */
-	UBYTE                         icld__Option_IconTextMode;                     /* */
-	BOOL                          icld__Option_IconListFixedBackground;          /* */
-	BOOL                          icld__Option_IconListScaledBackground;         /* */
-	ULONG                         icld__Option_LabelTextMultiLine;               /* No. of lines to display for labels*/
-	BOOL                          icld__Option_LabelTextMultiLineOnFocus;        /* Only show "multiline" label for focused icon */
-	UBYTE                         icld__Option_IconBorderOverlap;
-	UBYTE                         icld__Option_IconHorizontalSpacing;            /* Horizontal/Vert Space between Icon "Areas" */
-	UBYTE                         icld__Option_IconVerticalSpacing;
-	UBYTE                         icld__Option_IconImageSpacing;                 /* Space between Icon Image and Label Frame */
-	UBYTE                         icld__Option_LabelTextHorizontalPadding;       /* Outer padding between label text and frame */
-	UBYTE                         icld__Option_LabelTextVerticalPadding;
-	UBYTE                         icld__Option_LabelTextBorderWidth;             /* Label frame dimensions */
-	UBYTE                         icld__Option_LabelTextBorderHeight;
-	
-	UBYTE                         mouse_pressed;
-};
 
 /**************************************************************************
 
@@ -249,7 +160,7 @@ struct IconEntry *Node_LastVisible(struct List *icon_list)
 
 // get positive lasso coords
 
-static void GetAbsoluteLassoRect(struct MUI_IconData *data, struct Rectangle *LassoRectangle)
+static void GetAbsoluteLassoRect(struct IconList_DATA *data, struct Rectangle *LassoRectangle)
 {
 	WORD minx = data->icld_LassoRectangle.MinX;
 	WORD miny = data->icld_LassoRectangle.MinY;
@@ -349,7 +260,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 } 
 
 //We don't use icon.library's label drawing so we do this by hand
-static void IconList_GetIconImageRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
+static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
@@ -367,7 +278,7 @@ D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTI
 		data->icld_IconLargestHeight = icon->ile_IconHeight;
 }
 
-static void IconList_GetIconLabelRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
+static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
 	ULONG      outline_offset = 0;
 	ULONG 	   textwidth = 0;
@@ -451,7 +362,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 	if (((rect->MaxY - rect->MinY) + 1) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = ((rect->MaxY - rect->MinY) + 1);
 }
 
-static void IconList_GetIconAreaRectangle(Object *obj, struct MUI_IconData *data, struct IconEntry *icon, struct Rectangle *rect)
+static void IconList_GetIconAreaRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -496,7 +407,7 @@ Draw the icon at its position
 
 IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DrawEntry *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 	struct Rectangle iconrect;
 	struct Rectangle objrect;
@@ -585,7 +496,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 	return TRUE;
 }
 
-void IconList__LabelFunc_SplitLabel(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
+void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
 	ULONG		labelSplit_MaxLabelLineLength = data->icld__Option_IconTextMaxLen;
 	ULONG       labelSplit_LabelLength = strlen(icon->ile_IconListEntry.label);
@@ -692,7 +603,7 @@ D(bug("SPLIT: labelSplit_CurSplitLength = %d\n", labelSplit_CurSplitLength));
 //	if ((labelSplit_FontY * icon->ile_SplitParts) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = (labelSplit_FontY * icon->ile_SplitParts);
 }
 
-IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
+IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
 	if (icon->ile_TxtBuf_DisplayedLabel)
 	{
@@ -741,7 +652,7 @@ IPTR IconList__LabelFunc_CreateLabel(Object *obj, struct MUI_IconData *data, str
 
 IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DrawEntry *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 	STRPTR     			buf = NULL;
 
@@ -1039,7 +950,7 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
 **************************************************************************/
 IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj, struct MUIP_IconList_RethinkDimensions *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 	struct IconEntry  *icon = NULL;
 	LONG              maxx = 0,
@@ -1049,7 +960,8 @@ IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-	if (!(_flags(obj) & MADF_SETUP)) return FALSE;
+#warning "TODO: Handle MADF_SETUP"
+//	if (!(_flags(obj) & MADF_SETUP)) return FALSE;
 
 	if (message->singleicon != NULL)
 	{
@@ -1109,7 +1021,7 @@ suggested positions.
 atx and aty are absolute positions
 **************************************************************************/
 /*
-static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
+static int IconList_CouldPlaceIcon(Object *obj, struct IconList_DATA *data, struct IconEntry *toplace, int atx, int aty)
 {
 	struct IconEntry *icon;
 	struct Rectangle toplace_rect;
@@ -1147,7 +1059,7 @@ Place the icon at atx and aty.
 atx and aty are absolute positions
 **************************************************************************/
 /*
-static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *toplace, int atx, int aty)
+static void IconList_PlaceIcon(Object *obj, struct IconList_DATA *data, struct IconEntry *toplace, int atx, int aty)
 {
 #if 0
 	struct Rectangle toplace_rect;
@@ -1182,7 +1094,7 @@ MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
 
 IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *icon = NULL, *pass_first = NULL;
 	
 	int left = data->icld__Option_IconHorizontalSpacing;
@@ -1302,7 +1214,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 	return 0;
 }
 
-/*static void IconList_FixNoPositionIcons(Object *obj, struct MUI_IconData *data)
+/*static void IconList_FixNoPositionIcons(Object *obj, struct IconList_DATA *data)
 {
 struct IconEntry *icon;
 int cur_x = data->icld_ViewX + 36;
@@ -1353,7 +1265,7 @@ OM_NEW
 **************************************************************************/
 IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
-	struct MUI_IconData  *data = NULL;
+	struct IconList_DATA  *data = NULL;
 	struct TextFont      *icl_WindowFont = NULL;
 	struct RastPort      *icl_RastPort = NULL;
 
@@ -1413,7 +1325,7 @@ OM_DISPOSE
 **************************************************************************/
 IPTR IconList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *node = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -1435,7 +1347,7 @@ OM_SET
 **************************************************************************/
 IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct TagItem  	*tag = NULL,
 						*tags = NULL;
 
@@ -1578,7 +1490,8 @@ D(bug("[IconList] %s: MUIA_IconList_LabelText_MultiLine %d\n", __PRETTY_FUNCTION
 					{
 						IconList__LabelFunc_CreateLabel(obj, data, iconentry_Current);
 					}
-					if (!(_flags(obj) & MADF_SETUP)) DoMethod(obj, MUIM_IconList_Sort);
+#warning "TODO: Handle MADF_SETUP"
+                    //if (!(_flags(obj) & MADF_SETUP)) DoMethod(obj, MUIM_IconList_Sort);
 				}
 				break;
 			}
@@ -1708,7 +1621,7 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
 {
 	/* small macro to simplify return value storage */
 #define STORE *(message->opg_Storage)
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -1765,7 +1678,7 @@ MUIM_Setup
 **************************************************************************/
 IPTR IconList__MUIM_Setup(struct IClass *CLASS, Object *obj, struct MUIP_Setup *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *node = NULL;
 	IPTR                 geticon_error = 0;
 
@@ -1819,7 +1732,7 @@ MUIM_Show
 **************************************************************************/
 IPTR IconList__MUIM_Show(struct IClass *CLASS, Object *obj, struct MUIP_Show *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	LONG                newleft,
 						newtop;
 	IPTR                rc;
@@ -1905,7 +1818,7 @@ MUIM_Hide
 **************************************************************************/
 IPTR IconList__MUIM_Hide(struct IClass *CLASS, Object *obj, struct MUIP_Hide *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	IPTR                rc;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -1934,7 +1847,7 @@ MUIM_Cleanup
 **************************************************************************/
 IPTR IconList__MUIM_Cleanup(struct IClass *CLASS, Object *obj, struct MUIP_Cleanup *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *node = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -1980,7 +1893,7 @@ MUIM_Layout
 **************************************************************************/
 IPTR IconList__MUIM_Layout(struct IClass *CLASS, Object *obj,struct MUIP_Layout *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -1998,7 +1911,7 @@ MUIM_Draw - draw the IconList
 IPTR DrawCount;
 IPTR IconList__MUIM_Draw(struct IClass *CLASS, Object *obj, struct MUIP_Draw *message)
 {   
-	struct MUI_IconData    *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA    *data = INST_DATA(CLASS, obj);
 	struct IconEntry       *icon = NULL;
 
 	APTR                   clip;
@@ -2344,7 +2257,7 @@ Implemented by subclasses
 **************************************************************************/
 IPTR IconList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -2358,7 +2271,7 @@ MUIM_IconList_Clear
 **************************************************************************/
 IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Clear *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *node = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -2385,7 +2298,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
 IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_DestroyEntry *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -2414,7 +2327,7 @@ Returns 0 on failure otherwise it returns the icons entry ..
 **************************************************************************/
 IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
 {
-	struct MUI_IconData  *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA  *data = INST_DATA(CLASS, obj);
 	struct IconEntry     *entry = NULL;
 	struct DateTime 	 dt;
 	struct DateStamp     now;
@@ -2589,7 +2502,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
 
 static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG wheely, UWORD qual)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 	LONG    newleft = data->icld_ViewX,
 			newtop = data->icld_ViewY;
@@ -2645,7 +2558,7 @@ MUIM_HandleEvent
 **************************************************************************/
 IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_HandleEvent *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -4086,7 +3999,7 @@ MUIM_IconList_NextSelected
 **************************************************************************/
 IPTR IconList__MUIM_IconList_NextSelected(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextSelected *message)
 {
-	struct MUI_IconData    *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA    *data = INST_DATA(CLASS, obj);
 	struct IconEntry       *node = NULL;
 	struct IconList_Entry  *ent = NULL;
 	IPTR                    node_successor = NULL;
@@ -4139,7 +4052,7 @@ MUIM_CreateDragImage
 **************************************************************************/
 IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MUIP_CreateDragImage *message)
 {
-	struct MUI_IconData     *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA     *data = INST_DATA(CLASS, obj);
 	struct MUI_DragImage    *img = NULL;
 #if defined(CREATE_FULL_DRAGIMAGE)
 	LONG                    first_x = -1,
@@ -4225,7 +4138,7 @@ MUIM_DeleteDragImage
 **************************************************************************/
 IPTR IconList__MUIM_DeleteDragImage(struct IClass *CLASS, Object *obj, struct MUIP_DeleteDragImage *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -4272,7 +4185,7 @@ MUIM_DragDrop
 **************************************************************************/
 IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_DragDrop *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -4436,7 +4349,7 @@ MUIM_UnselectAll
 **************************************************************************/
 IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct Node         *node = NULL, *next_node = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -4480,7 +4393,7 @@ MUIM_SelectAll
 **************************************************************************/
 IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *node = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -4533,121 +4446,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 	return 1;
 }
 
-struct MUI_IconDrawerData
-{
-	char *drawer;
-};
-
-/**************************************************************************
-Read icons in
-**************************************************************************/
-static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
-{
-	struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
-	BPTR                      lock = NULL, tmplock = NULL;
-	char                      filename[256];
-	char                      namebuffer[512];
-	ULONG                     list_DisplayFlags = 0;
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	if (!data->drawer) return 1;
-
-	lock = Lock(data->drawer, SHARED_LOCK);
-
-	if (lock)
-	{
-		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-		if (fib)
-		{
-			if (Examine(lock, fib))
-			{
-				GET(obj, MUIA_IconList_DisplayFlags, &list_DisplayFlags);
-D(bug("[IconList] %s: DisplayFlags = 0x%p\n", __PRETTY_FUNCTION__, list_DisplayFlags));
-
-				while(ExNext(lock, fib))
-				{
-					int len = strlen(fib->fib_FileName);
-					memset(namebuffer, 0, 512);
-					strcpy(filename, fib->fib_FileName);
-
-D(bug("[IconList] %s: '%s', len = %d\n", __PRETTY_FUNCTION__, filename, len));
-
-					if (len >= 5)
-					{
-						if (!Stricmp(&filename[len-5],".info"))
-						{
-							/* Its a .info file .. skip "disk.info" and just ".info" files*/
-							if ((len == 5) || ((len == 9) && (!Strnicmp(filename, "Disk", 4))))
-							{
-D(bug("[IconList] %s: Skiping file named disk.info or just .info ('%s')\n", __PRETTY_FUNCTION__, filename));
-								continue;
-							}
-
-							strcpy(namebuffer, data->drawer);
-							memset((filename + len - 5), 0, 1); //Remove the .info section
-							AddPart(namebuffer, filename, sizeof(namebuffer));
-D(bug("[IconList] %s: Checking for .info files real file '%s'\n", __PRETTY_FUNCTION__, namebuffer));
-
-							if ((tmplock = Lock(namebuffer, SHARED_LOCK)))
-							{
-								/* We have a real file so skip it for now and let it be found seperately */
-D(bug("[IconList] %s: File found .. skipping\n", __PRETTY_FUNCTION__));
-								UnLock(tmplock); 
-								continue;
-							}
-						}
-					}
-
-D(bug("[IconList] %s: Registering file '%s'\n", __PRETTY_FUNCTION__, filename));
-					strcpy(namebuffer, data->drawer);
-					AddPart(namebuffer, filename, sizeof(namebuffer));
-
-					struct IconEntry *this_Icon = NULL;
-						
-					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL)))
-					{
-D(bug("[IconList] %s: Icon entry allocated @ 0x%p\n", __PRETTY_FUNCTION__, this_Icon));
-
-						sprintf(namebuffer + strlen(namebuffer), ".info");
-						if ((tmplock = Lock(namebuffer, SHARED_LOCK)))
-						{
-D(bug("[IconList] %s: File has a .info file .. updating info\n", __PRETTY_FUNCTION__));
-							UnLock(tmplock); 
-							if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON)) 
-								this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
-						}
-
-						if (list_DisplayFlags & ICONLIST_DISP_SHOWINFO)
-						{
-							if ((this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON) && !(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
-								this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
-						}
-						else if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
-						{
-							this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
-						}
-						this_Icon->ile_IconNode.ln_Pri = 0;
-					}
-					else
-					{
-D(bug("[IconList] %s: Failed to Register file!!!\n", __PRETTY_FUNCTION__));
-					}
-				}
-			}
-	
-			FreeDosObject(DOS_FIB, fib);
-		}
-	
-		UnLock(lock);
-	}
-
-	return 1;
-}
-
 IPTR IconList__MUIM_IconList_CoordsSort(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Sort *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 
 	struct IconEntry    *entry = NULL,
 						*test_icon = NULL;
@@ -4726,7 +4527,7 @@ MUIM_Sort - sortsort
 **************************************************************************/
 IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Sort *message)
 {
-	struct MUI_IconData *data = INST_DATA(CLASS, obj);
+	struct IconList_DATA *data = INST_DATA(CLASS, obj);
 	struct IconEntry    *entry = NULL,
 						*icon1 = NULL,
 						*icon2 = NULL;
@@ -4938,8 +4739,7 @@ D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
 	return 0;
 }
 
-/*************************************************************************/
-
+#if WANDERER_BUILTIN_ICONLIST
 BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 {
 	switch (message->MethodID)
@@ -4984,420 +4784,11 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 }
 BOOPSI_DISPATCHER_END
 
-
-/**************************************************************************
-OM_NEW
-**************************************************************************/
-IPTR IconDrawerList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
-{
-	struct MUI_IconDrawerData   *data = NULL;
-	struct TagItem  	        *tag = NULL,
-								*tags = NULL;
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	obj = (Object *)DoSuperNewTags(CLASS, obj, NULL,
-		TAG_MORE, (IPTR) message->ops_AttrList);
-
-	if (!obj) return FALSE;
-
-	data = INST_DATA(CLASS, obj);
-
-	/* parse initial taglist */
-	for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
-	{
-		switch (tag->ti_Tag)
-		{
-			case    MUIA_IconDrawerList_Drawer:
-			data->drawer = StrDup((char *)tag->ti_Data);
-			break;
-		}
-	}
-
-	return (IPTR)obj;
-}
-
-/**************************************************************************
-OM_DISPOSE
-**************************************************************************/
-IPTR IconDrawerList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
-{
-	struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-	
-	if (data->drawer)
-	{
-D(bug("[IconList] %s: Freeing DIR name storage for '%s'\n", __PRETTY_FUNCTION__, data->drawer));
-
-		FreeVec(data->drawer);
-	}
-
-	return DoSuperMethodA(CLASS, obj, message);
-}
-
-/**************************************************************************
-OM_SET
-**************************************************************************/
-IPTR IconDrawerList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
-{
-	struct MUI_IconDrawerData   *data = INST_DATA(CLASS, obj);
-	struct TagItem  	        *tag = NULL,
-								*tags = NULL;
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	/* parse initial taglist */
-	for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
-	{
-		switch (tag->ti_Tag)
-		{
-			case    MUIA_IconDrawerList_Drawer:
-				if (data->drawer) FreeVec(data->drawer);
-
-				data->drawer = StrDup((char*)tag->ti_Data);
-				DoMethod(obj, MUIM_IconList_Update);
-
-				break;
-		}
-	}
-
-	return DoSuperMethodA(CLASS, obj, (Msg)message);
-}
-
-/**************************************************************************
-OM_GET
-**************************************************************************/
-IPTR IconDrawerList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
-{
-	/* small macro to simplify return value storage */
-#define STORE *(message->opg_Storage)
-	struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	switch (message->opg_AttrID)
-	{
-		case MUIA_IconDrawerList_Drawer: STORE = (IPTR)data->drawer; return 1;
-	}
-
-	if (DoSuperMethodA(CLASS, obj, (Msg) message)) return 1;
-	return 0;
-#undef STORE
-}
-
-/**************************************************************************
-MUIM_IconList_Update
-**************************************************************************/
-IPTR IconDrawerList__MUIM_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
-{
-	struct MUI_IconDrawerData *data = INST_DATA(CLASS, obj);
-	//struct IconEntry *node;
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	DoSuperMethodA(CLASS, obj, (Msg) message);
-
-	DoMethod(obj, MUIM_IconList_Clear);
-
-	/* If not in setup do nothing */
-	if (!(_flags(obj) & MADF_SETUP)) return 1;
-
-	IconDrawerList__ParseContents(CLASS, obj);
-
-	/*_Sort takes care of icon placement and redrawing for us*/
-	DoMethod(obj, MUIM_IconList_Sort);
-
-	return 1;
-}
-
-
-BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, CLASS, obj, message)
-{
-	switch (message->MethodID)
-	{
-		case OM_NEW: return IconDrawerList__OM_NEW(CLASS, obj, (struct opSet *)message);
-		case OM_DISPOSE: return IconDrawerList__OM_DISPOSE(CLASS, obj, message);
-		case OM_SET: return IconDrawerList__OM_SET(CLASS, obj, (struct opSet *)message);
-		case OM_GET: return IconDrawerList__OM_GET(CLASS, obj, (struct opGet *)message);
-		case MUIM_IconList_Update: return IconDrawerList__MUIM_Update(CLASS, obj, (APTR)message);
-	}
-	return DoSuperMethodA(CLASS, obj, message);
-}
-BOOPSI_DISPATCHER_END
-
-/* sba: taken from SimpleFind3 */
-
-struct NewDosList
-{
-	struct List       list;
-	APTR              pool;
-};
-
-struct NewDosNode
-{
-	struct Node       node;
-	STRPTR            name;
-	struct Device     *device;
-	struct Unit       *unit;
-	struct MsgPort    *port;
-};
-
-static struct NewDosList *IconVolumeList__CreateDOSList(void)
-{
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-	APTR pool = CreatePool(MEMF_PUBLIC,4096,4096);
-	if (pool)
-	{
-		struct NewDosList *ndl = (struct NewDosList*)AllocPooled(pool, sizeof(struct NewDosList));
-		if (ndl)
-		{
-			struct DosList *dl = NULL;
-		
-			NewList((struct List*)ndl);
-			ndl->pool = pool;
-		
-			dl = LockDosList(LDF_VOLUMES|LDF_READ);
-			while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
-			{
-				STRPTR name;
-#ifndef __AROS__
-				UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
-				LONG len = dosname[0];
-				dosname++;
-#else
-				UBYTE *dosname = dl->dol_Ext.dol_AROS.dol_DevName;
-				LONG len = strlen(dosname);
-#endif
-
-				if ((name = (STRPTR)AllocPooled(pool, len + 1)))
-				{
-					struct NewDosNode *ndn = NULL;
-	
-					name[len] = 0;
-					strncpy(name, dosname, len);
-	
-					if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
-					{
-						ndn->name = name;
-						ndn->device = dl->dol_Ext.dol_AROS.dol_Device;
-						ndn->unit = dl->dol_Ext.dol_AROS.dol_Unit;
-D(bug("[IconList] %s: adding node for '%s' (Device @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, ndn->name, ndn->device, ndn->unit, dl->dol_Type));
-D(bug("[IconList] %s: Device '%s'\n", __PRETTY_FUNCTION__, ndn->device->dd_Library.lib_Node.ln_Name));
-						if (dl->dol_misc.dol_handler.dol_Startup)
-						{
-							struct FileSysStartupMsg *thisfs_SM = dl->dol_misc.dol_handler.dol_Startup;
-D(bug("[IconList] %s: Startup msg @ 0x%p\n", __PRETTY_FUNCTION__, thisfs_SM));
-D(bug("[IconList] %s: Startup Device '%s', Unit %d\n", __PRETTY_FUNCTION__, thisfs_SM->fssm_Device, thisfs_SM->fssm_Unit));
-						}
-#ifndef __AROS__
-						ndn->port = dl->dol_Task;
-#else
-						ndn->port = NULL;
-#endif
-						AddTail((struct List*)ndl, (struct Node*)ndn);
-					}
-				}
-			}
-			UnLockDosList(LDF_VOLUMES|LDF_READ);
-
-#ifndef __AROS__
-			dl = LockDosList(LDF_DEVICES|LDF_READ);
-			while(( dl = NextDosEntry(dl, LDF_DEVICES)))
-			{
-				struct NewDosNode *ndn = NULL;
-	
-				if (!dl->dol_Task) continue;
-	
-				ndn = (struct NewDosNode*)GetHead(ndl);
-				while ((ndn))
-				{
-					if (dl->dol_Task == ndn->port)
-					{
-						STRPTR name;
-						UBYTE  *dosname = (UBYTE*)BADDR(dl->dol_Name);
-						LONG   len = dosname[0];
-	
-						if ((name = (STRPTR)AllocPooled(pool, len + 1)))
-						{
-							name[len] = 0;
-							strncpy(name, &dosname[1], len);
-						}
-	
-						ndn->device = name;
-						break;
-					}
-	
-					ndn = (struct NewDosNode*)GetSucc(ndn);
-				}
-			}
-			UnLockDosList(LDF_DEVICES|LDF_READ);
-#endif
-			return ndl;
-		}
-		DeletePool(pool);
-	}
-	return NULL;
-}
-
-static void IconVolumeList__DestroyDOSList(struct NewDosList *ndl)
-{
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-	if (ndl && ndl->pool) DeletePool(ndl->pool);
-}
-/* sba: End SimpleFind3 */
-
-
-struct MUI_IconVolumeData
-{
-	int dummy;
-};
-
-/**************************************************************************
-OM_NEW
-**************************************************************************/
-IPTR IconVolumeList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
-{
-	struct MUI_IconDrawerData   *data = NULL;
-//    struct TagItem  	        *tag = NULL,
-//                                *tags = NULL;
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	obj = (Object *)DoSuperNewTags(CLASS, obj, NULL,
-		TAG_MORE, (IPTR) message->ops_AttrList);
-
-	if (!obj) return FALSE;
-
-	data = INST_DATA(CLASS, obj);
-
-	SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
-	SET(obj, MUIA_IconList_SortFlags, 0);
-
-	return (IPTR)obj;
-}
-
-/**************************************************************************
-MUIM_IconList_Update
-**************************************************************************/
-IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
-{
-	//struct MUI_IconVolumeData *data = INST_DATA(CLASS, obj);
-	struct IconEntry  *this_Icon = NULL;
-	struct NewDosList *ndl = NULL;
-
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
-	DoSuperMethodA(CLASS, obj, (Msg) message);
-	
-	DoMethod(obj, MUIM_IconList_Clear);
-
-	/* If not in setup do nothing */
-	if (!(_flags(obj) & MADF_SETUP)) return 1;
-
-	if ((ndl = IconVolumeList__CreateDOSList()))
-	{
-		struct NewDosNode *nd = NULL;
-		struct	MsgPort 			*mp=NULL;
-			
-		mp = CreateMsgPort();
-		if (mp)
-		{
-			ForeachNode(ndl, nd)
-			{
-				char buf[300];
-				if (nd->name)
-				{
-					strcpy(buf, nd->name);
-					strcat(buf, ":Disk");
-			
-					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)) == NULL)
-					{
-D(bug("[IconList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->name));
-					}
-					else
-					{
-						this_Icon->ile_IconListEntry.type == ST_ROOT;
-
-						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
-
-						if ((strcmp(nd->name, "Ram Disk")) == 0)
-						{
-D(bug("[IconList] %s: Setting Ram Disks icon node priority to 5\n", __PRETTY_FUNCTION__));
-							this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
-						}
-						else
-						{
-							this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
-
-/*							struct IOExtTD *ioreq = NULL;
-							struct DriveGeometry dg;
-
-							if (ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq)))
-							{
-								if (OpenDevice(boot_Device, boot_Unit, (struct IORequest *)ioreq, 0) == 0)
-								{
-									ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
-									ioreq->iotd_Req.io_Data = &dg;
-									ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
-									DoIO((struct IORequest *)ioreq);
-									if (dg.dg_Flags & DGF_REMOVABLE)
-									{
-										this_Icon->ile_IconNode.ln_Pri = 0;   // Removable Media get Priority 0
-									}
-									CloseDevice((struct IORequest *)ioreq);
-								}
-								DeleteIORequest((struct IORequest *)ioreq);
-							}*/
-						}
-					}
-				}
-			}
-			IconVolumeList__DestroyDOSList(ndl);
-		}
-	}
-
-	/* default display/sorting flags */
-	DoMethod(obj, MUIM_IconList_Sort);
-
-	return 1;
-}
-
-
-BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
-{
-	switch (message->MethodID)
-	{
-		case OM_NEW: return IconVolumeList__OM_NEW(CLASS, obj, (struct opSet *)message);
-		case MUIM_IconList_Update: return IconVolumeList__MUIM_IconList_Update(CLASS,obj,(APTR)message);
-	}
-
-	return DoSuperMethodA(CLASS, obj, message);
-}
-BOOPSI_DISPATCHER_END
-
-/*
-* Class descriptor.
-*/
+/* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconList_desc = { 
 	MUIC_IconList, 
 	MUIC_Area, 
-	sizeof(struct MUI_IconData), 
+	sizeof(struct IconList_DATA), 
 	(void*)IconList_Dispatcher
 };
-
-const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = { 
-	MUIC_IconDrawerList, 
-	MUIC_IconList, 
-	sizeof(struct MUI_IconDrawerData), 
-	(void*)IconDrawerList_Dispatcher 
-};
-
-const struct __MUIBuiltinClass _MUI_IconVolumeList_desc = { 
-	MUIC_IconVolumeList, 
-	MUIC_IconList, 
-	sizeof(struct MUI_IconVolumeData), 
-	(void*)IconVolumeList_Dispatcher
-};
-
+#endif

@@ -22,9 +22,10 @@
 #include <aros/inquire.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "wandererprefs.h"
-#include "../../libs/muimaster/classes/iconlist_attributes.h"
+#include "Classes/iconlist_attributes.h"
 #include "iconwindow_attributes.h"
 #include "support.h"
 #include "locale.h"
