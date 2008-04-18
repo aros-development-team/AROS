@@ -733,7 +733,8 @@ aros_arch
 aros_cpu
 aros_flavour
 aros_flavour_uc
-TOPDIR
+AROS_BUILDDIR
+AROS_SRCDIR
 aros_cc_pre
 aros_host_arch
 aros_host_cpu
@@ -2022,7 +2023,18 @@ fi
 echo "${ECHO_T}$target" >&6; }
 
 #don't know where else to put this...
-TOPDIR=$PWD
+{ echo "$as_me:$LINENO: checking Building AROS in .. " >&5
+echo $ECHO_N "checking Building AROS in .. ... $ECHO_C" >&6; }
+AROS_BUILDDIR=$PWD
+{ echo "$as_me:$LINENO: result: $AROS_BUILDDIR" >&5
+echo "${ECHO_T}$AROS_BUILDDIR" >&6; }
+
+{ echo "$as_me:$LINENO: checking AROS Source in .. " >&5
+echo $ECHO_N "checking AROS Source in .. ... $ECHO_C" >&6; }
+srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+AROS_SRCDIR=${srcpwd}
+{ echo "$as_me:$LINENO: result: $AROS_SRCDIR" >&5
+echo "${ECHO_T}$AROS_SRCDIR" >&6; }
 
 # Parse the target field into something useful.
 
@@ -11800,6 +11812,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Host related
 
 
@@ -12784,7 +12797,8 @@ aros_arch!$aros_arch$ac_delim
 aros_cpu!$aros_cpu$ac_delim
 aros_flavour!$aros_flavour$ac_delim
 aros_flavour_uc!$aros_flavour_uc$ac_delim
-TOPDIR!$TOPDIR$ac_delim
+AROS_BUILDDIR!$AROS_BUILDDIR$ac_delim
+AROS_SRCDIR!$AROS_SRCDIR$ac_delim
 aros_cc_pre!$aros_cc_pre$ac_delim
 aros_host_arch!$aros_host_arch$ac_delim
 aros_host_cpu!$aros_host_cpu$ac_delim
@@ -12857,7 +12871,6 @@ aros_debug!$aros_debug$ac_delim
 aros_mungwall_debug!$aros_mungwall_debug$ac_delim
 aros_stack_debug!$aros_stack_debug$ac_delim
 aros_modules_debug!$aros_modules_debug$ac_delim
-ignore_undefined_symbols!$ignore_undefined_symbols$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12899,11 +12912,12 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+ignore_undefined_symbols!$ignore_undefined_symbols$ac_delim
 gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 2; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 3; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

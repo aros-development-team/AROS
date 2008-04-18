@@ -15,8 +15,9 @@ AROS_TARGET_VARIANT ?= @aros_target_variant@
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 export AROS_GUI_THEME := @aros_target_guitheme@
 
-TOP := $(shell pwd)
-include $(TOP)/config/make.cfg
+TOP := @AROS_BUILDDIR@
+AROS_SRC := @AROS_SRCDIR@
+include $(AROS_SRC)/config/make.cfg
 
 all: makedirs tools mmake
 	@$(CALL) $(MMAKE) AROS.AROS

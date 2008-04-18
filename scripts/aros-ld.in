@@ -2,4 +2,4 @@
 if test -z "$COMPILER_PATH"; then
     export COMPILER_PATH=@aros_target_cc_path@
 fi
-exec @TOPDIR@/@aros_tools_dir@/collect-aros "$@"
+exec @AROS_BUILDDIR@/@aros_tools_dir@/collect-aros "$@"
