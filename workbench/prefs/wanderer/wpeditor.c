@@ -52,7 +52,7 @@
 
 #warning "TODO: Include the wandererprefs definitions in a better way .."
 #include "../../system/Wanderer/wandererprefs.h"
-#include "../../libs/muimaster/classes/iconlist_attributes.h"
+#include "../../system/Wanderer/Classes/iconlist_attributes.h"
 #include "../../system/Wanderer/iconwindow_attributes.h"
 
 struct TagItem32 {
