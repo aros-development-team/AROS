@@ -5,7 +5,7 @@
 
 SRC := createdtdesc.c examinedtdesc.c
 
--include $(TOP)/config/make.cfg
+-include $(AROS_SRC)/config/make.cfg
 
 .SUFFIXES:
 .SUFFIXES: .c .o
@@ -20,7 +20,11 @@ MKDIR	    ?= mkdir
 HOST_CFLAGS ?= -Wall -g -O
 INCL	    := -I. -I c_iff
 TOOLDIR     ?= .
-OBJDIR      := $(TOOLDIR)/obj
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+else
+OBJDIR := $(TOOLDIR)/obj
+endif
 
 RM	    ?= rm -f
 AR	    ?= ar rv
@@ -40,7 +44,7 @@ $(OBJDIR)/%.o : %.c
 	@$(HOST_CC) $(HOST_CFLAGS) $(INCL) -c $< -o $@
 
 c_iff/libc_iff.a:
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc/c_iff -f Makefile.aros TOP=$(TOP)
+	@$(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc/c_iff -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(OBJDIR) :
 	@$(MKDIR) $(OBJDIR)
@@ -49,4 +53,4 @@ clean:
 	@$(RM) -f *.o
 	@$(RM) -f examinedtdesc
 	@$(RM) -f $(CREATEDTDESC)
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc/c_iff -f Makefile.aros TOP=$(TOP) clean
+	@$(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc/c_iff -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP) clean

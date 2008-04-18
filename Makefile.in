@@ -58,7 +58,7 @@ $(FLEXCAT) : $(AROS_SRC)/tools/FlexCat/flexcat.c
 
 $(CREATEDTDESC) : $(wildcard $(AROS_SRC)/tools/dtdesc/*.[ch]) $(wildcard $(AROS_SRC)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(AFSLIB) : $(wildcard $(AROS_SRC)/workbench/devs/afs/*.[ch])
 	@$(ECHO) Building afslib...
