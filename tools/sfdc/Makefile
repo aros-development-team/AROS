@@ -1,7 +1,7 @@
 # Copyright © 2003, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(TOP)/config/make.cfg
+include $(AROS_SRC)/config/make.cfg
 
 MAIN		= main.pl
 CLASSES		= $(wildcard [A-Z]*.pl)
