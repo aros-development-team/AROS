@@ -8,7 +8,7 @@
 SRC	:=  flexcat.c
 SDFILES	:=  C_c_orig.sd C_h_orig.sd gcccatcomp.sd
 
-include $(TOP)/config/make.cfg
+include $(AROS_SRC)/config/make.cfg
 
 USER_CFLAGS := -Wunused -O3
 SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))

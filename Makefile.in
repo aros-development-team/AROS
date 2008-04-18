@@ -54,7 +54,7 @@ $(ARCHTOOL) : $(AROS_SRC)/tools/archtools/archtool.c
 
 $(FLEXCAT) : $(AROS_SRC)/tools/FlexCat/flexcat.c
 	@$(ECHO) Building flexcat...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/FlexCat AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(CREATEDTDESC) : $(wildcard $(AROS_SRC)/tools/dtdesc/*.[ch]) $(wildcard $(AROS_SRC)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
