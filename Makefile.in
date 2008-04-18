@@ -31,7 +31,7 @@ makedirs:
 	    else true ; fi ; \
 	done
 	@$(IF) [ ! -f $(AROSDIR)/.gdbinit ]; then \
-	    $(CP) $(TOP)/_gdbinit $(AROSDIR)/.gdbinit ; \
+	    $(CP) $(AROS_SRC)/_gdbinit $(AROSDIR)/.gdbinit ; \
 	else true ; fi
 
 # Create the tools that are used to build AROS.
@@ -40,62 +40,62 @@ tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
 	$(FD2INLINE) $(FD2PRAGMA) $(SFDC)
 
-$(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
+$(TOOLLIB) : $(wildcard $(AROS_SRC)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/toollib AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
-$(GENMF) : $(TOP)/tools/genmf/genmf.py
+$(GENMF) : $(AROS_SRC)/tools/genmf/genmf.py
 	@$(ECHO) Copying genmf...
 	@./config.status $(subst $(TOP)/,,$(GENMF)) genmf_executable
 
-$(ARCHTOOL) : $(TOP)/tools/archtools/archtool.c
+$(ARCHTOOL) : $(AROS_SRC)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools TOP=$(TOP)
 
-$(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
+$(FLEXCAT) : $(AROS_SRC)/tools/FlexCat/flexcat.c
 	@$(ECHO) Building flexcat...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
 
-$(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools/dtdesc/c_iff/*.[ch])
+$(CREATEDTDESC) : $(wildcard $(AROS_SRC)/tools/dtdesc/*.[ch]) $(wildcard $(AROS_SRC)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
 
-$(AFSLIB) : $(wildcard $(TOP)/workbench/devs/afs/*.[ch])
+$(AFSLIB) : $(wildcard $(AROS_SRC)/workbench/devs/afs/*.[ch])
 	@$(ECHO) Building afslib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/copytoafs -f Makefile.afslib TOP=$(TOP)
 
-$(COPYTOAFS) : $(TOP)/tools/copytoafs/copytoafs.c
+$(COPYTOAFS) : $(AROS_SRC)/tools/copytoafs/copytoafs.c
 	@$(ECHO) Building copytoafs...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/copytoafs TOP=$(TOP)
 
-$(ILBMTOC) : $(TOP)/tools/ilbmtoc/ilbmtoc.c
+$(ILBMTOC) : $(AROS_SRC)/tools/ilbmtoc/ilbmtoc.c
 	@$(ECHO) Building ilbmtoc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoc TOP=$(TOP)
 
-$(ILBMTOICON) : $(TOP)/tools/ilbmtoicon/ilbmtoicon.c
+$(ILBMTOICON) : $(AROS_SRC)/tools/ilbmtoicon/ilbmtoicon.c
 	@$(ECHO) Building ilbmtoicon...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoicon TOP=$(TOP)
 
-$(COLLECT-AROS) : $(wildcard $(TOP)/tools/collect-aros/*.[hc])
+$(COLLECT-AROS) : $(wildcard $(AROS_SRC)/tools/collect-aros/*.[hc])
 	@$(ECHO) Building collect-aros...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros TOP=$(TOP)
 
-$(FD2INLINE) : $(TOP)/tools/fd2inline/fd2inline.c
+$(FD2INLINE) : $(AROS_SRC)/tools/fd2inline/fd2inline.c
 	@$(ECHO) Building fd2inline...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2inline TOP=$(TOP)
 
-$(FD2PRAGMA) : $(TOP)/tools/fd2pragma/fd2pragma.c
+$(FD2PRAGMA) : $(AROS_SRC)/tools/fd2pragma/fd2pragma.c
 	@$(ECHO) Building fd2pragma...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma TOP=$(TOP)
 
-$(SFDC) : $(TOP)/tools/sfdc/*.pl 
+$(SFDC) : $(AROS_SRC)/tools/sfdc/*.pl 
 	@$(ECHO) Building sfdc...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
-mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
+mmake : $(AROS_SRC)/tools/MetaMake/Makefile $(MMAKE)
 
 $(TOP)/tools/MetaMake/configure : $(TOP)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
