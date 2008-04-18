@@ -4,7 +4,7 @@
 #   Desc: Makefile for ilbmtoicon
 #
 
--include $(TOP)/config/make.cfg
+-include $(AROS_SRC)/config/make.cfg
 
 USER_CFLAGS := -Wall -Wunused -O2
 

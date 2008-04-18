@@ -74,11 +74,11 @@ $(ILBMTOC) : $(AROS_SRC)/tools/ilbmtoc/ilbmtoc.c
 
 $(ILBMTOICON) : $(AROS_SRC)/tools/ilbmtoicon/ilbmtoicon.c
 	@$(ECHO) Building ilbmtoicon...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoicon TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/ilbmtoicon AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(COLLECT-AROS) : $(wildcard $(AROS_SRC)/tools/collect-aros/*.[hc])
 	@$(ECHO) Building collect-aros...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/collect-aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
 $(FD2INLINE) : $(AROS_SRC)/tools/fd2inline/fd2inline.c
 	@$(ECHO) Building fd2inline...
