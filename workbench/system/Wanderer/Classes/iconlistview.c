@@ -231,7 +231,7 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-D(bug("[IconListview] IconListview__OM_NEW: SELF = 0x%p\n", obj));
+D(bug("[IconListview] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, obj));
 
     data->vert = vert;
     data->horiz = horiz;
@@ -274,7 +274,7 @@ IPTR IconListview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
 			case MUIA_Background:
-D(bug("[IconListview] IconListview__OM_SET: MUIA_Background!\n"));
+D(bug("[IconListview] %s: MUIA_Background!\n", __PRETTY_FUNCTION__));
 				break;
 		}
     }
