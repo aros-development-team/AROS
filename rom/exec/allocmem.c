@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate some memory
@@ -16,6 +16,9 @@
 #include "memory.h"
 #include <exec/memory.h>
 #include <exec/memheaderext.h>
+#include <exec/nodes.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
 #include <proto/exec.h>
 
 #include <string.h>
@@ -161,7 +164,6 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 
     Permit();
 
-        
     if(res && (requirements & MEMF_CLEAR))
         memset(res, 0, byteSize);        
 
@@ -186,8 +188,8 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 	header->mwh_magicid = MUNGWALL_HEADER_ID;
 	header->mwh_allocsize = origSize;
 
-	/* Check whether list does exist. AllocMem() might have been
-	   called before PrepareAROSSupportBase() which is responsible for
+	/* Check whether list exists. AllocMem() might have been
+	   called before PrepareAROSSupportBase(), which is responsible for
 	   initialization of AllocMemList */
 	   
 	if (SysBase->DebugAROSBase)
@@ -220,6 +222,14 @@ static ULONG checkMemHandlers(struct checkMemHandlersState *cmhs);
 	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
     }
 #endif /* AROS_MUNGWALL_DEBUG */
+
+    /* Set DOS error if called from a process */
+    if (res == NULL)
+    {
+        struct Process *process = (struct Process *)FindTask(NULL);
+        if (process->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+            process->pr_Result2 = ERROR_NO_FREE_STORE;
+    }
 
 #if DEBUG
     if (SysBase->DebugAROSBase)
