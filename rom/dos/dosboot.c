@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start up the ol' Dos boot process.
@@ -61,7 +61,6 @@ AROS_UFH3(void, intBoot,
     STRPTR                bootName;
     LONG                  bootNameLength;        
     BPTR                  lock;
-    LONG                  second;
 
 #   define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_Ext.dol_AROS.dol_DevName)
     
@@ -132,16 +131,9 @@ AROS_UFH3(void, intBoot,
         
         kprintf( "No bootable disk was found.\n" );
         kprintf( "Please insert a bootable disk in any drive.\n" );
-        
-#if 0
-        for( second = 5; second > 0; second-- ) {
-            kprintf( "Retrying in %d seconds...\n", second );
-            Delay( 50 );
-        }
-#else
-            kprintf( "Retrying in 5 seconds...\n" );
-            Delay( 500 );
-#endif
+
+        kprintf( "Retrying in 5 seconds...\n" );
+        Delay( 500 );
         
         /* FIXME: Should there be a prompt instead of a automatic retry? */        
     }
