@@ -1,5 +1,5 @@
 /*
-	Copyright  2004-2006, The AROS Development Team. All rights reserved.
+	Copyright  2004-2008, The AROS Development Team. All rights reserved.
 	$Id$
 */
 
@@ -497,7 +497,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
 		child = CreateNewProcTags(
 			NP_Entry,	copy_dropentries,
 			NP_UserData,	(IPTR)message_filelist,
-			NP_Name,	(ULONG)"wanderer copy",
+			NP_Name,	(IPTR)"wanderer copy",
 			NP_StackSize,	40000,			
 			TAG_DONE);
 
