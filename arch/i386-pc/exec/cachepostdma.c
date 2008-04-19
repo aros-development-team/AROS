@@ -61,7 +61,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    asm volatile("wbinvd":::"memory");
+//    asm volatile("wbinvd":::"memory");
 
     AROS_LIBFUNC_EXIT
 } /* CachePostDMA */
