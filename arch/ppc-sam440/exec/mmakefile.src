@@ -2,11 +2,12 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        exec_init cause disable enable preparecontext stackswap rawputchar initcode alert \
+        exec_init cause disable enable preparecontext rawputchar initcode alert \
         findresident newaddtask permit prepareexecbase remtask reschedule setexcept settaskpri \
         signal wait cachecleare cachepostdma cachepredma
 
-AFILES		:= 
+AFILES		:= \
+	stackswap 
 
 #MM kernel-exec : kernel-exec-sam440-ppc
 #MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes
