@@ -61,13 +61,13 @@
 	CachePostDMA()
 
     INTERNALS
-	This function should be replaced by a function in $(KERNEL).
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    CacheClearE(address, *length, CACRF_ClearD | CACRF_ClearI);
+    /* At PreDMA stage only data caches need to be flushed */
+    CacheClearE(address, *length, CACRF_ClearD);
 
     return address;
 
