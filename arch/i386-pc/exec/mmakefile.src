@@ -5,7 +5,8 @@ CFILES		:= \
 	exec_init disable enable switch preparecontext rawputchar \
 	newaddtask cause dispatch debug supervisor reschedule permit \
 	wait remtask settaskpri signal setexcept superstate userstate \
-	core traps screen serialrawio execfunctions prepareexecbase
+	core traps screen serialrawio execfunctions prepareexecbase \
+	cachecleare cachepredma cachepostdma
 
 AFILES		:= coldreboot corelow stackswap
 
