@@ -66,7 +66,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    asm volatile("wbinvd":::"memory");
+//    asm volatile("wbinvd":::"memory");
 
     return address;
 
