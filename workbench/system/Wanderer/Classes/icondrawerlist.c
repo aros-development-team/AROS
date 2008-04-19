@@ -78,7 +78,7 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
 	char                      namebuffer[512];
 	ULONG                     list_DisplayFlags = 0;
 
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
 
 	if (!data->drawer) return 1;
 
@@ -92,7 +92,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 			if (Examine(lock, fib))
 			{
 				GET(obj, MUIA_IconList_DisplayFlags, &list_DisplayFlags);
-D(bug("[IconList] %s: DisplayFlags = 0x%p\n", __PRETTY_FUNCTION__, list_DisplayFlags));
+D(bug("[IconDrawerList] %s: DisplayFlags = 0x%p\n", __PRETTY_FUNCTION__, list_DisplayFlags));
 
 				while(ExNext(lock, fib))
 				{
@@ -100,7 +100,7 @@ D(bug("[IconList] %s: DisplayFlags = 0x%p\n", __PRETTY_FUNCTION__, list_DisplayF
 					memset(namebuffer, 0, 512);
 					strcpy(filename, fib->fib_FileName);
 
-D(bug("[IconList] %s: '%s', len = %d\n", __PRETTY_FUNCTION__, filename, len));
+D(bug("[IconDrawerList] %s: '%s', len = %d\n", __PRETTY_FUNCTION__, filename, len));
 
 					if (len >= 5)
 					{
@@ -109,26 +109,26 @@ D(bug("[IconList] %s: '%s', len = %d\n", __PRETTY_FUNCTION__, filename, len));
 							/* Its a .info file .. skip "disk.info" and just ".info" files*/
 							if ((len == 5) || ((len == 9) && (!Strnicmp(filename, "Disk", 4))))
 							{
-D(bug("[IconList] %s: Skiping file named disk.info or just .info ('%s')\n", __PRETTY_FUNCTION__, filename));
+D(bug("[IconDrawerList] %s: Skiping file named disk.info or just .info ('%s')\n", __PRETTY_FUNCTION__, filename));
 								continue;
 							}
 
 							strcpy(namebuffer, data->drawer);
 							memset((filename + len - 5), 0, 1); //Remove the .info section
 							AddPart(namebuffer, filename, sizeof(namebuffer));
-D(bug("[IconList] %s: Checking for .info files real file '%s'\n", __PRETTY_FUNCTION__, namebuffer));
+D(bug("[IconDrawerList] %s: Checking for .info files real file '%s'\n", __PRETTY_FUNCTION__, namebuffer));
 
 							if ((tmplock = Lock(namebuffer, SHARED_LOCK)))
 							{
 								/* We have a real file so skip it for now and let it be found seperately */
-D(bug("[IconList] %s: File found .. skipping\n", __PRETTY_FUNCTION__));
+D(bug("[IconDrawerList] %s: File found .. skipping\n", __PRETTY_FUNCTION__));
 								UnLock(tmplock); 
 								continue;
 							}
 						}
 					}
 
-D(bug("[IconList] %s: Registering file '%s'\n", __PRETTY_FUNCTION__, filename));
+D(bug("[IconDrawerList] %s: Registering file '%s'\n", __PRETTY_FUNCTION__, filename));
 					strcpy(namebuffer, data->drawer);
 					AddPart(namebuffer, filename, sizeof(namebuffer));
 
@@ -136,12 +136,12 @@ D(bug("[IconList] %s: Registering file '%s'\n", __PRETTY_FUNCTION__, filename));
 						
 					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL)))
 					{
-D(bug("[IconList] %s: Icon entry allocated @ 0x%p\n", __PRETTY_FUNCTION__, this_Icon));
+D(bug("[IconDrawerList] %s: Icon entry allocated @ 0x%p\n", __PRETTY_FUNCTION__, this_Icon));
 
 						sprintf(namebuffer + strlen(namebuffer), ".info");
 						if ((tmplock = Lock(namebuffer, SHARED_LOCK)))
 						{
-D(bug("[IconList] %s: File has a .info file .. updating info\n", __PRETTY_FUNCTION__));
+D(bug("[IconDrawerList] %s: File has a .info file .. updating info\n", __PRETTY_FUNCTION__));
 							UnLock(tmplock); 
 							if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON)) 
 								this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
@@ -160,7 +160,7 @@ D(bug("[IconList] %s: File has a .info file .. updating info\n", __PRETTY_FUNCTI
 					}
 					else
 					{
-D(bug("[IconList] %s: Failed to Register file!!!\n", __PRETTY_FUNCTION__));
+D(bug("[IconDrawerList] %s: Failed to Register file!!!\n", __PRETTY_FUNCTION__));
 					}
 				}
 			}
