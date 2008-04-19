@@ -7,12 +7,14 @@ FILES := main locale support filesystems wanderer wandererprefs iconwindow iconw
 
 #MM- workbench-system : workbench-system-wanderer
 #MM- workbench-system-wanderer : \
-#MM  workbench-libs-muimaster \
 #MM  workbench-system-wanderer-app \
-#MM  workbench-system-wanderer-classes \
-#MM  workbench-system-wanderer-catalogs \
 #MM  workbench-system-wanderer-icons \
 #MM  workbench-system-wanderer-tools
+
+#MM  workbench-system-wanderer-app : \
+#MM  workbench-libs-muimaster \
+#MM  workbench-system-wanderer-catalogs \
+#MM  workbench-system-wanderer-classes
 
 %build_prog mmake=workbench-system-wanderer-app \
     progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
