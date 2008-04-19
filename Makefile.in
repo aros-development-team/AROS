@@ -95,7 +95,7 @@ $(SFDC) : $(AROS_SRC)/tools/sfdc/*.pl
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
-mmake : $(AROS_SRC)/tools/MetaMake/Makefile $(MMAKE)
+mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
 $(AROS_SRC)/tools/MetaMake/configure : $(AROS_SRC)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
@@ -104,7 +104,7 @@ $(AROS_SRC)/tools/MetaMake/configure : $(AROS_SRC)/tools/MetaMake/configure.in
 $(AROS_SRC)/tools/MetaMake/Makefile.in : $(AROS_SRC)/tools/MetaMake/Makefile.am
 	@cd $(AROS_SRC)/tools/MetaMake ; @aros_host_automake@ -a -c
 
-$(AROS_SRC)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC)/tools/MetaMake/Makefile.in
+$(TOP)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC)/tools/MetaMake/Makefile.in
 	@$(IF) [ ! -d $(TOP)/tools/MetaMake ]; then \
 	    $(MECHO) $(MKDIR) "$(TOP)/tools/MetaMake" ; \
 	    $(MKDIR) "$(TOP)/tools/MetaMake"; \
