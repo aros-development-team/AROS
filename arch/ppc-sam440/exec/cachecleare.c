@@ -73,20 +73,37 @@
 {
     AROS_LIBFUNC_INIT
 
-    char *start = (char*)((unsigned long)address & 0xffffffe0);
-    char *end = (char*)(((unsigned long)address + length + 31) & 0xffffffe0);
+    char *start = (char*)((IPTR)address & 0xffffffe0);
+    char *end = (char*)(((IPTR)address + length + 31) & 0xffffffe0);
     char *ptr;
     
+    /* Flush data caches and mark cacke lines invalid */
     if (caches & CACRF_ClearD)
+    {
+        for (ptr = start; ptr < end; ptr +=32)
+        {
+            asm volatile("dcbf 0,%0"::"r"(ptr));
+        }
+        asm volatile("sync");
+    }
+
+    /* FLish instruction caches only - in this case sync the data caches before */
+    if (caches & (CACRF_ClearD | CACRF_ClearI) == CACRF_ClearI)
     {
         for (ptr = start; ptr < end; ptr +=32)
         {
             asm volatile("dcbst 0,%0"::"r"(ptr));
         }
         asm volatile("sync");
-    }
 
-    if (caches & CACRF_ClearI)
+        for (ptr = start; ptr < end; ptr +=32)
+        {
+            asm volatile("icbi 0,%0"::"r"(ptr));
+        }
+    
+        asm volatile("sync; isync; ");
+    }
+    else if (caches & CACRF_ClearI) /* Clear ICache with DCache together */
     {
         for (ptr = start; ptr < end; ptr +=32)
         {
