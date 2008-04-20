@@ -29,21 +29,21 @@
    in here if you want to stay compatible with AmigaOS! */
 
 
-/* Filesystem handlers are called with so-called actions, whenever they are
+/* Filesystem handlers are called with so-called actions whenever they are
    supposed to do something. See below for a list of currently defined actions
    and how to use them.
 
    Not all filesystems have to support all actions. Filesystems have to return
    ERROR_ACTION_NOT_KNOWN (<dos/dos.h>) in IOFileSys->io_DosError, if they do
    not support the specified action. If they know an action but ignore it on
-   purpose, they may return ERROR_NOT_IMPLEMENTED. A purpose may be that the
+   purpose, they may return ERROR_NOT_IMPLEMENTED. A reason may be that the
    hardware or software the filesystem relies on does not support this kind of
-   action (eg: a net-filesystem protocol may not support renaming of files, so
+   action (e.g. a net-filesystem protocol may not support renaming of files, so
    a filesystem handler for this protocol should return ERROR_NOT_IMPLEMENTED
    for FSA_RENAME). Another example is the nil-device, which does not implement
    FSA_CREATE_DIR or anything concerning specific files. What does that mean
    for an application? If an application receives ERROR_NOT_IMPLEMENTED, it
-   knows that the action, it wanted to perform, makes no sense for that
+   knows that the action it wanted to perform makes no sense for that
    filesystem. If it receives ERROR_ACTION_NOT_KNOWN, it knows that the
    filesystem does not know about this action for whatever reason (including
    that it makes no sense to perform that action on that specific filesystem).
@@ -55,19 +55,19 @@
    to the filehandle to affect or is set to the filehandle that is returned by
    the action. Note that the filehandle mentioned above is not a pointer to a
    struct FileHandle as defined in <dos/dosextens.h>, but is an APTR to a
-   device specific blackbox structure. In a struct FileHandle this private
+   device-specific blackbox structure. In a struct FileHandle this private
    pointer is normally to be found in FileHandle->fh_Unit.
 
    Whenever a filename is required as argument, this filename has to be
-   stripped from the devicename, ie it has to be relative to the current
+   stripped from the devicename, i.e. it has to be relative to the current
    directory on that volume (set in the io_Unit field). */
 
 /* Returns a new filehandle. The file may be newly created (depending on
-   io_FileMode. */
+   io_FileMode). */
 #define FSA_OPEN 1
 struct IFS_OPEN
 {
-    STRPTR io_Filename; /* File to open. */
+    CONST_STRPTR io_Filename; /* File to open. */
     ULONG  io_FileMode; /* see below */
 };
 
@@ -78,7 +78,7 @@ struct IFS_OPEN
 #define FSA_READ 3
 struct IFS_READ_WRITE
 {
-      /* The buffer for the data to read/to write. */
+      /* The buffer for the data to read/write. */
     char * io_Buffer;
       /* The length of the buffer. This is filled by the filesystem handler
          with the number of bytes actually read/written. */
@@ -88,7 +88,7 @@ struct IFS_READ_WRITE
 /* Writes the contents of a buffer into a filehandle. Uses IFS_READ_WRITE. */
 #define FSA_WRITE 4
 
-/* The action does exactly the same as the function Seek(). */
+/* This action does exactly the same as the function Seek(). */
 #define FSA_SEEK 5
 struct IFS_SEEK
 {
@@ -110,7 +110,7 @@ struct IFS_WAIT_CHAR
 {
       /* Maximum time (in microseconds) to wait for a character. */
     LONG io_Timeout;
-      /* This is set to FALSE by the filehandler, if no character arrived in
+      /* This is set to FALSE by the filehandler if no character arrived in
          time. Otherwise it is set to TRUE. */
     BOOL io_Success;
 };
@@ -127,12 +127,12 @@ struct IFS_FILE_MODE
     ULONG io_Mask;
 };
 
-/* This action can be used to query if a filehandle is interactive, ie if it
+/* This action can be used to query if a filehandle is interactive, i.e. if it
    is a terminal or not. */
 #define FSA_IS_INTERACTIVE 9
 struct IFS_IS_INTERACTIVE
 {
-      /* This boolean is filled by the filehandler. It is set to TRUE, if the
+      /* This boolean is filled by the filehandler. It is set to TRUE if the
          filehandle is interactive, otherwise it is set to FALSE. */
     BOOL io_IsInteractive;
 };
@@ -167,7 +167,7 @@ struct IFS_EXAMINE_NEXT
 };
 
 /* Works exactly like FSA_EXAMINE with the exeption that multiple files may be
-   examined, ie the filehandle must be a directory. */
+   examined, i.e. the filehandle must be a directory. */
 #define FSA_EXAMINE_ALL 13
 struct IFS_EXAMINE_ALL
 {
@@ -180,7 +180,7 @@ struct IFS_EXAMINE_ALL
     LONG               io_Mode;
 };
 
-/* This has to be called, if FSA_EXAMINE_ALL is stopped before all examined
+/* This has to be called if FSA_EXAMINE_ALL is stopped before all examined
    files were returned. It takes no arguments except the filehandle in
    io_Unit. */
 #define FSA_EXAMINE_ALL_END 14
@@ -190,7 +190,7 @@ struct IFS_EXAMINE_ALL
 #define FSA_OPEN_FILE 15
 struct IFS_OPEN_FILE
 {
-    STRPTR io_Filename;   /* File to open. */
+    CONST_STRPTR io_Filename;   /* File to open. */
     ULONG  io_FileMode;   /* see below */
     ULONG  io_Protection; /* The protection bits. */
 };
@@ -200,25 +200,25 @@ struct IFS_OPEN_FILE
 #define FSA_CREATE_DIR 16
 struct IFS_CREATE_DIR
 {
-    STRPTR io_Filename;   /* Name of directory to create. */
+    CONST_STRPTR io_Filename;   /* Name of directory to create. */
     ULONG  io_Protection; /* The protection bits. */
 };
 
-/* Creates a hard link (ie gives one file a second name). */
+/* Creates a hard link (i.e. gives one file/directory a second name). */
 #define FSA_CREATE_HARDLINK 17
 struct IFS_CREATE_HARDLINK
 {
-    STRPTR   io_Filename; /* The filename of the link to create. */
+    CONST_STRPTR   io_Filename; /* The filename of the link to create. */
     APTR     io_OldFile;  /* Filehandle of the file to link to. */
 };
 
-/* Creates a soft link (ie a file is created, which references another by its
+/* Creates a soft link (i.e. a file is created that references another by its
    name). */
 #define FSA_CREATE_SOFTLINK 18
 struct IFS_CREATE_SOFTLINK
 {
-    STRPTR io_Filename;  /* The filename of the link to create. */
-    STRPTR io_Reference; /* The name of the file to link to. */
+    CONST_STRPTR io_Filename;  /* The filename of the link to create. */
+    CONST_STRPTR io_Reference; /* The name of the file to link to. */
 };
 
 /* Renames a file. To the old and the new name, the current directory is
@@ -226,15 +226,15 @@ struct IFS_CREATE_SOFTLINK
 #define FSA_RENAME 19
 struct IFS_RENAME
 {
-    STRPTR io_Filename; /* The old filename. */
-    STRPTR io_NewName;  /* The new filename. */
+    CONST_STRPTR io_Filename; /* The old filename. */
+    CONST_STRPTR io_NewName;  /* The new filename. */
 };
 
 /* Resolves the full path name of the file a softlink filehandle points to. */
 #define FSA_READ_SOFTLINK 20
 struct IFS_READ_SOFTLINK
 {
-    STRPTR io_Filename; /* file name which returned ERROR_IS_SOFT_LINK */
+    CONST_STRPTR io_Filename; /* file name which returned ERROR_IS_SOFT_LINK */
       /* The buffer to fill with the pathname. If this buffer is too small, the
          filesystem handler is supposed to return ERROR_LINE_TOO_LONG. */
     STRPTR io_Buffer;
@@ -246,23 +246,23 @@ struct IFS_READ_SOFTLINK
 #define FSA_DELETE_OBJECT 21
 struct IFS_DELETE_OBJECT
 {
-    STRPTR io_Filename; /* The name of the file to delete. */
+    CONST_STRPTR io_Filename; /* The name of the file to delete. */
 };
 
 /* Sets a filecomment for a file. */
 #define FSA_SET_COMMENT 22
 struct IFS_SET_COMMENT
 {
-    STRPTR io_Filename; /* The name of the file to be commented. */
-    STRPTR io_Comment;  /* The new filecomment. May be NULL, in which case the
-                           current filecomment is deleted. */
+    CONST_STRPTR io_Filename; /* The name of the file to be commented. */
+    CONST_STRPTR io_Comment;  /* The new filecomment. May be NULL, in which
+                                 case the current filecomment is deleted. */
 };
 
 /* Sets the protection bits of a file. */
 #define FSA_SET_PROTECT 23
 struct IFS_SET_PROTECT
 {
-    STRPTR io_Filename;   /* The file to change. */
+    CONST_STRPTR io_Filename;   /* The file to change. */
     ULONG  io_Protection; /* The new protection bits. */
 };
 
@@ -270,27 +270,27 @@ struct IFS_SET_PROTECT
 #define FSA_SET_OWNER 24
 struct IFS_SET_OWNER
 {
-    STRPTR io_Filename; /* The file to change. */
+    CONST_STRPTR io_Filename; /* The file to change. */
     UWORD  io_UID;      /* The new owner. */
     UWORD  io_GID;      /* The new group owner. */
 };
 
-/* Sets the last modification date of the filename given as first argument.
-   The date is given as standard TimeStamp structure (see <dos/dos.h>) as
-   second to fourth argument (ie as days, minutes and ticks). */
+/* Sets the last modification date/time of the filename given as first
+   argument. The date/time is given as standard DateStamp structure
+   (see <dos/dos.h>). */
 #define FSA_SET_DATE 25
 struct IFS_SET_DATE
 {
-    STRPTR           io_Filename; /* The file to change. */
-    struct DateStamp io_Date;     /* The new date. (see <dos/dosextens.h>) */
+    CONST_STRPTR     io_Filename; /* The file to change. */
+    struct DateStamp io_Date;     /* The new date. (see <dos/dos.h>) */
 };
 
-/* Check if a filesystem is in fact a FILEsystem, ie can contain different
+/* Check if a filesystem is in fact a FILEsystem, i.e. can contain different
    files. */
 #define FSA_IS_FILESYSTEM 26
 struct IFS_IS_FILESYSTEM
 {
-      /* This is set to TRUE by the filesystem handler, if it is a filesystem
+      /* This is set to TRUE by the filesystem handler if it is a filesystem
          and set to FALSE if it is not. */
     BOOL io_IsFilesystem;
 };
@@ -305,16 +305,16 @@ struct IFS_MORE_CACHE
     LONG io_NumBuffers;
 };
 
-/* Formats a volume, ie erases all data on it. */
+/* Formats a volume, i.e. erases all data on it. */
 #define FSA_FORMAT 28
 struct IFS_FORMAT
 {
-    STRPTR io_VolumeName; /* New name for the volume. */
+    CONST_STRPTR io_VolumeName; /* New name for the volume. */
     ULONG  io_DosType;    /* New type for the volume. Filesystem specific. */
 };
 
-/* Resets/Reads the mount-mode of the volume passed in as io_Unit. The first
-   and second argument work exactly like FSA_FILE_MODE, but the third
+/* Resets/reads the mount-mode of the volume passed in as io_Unit. The first
+   and second arguments work exactly like FSA_FILE_MODE, but the third
    argument can contain a password, if MMF_LOCKED is set. */
 #define FSA_MOUNT_MODE 29
 struct IFS_MOUNT_MODE
@@ -322,10 +322,10 @@ struct IFS_MOUNT_MODE
       /* The new mode to apply to the volume. See below for definitions. The
          filehandler fills this with the old mode bits. */
     ULONG  io_MountMode;
-      /* This mask defines, which flags are to be changed. */
+      /* This mask defines which flags are to be changed. */
     ULONG  io_Mask;
       /* A password, which is needed if MMF_LOCKED is set. */
-    STRPTR io_Password;
+    CONST_STRPTR io_Password;
 };
 
 /* The following actions are currently not supported. */
@@ -349,7 +349,7 @@ struct IFS_INHIBIT
 #define FSA_ADD_NOTIFY	    35
 struct IFS_NOTIFY
 {
-    STRPTR io_FileName;		/* Needed for synchronous operation */
+    CONST_STRPTR io_FileName;		/* Needed for synchronous operation */
     struct NotifyRequest *io_NotificationRequest;
 };
 
@@ -384,8 +384,8 @@ struct IFS_RECORD
 #define FSA_PARENT_DIR_POST 42
 struct IFS_PARENT_DIR
 {
-    /* this will contain the return value of the parent directory or
-       NULL, if we are at the root directory already */
+    /* This will contain the return value of the parent directory, or
+       NULL if we are at the root directory already */
     char * io_DirName;
 };
 
@@ -405,7 +405,7 @@ struct IFS_CONSOLE_MODE
 #define FSA_RELABEL    44
 struct IFS_RELABEL
 {
-    STRPTR      io_NewName;
+    CONST_STRPTR      io_NewName;
     BOOL        io_Result;
 };
 
@@ -420,14 +420,14 @@ struct IFS_RELABEL
  * The read handle is returned in io_Unit. */
 #define FSA_PIPE 45
 struct IFS_PIPE {
-    STRPTR       io_FileName;
+    CONST_STRPTR       io_FileName;
     struct Unit *io_Writer;
 };
 
 
 
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
-   and may be or'ed. Note that not all filesystems support all flags. */
+   and may be OR'ed. Note that not all filesystems support all flags. */
 #define FMF_LOCK     (1L<<0) /* Lock exclusively. */
 #define FMF_EXECUTE  (1L<<1) /* Open for executing. */
 /* At least one of the following two flags must be specified. Otherwise expect
@@ -440,7 +440,8 @@ struct IFS_PIPE {
 #define FMF_NONBLOCK (1L<<7)  /* Don't block Open() in case it would
                                  and return an error in case Write()/Read()
 				 would block */
-#define FMF_APPEND   (1L<<8)  /* Every write will happen always at the end of the file */
+#define FMF_APPEND   (1L<<8)  /* Every write will happen always at the end
+                                 of the file */
 
 #define FMF_AMIGADOS (1L<<9 | 1L<<31) /* Identifies the old AmigaDOS modes:
 					 - bit 9 is the first bit set in the MODE_#? modes
@@ -450,7 +451,7 @@ struct IFS_PIPE {
 #define FMF_MODE_READWRITE (FMF_MODE_OLDFILE | FMF_CREATE)
 #define FMF_MODE_NEWFILE   (FMF_MODE_READWRITE | FMF_LOCK | FMF_CLEAR)
 
-/* io_MountMode for FSA_MOUNT_MODE. These are flags and may be or'ed. */
+/* io_MountMode for FSA_MOUNT_MODE. These are flags and may be OR'ed. */
 #define MMF_READ	(1L<<0) /* Mounted for reading. */
 #define MMF_WRITE	(1L<<1) /* Mounted for writing. */
 #define MMF_READ_CACHE	(1L<<2) /* Read cache enabled. */
@@ -477,23 +478,23 @@ struct IOFileSys
     union
     {
         struct {
-            STRPTR             io_DeviceName; /* Name of the device to open. */
+            CONST_STRPTR       io_DeviceName; /* Name of the device to open. */
             IPTR               io_Unit;       /* Number of unit to open. */
             IPTR *             io_Environ;    /* Pointer to environment array.
                                                  (see <dos/filehandler.h> */
-            STRPTR             io_DosName;    /* The name with wich the
+            STRPTR             io_DosName;    /* The name with which the
                                                  filesystem is being mounted
                                                  (the mount point, one might
                                                  say) */
             struct DeviceNode *io_DeviceNode; /* The DOS entry for this
                                                  filesystem. Packet-based
                                                  filesystems expect to receive
-                                                 this along with the the
+                                                 this along with the
                                                  startup message */
         } io_OpenDevice;
 
 	struct {
-	    STRPTR io_Filename;
+	    CONST_STRPTR io_Filename;
 	} io_NamedFile;
 
         struct IFS_OPEN            io_OPEN;           /* FSA_OPEN */
@@ -536,9 +537,9 @@ struct IOFileSys
     } io_Union;
 };
 
-/* Define some AROS' specific errors */
+/* Define some AROS-specific errors */
 
 #define ERROR_BROKEN_PIPE   400  /* An attempt to write on a pipe without any reader has been made */
 #define ERROR_WOULD_BLOCK   401  /* A Read() or a Write() on a file opened with the FMF_NONBLOCK flag would block */
-#define ERROR_INTERRUPTED   402  /* The I/O file operation has been interrupted for some reasons */
+#define ERROR_INTERRUPTED   402  /* The I/O file operation has been interrupted for some reason */
 #endif /* DOS_FILESYSTEM_H */
