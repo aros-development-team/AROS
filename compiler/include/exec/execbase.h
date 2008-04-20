@@ -138,6 +138,7 @@ struct ExecBase
 #define CACRF_ClearD        (1L<<11)
 #define CACRF_DBE           (1L<<12)
 #define CACRF_WriteAllocate (1L<<13)
+#define CACRF_InvalidateD   (1L<<15)
 #define CACRF_EnableE       (1L<<30)
 #define CACRF_CopyBack      (1L<<31)
 
