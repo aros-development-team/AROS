@@ -286,16 +286,18 @@ static VOID __HandleLaunch_WB
     /* Duplicate lock for NP_HomeDir */
     home = DupLock(lock);
     if (home == NULL) goto error;
-    
+
+    const struct TagItem 	     tags[]=
+    {
+        {NP_Seglist,     (IPTR)startup->sm_Segment},
+        {NP_Name,        (IPTR)name},
+        {NP_HomeDir,     (IPTR)home},
+        {NP_StackSize,   WorkbenchBase->wb_DefaultStackSize}, /* FIXME: should be read from icon */
+        {TAG_DONE    , 0     	    	    	   }
+    };
+
     /* Launch the program */
-    process = CreateNewProcTags
-    (
-        NP_Seglist,     (IPTR) startup->sm_Segment,
-        NP_Name,        (IPTR) name,
-        NP_HomeDir,     (IPTR) home,
-        NP_StackSize,          WorkbenchBase->wb_DefaultStackSize, /* FIXME: should be read from icon */
-        TAG_DONE
-    );
+    process = CreateNewProc(tags);
     
     if (process != NULL)
     {
