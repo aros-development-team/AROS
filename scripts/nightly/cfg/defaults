@@ -4,16 +4,17 @@
 # ## Allowed Common Packages:
 #          sources,
 #          documentation,
-#          changelogs,
+#          changelogs
 # ## Allowed Arch Specific Targets:
 #          sdk.svn.pc-i386,
 #          contrib.svn.pc-i386,
-#          bootiso.svn.pc-i386,
+#          bootiso-grub.svn.pc-i386,
+#          bootiso-grub2.svn.pc-i386,
 #          bootfloppy.svn.pc-i386,
 #          hosted.svn.linux-i386,
 #          sdk.svn.pc-x86_64,
 #          contrib.svn.pc-x86_64,
-#          bootiso.svn.pc-x86_64,
+#          bootiso-grub2.svn.pc-x86_64
 
 CFG_PACKAGES=( sources )
 
