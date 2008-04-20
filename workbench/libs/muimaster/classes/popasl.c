@@ -154,13 +154,11 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
     }
     
     {
-        struct TagItem processTags[2] = 
+        const struct TagItem processTags[2] = 
         {
-            { NP_Entry, 0 },
+            { NP_Entry, (IPTR)Asl_Entry },
             { TAG_DONE, 0 }
         };
-
-	processTags[0].ti_Data = (IPTR)Asl_Entry;
 
         if (!(data->asl_proc = CreateNewProc( processTags )))
         {

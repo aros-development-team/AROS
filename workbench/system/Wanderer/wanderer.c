@@ -494,12 +494,16 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
 			while ( (int)ent != MUIV_IconList_NextSelected_End );
 
 		/* create process and copy files within */
-		child = CreateNewProcTags(
-			NP_Entry,	copy_dropentries,
-			NP_UserData,	(IPTR)message_filelist,
-			NP_Name,	(IPTR)"wanderer copy",
-			NP_StackSize,	40000,			
-			TAG_DONE);
+        const struct TagItem 	     tags[]=
+        {
+            {NP_Entry    , (IPTR)copy_dropentries    	},
+            {NP_Name     , (IPTR)"wanderer copy"        },
+			{NP_UserData , (IPTR)message_filelist       },
+			{NP_StackSize, 40000 			            },
+            {TAG_DONE    , 0     	    	    	    }
+        };
+
+		child = CreateNewProc(tags);
 
 			/* FIXME: update list contents */
 		/* this one should be solved through file notofications, as files are copied in a seperate process now  */

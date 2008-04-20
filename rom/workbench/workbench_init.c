@@ -60,20 +60,17 @@ static int WBOpen(LIBBASETYPEPTR LIBBASE)
             );
         }
     
+        const struct TagItem 	     tags[]=
+        {
+            {NP_Entry    , (IPTR)WorkbenchHandler      },
+            {NP_Name     , (IPTR)"Workbench Handler"   },
+			{NP_UserData , (IPTR)WorkbenchBase      },
+			{NP_StackSize, 8129 			           },
+            {TAG_DONE    , 0     	    	    	   }
+        };
+        
         /* Start workbench handler -----------------------------------------*/
-        if
-        (
-            (
-                CreateNewProcTags
-                (
-                    NP_Entry,     (IPTR) WorkbenchHandler,
-                    NP_StackSize,        8129,
-                    NP_Name,      (IPTR) "Workbench Handler",
-                    NP_UserData,  (IPTR) WorkbenchBase,
-                    TAG_DONE
-                )
-            ) != NULL
-        )
+        if ((CreateNewProc(tags)) != NULL)
         {
             /* Prevent expunging while the handler is running */
             AROS_ATOMIC_INC(WorkbenchBase->LibNode.lib_OpenCnt);
