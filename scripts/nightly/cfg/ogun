@@ -1,5 +1,5 @@
 CFG_MAIL_CC=falemagn@studenti.unina.it
 CFG_DS_USER=falemagn
-CFG_PACKAGES=(sources documentation sdk.svn.pc-i386 contrib.svn.pc-i386 hosted.svn.linux-i386 bootiso-grub.svn.pc-i386)
+CFG_PACKAGES=(sources.svn.all documentation.svn.all sdk.svn.pc-i386 contrib.svn.pc-i386 hosted.svn.linux-i386 bootiso-grub.svn.pc-i386)
 
 

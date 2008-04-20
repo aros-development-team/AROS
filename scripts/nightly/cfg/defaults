@@ -2,9 +2,9 @@
 # ## DO NOT USE THESE PACKAGES!
 #          bootiso            (only to be called from arch specific packages)
 # ## Allowed Common Packages:
-#          sources,
-#          documentation,
-#          changelogs
+#          sources.svn.all,
+#          documentation.svn.all,
+#          changelogs.svn.all
 # ## Allowed Arch Specific Targets:
 #          sdk.svn.pc-i386,
 #          contrib.svn.pc-i386,
@@ -16,7 +16,7 @@
 #          contrib.svn.pc-x86_64,
 #          bootiso-grub2.svn.pc-x86_64
 
-CFG_PACKAGES=( sources )
+CFG_PACKAGES=( sources.svn.all )
 
 # C compiler to use
 CFG_CC=gcc
