@@ -4,13 +4,14 @@ STOP_TIME="N/A"
 UPLOAD_START_TIME="N/A"
 UPLOAD_STOP_TIME="N/A"
 
+export LANG=en_US.ISO8859-1
 export SP=$(dirname $0)
 export CFG_NAME=$1
 source $SP/setup initial
 source $SP/mail
 
 #-- Update sources -----------------------------------------------------------
-printi "Starting nightly build on $CFG_NAME..."
+printi "Starting $LANG nightly build on $CFG_NAME..."
 zsh $SP/update
 if [ $? != 0 ]; then
     printe "Updating sources FAILED! ABORTING SCRIPT!"
@@ -32,13 +33,14 @@ fi
 failed=()
 succeeded=()
 for package in $CFG_PACKAGES; do
-    zsh $SP/pkg/$package
+    printe "package $package[(ws:.:)1]-$package[(ws:.:)3]"
+    zsh $SP/pkg/$package[(ws:.:)1]-$package[(ws:.:)3]
     if [ $? != 0 ]; then
-        printe "Build of package '"$package"' FAILED."
-        failed=( $failed $package )
+        printe "Build of package '"$package[(ws:.:)1]-$package[(ws:.:)3]"' FAILED."
+        failed=( $failed $package[(ws:.:)1]-$package[(ws:.:)3] )
     else
-        printi "Build of package '"$package"' completed successfully."
-        succeeded=( $succeeded $package )
+        printi "Build of package '"$package[(ws:.:)1]-$package[(ws:.:)3]"' completed successfully."
+        succeeded=( $succeeded $package[(ws:.:)1]-$package[(ws:.:)3] )
     fi
 done
 

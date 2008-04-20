@@ -1,0 +1,7 @@
+#!/bin/zsh
+# Creates AROS/pc-x86_64 grub2 bootiso binary packages.
+
+BUILDTARGET=pc-x86_64
+BOOTLOADER=grub2
+
+source $SP/pkg/bootiso $BOOTLOADER

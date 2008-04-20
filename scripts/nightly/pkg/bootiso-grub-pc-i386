@@ -1,0 +1,7 @@
+#!/bin/zsh
+# Creates AROS/pc-i386 grub bootiso binary packages.
+
+BUILDTARGET=pc-i386
+BOOTLOADER=grub
+
+source $SP/pkg/bootiso $BOOTLOADER

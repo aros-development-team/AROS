@@ -1,23 +1,26 @@
 #!/bin/zsh
-# Creates AROS contrib package.
+# Creates AROS/pc-x86_64 contrib package.
+
+BUILDTARGET=pc-x86_64
 
 source  $SP/setup
-setl    contrib.log
+# The log-name MUST match the name of the package script
+setl    contrib-$BUILDTARGET.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 
 printi "Creating AROS contrib binary package..."
-PACKAGE=$BASENAME-$HOST_CPU-all-contrib
+PACKAGE=$BASENAME-$BUILDTARGET-contrib
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
 copy    $SOURCE_AROS    $BUILD_BASE/AROS
 copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --enable-build-type=nightly
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly
 make    tools mmake contrib
 
-cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU/AROS
+cd      $BUILD_BASE/AROS/bin/$BUILDTARGET/AROS
 move    Extras $PACKAGE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
