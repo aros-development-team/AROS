@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -68,18 +68,21 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 		   /N Option is a number. Strings are not allowed.
 		      If the option is optional, a pointer to the
 		      actual number is returned. This is how you know
-		      if it was really given.
+		      if it was really given. The number is always of type
+		      LONG.
 		   /A Argument is required. If it is left out ReadArgs()
 		      fails.
 		   /K The keyword must be given when filling the option.
 		      Normally it's skipped.
-		   /M Multiple strings. The result is returned as a string
-		      pointer array terminated with NULL. /M eats all strings
-		      that don't fit into any other option. If there are
-		      unfilled /A arguments after parsing they steal strings
-		      from /M. This makes it possible to e.g. write a COPY
-		      template like 'FROM/A/M,TO/A'. There may be only one
-		      /M option in a template.
+		   /M Multiple strings or, when used in combination with /N,
+		      numbers. The result is returned as an array of pointers
+		      to strings or LONGs, and is terminated with NULL. /M
+		      eats all strings that don't fit into any other option.
+		      If there are unfilled /A arguments after parsing they
+		      steal strings from /M. This makes it possible to, for
+		      example, write a Copy command template like
+		      'FROM/A/M,TO/A'. There may be only one /M option in a
+		      template.
 		   /F Eats the rest of the line even if there are option
 		      keywords in it.
 	array	 - Array to be filled with the result values. The array must
@@ -104,13 +107,14 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     UBYTE *flags = NULL;
     STRPTR strbuf = NULL, iline = NULL;
     STRPTR *multvec = NULL, *argbuf = NULL;
+    CONST_STRPTR numstr;
     ULONG multnum = 0, multmax = 0;
 
     /* Some variables */
     CONST_STRPTR cs1;
     STRPTR s1, s2, *newmult;
     ULONG arg, numargs, nextarg;
-    LONG it, item, chars, value;
+    LONG it, item, chars;
     struct CSource lcs, *cs;
 
     ASSERT_VALID_PTR(template);
@@ -255,8 +259,8 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                             ERROR(ERROR_NO_FREE_STORE);
                         }
 
-                        CopyMemQuick((ULONG *) iline,
-                                     (ULONG *) newiline, isize);
+                        if (iline != NULL)
+                            CopyMemQuick(iline, newiline, isize);
 
                         FreeVec(iline);
 
@@ -272,7 +276,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                         ERROR(me->pr_Result2);
                     }
                     
-                    if (c == EOF || c == '\n' || !c)
+                    if (c == EOF || c == '\n' || c == '\0')
                     {
                         /* stegerg: added this. Otherwise try "list ?" then enter only "l" + RETURN
                          * and you will get a broken wall in FreeMem reported. This happens in
@@ -381,7 +385,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
     #endif
     	
         {
-            /* Get item. Quoted items are no keywords. */
+            /* Get item. Quoted items are never keywords. */
             it = ReadItem(s1, ~0ul / 2, cs);
 
             if (it == ITEM_UNQUOTED)
@@ -617,7 +621,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                 if ((flags[arg] & TYPEMASK) == NUMERIC)
                 {
                     STRPTR *p;
-                    SIPTR *q;
+                    LONG *q;
 
                     if (multnum * 2 > multmax)
                     {
@@ -640,7 +644,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
                     array[arg] = (IPTR) multvec;
                     p = multvec;
-                    q = (SIPTR *) (multvec + multnum);
+                    q = (LONG *) (multvec + multnum);
 
                     while (*p)
                     {
@@ -656,7 +660,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                         /* Put the result where it belongs. */
                         *p = (STRPTR) q;
                         p++;
-                        q++;
+                        q += sizeof(IPTR) / sizeof(LONG);
                     }
                 }
             }
@@ -678,26 +682,18 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
                     case NUMERIC:
                         /* Convert /N argument. */
-                        chars = StrToLong(argbuf[arg], &value);
+                        /* Abuse the argbuf buffer. It's not needed anymore. */
+                        numstr = (CONST_STRPTR)argbuf[arg];
+                        chars = StrToLong(numstr, (LONG *)&argbuf[arg]);
 
-                        if (chars <= 0 || argbuf[arg][chars])
+                        if (chars <= 0 || numstr[chars] != '\0')
                         {
                             /* Conversion failed. */
                             ERROR(ERROR_BAD_NUMBER);
                         }
 
                         /* Put the result where it belongs. */
-#if 0
-                        if (flags[arg] & REQUIRED)
-                            /* Required argument. Return number. */
-                            array[arg] = value;
-                        else
-#endif
-                        {
-                            /* Abuse the argbuf buffer. It's not needed anymore. */
-                            argbuf[arg] = (STRPTR) value;
-                            array[arg] = (IPTR) & argbuf[arg];
-                        }
+                        array[arg] = (IPTR) &argbuf[arg];
                         break;
                 }
             }
