@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG,   code,   D1),
-	AROS_LHA(STRPTR, header, D2),
+	AROS_LHA(CONST_STRPTR, header, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 79, Dos)
@@ -36,7 +36,7 @@
                     in which case only the error message is printed.
 
     RESULT
-	!= 0 if all went well. 0 on failure.
+	Boolean success indicator.
 
     NOTES
 

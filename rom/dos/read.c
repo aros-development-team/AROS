@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read a couple of bytes from a file.
@@ -81,7 +81,8 @@
     /* send the request, with error reporting */
     do {
         DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_STREAM, fh, NULL) == DOSFALSE);
+    } while (iofs.io_DosError != 0
+        && !ErrorReport(iofs.io_DosError, REPORT_STREAM, (IPTR)fh, NULL));
 
     SetIoErr(iofs.io_DosError);
 

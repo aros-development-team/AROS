@@ -278,7 +278,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase);
 	    NP_CloseError,
 	    NP_HomeDir,
 	    NP_Cli,
-	    NULL
+	    0
 	};
 
 	FilterTagItems(newtags, filterList, TAGFILTER_NOT);

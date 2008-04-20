@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a hard- or softlink.
@@ -19,7 +19,7 @@
 	AROS_LH3(LONG, MakeLink,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(APTR,   dest, D2),
 	AROS_LHA(LONG  , soft, D3),
 
@@ -88,7 +88,7 @@
 
     /* source and target must be on the same device
      * XXX this is insufficient, see comments in samedevice.c */
-    if (dvp->dvp_Port != fh->fh_Device) {
+    if (dvp->dvp_Port != (struct MsgPort *)fh->fh_Device) {
         FreeDeviceProc(dvp);
         SetIoErr(ERROR_RENAME_ACROSS_DEVICES);
         return DOSFALSE;

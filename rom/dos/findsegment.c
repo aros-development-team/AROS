@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Find a resident segment.
@@ -17,7 +17,7 @@
 	AROS_LH3(struct Segment *, FindSegment,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR          , name, D1),
+	AROS_LHA(CONST_STRPTR    , name, D1),
 	AROS_LHA(struct Segment *, seg, D2),
 	AROS_LHA(BOOL            , system, D3),
 

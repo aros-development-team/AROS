@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,7 +45,7 @@ AROS_UFH2(void,vfp_hook,
 /*  SYNOPSIS */
 	AROS_LHA(BPTR,         file,     D1),
 	AROS_LHA(CONST_STRPTR, format,   D2),
-	AROS_LHA(IPTR *,       argarray, D3),
+	AROS_LHA(const IPTR *, argarray, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 59, Dos)

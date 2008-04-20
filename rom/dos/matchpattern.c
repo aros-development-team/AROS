@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,8 +19,8 @@
 	AROS_LH2(BOOL, MatchPattern,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, pat, D1),
-	AROS_LHA(STRPTR, str, D2),
+	AROS_LHA(CONST_STRPTR, pat, D1),
+	AROS_LHA(CONST_STRPTR, str, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 141, Dos)

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Lang: english
@@ -19,7 +19,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR , fh, D1),
-	AROS_LHA(CONST APTR , block, D2),
+	AROS_LHA(CONST_APTR , block, D2),
 	AROS_LHA(ULONG, blocklen, D3),
 	AROS_LHA(ULONG, numblocks, D4),
 
@@ -51,16 +51,13 @@
     ASSERT(blocklen > 0);
     ASSERT(numblocks > 0);
 
-    ULONG   len;
-    UBYTE  *ptr;
+    ULONG   len, written;
+    const UBYTE  *ptr;
 
     ptr = block;
     len = 0;
 
     SetIoErr(0);
-
-        ULONG
-    written;
 
     for(written = 0; written < numblocks; written++)
     {
@@ -106,7 +103,7 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
         /* Is there a buffer? */
         if (fh->fh_Buf == NULL)
         {
-            if (NULL == vbuf_alloc(fh, IOBUFSIZE, DOSBase))
+            if (vbuf_alloc(fh, IOBUFSIZE, DOSBase) == NULL)
             {
                 return(EOF);
             }
@@ -132,7 +129,7 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
             goOn = Flush(file);
         }
 
-        if (FALSE != goOn)
+        if (goOn)
         {
             written = Write(file, buffer, length);
         }
@@ -141,24 +138,24 @@ FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOS
     {
         for (written = 0; written < length; ++written)
         {
-/* Check if there is still some space in the buffer */
+            /* Check if there is still some space in the buffer */
             if (fh->fh_Pos >= fh->fh_End)
             {
-                if (NULL == Flush(file))
+                if (!Flush(file))
                 {
                     written = -1;
                     break;
                 }
             }
 
-/* Write data */
+            /* Write data */
             *fh->fh_Pos++ = buffer[written];
             
             if (fh->fh_Flags & FHF_LINEBUF
                 && (buffer[written] == '\n' || buffer[written] == '\r'
                     || buffer[written] == '\0'))
             {
-                if (NULL == Flush(file))
+                if (!Flush(file))
                 {
                     written = -1;
                     break;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -44,7 +44,8 @@ LONG InternalSeek
     /* send the request, with error reporting */
     do {
         DosDoIO(&iofs.IOFS);
-    } while (iofs.io_DosError != 0 && ErrorReport(iofs.io_DosError, REPORT_STREAM, fh, NULL) == DOSFALSE);
+    } while (iofs.io_DosError != 0
+        && !ErrorReport(iofs.io_DosError, REPORT_STREAM, (IPTR)fh, NULL));
 
     SetIoErr(iofs.io_DosError);
 

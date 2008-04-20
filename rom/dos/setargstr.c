@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,7 +17,7 @@
 	AROS_LH1(STRPTR, SetArgStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, string, D1),
+	AROS_LHA(CONST_STRPTR, string, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 90, Dos)
@@ -50,7 +50,7 @@
     STRPTR oldStr;
     struct Process *pr = (struct Process *)FindTask(NULL);
     oldStr = pr->pr_Arguments;
-    pr->pr_Arguments = string;
+    pr->pr_Arguments = (STRPTR)string;
 
     return oldStr;
 

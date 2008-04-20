@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -67,9 +67,10 @@ struct vfp
 void InitIOFS(struct IOFileSys *iofs, ULONG type,
 	      struct DosLibrary *DOSBase);
 
-STRPTR StripVolume(STRPTR name);
+CONST_STRPTR StripVolume(CONST_STRPTR name);
 
-LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, STRPTR name, struct DosLibrary *DOSBase);
+LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
+    struct DosLibrary *DOSBase);
 
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
@@ -77,17 +78,17 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase);
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */
-BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name,
-			     struct DosLibrary *DOSBase);
+BOOL internal_SetProgramName(struct CommandLineInterface *cli,
+    CONST_STRPTR name, struct DosLibrary *DOSBase);
 
 
 /* Pattern matching function used by MatchPattern() and MatchPatternNoCase() */
-BOOL patternMatch(STRPTR pat, STRPTR str, BOOL useCase,
+BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
 		  struct DosLibrary *DOSBase);
 
 /* Pattern parsing function used by ParsePattern() and ParsePatternNoCase() */
-LONG patternParse(STRPTR Source, STRPTR Dest, LONG DestLength, BOOL useCase,
-		  struct DosLibrary *DOSBase);
+LONG patternParse(CONST_STRPTR Source, STRPTR Dest, LONG DestLength,
+    BOOL useCase, struct DosLibrary *DOSBase);
 
 
 LONG InternalSeek
@@ -104,7 +105,7 @@ LONG InternalFlush( struct FileHandle *fh, struct DosLibrary *DOSBase );
 
 struct AChain *Match_AllocAChain(LONG extrasize, struct DosLibrary *DOSBase);
 void Match_FreeAChain(struct AChain *ac, struct DosLibrary *DOSBase);
-LONG Match_BuildAChainList(STRPTR pattern, struct AnchorPath *ap,
+LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
 			   struct AChain **retac, struct DosLibrary *DOSBase);
 LONG Match_MakeResult(struct AnchorPath *ap, struct DosLibrary *DOSBase);
 
@@ -114,8 +115,8 @@ void removefromrootnode(struct Process *, struct DosLibrary *);
 struct marker
 {
     UBYTE type; /* 0: Split 1: MP_NOT */
-    STRPTR pat; /* Pointer into pattern */
-    STRPTR str; /* Pointer into string */
+    CONST_STRPTR pat; /* Pointer into pattern */
+    CONST_STRPTR str; /* Pointer into string */
 };
 
 struct markerarray
@@ -238,7 +239,7 @@ typedef struct FileHandle* FileHandlePtr;
 
 void vbuf_free(FileHandlePtr fh);
 
-IPTR vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase);
+APTR vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase);
 
 LONG FWriteChars(BPTR file, CONST UBYTE* buffer, ULONG length, struct DosLibrary *DOSBase);
     

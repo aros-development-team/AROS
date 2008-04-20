@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a CLI command
@@ -18,7 +18,7 @@
 	AROS_LH3(LONG, Execute,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, string, D1),
+	AROS_LHA(CONST_STRPTR, string, D1),
 	AROS_LHA(BPTR  , input , D2),
 	AROS_LHA(BPTR  , output, D3),
 

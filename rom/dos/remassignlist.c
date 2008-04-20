@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RemAssignList() - Remove an entry from a multi-dir assign.
@@ -18,7 +18,7 @@
 	AROS_LH2(LONG, RemAssignList,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(BPTR  , lock, D2),
 
 /*  LOCATION */

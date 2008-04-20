@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Writes a buffer to the current output.
@@ -17,8 +17,8 @@
 	AROS_LH2(LONG, WriteChars,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, buf, D1),
-	AROS_LHA(ULONG , buflen, D2),
+	AROS_LHA(CONST_STRPTR, buf, D1),
+	AROS_LHA(ULONG, buflen, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 157, Dos)

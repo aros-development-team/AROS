@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Change the date of a file.
@@ -22,7 +22,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR,       name, D1),
-	AROS_LHA(struct DateStamp *, date, D2),
+	AROS_LHA(const struct DateStamp *, date, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 66, Dos)
@@ -35,8 +35,8 @@
 	date - new file time
 
     RESULT
-	!= 0 if all went well, 0 else. IoErr() gives additional
-	information in that case.
+	Boolean success indicator. IoErr() gives additional information upon
+	failure.
 
     NOTES
 
@@ -58,7 +58,7 @@
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_SET_DATE, DOSBase);
 
-    memcpy(&iofs.io_Union.io_SET_DATE.io_Date, date, sizeof(struct DateStamp));
+    CopyMem(date, &iofs.io_Union.io_SET_DATE.io_Date, sizeof(struct DateStamp));
 
     return DoIOFS(&iofs, NULL, name, DOSBase) == 0;
 

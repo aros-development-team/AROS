@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Execute a loaded command synchonously
+    Desc: Execute a loaded command synchronously
     Lang: english
 */
 #include <exec/memory.h>
@@ -16,7 +16,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 (
 	struct Process	       * proc,
 	struct StackSwapStruct * sss,
-	STRPTR			 argptr,
+	CONST_STRPTR		 argptr,
 	ULONG			 argsize,
 	LONG_FUNC		 entry,
 	struct DosLibrary      * DOSBase
@@ -32,7 +32,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 /*  SYNOPSIS */
 	AROS_LHA(BPTR,   segList,   D1),
 	AROS_LHA(ULONG,  stacksize, D2),
-	AROS_LHA(STRPTR, argptr,    D3),
+	AROS_LHA(CONST_STRPTR, argptr,    D3),
 	AROS_LHA(ULONG,  argsize,   D4),
 
 /*  LOCATION */
@@ -60,7 +60,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 	The return code from the program. See also IoErr().
 
     NOTES
-	Programs expect the arugment string to end with a newline ('\n')
+	Programs expect the argument string to end with a newline ('\n')
 	character (ReadArgs() requires it to work properly).
 
     EXAMPLE
@@ -101,7 +101,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
-    me->pr_Arguments=argptr;
+    me->pr_Arguments=(STRPTR)argptr;
 
     ret=AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
 		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
