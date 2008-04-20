@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -29,8 +29,8 @@ void InitIOFS(struct IOFileSys *iofs, ULONG type,
     iofs->IOFS.io_Flags                   = 0;
 }
 
-STRPTR StripVolume(STRPTR name) {
-    char *path = strchr(name, ':');
+CONST_STRPTR StripVolume(CONST_STRPTR name) {
+    const char *path = strchr(name, ':');
     if (path != NULL)
         path++;
     else
@@ -38,8 +38,8 @@ STRPTR StripVolume(STRPTR name) {
     return path;
 }
 
-LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, STRPTR name, struct DosLibrary *DOSBase) {
-    LONG err;
+LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, CONST_STRPTR name,
+    struct DosLibrary *DOSBase) {
     BOOL freedvp = FALSE;
 
     if (dvp == NULL) {
@@ -59,7 +59,7 @@ LONG DoIOFS(struct IOFileSys *iofs, struct DevProc *dvp, STRPTR name, struct Dos
     if (name != NULL)
         iofs->io_Union.io_NamedFile.io_Filename = StripVolume(name);
 
-    DosDoIO(iofs);
+    DosDoIO((struct IORequest *)iofs);
 
     SetIoErr(iofs->io_DosError);
 

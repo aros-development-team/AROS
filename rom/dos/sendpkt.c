@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -450,7 +450,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    	    
 	    dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
 
-	    if (dp->dp_Arg6 == NULL)
+	    if (dp->dp_Arg6 == (IPTR)NULL)
 	    {
 		return;
 	    }
@@ -481,7 +481,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    
 	    dp->dp_Arg6 = (IPTR)AllocDosObject(DOS_FILEHANDLE, NULL);
 
-	    if (dp->dp_Arg6 == NULL)
+	    if (dp->dp_Arg6 == (IPTR)NULL)
 	    {
 		return;
 	    }
@@ -564,7 +564,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 			return;
 		    }
 		    
-		    if (dvp->dvp_Port != fh->fh_Device)
+		    if (dvp->dvp_Port != (struct MsgPort *)fh->fh_Device)
 		    {
                         FreeDeviceProc(dvp);
 			SetIoErr(ERROR_RENAME_ACROSS_DEVICES);

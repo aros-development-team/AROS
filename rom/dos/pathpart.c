@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Return a pointer to after the directories in a path.
@@ -79,7 +79,7 @@
 	ptr++;
     }
     
-    return path;
+    return (STRPTR)path;
     AROS_LIBFUNC_EXIT
 } /* PathPart */
 

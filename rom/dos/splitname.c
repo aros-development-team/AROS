@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Split a path into pieces
@@ -29,7 +29,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(CONST_STRPTR, name, D1),
-	AROS_LHA(ULONG , seperator, D2),
+	AROS_LHA(ULONG , separator, D2),
 	AROS_LHA(STRPTR, buf, D3),
 	AROS_LHA(LONG  , oldpos, D4),
 	AROS_LHA(LONG  , size, D5),
@@ -38,13 +38,13 @@
 	struct DosLibrary *, DOSBase, 69, Dos)
 
 /*  FUNCTION
-	Split a path into parts at the position of seperator.
+	Split a path into parts at the position of separator.
 
     INPUTS
 	name - Split this path
-	seperator - Split it at this seperator
+	separator - Split it at this separator
 	buf - Copy the current part into this buffer
-	oldpos - Begin at this place with the search for seperator.
+	oldpos - Begin at this place with the search for separator.
 		If you call this function for the first time, set it
 		to 0.
 	size - The size of the buffer. If the current part of the
@@ -53,7 +53,7 @@
 
     RESULT
 	The next position to continue for the next part or -1 if
-	there is no seperator after name+oldpos.
+	there is no separator after name+oldpos.
 
     NOTES
 
@@ -74,7 +74,7 @@
 
     name += oldpos;
 
-    while (*name != seperator && *name && size)
+    while (*name != separator && *name && size)
     {
 	size --;
 	*buf++ = *name++;
@@ -83,7 +83,7 @@
 
     *buf = 0;
 
-    if (*name == seperator)
+    if (*name == separator)
 	return oldpos + 1;
 
     return -1;
@@ -104,7 +104,7 @@ int main (int argc, char ** argv)
 
     if (argc < 3)
     {
-	fprintf (stderr, "Usage: %s <path> <seperator>\n", argv[0]);
+	fprintf (stderr, "Usage: %s <path> <separator>\n", argv[0]);
 	return RETURN_ERROR;
     }
 

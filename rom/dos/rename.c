@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Rename a file
@@ -99,6 +99,7 @@
 	/* get real name of destination path */
 	BPTR lock;
 	char *pos;
+	const char *pos2;
 
 	strcpy(buf2, newName);
 	pos = strrchr(buf2, '/');
@@ -117,13 +118,13 @@
 	    {
 		int namelen;
 		len = strlen(buf2);
-		pos = newName + (int)(pos - buf2);
-		namelen = strlen(pos);
+		pos2 = newName + (int)(pos - buf2);
+		namelen = strlen(pos2);
 		if (len + namelen < sizeof(buf2) - 1)
 		{
 		    if (buf2[len - 1] != ':')
 			buf2[len++] = '/';
-		    CopyMem(pos, buf2 + len, namelen + 1);
+		    CopyMem(pos2, buf2 + len, namelen + 1);
 		    newName = buf2;
 		}
 	    }

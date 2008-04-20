@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,7 +20,7 @@
 	AROS_LH2(LONG, MatchFirst,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR             , pat, D1),
+	AROS_LHA(CONST_STRPTR       , pat, D1),
 	AROS_LHA(struct AnchorPath *, AP , D2),
 
 /*  LOCATION */
@@ -34,8 +34,8 @@
 	and ap_FoundBreak. The first call to MatchFirst() also passes you
 	the first matching file which you can examine in ap_Info and the directory
 	the files is in in ap_Current->an_Lock. After the first call to
-        MatchFirst() call MatchNext().
-	The search begins whereever the current directory is set to. See
+        MatchFirst(), call MatchNext().
+	The search begins wherever the current directory is set to. See
 	CurrentDir();
 	For more info on patterns see ParsePattern().
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -9,7 +9,7 @@
 #include <dos/bptr.h>
 #include <string.h>
 
-LONG    putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh,
+LONG    putNumber(CONST_STRPTR *format, IPTR **args, ULONG base, BPTR fh,
 		  struct DosLibrary *DOSBase);
 STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
 		    struct DosLibrary *DOSBase);
@@ -23,8 +23,8 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
 
 /*  SYNOPSIS */
 	AROS_LHA(BPTR  , fh      , D1),
-	AROS_LHA(STRPTR, fmt     , D2),
-	AROS_LHA(IPTR *, argarray, D3),
+	AROS_LHA(CONST_STRPTR, fmt     , D2),
+	AROS_LHA(const IPTR *, argarray, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 58, Dos)
@@ -79,8 +79,8 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
     char    buffer[bLast + 1];
 
     LONG    count  = 0;	     /* Number of characters written */
-    STRPTR  format = fmt;
-    IPTR   *args   = argarray;
+    CONST_STRPTR  format = fmt;
+    const IPTR   *args   = argarray;
 
     STRPTR  string;
     STRPTR  wBuf;	     /* Pointer to first number character in buffer */
@@ -154,17 +154,17 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
 		
 	    case 'O':		/* Octal number */
 	    case 'o':
-		count += putNumber(&format, &args, 8, fh, DOSBase);
+		count += putNumber(&format, (IPTR **)&args, 8, fh, DOSBase);
 		break;
 		
 	    case 'X':		/* Hexadecimal number */
 	    case 'x':
-		count += putNumber(&format, &args, 16, fh, DOSBase);
+		count += putNumber(&format, (IPTR **)&args, 16, fh, DOSBase);
 		break;
 		
 	    case 'I':		/* Decimal number */
 	    case 'i':
-		count += putNumber(&format, &args, 10, fh, DOSBase);
+		count += putNumber(&format, (IPTR **)&args, 10, fh, DOSBase);
 		break;
 		
 	    case 'N':		/* Decimal number (no length restriction) */
@@ -248,7 +248,7 @@ STRPTR  writeNumber(char *buffer, ULONG base, ULONG n, BOOL minus,
 } /* VFWritef */
 
 
-LONG putNumber(STRPTR *format, IPTR **args, ULONG base, BPTR fh,
+LONG putNumber(CONST_STRPTR *format, IPTR **args, ULONG base, BPTR fh,
 	       struct DosLibrary *DOSBase)
 {
     char    buffer[bLast + 1];

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for MatchFirst/MatchNext/MatchEnd
@@ -83,7 +83,7 @@ Examples: [<???>] is one AChain
 
 **************************************************************************/
   
-LONG Match_BuildAChainList(STRPTR pattern, struct AnchorPath *ap,
+LONG Match_BuildAChainList(CONST_STRPTR pattern, struct AnchorPath *ap,
 			   struct AChain **retac, struct DosLibrary *DOSBase)
 {
     struct AChain 	*baseac = 0, *prevac = 0, *ac;

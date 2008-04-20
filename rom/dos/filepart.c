@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Returns a pointer to the first char of the filename in the give file part.
@@ -64,12 +64,12 @@
 
     if(path)
     {
-	STRPTR i;
+	CONST_STRPTR i;
 
 	/* set i to last char of path */
 
 	if (!*path) /* path == "" ? */
-	  return path;
+	  return (STRPTR)path;
 
 	i = path + strlen (path) -1;   /* set i to the \0-byte */
 
@@ -81,10 +81,10 @@
 	if ((*i == ':')) i++;
 	if ((*i == '/')) i++;
 
-	return(i);
+	return (STRPTR)i;
     } /* path */
 
-    return (0L);  /* if no path is given return NIL pointer */
+    return NULL;  /* if no path is given, return NULL pointer (shouldn't happen) */
 
     AROS_LIBFUNC_EXIT
 } /* FilePart */
@@ -96,7 +96,7 @@
 int main (int argc, char ** argv)
 {
     UWORD i;
-    STRPTR s,fileptr;
+    CONST_STRPTR s, fileptr;
 
     while (--argc)
     {

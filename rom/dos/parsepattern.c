@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -19,7 +19,7 @@
 	AROS_LH3(LONG, ParsePattern,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, Source,     D1),
+	AROS_LHA(CONST_STRPTR, Source,     D1),
 	AROS_LHA(STRPTR, Dest,       D2),
 	AROS_LHA(LONG,   DestLength, D3),
 

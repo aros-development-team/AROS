@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: DOS function NewLoadSeg()
@@ -20,7 +20,7 @@
         AROS_LH2(BPTR, NewLoadSeg,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR, file, D1),
+        AROS_LHA(CONST_STRPTR, file, D1),
 	AROS_LHA(struct TagItem *, tags, D2),
 
 /*  LOCATION */
@@ -43,7 +43,7 @@
     EXAMPLE
 
     BUGS
-        As there are no tags currently defined all this function does is
+        As there are no tags currently defined, all this function does is
         call LoadSeg()
 
     SEE ALSO

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -45,18 +45,13 @@
 
     INTERNALS
 
-    HISTORY
-	04-06-07    sonic   merged back from MorphOS source code
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     struct DosInfo *di = BADDR(DOSBase->dl_Root->rn_Info);
     struct DosList *dl = (struct DosList *)&DOSBase->dl_DevInfo;
-    ULONG DevSem, EntrySem, DelSem;
+    ULONG DevSem = FALSE, EntrySem = FALSE, DelSem = FALSE;
 
     D(bug("AttemptLockDosList: flags = $%lx\n", flags));
 

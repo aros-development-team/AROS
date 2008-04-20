@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include <proto/exec.h>
@@ -118,7 +118,7 @@ vbuf_free(FileHandlePtr fh)
 }
 
 
-IPTR
+APTR
 vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase)
 {
         STRPTR
@@ -131,10 +131,6 @@ vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase)
 
         fh->fh_Pos = fh->fh_Buf = fh->fh_End = buf;
     }
-    else
-    {
-        SetIoErr(ERROR_NO_FREE_STORE);
-    }
-    
+
     return(fh->fh_Buf);
 }

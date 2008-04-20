@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
@@ -20,7 +20,7 @@
 	AROS_LH2(struct DevProc *, GetDeviceProc,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR          , name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 	AROS_LHA(struct DevProc *, dp, D2),
 
 /*  LOCATION */
@@ -51,8 +51,6 @@
     BUGS
 	Currently doesn't return dvp_DevNode for locks which are
 	relative to "PROGDIR:", ":", or the current directory.
-
-	I'm working on it though...
 
     SEE ALSO
 	FreeDeviceProc()
@@ -146,7 +144,9 @@
              * implement names. bring on packets I say */
 
             dl = LockDosList(LDF_ALL | LDF_READ);
-            while (dl != NULL && (dl->dol_Ext.dol_AROS.dol_Device != dp->dvp_Port))
+            while (dl != NULL
+                && ((struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device
+                != dp->dvp_Port))
                 dl = dl->dol_Next;
 
             UnLockDosList(LDF_READ | LDF_ALL);

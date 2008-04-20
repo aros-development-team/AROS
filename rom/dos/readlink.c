@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read the soft link information.
@@ -18,7 +18,7 @@
 /*  SYNOPSIS */
 	AROS_LHA(struct MsgPort *, port, D1),
 	AROS_LHA(BPTR            , lock, D2),
-	AROS_LHA(STRPTR          , path, D3),
+	AROS_LHA(CONST_STRPTR    , path, D3),
 	AROS_LHA(STRPTR          , buffer, D4),
 	AROS_LHA(ULONG           , size, D5),
 

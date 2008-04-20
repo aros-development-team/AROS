@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sets the name of the current program.
@@ -20,7 +20,7 @@
 	AROS_LH1(BOOL, SetProgramName,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(CONST_STRPTR, name, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 95, Dos)
@@ -59,10 +59,11 @@
 } /* SetProgramName */
 
 
-BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name,
-			     struct DosLibrary *DOSBase)
+BOOL internal_SetProgramName(struct CommandLineInterface *cli,
+    CONST_STRPTR name, struct DosLibrary *DOSBase)
 {
-    STRPTR  s;
+    CONST_STRPTR  s;
+    STRPTR  bs;
     ULONG   namelen;
 
     if (cli == NULL)
@@ -82,10 +83,10 @@ BOOL internal_SetProgramName(struct CommandLineInterface *cli, STRPTR name,
 	return FALSE;
     }
     
-    s = AROS_BSTR_ADDR(cli->cli_CommandName);
+    bs = AROS_BSTR_ADDR(cli->cli_CommandName);
     
     AROS_BSTR_setstrlen(cli->cli_CommandName, namelen);
-    CopyMem((APTR)name, s, namelen);
+    CopyMem((APTR)name, bs, namelen);
 
     return TRUE;
 }

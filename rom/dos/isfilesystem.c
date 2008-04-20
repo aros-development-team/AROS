@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Check if a device is a filesystem.
@@ -23,7 +23,7 @@
 	AROS_LH1(BOOL, IsFileSystem,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, devicename, D1),
+	AROS_LHA(CONST_STRPTR, devicename, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 118, Dos)
@@ -67,8 +67,8 @@
     InitIOFS(&iofs, FSA_IS_FILESYSTEM, DOSBase);
     err = DoIOFS(&iofs, NULL, devicename, DOSBase);
 
-    /* XXX if err is ERROR_ACTION_NOT_KNOWN, we should try to the lock the
-     * root. if we can get a lock, then its a filesystem */
+    /* XXX if err is ERROR_ACTION_NOT_KNOWN, we should try to lock the
+     * root. if we can get a lock, then it's a filesystem */
 
     if (err != 0)
         return FALSE;

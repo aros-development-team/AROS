@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: RunProcess() - Run a process from an entry point with args
@@ -40,7 +40,7 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 /*  SYNOPSIS */
 	struct Process		* proc,
 	struct StackSwapStruct  * sss,
-	STRPTR			  argptr,
+	CONST_STRPTR		  argptr,
 	ULONG			  argsize,
 	LONG_FUNC		  entry,
 	struct DosLibrary 	* DOSBase)
@@ -120,7 +120,7 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 //    *retptr = entry(argptr,argsize,SysBase);
 
     *retptr = AROS_UFC3R(ULONG, entry,
-		AROS_UFCA(STRPTR, argptr, A0),
+		AROS_UFCA(CONST_STRPTR, argptr, A0),
 		AROS_UFCA(ULONG, argsize, D0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6),
 		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)

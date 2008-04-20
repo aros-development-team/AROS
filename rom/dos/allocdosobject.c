@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,8 +22,8 @@
 	AROS_LH2(APTR, AllocDosObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG           , type, D1),
-	AROS_LHA(struct TagItem *, tags, D2),
+	AROS_LHA(ULONG                 , type, D1),
+	AROS_LHA(const struct TagItem *, tags, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 38, Dos)
@@ -66,31 +66,19 @@
 
 	    /* We set fh->fh_Arg1 to point back to 'fh' to make packet
 	       emulation possible */
-	    fh->fh_CompatibilityHack = fh;
+	    fh->fh_CompatibilityHack = (SIPTR)fh;
 	}
-	else
-	{
-	    SetIoErr(ERROR_NO_FREE_STORE);
-	}
-
 	return mem;
 
     case DOS_FIB:
-	mem = AllocMem(sizeof(struct FileInfoBlock), MEMF_CLEAR);
-
-	if(mem == NULL)
-	    SetIoErr(ERROR_NO_FREE_STORE);
-
-	return mem;
+	return AllocMem(sizeof(struct FileInfoBlock), MEMF_CLEAR);
 
     case DOS_STDPKT:
         {
             struct StandardPacket *sp = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
 
-            if (sp == NULL) {
-                SetIoErr(ERROR_NO_FREE_STORE);
+            if (sp == NULL)
                 return NULL;
-            }
 
             sp->sp_Pkt.dp_Link = &(sp->sp_Msg);
             sp->sp_Msg.mn_Node.ln_Name = (char *) &(sp->sp_Pkt);
@@ -99,12 +87,7 @@
         }
 
     case DOS_EXALLCONTROL:
-	mem = AllocMem(sizeof(struct InternalExAllControl), MEMF_CLEAR);
-
-	if(mem == NULL)
-	    SetIoErr(ERROR_NO_FREE_STORE);
-
-	return mem;
+	return AllocMem(sizeof(struct InternalExAllControl), MEMF_CLEAR);
 
     case DOS_CLI:
 	{

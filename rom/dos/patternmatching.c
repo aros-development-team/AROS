@@ -38,10 +38,10 @@
  */
 
 
-BOOL patternMatch(STRPTR pat, STRPTR str, BOOL useCase,
+BOOL patternMatch(CONST_STRPTR pat, CONST_STRPTR str, BOOL useCase,
 		  struct DosLibrary *DOSBase)
 {
-    STRPTR  s;
+    CONST_STRPTR  s;
     BOOL    match = FALSE;
 
     struct markerarray   ma;
@@ -430,8 +430,8 @@ BOOL patternMatch(STRPTR pat, STRPTR str, BOOL useCase,
 }
 
 
-LONG patternParse(STRPTR Source, STRPTR Dest, LONG DestLength, BOOL useCase,
-		  struct DosLibrary *DOSBase)
+LONG patternParse(CONST_STRPTR Source, STRPTR Dest, LONG DestLength,
+    BOOL useCase, struct DosLibrary *DOSBase)
 {
     STRPTR  stack;
     STRPTR  end;

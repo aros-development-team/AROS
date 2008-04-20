@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a new directory.
@@ -29,14 +29,14 @@
 	struct DosLibrary *, DOSBase, 20, Dos)
 
 /*  FUNCTION
-	Creates a new directory under the given name. If all went an
+	Creates a new directory under the given name. If all went well, an
 	exclusive lock on the new diretory is returned.
 
     INPUTS
 	name  -- NUL terminated name.
 
     RESULT
-	Exclusive lock to the new directory or 0 if couldn't be created.
+	Exclusive lock to the new directory or 0 if it couldn't be created.
 	IoErr() gives additional information in that case.
 
     NOTES
@@ -55,12 +55,9 @@
 
     struct FileHandle *fh;
     struct IOFileSys iofs;
-    struct DevProc *dvp;
 
-    if ((fh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL) {
-        SetIoErr(ERROR_NO_FREE_STORE);
+    if ((fh = (struct FileHandle *) AllocDosObject(DOS_FILEHANDLE, NULL)) == NULL)
         return NULL;
-    }
 
     InitIOFS(&iofs, FSA_CREATE_DIR, DOSBase);
     iofs.io_Union.io_CREATE_DIR.io_Protection = 0;
