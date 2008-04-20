@@ -1,2 +1,2 @@
-CFG_PACKAGES=(hosted contrib development i386-pc)
+CFG_PACKAGES=(hosted.svn.linux-i386 contrib.svn.linux-i386 development bootiso-grub.svn.pc-i386)
 CFG_MAIL_ENABLE=yes

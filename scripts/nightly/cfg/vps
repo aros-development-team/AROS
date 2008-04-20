@@ -1,4 +1,4 @@
-CFG_PACKAGES=(sources sdk hosted contrib i386-pc i386-pc-livefloppy documentation)
+CFG_PACKAGES=(sources documentation sdk.svn.pc-i386 hosted.svn.linux-i386 contrib.svn.pc-i386 bootiso-grub.svn.pc-i386 bootfloppy.svn.pc-i386)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=n.cafferkey@cs.ucc.ie

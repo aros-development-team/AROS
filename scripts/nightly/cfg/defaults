@@ -1,6 +1,20 @@
 # Packages to build, as an array. 
-# Allowed: sources, documentation, sdk, hosted, contrib, i386-pc,
-#          i386-pc-floppy, changelogs
+# ## DO NOT USE THESE PACKAGES!
+#          bootiso            (only to be called from arch specific packages)
+# ## Allowed Common Packages:
+#          sources,
+#          documentation,
+#          changelogs,
+# ## Allowed Arch Specific Targets:
+#          sdk.svn.pc-i386,
+#          contrib.svn.pc-i386,
+#          bootiso.svn.pc-i386,
+#          bootfloppy.svn.pc-i386,
+#          hosted.svn.linux-i386,
+#          sdk.svn.pc-x86_64,
+#          contrib.svn.pc-x86_64,
+#          bootiso.svn.pc-x86_64,
+
 CFG_PACKAGES=( sources )
 
 # C compiler to use
@@ -13,7 +27,7 @@ CFG_CC=gcc
 CFG_MAIL_ENABLE=no
 
 # Addresses
-CFG_MAIL_TO=aros-dev@lists.hepe.com
+CFG_MAIL_TO=aros-dev@aros.org
 CFG_MAIL_CC=MUST_BE_SET
 
 #=============================================================================
