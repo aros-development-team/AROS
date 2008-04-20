@@ -22,6 +22,7 @@
  * 2008-04-03  T. Wiszkowski       Fixed IRQ flood issue, eliminated and reduced obsolete / redundant code                                 
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
+ * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
  */
 
 #define DEBUG 0
@@ -80,6 +81,13 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         count >>= unit->au_SectorShift;
         ULONG cnt = 0;
 
+        if ((0 == (unit->au_XferModes & AF_XFER_PACKET)) && ((block + count) > unit->au_Capacity))
+        {
+            bug("[ATA!!] Requested block (%lx;%ld) outside disk range (%lx)\n", block, count, unit->au_Capacity);
+            io->io_Error = IOERR_BADADDRESS;
+            return;
+        }
+
         /* Call the Unit's access funtion */
         io->io_Error = unit->au_Read32(unit, block, count,
             IOStdReq(io)->io_Data, &cnt);
@@ -118,11 +126,26 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
             Otherwise do the 48-bit LBA addressing.
         */
         if ((block + count) < 0x0fffffff)
-            io->io_Error = unit->au_Read32(unit, (ULONG)(block & 0x0fffffff), count,
-                IOStdReq(io)->io_Data, &cnt);
+        {
+            if ((0 == (unit->au_XferModes & AF_XFER_PACKET)) && ((block + count) > unit->au_Capacity))
+            {
+                bug("[ATA!!] Requested block (%lx;%ld) outside disk range (%lx)\n", block, count, unit->au_Capacity);
+                io->io_Error = IOERR_BADADDRESS;
+                return;
+            }
+            io->io_Error = unit->au_Read32(unit, (ULONG)(block & 0x0fffffff), count, IOStdReq(io)->io_Data, &cnt);
+        }
         else
-            io->io_Error = unit->au_Read64(unit, block, count,
-                IOStdReq(io)->io_Data, &cnt);
+        {
+            if ((0 == (unit->au_XferModes & AF_XFER_PACKET)) && ((block + count) > unit->au_Capacity48))
+            {
+                bug("[ATA!!] Requested block (%lx:%08lx;%ld) outside disk range (%lx:%08lx;%ld)\n", block>>32, block&0xfffffffful, count, unit->au_Capacity48>>32, unit->au_Capacity48 & 0xfffffffful);
+                io->io_Error = IOERR_BADADDRESS;
+                return;
+            }
+
+            io->io_Error = unit->au_Read64(unit, block, count, IOStdReq(io)->io_Data, &cnt);
+        }
                 
         IOStdReq(io)->io_Actual = cnt;
     }

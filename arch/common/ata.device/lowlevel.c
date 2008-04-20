@@ -39,6 +39,7 @@
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  *                                 increased failure timeout values to cover rainy day scenarios
+ * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
  */
 
 #define DEBUG 0
@@ -1502,7 +1503,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
         return IOERR_OPENFAIL;
     }
 
-#ifdef AROS_BIG_ENDIAN
+#if (AROS_BIG_ENDIAN != 0)
     SWAP_LE_WORD(unit->au_Drive->id_General);
     SWAP_LE_WORD(unit->au_Drive->id_OldCylinders);
     SWAP_LE_WORD(unit->au_Drive->id_SpecificConfig);
@@ -1582,6 +1583,7 @@ ULONG atapi_Identify(struct ata_Unit* unit)
 
     unit->au_Capacity   = unit->au_Drive->id_LBASectors;
     unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
+    bug("[ATA%02ld] Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
 
     /*
      * ok, this is not very original, but quite compatible :P
@@ -1643,7 +1645,7 @@ ULONG ata_Identify(struct ata_Unit* unit)
         return IOERR_OPENFAIL;
     }
 
-#ifdef AROS_BIG_ENDIAN
+#if (AROS_BIG_ENDIAN != 0)
     SWAP_LE_WORD(unit->au_Drive->id_General);
     SWAP_LE_WORD(unit->au_Drive->id_OldCylinders);
     SWAP_LE_WORD(unit->au_Drive->id_SpecificConfig);
@@ -1725,6 +1727,7 @@ ULONG ata_Identify(struct ata_Unit* unit)
 
     unit->au_Capacity   = unit->au_Drive->id_LBASectors;
     unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
+    bug("[ATA%02ld] Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
 
     /*
        For drive capacities > 8.3GB assume maximal possible layout.
