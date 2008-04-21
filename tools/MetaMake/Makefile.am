@@ -10,5 +10,6 @@ DEPDIR = $(mmake_objdir)/.deps
 $(mmake_objdir)/%.o: %.c
 	$(MKDIR_P) "$(DEPDIR)"
 	$(MKDIR_P) "$(mmake_objdir)"
+	$(MKDIR_P) "$(DEPDIR)"
 	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
