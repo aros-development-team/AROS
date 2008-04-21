@@ -109,7 +109,7 @@ $(TOP)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC
 	    $(MECHO) $(MKDIR) "$(TOP)/tools/MetaMake" ; \
 	    $(MKDIR) "$(TOP)/tools/MetaMake"; \
 	fi;
-	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS="" $(AROS_SRC)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --enable-objfiles=$(HOSTGENDIR)/tools/MetaMake
+	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS= $(AROS_SRC)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake
 
 $(MMAKE): $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
 	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake

@@ -21,9 +21,10 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(stdarg.h string.h unistd.h sys/stat.h sys/types.h netinet/in.h)
 
 AC_MSG_CHECKING([where to build objfiles])
-AC_ARG_ENABLE(objfiles,AC_HELP_STRING([--enable-objfiles=DIR],[Build Object Files in DIR]),with_objfiles=$enableval,with_objfiles="sourcedir")
+AC_ARG_WITH(objfiledir,AC_HELP_STRING([--with-objfiledir=DIR],[Build Object Files in DIR]),with_objfiles="$withval",with_objfiles="sourcedir")
 if test "$with_objfiles" = "sourcedir"; then
-    mmake_objdir="./"
+    mmake_srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+    mmake_objdir="${mmake_srcpwd}"
 else
     mmake_objdir="$with_objfiles"
 fi
