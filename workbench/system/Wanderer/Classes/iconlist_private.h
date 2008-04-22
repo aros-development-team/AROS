@@ -80,11 +80,15 @@ struct IconList_DATA
 	ULONG                         icld_InfoShadowPen;
 
 	ULONG                         icld__Option_IconTextMaxLen;                   /* max no. of chars to display in a line */
+    ULONG                         icld__Option_LastIconTextMaxLen;
+
 	UBYTE                         icld__Option_IconListMode;                     /* */
 	UBYTE                         icld__Option_IconTextMode;                     /* */
 	BOOL                          icld__Option_IconListFixedBackground;          /* */
 	BOOL                          icld__Option_IconListScaledBackground;         /* */
 	ULONG                         icld__Option_LabelTextMultiLine;               /* No. of lines to display for labels*/
+	ULONG                         icld__Option_LastLabelTextMultiLine;
+
 	BOOL                          icld__Option_LabelTextMultiLineOnFocus;        /* Only show "multiline" label for focused icon */
 	UBYTE                         icld__Option_IconBorderOverlap;
 	UBYTE                         icld__Option_IconHorizontalSpacing;            /* Horizontal/Vert Space between Icon "Areas" */
