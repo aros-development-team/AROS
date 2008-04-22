@@ -2,7 +2,7 @@
 set timeout=5
 
 # Set default boot entry as VESA Gfx @ 800x600-16bpp
-set default=5
+set default=6
 
 if font /dh0/boot/grub/unifont.pff ; then
 	insmod /dh0/boot/grub/vbe.mod
@@ -18,6 +18,11 @@ menuentry "AROS64 with VESA Gfx @ 640x480-8bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=640x480x8 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 800x600-8bpp" {
@@ -25,6 +30,11 @@ menuentry "AROS64 with VESA Gfx @ 800x600-8bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=800x600x8 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 1024x768-8bpp" {
@@ -32,6 +42,11 @@ menuentry "AROS64 with VESA Gfx @ 1024x768-8bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=1024x768x8 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 1280x1024-8bpp" {
@@ -39,6 +54,11 @@ menuentry "AROS64 with VESA Gfx @ 1280x1024-8bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=1280x1024x8 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 640x480-16bpp" {
@@ -46,6 +66,11 @@ menuentry "AROS64 with VESA Gfx @ 640x480-16bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=640x480x16 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 800x600-16bpp" {
@@ -53,6 +78,11 @@ menuentry "AROS64 with VESA Gfx @ 800x600-16bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=800x600x16 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 1024x768-16bpp" {
@@ -60,6 +90,11 @@ menuentry "AROS64 with VESA Gfx @ 1024x768-16bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=1024x768x16 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 1280x1024-16bpp" {
@@ -67,6 +102,11 @@ menuentry "AROS64 with VESA Gfx @ 1280x1024-16bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=1280x1024x16 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 640x480-32bpp" {
@@ -74,6 +114,11 @@ menuentry "AROS64 with VESA Gfx @ 640x480-32bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=640x480x32 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 800x600-32bpp" {
@@ -81,6 +126,11 @@ menuentry "AROS64 with VESA Gfx @ 800x600-32bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=800x600x32 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 1024x768-32bpp" {
@@ -88,6 +138,11 @@ menuentry "AROS64 with VESA Gfx @ 1024x768-32bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=1024x768x32 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 1280x1024-32bpp" {
@@ -95,6 +150,11 @@ menuentry "AROS64 with VESA Gfx @ 1280x1024-32bpp" {
     multiboot /dh0/boot/aros-x86_64 vesa=1280x1024x32 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VGA @ 640x480-4bpp" {
@@ -102,6 +162,11 @@ menuentry "AROS64 with VGA @ 640x480-4bpp" {
     multiboot /dh0/boot/aros-x86_64 ATA=32bit,forcedma nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VGA @ 640x480-4bpp (slow ATA)" {
@@ -109,6 +174,11 @@ menuentry "AROS64 with VGA @ 640x480-4bpp (slow ATA)" {
     multiboot /dh0/boot/aros-x86_64 nofdc
     module /dh0/boot/kernel
     module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
 
 menuentry "AROS64 with VESA Gfx @ 800x600-16bpp (SFS+FAT)" {
@@ -118,4 +188,8 @@ menuentry "AROS64 with VESA Gfx @ 800x600-16bpp (SFS+FAT)" {
     module /dh0/boot/kernel.pkg
     module /dh0/Devs/sfs.handler
     module /dh0/Devs/fat.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 }
