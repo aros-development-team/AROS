@@ -6,7 +6,7 @@
 
 usage()
 {
-    error "Usage: $1 -a archive [-s suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
+    error "Usage: $1 -a archive [-s suffixes] [-ao archive_origins...] [-l location to download to] [-d dir to unpack to] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
 sf_mirrors="aleron voxel heanet avh umn unc puzzle mesh"
@@ -38,7 +38,7 @@ fetch()
     
     case $protocol in
         http | ftp)    
-            if ! wget -t 5 -T 5 -c "$origin/$file" -O "$destination/$file".tmp; then
+            if ! wget -t 5 -T 15 -c "$origin/$file" -O "$destination/$file".tmp; then
                 ret=false
 	    else
 	        mv "$destination/$file".tmp "$destination/$file"
@@ -90,10 +90,10 @@ fetch_cached()
     export $foundvar=
     
     test -e "$destination" -a ! -d "$destination" && \
-        echo "\`$destination' is not a diretory." && return 1
+        echo "fetch_cached: \`$destination' is not a diretory." && return 1
 
     if ! test -e "$destination"; then
-	echo "\`$destination' does not exist. Making it."
+	echo "fetch_cached: \`$destination' does not exist. Making it."
 	! mkdir -p "$destination" && return 1
     fi
     
@@ -124,7 +124,7 @@ error()
 
 unpack()
 {
-    local location="$1" archive="$2";
+    local location="$1" archive="$2" archivepath="$3";
     
     local old_PWD="$PWD"
     cd $location
@@ -134,10 +134,10 @@ unpack()
     local ret=true
     case "$archive" in
         *.tar.bz2)
-	    if ! tar xfj "$archive"; then ret=false; fi
+	    if ! tar xfj "$archivepath/$archive"; then ret=false; fi
 	    ;;
         *.tar.gz | *.tgz)
-	    if ! tar xfz "$archive"; then ret=false; fi
+	    if ! tar xfz "$archivepath/$archive"; then ret=false; fi
 	    ;;
 	*)
 	    echo "Unknown archive format for \`$archive'."
@@ -152,10 +152,15 @@ unpack()
 
 unpack_cached()
 {
-    local location="$1" archive="$2";
+    local location="$1" archive="$2" archivepath="$3";
+
+    if ! test -e "$location"; then
+	echo "unpack_cached: \`$location' does not exist. Making it."
+	! mkdir -p "$location" && return 1
+    fi
 
     if ! test -f ${location}/.${archive}.unpacked;  then
-        if unpack "$location" "$archive"; then
+        if unpack "$location" "$archive" "$archivepath"; then
 	    echo yes > ${location}/.${archive}.unpacked
 	    true
 	else
@@ -207,6 +212,7 @@ patch_cached()
     fi
 }
 
+location="./"
 
 while  test "x$1" != "x"; do
     if test "x${1:0:1}" == "x-" -a  "x${2:0:1}" == "x-"; then
@@ -220,7 +226,8 @@ while  test "x$1" != "x"; do
 	 -d) destination="$2";;
 	-po) patches_origins="$2";;
 	 -p) patches="$2";;
-  	  *) echo "Unknown option \`$1'."; usage "$0";;
+     -l) location="$2";;
+  	  *) echo "fetch: Unknown option \`$1'."; usage "$0";;
     esac
     
     shift
@@ -231,10 +238,11 @@ test -z "$archive" && usage "$0"
 
 archive_origins=${archive_origins:-.}
 destination=${destination:-.}
+location=${location:-.}
 patches_origins=${patches_origins:-.}
 
-fetch_cached "$archive_origins" "$archive" "$suffixes" "$destination" archive2
-test -z "$archive2" && error "Error while fetching the archive \`$archive'."
+fetch_cached "$archive_origins" "$archive" "$suffixes" "$location" archive2
+test -z "$archive2" && error "fetch: Error while fetching the archive \`$archive'."
 archive="$archive2"
 
 for patch in $patches; do
@@ -242,20 +250,20 @@ for patch in $patches; do
     if test "x$patch" != "x"; then
         if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
 	    fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz" "$destination" patch2
-            test -z "$patch2" && error "Error while fetching the patch \`$patch'."
-	    if ! unpack_cached "$destination" "$patch2"; then
-		error "Error while unpacking \`$patch2'."
+            test -z "$patch2" && error "fetch: Error while fetching the patch \`$patch'."
+	    if ! unpack_cached "$destination" "$patch2" "$destination"; then
+		error "fetch: Error while unpacking \`$patch2'."
 	    fi
         fi
     fi
 done
 
-if ! unpack_cached "$destination" "$archive"; then
-    error "Error while unpacking \`$archive'."
+if ! unpack_cached "$destination" "$archive" "$location"; then
+    error "fetch: Error while unpacking \`$archive'."
 fi
     
 for patch in $patches; do
     if ! patch_cached "$destination" "$patch"; then
-        error "Error while applying the patch \`$patch'."
+        error "fetch: Error while applying the patch \`$patch'."
     fi
 done
