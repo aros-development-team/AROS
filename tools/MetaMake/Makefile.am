@@ -1,5 +1,6 @@
 AUTOMAKE_OPTIONS = ansi2knr
 mmake_objdir = @mmake_objdir@
+MKDIR_P = @MKDIR_P@
 bin_PROGRAMS = mmake
 mmake_FILES = mmake mem list var dirnode dep project cache io
 mmake_SOURCES = $(addsuffix .c,$(mmake_FILES))
