@@ -2246,8 +2246,6 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
         tar -cvf $(%(mmake)-%(subpackage)-package-basename).tar * ; \
         cd $(TOP) ; \
         $(RM) -r "$(PORTSDIR)/%(package)" ; \
-        #Using make install would be better here.
-        tar -xf $(%(mmake)-%(subpackage)-package-basename).tar -C "%(prefix)"/ ; \
         bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar ; \
     fi
 %end
