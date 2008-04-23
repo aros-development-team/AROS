@@ -1,9 +1,9 @@
 # $Id: mmakefile.src 28046 2008-03-17 23:02:42Z agreppin $
 include $(TOP)/config/make.cfg
 
-.PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 
-TARGET_ISO := $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 
 #MM bootiso-pc-i386 :	AROS-complete		\
 #MM			kernel-package-pc-i386		\
@@ -34,7 +34,7 @@ $(warning LANG = $(LANG))
 $(TARGET_ISO): $(BINDIR)/boot/aros-pc-i386.gz
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
-	@$(MKDIR) -p "$(PORTSDIR)"
+	@$(MKDIR) -p "$(DISTDIR)"
 	@mkisofs -f \
 		-o $@ \
 		-b $(BOOTLOADER_ELTORITO_REL) \
