@@ -9,9 +9,10 @@ ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 printi "Creating hosted binary packages..."
 
 printi "Creating AROS/"$HOST_CPU-$HOST_OS" system package..."
-PACKAGE=$BASENAME-$HOST_CPU-$HOST_OS-system
+PACKAGE=$BASENAME-$HOST_OS-$HOST_CPU-system
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
+delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
