@@ -1,13 +1,19 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(mmake.c)
-AM_INIT_AUTOMAKE(MetaMake,0.6)
+AC_INIT(MetaMake,0.6)
 AC_REVISION($Revision$)dnl
-AC_PREREQ(2.12)
+AC_PREREQ(2.61)
+AC_CONFIG_AUX_DIR(.)
+AC_CONFIG_SRCDIR(mmake.c)
 
 #don't know where else to put this...
 AC_MSG_CHECKING([Building MetaMake in .. ])
 METAMAKE_BUILDDIR=$PWD
 AC_MSG_RESULT($METAMAKE_BUILDDIR)
+
+AC_MSG_CHECKING([MetaMake Source in .. ])
+srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+METAMAKE_SRCDIR=${srcpwd}
+AC_MSG_RESULT($METAMAKE_SRCDIR)
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -41,6 +47,7 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(getcwd strdup strndup strerror)
 
 AC_SUBST(mmake_objdir)
+AC_SUBST(METAMAKE_SRCDIR)
 
 AM_CONFIG_HEADER(config.h)
 AC_OUTPUT(Makefile)
