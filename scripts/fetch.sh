@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2008, The AROS Development Team. All rights reserved.
 # $Id$
 
 
@@ -9,17 +9,51 @@ usage()
     error "Usage: $1 -a archive [-s suffixes] [-ao archive_origins...] [-l location to download to] [-d dir to unpack to] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
-sf_mirrors="aleron voxel heanet avh umn unc puzzle mesh"
+fetch_mirrored()
+{
+    local origin="$1" file="$2" destination="$3" mirrosgroup="$4" mirrors="$5"
+    local full_path
+    local ret=false
+
+    for mirror in $mirrors; do
+        echo "Downloading from ${mirrosgroup}... "
+        if fetch "${mirror}/$origin" "${file}" "$destination"; then
+                ret=true
+                break;
+        fi
+    done
+    
+    $ret
+}
+
+gnu_mirrors="http://ftp.gnu.org/pub/gnu ftp://ftp.cise.ufl.edu/pub/mirrors/GNU/gnu"
+
+fetch_gnu()
+{
+    local origin="$1" file="$2" destination="$3"
+    local full_path
+    local ret=true
+
+    if ! fetch_mirrored "$origin" "${file}" "$destination" "GNU" "${gnu_mirrors}"; then
+        ret=false
+    fi
+
+    $ret
+}
+
+sf_mirrors="http://downloads.sourceforge.net http://aleron.dl.sourceforge.net http://voxel.dl.sourceforge.net http://heanet.dl.sourceforge.net http://avh.dl.sourceforge.net http://umn.dl.sourceforge.net http://unc.dl.sourceforge.net http://puzzle.dl.sourceforge.net http://mesh.dl.sourceforge.net"
 
 fetch_sf()
 {
     local origin="$1" file="$2" destination="$3"
     local full_path
-    
-    for i in 1; do
-        echo "Downloading from SourceForge... Try n. $i."
-        fetch "http://downloads.sourceforge.net/$origin" "${file}" "$destination" && break;
-    done
+    local ret=true
+
+    if ! fetch_mirrored "$origin" "${file}" "$destination" "SourceForge" "${sf_mirrors}"; then
+        ret=false
+    fi
+
+    $ret
 }
 
 fetch()
@@ -40,13 +74,20 @@ fetch()
         http | ftp)    
             if ! wget -t 5 -T 15 -c "$origin/$file" -O "$destination/$file".tmp; then
                 ret=false
-	    else
-	        mv "$destination/$file".tmp "$destination/$file"
-	    fi
+            else
+                mv "$destination/$file".tmp "$destination/$file"
+            fi
             rm -f "$destination/$file".tmp
-	    ;;
+            ;;
+        gnu)
+            if ! fetch_gnu "${origin:${#protocol}+3}" "$file" "$destination"; then
+                ret=false
+            fi
+            ;;
         sf | sourceforge)
-            ! fetch_sf "${origin:${#protocol}+3}" "$file" "$destination" && ret=false
+            if ! fetch_sf "${origin:${#protocol}+3}" "$file" "$destination"; then
+                ret=false
+            fi
             ;;
 	"")
 	    if test "$origin" = "$destination";  then
