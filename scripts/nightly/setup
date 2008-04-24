@@ -57,7 +57,7 @@ fi
 
 alias makedir='execute mkdir -p'
 alias  delete='execute rm -rf'
-alias    copy='execute cp -pR'
+alias    copy='execute cp -pRL'
 alias    move='execute mv -f'
 
 export CC=$CFG_CC
