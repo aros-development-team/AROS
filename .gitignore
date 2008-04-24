@@ -1773,25 +1773,15 @@
 /tools/FlexCat/mmakefile
 
 # tools/MetaMake
-/tools/MetaMake/mmake
-/tools/MetaMake/*.o
-/tools/MetaMake/mmake.cache
-/tools/MetaMake/Makefile
-/tools/MetaMake/Makefile.in
-/tools/MetaMake/config.h
-/tools/MetaMake/MetaMake-*.*.tar.gz
-/tools/MetaMake/stamp-h
 /tools/MetaMake/configure
-/tools/MetaMake/config.cache
 /tools/MetaMake/config.log
+/tools/MetaMake/config.h
+/tools/MetaMake/Makefile
 /tools/MetaMake/config.status
-/tools/MetaMake/aclocal.m4
-/tools/MetaMake/.deps
-/tools/MetaMake/.pure
 /tools/MetaMake/mmakefile
-/tools/MetaMake/depcomp
-/tools/MetaMake/autom4te.cache
 /tools/MetaMake/stamp-h1
+/tools/MetaMake/autom4te.cache
+/tools/MetaMake/aclocal.m4
 
 # tools/adflib
 /tools/adflib/mmakefile
