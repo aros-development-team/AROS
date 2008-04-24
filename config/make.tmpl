@@ -2221,7 +2221,7 @@ endif
 
 %build_with_configure mmake=%(mmake)-%(subpackage) \
      srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
-     nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-%(subpackage)-package-dir)" \
+     nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
      %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)"
 
@@ -2244,8 +2244,6 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
         mkdir -p "$(%(mmake)-prefix)" ; \
         cd $(%(mmake)-%(subpackage)-package-dir) ; \
         tar -cvf $(%(mmake)-%(subpackage)-package-basename).tar * ; \
-        cd $(TOP) ; \
-        $(RM) -r "$(PORTSDIR)/%(package)" ; \
         bzip2 -9 -f $(%(mmake)-%(subpackage)-package-basename).tar ; \
     fi
 %end
