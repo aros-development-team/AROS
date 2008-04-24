@@ -101,7 +101,7 @@ main (int argc, char ** argv)
 	{
 	    if (!strcmp (argv[t], "--version"))
 	    {
-		printf ("MetaMake %s (%s)\n", VERSION, __DATE__);
+		printf ("MetaMake %s (%s)\n", PACKAGE_VERSION, __DATE__);
 		if (argc == 2)
 		    exit (0);
 	    }
