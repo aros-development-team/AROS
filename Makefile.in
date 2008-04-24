@@ -101,9 +101,6 @@ $(AROS_SRC)/tools/MetaMake/configure : $(AROS_SRC)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
 	@cd $(AROS_SRC)/tools/MetaMake ; @aros_host_aclocal@ ; @aros_host_autoconf@
 
-$(AROS_SRC)/tools/MetaMake/Makefile.in : $(AROS_SRC)/tools/MetaMake/Makefile.am
-	@cd $(AROS_SRC)/tools/MetaMake ; @aros_host_automake@ -a -c
-
 $(TOP)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC)/tools/MetaMake/Makefile.in
 	@$(IF) [ ! -d $(TOP)/tools/MetaMake ]; then \
 	    $(MECHO) $(MKDIR) "$(TOP)/tools/MetaMake" ; \
