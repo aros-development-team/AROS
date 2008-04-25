@@ -65,10 +65,12 @@
 *****************************************************************************/
 {
     struct opSet ops, *msg = &ops;
+    AROS_SLOWSTACKTAGS_PRE(tag1)
 
     ops.MethodID     = OM_SET;
-    ops.ops_AttrList = &tag1;
+    ops.ops_AttrList = AROS_SLOWSTACKTAGS_ARG(tag1);
     ops.ops_GInfo    = NULL;
 
-    return DoSuperMethodA(class, object, (Msg)msg);
+    retval = DoSuperMethodA(class, object, (Msg)msg);
+    AROS_SLOWSTACKTAGS_POST
 } /* SetSuperAttrs */
