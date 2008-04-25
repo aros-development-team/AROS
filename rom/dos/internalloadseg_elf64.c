@@ -370,7 +370,7 @@ static int load_hunk
             {
                 sh->addr = (char *)AROS_ROUNDUP2
                 (
-                 (ULONG)hunk->data + sizeof(struct FullJumpVec), sh->addralign
+                 (IPTR)hunk->data + sizeof(struct FullJumpVec), sh->addralign
                 );
                 __AROS_SET_FULLJMP((struct FullJumpVec *)hunk->data, sh->addr);
             }
@@ -500,7 +500,7 @@ static int relocate
                 break;
 
             case R_X86_64_PC32: /* PC relative 32 bit signed */
-                *p = s + rel->addend - (ULONG)p;
+                *(ULONG *)p = s + rel->addend - (IPTR) p;
                 break;
                 
             case R_X86_64_32:
