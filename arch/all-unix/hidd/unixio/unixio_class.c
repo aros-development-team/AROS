@@ -6,6 +6,18 @@
     Lang: english
 */
 
+/* Unix includes */
+#define timeval sys_timeval /* We don't want the unix timeval to interfere with the AROS one */
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/ioctl.h>
+#include <string.h>
+#include <errno.h>
+#undef timeval
+
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/interrupts.h>
@@ -32,18 +44,6 @@
 #include <proto/alib.h>
 
 #include <devices/timer.h>
-
-/* Unix includes */
-#define timeval sys_timeval /* We don't want the unix timeval to interfere with the AROS one */
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <string.h>
-#include <errno.h>
-#undef timeval
 
 #include "unixio.h"
 
@@ -718,7 +718,7 @@ static int UXIO_Init(LIBBASETYPEPTR LIBBASE)
 
 	newtask->tc_SPReg   = NULL;
 	newtask->tc_SPLower = ml->ml_ME[1].me_Addr;
-	newtask->tc_SPUpper = (APTR)((ULONG)ml->ml_ME[1].me_Addr + AROS_STACKSIZE);
+	newtask->tc_SPUpper = (APTR)((IPTR)ml->ml_ME[1].me_Addr + AROS_STACKSIZE);
 
 	newtask->tc_UserData = &LIBBASE->uio_csd;
 
