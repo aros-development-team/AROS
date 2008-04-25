@@ -115,8 +115,7 @@ $(MMAKE): $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
 # Clean the sources
 clean:
 	@$(CALL) $(MMAKE) AROS.clean
-	-@$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
-	    config.log
+	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log mmake.cache mmake.config rom/mmakefile config/make.cfg $(AROS_DEVELOPMENT)/include/aros/config.h $(GENDIR)/include/aros/config.h $(HOSTGENDIR)/config/host.cfg $(GENDIR)/config/target.cfg $(GENDIR)/config/make.defaults $(GENDIR)/config/specs $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld $(GENDIR)/scripts/genshared $(TOOLDIR)/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h
 
 # Clean the sources and tools
 arch-clean: clean
@@ -133,7 +132,7 @@ arch-clean: clean
         
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
-	@$(RM) Makefile config.* mmake.cache mmake.config
+	@$(NOP)
 
 # Dependencies don't work with .DEFAULT :-(
 docs : makedirs tools mmake
