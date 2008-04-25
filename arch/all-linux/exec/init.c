@@ -351,7 +351,7 @@ int main(int argc, char **argv)
       if (space != (UBYTE *)-1)
       {
         int size = psize/sizeof(ULONG);
-        memory = (UBYTE *)((ULONG)space + psize);
+        memory = (UBYTE *)((IPTR)space + psize);
         while(--size)
             ((ULONG *)space)[size] = 0xDEADBEEF;
       }
@@ -368,7 +368,15 @@ int main(int argc, char **argv)
     if (!_use_hostmem)
     {
       /* We allocate memSize megabytes */
+#ifdef __x86_64__
+      /* Allocate AROS memory in the first 2GB on x86-64 machines,
+       * otherwise relocations won't work correctly */
+      memory = mmap((APTR)0, (memSize << 20), PROT_READ|PROT_WRITE,
+                   MAP_ANONYMOUS|MAP_PRIVATE|MAP_32BIT, -1, 0);
+      if( memory == (UBYTE *)-1 )
+#else
       if( posix_memalign(&memory, getpagesize(), (memSize << 20)) != 0 )
+#endif
       {
          /*fprintf(stderr, "Cannot allocate any memory!\n");*/
          exit(20);
