@@ -8,7 +8,7 @@ SRC	= error filesup hash lineparser mystream \
 
 # Include the AROS build information. This will fail if $(TOP) is not
 # set, and build in the current directory.
--include $(AROS_SRC)/config/make.cfg
+-include $(TOP)/config/make.cfg
 
 # Values relating to stuff.
 PURIFY	= /home/digulla/AROS/compiler/purify/purify

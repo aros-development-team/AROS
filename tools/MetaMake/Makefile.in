@@ -70,11 +70,10 @@ $(mmake_objdir)/mmake$(EXEEXT): $(mmake_OBJECTS)
 
 # Clean the sources
 clean:
-	-@rm -rf $(mmake_objdir) Makefile config.cache config.status config.log
+	-@rm -rf $(mmake_objdir) Makefile config.cache config.status config.log config.h
 
 # Clean the sources and tools
 arch-clean: clean
 
 install :  makedirs $(mmake_objdir)/mmake$(EXEEXT)
 	cp $(mmake_objdir)/mmake$(EXEEXT) $(bindir)
-

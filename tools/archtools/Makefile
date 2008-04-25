@@ -1,7 +1,7 @@
 # Copyright © 2000-2003, The AROS Development Team. All rights reserved.
 # $Id$
 
--include $(AROS_SRC)/config/make.cfg
+-include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -Wall -Wunused -O0 -g
 

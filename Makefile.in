@@ -115,7 +115,7 @@ $(MMAKE): $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
 # Clean the sources and tools
 clean:
 	@$(CALL) $(MMAKE) AROS.clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/FlexCat clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/archtools clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/genmf clean

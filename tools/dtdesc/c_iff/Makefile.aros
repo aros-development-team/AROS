@@ -3,74 +3,76 @@
 #
 #   Makefile for c_iff
 
--include $(AROS_SRC)/config/make.cfg
+SRC	= checkiff \
+	closeiff \
+	endchunk \
+	filesize \
+	fixiffsize \
+	newchunk \
+	newiff \
+	newsubform \
+	openiff \
+	readchunkdata \
+	readchunkheader \
+	skipchunkdata \
+	writechunkdata
 
-.SUFFIXES:
-.SUFFIXES: .c .o
+-include $(TOP)/config/make.cfg
 
 # These are the compatibility variables. They will only be defined
-# if including $(AROS_SRC)/config/make.cfg fails (since they will then
+# if including $(TOP)/config/make.cfg fails (since they will then
 # be undefined.
 
-HOST_CC	    ?= $(CC)
-HOST_STRIP  ?= strip
-MKDIR	    ?= mkdir
-HOST_CFLAGS ?= -Wall -g -O
-INCL	    := -I. -I c_iff
-TOOLDIR	    ?= .
+HOST_CC ?= $(CC)
+HOST_AR ?= $(AR) cru
+TOOLDIR ?= .
 ifneq ($(HOSTGENDIR),)
-OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+OBJDIR=$(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+CIFFSRCDIR=$(CURDIR)
+CIFFLIBDIR=$(HOSTDIR)/lib
 else
-OBJDIR := $(TOOLDIR)/obj
+OBJDIR=$(TOOLDIR)/obj
+CIFFSRCDIR= .
+CIFFLIBDIR= .
 endif
+MKDIR ?= mkdir
+MECHO ?= echo
+CIFFLIB ?= $(TOOLDIR)/libc_iff.a
+HOST_CFLAGS := $(HOST_CFLAGS) -Wall -g -DHAVE_VSNPRINTF -I.. -O
 
-RM	    ?= rm -f
-AR	    ?= ar rv
-RANLIB	    ?= ranlib
 
+DEPS   := $(foreach f,$(SRC),$(OBJDIR)/$(f).d)
 
-RM = rm -f
-AR = ar rv
-RANLIB = ranlib
+all : depend $(OBJDIR) $(CIFFLIB)
 
-OBJS = \
-	checkiff.o \
-	closeiff.o \
-	endchunk.o \
-	filesize.o \
-	fixiffsize.o \
-	newchunk.o \
-	newiff.o \
-	newsubform.o \
-	openiff.o \
-	readchunkdata.o \
-	readchunkheader.o \
-	skipchunkdata.o \
-	writechunkdata.o
+$(CIFFLIB) : $(foreach f,$(SRC),$(OBJDIR)/$(f).o)
+	@$(MECHO) "Creating c_iff/$(notdir $@)..."
+	@$(HOST_AR) $@ $?
 
-%.o : %.c
-	@$(HOST_CC) $(HOST_CFLAGS) -I. -c $< -o $@
+$(OBJDIR)/%.o : %.c
+	@$(MECHO) "Compiling c_iff/$(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) -o $@ -c $<
 
-all : libc_iff.a
-doc : c_iff.txt
+$(OBJDIR)/%.d : %.c
+	@$(MECHO) Finding dependencies for $<...
+	@$(MKDIR) -p $(dir $@)
+	@$(HOST_CC) $(HOST_CFLAGS) -M $< > $@
 
-libc_iff.a : $(OBJS)
-	@$(RM) libc_iff.a
-	@$(AR) $@ $(OBJS)
-	@$(RANLIB) $@
+$(OBJDIR):
+	@$(MKDIR)  $(OBJDIR)
 
-c_iff.txt :
+doc: c_iff.txt
+
+c_iff.txt:
 	@perl autodoc.pl *.c >c_iff.txt
 
-example : example.o libc_iff.a hot.iff
-	@$(HOST_CC) $(HOST_CFLAGS) -I. -o $@ example.o -L. -lc_iff
+example : $(OBJDIR)/example.o $(CIFFLIB) hot.iff
+	@$(HOST_CC) $(HOST_CFLAGS) $(INCL) -o $@ example.o -L$(TOOLDIR) -lc_iff
 
-$(OBJS) : c_iff.h
+clean:
+	@$(RM) $(CIFFLIB) $(OBJDIR)/*.o c_iff.txt example test1.iff
 
-clean :
-	@$(RM) libc_iff.a
-	@$(RM) *.o
-	@$(RM) c_iff.txt
-	@$(RM) example
-	@$(RM) test1.iff
+depend : $(DEPS)
 
+-include $(DEPS)
+# DO NOT DELETE
