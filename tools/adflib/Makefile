@@ -23,7 +23,7 @@ DEPEND=makedepend
 LDFLAGS=-L. -ladf
 LDSHARED=$(CC)
 
-OBJS=	 adf_hd.o adf_disk.o adf_raw.o adf_bitm.o adf_dump.o\
+OBJS=adf_hd.o adf_disk.o adf_raw.o adf_bitm.o adf_dump.o\
         adf_util.o adf_env.o adf_nativ.o adf_dir.o adf_file.o adf_cache.o \
         adf_link.o adf_salv.o
 

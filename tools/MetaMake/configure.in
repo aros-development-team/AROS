@@ -31,7 +31,7 @@ AC_MSG_CHECKING([where to build objfiles])
 AC_ARG_WITH(objfiledir,AC_HELP_STRING([--with-objfiledir=DIR],[Build Object Files in DIR]),with_objfiles="$withval",with_objfiles="sourcedir")
 if test "$with_objfiles" = "sourcedir"; then
     mmake_srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
-    mmake_objdir="${mmake_srcpwd}"
+    mmake_objdir="${mmake_srcpwd}/obj"
 else
     mmake_objdir="$with_objfiles"
 fi

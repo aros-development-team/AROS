@@ -1,4 +1,4 @@
-include $(AROS_SRC)/config/make.cfg
+include $(TOP)/config/make.cfg
 
 SILENT := yes
 
@@ -36,7 +36,7 @@ endif
 
 .PHONY: all depend clean
 
-all: depend $(OBJDIR) $(AFSLIB)
+all: $(OBJDIR) depend $(AFSLIB)
 
 $(AFSLIB): $(OBJS)
 	@$(ECHO) "Creating $@..."
@@ -58,7 +58,7 @@ $(OBJDIR):
 	@$(MKDIR) $(OBJDIR)
 
 clean:
-	@$(RM) $(AFSLIB) $(OBJDIR)
+	@$(RM) -f $(AFSLIB) $(OBJDIR)
 
 depend: $(DEPS)
 

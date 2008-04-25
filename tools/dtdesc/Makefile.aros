@@ -5,52 +5,53 @@
 
 SRC := createdtdesc.c examinedtdesc.c
 
--include $(AROS_SRC)/config/make.cfg
-
-.SUFFIXES:
-.SUFFIXES: .c .o
+-include $(TOP)/config/make.cfg
 
 # These are the compatibility variables. They will only be defined
 # if including $(TOP)/config/make.cfg fails (since they will then
 # be undefined.
 
 HOST_CC	    ?= $(CC)
-HOST_STRIP  ?= strip
-MKDIR	    ?= mkdir
 HOST_CFLAGS ?= -Wall -g -O
-INCL	    := -I. -I c_iff
 TOOLDIR     ?= .
 ifneq ($(HOSTGENDIR),)
 OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+CIFFSRCDIR := $(AROS_SRC)/tools/dtdesc/c_iff
+CIFFLIBDIR := $(TOOLDIR)
 else
 OBJDIR := $(TOOLDIR)/obj
+CIFFSRCDIR := $(TOOLDIR)/c_iff
+CIFFLIBDIR := $(TOOLDIR)/c_iff
 endif
+MKDIR	    ?= mkdir
+
+INCL	    := -I. -I $(CIFFSRCDIR)
 
 RM	    ?= rm -f
 AR	    ?= ar rv
 RANLIB	    ?= ranlib
 
-CREATEDTDESC ?= createdtdesc
+CREATEDTDESC ?= $(TOOLDIR)/createdtdesc
 
-all: $(OBJDIR) $(CREATEDTDESC) examinedtdesc
+all: $(OBJDIR) $(CREATEDTDESC) $(TOOLDIR)/examinedtdesc
 
-$(CREATEDTDESC): $(OBJDIR)/createdtdesc.o c_iff/libc_iff.a
-	@$(HOST_CC) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -Lc_iff/ -lc_iff
+$(CREATEDTDESC): $(OBJDIR)/createdtdesc.o $(CIFFLIBDIR)/libc_iff.a
+	@$(HOST_CC) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
 
-examinedtdesc: $(OBJDIR)/examinedtdesc.o c_iff/libc_iff.a
-	@$(HOST_CC) -o examinedtdesc $(OBJDIR)/examinedtdesc.o -Lc_iff/ -lc_iff
+$(TOOLDIR)/examinedtdesc: $(OBJDIR)/examinedtdesc.o $(CIFFLIBDIR)/libc_iff.a
+	@$(HOST_CC) -o $(TOOLDIR)/examinedtdesc $(OBJDIR)/examinedtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
 
 $(OBJDIR)/%.o : %.c
 	@$(HOST_CC) $(HOST_CFLAGS) $(INCL) -c $< -o $@
 
-c_iff/libc_iff.a:
-	@$(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc/c_iff -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+$(CIFFLIBDIR)/libc_iff.a:
+	@$(ECHO) Building libc_iff.a...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
-$(OBJDIR) :
+$(OBJDIR):
 	@$(MKDIR) $(OBJDIR)
 
 clean:
-	@$(RM) -f *.o
-	@$(RM) -f examinedtdesc
-	@$(RM) -f $(CREATEDTDESC)
-	@$(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc/c_iff -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP) clean
+	@$(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP) clean
+	@$(RM) -f *.o examinedtdesc $(CREATEDTDESC) $(OBJDIR)
+

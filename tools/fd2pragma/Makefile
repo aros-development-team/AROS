@@ -1,7 +1,7 @@
 # Copyright © 2003, The AROS Development Team. All rights reserved.
 # $Id$
 
-include $(AROS_SRC)/config/make.cfg
+include $(TOP)/config/make.cfg
 
 all : $(FD2PRAGMA)
 

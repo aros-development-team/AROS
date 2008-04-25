@@ -1,4 +1,4 @@
-include $(AROS_SRC)/config/make.cfg
+include $(TOP)/config/make.cfg
 
 SILENT := yes
 
@@ -45,7 +45,7 @@ $(OBJDIR):
 	@$(MKDIR) $(OBJDIR)
 
 clean:
-	@$(RM) $(COPYTOAFS) $(OBJDIR)
+	@$(RM) -f $(COPYTOAFS) $(OBJDIR)
 
 depend: $(DEPS)
 
