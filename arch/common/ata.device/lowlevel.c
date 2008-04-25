@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved
+    Copyright © 2004-2008, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -235,6 +235,7 @@ inline void ata_SelectUnit(struct ata_Unit* unit)
  */
 void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable)
 {
+    enable = TRUE; // Needed in order to work with many PCs. Better fix welcome
     bus->ab_Waiting = enable;
     ata_out(enable ? 0x0 : 0x02, ata_AltControl, bus->ab_Alt);
 }
