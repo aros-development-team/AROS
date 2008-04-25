@@ -1,7 +1,7 @@
 #ifndef AROS_X86_64_CPU_H
 #define AROS_X86_64_CPU_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -211,7 +211,7 @@ extern void _aros_not_implemented (char *);
 	"movl   %%esp,%1\n\t"\
 	"call  *%%rcx\n\t"\
 	"movl   %%eax,%0"\
-	: "=g"(_re), "=m"(*(APTR *)p)\
+	: "=m"(_re), "=m"(*(APTR *)p)\
 	: "g"(_n), "g"(_n1), "g"(_n2), "g"(_n3)\
 	: "cc", "memory", "%rcx", "%rax", "%rdx", "%rsi", "%rdi" );\
     (_t)_re;\
