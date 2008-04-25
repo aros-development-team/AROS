@@ -9,12 +9,10 @@
     Lang: english
 */
 
-#define USE_SA_SIGINFO 0
-
-#if USE_SA_SIGINFO
+/* There's no need for USE_SA_SIGINFO, as we always use SA_SIGINFO
+   on x86_64 - there's no other sane way to get ucontext. */ 
 #define SIGCORE_NEED_SA_SIGINFO 1
 #include <ucontext.h>
-#endif
 
 #include <signal.h>
 #include <errno.h>
@@ -67,7 +65,6 @@ typedef @sighandler@ SignalHandler;
     so the address of the signal context is &sig+1.
 */
 
-#if USE_SA_SIGINFO
 #define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc);    		\
 										\
@@ -75,17 +72,6 @@ typedef @sighandler@ SignalHandler;
 	{ 									\
 	    sighandler(sig, (sigcontext_t *)&u->uc_mcontext); 			\
 	}
-
-#else
-
-#define GLOBAL_SIGNAL_INIT \
-	static void sighandler (int sig, sigcontext_t * sc);    \
-								\
-	static void SIGHANDLER (int sig)                        \
-	{							\
-	    sighandler (sig, (sigcontext_t *)(&sig+1));         \
-	}
-#endif
 
 /* Type of the values which can be stored on the stack. A variable
    which is to be used as a stack pointer must be declared as
@@ -101,10 +87,11 @@ typedef @sighandler@ SignalHandler;
 
 struct AROS_cpu_context
 {
-    ULONG regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
+    UQUAD regs[17];  	     /* rip (PC), rbp (FP), rax, rbx, rcx,
                              rdx, rdi, rsi, r8, r9, r10, r11, r12,
 			     r13, r14, r15, eflags */
-    struct _fpstate *fpstate; /* FPU state */
+    struct _fpstate fpstate __attribute__ ((aligned (16))); /* FPU state */
+    struct AROS_cpu_context * sc;
     int	errno_backup;
 };
 
@@ -253,14 +240,14 @@ struct AROS_cpu_context
         do                                      \
 	{                                       \
     	    if (HAS_FPU(sc))                    \
-	        (cc)->fpstate = (sc)->fpstate; \
+	        (cc)->fpstate = *(sc)->fpstate; \
 	} while (0)
 
 #define RESTORE_FPU(cc,sc)                      \
         do                                      \
 	{                                       \
     	    if (HAS_FPU(sc))                    \
-	        (sc)->fpstate = (cc)->fpstate; \
+	        *(sc)->fpstate = (cc)->fpstate; \
 	} while (0)
 
 /*
@@ -312,9 +299,18 @@ struct AROS_cpu_context
         do                                    \
 	{                                     \
 	    GetCpuContext(task)->regs[15] = 0; \
-	    GetCpuContext(task)->regs[16] = (ULONG)pc; \
+	    GetCpuContext(task)->regs[16] = (UQUAD)pc; \
 	} while (0)
 
+/* Here we have to setup a complete stack frame
+    so Exec_Exception thinks it was called as a
+    normal function. */
+#define SETUP_EXCEPTION(sc,arg)\
+	do                                        \
+	{                                         \
+	    _PUSH(GetSP(SysBase->ThisTask), arg); \
+	    _PUSH(GetSP(SysBase->ThisTask), arg); \
+	} while (0)
 
 /*
     Prepare the cpu context
@@ -324,7 +320,7 @@ struct AROS_cpu_context
 
 #define PREPARE_INITIAL_CONTEXT(task,startpc) \
    asm volatile("fninit\n\t" \
-    	    	"fnsave %0\n\t" \
+    	    	"fxsave %0\n\t" \
 		"fwait" : "=m" (GetCpuContext(task)->fpstate))
 
 #else
@@ -332,6 +328,32 @@ struct AROS_cpu_context
 #define PREPARE_INITIAL_CONTEXT(task,startpc)
 
 #endif
+
+/*
+    Store first six arguments in registers, the rest on stack
+*/
+
+#define PREPARE_INITIAL_ARGS(task, args, numargs) \
+    UQUAD* regs = GetIntETask (task)->iet_Context;\
+    int argcounter = numargs;                     \
+    while (argcounter > 6)                        \
+        _PUSH(GetSP(task), args[--argcounter]);   \
+    switch (argcounter)                           \
+    {                                             \
+        case 6:                                   \
+            regs[7] = args[5];                    \
+        case 5:                                   \
+            regs[6] = args[4];                    \
+        case 4:                                   \
+            regs[2] = args[3];                    \
+        case 3:                                   \
+            regs[3] = args[2];                    \
+        case 2:                                   \
+            regs[5] = args[1];                    \
+        case 1:                                   \
+            regs[4] = args[0];                    \
+            break;                                \
+    }
 
 /*
     This macro is similar to PREPARE_INITIAL_FRAME() but also saves
