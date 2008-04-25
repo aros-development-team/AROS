@@ -9,6 +9,7 @@
  * CHANGELOG:
  * DATE        NAME                ENTRY
  * ----------  ------------------  -------------------------------------------------------------------
+ * 2008-04-25  P. Fedin		   Brought back device discovery for old machines without PCI IDE controllers
  * 2008-01-25  T. Wiszkowski       Rebuilt, rearranged and partially fixed 60% of the code here
  *                                 Enabled implementation to scan for other PCI IDE controllers
  *                                 Implemented ATAPI Packet Support for both read and write
@@ -161,21 +162,9 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
-/*
- * PCI BUS ENUMERATOR
- *   collect ALL ata/ide capable devices (including SATA and other) and spawn consecutive tasks
- *
- * This function is growing too large. It will shorten drasticly once this whole mess gets converted into c++
- */
-
-static
-AROS_UFH3(void, Enumerator,
-    AROS_UFHA(struct Hook *,    hook,   A0),
-    AROS_UFHA(OOP_Object *,     Device, A2),
-    AROS_UFHA(APTR,             message,A1))
+static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
+		      IPTR DMABase, int x, EnumeratorArgs *a)
 {
-    AROS_USERFUNC_INIT
-
     /*
      * static list of io/irqs that we can handle
      */
@@ -196,6 +185,112 @@ AROS_UFH3(void, Enumerator,
      * ata bus - this is going to be created and linked to the master list here
      */
     struct ata_Bus *ab;
+
+    /*
+     * see if IO Base is valid. otherwise pick device from static list 
+     * (this most likely means the device is right there)
+     */
+    if (IOBase == 0)
+    {
+        if (a->PredefBus < (sizeof(Buses) / sizeof(Buses[0])))
+        {
+            /*
+             * collect IOBase and interrupt from the above list
+             */
+            IOBase  = Buses[a->PredefBus].port;
+            IOAlt   = Buses[a->PredefBus].alt;
+            INTLine = Buses[a->PredefBus].irq;
+            a->PredefBus++;
+        }
+        else
+        {
+            IOBase  = 0;
+            IOAlt   = 0;
+            DMABase = 0;
+            INTLine = 0;
+            bug("[ATA  ] Found more controllers\n");
+            /*
+             * we're all done. no idea what else they want from us
+             */
+            return;
+	}
+    }
+
+    D(bug("[ATA.Add_Device] IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
+
+    /*
+     * initialize structure
+     */
+    ab = (struct ata_Bus*) AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Bus));
+    if (ab == NULL)
+        return;
+
+    ab->ab_Base         = a->ATABase;
+    ab->ab_Port         = IOBase;
+    ab->ab_Alt          = IOAlt;
+    ab->ab_Irq          = INTLine;
+    ab->ab_Dev[0]       = DEV_NONE;
+    ab->ab_Dev[1]       = DEV_NONE;
+    ab->ab_Flags        = 0;
+    ab->ab_SleepySignal = 0;
+    ab->ab_BusNum       = a->CurrentBus++;
+    ab->ab_Waiting      = FALSE;
+    ab->ab_Timeout      = 0;
+    ab->ab_Units[0]     = 0;
+    ab->ab_Units[1]     = 0;
+    ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(a->ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
+    D(bug("[ATA  ] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
+
+    /*
+     * allocate DMA PRD
+     */
+    ab->ab_PRD          = AllocVecPooled(a->ATABase->ata_MemPool, (PRD_MAX+1) * 2 * sizeof(struct PRDEntry));  
+    if ((0x10000 - ((ULONG)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
+       ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
+
+    InitSemaphore(&ab->ab_Lock);
+
+    /*
+     * scan bus - try to locate all devices
+     */
+    ata_ScanBus(ab);
+    if (ab->ab_Dev[0] > DEV_UNKNOWN)
+    {
+        ab->ab_Units[0] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
+        ab->ab_Units[0]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
+        ata_init_unit(ab, 0);
+    }
+    if (ab->ab_Dev[1] > DEV_UNKNOWN)
+    {
+        ab->ab_Units[1] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
+        ab->ab_Units[1]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
+        ata_init_unit(ab, 1);
+    }
+
+    D(bug("[ATA  ] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
+
+    /*
+     * start things up :)
+     * note: this happens no matter there are devices or not 
+     * sort of almost-ready-for-hotplug ;)
+     */
+    AddTail((struct List*)&a->ATABase->ata_Buses, (struct Node*)ab);
+}
+
+/*
+ * PCI BUS ENUMERATOR
+ *   collect ALL ata/ide capable devices (including SATA and other) and spawn consecutive tasks
+ *
+ * This function is growing too large. It will shorten drasticly once this whole mess gets converted into c++
+ */
+
+static
+AROS_UFH3(void, Enumerator,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(OOP_Object *,     Device, A2),
+    AROS_UFHA(APTR,             message,A1))
+{
+    AROS_USERFUNC_INIT
 
     /*
      * parameters we will want to acquire
@@ -263,95 +358,8 @@ AROS_UFH3(void, Enumerator,
         }
         OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
 
-        /*
-         * see if IO Base is valid. otherwise pick device from static list 
-         * (this most likely means the device is right there)
-         */
-        if (IOBase == 0)
-        {
-            if (a->PredefBus < (sizeof(Buses) / sizeof(Buses[0])))
-            {
-                /*
-                 * collect IOBase and interrupt from the above list
-                 */
-                IOBase  = Buses[a->PredefBus].port;
-                IOAlt   = Buses[a->PredefBus].alt;
-                INTLine = Buses[a->PredefBus].irq;
-                a->PredefBus++;
-            }
-            else
-            {
-               IOBase  = 0;
-               IOAlt   = 0;
-               DMABase = 0;
-               INTLine = 0;
-               bug("[ATA  ] Found more controllers\n");
-                /*
-                 * we're all done. no idea what else they want from us
-                 */
-               continue;
-            }
-        }
-    
-        D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x:%x DMA: %x\n", ProductID, VendorID, IOBase, IOAlt, DMABase));
-
-        /*
-         * initialize structure
-         */
-        ab = (struct ata_Bus*) AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Bus));
-        if (ab == NULL)
-            return;
-
-        ab->ab_Base         = a->ATABase;
-        ab->ab_Port         = IOBase;
-        ab->ab_Alt          = IOAlt;
-        ab->ab_Irq          = INTLine;
-        ab->ab_Dev[0]       = DEV_NONE;
-        ab->ab_Dev[1]       = DEV_NONE;
-        ab->ab_Flags        = 0;
-        ab->ab_SleepySignal = 0;
-        ab->ab_BusNum       = a->CurrentBus++;
-        ab->ab_Waiting      = FALSE;
-        ab->ab_Timeout      = 0;
-        ab->ab_Units[0]     = 0;
-        ab->ab_Units[1]     = 0;
-        ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(a->ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
-        D(bug("[ATA  ] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
-
-        /*
-         * allocate DMA PRD
-         */
-        ab->ab_PRD          = AllocVecPooled(a->ATABase->ata_MemPool, (PRD_MAX+1) * 2 * sizeof(struct PRDEntry));  
-        if ((0x10000 - ((ULONG)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
-           ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
-
-        InitSemaphore(&ab->ab_Lock);
-
-        /*
-         * scan bus - try to locate all devices
-         */
-        ata_ScanBus(ab);
-        if (ab->ab_Dev[0] > DEV_UNKNOWN)
-        {
-            ab->ab_Units[0] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
-            ab->ab_Units[0]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
-            ata_init_unit(ab, 0);
-        }
-        if (ab->ab_Dev[1] > DEV_UNKNOWN)
-        {
-            ab->ab_Units[1] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
-            ab->ab_Units[1]->au_DMAPort = (DMABase != 0 ? DMABase + (x<<3) : 0);
-            ata_init_unit(ab, 1);
-        }
-
-        D(bug("[ATA  ] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
-
-        /*
-         * start things up :)
-         * note: this happens no matter there are devices or not 
-         * sort of almost-ready-for-hotplug ;)
-         */
-        AddTail((struct List*)&a->ATABase->ata_Buses, (struct Node*)ab);
+	D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x:%x DMA: %x\n", ProductID, VendorID, IOBase, IOAlt, DMABase));
+	Add_Device(IOBase, IOAlt, INTLine, DMABase, x, a);
 
     }
 
@@ -372,6 +380,13 @@ void ata_Scan(struct ataBase *base)
 {
     OOP_Object *pci;
     struct Node* node;
+    int i;
+    EnumeratorArgs Args=
+    {
+        base,
+        0,
+        0
+    };
 
     D(bug("[ATA--] Enumerating devices\n"));
 
@@ -379,13 +394,6 @@ void ata_Scan(struct ataBase *base)
 
     if (pci)
     {
-        EnumeratorArgs Args=
-        {
-            base,
-            0,
-            0
-        };
-
         struct Hook FindHook = {
             h_Entry:    (IPTR (*)())Enumerator,
             h_Data:     &Args
@@ -420,6 +428,11 @@ void ata_Scan(struct ataBase *base)
         OOP_DoMethod(pci, (OOP_Msg)msg);
         
         OOP_DisposeObject(pci);
+    }
+    if (!Args.CurrentBus) {
+	D(bug("[ATA--] No PCI devices found, attempting defaults\n"));
+	for (i=0; i<4; i++)
+	    Add_Device(0, 0, 0, 0, i & 1, &Args);
     }
             
     ForeachNode(&base->ata_Buses, node)
