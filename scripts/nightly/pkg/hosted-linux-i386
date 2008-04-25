@@ -1,36 +1,6 @@
 #!/bin/zsh
-# Creates hosted binary packages.
+# Creates linux-i386 "hosted" binary packages.
 
-source $SP/setup
-setl   hosted.log
+BUILDTARGET=linux-i386
 
-ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
-
-printi "Creating hosted binary packages..."
-
-printi "Creating AROS/"$HOST_CPU-$HOST_OS" system package..."
-PACKAGE=$BASENAME-$HOST_OS-$HOST_CPU-system
-ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
-
-delete  $BUILD_BASE/AROS
-copy    $SOURCE_AROS      $BUILD_BASE/AROS
-copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
-
-cd      $BUILD_BASE/AROS
-execute ./configure --enable-build-type=nightly
-make
-make    default-x11keymaptable
-
-cd      $BUILD_BASE/AROS/bin/$HOST_OS-$HOST_CPU
-move    AROS $PACKAGE
-
-copy    $SOURCE_AROS/LICENSE $PACKAGE
-copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
-delete	$PACKAGE/Include
-delete	$PACKAGE/lib
-
-archive $ARCHIVE $PACKAGE
-
-cd      $ROOT
-delete  $BUILD_BASE/AROS
-resetl
+source $SP/pkg/hosted
