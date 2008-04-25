@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates linux-x86_64 "hosted" binary packages.
+
+BUILDTARGET=linux-x86_64
+
+source $SP/pkg/hosted

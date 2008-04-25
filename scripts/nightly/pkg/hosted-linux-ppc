@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates linux-ppc "hosted" binary packages.
+
+BUILDTARGET=linux-ppc
+
+source $SP/pkg/hosted
