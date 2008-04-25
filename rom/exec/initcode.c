@@ -49,7 +49,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG *list = SysBase->ResModules;
+    IPTR *list = SysBase->ResModules;
 
     D(bug("enter InitCode(0x%x, %d)\n", startClass, version));
 	  
@@ -61,7 +61,7 @@
 		If bit 31 is set, this doesn't point to a Resident module, but
 		to another list of modules.
 	    */
-	    if(*list & 0x80000000) list = (ULONG *)(*list & 0x7fffffff);
+	    if(*list & 0x80000000) list = (IPTR *)(*list & 0x7fffffff);
 
 	    if( (((struct Resident *)*list)->rt_Version >= (UBYTE)version)
 	     && (((struct Resident *)*list)->rt_Flags & (UBYTE)startClass) )
