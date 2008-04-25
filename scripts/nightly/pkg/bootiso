@@ -16,7 +16,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-bootloader=$BOOTLOADER --enable-build-type=nightly
+execute ./configure --target=$BUILDTARGET --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly
 make
 
 ISOFILE=aros-$BUILDTARGET.iso

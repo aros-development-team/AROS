@@ -1,5 +1,5 @@
 # Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-# $Id$
+# $Id: make.cfg 28435 2008-04-23 15:30:16Z NicJA $
 #
 # Static makefile rule file for AROS.
 
@@ -28,7 +28,7 @@ include $(GENDIR)/config/target.cfg
 include $(HOSTGENDIR)/config/host.cfg
 
 # Files downloaded from the net are put here
-PORTSSOURCEDIR    := $(TOP)/bin/Sources
+PORTSSOURCEDIR    := @AROS_PORTSSRCDIR@
 PORTSDIR    := $(TARGETDIR)/Ports
 
 # Distributable Files we generate are put here
