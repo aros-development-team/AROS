@@ -735,6 +735,7 @@ aros_flavour
 aros_flavour_uc
 AROS_BUILDDIR
 AROS_SRCDIR
+AROS_PORTSSRCDIR
 aros_cc_pre
 aros_host_arch
 aros_host_cpu
@@ -1414,9 +1415,6 @@ Optional Features:
                           (default=no).
   --enable-target-variant=NAME
                           Enable a specific target variant(default=none)
-  --enable-bootloader=NAME
-                          Enable a specific bootloader
-  --enable-theme=NAME     Enable a specific GUI Theme
   --enable-includes=dir   Alternative system include directory
   --enable-bochs-hack     Enable hacks to make BOCHS (partly) work
                           (default=no)
@@ -1438,6 +1436,9 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-optimization=FLAGS
                           Use optimization flags FLAGS (default=-O2).
+  --with-portssources=DIR Where to download sourcecode for external ports
+  --with-bootloader=NAME  Use a specific bootloader
+  --with-theme=NAME       Use a specific GUI Theme
   --with-resolution=XRESxYRESxDEPTH
                           Default resolution of the initial WorkbenchScreen
   --with-serial-debug     Enable serial debug output in native (default=no)
@@ -8666,11 +8667,30 @@ echo "$as_me: error: Unsupported target architecture $target" >&2;}
 	;;
 esac
 
+{ echo "$as_me:$LINENO: checking Where to download sourcecode for external ports" >&5
+echo $ECHO_N "checking Where to download sourcecode for external ports... $ECHO_C" >&6; }
+
+# Check whether --with-portssources was given.
+if test "${with_portssources+set}" = set; then
+  withval=$with_portssources; with_portssrcdir=$withval
+else
+  with_portssrcdir="default"
+fi
+
+if test "$with_portssrcdir" = "default"; then
+    AROS_PORTSSRCDIR="$AROS_BUILDDIR/bin/Sources"
+else
+    AROS_PORTSSRCDIR="$with_portssrcdir"
+fi
+{ echo "$as_me:$LINENO: result: $AROS_PORTSSRCDIR" >&5
+echo "${ECHO_T}$AROS_PORTSSRCDIR" >&6; }
+
 { echo "$as_me:$LINENO: checking which bootloader to use" >&5
 echo $ECHO_N "checking which bootloader to use... $ECHO_C" >&6; }
-# Check whether --enable-bootloader was given.
-if test "${enable_bootloader+set}" = set; then
-  enableval=$enable_bootloader; target_bootloader=$enableval
+
+# Check whether --with-bootloader was given.
+if test "${with_bootloader+set}" = set; then
+  withval=$with_bootloader; target_bootloader=$withval
 else
   target_bootloader=$target_bootloader
 fi
@@ -9146,9 +9166,10 @@ fi
 
 { echo "$as_me:$LINENO: checking which GUI Theme to use" >&5
 echo $ECHO_N "checking which GUI Theme to use... $ECHO_C" >&6; }
-# Check whether --enable-theme was given.
-if test "${enable_theme+set}" = set; then
-  enableval=$enable_theme; target_guitheme=$enableval
+
+# Check whether --with-theme was given.
+if test "${with_theme+set}" = set; then
+  withval=$with_theme; target_guitheme=$withval
 else
   target_guitheme="default"
 fi
@@ -11814,6 +11835,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Host related
 
 
@@ -11974,7 +11996,7 @@ ac_config_commands="$ac_config_commands genmf_executable"
 ac_config_commands="$ac_config_commands adflib_myaros.conf_executable"
 
 
-ac_config_files="$ac_config_files Makefile rom/mmakefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h"
+ac_config_files="$ac_config_files Makefile rom/mmakefile config/make.cfg ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h"
 
 
 cat >confcache <<\_ACEOF
@@ -12562,6 +12584,7 @@ do
     "adflib_myaros.conf_executable") CONFIG_COMMANDS="$CONFIG_COMMANDS adflib_myaros.conf_executable" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "rom/mmakefile") CONFIG_FILES="$CONFIG_FILES rom/mmakefile" ;;
+    "config/make.cfg") CONFIG_FILES="$CONFIG_FILES config/make.cfg" ;;
     "${aros_inc_dir}/config.h") CONFIG_FILES="$CONFIG_FILES ${aros_inc_dir}/config.h:config/config.h.in" ;;
     "${aros_geninc_dir}/config.h") CONFIG_FILES="$CONFIG_FILES ${aros_geninc_dir}/config.h:config/config.h.in" ;;
     "${aros_hostcfg_dir}/host.cfg") CONFIG_FILES="$CONFIG_FILES ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in" ;;
@@ -12800,6 +12823,7 @@ aros_flavour!$aros_flavour$ac_delim
 aros_flavour_uc!$aros_flavour_uc$ac_delim
 AROS_BUILDDIR!$AROS_BUILDDIR$ac_delim
 AROS_SRCDIR!$AROS_SRCDIR$ac_delim
+AROS_PORTSSRCDIR!$AROS_PORTSSRCDIR$ac_delim
 aros_cc_pre!$aros_cc_pre$ac_delim
 aros_host_arch!$aros_host_arch$ac_delim
 aros_host_cpu!$aros_host_cpu$ac_delim
@@ -12871,7 +12895,6 @@ KERNEL_DBUS_INCLUDES!$KERNEL_DBUS_INCLUDES$ac_delim
 aros_debug!$aros_debug$ac_delim
 aros_mungwall_debug!$aros_mungwall_debug$ac_delim
 aros_stack_debug!$aros_stack_debug$ac_delim
-aros_modules_debug!$aros_modules_debug$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12913,12 +12936,13 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+aros_modules_debug!$aros_modules_debug$ac_delim
 ignore_undefined_symbols!$ignore_undefined_symbols$ac_delim
 gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 3; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 4; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

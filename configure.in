@@ -1002,8 +1002,17 @@ case "$target_os" in
 	;;
 esac
 
+AC_MSG_CHECKING([Where to download sourcecode for external ports])
+AC_ARG_WITH(portssources,AC_HELP_STRING([--with-portssources=DIR],[Where to download sourcecode for external ports]),with_portssrcdir=$withval,with_portssrcdir="default")
+if test "$with_portssrcdir" = "default"; then
+    AROS_PORTSSRCDIR="$AROS_BUILDDIR/bin/Sources"
+else
+    AROS_PORTSSRCDIR="$with_portssrcdir"
+fi
+AC_MSG_RESULT($AROS_PORTSSRCDIR)
+
 AC_MSG_CHECKING([which bootloader to use])
-AC_ARG_ENABLE(bootloader,AC_HELP_STRING([--enable-bootloader=NAME],[Enable a specific bootloader]),target_bootloader=$enableval,target_bootloader=$target_bootloader)
+AC_ARG_WITH(bootloader,AC_HELP_STRING([--with-bootloader=NAME],[Use a specific bootloader]),target_bootloader=$withval,target_bootloader=$target_bootloader)
 if test "$target_bootloader" = "none"; then
     aros_target_bootloader=""
 else
@@ -1049,7 +1058,7 @@ if test "$aros_liblzo_check" = "yes"; then
 fi
 
 AC_MSG_CHECKING([which GUI Theme to use])
-AC_ARG_ENABLE(theme,AC_HELP_STRING([--enable-theme=NAME],[Enable a specific GUI Theme]),target_guitheme=$enableval,target_guitheme="default")
+AC_ARG_WITH(theme,AC_HELP_STRING([--with-theme=NAME],[Use a specific GUI Theme]),target_guitheme=$withval,target_guitheme="default")
 if test "$target_guitheme" = "default"; then
     aros_target_guitheme="Ice"
 else
@@ -1462,6 +1471,7 @@ AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(AROS_BUILDDIR)
 AC_SUBST(AROS_SRCDIR)
+AC_SUBST(AROS_PORTSSRCDIR)
 
 # Host related
 AC_SUBST(aros_cc_pre)
@@ -1673,6 +1683,7 @@ AC_CONFIG_COMMANDS([adflib_myaros.conf_executable],
 AC_CONFIG_FILES(
     Makefile
     rom/mmakefile
+    config/make.cfg
     ${aros_inc_dir}/config.h:config/config.h.in
     ${aros_geninc_dir}/config.h:config/config.h.in
     ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in
