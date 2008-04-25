@@ -2,7 +2,8 @@
 # Creates generic "hosted" binary packages.
 
 source $SP/setup
-setl   hosted.log
+# The log-name MUST match the name of the package script
+setl   hosted-$BUILDTARGET.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 
