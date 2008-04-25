@@ -151,7 +151,7 @@ IPTR Dataspace__MUIM_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspace_
     {
 	if (find->id == msg->id)
 	{
-	    return (ULONG)(find + 1);
+	    return (IPTR)(find + 1);
 	}
 	find = Node_Next(find);
     }
