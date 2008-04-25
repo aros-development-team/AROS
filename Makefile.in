@@ -112,24 +112,25 @@ $(MMAKE): $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
 	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake install
 
-# Clean the sources
+# Clean the sources and tools
 clean:
 	@$(CALL) $(MMAKE) AROS.clean
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/FlexCat clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/archtools clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/genmf clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/toollib clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc -f Makefile.aros clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/collect-aros clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2inline clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2pragma clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/sfdc clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log mmake.cache mmake.config rom/mmakefile config/make.cfg $(AROS_DEVELOPMENT)/include/aros/config.h $(GENDIR)/include/aros/config.h $(HOSTGENDIR)/config/host.cfg $(GENDIR)/config/target.cfg $(GENDIR)/config/make.defaults $(GENDIR)/config/specs $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld $(GENDIR)/scripts/genshared $(TOOLDIR)/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h
 
 # Clean the sources and tools
 arch-clean: clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/FlexCat clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/archtools clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/genmf clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/toollib clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc -f Makefile.aros clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/collect-aros clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2inline clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2pragma clean TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/sfdc clean TOP=$(TOP)
-        
+	@$(NOP)
+
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
 	@$(NOP)
