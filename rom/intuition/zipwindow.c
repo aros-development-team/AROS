@@ -113,8 +113,8 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
         NewWidth    = w->ZipWidth;
 	if (window->Flags & WFLG_SIZEGADGET)
 	{
-            if (NewWidth < window->MinWidth) NewWidth = window->MinWidth;
-            if (NewWidth > window->MaxWidth) NewWidth = window->MaxWidth;
+            if (NewWidth < (ULONG)window->MinWidth) NewWidth = window->MinWidth;
+            if (NewWidth > (ULONG)window->MaxWidth) NewWidth = window->MaxWidth;
 	}
         w->ZipWidth = w->window.Width;
     }
@@ -125,8 +125,8 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
         NewHeight    = w->ZipHeight;
 	if (window->Flags & WFLG_SIZEGADGET)
 	{
-            if (NewHeight < window->MinHeight) NewHeight = window->MinHeight;
-            if (NewHeight > window->MaxHeight) NewHeight = window->MaxHeight;
+            if (NewHeight < (ULONG)window->MinHeight) NewHeight = window->MinHeight;
+            if (NewHeight > (ULONG)window->MaxHeight) NewHeight = window->MaxHeight;
 	}
         w->ZipHeight = w->window.Height;
     }
