@@ -998,12 +998,23 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Requester *req, struc
     switch(gad->GadgetType & GTYP_GTYPEMASK)
     {
         case GTYP_STRGADGET:
+	{
+	    struct StringInfo *si = (struct StringInfo *)gad->SpecialInfo;
+	    
             DEBUG_ACTIVATEGADGET(dprintf("DoActivateGadget: GTYP_STRGADGET\n"));
+
+	    gad->Flags |= GFLG_SELECTED;
+	    if (si && si->UndoBuffer)
+	    {
+	    	strcpy(si->UndoBuffer, si->Buffer);
+	    }
+
             gad->Activation |= GACT_ACTIVEGADGET;
             UpdateStrGadget(gad, win, req, IntuitionBase);
             result = gad;
             break;
-
+    	}
+	
         case GTYP_CUSTOMGADGET:
         {
             struct gpInput  gpi;
