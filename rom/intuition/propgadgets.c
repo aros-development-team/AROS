@@ -545,6 +545,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
     D(bug("RefresPropGadgetKnob(flags=%d, clear=%p, knob = %p, win=%s)\n",
           flags, clear, knob, window->Title));
 
+    if ((knob->Width < 1) || (knob->Height < 1)) return;
+    
     onborder = (IS_BORDER_GADGET(gadget) || isonborder(gadget,window));
 
     pi = (struct PropInfo *)gadget->SpecialInfo;
@@ -561,6 +563,15 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 	    struct Rectangle krect;
 	    
             CalcBBox (window, req, gadget, &bbox);
+	    
+	    if ((bbox.Width < 1) || (bbox.Height < 1))
+	    {
+                ReleaseGIRPort(rp);
+    	        FreeScreenDrawInfo(window->WScreen, (struct DrawInfo *)dri);
+
+	    	return;
+	    }
+	    
     	    brect.MinX = bbox.Left;
 	    brect.MinY = bbox.Top;
 	    brect.MaxX = bbox.Left + bbox.Width - 1;
@@ -570,7 +581,7 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 	    krect.MinY = knob->Top;
 	    krect.MaxX = knob->Left + knob->Width - 1;
 	    krect.MaxY = knob->Top + knob->Height - 1;
-
+	    
             SetDrMd (rp, JAM2);
 
             if (clear)
