@@ -1,4 +1,4 @@
-CFG_PACKAGES=(sdk.svn.ppc hosted.svn.linux-ppc contrib.svn.ppc)
+CFG_PACKAGES=(sdk.svn.linux-ppc hosted.svn.linux-ppc contrib.svn.linux-ppc)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=weissms@aros.org
