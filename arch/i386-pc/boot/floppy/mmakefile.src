@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-.PHONY: $(OSGENDIR)/boot/aros-pc-i386.bin
+.PHONY: $(DISTDIR)/aros-pc-i386.img
 
 #MM bootdisk-pc-i386 : AROS		\
 #MM			bootdisk-setup-pc-i386 \
@@ -115,14 +115,15 @@ bootdisk-setup-pc-i386 :
 workbench-boot-pc-i386:
 	@$(NOP)
 
-bootdisk-pc-i386: $(OSGENDIR)/boot/aros-pc-i386.bin
+bootdisk-pc-i386: $(DISTDIR)/aros-pc-i386.img
 
 .PHONY: bootdisk-pc-i386-quick
 
 #MM
 bootdisk-pc-i386-quick : bootdisk-pc-i386
 
-$(OSGENDIR)/boot/aros-pc-i386.bin: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+$(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+	@$(MKDIR) -p "$(DISTDIR)"
 	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
@@ -166,7 +167,7 @@ install-bootdisk :
 	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
 	@read
 	@$(ECHO) "Writing AROS Image to floppy..."
-	@dd if=$(OSGENDIR)/boot/aros-pc-i386.bin of=/dev/fd0
+	@dd if=$(DISTDIR)/aros-pc-i386.img of=/dev/fd0
 
 #MM
 install-pc-i386 :
