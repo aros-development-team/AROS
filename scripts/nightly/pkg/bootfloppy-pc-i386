@@ -1,12 +1,12 @@
 #!/bin/zsh
-# Creates AROS/i386-pc-livefloppy binary packages.
+# Creates AROS/bootfloppy-pc-i386 binary packages.
 
 source $SP/setup
-setl   i386-pc-livefloppy.log
+setl   bootfloppy-pc-i386.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 
-printi "Creating AROS/i386-pc-livefloppy binary package..."
+printi "Creating AROS/bootfloppy-pc-i386 binary package..."
 
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
