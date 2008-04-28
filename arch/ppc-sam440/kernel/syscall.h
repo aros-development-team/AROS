@@ -9,5 +9,6 @@
 #define SC_STI          5
 #define SC_SUPERSTATE   6
 #define SC_ISSUPERSTATE 7
+#define SC_INVALIDATED  8
 
 #endif /*SYSCALL_H_*/

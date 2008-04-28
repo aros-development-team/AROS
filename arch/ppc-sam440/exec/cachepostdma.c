@@ -61,7 +61,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    CacheClearE(address, *length, CACRF_ClearD | CACRF_ClearI);
+    CacheClearE(address, *length, CACRF_InvalidateD | CACRF_ClearI);
 
     AROS_LIBFUNC_EXIT
 } /* CachePostDMA */

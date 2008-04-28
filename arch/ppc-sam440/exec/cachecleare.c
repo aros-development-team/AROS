@@ -87,23 +87,14 @@
         asm volatile("sync");
     }
 
-    /* FLish instruction caches only - in this case sync the data caches before */
-    if (caches & (CACRF_ClearD | CACRF_ClearI) == CACRF_ClearI)
+    if (caches & CACRF_InvalidateD)
     {
-        for (ptr = start; ptr < end; ptr +=32)
-        {
-            asm volatile("dcbst 0,%0"::"r"(ptr));
-        }
-        asm volatile("sync");
-
-        for (ptr = start; ptr < end; ptr +=32)
-        {
-            asm volatile("icbi 0,%0"::"r"(ptr));
-        }
-    
-        asm volatile("sync; isync; ");
+        register APTR addr asm ("r4") = address;
+        register ULONG len asm ("r5") = length;
+        asm volatile("li %%r3,%0; sc"::"i"(8 /*SC_INVALIDATED*/),"r"(addr),"r"(len):"memory","r3");
     }
-    else if (caches & CACRF_ClearI) /* Clear ICache with DCache together */
+    
+    if (caches & CACRF_ClearI) /* Clear ICache with DCache together */
     {
         for (ptr = start; ptr < end; ptr +=32)
         {
