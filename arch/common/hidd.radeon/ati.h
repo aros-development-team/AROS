@@ -15,6 +15,8 @@
 #include <exec/memory.h>
 #include <dos/bptr.h>
 
+#include <devices/timer.h>
+
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
@@ -26,8 +28,6 @@
 #include <exec/execbase.h>
 
 #include "radeon.h"
-
-#include LC_LIBDEFS_FILE
 
 #define IID_Hidd_Gfx_Ati    "IRadeonDriver"
 #define IID_Hidd_ATIBitMap  "IRadeonBitmap"
@@ -84,6 +84,9 @@ typedef struct __bm {
 struct ati_staticdata {
     struct SignalSemaphore  HWLock;     /* Hardware exclusive semaphore */
     struct SignalSemaphore  MultiBMLock;    /* To lock more than one bitmap at a time */
+
+    struct MsgPort          mp;
+    struct timerequest      tr;
 
     APTR    memPool;
 

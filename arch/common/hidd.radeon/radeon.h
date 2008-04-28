@@ -122,6 +122,12 @@ typedef enum {
     CHIP_FAMILY_LAST
 } CardType;
 
+typedef enum {
+    CHIP_ERRATA_R300_CG         = 0x00000001,
+    CHIP_ERRATA_PLL_DUMMYREADS  = 0x00000002,
+    CHIP_ERRATA_PLL_DELAY       = 0x00000004
+} RADEONErrata;
+
 #define IS_RV100_VARIANT ((sd->Card.Type == RV100) ||    \
     (sd->Card.Type == RV200)    || \
     (sd->Card.Type == RS100)    || \
@@ -280,6 +286,8 @@ struct Card {
     RADEONMonitorType   MonType2;
     RADEONMonitorType   MonType1;
 
+    RADEONErrata        ChipErrata;
+    
     RADEONConnector PortInfo[2];
     RADEONTMDSPll   tmds_pll[4];
     RADEONPLLRec    pll;
