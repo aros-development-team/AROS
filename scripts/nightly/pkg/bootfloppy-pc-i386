@@ -1,29 +1,31 @@
 #!/bin/zsh
 # Creates AROS/bootfloppy-pc-i386 binary packages.
 
+BUILDTARGET=pc-i386
+
 source $SP/setup
-setl   bootfloppy-pc-i386.log
+setl  bootfloppy-$BUILDTARGET.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
 
-printi "Creating AROS/bootfloppy-pc-i386 binary package..."
+printi "Creating AROS/$BUILDTARGET bootfloppy binary package..."
 
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=pc-i386 --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="-Os -fno-defer-pop -mpreferred-stack-boundary=4"
+execute ./configure --target=$BUILDTARGET --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="-Os -fno-defer-pop -mpreferred-stack-boundary=4"
 make
 make    themes-gorilla-icons-aros-clean
 make    masonicons
 make    bootdisk
 
-PACKAGE=$BASENAME-i386-pc-boot-floppy
+PACKAGE=$BASENAME-$BUILDTARGET-boot-floppy
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.zip
 
 makedir $BUILD_BASE/$PACKAGE
-copy    $BUILD_BASE/AROS/distfiles/aros-pc-i386.img $BUILD_BASE/$PACKAGE
+copy    $BUILD_BASE/AROS/distfiles/aros-$BUILDTARGET.img $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
 copy    $SOURCE_AROS/LICENSE $PACKAGE
 copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
