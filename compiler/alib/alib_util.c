@@ -300,6 +300,105 @@
 	FreeVec (tags);
 } /* FreeTagsFromStack */
 
+/******************************************************************************
+
+    NAME */
+	APTR GetParamsFromStack (
+
+/*  SYNOPSIS */
+	va_list args)
+
+/*  FUNCTION
+	Builds an array of parameters which are passed on the stack.
+	This function is used on machines which have compilers which
+	don't pass the arguments to a varargs function unlike the
+	Amiga ones.
+
+    INPUTS
+	args - This has to be initialized by va_start()
+
+    RESULT
+	An array which can be passed to any function which expects the
+	structure or NULL if something failed. This call may fail for
+	different reasons on different systems. On some systems, NULL 
+	indicates that there was not enough	memory.
+
+    NOTES
+	This function fails for structures with more than 20 fields.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	CallHook().
+
+    INTERNALS
+	HPPA: Allocate a structure which can contain all APTRs between the
+	first variadic parameter of, for example, CallHook() and its first
+	local variable. This will copy a bit too much memory but in the end,
+	it saves a lot of work, since it's not neccessary to register every
+	structure.
+
+    HISTORY
+	25.04.08 sszymczy adapted from GetMsgFromStack()
+
+******************************************************************************/
+{
+    ULONG size;
+    APTR params;
+
+    size = 21;
+
+    if ((params = AllocVec (size * sizeof (IPTR), MEMF_CLEAR)))
+    {
+	IPTR * ulptr = (IPTR *) params;
+
+	while (-- size)
+	{
+	    *ulptr ++ = va_arg (args, IPTR);
+	}
+    }
+
+    return params;
+} /* GetParamsFromStack */
+
+/******************************************************************************
+
+    NAME */
+	void FreeParamsFromStack (
+
+/*  SYNOPSIS */
+	APTR params)
+
+/*  FUNCTION
+	Frees the memory occupied by the parameters array which was
+	created by GetParamsFromStack().
+
+    INPUTS
+	params - The return value of GetParamsFromStack(). May be NULL.
+
+    RESULT
+	None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	GetParamsFromStack()
+
+    HISTORY
+    25.04.08 sszymczy adapted from FreeMsgFromStack()
+
+******************************************************************************/
+{
+    if (params)
+	FreeVec (params);
+} /* FreeParamsFromStack */
+
 #endif /* AROS_SLOWSTACKTAGS */
 
 
