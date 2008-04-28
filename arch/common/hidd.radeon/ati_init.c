@@ -249,24 +249,37 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
             InitSemaphore(&LIBBASE->sd.HWLock);
             InitSemaphore(&LIBBASE->sd.MultiBMLock);
         
-            if ((LIBBASE->sd.PCIObject = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)))
+            /* Initialize MsgPort */
+            LIBBASE->sd.mp.mp_SigBit = SIGB_SINGLE;
+            LIBBASE->sd.mp.mp_Flags = PA_SIGNAL;
+            LIBBASE->sd.mp.mp_SigTask = FindTask(NULL);
+            LIBBASE->sd.mp.mp_Node.ln_Type = NT_MSGPORT;
+            NEWLIST(&LIBBASE->sd.mp.mp_MsgList);
+            
+            LIBBASE->sd.tr.tr_node.io_Message.mn_ReplyPort = &LIBBASE->sd.mp;
+            LIBBASE->sd.tr.tr_node.io_Message.mn_Length = sizeof(LIBBASE->sd.tr);
+            
+            if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)&LIBBASE->sd.tr, 0))
             {
-                struct Hook FindHook = {
-                    h_Entry:    (IPTR (*)())Enumerator,
-                    h_Data:     LIBBASE,
-                };
-        
-                struct TagItem Requirements[] = {
-                    { tHidd_PCI_Interface,  0x00 },
-                    { tHidd_PCI_Class,  0x03 },
-                    { tHidd_PCI_SubClass,   0x00 },
-                    { tHidd_PCI_VendorID,   0x1002 }, // ATI VendorID. May require more of them
-                    { TAG_DONE, 0UL }
-                };
-                
-                HIDD_PCI_EnumDevices(LIBBASE->sd.PCIObject, &FindHook, Requirements);
-                
-                return TRUE;
+                if ((LIBBASE->sd.PCIObject = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)))
+                {
+                    struct Hook FindHook = {
+                        h_Entry:    (IPTR (*)())Enumerator,
+                        h_Data:     LIBBASE,
+                    };
+            
+                    struct TagItem Requirements[] = {
+                        { tHidd_PCI_Interface,  0x00 },
+                        { tHidd_PCI_Class,  0x03 },
+                        { tHidd_PCI_SubClass,   0x00 },
+                        { tHidd_PCI_VendorID,   0x1002 }, // ATI VendorID. May require more of them
+                        { TAG_DONE, 0UL }
+                    };
+                    
+                    HIDD_PCI_EnumDevices(LIBBASE->sd.PCIObject, &FindHook, Requirements);
+                    
+                    return TRUE;
+                }
             }
             
             OOP_ReleaseAttrBases(attrbases);

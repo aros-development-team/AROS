@@ -12,6 +12,8 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 
+#include <hidd/i2c.h>
+
 void METHOD(ATII2C, Hidd_I2C, PutBits)
 {
     struct ati_staticdata *sd = SD(cl);
