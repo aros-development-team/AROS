@@ -2,13 +2,13 @@
 include $(TOP)/config/make.cfg
 
 FILES	:=	\
-	vmwaregfx_init \
-	vmwaregfxclass \
-	hardware \
-	offbitmap \
-	onbitmap
+	vmwaresvga_init \
+	vmwaresvgaclass \
+	vmwaresvgahardware \
+	vmwaresvgaoffbitmap \
+	vmwaresvgaonbitmap
 
-%build_module mmake=kernel-pc-i386-vmwaregfx \
-  modname=vmwaregfx modtype=hidd \
+%build_module mmake=kernel-hidd-vmwaresvga \
+  modname=vmwaresvga modtype=hidd \
   files=$(FILES) \
   uselibs="hiddgraphicsstubs hiddstubs rom amiga oop"

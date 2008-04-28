@@ -1,5 +1,5 @@
-#ifndef MOUSE_H
-#define MOUSE_H
+#ifndef _VMWARESVGA_MOUSE_H
+#define _VMWARESVGA_MOUSE_H
 
 #include <hidd/graphics.h>
 
@@ -13,4 +13,4 @@ struct MouseData {
 	LONG visible;
 };
 
-#endif
+#endif /* _VMWARESVGA_MOUSE_H */
