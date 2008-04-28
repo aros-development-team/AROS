@@ -50,9 +50,7 @@
 
 IPTR CallHook (struct Hook * hook, APTR object, ...)
 {
-    IPTR    retval;
-
-    retval = CALLHOOKPKT(hook, object, &object+1);
-
-    return retval;
+    AROS_SLOWSTACKHOOKS_PRE(object)
+    retval = CALLHOOKPKT(hook, object, AROS_SLOWSTACKHOOKS_ARG(object));
+    AROS_SLOWSTACKHOOKS_POST
 } /* CallHook() */
