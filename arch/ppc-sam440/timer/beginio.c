@@ -84,7 +84,11 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
     ULONG unitNum;
     BOOL replyit = FALSE;
 
+    ULONG initial_time = inl(GPT0_TBC);
+
+    Disable();
     EClockUpdate(TimerBase);
+    Enable();
 
     timereq->tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     timereq->tr_node.io_Error = 0;
@@ -123,7 +127,9 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
 #endif
 
         case TR_GETSYSTIME:
+	    Disable();
             EClockUpdate(TimerBase);
+	    Enable();
             GetSysTime(&timereq->tr_time);
         
             if(!(timereq->tr_node.io_Flags & IOF_QUICK))
@@ -160,7 +166,7 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
                         /* Ok, we add this to the list */
                         if (timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_WAITVBL], timereq))
                         {
-                            TimerSetup(TimerBase);
+                            TimerSetup(TimerBase, initial_time);
                         }
                         Enable();
                         replyit = FALSE;
@@ -175,7 +181,7 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
                     /* Slot it into the list */             
                     if (timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], timereq))
                     {
-                        TimerSetup(TimerBase);
+                        TimerSetup(TimerBase, initial_time);
                     }
                     Enable();
                     timereq->tr_node.io_Flags &= ~IOF_QUICK;

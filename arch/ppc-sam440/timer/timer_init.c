@@ -37,7 +37,10 @@
 
 #include "../kernel/syscall.h"
 
+#include "lowlevel.h"
+
 void DecrementerHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase);
+void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 /****************************************************************************************/
 
@@ -45,7 +48,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     void *KernelBase = rdspr(SPRG4U);
     struct ExecBase *SysBase = rdspr(SPRG5U);
-    char super = 0;
+    
+    TimerBase->tb_prev_tick = inl(GPT0_TBC);
     
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
@@ -77,17 +81,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
 //    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
 //    KrnAddIRQHandler(0x20, VBlankInt, LIBBASE, SysBase);
-    LIBBASE->tb_VBlankInt.is_Code = KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
-
-    if (!(super = KrnIsSuper()))
-        asm volatile("li %%r3,%0; sc"::"i"(SC_SUPERSTATE):"memory","r3");
+    LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(INTR_GDP, GPTHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
     
-    wrspr(TCR, (rdspr(TCR) & ~TCR_ARE) | TCR_DIE);
-    wrspr(TSR, TSR_DIS);
-    wrspr(DEC, 666666);
-
-    if (!super)
-            wrmsr(rdmsr() | (MSR_PR));
+    outl(GPT0_DCIS_DCIS, GPT0_DCIS);
+    TimerSetup(TimerBase, inl(GPT0_TBC));
+    //outl(1333, GPT0_DCT0);
+    
     
     /* VBlank EMU */
     
@@ -147,20 +146,13 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     void *KernelBase = rdspr(SPRG4U);
     
-    KrnRemExceptionHandler(LIBBASE->tb_VBlankInt.is_Code);
+    KrnRemIRQHandler(LIBBASE->tb_VBlankInt.is_Code);
     
     return TRUE;
 }
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Op)(LIBBASETYPEPTR LIBBASE)
-{
-    return TRUE;
-}
-
-
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
-ADD2OPENLIB(GM_UNIQUENAME(Op), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
