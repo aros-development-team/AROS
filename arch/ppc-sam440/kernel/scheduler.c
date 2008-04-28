@@ -78,7 +78,7 @@ AROS_LH0(void, KrnSchedule,
  */
 void core_Dispatch(regs_t *regs)
 {
-    struct ExecBase *SysBase = getSysBase();
+    volatile struct ExecBase *SysBase = getSysBase();
     struct Task *task;
 
     if (SysBase)
@@ -95,11 +95,12 @@ void core_Dispatch(regs_t *regs)
             SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
             
-            D(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
+            //D(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
             /* Sleep almost forever ;) */
-            __asm__ __volatile__("wrteei 1");
-            wrmsr(rdmsr() | MSR_POW);
+            //__asm__ __volatile__("wrteei 1; sync; isync;");
+            wrmsr(rdmsr() | MSR_POW | MSR_EE);
             __asm__ __volatile__("wrteei 0");
+            //D(bug("[\n"));
             
             if (SysBase->SysFlags & SFF_SoftInt)
             {
@@ -138,6 +139,8 @@ void core_Dispatch(regs_t *regs)
     //    asm volatile("fxrstor (%0)"::"D"(sse_ctx));
         
     }
+    
+    regs->srr1 &= ~MSR_POW;
     /* Leave interrupt and jump to the new task */
     core_LeaveInterrupt(regs);
 }
@@ -243,6 +246,9 @@ void core_Schedule(regs_t *regs)
  */
 void core_ExitInterrupt(regs_t *regs) 
 {
+    /* Powermode was on? Turn it off now */
+    regs->srr1 &= ~MSR_POW;
+    
     /* Going back into supervisor mode? Then exit immediatelly */
     if (!(regs->srr1 & MSR_PR))
     {
