@@ -454,7 +454,7 @@ CFLAGS="$CFLAGS -fno-stack-protector"
 AC_TRY_COMPILE(,, use_no_stack_protector="yes", use_no_stack_protector="no")
 AC_MSG_RESULT($use_no_stack_protector)
 if test "x-$use_no_stack_protector" = "x-yes" ; then
-    aros_config_cflags="$aros_config_cflags -fno-stack-protector"
+    aros_host_cflags="$aros_host_cflags -fno-stack-protector"
 fi
 CFLAGS="$save_cflags"
 
@@ -1287,15 +1287,17 @@ AC_MSG_RESULT($nesting_supervisor)
 dnl things specifically required for hosted flavours
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
 
-    dnl some kind of dynamic library access system is required for hostlib.resource
-    AC_CHECK_FUNC(dlopen, have_dl="yes", have_dl="no")
-    if test "x-$have_dl" = "x-no" ; then
-        AC_CHECK_LIB(dl, dlopen, [have_dl="yes"
-                                  aros_host_ldflags="$aros_host_ldflags -ldl"],
-                                 have_dl="no")
-    fi
-    if test "x-$have_dl" = "x-no" ; then
-         AC_MSG_ERROR([dlopen() dynamic linker functions not available])
+    if test "x-$aros_host_arch" != "x-darwin" ; then
+      dnl some kind of dynamic library access system is required for hostlib.resource
+      AC_CHECK_FUNC(dlopen, have_dl="yes", have_dl="no")
+      if test "x-$have_dl" = "x-no" ; then
+          AC_CHECK_LIB(dl, dlopen, [have_dl="yes"
+                                    aros_host_ldflags="$aros_host_ldflags -ldl"],
+                                    have_dl="no")
+      fi
+      if test "x-$have_dl" = "x-no" ; then
+          AC_MSG_ERROR([dlopen() dynamic linker functions not available])
+      fi
     fi
 
 
