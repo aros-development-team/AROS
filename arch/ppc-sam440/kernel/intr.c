@@ -47,7 +47,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
             }
             else
             {
-                wrdcr(UIC1_ER, rddcr(UIC0_ER) | (0x80000000 >> (irq - 30)));
+                wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 30)));
                 wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
             }
             
@@ -238,6 +238,10 @@ void intr_init()
     wrspr(IVOR13, ((uint32_t)&__EXCEPTION_13_Prolog) & 0x0000fff0);
     wrspr(IVOR14, ((uint32_t)&__EXCEPTION_14_Prolog) & 0x0000fff0);
     wrspr(IVOR15, ((uint32_t)&__EXCEPTION_15_Prolog) & 0x0000fff0);
+    
+    /* Disable external interrupts completely */
+    wrdcr(UIC0_ER, 0);
+    wrdcr(UIC1_ER, 0);
 }
 
 #define _STR(x) #x
@@ -316,7 +320,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     
     /* Clear the DIS bit - we have received decrementer exception */
     wrspr(TSR, TSR_DIS);
-    //D(bug("[KRN] Decrementer handler. Context @ %p\n", ctx));
+//    D(bug("[KRN] Decrementer handler. Context @ %p. srr1=%08x\n", ctx, ctx->srr1));
 
     if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
     {
@@ -338,13 +342,15 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     struct KernelBase *KernelBase = getKernelBase();
     struct ExecBase *SysBase = getSysBase();
     
-    D(bug("[KRN] Exception %d handler. Context @ %p\n", exception, ctx));
+    D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
     if (SysBase)
     {
         struct Task *t = FindTask(NULL);
         D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name));
     }
-    D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x\n",ctx->srr0, ctx->srr1, rdspr(DEAR)));
+    D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->srr0, ctx->srr1, rdspr(DEAR), rdspr(ESR)));
+    D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
+    D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
     D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
@@ -363,6 +369,14 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
              ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
 
+    D(bug("[KRN] Instruction dump:\n"));
+    int i;
+    ULONG *p = (ULONG*)ctx->srr0;
+    for (i=0; i < 8; i++)
+    {
+        D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
+    }
+    
     D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
     
     while(1) {
@@ -546,6 +560,7 @@ static void __attribute__((used)) __core_LeaveInterrupt()
                  "lwz %%r0,%[srr0](%%r3)        \n\t"
                  "mtsrr0 %%r0                   \n\t"
                  "lwz %%r0,%[srr1](%%r3)        \n\t"
+                 //"rlwinm %%r0,%%r0,0,14,12      \n\t"
                  "mtsrr1 %%r0                   \n\t"
                  "lwz %%r0,%[ctr](%%r3)         \n\t"
                  "mtctr %%r0                    \n\t"
