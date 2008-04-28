@@ -186,6 +186,59 @@ AROS_UFP3(IPTR, HookEntry,
     void	     FreeTagsFromStack (struct TagItem * tags);
 #endif /* AROS_SLOWSTACKTAGS */
 
+#ifndef AROS_HOOKRETURNTYPE
+#   define AROS_HOOKRETURNTYPE IPTR
+#endif
+
+#ifdef AROS_SLOWSTACKHOOKS
+    APTR  GetParamsFromStack  (va_list args);
+    void FreeParamsFromStack (APTR params);
+
+#   define AROS_NR_SLOWSTACKHOOKS_PRE(arg)    \
+    va_list args;				\
+    APTR     params;				\
+						\
+    va_start (args, arg);                       \
+						\
+    if ((params = GetParamsFromStack (args)))    \
+    {
+
+#   define AROS_SLOWSTACKHOOKS_PRE(arg)       \
+    AROS_HOOKRETURNTYPE retval;		\
+						\
+    va_list args;				\
+    APTR     params;				\
+						\
+    va_start (args, arg);                       \
+						\
+    if ((params = GetParamsFromStack (args)))    \
+    {
+
+#   define AROS_SLOWSTACKHOOKS_ARG(arg) params
+
+#   define AROS_SLOWSTACKHOOKS_POST		\
+	FreeParamsFromStack (params);                 \
+    }						\
+    else					\
+	retval = (AROS_HOOKRETURNTYPE)0L;     \
+						\
+    va_end (args);                              \
+						\
+    return retval;
+
+#   define AROS_NR_SLOWSTACKHOOKS_POST	\
+	FreeParamsFromStack (params);                 \
+    }						\
+						\
+    va_end (args);
+#else
+#   define AROS_NR_SLOWSTACKHOOKS_PRE(arg)
+#   define AROS_SLOWSTACKHOOKS_PRE(arg)   AROS_HOOKRETURNTYPE retval;
+#   define AROS_SLOWSTACKHOOKS_ARG(arg)   ((IPTR*)&(arg)+1)
+#   define AROS_SLOWSTACKHOOKS_POST	    return retval;
+#   define AROS_NR_SLOWSTACKHOOKS_POST
+#endif /* AROS_SLOWSTACKHOOKS */
+
 /* Rexx support */
 BOOL CheckRexxMsg(struct RexxMsg *);
 LONG SetRexxVar(struct RexxMsg *, char *, char *, ULONG length);
