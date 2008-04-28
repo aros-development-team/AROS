@@ -1,0 +1,12 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(TOP)/rom/dos
+USER_CFLAGS := -Dmain=submain
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos \
+  arch=sam440-ppc \
+  files="boot aros inithidds runprocess"
+
+#MM- kernel-dos-sam440-ppc : kernel-bootloader-sam440-ppc-includes
