@@ -46,8 +46,8 @@ struct MUI_NotifyData
 struct MUIP_CallHook             {STACKED ULONG MethodID; STACKED struct Hook *Hook; STACKED ULONG param1; /* more might follow */};
 struct MUIP_Export               {STACKED ULONG MethodID; STACKED Object *dataspace;};
 struct MUIP_FindUData            {STACKED ULONG MethodID; STACKED ULONG udata;};
-struct MUIP_GetConfigItem        {STACKED ULONG MethodID; STACKED ULONG id; STACKED ULONG *storage;};
-struct MUIP_GetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED ULONG *storage;};
+struct MUIP_GetConfigItem        {STACKED ULONG MethodID; STACKED ULONG id; STACKED APTR *storage;};
+struct MUIP_GetUData             {STACKED ULONG MethodID; STACKED ULONG udata; STACKED ULONG attr; STACKED APTR *storage;};
 struct MUIP_Import               {STACKED ULONG MethodID; STACKED Object *dataspace;};
 struct MUIP_KillNotify           {STACKED ULONG MethodID; STACKED ULONG TrigAttr;};
 struct MUIP_KillNotifyObj        {STACKED ULONG MethodID; STACKED ULONG TrigAttr; STACKED Object *dest;};
