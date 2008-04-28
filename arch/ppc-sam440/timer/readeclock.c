@@ -55,20 +55,16 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    
+    Disable();
 
     EClockUpdate(TimerBase);
     
-    uint32_t tbu, tbl;
-    Disable();
-    do {
-        tbu = rdspr(TBUU);
-        tbl = rdspr(TBLU);
-    } while(tbu != rdspr(TBUU));
+    dest->ev_hi = TimerBase->tb_ticks_total >> 32;
+    dest->ev_lo = TimerBase->tb_ticks_total & 0xffffffff;
     
-    dest->ev_hi = tbu;
-    dest->ev_lo = tbl;
     Enable();
-    return 666666666;
+    return 66666666;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */
