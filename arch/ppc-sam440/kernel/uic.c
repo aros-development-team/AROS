@@ -7,7 +7,7 @@
 void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-
+    
     /* Get the interrupt sources */
     uint32_t uic0_sr = rddcr(UIC0_MSR);
     uint32_t uic1_sr = rddcr(UIC1_MSR);
@@ -27,7 +27,7 @@ void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void 
             
             for (mask = 0x80000000; mask != 0x2; mask >>= 1, irq++)
             {
-                if (mask && uic0_sr)
+                if (mask & uic0_sr)
                 {
                     if (!IsListEmpty(&KernelBase->kb_Interrupts[irq]))
                     {
@@ -39,14 +39,15 @@ void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void 
                                 in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
                         }
                     }
-                    else
+                    else {
                         D(bug("[KRN] Orphan interrupt %d occured\n", irq));
+                    }
                 }
             }
 
             for (mask = 0x80000000; mask; mask >>= 1, irq++)
             {
-                if (mask && uic1_sr)
+                if (mask & uic1_sr)
                 {
                     if (!IsListEmpty(&KernelBase->kb_Interrupts[irq]))
                     {
@@ -58,8 +59,9 @@ void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void 
                                 in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
                         }
                     }
-                    else
+                    else {
                         D(bug("[KRN] Orphan interrupt %d occured\n", irq));
+                    }
                 }
             }
         }
