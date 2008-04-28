@@ -87,7 +87,8 @@ COMMONTESTFILES := \
     time \
     waitforchar \
     seektest \
-    avltest
+    avltest \
+    callhooktest
 
 HOSTEDTESTFILES :=  \
     hostlib
