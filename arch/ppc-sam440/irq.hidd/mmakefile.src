@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM kernel-sam440-ppc-irq-kobj : hidd-irq-stubs
+#MM kernel-sam440-ppc-irq : hidd-irq-stubs
+
+FILES       := irq_init irqclass
+
+%build_module mmake=kernel-sam440-ppc-irq \
+  modname=irq modtype=hidd \
+  files=$(FILES) uselibs="oop"
