@@ -103,9 +103,11 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     D(bug("[KRN] Kernel resource pre-exec init\n"));
     D(bug("[KRN] MSR=%08x CRR0=%08x CRR1=%08x\n", rdmsr(), rdspr(CCR0), rdspr(CCR1)));
+    D(bug("[KRN] USB config %08x\n", rddcr(SDR0_USB0)));
     
     /* Enable FPU */
     wrspr(CCR0, rdspr(CCR0) & ~0x00100000);
+    wrspr(CCR1, rdspr(CCR1) | (0x80000000 >> 24));
     
     /* Disable interrupts */
     wrmsr(rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME));
