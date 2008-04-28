@@ -9,6 +9,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-expansion \
 #MM	kernel-utility \
 #MM	kernel-oop \
+#MM	kernel-battclock \
 #MM	kernel-hidd \
 #MM	kernel-mathieeesingbas \
 #MM	kernel-aros \
@@ -34,6 +35,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-ata \
 #MM	hidd-i2c \
 #MM	hidd-radeon \
+#MM	hidd-usb \
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
 #MM	workbench-libs-partition \
@@ -41,19 +43,20 @@ include $(TOP)/config/make.cfg
 #MM	contrib-cdvdfs \
 #MM	workbench-hidd-graphics
 
-
 PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench dos boot
-PKG_RSRC := misc bootloader
+PKG_RSRC := misc bootloader battclock
 PKG_DEVS :=  input gameport keyboard console timer ata
 PKG_HANDLERS := con nil ram packet cdrom
-PKG_HIDDS:= graphics hiddclass pci pci-amcc440 i2c radeon irq
+PKG_HIDDS:= graphics hiddclass pci pci-amcc440 i2c radeon irq usb ohci
+PKG_USB:= hid
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
-	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
+	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) 
 
 .PHONY: $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 	

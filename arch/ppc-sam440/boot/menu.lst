@@ -8,6 +8,7 @@ title AROS PowerPC test 1
     module boot/modules/expansion.library
     module boot/modules/utility.library
     module boot/modules/partition.library
+    module boot/modules/battclock.resource
     module boot/modules/aros.library
     module boot/modules/bootloader.resource
     module boot/modules/mathieeesingbas.library
@@ -38,6 +39,9 @@ title AROS PowerPC test 1
     module boot/modules/radeon.hidd
     module boot/modules/ata.device
     module boot/modules/cdrom.handler
+    module boot/modules/ohci.hidd
+    module boot/modules/usb.hidd
+    module boot/modules/hid.hidd
 
 #title AROS PPC test 2
 #    kernel boot/aros-ppc2
