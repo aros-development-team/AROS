@@ -495,8 +495,8 @@ struct Window
     WORD MouseY;
     WORD MinWidth;
     WORD MinHeight;
-    WORD MaxWidth;
-    WORD MaxHeight;
+    UWORD MaxWidth;
+    UWORD MaxHeight;
 
     ULONG Flags;
 
