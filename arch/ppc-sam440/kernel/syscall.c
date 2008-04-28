@@ -57,6 +57,19 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
         case SC_SCHEDULE:
             core_Schedule(ctx);
             break;
+        
+        case SC_INVALIDATED:
+        {
+            char *start = (char*)((IPTR)ctx->gpr[4] & 0xffffffe0);
+            char *end = (char*)(((IPTR)ctx->gpr[4] + ctx->gpr[5] + 31) & 0xffffffe0);
+            char *ptr;
+            
+            for (ptr = start; ptr < end; ptr +=32)
+            {
+                asm volatile("dcbi 0,%0"::"r"(ptr));
+            }
+            asm volatile("sync");
+        }
     }
     
     core_LeaveInterrupt(ctx);
