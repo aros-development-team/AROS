@@ -551,74 +551,72 @@ struct MUI_RGBcolor
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
-enum {
-    /* configured by the user within the prefs programm */
-    MUII_WindowBack     = 0,
-    MUII_RequesterBack  = 1,
-    MUII_ButtonBack     = 2,
-    MUII_ListBack       = 3,
-    MUII_TextBack       = 4,
-    MUII_PropBack       = 5,
-    MUII_PopupBack      = 6,
-    MUII_SelectedBack   = 7,
-    MUII_ListCursor     = 8,
-    MUII_ListSelect     = 9,
-    MUII_ListSelCur     = 10,
-    MUII_ArrowUp        = 11,
-    MUII_ArrowDown      = 12,
-    MUII_ArrowLeft      = 13,
-    MUII_ArrowRight     = 14,
-    MUII_CheckMark      = 15,
-    MUII_RadioButton    = 16,
-    MUII_Cycle          = 17,
-    MUII_PopUp          = 18,
-    MUII_PopFile        = 19,
-    MUII_PopDrawer      = 20,
-    MUII_PropKnob       = 21,
-    MUII_Drawer         = 22,
-    MUII_HardDisk       = 23,
-    MUII_Disk           = 24,
-    MUII_Chip           = 25,
-    MUII_Volume         = 26,
-    MUII_RegisterBack   = 27,
-    MUII_Network        = 28,
-    MUII_Assign         = 29,
-    MUII_TapePlay       = 30,
-    MUII_TapePlayBack   = 31,
-    MUII_TapePause      = 32,
-    MUII_TapeStop       = 33,
-    MUII_TapeRecord     = 34,
-    MUII_GroupBack      = 35,
-    MUII_SliderBack     = 36,
-    MUII_SliderKnob     = 37,
-    MUII_TapeUp         = 38,
-    MUII_TapeDown       = 39,
-    MUII_PageBack       = 40,
-    MUII_ReadListBack   = 41,
-    MUII_Count          = 42,
+/* configured by the user within the prefs programm */
+#define MUII_WindowBack        0UL
+#define MUII_RequesterBack     1UL
+#define MUII_ButtonBack        2UL
+#define MUII_ListBack          3UL
+#define MUII_TextBack          4UL
+#define MUII_PropBack          5UL
+#define MUII_PopupBack         6UL
+#define MUII_SelectedBack      7UL
+#define MUII_ListCursor        8UL
+#define MUII_ListSelect        9UL
+#define MUII_ListSelCur        10UL
+#define MUII_ArrowUp           11UL
+#define MUII_ArrowDown         12UL
+#define MUII_ArrowLeft         13UL
+#define MUII_ArrowRight        14UL
+#define MUII_CheckMark         15UL
+#define MUII_RadioButton       16UL
+#define MUII_Cycle             17UL
+#define MUII_PopUp             18UL
+#define MUII_PopFile           19UL
+#define MUII_PopDrawer         20UL
+#define MUII_PropKnob          21UL
+#define MUII_Drawer            22UL
+#define MUII_HardDisk          23UL
+#define MUII_Disk              24UL
+#define MUII_Chip              25UL
+#define MUII_Volume            26UL
+#define MUII_RegisterBack      27UL
+#define MUII_Network           28UL
+#define MUII_Assign            29UL
+#define MUII_TapePlay          30UL
+#define MUII_TapePlayBack      31UL
+#define MUII_TapePause         32UL
+#define MUII_TapeStop          33UL
+#define MUII_TapeRecord        34UL
+#define MUII_GroupBack         35UL
+#define MUII_SliderBack        36UL
+#define MUII_SliderKnob        37UL
+#define MUII_TapeUp            38UL
+#define MUII_TapeDown          39UL
+#define MUII_PageBack          40UL
+#define MUII_ReadListBack      41UL
+#define MUII_Count             42UL
 
-    /* direct color's and combinations */
-    MUII_BACKGROUND     = 128,
-    MUII_SHADOW         = 129,
-    MUII_SHINE          = 130,
-    MUII_FILL           = 131,
-    MUII_SHADOWBACK     = 132,
-    MUII_SHADOWFILL     = 133,
-    MUII_SHADOWSHINE    = 134,
-    MUII_FILLBACK       = 135,
-    MUII_FILLSHINE      = 136,
-    MUII_SHINEBACK      = 137,
-    MUII_FILLBACK2      = 138,
-    MUII_HSHINEBACK     = 139,
-    MUII_HSHADOWBACK    = 140,
-    MUII_HSHINESHINE    = 141,
-    MUII_HSHADOWSHADOW  = 142,
-    MUII_MARKSHINE      = 143,
-    MUII_MARKHALFSHINE  = 144,
-    MUII_MARKBACKGROUND = 145,
-    MUII_LASTPAT        = 146,
+/* direct color's and combinations */
+#define MUII_BACKGROUND        128UL
+#define MUII_SHADOW            129UL
+#define MUII_SHINE             130UL
+#define MUII_FILL              131UL
+#define MUII_SHADOWBACK        132UL
+#define MUII_SHADOWFILL        133UL
+#define MUII_SHADOWSHINE       134UL
+#define MUII_FILLBACK          135UL
+#define MUII_FILLSHINE         136UL
+#define MUII_SHINEBACK         137UL
+#define MUII_FILLBACK2         138UL
+#define MUII_HSHINEBACK        139UL
+#define MUII_HSHADOWBACK       140UL
+#define MUII_HSHINESHINE       141UL
+#define MUII_HSHADOWSHADOW     142UL
+#define MUII_MARKSHINE         143UL
+#define MUII_MARKHALFSHINE     144UL
+#define MUII_MARKBACKGROUND    145UL
+#define MUII_LASTPAT           146UL
 
-};
 
 /**************************************************************************
  For ARexx
