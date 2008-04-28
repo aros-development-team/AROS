@@ -40,7 +40,7 @@
 	memory, on others that the MethodID is unknown.
 
     NOTES
-	This function fails for structures with more than 20 fields.
+	This function fails for structures with more than 32 fields.
 
     EXAMPLE
 
@@ -52,7 +52,7 @@
 	Intuition" and the "boopsi Class Reference" Dokument.
 
     INTERNALS
-	HPPA: Allocate a structure which can contain all ULONGs between
+	HPPA: Allocate a structure which can contain all IPTRs between
 	the first argument of, for example, DoMethod() and its first local
 	variable. This will copy a bit too much memory but in the end, it
 	saves a lot of work, since it's not neccessary to register every
@@ -66,7 +66,7 @@
     ULONG size;
     Msg   msg;
 
-    size = 21;
+    size = 33;
 
     if ((msg = AllocVec (size * sizeof (IPTR), MEMF_CLEAR)))
     {
