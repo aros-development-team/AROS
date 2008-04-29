@@ -8,7 +8,7 @@ FILES	:=	\
 	vmwaresvgaoffbitmap \
 	vmwaresvgaonbitmap
 
-%build_module mmake=kernel-hidd-vmwaresvga \
+%build_module mmake=hidd-vmwaresvga \
   modname=vmwaresvga modtype=hidd \
   files=$(FILES) \
   uselibs="hiddgraphicsstubs hiddstubs rom amiga oop"
