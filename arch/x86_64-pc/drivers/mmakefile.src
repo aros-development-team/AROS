@@ -1,0 +1,12 @@
+$Id: mmakefile 28549 2008-04-29 11:15:02Z NicJA $
+
+#
+# Rule's to create Support drivers for pc-x86_64
+# These are not needed as part of the kernel - and so get created seperately
+#
+
+#MM- AROS-pc-x86_64-drivers : \
+#MM    kernel-hidd-vmwaresvga \
+#MM    kernel-hidd-nvidia \
+#MM    hidd-radeon
+

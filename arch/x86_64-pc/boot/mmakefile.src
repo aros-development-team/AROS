@@ -11,7 +11,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-gameport \
 #MM	kernel-pc-i386-vga \
 #MM	kernel-pc-i386-vesa \
-#MM     kernel-hidd-vmwaresvga \
 #MM	kernel-battclock \
 #MM	kernel-misc \
 #MM	kernel-pci \
