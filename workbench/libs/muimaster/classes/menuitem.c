@@ -47,7 +47,7 @@ static int Menuitem_GetTotalChildren(Object *obj)
     struct MinList        *ChildList;
     int num = 0;
 
-    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(obj, MUIA_Family_List, &ChildList);
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -66,7 +66,7 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu, int depth)
 
     if (depth > 2) return 0;
 
-    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(obj, MUIA_Family_List, &ChildList);
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -217,7 +217,7 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     	    	    	struct MinList  *ChildList;
 			ULONG	    	i = 1;
 			
-    	    	    	get(parent, MUIA_Family_List, (ULONG *)&(ChildList));
+    	    	    	get(parent, MUIA_Family_List, &ChildList);
     	    	    	cstate = (Object *)ChildList->mlh_Head;
     	    	    	while ((child = NextObject(&cstate)))
 			{
@@ -391,7 +391,7 @@ IPTR Menuitem__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
 
     muiNotifyData(obj)->mnd_ParentObject = msg->parent;
 
-    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(obj, MUIA_Family_List, &ChildList);
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -411,7 +411,7 @@ IPTR Menuitem__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 
     D(bug("Menuitem_DisconnectParent(%p) %s\n", obj, OCLASS(obj)->cl_ID));
 
-    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    get(obj, MUIA_Family_List, &ChildList);
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
