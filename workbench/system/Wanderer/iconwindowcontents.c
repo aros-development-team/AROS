@@ -541,40 +541,40 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notificat
 		IPTR    attrib_Prefs;
 
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_IconListMode);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_IconListMode, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_IconListMode))) SET(self, MUIA_IconList_IconListMode, attrib_Prefs);
 
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_Mode);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_Mode, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_Mode)))  SET(self, MUIA_IconList_LabelText_Mode, attrib_Prefs);
 
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_MaxLineLen);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_MaxLineLen, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_MaxLineLen)))  SET(self, MUIA_IconList_LabelText_MaxLineLen, attrib_Prefs);
 
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_MultiLine);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_MultiLine, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_MultiLine)))  SET(self, MUIA_IconList_LabelText_MultiLine, attrib_Prefs);
 
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_MultiLineOnFocus);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_MultiLineOnFocus, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_MultiLineOnFocus)))  SET(self, MUIA_IconList_LabelText_MultiLineOnFocus, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_Icon_HorizontalSpacing);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_Icon_HorizontalSpacing, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_Icon_HorizontalSpacing)))  SET(self, MUIA_IconList_Icon_HorizontalSpacing, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_Icon_VerticalSpacing);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_Icon_VerticalSpacing, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_Icon_VerticalSpacing)))  SET(self, MUIA_IconList_Icon_VerticalSpacing, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_Icon_ImageSpacing);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_Icon_ImageSpacing, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_Icon_ImageSpacing)))  SET(self, MUIA_IconList_Icon_ImageSpacing, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_HorizontalPadding);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_HorizontalPadding, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_HorizontalPadding)))  SET(self, MUIA_IconList_LabelText_HorizontalPadding, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_VerticalPadding);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_VerticalPadding, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_VerticalPadding)))  SET(self, MUIA_IconList_LabelText_VerticalPadding, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_BorderWidth);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_BorderWidth, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_BorderWidth)))  SET(self, MUIA_IconList_LabelText_BorderWidth, attrib_Prefs);
 
 		attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_BorderHeight);
-		if (attrib_Prefs != (IPTR)-1) SET(self, MUIA_IconList_LabelText_BorderHeight, attrib_Prefs);
+		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_BorderHeight)))  SET(self, MUIA_IconList_LabelText_BorderHeight, attrib_Prefs);
 
 		/* Configure notifications incase they get updated =) */
 		DoMethod

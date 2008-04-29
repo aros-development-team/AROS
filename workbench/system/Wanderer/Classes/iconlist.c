@@ -3,6 +3,7 @@ Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define DEBUG_ILC_EVENTS
@@ -287,7 +288,7 @@ static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *da
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-    switch ( data->icld__Option_IconTextMode )
+    switch ( data->icld__Option_LabelTextMode )
     {
         case ICON_TEXTMODE_DROPSHADOW:
             outline_offset = 1;
@@ -498,7 +499,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 
 void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
-    ULONG		labelSplit_MaxLabelLineLength = data->icld__Option_IconTextMaxLen;
+    ULONG		labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
     ULONG       labelSplit_LabelLength = strlen(icon->ile_IconListEntry.label);
     ULONG       txwidth;
     ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
@@ -671,14 +672,14 @@ D(bug("[IconList]: %s: Building unsplit label ..\n", __PRETTY_FUNCTION__));
         ULONG ile_LabelLength = strlen(icon->ile_IconListEntry.label);
         icon->ile_SplitParts = 1;
 
-        if(ile_LabelLength > data->icld__Option_IconTextMaxLen)
+        if(ile_LabelLength > data->icld__Option_LabelTextMaxLen)
         {
-            if (!(icon->ile_TxtBuf_DisplayedLabel = AllocVecPooled(data->icld_Pool, data->icld__Option_IconTextMaxLen + 1)))
+            if (!(icon->ile_TxtBuf_DisplayedLabel = AllocVecPooled(data->icld_Pool, data->icld__Option_LabelTextMaxLen + 1)))
             {
                 return NULL;
             }
-            memset(icon->ile_TxtBuf_DisplayedLabel, 0, data->icld__Option_IconTextMaxLen + 1);
-            strncpy(icon->ile_TxtBuf_DisplayedLabel, icon->ile_IconListEntry.label, data->icld__Option_IconTextMaxLen - 3);
+            memset(icon->ile_TxtBuf_DisplayedLabel, 0, data->icld__Option_LabelTextMaxLen + 1);
+            strncpy(icon->ile_TxtBuf_DisplayedLabel, icon->ile_IconListEntry.label, data->icld__Option_LabelTextMaxLen - 3);
             strcat(icon->ile_TxtBuf_DisplayedLabel , " ..");
         }
         else 
@@ -717,7 +718,7 @@ AROS_UFH3(
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-    if (((data->icld__Option_IconTextMaxLen != data->icld__Option_LastIconTextMaxLen) &&
+    if (((data->icld__Option_LabelTextMaxLen != data->icld__Option_LastLabelTextMaxLen) &&
         (data->icld__Option_LabelTextMultiLine > 1)) ||
         (data->icld__Option_LabelTextMultiLine != data->icld__Option_LastLabelTextMultiLine));
     {
@@ -729,7 +730,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         }
     }
 
-    data->icld__Option_LastIconTextMaxLen = data->icld__Option_IconTextMaxLen;
+    data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
     data->icld__Option_LastLabelTextMultiLine = data->icld__Option_LabelTextMultiLine;
 
 	AROS_USERFUNC_EXIT
@@ -909,7 +910,7 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
 
             ty = ty + data->icld_IconLabelFont->tf_YSize;
 
-            switch ( data->icld__Option_IconTextMode )
+            switch ( data->icld__Option_LabelTextMode )
             {
                 case ICON_TEXTMODE_DROPSHADOW:
                     SetAPen(data->icld_BufferRastPort, data->icld_LabelShadowPen);
@@ -991,7 +992,7 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
 
                 ty = labelY + ((data->icld__Option_LabelTextVerticalPadding + data->icld_IconLabelFont->tf_YSize ) * curlabel_TotalLines) + data->icld_IconInfoFont->tf_YSize;
 
-                switch ( data->icld__Option_IconTextMode )
+                switch ( data->icld__Option_LabelTextMode )
                 {
                     case ICON_TEXTMODE_DROPSHADOW:
                         SetAPen(data->icld_BufferRastPort, data->icld_InfoShadowPen);
@@ -1382,16 +1383,19 @@ D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__,
     data->icld_IconLabelFont = icl_WindowFont;	
 
     // Get some initial values
+#warning "TODO: Adjust overlap by window border width"
     data->icld__Option_IconBorderOverlap = 10;
 
     data->icld__Option_IconListMode   = (UBYTE)GetTagData(MUIA_IconList_IconListMode, 0, message->ops_AttrList);
-    data->icld__Option_IconTextMode   = (UBYTE)GetTagData(MUIA_IconList_LabelText_Mode, 0, message->ops_AttrList);
-    data->icld__Option_IconTextMaxLen = (ULONG)GetTagData(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT, message->ops_AttrList);
+    data->icld__Option_LabelTextMode   = (UBYTE)GetTagData(MUIA_IconList_LabelText_Mode, 0, message->ops_AttrList);
+    data->icld__Option_LabelTextMaxLen = (ULONG)GetTagData(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT, message->ops_AttrList);
 
-    if ( data->icld__Option_IconTextMaxLen < ILC_ICONLABEL_SHORTEST )
-        data->icld__Option_IconTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
+    if ( data->icld__Option_LabelTextMaxLen < ILC_ICONLABEL_SHORTEST )
+        data->icld__Option_LabelTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
 
-D(bug("[IconList] %s: MaxLineLen : %d\n", __PRETTY_FUNCTION__, data->icld__Option_IconTextMaxLen));
+        data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
+
+D(bug("[IconList] %s: MaxLineLen : %d\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
@@ -1562,18 +1566,18 @@ D(bug("[IconList] %s: MUIA_IconList_IconListMode %d\n", __PRETTY_FUNCTION__, tag
             
             case MUIA_IconList_LabelText_Mode:
 D(bug("[IconList] %s: MUIA_IconList_LabelText_Mode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
-                data->icld__Option_IconTextMode = (UBYTE)tag->ti_Data;
+                data->icld__Option_LabelTextMode = (UBYTE)tag->ti_Data;
                 break;
             
             case MUIA_IconList_LabelText_MaxLineLen:
 D(bug("[IconList] %s: MUIA_IconList_LabelText_MaxLineLen %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 if (tag->ti_Data >= ILC_ICONLABEL_SHORTEST)
                 {
-                    data->icld__Option_IconTextMaxLen = (ULONG)tag->ti_Data;
+                    data->icld__Option_LabelTextMaxLen = (ULONG)tag->ti_Data;
                 }
                 else
                 {
-                    data->icld__Option_IconTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
+                    data->icld__Option_LabelTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
                 }
                 break;
             
@@ -1727,17 +1731,19 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         case MUIA_IconList_IconsDropped:                 STORE = (IPTR)&data->icld_DragDropEvent; return 1;
         case MUIA_IconList_Clicked:                      STORE = (IPTR)&data->icld_ClickEvent; return 1;
         case MUIA_IconList_IconListMode:                 STORE = (IPTR)data->icld__Option_IconListMode; return 1;
-        case MUIA_IconList_LabelText_Mode:               STORE = (IPTR)data->icld__Option_IconTextMode; return 1;
-        case MUIA_IconList_LabelText_MaxLineLen:         STORE = (IPTR)data->icld__Option_IconTextMaxLen; return 1;
+        case MUIA_IconList_LabelText_Mode:               STORE = (IPTR)data->icld__Option_LabelTextMode; return 1;
+        case MUIA_IconList_LabelText_MaxLineLen:         STORE = (IPTR)data->icld__Option_LabelTextMaxLen; return 1;
+        case MUIA_IconList_LabelText_MultiLine:          STORE = (IPTR)data->icld__Option_LabelTextMultiLine; return 1;
+        case MUIA_IconList_LabelText_MultiLineOnFocus:   STORE = (IPTR)data->icld__Option_LabelTextMultiLineOnFocus; return 1;
         case MUIA_IconList_DisplayFlags:                 STORE = (IPTR)data->icld_DisplayFlags; return 1;
         case MUIA_IconList_SortFlags:                    STORE = (IPTR)data->icld_SortFlags; return 1;
 
         case MUIA_IconList_FocusIcon:                    STORE = (IPTR)data->icld_FocusIcon; return 1;
 
         case MUIA_Font:                                  STORE = (IPTR)data->icld_IconLabelFont; return 1;
-        case MUIA_IconList_LabelInfoText_Font:           STORE = (IPTR)data->icld_IconInfoFont; return 1;
         case MUIA_IconList_LabelText_Pen:                STORE = (IPTR)data->icld_LabelPen; return 1;
         case MUIA_IconList_LabelText_ShadowPen:          STORE = (IPTR)data->icld_LabelShadowPen; return 1;
+        case MUIA_IconList_LabelInfoText_Font:           STORE = (IPTR)data->icld_IconInfoFont; return 1;
         case MUIA_IconList_LabelInfoText_Pen:            STORE = (IPTR)data->icld_InfoPen; return 1;
         case MUIA_IconList_LabelInfoText_ShadowPen:      STORE = (IPTR)data->icld_InfoShadowPen; return 1;
 
@@ -1790,6 +1796,8 @@ D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, 
     data->icld_InfoShadowPen                      = _pens(obj)[MPEN_SHADOW];
 
     data->icld__Option_LabelTextMultiLine         = 1;
+    data->icld__Option_LastLabelTextMultiLine = data->icld__Option_LabelTextMultiLine;
+
     data->icld__Option_LabelTextMultiLineOnFocus  = FALSE;
     
     data->icld__Option_IconHorizontalSpacing      = ILC_ICON_HORIZONTALMARGIN_DEFAULT;

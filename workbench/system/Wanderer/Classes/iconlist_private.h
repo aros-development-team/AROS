@@ -79,11 +79,11 @@ struct IconList_DATA
 	ULONG                         icld_InfoPen;
 	ULONG                         icld_InfoShadowPen;
 
-	ULONG                         icld__Option_IconTextMaxLen;                   /* max no. of chars to display in a line */
-    ULONG                         icld__Option_LastIconTextMaxLen;
+	ULONG                         icld__Option_LabelTextMaxLen;                   /* max no. of chars to display in a line */
+    ULONG                         icld__Option_LastLabelTextMaxLen;
 
 	UBYTE                         icld__Option_IconListMode;                     /* */
-	UBYTE                         icld__Option_IconTextMode;                     /* */
+	UBYTE                         icld__Option_LabelTextMode;                     /* */
 	BOOL                          icld__Option_IconListFixedBackground;          /* */
 	BOOL                          icld__Option_IconListScaledBackground;         /* */
 	ULONG                         icld__Option_LabelTextMultiLine;               /* No. of lines to display for labels*/

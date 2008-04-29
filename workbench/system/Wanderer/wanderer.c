@@ -1881,31 +1881,41 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
 {
     SETUP_WANDERER_INST_DATA;
     struct WBHandlerMessage *wbhm = NULL;
-    
-D(bug("[Wanderer] Recieved signal at notify port\n"));
-    
+D(bug("[Wanderer] %s()\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Recieved signal at notification port\n", __PRETTY_FUNCTION__));
+
     while ((wbhm = WBHM(GetMsg(data->wd_CommandPort))) != NULL)
     {
-D(bug("[Wanderer] Recieved message from handler, type = %ld\n", wbhm->wbhm_Type));
-        
+D(bug("[Wanderer] %s: Recieved message from handler, type = %ld\n", __PRETTY_FUNCTION__, wbhm->wbhm_Type));
+
         switch (wbhm->wbhm_Type)
         {
             case WBHM_TYPE_SHOW:
-D(bug("[Wanderer] WBHM_TYPE_SHOW\n"));
-                SET(self, MUIA_ShowMe, TRUE);
+D(bug("[Wanderer] %s: WBHM_TYPE_SHOW\n", __PRETTY_FUNCTION__));
+                if ((data->wd_Screen = LockPubScreen(NULL)) != NULL)
+                {
+D(bug("[Wanderer] %s: Unlocking access to screen @ %x\n", __PRETTY_FUNCTION__, data->wd_Screen));
+                    UnlockPubScreen(NULL, data->wd_Screen);
+                    SET(self, MUIA_ShowMe, TRUE);
+                }
+                else
+                {
+#warning "TODO: We need to handle the possiblity that we fail to lock the pubscreen..."
+D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __PRETTY_FUNCTION__));
+                }
                 break;
-            
+
             case WBHM_TYPE_HIDE:
-D(bug("[Wanderer] WBHM_TYPE_HIDE\n"));
+D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __PRETTY_FUNCTION__));
                 SET(self, MUIA_ShowMe, FALSE);
                 break;
-                
+
             case WBHM_TYPE_UPDATE:
-D(bug("[Wanderer] WBHM_TYPE_UPDATE\n"));
+D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __PRETTY_FUNCTION__));
                 {
                     CONST_STRPTR name = wbhm->wbhm_Data.Update.Name;
                     ULONG        length;
-                    
+
                     switch (wbhm->wbhm_Data.Update.Type)
                     {
                         case WBDISK:
@@ -1913,24 +1923,24 @@ D(bug("[Wanderer] WBHM_TYPE_UPDATE\n"));
                         case WBGARBAGE:
                             length = strlen(name);
                             break;
-                            
+
                         default:
                             length = PathPart(name) - name;
                             break;
                     }
-                    
-D(bug("[Wanderer] name = %s, length = %ld\n", name, length));
-                    
+
+D(bug("[Wanderer] %s: name = %s, length = %ld\n", __PRETTY_FUNCTION__, name, length));
+
                     {
                         Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
                         Object *child = NULL;
-                        
+
                         while ((child = NextObject(&cstate)))
                         {
                             if (XGET(child, MUIA_UserData))
                             {
                                 STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
-                                
+
                                 if
                                 (
                                     child_drawer != NULL 
@@ -1939,9 +1949,9 @@ D(bug("[Wanderer] name = %s, length = %ld\n", name, length));
                                 )
                                 {
                                     Object *iconlist = (Object *) XGET(child, MUIA_IconWindow_IconList);
-                                    
-D(bug("[Wanderer] Drawer found: %s!\n", child_drawer));
-                                    
+
+D(bug("[Wanderer] %s: Drawer found: %s!\n", __PRETTY_FUNCTION__, child_drawer));
+
                                     if (iconlist != NULL)
                                     {
                                         DoMethod ( iconlist, MUIM_IconList_Update );
@@ -1953,15 +1963,15 @@ D(bug("[Wanderer] Drawer found: %s!\n", child_drawer));
                     }
                 }
                 break;
-                
+
             case WBHM_TYPE_OPEN:
-D(bug("[Wanderer] WBHM_TYPE_OPEN\n"));
-            
+D(bug("[Wanderer] %s: WBHM_TYPE_OPEN\n", __PRETTY_FUNCTION__));
+
                 {
                     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
                     Object *child;
                     CONST_STRPTR buf = wbhm->wbhm_Data.Open.Name;
-                    
+
                     while ((child = NextObject(&cstate)))
                     {
                         if (XGET(child, MUIA_UserData))
@@ -1981,7 +1991,7 @@ D(bug("[Wanderer] WBHM_TYPE_OPEN\n"));
                             }
                         }
                     }
-                    
+
                     DoMethod
                     (
                         _WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf
@@ -1989,10 +1999,10 @@ D(bug("[Wanderer] WBHM_TYPE_OPEN\n"));
                 }
                 break;
         } /* switch */
-        
+
         ReplyMsg((struct Message *) wbhm);
     }
-    
+
     return 0;
 }
 
