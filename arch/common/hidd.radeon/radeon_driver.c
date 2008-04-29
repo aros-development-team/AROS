@@ -10,6 +10,8 @@
 #include "radeon_accel.h"
 #include "radeon_macros.h"
 
+#include "bitmap.h"
+
 #include <math.h>
 
 #define DEBUG 1
@@ -2412,6 +2414,8 @@ D(bug("[ATI] Radeon init\n"));
     D(bug("[ATI] Video memory = %dMiB (%d bit %s SDRAM)\n", sd->Card.FbUsableSize >> 20,
         sd->Card.RamWidth, sd->Card.IsDDR ? "DDR":"SDR"));
 
+    BitmapInit(sd);
+    
     /* RADEONPreInitDDC */
     sd->Card.DDC1 = FALSE;
     sd->Card.DDC2 = FALSE;
@@ -2444,17 +2448,21 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
 
     LOCK_HW
     
-    Forbid();
-    result = (IPTR)Allocate(&sd->CardMem, size);
-    Permit();
-   
-    /*
-        If Allocate failed, make the 0xffffffff as return. If it succeeded, make
-        the memory pointer relative to the begin of GFX memory
-    */
-    if (result == 0) --result;
-    else result -= (IPTR)sd->Card.FrameBuffer;
+//    Forbid();
+//    result = (IPTR)Allocate(&sd->CardMem, size);
+//    Permit();
+//   
+//    /*
+//        If Allocate failed, make the 0xffffffff as return. If it succeeded, make
+//        the memory pointer relative to the begin of GFX memory
+//    */
+//    if (result == 0) --result;
+//    else result -= (IPTR)sd->Card.FrameBuffer;
 
+    Forbid();
+    result = BitmapAlloc(sd, size);
+    Permit();
+    
     D(bug("[ATI] AllocBitmapArea(%dx%d@%d) = %p\n", width, height, bpp, result));
 
     UNLOCK_HW
@@ -2474,7 +2482,8 @@ VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG heig
     bmp, width, height, bpp));
 
     Forbid();
-    Deallocate(&sd->CardMem, ptr, size);
+//    Deallocate(&sd->CardMem, ptr, size);
+    BitmapFree(sd, bmp, size);
     Permit();
     
     UNLOCK_HW

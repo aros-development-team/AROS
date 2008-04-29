@@ -91,6 +91,8 @@ struct ati_staticdata {
     APTR    memPool;
 
     struct MemHeader    CardMem;
+    ULONG               *CardMemBmp;
+    LONG                CardMemSize;
     
     struct Card     Card;
     struct CardState *poweron_state;
