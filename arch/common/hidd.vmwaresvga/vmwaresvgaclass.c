@@ -22,6 +22,8 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 #include <oop/oop.h>
+#include <clib/alib_protos.h>
+#include <string.h>
 
 #include "vmwaresvgaclass.h"
 #include "vmwaresvgabitmap.h"
@@ -64,6 +66,8 @@ STATIC ULONG mask_to_shift(ULONG mask)
 
 OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    int sync_count;
+
     struct TagItem pftags[] =
     {
         {aHidd_PixFmt_RedShift,         0       }, /*  0 */
@@ -84,52 +88,62 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         {aHidd_PixFmt_BitMapType,       0       }, /* 15 */
         {TAG_DONE,                      0UL     }
     };
-#warning "TODO: Probe available display modes"
-    struct TagItem sync_mode1[] =
+#warning "TODO: Probe available display/sync modes"
+#define VMWARESVGA_SYNCMODES   3
+    struct TagItem *sync_modes[VMWARESVGA_SYNCMODES];
+
+    struct TagItem sync_mode_640[] =
     {
-        {aHidd_Sync_PixelClock, 0       },
-        {aHidd_Sync_HDisp,      640     },
-        {aHidd_Sync_VDisp,      480     },
-        {aHidd_Sync_HSyncStart, 0       },
-        {aHidd_Sync_HSyncEnd,   0       },
-        {aHidd_Sync_HTotal,     0       },
-        {aHidd_Sync_VSyncStart, 0       },
-        {aHidd_Sync_VSyncEnd,   0       },
-        {aHidd_Sync_VTotal,     0       },
-        {TAG_DONE,              0UL     }
+        {aHidd_Sync_Description,    (IPTR)"VMWareSVGA:640x480"  },
+        {aHidd_Sync_PixelClock,     0                           },
+        {aHidd_Sync_HDisp,          640                         },
+        {aHidd_Sync_VDisp,          480                         },
+        {aHidd_Sync_HSyncStart,     0                           },
+        {aHidd_Sync_HSyncEnd,       0                           },
+        {aHidd_Sync_HTotal,         0                           },
+        {aHidd_Sync_VSyncStart,     0                           },
+        {aHidd_Sync_VSyncEnd,       0                           },
+        {aHidd_Sync_VTotal,         0                           },
+        {TAG_DONE,                  0UL                         }
     };
-    struct TagItem sync_mode2[] =
+    sync_modes[0] = sync_mode_640;
+    struct TagItem sync_mode_800[] =
     {
-        {aHidd_Sync_PixelClock, 0       },
-        {aHidd_Sync_HDisp,      800     },
-        {aHidd_Sync_VDisp,      600     },
-        {aHidd_Sync_HSyncStart, 0       },
-        {aHidd_Sync_HSyncEnd,   0       },
-        {aHidd_Sync_HTotal,     0       },
-        {aHidd_Sync_VSyncStart, 0       },
-        {aHidd_Sync_VSyncEnd,   0       },
-        {aHidd_Sync_VTotal,     0       },
-        {TAG_DONE,              0UL     }
+        {aHidd_Sync_Description,    (IPTR)"VMWareSVGA:800x600"  },
+        {aHidd_Sync_PixelClock,     0                           },
+        {aHidd_Sync_HDisp,          800                         },
+        {aHidd_Sync_VDisp,          600                         },
+        {aHidd_Sync_HSyncStart,     0                           },
+        {aHidd_Sync_HSyncEnd,       0                           },
+        {aHidd_Sync_HTotal,         0                           },
+        {aHidd_Sync_VSyncStart,     0                           },
+        {aHidd_Sync_VSyncEnd,       0                           },
+        {aHidd_Sync_VTotal,         0                           },
+        {TAG_DONE,                  0UL                         }
     };
-    struct TagItem sync_mode3[] =
+    sync_modes[1] = sync_mode_800;
+    struct TagItem sync_mode_1024[] =
     {
-        {aHidd_Sync_PixelClock, 0       },
-        {aHidd_Sync_HDisp,      1024    },
-        {aHidd_Sync_VDisp,      768     },
-        {aHidd_Sync_HSyncStart, 0       },
-        {aHidd_Sync_HSyncEnd,   0       },
-        {aHidd_Sync_HTotal,     0       },
-        {aHidd_Sync_VSyncStart, 0       },
-        {aHidd_Sync_VSyncEnd,   0       },
-        {aHidd_Sync_VTotal,     0       },
-        {TAG_DONE,              0UL     }
+        {aHidd_Sync_Description,    (IPTR)"VMWareSVGA:1024x768" },
+        {aHidd_Sync_PixelClock,     0                           },
+        {aHidd_Sync_HDisp,          1024                        },
+        {aHidd_Sync_VDisp,          768                         },
+        {aHidd_Sync_HSyncStart,     0                           },
+        {aHidd_Sync_HSyncEnd,       0                           },
+        {aHidd_Sync_HTotal,         0                           },
+        {aHidd_Sync_VSyncStart,     0                           },
+        {aHidd_Sync_VSyncEnd,       0                           },
+        {aHidd_Sync_VTotal,         0                           },
+        {TAG_DONE,                  0UL                         }
     };
-    struct TagItem modetags[] =
+    sync_modes[2] = sync_mode_1024;
+
+    struct TagItem modetags[VMWARESVGA_SYNCMODES + 2] =
     {
         {aHidd_Gfx_PixFmtTags,  (IPTR)pftags        },
-        {aHidd_Gfx_SyncTags,    (IPTR)sync_mode1    },
-        {aHidd_Gfx_SyncTags,    (IPTR)sync_mode2    },
-        {aHidd_Gfx_SyncTags,    (IPTR)sync_mode3    },
+        {aHidd_Gfx_SyncTags,    (IPTR)sync_modes[0]  },
+        {aHidd_Gfx_SyncTags,    (IPTR)sync_modes[1]  },
+        {aHidd_Gfx_SyncTags,    (IPTR)sync_modes[2]  },
         {TAG_DONE,              0UL                 }
     };
     struct TagItem yourtags[] =
@@ -161,16 +175,20 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
             pftags[4].ti_Data, pftags[0].ti_Data,
             pftags[5].ti_Data, pftags[1].ti_Data,
             pftags[6].ti_Data, pftags[2].ti_Data));
+
     if (XSD(cl)->data.pseudocolor)
         pftags[8].ti_Data = vHidd_ColorModel_Palette;
     else
         pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
+
     pftags[9].ti_Data = XSD(cl)->data.depth;
     pftags[10].ti_Data = XSD(cl)->data.bytesperpixel;
     pftags[11].ti_Data = XSD(cl)->data.bitsperpixel;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
     pftags[15].ti_Data = vHidd_BitMapType_Chunky;
+
     yourtags[1].ti_Data = (IPTR)msg->attrList;
+
     yourmsg.mID = msg->mID;
     yourmsg.attrList = yourtags;
     msg = &yourmsg;
@@ -585,7 +603,7 @@ static int VMWareSVGA_InitStatic(LIBBASETYPEPTR LIBBASE)
     
     D(bug("[VMWareSVGA] VMWareSVGA_InitStatic: ok\n"));
 
-    ReturnInt("VMWareSVGA_InitStatic", UNLONG, TRUE);
+    ReturnInt("VMWareSVGA_InitStatic", int, TRUE);
 }
 
 static int VMWareSVGA_ExpungeStatic(LIBBASETYPEPTR LIBBASE)
