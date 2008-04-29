@@ -1,8 +1,13 @@
+#ifndef COMPILERSPECIFIC_H
+#define COMPILERSPECIFIC_H
+
+#ifndef __AROS__
 #ifndef IPTR
 #define IPTR ULONG
 #endif
 #ifndef STACKIPTR
 #define STACKIPTR ULONG
+#endif
 #endif
 
 #undef 	REGARGS
@@ -67,3 +72,5 @@
 #define SAVEDS	    	    	    	__saveds
 
 #endif
+
+#endif /* COMPILERSPECIFIC_H */
