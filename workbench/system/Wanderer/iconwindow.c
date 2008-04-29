@@ -1,5 +1,5 @@
 /*
-	Copyright  2004-2006, The AROS Development Team. All rights reserved.
+	Copyright  2004-2008, The AROS Development Team. All rights reserved.
 	$Id$
 */
 
@@ -372,8 +372,8 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 	IPTR                            _newIconWin__WindowWidth = 0;
 	IPTR                            _newIconWin__WindowHeight = 0;
-	IPTR                            _newIconWin__WindowTop = 0;
 	IPTR                            _newIconWin__WindowLeft = 0;
+	IPTR                            _newIconWin__WindowTop = 0;
 
 	IPTR                            _newIconWin__FSNotifyPort = NULL;
 
@@ -644,12 +644,6 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
 			data->iwd_BackFill_hook->h_Data = &data->iwd_BackFillHookData;
 		}
 
-		if (iconwindow_BackFill_Active)
-		{
-			data->iwd_BackFillInfo = DoMethod(self, MUIM_IconWindow_BackFill_Setup);
-			D(bug("[iconwindow] %s: Window BackFill_Data @ 0x%p for '%s'\n", __PRETTY_FUNCTION__, data->iwd_BackFillInfo, iconwindow_BackFill_Active->bfd_BackFillID));
-		}
-
 		/* no tool bar when root */
 		if (!isRoot && hasToolbar && data->iwd_ExtensionContainerObj)
 			IconWindow__SetupToolbar(CLASS, self, prefs);
@@ -737,16 +731,34 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 			D(bug("[iconwindow] %s: MUIA_ShowMe [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
             if ((BOOL)tag->ti_Data == TRUE)
             {
-                IPTR wand_screen = NULL;
-                GET(_app(self), MUIA_Wanderer_Screen, &wand_screen);
-                if (wand_screen != data->iwd_Screen)
+                struct Screen *__Wanderer__Screen = NULL;
+                GET(_app(self), MUIA_Wanderer_Screen, &__Wanderer__Screen);
+                if (__Wanderer__Screen != data->iwd_Screen)
                 {
-                    D(bug("[iconwindow] %s: Screen Changed [old = %p, new = %p]\n", __PRETTY_FUNCTION__, data->iwd_Screen, wand_screen));
-                    SET(self, MUIA_Window_Screen, wand_screen);
+                    D(bug("[iconwindow] %s: Screen Changed [old = %p, new = %p]\n", __PRETTY_FUNCTION__, data->iwd_Screen, __Wanderer__Screen));
+                    SET(self, MUIA_Window_Screen, __Wanderer__Screen);
                     if ((data->iwd_Flag_ISROOT) && (data->iwd_Flag_ISBACKDROP))
                     {
 #warning "TODO: Change window dimensions to match new screen size!"
                         D(bug("[iconwindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
+                        IPTR                            _IconWin__NewWindowWidth = 0;
+                        IPTR                            _IconWin__NewWindowHeight = 0;
+                        IPTR                            _IconWin__NewWindowLeft = 0;
+                        IPTR                            _IconWin__NewWindowTop = 0;
+
+                        _IconWin__NewWindowWidth = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_WIDTH);
+                        _IconWin__NewWindowHeight = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_HEIGHT);
+                        D(bug("[iconwindow] %s: Screen dimensions ..  %d x %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight));
+
+                        _IconWin__NewWindowTop = __Wanderer__Screen->BarHeight + 1;
+                        _IconWin__NewWindowLeft = 0;
+
+                        _IconWin__NewWindowHeight -= _IconWin__NewWindowTop;
+
+                        D(bug("[iconwindow] %s: New Window dimensions ..  %d x %d @ %d, %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight, _IconWin__NewWindowLeft, _IconWin__NewWindowTop));
+
+                        SET(self, MUIA_Window_Width, _IconWin__NewWindowWidth);
+                        SET(self, MUIA_Window_Height, _IconWin__NewWindowHeight);
                     }
                 }
             }
@@ -757,16 +769,26 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 			break;
 
 		case MUIA_Window_Open:
+			D(bug("[iconwindow] %s: MUIA_Window_Open [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            if ((BOOL)tag->ti_Data == TRUE)
 			{
-				/* Commented out for unknown reason - please elaborate here!
-				if (data->iwd_WindowFont)
-				{
-D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [0x%p]\n", data->iwd_WindowFont));
-					SetFont(_rp(self), data->iwd_WindowFont);
-				}
-				*/
-				break;
+                rv = DoSuperMethodA(CLASS, self, (Msg) message);
+#if defined(ICONWINDOW_BUFFERLIST)
+                if (!(data->iwd_Flag_ISROOT))
+                {
+                    GET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, &CURDISPFLAGS);
+                    CURDISPFLAGS |= ICONLIST_DISP_BUFFERED;
+                    SET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, CURDISPFLAGS);
+                }
+#endif
+                D(bug("[IconWindow] %s: Process the background ..\n", __PRETTY_FUNCTION__));
+                DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
+
+                D(bug("[IconWindow] %s: Force an update of the list ..\n", __PRETTY_FUNCTION__));
+                DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+                return rv;
 			}
+            break;
 
 		case MUIA_Window_Activate:
 			if (data->iwd_IconListObj)
@@ -778,7 +800,7 @@ D(bug("[iconwindow] MUIA_Window_Open: Setting Window Font [0x%p]\n", data->iwd_W
 			data->iwd_WindowFont = (struct TextFont  *)tag->ti_Data;
 			D(bug("[iconwindow] %s: MUIA_IconWindow_Font [font @ 0x%p]\n", __PRETTY_FUNCTION__, data->iwd_WindowFont));
 
-			if ( data->iwd_WindowFont != 1 )
+			if (data->iwd_WindowFont != 1)
 				SetFont(_rp(self), data->iwd_WindowFont);
 
 			break;
@@ -924,6 +946,12 @@ IPTR IconWindow__MUIM_Window_Setup
 	Object *prefs = NULL;
 	
 	if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
+
+    if (iconwindow_BackFill_Active)
+    {
+        data->iwd_BackFillInfo = DoMethod(self, MUIM_IconWindow_BackFill_Setup);
+        D(bug("[iconwindow] %s: Window BackFill_Data @ 0x%p for '%s'\n", __PRETTY_FUNCTION__, data->iwd_BackFillInfo, iconwindow_BackFill_Active->bfd_BackFillID));
+    }
 
 	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
@@ -1134,21 +1162,7 @@ IPTR IconWindow__MUIM_IconWindow_Open
 	{
 		DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
 		SET(self, MUIA_Window_Open, TRUE);
-
-#if defined(ICONWINDOW_BUFFERLIST)
-		if (!(data->iwd_Flag_ISROOT))
-		{
-			GET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, &CURDISPFLAGS);
-			CURDISPFLAGS |= ICONLIST_DISP_BUFFERED;
-			SET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, CURDISPFLAGS);
-		}
-#endif
-
-		D(bug("[IconWindow] %s: Process the background ..\n", __PRETTY_FUNCTION__));
-		DoMethod(self, MUIM_IconWindow_BackFill_ProcessBackground, data->iwd_BackFillInfo, data->iwd_RootViewObj);
-	}
-	D(bug("[IconWindow] %s: Force an update of the list ..\n", __PRETTY_FUNCTION__));
-	DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
+    }
 
 	D(bug("[IconWindow] %s: Setting window as active ..\n", __PRETTY_FUNCTION__));
 	SET(self, MUIA_Window_Activate, TRUE);
