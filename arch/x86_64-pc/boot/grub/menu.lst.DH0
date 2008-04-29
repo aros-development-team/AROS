@@ -1,7 +1,40 @@
 # [B] (DO NOT REMOVE THIS LINE!)
 
 timeout 5
-default 6
+default 9
+
+title AROS64 with NVIDIA Gfx
+    serial=9600
+    kernel /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma nofdc
+    module /dh0/boot/kernel
+    module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
+
+title AROS64 with ATI Gfx
+    serial=9600
+    kernel /dh0/boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit,forcedma nofdc
+    module /dh0/boot/kernel
+    module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
+
+title AROS64 with VMWareSVGA Gfx
+    serial=9600
+    kernel /dh0/boot/aros-x86_64 gfx=hidd.gfx.vmwaresvga lib=vmwaresvga.hidd ATA=32bit,forcedma nofdc
+    module /dh0/boot/kernel
+    module /dh0/boot/kernel.pkg
+    module /dh0/Devs/sfs.handler
+    module /dh0/Devs/Drivers/usb.hidd
+    module /dh0/Devs/Drivers/ehci.hidd
+    module /dh0/Devs/Drivers/uhci.hidd
+    module /dh0/Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 640x480-8bpp
     serial=9600
