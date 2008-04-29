@@ -1,8 +1,23 @@
 # Timeout for menu
 set timeout=5
 
-# Set default boot entry as VESA Gfx @ 800x600-16bpp
-set default=5
+# Set default boot entry as VESA Gfx @ 1024x768-16bpp
+set default=9
+
+menuentry "AROS with NVIDIA Gfx" {
+    serial --speed=9600
+    multiboot /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma nofdc
+}
+
+menuentry "AROS with ATI Gfx" {
+    serial --speed=9600
+    multiboot /dh0/boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit,forcedma nofdc
+}
+
+menuentry "AROS with VMWareSVGA Gfx" {
+    serial --speed=9600
+    multiboot /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.vmwaresvga lib=vmwaresvga.hidd ATA=32bit,forcedma nofdc
+}
 
 menuentry "AROS with VESA Gfx @ 640x480-8bpp" {
     serial --speed=9600
@@ -73,19 +88,3 @@ menuentry "AROS with VGA @ 640x480-4bpp (slow ATA)" {
     serial --speed=9600
     multiboot /dh0/boot/aros-pc-i386.gz nofdc
 }
-
-menuentry "AROS with NVIDIA Gfx" {
-    serial --speed=9600
-    multiboot /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma nofdc
-}
-
-menuentry "AROS with ATI Gfx" {
-    serial --speed=9600
-    multiboot /dh0/boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit,forcedma nofdc
-}
-
-#menuentry "AROS with VMWare Gfx" {
-#    serial --speed=9600
-#    multiboot /dh0/boot/aros-pc-i386.gz gfx=hidd.gfx.vmware lib=vmwaregfx.hidd ATA=32bit,forcedma nofdc
-#}
-
