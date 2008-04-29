@@ -91,6 +91,7 @@ struct IconWindow_BackFillHookData
 
 struct IconWindow_DATA
 {
+    struct Screen                        *iwd_Screen;
 	char                                 *iwd_Title;
     char                                 iwd_DirectoryPath[IWD_MAX_DIRECTORYPATHLEN];
 

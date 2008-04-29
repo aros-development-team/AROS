@@ -3,6 +3,7 @@ Copyright © 2002-2008, The AROS Development Team.
 $Id$
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>

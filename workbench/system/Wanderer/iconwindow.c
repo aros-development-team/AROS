@@ -584,6 +584,8 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
 
 		D(bug("[iconwindow] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
 
+        data->iwd_Screen                  = _newIconWin__Screen;
+        
 		data->iwd_Title                   = _newIconWin__Title;
 
 		data->iwd_RootViewObj             = _newIconWin__RootViewObj;
@@ -726,6 +728,29 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 	{
 		switch (tag->ti_Tag)
 		{
+        case MUIA_Window_Screen:
+            D(bug("[iconwindow] %s: MUIA_Window_Screen [screen @ %p]\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            data->iwd_Screen = tag->ti_Tag;
+            break;
+
+        case MUIA_ShowMe:
+			D(bug("[iconwindow] %s: MUIA_ShowMe [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
+            if ((BOOL)tag->ti_Data == TRUE)
+            {
+                IPTR wand_screen = NULL;
+                GET(_app(self), MUIA_Wanderer_Screen, &wand_screen);
+                if (wand_screen != data->iwd_Screen)
+                {
+                    D(bug("[iconwindow] %s: Screen Changed [old = %p, new = %p]\n", __PRETTY_FUNCTION__, data->iwd_Screen, wand_screen));
+                    SET(self, MUIA_Window_Screen, wand_screen);
+                    if ((data->iwd_Flag_ISROOT) && (data->iwd_Flag_ISBACKDROP))
+                    {
+                        D(bug("[iconwindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
+                    }
+                }
+            }
+            break;
+
 		case MUIA_IconWindow_Changed:
 			data->iwd_Flag_NEEDSUPDATE = (BOOL)tag->ti_Data;
 			break;
