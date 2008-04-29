@@ -9,6 +9,7 @@ $Id$
 #MM    kernel-pc-i386-parallel-kobj \
 #MM    kernel-pc-i386-vesa-kobj \
 #MM    kernel-pc-i386-vga-kobj \
+#MM    kernel-hidd-vmwaresvga \
 #MM    kernel-pci-kobj \
 #MM    kernel-pci-pcipc-kobj \
 #MM    kernel-ata-kobj \
