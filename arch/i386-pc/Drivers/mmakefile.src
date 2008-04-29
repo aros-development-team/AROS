@@ -1,4 +1,8 @@
-$Id$
+$Id: mmakefile 28549 2008-04-29 11:15:02Z NicJA $
+
+#
+# Rule's to create Kernel drivers for pc-i386
+#
 
 #MM- kernel-pc-i386-drivers : \
 #MM    kernel-pc-i386-trackdisk-kobj \
@@ -9,12 +13,21 @@ $Id$
 #MM    kernel-pc-i386-parallel-kobj \
 #MM    kernel-pc-i386-vesa-kobj \
 #MM    kernel-pc-i386-vga-kobj \
-#MM    kernel-hidd-vmwaresvga \
 #MM    kernel-pci-kobj \
 #MM    kernel-pci-pcipc-kobj \
-#MM    kernel-ata-kobj \
-#MM    kernel-hidd-nvidia \
-#MM    hidd-radeon
+#MM    kernel-ata-kobj
 
 # Disabled kernel-pc-i386-driver
 ##MM    kernel-pc-i386-usb-kobj
+
+#
+# Rule's to create Support drivers for pc-i386
+# These are not needed as part of the kernel - and so get created seperately
+#
+
+#MM- AROS-pc-i386-drivers : \
+#MM    hidd-vmwaresvga \
+#MM    hidd-nvidia \
+#MM    hidd-radeon
+
+
