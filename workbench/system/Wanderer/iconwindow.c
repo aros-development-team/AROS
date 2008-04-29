@@ -745,6 +745,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                     SET(self, MUIA_Window_Screen, wand_screen);
                     if ((data->iwd_Flag_ISROOT) && (data->iwd_Flag_ISBACKDROP))
                     {
+#warning "TODO: Change window dimensions to match new screen size!"
                         D(bug("[iconwindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
                     }
                 }
