@@ -771,6 +771,8 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 			D(bug("[iconwindow] %s: MUIA_Window_Open [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
             if ((BOOL)tag->ti_Data == TRUE)
 			{
+                DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
+
                 rv = DoSuperMethodA(CLASS, self, (Msg) message);
 #if defined(ICONWINDOW_BUFFERLIST)
                 if (!(data->iwd_Flag_ISROOT))
@@ -1159,7 +1161,6 @@ IPTR IconWindow__MUIM_IconWindow_Open
 
 	if (!XGET(self, MUIA_Window_Open))
 	{
-		DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
 		SET(self, MUIA_Window_Open, TRUE);
     }
 
