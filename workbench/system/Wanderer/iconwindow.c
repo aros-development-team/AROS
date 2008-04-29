@@ -739,7 +739,6 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                     SET(self, MUIA_Window_Screen, __Wanderer__Screen);
                     if ((data->iwd_Flag_ISROOT) && (data->iwd_Flag_ISBACKDROP))
                     {
-#warning "TODO: Change window dimensions to match new screen size!"
                         D(bug("[iconwindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
                         IPTR                            _IconWin__NewWindowWidth = 0;
                         IPTR                            _IconWin__NewWindowHeight = 0;
