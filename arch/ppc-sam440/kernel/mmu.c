@@ -178,7 +178,7 @@ void mmu_init(struct TagItem *tags)
     mh->mh_First->mc_Bytes = mh->mh_Free;
     
     /* The regular RAM, make 1GB of it - amcc440 cannot do more. */
-    map_region(krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX );
+    map_region(krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX);// | TLB_W );
     
     /* map the PCI bus */
     map_region(0xa0000000, 0xa0000000, 0x40000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
