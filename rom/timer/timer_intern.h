@@ -1,3 +1,6 @@
+#ifndef _TIMER_INTERN_H
+#define _TIMER_INTERN_H
+
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
@@ -74,3 +77,5 @@ struct TimerBase
 #define TF_GO		(1L<<0)
 #define TF_GotVBlank	(1L<<1)	/* HIDD used for VBlank units */
 #define TF_GotEClock	(1L<<2)	/* HIDD used for other units */
+
+#endif /* _TIMER_INTERN_H */
