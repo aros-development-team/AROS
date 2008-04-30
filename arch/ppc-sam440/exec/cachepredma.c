@@ -67,6 +67,8 @@
     AROS_LIBFUNC_INIT
 
     /* At PreDMA stage only data caches need to be flushed */
+    //if (flags & DMA_ReadFromRAM)
+    
     CacheClearE(address, *length, CACRF_ClearD);
 
     return address;
