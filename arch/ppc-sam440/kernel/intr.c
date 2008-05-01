@@ -503,7 +503,7 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
                  [gpr29]"i"(offsetof(regs_t, gpr[29])),
                  [gpr30]"i"(offsetof(regs_t, gpr[30])),
                  [gpr31]"i"(offsetof(regs_t, gpr[31])),
-                 [msrval]"i"(MSR_ME|MSR_CE)
+                 [msrval]"i"(MSR_ME|MSR_CE|MSR_FP)
     );
 }
 
