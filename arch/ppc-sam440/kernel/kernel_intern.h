@@ -22,7 +22,7 @@ struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
     struct List         kb_Exceptions[16];
-    struct List         kb_Interrupts[62];
+    struct List         kb_Interrupts[64];
     struct MemHeader    *kb_SupervisorMem;
 };
 

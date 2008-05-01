@@ -25,7 +25,7 @@ void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void 
             uint32_t mask = 0x80000000;
             uint32_t irq = 0;
             
-            for (mask = 0x80000000; mask != 0x2; mask >>= 1, irq++)
+            for (mask = 0x80000000; mask; mask >>= 1, irq++)
             {
                 if (mask & uic0_sr)
                 {
@@ -39,7 +39,7 @@ void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void 
                                 in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
                         }
                     }
-                    else {
+                    else if (irq < 30){
                         D(bug("[KRN] Orphan interrupt %d occured\n", irq));
                     }
                 }
