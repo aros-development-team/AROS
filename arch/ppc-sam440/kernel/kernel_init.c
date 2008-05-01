@@ -69,13 +69,11 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     struct KernelBSS *bss;
     
     bss =(struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
-    D(bug("[KRN] Clearing BSS\n"));
 
     if (bss)
     {
         while (bss->addr && bss->len)
         {
-            D(bug("[KRN]   %p-%p\n", bss->addr, (char*)bss->addr+bss->len-1));
             bzero(bss->addr, bss->len);
             bss++;
         }   
@@ -98,6 +96,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     int i;
     uint32_t v1,v2,v3;
 
+    /* Disable interrupts and let FPU work */
+    wrmsr((rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME)) | MSR_FP);
+        
+    /* Enable FPU */
+    wrspr(CCR0, rdspr(CCR0) & ~0x00100000);
+    wrspr(CCR1, rdspr(CCR1) | (0x80000000 >> 24));
+    
     wrspr(SPRG4, 0);    /* Clear KernelBase */
     wrspr(SPRG5, 0);    /* Clear SysBase */
 
@@ -105,12 +110,6 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     D(bug("[KRN] MSR=%08x CRR0=%08x CRR1=%08x\n", rdmsr(), rdspr(CCR0), rdspr(CCR1)));
     D(bug("[KRN] USB config %08x\n", rddcr(SDR0_USB0)));
     
-    /* Enable FPU */
-    wrspr(CCR0, rdspr(CCR0) & ~0x00100000);
-    wrspr(CCR1, rdspr(CCR1) | (0x80000000 >> 24));
-    
-    /* Disable interrupts */
-    wrmsr(rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME));
     wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-4]);
     
     /* Do a slightly more sophisticated MMU map */
