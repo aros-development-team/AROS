@@ -6,7 +6,9 @@ include $(TOP)/config/make.cfg
 #MM	kernel-sam440-ppc \
 #MM	kernel-package-sam440-ppc \
 #MM	workbench-complete \
-#MM	contrib-networking-stacks
+#MM	contrib-networking-stacks \
+#MM	contrib-dhcp-client \
+#MM	aros-tcpip-apps
 
 #MM kernel-package-sam440-ppc: \
 #MM	linklibs-clib \
