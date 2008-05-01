@@ -14,12 +14,28 @@
 #include "svga_reg.h"
 #include "vmwaresvgahardware.h"
 
+#ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/
 VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg) 
 {
+    struct BitmapData *data = OOP_INST_DATA(cl, o);
+    ULONG   	    	width, height;
+
     D(bug("[VMWareSVGA] Clear()\n"));
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    /* Get width & height from bitmap */
+
+    OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(o, aHidd_BitMap_Height, &height);
+
+    writeVMWareSVGAFIFO(data->data, SVGA_CMD_RECT_FILL);
+    writeVMWareSVGAFIFO(data->data, GC_FG(msg->gc));
+    writeVMWareSVGAFIFO(data->data, 0);
+    writeVMWareSVGAFIFO(data->data, 0);
+    writeVMWareSVGAFIFO(data->data, width);
+    writeVMWareSVGAFIFO(data->data, height);
 }
+#endif
 
 #if 0
 /* this function does not really make sense for LUT bitmaps */
