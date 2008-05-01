@@ -41,13 +41,13 @@ AROS_LH4(void *, KrnAddIRQHandler,
             Disable();
             ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
             
-            if (irq < 30)
+            if (irq < 32)
             {
                 wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
             }
             else
             {
-                wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 30)));
+                wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 32)));
                 wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
             }
             
@@ -84,9 +84,9 @@ AROS_LH1(void, KrnRemIRQHandler,
             {
                 wrdcr(UIC0_ER, rddcr(UIC0_ER) & ~(0x80000000 >> irq));
             }
-            else
+            else if (irq > 31)
             {
-                wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 30)));
+                wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 32)));
             }
         }
         Enable();

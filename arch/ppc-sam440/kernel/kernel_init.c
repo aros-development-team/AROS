@@ -171,7 +171,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     for (i=0; i < 16; i++)
         NEWLIST(&LIBBASE->kb_Exceptions[i]);
 
-    for (i=0; i < 62; i++)
+    for (i=0; i < 64; i++)
         NEWLIST(&LIBBASE->kb_Interrupts[i]);
 
     /* Prepare private memory block */

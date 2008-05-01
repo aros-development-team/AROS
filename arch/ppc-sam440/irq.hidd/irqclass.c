@@ -90,7 +90,7 @@ BOOL Irq__Hidd_IRQ__AddHandler(OOP_Class *cl, OOP_Object *obj, struct pHidd_IRQ_
 
     D(bug("Translated IRQ number is %d\n", irqnum));
 
-    if (irqnum >= 0 && irqnum <= 62)
+    if (irqnum >= 0 && irqnum <= 63)
     {
         static HIDDT_IRQ_HwInfo dummy;
         dummy.sysBase = SysBase;
