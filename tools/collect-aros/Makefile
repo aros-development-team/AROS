@@ -1,9 +1,9 @@
-# Copyright © 2000-2003, The AROS Development Team. All rights reserved.
+# Copyright © 2000-2008, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Makefile to build collect-aros.
 
-USER_CFLAGS := -Wall -Wunused -O2
+USER_CFLAGS += -Wall -Wunused -O2
 -include $(TOP)/config/make.cfg
 
 HOST_CC	     ?= $(CC)
