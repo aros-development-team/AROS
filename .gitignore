@@ -495,19 +495,13 @@
 
 # arch/common/boot/grub2/include/grub/i386/ieee1275
 
-# arch/common/boot/grub2/include/grub/i386/linuxbios
-
 # arch/common/boot/grub2/include/grub/i386/pc
-
-# arch/common/boot/grub2/include/grub/i386/pc/util
 
 # arch/common/boot/grub2/include/grub/ieee1275
 
 # arch/common/boot/grub2/include/grub/powerpc
 
 # arch/common/boot/grub2/include/grub/powerpc/ieee1275
-
-# arch/common/boot/grub2/include/grub/powerpc/ieee1275/util
 
 # arch/common/boot/grub2/include/grub/sparc64
 
