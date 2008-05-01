@@ -18,7 +18,7 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
 {
     context_t   *ctx;
     int         i;
-    IPTR        *sp=(IPTR *)task->tc_SPReg;
+    IPTR        *sp=(IPTR *)((IPTR)task->tc_SPReg & 0xfffffff0);
     IPTR        args[8] = {0};
     WORD        numargs = 0;
  
