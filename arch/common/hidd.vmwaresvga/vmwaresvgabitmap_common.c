@@ -34,6 +34,7 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
     writeVMWareSVGAFIFO(data->data, 0);
     writeVMWareSVGAFIFO(data->data, width);
     writeVMWareSVGAFIFO(data->data, height);
+    syncVMWareSVGAFIFO(data);
 }
 #endif
 
