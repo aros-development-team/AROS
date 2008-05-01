@@ -658,6 +658,18 @@ case "$target_os" in
 		aros_default_wbdepth=8
 		gcc_target_cpu="ppc"
 		;;
+# TODO
+# Same as powerpc, but I need this for the nightly build to work again.
+# Actually, the nightly should be made working with powerpc target.
+# That just was too much work for the moment, another week or two.
+	    *ppc*)
+	    	aros_target_cpu="ppc"
+		aros_object_format="elf32ppc"
+		aros_flavour="emulation"
+		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
+		aros_default_wbdepth=8
+		gcc_target_cpu="ppc"
+		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for Linux -- $target_cpu")
 		;;
