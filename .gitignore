@@ -436,6 +436,9 @@
 # arch/common/boot/grub2
 /arch/common/boot/grub2/mmakefile
 
+# arch/common/boot/grub2/AROS
+/arch/common/boot/grub2/AROS/mmakefile
+
 # arch/common/boot/grub2/boot
 
 # arch/common/boot/grub2/boot/i386
@@ -637,6 +640,10 @@
 /arch/common/hidd.radeon/
 /arch/common/hidd.radeon/mmakefile
 
+# arch/common/hidd.vmwaresvga
+/arch/common/hidd.vmwaresvga/mmakefile
+/arch/common/hidd.vmwaresvga/libdefs.h
+
 # arch/common/include
 /arch/common/include/mmakefile
 
@@ -678,6 +685,7 @@
 /arch/i386-pc/machine.i
 
 # arch/i386-pc/Drivers
+/arch/i386-pc/Drivers/mmakefile
 
 # arch/i386-pc/Drivers/irq.hidd
 /arch/i386-pc/Drivers/irq.hidd/mmakefile
@@ -714,10 +722,6 @@
 # arch/i386-pc/Drivers/vga.hidd
 /arch/i386-pc/Drivers/vga.hidd/mmakefile
 /arch/i386-pc/Drivers/vga.hidd/libdefs.h
-
-# arch/i386-pc/Drivers/vmwaregfx.hidd
-/arch/i386-pc/Drivers/vmwaregfx.hidd/mmakefile
-/arch/i386-pc/Drivers/vmwaregfx.hidd/libdefs.h
 
 # arch/i386-pc/alib
 /arch/i386-pc/alib/mmakefile
@@ -853,8 +857,17 @@
 
 # arch/ppc-sam440
 
+# arch/ppc-sam440/ata
+/arch/ppc-sam440/ata/mmakefile
+
 # arch/ppc-sam440/boot
 /arch/ppc-sam440/boot/mmakefile
+
+# arch/ppc-sam440/bootloader
+/arch/ppc-sam440/bootloader/mmakefile
+
+# arch/ppc-sam440/dos
+/arch/ppc-sam440/dos/mmakefile
 
 # arch/ppc-sam440/exec
 /arch/ppc-sam440/exec/mmakefile
@@ -874,6 +887,9 @@
 
 # arch/ppc-sam440/intuition
 /arch/ppc-sam440/intuition/mmakefile
+
+# arch/ppc-sam440/irq.hidd
+/arch/ppc-sam440/irq.hidd/mmakefile
 
 # arch/ppc-sam440/kernel
 /arch/ppc-sam440/kernel/mmakefile
@@ -937,6 +953,9 @@
 
 # arch/x86_64-pc/dos
 /arch/x86_64-pc/dos/mmakefile
+
+# arch/x86_64-pc/drivers
+/arch/x86_64-pc/drivers/mmakefile
 
 # arch/x86_64-pc/exec
 /arch/x86_64-pc/exec/mmakefile
@@ -1230,6 +1249,7 @@
 /config/config.h
 /config/mmakefile
 /config/makefile
+/config/make.cfg
 
 # images
 /images/mmakefile
@@ -1741,6 +1761,9 @@
 # test/icon
 /test/icon/mmakefile
 
+# test/library
+/test/library/mmakefile
+
 # test/michael-native
 
 # test/oop
@@ -1883,6 +1906,7 @@
 /tools/genmf/mmakefile
 
 # tools/genmodule
+/tools/genmodule/archspecific.h
 
 # tools/genmodule/include
 
@@ -2909,6 +2933,7 @@
 /workbench/prefs/Zune/catalogs/mmakefile
 
 # workbench/prefs/env-archive
+/workbench/prefs/env-archive/mmakefile
 
 # workbench/prefs/env-archive/SYS
 
@@ -3026,6 +3051,9 @@
 
 # workbench/system/Wanderer/Catalogs
 /workbench/system/Wanderer/Catalogs/mmakefile
+
+# workbench/system/Wanderer/Classes
+/workbench/system/Wanderer/Classes/mmakefile
 
 # workbench/system/Wanderer/Icons
 /workbench/system/Wanderer/Icons/mmakefile
