@@ -104,6 +104,8 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
 
     data->capabilities = vmwareReadReg(data, SVGA_REG_CAPABILITIES);
     data->depth = vmwareReadReg(data, SVGA_REG_DEPTH);
+    data->maxwidth = vmwareReadReg(data, SVGA_REG_MAX_WIDTH);
+    data->maxheight = vmwareReadReg(data, SVGA_REG_MAX_HEIGHT);
     data->redmask = vmwareReadReg(data, SVGA_REG_RED_MASK);
     data->greenmask = vmwareReadReg(data, SVGA_REG_GREEN_MASK);
     data->bluemask = vmwareReadReg(data, SVGA_REG_BLUE_MASK);
@@ -122,13 +124,26 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
     else
         data->bitsperpixel = vmwareReadReg(data, SVGA_REG_BITS_PER_PIXEL);
 
-    data->vramsize = vmwareReadReg(data, SVGA_REG_FB_MAX_SIZE);
+    if (data->capabilities & SVGA_CAP_MULTIMON)
+    {
+        data->displaycount = vmwareReadReg(data, SVGA_REG_NUM_DISPLAYS);
+    }
+    else
+    {
+        data->displaycount = 1;
+    }
+
+    data->vramsize = vmwareReadReg(data, SVGA_REG_VRAM_SIZE);
     data->vrambase = vmwareReadReg(data, SVGA_REG_FB_START);
     data->pseudocolor = vmwareReadReg(data, SVGA_REG_PSEUDOCOLOR);
 
     D(bug("[VMWareSVGA] Init: caps : 0x%08x\n",data->capabilities));
+    D(bug("[VMWareSVGA] Init: no.displays: %d\n",data->displaycount));
     D(bug("[VMWareSVGA] Init: depth: %d\n",data->depth));
     D(bug("[VMWareSVGA] Init: bpp  : %d\n",data->bitsperpixel));
+    D(bug("[VMWareSVGA] Init: maxw: %d\n",data->maxwidth));
+    D(bug("[VMWareSVGA] Init: maxh: %d\n",data->maxheight));
+
     return TRUE;
 }
 

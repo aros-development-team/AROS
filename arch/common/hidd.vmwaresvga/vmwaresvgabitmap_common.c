@@ -22,7 +22,6 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
 }
 
 #if 0
-
 /* this function does not really make sense for LUT bitmaps */
 
 HIDDT_Pixel MNAME_BM(MapColor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
@@ -30,10 +29,6 @@ HIDDT_Pixel MNAME_BM(MapColor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     D(bug("[VMWareSVGA] MapColor()\n"));
     return i;
 }
-
-#endif
-
-#if 0
 
 /* this function does not really make sense for LUT bitmaps */
 
