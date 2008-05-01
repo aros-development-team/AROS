@@ -54,7 +54,7 @@ typedef unsigned int            __size_t;           /* XXX Large Files? */
 typedef __uint32_t              __socklen_t;
 typedef int                     __ssize_t;
 typedef __int32_t               __suseconds_t;
-typedef __uint32_t              __time_t;           /* XXX Limiting? */
+typedef __int32_t               __time_t;           /* XXX Limiting? */
 typedef int                     __timer_t;
 typedef __uint32_t              __uid_t;
 typedef __uint32_t              __useconds_t;
