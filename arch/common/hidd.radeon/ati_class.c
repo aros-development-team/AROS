@@ -394,15 +394,16 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
                 
                 if (pixfmt == vHidd_StdPixFmt_LUT8)
                 {
-                    getcolor->colorNo = pixel;
-                    OOP_DoMethod(colormap, (OOP_Msg)getcolor);
-                    pixel = ((color.red << 8) & 0xff0000) |
-                        ((color.green) & 0x00ff00)    |
-                        ((color.blue >> 8) & 0x0000ff);
-                    
-                    if (pixel)
+		    if (pixel)
+		    {
+                	getcolor->colorNo = pixel;
+                	OOP_DoMethod(colormap, (OOP_Msg)getcolor);
+                	pixel = ((color.red << 8) & 0xff0000) |
+                    	    ((color.green) & 0x00ff00)    |
+                    	    ((color.blue >> 8) & 0x0000ff);
                         *curimg++ = ToRGB8888(0xe0, pixel);
-                    else curimg++;
+                    }
+		    else *curimg++ = ToRGB8888(0,0);
                 }
             }
             for (x=width; x < maxw; x++, curimg++)
