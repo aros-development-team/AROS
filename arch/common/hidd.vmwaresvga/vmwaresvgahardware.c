@@ -50,14 +50,23 @@ ULONG getVMWareSVGAID(struct HWData *data)
 VOID initVMWareSVGAFIFO(struct HWData *data)
 {
     ULONG *fifo;
+    ULONG fifomin;
 
     vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 0);		//Stop vmware from reading the fifo
+
     fifo = data->mmiobase = vmwareReadReg(data, SVGA_REG_MEM_START);
     data->mmiosize = vmwareReadReg(data, SVGA_REG_MEM_SIZE) & ~3;
-    fifo[SVGA_FIFO_MIN] = 16;
+
+    if (data->capabilities & SVGA_CAP_EXTENDED_FIFO)
+        fifomin = vmwareReadReg(data, SVGA_REG_MEM_REGS);
+    else
+        fifomin =4;
+    
+    fifo[SVGA_FIFO_MIN] = fifomin * sizeof(ULONG);
     fifo[SVGA_FIFO_MAX] = data->mmiosize;
-    fifo[SVGA_FIFO_NEXT_CMD] = 16;
-    fifo[SVGA_FIFO_STOP] = 16;
+    fifo[SVGA_FIFO_NEXT_CMD] = fifomin * sizeof(ULONG);
+    fifo[SVGA_FIFO_STOP] = fifomin * sizeof(ULONG);
+
     vmwareWriteReg(data, SVGA_REG_CONFIG_DONE, 1);
 }
 
