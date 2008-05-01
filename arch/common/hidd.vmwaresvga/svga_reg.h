@@ -19,8 +19,8 @@
  * Memory and port addresses and fundamental constants
  */
 
-#define SVGA_MAX_WIDTH			2364
-#define SVGA_MAX_HEIGHT			1773
+#define SVGA_MAX_WIDTH			2360
+#define SVGA_MAX_HEIGHT			1770
 
 #define SVGA_MAX_BITS_PER_PIXEL		32
 #if SVGA_MAX_WIDTH * SVGA_MAX_HEIGHT * SVGA_MAX_BITS_PER_PIXEL / 8 > \
@@ -29,6 +29,7 @@
 #endif
 #define SVGA_MAX_PSEUDOCOLOR_DEPTH	8
 #define SVGA_MAX_PSEUDOCOLORS		(1 << SVGA_MAX_PSEUDOCOLOR_DEPTH)
+#define SVGA_NUM_PALETTE_REGS           (3 * SVGA_MAX_PSEUDOCOLORS)
 
 #define SVGA_MAGIC         0x900000
 #define SVGA_MAKE_ID(ver)  (SVGA_MAGIC << 8 | (ver))
@@ -80,7 +81,7 @@ enum {
    SVGA_REG_MAX_WIDTH = 4,
    SVGA_REG_MAX_HEIGHT = 5,
    SVGA_REG_DEPTH = 6,
-   SVGA_REG_BITS_PER_PIXEL = 7,
+   SVGA_REG_BITS_PER_PIXEL = 7,     /* Current bpp in the guest */
    SVGA_REG_PSEUDOCOLOR = 8,
    SVGA_REG_RED_MASK = 9,
    SVGA_REG_GREEN_MASK = 10,
@@ -88,8 +89,10 @@ enum {
    SVGA_REG_BYTES_PER_LINE = 12,
    SVGA_REG_FB_START = 13,
    SVGA_REG_FB_OFFSET = 14,
-   SVGA_REG_FB_MAX_SIZE = 15,
+   SVGA_REG_VRAM_SIZE = 15,
    SVGA_REG_FB_SIZE = 16,
+
+   /* ID 0 implementation only had the above registers, then the palette */
 
    SVGA_REG_CAPABILITIES = 17,
    SVGA_REG_MEM_START = 18,	   /* Memory for command FIFO and bitmaps */
@@ -103,10 +106,19 @@ enum {
    SVGA_REG_CURSOR_Y = 26,	   /* Set cursor Y position */
    SVGA_REG_CURSOR_ON = 27,	   /* Turn cursor on/off */
    SVGA_REG_HOST_BITS_PER_PIXEL = 28, /* Current bpp in the host */
+   SVGA_REG_SCRATCH_SIZE = 29,     /* Number of scratch registers */
+   SVGA_REG_MEM_REGS = 30,         /* Number of FIFO registers */
+   SVGA_REG_NUM_DISPLAYS = 31,     /* Number of guest displays */
+   SVGA_REG_PITCHLOCK = 32,        /* Fixed pitch for all modes */
+   SVGA_REG_TOP = 33,		   /* Must be 1 more than the last register */
 
-   SVGA_REG_TOP = 30,		   /* Must be 1 greater than the last register */
-
-   SVGA_PALETTE_BASE = 1024	   /* Base of SVGA color map */
+   SVGA_PALETTE_BASE = 1024,	   /* Base of SVGA color map */
+   /* Next 768 (== 256*3) registers exist for colormap */
+   SVGA_SCRATCH_BASE = SVGA_PALETTE_BASE + SVGA_NUM_PALETTE_REGS
+                                   /* Base of scratch registers */
+   /* Next reg[SVGA_REG_SCRATCH_SIZE] registers exist for scratch usage:
+      First 4 are reserved for VESA BIOS Extension; any remaining are for
+      the use of the current SVGA driver. */
 };
 
 
@@ -114,44 +126,50 @@ enum {
  *  Capabilities
  */
 
-#define	SVGA_CAP_NONE               0x0000
-#define	SVGA_CAP_RECT_FILL	    0x0001
-#define	SVGA_CAP_RECT_COPY	    0x0002
-#define	SVGA_CAP_RECT_PAT_FILL      0x0004
-#define	SVGA_CAP_LEGACY_OFFSCREEN   0x0008
-#define	SVGA_CAP_RASTER_OP	    0x0010
-#define	SVGA_CAP_CURSOR		    0x0020
-#define	SVGA_CAP_CURSOR_BYPASS	    0x0040
-#define	SVGA_CAP_CURSOR_BYPASS_2    0x0080
-#define	SVGA_CAP_8BIT_EMULATION     0x0100
-#define SVGA_CAP_ALPHA_CURSOR       0x0200
-#define SVGA_CAP_GLYPH              0x0400
-#define SVGA_CAP_GLYPH_CLIPPING     0x0800
-#define SVGA_CAP_OFFSCREEN_1        0x1000
-#define SVGA_CAP_ALPHA_BLEND        0x2000
+#define	SVGA_CAP_NONE               0x00000
+#define	SVGA_CAP_RECT_FILL	    0x00001
+#define	SVGA_CAP_RECT_COPY	    0x00002
+#define	SVGA_CAP_RECT_PAT_FILL      0x00004
+#define	SVGA_CAP_LEGACY_OFFSCREEN   0x00008
+#define	SVGA_CAP_RASTER_OP	    0x00010
+#define	SVGA_CAP_CURSOR		    0x00020
+#define	SVGA_CAP_CURSOR_BYPASS	    0x00040
+#define	SVGA_CAP_CURSOR_BYPASS_2    0x00080
+#define	SVGA_CAP_8BIT_EMULATION     0x00100
+#define SVGA_CAP_ALPHA_CURSOR       0x00200
+#define SVGA_CAP_GLYPH              0x00400
+#define SVGA_CAP_GLYPH_CLIPPING     0x00800
+#define SVGA_CAP_OFFSCREEN_1        0x01000
+#define SVGA_CAP_ALPHA_BLEND        0x02000
+#define SVGA_CAP_3D                 0x04000
+#define SVGA_CAP_EXTENDED_FIFO      0x08000
+#define SVGA_CAP_MULTIMON           0x10000
+#define SVGA_CAP_PITCHLOCK          0x20000
 
 
 /*
  *  Raster op codes (same encoding as X)
  */
 
-#define	SVGA_ROP_CLEAR		0x00
-#define	SVGA_ROP_AND		0x01
-#define	SVGA_ROP_AND_REVERSE	0x02
-#define	SVGA_ROP_COPY		0x03
-#define	SVGA_ROP_AND_INVERTED	0x04
-#define	SVGA_ROP_NOOP		0x05
-#define	SVGA_ROP_XOR		0x06
-#define	SVGA_ROP_OR		0x07
-#define	SVGA_ROP_NOR		0x08
-#define	SVGA_ROP_EQUIV		0x09
-#define	SVGA_ROP_INVERT		0x0a
-#define	SVGA_ROP_OR_REVERSE	0x0b
-#define	SVGA_ROP_COPY_INVERTED	0x0c
-#define	SVGA_ROP_OR_INVERTED	0x0d
-#define	SVGA_ROP_NAND		0x0e
-#define	SVGA_ROP_SET		0x0f
+#define SVGA_ROP_CLEAR          0x00     /* 0 */
+#define SVGA_ROP_AND            0x01     /* src AND dst */
+#define SVGA_ROP_AND_REVERSE    0x02     /* src AND NOT dst */
+#define SVGA_ROP_COPY           0x03     /* src */
+#define SVGA_ROP_AND_INVERTED   0x04     /* NOT src AND dst */
+#define SVGA_ROP_NOOP           0x05     /* dst */
+#define SVGA_ROP_XOR            0x06     /* src XOR dst */
+#define SVGA_ROP_OR             0x07     /* src OR dst */
+#define SVGA_ROP_NOR            0x08     /* NOT src AND NOT dst */
+#define SVGA_ROP_EQUIV          0x09     /* NOT src XOR dst */
+#define SVGA_ROP_INVERT         0x0a     /* NOT dst */
+#define SVGA_ROP_OR_REVERSE     0x0b     /* src OR NOT dst */
+#define SVGA_ROP_COPY_INVERTED  0x0c     /* NOT src */
+#define SVGA_ROP_OR_INVERTED    0x0d     /* NOT src OR dst */
+#define SVGA_ROP_NAND           0x0e     /* NOT src OR NOT dst */
+#define SVGA_ROP_SET            0x0f     /* 1 */
+#define SVGA_ROP_UNSUPPORTED    0x10
 
+#define SVGA_NUM_SUPPORTED_ROPS   16
 
 /*
  *  Memory area offsets (viewed as an array of 32-bit words)
@@ -191,9 +209,15 @@ enum {
 #define SVGA_BITMAP_INCREMENT(w) ((( (w)+31 ) >> 5) * sizeof (uint32))
 #define SVGA_PIXMAP_INCREMENT(w,d) ((( ((w)*(d))+31 ) >> 5) * sizeof (uint32))
 
+#define SVGA_COLOR_TRANSPARENT (~0)
+
 /*
  *  Commands in the command FIFO
  */
+
+#define	 SVGA_CMD_INVALID_CMD		   0
+	 /* FIFO layout:
+            <nothing> (well, undefined) */
 
 #define	 SVGA_CMD_UPDATE		   1
 	 /* FIFO layout:
@@ -316,6 +340,16 @@ enum {
            destX, destY, w, h, op (SVGA_BLENDOP*), flags (SVGA_BLENDFLAGS*), 
            param1, param2 */
 
-#define	SVGA_CMD_MAX			  29
+#define	 SVGA_CMD_FRONT_ROP_FILL          29
+         /* FIFO layout:
+            Color, X, Y, Width, Height, ROP */
+
+#define	 SVGA_CMD_FENCE                   30
+         /* FIFO layout:
+            Fence value */
+
+#define	SVGA_CMD_MAX			  31
+
+#define SVGA_CMD_MAX_ARGS                 64
 
 #endif

@@ -28,7 +28,8 @@ struct HWData  {
 	ULONG vramsize;
 	APTR vrambase;
 	ULONG maxwidth;
-	ULONG maxheigt;
+	ULONG maxheight;
+    ULONG displaycount;
 	ULONG mmiosize;
 	APTR mmiobase;
 	ULONG fboffset; /* last byte in framebuffer of current screen mode */
