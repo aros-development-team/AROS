@@ -50,6 +50,8 @@ static void SNOOPY_breakpoint(void)
     #if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
 	#if defined(__i386__) || defined(__x86_64__)
 	    asm("int3");
+	#elif defined(__powerpc__)
+	    asm("trap");
 	#else
 	    // TODO: other platforms
 	    kprintf("[SNOOP] interrupt not supported on this platform\n");
