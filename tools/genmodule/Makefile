@@ -30,7 +30,7 @@ $(GENMODULEINCLUDE) : include/aros/libcall.h
 
 archspecific.h: archspecific.c
 	@$(TARGET_CC) -S $<
-	@grep "^[/#][*d]" archspecific.s | sed s/[$$]//g >$@
+	@grep "^[/#][*d]" archspecific.s | sed s/@SED@[$$]*//g >$@
 	@rm archspecific.s
 
 clean :
