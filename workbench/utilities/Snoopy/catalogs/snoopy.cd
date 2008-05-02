@@ -3,7 +3,7 @@ MSG_TITLE (//)
 Snoopy
 ;
 MSG_COPYRIGHT (//)
-© 2006, The AROS Development Team
+© 2006-2008, The AROS Development Team
 ;
 MSG_AUTHOR (//)
 The AROS Development Team
@@ -31,6 +31,12 @@ Use device names
 ;
 MSG_IGNORE_WB (//)
 Ignore Workbench/Shell
+;
+MSG_BREAKPOINT (//)
+Set breakpoint
+;
+MSG_MATCH (//)
+Match name
 ;
 MSG_SYSTEM_FUNC (//)
 System Functions
@@ -93,7 +99,8 @@ MSG_REMOVE_SNOOP (//)
 Remove|Keep
 ;
 MSG_ASK_REMOVE (//)
-Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+Do you really want to remove the Snoopy process?\n\
+This can be quite dangerous when another task has patched Snoopy's patches.
 ;
 MSG_GLOBAL (//)
 Global

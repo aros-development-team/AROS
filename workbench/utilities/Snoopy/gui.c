@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,10 +16,10 @@
 #include "patches.h"
 #include "locale.h"
 
-#define VERSION "$VER: Snoopy 0.7 (10.11.2007) © 2006-2007 The AROS Dev Team"
+#define VERSION "$VER: Snoopy 0.8 (02.05.2008) © 2006-2008 The AROS Dev Team"
 
 static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
-static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM;
+static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM, *breakPointCM, *patternStr;
 static Object *nameNum, *actionNum, *targetNum, *optionNum;
 static Object *changeDirCM, *deleteCM, *executeCM, *getVarCM, *loadSegCM, *lockCM, *makeDirCM, *makeLinkCM;
 static Object *openCM, *renameCM, *runCommandCM, *setVarCM, *systemCM, *findPortCM, *findResidentCM, *findSemaphoreCM;
@@ -168,8 +168,17 @@ void gui_init(void)
 			    Child, (IPTR)(devCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)Label(MSG(MSG_IGNORE_WB)),
 			    Child, (IPTR)(ignoreCM = MUI_MakeObject(MUIO_Checkmark, "")),
+			    Child, (IPTR)Label(MSG(MSG_BREAKPOINT)),
+			    Child, (IPTR)(breakPointCM = MUI_MakeObject(MUIO_Checkmark, "")),
 			    Child, (IPTR)HVSpace,
 			    Child, (IPTR)HVSpace,
+			End),
+			Child, (IPTR)(ColGroup(2),
+			    Child, (IPTR)Label(MSG(MSG_MATCH)),
+			    Child, (IPTR)(patternStr = StringObject,
+				StringFrame,
+				MUIA_String_MaxLen, PATTERNLEN,
+			    End),
 			End),
 			Child, (IPTR)(ColGroup(2),
 			    GroupFrameT(MSG(MSG_OUTPUT_FIELD)),
@@ -283,6 +292,10 @@ void gui_init(void)
     // disable unavailable functions
     set(pathCM,   MUIA_Disabled, TRUE);
     set(devCM,    MUIA_Disabled, TRUE);
+    // breakpoint option only available on hosted
+    #if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+	set(breakPointCM,    MUIA_Disabled, TRUE);
+    #endif
 
     gui_set();
     set(window, MUIA_Window_Open, TRUE);
@@ -323,6 +336,10 @@ void gui_set(void)
     set(pathCM,          MUIA_Selected, setup.showPaths);
     set(devCM,           MUIA_Selected, setup.useDevNames);
     set(ignoreCM,        MUIA_Selected, setup.ignoreWB);
+    set(breakPointCM,    MUIA_Selected, setup.breakPoint);
+
+    set(patternStr,      MUIA_String_Contents, setup.pattern);
+    main_parsepattern();
 
     set(changeDirCM,     MUIA_Selected, setup.enableChangeDir);
     set(deleteCM,        MUIA_Selected, setup.enableDelete);
@@ -362,6 +379,10 @@ void gui_get(void)
     setup.showPaths           = XGET(pathCM,          MUIA_Selected);
     setup.useDevNames         = XGET(devCM,           MUIA_Selected);
     setup.ignoreWB            = XGET(ignoreCM,        MUIA_Selected);
+    setup.breakPoint          = XGET(breakPointCM,    MUIA_Selected);
+
+    setup.pattern             = (STRPTR)XGET(patternStr, MUIA_String_Contents);
+    main_parsepattern();
 
     setup.enableChangeDir     = XGET(changeDirCM,     MUIA_Selected);
     setup.enableDelete        = XGET(deleteCM,        MUIA_Selected);

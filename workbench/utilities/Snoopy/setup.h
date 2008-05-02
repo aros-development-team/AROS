@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,6 +7,8 @@
 #define SETUP_H
 
 #include <exec/types.h>
+
+#include "main.h"
 
 #define PREFFILE "envarc:snoopy.prefs"
 
@@ -22,6 +24,11 @@ struct Setup
     BOOL useDevNames;
     BOOL showPaths;
     BOOL ignoreWB;
+    BOOL breakPoint; // stop AROS e.g. with asm("int3") on i386.
+
+    BOOL match;  // TRUE if pattern could be successfully parsed.
+    STRPTR pattern;
+    TEXT parsedpattern[PARSEDPATTERNLEN];
 
     BOOL enableChangeDir;
     BOOL enableDelete;

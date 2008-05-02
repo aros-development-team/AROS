@@ -10,7 +10,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME    "System/Utilities/Snoopy.catalog"
-#define CATALOG_VERSION 1
+#define CATALOG_VERSION 2
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
