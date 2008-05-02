@@ -43,7 +43,22 @@ static void prettyprint(CONST_STRPTR str, LONG minlen)
 }
 
 
-void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result)
+// eye-catching function name because this is what we'd see in the debugger
+static void SNOOPY_breakpoint(void)
+{
+    // interrupting makes only sense on "hosted" where we have a debugger
+    #if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+	#if defined(__i386__) || defined(__x86_64__)
+	    asm("int3");
+	#else
+	    // TODO: other platforms
+	    kprintf("[SNOOP] interrupt not supported on this platform\n");
+	#endif
+    #endif
+}
+
+
+void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result, BOOL canInterrupt)
 {
     struct Task *thistask = SysBase->ThisTask;
     STRPTR name = thistask->tc_Node.ln_Name;
@@ -56,6 +71,12 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, 
 	if ( ! stricmp(name, "newshell")) return;
 	if ( ! stricmp(name, "boot shell")) return;
 	if ( ! stricmp(name, "background cli")) return;
+    }
+
+    if (setup.match && ! MatchPatternNoCase(setup.parsedpattern, name))
+    {
+	// pattern doesn't fit
+	return;
     }
 
     // FIXME: Can Forbid/Permit cause locks?
@@ -82,7 +103,30 @@ void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, 
     prettyprint(result ? MSG(MSG_OK) : MSG(MSG_FAIL), 0);
     RawPutChar('\n');
     Permit();
+    
+    // We're calling the breakpoint function from the output function
+    // so that we don't have to check the setup parameters again.
+    // canInterrupt is for cases where a patch prints multiple lines.
+    if (canInterrupt && setup.breakPoint) SNOOPY_breakpoint();
 }
+
+
+void main_parsepattern(void)
+{
+    setup.match = FALSE;
+
+    if (!setup.pattern) return;
+    if (setup.pattern[0] == '\0') return;
+
+    Forbid(); // avoid that parsed pattern is used while we change it
+    setup.parsedpattern[0] = '\0';
+    if (ParsePatternNoCase(setup.pattern, setup.parsedpattern, PARSEDPATTERNLEN) != -1)
+    {
+	setup.match = TRUE;
+    }
+    Permit();
+}
+
 
 void clean_exit(char *s)
 {
@@ -91,7 +135,6 @@ void clean_exit(char *s)
     {
 	puts(s);
 	exit(RETURN_FAIL);
-
     }
     exit(RETURN_OK);
 }

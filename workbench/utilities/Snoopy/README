@@ -17,6 +17,12 @@ You should normally not use the 'Cancel' button. It can lead to
 problems when another program patches the functions which have
 already been patched by Snoopy.
 
+Option "Breakpoint" sets debug interrupt on i386 and x86-64. This option is
+connected to the output, i.e. interrupt happens after "SNOOP" output.
+Only enable this when you know what you are doing.
+
+Option "Match name". Filters with AmigaDOS pattern (e.g. #?foobar#?)
+
 TODO
 ====
 
@@ -25,3 +31,4 @@ the full path name of the directory and the option ShowFullPath doesn't work.
 
 Implement missing settings.
 
+Load/Save match pattern

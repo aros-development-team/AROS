@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,6 +11,8 @@
 #include <proto/icon.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+
+#include <dos/filesystem.h>
 
 #include "main.h"
 #include "patches.h"
@@ -124,7 +126,7 @@ AROS_UFH2(BPTR, New_CreateDir,
 
     if (patches[PATCH_CreateDir].enabled)
     {
-	main_output("CreateDir", name, 0, (LONG)result);
+	main_output("CreateDir", name, 0, (LONG)result, TRUE);
     }
 
     return result;
@@ -162,7 +164,7 @@ AROS_UFH2(BPTR, New_CurrentDir,
 		}
 	    }
 	}
-	main_output("CurrentDir", lockpath, 0, TRUE);
+	main_output("CurrentDir", lockpath, 0, TRUE, TRUE);
 
 	if (fib) FreeDosObject(DOS_FIB, fib);
 	SetIoErr(err);
@@ -188,7 +190,7 @@ AROS_UFH2(BOOL, New_DeleteFile,
 
     if (patches[PATCH_DeleteFile].enabled)
     {
-	main_output("Delete", name, 0, result);
+	main_output("Delete", name, 0, result, TRUE);
     }
 
     return result;
@@ -219,7 +221,7 @@ AROS_UFH3(LONG, New_DeleteVar,
         else if ((flags & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
         else                              opt = MSG(MSG_UNKNOWN);
 
-	main_output("DeleteVar", name, opt, result);
+	main_output("DeleteVar", name, opt, result, TRUE);
     }
 
     return result;
@@ -246,7 +248,7 @@ AROS_UFH4(LONG, New_Execute,
 
     if (patches[PATCH_Execute].enabled)
     {
-	main_output("Execute", string ,0 , result);
+	main_output("Execute", string ,0 , result, TRUE);
     }
 
     return result;
@@ -276,7 +278,7 @@ AROS_UFH3(struct LocalVar *, New_FindVar,
 	else if ((type & 7) == LV_ALIAS) opt = MSG(MSG_ALIAS);
 	else                             opt = MSG(MSG_UNKNOWN);
 
-	main_output("FindVar", name, opt, (LONG)result);
+	main_output("FindVar", name, opt, (LONG)result, TRUE);
     }
 
     return result;
@@ -311,7 +313,7 @@ AROS_UFH5(LONG, New_GetVar,
         else if (flags & GVF_LOCAL_ONLY)  opt = MSG(MSG_LOCAL);
         else                              opt = MSG(MSG_ANY);
 
-	main_output("GetVar", name, opt, result != -1);
+	main_output("GetVar", name, opt, result != -1, TRUE);
     }
 
     return result;
@@ -334,7 +336,7 @@ AROS_UFH2(BPTR, New_LoadSeg,
 
     if (patches[PATCH_LoadSeg].enabled)
     {
-	main_output("LoadSeg", name, 0, (LONG)result);
+	main_output("LoadSeg", name, 0, (LONG)result, TRUE);
     }
 
     return result;
@@ -374,7 +376,7 @@ AROS_UFH3(BPTR, New_Lock,
 	    curname = "\"\"";
 	}
 
-	main_output("Lock", curname, opt, (LONG)result);
+	main_output("Lock", curname, opt, (LONG)result, TRUE);
     }
 
     return result;
@@ -433,7 +435,7 @@ AROS_UFH4(LONG, New_MakeLink,
 	    }
 	}
 #endif
-	main_output("MakeLink", name /*namestr */, opt, result);
+	main_output("MakeLink", name /*namestr */, opt, result, TRUE);
     }
 
     return result;
@@ -458,7 +460,7 @@ AROS_UFH3(BPTR, New_NewLoadSeg,
 
     if (patches[PATCH_NewLoadSeg].enabled)
     {
-	main_output("NewLoadSeg", file, 0, (LONG)result);
+	main_output("NewLoadSeg", file, 0, (LONG)result, TRUE);
     }
 
     return result;
@@ -484,13 +486,22 @@ AROS_UFH3 (BPTR, New_Open,
 
     if (patches[PATCH_Open].enabled)
     {
-	CONST_STRPTR opt;
+	CONST_STRPTR opt = NULL;
+	char optstr[10];
 	if      (accessMode == MODE_OLDFILE)   opt = MSG(MSG_READ);
 	else if (accessMode == MODE_NEWFILE)   opt = MSG(MSG_WRITE);
 	else if (accessMode == MODE_READWRITE) opt = MSG(MSG_MODIFY);
+	else if (accessMode & (FMF_READ|FMF_WRITE|FMF_APPEND|FMF_CREATE))
+	{
+	    sprintf(optstr, "FMF %c%c%c%c",
+		(accessMode & FMF_READ) ? 'R' : '_',
+		(accessMode & FMF_WRITE) ? 'W' : '_',
+		(accessMode & FMF_APPEND) ? 'A' : '_',
+		(accessMode & FMF_CREATE) ? 'C' : '_');
+	}
 	else                                   opt = MSG(MSG_UNKNOWN);
 
-	main_output("Open", name, opt, (LONG)result);
+	main_output("Open", name, opt ? opt : (STRPTR)optstr, (LONG)result, TRUE);
     }
 
     return result;
@@ -515,8 +526,8 @@ AROS_UFH3(LONG, New_Rename,
 
     if (patches[PATCH_Rename].enabled)
     {
-	main_output("Rename", oldName, 0, result);
-	main_output("to -->", newName, 0, result);
+	main_output("Rename", oldName, 0, result, FALSE);
+	main_output("to -->", newName, 0, result, TRUE);
     }
     
     return result;
@@ -556,7 +567,7 @@ AROS_UFH5(LONG, New_RunCommand,
 	}
 
 	argstr[pos] = 0;
-	main_output("RunCommand", argstr, 0, result != -1);
+	main_output("RunCommand", argstr, 0, result != -1, TRUE);
     }
     
     return result;
@@ -613,7 +624,7 @@ AROS_UFH5(BOOL, New_SetVar,
 	    strncat(varstr, buffer, vlen);
 	    varstr[MAX_STR_LEN] = 0;
 	}
-	main_output("SetVar", varstr, opt, result);
+	main_output("SetVar", varstr, opt, result, TRUE);
     }
 
     return result;
@@ -640,7 +651,7 @@ AROS_UFH3(LONG, New_SystemTagList,
     {
 	char optstr[20];
 	sprintf(optstr, "%ld", result);
-	main_output("SystemTagList", command, optstr, result != -1);
+	main_output("SystemTagList", command, optstr, result != -1, TRUE);
     }
 
     return result;
@@ -663,7 +674,7 @@ AROS_UFH2(struct MsgPort *, New_FindPort,
 
     if (patches[PATCH_FindPort].enabled)
     {
-	main_output("FindPort", name, 0, (LONG)result );
+	main_output("FindPort", name, 0, (LONG)result, TRUE);
     }
     
     return result;
@@ -686,7 +697,7 @@ AROS_UFH2(struct Resident *, New_FindResident,
 
     if (patches[PATCH_FindResident].enabled)
     {
-	main_output("FindResident", name, 0, (LONG)result );
+	main_output("FindResident", name, 0, (LONG)result, TRUE);
     }
     
     return result;
@@ -709,7 +720,7 @@ AROS_UFH2(struct SignalSemaphore *, New_FindSemaphore,
 
     if (patches[PATCH_FindSemaphore].enabled)
     {
-	main_output("FindSemaphore", name, 0, (LONG)result );
+	main_output("FindSemaphore", name, 0, (LONG)result, TRUE);
     }
     
     return result;
@@ -732,7 +743,7 @@ AROS_UFH2(struct Task *, New_FindTask,
 
     if (patches[PATCH_FindTask].enabled)
     {
-	main_output("FindTask", name, 0, (LONG)result );
+	main_output("FindTask", name, 0, (LONG)result, TRUE);
     }
     
     return result;
@@ -763,7 +774,7 @@ AROS_UFH5(BYTE, New_OpenDevice,
     {
 	char unitstr[20];
 	sprintf(unitstr, "Unit %ld", unitNumber);
-	main_output("OpenDevice", devName, unitstr, !result );
+	main_output("OpenDevice", devName, unitstr, !result, TRUE);
     }
     
     return result;
@@ -790,7 +801,7 @@ AROS_UFH3(struct Library *, New_OpenLibrary,
     {
 	char verstr[20];
 	sprintf(verstr, MSG(MSG_VERSION), version);
-	main_output("OpenLibrary", libName, verstr, (LONG)result );
+	main_output("OpenLibrary", libName, verstr, (LONG)result, TRUE);
     }
     
     return result;
@@ -813,7 +824,7 @@ AROS_UFH2(APTR, New_OpenResource,
 
     if (patches[PATCH_OpenResource].enabled)
     {
-	main_output("OpenLibrary", resName, 0, (LONG)result );
+	main_output("OpenLibrary", resName, 0, (LONG)result, TRUE);
     }
     
     return result;
@@ -836,7 +847,7 @@ AROS_UFH2(struct Screen *, New_LockPubScreen,
 
     if (patches[PATCH_LockPubScreen].enabled)
     {
-	main_output("LockPubScreen", name, 0, (LONG)result );
+	main_output("LockPubScreen", name, 0, (LONG)result, TRUE);
     }
     
     return result;
@@ -869,7 +880,7 @@ AROS_UFH2(struct TextFont *, New_OpenFont,
 	    *sizestr = '\0';
 	    name = "\"\"";
 	}
-	main_output("OpenFont", name, sizestr, (LONG)result );
+	main_output("OpenFont", name, sizestr, (LONG)result, TRUE);
     }
 
     return result;
@@ -894,7 +905,7 @@ AROS_UFH3(UBYTE *, New_FindToolType,
 
     if (patches[PATCH_FindToolType].enabled)
     {
-	main_output("FindToolType", typeName, 0, (LONG)result );
+	main_output("FindToolType", typeName, 0, (LONG)result, TRUE);
     }
 
     return result;
@@ -918,7 +929,7 @@ AROS_UFH3(BOOL, New_MatchToolValue,
 
     if (patches[PATCH_MatchToolValue].enabled)
     {
-	main_output("MatchToolValue", typeString, value, result );
+	main_output("MatchToolValue", typeString, value, result, TRUE);
     }
 
     return result;

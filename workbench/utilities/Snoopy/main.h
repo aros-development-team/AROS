@@ -1,13 +1,17 @@
 /*
-    Copyright © 2006, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef MAIN_H
 #define MAIN_H
 
+#define PATTERNLEN (100)
+#define PARSEDPATTERNLEN (PATTERNLEN * 2 + 5)
+
 void clean_exit(char *s);
-void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result);
+void main_output(CONST_STRPTR action, CONST_STRPTR target, CONST_STRPTR option, LONG result, BOOL canInterrupt);
+void main_parsepattern(void);
 
 #endif
 

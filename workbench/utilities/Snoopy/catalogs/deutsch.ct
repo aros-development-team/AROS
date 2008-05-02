@@ -1,4 +1,4 @@
-## version $VER: snoopy.catalog 1.0 (03.09.2006)
+## version $VER: snoopy.catalog 2.0 (02.05.2008)
 ## language deutsch
 ## codeset 0
 ;
@@ -9,7 +9,7 @@ Snoopy
 ;
 MSG_COPYRIGHT
 © 2006, The AROS Development Team
-; © 2006, The AROS Development Team
+; © 2006-2008, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
@@ -46,6 +46,14 @@ Device-Namen verwenden
 MSG_IGNORE_WB
 Workbench/Shell ignorieren
 ; Ignore Workbench/Shell
+;
+MSG_BREAKPOINT
+Unterbrechung setzen
+; Set breakpoint
+;
+MSG_MATCH
+Namensmuster
+; Match name
 ;
 MSG_SYSTEM_FUNC
 Systemfunktionen
@@ -128,8 +136,10 @@ Entfernen|Beibehalten
 ; Remove|Keep
 ;
 MSG_ASK_REMOVE
-Möchtest Du den Snoopy-Prozess wirklich entfernen?\nThis kann ziemlich gefährlich sein, wenn ein anderer Task Snoopys Patche gepatcht hat.
-; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+Möchtest Du den Snoopy-Prozess wirklich entfernen?\n\
+Dies kann ziemlich gefährlich sein, wenn ein anderer Task Snoopys Patche gepatcht hat.
+; Do you really want to remove the Snoopy process?\n\
+; This can be quite dangerous when another task has patched Snoopy's patches.
 ;
 MSG_GLOBAL
 Global
