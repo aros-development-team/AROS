@@ -701,6 +701,7 @@ case "$target_os" in
 		;;
             *x86_64*)
                 aros_target_cpu="x86_64"
+                aros_serial_debug=1
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="elf_x86_64"
                 fi
@@ -1265,15 +1266,21 @@ AC_MSG_RESULT($bochs_hack)
 dnl See if the user wants the serial debug output for native flavour
 AC_MSG_CHECKING([if serial debug is enabled])
 AC_ARG_WITH(serial-debug,AC_HELP_STRING([--with-serial-debug],[Enable serial debug output in native (default=no)]),serial_debug=$withval,serial_debug=none)
-if test "$serial_debug" = "yes" ; then
-    serial_debug="2"
-fi
-if test "$serial_debug" = "no" ; then
-    serial_debug="none"
+if test "$aros_serial_debug" = 0 ; then
+    serial_debug_forced=""
+    if test "$serial_debug" = "yes" ; then
+        serial_debug="2"
+    fi
+    if test "$serial_debug" = "no" ; then
+        serial_debug="none"
+    fi
+else
+    serial_debug_forced="(forced)"
+    serial_debug=$aros_serial_debug
 fi
 if test "$serial_debug" != "none" ; then
     aros_serial_debug=$serial_debug
-    AC_MSG_RESULT(on port $serial_debug)
+    AC_MSG_RESULT($serial_debug_forced on port $serial_debug)
 else
     AC_MSG_RESULT(no)
 fi
