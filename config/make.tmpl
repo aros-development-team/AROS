@@ -2050,7 +2050,7 @@ $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	cd $(GENDIR)/$(CURDIR) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" \
+	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
 	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
 	    --host=$(AROS_TARGET_CPU)-aros \
@@ -2066,7 +2066,7 @@ $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	cd $(GENDIR)/$(CURDIR) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(KERNEL_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
-	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" \
+	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
 	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
 	    --host=$(AROS_TARGET_CPU)-aros \
