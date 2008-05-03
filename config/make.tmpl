@@ -1758,14 +1758,9 @@ endif
 
 %define copy_files_q files=$(FILES) src=. dst=/A maketarget=files-copy
 
-SRC_FILES := $(addprefix %(src)/, %(files))
-DST_FILES := $(addprefix %(dst)/, %(files))
+%(maketarget) : setup 
+	$(foreach file, %(files), $(shell $(CP) $(addprefix %(src)/, $(file)) $(addprefix %(dst)/, $(file))))
 
-%(maketarget) : setup $(DST_FILES)
-
-$(DST_FILES) : %(dst)/% : %(src)/%
-	@$(CP) $< $@
-	
 setup ::
 	%mkdirs_q %(dst)
 

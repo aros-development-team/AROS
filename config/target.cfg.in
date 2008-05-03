@@ -11,7 +11,7 @@ FLAVOUR		:= @aros_flavour@
 SHARED_MOD	:= @aros_shared_default@
 SYS_INCLUDES	:= @aros_target_incl@
 
-TARGET_CC	:= @aros_target_cc@
+TARGET_CC	:= @aros_cc_pre@ @aros_target_cc@
 KERNEL_CC	:= @aros_kernel_cc@
 TARGET_AS	:= @aros_target_as@
 TARGET_LD	:= @aros_target_ld@
