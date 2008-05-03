@@ -82,6 +82,9 @@ IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagL
 void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList);
 
 /* Debug support .. */
+#if (AROS_SERIAL_DEBUG > 0)
+void Exec_SerialRawIOInit();
+#endif
 void scr_RawPutChars(char *, int);
 void clr();
 static char tab[512];

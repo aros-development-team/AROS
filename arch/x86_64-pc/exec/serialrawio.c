@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id: serialrawio.c 26020 2007-05-07 19:49:07Z verhaegs $
 
     Desc: functions for serial RawIOInit/RawPutChar
@@ -22,6 +22,7 @@
 
 #define SER_ERRSIGNALS 0x0300
 
+#warning "TODO: Synch defines with those from the serial.device"
 #define SER_LSR_OVERRUNERROR 0x02
 #define SER_LSR_PARITYERROR  0x04
 #define SER_LSR_FRAMINGERROR 0x08
@@ -58,38 +59,128 @@
 
 #define SER_MAXBAUD 115200L
 
-int ser_UARTType (short);
-void ser_FIFOLevel(short, BYTE);
-int ser_Init(short, LONG, BYTE);
+/** UART Types **/
+#define SER_UART_INS8250       1
+#define SER_UART_NS16450       2
+#define SER_UART_NS16550A      3
+#define SER_UART_NS16C552      4
 
-/*****i***********************************************************************
+/***********************************************/
+/** Serial Probe and Initialisation Functions **/
+/***********************************************/
+
+static UBYTE __ser_UARTType(short port)
+{
+    outb_p(0xAA, port + SER_LINE_CONTROL);                  /* set Divisor-Latch */
+    if (inb_p(port + SER_LINE_CONTROL) != 0xAA)
+        return 0;
+    outb_p(0x55, port + SER_DIVISOR_MSB);                   /* write Divisor */
+    if (inb_p(port + SER_DIVISOR_MSB) != 0x55)
+        return 0;
+    outb_p(0x55, port + SER_LINE_CONTROL);                  /* clear Divisor-Latch */
+    if (inb_p(port + SER_LINE_CONTROL) != 0x55)
+        return 0;
+    outb_p(0x55, port + SER_IRQ_ENABLE);
+    if (inb_p(port + SER_IRQ_ENABLE) != 0x05)
+        return 0;
+    outb_p(0, port + SER_FIFO);                             /* clear FIFO and IRQ */
+    outb_p(0, port + SER_IRQ_ENABLE);
+    if (inb_p(port + SER_IRQ_ID) != 1)
+        return 0;
+    outb_p(0xF5, port + SER_MODEM_CONTROL);
+    if (inb_p(port + SER_MODEM_CONTROL) != 0x15)
+        return 0;
+    outb_p(SER_MCR_LOOP, port + SER_MODEM_CONTROL);         /* Looping */
+    inb_p(port + SER_MODEM_STATUS);
+    if ((inb_p(port + SER_MODEM_STATUS) & 0xF0) != 0)
+        return 0;
+    outb_p(0x1F, port + SER_MODEM_CONTROL);
+    if ((inb_p(port + SER_MODEM_STATUS) & 0xF0) != 0xF0)
+        return 0;
+    outb_p(SER_MCR_DTR | SER_MCR_RTS, port + SER_MODEM_CONTROL);
+
+    outb_p(0x55, port + SER_SCRATCH);                       /* Scratch-Register ?*/
+    if (inb_p(port + SER_SCRATCH) != 0x55)
+        return SER_UART_INS8250;
+    outb_p(0, port + SER_SCRATCH);
+
+    outb_p(0xCF, port + SER_FIFO);                          /* FIFO ? */
+    if ((inb_p(port + SER_IRQ_ID) & 0xC0) != 0xC0)
+        return SER_UART_NS16450;
+    outb_p(0, port + SER_FIFO);
+
+    outb_p(SER_LCR_SETDIVISOR, port + SER_LINE_CONTROL);    /* Alternate-Function Register ? */
+    outb_p(0x07, port + SER_2FUNCTION);
+    if (inb_p(port + SER_2FUNCTION ) != 0x07)
+    {
+        outb_p(0, port + SER_LINE_CONTROL);
+        return SER_UART_NS16550A;
+    }
+    outb_p(0, port + SER_LINE_CONTROL);                     /* reset registers */
+    outb_p(0, port + SER_2FUNCTION);
+    return SER_UART_NS16C552;
+}
+
+static void __ser_FIFOLevel(short port, BYTE level)
+{
+    if (level)
+        outb_p(level | SER_FIFO_ENABLE, port + SER_FIFO);
+    else
+        outb_p(SER_FIFO_RESETRECEIVE | SER_FIFO_RESETTRANSMIT, port + SER_FIFO);
+}
+
+static UBYTE __ser_Init(short port, LONG baudRate, BYTE params)
+{
+    WORD uDivisor;
+    UBYTE uart_type, tmp;
+
+    if ((uart_type = __ser_UARTType(port)) > 0)
+    {
+#warning "TODO: Set UART FIFO?"
+        uDivisor=(WORD)(SER_MAXBAUD / baudRate);
+        tmp = inb_p(port + SER_LINE_CONTROL);
+        outb_p(tmp | SER_LCR_SETDIVISOR, port + SER_LINE_CONTROL);
+        outb_p(uDivisor & 0xFF, port + SER_DIVISOR_LSB);
+        outb_p(uDivisor >> 8, port + SER_DIVISOR_MSB);
+        outb_p(tmp, port + SER_LINE_CONTROL);
+
+        //tmp = inb_p(port + SER_LINE_CONTROL);
+        outb_p(params, port + SER_LINE_CONTROL);
+        inb_p(port + SER_TXBUFFER);
+    }
+    return uart_type;
+}
+
+/****************************************************************************
 
     NAME */
-	AROS_LH0(void, SerialRawIOInit,
+    AROS_LH0(void, SerialRawIOInit,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 84, Exec)
+    struct ExecBase *, SysBase, 84, Exec)
 
 /*  FUNCTION
-	This is a private function. It initializes raw IO. After you
-	have called this function, you can use (!RawMayGetChar()) and
-	RawPutChar().
+    This is a private function. It initializes raw IO. After you
+    have called this function, you can use (!RawMayGetChar()) and
+    RawPutChar().
 
     INPUTS
-	None.
+    None.
 
     RESULT
-	None.
+    None.
 
     NOTES
-	This function is for very low level debugging only.
+    This function is for very low level debugging only.  ExecBase
+    shouldnt be used inside the function because it may be called
+    before ExecBase is prepaired.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RawPutChar(), RawMayGetChar()
+    RawPutChar(), RawMayGetChar()
 
     INTERNALS
 
@@ -99,125 +190,70 @@ int ser_Init(short, LONG, BYTE);
 {
    AROS_LIBFUNC_INIT
 #if AROS_SERIAL_DEBUG == 1
-	if (ser_Init(0x3F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
-		ser_FIFOLevel(0x3F8, 0);
+    if (__ser_Init(0x3F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY) > 0)
+        __ser_FIFOLevel(0x3F8, 0);
 #endif
 #if AROS_SERIAL_DEBUG == 2
-   	if (ser_Init(0x2F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
-		ser_FIFOLevel(0x2F8, 0);
+    if (__ser_Init(0x2F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY) > 0)
+        __ser_FIFOLevel(0x2F8, 0);
 #endif
-   return;
    AROS_LIBFUNC_EXIT
-} /* RawIOInit */
-
-int ser_UARTType (short port) {
-
-	outb_p(0xAA, port+SER_LINE_CONTROL); /* set Divisor-Latch */
-	if (inb_p(port+SER_LINE_CONTROL) != 0xAA)
-		return 1;
-	outb_p(0x55, port+SER_DIVISOR_MSB); /* write Divisor */
-	if (inb_p(port+SER_DIVISOR_MSB) != 0x55)
-		return 1;
-	outb_p(0x55, port+SER_LINE_CONTROL); /* clear Divisor-Latch */
-	if (inb_p(port+SER_LINE_CONTROL) != 0x55)
-		return 1;
-	outb_p(0x55, port+SER_IRQ_ENABLE);
-	if (inb_p(port+SER_IRQ_ENABLE) != 0x05)
-		return 1;
-	outb_p(0, port+SER_FIFO); /* clear FIFO and IRQ */
-	outb_p(0, port+SER_IRQ_ENABLE);
-	if (inb_p(port+SER_IRQ_ID) != 1)
-		return 1;
-	outb_p(0xF5, port+SER_MODEM_CONTROL);
-	if (inb_p(port+SER_MODEM_CONTROL) != 0x15)
-		return 1;
-	outb_p(SER_MCR_LOOP, port+SER_MODEM_CONTROL); /* Looping */
-	inb_p(port+SER_MODEM_STATUS);
-	if ((inb_p(port+SER_MODEM_STATUS) & 0xF0) != 0)
-		return 1;
-	outb_p(0x1F, port+SER_MODEM_CONTROL);
-	if ((inb_p(port+SER_MODEM_STATUS) & 0xF0) != 0xF0)
-		return 1;
-	outb_p(SER_MCR_DTR | SER_MCR_RTS, port + SER_MODEM_CONTROL);
-
-	outb_p(0x55, port+SER_SCRATCH); /* Scratch-Register ?*/
-	if (inb_p(port+SER_SCRATCH) != 0x55)
-		return 2;	//INS8250;
-	outb_p(0, port+SER_SCRATCH);
-
-	outb_p(0xCF, port+SER_FIFO);              /* FIFO ? */
-	if ((inb_p(port+SER_IRQ_ID) & 0xC0) != 0xC0)
-		return 3;	//NS16450;
-	outb_p(0, port+SER_FIFO);
-                            /* Alternate-Function Register ? */
-	outb_p(SER_LCR_SETDIVISOR, port+SER_LINE_CONTROL);
-	outb_p(0x07, port+SER_2FUNCTION);
-	if (inb_p(port+SER_2FUNCTION ) != 0x07)
-	{
-		outb_p(0, port+SER_LINE_CONTROL);
-		return 4;	//NS16550A;
-	}
-	outb_p(0, port+SER_LINE_CONTROL);               /* reset registers */
-	outb_p(0, port+SER_2FUNCTION);
-	return 5;	//NS16C552;
 }
 
-void ser_FIFOLevel(short port, BYTE level) {
+/*****************************/
+/** Serial Output Functions **/
+/*****************************/
 
-	if (level)
-		outb_p(level | SER_FIFO_ENABLE, port+SER_FIFO);
-	else
-		outb_p(SER_FIFO_RESETRECEIVE | SER_FIFO_RESETTRANSMIT, port+SER_FIFO);
+static int __ser_WriteByte(short port, UBYTE data, ULONG timeout, BYTE sigmask, BYTE sigvals) {
+
+    if (timeout)
+    {
+        while (!(inb_p(port + SER_LINE_STATUS) & SER_LSR_TSREMPTY) && timeout)
+            timeout--;
+        if (!timeout)
+            return 1;
+    }
+    else
+        while (!(inb_p(port + SER_LINE_STATUS) & SER_LSR_TSREMPTY));
+
+    if ((inb_p(port + SER_MODEM_STATUS) & sigmask) == sigvals)
+    {
+        outb_p(data, port + SER_TXBUFFER);
+        return inb_p(port + SER_LINE_STATUS) & SER_LSR_ERRORMSK;
+    }
+    else
+        return SER_ERRSIGNALS;
 }
 
-int ser_Init(short port, LONG baudRate, BYTE params) {
-WORD uDivisor;
+/****************************************************************************
 
-	if (ser_UARTType(port)!=1)
-	{
-		uDivisor=(WORD)(SER_MAXBAUD / baudRate);
-		outb_p(inb_p(port+SER_LINE_CONTROL) | SER_LCR_SETDIVISOR, port+SER_LINE_CONTROL);
-		outb_p(uDivisor & 0xFF, port+SER_DIVISOR_LSB);
-		outb_p(uDivisor>>8, port+SER_DIVISOR_MSB);
-		outb_p(inb_p(port+SER_LINE_CONTROL) & ~SER_LCR_SETDIVISOR, port+SER_LINE_CONTROL);
-
-		outb_p(params, port+SER_LINE_CONTROL);
-		inb_p(port+SER_TXBUFFER);
-		return 1;
-	}
-	return 0;
-}
-
-int ser_WriteByte(short, UBYTE , ULONG , BYTE , BYTE );
-int ser_IsWritingPossible(short);
-
-
-	AROS_LH1(void, SerialRawPutChar,
+    NAME */
+    AROS_LH1(void, SerialRawPutChar,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE, chr, D0),
+    AROS_LHA(UBYTE, chr, D0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 86, Exec)
+    struct ExecBase *, SysBase, 86, Exec)
 
 /*  FUNCTION
-	Emits a single character.
+    Emits a single character.
 
     INPUTS
-	chr - The character to emit
+    chr - The character to emit
 
     RESULT
-	None.
+    None.
 
     NOTES
-	This function is for very low level debugging only.
+    This function is for very low level debugging only.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RawIOInit(), RawPutChar(), RawMayGetChar()
+    RawIOInit(), RawPutChar(), RawMayGetChar()
 
     INTERNALS
 
@@ -225,62 +261,34 @@ int ser_IsWritingPossible(short);
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-    	/* stegerg: Don't use Disable/Enable, because we want
-	            interrupt enabled flag to stay the same as
-		    it was before the Disable() call */
-		    
     unsigned long flags;
-	
-	__save_flags(flags);
-	__cli();
-	
-	/* Disable(); */
-    
-    	/* Don't write 0 bytes */
-	if (chr)
-	{
-    	    //if (chr==0x0A)
-    	    //	ser_WriteByte(0x2F8, 0x0D, 1, 0, 0);
+
+#if (AROS_SERIAL_DEBUG > 0)
+    __save_flags(flags);
+
+    /* stegerg: Don't use Disable/Enable, because we want
+       interrupt enabled flag to stay the same as
+       it was before the Disable() call */
+    __cli();
+
+    /* Don't write 0 bytes */
+    if (chr)
+    {
 #if AROS_SERIAL_DEBUG == 1
-	    ser_WriteByte(0x3F8, chr, 0, 0, 0);
+        __ser_WriteByte(0x3F8, chr, 0, 0, 0);
 #endif
 #if AROS_SERIAL_DEBUG == 2
-	    ser_WriteByte(0x2F8, chr, 0, 0, 0);
+        __ser_WriteByte(0x2F8, chr, 0, 0, 0);
 #endif
-	}
+    }
 
-    	__restore_flags(flags);
-	
-	/* Enable(); */
-    
-	AROS_LIBFUNC_EXIT
-} /* RawPutChar */
+    /* Interrupt flag is stored in flags - if it was
+       enabled before, it will be renabled when the flags
+       are restored */
+    __restore_flags(flags);
+#endif
 
-int ser_IsWritingPossible(short port) {
-
-	return inb_p(port+SER_LINE_STATUS) & SER_LSR_TSREMPTY;
+    AROS_LIBFUNC_EXIT
 }
-
-int ser_WriteByte(short port, UBYTE data, ULONG timeout, BYTE sigmask, BYTE sigvals) {
-
-	if (timeout)
-	{
-		while (!ser_IsWritingPossible(port) && timeout)
-			timeout--;
-		if (!timeout)
-			return 1;
-	}
-	else
-		while (!ser_IsWritingPossible(port));
-
-	if ((inb_p(port+SER_MODEM_STATUS) & sigmask) == sigvals)
-	{
-		outb_p(data, port+SER_TXBUFFER);
-		return inb_p(port+SER_LINE_STATUS) & SER_LSR_ERRORMSK;
-	}
-	else
-		return SER_ERRSIGNALS;
-}
-

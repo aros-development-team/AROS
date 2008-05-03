@@ -89,6 +89,13 @@ const struct __text Resident Exec_resident =
         exec_main               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
+/** Screen/Serial Debug **/
+
+#if (AROS_SERIAL_DEBUG > 0)
+extern void Exec_SerialRawIOInit();
+extern void Exec_SerialRawPutChar(UBYTE chr);
+#endif
+
 void scr_RawPutChars(char *, int);
 void clr();
 void vesa_init(int width, int height, int depth, void *base);
@@ -101,6 +108,8 @@ char tab[512];
 
 void _aros_not_implemented(char *string) {}
 
+/****/
+    
 const char exec_chipname[] = "Chip Memory";
 const char exec_fastname[] = "Fast Memory";
 
@@ -211,15 +220,15 @@ int exec_main(struct TagItem *msg, void *entry)
     struct ExecBase *SysBase;
     int i;
     struct vbe_mode *mode;
-    
-    if ((mode=krnGetTagData(KRN_VBEModeInfo, 0, msg)))
+
+    if ((mode = krnGetTagData(KRN_VBEModeInfo, 0, msg)))
     {
         vesa_init(mode->x_resolution, mode->y_resolution, 
             mode->bits_per_pixel, (void*)mode->phys_base);
     }
 
     clr();
-    rkprintf("[exec] AROS64 - The AROS Research OS, 64-bit version\n[exec] Compiled %s\n",__DATE__);
+    rkprintf("[exec] AROS64 - The AROS Research OS, 64-bit version\n[exec] Compiled %s\n", __DATE__);
 
     /* Prepare the exec base */
 
@@ -243,7 +252,7 @@ int exec_main(struct TagItem *msg, void *entry)
 
     /* How about clearing most of ExecBase structure? */
     bzero(&SysBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
-    
+
     /*
      * Now everything is prepared to store ExecBase at the location 4UL and set
      * it complement in ExecBase structure
@@ -347,7 +356,6 @@ int exec_main(struct TagItem *msg, void *entry)
                 uintptr_t tmp;
 
 #warning TODO: Add proper handling of the memory above 4GB!
-    
 
                 if (addr < (uintptr_t)SysBase)
                 {
@@ -430,12 +438,12 @@ int exec_main(struct TagItem *msg, void *entry)
     Enqueue(&SysBase->LibList,&SysBase->LibNode.lib_Node);
 
     rkprintf("[exec] SysBase Enqueued in Exec Liblist\n");
-    
+
     if ((SysBase->DebugAROSBase = PrepareAROSSupportBase()) == NULL)
     {
-    rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
+        rkprintf("[exec] PrepareAROSSupportBase returns NULL!!!\n");
     }
-    
+
     rkprintf("[exec] ExecBase=%012p\n", SysBase);
 
     for (i=0; i<16; i++)
@@ -586,22 +594,25 @@ int exec_main(struct TagItem *msg, void *entry)
             "pushq $1f\n\t iretq\n 1:"
             ::[user_ds]"r"(USER_DS),[ds]"i"(USER_DS),[cs]"i"(USER_CS):"r12");
     rkprintf("[exec] Done?! Still here?\n");
-        
+
     SysBase->TDNestCnt++;
+
     Permit();
+
+#if (AROS_SERIAL_DEBUG > 0)
+    SetFunction(&SysBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
+    SetFunction(&SysBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
+#endif
 
     /* Scan for valid RomTags */
     SysBase->ResModules = exec_RomTagScanner(msg);
 
-
-    
     rkprintf("[exec] InitCode(RTF_SINGLETASK)\n");
     InitCode(RTF_SINGLETASK, 0);
-    
+
     rkprintf("[exec] InitCode(RTF_COLDSTART)\n");
     InitCode(RTF_COLDSTART, 0);
 
-            
     rkprintf("[exec] I should never get here...\n");
     while(1) asm volatile("nop");
     return 0;

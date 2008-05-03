@@ -157,6 +157,13 @@ intptr_t len;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
+#if (AROS_SERIAL_DEBUG > 0)
+    struct ExecBase *SysBase = NULL;
+    /* Initialise the serial hardware ASAP so all debug is output correctly!
+        rkprintf (screen output) _may_ also be directed to the serial output*/
+    Exec_SerialRawIOInit();
+#endif
+
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
 
     IPTR _APICBase = core_APICGetMSRAPICBase();

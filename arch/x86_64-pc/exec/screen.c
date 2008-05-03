@@ -3,6 +3,8 @@
     $Id: screen.c 23064 2005-03-08 21:43:00Z stegerg $
 */
 
+#define SCREEN_SERIAL_DEBUG
+
 #include <strings.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -108,8 +110,18 @@ void Putc(char chr)
     __save_flags(flags);
     __cli();
 
+#warning "TODO: Enable screen debug to serial at config time, and note that it doesnt work properly on real hardware since it doesnt initialise the serial port to a given baud_rate"
+#if defined(SCREEN_SERIAL_DEBUG)
     if (chr != 3)
-        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x3f8));
+    {
+#if AROS_SERIAL_DEBUG == 1
+        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x3F8));
+#endif
+#if AROS_SERIAL_DEBUG == 2
+        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x2F8));
+#endif    
+    }
+#endif
 
     if (chr == 3) /* die / CTRL-C / "signal" */
     {
