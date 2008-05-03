@@ -5,6 +5,8 @@
     Desc: screen support functions ripped from the 32-bit native target.
 */
 
+//#define SCREEN_SERIAL_DEBUG
+
 #undef __save_flags
 #undef __restore_flags
 #undef __cli
@@ -56,7 +58,15 @@ void Putc(char chr)
     }
     else if (!dead)
     {
-        asm volatile ("out %b0,%w1"::"a"(chr),"Nd"(0x3f8));
+#warning "TODO: Enable screen debug to serial at config time, and note that it doesnt work properly on real hardware since it doesnt initialise the serial port to a given baud_rate"
+#if defined(SCREEN_SERIAL_DEBUG)
+#if AROS_SERIAL_DEBUG == 1
+        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x3F8));
+#endif
+#if AROS_SERIAL_DEBUG == 2
+        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x2F8));
+#endif    
+#endif
         if (chr)
         {
             if (chr == 10)

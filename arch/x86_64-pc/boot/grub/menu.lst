@@ -4,7 +4,6 @@ timeout 5
 default 9
 
 title AROS64 with NVIDIA Gfx
-    serial=9600
     kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.nv lib=DRIVERS:nvidia.hidd ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -15,7 +14,6 @@ title AROS64 with NVIDIA Gfx
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with ATI Gfx
-    serial=9600
     kernel /boot/aros-pc-i386.gz gfx=RadeonDriver lib=DRIVERS:radeon.hidd ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -26,7 +24,6 @@ title AROS64 with ATI Gfx
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VMWareSVGA Gfx
-    serial=9600
     kernel /boot/aros-x86_64 gfx=hidd.gfx.vmwaresvga lib=vmwaresvga.hidd ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -37,7 +34,6 @@ title AROS64 with VMWareSVGA Gfx
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 640x480-8bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=640x480x8 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -48,7 +44,6 @@ title AROS64 with VESA Gfx @ 640x480-8bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 800x600-8bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=800x600x8 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -59,7 +54,6 @@ title AROS64 with VESA Gfx @ 800x600-8bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 1024x768-8bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=1024x768x8 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -70,7 +64,6 @@ title AROS64 with VESA Gfx @ 1024x768-8bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 1280x1024-8bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=1280x1024x8 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -81,7 +74,6 @@ title AROS64 with VESA Gfx @ 1280x1024-8bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 640x480-16bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=640x480x16 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -92,7 +84,6 @@ title AROS64 with VESA Gfx @ 640x480-16bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 800x600-16bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=800x600x16 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -103,7 +94,6 @@ title AROS64 with VESA Gfx @ 800x600-16bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 1024x768-16bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=1024x768x16 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -114,7 +104,6 @@ title AROS64 with VESA Gfx @ 1024x768-16bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 1280x1024-16bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=1280x1024x16 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -125,7 +114,6 @@ title AROS64 with VESA Gfx @ 1280x1024-16bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 640x480-32bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=640x480x32 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -136,7 +124,6 @@ title AROS64 with VESA Gfx @ 640x480-32bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 800x600-32bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=800x600x32 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -147,7 +134,6 @@ title AROS64 with VESA Gfx @ 800x600-32bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 1024x768-32bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=1024x768x32 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -158,7 +144,6 @@ title AROS64 with VESA Gfx @ 1024x768-32bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 1280x1024-32bpp
-    serial=9600
     kernel /boot/aros-x86_64 vesa=1280x1024x32 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -169,7 +154,6 @@ title AROS64 with VESA Gfx @ 1280x1024-32bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VGA @ 640x480-4bpp
-    serial=9600
     kernel /boot/aros-x86_64 ATA=32bit,forcedma nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -180,7 +164,6 @@ title AROS64 with VGA @ 640x480-4bpp
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VGA @ 640x480-4bpp (slow ATA)
-    serial=9600
     kernel /boot/aros-x86_64 nofdc
     module /boot/kernel
     module /boot/kernel.pkg
@@ -191,7 +174,6 @@ title AROS64 with VGA @ 640x480-4bpp (slow ATA)
     module /Devs/Drivers/ohci.hidd
 
 title AROS64 with VESA Gfx @ 800x600-16bpp (+FAT)
-    serial=9600
     kernel /boot/aros-x86_64 vesa=800x600x16
     module /boot/kernel
     module /boot/kernel.pkg
