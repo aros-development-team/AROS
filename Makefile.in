@@ -64,7 +64,7 @@ $(AFSLIB) : $(wildcard $(AROS_SRC)/workbench/devs/afs/*.[ch])
 	@$(ECHO) Building afslib...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/copytoafs -f Makefile.afslib AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
-$(COPYTOAFS) : $(AROS_SRC)/tools/copytoafs/copytoafs.c
+$(COPYTOAFS) : $(AFSLIB) $(AROS_SRC)/tools/copytoafs/copytoafs.c
 	@$(ECHO) Building copytoafs...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/copytoafs AROS_SRC=$(AROS_SRC) TOP=$(TOP)
 
