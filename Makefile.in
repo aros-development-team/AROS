@@ -99,7 +99,7 @@ mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
 $(AROS_SRC)/tools/MetaMake/configure : $(AROS_SRC)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
-	@cd $(AROS_SRC)/tools/MetaMake ; @aros_host_aclocal@ ; @aros_host_autoconf@
+	@cd $(AROS_SRC)/tools/MetaMake && @aros_host_aclocal@ && @aros_host_autoconf@
 
 $(TOP)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC)/tools/MetaMake/Makefile.in
 	@$(IF) [ ! -d $(TOP)/tools/MetaMake ]; then \
@@ -108,7 +108,7 @@ $(TOP)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC
 	fi;
 	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS= $(AROS_SRC)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake
 
-$(MMAKE): $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
+$(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
 	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake install
 
