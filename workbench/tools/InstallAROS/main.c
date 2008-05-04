@@ -1438,7 +1438,7 @@ localecopydone:
 		};
 
 		// Copying Extras
-		D(bug("[INSTALLER] Copying Extras to '%s'...\n"), extras_path);
+		D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
 		set(data->label, MUIA_Text_Contents, "Copying Extra Software...");
 
 		CopyDirArray( CLASS, self, data, extras_dirs, extras_path);
