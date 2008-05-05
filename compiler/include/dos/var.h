@@ -25,6 +25,23 @@ struct LocalVar {
     ULONG         lv_Len;   /* The length of the contents. */
 };
 
+/* This structure is used by ScanVars() function to pass information about
+   local and/or global variables to specified hook function. Note that this
+   structure is READ-ONLY and its content is valid only during ScanVars()
+   hook function call. Don't try to use a pointer to this structure outside
+   ScanVars() hook function.
+*/
+struct ScanVarsMsg 
+{
+    ULONG sv_SVMSize;  /* Size of ScanVarsMsg structure */
+    ULONG sv_Flags;    /* The flags parameter given to ScanVars() */
+    STRPTR sv_GDir;    /* Directory patch for global variables or empty string
+                          "\0" for local variables */
+    STRPTR sv_Name;    /* Name of the variable */
+    STRPTR sv_Var;     /* Pointer to the contents of the variable */
+    ULONG sv_VarLen;   /* Size of the variable */
+};
+
 /* lv_Node.ln_Type */
 #define LV_VAR   0 /* This is a variable. */
 #define LV_ALIAS 1 /* This is an alias. */
