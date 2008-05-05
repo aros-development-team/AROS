@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id: cachepredma.c 28250 2008-04-07 20:12:59Z schulz $
 
     Desc: CachePreDMA() - Do what is necessary for DMA.
@@ -61,12 +61,14 @@
 	CachePostDMA()
 
     INTERNALS
+    Due to the strong cache coherency of x86 systems this function
+    is actually not needed. CPU snoops the address lines and 
+    invalidate all cache which is out-of-date. It is valid for both
+    D and I caches). Even a BM-DMA transfer are perfectly safe here.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-//    asm volatile("wbinvd":::"memory");
 
     return address;
 
