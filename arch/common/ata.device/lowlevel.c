@@ -235,7 +235,6 @@ inline void ata_SelectUnit(struct ata_Unit* unit)
  */
 void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable)
 {
-    enable = TRUE; // Needed in order to work with many PCs. Better fix welcome
     bus->ab_Waiting = enable;
     ata_out(enable ? 0x0 : 0x02, ata_AltControl, bus->ab_Alt);
 }
@@ -572,6 +571,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
         case CM_PIORead:
         case CM_NoData:
             D(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
+	    ata_EnableIRQ(au->au_Bus, TRUE);
             ata_out(block->command, ata_Command, port);
             if (FALSE == ata_WaitBusyTO(au, 10, TRUE))
             {
@@ -871,6 +871,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
              * if we got here, it means that device most likely expects us to send exactly 12 bytes
              * of packet data. no more, and no less. 12 bytes.
              */
+	    ata_EnableIRQ(unit->au_Bus, TRUE);
             unit->au_outs(cmd, port, 12);
             return 1;
         }
