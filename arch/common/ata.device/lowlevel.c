@@ -871,8 +871,8 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, LONG datalen, BOOL *dma
              * if we got here, it means that device most likely expects us to send exactly 12 bytes
              * of packet data. no more, and no less. 12 bytes.
              */
-	    ata_EnableIRQ(unit->au_Bus, TRUE);
             unit->au_outs(cmd, port, 12);
+	    ata_EnableIRQ(unit->au_Bus, TRUE);
             return 1;
         }
         else
