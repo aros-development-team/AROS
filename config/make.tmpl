@@ -942,7 +942,8 @@ BDID := $(BDTARGETID)
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
-    aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no
+    aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
+    srcdir=
 
 .PHONY : %(mmake)
 
@@ -967,7 +968,7 @@ BD_LDFLAGS   := %(ldflags)
 %(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
-%rule_compile basename=% targetdir=$(BD_OBJDIR) \
+%rule_compile basename=%(srcdir)% targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
     aflags=$(BD_AFLAGS)
@@ -1567,7 +1568,7 @@ endif
 %(mmake)-clean ::
 	$(RM) $(FILES)
 
-.PHONY: %(mmake) %(mmake-clean)
+.PHONY: %(mmake) %(mmake)-clean
 
 %end
 
@@ -1599,7 +1600,7 @@ GLOB_MKDIRS += %(dir)
 %(mmake)-clean ::
 	@$(RM) $(FILES)
 
-.PHONY: %(mmake) %(mmake-clean)
+.PHONY: %(mmake) %(mmake)-clean
 
 %end
 
@@ -1964,7 +1965,7 @@ else
     host := no
 endif
 
-ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) %(host)),yes)
+ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) $(host)),yes)
     %(mmake)-PROGDIR      := $(%(mmake)-aros_prefix)/bin
     %(mmake)-config_opts  := --prefix=$(%(mmake)-aros_prefix)
 else
