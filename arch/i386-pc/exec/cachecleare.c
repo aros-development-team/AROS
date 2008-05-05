@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id: cachecleare.c 28252 2008-04-07 20:30:41Z schulz $
 
     Desc: CacheClearE() - Clear the caches with extended control.
@@ -66,15 +66,15 @@
 	CacheClearU(), CacheControl()
 
     INTERNALS
-	This is a rather CPU dependant function. You should replace it
-	in your $(KERNEL).
+    Due to the strong cache coherency of x86 systems this function
+    is actually not needed. CPU snoops the address lines and 
+    invalidate all cache which is out-of-date. It is valid for both
+    D and I caches). Even a BM-DMA transfer are perfectly safe here.
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-//    asm volatile("wbinvd":::"memory");
-    
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
 
