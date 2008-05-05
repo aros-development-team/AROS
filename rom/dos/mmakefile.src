@@ -29,8 +29,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     open openfromlock output parentdir parentoffh parsepattern \
 	     parsepatternnocase pathpart pipe printfault putstr read readargs \
 	     readitem relabel readlink remassignlist remdosentry remsegment rename \
-	     replypkt runcommand samedevice samelock seek selecterror selectinput \
-	     selectoutput sendpkt setargstr setcomment setconsoletask \
+	     replypkt runcommand samedevice samelock scanvars seek selecterror \
+	     selectinput selectoutput sendpkt setargstr setcomment setconsoletask \
 	     setcurrentdirname setfiledate setfilesize setfilesystask \
 	     setioerr setmode setowner setprogramdir setprogramname \
 	     setprompt setprotection setvar setvbuf splitname startnotify \
