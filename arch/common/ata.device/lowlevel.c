@@ -549,6 +549,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             dma_SetupPRDSize(au, mem, block->length, TRUE);
             CachePreDMA(mem, &block->length, DMA_ReadFromRAM);
             //D(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
+	    ata_EnableIRQ(au->au_Bus, TRUE);
             ata_out(block->command, ata_Command, port);
             dma_StartDMA(au);
             break;
@@ -558,12 +559,14 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
             dma_SetupPRDSize(au, mem, block->length, FALSE);
             CachePreDMA(mem, &block->length, 0);
             //D(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
+	    ata_EnableIRQ(au->au_Bus, TRUE);
             ata_out(block->command, ata_Command, port);
             dma_StartDMA(au);
             break;
 
         case CM_PIOWrite:
             //D(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
+	    ata_EnableIRQ(au->au_Bus, TRUE);
             ata_out(block->command, ata_Command, port);
             ata_400ns();
             break;
