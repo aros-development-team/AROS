@@ -5,6 +5,7 @@
 
 #define SCREEN_SERIAL_DEBUG
 
+#include <aros/config.h>
 #include <strings.h>
 #include <stdarg.h>
 #include <stdlib.h>

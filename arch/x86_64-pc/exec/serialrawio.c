@@ -7,6 +7,7 @@
 
     Note: serial io from "PC-intern" examples
 */
+#include <aros/config.h>
 #include <proto/exec.h>
 #include <asm/io.h>
 
@@ -276,6 +277,16 @@ static int __ser_WriteByte(short port, UBYTE data, ULONG timeout, BYTE sigmask, 
     /* Don't write 0 bytes */
     if (chr)
     {
+        if (chr == 0x0A)
+        {
+            // Send <CR> before <LF>
+#if AROS_SERIAL_DEBUG == 1
+            __ser_WriteByte(0x3F8, 0x0D, 0, 0, 0);
+#endif
+#if AROS_SERIAL_DEBUG == 2
+            __ser_WriteByte(0x2F8, 0x0D, 0, 0, 0);
+#endif
+        }
 #if AROS_SERIAL_DEBUG == 1
         __ser_WriteByte(0x3F8, chr, 0, 0, 0);
 #endif
