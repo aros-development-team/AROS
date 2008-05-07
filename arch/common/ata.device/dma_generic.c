@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved
+    Copyright © 2004-2008, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -120,7 +120,7 @@ VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
     ata_in(dma_Command, unit->au_DMAPort);
-    ata_in(dma_Status, unit->au_DMAPort);
+    ata_out(ata_in(dma_Status, unit->au_DMAPort), dma_Status, unit->au_DMAPort);
     ata_out(ata_in(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
     ata_in(dma_Command, unit->au_DMAPort);
     ata_in(dma_Status, unit->au_DMAPort);
