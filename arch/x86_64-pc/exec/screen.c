@@ -13,6 +13,12 @@
 
 #include "font8x14.c"
 
+#if defined(SCREEN_SERIAL_DEBUG)
+#if (AROS_SERIAL_DEBUG > 0)
+extern void Exec_SerialRawPutChar(char chr);
+#endif
+#endif
+
 #undef __save_flags
 #undef __restore_flags
 #undef __cli
@@ -115,12 +121,9 @@ void Putc(char chr)
 #if defined(SCREEN_SERIAL_DEBUG)
     if (chr != 3)
     {
-#if AROS_SERIAL_DEBUG == 1
-        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x3F8));
+#if (AROS_SERIAL_DEBUG > 0)
+        Exec_SerialRawPutChar(chr);
 #endif
-#if AROS_SERIAL_DEBUG == 2
-        asm volatile ("outb %b0,%w1"::"a"(chr),"Nd"(0x2F8));
-#endif    
     }
 #endif
 
