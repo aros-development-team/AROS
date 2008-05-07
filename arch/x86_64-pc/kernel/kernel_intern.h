@@ -83,7 +83,12 @@ void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tag
 
 /* Debug support .. */
 #if (AROS_SERIAL_DEBUG > 0)
-void Exec_SerialRawIOInit();
+extern void   Exec_SerialRawIOInit();
+extern ULONG  __serial_rawio_speed;
+extern UBYTE  __serial_rawio_databits;
+extern UBYTE  __serial_rawio_parity;
+extern UBYTE  __serial_rawio_stopbits;
+extern UWORD  __serial_rawio_port;
 #endif
 void scr_RawPutChars(char *, int);
 void clr();

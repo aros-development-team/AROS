@@ -66,6 +66,20 @@
 #define SER_UART_NS16550A      3
 #define SER_UART_NS16C552      4
 
+ULONG  __serial_rawio_speed     = 9600;
+UBYTE  __serial_rawio_databits  = SER_LCR_8BITS;
+UBYTE  __serial_rawio_parity    = SER_LCR_NOPARITY;
+UBYTE  __serial_rawio_stopbits  = SER_LCR_1STOPBIT;
+#if AROS_SERIAL_DEBUG == 1
+UWORD __serial_rawio_port = 0x3F8;
+#else
+#if AROS_SERIAL_DEBUG == 2
+UWORD __serial_rawio_port = 0x2F8;
+#else
+UWORD __serial_rawio_port = 0;
+#endif
+#endif
+
 /***********************************************/
 /** Serial Probe and Initialisation Functions **/
 /***********************************************/
@@ -138,6 +152,8 @@ static UBYTE __ser_Init(short port, LONG baudRate, BYTE params)
     if ((uart_type = __ser_UARTType(port)) > 0)
     {
 #warning "TODO: Set UART FIFO?"
+        if (baudRate > SER_MAXBAUD) return 0;
+
         uDivisor=(WORD)(SER_MAXBAUD / baudRate);
         tmp = inb_p(port + SER_LINE_CONTROL);
         outb_p(tmp | SER_LCR_SETDIVISOR, port + SER_LINE_CONTROL);
@@ -189,15 +205,13 @@ static UBYTE __ser_Init(short port, LONG baudRate, BYTE params)
 
 *****************************************************************************/
 {
-   AROS_LIBFUNC_INIT
-#if AROS_SERIAL_DEBUG == 1
-    if (__ser_Init(0x3F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY) > 0)
-        __ser_FIFOLevel(0x3F8, 0);
-#endif
-#if AROS_SERIAL_DEBUG == 2
-    if (__ser_Init(0x2F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY) > 0)
-        __ser_FIFOLevel(0x2F8, 0);
-#endif
+    AROS_LIBFUNC_INIT
+    
+    if (__serial_rawio_port > 0)
+    {
+        if (__ser_Init(__serial_rawio_port, __serial_rawio_speed, __serial_rawio_databits | __serial_rawio_parity | __serial_rawio_stopbits) > 0)
+            __ser_FIFOLevel(__serial_rawio_port, 0);
+    }
    AROS_LIBFUNC_EXIT
 }
 
@@ -266,40 +280,27 @@ static int __ser_WriteByte(short port, UBYTE data, ULONG timeout, BYTE sigmask, 
 
     unsigned long flags;
 
-#if (AROS_SERIAL_DEBUG > 0)
-    __save_flags(flags);
-
-    /* stegerg: Don't use Disable/Enable, because we want
-       interrupt enabled flag to stay the same as
-       it was before the Disable() call */
-    __cli();
-
-    /* Don't write 0 bytes */
-    if (chr)
+    if ((__serial_rawio_port > 0) && (chr))
     {
+        __save_flags(flags);
+
+        /* stegerg: Don't use Disable/Enable, because we want
+           interrupt enabled flag to stay the same as
+           it was before the Disable() call */
+        __cli();
+
         if (chr == 0x0A)
         {
             // Send <CR> before <LF>
-#if AROS_SERIAL_DEBUG == 1
-            __ser_WriteByte(0x3F8, 0x0D, 0, 0, 0);
-#endif
-#if AROS_SERIAL_DEBUG == 2
-            __ser_WriteByte(0x2F8, 0x0D, 0, 0, 0);
-#endif
+            __ser_WriteByte(__serial_rawio_port, 0x0D, 0, 0, 0);
         }
-#if AROS_SERIAL_DEBUG == 1
-        __ser_WriteByte(0x3F8, chr, 0, 0, 0);
-#endif
-#if AROS_SERIAL_DEBUG == 2
-        __ser_WriteByte(0x2F8, chr, 0, 0, 0);
-#endif
-    }
+        __ser_WriteByte(__serial_rawio_port, chr, 0, 0, 0);
 
-    /* Interrupt flag is stored in flags - if it was
-       enabled before, it will be renabled when the flags
-       are restored */
-    __restore_flags(flags);
-#endif
+        /* Interrupt flag is stored in flags - if it was
+           enabled before, it will be renabled when the flags
+           are restored */
+        __restore_flags(flags);
+    }
 
     AROS_LIBFUNC_EXIT
 }

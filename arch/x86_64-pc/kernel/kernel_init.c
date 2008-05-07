@@ -13,6 +13,7 @@
 #include <proto/kernel.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "kernel_intern.h"
 #include "../bootstrap/multiboot.h"
@@ -154,14 +155,72 @@ static struct vbe_controller vbectrl;
 static struct vbe_mode vbemd;
 intptr_t addr;
 intptr_t len;
+BOOL serial_initialised = FALSE;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
+    struct TagItem *tag;
+
 #if (AROS_SERIAL_DEBUG > 0)
-    struct ExecBase *SysBase = NULL;
-    /* Initialise the serial hardware ASAP so all debug is output correctly!
-        rkprintf (screen output) _may_ also be directed to the serial output*/
-    Exec_SerialRawIOInit();
+    if (!serial_initialised)
+    {
+        struct ExecBase *SysBase = NULL;
+        /* Initialise the serial hardware ASAP so all debug is output correctly!
+            rkprintf (screen output) _may_ also be directed to the serial output*/
+        tag = krnFindTagItem(KRN_CmdLine, msg);
+        if (tag)
+        {
+            STRPTR cmd;
+            ULONG temp;
+            cmd = stpblk(tag->ti_Data);
+            while(cmd[0])
+            {
+                /* Split the command line */
+                temp = strcspn(cmd," ");
+                if (strncmp(cmd, "serial-debug=", 13)==0)
+                {
+                    if (cmd[13] == '1')
+                        __serial_rawio_port = 0x3F8;
+                    else if (cmd[13] == '2')
+                        __serial_rawio_port = 0x2F8;
+                }
+                else if (strncmp(cmd, "serial-databits=", 16)==0)
+                {
+                    if (cmd[16] == '5')
+                        __serial_rawio_databits = 0x00;
+                    else if (cmd[16] == '6')
+                        __serial_rawio_databits = 0x01;
+                    else if (cmd[16] == '7')
+                        __serial_rawio_databits = 0x02;
+                    else if (cmd[16] == '8')
+                        __serial_rawio_databits = 0x03;
+                }
+                else if (strncmp(cmd, "serial-stopbits=", 16)==0)
+                {
+                    if (cmd[16] == '1')
+                        __serial_rawio_stopbits = 0x00;
+                    else if (cmd[16] == '2')
+                        __serial_rawio_stopbits = 0x04;
+                }
+                else if (strncmp(cmd, "serial-parity=", 14)==0)
+                {
+                    if (cmd[14] == 'n')
+                        __serial_rawio_parity = 0x00;
+                    else if (cmd[14] == 'o')
+                        __serial_rawio_parity = 0x08;
+                    else if (cmd[14] == 'e')
+                        __serial_rawio_parity = 0x18;
+                }
+                else if (strncmp(cmd, "serial-speed=", 13)==0)
+                {
+                    __serial_rawio_speed = atoi(&cmd[13] );
+                }
+                cmd = stpblk(cmd+temp);
+            }
+        }
+        Exec_SerialRawIOInit();
+        serial_initialised = TRUE;
+    }
 #endif
 
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
@@ -175,13 +234,17 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     
     if (!(_kern_initflags & KERNBOOTFLAG_BOOTCPUSET))
     {
+        if(serial_initialised)
+        {
+            rkprintf("[Kernel] kernel_cstart: Serial Debug initialised [port 0x%x, speed=%u, flags=0x%x].\n", __serial_rawio_port, __serial_rawio_speed, (__serial_rawio_databits | __serial_rawio_parity | __serial_rawio_stopbits));
+        }
         _kern_early_BOOTAPICID = kern_apic_id;
         _kern_initflags |= KERNBOOTFLAG_BOOTCPUSET;
 
-        struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
         addr = krnGetTagData(KRN_KernelBase, 0, msg);
         len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
 
+        tag = krnFindTagItem(KRN_CmdLine, msg);
         if (tag)
         {
             if (tag->ti_Data != (IPTR)_kern_early_BOOTCmdLine) {
