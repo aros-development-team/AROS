@@ -3,10 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- arch-common-grub2 : grub2-host-quick grub2-menu-$(ARCH) grub2-copy-files
+#MM- arch-common-grub2 : grub2-dirs grub2-host-quick
 
 #MM- bootloader-grub2 : arch-common-grub2
-#MM- bootloader-grub2-isosetup : grub2-dirs arch-common-grub2 grub2-iso-setup
+#MM- bootloader-grub2-isosetup :  arch-common-grub2 grub2-iso-setup
 
 GRUBBOOTDIR := $(AROSDIR)/boot/grub
 
@@ -16,7 +16,7 @@ export CFLAGS        := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 
 %build_with_configure mmake=grub2-host compiler=host nix=yes	\
-	prefix="$(GENDIR)/$(CURDIR)/host_binaries"		\
+	prefix="$(GENDIR)/$(CURDIR)/host_binaries"	install_target=	\
 	extraoptions="--enable-grub-emu --enable-grub-fstest"
 
 GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
