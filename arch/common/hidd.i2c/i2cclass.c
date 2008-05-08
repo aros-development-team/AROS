@@ -554,7 +554,7 @@ static int I2C_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[I2C] Base Class destruction\n"));
 
-    OOP_ReleaseAttrBase((STRPTR)IID_Hidd_I2C);
+    OOP_ReleaseAttrBase((STRPTR)IID_Hidd_I2CDevice);
     OOP_ReleaseAttrBase((STRPTR)IID_Hidd_I2C);
     OOP_ReleaseAttrBase((STRPTR)IID_Hidd);
 
