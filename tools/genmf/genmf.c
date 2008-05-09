@@ -338,7 +338,7 @@ void add_continuation(String *s, FILE *fh)
 }
 
 	    
-void output (const char * line)
+void output (const char * line, FILE * outfile)
 {
     const char * ptr = line;
 
@@ -349,11 +349,11 @@ void output (const char * line)
 	)
 	{
 	    ptr += 9;
-	    fputs (curdir, stdout);
+	    fputs (curdir, outfile);
 	}
 	else
 	{
-	    putchar (*ptr);
+	    fputc (*ptr, outfile);
 	    ptr ++;
 	}
     }
@@ -592,7 +592,7 @@ Arg * findArg (Template * tmpl, char ** argstr)
     return arg;
 }
 
-void replace_template (const char * string)
+void replace_template (const char * string, FILE * outfile)
 {
     char ** argv;
     int argc, t;
@@ -609,7 +609,7 @@ void replace_template (const char * string)
     {
 	/* Print no error for GNU Make patterns */
 	/* error ("Can't find template %s\n", argv[0]); */
-	fputs (string, stdout);
+	fputs (string, outfile);
     }
     else
     {
@@ -698,7 +698,7 @@ void replace_template (const char * string)
 	    {
 		arg = findArg (tmpl, &ptr);
 		if (arg)
-		    output (values[arg->pos]);
+		    output (values[arg->pos], outfile);
 	    }
 	    else if (*ptr == '%')
 	    {
@@ -725,7 +725,7 @@ void replace_template (const char * string)
 			break;
 		}
 
-		replace_template (str->value);
+		replace_template (str->value, outfile);
 		free_string (str);
 	    }
 	    else if (*ptr == '$' && ptr[1] == '(' && curdir &&
@@ -733,11 +733,11 @@ void replace_template (const char * string)
 		)
 	    {
 		ptr += 9;
-		fputs (curdir, stdout);
+		fputs (curdir, outfile);
 	    }
 	    else
 	    {
-		putchar (*ptr);
+		fputc (*ptr, outfile);
 		ptr ++;
 	    }
 	}
@@ -753,22 +753,11 @@ void replace_template (const char * string)
     }
 }
 
-int main (int argc, char ** argv)
+void process_file(FILE * infile, FILE *outfile)
 {
-    int t;
-    String * line;
     char * ptr;
+    String * line;
     int common = 0;
-
-    NewList (&templates);
-
-    for (t=1; t<argc; t++)
-    {
-	if (!strncmp ("--curdir=", argv[t], 9))
-	    curdir = argv[t] + 9;
-	else
-	    read_templates (argv[t]);
-    }
 
     fputs (
 	"####################################################################\n"
@@ -776,10 +765,10 @@ int main (int argc, char ** argv)
 	"############# THIS IS A GENERATED FILE ! DO NOT EDIT ###############\n"
 	"####################################################################\n"
 	"####################################################################\n"
-	, stdout
+	, outfile
     );
 
-    while ((line = getline (stdin)))
+    while ((line = getline (infile)))
     {
 	ptr = line->value;
 	while (isspace (*ptr)) ptr++;
@@ -791,15 +780,15 @@ int main (int argc, char ** argv)
 	    if (!strncmp (ptr+1, "common", 6))
 		common = 1;
 	    
-	    add_continuation(line, stdin);
+	    add_continuation (line, infile);
 	    ptr = line->value + pos;
 	    
-	    replace_template (ptr);
+	    replace_template (ptr, outfile);
 	}
 	else
 	{
-	    output (line->value);
-	    putchar ('\n');
+	    output (line->value, outfile);
+	    fputc ('\n', outfile);
 	}
 
 	free_string (line);
@@ -807,8 +796,64 @@ int main (int argc, char ** argv)
 
     if (!common)
     {
-	replace_template ("%common");
+	replace_template ("%common", outfile);
     }
+
+}
+
+int main (int argc, char ** argv)
+{
+    int t;
+    FILE * infile = NULL, * outfile = NULL;
+    FILE * listfile = NULL;
+    char * infilename, *outfilename;
+    String * line;
+
+    NewList (&templates);
+
+    for (t=1; t<argc; t++)
+    {
+        if (!strncmp ("--curdir=", argv[t], 9))
+            curdir = argv[t] + 9;
+        else if(!strncmp ("--listfile", argv[t], 10)) 
+        {
+            // next parameter is the list file name
+            if (t+1 <= argc)
+            {
+                if (!(listfile = fopen (argv[t+1], "r" )))
+                {
+                    error ( "Can't open list file %s\n", argv[t+1] );
+                    t++;
+                }
+            }
+            else
+                error ( "No list file name given\n" );
+        }
+        else
+	        read_templates (argv[t]);
+    }
+    if (listfile)
+    {
+        for (t = 0; line = getline (listfile); t++)
+        {
+            infilename = strtok (line->value, " \t"); 
+            if (!infilename)
+                error("Syntax error in list file at line %d\n", t);
+            outfilename = strtok (NULL, " \t");
+            if (!outfilename)
+                error("Syntax error in list file at line %d\n", t);
+            if (!(infile = fopen (infilename, "r")))
+                error("Can't open input file %s\n", infilename);
+            if (!(outfile = fopen (outfilename, "w")))
+                error("Can't open output file %s\n", outfilename);
+            process_file (infile, outfile);
+            fclose (infile);
+            fclose (outfile);
+            free_string (line);
+        }
+        fclose (listfile);
+    }
+    else process_file (stdin, stdout);
 
     return 0;
 }
