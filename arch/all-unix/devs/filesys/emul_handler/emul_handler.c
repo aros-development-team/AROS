@@ -97,6 +97,9 @@ static struct DosLibrary *DOSBase;
 #define malloc you_must_change_malloc_to__emul_malloc
 #define free you_must_change_free_to__emul_free
 
+#define DEVNAME "EMU"
+#define VOLNAME "System"
+
 /*********************************** Support *******************************/
 
 /* Make an AROS error-code (<dos/dos.h>) out of an unix error-code. */
@@ -947,10 +950,7 @@ static LONG startup(struct emulbase *emulbase)
 			
 			/* Make sure that the root directory is valid */
 			if(getcwd(fhv->volume, 256) && !stat(fhv->name,&st) && S_ISDIR(st.st_mode))
-			{
-			    #define DEVNAME "EMU"
-			    #define VOLNAME "System"
-			    
+			{		    
 			    static const char *devname = DEVNAME;
 			    static const char *volname = VOLNAME;
 			    LONG len;
@@ -1467,8 +1467,46 @@ static LONG create_softlink(struct emulbase * emulbase,
 {
     LONG error=0L;
     struct filehandle *fh;
-
+    struct DosList    *dl;
+    char *path;
+    char *volname;
+    char *unixram = "/Ram Disk";
+    char *unixvolname;
+    char *unixfullpath;
+    
     if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
+    if (DOSBase == NULL)
+    	if(!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 41)))
+    		return ERROR_INVALID_RESIDENT_LIBRARY; /* I guess this is very unlikely */
+
+    /* ref is an absolute path with volume, we have to translate them to the real unix file
+       path - first split it to path part and volume part */
+    path = strchr(ref, ':') + 1;
+    if(!path)
+    	return ERROR_INVALID_COMPONENT_NAME; /* sorry, we need volume name */
+
+    /* copy volume name to separate array */
+    volname = (char *)emul_malloc(emulbase, (IPTR) path - (IPTR) ref);
+    if(!volname)
+    	return ERROR_NO_FREE_STORE;
+    strncpy(volname, ref, (IPTR) path - (IPTR) ref - 1);
+    volname[(IPTR) path - (IPTR) ref - 1] = '\0';
+
+    /* due to the current _open implementation we can't really handle anything outside
+       filesystem (for example Ram Disk), so the only supported Volume is VOLNAME.
+       It may change in the future. */
+    if (strcmp(volname, VOLNAME) != 0)
+    	return ERROR_INVALID_COMPONENT_NAME;
+
+    /* now get DeviceList structure containing information about given volume */
+    dl = LockDosList(LDF_VOLUMES | LDF_READ);
+    dl = FindDosEntry(dl, volname, LDF_VOLUMES);
+    UnLockDosList(LDF_VOLUMES | LDF_READ);
+    /* we don't need volume name anymore, free it here to ease further error handling */
+    emul_free(emulbase, volname);
+    if (dl == NULL)
+    	return ERROR_OBJECT_NOT_FOUND;
 
     fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
     if(!fh)
@@ -1477,10 +1515,23 @@ static LONG create_softlink(struct emulbase * emulbase,
     fh->pathname = NULL; /* just to make sure... */
     fh->DIR      = NULL;
     
+   	unixvolname = ((struct filehandle *)((struct DeviceList*)dl)->dl_Ext.dl_AROS.dn_Unit)->volume;
+    unixfullpath = (char *)emul_malloc(emulbase, strlen(unixvolname) + strlen(path) + 2);
+    if(!unixfullpath)
+    {
+        FreeMem(fh, sizeof(struct filehandle));
+        return ERROR_NO_FREE_STORE;    	
+    }
+    unixfullpath[0] = '\0';
+    strcat(unixfullpath, unixvolname);
+    strcat(unixfullpath, "/");
+    /* we don't have to convert the path, as it's absolute (no // to convert to ..) */
+    strcat(unixfullpath, path);
+    
     error = makefilename(emulbase, &fh->name, (*handle)->name, name);
     if (!error)
     {
-        if (!symlink(ref, fh->name))
+        if (!symlink(unixfullpath, fh->name))
             *handle = fh;
         else
             error = err_u2a();
@@ -1489,6 +1540,7 @@ static LONG create_softlink(struct emulbase * emulbase,
         error = ERROR_NO_FREE_STORE;
         FreeMem(fh, sizeof(struct filehandle));
     }
+    emul_free(emulbase, unixfullpath);
 
     return error;
 }
@@ -1526,8 +1578,10 @@ static LONG read_softlink(struct emulbase *emulbase,
                           STRPTR buffer,
                           ULONG size)
 {
+	bug("read_softlink volume %s\n", fh->volume);
     if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
+	bug("read_softlink name %s\n", fh->name);
     if (readlink(fh->name, buffer, size-1) == -1)
         return err_u2a();
 
