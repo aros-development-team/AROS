@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <exec/memory.h>
+#include "../exec/etask.h"
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/filesystem.h>
@@ -78,6 +79,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 
     STRPTR oldargs;
     LONG oldresult;
+    struct aros_startup * oldstartup;
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -97,7 +99,10 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     sss.stk_Upper=stack+stacksize;
 
     oldresult=me->pr_Result2;
-
+    /* we have to save iet_startup field because it's overwritten in 
+       startup code */
+	oldstartup = (struct aros_startup *)GetIntETask(me)->iet_startup;
+    
     me->pr_Result2=oldresult;
 
     oldargs=me->pr_Arguments;
@@ -108,6 +113,8 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;
+    /* restore saved iet_startup */
+    GetIntETask(me)->iet_startup = oldstartup;
 
     me->pr_Result2=oldresult;
 

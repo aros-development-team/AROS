@@ -89,7 +89,8 @@ COMMONTESTFILES := \
     seektest \
     avltest \
     callhooktest \
-    scanvarstest
+    scanvarstest \
+    runcommand
 
 HOSTEDTESTFILES :=  \
     hostlib
