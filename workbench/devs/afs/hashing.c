@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,7 @@
 #include "extstrings.h"
 #include "afsblocks.h"
 
-ULONG getHashKey(STRPTR name,ULONG tablesize, UBYTE flags) {
+ULONG getHashKey(CONST_STRPTR name, ULONG tablesize, UBYTE flags) {
 ULONG result;
 UWORD length, i;
 

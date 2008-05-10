@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 /*
@@ -170,7 +170,8 @@ ULONG i,curblock;
  Output: 0 for success; error code otherwise
 ********************************************/
 LONG format
-	(struct AFSBase *afsbase, struct Volume *volume, STRPTR name, ULONG dostype)
+	(struct AFSBase *afsbase, struct Volume *volume, CONST_STRPTR name,
+	ULONG dostype)
 {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
@@ -249,7 +250,8 @@ UWORD i;
          name    - new name for volume
  Output: DOSTRUE for success; DOSFALSE otherwise
 ********************************************/
-LONG relabel(struct AFSBase *afsbase, struct Volume *volume, STRPTR name) {
+LONG relabel(struct AFSBase *afsbase, struct Volume *volume,
+	CONST_STRPTR name) {
 struct BlockCache *blockbuffer;
 struct DateStamp ds;
 

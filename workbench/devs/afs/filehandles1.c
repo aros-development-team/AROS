@@ -34,7 +34,7 @@ struct BlockCache *getHeaderBlock
 	(
 		struct AFSBase *afsbase,
 		struct Volume *volume,
-		STRPTR name,
+		CONST_STRPTR name,
 		struct BlockCache *blockbuffer,
 		ULONG *block
 	)
@@ -152,7 +152,7 @@ D
                    if NULL, start in root dir
          name    - path of file/dir
          block   - will be filled with the block number
-                   prior the entry we are using; rootblock
+                   prior to the entry we are using; rootblock
                    if we are searching for the root
  Output: NULL=error (evtl. error=ERROR_...)
          blockcache structure of found block otherwise
@@ -161,7 +161,7 @@ struct BlockCache *findBlock
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
-		STRPTR name,
+		CONST_STRPTR name,
 		ULONG *block
 	)
 {
@@ -322,7 +322,7 @@ struct AfsHandle *ah;
 			return ah;
 		ah=ah->next;
 	}
-	return 0;
+	return NULL;
 }
 
 /****************************************
@@ -431,7 +431,7 @@ struct AfsHandle *openf
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
-		STRPTR filename,
+		CONST_STRPTR filename,
 		ULONG mode
 	)
 {
@@ -460,7 +460,7 @@ struct AfsHandle *openfile
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
-		STRPTR name,
+		CONST_STRPTR name,
 		ULONG mode,
 		ULONG protection
 	)
@@ -952,7 +952,8 @@ BOOL extensionModified = FALSE;
 			ah->current.byte = 0;
 			ah->current.filekey--;
 		}
-		CopyMem((APTR)((char *)buffer+writtenbytes),(APTR)destination,size);
+		if (buffer != NULL)
+			CopyMem((APTR)((char *)buffer+writtenbytes),(APTR)destination,size);
 		if (ah->volume->dosflags == 0)
 		{
 			if (ah->current.byte == 0)
@@ -968,7 +969,8 @@ BOOL extensionModified = FALSE;
 		}
 		else
 			sumoffset = -1;
-		writeBlock(afsbase, ah->volume, databuffer, sumoffset);
+		if (buffer != NULL || ah->volume->dosflags == 0)
+			writeBlock(afsbase, ah->volume, databuffer, sumoffset);
 		length -= size;
 		writtenbytes += size;
 	}
@@ -1107,5 +1109,95 @@ struct BlockCache *blockbuffer;
 		}
 	}
 	return old;
+}
+
+LONG setFileSize
+	(struct AFSBase* afsbase, struct AfsHandle *ah, LONG size, LONG mode)
+{
+LONG pos = -1, extra, savederror, newsize;
+struct BlockCache *headerblock;
+struct DateStamp ds;
+struct AfsHandle *ah2;
+
+	if (0 == checkValid(afsbase, ah->volume))
+	{
+		error = ERROR_DISK_WRITE_PROTECTED;
+		return -1;
+	}
+
+	/* Get absolute new length */
+	D(bug("[afs] setfilesize(%ld,%ld,%ld)\n", ah->header_block, size, mode));
+	error = ERROR_SEEK_ERROR;
+	if (mode == OFFSET_BEGINNING)
+	{
+		newsize = 0;
+	}
+	else if (mode == OFFSET_CURRENT)
+	{
+		newsize = ah->current.offset;
+	}
+	else if (mode == OFFSET_END)
+	{
+		newsize = ah->filesize;
+	}
+	else
+		return -1;
+
+	/* Ensure new length isn't negative */
+	if (-size > newsize)
+	{
+		return -1;
+	}
+	newsize += size;
+
+	/* Ensure there aren't any other filehandles positioned after the new
+	   length */
+	for (ah2 = ah->volume->locklist; ah2 != NULL; ah2 = ah2->next)
+	{
+			if (ah2 != ah && ah2->header_block == ah->header_block
+				&& ah2->current.offset > newsize)
+				return -1;
+	}
+
+	/* Lengthen or shorten file */
+	pos = ah->current.offset;
+	if (newsize > ah->filesize)
+	{
+		seek(afsbase, ah, 0, OFFSET_END);
+		invalidBitmap(afsbase, ah->volume);
+		extra = writeData(afsbase, ah, NULL, newsize - ah->filesize);
+		validBitmap(afsbase, ah->volume);
+
+		/* Revert to original size if we couldn't fully lengthen the file */
+		if (extra < newsize - ah->filesize)
+		{
+			savederror = error;
+			setFileSize(afsbase, ah, ah->filesize, OFFSET_BEGINNING);
+			error = savederror;
+			return -1;
+		}
+	}
+	else
+	{
+		seek(afsbase, ah, newsize, OFFSET_BEGINNING);
+		deleteFileRemainder(afsbase, ah);
+		if (pos < newsize);
+			pos = newsize;
+	}
+	error = 0;
+
+	/* Update metadata */
+	headerblock = getBlock(afsbase, ah->volume, ah->header_block);
+	if (headerblock != NULL)
+	{
+		ah->filesize = newsize;
+		headerblock->buffer[BLK_BYTE_SIZE(ah->volume)] =
+			OS_LONG2BE(ah->filesize);
+		DateStamp(&ds);
+		setHeaderDate(afsbase, ah->volume, headerblock, &ds);
+	}
+	seek(afsbase, ah, pos, OFFSET_BEGINNING);
+
+	return newsize;
 }
 
