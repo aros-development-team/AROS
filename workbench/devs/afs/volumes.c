@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -121,7 +121,7 @@ struct Volume *initVolume
 	(
 		struct AFSBase *afsbase,
 		struct Device *device,
-		STRPTR blockdevice,
+		CONST_STRPTR blockdevice,
 		ULONG unit,
 		struct DosEnvec *devicedef,
 		ULONG *error

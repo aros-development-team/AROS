@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -189,8 +189,13 @@ LONG retval;
 								);
 							break;
 						case FSA_SET_FILE_SIZE :
-							D(bug("[afs] set file size nsy\n"));
-							error=ERROR_ACTION_NOT_KNOWN;
+							iofs->io_Union.io_SEEK.io_Offset = setFileSize
+								(
+									afsbase,
+									afshandle,
+									iofs->io_Union.io_SEEK.io_Offset,
+									iofs->io_Union.io_SEEK.io_SeekMode
+								);
 							break;
 						case FSA_FILE_MODE :
 							D(bug("[afs] set file mode nsy\n"));

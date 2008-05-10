@@ -2,12 +2,12 @@
 #define HASHING_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include "os.h"
 
-ULONG getHashKey(STRPTR, ULONG, UBYTE);
+ULONG getHashKey(CONST_STRPTR, ULONG, UBYTE);
 
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 /*
@@ -74,7 +74,7 @@ ULONG setDate
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
-		STRPTR name,
+		CONST_STRPTR name,
 		struct DateStamp *ds
 	)
 {
@@ -103,7 +103,7 @@ ULONG setProtect
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
-		STRPTR name,
+		CONST_STRPTR name,
 		ULONG mask
 	)
 {
@@ -129,7 +129,8 @@ struct BlockCache *blockbuffer;
  Output: 0 for success; error code otherwise
 *********************************************/
 ULONG setComment
-	(struct AFSBase *afsbase, struct AfsHandle *ah, STRPTR name, STRPTR comment)
+	(struct AFSBase *afsbase, struct AfsHandle *ah, CONST_STRPTR name,
+	CONST_STRPTR comment)
 {
 ULONG block;
 struct BlockCache *blockbuffer;
@@ -198,7 +199,9 @@ ULONG key;
          name    - name of object to delete
  Output: 0 for success; error code otherwise
 *********************************************/
-ULONG deleteObject(struct AFSBase *afsbase, struct AfsHandle *ah, STRPTR name) {
+ULONG deleteObject(struct AFSBase *afsbase, struct AfsHandle *ah,
+	CONST_STRPTR name)
+{
 ULONG lastblock,key;
 struct BlockCache *blockbuffer, *priorbuffer;
 
@@ -299,6 +302,66 @@ struct BlockCache *blockbuffer, *priorbuffer;
 }
 
 /********************************************
+ Name  : deleteFileRemainder
+ Descr.: delete all data blocks in a file after the current position
+ Input : ah      - filehandle to delete from
+ Output: 0 for success; error code otherwise
+*********************************************/
+ULONG deleteFileRemainder(struct AFSBase *afsbase, struct AfsHandle *ah)
+{
+ULONG lastblock, key;
+struct BlockCache *blockbuffer;
+
+	invalidBitmap(afsbase, ah->volume);
+
+	blockbuffer = getBlock(afsbase, ah->volume, ah->current.block);
+	blockbuffer->flags |= BCF_USED;
+
+	/* Start with the first block that will be wholly unused afterwards */
+	key = ah->current.filekey;
+	if (ah->current.byte != 0)
+		key--;
+
+	while (TRUE)
+	{
+		D(bug("[afs]   extensionblock=%lu\n", blockbuffer->blocknum));
+		while (key >= BLK_TABLE_START && blockbuffer->buffer[key] != 0)
+		{
+			markBlock(afsbase, ah->volume,
+				OS_BE2LONG(blockbuffer->buffer[key]), -1);
+			key--;
+		}
+		if (blockbuffer->buffer[BLK_EXTENSION(ah->volume)] == 0)
+			break;
+		/* get next extensionblock */
+		blockbuffer->flags &= ~BCF_USED;
+		blockbuffer = getBlock
+			(
+				afsbase,
+				ah->volume,
+				OS_BE2LONG(blockbuffer->buffer[BLK_EXTENSION(ah->volume)])
+			);
+		if (blockbuffer == NULL)
+		{
+			return ERROR_UNKNOWN;
+		}
+		if (calcChkSum(ah->volume->SizeBlock, blockbuffer->buffer))
+		{
+			if (showError(afsbase, ERR_CHECKSUM))
+				launchValidator(afsbase, ah->volume);
+			return ERROR_UNKNOWN;
+		}
+		blockbuffer->flags |= BCF_USED;
+		markBlock(afsbase, ah->volume, blockbuffer->blocknum, -1);
+		key = BLK_TABLE_END(ah->volume);
+	}
+
+	validBitmap(afsbase, ah->volume);
+	blockbuffer->flags &= ~BCF_USED;
+	return 0;
+}
+
+/********************************************
  Name  : linkNewBlock
  Descr.: links a new entry into a directorylist
  Input : dir  - directory to link in
@@ -376,12 +439,12 @@ struct BlockCache *getDirBlockBuffer
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *ah,
-		STRPTR name,
+		CONST_STRPTR name,
 		STRPTR entryname
 	)
 {
 ULONG block,len;
-STRPTR end;
+CONST_STRPTR end;
 UBYTE buffer[256];
 
 	end = PathPart(name);
@@ -407,8 +470,8 @@ ULONG renameObject
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
-		STRPTR oname,
-		STRPTR newname
+		CONST_STRPTR oname,
+		CONST_STRPTR newname
 	)
 {
 struct BlockCache *lastlink,*oldfile, *dirblock;
@@ -569,7 +632,7 @@ struct BlockCache *createNewEntry
 	struct AFSBase *afsbase,
 		struct Volume *volume,
 		ULONG entrytype,
-		STRPTR entryname,
+		CONST_STRPTR entryname,
 		struct BlockCache *dirblock,
 		ULONG protection
 	)
@@ -665,7 +728,7 @@ struct AfsHandle *createDir
 	(
 		struct AFSBase *afsbase,
 		struct AfsHandle *dirah,
-		STRPTR filename,
+		CONST_STRPTR filename,
 		ULONG protection
 	)
 {

@@ -2,7 +2,7 @@
 #define VOLUMES_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -48,7 +48,8 @@ struct Volume {
 #define VOLF_TRACKDISK    (1 <<  8)
 
 BOOL mediumPresent(struct IOHandle *);
-struct Volume *initVolume(struct AFSBase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
+struct Volume *initVolume(struct AFSBase *, struct Device *, CONST_STRPTR,
+	ULONG, struct DosEnvec *, ULONG *);
 void uninitVolume(struct AFSBase *, struct Volume *);
 LONG newMedium(struct AFSBase *, struct Volume *);
 
