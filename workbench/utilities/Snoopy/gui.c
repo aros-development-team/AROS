@@ -16,7 +16,7 @@
 #include "patches.h"
 #include "locale.h"
 
-#define VERSION "$VER: Snoopy 0.8 (02.05.2008) © 2006-2008 The AROS Dev Team"
+#define VERSION "$VER: Snoopy 0.9 (10.05.2008) © 2006-2008 The AROS Dev Team"
 
 static Object *app, *window, *saveBtn, *openBtn, *useBtn, *undoBtn, *resetBtn, *cancelBtn;
 static Object *failCM, *cliCM, *pathCM, *devCM, *ignoreCM, *breakPointCM, *patternStr;
@@ -285,8 +285,7 @@ void gui_init(void)
 
     if ( ! app)
     {
-	D(bug("Cant create application\n"));
-	return;
+	clean_exit("Can't create application\n");
     }
     
     // disable unavailable functions
