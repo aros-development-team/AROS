@@ -60,6 +60,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
+#include <aros/debug.h>
 
 const TEXT version[] = "$VER: MakeLink 41.1 (2.6.2000)\n";
 
@@ -72,6 +73,9 @@ int main(void)
     int  retval = RETURN_FAIL;
     IPTR args[] = { NULL, NULL, (IPTR)FALSE, (IPTR)FALSE };
     struct RDArgs *rda;
+    UBYTE *buffer;
+    int bufferincrease = 256;
+    int buffersize = bufferincrease;
 	
     rda = ReadArgs("FROM/A,TO/A,HARD/S,FORCE/S", args, NULL);
     
@@ -89,25 +93,58 @@ int main(void)
 	    {
 		if(Examine(lock, fib) == DOSTRUE)
 		{
-		    /* Directories may only be hard-linked to if FORCE is
-		       specified */
-		    if(fib->fib_DirEntryType >= 0 &&
-		       !(BOOL)args[ARG_FORCE] && (BOOL)args[ARG_HARD])
-		    {
-			PutStr("Hard-links to directories require the FORCE"
-			       "keyword\n");
-		    }
-		    else
-		    {
-			/* Check loops? */
-			if(MakeLink((STRPTR)args[ARG_FROM],
-				    (BOOL)args[ARG_HARD] ? lock :
-				    (STRPTR)args[ARG_TO],
-				    !(BOOL)args[ARG_HARD]) == DOSTRUE)
-			    retval = RETURN_OK;
-			else
-			    PrintFault(IoErr(), "MakeLink");
-		    }
+	    	if(args[ARG_HARD])
+	    	{
+			    /* Directories may only be hard-linked to if FORCE is
+			       specified */
+			    if(fib->fib_DirEntryType >= 0 && !(BOOL)args[ARG_FORCE])
+			    {
+			    	PutStr("Hard-links to directories require the FORCE"
+				       "keyword\n");
+			    }
+			    else
+		    		/* Check loops? */
+					if(MakeLink((STRPTR)args[ARG_FROM],
+						    lock, 
+						    FALSE) == DOSTRUE)
+					    retval = RETURN_OK;
+					else
+					    PrintFault(IoErr(), "MakeLink");
+	    	}
+	    	else
+	    	{
+				do
+				{
+					if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
+			        {
+						SetIoErr(ERROR_NO_FREE_STORE);
+						PrintFault(IoErr(), "MakeLink");
+			            break;
+			        }
+					
+		    		/* Get the full path of oldpath */
+			    	if(NameFromLock(lock, buffer, buffersize))
+			    	{
+						if(MakeLink((STRPTR)args[ARG_FROM],
+							    (STRPTR)buffer,
+							    TRUE) == DOSTRUE)
+						    retval = RETURN_OK;
+						else
+						{
+							PrintFault(IoErr(), "MakeLink");
+							break;
+						}
+			    	}
+			    	else if(IoErr() != ERROR_LINE_TOO_LONG)
+					{
+						PrintFault(IoErr(), "MakeLink");
+						break;
+					}
+			    	FreeVec(buffer);
+			    	buffersize += bufferincrease;
+				}
+				while(retval != RETURN_OK);		    		
+	    	}
 		}   
 		
 		FreeDosObject(DOS_FIB, fib);
