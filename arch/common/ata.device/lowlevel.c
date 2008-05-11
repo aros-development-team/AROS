@@ -50,12 +50,12 @@
 
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
-#define DIRQ(a)
-#define DIRQ_MORE(a)
-#define DUMP(a) 
-#define DATA(a)
-#define DATAPI(a) 
-#define DINIT(a)
+#define DIRQ(a) D(a)
+#define DIRQ_MORE(a) D(a)
+#define DUMP(a) D(a)
+#define DATA(a) D(a)
+#define DATAPI(a) D(a)
+#define DINIT(a) D(a)
 
 #include <aros/debug.h>
 #include <exec/types.h>
@@ -2166,31 +2166,37 @@ ULONG ata_ReadSignature(struct ata_Bus *bus)
     tmp2 = ata_in(ata_LBALow, port);
     DINIT(bug("[ATA  ] Checking Count / LBA against expected values (%d:%d)\n", tmp1, tmp2));
 
+    DINIT(bug("[ATA  ] Status %08lx Device %08lx\n", ata_in(ata_Status, port), ata_in(ata_DevHead, port)));
+
     if ((tmp1 == 0x01) && (tmp2 == 0x01))
     {
         /* Ok, ATA/ATAPI device. Get detailed signature */
-        DINIT(bug("[ATA  ] Found an ATA[PI] Device[0]. Attempting to detect specific subtype\n"));
+        DINIT(bug("[ATA  ] Found an ATA[PI] Device. Attempting to detect specific subtype\n"));
 
         tmp1 = ata_in(ata_LBAMid, port);
         tmp2 = ata_in(ata_LBAHigh, port);
         
-        DINIT(bug("[ATA  ] Subtype check returned %02lx:%02lx\n", tmp1, tmp2));
+        DINIT(bug("[ATA  ] Subtype check returned %02lx:%02lx (%04lx)\n", tmp1, tmp2, (tmp1 << 8) | tmp2));
+
     
-        switch ((tmp1 << 8) | (tmp2))
+        switch ((tmp1 << 8) | tmp2)
         {
+            case 0x0000:
+                if (0 == (ata_ReadStatus(bus) & 0xfe))
+                    return DEV_NONE;
+                DINIT(bug("[ATA  ] Found signature for ATA device\n"));
+                return DEV_ATA;
+
             case 0x14eb:
+                DINIT(bug("[ATA  ] Found signature for ATAPI device\n"));
                 return DEV_ATAPI;
 
-            case 0x0000:
-                if (ata_ReadStatus(bus) & 0xfe)
-                    return DEV_ATA;
-                DINIT(bug("[ATA  ] Signature valid, but no real drive connected\n"));
-                return DEV_NONE;
-
             case 0x3cc3:
+                DINIT(bug("[ATA  ] Found signature for SATA device\n"));
                 return DEV_SATA;
 
             case 0x6996:
+                DINIT(bug("[ATA  ] Found signature for SATAPI device\n"));
                 return DEV_SATAPI;
 
             default:
@@ -2229,6 +2235,9 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         ata_out(0x02, ata_AltControl, alt);
         ata_usleep(tr, 2000);               /* minimum required: 2ms */
 
+        ata_out(0xa0, ata_DevHead, port);
+        ata_400ns();
+
         while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
             ata_usleep(tr, 200);
 
@@ -2244,6 +2253,9 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         ata_usleep(tr, 10);                /* minimum required: 5us */
         ata_out(0x02, ata_AltControl, alt);
         ata_usleep(tr, 2000);               /* minimum required: 2ms */
+
+        ata_out(0xb0, ata_DevHead, port);
+        ata_400ns();
 
         while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
             ata_usleep(tr, 200);
