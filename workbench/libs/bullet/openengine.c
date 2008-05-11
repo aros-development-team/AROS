@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bullet function OpenEngine()
@@ -35,6 +35,9 @@
     SEE ALSO
 
     INTERNALS
+
+    This interface is implemented in freetype2.library. 
+    See /workbench/libs/freetype/src/aros.
 
     HISTORY
 
