@@ -22,7 +22,14 @@
 #define AROS_PTRALIGN		   4 /* Alignment for PTR */
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
-#define AROS_WORSTALIGN 	   8 /* Worst case alignment */
+#define AROS_WORSTALIGN 	  16 /* Worst case alignment */
+
+/*
+ * PowerPC note:
+ * Some (or maybe even all) PowerPC machines expect the stack to be aligned on 16-byte boundary.
+ * This is the reason number one for AROS_WORSTALIGN=16. The second reason is, the 440 CPU will 
+ * generate an alignment exception if floating point data *crosses* the 16-byte boundary.
+ */
 
 #define AROS_32BIT_TYPE         int
 
