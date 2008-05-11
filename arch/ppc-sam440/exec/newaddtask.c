@@ -143,6 +143,14 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
         task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
 #endif
 
+    if ((IPTR)task->tc_SPReg & 0xf)
+    {
+	bug("[exec] NewAddTask with unaligned stack pointer! fixing %08x->%08x\n",
+	    task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0);
+	
+	task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
+    }
+
 #ifdef STACKSNOOP
     {
         UBYTE *startfill, *endfill;
