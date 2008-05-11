@@ -232,7 +232,7 @@ extern void _aros_not_implemented (char *);
 	"mr     5,%5\n\t"    \
 	"stw    1,%1\n\t"    \
 	"mflr   0\n\t"       \
-	"stwu   1,-12(1)\n\t" \
+	"stwu   1,-16(1)\n\t" \
 	"stw    0,8(1)\n\t" \
 	"mr     0,%2\n\t"    \
 	"mtlr   0\n\t"       \
