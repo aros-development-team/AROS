@@ -1,4 +1,5 @@
-$Id: mmakefile 28549 2008-04-29 11:15:02Z NicJA $
+# $Id: mmakefile 28549 2008-04-29 11:15:02Z NicJA $
+include $(TOP)/config/make.cfg
 
 #
 # Rule's to create Kernel drivers for pc-i386
@@ -29,5 +30,3 @@ $Id: mmakefile 28549 2008-04-29 11:15:02Z NicJA $
 #MM    hidd-vmwaresvga \
 #MM    hidd-nvidia \
 #MM    hidd-radeon
-
-
