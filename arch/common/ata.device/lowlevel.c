@@ -2171,7 +2171,6 @@ ULONG ata_ReadSignature(struct ata_Bus *bus)
         /* Ok, ATA/ATAPI device. Get detailed signature */
         DINIT(bug("[ATA  ] Found an ATA[PI] Device[0]. Attempting to detect specific subtype\n"));
 
-        bus->ab_Dev[0] = DEV_UNKNOWN;
         tmp1 = ata_in(ata_LBAMid, port);
         tmp2 = ata_in(ata_LBAHigh, port);
         
@@ -2183,7 +2182,10 @@ ULONG ata_ReadSignature(struct ata_Bus *bus)
                 return DEV_ATAPI;
 
             case 0x0000:
-                return DEV_ATA;
+                if (ata_ReadStatus(bus) & 0xfe)
+                    return DEV_ATA;
+                DINIT(bug("[ATA  ] Signature valid, but no real drive connected\n"));
+                return DEV_NONE;
 
             case 0x3cc3:
                 return DEV_SATA;
@@ -2195,7 +2197,11 @@ ULONG ata_ReadSignature(struct ata_Bus *bus)
                 if (((tmp1 | tmp2) == 0xff) &&
                     ((tmp1 & tmp2) == 0x00))
                 {
-                    bug("[ATA  ] Found valib subtype, but don't know how to handle this device: %02lx %02lx\n", tmp1, tmp2);
+                    bug("[ATA  ] Found valid subtype, but don't know how to handle this device: %02lx %02lx\n", tmp1, tmp2);
+                }
+                else
+                {
+                    bug("[ATA  ] Invalid signature: %02lx %02lx\n", tmp1, tmp2);
                 }
                 return DEV_NONE;
         }
