@@ -41,80 +41,124 @@
     else will even touch PRD. It should be however truth, as for given bus all
     ATA accesses are protected with a semaphore.
 */
-VOID dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
+LONG dma_Setup(APTR adr, ULONG len, BOOL read, struct PRDEntry* array)
 {
-   dma_SetupPRDSize(unit, buffer, sectors << unit->au_SectorShift, io);
+    ULONG tmp = 0, rem = 0;
+    ULONG flg = read ? DMA_ReadFromRAM : 0;
+    IPTR phy_mem;
+    LONG items = 0;
+
+    /*
+     * in future you may have to put this in prd construction procedure
+     */
+    while (0 < len)
+    {
+        tmp = len;
+        phy_mem = (IPTR)CachePreDMA(adr, &tmp, flg);
+
+        D(bug("[ATA  ] DMA: Translating V:%08lx > P:%08lx (%ld bytes)\n", adr, phy_mem, tmp));
+        /*
+         * update all addresses for the next call
+         */
+        adr = &((UBYTE*)adr)[tmp];
+        len -= tmp;
+        flg |= DMA_Continue;
+
+        /* 
+         * check if we're crossing the magic 64k boundary:
+         */
+        while (0 < tmp)
+        {
+            /*
+             * politely say what sucks
+             */
+            if (phy_mem > 0xffffffffull)
+            {
+                bug("[ATA  ] DMA ERROR: ATA DMA POINTERS BEYOND MAXIMUM ALLOWED ADDRESS!\n");
+                return 0;
+            }
+            if (items > PRD_MAX)
+            {
+                bug("[ATA  ] DMA ERROR: ATA DMA PRD TABLE SIZE TOO LARGE\n");
+                return 0;
+            }
+
+            /*
+             * calculate remainder and see if it is larger of the current memory block.
+             * if smaller, adjust its size.
+             */
+            rem = 0x10000 - (phy_mem & 0xffff);
+            if (rem > tmp)
+                rem = tmp;
+            /*
+             * update PRD with address and remainder
+             */
+            D(bug("[ATA  ] DMA: Inserting into PRD Table: %08lx / %ld @ %08lx\n", phy_mem, rem, array));
+            array->prde_Address = AROS_LONG2LE(phy_mem);
+            array->prde_Length  = AROS_LONG2LE((rem & 0xffff));
+            ++array;
+            ++items;
+
+            /*
+             * update locals ;-)
+             */
+            phy_mem += rem;
+            tmp -= rem;
+        }
+    }
+
+    if (items > 0)
+    {
+        --array;
+        array->prde_Length |= AROS_LONG2LE(PRDE_EOT);
+    }
+    D(bug("[ATA  ] DMA: PRD Table set - %ld items in total.\n", items));
+    /*
+     * PRD table all set.
+     */
+    return items;
 }
 
-VOID dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL io)
+
+BOOL dma_SetupPRD(struct ata_Unit *unit, APTR buffer, ULONG sectors, BOOL io)
 {
-    struct PRDEntry *prd = unit->au_Bus->ab_PRD;
-    IPTR ptr = (IPTR)buffer;
-    int i;
+   return dma_SetupPRDSize(unit, buffer, sectors << unit->au_SectorShift, io);
+}
 
-    D(bug("[DMA] Setup PRD for %d bytes at %x\n",
-	size, ptr));
+BOOL dma_SetupPRDSize(struct ata_Unit *unit, APTR buffer, ULONG size, BOOL read)
+{
+    LONG items = 0;
+    D(bug("[DMA] Setup PRD for %08lx/%ld bytes at %x for %s\n", buffer, size, unit->au_Bus->ab_PRD, read ? "read" : "write"));
+    items = dma_Setup(buffer, size, read, unit->au_Bus->ab_PRD);
 
-    /* 
-	The first PRD address is the buffer pointer self, doesn't have to be 
-	aligned to 64K boundary
-    */
-    prd[0].prde_Address = AROS_LONG2LE(ptr);
+    if (0 == items)
+        return FALSE;
 
-    /*
-	All other PRD addresses are the next 64K pages, until the page address
-	is bigger as the highest address used
-    */
-    for (i=1; i < PRD_MAX; i++)
-    {
-	prd[i].prde_Address = AROS_LONG2LE((AROS_LE2LONG(prd[i-1].prde_Address) & 0xffff0000) + 0x00010000);
-	prd[i].prde_Length = 0;
-	if (AROS_LE2LONG(prd[i].prde_Address) > ptr + size)
-	    break;
-    }
-
-    if (size <= AROS_LE2LONG(prd[1].prde_Address) - AROS_LE2LONG(prd[0].prde_Address))
-    {
-	prd[0].prde_Length = AROS_LONG2LE(size);
-	size = 0;
-    }
-    else
-    {
-	prd[0].prde_Length = AROS_LONG2LE(AROS_LE2LONG(prd[1].prde_Address) - AROS_LE2LONG(prd[0].prde_Address));
-	size -= AROS_LE2LONG(prd[0].prde_Length);
-    }
+    CacheClearE(unit->au_Bus->ab_PRD, items * sizeof(struct PRDEntry), CACRF_ClearD);
     
-    prd[0].prde_Length &= AROS_LONG2LE(0x0000ffff);
-
-    i = 1;
-
-    while(size >= 65536)
-    {
-	prd[i].prde_Length = 0;	    /* 64KB in one PRD */
-	size -= 65536;
-	i++;
-    }
-
-    if (size > 0)
-    {
-	prd[i].prde_Length = AROS_LONG2LE(size);
-	i++;
-    }
-
-    prd[i-1].prde_Length |= AROS_LONG2LE(0x80000000);
-
-    CacheClearE(&prd[0], (i) * sizeof(struct PRDEntry), CACRF_ClearD);
-    
-    ata_outl((ULONG)prd, dma_PRD, unit->au_DMAPort);
+    ata_outl((ULONG)unit->au_Bus->ab_PRD, dma_PRD, unit->au_DMAPort);
     ata_out(ata_in(dma_Status, unit->au_DMAPort) | DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
     
-    /*
-	If io set to TRUE, then sectors are read, when set to FALSE, they are written
-    */
-    if (io)
-	ata_out(DMA_WRITE, dma_Command, unit->au_DMAPort);
+    if (read)
+        ata_out(DMA_WRITE, dma_Command, unit->au_DMAPort); /* inverse logic */
     else
-	ata_out(DMA_READ, dma_Command, unit->au_DMAPort);
+        ata_out(DMA_READ, dma_Command, unit->au_DMAPort);
+    return TRUE;
+}
+
+VOID dma_Cleanup(APTR adr, ULONG len, BOOL read)
+{
+    ULONG tmp = 0;
+    ULONG flg = read ? DMA_ReadFromRAM : 0;
+
+    while (len > 0)
+    {
+        tmp = len;
+        CachePostDMA(adr, &tmp, flg);
+        adr = &((UBYTE*)adr)[tmp];
+        len -= tmp;
+        flg |= DMA_Continue;
+    }
 }
 
 VOID dma_StartDMA(struct ata_Unit *unit)

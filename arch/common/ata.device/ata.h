@@ -2,11 +2,11 @@
 #define _ATA_H
 
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved
-    $Id$
+   Copyright © 2004-2007, The AROS Development Team. All rights reserved
+   $Id$
 
-    Desc: ata.device main private include file
-    Lang: English
+Desc: ata.device main private include file
+Lang: English
 */
 /*
  * CHANGELOG:
@@ -28,6 +28,8 @@
  *                                 they use pci_inb and pci_outb.
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
+ * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
+ *                                 medium removal, device detection, bus management and much more
  */
 
 #include <exec/types.h>
@@ -57,15 +59,15 @@
 #define TASK_PRI    10
 
 /*
-    Don't blame me for information redundance here!
+   Don't blame me for information redundance here!
 
-    Please note, that all structures here are more or less chained together.
-    The aim is, every single function in ata.device, no matter whether it takes
-    ata_Unit or ata_Bus or God knows what else, would have access to ata device
-    base and through it, to all other device structures.
+   Please note, that all structures here are more or less chained together.
+   The aim is, every single function in ata.device, no matter whether it takes
+   ata_Unit or ata_Bus or God knows what else, would have access to ata device
+   base and through it, to all other device structures.
 
-    I just wanted to avoid passing ataBase everywhere. :-D
-*/
+   I just wanted to avoid passing ataBase everywhere. :-D
+   */
 
 /* structure forward declarations */
 struct ata_Unit;
@@ -75,71 +77,72 @@ struct ata_Bus;
  * this **might** cause problems with PPC64, which **might** expect both to be 64bit.
  */
 struct PRDEntry {
-    ULONG   prde_Address;
-    ULONG   prde_Length;
+   ULONG   prde_Address;
+   ULONG   prde_Length;
 };
 
-#define PRDE_EOT    0x8000
+#define PRDE_EOT    0x80000000
 #define PRD_MAX     514
 
 /* ata.device base */
 struct ataBase 
 {
-    /*
-     * Device structure - used to manage devices by exec guts^h^h^hoods
-     */ 
-    struct Device           ata_Device;
-    
-    /*
-     * master task pointer
-     */
-    struct Task            *ata_Daemon;
+   /*
+    * Device structure - used to manage devices by exec guts^h^h^hoods
+    */ 
+   struct Device           ata_Device;
 
-    /*
-     * list of all buses - we may have more than just 4
-     */
-    struct MinList          ata_Buses;
+   /*
+    * master task pointer
+    */
+   struct Task            *ata_Daemon;
 
-    /*
-     * flags
-     */
-    UBYTE                   ata_32bit;
-    UBYTE                   ata_NoDMA;
+   /*
+    * list of all buses - we may have more than just 4
+    */
+   struct MinList          ata_Buses;
 
-    /*
-     * memory pool
-     */
-    APTR                    ata_MemPool;
+   /*
+    * flags
+    */
+   UBYTE                   ata_32bit;
+   UBYTE                   ata_NoDMA;
+
+   /*
+    * memory pool
+    */
+   APTR                    ata_MemPool;
 };
 
 /*
-    The single IDE bus (channel)
-*/
+   The single IDE bus (channel)
+   */
 struct ata_Bus 
 {
-    struct MinNode          ab_Node;    /* exec node */
-    struct ataBase          *ab_Base;   /* device self */
-    struct SignalSemaphore  ab_Lock;    /* Semaphore locking IO access */
+   struct MinNode          ab_Node;    /* exec node */
+   struct ataBase          *ab_Base;   /* device self */
+   ULONG                   ab_Port;    /* IO port used */
+   ULONG                   ab_Alt;     /* alternate io port */
+   UBYTE                   ab_Irq;     /* IRQ used */
+   UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
+   UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
+   BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
+   /* for data requests/DMA */
+   UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
+   BOOL                    ab_IRQ;     /* set if IRQ is enabled */
+   LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
-    ULONG                   ab_Port;    /* IO port used */
-    ULONG                   ab_Alt;     /* alternate io port */
-    UBYTE                   ab_Irq;     /* IRQ used */
-    UBYTE                   ab_Dev[2];  /* Master/Slave type, see below */
-    UBYTE                   ab_Flags;   /* Bus flags similar to unit flags */
-    BYTE                    ab_SleepySignal; /* Signal used to wake the task up, when it's waiting */
-                                             /* for data requests/DMA */
-    UBYTE                   ab_BusNum;  /* bus id - used to calculate device id */
-    BOOL                    ab_Waiting;
-    LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
+   struct ata_Unit         *ab_Units[MAX_UNIT];    /* Units on the bus */
 
-    struct ata_Unit         *ab_Units[MAX_UNIT];    /* Units on the bus */
+   HIDDT_IRQ_Handler       *ab_IntHandler;
+   ULONG                   ab_IntCnt;
 
-    HIDDT_IRQ_Handler       *ab_IntHandler;
-    ULONG                   ab_IntCnt;
+   struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
+   struct MsgPort          *ab_MsgPort;    /* Task's message port */
+   struct PRDEntry         *ab_PRD;
 
-    struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */
-    struct MsgPort          *ab_MsgPort;    /* Task's message port */
-    struct PRDEntry         *ab_PRD;
+   /* functions go here */
+   void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
 };
 
 /* Device types */
@@ -151,74 +154,74 @@ struct ata_Bus
 #define DEV_SATAPI      0x81
 
 /*
-    DriveIdent structure as returned by ATA_IDENTIFY_[DEVICE|ATAPI]
-*/
+   DriveIdent structure as returned by ATA_IDENTIFY_[DEVICE|ATAPI]
+   */
 struct DriveIdent {
-    UWORD       id_General;             // 0
-    UWORD       id_OldCylinders;        // 1
-    UWORD       id_SpecificConfig;      // 2
-    UWORD       id_OldHeads;            // 3
-    UWORD       pad1[2];                // 4-5
-    UWORD       id_OldSectors;          // 6
-    UWORD       pad2[3];                // 7-9
-    UBYTE       id_SerialNumber[20];    // 10-19
-    UWORD       pad3[3];                // 20-22
-    UBYTE       id_FirmwareRev[8];      // 23-26
-    UBYTE       id_Model[40];           // 27-46
-    UWORD       id_RWMultipleSize;      // 47
-    UWORD       pad4;                   // 48
-    UWORD       id_Capabilities;        // 49
-    UWORD       id_OldCaps;             // 50
-    UWORD       id_OldPIO;              // 51
-    UWORD       pad5;                   // 52
-    UWORD       id_ConfigAvailable;     // 53
-    UWORD       id_OldLCylinders;       // 54
-    UWORD       id_OldLHeads;           // 55
-    UWORD       id_OldLSectors;         // 56
-    UWORD       pad6[2];                // 57-58
-    UWORD       id_RWMultipleTrans;     // 59
-    ULONG       id_LBASectors;          // 60-61
-    UWORD       pad7;                   // 62
-    UWORD       id_MWDMASupport;        // 63
-    UWORD       id_PIOSupport;          // 64
-    UWORD       id_MWDMA_MinCycleTime;  // 65
-    UWORD       id_MWDMA_DefCycleTime;  // 66
-    UWORD       id_PIO_MinCycleTime;    // 67
-    UWORD       id_PIO_MinCycleTImeIORDY; // 68
-    UWORD       pad8[6];                // 69-74
-    UWORD       id_QueueDepth;          // 75
-    UWORD       pad9[4];                // 76-79
-    UWORD       id_ATAVersion;          // 80
-    UWORD       id_ATARevision;         // 81
-    UWORD       id_Commands1;           // 82
-    UWORD       id_Commands2;           // 83
-    UWORD       id_Commands3;           // 84
-    UWORD       id_Commands4;           // 85
-    UWORD       id_Commands5;           // 86
-    UWORD       id_Commands6;           // 87
-    UWORD       id_UDMASupport;         // 88
-    UWORD       id_SecurityEraseTime;   // 89
-    UWORD       id_EnchSecurityEraseTime; // 90
-    UWORD       id_CurrentAdvowerMode;  // 91
-    UWORD       id_MasterPwdRevision;   // 92
-    UWORD       id_HWResetResult;       // 93
-    UWORD       id_AcousticManagement;  // 94
-    UWORD       id_StreamMinimunReqSize; // 95
-    UWORD       id_StreamingTimeDMA;    // 96
-    UWORD       id_StreamingLatency;    // 97
-    ULONG       id_StreamingGranularity; // 98-99
-    UQUAD       id_LBA48Sectors;        // 100-103
-    UWORD       id_StreamingTimePIO;    // 104
-    UWORD       pad10;                  // 105
-    UWORD       id_PhysSectorSize;      // 106
-    UWORD       pad11;                  // 107
-    UQUAD       id_UniqueIDi[2];        // 108-115
-    UWORD       pad12;                  // 116
-    ULONG       id_WordsPerLogicalSector; // 117-118
-    UWORD       pad13[8];               // 119-126
-    UWORD       id_RemMediaStatusNotificationFeatures; // 127
-    UWORD       id_SecurityStatus;      // 128
-    UWORD       pad14[127];
+   UWORD       id_General;             // 0
+   UWORD       id_OldCylinders;        // 1
+   UWORD       id_SpecificConfig;      // 2
+   UWORD       id_OldHeads;            // 3
+   UWORD       pad1[2];                // 4-5
+   UWORD       id_OldSectors;          // 6
+   UWORD       pad2[3];                // 7-9
+   UBYTE       id_SerialNumber[20];    // 10-19
+   UWORD       pad3[3];                // 20-22
+   UBYTE       id_FirmwareRev[8];      // 23-26
+   UBYTE       id_Model[40];           // 27-46
+   UWORD       id_RWMultipleSize;      // 47
+   UWORD       pad4;                   // 48
+   UWORD       id_Capabilities;        // 49
+   UWORD       id_OldCaps;             // 50
+   UWORD       id_OldPIO;              // 51
+   UWORD       pad5;                   // 52
+   UWORD       id_ConfigAvailable;     // 53
+   UWORD       id_OldLCylinders;       // 54
+   UWORD       id_OldLHeads;           // 55
+   UWORD       id_OldLSectors;         // 56
+   UWORD       pad6[2];                // 57-58
+   UWORD       id_RWMultipleTrans;     // 59
+   ULONG       id_LBASectors;          // 60-61
+   UWORD       pad7;                   // 62
+   UWORD       id_MWDMASupport;        // 63
+   UWORD       id_PIOSupport;          // 64
+   UWORD       id_MWDMA_MinCycleTime;  // 65
+   UWORD       id_MWDMA_DefCycleTime;  // 66
+   UWORD       id_PIO_MinCycleTime;    // 67
+   UWORD       id_PIO_MinCycleTImeIORDY; // 68
+   UWORD       pad8[6];                // 69-74
+   UWORD       id_QueueDepth;          // 75
+   UWORD       pad9[4];                // 76-79
+   UWORD       id_ATAVersion;          // 80
+   UWORD       id_ATARevision;         // 81
+   UWORD       id_Commands1;           // 82
+   UWORD       id_Commands2;           // 83
+   UWORD       id_Commands3;           // 84
+   UWORD       id_Commands4;           // 85
+   UWORD       id_Commands5;           // 86
+   UWORD       id_Commands6;           // 87
+   UWORD       id_UDMASupport;         // 88
+   UWORD       id_SecurityEraseTime;   // 89
+   UWORD       id_EnchSecurityEraseTime; // 90
+   UWORD       id_CurrentAdvowerMode;  // 91
+   UWORD       id_MasterPwdRevision;   // 92
+   UWORD       id_HWResetResult;       // 93
+   UWORD       id_AcousticManagement;  // 94
+   UWORD       id_StreamMinimunReqSize; // 95
+   UWORD       id_StreamingTimeDMA;    // 96
+   UWORD       id_StreamingLatency;    // 97
+   ULONG       id_StreamingGranularity; // 98-99
+   UQUAD       id_LBA48Sectors;        // 100-103
+   UWORD       id_StreamingTimePIO;    // 104
+   UWORD       pad10;                  // 105
+   UWORD       id_PhysSectorSize;      // 106
+   UWORD       pad11;                  // 107
+   UQUAD       id_UniqueIDi[2];        // 108-115
+   UWORD       pad12;                  // 116
+   ULONG       id_WordsPerLogicalSector; // 117-118
+   UWORD       pad13[8];               // 119-126
+   UWORD       id_RemMediaStatusNotificationFeatures; // 127
+   UWORD       id_SecurityStatus;      // 128
+   UWORD       pad14[127];
 } __attribute__((packed));
 
 typedef struct
@@ -250,61 +253,65 @@ typedef struct
 } ata_CommandBlock;
 
 /*
-    Unit structure describing given device on the bus. It contains all the
-    necessary information unit/device may need.
-*/
+   Unit structure describing given device on the bus. It contains all the
+   necessary information unit/device may need.
+   */
 struct ata_Unit 
 {
-    struct Unit         au_Unit;   /* exec's unit */
-    struct DriveIdent  *au_Drive;  /* Drive Ident after IDENTIFY command */
-    struct ata_Bus     *au_Bus;    /* Bus on which this unit is */
+   struct Unit         au_Unit;   /* exec's unit */
+   struct DriveIdent  *au_Drive;  /* Drive Ident after IDENTIFY command */
+   struct ata_Bus     *au_Bus;    /* Bus on which this unit is */
 
-    ULONG               au_DMAPort;
-    ULONG               au_XferModes;   /* available transfer modes */
+   ULONG               au_DMAPort;
+   ULONG               au_XferModes;   /* available transfer modes */
 
-    ULONG               au_Capacity;    /* Highest sector accessible through LBA28 */
-    UQUAD               au_Capacity48;  /* Highest sector accessible through LBA48 */
-    ULONG               au_Cylinders;
-    UBYTE               au_Heads;
-    UBYTE               au_Sectors;
-    UBYTE               au_Model[41];
-    UBYTE               au_FirmwareRev[9];
-    UBYTE               au_SerialNumber[21];
+   ULONG               au_Capacity;    /* Highest sector accessible through LBA28 */
+   UQUAD               au_Capacity48;  /* Highest sector accessible through LBA48 */
+   ULONG               au_Cylinders;
+   UBYTE               au_Heads;
+   UBYTE               au_Sectors;
+   UBYTE               au_Model[41];
+   UBYTE               au_FirmwareRev[9];
+   UBYTE               au_SerialNumber[21];
 
-    /*
-        Here are stored pointers to functions responsible for handling this
-        device. They are set during device initialization and point to most
-        effective functions for this particular unit. Read/Write may be done
-        in PIO mode reading single sectors, using PIO with multiword or DMA.
-    */
-    ULONG               (*au_Read32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-    ULONG               (*au_Write32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
-    ULONG               (*au_Read64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-    ULONG               (*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
-    ULONG               (*au_Eject)(struct ata_Unit *);
-    ULONG               (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
-    ULONG               (*au_Identify)(struct ata_Unit *);
+   /*
+      Here are stored pointers to functions responsible for handling this
+      device. They are set during device initialization and point to most
+      effective functions for this particular unit. Read/Write may be done
+      in PIO mode reading single sectors, using PIO with multiword or DMA.
+      */
+   ULONG               (*au_Read32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+   ULONG               (*au_Write32)(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
+   ULONG               (*au_Read64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   ULONG               (*au_Write64)(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
+   ULONG               (*au_Eject)(struct ata_Unit *);
+   ULONG               (*au_DirectSCSI)(struct ata_Unit *, struct SCSICmd*);
+   ULONG               (*au_Identify)(struct ata_Unit *);
 
-    VOID                (*au_ins)(APTR, UWORD, ULONG);
-    VOID                (*au_outs)(APTR, UWORD, ULONG);
-    
-    /* If a HW driver is used with this unit, it may store its data here */
-    APTR                au_DriverData;
-    
-    ULONG               au_UnitNum;     /* Unit number as coded by device */
-    ULONG               au_Flags;       /* Unit flags, see below */
-    ULONG               au_ChangeNum;   /* Number of disc changes */
-    ULONG               au_NumLoop;     /* Maximal busy wait delay for unit */
+   VOID                (*au_ins)(APTR, UWORD, ULONG);
+   VOID                (*au_outs)(APTR, UWORD, ULONG);
 
-    struct Interrupt   *au_RemoveInt;  /* Raise this interrupt on a disc change */
-    struct List         au_SoftList;    /* Raise even more interrupts from this list on disc change */
+   /* If a HW driver is used with this unit, it may store its data here */
+   APTR                au_DriverData;
 
-    UBYTE               au_RDBSector;           /* Geee. Do I really need it? */
-    UBYTE               au_SectorShift;         /* Sector shift. 9 here is 512 bytes sector */
-    UBYTE               au_DevMask;             /* device mask used to simplify device number coding */
-    UBYTE               au_SenseKey;            /* Sense key from ATAPI devices */
-    UBYTE               au_DevType;
-    
+   ULONG               au_UnitNum;     /* Unit number as coded by device */
+   ULONG               au_Flags;       /* Unit flags, see below */
+   ULONG               au_ChangeNum;   /* Number of disc changes */
+   ULONG               au_NumLoop;     /* Maximal busy wait delay for unit */
+
+   struct Interrupt   *au_RemoveInt;  /* Raise this interrupt on a disc change */
+   struct List         au_SoftList;    /* Raise even more interrupts from this list on disc change */
+
+   UBYTE               au_RDBSector;           /* Geee. Do I really need it? */
+   UBYTE               au_SectorShift;         /* Sector shift. 9 here is 512 bytes sector */
+   UBYTE               au_DevMask;             /* device mask used to simplify device number coding */
+   UBYTE               au_SenseKey;            /* Sense key from ATAPI devices */
+   UBYTE               au_DevType;
+
+   /******* PIO IO ********/
+   APTR                au_cmd_data;
+   ULONG               au_cmd_length;
+   ULONG               au_cmd_error;
 };
 
 typedef enum
@@ -354,17 +361,13 @@ typedef enum
 #define AF_XFER_DMA     (1<<(AB_XFER_DMA))
 
 /* Unit internal flags */
-#define AB_DiscPresent          30
-#define AB_DiscPresenceUnknown  29 
-#define AB_Removable            28
-#define AB_Used                 27
-#define AB_SlowDevice           26
+#define AB_DiscPresent          30     /* disc now in drive */
+#define AB_DiscChanged          29     /* disc changed */
+#define AB_Removable            28     /* media removable */
 
 #define AF_DiscPresent          (1 << AB_DiscPresent)
-#define AF_DiscPresenceUnknown  (1 << AB_DiscPresenceUnknown)
+#define AF_DiscChanged          (1 << AB_DiscChanged)
 #define AF_Removable            (1 << AB_Removable)
-#define AF_Used                 (1 << AB_Used)
-#define AF_SlowDevice           (1 << AB_SlowDevice)
 
 /* ATA/ATAPI registers */
 #define ata_Error           1
@@ -412,6 +415,7 @@ typedef enum
 #define ATAF_DATAREQ        0x08
 #define ATAF_ERROR          0x01
 #define ATAF_BUSY           0x80
+#define ATAF_DRDY           0x40
 
 #define ATAPIF_CHECK        0x01
 
@@ -469,9 +473,9 @@ typedef enum
 
 void ata_usleep(struct timerequest *, ULONG);
 void ata_ResetBus(struct timerequest *, struct ata_Bus *);
-void ata_ScanBus(struct ata_Bus *);
+void ata_InitBus(struct ata_Bus *);
 
-int atapi_SendPacket(struct ata_Unit *, APTR, LONG, BOOL*, BOOL);
+int atapi_SendPacket(struct ata_Unit *, APTR, APTR, LONG, BOOL*, BOOL);
 int atapi_TestUnitOK(struct ata_Unit *);
 
 ULONG atapi_Identify(struct ata_Unit*);
@@ -479,16 +483,18 @@ ULONG ata_Identify(struct ata_Unit*);
 
 ULONG atapi_DirectSCSI(struct ata_Unit*, struct SCSICmd *);
 ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen);
+void ata_EnableIRQ(struct ata_Bus *bus, BOOL enable);
 
-int ata_InitBusTask(struct ata_Bus *);
+int ata_InitBusTask(struct ata_Bus *, struct SignalSemaphore*);
 int ata_InitDaemonTask(LIBBASETYPEPTR);
 void ata_HandleIRQ(struct ata_Bus *bus);
 UBYTE ata_ReadStatus(struct ata_Bus *bus);
 
-VOID dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
-VOID dma_SetupPRDSize(struct ata_Unit *, APTR, ULONG, BOOL);
+BOOL dma_SetupPRD(struct ata_Unit *, APTR, ULONG, BOOL);
+BOOL dma_SetupPRDSize(struct ata_Unit *, APTR, ULONG, BOOL);
 VOID dma_StartDMA(struct ata_Unit *);
 VOID dma_StopDMA(struct ata_Unit *);
+VOID dma_Cleanup(APTR adr, ULONG len, BOOL read);
 
 BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);

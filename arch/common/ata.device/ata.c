@@ -23,6 +23,8 @@
  * 2008-04-05  T. Wiszkowski       Improved IRQ management 
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
+ * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
+ *                                 medium removal, device detection, bus management and much more
  */
 
 #define DEBUG 0
@@ -245,67 +247,15 @@ static void cmd_Flush(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
     struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
+    struct IORequest *msg;
 
-    /*
-        It's impossible to check media status in ATA harddrives :)
-    */
-    if (unit->au_XferModes & AF_XFER_PACKET)
+    if ((unit->au_XferModes & AF_XFER_PACKET) && (unit->au_Flags & AF_Removable))
     {
-        /* Don't bother with nonremovable ATAPI units */
-        if (unit->au_Flags & AF_Removable)
+        atapi_TestUnitOK(unit);
+        if (unit->au_Flags & AF_DiscChanged)
         {
-            struct IORequest *msg;
-            UBYTE sense;
-
-            /* Issue media check */
-            if ((sense = atapi_TestUnitOK(unit)))
-            {
-                /* 
-                    Clear the unknown flag. We do know already, that there
-                    is no media in drive
-                */
-                unit->au_Flags &= ~AF_DiscPresenceUnknown;
-                
-                /* Media not present */
-                if (!(unit->au_Flags & AF_DiscPresent))
-                {
-                    /*
-                        Do status change since last call. Do almost
-                        nothing. Clear the AF_Used flag as the drive cannot
-                        be really used without media.
-                    */
-                    unit->au_Flags &= ~AF_Used;
-                    return;
-                }
-                /* Clear the presence flag */
-                unit->au_Flags &= ~AF_DiscPresent;
-            }
-            else
-            {
-                /*
-                    No more mystery, we know already that there is media in 
-                    drive. Clear this mysterious flag.
-                */
-                unit->au_Flags &= ~AF_DiscPresenceUnknown;
-
-                /* Media present */
-                if (unit->au_Flags & AF_DiscPresent)
-                {
-                    /* No status change. Do nothing */
-                    return;
-                }
-                /* Set the presence flag */
-                unit->au_Flags |= AF_DiscPresent;
-            }
-            /*
-                If CPU came here, there was a change in media presence status.
-                First, increase the number of changes to satisfy the curiousity
-            */
             unit->au_ChangeNum++;
 
-            /*
-                And tell the truth to the world :D
-            */
             Forbid();
 
             /* old-fashioned RemoveInt call first */
@@ -318,10 +268,11 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
                 Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
             }
 
+            unit->au_Flags &= ~AF_DiscChanged;
+
             Permit();
         }
     }
-    unit->au_Flags &= ~AF_Used;
 }
 
 static void cmd_Update(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -352,6 +303,8 @@ static void cmd_ChangeState(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         IOStdReq(io)->io_Actual = 0;
     else
         IOStdReq(io)->io_Actual = 1;
+
+    D(bug("[ATA%02lx] Media %s\n", unit->au_UnitNum, IOStdReq(io)->io_Actual ? "ABSENT" : "PRESENT"));
 }
 
 static void cmd_ProtStatus(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -633,7 +586,7 @@ AROS_LH1(void, BeginIO,
         If the command is not-immediate, or presence of disc is still unknown,
         let the bus task do the job.
     */
-    if (isSlow(io->io_Command) || (unit->au_Flags & AF_DiscPresenceUnknown))
+    if (isSlow(io->io_Command))
     {
         unit->au_Unit.unit_flags |= UNITF_ACTIVE | UNITF_INTASK;
         io->io_Flags &= ~IOF_QUICK;
@@ -888,13 +841,13 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     }
 }
 
-static void TaskCode(struct ata_Bus *, struct Task*);
+static void TaskCode(struct ata_Bus *, struct Task*, struct SignalSemaphore*);
 static void ata_Interrupt(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 /* 
  * Make a task for given bus alive.
  */
-int ata_InitBusTask(struct ata_Bus *bus)
+int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
 {
     struct Task     *t;
     struct MemList  *ml;
@@ -902,6 +855,7 @@ int ata_InitBusTask(struct ata_Bus *bus)
     struct TagItem tags[] = {
         { TASKTAG_ARG1,     (IPTR)bus },
         { TASKTAG_ARG2,     (IPTR)FindTask(0) },
+        { TASKTAG_ARG3,     (IPTR)ready },
         { TAG_DONE, 0 }
     };
     
@@ -946,8 +900,6 @@ int ata_InitBusTask(struct ata_Bus *bus)
         t->tc_Node.ln_Type = NT_TASK;
         t->tc_Node.ln_Pri  = TASK_PRI;
         
-        bus->ab_Task = t;
-
         /* Wake up the task */
         NewAddTask(t, TaskCode, NULL, (struct TagItem*)&tags);
         Wait(SIGBREAKF_CTRL_C);
@@ -996,7 +948,7 @@ static int CreateInterrupt(struct ata_Bus *bus)
     in endless lopp and calls proper handling function. The IO is Semaphore-
     protected within a bus.
 */
-static void TaskCode(struct ata_Bus *bus, struct Task* parent)
+static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem)
 {
     ULONG sig;
     int iter;
@@ -1004,16 +956,27 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
     
     D(bug("[ATA**] Task started (IO: 0x%x)\n", bus->ab_Port));
 
+    /*
+     * don't hold parent while we analyze devices.
+     * keep things as parallel as they can be
+     */
+    ObtainSemaphoreShared(ssem);
+    Signal(parent, SIGBREAKF_CTRL_C);
+
+
     /* Get the signal used for sleeping */
+    bus->ab_Task = FindTask(0);
     bus->ab_SleepySignal = AllocSignal(-1);
     /* Failed to get it? Use SIGBREAKB_CTRL_E instead */
     if (bus->ab_SleepySignal < 0)
         bus->ab_SleepySignal = SIGBREAKB_CTRL_E;
 
+    /*
+     * set up irq handler now. all irqs are disabled, so prepare them one by one
+     */
     if (!CreateInterrupt(bus))
     {
-        D(bug("[%s] Something wrong with creating interrupt?\n",
-            bus->ab_Task->tc_Node.ln_Name));
+        D(bug("[ATA  ] Something wrong with creating interrupt?\n"));
     }
 
     sig = 1L << bus->ab_MsgPort->mp_SigBit;
@@ -1029,7 +992,11 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
        }
     }
 
-    Signal(parent, SIGBREAKF_CTRL_C);
+    /*
+     * ok, we're done with init here.
+     * tell the parent task we're ready
+     */
+    ReleaseSemaphore(ssem);
 
     /* Wait forever and process messages */
     for (;;)
@@ -1045,9 +1012,7 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent)
             while ((msg = (struct IORequest *)GetMsg(bus->ab_MsgPort)))
             {
                 /* And do IO's */
-                ObtainSemaphore(&bus->ab_Lock);
                 HandleIO(msg, bus->ab_Base);
-                ReleaseSemaphore(&bus->ab_Lock);
                 /* TD_ADDCHANGEINT doesn't require reply */
                 if (msg->io_Command != TD_ADDCHANGEINT)
                 {
