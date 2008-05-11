@@ -33,9 +33,11 @@
  * 2008-04-07  M. Schulz           The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will 
  *                                 not be find with the generic enumeration. Do an explicit search after it 
  *                                 since ata.device may handle it in legacy mode without any issues.
+ * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
+ *                                 medium removal, device detection, bus management and much more
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
@@ -208,7 +210,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
             IOAlt   = 0;
             DMABase = 0;
             INTLine = 0;
-            bug("[ATA  ] Found more controllers\n");
+            bug("[ATA>>] Found more controllers\n");
             /*
              * we're all done. no idea what else they want from us
              */
@@ -216,7 +218,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
 	}
     }
 
-    D(bug("[ATA.Add_Device] IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
+    D(bug("[ATA>>] IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
 
     /*
      * initialize structure
@@ -234,12 +236,14 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
     ab->ab_Flags        = 0;
     ab->ab_SleepySignal = 0;
     ab->ab_BusNum       = a->CurrentBus++;
-    ab->ab_Waiting      = FALSE;
     ab->ab_Timeout      = 0;
     ab->ab_Units[0]     = 0;
     ab->ab_Units[1]     = 0;
     ab->ab_IntHandler   = (HIDDT_IRQ_Handler *)AllocVecPooled(a->ATABase->ata_MemPool, sizeof(HIDDT_IRQ_Handler));
-    D(bug("[ATA  ] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
+    ab->ab_Task         = 0;
+    ab->ab_HandleIRQ    = 0;
+
+    D(bug("[ATA>>] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
 
     /*
      * allocate DMA PRD
@@ -248,12 +252,10 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
     if ((0x10000 - ((ULONG)ab->ab_PRD & 0xffff)) < PRD_MAX * sizeof(struct PRDEntry))
        ab->ab_PRD      = (void*)((((IPTR)ab->ab_PRD)+0xffff) &~ 0xffff);
 
-    InitSemaphore(&ab->ab_Lock);
-
     /*
-     * scan bus - try to locate all devices
+     * scan bus - try to locate all devices (disables irq)
      */
-    ata_ScanBus(ab);
+    ata_InitBus(ab);
     if (ab->ab_Dev[0] > DEV_UNKNOWN)
     {
         ab->ab_Units[0] = AllocVecPooled(a->ATABase->ata_MemPool, sizeof(struct ata_Unit));
@@ -267,7 +269,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
         ata_init_unit(ab, 1);
     }
 
-    D(bug("[ATA  ] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
+    D(bug("[ATA>>] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
 
     /*
      * start things up :)
@@ -379,6 +381,8 @@ AROS_UFH3(void, Enumerator,
 void ata_Scan(struct ataBase *base)
 {
     OOP_Object *pci;
+    struct SignalSemaphore ssem;
+
     struct Node* node;
     int i;
     EnumeratorArgs Args=
@@ -434,11 +438,23 @@ void ata_Scan(struct ataBase *base)
 	for (i=0; i<4; i++)
 	    Add_Device(0, 0, 0, 0, i & 1, &Args);
     }
-            
+
+
+    InitSemaphore(&ssem);
     ForeachNode(&base->ata_Buses, node)
     {
-        ata_InitBusTask((struct ata_Bus*)node);
+        ata_InitBusTask((struct ata_Bus*)node, &ssem);
     }
+
+    /*
+     * wait for all buses to complete their init
+     */
+    ObtainSemaphore(&ssem);
+
+    /*
+     * and leave.
+     */
+    ReleaseSemaphore(&ssem);
 }
 
 /*
