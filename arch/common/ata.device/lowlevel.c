@@ -50,9 +50,9 @@
 
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
-#define DIRQ(a) D(a)
+#define DIRQ(a)
 #define DIRQ_MORE(a) D(a)
-#define DUMP(a) D(a)
+#define DUMP(a)
 #define DATA(a) D(a)
 #define DATAPI(a) D(a)
 #define DINIT(a) D(a)
@@ -400,14 +400,12 @@ void ata_IRQDMAReadWrite(struct ata_Unit *au, UBYTE status)
     else if (0 == (stat & (DMAF_Active)))
     {
         DIRQ(bug("[ATA  ] IRQ: DMA Done.\n"));
-        dma_StopDMA(au);
         au->au_cmd_length = 0;        // remaining data set to zero
     }
     else
     {
         DIRQ(bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", au->au_UnitNum, status, stat));
         bug("[ATA  ] IRQ: Holy cow, DMA is expecting more data, but device has nothing more to give!\n");
-        dma_StopDMA(au);
         au->au_cmd_length = 0;        // remaining data set to zero
         au->au_cmd_error = IOERR_BADLENGTH;
     }
@@ -793,10 +791,12 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      */
     if (block->method == CM_DMARead)
     {
+        dma_StopDMA(au);
         dma_Cleanup(block->buffer, block->length, TRUE);
     }
     else if (block->method == CM_DMAWrite)
     {
+        dma_StopDMA(au);
         dma_Cleanup(block->buffer, block->length, FALSE);
     }
 
@@ -935,7 +935,10 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
         err = atapi_EndCmd(unit);
 
     if (TRUE == *dma)
+    {
+        dma_StopDMA(unit);
         dma_Cleanup(data, datalen, !write);
+    }
 
     DATAPI(bug("[ATAPI] Error code %ld\n", err));
     return err;
