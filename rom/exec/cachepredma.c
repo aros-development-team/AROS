@@ -71,7 +71,7 @@
 #if defined(DEBUG) && (DEBUG > 0)
     aros_print_not_implemented("CachePreDMA");
 #endif
-    return NULL;
+    return address;
 
     AROS_LIBFUNC_EXIT
 } /* CachePreDMA() */
