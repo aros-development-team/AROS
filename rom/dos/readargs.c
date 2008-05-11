@@ -218,6 +218,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                 BPTR output = Output();
                 ULONG isize = 0, ibuf = 0;
                 LONG c;
+                ULONG helpdisplayed = FALSE;
 
                 /* Prompt for more input */
 
@@ -225,12 +226,6 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 printf ("rdargs=%p\n", rdargs);
 if (rdargs)
 printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
-
-                if (rdargs->RDA_ExtHelp != NULL)
-                {
-                    if (FPuts(output, rdargs->RDA_ExtHelp))
-                        ERROR(me->pr_Result2);
-                }
 
                 if (FPuts(output, template) || FPuts(output, ": "))
                 {
@@ -242,56 +237,85 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
                     ERROR(me->pr_Result2);
                 }
 
-                /* Read a line in. */
-                for (;;)
-                {
-                    if (isize >= ibuf)
-                    {
-                        /* Buffer too small. Get a new one. */
-                        STRPTR newiline;
+                do {
+	                /* Read a line in. */
+	                for (;;)
+	                {
+	                    if (isize >= ibuf)
+	                    {
+	                        /* Buffer too small. Get a new one. */
+	                        STRPTR newiline;
+	
+	                        ibuf += 256;
+	
+	                        newiline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
+	
+	                        if (newiline == NULL)
+	                        {
+	                            ERROR(ERROR_NO_FREE_STORE);
+	                        }
+	
+	                        if (iline != NULL)
+	                            CopyMemQuick(iline, newiline, isize);
+	
+	                        FreeVec(iline);
+	
+	                        iline = newiline;
+	                    }
+	
+	                    /* Read character */
+	                    c = FGetC(input);
+	
+	                    /* Check and write it. */
+	                    if (c == EOF && me->pr_Result2)
+	                    {
+	                        ERROR(me->pr_Result2);
+	                    }
+	                    
+	                    if (c == EOF || c == '\n' || c == '\0')
+	                    {
+	                        /* stegerg: added this. Otherwise try "list ?" then enter only "l" + RETURN
+	                         * and you will get a broken wall in FreeMem reported. This happens in
+	                         * FreeArgs() during the FreeVec() of the StrBuf. Appending '\n' here fixes
+	                         * this, but maybe the real bug is somewhere else. */
+	
+	                        iline[isize++] = '\n';
+	
+	                        /* end stegerg: */
+	
+	                        break;
+	                    }
+	
+	                    iline[isize++] = c;
+	                }
+	                
+	                /* if user entered single ? again or some string ending
+	                   with space and ? either display template again or
+	                   extended help if it's available */
+	                if ((isize == 2 || (isize > 2 && iline[isize-3] == ' ')) 
+	                		&& iline[isize-2] == '?' ) 
+	                {
+	                    helpdisplayed = TRUE;
+	                	isize = 0;
+	                	if(rdargs->RDA_ExtHelp != NULL)
+		                {
+		                    if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
+		                        ERROR(me->pr_Result2);
+		                } 
+	                	else if (FPuts(output, template) || FPuts(output, ": "))
+	                    {
+	                        ERROR(me->pr_Result2);
+	                    }
 
-                        ibuf += 256;
-
-                        newiline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
-
-                        if (newiline == NULL)
-                        {
-                            ERROR(ERROR_NO_FREE_STORE);
-                        }
-
-                        if (iline != NULL)
-                            CopyMemQuick(iline, newiline, isize);
-
-                        FreeVec(iline);
-
-                        iline = newiline;
-                    }
-
-                    /* Read character */
-                    c = FGetC(input);
-
-                    /* Check and write it. */
-                    if (c == EOF && me->pr_Result2)
-                    {
-                        ERROR(me->pr_Result2);
-                    }
-                    
-                    if (c == EOF || c == '\n' || c == '\0')
-                    {
-                        /* stegerg: added this. Otherwise try "list ?" then enter only "l" + RETURN
-                         * and you will get a broken wall in FreeMem reported. This happens in
-                         * FreeArgs() during the FreeVec() of the StrBuf. Appending '\n' here fixes
-                         * this, but maybe the real bug is somewhere else. */
-
-                        iline[isize++] = '\n';
-
-                        /* end stegerg: */
-
-                        break;
-                    }
-
-                    iline[isize++] = c;
+	                    if (!Flush(output))
+	                    {
+	                        ERROR(me->pr_Result2);
+	                    }
+	                }
+	                else 
+	                	helpdisplayed = FALSE;
                 }
+                while(helpdisplayed);
 
                 /* Prepare input source for new line. */
                 cs->CS_Buffer = iline;
