@@ -430,7 +430,14 @@ void ata_Scan(struct ataBase *base)
         Requirements[1].ti_Data = 0x3114;
 
         OOP_DoMethod(pci, (OOP_Msg)msg);
-        
+
+        Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+        Requirements[0].ti_Data = 0x1095;
+        Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+        Requirements[1].ti_Data = 0x3512;
+
+        OOP_DoMethod(pci, (OOP_Msg)msg);
+
         OOP_DisposeObject(pci);
     }
     if (!Args.CurrentBus) {
