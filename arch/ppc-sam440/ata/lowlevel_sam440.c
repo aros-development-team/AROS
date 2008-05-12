@@ -59,3 +59,14 @@ VOID ata_outsl(APTR address, UWORD port, ULONG count)
         }
     }
 }
+
+void ata_400ns()
+{
+    register ULONG tick_old, tick;
+    
+    asm volatile("mftbl %0":"=r"(tick_old));
+    
+    do {
+	asm volatile("mftbl %0":"=r"(tick));	
+    } while(tick < (tick_old + 60));
+}
