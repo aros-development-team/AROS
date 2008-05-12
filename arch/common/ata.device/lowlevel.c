@@ -151,11 +151,25 @@ static VOID ata_outsl(APTR address, UWORD port, ULONG count)
     else
         outsl(port, address, count >> 2);
 }
+
+/*
+ * Very short delay (TM) by someone who assumes slow data ports.
+ * well, glad it works anyways.
+ */
+void ata_400ns()
+{
+    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, 0x3f6);
+}
+
 #else
 extern VOID ata_insw(APTR address, UWORD port, ULONG count);
 extern VOID ata_insl(APTR address, UWORD port, ULONG count);
 extern VOID ata_outsw(APTR address, UWORD port, ULONG count);
 extern VOID ata_outsl(APTR address, UWORD port, ULONG count);
+extern void ata_400ns();
 #endif
 
 static void dump(APTR mem, ULONG len)
@@ -226,18 +240,6 @@ static ULONG ata_STUB_SCSI(struct ata_Unit *au, struct SCSICmd* cmd)
 {
     bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum);
     return CDERR_NOCMD;
-}
-
-/*
- * Very short delay (TM) by someone who assumes slow data ports.
- * well, glad it works anyways.
- */
-void ata_400ns()
-{
-    ata_in(ata_AltControl, 0x3f6);
-    ata_in(ata_AltControl, 0x3f6);
-    ata_in(ata_AltControl, 0x3f6);
-    ata_in(ata_AltControl, 0x3f6);
 }
 
 inline BOOL ata_SelectUnit(struct ata_Unit* unit)
@@ -2241,7 +2243,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         ata_out(0x04, ata_AltControl, alt);
         ata_usleep(tr, 10);                /* minimum required: 5us */
         ata_out(0x02, ata_AltControl, alt);
-        ata_usleep(tr, 2000);               /* minimum required: 2ms */
+        ata_usleep(tr, 20000);               /* minimum required: 2ms */
 
         ata_out(0xa0, ata_DevHead, port);
         ata_400ns();
@@ -2260,7 +2262,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         ata_out(0x04, ata_AltControl, alt);
         ata_usleep(tr, 10);                /* minimum required: 5us */
         ata_out(0x02, ata_AltControl, alt);
-        ata_usleep(tr, 2000);               /* minimum required: 2ms */
+        ata_usleep(tr, 20000);               /* minimum required: 2ms */
 
         ata_out(0xb0, ata_DevHead, port);
         ata_400ns();
