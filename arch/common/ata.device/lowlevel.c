@@ -42,6 +42,7 @@
  * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
  *                                 medium removal, device detection, bus management and much more
+ * 2008-05-12  P. Fedin		   Explicitly enable multisector transfers on the drive
  */
 /*
  * TODO: 
@@ -1174,6 +1175,10 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
         {
             if (unit->au_XferModes & AF_XFER_RWMULTI)
             {
+		ata_out(unit->au_Drive->id_RWMultipleSize & 0xFF, ata_Count, unit->au_Bus->ab_Port);
+    		ata_out(ATA_SET_MULTIPLE, ata_Command, unit->au_Bus->ab_Port);
+    		ata_WaitBusyTO(unit, -1, FALSE);
+
                 unit->au_Read32         = ata_ReadMultiple32;
                 unit->au_Write32        = ata_WriteMultiple32;
                 if (unit->au_XferModes & AF_XFER_48BIT)
