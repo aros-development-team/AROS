@@ -9,7 +9,7 @@ CFILES          := \
 AFILES		:= stackswap
 
 #MM kernel-exec : kernel-exec-pc-x86_64
-#MM kernel-exec-pc-x86_64 : kernel-kernel-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
+#MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
 
 USER_CFLAGS     := -I$(TOP)/rom/exec -Os
 USER_AFLAGS     := -I$(TOP)/rom/exec -I$(GENINCDIR) -Os
