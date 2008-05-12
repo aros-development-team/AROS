@@ -1,0 +1,23 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM
+kernel-darwin-sigcore : $(GENINCDIR)/sigcore.h
+
+CFILES := 	alert cause disable enable\
+		  	exception preparecontext stackswap switch \
+			rawioinit rawputchar rawmaygetchar idletask \
+			exec_init
+
+$(GENINCDIR)/sigcore.h : sigcore.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $^ $@
+
+USER_INCLUDES := -I$(GENINCDIR)
+USER_CFLAGS := -I$(TOP)/rom/exec
+%build_archspecific \
+	mainmmake=kernel-exec maindir=rom/exec arch=darwin \
+	files=$(CFILES) modulename=exec
+
+#MM- kernel-exec-includes : kernel-kernel-darwin-i386-includes
+

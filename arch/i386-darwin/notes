@@ -1,0 +1,7 @@
+
+things like AROS_64BIT_TYPE are defined in 3 places:
+
+./compiler/arossupport/include/system.h
+./compiler/clib/include/stdint.h
+./compiler/clib/include/sys/_types.h
+
