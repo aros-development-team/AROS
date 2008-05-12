@@ -27,7 +27,7 @@ KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 #				$(KOBJSDIR)/intuition_library.o \
 
 
-#MM kernel-bootstrap-darwin-i386: kernel kernel-kernel-darwin-i386-kobj kernel-fs-emul-kobj
+#MM kernel-bootstrap-darwin-i386: kernel kernel-kernel-darwin-i386-kobj kernel-fs-emul-darwin-i386-kobj
 
 kernel-bootstrap-darwin-i386: setup-darwin-i386 $(BINDIR)/boot/AROSBootstrap $(BINDIR)/boot/kernel
 

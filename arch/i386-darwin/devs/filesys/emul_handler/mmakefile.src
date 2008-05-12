@@ -3,11 +3,11 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(GENINCDIR)
 
-#MM kernel-fs-emul-linklib : includes linklibs kernel-fs-emul-native
-#MM kernel-fs-emul-kobj : includes linklibs kernel-fs-emul-native
-#MM kernel-fs-emul-native
+#MM kernel-fs-emul-darwin-i386-linklib : includes linklibs kernel-fs-emul-darwin-i386-native
+#MM kernel-fs-emul-darwin-i386-kobj : includes linklibs kernel-fs-emul-darwin-i386-native
+#MM kernel-fs-emul-darwin-i386-native
 
-%build_module mmake=kernel-fs-emul \
+%build_module mmake=kernel-fs-emul-darwin-i386 \
   modname=emul modtype=device modsuffix=handler \
   files=emul_handler
 
@@ -17,7 +17,7 @@ NATIVE_OBJS :=	$(NATIVE_DIR)/emul_handler_native_init.o \
 SOEXT := .dylib
 SO_LDFLAGS := -dynamiclib
 
-kernel-fs-emul-native: $(NATIVE_DIR)/emul_handler_native$(SOEXT)
+kernel-fs-emul-darwin-i386-native: $(NATIVE_DIR)/emul_handler_native$(SOEXT)
 
 $(NATIVE_DIR)/emul_handler_native$(SOEXT): $(NATIVE_OBJS)
 	$(HOST_CC) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
