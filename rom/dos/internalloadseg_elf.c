@@ -448,6 +448,8 @@ static int load_hunk
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
 
+        D(bug("[dos] hunk @ %p\n", sh->addr));
+        
         /* Update the pointer to the previous one, which is now the current one */
         *next_hunk_ptr = HUNK2BPTR(hunk);
 
