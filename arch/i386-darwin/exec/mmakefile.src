@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- kernel-exec-darwin-i386-includes : kernel-kernel-darwin-i386-includes
+
 #MM
 kernel-darwin-sigcore : $(GENINCDIR)/sigcore.h
 
@@ -16,8 +18,5 @@ $(GENINCDIR)/sigcore.h : sigcore.h
 USER_INCLUDES := -I$(GENINCDIR)
 USER_CFLAGS := -I$(TOP)/rom/exec
 %build_archspecific \
-	mainmmake=kernel-exec maindir=rom/exec arch=darwin \
+	mainmmake=kernel-exec maindir=rom/exec arch=darwin-i386 \
 	files=$(CFILES) modulename=exec
-
-#MM- kernel-exec-includes : kernel-kernel-darwin-i386-includes
-
