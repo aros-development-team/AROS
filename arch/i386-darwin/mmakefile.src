@@ -1,0 +1,12 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- AROS-darwin-i386 : kernel-darwin-i386 development
+
+#MM- includes-darwin : compiler-includes includes-copy
+
+#MM- kernel-darwin-i386 : kernel-exec-i386
+
+#MM- kernel-exec-includes-darwin-i386 : kernel-exec-includes-i386
+
+#MM- workbench-darwin-i386 : 

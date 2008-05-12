@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 25924 2007-04-28 00:14:49Z verhaegs $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
+
+#MM- includes-copy-darwin-i386 : includes-common-x86_64
+
+%copy_includes mmake=compiler-includes
+
+#MM- kernel-exec-includes-darwin-i386 : includes-copy-darwin-i386
+

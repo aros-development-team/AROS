@@ -1,0 +1,29 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(GENINCDIR)
+
+#MM kernel-fs-emul-linklib : includes linklibs kernel-fs-emul-native
+#MM kernel-fs-emul-kobj : includes linklibs kernel-fs-emul-native
+#MM kernel-fs-emul-native
+
+%build_module mmake=kernel-fs-emul \
+  modname=emul modtype=device modsuffix=handler \
+  files=emul_handler
+
+NATIVE_DIR := $(TARGETDIR)/native
+NATIVE_OBJS :=	$(NATIVE_DIR)/emul_handler_native_init.o \
+				$(NATIVE_DIR)/emul_handler_native.o
+SOEXT := .dylib
+SO_LDFLAGS := -dynamiclib
+
+kernel-fs-emul-native: $(NATIVE_DIR)/emul_handler_native$(SOEXT)
+
+$(NATIVE_DIR)/emul_handler_native$(SOEXT): $(NATIVE_OBJS)
+	$(HOST_CC) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
+
+$(NATIVE_DIR) :
+	mkdir $(NATIVE_DIR)
+	 
+$(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
+	$(HOST_CC) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec

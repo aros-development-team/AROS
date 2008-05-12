@@ -1,0 +1,72 @@
+# $Id: mmakefile.src 26763 2007-09-20 23:29:57Z NicJA $
+include $(TOP)/config/make.cfg
+
+TARGETDIR 	:= $(GENDIR)/$(CURDIR)
+BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o 
+FILES		:= bootstrap elfloader32
+KOBJS_DEVICES := $(KOBJSDIR)/timer_device.o
+KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o\
+			   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
+KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
+				$(KOBJSDIR)/expansion_library.o \
+				$(KOBJSDIR)/boot_library.o \
+				$(KOBJSDIR)/dos_library.o \
+				$(KOBJSDIR)/aros_library.o \
+				$(KOBJSDIR)/utility_library.o\
+				$(KOBJSDIR)/keymap_library.o \
+				$(KOBJSDIR)/mathieeesingbas_library.o \
+				$(KOBJSDIR)/oop_library.o
+K_RES		:= $(KOBJSDIR)/kernel_resource.o 
+KOBJS_HANDLERS := $(KOBJSDIR)/emul_handler.o
+KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
+
+#this needs sdl.hidd
+#				$(KOBJSDIR)/graphics_library.o \
+#				$(KOBJSDIR)/layers_library.o \
+#				$(KOBJSDIR)/workbench_library.o
+#				$(KOBJSDIR)/intuition_library.o \
+
+
+#MM kernel-bootstrap-darwin-i386: kernel kernel-kernel-darwin-i386-kobj kernel-fs-emul-kobj
+
+kernel-bootstrap-darwin-i386: setup-darwin-i386 $(BINDIR)/boot/AROSBootstrap $(BINDIR)/boot/kernel
+
+setup-darwin-i386 :
+	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
+
+$(BINDIR)/boot/kernel: setup-darwin-i386 $(KOBJS)
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds\
+	  -o $@ $(KOBJS)\
+	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
+
+
+$(BINDIR)/boot/AROSBootstrap: $(BOBJS)
+	$(HOST_CC) -o $@ $(BOBJS)
+	 
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+#$(TARGETDIR)/%.o : %.c
+#	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+-include $(DEPS)
+
+$(TARGETDIR)/%.o : %.c
+	$(HOST_CC) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
+
+#$(TARGETDIR)/%.o : %.S
+#	%compile_q opt="$(CFLAGS)"
+
+#$(TARGETDIR)/%.d : %.c
+#	%mkdepend_q
+
+
+%common

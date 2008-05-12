@@ -1,0 +1,6 @@
+sigcore.h contains code from wine, which itself is under LGPL.
+The piece of code is marked by a comment in sigcore.h
+
+All the other code is from other places in the AROS tree or
+by me (DANIEL OBERHOFF). All code by me may be placed under
+the APL.
