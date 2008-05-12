@@ -145,7 +145,7 @@ VOID GetGadgetIBox(struct Gadget *g, struct GadgetInfo *gi, struct IBox *ibox)
     }
 
     DEBUG_GETGADGETIBOX(dprintf("GetGadgetIBox: Gadget 0x%lx GInfo 0x%lx Flags 0x%lx Left %ld Top %ld Width %ld Height %ld\n",
-                                o, gi, g->Flags, ibox->Left, ibox->Top, ibox->Width, ibox->Height));
+                                g, gi, g->Flags, ibox->Left, ibox->Top, ibox->Width, ibox->Height));
 }
 
 /**********************************************************************************************/
