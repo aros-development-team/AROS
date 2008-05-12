@@ -346,7 +346,7 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     if (SysBase)
     {
         struct Task *t = FindTask(NULL);
-        D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name));
+        D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
     }
     D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->srr0, ctx->srr1, rdspr(DEAR), rdspr(ESR)));
     D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
