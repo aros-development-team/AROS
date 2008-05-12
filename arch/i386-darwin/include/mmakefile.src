@@ -3,9 +3,9 @@ include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
 
-#MM- includes-copy-darwin-i386 : includes-common-x86_64
+#MM- includes-copy-darwin-i386 : includes-common-i386
 
-%copy_includes mmake=compiler-includes
+%copy_includes mmake=includes-copy-darwin-i386
 
 #MM- kernel-exec-includes-darwin-i386 : includes-copy-darwin-i386
 
