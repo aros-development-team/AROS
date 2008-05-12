@@ -3,6 +3,7 @@
     $Id$
 */
 
+#define DEBUG 0
 #include "bitmap.h"
 #include <exec/types.h>
 #include <proto/exec.h>
@@ -258,11 +259,11 @@ ULONG BitmapAlloc(struct ati_staticdata *sd, ULONG size)
     
     ptr = bmffz(sd->CardMemBmp, sd->CardMemSize, 0);
     
-    bug("[ATIBMP] BitmapAlloc(%d)\n", size);
+    D(bug("[ATIBMP] BitmapAlloc(%d)\n", size));
     
     while (ptr <= (sd->CardMemSize << 5) + size)
     {
-        bug("[ATIBMP] ptr=%08x\n", ptr);
+        D(bug("[ATIBMP] ptr=%08x\n", ptr));
         
         if (bmtstz(sd->CardMemBmp, ptr, size))
         {
