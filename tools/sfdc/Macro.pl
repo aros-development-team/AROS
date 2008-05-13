@@ -126,7 +126,7 @@ BEGIN {
 		my $first_stdargnum = $$prototype{'numargs'} - 2;
 		my $first_stdarg = $$prototype{'___argnames'}[$first_stdargnum];
 	    
-		printf "	({ULONG _%s[] = { (ULONG) $first_stdarg, ## __VA_ARGS__ }; ",
+		printf "	({IPTR _%s[] = { (IPTR) $first_stdarg, ## __VA_ARGS__ }; ",
 		$prototype->{subtype} eq 'tagcall' ? "tags" : "message";
 		print "__$$prototype{'real_funcname'}_WB((___base), ";
 	    }
