@@ -51,9 +51,9 @@ OOP_Object *NVOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     {
 	nvBitMap *bm = OOP_INST_DATA(cl, o);
 
-	ULONG width, height, depth;
+	IPTR fb;
+	IPTR width, height, depth;
 	UBYTE bytesPerPixel;
-	ULONG fb;
 
 	OOP_Object *pf;
 
@@ -165,8 +165,8 @@ OOP_Object *NVOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 				
 	    if (modeid != vHidd_ModeID_Invalid)
 	    {
-		ULONG pixel;
-		ULONG hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
+		IPTR pixel;
+		IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
 	
 		/* Get Sync and PixelFormat properties */
 		struct pHidd_Gfx_GetMode __getmodemsg = {
@@ -228,7 +228,7 @@ OOP_Object *NVOffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     {
 	nvBitMap *bm = OOP_INST_DATA(cl, o);
 
-	ULONG width, height, depth;
+	IPTR width, height, depth;
 	UBYTE bytesPerPixel;
 
 	OOP_Object *pf;

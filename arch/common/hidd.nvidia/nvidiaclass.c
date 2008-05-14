@@ -590,8 +590,8 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	HIDDT_StdPixFmt	pixfmt;
 	HIDDT_Color	color;
 
-	ULONG		width, height, x, y;
-	ULONG		maxw,maxh;
+	IPTR		width, height, x, y;
+	IPTR		maxw,maxh;
 
 	ULONG		*curimg = (ULONG*)((IPTR)_sd->Card.CursorStart + (IPTR)_sd->Card.FrameBuffer);
 
