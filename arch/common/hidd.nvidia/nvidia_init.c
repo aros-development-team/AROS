@@ -574,7 +574,7 @@ AROS_UFH3(void, Enumerator,
 	{
 	    /* Matching card found */
 	    APTR buf;
-	    ULONG size;
+	    IPTR size;
 	    struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
 	    OOP_Object *driver;
 	    struct MemChunk *mc;
