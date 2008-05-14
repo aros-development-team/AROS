@@ -32,6 +32,7 @@ __BEGIN_DECLS
 
 struct arosc_userdata *__get_arosc_userdata(void) __pure;
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[]);
+int __get_default_file(int file_descriptor, long* file_handle);
 
 __END_DECLS
 
