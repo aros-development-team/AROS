@@ -1,16 +1,15 @@
-## version $VER: Snoopy.catalog 1.1 (20.12.2007)
+## version $VER: Snoopy.catalog 2.0 (14.5.2008)
 ## language czech
-## codeset 5
+## codeset 0
 ;
-; TODO: update translation and set version to 2
 ;
 MSG_TITLE
 Snoopy
 ; Snoopy
 ;
 MSG_COPYRIGHT
-Copyright (C) 2006, The AROS Development Team
-; © 2006, The AROS Development Team
+Copyright (C) 2006-2008, The AROS Development Team
+; © 2006-2008, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
@@ -47,6 +46,14 @@ Zobrazit název zaøízení
 MSG_IGNORE_WB
 Ignorovat Wanderer/Shell
 ; Ignore Workbench/Shell
+;
+MSG_BREAKPOINT
+Zadat bod pøeru¹ení
+; Set breakpoint
+;
+MSG_MATCH
+Zadat název
+; Match name
 ;
 MSG_SYSTEM_FUNC
 Systémové funkce
@@ -129,8 +136,12 @@ Odstranit|Ponechat
 ; Remove|Keep
 ;
 MSG_ASK_REMOVE
-Upozornìní: Tato akce mù¾e skonèit pádem systému,\nproto¾e jiný program u¾ mezitím zmìnil úpravy\nsystému zavedené programem Snoopy.\n\nOpravdu chcete odstranit program Snoopy?
-; Do you really want to remove the Snoopy process?\nThis can be quite dangerous when another task has patched Snoopy's patches.
+Upozornìní: Tato akce mù¾e skonèit pádem systému,\n\
+proto¾e jiný program u¾ mezitím zmìnil úpravy\n\
+systému zavedené programem Snoopy.\n\n\
+Opravdu chcete odstranit program Snoopy?
+; Do you really want to remove the Snoopy process?\n\
+; This can be quite dangerous when another task has patched Snoopy's patches.
 ;
 MSG_GLOBAL
 globální
