@@ -33,9 +33,12 @@ struct arosc_userdata * __get_arosc_userdata(void)
 	#warning        (yet to be written).
 
         struct Task *parent = GetETask(curtask)->et_Parent;
-	
-	if (parent)
+	    while (parent != NULL)
+	    {
             acpd = GetIntETask(parent)->iet_acpd;
+            if(acpd != NULL) break;
+            parent = GetETask(parent)->et_Parent;
+	    }
     }
     #endif 
 
