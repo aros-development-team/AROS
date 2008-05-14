@@ -100,6 +100,7 @@ SHARED	:= \
 	__arosc_userdata \
 	__assert \
 	__ctype \
+	__get_default_file \
 	__env \
 	__exitfunc \
 	__ioerr2errno \
