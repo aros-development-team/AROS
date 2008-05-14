@@ -1,6 +1,6 @@
-## version $VER: About.catalog 1.5 (20.12.2007)
+## version $VER: About.catalog 1.6 (14.5.2008)
 ## language czech
-## codeset 5
+## codeset 0
 ;
 ;
 MSG_TITLE
@@ -8,12 +8,12 @@ O systému AROS
 ; About AROS
 ;
 MSG_PERSONAL_BUILD
-Osobní %s sestavení
-; Personal Build
+Osobní sestavení (%s)
+; Personal %s Build
 ;
 MSG_NIGHTLY_BUILD
-Noèní %s sestavení
-; Nightly Build
+Noèní sestavení (%s)
+; Nightly %s Build
 ;
 MSG_SNAPSHOT
 Sestavení
@@ -29,7 +29,7 @@ Vydání
 ;
 MSG_COPYRIGHT
 Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
-; Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+; Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 ;
 MSG_LICENSE_1
 Vydáno na základì licence
@@ -111,9 +111,9 @@ MSG_SECTION_DOS
 DOS
 ; DOS
 ;
-MSG_SECTION_NETWORK (//)
-Networking Components
-;Networking Components
+MSG_SECTION_NETWORK
+Sí»ová èást
+; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
 Knihovna libc a vrstva POSIX

@@ -1,6 +1,6 @@
-## version $VER: Editor.catalog 1.3 (7.12.2007)
+## version $VER: Editor.catalog 1.4 (13.5.2008)
 ## language czech
-## codeset 5
+## codeset 0
 ;
 ;
 ; Catalog description for JanoEditor
@@ -81,7 +81,7 @@ Oznaèit
 ;
 MSG_MARKCOLUMN
 Oznaèit sloupec
-; Mark columnar
+; Mark column
 ;
 MSG_SELECTALL
 Oznaèit v¹e
@@ -89,7 +89,7 @@ Oznaèit v¹e
 ;
 MSG_DELLINE
 Smazat øádek
-; Del line
+; Delete line
 ;
 MSG_SUBTOOLS
 Nástroje
@@ -159,7 +159,7 @@ Nahradit
 ;
 MSG_PREVPAGE
 Pøedchozí strana
-; Prev page
+; Previous page
 ;
 MSG_NEXTPAGE
 Dal¹í strana
@@ -223,19 +223,19 @@ Písma...
 ;
 MSG_PREFS
 Mo¾nosti...
-; General prefs...
+; General preferences...
 ;
 MSG_LOADPREFS
 Naèíst...
-; Load prefs...
+; Load preferences..
 ;
 MSG_SAVEPREFS
 Ulo¾it
-; Save prefs
+; Save preferences
 ;
 MSG_SAVEPREFSAS
 Ulo¾it jako...
-; Save prefs as...
+; Save preferences as...
 ;
 ;
 ;
@@ -286,7 +286,7 @@ Vybraný objekt je adresáø!
 ;
 ERR_READCLIP
 Po¾adovanou operaci nelze dokonèit pro nedostatek volné pamìti.
-; Read operation incomplete due to probably a lack of memory
+; Read operation incomplete
 ;
 ERR_NOBRACKET
 Na pozici kurzoru se nenachází závorka!
@@ -330,11 +330,11 @@ Ano|Ne
 ;
 WARN_RECORD
 Zaèátek záznamu makra
-; Start recording macro
+; Start recording macro
 ;
 WARN_RECORDED
 Záznam makra byl dokonèen
-; Macro recorded
+; Macro recorded
 ;
 WARN_REC
 [REC]
@@ -428,7 +428,7 @@ _Zru¹it
 ;
 MSG_REPLACEALL
 Nahrazeno %ld %s textu "%s".
-; %ld %s of `%s' replaced
+; %ld %s of `%s' replaced
 ;
 MSG_OCCURENCY
 polo¾ka
