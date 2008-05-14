@@ -83,124 +83,136 @@ int __initcommandline(void)
     return 1;
 }
 
+static BOOL is_space(char c)
+{
+	switch(c)
+	{
+	case ' ':
+	case '\n':
+	case '\t':
+	case '\v':
+	case '\f':
+	case '\r':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static BOOL is_escape(char c)
+{
+	if(c == '*')
+		return TRUE;
+	else
+		return FALSE;
+}
+
+static BOOL is_final_quote(char *ptr)
+{
+	if(*ptr == '\"' && (ptr[1] == '\0' || is_space(ptr[1])))
+		return TRUE;
+	else
+		return FALSE;
+}
+
 static void process_cmdline(int *pargc, char *args, char *argv[])
 {
-    int argc, exit_loop, quote;
-    char *ptr, prev;
-
-    for (argc = 1, ptr = args; *ptr; )
-    {
-	if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
+	char *ptr = args;
+	char *arg;
+	int argc = 1;
+	
+	while(TRUE)
 	{
-	    /* Skip whitespace */
-	    ptr++;
-	    while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-		ptr ++;
-	}
-
-	if (*ptr)
-	{
-	    if (*ptr == '"' || *ptr == '\'')
-		quote = *ptr++;
-	    else
-		quote = -1;
-
-	    if (argv)
-		argv[argc++] = ptr;
-	    else
+		/* skip leading white spaces */
+		while(is_space(*ptr)) 
+			ptr++;
+	
+		if(*ptr == '\0')
+			break;
+		
 		argc++;
-
-	/*
-	 * This code can now handle a command line like:
-	 * kpsewhich --format="web2c files" mktex.opt
-	 * fontinfo "Vera Sans.font" 40
-	 */
-
-	    prev = -1;
-	    while (*ptr)
-	    {
-		exit_loop = 0;
-
-		switch (*ptr)
+		if(*ptr == '\"')
 		{
-		case '"':
-		case '\'':
-		    if (prev != '\\')
-		    {
-			if (quote == *ptr)
+			/* quoted parameter starts here */
+			ptr++;
+			
+			/* store pointer to the parameter */
+			if(argv)
+				argv[argc-1] = ptr;
+			
+			/* unescape quoted parameter */
+			arg = ptr;
+			while(!(*ptr == '\0' || is_final_quote(ptr)))
 			{
-			    quote = -1;
-
-			    if (argv)
-			    {
-				char *src = ptr + 1, *dst = ptr;
-				while (*src)
-				    *dst++ = *src++;
-				*dst = '\0';
-			    }
-
-			    exit_loop = 1;
+				if(argv)
+				{
+					/* unescaping */
+					if(is_escape(*ptr))
+					{
+						ptr++;
+						switch(*ptr)
+						{
+						case 'e':
+						case 'E':
+							*arg++ = '\033';
+							break;
+						case 'N':
+						case 'n':
+							*arg++ = '\n';
+							break;
+						case '\0':
+							break;
+						default:
+							*arg++ = *ptr;
+						}
+						ptr++;
+					}
+					else
+						*arg++ = *ptr++;
+				}
+				else
+				{
+					/* don't touch anything, just skip escapes */
+					if(is_escape(*ptr))
+					{
+						ptr++;
+						if(*ptr != '\0')
+							ptr++;
+					}
+					else
+						ptr++;
+				}
 			}
-			else
-			    quote = *ptr++;
-
-			prev = quote;
-		    }
-		    else
-		    {
-			prev = *ptr;
-			if (argv)
-			{
-			    char *src = ptr, *dst = ptr - 1;
-			    while (*src)
-				*dst++ = *src++;
-			    *dst = '\0';
-			}
-			++ptr;
-		    }
-		    break;
-
-		case '\\':
-		    if (prev == '\\')
-		    {
-			if (argv)
-			{
-			    char *src = ptr + 1, *dst = ptr;
-			    while (*src)
-				*dst++ = *src++;
-			    *dst = '\0';
-			}
-			prev = -1;
-		    }
-		    else
-			prev = '\\';
-		    ++ptr;
-		    break;
-
-		case ' ':
-		case '\t':
-		case '\n':
-		    if (quote == -1)
-			exit_loop = 1;
-		    else
-			prev = *ptr++;
-		    break;
-
-		default:
-		    prev = *ptr++;
-		    break;
+			/* skip final quote */
+			if(*ptr != '\0')
+				ptr++;
+			/* quoted parameter ends here */
+			if(argv)
+				*arg = '\0';
 		}
+		else
+		{
+			/* unquoted parameter starts here */
 
-		if (exit_loop)
-		    break;
-	    }
-
-	    if (argv && *ptr)
-		*ptr++ = 0;
+			/* store pointer to the parameter */
+			if(argv)
+				argv[argc-1] = ptr;
+			
+			/* no escaping, just find the end */
+			while(!(*ptr == '\0' || is_space(*ptr)))
+				ptr++;
+			
+			/* stop processing if we reached the end of argument string */
+			if(*ptr == '\0') 
+				break;
+			
+			/* unquoted parameter ends here */
+			if(argv)
+				*ptr++ = '\0';
+		}
 	}
-    }
-
-    *pargc = argc;
+	/* store the number of arguments */
+	*pargc = argc;
 }
 
 void __exitcommandline(void)
