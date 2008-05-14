@@ -37,7 +37,7 @@
 #include "ata.h"
 
 /*
-    Prepare PRD entries for sectors transfer. This function assumes, that noone
+    Prepare PRD entries for sectors transfer. This function assumes that no one
     else will even touch PRD. It should be however truth, as for given bus all
     ATA accesses are protected with a semaphore.
 */
@@ -164,7 +164,7 @@ VOID dma_Cleanup(APTR adr, ULONG len, BOOL read)
 VOID dma_StartDMA(struct ata_Unit *unit)
 {
     ata_in(dma_Command, unit->au_DMAPort);
-    ata_out(ata_in(dma_Status, unit->au_DMAPort), dma_Status, unit->au_DMAPort);
+    ata_in(dma_Status, unit->au_DMAPort);
     ata_out(ata_in(dma_Command, unit->au_DMAPort) | DMA_START, dma_Command, unit->au_DMAPort);
     ata_in(dma_Command, unit->au_DMAPort);
     ata_in(dma_Status, unit->au_DMAPort);
