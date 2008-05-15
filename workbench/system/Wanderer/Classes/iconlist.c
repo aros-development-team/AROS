@@ -480,6 +480,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
     
     // Center icon image
+
     ULONG iconX = iconrect.MinX - _mleft(obj) + data->icld_DrawOffsetX;
     ULONG iconY = iconrect.MinY - _mtop(obj) + data->icld_DrawOffsetY;
 
@@ -1489,6 +1490,11 @@ D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->
                 {
                     //Buffer still set!?!?!
                 }
+                SET(obj, MUIA_IconList_BufferRastport, tag->ti_Data);
+                break;
+
+            case MUIA_IconList_BufferRastport:
+D(bug("[IconList] %s: MUIA_IconList_BufferRastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 data->icld_BufferRastPort = (struct RastPort*)tag->ti_Data;
                 break;
 
@@ -1517,6 +1523,7 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
                         //Free up the buffers rastport and bitmap so we can replace them ..
                         FreeBitMap(data->icld_BufferRastPort->BitMap);
                         FreeRastPort(data->icld_BufferRastPort);
+                        SET(obj, MUIA_IconList_BufferRastport, NULL);
                     }
                     ULONG tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
                     if ((tmp_BuffBitMap = AllocBitMap(data->icld_ViewWidth,
@@ -1528,6 +1535,7 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
                       if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
                       {
                         data->icld_BufferRastPort->BitMap = tmp_BuffBitMap;
+                        SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
                         data->icld_DrawOffsetX = 0;
                         data->icld_DrawOffsetY = 0;
                       }
@@ -2071,17 +2079,25 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEICON (icon @ 0x%p)\n", __PRETTY_FUNCTION__
             rect.MinY += _mtop(obj) + (data->update_icon->ile_IconY - data->icld_ViewY);
             rect.MaxY += _mtop(obj) + (data->update_icon->ile_IconY - data->icld_ViewY);
 
-            if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-                (data->update_icon->ile_AreaWidth < data->icld_IconAreaLargestWidth))
+            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
             {
-                rect.MinX += ((data->icld_IconAreaLargestWidth - data->update_icon->ile_AreaWidth)/2);
-                rect.MaxX += ((data->icld_IconAreaLargestWidth - data->update_icon->ile_AreaWidth)/2);
+                if (data->update_icon->ile_AreaWidth < data->icld_IconAreaLargestWidth)
+                {
+                    rect.MinX += ((data->icld_IconAreaLargestWidth - data->update_icon->ile_AreaWidth)/2);
+                    rect.MaxX += ((data->icld_IconAreaLargestWidth - data->update_icon->ile_AreaWidth)/2);
+                }
+
+                if (data->update_icon->ile_AreaHeight < data->icld_IconAreaLargestHeight)
+                {
+                    rect.MinY += ((data->icld_IconAreaLargestHeight - data->update_icon->ile_AreaHeight)/2);
+                    rect.MaxY += ((data->icld_IconAreaLargestHeight - data->update_icon->ile_AreaHeight)/2);
+                }
             }
 
             clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
+D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
             DoMethod(obj, MUIM_DrawBackground, 
                 rect.MinX, rect.MinY,
@@ -2102,11 +2118,19 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
                     rect2.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
                     rect2.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
 
-                    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-                        (icon->ile_AreaWidth < data->icld_IconAreaLargestWidth))
+                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                     {
-                        rect2.MinX += ((data->icld_IconAreaLargestWidth - icon->ile_AreaWidth)/2);
-                        rect2.MaxX += ((data->icld_IconAreaLargestWidth - icon->ile_AreaWidth)/2);
+                        if (icon->ile_AreaWidth < data->icld_IconAreaLargestWidth)
+                        {
+                            rect2.MinX += ((data->icld_IconAreaLargestWidth - icon->ile_AreaWidth)/2);
+                            rect2.MaxX += ((data->icld_IconAreaLargestWidth - icon->ile_AreaWidth)/2);
+                        }
+
+                        if (icon->ile_AreaHeight < data->icld_IconAreaLargestHeight)
+                        {
+                            rect2.MinY += ((data->icld_IconAreaLargestHeight - icon->ile_AreaHeight)/2);
+                            rect2.MaxY += ((data->icld_IconAreaLargestHeight - icon->ile_AreaHeight)/2);
+                        }
                     }
 
                     if (RectAndRect(&rect, &rect2))
@@ -2122,6 +2146,20 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
             DoMethod(obj, MUIM_IconList_DrawEntryLabel, data->update_icon, ICONENTRY_DRAWMODE_PLAIN);
             data->icld_UpdateMode = 0;
             data->update_icon = NULL;
+
+            if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+            {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SINGLEICON Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+                BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+                          rect.MinX - _mleft(obj), rect.MinY - _mtop(obj),
+                          data->icld_DisplayRastPort,
+                          rect.MinX, rect.MinY,
+                          rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
+                          0xC0);
+            }
+
             MUI_RemoveClipping(muiRenderInfo(obj),clip);
             goto draw_done;
         }
@@ -2132,6 +2170,10 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
                                 yrect;
             BOOL    	    	scroll_caused_damage;
 
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL.\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+
             if (!data->icld__Option_IconListFixedBackground)
             {
                 scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
@@ -2141,12 +2183,18 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
                 if ((abs(data->update_scrolldx) >= _mwidth(obj)) ||
                     (abs(data->update_scrolldy) >= _mheight(obj)))
                 {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Moved outside current view\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
                 }
 
                 if (!(region = NewRegion()))
                 {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Couldnt Alloc Region\n", __PRETTY_FUNCTION__, draw_id));
+#endif
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
                     goto draw_done;
                 }
@@ -2197,19 +2245,38 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
                     data->update_rect2 = &yrect;
                 }
 
-                ScrollRasterBF(data->icld_BufferRastPort,
-                    data->update_scrolldx,
-                    data->update_scrolldy,
-                    _mleft(obj),
-                    _mtop(obj),
-                    _mright(obj),
-                    _mbottom(obj));
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Scrolling Raster..\n", __PRETTY_FUNCTION__, draw_id));
+#endif
+                if (data->icld_DisplayRastPort == data->icld_BufferRastPort)
+                {
+                    ScrollRasterBF(data->icld_BufferRastPort,
+                                            data->update_scrolldx,
+                                            data->update_scrolldy,
+                                            _mleft(obj),
+                                            _mtop(obj),
+                                            _mright(obj),
+                                            _mbottom(obj));
+                }
+                else
+                {
+                    ScrollRasterBF(data->icld_BufferRastPort,
+                                            data->update_scrolldx,
+                                            data->update_scrolldy,
+                                            0,
+                                            0,
+                                            _mwidth(obj),
+                                            _mheight(obj));
+                }
 
                 scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
 
                 clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
             }
 
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Causing Redraw..\n", __PRETTY_FUNCTION__, draw_id));
+#endif
             MUI_Redraw(obj, MADF_DRAWOBJECT);
 
             data->update_rect1 = data->update_rect2 = NULL;
@@ -2236,6 +2303,18 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
                     }
                 }
             }
+            if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+            {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_SCROLL: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+                BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+                          0, 0,
+                          data->icld_DisplayRastPort,
+                          _mleft(obj), _mtop(obj),
+                          _mwidth(obj), _mheight(obj),
+                          0xC0);
+            }
             goto draw_done;
         }
         else if (data->icld_UpdateMode == UPDATE_RESIZE)
@@ -2245,6 +2324,48 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
                                 hrect;
             ULONG               diffw = 0,
                                 diffh = 0;
+
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+
+            if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
+            {
+                //Free up the buffers rastport and bitmap so we can replace them ..
+                struct Bitmap *bitmap_Old = data->icld_BufferRastPort->BitMap;
+                struct Bitmap *bitmap_New;
+
+                data->icld_BufferRastPort->BitMap = NULL;
+
+                FreeRastPort(data->icld_BufferRastPort);
+                SET(obj, MUIA_IconList_BufferRastport, NULL);
+
+                ULONG tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
+                if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
+                                    data->icld_ViewHeight,
+                                    tmp_RastDepth,
+                                    BMF_CLEAR,
+                                    data->icld_DisplayRastPort->BitMap))!=NULL)
+                {
+                    if ((data->icld_BufferRastPort = CreateRastPort())!=NULL)
+                    {
+                        data->icld_BufferRastPort->BitMap = bitmap_New;
+                        SET(obj, MUIA_IconList_BufferRastport, data->icld_BufferRastPort);
+                        data->icld_DrawOffsetX = 0;
+                        data->icld_DrawOffsetY = 0;
+                    }
+                    else
+                    {
+                        FreeBitMap(bitmap_New);
+                        data->icld_BufferRastPort = data->icld_DisplayRastPort;
+                        data->icld_DrawOffsetX = _mleft(obj);
+                        data->icld_DrawOffsetY = _mtop(obj);
+                    }
+                }
+                
+                if (bitmap_Old != data->icld_BufferRastPort->BitMap)
+                    FreeBitMap(bitmap_Old);
+            }
 
             data->icld_UpdateMode = 0;
 
@@ -2316,10 +2437,16 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (A)\n", __PRETTY_FUNCTION__
 D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif
 
+        struct Rectangle viewrect;
         clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
+        viewrect.MinX = _mleft(obj);
+        viewrect.MaxX = _mleft(obj) + _mwidth(obj);
+        viewrect.MinY = _mtop(obj);
+        viewrect.MaxY = _mtop(obj) + _mheight(obj);
+
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__, draw_id));
+D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__, draw_id));
 #endif
         DoMethod(
             obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
@@ -2328,11 +2455,38 @@ D(bug("[IconList] %s#%d: Calling MUIM_DrawBackground (B)\n", __PRETTY_FUNCTION__
 
         ForeachNode(&data->icld_IconList, icon)
         {
-            if ((icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (icon->ile_DiskObj && icon->ile_IconX != NO_ICON_POSITION && icon->ile_IconY != NO_ICON_POSITION))
+            if ((icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
+                (icon->ile_DiskObj) &&
+                (icon->ile_IconX != NO_ICON_POSITION) &&
+                (icon->ile_IconY != NO_ICON_POSITION))
             {
-                DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
-                DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
+                struct Rectangle iconrect;
+                IconList_GetIconAreaRectangle(obj, data, icon, &iconrect);
+
+                iconrect.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
+                iconrect.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
+                iconrect.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
+                iconrect.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
+
+                if (RectAndRect(&viewrect, &iconrect))
+                {
+                    DoMethod(obj, MUIM_IconList_DrawEntry, icon, ICONENTRY_DRAWMODE_PLAIN);
+                    DoMethod(obj, MUIM_IconList_DrawEntryLabel, icon, ICONENTRY_DRAWMODE_PLAIN);
+                }
             }
+        }
+
+        if (data->icld_DisplayRastPort != data->icld_BufferRastPort)
+        {
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Blitting to front rastport..\n", __PRETTY_FUNCTION__, draw_id));
+#endif 
+			BltBitMapRastPort(data->icld_BufferRastPort->BitMap,
+					  0, 0,
+					  data->icld_DisplayRastPort,
+					  _mleft(obj), _mtop(obj),
+					  _mwidth(obj), _mheight(obj),
+					  0xC0);
         }
 
         MUI_RemoveClipping(muiRenderInfo(obj), clip);

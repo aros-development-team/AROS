@@ -51,6 +51,7 @@ extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 struct IconWindowIconList_DATA
 {
 	Object                       *iwcd_IconWindow;
+	struct RastPort     		 *iwcd_RastPort;
 	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
 	IPTR                         iwcd_ViewPrefs_ID;
@@ -60,6 +61,7 @@ struct IconWindowIconList_DATA
 struct IconWindowIconDrawerList_DATA
 {
 	Object                       *iwcd_IconWindow;
+	struct RastPort     		 *iwcd_RastPort;
 	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
 	IPTR                         iwcd_ViewPrefs_ID;
@@ -70,6 +72,7 @@ struct IconWindowIconDrawerList_DATA
 struct IconWindowIconVolumeList_DATA
 {
 	Object                       *iwcd_IconWindow;
+	struct RastPort     		 *iwcd_RastPort;
 	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
 	IPTR                         iwcd_ViewPrefs_ID;
@@ -84,6 +87,7 @@ struct IconWindowIconVolumeList_DATA
 struct IconWindowIconNetworkBrowserList_DATA
 {
 	Object                       *iwcd_IconWindow;
+	struct RastPort     		 *iwcd_RastPort;
 	struct MUI_EventHandlerNode  iwcd_EventHandlerNode;
 	struct Hook					 iwcd_ProcessIconListPrefs_hook;
 	IPTR                         iwcd_ViewPrefs_ID;
@@ -486,14 +490,21 @@ IPTR IconWindowIconList__OM_SET(Class *CLASS, Object *self, struct opSet *messag
 		{
 			case MUIA_Background:
 			{
-				D(bug("[IconWindowIconList] IconWindowIconList__OM_SET: MUIA_Background\n"));
+				D(bug("[IconWindowIconList] %s: MUIA_Background\n", __PRETTY_FUNCTION__));
 				break;
 			}
 			case MUIA_IconWindow_Window:
 			{
+				D(bug("[IconWindowIconList] %s: MUIA_IconWindow_Window @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
 				data->iwcd_IconWindow = tag->ti_Data;
 				break;
 			}
+            case MUIA_IconList_BufferRastport:
+            {
+				D(bug("[IconWindowIconList] %s: MUIA_IconList_BufferRastport @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                data->iwcd_RastPort = tag->ti_Data;
+				break;
+            }
 		}
 	}
 	return DoSuperMethodA(CLASS, self, (Msg) message);
@@ -875,17 +886,34 @@ IPTR IconWindowIconList__MUIM_DrawBackground
 	struct RastPort     		  *DrawBackGround_RastPort = _rp(self);
 	struct IconWindowBackFillMsg  DrawBackGround_BackFillMsg;
 
+    if ((data->iwcd_RastPort != NULL) && (DrawBackGround_RastPort != data->iwcd_RastPort))
+    {
+        DrawBackGround_RastPort = data->iwcd_RastPort;
+
+        DrawBackGround_BackFillMsg.AreaBounds.MinX = 0;
+        DrawBackGround_BackFillMsg.AreaBounds.MinY = 0;
+        DrawBackGround_BackFillMsg.AreaBounds.MaxX = _mwidth(self);
+        DrawBackGround_BackFillMsg.AreaBounds.MaxY = _mheight(self);
+
+        DrawBackGround_BackFillMsg.DrawBounds.MinX = message->left - _mleft(self);
+        DrawBackGround_BackFillMsg.DrawBounds.MinY = message->top - _mtop(self);
+        DrawBackGround_BackFillMsg.DrawBounds.MaxX = message->width;
+        DrawBackGround_BackFillMsg.DrawBounds.MaxY = message->height;
+    }
+    else
+    {
+        DrawBackGround_BackFillMsg.AreaBounds.MinX = _mleft(self);
+        DrawBackGround_BackFillMsg.AreaBounds.MinY = _mtop(self);
+        DrawBackGround_BackFillMsg.AreaBounds.MaxX = (_mleft(self) + _mwidth(self));
+        DrawBackGround_BackFillMsg.AreaBounds.MaxY = (_mtop(self) + _mheight(self));
+
+        DrawBackGround_BackFillMsg.DrawBounds.MinX = message->left;
+        DrawBackGround_BackFillMsg.DrawBounds.MinY = message->top;
+        DrawBackGround_BackFillMsg.DrawBounds.MaxX = (message->left + message->width);
+        DrawBackGround_BackFillMsg.DrawBounds.MaxY = (message->top + message->height);
+    }
+
 	DrawBackGround_BackFillMsg.Layer = DrawBackGround_RastPort->Layer;
-
-	DrawBackGround_BackFillMsg.AreaBounds.MinX = _mleft(self);
-	DrawBackGround_BackFillMsg.AreaBounds.MinY = _mtop(self);
-	DrawBackGround_BackFillMsg.AreaBounds.MaxX = (_mleft(self) + _mwidth(self));
-	DrawBackGround_BackFillMsg.AreaBounds.MaxY = (_mtop(self) + _mheight(self));
-
-	DrawBackGround_BackFillMsg.DrawBounds.MinX = message->left;
-	DrawBackGround_BackFillMsg.DrawBounds.MinY = message->top;
-	DrawBackGround_BackFillMsg.DrawBounds.MaxX = (message->left + message->width);
-	DrawBackGround_BackFillMsg.DrawBounds.MaxY = (message->top + message->height);
 
 	/* Offset into source image (ala scroll bar position) */
 	DrawBackGround_BackFillMsg.OffsetX = message->xoffset;
