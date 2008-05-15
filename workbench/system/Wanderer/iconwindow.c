@@ -777,6 +777,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 #if defined(ICONWINDOW_BUFFERLIST)
                 if (!(data->iwd_Flag_ISROOT))
                 {
+                    IPTR  			CURDISPFLAGS = NULL;
                     GET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, &CURDISPFLAGS);
                     CURDISPFLAGS |= ICONLIST_DISP_BUFFERED;
                     SET(data->iwd_IconListObj, MUIA_IconList_DisplayFlags, CURDISPFLAGS);
