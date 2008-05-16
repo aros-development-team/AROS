@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -26,7 +26,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_PACKETS
-#include <aros/debug.h>
+#include "debug.h"
 
 void ProcessPackets(void) {
     struct Message *msg;
@@ -45,10 +45,9 @@ void ProcessPackets(void) {
                 UBYTE *path = BADDR(pkt->dp_Arg2);
                 LONG access = pkt->dp_Arg3;
 
-                D(bug("[fat] LOCATE_OBJECT: lock 0x%08x (dir %ld/%ld) name '%.*s' type %s\n",
-                      pkt->dp_Arg1,
-                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
-                      path[0], &path[1],
+		D(bug("[fat] LOCATE_OBJECT: lock 0x%08x (dir %ld/%ld) name '", pkt->dp_Arg1,
+-                     fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+		RawPutChars(&path[1], path[0]); bug("' type %s\n",
                       pkt->dp_Arg3 == EXCLUSIVE_LOCK ? "EXCLUSIVE" : "SHARED"));
 
                 if ((err = TestLock(fl)))
@@ -198,13 +197,13 @@ void ProcessPackets(void) {
                 UBYTE *path = BADDR(pkt->dp_Arg3);
                 struct ExtFileLock *lock;
 
-                D(bug("[fat] %s: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
-                      pkt->dp_Type == ACTION_FINDINPUT  ? "FINDINPUT"  :
-                      pkt->dp_Type == ACTION_FINDOUTPUT ? "FINDOUTPUT" :
-                                                          "FINDUPDATE",
-                      pkt->dp_Arg2,
-                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
-                      path[0], &path[1]));
+	        D(bug("[fat] %s: lock 0x%08x (dir %ld/%ld) path '",
+		      pkt->dp_Type == ACTION_FINDINPUT  ? "FINDINPUT"  :
+		      pkt->dp_Type == ACTION_FINDOUTPUT ? "FINDOUTPUT" :
+							  "FINDUPDATE",
+		      pkt->dp_Arg2,
+		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+		  RawPutChars(&path[1], path[0]); bug("'\n"));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -505,8 +504,7 @@ void ProcessPackets(void) {
             case ACTION_RENAME_DISK: {
                 UBYTE *name = BADDR(pkt->dp_Arg1);
                 
-                D(bug("[fat] RENAME_DISK: name '%.*s'\n",
-                      name[0], &name[1]));
+		D(bug("[fat] RENAME_DISK: name '"); RawPutChars(&name[1], name[0]); bug("'\n"));
 
                 if (glob->sb->doslist == NULL) {
                     err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
@@ -532,10 +530,10 @@ void ProcessPackets(void) {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 UBYTE *name = BADDR(pkt->dp_Arg2);
 
-                D(bug("[fat] DELETE_OBJECT: lock 0x%08x (dir %ld/%ld) path '%.*s'\n",
-                      pkt->dp_Arg1,
-                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
-                      name[0], &name[1]));
+	        D(bug("[fat] DELETE_OBJECT: lock 0x%08x (dir %ld/%ld) path '",
+		      pkt->dp_Arg1,
+		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+		  RawPutChars(&name[1], name[0]); bug("'\n"));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -549,13 +547,13 @@ void ProcessPackets(void) {
                 struct ExtFileLock *sfl = BADDR(pkt->dp_Arg1), *dfl = BADDR(pkt->dp_Arg3);
                 UBYTE *sname = BADDR(pkt->dp_Arg2), *dname = BADDR(pkt->dp_Arg4);
 
-                D(bug("[fat] RENAME_OBJECT: srclock 0x%08x (dir %ld/%ld) name '%.*s' destlock 0x%08x (dir %ld/%ld) name '%.*s'\n",
-                      pkt->dp_Arg1,
-                      sfl != NULL ? sfl->gl->dir_cluster : 0, sfl != NULL ? sfl->gl->dir_entry : 0,
-                      sname[0], &sname[1],
-                      pkt->dp_Arg3,
-                      dfl != NULL ? dfl->gl->dir_cluster : 0, dfl != NULL ? dfl->gl->dir_entry : 0,
-                      dname[0], &dname[1]));
+	        D(bug("[fat] RENAME_OBJECT: srclock 0x%08x (dir %ld/%ld) name '",
+		      pkt->dp_Arg1,
+		      sfl != NULL ? sfl->gl->dir_cluster : 0, sfl != NULL ? sfl->gl->dir_entry : 0);
+		  RawPutChars(&sname[1], sname[0]); bug("' destlock 0x%08x (dir %ld/%ld) name '",
+		      pkt->dp_Arg3,
+		      dfl != NULL ? dfl->gl->dir_cluster : 0, dfl != NULL ? dfl->gl->dir_entry : 0);
+		  RawPutChars(&dname[1], dname[0]); bug("'\n"));
 
                 if ((err = TestLock(sfl)) != 0 || (err = TestLock(dfl)) != 0)
                     break;
@@ -569,10 +567,10 @@ void ProcessPackets(void) {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *new;
                 UBYTE *name = BADDR(pkt->dp_Arg2);
 
-                D(bug("[fat] CREATE_DIR: lock 0x%08x (dir %ld/%ld) name '%.*s'\n",
-                      pkt->dp_Arg1,
-                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
-                      name[0], &name[1]));
+	        D(bug("[fat] CREATE_DIR: lock 0x%08x (dir %ld/%ld) name '",
+		      pkt->dp_Arg1,
+		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+		  RawPutChars(&name[1], name[0]); bug("'\n"));
 
                 if ((err = TestLock(fl)))
                     break;
@@ -588,12 +586,9 @@ void ProcessPackets(void) {
                 UBYTE *name = BADDR(pkt->dp_Arg3);
                 ULONG prot = pkt->dp_Arg4;
 
-                D(bug("[fat] SET_PROTECT: lock 0x%08x (dir %ld/%ld) name '%.*s' prot 0x%08x\n",
-                      pkt->dp_Arg2,
-                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
-                      name[0], &name[1],
-                      prot));
-
+	        D(bug("[fat] SET_PROTECT: lock 0x%08x (dir %ld/%ld) name '", pkt->dp_Arg2,
+		      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+		  RawPutChars(&name[1], name[0]); bug("' prot 0x%08x\n", prot));
                 if ((err = TestLock(fl)))
                     break;
 
@@ -605,7 +600,7 @@ void ProcessPackets(void) {
             case ACTION_SET_DATE: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg2);
                 UBYTE *name = BADDR(pkt->dp_Arg3);
-                struct DateStamp *ds = pkt->dp_Arg4;
+		struct DateStamp *ds = (struct DateStamp *)pkt->dp_Arg4;
 
 #if defined(DEBUG) && DEBUG != 0
                 {
@@ -620,11 +615,10 @@ void ProcessPackets(void) {
                     dt.dat_StrTime = NULL;
                     DateToStr(&dt);
 
-                    D(bug("[fat] SET_DATE: lock 0x%08x (dir %ld/%ld) name '%.*s' ds '%s'\n",
-                          pkt->dp_Arg2,
-                          fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0,
-                          name[0], &name[1],
-                          datestr));
+		    D(bug("[fat] SET_DATE: lock 0x%08x (dir %ld/%ld) name '",
+			  pkt->dp_Arg2,
+			  fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+		      RawPutChars(&name[1], name[0]); bug("' ds '%s'\n", datestr));
                 }
 #endif
 
@@ -637,7 +631,7 @@ void ProcessPackets(void) {
             }
 
             case ACTION_ADD_NOTIFY: {
-                struct NotifyRequest *nr = pkt->dp_Arg1;
+		struct NotifyRequest *nr = (struct NotifyRequest *)pkt->dp_Arg1;
 
                 D(bug("[fat] ADD_NOTIFY: nr 0x%08x name '%s'\n", nr, nr->nr_FullName));
 
@@ -647,7 +641,7 @@ void ProcessPackets(void) {
             }
 
             case ACTION_REMOVE_NOTIFY: {
-                struct NotifyRequest *nr = pkt->dp_Arg1;
+		struct NotifyRequest *nr = (struct NotifyRequest *)pkt->dp_Arg1;
 
                 D(bug("[fat] REMOVE_NOTIFY: nr 0x%08x name '%s'\n", nr, nr->nr_FullName));
 

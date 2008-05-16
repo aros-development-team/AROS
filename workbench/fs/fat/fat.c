@@ -10,6 +10,8 @@
  * $Id$
  */
 
+#include <aros/macros.h>
+#include <exec/errors.h>
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -25,9 +27,10 @@
 
 #include "fat_fs.h"
 #include "fat_protos.h"
+#include "timer.h"
 
 #define DEBUG DEBUG_MISC
-#include <aros/debug.h>
+#include "debug.h"
 
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
@@ -91,6 +94,7 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
 
         val = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
         val |= *GetFatEntryPtr(sb, offset, NULL);
+	val = AROS_LE2WORD(val);
     }
     else
         val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL)));
@@ -129,6 +133,7 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 
         newval = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
         newval |= *GetFatEntryPtr(sb, offset, NULL);
+	newval = AROS_LE2WORD(newval);
     }
     else {
         fat = (UWORD *) GetFatEntryPtr(sb, offset, &b);
@@ -179,13 +184,16 @@ static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 LONG ReadFATSuper(struct FSSuper *sb ) {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
     LONG err;
-    UBYTE raw[512];
-    struct FATBootSector *boot = (struct FATBootSector *) &raw;
+    ULONG bsize = de->de_SizeBlock * 4;
+    struct FATBootSector *boot;
     BOOL invalid = FALSE;
+    ULONG end;
 
     D(bug("[fat] reading boot sector\n"));
 
-
+    boot = AllocMem(bsize, MEMF_ANY);
+    if (!boot)
+	return ERROR_NO_FREE_STORE;
     /*
      * Read the boot sector. We go direct because we don't have a cache yet,
      * and can't create one until we know the sector size, which is held in
@@ -198,14 +206,9 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 
     D(bug("[fat] boot sector at sector %ld\n", sb->first_device_sector));
 
-    glob->diskioreq->iotd_Req.io_Command = CMD_READ;
-    glob->diskioreq->iotd_Req.io_Offset = sb->first_device_sector * de->de_SizeBlock * 4;
-    glob->diskioreq->iotd_Req.io_Length = 512;
-    glob->diskioreq->iotd_Req.io_Data = &raw;
-    glob->diskioreq->iotd_Req.io_Flags = IOF_QUICK;
-
-    if ((err = DoIO((struct IORequest *) glob->diskioreq)) != 0) {
+    if ((err = AccessDisk(FALSE, sb->first_device_sector, 1, bsize, (UBYTE *)boot)) != 0) {
         D(bug("[fat] couldn't read boot block (%ld)\n", err));
+	FreeMem(boot, bsize);
         return err;
     }
 
@@ -282,15 +285,22 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
         invalid = TRUE;
 
     /* FAT "signature" */
-    if (raw[510] != 0x55 || raw[511] != 0xaa)
+    if (boot->bpb_signature[0] != 0x55 || boot->bpb_signature[1] != 0xaa)
         invalid = TRUE;
  
     if (invalid) {
         D(bug("\tInvalid FAT Boot Sector\n"));
+	FreeMem(boot, bsize);
         return ERROR_NOT_A_DOS_DISK;
     }
+    end = 0xFFFFFFFF / sb->sectorsize;
+    if ((sb->first_device_sector + sb->total_sectors - 1 > end) && (glob->readcmd == CMD_READ)) {
+	D(bug("\tDevice is too large\n"));
+	FreeMem(boot, bsize);
+	return IOERR_BADADDRESS;
+    }
 
-    sb->cache = cache_new(glob->diskioreq, 64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
+    sb->cache = cache_new(64, 256, sb->sectorsize, CACHE_WRITETHROUGH);
  
     if (sb->clusters_count < 4085) {
         D(bug("\tFAT12 filesystem detected\n"));
@@ -377,7 +387,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     NEWLIST(&(sb->notifies));
 
     D(bug("\tFAT Filesystem succesfully detected.\n"));
-
+    FreeMem(boot, bsize);
     return 0;
 }
 
@@ -397,7 +407,7 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
 
         /* match the volume id entry */
-        if ((de.e.entry.attr & ATTR_LONG_NAME_MASK) == ATTR_VOLUME_ID) {
+	if ((de.e.entry.attr & ATTR_VOLUME_ID_MASK) == ATTR_VOLUME_ID) {
             D(bug("[fat] found volume id entry %ld\n", dh.cur_index));
 
             /* copy the name in. volume->name is a BSTR */
@@ -519,6 +529,7 @@ LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
 
 void FreeFATSuper(struct FSSuper *sb) {
     D(bug("\tRemoving Super Block from memory\n"));
+    cache_free(sb->cache);
     FreeVecPooled(glob->mempool, sb->fat_blocks);
     sb->fat_blocks = NULL;
 }

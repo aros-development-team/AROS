@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,6 +10,9 @@
  * $Id$
  */
 
+#define AROS_ALMOST_COMPATIBLE
+
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -26,7 +29,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_LOCK
-#include <aros/debug.h>
+#include "debug.h"
 
 #if DEBUG == 0
 #define DumpLocks(sb)
@@ -42,7 +45,8 @@ void DumpLocks(struct FSSuper *sb) {
     
     ForeachNode(&sb->locks, gl) {
         ListLength(&gl->locks, count);
-        bug("    (%ld/%ld) %.*s: %ld references\n", gl->dir_cluster, gl->dir_entry, gl->name[0], &(gl->name[1]), count);
+	bug("    (%ld/%ld) ", gl->dir_cluster, gl->dir_entry); RawPutChars(&(gl->name[1]), gl->name[0]);
+	bug(": %ld references\n",  count);
     }
 }
 #endif
@@ -85,7 +89,8 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     /* get the first cluster of the directory to look for the file in */
     dir_cluster = (fl != NULL) ? fl->ioh.first_cluster : 0;
 
-    D(bug("[fat] trying to obtain lock on '%.*s' in dir at cluster %ld\n", namelen, name, dir_cluster));
+    D(bug("[fat] trying to obtain lock on '"); RawPutChars(name, namelen);
+      bug("' in dir at cluster %ld\n", dir_cluster));
     
     /* open the dir */
     InitDirHandle(glob->sb, dir_cluster, &dh);
@@ -226,6 +231,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
     fl->do_notify = FALSE;
 
     fl->gl = gl;
+    fl->sb = glob->sb;
     ADDTAIL(&gl->locks, &fl->node);
 
     D(bug("[fat] created file lock 0x%08x\n", fl));
@@ -267,6 +273,7 @@ LONG LockRoot(LONG access, struct ExtFileLock **lock) {
     fl->do_notify = FALSE;
 
     fl->gl = &glob->sb->root_lock;
+    fl->sb = glob->sb;
     ADDTAIL(&glob->sb->root_lock.locks, &fl->node);
 
     D(bug("[fat] created root lock 0x%08x\n", fl));
@@ -304,10 +311,10 @@ void FreeLock(struct ExtFileLock *fl) {
 
     REMOVE(&fl->node);
 
-    if (IsListEmpty(&fl->gl->locks) && fl->gl != &glob->sb->root_lock) {
+    if (IsListEmpty((struct List *)&fl->gl->locks) && fl->gl != &fl->sb->root_lock) {
         REMOVE(fl->gl);
 
-        ForeachNode(&glob->sb->notifies, nn)
+	ForeachNode(&fl->sb->notifies, nn)
             if(nn->gl == fl->gl)
                 nn->gl = NULL;
 
@@ -316,12 +323,11 @@ void FreeLock(struct ExtFileLock *fl) {
         D(bug("[fat] freed associated global lock\n"));
     }
 
+    DumpLocks(fl->sb);
     if (fl->ioh.block != NULL)
-        cache_put_block(glob->sb->cache, fl->ioh.block, 0);
+	cache_put_block(fl->sb->cache, fl->ioh.block, 0);
 
     FreeVecPooled(glob->mempool, fl);
-
-    DumpLocks(glob->sb);
 }
 
 #if 0

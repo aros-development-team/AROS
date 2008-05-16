@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -52,7 +52,8 @@ struct FATBootSector {
             UBYTE bs_filsystype[8];
         } __attribute__ ((__packed__)) fat32;
     } type;
-
+    UBYTE pad[420];
+    UBYTE bpb_signature[2];
 } __attribute__ ((__packed__));
 
 struct FATFSInfo {
@@ -89,16 +90,17 @@ struct FATDirEntry {
 
 #define ATTR_LONG_NAME (ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID)
 #define ATTR_LONG_NAME_MASK (ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID | ATTR_DIRECTORY | ATTR_ARCHIVE)
+#define ATTR_VOLUME_ID_MASK (ATTR_VOLUME_ID | ATTR_DIRECTORY)
 
 struct FATLongDirEntry {
     UBYTE order;
-    UBYTE name1[10];
+    UWORD name1[5];
     UBYTE attr;
     UBYTE type;
     UBYTE checksum;
-    UBYTE name2[12];
+    UWORD name2[6];
     UWORD first_cluster_lo;
-    UBYTE name3[4];
+    UWORD name3[2];
 } __attribute__ ((__packed__));
 
 #define FAT_MAX_LONG_FILENAME 0xff

@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -112,6 +112,7 @@ struct ExtFileLock {
     ULONG               pos;            /* current seek position within the file */
 
     BOOL                do_notify;      /* if set, send notification on file close (ACTION_END) */
+    struct FSSuper      *sb;            /* pointer to sb, for unlocking when volume is removed */
 };
 
 struct GlobalLock {
@@ -219,6 +220,13 @@ struct Globals {
     struct IOExtTD *diskioreq;
     struct IOExtTD *diskchgreq;
     struct MsgPort *diskport;
+    struct timerequest *timereq;
+    struct MsgPort *timerport;
+    ULONG last_num;
+    UWORD readcmd;
+    UWORD writecmd;
+    char timer_active;
+    char restart_timer;
 
     /* volumes */
     struct FSSuper *sb;    /* current sb */
@@ -227,6 +235,10 @@ struct Globals {
     /* disk status */
     LONG disk_inserted;
     LONG disk_inhibited;
+
+    /* Character sets translation */
+    UBYTE from_unicode[65536];
+    UWORD to_unicode[256];
 };
 
 #include "support.h"

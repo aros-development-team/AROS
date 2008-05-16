@@ -10,6 +10,7 @@
  * $Id$
  */
 
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
@@ -23,7 +24,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_DIRENTRY
-#include <aros/debug.h>
+#include "debug.h"
 
 #define RESET_DIRHANDLE(dh)         \
     do {                            \
@@ -181,7 +182,7 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
     ULONG buflen;
     LONG err;
 
-    D(bug("[fat] looking for dir entry with name '%.*s'\n", namelen, name));
+    D(bug("[fat] looking for dir entry with name '%s'\n", name));
 
     /* start at the start */
     RESET_DIRHANDLE(dh);
@@ -191,14 +192,14 @@ LONG GetDirEntryByName(struct DirHandle *dh, STRPTR name, ULONG namelen, struct 
         /* compare with the short name first, since we already have it */
         GetDirEntryShortName(de, buf, &buflen);
         if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
-            D(bug("[fat] matched short name '%.*s' at entry %ld, returning\n", buflen, buf, dh->cur_index));
+	    D(bug("[fat] matched short name '%s' at entry %ld, returning\n", buf, dh->cur_index));
             return 0;
         }
 
         /* no match, extract the long name and compare with that instead */
         GetDirEntryLongName(de, buf, &buflen);
         if (namelen == buflen && strnicmp((char *) name, (char *) buf, buflen) == 0) {
-            D(bug("[fat] matched long name '%.*s' at entry %ld, returning\n", buflen, buf, dh->cur_index));
+	    D(bug("[fat] matched long name '%s' at entry %ld, returning\n", buf, dh->cur_index));
             return 0;
         }
     }
@@ -210,7 +211,8 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
     LONG err;
     ULONG len, i;
 
-    D(bug("[fat] looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->ioh.first_cluster));
+    D(bug("[fat] looking for entry with path '"); RawPutChars(path, pathlen);
+      bug("' from dir at cluster %ld\n", dh->ioh.first_cluster));
 
     /* get back to the start of the dir */
     RESET_DIRHANDLE(dh);
@@ -229,7 +231,8 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
             break;
         }
 
-    D(bug("[fat] now looking for entry with path '%.*s' from dir at cluster %ld\n", pathlen, path, dh->ioh.first_cluster));
+    D(bug("[fat] now looking for entry with path '"); RawPutChars(path, pathlen);
+      bug("' from dir at cluster %ld\n", dh->ioh.first_cluster));
 
     /* each time around the loop we find one dir/file in the full path */
     while (pathlen > 0) {
@@ -237,15 +240,15 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         /* zoom forward and find the first dir separator */
         for (len = 0; len < pathlen && path[len] != '/'; len++);
 
-        D(bug("[fat] remaining path is '%.*s' (%d bytes), "
-            "current chunk is '%.*s' (%d bytes)\n", pathlen, path, pathlen,
-            len, path, len));
+	D(bug("[fat] remaining path is '"); RawPutChars(path, pathlen);
+	  bug("' (%d bytes), current chunk is '", pathlen); RawPutChars(path, len);
+	  bug("' (%d bytes)\n", len));
 
         /* if the first character is a /, or they've asked for '..', then we
          * have to go up a level */
         if (len == 0) {
 
-            /* get the parent dir, and bale if we've gone past it (ie we are
+            /* get the parent dir, and bail if we've gone past it (ie we are
              * the root) */
             if ((err = GetParentDir(dh, de)) != 0)
                 return err;
@@ -261,7 +264,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         path += len;
         pathlen -= len;
 
-        /* a / here is either the path separator or the directory we just went
+        /* a / here is either the path seperator or the directory we just went
          * up. either way, we have to ignore it */
         if (pathlen > 0 && path[0] == '/') {
             path++;
@@ -311,7 +314,8 @@ LONG CreateDirEntry(struct DirHandle *dh, STRPTR name, ULONG namelen, UBYTE attr
     ULONG nfound;
     struct DateStamp ds;
 
-    D(bug("[fat] creating dir entry (name '%.*s' attr 0x%02x cluster %ld)\n", namelen, name, attr, cluster));
+    D(bug("[fat] creating dir entry (name '"); RawPutChars(name, namelen);
+      bug("' attr 0x%02x cluster %ld)\n", attr, cluster));
 
     /* find out how many entries we need */
     nwant = NumLongNameEntries(name, namelen) + 1;
@@ -494,9 +498,9 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
         ReleaseDirHandle(&dh);
     }
 
-    len = gl->name[0] <= 107 ? gl->name[0] : 107;
+    len = gl->name[0] <= 106 ? gl->name[0] : 106;
     CopyMem(gl->name, fib->fib_FileName, len + 1);
-    D(fib->fib_FileName[len + 1] = '\0');
+    fib->fib_FileName[len + 1] = '\0';
     D(bug("\t\tname (len %ld) %s\n", len, fib->fib_FileName + 1));
 
     fib->fib_Protection = 0;

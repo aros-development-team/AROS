@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -22,9 +22,16 @@
 #include <proto/intuition.h>
 #include <proto/exec.h>
 
+#include <stdarg.h>
 #include <string.h>
 
 #include "fat_fs.h"
+
+#ifdef __PPC__
+#define ARGS(ap) ap->overflow_arg_area
+#else
+#define ARGS(ap) (ULONG *)ap
+#endif
 
 void SendEvent(LONG event) {
     struct IOStdReq *InputRequest;
@@ -73,3 +80,27 @@ int ilog2(ULONG data) {
 }
 
 /*-----------------------------------------------------------------------*/
+
+void ErrorMessage(char *fmt, ...)
+{
+	va_list ap;
+	struct IntuitionBase *IntuitionBase;
+
+	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
+	if (IntuitionBase) {
+		struct EasyStruct es = {
+			sizeof (struct EasyStruct),
+			0,
+			"FAT filesystem critical error",
+			NULL,
+			"Ok"
+		};
+		va_start(ap, fmt);
+
+		es.es_TextFormat = fmt;
+		EasyRequestArgs(NULL, &es, NULL, ARGS(ap));
+		va_end(ap);
+		CloseLibrary((struct Library *)IntuitionBase);
+	}
+}
+
