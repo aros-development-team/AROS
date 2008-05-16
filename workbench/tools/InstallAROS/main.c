@@ -460,6 +460,8 @@ IPTR Install__MUIM_FindDrives
 	{
 		devnode = CurBootNode->bn_DeviceNode;
 		StartMess = devnode->dvi_Startup;
+		if (!StartMess) continue;
+
 		DriveEnv = StartMess->fssm_Environ;
 
 		if (!myCheckFloppy(DriveEnv))
@@ -2631,20 +2633,6 @@ BOOPSI_DISPATCHER_END
 
 int main(int argc,char *argv[])
 {
-#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-	// don't run on 'hosted' because it segfaults
-	struct EasyStruct es =
-	{
-		sizeof(struct EasyStruct),
-		0,
-		"InstallAROS Error",
-		"Sorry, you can't use InstallAROS on 'hosted'.",
-		"OK",
-	};
-
-	EasyRequest( NULL, &es, NULL );
-	return 0;
-#endif
 
 /**/
 	Object			*wnd = NULL;             /* installer window objects  - will get swallowed into the class eventually */
