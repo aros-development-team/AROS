@@ -130,13 +130,29 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
         /* start it up */
         snprintf(pr_name, sizeof(pr_name), "filesys process for %s", mount->mount_point);
+#if 1
+#warning "CreateNewProcTags (alib) crashes because DOSBase = NULL"
+	{
+    	    struct TagItem tags[] =
+	    {
+		{NP_Entry   	, (IPTR) packet_startup },
+        	{NP_Name    	, pr_name   	    	},
+        	{NP_StackSize	, dn->dn_StackSize  	},
+        	{NP_Priority	, dn->dn_Priority  	},
+        	{NP_UserData	, (IPTR) seglist   	},
+        	{TAG_DONE   	    	    	    	}
+	    };
+
+	    mount->process = CreateNewProc(tags);
+	}
+#else
         mount->process = CreateNewProcTags(NP_Entry,     (IPTR) packet_startup,
                                            NP_Name,      pr_name,
                                            NP_StackSize, dn->dn_StackSize,
                                            NP_Priority,  dn->dn_Priority,
                                            NP_UserData,  (IPTR) seglist,
                                            TAG_DONE);
-
+#endif
         reply_port = CreateMsgPort();
 
         msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
