@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2631,6 +2631,20 @@ BOOPSI_DISPATCHER_END
 
 int main(int argc,char *argv[])
 {
+#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+	// don't run on 'hosted' because it segfaults
+	struct EasyStruct es =
+	{
+		sizeof(struct EasyStruct),
+		0,
+		"InstallAROS Error",
+		"Sorry, you can't use InstallAROS on 'hosted'.",
+		"OK",
+	};
+
+	EasyRequest( NULL, &es, NULL );
+	return 0;
+#endif
 
 /**/
 	Object			*wnd = NULL;             /* installer window objects  - will get swallowed into the class eventually */
