@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,6 +10,7 @@
  * $Id$
  */
 
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
@@ -22,7 +23,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_NAMES
-#include <aros/debug.h>
+#include "debug.h"
 
 LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     int i;
@@ -37,7 +38,8 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
         return 0;
     }
 
-    D(bug("[fat] extracting short name for name '%.11s' (index %ld)\n", raw, de->index));
+    D(bug("[fat] extracting short name for name '"); RawPutChars(raw, 11);
+      bug("' (index %ld)\n", de->index));
 
     /* copy the chars into the return string */
     c = name;
@@ -82,7 +84,7 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
     *c = '\0';
     *len = strlen(name);
 
-    D(bug("[fat] extracted short name '%.*s'\n", *len, name));
+    D(bug("[fat] extracted short name '"); RawPutChars(name, *len); bug("\n"));
 
     return 0;
 }
@@ -149,15 +151,15 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
          * that works well enough but is still a hack. if our dos ever
          * supports unicode this should be revisited */
         for (i = 0; i < 5; i++) {
-            *c = de.e.long_entry.name1[i << 1];
+	    *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name1[i])];
             c++;
         }
         for (i = 0; i < 6; i++) {
-            *c = de.e.long_entry.name2[i << 1];
+	    *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name2[i])];
             c++;
         }
         for (i = 0; i < 2; i++) {
-            *c = de.e.long_entry.name3[i << 1];
+	    *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name3[i])];
             c++;
         }
 
@@ -167,7 +169,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
             *len = strlen((char *) buf);
             CopyMem(buf, name, *len);
 
-            D(bug("[fat] extracted long name '%.*s'\n", *len, name));
+	    D(bug("[fat] extracted long name '%s'\n", name));
 
             ReleaseDirHandle(&dh);
 
@@ -200,7 +202,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     UBYTE checksum;
     UBYTE order;
 
-    D(bug("[fat] setting name for entry index %ld to '%.*s'\n", short_de->index, len, name));
+    D(bug("[fat] setting name for entry index %ld to '", short_de->index,);
+      RawPutChars(name, len); bug("'\n"));
 
     nlong = NumLongNameEntries(name, len);
     D(bug("[fat] name requires %ld long name entries\n", nlong));
@@ -376,18 +379,15 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 
         /* copy bytes in */
         for (dst = 0; dst < 5; dst++) {
-            de.e.long_entry.name1[dst << 1] = src < len ? name[src++] : 0x00;
-            de.e.long_entry.name1[(dst << 1)+1] = 0;
+	    de.e.long_entry.name1[dst] = src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) : 0x00;
         }
 
         for (dst = 0; dst < 6; dst++) {
-            de.e.long_entry.name2[dst << 1] = src < len ? name[src++] : 0x00;
-            de.e.long_entry.name2[(dst << 1)+1] = 0;
+	    de.e.long_entry.name2[dst] = src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) : 0x00;
         }
 
         for (dst = 0; dst < 2; dst++) {
-            de.e.long_entry.name3[dst << 1] = src < len ? name[src++] : 0x00;
-            de.e.long_entry.name3[(dst << 1)+1] = 0;
+	    de.e.long_entry.name3[dst] = src < len ? AROS_WORD2LE(glob->to_unicode[name[src++]]) : 0x00;
         }
 
         /* setup the rest of the entry */

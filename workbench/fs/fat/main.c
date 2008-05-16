@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,6 +10,8 @@
  * $Id$
  */
 
+#include <aros/asmcall.h>
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -26,9 +28,11 @@
 
 #include "fat_fs.h"
 #include "fat_protos.h"
+#include "charset.h"
+#include "timer.h"
 
 #define DEBUG DEBUG_MISC
-#include <aros/debug.h>
+#include "debug.h"
 
 struct DosLibrary *DOSBase;
 struct Library *UtilityBase;
@@ -40,6 +44,7 @@ struct Globals *glob = &global_data;
 void handler(void) {
     struct Message *msg;
     struct DosPacket *startuppacket;
+    struct DosList *dl;
     LONG error = ERROR_NO_FREE_STORE;
 
     glob->ourtask = FindTask(NULL);
@@ -61,56 +66,72 @@ void handler(void) {
                 glob->fssm = BADDR(startuppacket->dp_Arg2);
 
                 if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD))) {
-                    ULONG diskchgsig_bit;
 
-                    if ((error = InitDiskHandler(glob->fssm, &diskchgsig_bit)) == 0) {
-                        ULONG pktsig = 1 << glob->ourport->mp_SigBit;
-                        ULONG diskchgsig = 1 << diskchgsig_bit;
-                        ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
-                        ULONG mask = pktsig | diskchgsig | notifysig;
-                        ULONG sigs;
-                        struct MsgPort *rp;
+		    error = InitTimer();
+		    if (!error) {
+			ULONG diskchgsig_bit;
 
-                        D(bug("\tInitiated device: %.*s\n", AROS_BSTR_strlen(glob->devnode->dol_Name), AROS_BSTR_ADDR(glob->devnode->dol_Name)));
+			InitCharsetTables();
+                        if ((error = InitDiskHandler(glob->fssm, &diskchgsig_bit)) == 0) {
+                            ULONG pktsig = 1 << glob->ourport->mp_SigBit;
+                            ULONG diskchgsig = 1 << diskchgsig_bit;
+                            ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
+                            ULONG timersig = 1 << glob->timerport->mp_SigBit;
+			    ULONG mask = pktsig | diskchgsig | notifysig | timersig;
+                            ULONG sigs;
+                            struct MsgPort *rp;
 
-                        glob->devnode->dol_Task = glob->ourport;
+                            D(bug("\tInitiated device: %.*s\n", AROS_BSTR_strlen(glob->devnode->dol_Name), AROS_BSTR_ADDR(glob->devnode->dol_Name)));
 
-                        D(bug("[fat] returning startup packet\n"));
+                            glob->devnode->dol_Task = glob->ourport;
 
-                        rp = startuppacket->dp_Port;
-                        startuppacket->dp_Port = glob->ourport;
-                        startuppacket->dp_Res1 = DOSTRUE;
-                        startuppacket->dp_Res2 = 0;
-                        PutMsg(rp, startuppacket->dp_Link);
+                            D(bug("[fat] returning startup packet\n"));
 
-                        D(bug("Handler init finished.\n"));
+                            rp = startuppacket->dp_Port;
+                            startuppacket->dp_Port = glob->ourport;
+                            startuppacket->dp_Res1 = DOSTRUE;
+                            startuppacket->dp_Res2 = 0;
+                            PutMsg(rp, startuppacket->dp_Link);
 
-                        glob->sb = NULL;
-                        glob->sblist = NULL;
-                        glob->disk_inserted = FALSE;
-                        glob->disk_inhibited = FALSE;
-                        glob->quit = FALSE;
+                            D(bug("Handler init finished.\n"));
 
-                        ProcessDiskChange(); /* insert disk */
+                            glob->sb = NULL;
+                            glob->sblist = NULL;
+                            glob->disk_inserted = FALSE;
+                            glob->disk_inhibited = FALSE;
+                            glob->quit = FALSE;
 
-                        while(!glob->quit) {
-                            sigs = Wait(mask);
-                            if (sigs & diskchgsig)
-                                ProcessDiskChange();
-                            if (sigs & pktsig)
-                                ProcessPackets();
-                            if (sigs & notifysig)
-                                ProcessNotify();
+                            ProcessDiskChange(); /* insert disk */
+
+                            while(!glob->quit) {
+                                sigs = Wait(mask);
+                                if (sigs & diskchgsig)
+                                    ProcessDiskChange();
+                                if (sigs & pktsig)
+                                    ProcessPackets();
+                                if (sigs & notifysig)
+                                    ProcessNotify();
+				if (sigs & timersig)
+				    HandleTimer();
+                            }
+
+                            D(bug("\nHandler shutdown initiated\n"));
+
+                            error = 0;
+                            startuppacket = NULL;
+
+			    dl = LockDosList(LDF_WRITE | LDF_DEVICES);
+			    if (dl)
+			    {
+			        RemDosEntry(glob->devnode);
+			        FreeDosEntry(glob->devnode);
+			        UnLockDosList(LDF_WRITE | LDF_DEVICES);
+			    }
+
+                            CleanupDiskHandler(diskchgsig_bit);
                         }
-
-                        D(bug("\nHandler shutdown initiated\n"));
-
-                        error = 0;
-                        startuppacket = NULL;
-
-                        CleanupDiskHandler(diskchgsig_bit);
-                    }
-
+			CleanupTimer();
+		    }
                     DeletePool(glob->mempool);
                 }
                 else
@@ -183,6 +204,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
 
                 if (OpenDevice(device, unit, (struct IORequest *)glob->diskioreq, flags) == 0) {
                     D(bug("\tDevice successfully opened\n"));
+                    Probe_64bit_support();
 
                     if ((glob->diskchgreq = AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC))) {
                         CopyMem(glob->diskioreq, glob->diskchgreq, sizeof(struct IOExtTD));
@@ -196,7 +218,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm, ULONG *diskchgsig_bit) {
                         DiskChangeIntData.Interrupt.is_Node.ln_Pri = 0;
                         DiskChangeIntData.Interrupt.is_Node.ln_Name = "FATFS";
                         DiskChangeIntData.Interrupt.is_Data = &DiskChangeIntData;
-                        DiskChangeIntData.Interrupt.is_Code = (void (*)(void))DiskChangeIntHandler;
+			DiskChangeIntData.Interrupt.is_Code = (void (*)(void))AROS_ASMSYMNAME(DiskChangeIntHandler);
 
                         /* fill io request data */
                         glob->diskchgreq->iotd_Req.io_Command = TD_ADDCHANGEINT;

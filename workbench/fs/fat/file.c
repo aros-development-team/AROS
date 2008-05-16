@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -22,7 +22,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_FILE
-#include <aros/debug.h>
+#include "debug.h"
 
 #if defined(DEBUG_DUMP) && DEBUG_DUMP != 0
 #include <ctype.h>

@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -21,6 +21,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <dos/filehandler.h>
+#include <devices/newstyle.h>
 #include <devices/trackdisk.h>
 #include <devices/inputevent.h>
 
@@ -31,14 +32,20 @@
 
 #include "fat_fs.h"
 #include "fat_protos.h"
+#include "timer.h"
 
 #define DEBUG DEBUG_MISC
-#include <aros/debug.h>
+#include "debug.h"
 
 #ifndef ID_BUSY
 #define ID_BUSY 0x42555359
 #endif
 
+/* TD64 commands */
+#ifndef TD_READ64
+#define TD_READ64  24
+#define TD_WRITE64 25
+#endif
 
 void FillDiskInfo (struct InfoData *id) {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
@@ -54,10 +61,7 @@ void FillDiskInfo (struct InfoData *id) {
         id->id_NumBlocksUsed = glob->sb->total_sectors - ((glob->sb->free_clusters * glob->sb->clustersize) >> glob->sb->sectorsize_bits);
         id->id_BytesPerBlock = glob->sb->sectorsize;
 
-        id->id_DiskType = (glob->sb->type == 12) ? ID_FAT12_DISK :
-                          (glob->sb->type == 16) ? ID_FAT16_DISK :
-                          (glob->sb->type == 32) ? ID_FAT32_DISK :
-                                                   ID_FAT12_DISK;
+	id->id_DiskType = ID_DOS_DISK;
 
         id->id_VolumeNode = MKBADDR(glob->sb->doslist);
         id->id_InUse = glob->sb->doslist->dol_misc.dol_volume.dol_LockList ? DOSTRUE : DOSFALSE;
@@ -97,11 +101,13 @@ void SendVolumePacket(struct DosList *vol, ULONG action) {
 
 void DoDiskInsert(void) {
     struct FSSuper *sb;
+    ULONG err;
 
     if (glob->sb == NULL && (sb = AllocVecPooled(glob->mempool, sizeof(struct FSSuper)))) {
         memset(sb, 0, sizeof(struct FSSuper));
 
-        if (ReadFATSuper(sb) == 0) {
+	err = ReadFATSuper(sb);
+	if (err == 0) {
             LONG found = FALSE;
 
             if (glob->sblist) {
@@ -183,7 +189,12 @@ void DoDiskInsert(void) {
             D(bug("\tDisk successfully initialised\n"));
 
             return;
-        }
+	} else if (err == IOERR_BADADDRESS)
+	    ErrorMessage("Your device does not support 64-bit\n"
+			 "access to the disk while it is needed!\n"
+			 "In order to prevent data damage access to\n"
+			 "this disk was blocked.\n"
+			 "Please upgrade your device driver.");
 
         FreeVecPooled(glob->mempool, sb);
     }
@@ -249,3 +260,113 @@ void ProcessDiskChange(void) {
 
     D(bug("Done\n"));
 }
+
+void UpdateDisk(void)
+{
+	struct cache *c;
+
+	c = glob->sb->cache;
+	if (c && (c->flags & CACHE_WRITEBACK))
+		cache_flush(c);
+
+	glob->diskioreq->iotd_Req.io_Command = CMD_UPDATE;
+	DoIO((struct IORequest *)glob->diskioreq);
+
+	glob->diskioreq->iotd_Req.io_Command = TD_MOTOR;
+	glob->diskioreq->iotd_Req.io_Length = 0;
+	DoIO((struct IORequest *)glob->diskioreq);
+}
+
+/* probe the device to determine 64-bit support */
+void Probe_64bit_support(void) {
+    struct NSDeviceQueryResult nsd_query;
+    UWORD *nsd_cmd;
+
+    glob->readcmd = CMD_READ;
+    glob->writecmd = CMD_WRITE;
+
+    /* probe TD64 */
+    glob->diskioreq->iotd_Req.io_Command = TD_READ64;
+    glob->diskioreq->iotd_Req.io_Offset = 0;
+    glob->diskioreq->iotd_Req.io_Length = 0;
+    glob->diskioreq->iotd_Req.io_Actual = 0;
+    glob->diskioreq->iotd_Req.io_Data = 0;
+
+    if (DoIO((struct IORequest *) glob->diskioreq) != IOERR_NOCMD) {
+	D(bug("Probe_64bit_support: device supports 64-bit trackdisk extensions\n"));
+	glob->readcmd = TD_READ64;
+	glob->writecmd = TD_WRITE64;
+    }
+
+    /* probe NSD */
+    glob->diskioreq->iotd_Req.io_Command = NSCMD_DEVICEQUERY;
+    glob->diskioreq->iotd_Req.io_Length = sizeof(struct NSDeviceQueryResult);
+    glob->diskioreq->iotd_Req.io_Data = (APTR) &nsd_query;
+
+    if (DoIO((struct IORequest *) glob->diskioreq) == 0)
+        for (nsd_cmd = nsd_query.SupportedCommands; *nsd_cmd != 0; nsd_cmd++) {
+            if (*nsd_cmd == NSCMD_TD_READ64) {
+		D(bug("Probe_64bit_support: device supports NSD 64-bit trackdisk extensions\n"));
+		glob->readcmd = NSCMD_TD_READ64;
+		glob->writecmd = NSCMD_TD_WRITE64;
+                break;
+            }
+        }
+}
+
+ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data)
+{
+    UQUAD off;
+    ULONG err;
+    ULONG end;
+
+    if (glob->sb) {
+	if (num < glob->sb->first_device_sector) {
+	    if (num != glob->last_num) {
+		glob->last_num = num;
+	        ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
+		    	     "from %lu before the actual volume space.\n"
+		    	     "First volume sector is %lu, sector size is %lu.\n"
+		    	     "Either your disk is damaged or it is a bug in\n"
+		    	     "the handler. Please check your disk and/or\n"
+		    	     "report this problem to the developers team.",
+		    	     do_write ? "write" : "read", nblocks, num,
+		    	     glob->sb->first_device_sector, block_size);
+	    }
+	    return IOERR_BADADDRESS;
+	}
+	end = glob->sb->first_device_sector + glob->sb->total_sectors;
+	if (num + nblocks > end) {
+	    if (num != glob->last_num) {
+		glob->last_num = num;
+	        ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
+		    	     "from %lu beyond the actual volume space.\n"
+		    	     "Last volume sector is %lu, sector size is %lu.\n"
+		    	     "Either your disk is damaged or it is a bug in\n"
+		    	     "the handler. Please check your disk and/or\n"
+		    	     "report this problem to the developers team.",
+		    	     do_write ? "write" : "read", nblocks, num,
+		    	     end - 1, block_size);
+	    }
+	    return IOERR_BADADDRESS;
+	}
+    }
+
+    off = ((UQUAD) num) * block_size;
+
+    glob->diskioreq->iotd_Req.io_Offset = off & 0xFFFFFFFF;
+    glob->diskioreq->iotd_Req.io_Actual = off >> 32;
+
+    if (glob->diskioreq->iotd_Req.io_Actual && (glob->readcmd == CMD_READ))
+	return IOERR_BADADDRESS;
+
+    glob->diskioreq->iotd_Req.io_Length = nblocks * block_size;
+    glob->diskioreq->iotd_Req.io_Data = data;
+    glob->diskioreq->iotd_Req.io_Command = do_write ? glob->writecmd : glob->readcmd;
+
+    err = DoIO((struct IORequest *) glob->diskioreq);
+    RestartTimer();
+
+    return err;
+}
+

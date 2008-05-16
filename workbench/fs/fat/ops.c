@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -10,6 +10,9 @@
  * $Id$
  */
 
+#define AROS_ALMOST_COMPATIBLE
+
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/notify.h>
@@ -19,7 +22,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_OPS
-#include <aros/debug.h>
+#include "debug.h"
 
 #define FREE_CLUSTER_CHAIN(sb,cl)                               \
     do {                                                        \
@@ -76,7 +79,8 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
     namelen -= baselen;
     name = &base[baselen];
 
-    D(bug("[fat] base is '%.*s', name is '%.*s'\n", baselen, base, namelen, name));
+    D(bug("[fat] base is '"); RawPutChars(base, baselen);
+      bug("', name is '"); RawPutChars(name, namelen); bug("'\n"));
 
     if (baselen > 0) {
         if ((err = GetDirEntryByPath(dh, base, baselen, &de)) != 0) {
@@ -185,8 +189,9 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
     struct DirHandle dh;
     struct DirEntry de;
 
-    D(bug("[fat] opening file '%.*s' in dir at cluster %ld, action %s\n",
-          namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0,
+    D(bug("[fat] opening file '"); RawPutChars(name, namelen);
+      bug("' in dir at cluster %ld, action %s\n",
+	  dirlock != NULL ? dirlock->ioh.first_cluster : 0,
           action == ACTION_FINDINPUT  ? "FINDINPUT"  :
           action == ACTION_FINDOUTPUT ? "FINDOUTPUT" :
           action == ACTION_FINDUPDATE ? "FINDUPDATE" : "[unknown]"));
@@ -277,7 +282,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
         return ERROR_OBJECT_NOT_FOUND;
     }
 
-    D(bug("[fat] trying to create '%.*s'\n", namelen, name));
+    D(bug("[fat] trying to create '"); RawPutChars(name, namelen); bug("'\n"));
 
     /* otherwise it's time to create the file. get a handle on the passed dir */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)
@@ -328,7 +333,8 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     struct DirHandle dh;
     struct DirEntry de;
 
-    D(bug("[fat] deleting file '%.*s' in directory at cluster %ld\n", namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0));
+    D(bug("[fat] deleting file '"); RawPutChars(name, namelen);
+      bug("' in directory at cluster % ld\n", dirlock != NULL ? dirlock->ioh.first_cluster : 0));
 
     /* obtain a lock on the file. we need an exclusive lock as we don't want
      * to delete the file if its in use */
@@ -413,7 +419,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     /* this lock is now completely meaningless */
     FreeLock(lock);
 
-    D(bug("[fat] deleted '%.*s'\n", namelen, name));
+    D(bug("[fat] deleted '"); RawPutChars(name, namelen); bug("'\n"));
 
     return 0;
 }
@@ -543,7 +549,8 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     struct DirHandle dh, sdh;
     struct DirEntry de, sde;
 
-    D(bug("[fat] creating directory '%.*s' in directory at cluster %ld\n", namelen, name, dirlock != NULL ? dirlock->ioh.first_cluster : 0));
+    D(bug("[fat] creating directory '"); RawPutChars(name, namelen);
+      bug("' in directory at cluster %ld\n", dirlock != NULL ? dirlock->ioh.first_cluster : 0));
 
     /* get a handle on the passed dir */
     if ((err = InitDirHandle(glob->sb, dirlock != NULL ? dirlock->ioh.first_cluster : 0, &dh)) != 0)

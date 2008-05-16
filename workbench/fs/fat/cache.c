@@ -2,6 +2,7 @@
  * Disk buffer cache
  *
  * Copyright © 2007 Robert Norris
+ * Copyright © 2008 Pavel Fedin
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -56,27 +57,18 @@
 #include <exec/ports.h>
 #include <exec/errors.h>
 #include <dos/dos.h>
-#include <devices/trackdisk.h>
-#include <devices/newstyle.h>
 
 #include <proto/exec.h>
 
 #include "cache.h"
+#include "fat_fs.h"
+#include "fat_protos.h"
+#include "timer.h"
 
 #define DEBUG 0
-#include <aros/debug.h>
+#include "debug.h"
 
-/* TD64 commands */
-#ifndef TD_READ64
-#  define TD_READ64     24
-#  define TD_WRITE64    25
-#endif
-
-/* prototype for lowlevel block function */
-static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data);
-static void _cache_64bit_support(struct cache *c);
-
-struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
+struct cache *cache_new(ULONG hash_size, ULONG num_blocks, ULONG block_size, ULONG flags) {
     struct cache *c;
     ULONG i;
 
@@ -84,8 +76,6 @@ struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks,
 
     if ((c = (struct cache *) AllocVec(sizeof(struct cache), MEMF_PUBLIC)) == NULL)
         return NULL;
-
-    c->req = req;
 
     c->hash_size = hash_size;
     c->hash_mask = hash_size-1;
@@ -95,8 +85,6 @@ struct cache *cache_new(struct IOStdReq *req, ULONG hash_size, ULONG num_blocks,
     c->flags = CACHE_WRITETHROUGH;
     if ((flags & (CACHE_WRITEBACK | CACHE_WRITETHROUGH)) == CACHE_WRITEBACK)
         c->flags = CACHE_WRITEBACK;
-
-    _cache_64bit_support(c);
 
     c->num_blocks = num_blocks;
     c->num_in_use = 0;
@@ -236,7 +224,7 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
         cache_flush(c);
 
     /* read the block from disk */
-    if ((err = _cache_do_blocks_ll(c, FALSE, num, 1, c->block_size, b->data)) != 0) {
+    if ((err = AccessDisk(FALSE, num, 1, c->block_size, b->data)) != 0) {
         /* read failed, put the block back on the free list */
         b->free_next = c->free_head;
         c->free_head = b;
@@ -356,7 +344,7 @@ ULONG cache_mark_block_dirty(struct cache *c, struct cache_block *b) {
 
     D(bug("cache_mark_block_dirty: writing dirty block %d\n", b->num));
 
-    if ((err = _cache_do_blocks_ll(c, TRUE, b->num, 1, c->block_size, b->data)) != 0) {
+    if ((err = AccessDisk(TRUE, b->num, 1, c->block_size, b->data)) != 0) {
         D(bug("cache_mark_block_dirty: write failed, leaving block marked dirty\n"));
 
         if (!b->is_dirty) {
@@ -402,7 +390,7 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
     for (i = 0; i < nblocks; i++) {
         D(bug("cache_mark_blocks_dirty: writing dirty block %d\n", b[i]->num));
 
-        if ((err = _cache_do_blocks_ll(c, TRUE, b[i]->num, 1, c->block_size, b[i]->data)) != 0) {
+	if ((err = AccessDisk(TRUE, b[i]->num, 1, c->block_size, b[i]->data)) != 0) {
             D(bug("cache_mark_blocks_dirty: write failed, leaving this and remaining blocks marked dirty\n"));
 
             for (; i < nblocks; i++) {
@@ -436,7 +424,7 @@ ULONG cache_flush(struct cache *c) {
     while (b != NULL) {
         next = b->dirty_next;
 
-        if ((err = _cache_do_blocks_ll(c, TRUE, b->num, 1, c->block_size, b->data)) != 0) {
+	if ((err = AccessDisk(TRUE, b->num, 1, c->block_size, b->data)) != 0) {
             D(bug("cache_flush: write failed, leaving this and remaining blocks marked dirty\n"));
             break;
         }
@@ -454,6 +442,7 @@ ULONG cache_flush(struct cache *c) {
     return err;
 }
 
+#if DEBUG_CACHESTATS > 0
 void cache_stats(struct cache *c) {
     struct cache_block *b;
     ULONG count, i;
@@ -464,10 +453,7 @@ void cache_stats(struct cache *c) {
     kprintf("    block size: %ld bytes\n", c->block_size);
     kprintf("    total blocks: %ld\n", c->num_blocks);
     kprintf("    flags:%s%s\n", c->flags & CACHE_WRITETHROUGH ? " CACHE_WRITETHROUGH" : "",
-                                c->flags & CACHE_WRITEBACK    ? " CACHE_WRITEBACK"    : "",
-                                c->flags & CACHE_64_TD64      ? " CACHE_64_TD64"      : "",
-                                c->flags & CACHE_64_NSD       ? " CACHE_64_NSD"       : "",
-                                c->flags & CACHE_64_SCSI      ? " CACHE_64_SCSI"      : "");
+				c->flags & CACHE_WRITEBACK    ? " CACHE_WRITEBACK"    : "");
     kprintf("    total blocks in use: %ld\n", c->num_in_use);
 
     count = 0;
@@ -492,93 +478,5 @@ void cache_stats(struct cache *c) {
 
     kprintf("    hits: %ld    misses: %ld\n", c->hits, c->misses);
 }
+#endif
 
-/* lowlevel block function */
-static ULONG _cache_do_blocks_ll(struct cache *c, BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYTE *data) {
-    ULONG err;
-    UQUAD off;
-    ULONG low, high;
-    ULONG length;
-    BOOL want_64 = FALSE;
-
-    D(bug("_cache_do_blocks_ll: request to %s %ld blocks starting from %ld (block_size %ld)\n", do_write ? "write" : "read", nblocks, num, block_size));
-
-    off = ((UQUAD) num) * 512;
-
-    low = off & 0xffffffff;
-    high = off >> 32;
-
-    length = nblocks * block_size;
-
-    if (high > 0 || low + length < length) {
-        if (!(c->flags & CACHE_64_MASK)) {
-            D(bug("_cache_do_blocks_ll: 64-bit operation requested but underlying device doesn't support it\n"));
-            return IOERR_NOCMD;
-        }
-
-        want_64 = TRUE;
-    }
-
-    /* XXX support DirectSCSI */
-
-    c->req->io_Offset = low;
-    c->req->io_Actual = high;
-    c->req->io_Length = nblocks * block_size;
-    c->req->io_Data = data;
-    c->req->io_Flags = IOF_QUICK;
-
-    if (!want_64)
-        c->req->io_Command = do_write ? CMD_WRITE : CMD_READ;
-    else if (c->flags & CACHE_64_TD64)
-        c->req->io_Command = do_write ? TD_WRITE64 : TD_READ64;
-    else if (c->flags & CACHE_64_NSD)
-        c->req->io_Command = do_write ? NSCMD_TD_WRITE64 : NSCMD_TD_READ64;
-
-    DoIO((struct IORequest *) c->req);
-
-    err = c->req->io_Error;
-
-    D(bug("_cache_do_blocks_ll: returning error %ld\n", err));
-
-    return err;
-}
-
-/* probe the device to determine 64-bit support */
-static void _cache_64bit_support(struct cache *c) {
-    struct NSDeviceQueryResult nsd_query;
-    UWORD *nsd_cmd;
-
-    /* probe TD64 */
-    c->req->io_Command = TD_READ64;
-    c->req->io_Offset = 0;
-    c->req->io_Length = 0;
-    c->req->io_Actual = 0;
-    c->req->io_Data = 0;
-    c->req->io_Flags = IOF_QUICK;
-
-    if (DoIO((struct IORequest *) c->req) == 0 && c->req->io_Error != IOERR_NOCMD) {
-        D(bug("_cache_64bit_support: device supports 64-bit trackdisk extensions\n"));
-        c->flags |= CACHE_64_TD64;
-    }
-
-    /* probe NSD */
-    c->req->io_Command = NSCMD_DEVICEQUERY;
-    c->req->io_Length = sizeof(struct NSDeviceQueryResult);
-    c->req->io_Data = (APTR) &nsd_query;
-
-    if (DoIO((struct IORequest *) c->req) == 0 && c->req->io_Error != IOERR_NOCMD)
-        for (nsd_cmd = nsd_query.SupportedCommands; *nsd_cmd != 0; nsd_cmd++) {
-            if (*nsd_cmd == NSCMD_TD_READ64) {
-                D(bug("_cache_64bit_support: device supports NSD 64-bit trackdisk extensions\n"));
-                c->flags |= CACHE_64_NSD;
-                break;
-            }
-        }
-
-    /* XXX probe DirectSCSI */
-
-    if (c->flags & CACHE_64_MASK)
-        D(bug("_cache_64bit_support: 64-bit access available\n"));
-    else
-        D(bug("_cache_64bit_support: 64-bit access not available\n"));
-}

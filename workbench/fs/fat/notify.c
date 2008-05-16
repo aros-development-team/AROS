@@ -2,13 +2,15 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  *
  * $Id$
  */
+
+#define AROS_ALMOST_COMPATIBLE
 
 #include <exec/types.h>
 #include <dos/dos.h>
@@ -19,7 +21,7 @@
 #include "fat_protos.h"
 
 #define DEBUG DEBUG_NOTIFY
-#include <aros/debug.h>
+#include "debug.h"
 
 void SendNotify(struct NotifyRequest *nr) {
     struct NotifyMessage *nm;
