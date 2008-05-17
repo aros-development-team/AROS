@@ -45,8 +45,6 @@
 
 ******************************************************************************/
 {
-  D(bug("dirfd(d_type=%d)=%d\n", dir->ent.d_type, dir->fd));
-  if (dir->ent.d_type == DT_DIR)
-    return dir->fd;
-  return -1;
+  D(bug("dirfd()=%d\n", dir->fd));
+  return dir->fd;
 }
