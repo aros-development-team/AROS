@@ -278,10 +278,10 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 		    exit(20);
 		}
 
-		if (S_ISDIR (st.st_mode)
+		if (((S_ISDIR (st.st_mode)
 		    && strcmp (dirent->d_name, ".") != 0
-		    && strcmp (dirent->d_name, "..") != 0
-		    && !S_ISLNK (st.st_mode)
+		    && strcmp (dirent->d_name, "..") != 0)
+		    || S_ISLNK (st.st_mode))
 		    && !FindNode (ignoredirs, dirent->d_name)
 		)
 		{

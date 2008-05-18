@@ -338,9 +338,15 @@ updatemflist (Cache_priv * cache, DirNode * node, List * regeneratefiles)
     DirNode * subdir;
     Makefile * makefile;
     int goup = 0, reread = 0;
+    char curdir[1024];
 
     if (strlen(node->node.name) != 0)
     {
+	if (getcwd(curdir, sizeof(curdir)) == NULL)
+	{
+		error("Could not get current directory");
+		exit (20);
+	}
 	if (chdir(node->node.name) < 0)
 	{
 	    error("Could not change to dir '%s'", node->node.name);
@@ -359,7 +365,7 @@ updatemflist (Cache_priv * cache, DirNode * node, List * regeneratefiles)
 	checknewsrc(cache, makefile, regeneratefiles);
 
     if (goup)
-	chdir("..");
+	chdir(curdir);
 
     progress (stdout);
     
@@ -371,9 +377,15 @@ updatetargetlist (Cache_priv * cache, DirNode * node)
 {
     DirNode * subdir;
     int goup = 0, reread = 0;
+    char curdir[1024];
 
     if (strlen(node->node.name) != 0)
     {
+	if (getcwd(curdir, sizeof(curdir)) == NULL)
+	{
+		error("Could not get current directory");
+		exit (20);
+	}
 	if (chdir(node->node.name) < 0)
 	{
 	    error("Could not change to dir '%s'", node->node.name);
@@ -390,7 +402,7 @@ updatetargetlist (Cache_priv * cache, DirNode * node)
     progress (stdout);
     
     if (goup)
-	chdir("..");
+	chdir(curdir);
     
     return reread;
 }
