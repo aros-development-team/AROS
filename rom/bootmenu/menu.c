@@ -8,6 +8,7 @@
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
 #include <libraries/bootmenu.h>
+#include <libraries/expansionbase.h>
 #include <aros/bootloader.h>
 #include <aros/symbolsets.h>
 #include <string.h>
@@ -20,6 +21,8 @@
 #include LC_LIBDEFS_FILE
 
 #define BUFSIZE 100
+
+struct ExpansionBase *ExpansionBase;
 
 #if 0
 struct GfxBase *GfxBase;
@@ -63,63 +66,63 @@ static ULONG pointercoltab[] = {
 BOOL initScreen(STRPTR gfxhiddname, struct BootMenuBase *bootmenubase) {
 struct TagItem modetags[] =
 {
-	{BIDTAG_Depth, 2},
-	{BIDTAG_DesiredWidth, 640},
-	{BIDTAG_DesiredHeight, 200},
-	{TAG_DONE, 0UL}
+    {BIDTAG_Depth, 2},
+    {BIDTAG_DesiredWidth, 640},
+    {BIDTAG_DesiredHeight, 200},
+    {TAG_DONE, 0UL}
 };
 ULONG modeid, depth;
 
-	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
-	if (GfxBase)
-	{
-		if (LateGfxInit(gfxhiddname))
-		{
-			modeid = BestModeIDA(modetags);
-			if (modeid != INVALID_ID)
-			{
-				InitRastPort(&rp);
-				InitVPort(&vp);
-				rp.BitMap = AllocScreenBitMap(modeid);
-				if (rp.BitMap)
-				{
-					vp.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
-					if (vp.RasInfo)
-					{
-						vp.RasInfo->BitMap = rp.BitMap;
-						vp.ColorMap = GetColorMap(4);
-						vp.ColorMap->VPModeID = modeid;
-						if (AttachPalExtra(vp.ColorMap, &vp) == 0)
-						{
-							LoadRGB32(&vp, (ULONG *)coltab);
-							depth = GetBitMapAttr(rp.BitMap, BMA_DEPTH);
-							if (depth > 4)
-							    pointercoltab[0] = (3L << 16) + 17;
-							else
-							    pointercoltab[0] = (3L << 16) + (1 << depth) - 3;
-							LoadRGB32(&vp, pointercoltab);
-							rp.BitMap->Flags |= BMF_AROS_HIDD;
-							SetFont(&rp, GfxBase->DefaultFont);
-							SetFrontBitMap(rp.BitMap, TRUE);
-							Forbid();
-							rp.Font->tf_Accessors++;
-							Permit();
-							SetAPen(&rp, 1);
-							Move(&rp, 100, 100);
-							Text(&rp, "Sucker", 6);
+    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
+    if (GfxBase)
+    {
+        if (LateGfxInit(gfxhiddname))
+        {
+            modeid = BestModeIDA(modetags);
+            if (modeid != INVALID_ID)
+            {
+                InitRastPort(&rp);
+                InitVPort(&vp);
+                rp.BitMap = AllocScreenBitMap(modeid);
+                if (rp.BitMap)
+                {
+                    vp.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
+                    if (vp.RasInfo)
+                    {
+                        vp.RasInfo->BitMap = rp.BitMap;
+                        vp.ColorMap = GetColorMap(4);
+                        vp.ColorMap->VPModeID = modeid;
+                        if (AttachPalExtra(vp.ColorMap, &vp) == 0)
+                        {
+                            LoadRGB32(&vp, (ULONG *)coltab);
+                            depth = GetBitMapAttr(rp.BitMap, BMA_DEPTH);
+                            if (depth > 4)
+                                pointercoltab[0] = (3L << 16) + 17;
+                            else
+                                pointercoltab[0] = (3L << 16) + (1 << depth) - 3;
+                            LoadRGB32(&vp, pointercoltab);
+                            rp.BitMap->Flags |= BMF_AROS_HIDD;
+                            SetFont(&rp, GfxBase->DefaultFont);
+                            SetFrontBitMap(rp.BitMap, TRUE);
+                            Forbid();
+                            rp.Font->tf_Accessors++;
+                            Permit();
+                            SetAPen(&rp, 1);
+                            Move(&rp, 100, 100);
+                            Text(&rp, "Sucker", 6);
 kprintf("done\n");
-							return TRUE;
-						}
-						FreeMem(vp.RasInfo, sizeof(struct RasInfo));
-					}
-					FreeBitMap(rp.BitMap);
-				}
-			}
-		}
-		CloseLibrary((struct Library *)GfxBase);
-	}
+                            return TRUE;
+                        }
+                        FreeMem(vp.RasInfo, sizeof(struct RasInfo));
+                    }
+                    FreeBitMap(rp.BitMap);
+                }
+            }
+        }
+        CloseLibrary((struct Library *)GfxBase);
+    }
 kprintf("no screen!\n");
-	return FALSE;
+    return FALSE;
 }
 #else
 
@@ -129,109 +132,109 @@ kprintf("no screen!\n");
 
 static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *bootmenubase)
 {
-	BOOL success = FALSE; 
-	EnterFunc(bug("init_gfx(hiddbase=%s)\n", gfxclassname));
+    BOOL success = FALSE; 
+    EnterFunc(bug("init_gfx(hiddbase=%s)\n", gfxclassname));
     
-	/*  Call private gfx.library call to init the HIDD.
-	    Gfx library is responsable for closing the HIDD
-	    library (although it will probably not be neccesary).
-	*/
+    /*  Call private gfx.library call to init the HIDD.
+        Gfx library is responsable for closing the HIDD
+        library (although it will probably not be neccesary).
+    */
 
-	D(bug("calling private gfx LateGfxInit()\n"));
-	if (LateGfxInit(gfxclassname))
-	{
-	    D(bug("success\n"));
-	    if (IntuitionBase)
-	    {
-	    	if (LateIntuiInit(NULL))
-	    	{
-	    	    success = TRUE;
-		}
-	    }
-	}
-	ReturnBool ("init_gfxhidd", success);
+    D(bug("calling private gfx LateGfxInit()\n"));
+    if (LateGfxInit(gfxclassname))
+    {
+        D(bug("success\n"));
+        if (IntuitionBase)
+        {
+            if (LateIntuiInit(NULL))
+            {
+                success = TRUE;
+        }
+        }
+    }
+    ReturnBool ("init_gfxhidd", success);
 }
 
 
 static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct BootMenuBase *bootmenubase)
 {
-	BOOL success = FALSE;
-	struct MsgPort *mp;
+    BOOL success = FALSE;
+    struct MsgPort *mp;
 
-	EnterFunc(bug("init_device(classname=%s)\n", hiddclassname));
+    EnterFunc(bug("init_device(classname=%s)\n", hiddclassname));
 
-	mp = CreateMsgPort();
-	if (mp)
-	{
-		struct IORequest *io;
-		io = CreateIORequest(mp, sizeof ( struct IOStdReq));
-		if (io)
-		{
-			if (0 == OpenDevice(devicename, 0, io, 0))
-			{
-				#define ioStd(x) ((struct IOStdReq *)x)
-				ioStd(io)->io_Command = CMD_HIDDINIT;
-				ioStd(io)->io_Data = hiddclassname;
-				ioStd(io)->io_Length = strlen(hiddclassname);
+    mp = CreateMsgPort();
+    if (mp)
+    {
+        struct IORequest *io;
+        io = CreateIORequest(mp, sizeof ( struct IOStdReq));
+        if (io)
+        {
+            if (0 == OpenDevice(devicename, 0, io, 0))
+            {
+                #define ioStd(x) ((struct IOStdReq *)x)
+                ioStd(io)->io_Command = CMD_HIDDINIT;
+                ioStd(io)->io_Data = hiddclassname;
+                ioStd(io)->io_Length = strlen(hiddclassname);
 
-				/* Let the device init the HIDD */
-				DoIO(io);
-				if (0 == io->io_Error)
-				{
-					success = TRUE;
-				}
-				CloseDevice(io);
-			}
-			DeleteIORequest(io); 
-		}
-		DeleteMsgPort(mp);
-	} 
-	ReturnBool("init_device", success);
+                /* Let the device init the HIDD */
+                DoIO(io);
+                if (0 == io->io_Error)
+                {
+                    success = TRUE;
+                }
+                CloseDevice(io);
+            }
+            DeleteIORequest(io); 
+        }
+        DeleteMsgPort(mp);
+    } 
+    ReturnBool("init_device", success);
 }
 
 BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *bootmenubase) {
 
-	OpenLibrary(bootcfg->defaultgfx.libname, 0);
-	init_gfx(bootcfg->defaultgfx.hiddname, bootmenubase);
-	OpenLibrary(bootcfg->defaultmouse.libname, 0);
-	init_device(bootcfg->defaultmouse.hiddname, "gameport.device", bootmenubase);
-	return TRUE;
+    OpenLibrary(bootcfg->defaultgfx.libname, 0);
+    init_gfx(bootcfg->defaultgfx.hiddname, bootmenubase);
+    OpenLibrary(bootcfg->defaultmouse.libname, 0);
+    init_device(bootcfg->defaultmouse.hiddname, "gameport.device", bootmenubase);
+    return TRUE;
 }
 
 struct Gadget *createGadgets(struct BootMenuBase_intern *bootmenubase) {
 struct Gadget *first;
 struct ButtonGadget *last;
 
-	last = bootmenubase->maingadgets.boot = createButton(16, 190, 280, 14, (struct Gadget *)&first, "Boot", BUTTON_BOOT, bootmenubase);
-	if (last == NULL)
-		return NULL;
-	last = bootmenubase->maingadgets.bootnss = createButton(344, 190, 280, 14, last->gadget, "Boot With No Startup-Sequence", BUTTON_BOOT_WNSS, bootmenubase);
-	if (last == NULL)
-		return NULL;
-	last = bootmenubase->maingadgets.bootopt = createButton(180, 63, 280, 14, last->gadget, "Boot Options...", BUTTON_BOOT_OPTIONS, bootmenubase);
-	if (last == NULL)
-		return NULL;
-	last = bootmenubase->maingadgets.displayopt = createButton(180, 84, 280, 14, last->gadget, "Display Options...", BUTTON_DISPLAY_OPTIONS, bootmenubase);
-	if (last == NULL)
-		return NULL;
-	last = bootmenubase->maingadgets.expboarddiag = createButton(180, 105, 280, 14, last->gadget, "Expansion Board Diagnostic...", BUTTON_EXPBOARDDIAG, bootmenubase);
-	if (last == NULL)
-		return NULL;
-	return first;
+    last = bootmenubase->maingadgets.boot = createButton(16, 190, 280, 14, (struct Gadget *)&first, "Boot", BUTTON_BOOT, bootmenubase);
+    if (last == NULL)
+        return NULL;
+    last = bootmenubase->maingadgets.bootnss = createButton(344, 190, 280, 14, last->gadget, "Boot With No Startup-Sequence", BUTTON_BOOT_WNSS, bootmenubase);
+    if (last == NULL)
+        return NULL;
+    last = bootmenubase->maingadgets.bootopt = createButton(180, 63, 280, 14, last->gadget, "Boot Options...", BUTTON_BOOT_OPTIONS, bootmenubase);
+    if (last == NULL)
+        return NULL;
+    last = bootmenubase->maingadgets.displayopt = createButton(180, 84, 280, 14, last->gadget, "Display Options...", BUTTON_DISPLAY_OPTIONS, bootmenubase);
+    if (last == NULL)
+        return NULL;
+    last = bootmenubase->maingadgets.expboarddiag = createButton(180, 105, 280, 14, last->gadget, "Expansion Board Diagnostic...", BUTTON_EXPBOARDDIAG, bootmenubase);
+    if (last == NULL)
+        return NULL;
+    return first;
 }
 
 void freeGadgets(struct BootMenuBase_intern *bootmenubase) {
 
-	if (bootmenubase->maingadgets.boot != NULL)
-		freeButtonGadget(bootmenubase->maingadgets.boot, bootmenubase);
-	if (bootmenubase->maingadgets.bootnss != NULL);
-		freeButtonGadget(bootmenubase->maingadgets.bootnss, bootmenubase);
-	if (bootmenubase->maingadgets.bootopt != NULL)
-		freeButtonGadget(bootmenubase->maingadgets.bootopt, bootmenubase);
-	if (bootmenubase->maingadgets.displayopt != NULL)
-		freeButtonGadget(bootmenubase->maingadgets.displayopt, bootmenubase);
-	if (bootmenubase->maingadgets.expboarddiag != NULL)
-		freeButtonGadget(bootmenubase->maingadgets.expboarddiag, bootmenubase);
+    if (bootmenubase->maingadgets.boot != NULL)
+        freeButtonGadget(bootmenubase->maingadgets.boot, bootmenubase);
+    if (bootmenubase->maingadgets.bootnss != NULL);
+        freeButtonGadget(bootmenubase->maingadgets.bootnss, bootmenubase);
+    if (bootmenubase->maingadgets.bootopt != NULL)
+        freeButtonGadget(bootmenubase->maingadgets.bootopt, bootmenubase);
+    if (bootmenubase->maingadgets.displayopt != NULL)
+        freeButtonGadget(bootmenubase->maingadgets.displayopt, bootmenubase);
+    if (bootmenubase->maingadgets.expboarddiag != NULL)
+        freeButtonGadget(bootmenubase->maingadgets.expboarddiag, bootmenubase);
 }
 
 void msgLoop(struct BootMenuBase *bootmenubase, struct Window *win, struct BootConfig *bcfg) {
@@ -239,117 +242,119 @@ BOOL in=TRUE;
 struct IntuiMessage *msg;
 struct Gadget *g;
 
-	do
-	{
-		WaitPort(win->UserPort);
-		while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
-		{
-			if (msg->Class == IDCMP_GADGETUP)
-			{
-				g = msg->IAddress;
-				switch (g->GadgetID)
-				{
-				case BUTTON_BOOT:
-					bcfg->startup_sequence = TRUE;
-					in = FALSE;
-					break;
-				case BUTTON_BOOT_WNSS:
-					bcfg->startup_sequence = FALSE;
-					in = FALSE;
-					break;
-				}
-			}
-			ReplyMsg(&msg->ExecMessage);
-		}
-	} while (in);
-	while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
-		ReplyMsg(&msg->ExecMessage);
+    do
+    {
+        WaitPort(win->UserPort);
+        while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
+        {
+            if (msg->Class == IDCMP_GADGETUP)
+            {
+                g = msg->IAddress;
+                switch (g->GadgetID)
+                {
+                case BUTTON_BOOT:
+                    ExpansionBase->Flags &= ~EBF_DOSFLAG;
+                    bcfg->startup_sequence = TRUE;
+                    in = FALSE;
+                    break;
+                case BUTTON_BOOT_WNSS:
+                    ExpansionBase->Flags |= EBF_DOSFLAG;
+                    bcfg->startup_sequence = FALSE;
+                    in = FALSE;
+                    break;
+                }
+            }
+            ReplyMsg(&msg->ExecMessage);
+        }
+    } while (in);
+    while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
+        ReplyMsg(&msg->ExecMessage);
 }
 
 BOOL initScreen(struct BootMenuBase_intern *bootmenubase, struct BootConfig *bcfg) {
 UWORD pens[] = {~0};
 struct TagItem scrtags[] =
 {
-	{SA_Width,       640},
-	{SA_Height,      256},
-	{SA_Depth,         4},
-	{SA_Pens, (IPTR)pens},
-	{TAG_DONE,       0UL}
+    {SA_Width,       640},
+    {SA_Height,      256},
+    {SA_Depth,         4},
+    {SA_Pens, (IPTR)pens},
+    {TAG_DONE,       0UL}
 };
 struct TagItem wintags[] =
 {
-	{WA_Left,          0}, /* 0 */
-	{WA_Top,           0}, /* 1 */
-	{WA_Width,       640}, /* 2 */
-	{WA_Height,      256}, /* 3 */
-	{WA_CustomScreen,  0}, /* 4 */
-	{WA_Gadgets,    NULL}, /* 5 */
-	{WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN},
-	{WA_Borderless, TRUE},
-	{WA_RMBTrap,    TRUE},
-	{TAG_DONE,       0UL}
+    {WA_Left,          0}, /* 0 */
+    {WA_Top,           0}, /* 1 */
+    {WA_Width,       640}, /* 2 */
+    {WA_Height,      256}, /* 3 */
+    {WA_CustomScreen,  0}, /* 4 */
+    {WA_Gadgets,    NULL}, /* 5 */
+    {WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN},
+    {WA_Borderless, TRUE},
+    {WA_RMBTrap,    TRUE},
+    {TAG_DONE,       0UL}
 };
 struct Gadget *first = NULL;
 
-	bootmenubase->scr = OpenScreenTagList(NULL, scrtags);
-	if (bootmenubase->scr != NULL)
-	{
-		first = createGadgets(bootmenubase);
-		if (first != NULL)
-		{
-			wintags[2].ti_Data = bootmenubase->scr->Width;
-			wintags[3].ti_Data = bootmenubase->scr->Height;
-			wintags[4].ti_Data = (IPTR)bootmenubase->scr;
-			wintags[5].ti_Data = (IPTR)first;
-			bootmenubase->win = OpenWindowTagList(NULL, wintags);
-			if (bootmenubase->win != NULL)
-			{
-				SetAPen(bootmenubase->win->RPort, 2);
-				Move(bootmenubase->win->RPort, 215, 20);
-				Text(bootmenubase->win->RPort, "AROS Early Startup Control", 26);
-				SetAPen(bootmenubase->win->RPort, 1);
-				Move(bootmenubase->win->RPort, 225, 40);
-				Text(bootmenubase->win->RPort, "(what is PAL and NTSC?)", 23);
-				msgLoop(bootmenubase, bootmenubase->win, bcfg);
-				return TRUE;
-			}
-			else
-				Alert(AT_DeadEnd | AN_OpenWindow);
-			CloseWindow(bootmenubase->win);
-			freeGadgets(bootmenubase);
-		}
-		else
-			Alert(AT_DeadEnd | AN_BadGadget);
-		CloseScreen(bootmenubase->scr);
-	}
-	else
-		Alert(AT_DeadEnd | AN_OpenScreen);
-	return FALSE;
+    bootmenubase->scr = OpenScreenTagList(NULL, scrtags);
+    if (bootmenubase->scr != NULL)
+    {
+        first = createGadgets(bootmenubase);
+        if (first != NULL)
+        {
+            wintags[2].ti_Data = bootmenubase->scr->Width;
+            wintags[3].ti_Data = bootmenubase->scr->Height;
+            wintags[4].ti_Data = (IPTR)bootmenubase->scr;
+            wintags[5].ti_Data = (IPTR)first;
+            bootmenubase->win = OpenWindowTagList(NULL, wintags);
+            if (bootmenubase->win != NULL)
+            {
+                SetAPen(bootmenubase->win->RPort, 2);
+                Move(bootmenubase->win->RPort, 215, 20);
+                Text(bootmenubase->win->RPort, "AROS Early Startup Control", 26);
+                SetAPen(bootmenubase->win->RPort, 1);
+                Move(bootmenubase->win->RPort, 225, 40);
+                Text(bootmenubase->win->RPort, "(what is PAL and NTSC?)", 23);
+                msgLoop(bootmenubase, bootmenubase->win, bcfg);
+                return TRUE;
+            }
+            else
+                Alert(AT_DeadEnd | AN_OpenWindow);
+            CloseWindow(bootmenubase->win);
+            freeGadgets(bootmenubase);
+        }
+        else
+            Alert(AT_DeadEnd | AN_BadGadget);
+        CloseScreen(bootmenubase->scr);
+    }
+    else
+        Alert(AT_DeadEnd | AN_OpenScreen);
+    return FALSE;
 }
 
 void delay(struct BootMenuBase *bootmenubase, LONG secs, LONG micro) {
 struct MsgPort *mp;
 
-	mp = CreateMsgPort();
-	if (mp)
-	{
-		struct timerequest *tr;
-		tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
-		if (tr)
-		{
-			if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0) == 0)
-			{
-				#define ioStd(x) ((struct IOStdReq *)x)
-				ioStd(tr)->io_Command = TR_ADDREQUEST;
-				tr->tr_time.tv_secs = secs;
-				tr->tr_time.tv_micro = micro;
-				DoIO((struct IORequest *)tr);
-				CloseDevice((struct IORequest *)tr);
-			}
-			DeleteIORequest((struct IORequest *)tr);
-		}
-		DeleteMsgPort(mp);
-	}
+    mp = CreateMsgPort();
+    if (mp)
+    {
+        struct timerequest *tr;
+        tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
+        if (tr)
+        {
+            if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0) == 0)
+            {
+                #define ioStd(x) ((struct IOStdReq *)x)
+                ioStd(tr)->io_Command = TR_ADDREQUEST;
+                tr->tr_time.tv_secs = secs;
+                tr->tr_time.tv_micro = micro;
+                DoIO((struct IORequest *)tr);
+                CloseDevice((struct IORequest *)tr);
+            }
+            DeleteIORequest((struct IORequest *)tr);
+        }
+        DeleteMsgPort(mp);
+    }
 }
 
 BOOL buttonsPressed(struct BootMenuBase *bootmenubase, struct DefaultHidd *kbd) {
@@ -357,39 +362,39 @@ BOOL success = FALSE;
 struct MsgPort *mp;
 UBYTE matrix[16];
 
-	if (OpenLibrary(kbd->libname, 0) != NULL)
-	{
-		if (init_device(kbd->hiddname, "keyboard.device", bootmenubase))
-		{
-			delay(bootmenubase, 1, 0);
-			mp = CreateMsgPort();
-			if (mp)
-			{
-				struct IORequest *io;
-				io = CreateIORequest(mp, sizeof ( struct IOStdReq));
-				if (io)
-				{
-					if (0 == OpenDevice("keyboard.device", 0, io, 0))
-					{
-						#define ioStd(x) ((struct IOStdReq *)x)
-						ioStd(io)->io_Command = KBD_READMATRIX;
-						ioStd(io)->io_Data = matrix;
-						ioStd(io)->io_Length = 16;
-						DoIO(io);
-						if (0 == io->io_Error)
-						{
-							if (matrix[RAWKEY_SPACE/8] & (1<<(RAWKEY_SPACE%8)))
-								success = TRUE;
-						}
-						CloseDevice(io);
-					}
-					DeleteIORequest(io); 
-				}
-				DeleteMsgPort(mp);
-			}
-		}
-	}
-	return success;
+    if (OpenLibrary(kbd->libname, 0) != NULL)
+    {
+        if (init_device(kbd->hiddname, "keyboard.device", bootmenubase))
+        {
+            delay(bootmenubase, 1, 0);
+            mp = CreateMsgPort();
+            if (mp)
+            {
+                struct IORequest *io;
+                io = CreateIORequest(mp, sizeof ( struct IOStdReq));
+                if (io)
+                {
+                    if (0 == OpenDevice("keyboard.device", 0, io, 0))
+                    {
+                        #define ioStd(x) ((struct IOStdReq *)x)
+                        ioStd(io)->io_Command = KBD_READMATRIX;
+                        ioStd(io)->io_Data = matrix;
+                        ioStd(io)->io_Length = 16;
+                        DoIO(io);
+                        if (0 == io->io_Error)
+                        {
+                            if (matrix[RAWKEY_SPACE/8] & (1<<(RAWKEY_SPACE%8)))
+                                success = TRUE;
+                        }
+                        CloseDevice(io);
+                    }
+                    DeleteIORequest(io); 
+                }
+                DeleteMsgPort(mp);
+            }
+        }
+    }
+    return success;
 }
 
 #endif
@@ -401,35 +406,39 @@ static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
     struct VesaInfo *vi;
     static struct BootConfig bootcfg =
     {
-	&bootcfg,
-	{"vgah.hidd", "hidd.gfx.vga"},
-	{"kbd.hidd", "hidd.kbd.hw"},
-	{"mouse.hidd", "hidd.bus.mouse"},
-	NULL,
-	TRUE
+    &bootcfg,
+    {"vgah.hidd", "hidd.gfx.vga"},
+    {"kbd.hidd", "hidd.kbd.hw"},
+    {"mouse.hidd", "hidd.bus.mouse"},
+    NULL,
+    TRUE
     };
 
     LIBBASE->bcfg = bootcfg;
 
     /* init keyboard + check */
-    if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
+    if ((ExpansionBase = OpenLibrary("expansion.library",0)) != NULL)
     {
-	BootLoaderBase = OpenResource("bootloader.resource");
-	if (BootLoaderBase) {
-	    vi = (struct VesaInfo *)GetBootInfo(BL_Video);
-	    if (vi) {
-		if (vi->ModeNumber != 3) {
-		    strcpy(LIBBASE->bcfg.defaultgfx.libname, "vesagfx.hidd");
-		    strcpy(LIBBASE->bcfg.defaultgfx.hiddname, "hidd.gfx.vesa");
-		}
-	    }
-	}
-	kprintf("Entering Boot Menu ...\n");
-	/* init mouse + gfx */
-	if (initHidds(&LIBBASE->bcfg, LIBBASE))
-	{
-	    initScreen(LIBBASE, &LIBBASE->bcfg);
-	}
+        if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
+        {
+            BootLoaderBase = OpenResource("bootloader.resource");
+            if (BootLoaderBase)
+            {
+                vi = (struct VesaInfo *)GetBootInfo(BL_Video);
+                if (vi) {
+                    if (vi->ModeNumber != 3) {
+                        strcpy(LIBBASE->bcfg.defaultgfx.libname, "vesagfx.hidd");
+                        strcpy(LIBBASE->bcfg.defaultgfx.hiddname, "hidd.gfx.vesa");
+                    }
+                }
+            }
+            kprintf("Entering Boot Menu ...\n");
+            /* init mouse + gfx */
+            if (initHidds(&LIBBASE->bcfg, LIBBASE))
+            {
+                initScreen(LIBBASE, &LIBBASE->bcfg);
+            }
+        }
     }
     return TRUE;
 }
