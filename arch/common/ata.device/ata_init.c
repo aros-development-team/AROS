@@ -35,9 +35,10 @@
  *                                 since ata.device may handle it in legacy mode without any issues.
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
  *                                 medium removal, device detection, bus management and much more
+ * 2008-05-18  T. Wiszkowski       corrected device naming to handle cases where more than 10 physical units may be available
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
@@ -109,7 +110,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
             }
 
             if (unit->au_UnitNum < 10)
-                dosdevname[2] += unit->au_UnitNum / 10;
+                dosdevname[2] += unit->au_UnitNum % 10;
             else
                 dosdevname[2] = 'A' - 10 + unit->au_UnitNum;
             pp[0] = (IPTR)dosdevname;

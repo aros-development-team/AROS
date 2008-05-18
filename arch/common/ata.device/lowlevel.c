@@ -53,12 +53,12 @@
 
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
-#define DIRQ(a)
+#define DIRQ(a) 
 #define DIRQ_MORE(a) 
-#define DUMP(a)
-#define DATA(a) D(a)
-#define DATAPI(a) 
-#define DINIT(a) D(a)
+#define DUMP(a) 
+#define DATA(a) 
+#define DATAPI(a) D(a)
+#define DINIT(a) 
 
 #include <aros/debug.h>
 #include <exec/types.h>
