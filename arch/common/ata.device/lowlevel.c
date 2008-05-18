@@ -42,7 +42,8 @@
  * 2008-04-20  T. Wiszkowski       Corrected the flaw in drive identification routines leading to ocassional system hangups
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
  *                                 medium removal, device detection, bus management and much more
- * 2008-05-12  P. Fedin		   Explicitly enable multisector transfers on the drive
+ * 2008-05-12  P. Fedin	           Explicitly enable multisector transfers on the drive
+ * 2008-05-18  T. Wiszkowski       Added extra checks to prevent duplicating drive0 in drive0 only configs
  */
 /*
  * TODO: 
@@ -52,10 +53,10 @@
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
 #define DIRQ(a)
-#define DIRQ_MORE(a) D(a)
+#define DIRQ_MORE(a) 
 #define DUMP(a)
 #define DATA(a) D(a)
-#define DATAPI(a) D(a)
+#define DATAPI(a) 
 #define DINIT(a) D(a)
 
 #include <aros/debug.h>
@@ -1094,7 +1095,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
     {
         DINIT(bug("[ATA%02ld] ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-        bus->ab_Base->ata_MemPool = 0;
+        unit->au_Drive = 0;
         return FALSE;
     }
 
@@ -1117,7 +1118,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
         default:
             DINIT(bug("[ATA%02ld] Unsupported device %lx. All functions will remain stubbed.\n", unit->au_UnitNum, bus->ab_Dev[u]));
             FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-            bus->ab_Base->ata_MemPool = 0;
+            unit->au_Drive = 0;
             return FALSE;
     }
 
@@ -1129,7 +1130,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
     if (unit->au_Identify(unit) != 0)
     {
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
-        bus->ab_Base->ata_MemPool = 0;
+        unit->au_Drive = 0;
         return FALSE;
     }
 
@@ -2166,7 +2167,7 @@ ULONG atapi_RequestSense(struct ata_Unit* unit, UBYTE* sense, ULONG senselen)
     return ((sense[2]&0xf)<<16) | (sense[12]<<8) | (sense[13]);
 }
 
-ULONG ata_ReadSignature(struct ata_Bus *bus)
+ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
 {
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
@@ -2194,8 +2195,22 @@ ULONG ata_ReadSignature(struct ata_Bus *bus)
             case 0x0000:
                 if (0 == (ata_ReadStatus(bus) & 0xfe))
                     return DEV_NONE;
-                DINIT(bug("[ATA  ] Found signature for ATA device\n"));
-                return DEV_ATA;
+                ata_out(0xa0 | (unit << 4), ata_DevHead, port);
+                ata_out(ATA_EXECUTE_DIAG, ata_Command, port);
+                ata_out(0xa0 | (unit << 4), ata_DevHead, port);
+
+                while (ata_ReadStatus(bus) & ATAF_BUSY)
+                    ata_400ns();
+                    
+                DINIT(bug("[ATA  ] Further validating  ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
+
+                if ((1 == (0x7f & ata_in(ata_Error, port))) && 
+                    (unit == ((ata_in(ata_DevHead, port) >> 4) & 1)))
+                {
+                    DINIT(bug("[ATA  ] Found *valid* signature for ATA device\n"));
+                    return DEV_ATA;
+                }
+                return DEV_NONE;
 
             case 0x14eb:
                 DINIT(bug("[ATA  ] Found signature for ATAPI device\n"));
@@ -2230,47 +2245,32 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 {
     ULONG alt = bus->ab_Alt;
     ULONG port = bus->ab_Port;
+    int id;
 
     /*
      * issue and clear the software reset signal
      */
     /* at this time both devices should report ready immediately */
-    if (DEV_NONE != bus->ab_Dev[0])
+    for (id = 0; id < 2; id++)
     {
-        ata_out(0xa0, ata_DevHead, port);
-        ata_400ns();
+        if (DEV_NONE != bus->ab_Dev[id])
+        {
+            ata_out(0xa0 | (id << 4), ata_DevHead, port);
+            ata_400ns();
 
-        ata_out(0x04, ata_AltControl, alt);
-        ata_usleep(tr, 10);                /* minimum required: 5us */
-        ata_out(0x02, ata_AltControl, alt);
-        ata_usleep(tr, 20000);               /* minimum required: 2ms */
+            ata_out(0x04, ata_AltControl, alt);
+            ata_usleep(tr, 10);                /* minimum required: 5us */
+            ata_out(0x02, ata_AltControl, alt);
+            ata_usleep(tr, 20000);               /* minimum required: 2ms */
 
-        ata_out(0xa0, ata_DevHead, port);
-        ata_400ns();
+            ata_out(0xa0 | (id << 4), ata_DevHead, port);
+            ata_400ns();
 
-        while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
-            ata_usleep(tr, 200);
+            while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
+                ata_usleep(tr, 200);
 
-        bus->ab_Dev[0] = ata_ReadSignature(bus);
-    }
-
-    if (DEV_NONE != bus->ab_Dev[1])
-    {
-        ata_out(0xb0, ata_DevHead, port);
-        ata_400ns();
-
-        ata_out(0x04, ata_AltControl, alt);
-        ata_usleep(tr, 10);                /* minimum required: 5us */
-        ata_out(0x02, ata_AltControl, alt);
-        ata_usleep(tr, 20000);               /* minimum required: 2ms */
-
-        ata_out(0xb0, ata_DevHead, port);
-        ata_400ns();
-
-        while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
-            ata_usleep(tr, 200);
-
-        bus->ab_Dev[1] = ata_ReadSignature(bus);
+            bus->ab_Dev[id] = ata_ReadSignature(bus, id);
+        }
     }
 }
 

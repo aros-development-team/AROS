@@ -302,7 +302,6 @@ struct ata_Unit
    struct Interrupt   *au_RemoveInt;  /* Raise this interrupt on a disc change */
    struct List         au_SoftList;    /* Raise even more interrupts from this list on disc change */
 
-   UBYTE               au_RDBSector;           /* Geee. Do I really need it? */
    UBYTE               au_SectorShift;         /* Sector shift. 9 here is 512 bytes sector */
    UBYTE               au_DevMask;             /* device mask used to simplify device number coding */
    UBYTE               au_SenseKey;            /* Sense key from ATAPI devices */
@@ -426,6 +425,7 @@ typedef enum
 #define ATA_IDENTIFY_DEVICE 0xec
 #define ATA_IDENTIFY_ATAPI  0xa1
 #define ATA_NOP             0x00
+#define ATA_EXECUTE_DIAG    0x90
 #define ATA_PACKET          0xa0
 #define ATA_READ_DMA        0xc8
 #define ATA_READ_DMA64      0x25
