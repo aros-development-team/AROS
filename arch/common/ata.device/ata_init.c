@@ -84,8 +84,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
     IPTR *pp;
-    static int volnum;
-    TEXT dosdevname[4] = "HD0", *handler;
+    TEXT dosdevname[4] = "HD00", *handler;
     UWORD len;
 
     ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
@@ -108,7 +107,8 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 default:
                     D(bug("IDE: AddVolume called on unknown devicetype\n"));
             }
-            dosdevname[2] += volnum;
+            dosdevname[2] += unit->au_UnitNum / 10;
+            dosdevname[3] += unit->au_UnitNum % 10;
             pp[0] = (IPTR)dosdevname;
             pp[1] = (IPTR)MOD_NAME_STRING;
             pp[2] = unit->au_UnitNum;
@@ -151,8 +151,6 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                     AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
                     D(bug("done\n"));
                     
-                    volnum++;
-
                     return TRUE;
                 }
             }

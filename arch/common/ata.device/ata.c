@@ -359,13 +359,15 @@ static void cmd_GetGeometry(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
         dg->dg_SectorSize       = 1 << unit->au_SectorShift;
 
-        if (unit->au_Capacity48 > unit->au_Capacity) {
+        if (unit->au_Capacity48 != 0) 
+        {
             if ((unit->au_Capacity48 >> 32) != 0)
                 dg->dg_TotalSectors     = 0xffffffff;
             else
                 dg->dg_TotalSectors     = unit->au_Capacity48;
         }
-        else    dg->dg_TotalSectors     = unit->au_Capacity;
+        else    
+            dg->dg_TotalSectors         = unit->au_Capacity;
 
         dg->dg_Cylinders                = unit->au_Cylinders;
         dg->dg_CylSectors               = unit->au_Sectors * unit->au_Heads;
@@ -636,7 +638,7 @@ AROS_LH1(ULONG, GetRdskLba,
 {
     AROS_LIBFUNC_INIT
 
-    return Unit(io)->au_RDBSector;
+    return 0;
 
     AROS_LIBFUNC_EXIT
 }
@@ -987,6 +989,8 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
        {
           if (bus->ab_Units[iter]->au_XferModes & AF_XFER_PACKET)
              AddVolume(0, 0, bus->ab_Units[iter]);
+          else if (bus->ab_Units[iter]->au_Capacity48 != 0)
+             AddVolume(0, bus->ab_Units[iter]->au_Capacity48, bus->ab_Units[iter]);
           else
              AddVolume(0, bus->ab_Units[iter]->au_Capacity, bus->ab_Units[iter]);
        }
