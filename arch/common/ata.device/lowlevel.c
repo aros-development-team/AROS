@@ -44,6 +44,7 @@
  *                                 medium removal, device detection, bus management and much more
  * 2008-05-12  P. Fedin	           Explicitly enable multisector transfers on the drive
  * 2008-05-18  T. Wiszkowski       Added extra checks to prevent duplicating drive0 in drive0 only configs
+ * 2008-05-18  T. Wiszkowski       Replaced static C/H/S with more accurate calcs, should make HDTB and other tools see right capacity
  */
 /*
  * TODO: 
@@ -1556,8 +1557,6 @@ ULONG atapi_Identify(struct ata_Unit* unit)
             break;
     }
                         
-    unit->au_NumLoop = 10000000;
-
     atapi_TestUnitOK(unit);
 
     return 0;
@@ -1663,8 +1662,6 @@ ULONG ata_Identify(struct ata_Unit* unit)
         unit->au_Flags |= AF_Removable;
     }
 
-    unit->au_NumLoop = 4000000;
-
     unit->au_Capacity   = unit->au_Drive->id_LBASectors;
     unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
     bug("[ATA%02ld] Unit info: %07lx 28bit / %04lx:%08lx 48bit addressable blocks\n", unit->au_UnitNum, unit->au_Capacity, (ULONG)(unit->au_Capacity48 >> 32), (ULONG)(unit->au_Capacity48 & 0xfffffffful));
@@ -1675,11 +1672,44 @@ ULONG ata_Identify(struct ata_Unit* unit)
        CHS way anyway :)
        i guess this just solves that weirdo div-by-zero crash, if anything else...
        */
-    if (unit->au_Drive->id_LBASectors > (63*255*1024))
+    if ((unit->au_Drive->id_LBA48Sectors > (63 * 255 * 1024)) ||
+        (unit->au_Drive->id_LBASectors > (63 * 255 * 1024)))
     {
-        unit->au_Cylinders  = unit->au_Drive->id_LBASectors / (255*63);
-        unit->au_Heads      = 255;
+        ULONG div = 1;
+        /*
+         * TODO: this shouldn't be casted down here.
+         */
+        ULONG sec = unit->au_Capacity48;
+
+        if (sec < unit->au_Capacity48)
+            sec = ~0ul;
+        
+        if (sec < unit->au_Capacity)
+            sec = unit->au_Capacity;
+
         unit->au_Sectors    = 63;
+        sec /= 63;
+        /*
+         * keep dividing by 2
+         */
+        do
+        {
+            if (((sec >> 1) << 1) != sec)
+                break;
+            div <<= 1;
+            sec >>= 1;
+        } while (1);
+
+        do
+        {
+            if (((sec / 3) * 3) != sec)
+                break;
+            div *= 3;
+            sec /= 3;
+        } while (1);
+
+        unit->au_Cylinders  = sec;
+        unit->au_Heads      = div;
     }
     else
     {

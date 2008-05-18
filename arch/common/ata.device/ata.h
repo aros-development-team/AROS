@@ -297,7 +297,6 @@ struct ata_Unit
    ULONG               au_UnitNum;     /* Unit number as coded by device */
    ULONG               au_Flags;       /* Unit flags, see below */
    ULONG               au_ChangeNum;   /* Number of disc changes */
-   ULONG               au_NumLoop;     /* Maximal busy wait delay for unit */
 
    struct Interrupt   *au_RemoveInt;  /* Raise this interrupt on a disc change */
    struct List         au_SoftList;    /* Raise even more interrupts from this list on disc change */
