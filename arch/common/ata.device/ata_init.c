@@ -37,7 +37,7 @@
  *                                 medium removal, device detection, bus management and much more
  */
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
@@ -84,7 +84,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     struct ExpansionBase *ExpansionBase;
     struct DeviceNode *devnode;
     IPTR *pp;
-    TEXT dosdevname[4] = "HD00", *handler;
+    TEXT dosdevname[4] = "HD0", *handler;
     UWORD len;
 
     ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
@@ -107,8 +107,11 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                 default:
                     D(bug("IDE: AddVolume called on unknown devicetype\n"));
             }
-            dosdevname[2] += unit->au_UnitNum / 10;
-            dosdevname[3] += unit->au_UnitNum % 10;
+
+            if (unit->au_UnitNum < 10)
+                dosdevname[2] += unit->au_UnitNum / 10;
+            else
+                dosdevname[2] = 'A' - 10 + unit->au_UnitNum;
             pp[0] = (IPTR)dosdevname;
             pp[1] = (IPTR)MOD_NAME_STRING;
             pp[2] = unit->au_UnitNum;
