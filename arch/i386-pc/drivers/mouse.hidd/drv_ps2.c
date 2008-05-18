@@ -51,6 +51,7 @@ int kbd_read_data(void);
 void kb_wait(void);
 void kbd_write_cmd(int cmd);
 void aux_write_ack(int val);
+void aux_write_noack(int val);
 void kbd_write_command_w(int data);
 
 /****************************************************************************************/
@@ -227,6 +228,7 @@ static int detect_intellimouse(void)
     aux_write_ack(KBD_OUTCMD_SET_RATE);
     aux_write_ack(80);     
     aux_write_ack(KBD_OUTCMD_GET_ID);
+    aux_write_noack(KBD_OUTCMD_GET_ID);
     
     query_mouse(&id, 1, 20);
 

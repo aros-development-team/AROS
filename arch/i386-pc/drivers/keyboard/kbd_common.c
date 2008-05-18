@@ -87,9 +87,17 @@ void aux_write_ack(int val)
 {
     kb_wait();
     kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
-    kb_wait();;
+    kb_wait();
     kbd_write_output(val);
     kb_wait();
+}
+
+void aux_write_noack(int val)
+{
+    kb_wait();
+    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);
+    kb_wait();
+    kbd_write_output(val);
 }
 
 void kbd_write_output_w(int data)
