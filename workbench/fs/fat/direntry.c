@@ -228,6 +228,16 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
 
             InitDirHandle(dh->ioh.sb, 0, dh);
 
+	    /* If we were called with simply ":" as the name we will return
+	       immediately after this, so we prepare a fictional direntry for
+	       such a case.
+	       Note that we fill only fields which are actually used in our handler */
+	    de->cluster = 0;
+	    de->index = -1;			/* WARNING! Dummy index */
+	    de->e.entry.attr = ATTR_DIRECTORY;
+	    de->e.entry.first_cluster_hi = 0;
+	    de->e.entry.first_cluster_lo = 0;
+
             break;
         }
 

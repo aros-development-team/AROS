@@ -45,21 +45,6 @@ static LONG MoveToSubdir(struct DirHandle *dh, UBYTE **pname, ULONG *pnamelen) {
     UBYTE *name = *pname, *base;
     ULONG namelen = *pnamelen, baselen;
     struct DirEntry de;
-    int i;
-
-    /* if it starts with a volume specifier (or just a :), remove it and get
-     * us back to the root dir */
-    for (i = 0; i < namelen; i++)
-        if (name[i] == ':') {
-            D(bug("[fat] name has volume specifier, moving to the root dir\n"));
-
-            namelen -= (i+1);
-            name = &name[i+1];
-
-            InitDirHandle(dh->ioh.sb, 0, dh);
-
-            break;
-        }
 
     /* we break the given name into two pieces - the name of the containing
      * dir, and the name of the new dir to go within it. if the base ends up
@@ -1001,7 +986,7 @@ LONG OpAddNotify(struct NotifyRequest *nr) {
     struct DirEntry de;
     struct GlobalLock *gl = NULL, *tmp;
     struct NotifyNode *nn;
-    BOOL exists;
+    BOOL exists = FALSE;
 
     D(bug("[fat] trying to add notification for '%s'\n", nr->nr_FullName));
 
