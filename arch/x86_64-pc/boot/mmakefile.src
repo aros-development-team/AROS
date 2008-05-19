@@ -6,15 +6,10 @@ include $(TOP)/config/make.cfg
 #MM	kernel-aros \
 #MM	kernel-bootloader-pc-x86_64 \
 #MM	kernel-timer \
-#MM	kernel-ata \
 #MM	kernel-keyboard \
 #MM	kernel-gameport \
-#MM	kernel-pc-i386-vga \
-#MM	kernel-pc-i386-vesa \
 #MM	kernel-battclock \
 #MM	kernel-misc \
-#MM	kernel-pci \
-#MM	kernel-pci-pcipc \
 #MM	kernel-mathieeesingbas \
 #MM	workbench-libs-partition \
 #MM	workbench-hidd-graphics \
@@ -32,16 +27,17 @@ include $(TOP)/config/make.cfg
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
 #MM	workbench-fs-afs \
+#MM     kernel-pc-x86_64-drivers \
 #MM     kernel-contrib-necessary-pc-x86_64 \
 #MM	kernel-boot
 
 #MM- kernel-contrib-necessary-pc-x86_64 : contrib-necessary-pc-x86_64
 
-PKG_LIBS := aros boot mathieeesingbas partition dos graphics layers keymap intuition workbench
-PKG_RSRC := bootloader battclock misc
-PKG_DEVS := ata timer keyboard gameport input console
-PKG_HANDLERS := cdrom packet con nil ram afs
-PKG_HIDDS:= vgah pci pcipc graphics vesagfx
+PKG_LIBS := aros boot dos graphics intuition keymap layers mathieeesingbas partition workbench
+PKG_RSRC := battclock bootloader misc
+PKG_DEVS := ata console gameport input keyboard timer
+PKG_HANDLERS := afs cdrom con nil packet ram
+PKG_HIDDS:= graphics parallel pci pcipc serial vesagfx vgah
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
