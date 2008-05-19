@@ -2,6 +2,25 @@
 include $(TOP)/config/make.cfg
 
 #
+# Rule's to create Kernel drivers for pc-x86_64
+#
+
+#MM- kernel-bootstrap-pc-x86_64-drivers : \
+#MM    kernel-pc-x86_64-irq-kobj \
+#MM    kernel-pc-i386-kbd-kobj \
+#MM    kernel-pc-i386-mouse-kobj
+
+#MM- kernel-pc-x86_64-drivers : \
+#MM    kernel-pc-i386-trackdisk \
+#MM    kernel-pc-i386-serial \
+#MM    kernel-pc-i386-parallel \
+#MM    kernel-pc-i386-vga \
+#MM    kernel-pc-i386-vesa \
+#MM    kernel-pci \
+#MM    kernel-pci-pcipc \
+#MM    kernel-ata
+
+#
 # Rule's to create Support drivers for pc-x86_64
 # These are not needed as part of the kernel - and so get created seperately
 #
