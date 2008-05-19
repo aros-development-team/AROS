@@ -5,7 +5,8 @@ include $(TOP)/config/make.cfg
 #MM- kernel-pc-i386-trackdisk-kobj : includes
 
 USER_INCLUDES := -I$(TOP)/rom/devs
+
 %build_module mmake=kernel-pc-i386-trackdisk \
   modname=trackdisk modtype=device \
-  files="trackdisk_device trackdisk_hw"
-
+  files="trackdisk_device trackdisk_hw" \
+  uselibs="hiddstubs rom amiga oop"
