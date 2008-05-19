@@ -42,6 +42,7 @@
 #define BNF_RETRY 0x8000 /* Private flag for the BootNode */
 
 extern void boot();
+extern void InitKernelBases(void);
 
 BOOL init_hidds( struct ExecBase *, struct DosLibrary * );
 BOOL mount( struct DeviceNode *dn, struct DosLibrary * ); 
@@ -79,6 +80,9 @@ AROS_UFH3(void, intBoot,
 	D(bug( "Could not open expansion.library, something's wrong!\n"));
 	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
     }
+
+    /* Initialise library bases used by linklib functions within the kernel */
+    InitKernelBases();
 
     /**** Try to mount all filesystems in the MountList ****************************/
     D(bug( "Examining MountList:\n" ));
