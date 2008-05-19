@@ -4,15 +4,22 @@ include $(TOP)/config/make.cfg
 
 FILES := funcs
 
-#MM- includes-generate : workbench-libs-oss-unix-includes
+#MM- workbench-libs-oss-unix : \
+#MM      workbench-libs-oss-unix-module \
+#MM      test-playoss
+#MM- test-playoss : workbench-libs-oss-unix-module
 
-#MM workbench-libs-oss-unix-includes : \
+#MM workbench-libs-oss-unix-module-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-oop-includes \
 #MM     includes-copy
-#MM workbench-libs-oss-unix : linklibs
+#MM workbench-libs-oss-unix-module : linklibs
+
+# If an arch specific oss is made also test-playoss will be made
+%build_prog mmake=test-playoss \
+    progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
 
 USER_CFLAGS := -I$(AROS_INCLUDES) -D__AROS__
-%build_module mmake=workbench-libs-oss-unix modname=oss \
+%build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library files="$(FILES) oss_init" linklibname=ossshared \
     uselibs="oop amiga rom m hiddstubs" compiler=host

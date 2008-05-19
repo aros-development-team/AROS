@@ -10,13 +10,14 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-battclock arch=linux alias=unix
 %rule_archalias mainmmake=kernel-dbus arch=linux alias=unix
 
+%rule_archalias mainmmake=workbench-libs-oss arch=linux alias=unix
+
 MM- check : check-exec-unix
 
 #MM- contrib-linux : contrib-complete
 
 #MM- workbench-linux : \
 #MM      workbench-unix \
-#MM      workbench-libs-oss-unix \
 #MM      workbench-devs-tap-unix
 
 %common
