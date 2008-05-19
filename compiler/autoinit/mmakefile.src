@@ -36,7 +36,8 @@ LIBHANDLINGFILES := \
 	libraries
 
 MISCFILES := \
-	detach
+	detach \
+	initkernelbases
 
 FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(MISCFILES)
 
