@@ -696,6 +696,11 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Font:
                 data->mad_FontPreset = tag->ti_Data;
                 break;
+		
+            case MUIA_InputMode:
+                data->mad_InputMode = tag->ti_Data;
+                break;
+
         }
     }
 
@@ -2222,8 +2227,8 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 
     if (fi != NULL)
     {
-        UWORD   w = fi->tile_left + fi->tile_right;
-        UWORD   h = fi->tile_top + fi->tile_bottom;
+        //UWORD   w = fi->tile_left + fi->tile_right;
+        //UWORD   h = fi->tile_top + fi->tile_bottom;
 
         data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
         data->mad_subwidth = data->mad_addleft + data->mad_InnerRight + zframe->iright;
