@@ -417,6 +417,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
 
     InitResident( DOSResident, NULL );
 
+    /* We don't get here if everything went well */
     return 0;
 
     AROS_USERFUNC_EXIT
