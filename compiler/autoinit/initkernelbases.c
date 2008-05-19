@@ -20,16 +20,16 @@
 
 void InitKernelBases(void)
 {
-    ArosBase = OpenLibrary("aros.library", 0);
-    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
+//    ArosBase = OpenLibrary("aros.library", 0);
+//    CyberGfxBase = OpenLibrary("cybergraphics.library", 0);
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-    ExpansionBase = OpenLibrary("expansion.library", 0);
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0);
-    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0);
-    KeymapBase = OpenLibrary("keymap.library", 0);
-    LayersBase = OpenLibrary("layers.library", 0);
-    PartitionBase = OpenLibrary("partition.library", 0);
-    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0);
-    WorkbenchBase = OpenLibrary("workbench.library", 0);
+//    ExpansionBase = OpenLibrary("expansion.library", 0);
+//    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0);
+//    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 0);
+//    KeymapBase = OpenLibrary("keymap.library", 0);
+//    LayersBase = OpenLibrary("layers.library", 0);
+//    PartitionBase = OpenLibrary("partition.library", 0);
+//    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 0);
+//    WorkbenchBase = OpenLibrary("workbench.library", 0);
 }
 
