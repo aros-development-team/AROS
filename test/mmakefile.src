@@ -72,7 +72,6 @@ COMMONTESTFILES := \
     printnativekeytable \
     textbug \
     testide \
-    playoss \
     openlib \
     simplepng \
     truecolorpens \

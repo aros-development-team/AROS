@@ -8,9 +8,10 @@ include $(TOP)/config/make.cfg
 %rule_archalias mainmmake=kernel-dos arch=freebsd alias=unix
 %rule_archalias mainmmake=kernel-battclock arch=freebsd alias=unix
 
+%rule_archalias mainmmake=workbench-libs-oss arch=freebsd alias=unix
+
 #MM- workbench-freebsd : \
-#MM     workbench-unix \
-#MM     workbench-libs-oss-unix
+#MM     workbench-unix
 
 #MM- contrib-freebsd : contrib-complete
 
