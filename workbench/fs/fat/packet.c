@@ -46,7 +46,7 @@ void ProcessPackets(void) {
                 LONG access = pkt->dp_Arg3;
 
 		D(bug("[fat] LOCATE_OBJECT: lock 0x%08x (dir %ld/%ld) name '", pkt->dp_Arg1,
--                     fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
+                      fl != NULL ? fl->gl->dir_cluster : 0, fl != NULL ? fl->gl->dir_entry : 0);
 		RawPutChars(&path[1], path[0]); bug("' type %s\n",
                       pkt->dp_Arg3 == EXCLUSIVE_LOCK ? "EXCLUSIVE" : "SHARED"));
 

@@ -415,7 +415,7 @@ ULONG cache_mark_blocks_dirty(struct cache *c, struct cache_block **b, ULONG nbl
 
 ULONG cache_flush(struct cache *c) {
     struct cache_block *b, *next;
-    ULONG err;
+    ULONG err = 0;
     int count = 0;
 
     D(bug("cache_flush: flushing dirty blocks\n"));
