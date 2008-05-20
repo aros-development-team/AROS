@@ -192,9 +192,9 @@ AROS_UFH3(void, __dosboot_IntBoot,
 
     ForeachNode(&ExpansionBase->MountList, bootNode)
     {
-        D(bug("[DOS] __dosboot_IntBoot: Node: %p, DevNode: %p, Name = %s\n", 
+        D(bug("[DOS] __dosboot_IntBoot: BootNode: %p, bn_DeviceNode: %p, Name '%s', Priority %4d\n",
                 bootNode, bootNode->bn_DeviceNode,
-            deviceName ? deviceName : "(null)" 
+                deviceName ? deviceName : "(null)", bootNode->bn_Node.ln_Pri
         ));
         /* 
             Try to mount the filesystem. If it fails, mark the BootNode
