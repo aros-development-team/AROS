@@ -39,8 +39,8 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     vprintf waitforchar waitpkt write writechars
 
 #MM kernel-dos-linklib : kernel-dos-$(ARCH)-$(CPU)
-#MM kernel-dos-kobj : kernel-dos-$(ARCH)-$(CPU)
-#MM kernel-dos : kernel-dos-$(ARCH)-$(CPU)
+#MM kernel-dos-kobj : kernel-bootmenu-includes kernel-dos-$(ARCH)-$(CPU)
+#MM kernel-dos : kernel-bootmenu-includes kernel-dos-$(ARCH)-$(CPU)
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
