@@ -391,11 +391,10 @@ static BOOL buttonsPressed(struct BootMenuBase *BootMenuBase, struct DefaultHidd
 static struct BootConfig bootcfg =
 {
     &bootcfg,
+    NULL,
     {"vgah.hidd", "hidd.gfx.vga"},
     {"kbd.hidd", "hidd.kbd.hw"},
     {"mouse.hidd", "hidd.bus.mouse"},
-    NULL,
-    TRUE
 };
 
 static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
