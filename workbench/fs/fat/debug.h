@@ -2,7 +2,7 @@
 #include <aros/debug.h>
 #else
 #if DEBUG > 0
-#include <proto/sysdebug.h>
+#include <clib/debug_protos.h>
 #define D(x) x
 #define bug kprintf
 

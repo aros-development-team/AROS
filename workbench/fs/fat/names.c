@@ -118,7 +118,7 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name, ULONG *len) {
     D(bug("[fat] short name checksum is 0x%02x\n", checksum));
 
     /* get a handle on the directory */
-    InitDirHandle(short_de->sb, short_de->cluster, &dh);
+    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE);
 
     /* loop over the long name entries */
     c = buf;
@@ -283,7 +283,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     D(bug("[fat] basis name is '%.11s'\n", basis));
 
     /* get a fresh handle on the current directory */
-    InitDirHandle(short_de->sb, short_de->cluster, &dh);
+    InitDirHandle(short_de->sb, short_de->cluster, &dh, FALSE);
 
     /* if the name will require one or more entries, then our basis name is
      * actually some conversion of the real name, and we have to look to make

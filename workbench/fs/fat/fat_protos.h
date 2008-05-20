@@ -44,7 +44,7 @@ void ProcessPackets(void);
 /* new definitions as we refactor the code */
 
 /* direntry.c */
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh);
+LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse);
 LONG ReleaseDirHandle(struct DirHandle *dh);
 
 LONG GetDirEntry(struct DirHandle *dh, ULONG index, struct DirEntry *de);

@@ -32,12 +32,12 @@
         dh->cur_index = 0xffffffff; \
     } while(0);
 
-LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh) {
+LONG InitDirHandle(struct FSSuper *sb, ULONG cluster, struct DirHandle *dh, BOOL reuse) {
     /* dh may or may not be initialised when this is called. if it is, then it
      * probably has a valid cache block that we need to free, but we wouldn't
      * know. we test the superblock pointer to figure out if it's valid or
      * not */
-    if (dh->ioh.sb == sb) {
+    if (reuse && (dh->ioh.sb == sb)) {
         D(bug("[fat] reusing directory handle\n"));
         if (dh->ioh.block != NULL) {
             cache_put_block(sb->cache, dh->ioh.block, 0);
@@ -172,7 +172,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de) {
     }
 
     /* take us up */
-    InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh);
+    InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
 
     return 0;
 }
@@ -226,7 +226,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
             pathlen -= (i+1);
             path = &path[i+1];
 
-            InitDirHandle(dh->ioh.sb, 0, dh);
+	    InitDirHandle(dh->ioh.sb, 0, dh, TRUE);
 
 	    /* If we were called with simply ":" as the name we will return
 	       immediately after this, so we prepare a fictional direntry for
@@ -288,7 +288,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
                 return ERROR_OBJECT_WRONG_TYPE;
             }
 
-            InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh);
+	    InitDirHandle(dh->ioh.sb, FIRST_FILE_CLUSTER(de), dh, TRUE);
         }
     }
 
@@ -304,7 +304,7 @@ LONG UpdateDirEntry(struct DirEntry *de) {
 
     D(bug("[fat] writing dir entry %ld in dir starting at cluster %ld\n", de->index, de->cluster));
 
-    InitDirHandle(glob->sb, de->cluster, &dh);
+    InitDirHandle(glob->sb, de->cluster, &dh, FALSE);
 
     err = WriteFileChunk(&(dh.ioh), de->pos, sizeof(struct FATDirEntry), (UBYTE *) &(de->e.entry), &nwritten);
     if (err != 0) {
@@ -427,7 +427,7 @@ LONG DeleteDirEntry(struct DirEntry *de) {
     ULONG order;
     LONG err;
 
-    InitDirHandle(glob->sb, de->cluster, &dh);
+    InitDirHandle(glob->sb, de->cluster, &dh, FALSE);
 
     /* calculate the short name checksum before we trample on the name */
     CALC_SHORT_NAME_CHECKSUM(de->e.entry.name, checksum);
@@ -502,7 +502,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
     if (fib->fib_DirEntryType == ST_ROOT)
         CopyMem(&sb->volume.create_time, &fib->fib_Date, sizeof(struct DateStamp));
     else {
-        InitDirHandle(sb, gl->dir_cluster, &dh);
+	InitDirHandle(sb, gl->dir_cluster, &dh, FALSE);
         GetDirEntry(&dh, gl->dir_entry, &de);
         ConvertFATDate(de.e.entry.write_date, de.e.entry.write_time, &fib->fib_Date);
         ReleaseDirHandle(&dh);

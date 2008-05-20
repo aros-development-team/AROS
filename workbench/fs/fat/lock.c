@@ -92,7 +92,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
       bug("' in dir at cluster %ld\n", dir_cluster));
     
     /* open the dir */
-    InitDirHandle(glob->sb, dir_cluster, &dh);
+    InitDirHandle(glob->sb, dir_cluster, &dh, FALSE);
 
     /* look for the entry */
     if ((err = GetDirEntryByPath(&dh, name, namelen, &de)) != 0) {
@@ -153,7 +153,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
         gl->access = access;
 
         /* gotta fish some stuff out of the dir entry too */
-        InitDirHandle(glob->sb, dir_cluster, &dh);
+	InitDirHandle(glob->sb, dir_cluster, &dh, FALSE);
         GetDirEntry(&dh, dir_entry, &de);
 
         gl->first_cluster = FIRST_FILE_CLUSTER(&de);
@@ -183,7 +183,7 @@ LONG LockFile(ULONG dir_cluster, ULONG dir_entry, LONG access, struct ExtFileLoc
                 if (nn->gl == NULL) {
                     D(bug("[fat] searching for notify name '%s'\n", nn->nr->nr_FullName));
 
-                    if (InitDirHandle(glob->sb, 0, &dh) != 0)
+		    if (InitDirHandle(glob->sb, 0, &dh, TRUE) != 0)
                         continue;
 
                     if (GetDirEntryByPath(&dh, nn->nr->nr_FullName, strlen(nn->nr->nr_FullName), &de) != 0)
