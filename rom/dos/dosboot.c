@@ -6,11 +6,10 @@
     Lang: english 
 */
 
-/* Uncomment this definition in order to enable mounting
+/* This definition enables mounting
    disk-based handlers (e.g. fat.handler) at bootup.
-   This code works however fat.handler itself currently has
-   problems, so this option is disabled for now
-#define MOUNT_DISK_HANDLERS */
+   Comment it out in case if some critical bugs appear. */
+#define MOUNT_DISK_HANDLERS
 
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
