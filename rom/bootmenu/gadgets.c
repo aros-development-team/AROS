@@ -40,8 +40,7 @@ struct ButtonGadget *createButton
     };
     struct ButtonGadget *button;
 
-	;
-	if (button)
+	if ((button = AllocMem(sizeof(struct ButtonGadget), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
 	{
 		tags[4].ti_Data = (IPTR)&button->uborder2;
 		tags[5].ti_Data = (IPTR)&button->sborder2;
