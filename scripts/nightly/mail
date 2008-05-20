@@ -24,7 +24,7 @@ mail_write()
 # $1 = extra options (attachements)
 mail_send()
 {
-    mail -s $MAIL_SUBJECT -c $CFG_MAIL_CC $1 $CFG_MAIL_TO <$MAIL_FILE
+    mutt -s $MAIL_SUBJECT -c $CFG_MAIL_CC $1 $CFG_MAIL_TO <$MAIL_FILE
 }
 
 mail_stop()
