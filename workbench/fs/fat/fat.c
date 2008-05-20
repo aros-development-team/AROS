@@ -402,7 +402,7 @@ LONG GetVolumeInfo(struct FSSuper *sb, struct VolumeInfo *volume) {
     /* search the directory for the volume id entry. it would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
-    InitDirHandle(sb, 0, &dh);
+    InitDirHandle(sb, 0, &dh, FALSE);
 
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
 
@@ -455,7 +455,7 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     /* search the directory for the volume id entry. it would've been nice to
      * just use GetNextDirEntry but I didn't want a flag or something to tell
      * it not to skip the volume name */
-    InitDirHandle(sb, 0, &dh);
+    InitDirHandle(sb, 0, &dh, FALSE);
 
     while ((err = GetDirEntry(&dh, dh.cur_index + 1, &de)) == 0) {
 

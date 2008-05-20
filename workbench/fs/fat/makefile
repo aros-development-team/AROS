@@ -15,8 +15,7 @@ PROG     = fat-handler
 DESTDIR  = L:
 endif
 
-# -O2 here causes problems under MorphOS with gcc v2.95.4
-CFLAGS = -O1
+CFLAGS = -O2 -Wall
 
 FILES := $(STARTUP) cache.c direntry.c disk.c fat.c file.c lock.c \
 	 main.c names.c packet.c ops.c support.c notify.c charset.c \

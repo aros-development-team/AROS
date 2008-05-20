@@ -1,7 +1,6 @@
 include $(TOP)/config/make.cfg
 
 FILES := startup-aros cache charset direntry disk fat file lock main names packet ops support notify timer
-USER_CFLAGS := -fno-strict-aliasing
 
 %build_prog mmake=workbench-fs-fat \
     progname=fat.handler targetdir=$(AROS_DEVS) \

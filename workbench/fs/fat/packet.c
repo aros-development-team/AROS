@@ -155,7 +155,7 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh)) != 0)
+		if ((err = InitDirHandle(glob->sb, fl->ioh.first_cluster, &dh, FALSE)) != 0)
                     break;
 
                 dh.cur_index = fib->fib_DiskKey;

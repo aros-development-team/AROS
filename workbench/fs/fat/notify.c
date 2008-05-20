@@ -86,6 +86,10 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de) {
     struct DirHandle sdh;
     struct DirEntry sde;
 
+    /* Inside the loop we may reuse the dirhandle, so here we explicitly mark it
+       as uninitialised */
+    sdh.ioh.sb = NULL;
+
     D(bug("[fat] notifying for dir entry (%ld/%ld)\n", de->cluster, de->index));
 
     ForeachNode(&sb->notifies, nn)
@@ -95,7 +99,7 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de) {
         }
 
         else {
-            if (InitDirHandle(sb, 0, &sdh) != 0)
+	    if (InitDirHandle(sb, 0, &sdh, TRUE) != 0)
                 continue;
 
             if (GetDirEntryByPath(&sdh, nn->nr->nr_FullName, strlen(nn->nr->nr_FullName), &sde) != 0)
