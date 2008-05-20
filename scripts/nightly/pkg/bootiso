@@ -1,8 +1,9 @@
 #!/bin/zsh
 # Generic bootiso binary package generator.
+
 BOOTLOADER=$1
 
-source $SP/setup
+source  $SP/setup
 
 # The log-name MUST match the name of the package script
 setl   bootiso-$BOOTLOADER-$BUILDTARGET.log
@@ -13,7 +14,7 @@ printi "Creating AROS/$BUILDTARGET bootiso binary packages (with $BOOTLOADER)...
 
 delete  $BUILD_BASE/AROS
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
-copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
+copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
 execute ./configure --target=$BUILDTARGET --enable-ccache --with-bootloader=$BOOTLOADER --enable-build-type=nightly
