@@ -46,7 +46,6 @@
 
 extern BOOL init_hidds(struct ExecBase *, struct DosLibrary *);
 extern void boot();
-extern void InitKernelBases(void);
 
 BOOL attemptingboot = FALSE;
 BOOL bootdevicefound = FALSE;
@@ -158,9 +157,6 @@ AROS_UFH3(void, __dosboot_IntBoot,
     {
         D(bug("[DOS] __dosboot_IntBoot: Could not open bootmenu.resource, something's wrong!\n"));
     }
-
-    /* Initialise library bases used by linklib functions within the kernel */
-    InitKernelBases();
 
     if ((mp = CreateMsgPort()) != NULL)
     {
