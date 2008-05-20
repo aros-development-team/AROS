@@ -1,17 +1,18 @@
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
-#define DEBUG 1
-#include <aros/debug.h>
 
 #include "gadgets.h"
 #include "bootmenu_intern.h"
 
 #undef GfxBase
 #undef IntuitionBase
-#define GfxBase bootmenubase->GfxBase
-#define IntuitionBase bootmenubase->IntuitionBase
+#define GfxBase BootMenuBase->bm_GfxBase
+#define IntuitionBase BootMenuBase->bm_IntuitionBase
 
 struct ButtonGadget *createButton
 	(
@@ -19,27 +20,27 @@ struct ButtonGadget *createButton
 		struct Gadget *prev,
 		STRPTR name,
 		UWORD id,
-		struct BootMenuBase *bootmenubase
+		struct BootMenuBase *BootMenuBase
 	)
 {
-struct TagItem tags[] =
-{
-	{GA_Left,           left}, /* 0 */
-	{GA_Top,             top}, /* 1 */
-	{GA_Height,       height}, /* 2 */
-	{GA_Width,         width}, /* 3 */
-	{GA_Border,         NULL}, /* 4 */
-	{GA_SelectRender,   NULL}, /* 5 */
-	{GA_Previous, (IPTR)prev}, /* 6 */
-	{GA_Text,     (IPTR)name}, /* 7 */
-	{GA_ID,         (IPTR)id}, /* 8 */
-	{GA_Immediate,      TRUE},
-	{GA_RelVerify,      TRUE},
-	{TAG_DONE,           0UL}
-};
-struct ButtonGadget *button;
+    struct TagItem tags[] =
+    {
+        {GA_Left,           left}, /* 0 */
+        {GA_Top,             top}, /* 1 */
+        {GA_Height,       height}, /* 2 */
+        {GA_Width,         width}, /* 3 */
+        {GA_Border,         NULL}, /* 4 */
+        {GA_SelectRender,   NULL}, /* 5 */
+        {GA_Previous, (IPTR)prev}, /* 6 */
+        {GA_Text,     (IPTR)name}, /* 7 */
+        {GA_ID,         (IPTR)id}, /* 8 */
+        {GA_Immediate,      TRUE},
+        {GA_RelVerify,      TRUE},
+        {TAG_DONE,           0UL}
+    };
+    struct ButtonGadget *button;
 
-	button = AllocMem(sizeof(struct ButtonGadget), MEMF_PUBLIC | MEMF_CLEAR);
+	;
 	if (button)
 	{
 		tags[4].ti_Data = (IPTR)&button->uborder2;
@@ -80,8 +81,8 @@ struct ButtonGadget *button;
 	return NULL;
 }
 
-void freeButtonGadget(struct ButtonGadget *button, struct BootMenuBase *bootmenubase) {
-
+void freeButtonGadget(struct ButtonGadget *button, struct BootMenuBase *BootMenuBase) 
+{
 	DisposeObject(button->button);
 	FreeMem(button, sizeof(struct ButtonGadget));
 }

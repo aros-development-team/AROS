@@ -1,3 +1,6 @@
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -13,8 +16,6 @@
 #include <aros/symbolsets.h>
 #include <string.h>
 #include "devs_private.h"
-#define DEBUG 0
-#include <aros/debug.h>
 
 #include "bootmenu_intern.h"
 
@@ -22,7 +23,8 @@
 
 #define BUFSIZE 100
 
-struct ExpansionBase *ExpansionBase;
+#undef ExpansionBase
+#define ExpansionBase BootMenuBase->bm_ExpansionBase
 
 #if 0
 struct GfxBase *GfxBase;
@@ -63,15 +65,18 @@ static ULONG pointercoltab[] = {
     0L
 };
 
-BOOL initScreen(STRPTR gfxhiddname, struct BootMenuBase *bootmenubase) {
-struct TagItem modetags[] =
+BOOL initScreen(STRPTR gfxhiddname, struct BootMenuBase *BootMenuBase)
 {
-    {BIDTAG_Depth, 2},
-    {BIDTAG_DesiredWidth, 640},
-    {BIDTAG_DesiredHeight, 200},
-    {TAG_DONE, 0UL}
-};
-ULONG modeid, depth;
+    struct TagItem modetags[] =
+    {
+        {BIDTAG_Depth, 2},
+        {BIDTAG_DesiredWidth, 640},
+        {BIDTAG_DesiredHeight, 200},
+        {TAG_DONE, 0UL}
+    };
+    ULONG modeid, depth;
+
+    D(bug("[BootMenu] initScreen(gfxhidd='%s')\n", gfxhiddname));
 
     GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
     if (GfxBase)
@@ -130,20 +135,20 @@ kprintf("no screen!\n");
 **  init_gfx()  **
 *****************/
 
-static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *bootmenubase)
+static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *BootMenuBase)
 {
     BOOL success = FALSE; 
-    EnterFunc(bug("init_gfx(hiddbase=%s)\n", gfxclassname));
+    D(bug("[BootMenu] init_gfx(hiddbase='%s')\n", gfxclassname));
     
     /*  Call private gfx.library call to init the HIDD.
         Gfx library is responsable for closing the HIDD
         library (although it will probably not be neccesary).
     */
 
-    D(bug("calling private gfx LateGfxInit()\n"));
+    D(bug("[BootMenu] init_gfx: calling private gfx LateGfxInit() .."));
     if (LateGfxInit(gfxclassname))
     {
-        D(bug("success\n"));
+        D(bug("Success\n"));
         if (IntuitionBase)
         {
             if (LateIntuiInit(NULL))
@@ -152,23 +157,25 @@ static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *bootmenubase)
         }
         }
     }
+    else
+    {
+        D(bug("Failed\n"));
+    }
     ReturnBool ("init_gfxhidd", success);
 }
 
 
-static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct BootMenuBase *bootmenubase)
+static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct BootMenuBase *BootMenuBase)
 {
     BOOL success = FALSE;
-    struct MsgPort *mp;
+    struct MsgPort *mp = NULL;
 
-    EnterFunc(bug("init_device(classname=%s)\n", hiddclassname));
+    D(bug("[BootMenu] init_device(classname='%s', devicename='%s')\n", hiddclassname, devicename));
 
-    mp = CreateMsgPort();
-    if (mp)
+    if ((mp = CreateMsgPort()) != NULL)
     {
-        struct IORequest *io;
-        io = CreateIORequest(mp, sizeof ( struct IOStdReq));
-        if (io)
+        struct IORequest *io = NULL;
+        if ((io = CreateIORequest(mp, sizeof ( struct IOStdReq))) != NULL)
         {
             if (0 == OpenDevice(devicename, 0, io, 0))
             {
@@ -192,55 +199,61 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct BootMe
     ReturnBool("init_device", success);
 }
 
-BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *bootmenubase) {
+static BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *BootMenuBase) 
+{
+    D(bug("[BootMenu] initHidds()\n"));
 
     OpenLibrary(bootcfg->defaultgfx.libname, 0);
-    init_gfx(bootcfg->defaultgfx.hiddname, bootmenubase);
+    init_gfx(bootcfg->defaultgfx.hiddname, BootMenuBase);
+
     OpenLibrary(bootcfg->defaultmouse.libname, 0);
-    init_device(bootcfg->defaultmouse.hiddname, "gameport.device", bootmenubase);
+    init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase);
+
     return TRUE;
 }
 
-struct Gadget *createGadgets(struct BootMenuBase_intern *bootmenubase) {
-struct Gadget *first;
-struct ButtonGadget *last;
+static struct Gadget *createGadgets(struct BootMenuBase_intern *BootMenuBase) 
+{
+    struct Gadget *first;
+    struct ButtonGadget *last;
 
-    last = bootmenubase->maingadgets.boot = createButton(16, 190, 280, 14, (struct Gadget *)&first, "Boot", BUTTON_BOOT, bootmenubase);
+    last = BootMenuBase->bm_MainGadgets.boot = createButton(16, 190, 280, 14, (struct Gadget *)&first, "Boot", BUTTON_BOOT, BootMenuBase);
     if (last == NULL)
         return NULL;
-    last = bootmenubase->maingadgets.bootnss = createButton(344, 190, 280, 14, last->gadget, "Boot With No Startup-Sequence", BUTTON_BOOT_WNSS, bootmenubase);
+    last = BootMenuBase->bm_MainGadgets.bootnss = createButton(344, 190, 280, 14, last->gadget, "Boot With No Startup-Sequence", BUTTON_BOOT_WNSS, BootMenuBase);
     if (last == NULL)
         return NULL;
-    last = bootmenubase->maingadgets.bootopt = createButton(180, 63, 280, 14, last->gadget, "Boot Options...", BUTTON_BOOT_OPTIONS, bootmenubase);
+    last = BootMenuBase->bm_MainGadgets.bootopt = createButton(180, 63, 280, 14, last->gadget, "Boot Options...", BUTTON_BOOT_OPTIONS, BootMenuBase);
     if (last == NULL)
         return NULL;
-    last = bootmenubase->maingadgets.displayopt = createButton(180, 84, 280, 14, last->gadget, "Display Options...", BUTTON_DISPLAY_OPTIONS, bootmenubase);
+    last = BootMenuBase->bm_MainGadgets.displayopt = createButton(180, 84, 280, 14, last->gadget, "Display Options...", BUTTON_DISPLAY_OPTIONS, BootMenuBase);
     if (last == NULL)
         return NULL;
-    last = bootmenubase->maingadgets.expboarddiag = createButton(180, 105, 280, 14, last->gadget, "Expansion Board Diagnostic...", BUTTON_EXPBOARDDIAG, bootmenubase);
+    last = BootMenuBase->bm_MainGadgets.expboarddiag = createButton(180, 105, 280, 14, last->gadget, "Expansion Board Diagnostic...", BUTTON_EXPBOARDDIAG, BootMenuBase);
     if (last == NULL)
         return NULL;
     return first;
 }
 
-void freeGadgets(struct BootMenuBase_intern *bootmenubase) {
-
-    if (bootmenubase->maingadgets.boot != NULL)
-        freeButtonGadget(bootmenubase->maingadgets.boot, bootmenubase);
-    if (bootmenubase->maingadgets.bootnss != NULL);
-        freeButtonGadget(bootmenubase->maingadgets.bootnss, bootmenubase);
-    if (bootmenubase->maingadgets.bootopt != NULL)
-        freeButtonGadget(bootmenubase->maingadgets.bootopt, bootmenubase);
-    if (bootmenubase->maingadgets.displayopt != NULL)
-        freeButtonGadget(bootmenubase->maingadgets.displayopt, bootmenubase);
-    if (bootmenubase->maingadgets.expboarddiag != NULL)
-        freeButtonGadget(bootmenubase->maingadgets.expboarddiag, bootmenubase);
+static void freeGadgets(struct BootMenuBase_intern *BootMenuBase)
+{
+    if (BootMenuBase->bm_MainGadgets.boot != NULL)
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.boot, BootMenuBase);
+    if (BootMenuBase->bm_MainGadgets.bootnss != NULL);
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.bootnss, BootMenuBase);
+    if (BootMenuBase->bm_MainGadgets.bootopt != NULL)
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.bootopt, BootMenuBase);
+    if (BootMenuBase->bm_MainGadgets.displayopt != NULL)
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.displayopt, BootMenuBase);
+    if (BootMenuBase->bm_MainGadgets.expboarddiag != NULL)
+        freeButtonGadget(BootMenuBase->bm_MainGadgets.expboarddiag, BootMenuBase);
 }
 
-void msgLoop(struct BootMenuBase *bootmenubase, struct Window *win, struct BootConfig *bcfg) {
-BOOL in=TRUE;
-struct IntuiMessage *msg;
-struct Gadget *g;
+static void msgLoop(struct BootMenuBase *BootMenuBase, struct Window *win, struct BootConfig *bcfg)
+{
+    BOOL in=TRUE;
+    struct IntuiMessage *msg;
+    struct Gadget *g;
 
     do
     {
@@ -254,12 +267,10 @@ struct Gadget *g;
                 {
                 case BUTTON_BOOT:
                     ExpansionBase->Flags &= ~EBF_DOSFLAG;
-                    bcfg->startup_sequence = TRUE;
                     in = FALSE;
                     break;
                 case BUTTON_BOOT_WNSS:
                     ExpansionBase->Flags |= EBF_DOSFLAG;
-                    bcfg->startup_sequence = FALSE;
                     in = FALSE;
                     break;
                 }
@@ -271,176 +282,201 @@ struct Gadget *g;
         ReplyMsg(&msg->ExecMessage);
 }
 
-BOOL initScreen(struct BootMenuBase_intern *bootmenubase, struct BootConfig *bcfg) {
-UWORD pens[] = {~0};
-struct TagItem scrtags[] =
+static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConfig *bcfg)
 {
-    {SA_Width,       640},
-    {SA_Height,      256},
-    {SA_Depth,         4},
-    {SA_Pens, (IPTR)pens},
-    {TAG_DONE,       0UL}
-};
-struct TagItem wintags[] =
-{
-    {WA_Left,          0}, /* 0 */
-    {WA_Top,           0}, /* 1 */
-    {WA_Width,       640}, /* 2 */
-    {WA_Height,      256}, /* 3 */
-    {WA_CustomScreen,  0}, /* 4 */
-    {WA_Gadgets,    NULL}, /* 5 */
-    {WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN},
-    {WA_Borderless, TRUE},
-    {WA_RMBTrap,    TRUE},
-    {TAG_DONE,       0UL}
-};
-struct Gadget *first = NULL;
-
-    bootmenubase->scr = OpenScreenTagList(NULL, scrtags);
-    if (bootmenubase->scr != NULL)
+    UWORD pens[] = {~0};
+    struct TagItem scrtags[] =
     {
-        first = createGadgets(bootmenubase);
+        {SA_Width,       640},
+        {SA_Height,      256},
+        {SA_Depth,         4},
+        {SA_Pens, (IPTR)pens},
+        {TAG_DONE,       0UL}
+    };
+    struct TagItem wintags[] =
+    {
+        {WA_Left,          0}, /* 0 */
+        {WA_Top,           0}, /* 1 */
+        {WA_Width,       640}, /* 2 */
+        {WA_Height,      256}, /* 3 */
+        {WA_CustomScreen,  0}, /* 4 */
+        {WA_Gadgets,    NULL}, /* 5 */
+        {WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY | IDCMP_GADGETUP | IDCMP_GADGETDOWN},
+        {WA_Borderless, TRUE},
+        {WA_RMBTrap,    TRUE},
+        {TAG_DONE,       0UL}
+    };
+    struct Gadget *first = NULL;
+
+    BootMenuBase->bm_Screen = OpenScreenTagList(NULL, scrtags);
+    if (BootMenuBase->bm_Screen != NULL)
+    {
+        first = createGadgets(BootMenuBase);
         if (first != NULL)
         {
-            wintags[2].ti_Data = bootmenubase->scr->Width;
-            wintags[3].ti_Data = bootmenubase->scr->Height;
-            wintags[4].ti_Data = (IPTR)bootmenubase->scr;
+            wintags[2].ti_Data = BootMenuBase->bm_Screen->Width;
+            wintags[3].ti_Data = BootMenuBase->bm_Screen->Height;
+            wintags[4].ti_Data = (IPTR)BootMenuBase->bm_Screen;
             wintags[5].ti_Data = (IPTR)first;
-            bootmenubase->win = OpenWindowTagList(NULL, wintags);
-            if (bootmenubase->win != NULL)
+            BootMenuBase->bm_Window = OpenWindowTagList(NULL, wintags);
+            if (BootMenuBase->bm_Window != NULL)
             {
-                SetAPen(bootmenubase->win->RPort, 2);
-                Move(bootmenubase->win->RPort, 215, 20);
-                Text(bootmenubase->win->RPort, "AROS Early Startup Control", 26);
-                SetAPen(bootmenubase->win->RPort, 1);
-                Move(bootmenubase->win->RPort, 225, 40);
-                Text(bootmenubase->win->RPort, "(what is PAL and NTSC?)", 23);
-                msgLoop(bootmenubase, bootmenubase->win, bcfg);
+                SetAPen(BootMenuBase->bm_Window->RPort, 2);
+                Move(BootMenuBase->bm_Window->RPort, 215, 20);
+                Text(BootMenuBase->bm_Window->RPort, "AROS Early Startup Control", 26);
+                SetAPen(BootMenuBase->bm_Window->RPort, 1);
+                Move(BootMenuBase->bm_Window->RPort, 225, 40);
+                Text(BootMenuBase->bm_Window->RPort, "(what is PAL and NTSC?)", 23);
+                msgLoop(BootMenuBase, BootMenuBase->bm_Window, bcfg);
                 return TRUE;
             }
             else
                 Alert(AT_DeadEnd | AN_OpenWindow);
-            CloseWindow(bootmenubase->win);
-            freeGadgets(bootmenubase);
+            CloseWindow(BootMenuBase->bm_Window);
+            freeGadgets(BootMenuBase);
         }
         else
             Alert(AT_DeadEnd | AN_BadGadget);
-        CloseScreen(bootmenubase->scr);
+        CloseScreen(BootMenuBase->bm_Screen);
     }
     else
         Alert(AT_DeadEnd | AN_OpenScreen);
     return FALSE;
 }
 
-void delay(struct BootMenuBase *bootmenubase, LONG secs, LONG micro) {
-struct MsgPort *mp;
+static BOOL buttonsPressed(struct BootMenuBase *BootMenuBase, struct DefaultHidd *kbd) 
+{
+    BOOL success = FALSE;
+    struct MsgPort *mp = NULL;
+    UBYTE matrix[16];
 
-    mp = CreateMsgPort();
-    if (mp)
+    if ((mp = CreateMsgPort()) != NULL)
     {
-        struct timerequest *tr;
-        tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest));
-        if (tr)
+        struct IORequest *io = NULL;
+        if ((io = CreateIORequest(mp, sizeof ( struct IOStdReq))) != NULL)
         {
-            if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0) == 0)
+            if (0 == OpenDevice("keyboard.device", 0, io, 0))
             {
+                D(bug("[BootMenu] buttonsPressed: Checking KBD_READMATRIX\n"));
                 #define ioStd(x) ((struct IOStdReq *)x)
-                ioStd(tr)->io_Command = TR_ADDREQUEST;
-                tr->tr_time.tv_secs = secs;
-                tr->tr_time.tv_micro = micro;
-                DoIO((struct IORequest *)tr);
-                CloseDevice((struct IORequest *)tr);
+                ioStd(io)->io_Command = KBD_READMATRIX;
+                ioStd(io)->io_Data = matrix;
+                ioStd(io)->io_Length = 16;
+                DoIO(io);
+                if (0 == io->io_Error)
+                {
+#if defined(DEBUG)
+                    int i;
+                    D(bug("[BootMenu] buttonsPressed: Matrix : "));
+                    for (i = 0; i < sizeof(matrix); i ++)
+                    {
+                        D(bug("%2x ", matrix[i]));
+                    }
+                    D(bug("\n"));
+#endif
+                    if (matrix[RAWKEY_SPACE/8] & (1<<(RAWKEY_SPACE%8)))
+                        success = TRUE;
+                }
+                CloseDevice(io);
             }
-            DeleteIORequest((struct IORequest *)tr);
+            DeleteIORequest(io); 
         }
         DeleteMsgPort(mp);
-    }
-}
-
-BOOL buttonsPressed(struct BootMenuBase *bootmenubase, struct DefaultHidd *kbd) {
-BOOL success = FALSE;
-struct MsgPort *mp;
-UBYTE matrix[16];
-
-    if (OpenLibrary(kbd->libname, 0) != NULL)
-    {
-        if (init_device(kbd->hiddname, "keyboard.device", bootmenubase))
-        {
-            delay(bootmenubase, 1, 0);
-            mp = CreateMsgPort();
-            if (mp)
-            {
-                struct IORequest *io;
-                io = CreateIORequest(mp, sizeof ( struct IOStdReq));
-                if (io)
-                {
-                    if (0 == OpenDevice("keyboard.device", 0, io, 0))
-                    {
-                        #define ioStd(x) ((struct IOStdReq *)x)
-                        ioStd(io)->io_Command = KBD_READMATRIX;
-                        ioStd(io)->io_Data = matrix;
-                        ioStd(io)->io_Length = 16;
-                        DoIO(io);
-                        if (0 == io->io_Error)
-                        {
-                            if (matrix[RAWKEY_SPACE/8] & (1<<(RAWKEY_SPACE%8)))
-                                success = TRUE;
-                        }
-                        CloseDevice(io);
-                    }
-                    DeleteIORequest(io); 
-                }
-                DeleteMsgPort(mp);
-            }
-        }
     }
     return success;
 }
 
 #endif
 
-
-static int CheckAndDisplay(LIBBASETYPEPTR LIBBASE)
+static struct BootConfig bootcfg =
 {
-    struct BootLoaderBase *BootLoaderBase;
-    struct VesaInfo *vi;
-    static struct BootConfig bootcfg =
-    {
     &bootcfg,
     {"vgah.hidd", "hidd.gfx.vga"},
     {"kbd.hidd", "hidd.kbd.hw"},
     {"mouse.hidd", "hidd.bus.mouse"},
     NULL,
     TRUE
-    };
+};
 
-    LIBBASE->bcfg = bootcfg;
+static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[BootMenu] bootmenu_EarlyPrep()\n"));
 
-    /* init keyboard + check */
+    struct BootLoaderBase *BootLoaderBase = NULL;
+    struct VesaInfo *vi = NULL;
+
+    LIBBASE->bm_BootConfig = bootcfg;
+    struct DefaultHidd *kbd = &LIBBASE->bm_BootConfig.defaultkbd;
+
     if ((ExpansionBase = OpenLibrary("expansion.library",0)) != NULL)
     {
-        if (buttonsPressed(LIBBASE, &LIBBASE->bcfg.defaultkbd))
+        if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
         {
-            BootLoaderBase = OpenResource("bootloader.resource");
-            if (BootLoaderBase)
+            if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)) != NULL)
             {
-                vi = (struct VesaInfo *)GetBootInfo(BL_Video);
-                if (vi) {
-                    if (vi->ModeNumber != 3) {
-                        strcpy(LIBBASE->bcfg.defaultgfx.libname, "vesagfx.hidd");
-                        strcpy(LIBBASE->bcfg.defaultgfx.hiddname, "hidd.gfx.vesa");
-                    }
+                if (vi->ModeNumber != 3)
+                {
+                    strcpy(LIBBASE->bm_BootConfig.defaultgfx.libname, "vesagfx.hidd");
+                    strcpy(LIBBASE->bm_BootConfig.defaultgfx.hiddname, "hidd.gfx.vesa");
                 }
             }
-            kprintf("Entering Boot Menu ...\n");
-            /* init mouse + gfx */
-            if (initHidds(&LIBBASE->bcfg, LIBBASE))
+        }
+        
+        if (OpenLibrary(kbd->libname, 0) != NULL)
+        {
+            if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
             {
-                initScreen(LIBBASE, &LIBBASE->bcfg);
+                return TRUE;
             }
         }
     }
-    return TRUE;
+    return FALSE;
 }
 
-ADD2INITLIB(CheckAndDisplay, 0)
+/*****************************************************************************
+
+    NAME */
+    AROS_LH0(void, bootmenu_CheckAndDisplay,
+
+/*  SYNOPSIS */
+
+/*  LOCATION */
+    LIBBASETYPEPTR, LIBBASE, 1, Bootmenu)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[BootMenu] bootmenu_CheckAndDisplay()\n"));
+
+    /* check keyboard */
+    if (buttonsPressed(LIBBASE, &LIBBASE->bm_BootConfig.defaultkbd))
+    {
+        kprintf("Entering Boot Menu ...\n");
+        /* init mouse + gfx */
+        if (initHidds(&LIBBASE->bm_BootConfig, LIBBASE))
+        {
+            initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
+        }
+    }
+
+    AROS_LIBFUNC_EXIT
+} /* bootmenu_CheckAndDisplay */
+
+ADD2INITLIB(bootmenu_EarlyPrep, 0)
