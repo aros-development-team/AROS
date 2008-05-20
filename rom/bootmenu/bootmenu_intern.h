@@ -11,17 +11,22 @@
 
 #include <aros/libcall.h>
 #include <exec/libraries.h>
+#include <exec/lists.h>
 #include <libcore/base.h>
+#include <libraries/expansionbase.h>
 #include <libraries/bootmenu.h>
 #include "gadgets.h"
 #include LC_LIBDEFS_FILE
 
 LIBBASETYPE {
-	struct LibHeader lh;
-	struct BootConfig bcfg;
-	struct Screen *scr;
-	struct Window *win;
-	struct MainGadgets maingadgets;
+    struct Node          bm_Node;
+    struct ExpansionBase *bm_ExpansionBase;
+	struct GfxBase       *bm_GfxBase;
+	struct IntuitionBase *bm_IntuitionBase;
+	struct BootConfig    bm_BootConfig;
+	struct Screen        *bm_Screen;
+	struct Window        *bm_Window;
+	struct MainGadgets   bm_MainGadgets;
 };
 
 #endif /* BOOTMENU_INTERN_H */

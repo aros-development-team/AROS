@@ -27,14 +27,15 @@ include $(TOP)/config/make.cfg
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
 #MM	workbench-fs-afs \
-#MM     kernel-pc-x86_64-drivers \
-#MM     kernel-contrib-necessary-pc-x86_64 \
+#MM	kernel-pc-x86_64-drivers \
+#MM	kernel-contrib-necessary-pc-x86_64 \
+#MM	kernel-bootmenu \
 #MM	kernel-boot
 
 #MM- kernel-contrib-necessary-pc-x86_64 : contrib-necessary-pc-x86_64
 
 PKG_LIBS := aros boot dos graphics intuition keymap layers mathieeesingbas partition workbench
-PKG_RSRC := battclock bootloader misc
+PKG_RSRC := battclock bootloader bootmenu misc
 PKG_DEVS := ata console gameport input keyboard timer
 PKG_HANDLERS := afs cdrom con nil packet ram
 PKG_HIDDS:= graphics parallel pci pcipc serial vesagfx vgah

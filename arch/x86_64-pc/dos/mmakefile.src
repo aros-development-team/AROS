@@ -9,4 +9,4 @@ USER_CFLAGS := -Dmain=submain -fno-omit-frame-pointer
   arch=pc-x86_64 \
   files="boot aros inithidds runprocess"
 
-#MM- kernel-dos-pc-x86_64 : kernel-bootloader-pc-x86_64-includes
+#MM- kernel-dos-pc-x86_64 : kernel-bootloader-pc-x86_64-includes kernel-bootmenu-includes

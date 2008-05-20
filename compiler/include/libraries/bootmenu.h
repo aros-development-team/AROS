@@ -10,22 +10,25 @@ struct DefaultHidd {
 
 struct BootConfig {
 	struct BootConfig *self;
+	/* prefered boot device */
+	struct BootNode *boot;
 	/* default hidds used in bootmenu and for fallback mode */
 	struct DefaultHidd defaultgfx;
 	struct DefaultHidd defaultkbd;
 	struct DefaultHidd defaultmouse;
-	/* prefered boot device */
-	struct BootNode *boot;
-	/* boot with startup-sequence ? */
-	BOOL startup_sequence;
 };
 
 struct BootMenuBase {
-	struct LibHeader lh;
-	struct GfxBase *GfxBase;
-	struct IntuitionBase *IntuitionBase;
-	struct BootConfig bcfg;
+    struct Node          bm_Node;
+    struct ExpansionBase *bm_ExpansionBase;
+	struct GfxBase       *bm_GfxBase;
+	struct IntuitionBase *bm_IntuitionBase;
+	struct BootConfig    bm_BootConfig;
+	IPTR                 bm_Screen;
+	IPTR                 bm_Window;
+	IPTR                 bm_MainGadgets;
 };
 
 #endif
+
 

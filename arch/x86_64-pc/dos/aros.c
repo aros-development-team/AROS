@@ -5,11 +5,15 @@
     Desc: This is the "boot code" of AROS when it runs as an emulation.
     Lang: english
 */
+
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <dos/dostags.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
-#include <libraries/bootmenu.h>
+#include <libraries/expansionbase.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/exec.h>
@@ -25,40 +29,45 @@ int main(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
 
     if (cis)
     {
-	struct BootMenuBase *bootmenubase;
-	BOOL opensseq = TRUE;
-    	BPTR sseq = NULL;
-	struct TagItem tags[] =
+        struct ExpansionBase *ExpansionBase;
+        BPTR sseq = NULL;
+        BOOL opensseq = TRUE;
+
+        struct TagItem tags[] =
+            {
+                { SYS_Asynch,      TRUE       }, /* 0 */
+                { SYS_Background,  FALSE      }, /* 1 */
+                { SYS_Input,       (IPTR)cis  }, /* 2 */
+                { SYS_Output,      (IPTR)NULL }, /* 3 */
+                { SYS_Error,       (IPTR)NULL }, /* 4 */
+                { SYS_ScriptInput, (IPTR)NULL }, /* 5 */
+                { TAG_DONE,       0           }
+            };
+
+        if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
         {
-            { SYS_Asynch,      TRUE       }, /* 0 */
-	    { SYS_Background,  FALSE      }, /* 1 */
-	    { SYS_Input,       (IPTR)cis  }, /* 2 */
-	    { SYS_Output,      (IPTR)NULL }, /* 3 */
-	    { SYS_Error,       (IPTR)NULL }, /* 4 */
-	    { SYS_ScriptInput, (IPTR)NULL }, /* 5 */
-	    { TAG_DONE,       0           }
-        };
-	bootmenubase = (struct BootMenuBase *)OpenLibrary("bootmenu.library", 41);
-	if (bootmenubase != NULL)
-	{
-	    opensseq = bootmenubase->bcfg.startup_sequence;
-	    CloseLibrary((struct Library *)bootmenubase);
-	}
-	if (opensseq)
-	{
-	    sseq = Open("S:Startup-Sequence", FMF_READ);
-	    tags[5].ti_Data = (IPTR)sseq;
-	}
+            opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
+            CloseLibrary(ExpansionBase);
+        }
+
+        D(bug("[SubMain] Open Startup Sequence = %d\n", opensseq));
+
+        if (opensseq)
+        {
+            sseq = Open("S:Startup-Sequence", FMF_READ);
+            tags[5].ti_Data = (IPTR)sseq;
+        }
+
         rc = SystemTagList("", tags);
-	if (rc != -1)
-	{
-	    cis  = NULL;
-	    sseq = NULL;
-	}
-	else
-	    rc = RETURN_FAIL;
-	if (sseq != NULL)
-	    Close(sseq);
+        if (rc != -1)
+        {
+            cis  = NULL;
+            sseq = NULL;
+        }
+        else
+            rc = RETURN_FAIL;
+        if (sseq != NULL)
+            Close(sseq);
     }
     else
     {
