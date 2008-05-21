@@ -1,0 +1,5 @@
+# $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM- kernel-bootloader-linux-ppc : kernel-bootloader-unix
+#MM- kernel-bootloader-linux-ppc-includes : kernel-bootloader-unix-includes
