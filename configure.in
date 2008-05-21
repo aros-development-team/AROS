@@ -491,7 +491,7 @@ save_cflags="$CFLAGS"
 CFLAGS="$CFLAGS -Wno-pointer-sign"
 AC_TRY_COMPILE(,, use_no_sign_warning="yes", use_no_sign_warning="no")
 AC_MSG_RESULT($use_no_sign_warning)
-if test "x-$use_no_sign_warning" = "x-yesnnn" ; then
+if test "x-$use_no_sign_warning" = "x-yes" ; then
     aros_host_cflags="$aros_host_cflags -Wno-pointer-sign"
 fi
 CFLAGS="$save_cflags"
