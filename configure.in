@@ -458,6 +458,29 @@ if test "x-$use_no_stack_protector" = "x-yes" ; then
 fi
 CFLAGS="$save_cflags"
 
+
+#
+# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
+# On GCC >= 4.0 -iquote should be used
+#
+
+AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -iquote."
+AC_TRY_COMPILE(,, has_iquote="yes", has-iquote="no")
+AC_MSG_RESULT($has_iquote)
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+CFLAGS="$save_cflags"
+
+AC_SUBST(aros_cflags_iquote)
+AC_SUBST(aros_cflags_iquote_end)
+
 #-----------------------------------------------------------------------------
 
 # Disable pointer-signedness warnings if the compiler recognises the option

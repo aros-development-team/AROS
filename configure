@@ -708,6 +708,8 @@ CMP
 GREP
 EGREP
 LIBOBJS
+aros_cflags_iquote
+aros_cflags_iquote_end
 DISTCC
 CCACHE
 LIBLZO
@@ -7938,6 +7940,71 @@ if test "x-$use_no_stack_protector" = "x-yes" ; then
 fi
 CFLAGS="$save_cflags"
 
+
+#
+# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
+# On GCC >= 4.0 -iquote should be used
+#
+
+{ echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
+echo $ECHO_N "checking whether ${CC} accepts -iquote... $ECHO_C" >&6; }
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -iquote."
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  has_iquote="yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	has-iquote="no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ echo "$as_me:$LINENO: result: $has_iquote" >&5
+echo "${ECHO_T}$has_iquote" >&6; }
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+CFLAGS="$save_cflags"
+
+
+
+
 #-----------------------------------------------------------------------------
 
 # Disable pointer-signedness warnings if the compiler recognises the option
@@ -12776,8 +12843,8 @@ CMP!$CMP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
-DISTCC!$DISTCC$ac_delim
-CCACHE!$CCACHE$ac_delim
+aros_cflags_iquote!$aros_cflags_iquote$ac_delim
+aros_cflags_iquote_end!$aros_cflags_iquote_end$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12819,6 +12886,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+DISTCC!$DISTCC$ac_delim
+CCACHE!$CCACHE$ac_delim
 LIBLZO!$LIBLZO$ac_delim
 aros_kernel_cc!$aros_kernel_cc$ac_delim
 aros_target_as_ln!$aros_target_as_ln$ac_delim
@@ -12914,8 +12983,6 @@ DBUS_LIBFLAGS!$DBUS_LIBFLAGS$ac_delim
 KERNEL_DBUS_KOBJ!$KERNEL_DBUS_KOBJ$ac_delim
 KERNEL_DBUS_INCLUDES!$KERNEL_DBUS_INCLUDES$ac_delim
 aros_debug!$aros_debug$ac_delim
-aros_mungwall_debug!$aros_mungwall_debug$ac_delim
-aros_stack_debug!$aros_stack_debug$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12957,13 +13024,15 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+aros_mungwall_debug!$aros_mungwall_debug$ac_delim
+aros_stack_debug!$aros_stack_debug$ac_delim
 aros_modules_debug!$aros_modules_debug$ac_delim
 ignore_undefined_symbols!$ignore_undefined_symbols$ac_delim
 gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 4; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 6; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
