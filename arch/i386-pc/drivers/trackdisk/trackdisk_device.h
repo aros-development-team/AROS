@@ -66,6 +66,8 @@ struct TrackDiskBase
     ULONG			td_TmoBit;		/* Used for timeout signaling */
     UBYTE			td_comsize;        	/* RAW command size */
     UBYTE			td_rawcom[9];      	/* RAW command to send */
+    UBYTE			td_comsize2;		/* Secondary command (inside td_dinit()) */
+    UBYTE			td_rawcom2[3];
     UBYTE			td_result[7];      	/* Last set of bytes */
     UBYTE			td_dor;			/* Digital Output Register */
     UBYTE			td_sr0;
