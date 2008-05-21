@@ -2853,6 +2853,49 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
 }
 #endif
 
+#if 1
+/* Notes about Group_Notify() and echo notification problem:
+It was discovered that MUI seems to have some special handling for group class
+which will drop notifications on the children which are found to not 
+understand the attribute.
+
+This is done by checking if an OM_GET on the child returns TRUE. 
+There's a little problem here because it is not known how big the storage 
+needed for the attribute in question will be. Almost no class uses anything 
+bigger than one IPTR. For "big" attributes those return a pointer to the data,
+not the data itself. Unfortuntely there are some exceptions like colorwheel 
+class which does not return a pointer, but the data itself. So it's not 
+enough to use one single IPTR variable (4 Bytes on 32bit machines, 8 bytes 
+on 64 bit machines) to store the result of the test-OM_Get.
+
+There is no general way to query the size needed so if one wants to change 
+Zune to work like MUI one needs to choose a size which one hopes will be 
+big enough to hold all possible attributes of all classes, old, present 
+and future ones.
+*/
+STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
+    get(data->family, MUIA_Family_List, (IPTR *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+       IPTR attr[30];
+
+       if (GetAttr(msg->TrigAttr, child, attr))
+       {
+           DoMethodA(child, (Msg)msg);
+       }
+    }
+    return TRUE;
+}
+#endif
+
 BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -2886,7 +2929,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 	case MUIM_DragQueryExtended:return Group__MUIM_DragQueryExtended(cl, obj, (APTR)msg);
 	case MUIM_FindAreaObject:   return Group__MUIM_FindAreaObject(cl, obj, (APTR)msg);
 
-#if 0
+//#if 0
+#if 1
 				  /* Disabled. See above */
 	case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
 #endif
