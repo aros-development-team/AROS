@@ -45,8 +45,8 @@ void td_motoron(UBYTE unitnum, struct TrackDiskBase *tdb, BOOL wait)
 {
     UBYTE dor;
 
-    dor = tdb->td_dor & 0x30;
-    dor |= 0x0c  | (0x10 << unitnum) | unitnum;
+    dor = tdb->td_dor & (DORF_MOT0|DORF_MOT1);
+    dor |= DORF_DMA | DORF_RESET | (DORF_MOT0 << unitnum) | unitnum;
     tdb->td_dor = dor;
 
     outb(dor,FDC_DOR);
@@ -60,7 +60,7 @@ void td_motoron(UBYTE unitnum, struct TrackDiskBase *tdb, BOOL wait)
 /* Stop motor */
 void td_motoroff(UBYTE unitnum, struct TrackDiskBase *tdb)
 {
-    tdb->td_dor = tdb->td_dor & ~(0x10 << unitnum);
+    tdb->td_dor = tdb->td_dor & ~(DORF_MOT0 << unitnum);
     outb(tdb->td_dor,FDC_DOR);
 }
 
@@ -116,12 +116,27 @@ int td_sendcommand(struct TrackDiskBase *TDBase)
     {
 	int i;
 
-	kprintf("[Floppy] Resending command\n");
+	D(bug("[Floppy] Resending command\n"));
 	err = 0;
 	td_dinit(TDBase);
 	// Resend command
 	for (i=0; (i < TDBase->td_comsize) && !err; i++)
 	    err = td_sendbyte(TDBase->td_rawcom[i], TDBase);
+    }
+    return err;
+}
+
+int td_sendcommand2(struct TrackDiskBase *TDBase)
+{
+    int err = 0;
+
+    if (TDBase->td_comsize2)
+    {
+	int i;
+	for (i=0; (i < TDBase->td_comsize2) && !err; i++)
+	{
+	    err = td_sendbyte(TDBase->td_rawcom2[i], TDBase);
+	}
     }
     return err;
 }
@@ -221,12 +236,16 @@ UBYTE td_getprotstatus(UBYTE unitnum, struct TrackDiskBase *tdb)
 int td_dinit(struct TrackDiskBase *TDBase)
 {
     int i;
+    UBYTE dor;
 
     // Assert RESET in DOR
-    outb(DORF_DMA, FDC_DOR);
-    outb(DORF_DMA, FDC_DOR);
+    dor = TDBase->td_dor & 0x39;
+    outb(dor, FDC_DOR);
+    outb(dor, FDC_DOR);
     // deassert RESET signal
-    outb(DORF_RESET | DORF_DMA, FDC_DOR);
+    dor |= DORF_RESET;
+    TDBase->td_dor = dor;
+    outb(dor, FDC_DOR);
     td_waitint(TDBase,0,FALSE);
     /* Issue configure */
     td_configure(TDBase);
@@ -241,11 +260,11 @@ int td_dinit(struct TrackDiskBase *TDBase)
 	td_readstatus(TDBase, 2);
     }
     // issue Specify
-    TDBase->td_comsize = 3;
-    TDBase->td_rawcom[0] = FD_SPECIFY;
-    TDBase->td_rawcom[1] = DP_SPEC1;
-    TDBase->td_rawcom[2] = DP_SPEC2;
-    td_sendcommand(TDBase);
+    TDBase->td_comsize2 = 3;
+    TDBase->td_rawcom2[0] = FD_SPECIFY;
+    TDBase->td_rawcom2[1] = DP_SPEC1;
+    TDBase->td_rawcom2[2] = DP_SPEC2;
+    td_sendcommand2(TDBase);
     return 0;
 }
 
@@ -274,7 +293,6 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct TrackDiskB
     }
     else
     {
-	sector /= 2*DP_SECTORS; // cyl contains real cyl number
 	/* Issue seek command */
 	TDBase->td_comsize = 3;
 	TDBase->td_rawcom[0] = FD_SEEK;
@@ -293,7 +311,7 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct TrackDiskB
 	    {
 		/* Store current track */
 		if (TDBase->td_Units[unitn])
-		    TDBase->td_Units[unitn]->pub.tdu_CurrTrk = TDBase->td_pcn;
+		    TDBase->td_Units[unitn]->pub.tdu_CurrTrk=TDBase->td_pcn;
 		return 0;
 	    }
 	    /* SeekError otherwise */
@@ -381,8 +399,8 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
 	rwcnt = TDBase->td_Units[unitnum]->pub.tdu_RetryCnt;
 	err = 0;
 	/* If we are on the correct track, dont seek */
-	if (TDBase->td_Units[unitnum]->pub.tdu_CurrTrk != ((cyl*DP_SECTORS)<<1))
-		err = td_recalibrate(unitnum,0,(cyl*DP_SECTORS)<<1,TDBase);
+	if (TDBase->td_Units[unitnum]->pub.tdu_CurrTrk != cyl)
+		err = td_recalibrate(unitnum,0,cyl,TDBase);
 	if (!err)
 	{
 	    do
@@ -399,15 +417,15 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
 		/* Issue read/write command */
 		TDBase->td_comsize = 9;
 		buf = TDBase->td_rawcom;
-		*buf++ = mode;							// Command
+		*buf++ = mode;			// Command
 		*buf++ = unitnum | (hd << 2);	// Drive Select
 		*buf++ = cyl;			// Cylinder
 		*buf++ = hd;			// Head
-		*buf++ = 1;			// Sector
+		*buf++ = 1;			// First sector
 		*buf++ = DP_SSIZE;		// Sector size
-		*buf++ = DP_SECTORS;		// End sector - the same as sec field for a while
+		*buf++ = DP_SECTORS;		// Last sector
 		*buf++ = DP_GAP1;		// Gap length
-		*buf++ = -1;			// DTL
+		*buf = -1;			// DTL
 		/* Command prepared, now send it */
 		td_sendcommand(TDBase);
 		/* Wait for end phase */
@@ -438,7 +456,7 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
 		}
 	    } while (--rwcnt);
 	}
-	td_recalibrate(unitnum, 1, 0, TDBase);
+	td_recalibrate(unitnum,1,0,TDBase);
     } while(--skcnt);	
     return err;
 }
@@ -544,10 +562,10 @@ int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
     }
 
     sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
-    cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
-    sec %= 2*DP_SECTORS;	// sector on track (on both sides)
-    hd = sec / DP_SECTORS;	// head number
-    sec %= DP_SECTORS;		// real sector number
+    cyl = (sec >> 1) / DP_SECTORS;	 // cyl contains real cyl number
+    sec %= 2*DP_SECTORS;		 // sector on track (on both sides)
+    hd = sec / DP_SECTORS;		 // head number
+    sec %= DP_SECTORS;			 // real sector number
 
     remain = iotd->iotd_Req.io_Length;
     while (length<iotd->iotd_Req.io_Length)
@@ -562,17 +580,15 @@ int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 	       */
 	    err=td_readtrack(iotd, (UBYTE)cyl, (UBYTE)hd, TDBase);
 	    if (err) {
-		iotd->iotd_Req.io_Length = length;
+		iotd->iotd_Req.io_Actual = length;
 		return err;
 	    }
 	}
 	else
 	{
 	    err=td_update(unit, TDBase);
-	    if (err) {
-		iotd->iotd_Req.io_Length = length;
+	    if (err)
 		return err;
-	    }
 	    unit->tdu_lastcyl=(UBYTE)cyl;
 	    unit->tdu_lasthd=(UBYTE)hd;
 	}
@@ -595,34 +611,23 @@ int td_write(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 
 /*
  * Format a track
- * Could probable need a lot more errorchecking/handling,
- * but atleast it works.
+ * Probably needs a lot more error checking/handling,
+ * but at least it works.
  */
-int td_format(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
+int td_formattrack(struct TDU *unit, UBYTE cyl, UBYTE hd, struct TrackDiskBase *tdb)
 {
-    struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
     UBYTE *dmabuf;
-    int cyl, hd, sec;
+    int skcnt, rwcnt;
     int i,off;
     int err;		// Error
 
+    skcnt = unit->pub.tdu_RetryCnt;
     /* Start motor */
-    unit->tdu_MotorOn = 1;
-/*  td_motoron(unit->tdu_UnitNum,tdb,TRUE);
+/*  unit->tdu_MotorOn = 1;
     FIXME: the same as in td_readwritetrack */
+    td_motoron(unit->tdu_UnitNum,tdb,TRUE);
     /* Set datarate */
     outb(0,FDC_CCR);
-
-    /* Calculate CHS style address */
-    sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
-    cyl = (sec >> 1) / DP_SECTORS; // cyl contains real cyl number
-    sec %= 2*DP_SECTORS;	// sector on track (on both sides)
-    hd = sec / DP_SECTORS;	// head number
-
-    /* Then go to the correct track */
-    err = td_recalibrate(unit->tdu_UnitNum,0,(cyl*DP_SECTORS)<<1,tdb);
-    if (err)
-	return err;
 
     /* We start by filling the DMA buffer with values needed */
     dmabuf = (UBYTE *)unit->td_DMABuffer;
@@ -634,34 +639,113 @@ int td_format(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	dmabuf[off++] = i;
 	dmabuf[off++] = 2;
     }
-
-    /* Set DMA up */
-    clear_dma_ff(TD_DMA);
-    // Should place some cache flush in future (when cache implemented)
-    set_dma_addr(TD_DMA, (ULONG)(unit->td_DMABuffer));
-    set_dma_count(TD_DMA, 4*DP_SECTORS);
-    set_dma_mode(TD_DMA, DMA_MODE_WRITE);
-    enable_dma(TD_DMA);
-    /* Issue format command */
-    tdb->td_comsize = 6;
-    tdb->td_rawcom[0] = FD_FORMAT;
-    tdb->td_rawcom[1] = unit->tdu_UnitNum | (hd << 2);
-    tdb->td_rawcom[2] = DP_SSIZE;
-    tdb->td_rawcom[3] = DP_SECTORS;
-    tdb->td_rawcom[4] = DP_GAP2;
-    tdb->td_rawcom[5] = 0;
-    /* Command prepared, now send it */
-    td_sendcommand(tdb);
-    /* Wait for end phase */
-    err = td_waitint(tdb,7,FALSE);
-    if (!err)
+    unit->tdu_lastcyl = -1;
+    unit->tdu_lasthd = -1;
+    do
     {
-	/* Check if everything went OK */
-	if (!(tdb->td_result[0] & 0xc0))
+	/* Go to the correct track,. If we are already on it, we omit seeking in order to
+	   speed up the operation. */
+	if (unit->pub.tdu_CurrTrk == cyl)
+	    err = 0;
+	else
+	    err = td_recalibrate(unit->tdu_UnitNum,0,cyl,tdb);
+	if (!err)
+	{
+	    rwcnt = unit->pub.tdu_RetryCnt;
+	    do
+	    {
+		/* Set DMA up */
+		clear_dma_ff(TD_DMA);
+		// Should place some cache flush in future (when cache implemented)
+		set_dma_addr(TD_DMA, (ULONG)unit->td_DMABuffer);
+		set_dma_count(TD_DMA, DP_SECTORS*512);
+		set_dma_mode(TD_DMA, DMA_MODE_WRITE);
+		enable_dma(TD_DMA);
+	        /* Issue format command */
+	        tdb->td_comsize = 6;
+	        tdb->td_rawcom[0] = FD_FORMAT;
+	        tdb->td_rawcom[1] = unit->tdu_UnitNum | (hd << 2);
+	        tdb->td_rawcom[2] = DP_SSIZE;
+	        tdb->td_rawcom[3] = DP_SECTORS;
+	        tdb->td_rawcom[4] = DP_GAP2;
+	        tdb->td_rawcom[5] = 0;
+	        /* Command prepared, now send it */
+	        td_sendcommand(tdb);
+	        /* Wait for end phase */
+	        err = td_waitint(tdb,7,FALSE);
+	        if (!err)
+	        {
+		    /* Check if everything went OK */
+		    if (tdb->td_result[0] & 0xc0)
+		    {
+			err = TDERR_NotSpecified;
+		    }
+		}
+		if (!err)
+		    return 0;
+	    } while (--rwcnt);
+	}
+	td_recalibrate(unit->tdu_UnitNum,1,0,tdb);
+    } while(--skcnt);
+    return err;
+}
+
+int td_format(struct IOExtTD *iotd, struct TrackDiskBase *tdb)
+{
+#ifdef NOFORMAT
+    iotd->iotd_Req.io_Actual = 0;
+    return TDERR_WriteProt;
+#else
+    struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
+    ULONG size, remain;
+    ULONG length = 0;
+    int cyl, hd, sec;
+    int err;		// Error
+
+    if (unit->tdu_DiskIn == TDU_NODISK)
+    {
+	D(bug("td_format(): No disk in drive!\n"));
+	return TDERR_DiskChanged;
+    }
+
+    /* Calculate CHS style address */
+    sec = iotd->iotd_Req.io_Offset >> 9; // sector is wrong right now (LBA)
+    cyl = (sec >> 1) / DP_SECTORS;       // cyl contains real cyl number
+    sec %= 2*DP_SECTORS;	         // sector on track (on both sides)
+    hd = sec / DP_SECTORS;		 // head number
+
+    remain = iotd->iotd_Req.io_Length;
+    while (length < iotd->iotd_Req.io_Length) {
+	err = td_formattrack(unit, cyl, hd, tdb);
+	if (!err)
 	{
 	    /* We are fine, now write that data! */
-	    return td_write(iotd,tdb);
+	    size = remain;
+	    if (size > 512*DP_SECTORS)
+		size = 512*DP_SECTORS;
+	    CopyMem(iotd->iotd_Req.io_Data + length, unit->td_DMABuffer, size);
+	    /* Note that we don't remember last track number stored in the buffer.
+	       We do it because next TD_READ issued in order to verify the data
+	       should really read the data from the disk, not just get them back
+	       from the buffer. */
+	    err = td_readwritetrack(unit->tdu_UnitNum, cyl, hd, FD_WRITE, tdb);
 	}
+	if (err) {
+	    iotd->iotd_Req.io_Actual = length;
+	    return err;
+	}
+	length += size;
+	remain -= size;
+	if (hd)
+	{
+	    hd=0;
+	    cyl++;
+	}
+	else
+	    hd=1;
     }
-    return TDERR_NotSpecified;
+    iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Length;
+    return 0;
+#endif
 }
+
