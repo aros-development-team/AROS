@@ -509,11 +509,31 @@ endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
+
+# Make a list of the lib files this program depends on.
+ifneq (%(uselibs),)
+# In LDFLAGS remove white space between -L and directory
+TMP_DIRS := $(subst -L ,-L,$(strip %(ldflags)))
+# Filter out only the libdirs and remove -L
+TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+# Add trailing /
+TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+# Add normal linklib path
+TMP_DIRS += $(LIBDIR)/
+# add lib and .a to static linklib names
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+# search for the linklibs in the given path, ignore ones not found
+TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
+)
+else
+TMP_DEPLIBS :=
+endif
+
 %(prog) : OBJS := %(objs)
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
 %(prog) : LIBS := $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
-
-%(prog) : %(objs) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+%(prog) : %(objs) $(TMP_DEPLIBS)
 	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
@@ -536,11 +556,30 @@ endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
+
+# Make a list of the lib files the programs depend on.
+ifneq (%(uselibs),)
+# In LDFLAGS remove white space between -L and directory
+TMP_DIRS := $(subst -L ,-L,$(strip %(ldflags)))
+# Filter out only the libdirs and remove -L
+TMP_DIRS := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+# Add trailing /
+TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+# Add normal linklib path
+TMP_DIRS += $(LIBDIR)/lib/
+# add lib and .a to static linklib names
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+# search for the linklibs in the given path, ignore ones not found
+TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
+)
+else
+TMP_DEPLIBS :=
+endif
+
 $(addprefix %(targetdir)/,%(progs)) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
 $(addprefix %(targetdir)/,%(progs)) : LIBS:= $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
-
-$(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
-    $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+$(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
 	%link_q from=$< opt=$(LDFLAGS) libs=$(LIBS)
 %end
 #------------------------------------------------------------------------------
