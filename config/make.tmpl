@@ -1353,9 +1353,10 @@ endif
 
 ## function reference files generation
 ##
+BD_CFLAGS_REF := -I$(dir $(GENMODULE))/genmod_inc -I%(objdir)/dummyinc $(strip %(cflags)) -I$(TOP)/$(CURDIR) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
 %rule_ref_multi \
     basenames=$(BD_FILES) targetdir=%(objdir) \
-    cflags="-I$(dir $(GENMODULE))/genmod_inc -I%(objdir)/dummyinc $(strip $(BD_CFLAGS))" \
+    cflags=$(BD_CFLAGS_REF) \
     compiler=%(compiler)
 
 ifeq (%(noref),)
