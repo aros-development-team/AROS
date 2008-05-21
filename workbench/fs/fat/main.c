@@ -81,7 +81,7 @@ void handler(void) {
                             ULONG sigs;
                             struct MsgPort *rp;
 
-                            D(bug("\tInitiated device: %.*s\n", AROS_BSTR_strlen(glob->devnode->dol_Name), AROS_BSTR_ADDR(glob->devnode->dol_Name)));
+			    D(bug("\tInitiated device: %s\n", AROS_BSTR_ADDR(glob->devnode->dol_Name)));
 
                             glob->devnode->dol_Task = glob->ourport;
 
