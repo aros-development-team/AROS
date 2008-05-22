@@ -10,11 +10,11 @@
  * $Id: startup-aros.c,v 1.1 2008/04/25 10:33:43 sonic_amiga Exp $
  */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
-#include "debug.h"
+#include <aros/debug.h>
 
 struct ExecBase *SysBase;
 
