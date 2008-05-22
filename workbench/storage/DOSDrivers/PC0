@@ -1,0 +1,15 @@
+FileSystem     = devs:fat.handler
+Device         = trackdisk.device
+Unit           = 0          /* change drive number here */
+Flags          = 0
+LowCyl         = 0
+HighCyl        = 79
+Surfaces       = 2          /* bootblock values have priority over these */
+BlocksPerTrack = 18
+Buffers        = 20
+BufMemType     = 1
+BootPri        = 0
+Stacksize      = 4096
+Priority       = 5
+GlobVec        = -1
+DosType        = 0x46415400
