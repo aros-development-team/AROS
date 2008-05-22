@@ -53,7 +53,7 @@ BOOL TD_PerformIO( struct IOExtTD *, struct TrackDiskBase *);
 struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 {
     struct TDU     *unit;
-    struct ExpansionBase *ExpansionBase;
+    struct ExpansionBase *ExpansionBase = NULL;
     struct DeviceNode *devnode;
     IPTR *pp;
     TEXT dosdevname[4] = "DF0", *handler = "afs.handler";
@@ -62,7 +62,8 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     /* Try to get memory for structure */
     unit = AllocMem(sizeof(struct TDU), MEMF_PUBLIC | MEMF_CLEAR);
 
-    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40);
+    if (!tdb->td_nomount)
+	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40);
     if (unit)
     {
 	unit->tdu_DiskIn = TDU_NODISK;	/* Assume there is no floppy in there */
@@ -101,9 +102,9 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
 	/* Store the unit in TDBase */
 	tdb->td_Units[num] = unit;
 
-	D(bug("TD: Adding bootnode\n"));
 	if (ExpansionBase)
 	{
+	    D(bug("TD: Adding bootnode\n"));
 	    pp = (IPTR *)AllocMem(sizeof(struct DosEnvec)+sizeof(IPTR)*4,MEMF_PUBLIC|MEMF_CLEAR);
 
 	    if (pp)
@@ -174,10 +175,14 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 	{
 	    ForeachNode(list,node)
 	    {
-		if (0 == strncmp(node->ln_Name,"nofdc",5))
+		if (0 == strncmp(node->ln_Name,"floppy=",5))
 		{
-		    bug("[Floppy] Disabled with bootloader argument\n");
-		    return FALSE;
+		    if (strstr(&node->ln_Name[7], "disabled"))
+		    {
+		        D(bug("[Floppy] Disabled with bootloader argument\n"));
+			return FALSE;
+		    }
+		    TDBase->td_nomount = strstr(&node->ln_Name[7], "nomount");
 		}
 	    }
 	}
