@@ -73,6 +73,7 @@ struct TrackDiskBase
     UBYTE			td_sr0;
     UBYTE			td_pcn;
     UBYTE			td_inttmo;
+    BOOL			td_nomount;
 };
 
 #endif /* TRACKDISK_DEVICE_H */
