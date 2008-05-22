@@ -9,11 +9,6 @@
 #include "gadgets.h"
 #include "bootmenu_intern.h"
 
-#undef GfxBase
-#undef IntuitionBase
-#define GfxBase BootMenuBase->bm_GfxBase
-#define IntuitionBase BootMenuBase->bm_IntuitionBase
-
 struct ButtonGadget *createButton
 	(
 		ULONG left, ULONG top, ULONG width, ULONG height,

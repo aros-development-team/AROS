@@ -29,5 +29,12 @@ LIBBASETYPE {
 	struct MainGadgets   bm_MainGadgets;
 };
 
+#undef ExpansionBase
+#define ExpansionBase BootMenuBase->bm_ExpansionBase
+#undef GfxBase
+#define GfxBase BootMenuBase->bm_GfxBase
+#undef IntuitionBase
+#define IntuitionBase BootMenuBase->bm_IntuitionBase
+
 #endif /* BOOTMENU_INTERN_H */
 

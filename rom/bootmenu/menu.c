@@ -23,11 +23,7 @@
 
 #define BUFSIZE 100
 
-#undef ExpansionBase
-#define ExpansionBase BootMenuBase->bm_ExpansionBase
-
 #if 0
-struct GfxBase *GfxBase;
 struct RastPort rp;
 struct ViewPort vp;
 
@@ -78,53 +74,48 @@ BOOL initScreen(STRPTR gfxhiddname, struct BootMenuBase *BootMenuBase)
 
     D(bug("[BootMenu] initScreen(gfxhidd='%s')\n", gfxhiddname));
 
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
-    if (GfxBase)
+    if (LateGfxInit(gfxhiddname))
     {
-        if (LateGfxInit(gfxhiddname))
+        modeid = BestModeIDA(modetags);
+        if (modeid != INVALID_ID)
         {
-            modeid = BestModeIDA(modetags);
-            if (modeid != INVALID_ID)
+            InitRastPort(&rp);
+            InitVPort(&vp);
+            rp.BitMap = AllocScreenBitMap(modeid);
+            if (rp.BitMap)
             {
-                InitRastPort(&rp);
-                InitVPort(&vp);
-                rp.BitMap = AllocScreenBitMap(modeid);
-                if (rp.BitMap)
+                vp.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
+                if (vp.RasInfo)
                 {
-                    vp.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
-                    if (vp.RasInfo)
+                    vp.RasInfo->BitMap = rp.BitMap;
+                    vp.ColorMap = GetColorMap(4);
+                    vp.ColorMap->VPModeID = modeid;
+                    if (AttachPalExtra(vp.ColorMap, &vp) == 0)
                     {
-                        vp.RasInfo->BitMap = rp.BitMap;
-                        vp.ColorMap = GetColorMap(4);
-                        vp.ColorMap->VPModeID = modeid;
-                        if (AttachPalExtra(vp.ColorMap, &vp) == 0)
-                        {
-                            LoadRGB32(&vp, (ULONG *)coltab);
-                            depth = GetBitMapAttr(rp.BitMap, BMA_DEPTH);
-                            if (depth > 4)
-                                pointercoltab[0] = (3L << 16) + 17;
-                            else
-                                pointercoltab[0] = (3L << 16) + (1 << depth) - 3;
-                            LoadRGB32(&vp, pointercoltab);
-                            rp.BitMap->Flags |= BMF_AROS_HIDD;
-                            SetFont(&rp, GfxBase->DefaultFont);
-                            SetFrontBitMap(rp.BitMap, TRUE);
-                            Forbid();
-                            rp.Font->tf_Accessors++;
-                            Permit();
-                            SetAPen(&rp, 1);
-                            Move(&rp, 100, 100);
-                            Text(&rp, "Sucker", 6);
+                        LoadRGB32(&vp, (ULONG *)coltab);
+                        depth = GetBitMapAttr(rp.BitMap, BMA_DEPTH);
+                        if (depth > 4)
+                            pointercoltab[0] = (3L << 16) + 17;
+                        else
+                            pointercoltab[0] = (3L << 16) + (1 << depth) - 3;
+                        LoadRGB32(&vp, pointercoltab);
+                        rp.BitMap->Flags |= BMF_AROS_HIDD;
+                        SetFont(&rp, GfxBase->DefaultFont);
+                        SetFrontBitMap(rp.BitMap, TRUE);
+                        Forbid();
+                        rp.Font->tf_Accessors++;
+                        Permit();
+                        SetAPen(&rp, 1);
+                        Move(&rp, 100, 100);
+                        Text(&rp, "Sucker", 6);
 kprintf("done\n");
-                            return TRUE;
-                        }
-                        FreeMem(vp.RasInfo, sizeof(struct RasInfo));
+                        return TRUE;
                     }
-                    FreeBitMap(rp.BitMap);
+                    FreeMem(vp.RasInfo, sizeof(struct RasInfo));
                 }
+                FreeBitMap(rp.BitMap);
             }
         }
-        CloseLibrary((struct Library *)GfxBase);
     }
 kprintf("no screen!\n");
     return FALSE;
@@ -145,21 +136,23 @@ static BOOL init_gfx(STRPTR gfxclassname, struct BootMenuBase *BootMenuBase)
         library (although it will probably not be neccesary).
     */
 
-    D(bug("[BootMenu] init_gfx: calling private gfx LateGfxInit() .."));
+    D(bug("[BootMenu] init_gfx: calling private LateGfxInit() ..\n"));
     if (LateGfxInit(gfxclassname))
     {
-        D(bug("Success\n"));
-        if (IntuitionBase)
+        D(bug("[BootMenu] init_gfx: calling private LateGfxInit Succeeded\n"));
+        if (LateIntuiInit(NULL))
         {
-            if (LateIntuiInit(NULL))
-            {
-                success = TRUE;
+            D(bug("[BootMenu] init_gfx: calling private LateIntuiInit Succeeded\n"));
+            success = TRUE;
         }
+        else
+        {
+            D(bug("[BootMenu] init_gfx: calling private LateIntuiInit Failed!\n"));
         }
     }
     else
     {
-        D(bug("Failed\n"));
+        D(bug("[BootMenu] init_gfx: calling private LateGfxInit Failed!\n"));
     }
     ReturnBool ("init_gfxhidd", success);
 }
@@ -208,6 +201,8 @@ static BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *BootMenuB
 
     OpenLibrary(bootcfg->defaultmouse.libname, 0);
     init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase);
+
+    D(bug("[BootMenu] initHidds: Hidds initialised\n"));
 
     return TRUE;
 }
@@ -308,19 +303,21 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
     };
     struct Gadget *first = NULL;
 
-    BootMenuBase->bm_Screen = OpenScreenTagList(NULL, scrtags);
-    if (BootMenuBase->bm_Screen != NULL)
+    D(bug("[BootMenu] initScreen()\n"));
+
+    if ((BootMenuBase->bm_Screen = OpenScreenTagList(NULL, scrtags)) != NULL)
     {
-        first = createGadgets(BootMenuBase);
-        if (first != NULL)
+        D(bug("[BootMenu] initScreen: Screen opened @ %p\n", BootMenuBase->bm_Screen));
+        if ((first = createGadgets(BootMenuBase)) != NULL)
         {
+            D(bug("[BootMenu] initScreen: Gadgets created @ %p\n", first));
             wintags[2].ti_Data = BootMenuBase->bm_Screen->Width;
             wintags[3].ti_Data = BootMenuBase->bm_Screen->Height;
             wintags[4].ti_Data = (IPTR)BootMenuBase->bm_Screen;
             wintags[5].ti_Data = (IPTR)first;
-            BootMenuBase->bm_Window = OpenWindowTagList(NULL, wintags);
-            if (BootMenuBase->bm_Window != NULL)
+            if ((BootMenuBase->bm_Window = OpenWindowTagList(NULL, wintags)) != NULL)
             {
+                D(bug("[BootMenu] initScreen: Window opened @ %p\n", first));
                 SetAPen(BootMenuBase->bm_Window->RPort, 2);
                 Move(BootMenuBase->bm_Window->RPort, 215, 20);
                 Text(BootMenuBase->bm_Window->RPort, "AROS Early Startup Control", 26);
@@ -332,15 +329,18 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
             }
             else
                 Alert(AT_DeadEnd | AN_OpenWindow);
+
             CloseWindow(BootMenuBase->bm_Window);
             freeGadgets(BootMenuBase);
         }
         else
             Alert(AT_DeadEnd | AN_BadGadget);
+
         CloseScreen(BootMenuBase->bm_Screen);
     }
     else
         Alert(AT_DeadEnd | AN_OpenScreen);
+
     return FALSE;
 }
 
@@ -407,31 +407,38 @@ static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
     LIBBASE->bm_BootConfig = bootcfg;
     struct DefaultHidd *kbd = &LIBBASE->bm_BootConfig.defaultkbd;
 
-    if ((ExpansionBase = OpenLibrary("expansion.library",0)) != NULL)
+    if ((ExpansionBase = OpenLibrary("expansion.library", 0)) != NULL)
     {
-        if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
+        if ((GfxBase = OpenLibrary("graphics.library", 37)) != NULL)
         {
-            if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)) != NULL)
+            if ((IntuitionBase = OpenLibrary("intuition.library", 37)) != NULL)
             {
-                if (vi->ModeNumber != 3)
+                if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
                 {
-                    strcpy(LIBBASE->bm_BootConfig.defaultgfx.libname, "vesagfx.hidd");
-                    strcpy(LIBBASE->bm_BootConfig.defaultgfx.hiddname, "hidd.gfx.vesa");
+                    if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)) != NULL)
+                    {
+                        if (vi->ModeNumber != 3)
+                        {
+                            strcpy(LIBBASE->bm_BootConfig.defaultgfx.libname, "vesagfx.hidd");
+                            strcpy(LIBBASE->bm_BootConfig.defaultgfx.hiddname, "hidd.gfx.vesa");
+                        }
+                    }
                 }
-            }
-        }
-        
-        if (OpenLibrary(kbd->libname, 0) != NULL)
-        {
-            if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
-            {
-                return TRUE;
+                
+                if (OpenLibrary(kbd->libname, 0) != NULL)
+                {
+                    if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
+                    {
+                        return TRUE;
+                    }
+                }
             }
         }
     }
     return FALSE;
 }
 
+#warning "TODO: THis call should dissapear and be handled via RTF_AFTERDOS"
 /*****************************************************************************
 
     NAME */
@@ -449,6 +456,8 @@ static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
     RESULT
 
     NOTES
+        Temporary call used to check if the bootmenu should be displayed, and display it.
+         this should be removed at a later time and handled via RTF_AFTERDOS.
 
     EXAMPLE
 
@@ -471,6 +480,7 @@ static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
         /* init mouse + gfx */
         if (initHidds(&LIBBASE->bm_BootConfig, LIBBASE))
         {
+            D(bug("[BootMenu] bootmenu_CheckAndDisplay: Hidds Initialised\n"));
             initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
         }
     }
