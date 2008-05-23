@@ -28,7 +28,7 @@ $(GENMODULEINCLUDE) : include/aros/libcall.h
 	@$(MKDIR) $(dir $@)
 	@$(CP) $< $@
 
-archspecific.h: archspecific.c
+archspecific.h: archspecific.c $(AROS_INCLUDES)/aros/$(AROS_TARGET_CPU)/cpu.h
 	@$(TARGET_CC) -S $<
 	@grep "^[/#][*d]" archspecific.s | sed s/@SED@[$$]*//g >$@
 	@rm archspecific.s

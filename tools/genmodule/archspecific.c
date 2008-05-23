@@ -11,5 +11,5 @@ asm ("\n#define ALIASCODE " STR(ALIASCODE));
 
 void foo()
 {
-    asm volatile("\n#define JUMPVEC(n) ((n)+1+@SED@%0)*@SED@%1"::"i"(LIB_RESERVED),"i"(-LIB_VECTSIZE));
+    asm volatile("\n#define LIB_VECTSIZE @SED@%0"::"i"(LIB_VECTSIZE));
 }
