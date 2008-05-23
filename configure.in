@@ -234,6 +234,9 @@ case "$host_os" in
         aros_host_arch="solaris"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         case "$host_cpu" in
+            *i?86*)
+                aros_host_cpu="i386"
+                ;;
             *sparc*)
                 aros_host_cpu="sparc"
                 ;;
@@ -829,6 +832,14 @@ case "$target_os" in
     solaris*)
         aros_target_arch="solaris"
         case "$target_cpu" in
+           *i?86*)
+               aros_target_cpu="i386"
+               aros_object_format="elf_i386"
+               aros_flavour="emulation"
+               aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__Solaris__"
+               aros_default_wbdepth=8
+               gcc_target_cpu="i386"
+               ;;
             *sparc*)
                 aros_target_cpu="sparc"
 		aros_object_format="elf_sparc"
