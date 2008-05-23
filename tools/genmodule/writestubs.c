@@ -124,7 +124,7 @@ void writestubs(struct config *cfg)
 			STUBCODE,
 			funclistit->name,
 			cfg->libbase,
-			JUMPVEC(funclistit->lvo)
+			-funclistit->lvo*LIB_VECTSIZE
 		 );
 	    }
 	
