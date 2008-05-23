@@ -61,9 +61,13 @@
 	return -1;
     }
 
+    if (--desc->opencount == 0)
+    {
+        UnLock(desc->fh);
+        free(desc);
+    }
     __setfdesc(dir->fd, NULL);
 
-    UnLock(desc->fh);
     FreeDosObject(DOS_FIB, dir->priv);
     free(dir);
 
