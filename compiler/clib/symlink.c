@@ -23,7 +23,7 @@ int symlink(const char *oldpath, const char *newpath)
     int errorset = FALSE;
     LONG ioerr;
     UBYTE *buffer;
-    int bufferincrease = 1;
+    int bufferincrease = 256;
     int buffersize = bufferincrease;
 
     if (!oldpath || !newpath) /*safety check */
