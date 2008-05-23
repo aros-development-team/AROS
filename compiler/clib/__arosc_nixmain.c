@@ -35,6 +35,7 @@ static void update_PATH(void);
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
     char *old_argv0 = NULL;
+    char *new_argv0;
     struct MinList old_vars;
 
     /* Trigger *nix path handling on.  */
@@ -45,8 +46,6 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        into an unix-style one.  */
     if (argv && argv[0] && !__get_arosc_privdata()->acpd_parent_does_upath)
     {
-        char *new_argv0;
-
 	new_argv0 = strdup(__path_a2u(argv[0]));
 	if (new_argv0 == NULL)
 	    return RETURN_FAIL;
@@ -90,7 +89,7 @@ err_vars:
     /* Restore the old argv[0].  */
     if (old_argv0 != NULL)
     {
-        free(argv[0]);
+        free(new_argv0);
 	argv[0] = (char *)old_argv0;
     }
 
