@@ -945,6 +945,11 @@ case "$target_os" in
 		AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
 		;;
 	esac
+	if test $host_os = "cygwin"; then
+		aros_config_cflags="$aros_config_cflags -mno-cygwin"
+		aros_config_ldflags="$aros_config_ldflags -mno-cygwin"
+		aros_kernel_ldflags="$aros_kernel_ldflags -mno-cygwin"
+	fi
     ;;
     pp*)
 	aros_target_arch="pp"
