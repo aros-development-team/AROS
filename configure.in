@@ -468,9 +468,11 @@ CFLAGS="$save_cflags"
 #
 
 AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+save_cc="$CC"
 save_cflags="$CFLAGS"
-CFLAGS="$CFLAGS -iquote."
-AC_TRY_COMPILE(,, has_iquote="yes", has-iquote="no")
+CC="$aros_target_cc"
+CFLAGS="-iquote."
+AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
 AC_MSG_RESULT($has_iquote)
 if test "x-$has_iquote" = "x-yes" ; then
     aros_cflags_iquote=-iquote
@@ -479,6 +481,7 @@ else
     aros_cflags_iquote=-I
     aros_cflags_iquote_end=-I-
 fi
+CC="$save_cc"
 CFLAGS="$save_cflags"
 
 AC_SUBST(aros_cflags_iquote)
