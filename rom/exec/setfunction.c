@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Patch a library or device function
@@ -44,7 +44,8 @@
     INPUTS
 	library     - Pointer to library structure.
 	funcOffset  - Offset of the jumpvector from the library base address in
-		      bytes.
+		      bytes. It's the negative LVO (library vector offset)
+		      multiplied with LIB_VECTSIZE.
 	newFunction - New jumptable entry (pointer to the new function).
 
     RESULT
@@ -56,6 +57,10 @@
 	So don't use this function if it can be avoided.
 
     EXAMPLE
+	Patch of the function Open() from dos.library:
+	You can find the LVO of 5 in clib/dos_protos.h.
+	SetFunction(DOSBase, -5 * LIB_VECTSIZE, NewOpen);
+	NewOpen must be prepared with AROS_UFH macros.
 
     BUGS
 	On native builds, this contains a hack to fix dos.library/ramlib
