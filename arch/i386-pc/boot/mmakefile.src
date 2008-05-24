@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES	:= -I$(GENINCDIR)
 
 #
-# Rule's to create AROS for pc-i386
+# Rules to create AROS for pc-i386
 #
 
 #MM- AROS-pc-i386 : general-setup-pc-i386 kernel-pc-i386 software-pc-i386
@@ -48,7 +48,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   mathieeesingbas expansion oop layers workbench cybergraphics \
 	   partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
-KHNDLRS := con nil packet ram cdrom afs sfs
+KHNDLRS := con nil packet amberram cdrom afs sfs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
 #Disabled RSRC cpu
 #Disabled HIDD vmwaregfx usbuhci
