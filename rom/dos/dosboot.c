@@ -8,8 +8,9 @@
 
 /* This definition enables mounting
    disk-based handlers (e.g. fat.handler) at bootup.
-   Comment it out in case if some critical bugs appear. */
+   Comment it out in case if some critical bugs appear.
 #define MOUNT_DISK_HANDLERS
+*/
 
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
@@ -135,7 +136,7 @@ AROS_UFH3(void, __dosboot_IntBoot,
     BPTR                  lock;
 
     struct MsgPort *mp;         // Message port used with timer.device
-    struct timerequest *tr;     // timer's time request message
+    struct timerequest *tr = NULL;     // timer's time request message
 
 #define deviceName (((struct DosList *) bootNode->bn_DeviceNode)->dol_Ext.dol_AROS.dol_DevName)
 
