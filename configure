@@ -730,8 +730,6 @@ CMP
 GREP
 EGREP
 LIBOBJS
-aros_cflags_iquote
-aros_cflags_iquote_end
 DISTCC
 CCACHE
 LIBLZO
@@ -749,6 +747,8 @@ aros_target_nostartup_ldflags
 aros_target_nix_ldflags
 aros_target_detach_ldflags
 aros_target_nostdlib_ldflags
+aros_cflags_iquote
+aros_cflags_iquote_end
 XMKMF
 SDL_CONFIG
 SDL_CFLAGS
@@ -8242,75 +8242,6 @@ fi
 CFLAGS="$save_cflags"
 
 
-#
-# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
-# On GCC >= 4.0 -iquote should be used
-#
-
-{ $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
-$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
-save_cc="$CC"
-save_cflags="$CFLAGS"
-CC="$aros_target_cc"
-#CFLAGS="$CFLAGS -iquote."
-CFLAGS="-iquote."
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext
-if { (ac_try="$ac_compile"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
-$as_echo "$ac_try_echo") >&5
-  (eval "$ac_compile") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest.$ac_objext; then
-  has_iquote="yes"
-else
-  $as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	has_iquote="no"
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ $as_echo "$as_me:$LINENO: result: $has_iquote" >&5
-$as_echo "$has_iquote" >&6; }
-if test "x-$has_iquote" = "x-yes" ; then
-    aros_cflags_iquote=-iquote
-    aros_cflags_iquote_end=
-else
-    aros_cflags_iquote=-I
-    aros_cflags_iquote_end=-I-
-fi
-CC="$save_cc"
-CFLAGS="$save_cflags"
-
-
-
-
 #-----------------------------------------------------------------------------
 
 # Disable pointer-signedness warnings if the compiler recognises the option
@@ -10859,6 +10790,75 @@ if test "$aros_target_cc_includes" = "" ; then
 fi
 { $as_echo "$as_me:$LINENO: result: $aros_target_cc_includes" >&5
 $as_echo "$aros_target_cc_includes" >&6; }
+
+#
+# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
+# On GCC >= 4.0 -iquote should be used
+#
+
+{ $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
+save_cc="$CC"
+save_cflags="$CFLAGS"
+CC="$aros_target_cc"
+CFLAGS="-iquote."
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  has_iquote="yes"
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	has_iquote="no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+{ $as_echo "$as_me:$LINENO: result: $has_iquote" >&5
+$as_echo "$has_iquote" >&6; }
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+CC="$save_cc"
+CFLAGS="$save_cflags"
+
+
+
+
 
 { $as_echo "$as_me:$LINENO: checking for default resolution of WBScreen" >&5
 $as_echo_n "checking for default resolution of WBScreen... " >&6; }

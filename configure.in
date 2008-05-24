@@ -462,31 +462,6 @@ fi
 CFLAGS="$save_cflags"
 
 
-#
-# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
-# On GCC >= 4.0 -iquote should be used
-#
-
-AC_MSG_CHECKING([whether ${CC} accepts -iquote])
-save_cc="$CC"
-save_cflags="$CFLAGS"
-CC="$aros_target_cc"
-CFLAGS="-iquote."
-AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
-AC_MSG_RESULT($has_iquote)
-if test "x-$has_iquote" = "x-yes" ; then
-    aros_cflags_iquote=-iquote
-    aros_cflags_iquote_end=
-else
-    aros_cflags_iquote=-I
-    aros_cflags_iquote_end=-I-
-fi
-CC="$save_cc"
-CFLAGS="$save_cflags"
-
-AC_SUBST(aros_cflags_iquote)
-AC_SUBST(aros_cflags_iquote_end)
-
 #-----------------------------------------------------------------------------
 
 # Disable pointer-signedness warnings if the compiler recognises the option
@@ -1264,6 +1239,32 @@ if test "$aros_target_cc_includes" = "" ; then
     fi
 fi
 AC_MSG_RESULT($aros_target_cc_includes)
+
+#
+# For GCC < 4.0 -I- is used for giving the search path for '#include "..."'
+# On GCC >= 4.0 -iquote should be used
+#
+
+AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+save_cc="$CC"
+save_cflags="$CFLAGS"
+CC="$aros_target_cc"
+CFLAGS="-iquote."
+AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
+AC_MSG_RESULT($has_iquote)
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+CC="$save_cc"
+CFLAGS="$save_cflags"
+
+AC_SUBST(aros_cflags_iquote)
+AC_SUBST(aros_cflags_iquote_end)
+
 
 dnl Check if user specified --with-resolution=XRESxYRESxDEPTH
 AC_MSG_CHECKING([for default resolution of WBScreen])
