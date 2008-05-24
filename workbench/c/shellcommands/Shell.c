@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     The shell program.
@@ -17,7 +17,7 @@
 
     LOCATION
 
-        Workbench:C
+        C:
 
     FUNCTION
 
@@ -41,7 +41,7 @@
 
     EXAMPLE
 
-        shell FROM S:Startup-Sequence
+        Shell FROM S:Startup-Sequence
 
         Starts a shell and executes the startup script.
 
@@ -282,7 +282,7 @@ void releaseFiles(struct Redirection *rd);
  *
  * Output:   BOOL  --  success/failure indicator
  */
-BOOL appendString(struct CSource *cs, STRPTR from, LONG size);
+BOOL appendString(struct CSource *cs, CONST_STRPTR from, LONG size);
 
 
 /* Function: printFlush
@@ -445,7 +445,7 @@ static void popInterpreterState(struct InterpreterState *is)
 
     for (i = 0; i < is->argcount; ++i)
 	if (is->argdef[i])
-	    FreeMem(is->argdef[i], is->argdeflen[i] + 1);
+	    FreeMem((APTR)is->argdef[i], is->argdeflen[i] + 1);
 
     if (is->rdargs)
     {
@@ -564,8 +564,8 @@ LONG interact(struct InterpreterState *is)
 	{
 	    PutStr
 	    (
-	    	"AROS - The Amiga® Research Operating System\n"
-		"Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
+	    	"AROS - The AROS Research Operating System\n"
+		"Copyright © 1995-2008, The AROS Development Team. All rights reserved.\n"
 		"AROS is licensed under the terms of the AROS Public License (APL),\n"
 		"a copy of which you should have received with this distribution.\n"
 		"Visit http://www.aros.org/ for more information.\n"
@@ -658,7 +658,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
     lv = FindVar("echo", LV_VAR);
     if (lv != NULL)
     {
-	/* AmigaDOS' shell is content also with echo being set to anything
+	/* AmigaDOS's shell is content also with echo being set to anything
 	   that begins with "on" in order to trigger commands echoing on, 
 	   it doesn't really have to be set to just "on".  */
 	if (lv->lv_Len >= 2)
@@ -714,7 +714,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 
 	if(rd->haveAppRD)
 	{
-	    rd->newOut = Open(rd->outFileName, (FMF_MODE_OLDFILE | FMF_CREATE | FMF_APPEND) & ~FMF_AMIGADOS);
+	    rd->newOut = Open(rd->outFileName, MODE_READWRITE);
 
 	    if(BADDR(rd->newOut) == NULL)
 	    {
@@ -723,6 +723,7 @@ LONG checkLine(struct Redirection *rd, struct CommandLine *cl,
 	        goto exit;
 	    }
 
+	    Seek(rd->newOut, 0, OFFSET_END);
 	    D(bug("Output stream opened (append)\n"));
     	    SelectOutput(rd->newOut);
 	}
@@ -1307,7 +1308,8 @@ LONG convertLine(struct CSource *filtered, struct CSource *cs,
 
 				if (!(t & (NUMERIC | SWITCH | TOGGLE)))
 				    if (is->arg[j])
-					is->arglen[j] = strlen(is->arg[j]);
+					is->arglen[j] =
+					    strlen((STRPTR)is->arg[j]);
 
 				if (s[0] == '\0')
 				    break;
@@ -1533,7 +1535,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
 
 
 /* Currently, there is no error checking involved */
-BOOL appendString(struct CSource *cs, STRPTR fromStr, LONG size)
+BOOL appendString(struct CSource *cs, CONST_STRPTR fromStr, LONG size)
 {
     /* +2 for additional null bytes, '\n', \0' */
     while(cs->CS_CurChr + size + 2 > (cs->CS_Length - cs->CS_CurChr))
