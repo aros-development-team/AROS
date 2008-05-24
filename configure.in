@@ -1245,11 +1245,11 @@ AC_MSG_RESULT($aros_target_cc_includes)
 # On GCC >= 4.0 -iquote should be used
 #
 
-AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 save_cc="$CC"
 save_cflags="$CFLAGS"
-CC="$aros_target_cc"
+CC="$aros_kernel_cc"
 CFLAGS="-iquote."
+AC_MSG_CHECKING([whether ${CC} accepts -iquote])
 AC_TRY_COMPILE(,, has_iquote="yes", has_iquote="no")
 AC_MSG_RESULT($has_iquote)
 if test "x-$has_iquote" = "x-yes" ; then

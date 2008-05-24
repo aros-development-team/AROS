@@ -10796,12 +10796,12 @@ $as_echo "$aros_target_cc_includes" >&6; }
 # On GCC >= 4.0 -iquote should be used
 #
 
-{ $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
-$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
 save_cc="$CC"
 save_cflags="$CFLAGS"
-CC="$aros_target_cc"
+CC="$aros_kernel_cc"
 CFLAGS="-iquote."
+{ $as_echo "$as_me:$LINENO: checking whether ${CC} accepts -iquote" >&5
+$as_echo_n "checking whether ${CC} accepts -iquote... " >&6; }
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
