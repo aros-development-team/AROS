@@ -469,6 +469,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 {
     int atend = 0, i;
     char *line, *s, *s2, *libbasetypeextern = NULL;
+    struct tm date;
     
     while (!atend)
     {
@@ -551,14 +552,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case 6: /* date */
 		if (inclass)
 		    exitfileerror(20, "date not valid config option when in a class section\n");
-		if (!(strlen(s)==10 && isdigit(s[0]) && isdigit(s[1]) &&
-		      s[2]=='.' && isdigit(s[3]) && isdigit(s[4]) &&
-		      s[5]=='.' && isdigit(s[6]) && isdigit(s[7]) &&
-		      isdigit(s[8]) && isdigit(s[9])
-		     )
-	        )
+		if (strptime(s, "%e.%m.%Y", &date) == NULL)
 		{
-		    exitfileerror(20, "date string has have dd.mm.yyyy format\n");
+		    exitfileerror(20, "date string has to have d.m.yyyy format\n");
 		}
 		cfg->datestring = strdup(s);
 		break;
@@ -882,8 +878,10 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	{
 	    char tmpbuf[256];
 	    time_t now = time(NULL);
-	
-	    strftime(tmpbuf, sizeof(tmpbuf), "%d.%m.%Y", localtime(&now));
+	    struct tm *ltime = localtime(&now);
+
+	    snprintf(tmpbuf, sizeof(tmpbuf), "%u.%u.%u",
+                ltime->tm_mday, 1 + ltime->tm_mon, 1900 + ltime->tm_year);
 
 	    cfg->datestring = strdup(tmpbuf);
 	}
