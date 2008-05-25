@@ -245,7 +245,20 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    continue;
+	    fprintf(out, "%s %s(", funclistit->type, funclistit->name);
+        
+	    for(arglistit = funclistit->arguments, first = 1;
+		arglistit != NULL;
+		arglistit = arglistit->next, first = 0
+	    )
+	    {
+		if (!first)
+		    fprintf(out, ", ");
+            
+		fprintf(out, "%s", arglistit->arg);
+	    }
+	    fprintf(out, ");\n");
+            break;
    
 	case REGISTER:
 	case REGISTERMACRO:
