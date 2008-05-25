@@ -6,8 +6,10 @@ include $(TOP)/config/make.cfg
 # and there doesn't seem to be a template for handling this case
 # so I write the file manually.
 
-USER_INCLUDES := -I$(GENINCDIR)
-USER_CFLAGS := -D__AROS__ $(HOST_X11_CFLAGS)
+#USER_INCLUDES := -I$(GENINCDIR)
+#USER_CFLAGS := -D__AROS__ $(HOST_X11_CFLAGS)
+
+FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 
@@ -18,6 +20,7 @@ FILES	   := x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap x11kbd x1
 %build_module mmake=kernel-x11gfx \
   modname=x11gfx modtype=hidd \
   files=$(FILES) compiler=host \
+  cflags=$(FLAGS) \
   uselibs="oop hiddgraphicsstubs"
 
 #MM x11keymaptable
