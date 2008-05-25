@@ -38,9 +38,6 @@ AROS_UFH2(void, __putChr,
     RESULT
 
     NOTES
-	This routines needs access to SysBase, which makes it impossible to
-	use from libraries. For user programs, though, it is possible to
-	use it as SysBase is set up in startup.c.
 
     EXAMPLE
 
