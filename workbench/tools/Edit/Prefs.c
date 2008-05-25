@@ -118,7 +118,7 @@ void set_default_prefs( PREFS *prefs, struct Screen *def )
 	memset(prefs, 0, sizeof(*prefs));
 	CopyMem(&DefaultPens, &prefs->pen, sizeof(prefs->pen));
 	prefs->auto_indent = 1;
-	prefs->matchcase   = 1;
+	prefs->matchcase   = 0;
 	prefs->tabsize = 8;
 	prefs->scrfont = def->RastPort.Font;
 	prefs->txtfont = GfxBase->DefaultFont;
