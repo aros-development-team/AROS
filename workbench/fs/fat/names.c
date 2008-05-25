@@ -56,11 +56,6 @@ LONG GetDirEntryShortName(struct DirEntry *de, STRPTR name, ULONG *len) {
          * know that about fat names. the point of this is to say that we
          * can't just flick forward in our copying at the first sight of a
          * space, it's technically incorrect.
-         *
-         * XXX it occurs to me just now that AROS may not like spaces in its
-         * names. in that case spaces should probably be converted to
-         * underscores. that or our dos should be changed so it does allow
-         * spaces. either way, thats a project for another time.
          */
         if (i == 7) {
             /* backtrack to first non-space. this is safe because the first
@@ -287,9 +282,9 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
 
     /* if the name will require one or more entries, then our basis name is
      * actually some conversion of the real name, and we have to look to make
-     * sure its not in use */
+     * sure it's not in use */
     if (nlong > 0) {
-        D(bug("[fat] searching for basis name to confirm that its not in use\n"));
+        D(bug("[fat] searching for basis name to confirm that it's not in use\n"));
 
         /* loop over the entries and compare them with the basis until we find
          * a gap */
@@ -329,7 +324,7 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len) {
     }
 
     /* copy the new name into the original entry. we don't write it out -
-     * we'll leave that for the caller to do, its his entry */
+     * we'll leave that for the caller to do, it's his entry */
     CopyMem(basis, short_de->e.entry.name, 11);
 
     /* we can stop here if no long name is required */

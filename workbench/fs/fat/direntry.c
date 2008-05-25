@@ -254,11 +254,10 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
 	  bug("' (%d bytes), current chunk is '", pathlen); RawPutChars(path, len);
 	  bug("' (%d bytes)\n", len));
 
-        /* if the first character is a /, or they've asked for '..', then we
-         * have to go up a level */
+        /* if the first character is a /, then we have to go up a level */
         if (len == 0) {
 
-            /* get the parent dir, and bail if we've gone past it (ie we are
+            /* get the parent dir, and bale if we've gone past it (i.e. we are
              * the root) */
             if ((err = GetParentDir(dh, de)) != 0)
                 return err;
@@ -274,7 +273,7 @@ LONG GetDirEntryByPath(struct DirHandle *dh, STRPTR path, ULONG pathlen, struct 
         path += len;
         pathlen -= len;
 
-        /* a / here is either the path seperator or the directory we just went
+        /* a / here is either the path separator or the directory we just went
          * up. either way, we have to ignore it */
         if (pathlen > 0 && path[0] == '/') {
             path++;

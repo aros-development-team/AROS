@@ -138,7 +138,7 @@ struct NotifyNode {
     struct MinNode          node;
 
     struct GlobalLock       *gl;        /* pointer to global lock if this file is
-                                           locked. if its not, this is NULL */
+                                           locked. if it's not, this is NULL */
 
     struct NotifyRequest    *nr;        /* the request that DOS passed us */
 };

@@ -14,7 +14,7 @@
  * This is an attempt at a generic buffer cache for filesystems. It's a
  * traditional cache of the type described in Tanenbaum 2nd Ed. Eventually I
  * hope it will be a system-wide facility (eg cache.resource), but for the
- * moment its just part of fat.handler.
+ * moment it's just part of fat.handler.
  *
  * The idea is that we have pile of blocks (struct cache_block), a hashtable
  * and a free list. Initially all the blocks are free, and reside on the free
@@ -22,7 +22,7 @@
  *
  * When a request for a block comes in (cache_get_block()), we extract the
  * bottom N bits of the block number, and then scan the linked-list in that
- * cache bucket for the block. If its there, the use count for the block is
+ * cache bucket for the block. If it's there, the use count for the block is
  * incremented and the block is returned.
  *
  * If not found, then we check the free list. The free list is stored in order
@@ -30,19 +30,19 @@
  * most-recently-used block at the back (tail). We scan the free list from
  * back to front. A block that was used recently is likely to be used again in
  * the future, so this is the fastest way to find it. Once found, its use
- * count is incremented and its re-inserted into the appropriate hash
+ * count is incremented and it's re-inserted into the appropriate hash
  * bucket/list, then returned to the caller.
  *
  * If the block isn't found in the free list, then we don't have it anywhere,
  * and have to load it from disk. We take an empty buffer from the beginning
- * of the free list (that is, the oldest unused block available). If its dirty
+ * of the free list (that is, the oldest unused block available). If it's dirty
  * (ie was written to), we write out it and all the other blocks for the
  * device/unit (to improve the odds of the filesystem remaining consistent).
  * Then, we load the block from the disk into the buffer, fiddle with the
  * block metadata, add it to the hash and return it.
  *
  * When the caller is finished with the block, it calls cache_put_block() to
- * return the block to the cache. The blocks' use count is decremented. If its
+ * return the block to the cache. The blocks' use count is decremented. If it's
  * still >0 (ie the block is in use), then the function just returns. If not,
  * it removes the block from the hash and adds it to the end of the freelist.
  *
@@ -184,7 +184,7 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
                 b->hash_next->hash_prev = b;
             c->hash[num & c->hash_mask] = b;
 
-            /* if its dirty, flush everything */
+            /* if it's dirty, flush everything */
             if (b->is_dirty)
                 cache_flush(c);
 
@@ -219,7 +219,7 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
 
     b->free_prev = b->free_next = NULL;
 
-    /* write it out if its dirty */
+    /* write it out if it's dirty */
     if (b->is_dirty)
         cache_flush(c);
 
@@ -256,7 +256,7 @@ ULONG cache_get_block(struct cache *c, ULONG num, ULONG flags, struct cache_bloc
 ULONG cache_put_block(struct cache *c, struct cache_block *b, ULONG flags) {
     D(bug("cache_put_block: returning block %d, flags 0x%08x\n", b->num, flags));
 
-    /* if its still in use, then we've got it easy */
+    /* if it's still in use, then we've got it easy */
     b->use_count--;
     if (b->use_count != 0) {
         D(bug("cache_put_block: new use count is %d, nothing else to do\n", b->use_count));
