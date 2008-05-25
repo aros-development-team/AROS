@@ -147,7 +147,7 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent) {
             break;
         }
 
-        /* we found it if its not empty, and its not the volume id or a long
+        /* we found it if it's not empty, and it's not the volume id or a long
          * name, and it is a directory, and it does point to us */
         if (de.e.entry.name[0] != 0xe5 &&
             !(de.e.entry.attr & ATTR_VOLUME_ID) &&
@@ -214,7 +214,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 
         /* can't open directories */
         if (lock->gl->attr & ATTR_DIRECTORY) {
-            D(bug("[fat] its a directory, can't open it\n"));
+            D(bug("[fat] it's a directory, can't open it\n"));
             FreeLock(lock);
             return ERROR_OBJECT_WRONG_TYPE;
         }
@@ -313,7 +313,7 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, LONG ac
 }
 
 /* find the named file in the directory referenced by dirlock, and delete it.
- * if the file is a directory, it will only be deleted if its empty */
+ * if the file is a directory, it will only be deleted if it's empty */
 LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     LONG err;
     struct ExtFileLock *lock;
@@ -326,7 +326,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     dh.ioh.sb = NULL;
 
     /* obtain a lock on the file. we need an exclusive lock as we don't want
-     * to delete the file if its in use */
+     * to delete the file if it's in use */
     if ((err = LockFileByName(dirlock, name, namelen, EXCLUSIVE_LOCK, &lock)) != 0) {
         D(bug("[fat] couldn't obtain exclusive lock on named file\n"));
         return err;
@@ -338,9 +338,9 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
         return ERROR_DELETE_PROTECTED;
     }
 
-    /* if its a directory, we have to make sure its empty */
+    /* if it's a directory, we have to make sure it's empty */
     if (lock->gl->attr & ATTR_DIRECTORY) {
-        D(bug("[fat] file is a directory, making sure its empty\n"));
+        D(bug("[fat] file is a directory, making sure it's empty\n"));
 
 	if ((err = InitDirHandle(lock->ioh.sb, lock->ioh.first_cluster, &dh, FALSE)) != 0) {
             FreeLock(lock);
@@ -350,14 +350,14 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
         /* loop over the entries, starting from entry 2 (the first real
          * entry). skipping unused ones, we look for the end-of-directory
          * marker. if we find it, the directory is empty. if we find a real
-         * name, its in use */
+         * name, it's in use */
         de.index = 1;
         while ((err = GetDirEntry(&dh, de.index+1, &de)) == 0) {
             /* skip unused entries */
             if (de.e.entry.name[0] == 0xe5)
                 continue;
 
-            /* end of directory, its empty */
+            /* end of directory, it's empty */
             if (de.e.entry.name[0] == 0x00)
                 break;
 
@@ -396,7 +396,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen) {
     /* kill it */
     DeleteDirEntry(&de);
 
-    /* its all good */
+    /* it's all good */
     ReleaseDirHandle(&dh);
 
     /* now free the clusters the file was using */
@@ -593,7 +593,7 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
     /* now get a handle on the new directory */
     InitDirHandle(dh.ioh.sb, cluster, &sdh, FALSE);
 
-    /* create the dot entry. its a direct copy of the just-created entry, but
+    /* create the dot entry. it's a direct copy of the just-created entry, but
      * with a different name */
     GetDirEntry(&sdh, 0, &sde);
     CopyMem(&de.e.entry, &sde.e.entry, sizeof(struct FATDirEntry));
@@ -664,7 +664,7 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
         return ERROR_OBJECT_IN_USE;
     }
 
-    /* don't modify the file if its protected */
+    /* don't modify the file if it's protected */
     if (lock->gl->attr & ATTR_READ_ONLY) {
         D(bug("[fat] file is write protected\n"));
         return ERROR_WRITE_PROTECTED;
@@ -742,7 +742,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *new
         return ERROR_OBJECT_IN_USE;
     }
 
-    /* don't modify the file if its protected */
+    /* don't modify the file if it's protected */
     if (lock->gl->attr & ATTR_READ_ONLY) {
         D(bug("[fat] file is write protected\n"));
         return ERROR_WRITE_PROTECTED;
@@ -782,7 +782,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *new
 
     /* we're getting three things here - the first cluster of the existing
      * file, the last cluster of the existing file (which might be the same),
-     * and the number of clusters currently allocated to it (its not safe to
+     * and the number of clusters currently allocated to it (it's not safe to
      * infer it from the current size as a broken fat implementation may have
      * allocated it more than it needs). we handle file shrinking/truncation
      * here as it falls out naturally from following the current cluster chain
@@ -799,9 +799,9 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence, LONG *new
     else if (want == 0) {
         /* if we're fully truncating the file, then the below loop will
          * actually not truncate the file at all (count will get incremented
-         * past want first time around the loop). its a pain to incorporate a
+         * past want first time around the loop). it's a pain to incorporate a
          * full truncate into the loop, not counting the change to the first
-         * cluster, so its easier to just take care of it all here */
+         * cluster, so it's easier to just take care of it all here */
         D(bug("[fat] want nothing, so truncating the entire file\n"));
 
         FREE_CLUSTER_CHAIN(glob->sb, cl);
@@ -927,7 +927,7 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, ULONG
 
     SendNotifyByDirEntry(glob->sb, &de);
 
-    /* if its a directory, we also need to update the protections for the
+    /* if it's a directory, we also need to update the protections for the
      * directory's . entry */
     if (de.e.entry.attr & ATTR_DIRECTORY) {
         ULONG attr = de.e.entry.attr;
@@ -975,6 +975,7 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct D
 
     /* set and update the date */
     ConvertAROSDate(*ds, &de.e.entry.write_date, &de.e.entry.write_time);
+    de.e.entry.last_access_date = de.e.entry.write_date;
     UpdateDirEntry(&de);
 
     SendNotifyByDirEntry(glob->sb, &de);

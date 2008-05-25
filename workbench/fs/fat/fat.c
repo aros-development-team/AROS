@@ -94,7 +94,6 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
 
         val = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
         val |= *GetFatEntryPtr(sb, offset, NULL);
-	val = AROS_LE2WORD(val);
     }
     else
         val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL)));
@@ -133,7 +132,6 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
 
         newval = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
         newval |= *GetFatEntryPtr(sb, offset, NULL);
-	newval = AROS_LE2WORD(newval);
     }
     else {
         fat = (UWORD *) GetFatEntryPtr(sb, offset, &b);

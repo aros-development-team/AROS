@@ -56,7 +56,7 @@ void SendEvent(LONG event) {
                 }
                 CloseDevice((struct IORequest*)InputRequest);
             }
-            DeleteIORequest (InputRequest);
+            DeleteIORequest((struct IORequest *)InputRequest);
         }
         DeleteMsgPort (InputPort);
     }
