@@ -19,7 +19,7 @@
 #include "mui.h"
 #include "support.h"
 
-#include "notify.h"
+#include "classes/notify.h"
 
 #define MYDEBUG
 #include "debug.h"

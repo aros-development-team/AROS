@@ -25,7 +25,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "frame.h"
-#include "framedisplay_private.h"
+#include "classes/framedisplay_private.h"
 
 extern struct Library *MUIMasterBase;
 

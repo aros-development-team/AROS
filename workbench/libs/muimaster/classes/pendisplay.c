@@ -25,7 +25,7 @@
 #include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
-#include "pendisplay_private.h"
+#include "classes/pendisplay_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
