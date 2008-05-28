@@ -1,9 +1,9 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$
+	Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+	$Id$
 
-    Desc: Code that loads and initializes necessary HIDDs.
-    Lang: english
+	Desc: Code that loads and initializes necessary HIDDs.
+	Lang: english
 */
 
 #include <exec/memory.h>
@@ -38,15 +38,10 @@
 
 struct initbase
 {
-    struct ExecBase	*sysbase;
-    struct DosLibrary	*dosbase;
-    struct Library	*oopbase;
+	struct ExecBase	*sysbase;
+	struct DosLibrary	*dosbase;
+	struct Library	*oopbase;
 };
-
-#define SysBase	(base->sysbase)
-#define DOSBase (base->dosbase)
-#define OOPBase (base->oopbase)
-
 
 static BOOL init_gfx  ( STRPTR gfxclassname,   struct initbase *base);
 static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base);
@@ -64,121 +59,146 @@ static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initba
 
 #include <proto/graphics.h>
 
-BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
+BOOL init_hidds(struct ExecBase *_SysBase, struct DosLibrary *_DOSBase)
 {
-/* This is the initialisation code for InitHIDDs module */
+	/* This is the initialisation code for InitHIDDs module */
+	struct BootLoaderBase *BootLoaderBase;
+	struct initbase stack_b, *base = &stack_b;
+	BOOL vga = FALSE, kbd = TRUE, mouse = TRUE, success = TRUE;
+	STRPTR vgavhidd = "hidd.gfx.vga";
+	STRPTR vgavlib = "vgah.hidd";
+	STRPTR defvhidd = vgavhidd;
+	STRPTR defvlib = vgavlib;
+	UBYTE gfxname[BUFSIZE];
 
+#define SysBase	(base->sysbase)
+#define DOSBase (base->dosbase)
+#define OOPBase (base->oopbase)
 
-    struct initbase stack_b, *base = &stack_b;
-    BOOL success = TRUE, vga = FALSE;
-    STRPTR defvhidd = "hidd.gfx.vga";
-    STRPTR defvlib = "vgah.hidd";
-    UBYTE gfxname[BUFSIZE];
-    struct BootLoaderBase *BootLoaderBase;
+	SysBase = _SysBase;
+	DOSBase = _DOSBase;
 
-    base->sysbase = sysBase;
-    base->dosbase = dosBase;
-
-    EnterFunc(bug("init_hidds\n"));
-    
-    OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-    if (!OOPBase)
-    {
-    	success = FALSE;
-    }
-    else
-    {
-	/* Initialize these HIDDs by default */
-	if (!(OpenLibrary("mouse.hidd",0L)))
+	EnterFunc(bug("init_hidds\n"));
+	
+	if ((OOPBase = OpenLibrary(AROSOOP_NAME, 0)) == NULL)
 	{
-	    success = FALSE;
-	    bug("[DOS] InitHidds: Failed to open mouse.hidd\n");
+		success = FALSE;
 	}
-
-	if (!(OpenLibrary("kbd.hidd",0L)))
+	else
 	{
-	    success = FALSE;
-	    bug("[DOS] InitHidds: Failed to open kbd.hidd\n");
-	}
-	if (!(OpenLibrary("graphics.hidd",0L)))
-	{
-	    success = FALSE;
-	    bug("[DOS] InitHidds: Failed to open graphics.hidd\n");
-	}
-
-	/* Prepare the VGA hidd as a fallback */
-	strncpy(gfxname,defvhidd,BUFSIZE-1);
-	if ((BootLoaderBase = OpenResource("bootloader.resource")))
-	{
-	    struct List *list;
-	    struct Node *node;
-	    struct VesaInfo *vi;
-
-	    /* See if VESA mode specified. If so, we will use vesagfx.hidd instead
-	     * of vgah.hid by default */
-	    if ((vi = GetBootInfo(BL_Video)))
-	    {
-		if (vi->ModeNumber != 3)
+		/* Initialize the base HIDDs */
+		if ((OpenLibrary("mouse.hidd", 0L)) == NULL)
 		{
-		    /* Bootloader set vesa mode */
-		    defvhidd = "hidd.gfx.vesa";
-		    defvlib = "vesagfx.hidd";
-		    strcpy(gfxname,defvhidd);
-		    bug("[DOS] InitHidds: VESA graphics requested\n");
+			success = FALSE;
+			bug("[DOS] InitHidds: Failed to open mouse.hidd\n");
 		}
-	    }
-	    list = (struct List *)GetBootInfo(BL_Args);
-	    if (list)
-	    {
-		ForeachNode(list,node)
+
+		if ((OpenLibrary("kbd.hidd", 0L)) == NULL)
 		{
-		    if (0 == strncmp(node->ln_Name,"gfx=",4))
-		    {
-			bug("[DOS] InitHidds: Using %s as graphics driver\n",&node->ln_Name[4]);
-			strncpy(gfxname,&(node->ln_Name[4]),BUFSIZE-1);
-		    }
-		    if (0 == strncmp(node->ln_Name,"lib=",4))
-		    {
-			bug("[DOS] InitHidds: Opening library %s\n",&node->ln_Name[4]);
-			if (!(OpenLibrary(&node->ln_Name[4],0L)))
-			    bug("[DOS] InitHidds: Failed to open %s\n",&node->ln_Name[4]);
-			if (0 == strcmp(&node->ln_Name[4],defvlib))
-			    vga = TRUE;
-		    }
+			success = FALSE;
+			bug("[DOS] InitHidds: Failed to open kbd.hidd\n");
 		}
-	    }
-	}
+		if ((OpenLibrary("graphics.hidd", 0L)) == NULL)
+		{
+			success = FALSE;
+			bug("[DOS] InitHidds: Failed to open graphics.hidd\n");
+		}
 
-	/* If we got no gfx hidd on the commandline, and did not load default hidd,
-	 * we will do that now. */
-	if (0 == strcmp(gfxname,defvhidd) && vga == FALSE)
-	{	
-	    OpenLibrary(defvlib,0L);
-	}
+		/* Prepare the VGA hidd as a fallback */
+		strncpy(gfxname, defvhidd, BUFSIZE-1);
+		if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
+		{
+			struct List *list;
+			struct Node *node;
+			struct VesaInfo *vi;
 
-	/* Set up the graphics HIDD system */
-	if (!init_gfx(gfxname, base))
-	{
-	    bug("[DOS] InitHidds: Could not init gfx hidd %s\n", gfxname);
-	    success = FALSE;
-	}
+			/* See if VESA mode specified. If so, we will use vesagfx.hidd instead
+			 * of vgah.hid by default */
+			if ((vi = GetBootInfo(BL_Video)))
+			{
+				if (vi->ModeNumber != 3)
+				{
+					/* Bootloader set vesa mode */
+					defvhidd = "hidd.gfx.vesa";
+					defvlib = "vesagfx.hidd";
+					strcpy(gfxname,defvhidd);
+					bug("[DOS] InitHidds: VESA graphics requested\n");
+				}
+			}
+			list = (struct List *)GetBootInfo(BL_Args);
+			if (list)
+			{
+				ForeachNode(list,node)
+				{
+					if (0 == strncmp(node->ln_Name,"gfx=",4))
+					{
+						bug("[DOS] InitHidds: Using %s as graphics driver\n",&node->ln_Name[4]);
+						strncpy(gfxname,&(node->ln_Name[4]),BUFSIZE-1);
+					}
+					if (0 == strncmp(node->ln_Name,"lib=",4))
+					{
+						bug("[DOS] InitHidds: Opening library %s\n",&node->ln_Name[4]);
+						if (!(OpenLibrary(&node->ln_Name[4],0L)))
+							bug("[DOS] InitHidds: Failed to open %s\n",&node->ln_Name[4]);
+						if (0 == strcmp(&node->ln_Name[4],defvlib))
+							vga = TRUE;
+					}
+					if (0 == strncmp(node->ln_Name,"kbd=",4))
+					{
+						if (strstr(&node->ln_Name[4], "disabled"))
+						{
+							D(bug("[DOS] Keyboard DISABLED with bootloader argument\n"));
+							kbd = FALSE;
+						}
+					}
+					if (0 == strncmp(node->ln_Name,"mouse=",6))
+					{
+						if (strstr(&node->ln_Name[6], "disabled"))
+						{
+							D(bug("[DOS] Mouse DISABLED with bootloader argument\n"));
+							mouse = FALSE;
+						}
+					}
+				}
+			}
+		}
 
-	/* And finally keyboard and mouse */
-	if (!init_device("hidd.kbd.hw", "keyboard.device", base))
-	{
-	    bug("[DOS] InitHidds: Could not init keyboard hidd\n");
-	    success = FALSE;
-	}
+		/* If we got no gfx hidd on the commandline, and did not load default hidd,
+		 * we will do that now. */
+		if (0 == strcmp(gfxname, defvhidd) && vga == FALSE)
+		{	
+			OpenLibrary(defvlib, 0L);
+		}
 
-	if (!init_device("hidd.bus.mouse", "gameport.device", base))
-	{
-	    bug("[DOS] InitHidds: Could not init mouse hidd\n");
-	    success = FALSE;
+		/* Set up the graphics HIDD system */
+		if (!init_gfx(gfxname, base))
+		{
+			bug("[DOS] InitHidds: Could not init gfx hidd %s\n", gfxname);
+			success = FALSE;
+		}
+
+		/* And finally keyboard and mouse */
+		if (kbd)
+		{
+			if (!init_device("hidd.kbd.hw", "keyboard.device", base))
+			{
+				bug("[DOS] InitHidds: Could not init keyboard hidd\n");
+				success = FALSE;
+			}
+		}
+
+		if (mouse)
+		{
+			if (!init_device("hidd.bus.mouse", "gameport.device", base))
+			{
+				bug("[DOS] InitHidds: Could not init mouse hidd\n");
+				success = FALSE;
+			}
+		}
+		CloseLibrary(OOPBase);
 	}
-	CloseLibrary(OOPBase);
-    }
-    
-    ReturnBool("init_hidds", success);
+	
+	ReturnBool("init_hidds", success);
 }
 
 /*****************
@@ -187,94 +207,91 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 
 static BOOL init_gfx(STRPTR gfxclassname, struct initbase *base)
 {
-    struct GfxBase *GfxBase;
-    BOOL success = FALSE;
-    
-    EnterFunc(bug("init_gfx(hiddbase=%s)\n", gfxclassname));
-    
-    GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
-    if (GfxBase)
-    {
-    	D(bug("gfx.library opened\n"));
-
-	/*  Call private gfx.library call to init the HIDD.
-	    Gfx library is responsable for closing the HIDD
-	    library (although it will probably not be neccesary).
-	*/
-
-    	D(bug("calling private gfx LateGfxInit()\n"));
-	if (LateGfxInit(gfxclassname))
-	{
-	    struct IntuitionBase *IntuitionBase;
-	    D(bug("success\n"));
-	    
-	    /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
-	    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-	    if (IntuitionBase)
-	    {
-	    	if (LateIntuiInit(NULL))
-	    	{
-	    	    success = TRUE;
-		}
-		CloseLibrary((struct Library *)IntuitionBase);
-	    }
-	}
-	D(bug("Closing gfx\n"));
+	struct GfxBase *GfxBase;
+	BOOL success = FALSE;
 	
-	CloseLibrary((struct Library *)GfxBase);
-    }
-    ReturnBool ("init_gfxhidd", success);
+	EnterFunc(bug("init_gfx(hiddbase=%s)\n", gfxclassname));
+	
+	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37)) != NULL)
+	{
+		D(bug("gfx.library opened\n"));
+
+		/*  Call private gfx.library call to init the HIDD.
+			Gfx library is responsable for closing the HIDD
+			library (although it will probably not be neccesary).
+		*/
+
+		D(bug("calling private gfx LateGfxInit()\n"));
+		if (LateGfxInit(gfxclassname))
+		{
+			struct IntuitionBase *IntuitionBase;
+			D(bug("success\n"));
+
+			/* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
+			if ((IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37)) != NULL)
+			{
+				if (LateIntuiInit(NULL))
+				{
+					success = TRUE;
+				}
+			CloseLibrary((struct Library *)IntuitionBase);
+			}
+		}
+		D(bug("Closing gfx\n"));
+		
+		CloseLibrary((struct Library *)GfxBase);
+	}
+	ReturnBool ("init_gfxhidd", success);
 }
 
 
 static BOOL init_device( STRPTR hiddclassname, STRPTR devicename,  struct initbase *base)
 {
-    BOOL success = FALSE;
-    struct MsgPort *mp;
+	BOOL success = FALSE;
+	struct MsgPort *mp;
 
+	EnterFunc(bug("init_device(class:'%s', device '%s')\n", hiddclassname, devicename));
 
-    EnterFunc(bug("init_device(classname=%s)\n", hiddclassname));
-
-    mp = CreateMsgPort();
-    if (mp)
-    {
-    	struct IORequest *io;
+	mp = CreateMsgPort();
+	if (mp)
+	{
+		struct IORequest *io;
 	io = CreateIORequest(mp, sizeof ( struct IOStdReq));
 	{
-	    if (0 == OpenDevice(devicename, 0, io, 0))
-	    {
+		if (0 == OpenDevice(devicename, 0, io, 0))
+		{
 		UBYTE *data;
 
-	        /* Allocate message data */
+			/* Allocate message data */
 		data = AllocMem(BUFSIZE, MEMF_PUBLIC);
 		if (data)
 		{
-		    #define ioStd(x) ((struct IOStdReq *)x)
-		    strcpy(data, hiddclassname);
-		    ioStd(io)->io_Command = CMD_HIDDINIT;
-		    ioStd(io)->io_Data = data;
-		    ioStd(io)->io_Length = strlen(data);
+			#define ioStd(x) ((struct IOStdReq *)x)
+			strcpy(data, hiddclassname);
+			ioStd(io)->io_Command = CMD_HIDDINIT;
+			ioStd(io)->io_Data = data;
+			ioStd(io)->io_Length = strlen(data);
 
-		    /* Let the device init the HIDD */
-		    DoIO(io);
-		    if (0 == io->io_Error)
-		    {
+			/* Let the device init the HIDD */
+			DoIO(io);
+			if (0 == io->io_Error)
+			{
 			success = TRUE;
-		    }
+			}
 
-		    FreeMem(data, BUFSIZE);
+			FreeMem(data, BUFSIZE);
 		}
 		CloseDevice(io);
 		
-	    }
-	    DeleteIORequest(io);
-	    
+		}
+		DeleteIORequest(io);
+		
 	}
 	
 	DeleteMsgPort(mp);
-    
-    }
-    
-    ReturnBool("init_device", success);
+	
+	}
+	
+	ReturnBool("init_device", success);
 }
 
