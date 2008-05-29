@@ -258,9 +258,9 @@ D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION_
 						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
 							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
 
-						if ((strcmp(nd->name, "Ram Disk")) == 0)
+						if ((strcasecmp(nd->name, "Ram Disk")) == 0)
 						{
-D(bug("[IconVolList] %s: Setting Ram Disks icon node priority to 5\n", __PRETTY_FUNCTION__));
+D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY_FUNCTION__));
 							this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
 						}
 						else
