@@ -29,7 +29,7 @@ struct TaskData
 {
     struct MsgPort      td_Port;                // MessagePort
     struct Task         td_Task;                // Task Structure
-    BYTE                td_Stack[STACK_SIZE];   // Keep stack here
+    IPTR                td_Stack;   // Keep stack here
 };
 
 #define TDU_NODISK	0x00

@@ -47,7 +47,7 @@ void td_floppyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 int td_getbyte(unsigned char *, struct TrackDiskBase *);
 int td_sendbyte(unsigned char, struct TrackDiskBase *);
 ULONG TD_InitTask(struct TrackDiskBase *);
-void TD_DevTask(struct TrackDiskBase *);
+static void TD_DevTask();
 BOOL TD_PerformIO( struct IOExtTD *, struct TrackDiskBase *);
 
 struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
@@ -549,6 +549,12 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 
     /* Allocate Task Data structure */
     t = AllocMem(sizeof(struct TaskData), MEMF_PUBLIC|MEMF_CLEAR);
+    /* Allocate Stack space */
+    if ((t) && ((t->td_Stack = AllocMem(STACK_SIZE, MEMF_PUBLIC|MEMF_CLEAR)) == NULL))
+    {
+        FreeMem(t, sizeof(struct TaskData));
+        t = NULL;
+    }
     /* Allocate MemEntry for this task */
     ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
 
@@ -557,16 +563,11 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
     
     if (t && ml)
     {
-	/* prepare stack */
-	BYTE	*sp = t->td_Stack;
-
 	D(bug("TD: Creating devicetask..."));
 	/* Save stack info into task structure */
-	t->td_Task.tc_SPLower = sp;
-	t->td_Task.tc_SPUpper = (BYTE *)sp + STACK_SIZE;
+	t->td_Task.tc_SPLower = t->td_Stack;
+	t->td_Task.tc_SPUpper = (BYTE *)t->td_Stack + STACK_SIZE;
 	t->td_Task.tc_SPReg = (BYTE *)t->td_Task.tc_SPUpper - SP_OFFSET - sizeof(APTR);
-	/* Store TDBase on stack */
-	((APTR *)t->td_Task.tc_SPUpper)[-1] = tdb;
 
 	/* Init MsgPort */
 	NEWLIST(&t->td_Port.mp_MsgList);
@@ -591,8 +592,12 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 
 	tdb->td_TaskData = t;
 
+    struct TagItem task_Tags[] = {
+        { TASKTAG_ARG1,             tdb },
+        { TAG_DONE,                 0   },
+    };
 	/* Add task to system task list */
-	AddTask(&t->td_Task, &TD_DevTask, NULL);
+    NewAddTask(&t->td_Task, &TD_DevTask, NULL, task_Tags );
 
 	/* Wait until started */
 	Wait(SIGBREAKF_CTRL_F);
@@ -601,13 +606,20 @@ ULONG TD_InitTask(struct TrackDiskBase *tdb)
 
 	return 1;
     }
+    else
+    {
+        if (t)
+        {
+            if (t->td_Stack) FreeMem(t->td_Stack, STACK_SIZE);
+            FreeMem(t, sizeof(struct TaskData));
+        }
+        if (ml) FreeMem(ml, sizeof(struct MemList));
+    }
 
     return 0;
 }
 
-/* Device task */
-
-void TD_DevTask(struct TrackDiskBase *tdb)
+static void TD_DevTask(struct TrackDiskBase *tdb)
 {
     struct TaskData		*td;
     struct IOExtTD		*iotd;
@@ -615,7 +627,11 @@ void TD_DevTask(struct TrackDiskBase *tdb)
     ULONG			tasig,tisig,sigs,i;
     UBYTE			dir;
 
+    D(bug("[TDTask] TD_DevTask(tdb=%p)\n", tdb));
+
     td = tdb->td_TaskData;
+
+    D(bug("[TDTask] TD_DevTask: struct TaskData @ %p\n", td));
 
     tdb->td_IntBit = AllocSignal(-1);
     tdb->td_TmoBit = AllocSignal(-1);
