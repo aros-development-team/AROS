@@ -46,6 +46,7 @@
  * 2008-05-18  T. Wiszkowski       Added extra checks to prevent duplicating drive0 in drive0 only configs
  * 2008-05-18  T. Wiszkowski       Replaced static C/H/S with more accurate calcs, should make HDTB and other tools see right capacity
  * 2008-05-19  T. Wiszkowski       Updated ATA DMA handling and transfer wait operation to allow complete transfer before dma_StopDMA()
+ * 2008-05-30  T. Wiszkowski       Corrected CHS calculation for larger disks
  */
 /*
  * TODO: 
@@ -1681,6 +1682,8 @@ ULONG ata_Identify(struct ata_Unit* unit)
         {
             if (((sec >> 1) << 1) != sec)
                 break;
+            if ((div << 1) > 255)
+                break;
             div <<= 1;
             sec >>= 1;
         } while (1);
@@ -1688,6 +1691,8 @@ ULONG ata_Identify(struct ata_Unit* unit)
         do
         {
             if (((sec / 3) * 3) != sec)
+                break;
+            if ((div * 3) > 255)
                 break;
             div *= 3;
             sec /= 3;
