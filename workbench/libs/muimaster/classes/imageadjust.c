@@ -29,7 +29,7 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
-#include "classes/imageadjust_private.h"
+#include "imageadjust_private.h"
 
 extern struct Library *MUIMasterBase;
 

@@ -23,7 +23,7 @@
 #include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
-#include "classes/gauge_private.h"
+#include "gauge_private.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"

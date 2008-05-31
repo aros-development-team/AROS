@@ -25,7 +25,7 @@
 #include "prefs.h"
 #include "imspec.h"
 #include "debug.h"
-#include "classes/numericbutton_private.h"
+#include "numericbutton_private.h"
 
 extern struct Library *MUIMasterBase;
 

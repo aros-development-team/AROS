@@ -26,7 +26,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "imspec.h"
-#include "classes/imagedisplay_private.h" 
+#include "imagedisplay_private.h" 
 
 extern struct Library *MUIMasterBase;
 

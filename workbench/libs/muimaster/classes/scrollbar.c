@@ -12,8 +12,8 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
-#include "datatypescache.h"
-#include "imspec_intern.h"
+#include "../datatypescache.h"
+#include "../imspec_intern.h"
 
 #include "mui.h"
 #include "muimaster_intern.h"
