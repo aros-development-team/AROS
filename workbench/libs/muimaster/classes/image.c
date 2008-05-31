@@ -23,8 +23,8 @@
 
 /*  #define MYDEBUG 1 */
 
-#include "datatypescache.h"
-#include "imspec_intern.h"
+#include "../datatypescache.h"
+#include "../imspec_intern.h"
 
 #include "debug.h"
 #include "mui.h"

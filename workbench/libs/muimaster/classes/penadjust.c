@@ -28,7 +28,7 @@
 #include "support.h"
 #include "support_classes.h"
 #include "penspec.h"
-#include "classes/penadjust_private.h"
+#include "penadjust_private.h"
 
 extern struct Library *MUIMasterBase;
 
