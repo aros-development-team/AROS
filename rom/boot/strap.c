@@ -358,17 +358,12 @@ static VOID CheckPartitions
             }
             else
             {
-		CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
-/* FIXME: This causes out-of-range access to disk by afs.handler with following system lockup during boot.
-   Probably the root of the problem lies in ata.device supplying wrong geometry data to the handler.
-   To solve this, we will not reinsert the BootNode for unpartitioned hard drives. Anyway i don't know any
-   practical case when unpartitioned hard drive is used.
                 if (!CheckTables(ExpansionBase, PartitionBase, fssm, pt,
                     SysBase))
-                {*/
+                {
                     /* no partition table found, so reinsert node */
-/*                  Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-                }*/
+                    Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+                }
             }
             CloseRootPartition(pt);
         }
