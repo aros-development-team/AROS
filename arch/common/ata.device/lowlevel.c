@@ -47,6 +47,7 @@
  * 2008-05-18  T. Wiszkowski       Replaced static C/H/S with more accurate calcs, should make HDTB and other tools see right capacity
  * 2008-05-19  T. Wiszkowski       Updated ATA DMA handling and transfer wait operation to allow complete transfer before dma_StopDMA()
  * 2008-05-30  T. Wiszkowski       Corrected CHS calculation for larger disks
+ * 2008-06-03  K. Smiechowicz      Added 400ns delay in ata_WaitBusyTO before read of device status.
  */
 /*
  * TODO: 
@@ -522,6 +523,13 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
 
     do
     {
+
+        /* 
+         * delay the check - this was found needed for some hardware
+         */
+
+        ata_400ns();
+
         /*
          * lets check if the drive is already good
          */
