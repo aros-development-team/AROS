@@ -239,21 +239,42 @@ IPTR Prop__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Prop_Entries:
-		    data->entries = tag->ti_Data;
-		    refresh = 1;
+	    	    if ((IPTR)data->entries != tag->ti_Data)
+		    {
+		    	data->entries = tag->ti_Data;
+		    	refresh = 1;
+		    }
+		    else
+		    {
+		    	tag->ti_Tag = TAG_IGNORE;
+		    }
 		    break;
 
 	    case    MUIA_Prop_First:
- 		    data->first = tag->ti_Data;
-		    refresh = 1;
+	    	    if ((IPTR)data->first != tag->ti_Data)
+		    {
+ 		    	data->first = tag->ti_Data;
+		    	refresh = 1;
+		    }
+		    else
+		    {
+		    	tag->ti_Tag = TAG_IGNORE;
+		    }
 		    break;
 
 	    case    MUIA_Prop_Slider:
 		    break;
 
 	    case    MUIA_Prop_Visible:
-		    data->visible = tag->ti_Data;
-		    refresh = 1;
+	    	    if ((IPTR)data->visible != tag->ti_Data)
+		    {
+		    	data->visible = tag->ti_Data;
+		    	refresh = 1;
+		    }
+		    else
+		    {
+		    	tag->ti_Tag = TAG_IGNORE;
+		    }
 		    break;
 
 	    case    MUIA_Prop_OnlyTrigger:
@@ -308,6 +329,20 @@ IPTR Prop__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     	case    MUIA_Prop_Entries: STORE = data->entries; return 1;
     	case    MUIA_Prop_Visible: STORE = data->visible; return 1;
 	    
+	/* CHECKME: MUIA_Prop_Release
+	
+	   TextEditor.mcc sets up notification on slider obj which is subclass
+	   of group and notification on group children (the prop object) will be
+	   dropped if the child does not return TRUE on OM_GET.
+	   
+	   It may be that MUI handles this differently, because a quick check
+	   with UAE/MUI showed that a GetAttr() of MUIA_Prop_Release on alider
+	   object does not work (returns FALSE). Maybe MUI slider class is
+	   similiar to for exampe NListview.mcc which overrides MUIM_Notify where
+	   it checks for known attributes and forwards the Method to the correct child
+	   of the group.	 	   
+	*/
+	case	MUIA_Prop_Release: STORE = 0; return 1;
     	default:
     	        return DoSuperMethodA(cl,obj,(Msg)msg);
     }
@@ -418,6 +453,12 @@ IPTR Prop__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg
     {
 	DoMethod(_win(obj),MUIM_Window_FreeGadgetID,data->gadgetid);
     }
+    else
+    {
+    	data->prop_object = NULL;
+	data->gadgetid = 0;
+    }
+    
     DoMethod(_win(obj),MUIM_Window_RemEventHandler,(IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -783,7 +824,7 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     		AddGadget(_window(obj),(struct Gadget*)data->prop_object,~0);
 	    }
 	}
-    } else
+    } else if (!data->prop_object)
     {
     	switch (data->usewinborder)
     	{
@@ -868,11 +909,8 @@ IPTR Prop__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     	{
 	    RemoveGadget(_window(obj),(struct Gadget*)data->prop_object);
     	    DisposeObject(data->prop_object);
-    	} else
-    	{
-	    data->gadgetid = 0;
+    	    data->prop_object = NULL;
     	}
-	data->prop_object = NULL;
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
@@ -881,6 +919,7 @@ IPTR Prop__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct Prop_DATA *data = INST_DATA(cl, obj);
+
     if (msg->imsg)
     {
     	if (msg->imsg->Class == IDCMP_IDCMPUPDATE)
@@ -901,10 +940,10 @@ IPTR Prop__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 	    //kprintf("PROP_HandleEvent: PGA_Top %d upscaled %d entries %d\n", tag->ti_Data, v, data->entries);
 	    
 	    if ((v == data->first) && (msg->imsg->Qualifier & IEQUALIFIER_REPEAT)) return 0;
-	    data->first = v;
-	    if (data->first < 0)
-		data->first = 0;
-	    SetAttrs(obj, MUIA_Prop_First, data->first, MUIA_Prop_OnlyTrigger, TRUE,
+	    
+	    if ((LONG)v < 0) v = 0;
+
+	    SetAttrs(obj, MUIA_Prop_First, v, MUIA_Prop_OnlyTrigger, TRUE,
 			  MUIA_Prop_Release, ((msg->imsg->Qualifier & IEQUALIFIER_REPEAT) ? FALSE : TRUE),
 			  TAG_DONE);
 	}
