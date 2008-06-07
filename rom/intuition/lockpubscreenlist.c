@@ -21,8 +21,8 @@ AROS_LH0(struct List *, LockPubScreenList,
 /*  FUNCTION
  
     Arbitrates access to the system public screen list. This is for Public
-    Screen Manager programs only! The list should be locked as short a time
-    as possible.
+    Screen Manager programs only! The list should be locked for as short a
+    time as possible.
  
     INPUTS
  
@@ -31,7 +31,6 @@ AROS_LH0(struct List *, LockPubScreenList,
     NOTES
  
     The list's nodes are PubScreenNodes as defined in <intuition/screens.h>.
-    Act very quickly when holding this lock!
  
     EXAMPLE
  
@@ -42,11 +41,6 @@ AROS_LH0(struct List *, LockPubScreenList,
     UnlockPubScreenList()
  
     INTERNALS
- 
-    HISTORY
-        21-06-98    SDuvan  Implemented
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
 #define GPB(x) GetPrivIBase(x)
