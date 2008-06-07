@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -118,9 +118,29 @@ void FontPrefs_Handler(STRPTR filename)
 			case FP_SCREENFONT:
 			    if ((font = OpenDiskFont(&ta)))
 			    {
+				BOOL closed = FALSE, cancel = FALSE;
+				TEXT screen_name[MAXPUBSCREENNAME + 1];
+
 				SetDefaultScreenFont(font);
-				
-				D(bug("FontPrefs_Handler: Installed new system font!\n"));
+				D(bug("FontPrefs_Handler: Installed new screen font!\n"));
+
+				/* Keep trying to close WB screen unless user
+				   cancels or it wasn't open in the first
+				   place */
+				while (!(closed || cancel ||
+				    NextPubScreen(NULL, screen_name) == NULL))
+				{
+				    closed = CloseWorkBench();
+				    if (!closed)
+					cancel = ShowMessage("System Request",
+					    "Intuition is attempting to reset"
+					    " the Workbench Screen.\n"
+					    "Please close all windows,"
+					    " except drawers.",
+					    "Retry|Cancel") == 0;
+				}
+				if (closed)
+				    OpenWorkBench();
 			    }
 			    else
 			    {

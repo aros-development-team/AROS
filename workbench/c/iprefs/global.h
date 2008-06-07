@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -181,6 +181,7 @@ struct IPrefsSem
 /* main.c */
 
 void Cleanup(STRPTR msg);
+WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext);
 
 /* patches.c */
 
