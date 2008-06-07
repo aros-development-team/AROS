@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -57,7 +57,7 @@ AROS_LH2(UBYTE *, NextPubScreen,
  
     INTERNALS
     
-    Maybe we should correct the + 1 stupidity right away?
+    Maybe we should correct the + 1 stupidity.
  
 *****************************************************************************/
 #define GPB(x) GetPrivIBase(x)
@@ -79,17 +79,22 @@ AROS_LH2(UBYTE *, NextPubScreen,
     else
     {
         ps = scr->pubScrNode;
-        if (!ps) return NULL;
-
-        ps = (struct PubScreenNode *)ps->psn_Node.ln_Succ;
-        ASSERT(ps != NULL);
+        if (ps != NULL)
+        {
+            ps = (struct PubScreenNode *)ps->psn_Node.ln_Succ;
+            ASSERT(ps != NULL);
+        }
+        else
+            namebuff = NULL;
     }
 
     /* A "valid" node in a list must have ln_Succ != NULL */
 
-    if (!ps->psn_Node.ln_Succ) return NULL;
+    if (ps->psn_Node.ln_Succ == NULL)
+        namebuff = NULL;
 
-    if (namebuff) strcpy(namebuff, ps->psn_Node.ln_Name);
+    if (namebuff != NULL)
+        strcpy(namebuff, ps->psn_Node.ln_Name);
 
     UnlockPubScreenList();
 
