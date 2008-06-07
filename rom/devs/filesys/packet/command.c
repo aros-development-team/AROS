@@ -245,15 +245,14 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 mode,
                 iofs->io_Union.io_OPEN_FILE.io_Protection));
 
-            /* convert modes to the proper packet type */
-            if (mode == FMF_MODE_OLDFILE || mode == FMF_READ)
-                dp->dp_Type = ACTION_FINDINPUT;
-            else if (mode == FMF_MODE_READWRITE)
-                dp->dp_Type = ACTION_FINDUPDATE;
-            else if (mode == FMF_MODE_NEWFILE)
+            /* convert modes to the proper packet type (as best we can) */
+            if ((mode & FMF_CLEAR) != 0)
                 dp->dp_Type = ACTION_FINDOUTPUT;
-            else {
-                /* XXX do we need to handle other combinations? */
+            else if ((mode & FMF_CREATE) != 0)
+                dp->dp_Type = ACTION_FINDUPDATE;
+            else
+                dp->dp_Type = ACTION_FINDINPUT;
+            if ((mode & FMF_APPEND) != 0) {
                 iofs->io_DosError = ERROR_BAD_NUMBER;
                 goto reply;
             }
@@ -304,7 +303,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg3 = (IPTR) iofs->io_Union.io_READ.io_Length;
 
             /* DOSFALSE == 0, so we can't distinguish between a zero-length
-             * read an actual error. So, we reset the length here. If the
+             * read and an actual error. So, we reset the length here. If the
              * returned packet is DOSFALSE, but no error, this will make sure
              * DOS gets the right length back */
             iofs->io_Union.io_READ.io_Length = 0;
@@ -496,7 +495,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
              * arguments to rename with no changes, so they may contain volume
              * specifiers, path seperators, etc. both can be calculated
              * relative to the handle. here we just pass them through to the
-             * handler as-is, but I'm not sure if thats right. fat.handler at
+             * handler as-is, but I'm not sure if that's right. fat.handler at
              * least will do the right thing. this probably needs to be
              * revisited if another packet-based handler is ported */
 
@@ -530,7 +529,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_DELETE_OBJECT.io_Filename);
             break;
 
-        case FSA_SET_COMMENT: /* XXX untested */
+        case FSA_SET_COMMENT:
             D(bug("[packet] SET_COMMENT: lock 0x%08x (%s) name '%s' comment '%s'\n",
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
