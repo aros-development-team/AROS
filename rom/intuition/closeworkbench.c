@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -21,19 +21,17 @@ AROS_LH0(LONG, CloseWorkBench,
          struct IntuitionBase *, IntuitionBase, 13, Intuition)
 
 /*  FUNCTION
-    Attempt to close the Workbench screen:
-    - Check for open application windows. return FALSE if there are any
-    - Clean up all special buffers
-    - Close the Workbench screen
-    - Make the Workbench program mostly inactive
-      (disk activity will still be monitored)
-    - Return TRUE
+    Attempt to close the Workbench screen. This will fail if there are any
+    non-Drawer windows open on it.
  
     INPUTS
  
     RESULT
+	success - TRUE if Workbench screen could be closed.
  
     NOTES
+	If the Workbench screen is already closed when this function is called,
+	FALSE is returned.
  
     EXAMPLE
  
@@ -92,8 +90,7 @@ AROS_LH0(LONG, CloseWorkBench,
     UnlockPubScreenList();
     DEBUG_CLOSEWORKBENCH(dprintf("CloseWorkBench: UnlockPubScreenList done\n"));
 
-
-    /* If there is a Workbench process running, tell it to close it's windows. */
+    /* If there is a Workbench process running, tell it to close its windows. */
 
     /* Don't call this function while pub screen list is locked! */
 
