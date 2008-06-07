@@ -128,7 +128,8 @@ int feraiseexcept(int __excepts);
 static __inline int
 fetestexcept(int __excepts)
 {
-	int __mxcsr, __status;
+	short __status;
+	int __mxcsr;
 
 	__stmxcsr(&__mxcsr);
 	__fnstsw(&__status);
