@@ -103,7 +103,8 @@ feholdexcept(fenv_t *envp)
 int
 feupdateenv(const fenv_t *envp)
 {
-	int mxcsr, status;
+	short status;
+	int mxcsr;
 
 	__fnstsw(&status);
 	__stmxcsr(&mxcsr);
