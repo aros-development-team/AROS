@@ -931,8 +931,7 @@ void wanderer_menufunc_wanderer_shell(STRPTR *cd_ptr)
 
     if (!dr)
     {
-    bug("wanderer_menufunc_wanderer_shell is broken, fix it please !\n");
-    dr = "";
+        dr = "";
     }
 
     cd = Lock(dr, ACCESS_READ);
@@ -1881,6 +1880,9 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
 {
     SETUP_WANDERER_INST_DATA;
     struct WBHandlerMessage *wbhm = NULL;
+    struct List *pub_screen_list;
+    struct PubScreenNode *pub_screen_node;
+    WORD visitor_count = 0;
 D(bug("[Wanderer] %s()\n", __PRETTY_FUNCTION__));
 D(bug("[Wanderer] %s: Recieved signal at notification port\n", __PRETTY_FUNCTION__));
 
@@ -1907,7 +1909,15 @@ D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __PRETTY_FUNCTION__));
 
             case WBHM_TYPE_HIDE:
 D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __PRETTY_FUNCTION__));
-                SET(self, MUIA_ShowMe, FALSE);
+                pub_screen_list = LockPubScreenList();
+                ForeachNode (pub_screen_list, pub_screen_node)
+                {
+                    if (pub_screen_node->psn_Screen == data->wd_Screen)
+                        visitor_count = pub_screen_node->psn_VisitorCount;
+                }
+                UnlockPubScreenList();
+                if (visitor_count == 0)
+                    SET(self, MUIA_ShowMe, FALSE);
                 break;
 
             case WBHM_TYPE_UPDATE:
