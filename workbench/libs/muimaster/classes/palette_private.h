@@ -13,5 +13,6 @@ struct MUI_PaletteData
     ULONG                       rgb[3];
     struct Hook                 display_hook;
     struct Hook                 setcolor_hook;
+    char    	    	    	buf[20];
 };
 #endif /* _PALETTE_PRIVATE_H_ */
