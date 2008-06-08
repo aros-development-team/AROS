@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for console handler. 
@@ -704,15 +704,17 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 	    	fh->historyviewpos--;
 		if (fh->historyviewpos < 0) fh->historyviewpos = fh->historysize - 1;
     	    #else
-    	    	if (fh->historyviewpos > 0)
-		{
-		    fh->historyviewpos--;
-		}
-		else
-		{
-		    if (fh->historyviewpos == 0) fh->historyviewpos = -1;
+		if (fh->historyviewpos != -1)
+                {
+                    fh->historyviewpos--;
+		if (fh->historyviewpos < 0
+		    && fh->historysize == CMD_HISTORY_SIZE)
+		    fh->historyviewpos = CMD_HISTORY_SIZE - 1;
+	        if (fh->historyviewpos == fh->historypos)
+                    fh->historyviewpos = -1;
+                }
+                if (fh->historyviewpos == -1)
 		    walk_to_empty_string = TRUE;
-		}
     	    #endif
 		break;
 		
@@ -721,15 +723,16 @@ void history_walk(struct conbase *conbase, struct filehandle *fh, WORD inp)
 	    	fh->historyviewpos++;
 		if (fh->historyviewpos >= fh->historysize) fh->historyviewpos = 0;
 	    #else
-	    	if (fh->historyviewpos < fh->historysize - 1)
-		{
-		    fh->historyviewpos++;
-		}
-		else
-		{
-		    if (fh->historyviewpos == fh->historysize - 1) fh->historyviewpos = fh->historysize;
+		if (fh->historyviewpos != fh->historypos)
+                {
+                    if (fh->historyviewpos == -1
+                        && fh->historysize == CMD_HISTORY_SIZE)
+                        fh->historyviewpos = fh->historypos;
+                    fh->historyviewpos = (fh->historyviewpos + 1)
+                        % CMD_HISTORY_SIZE;
+                }
+		if (fh->historyviewpos == fh->historypos)
 		    walk_to_empty_string = TRUE;
-		}
 	    #endif
 		break;
 	}
