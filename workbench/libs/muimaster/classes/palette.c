@@ -38,13 +38,12 @@ static LONG display_func(struct Hook *hook, char **array, struct MUI_Palette_Ent
 {
     struct MUI_PaletteData *data = hook->h_Data;
     
-    char buf[20];
-
     if (data->names) {  /* does any strings exist */
-        *array++ = data->names[(int) array[-1]];  /*then display user names */
+        *array = (char *)data->names[(int) array[-1]];  /*then display user names */
+	array++;
     } else {
-        sprintf(buf,"Color %ld",(long)(array[-1]+1));   /* if nos show default color names */
-        *array++ = buf;
+        sprintf(data->buf,"Color %ld",(long)(array[-1]+1));   /* if nos show default color names */
+        *array++ = data->buf;
     }
     return 0;
 }
@@ -238,7 +237,7 @@ IPTR Palette__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             return TRUE;
 	    
         case MUIA_Coloradjust_RGB:
-            *(IPTR **)store = data->rgb;
+            *store = (IPTR)data->rgb;
             return TRUE;
     }
     return DoSuperMethodA(cl,obj,(Msg)msg);
