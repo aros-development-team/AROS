@@ -78,6 +78,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdarg.h>
 #ifdef __amigados
         #include <dos.h>
 #endif
@@ -506,14 +507,16 @@ unsigned int d;
 */
 void ShowError(const char *msg, ...)
 {
-char **ptr = (char **) &msg;
+  va_list ptr;
+  va_start(ptr, msg);
 
 //  if(!Quiet)
     {
-    fprintf(stderr, ptr[0], ptr[1], ptr[2], ptr[3], ptr[4]);
+    vfprintf(stderr, msg, ptr);
     putc('\n', stderr);
     }
 
+  va_end(ptr);
 #if defined(__amigados)
   NumberOfWarnings++;
 #endif
@@ -539,14 +542,17 @@ void MemError(void)
 */
 void ShowWarn(const char *msg, ...)
 
-{ char **ptr = (char **) &msg;
+{ va_list ptr;
+  va_start(ptr, msg);
 
   if(!Quiet)
     {
     fprintf(stderr, (char *) msgWarning, ScanFile, ScanLine);
-    fprintf(stderr, ptr[0], ptr[1], ptr[2], ptr[3], ptr[4]);
+#warning the following line produces segfault on x86_64
+    vfprintf(stderr, msg, ptr);
     putc('\n', stderr);
     }
+  va_end(ptr);
 
   NumberOfWarnings++;
   GlobalReturnCode = 5;
