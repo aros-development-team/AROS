@@ -165,7 +165,7 @@ static struct ph_packet *packet_alloc(void) {
 }
 
 void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase) {
-    struct ph_handle *handle = (struct ph_handle *) iofs->IOFS.io_Unit;
+    struct ph_handle *handle;
     struct ph_packet *pkt;
     struct DosPacket *dp;
 
@@ -783,6 +783,14 @@ AROS_UFH3(void, packet_reply,
                 if (iofs->io_DosError == 0)
                     iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
                 break;
+
+            /* a zero result is not an error for the following two packet
+             * types. We shouldn't really be here */
+            case ACTION_SEEK:
+                iofs->io_Union.io_SEEK.io_Offset = dp->dp_Res1;
+            case ACTION_SET_FILE_SIZE:
+                iofs->io_DosError = 0;
+                break;
         }
 
         /* kill the packet */
@@ -869,7 +877,15 @@ AROS_UFH3(void, packet_reply,
             break;
 
         case ACTION_SEEK:
-            iofs->io_Union.io_SEEK.io_Offset = dp->dp_Res1;
+            if (dp->dp_Res1 == -1)
+                iofs->io_DosError = dp->dp_Res2;
+            else
+                iofs->io_Union.io_SEEK.io_Offset = dp->dp_Res1;
+            break;
+
+        case ACTION_SET_FILE_SIZE:
+            if (dp->dp_Res1 == -1)
+                iofs->io_DosError = dp->dp_Res2;
             break;
 
         case ACTION_SAME_LOCK:
