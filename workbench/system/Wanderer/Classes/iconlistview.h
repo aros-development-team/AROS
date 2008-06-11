@@ -23,4 +23,6 @@
 
 extern const struct __MUIBuiltinClass _MUI_IconListview_desc; /* PRIV */
 
+#define IconListviewObject   MUIOBJMACRO_START(MUIC_IconListview)
+
 #endif /*_MUI_CLASSES_ICONLISTVIEW_H */
