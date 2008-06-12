@@ -753,14 +753,20 @@ case "$target_os" in
 
     darwin*)
 	aros_target_arch="darwin"
-	aros_target_cpu="i386"
 	aros_flavour="emulation"
-	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
-	gcc_target_cpu="i386"
-
-	aros_target_strip_flags="-x"
+	case "$target_cpu" in
+		*i?86*)
+			aros_target_cpu="i386"
+			aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
+			gcc_target_cpu="i386"
+			aros_object_format="elf_i386"
+			aros_target_strip_flags="-x"
+			;;
+		*)
+			AC_MSG_ERROR("Unsupported target CPU for darwin hosted flavour -- $target_cpu")
+			;;
+	esac
 	;;
-
     netbsd*)
         aros_target_arch="netbsd"
 	case "$target_cpu" in
