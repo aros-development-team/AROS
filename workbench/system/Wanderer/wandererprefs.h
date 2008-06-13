@@ -33,6 +33,10 @@ struct  MUIP_WandererPrefs_ViewSettings_GetAttribute         {STACKED ULONG Meth
 extern struct MUI_CustomClass *WandererPrefs_CLASS;
 
 /*** Macros *****************************************************************/
+#ifdef __AROS__
 #define WandererPrefsObject BOOPSIOBJMACRO_START(WandererPrefs_CLASS->mcc_Class)
+#else
+#define WandererPrefsObject NewObject(WandererPrefs_CLASS->mcc_Class, NULL
+#endif
 
 #endif /* _WANDERERPREFS_H_ */

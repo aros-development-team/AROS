@@ -2,22 +2,42 @@
 	Copyright  2004-2007, The AROS Development Team. All rights reserved.
 	$Id$
 */
+
+#ifndef __AROS__
+#include "portable_macros.h"
+#else
 #define DEBUG 0
 #include <aros/debug.h>
 
 #define MUIMASTER_YES_INLINE_STDARG
+#endif
+
 #define IFF_CHUNK_BUFFER_SIZE 1024
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+
+#ifdef __AROS__
 #include <zune/customclasses.h>
+#else
+#include <zune_AROS/customclasses.h>
+#endif
+
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
+
+#ifdef __AROS__
 #include <proto/alib.h>
+#endif
+
 #include <proto/iffparse.h>
+
+#ifdef __AROS__
 #include <proto/aros.h>
+#endif
+
 #include <aros/arosbase.h>
 #include <aros/inquire.h>
 
@@ -31,8 +51,25 @@
 #include "locale.h"
 #include "version.h"
 
+#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/prefhdr.h>
+#include <prefs_AROS/wanderer.h>
+#endif
+
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 struct TagItem32 {
 	ULONG ti_Tag;
@@ -162,8 +199,11 @@ static
 struct Node *findname(struct List *list, CONST_STRPTR name)
 {
 	struct Node *node;
-
+	#ifdef __AROS__
 	ForeachNode(list, node)
+	#else
+	Foreach_Node(list, node);
+	#endif
 	{
 		if (!Stricmp(node->ln_Name, (STRPTR) name))
 		{
@@ -178,6 +218,11 @@ struct Node *findname(struct List *list, CONST_STRPTR name)
 STRPTR ProcessUserScreenTitle(STRPTR screentitle_Template)
 {
 /* Work in progress :-) */
+	int screentitle_TemplateLen;
+	STATIC char title[256];
+	char temp[256], buffer[256];
+	char infostr[10];
+	int screentitle_curChar;
 
 D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_Template = %s\n", screentitle_Template));   
 
@@ -187,7 +232,7 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle = NULL\n"));
 		return screentitle_Template;
 	}
 
-	int screentitle_TemplateLen = strlen(screentitle_Template);
+	screentitle_TemplateLen = strlen(screentitle_Template);
 
 	if (screentitle_TemplateLen < 1)
 	{
@@ -195,13 +240,9 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n
 		return screentitle_TemplateLen;
 	}
 
-	STATIC char title[256];
-	char temp[256], buffer[256];
-	char infostr[10];
-
+	
 	strcpy(temp, screentitle_Template);
-
-	int screentitle_curChar;
+	
 	for (screentitle_curChar = 0; screentitle_curChar < screentitle_TemplateLen; screentitle_curChar++)
 	{
 		if (temp[screentitle_curChar]=='%')
@@ -505,9 +546,10 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 BOOL WPEditor_ProccessScreenTitleChunk(Class *CLASS, Object *self, UBYTE *_ScreenTitle_Chunk)
 {
 	//SETUP_INST_DATA;
-D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: ScreenTitle Template = '%s'\n", _ScreenTitle_Chunk));
 	char *displayed_screentitle = _ScreenTitle_Chunk;
 	char *userscreentitle = NULL;
+
+D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: ScreenTitle Template = '%s'\n", _ScreenTitle_Chunk));
 
 	if ((userscreentitle = ProcessUserScreenTitle(_ScreenTitle_Chunk)) != NULL)
 	{
@@ -524,8 +566,12 @@ D(bug("[WANDERER.PREFS] WandererPrefs__ProccessScreenTitleChunk@@@@@@@@@: SCREEN
 struct WandererPrefs_ViewSettingsNode *WandererPrefs_FindViewSettingsNode(struct WandererPrefs_DATA *data, char *node_Name)
 {
 	struct WandererPrefs_ViewSettingsNode *current_Node = NULL;
-
+	
+	#ifdef __AROS__
 	ForeachNode(&data->wpd_ViewSettings, current_Node)
+	#else
+	Foreach_Node(&data->wpd_ViewSettings, current_Node);
+	#endif
 	{
 		if ((strcmp(current_Node->wpbn_Name, node_Name)) == 0) return current_Node;
 	}
@@ -536,9 +582,10 @@ BOOL WandererPrefs_ProccessViewSettingsChunk(Class *CLASS, Object *self, char *_
 {
 	SETUP_INST_DATA;
 
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk()\n"));
 	BOOL                                 background_node_found = FALSE;
 	struct WandererPrefs_ViewSettingsNode  *_viewSettings_Node = NULL;
+
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk()\n"));
 
 	_viewSettings_Node = WandererPrefs_FindViewSettingsNode(data, _viewSettings_ViewName);
 
@@ -567,8 +614,10 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: NAME BACKGROUND
 	
 	if (chunk_size > (strlen(_viewSettings_Chunk) + 1))
 	{
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Chunk has options Tag data ..\n"));
 		UBYTE _viewSettings_TagOffset = ((strlen(_viewSettings_Chunk)  + 1)/4);
+		IPTR _viewSettings_TagCount;
+
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Chunk has options Tag data ..\n"));
 
 		if ((_viewSettings_TagOffset * 4) != (strlen(_viewSettings_Chunk)  + 1))
 		{
@@ -581,7 +630,7 @@ D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length unalined - rou
 D(bug("[WPEditor] WPEditor_ProccessBackgroundChunk: String length doesnt need aligned (length %d) \n", strlen(_viewSettings_Chunk) + 1));
 		}
 
-		IPTR _viewSettings_TagCount  = ((chunk_size - _viewSettings_TagOffset)/sizeof(struct TagItem32));
+		_viewSettings_TagCount  = ((chunk_size - _viewSettings_TagOffset)/sizeof(struct TagItem32));
 
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: %d Tags at offset %d ..\n", _viewSettings_TagCount, _viewSettings_TagOffset));
 
@@ -599,12 +648,14 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: New tag storage
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to storage \n"));
 
 		_viewSettings_Node->wpbn_Options[_viewSettings_TagCount].ti_Tag = TAG_DONE;
-
-		int i = 0;
-		for (i = 0; i < _viewSettings_TagCount; i++)
+		
 		{
+			int i = 0;
+			for (i = 0; i < _viewSettings_TagCount; i++)
+			{
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Setting Tag 0x%p Value %d\n", AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag), AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data)));
 			SET(_viewSettings_Node->wpbn_NotifyObject, AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag), AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data));
+			}
 		}
 	}
 	return TRUE;
@@ -650,10 +701,11 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload()\n"));
 						
 					if ((error=ReadChunkBytes(handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE)))
 					{
-	D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
 						struct WandererPrefsIFFChunkHeader *this_header =(struct WandererPrefsIFFChunkHeader *) chunk_buffer;
 						char                               *this_chunk_name = NULL;
 						IPTR                               this_chunk_size = AROS_LE2LONG(this_header->wpIFFch_ChunkSize);
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Header size ..\n"));
 
 						if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
 						{
@@ -852,8 +904,10 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
 		{
 			if (sizeof(IPTR) > 4)
 			{
-D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Using internal GetTag32Data()\n"));
 				ULONG retVal = GetTag32Data(message->AttributeID, (ULONG)-1, current_Node->wpbn_Options);
+
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Using internal GetTag32Data()\n"));
+
 				if (retVal != (ULONG)-1)
 				return (IPTR)retVal;
 			}

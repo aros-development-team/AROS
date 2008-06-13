@@ -2,8 +2,12 @@
 Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
-
+#ifndef __AROS__
+#include "../portable_macros.h"
+#define WANDERER_BUILTIN_ICONDRAWERLIST 1
+#else
 #include <aros/debug.h>
+#endif
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -38,8 +42,15 @@ $Id$
 #include <graphics/rpattr.h>
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
+
+#ifdef __AROS__
 #include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
+#else
+#include <devices_AROS/rawkeycodes.h>
+#endif
+
+
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
@@ -50,11 +61,22 @@ $Id$
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
+
+#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/prefhdr.h>
+#include <prefs_AROS/wanderer.h>
+#endif
+
 #include <proto/cybergraphics.h>
 
+#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
+#else
+#include <cybergraphx_AROS/cybergraphics.h>
+#endif
 
 #include <libraries/mui.h>
 //#include "muimaster_intern.h"
@@ -63,6 +85,17 @@ $Id$
 #include "iconlist_attributes.h"
 #include "iconlist.h"
 #include "icondrawerlist_private.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -97,6 +130,8 @@ D(bug("[IconDrawerList] %s: DisplayFlags = 0x%p\n", __PRETTY_FUNCTION__, list_Di
 				while(ExNext(lock, fib))
 				{
 					int len = strlen(fib->fib_FileName);
+					struct IconEntry *this_Icon;
+
 					memset(namebuffer, 0, 512);
 					strcpy(filename, fib->fib_FileName);
 
@@ -132,7 +167,7 @@ D(bug("[IconDrawerList] %s: Registering file '%s'\n", __PRETTY_FUNCTION__, filen
 					strcpy(namebuffer, data->drawer);
 					AddPart(namebuffer, filename, sizeof(namebuffer));
 
-					struct IconEntry *this_Icon = NULL;
+					this_Icon = NULL;
 						
 					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL)))
 					{
@@ -304,18 +339,31 @@ D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
 #if WANDERER_BUILTIN_ICONDRAWERLIST
 BOOPSI_DISPATCHER(IPTR, IconDrawerList_Dispatcher, CLASS, obj, message)
 {
+	#ifdef __AROS__
 	switch (message->MethodID)
+	#else
+	struct IClass *CLASS = cl;
+	Msg message = msg;
+
+	switch (msg->MethodID)
+	#endif
 	{
 		case OM_NEW: return IconDrawerList__OM_NEW(CLASS, obj, (struct opSet *)message);
 		case OM_DISPOSE: return IconDrawerList__OM_DISPOSE(CLASS, obj, message);
 		case OM_SET: return IconDrawerList__OM_SET(CLASS, obj, (struct opSet *)message);
 		case OM_GET: return IconDrawerList__OM_GET(CLASS, obj, (struct opGet *)message);
+
+		#ifdef __AROS__
 		case MUIM_IconList_Update: return IconDrawerList__MUIM_Update(CLASS, obj, (APTR)message);
+		#else
+		case MUIM_IconList_Update: return IconDrawerList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
+		#endif
 	}
 	return DoSuperMethodA(CLASS, obj, message);
 }
 BOOPSI_DISPATCHER_END
 
+#ifdef __AROS__
 /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = { 
 	MUIC_IconDrawerList, 
@@ -323,4 +371,13 @@ const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = {
 	sizeof(struct IconDrawerList_DATA), 
 	(void*)IconDrawerList_Dispatcher 
 };
+#endif
+#endif
+
+#ifndef __AROS__
+struct MUI_CustomClass  *initIconDrawerListClass(void)
+{
+  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL,  NULL, IconList_Class, sizeof(struct IconDrawerList_DATA), ENTRY(IconDrawerList_Dispatcher));
+}
+
 #endif

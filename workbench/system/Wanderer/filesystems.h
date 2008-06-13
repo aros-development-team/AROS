@@ -1,6 +1,10 @@
 #ifndef WANDERER_FILESYSTEMS_H
 #define	WANDERER_FILESYSTEMS_H
 
+#ifndef __AROS__
+#include "portable_macros.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,11 +16,14 @@
 #include <dos/dos.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/classusr.h>
+
+#ifdef __AROS__
 #include <clib/alib_protos.h>
+#endif
+
 #include <utility/utility.h>
 #include <dos/dosextens.h>
 #include <libraries/mui.h>
-#include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/muimaster.h>

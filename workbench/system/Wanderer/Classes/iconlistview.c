@@ -1,15 +1,23 @@
 /*
-Copyright © 2002-2008, The AROS Development Team. 
+Copyright ï¿½ 2002-2008, The AROS Development Team. 
 $Id$
 */
-
+#ifndef __AROS__
+#include "../portable_macros.h"
+#define WANDERER_BUILTIN_ICONLISTVIEW 1
+#else
 #define DEBUG 0
 #include <aros/debug.h>
+#endif
 
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
+
+#ifdef __AROS__
 #include <clib/alib_protos.h>
+#endif
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -21,6 +29,17 @@ $Id$
 #include "iconlist.h"
 #include "iconlistview.h"
 #include "iconlistview_private.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -191,12 +210,20 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         return NULL;
     usewinborder = GetTagData(MUIA_IconListview_UseWinBorder, FALSE, msg->ops_AttrList);
 
+    #ifdef __AROS__
     if (!usewinborder) 
         button = ScrollbuttonObject, End;
+    #else
+    if (!usewinborder) 
+        button = MUI_MakeObject(MUIO_Button,(IPTR)"scroll", TAG_DONE);
+    #endif
+
     else 
         button = NULL;
 
+    #ifndef __amigaos4__
     layout_hook->h_Entry = HookEntry;
+    #endif
     layout_hook->h_SubEntry = (HOOKFUNC)IconListview_Layout_Function;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
@@ -239,7 +266,9 @@ D(bug("[IconListview] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, obj));
     data->button = button;
     data->iconlist = iconlist;
 
+    #ifndef __amigaos4__
     data->hook.h_Entry = HookEntry;
+    #endif
     data->hook.h_SubEntry = (HOOKFUNC)IconListview_Function;
     data->hook.h_Data = data;
     data->layout_hook = layout_hook;
@@ -315,7 +344,14 @@ IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *m
 #if WANDERER_BUILTIN_ICONLISTVIEW
 BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 {
+    #ifdef __AROS__
+    switch (message->MethodID)
+    #else
+    struct IClass *CLASS = cl;
+    Msg message = msg;
+
     switch (msg->MethodID)
+    #endif
     {
         case OM_NEW: 
             return IconListview__OM_NEW(cl, obj, (struct opSet *) msg);
@@ -330,6 +366,7 @@ BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 }
 BOOPSI_DISPATCHER_END
 
+#ifdef __AROS__
 const struct __MUIBuiltinClass _MUI_IconListview_desc =
 {
     MUIC_IconListview, 
@@ -337,4 +374,13 @@ const struct __MUIBuiltinClass _MUI_IconListview_desc =
     sizeof(struct IconListview_DATA), 
     (void*)IconListview_Dispatcher 
 };
+#endif
 #endif /* ZUNE_BUILTIN_ICONLISTVIEW */
+
+#ifndef __AROS__
+struct MUI_CustomClass  *initIconListviewClass(void)
+{
+  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Group, NULL, sizeof(struct IconListview_DATA), ENTRY(IconListview_Dispatcher));
+}
+
+#endif

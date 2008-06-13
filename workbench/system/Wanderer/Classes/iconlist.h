@@ -129,8 +129,14 @@ extern const struct __MUIBuiltinClass _MUI_IconList_desc; /* PRIV */
 extern const struct __MUIBuiltinClass _MUI_IconDrawerList_desc; /* PRIV */
 extern const struct __MUIBuiltinClass _MUI_IconVolumeList_desc; /* PRIV */
 
+#ifdef __AROS__
 #define IconListObject       MUIOBJMACRO_START(MUIC_IconList)
 #define IconVolumeListObject MUIOBJMACRO_START(MUIC_IconVolumeList)
 #define IconDrawerListObject MUIOBJMACRO_START(MUIC_IconDrawerList)
+#else
+#define IconDrawerListObject   NewObject(IconDrawerList_Class->mcc_Class, NULL
+#define IconVolumeListObject   NewObject(IconVolumeList_Class->mcc_Class, NULL
+#define IconListObject         NewObject(IconList_Class->mcc_Class, NULL
+#endif
 
 #endif /* _MUI_CLASSES_ICONLIST_H */
