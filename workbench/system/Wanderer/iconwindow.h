@@ -130,7 +130,11 @@ struct IconWindow_DATA
 
 #define SETUP_ICONWINDOW_INST_DATA       struct IconWindow_DATA *data = INST_DATA(CLASS, self)
 
+#ifdef __AROS__
 #define IconWindowObject                 BOOPSIOBJMACRO_START(IconWindow_CLASS->mcc_Class)
+#else
+#define IconWindowObject NewObject(IconWindow_CLASS->mcc_Class, NULL
+#endif
 
 
 /* this macro is based on the ZUNE_CUSTOMCLASS_10 macros from zune/customclasses.h

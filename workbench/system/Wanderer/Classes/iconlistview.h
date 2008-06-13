@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,6 +23,12 @@
 
 extern const struct __MUIBuiltinClass _MUI_IconListview_desc; /* PRIV */
 
+#ifdef __AROS__
 #define IconListviewObject   MUIOBJMACRO_START(MUIC_IconListview)
+#else
+struct MUI_CustomClass  *initIconListviewClass(void);
+
+#define IconListviewObject   NewObject(IconListview_Class->mcc_Class, NULL
+#endif
 
 #endif /*_MUI_CLASSES_ICONLISTVIEW_H */

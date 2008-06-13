@@ -3,18 +3,30 @@
 	$Id$
 */
 
+#ifndef __AROS__
+#include "portable_macros.h"
+#else
 #define MUIMASTER_YES_INLINE_STDARG
+#endif
 
 //#define DEBUG_NETWORKBROWSER
 //#define DEBUG_SHOWUSERFILES
 #define TXTBUFF_LEN 1024
 
+#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
+#endif
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+
+#ifdef __AROS__
 #include <zune/customclasses.h>
+#else
+#include <zune_AROS/customclasses.h>
+#endif
+
 
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -41,6 +53,18 @@
 #include "wandererprefs.h"
 #include "iconwindow.h"
 #include "iconwindowcontents.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
+
 
 extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
@@ -126,9 +150,10 @@ AROS_UFH3(
 
 	if (prefs)
 	{
-		D(bug("[IconWindowIconList] %s: Setting IconList options ..\n", __PRETTY_FUNCTION__));
         IPTR attrib_Current, attrib_Prefs, prefs_Processing = 0;
    		BOOL options_changed = FALSE;
+
+		D(bug("[IconWindowIconList] %s: Setting IconList options ..\n", __PRETTY_FUNCTION__));
 
 		GET(prefs, MUIA_WandererPrefs_Processing, &prefs_Processing);
 
@@ -412,14 +437,17 @@ AROS_UFH3(
 
 		if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 		{
+			ULONG   current_ShowNetwork;
+			ULONG   prefs_ShowNetwork;
+
 			D(bug("[IconWindowIconList] %s: Setting ROOT view Network options ..\n", __PRETTY_FUNCTION__));
-			ULONG   current_ShowNetwork = 0;
+			current_ShowNetwork = 0;
 
 			GET(self, MUIA_IconWindowExt_NetworkBrowser_Show, &current_ShowNetwork);
 
 			D(bug("[IconWindowIconList] %s: Current = %d\n", __PRETTY_FUNCTION__, current_ShowNetwork));
 
-			ULONG   prefs_ShowNetwork = 0;
+			prefs_ShowNetwork = 0;
 
 			GET(prefs, MUIA_IconWindowExt_NetworkBrowser_Show, &prefs_ShowNetwork);
 		
@@ -449,9 +477,9 @@ AROS_UFH3(
 
 Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-	D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
-
 	IPTR                            _newIconList__FSNotifyPort = NULL;
+
+	D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW()\n"));
 
 	_newIconList__FSNotifyPort = (Object *)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
@@ -531,15 +559,18 @@ IPTR IconWindowIconList__MUIM_Setup
 )
 {
 	SETUP_INST_DATA;
+	
+	Object *prefs = NULL;
 
 	if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
-
-	Object *prefs = NULL;
 
 	GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 
 	if (prefs)
 	{
+		/* Set our initial options */
+		IPTR    attrib_Prefs;
+
 		GET(_win(self), MUIA_IconWindow_BackgroundAttrib, &data->iwcd_ViewPrefs_ID);
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Window Background = '%s'\n", data->iwcd_ViewPrefs_ID));
 		data->iwcd_ViewPrefs_NotificationObject = DoMethod(prefs,
@@ -548,8 +579,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Window Background = 
 
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_Setup: Background Notification Obj @ 0x%p\n", data->iwcd_ViewPrefs_NotificationObject));
 
-		/* Set our initial options */
-		IPTR    attrib_Prefs;
+
 
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_IconListMode);
 		if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_IconListMode))) SET(self, MUIA_IconList_IconListMode, attrib_Prefs);
@@ -846,8 +876,9 @@ IPTR IconWindowIconList__MUIM_HandleEvent
 {
 	SETUP_INST_DATA;
 
-	D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent()\n"));
 	struct IntuiMessage *imsg = message->imsg;
+
+	D(bug("[IconWindowIconList] IconWindowIconList__MUIM_HandleEvent()\n"));
 
 	if(imsg->Class == IDCMP_DISKINSERTED) 
 	{
@@ -873,6 +904,8 @@ IPTR IconWindowIconList__MUIM_DrawBackground
 
 	IPTR 				retVal = (IPTR)TRUE;
 	IPTR                clip = NULL, adjust_left = 0, adjust_top = 0;
+	struct RastPort     		  *DrawBackGround_RastPort;
+	struct IconWindowBackFillMsg  DrawBackGround_BackFillMsg;
 
 	D(bug("[IconWindow] IconWindowIconList__MUIM_DrawBackground()\n"));
 
@@ -883,8 +916,8 @@ IPTR IconWindowIconList__MUIM_DrawBackground
 		goto iwc_ParentBackground;
 	}
 
-	struct RastPort     		  *DrawBackGround_RastPort = _rp(self);
-	struct IconWindowBackFillMsg  DrawBackGround_BackFillMsg;
+	DrawBackGround_RastPort = _rp(self);
+	
 
     if ((data->iwcd_RastPort != NULL) && (DrawBackGround_RastPort != data->iwcd_RastPort))
     {
@@ -955,13 +988,13 @@ IPTR IconWindowIconList__MUIM_IconList_Update
 
 	if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
 	{
+		Object *prefs = NULL;
+		BOOL    sort_list = FALSE;
+
 		D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: (ROOT WINDOW) Causing parent to update\n"));
 		retVal = DoSuperMethodA(CLASS, self, (Msg) message);
 
 		D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if we should show NetworkBrowser Icon ..\n"));
-
-		Object *prefs = NULL;
-		BOOL    sort_list = FALSE;
 
 		GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 

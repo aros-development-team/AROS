@@ -2,8 +2,12 @@
 Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
-
+#ifndef __AROS__
+#include "../portable_macros.h"
+#define WANDERER_BUILTIN_ICONVOLUMELIST 1 
+#else
 #include <aros/debug.h>
+#endif
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -38,8 +42,12 @@ $Id$
 #include <graphics/rpattr.h>
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
+
+#ifdef __AROS__
 #include <devices/rawkeycodes.h>
 #include <clib/alib_protos.h>
+#endif
+
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
@@ -50,11 +58,22 @@ $Id$
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
+
+#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/prefhdr.h>
+#include <prefs_AROS/wanderer.h>
+#endif
+
 #include <proto/cybergraphics.h>
 
+#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
+#else
+#include <cybergraphx_AROS/cybergraphics.h>
+#endif
 
 #include <libraries/mui.h>
 //#include "muimaster_intern.h"
@@ -63,6 +82,17 @@ $Id$
 #include "iconlist_attributes.h"
 #include "iconlist.h"
 #include "iconvolumelist_private.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -85,8 +115,10 @@ struct NewDosNode
 
 static struct NewDosList *IconVolumeList__CreateDOSList(void)
 {
-D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 	APTR pool = CreatePool(MEMF_PUBLIC,4096,4096);
+
+D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
+
 	if (pool)
 	{
 		struct NewDosList *ndl = (struct NewDosList*)AllocPooled(pool, sizeof(struct NewDosList));
@@ -120,8 +152,10 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 					if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
 					{
 						ndn->name = name;
+						#ifdef __AROS__
 						ndn->device = dl->dol_Ext.dol_AROS.dol_Device;
 						ndn->unit = dl->dol_Ext.dol_AROS.dol_Unit;
+						#endif
 D(bug("[IconVolList] %s: adding node for '%s' (Device @ 0x%p, Unit @ 0x%p) Type: %d\n", __PRETTY_FUNCTION__, ndn->name, ndn->device, ndn->unit, dl->dol_Type));
 D(bug("[IconVolList] %s: Device '%s'\n", __PRETTY_FUNCTION__, ndn->device->dd_Library.lib_Node.ln_Name));
 						if (dl->dol_misc.dol_handler.dol_Startup)
@@ -238,8 +272,12 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 			
 		mp = CreateMsgPort();
 		if (mp)
-		{
+		{	
+			#ifdef __AROS__
 			ForeachNode(ndl, nd)
+			#else
+			Foreach_Node(ndl, nd);
+			#endif
 			{
 				char buf[300];
 				if (nd->name)
@@ -303,7 +341,14 @@ D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY
 #if WANDERER_BUILTIN_ICONVOLUMELIST
 BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
 {
-	switch (message->MethodID)
+    	#ifdef __AROS__
+    	switch (message->MethodID)
+    	#else
+    	struct IClass *CLASS = cl;
+    	Msg message = msg;
+
+    	switch (msg->MethodID)
+    	#endif
 	{
 		case OM_NEW: return IconVolumeList__OM_NEW(CLASS, obj, (struct opSet *)message);
 		case MUIM_IconList_Update: return IconVolumeList__MUIM_IconList_Update(CLASS,obj,(APTR)message);
@@ -313,6 +358,7 @@ BOOPSI_DISPATCHER(IPTR, IconVolumeList_Dispatcher, CLASS, obj, message)
 }
 BOOPSI_DISPATCHER_END
 
+#ifdef __AROS__
 /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconVolumeList_desc = { 
 	MUIC_IconVolumeList, 
@@ -320,4 +366,12 @@ const struct __MUIBuiltinClass _MUI_IconVolumeList_desc = {
 	sizeof(struct IconVolumeList_DATA), 
 	(void*)IconVolumeList_Dispatcher
 };
+#endif
+#endif
+
+#ifndef __AROS__
+struct MUI_CustomClass  *initIconVolumeListClass(void)
+{
+  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL,  NULL, IconList_Class, sizeof(struct IconVolumeList_DATA), ENTRY(IconVolumeList_Dispatcher));
+}
 #endif

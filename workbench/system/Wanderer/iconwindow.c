@@ -3,17 +3,28 @@
 	$Id$
 */
 
+#ifndef __AROS__
+#include "portable_macros.h"
+#else
 #define MUIMASTER_YES_INLINE_STDARG
+#endif
 
 #define ICONWINDOW_OPTION_NOSEARCHBUTTON
 //#define ICONWINDOW_BUFFERLIST
 
+#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
+#endif
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+
+#ifdef __AROS__
 #include <zune/customclasses.h>
+#else
+#include <zune_AROS/customclasses.h>
+#endif
 
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -31,9 +42,15 @@
 #include <intuition/screens.h>
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
+
+#ifdef __AROS__
 #include <clib/alib_protos.h>
 
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/wanderer.h>
+#endif
+
 
 #include "Classes/iconlist.h"
 #include "Classes/iconlistview.h"
@@ -45,6 +62,17 @@
 #include "iconwindow_attributes.h"
 #include "iconwindowcontents.h"
 #include "iconwindowbackfill.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 static char __intern_wintitle_wanderer[] = "Wanderer";
 
@@ -122,12 +150,13 @@ AROS_UFH3(
 	/* Get our private data */
 	Object *self = ( Object *)obj;
 	Class *CLASS = *( Class **)param;
+	IPTR changed_state;
 
 	SETUP_ICONWINDOW_INST_DATA;
 
 	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
-	IPTR changed_state = 0;
+	changed_state = 0;
 	GET(self, MUIA_IconWindow_Changed, &changed_state);
 
 	if ((changed_state) && (data->iwd_IconListObj))
@@ -187,8 +216,9 @@ AROS_UFH3(
 {
 	AROS_USERFUNC_INIT
 	
-	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 	struct IconWindow_BackFillHookData *HookData = NULL;
+
+	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 		
 	if ((HookData = Hook->h_Data) && (iconwindow_BackFill_Active != NULL))
 	{
@@ -237,12 +267,13 @@ void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
 {
 	SETUP_ICONWINDOW_INST_DATA;
 
-	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-
 	Object          *strObj = NULL,
 					*bt_dirup = NULL,
 					*bt_search = NULL;
+	Object *toolbarPanel;
 
+
+	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 	D(bug("[IconWindow] %s: App PrefsObj @ 0x%p\n", __PRETTY_FUNCTION__, prefs));
 
 	if (prefs != NULL)
@@ -255,7 +286,7 @@ void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
 	}
 
 	/* Create the "ToolBar" panel object .. */
-	Object *toolbarPanel = VGroup,
+	toolbarPanel = VGroup,
 		InnerSpacing(0, 0),
 		MUIA_Frame, MUIV_Frame_None,
 		Child, (IPTR)HGroup,
@@ -405,11 +436,11 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	{
 		D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__BackFillHook));
 		_newIconWin__BackFillHook->h_Entry = ( HOOKFUNC )IconWindow__HookFunc_WandererBackFillFunc;
-#if defined(__MORPHOS__)
-		WindowBF_TAG = MUIA_Window_BackFillHook;
-#else
+//#if defined(__MORPHOS__)
+//		WindowBF_TAG = MUIA_Window_BackFillHook;
+//#else
 		WindowBF_TAG = WA_BackFill;
-#endif
+//#endif
 	}
 
 	if (isRoot)
@@ -440,9 +471,12 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	}
 	else
 	{
+		IPTR _newIconWin__TitleLen;
+		BPTR                      dir_info_lock;
+		char                      *dir_info_name;
 		D(bug("[iconwindow] %s: Directory Window\n", __PRETTY_FUNCTION__));
 		_newIconWin__Title = (STRPTR) GetTagData(MUIA_IconWindow_Location, (IPTR)NULL, message->ops_AttrList);
-		IPTR _newIconWin__TitleLen = strlen(_newIconWin__Title);
+		_newIconWin__TitleLen = strlen(_newIconWin__Title);
 
 		D(bug("[iconwindow] %s: Dir: '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
 
@@ -454,9 +488,10 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 		if (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':')
 		{
-D(bug("[iconwindow] %s: Opening Volume Root Window\n", __PRETTY_FUNCTION__));
 			BPTR                      volume_info_lock = NULL;
 			char                      *volume_info_name = NULL;
+
+D(bug("[iconwindow] %s: Opening Volume Root Window\n", __PRETTY_FUNCTION__));
 
 			if ((volume_info_name = AllocVec(_newIconWin__TitleLen + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 			{
@@ -467,8 +502,8 @@ D(bug("[iconwindow] %s: Opening Volume Root Window\n", __PRETTY_FUNCTION__));
 				}
 				else
 				{
-D(bug("[iconwindow] %s: No disk.info found - setting show all files\n", __PRETTY_FUNCTION__));
 					IPTR current_DispFlags = 0;
+D(bug("[iconwindow] %s: No disk.info found - setting show all files\n", __PRETTY_FUNCTION__));
 
 					GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
 					current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
@@ -478,8 +513,8 @@ D(bug("[iconwindow] %s: No disk.info found - setting show all files\n", __PRETTY
 			}
 		}
 
-		BPTR                      dir_info_lock = NULL;
-		char                      *dir_info_name = NULL;
+		dir_info_lock = NULL;
+		dir_info_name = NULL;
 
 		if ((dir_info_name = AllocVec(_newIconWin__TitleLen + 7, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 		{
@@ -739,11 +774,12 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                     SET(self, MUIA_Window_Screen, __Wanderer__Screen);
                     if ((data->iwd_Flag_ISROOT) && (data->iwd_Flag_ISBACKDROP))
                     {
-                        D(bug("[iconwindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
                         IPTR                            _IconWin__NewWindowWidth = 0;
                         IPTR                            _IconWin__NewWindowHeight = 0;
                         IPTR                            _IconWin__NewWindowLeft = 0;
                         IPTR                            _IconWin__NewWindowTop = 0;
+
+                        D(bug("[iconwindow] %s: Updating Backdrop Window Dimensions\n", __PRETTY_FUNCTION__));
 
                         _IconWin__NewWindowWidth = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_WIDTH);
                         _IconWin__NewWindowHeight = GetBitMapAttr(__Wanderer__Screen->RastPort.BitMap, BMA_HEIGHT);
@@ -829,6 +865,9 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 				// remove toolbar
 				if (!(( BOOL )tag->ti_Data))
 				{
+					//Force classic navigation when the toolbar is disabled ..
+					Object *prefs = NULL;
+
 					if (data->iwd_Toolbar_PanelObj != NULL)
 					{
 						data->iwd_ExtensionGroupSpacerObj = HSpace(0);
@@ -844,8 +883,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 							data->iwd_Toolbar_PanelObj = NULL;
 						}
 					}
-					//Force classic navigation when the toolbar is disabled ..
-					Object *prefs = NULL;
+				
 
 					GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
 					if (prefs)
@@ -943,9 +981,9 @@ IPTR IconWindow__MUIM_Window_Setup
 {
 	SETUP_ICONWINDOW_INST_DATA;
 	
-	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
-	
 	Object *prefs = NULL;
+
+	D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 	
 	if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
@@ -1304,6 +1342,9 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_ProcessBackground
 
 			if ((IconWindowPB_Background = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwd_ViewSettings_Attrib, MUIA_Background)) != -1)
 			{
+				char *bgmode_string;
+				BYTE this_mode;
+	
 				if ((IconWindowPB_BGMode = DoMethod(IconWindowPB_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
 												data->iwd_ViewSettings_Attrib, MUIA_IconWindowExt_ImageBackFill_BGRenderMode)) == -1)
 					IconWindowPB_BGMode = IconWindowExt_ImageBackFill_RenderMode_Tiled;
@@ -1314,8 +1355,8 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_ProcessBackground
 				
 				SET(data->iwd_RootViewObj, MUIA_Background, IconWindowPB_Background);
 
-				char *bgmode_string = IconWindowPB_Background;
-				BYTE this_mode = bgmode_string[0] - 48;
+				bgmode_string = IconWindowPB_Background;
+				this_mode = bgmode_string[0] - 48;
 
 				D(bug("[IconWindow] %s: MUI BG Mode = %d\n", __PRETTY_FUNCTION__, this_mode));
 
@@ -1397,3 +1438,18 @@ ICONWINDOW_CUSTOMCLASS
 );
 
 ADD2INIT(IconWindow__SetupClass, 0);
+
+#ifndef __AROS__
+int initIconWindowClass(void)
+{
+  IPTR ret1 = IconWindow_Initialize();
+
+  IPTR ret2 = IconWindow__SetupClass();
+
+  if (ret1 && ret2)
+    return TRUE;
+  else
+    return FALSE;
+
+}
+#endif

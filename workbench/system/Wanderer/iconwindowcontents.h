@@ -23,9 +23,15 @@ extern struct MUI_CustomClass *IconWindowIconVolumeList_CLASS;
 extern struct MUI_CustomClass *IconWindowIconNetworkBrowserList_CLASS;
 	
 /*** Macros *****************************************************************/
+#ifdef __AROS__
 #define IconWindowIconDrawerListObject BOOPSIOBJMACRO_START(IconWindowIconDrawerList_CLASS->mcc_Class)
 #define IconWindowIconVolumeListObject BOOPSIOBJMACRO_START(IconWindowIconVolumeList_CLASS->mcc_Class)
 #define IconWindowIconNetworkBrowserListObject BOOPSIOBJMACRO_START(IconWindowIconNetworkBrowserList_CLASS->mcc_Class)
+#else
+#define IconWindowIconDrawerListObject NewObject(IconWindowIconDrawerList_CLASS->mcc_Class, NULL
+#define IconWindowIconVolumeListObject NewObject(IconWindowIconVolumeList_CLASS->mcc_Class, NULL
+#define IconWindowIconNetworkBrowserListObject NewObject(IconWindowIconNetworkBrowserList_CLASS->mcc_Class, NULL
+#endif
 
 /* this macro is based on the ZUNE_CUSTOMCLASS_10 macros from zune/customclasses.h
 and temporarily placed here */

@@ -2,9 +2,13 @@
 Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
-
+#ifndef __AROS__
+#include "../portable_macros.h"
+#define WANDERER_BUILTIN_ICONLIST 1
+#else
 #define DEBUG 0
 #include <aros/debug.h>
+#endif
 
 #define DEBUG_ILC_EVENTS
 #define DEBUG_ILC_KEYEVENTS
@@ -39,8 +43,17 @@ $Id$
 #include <graphics/rpattr.h>
 #include <workbench/icon.h>
 #include <workbench/workbench.h>
+
+#ifdef __AROS__
 #include <devices/rawkeycodes.h>
+#else
+#include <devices_AROS/rawkeycodes.h>
+#endif
+
+#ifdef __AROS__
 #include <clib/alib_protos.h>
+#endif
+
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
@@ -51,11 +64,22 @@ $Id$
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
+
+#ifdef __AROS__
 #include <prefs/prefhdr.h>
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/prefhdr.h>
+#include <prefs_AROS/wanderer.h>
+#endif
+
 #include <proto/cybergraphics.h>
 
+#ifdef __AROS__
 #include <cybergraphx/cybergraphics.h>
+#else
+#include <cybergraphx_AROS/cybergraphics.h>
+#endif
 
 #include <libraries/mui.h>
 //#include "muimaster_intern.h"
@@ -65,6 +89,17 @@ $Id$
 #include "iconlist.h"
 #include "iconlist_private.h"
 #include "iconlistview.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
 #define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
@@ -105,7 +140,11 @@ for                                                        \
 #ifdef AndRectRect
 /* Fine */
 #else
+#ifdef __AROS__
 #error "Implement AndRectRect (rom/graphics/andrectrect.c)"
+#else
+#warning "Implement AndRectRect (rom/graphics/andrectrect.c)"
+#endif
 #endif
 
 // Icon/Label Area support functions
@@ -305,6 +344,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     /* Get icon box width including text width */
     if ((icon->ile_IconListEntry.label != NULL) && (icon->ile_TxtBuf_DisplayedLabel != NULL))
     {
+	ULONG curlabel_TotalLines;
         SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
         
         rect->MinX = 0;
@@ -312,7 +352,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     
         rect->MinY = 0;
 
-        ULONG curlabel_TotalLines = icon->ile_SplitParts;
+        curlabel_TotalLines = icon->ile_SplitParts;
         if (curlabel_TotalLines == 0)
             curlabel_TotalLines = 1;
         if (curlabel_TotalLines > data->icld__Option_LabelTextMultiLine)
@@ -365,10 +405,14 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
 static void IconList_GetIconAreaRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *icon, struct Rectangle *rect)
 {
+    struct Rectangle labelrect;
+    ULONG iconlabel_Width;
+    ULONG iconlabel_Height;
+
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
-    struct Rectangle labelrect;
+
     /* Get icon box width including text width */
     memset(rect, 0, sizeof(struct Rectangle));
 
@@ -386,8 +430,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     IconList_GetIconLabelRectangle(obj, data, icon, &labelrect);
 
-    ULONG iconlabel_Width = ((labelrect.MaxX - labelrect.MinX) + 1);
-    ULONG iconlabel_Height = ((labelrect.MaxY - labelrect.MinY) + 1);
+    iconlabel_Width = ((labelrect.MaxX - labelrect.MinX) + 1);
+    iconlabel_Height = ((labelrect.MaxY - labelrect.MinY) + 1);
     
     if (iconlabel_Width > icon->ile_AreaWidth)
         icon->ile_AreaWidth = iconlabel_Width;
@@ -416,6 +460,9 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     //LONG tx,ty;
     LONG offsetx,offsety;
     //LONG txwidth, txheight;
+
+    ULONG iconX;
+    ULONG iconY;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList]: %s(message->icon = 0x%p)\n", __PRETTY_FUNCTION__, message->icon));
@@ -481,8 +528,8 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     
     // Center icon image
 
-    ULONG iconX = iconrect.MinX - _mleft(obj) + data->icld_DrawOffsetX;
-    ULONG iconY = iconrect.MinY - _mtop(obj) + data->icld_DrawOffsetY;
+    iconX = iconrect.MinX - _mleft(obj) + data->icld_DrawOffsetX;
+    iconY = iconrect.MinY - _mtop(obj) + data->icld_DrawOffsetY;
 
     DRAWICONSTATE(
         data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->ile_DiskObj, NULL,
@@ -504,6 +551,8 @@ void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, str
     ULONG       labelSplit_LabelLength = strlen(icon->ile_IconListEntry.label);
     ULONG       txwidth;
     ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
+     int        labelSplit_CharsDone,   labelSplit_CharsSplit;
+    ULONG labelSplit_CurSplitWidth;
 
     if (labelSplit_MaxLabelLineLength >= labelSplit_LabelLength)
     {
@@ -522,14 +571,16 @@ D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
     memset(icon->ile_TxtBuf_DisplayedLabel, 0, 256);
     icon->ile_SplitParts = 0;
     
-    int        labelSplit_CharsDone = 0,
-                 labelSplit_CharsSplit = 0;
+    labelSplit_CharsDone = 0;
+    labelSplit_CharsSplit = 0;
 
     while (labelSplit_CharsDone < labelSplit_LabelLength)
     {
         ULONG labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
         IPTR  labelSplit_SplitStart = icon->ile_IconListEntry.label + labelSplit_CharsDone;
         int  tmp_checkoffs = 0;
+	IPTR   labelSplit_RemainingCharsAfterSplit;
+	IPTR labelSplit_CurSplitDest;
 
         while (*(char *)(labelSplit_SplitStart) == ' ')
         {
@@ -544,7 +595,6 @@ D(bug("[IconList]: %s: txwidth = %d\n", __PRETTY_FUNCTION__, txwidth));
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, labelSplit_CurSplitLength));
 #endif
-        IPTR   labelSplit_RemainingCharsAfterSplit;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
             D(bug("[IconList]: %s: Attempting to find neat split ", __PRETTY_FUNCTION__));
@@ -622,11 +672,11 @@ D(bug("[IconList]: %s: labelSplit_CurSplitLength = %d\n", __PRETTY_FUNCTION__, l
         }
         if ((labelSplit_CharsDone + labelSplit_CurSplitLength) > labelSplit_LabelLength) labelSplit_CurSplitLength = labelSplit_LabelLength - labelSplit_CharsDone;
 
-        IPTR labelSplit_CurSplitDest = icon->ile_TxtBuf_DisplayedLabel + labelSplit_CharsSplit + icon->ile_SplitParts;
+        labelSplit_CurSplitDest = icon->ile_TxtBuf_DisplayedLabel + labelSplit_CharsSplit + icon->ile_SplitParts;
         
         strncpy(labelSplit_CurSplitDest, labelSplit_SplitStart, labelSplit_CurSplitLength);
         
-        ULONG labelSplit_CurSplitWidth = TextLength(data->icld_BufferRastPort, labelSplit_CurSplitDest, labelSplit_CurSplitLength);
+        labelSplit_CurSplitWidth = TextLength(data->icld_BufferRastPort, labelSplit_CurSplitDest, labelSplit_CurSplitLength);
         
         icon->ile_SplitParts = icon->ile_SplitParts + 1;
         
@@ -666,12 +716,14 @@ D(bug("[IconList]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
     
     if (icon->ile_TxtBuf_DisplayedLabel == NULL)
     {	
-#if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: Building unsplit label ..\n", __PRETTY_FUNCTION__));
-#endif
+
 
         ULONG ile_LabelLength = strlen(icon->ile_IconListEntry.label);
         icon->ile_SplitParts = 1;
+
+#if defined(DEBUG_ILC_ICONRENDERING)
+D(bug("[IconList]: %s: Building unsplit label ..\n", __PRETTY_FUNCTION__));
+#endif
 
         if(ile_LabelLength > data->icld__Option_LabelTextMaxLen)
         {
@@ -724,8 +776,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         (data->icld__Option_LabelTextMultiLine != data->icld__Option_LastLabelTextMultiLine));
     {
         struct IconEntry *iconentry_Current = NULL;
-
+	#ifdef __AROS__
         ForeachNode(&data->icld_IconList, iconentry_Current)
+	#else
+	Foreach_Node(&data->icld_IconList, iconentry_Current);
+	#endif
         {
             IconList__LabelFunc_CreateLabel(obj, data, iconentry_Current);
         }
@@ -749,6 +804,11 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     ULONG               txtbox_width = 0;
     LONG 				tx,ty,offsetx,offsety;
     LONG 				txwidth; // txheight;
+    
+    ULONG labelX;
+    ULONG labelY;
+    ULONG txtarea_width;
+    ULONG curlabel_TotalLines, curlabel_CurrentLine, offset_y;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList]: %s(message->icon = 0x%p), '%s'\n", __PRETTY_FUNCTION__, message->icon, message->icon->ile_IconListEntry.label));
@@ -828,13 +888,15 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     iconlabelrect.MaxX = (iconlabelrect.MaxX - _mleft(obj)) + data->icld_DrawOffsetX;
     iconlabelrect.MaxY = (iconlabelrect.MaxY - _mtop(obj)) + data->icld_DrawOffsetY;
 
-    ULONG labelX = iconlabelrect.MinX + data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding;
-    ULONG labelY = iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding;
+    labelX = iconlabelrect.MinX + data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding;
+    labelY = iconlabelrect.MinY + data->icld__Option_LabelTextBorderHeight + data->icld__Option_LabelTextVerticalPadding;
 
-    ULONG txtarea_width = txtbox_width - ((data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding) * 2);
+    txtarea_width = txtbox_width - ((data->icld__Option_LabelTextBorderWidth + data->icld__Option_LabelTextHorizontalPadding) * 2);
 
     if (message->icon->ile_IconListEntry.label && message->icon->ile_TxtBuf_DisplayedLabel)
     {
+	char *curlabel_StrPtr;
+
         if ((message->icon->ile_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
         {
             //Draw the focus box around the selected label ..
@@ -862,8 +924,8 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 
         SetFont(data->icld_BufferRastPort, data->icld_IconLabelFont);
 
-        ULONG curlabel_TotalLines = message->icon->ile_SplitParts,
-              curlabel_CurrentLine = 0, offset_y;
+        curlabel_TotalLines = message->icon->ile_SplitParts;
+              curlabel_CurrentLine = 0;
 
         if (curlabel_TotalLines == 0)
             curlabel_TotalLines = 1;
@@ -876,7 +938,7 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
         else
             curlabel_TotalLines = 1;
 
-        char * curlabel_StrPtr = message->icon->ile_TxtBuf_DisplayedLabel;
+        curlabel_StrPtr = message->icon->ile_TxtBuf_DisplayedLabel;
         
         ty = labelY - 1;
 
@@ -884,6 +946,8 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
 
         for (curlabel_CurrentLine = 0; curlabel_CurrentLine < curlabel_TotalLines; curlabel_CurrentLine++)
         {
+	    ULONG ile_LabelLength;
+
             if (curlabel_CurrentLine > 0) curlabel_StrPtr = curlabel_StrPtr + strlen(curlabel_StrPtr) + 1;
             if ((curlabel_CurrentLine >= (curlabel_TotalLines -1)) && (curlabel_TotalLines < message->icon->ile_SplitParts))
             {
@@ -900,7 +964,7 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
                 
             }
             
-            ULONG ile_LabelLength = strlen(curlabel_StrPtr);
+            ile_LabelLength = strlen(curlabel_StrPtr);
             offset_y = 0;
 
             // Center message->icon's label
@@ -1042,6 +1106,7 @@ IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj
     struct IconEntry  *icon = NULL;
     LONG              maxx = 0,
                       maxy = 0;
+    struct Rectangle icon_rect;
 
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -1059,7 +1124,7 @@ D(bug("[IconList] %s: SingleIcon - maxx = %d, maxy = %d\n", __PRETTY_FUNCTION__,
     }
     else icon = (struct IconEntry *)GetHead(&data->icld_IconList);
 
-    struct Rectangle icon_rect;
+   
     
     while (icon != NULL)
     {
@@ -1193,12 +1258,12 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     int maxw = 0;        // Widest & Talest icon in a column or row.
     int maxh = 0;
 
+    BOOL  next;
+    struct Rectangle iconrect;
+
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
-
-    BOOL  next;
-    struct Rectangle iconrect;
 
     // Now go to the actual positioning
     icon = (struct IconEntry *)GetHead(&data->icld_IconList);
@@ -1436,7 +1501,11 @@ IPTR IconList__OM_DISPOSE(struct IClass *CLASS, Object *obj, Msg message)
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     
+    #ifdef __AROS__
     ForeachNode(&data->icld_IconList, node)
+    #else
+    Foreach_Node(&data->icld_IconList, node);
+    #endif
     {
         if (node->ile_DiskObj) FreeDiskObject(node->ile_DiskObj);
     }
@@ -1514,10 +1583,12 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags\n", __PRETTY_FUNCTION__));
                 data->icld_DisplayFlags = (ULONG)tag->ti_Data;
                 if (data->icld_DisplayFlags & ICONLIST_DISP_BUFFERED)
                 {
+                    struct BitMap *tmp_BuffBitMap = NULL;
+		    ULONG tmp_RastDepth;
+
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __PRETTY_FUNCTION__));
 #endif
-                    struct BitMap *tmp_BuffBitMap = NULL;
                     if ((data->icld_BufferRastPort) && (data->icld_BufferRastPort != data->icld_DisplayRastPort))
                     {
                         //Free up the buffers rastport and bitmap so we can replace them ..
@@ -1525,7 +1596,7 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
                         FreeRastPort(data->icld_BufferRastPort);
                         SET(obj, MUIA_IconList_BufferRastport, NULL);
                     }
-                    ULONG tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
+                    tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
                     if ((tmp_BuffBitMap = AllocBitMap(data->icld_ViewWidth,
                                         data->icld_ViewHeight,
                                         tmp_RastDepth,
@@ -1816,7 +1887,11 @@ D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, 
     data->icld__Option_LabelTextBorderWidth       = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
     data->icld__Option_LabelTextBorderHeight      = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
     
+    #ifdef __AROS__
     ForeachNode(&data->icld_IconList, node)
+    #else
+    Foreach_Node(&data->icld_IconList, node);
+    #endif
     {
         if (!node->ile_DiskObj)
         {
@@ -1954,8 +2029,11 @@ IPTR IconList__MUIM_Cleanup(struct IClass *CLASS, Object *obj, struct MUIP_Clean
     struct IconEntry    *node = NULL;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-
+    #ifdef __AROS__
     ForeachNode(&data->icld_IconList, node)
+    #else
+    Foreach_Node(&data->icld_IconList, node);
+    #endif
     {
         if (node->ile_DiskObj)
         {
@@ -1974,10 +2052,9 @@ MUIM_AskMinMax
 **************************************************************************/
 IPTR IconList__MUIM_AskMinMax(struct IClass *CLASS, Object *obj, struct MUIP_AskMinMax *message)
 {
+    ULONG rc = DoSuperMethodA(CLASS, obj, (Msg) message);
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-    
-    ULONG rc = DoSuperMethodA(CLASS, obj, (Msg) message);
 
     message->MinMaxInfo->MinWidth  += 96;
     message->MinMaxInfo->MinHeight += 64;
@@ -1997,10 +2074,11 @@ MUIM_Layout
 IPTR IconList__MUIM_Layout(struct IClass *CLASS, Object *obj,struct MUIP_Layout *message)
 {
     struct IconList_DATA *data = INST_DATA(CLASS, obj);
+    ULONG rc;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
-    ULONG rc = DoSuperMethodA(CLASS, obj, (Msg)message);
+    rc = DoSuperMethodA(CLASS, obj, (Msg)message);
 
     data->icld_ViewWidth = _mwidth(obj);
     data->icld_ViewHeight = _mheight(obj);
@@ -2106,7 +2184,11 @@ D(bug("[IconList] %s#%d: UPDATE_SINGLEICON: Calling MUIM_DrawBackground (A)\n", 
                 0);
 
             /* We could have deleted also other icons so they must be redrawn */
-            ForeachNode(&data->icld_IconList, icon)
+            #ifdef __AROS__
+	    ForeachNode(&data->icld_IconList, icon)
+	    #else
+	    Foreach_Node(&data->icld_IconList, icon);
+  	    #endif
             {
                 if ((icon != data->update_icon) && (icon->ile_Flags & ICONENTRY_FLAG_VISIBLE))
                 {
@@ -2334,13 +2416,15 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 //Free up the buffers rastport and bitmap so we can replace them ..
                 struct Bitmap *bitmap_Old = data->icld_BufferRastPort->BitMap;
                 struct Bitmap *bitmap_New;
+		
+		ULONG tmp_RastDepth;
 
                 data->icld_BufferRastPort->BitMap = NULL;
 
                 FreeRastPort(data->icld_BufferRastPort);
                 SET(obj, MUIA_IconList_BufferRastport, NULL);
 
-                ULONG tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
+                tmp_RastDepth = GetCyberMapAttr(data->icld_DisplayRastPort->BitMap, CYBRMATTR_DEPTH);
                 if ((bitmap_New = AllocBitMap(data->icld_ViewWidth,
                                     data->icld_ViewHeight,
                                     tmp_RastDepth,
@@ -2433,11 +2517,12 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
 
     if (message->flags & MADF_DRAWOBJECT)
     {
+        struct Rectangle viewrect;
+
 #if defined(DEBUG_ILC_ICONRENDERING)
 D(bug("[IconList] %s#%d: MADF_DRAWOBJECT\n", __PRETTY_FUNCTION__, draw_id));
 #endif
 
-        struct Rectangle viewrect;
         clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 
         viewrect.MinX = _mleft(obj);
@@ -2452,8 +2537,11 @@ D(bug("[IconList] %s#%d: MADF_DRAWOBJECT: Calling MUIM_DrawBackground (B)\n", __
             obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj),
             clear_xoffset, clear_yoffset, 0
         );
-
+	#ifdef __AROS__
         ForeachNode(&data->icld_IconList, icon)
+	#else
+        Foreach_Node(&data->icld_IconList, icon);
+	#endif
         {
             if ((icon->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
                 (icon->ile_DiskObj) &&
@@ -3492,12 +3580,13 @@ D(bug("[IconList] %s: LEFT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, acti
                                 else
                                 {
                                     LONG active_entry_X = active_entry->ile_IconX;
+				    LONG active_entry_Y;
                                     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                     {
                                         if (active_entry->ile_AreaWidth < data->icld_IconAreaLargestWidth)
                                             active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ile_AreaWidth)/2);
                                     }
-                                    LONG active_entry_Y = active_entry->ile_IconY;
+                                    active_entry_Y = active_entry->ile_IconY;
                                     
                                     if (start_entry)
                                     {
@@ -3691,12 +3780,13 @@ D(bug("[IconList] %s: RIGHT: Checking active @ 0x%p\n", __PRETTY_FUNCTION__, act
                                 else
                                 {
                                     LONG active_entry_X = active_entry->ile_IconX;
+				    LONG active_entry_Y;
                                     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
                                     {
                                         if (active_entry->ile_AreaWidth < data->icld_IconAreaLargestWidth)
                                             active_entry_X = active_entry_X - ((data->icld_IconAreaLargestWidth - active_entry->ile_AreaWidth)/2);
                                     }
-                                    LONG active_entry_Y = active_entry->ile_IconY;
+                                    active_entry_Y = active_entry->ile_IconY;
                                     
                                     if (start_entry)
                                     {
@@ -3860,9 +3950,14 @@ D(bug("[IconList] %s: RAWKEY_END\n", __PRETTY_FUNCTION__));
                         struct Rectangle     rect;
 
                         int selections = 0;
+			BOOL icon_doubleclicked;
 
                         /* check if clicked on icon */
+			#ifdef __AROS__
                         ForeachNode(&data->icld_IconList, node)
+			#else
+			Foreach_Node(&data->icld_IconList, node);
+			#endif
                         {
                             if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
                             {
@@ -3919,7 +4014,7 @@ D(bug("[IconList] %s: Rendered icon '%s'\n", __PRETTY_FUNCTION__, node->ile_Icon
                             }
                         }
 
-                        BOOL icon_doubleclicked = FALSE;
+                        icon_doubleclicked = FALSE;
 
                         if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
                         {
@@ -4052,7 +4147,11 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                             data->icld_LassoActive = FALSE;
 
                             //Remove Lasso flag from affected icons..
+			    #ifdef __AROS__
                             ForeachNode(&data->icld_IconList, node)
+			    #else
+			    Foreach_Node(&data->icld_IconList, node);
+			    #endif
                             {
                                 if (node->ile_Flags & ICONENTRY_FLAG_LASSO)
                                 {
@@ -4142,8 +4241,11 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
 
                         /* get absolute Lasso coordinates */
                         GetAbsoluteLassoRect(data, &new_lasso);
-
+			#ifdef __AROS__
                         ForeachNode(&data->icld_IconList, node)
+			#else
+			Foreach_Node(&data->icld_IconList, node);
+			#endif
                         {
                             IPTR update_icon = NULL;
 
@@ -4320,7 +4422,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
     
 #if defined(CREATE_FULL_DRAGIMAGE)
+	#ifdef __AROS__
         ForeachNode(&data->icld_SelectionList, node)
+	#else
+        Foreach_Node(&data->icld_SelectionList, node);
+	#endif
         {
             entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ile_SelectionNode - (IPTR)entry));
             if ((entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ile_Flags & ICONENTRY_FLAG_SELECTED))
@@ -4513,9 +4619,14 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
            /* check if dropped on a drawer */
            struct IconEntry *node = NULL;
            struct IconEntry *drop_target_node = NULL;
+	   STRPTR directory_path;
 
            /* go through list and check if dropped on icon */
+	   #ifdef __AROS__
            ForeachNode(&data->icld_IconList, node)
+	   #else
+	   Foreach_Node(&data->icld_IconList, node);
+	   #endif
            {
                if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
                    message->x >= node->ile_IconX - data->icld_ViewX && 
@@ -4528,7 +4639,7 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
            }
 
            /* get path to destination directory */
-           STRPTR directory_path = NULL;
+           directory_path = NULL;
            GET(obj, MUIA_IconDrawerList_Drawer, &directory_path);
 
            /* check if dropped on a root drive - 
@@ -4605,8 +4716,11 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     data->icld_SelectionLastClicked = NULL;
     data->icld_FocusIcon = NULL;
-
+    #ifdef __AROS__
     ForeachNodeSafe(&data->icld_SelectionList, node, next_node)
+    #else
+    Foreach_NodeSafe(&data->icld_SelectionList, node, next_node);
+    #endif
     {
         struct IconEntry    *entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ile_SelectionNode - (IPTR)entry));
         BOOL                update_icon = FALSE;
@@ -4762,7 +4876,11 @@ D(bug("[IconList] %s: Done\n", __PRETTY_FUNCTION__));
     }
 
 #if defined(DEBUG_ILC_ICONSORTING_DUMP)
+    #ifdef __AROS__
     ForeachNode(&data->icld_IconList, entry)
+    #else   
+    Foreach_Node(&data->icld_IconList, entry);
+    #endif
     {
 D(bug("[IconList] %s: %d   %d   '%s'\n", __PRETTY_FUNCTION__, entry->ile_IconX, entry->ile_IconY, entry->ile_IconListEntry.label));
     }
@@ -4991,7 +5109,14 @@ D(bug("[IconList] %s: icons dropped on custom window \n", __PRETTY_FUNCTION__));
 #if WANDERER_BUILTIN_ICONLIST
 BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 {
+    #ifdef __AROS__
     switch (message->MethodID)
+    #else
+    struct IClass *CLASS = cl;
+    Msg message = msg;
+
+    switch (msg->MethodID)
+    #endif
     {
         case OM_NEW:                            return IconList__OM_NEW(CLASS, obj, (struct opSet *)message);
         case OM_DISPOSE:                        return IconList__OM_DISPOSE(CLASS, obj, message);
@@ -5005,14 +5130,18 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_Cleanup:                      return IconList__MUIM_Cleanup(CLASS, obj, (struct MUIP_Cleanup *)message);
         case MUIM_AskMinMax:                    return IconList__MUIM_AskMinMax(CLASS, obj, (struct MUIP_AskMinMax *)message);
         case MUIM_Draw:                         return IconList__MUIM_Draw(CLASS, obj, (struct MUIP_Draw *)message);
+	#ifdef __AROS__
         case MUIM_Layout:                       return IconList__MUIM_Layout(CLASS, obj, (struct MUIP_Layout *)message);
+	#endif
         case MUIM_HandleEvent:                  return IconList__MUIM_HandleEvent(CLASS, obj, (struct MUIP_HandleEvent *)message);
         case MUIM_CreateDragImage:              return IconList__MUIM_CreateDragImage(CLASS, obj, (APTR)message);
         case MUIM_DeleteDragImage:              return IconList__MUIM_DeleteDragImage(CLASS, obj, (APTR)message);
         case MUIM_DragQuery:                    return IconList__MUIM_DragQuery(CLASS, obj, (APTR)message);
         case MUIM_DragReport:                   return IconList__MUIM_DragReport(CLASS, obj, (APTR)message);
         case MUIM_DragDrop:                     return IconList__MUIM_DragDrop(CLASS, obj, (APTR)message);
+	#ifdef __AROS__
         case MUIM_UnknownDropDestination:       return IconList__MUIM_UnknownDropDestination(CLASS, obj, (APTR)message);       
+	#endif
         case MUIM_IconList_Update:              return IconList__MUIM_IconList_Update(CLASS, obj, (APTR)message);
         case MUIM_IconList_Clear:               return IconList__MUIM_IconList_Clear(CLASS, obj, (APTR)message);
         case MUIM_IconList_RethinkDimensions:   return IconList__MUIM_IconList_RethinkDimensions(CLASS, obj, (APTR)message);
@@ -5033,6 +5162,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
 }
 BOOPSI_DISPATCHER_END
 
+#ifdef __AROS__
 /* Class descriptor. */
 const struct __MUIBuiltinClass _MUI_IconList_desc = { 
     MUIC_IconList, 
@@ -5040,4 +5170,13 @@ const struct __MUIBuiltinClass _MUI_IconList_desc = {
     sizeof(struct IconList_DATA), 
     (void*)IconList_Dispatcher
 };
+#endif
+#endif
+
+#ifndef __AROS__
+struct MUI_CustomClass  *initIconListClass(void)
+{
+  return (struct MUI_CustomClass *) MUI_CreateCustomClass(NULL, MUIC_Area, NULL, sizeof(struct IconList_DATA), ENTRY(IconList_Dispatcher));
+}
+
 #endif

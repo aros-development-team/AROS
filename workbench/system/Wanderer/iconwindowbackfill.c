@@ -3,16 +3,30 @@
 	$Id$
 */
 
+#ifndef __AROS__
+#include "portable_macros.h"
+#endif
+
+#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
+#endif
 
 #define WANDERER_MODULE_BACKFILL_ENABLED
 
+#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
+#endif
 
 #include <exec/types.h>
 #include <libraries/mui.h>
+
+#ifdef __AROS__
 #include <zune/customclasses.h>
+#else
+#include <zune_AROS/customclasses.h>
+#endif
+
 
 #include <proto/utility.h>
 #include <proto/intuition.h>
@@ -30,11 +44,18 @@
 #include <intuition/screens.h>
 #include <datatypes/pictureclass.h>
 #include <clib/macros.h>
+
+#ifdef __AROS__
 #include <clib/alib_protos.h>
+#endif
 
 #include <graphics/scale.h>
 
+#ifdef __AROS__
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/wanderer.h>
+#endif
 
 #include "wanderer.h"
 #include "wandererprefs.h"
@@ -44,7 +65,17 @@
 #include "Classes/iconlistview.h"
 #include "Classes/iconlist_attributes.h"
 
-#include <prefs/wanderer.h>
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
 
 /*** Global Data **********************************************************/
 
@@ -58,8 +89,11 @@ static struct List                             image_backfill_images;
 static struct BackFillSourceImageRecord *ImageBackFill_FindSourceRecord(char *source_name, IPTR source_mode)
 {
 	struct BackFillSourceImageRecord *source_record = NULL;
-
+	#ifdef __AROS__
 	ForeachNode(&image_backfill_images, source_record)
+	#else
+	Foreach_Node(&image_backfill_images, source_record);
+	#endif
 	{
 		if ((strcmp(source_record->bfsir_SourceImage, source_name)==0) && (source_record->bfsir_BackGroundRenderMode == source_mode)) return source_record;
 	}
@@ -69,8 +103,12 @@ static struct BackFillSourceImageRecord *ImageBackFill_FindSourceRecord(char *so
 static struct BackFillSourceImageBuffer *ImageBackFill_FindBufferRecord(struct BackFillSourceImageRecord *source_record, WORD buffer_width, WORD buffer_height)
 {
 	struct BackFillSourceImageBuffer *buffer_record = NULL;
-
+	
+	#ifdef __AROS__
 	ForeachNode(&source_record->bfsir_Buffers, buffer_record)
+	#else
+	Foreach_Node(&source_record->bfsir_Buffers, buffer_record);
+	#endif
 	{
 		if ((buffer_record->bfsib_BitMapWidth == buffer_width) && (buffer_record->bfsib_BitMapHeight == buffer_height)) return buffer_record;
 	}
@@ -134,8 +172,8 @@ static void ImageBackFill_CopyScaledBitMap
 	ULONG blit_MODE
 )
 {
-	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyScaledBitMap()\n"));
 	struct BitScaleArgs		Scale_Args;
+D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyScaledBitMap()\n"));
 
 	Scale_Args.bsa_SrcX = SrcOffsetX;
 	Scale_Args.bsa_SrcY = SrcOffsetY;		
@@ -166,8 +204,6 @@ static void ImageBackFill_CopyTiledBitMap
 )
 {
 	
-	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", blit_MODE));
-	
 	WORD FirstSizeX;  // the width of the rectangle to blit as the first column
 	WORD FirstSizeY;  // the height of the rectangle to blit as the first row
 	WORD SecondMinX;  // the left edge of the second column
@@ -179,7 +215,15 @@ static void ImageBackFill_CopyTiledBitMap
 	WORD SrcX, SrcY;        // used as bitmap size in the "exponential" blit
 
 	struct BitMap *Src = SrcRast->BitMap;
-	struct BitMap *Dst = DstRast->BitMap;		
+	struct BitMap *Dst = DstRast->BitMap;	
+
+	#if defined(DEBUG)
+	int xcount;
+	int ycount;
+	#endif
+		
+
+D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", blit_MODE));
 
 	D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: SrcRast @ %x, DstRast @ %x\n", SrcRast, DstRast));
 		
@@ -250,7 +294,7 @@ static void ImageBackFill_CopyTiledBitMap
 		}
 
 #if defined(DEBUG)
-		int xcount = 2;
+		xcount = 2;
 #endif
 		//Generates the first row of the tiles ....
 		for (PosX = DstFillBounds->MinX + SrcSizeX, SizeX = MIN(SrcSizeX, (DstFillBounds->MaxX - PosX) + 1);PosX <= DstFillBounds->MaxX;)
@@ -271,7 +315,7 @@ static void ImageBackFill_CopyTiledBitMap
 		}
 
 #if defined(DEBUG)
-		int ycount = 2;
+		ycount = 2;
 #endif
 		// .. now Blit the first row down several times to fill the whole dest rect
 		for (PosY = DstFillBounds->MinY + SrcSizeY, SizeY = MIN(SrcSizeY, (DstFillBounds->MaxY - PosY) + 1);PosY <= DstFillBounds->MaxY;)
@@ -346,6 +390,9 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 	
 	struct BackFillInfo   *this_BFI = message->BackFill_Data;
 
+	UBYTE                  *this_bgtype;
+	char                  *this_ImageName;
+
 	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground()\n"));
 	
 	GET(_app(self), MUIA_Wanderer_Prefs, &_IconWindows_PrefsObj);
@@ -382,8 +429,8 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 									BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGRenderMode)) == -1)
 		BackGround_RenderMode = IconWindowExt_ImageBackFill_RenderMode_Tiled;
 
-	UBYTE                  *this_bgtype    = (UBYTE *)BackGround_Base;
-	char                  *this_ImageName = (char *)(BackGround_Base + 2);
+	this_bgtype    = (UBYTE *)BackGround_Base;
+	this_ImageName = (char *)(BackGround_Base + 2);
 	
 	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: BackFillInfo @ %x\n", this_BFI));
 	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background '%s', mode %d\n", BackGround_Base, BackGround_RenderMode));
@@ -542,6 +589,7 @@ check_imagebuffer:
 
 			if ((BOOL)XGET(self, MUIA_IconWindow_IsRoot))
 			{
+				struct BackFillSourceImageBuffer *this_Buffer;
 				D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Root Window = TRUE!\n"));
 				this_BFI->bfi_CopyWidth = GetBitMapAttr(this_BFI->bfi_Screen->RastPort.BitMap, BMA_WIDTH);
 				this_BFI->bfi_CopyHeight = GetBitMapAttr(this_BFI->bfi_Screen->RastPort.BitMap, BMA_HEIGHT);
@@ -558,7 +606,7 @@ check_imagebuffer:
 
 				this_BFI->bfi_CopyHeight -= (this_BFI->bfi_Screen->BarHeight + 1);
 
-				struct BackFillSourceImageBuffer *this_Buffer = NULL;
+				this_Buffer = NULL;
 
 				if (this_BFI->bfi_Buffer)
 				{
@@ -587,11 +635,11 @@ check_imagebuffer:
 
 					if (this_Buffer->bfsib_BitMap = AllocBitMap(this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight, Depth, Depth == 8 ? BMF_MINPLANES : 0L, this_BFI->bfi_Screen->RastPort.BitMap))
 					{
+						struct Rectangle CopyBounds;
 
 						D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: SCALED - Scale Dimensions (%d x %d)\n", this_BFI->bfi_CopyWidth, this_BFI->bfi_CopyHeight));
 
-						struct Rectangle CopyBounds;
-
+						
 						this_Buffer->bfsib_BitMapRastPort->BitMap = this_Buffer->bfsib_BitMap;
 						this_BFI->bfi_Buffer = this_Buffer;
 						
@@ -628,6 +676,7 @@ check_imagebuffer:
 		}
 		default:
 		{
+			struct BackFillSourceImageBuffer *this_Buffer;
 			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: TILED mode\n"));
 			if ((BackGround_TileMode = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
 																BackGround_Attrib, MUIA_IconWindowExt_ImageBackFill_BGTileMode)) == -1)
@@ -666,7 +715,7 @@ check_imagebuffer:
 
 			SET(_IconWindows_IconListObj, MUIA_IconListview_ScaledBackground, FALSE);
 
-			struct BackFillSourceImageBuffer *this_Buffer = NULL;
+			this_Buffer = NULL;
 
 			if (this_BFI->bfi_Buffer)
 			{
@@ -777,8 +826,9 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_Cleanup
 	Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Cleanup *message
 )
 {
-	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Cleanup()\n"));
 	struct BackFillInfo   *this_BFI = message->BackFill_Data;
+
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_Cleanup()\n"));
 
 	if (this_BFI->bfi_Buffer)
 	{
@@ -800,8 +850,9 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_DrawBackground
 	Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_DrawBackground *message
 )
 {
-	D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground()\n"));
 	struct BackFillInfo   *this_BFI = NULL;
+
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground()\n"));
 		
 	if ((this_BFI = message->BackFill_Data) != NULL)
 	{
@@ -810,10 +861,12 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_DrawBackground
 
 		if ((this_BFI->bfi_Buffer) && (this_BFI->bfi_RastPort))
 		{
-			D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: BackFill_Data has suitable Buffer and RastPort ..\n"));
+
 #warning "TODO: Make Base Tile Offset preference settable"
 			WORD OffsetX = this_BFI->bfi_Options.bfo_OffsetX;         // the offset within the tile in x direction
 			WORD OffsetY = this_BFI->bfi_Options.bfo_OffsetY;         // the offset within the tile in y direction
+
+D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_DrawBackground: BackFill_Data has suitable Buffer and RastPort ..\n"));
 
 			if (this_BFI->bfi_Options.bfo_TileMode == IconWindowExt_ImageBackFill_TileMode_Float)
 			{

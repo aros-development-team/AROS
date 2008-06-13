@@ -2,11 +2,14 @@
     Copyright  2004-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
-
+#ifndef __AROS__
+#include "portable_macros.h"
+#else
 #define MUIMASTER_YES_INLINE_STDARG
 
 #define DEBUG 0
 #include <aros/debug.h>
+#endif
 
 #define WANDERER_DEFAULT_BACKDROP
 //#define WANDERER_DEFAULT_SHOWALL
@@ -15,24 +18,49 @@
 #include <exec/types.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
+
+#ifdef __AROS__
 #include <zune/customclasses.h>
+#else
+#include <zune_AROS/customclasses.h>
+#endif
+
 #include <dos/notify.h>
+
+#ifdef __AROS__
 #include <workbench/handler.h>
+#else
+#include <workbench_AROS/handler.h>
+#endif
+
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
+
+#ifdef __AROS__
 #include <proto/workbench.h>
+#endif
+
 #include <proto/layers.h>
+
+#ifdef __AROS__
 #include <proto/alib.h>
+#endif
 
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
 
+
+#ifdef __AROS__
 #include <aros/detach.h>
 #include <prefs/wanderer.h>
+#else
+#include <prefs_AROS/wanderer.h>
+#endif
+
 
 #include "iconwindow.h"
 #include "iconwindow_attributes.h"
@@ -46,6 +74,18 @@
 #include "locale.h"
 
 #include "version.h"
+
+#ifndef __AROS__
+#define DEBUG 1
+
+#ifdef DEBUG
+  #define D(x) if (DEBUG) x
+  #define bug DebugPrintF
+#else
+  #define  D(...)
+#endif
+#endif
+
 
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
 
@@ -282,11 +322,12 @@ void copy_dropentries()
         struct MUIDisplayObjects dobjects;
         struct Hook displayCopyHook;
         struct Hook displayDelHook;
+	struct Wanderer_FileEntry *currententry;
 
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
         displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
         
-        struct Wanderer_FileEntry *currententry;
+        
 
         if (CreateCopyDisplay(ACTION_COPY, &dobjects))
         {
@@ -331,7 +372,7 @@ AROS_UFH3
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
         static unsigned char  buf[1024];
-
+	IPTR                  offset;
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
 
         DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR)&ent);
@@ -341,7 +382,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSel
             return;
         }
 
-        IPTR                  offset = strlen(ent->filename) - 5;
+        offset = strlen(ent->filename) - 5;
 
         if ((msg->isroot) && (!Stricmp(ent->filename + offset, ":Disk")))
         {
@@ -475,9 +516,12 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
     if (message_filelist != NULL)
     {
         strcpy( (char*)&message_filelist->destination_string, drop->destination_string);
-
+	
+	#ifdef __AROS__
         NEWLIST(&message_filelist->files);
-
+	#else
+        NEW_LIST(&message_filelist->files);
+	#endif
             /* process all selected entries */
             do
             {
@@ -493,18 +537,19 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
             } 
             while ( (int)ent != MUIV_IconList_NextSelected_End );
 
+	{
         /* create process and copy files within */
-        const struct TagItem 	     tags[]=
-        {
-            {NP_Entry    , (IPTR)copy_dropentries    	},
-            {NP_Name     , (IPTR)"wanderer copy"        },
-            {NP_UserData , (IPTR)message_filelist       },
-            {NP_StackSize, 40000 			            },
-            {TAG_DONE    , 0     	    	    	    }
-        };
+        	const struct TagItem 	     tags[]=
+        	{
+            		{NP_Entry    , (IPTR)copy_dropentries       },
+            		{NP_Name     , (IPTR)"wanderer copy"        },
+            		{NP_UserData , (IPTR)message_filelist       },
+            		{NP_StackSize, 40000 			    },
+            		{TAG_DONE    , 0     	    	    	    }
+        	};
 
-        child = CreateNewProc(tags);
-
+        	child = CreateNewProc(tags);
+	}
             /* FIXME: update list contents */
         /* this one should be solved through file notofications, as files are copied in a seperate process now  */
 
@@ -530,9 +575,11 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                 struct List AppList;
                 ULONG files = 0;
                 BOOL  fail  = FALSE;
+		struct IconList_Entry *ent;
+
                 NewList(&AppList);
 
-                struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+                ent = (void*)MUIV_IconList_NextSelected_Start;
                 /* process all selected entries */
                 do 
                 {
@@ -634,9 +681,10 @@ AROS_UFH3
 {
     AROS_USERFUNC_INIT
 
-D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc()\n"));
     struct Wanderer_DATA *data = INST_DATA(_WandererIntern_CLASS, _WandererIntern_AppObj);
+    BOOL    wb_iscurrentlybd;
 
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc()\n"));
 D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Private data @ %x\n", data));
 
     if (!data->wd_WorkbenchWindow)
@@ -645,15 +693,14 @@ D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: No Workbench Window\n"));
         return;
     }
     
-    BOOL    wb_iscurrentlybd = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_IconWindow_IsBackdrop);
+    wb_iscurrentlybd = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_IconWindow_IsBackdrop);
 
     if (wb_iscurrentlybd != data->wd_Option_BackDropMode)
     {
-D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Backdrop mode change requested!\n"));
-
         BOOL          isOpen = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_Window_Open);
         Object        *win_Active = NULL;
 
+D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Backdrop mode change requested!\n"));
 D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Disposing of existing Workbench window Obj ..\n"));
         if (isOpen)
             SET(data->wd_WorkbenchWindow, MUIA_Window_Open, FALSE);
@@ -792,10 +839,11 @@ STRPTR GetUserScreenTitle(Object *self)
   /*Work in progress :-)
    */
     char *screentitlestr;
+    int screentitleleng;
     
     GET(self, MUIA_IconWindowExt_ScreenTitle_String, &screentitlestr);   
    
-    int screentitleleng = strlen(screentitlestr);
+    screentitleleng = strlen(screentitlestr);
 
     if (screentitleleng<1)
     { 
@@ -962,10 +1010,11 @@ void wanderer_menufunc_window_newdrawer(STRPTR *cdptr)
     
     Object *win = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     STRPTR dr = ( STRPTR )XGET( win, MUIA_IconWindow_Location );
-D(bug("[wanderer] wanderer_menufunc_window_newdrawer(%s)\n", dr));
-
     Object *actwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *wbwindow = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
+    BPTR lock;
+
+D(bug("[wanderer] wanderer_menufunc_window_newdrawer(%s)\n", dr));
     if (actwindow == wbwindow)
     {
         /* This check is necessary because WorkbenchWindow has path RAM: */
@@ -978,7 +1027,7 @@ D(bug("[wanderer] wanderer_menufunc_window_newdrawer: Can't call WBNewDrawer: th
         return;
     }
 
-    BPTR lock = Lock(dr, ACCESS_READ);
+    lock = Lock(dr, ACCESS_READ);
     OpenWorkbenchObject
     (
         "WANDERER:Tools/WBNewDrawer",
@@ -997,9 +1046,16 @@ void wanderer_menufunc_window_openparent(STRPTR *cdptr)
         
     IPTR	path_len=0;
     STRPTR	last_letter=NULL;
+    STRPTR thispath;
+    STRPTR buf;
+    Object *cstate;
+    Object *child;
+    BOOL foundSlash, foundColon;
+    int i = 0;
+
     last_letter = &dr[ strlen(dr) - 1 ];
     
-    STRPTR thispath = FilePart(dr);
+    thispath = FilePart(dr);
     
     if (*last_letter==0x3a) return; /* Top Drawer has no parent to open */
     
@@ -1010,15 +1066,15 @@ void wanderer_menufunc_window_openparent(STRPTR *cdptr)
     else 
        path_len = (IPTR)((thispath-(IPTR)(dr))-1);
     
-    STRPTR buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
+    buf = AllocVec((path_len+1),MEMF_PUBLIC|MEMF_CLEAR);	
     CopyMem(dr, buf, path_len);
     
-    Object *cstate = (Object*)(((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
-    Object *child;
+    cstate = (Object*)(((struct List*)XGET(_WandererIntern_AppObj, MUIA_Application_WindowList))->lh_Head);
+   
     
     // Make sure we have a correct path   
-    BOOL foundSlash = FALSE, foundColon = FALSE;
-    int i = 0; for ( ; i < path_len; i++ )
+    foundSlash = FALSE, foundColon = FALSE;
+    i = 0; for ( ; i < path_len; i++ )
     {
         if ( buf[ i ] == '/' ) foundSlash = TRUE;
         if ( buf[ i ] == ':' ) foundColon = TRUE;
@@ -1476,15 +1532,16 @@ void wanderer_menufunc_icon_delete(void)
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
     struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextSelected_Start;
-    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
-    
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
     struct Hook displayDelHook;
+    ULONG updatedIcons;
+
+    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
     displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
     displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
     
-    ULONG updatedIcons = 0;
+    updatedIcons = 0;
     
     /* Process all selected entries */
     if (CreateCopyDisplay(ACTION_DELETE, &dobjects))
@@ -1626,7 +1683,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW()\n"));
     if (self != NULL)
     {
         SETUP_WANDERER_INST_DATA;
-
+	ULONG updatedIcons;
 D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data));
 
         _WandererIntern_CLASS = CLASS;
@@ -1910,7 +1967,12 @@ D(bug("[Wanderer] %s: Couldnt Lock WB Screen!!\n", __PRETTY_FUNCTION__));
             case WBHM_TYPE_HIDE:
 D(bug("[Wanderer] %s: WBHM_TYPE_HIDE\n", __PRETTY_FUNCTION__));
                 pub_screen_list = LockPubScreenList();
+
+                #ifdef __AROS__
                 ForeachNode (pub_screen_list, pub_screen_node)
+                #else
+		Foreach_Node(pub_screen_list, pub_screen_node);
+                #endif
                 {
                     if (pub_screen_node->psn_Screen == data->wd_Screen)
                         visitor_count = pub_screen_node->psn_VisitorCount;
@@ -2200,22 +2262,26 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
 {
     SETUP_WANDERER_INST_DATA;
 
-D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
-
     Object *window                = NULL;
     BOOL    isWorkbenchWindow     = FALSE;
     BOOL    useBackdrop           = FALSE;
+    BOOL    hasToolbar;
+    IPTR    TAG_IconWindow_Drawer;
+    IPTR    useFont;
+    Object *_NewWandDrawerMenu__menustrip;
+
+D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 
     if (isWorkbenchWindow = (message->drawer == NULL ? TRUE : FALSE))
     {
         useBackdrop = data->wd_Option_BackDropMode;
     }
 
-    BOOL    hasToolbar            = XGET(data->wd_Prefs, MUIA_IconWindowExt_Toolbar_Enabled);
+    hasToolbar            = XGET(data->wd_Prefs, MUIA_IconWindowExt_Toolbar_Enabled);
 
-    IPTR    TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
+    TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
 
-    IPTR    useFont = (IPTR)NULL;
+    useFont = (IPTR)NULL;
     
     data->wd_Screen = LockPubScreen(NULL);
     if(data->wd_Screen == NULL)
@@ -2231,7 +2297,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Using Screen @ %x\
         useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
     }
 
-    Object *_NewWandDrawerMenu__menustrip = __CreateWandererIntuitionMenu__ (isWorkbenchWindow, useBackdrop);
+    _NewWandDrawerMenu__menustrip = __CreateWandererIntuitionMenu__ (isWorkbenchWindow, useBackdrop);
     
     /* Create a new icon drawer window with the correct drawer being set */
     window = IconWindowObject,

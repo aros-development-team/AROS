@@ -1,9 +1,14 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
+#ifndef __AROS__
+#include "portable_macros.h"
+#endif
 
+#ifdef __AROS__
 #include <aros/symbolsets.h>
+#endif
 #include <exec/types.h>
 #include <proto/locale.h>
 
