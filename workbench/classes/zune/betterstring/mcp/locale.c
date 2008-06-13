@@ -74,7 +74,7 @@ void CloseCat(void)
 void OpenCat(void)
 {
   static const struct TagItem tags[] = {
-                                         { OC_BuiltInLanguage, (ULONG)"english" },
+                                         { OC_BuiltInLanguage, (IPTR)"english" },
                                          { OC_Version,         2 },
                                          { TAG_DONE,           0  }
                                        };
