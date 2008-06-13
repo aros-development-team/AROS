@@ -240,7 +240,7 @@ extern void _aros_not_implemented (char *);
 	"stw    1,%1\n\t"    \
 	"mflr   0\n\t"       \
 	"stwu   1,-16(1)\n\t" \
-	"stw    0,8(1)\n\t" \
+	"stw    0,12(1)\n\t" \
 	"mr     0,%2\n\t"    \
 	"mtlr   0\n\t"       \
 	"blrl\n\t"           \
