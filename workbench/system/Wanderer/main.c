@@ -28,7 +28,11 @@
 
 #ifdef DEBUG
   #define D(x) if (DEBUG) x
+  #ifdef __amigaos4__
   #define bug DebugPrintF
+  #else
+  #define bug kprintf
+  #endif
 #else
   #define  D(...)
 #endif
@@ -44,8 +48,8 @@ struct CyberGfxIFace    *ICyberGfx;
 #endif
 
 /* global variables */
-Object 				 *_WandererIntern_AppObj = NULL;
-Class 				 *_WandererIntern_CLASS = NULL;
+Object         *_WandererIntern_AppObj = NULL;
+Class          *_WandererIntern_CLASS = NULL;
 
 /* Don't output errors to the console, open requesters instead */
 int                  __forceerrorrequester = 1;
@@ -57,6 +61,7 @@ struct MUI_CustomClass  *IconDrawerList_Class = NULL;
 struct MUI_CustomClass  *IconListview_Class = NULL;
 struct MUI_CustomClass  *IconVolumeList_Class = NULL;
 
+///deInitLibs()
 void deInitLibs(void)
 {
   if (MUIMasterBase)
@@ -115,7 +120,9 @@ D(bug("6\n"));
    if (CyberGfxBase) CloseLibrary(CyberGfxBase);
 
 }
+///
 
+///initLibs()
 int initLibs(void)
 {
 
@@ -171,9 +178,10 @@ int initLibs(void)
   return 0;
 
 }
+///
 #endif
 
-
+///main()
 int main(void)
 {
     LONG             retval = RETURN_ERROR;
@@ -186,13 +194,13 @@ int main(void)
 D(bug("[Wanderer.EXE] Wanderer Initialising .. \n"));
 
     OpenWorkbenchObject("Wanderer:Tools/ExecuteStartup", 0, 0);
-	
+  
     if ((_WandererIntern_AppObj = WandererObject, End) != NULL)
     {
 D(bug("[Wanderer.EXE] Handing control over to Zune .. \n"));
-		retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
+    retval = DoMethod(_WandererIntern_AppObj, MUIM_Application_Execute);
 D(bug("[Wanderer.EXE] Returned from Zune's control .. \n"));
-		MUI_DisposeObject(_WandererIntern_AppObj);
+    MUI_DisposeObject(_WandererIntern_AppObj);
     }
 
 D(bug("[Wanderer.EXE] Exiting .. \n"));
@@ -203,3 +211,4 @@ D(bug("[Wanderer.EXE] Exiting .. \n"));
 
     return retval;
 }
+///

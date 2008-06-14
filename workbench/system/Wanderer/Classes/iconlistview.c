@@ -35,7 +35,11 @@ $Id$
 
 #ifdef DEBUG
   #define D(x) if (DEBUG) x
+  #ifdef __amigaos4__
   #define bug DebugPrintF
+  #else
+  #define bug kprintf
+  #endif
 #else
   #define  D(...)
 #endif
@@ -43,7 +47,7 @@ $Id$
 
 extern struct Library *MUIMasterBase;
 
-
+///IconListview_Layout_Function()
 ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *lm)
 {
     struct IconListview_DATA *data = (struct IconListview_DATA *)hook->h_Data;
@@ -161,8 +165,9 @@ ULONG IconListview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_La
     }
     return 0;
 }
+///
 
-
+///IconListview_Function()
 ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct IconListview_DATA *data = (struct IconListview_DATA *)hook->h_Data;
@@ -194,8 +199,9 @@ ULONG IconListview_Function(struct Hook *hook, APTR dummyobj, void **msg)
     
     return 0;
 }
+///
 
-
+///OM_NEW()
 IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct IconListview_DATA *data;
@@ -228,9 +234,9 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, FALSE,
-		MUIA_Group_HorizSpacing, 0,
-		MUIA_Group_VertSpacing, 0,
-		MUIA_Frame, MUIV_Frame_None,
+    MUIA_Group_HorizSpacing, 0,
+    MUIA_Group_VertSpacing, 0,
+    MUIA_Frame, MUIV_Frame_None,
 
         Child, (IPTR) (
             group = GroupObject,
@@ -283,8 +289,9 @@ D(bug("[IconListview] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, obj));
     
     return (ULONG)obj;
 }
+///
 
-
+///OM_DISPOSE()
 IPTR IconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct IconListview_DATA *data = INST_DATA(cl, obj);
@@ -297,21 +304,23 @@ IPTR IconListview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR IconListview__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct IconListview_DATA *data = INST_DATA(cl, obj);
-    struct TagItem  	     *tag, *tags;
+    struct TagItem         *tag, *tags;
     
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
         switch (tag->ti_Tag)
         {
-			case MUIA_Background:
+      case MUIA_Background:
 D(bug("[IconListview] %s: MUIA_Background!\n", __PRETTY_FUNCTION__));
-				break;
-		}
+        break;
+    }
     }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
+///
 
+///MUIM_Show()
 IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct IconListview_DATA *data = INST_DATA(cl, obj);
@@ -340,6 +349,7 @@ IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *m
 
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
+///
 
 #if WANDERER_BUILTIN_ICONLISTVIEW
 BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
@@ -359,8 +369,8 @@ BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
             return IconListview__OM_DISPOSE(cl, obj, msg);
         case MUIM_Show: 
             return IconListview__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
-		case OM_SET:
-			return IconListview__OM_SET(cl, obj, (struct opSet *) msg);
+    case OM_SET:
+      return IconListview__OM_SET(cl, obj, (struct opSet *) msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }

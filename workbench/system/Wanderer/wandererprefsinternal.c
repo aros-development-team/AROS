@@ -103,7 +103,11 @@
 
 #ifdef DEBUG
   #define D(x) if (DEBUG) x
+  #ifdef __amigaos4__
   #define bug DebugPrintF
+  #else
+  #define bug kprintf
+  #endif
 #else
   #define  D(...)
 #endif
@@ -152,94 +156,94 @@ struct IFFHandle *CreateIFF(STRPTR filename, LONG *stopchunks, LONG numstopchunk
     
     if ((iff = AllocIFF()))
     {
-    	D(bug("CreateIFF: AllocIFF okay.\n"));
-    	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE)))
-	{
-    	    D(bug("CreateIFF: Open() okay.\n"));
-	    InitIFFasDOS(iff);
-	    
-	    if (OpenIFF(iff, IFFF_READ) == 0)
-	    {
-	    	BOOL ok = FALSE;
+      D(bug("CreateIFF: AllocIFF okay.\n"));
+      if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE)))
+  {
+          D(bug("CreateIFF: Open() okay.\n"));
+      InitIFFasDOS(iff);
+      
+      if (OpenIFF(iff, IFFF_READ) == 0)
+      {
+        BOOL ok = FALSE;
 
-    	    	D(bug("CreateIFF: OpenIFF okay.\n"));
-		
-	    	if ((StopChunk(iff, ID_PREF, ID_PRHD) == 0) &&
-		    (StopChunks(iff, stopchunks, numstopchunks) == 0))
-		{
-    	    	    D(bug("CreateIFF: StopChunk(PRHD) okay.\n"));
-		    
-		    if (ParseIFF(iff, IFFPARSE_SCAN) == 0)
-		    {
-		    	struct ContextNode *cn;
+            D(bug("CreateIFF: OpenIFF okay.\n"));
+    
+        if ((StopChunk(iff, ID_PREF, ID_PRHD) == 0) &&
+        (StopChunks(iff, stopchunks, numstopchunks) == 0))
+    {
+                D(bug("CreateIFF: StopChunk(PRHD) okay.\n"));
+        
+        if (ParseIFF(iff, IFFPARSE_SCAN) == 0)
+        {
+          struct ContextNode *cn;
 
-			cn = CurrentChunk(iff);
-			
-    	    	    	D(bug("CreateIFF: ParseIFF okay. Chunk Type = %c%c%c%c  ChunkID = %c%c%c%c\n",
-			      cn->cn_Type >> 24,
-			      cn->cn_Type >> 16,
-			      cn->cn_Type >> 8,
-			      cn->cn_Type,
-			      cn->cn_ID >> 24,
-			      cn->cn_ID >> 16,
-			      cn->cn_ID >> 8,
-			      cn->cn_ID));
-			
-			if ((cn->cn_ID == ID_PRHD)
-    	    	    #if CHECK_PRHD_SIZE
-			    && (cn->cn_Size == sizeof(struct FilePrefHeader))
-    	    	    #endif
-    	    	    	   )
-			{
-			    struct FilePrefHeader h;
-			    
-    	    	    	    D(bug("CreateIFF: PRHD chunk okay.\n"));
+      cn = CurrentChunk(iff);
+      
+                  D(bug("CreateIFF: ParseIFF okay. Chunk Type = %c%c%c%c  ChunkID = %c%c%c%c\n",
+            cn->cn_Type >> 24,
+            cn->cn_Type >> 16,
+            cn->cn_Type >> 8,
+            cn->cn_Type,
+            cn->cn_ID >> 24,
+            cn->cn_ID >> 16,
+            cn->cn_ID >> 8,
+            cn->cn_ID));
+      
+      if ((cn->cn_ID == ID_PRHD)
+                #if CHECK_PRHD_SIZE
+          && (cn->cn_Size == sizeof(struct FilePrefHeader))
+                #endif
+                     )
+      {
+          struct FilePrefHeader h;
+          
+                      D(bug("CreateIFF: PRHD chunk okay.\n"));
 
-		    	    if (ReadChunkBytes(iff, &h, sizeof(h)) == sizeof(h))
-			    {
-    	    	    	    	D(bug("CreateIFF: Reading PRHD chunk okay.\n"));
+              if (ReadChunkBytes(iff, &h, sizeof(h)) == sizeof(h))
+          {
+                        D(bug("CreateIFF: Reading PRHD chunk okay.\n"));
 
-    	    	    	    #if CHECK_PRHD_VERSION
-			    	if (h.ph_Version == PHV_CURRENT)
-				{
-    	    	    	    	    D(bug("CreateIFF: PrefHeader version is correct.\n"));
-				    ok = TRUE;
-				}
-    	    	    	    #else
-    	    	    	    	ok = TRUE;
-    	    	    	    #endif	
-			    			
-			    }
-			    
-			}
-			
-		    } /* if (ParseIFF(iff, IFFPARSE_SCAN) == 0) */
-		    
-		} /* if ((StopChunk(iff, ID_PREF, ID_PRHD) == 0) && (StopChunks(... */
-		
-		if (!ok)
-		{
-		    CloseIFF(iff);
-	    	    Close((BPTR)iff->iff_Stream);
-		    FreeIFF(iff);
-		    iff = NULL;
-		}
-		
-	    } /* if (OpenIFF(iff, IFFF_READ) == 0) */
-	    else
-	    {
-	    	Close((BPTR)iff->iff_Stream);
-		FreeIFF(iff);
-		iff = NULL;
-	    }
-	    
-	} /* if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE))) */
-	else
-	{
-	   FreeIFF(iff); 
-	   iff = NULL;
-	}
-	
+                      #if CHECK_PRHD_VERSION
+            if (h.ph_Version == PHV_CURRENT)
+        {
+                            D(bug("CreateIFF: PrefHeader version is correct.\n"));
+            ok = TRUE;
+        }
+                      #else
+                        ok = TRUE;
+                      #endif  
+                
+          }
+          
+      }
+      
+        } /* if (ParseIFF(iff, IFFPARSE_SCAN) == 0) */
+        
+    } /* if ((StopChunk(iff, ID_PREF, ID_PRHD) == 0) && (StopChunks(... */
+    
+    if (!ok)
+    {
+        CloseIFF(iff);
+            Close((BPTR)iff->iff_Stream);
+        FreeIFF(iff);
+        iff = NULL;
+    }
+    
+      } /* if (OpenIFF(iff, IFFF_READ) == 0) */
+      else
+      {
+        Close((BPTR)iff->iff_Stream);
+    FreeIFF(iff);
+    iff = NULL;
+      }
+      
+  } /* if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE))) */
+  else
+  {
+     FreeIFF(iff); 
+     iff = NULL;
+  }
+  
     } /* if ((iff = AllocIFF())) */
     
     return iff;
@@ -291,46 +295,46 @@ D(bug("[wanderer] WandererPrefs_CheckFont: ID_FONT chunk with correct size found
 
         if (ReadChunkBytes(iff, &fontprefs, sizeof(fontprefs)) == sizeof(fontprefs))
         {
-		    UWORD   	    type;
-		    
+        UWORD         type;
+        
 D(bug("[wanderer] WandererPrefs_CheckFont: Reading of ID_FONT chunk okay.\n"));
 
-		    type = (fontprefs.fp_Type[0] << 8) + fontprefs.fp_Type[1];
+        type = (fontprefs.fp_Type[0] << 8) + fontprefs.fp_Type[1];
 
 D(bug("[wanderer] WandererPrefs_CheckFont: Type = %d  Name = %s\n", type, fontprefs.fp_Name));
 
-		    if (type == FP_WBFONT)
-		    {
-		      struct TextFont  *oldWIPD_IconFont = NULL;
-		      if (WIPD->WIPD_IconFont != NULL)
-		      {
-		        oldWIPD_IconFont = WIPD->WIPD_IconFont;
-		      }
-  		      WIPD->WIPD_IconFontTA.ta_Name  = fontprefs.fp_Name;
-		      WIPD->WIPD_IconFontTA.ta_YSize = (fontprefs.fp_TextAttr_ta_YSize[0] << 8) + 
-		    	    	                           fontprefs.fp_TextAttr_ta_YSize[1];
-		      WIPD->WIPD_IconFontTA.ta_Style = fontprefs.fp_TextAttr_ta_Style;
-		      WIPD->WIPD_IconFontTA.ta_Flags = fontprefs.fp_TextAttr_ta_Flags;
-
-		      WIPD->WIPD_IconFont = OpenDiskFont(&WIPD->WIPD_IconFontTA);
-D(bug("[wanderer] WandererPrefs_CheckFont: Trying to use Font '%s' @ %x\n", WIPD->WIPD_IconFontTA.ta_Name, WIPD->WIPD_IconFont));
-		      if (oldWIPD_IconFont != NULL)
-		      {
-		        // Cause all windows to update their used font ..
-
-		        // Then close the old font ..
-		        CloseFont(oldWIPD_IconFont);
-		      }
+        if (type == FP_WBFONT)
+        {
+          struct TextFont  *oldWIPD_IconFont = NULL;
+          if (WIPD->WIPD_IconFont != NULL)
+          {
+            oldWIPD_IconFont = WIPD->WIPD_IconFont;
           }
-		    
+            WIPD->WIPD_IconFontTA.ta_Name  = fontprefs.fp_Name;
+          WIPD->WIPD_IconFontTA.ta_YSize = (fontprefs.fp_TextAttr_ta_YSize[0] << 8) + 
+                                           fontprefs.fp_TextAttr_ta_YSize[1];
+          WIPD->WIPD_IconFontTA.ta_Style = fontprefs.fp_TextAttr_ta_Style;
+          WIPD->WIPD_IconFontTA.ta_Flags = fontprefs.fp_TextAttr_ta_Flags;
+
+          WIPD->WIPD_IconFont = OpenDiskFont(&WIPD->WIPD_IconFontTA);
+D(bug("[wanderer] WandererPrefs_CheckFont: Trying to use Font '%s' @ %x\n", WIPD->WIPD_IconFontTA.ta_Name, WIPD->WIPD_IconFont));
+          if (oldWIPD_IconFont != NULL)
+          {
+            // Cause all windows to update their used font ..
+
+            // Then close the old font ..
+            CloseFont(oldWIPD_IconFont);
+          }
+          }
+        
         } /* if (ReadChunkBytes(iff, &fontprefs, sizeof(fontprefs)) == sizeof(fontprefs)) */
-		
+    
       } /* if ((cn->cn_ID == ID_FONT) && (cn->cn_Size == sizeof(fontprefs))) */
 
     } /* while(ParseIFF(iff, IFFPARSE_SCAN) == 0) */
-	    
+      
     KillIFF(iff);
-	
+  
   } /* if ((iff = CreateIFF(filename))) */
 }
 
