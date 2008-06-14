@@ -12,6 +12,7 @@
 #include "gui.h"
 #include "harddisks.h"
 
+#define DEBUG 0
 #include "debug.h"
 
 extern struct GUIGadgets gadgets;
@@ -35,8 +36,16 @@ struct HDTBDevice *addDevice(struct ListNode *parent, STRPTR name)
                 ln->listnode.ln.ln_Type = LNT_Device;
                 CopyMem(name, ln->listnode.ln.ln_Name, strlen(name)+1);
                 findHDs(&ln->listnode);
+
+		/*
+		 * check if device carries at least one element (empty partition?)
+		 */
                 if (ln->listnode.list.lh_Head->ln_Succ->ln_Succ)
                     ln->listnode.flags |= LNF_Listable;
+
+		/*
+		 * add device to the list
+		 */
                 InsertList(gadgets.leftlv, &ln->listnode);
                 AddTail(&parent->list, &ln->listnode.ln);
                 return ln;

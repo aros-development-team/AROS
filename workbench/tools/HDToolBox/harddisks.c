@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 
+#define DEBUG 0
 #include "debug.h"
 
 #include "harddisks.h"
@@ -92,12 +93,19 @@ void findHDs(struct ListNode *parent)
                                 node->root_partition.ph = OpenRootPartition(parent->ln.ln_Name, node->unit);
                                 if (node->root_partition.ph)
                                 {
+				    D(bug("[HDToolBox] - appending ROOT partition %p to list %p\n", &node->root_partition.listnode.ln, &parent->list));
+				    D(bug("[HDToolBox] - first entry at %p\n", node->root_partition.listnode.list.lh_Head));
                                     AddTail(&parent->list, &node->root_partition.listnode.ln);
                                     if (findPartitionTable(&node->root_partition))
                                     {
+					D(bug("[HDToolBox] - partition table found. searching for partitions\n"));
                                         findPartitions(&node->root_partition.listnode, &node->root_partition);
                                         node->root_partition.listnode.flags |= LNF_Listable;
                                     }
+				    else
+				    {
+					D(bug("[HDToolBox] - partition table not found.\n"));
+				    }
                                     GetPartitionAttrsA
                                     (
                                         node->root_partition.ph,
@@ -119,6 +127,7 @@ void findHDs(struct ListNode *parent)
         }
         DeleteMsgPort(mp);
     }
+    D(bug("[HDToolBox] findHDs() successful\n"));
 }
 
 void freeHDList(struct List *list)

@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
+#define DEBUG 0
 #include "debug.h"
 
 #include "gui.h"
@@ -486,6 +487,7 @@ AROS_UFH3(void, buttons_function,
             LONG type;
             struct DosEnvec *de;
             char str[32];
+	    D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display:\n"));
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_EMPTY_AREA)
             {
@@ -501,25 +503,18 @@ AROS_UFH3(void, buttons_function,
                     partition->listnode.flags |= LNF_IntermedChange;
                 }
             }
-            set(resizemovegadgets.lowcyl, MUIA_String_Integer, de->de_LowCyl);
-            set(resizemovegadgets.highcyl, MUIA_String_Integer, de->de_HighCyl);
-            set(resizemovegadgets.totalcyl, MUIA_String_Integer, de->de_HighCyl-de->de_LowCyl+1);
-            getSizeStr
-            (
-                str,
-                (
-                    (
-                        (de->de_HighCyl-de->de_LowCyl+1)*
-                        de->de_Surfaces*de->de_BlocksPerTrack
-                    )-1
-                )/2
-            );
-            set(resizemovegadgets.size, MUIA_String_Contents, str);
+            nnset(resizemovegadgets.lowcyl, MUIA_String_Integer, de->de_LowCyl);
+            nnset(resizemovegadgets.highcyl, MUIA_String_Integer, de->de_HighCyl);
+            nnset(resizemovegadgets.totalcyl, MUIA_String_Integer, de->de_HighCyl-de->de_LowCyl+1);
+            getSizeStr(str, (((de->de_HighCyl - de->de_LowCyl + 1) * de->de_Surfaces * de->de_BlocksPerTrack)-1)/2);
+            nnset(resizemovegadgets.size, MUIA_String_Contents, str);
+	    D(bug("[HDToolBox] buttons_function() - Resize/Move Partition Display successful\n"));
         }
         else if (object == resizemovegadgets.lowcyl)
         {
             LONG type;
             ULONG value;
+	    D(bug("[HDToolBox] buttons_function() - Resize/Move Lowcyl:\n"));
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
@@ -529,6 +524,11 @@ AROS_UFH3(void, buttons_function,
                 ULONG block;
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
+		D(bug("[HDToolBox] - Type             : Partition\n"));
+		D(bug("[HDToolBox] - Old value        : %ld\n", partition->de.de_LowCyl));
+		D(bug("[HDToolBox] - New value        : %ld\n", value));
+		D(bug("[HDToolBox] - Partition table  : %p\n", table));
+		D(bug("[HDToolBox] - Active partition : %p\n", partition));
                 if (value != partition->de.de_LowCyl)
                 {
                     block =
@@ -570,6 +570,7 @@ AROS_UFH3(void, buttons_function,
         {
             LONG type;
             ULONG value;
+	    D(bug("[HDToolBox] buttons_function() - Resize/Move Highcyl:\n"));
             get(object, MUIA_String_Integer, &value);
             get(resizemovegadgets.pt, PTCT_ActiveType, &type);
             if (type == PTS_PARTITION)
@@ -579,6 +580,11 @@ AROS_UFH3(void, buttons_function,
                 ULONG block;
                 get(resizemovegadgets.pt, PTCT_PartitionTable, &table);
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &partition);
+		D(bug("[HDToolBox] - Type             : Partition\n"));
+		D(bug("[HDToolBox] - Old value        : %ld\n", partition->de.de_HighCyl));
+		D(bug("[HDToolBox] - New value        : %ld\n", value));
+		D(bug("[HDToolBox] - Partition table  : %p\n", table));
+		D(bug("[HDToolBox] - Active partition : %p\n", partition));
                 if (value != partition->de.de_HighCyl)
                 {
                     block =
@@ -591,8 +597,8 @@ AROS_UFH3(void, buttons_function,
                         char str[32];
                         partition->listnode.flags |= LNF_IntermedChange;
                         partition->de.de_HighCyl = value;
-                        set(resizemovegadgets.totalcyl, MUIA_String_Integer, partition->de.de_HighCyl-partition->de.de_LowCyl+1);
-                        set(resizemovegadgets.pt, PTCT_PartitionTable, table);
+                        nnset(resizemovegadgets.totalcyl, MUIA_String_Integer, partition->de.de_HighCyl-partition->de.de_LowCyl+1);
+                        nnset(resizemovegadgets.pt, PTCT_PartitionTable, table);
                         getSizeStr
                         (
                             str,
@@ -603,21 +609,22 @@ AROS_UFH3(void, buttons_function,
                                 )-1
                             )/2
                         );
-                        set(resizemovegadgets.size, MUIA_String_Contents, str);
+                        nnset(resizemovegadgets.size, MUIA_String_Contents, str);
                     }
                     else
-                        set(object, MUIA_String_Integer, partition->de.de_HighCyl);
+                        nnset(object, MUIA_String_Integer, partition->de.de_HighCyl);
                 }
             }
             else if (type == PTS_EMPTY_AREA)
             {
                 struct DosEnvec *de;
+		D(bug("[HDToolBox] - Type             : Empty Area\n"));
                 get(resizemovegadgets.pt, PTCT_ActivePartition, &de);
                 if (value != de->de_HighCyl)
                     set(object, MUIA_String_Integer, de->de_HighCyl);
             }
             else
-                set(object, MUIA_String_Integer, 0);
+                nnset(object, MUIA_String_Integer, 0);
         }
         else if (object == resizemovegadgets.totalcyl)
         {
@@ -2240,9 +2247,12 @@ void deinitGUI()
 
 BOOL QuitGUI(ULONG *sigs)
 {
-    D(bug("[HDToolBox] QuitGUI()\n"));
+    // moved debug from this place because it produces too much garbage 
 
     if ((LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)sigs) == MUIV_Application_ReturnID_Quit)
+    {
+	D(bug("[HDToolBox] QuitGUI()\n"));
         return TRUE;
+    }
     return FALSE;
 }
