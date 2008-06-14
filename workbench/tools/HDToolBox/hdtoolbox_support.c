@@ -68,7 +68,6 @@ ULONG countNodes(struct List *list, UBYTE type)
     return count;
 }
 
-
 void typestrncpy(STRPTR dst, STRPTR src, ULONG len)
 {
     while (len)

@@ -23,6 +23,7 @@
 #include "partitiontables.h"
 #include "platform.h"
 
+#define DEBUG 0
 #include "debug.h"
 
 #define G(a) ((struct Gadget *)a)
@@ -732,10 +733,15 @@ LONG getBetterDiff(struct HDTBPartition *table, struct HDTBPartition *current, L
             return 0;
         return getBetterDiff(table, current, diff);
     }
-    pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
-    while (pn->listnode.ln.ln_Succ)
+
+    for (pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
+	 pn->listnode.ln.ln_Succ;
+	 pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ)
     {
-        /* dont't check currently processed partition */
+	/* do NOT include anything that is NOT a partition */
+	if (pn->listnode.ln.ln_Type != LNT_Partition)
+	    continue;
+        /* don't check currently processed partition */
         if (current != pn)
         {
             spc = pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
@@ -754,7 +760,6 @@ LONG getBetterDiff(struct HDTBPartition *table, struct HDTBPartition *current, L
                 return getBetterDiff(table, current, diff);
             }
         }
-        pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
     }
     return diff;
 }
@@ -766,11 +771,11 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
     struct InputEvent *ie;
     struct RastPort *rport;
 
-    D(bug("[HDToolBox] pt_handleinput()\n"));
 
     ie = msg->gpi_IEvent;
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
+	D(bug("[HDToolBox] pt_handleinput(): %x / %x / %x\n", IECODE_NOBUTTON, IECODE_LBUTTON | IECODE_UP_PREFIX, ie->ie_Code));
         switch (ie->ie_Code)
         {
         case IECODE_NOBUTTON:
@@ -786,29 +791,32 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
                 ULONG spc;
                 ULONG tocheck;
 
+		D(bug("[HDToolBox] - attempting to obtain block\n", diff));
                 block = getBlock(msg->gpi_Mouse.X, G(obj)->Width - PARTITIONBLOCK_FRAMEWIDTH, data->table);
+		D(bug("[HDToolBox] - block location: %ld\n", diff));
                 diff = block-data->block;
                 if (diff)
                 {
+		    D(bug("[HDToolBox] - odiff: %ld\n", diff));
                     diff = getBetterDiff(data->table, data->active, diff);
+		    D(bug("[HDToolBox] - diff : %ld\n", diff));
                     if (diff)
                     {
                         spc=data->active->de.de_Surfaces*data->active->de.de_BlocksPerTrack;
+			D(bug("[HDToolBox] - spc  : %ld\n", spc));
                         start = data->active->de.de_LowCyl*spc;
+			D(bug("[HDToolBox] - start: %ld\n", start));
                         start += diff;
                         end = ((data->active->de.de_HighCyl+1)*spc)-1;
+			D(bug("[HDToolBox] - end  : %ld\n", end));
                         end += diff;
                         tocheck = (diff>0) ? end : start;
-#ifdef DEBUG
-#if DEBUG>0
                         if (validValue(data->table, data->active, tocheck))
                         {
-#endif
-#endif							
-                            rport = ObtainGIRPort(msg->gpi_GInfo);
-                            
                             start = start/spc;
                             end = ((end+1)/spc)-1;
+                            
+                            rport = ObtainGIRPort(msg->gpi_GInfo);
                             
                             DrawPartition
                             (
@@ -821,7 +829,6 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
                             );
                             data->active->de.de_LowCyl=start;
                             data->active->de.de_HighCyl=end;
-                            
                             DrawPartition
                             (
                                 rport,
@@ -831,26 +838,21 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
                                 &data->active->de,
                                 DPTYPE_USED_SELECTED
                             );
+                            if (rport) ReleaseGIRPort(rport);
 
                             data->block = block;
                             data->move = TRUE;
                             notify_all(cl, obj, msg->gpi_GInfo, TRUE, TRUE);
-                            
-                            if (rport) ReleaseGIRPort(rport);
-#ifdef DEBUG
-#if DEBUG>0
                         }
                         else
                         {
                             D(bug("[HDToolBox] pt_handleinput: !!!!!!!!!!!!!!!!!!!not valid\n"));
                         }
-#endif
-#endif
                     }
                 }
             }
-            break;
-        case SELECTUP:
+	    break;
+        case (IECODE_LBUTTON | IECODE_UP_PREFIX):
             data->move = FALSE;
             notify_all(cl, obj, msg->gpi_GInfo, FALSE, TRUE);
             data->selected = FALSE;
@@ -858,6 +860,11 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg)
             break;
         }
     }
+    else
+    {
+	D(bug("[HDToolBox] pt_handleinput(): Other class: %x\n", ie->ie_Class));
+    }
+    D(bug("[HDToolBox] pt_handleinput(): successful\n", ie->ie_Class));
     return retval;
 }
 
