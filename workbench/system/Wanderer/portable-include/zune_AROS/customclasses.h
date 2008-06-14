@@ -34,7 +34,7 @@ int name ## _Initialize(void)                                         \
                                                                       \
     if (!name ## _CLASS)                                              \
     {                                                                 \
-        D(bug("Could not create Zune custom class `" #name "'."));    \
+        D(bug("Could not create Zune custom class `" #name "'.\n"));    \
                                                                       \
   return 0;                                                           \
     }                                                                 \

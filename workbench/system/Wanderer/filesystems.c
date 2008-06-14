@@ -1,6 +1,6 @@
 #include  "filesystems.h"
 
-struct TagItem DummyTags[] = { TAG_DONE, };
+struct TagItem DummyTags[] = { {TAG_DONE, 0}};
 
 /* define some nonglobal data that can be used by the display hook */
 
@@ -9,7 +9,7 @@ void  strcrem(char *s, char *d, char c)
 {
     while (*s) {
         if (*s != c) *d++= *s;
-        *s++;
+        *s++;//"value computed is not used" ?
     }
     *d = 0;
 }
@@ -168,8 +168,8 @@ char *combinePath(APTR pool, char *path, char *file)
     int l;
     char *out;
     if ((path == NULL) || (file == NULL)) return NULL;
-    if (strlen(path) == NULL) return NULL;
-    if (strlen(file) == NULL) return NULL;
+    if (strlen(path) == 0) return NULL;
+    if (strlen(file) == 0) return NULL;
     
     l = strlen(path) + strlen(file) + 1;
     if (path[strlen(path)-1] != '/') l++;
@@ -1064,7 +1064,8 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
     struct  dCopyStruct    display;
     struct  dCopyStruct    delDisplay;
     char       *destname, *dest, *path, *comment, *dpath, *infoname, *destinfo;
-    LONG       len, Success2, prot;
+    //LONG       len;
+    LONG        Success2, prot;
     BPTR       nLock, nDir;
     APTR        pool;
     BOOL       created = FALSE;

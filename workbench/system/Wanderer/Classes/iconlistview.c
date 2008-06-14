@@ -354,14 +354,7 @@ IPTR IconListview__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *m
 #if WANDERER_BUILTIN_ICONLISTVIEW
 BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
 {
-    #ifdef __AROS__
-    switch (message->MethodID)
-    #else
-    struct IClass *CLASS = cl;
-    Msg message = msg;
-
     switch (msg->MethodID)
-    #endif
     {
         case OM_NEW: 
             return IconListview__OM_NEW(cl, obj, (struct opSet *) msg);

@@ -3,9 +3,7 @@
   $Id$
 */
 
-#ifndef __AROS__
 #include "portable_macros.h"
-#endif
 
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG

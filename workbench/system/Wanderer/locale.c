@@ -2,9 +2,7 @@
     Copyright � 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
-#ifndef __AROS__
 #include "portable_macros.h"
-#endif
 
 #ifdef __AROS__
 #include <aros/symbolsets.h>
@@ -28,11 +26,11 @@ CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+  return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {
-	return CatCompArray[id].cca_Str;
+  return CatCompArray[id].cca_Str;
     }
 }
 

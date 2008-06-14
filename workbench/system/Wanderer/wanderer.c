@@ -2,9 +2,9 @@
     Copyright  2004-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
-#ifndef __AROS__
 #include "portable_macros.h"
-#else
+
+#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
 #define DEBUG 0
@@ -393,12 +393,12 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSel
 
         if ((msg->isroot) && (!Stricmp(ent->filename + offset, ":Disk")))
         {
-            strcpy(buf, ent->label);
-            strcat(buf, ":");
+            strcpy((STRPTR)buf, ent->label);
+            strcat((STRPTR)buf, ":");
         }
         else
         {
-            strcpy(buf, ent->filename);
+            strcpy((STRPTR)buf, ent->filename);
         }
 
 D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset = %d, buf = %s\n", offset, buf);)
@@ -417,7 +417,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                     if (XGET(child, MUIA_UserData))
                     {
                         STRPTR child_drawer = (STRPTR)XGET(child, MUIA_IconWindow_Location);
-                        if (child_drawer && !Stricmp(buf,child_drawer))
+                        if (child_drawer && !Stricmp(buf,(CONST_STRPTR)child_drawer))
                         {
                             BOOL is_open = ( BOOL )XGET(child, MUIA_Window_Open);
                             
@@ -522,7 +522,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
 
     if (message_filelist != NULL)
     {
-        strcpy( (char*)&message_filelist->destination_string, drop->destination_string);
+        strcpy( (char*)&message_filelist->destination_string,(STRPTR) drop->destination_string);
   
   #ifdef __AROS__
         NEWLIST(&message_filelist->files);
@@ -877,7 +877,7 @@ STRPTR ExpandEnvName(STRPTR env_path)
     BOOL     ok = FALSE;
     char     tmp_envbuff[1024];
     STRPTR   fullpath = NULL;
-    BPTR     env_lock = NULL;
+    BPTR     env_lock = (BPTR) NULL;
 
     env_lock = Lock("ENV:", SHARED_LOCK);
     if (env_lock)
@@ -951,7 +951,7 @@ void execute_open_with_command(BPTR cd, STRPTR contents)
 {
     BPTR lock;
     
-    if (cd != NULL) lock = cd;
+    if (cd !=(BPTR) NULL) lock =  cd;
     else            lock = Lock("RAM:", ACCESS_READ);
         
     OpenWorkbenchObject
@@ -962,7 +962,7 @@ void execute_open_with_command(BPTR cd, STRPTR contents)
         TAG_DONE
     );
     
-    if (cd == NULL) UnLock(lock);
+    if (cd ==(BPTR) NULL) UnLock(lock);
 }
 ///
 
@@ -1755,7 +1755,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW()\n"));
     if (self != NULL)
     {
         SETUP_WANDERER_INST_DATA;
-  ULONG updatedIcons;
+    //    ULONG updatedIcons;
 D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data));
 
         _WandererIntern_CLASS = CLASS;
@@ -1769,7 +1769,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data)
         /*-- Setup hooks structures ----------------------------------------*/
         _WandererIntern_hook_standard.h_Entry = (HOOKFUNC) Wanderer__HookFunc_StandardFunc;
         _WandererIntern_hook_action.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_ActionFunc;
-    _WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
+        _WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
 
         // ---
         if ((data->wd_CommandPort = CreateMsgPort()) == NULL)
@@ -1884,7 +1884,7 @@ IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     SETUP_WANDERER_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList, *tag;
 
-    while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
+    while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
@@ -2189,24 +2189,24 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
     
     while ((plainMessage = GetMsg(data->wd_NotifyPort)) != NULL)
     {
-        struct NotifyMessage *notifyMessage = plainMessage;
+        struct NotifyMessage *notifyMessage = (struct NotifyMessage *) plainMessage;
         IPTR                  notifyMessage_UserData = notifyMessage->nm_NReq->nr_UserData;
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_HandleNotify: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", notifyMessage->nm_NReq->nr_Name, notifyMessage, notifyMessage_UserData));
 
-        if ((notifyMessage_UserData == NULL) && (strcmp(notifyMessage->nm_NReq->nr_Name, data->wd_PrefsNotifyRequest.nr_Name) == 0))
+        if ((notifyMessage_UserData ==(IPTR) NULL) && (strcmp(notifyMessage->nm_NReq->nr_Name, data->wd_PrefsNotifyRequest.nr_Name) == 0))
         {
             /* reload prefs file */
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_HandleNotify: Wanderer Prefs-File Changed .. Reloading\n"));
 
             DoMethod(data->wd_Prefs, MUIM_WandererPrefs_Reload);
         }
-        else if (notifyMessage_UserData != NULL)
+        else if (notifyMessage_UserData != (IPTR) NULL)
         {
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_HandleNotify: Drawer Window contents changed .. Updating\n"));
             DoMethod(notifyMessage_UserData, MUIM_IconList_Update);
         }
 
-        ReplyMsg(notifyMessage);
+        ReplyMsg((struct Message *)notifyMessage);
     }
 
     return 0;
@@ -2233,7 +2233,7 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
     if ( isRoot )
     {
         struct NewMenu nm[] = {
-        {NM_TITLE,     _(MSG_MEN_WANDERER)},
+            {NM_TITLE,     _(MSG_MEN_WANDERER)},
             {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), _NewWandIntMenu__OPTION_BACKDROP, 0, (APTR) MEN_WANDERER_BACKDROP},
             {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
     
@@ -2242,7 +2242,7 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
     
-        {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
+            {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
     
             {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_UPDATE},
             {NM_ITEM, NM_BARLABEL},
@@ -2376,7 +2376,7 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
 
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 
-    if (isWorkbenchWindow = (message->drawer == NULL ? TRUE : FALSE))
+    if ((isWorkbenchWindow = (message->drawer == NULL ? TRUE : FALSE)))
     {
         useBackdrop = data->wd_Option_BackDropMode;
     }
