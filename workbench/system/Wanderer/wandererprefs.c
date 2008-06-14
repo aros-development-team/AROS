@@ -3,9 +3,8 @@
   $Id$
 */
 
-#ifndef __AROS__
 #include "portable_macros.h"
-#else
+#ifdef __AROS__
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -114,7 +113,7 @@ BOOL SetString(STRPTR *dst, STRPTR src)
   {
     if ((*dst == NULL) || (strcmp(src, *dst) != 0))
     {
-      STRPTR tmp = StrDup(src);
+      STRPTR tmp =(STRPTR) StrDup(src);
 
       if (tmp != NULL)
       {
@@ -250,7 +249,7 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle = NULL\n"));
   if (screentitle_TemplateLen < 1)
   {
 D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n", screentitle_TemplateLen));   
-    return screentitle_TemplateLen;
+    return (STRPTR) screentitle_TemplateLen;
   }
 
   
@@ -270,7 +269,7 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n
 
           MyLibrary = (struct Library *)findname(&SysBase->LibList, "workbench.library");
 
-          sprintf(infostr, "%ld.%ld", MyLibrary->lib_Version, MyLibrary->lib_Revision);
+          sprintf(infostr, "%ld.%ld",(long int) MyLibrary->lib_Version,(long int) MyLibrary->lib_Revision);
           found = TRUE;
         }
 
@@ -280,8 +279,8 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n
 
           if (AROSBase!=NULL)
           {
-            UWORD ver = 0,
-                kickrev = 0;
+            UWORD ver = 0;
+            //UWORD    kickrev = 0;
 
             ArosInquire
               (
@@ -321,8 +320,8 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n
 
           if (AROSBase != NULL)
           {
-            ULONG ver = 0,
-                rev = 0;
+            ULONG ver = 0;
+            ULONG    rev = 0;
 
             ArosInquire
               (
@@ -455,7 +454,7 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
   const struct TagItem *tstate = message->ops_AttrList;
   struct TagItem *tag;
   
-  while ((tag = NextTagItem(&tstate)) != NULL)
+  while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)
   {
     switch (tag->ti_Tag)
     {
@@ -471,7 +470,7 @@ IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
         break;
 
       case MUIA_IconWindowExt_ScreenTitle_String:
-        strcpy(data->wpd_ScreenTitleString,tag->ti_Data);
+        strcpy((STRPTR)data->wpd_ScreenTitleString, (STRPTR)tag->ti_Data);
         //data->wpd_ScreenTitleString = (LONG)tag->ti_Data;
         break;
 
@@ -561,7 +560,7 @@ BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSetti
 {
   //SETUP_INST_DATA;
 
-  struct TagItem *network_tags =(struct TagItem32 *) _viewSettings_Chunk;
+  struct TagItem *network_tags =(struct TagItem *) _viewSettings_Chunk;
   SET(self, AROS_LE2LONG(network_tags[0].ti_Tag), AROS_LE2LONG(network_tags[0].ti_Data));
 
   return TRUE;
@@ -622,7 +621,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk()\n"));
   if (_viewSettings_Node)
   {
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Updating Existing node @ 0x%p\n", _viewSettings_Node));
-    if (_viewSettings_Node->wpbn_Background) FreeVec(_viewSettings_Node->wpbn_Background);
+    if (_viewSettings_Node->wpbn_Background) FreeVec((APTR)_viewSettings_Node->wpbn_Background);
   }
   else
   {
@@ -821,7 +820,7 @@ D(bug("[WANDERER.PREFS] Failed to open stream!, returncode %ld!\n", error));
     success = FALSE;
   }//END if ((error = StopChunk(handle, ID_PREF, ID_WANDR)) == 0)
 
-  Close((APTR)handle->iff_Stream);
+  Close((BPTR)handle->iff_Stream);
 
   FreeIFF(handle);
 
@@ -901,7 +900,7 @@ struct TagItem32 * FindTag32Item(ULONG tagValue, struct TagItem32 *tagList)
   struct TagItem32 *tag;
   const struct TagItem32 *tagptr = tagList;
 
-  while ((tag = NextTag32Item(&tagptr)))
+  while ((tag = NextTag32Item((struct TagItem32 **)&tagptr)))
   {
     if (tag->ti_Tag == tagValue) return tag;
   }
@@ -945,7 +944,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
     {
       if (sizeof(IPTR) > 4)
       {
-        ULONG retVal = GetTag32Data(message->AttributeID, (ULONG)-1, current_Node->wpbn_Options);
+        ULONG retVal = GetTag32Data(message->AttributeID, (ULONG)-1,(struct TagItem32 *) current_Node->wpbn_Options);
 
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Using internal GetTag32Data()\n"));
 
@@ -955,7 +954,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
       else
       {
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttribute: Using utility.library->GetTagData()\n"));
-        return (IPTR)GetTagData(message->AttributeID, (IPTR)-1, current_Node->wpbn_Options);
+        return (IPTR)GetTagData(message->AttributeID, (IPTR)-1, (struct TagItem *) current_Node->wpbn_Options);
       }
     }
   }

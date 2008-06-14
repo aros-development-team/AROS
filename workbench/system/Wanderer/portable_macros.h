@@ -1,7 +1,6 @@
 #ifndef __PORTABLE_MACROS__
 #define __PORTABLE_MACROS__
 
-
 #ifdef __AROS__
   #define TAGITEM const struct TagItem **
 #else
@@ -9,11 +8,16 @@
 #endif
 
 #ifndef __AROS__
-#ifdef __amigaos4__
-#define IPTR uint32
-#else
-#define IPTR ULONG
+
+#if !defined(__AROS__) || !defined(__MORPHOS__)
+    #ifdef __amigaos4__
+    #define IPTR uint32
+    #else
+    #define IPTR ULONG
+    #endif
 #endif
+
+#ifndef __AROS__
 #define STACKED
 #endif
 
@@ -148,17 +152,43 @@ struct  MUIP_Layout                 {STACKED ULONG MethodID;};
 #define MUIM_Application_Execute   (MUIB_Wanderer | 0x000000011)
 #endif
 
+extern STRPTR StrDup (CONST_STRPTR str);
+
+extern int IconWindowIconDrawerList_Initialize(void);
+extern int IconWindowIconVolumeList_Initialize(void);
+extern int WandererPrefs_Initialize(void);
+extern int Wanderer_Initialize(void);
+extern int IconWindow_Initialize(void);
+
+
+extern void IconWindowIconDrawerList_Deinitialize(void);
+extern void IconWindowIconVolumeList_Deinitialize(void);
+extern void WandererPrefs_Deinitialize(void);
+extern void Wanderer_Deinitialize(void);
+extern void IconWindow_Deinitialize(void);
+
+
+
 extern struct MUI_CustomClass *IconWindowIconVolumeList_CLASS;
 extern struct MUI_CustomClass *IconWindowIconDrawerList_CLASS;
 extern struct MUI_CustomClass *WandererPrefs_CLASS;
 extern struct MUI_CustomClass *IconWindow_CLASS;
+
+
+extern int initIconWindowClass(void);
+extern struct MUI_CustomClass  * initIconListClass(void);
+extern struct MUI_CustomClass  * initIconDrawerListClass(void);
+extern struct MUI_CustomClass  *initIconListviewClass(void);
+extern struct MUI_CustomClass  * initIconVolumeListClass(void);
+
 
 extern struct MUI_CustomClass  *IconList_Class;
 extern struct MUI_CustomClass  *IconDrawerList_Class;
 extern struct MUI_CustomClass  *IconListview_Class;
 extern struct MUI_CustomClass  *IconVolumeList_Class ;
 
-int initIconWindowClass(void);     
+
+#endif
 
 #endif
 

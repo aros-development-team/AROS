@@ -2,10 +2,9 @@
     Copyright � 2002-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#ifndef __AROS__
 #include "portable_macros.h"
-#else
+
+#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
 #define DEBUG 0
@@ -68,6 +67,31 @@ void deInitLibs(void)
   {
 
 
+    
+
+
+  
+
+    
+
+
+/*
+    if (IconWindowIconNetworkBrowserList_CLASS)
+      IconWindowIconNetworkBrowserList_Deinitialize();
+D(bug("2\n"));*/
+    if (WandererPrefs_CLASS)
+      WandererPrefs_Deinitialize();
+
+    if (Wanderer_CLASS)
+      Wanderer_Deinitialize();
+
+    if (IconWindowIconVolumeList_CLASS)
+      IconWindowIconVolumeList_Deinitialize();
+
+    if (IconWindowIconDrawerList_CLASS)
+      IconWindowIconDrawerList_Deinitialize();
+
+
     if (IconVolumeList_Class)
       MUI_DeleteCustomClass(IconVolumeList_Class);
 
@@ -80,28 +104,10 @@ void deInitLibs(void)
     if (IconList_Class)
       MUI_DeleteCustomClass(IconList_Class);
 
-
-D(bug("1\n"));
-/*
-    if (IconWindowIconNetworkBrowserList_CLASS)
-      IconWindowIconNetworkBrowserList_Deinitialize();
-D(bug("2\n"));*/
-    if (IconWindowIconVolumeList_CLASS)
-      IconWindowIconVolumeList_Deinitialize();
-
-D(bug("3\n"));
-    if (IconWindowIconDrawerList_CLASS)
-      IconWindowIconDrawerList_Deinitialize();
-D(bug("4\n"));
-
-    if (WandererPrefs_CLASS)
-      WandererPrefs_Deinitialize();
-D(bug("5\n"));
-    if (Wanderer_CLASS)
-      Wanderer_Deinitialize();
-D(bug("6\n"));
     if (IconWindow_CLASS)
       IconWindow_Deinitialize();
+
+
 
     #ifdef __amigaos4__
     if (IMUIMaster)
@@ -151,16 +157,16 @@ int initLibs(void)
   if (!initIconWindowClass())
     return 1;
 
-  if (!(IconList_Class = initIconListClass()))
+  if (!(IconList_Class = (struct MUI_CustomClass *) initIconListClass()))
     return 1;
 
-  if (!(IconDrawerList_Class = initIconDrawerListClass()))
+  if (!(IconDrawerList_Class = (struct MUI_CustomClass *) initIconDrawerListClass()))
     return 1;
 
-  if (!(IconListview_Class = initIconListviewClass()))
+  if (!(IconListview_Class = (struct MUI_CustomClass *) initIconListviewClass()))
     return 1;
 
-  if (!(IconVolumeList_Class = initIconVolumeListClass()))
+  if (!(IconVolumeList_Class = (struct MUI_CustomClass *) initIconVolumeListClass()))
     return 1;
 
 

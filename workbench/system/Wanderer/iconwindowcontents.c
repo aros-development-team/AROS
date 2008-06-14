@@ -3,9 +3,9 @@
   $Id$
 */
 
-#ifndef __AROS__
 #include "portable_macros.h"
-#else
+
+#ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 #endif
 
@@ -1116,37 +1116,49 @@ IPTR IconWindowIconList__MUIM_IconList_Update
 /*** Setup ******************************************************************/
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
 (
-  IconWindowIconDrawerList, IconWindowIconList, NULL, MUIC_IconDrawerList, NULL,
-  OM_NEW,                        struct opSet *,
-  OM_SET,                        struct opSet *,
-  OM_GET,                        struct opGet *,
-  MUIM_Setup,                    Msg,
-  MUIM_Cleanup,                  Msg,
-  MUIM_DrawBackground,           Msg
+    #ifdef __AROS__
+    IconWindowIconDrawerList, IconWindowIconList, NULL, MUIC_IconDrawerList, NULL,
+    #else
+    IconWindowIconDrawerList, IconWindowIconList, NULL,  NULL, IconDrawerList_Class,
+    #endif
+    OM_NEW,                        struct opSet *,
+    OM_SET,                        struct opSet *,
+    OM_GET,                        struct opGet *,
+    MUIM_Setup,                    Msg,
+    MUIM_Cleanup,                  Msg,
+    MUIM_DrawBackground,           Msg
 );
 
 ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
 (
-  IconWindowIconVolumeList, IconWindowIconList, NULL, MUIC_IconVolumeList, NULL,
-  OM_NEW,                        struct opSet *,
-  OM_SET,                        struct opSet *,
-  OM_GET,                        struct opGet *,
-  MUIM_Setup,                    Msg,
-  MUIM_Cleanup,                  Msg,
-  MUIM_DrawBackground,           Msg,
-  MUIM_HandleEvent,              Msg,
-  MUIM_IconList_Update,          struct MUIP_IconList_Update *
+    #ifdef __AROS__
+    IconWindowIconVolumeList, IconWindowIconList, NULL, MUIC_IconVolumeList, NULL,
+    #else
+    IconWindowIconVolumeList, IconWindowIconList, NULL,  NULL, IconVolumeList_Class,
+    #endif
+    OM_NEW,                        struct opSet *,
+    OM_SET,                        struct opSet *,
+    OM_GET,                        struct opGet *,
+    MUIM_Setup,                    Msg,
+    MUIM_Cleanup,                  Msg,
+    MUIM_DrawBackground,           Msg,
+    MUIM_HandleEvent,              Msg,
+    MUIM_IconList_Update,          struct MUIP_IconList_Update *
 );
 
 ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS
 (
-  IconWindowIconNetworkBrowserList, IconWindowIconList, NULL, MUIC_IconList, NULL,
-  OM_NEW,                        struct opSet *,
-  OM_SET,                        struct opSet *,
-  OM_GET,                        struct opGet *,
-  MUIM_Setup,                    Msg,
-  MUIM_Cleanup,                  Msg,
-  MUIM_DrawBackground,           Msg,
-  MUIM_HandleEvent,              Msg,
-  MUIM_IconList_Update,          struct MUIP_IconList_Update *
+    #ifdef __AROS__
+    IconWindowIconNetworkBrowserList, IconWindowIconList, NULL, MUIC_IconList, NULL,
+    #else
+    IconWindowIconNetworkBrowserList, IconWindowIconList, NULL, NULL, IconList_Class,
+    #endif
+    OM_NEW,                        struct opSet *,
+    OM_SET,                        struct opSet *,
+    OM_GET,                        struct opGet *,
+    MUIM_Setup,                    Msg,
+    MUIM_Cleanup,                  Msg,
+    MUIM_DrawBackground,           Msg,
+    MUIM_HandleEvent,              Msg,
+    MUIM_IconList_Update,          struct MUIP_IconList_Update *
 );
