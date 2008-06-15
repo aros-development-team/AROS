@@ -452,7 +452,7 @@ ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 		$(foreach f,$(ROM_STATIC),$(OBJDIR)/static/$(f).o)
 
 # These are added to the link step of arosc.library
-LIBS := -L$(AROS_LIB) -larosm -lautoinit
+LIBS := -lgcc -L$(AROS_LIB) -larosm -lautoinit
 DEP_LIBS := arosm autoinit
 
 #MM- linklibs-core : linklibs-clib
