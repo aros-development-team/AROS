@@ -114,6 +114,9 @@ const unsigned char *const __decimalpoint = ".";
       { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
       size_t width=0,preci=ULONG_MAX,flags=0; /* Specifications */
       char type,subtype='i';
+#ifdef AROS_HAVE_LONG_LONG
+      char lltype=0;
+#endif      
       char buffer1[2];		   /* Signs and that like */
       char buffer[REQUIREDBUFFER]; /* The body */
       char *buffer2=buffer;	   /* So we can set this to any other strings */
@@ -160,6 +163,14 @@ const unsigned char *const __decimalpoint = ".";
       if(*ptr=='h'||*ptr=='l'||*ptr=='L')
 	subtype=*ptr++;
 
+#ifdef AROS_HAVE_LONG_LONG
+      if(*ptr=='l')
+      {
+        lltype=1;
+        ptr++;
+      }
+#endif
+      
       type=*ptr++;
 
       switch(type)
@@ -170,7 +181,12 @@ const unsigned char *const __decimalpoint = ".";
 	case 'u':
 	case 'x':
 	case 'X':
-	{ unsigned long v;
+	{
+#ifdef AROS_HAVE_LONG_LONG
+          unsigned long long v;
+#else
+          unsigned long v;
+#endif
 	  const char *tabel;
 	  int base;
 
@@ -180,9 +196,18 @@ const unsigned char *const __decimalpoint = ".";
 	    flags|=ALTERNATEFLAG; }
 
 	  if(type=='d'||type=='i') /* These are signed */
-	  { signed long v2;
+	  {
+#ifdef AROS_HAVE_LONG_LONG
+            signed long long v2;
+#else
+            signed long v2;
+#endif
 	    if(subtype=='l')
+#ifdef AROS_HAVE_LONG_LONG
+	      v2=va_arg(args,signed long long);
+#else
 	      v2=va_arg(args,signed long);
+#endif
 	    else
 	      v2=va_arg(args,signed int);
 	    if(v2<0)
@@ -196,7 +221,11 @@ const unsigned char *const __decimalpoint = ".";
 	      v=v2; }
 	  }else 		   /* These are unsigned */
 	  { if(subtype=='l')
+#ifdef AROS_HAVE_LONG_LONG
+	      v=va_arg(args,unsigned long long);
+#else
 	      v=va_arg(args,unsigned long);
+#endif
 	    else
 	      v=va_arg(args,unsigned int);
 	    if(flags&ALTERNATEFLAG)
@@ -224,7 +253,11 @@ const unsigned char *const __decimalpoint = ".";
 	}
 	case 'c':
 	  if(subtype=='l')
+#ifdef AROS_HAVE_LONG_LONG
+	    *buffer2=va_arg(args,long long);
+#else
 	    *buffer2=va_arg(args,long);
+#endif
 	  else
 	    *buffer2=va_arg(args,int);
 	  size2=1;
