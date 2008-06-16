@@ -1,0 +1,19 @@
+A brief explanation of what BH Format does, and its version history,
+can be found at the top of source file `main.c'.  If you are not a
+programmer, ignore the rest of the source code and use the compiled
+version.
+
+BH Format is free software licensed under the GNU GPL, which you can
+find in the file `COPYING'.
+
+If you want to recompile the program, you will need the Geek Gadgets
+development environment, or an m68k-amigaos cross-compiler built from
+the Geek Gadgets source.  You will probably want to edit Makefile to
+select a debugging version.  The file `design.txt' contains a partial
+explanation of the structure of the program.
+
+- Pavel Fedin <sonic_amiga@rambler.ru>
+
+Original author of this program is:
+- Ben Hutchings <womble@zzumbouk.demon.co.uk>
+

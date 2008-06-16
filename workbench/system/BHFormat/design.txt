@@ -1,0 +1,121 @@
+Overview:
+
+On startup, Format will test whether it has been started with CLI or
+Workbench arguments.  In the former case, it will run a procedure that
+uses standard file streams for interaction with the user.  In the
+latter, it will run a procedure that uses one or more windows for
+interaction.  These procedures will use common functions for the
+actual formatting / file-system functionality.  Errors will be
+reported to the user by the functions that detect them, through a
+single function that combines a severity level with a system error
+code and/or specific error text.  Error messages will be displayed on
+the standard error stream if the program is started with CLI
+arguments, and in an `easy request' window if it started with
+Workbench arguments.
+
+Functions:
+
+int rcCliMain(void)
+
+Read and validate CLI arguments.  Open the drive.  Confirm the command
+- abort on Ctrl-C or continue on Return.  Format and verify each
+cylinder if required; display progress messages and abort on Ctrl-C.
+Make a new file-system and create icon(s) if required.
+
+int rcGuiMain(void)
+
+Open a window.  Display a device selection list if no disks were given
+as Workbench arguments.  Display gadgets for specifying the other
+arguments.  Validate all input.  If user chooses to continue, open the
+drive and confirm the command.  If user confirms, format and verify
+each cylinder if required; display a Cancel button and a progress bar;
+update the progress bar after each cylinder and abort if the user
+selects the Cancel button.  Make a new file-system and create icon(s)
+if required.
+
+void ReportErrSz( ErrorType ert, LONG err, const char * pszMessage, ... )
+
+Report an error condition.  The error may be described by DOS error
+code err with pszMessage equal to 0, or by DOS error code err and
+additional string pszMessage, or by string pszMessage with err equal
+to -1.  If err is 0 then the result of IoErr() will be used in its
+place.  The error is indicated as a warning, error or failure
+depending on the value of ert.  The string pszMessage is used as a
+format string for RawDoFmt, with any additional arguments used as
+format arguments.
+
+BOOL bSetSzVolumeFromSz( const char * pszVolume )
+
+Validate volume name pszVolume; if it is valid make it the effective
+volume name and return TRUE; otherwise return FALSE.
+
+BOOL bSetSzDosDeviceFromSz( const char * pszDevice )
+
+Validate DOS device name pszDevice; if it is valid make it the
+effective DOS device name and return TRUE; otherwise return FALSE.
+
+BOOL bSetFstFromSz( const char * pszFileSysType )
+
+Validate file-system type (DosType) string pszFileSysType; if it is
+valid set the effective file-system type accordingly and return TRUE;
+otherwise return FALSE.
+
+BOOL bSetDevfFromSz( const char * pszDevFlags )
+
+Validate device flags string pszDevFlags; if it is valid set the
+effective device flags accordingly and return TRUE; otherwise return
+FALSE.
+
+BOOL bGetDosDevice(void)
+
+Attempt to lock the DOS list, if it is not already locked, and find
+the DOS list entry for the device to be used.  Check that its settings
+are safe; warn about any that we can work around and fail if we can't.
+If everything is successful return TRUE; otherwise return FALSE.
+bSetSzDosDeviceFromSz must have been called successfully before this
+is called.
+
+BOOL bGetExecDevice( BOOL bWillVerify )
+
+Inhibit the DOS device.  Attempt to open the underlying Exec device,
+and test that it supports NSD 64-bit trackdisk commands if they will
+be needed.  Attempt to allocate and initialise buffers for disk
+access.  bWillVerify indicates whether verification will be done; if
+it is FALSE then no read buffer is needed.  If everything is
+successful return TRUE; otherwise return FALSE.  bGetDosDevice must
+have been called successfully before this is called.
+
+BOOL bFormatCylinder( ULONG icyl )
+
+Attempt to format a cylinder of the disk.  Return TRUE if successful;
+FALSE if not.  bGetExecDevice must been called successfully before
+this is called.
+
+BOOL bVerifyCylinder( ULONG icyl )
+
+Attempt to read a cylinder of the disk and compare it with the data
+previously written.  Return TRUE if reading is successful and the data
+read matches what was written, FALSE otherwise.  bFormatCylinder must
+have been called previously, and the last call must have specified the
+same cylinder and been succesful.
+
+void FreeDosDevice(void)
+
+Unlock the DOS list and uninhibit the DOS device.
+
+void FreeExecDevice(void)
+
+Free disk buffers and close the Exec device.
+
+BOOL bMakeFileSys( BOOL bFFS, BOOL bOFS, BOOL bIntl, BOOL bNoIntl,
+		   BOOL bDirCache, BOOL bNoDirCache )
+
+Inhibit the DOS device, if it is not yet inhibited.  Make a
+file-system on it.  If the DOS device's current file-system type is a
+standard Amiga file-system (DOS\0-DOS\5) and bSetFstFromSz has not
+been used to set a specific type, then the current type will be
+modified according to the various flags given as arguments.  The rules
+used are identical to those used by Commodore-Amiga Format version 40.
+Uninhibit the DOS device.  Return TRUE if successful; FALSE if not.
+bGetDosDevice must have been called successfully before this is
+called.

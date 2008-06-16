@@ -1,0 +1,17 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 19665 2003-09-06 16:59:16Z verhaegs $
+
+include $(TOP)/config/make.cfg
+
+FILES	:= main cli gui
+
+EXEDIR  := $(AROS_SYSTEM)
+
+#MM- workbench-system : workbench-system-format
+#MM workbench-system-format : includes linklibs
+
+%build_prog mmake=workbench-system-format \
+    progname=Format targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga arosc"
+
+%common
