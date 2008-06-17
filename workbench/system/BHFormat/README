@@ -1,19 +1,99 @@
-A brief explanation of what BH Format does, and its version history,
-can be found at the top of source file `main.c'.  If you are not a
-programmer, ignore the rest of the source code and use the compiled
-version.
+This is intended to be a compatible replacement for Format version
+40 with important additions - in particular, it is safe to use
+with drives larger than 4 GB.  It can also warn about several
+problems with large drives and old OS versions.  Currently its
+main deficiency is a lack of localisation.  It will also fail
+currently if started from Workbench with no arguments, because I
+haven't implemented the device selection interface that should be
+used in that case.  It also needs a good deal of testing.
+
+Under MorphOS this utility can be useful for ScalOS desktop users.
+MorphOS port of ScalOS currently lacks native disk formatting module.
+BH Format can be used in such a way. To do this just make a softlink
+ScalOS:Modules/Format_Disk.module pointing to SYS:System/Format (or
+whatever where BH Format is installed).
+
+Please send bug reports, success reports, fixes and improvements
+to me.
 
 BH Format is free software licensed under the GNU GPL, which you can
 find in the file `COPYING'.
 
 If you want to recompile the program, you will need the Geek Gadgets
-development environment, or an m68k-amigaos cross-compiler built from
-the Geek Gadgets source.  You will probably want to edit Makefile to
-select a debugging version.  The file `design.txt' contains a partial
+development environment, or a cross-compiler built from the Geek
+Gadgets source.  You will probably want to edit Makefile to select a
+debugging version.  The file `design.txt' contains a partial
 explanation of the structure of the program.
 
 - Pavel Fedin <sonic_amiga@rambler.ru>
 
 Original author of this program is:
 - Ben Hutchings <womble@zzumbouk.demon.co.uk>
+
+History:
+
+Version 43.5, 15 June 2008.
+
+Ported to MorphOS and AROS
+
+Does not hold a lock on DosList for a long time
+
+Fixed bug: track buffer size size was undefined when formatting
+non-FFS partitions, this could cause memory trashing.
+
+Version 43.4, 9 June 1999.
+
+Fixed 2 medium and 4 minor bugs:
+
+- In the GUI, the logic of the trashcan check-box was inverted.
+- Starting Format from Workbench with the icon of an ejected disk
+  would result in formatting whatever was currently in the drive
+  that the ejected volume was previously in.  It should, and now
+  does, ask for the ejected disk to be re-inserted and fail if
+  the user refuses.
+
+- The warning about MaxTransfer setting had several words repeated.
+- The default disk icon for a file-system type would not be fetched
+  unless a file-system type was specified using the CLI DOSTYPE
+  keyword.
+- The area cleared after formatting the disk and before displaying
+  "Initializing disk..." was calculated wrongly (typo).
+- The positions of the ticks on the format progress bar were
+  calculated slightly wrongly.
+
+Version 43.3, 6 June 1999.
+
+Changed all variable and function names to Hungarian naming
+convention (the real thing, not Micro$oft's botched version).
+Hopefully this makes the code easy to understand.
+
+Restructured the program so that the GUI and CLI procedures can
+share as much code as possible.  Changed error reporting code to
+use a single function that will print the message to the console
+or display it in a requester depending on how the program was
+started.
+
+Wrote almost all the necessary GUI code (search for TODO: in gui.c
+to find the missing bits).  The GUI is, of course, font-sensitive.
+
+Added another rule for finding default disk icons - if there isn't
+a default icon for the device then the program looks for a default
+icon for the file-system type before finally asking icon.library
+for the default disk icon.  This should now match DefIcons rules
+exactly.
+
+Version 43.2, 25 April 1999.
+
+Added DOSTYPE keyword for specifying file-system type to handlers
+that implement multiple non-native types.  Added FLAGS keyword for
+specifying non-standard flags when opening the device driver.
+Added NOVERIFY switch for disabling format verification (pointless).
+Added DISKICON switch for putting a default disk icon on the disk.
+Marked comments on unimplemented stuff with "TODO" so that they're
+easy to find.
+
+Version 43.1, 13 April 1999.
+
+The product of some hours' hacking last year, and a little
+clean-up recently.
 
