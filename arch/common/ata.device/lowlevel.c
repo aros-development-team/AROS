@@ -556,7 +556,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
             /*
              * now if we did reach timeout, then there's no point in going ahead.
              */
-            if (SIGBREAKB_CTRL_C & step)
+            if (SIGBREAKF_CTRL_C & step)
             {
                 bug("[ATA%02ld] Timeout while waiting for device to complete operation\n", unit->au_UnitNum);
                 res = FALSE;
