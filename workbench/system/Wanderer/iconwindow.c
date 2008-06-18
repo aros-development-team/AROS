@@ -87,6 +87,7 @@ struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active = NULL;
 /*** Hook functions *********************************************************/
 
 ///IconWindow__HookFunc_ToolbarLocationStringFunc()
+#ifdef __AROS__
 AROS_UFH3(
   void, IconWindow__HookFunc_ToolbarLocationStringFunc,
   AROS_UFHA(struct Hook *,    hook,   A0),
@@ -94,6 +95,10 @@ AROS_UFH3(
   AROS_UFHA(APTR,             param,  A1)
 )
 {
+#else
+HOOKPROTO(IconWindow__HookFunc_ToolbarLocationStringFunc, void, APTR *obj, APTR param)
+{
+#endif
   AROS_USERFUNC_INIT
 
   /* Get data */
@@ -140,9 +145,14 @@ AROS_UFH3(
   
   AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(iwd_pathStrHook,IconWindow__HookFunc_ToolbarLocationStringFunc);
+#endif
+
 ///
 
 ///IconWindow__HookFunc_PrefsUpdatedFunc()
+#ifdef __AROS__
 AROS_UFH3(
   void, IconWindow__HookFunc_PrefsUpdatedFunc,
   AROS_UFHA(struct Hook *,    hook,   A0),
@@ -150,6 +160,10 @@ AROS_UFH3(
   AROS_UFHA(APTR,             param,  A1)
 )
 {
+#else
+HOOKPROTO(IconWindow__HookFunc_PrefsUpdatedFunc, void, APTR *obj, APTR param)
+{
+#endif
   AROS_USERFUNC_INIT
   
   /* Get our private data */
@@ -173,9 +187,13 @@ AROS_UFH3(
 
   AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(iwd_PrefsUpdated_hook,IconWindow__HookFunc_PrefsUpdatedFunc);
+#endif
 ///
 
 ///IconWindow__HookFunc_ProcessBackgroundFunc()
+#ifdef __AROS__
 AROS_UFH3(
   void, IconWindow__HookFunc_ProcessBackgroundFunc,
   AROS_UFHA(struct Hook *,    hook,   A0),
@@ -183,6 +201,10 @@ AROS_UFH3(
   AROS_UFHA(APTR,             param,  A1)
 )
 {
+#else
+HOOKPROTO(IconWindow__HookFunc_ProcessBackgroundFunc, void, APTR *obj, APTR param)
+{
+#endif
   AROS_USERFUNC_INIT
   
   /* Get our private data */
@@ -212,23 +234,29 @@ AROS_UFH3(
 
   AROS_USERFUNC_EXIT
 }
+MakeStaticHook(iwd_ProcessBackground_hook,IconWindow__HookFunc_ProcessBackgroundFunc);
 ///
 
 ///IconWindow__HookFunc_WandererBackFillFunc()
+#ifdef __AROS__
 AROS_UFH3(
     void, IconWindow__HookFunc_WandererBackFillFunc,
-    AROS_UFHA(struct Hook *,        Hook,   A0),
+    AROS_UFHA(struct Hook *,        hook,   A0),
     AROS_UFHA(struct RastPort *,    RP,    A2),
     AROS_UFHA(struct BackFillMsg *, BFM,  A1)
 )
 {
+#else
+HOOKPROTO(IconWindow__HookFunc_WandererBackFillFunc, void, struct RastPort *RP, struct BackFillMsg *BFM)
+{
+#endif
     AROS_USERFUNC_INIT
   
     struct IconWindow_BackFillHookData *HookData = NULL;
 
 D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
     
-    if ((HookData = Hook->h_Data) && (iconwindow_BackFill_Active != NULL))
+    if ((HookData = hook->h_Data) && (iconwindow_BackFill_Active != NULL))
     {
         Class                              *CLASS = HookData->bfhd_IWClass;
         Object                 *self = HookData->bfhd_IWObject;
@@ -270,6 +298,9 @@ D(bug("[IconWindow]: %s()\n", __PRETTY_FUNCTION__));
 
     AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(Hook_WandererBackFillFunc,IconWindow__HookFunc_WandererBackFillFunc);
+#endif
 ///
 
 /*** Methods ****************************************************************/
@@ -281,8 +312,9 @@ void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
   Object          *strObj = NULL,
           *bt_dirup = NULL;
   Object *toolbarPanel;
-#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
   Object          *bt_search = NULL;
+#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
+  Object          *bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test");
 #endif
 
 
@@ -299,43 +331,56 @@ void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
   }
 
   /* Create the "ToolBar" panel object .. */
-  toolbarPanel = VGroup,
-    InnerSpacing(0, 0),
+  toolbarPanel = MUI_NewObject(MUIC_Group,
+    MUIA_InnerLeft,(0),
+    MUIA_InnerRight,(0),
+    MUIA_InnerTop,(0),
+    MUIA_InnerBottom,(0),
     MUIA_Frame, MUIV_Frame_None,
-    Child, (IPTR)HGroup,
-      InnerSpacing(4, 4),
+    Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
+      MUIA_InnerLeft,(4),
+      MUIA_InnerRight,(4),
+      MUIA_InnerTop,(4),
+      MUIA_InnerBottom,(4),
       MUIA_Frame, MUIV_Frame_None,
       MUIA_Weight, 100,
-      Child, (IPTR)HGroup,
-        InnerSpacing(0, 0),
+      Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
+        MUIA_InnerLeft,(0),
+        MUIA_InnerRight,(0),
+        MUIA_InnerTop,(0),
+        MUIA_InnerBottom,(0),
         MUIA_Weight, 100,
-        Child, (IPTR)( strObj = StringObject,
+        Child, (IPTR)( strObj = MUI_NewObject(MUIC_String,
           MUIA_String_Contents, (IPTR)"",
           MUIA_CycleChain, 1,
           MUIA_Frame, MUIV_Frame_String,
-        End ),
-      End,
-      Child, (IPTR)HGroup,
-        InnerSpacing(0, 0),
+        TAG_DONE) ),
+      TAG_DONE),
+      Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
+        MUIA_InnerLeft,(0),
+        MUIA_InnerRight,(0),
+        MUIA_InnerTop,(0),
+        MUIA_InnerBottom,(0),
         MUIA_HorizWeight,   0,
         MUIA_VertWeight,    100,
         Child, (IPTR) (bt_dirup = ImageButton("", "THEME:Images/Gadgets/Prefs/Revert")),
-#if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
-        Child, (IPTR) (bt_search = ImageButton("", "THEME:Images/Gadgets/Prefs/Test")),
-#endif
-      End,
-    End,
-    Child, (IPTR)HGroup,
-      InnerSpacing(0, 0),
+        (bt_search ? Child : TAG_IGNORE), (IPTR) (bt_search),
+      TAG_DONE),
+    TAG_DONE),
+    Child, (IPTR)MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
+      MUIA_InnerLeft,(0),
+      MUIA_InnerRight,(0),
+      MUIA_InnerTop,(0),
+      MUIA_InnerBottom,(0),
       MUIA_Group_Spacing, 0,
       MUIA_FixHeight, 1,
       MUIA_Frame, MUIV_Frame_None,
       MUIA_Background, MUII_SHADOW,
-      Child, (IPTR)RectangleObject,
+      Child, (IPTR)MUI_NewObject(MUIC_Rectangle,
         MUIA_Frame, MUIV_Frame_None,
-      End,
-    End,
-  End;
+      TAG_DONE),
+    TAG_DONE),
+  TAG_DONE);
   
   /* Got a toolbarpanel? setup notifies and other values are 
      copied to the data of the object */
@@ -371,8 +416,12 @@ void IconWindow__SetupToolbar(Class *CLASS, Object *self, Object *prefs)
       );
 
       data->iwd_Toolbar_LocationStringObj = strObj;
-
+      #ifdef __AROS__
       data->iwd_pathStrHook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ToolbarLocationStringFunc;
+      #else
+      data->iwd_pathStrHook= &iwd_pathStrHook;
+      #endif
+
       SET(
         data->iwd_Toolbar_LocationStringObj, MUIA_String_Contents, 
         XGET(data->iwd_IconListObj, MUIA_IconDrawerList_Drawer)
@@ -424,7 +473,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
   IPTR                            _newIconWin__FSNotifyPort =(IPTR) NULL;
 
   D(bug("[iconwindow]: %s()\n", __PRETTY_FUNCTION__));
-  
+
   /* More than one GetTagData is not very efficient, however since this isn't called very often... */
 
   isBackdrop = (BOOL)GetTagData(MUIA_IconWindow_IsBackdrop, (IPTR)FALSE, message->ops_AttrList);
@@ -445,12 +494,18 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     D(bug("[IconWindow] %s: NO SCREEN SET!\n", __PRETTY_FUNCTION__));
     return NULL;
   }
-  D(bug("[iconwindow] %s: Screen @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__Screen));
+  D(bug("[iconwindow] %s: Screen @ 0x%x\n", __PRETTY_FUNCTION__, _newIconWin__Screen));
 
   if ((_newIconWin__BackFillHook = AllocVec(sizeof(struct Hook), MEMF_CLEAR|MEMF_PUBLIC))!=NULL)
   {
     D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__BackFillHook));
+
+    #ifdef __AROS__
     _newIconWin__BackFillHook->h_Entry = ( HOOKFUNC )IconWindow__HookFunc_WandererBackFillFunc;
+    #else
+    _newIconWin__BackFillHook = &Hook_WandererBackFillFunc;
+    #endif
+
 //#if defined(__MORPHOS__)
 //    WindowBF_TAG = MUIA_Window_BackFillHook;
 //#else
@@ -460,9 +515,17 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
   if (isRoot)
   {
-    _newIconWin__IconListObj = (Object *)IconWindowIconVolumeListObject,
-                                    MUIA_Font, (IPTR)_newIconWin__WindowFont,
-                                End;
+    #ifdef __AROS__
+        _newIconWin__IconListObj = (Object *)IconWindowIconVolumeListObject,
+                                       MUIA_Font, (IPTR)_newIconWin__WindowFont,
+                                    End;
+    #else
+    _newIconWin__IconListObj = (Object *)NewObject(IconWindowIconVolumeList_CLASS->mcc_Class, NULL,
+                                           MUIA_Font, (IPTR)_newIconWin__WindowFont,
+                                TAG_DONE);
+    #endif
+
+                         
 
     _newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
     _newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
@@ -495,11 +558,20 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     D(bug("[iconwindow] %s: Dir: '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
 
-    _newIconWin__IconListObj = (Object *)IconWindowIconDrawerListObject,
+    #ifdef __AROS__
+      _newIconWin__IconListObj = (Object *) IconWindowIconDrawerListObject ,
                                  MUIA_Font, (IPTR)_newIconWin__WindowFont,
                                  MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
                                  MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                 End;
+    #else
+    _newIconWin__IconListObj = (Object *) NewObject(IconWindowIconDrawerList_CLASS->mcc_Class, NULL,
+                                 MUIA_Font, (IPTR)_newIconWin__WindowFont,
+                                 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
+                                 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
+                                TAG_DONE);
+    #endif
+                                
 
     if (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':')
     {
@@ -553,16 +625,19 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
       FreeVec(dir_info_name);
     }
 
-    _newIconWin__ExtensionGroupObj = GroupObject,
-      InnerSpacing(0,0),
-      MUIA_Frame, MUIV_Frame_None,
-      MUIA_Group_Spacing, 0,
-      Child, (_newIconWin__ExtensionGroupSpacerObj = HSpace(0)),
-    End;
+    _newIconWin__ExtensionGroupObj = MUI_NewObject(MUIC_Group,
+        MUIA_InnerLeft,(0),
+        MUIA_InnerRight,(0),
+        MUIA_InnerTop,(0),
+        MUIA_InnerBottom,(0),
+        MUIA_Frame, MUIV_Frame_None,
+        MUIA_Group_Spacing, 0,
+        Child, (_newIconWin__ExtensionGroupSpacerObj = HSpace(0)),
+    TAG_DONE);
 
     if (_newIconWin__ExtensionGroupObj)
     {
-      _newIconWin__ExtensionContainerObj = HGroup,
+      _newIconWin__ExtensionContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
         InnerSpacing(0,0),
         MUIA_HorizWeight,   100,
         MUIA_VertWeight,    0,
@@ -570,19 +645,28 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
         MUIA_Group_Spacing, 3,
         /* extension on top of the list */
         Child, (IPTR)_newIconWin__ExtensionGroupObj,
-      End;
+      TAG_DONE);
     }
   }
   D(bug("[iconwindow] %s: Using dimensions ..  %d x %d\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
+  #ifdef __AROS__
   _newIconWin__RootViewObj = (Object *) IconListviewObject,
-                                MUIA_Weight,                           100,
+                                    MUIA_Weight,                           100,
                                 MUIA_IconListview_UseWinBorder,        TRUE,
                                 MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
                             End;
+  #else
+  _newIconWin__RootViewObj = (Object *) NewObject(IconListview_Class->mcc_Class, NULL    ,
+                                        MUIA_Weight,                           100,
+                                MUIA_IconListview_UseWinBorder,        TRUE,
+                                MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
+                            TAG_DONE);
+  #endif
+                            
 
   D(bug("[iconwindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
-  
+
   self = (Object *) DoSuperNewTags
   (
     CLASS, self, NULL,
@@ -608,11 +692,15 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
     MUIA_Window_UseBottomBorderScroller,                   (!isBackdrop) ? TRUE : FALSE,
     MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
     MUIA_Window_IsSubWindow,                             TRUE,
+    #ifdef __AROS__
     WindowBF_TAG,                                        _newIconWin__BackFillHook,
+    #else
+    WindowBF_TAG,                                        *_newIconWin__BackFillHook,
+    #endif
     MUIA_Window_ScreenTitle,                             (IPTR) "",
     MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
 
-    WindowContents, (IPTR) VGroup,
+    WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
       MUIA_Group_Spacing,  0,
       MUIA_Group_SameSize, FALSE,
       InnerSpacing(0,0),
@@ -623,11 +711,11 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
       /* icon list */
       Child, (IPTR) _newIconWin__RootViewObj,
       
-    End,
+    TAG_DONE),
     
     TAG_MORE, (IPTR) message->ops_AttrList
   );
-  
+
   if (self != NULL)
   {
     SETUP_ICONWINDOW_INST_DATA;
@@ -663,7 +751,11 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
 
     if (prefs)
     {
+      #ifdef __AROS__
       data->iwd_PrefsUpdated_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_PrefsUpdatedFunc;
+      #else
+      data->iwd_PrefsUpdated_hook = &iwd_PrefsUpdated_hook;
+      #endif
 
       DoMethod
       (
@@ -686,7 +778,12 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
       }
     }
 
+    #ifdef __AROS__
     data->iwd_ProcessBackground_hook.h_Entry = ( HOOKFUNC )IconWindow__HookFunc_ProcessBackgroundFunc;
+    #else
+    data->iwd_ProcessBackground_hook = &iwd_ProcessBackground_hook;
+    #endif
+
     if ((data->iwd_BackFill_hook = _newIconWin__BackFillHook))
     {
       data->iwd_BackFillHookData.bfhd_IWClass = CLASS;
@@ -726,7 +823,7 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
       (IPTR) self, 1, MUIM_IconWindow_Clicked
     );
   }
-
+D(bug("[IconWindow] obj = %ld\n", self));
   return self;
 }
 ///

@@ -385,23 +385,23 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
 )
 {
 
-  LONG                  Depth = 0;
-  Object                *_IconWindows_PrefsObj    = NULL,
+  LONG        Depth = 0;
+  Object      *_IconWindows_PrefsObj    = NULL,
               *_IconWindows_WindowObj   = NULL;
-  Object          *_IconWindows_IconListObj = NULL;
+  Object      *_IconWindows_IconListObj = NULL;
 
-  BOOL            options_changed = FALSE;
+  BOOL        options_changed = FALSE;
 
-  IPTR                  prefs_processing        = 0;
+  IPTR        prefs_processing        = 0;
   
-  IPTR                  BackGround_Attrib       = 0,
+  IPTR        BackGround_Attrib       = 0,
               BackGround_Base         = 0,
               BackGround_RenderMode   = 0,
               BackGround_TileMode     = 0,
               BackGround_XOffset      = 0,
               BackGround_YOffset      = 0;
   
-  struct BackFillInfo   *this_BFI = message->BackFill_Data;
+  struct BackFillInfo   *this_BFI =(struct BackFillInfo   *) message->BackFill_Data;
 
   UBYTE                  *this_bgtype;
   char                  *this_ImageName;
@@ -432,7 +432,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
   
   D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Background Attrib = '%s'\n", BackGround_Attrib));
 
-  if (BackGround_Attrib == NULL) return FALSE;
+  if (BackGround_Attrib == (IPTR) NULL) return FALSE;
   
   if ((BackGround_Base = DoMethod(_IconWindows_PrefsObj, MUIM_WandererPrefs_ViewSettings_GetAttribute,
                   BackGround_Attrib, MUIA_Background)) == -1)
@@ -499,7 +499,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
     }
     strcpy(this_BFI->bfi_Source->bfsir_SourceImage, this_ImageName);
     
-    if (this_BFI->bfi_Source->bfsir_DTPictureObject = NewDTObject(this_BFI->bfi_Source->bfsir_SourceImage,
+    if ((this_BFI->bfi_Source->bfsir_DTPictureObject = NewDTObject(this_BFI->bfi_Source->bfsir_SourceImage,
                           DTA_SourceType,         DTST_FILE,
                           DTA_GroupID,            GID_PICTURE,
                           PDTA_DestMode,          PMODE_V43,
@@ -507,7 +507,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
                           PDTA_Screen,            this_BFI->bfi_Screen,
                           PDTA_FreeSourceBitMap,  TRUE,
                           OBP_Precision,          PRECISION_IMAGE,
-                          TAG_DONE))
+                          TAG_DONE)))
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Opened Datatype Object @ %x for image '%s'\n", this_BFI->bfi_Source->bfsir_DTPictureObject, this_BFI->bfi_Source->bfsir_SourceImage));
       if (DoMethod(this_BFI->bfi_Source->bfsir_DTPictureObject, DTM_PROCLAYOUT, NULL, 1))
@@ -524,7 +524,7 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
         {
           D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Datatype Object BitMap @ %x\n", this_BFI->bfi_Source->bfsir_DTBitMap));
 
-          if (this_BFI->bfi_Source->bfsir_DTRastPort = CreateRastPort())
+          if ((this_BFI->bfi_Source->bfsir_DTRastPort = CreateRastPort()))
           {
             this_BFI->bfi_Source->bfsir_DTRastPort->BitMap = this_BFI->bfi_Source->bfsir_DTBitMap;
             this_BFI->bfi_Source->bfsir_BackGroundRenderMode = BackGround_RenderMode;

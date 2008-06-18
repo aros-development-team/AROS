@@ -12,9 +12,9 @@ CXXINCS   = -Iportable-include
 BIN       = Wanderer_MOS
 DEFINES   = 
 CXXFLAGS  = $(CXXINCS) $(DEFINES)  
-CFLAGS    = $(INCS) $(DEFINES)
+CFLAGS    = $(INCS) $(DEFINES) -DALMOST_AROS_COMPATIBLE
 RM        = rm -f
-LIBS      = 
+LIBS      = -ldebug
 LINK      = ppc-morphos-gcc
 
 .PHONY: all all-before all-after clean clean-custom

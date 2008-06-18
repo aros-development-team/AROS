@@ -27,8 +27,8 @@
 #define MUIM_IconWindow_AppWindowDrop                      (MUIB_IconWindow | 0x00000006)
 #define MUIM_IconWindow_Remove                             (MUIB_IconWindow | 0x00000007)
 
-#define MUIM_IconWindow_BackFill_Register		           (MUIB_IconWindow | 0x00000010)
-#define MUIM_IconWindow_BackFill_Setup		               (MUIB_IconWindow | 0x00000012)
+#define MUIM_IconWindow_BackFill_Register                  (MUIB_IconWindow | 0x00000010)
+#define MUIM_IconWindow_BackFill_Setup                     (MUIB_IconWindow | 0x00000012)
 #define MUIM_IconWindow_BackFill_Cleanup                   (MUIB_IconWindow | 0x00000013)
 #define MUIM_IconWindow_BackFill_ProcessBackground         (MUIB_IconWindow | 0x0000001a)
 #define MUIM_IconWindow_BackFill_DrawBackground            (MUIB_IconWindow | 0x0000001b)
@@ -46,19 +46,19 @@ extern struct MUI_CustomClass                     *IconWindow_CLASS;
 
 struct BackFillMsg
 {
-	STACKED struct Layer    *Layer;
-	STACKED struct Rectangle Bounds;
-	STACKED LONG             OffsetX;
-	STACKED LONG             OffsetY;
+    STACKED struct Layer    *Layer;
+    STACKED struct Rectangle Bounds;
+    STACKED LONG             OffsetX;
+    STACKED LONG             OffsetY;
 };
 
 struct IconWindowBackFillMsg
 {
-	STACKED struct Layer    *Layer;
-	STACKED struct Rectangle AreaBounds;
-	STACKED struct Rectangle DrawBounds;
-	STACKED LONG             OffsetX;
-	STACKED LONG             OffsetY;
+    STACKED struct Layer    *Layer;
+    STACKED struct Rectangle AreaBounds;
+    STACKED struct Rectangle DrawBounds;
+    STACKED LONG             OffsetX;
+    STACKED LONG             OffsetY;
 };
 
 struct IconWindow_ActionMsg
@@ -73,51 +73,65 @@ struct IconWindow_ActionMsg
 
 struct IconWindow_BackFill_Descriptor
 {
-	struct Node      bfd_Node;
-	char             *bfd_BackFillID;
-	IPTR             (*bfd_MUIM_IconWindow_BackFill_Setup)(Class *, Object *, struct MUIP_IconWindow_BackFill_Setup *);
-	IPTR             (*bfd_MUIM_IconWindow_BackFill_Cleanup)(Class *, Object *, struct MUIP_IconWindow_BackFill_Cleanup *);
-	IPTR             (*bfd_MUIM_IconWindow_BackFill_ProcessBackground)(Class *, Object *, struct MUIP_IconWindow_BackFill_ProcessBackground *);
-	IPTR		     (*bfd_MUIM_IconWindow_BackFill_DrawBackground)(Class *, Object *, struct MUIP_IconWindow_BackFill_DrawBackground *);
+    struct Node      bfd_Node;
+    char             *bfd_BackFillID;
+    IPTR             (*bfd_MUIM_IconWindow_BackFill_Setup)(Class *, Object *, struct MUIP_IconWindow_BackFill_Setup *);
+    IPTR             (*bfd_MUIM_IconWindow_BackFill_Cleanup)(Class *, Object *, struct MUIP_IconWindow_BackFill_Cleanup *);
+    IPTR             (*bfd_MUIM_IconWindow_BackFill_ProcessBackground)(Class *, Object *, struct MUIP_IconWindow_BackFill_ProcessBackground *);
+    IPTR             (*bfd_MUIM_IconWindow_BackFill_DrawBackground)(Class *, Object *, struct MUIP_IconWindow_BackFill_DrawBackground *);
 };
 
 /*** Private Instance Data **********************************************************/
 
 struct IconWindow_BackFillHookData
 {
-	Class                                *bfhd_IWClass;
-	Object                               *bfhd_IWObject;
+    Class                                *bfhd_IWClass;
+    Object                               *bfhd_IWObject;
 };
 
 struct IconWindow_DATA
 {
     struct Screen                        *iwd_Screen;
-	char                                 *iwd_Title;
+    char                                 *iwd_Title;
     char                                 iwd_DirectoryPath[IWD_MAX_DIRECTORYPATHLEN];
 
-	char                                 *iwd_ViewSettings_Attrib;
-	Object                               *iwd_ViewSettings_PrefsNotificationObject;
+    char                                 *iwd_ViewSettings_Attrib;
+    Object                               *iwd_ViewSettings_PrefsNotificationObject;
 
-	Object                               *iwd_RootViewObj;
+    Object                               *iwd_RootViewObj;
     Object                               *iwd_IconListObj;
 
     Object                               *iwd_ExtensionContainerObj;
     Object                               *iwd_ExtensionGroupObj;
     Object                               *iwd_ExtensionGroupSpacerObj;
 
-	Object                               *iwd_Toolbar_PrefsNotificationObject;
+    Object                               *iwd_Toolbar_PrefsNotificationObject;
 
     Object                               *iwd_Toolbar_PanelObj;
     Object                               *iwd_Toolbar_LocationStringObj;
 
-	struct Hook                          iwd_PrefsUpdated_hook;
+    #ifdef __AROS__
+    struct Hook                          iwd_PrefsUpdated_hook;
+    #else
+    struct Hook                          *iwd_PrefsUpdated_hook;
+    #endif
+
     struct Hook                          *iwd_ActionHook;
+    #ifdef __AROS__
     struct Hook                          iwd_pathStrHook;
-	struct Hook		                     iwd_ProcessBackground_hook;
-	struct Hook                          *iwd_BackFill_hook;
-	struct BackFillInfo                  *iwd_BackFillInfo;
-	struct IconWindow_BackFillHookData   iwd_BackFillHookData;
-	
+    #else
+    struct Hook                          *iwd_pathStrHook;
+    #endif
+    #ifdef __AROS__
+    struct Hook                          iwd_ProcessBackground_hook;
+    #else
+    struct Hook                          *iwd_ProcessBackground_hook;
+    #endif
+
+    struct Hook                          *iwd_BackFill_hook;
+    struct BackFillInfo                  *iwd_BackFillInfo;
+    struct IconWindow_BackFillHookData   iwd_BackFillHookData;
+    
     struct TextFont                      *iwd_WindowFont;
     
     BOOL                                 iwd_Flag_NEEDSUPDATE;
@@ -134,6 +148,7 @@ struct IconWindow_DATA
 #define IconWindowObject                 BOOPSIOBJMACRO_START(IconWindow_CLASS->mcc_Class)
 #else
 #define IconWindowObject NewObject(IconWindow_CLASS->mcc_Class, NULL
+//#define IconWindowObject NewObject(IconWindow_Class->mcc_Class, NULL
 #endif
 
 

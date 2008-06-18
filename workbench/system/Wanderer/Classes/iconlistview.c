@@ -286,7 +286,8 @@ D(bug("[IconListview] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, obj));
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Width, MUIV_EveryTime, (IPTR)horiz, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
     DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Height, MUIV_EveryTime, (IPTR)vert, 3, MUIM_NoNotifySet, MUIA_Prop_Entries, MUIV_TriggerValue);
-    
+
+D(bug("[IconListview] obj = %ld\n", obj));
     return (ULONG)obj;
 }
 ///

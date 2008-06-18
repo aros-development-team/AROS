@@ -244,7 +244,7 @@ D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
       break;
     }
   }
-
+D(bug("[IconDrawerList] obj = %ld\n", obj));
   return (IPTR)obj;
 }
 ///

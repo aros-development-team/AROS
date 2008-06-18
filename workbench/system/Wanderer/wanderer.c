@@ -90,7 +90,7 @@
 #endif
 #endif
 
-#define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
+#define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, TAG_DONE)
 
 extern IPTR InitWandererPrefs(void);
 VOID        DoAllMenuNotifies(Object *strip, STRPTR path);
@@ -105,9 +105,16 @@ BOOL        CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
 extern Object        *_WandererIntern_AppObj;
 extern Class     *_WandererIntern_CLASS;
 /* Internal Hooks */
+#ifdef __AROS__
 struct Hook          _WandererIntern_hook_standard;
 struct Hook          _WandererIntern_hook_action;
 struct Hook          _WandererIntern_hook_backdrop;
+#else
+struct Hook          *_WandererIntern_hook_standard;
+struct Hook          *_WandererIntern_hook_action;
+struct Hook          *_WandererIntern_hook_backdrop;
+#endif
+
 
 static unsigned char strtochar(STRPTR st)
 {
@@ -141,14 +148,19 @@ struct Wanderer_DATA
 * HOOK FUNCS                                                              *
 **************************************************************************/
 ///Wanderer__HookFunc_DisplayCopyFunc()
+#ifdef __AROS__
 AROS_UFH3
 (
     BOOL, Wanderer__HookFunc_DisplayCopyFunc,
-    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct dCopyStruct *, obj, A2),
     AROS_UFHA(APTR, unused_param, A1)
 )
 {
+#else
+HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APTR unused_param)
+{
+#endif
     AROS_USERFUNC_INIT
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
@@ -246,17 +258,25 @@ AROS_UFH3
 
     AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(Hook_DisplayCopyFunc,Wanderer__HookFunc_DisplayCopyFunc);
+#endif
 ///
 
 ///Wanderer__HookFunc_AskDeleteFunc()
+#ifdef __AROS__
 AROS_UFH3
 (
     ULONG, Wanderer__HookFunc_AskDeleteFunc,
-    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct dCopyStruct *, obj, A2),
     AROS_UFHA(APTR, unused_param, A1)
 )
 {
+#else
+HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR unused_param)
+{
+#endif
     AROS_USERFUNC_INIT
     
     ULONG back = DELMODE_NONE;
@@ -312,6 +332,9 @@ AROS_UFH3
     
     AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(Hook_AskDeleteFunc,Wanderer__HookFunc_AskDeleteFunc);
+#endif
 ///
 
 ///copy_dropentries()
@@ -326,13 +349,22 @@ void copy_dropentries()
     {
            
         struct MUIDisplayObjects dobjects;
+        struct Wanderer_FileEntry *currententry;
+        #ifdef __AROS__
         struct Hook displayCopyHook;
         struct Hook displayDelHook;
-  struct Wanderer_FileEntry *currententry;
+        #else
+        struct Hook *displayCopyHook;
+        struct Hook *displayDelHook;
+        #endif
 
+        #ifdef __AROS__
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
         displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
-        
+        #else
+        displayCopyHook = &Hook_DisplayCopyFunc;
+        displayDelHook = &Hook_AskDeleteFunc;
+        #endif
         
 
         if (CreateCopyDisplay(ACTION_COPY, &dobjects))
@@ -366,14 +398,19 @@ void copy_dropentries()
 ///
 
 ///Wanderer__HookFunc_ActionFunc()
+#ifdef __AROS__
 AROS_UFH3
 (
     void, Wanderer__HookFunc_ActionFunc,
-    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(Object *, obj, A2),
     AROS_UFHA(struct IconWindow_ActionMsg *, msg, A1)
 )
 {
+#else
+HOOKPROTO(Wanderer__HookFunc_ActionFunc, void, Object *obj, struct IconWindow_ActionMsg *msg)
+{
+#endif
     AROS_USERFUNC_INIT
 
     if (msg->type == ICONWINDOW_ACTION_OPEN)
@@ -385,7 +422,7 @@ AROS_UFH3
         DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR)&ent);
         if ((IPTR)ent == (IPTR)MUIV_IconList_NextSelected_End)
         {
-D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSelected returned MUIV_IconList_NextSelected_End\n"));
+D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSelected returned MUIV_IconList_NextSelected_TAG_DONE)\n"));
             return;
         }
 
@@ -535,7 +572,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                     DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
 
                     /* if not end of selection, process */
-                    if ( (int)ent != MUIV_IconList_NextSelected_End )
+                    if ( (int)ent != MUIV_IconList_NextSelected_End)
                     {
                 file_recordtmp = AllocVec( sizeof(struct Wanderer_FileEntry), MEMF_CLEAR|MEMF_PUBLIC );
                 strcpy( (char*)&file_recordtmp->filename, ent->filename);
@@ -613,7 +650,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                         else fail = TRUE;
                     }
                 } 
-                while ( ((int)ent != MUIV_IconList_NextSelected_End ) && !fail);
+                while ( ((int)ent != MUIV_IconList_NextSelected_End) && !fail);
                 
                 if (!fail && (files > 0))
                 {
@@ -661,17 +698,25 @@ D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filel
 
     AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(Hook_ActionFunc,Wanderer__HookFunc_ActionFunc);
+#endif
 ///
 
 ///Wanderer__HookFunc_StandardFunc()
+#ifdef __AROS__
 AROS_UFH3
 (
     void, Wanderer__HookFunc_StandardFunc,
-    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(void *, dummy, A2),
     AROS_UFHA(void **, funcptr, A1)
 )
 {
+#else
+HOOKPROTO(Wanderer__HookFunc_StandardFunc, void, void *dummy, void **funcptr)
+{
+#endif
     AROS_USERFUNC_INIT
     
     void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
@@ -679,17 +724,25 @@ AROS_UFH3
     
     AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(Hook_StandardFunc,Wanderer__HookFunc_StandardFunc);
+#endif
 ///
 
 ///Wanderer__HookFunc_BackdropFunc()
+#ifdef __AROS__
 AROS_UFH3
 (
     void, Wanderer__HookFunc_BackdropFunc,
-    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(void *, dummy, A2),
     AROS_UFHA(void **, funcptr, A1)
 )
 {
+#else
+HOOKPROTO(Wanderer__HookFunc_BackdropFunc, void, void *dummy, void **funcptr)
+{
+#endif
     AROS_USERFUNC_INIT
 
     struct Wanderer_DATA *data = INST_DATA(_WandererIntern_CLASS, _WandererIntern_AppObj);
@@ -770,6 +823,9 @@ D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Making Workbench window visab
     }
     AROS_USERFUNC_EXIT
 }
+#ifndef __AROS__
+MakeStaticHook(Hook_BackdropFunc,Wanderer__HookFunc_BackdropFunc);
+#endif
 ///
 /******** code from workbench/c/Info.c *******************/
 ///fmtlarge()
@@ -1385,7 +1441,7 @@ void wanderer_menufunc_icon_rename(void)
     {
         DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
         
-        if ((int)entry != MUIV_IconList_NextSelected_End) 
+        if ((int)entry != MUIV_IconList_NextSelected_End)
         {
             BPTR lock   = Lock(entry->filename, ACCESS_READ);
             BPTR parent = ParentDir(lock);
@@ -1469,10 +1525,10 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
     d->numfiles = 0;
     d->action = flags;
     d->smallobjects = 0;
-    d->copyApp = ApplicationObject,
+    d->copyApp = MUI_NewObject(MUIC_Application,
         MUIA_Application_Title,     (IPTR)"CopyRequester",
         MUIA_Application_Base,      (IPTR)"WANDERER_COPY",
-        SubWindow, (IPTR)(d->win = WindowObject,
+        MUIA_Application_Window, (IPTR)(d->win = MUI_NewObject(MUIC_Window,
             MUIA_Window_Title,          (IPTR)"Copy Filesystem",
             MUIA_Window_Activate,       TRUE,
             MUIA_Window_DepthGadget,    TRUE,
@@ -1484,67 +1540,91 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Centered,
             MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Centered,
             MUIA_Window_Width,          MUIV_Window_Width_Visible(60),
-            WindowContents, (group = VGroup,
-                Child, (IPTR)(fromObject = TextObject,
-                    InnerSpacing(8,2),
+            WindowContents, (group = MUI_NewObject(MUIC_Group,
+                Child, (IPTR)(fromObject = MUI_NewObject(MUIC_Text,
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                End),
-                Child, (IPTR)(d->sourceObject = TextObject,
+                TAG_DONE)),
+                Child, (IPTR)(d->sourceObject = MUI_NewObject(MUIC_Text,
                     TextFrame,
-                    InnerSpacing(8,2),
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)"---",
-                End),
-                Child, (IPTR)(toObject = TextObject,
-                    InnerSpacing(8,2),
+                TAG_DONE)),
+                Child, (IPTR)(toObject = MUI_NewObject(MUIC_Text,
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                End),
-                Child, (IPTR)(d->destObject = TextObject,
+                TAG_DONE)),
+                Child, (IPTR)(d->destObject = MUI_NewObject(MUIC_Text,
                     TextFrame,
-                    InnerSpacing(8,2),
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)"---",
-                End),
-                Child, (IPTR)(fileTextObject = TextObject,
-                    InnerSpacing(8,2),
+                TAG_DONE)),
+                Child, (IPTR)(fileTextObject = MUI_NewObject(MUIC_Text,
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                End),
-                Child, (IPTR)(d->fileObject = TextObject,
+                TAG_DONE)),
+                Child, (IPTR)(d->fileObject = MUI_NewObject(MUIC_Text,
                     TextFrame,
-                    InnerSpacing(8,2),
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Background,    MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)"---",
-                End),
-                Child, (IPTR)(fileLengthObject = TextObject,
-                    InnerSpacing(8,2),
+                TAG_DONE)),
+                Child, (IPTR)(fileLengthObject = MUI_NewObject(MUIC_Text,
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Text_PreParse, (IPTR)"\33c",
-                End),
-                Child, (IPTR)(gaugeGroup = VGroup,
+                TAG_DONE)),
+                Child, (IPTR)(gaugeGroup = MUI_NewObject(MUIC_Group,
                     TextFrame,
-                    Child, d->gauge = GaugeObject,
+                    Child, d->gauge = MUI_NewObject(MUIC_Gauge,
                         MUIA_Gauge_Horiz, TRUE,
                         MUIA_Gauge_Max, 32768,
                         MUIA_Gauge_InfoText, "Processing...",
-                    End,
-                    Child, ScaleObject,
+                    TAG_DONE),
+                    Child, MUI_NewObject(MUIC_Scale,
                         MUIA_Scale_Horiz, TRUE,
-                    End,
-                End),
-                Child, (IPTR)( d->performanceObject = TextObject,
+                    TAG_DONE),
+                TAG_DONE)),
+                Child, (IPTR)( d->performanceObject = MUI_NewObject(MUIC_Text,
                     TextFrame,
-                    InnerSpacing(8,2),
+                    MUIA_InnerLeft,(8),
+                    MUIA_InnerRight,(8),
+                    MUIA_InnerTop,(2),
+                    MUIA_InnerBottom,(2),
                     MUIA_Background,     MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)"...........0 Bytes...........",
-                End),
+                TAG_DONE)),
 
                 Child, (IPTR)( d->stopObject = SimpleButton("Stop") ),
-            End),
-        End),
-    End;
+            TAG_DONE)),
+        TAG_DONE)),
+    TAG_DONE);
 
 
     if (d->copyApp) 
@@ -1607,7 +1687,7 @@ void wanderer_menufunc_icon_delete(void)
     {
         do
         {   
-            if ((int)entry != MUIV_IconList_NextSelected_End) 
+            if ((int)entry != MUIV_IconList_NextSelected_End)
             {  
                 /* copy via filesystems.c */
                 D(bug("[WANDERER] Delete \"%s\"\n", entry->filename);)
@@ -1755,6 +1835,7 @@ D(bug("[Wanderer] Wanderer__OM_NEW()\n"));
     if (self != NULL)
     {
         SETUP_WANDERER_INST_DATA;
+
     //    ULONG updatedIcons;
 D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data));
 
@@ -1767,9 +1848,15 @@ D(bug("[Wanderer] Wanderer__OM_NEW: SELF = %d, Private data @ %x\n", self, data)
 #endif
 
         /*-- Setup hooks structures ----------------------------------------*/
+        #ifdef __AROS__
         _WandererIntern_hook_standard.h_Entry = (HOOKFUNC) Wanderer__HookFunc_StandardFunc;
         _WandererIntern_hook_action.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_ActionFunc;
         _WandererIntern_hook_backdrop.h_Entry   = (HOOKFUNC) Wanderer__HookFunc_BackdropFunc;
+        #else
+         _WandererIntern_hook_standard = &Hook_StandardFunc;
+        _WandererIntern_hook_action   = &Hook_ActionFunc;
+        _WandererIntern_hook_backdrop   = &Hook_BackdropFunc;
+        #endif
 
         // ---
         if ((data->wd_CommandPort = CreateMsgPort()) == NULL)
@@ -1832,15 +1919,18 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", data->w
         {
 D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
         }
-
+	#ifdef __AROS__
         data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
+	#else
+	data->wd_Prefs = NewObject(Wanderer_CLASS->mcc_Class, NULL, TAG_DONE); // FIXME: error handling
+	#endif
 
 D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-SCREENTITLE IS = '%s'\n",XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
 
         if (data->wd_Prefs) 
             data->wd_PrefsIntern = InitWandererPrefs();
     }
-
+D(bug("[Wanderer] obj = %ld\n", self));
     return self;
 }
 ///
@@ -2388,6 +2478,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
     useFont = (IPTR)NULL;
     
     data->wd_Screen = LockPubScreen(NULL);
+    
     if(data->wd_Screen == NULL)
     {
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Couldn't lock screen!\n"));
@@ -2402,8 +2493,11 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Using Screen @ %x\
     }
 
     _NewWandDrawerMenu__menustrip = __CreateWandererIntuitionMenu__ (isWorkbenchWindow, useBackdrop);
-    
+
+//D(bug("1\n\n")); Delay(100);
     /* Create a new icon drawer window with the correct drawer being set */
+		
+    #ifdef __AROS__	
     window = IconWindowObject,
                 MUIA_UserData,                      1,
                 MUIA_Wanderer_Prefs,                  data->wd_Prefs,
@@ -2419,7 +2513,24 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Using Screen @ %x\
                 MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
                 MUIA_IconWindowExt_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
              End;
-
+    #else
+     window = NewObject(IconWindow_CLASS->mcc_Class, NULL,
+                MUIA_UserData,                      1,
+                MUIA_Wanderer_Prefs,                  data->wd_Prefs,
+                MUIA_Wanderer_Screen,                 data->wd_Screen,
+                MUIA_Window_ScreenTitle,              GetUserScreenTitle(data->wd_Prefs),
+                MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
+                TAG_IconWindow_Drawer,                (IPTR) message->drawer,
+                MUIA_IconWindow_Font,                 useFont,
+                MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
+                MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
+                isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
+                isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyPort, data->wd_NotifyPort,
+                MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
+                MUIA_IconWindowExt_Toolbar_Enabled,   hasToolbar ? TRUE : FALSE,
+             TAG_DONE);
+    #endif
+//D(bug("2\n\n")); Delay(100);
     if (data->wd_Screen)
     {
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Unlocking access to screen @ %x\n", data->wd_Screen));

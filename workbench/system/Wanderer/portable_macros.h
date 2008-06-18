@@ -46,7 +46,7 @@
 #include <workbench/icon.h>
 #endif
 
-#ifdef __MORPHOS__
+#if defined (__MORPHOS__) || (defined (__AMIGA__) && !defined(__PPC__))
 #include <dos/dostags.h>
 #endif
 
@@ -58,6 +58,21 @@
 
 
 #ifndef __AROS__
+
+#ifdef __amigaos4__
+#define UQUAD uint64
+#define QUAD int64
+#else
+#define UQUAD ULONG
+#define QUAD LONG
+#endif
+
+extern struct Library  *MUIMasterBase;
+#ifdef __amigaos4__
+extern struct MUIMasterIFace   *IMUIMaster;
+#endif
+
+
 #define AROS_UFHA(type,name,reg)  type name
 
 
@@ -79,20 +94,43 @@
 #define MUIB_AROS (MUIB_RSVD | 0x00070000)  /* Base for AROS core reserved range */
 
 
-#ifdef __amigaos4__
-#define UQUAD uint64
-#define QUAD int64
-#else
-#define UQUAD ULONG
-#define QUAD LONG
-#endif
 
-#define Detach()
-#define __showerror
 
-#define DeinitRastPort(rp)
-#define CloneRastPort(rp) (rp)
-#define FreeRastPort(rp)
+#define MAX(a,b) (((a) > (b))?(a):(b))
+#define MIN(a,b) (((a) > (b))?(b):(a))
+
+#define _AndRectRect(rect1, rect2, intersect)                  \
+({                                                             \
+    BOOL res;                                                  \
+                                                               \
+    if (overlap(*(rect1), *(rect2)))                           \
+    {                                                          \
+    (intersect)->MinX = MAX((rect1)->MinX, (rect2)->MinX);     \
+    (intersect)->MinY = MAX((rect1)->MinY, (rect2)->MinY);     \
+    (intersect)->MaxX = MIN((rect1)->MaxX, (rect2)->MaxX);     \
+    (intersect)->MaxY = MIN((rect1)->MaxY, (rect2)->MaxY);     \
+                                                               \
+    res = TRUE;                                                \
+    }                                                          \
+    else                                                       \
+        res = FALSE;                                           \
+                                                               \
+    res;                                                       \
+})
+
+
+#define _DoRectsOverlap(Rect, x1, y1, x2, y2) \
+(                                             \
+    y1 <= (Rect)->MaxY &&                     \
+    y2 >= (Rect)->MinY &&                     \
+    x1 <= (Rect)->MaxX &&                     \
+    x2 >= (Rect)->MinX                        \
+)
+
+#define overlap(a,b) _DoRectsOverlap(&(a), (b).MinX, (b).MinY, (b).MaxX, (b).MaxY)
+
+
+
 
 #define GET(obj,attr,store) get(obj,attr,store)
 #define SET(obj,attr,value) set(obj,attr,value)
@@ -107,26 +145,59 @@
 #define NNSET(obj,attr,value) nnset(obj,attr,value)
 
 
+
+#ifdef __MORPHOS__
+
+#define GetHead(_l)  \
+({ struct List *l = (struct List *)(_l);  \
+	l->lh_Head->ln_Succ ? l->lh_Head : (struct Node *)0;  \
+})
+
+#define GetSucc(_n)  \
+({ struct Node *n = (struct Node *)(_n);  \
+	n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0;  \
+})
+
+#define GetTail(_l)  \
+({ struct List *l = (struct List *)(_l);  \
+	l->lh_TailPred->ln_Pred ? l->lh_TailPred : (struct Node *)0;  \
+})
+
+#define GetPred(_n)  \
+({ struct Node *n = (struct Node *)(_n);  \
+	n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0;  \
+})
+#endif
+
+
 #define ImageButton(label, imagePath) MUI_MakeObject(MUIO_Button, (IPTR) (label))
 
-extern struct Library  *MUIMasterBase;
-#ifdef __amigaos4__
-extern struct MUIMasterIFace   *IMUIMaster;
-#endif
+#define BOOPSI_DISPATCHER(ret, nameDsp, cls, obj, msg)   DISPATCHER(nameDsp)
+#define BOOPSI_DISPATCHER_END
+
+
 
 #define SendAppWindowMessage(...) sizeof(NULL)
 #define RegisterWorkbench(...)  sizeof(NULL)
 #define UnregisterWorkbench(...)  sizeof(NULL)
 #define ArosInquire(...)  sizeof(NULL)
 #define AROS_LE2LONG(...)  sizeof(NULL)
-#define CreateRastPort(...)  sizeof(NULL)
-#define AndRectRect(...)  sizeof(NULL)
-
 #define ADD2INIT(...)
 #define ADD2EXIT(...)
+#define Detach()
+#define __showerror
 
-#define BOOPSI_DISPATCHER(ret, nameDsp, cls, obj, msg)   DISPATCHER(nameDsp)
-#define BOOPSI_DISPATCHER_END
+#define DeinitRastPort FreeRastPort
+
+
+extern struct RastPort *CreateRastPort(void);
+
+
+#if defined (__AMIGA__) && !defined(__PPC__)
+#define NP_UserData         (NP_Dummy + 26)
+    /* optional value to install into task->tc_UserData. */
+#endif
+
 
 struct MUIP_CreateDragImage     {STACKED ULONG MethodID; STACKED LONG touchx; STACKED LONG touchy; STACKED ULONG flags;};
 
@@ -176,12 +247,14 @@ extern struct MUI_CustomClass *IconWindow_CLASS;
 
 
 extern int initIconWindowClass(void);
+//extern struct MUI_CustomClass  *initIconWindowClass(void);
 extern struct MUI_CustomClass  * initIconListClass(void);
 extern struct MUI_CustomClass  * initIconDrawerListClass(void);
 extern struct MUI_CustomClass  *initIconListviewClass(void);
 extern struct MUI_CustomClass  * initIconVolumeListClass(void);
 
 
+extern struct MUI_CustomClass  *IconWindow_Class;
 extern struct MUI_CustomClass  *IconList_Class;
 extern struct MUI_CustomClass  *IconDrawerList_Class;
 extern struct MUI_CustomClass  *IconListview_Class;

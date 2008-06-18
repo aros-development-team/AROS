@@ -251,6 +251,7 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
   SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_VERTICAL);
   SET(obj, MUIA_IconList_SortFlags, 0);
 
+D(bug("[IconVolList] obj = %ld\n", obj));
   return (IPTR)obj;
 }
 ///
