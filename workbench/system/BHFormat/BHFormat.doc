@@ -1,36 +1,70 @@
-This is intended to be a compatible replacement for Format version
-40 with important additions - in particular, it is safe to use
-with drives larger than 4 GB.  It can also warn about several
-problems with large drives and old OS versions.  Currently its
-main deficiency is a lack of localisation.  It will also fail
-currently if started from Workbench with no arguments, because I
-haven't implemented the device selection interface that should be
-used in that case.  It also needs a good deal of testing.
+1. INTRODUCTION
+---------------
 
-Under MorphOS this utility can be useful for ScalOS desktop users.
-MorphOS port of ScalOS currently lacks native disk formatting module.
-BH Format can be used in such a way. To do this just make a softlink
-ScalOS:Modules/Format_Disk.module pointing to SYS:System/Format (or
-whatever where BH Format is installed).
+BH Format is intended to be a compatible replacement for Format
+version 40 (AmigaOS up to v3.1) or version version 50 (MorphOS up to 1.4.5)
+with important additions:
 
-Please send bug reports, success reports, fixes and improvements
-to me.
+* It can perform low-level formats (or fake formats, as they usually are)
+  on drives larger than 4 GB (AmigaOS v40 Format command will destroy data
+  on such a drive).
 
-BH Format is free software licensed under the GNU GPL, which you can
-find in the file `COPYING'.
+* It will warn you if the device to be formatted is misconfigured or if
+  your file-system or if your disk is too large for your current device
+  driver or file-system to handle (only for m68k).
 
-If you want to recompile the program, you will need the Geek Gadgets
-development environment, or a cross-compiler built from the Geek
-Gadgets source.  You will probably want to edit Makefile to select a
-debugging version.  The file `design.txt' contains a partial
-explanation of the structure of the program.
+* It allows you to specify file-system type (DosType) and device flags
+  directly.  This will be particularly useful in conjunction with firth-
+  coming improvements to Francis Swift's XFS package.
 
-- Pavel Fedin <sonic_amiga@rambler.ru>
+* It can create a default disk icon, following the same rules as the
+  DefIcons program from NewIcons does.
+
+* It has a GUI (native MorphOS version lacks it), can be used as a module for
+  ScalOS desktop.
+
+Also BH Format is a native formatting utility for AROS.
+
+It currently lacks localisation, some error reporting code, and good
+documentation.  However, full source code is included and licensed
+under the GNU GPL, so perhaps I can get some help with this...
+
+2. INSTALLATION
+---------------
+
+1. Copy Format program together with its icon (Format.info) to SYS:System
+directory (replacing original program on m68k AmigaOS).
+
+2. On MorphOS: delete (or rename) original MOSSYS:C/Format utility
+
+3. To install as a ScalOS module execute the following command:
+
+   MakeLink Scalos:Modules/Format_Disk.module SYS:System/Format
+
+
+3. AUTHOR
+---------
+
+Please send bug reports, success reports, fixes and improvements to
+me.
+
+	Pavel Fedin
+	RUSSIA
+
+	email: sonic_amiga@rambler.ru
 
 Original author of this program is:
-- Ben Hutchings <womble@zzumbouk.demon.co.uk>
 
-History:
+        Ben Hutchings
+        8 Primrose Street
+        Cambridge
+        CB4 3EH
+        ENGLAND
+
+        email: womble@zzumbouk.demon.co.uk
+
+4. HISTORY
+----------
 
 Version 43.5, 15 June 2008.
 
