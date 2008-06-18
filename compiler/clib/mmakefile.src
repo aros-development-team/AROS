@@ -482,7 +482,7 @@ $(AROS_LIBS)/$(MODULE) : $(MODULE_OBJ) $(OBJDIR)/libarosccommon.a
 	    libs="$(LIBS) -larosccommon"
 
 $(OBJDIR)/static/%.o : %.c
-	%compile_q opt="$(CFLAGS)"
+	%compile_q opt="$(CFLAGS) -DAROSC_STATIC"
 
 $(OBJDIR)/shared/%.o : %.c
 	%compile_q opt="$(CFLAGS) -DAROSC_SHARED"

@@ -39,6 +39,10 @@
 #   define BITSPERBYTE 8
 #endif
 
+#if (__WORDSIZE != 64) && defined(AROSC_STATIC)
+#undef AROS_HAVE_LONG_LONG
+#endif
+
 /* a little macro to make life easier */
 #define OUT(c)  do                           \
 		{ if((*outc)((c),data)==EOF)   \
