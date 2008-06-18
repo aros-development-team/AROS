@@ -267,7 +267,12 @@ D(bug("[Wanderer] ProcessUserScreenTitle(),EXTERN screentitle_TemplateLen = %d\n
         {
           struct Library *MyLibrary = NULL;
 
+        #ifdef __AROS__
           MyLibrary = (struct Library *)findname(&SysBase->LibList, "workbench.library");
+          //workbench.library is just opened, what is the sense of this istruction?
+        #else
+          MyLibrary = WorkbenchBase;
+        #endif
 
           sprintf(infostr, "%ld.%ld",(long int) MyLibrary->lib_Version,(long int) MyLibrary->lib_Revision);
           found = TRUE;
@@ -433,7 +438,7 @@ D(bug("WandererPrefs::New - reloading\n"));
 
     DoMethod(self, MUIM_WandererPrefs_Reload);
   }
-  
+D(bug("[WandererPrefs] obj = %ld\n", self));
   return self;
 }
 ///
@@ -630,8 +635,11 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Creating new no
 
     _viewSettings_Node->wpbn_Name = AllocVec(strlen(_viewSettings_ViewName) + 1, MEMF_CLEAR|MEMF_PUBLIC);
     strcpy(_viewSettings_Node->wpbn_Name, _viewSettings_ViewName);
-
+    #ifdef __AROS__
     _viewSettings_Node->wpbn_NotifyObject = NotifyObject, End;
+    #else
+    _viewSettings_Node->wpbn_NotifyObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
+    #endif
 
     AddTail(&data->wpd_ViewSettings, &_viewSettings_Node->wpbn_Node);
   }
@@ -745,7 +753,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
 
               if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
               {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of header chunk ..\n"));
+  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: TAG_DONE) of header chunk ..\n"));
 
                 if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
                 {
@@ -789,7 +797,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
                   }//END if (error == this_chunk_size)  
                   if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
                   {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of Data chunk ..\n"));
+  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: TAG_DONE) of Data chunk ..\n"));
                   }
                 }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
               }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)       
@@ -850,9 +858,11 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotify
 
   current_Node->wpbn_Name = AllocVec(strlen(message->Background_Name) + 1, MEMF_CLEAR|MEMF_PUBLIC);
   strcpy(current_Node->wpbn_Name, message->Background_Name);
-
-  current_Node->wpbn_NotifyObject = NotifyObject, End;
-  
+    #ifdef __AROS__
+    current_Node->wpbn_NotifyObject = NotifyObject, End;
+    #else
+    current_Node->wpbn_NotifyObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
+    #endif
   AddTail(&data->wpd_ViewSettings, &current_Node->wpbn_Node);
 
 D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject: Notify Object @ 0x%p\n", current_Node->wpbn_NotifyObject));

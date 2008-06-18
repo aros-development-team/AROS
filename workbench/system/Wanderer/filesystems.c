@@ -29,12 +29,12 @@ WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL center
 
     back = 0;
 
-    app = ApplicationObject,
+    app = MUI_NewObject(MUIC_Application,
     
         MUIA_Application_Title,     (IPTR)"Requester",
         MUIA_Application_Base,      (IPTR)"WANDERER_REQ",
     
-        SubWindow, (IPTR)(win = WindowObject,
+        SubWindow, (IPTR)(win = MUI_NewObject(MUIC_Window,
             MUIA_Window_Title,           title,
             MUIA_Window_Activate,        TRUE,
             MUIA_Window_DepthGadget,     TRUE,
@@ -45,18 +45,21 @@ WORD AskChoiceNew(char *title, char *strg, char *gadgets, UWORD sel, BOOL center
             MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Moused,
             MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Moused,
         
-            WindowContents, (IPTR)VGroup,
-                Child, (IPTR)TextObject,
+            WindowContents, (IPTR)MUI_NewObject(MUIC_Group,
+                Child, (IPTR)MUI_NewObject(MUIC_Text,
                     TextFrame,
-                    InnerSpacing(12,12),
+                    MUIA_InnerLeft,(12),
+                    MUIA_InnerRight,(12),
+                    MUIA_InnerTop,(12),
+                    MUIA_InnerBottom,(12),
                     MUIA_Background, MUII_TextBack,
                     MUIA_Text_PreParse, (IPTR)"\33c",
                     MUIA_Text_Contents, (IPTR)strg,
-                End,
-                Child, (IPTR)(bObject = HGroup,End),
-            End,
-        End),
-    End;
+                TAG_DONE),
+                Child, (IPTR)(bObject = MUI_NewObject(MUIC_Group,MUIA_Group_Horiz, TRUE,TAG_DONE)),
+            TAG_DONE),
+        TAG_DONE)),
+    TAG_DONE);
 
 
     if (app) 

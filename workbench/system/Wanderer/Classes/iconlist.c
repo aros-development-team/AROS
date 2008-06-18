@@ -46,13 +46,11 @@ $Id$
 
 #ifdef __AROS__
 #include <devices/rawkeycodes.h>
+#include <clib/alib_protos.h>
 #else
 #include <devices_AROS/rawkeycodes.h>
 #endif
 
-#ifdef __AROS__
-#include <clib/alib_protos.h>
-#endif
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -95,7 +93,11 @@ $Id$
 
 #ifdef DEBUG
   #define D(x) if (DEBUG) x
+  #ifdef __amigaos4__
   #define bug DebugPrintF
+  #else
+  #define bug kprintf
+  #endif
 #else
   #define  D(...)
 #endif
@@ -1527,6 +1529,7 @@ D(bug("[IconList] %s: MaxLineLen : %d\n", __PRETTY_FUNCTION__, data->icld__Optio
         MUIM_CallHook, &__iconlist_UpdateLabels_hook, (IPTR)CLASS
     );
 
+D(bug("[IconList] obj = %ld\n", obj));
     return (IPTR)obj;
 }
 ///

@@ -14,7 +14,7 @@ DEFINES   =
 CXXFLAGS  = $(CXXINCS) $(DEFINES)  
 CFLAGS    = $(INCS) $(DEFINES)  -D__USE_INLINE__ -D__USE_BASETYPE__ -Wall
 RM        = rm -f
-LIBS      = -lauto -lraauto
+LIBS      = 
 LINK      = ppc-amigaos-gcc
 
 .PHONY: all all-before all-after clean clean-custom
