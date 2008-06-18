@@ -162,7 +162,10 @@ FILES := \
     w_drem \
     w_dremf \
     infinity \
-    fenv
+    fenv \
+    sincos \
+    sincosf \
+    sincosl
 
 # If long double != double use these; otherwise, we alias the double versions
 # These are architectures that have LDBL_MANT_DIG == 53 in float.h
