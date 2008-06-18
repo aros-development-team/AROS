@@ -1,0 +1,39 @@
+Short:        NSD-aware Format command with source
+Author:       womble@zzumbouk.demon.co.uk (Ben Hutchings)
+Uploader:     womble zzumbouk demon co uk (Ben Hutchings)
+Type:         util/sys
+Version:      43.5
+Architecture: ppc-morphos
+
+BH Format is intended to be a compatible replacement for Format
+under various operating systems of Amiga family with important additions:
+
+* It can perform low-level formats (or fake formats, as they usually are)
+  on drives larger than 4 GB.
+
+* It will warn you if the device to be formatted is misconfigured or if
+  your file-system or if your disk is too large for your current device
+  driver or file-system to handle (only for m68k).
+
+* It allows you to specify file-system type (DosType) and device flags
+  directly.  This will be particularly useful in conjunction with firth-
+  coming improvements to Francis Swift's XFS package.
+
+* It can create a default disk icon, following the same rules as the
+  DefIcons program from NewIcons does.
+
+* It has a GUI (native MorphOS version lacks it), can be used as a module for
+  ScalOS desktop.
+
+It currently lacks localisation, some error reporting code, and good
+documentation.  However, full source code is included and licensed
+under the GNU GPL, so perhaps I can get some help with this...
+                    
+Please send bug reports, success reports, fixes and improvements to
+me.
+
+	Pavel Fedin
+	RUSSIA
+
+	email: sonic_amiga@rambler.ru
+
