@@ -619,11 +619,11 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg2 = (IPTR) iofs->io_Union.io_FORMAT.io_DosType;
             break;
 
-        case FSA_INHIBIT: /* XXX untested */
+        case FSA_INHIBIT:
             D(bug("[packet] FSA_INHIBIT: %sinhibit\n", iofs->io_Union.io_INHIBIT.io_Inhibit == 0 ? "un" : ""));
 
             dp->dp_Type = ACTION_INHIBIT;
-            dp->dp_Arg1 = (IPTR) iofs->io_Union.io_INHIBIT.io_Inhibit;
+            dp->dp_Arg1 = iofs->io_Union.io_INHIBIT.io_Inhibit ? DOSTRUE : DOSFALSE;
             break;
 
         case FSA_RELABEL:
