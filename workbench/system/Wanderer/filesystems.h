@@ -26,7 +26,11 @@
 #include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
 #include <proto/muimaster.h>
+
 #ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
 #endif

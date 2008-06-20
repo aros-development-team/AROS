@@ -55,10 +55,8 @@ $Id$
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
-#include <proto/intuition.h>
 #include <proto/icon.h>
 #include <proto/layers.h>
-#include <proto/muimaster.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 
@@ -77,6 +75,12 @@ $Id$
 #else
 #include <cybergraphx_AROS/cybergraphics.h>
 #endif
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
+#include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 #include <libraries/mui.h>
 //#include "muimaster_intern.h"

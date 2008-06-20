@@ -6,9 +6,8 @@
 
 #include <proto/exec.h>
 #include <proto/utility.h>
-#include <proto/intuition.h>
+
 #include <proto/graphics.h>
-#include <proto/muimaster.h>
 #include <proto/datatypes.h>
 #include <proto/dos.h>
 #include <proto/icon.h>
@@ -21,6 +20,12 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <intuition/pointerclass.h>
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
+#include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 #ifndef __AROS__
 #define DEBUG 1
