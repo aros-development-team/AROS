@@ -35,8 +35,7 @@
 
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <proto/intuition.h>
-#include <proto/muimaster.h>
+
 #include <proto/dos.h>
 
 #ifdef __AROS__
@@ -60,6 +59,12 @@
 #else
 #include <prefs_AROS/wanderer.h>
 #endif
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
+#include <proto/intuition.h>
+#include <proto/muimaster.h>
 
 
 #include "iconwindow.h"

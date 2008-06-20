@@ -27,11 +27,9 @@
 
 
 #include <proto/utility.h>
-#ifndef _PROTO_INTUITION_H
-#include <proto/intuition.h>
-#endif
+
 #include <proto/graphics.h>
-#include <proto/muimaster.h>
+
 #include <proto/exec.h>
 #include <proto/datatypes.h>
 
@@ -56,6 +54,14 @@
 #else
 #include <prefs_AROS/wanderer.h>
 #endif
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
+#ifndef _PROTO_INTUITION_H
+#include <proto/intuition.h>
+#endif
+#include <proto/muimaster.h>
 
 #include "wanderer.h"
 #include "wandererprefs.h"

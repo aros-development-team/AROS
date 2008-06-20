@@ -19,8 +19,12 @@ $Id$
 #endif
 
 #include <proto/exec.h>
-#include <proto/intuition.h>
 #include <proto/utility.h>
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
+#include <proto/intuition.h>
 #include <proto/muimaster.h>
 
 #include <libraries/mui.h>

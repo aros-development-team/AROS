@@ -12,9 +12,9 @@ CXXINCS   = -Iportable-include
 BIN       = Wanderer_OS3
 DEFINES   = 
 CXXFLAGS  = $(CXXINCS) $(DEFINES)  
-CFLAGS    = $(INCS) $(DEFINES) -noixemul  
+CFLAGS    = $(INCS) $(DEFINES) -m68020-60 -soft-float -mstackextend -noixemul
 RM        = rm -f
-LIBS      = -ldebug
+LIBS      = -ldebug -lmui
 LINK      = m68k-amigaos-gcc
 
 .PHONY: all all-before all-after clean clean-custom

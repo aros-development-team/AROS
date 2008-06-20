@@ -12,6 +12,11 @@
 #endif
 
 #include <libraries/mui.h>
+
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+#define NO_INLINE_STDARG
+#endif
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #ifdef __AROS__
