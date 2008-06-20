@@ -150,22 +150,22 @@ extern struct MUIMasterIFace   *IMUIMaster;
 
 #define GetHead(_l)  \
 ({ struct List *l = (struct List *)(_l);  \
-	l->lh_Head->ln_Succ ? l->lh_Head : (struct Node *)0;  \
+    l->lh_Head->ln_Succ ? l->lh_Head : (struct Node *)0;  \
 })
 
 #define GetSucc(_n)  \
 ({ struct Node *n = (struct Node *)(_n);  \
-	n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0;  \
+    n->ln_Succ->ln_Succ ? n->ln_Succ : (struct Node *)0;  \
 })
 
 #define GetTail(_l)  \
 ({ struct List *l = (struct List *)(_l);  \
-	l->lh_TailPred->ln_Pred ? l->lh_TailPred : (struct Node *)0;  \
+    l->lh_TailPred->ln_Pred ? l->lh_TailPred : (struct Node *)0;  \
 })
 
 #define GetPred(_n)  \
 ({ struct Node *n = (struct Node *)(_n);  \
-	n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0;  \
+    n->ln_Pred->ln_Pred ? n->ln_Pred : (struct Node *)0;  \
 })
 #endif
 
@@ -191,6 +191,10 @@ extern struct MUIMasterIFace   *IMUIMaster;
 
 
 extern struct RastPort *CreateRastPort(void);
+extern struct RastPort *CloneRastPort(struct RastPort *rp);
+extern void FreeRastPort(struct RastPort *rp);
+extern BOOL AndRectRect(struct Rectangle *rect1, struct Rectangle *rect2, struct Rectangle *intersect);
+
 
 
 #if defined (__AMIGA__) && !defined(__PPC__)
