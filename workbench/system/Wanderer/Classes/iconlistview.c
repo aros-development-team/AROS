@@ -232,33 +232,33 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     #endif
     layout_hook->h_SubEntry = (HOOKFUNC)IconListview_Layout_Function;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-        MUIA_Group_Horiz, FALSE,
-    MUIA_Group_HorizSpacing, 0,
-    MUIA_Group_VertSpacing, 0,
-    MUIA_Frame, MUIV_Frame_None,
-
-        Child, (IPTR) (
-            group = GroupObject,
-                usewinborder ? TAG_IGNORE : MUIA_Group_LayoutHook, layout_hook,
-                Child, iconlist,
-                Child, vert = ScrollbarObject,
-                    usewinborder ? MUIA_Prop_UseWinBorder : TAG_IGNORE, MUIV_Prop_UseWinBorder_Right,
+    group = MUI_NewObject(MUIC_Group,
+                (usewinborder ? TAG_IGNORE : MUIA_Group_LayoutHook), layout_hook,
+                (iconlist ? Child : TAG_IGNORE), iconlist,
+                Child, vert= MUI_NewObject(MUIC_Scrollbar,
+                    (usewinborder ? MUIA_Prop_UseWinBorder : TAG_IGNORE), MUIV_Prop_UseWinBorder_Right,
                     MUIA_Prop_DeltaFactor, 20,
                     MUIA_Group_Horiz, FALSE,
-                End,
-                Child, horiz = ScrollbarObject,
-                    usewinborder ? MUIA_Prop_UseWinBorder : TAG_IGNORE, MUIV_Prop_UseWinBorder_Bottom,
+                TAG_DONE),
+                Child, horiz = MUI_NewObject(MUIC_Scrollbar,
+                    (usewinborder ? MUIA_Prop_UseWinBorder : TAG_IGNORE), MUIV_Prop_UseWinBorder_Bottom,
                     MUIA_Prop_DeltaFactor, 20,
                     MUIA_Group_Horiz, TRUE,
-                End,
-                usewinborder ? TAG_IGNORE : Child, button,
-            End ),
-        TAG_DONE
-    );
+                TAG_DONE),
+                (usewinborder ? TAG_IGNORE : Child), button,
+            TAG_DONE);
+
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
+            MUIA_Group_Horiz, FALSE,
+            MUIA_Group_HorizSpacing, 0,
+            MUIA_Group_VertSpacing, 0,
+            MUIA_Frame, MUIV_Frame_None,
+
+            Child, (IPTR) group);
 
     if (!obj)
     {
+        MUI_DisposeObject(group);
         FreeVec(layout_hook);
         return NULL;
     }

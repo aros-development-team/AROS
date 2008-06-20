@@ -146,7 +146,7 @@ extern struct MUIMasterIFace   *IMUIMaster;
 
 
 
-#ifdef __MORPHOS__
+#if !defined(__amigaos4__)
 
 #define GetHead(_l)  \
 ({ struct List *l = (struct List *)(_l);  \

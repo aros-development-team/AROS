@@ -121,3 +121,35 @@ BOOL AndRectRect(struct Rectangle *rect1, struct Rectangle *rect2, struct Rectan
         return overlap(*rect1, *rect2);
 
 } /* AndRectRect */
+
+#if defined(__AMIGA__) && !defined(__PPC__)
+APTR AllocVecPooled(APTR  pool, ULONG size)
+{
+    
+    IPTR *memory;
+    
+    if (pool == NULL) return NULL;
+    
+    size   += sizeof(IPTR);
+    memory  = AllocPooled(pool, size);
+    
+    if (memory != NULL)
+    {
+        *memory++ = size;
+    }
+
+    return memory;
+} /* AllocVecPooled() */
+
+
+void FreeVecPooled(APTR pool, APTR memory)
+{
+    if (memory != NULL)
+    {
+        IPTR *real = (IPTR *) memory;
+        IPTR size  = *--real;
+
+        FreePooled(pool, real, size);
+    }
+} /* FreeVecPooled() */
+#endif

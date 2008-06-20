@@ -2,7 +2,6 @@
   Copyright  2004-2007, The AROS Development Team. All rights reserved.
   $Id$
 */
-
 #include "portable_macros.h"
 #ifdef __AROS__
 #define DEBUG 0
@@ -23,7 +22,9 @@
 #endif
 
 #include <proto/utility.h>
+#ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
+#endif
 #include <proto/muimaster.h>
 #include <proto/dos.h>
 
@@ -135,7 +136,7 @@ static unsigned char strtochar(STRPTR st)
   return *st++;
 }
 ///
-/******** code from workbench/c/Info.c *******************/
+/******** code from workbench/c/Info.c **************************************/
 ///fmtlarge()
 static void fmtlarge(UBYTE *buf, ULONG num)
 {
@@ -559,13 +560,13 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
   return TRUE;
 }
 ///
-
+                    
 ///WPEditor_ProccessNetworkChunk()
 BOOL WPEditor_ProccessNetworkChunk(Class *CLASS, Object *self, UBYTE *_viewSettings_Chunk)
 {
   //SETUP_INST_DATA;
 
-  struct TagItem *network_tags =(struct TagItem *) _viewSettings_Chunk;
+  struct TagItem *network_tags =(struct TagItem32 *) _viewSettings_Chunk;
   SET(self, AROS_LE2LONG(network_tags[0].ti_Tag), AROS_LE2LONG(network_tags[0].ti_Data));
 
   return TRUE;
@@ -753,7 +754,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
 
               if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
               {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: TAG_DONE) of header chunk ..\n"));
+  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of header chunk ..\n"));
 
                 if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
                 {
