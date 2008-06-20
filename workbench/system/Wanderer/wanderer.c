@@ -1924,11 +1924,11 @@ D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", data->w
         {
 D(bug("[Wanderer] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
         }
-	#ifdef __AROS__
+    #ifdef __AROS__
         data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
-	#else
-	data->wd_Prefs = NewObject(Wanderer_CLASS->mcc_Class, NULL, TAG_DONE); // FIXME: error handling
-	#endif
+    #else
+    data->wd_Prefs = NewObject(WandererPrefs_CLASS->mcc_Class, NULL, TAG_DONE); // FIXME: error handling
+    #endif
 
 D(bug("[Wanderer] Wanderer__OM_NEW: Prefs-SCREENTITLE IS = '%s'\n",XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
 
@@ -2501,8 +2501,8 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Using Screen @ %x\
 
 //D(bug("1\n\n")); Delay(100);
     /* Create a new icon drawer window with the correct drawer being set */
-		
-    #ifdef __AROS__	
+        
+    #ifdef __AROS__ 
     window = IconWindowObject,
                 MUIA_UserData,                      1,
                 MUIA_Wanderer_Prefs,                  data->wd_Prefs,
