@@ -27,7 +27,9 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/muimaster.h>
+#ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
+#endif
 
 /* FILEINFO CONSTANTS */
 

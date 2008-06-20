@@ -26,7 +26,9 @@
 #endif
 
 #include <proto/utility.h>
+#ifndef _PROTO_INTUITION_H
 #include <proto/intuition.h>
+#endif
 #include <proto/graphics.h>
 #include <proto/muimaster.h>
 #include <proto/exec.h>
