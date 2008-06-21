@@ -208,7 +208,10 @@ const unsigned char *const __decimalpoint = ".";
 #endif
 	    if(subtype=='l')
 #ifdef AROS_HAVE_LONG_LONG
-	      v2=va_arg(args,signed long long);
+            { if(lltype)
+	        v2=va_arg(args,signed long long);
+              else
+	        v2=va_arg(args,signed long); }
 #else
 	      v2=va_arg(args,signed long);
 #endif
@@ -226,7 +229,10 @@ const unsigned char *const __decimalpoint = ".";
 	  }else 		   /* These are unsigned */
 	  { if(subtype=='l')
 #ifdef AROS_HAVE_LONG_LONG
-	      v=va_arg(args,unsigned long long);
+            { if(lltype)
+	        v=va_arg(args,unsigned long long);
+              else
+	        v=va_arg(args,unsigned long); }
 #else
 	      v=va_arg(args,unsigned long);
 #endif
@@ -258,7 +264,10 @@ const unsigned char *const __decimalpoint = ".";
 	case 'c':
 	  if(subtype=='l')
 #ifdef AROS_HAVE_LONG_LONG
-	    *buffer2=va_arg(args,long long);
+            { if(lltype)
+	        buffer2=va_arg(args,long long);
+              else
+	        buffer2=va_arg(args,long); }
 #else
 	    *buffer2=va_arg(args,long);
 #endif
