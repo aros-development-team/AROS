@@ -536,7 +536,7 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     _newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
     _newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
-    D(bug("[iconwindow] %s: Screen dimensions ..  %d x %d\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
+    D(bug("[iconwindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
     if (isBackdrop)
     {
@@ -644,7 +644,7 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
 
     if (_newIconWin__ExtensionGroupObj)
     {
-      _newIconWin__ExtensionContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE                      ,
+      _newIconWin__ExtensionContainerObj = MUI_NewObject(MUIC_Group, MUIA_Group_Horiz, TRUE,
         InnerSpacing(0,0),
         MUIA_HorizWeight,   100,
         MUIA_VertWeight,    0,
@@ -655,25 +655,26 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
       TAG_DONE);
     }
   }
-  D(bug("[iconwindow] %s: Using dimensions ..  %d x %d\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
+  D(bug("[iconwindow] %s: Using dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
   #ifdef __AROS__
   _newIconWin__RootViewObj = (Object *) IconListviewObject,
-                                    MUIA_Weight,                           100,
-                                MUIA_IconListview_UseWinBorder,        TRUE,
-                                MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
-                            End;
+                                            MUIA_Weight,                    100,
+                                            MUIA_IconListview_UseWinBorder, TRUE,
+                                            MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
+                                        End;
   #else
-  _newIconWin__RootViewObj = (Object *) NewObject(IconListview_Class->mcc_Class, NULL    ,
-                                        MUIA_Weight,                           100,
-                                MUIA_IconListview_UseWinBorder,        TRUE,
-                                MUIA_IconListview_IconList,     (IPTR) _newIconWin__IconListObj,
-                            TAG_DONE);
+  _newIconWin__RootViewObj = (Object *) NewObject(IconListview_Class->mcc_Class, NULL,
+                                            MUIA_Weight,                        100,
+                                            MUIA_IconListview_UseWinBorder,     TRUE,
+                                            MUIA_IconListview_IconList,         (IPTR) _newIconWin__IconListObj,
+                                        TAG_DONE);
   #endif
                             
 
   D(bug("[iconwindow] %s: Font @ 0x%p\n", __PRETTY_FUNCTION__, _newIconWin__WindowFont));
 
+  #ifdef __AROS__
   self = (Object *) DoSuperNewTags
   (
     CLASS, self, NULL,
@@ -722,6 +723,54 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
     
     TAG_MORE, (IPTR) message->ops_AttrList
   );
+  #else
+  self = (Object *) DoSuperNew(CLASS, self, 
+    MUIA_Window_Screen,                                    _newIconWin__Screen,
+    MUIA_Window_Backdrop,                                  isBackdrop ? TRUE : FALSE,
+    MUIA_Window_Borderless,                                isBackdrop ? TRUE : FALSE,
+    MUIA_Window_Width,                                     _newIconWin__WindowWidth,
+    MUIA_Window_Height,                                    _newIconWin__WindowHeight,
+    MUIA_Window_LeftEdge,                                  _newIconWin__WindowLeft,
+    MUIA_Window_TopEdge,                                   _newIconWin__WindowTop,
+    (!isBackdrop) ? MUIA_Window_AltWidth : TAG_IGNORE,     100,
+    (!isBackdrop) ? MUIA_Window_AltHeight : TAG_IGNORE,    80,
+    MUIA_Window_Title,                                   (IPTR)_newIconWin__Title,
+
+    MUIA_Window_DragBar,                                   (!isBackdrop) ? TRUE : FALSE,
+    MUIA_Window_CloseGadget,                               (!isBackdrop) ? TRUE : FALSE,
+    MUIA_Window_SizeGadget,                                (!isBackdrop) ? TRUE : FALSE,
+    MUIA_Window_DepthGadget,                               (!isBackdrop) ? TRUE : FALSE,
+#if defined(MUIA_Window_ZoomGadget)
+    MUIA_Window_ZoomGadget,                                (!isBackdrop) ? TRUE : FALSE,
+#endif
+    MUIA_Window_UseBottomBorderScroller,                   (!isBackdrop) ? TRUE : FALSE,
+    MUIA_Window_UseRightBorderScroller,                    (!isBackdrop) ? TRUE : FALSE,
+    MUIA_Window_IsSubWindow,                             TRUE,
+    #ifdef __AROS__
+    WindowBF_TAG,                                        _newIconWin__BackFillHook,
+    #else
+    WindowBF_TAG,                                        *_newIconWin__BackFillHook,
+    #endif
+    MUIA_Window_ScreenTitle,                             (IPTR) "",
+    MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
+
+    WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
+      MUIA_Group_Spacing,  0,
+      MUIA_Group_SameSize, FALSE,
+      InnerSpacing(0,0),
+
+      /* "Extension" group */
+      _newIconWin__ExtensionContainerObj ? Child : TAG_IGNORE, (IPTR)_newIconWin__ExtensionContainerObj,
+
+      /* icon list */
+      Child, (IPTR) _newIconWin__RootViewObj,
+
+    TAG_DONE),
+
+    TAG_MORE, (IPTR) message->ops_AttrList);
+  #endif
+
+
 
   if (self != NULL)
   {
@@ -729,7 +778,7 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
 
     D(bug("[iconwindow] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
 
-        data->iwd_Screen                  = _newIconWin__Screen;
+    data->iwd_Screen                  = _newIconWin__Screen;
         
     data->iwd_Title                   = _newIconWin__Title;
 
@@ -927,7 +976,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
       break;
 
     case MUIA_Window_Open:
-      D(bug("[iconwindow] %s: MUIA_Window_Open [%x]\n", __PRETTY_FUNCTION__, tag->ti_Data));
+      D(bug("[iconwindow] %s: MUIA_Window_Open [%ld]\n", __PRETTY_FUNCTION__, tag->ti_Data));
             if ((BOOL)tag->ti_Data == TRUE)
       {
                 DoMethod(data->iwd_IconListObj, MUIM_IconList_Clear);
@@ -1604,7 +1653,9 @@ int initIconWindowClass(void)
 
   IPTR ret2 = IconWindow__SetupClass();
 
-  if (ret1 && ret2)
+  IPTR ret3 = ImageBackFill__SetupClass();
+
+  if (ret1 && ret2 && ret3)
     return TRUE;
   else
     return FALSE;

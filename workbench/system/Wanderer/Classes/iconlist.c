@@ -2,8 +2,8 @@
 Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
-#ifndef __AROS__
 #include "../portable_macros.h"
+#ifndef __AROS__
 #define WANDERER_BUILTIN_ICONLIST 1
 #else
 #define DEBUG 0
@@ -1506,7 +1506,7 @@ D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__,
 
         data->icld__Option_LastLabelTextMaxLen = data->icld__Option_LabelTextMaxLen;
 
-D(bug("[IconList] %s: MaxLineLen : %d\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
+D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Option_LabelTextMaxLen));
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
@@ -1583,21 +1583,21 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
     /* parse initial taglist */
-    for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = message->ops_AttrList; (tag = NextTagItem((TAGITEM)&tags)); )
     {
         switch (tag->ti_Tag)
         {
             case MUIA_IconList_Left:
-D(bug("[IconList] %s: MUIA_IconList_Left %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+D(bug("[IconList] %s: MUIA_IconList_Left %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 if (data->icld_ViewX != tag->ti_Data)
                     data->icld_ViewX = tag->ti_Data;
-                break;
+            break;
     
             case MUIA_IconList_Top:
-D(bug("[IconList] %s: MUIA_IconList_Top %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
+D(bug("[IconList] %s: MUIA_IconList_Top %ld\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 if (data->icld_ViewY != tag->ti_Data)
                     data->icld_ViewY = tag->ti_Data;
-                break;
+            break;
 
             case MUIA_IconList_Rastport:
 D(bug("[IconList] %s: MUIA_IconList_Rastport 0x%p\n", __PRETTY_FUNCTION__, tag->ti_Data));
@@ -1680,8 +1680,9 @@ D(bug("[IconList] %s: MUIA_IconList_DisplayFlags & ICONLIST_DISP_BUFFERED\n", __
                         data->icld_DrawOffsetY = _mtop(obj);
                     }
                 }
-                break;
             }
+            break;
+
             case MUIA_IconList_SortFlags:
 D(bug("[IconList] %s: MUIA_IconList_SortFlags\n", __PRETTY_FUNCTION__));
                 data->icld_SortFlags = (ULONG)tag->ti_Data;
@@ -1817,20 +1818,24 @@ D(bug("[IconList] %s: MUIA_Background | MUI BG Mode = %d\n", __PRETTY_FUNCTION__
                     NNSET(obj, MUIA_IconListview_ScaledBackground, FALSE);
                     break;
                 }
-                return 0;
             }
+            return (IPTR)FALSE;
         }
     }
+
+D(bug("[IconList] %s(), out of switch\n", __PRETTY_FUNCTION__));
 
     if ((oldleft != data->icld_ViewX) || (oldtop != data->icld_ViewY))
     {
         data->icld_UpdateMode = UPDATE_SCROLL;
         data->update_scrolldx = data->icld_ViewX - oldleft;
         data->update_scrolldy = data->icld_ViewY - oldtop;
+D(bug("[IconList] %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
         MUI_Redraw(obj, MADF_DRAWUPDATE);
     }
 
-    return DoSuperMethodA(CLASS, obj, (Msg)message);
+D(bug("[IconList] %s(), call DoSuperMethodA()\n", __PRETTY_FUNCTION__));
+    return DoSuperMethodA(CLASS, obj, (struct opSet *)message);
 }
 ///
 
@@ -2690,12 +2695,21 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     
     data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
 
+D(bug("[IconList]: %s(), call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
+    SetSuperAttrs(CLASS, obj, MUIA_IconList_Left, data->icld_ViewX,
+                  MUIA_IconList_Top, data->icld_ViewY,
+            TAG_DONE);
+D(bug("[IconList]: %s() call SetAttrs()\n", __PRETTY_FUNCTION__));
     SetAttrs(obj, MUIA_IconList_Left, data->icld_ViewX,
-        MUIA_IconList_Top, data->icld_ViewY,
-        MUIA_IconList_Width, data->icld_AreaWidth,
+                  MUIA_IconList_Top, data->icld_ViewY,
+            TAG_DONE);
+
+D(bug("[IconList]: %s(), now set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
+    SetAttrs(obj, MUIA_IconList_Width, data->icld_AreaWidth,
         MUIA_IconList_Height, data->icld_AreaHeight,
         TAG_DONE);
 
+D(bug("[IconList]: %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
 }

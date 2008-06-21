@@ -6,7 +6,6 @@ $Id$
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONVOLUMELIST 1 
 #else
-#define DEBUG 0
 #include <aros/debug.h>
 #endif
 

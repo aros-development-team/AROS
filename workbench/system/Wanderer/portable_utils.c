@@ -43,6 +43,22 @@
 #endif
 
 
+#ifndef __MORPHOS__
+Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
+{
+    Object *rc;
+    VA_LIST args;
+
+    VA_START(args, obj);
+
+    rc = (Object *)DoSuperMethod(cl, obj, OM_NEW, VA_ARG(args, IPTR), NULL);
+
+    VA_END(args);
+
+    return rc;
+}
+#endif
+
 Object *VARARGS68K DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy, ...)
 {
     Object *rc;
