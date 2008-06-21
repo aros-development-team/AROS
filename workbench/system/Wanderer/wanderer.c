@@ -2544,6 +2544,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Unlocking access t
 
     if (window != NULL)
     {
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: window != NULL\n"));
         /* Get the drawer path back so we can use it also outside this function */
         STRPTR drw = NULL;
         BOOL freeDrwStr = FALSE;
@@ -2551,6 +2552,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Unlocking access t
         if (!isWorkbenchWindow) drw = (STRPTR) XGET(window, MUIA_IconWindow_Location);
         else
         {
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: call AllocVec()\n"));
             drw = AllocVec ( 5, MEMF_CLEAR );
             sprintf ( drw, "RAM:" );
             freeDrwStr = TRUE;    
@@ -2558,6 +2560,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Unlocking access t
         
         if (isWorkbenchWindow)
         {
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: isWorkbenchWindow\n"));
             DoMethod
             (
                 window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
@@ -2576,7 +2579,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Unlocking access t
 #if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
         Object *window_IconList = NULL;
         ULONG  current_DispFlags = 0;
-
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: call get with MUIA_IconWindow_IconList\n"));
         GET(window, MUIA_IconWindow_IconList, &window_IconList);
 
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: IconWindows IconList @ %x\n", window_IconList));
@@ -2599,7 +2602,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n",
             SET(window_IconList, MUIA_IconList_DisplayFlags, current_DispFlags);
         }
 #endif
-        
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: setup notifications\n"));
         DoMethod
         (
             window, MUIM_Notify, MUIA_Window_Activate, TRUE,
@@ -2619,20 +2622,25 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n",
             (IPTR)_app(self), 2, MUIM_CallHook, (IPTR) &_WandererIntern_hook_backdrop
         );
 #endif
-
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: execute all notifies\n"));
         /* If "Execute Command" entry is clicked open the execute window */
         DoAllMenuNotifies(_NewWandDrawerMenu__menustrip, drw);        
-        
+
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: add window to app\n"));
         /* Add the window to the application */
+        #ifdef __AROS__
         DoMethod(_app(self), OM_ADDMEMBER, (IPTR) window);
-        
+        #else
+        DoMethod(self, OM_ADDMEMBER, (IPTR) window);
+        #endif
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: open window\n"));
         /* And now open it */
         DoMethod(window, MUIM_IconWindow_Open);
-
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: clean up memory\n"));
         /* Clean up ram string */
         if ( freeDrwStr && drw ) FreeVec ( drw );
     }
-    
+D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: exit\n"));
     return window;
 }
 ///
