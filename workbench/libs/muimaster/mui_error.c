@@ -17,6 +17,7 @@
 	struct Library *, MUIMasterBase, 11, MUIMaster)
 
 /*  FUNCTION
+	Obsolete function. Use SetIoErr()/IoErr() instead.
 
     INPUTS
 
@@ -27,9 +28,9 @@
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	MUI_SetError()
 
     INTERNALS
 

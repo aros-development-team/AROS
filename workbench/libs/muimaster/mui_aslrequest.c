@@ -21,6 +21,7 @@
 	struct Library *, MUIMasterBase, 9, MUIMaster)
 
 /*  FUNCTION
+	Interface to asl.library.
 
     INPUTS
 
@@ -31,9 +32,9 @@
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	asl.library/AslRequest()
 
     INTERNALS
 

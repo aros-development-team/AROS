@@ -23,8 +23,8 @@
 	Deletes MUI object and its child objects.
 	
     INPUTS
-	obj -- pointer to MUI object created with MUI_NewObject. Maybe NULL,
-	in which case this function has no effect.
+	obj - pointer to MUI object created with MUI_NewObject. Maybe NULL,
+	      in which case this function has no effect.
 	
     RESULT
 
@@ -33,12 +33,10 @@
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
 
     INTERNALS
-
 	MUI will call DisposeObject(), then call CloseLibrary() on
 	OCLASS(obj)->h_Data if cl_ID!=NULL && h_Data!=NULL.
 

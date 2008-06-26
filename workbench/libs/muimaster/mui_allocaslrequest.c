@@ -21,19 +21,22 @@
 	struct Library *, MUIMasterBase, 8, MUIMaster)
 
 /*  FUNCTION
+	Interface to asl.library.
 
     INPUTS
+	see asl.library/AllocAslRequest()
 
     RESULT
+	Pointer to AslRequest
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	asl.library/AllocAslRequest()
 
     INTERNALS
 
