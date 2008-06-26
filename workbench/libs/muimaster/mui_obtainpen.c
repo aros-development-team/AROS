@@ -28,6 +28,8 @@
 	struct Library *, MUIMasterBase, 22, MUIMaster)
 
 /*  FUNCTION
+	Turns struct MUI_PenSpec (the result of a Poppen object) into
+	a pen for SetAPen().
 
     INPUTS
 
@@ -38,9 +40,9 @@
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	MUI_ReleasePen()
 
     INTERNALS
 

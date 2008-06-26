@@ -26,19 +26,23 @@
 	struct Library *, MUIMasterBase, 5, MUIMaster)
 
 /*  FUNCTION
+	Create object from MUI class.
 
     INPUTS
+	classid - case sensitive name/ID string of a MUI class.
+	taglist - attribute/value pairs for the new object.
 
     RESULT
+	Pointer to object. NULL means failure.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	MUI_DisposeObject(), SetAttrs(), GetAttr()
 
     INTERNALS
 

@@ -191,19 +191,25 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
 	struct Library *, MUIMasterBase, 20, MUIMaster)
 
 /*  FUNCTION
+	Create an object from the builtin object collection.
+	See file libraries/mui.h for a list of available objects
+	and their parameters. Note that this is not a taglist.
 
     INPUTS
+	type   - kind of builtin object
+	params - additional parameters for object
 
     RESULT
+	Pointer to object
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	MUI_CreateCustomClass(), MUI_DeleteCustomClass()
 
     INTERNALS
 

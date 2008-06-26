@@ -25,16 +25,15 @@
 	struct Library *, MUIMasterBase, 14, MUIMaster)
 
 /*  FUNCTION
-	Frees a class returned by MUI_GetClass().
+	Frees a class returned by MUI_GetClass(). This function is
+	obsolete. Use MUI_DeleteCustomClass() instead.
 
     INPUTS
         cl - The pointer to the class.
 
     RESULT
-        VOID - The function always succeed: if the class can't be
 
     NOTES
-        This function is obsolete, DO NOT use it.
 
     EXAMPLE
 

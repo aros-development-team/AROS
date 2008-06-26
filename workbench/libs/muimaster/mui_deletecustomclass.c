@@ -23,19 +23,23 @@
 	struct Library *, MUIMasterBase, 19, MUIMaster)
 
 /*  FUNCTION
+	Delete private or public custom classes.
 
     INPUTS
+	mcc - pointer from MUI_CreateCustomClass()
 
     RESULT
+	TRUE  : success
+	FALSE : some objects or sub classes were still in use.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+	MUI_CreateCustomClass()
 
     INTERNALS
 
