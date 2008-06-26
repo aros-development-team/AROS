@@ -30,6 +30,7 @@ Lang: English
  * 2008-04-07  T. Wiszkowski       Changed bus timeout mechanism
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
  *                                 medium removal, device detection, bus management and much more
+ * 2008-06-24  P. Fedin            Added 'nomulti' flag to disable multisector operations
  */
 
 #include <exec/types.h>
@@ -106,6 +107,7 @@ struct ataBase
     * flags
     */
    UBYTE                   ata_32bit;
+   UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
 
    /*
@@ -309,6 +311,7 @@ struct ata_Unit
    /******* PIO IO ********/
    APTR                au_cmd_data;
    ULONG               au_cmd_length;
+   ULONG               au_cmd_total;
    ULONG               au_cmd_error;
 };
 

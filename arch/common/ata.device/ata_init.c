@@ -36,6 +36,7 @@
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling 
  *                                 medium removal, device detection, bus management and much more
  * 2008-05-18  T. Wiszkowski       corrected device naming to handle cases where more than 10 physical units may be available
+ * 2008-06-24  P. Fedin            Added 'NoMulti' flag to disable multisector transfers
  */
 
 #define DEBUG 0
@@ -486,6 +487,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
      * store library pointer so we can use it later
      */
     LIBBASE->ata_32bit = FALSE;
+    LIBBASE->ata_NoMulti = FALSE;
     LIBBASE->ata_NoDMA = FALSE;
 
     /*
@@ -512,6 +514,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                         D(bug("[ATA  ] Using 32-bit IO transfers\n"));
                         LIBBASE->ata_32bit = TRUE;
                     }
+		    if (strstr(node->ln_Name, "nomulti"))
+		    {
+			D(bug("[ATA  ] Disabled multisector transfers\n"));
+			LIBBASE->ata_NoMulti = TRUE;
+		    }
                     if (strstr(node->ln_Name, "nodma"))
                     {
                         D(bug("[ATA  ] Disabled DMA transfers\n"));
