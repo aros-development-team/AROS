@@ -48,6 +48,8 @@
  * 2008-05-19  T. Wiszkowski       Updated ATA DMA handling and transfer wait operation to allow complete transfer before dma_StopDMA()
  * 2008-05-30  T. Wiszkowski       Corrected CHS calculation for larger disks
  * 2008-06-03  K. Smiechowicz      Added 400ns delay in ata_WaitBusyTO before read of device status.
+ * 2008-06-25  P. Fedin            Added "nomulti" flag
+ *                                 PIO works correctly again
  */
 /*
  * TODO: 
@@ -59,7 +61,7 @@
 #define DIRQ(a)
 #define DIRQ_MORE(a) 
 #define DUMP(a) 
-#define DATA(a) 
+#define DATA(a)
 #define DATAPI(a)
 #define DINIT(a) D(a)
 
@@ -100,7 +102,7 @@ static ULONG ata_WriteMultiple64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *)
 static ULONG ata_WriteDMA32(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static ULONG ata_WriteDMA64(struct ata_Unit *, UQUAD, ULONG, APTR, ULONG *);
 static ULONG ata_Eject(struct ata_Unit *);
-static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq);
+static BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout);
 
 static ULONG atapi_EndCmd(struct ata_Unit *unit);
 
@@ -334,13 +336,14 @@ void ata_HandleIRQ(struct ata_Bus *bus)
     });
 }
 
-void ata_IRQSetHandler(struct ata_Unit *unit, void (*handler)(struct ata_Unit*, UBYTE), APTR piomem, ULONG piolen)
+void ata_IRQSetHandler(struct ata_Unit *unit, void (*handler)(struct ata_Unit*, UBYTE), APTR piomem, ULONG blklen, ULONG piolen)
 {
     if (NULL != handler)
         unit->au_cmd_error = 0;
 
     unit->au_cmd_data = piomem;
-    unit->au_cmd_length = piolen;
+    unit->au_cmd_length = (piolen < blklen) ? piolen : blklen;
+    unit->au_cmd_total = piolen;
     unit->au_Bus->ab_HandleIRQ = handler;
 }
 
@@ -353,37 +356,52 @@ void ata_IRQNoData(struct ata_Unit *unit, UBYTE status)
         unit->au_cmd_error = HFERR_BadStatus;
 
     DIRQ(bug("[ATA%02ld] IRQ: NoData - done; status %02lx.\n", unit->au_UnitNum, status));
-    ata_IRQSetHandler(unit, NULL, NULL, 0);
+    ata_IRQSetHandler(unit, NULL, NULL, 0, 0);
     ata_IRQSignalTask(unit->au_Bus);
 }
 
 void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
 {
-    if (status & ATAF_ERROR)
-        ata_IRQNoData(unit, status);
-    if (status & ATAF_DATAREQ)
+    if (status & ATAF_DATAREQ) {
+	DIRQ(bug("[ATA  ] IRQ: PIOReadData - DRQ.\n"));
         unit->au_ins(unit->au_cmd_data, unit->au_Bus->ab_Port, unit->au_cmd_length);
 
-    DIRQ(bug("[ATA  ] IRQ: PIOReadData - done.\n"));
+	/*
+	 * indicate it's all done here
+	 */
+	unit->au_cmd_data += unit->au_cmd_length;
+	unit->au_cmd_total -= unit->au_cmd_length;
+	if (unit->au_cmd_total) {
+	    if (unit->au_cmd_length > unit->au_cmd_total)
+		unit->au_cmd_length = unit->au_cmd_total;
+	    return;
+	}
+	DIRQ(bug("[ATA  ] IRQ: PIOReadData - transfer completed.\n"));
+    }
+    ata_IRQNoData(unit, status);
+}
+
+void ata_PIOWriteBlk(struct ata_Unit *unit)
+{
+    unit->au_outs(unit->au_cmd_data, unit->au_Bus->ab_Port, unit->au_cmd_length);
+
     /*
      * indicate it's all done here
      */
-    unit->au_cmd_length = 0;
-    ata_IRQNoData(unit, status);
+    unit->au_cmd_data += unit->au_cmd_length;
+    unit->au_cmd_total -= unit->au_cmd_length;
+    if (unit->au_cmd_length > unit->au_cmd_total)
+        unit->au_cmd_length = unit->au_cmd_total;
 }
 
 void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
 {
-    if (status & ATAF_ERROR)
-        ata_IRQNoData(unit, status);
-    if (status & ATAF_DATAREQ)
-        unit->au_outs(unit->au_cmd_data, unit->au_Bus->ab_Port, unit->au_cmd_length);
-
+    if (status & ATAF_DATAREQ) {
+	DIRQ(bug("[ATA  ] IRQ: PIOWriteData - DRQ.\n"));
+	ata_PIOWriteBlk(unit);
+	return;
+    }
     DIRQ(bug("[ATA  ] IRQ: PIOWriteData - done.\n"));
-    /*
-     * indicate it's all done here
-     */
-    unit->au_cmd_length = 0;
     ata_IRQNoData(unit, status);
 }
 
@@ -487,7 +505,7 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
  * wait for timeout or drive ready
  * polling-in-a-loop, but it should be safe to remove this already
  */
-BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
+BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 {
     UBYTE status;
     ULONG sigs = SIGBREAKF_CTRL_C;
@@ -621,6 +639,8 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq)
     /*
      * and say it went fine (i mean it)
      */
+    if (stout)
+	*stout = status;
     return res;
 }
 
@@ -651,6 +671,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     ULONG port = au->au_Bus->ab_Port;
     ULONG err = 0;
     APTR mem = block->buffer;
+    UBYTE status;
 
     if (FALSE == ata_SelectUnit(au))
         return IOERR_UNITBUSY;
@@ -733,29 +754,29 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     switch (block->method)
     {
         case CM_PIOWrite:
-            ata_IRQSetHandler(au, &ata_IRQPIOWrite, mem, block->length);
+            ata_IRQSetHandler(au, &ata_IRQPIOWrite, mem, block->secmul << au->au_SectorShift, block->length);
             break;
 
         case CM_PIORead:
-            ata_IRQSetHandler(au, &ata_IRQPIORead, mem, block->length);
+            ata_IRQSetHandler(au, &ata_IRQPIORead, mem, block->secmul << au->au_SectorShift, block->length);
             break;
 
         case CM_DMARead:
             if (FALSE == dma_SetupPRDSize(au, mem, block->length, TRUE))
                 return IOERR_ABORTED;
-            ata_IRQSetHandler(au, &ata_IRQDMAReadWrite, NULL, 0);
+            ata_IRQSetHandler(au, &ata_IRQDMAReadWrite, NULL, 0, 0);
             dma_StartDMA(au);
             break;
 
         case CM_DMAWrite:
             if (FALSE == dma_SetupPRDSize(au, mem, block->length, FALSE))
                 return IOERR_ABORTED;
-            ata_IRQSetHandler(au, &ata_IRQDMAReadWrite, NULL, 0);
+            ata_IRQSetHandler(au, &ata_IRQDMAReadWrite, NULL, 0, 0);
             dma_StartDMA(au);
             break;
 
         case CM_NoData:
-            ata_IRQSetHandler(au, &ata_IRQNoData, NULL, 0);
+            ata_IRQSetHandler(au, &ata_IRQNoData, NULL, 0, 0);
             break;
 
         default:
@@ -770,11 +791,32 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     DATA(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
     ata_out(block->command, ata_Command, port);
     ata_400ns();
+    
+    /*
+     * In case of PIO write the drive won't issue an IRQ before first
+     * data transfer, so we should poll the status and send the firs
+     * block upon request.
+     */
+    if (block->method == CM_PIOWrite) {
+	if (FALSE == ata_WaitBusyTO(au, 300, FALSE, &status)) {
+	    D(bug("[ATA%02ld] PIOWrite - no response from device\n", au->au_UnitNum));
+	    return IOERR_UNITBUSY;
+	}
+	if (status & ATAF_DATAREQ) {
+	    DATA(bug("[ATA%02ld] PIOWrite - DRQ.\n", au->au_UnitNum));
+	    ata_PIOWriteBlk(au);
+	}
+	else
+	{
+	    D(bug("[ATA%02ld] PIOWrite - bad status: %02X\n", status));
+	    return HFERR_BadStatus;
+	}
+    }
 
     /*
      * wait for drive to complete what it has to do
      */
-    if (FALSE == ata_WaitBusyTO(au, 300, TRUE))
+    if (FALSE == ata_WaitBusyTO(au, 300, TRUE, NULL))
     {
         bug("[ATA%02ld] Device is late - no response\n", au->au_UnitNum);
         err = IOERR_UNITBUSY;
@@ -879,7 +921,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     ata_out(ATA_PACKET, atapi_Command, port);
     ata_400ns();
     
-    ata_WaitBusyTO(unit, 30, FALSE);
+    ata_WaitBusyTO(unit, 30, FALSE, NULL);
     if (0 == (ata_ReadStatus(unit->au_Bus) & ATAF_DATAREQ))
         return HFERR_BadStatus;
 
@@ -887,13 +929,13 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
      * setup appropriate hooks. not really the best way.
      */
     if (datalen == 0)
-        ata_IRQSetHandler(unit, &ata_IRQNoData, 0, 0);
+        ata_IRQSetHandler(unit, &ata_IRQNoData, 0, 0, 0);
     else if (*dma)
-        ata_IRQSetHandler(unit, &ata_IRQDMAReadWrite, NULL, 0);
+        ata_IRQSetHandler(unit, &ata_IRQDMAReadWrite, NULL, 0, 0);
     else if (write)
-        ata_IRQSetHandler(unit, &ata_IRQPIOWriteAtapi, data, datalen);
+        ata_IRQSetHandler(unit, &ata_IRQPIOWriteAtapi, data, 0, datalen);
     else
-        ata_IRQSetHandler(unit, &ata_IRQPIOReadAtapi, data, datalen);
+        ata_IRQSetHandler(unit, &ata_IRQPIOReadAtapi, data, 0, datalen);
 
     DATAPI(bug("[ATAPI] Sending packet\n"));
     unit->au_outs(cmd, unit->au_Bus->ab_Port, 12);
@@ -925,7 +967,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
         }
     }
 
-    if ((0 == err) && (ata_WaitBusyTO(unit, 300, TRUE) == FALSE))
+    if ((0 == err) && (ata_WaitBusyTO(unit, 300, TRUE, NULL) == FALSE))
     {
         DATAPI(bug("[DSCSI] Command timed out.\n"));
         err = IOERR_UNITBUSY;
@@ -1086,7 +1128,7 @@ BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u)
 
     ata_SelectUnit(unit);
 
-    if (FALSE == ata_WaitBusyTO(unit, 1, FALSE))
+    if (FALSE == ata_WaitBusyTO(unit, 1, FALSE, NULL))
     {
         DINIT(bug("[ATA%02ld] ERROR: Drive not ready for use. Keeping functions stubbed\n", unit->au_UnitNum));
         FreePooled(bus->ab_Base->ata_MemPool, unit->au_Drive, sizeof(struct DriveIdent));
@@ -1171,11 +1213,11 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     {
         if ((mode >= AB_XFER_PIO0) & (mode <= AB_XFER_PIO7))
         {
-            if (unit->au_XferModes & AF_XFER_RWMULTI)
+            if ((!unit->au_Bus->ab_Base->ata_NoMulti) && (unit->au_XferModes & AF_XFER_RWMULTI))
             {
                 ata_out(unit->au_Drive->id_RWMultipleSize & 0xFF, ata_Count, unit->au_Bus->ab_Port);
                 ata_out(ATA_SET_MULTIPLE, ata_Command, unit->au_Bus->ab_Port);
-                ata_WaitBusyTO(unit, -1, FALSE);
+                ata_WaitBusyTO(unit, -1, FALSE, NULL);
 
                 unit->au_Read32         = ata_ReadMultiple32;
                 unit->au_Write32        = ata_WriteMultiple32;
