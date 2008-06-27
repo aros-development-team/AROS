@@ -447,21 +447,21 @@ void ata_IRQPIOReadAtapi(struct ata_Unit *unit, UBYTE status)
         return;
 
     size = ata_in(atapi_ByteCntH, port) << 8 | ata_in(atapi_ByteCntL, port);
-    DIRQ(bug("[ATAPI] IRQ: data available for read (%ld bytes, max: %ld bytes)\n", size, unit->au_cmd_length));
+    DIRQ(bug("[ATAPI] IRQ: data available for read (%ld bytes, max: %ld bytes)\n", size, unit->au_cmd_total));
 
-    if (size > unit->au_cmd_length)
+    if (size > unit->au_cmd_total)
     {
-        bug("[ATAPI] IRQ: CRITICAL! MORE DATA OFFERED THAN STORAGE CAN TAKE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_length);
-        size = unit->au_cmd_length;
+        bug("[ATAPI] IRQ: CRITICAL! MORE DATA OFFERED THAN STORAGE CAN TAKE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_total);
+        size = unit->au_cmd_total;
     }
 
     unit->au_ins(unit->au_cmd_data, port, size);
     unit->au_cmd_data = &((UBYTE*)unit->au_cmd_data)[size];
-    unit->au_cmd_length -= size;
+    unit->au_cmd_total -= size;
 
     DIRQ(bug("[ATAPI] IRQ: %lu bytes read.\n", size));
 
-    if (unit->au_cmd_length == 0)
+    if (unit->au_cmd_total == 0)
         ata_IRQNoData(unit, status);
 }
 
@@ -483,21 +483,21 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
         return;
 
     size = ata_in(atapi_ByteCntH, port) << 8 | ata_in(atapi_ByteCntL, port);
-    DIRQ(bug("[ATAPI] IRQ: data requested for write (%ld bytes, max: %ld bytes)\n", size, unit->au_cmd_length));
+    DIRQ(bug("[ATAPI] IRQ: data requested for write (%ld bytes, max: %ld bytes)\n", size, unit->au_cmd_total));
 
-    if (size > unit->au_cmd_length)
+    if (size > unit->au_cmd_total)
     {
-        bug("[ATAPI] IRQ: CRITICAL! MORE DATA REQUESTED THAN STORAGE CAN GIVE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_length);
-        size = unit->au_cmd_length;
+        bug("[ATAPI] IRQ: CRITICAL! MORE DATA REQUESTED THAN STORAGE CAN GIVE: %ld bytes vs %ld bytes left!\n", size, unit->au_cmd_total);
+        size = unit->au_cmd_total;
     }
 
     unit->au_outs(unit->au_cmd_data, port, size);
     unit->au_cmd_data = &((UBYTE*)unit->au_cmd_data)[size];
-    unit->au_cmd_length -= size;
+    unit->au_cmd_total -= size;
 
     DIRQ(bug("[ATAPI] IRQ: %lu bytes written.\n", size));
 
-    if (unit->au_cmd_length == 0)
+    if (unit->au_cmd_total == 0)
         ata_IRQNoData(unit, status);
 }
 
