@@ -4,9 +4,11 @@
 include $(TOP)/config/make.cfg
 
 #MM- workbench-fonts : workbench-fonts-truetype
-#MM workbench-fonts-truetype : setup
 
-workbench-fonts-truetype : files-copy
+#MM- workbench-fonts-truetype : workbench-fonts-dejavu-ttf workbench-fonts-dejavu-font
 
-%copy_files_q files="$(wildcard *.ttf)" dst=$(AROSDIR)/Fonts/TrueType
-%copy_files_q files="$(wildcard *.font *.otag)" dst=$(AROSDIR)/Fonts
+#MM workbench-fonts-dejavu-ttf
+#MM workbench-fonts-dejavu-font
+
+%copy_files_q files="$(wildcard *.ttf)" dst=$(AROSDIR)/Fonts/TrueType maketarget=workbench-fonts-dejavu-ttf
+%copy_files_q files="$(wildcard *.font *.otag)" dst=$(AROSDIR)/Fonts maketarget=workbench-fonts-dejavu-font
