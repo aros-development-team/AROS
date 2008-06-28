@@ -9,371 +9,273 @@
 /distfiles
 /config.status
 /contrib
+/documentation
 /.settings
 /.cproject
 /.project
 
-# arch
-
-# arch/.unmaintained
-
-# arch/.unmaintained/all-netbsd
+# /arch/.unmaintained/all-netbsd/
 /arch/.unmaintained/all-netbsd/mmakefile
 
-# arch/.unmaintained/all-netbsd/exec
-
-# arch/.unmaintained/all-openbsd
+# /arch/.unmaintained/all-openbsd/
 /arch/.unmaintained/all-openbsd/mmakefile
 
-# arch/.unmaintained/all-openbsd/exec
-
-# arch/.unmaintained/amiga
-
-# arch/.unmaintained/amiga/boot
-
-# arch/.unmaintained/amiga/workbench
-
-# arch/.unmaintained/amiga/workbench/hidds
-
-# arch/.unmaintained/amiga/workbench/hidds/graphics
-
-# arch/.unmaintained/amiga/workbench/hidds/graphics/intuition
+# /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/
 /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/*.bak
 /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/mmakefile
 /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/graphics_amiga_intui_end.c
 /arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/libdefs.h
 
-# arch/.unmaintained/amiga/workbench/hidds/graphics/intuition/include
-
-# arch/.unmaintained/arm-all
-
-# arch/.unmaintained/arm-all/Drivers
-
-# arch/.unmaintained/arm-all/Drivers/irq.hidd.sa1100
+# /arch/.unmaintained/arm-all/Drivers/irq.hidd.sa1100/
 /arch/.unmaintained/arm-all/Drivers/irq.hidd.sa1100/mmakefile
 
-# arch/.unmaintained/arm-all/clib
+# /arch/.unmaintained/arm-all/clib/
 /arch/.unmaintained/arm-all/clib/mmakefile
 
-# arch/.unmaintained/arm-all/dos
+# /arch/.unmaintained/arm-all/dos/
 /arch/.unmaintained/arm-all/dos/mmakefile
 
-# arch/.unmaintained/arm-all/exec
+# /arch/.unmaintained/arm-all/exec/
 /arch/.unmaintained/arm-all/exec/mmakefile
 
-# arch/.unmaintained/arm-all/include
+# /arch/.unmaintained/arm-all/include/
 /arch/.unmaintained/arm-all/include/mmakefile
 
-# arch/.unmaintained/arm-all/include/aros
-
-# arch/.unmaintained/arm-all/include/asm
-
-# arch/.unmaintained/arm-all/include/exec
-
-# arch/.unmaintained/arm-all/mlib
+# /arch/.unmaintained/arm-all/mlib/
 /arch/.unmaintained/arm-all/mlib/mmakefile
 
-# arch/.unmaintained/dummy
-
-# arch/.unmaintained/generic
-
-# arch/.unmaintained/generic/hidd
-
-# arch/.unmaintained/generic/hidd/irq
-
-# arch/.unmaintained/generic/hidd/parallel
-
-# arch/.unmaintained/generic/hidd/serial
-
-# arch/.unmaintained/hidd
+# /arch/.unmaintained/hidd/
 /arch/.unmaintained/hidd/mmakefile
 
-# arch/.unmaintained/i386-cygwin
+# /arch/.unmaintained/i386-cygwin/
 /arch/.unmaintained/i386-cygwin/mmakefile
 
-# arch/.unmaintained/i386-cygwin/exec
-
-# arch/.unmaintained/m68k-emul
+# /arch/.unmaintained/m68k-emul/
 /arch/.unmaintained/m68k-emul/mmakefile
 
-# arch/.unmaintained/m68k-emul/clib
+# /arch/.unmaintained/m68k-emul/clib/
 /arch/.unmaintained/m68k-emul/clib/mmakefile
 
-# arch/.unmaintained/m68k-emul/exec
+# /arch/.unmaintained/m68k-emul/exec/
 /arch/.unmaintained/m68k-emul/exec/mmakefile
 
-# arch/.unmaintained/m68k-emul/utility
+# /arch/.unmaintained/m68k-emul/utility/
 /arch/.unmaintained/m68k-emul/utility/mmakefile
 
-# arch/.unmaintained/m68k-linux
+# /arch/.unmaintained/m68k-linux/
 /arch/.unmaintained/m68k-linux/mmakefile
 /arch/.unmaintained/m68k-linux/geninc
 /arch/.unmaintained/m68k-linux/machine.i
 
-# arch/.unmaintained/m68k-linux/alib
+# /arch/.unmaintained/m68k-linux/alib/
 /arch/.unmaintained/m68k-linux/alib/mmakefile
 
-# arch/.unmaintained/m68k-linux/clib
+# /arch/.unmaintained/m68k-linux/clib/
 /arch/.unmaintained/m68k-linux/clib/mmakefile
 
-# arch/.unmaintained/m68k-linux/exec
+# /arch/.unmaintained/m68k-linux/exec/
 /arch/.unmaintained/m68k-linux/exec/mmakefile
 
-# arch/.unmaintained/m68k-linux/utility
+# /arch/.unmaintained/m68k-linux/utility/
 /arch/.unmaintained/m68k-linux/utility/mmakefile
 
-# arch/.unmaintained/m68k-native
+# /arch/.unmaintained/m68k-native/
 /arch/.unmaintained/m68k-native/geninc
 /arch/.unmaintained/m68k-native/machine.i
 /arch/.unmaintained/m68k-native/makefile
 /arch/.unmaintained/m68k-native/mmakefile
 
-# arch/.unmaintained/m68k-native/aros
+# /arch/.unmaintained/m68k-native/aros/
 /arch/.unmaintained/m68k-native/aros/mmakefile
 
-# arch/.unmaintained/m68k-native/clib
+# /arch/.unmaintained/m68k-native/clib/
 /arch/.unmaintained/m68k-native/clib/makefile
 /arch/.unmaintained/m68k-native/clib/mmakefile
 
-# arch/.unmaintained/m68k-native/exec
+# /arch/.unmaintained/m68k-native/exec/
 /arch/.unmaintained/m68k-native/exec/makefile
 /arch/.unmaintained/m68k-native/exec/mmakefile
 
-# arch/.unmaintained/m68k-native/layers
+# /arch/.unmaintained/m68k-native/layers/
 /arch/.unmaintained/m68k-native/layers/makefile
 /arch/.unmaintained/m68k-native/layers/mmakefile
 
-# arch/.unmaintained/m68k-native/utility
+# /arch/.unmaintained/m68k-native/utility/
 /arch/.unmaintained/m68k-native/utility/makefile
 /arch/.unmaintained/m68k-native/utility/mmakefile
 
-# arch/.unmaintained/m68k-pp-native
+# /arch/.unmaintained/m68k-pp-native/
 /arch/.unmaintained/m68k-pp-native/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/Drivers
-
-# arch/.unmaintained/m68k-pp-native/Drivers/display.hidd
+# /arch/.unmaintained/m68k-pp-native/Drivers/display.hidd/
 /arch/.unmaintained/m68k-pp-native/Drivers/display.hidd/mmakefile
 /arch/.unmaintained/m68k-pp-native/Drivers/display.hidd/libdefs.h
 
-# arch/.unmaintained/m68k-pp-native/Drivers/graphics
+# /arch/.unmaintained/m68k-pp-native/Drivers/graphics/
 /arch/.unmaintained/m68k-pp-native/Drivers/graphics/libdefs.h
 /arch/.unmaintained/m68k-pp-native/Drivers/graphics/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/Drivers/irq.hidd
+# /arch/.unmaintained/m68k-pp-native/Drivers/irq.hidd/
 /arch/.unmaintained/m68k-pp-native/Drivers/irq.hidd/mmakefile
 /arch/.unmaintained/m68k-pp-native/Drivers/irq.hidd/libdefs.h
 
-# arch/.unmaintained/m68k-pp-native/Drivers/serial.hidd
+# /arch/.unmaintained/m68k-pp-native/Drivers/serial.hidd/
 /arch/.unmaintained/m68k-pp-native/Drivers/serial.hidd/mmakefile
 /arch/.unmaintained/m68k-pp-native/Drivers/serial.hidd/libdefs.h
 
-# arch/.unmaintained/m68k-pp-native/Drivers/touchscreen.hidd
+# /arch/.unmaintained/m68k-pp-native/Drivers/touchscreen.hidd/
 /arch/.unmaintained/m68k-pp-native/Drivers/touchscreen.hidd/mmakefile
 /arch/.unmaintained/m68k-pp-native/Drivers/touchscreen.hidd/libdefs.h
 
-# arch/.unmaintained/m68k-pp-native/TxElf
+# /arch/.unmaintained/m68k-pp-native/TxElf/
 /arch/.unmaintained/m68k-pp-native/TxElf/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/battclock
+# /arch/.unmaintained/m68k-pp-native/battclock/
 /arch/.unmaintained/m68k-pp-native/battclock/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/boot
+# /arch/.unmaintained/m68k-pp-native/boot/
 /arch/.unmaintained/m68k-pp-native/boot/*.bin
 /arch/.unmaintained/m68k-pp-native/boot/bin.res
 /arch/.unmaintained/m68k-pp-native/boot/*.grc
 /arch/.unmaintained/m68k-pp-native/boot/*.prc
 /arch/.unmaintained/m68k-pp-native/boot/exec
 
-# arch/.unmaintained/m68k-pp-native/boot-elf
+# /arch/.unmaintained/m68k-pp-native/boot-elf/
 /arch/.unmaintained/m68k-pp-native/boot-elf/*.o
 
-# arch/.unmaintained/m68k-pp-native/build-rom
+# /arch/.unmaintained/m68k-pp-native/build-rom/
 /arch/.unmaintained/m68k-pp-native/build-rom/mmakefile
 /arch/.unmaintained/m68k-pp-native/build-rom/*.o
 /arch/.unmaintained/m68k-pp-native/build-rom/*.s
 /arch/.unmaintained/m68k-pp-native/build-rom/aros.rom
 /arch/.unmaintained/m68k-pp-native/build-rom/aros_rom
 
-# arch/.unmaintained/m68k-pp-native/clib
+# /arch/.unmaintained/m68k-pp-native/clib/
 /arch/.unmaintained/m68k-pp-native/clib/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/dos
+# /arch/.unmaintained/m68k-pp-native/dos/
 /arch/.unmaintained/m68k-pp-native/dos/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/exec
+# /arch/.unmaintained/m68k-pp-native/exec/
 /arch/.unmaintained/m68k-pp-native/exec/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/include
+# /arch/.unmaintained/m68k-pp-native/include/
 /arch/.unmaintained/m68k-pp-native/include/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/include/aros
-
-# arch/.unmaintained/m68k-pp-native/include/asm
-
-# arch/.unmaintained/m68k-pp-native/include/exec
-
-# arch/.unmaintained/m68k-pp-native/libgcc1
+# /arch/.unmaintained/m68k-pp-native/libgcc1/
 /arch/.unmaintained/m68k-pp-native/libgcc1/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/loader
+# /arch/.unmaintained/m68k-pp-native/loader/
 /arch/.unmaintained/m68k-pp-native/loader/*.grc
 /arch/.unmaintained/m68k-pp-native/loader/*.prc
 /arch/.unmaintained/m68k-pp-native/loader/*.bin
 /arch/.unmaintained/m68k-pp-native/loader/*.res
 /arch/.unmaintained/m68k-pp-native/loader/loader
 
-# arch/.unmaintained/m68k-pp-native/mlib
+# /arch/.unmaintained/m68k-pp-native/mlib/
 /arch/.unmaintained/m68k-pp-native/mlib/mmakefile
 
-# arch/.unmaintained/m68k-pp-native/xcopilotpatch
-
-# arch/.unmaintained/morphos
+# /arch/.unmaintained/morphos/
 /arch/.unmaintained/morphos/mmakefile
 
-# arch/.unmaintained/morphos/Include
-
-# arch/.unmaintained/morphos/Include/aros
-
-# arch/.unmaintained/morphos/Include/dos
-
-# arch/.unmaintained/morphos/Include/exec
-
-# arch/.unmaintained/morphos/Include/gadgets
-
-# arch/.unmaintained/morphos/Include/intuition
-
-# arch/.unmaintained/morphos/Include/libcore
-
-# arch/.unmaintained/morphos/Include/libraries
-
-# arch/.unmaintained/morphos/Include/proto
-
-# arch/.unmaintained/ppc-native
+# /arch/.unmaintained/ppc-native/
 /arch/.unmaintained/ppc-native/mmakefile
 
-# arch/.unmaintained/ppc-native/boot
-
-# arch/.unmaintained/ppc-native/exec
+# /arch/.unmaintained/ppc-native/exec/
 /arch/.unmaintained/ppc-native/exec/mmakefile
 
-# arch/.unmaintained/solaris
+# /arch/.unmaintained/solaris/
 /arch/.unmaintained/solaris/mmakefile
 
-# arch/all-freebsd
+# /arch/all-freebsd/
 /arch/all-freebsd/mmakefile
 
-# arch/all-freebsd/exec
+# /arch/all-freebsd/exec/
 /arch/all-freebsd/exec/mmakefile
 
-# arch/all-hosted
-
-# arch/all-linux
+# /arch/all-linux/
 /arch/all-linux/mmakefile
 
-# arch/all-linux/exec
+# /arch/all-linux/exec/
 /arch/all-linux/exec/mmakefile
 
-# arch/all-linux/hidd
+# /arch/all-linux/hidd/
 /arch/all-linux/hidd/mmakefile
 /arch/all-linux/hidd/libdefs.h
 
-# arch/all-linux/i386
-
-# arch/all-linux/ppc
-
-# arch/all-linux/x86_64
-
-# arch/all-sdl
-
-# arch/all-sdl/hidd
+# /arch/all-sdl/hidd/
 /arch/all-sdl/hidd/mmakefile
 
-# arch/all-unix
+# /arch/all-unix/
 /arch/all-unix/*.err
 /arch/all-unix/makefile
 
-# arch/all-unix/battclock
+# /arch/all-unix/battclock/
 /arch/all-unix/battclock/mmakefile
 /arch/all-unix/battclock/*.bak
 
-# arch/all-unix/devs
+# /arch/all-unix/bootloader/
+/arch/all-unix/bootloader/mmakefile
 
-# arch/all-unix/devs/filesys
-
-# arch/all-unix/devs/filesys/emul_handler
+# /arch/all-unix/devs/filesys/emul_handler/
 /arch/all-unix/devs/filesys/emul_handler/mmakefile
 
-# arch/all-unix/devs/networks
-
-# arch/all-unix/devs/networks/tap
+# /arch/all-unix/devs/networks/tap/
 /arch/all-unix/devs/networks/tap/mmakefile
 
-# arch/all-unix/dos
+# /arch/all-unix/dos/
 /arch/all-unix/dos/makefile.bak
 /arch/all-unix/dos/mmakefile
 /arch/all-unix/dos/makefile
 
-# arch/all-unix/exec
+# /arch/all-unix/exec/
 /arch/all-unix/exec/mmakefile
 /arch/all-unix/exec/sigcore.h
 
-# arch/all-unix/hidd
-
-# arch/all-unix/hidd/parallel
+# /arch/all-unix/hidd/parallel/
 /arch/all-unix/hidd/parallel/libdefs.h
 /arch/all-unix/hidd/parallel/mmakefile
 /arch/all-unix/hidd/parallel/*.err
 /arch/all-unix/hidd/parallel/parallel_end.c
 
-# arch/all-unix/hidd/serial
+# /arch/all-unix/hidd/serial/
 /arch/all-unix/hidd/serial/libdefs.h
 /arch/all-unix/hidd/serial/mmakefile
 /arch/all-unix/hidd/serial/*.err
 /arch/all-unix/hidd/serial/serial_end.c
 
-# arch/all-unix/hidd/tap
+# /arch/all-unix/hidd/tap/
 /arch/all-unix/hidd/tap/mmakefile
 
-# arch/all-unix/hidd/unixio
+# /arch/all-unix/hidd/unixio/
 /arch/all-unix/hidd/unixio/mmakefile
 
-# arch/all-unix/hidd/unixio/include
-
-# arch/all-unix/hostlib
+# /arch/all-unix/hostlib/
 /arch/all-unix/hostlib/mmakefile
 
-# arch/all-unix/libs
-
-# arch/all-unix/libs/dbus
+# /arch/all-unix/libs/dbus/
 /arch/all-unix/libs/dbus/mmakefile
 /arch/all-unix/libs/dbus/*.bak
 
-# arch/all-unix/libs/oss
+# /arch/all-unix/libs/oss/
 /arch/all-unix/libs/oss/mmakefile
 
-# arch/all-x11
+# /arch/all-x11/
 /arch/all-x11/mmakefile
 /arch/all-x11/makefile
 /arch/all-x11/makefile.bak
 
-# arch/all-x11/hidd
+# /arch/all-x11/hidd/
 /arch/all-x11/hidd/mmakefile
 /arch/all-x11/hidd/libdefs.h
 
-# arch/common
-
-# arch/common/ata.device
+# /arch/common/ata.device/
 /arch/common/ata.device/mmakefile
 
-# arch/common/ata.device/include
-
-# arch/common/boot
-
-# arch/common/boot/floppy
+# /arch/common/boot/floppy/
 /arch/common/boot/floppy/mmakefile
 
-# arch/common/boot/grub
+# /arch/common/boot/grub/
 /arch/common/boot/grub/Makefile
 /arch/common/boot/grub/config.status
 /arch/common/boot/grub/config.cache
@@ -384,31 +286,31 @@
 /arch/common/boot/grub/.files-touched
 /arch/common/boot/grub/autom4te.cache
 
-# arch/common/boot/grub/docs
+# /arch/common/boot/grub/docs/
 /arch/common/boot/grub/docs/.deps
 /arch/common/boot/grub/docs/Makefile
 /arch/common/boot/grub/docs/*.info*
 
-# arch/common/boot/grub/grub
+# /arch/common/boot/grub/grub/
 /arch/common/boot/grub/grub/.deps
 /arch/common/boot/grub/grub/Makefile
 /arch/common/boot/grub/grub/grub
 
-# arch/common/boot/grub/lib
+# /arch/common/boot/grub/lib/
 /arch/common/boot/grub/lib/.deps
 /arch/common/boot/grub/lib/Makefile
 
-# arch/common/boot/grub/netboot
+# /arch/common/boot/grub/netboot/
 /arch/common/boot/grub/netboot/.deps
 /arch/common/boot/grub/netboot/Makefile
 
-# arch/common/boot/grub/stage1
+# /arch/common/boot/grub/stage1/
 /arch/common/boot/grub/stage1/.deps
 /arch/common/boot/grub/stage1/Makefile
 /arch/common/boot/grub/stage1/stage1
 /arch/common/boot/grub/stage1/stage1.exec
 
-# arch/common/boot/grub/stage2
+# /arch/common/boot/grub/stage2/
 /arch/common/boot/grub/stage2/.deps
 /arch/common/boot/grub/stage2/Makefile
 /arch/common/boot/grub/stage2/diskless
@@ -424,7 +326,7 @@
 /arch/common/boot/grub/stage2/*.exec
 /arch/common/boot/grub/stage2/*_stage1_5
 
-# arch/common/boot/grub/util
+# /arch/common/boot/grub/util/
 /arch/common/boot/grub/util/.deps
 /arch/common/boot/grub/util/Makefile
 /arch/common/boot/grub/util/grub-image
@@ -433,794 +335,446 @@
 /arch/common/boot/grub/util/grub-terminfo
 /arch/common/boot/grub/util/mbchk
 
-# arch/common/boot/grub2
+# /arch/common/boot/grub2/
 /arch/common/boot/grub2/mmakefile
 
-# arch/common/boot/grub2/AROS
+# /arch/common/boot/grub2/AROS/
 /arch/common/boot/grub2/AROS/mmakefile
 
-# arch/common/boot/grub2/boot
-
-# arch/common/boot/grub2/boot/i386
-
-# arch/common/boot/grub2/boot/i386/pc
-
-# arch/common/boot/grub2/boot/powerpc
-
-# arch/common/boot/grub2/boot/powerpc/ieee1275
-
-# arch/common/boot/grub2/bus
-
-# arch/common/boot/grub2/commands
-
-# arch/common/boot/grub2/commands/i386
-
-# arch/common/boot/grub2/commands/i386/pc
-
-# arch/common/boot/grub2/commands/ieee1275
-
-# arch/common/boot/grub2/conf
-
-# arch/common/boot/grub2/disk
-
-# arch/common/boot/grub2/disk/efi
-
-# arch/common/boot/grub2/disk/i386
-
-# arch/common/boot/grub2/disk/i386/pc
-
-# arch/common/boot/grub2/disk/ieee1275
-
-# arch/common/boot/grub2/disk/powerpc
-
-# arch/common/boot/grub2/disk/powerpc/ieee1275
-
-# arch/common/boot/grub2/docs
-
-# arch/common/boot/grub2/font
-
-# arch/common/boot/grub2/fs
-
-# arch/common/boot/grub2/hello
-
-# arch/common/boot/grub2/include
-
-# arch/common/boot/grub2/include/grub
-
-# arch/common/boot/grub2/include/grub/efi
-
-# arch/common/boot/grub2/include/grub/i386
-
-# arch/common/boot/grub2/include/grub/i386/efi
-
-# arch/common/boot/grub2/include/grub/i386/ieee1275
-
-# arch/common/boot/grub2/include/grub/i386/pc
-
-# arch/common/boot/grub2/include/grub/ieee1275
-
-# arch/common/boot/grub2/include/grub/powerpc
-
-# arch/common/boot/grub2/include/grub/powerpc/ieee1275
-
-# arch/common/boot/grub2/include/grub/sparc64
-
-# arch/common/boot/grub2/include/grub/sparc64/ieee1275
-
-# arch/common/boot/grub2/include/grub/util
-
-# arch/common/boot/grub2/io
-
-# arch/common/boot/grub2/kern
-
-# arch/common/boot/grub2/kern/efi
-
-# arch/common/boot/grub2/kern/i386
-
-# arch/common/boot/grub2/kern/i386/efi
-
-# arch/common/boot/grub2/kern/i386/linuxbios
-
-# arch/common/boot/grub2/kern/i386/pc
-
-# arch/common/boot/grub2/kern/ieee1275
-
-# arch/common/boot/grub2/kern/powerpc
-
-# arch/common/boot/grub2/kern/powerpc/ieee1275
-
-# arch/common/boot/grub2/kern/sparc64
-
-# arch/common/boot/grub2/kern/sparc64/ieee1275
-
-# arch/common/boot/grub2/loader
-
-# arch/common/boot/grub2/loader/efi
-
-# arch/common/boot/grub2/loader/i386
-
-# arch/common/boot/grub2/loader/i386/efi
-
-# arch/common/boot/grub2/loader/i386/pc
-
-# arch/common/boot/grub2/loader/powerpc
-
-# arch/common/boot/grub2/loader/powerpc/ieee1275
-
-# arch/common/boot/grub2/normal
-
-# arch/common/boot/grub2/normal/i386
-
-# arch/common/boot/grub2/normal/powerpc
-
-# arch/common/boot/grub2/normal/sparc64
-
-# arch/common/boot/grub2/partmap
-
-# arch/common/boot/grub2/term
-
-# arch/common/boot/grub2/term/efi
-
-# arch/common/boot/grub2/term/i386
-
-# arch/common/boot/grub2/term/i386/pc
-
-# arch/common/boot/grub2/term/ieee1275
-
-# arch/common/boot/grub2/term/powerpc
-
-# arch/common/boot/grub2/term/powerpc/ieee1275
-
-# arch/common/boot/grub2/util
-
-# arch/common/boot/grub2/util/elf
-
-# arch/common/boot/grub2/util/grub.d
-
-# arch/common/boot/grub2/util/i386
-
-# arch/common/boot/grub2/util/i386/efi
-
-# arch/common/boot/grub2/util/i386/pc
-
-# arch/common/boot/grub2/util/ieee1275
-
-# arch/common/boot/grub2/util/powerpc
-
-# arch/common/boot/grub2/util/powerpc/ieee1275
-
-# arch/common/boot/grub2/video
-
-# arch/common/boot/grub2/video/i386
-
-# arch/common/boot/grub2/video/i386/pc
-
-# arch/common/boot/grub2/video/readers
-
-# arch/common/boot/iso
+# /arch/common/boot/iso/
 /arch/common/boot/iso/mmakefile
 
-# arch/common/hidd.i2c
+# /arch/common/hidd.i2c/
 /arch/common/hidd.i2c/
 /arch/common/hidd.i2c/mmakefile
 
-# arch/common/hidd.i2c/include
-
-# arch/common/hidd.i2c/stubs
+# /arch/common/hidd.i2c/stubs/
 /arch/common/hidd.i2c/stubs/
 /arch/common/hidd.i2c/stubs/mmakefile
 
-# arch/common/hidd.nvidia
+# /arch/common/hidd.nvidia/
 /arch/common/hidd.nvidia/mmakefile
 
-# arch/common/hidd.pci
+# /arch/common/hidd.pci/
 /arch/common/hidd.pci/mmakefile
 
-# arch/common/hidd.pci/doc
-
-# arch/common/hidd.pci/include
-
-# arch/common/hidd.pci/pcitool
+# /arch/common/hidd.pci/pcitool/
 /arch/common/hidd.pci/pcitool/mmakefile
 /arch/common/hidd.pci/pcitool/strings.h
 
-# arch/common/hidd.pci/pcitool/catalogs
+# /arch/common/hidd.pci/pcitool/catalogs/
 /arch/common/hidd.pci/pcitool/catalogs/mmakefile
 
-# arch/common/hidd.pci/stubs
+# /arch/common/hidd.pci/stubs/
 /arch/common/hidd.pci/stubs/mmakefile
 
-# arch/common/hidd.radeon
+# /arch/common/hidd.radeon/
 /arch/common/hidd.radeon/
 /arch/common/hidd.radeon/mmakefile
 
-# arch/common/hidd.vmwaresvga
+# /arch/common/hidd.vmwaresvga/
 /arch/common/hidd.vmwaresvga/mmakefile
 /arch/common/hidd.vmwaresvga/libdefs.h
 
-# arch/common/include
+# /arch/common/include/
 /arch/common/include/mmakefile
 
-# arch/i386-all
+# /arch/i386-all/
 /arch/i386-all/mmakefile
 /arch/i386-all/geninc
 /arch/i386-all/machine.i
 
-# arch/i386-all/clib
+# /arch/i386-all/clib/
 /arch/i386-all/clib/mmakefile
 /arch/i386-all/clib/makefile
 
-# arch/i386-all/exec
+# /arch/i386-all/exec/
 /arch/i386-all/exec/mmakefile
 /arch/i386-all/exec/makefile
 /arch/i386-all/exec/makefile.bak
 
-# arch/i386-all/include
+# /arch/i386-all/include/
 /arch/i386-all/include/mmakefile
 
-# arch/i386-all/include/aros
-
-# arch/i386-all/include/aros/i386
-
-# arch/i386-all/mlib
+# /arch/i386-all/mlib/
 /arch/i386-all/mlib/mmakefile
 
-# arch/i386-freebsd
+# /arch/i386-darwin/
+/arch/i386-darwin/mmakefile
 
-# arch/i386-linux
+# /arch/i386-darwin/bootstrap/
+/arch/i386-darwin/bootstrap/mmakefile
 
-# arch/i386-linux/pcilinux
+# /arch/i386-darwin/devs/filesys/emul_handler/
+/arch/i386-darwin/devs/filesys/emul_handler/mmakefile
+
+# /arch/i386-darwin/dos/
+/arch/i386-darwin/dos/mmakefile
+
+# /arch/i386-darwin/exec/
+/arch/i386-darwin/exec/mmakefile
+
+# /arch/i386-darwin/include/
+/arch/i386-darwin/include/mmakefile
+
+# /arch/i386-darwin/kernel/
+/arch/i386-darwin/kernel/mmakefile
+
+# /arch/i386-linux/bootloader/
+/arch/i386-linux/bootloader/mmakefile
+
+# /arch/i386-linux/pcilinux/
 /arch/i386-linux/pcilinux/mmakefile
 
-# arch/i386-pc
+# /arch/i386-pc/
 /arch/i386-pc/build
 /arch/i386-pc/geninc
 /arch/i386-pc/mmakefile
 /arch/i386-pc/machine.i
 
-# arch/i386-pc/Drivers
-/arch/i386-pc/Drivers/mmakefile
-
-# arch/i386-pc/Drivers/irq.hidd
-/arch/i386-pc/Drivers/irq.hidd/mmakefile
-/arch/i386-pc/Drivers/irq.hidd/libdefs.h
-/arch/i386-pc/Drivers/irq.hidd/irq.s
-/arch/i386-pc/Drivers/irq.hidd/irq_init.s
-
-# arch/i386-pc/Drivers/keyboard
-/arch/i386-pc/Drivers/keyboard/mmakefile
-/arch/i386-pc/Drivers/keyboard/libdefs.h
-/arch/i386-pc/Drivers/keyboard/*.s
-
-# arch/i386-pc/Drivers/mouse.hidd
-/arch/i386-pc/Drivers/mouse.hidd/mmakefile
-/arch/i386-pc/Drivers/mouse.hidd/libdefs.h
-
-# arch/i386-pc/Drivers/parallel.hidd
-/arch/i386-pc/Drivers/parallel.hidd/mmakefile
-
-# arch/i386-pc/Drivers/pcipc
-/arch/i386-pc/Drivers/pcipc/mmakefile
-
-# arch/i386-pc/Drivers/serial.hidd
-/arch/i386-pc/Drivers/serial.hidd/mmakefile
-/arch/i386-pc/Drivers/serial.hidd/libdefs.h
-
-# arch/i386-pc/Drivers/trackdisk
-/arch/i386-pc/Drivers/trackdisk/mmakefile
-
-# arch/i386-pc/Drivers/vesa.hidd
-/arch/i386-pc/Drivers/vesa.hidd/mmakefile
-/arch/i386-pc/Drivers/vesa.hidd/libdefs.h
-
-# arch/i386-pc/Drivers/vga.hidd
-/arch/i386-pc/Drivers/vga.hidd/mmakefile
-/arch/i386-pc/Drivers/vga.hidd/libdefs.h
-
-# arch/i386-pc/alib
+# /arch/i386-pc/alib/
 /arch/i386-pc/alib/mmakefile
 
-# arch/i386-pc/battclock
+# /arch/i386-pc/battclock/
 /arch/i386-pc/battclock/readbattclock.s
 /arch/i386-pc/battclock/mmakefile
 
-# arch/i386-pc/boot
+# /arch/i386-pc/boot/
 /arch/i386-pc/boot/mmakefile
 /arch/i386-pc/boot/stage1
 /arch/i386-pc/boot/stage2
 /arch/i386-pc/boot/install
 
-# arch/i386-pc/boot/floppy
+# /arch/i386-pc/boot/floppy/
 /arch/i386-pc/boot/floppy/mmakefile
 
-# arch/i386-pc/boot/grub
+# /arch/i386-pc/boot/grub/
 /arch/i386-pc/boot/grub/mmakefile
 
-# arch/i386-pc/boot/grub2
+# /arch/i386-pc/boot/grub2/
 /arch/i386-pc/boot/grub2/mmakefile
 
-# arch/i386-pc/boot/iso
+# /arch/i386-pc/boot/iso/
 /arch/i386-pc/boot/iso/mmakefile
 
-# arch/i386-pc/bootloader
+# /arch/i386-pc/bootloader/
 /arch/i386-pc/bootloader/mmakefile
 /arch/i386-pc/bootloader/libdefs.h
 
-# arch/i386-pc/cpu
+# /arch/i386-pc/cpu/
 /arch/i386-pc/cpu/mmakefile
 
-# arch/i386-pc/dos
+# /arch/i386-pc/dos/
 /arch/i386-pc/dos/mmakefile
 
-# arch/i386-pc/exec
+# /arch/i386-pc/drivers/
+/arch/i386-pc/drivers/mmakefile
+
+# /arch/i386-pc/drivers/irq.hidd/
+/arch/i386-pc/drivers/irq.hidd/mmakefile
+/arch/i386-pc/drivers/irq.hidd/libdefs.h
+/arch/i386-pc/drivers/irq.hidd/irq.s
+/arch/i386-pc/drivers/irq.hidd/irq_init.s
+
+# /arch/i386-pc/drivers/keyboard/
+/arch/i386-pc/drivers/keyboard/mmakefile
+/arch/i386-pc/drivers/keyboard/libdefs.h
+/arch/i386-pc/drivers/keyboard/*.s
+
+# /arch/i386-pc/drivers/mouse.hidd/
+/arch/i386-pc/drivers/mouse.hidd/mmakefile
+/arch/i386-pc/drivers/mouse.hidd/libdefs.h
+
+# /arch/i386-pc/drivers/parallel.hidd/
+/arch/i386-pc/drivers/parallel.hidd/mmakefile
+
+# /arch/i386-pc/drivers/pcipc/
+/arch/i386-pc/drivers/pcipc/mmakefile
+
+# /arch/i386-pc/drivers/serial.hidd/
+/arch/i386-pc/drivers/serial.hidd/mmakefile
+/arch/i386-pc/drivers/serial.hidd/libdefs.h
+
+# /arch/i386-pc/drivers/trackdisk/
+/arch/i386-pc/drivers/trackdisk/mmakefile
+
+# /arch/i386-pc/drivers/vesa.hidd/
+/arch/i386-pc/drivers/vesa.hidd/mmakefile
+/arch/i386-pc/drivers/vesa.hidd/libdefs.h
+
+# /arch/i386-pc/drivers/vga.hidd/
+/arch/i386-pc/drivers/vga.hidd/mmakefile
+/arch/i386-pc/drivers/vga.hidd/libdefs.h
+
+# /arch/i386-pc/exec/
 /arch/i386-pc/exec/mmakefile
 /arch/i386-pc/exec/cpu.s
 
-# arch/i386-pc/include
+# /arch/i386-pc/include/
 /arch/i386-pc/include/mmakefile
 /arch/i386-pc/include/geninc
 /arch/i386-pc/include/machine.i
 
-# arch/i386-pc/include/aros
-
-# arch/i386-pc/include/asm
-
-# arch/i386-pc/intuition
+# /arch/i386-pc/intuition/
 /arch/i386-pc/intuition/mmakefile
 
-# arch/i386-pc/timer
+# /arch/i386-pc/timer/
 /arch/i386-pc/timer/mmakefile
 
-# arch/m68k-mac
+# /arch/m68k-mac/
 /arch/m68k-mac/mmakefile
 
-# arch/m68k-mac/boot
+# /arch/m68k-mac/boot/
 /arch/m68k-mac/boot/mmakefile
 /arch/m68k-mac/boot/entrycode.s
 
-# arch/m68k-mac/clib
+# /arch/m68k-mac/clib/
 /arch/m68k-mac/clib/mmakefile
 
-# arch/m68k-mac/exec
+# /arch/m68k-mac/exec/
 /arch/m68k-mac/exec/mmakefile
 
-# arch/m68k-mac/include
+# /arch/m68k-mac/include/
 /arch/m68k-mac/include/mmakefile
 
-# arch/m68k-mac/include/aros
+# /arch/m68k-mac/include/aros/
 /arch/m68k-mac/include/aros/mmakefile
 
-# arch/m68k-mac/include/aros/m68k
-
-# arch/m68k-mac/include/asm
+# /arch/m68k-mac/include/asm/
 /arch/m68k-mac/include/asm/mmakefile
 
-# arch/m68k-mac/include/exec
+# /arch/m68k-mac/include/exec/
 /arch/m68k-mac/include/exec/mmakefile
 
-# arch/m68k-mac/libgcc1
+# /arch/m68k-mac/libgcc1/
 /arch/m68k-mac/libgcc1/mmakefile
 
-# arch/m68k-mac/mlib
+# /arch/m68k-mac/mlib/
 /arch/m68k-mac/mlib/mmakefile
 
-# arch/ppc-all
+# /arch/ppc-all/
 /arch/ppc-all/mmakefile
 
-# arch/ppc-all/clib
+# /arch/ppc-all/clib/
 /arch/ppc-all/clib/mmakefile
 
-# arch/ppc-all/common
-
-# arch/ppc-all/common/include
+# /arch/ppc-all/common/include/
 /arch/ppc-all/common/include/mmakefile
 
-# arch/ppc-all/common/include/aros
-
-# arch/ppc-all/common/include/asm
-
-# arch/ppc-all/common/include/inline
-
-# arch/ppc-all/common/include/libcore
-
-# arch/ppc-all/exec
+# /arch/ppc-all/exec/
 /arch/ppc-all/exec/mmakefile
 
-# arch/ppc-all/include
+# /arch/ppc-all/include/
 /arch/ppc-all/include/mmakefile
 /arch/ppc-all/include/machine.i
 
-# arch/ppc-all/include/aros
-
-# arch/ppc-all/include/aros/ppc
-
-# arch/ppc-all/mlib
+# /arch/ppc-all/mlib/
 /arch/ppc-all/mlib/mmakefile
 
-# arch/ppc-all/prep
+# /arch/ppc-all/prep/
 /arch/ppc-all/prep/mmakefile
 
-# arch/ppc-all/prep/kernel
+# /arch/ppc-all/prep/kernel/
 /arch/ppc-all/prep/kernel/mmakefile
 /arch/ppc-all/prep/kernel/libdefs.h
 
-# arch/ppc-all/prep/startup
+# /arch/ppc-all/prep/startup/
 /arch/ppc-all/prep/startup/mmakefile
 
-# arch/ppc-linux
+# /arch/ppc-linux/bootloader/
+/arch/ppc-linux/bootloader/mmakefile
 
-# arch/ppc-sam440
-
-# arch/ppc-sam440/ata
+# /arch/ppc-sam440/ata/
 /arch/ppc-sam440/ata/mmakefile
 
-# arch/ppc-sam440/boot
+# /arch/ppc-sam440/boot/
 /arch/ppc-sam440/boot/mmakefile
 
-# arch/ppc-sam440/bootloader
+# /arch/ppc-sam440/bootloader/
 /arch/ppc-sam440/bootloader/mmakefile
 
-# arch/ppc-sam440/dos
+# /arch/ppc-sam440/dos/
 /arch/ppc-sam440/dos/mmakefile
 
-# arch/ppc-sam440/exec
+# /arch/ppc-sam440/exec/
 /arch/ppc-sam440/exec/mmakefile
 
-# arch/ppc-sam440/graphics
+# /arch/ppc-sam440/graphics/
 /arch/ppc-sam440/graphics/mmakefile
 
-# arch/ppc-sam440/hidd.radeon
+# /arch/ppc-sam440/hidd.radeon/
 /arch/ppc-sam440/hidd.radeon/mmakefile
 
-# arch/ppc-sam440/include
+# /arch/ppc-sam440/include/
 /arch/ppc-sam440/include/mmakefile
 
-# arch/ppc-sam440/include/aros
-
-# arch/ppc-sam440/include/asm
-
-# arch/ppc-sam440/intuition
+# /arch/ppc-sam440/intuition/
 /arch/ppc-sam440/intuition/mmakefile
 
-# arch/ppc-sam440/irq.hidd
+# /arch/ppc-sam440/irq.hidd/
 /arch/ppc-sam440/irq.hidd/mmakefile
 
-# arch/ppc-sam440/kernel
+# /arch/ppc-sam440/kernel/
 /arch/ppc-sam440/kernel/mmakefile
 
-# arch/ppc-sam440/pci
+# /arch/ppc-sam440/pci/
 /arch/ppc-sam440/pci/mmakefile
 
-# arch/ppc-sam440/timer
+# /arch/ppc-sam440/timer/
 /arch/ppc-sam440/timer/mmakefile
 
-# arch/ppc-sam440/workbench
+# /arch/ppc-sam440/workbench/
 /arch/ppc-sam440/workbench/mmakefile
 
-# arch/x86_64-all
+# /arch/x86_64-all/
 /arch/x86_64-all/mmakefile
 
-# arch/x86_64-all/clib
+# /arch/x86_64-all/clib/
 /arch/x86_64-all/clib/mmakefile
 
-# arch/x86_64-all/exec
+# /arch/x86_64-all/exec/
 /arch/x86_64-all/exec/mmakefile
 
-# arch/x86_64-all/include
+# /arch/x86_64-all/include/
 /arch/x86_64-all/include/mmakefile
 
-# arch/x86_64-all/include/aros
-
-# arch/x86_64-all/include/aros/x86_64
-
-# arch/x86_64-all/mlib
+# /arch/x86_64-all/mlib/
 /arch/x86_64-all/mlib/mmakefile
 
-# arch/x86_64-linux
+# /arch/x86_64-linux/bootloader/
+/arch/x86_64-linux/bootloader/mmakefile
 
-# arch/x86_64-linux/pcilinux
+# /arch/x86_64-linux/pcilinux/
 /arch/x86_64-linux/pcilinux/mmakefile
 
-# arch/x86_64-pc
-
-# arch/x86_64-pc/battclock
+# /arch/x86_64-pc/battclock/
 /arch/x86_64-pc/battclock/mmakefile
 
-# arch/x86_64-pc/boot
+# /arch/x86_64-pc/boot/
 /arch/x86_64-pc/boot/mmakefile
 
-# arch/x86_64-pc/boot/grub
+# /arch/x86_64-pc/boot/grub/
 /arch/x86_64-pc/boot/grub/mmakefile
 
-# arch/x86_64-pc/boot/grub2
+# /arch/x86_64-pc/boot/grub2/
 /arch/x86_64-pc/boot/grub2/mmakefile
 
-# arch/x86_64-pc/boot/iso
+# /arch/x86_64-pc/boot/iso/
 /arch/x86_64-pc/boot/iso/mmakefile
 
-# arch/x86_64-pc/bootloader
+# /arch/x86_64-pc/bootloader/
 /arch/x86_64-pc/bootloader/mmakefile
 
-# arch/x86_64-pc/bootstrap
+# /arch/x86_64-pc/bootstrap/
 /arch/x86_64-pc/bootstrap/
 /arch/x86_64-pc/bootstrap/mmakefile
 
-# arch/x86_64-pc/dos
+# /arch/x86_64-pc/dos/
 /arch/x86_64-pc/dos/mmakefile
 
-# arch/x86_64-pc/drivers
+# /arch/x86_64-pc/drivers/
 /arch/x86_64-pc/drivers/mmakefile
 
-# arch/x86_64-pc/exec
+# /arch/x86_64-pc/exec/
 /arch/x86_64-pc/exec/mmakefile
 
-# arch/x86_64-pc/include
+# /arch/x86_64-pc/include/
 /arch/x86_64-pc/include/mmakefile
 
-# arch/x86_64-pc/include/aros
-
-# arch/x86_64-pc/include/asm
-
-# arch/x86_64-pc/irq.hidd
+# /arch/x86_64-pc/irq.hidd/
 /arch/x86_64-pc/irq.hidd/mmakefile
 
-# arch/x86_64-pc/kernel
+# /arch/x86_64-pc/kernel/
 /arch/x86_64-pc/kernel/mmakefile
 
-# arch/x86_64-pc/timer
+# /arch/x86_64-pc/timer/
 /arch/x86_64-pc/timer/mmakefile
 
-# arch/x86_64-pc/workbench
-
-# arch/x86_64-pc/workbench/libs
-
-# arch/x86_64-pc/workbench/libs/locale
+# /arch/x86_64-pc/workbench/libs/locale/
 /arch/x86_64-pc/workbench/libs/locale/mmakefile
 
-# compiler
+# /compiler/
 /compiler/fdlibm
 
-# compiler/alib
+# /compiler/alib/
 /compiler/alib/mmakefile
 /compiler/alib/makefile
 
-# compiler/arossupport
+# /compiler/arossupport/
 /compiler/arossupport/mmakefile
 
-# compiler/arossupport/include
+# /compiler/arossupport/include/
 /compiler/arossupport/include/machine.h
 /compiler/arossupport/include/config.h
 
-# compiler/autoinit
+# /compiler/autoinit/
 /compiler/autoinit/mmakefile
 
-# compiler/boost
+# /compiler/boost/
 /compiler/boost/mmakefile
 
-# compiler/boost/preprocessor
-
-# compiler/boost/preprocessor/arithmetic
-
-# compiler/boost/preprocessor/arithmetic/detail
-
-# compiler/boost/preprocessor/array
-
-# compiler/boost/preprocessor/comparison
-
-# compiler/boost/preprocessor/config
-
-# compiler/boost/preprocessor/control
-
-# compiler/boost/preprocessor/control/detail
-
-# compiler/boost/preprocessor/control/detail/dmc
-
-# compiler/boost/preprocessor/control/detail/edg
-
-# compiler/boost/preprocessor/control/detail/msvc
-
-# compiler/boost/preprocessor/debug
-
-# compiler/boost/preprocessor/detail
-
-# compiler/boost/preprocessor/detail/dmc
-
-# compiler/boost/preprocessor/facilities
-
-# compiler/boost/preprocessor/iteration
-
-# compiler/boost/preprocessor/iteration/detail
-
-# compiler/boost/preprocessor/iteration/detail/bounds
-
-# compiler/boost/preprocessor/iteration/detail/iter
-
-# compiler/boost/preprocessor/list
-
-# compiler/boost/preprocessor/list/detail
-
-# compiler/boost/preprocessor/list/detail/dmc
-
-# compiler/boost/preprocessor/list/detail/edg
-
-# compiler/boost/preprocessor/logical
-
-# compiler/boost/preprocessor/punctuation
-
-# compiler/boost/preprocessor/repetition
-
-# compiler/boost/preprocessor/repetition/detail
-
-# compiler/boost/preprocessor/repetition/detail/dmc
-
-# compiler/boost/preprocessor/repetition/detail/edg
-
-# compiler/boost/preprocessor/repetition/detail/msvc
-
-# compiler/boost/preprocessor/selection
-
-# compiler/boost/preprocessor/seq
-
-# compiler/boost/preprocessor/seq/detail
-
-# compiler/boost/preprocessor/slot
-
-# compiler/boost/preprocessor/slot/detail
-
-# compiler/boost/preprocessor/tuple
-
-# compiler/c_lib
+# /compiler/c_lib/
 /compiler/c_lib/makefile
 
-# compiler/c_lib/source
+# /compiler/c_lib/source/
 /compiler/c_lib/source/makefile
 
-# compiler/c_lib/source/fd
-
-# compiler/c_lib/source/include
-
-# compiler/c_lib/source/include/clib
-
-# compiler/c_lib/source/include/defines
-
-# compiler/c_lib/source/include/example
-
-# compiler/c_lib/source/include/libcore
-
-# compiler/c_lib/source/include/pragma
-
-# compiler/c_lib/source/include/pragmas
-
-# compiler/c_lib/source/include/proto
-
-# compiler/c_lib/source/lib_source
-
-# compiler/c_lib/source/test_prg
-
-# compiler/clib
+# /compiler/clib/
 /compiler/clib/mmakefile
 
-# compiler/clib/include
-
-# compiler/clib/include/sys
-
-# compiler/clib/locale
-
-# compiler/clib/regex
-
-# compiler/clib/stdtime
-
-# compiler/clib/stubs
+# /compiler/clib/stubs/
 /compiler/clib/stubs/genstubs
 /compiler/clib/stubs/stubslist
 /compiler/clib/stubs/stubsdeps
 /compiler/clib/stubs/*.S
 /compiler/clib/stubs/mmakefile
 
-# compiler/coolimages
+# /compiler/coolimages/
 /compiler/coolimages/mmakefile
 
-# compiler/coolimages/include
-
-# compiler/include
-
-# compiler/include/aros
-
-# compiler/include/aros/preprocessor
-
-# compiler/include/aros/preprocessor/facilities
-
-# compiler/include/aros/preprocessor/variadic
-
-# compiler/include/c++
-
-# compiler/include/c++/exec
-
-# compiler/include/clib
+# /compiler/include/clib/
 /compiler/include/clib/battclock_protos.h
 /compiler/include/clib/boopsi_protos.h
 /compiler/include/clib/graphics_protos.h
 /compiler/include/clib/timer_protos.h
 
-# compiler/include/datatypes
-
-# compiler/include/defines
+# /compiler/include/defines/
 /compiler/include/defines/battclock.h
 /compiler/include/defines/boopsi.h
 /compiler/include/defines/graphics.h
 /compiler/include/defines/timer.h
 
-# compiler/include/devices
-
-# compiler/include/diskfont
-
-# compiler/include/dos
-
-# compiler/include/exec
-
-# compiler/include/gadgets
-
-# compiler/include/graphics
-
-# compiler/include/hardware
-
-# compiler/include/hardware/acpi
-
-# compiler/include/hardware/cpu
-
-# compiler/include/hardware/pic
-
-# compiler/include/intuition
-
-# compiler/include/libraries
-
-# compiler/include/midi
-
-# compiler/include/pragmas
-
-# compiler/include/prefs
-
-# compiler/include/proto
-
-# compiler/include/resources
-
-# compiler/include/rexx
-
-# compiler/include/s
+# /compiler/include/s/
 /compiler/include/s/mmakefile
 
-# compiler/include/utility
-
-# compiler/include/workbench
-
-# compiler/libbz2
+# /compiler/libbz2/
 /compiler/libbz2/mmakefile
 
-# compiler/libinit
+# /compiler/libinit/
 /compiler/libinit/mmakefile
 
-# compiler/libjpeg
+# /compiler/libjpeg/
 /compiler/libjpeg/*.bak
 
-# compiler/libjpeg/doc
+# /compiler/libjpeg/doc/
 /compiler/libjpeg/doc/mmakefile
 /compiler/libjpeg/doc/*.bak
 
-# compiler/libjpeg/main
+# /compiler/libjpeg/main/
 /compiler/libjpeg/main/mmakefile
 /compiler/libjpeg/main/*.bak
 
-# compiler/libjpeg/test
+# /compiler/libjpeg/test/
 /compiler/libjpeg/test/mmakefile
 /compiler/libjpeg/test/*.bak
 
-# compiler/libpng
+# /compiler/libpng/
 /compiler/libpng/mmakefile
 
-# compiler/mlib
+# /compiler/mlib/
 /compiler/mlib/mmakefile
 
-# compiler/purify
+# /compiler/purify/
 /compiler/purify/test?
 /compiler/purify/test??
 /compiler/purify/t_illread
@@ -1230,465 +784,320 @@
 /compiler/purify/*.a
 /compiler/purify/*.tmp
 
-# compiler/purify/src
-
-# compiler/startup
+# /compiler/startup/
 /compiler/startup/mmakefile
 
-# compiler/zlib
+# /compiler/zlib/
 /compiler/zlib/mmakefile
 
-# config
+# /config/
 /config/host.cfg
 /config/config.h
 /config/mmakefile
 /config/makefile
 /config/make.cfg
 
-# images
+# /images/
 /images/mmakefile
 
-# images/Gorilla
-
-# images/Gorilla/Elements
-
-# images/Gorilla/Icons
-
-# images/Gorilla/Icons/Medium
-
-# images/Gorilla/Icons/Medium/AROS
+# /images/Gorilla/Icons/Medium/AROS/
 /images/Gorilla/Icons/Medium/AROS/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Development
+# /images/Gorilla/Icons/Medium/AROS/Development/
 /images/Gorilla/Icons/Medium/AROS/Development/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Devs
+# /images/Gorilla/Icons/Medium/AROS/Devs/
 /images/Gorilla/Icons/Medium/AROS/Devs/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Extras
+# /images/Gorilla/Icons/Medium/AROS/Extras/
 /images/Gorilla/Icons/Medium/AROS/Extras/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Extras/AHI
-
-# images/Gorilla/Icons/Medium/AROS/Extras/AHI/Prefs
+# /images/Gorilla/Icons/Medium/AROS/Extras/AHI/Prefs/
 /images/Gorilla/Icons/Medium/AROS/Extras/AHI/Prefs/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Locale
+# /images/Gorilla/Icons/Medium/AROS/Locale/
 /images/Gorilla/Icons/Medium/AROS/Locale/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Prefs
+# /images/Gorilla/Icons/Medium/AROS/Prefs/
 /images/Gorilla/Icons/Medium/AROS/Prefs/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Prefs/Env-Archive
-
-# images/Gorilla/Icons/Medium/AROS/Prefs/Env-Archive/SYS
+# /images/Gorilla/Icons/Medium/AROS/Prefs/Env-Archive/SYS/
 /images/Gorilla/Icons/Medium/AROS/Prefs/Env-Archive/SYS/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Prefs/Presets
+# /images/Gorilla/Icons/Medium/AROS/Prefs/Presets/
 /images/Gorilla/Icons/Medium/AROS/Prefs/Presets/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/System
+# /images/Gorilla/Icons/Medium/AROS/System/
 /images/Gorilla/Icons/Medium/AROS/System/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Tools
+# /images/Gorilla/Icons/Medium/AROS/Tools/
 /images/Gorilla/Icons/Medium/AROS/Tools/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Tools/Commodities
+# /images/Gorilla/Icons/Medium/AROS/Tools/Commodities/
 /images/Gorilla/Icons/Medium/AROS/Tools/Commodities/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Tools/Debug
+# /images/Gorilla/Icons/Medium/AROS/Tools/Debug/
 /images/Gorilla/Icons/Medium/AROS/Tools/Debug/mmakefile
 
-# images/Gorilla/Icons/Medium/AROS/Utilities
+# /images/Gorilla/Icons/Medium/AROS/Utilities/
 /images/Gorilla/Icons/Medium/AROS/Utilities/mmakefile
 
-# images/Gorilla/Icons/Medium/Computers
+# /images/Gorilla/Icons/Medium/Computers/
 /images/Gorilla/Icons/Medium/Computers/mmakefile
 
-# images/Gorilla/Icons/Medium/Disks
+# /images/Gorilla/Icons/Medium/Disks/
 /images/Gorilla/Icons/Medium/Disks/mmakefile
 
-# images/Gorilla/Icons/Medium/Drawers
+# /images/Gorilla/Icons/Medium/Drawers/
 /images/Gorilla/Icons/Medium/Drawers/mmakefile
 
-# images/Gorilla/Icons/Medium/Other
+# /images/Gorilla/Icons/Medium/Other/
 /images/Gorilla/Icons/Medium/Other/mmakefile
 
-# images/Gorilla/Icons/Scalable
-
-# images/Gorilla/Icons/Scalable/AROS
-
-# images/Gorilla/Icons/Scalable/AROS/Prefs
-
-# images/Gorilla/Icons/Scalable/AROS/Prefs/Env-Archive
-
-# images/Gorilla/Icons/Scalable/AROS/Prefs/Env-Archive/SYS
-
-# images/Gorilla-old
-
-# images/Gorilla-old/Icons
-
-# images/Gorilla-old/Icons/Medium
-
-# images/Gorilla-old/Icons/Medium/AROS
+# /images/Gorilla-old/Icons/Medium/AROS/
 /images/Gorilla-old/Icons/Medium/AROS/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Development
+# /images/Gorilla-old/Icons/Medium/AROS/Development/
 /images/Gorilla-old/Icons/Medium/AROS/Development/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Devs
+# /images/Gorilla-old/Icons/Medium/AROS/Devs/
 /images/Gorilla-old/Icons/Medium/AROS/Devs/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Extras
+# /images/Gorilla-old/Icons/Medium/AROS/Extras/
 /images/Gorilla-old/Icons/Medium/AROS/Extras/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Extras/AHI
-
-# images/Gorilla-old/Icons/Medium/AROS/Extras/AHI/Prefs
+# /images/Gorilla-old/Icons/Medium/AROS/Extras/AHI/Prefs/
 /images/Gorilla-old/Icons/Medium/AROS/Extras/AHI/Prefs/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Extras/MultiMedia
+# /images/Gorilla-old/Icons/Medium/AROS/Extras/MultiMedia/
 /images/Gorilla-old/Icons/Medium/AROS/Extras/MultiMedia/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Extras/MultiMedia/AMP2
+# /images/Gorilla-old/Icons/Medium/AROS/Extras/MultiMedia/AMP2/
 /images/Gorilla-old/Icons/Medium/AROS/Extras/MultiMedia/AMP2/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Locale
+# /images/Gorilla-old/Icons/Medium/AROS/Locale/
 /images/Gorilla-old/Icons/Medium/AROS/Locale/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Prefs
+# /images/Gorilla-old/Icons/Medium/AROS/Prefs/
 /images/Gorilla-old/Icons/Medium/AROS/Prefs/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Prefs/Env-Archive
-
-# images/Gorilla-old/Icons/Medium/AROS/Prefs/Env-Archive/SYS
+# /images/Gorilla-old/Icons/Medium/AROS/Prefs/Env-Archive/SYS/
 /images/Gorilla-old/Icons/Medium/AROS/Prefs/Env-Archive/SYS/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Prefs/Presets
+# /images/Gorilla-old/Icons/Medium/AROS/Prefs/Presets/
 /images/Gorilla-old/Icons/Medium/AROS/Prefs/Presets/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/System
+# /images/Gorilla-old/Icons/Medium/AROS/System/
 /images/Gorilla-old/Icons/Medium/AROS/System/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Tools
+# /images/Gorilla-old/Icons/Medium/AROS/Tools/
 /images/Gorilla-old/Icons/Medium/AROS/Tools/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Tools/Commodities
+# /images/Gorilla-old/Icons/Medium/AROS/Tools/Commodities/
 /images/Gorilla-old/Icons/Medium/AROS/Tools/Commodities/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Tools/Debug
+# /images/Gorilla-old/Icons/Medium/AROS/Tools/Debug/
 /images/Gorilla-old/Icons/Medium/AROS/Tools/Debug/mmakefile
 
-# images/Gorilla-old/Icons/Medium/AROS/Utilities
+# /images/Gorilla-old/Icons/Medium/AROS/Utilities/
 /images/Gorilla-old/Icons/Medium/AROS/Utilities/mmakefile
 
-# images/Patterns
-
-# images/Patterns/Stripes
+# /images/Patterns/Stripes/
 /images/Patterns/Stripes/mmakefile
 
-# images/Patterns/wallpapercompetition2007
+# /images/Patterns/wallpapercompetition2007/
 /images/Patterns/wallpapercompetition2007/mmakefile
 
-# images/Themes
-
-# images/Themes/ice
-
-# images/Themes/ice/images
-
-# images/Themes/ice/images/Gadgets
-
-# images/Themes/ice/images/Gadgets/Prefs
-
-# images/Themes/ice/menu
-
-# images/Themes/ice/menu/AmigaKey
-
-# images/Themes/ice/menu/Background
-
-# images/Themes/ice/menu/Checkmark
-
-# images/Themes/ice/menu/SubMenu
-
-# images/Themes/ice/system
-
-# images/Themes/ice/system/Arrowdown
-
-# images/Themes/ice/system/Arrowleft
-
-# images/Themes/ice/system/Arrowright
-
-# images/Themes/ice/system/Arrowup
-
-# images/Themes/ice/system/Checkmark
-
-# images/Themes/ice/system/Close
-
-# images/Themes/ice/system/Container
-
-# images/Themes/ice/system/Cycle
-
-# images/Themes/ice/system/Depth
-
-# images/Themes/ice/system/Knob
-
-# images/Themes/ice/system/Popup
-
-# images/Themes/ice/system/Radio
-
-# images/Themes/ice/system/SDepth
-
-# images/Themes/ice/system/STitlebar
-
-# images/Themes/ice/system/Size
-
-# images/Themes/ice/system/Titlebar
-
-# images/Themes/ice/system/Zoom
-
-# images/kalamatee
-
-# images/kalamatee/flags
-
-# images/kalamatee/gadgets
-
-# images/kalamatee/gadgets/system
+# /images/kalamatee/gadgets/system/
 /images/kalamatee/gadgets/system/mmakefile
 
-# images/kalamatee/gadgets/window
+# /images/kalamatee/gadgets/window/
 /images/kalamatee/gadgets/window/mmakefile
 
-# images/kalamatee/gadgets/window/os1.x
+# /images/kalamatee/gadgets/window/os1.x/
 /images/kalamatee/gadgets/window/os1.x/mmakefile
 
-# images/kalamatee/gadgets/window/os3.1
+# /images/kalamatee/gadgets/window/os3.1/
 /images/kalamatee/gadgets/window/os3.1/mmakefile
 
-# images/kalamatee/gadgets/window/os4
+# /images/kalamatee/gadgets/window/os4/
 /images/kalamatee/gadgets/window/os4/mmakefile
 
-# images/kalamatee/gadgets/window/simoami
+# /images/kalamatee/gadgets/window/simoami/
 /images/kalamatee/gadgets/window/simoami/mmakefile
 
-# images/kalamatee/gadgets/window/special
+# /images/kalamatee/gadgets/window/special/
 /images/kalamatee/gadgets/window/special/mmakefile
 
-# images/kalamatee/gadgets/window/xen
+# /images/kalamatee/gadgets/window/xen/
 /images/kalamatee/gadgets/window/xen/mmakefile
 
-# images/kalamatee/icons
-
-# images/kalamatee/icons/drawers
-
-# images/kalamatee/icons/programs
-
-# images/kalamatee/logos
+# /images/kalamatee/logos/
 /images/kalamatee/logos/mmakefile
 /images/kalamatee/logos/login.logo.png
 /images/kalamatee/logos/install.logo.png
 /images/kalamatee/logos/FloppyWriter.logo.png
 
-# images/kalamatee/patterns
+# /images/kalamatee/patterns/
 /images/kalamatee/patterns/mmakefile
 
-# images/mason
-
-# images/mason/gadgets
-
-# images/mason/gadgets/prefs
+# /images/mason/gadgets/prefs/
 /images/mason/gadgets/prefs/mmakefile
 
-# images/mason/icons
-
-# images/mason/icons/4cols
-
-# images/mason/icons/Programs
-
-# images/mason/icons/drawers
-
-# images/mason/icons/drives
-
-# images/mason/icons/workbench
+# /images/mason/icons/workbench/
 /images/mason/icons/workbench/mmakefile
 
-# images/mason/icons/workbench/Locale
+# /images/mason/icons/workbench/Locale/
 /images/mason/icons/workbench/Locale/mmakefile
 
-# images/mason/icons/workbench/Locale/Help
+# /images/mason/icons/workbench/Locale/Help/
 /images/mason/icons/workbench/Locale/Help/mmakefile
 
-# images/mason/icons/workbench/Prefs
+# /images/mason/icons/workbench/Prefs/
 /images/mason/icons/workbench/Prefs/mmakefile
 
-# images/mason/icons/workbench/Prefs/Env-Archive
+# /images/mason/icons/workbench/Prefs/Env-Archive/
 /images/mason/icons/workbench/Prefs/Env-Archive/mmakefile
 
-# images/mason/icons/workbench/Tools
+# /images/mason/icons/workbench/Tools/
 /images/mason/icons/workbench/Tools/mmakefile
 
-# images/mason/icons/workbench/Tools/Commodities
+# /images/mason/icons/workbench/Tools/Commodities/
 /images/mason/icons/workbench/Tools/Commodities/mmakefile
 
-# images/mason/icons/workbench/Utilities
+# /images/mason/icons/workbench/Utilities/
 /images/mason/icons/workbench/Utilities/mmakefile
 
-# images/mason/icons/workbench/devs-and-storage
+# /images/mason/icons/workbench/devs-and-storage/
 /images/mason/icons/workbench/devs-and-storage/mmakefile
 
-# images/mason/icons/workbench/system
+# /images/mason/icons/workbench/system/
 /images/mason/icons/workbench/system/mmakefile
 
-# kernel
-
-# kernel/exec
-/kernel/exec/mmakefile
-
-# rom
+# /rom/
 /rom/mmakefile
 
-# rom/alerthook
+# /rom/alerthook/
 /rom/alerthook/mmakefile
 
-# rom/aros
+# /rom/aros/
 /rom/aros/mmakefile
 
-# rom/battclock
+# /rom/battclock/
 /rom/battclock/mmakefile
 /rom/battclock/libdefs.h
 
-# rom/boopsi
+# /rom/boopsi/
 /rom/boopsi/*.s
 /rom/boopsi/mmakefile
 /rom/boopsi/libdefs.h
 
-# rom/boot
+# /rom/boot/
 /rom/boot/mmakefile
 
-# rom/bootmenu
+# /rom/bootmenu/
 /rom/bootmenu/mmakefile
 /rom/bootmenu/libdefs.h
 
-# rom/cgfx
+# /rom/cgfx/
 /rom/cgfx/mmakefile
 
-# rom/cgfx/include
-
-# rom/dbus
+# /rom/dbus/
 /rom/dbus/mmakefile
 
-# rom/dbus/include
-
-# rom/dbus/test
-
-# rom/devs
+# /rom/devs/
 /rom/devs/makefile
 
-# rom/devs/console
+# /rom/devs/console/
 /rom/devs/console/mmakefile
 /rom/devs/console/libdefs.h
 
-# rom/devs/console/include
-
-# rom/devs/filesys
+# /rom/devs/filesys/
 /rom/devs/filesys/makefile
 /rom/devs/filesys/mmakefile
 /rom/devs/filesys/makefile.bak
 
-# rom/devs/filesys/console_handler
+# /rom/devs/filesys/console_handler/
 /rom/devs/filesys/console_handler/mmakefile
 
-# rom/devs/filesys/packet
+# /rom/devs/filesys/packet/
 /rom/devs/filesys/packet/mmakefile
 
-# rom/devs/gameport
+# /rom/devs/gameport/
 /rom/devs/gameport/mmakefile
 /rom/devs/gameport/libdefs.h
 
-# rom/devs/gameport/include
-
-# rom/devs/input
+# /rom/devs/input/
 /rom/devs/input/mmakefile
 /rom/devs/input/libdefs.h
 
-# rom/devs/keyboard
+# /rom/devs/keyboard/
 /rom/devs/keyboard/mmakefile
 /rom/devs/keyboard/libdefs.h
 
-# rom/dos
+# /rom/dos/
 /rom/dos/libdefs.h
 /rom/dos/mmakefile
 /rom/dos/strings.h
 
-# rom/dos/catalogs
+# /rom/dos/catalogs/
 /rom/dos/catalogs/mmakefile
 
-# rom/exec
+# /rom/exec/
 /rom/exec/*.s
 /rom/exec/mmakefile
 /rom/exec/libdefs.h
 
-# rom/expansion
+# /rom/expansion/
 /rom/expansion/mmakefile
 /rom/expansion/libdefs.h
 
-# rom/graphics
+# /rom/graphics/
 /rom/graphics/libdefs.h
 /rom/graphics/mmakefile
 
-# rom/hidd
+# /rom/hidd/
 /rom/hidd/mmakefile
 /rom/hidd/libdefs.h
 
-# rom/hidd/include
-
-# rom/hyperlayers
+# /rom/hyperlayers/
 /rom/hyperlayers/mmakefile
 /rom/hyperlayers/*.s
 /rom/hyperlayers/libdefs.h
 
-# rom/intuition
+# /rom/intuition/
 /rom/intuition/mmakefile
 
-# rom/intuition/morphos
-
-# rom/keymap
+# /rom/keymap/
 /rom/keymap/mmakefile
 
-# rom/mathffp
+# /rom/mathffp/
 /rom/mathffp/mmakefile
 
-# rom/mathieeesingbas
+# /rom/mathieeesingbas/
 /rom/mathieeesingbas/mmakefile
 
-# rom/misc
+# /rom/misc/
 /rom/misc/mmakefile
 /rom/misc/libdefs.h
 
-# rom/oop
+# /rom/oop/
 /rom/oop/mmakefile
 /rom/oop/libdefs.h
 
-# rom/oop/docs
-
-# rom/oop/include
-
-# rom/oop/unused
-
-# rom/timer
+# /rom/timer/
 /rom/timer/mmakefile
 /rom/timer/libdefs.h
 /rom/timer/*.s
 
-# rom/timer/include
-
-# rom/utility
+# /rom/utility/
 /rom/utility/mmakefile
 
-# rom/workbench
+# /rom/workbench/
 /rom/workbench/libdefs.h
 /rom/workbench/mmakefile
 
-# scripts
+# /scripts/
 /scripts/checkmem.awk
 /scripts/update.awk
 /scripts/update.awk,v1
@@ -1696,100 +1105,76 @@
 /scripts/cvt.sh
 /scripts/strtoint
 
-# scripts/autoconf
-
-# scripts/nightly
-
-# scripts/nightly/cfg
-
-# scripts/nightly/pkg
-
-# test
+# /test/
 /test/mmakefile
 
-# test/HiddGraphics
+# /test/HiddGraphics/
 /test/HiddGraphics/*.bak
 /test/HiddGraphics/*.o
 /test/HiddGraphics/mmakefile
 /test/HiddGraphics/gfxhiddtool.a
 
-# test/OOPDemos
-
-# test/OOPDemos/include
-
-# test/OOPDemos/include/sysdep
-
-# test/OOPDemos/sysdep
-
-# test/Zune
+# /test/Zune/
 /test/Zune/mmakefile
 /test/Zune/*.bak
 /test/Zune/*.info
 /test/Zune/*.o
 
-# test/alib
-
-# test/benchmarks
-
-# test/benchmarks/boopsi
+# /test/benchmarks/boopsi/
 /test/benchmarks/boopsi/mmakefile
 
-# test/benchmarks/clib
+# /test/benchmarks/clib/
 /test/benchmarks/clib/mmakefile
 
-# test/benchmarks/exec
+# /test/benchmarks/exec/
 /test/benchmarks/exec/mmakefile
 
-# test/benchmarks/graphics
+# /test/benchmarks/graphics/
 /test/benchmarks/graphics/mmakefile
 
-# test/clib
+# /test/clib/
 /test/clib/mmakefile
 
-# test/desktop
+# /test/desktop/
 /test/desktop/mmakefile
 
-# test/dos
+# /test/dos/
 /test/dos/mmakefile
 
-# test/icon
+# /test/icon/
 /test/icon/mmakefile
 
-# test/library
+# /test/library/
 /test/library/mmakefile
 
-# test/michael-native
-
-# test/oop
+# /test/oop/
 /test/oop/oop
 
-# test/oop2
+# /test/oop2/
 /test/oop2/oop
 
-# test/rexx
+# /test/rexx/
 /test/rexx/mmakefile
 
-# test/threads
+# /test/threads/
 /test/threads/mmakefile
 
-# test/uae
+# /test/uae/
 /test/uae/t
 /test/uae/test.o
 /test/uae/test6.o
 /test/uae/test.S
 /test/uae/test6.S
 
-# test/uae-tmpl
+# /test/uae-tmpl/
 /test/uae-tmpl/test
 /test/uae-tmpl/test-1
 /test/uae-tmpl/a.out
 
-# tools
-
-# tools/FlexCat
+# /tools/FlexCat/
 /tools/FlexCat/mmakefile
 
-# tools/MetaMake
+# /tools/MetaMake/
 /tools/MetaMake/configure
 /tools/MetaMake/config.log
 /tools/MetaMake/config.h
@@ -1800,28 +1185,22 @@
 /tools/MetaMake/autom4te.cache
 /tools/MetaMake/aclocal.m4
 
-# tools/adflib
+# /tools/adflib/
 /tools/adflib/mmakefile
 /tools/adflib/myconf.aros
 
-# tools/adflib/Generic
-
-# tools/adflib/Win32
-
-# tools/archtools
+# /tools/archtools/
 /tools/archtools/mmakefile
 
-# tools/collect-aros
+# /tools/collect-aros/
 /tools/collect-aros/collect-aros.h
 /tools/collect-aros/env.h
 /tools/collect-aros/getlinkername
 
-# tools/copytoafs
-
-# tools/cpak
+# /tools/cpak/
 /tools/cpak/mmakefile
 
-# tools/cxref
+# /tools/cxref/
 /tools/cxref/Makefile
 /tools/cxref/autoconfig.h
 /tools/cxref/config.cache
@@ -1835,9 +1214,7 @@
 /tools/cxref/parse-yacc.c
 /tools/cxref/parse-yacc.h
 
-# tools/cxref/contrib
-
-# tools/cxref/cpp
+# /tools/cxref/cpp/
 /tools/cxref/cpp/Makefile
 /tools/cxref/cpp/autoconfig.h
 /tools/cxref/cpp/config.log
@@ -1847,20 +1224,20 @@
 /tools/cxref/cpp/cxref-cpp-configure
 /tools/cxref/cpp/cxref-cpp.defines
 
-# tools/cxref/doc
+# /tools/cxref/doc/
 /tools/cxref/doc/Makefile
 
-# tools/cxref/query
+# /tools/cxref/query/
 /tools/cxref/query/Makefile
 /tools/cxref/query/cxref-query
 
-# tools/dtdesc
+# /tools/dtdesc/
 /tools/dtdesc/createdtdesc
 /tools/dtdesc/examinedtdesc
 /tools/dtdesc/*.o
 /tools/dtdesc/mmakefile
 
-# tools/dtdesc/c_iff
+# /tools/dtdesc/c_iff/
 /tools/dtdesc/c_iff/libc_iff.a
 /tools/dtdesc/c_iff/*.o
 /tools/dtdesc/c_iff/c_iff.txt
@@ -1868,375 +1245,247 @@
 /tools/dtdesc/c_iff/test1.iff
 /tools/dtdesc/c_iff/mmakefile
 
-# tools/fd2inline
-
-# tools/fd2inline/cross
-
-# tools/fd2inline/cross/bin
-
-# tools/fd2inline/cross/share
-
-# tools/fd2inline/cross/share/ix86be-amithlon
-
-# tools/fd2inline/cross/share/m68k-amigaos
-
-# tools/fd2inline/cross/share/ppc-morphos
-
-# tools/fd2inline/include-src
-
-# tools/fd2inline/include-src/inline
-
-# tools/fd2inline/include-src/proto
-
-# tools/fd2inline/lib
-
-# tools/fd2inline/manifests
-
-# tools/fd2inline/patches
-
-# tools/fd2pragma
-
-# tools/genmf
+# /tools/genmf/
 /tools/genmf/mmakefile
 
-# tools/genmodule
+# /tools/genmodule/
 /tools/genmodule/archspecific.h
 
-# tools/genmodule/include
-
-# tools/genmodule/include/aros
-
-# tools/hiddtool
+# /tools/hiddtool/
 /tools/hiddtool/hiddtool
 
-# tools/ilbmtoc
+# /tools/ilbmtoc/
 /tools/ilbmtoc/ilbmtoc
 /tools/ilbmtoc/mmakefile
 
-# tools/ilbmtoicon
+# /tools/ilbmtoicon/
 /tools/ilbmtoicon/ilbmtoicon
 /tools/ilbmtoicon/mmakefile
 
-# tools/mkfsaffs
-
-# tools/package
-
-# tools/sdk
+# /tools/sdk/
 /tools/sdk/mmakefile
 
-# tools/sdk/scripts
-
-# tools/sfdc
-
-# tools/toollib
+# /tools/toollib/
 /tools/toollib/mmakefile
 /tools/toollib/depend
 
-# tools/tubs
-
-# workbench
+# /workbench/
 /workbench/mmakefile
 
-# workbench/c
+# /workbench/c/
 /workbench/c/mmakefile
 
-# workbench/c/CPUInfo
+# /workbench/c/CPUInfo/
 /workbench/c/CPUInfo/mmakefile
 
-# workbench/c/CPUInfo/x86
-
-# workbench/c/CPUInfo/x86/AMD
-
-# workbench/c/CPUInfo/x86/Cyrix
-
-# workbench/c/CPUInfo/x86/IDT
-
-# workbench/c/CPUInfo/x86/Intel
-
-# workbench/c/CPUInfo/x86/NatSemi
-
-# workbench/c/CPUInfo/x86/RiSE
-
-# workbench/c/Decoration
+# /workbench/c/Decoration/
 /workbench/c/Decoration/mmakefile
 
-# workbench/c/Format
+# /workbench/c/Format/
 /workbench/c/Format/mmakefile
 
-# workbench/c/HDTool
+# /workbench/c/HDTool/
 /workbench/c/HDTool/mmakefile
 
-# workbench/c/Identify
+# /workbench/c/Identify/
 /workbench/c/Identify/mmakefile
 
-# workbench/c/LoadResource
+# /workbench/c/LoadResource/
 /workbench/c/LoadResource/mmakefile
 /workbench/c/LoadResource/strings.h
 
-# workbench/c/LoadResource/catalogs
+# /workbench/c/LoadResource/catalogs/
 /workbench/c/LoadResource/catalogs/mmakefile
 
-# workbench/c/Open
+# /workbench/c/Open/
 /workbench/c/Open/mmakefile
 
-# workbench/c/Partition
+# /workbench/c/Partition/
 /workbench/c/Partition/mmakefile
 
-# workbench/c/Unpack
+# /workbench/c/Unpack/
 /workbench/c/Unpack/mmakefile
 
-# workbench/c/iprefs
+# /workbench/c/iprefs/
 /workbench/c/iprefs/mmakefile
 
-# workbench/c/shellcommands
+# /workbench/c/shellcommands/
 /workbench/c/shellcommands/mmakefile
 
-# workbench/classes
+# /workbench/classes/
 /workbench/classes/makefile
 
-# workbench/classes/datatypes
-
-# workbench/classes/datatypes/8svx
+# /workbench/classes/datatypes/8svx/
 /workbench/classes/datatypes/8svx/libdefs.h
 /workbench/classes/datatypes/8svx/mmakefile
 
-# workbench/classes/datatypes/amigaguide
+# /workbench/classes/datatypes/amigaguide/
 /workbench/classes/datatypes/amigaguide/mmakefile
 
-# workbench/classes/datatypes/amigaguide/include
-
-# workbench/classes/datatypes/ascii
+# /workbench/classes/datatypes/ascii/
 /workbench/classes/datatypes/ascii/libdefs.h
 /workbench/classes/datatypes/ascii/mmakefile
 
-# workbench/classes/datatypes/binary
+# /workbench/classes/datatypes/binary/
 /workbench/classes/datatypes/binary/libdefs.h
 /workbench/classes/datatypes/binary/mmakefile
 
-# workbench/classes/datatypes/bmp
+# /workbench/classes/datatypes/bmp/
 /workbench/classes/datatypes/bmp/mmakefile
 /workbench/classes/datatypes/bmp/libdefs.h
 
-# workbench/classes/datatypes/gif
+# /workbench/classes/datatypes/gif/
 /workbench/classes/datatypes/gif/mmakefile
 /workbench/classes/datatypes/gif/libdefs.h
 
-# workbench/classes/datatypes/html
+# /workbench/classes/datatypes/html/
 /workbench/classes/datatypes/html/libdefs.h
 /workbench/classes/datatypes/html/mmakefile
 /workbench/classes/datatypes/html/*.bak
 
-# workbench/classes/datatypes/ilbm
+# /workbench/classes/datatypes/ilbm/
 /workbench/classes/datatypes/ilbm/libdefs.h
 /workbench/classes/datatypes/ilbm/mmakefile
 
-# workbench/classes/datatypes/jpeg
+# /workbench/classes/datatypes/jpeg/
 /workbench/classes/datatypes/jpeg/mmakefile
 /workbench/classes/datatypes/jpeg/libdefs.h
 /workbench/classes/datatypes/jpeg/*.bak
 
-# workbench/classes/datatypes/picture
+# /workbench/classes/datatypes/picture/
 /workbench/classes/datatypes/picture/libdefs.h
 /workbench/classes/datatypes/picture/mmakefile
 
-# workbench/classes/datatypes/png
+# /workbench/classes/datatypes/png/
 /workbench/classes/datatypes/png/mmakefile
 /workbench/classes/datatypes/png/libdefs.h
 /workbench/classes/datatypes/png/*.bak
 
-# workbench/classes/datatypes/ppm
+# /workbench/classes/datatypes/ppm/
 /workbench/classes/datatypes/ppm/libdefs.h
 /workbench/classes/datatypes/ppm/mmakefile
 
-# workbench/classes/datatypes/sound
+# /workbench/classes/datatypes/sound/
 /workbench/classes/datatypes/sound/mmakefile
 
-# workbench/classes/datatypes/text
+# /workbench/classes/datatypes/text/
 /workbench/classes/datatypes/text/libdefs.h
 /workbench/classes/datatypes/text/mmakefile
 
-# workbench/classes/gadgets
+# /workbench/classes/gadgets/
 /workbench/classes/gadgets/makefile
 
-# workbench/classes/gadgets/aroscheckbox
+# /workbench/classes/gadgets/aroscheckbox/
 /workbench/classes/gadgets/aroscheckbox/libdefs.h
 /workbench/classes/gadgets/aroscheckbox/mmakefile
 
-# workbench/classes/gadgets/aroscycle
+# /workbench/classes/gadgets/aroscycle/
 /workbench/classes/gadgets/aroscycle/libdefs.h
 /workbench/classes/gadgets/aroscycle/mmakefile
 
-# workbench/classes/gadgets/aroslist
+# /workbench/classes/gadgets/aroslist/
 /workbench/classes/gadgets/aroslist/libdefs.h
 /workbench/classes/gadgets/aroslist/mmakefile
 
-# workbench/classes/gadgets/aroslistview
+# /workbench/classes/gadgets/aroslistview/
 /workbench/classes/gadgets/aroslistview/libdefs.h
 /workbench/classes/gadgets/aroslistview/mmakefile
 
-# workbench/classes/gadgets/arosmutualexclude
+# /workbench/classes/gadgets/arosmutualexclude/
 /workbench/classes/gadgets/arosmutualexclude/libdefs.h
 /workbench/classes/gadgets/arosmutualexclude/mmakefile
 
-# workbench/classes/gadgets/arospalette
+# /workbench/classes/gadgets/arospalette/
 /workbench/classes/gadgets/arospalette/libdefs.h
 /workbench/classes/gadgets/arospalette/mmakefile
 
-# workbench/classes/gadgets/colorwheel
+# /workbench/classes/gadgets/colorwheel/
 /workbench/classes/gadgets/colorwheel/libdefs.h
 /workbench/classes/gadgets/colorwheel/mmakefile
 
-# workbench/classes/gadgets/gradientslider
+# /workbench/classes/gadgets/gradientslider/
 /workbench/classes/gadgets/gradientslider/libdefs.h
 /workbench/classes/gadgets/gradientslider/mmakefile
 
-# workbench/classes/gadgets/texteditor
+# /workbench/classes/gadgets/texteditor/
 /workbench/classes/gadgets/texteditor/mmakefile
 
-# workbench/classes/gadgets/texteditor/demo
-
-# workbench/classes/gadgets/texteditor/demo/rexx
-
-# workbench/classes/gadgets/texteditor/doc
-
-# workbench/classes/gadgets/texteditor/includes
-
-# workbench/classes/gadgets/texteditor/includes/clib
-
-# workbench/classes/gadgets/texteditor/includes/fd
-
-# workbench/classes/gadgets/texteditor/includes/inline
-
-# workbench/classes/gadgets/texteditor/includes/inline4
-
-# workbench/classes/gadgets/texteditor/includes/interfaces
-
-# workbench/classes/gadgets/texteditor/includes/libraries
-
-# workbench/classes/gadgets/texteditor/includes/mui
-
-# workbench/classes/gadgets/texteditor/includes/ppcinline
-
-# workbench/classes/gadgets/texteditor/includes/pragmas
-
-# workbench/classes/gadgets/texteditor/includes/proto
-
-# workbench/classes/gadgets/texteditor/includes/sfd
-
-# workbench/classes/gadgets/texteditor/includes/xml
-
-# workbench/classes/gadgets/texteditor/mcc
+# /workbench/classes/gadgets/texteditor/mcc/
 /workbench/classes/gadgets/texteditor/mcc/*.o
 /workbench/classes/gadgets/texteditor/mcc/.obj_*
 /workbench/classes/gadgets/texteditor/mcc/bin_*
 /workbench/classes/gadgets/texteditor/mcc/mmakefile
 
-# workbench/classes/gadgets/texteditor/mcc/asm
-
-# workbench/classes/gadgets/texteditor/mcc/classact
-
-# workbench/classes/gadgets/texteditor/mcp
+# /workbench/classes/gadgets/texteditor/mcp/
 /workbench/classes/gadgets/texteditor/mcp/.obj_*
 /workbench/classes/gadgets/texteditor/mcp/locale.h
 /workbench/classes/gadgets/texteditor/mcp/locale.c
 /workbench/classes/gadgets/texteditor/mcp/bin_*
 /workbench/classes/gadgets/texteditor/mcp/mmakefile
 
-# workbench/classes/gadgets/texteditor/mcp/locale
-
-# workbench/classes/zune
-
-# workbench/classes/zune/aboutwindow
+# /workbench/classes/zune/aboutwindow/
 /workbench/classes/zune/aboutwindow/mmakefile
 /workbench/classes/zune/aboutwindow/strings.h
 
-# workbench/classes/zune/aboutwindow/catalogs
+# /workbench/classes/zune/aboutwindow/catalogs/
 /workbench/classes/zune/aboutwindow/catalogs/mmakefile
 
-# workbench/classes/zune/betterstring
+# /workbench/classes/zune/betterstring/
 /workbench/classes/zune/betterstring/mmakefile
 
-# workbench/classes/zune/betterstring/doc
-
-# workbench/classes/zune/betterstring/includes
-
-# workbench/classes/zune/betterstring/includes/clib
-
-# workbench/classes/zune/betterstring/includes/fd
-
-# workbench/classes/zune/betterstring/includes/inline
-
-# workbench/classes/zune/betterstring/includes/inline4
-
-# workbench/classes/zune/betterstring/includes/interfaces
-
-# workbench/classes/zune/betterstring/includes/libraries
-
-# workbench/classes/zune/betterstring/includes/ppcinline
-
-# workbench/classes/zune/betterstring/includes/pragmas
-
-# workbench/classes/zune/betterstring/includes/proto
-
-# workbench/classes/zune/betterstring/includes/sfd
-
-# workbench/classes/zune/betterstring/includes/xml
-
-# workbench/classes/zune/betterstring/mcc
+# /workbench/classes/zune/betterstring/mcc/
 /workbench/classes/zune/betterstring/mcc/mmakefile
 
-# workbench/classes/zune/betterstring/mcc/hotkeystring
+# /workbench/classes/zune/betterstring/mcc/hotkeystring/
 /workbench/classes/zune/betterstring/mcc/hotkeystring/mmakefile
 
-# workbench/classes/zune/betterstring/mcp
+# /workbench/classes/zune/betterstring/mcp/
 /workbench/classes/zune/betterstring/mcp/mmakefile
 
-# workbench/classes/zune/betterstring/mcp/locale
-
-# workbench/classes/zune/busy
+# /workbench/classes/zune/busy/
 /workbench/classes/zune/busy/mmakefile
 
-# workbench/classes/zune/calendar
+# /workbench/classes/zune/calendar/
 /workbench/classes/zune/calendar/mmakefile
 
-# workbench/classes/zune/clock
+# /workbench/classes/zune/clock/
 /workbench/classes/zune/clock/mmakefile
 
-# workbench/classes/zune/iconimage
+# /workbench/classes/zune/iconimage/
 /workbench/classes/zune/iconimage/mmakefile
 
-# workbench/classes/zune/loginwindow
+# /workbench/classes/zune/loginwindow/
 /workbench/classes/zune/loginwindow/mmakefile
 
-# workbench/classes/zune/prefseditor
+# /workbench/classes/zune/prefseditor/
 /workbench/classes/zune/prefseditor/strings.h
 /workbench/classes/zune/prefseditor/mmakefile
 
-# workbench/classes/zune/prefswindow
+# /workbench/classes/zune/prefswindow/
 /workbench/classes/zune/prefswindow/strings.h
 /workbench/classes/zune/prefswindow/mmakefile
 
-# workbench/classes/zune/prefswindow/catalogs
+# /workbench/classes/zune/prefswindow/catalogs/
 /workbench/classes/zune/prefswindow/catalogs/mmakefile
 
-# workbench/classes/zune/systemprefswindow
+# /workbench/classes/zune/systemprefswindow/
 /workbench/classes/zune/systemprefswindow/mmakefile
 /workbench/classes/zune/systemprefswindow/strings.h
 
-# workbench/classes/zune/systemprefswindow/catalogs
+# /workbench/classes/zune/systemprefswindow/catalogs/
 /workbench/classes/zune/systemprefswindow/catalogs/mmakefile
 
-# workbench/demos
+# /workbench/demos/
 /workbench/demos/Talk2boopsi.c
 /workbench/demos/afd.dump
 /workbench/demos/makefile
 /workbench/demos/undefdsyms.list
 /workbench/demos/mmakefile
 
-# workbench/demos/2View
+# /workbench/demos/2View/
 /workbench/demos/2View/mmakefile
 
-# workbench/demos/Zune
+# /workbench/demos/Zune/
 /workbench/demos/Zune/mmakefile
 /workbench/demos/Zune/*.info
 /workbench/demos/Zune/*.bak
@@ -2244,275 +1493,155 @@
 /workbench/demos/Zune/*.o
 /workbench/demos/Zune/*.lnk
 
-# workbench/demos/images
+# /workbench/demos/images/
 /workbench/demos/images/*.h
 /workbench/demos/images/*.gif
 
-# workbench/devs
+# /workbench/devs/
 /workbench/devs/mmakefile
 /workbench/devs/makefile
 /workbench/devs/makefile.bak
 
-# workbench/devs/DOSDrivers
-
-# workbench/devs/afs
+# /workbench/devs/afs/
 /workbench/devs/afs/mmakefile
 
-# workbench/devs/clipboard
+# /workbench/devs/clipboard/
 /workbench/devs/clipboard/mmakefile
 
-# workbench/devs/datatypes
+# /workbench/devs/datatypes/
 /workbench/devs/datatypes/mmakefile
 
-# workbench/devs/keymaps
+# /workbench/devs/keymaps/
 /workbench/devs/keymaps/mmakefile
 
-# workbench/devs/keymaps/descriptions
-
-# workbench/devs/midi
+# /workbench/devs/midi/
 /workbench/devs/midi/mmakefile
 /workbench/devs/midi/*.o
 
-# workbench/devs/nil_handler
+# /workbench/devs/nil_handler/
 /workbench/devs/nil_handler/mmakefile
 
-# workbench/devs/parallel
+# /workbench/devs/parallel/
 /workbench/devs/parallel/mmakefile
 
-# workbench/devs/ram_handler
+# /workbench/devs/ram_handler/
 /workbench/devs/ram_handler/mmakefile
 
-# workbench/devs/serial
+# /workbench/devs/serial/
 /workbench/devs/serial/mmakefile
 
-# workbench/fonts
-
-# workbench/fonts/Russian
-
-# workbench/fonts/Russian/SWScrFont
-
-# workbench/fonts/Russian/Scala
-
-# workbench/fonts/Russian/XEN
-
-# workbench/fonts/Russian/XHelvetica
-
-# workbench/fonts/Russian/topaz
-
-# workbench/fonts/XEN
-
-# workbench/fonts/arial
-
-# workbench/fonts/fixed
-
-# workbench/fonts/stop
-
-# workbench/fonts/truetype
-
-# workbench/fonts/truetype/DejaVu
+# /workbench/fonts/truetype/DejaVu/
 /workbench/fonts/truetype/DejaVu/mmakefile
 
-# workbench/fonts/truetype/bitstream
+# /workbench/fonts/truetype/bitstream/
 /workbench/fonts/truetype/bitstream/mmakefile
 
-# workbench/fonts/ttcourier
-
-# workbench/fs
-
-# workbench/fs/fat
+# /workbench/fs/fat/
 /workbench/fs/fat/mmakefile
 
-# workbench/hidds
+# /workbench/hidds/
 /workbench/hidds/mmakefile
 
-# workbench/hidds/graphics
+# /workbench/hidds/graphics/
 /workbench/hidds/graphics/mmakefile
 /workbench/hidds/graphics/libdefs.h
 /workbench/hidds/graphics/CHANGES
 
-# workbench/hidds/graphics/include
-
-# workbench/hidds/irq
+# /workbench/hidds/irq/
 /workbench/hidds/irq/mmakefile
 
-# workbench/hidds/irq/include
-
-# workbench/hidds/kbd
+# /workbench/hidds/kbd/
 /workbench/hidds/kbd/mmakefile
 
-# workbench/hidds/kbd/include
-
-# workbench/hidds/mouse
+# /workbench/hidds/mouse/
 /workbench/hidds/mouse/mmakefile
 
-# workbench/hidds/mouse/include
-
-# workbench/hidds/parallel
+# /workbench/hidds/parallel/
 /workbench/hidds/parallel/mmakefile
 /workbench/hidds/parallel/libdefs.h
 /workbench/hidds/parallel/CHANGES
 
-# workbench/hidds/parallel/include
-
-# workbench/hidds/serial
+# /workbench/hidds/serial/
 /workbench/hidds/serial/mmakefile
 /workbench/hidds/serial/libdefs.h
 /workbench/hidds/serial/CHANGES
 
-# workbench/hidds/serial/include
-
-# workbench/hidds/tap
+# /workbench/hidds/tap/
 /workbench/hidds/tap/mmakefile
 
-# workbench/hidds/tap/include
-
-# workbench/libs
+# /workbench/libs/
 /workbench/libs/makefile
 
-# workbench/libs/amigaguide
+# /workbench/libs/amigaguide/
 /workbench/libs/amigaguide/libdefs.h
 /workbench/libs/amigaguide/mmakefile
 
-# workbench/libs/asl
+# /workbench/libs/asl/
 /workbench/libs/asl/libdefs.h
 /workbench/libs/asl/mmakefile
 /workbench/libs/asl/*.err
 /workbench/libs/asl/strings.h
 
-# workbench/libs/asl/catalogs
+# /workbench/libs/asl/catalogs/
 /workbench/libs/asl/catalogs/mmakefile
 
-# workbench/libs/bsdsocket
+# /workbench/libs/bsdsocket/
 /workbench/libs/bsdsocket/libdefs.h
 /workbench/libs/bsdsocket/mmakefile
 
-# workbench/libs/bullet
+# /workbench/libs/bullet/
 /workbench/libs/bullet/libdefs.h
 /workbench/libs/bullet/mmakefile
 
-# workbench/libs/camd
+# /workbench/libs/camd/
 /workbench/libs/camd/libdefs.h
 /workbench/libs/camd/mmakefile
 
-# workbench/libs/cgxvideo
+# /workbench/libs/cgxvideo/
 /workbench/libs/cgxvideo/mmakefile
 
-# workbench/libs/cgxvideo/include
+# /workbench/libs/codesetslib/
 
-# workbench/libs/codesetslib
-
-# workbench/libs/codesetslib/charsets
+# /workbench/libs/codesetslib/charsets/
 /workbench/libs/codesetslib/charsets/mmakefile
 
-# workbench/libs/codesetslib/developer
-
-# workbench/libs/codesetslib/developer/docs
-
-# workbench/libs/codesetslib/developer/examples
+# /workbench/libs/codesetslib/developer/examples/
 /workbench/libs/codesetslib/developer/examples/mmakefile
 /workbench/libs/codesetslib/developer/examples/bin_*
 /workbench/libs/codesetslib/developer/examples/.obj_*
 
-# workbench/libs/codesetslib/developer/fd
-
-# workbench/libs/codesetslib/developer/include
-
-# workbench/libs/codesetslib/developer/include/clib
-
-# workbench/libs/codesetslib/developer/include/inline
-
-# workbench/libs/codesetslib/developer/include/inline4
-
-# workbench/libs/codesetslib/developer/include/interfaces
-
-# workbench/libs/codesetslib/developer/include/libraries
-
-# workbench/libs/codesetslib/developer/include/ppcinline
-
-# workbench/libs/codesetslib/developer/include/pragmas
-
-# workbench/libs/codesetslib/developer/include/proto
-
-# workbench/libs/codesetslib/developer/sfd
-
-# workbench/libs/codesetslib/developer/xml
-
-# workbench/libs/codesetslib/include
-
-# workbench/libs/codesetslib/include/clib
-
-# workbench/libs/codesetslib/include/inline
-
-# workbench/libs/codesetslib/include/inline4
-
-# workbench/libs/codesetslib/include/interfaces
-
-# workbench/libs/codesetslib/include/libraries
+# /workbench/libs/codesetslib/include/libraries/
 /workbench/libs/codesetslib/include/libraries/mmakefile
 
-# workbench/libs/codesetslib/include/mui
-
-# workbench/libs/codesetslib/include/ppcinline
-
-# workbench/libs/codesetslib/include/pragmas
-
-# workbench/libs/codesetslib/include/proto
-
-# workbench/libs/codesetslib/src
+# /workbench/libs/codesetslib/src/
 /workbench/libs/codesetslib/src/bin_*
 /workbench/libs/codesetslib/src/.obj_*
 /workbench/libs/codesetslib/src/mmakefile
 
-# workbench/libs/commodities
+# /workbench/libs/commodities/
 /workbench/libs/commodities/libdefs.h
 /workbench/libs/commodities/mmakefile
 
-# workbench/libs/coolimages
+# /workbench/libs/coolimages/
 /workbench/libs/coolimages/libdefs.h
 /workbench/libs/coolimages/mmakefile
 
-# workbench/libs/datatypes
+# /workbench/libs/datatypes/
 /workbench/libs/datatypes/libdefs.h
 /workbench/libs/datatypes/mmakefile
 
-# workbench/libs/desktop
+# /workbench/libs/desktop/
 /workbench/libs/desktop/mmakefile
 /workbench/libs/desktop/libdefs.h
 
-# workbench/libs/diskfont
+# /workbench/libs/diskfont/
 /workbench/libs/diskfont/libdefs.h
 /workbench/libs/diskfont/mmakefile
 
-# workbench/libs/freetype
+# /workbench/libs/freetype/
 /workbench/libs/freetype/mmakefile
 
-# workbench/libs/freetype/builds
-
-# workbench/libs/freetype/builds/amiga
-
-# workbench/libs/freetype/builds/amiga/include
-
-# workbench/libs/freetype/builds/amiga/include/freetype
-
-# workbench/libs/freetype/builds/amiga/include/freetype/config
-
-# workbench/libs/freetype/builds/amiga/src
-
-# workbench/libs/freetype/builds/amiga/src/base
-
-# workbench/libs/freetype/builds/ansi
-
-# workbench/libs/freetype/builds/beos
-
-# workbench/libs/freetype/builds/compiler
-
-# workbench/libs/freetype/builds/dos
-
-# workbench/libs/freetype/builds/mac
-
-# workbench/libs/freetype/builds/os2
-
-# workbench/libs/freetype/builds/unix
+# /workbench/libs/freetype/builds/unix/
 /workbench/libs/freetype/builds/unix/unix-def.mk
 /workbench/libs/freetype/builds/unix/unix-cc.mk
 /workbench/libs/freetype/builds/unix/config.status
@@ -2522,19 +1651,7 @@
 /workbench/libs/freetype/builds/unix/ftconfig.h
 /workbench/libs/freetype/builds/unix/freetype-config
 
-# workbench/libs/freetype/builds/vms
-
-# workbench/libs/freetype/builds/win32
-
-# workbench/libs/freetype/builds/win32/visualc
-
-# workbench/libs/freetype/config
-
-# workbench/libs/freetype/config/aros
-
-# workbench/libs/freetype/demos
-
-# workbench/libs/freetype/demos/bin
+# /workbench/libs/freetype/demos/bin/
 /workbench/libs/freetype/demos/bin/ftbench
 /workbench/libs/freetype/demos/bin/ftdump
 /workbench/libs/freetype/demos/bin/ftlint
@@ -2546,147 +1663,77 @@
 /workbench/libs/freetype/demos/bin/testnames
 /workbench/libs/freetype/demos/bin/.libs
 
-# workbench/libs/freetype/demos/graph
+# /workbench/libs/freetype/demos/graph/
 /workbench/libs/freetype/demos/graph/mmakefile
 
-# workbench/libs/freetype/demos/graph/allegro
-
-# workbench/libs/freetype/demos/graph/aros
-
-# workbench/libs/freetype/demos/graph/beos
-
-# workbench/libs/freetype/demos/graph/mac
-
-# workbench/libs/freetype/demos/graph/os2
-
-# workbench/libs/freetype/demos/graph/win32
-
-# workbench/libs/freetype/demos/graph/x11
-
-# workbench/libs/freetype/demos/mac
-
-# workbench/libs/freetype/demos/mac/codewarrior
-
-# workbench/libs/freetype/demos/obj
-
-# workbench/libs/freetype/demos/src
+# /workbench/libs/freetype/demos/src/
 /workbench/libs/freetype/demos/src/mmakefile
 
-# workbench/libs/freetype/docs
-
-# workbench/libs/freetype/fonts
-
-# workbench/libs/freetype/include
+# /workbench/libs/freetype/include/
 /workbench/libs/freetype/include/mmakefile
 
-# workbench/libs/freetype/include/freetype
+# /workbench/libs/freetype/include/freetype/
 /workbench/libs/freetype/include/freetype/mmakefile
 
-# workbench/libs/freetype/include/freetype/cache
+# /workbench/libs/freetype/include/freetype/cache/
 /workbench/libs/freetype/include/freetype/cache/mmakefile
 
-# workbench/libs/freetype/include/freetype/config
+# /workbench/libs/freetype/include/freetype/config/
 /workbench/libs/freetype/include/freetype/config/mmakefile
 
-# workbench/libs/freetype/include/freetype/internal
+# /workbench/libs/freetype/include/freetype/internal/
 /workbench/libs/freetype/include/freetype/internal/mmakefile
 
-# workbench/libs/freetype/objs
+# /workbench/libs/freetype/objs/
 /workbench/libs/freetype/objs/*.lo
 /workbench/libs/freetype/objs/libfreetype.la
 /workbench/libs/freetype/objs/.libs
 
-# workbench/libs/freetype/src
+# /workbench/libs/freetype/src/
 /workbench/libs/freetype/src/mmakefile
 
-# workbench/libs/freetype/src/aros
+# /workbench/libs/freetype/src/aros/
 /workbench/libs/freetype/src/aros/mmakefile
 
-# workbench/libs/freetype/src/autohint
-
-# workbench/libs/freetype/src/base
-
-# workbench/libs/freetype/src/bdf
-
-# workbench/libs/freetype/src/cache
-
-# workbench/libs/freetype/src/cff
-
-# workbench/libs/freetype/src/cid
-
-# workbench/libs/freetype/src/gzip
-
-# workbench/libs/freetype/src/otlayout
-
-# workbench/libs/freetype/src/pcf
-
-# workbench/libs/freetype/src/pfr
-
-# workbench/libs/freetype/src/psaux
-
-# workbench/libs/freetype/src/pshinter
-
-# workbench/libs/freetype/src/psnames
-
-# workbench/libs/freetype/src/raster
-
-# workbench/libs/freetype/src/sfnt
-
-# workbench/libs/freetype/src/smooth
-
-# workbench/libs/freetype/src/tools
-
-# workbench/libs/freetype/src/tools/docmaker
-
-# workbench/libs/freetype/src/truetype
-
-# workbench/libs/freetype/src/type1
-
-# workbench/libs/freetype/src/type42
-
-# workbench/libs/freetype/src/winfonts
-
-# workbench/libs/freetype/tests
-
-# workbench/libs/gadtools
+# /workbench/libs/gadtools/
 /workbench/libs/gadtools/libdefs.h
 /workbench/libs/gadtools/mmakefile
 
-# workbench/libs/icon
+# /workbench/libs/icon/
 /workbench/libs/icon/libdefs.h
 /workbench/libs/icon/mmakefile
 
-# workbench/libs/iffparse
+# /workbench/libs/iffparse/
 /workbench/libs/iffparse/libdefs.h
 /workbench/libs/iffparse/mmakefile
 
-# workbench/libs/locale
+# /workbench/libs/locale/
 /workbench/libs/locale/libdefs.h
 /workbench/libs/locale/mmakefile
 
-# workbench/libs/lowlevel
+# /workbench/libs/lowlevel/
 /workbench/libs/lowlevel/libdefs.h
 /workbench/libs/lowlevel/mmakefile
 
-# workbench/libs/mathieeedoubbas
+# /workbench/libs/mathieeedoubbas/
 /workbench/libs/mathieeedoubbas/libdefs.h
 /workbench/libs/mathieeedoubbas/mmakefile
 /workbench/libs/mathieeedoubbas/*.err
 
-# workbench/libs/mathieeedoubtrans
+# /workbench/libs/mathieeedoubtrans/
 /workbench/libs/mathieeedoubtrans/libdefs.h
 /workbench/libs/mathieeedoubtrans/mmakefile
 /workbench/libs/mathieeedoubtrans/*.err
 
-# workbench/libs/mathieeesingtrans
+# /workbench/libs/mathieeesingtrans/
 /workbench/libs/mathieeesingtrans/libdefs.h
 /workbench/libs/mathieeesingtrans/mmakefile
 
-# workbench/libs/mathtrans
+# /workbench/libs/mathtrans/
 /workbench/libs/mathtrans/libdefs.h
 /workbench/libs/mathtrans/mmakefile
 
-# workbench/libs/muimaster
+# /workbench/libs/muimaster/
 /workbench/libs/muimaster/*_end.c
 /workbench/libs/muimaster/*_endtag.c
 /workbench/libs/muimaster/libdefs.h
@@ -2712,7 +1759,7 @@
 /workbench/libs/muimaster/project.index
 /workbench/libs/muimaster/include-generated
 
-# workbench/libs/muimaster/classes
+# /workbench/libs/muimaster/classes/
 /workbench/libs/muimaster/classes/*_end.c
 /workbench/libs/muimaster/classes/*_endtag.c
 /workbench/libs/muimaster/classes/libdefs.h
@@ -2724,487 +1771,372 @@
 /workbench/libs/muimaster/classes/*.o
 /workbench/libs/muimaster/classes/*.mdbi
 
-# workbench/libs/muimaster/staticlib
+# /workbench/libs/muimaster/staticlib/
 /workbench/libs/muimaster/staticlib/mmakefile
 
-# workbench/libs/muimaster/tutorial
-
-# workbench/libs/muimaster/tutorial/examples
+# /workbench/libs/muimaster/tutorial/examples/
 /workbench/libs/muimaster/tutorial/examples/mmakefile
 
-# workbench/libs/nonvolatile
+# /workbench/libs/nonvolatile/
 /workbench/libs/nonvolatile/libdefs.h
 /workbench/libs/nonvolatile/mmakefile
 
-# workbench/libs/nonvolatile/nvdisk
+# /workbench/libs/nonvolatile/nvdisk/
 /workbench/libs/nonvolatile/nvdisk/libdefs.h
 /workbench/libs/nonvolatile/nvdisk/mmakefile
 
-# workbench/libs/openurl
-
-# workbench/libs/openurl/Cmd
+# /workbench/libs/openurl/Cmd/
 /workbench/libs/openurl/Cmd/mmakefile
 
-# workbench/libs/openurl/Cmd/etc
-
-# workbench/libs/openurl/developer
-
-# workbench/libs/openurl/developer/Autodocs
-
-# workbench/libs/openurl/developer/C
-
-# workbench/libs/openurl/developer/C/include
-
-# workbench/libs/openurl/developer/C/include/clib
-
-# workbench/libs/openurl/developer/C/include/inline4
-
-# workbench/libs/openurl/developer/C/include/interfaces
-
-# workbench/libs/openurl/developer/C/include/libraries
-
-# workbench/libs/openurl/developer/C/include/ppcinline
-
-# workbench/libs/openurl/developer/C/include/pragmas
-
-# workbench/libs/openurl/developer/C/include/proto
-
-# workbench/libs/openurl/developer/C/include/xml
-
-# workbench/libs/openurl/developer/FD
-
-# workbench/libs/openurl/distrib
-
-# workbench/libs/openurl/distrib/OpenURL
-
-# workbench/libs/openurl/include
-
-# workbench/libs/openurl/include/aros
-
-# workbench/libs/openurl/include/clib
-
-# workbench/libs/openurl/include/inline4
-
-# workbench/libs/openurl/include/interfaces
-
-# workbench/libs/openurl/include/libraries
+# /workbench/libs/openurl/include/libraries/
 /workbench/libs/openurl/include/libraries/mmakefile
 
-# workbench/libs/openurl/include/mui
-
-# workbench/libs/openurl/include/ppcinline
-
-# workbench/libs/openurl/include/pragmas
-
-# workbench/libs/openurl/include/proto
-
-# workbench/libs/openurl/library
+# /workbench/libs/openurl/library/
 /workbench/libs/openurl/library/mmakefile
 
-# workbench/libs/openurl/localization
+# /workbench/libs/openurl/localization/
 /workbench/libs/openurl/localization/mmakefile
 
-# workbench/libs/openurl/prefs
+# /workbench/libs/openurl/prefs/
 /workbench/libs/openurl/prefs/mmakefile
 
-# workbench/libs/partition
+# /workbench/libs/partition/
 /workbench/libs/partition/mmakefile
 /workbench/libs/partition/libdefs.h
 
-# workbench/libs/partition/amigaincludesforgcc
-
-# workbench/libs/partition/amigaincludesforgcc/clib
-
-# workbench/libs/partition/amigaincludesforgcc/inline
-
-# workbench/libs/partition/amigaincludesforgcc/libraries
-
-# workbench/libs/partition/amigaincludesforgcc/proto
-
-# workbench/libs/popupmenu
+# /workbench/libs/popupmenu/
 /workbench/libs/popupmenu/mmakefile
 
-# workbench/libs/popupmenu/prefs
-
-# workbench/libs/prometheus
+# /workbench/libs/prometheus/
 /workbench/libs/prometheus/mmakefile
 
-# workbench/libs/realtime
+# /workbench/libs/realtime/
 /workbench/libs/realtime/libdefs.h
 /workbench/libs/realtime/mmakefile
 
-# workbench/libs/reqtools
+# /workbench/libs/reqtools/
 /workbench/libs/reqtools/mmakefile
 /workbench/libs/reqtools/libdefs.h
 /workbench/libs/reqtools/strings.h
 
-# workbench/libs/reqtools/amigaincludesforgcc
-
-# workbench/libs/reqtools/amigaincludesforgcc/clib
-
-# workbench/libs/reqtools/amigaincludesforgcc/inline
-
-# workbench/libs/reqtools/amigaincludesforgcc/libraries
-
-# workbench/libs/reqtools/amigaincludesforgcc/proto
-
-# workbench/libs/reqtools/catalogs
+# /workbench/libs/reqtools/catalogs/
 /workbench/libs/reqtools/catalogs/mmakefile
 
-# workbench/libs/reqtools/stubs
+# /workbench/libs/reqtools/stubs/
 /workbench/libs/reqtools/stubs/mmakefile
 
-# workbench/libs/rexxsupport
+# /workbench/libs/rexxsupport/
 /workbench/libs/rexxsupport/libdefs.h
 /workbench/libs/rexxsupport/mmakefile
 
-# workbench/libs/rexxsyslib
+# /workbench/libs/rexxsyslib/
 /workbench/libs/rexxsyslib/mmakefile
 /workbench/libs/rexxsyslib/libdefs.h
 /workbench/libs/rexxsyslib/libdefs.h.bak
 
-# workbench/libs/security
+# /workbench/libs/security/
 /workbench/libs/security/mmakefile
 
-# workbench/libs/thread
+# /workbench/libs/thread/
 /workbench/libs/thread/mmakefile
 
-# workbench/libs/uuid
+# /workbench/libs/uuid/
 /workbench/libs/uuid/mmakefile
 
-# workbench/libs/uuid/include
-
-# workbench/locale
+# /workbench/locale/
 /workbench/locale/makefile
 
-# workbench/locale/catalogs
-
-# workbench/locale/countries
+# /workbench/locale/countries/
 /workbench/locale/countries/makecountry
 /workbench/locale/countries/mmakefile
 
-# workbench/locale/countries/makecountry
-
-# workbench/locale/countries/templates
-
-# workbench/locale/flags
+# /workbench/locale/flags/
 /workbench/locale/flags/mmakefile
 
-# workbench/locale/flags/countries
+# /workbench/locale/flags/countries/
 /workbench/locale/flags/countries/mmakefile
 
-# workbench/locale/help
+# /workbench/locale/help/
 /workbench/locale/help/mmakefile
 
-# workbench/locale/help/English
+# /workbench/locale/help/English/
 /workbench/locale/help/English/mmakefile
 
-# workbench/locale/help/Español
-
-# workbench/locale/help/Russian
-
-# workbench/locale/languages
+# /workbench/locale/languages/
 /workbench/locale/languages/mmakefile
 
-# workbench/locale/languages/templates
-
-# workbench/prefs
+# /workbench/prefs/
 /workbench/prefs/mmakefile
 
-# workbench/prefs/Editor
+# /workbench/prefs/Editor/
 /workbench/prefs/Editor/strings.h
 /workbench/prefs/Editor/mmakefile
 /workbench/prefs/Editor/Prefs.c
 
-# workbench/prefs/Editor/catalogs
+# /workbench/prefs/Editor/catalogs/
 /workbench/prefs/Editor/catalogs/mmakefile
 
-# workbench/prefs/Zune
+# /workbench/prefs/Zune/
 /workbench/prefs/Zune/strings.h
 /workbench/prefs/Zune/mmakefile
 
-# workbench/prefs/Zune/catalogs
+# /workbench/prefs/Zune/catalogs/
 /workbench/prefs/Zune/catalogs/mmakefile
 
-# workbench/prefs/env-archive
+# /workbench/prefs/env-archive/
 /workbench/prefs/env-archive/mmakefile
 
-# workbench/prefs/env-archive/SYS
-
-# workbench/prefs/env-archive/SYS/Packages
-
-# workbench/prefs/env-archive/Zune
-
-# workbench/prefs/font
+# /workbench/prefs/font/
 /workbench/prefs/font/mmakefile
 /workbench/prefs/font/strings.h
 
-# workbench/prefs/font/catalogs
+# /workbench/prefs/font/catalogs/
 /workbench/prefs/font/catalogs/mmakefile
 
-# workbench/prefs/icontrol
+# /workbench/prefs/icontrol/
 /workbench/prefs/icontrol/mmakefile
 /workbench/prefs/icontrol/strings.h
 /workbench/prefs/icontrol/*_image.c
 
-# workbench/prefs/icontrol/catalogs
+# /workbench/prefs/icontrol/catalogs/
 /workbench/prefs/icontrol/catalogs/mmakefile
 
-# workbench/prefs/icontrol/images
-
-# workbench/prefs/input
+# /workbench/prefs/input/
 /workbench/prefs/input/mmakefile
 /workbench/prefs/input/strings.h
 /workbench/prefs/input/computermouse_image.c
 
-# workbench/prefs/input/catalogs
+# /workbench/prefs/input/catalogs/
 /workbench/prefs/input/catalogs/mmakefile
 
-# workbench/prefs/locale
+# /workbench/prefs/locale/
 /workbench/prefs/locale/mmakefile
 /workbench/prefs/locale/strings.h
 /workbench/prefs/locale/earthmap_small_image.c
 /workbench/prefs/locale/timezones_small_image.c
 
-# workbench/prefs/locale/catalogs
+# /workbench/prefs/locale/catalogs/
 /workbench/prefs/locale/catalogs/mmakefile
 
-# workbench/prefs/locale/pics
-
-# workbench/prefs/reqtools
+# /workbench/prefs/reqtools/
 /workbench/prefs/reqtools/mmakefile
 /workbench/prefs/reqtools/strings.h
 
-# workbench/prefs/reqtools/catalogs
+# /workbench/prefs/reqtools/catalogs/
 /workbench/prefs/reqtools/catalogs/mmakefile
 
-# workbench/prefs/screenmode
+# /workbench/prefs/screenmode/
 /workbench/prefs/screenmode/mmakefile
 /workbench/prefs/screenmode/strings.h
 
-# workbench/prefs/screenmode/catalogs
+# /workbench/prefs/screenmode/catalogs/
 /workbench/prefs/screenmode/catalogs/mmakefile
 
-# workbench/prefs/serial
+# /workbench/prefs/serial/
 /workbench/prefs/serial/mmakefile
 /workbench/prefs/serial/strings.h
 
-# workbench/prefs/serial/catalogs
+# /workbench/prefs/serial/catalogs/
 /workbench/prefs/serial/catalogs/mmakefile
 
-# workbench/prefs/time
+# /workbench/prefs/time/
 /workbench/prefs/time/mmakefile
 /workbench/prefs/time/strings.h
 
-# workbench/prefs/time/catalogs
+# /workbench/prefs/time/catalogs/
 /workbench/prefs/time/catalogs/mmakefile
 
-# workbench/prefs/trackdisk
+# /workbench/prefs/trackdisk/
 /workbench/prefs/trackdisk/strings.h
 /workbench/prefs/trackdisk/mmakefile
 
-# workbench/prefs/trackdisk/Catalogs
+# /workbench/prefs/trackdisk/Catalogs/
 /workbench/prefs/trackdisk/Catalogs/mmakefile
 
-# workbench/prefs/wanderer
+# /workbench/prefs/wanderer/
 /workbench/prefs/wanderer/mmakefile
 /workbench/prefs/wanderer/strings.h
 
-# workbench/prefs/wanderer/catalogs
+# /workbench/prefs/wanderer/catalogs/
 /workbench/prefs/wanderer/catalogs/mmakefile
 
-# workbench/rexxc
+# /workbench/rexxc/
 /workbench/rexxc/mmakefile
 
-# workbench/s
-
-# workbench/storage
-
-# workbench/storage/DOSDrivers
-
-# workbench/system
+# /workbench/system/
 /workbench/system/mmakefile
 
-# workbench/system/AboutAROS
+# /workbench/system/AboutAROS/
 /workbench/system/AboutAROS/mmakefile
 /workbench/system/AboutAROS/strings.h
 /workbench/system/AboutAROS/authors.h
 /workbench/system/AboutAROS/sponsors.h
 /workbench/system/AboutAROS/acknowledgements.h
 
-# workbench/system/AboutAROS/catalogs
+# /workbench/system/AboutAROS/catalogs/
 /workbench/system/AboutAROS/catalogs/mmakefile
 
-# workbench/system/AboutAROS/db
+# /workbench/system/BHFormat/
+/workbench/system/BHFormat/mmakefile
 
-# workbench/system/AboutAROS/scripts
-
-# workbench/system/Wanderer
+# /workbench/system/Wanderer/
 /workbench/system/Wanderer/mmakefile
 /workbench/system/Wanderer/strings.h
 
-# workbench/system/Wanderer/Catalogs
+# /workbench/system/Wanderer/Catalogs/
 /workbench/system/Wanderer/Catalogs/mmakefile
 
-# workbench/system/Wanderer/Classes
+# /workbench/system/Wanderer/Classes/
 /workbench/system/Wanderer/Classes/mmakefile
 
-# workbench/system/Wanderer/Icons
+# /workbench/system/Wanderer/Icons/
 /workbench/system/Wanderer/Icons/mmakefile
 
-# workbench/system/Wanderer/Tools
-
-# workbench/system/Wanderer/Tools/Delete
+# /workbench/system/Wanderer/Tools/Delete/
 /workbench/system/Wanderer/Tools/Delete/mmakefile
 /workbench/system/Wanderer/Tools/Delete/strings.h
 
-# workbench/system/Wanderer/Tools/Delete/Catalogs
+# /workbench/system/Wanderer/Tools/Delete/Catalogs/
 /workbench/system/Wanderer/Tools/Delete/Catalogs/mmakefile
 
-# workbench/system/Wanderer/Tools/Delete/icons
+# /workbench/system/Wanderer/Tools/Delete/icons/
 /workbench/system/Wanderer/Tools/Delete/icons/mmakefile
 
-# workbench/system/Wanderer/Tools/DiskInfo
+# /workbench/system/Wanderer/Tools/DiskInfo/
 /workbench/system/Wanderer/Tools/DiskInfo/mmakefile
 /workbench/system/Wanderer/Tools/DiskInfo/strings.h
 
-# workbench/system/Wanderer/Tools/DiskInfo/Catalogs
+# /workbench/system/Wanderer/Tools/DiskInfo/Catalogs/
 /workbench/system/Wanderer/Tools/DiskInfo/Catalogs/mmakefile
 
-# workbench/system/Wanderer/Tools/DiskInfo/Icons
+# /workbench/system/Wanderer/Tools/DiskInfo/Icons/
 /workbench/system/Wanderer/Tools/DiskInfo/Icons/mmakefile
 
-# workbench/system/Wanderer/Tools/ExecuteCommand
+# /workbench/system/Wanderer/Tools/ExecuteCommand/
 /workbench/system/Wanderer/Tools/ExecuteCommand/mmakefile
 /workbench/system/Wanderer/Tools/ExecuteCommand/strings.h
 
-# workbench/system/Wanderer/Tools/ExecuteCommand/catalogs
+# /workbench/system/Wanderer/Tools/ExecuteCommand/catalogs/
 /workbench/system/Wanderer/Tools/ExecuteCommand/catalogs/mmakefile
 
-# workbench/system/Wanderer/Tools/ExecuteCommand/icons
+# /workbench/system/Wanderer/Tools/ExecuteCommand/icons/
 /workbench/system/Wanderer/Tools/ExecuteCommand/icons/mmakefile
 
-# workbench/system/Wanderer/Tools/ExecuteStartup
+# /workbench/system/Wanderer/Tools/ExecuteStartup/
 /workbench/system/Wanderer/Tools/ExecuteStartup/mmakefile
 
-# workbench/system/Wanderer/Tools/Info
+# /workbench/system/Wanderer/Tools/Info/
 /workbench/system/Wanderer/Tools/Info/mmakefile
 /workbench/system/Wanderer/Tools/Info/strings.h
 
-# workbench/system/Wanderer/Tools/Info/catalogs
+# /workbench/system/Wanderer/Tools/Info/catalogs/
 /workbench/system/Wanderer/Tools/Info/catalogs/mmakefile
 
-# workbench/system/Wanderer/Tools/Info/icons
+# /workbench/system/Wanderer/Tools/Info/icons/
 /workbench/system/Wanderer/Tools/Info/icons/mmakefile
 
-# workbench/system/Wanderer/Tools/WBNewDrawer
+# /workbench/system/Wanderer/Tools/WBNewDrawer/
 /workbench/system/Wanderer/Tools/WBNewDrawer/mmakefile
 /workbench/system/Wanderer/Tools/WBNewDrawer/strings.h
 
-# workbench/system/Wanderer/Tools/WBNewDrawer/catalogs
+# /workbench/system/Wanderer/Tools/WBNewDrawer/catalogs/
 /workbench/system/Wanderer/Tools/WBNewDrawer/catalogs/mmakefile
 
-# workbench/system/Wanderer/Tools/WBNewDrawer/icons
+# /workbench/system/Wanderer/Tools/WBNewDrawer/icons/
 /workbench/system/Wanderer/Tools/WBNewDrawer/icons/mmakefile
 
-# workbench/system/Wanderer/Tools/WBRename
+# /workbench/system/Wanderer/Tools/WBRename/
 /workbench/system/Wanderer/Tools/WBRename/mmakefile
 /workbench/system/Wanderer/Tools/WBRename/strings.h
 
-# workbench/system/Wanderer/Tools/WBRename/catalogs
+# /workbench/system/Wanderer/Tools/WBRename/catalogs/
 /workbench/system/Wanderer/Tools/WBRename/catalogs/mmakefile
 
-# workbench/system/Wanderer/Tools/WBRename/icons
+# /workbench/system/Wanderer/Tools/WBRename/icons/
 /workbench/system/Wanderer/Tools/WBRename/icons/mmakefile
 
-# workbench/system/ftmanager
+# /workbench/system/ftmanager/
 /workbench/system/ftmanager/mmakefile
 
-# workbench/tools
+# /workbench/tools/
 /workbench/tools/mmakefile
 
-# workbench/tools/Edit
+# /workbench/tools/Edit/
 /workbench/tools/Edit/mmakefile
 /workbench/tools/Edit/strings.h
 
-# workbench/tools/Edit/catalogs
+# /workbench/tools/Edit/catalogs/
 /workbench/tools/Edit/catalogs/mmakefile
 
-# workbench/tools/HDToolBox
+# /workbench/tools/HDToolBox/
 /workbench/tools/HDToolBox/strings.h
 /workbench/tools/HDToolBox/mmakefile
 
-# workbench/tools/HDToolBox/catalogs
+# /workbench/tools/HDToolBox/catalogs/
 /workbench/tools/HDToolBox/catalogs/mmakefile
 
-# workbench/tools/HDToolBox/env-archive
-
-# workbench/tools/InstallAROS
+# /workbench/tools/InstallAROS/
 /workbench/tools/InstallAROS/mmakefile
 /workbench/tools/InstallAROS/main.c.newest
 /workbench/tools/InstallAROS/iotask.c
 
-# workbench/tools/ScreenGrabber
+# /workbench/tools/ScreenGrabber/
 /workbench/tools/ScreenGrabber/mmakefile
 /workbench/tools/ScreenGrabber/strings.h
 
-# workbench/tools/ScreenGrabber/catalogs
+# /workbench/tools/ScreenGrabber/catalogs/
 /workbench/tools/ScreenGrabber/catalogs/mmakefile
 
-# workbench/tools/commodities
+# /workbench/tools/commodities/
 /workbench/tools/commodities/mmakefile
 /workbench/tools/commodities/strings.h
 
-# workbench/tools/commodities/catalogs
+# /workbench/tools/commodities/catalogs/
 /workbench/tools/commodities/catalogs/mmakefile
 
-# workbench/tools/commodities/startmenu
+# /workbench/tools/commodities/startmenu/
 /workbench/tools/commodities/startmenu/mmakefile
 
-# workbench/tools/debug
-
-# workbench/tools/debug/sashimi
+# /workbench/tools/debug/sashimi/
 /workbench/tools/debug/sashimi/mmakefile
 
-# workbench/utilities
-
-# workbench/utilities/Clock
+# /workbench/utilities/Clock/
 /workbench/utilities/Clock/mmakefile
 /workbench/utilities/Clock/strings.h
 
-# workbench/utilities/Clock/catalogs
+# /workbench/utilities/Clock/catalogs/
 /workbench/utilities/Clock/catalogs/mmakefile
 
-# workbench/utilities/Installer
+# /workbench/utilities/Installer/
 /workbench/utilities/Installer/mmakefile
 /workbench/utilities/Installer/strings.h
 
-# workbench/utilities/Installer/catalogs
+# /workbench/utilities/Installer/catalogs/
 /workbench/utilities/Installer/catalogs/mmakefile
 
-# workbench/utilities/More
+# /workbench/utilities/More/
 /workbench/utilities/More/mmakefile
 /workbench/utilities/More/strings.h
 
-# workbench/utilities/More/catalogs
+# /workbench/utilities/More/catalogs/
 /workbench/utilities/More/catalogs/mmakefile
 
-# workbench/utilities/MultiView
+# /workbench/utilities/MultiView/
 /workbench/utilities/MultiView/mmakefile
 /workbench/utilities/MultiView/strings.h
 
-# workbench/utilities/MultiView/catalogs
+# /workbench/utilities/MultiView/catalogs/
 /workbench/utilities/MultiView/catalogs/mmakefile
 
-# workbench/utilities/Presenter
+# /workbench/utilities/Presenter/
 /workbench/utilities/Presenter/mmakefile
 
-# workbench/utilities/Snoopy
+# /workbench/utilities/Snoopy/
 /workbench/utilities/Snoopy/mmakefile
 /workbench/utilities/Snoopy/strings.h
 
-# workbench/utilities/Snoopy/catalogs
+# /workbench/utilities/Snoopy/catalogs/
 /workbench/utilities/Snoopy/catalogs/mmakefile
 
-# workbench/utilities/Snoopy/icons
+# /workbench/utilities/Snoopy/icons/
 /workbench/utilities/Snoopy/icons/mmakefile
