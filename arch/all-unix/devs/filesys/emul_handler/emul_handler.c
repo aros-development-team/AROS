@@ -51,7 +51,6 @@
 
 
 #include <aros/system.h>
-#include <aros/options.h>
 #include <aros/symbolsets.h>
 #include <exec/resident.h>
 #include <exec/memory.h>

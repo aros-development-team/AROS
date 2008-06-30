@@ -17,9 +17,6 @@
 #ifndef AROS_SYSTEM_H
 #   include <aros/system.h>
 #endif
-#ifndef AROS_OPTIONS_H
-#   include <aros/options.h>
-#endif
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif

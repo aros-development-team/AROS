@@ -1,5 +1,5 @@
 /*
- Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
+ Copyright © 1995-2008, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -22,7 +22,6 @@
 
 
 #include <aros/system.h>
-#include <aros/options.h>
 #include <aros/symbolsets.h>
 #include <exec/resident.h>
 #include <exec/memory.h>
