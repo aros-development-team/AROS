@@ -71,6 +71,7 @@ int rcCliMain(void)
     BPTR bpfhStdIn, bpfhStdOut;
     BOOL DirCache = FALSE;
     BOOL NoDirCache = TRUE;
+    char ch;
 
     prda = ReadArgs(ARGS_TEMPLATE, (LONG *)&args, 0 );
     if( prda == 0 )
@@ -115,14 +116,14 @@ int rcCliMain(void)
     SetMode( bpfhStdIn, 1 ); /* raw input */
     {
 	LONG cch;
-	static char ch; /* this must be in public memory! */
-	do
+	do {
 	    cch = Read( bpfhStdIn, &ch, 1 );
-	while( cch == 1 && ch != 3 && ch != 13 );
+	    D(Printf("Character code: %lu\n", ch));
+	} while( cch == 1 && ch != 3 && ch != 13 );
     }
     SetMode( bpfhStdIn, 0 ); /* cooked input */
     PutStr("\n");
-    if(CheckSignal(SIGBREAKF_CTRL_C))
+    if (ch == 3)
     {
 	PrintFault( ERROR_BREAK, 0 );
 	goto cleanup;
@@ -147,6 +148,8 @@ int rcCliMain(void)
 	    /* Allow the user to break */
 	    if(CheckSignal(SIGBREAKF_CTRL_C))
 	    {
+		PutStr("\033[ p\n");
+		D(Printf("Cancelled by user\n"));
 		PrintFault( ERROR_BREAK, 0 );
 		goto cleanup;
 	    }

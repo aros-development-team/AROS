@@ -35,11 +35,14 @@ under the GNU GPL, so perhaps I can get some help with this...
 1. Copy Format program together with its icon (Format.info) to SYS:System
 directory (replacing original program on m68k AmigaOS).
 
-2. On MorphOS: delete (or rename) original MOSSYS:C/Format utility
+2. On MorphOS: delete (or rename) original MOSSYS:C/Format utility and add
+the following command to your S:User-startup file:
+
+Path SYS:System ADD
 
 3. To install as a ScalOS module execute the following command:
 
-   MakeLink Scalos:Modules/Format_Disk.module SYS:System/Format
+MakeLink Scalos:Modules/Format_Disk.module SYS:System/Format
 
 
 3. AUTHOR
@@ -65,6 +68,13 @@ Original author of this program is:
 
 4. HISTORY
 ----------
+
+Version 43.6, 28 June 2008.
+
+Fixed one minor and one major bug:
+
+- Turns on cursor if interrupted by the user
+- Cancelling formatting using CTRL-C really works
 
 Version 43.5, 15 June 2008.
 

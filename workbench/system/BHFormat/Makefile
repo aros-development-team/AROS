@@ -30,6 +30,6 @@ install: Format
 	Copy Format.info SYS:System/
 
 clean:
-	Delete #?.o
+	Delete "#?.o"
 	Delete Format
 
