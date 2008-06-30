@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: dos.library function Fault()
     Lang: english
 */
-#include <aros/options.h>
+#include <aros/system.h>
 #include "dos_intern.h"
 #if PassThroughErrnos
 #   include <errno.h>
