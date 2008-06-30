@@ -1,7 +1,7 @@
 #ifndef AROS_I386_CPU_H
 #define AROS_I386_CPU_H
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -205,8 +205,6 @@ extern void aros_not_implemented ();
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
-/* if this is defined, all AROS_LP*-macros will expand to nothing. */
-#define __AROS_USE_MACROS_FOR_LIBCALL
 
 #define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
 ({\
