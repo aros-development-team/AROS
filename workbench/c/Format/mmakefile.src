@@ -7,7 +7,6 @@ FILES	:= main
 
 EXEDIR  := $(AROS_C)
 
-#MM- workbench-c : workbench-c-format
 #MM workbench-c-format : includes linklibs
 
 %build_prog mmake=workbench-c-format \
