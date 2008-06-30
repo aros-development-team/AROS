@@ -69,7 +69,13 @@ static struct patchinfo
 }
 pi [] =
 {
-    {LIB_EXEC   , 87 , LIB_LOCALE, 31}, /* RawDoFmt  */
+/* This patch was deactivated because LocRawDoFmt() does not accept %V. There is nothing in the
+   documentation telling that RawDoFmt() should depend on current locale, so the patch is deactivated.
+   The line is left here for reference.
+   
+   Pavel Fedin <sonic_amiga@rambler.ru>
+
+    {LIB_EXEC   , 87 , LIB_LOCALE, 31},  * RawDoFmt  */
     {LIB_UTILITY, 28 , LIB_LOCALE, 32}, /* Strnicmp  */
     {LIB_UTILITY, 27 , LIB_LOCALE, 33}, /* Stricmp   */
     {LIB_UTILITY, 30 , LIB_LOCALE, 34}, /* ToLower   */
