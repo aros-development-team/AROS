@@ -42,6 +42,9 @@
 
 #include "format.h"
 
+#ifndef AROS_BSTR_ADDR
+#define AROS_BSTR_ADDR(x) (char *)BADDR(x) + 1
+#endif
 
 static void WordWrapSz( char * psz );
 static BOOL bTransferCylinder(
@@ -73,8 +76,7 @@ static ULONG * paulWriteBuffer, * paulReadBuffer;
 static ULONG cbyTransfer;
 
 
-static const char szVersion[] = "$VER: BHFormat 43.5 (" __DATE__ ")";
-
+static const char szVersion[] = "$VER: BHFormat 43.6 (" __DATE__ ")";
 
 int main(void)
 {
@@ -319,7 +321,7 @@ BOOL bGetDosDevice(struct DosList *pdlList)
 
     /* Unlike most BCPL strings, this one is guaranteed to be null-
        terminated. */
-    pszExecDevice = (char *)BADDR(pfssm->fssm_Device) + 1;
+    pszExecDevice = AROS_BSTR_ADDR(pfssm->fssm_Device);
     ExecUnit = pfssm->fssm_Unit;
     ExecDeviceFlags = pfssm->fssm_Flags;
     MaxTransfer = pdenDevice->de_MaxTransfer;
@@ -523,6 +525,7 @@ BOOL bGetExecDevice( BOOL bWillVerify )
 	{
 	case 0:
 	    if( piosDisk->io_Actual == sizeof(nsdqr) )
+	    {
 		if( nsdqr.DeviceType == NSDEVTYPE_TRACKDISK )
 		{
 		    /* Look for 64-bit trackdisk commands - any one will
@@ -538,6 +541,7 @@ BOOL bGetExecDevice( BOOL bWillVerify )
 		    ReportErrSz( ertError, ERROR_OBJECT_WRONG_TYPE, 0 );
 		    return FALSE;
 		}
+	    }
 	    break;
 
 	case IOERR_NOCMD:

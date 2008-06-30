@@ -32,14 +32,18 @@
 #include <stdarg.h>
 
 #ifdef __AROS__
+#include <aros/debug.h>
 #define _WBenchMsg WBenchMsg
-#endif
-
+#else
+#include <clib/debug_protos.h>
+#define bug kprintf
 #ifdef DEBUG
 #define D(x) (x)
 #else
 #define D(x)
 #endif
+#endif
+
 
 /* Maximum length of a name component - I can't find this defined anywhere */
 #define MAX_FS_NAME_LEN 30

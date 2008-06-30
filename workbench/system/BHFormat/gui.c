@@ -146,15 +146,18 @@ int rcGuiMain(void)
 	if( _WBenchMsg->sm_ArgList[1].wa_Lock == 0 )
 	{
 	    /* it's a device */
-	    if( !bSetSzDosDeviceFromSz(_WBenchMsg->sm_ArgList[1].wa_Name) )
+	    if( !bSetSzDosDeviceFromSz(_WBenchMsg->sm_ArgList[1].wa_Name) ) {
+		D(bug("Bad device name wrom Workbench: %s\n", _WBenchMsg->sm_ArgList[1].wa_Name));
 		/* Workbench is playing silly buggers */
 		goto cleanup;
+	    }
 	}
 	else if( _WBenchMsg->sm_ArgList[1].wa_Name[0] == 0 )
 	{
 	    struct DosList *pdlDevice;
 	    /* it's a volume */
 
+	    D(bug("Object specified by lock\n"));
 	    /* make sure it's mounted before looking for its device */
 	    if( !Info( _WBenchMsg->sm_ArgList[1].wa_Lock, &dinf ) )
 	    {
