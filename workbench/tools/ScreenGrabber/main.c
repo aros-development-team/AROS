@@ -30,7 +30,7 @@
 static const char version[] = "$VER: " VERSION " ©2006 AROS Dev Team";
 
 static Object *app, *MainWindow, *ScreenList, *FilenameString, *SaveButton, *RefreshButton, *GrabButton;
-static Object *Size, *Title, *DefTitle, *Delay, *Hide, *Progress;
+static Object *Size, *Title, *DefTitle, *Pause, *Hide, *Progress;
 
 static Object *DTImage = NULL;
 
@@ -136,7 +136,7 @@ AROS_UFH3(void, grab_function,
     struct PubScreenNode *psn;
     struct Screen *screen;
 
-    delay = XGET(Delay, MUIA_Numeric_Value) * 10;
+    delay = XGET(Pause, MUIA_Numeric_Value) * 10;
     hide_win = XGET(Hide, MUIA_Selected);
    
     active = XGET(ScreenList, MUIA_List_Active);
@@ -361,7 +361,7 @@ BOOL GUIInit()
 			    Child, VGroup, GroupFrameT(_(MSG_GRABBING_OPTIONS)),
 				Child, ColGroup(2),
 				    Child, Label(_(MSG_DELAY)),
-				    Child, Delay = SliderObject,
+				    Child, Pause = SliderObject,
 					MUIA_Numeric_Min, 0,
 					MUIA_Numeric_Max, 30,
 					MUIA_Numeric_Value, 0,
