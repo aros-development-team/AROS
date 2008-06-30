@@ -1114,25 +1114,43 @@ typedef unsigned int (*ULONG_FUNC)();
 #endif /* !__AROS_CPU_SPECIFIC_LC */
 
 #ifndef __AROS_CPU_SPECIFIC_LP
-#   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s)
-#   define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s)
+#   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
+t n(__AROS_LPAQUAD(a1))
+#   define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
+t n(__AROS_LPAQUAD(a1),__AROS_LPAQUAD(a2))
 
-#   define AROS_LP0(t,n,bt,bn,o,s)
-#   define AROS_LP1(t,n,a1,bt,bn,o,s)
-#   define AROS_LP2(t,n,a1,a2,bt,bn,o,s)
-#   define AROS_LP3(t,n,a1,a2,a3,bt,bn,o,s)
-#   define AROS_LP4(t,n,a1,a2,a3,a4,bt,bn,o,s)
-#   define AROS_LP5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s)
-#   define AROS_LP6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s)
-#   define AROS_LP7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s)
-#   define AROS_LP8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
-#   define AROS_LP9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
-#   define AROS_LP10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
-#   define AROS_LP11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
-#   define AROS_LP12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s)
-#   define AROS_LP13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s)
-#   define AROS_LP14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s)
-#   define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s)
+#   define AROS_LP0(t,n,bt,bn,o,s) \
+t n(void)
+#   define AROS_LP1(t,n,a1,bt,bn,o,s) \
+t n(__AROS_LPA(a1))
+#   define AROS_LP2(t,n,a1,a2,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2))
+#   define AROS_LP3(t,n,a1,a2,a3,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3))
+#   define AROS_LP4(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4))
+#   define AROS_LP5(t,n,a1,a2,a3,a4,a5,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5))
+#   define AROS_LP6(t,n,a1,a2,a3,a4,a5,a6,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6))
+#   define AROS_LP7(t,n,a1,a2,a3,a4,a5,a6,a7,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7))
+#   define AROS_LP8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8))
+#   define AROS_LP9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9))
+#   define AROS_LP10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9),__AROS_LPA(a10))
+#   define AROS_LP11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9),__AROS_LPA(a10),__AROS_LPA(a11))
+#   define AROS_LP12(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9),__AROS_LPA(a10),__AROS_LPA(a11),__AROS_LPA(a12))
+#   define AROS_LP13(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9),__AROS_LPA(a10),__AROS_LPA(a11),__AROS_LPA(a12),__AROS_LPA(a13))
+#   define AROS_LP14(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9),__AROS_LPA(a10),__AROS_LPA(a11),__AROS_LPA(a12),__AROS_LPA(a13),__AROS_LPA(a14))
+#   define AROS_LP15(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,bt,bn,o,s) \
+t n(__AROS_LPA(a1),__AROS_LPA(a2),__AROS_LPA(a3),__AROS_LPA(a4),__AROS_LPA(a5),__AROS_LPA(a6),__AROS_LPA(a7),__AROS_LPA(a8),__AROS_LPA(a9),__AROS_LPA(a10),__AROS_LPA(a11),__AROS_LPA(a12),__AROS_LPA(a13),__AROS_LPA(a14),__AROS_LPA(a15))
 #  endif /* !__AROS_CPU_SPECIFIC_LP */
 
 
