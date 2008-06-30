@@ -2,7 +2,7 @@ Short:        NSD-aware Format command with source
 Author:       womble@zzumbouk.demon.co.uk (Ben Hutchings)
 Uploader:     womble zzumbouk demon co uk (Ben Hutchings)
 Type:         util/sys
-Version:      43.5
+Version:      43.6
 Architecture: ppc-morphos
 
 BH Format is intended to be a compatible replacement for Format
