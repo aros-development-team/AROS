@@ -404,7 +404,7 @@ void ProcessPackets(void) {
                     if (glob->disk_inhibited == 1)
                         DoDiskRemove();
                 }
-                else {
+                else if (glob->disk_inhibited) {
                     glob->disk_inhibited--;
                     if (glob->disk_inhibited == 0)
                        ProcessDiskChange();
