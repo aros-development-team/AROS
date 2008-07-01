@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := About FixFonts FTManager Themes
+ICONS := About FixFonts Format FTManager Themes
 
 #MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-system-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-system
