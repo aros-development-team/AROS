@@ -412,6 +412,14 @@ void ata_Scan(struct ataBase *base)
             {TAG_DONE,              0x00}
         };
 
+        /*
+         * Do not chech the subclass if the proper kernel option was given. It may 
+         * It will let AROS use SATA controllers on some architectures, like eg. the 
+         * Intel ICH8.
+         */
+        if (base->ata_NoSubclass)
+            Requirements[1].ti_Tag = TAG_IGNORE;
+
         struct pHidd_PCI_EnumDevices enummsg = {
             mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
             callback:       &FindHook,
@@ -420,26 +428,29 @@ void ata_Scan(struct ataBase *base)
         
         OOP_DoMethod(pci, (OOP_Msg)msg);
 
-        /* 
-         * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be find
-         * with the enumeration above. Do an explicit search now since ata.device may handle it
-         * in legacy mode without any issues.
-         * 
-         * Note: This chip is used on Sam440 board.
-         */
-        Requirements[0].ti_Tag = tHidd_PCI_VendorID;
-        Requirements[0].ti_Data = 0x1095;
-        Requirements[1].ti_Tag = tHidd_PCI_ProductID;
-        Requirements[1].ti_Data = 0x3114;
+        if (!base->ata_NoSubclass)
+        {
+           /* 
+             * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be find
+             * with the enumeration above. Do an explicit search now since ata.device may handle it
+             * in legacy mode without any issues.
+             * 
+             * Note: This chip is used on Sam440 board.
+             */
+            Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+            Requirements[0].ti_Data = 0x1095;
+            Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+            Requirements[1].ti_Data = 0x3114;
 
-        OOP_DoMethod(pci, (OOP_Msg)msg);
+            OOP_DoMethod(pci, (OOP_Msg)msg);
 
-        Requirements[0].ti_Tag = tHidd_PCI_VendorID;
-        Requirements[0].ti_Data = 0x1095;
-        Requirements[1].ti_Tag = tHidd_PCI_ProductID;
-        Requirements[1].ti_Data = 0x3512;
+            Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+            Requirements[0].ti_Data = 0x1095;
+            Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+            Requirements[1].ti_Data = 0x3512;
 
-        OOP_DoMethod(pci, (OOP_Msg)msg);
+            OOP_DoMethod(pci, (OOP_Msg)msg);
+        }
 
         OOP_DisposeObject(pci);
     }
@@ -489,6 +500,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->ata_32bit = FALSE;
     LIBBASE->ata_NoMulti = FALSE;
     LIBBASE->ata_NoDMA = FALSE;
+    LIBBASE->ata_NoSubclass = FALSE;
 
     /*
      * start initialization: 
@@ -523,6 +535,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                     {
                         D(bug("[ATA  ] Disabled DMA transfers\n"));
                         LIBBASE->ata_NoDMA = TRUE;
+                    }
+                    if (strstr(node->ln_Name, "nosubclass"))
+                    {
+                	D(bug("[ATA  ] Disabling Subclass check during PCI scan\n"));
+                	LIBBASE->ata_NoSubclass = TRUE;
                     }
                 }
             }
