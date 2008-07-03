@@ -92,7 +92,7 @@
 #define PutCh(ch)                         \
 do                                        \
 {                                         \
-    switch ((ULONG)PutChProc)             \
+    switch (PutChProc)                    \
     {                                     \
     case RAWFMTFUNC_STRING:		  \
 	*UPutChData++ = ch;               \
