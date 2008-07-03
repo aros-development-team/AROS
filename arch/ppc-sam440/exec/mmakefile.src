@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 CFILES          := \
         exec_init cause disable enable preparecontext rawputchar initcode alert \
         findresident newaddtask permit prepareexecbase remtask reschedule setexcept settaskpri \
-        signal wait cachecleare cachepostdma cachepredma
+        signal wait cachecleare cachepostdma cachepredma supervisor superstate userstate
 
 AFILES		:= \
 	stackswap 
