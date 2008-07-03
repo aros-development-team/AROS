@@ -76,7 +76,7 @@
 /* Fetch the data either from memory or from the va_list, depending
    on the value of VaListStream.  */
 #define fetch_arg(type) \
-    (VaListStream ? fetch_va_arg(type) : fetch_mem_arg(type))
+    (DataStream ? fetch_mem_arg(type) : fetch_va_arg(type))
 
 /* Fetch a number from the stream.
 
