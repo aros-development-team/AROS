@@ -2,16 +2,16 @@
 #define _EXEC_UTIL_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Utility functions for exec.
     Lang: english
 */
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
+#include <aros/asmcall.h>
+#include <exec/types.h>
+#include <stdarg.h>
 
 #ifndef EXEC_TASKS_H
 struct Task;
@@ -33,6 +33,9 @@ void Exec_InitETask(struct Task *task, struct ETask *etask, struct ExecBase *Sys
 struct Task *Exec_FindTaskByID(ULONG id, struct ExecBase *SysBase);
 struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
 struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
+
+APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
+		      APTR PutChData, va_list VaListStream);
 
 /*
  *  Pseudo-functions, including SysBase for nicer calling...

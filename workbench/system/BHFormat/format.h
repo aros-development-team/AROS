@@ -23,9 +23,16 @@
 #error "You need to use GNU CC to compile this."
 #endif
 
+#ifdef __MORPHOS__
+#define HAVE_NEWRAWDOFMT
+#endif
+#ifdef __AROS__
+#define HAVE_NEWRAWDOFMT
+#endif
+
 #include <dos/dos.h>
 #include <exec/types.h>
-#ifdef __MORPHOS__
+#ifdef HAVE_NEWRAWDOFMT
 #include <exec/rawfmt.h>
 #endif
 
@@ -84,7 +91,7 @@ void FreeAll(void);
 int rcCliMain(void);
 int rcGuiMain(void);
 
-#ifdef __MORPHOS__
+#ifdef HAVE_NEWRAWDOFMT
 #define RawDoFmtSz(pszBuffer, pszFormat, args...) NewRawDoFmt(pszFormat, RAWFMTFUNC_STRING, pszBuffer, args)
 #define RawDoVFmtSz(pszBuffer, pszFormat, pData) VNewRawDoFmt(pszFormat, RAWFMTFUNC_STRING, pszBuffer, pData)
 #else

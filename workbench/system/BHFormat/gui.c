@@ -75,7 +75,6 @@
  *  disk...' for the file-system creation and trashcan creation stages.
  */
 
-
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 #include <intuition/intuition.h>
@@ -132,11 +131,11 @@ int rcGuiMain(void)
 	NULL, "Initializing disk...", 0
     };
 
-#ifdef DEBUG
+#if DEBUG
     BPTR bpfhStdErr =
 	Open("CON:0/50/640/100/Format Debug Output/CLOSE/WAIT",MODE_READWRITE);
-    SelectInput(bpfhStdErr);
-    SelectOutput(bpfhStdErr);
+    BPTR OldInput = SelectInput(bpfhStdErr);
+    BPTR OldOutput = SelectOutput(bpfhStdErr);
 #endif
 
     if( _WBenchMsg->sm_NumArgs > 1 )
@@ -147,7 +146,7 @@ int rcGuiMain(void)
 	{
 	    /* it's a device */
 	    if( !bSetSzDosDeviceFromSz(_WBenchMsg->sm_ArgList[1].wa_Name) ) {
-		D(bug("Bad device name wrom Workbench: %s\n", _WBenchMsg->sm_ArgList[1].wa_Name));
+		D(Printf("Bad device name wrom Workbench: %s\n", _WBenchMsg->sm_ArgList[1].wa_Name));
 		/* Workbench is playing silly buggers */
 		goto cleanup;
 	    }
@@ -157,7 +156,7 @@ int rcGuiMain(void)
 	    struct DosList *pdlDevice;
 	    /* it's a volume */
 
-	    D(bug("Object specified by lock\n"));
+	    D(Printf("Object specified by lock\n"));
 	    /* make sure it's mounted before looking for its device */
 	    if( !Info( _WBenchMsg->sm_ArgList[1].wa_Lock, &dinf ) )
 	    {
@@ -256,6 +255,7 @@ int rcGuiMain(void)
 
     if( _WBenchMsg->sm_NumArgs == 1 )
     {
+	D(Printf("Started by double-click\n"));
 	/* TODO: display list of devices and have user select one */
 	goto cleanup;
     }
@@ -565,8 +565,9 @@ cleanup:
     FreeVisualInfo(vi);
     CloseFont(ptf);
 
-#ifdef DEBUG
-    FreeAll();
+#if DEBUG
+    SelectInput(OldInput);
+    SelectOutput(OldOutput);
     Close(bpfhStdErr);
 #endif
 

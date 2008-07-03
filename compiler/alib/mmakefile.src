@@ -79,6 +79,7 @@ FILES	:= \
     newlist \
     newloadsegtags \
     newobject \
+    newrawdofmt \
     obtainbestpen \
     obtaininfo \
     openamigaguide \
