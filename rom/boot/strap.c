@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -192,6 +192,9 @@ static VOID AddPartitionVolume
 	    tags[3] = (IPTR)&pp[4];
 	    tags[4] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
+	    /* BHFormat complains if this bit is not set, and it's really wrong to have it unset. So we explicitly set it here.
+	       Pavel Fedin <sonic_amiga@rambler.ru> */
+	    pp[4 + DE_BUFMEMTYPE] |= MEMF_PUBLIC;
         }
         else
         {
