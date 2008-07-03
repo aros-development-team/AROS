@@ -416,8 +416,9 @@ void ata_IRQDMAReadWrite(struct ata_Unit *au, UBYTE status)
     }
     else if ((status & ATAF_ERROR) || (stat & DMAF_Error))
     {
-        DIRQ(bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", au->au_UnitNum, status, stat));
-        DIRQ(bug("[ATA%02ld] IRQ: ERROR %02lx\n", au->au_UnitNum, ata_in(atapi_Error, au->au_Bus->ab_Port)));
+        /* This is turned on in order to help Phantom - Pavel Fedin <sonic_amiga@rambler.ru> */
+        bug("[ATA%02ld] IRQ: IO status %02lx, DMA status %02lx\n", au->au_UnitNum, status, stat);
+        bug("[ATA%02ld] IRQ: ERROR %02lx\n", au->au_UnitNum, ata_in(atapi_Error, au->au_Bus->ab_Port));
         bug("[ATA  ] IRQ: DMA Failed.\n");
         au->au_cmd_error = HFERR_DMA;
         ata_IRQNoData(au, status);
