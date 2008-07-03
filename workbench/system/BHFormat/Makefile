@@ -10,7 +10,7 @@ CC	= gcc
 CFLAGS	= -Werror-implicit-function-declaration -Wswitch -Wunused -noixemul
 
 # Comment out one of these lines to select between debug and `release' versions
-#CFLAGS	+= -DDEBUG
+#CFLAGS	+= -DDEBUG=1
 CFLAGS	+= -DNDEBUG -O2
 
 Format : main.o cli.o gui.o

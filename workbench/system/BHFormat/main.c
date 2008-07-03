@@ -923,23 +923,7 @@ void FreeAll(void)
     FreeDosDevice();
 }
 
-#ifdef __AROS__
-void RawDoFmtSz(char *pszBuffer, const char *pszFormat, ...)
-{
-    va_list args;
-    
-    va_start(args, pszFormat);
-    RawDoVFmtSz(pszBuffer, pszFormat, args);
-    va_end(args);
-}
-
-void RawDoVFmtSz(char *pszBuffer, const char *pszFormat, va_list Data)
-{
-    APTR args[] = {&Data, pszFormat};
-    
-    RawDoFmt("%V", args, NULL, pszBuffer);
-}
-#else
+#ifndef HAVE_NEWRAWDOFMT
 #ifdef __mc68000
 static const UWORD AddChSz[] = {0x16C0, 0x4E75}; /* move.l d0,(a3)+ : rts */
 
@@ -953,5 +937,7 @@ void RawDoVFmtSz( char * pszBuffer, const char * pszFormat, APTR pData )
 {
     RawDoFmt( (char *)pszFormat, pData, (void (*)())AddChSz, pszBuffer );
 }
+#else
+#error CPU is not supported
 #endif
 #endif

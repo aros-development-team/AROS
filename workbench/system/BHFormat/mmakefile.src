@@ -7,6 +7,9 @@ FILES	:= main cli gui
 
 EXEDIR  := $(AROS_SYSTEM)
 
+# Uncomment this to enable debug output
+#USER_CFLAGS := -DDEBUG=1
+
 #MM- workbench-system : workbench-system-format
 #MM workbench-system-format : includes linklibs
 

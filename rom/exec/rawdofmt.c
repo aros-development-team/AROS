@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Format a string and emit it.
@@ -8,10 +8,13 @@
 #include <dos/dos.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
+#include <exec/rawfmt.h>
 #include <proto/exec.h>
 #include <string.h>
 
 #include <stdarg.h>
+
+#include "exec_util.h"
 
 /* Fetch the data from a va_list.
 
@@ -71,9 +74,9 @@
 })
 
 /* Fetch the data either from memory or from the va_list, depending
-   on the value of user_va_list_ptr.  */
+   on the value of VaListStream.  */
 #define fetch_arg(type) \
-    (user_va_list_ptr ? fetch_va_arg(type) : fetch_mem_arg(type))
+    (VaListStream ? fetch_va_arg(type) : fetch_mem_arg(type))
 
 /* Fetch a number from the stream.
 
@@ -89,164 +92,33 @@
 #define PutCh(ch)                         \
 do                                        \
 {                                         \
-    if (PutChProc != NULL)                \
+    switch ((ULONG)PutChProc)             \
     {                                     \
+    case RAWFMTFUNC_STRING:		  \
+	*UPutChData++ = ch;               \
+	break;				  \
+    case RAWFMTFUNC_SERIAL:		  \
+	RawPutChar(ch);			  \
+	break;				  \
+    case RAWFMTFUNC_COUNT:		  \
+	*((ULONG *)PutChData)++;	  \
+	break;				  \
+    default:				  \
         AROS_UFC2(void, PutChProc,        \
         AROS_UFCA(UBYTE, (ch), D0),       \
         AROS_UFCA(APTR , PutChData, A3)); \
     }                                     \
-    else                                  \
-    {                                     \
-	*UPutChData++ = ch;               \
-    }                                     \
 } while (0)
 
-
-/*****************************************************************************
-
-    NAME */
-
-	AROS_LH4I(APTR,RawDoFmt,
-
-/*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, FormatString, A0),
-	AROS_LHA(APTR,         DataStream,   A1),
-	AROS_LHA(VOID_FUNC,    PutChProc,    A2),
-	AROS_LHA(APTR,         PutChData,    A3),
-
-/*  LOCATION */
-	struct ExecBase *, SysBase, 87, Exec)
-
-/*  FUNCTION
-	printf-style formatting function with callback hook.
-
-    INPUTS
-	FormatString - Pointer to the format string with any of the following
-		       DataStream formatting options allowed:
-
-		       %[leftalign][minwidth.][maxwidth][size][type]
-
-		       leftalign - '-' means align left. Default: align right.
-		       minwidth  - minimum width of field. Defaults to 0.
-		       maxwidth  - maximum width of field (for strings only).
-				   Defaults to no limit.
-
-		       size	 - 'w' means WORD.
-		                   'l' means LONG.
-				   'i' means IPTR.
-
-				   defaults to WORD, if nothing is specified.
-
-		       type	 - 'b' BSTR. It will use the internal representation
-                                       of the BSTR defined by the ABI.
-				   'c' single character.
-				   'd' signed decimal number.
-				   's' C string. NULL terminated.
-				   'u' unsigned decimal number.
-				   'x' unsigned hexdecimal number.
-
-		       As an AROS extension, the following special options
-		       are allowed:
-
-		       %[type]
-
-		       type - 'v' means that the current data in the DataStream is a pointer
-		                  to a an object of type va_list, as defined in <stdarg.h>.
-
-			          From this point on the data is fetched from the va_list
-			          and not from the original DataStream array anymore.
-
-			          If the pointer is NULL, however, then nothing changes
-				  and data fetching proceeds as if no %v had been specified
-				  at all.
-
-		            - 'V' it's like 'v', but requires an additional parameter which,
-			          if non NULL, instructs RawDoFmt to switch to another
-				  format string, whose address is the value of the parameter.
-
-				  Look at the EXAMPLE section to see an example about how
-				  to use this option.
-
-	DataStream   - Pointer to a zone of memory containing the data. Data has to be
-	               WORD aligned.
-
-	PutChProc    - Callback function. In caseCalled for each character, including
-		       the NULL terminator. The fuction is called as follow:
-
-                       AROS_UFC2(void, PutChProc,
-                                 AROS_UFCA(UBYTE, char,      D0),
-                                 AROS_UFCA(APTR , PutChData, A3));
-
-	PutChData    - Data propagated to each call of the callback hook.
-
-    RESULT
-	Pointer to the rest of the DataStream.
-
-	NOTE: If the format string contains one of the va_list-related options, then
-	      the result will be the same pointer to the va_list object
-
-    NOTES
-	The field size defaults to words which may be different from the
-	default integer size of the compiler.
-
-    EXAMPLE
-	Build a sprintf style function:
-
-	    static void callback(UBYTE chr __reg(d0), UBYTE **data __reg(a3))
-	    {
-	       *(*data)++=chr;
-	    }
-
-	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
-	    {
-	        RawDoFmt(format, &format+1, &callback, &buffer);
-            }
-
-	The above example makes the assumption that arguments are
-	all passed on the stack, which is true on some architectures
-	but is not on some others. In the general case you should NOT
-	use that approach, you should rather use the %v or %V options
-	and the standard <stdarg.h> facilities, like this:
-
-	    #include <stdarg.h>
-
-	    static void callback(UBYTE chr __reg(d0), UBYTE **data __reg(a3))
-	    {
-	       *(*data)++=chr;
-	    }
-
-	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
-	    {
-	        va_list args;
-		va_start(args, format);
-
-		APTR raw_args[] = { &args, format };
-
-	        RawDoFmt("%V", raw_args, &callback, &buffer);
-
-		va_end(args);
-            }
-
-    BUGS
-	PutChData cannot be modified from the callback hook on non-m68k
-	systems.
-
-    SEE ALSO
-
-    INTERNALS
-
-******************************************************************************/
+APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
+		      APTR PutChData, va_list VaListStream)
 {
-    AROS_LIBFUNC_INIT
-
 #ifdef __mc68000
     register APTR __PutChData asm("a3") = PutChData;
 #   define PutChData __PutChData
 #endif
 
     UBYTE   *UPutChData = PutChData;
-    va_list *user_va_list_ptr = NULL;
-    va_list  VaListStream;
 
     /* As long as there is something to format left */
     while (*FormatString)
@@ -289,43 +161,6 @@ do                                        \
 
 	    /* Skip over '%' character */
 	    FormatString++;
-
-	    /* Possibly switch to a va_list type stream.  */
-	    if (*FormatString == 'v')
-	    {
-	        user_va_list_ptr = fetch_arg(va_list *);
-
-		FormatString++;
-
-		if (user_va_list_ptr != NULL)
-		    va_copy(VaListStream, *user_va_list_ptr);
-
-		continue;
-	    }
-
-	    /* Possibly switch to a va_list type stream and also to a new
-	       format string.  */
-	    if (*FormatString == 'V')
-	    {
-	        char    *new_format;
-		va_list *list_ptr;
-
-		list_ptr   = fetch_arg(va_list *);
-	        new_format = fetch_arg(char *);
-
-                FormatString++;
-
-		if (list_ptr != NULL)
-		{
-		    user_va_list_ptr =  list_ptr;
-		    va_copy(VaListStream, *list_ptr);
-		}
-
-		if (new_format != NULL)
-		    FormatString = new_format;
-
-		continue;
-	    }
 
 	    /* '-' modifier? (left align) */
 	    if (*FormatString == '-')
@@ -503,12 +338,107 @@ do                                        \
     /* All done. Put the terminator out. */
     PutCh('\0');
 
-    /* Return the rest of the DataStream. */
-    return (user_va_list_ptr != NULL)
-    ?
-        (va_copy(*user_va_list_ptr, *(va_list *)&VaListStream), user_va_list_ptr)
-    :
-        DataStream;
+    /* Return the rest of the DataStream or buffer. */
+    return VaListStream ? UPutChData : DataStream;
+}
+
+
+/*****************************************************************************
+
+    NAME */
+
+	AROS_LH4I(APTR,RawDoFmt,
+
+/*  SYNOPSIS */
+	AROS_LHA(CONST_STRPTR, FormatString, A0),
+	AROS_LHA(APTR,         DataStream,   A1),
+	AROS_LHA(VOID_FUNC,    PutChProc,    A2),
+	AROS_LHA(APTR,         PutChData,    A3),
+
+/*  LOCATION */
+	struct ExecBase *, SysBase, 87, Exec)
+
+/*  FUNCTION
+	printf-style formatting function with callback hook.
+
+    INPUTS
+	FormatString - Pointer to the format string with any of the following
+		       DataStream formatting options allowed:
+
+		       %[leftalign][minwidth.][maxwidth][size][type]
+
+		       leftalign - '-' means align left. Default: align right.
+		       minwidth  - minimum width of field. Defaults to 0.
+		       maxwidth  - maximum width of field (for strings only).
+				   Defaults to no limit.
+
+		       size	 - 'w' means WORD.
+		                   'l' means LONG.
+				   'i' means IPTR.
+
+				   defaults to WORD, if nothing is specified.
+
+		       type	 - 'b' BSTR. It will use the internal representation
+                                       of the BSTR defined by the ABI.
+				   'c' single character.
+				   'd' signed decimal number.
+				   's' C string. NULL terminated.
+				   'u' unsigned decimal number.
+				   'x' unsigned hexdecimal number.
+
+	DataStream   - Pointer to a zone of memory containing the data. Data has to be
+	               WORD aligned.
+
+	PutChProc    - Callback function. In caseCalled for each character, including
+		       the NULL terminator. The fuction is called as follow:
+
+                       AROS_UFC2(void, PutChProc,
+                                 AROS_UFCA(UBYTE, char,      D0),
+                                 AROS_UFCA(APTR , PutChData, A3));
+
+	PutChData    - Data propagated to each call of the callback hook.
+
+    RESULT
+	Pointer to the rest of the DataStream.
+
+    NOTES
+	The field size defaults to words which may be different from the
+	default integer size of the compiler.
+
+    EXAMPLE
+	Build a sprintf style function:
+
+	    __stackparm void my_sprintf(UBYTE *buffer, UBYTE *format, ...);
+
+	    static void callback(UBYTE chr __reg(d0), UBYTE **data __reg(a3))
+	    {
+	       *(*data)++=chr;
+	    }
+
+	    void my_sprintf(UBYTE *buffer, UBYTE *format, ...)
+	    {
+	        RawDoFmt(format, &format+1, &callback, &buffer);
+            }
+
+	The above example uses __stackparm attribute in the function
+	prototype in order to make sure that arguments are all passed on
+	the stack on all architectures. The alternative is to use
+	VNewRawDoFmt() function which takes va_list instead of array
+	DataStream.
+
+    BUGS
+	PutChData cannot be modified from the callback hook on non-m68k
+	systems.
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    return InternalRawDoFmt(FormatString, DataStream, PutChProc, PutChData, NULL);
 
     AROS_LIBFUNC_EXIT
 } /* RawDoFmt */
