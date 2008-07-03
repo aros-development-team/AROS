@@ -109,6 +109,7 @@ struct ataBase
    UBYTE                   ata_32bit;
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
+   UBYTE                   ata_NoSubclass;
 
    /*
     * memory pool
