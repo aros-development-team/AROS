@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
@@ -9,6 +9,7 @@
     Lang: english
 */
 
+#include <exec/rawfmt.h>
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/locale.h>
@@ -111,50 +112,33 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 {
     AROS_USERFUNC_INIT
 
-
-#ifdef __MORPHOS__
-    struct HookData *data = hook->h_Data;
-
-    switch ((ULONG) hook->h_SubEntry)
-    {
-      case 0:
-	/* Standard Array Function */
-	*data->PutChData++ = fill;
-	break;
-      case 1:
-	/* Standard Serial Function */
-	dprintf("%c",fill);
-	break;
-      default:
-	data->PutChData = PPCCallM68k_RawDoFmt(fill,
-					       hook->h_SubEntry,
-					       data->PutChData,
-					       data->OldA4,
-					       SysBase);
-	break;
-    }
-#else
-
 #ifdef __mc68000__
     register char *pdata asm("a3") = hook->h_Data;
 #else
     char *pdata = hook->h_Data;
 #endif
 
-    if (hook->h_SubEntry)
+    switch (hook->h_SubEntry)
     {
+      case RAWFMTFUNC_STRING:
+	/* Standard Array Function */
+	*pdata++ = fill;
+	break;
+      case RAWFMTFUNC_SERIAL:
+	/* Standard Serial Function */
+	RawPutChar(fill);
+	break;
+      case RAWFMTFUNC_COUNT:
+        /* Standard Count Function */
+	*((ULONG *)pdata)++
+	break;
+      default:
 	AROS_UFC3(void, hook->h_SubEntry,
     	    AROS_UFCA(char, fill, D0),
 	    AROS_UFCA(APTR, pdata, A3),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6));
-    }
-    else
-    {
-    	*pdata++ = fill;
-    }
-    
+    }    
     hook->h_Data = pdata;
-#endif
 
     AROS_USERFUNC_EXIT
 }

@@ -302,18 +302,15 @@
 
 #define  DEBUG  0
 
-#ifdef __AROS__
-#warning "FIXME: Not trusting softlinks in AROS DOS!"
-#define USE_SOFTLINKCHECK               0
-#else
+/* Enabled softlinks check for testing. Define this to 0 in case of problems.
+   Pavel Fedin <sonic_amiga@rambler.ru> */
 #define USE_SOFTLINKCHECK               1
-#endif
 
 #define USE_ALWAYSVERBOSE               1
 #define USE_BOGUSEOFWORKAROUND          0
 
 
-
+#include <aros/asmcall.h>
 #include <exec/devices.h>
 #include <exec/io.h>
 #include <exec/memory.h>
@@ -564,19 +561,17 @@ static STRPTR skipspaces( STRPTR buffer);
 static STRPTR skipnonspaces( STRPTR buffer);
 static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
 
-int main(void)
+AROS_UFH3(__startup static int, Start,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-#ifndef __AROS__
-    struct ExecBase *SysBase;
+    AROS_USERFUNC_INIT
+
     struct DosLibrary *DOSBase;
-#endif
     struct Process *task;
     struct CopyData *cd;
     int retval = RETURN_FAIL;
-
-#ifndef __AROS__
-    SysBase=*((struct ExecBase**) 4);
-#endif
 
     /* test for WB and reply startup-message */
     if (!(task = (struct Process *)FindTask(NULL))->pr_CLI)
@@ -588,9 +583,7 @@ int main(void)
         return RETURN_FAIL;
     }
 
-#ifndef __AROS__
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
-#endif
     cd = AllocMem(sizeof(*cd), MEMF_PUBLIC | MEMF_CLEAR);
 
     if (DOSBase && cd)
@@ -815,17 +808,6 @@ int main(void)
                     cd->Mode = COPYMODE_LINK;
                     cd->Flags |= COPYFLAG_SOFTLINK | COPYFLAG_FORCELINK;
                 }
-
-#ifdef __AROS__
-#warning "CHECKME: Is this still needed?"
-                if (*args.from == NULL)
-                {
-                    PutStr("No arguments specified\n");
-                    FreeArgs(rda);
-                    FreeDosObject(DOS_RDARGS, rda);
-                    return RETURN_ERROR;
-                }
-#endif
 
                 if (cd->Mode != COPYMODE_DELETE &&
                     cd->Mode != COPYMODE_MAKEDIR && !args.to)
@@ -1223,13 +1205,13 @@ int main(void)
     {
         PrintFault(IoErr(), NULL);
     }
-#ifndef __AROS__
     if (DOSBase)
     {
         CloseLibrary((struct Library *)DOSBase);
     }
-#endif
     return retval;
+    
+    AROS_USERFUNC_EXIT
 }
 
 #define SysBase cd->SysBase

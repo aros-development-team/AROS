@@ -116,7 +116,11 @@ int rcGuiMain(void)
     struct Screen * pscr = 0;
     struct DrawInfo * pdri = 0;
     struct TextFont * ptf = 0;
+#ifdef AROS_FAKE_LOCK
+    struct FileHandle *pflVolume;
+#else
     struct FileLock * pflVolume = 0;
+#endif
     struct DosList * pdlVolume = 0;
     struct Gadget * pgadList = 0;
     BOOL bDoFormat, bMakeTrashcan, bFFS, bIntl;
@@ -164,6 +168,23 @@ int rcGuiMain(void)
 		goto cleanup;
 	    }
 
+#ifdef AROS_FAKE_LOCK
+	    pflVolume =
+		(struct FileHandle *)BADDR(_WBenchMsg->sm_ArgList[1].wa_Lock);
+	    pdlList = LockDosList( LDF_DEVICES | LDF_READ );
+	    pdlDevice = pdlList;
+	    do
+	    {
+		if( (pdlDevice = NextDosEntry( pdlDevice,
+					       LDF_DEVICES | LDF_READ )) == 0 )
+		{
+		    ReportErrSz( ertFailure, ERROR_DEVICE_NOT_MOUNTED, 0 );
+		    goto cleanup;
+		}
+	    }
+	    while((pdlDevice->dol_Ext.dol_AROS.dol_Device != pflVolume->fh_Device ) ||
+		  (pdlDevice->dol_Ext.dol_AROS.dol_Unit != pflVolume->fh_Unit));
+#else	    
 	    pflVolume =
 		(struct FileLock *)BADDR(_WBenchMsg->sm_ArgList[1].wa_Lock);
 	    pdlVolume = (struct DosList *)BADDR(pflVolume->fl_Volume);
@@ -179,7 +200,7 @@ int rcGuiMain(void)
 		}
 	    }
 	    while( pdlDevice->dol_Task != pflVolume->fl_Task );
-
+#endif
 	    RawDoFmtSz( szDosDevice, "%b", pdlDevice->dol_Name );
 	    pchDosDeviceColon = szDosDevice + strlen(szDosDevice);
 	    *(pchDosDeviceColon+1) = 0;
@@ -561,9 +582,12 @@ cleanup:
 	FreeScreenDrawInfo( pscr, pdri );
     if(pscr)
 	UnlockPubScreen( 0, pscr );
-    FreeGadgets(pgadList);
-    FreeVisualInfo(vi);
-    CloseFont(ptf);
+    if (pgadList)
+	FreeGadgets(pgadList);
+    if (vi)
+	FreeVisualInfo(vi);
+    if (ptf)
+	CloseFont(ptf);
 
 #if DEBUG
     SelectInput(OldInput);

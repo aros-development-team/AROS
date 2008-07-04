@@ -12,14 +12,12 @@ FILES := \
     ChangeTaskPri \
     CheckMem \
     ConClip \
-    Copy \
     CopyToPAR \
     CRList \
     DamageList \
     Date \
     Delete \
     DevList \
-    Dir \
     DiskChange \
     Eval \
     Filenote \
@@ -63,7 +61,9 @@ FILES := \
     Delay
 
 PURE_FILES := \
-    Assign
+    Assign \
+    Copy \
+    Dir
 
 USER_CFLAGS     := -I$(TOP)/rom/dos
 
@@ -79,7 +79,7 @@ USER_CFLAGS     := -I$(TOP)/rom/dos
 
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m" usestartup=no
+    uselibs="arossupport amiga rom m" usestartup=no
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...

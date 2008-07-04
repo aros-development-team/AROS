@@ -529,7 +529,7 @@ STRPTR GetFSysStr(ULONG DiskType)
 	static TEXT buffer[5];
 	
 	ptr = (STRPTR)buffer;
-	*((ULONG *)ptr) = DiskType;
+	*((ULONG *)ptr) = AROS_LONG2BE(DiskType);
 	
 	if(ptr[3] < ' ')
 	    ptr[3] += '0';
