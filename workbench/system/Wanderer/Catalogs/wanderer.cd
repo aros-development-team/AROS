@@ -170,3 +170,6 @@ DUMMY
 MSG_USERSCREENTITLE (//)
 Wanderer %pc graphics mem %pf other mem
 ;
+MSG_MEN_FORMAT (//)
+Format disk...
+;
