@@ -368,6 +368,9 @@ struct FileLock
     BPTR             fl_Volume; /* (struct DeviceList * - see below) */
 };
 
+/* This is a definition telling that AROS uses fake FileLocks which are
+   FileHandles in fact. It will go away when real FileLocks are implemented. */
+#define AROS_FAKE_LOCK
 
 /* Constants, defining of what kind a file is. These constants are used in
    many structures, including FileInfoBlock (<dos/dos.h>) and ExAllData

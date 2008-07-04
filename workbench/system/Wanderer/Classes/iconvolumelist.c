@@ -298,7 +298,7 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
         if (nd->name)
         {
           strcpy(buf, nd->name);
-          strcat(buf, ":Disk");
+          strcat(buf, ":");
       
           if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)) == NULL)
           {

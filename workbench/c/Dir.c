@@ -6,15 +6,9 @@
     Lang: English
 */
 
-#define  DEBUG  1
-
 #define MAX_PATH_LEN			512
 
-#ifdef __AROS__
 #define USE_SOFTLINKCHECK		0
-#else
-#define USE_SOFTLINKCHECK		1
-#endif
 
 #include <exec/devices.h>
 #include <exec/io.h>
@@ -26,6 +20,7 @@
 #include <utility/tagitem.h>
 #include <utility/utility.h>
 
+#include <aros/asmcall.h>
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -116,18 +111,14 @@ struct table
 
 struct data
 {
-#ifndef __AROS__
     struct ExecBase	*SysBase;
     struct DosLibrary	*DOSBase;
-#endif
     struct Library	*UtilityBase;
     int                 g_indent;
 };
 
-#ifndef __AROS__
 #define SysBase		data->SysBase
 #define DOSBase		data->DOSBase
-#endif
 #define UtilityBase	data->UtilityBase
 #define g_indent	data->g_indent
 
@@ -178,19 +169,22 @@ enum
     ARG_INTER
 };
 
-int main(void)
+AROS_UFH3(__startup static int, Start,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  AROS_UFHA(struct ExecBase *, sBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     struct data _data, *data = &_data;
     struct RDArgs *rda;
     IPTR           args[] = { NULL, NULL, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE };
 
     LONG error = RETURN_FAIL;
 
-#ifndef __AROS__
-    SysBase=*((struct ExecBase**) 4);
+    SysBase = sBase;
     if ((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37)))
     {
-#endif
         if ((UtilityBase=OpenLibrary("utility.library",37)))
         {
             error = RETURN_ERROR;
@@ -297,12 +291,12 @@ int main(void)
 
             CloseLibrary((struct Library *)UtilityBase);
         }
-#ifndef __AROS__
         CloseLibrary((struct Library *)DOSBase);
     }
-#endif
 
     return error;
+
+    AROS_USERFUNC_EXIT
 }
 
 static

@@ -7,7 +7,7 @@
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -1000,6 +1000,7 @@ enum
     MEN_ICON_RENAME,
     MEN_ICON_INFORMATION,
     MEN_ICON_DELETE,
+    MEN_ICON_FORMAT
 };
 
 
@@ -1713,6 +1714,38 @@ void wanderer_menufunc_icon_delete(void)
 }
 ///
 
+///wanderer_menufunc_icon_format()
+void wanderer_menufunc_icon_format(void)
+{
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextSelected_Start;
+    struct MUIDisplayObjects dobjects;
+    struct Hook displayCopyHook;
+    struct Hook displayDelHook;
+
+    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+    
+    /* Process only first selected entry */
+    if ((int)entry != MUIV_IconList_NextSelected_End)
+    {  
+	BPTR lock   = Lock(entry->filename, ACCESS_READ);
+	D(bug("[WANDERER] Format \"%s\"\n", entry->filename);)
+	/* Usually we pass object name and parent lock. Here we do the same thing.
+	   Just object name is empty string and its parent is device's root. */
+        OpenWorkbenchObject
+        (
+            "SYS:System/Format",
+            WBOPENA_ArgLock, (IPTR) lock,
+            WBOPENA_ArgName, lock ? (IPTR)"" : (IPTR)entry->filename,
+            TAG_DONE
+        );
+	if (lock)
+	    UnLock(lock);
+    }
+}
+///
+
 ///wanderer_menufunc_wanderer_guisettings()
 void wanderer_menufunc_wanderer_guisettings(void)
 {
@@ -1805,6 +1838,7 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
     DoMenuNotify(strip, MEN_ICON_RENAME,            wanderer_menufunc_icon_rename,            NULL);
     DoMenuNotify(strip, MEN_ICON_INFORMATION,       wanderer_menufunc_icon_information,       NULL);
     DoMenuNotify(strip, MEN_ICON_DELETE,            wanderer_menufunc_icon_delete,            NULL);
+    DoMenuNotify(strip, MEN_ICON_FORMAT,	    wanderer_menufunc_icon_format,	      NULL);
     
     if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
@@ -2376,7 +2410,7 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
     //    {NM_ITEM,  "Put Away", "P" },
             {NM_ITEM, NM_BARLABEL},
             {NM_ITEM,  _(MSG_MEN_DELETE), NULL, 0, 0, (APTR) MEN_ICON_DELETE},
-    //    {NM_ITEM,  "Format Disk..." },
+    	    {NM_ITEM,  _(MSG_MEN_FORMAT), NULL, 0, 0, (APTR) MEN_ICON_FORMAT},
     //    {NM_ITEM,  "Empty Trash..." },
     
         {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, 0},
