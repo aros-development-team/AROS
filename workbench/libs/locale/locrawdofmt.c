@@ -118,19 +118,19 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     char *pdata = hook->h_Data;
 #endif
 
-    switch (hook->h_SubEntry)
+    switch ((IPTR)hook->h_SubEntry)
     {
-      case RAWFMTFUNC_STRING:
+      case (IPTR)RAWFMTFUNC_STRING:
 	/* Standard Array Function */
 	*pdata++ = fill;
 	break;
-      case RAWFMTFUNC_SERIAL:
+      case (IPTR)RAWFMTFUNC_SERIAL:
 	/* Standard Serial Function */
 	RawPutChar(fill);
 	break;
-      case RAWFMTFUNC_COUNT:
+      case (IPTR)RAWFMTFUNC_COUNT:
         /* Standard Count Function */
-	*((ULONG *)pdata)++
+	(*((ULONG *)pdata))++
 	break;
       default:
 	AROS_UFC3(void, hook->h_SubEntry,

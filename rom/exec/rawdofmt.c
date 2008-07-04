@@ -92,16 +92,16 @@
 #define PutCh(ch)                         \
 do                                        \
 {                                         \
-    switch (PutChProc)                    \
+    switch ((IPTR)PutChProc)              \
     {                                     \
-    case RAWFMTFUNC_STRING:		  \
+    case (IPTR)RAWFMTFUNC_STRING:	  \
 	*UPutChData++ = ch;               \
 	break;				  \
-    case RAWFMTFUNC_SERIAL:		  \
+    case (IPTR)RAWFMTFUNC_SERIAL:	  \
 	RawPutChar(ch);			  \
 	break;				  \
-    case RAWFMTFUNC_COUNT:		  \
-	*((ULONG *)PutChData)++;	  \
+    case (IPTR)RAWFMTFUNC_COUNT:	  \
+	(*((ULONG *)PutChData))++;	  \
 	break;				  \
     default:				  \
         AROS_UFC2(void, PutChProc,        \
