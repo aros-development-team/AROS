@@ -130,14 +130,14 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 	break;
       case (IPTR)RAWFMTFUNC_COUNT:
         /* Standard Count Function */
-	(*((ULONG *)pdata))++
+	(*((ULONG *)pdata))++;
 	break;
       default:
 	AROS_UFC3(void, hook->h_SubEntry,
     	    AROS_UFCA(char, fill, D0),
 	    AROS_UFCA(APTR, pdata, A3),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6));
-    }    
+    }
     hook->h_Data = pdata;
 
     AROS_USERFUNC_EXIT
@@ -172,7 +172,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     NOTES
     	This function is not called by apps directly. Instead dos.library/DosGet-
 	LocalizedString is patched to use this function. This means, that the
-	LocaleBase parameter above actually points to SysBase, so we make use of 
+	LocaleBase parameter above actually points to SysBase, so we make use of
 	the global LocaleBase variable. This function is marked as private,
 	thus the headers generator won't mind the different basename in the header.
 
