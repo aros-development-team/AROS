@@ -84,8 +84,8 @@
    sign - <0 or >= 0.  */
 #define fetch_number(size, sign)                                                             \
     (sign >= 0                                                                            \
-     ? (size == 'w' ? fetch_arg(UWORD) : (size == 'l' ? fetch_arg(ULONG) : fetch_arg(IPTR))) \
-     : (size == 'w' ? fetch_arg(WORD) : (size == 'l' ? fetch_arg(LONG) : fetch_arg(SIPTR))))
+     ? (size == 'w' ? fetch_arg(UWORD) : fetch_arg(IPTR)) \
+     : (size == 'w' ? fetch_arg(WORD) : fetch_arg(SIPTR)))
 
 
 /* Call the PutCharProc funtion with the given parameters.  */
@@ -373,8 +373,7 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 				   Defaults to no limit.
 
 		       size	 - 'w' means WORD.
-		                   'l' means LONG.
-				   'i' means IPTR.
+		                   'l' means IPTR (LONG on 32-bit architectures and QUAD on 64-bit).
 
 				   defaults to WORD, if nothing is specified.
 

@@ -46,8 +46,7 @@
 				   Defaults to no limit.
 
 		       size	 - 'w' means WORD.
-		                   'l' means LONG.
-				   'i' means IPTR.
+		                   'l' means IPTR (LONG on 32-bit architectures and QUAD on 64-bit).
 
 				   defaults to WORD, if nothing is specified.
 
