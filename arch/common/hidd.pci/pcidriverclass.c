@@ -263,8 +263,8 @@ APTR PCIDrv__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
     APTR memory = AllocVec(msg->Size + 4096 + AROS_ALIGN(sizeof(APTR)), MEMF_CLEAR);
     IPTR diff;
     
-    diff = (IPTR)memory - (AROS_ROUNDUP2((IPTR)memory + 4, 4096));
-    *((APTR*)((IPTR)memory - diff - 4)) = memory;
+    diff = (IPTR)memory - (AROS_ROUNDUP2((IPTR)memory + sizeof(APTR), 4096));
+    *((APTR*)((IPTR)memory - diff - sizeof(APTR))) = memory;
 
     return (APTR)((IPTR)memory - diff);
 }
@@ -276,7 +276,7 @@ APTR PCIDrv__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
 VOID PCIDrv__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_FreePCIMem *msg)
 {
-    APTR memory = *(APTR*)((IPTR)msg->Address - 4);
+    APTR memory = *(APTR*)((IPTR)msg->Address - sizeof(APTR));
     FreeVec(memory);
 }
 
