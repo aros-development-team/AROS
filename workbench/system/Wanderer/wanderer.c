@@ -7,7 +7,7 @@
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
@@ -1488,13 +1488,19 @@ void wanderer_menufunc_icon_information()
         
         if ((IPTR)entry != MUIV_IconList_NextSelected_End)
         {
-            BPTR lock   = Lock(entry->filename, ACCESS_READ);
-            BPTR parent = ParentDir(lock);
-            UnLock(lock);
+            BPTR lock, parent;
+	    STRPTR name;
 
-D(bug("[wanderer] wanderer_menufunc_icon_information: selected = '%s'\n", entry->filename));
-
-            WBInfo(parent, entry->filename, NULL);
+	    D(bug("[wanderer] wanderer_menufunc_icon_information: selected = '%s'\n", entry->filename));
+	    lock = Lock(entry->filename, ACCESS_READ);
+	    name = FilePart(entry->filename);
+	    if (name[0]) {
+        	parent = ParentDir(lock);
+        	UnLock(lock);
+	    } else
+		parent = lock;
+	    D(bug("[wanderer] wanderer_menufunc_icon_information: name = '%s' lock = 0x%08lX\n", name, lock));
+            WBInfo(parent, name, NULL);
 
             UnLock(parent);
         }
