@@ -252,6 +252,14 @@ static inline void wrmsr(uint32_t msr) {
 #define SDR0_EMAC1REJCNT 0x4306 /*  R  EMAC1 RX Packet Reject Counter */
 #define SDR0_HSF        0x4400  /* R/W DDR Hardware Self Refresh Register */
 
+#define SDR0_MFR_ZMII_MODE_MASK         0x30000000
+
+#define SDR0_MFR_ZMII_MODE_MII          0x00000000
+#define SDR0_MFR_ZMII_MODE_SMII         0x10000000
+#define SDR0_MFR_ZMII_MODE_RMII_10M     0x20000000
+#define SDR0_MFR_ZMII_MODE_RMII_100M    0x30000000
+
+
 /* Universal Interrupt Controller 0 */
 #define UIC0_SR         0x00C0 /* R/Clear UIC 0 Status Register */
 #define UIC0_SRS        0x00C1 /* W/Set   UIC 0 Status Register Set (reserved for debug only) */
@@ -469,6 +477,187 @@ static inline void wrmsr(uint32_t msr) {
 #define GPT0_DCIS       0xef60011c
 #define GPT0_DCIS_DCIS  0x80000000
 
+/* ZMII interface */
+#define ZMII_FER        0xef600d00
+#define ZMII_SSR        0xef600d04
+#define ZMII_SMIISR     0xef600d08
 
+#define ZMII_RMII       0x22000000
+#define ZMII_MDI0       0x80000000
+
+#define ZMII_FER_DIS    0x0
+#define ZMII_FER_MDI    0x8
+#define ZMII_FER_SMII   0x4
+#define ZMII_FER_RMII   0x2
+#define ZMII_FER_MII    0x1
+
+#define ZMII_FER_RSVD11         (0x00200000)
+#define ZMII_FER_RSVD10         (0x00100000)
+#define ZMII_FER_RSVD14_31      (0x0003FFFF)
+
+#define ZMII_FER_V(__x)         (((3 - __x) * 4) + 16)
+
+/* ZMII Speed Selection Register Bit Definitions */
+#define ZMII_SSR_SCI            (0x4)
+#define ZMII_SSR_FSS            (0x2)
+#define ZMII_SSR_SP             (0x1)
+#define ZMII_SSR_RSVD16_31      (0x0000FFFF)
+
+#define ZMII_SSR_V(__x)         (((3 - __x) * 4) + 16)
+
+/* ZMII SMII Status Register Bit Definitions */
+#define ZMII_SMIISR_E1          (0x80)
+#define ZMII_SMIISR_EC          (0x40)
+#define ZMII_SMIISR_EN          (0x20)
+#define ZMII_SMIISR_EJ          (0x10)
+#define ZMII_SMIISR_EL          (0x08)
+#define ZMII_SMIISR_ED          (0x04)
+#define ZMII_SMIISR_ES          (0x02)
+#define ZMII_SMIISR_EF          (0x01)
+
+#define ZMII_SMIISR_V(__x)      ((3 - __x) * 8)
+
+#define EMAC_M0                 (0)
+#define EMAC_M1                 (4)
+#define EMAC_TXM0               (8)
+#define EMAC_TXM1               (12)
+#define EMAC_RXM                (16)
+#define EMAC_ISR                (20)
+#define EMAC_IER                (24)
+#define EMAC_IAH                (28)
+#define EMAC_IAL                (32)
+#define EMAC_PAUSE_TIME_REG     (44)
+#define EMAC_I_FRAME_GAP_REG    (88)
+#define EMAC_STACR              (92)
+#define EMAC_TRTR               (96)
+#define EMAC_RX_HI_LO_WMARK     (100)
+
+#define EMAC0_BASE               0xef600e00
+#define EMAC1_BASE               0xef600f00
+
+/* bit definitions */
+/* MODE REG 0 */
+#define EMAC_M0_RXI             (0x80000000)
+#define EMAC_M0_TXI             (0x40000000)
+#define EMAC_M0_SRST            (0x20000000)
+#define EMAC_M0_TXE             (0x10000000)
+#define EMAC_M0_RXE             (0x08000000)
+#define EMAC_M0_WKE             (0x04000000)
+
+#define EMAC_M1_FDE             0x80000000
+#define EMAC_M1_ILE             0x40000000
+#define EMAC_M1_VLE             0x20000000
+#define EMAC_M1_EIFC            0x10000000
+#define EMAC_M1_APP             0x08000000
+#define EMAC_M1_AEMI            0x02000000
+#define EMAC_M1_IST             0x01000000
+#define EMAC_M1_MF_1000MBPS     0x00800000      /* 0's for 10MBPS */
+#define EMAC_M1_MF_100MBPS      0x00400000
+#define EMAC_M1_RFS_4K          0x00300000      /* ~4k for 512 byte */
+#define EMAC_M1_RFS_2K          0x00200000
+#define EMAC_M1_RFS_1K          0x00100000
+#define EMAC_M1_TX_FIFO_2K      0x00080000      /* 0's for 512 byte */
+#define EMAC_M1_TX_FIFO_1K      0x00040000
+#define EMAC_M1_TR0_DEPEND      0x00010000      /* 0'x for single packet */
+#define EMAC_M1_TR0_MULTI       0x00008000
+#define EMAC_M1_TR1_DEPEND      0x00004000
+#define EMAC_M1_TR1_MULTI       0x00002000
+#define EMAC_M1_JUMBO_ENABLE    0x00001000
+
+/* Transmit Mode Register 0 */
+#define EMAC_TXM0_GNP0          (0x80000000)
+#define EMAC_TXM0_GNP1          (0x40000000)
+#define EMAC_TXM0_GNPD          (0x20000000)
+#define EMAC_TXM0_FC            (0x10000000)
+
+/* Receive Mode Register */
+#define EMAC_RMR_SP             (0x80000000)
+#define EMAC_RMR_SFCS           (0x40000000)
+#define EMAC_RMR_ARRP           (0x20000000)
+#define EMAC_RMR_ARP            (0x10000000)
+#define EMAC_RMR_AROP           (0x08000000)
+#define EMAC_RMR_ARPI           (0x04000000)
+#define EMAC_RMR_PPP            (0x02000000)
+#define EMAC_RMR_PME            (0x01000000)
+#define EMAC_RMR_PMME           (0x00800000)
+#define EMAC_RMR_IAE            (0x00400000)
+#define EMAC_RMR_MIAE           (0x00200000)
+#define EMAC_RMR_BAE            (0x00100000)
+#define EMAC_RMR_MAE            (0x00080000)
+
+/* Interrupt Status & enable Regs */
+#define EMAC_ISR_OVR            (0x02000000)
+#define EMAC_ISR_PP             (0x01000000)
+#define EMAC_ISR_BP             (0x00800000)
+#define EMAC_ISR_RP             (0x00400000)
+#define EMAC_ISR_SE             (0x00200000)
+#define EMAC_ISR_SYE            (0x00100000)
+#define EMAC_ISR_BFCS           (0x00080000)
+#define EMAC_ISR_PTLE           (0x00040000)
+#define EMAC_ISR_ORE            (0x00020000)
+#define EMAC_ISR_IRE            (0x00010000)
+#define EMAC_ISR_DBDM           (0x00000200)
+#define EMAC_ISR_DB0            (0x00000100)
+#define EMAC_ISR_SE0            (0x00000080)
+#define EMAC_ISR_TE0            (0x00000040)
+#define EMAC_ISR_DB1            (0x00000020)
+#define EMAC_ISR_SE1            (0x00000010)
+#define EMAC_ISR_TE1            (0x00000008)
+#define EMAC_ISR_MOS            (0x00000002)
+#define EMAC_ISR_MOF            (0x00000001)
+
+/* STA CONTROL REG */
+#define EMAC_STACR_OC           (0x00008000)
+#define EMAC_STACR_PHYE         (0x00004000)
+#define EMAC_STACR_WRITE        (0x00002000)
+#define EMAC_STACR_READ         (0x00001000)
+#define EMAC_STACR_CLK_83MHZ    (0x00000800)  /* 0's for 50Mhz */
+#define EMAC_STACR_CLK_66MHZ    (0x00000400)
+#define EMAC_STACR_CLK_100MHZ   (0x00000C00)
+
+#define EMAC_STACR_OC_MASK      (0x00000000)
+
+/* Transmit Request Threshold Register */
+#define EMAC_TRTR_256           (0x18000000)   /* 0's for 64 Bytes */
+#define EMAC_TRTR_192           (0x10000000)
+#define EMAC_TRTR_128           (0x01000000)
+
+/* the follwing defines are for the MadMAL status and control registers. */
+#define EMAC_TX_CTRL_GFCS       (0x0200)
+#define EMAC_TX_CTRL_GP         (0x0100)
+#define EMAC_TX_CTRL_ISA        (0x0080)
+#define EMAC_TX_CTRL_RSA        (0x0040)
+#define EMAC_TX_CTRL_IVT        (0x0020)
+#define EMAC_TX_CTRL_RVT        (0x0010)
+
+#define EMAC_TX_CTRL_DEFAULT (EMAC_TX_CTRL_GFCS |EMAC_TX_CTRL_GP)
+
+#define EMAC_TX_ST_BFCS         (0x0200)
+#define EMAC_TX_ST_BPP          (0x0100)
+#define EMAC_TX_ST_LCS          (0x0080)
+#define EMAC_TX_ST_ED           (0x0040)
+#define EMAC_TX_ST_EC           (0x0020)
+#define EMAC_TX_ST_LC           (0x0010)
+#define EMAC_TX_ST_MC           (0x0008)
+#define EMAC_TX_ST_SC           (0x0004)
+#define EMAC_TX_ST_UR           (0x0002)
+#define EMAC_TX_ST_SQE          (0x0001)
+
+#define EMAC_TX_ST_DEFAULT      (0x03F3)
+
+/* madmal receive status / Control bits */
+
+#define EMAC_RX_ST_OE           (0x0200)
+#define EMAC_RX_ST_PP           (0x0100)
+#define EMAC_RX_ST_BP           (0x0080)
+#define EMAC_RX_ST_RP           (0x0040)
+#define EMAC_RX_ST_SE           (0x0020)
+#define EMAC_RX_ST_AE           (0x0010)
+#define EMAC_RX_ST_BFCS         (0x0008)
+#define EMAC_RX_ST_PTL          (0x0004)
+#define EMAC_RX_ST_ORE          (0x0002)
+#define EMAC_RX_ST_IRE          (0x0001)
+/* all the errors we care about */
+#define EMAC_RX_ERRORS          (0x03FF)
 
 #endif /*ASM_AMCC440_H*/
