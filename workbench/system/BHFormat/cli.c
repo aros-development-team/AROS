@@ -101,7 +101,7 @@ int rcCliMain(void)
 	|| !bSetSzVolumeFromSz(args.pszName)
 	|| (args.pszType && !bSetFstFromSz(args.pszType))
 	|| (args.pszFlags && !bSetDevfFromSz(args.pszFlags))
-	|| !bGetDosDevice(NULL) )
+	|| !bGetDosDevice(NULL, 0) )
     {
 	rc = RETURN_ERROR;
 	goto cleanup;

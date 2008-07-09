@@ -42,7 +42,8 @@ void cleanup(CONST_STRPTR message)
 int main(int argc, char **argv)
 {
     Object *application;
-    STRPTR  initial = NULL;
+    BPTR  initial = NULL;
+
     Locale_Initialize();
 
     if (!DiskInfo_Initialize()) cleanup(_(MSG_ERROR_CLASSES));
@@ -59,18 +60,18 @@ int main(int argc, char **argv)
     struct WBStartup *startup = (struct WBStartup *) argv;
     if (startup->sm_NumArgs > 1)
     {
-        initial = startup->sm_ArgList[1].wa_Name;
-        D(bug("[DiskInfo] main, initial: %s\n", initial));
-        application = DiskInfoObject,
-            MUIA_DiskInfo_Initial, (IPTR) initial,
-            MUIA_DiskInfo_Aspect, 0,
-        End;
+        initial = startup->sm_ArgList[1].wa_Lock;
+    	D(bug("[DiskInfo] main, initial: 0x%08lX\n", initial));
+    	application = DiskInfoObject,
+    	    MUIA_DiskInfo_Initial, (IPTR) initial,
+    	    MUIA_DiskInfo_Aspect, 0,
+    	End;
 
-        if (application != NULL)
-        {
-            DoMethod(application, MUIM_Application_Execute);
-            MUI_DisposeObject(application);
-        }
+    	if (application != NULL)
+    	{
+    	    DoMethod(application, MUIM_Application_Execute);
+    	    MUI_DisposeObject(application);
+    	}
     } else {
         DiskInfo_Deinitialize();
         Locale_Deinitialize();

@@ -39,12 +39,15 @@
 #define ID_FAT16_DISK      (0x46415401L)
 #define ID_FAT32_DISK      (0x46415402L)
 #endif
+#ifndef ID_CDFS_DISK
+#define ID_CDFS_DISK	   (0x43444653L)
+#endif
 
 static LONG dt[]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
     ID_DOS_DISK, ID_FFS_DISK, ID_INTER_DOS_DISK, ID_INTER_FFS_DISK,
     ID_FASTDIR_DOS_DISK, ID_FASTDIR_FFS_DISK, ID_NOT_REALLY_DOS,
     ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_BE_DISK, ID_SFS_LE_DISK,
-    ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK };
+    ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK, ID_CDFS_DISK };
 
 /*** Instance data **********************************************************/
 struct DiskInfo_DATA
@@ -65,21 +68,22 @@ Object *DiskInfo__OM_NEW
     struct DiskInfo_DATA       *data           = NULL;
     const struct TagItem       *tstate         = message->ops_AttrList;
     struct TagItem             *tag            = NULL;
-    CONST_STRPTR                initial        = NULL;
+    BPTR                        initial        = NULL;
     Object                     *window, *grp, *grpformat;
     Object                     *textspace, *levelspace, *typespace;
     ULONG                       percent        = 0;
     LONG                        disktype       = ID_NO_DISK_PRESENT;
     LONG                        aspect         = 0;
-    STRPTR                      name           = NULL,
-                                s1             = NULL,
-                                volname        = NULL;
+    char                        volname[108];
+    STRPTR			dtr;
+    struct DosList	       *dl,
+			       *dn;
 
     static STRPTR disktypelist[] = {"No Disk", "Unreadable",
     "OFS", "FFS", "OFS-Intl", "FFS-Intl",
     "OFS-DC", "FFS-DC", "Not DOS",
     "KickStart", "MSDOS", "SFS", "sfs",
-    "FAT12", "FAT16", "FAT32" };
+    "FAT12", "FAT16", "FAT32", "CD-ROM" };
 
     /* Parse initial taglist -----------------------------------------------*/
     D(bug("[DiskInfo] OM_NEW\n"));
@@ -88,8 +92,8 @@ Object *DiskInfo__OM_NEW
         switch (tag->ti_Tag)
         {
             case MUIA_DiskInfo_Initial:
-                initial = (CONST_STRPTR) tag->ti_Data;
-                D(bug("[DiskInfo] initial: %s\n",initial));
+                initial = (BPTR) tag->ti_Data;
+                D(bug("[DiskInfo] initial: 0x%08lX\n",initial));
                 break;
             case MUIA_DiskInfo_Aspect:
                 aspect = tag->ti_Data;
@@ -98,44 +102,20 @@ Object *DiskInfo__OM_NEW
         }
     }
 
-    // glue from c:info
-    // compute the volume name from an absolute path
-    s1       = name = (STRPTR)initial;
-    while (*s1 != 0)
-    {
-        if (*s1++ == ':')
-        {
-            volname = (STRPTR)AllocMem(s1 - name, MEMF_ANY);
-
-            if (volname == NULL)
-            {
-                SetIoErr(ERROR_NO_FREE_STORE);
-                return NULL;
-            }
-
-            CopyMem(name, volname, s1 - name - 1);
-            volname[s1 - name - 1] = '\0';
-            break;
-        }
+    // obtain the volume name from a lock
+    if (!NameFromLock(initial, volname, sizeof(volname))) {
+	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+	return NULL;
     }
+    volname[strlen(volname)-1] = '\0';
+    dtr = _(MSG_UNKNOWN);
+    dl = LockDosList(LDF_VOLUMES|LDF_READ);
+    if (dl) {
+	dn = FindDosEntry(dl, volname, LDF_VOLUMES);
+	if (dn) {
+	    ULONG i;
 
-    // extract volume info from InfoData
-    BPTR lock;
-    UBYTE volnode[20];
-    STRPTR dtr = NULL;
-    sprintf(volnode, "%s:", volname);
-    lock = Lock(volnode, SHARED_LOCK);
-    if (lock != NULL)
-    {
-        static struct InfoData id;
-        if (Info(lock, &id) == DOSTRUE)
-        {
-            ULONG i;
-
-	    percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
-	    disktype = id.id_DiskType;
-	    dtr = __(MSG_UNKNOWN);
-
+	    disktype = dn->dol_misc.dol_volume.dol_DiskType;
 	    for (i = 0; i < sizeof(dt); ++i)
 	    {
 		if (disktype == dt[i])
@@ -145,6 +125,18 @@ Object *DiskInfo__OM_NEW
 		}
 	    }
             D(bug("[DiskInfo] Disk Type: %s\n", dtr));
+	}    
+	UnLockDosList(LDF_VOLUMES|LDF_READ);
+    }
+
+    // extract volume info from InfoData
+    if (initial != NULL)
+    {
+        static struct InfoData id;
+        if (Info(initial, &id) == DOSTRUE)
+        {
+	    percent = (100 * id.id_NumBlocksUsed/id.id_NumBlocks);
+
         }
     }
     /* Create application and window objects -------------------------------*/
@@ -235,8 +227,6 @@ Object *DiskInfo__OM_NEW
     DoMethod( window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
         (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    if (lock) UnLock(lock);
-    FreeMem(volname, s1 - name);
     return self;
 
 }

@@ -12,8 +12,8 @@
 /*** Attributes *************************************************************/
 
 /*+
-    [I..] CONST_STRPTR
-    Initial command line.
+    [I..] BPTR
+    Initial lock.
 +*/
 #define MUIA_DiskInfo_Initial (TAG_USER | 0x20000001)
 
