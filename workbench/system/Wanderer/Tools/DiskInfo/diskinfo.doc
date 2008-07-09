@@ -58,15 +58,10 @@ DiskInfo.mui/DiskInfo_Initialize()
 DiskInfo.mui/MUIA_DiskInfo_Initial
 
     NAME
-    MUIA_DiskInfo_Initial -- [I..], STRPTR
+    MUIA_DiskInfo_Initial -- [I..], BPTR
 
     FUNCTION
-    Provide at initialization time a path to the disk.
-
-    EXAMPLE
-    Wanderer Info passes a "Volume:Disk" string.
-    (because of its icon oriented nature, given that a volume
-    icon is located at volume root in "Disk.info").
+    Provide at initialization time a lock to the disk's root.
 
     SEE ALSO
     DiskInfo.mui/MUIA_DiskInfo_Volname

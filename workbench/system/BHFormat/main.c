@@ -276,25 +276,25 @@ BOOL bSetDevfFromSz( const char * pszDevFlags )
 }
 
 
-BOOL bGetDosDevice(struct DosList *pdlList)
+BOOL bGetDosDevice(struct DosList *pdlDevice, ULONG flags)
 {
-
+    struct DosList *pdlList;
     struct DosEnvec * pdenDevice;
-    struct DosList * pdlDevice;
 
-    if (!pdlList) {
-	pdlList = LockDosList( LDF_DEVICES | LDF_READ );
+    if (!pdlDevice) {
+	flags = LDF_DEVICES|LDF_READ;
+	pdlList = LockDosList(flags);
 	D(Printf( "LockDosList( LDF_DEVICES | LDF_READ ) = 0x%08lx\n", (ULONG)pdlList ));
-    }
-    *pchDosDeviceColon = 0;
-    pdlDevice = FindDosEntry( pdlList, szDosDevice, LDF_DEVICES );
-    D(Printf( "FindDosEntry( 0x%08lx, \"%s\", LDF_DEVICES ) = 0x%08lx\n",
-	     (ULONG)pdlList, (ULONG)szDosDevice, (ULONG)pdlDevice ));
-    if( pdlDevice == 0 )
-    {
-	UnLockDosList( LDF_DEVICES | LDF_READ );
-	ReportErrSz( ertError, ERROR_DEVICE_NOT_MOUNTED, 0 );
-	return FALSE;
+	*pchDosDeviceColon = 0;
+	pdlDevice = FindDosEntry( pdlList, szDosDevice, LDF_DEVICES );
+	D(Printf("FindDosEntry( 0x%08lx, \"%s\", LDF_DEVICES ) = 0x%08lx\n",
+		 (ULONG)pdlList, (ULONG)szDosDevice, (ULONG)pdlDevice ));
+	if( pdlDevice == 0 )
+	{
+	    UnLockDosList(flags);
+	    ReportErrSz( ertError, ERROR_DEVICE_NOT_MOUNTED, 0 );
+	    return FALSE;
+	}
     }
 
     /* Find startup message and verify file-system settings. Use
@@ -311,7 +311,7 @@ BOOL bGetDosDevice(struct DosList *pdlList)
 	|| pdenDevice->de_SecOrg != 0
 	|| pdenDevice->de_Interleave != 0 )
     {
-        UnLockDosList( LDF_DEVICES | LDF_READ );
+        UnLockDosList(flags);
 	ReportErrSz( ertError, ERROR_OBJECT_WRONG_TYPE, 0 );
 	return FALSE;
     }
@@ -367,7 +367,7 @@ BOOL bGetDosDevice(struct DosList *pdlList)
 	if( ibyEnd - ibyStart > 0x100000000ULL
 	    && verFS <= 43 ) /* perhaps v44 will change this? ;-) */
 	{
-            UnLockDosList( LDF_DEVICES | LDF_READ );
+            UnLockDosList(flags);
 	    ReportErrSz(
 		ertError,
 		-1,
@@ -377,7 +377,7 @@ BOOL bGetDosDevice(struct DosList *pdlList)
 	}
 	if( ibyEnd > 0x100000000ULL && verFS < 43 )
 	{
-            UnLockDosList( LDF_DEVICES | LDF_READ );
+            UnLockDosList(flags);
 	    ReportErrSz(
 		ertError,
 		-1,
@@ -401,7 +401,7 @@ BOOL bGetDosDevice(struct DosList *pdlList)
     }
 #endif
 
-    UnLockDosList( LDF_DEVICES | LDF_READ );
+    UnLockDosList(flags);
 
 #ifndef __MORPHOS__
     /* Certain documentation says MEMF_PUBLIC doesn't matter, and

@@ -78,7 +78,7 @@ BOOL bSetSzDosDeviceFromSz( const char * pszDevice );
 BOOL bSetSzVolumeFromSz( const char * pszVolume );
 BOOL bSetFstFromSz( const char * pszFileSysType );
 BOOL bSetDevfFromSz( const char * pszDevFlags );
-BOOL bGetDosDevice(struct DosList *pdlList);
+BOOL bGetDosDevice(struct DosList *pdlList, ULONG flags);
 void FreeDosDevice(void);
 BOOL bGetExecDevice( BOOL bWillVerify );
 void FreeExecDevice(void);

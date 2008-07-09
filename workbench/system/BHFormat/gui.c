@@ -116,8 +116,9 @@ int rcGuiMain(void)
     struct Screen * pscr = 0;
     struct DrawInfo * pdri = 0;
     struct TextFont * ptf = 0;
+    struct DosList *pdlDevice = NULL;
 #ifdef AROS_FAKE_LOCK
-    struct FileHandle *pflVolume;
+    char volName[108];
 #else
     struct FileLock * pflVolume = 0;
 #endif
@@ -137,7 +138,7 @@ int rcGuiMain(void)
 
 #if DEBUG
     BPTR bpfhStdErr =
-	Open("CON:0/50/640/100/Format Debug Output/CLOSE/WAIT",MODE_READWRITE);
+	Open("CON:0/50/640/400/Format Debug Output/CLOSE/WAIT",MODE_READWRITE);
     BPTR OldInput = SelectInput(bpfhStdErr);
     BPTR OldOutput = SelectOutput(bpfhStdErr);
 #endif
@@ -148,6 +149,7 @@ int rcGuiMain(void)
 
 	if( _WBenchMsg->sm_ArgList[1].wa_Lock == 0 )
 	{
+	    D(Printf("Object specified by name: %s\n", _WBenchMsg->sm_ArgList[1].wa_Name);)
 	    /* it's a device */
 	    if( !bSetSzDosDeviceFromSz(_WBenchMsg->sm_ArgList[1].wa_Name) ) {
 		D(Printf("Bad device name wrom Workbench: %s\n", _WBenchMsg->sm_ArgList[1].wa_Name));
@@ -157,7 +159,6 @@ int rcGuiMain(void)
 	}
 	else if( _WBenchMsg->sm_ArgList[1].wa_Name[0] == 0 )
 	{
-	    struct DosList *pdlDevice;
 	    /* it's a volume */
 
 	    D(Printf("Object specified by lock\n"));
@@ -167,23 +168,29 @@ int rcGuiMain(void)
 		ReportErrSz( ertFailure, 0, 0 );
 		goto cleanup;
 	    }
-
 #ifdef AROS_FAKE_LOCK
-	    pflVolume =
-		(struct FileHandle *)BADDR(_WBenchMsg->sm_ArgList[1].wa_Lock);
-	    pdlList = LockDosList( LDF_DEVICES | LDF_READ );
-	    pdlDevice = pdlList;
-	    do
-	    {
-		if( (pdlDevice = NextDosEntry( pdlDevice,
-					       LDF_DEVICES | LDF_READ )) == 0 )
-		{
-		    ReportErrSz( ertFailure, ERROR_DEVICE_NOT_MOUNTED, 0 );
-		    goto cleanup;
+	    if (NameFromLock(_WBenchMsg->sm_ArgList[1].wa_Lock, volName, sizeof(volName))) {
+		D(Printf("Volume name: %s\n", volName));
+		volName[strlen(volName)-1] = '\0';
+		pdlList = LockDosList( LDF_DEVICES | LDF_VOLUMES | LDF_READ );
+		pdlVolume = FindDosEntry(pdlList, volName, LDF_VOLUMES);
+		if (pdlVolume) {
+		    D(Printf("Looking for device = 0x%08lX Unit = 0x%08lX\n",
+			     pdlVolume->dol_Ext.dol_AROS.dol_Device,
+			     pdlVolume->dol_Ext.dol_AROS.dol_Unit));
+		    pdlDevice = pdlList;            
+		    do
+		    {
+			if ((pdlDevice = NextDosEntry(pdlDevice, LDF_DEVICES)) == 0)
+			    break;
+			D(Printf("Checking device %s:\n", pdlDevice->dol_Ext.dol_AROS.dol_DevName);)
+			D(Printf("Device = 0x%08lX Unit = 0x%08lX\n", pdlDevice->dol_Ext.dol_AROS.dol_Device,
+				 pdlDevice->dol_Ext.dol_AROS.dol_Unit);)
+		    }
+		    while((pdlDevice->dol_Ext.dol_AROS.dol_Device != pdlVolume->dol_Ext.dol_AROS.dol_Device) ||
+			  (pdlDevice->dol_Ext.dol_AROS.dol_Unit != pdlVolume->dol_Ext.dol_AROS.dol_Unit));
 		}
 	    }
-	    while((pdlDevice->dol_Ext.dol_AROS.dol_Device != pflVolume->fh_Device ) ||
-		  (pdlDevice->dol_Ext.dol_AROS.dol_Unit != pflVolume->fh_Unit));
 #else	    
 	    pflVolume =
 		(struct FileLock *)BADDR(_WBenchMsg->sm_ArgList[1].wa_Lock);
@@ -192,15 +199,16 @@ int rcGuiMain(void)
 	    pdlDevice = pdlList;
 	    do
 	    {
-		if( (pdlDevice = NextDosEntry( pdlDevice,
-					       LDF_DEVICES | LDF_READ )) == 0 )
-		{
-		    ReportErrSz( ertFailure, ERROR_DEVICE_NOT_MOUNTED, 0 );
-		    goto cleanup;
-		}
+		if ((pdlDevice = NextDosEntry(pdlDevice, LDF_DEVICES)) == 0)
+		    break;
 	    }
 	    while( pdlDevice->dol_Task != pflVolume->fl_Task );
 #endif
+	    if (!pdlDevice)
+	    {
+		ReportErrSz( ertFailure, ERROR_DEVICE_NOT_MOUNTED, 0 );
+		goto cleanup;
+	    }
 	    RawDoFmtSz( szDosDevice, "%b", pdlDevice->dol_Name );
 	    pchDosDeviceColon = szDosDevice + strlen(szDosDevice);
 	    *(pchDosDeviceColon+1) = 0;
@@ -211,7 +219,11 @@ int rcGuiMain(void)
 	    goto cleanup;
 	}
 
-	if(!bGetDosDevice(pdlList))
+#ifdef AROS_FAKE_LOCK
+	if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_VOLUMES|LDF_READ))
+#else
+	if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_READ))
+#endif
 	    goto cleanup;
     }
 
@@ -225,11 +237,12 @@ int rcGuiMain(void)
            possible disk size is 2^64 bytes = 16 exabytes. */
 	const char * pchUnitSymbol = "KMGTPE";
 
+	D(Printf("Calculating capacity info...\n"));
 	cUnits = ibyEnd - ibyStart;
 	while( (cUnits >>= 10) > 9999 )
 	    ++pchUnitSymbol;
 
-	if(pflVolume)
+	if(pdlVolume)
 	    RawDoFmtSz( szCapacityInfo, "%lu%lc capacity, %lu%% used",
 			(ULONG)cUnits, (ULONG)*pchUnitSymbol,
 			/* Calculate percentage used, to nearest point. */
@@ -238,6 +251,7 @@ int rcGuiMain(void)
 	else
 	    RawDoFmtSz( szCapacityInfo, "%lu%lc capacity",
 			(ULONG)cUnits, (ULONG)*pchUnitSymbol );
+	D(Printf("Done: %s\n", szCapacityInfo));
     }
 
     if( (pscr = LockPubScreen(0)) == 0
@@ -245,10 +259,12 @@ int rcGuiMain(void)
 	|| (pdri = GetScreenDrawInfo(pscr)) == 0
 	|| (ptf = OpenFont(pscr->Font)) == 0 )
     {
+	D(Printf("Error setting up screen\n"));
 	/* TODO: report error */
 	goto cleanup;
     }
 
+    D(Printf("Creating GUI...\n"));
     cxScale = ptf->tf_XSize;
     cyScale = ptf->tf_YSize;
     ipenText = pdri->dri_Pens[TEXTPEN];
@@ -267,6 +283,7 @@ int rcGuiMain(void)
 	WA_Title, (ULONG)"Format",
 	TAG_END )) == 0 )
     {
+	D(Printf("Failed to open window\n"));
 	/* TODO: report error */
 	goto cleanup;
     }
@@ -282,6 +299,7 @@ int rcGuiMain(void)
     }
 
     RawDoFmtSz( szTitle, "Format - %s", szDosDevice );
+    D(Printf("Setting window title to '%s'\n", szTitle));
     SetWindowTitles( pwin, szTitle, (UBYTE *)(-1) );
 
     {
@@ -333,7 +351,9 @@ int rcGuiMain(void)
 		pgadFFS, 0, CHECKBOX_KIND, 192, 88, 26, 11,
 		"International Mode:", PLACETEXT_LEFT,
 		GTCB_Checked, DosType & 6UL, TAG_END );
-#ifndef __AROS__
+#ifdef __AROS__
+	    pgad = pgadIntl;
+#else
 	    pgad = pgadDirCache = pgadCreate(
 		pgadIntl, 0, CHECKBOX_KIND, 192, 102, 26, 11,
 		"Directory Cache:", PLACETEXT_LEFT,
