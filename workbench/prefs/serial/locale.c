@@ -1,42 +1,51 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <exec/types.h>
+#include <proto/locale.h>
 
 #define CATCOMP_ARRAY
 #include "strings.h"
 
 #include "global.h"
 
+#define CATALOG_NAME     "System/Prefs/Serial.catalog"
+#define CATALOG_VERSION  0
+
+struct Catalog *catalog;
+
 /*********************************************************************************************/
 
-void InitLocale(STRPTR catname, ULONG version)
+VOID InitLocale(VOID)
 {
-#ifdef __AROS__
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
-#else
-    LocaleBase = (struct Library    *)OpenLibrary("locale.library", 39);
-#endif
-    if (LocaleBase)
+    if (LocaleBase != NULL)
     {
-	catalog = OpenCatalog(NULL, catname, OC_Version, version,
-					     TAG_DONE);
+	catalog = OpenCatalog(NULL, 
+	                      (STRPTR) CATALOG_NAME, 
+			      OC_Version, CATALOG_VERSION, 
+			      TAG_DONE);
+    }
+    else 
+    { 
+	catalog=NULL;
     }
 }
 
 /*********************************************************************************************/
 
-void CleanupLocale(void)
+VOID CleanupLocale(VOID)
 {
-    if (catalog) CloseCatalog(catalog);
-    if (LocaleBase) CloseLibrary((struct Library *)LocaleBase);
+    if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+    catalog=NULL;
 }
 
 /*********************************************************************************************/
 
 CONST_STRPTR MSG(ULONG id)
 {
-    if (catalog != NULL)
+    if ( (catalog != NULL) && (LocaleBase != NULL) )
     {
 	    return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     }
@@ -48,12 +57,3 @@ CONST_STRPTR MSG(ULONG id)
 
 /*********************************************************************************************/
 
-VOID LocalizeLabels(CONST_STRPTR * labels)
-{
-    CONST_STRPTR local;
-    
-    while (*labels) {
-        local = MSG((ULONG) *labels);
-        *labels++ = local;
-    }
-}

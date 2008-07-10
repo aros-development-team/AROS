@@ -3,7 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main vars locale misc prefs
+FILES 	    := main locale sereditor prefs
+
+#vars misc prefs
+
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-serial
@@ -11,6 +14,6 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-serial \
     progname=Serial targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
+    files=$(FILES) uselibs="coolimagesstatic mui arossupport amiga arosc m"
 
 %common
