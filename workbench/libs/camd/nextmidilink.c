@@ -25,7 +25,7 @@
 
 /*  FUNCTION
 		Returns the next MidiLink of a specified type that belongs
-		to a midinode. Or NULL if midilink was the first. If midilink
+		to a midinode. Or NULL if midilink was the last. If midilink
 		is NULL, returns the first one.
 
     INPUTS
@@ -47,6 +47,7 @@
     HISTORY
 
 	2001-01-12 ksvalast first created
+        2006-01-16 Lyle Hazelwood complete re-write.
 
 *****************************************************************************/
 {
@@ -60,6 +61,23 @@
 		node=midinode->mi_OutLinks.mlh_Head;
 	}
 
+	if(midilink == NULL){
+          if(node->mln_Succ != NULL){
+            return(GetMidiLinkFromOwnerNode(node));	
+          }else{
+            return(NULL);
+          }
+        }else{
+          node=&midilink->ml_OwnerNode;
+          node=node->mln_Succ;
+          if(node->mln_Succ != NULL){
+            return(GetMidiLinkFromOwnerNode(node));	
+          }else{
+            return(NULL);
+          }
+	}
+
+/*
 	while(node->mln_Succ!=NULL){
 		if(midilink==NULL){
 			return (struct MidiLink *)node;
@@ -76,6 +94,7 @@
 	}
 
 	return NULL;
+*/
 
    AROS_LIBFUNC_EXIT
 

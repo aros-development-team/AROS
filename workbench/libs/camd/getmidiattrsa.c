@@ -44,6 +44,9 @@
     INTERNALS
 
     HISTORY
+	2001-01-12 ksvalast first created
+        2007-07-01 Lyle Hazelwood fixed Tag <-> Data bug.
+
 
 *****************************************************************************/
 {
@@ -58,7 +61,7 @@
 
 	while((tag=NextTagItem(&tstate))){
 		ret++;
-		where=(ULONG *)tag->ti_Tag;
+		where=(ULONG *)tag->ti_Data;
 		switch(tag->ti_Tag){
 			case MIDI_Name:
 				*where=(ULONG)midinode->mi_Node.ln_Name;
