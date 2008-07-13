@@ -24,18 +24,21 @@
 	struct CamdBase *, CamdBase, 28, Camd)
 
 /*  FUNCTION
-		Remind me to fill in things here later.
+       Returns the number of bytes remaining in the current sys/ex message.
 
     INPUTS
+       midinode - pointer to MidiNode
 
     RESULT
+       Remaining bytes in sys/ex message.      0 is returned if the last
+       message read from GetMidi() wasn't a sys/ex message.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-		Not tested. SysEx receiving does probably have some bugs.
+		Tested.
 
     SEE ALSO
 		SkipSysEx, GetSysEx
@@ -45,6 +48,8 @@
     HISTORY
 
 	2001-01-12 ksvalast first created
+	2005-06-30 Lyle Hazelwood fixed sum to include EOX byte
+	2006-01-28 fixed wraparound bug (buffer overflow)
 
 *****************************************************************************/
 {
@@ -68,6 +73,8 @@
 		while(*sysex!=0xf7){
 			numleft++;
 			sysex++;
+			if(sysex == mymidinode->sysex_end)
+                          sysex = mymidinode->sysex_start;
 		}
 
 	ReleaseSemaphore(&mymidinode->sysexsemaphore2);
