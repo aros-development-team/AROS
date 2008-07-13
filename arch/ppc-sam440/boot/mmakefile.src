@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-package-sam440-ppc \
 #MM	workbench-complete \
 #MM	contrib-networking-stacks \
+#MM     contrib-networking-drivers-emac-powerpc \
 #MM	contrib-dhcp-client \
 #MM	aros-tcpip-apps
 
@@ -87,9 +88,11 @@ $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
                 -b bootloader \
                 -no-emul-boot \
                 -allow-leading-dots \
+		-iso-level 4 \
                 -V "AROS Live CD" \
-                -publisher "AROS Development Team" -R -J -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
-                -l -r \
+                -publisher "AROS Development Team" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
                 $(AROSDIR)
 
 
