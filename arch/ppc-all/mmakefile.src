@@ -25,7 +25,7 @@ include $(TOP)/config/make.cfg
 #
 
 #MM create-mf-inc-again
-create-mf-inc-again :
+create-mf-inc-again ::
 	@$(MAKE) -f $(TOP)/config/mmakefile setup
 
 #MM
