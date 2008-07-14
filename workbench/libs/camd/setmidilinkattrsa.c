@@ -92,9 +92,9 @@
 				midilink->ml_UserData=(void *)tag->ti_Data;
 				break;
 			case MLINK_Comment:
-// FixME!
-//				if(midilink
-				break;
+                          // Not implemented because it's not used.
+                          // if(midilink
+                          break;
 			case MLINK_PortID:
 				midilink->ml_PortID=tag->ti_Data;
 				break;
