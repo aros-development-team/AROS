@@ -35,12 +35,12 @@
 		- CL_Linkages must be locked.
 
 		- Often, a program wants to use this function for finding available
-		  clusters a user can choose from. It is then reccomended to allso
+		  clusters a user can choose from. It is then recommended to also
 		  let the user have the possibility to write in the name of a new cluster,
-		  so that camd can make new clusters automaticly to be used for
+		  so that camd can make new clusters automatically to be used for
 		  communication between various applications without having hardware-drivers
-		  etc. interfere with the datastreams. Applications does
-		  not need to make special concern about how cluster works or
+		  etc. interfere with the datastreams. Applications do
+		  not need to make special concerns about how cluster works or
 		  what they contain; that is all managed by camd.
 
     EXAMPLE
