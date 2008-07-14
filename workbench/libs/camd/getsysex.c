@@ -38,10 +38,9 @@
     EXAMPLE
 
     BUGS
-		Not tested. SysEx receiving does probably have some bugs.
 
     SEE ALSO
-		SkipSysEx, QuierySysEx
+		SkipSysEx, QuerySysEx
 
     INTERNALS
 
