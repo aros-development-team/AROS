@@ -30,16 +30,20 @@ if test "$[$1]" = ""; then
     AC_PATH_PROG([$1],[$2])
 fi])
 
-dnl AROS_TOOL_TARGET(var,prog)
+dnl AROS_TOOL_TARGET(var,prog,override)
 dnl This is effectively the same as AROS_PROG, but adds the appropriate
 dnl arch prefix when cross compiling. 
 dnl
 AC_DEFUN(AROS_TOOL_TARGET,
 [
-if test "$cross_compiling" = "yes" ; then
-    AC_PATH_PROG([$1],${target_tool_prefix}[$2])
+if test "$3" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        AC_PATH_PROG([$1],${target_tool_prefix}[$2])
+    else
+        AROS_TOOL_CCPATH($1, $2)
+    fi
 else
-    AROS_TOOL_CCPATH($1, $2)
+    AC_PATH_PROG($1, $3)
 fi
 ])
 

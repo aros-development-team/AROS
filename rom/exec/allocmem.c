@@ -31,7 +31,7 @@
 #if DEBUG_AllocMem
 #   define DEBUG 1
 #endif
-#define MDEBUG 1
+#define MDEBUG 0
 #   include <aros/debug.h>
 
 struct checkMemHandlersState
