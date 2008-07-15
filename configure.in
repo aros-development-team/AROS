@@ -722,23 +722,6 @@ case "$target_os" in
 	aros_default_wbwidth=640
 	aros_default_wbheight=480
 	gcc_target_cpu="ppc"
-	case "$target_cpu" in
-	    *cross*)
-		aros_target_cc="ppc-linux-gcc -pipe"
-		aros_target_ld="ppc-linux-ld"
-		aros_target_as="ppc-linux-as"
-		aros_target_ar="ppc-linux-ar"
-		aros_target_ranlib="ppc-linux-ranlib"
-		aros_target_nm="ppc-linux-nm"
-		aros_target_strip="ppc-linux-strip"
-		aros_target_objcopy="ppc-linux-objcopy"
-		aros_target_objdump="ppc-linux-objdump"
-		aros_shared_ld="ppc-linux-ld"
-		aros_kernel_ld="ppc-linux-ld"
-		;;
-	    *)
-	        ;;
-	esac
 	;;
 
     freebsd*)
@@ -860,23 +843,6 @@ case "$target_os" in
 	aros_default_wbheight=480
 	aros_config_cflags="$aros_config_cflags -mcpu=440fp -mno-toc -fno-asynchronous-unwind-tables"
 	gcc_target_cpu="powerpc"
-	case "$target_cpu" in
-	    *powerpc*)
-		aros_target_cc="powerpc-linux-gcc -pipe"
-		aros_target_ld="powerpc-linux-ld"
-		aros_target_as="powerpc-linux-as"
-		aros_target_ar="powerpc-linux-ar"
-		aros_target_ranlib="powerpc-linux-ranlib"
-		aros_target_nm="powerpc-linux-nm"
-		aros_target_strip="powerpc-linux-strip"
-		aros_target_objcopy="powerpc-linux-objcopy"
-		aros_target_objdump="powerpc-linux-objdump"
-		aros_shared_ld="powerpc-linux-ld"
-		aros_kernel_ld="powerpc-linux-ld"
-		;;
-	    *)
-	        ;;
-	esac
 	;;
 
     amiga*)
@@ -916,6 +882,15 @@ case "$target_os" in
 		aros_shared_cflags=""
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
+		aros_target_cc="i386-aros-gcc"
+		aros_target_ld="i386-aros-ld"
+		aros_target_as="i386-aros-as"
+		aros_target_ar="i386-aros-ar"
+		aros_target_ranlib="i386-aros-ranlib"
+		aros_target_nm="i386-aros-nm"
+		aros_target_strip="i386-aros-strip"
+		aros_target_objcopy="i386-aros-objcopy"
+		aros_target_objdump="i386-aros-objdump"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for CygWin -- $target_cpu")
@@ -935,14 +910,21 @@ case "$target_os" in
 		aros_shared_cflags=""
 		aros_default_wbdepth=8
 		gcc_target_cpu="i386"
+		aros_target_cc="i386-aros-gcc"
+		aros_target_ld="i386-aros-ld"
+		aros_target_as="i386-aros-as"
+		aros_target_ar="i386-aros-ar"
+		aros_target_ranlib="i386-aros-ranlib"
+		aros_target_nm="i386-aros-nm"
+		aros_target_strip="i386-aros-strip"
+		aros_target_objcopy="i386-aros-objcopy"
+		aros_target_objdump="i386-aros-objdump"
 		;;
 	    *)
 		AC_MSG_ERROR("Unknown CPU for Mingw32 -- $target_cpu")
 		;;
 	esac
 	if test $host_os = "cygwin"; then
-		aros_config_cflags="$aros_config_cflags -mno-cygwin"
-		aros_config_ldflags="$aros_config_ldflags -mno-cygwin"
 		aros_kernel_ldflags="$aros_kernel_ldflags -mno-cygwin"
 	fi
     ;;
@@ -959,17 +941,7 @@ case "$target_os" in
 		aros_default_wbwidth=160
                 aros_default_wbheight=160
 		aros_default_wbdepth=1
-                aros_target_cc="m68k-elf-gcc -pipe"
-                aros_target_ld="$(which m68k-elf-ld)"
-		aros_target_as="m68k-elf-gcc -pipe"
-		aros_shared_ld="m68k-elf-gcc"
-		aros_kernel_ld="m68k-elf-gcc"
-		aros_target_ar="m68k-elf-ar"
 		aros_target_ar_flags="cru"
-		aros_target_ranlib="m68k-elf-ranlib"
-		aros_target_nm="m68k-elf-nm"
-		aros_target_objcopy="m68k-elf-objcopy"
-		aros_target_objdump="m68k-elf-objdump"
 		aros_compiler_libs="-lgcc1"
 		aros_shared_default=no
 		aros_shared_cflags="-fpic"
@@ -1002,17 +974,7 @@ case "$target_os" in
 		aros_default_wbwidth=512
                 aros_default_wbheight=384
 		aros_default_wbdepth=8
-                aros_target_cc="m68k-elf-gcc -pipe"
-                aros_target_ld="$(which m68k-elf-ld)"
-		aros_target_as="m68k-elf-gcc -pipe"
-		aros_shared_ld="m68k-elf-gcc"
-		aros_kernel_ld="m68k-elf-gcc"
-		aros_target_ar="m68k-elf-ar"
 		aros_target_ar_flags="cru"
-		aros_target_ranlib="m68k-elf-ranlib"
-		aros_target_nm="m68k-elf-nm"
-		aros_target_objcopy="m68k-elf-objcopy"
-		aros_target_objdump="m68k-elf-objdump"
 		aros_compiler_libs="-lgcc1"
 		aros_shared_default=no
 		aros_shared_cflags="-fpic"
@@ -1137,26 +1099,30 @@ aros_target_incl_def="$aros_host_incl"
 AC_PATH_PROG(aros_kernel_cc,$CC)
 
 # The default tools executables to be linked to.
-AROS_TOOL_TARGET(aros_target_as_ln,as)
-AROS_REQUIRED(as,$aros_target_as_ln)
-AROS_TOOL_TARGET(aros_kernel_ld,ld)
-AROS_REQUIRED(ld,$aros_kernel_ld)
-AROS_TOOL_TARGET(aros_target_ar_ln,ar)
-AROS_REQUIRED(ar,$aros_target_ar_ln)
-AROS_TOOL_TARGET(aros_target_nm_ln,nm)
-AROS_REQUIRED(nm,$aros_target_nm_ln)
-AROS_TOOL_TARGET(aros_target_objcopy_ln,objcopy)
-AROS_REQUIRED(objcopy,$aros_target_objcopy_ln)
-AROS_TOOL_TARGET(aros_target_objdump_ln,objdump)
-AROS_REQUIRED(objdump,$aros_target_objdump_ln)
-AROS_TOOL_TARGET(aros_target_ranlib_ln,ranlib)
-AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
-AROS_TOOL_TARGET(aros_target_strip_ln,strip)
-AROS_REQUIRED(strip,$aros_target_strip_ln)
-
-if test "$GCC" = "yes"; then
-    aros_target_cc_path=`$aros_kernel_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
+if test "$aros_target_cc" != ""; then
+    AC_PATH_PROG(aros_target_cc,$aros_target_cc)
+    AROS_REQUIRED(gcc,$aros_target_cc)
 fi
+if test "$aros_target_ld" != ""; then
+    AC_PATH_PROG(aros_target_ld,$aros_target_ld)
+    AROS_REQUIRED(ld,$aros_target_ld)
+fi
+AROS_TOOL_TARGET(aros_target_as_ln,as,$aros_target_as)
+AROS_REQUIRED(as,$aros_target_as_ln)
+AROS_TOOL_TARGET(aros_kernel_ld,ld,$aros_kernel_ld)
+AROS_REQUIRED(ld,$aros_kernel_ld)
+AROS_TOOL_TARGET(aros_target_ar_ln,ar,$aros_target_ar)
+AROS_REQUIRED(ar,$aros_target_ar_ln)
+AROS_TOOL_TARGET(aros_target_nm_ln,nm,$aros_target_nm)
+AROS_REQUIRED(nm,$aros_target_nm_ln)
+AROS_TOOL_TARGET(aros_target_objcopy_ln,objcopy,$aros_target_objcopy)
+AROS_REQUIRED(objcopy,$aros_target_objcopy_ln)
+AROS_TOOL_TARGET(aros_target_objdump_ln,objdump,$aros_target_objdump)
+AROS_REQUIRED(objdump,$aros_target_objdump_ln)
+AROS_TOOL_TARGET(aros_target_ranlib_ln,ranlib,$aros_target_ranlib)
+AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
+AROS_TOOL_TARGET(aros_target_strip_ln,strip,$aros_target_strip)
+AROS_REQUIRED(strip,$aros_target_strip_ln)
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
@@ -1193,6 +1159,19 @@ AC_SUBST(aros_target_detach_ldflags,-detach)
 AC_SUBST(aros_target_nostdlib_ldflags,-nostdlib)
 
 # Target tools
+if test "$aros_target_cc" = ""; then
+    orig_target_cc=$aros_kernel_cc
+else
+    orig_target_cc=$aros_target_cc
+fi
+if test "$aros_target_ld" = ""; then
+    orig_target_ld=$aros_kernel_ld
+else
+    orig_target_ld=$aros_target_ld
+fi
+if test "$GCC" = "yes"; then
+    aros_target_cc_path=`$orig_target_cc -print-search-dirs | grep "programs: =" | cut -c 12-`
+fi
 aros_target_cc="${prefix}-gcc"
 aros_target_as="${prefix}-as"
 aros_target_ld="${prefix}-ld"
@@ -1577,9 +1556,11 @@ AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_ar)
 AC_SUBST(aros_target_ranlib)
 AC_SUBST(aros_kernel_nm)
+AC_SUBST(orig_target_cc)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_kernel_cc)
 AC_SUBST(aros_target_as)
+AC_SUBST(orig_target_ld)
 AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
 AC_SUBST(aros_target_cc_includes)
@@ -1703,7 +1684,7 @@ AC_CONFIG_COMMANDS([compiler_executable],
 
 	echo ${prefix}
 	echo ${prefix2}
-        chmod a+x ${prefix2}-gcc ${prefix2}-ld
+	chmod a+x ${prefix2}-gcc ${prefix2}-ld
 
 	ln -sf ${prefix2}-gcc          ${prefix}-gcc
 	ln -sf ${prefix2}-ld           ${prefix}-ld
