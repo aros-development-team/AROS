@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2006, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2008, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -925,7 +925,7 @@ case "$target_os" in
 		;;
 	esac
 	if test $host_os = "cygwin"; then
-		aros_kernel_ldflags="$aros_kernel_ldflags -mno-cygwin"
+		aros_kernel_cflags="-mno-cygwin"
 	fi
     ;;
     pp*)
@@ -1581,6 +1581,7 @@ AC_SUBST(aros_config_ldflags)
 AC_SUBST(aros_shared_cflags)
 AC_SUBST(aros_shared_aflags)
 AC_SUBST(aros_shared_ldflags)
+AC_SUBST(aros_kernel_cflags)
 AC_SUBST(aros_kernel_ldflags)
 AC_SUBST(aros_debug_cflags)
 AC_SUBST(aros_debug_aflags)
