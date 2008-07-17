@@ -782,6 +782,7 @@ aros_config_ldflags
 aros_shared_cflags
 aros_shared_aflags
 aros_shared_ldflags
+aros_kernel_cflags
 aros_kernel_ldflags
 aros_debug_cflags
 aros_debug_aflags
@@ -8590,7 +8591,7 @@ echo "$as_me: error: \"Unknown CPU for Mingw32 -- $target_cpu\"" >&2;}
 		;;
 	esac
 	if test $host_os = "cygwin"; then
-		aros_kernel_ldflags="$aros_kernel_ldflags -mno-cygwin"
+		aros_kernel_cflags="-mno-cygwin"
 	fi
     ;;
     pp*)
@@ -12429,6 +12430,7 @@ echo "${ECHO_T}$dbus" >&6; }
 
 
 
+
 # Graphics Related
 
 
@@ -13399,6 +13401,7 @@ aros_config_ldflags!$aros_config_ldflags$ac_delim
 aros_shared_cflags!$aros_shared_cflags$ac_delim
 aros_shared_aflags!$aros_shared_aflags$ac_delim
 aros_shared_ldflags!$aros_shared_ldflags$ac_delim
+aros_kernel_cflags!$aros_kernel_cflags$ac_delim
 aros_kernel_ldflags!$aros_kernel_ldflags$ac_delim
 aros_debug_cflags!$aros_debug_cflags$ac_delim
 aros_debug_aflags!$aros_debug_aflags$ac_delim
@@ -13423,7 +13426,6 @@ aros_nesting_supervisor!$aros_nesting_supervisor$ac_delim
 ENABLE_DBUS!$ENABLE_DBUS$ac_delim
 DBUS_CFLAGS!$DBUS_CFLAGS$ac_delim
 DBUS_LIBFLAGS!$DBUS_LIBFLAGS$ac_delim
-KERNEL_DBUS_KOBJ!$KERNEL_DBUS_KOBJ$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -13465,6 +13467,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+KERNEL_DBUS_KOBJ!$KERNEL_DBUS_KOBJ$ac_delim
 KERNEL_DBUS_INCLUDES!$KERNEL_DBUS_INCLUDES$ac_delim
 aros_debug!$aros_debug$ac_delim
 aros_mungwall_debug!$aros_mungwall_debug$ac_delim
@@ -13475,7 +13478,7 @@ gcc_target_cpu!$gcc_target_cpu$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 8; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 9; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
