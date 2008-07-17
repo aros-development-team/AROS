@@ -280,7 +280,7 @@ else
   TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
 endif
 
-ifeq ($(findstring %(compiler),host target),)
+ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
@@ -290,6 +290,10 @@ endif
 ifeq (%(compiler),host)
 $(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
 $(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 
 ifeq (%(nix),yes)
@@ -333,7 +337,7 @@ $(TMP_TARGETBASE).d : %(basename).c
 #   it is put in the same directory as the .c file. When targetdir is not
 #   empty, path names will be stripped from the file names so that all files
 #   are in that dir and not in subdirectories.
-# - compiler (default target): compiler to use, either target or host
+# - compiler (default target): compiler to use, target, kernel or host
 %define rule_compile_multi basenames=/A cflags=$(CFLAGS) dflags= targetdir= \
     compiler=target
 
@@ -357,7 +361,7 @@ endif
 
 endif
 
-ifeq ($(findstring %(compiler),host target),)
+ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
@@ -365,6 +369,9 @@ $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CC)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CC)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 
 $(TMP_TARGETS) : CFLAGS := %(cflags)
@@ -413,7 +420,7 @@ else
   TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
 endif
 
-ifeq ($(findstring %(compiler),host target),)
+ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
@@ -421,6 +428,9 @@ $(TMP_TARGETBASE).so : TMP_CMD:=$(TARGET_CC)
 endif
 ifeq (%(compiler),host)
 $(TMP_TARGETBASE).so : TMP_CMD:=$(HOST_CC)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETBASE).so : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 
 $(TMP_TARGETBASE).so : %(basename).c
@@ -642,14 +652,18 @@ else
 GENFILE_TMP := %(targetdir)/$(notdir %(basename)).ref
 endif
 
-ifeq ($(filter %(compiler),target host),)
-$(error use of %rule_ref: compiler has to be 'host' or 'target')
+ifeq ($(filter %(compiler),target kernel host),)
+$(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
 endif
 
 ifeq (%(compiler),target)
 $(GENFILE_TMP) : CC:=$(TARGET_CC)
-else
+endif
+ifeq (%(compiler),host)
 $(GENFILE_TMP) : CC:=$(HOST_CC)
+endif
+ifeq(%(compiler),kernel)
+$(GENFILE_TMP) : CC:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 
 $(GENFILE_TMP) : %(basename).c $(CXREF) %(includefile)
@@ -697,14 +711,18 @@ endif
 
 endif
 
-ifeq ($(filter %(compiler),target host),)
-$(error use of %rule_ref: compiler has to be 'host' or 'target')
+ifeq ($(filter %(compiler),target kernel host),)
+$(error use of %rule_ref: compiler has to be 'host', 'kernel' or 'target')
 endif
 
 ifeq (%(compiler),target)
 $(TMP_TARGETS) : CC:=$(TARGET_CC)
-else
+endif
+ifeq (%(compiler),host)
 $(TMP_TARGETS) : CC:=$(HOST_CC)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETS) : CC:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 ifeq (%(includefile),)
 $(TMP_TARGETS) : CFLAGS:=%(cflags)
@@ -1663,7 +1681,7 @@ GLOB_MKDIRS += %(dir)
 # - dflags: the flags used during creation of dependency file. If not specified
 #   the same value as cflags will be used
 # - aflags: the flags used during assembling
-# - compiler: (host or target) specifies which compiler to use. By default
+# - compiler: (host, kernel or target) specifies which compiler to use. By default
 #   the target compiler is used
 %define build_archspecific files= asmfiles= mainmmake=/A maindir=/A arch=/A \
 cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) compiler=target modulename=
@@ -1702,7 +1720,7 @@ GLOB_MKDIRS += $(BD_OBJDIR$(BDID))
 #MM
 %(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
 
-ifeq ($(findstring %(compiler),host target),)
+ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
@@ -1710,6 +1728,9 @@ $(BD_COBJS$(BDID)) : TMP_CMD:=$(TARGET_CC)
 endif
 ifeq (%(compiler),host)
 $(BD_COBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+endif
+ifeq (%(compiler),kernel)
+$(BD_COBJS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 ifneq (%(modulename),)
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) \
@@ -1866,8 +1887,8 @@ $(GENDIR)/$(CURDIR):
 %define copy_includes mmake=includes-copy includes=$(INCLUDE_FILES) path=. \
     dir= compiler=target
 
-ifeq ($(findstring %(compiler),host target),)
-$(error %copy_includes: compiler argument (%(compiler)) has to be host or target)
+ifeq ($(findstring %(compiler),host kernel target),)
+$(error %copy_includes: compiler argument (%(compiler)) has to be host, kernel or target)
 endif
 
 ifneq (%(dir),)
@@ -2105,7 +2126,7 @@ $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
-	CC="$(KERNEL_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
+	CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
 	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) \
 	    --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH) \
