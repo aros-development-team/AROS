@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define DEBUG 0
@@ -380,7 +380,7 @@ BOOL __FindDeviceName_WB
                             {
                                 success = TRUE;
                             }
-                            
+                            UnLock(lock);
                             break;
                         }
                     }
