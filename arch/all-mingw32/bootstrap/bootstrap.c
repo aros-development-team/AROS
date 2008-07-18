@@ -5,7 +5,9 @@
 #include <strings.h>
 #include <signal.h>
 #include <windows.h>
+#include "hostlib.h"
 #include "../include/aros/kernel.h"
+#include "../kernel/kernel_intern.h"
 
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
@@ -17,9 +19,25 @@ typedef struct TagItem *  (*hooklist_fun_t)();
 
 #define BASE_ALIGNMENT 16
 
+const char *kernel_names[] = {
+    /* TODO */
+    NULL
+};
+
+struct KernelInterface KernelIFace = {
+    /* TODO */
+    Kern_HostLib_Open,
+    Kern_HostLib_Close,
+    Kern_HostLib_GetPointer,
+    Kern_HostLib_FreeErrorStr,
+    Kern_HostLib_GetInterface
+};
+
 int main(int argc, char ** argv)
 {
-  
+  char *error;
+  unsigned long BadSyms;
+  struct TagItem *t;
 
   //alloc mem
   unsigned int memSize = 100;  
@@ -27,25 +45,25 @@ int main(int argc, char ** argv)
   void * memory = malloc((memSize << 20));
 
   //load native kernel
-  printf("[Bootstrap] loading native kernel component...");
-  HMODULE kernel_native = LoadLibrary("kernel_native.dll");
+  printf("[Bootstrap] loading native kernel component... ");
+  HMODULE kernel_native = Kern_HostLib_Open("kernel_native.dll", &error);
   if (kernel_native)
 	  printf("ok!\n");
   else {
-	  printf("failed!\n");
+      	  CharToOem(error, error);
+	  printf("%s\n", error);
+	  Kern_HostLib_FreeErrorStr(error);
 	  return -1;
   }
 	
-  printf("[Bootstrap] peeking symbols for native kernel component...");
-  init_fun_t kernel_native_init_fun = (init_fun_t)GetProcAddress(kernel_native,"kernel_init_native");
-  kmessage_fun_t kernel_native_message_fun = (kmessage_fun_t)GetProcAddress(kernel_native,"kernel_message");
-  if (kernel_native_init_fun && kernel_native_message_fun)
+  printf("[Bootstrap] peeking symbols for native kernel component... ");
+  BadSyms = Kern_HostLib_GetInterface(kernel_native, kernel_names, &KernelIFace);
+  if (!BadSyms)
 	  printf("ok!\n");
   else {
-	  printf("failed!\n");
+	  printf("failed (%lu unresolved symbols)!\n", BadSyms);
 	  return -1;
   }
-  
   
   //fill in kernel message related to allocated ram regions
   struct TagItem *tag = km;
@@ -63,16 +81,14 @@ int main(int argc, char ** argv)
   tag++;
   
   //init native kernel and fill in message
-  printf("[Bootstrap] initializing native kernel component...\n");
-  kernel_native_init_fun();
   printf("[Bootstrap] getting boot info from native kernel component...\n");
-  tag = kernel_native_message_fun(tag);  
+//  tag = kernel_native_message_fun(tag);  
   
   //temporarily terminate message so it can be scanned
   tag->ti_Tag = TAG_DONE;
   
   void ** SysBasePtr = 0;
-  for (struct TagItem * t = km; t->ti_Tag != TAG_DONE; ++t)
+  for (t = km; t->ti_Tag != TAG_DONE; ++t)
     if (t->ti_Tag == KRN_SysBasePtr)
       SysBasePtr = (void**)t->ti_Data;
       
