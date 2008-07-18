@@ -2,8 +2,8 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
-BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o 
-FILES		:= bootstrap elfloader32
+BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o $(TARGETDIR)/hostlib.o
+FILES		:= bootstrap elfloader32 hostlib
 KOBJS_DEVICES := $(KOBJSDIR)/timer_device.o
 KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o\
 			   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
@@ -42,7 +42,7 @@ $(BINDIR)/boot/kernel: setup-mingw32 $(KOBJS)
 
 
 $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
-	$(HOST_CC) -mno-cygwin -o $@ $(BOBJS)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
 	 
 #MM
 clean ::
@@ -55,13 +55,13 @@ $(TARGETDIR)/%.o : %.S
 	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.d : %.c
-	%mkdepend_q
+	%mkdepend_q cc="$(KERNEL_CC) $(KERNEL_CFLAGS)"
 
 DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)
 
 $(TARGETDIR)/%.o : %.c
-	$(HOST_CC) -mno-cygwin -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
 
 #$(TARGETDIR)/%.o : %.S
 #	%compile_q opt="$(CFLAGS)"
