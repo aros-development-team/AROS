@@ -59,12 +59,13 @@
     struct Node * node;
 /* FIX !
 	FindName supplied with a NULL list defaults to the exec port list
+	Changed in lists.c as well....
 */
     if( !list )
         list = &SysBase->PortList;
 
 /*    ASSERT(list != NULL); */
-    ASSERT(node != NULL);
+    ASSERT(name);
 
     /* Look through the list */
     for (node=GetHead(list); node; node=GetSucc(node))
