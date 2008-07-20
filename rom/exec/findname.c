@@ -38,6 +38,8 @@
 
 	The list must contain complete Nodes and no MinNodes.
 
+	When supplied with a NULL list argument, defaults to the exec port list.
+
     EXAMPLE
 	struct List * list;
 	struct Node * node;
@@ -55,8 +57,13 @@
 {
     AROS_LIBFUNC_INIT
     struct Node * node;
+/* FIX !
+	FindName supplied with a NULL list defaults to the exec port list
+*/
+    if( !list )
+        list = &SysBase->PortList;
 
-    ASSERT(list != NULL);
+/*    ASSERT(list != NULL); */
     ASSERT(list != NULL);
 
     /* Look through the list */
