@@ -64,7 +64,7 @@
         list = &SysBase->PortList;
 
 /*    ASSERT(list != NULL); */
-    ASSERT(list != NULL);
+    ASSERT(node != NULL);
 
     /* Look through the list */
     for (node=GetHead(list); node; node=GetSucc(node))
