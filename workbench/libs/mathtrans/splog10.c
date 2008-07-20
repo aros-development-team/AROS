@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -108,7 +108,7 @@ AROS_LH1(float, SPLog10,
     /*               
                       ld M + E
         log(fnum1) =  --------
-                        ld e
+                        ld 10
     */
     
     return SPMul( SPAdd(ld_M, Exponent), InvLd10);
