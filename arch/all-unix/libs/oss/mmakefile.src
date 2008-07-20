@@ -13,7 +13,13 @@ FILES := funcs
 #MM     kernel-exec-includes \
 #MM     kernel-oop-includes \
 #MM     includes-copy
-#MM workbench-libs-oss-unix-module : hidd-unixio-stubs linklibs
+#MM workbench-libs-oss-unix-module : \
+#MM     hidd-unixio-stubs \
+#MM     linklibs-amiga \
+#MM     linklibs-arossupport \
+#MM     linklibs-clib \
+#MM     linklibs-libinit \
+#MM     linklibs-startup
 
 # If an arch specific oss is made also test-playoss will be made
 %build_prog mmake=test-playoss \
