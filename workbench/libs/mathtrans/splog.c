@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,7 @@
 
 /*
     FUNCTION
-      Calculate logarithm (base 10) of the given ffp number
+      Calculate logarithm (base e) of the given ffp number
 
     RESULT
       ffp-number
@@ -106,7 +106,7 @@ AROS_LH1(float, SPLog,
     ld_M = intern_SPLd((fnum1 & FFPMantisse_Mask) | 0x40);
     
     /*               ld M + E
-    ** log(fnum1) =  --------
+    ** ln(fnum1) =  --------
     **                 ld e
     */
     
