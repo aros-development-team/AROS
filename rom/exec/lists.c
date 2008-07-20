@@ -249,6 +249,8 @@ give some example programs and explain how lists work.<p>
 
 	The list must contain complete Nodes and no MinNodes.
 
+	When supplied with a NULL list argument, defaults to the exec port list.
+
     EXAMPLE
 	struct List * list;
 	struct Node * node;
@@ -267,7 +269,16 @@ give some example programs and explain how lists work.<p>
 {
     struct Node * node;
 
-    assert (list);
+/* FIX
+	FindNode when supplied with a NULL list searches the exec ports list.
+	per ampurtle, reference RKM 1.0
+	Hmmm... why is there also a separate FindName.c
+	Both files changed....
+*/
+    if( !list )
+	list = &SysBase->PortList;
+
+    /* assert (list); */
     assert (name);
 
     /* Look through the list */
