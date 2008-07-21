@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -34,23 +34,23 @@
       All other cases:
 
       (ld is the logarithm with base 2)
-      (ln is the logarithm with base e)
+      (log is the logarithm with base 10)
       y = M * 2^E
 
       <code>
-      ln y = ln ( M * 2^E ) =
+      log y = log ( M * 2^E ) =
 
-           = ln M + ln 2^E =
+            = log M + log 2^E =
 
-           = ln M + E * ln (2) =
+            = log M + E * log (2) =
 
-             ld M        ld 2
-           = ----- + E * ----- =      [ld 2 = 1]
-             ld 10       ld 10
+              ld M        ld 2
+            = ----- + E * ----- =      [ld 2 = 1]
+              ld 10       ld 10
 
-             ld M + E
-           = --------
-             ld 10
+              ld M + E
+            = --------
+              ld 10
       </code>
 
       ld 10 can be precalculated, of course.

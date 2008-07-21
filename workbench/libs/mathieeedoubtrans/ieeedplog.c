@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -109,7 +109,7 @@ AROS_LHQUAD1(double, IEEEDPLog,
     );
     /*      
                       ld M + E
-        log(fnum1) =  --------
+        ln(fnum1) =  --------
                         ld e
     */
     Set_Value64C(tmp, 0x3fe62e42, 0xfefa39ef ); /* ln 2*/
