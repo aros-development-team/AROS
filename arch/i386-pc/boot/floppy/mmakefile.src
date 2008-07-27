@@ -1,25 +1,30 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-.PHONY: $(DISTDIR)/aros-pc-i386.img
+.PHONY: $(DISTDIR)/aros-pc-i386.img $(DISTDIR)/system-pc-i386.img
 
 #MM bootdisk-pc-i386 : AROS		\
 #MM			bootdisk-setup-pc-i386 \
 #MM			kernel-package-pc-i386		\
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
-BOOT_FILES := \
-    C/Assign \
+#MM systemdisk-pc-i386 : AROS		\
+#MM			systemdisk-setup-pc-i386 \
+#MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+SYSTEM_FILES := \
     C/Shell \
-    C/Unpack
+    C/Unpack \
+    Libs/locale.library \
+    Libs/iffparse.library
 
 BOOT_EXTRA_FILES :=
 
 BOOT_TAR_EXECUTABLES := \
-    C/AddBuffers C/AddDatatypes C/Alias C/Ask  C/Avail C/Break C/CD \
-    C/ChangeTaskPri C/ConClip C/Copy C/Date C/Delete C/Dir C/Echo C/Else \
+    C/AddBuffers C/AddDatatypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
+    C/ChangeTaskPri C/Copy C/Date C/Delete C/Dir C/DiskChange C/Echo C/Else \
     C/EndCLI C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote System/Format \
-    C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List C/Lock \
+    C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List \
     C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
     C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
     C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
@@ -30,24 +35,37 @@ BOOT_TAR_EXECUTABLES := \
     Classes/Datatypes/text.datatype \
     Classes/Datatypes/picture.datatype \
     Classes/Datatypes/ilbm.datatype \
+    Classes/Datatypes/png.datatype \
     Classes/Zune/AboutWindow.mcc \
-    Classes/Zune/IconImage.mcc Classes/Zune/PrefsWindow.mcc \
+    Classes/Zune/Calendar.mcc \
+    Classes/Zune/Clock.mcc \
+    Classes/Zune/IconDrawerList.mui \
+    Classes/Zune/IconImage.mcc \
+    Classes/Zune/IconList.mui \
+    Classes/Zune/IconListView.mui \
+    Classes/Zune/IconDrawerList.mui \
+    Classes/Zune/IconVolumeList.mui Classes/Zune/PrefsWindow.mcc \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
-	Devs/clipboard.device Devs/serial.device \
+    Devs/clipboard.device \
+    Devs/serial.device \
     Devs/pipefs.handler \
     Libs/arosc.library Libs/asl.library Libs/commodities.library \
     Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
-    Libs/icon.library Libs/iffparse.library Libs/locale.library \
+    Libs/icon.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Prefs/Font \
     Prefs/Time \
     System/About System/FixFonts \
     System/Wanderer/Wanderer \
     System/Wanderer/Tools/Delete System/Wanderer/Tools/DiskInfo \
-    System/Wanderer/Tools/ExecuteCommand System/Wanderer/Tools/ExecuteStartup \
-    System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer System/Wanderer/Tools/WBRename \
+    System/Wanderer/Tools/ExecuteCommand \
+    System/Wanderer/Tools/ExecuteStartup \
+    System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer \
+    System/Wanderer/Tools/WBRename \
     Tools/HDToolBox \
-    Tools/Debug/sashimi
+    Tools/Debug/sashimi \
+    Utilities/Multiview
+
 
 BOOT_TAR_ICONS := \
     Devs.info \
@@ -61,32 +79,40 @@ BOOT_TAR_ICONS := \
     System/Wanderer/Wanderer.info \
     System/Wanderer/Tools/Delete.info System/Wanderer/Tools/DiskInfo.info \
     System/Wanderer/Tools/ExecuteCommand.info System/Wanderer/Tools/Info.info \
-	System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
-	Tools.info \
+    System/Wanderer/Tools/WBNewDrawer.info System/Wanderer/Tools/WBRename.info \
+    Tools.info \
     Tools/HDToolBox.info \
     Tools/Debug/Sashimi.info
 
+
 BOOT_TAR_MISC := \
     Devs/DataTypes/ELF Devs/DataTypes/ELF_EXE Devs/DataTypes/ILBM \
-    Devs/DataTypes/FTXT \
+    Devs/DataTypes/FTXT Devs/DOSDrivers/PIPEFS \
     Devs/Keymaps Devs/Mountlist \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 \
-	Locale/Countries Locale/Help \
-    Prefs/Env-Archive/SYS/font.prefs \
+    Locale/Countries Locale/Help \
+    Prefs/Env-Archive/hdtoolbox.prefs \
+    Prefs/Env-Archive/SYS/font.prefs Prefs/Env-Archive/SYS/theme.var \
+    Prefs/Env-Archive/SYS/def_Disk.info \
+    Prefs/Env-Archive/SYS/def_Drawer.info \
+    Prefs/Env-Archive/SYS/def_Project.info \
+    Prefs/Env-Archive/SYS/def_RAM.info \
+    Prefs/Env-Archive/SYS/def_Tool.info \
     S/Shell-Startup S/Startup-Sequence \
     System/Themes/Mason \
-    System/Themes/os3.1
+    System/Themes/$(AROS_GUI_THEME)
 
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
+SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub)
 BOOT_FILES += boot/grub/menu.lst boot/grub/stage1
-BOOT_TAR_MISC += boot/grub/menu.lst.DH0
+BOOT_TAR_MISC += boot/grub/menu.lst.DH0 boot/grub/stage2
 BOOT_EXTRA_FILES += $(BOOT_DEST_DIR)/boot/grub/stage2
 
-$(BOOT_DEST_DIR)/boot/grub/stage2:
+$(BOOT_DEST_DIR)/boot/grub/stage2 $(SYSTEM_DEST_DIR)/boot/grub/stage2:
 	@$(CP) $(AROSDIR)/boot/grub/stage2_hdisk $@
 endif
 
@@ -99,42 +125,61 @@ BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
 
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
+SYSTEM_DEST_FILES := $(foreach f, $(SYSTEM_FILES), $(SYSTEM_DEST_DIR)/$(f))
+
 #MM
 bootdisk-setup-pc-i386 :
 	%mkdirs_q "$(AROSDIR)/Tools/Boot Disks"
 	-$(RM) -rf $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)
-	%mkdirs_q $(BOOT_DEST_DIR)/C
-	%mkdirs_q $(BOOT_DEST_DIR)/S
-	%mkdirs_q $(BOOT_DEST_DIR)/Prefs
-	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive
-	%mkdirs_q $(BOOT_DEST_DIR)/Prefs/Env-Archive/SYS
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
+
+#MM
+systemdisk-setup-pc-i386 :
+	%mkdirs_q "$(AROSDIR)/Tools/Boot Disks"
+	-$(RM) -rf $(SYSTEM_DEST_DIR)
+	%mkdirs_q $(SYSTEM_DEST_DIR)
+	%mkdirs_q $(SYSTEM_DEST_DIR)/C
+	%mkdirs_q $(SYSTEM_DEST_DIR)/Libs
+	%mkdirs_q $(SYSTEM_DEST_DIR)/S
 
 #MM workbench-boot-pc-i386
 workbench-boot-pc-i386:
 	@$(NOP)
 
 bootdisk-pc-i386: $(DISTDIR)/aros-pc-i386.img
+systemdisk-pc-i386: $(DISTDIR)/system-pc-i386.img
 
-.PHONY: bootdisk-pc-i386-quick
+.PHONY: bootdisk-pc-i386-quick systemdisk-pc-i386-quick
 
 #MM
 bootdisk-pc-i386-quick : bootdisk-pc-i386
 
-$(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+#MM
+systemdisk-pc-i386-quick : systemdisk-pc-i386
+
+$(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
+ $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz \
+ $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
-	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(BOOT_DEST_DIR)
+	$(RM) $@
+	$(COPYTOAFS) $@ --name "AROS Boot Floppy" --size floppy1440 $(BOOT_DEST_DIR)
 	$(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU) $@
 
-$(BOOT_DEST_DIR)/S/Startup-Sequence:
+$(DISTDIR)/system-pc-i386.img: $(SYSTEM_DEST_FILES) \
+ $(SYSTEM_DEST_DIR)/AROS.pkg $(SYSTEM_DEST_DIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(DISTDIR)"
+	$(RM) $@
+	$(COPYTOAFS) $@ --name "AROS Live Floppy" --size floppy1440 $(SYSTEM_DEST_DIR)
+
+$(SYSTEM_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): install.c
 	@$(MKDIR) -p $(GENDIR)/$(CURDIR)
 	@$(HOST_CC) install.c -o $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 
-$(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
+$(SYSTEM_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
 	@$(RM) -rf $(OSGENDIR)/boot/bootdisk.compressed
 	@$(MKDIR) -p $(OSGENDIR)/boot/bootdisk.compressed
 	@$(MKDIR) -p $(OSGENDIR)/boot/bootdisk.compressed/S
@@ -144,7 +189,7 @@ $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
             cd $(BOOT_SRC_DIR) && \
             for path in $(BOOT_TAR_EXECUTABLES); do \
                 $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
-				strip --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/bootdisk.compressed/$$path ; \
+				$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/bootdisk.compressed/$$path ; \
             done && \
             for path in $(BOOT_TAR_ICONS); do \
                 $(SH) $(TOP)/$(CURDIR)/copypath $$path $(OSGENDIR)/boot/bootdisk.compressed ; \
@@ -156,22 +201,32 @@ $(BOOT_DEST_DIR)/AROS.pkg : $(addprefix $(BOOT_SRC_DIR)/,$(BOOT_TAR_FILES))
             $(RM) AROS.pkg && \
             $(TOP)/tools/package/pkg c AROS.pkg bootdisk.compressed && \
             bzip2 -9 AROS.pkg && \
-            mv -f AROS.pkg.bz2 $(BOOT_DEST_DIR)/AROS.pkg \
+            mv -f AROS.pkg.bz2 $(SYSTEM_DEST_DIR)/AROS.pkg \
         )
 
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
+	@$(CP) $< $@
+
+$(SYSTEM_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
 
 #MM
 install-bootdisk :
 	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
 	@read
-	@$(ECHO) "Writing AROS Image to floppy..."
+	@$(ECHO) "Writing AROS Boot Image to floppy..."
 	@dd if=$(DISTDIR)/aros-pc-i386.img of=/dev/fd0
 
 #MM
+install-systemdisk :
+	@$(ECHO) "Insert blank floppy-disk in /dev/fd0 and press enter."
+	@read
+	@$(ECHO) "Writing AROS System Image to floppy..."
+	@dd if=$(DISTDIR)/system-pc-i386.img of=/dev/fd0
+
+#MM
 install-pc-i386 :
-	@$(ECHO) -n "Copying aros kernel to /aros/boot directory... "
+	@$(ECHO) -n "Copying AROS kernel to /aros/boot directory... "
 	@cp $(BINDIR)/boot/aros-pc-i386 /aros/boot/
 	@$(ECHO) "Done."
 

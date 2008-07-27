@@ -17,7 +17,7 @@ Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
 Assign >NIL: Fonts: SYS:Fonts/Russian ADD
 Assign HELP:    LOCALE:Help DEFER
-Assign THEMES:  SYS:System/Themes
+Assign THEMES:  SYS:System/Themes >NIL:
 Assign IMAGES:  SYS:System/Images DEFER
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
@@ -77,17 +77,19 @@ If EXISTS C:RexxMast
     Run <NIL: >NIL: C:RexxMast
 EndIf
 
-C:Decoration <NIL: >NIL: 
+If EXISTS C:Decoration
+    C:Decoration <NIL: >NIL: 
+Endif
 
-Assign EXISTS Extras: >nil:
+Assign EXISTS Extras: >NIL:
 If WARN
     If Exists $EXTRASPATH
         Assign Extras: $EXTRASPATH
     EndIf
 Endif
-Assign EXISTS Extras: >nil:
+Assign EXISTS Extras: >NIL:
 If WARN
-    Assign Extras: sys:Extras
+    Assign Extras: SYS:Extras >NIL:
 EndIf
 
 If EXISTS ENV:SYS/Packages
