@@ -2,6 +2,7 @@ SYS:C/Unpack SYS:AROS.pkg RAM:
 
 RAM:
 C/Copy SYS:C/Shell RAM:C QUIET
+C/Copy SYS:Libs RAM:Libs QUIET
 
 C/Assign SYS:  RAM:
 C/Assign C:    SYS:C

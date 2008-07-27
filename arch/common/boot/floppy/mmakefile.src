@@ -3,3 +3,5 @@ include $(TOP)/config/make.cfg
 
 #MM- bootdisk : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- bootdisk-quick : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+#MM- systemdisk : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- systemdisk-quick : systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
