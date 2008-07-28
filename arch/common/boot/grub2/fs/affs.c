@@ -401,7 +401,7 @@ grub_affs_iterate_dir (grub_fshelp_node_t dir,
  fail:
   grub_free (node);
   grub_free (hashtable);
-  return 1;
+  return 0;
 }
 
 
