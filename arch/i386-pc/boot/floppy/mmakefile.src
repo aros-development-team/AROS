@@ -42,7 +42,7 @@ BOOT_TAR_EXECUTABLES := \
     Classes/Zune/IconDrawerList.mui \
     Classes/Zune/IconImage.mcc \
     Classes/Zune/IconList.mui \
-    Classes/Zune/IconListView.mui \
+    Classes/Zune/IconListview.mui \
     Classes/Zune/IconDrawerList.mui \
     Classes/Zune/IconVolumeList.mui Classes/Zune/PrefsWindow.mcc \
     Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
