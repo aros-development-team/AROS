@@ -431,6 +431,12 @@ char	*FindPartition(struct PartitionHandle *root)
 					success = name;
 					break;
 				}
+                if ((type->id[0]==83)&&(type->id[1]==70)&&(type->id[2]==83))
+                {
+                    D(bug("[INSTALLER.fp] Found SFS Partition! '%s'\n",name));
+                    success = name;
+                    break;
+                }
 			}
 		}
 	}
