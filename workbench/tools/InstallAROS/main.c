@@ -2714,6 +2714,23 @@ int main(int argc,char *argv[])
 		MUIA_ShowSelState, FALSE, MUIA_Selected, FALSE, MUIA_Disabled, TRUE,
 		End;
 
+	static char *opt_fstypes[] =
+	{
+		"FFS-Intl",
+		"SFS",
+		NULL
+	};
+
+#if GRUB == 2
+    Object * cycle_fstypesys = 
+        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 1, End;
+#else
+    Object * cycle_fstypesys = 
+        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 0, End;
+#endif
+    Object * cycle_fstypework = 
+        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
+
 	install_opts = AllocMem( sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	grub_opts = AllocMem( sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	source_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
@@ -2767,7 +2784,7 @@ int main(int argc,char *argv[])
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
 		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.5 (1.9.2007)",
-		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2007, The AROS Development Team. All rights reserved.",
+		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2008, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson & Nic Andrews",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
 		MUIA_Application_Base,        (IPTR) "INSTALLER",
@@ -2856,14 +2873,15 @@ int main(int argc,char *argv[])
 												Child, (IPTR) HVSpace,
 											End,
 										End,
-										Child, (IPTR) ColGroup(6),
+										Child, (IPTR) ColGroup(7),
 											Child, (IPTR) LLabel("Size:"),
 											Child, (IPTR) (sys_size = StringObject,
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
 												MUIA_Disabled, TRUE, End),
 											Child, (IPTR) LLabel("MB"),
-											Child, (IPTR) HVSpace,
+                                            Child, (IPTR) cycle_fstypesys,
+                                            Child, (IPTR) HVSpace,
 											Child, (IPTR) check_sizesys,
 											Child, (IPTR) LLabel("Specify Size"),
 										End,
@@ -2874,13 +2892,14 @@ int main(int argc,char *argv[])
 											Child, (IPTR) check_creatework,
 											Child, (IPTR) LLabel("Create"),
 										End,
-										Child, (IPTR) ColGroup(6),
+										Child, (IPTR) ColGroup(7),
 											Child, (IPTR) LLabel("Size:"),
 											Child, (IPTR) (work_size = StringObject,
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
 												MUIA_Disabled, TRUE, End),
 											Child, (IPTR) LLabel("MB"),
+                                            Child, (IPTR) cycle_fstypework,
 											Child, (IPTR) HVSpace,
 											Child, (IPTR) check_sizework,
 											Child, (IPTR) LLabel("Specify Size"),
@@ -3064,12 +3083,8 @@ int main(int argc,char *argv[])
 	}
 
 	/* Update GUI in response to certain user actions */
-	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-		(IPTR) dest_device, 3, MUIM_Set,
-		MUIA_Disabled, MUIV_TriggerValue);
-	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
-		(IPTR) dest_unit, 3, MUIM_Set,
-		MUIA_Disabled, MUIV_TriggerValue);
+
+    /* Notifications on partitioning action */
 	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 0,
 		(IPTR) check_sizesys, 3, MUIM_Set,
 		MUIA_Disabled, FALSE);
@@ -3079,21 +3094,41 @@ int main(int argc,char *argv[])
 	DoMethod(radio_part, MUIM_Notify, (IPTR) MUIA_Radio_Active, 2,
 		(IPTR) check_sizesys, 3, MUIM_Set,
 		MUIA_Disabled, TRUE);
+
+    /* Notifications on change of enable status of 'entry size of sys volume' */
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) dest_device, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) dest_unit, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Disabled, MUIV_EveryTime,
+		(IPTR) cycle_fstypesys, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_TriggerValue);
+
+    /* Notifications on change of selected status of 'entry size of sys volume' */
 	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) check_creatework, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
-	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-		(IPTR) check_creatework, 3, MUIM_Set,
-		MUIA_Selected, FALSE);
-	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-		(IPTR) check_sizework, 3, MUIM_Set,
-		MUIA_Disabled, MUIV_NotTriggerValue);
-	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-		(IPTR) check_sizework, 3, MUIM_Set,
-		MUIA_Selected, FALSE);
 	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) sys_size, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_sizesys, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_creatework, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+
+
+    /* Notifications on change of selected status of 'create work volume' */
+	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_sizework, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) cycle_fstypework, 3, MUIM_Set,
+		MUIA_Disabled, MUIV_NotTriggerValue);
+	DoMethod(check_creatework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		(IPTR) check_sizework, 3, MUIM_Set,
+		MUIA_Selected, FALSE);
+
 	DoMethod(check_sizework, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		(IPTR) work_size, 3, MUIM_Set,
 		MUIA_Disabled, MUIV_NotTriggerValue);
