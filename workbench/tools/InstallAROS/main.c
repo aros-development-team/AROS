@@ -4,9 +4,8 @@
 */
 
 #define INTUITION_NO_INLINE_STDARG
-//#define USE_FORMAT64
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -1930,21 +1929,16 @@ IPTR Install__MUIM_Format
 
 	if ((BOOL)XGET(check_formatsys,MUIA_Selected))
 	{
-#if	!defined(USE_FORMAT64)
-	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-	success = FormatPartition(dev_nametmp, kDstPartName, ID_INTER_FFS_DISK);
-#else
-	sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS INTL QUICK",dev_nametmp, kDstPartName);
-	D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
-	success = (BOOL)Execute(tmp, NULL, NULL);
-#endif
-	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
+    	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
+    	success = FormatPartition(dev_nametmp, kDstPartName, ID_INTER_FFS_DISK);
+
+    	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
 	get(check_work, MUIA_Selected, &option);
 	if (option && XGET(check_formatwork,MUIA_Selected))
 	{
-BPTR in;
+        BPTR in;
 		/* Format Vol1, if it's not already formated */
 		sprintf(fmt_nametmp,"Formatting '%s'...",work_Path);
 		D(bug("[INSTALLER] %s\n",fmt_nametmp));
@@ -1956,18 +1950,14 @@ BPTR in;
 #if	!defined(USE_FFS_ON_WORK)
 		D(bug("[INSTALLER] (info) Using 'SFS' on Work\n"));
 #if AROS_BIG_ENDIAN
-		FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
+		success = FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
 #else
 		/* atm, SFS is BE on AROS */
-		FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
+		success = FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
 #endif
-#elif	!defined(USE_FORMAT64)
-		D(bug("[INSTALLER] (info) Using FormatPartition\n"));
-		FormatPartition(dev_nametmp, kDstWorkName, ID_INTER_FFS_DISK);
 #else
-		sprintf(tmp,"SYS:Extras/aminet/Format64 DRIVE=%s NAME=%s FFS QUICK",dev_nametmp,kDstWorkName);
-		D(bug("[INSTALLER] (info) Using '%s'\n",tmp));
-		success = (BOOL)Execute(tmp, NULL, NULL);
+		D(bug("[INSTALLER] (info) Using FormatPartition\n"));
+		success = FormatPartition(dev_nametmp, kDstWorkName, ID_INTER_FFS_DISK);
 #endif
 		if (success)
 		{
