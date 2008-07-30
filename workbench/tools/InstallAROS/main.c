@@ -109,6 +109,8 @@ Object* 			show_formatsys = NULL;
 Object* 			show_formatwork = NULL;
 Object* 			check_formatsys = NULL;
 Object* 			check_formatwork = NULL;
+Object*             cycle_fstypesys = NULL;
+Object*             cycle_fstypework = NULL;
 
 Object* 			dest_volume = NULL;
 Object* 			work_volume = NULL;
@@ -1046,7 +1048,7 @@ IPTR Install__MUIM_Partition
 		set(data->back, MUIA_Disabled, TRUE);
 		set(data->proceed, MUIA_Disabled, TRUE);
 
-		char tmpcmd[100], tmparg[100];
+		char tmpcmd[150], tmparg[100];
 		get(dest_device, MUIA_String_Contents, &tmp);
 		get(dest_unit, MUIA_String_Integer, &option);
 		sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
@@ -1060,6 +1062,14 @@ IPTR Install__MUIM_Partition
 			sprintf(&tmparg, " SYSSIZE=%ld", tmp);
 			strcat(tmpcmd, tmparg);
 		}
+        
+        /* Specify SYS filesystem (defaults to FFSIntl)*/
+        get(cycle_fstypesys, MUIA_Cycle_Active, &tmp);
+        if ((int)tmp == 1)
+            strcat(tmpcmd, " SYSTYPE=SFS");
+        else
+            strcat(tmpcmd, " SYSTYPE=FFSIntl");
+    
 
 		/* Specify Work size */
 		get(check_creatework, MUIA_Selected, &option);
@@ -1077,6 +1087,13 @@ IPTR Install__MUIM_Partition
 				strcat(tmpcmd, " MAXWORK");
 			}
 		}
+
+        /* Specify WORK filesystem (defaults to SFS)*/
+        get(cycle_fstypework, MUIA_Cycle_Active, &tmp);
+        if ((int)tmp == 0)
+            strcat(tmpcmd, " WORKTYPE=FFSIntl");
+        else
+            strcat(tmpcmd, " WORKTYPE=SFS");
 
 		/* Specify whether to wipe disk or not */
 		get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
@@ -1935,6 +1952,13 @@ IPTR Install__MUIM_Format
 
 	if ((BOOL)XGET(check_formatsys,MUIA_Selected))
 	{
+
+        /* XXX HACK
+         * If partition is FFS -> it will format it for FFS
+         * If partition is SFS -> it will format it for SFS
+         * Correct way of doing things: read type for DH0 and DH1, apply correct
+         * type when formatting
+         */
     	D(bug("[INSTALLER] (info) Using FormatPartition\n"));
     	success = FormatPartition(dev_nametmp, kDstPartName, ID_INTER_FFS_DISK);
 
@@ -1953,18 +1977,16 @@ IPTR Install__MUIM_Format
 		set(data->gauge2, MUIA_Gauge_Current, 0);
 
 		sprintf(dev_nametmp,"%s:",work_Path);
-#if	!defined(USE_FFS_ON_WORK)
-		D(bug("[INSTALLER] (info) Using 'SFS' on Work\n"));
-#if AROS_BIG_ENDIAN
-		success = FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
-#else
-		/* atm, SFS is BE on AROS */
-		success = FormatPartition(dev_nametmp, kDstWorkName, ID_SFS_BE_DISK);
-#endif
-#else
+
+        /* XXX HACK
+         * If partition is FFS -> it will format it for FFS
+         * If partition is SFS -> it will format it for SFS
+         * Correct way of doing things: read type for DH0 and DH1, apply correct
+         * type when formatting (ID_INTER_FFS_DISK or ID_SFS_BE_DISK)
+         */
 		D(bug("[INSTALLER] (info) Using FormatPartition\n"));
 		success = FormatPartition(dev_nametmp, kDstWorkName, ID_INTER_FFS_DISK);
-#endif
+
 		if (success)
 		{
 				sprintf(tmp, "%s:", work_Path);
@@ -2722,14 +2744,11 @@ int main(int argc,char *argv[])
 	};
 
 #if GRUB == 2
-    Object * cycle_fstypesys = 
-        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 1, End;
+    cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 1, End;
 #else
-    Object * cycle_fstypesys = 
-        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 0, End;
+    cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 0, End;
 #endif
-    Object * cycle_fstypework = 
-        CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
+    cycle_fstypework = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
 
 	install_opts = AllocMem( sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	grub_opts = AllocMem( sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC );
@@ -2874,14 +2893,14 @@ int main(int argc,char *argv[])
 											End,
 										End,
 										Child, (IPTR) ColGroup(7),
+											Child, (IPTR) LLabel("Filesystem:"),
+                                            Child, (IPTR) cycle_fstypesys,
 											Child, (IPTR) LLabel("Size:"),
 											Child, (IPTR) (sys_size = StringObject,
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
 												MUIA_Disabled, TRUE, End),
 											Child, (IPTR) LLabel("MB"),
-                                            Child, (IPTR) cycle_fstypesys,
-                                            Child, (IPTR) HVSpace,
 											Child, (IPTR) check_sizesys,
 											Child, (IPTR) LLabel("Specify Size"),
 										End,
@@ -2893,14 +2912,14 @@ int main(int argc,char *argv[])
 											Child, (IPTR) LLabel("Create"),
 										End,
 										Child, (IPTR) ColGroup(7),
+											Child, (IPTR) LLabel("Filesystem:"),
+                                            Child, (IPTR) cycle_fstypework,
 											Child, (IPTR) LLabel("Size:"),
 											Child, (IPTR) (work_size = StringObject,
 												MUIA_String_Accept, "0123456789",
 												MUIA_String_Integer, 0,
 												MUIA_Disabled, TRUE, End),
 											Child, (IPTR) LLabel("MB"),
-                                            Child, (IPTR) cycle_fstypework,
-											Child, (IPTR) HVSpace,
 											Child, (IPTR) check_sizework,
 											Child, (IPTR) LLabel("Specify Size"),
 										End,
