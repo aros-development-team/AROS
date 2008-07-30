@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,8 @@
 
     SYNOPSIS
 
-        DEVICE, UNIT/N, SYSSIZE/K/N, WORKSIZE/K/N, MAXWORK/S, WIPE/S, FORCE/S, QUIET/S
+        DEVICE, UNIT/N, SYSSIZE/K/N, SYSTYPE/K, WORKSIZE/K/N, MAXWORK/S, 
+        WORKTYPE/K, WIPE/S, FORCE/S, QUIET/S
 
     LOCATION
 
@@ -59,6 +60,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/partition.h>
+#include <proto/utility.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -114,6 +116,22 @@ int main(void)
         if (ARG(QUIET) && !ARG(FORCE))
         {
             PutStr("ERROR: Cannot specify QUIET without FORCE.\n");
+            error = ERROR_REQUIRED_ARG_MISSING;
+        }
+
+        if (ARG(SYSTYPE) != (IPTR)NULL &&
+            Stricmp((CONST_STRPTR)ARG(SYSTYPE), "FFSIntl") != 0 &&
+            Stricmp((CONST_STRPTR)ARG(SYSTYPE), "SFS") != 0)
+        {
+            PutStr("ERROR: SYSTYPE must be either 'FFSIntl' or 'SFS'.\n");
+            error = ERROR_REQUIRED_ARG_MISSING;
+        }
+
+        if (ARG(WORKTYPE) != (IPTR)NULL &&
+            Stricmp((CONST_STRPTR)ARG(WORKTYPE), "FFSIntl") != 0 &&
+            Stricmp((CONST_STRPTR)ARG(WORKTYPE), "SFS") != 0)
+        {
+            PutStr("ERROR: WORKTYPE must be either 'FFSIntl' or 'SFS'.\n");
             error = ERROR_REQUIRED_ARG_MISSING;
         }
     }
@@ -303,15 +321,25 @@ int main(void)
         sysHighCyl = MBsToCylinders(sysSize, &diskPart->de);
 
         /* Create partitions in the RDB table */
-        sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl,
-				     "DH0", TRUE, &dos3);
+
+        /* Create DH0 partition (defaults to FFSIntl) */
+        if (ARG(SYSTYPE) == (IPTR)NULL || Stricmp((CONST_STRPTR)ARG(SYSTYPE), "SFS") != 0) 
+            sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE, &dos3);
+        else
+            sysPart = CreateRDBPartition(diskPart, 0, sysHighCyl, "DH0", TRUE, &sfs0);
+
         if (sysPart == NULL)
             error = ERROR_UNKNOWN;
+
         if (sysSize != 0
             && sysHighCyl < diskPart->de.de_HighCyl - diskPart->de.de_LowCyl)
         {
-            workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0,
-					  "DH1", FALSE, &sfs0);
+            /* Create DH1 partition (defaults to SFS) */
+            if (ARG(WORKTYPE) == (IPTR)NULL || Stricmp((CONST_STRPTR)ARG(WORKTYPE), "FFSIntl") != 0)
+                workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0, "DH1", FALSE, &sfs0);
+            else
+                workPart = CreateRDBPartition(diskPart, sysHighCyl + 1, 0, "DH1", FALSE, &dos3);
+
             if (workPart == NULL)
                 error = ERROR_UNKNOWN;
         }
