@@ -540,7 +540,8 @@ IPTR Install__MUIM_IC_NextStep
 
 	get(data->page,MUIA_Group_ActivePage, &this_page);
 
-	if ((EDoneStage == this_page)&&( this_page == data->instc_stage_next )) set(self, MUIA_InstallComplete, TRUE);  //ALL DONE!!
+	if ((EDoneStage == this_page)&&( this_page == data->instc_stage_next )) 
+        set(self, MUIA_InstallComplete, TRUE);  //ALL DONE!!
 
 	set(data->back, MUIA_Disabled, (BOOL)data->disable_back);
 
@@ -691,11 +692,27 @@ IPTR Install__MUIM_IC_NextStep
 		break;
 
 	case EPartitioningStage:
+
+        get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
+#if GRUB == 1
+        /* Warn user about partitiong DH0: to non FFS-Intl filesystem on GRUB */
+        if ((int)option == 0 || (int)option == 1)
+        {
+            IPTR fstype = (IPTR)NULL;
+            get(cycle_fstypesys, MUIA_Cycle_Active, &fstype);
+            if ((int)fstype != 0)
+            {
+                if(MUI_RequestA(data->installer, data->window, 0, "Warning", 
+                    "Continue Partitioning|*Cancel Partitioning", KMsgGRUBNonFFSWarning, NULL) != 1)
+                    return 0;
+            }
+        }
+#endif
 		data->disable_back = TRUE;
 
 		set(data->page,MUIA_Group_ActivePage, EPartitioningStage);
 
-		get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
+		
 		switch (option)
 		{
 			case 0:
@@ -2822,7 +2839,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.5 (1.9.2007)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.6 (31.07.2008)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2008, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson & Nic Andrews",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
