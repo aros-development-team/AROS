@@ -115,6 +115,14 @@ static const char* KMsgCancelDanger =
 static const char* KMsgProceed =
 "_Proceed";
 
+static const char* KMsgGRUBNonFFSWarning =
+"You have selected a filesystem different\n"
+"than FFS-Intl for the DH0 partition. Since\n"
+"this distribution of AROS is compiled  with\n"
+"GRUB bootloader, you will not be able to\n"
+"boot the system after installation\n\n"
+"Should the partitioning continue?\n";
+
 #define MUIM_IC_NextStep           (0x00335551)
 #define MUIM_IC_PrevStep           (0x00335552)
 #define MUIM_IC_UndoSteps          (0x00335553)
