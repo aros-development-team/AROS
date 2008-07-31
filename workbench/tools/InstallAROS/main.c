@@ -1527,6 +1527,8 @@ localecopydone:
 			"boot/grub/core.img",		"boot/grub/core.img",
 			"boot/grub/grub.cfg.DH0",	"boot/grub/grub.cfg",
 			"boot/grub/normal.mod",		"boot/grub/normal.mod",
+			"boot/grub/chain.mod",		"boot/grub/chain.mod",
+			"boot/grub/_chain.mod",		"boot/grub/_chain.mod",
 			"boot/grub/command.lst",	"boot/grub/command.lst",
 			"boot/grub/fs.lst",		"boot/grub/fs.lst",
 #elif GRUB == 1
@@ -1582,10 +1584,28 @@ localecopydone:
 
 		TEXT tmp[200];
 #if GRUB == 2
+		/* Add entry to boot MS Windows if present XXX NOT TESTED */
+		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
+		{
+			STRPTR menu_file_path = "boot/grub/grub.cfg";
+			sprintf(tmp, "%s:%s", dest_Path, menu_file_path);
+			BPTR menu_file = Open(tmp, MODE_READWRITE);
+			if (menu_file != NULL)
+			{
+				Seek(menu_file, 0, OFFSET_END);
+				FPrintf(menu_file,
+					"\nmenuentry \"Microsoft Windows\" {\n    chainloader (hd%ld,%ld)+1\n}\n\n",
+					boot_Unit, part_no + 1); /* GRUB2 counts partitions from 1 */
+				Close(menu_file);
+			}
+			D(bug("[INSTALLER] Windows partition found."
+				" Adding Windows option to GRUB2 menu.\n"));
+		}
+
 		sprintf(tmp,
 			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub",
-			boot_Device, boot_Unit, dest_Path, dest_Path);
+			boot_Device, boot_Unit, dest_Path);
 #elif GRUB == 1
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
