@@ -86,7 +86,7 @@
             return NULL;
         }
 
-        /* its fine, we'll start from here */
+        /* it's fine, we'll start from here */
         dl = dp->dvp_DevNode;
 
         /* lock the dos list here, to match the result of the next block */
@@ -164,7 +164,7 @@
             return dp;
         }
 
-        /* something real, work out what its relative to */
+        /* something real, work out what it's relative to */
     	if (Strnicmp(name, "PROGDIR:", 8) == 0) {
     	    cur = pr->pr_HomeDir;
 
@@ -183,7 +183,7 @@
         /* extract the volume name */
         len = SplitName(name, ':', vol, 0, sizeof(vol)-1);
 
-        /* move the name past it, its now relative to the volume */
+        /* move the name past it, it's now relative to the volume */
         name += len;
 
         /* if there wasn't one (or we found a lone ':'), then we need to
@@ -197,7 +197,7 @@
         if (len <= 1) {
 
             /* if we didn't find a ':' at all, then we'll need to return the
-             * lock that its relative to, so make a note */
+             * lock that it's relative to, so make a note */
             if (len == -1)
                 lock = cur;
 
@@ -357,7 +357,7 @@
         return NULL;
     }
 
-    /* real assigns. first, see if its just pointing to a single dir */
+    /* real assigns. first, see if it's just pointing to a single dir */
     if (dp->dvp_Flags != DVPF_ASSIGN) {
         /* just a plain assign, easy */
         dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
@@ -431,6 +431,7 @@ BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
         {
 	    STRPTR handler;
 	    struct FileSysStartupMsg *fssm;
+	    ULONG fssmFlags = 0;
 
 	    if (deviceNode->dn_Handler == NULL)
 	    {
@@ -451,13 +452,14 @@ BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
 		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
 		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
+		fssmFlags = fssm->fssm_Flags;
 	    }
 	    iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_Ext.dn_AROS.dn_DevName;
 	    iofs->io_Union.io_OpenDevice.io_DeviceNode = deviceNode;
 
 	    D(bug("Starting up %s\n", handler));
-	    if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags) ||
-        	!OpenDevice("packet.handler", 0, &iofs->IOFS, fssm->fssm_Flags))
+	    if (!OpenDevice(handler, 0, &iofs->IOFS, fssmFlags) ||
+        	!OpenDevice("packet.handler", 0, &iofs->IOFS, fssmFlags))
 	    {
 		/* Ok, this means that the handler was able to open. */
 		D(bug("Handler started\n"));
