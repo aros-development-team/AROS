@@ -104,7 +104,8 @@ aros_host_lib_suffix=""
 AC_CHECK_PROGS(aros_host_aclocal,[aclocal aclocal19])
 AC_CHECK_PROGS(aros_host_autoconf,[autoconf autoconf259 autoconf253])
 AC_CHECK_PROGS(aros_host_autoheader,[autoheader autoheader259 autoheader253])
-AC_CHECK_PROGS(aros_host_automake,[automake automake19])
+AC_CHECK_PROGS(aros_host_automake,[automake automake19 automake-1.9])
+AROS_REQUIRED(automake/automake19/automake-1.9, $aros_host_automake)
 
 case "$aros_host_cc" in
     *gcc*)

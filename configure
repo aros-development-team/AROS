@@ -3864,7 +3864,7 @@ fi
   test -n "$aros_host_autoheader" && break
 done
 
-for ac_prog in automake automake19
+for ac_prog in automake automake19 automake-1.9
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -3906,6 +3906,11 @@ fi
   test -n "$aros_host_automake" && break
 done
 
+if test "$aros_host_automake" = ""; then
+    { { echo "$as_me:$LINENO: error: automake/automake19/automake-1.9 is required to build AROS. Please install and run configure again." >&5
+echo "$as_me: error: automake/automake19/automake-1.9 is required to build AROS. Please install and run configure again." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 
 case "$aros_host_cc" in
     *gcc*)
