@@ -101,10 +101,12 @@ aros_host_incl="/usr/include"
 aros_host_exe_suffix="$EXEEXT"
 aros_host_lib_suffix=""
 
-AC_CHECK_PROGS(aros_host_aclocal,[aclocal aclocal19])
+AC_CHECK_PROGS(aros_host_aclocal,[aclocal aclocal19 aclocal-1.9])
 AC_CHECK_PROGS(aros_host_autoconf,[autoconf autoconf259 autoconf253])
 AC_CHECK_PROGS(aros_host_autoheader,[autoheader autoheader259 autoheader253])
 AC_CHECK_PROGS(aros_host_automake,[automake automake19 automake-1.9])
+
+AROS_REQUIRED(aclocal/aclocal19/aclocal-1.9, $aros_host_aclocal)
 AROS_REQUIRED(automake/automake19/automake-1.9, $aros_host_automake)
 
 case "$aros_host_cc" in
