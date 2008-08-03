@@ -203,6 +203,12 @@
 /arch/all-linux/hidd/mmakefile
 /arch/all-linux/hidd/libdefs.h
 
+# /arch/all-mingw32/
+/arch/all-mingw32/mmakefile
+
+# /arch/all-mingw32/bootstrap/
+/arch/all-mingw32/bootstrap/mmakefile
+
 # /arch/all-sdl/hidd/
 /arch/all-sdl/hidd/mmakefile
 
@@ -1280,9 +1286,6 @@
 
 # /workbench/c/Decoration/
 /workbench/c/Decoration/mmakefile
-
-# /workbench/c/Format/
-/workbench/c/Format/mmakefile
 
 # /workbench/c/HDTool/
 /workbench/c/HDTool/mmakefile
