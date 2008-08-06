@@ -12,7 +12,7 @@
 //#define ICONWINDOW_BUFFERLIST
 
 #ifdef __AROS__
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -34,6 +34,8 @@
 
 #include <dos/dos.h>
 #include <proto/dos.h>
+
+#include <proto/icon.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -460,7 +462,10 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                   *prefs = NULL;
 
   char                            *_newIconWin__Title = NULL;
-  
+
+
+	UBYTE						_newIconWin__VOLVIEWMODE = MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo;
+	
   BOOL                            isRoot = FALSE,
                                   isBackdrop = FALSE,
                                   hasToolbar = FALSE;
@@ -556,9 +561,10 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
   }
   else
   {
-    IPTR _newIconWin__TitleLen;
-    BPTR                      dir_info_lock;
-    char                      *dir_info_name;
+    BPTR	dir_info_lock = (BPTR)NULL;
+    char	*dir_info_name = NULL;
+    IPTR	_newIconWin__TitleLen = 0;
+
     D(bug("[iconwindow] %s: Directory Window\n", __PRETTY_FUNCTION__));
     _newIconWin__Title = (STRPTR) GetTagData(MUIA_IconWindow_Location, (IPTR)NULL, message->ops_AttrList);
     _newIconWin__TitleLen = strlen(_newIconWin__Title);
@@ -578,59 +584,76 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                  MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                 TAG_DONE);
     #endif
-                                
 
     if (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':')
     {
-      BPTR                      volume_info_lock = (BPTR) NULL;
-      char                      *volume_info_name = NULL;
-
 D(bug("[iconwindow] %s: Opening Volume Root Window\n", __PRETTY_FUNCTION__));
-
-      if ((volume_info_name = AllocVec(_newIconWin__TitleLen + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-      {
-        sprintf(volume_info_name, "%sdisk.info\0", _newIconWin__Title);
-        if ((volume_info_lock = Lock(volume_info_name, SHARED_LOCK)) !=(BPTR) NULL)
-        {
-          UnLock(volume_info_lock);
-        }
-        else
-        {
-          IPTR current_DispFlags = 0;
-D(bug("[iconwindow] %s: No disk.info found - setting show all files\n", __PRETTY_FUNCTION__));
-
-          GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
-          current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
-          SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, current_DispFlags);
-        }
-        FreeVec(volume_info_name);
-      }
+		if ((dir_info_name = AllocVec(_newIconWin__TitleLen + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+		{
+			sprintf(dir_info_name, "%sdisk.info\0", _newIconWin__Title);
+		}
+		if (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)
+		{
+			IPTR current_DispFlags = 0;
+D(bug("[iconwindow] %s: setting MUIV_IconWindow_VolumeInfoMode_ShowAll\n", __PRETTY_FUNCTION__));
+			GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
+			current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+			SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, current_DispFlags);
+		}
     }
+	else
+	{
+D(bug("[iconwindow] %s: Opening Drawer Window\n", __PRETTY_FUNCTION__));
+		if ((dir_info_name = AllocVec(_newIconWin__TitleLen + 6, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+		{
+			sprintf(dir_info_name, "%s.info\0", _newIconWin__Title);
+		}
+	}
 
-    dir_info_lock = (BPTR) NULL;
-    dir_info_name = NULL;
-
-    if ((dir_info_name = AllocVec(_newIconWin__TitleLen + 7, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+    if (dir_info_name)
     {
-      sprintf(dir_info_name, "%s", _newIconWin__Title);
-      AddPart(dir_info_name, ".info", _newIconWin__TitleLen + 7);
+		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
+		_newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
+		_newIconWin__WindowWidth = 300;
+		_newIconWin__WindowHeight = 300;
+		
+		if ((dir_info_lock = Lock(dir_info_name, SHARED_LOCK)) != (BPTR) NULL)
+		{
+			struct DiskObject 	*drawericon = NULL;
+			IPTR				geticon_error = NULL;
 
-      if ((dir_info_lock = Lock(dir_info_name, SHARED_LOCK)) != (BPTR) NULL)
-      {
-        UnLock(dir_info_lock);
+			UnLock(dir_info_lock);
 #warning "TODO: Read in the .info files coords and dimensions"
-D(bug("[iconwindow] %s: Gettin window coords/dimensions from drawer '.info' file\n", __PRETTY_FUNCTION__));
-      }
-      else
-      {
-D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\n", __PRETTY_FUNCTION__));
-        _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
-        _newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
-        _newIconWin__WindowWidth = 300;
-        _newIconWin__WindowHeight = 300;
-      }
-      FreeVec(dir_info_name);
+D(bug("[iconwindow] %s: Gettin window coords/dimensions from '%s'\n", __PRETTY_FUNCTION__, dir_info_name));
+			drawericon = GetIconTags(dir_info_name,
+						ICONGETA_FailIfUnavailable, FALSE,
+						ICONA_ErrorCode, &geticon_error,
+						TAG_DONE);
+		  
+			if (drawericon)
+			{
+				_newIconWin__WindowTop = drawericon->do_DrawerData->dd_NewWindow.TopEdge;
+				_newIconWin__WindowLeft = drawericon->do_DrawerData->dd_NewWindow.LeftEdge;
+				_newIconWin__WindowWidth = drawericon->do_DrawerData->dd_NewWindow.Width;
+				_newIconWin__WindowHeight = drawericon->do_DrawerData->dd_NewWindow.Height;
+			}
+		}
+		else
+		{
+D(bug("[iconwindow] %s: '%s' not found - Using default dimensions/coords\n", __PRETTY_FUNCTION__, dir_info_name));
+			if ((_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo) && (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':'))
+			{
+				IPTR current_DispFlags = 0;
+D(bug("[iconwindow] %s: setting 'SHOW ALL FILES' for volume with no .info file\n", __PRETTY_FUNCTION__));
+				GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
+				current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+				SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, current_DispFlags);
+			}
+		}
+		FreeVec(dir_info_name);
     }
+
+D(bug("[iconwindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
     _newIconWin__ExtensionGroupObj = MUI_NewObject(MUIC_Group,
         MUIA_InnerLeft,(0),
@@ -778,8 +801,10 @@ D(bug("[iconwindow] %s: No Drawer .info found - Using default dimensions/coords\
 
     D(bug("[iconwindow] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
 
+	data->iwd_Flag_VOLVIEWMODE        = _newIconWin__VOLVIEWMODE;
+
     data->iwd_Screen                  = _newIconWin__Screen;
-        
+
     data->iwd_Title                   = _newIconWin__Title;
 
     data->iwd_RootViewObj             = _newIconWin__RootViewObj;
