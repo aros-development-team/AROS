@@ -1,0 +1,11 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id: mmakefile 20923 2004-02-16 14:07:14Z chodorowski $
+
+include $(TOP)/config/make.cfg
+
+AROSBOOTSIGFILE := AROS.boot
+
+#MM
+arch-common-boot-generatebootsig:
+	@echo "$(ARCH)-$(CPU)" > $(AROSDIR)/$(AROSBOOTSIGFILE)
+
