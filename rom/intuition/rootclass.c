@@ -79,13 +79,6 @@ AROS_UFH3(IPTR, rootDispatcher,
             /* 
                 Get memory for the instance data. The class knows how much is
                 needed. NOTE: The object argument is actually the class!
-
-		RETHINK !!!
-		All class allocations were originally AllocVec() in Intuition to allow 
-		for easy release anywhere. A class pool is the preferred method, but
-		it may break some existing code... Hmmm, it's 2008, compatibility should be 		forgoten about because any Amigas still out there are either door stops or 
-		will be shortly. 
-		My preference is AllocVecPooled() (amp 2008-07-21)
             */
             
             o = (Object *) alloc
