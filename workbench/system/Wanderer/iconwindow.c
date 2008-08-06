@@ -630,12 +630,61 @@ D(bug("[iconwindow] %s: Gettin window coords/dimensions from '%s'\n", __PRETTY_F
 						ICONA_ErrorCode, &geticon_error,
 						TAG_DONE);
 		  
-			if (drawericon)
+			if ((drawericon) && (drawericon->do_DrawerData))
 			{
+D(bug("[iconwindow] %s: File has drawer data!\n", __PRETTY_FUNCTION__));
 				_newIconWin__WindowTop = drawericon->do_DrawerData->dd_NewWindow.TopEdge;
 				_newIconWin__WindowLeft = drawericon->do_DrawerData->dd_NewWindow.LeftEdge;
 				_newIconWin__WindowWidth = drawericon->do_DrawerData->dd_NewWindow.Width;
 				_newIconWin__WindowHeight = drawericon->do_DrawerData->dd_NewWindow.Height;
+			}
+			if ((drawericon) && (drawericon->do_Gadget.UserData > 0))
+			{
+D(bug("[iconwindow] %s: OS 2.x/3.x icons data: FLAGS %x [\n", __PRETTY_FUNCTION__, drawericon->do_DrawerData->dd_Flags));
+				switch (drawericon->do_DrawerData->dd_Flags)
+				{
+					case 0:
+						D(bug("Default"));
+						break;
+					case 1:
+						D(bug("Show only icons"));
+						break;
+					case 2:
+						D(bug("Show all files"));
+						break;
+					case 3:
+						D(bug("Show all files"));
+						break;
+					default:
+						D(bug("INVALID"));
+				}
+
+D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
+
+				switch (drawericon->do_DrawerData->dd_ViewModes)
+				{
+					case 0:
+						D(bug("Default (inherit from parent)"));
+						break;
+					case 1:
+						D(bug("View as icons"));
+						break;
+					case 2:
+						D(bug("View as text, sorted by name"));
+						break;
+					case 3:
+						D(bug("View as text, sorted by date"));
+						break;
+					case 4:
+						D(bug("View as text, sorted by size"));
+						break;
+					case 5:
+						D(bug("View as text, sorted by type"));
+						break;
+					default:
+						D(bug("INVALID"));
+				}
+D(bug("]\n"));
 			}
 		}
 		else
@@ -678,7 +727,6 @@ D(bug("[iconwindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, 
       TAG_DONE);
     }
   }
-  D(bug("[iconwindow] %s: Using dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
   #ifdef __AROS__
   _newIconWin__RootViewObj = (Object *) IconListviewObject,
