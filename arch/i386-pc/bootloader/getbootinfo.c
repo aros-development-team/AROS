@@ -66,3 +66,4 @@
 
     AROS_LIBFUNC_EXIT
 } /* GetBootInfo */
+
