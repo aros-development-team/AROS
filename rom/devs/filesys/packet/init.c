@@ -64,12 +64,13 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
     struct ph_mount *scan, *mount;
     struct DeviceNode *dn;
     char filename[MAXFILENAMELENGTH];
-    int i;
+    int i, n;
     BPTR seglist;
     BOOL loaded = FALSE;
     char pr_name[256];
     struct Message *msg;
     struct MsgPort *reply_port;
+    TEXT *dos_path;
     struct DosPacket *dp;
 
     D(bug("[packet] in open\n"));
@@ -180,9 +181,12 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         D(bug("[packet] started, process structure is 0x%08x\n", mount->process));
 
         /* build the startup packet */
-        /* XXX gurubook p645 suggests dp_Arg1 may be "BPTR TO BSTR (file name)",
-         * but I can't confirm this */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);
+        n = strlen(dn->dn_Name);
+        dos_path = AllocVec(n + 2, MEMF_PUBLIC);
+        sprintf(dos_path + 1, "%s:", dn->dn_Name);
+        dos_path[0] = n + 1;
+        dp->dp_Arg1 = (SIPTR)MKBADDR(dos_path);
         dp->dp_Arg2 = (SIPTR)MKBADDR(dn->dn_Startup);
         dp->dp_Arg3 = (SIPTR)MKBADDR(dn);
         dp->dp_Port = reply_port;
