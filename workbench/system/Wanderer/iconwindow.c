@@ -662,7 +662,7 @@ D(bug("]\n"));
 
 		if ((_newIconWin__Title[_newIconWin__TitleLen - 1] == ':') &&
 			(((geticon_isdefault) && (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo)) ||
-			(_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll))))
+			(_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)))
 		{
 D(bug("[iconwindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION__));
 			current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
