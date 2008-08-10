@@ -1263,16 +1263,17 @@ void wanderer_menufunc_window_snapshot(IPTR *flags)
     Object              *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
 	Object 				*iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 	char                *dir_info_name = NULL, *icon_info_name = NULL, *dir_name = XGET(window, MUIA_IconWindow_Location);
+	IPTR				dir_name_len = strlen(dir_name);
 	struct DiskObject 	*drawericon = NULL;
 	IPTR				geticon_error = NULL;
-	IPTR 				display_bits = 0;
+	IPTR 				display_bits = 0, sort_bits = 0;
 	BOOL 				snapshot_all = *flags;
 	BPTR 				tmp_lock;
 
 D(bug("[wanderer] wanderer_menufunc_window_snapshot()\n"));
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: Dir '%s'\n", dir_name));
 
-	if ((tmp_lock = Lock(dir_name, ACCESS_WRITE)) != (BPTR) NULL)
+	if ((tmp_lock = Lock(dir_name, ACCESS_WRITE)) != (BPTR)NULL)
 	{
 		UnLock(tmp_lock);
 
@@ -1300,10 +1301,25 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot ALL\n"));
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot WINDOW\n"));
 		}
 
-		if ((dir_info_name = AllocVec(strlen(dir_name) + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+		if (dir_name[dir_name_len - 1] == ':')
 		{
-			sprintf(dir_info_name, "%sdisk.info\0", dir_name);
-
+D(bug("[wanderer] %s: Updating Volume ROOT Icon\n", __PRETTY_FUNCTION__));
+			if ((dir_info_name = AllocVec(dir_name_len + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+			{
+				sprintf(dir_info_name, "%sdisk.info\0", dir_name);
+			}
+		}
+		else
+		{
+D(bug("[wanderer] %s: Updating Drawer Icon\n", __PRETTY_FUNCTION__));
+			if ((dir_info_name = AllocVec(dir_name_len + 6, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+			{
+				sprintf(dir_info_name, "%s.info\0", dir_name);
+			}
+		}
+		
+		if (dir_info_name)
+		{
 			if ((tmp_lock = Lock(dir_info_name, SHARED_LOCK)) != (BPTR) NULL)
 			{
 				UnLock(tmp_lock);
@@ -1317,7 +1333,7 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: '%s' found ..\n", dir_info_
 			{
 				//Get the default ICON ..
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: '%s' not found ..using default icon\n", dir_info_name));
-				drawericon = GetIconTags(dir_info_name,
+				drawericon = GetIconTags(dir_name,
 								ICONGETA_FailIfUnavailable, FALSE,
 								ICONA_ErrorCode, &geticon_error,
 								TAG_DONE);
@@ -1333,13 +1349,12 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: '%s' has no DRAWER data!\n"
 
 				drawericon->do_Gadget.UserData = 1;
 
-				drawericon->do_DrawerData->dd_NewWindow.TopEdge = 10;
-				drawericon->do_DrawerData->dd_NewWindow.LeftEdge = 10;
-				drawericon->do_DrawerData->dd_NewWindow.Width = 300;
-				drawericon->do_DrawerData->dd_NewWindow.Height = 300;
+				drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(window, MUIA_Window_TopEdge);
+				drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(window, MUIA_Window_LeftEdge);
+				drawericon->do_DrawerData->dd_NewWindow.Width = XGET(window, MUIA_Window_Width);
+				drawericon->do_DrawerData->dd_NewWindow.Height = XGET(window, MUIA_Window_Height);
 
 				GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
-
 				if (display_bits & ICONLIST_DISP_SHOWINFO)
 				{
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"));
@@ -1349,7 +1364,21 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"))
 				{
 					drawericon->do_DrawerData->dd_Flags = 2;
 				}
-				drawericon->do_DrawerData->dd_ViewModes = 0;
+
+#warning "TODO: Icon sort flags are only really for text list mode ... fix"
+				GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
+				if (sort_bits & ICONLIST_SORT_BY_DATE)
+				{
+					drawericon->do_DrawerData->dd_ViewModes = 3;
+				}
+				else if (sort_bits & ICONLIST_SORT_BY_SIZE)
+				{
+					drawericon->do_DrawerData->dd_ViewModes = 4;
+				}
+				else
+				{
+					drawericon->do_DrawerData->dd_ViewModes = 2;
+				}
 
 				PutDiskObject(dir_info_name, drawericon);
 			}
@@ -1359,6 +1388,8 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"))
 	else
 	{
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is write protected .. skipping ..\n"));
+		//DisplayBeep(data->wd_Screen);
+		DisplayBeep(NULL);
 	}
 }
 ///
@@ -1659,18 +1690,25 @@ D(bug("[wanderer] wanderer_menufunc_icon_snapshot: UNSNAPSHOT'ing\n"));
         {
 			node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 D(bug("[wanderer] wanderer_menufunc_icon_snapshot: entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
-			if (snapshot)
+			if (node->ile_DiskObj)
 			{
-				node->ile_DiskObj->do_CurrentX = node->ile_IconX;
-				node->ile_DiskObj->do_CurrentY = node->ile_IconY;
+				if (snapshot)
+				{
+					node->ile_DiskObj->do_CurrentX = node->ile_IconX;
+					node->ile_DiskObj->do_CurrentY = node->ile_IconY;
+				}
+				else
+				{
+					node->ile_DiskObj->do_CurrentX = NO_ICON_POSITION;
+					node->ile_DiskObj->do_CurrentY = NO_ICON_POSITION;
+				}
+				PutIconTagList(entry->filename, node->ile_DiskObj, icontags);
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: saved ..\n"));
 			}
 			else
 			{
-				node->ile_DiskObj->do_CurrentX = NO_ICON_POSITION;
-				node->ile_DiskObj->do_CurrentY = NO_ICON_POSITION;
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: icon has no diskobj!\n"));
 			}
-			PutIconTagList(entry->filename, node->ile_DiskObj, icontags);
-D(bug("[wanderer] wanderer_menufunc_icon_snapshot: saved ..\n"));
 		}
         else
         {
