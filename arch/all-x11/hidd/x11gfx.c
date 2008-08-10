@@ -325,8 +325,9 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 		    "|                                                          |\n"
 		    "|         Option \"Backingstore\"                            |\n"
 		    "|                                                          |\n"
-		    "| to the Device Section of your XFree86 config file, which |\n"
-		    "| usually is \"/etc/X11/XF86Config\".                        |\n"
+		    "| to the Device Section of your X Window config file,      |\n"
+		    "| which usually is \"/etc/X11/xorg.conf\"                    |\n"
+		    "| or \"/etc/X11/XFree86Config\"                              |\n"
 		    "+----------------------------------------------------------+\n"
 		    "\n");
 	    	break;
