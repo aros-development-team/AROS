@@ -7,7 +7,7 @@
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -37,6 +37,8 @@
 #include <proto/utility.h>
 
 #include <proto/dos.h>
+
+#include <proto/icon.h>
 
 #ifdef __AROS__
 #include <proto/workbench.h>
@@ -93,6 +95,10 @@
 #else
   #define  D(...)
 #endif
+#endif
+
+#ifndef NO_ICON_POSITION
+#define NO_ICON_POSITION                               (0x8000000) /* belongs to workbench/workbench.h */
 #endif
 
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, TAG_DONE)
@@ -999,6 +1005,8 @@ enum
     MEN_ICON_OPEN,
     MEN_ICON_RENAME,
     MEN_ICON_INFORMATION,
+	MEN_ICON_SNAPSHOT,
+	MEN_ICON_UNSNAPSHOT,
     MEN_ICON_DELETE,
     MEN_ICON_FORMAT
 };
@@ -1249,6 +1257,112 @@ void wanderer_menufunc_window_select()
 }
 ///
 
+///wanderer_menufunc_window_snapshot()
+void wanderer_menufunc_window_snapshot(IPTR *flags)
+{
+    Object              *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+	Object 				*iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+	char                *dir_info_name = NULL, *icon_info_name = NULL, *dir_name = XGET(window, MUIA_IconWindow_Location);
+	struct DiskObject 	*drawericon = NULL;
+	IPTR				geticon_error = NULL;
+	IPTR 				display_bits = 0;
+	BOOL 				snapshot_all = *flags;
+	BPTR 				tmp_lock;
+
+D(bug("[wanderer] wanderer_menufunc_window_snapshot()\n"));
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: Dir '%s'\n", dir_name));
+
+	if ((tmp_lock = Lock(dir_name, ACCESS_WRITE)) != (BPTR) NULL)
+	{
+		UnLock(tmp_lock);
+
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is writable .. continuing ..\n"));
+
+		if (snapshot_all == TRUE)
+		{
+			struct IconEntry    *entry = NULL;
+			struct TagItem  	*icontags = 
+			{
+				ICONPUTA_OnlyUpdatePosition, TRUE,
+				TAG_DONE
+			};
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot ALL\n"));
+
+//			if (entry->ile_DiskObj)
+//			{
+//        			entry->ile_DiskObj->do_CurrentX = entry->ile_IconX;
+//        			entry->ile_DiskObj->do_CurrentY = entry->ile_IconY;
+//              	    PutIconTagList(icon_info_name, entry->ile_DiskObj, icontags);
+//                      }
+		}
+		else
+		{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot WINDOW\n"));
+		}
+
+		if ((dir_info_name = AllocVec(strlen(dir_name) + 10, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+		{
+			sprintf(dir_info_name, "%sdisk.info\0", dir_name);
+
+			if ((tmp_lock = Lock(dir_info_name, SHARED_LOCK)) != (BPTR) NULL)
+			{
+				UnLock(tmp_lock);
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: '%s' found ..\n", dir_info_name));
+				drawericon = GetIconTags(dir_info_name,
+								ICONGETA_FailIfUnavailable, FALSE,
+								ICONA_ErrorCode, &geticon_error,
+								TAG_DONE);
+			}
+			else
+			{
+				//Get the default ICON ..
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: '%s' not found ..using default icon\n", dir_info_name));
+				drawericon = GetIconTags(dir_info_name,
+								ICONGETA_FailIfUnavailable, FALSE,
+								ICONA_ErrorCode, &geticon_error,
+								TAG_DONE);
+			}
+
+			if (drawericon != NULL)
+			{
+				if (drawericon->do_DrawerData == NULL)
+				{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: '%s' has no DRAWER data!\n", dir_info_name));
+					drawericon->do_DrawerData = AllocMem(sizeof(struct DrawerData), MEMF_CLEAR|MEMF_PUBLIC);
+				}
+
+				drawericon->do_Gadget.UserData = 1;
+
+				drawericon->do_DrawerData->dd_NewWindow.TopEdge = 10;
+				drawericon->do_DrawerData->dd_NewWindow.LeftEdge = 10;
+				drawericon->do_DrawerData->dd_NewWindow.Width = 300;
+				drawericon->do_DrawerData->dd_NewWindow.Height = 300;
+
+				GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+
+				if (display_bits & ICONLIST_DISP_SHOWINFO)
+				{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"));
+					drawericon->do_DrawerData->dd_Flags = 1;
+				}
+				else
+				{
+					drawericon->do_DrawerData->dd_Flags = 2;
+				}
+				drawericon->do_DrawerData->dd_ViewModes = 0;
+
+				PutDiskObject(dir_info_name, drawericon);
+			}
+			FreeVec(dir_info_name);
+		}
+	}
+	else
+	{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is write protected .. skipping ..\n"));
+	}
+}
+///
+
 ///wanderer_menufunc_window_view_icons(Object **pstrip)
 void wanderer_menufunc_window_view_icons(Object **pstrip)
 {
@@ -1259,7 +1373,7 @@ void wanderer_menufunc_window_view_icons(Object **pstrip)
 
     if (item != NULL && iconList != NULL)
     {
-        ULONG display_bits = 0, menu_view_state = 0;
+        IPTR display_bits = 0, menu_view_state = 0;
         GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
 
         GET(item, MUIA_Menuitem_Checked, &menu_view_state);
@@ -1489,17 +1603,18 @@ void wanderer_menufunc_icon_information()
         if ((IPTR)entry != MUIV_IconList_NextSelected_End)
         {
             BPTR lock, parent;
-	    STRPTR name;
+			STRPTR name;
 
-	    D(bug("[wanderer] wanderer_menufunc_icon_information: selected = '%s'\n", entry->filename));
-	    lock = Lock(entry->filename, ACCESS_READ);
-	    name = FilePart(entry->filename);
-	    if (name[0]) {
-        	parent = ParentDir(lock);
-        	UnLock(lock);
-	    } else
-		parent = lock;
-	    D(bug("[wanderer] wanderer_menufunc_icon_information: name = '%s' lock = 0x%08lX\n", name, lock));
+D(bug("[wanderer] wanderer_menufunc_icon_information: selected = '%s'\n", entry->filename));
+			lock = Lock(entry->filename, ACCESS_READ);
+			name = FilePart(entry->filename);
+			if (name[0]) {
+				parent = ParentDir(lock);
+				UnLock(lock);
+			} else
+				parent = lock;
+
+			D(bug("[wanderer] wanderer_menufunc_icon_information: name = '%s' lock = 0x%08lX\n", name, lock));
             WBInfo(parent, name, NULL);
 
             UnLock(parent);
@@ -1511,6 +1626,59 @@ void wanderer_menufunc_icon_information()
     } while (TRUE);
 }
 ///
+
+///wanderer_menufunc_icon_snapshot()
+void wanderer_menufunc_icon_snapshot(IPTR *flags)
+{
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextSelected_Start;
+    struct IconEntry      *node = NULL;
+	BOOL 				  snapshot  = *flags;
+	struct TagItem  	  *icontags = 
+	{
+		ICONPUTA_OnlyUpdatePosition, TRUE,
+		TAG_DONE
+	};
+
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot()\n"));
+	if (snapshot)
+	{
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: SNAPSHOT'ing\n"));
+	}
+	else
+	{
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: UNSNAPSHOT'ing\n"));
+	}
+
+    do
+    {
+        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR)&entry);
+        
+        if ((IPTR)entry != MUIV_IconList_NextSelected_End)
+        {
+			node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
+			if (snapshot)
+			{
+				node->ile_DiskObj->do_CurrentX = node->ile_IconX;
+				node->ile_DiskObj->do_CurrentY = node->ile_IconY;
+			}
+			else
+			{
+				node->ile_DiskObj->do_CurrentX = NO_ICON_POSITION;
+				node->ile_DiskObj->do_CurrentY = NO_ICON_POSITION;
+			}
+			PutIconTagList(entry->filename, node->ile_DiskObj, icontags);
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: saved ..\n"));
+		}
+        else
+        {
+            break;
+        }
+    } while (TRUE);
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: finished ..\n"));
+}
 
 ///DisposeCopyDisplay()
 /* dispose the file copy display */
@@ -1831,6 +1999,10 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
     DoMenuNotify(strip, MEN_WINDOW_CLOSE,           wanderer_menufunc_window_close,           NULL);
     DoMenuNotify(strip, MEN_WINDOW_UPDATE,          wanderer_menufunc_window_update,          NULL);
     DoMenuNotify(strip, MEN_WINDOW_CLEAR,           wanderer_menufunc_window_clear,           NULL);
+
+	DoMenuNotify(strip, MEN_WINDOW_SNAP_WIN,        wanderer_menufunc_window_snapshot,        FALSE);
+	DoMenuNotify(strip, MEN_WINDOW_SNAP_ALL,        wanderer_menufunc_window_snapshot,        TRUE);
+	
     DoMenuNotify(strip, MEN_WINDOW_SELECT,          wanderer_menufunc_window_select,          NULL);
     DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL,        wanderer_menufunc_window_view_icons,      strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       wanderer_menufunc_window_sort_name,       strip);
@@ -1843,6 +2015,8 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
     DoMenuNotify(strip, MEN_ICON_OPEN,              wanderer_menufunc_icon_open,              NULL);
     DoMenuNotify(strip, MEN_ICON_RENAME,            wanderer_menufunc_icon_rename,            NULL);
     DoMenuNotify(strip, MEN_ICON_INFORMATION,       wanderer_menufunc_icon_information,       NULL);
+    DoMenuNotify(strip, MEN_ICON_SNAPSHOT,          wanderer_menufunc_icon_snapshot,          TRUE);
+    DoMenuNotify(strip, MEN_ICON_UNSNAPSHOT,        wanderer_menufunc_icon_snapshot,          FALSE);
     DoMenuNotify(strip, MEN_ICON_DELETE,            wanderer_menufunc_icon_delete,            NULL);
     DoMenuNotify(strip, MEN_ICON_FORMAT,	    wanderer_menufunc_icon_format,	      NULL);
     
@@ -2410,8 +2584,8 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
     //    {NM_ITEM,  "Close","C" },
             {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
             {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
-    //    {NM_ITEM,  "Snapshot", "S" },
-    //    {NM_ITEM,  "Unsnapshot", "U" },
+			{NM_ITEM,  "Snapshot", "S", 0, 0, (APTR) MEN_ICON_SNAPSHOT},
+			{NM_ITEM,  "Unsnapshot", "U", 0, 0, (APTR) MEN_ICON_UNSNAPSHOT},
     //    {NM_ITEM,  "Leave Out", "L" },
     //    {NM_ITEM,  "Put Away", "P" },
             {NM_ITEM, NM_BARLABEL},
@@ -2473,8 +2647,8 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
     //    {NM_ITEM,  "Close","C" },
             {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
             {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
-    //    {NM_ITEM,  "Snapshot", "S" },
-    //    {NM_ITEM,  "Unsnapshot", "U" },
+			{NM_ITEM,  "Snapshot", "S", 0, 0, (APTR) MEN_ICON_SNAPSHOT},
+			{NM_ITEM,  "Unsnapshot", "U", 0, 0, (APTR) MEN_ICON_UNSNAPSHOT},
     //    {NM_ITEM,  "Leave Out", "L" },
     //    {NM_ITEM,  "Put Away", "P" },
             {NM_ITEM, NM_BARLABEL},

@@ -623,7 +623,6 @@ D(bug("[iconwindow] %s: Opening Drawer Window\n", __PRETTY_FUNCTION__));
 			IPTR				geticon_error = NULL;
 
 			UnLock(dir_info_lock);
-#warning "TODO: Read in the .info files coords and dimensions"
 D(bug("[iconwindow] %s: Gettin window coords/dimensions from '%s'\n", __PRETTY_FUNCTION__, dir_info_name));
 			drawericon = GetIconTags(dir_info_name,
 						ICONGETA_FailIfUnavailable, FALSE,
