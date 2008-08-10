@@ -1284,8 +1284,8 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is writable .. conti
 			struct IconEntry    *icon_entry = NULL;
 			struct TagItem  	*icon_tags = 
 			{
-				ICONPUTA_OnlyUpdatePosition, TRUE,
-				TAG_DONE
+				{ ICONPUTA_OnlyUpdatePosition, TRUE },
+				{ TAG_DONE, NULL                    }
 			};
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot ALL\n"));
 
@@ -1633,19 +1633,11 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
 	BOOL 				  snapshot  = *flags;
 	struct TagItem  	  *icontags = 
 	{
-		ICONPUTA_OnlyUpdatePosition, TRUE,
-		TAG_DONE
+		{ ICONPUTA_OnlyUpdatePosition, TRUE },
+		{ TAG_DONE, NULL                    }
 	};
 
 D(bug("[wanderer] wanderer_menufunc_icon_snapshot()\n"));
-	if (snapshot)
-	{
-D(bug("[wanderer] wanderer_menufunc_icon_snapshot: SNAPSHOT'ing\n"));
-	}
-	else
-	{
-D(bug("[wanderer] wanderer_menufunc_icon_snapshot: UNSNAPSHOT'ing\n"));
-	}
 
     do
     {
@@ -1654,7 +1646,7 @@ D(bug("[wanderer] wanderer_menufunc_icon_snapshot: UNSNAPSHOT'ing\n"));
         if ((IPTR)entry != MUIV_IconList_NextSelected_End)
         {
 			node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
-D(bug("[wanderer] wanderer_menufunc_icon_snapshot: entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
+D(bug("[wanderer] wanderer_menufunc_icon_snapshot: %s entry = '%s' @ %p, (%p)\n", (snapshot) ? "SNAPSHOT" : "UNSNAPSHOT", entry->filename, entry, node));
 			if (node->ile_DiskObj)
 			{
 				if (snapshot)
