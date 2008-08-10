@@ -1401,7 +1401,7 @@ void wanderer_menufunc_window_sort_name(Object **pstrip)
 
     if ( iconList != NULL)
     {
-        ULONG sort_bits = 0;
+        IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*name = date and size bit both NOT set*/
@@ -1424,7 +1424,7 @@ void wanderer_menufunc_window_sort_date(Object **pstrip)
 
     if ( iconList != NULL)
     {
-        ULONG sort_bits = 0;
+        IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*exclude size bit*/
@@ -1449,7 +1449,7 @@ void wanderer_menufunc_window_sort_size(Object **pstrip)
 
     if ( iconList != NULL)
     {
-        ULONG sort_bits = 0;
+        IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*exclude date bit*/
@@ -1474,7 +1474,7 @@ void wanderer_menufunc_window_sort_type(Object **pstrip)
 
     if ( iconList != NULL)
     {
-        ULONG sort_bits = 0;
+        IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*type = both date and size bits set*/
@@ -1496,7 +1496,7 @@ void wanderer_menufunc_window_sort_reverse(Object **pstrip)
 
     if (item != NULL && iconList != NULL)
     {
-        ULONG sort_bits = 0;
+        IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         if( XGET(item, MUIA_Menuitem_Checked) )
@@ -1524,7 +1524,7 @@ void wanderer_menufunc_window_sort_topdrawers(Object **pstrip)
 
     if (item != NULL && iconList != NULL)
     {
-        ULONG sort_bits = 0;
+        IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         if( XGET(item, MUIA_Menuitem_Checked) )
@@ -2792,7 +2792,7 @@ D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: isWorkbenchWindow\n"));
 
 #if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
         Object *window_IconList = NULL;
-        ULONG  current_DispFlags = 0;
+        IPTR  current_DispFlags = 0;
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: call get with MUIA_IconWindow_IconList\n"));
         GET(window, MUIA_IconWindow_IconList, &window_IconList);
 
