@@ -1953,7 +1953,7 @@ D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, 
     {
         if (!node->ile_DiskObj)
         {
-            if (!(node->ile_DiskObj = GetIconTags(node->ile_IconListEntry.filename, ICONGETA_FailIfUnavailable, FALSE, ICONGETA_Label, (IPTR)node->ile_IconListEntry.label, ICONA_ErrorCode, &geticon_error, TAG_DONE)))
+            if (!(node->ile_DiskObj = GetIconTags(node->ile_IconListEntry.filename, ICONGETA_GenerateImageMasks, TRUE, ICONGETA_FailIfUnavailable, FALSE, ICONGETA_Label, (IPTR)node->ile_IconListEntry.label, ICONA_ErrorCode, &geticon_error, TAG_DONE)))
             {
 D(bug("[IconList] %s: Failed to obtain Icon '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ile_IconListEntry.filename, geticon_error));
                 /*  We should probably remove this node if the icon cant be obtained ? */
@@ -2769,6 +2769,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         (
             message->filename, 
             ICONGETA_FailIfUnavailable,        FALSE,
+			ICONGETA_GenerateImageMasks,       TRUE,
             ICONGETA_Label,                    (IPTR) message->label,
             ICONA_ErrorCode,                   &geticon_error,
             TAG_DONE
