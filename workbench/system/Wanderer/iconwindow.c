@@ -621,12 +621,15 @@ D(bug("[iconwindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PR
 					break;
 				case 1:
 					D(bug("Show only icons"));
+					current_DispFlags |= ICONLIST_DISP_SHOWINFO;
 					break;
 				case 2:
 					D(bug("Show all files"));
+					current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
 					break;
 				case 3:
 					D(bug("Show all files"));
+					current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
 					break;
 				default:
 					D(bug("INVALID"));
