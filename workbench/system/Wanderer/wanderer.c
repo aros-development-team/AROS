@@ -1380,7 +1380,7 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"))
 					drawericon->do_DrawerData->dd_ViewModes = 2;
 				}
 
-				PutDiskObject(dir_info_name, drawericon);
+				PutDiskObject(dir_name, drawericon);
 			}
 			FreeVec(dir_info_name);
 		}
