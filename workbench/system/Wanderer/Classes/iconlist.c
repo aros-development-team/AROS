@@ -4453,7 +4453,7 @@ IPTR IconList__MUIM_IconList_NextSelected(struct IClass *CLASS, Object *obj, str
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
-    if ((IPTR)ent == (IPTR)MUIV_IconList_NextSelected_Start)
+    if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_Start)
     {
 D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
         node = (struct IconEntry *)GetHead(&data->icld_SelectionList);
@@ -4462,7 +4462,7 @@ D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
             node = (struct IconEntry *)((IPTR)node - ((IPTR)&node->ile_SelectionNode - (IPTR)node));
         }
     }
-    else if ((IPTR)ent != (IPTR)MUIV_IconList_NextSelected_End)
+    else if ((IPTR)ent != (IPTR)MUIV_IconList_NextIcon_End)
     {
         node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
         node_successor = GetSucc(&node->ile_SelectionNode);
@@ -4477,9 +4477,9 @@ D(bug("[IconList] %s: GetSucc() == NULL\n", __PRETTY_FUNCTION__));
 
     if (node == NULL)
     {
-D(bug("[IconList] %s: Returning MUIV_IconList_NextSelected_End\n", __PRETTY_FUNCTION__));
+D(bug("[IconList] %s: Returning MUIV_IconList_NextIcon_End\n", __PRETTY_FUNCTION__));
 
-        *message->entry = (struct IconList_Entry *)MUIV_IconList_NextSelected_End;
+        *message->entry = (struct IconList_Entry *)MUIV_IconList_NextIcon_End;
     }
     else
     {
@@ -4709,7 +4709,7 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
     else
     {
         // struct IconEntry      *icon     = NULL;
-        struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
+        struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
 
         /* get selected entries from SOURCE iconlist */
         DoMethod(message->obj, MUIM_IconList_NextSelected, (IPTR) &entry);

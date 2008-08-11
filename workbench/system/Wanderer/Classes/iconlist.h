@@ -42,8 +42,9 @@
 #define MUIM_IconList_DrawEntry         (MUIB_IconList | 0x00000012) /* Zune: V1 */
 #define MUIM_IconList_DrawEntryLabel    (MUIB_IconList | 0x00000013) /* Zune: V1 */
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000020) /* Zune: V1 */
-#define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000021) /* Zune: V1 */
-#define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000022) /* Zune: V1 */
+#define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000021) /* Zune: V1 */
+#define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000025) /* Zune: V1 */
+#define MUIM_IconList_NextVisible       (MUIB_IconList | 0x00000026) /* Zune: V1 */
 #define MUIM_IconList_Sort              (MUIB_IconList | 0x00000031) /* Zune: V1 */
 #define MUIM_IconList_CoordsSort        (MUIB_IconList | 0x00000032) /* Zune: V1 */
 #define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000033) /* Zune: V1 */
