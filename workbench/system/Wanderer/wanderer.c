@@ -992,6 +992,7 @@ enum
     MEN_WINDOW_VIEW_ICON,
     MEN_WINDOW_VIEW_DETAIL,
     MEN_WINDOW_VIEW_ALL,
+	MEN_WINDOW_VIEW_HIDDEN,
 
     MEN_WINDOW_SORT_NOW,
     MEN_WINDOW_SORT_NAME,
@@ -1371,7 +1372,7 @@ void wanderer_menufunc_window_view_icons(Object **pstrip)
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-    if (item != NULL && iconList != NULL)
+    if ((item != NULL) && (iconList != NULL))
     {
         IPTR display_bits = 0, menu_view_state = 0;
         GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
@@ -1385,6 +1386,36 @@ void wanderer_menufunc_window_view_icons(Object **pstrip)
         else
         {
             display_bits |= ICONLIST_DISP_SHOWINFO;
+        }
+
+        SET(iconList, MUIA_IconList_DisplayFlags, display_bits);
+        DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+///
+
+///wanderer_menufunc_window_view_hidden(Object **pstrip)
+void wanderer_menufunc_window_view_hidden(Object **pstrip)
+{
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_VIEW_HIDDEN);
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if ((item != NULL) && (iconList != NULL))
+    {
+        IPTR display_bits = 0, menu_view_state = 0;
+        GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+
+        GET(item, MUIA_Menuitem_Checked, &menu_view_state);
+
+        if (menu_view_state)
+        {
+            display_bits |= ICONLIST_DISP_SHOWHIDDEN;
+        }
+        else
+        {
+            display_bits &= ~ICONLIST_DISP_SHOWHIDDEN;
         }
 
         SET(iconList, MUIA_IconList_DisplayFlags, display_bits);
@@ -2004,6 +2035,7 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 	
     DoMenuNotify(strip, MEN_WINDOW_SELECT,          wanderer_menufunc_window_select,          NULL);
     DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL,        wanderer_menufunc_window_view_icons,      strip);
+    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN,     wanderer_menufunc_window_view_hidden,    strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       wanderer_menufunc_window_sort_name,       strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,       wanderer_menufunc_window_sort_type,       strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,       wanderer_menufunc_window_sort_date,       strip);
@@ -2534,10 +2566,6 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
         _NewWandIntMenu__OPTION_BACKDROP |= CHECKED;
     }
 
-#if defined(WANDERER_DEFAULT_SHOWALL)
-    _NewWandIntMenu__OPTION_SHOWALL |= CHECKED;
-#endif
-
     if ( isRoot )
     {
         struct NewMenu nm[] = {
@@ -2682,6 +2710,9 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     IPTR    useFont;
     Object *_NewWandDrawerMenu__menustrip;
 
+	Object *window_IconList = NULL;
+	IPTR 				current_DispFlags = 0, current_SortFlags = 0;
+
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 
     if ((isWorkbenchWindow = (message->drawer == NULL ? TRUE : FALSE)))
@@ -2789,9 +2820,6 @@ D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: isWorkbenchWindow\n"));
             );
         }
 
-#if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
-        Object *window_IconList = NULL;
-        IPTR  current_DispFlags = 0;
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: call get with MUIA_IconWindow_IconList\n"));
         GET(window, MUIA_IconWindow_IconList, &window_IconList);
 
@@ -2811,10 +2839,22 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList t
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'Hidden' Files\n"));
             current_DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
 #endif
+#if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n", current_DispFlags));
             SET(window_IconList, MUIA_IconList_DisplayFlags, current_DispFlags);
-        }
 #endif
+			/* Update menu's accordingly ... */
+			Object* tmp_MenuItem = NULL;
+			if ((tmp_MenuItem = FindMenuitem(_NewWandDrawerMenu__menustrip, MEN_WINDOW_VIEW_ALL)) != NULL)
+			{
+				SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_DispFlags & ICONLIST_DISP_SHOWINFO));
+			}
+			//if ((tmp_MenuItem = FindMenuitem(_NewWandDrawerMenu__menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
+			//{
+			//	SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
+			//}
+#warning "TODO: Set Sort menu correctly depending on IconList settings"
+        }
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: setup notifications\n"));
         DoMethod
         (
