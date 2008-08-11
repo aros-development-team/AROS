@@ -1290,7 +1290,7 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot ALL\n"));
 			if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
 			{
 				node = (struct IconEntry *)((IPTR)icon_entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: SNAPSHOT entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: SNAPSHOT entry = '%s' @ %p, (%p)\n", icon_entry->filename, icon_entry, node));
 				if (node->ile_DiskObj)
 				{
 					node->ile_DiskObj->do_CurrentX = node->ile_IconX;
