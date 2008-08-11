@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -62,6 +62,7 @@ struct Block
 };
 
 #if AROS_MUNGWALL_DEBUG
+#include <aros/debug.h> /* for MUNGWALLHEADER_SIZE */
 
 #define MUNGWALL_HEADER_ID 0x1ADEBCA1
 
