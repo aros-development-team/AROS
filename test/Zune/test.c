@@ -223,7 +223,7 @@ void volume_doubleclicked(void)
 {
     char buf[200];
     struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
-    DoMethod(volume_iconlist, MUIM_IconList_NextSelected, &ent);
+    DoMethod(volume_iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, &ent);
     if ((int)ent == MUIV_IconList_NextIcon_End) return;
 
     strcpy(buf,ent->label);
@@ -235,7 +235,7 @@ void drawer_doubleclicked(void)
 {
     struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
 
-    DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
+    DoMethod(drawer_iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, &ent);
     if ((int)ent == MUIV_IconList_NextIcon_End) return;
     set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
 }
