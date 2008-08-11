@@ -6,7 +6,7 @@ $Id$
 #ifndef __AROS__
 #define WANDERER_BUILTIN_ICONLIST 1
 #else
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -4437,11 +4437,11 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
 }
 ///
 
-///MUIM_IconList_NextSelected()
+///MUIM_IconList_NextIcon()
 /**************************************************************************
-MUIM_IconList_NextSelected
+MUIM_IconList_NextIcon
 **************************************************************************/
-IPTR IconList__MUIM_IconList_NextSelected(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextSelected *message)
+IPTR IconList__MUIM_IconList_NextIcon(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextIcon *message)
 {
     struct IconList_DATA    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *node = NULL;
@@ -4456,23 +4456,51 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_Start)
     {
 D(bug("[IconList] %s: Finding First Entry ..\n", __PRETTY_FUNCTION__));
-        node = (struct IconEntry *)GetHead(&data->icld_SelectionList);
-        if (node != NULL)
-        {
-            node = (struct IconEntry *)((IPTR)node - ((IPTR)&node->ile_SelectionNode - (IPTR)node));
-        }
+		if (message->nextflag == MUIV_IconList_NextIcon_Selected)
+		{
+			node = (struct IconEntry *)GetHead(&data->icld_SelectionList);
+			if (node != NULL)
+			{
+				node = (struct IconEntry *)((IPTR)node - ((IPTR)&node->ile_SelectionNode - (IPTR)node));
+			}
+		}
+		else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
+		{
+			node = (struct IconEntry *)GetHead(&data->icld_IconList);
+			while (node != NULL)
+			{
+				if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+					break;
+
+				node = GetSucc(&node->ile_IconNode);
+			}
+		}
     }
     else if ((IPTR)ent != (IPTR)MUIV_IconList_NextIcon_End)
     {
-        node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
-        node_successor = GetSucc(&node->ile_SelectionNode);
-        if (node_successor != NULL)
-            node = (struct IconEntry *)((IPTR)node_successor - ((IPTR)&node->ile_SelectionNode - (IPTR)node));
-        else
-        {
+		node = (struct IconEntry *)((IPTR)ent - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
+		if (message->nextflag == MUIV_IconList_NextIcon_Selected)
+		{
+			node_successor = GetSucc(&node->ile_SelectionNode);
+			if (node_successor != NULL)
+				node = (struct IconEntry *)((IPTR)node_successor - ((IPTR)&node->ile_SelectionNode - (IPTR)node));
+			else
+			{
 D(bug("[IconList] %s: GetSucc() == NULL\n", __PRETTY_FUNCTION__));
-            node = NULL;
-        }
+				node = NULL;
+			}
+		}
+		else if (message->nextflag == MUIV_IconList_NextIcon_Visible)
+		{
+			node = GetSucc(&node->ile_IconNode);
+			while (node != NULL)
+			{
+				if (node->ile_Flags & ICONENTRY_FLAG_VISIBLE)
+					break;
+
+				node = GetSucc(&node->ile_IconNode);
+			}
+		}
     }
 
     if (node == NULL)
@@ -4492,28 +4520,21 @@ D(bug("[IconList] %s: Returning entry for '%s'\n", __PRETTY_FUNCTION__, node->il
 }
 ///
 
-
-///MUIM_IconList_NextVisible()
+///MUIM_IconList_GetIconPrivate()
 /**************************************************************************
-MUIM_IconList_NextVisible
+MUIM_IconList_GetIconPrivate
 **************************************************************************/
-IPTR IconList__MUIM_IconList_NextVisible(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextSelected *message)
+IPTR IconList__MUIM_IconList_GetIconPrivate(struct IClass *CLASS, Object *obj, struct MUIP_IconList_GetIconPrivate *message)
 {
     struct IconList_DATA    *data = INST_DATA(CLASS, obj);
     struct IconEntry       *node = NULL;
-    struct IconList_Entry  *ent = NULL;
-    IPTR                    node_successor = NULL;
-
+	
     if (message->entry == NULL) return (IPTR)NULL;
-    ent = *message->entry;
 
-D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+	node = (struct IconEntry *)((IPTR)message->entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 
-    *message->entry = (struct IconList_Entry *)MUIV_IconList_NextIcon_End;
-
-    return (IPTR)NULL;
+	return node;
 }
-///
 
 ///MUIM_CreateDragImage()
 /**************************************************************************
@@ -4735,7 +4756,7 @@ D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window
         struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
 
         /* get selected entries from SOURCE iconlist */
-        DoMethod(message->obj, MUIM_IconList_NextSelected, (IPTR) &entry);
+        DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
 
         /* check if dropped on an icon on the iconlist area */
         if (entry)
@@ -5286,8 +5307,8 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_DestroyEntry:        return IconList__MUIM_IconList_DestroyEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_DrawEntry:           return IconList__MUIM_IconList_DrawEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_DrawEntryLabel:      return IconList__MUIM_IconList_DrawEntryLabel(CLASS, obj, (APTR)message);
-        case MUIM_IconList_NextSelected:        return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
-        case MUIM_IconList_NextVisible:         return IconList__MUIM_IconList_NextVisible(CLASS, obj, (APTR)message);
+        case MUIM_IconList_NextIcon:            return IconList__MUIM_IconList_NextIcon(CLASS, obj, (APTR)message);
+        case MUIM_IconList_GetIconPrivate:      return IconList__MUIM_IconList_GetIconPrivate(CLASS, obj, (APTR)message);
         case MUIM_IconList_UnselectAll:         return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
         case MUIM_IconList_Sort:                return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
         case MUIM_IconList_CoordsSort:          return IconList__MUIM_IconList_CoordsSort(CLASS, obj, (APTR)message);

@@ -430,10 +430,10 @@ HOOKPROTO(Wanderer__HookFunc_ActionFunc, void, Object *obj, struct IconWindow_Ac
   IPTR                  offset;
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
 
-        DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR)&ent);
+        DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent);
         if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_End)
         {
-D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSelected returned MUIV_IconList_NextSelected_TAG_DONE)\n"));
+D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextIcon returned MUIV_IconList_NextIcon_TAG_DONE)\n"));
             return;
         }
 
@@ -580,7 +580,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
             /* process all selected entries */
             do
             {
-                    DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
+                    DoMethod(drop->source_iconlistobj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &ent);
 
                     /* if not end of selection, process */
                     if ( (int)ent != MUIV_IconList_NextIcon_End)
@@ -638,7 +638,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                 /* process all selected entries */
                 do 
                 {
-                    DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
+                    DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &ent);
                     /*  if not end of selection, process */
                     if ( (int)ent != MUIV_IconList_NextIcon_End )
                     {
@@ -1268,112 +1268,97 @@ void wanderer_menufunc_window_snapshot(IPTR *flags)
 	IPTR				geticon_error = NULL;
 	IPTR 				display_bits = 0, sort_bits = 0;
 	BOOL 				snapshot_all = *flags;
-	BPTR 				tmp_lock;
 
 D(bug("[wanderer] wanderer_menufunc_window_snapshot()\n"));
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: Dir '%s'\n", dir_name));
 
-	if ((tmp_lock = Lock(dir_name, ACCESS_WRITE)) != (BPTR)NULL)
+	if (snapshot_all == TRUE)
 	{
-		UnLock(tmp_lock);
-
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is writable .. continuing ..\n"));
-
-		if (snapshot_all == TRUE)
+		struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+		struct IconEntry      *node = NULL;
+		struct TagItem  	  icon_tags[] = 
 		{
-			struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
-			struct IconEntry      *node = NULL;
-			struct TagItem  	  icon_tags[] = 
-			{
-				{ ICONPUTA_OnlyUpdatePosition, TRUE },
-				{ TAG_DONE, NULL                    }
-			};
+			{ ICONPUTA_OnlyUpdatePosition, TRUE },
+			{ TAG_DONE, NULL                    }
+		};
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot ALL\n"));
 
-			do
+		do
+		{
+			DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
+
+			if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
 			{
-				DoMethod(iconList, MUIM_IconList_NextVisible, (IPTR)&icon_entry);
-				
-				if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
-				{
-					node = (struct IconEntry *)((IPTR)icon_entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
+				node = (struct IconEntry *)((IPTR)icon_entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: SNAPSHOT entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
-					if (node->ile_DiskObj)
-					{
-							node->ile_DiskObj->do_CurrentX = node->ile_IconX;
-							node->ile_DiskObj->do_CurrentY = node->ile_IconY;
-						PutIconTagList(icon_entry->filename, node->ile_DiskObj, icon_tags);
-					}
-					else
-					{
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: icon has no diskobj!\n"));
-					}
+				if (node->ile_DiskObj)
+				{
+					node->ile_DiskObj->do_CurrentX = node->ile_IconX;
+					node->ile_DiskObj->do_CurrentY = node->ile_IconY;
+					PutIconTagList(icon_entry->filename, node->ile_DiskObj, icon_tags);
 				}
 				else
 				{
-					break;
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: icon has no diskobj!\n"));
 				}
-			} while (TRUE);
-		}
-		else
-		{
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot WINDOW\n"));
-		}
-
-		drawericon = GetIconTags(dir_name,
-							ICONGETA_FailIfUnavailable, FALSE,
-							ICONA_ErrorCode, &geticon_error,
-							TAG_DONE);
-
-		if (drawericon != NULL)
-		{
-			if (drawericon->do_DrawerData == NULL)
-			{
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: Icon for '%s' has no DRAWER data!\n", dir_name));
-				drawericon->do_DrawerData = AllocMem(sizeof(struct DrawerData), MEMF_CLEAR|MEMF_PUBLIC);
-			}
-
-			drawericon->do_Gadget.UserData = 1;
-
-			drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(window, MUIA_Window_TopEdge);
-			drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(window, MUIA_Window_LeftEdge);
-			drawericon->do_DrawerData->dd_NewWindow.Width = XGET(window, MUIA_Window_Width);
-			drawericon->do_DrawerData->dd_NewWindow.Height = XGET(window, MUIA_Window_Height);
-
-			GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
-			if (display_bits & ICONLIST_DISP_SHOWINFO)
-			{
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"));
-				drawericon->do_DrawerData->dd_Flags = 1;
 			}
 			else
 			{
-				drawericon->do_DrawerData->dd_Flags = 2;
+				break;
 			}
-
-#warning "TODO: Icon sort flags are only really for text list mode ... fix"
-			GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
-			if (sort_bits & ICONLIST_SORT_BY_DATE)
-			{
-				drawericon->do_DrawerData->dd_ViewModes = 3;
-			}
-			else if (sort_bits & ICONLIST_SORT_BY_SIZE)
-			{
-				drawericon->do_DrawerData->dd_ViewModes = 4;
-			}
-			else
-			{
-				drawericon->do_DrawerData->dd_ViewModes = 2;
-			}
-
-			PutDiskObject(dir_name, drawericon);
-		}
+		} while (TRUE);
 	}
 	else
 	{
-D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is write protected .. skipping ..\n"));
-		//DisplayBeep(data->wd_Screen);
-		DisplayBeep(NULL);
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot WINDOW\n"));
+	}
+
+	drawericon = GetIconTags(dir_name,
+						ICONGETA_FailIfUnavailable, FALSE,
+						ICONA_ErrorCode, &geticon_error,
+						TAG_DONE);
+
+	if (drawericon != NULL)
+	{
+		if (drawericon->do_DrawerData == NULL)
+		{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: Icon for '%s' has no DRAWER data!\n", dir_name));
+			drawericon->do_DrawerData = AllocMem(sizeof(struct DrawerData), MEMF_CLEAR|MEMF_PUBLIC);
+		}
+
+		drawericon->do_Gadget.UserData = 1;
+
+		drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(window, MUIA_Window_TopEdge);
+		drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(window, MUIA_Window_LeftEdge);
+		drawericon->do_DrawerData->dd_NewWindow.Width = XGET(window, MUIA_Window_Width);
+		drawericon->do_DrawerData->dd_NewWindow.Height = XGET(window, MUIA_Window_Height);
+
+		GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+		if (display_bits & ICONLIST_DISP_SHOWINFO)
+		{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: ICONLIST_DISP_SHOWINFO\n"));
+			drawericon->do_DrawerData->dd_Flags = 1;
+		}
+		else
+		{
+			drawericon->do_DrawerData->dd_Flags = 2;
+		}
+
+#warning "TODO: Icon sort flags are only really for text list mode ... fix"
+		GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
+		if (sort_bits & ICONLIST_SORT_BY_DATE)
+		{
+			drawericon->do_DrawerData->dd_ViewModes = 3;
+		}
+		else if (sort_bits & ICONLIST_SORT_BY_SIZE)
+		{
+			drawericon->do_DrawerData->dd_ViewModes = 4;
+		}
+		else
+		{
+			drawericon->do_DrawerData->dd_ViewModes = 2;
+		}
+		PutDiskObject(dir_name, drawericon);
 	}
 }
 ///
@@ -1574,7 +1559,7 @@ void wanderer_menufunc_icon_rename(void)
     
     do
     {
-        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
         
         if ((int)entry != MUIV_IconList_NextIcon_End)
         {
@@ -1613,7 +1598,7 @@ void wanderer_menufunc_icon_information()
     
     do
     {
-        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR)&entry);
+        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
         
         if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
@@ -1660,7 +1645,7 @@ D(bug("[wanderer] wanderer_menufunc_icon_snapshot()\n"));
 
     do
     {
-        DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR)&entry);
+        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
         
         if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
@@ -1870,7 +1855,7 @@ void wanderer_menufunc_icon_delete(void)
     struct Hook displayDelHook;
     ULONG updatedIcons;
 
-    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
     displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
     displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
     
@@ -1888,7 +1873,7 @@ void wanderer_menufunc_icon_delete(void)
                 CopyContent( NULL, entry->filename, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
                 updatedIcons++;
             }
-            DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+            DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
         } 
         while ( (int)entry != MUIV_IconList_NextIcon_End );
         DisposeCopyDisplay(&dobjects);
@@ -1912,7 +1897,7 @@ void wanderer_menufunc_icon_format(void)
     struct Hook displayCopyHook;
     struct Hook displayDelHook;
 
-    DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
+    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
     
     /* Process only first selected entry */
     if ((int)entry != MUIV_IconList_NextIcon_End)
