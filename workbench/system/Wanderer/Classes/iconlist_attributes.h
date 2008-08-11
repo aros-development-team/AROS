@@ -9,8 +9,11 @@
 /*** Identifier base ********************************************************/
 #define MUIB_IconList                      (MUIB_ZUNE | 0x00042000)
 
-#define MUIV_IconList_NextIcon_Start   0
-#define MUIV_IconList_NextIcon_End     1
+#define MUIV_IconList_NextIcon_Start      0
+#define MUIV_IconList_NextIcon_End        1
+
+#define MUIV_IconList_NextIcon_Selected   2
+#define MUIV_IconList_NextIcon_Visible    3
 
 /*** Attributes *************************************************************/
 #define MUIA_IconList_DoubleClick                           (MUIB_IconList | 0x00000000) /* Zune: V1 ..G BOOL                      */
