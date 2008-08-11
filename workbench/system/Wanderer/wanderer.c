@@ -1281,20 +1281,39 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is writable .. conti
 
 		if (snapshot_all == TRUE)
 		{
-			struct IconEntry    *icon_entry = NULL;
-			struct TagItem  	icon_tags[] = 
+			struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+			struct IconEntry      *node = NULL;
+			struct TagItem  	  icon_tags[] = 
 			{
 				{ ICONPUTA_OnlyUpdatePosition, TRUE },
 				{ TAG_DONE, NULL                    }
 			};
 D(bug("[wanderer] wanderer_menufunc_window_snapshot: snapshot ALL\n"));
 
-//			if (icon_entry->ile_DiskObj)
-//			{
-//        			icon_entry->ile_DiskObj->do_CurrentX = icon_entry->ile_IconX;
-//        			icon_entry->ile_DiskObj->do_CurrentY = icon_entry->ile_IconY;
-//                  PutIconTagList(icon_entry->, icon_entry->ile_DiskObj, icon_tags);
-//          }
+			do
+			{
+				DoMethod(iconList, MUIM_IconList_NextVisible, (IPTR)&icon_entry);
+				
+				if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
+				{
+					node = (struct IconEntry *)((IPTR)icon_entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: SNAPSHOT entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
+					if (node->ile_DiskObj)
+					{
+							node->ile_DiskObj->do_CurrentX = node->ile_IconX;
+							node->ile_DiskObj->do_CurrentY = node->ile_IconY;
+						PutIconTagList(icon_entry->filename, node->ile_DiskObj, icon_tags);
+					}
+					else
+					{
+D(bug("[wanderer] wanderer_menufunc_window_snapshot: icon has no diskobj!\n"));
+					}
+				}
+				else
+				{
+					break;
+				}
+			} while (TRUE);
 		}
 		else
 		{
