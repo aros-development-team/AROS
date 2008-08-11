@@ -428,10 +428,10 @@ HOOKPROTO(Wanderer__HookFunc_ActionFunc, void, Object *obj, struct IconWindow_Ac
     {
         static unsigned char  buf[1024];
   IPTR                  offset;
-        struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+        struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
 
         DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR)&ent);
-        if ((IPTR)ent == (IPTR)MUIV_IconList_NextSelected_End)
+        if ((IPTR)ent == (IPTR)MUIV_IconList_NextIcon_End)
         {
 D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextSelected returned MUIV_IconList_NextSelected_TAG_DONE)\n"));
             return;
@@ -563,7 +563,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
     struct Process *child;
 
     struct IconList_Drop *drop = (struct IconList_Drop *)msg->drop;
-        struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+        struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
     struct Wanderer_FileEntry *file_recordtmp;
 
     struct Wanderer_FilelistMsg *message_filelist = AllocMem( sizeof(struct Wanderer_FilelistMsg), MEMF_CLEAR|MEMF_PUBLIC );
@@ -583,14 +583,14 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                     DoMethod(drop->source_iconlistobj, MUIM_IconList_NextSelected, (IPTR) &ent);
 
                     /* if not end of selection, process */
-                    if ( (int)ent != MUIV_IconList_NextSelected_End)
+                    if ( (int)ent != MUIV_IconList_NextIcon_End)
                     {
                 file_recordtmp = AllocVec( sizeof(struct Wanderer_FileEntry), MEMF_CLEAR|MEMF_PUBLIC );
                 strcpy( (char*)&file_recordtmp->filename, ent->filename);
                 AddTail(&message_filelist->files, (struct Node *)file_recordtmp);
                     }
             } 
-            while ( (int)ent != MUIV_IconList_NextSelected_End );
+            while ( (int)ent != MUIV_IconList_NextIcon_End );
 
   {
         /* create process and copy files within */
@@ -634,13 +634,13 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
 
                 NewList(&AppList);
 
-                ent = (void*)MUIV_IconList_NextSelected_Start;
+                ent = (void*)MUIV_IconList_NextIcon_Start;
                 /* process all selected entries */
                 do 
                 {
                     DoMethod(msg->iconlist, MUIM_IconList_NextSelected, (IPTR) &ent);
                     /*  if not end of selection, process */
-                    if ( (int)ent != MUIV_IconList_NextSelected_End )
+                    if ( (int)ent != MUIV_IconList_NextIcon_End )
                     {
                         struct AppW *a = AllocVec(sizeof(struct AppW), MEMF_CLEAR);
                         if (a)
@@ -661,7 +661,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                         else fail = TRUE;
                     }
                 } 
-                while ( ((int)ent != MUIV_IconList_NextSelected_End) && !fail);
+                while ( ((int)ent != MUIV_IconList_NextIcon_End) && !fail);
                 
                 if (!fail && (files > 0))
                 {
@@ -1551,13 +1551,13 @@ void wanderer_menufunc_icon_rename(void)
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
     
     do
     {
         DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
         
-        if ((int)entry != MUIV_IconList_NextSelected_End)
+        if ((int)entry != MUIV_IconList_NextIcon_End)
         {
             BPTR lock   = Lock(entry->filename, ACCESS_READ);
             BPTR parent = ParentDir(lock);
@@ -1590,13 +1590,13 @@ void wanderer_menufunc_icon_information()
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
     
     do
     {
         DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR)&entry);
         
-        if ((IPTR)entry != MUIV_IconList_NextSelected_End)
+        if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
             BPTR lock, parent;
 			STRPTR name;
@@ -1628,7 +1628,7 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
     struct IconEntry      *node = NULL;
 	BOOL 				  snapshot  = *flags;
 	struct TagItem  	  icontags[] = 
@@ -1643,7 +1643,7 @@ D(bug("[wanderer] wanderer_menufunc_icon_snapshot()\n"));
     {
         DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR)&entry);
         
-        if ((IPTR)entry != MUIV_IconList_NextSelected_End)
+        if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
 			node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
 D(bug("[wanderer] wanderer_menufunc_icon_snapshot: %s entry = '%s' @ %p, (%p)\n", (snapshot) ? "SNAPSHOT" : "UNSNAPSHOT", entry->filename, entry, node));
@@ -1845,7 +1845,7 @@ void wanderer_menufunc_icon_delete(void)
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextIcon_Start;
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
     struct Hook displayDelHook;
@@ -1862,7 +1862,7 @@ void wanderer_menufunc_icon_delete(void)
     {
         do
         {   
-            if ((int)entry != MUIV_IconList_NextSelected_End)
+            if ((int)entry != MUIV_IconList_NextIcon_End)
             {  
                 /* copy via filesystems.c */
                 D(bug("[WANDERER] Delete \"%s\"\n", entry->filename);)
@@ -1871,7 +1871,7 @@ void wanderer_menufunc_icon_delete(void)
             }
             DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
         } 
-        while ( (int)entry != MUIV_IconList_NextSelected_End );
+        while ( (int)entry != MUIV_IconList_NextIcon_End );
         DisposeCopyDisplay(&dobjects);
     }
     // Only update list if anything happened to the icons!
@@ -1888,7 +1888,7 @@ void wanderer_menufunc_icon_format(void)
 {
     Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextSelected_Start;
+    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextIcon_Start;
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
     struct Hook displayDelHook;
@@ -1896,7 +1896,7 @@ void wanderer_menufunc_icon_format(void)
     DoMethod(iconList, MUIM_IconList_NextSelected, (IPTR) &entry);
     
     /* Process only first selected entry */
-    if ((int)entry != MUIV_IconList_NextSelected_End)
+    if ((int)entry != MUIV_IconList_NextIcon_End)
     {  
 	BPTR lock   = Lock(entry->filename, ACCESS_READ);
 	D(bug("[WANDERER] Format \"%s\"\n", entry->filename);)
