@@ -4492,6 +4492,29 @@ D(bug("[IconList] %s: Returning entry for '%s'\n", __PRETTY_FUNCTION__, node->il
 }
 ///
 
+
+///MUIM_IconList_NextVisible()
+/**************************************************************************
+MUIM_IconList_NextVisible
+**************************************************************************/
+IPTR IconList__MUIM_IconList_NextVisible(struct IClass *CLASS, Object *obj, struct MUIP_IconList_NextSelected *message)
+{
+    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
+    struct IconEntry       *node = NULL;
+    struct IconList_Entry  *ent = NULL;
+    IPTR                    node_successor = NULL;
+
+    if (message->entry == NULL) return (IPTR)NULL;
+    ent = *message->entry;
+
+D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+
+    *message->entry = (struct IconList_Entry *)MUIV_IconList_NextIcon_End;
+
+    return (IPTR)NULL;
+}
+///
+
 ///MUIM_CreateDragImage()
 /**************************************************************************
 MUIM_CreateDragImage
@@ -5264,6 +5287,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, CLASS, obj, message)
         case MUIM_IconList_DrawEntry:           return IconList__MUIM_IconList_DrawEntry(CLASS, obj, (APTR)message);
         case MUIM_IconList_DrawEntryLabel:      return IconList__MUIM_IconList_DrawEntryLabel(CLASS, obj, (APTR)message);
         case MUIM_IconList_NextSelected:        return IconList__MUIM_IconList_NextSelected(CLASS, obj, (APTR)message);
+        case MUIM_IconList_NextVisible:         return IconList__MUIM_IconList_NextVisible(CLASS, obj, (APTR)message);
         case MUIM_IconList_UnselectAll:         return IconList__MUIM_IconList_UnselectAll(CLASS, obj, (APTR)message);
         case MUIM_IconList_Sort:                return IconList__MUIM_IconList_Sort(CLASS, obj, (APTR)message);
         case MUIM_IconList_CoordsSort:          return IconList__MUIM_IconList_CoordsSort(CLASS, obj, (APTR)message);

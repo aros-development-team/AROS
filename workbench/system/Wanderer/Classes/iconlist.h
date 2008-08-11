@@ -57,7 +57,8 @@ struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED char *f
 struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
 struct MUIP_IconList_DrawEntry          {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
 struct MUIP_IconList_DrawEntryLabel     {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
-struct MUIP_IconList_NextSelected       {STACKED ULONG MethodID; STACKED struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
+struct MUIP_IconList_NextSelected       {STACKED ULONG MethodID; STACKED struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextIcon_Start, *entry is MUIV_IconList_NextIcon_End if no more entries are selected */
+struct MUIP_IconList_NextVisible        {STACKED ULONG MethodID; STACKED struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextIcon_Start, *entry is MUIV_IconList_NextIcon_End if no more entries are visible */
 struct MUIP_IconList_Sort               {STACKED ULONG MethodID;};
 struct MUIP_IconList_PositionIcons      {STACKED ULONG MethodID;};
 struct MUIP_IconList_ViewIcon           {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
