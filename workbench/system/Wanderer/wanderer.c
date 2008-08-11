@@ -2849,10 +2849,10 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n",
 			{
 				SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_DispFlags & ICONLIST_DISP_SHOWINFO));
 			}
-			//if ((tmp_MenuItem = FindMenuitem(_NewWandDrawerMenu__menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
-			//{
-			//	SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
-			//}
+			if ((tmp_MenuItem = FindMenuitem(_NewWandDrawerMenu__menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
+			{
+				SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
+			}
 #warning "TODO: Set Sort menu correctly depending on IconList settings"
         }
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: setup notifications\n"));
