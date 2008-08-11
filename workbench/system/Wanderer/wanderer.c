@@ -1282,7 +1282,7 @@ D(bug("[wanderer] wanderer_menufunc_window_snapshot: Drawer is writable .. conti
 		if (snapshot_all == TRUE)
 		{
 			struct IconEntry    *icon_entry = NULL;
-			struct TagItem  	*icon_tags = 
+			struct TagItem  	icon_tags[] = 
 			{
 				{ ICONPUTA_OnlyUpdatePosition, TRUE },
 				{ TAG_DONE, NULL                    }
@@ -1631,7 +1631,7 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
     struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextSelected_Start;
     struct IconEntry      *node = NULL;
 	BOOL 				  snapshot  = *flags;
-	struct TagItem  	  *icontags = 
+	struct TagItem  	  icontags[] = 
 	{
 		{ ICONPUTA_OnlyUpdatePosition, TRUE },
 		{ TAG_DONE, NULL                    }
