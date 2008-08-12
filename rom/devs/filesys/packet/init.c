@@ -183,7 +183,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         /* build the startup packet */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);
         n = strlen(dn->dn_Name);
-        dos_path = AllocVec(n + 2, MEMF_PUBLIC);
+        dos_path = AllocVec(n + 3, MEMF_PUBLIC);
         sprintf(dos_path + 1, "%s:", dn->dn_Name);
         dos_path[0] = n + 1;
         dp->dp_Arg1 = (SIPTR)MKBADDR(dos_path);
