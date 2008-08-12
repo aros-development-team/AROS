@@ -530,6 +530,68 @@ HOOKPROTO(IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc, void, APTR *obj, 
 MakeStaticHook(Hook_UpdateNetworkPrefsFunc,IconWindowIconList__HookFunc_UpdateNetworkPrefsFunc);
 #endif
 
+#define BDRPLINELEN_MAX 1024
+BOOL IconWindowIconList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bdrp_dir)
+{
+	BPTR 				bdrp_lock = (BPTR)NULL;
+	char 				*bdrp_file = NULL, *linebuf = NULL, *bdrp_fullfile = NULL, *bdrp_namepart = NULL;
+	struct DiskObject   *bdrp_currfile_dob = NULL;
+	BOOL retVal = FALSE;
+
+	if ((bdrp_dir == NULL) || (bdrp_dir[strlen(bdrp_dir) - 1] != ':'))
+		return retVal;
+
+	if ((bdrp_file = AllocVec(strlen(bdrp_dir) + 8 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+	{
+		sprintf(bdrp_file, "%s.backdrop", bdrp_dir);
+		if (bdrp_lock = Open(bdrp_file, MODE_OLDFILE))
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: Loading config file: '%s'\n", bdrp_file));
+			if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
+			{
+				while (FGets(bdrp_lock, linebuf, BDRPLINELEN_MAX))
+				{
+					int linelen = 0;
+					if (*linebuf != ':')
+						continue;
+
+					linelen = strlen(linebuf) - 1; /* drop the newline char */
+					linebuf[linelen] = '\0';
+
+					if ((bdrp_fullfile = AllocVec(linelen + strlen(bdrp_dir), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+					{
+						sprintf(bdrp_fullfile, "%s%s", bdrp_dir, &linebuf[1]);
+						bdrp_namepart = FilePart(bdrp_fullfile);
+						bdrp_currfile_dob = GetIconTags
+						(
+							bdrp_fullfile, 
+							ICONGETA_FailIfUnavailable, FALSE,
+							ICONGETA_Label,             bdrp_namepart,
+							TAG_DONE
+						);
+
+D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Icon '%s' ('%s') DOB @ 0x%p\n", bdrp_fullfile, bdrp_namepart, bdrp_currfile_dob));
+
+						if (bdrp_currfile_dob)
+						{
+							struct Node *this_entry = NULL;
+							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob))
+							{
+								retVal = TRUE;
+D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Icon Entry @ 0x%p\n", this_entry));
+							}
+						}
+					}
+				}
+				FreeMem(linebuf, BDRPLINELEN_MAX);
+			}
+			Close(bdrp_lock);
+		}
+		FreeVec(bdrp_file);
+	}
+	return retVal;
+}
+
 ///
 /*** Methods ****************************************************************/
 ///OM_NEW()
@@ -1071,11 +1133,28 @@ IPTR IconWindowIconList__MUIM_IconList_Update
 
   if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
   {
+	struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
     Object *prefs = NULL;
     BOOL    sort_list = FALSE;
 
     D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: (ROOT WINDOW) Causing parent to update\n"));
     retVal = DoSuperMethodA(CLASS, self, (Msg) message);
+
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Checking for '.backdrop' files\n"));
+	do
+	{
+		DoMethod(self, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
+		if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
+		{
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking entry '%s'\n", icon_entry->filename));
+			if (IconWindowIconList__Func_ParseBackdrop(CLASS, self, icon_entry->filename))
+				sort_list = TRUE;
+		}
+		else
+		{
+			break;
+		}
+	} while (TRUE);
 
     D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Check if we should show NetworkBrowser Icon ..\n"));
 
