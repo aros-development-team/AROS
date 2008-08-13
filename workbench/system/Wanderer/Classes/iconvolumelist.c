@@ -306,7 +306,7 @@ D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION_
           }
           else
           {
-            this_Icon->ile_IconListEntry.type == ST_ROOT;
+            this_Icon->ile_IconListEntry.type = ST_ROOT;
 
             if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
               this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
