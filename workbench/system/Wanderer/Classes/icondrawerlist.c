@@ -6,6 +6,7 @@ $Id$
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONDRAWERLIST 1
 #else
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
@@ -201,6 +202,21 @@ D(bug("[IconDrawerList] %s: File has a .info file .. updating info\n", __PRETTY_
               this_Icon->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
             }
             this_Icon->ile_IconNode.ln_Pri = 0;
+			
+			if (fib->fib_DirEntryType == ST_FILE)
+			{
+				this_Icon->ile_IconListEntry.type = ST_FILE;
+D(bug("[IconDrawerList] %s: ST_FILE Entry created\n", __PRETTY_FUNCTION__));
+			}
+			else if (fib->fib_DirEntryType == ST_USERDIR)
+			{
+				this_Icon->ile_IconListEntry.type = ST_USERDIR;
+D(bug("[IconDrawerList] %s: ST_USERDIR Entry created\n", __PRETTY_FUNCTION__));
+			}
+			else
+			{
+D(bug("[IconDrawerList] %s: Unknown Entry Type created\n", __PRETTY_FUNCTION__));
+			}
           }
           else
           {
