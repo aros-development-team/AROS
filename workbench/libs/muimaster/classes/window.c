@@ -3124,7 +3124,11 @@ IPTR Window__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Window_Width:
 	    STORE = (IPTR)data->wd_Width;
 	    return TRUE;
-	
+
+	case MUIA_Window_Menustrip:
+		STORE = (IPTR)data->wd_ChildMenustrip;
+		return TRUE;
+
 	case MUIA_Version:
 	    STORE = __version;
 	    return TRUE;
