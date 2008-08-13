@@ -18,17 +18,18 @@ int main(int argc, char **argv) {
 
     fh = Open(argv[1], MODE_READWRITE);
     if (fh == NULL) {
-        printf("Open failed: %ld\n", IoErr());
+        PrintFault(IoErr(), "SetFileSize");
         return 0;
     }
 
     size = SetFileSize(fh, atol(argv[2]), OFFSET_BEGINNING);
     if (size < 0) {
-        printf("SetFileSize: %ld\n", IoErr());
+        PrintFault(IoErr(), "SetFileSize");
+        Close(fh);
         return 0;
     }
 
-    printf ("new size is %ld bytes\n", size);
+    Printf("New size is %ld bytes\n", size);
 
     Close(fh);
 
