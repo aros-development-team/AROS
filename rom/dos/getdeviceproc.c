@@ -12,6 +12,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+static BOOL VolumeIsOffline(struct DosList *dl);
+
 /*****************************************************************************
 
     NAME */
@@ -68,6 +70,7 @@
     char buf[256];
     BPTR cur = NULL, lock = NULL;
     BOOL stdio = FALSE;
+    BOOL res;
 
     /* if they passed us the result of a previous call, then they're wanted to
      * loop over the targets of a multidirectory assign */
@@ -325,16 +328,23 @@
 
     /* devices and volumes are easy */
     if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME) {
+	res = TRUE;
 	if (dl->dol_Type == DLT_DEVICE) {
 	    if (!dl->dol_Ext.dol_AROS.dol_Device) {
 		D(bug("Accessing offline device %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
-		RunHandler((struct DeviceNode *)dl, DOSBase);
+		res = RunHandler((struct DeviceNode *)dl, DOSBase);
 	    }
 	} else {
-	    while (!dl->dol_Ext.dol_AROS.dol_Device) {
+	    while (res && VolumeIsOffline(dl)) {
 	    	D(bug("Accessing offline volume %s\n", dl->dol_Ext.dol_AROS.dol_DevName));
-		ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (ULONG)dl, NULL);
+		res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (ULONG)dl, NULL);
 	    }
+	}
+	if (!res) {
+            UnLockDosList(LDF_ALL | LDF_READ);
+            FreeMem(dp, sizeof(struct DevProc));
+            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+            return NULL;
 	}
         dp->dvp_Port = (struct MsgPort *) dl->dol_Ext.dol_AROS.dol_Device;
         dp->dvp_Lock = NULL;
@@ -474,4 +484,13 @@ BOOL RunHandler(struct DeviceNode *deviceNode, struct DosLibrary *DOSBase)
 	DeleteMsgPort(mp);
     }
     return ok;
+}
+
+static BOOL VolumeIsOffline(struct DosList *dl)
+{
+    if (strcmp(dl->dol_Ext.dol_AROS.dol_Device->dd_Library.lib_Node.ln_Name,
+	"packet.handler"))
+	return !dl->dol_Ext.dol_AROS.dol_Unit;
+    else
+	return !dl->dol_Task;
 }
