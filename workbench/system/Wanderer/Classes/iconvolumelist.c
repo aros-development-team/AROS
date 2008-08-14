@@ -267,99 +267,158 @@ MUIM_IconList_Update
 **************************************************************************/
 IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
-  //struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
-  struct IconEntry  *this_Icon = NULL;
-  struct NewDosList *ndl = NULL;
-  struct Process    *me;
-  APTR		     oldwin;
+	//struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
+	struct IconEntry  *this_Icon = NULL;
+	struct NewDosList *ndl = NULL;
+	struct Process    *me;
+	APTR		     oldwin;
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
-  DoSuperMethodA(CLASS, obj, (Msg) message);
+	DoSuperMethodA(CLASS, obj, (Msg) message);
   
-  DoMethod(obj, MUIM_IconList_Clear);
+	DoMethod(obj, MUIM_IconList_Clear);
 
-  /* If not in setup do nothing */
+	/* If not in setup do nothing */
 #warning "TODO: Handle MADF_SETUP"
 //  if (!(_flags(obj) & MADF_SETUP)) return 1;
 
-  if ((ndl = IconVolumeList__CreateDOSList()))
-  {
-    struct NewDosNode *nd = NULL;
-    struct  MsgPort       *mp=NULL;
-      
-    mp = CreateMsgPort();
-    if (mp)
-    { 
-      me = (struct Process *)FindTask(NULL);
-      oldwin = me->pr_WindowPtr;
-      me->pr_WindowPtr = (APTR)-1;
-      #ifdef __AROS__
-      ForeachNode(ndl, nd)
-      #else
-      Foreach_Node(ndl, nd);
-      #endif
-      {
-        char buf[300];
-        if (nd->name)
-        {
-          strcpy(buf, nd->name);
-          strcat(buf, ":");
+	if ((ndl = IconVolumeList__CreateDOSList()))
+	{
+		struct  MsgPort     *mp = NULL;
+		struct NewDosNode   *nd = NULL;
+		BPTR                nd_lock = NULL;
+		char 				*nd_nambuf = NULL, *nd_namext = NULL, *nd_entryname = NULL;
 
-	  D(bug("[IconVolList] Adding icon for %s\n", buf));
-          if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)) == NULL)
-          {
+		if ((mp = CreateMsgPort()) != NULL)
+		{ 
+			me = (struct Process *)FindTask(NULL);
+			oldwin = me->pr_WindowPtr;
+			me->pr_WindowPtr = (APTR)-1;
+
+#ifdef __AROS__
+			ForeachNode(ndl, nd)
+#else
+			Foreach_Node(ndl, nd);
+#endif
+			{
+				if (nd->name)
+				{
+					if ((nd_nambuf = AllocVec(strlen(nd->name) + 2, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+					{
+						sprintf(nd_nambuf, "%s:", nd->name);
+
+D(bug("[IconVolList] Adding icon for '%s'\n", nd_nambuf));
+
+						if ((nd_lock = Lock(nd_nambuf, ACCESS_READ)) != NULL)
+						{
+							struct InfoData * nd_paramblock = NULL;
+
+							if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+							{
+								Info(nd_lock, nd_paramblock);
+
+D(bug("[IconVolList] Volume Type for %s = %x\n", nd_nambuf, nd_paramblock->id_DiskType));
+
+								switch (nd_paramblock->id_DiskType)
+								{
+								case ID_VALIDATING:
+									nd_namext = "BUSY";
+									break;
+								case ID_UNREADABLE_DISK:
+									nd_namext = "BAD";
+									break;
+								case ID_NOT_REALLY_DOS:
+									nd_namext = "NDOS";
+									break;
+								case ID_KICKSTART_DISK:
+									break;
+								case ID_NO_DISK_PRESENT:
+									break;
+								default:
+									/* A filesystem type.. ie  ID_DOS_DISK */
+									nd_namext = NULL;
+									break;
+								}
+								FreeMem(nd_paramblock, sizeof(struct InfoData));
+							}
+							UnLock(nd_lock);
+						}
+
+						if (nd_namext != NULL)
+						{
+							if ((nd_entryname = AllocVec(strlen(nd_nambuf) + strlen(nd_namext) + 1, MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+							{
+								nd_entryname = nd_nambuf;
+							}
+							else
+							{
+								sprintf(nd_entryname, "%s%s", nd_nambuf, nd_namext);
+							}
+						}
+						else
+						{
+							nd_entryname = nd_nambuf;
+						}
+
+						if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)nd_entryname, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)) == NULL)
+						{
 D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->name));
-          }
-          else
-          {
-	    D(bug("[IconVolList] Icon added\n"));
-            this_Icon->ile_IconListEntry.type = ST_ROOT;
+						}
+						else
+						{
+D(bug("[IconVolList] Icon added\n"));
+							this_Icon->ile_IconListEntry.type = ST_ROOT;
 
-            if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
-              this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
+							if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
+								this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
 
-            if ((strcasecmp(nd->name, "Ram Disk")) == 0)
-            {
+							if ((strcasecmp(nd->name, "Ram Disk")) == 0)
+							{
 D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY_FUNCTION__));
-              this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
-            }
-            else
-            {
-              this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
+								this_Icon->ile_IconNode.ln_Pri = 5;   // Special dirs get Priority 5
+							}
+							else
+							{
+								this_Icon->ile_IconNode.ln_Pri = 1;   // Fixed Media get Priority 1
 
-/*              struct IOExtTD *ioreq = NULL;
-              struct DriveGeometry dg;
+							/*  struct IOExtTD *ioreq = NULL;
+								struct DriveGeometry dg;
 
-              if (ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq)))
-              {
-                if (OpenDevice(boot_Device, boot_Unit, (struct IORequest *)ioreq, 0) == 0)
-                {
-                  ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
-                  ioreq->iotd_Req.io_Data = &dg;
-                  ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
-                  DoIO((struct IORequest *)ioreq);
-                  if (dg.dg_Flags & DGF_REMOVABLE)
-                  {
-                    this_Icon->ile_IconNode.ln_Pri = 0;   // Removable Media get Priority 0
-                  }
-                  CloseDevice((struct IORequest *)ioreq);
-                }
-                DeleteIORequest((struct IORequest *)ioreq);
-              }*/
-            }
-          }
-        }
-      }
-      me->pr_WindowPtr = oldwin;
-      IconVolumeList__DestroyDOSList(ndl);
-    }
-  }
+								if (ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq)))
+								{
+									if (OpenDevice(boot_Device, boot_Unit, (struct IORequest *)ioreq, 0) == 0)
+									{
+										ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
+										ioreq->iotd_Req.io_Data = &dg;
+										ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
+										DoIO((struct IORequest *)ioreq);
+										if (dg.dg_Flags & DGF_REMOVABLE)
+										{
+											this_Icon->ile_IconNode.ln_Pri = 0;   // Removable Media get Priority 0
+										}
+										CloseDevice((struct IORequest *)ioreq);
+									}
+									DeleteIORequest((struct IORequest *)ioreq);
+								}*/
+							}
+						}
+						if (nd_entryname != nd_nambuf)
+							FreeVec(nd_entryname);
 
-  /* default display/sorting flags */
-  DoMethod(obj, MUIM_IconList_Sort);
+						FreeVec(nd_nambuf);
+					}
+				} /* (nd->name) */
+			}
+			me->pr_WindowPtr = oldwin;
+		}
+		IconVolumeList__DestroyDOSList(ndl);
+	}
 
-  return 1;
+	/* default display/sorting flags */
+	DoMethod(obj, MUIM_IconList_Sort);
+
+	return 1;
 }
 ///
 
