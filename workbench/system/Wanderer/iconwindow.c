@@ -10,6 +10,7 @@
 
 #define ICONWINDOW_OPTION_NOSEARCHBUTTON
 //#define ICONWINDOW_BUFFERLIST
+#define ICONWINDOW_NODETAILVIEWCLASS
 
 #ifdef __AROS__
 #define DEBUG 0
@@ -84,6 +85,10 @@
 #else
   #define  D(...)
 #endif
+#endif
+
+#if defined(ICONWINDOW_NODETAILVIEWCLASS)
+struct MUI_CustomClass *IconWindowDetailDrawerList_CLASS;
 #endif
 
 static char __intern_wintitle_wanderer[] = "Wanderer";
@@ -482,6 +487,10 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 	IPTR                            _newIconWin__WindowTop = 0;
 
 	IPTR                            _newIconWin__FSNotifyPort =(IPTR) NULL;
+	struct MUI_CustomClass 			*iconviewclass = NULL;
+#if defined(ICONWINDOW_NODETAILVIEWCLASS)
+	IconWindowDetailDrawerList_CLASS = IconWindowIconDrawerList_CLASS;
+#endif
 
 D(bug("[iconwindow]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -526,15 +535,16 @@ D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTIO
 
 	if (isRoot)
 	{
-#ifdef __AROS__
+/*#ifdef __AROS__
 			_newIconWin__IconListObj = (Object *)IconWindowIconVolumeListObject,
 										   MUIA_Font, (IPTR)_newIconWin__WindowFont,
 										End;
-#else
-		_newIconWin__IconListObj = (Object *)NewObject(IconWindowIconVolumeList_CLASS->mcc_Class, NULL,
+#else*/
+		iconviewclass = IconWindowIconVolumeList_CLASS;
+		_newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
 											   MUIA_Font, (IPTR)_newIconWin__WindowFont,
 									TAG_DONE);
-#endif
+/*#endif*/
 
 		_newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
 		_newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
@@ -562,6 +572,7 @@ D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTIO
 		IPTR				geticon_error = NULL, geticon_isdefault = NULL;
 		IPTR				_newIconWin__TitleLen = 0;
 		IPTR 				current_DispFlags = 0, current_SortFlags = 0;
+		IPTR                icon__DispFlags = 0,icon__DispFlagMask = ~0,
 
 		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
 		_newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
@@ -580,22 +591,6 @@ D(bug("[iconwindow] %s: Opening Volume Root Window '%s'\n", __PRETTY_FUNCTION__,
 D(bug("[iconwindow] %s: Opening Drawer Window '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
 		}
 
-#ifdef __AROS__
-		_newIconWin__IconListObj = (Object *) IconWindowIconDrawerListObject ,
-									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
-									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
-									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
-									End;
-#else
-		_newIconWin__IconListObj = (Object *) NewObject(IconWindowIconDrawerList_CLASS->mcc_Class, NULL,
-									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
-									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
-									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
-									TAG_DONE);
-#endif
-
-		GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
-
 		drawericon = GetIconTags(_newIconWin__Title,
 					ICONGETA_FailIfUnavailable, FALSE,
 					ICONGETA_IsDefaultIcon, &geticon_isdefault,
@@ -611,6 +606,7 @@ D(bug("[iconwindow] %s: Directory Icon has DRAWER data!\n", __PRETTY_FUNCTION__)
 			_newIconWin__WindowHeight = drawericon->do_DrawerData->dd_NewWindow.Height;
 		}
 
+		iconviewclass = IconWindowIconDrawerList_CLASS;
 		if ((drawericon) && (drawericon->do_Gadget.UserData > 0))
 		{
 D(bug("[iconwindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PRETTY_FUNCTION__, drawericon->do_DrawerData->dd_Flags));
@@ -621,15 +617,16 @@ D(bug("[iconwindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PR
 					break;
 				case 1:
 					D(bug("Show only icons"));
-					current_DispFlags |= ICONLIST_DISP_SHOWINFO;
+					icon__DispFlags |= ICONLIST_DISP_SHOWINFO;
 					break;
 				case 2:
 					D(bug("Show all files"));
-					current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+					icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
 					break;
 				case 3:
 					D(bug("Show all files"));
-					current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+					icon__DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
+					icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
 					break;
 				default:
 					D(bug("INVALID"));
@@ -647,15 +644,19 @@ D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
 					break;
 				case 2:
 					D(bug("View as text, sorted by name"));
+					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
 				case 3:
 					D(bug("View as text, sorted by date"));
+					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
 				case 4:
 					D(bug("View as text, sorted by size"));
+					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
 				case 5:
 					D(bug("View as text, sorted by type"));
+					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
 				default:
 					D(bug("INVALID"));
@@ -668,10 +669,25 @@ D(bug("]\n"));
 			(_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)))
 		{
 D(bug("[iconwindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION__));
-			current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
+			icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
 		}
 
-		SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, current_DispFlags);
+/*#ifdef __AROS__
+		_newIconWin__IconListObj = (Object *) IconWindowIconDrawerListObject ,
+									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
+									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
+									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
+									End;
+#else*/
+		_newIconWin__IconListObj = (Object *) NewObject(iconviewclass->mcc_Class, NULL,
+									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
+									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
+									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
+									TAG_DONE);
+/*#endif*/
+
+		GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
+		SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
 
 D(bug("[iconwindow] %s: Window Co-ords %d,%d [%d x %d]\n", __PRETTY_FUNCTION__, _newIconWin__WindowLeft, _newIconWin__WindowTop, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 

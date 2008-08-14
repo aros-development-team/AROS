@@ -646,19 +646,13 @@ Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
     #else
     data->iwcd_ProcessIconListPrefs_hook = &Hook_ProcessIconListPrefsFunc;
     #endif
-    
+
     if (_newIconList__FSNotifyPort != NULL)
     {
       struct IconWindowIconDrawerList_DATA *drawerlist_data = (IPTR)data;
       drawerlist_data->iwdcd_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = _newIconList__FSNotifyPort;
       D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: FS Notify Port @ 0x%p\n", _newIconList__FSNotifyPort));
     }
-//    DoMethod
-//    (
-//      self, MUIM_Notify, MUIA_IconList_SelectionChanged, MUIV_EveryTime,
-//      (IPTR) self, 3, 
-//      MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_IconListMode
-//    );
   }
 D(bug("[IconWindowIconList] obj = %ld\n", self));
   return self;

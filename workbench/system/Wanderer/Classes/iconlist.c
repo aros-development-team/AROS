@@ -4201,6 +4201,8 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                         data->click_x = mx;
                         data->click_y = my;
 
+						SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+
                         return MUI_EventHandlerRC_Eat;
                     }
                 }
@@ -4249,6 +4251,7 @@ D(bug("[IconList] %s: Rendered 'new_selected' icon '%s'\n", __PRETTY_FUNCTION__,
                                     node->ile_Flags &= ~ICONENTRY_FLAG_LASSO;
                                 }
                             }
+							SET(obj, MUIA_IconList_SelectionChanged, TRUE);
                         }
 
                         data->mouse_pressed &= ~LEFT_BUTTON;
@@ -4895,6 +4898,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         }
     }
 
+	SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+	
     return 1;
 }
 ///
@@ -4954,7 +4959,9 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
     }
-    
+
+	SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+
     return 1;
 }
 ///

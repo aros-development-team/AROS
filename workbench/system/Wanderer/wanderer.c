@@ -7,7 +7,7 @@
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
@@ -106,7 +106,7 @@
 extern IPTR InitWandererPrefs(void);
 VOID        DoAllMenuNotifies(Object *strip, STRPTR path);
 Object      *FindMenuitem(Object* strip, int id);
-Object      *__CreateWandererIntuitionMenu__(BOOL isRoot, BOOL useBackdrop);
+Object      *Wanderer__Func_CreateWandererIntuitionMenu(BOOL isRoot, BOOL useBackdrop);
 void        wanderer_menufunc_window_update(void);
 void        execute_open_with_command(BPTR cd, STRPTR contents);
 void        DisposeCopyDisplay(struct MUIDisplayObjects *d);
@@ -348,8 +348,8 @@ MakeStaticHook(Hook_AskDeleteFunc,Wanderer__HookFunc_AskDeleteFunc);
 #endif
 ///
 
-///copy_dropentries()
-void copy_dropentries()
+///Wanderer__Func_CopyDropEntries()
+void Wanderer__Func_CopyDropEntries()
 {
     /* get filelist from user message */
     struct Wanderer_FilelistMsg *message_filelist = FindTask(NULL)->tc_UserData;
@@ -596,11 +596,11 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
         /* create process and copy files within */
           const struct TagItem       tags[]=
           {
-                {NP_Entry    , (IPTR)copy_dropentries       },
-                {NP_Name     , (IPTR)"wanderer copy"        },
-                {NP_UserData , (IPTR)message_filelist       },
-                {NP_StackSize, 40000          },
-                {TAG_DONE    , 0                      }
+                {NP_Entry    , (IPTR)Wanderer__Func_CopyDropEntries	},
+                {NP_Name     , (IPTR)"wanderer copy"        		},
+                {NP_UserData , (IPTR)message_filelist				},
+                {NP_StackSize, 40000								},
+                {TAG_DONE    , NULL									}
           };
 
           child = CreateNewProc(tags);
@@ -974,8 +974,9 @@ enum
     MEN_WANDERER_BACKDROP,
     MEN_WANDERER_EXECUTE,
     MEN_WANDERER_SHELL,
-    MEN_WANDERER_GUISETTINGS,
-    MEN_WANDERER_ABOUT,
+    MEN_WANDERER_AROS_GUISETTINGS,
+    MEN_WANDERER_AROS_ABOUT,
+	MEN_WANDERER_ABOUT,
     MEN_WANDERER_QUIT,
     
     MEN_WINDOW_NEW_DRAWER,
@@ -1953,8 +1954,8 @@ void wanderer_menufunc_icon_format(void)
 }
 ///
 
-///wanderer_menufunc_wanderer_guisettings()
-void wanderer_menufunc_wanderer_guisettings(void)
+///wanderer_menufunc_wanderer_AROS_guisettings()
+void wanderer_menufunc_wanderer_AROS_guisettings(void)
 {
     //DoMethod(_WandererIntern_AppObj, MUIM_Application_OpenConfigWindow);
     OpenWorkbenchObject("SYS:Prefs/Zune",
@@ -1963,8 +1964,8 @@ void wanderer_menufunc_wanderer_guisettings(void)
 }
 ///
 
-///wanderer_menufunc_wanderer_about()
-void wanderer_menufunc_wanderer_about(void)
+///wanderer_menufunc_wanderer_AROS_about()
+void wanderer_menufunc_wanderer_AROS_about(void)
 {
     OpenWorkbenchObject("SYS:System/About", TAG_DONE);
 }
@@ -2021,38 +2022,66 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 
     if (!strip) return;
 
-    DoMenuNotify(strip, MEN_WANDERER_EXECUTE,       wanderer_menufunc_wanderer_execute,       path);
-    DoMenuNotify(strip, MEN_WANDERER_SHELL,         wanderer_menufunc_wanderer_shell,         path);
-    DoMenuNotify(strip, MEN_WANDERER_GUISETTINGS,   wanderer_menufunc_wanderer_guisettings,   NULL);
-    DoMenuNotify(strip, MEN_WANDERER_ABOUT,         wanderer_menufunc_wanderer_about,         NULL);
-    DoMenuNotify(strip, MEN_WANDERER_QUIT,          wanderer_menufunc_wanderer_quit,          NULL);
+    DoMenuNotify(strip, MEN_WANDERER_EXECUTE,
+				wanderer_menufunc_wanderer_execute, path);
+    DoMenuNotify(strip, MEN_WANDERER_SHELL,
+				wanderer_menufunc_wanderer_shell, path);
+    DoMenuNotify(strip, MEN_WANDERER_AROS_GUISETTINGS,
+				wanderer_menufunc_wanderer_AROS_guisettings, NULL);
+    DoMenuNotify(strip, MEN_WANDERER_AROS_ABOUT,
+				wanderer_menufunc_wanderer_AROS_about, NULL);
+    DoMenuNotify(strip, MEN_WANDERER_QUIT,
+				wanderer_menufunc_wanderer_quit, NULL);
 
-    DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER,      wanderer_menufunc_window_newdrawer,       path);
-    DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT,     wanderer_menufunc_window_openparent,      path);
-    DoMenuNotify(strip, MEN_WINDOW_CLOSE,           wanderer_menufunc_window_close,           NULL);
-    DoMenuNotify(strip, MEN_WINDOW_UPDATE,          wanderer_menufunc_window_update,          NULL);
-    DoMenuNotify(strip, MEN_WINDOW_CLEAR,           wanderer_menufunc_window_clear,           NULL);
+    DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER,
+				wanderer_menufunc_window_newdrawer, path);
+    DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT,
+				wanderer_menufunc_window_openparent, path);
+    DoMenuNotify(strip, MEN_WINDOW_CLOSE,
+				wanderer_menufunc_window_close, NULL);
+    DoMenuNotify(strip, MEN_WINDOW_UPDATE,
+				wanderer_menufunc_window_update, NULL);
+    DoMenuNotify(strip, MEN_WINDOW_CLEAR,
+				wanderer_menufunc_window_clear, NULL);
 
-	DoMenuNotify(strip, MEN_WINDOW_SNAP_WIN,        wanderer_menufunc_window_snapshot,        FALSE);
-	DoMenuNotify(strip, MEN_WINDOW_SNAP_ALL,        wanderer_menufunc_window_snapshot,        TRUE);
+	DoMenuNotify(strip, MEN_WINDOW_SNAP_WIN,
+				wanderer_menufunc_window_snapshot, FALSE);
+	DoMenuNotify(strip, MEN_WINDOW_SNAP_ALL,
+				wanderer_menufunc_window_snapshot, TRUE);
 	
-    DoMenuNotify(strip, MEN_WINDOW_SELECT,          wanderer_menufunc_window_select,          NULL);
-    DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL,        wanderer_menufunc_window_view_icons,      strip);
-    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN,     wanderer_menufunc_window_view_hidden,    strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,       wanderer_menufunc_window_sort_name,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,       wanderer_menufunc_window_sort_type,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,       wanderer_menufunc_window_sort_date,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE,       wanderer_menufunc_window_sort_size,       strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE,    wanderer_menufunc_window_sort_reverse,    strip);
-    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, wanderer_menufunc_window_sort_topdrawers, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SELECT,
+				wanderer_menufunc_window_select, NULL);
+    DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL,
+				wanderer_menufunc_window_view_icons, strip);
+    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN,
+				wanderer_menufunc_window_view_hidden, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_NAME,
+				wanderer_menufunc_window_sort_name, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE,
+				wanderer_menufunc_window_sort_type, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_DATE,
+				wanderer_menufunc_window_sort_date, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE,
+				wanderer_menufunc_window_sort_size, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE,
+				wanderer_menufunc_window_sort_reverse, strip);
+    DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS,
+				wanderer_menufunc_window_sort_topdrawers, strip);
 
-    DoMenuNotify(strip, MEN_ICON_OPEN,              wanderer_menufunc_icon_open,              NULL);
-    DoMenuNotify(strip, MEN_ICON_RENAME,            wanderer_menufunc_icon_rename,            NULL);
-    DoMenuNotify(strip, MEN_ICON_INFORMATION,       wanderer_menufunc_icon_information,       NULL);
-    DoMenuNotify(strip, MEN_ICON_SNAPSHOT,          wanderer_menufunc_icon_snapshot,          TRUE);
-    DoMenuNotify(strip, MEN_ICON_UNSNAPSHOT,        wanderer_menufunc_icon_snapshot,          FALSE);
-    DoMenuNotify(strip, MEN_ICON_DELETE,            wanderer_menufunc_icon_delete,            NULL);
-    DoMenuNotify(strip, MEN_ICON_FORMAT,	    wanderer_menufunc_icon_format,	      NULL);
+    DoMenuNotify(strip, MEN_ICON_OPEN,
+				wanderer_menufunc_icon_open, NULL);
+    DoMenuNotify(strip, MEN_ICON_RENAME,
+				wanderer_menufunc_icon_rename, NULL);
+    DoMenuNotify(strip, MEN_ICON_INFORMATION,
+				wanderer_menufunc_icon_information, NULL);
+    DoMenuNotify(strip, MEN_ICON_SNAPSHOT,
+				wanderer_menufunc_icon_snapshot,TRUE);
+    DoMenuNotify(strip, MEN_ICON_UNSNAPSHOT,
+				wanderer_menufunc_icon_snapshot, FALSE);
+    DoMenuNotify(strip, MEN_ICON_DELETE,
+				wanderer_menufunc_icon_delete, NULL);
+    DoMenuNotify(strip, MEN_ICON_FORMAT,
+				wanderer_menufunc_icon_format, NULL);
     
     if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
@@ -2067,8 +2096,8 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 }    
 ///
 
-///UpdateMenuStates()
-VOID UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
+///Wanderer__Func_UpdateMenuStates()
+VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
 {
 	IPTR   current_DispFlags = NULL, current_SortFlags = NULL;
 	Object *current_Menustrip = NULL, *current_MenuItem = NULL;
@@ -2083,33 +2112,33 @@ VOID UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
 	if (IconlistObj == NULL)
 		return;
 
-D(bug("[Wanderer] UpdateMenuStates(IconList @ %p)\n", IconlistObj));
+D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates(IconList @ %p)\n", IconlistObj));
 
 	GET(IconlistObj, MUIA_IconList_SortFlags, &current_SortFlags);
 	GET(IconlistObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
 	GET(WindowObj, MUIA_Window_Menustrip, &current_Menustrip);
 	
-D(bug("[Wanderer] UpdateMenuStates: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", current_Menustrip, current_DispFlags, current_SortFlags));
+D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", current_Menustrip, current_DispFlags, current_SortFlags));
 
 	do
 	{
-		DoMethod(IconlistObj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
+		DoMethod(IconlistObj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&icon_entry);
 
 		if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
 		{
 			if (icon_entry->type == ST_ROOT)
 			{
-D(bug("[Wanderer] UpdateMenuStates: ST_ROOT\n"));
+D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: ST_ROOT\n"));
 				icon_men_Format = TRUE;
 			}
 			if ((icon_entry->type == ST_LINKDIR) || (icon_entry->type == ST_LINKFILE))
 			{
-D(bug("[Wanderer] UpdateMenuStates: ST_LINKDIR/ST_LINKFILE\n"));
+D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: ST_LINKDIR/ST_LINKFILE\n"));
 				icon_men_PutAway = TRUE;
 			}
 			if ((icon_entry->type == ST_USERDIR) || (icon_entry->type == ST_FILE))
 			{
-D(bug("[Wanderer] UpdateMenuStates: ST_USERDIR/ST_FILE\n"));
+D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: ST_USERDIR/ST_FILE\n"));
 				icon_men_LeaveOut = TRUE;
 			}
 			selected_count++;
@@ -2241,6 +2270,38 @@ D(bug("[Wanderer] UpdateMenuStates: ST_USERDIR/ST_FILE\n"));
 			//SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_SortFlags & ICONLIST_DISP_SHOWINFO));
 		}
 	}
+}
+
+///Wanderer__HookFunc_UpdateMenuStatesFunc()
+#ifdef __AROS__
+AROS_UFH3
+(
+    ULONG, Wanderer__HookFunc_UpdateMenuStatesFunc,
+	AROS_UFHA(struct Hook *,    hook,   A0),
+	AROS_UFHA(APTR *,           obj,    A2),
+	AROS_UFHA(APTR,             param,  A1)
+)
+{
+#else
+HOOKPROTO(Wanderer__HookFunc_UpdateMenuStatesFunc, ULONG, struct dCopyStruct *obj, APTR param)
+{
+#endif
+    AROS_USERFUNC_INIT
+	Object	*self = ( Object *)obj;
+	Object	*window = *( Object **)param;
+	Object	*iconlist = NULL;
+
+D(bug("[Wanderer] Wanderer__HookFunc_UpdateMenuStatesFunc(self @ %p, window @ %p)\n", self, window));
+
+	GET(window, MUIA_IconWindow_IconList, &iconlist);
+
+D(bug("[Wanderer] Wanderer__HookFunc_UpdateMenuStatesFunc: iconlist @ %p\n", iconlist));
+
+	Wanderer__Func_UpdateMenuStates(window, iconlist);
+
+D(bug("[Wanderer] Wanderer__HookFunc_UpdateMenuStatesFunc: Update Complete.\n"));
+
+    AROS_USERFUNC_EXIT
 }
 
 /*** Methods ****************************************************************/
@@ -2423,7 +2484,7 @@ D(bug("[Wanderer] Wanderer__OM_SET: MUIA_Wanderer_ActiveWindow = %p\n", tag->ti_
 				Object *activatewin_Iconlist = NULL;
 
 				GET(data->wd_ActiveWindow, MUIA_IconWindow_IconList, &activatewin_Iconlist);
-				UpdateMenuStates(data->wd_ActiveWindow, activatewin_Iconlist);
+				Wanderer__Func_UpdateMenuStates(data->wd_ActiveWindow, activatewin_Iconlist);
                 break;
         
         case MUIA_Application_Iconified:
@@ -2738,9 +2799,9 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_HandleNotify: Drawer Window contents c
 }
 ///
 
-///__CreateWandererIntuitionMenu__()
+///Wanderer__Func_CreateWandererIntuitionMenu()
 /* Some differences here between volumes and subwindows */
-Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
+Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdrop)
 {
     Object   *_NewWandIntMenu__menustrip = NULL;
     IPTR     _NewWandIntMenu__OPTION_BACKDROP = CHECKIT|MENUTOGGLE;
@@ -2759,7 +2820,11 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
             {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
     
             {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
-            {NM_ITEM,  _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_GUISETTINGS},
+#if defined(__AROS__)
+            {NM_ITEM,  "AROS .."},
+            {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
+            {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
+#endif
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
     
@@ -2792,17 +2857,17 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
         //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
     
         {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
-            {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
+            {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), ITEMENABLED, 0, (APTR) MEN_ICON_OPEN},
     //    {NM_ITEM,  "Close","C" },
-            {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
-            {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
-			{NM_ITEM,  "Snapshot", "S", 0, 0, (APTR) MEN_ICON_SNAPSHOT},
-			{NM_ITEM,  "Unsnapshot", "U", 0, 0, (APTR) MEN_ICON_UNSNAPSHOT},
+            {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), ITEMENABLED, 0, (APTR) MEN_ICON_RENAME},
+            {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), ITEMENABLED, 0, (APTR) MEN_ICON_INFORMATION},
+			{NM_ITEM,  "Snapshot", "S", ITEMENABLED, 0, (APTR) MEN_ICON_SNAPSHOT},
+			{NM_ITEM,  "Unsnapshot", "U", ITEMENABLED, 0, (APTR) MEN_ICON_UNSNAPSHOT},
 			{NM_ITEM,  "Leave Out", "L", ITEMENABLED, 0, (APTR) MEN_ICON_LEAVEOUT},
 			{NM_ITEM,  "Put Away", "P", ITEMENABLED, 0, (APTR) MEN_ICON_PUTAWAY},
             {NM_ITEM, NM_BARLABEL},
-            {NM_ITEM,  _(MSG_MEN_DELETE), NULL, 0, 0, (APTR) MEN_ICON_DELETE},
-    	    {NM_ITEM,  _(MSG_MEN_FORMAT), NULL, 0, 0, (APTR) MEN_ICON_FORMAT},
+            {NM_ITEM,  _(MSG_MEN_DELETE), NULL, ITEMENABLED, 0, (APTR) MEN_ICON_DELETE},
+    	    {NM_ITEM,  _(MSG_MEN_FORMAT), NULL, ITEMENABLED, 0, (APTR) MEN_ICON_FORMAT},
 			{NM_ITEM,  "Empty Trash...",     NULL, ITEMENABLED},
     
         {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, 0},
@@ -2819,7 +2884,11 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
             {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
     
             {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
-            {NM_ITEM,  _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_GUISETTINGS},
+#if defined(__AROS__)
+            {NM_ITEM,  "AROS .."},
+            {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
+            {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
+#endif
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
     
@@ -2855,16 +2924,16 @@ Object * __CreateWandererIntuitionMenu__( BOOL isRoot, BOOL isBackdrop)
         //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
     
         {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
-            {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), 0, 0, (APTR) MEN_ICON_OPEN},
+            {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), ITEMENABLED, 0, (APTR) MEN_ICON_OPEN},
     //    {NM_ITEM,  "Close","C" },
-            {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), 0, 0, (APTR) MEN_ICON_RENAME},
-            {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), 0, 0, (APTR) MEN_ICON_INFORMATION},
-			{NM_ITEM,  "Snapshot", "S", 0, 0, (APTR) MEN_ICON_SNAPSHOT},
-			{NM_ITEM,  "Unsnapshot", "U", 0, 0, (APTR) MEN_ICON_UNSNAPSHOT},
+            {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), ITEMENABLED, 0, (APTR) MEN_ICON_RENAME},
+            {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), ITEMENABLED, 0, (APTR) MEN_ICON_INFORMATION},
+			{NM_ITEM,  "Snapshot", "S", ITEMENABLED, 0, (APTR) MEN_ICON_SNAPSHOT},
+			{NM_ITEM,  "Unsnapshot", "U", ITEMENABLED, 0, (APTR) MEN_ICON_UNSNAPSHOT},
 			{NM_ITEM,  "Leave Out", "L", ITEMENABLED, 0, (APTR) MEN_ICON_LEAVEOUT},
 			{NM_ITEM,  "Put Away", "P", ITEMENABLED, 0, (APTR) MEN_ICON_PUTAWAY},
             {NM_ITEM, NM_BARLABEL},
-            {NM_ITEM,  _(MSG_MEN_DELETE), NULL, 0, 0, (APTR) MEN_ICON_DELETE},
+            {NM_ITEM,  _(MSG_MEN_DELETE), NULL, ITEMENABLED, 0, (APTR) MEN_ICON_DELETE},
 			{NM_ITEM,  "Format Disk...",     NULL, ITEMENABLED},
 			{NM_ITEM,  "Empty Trash...",     NULL, ITEMENABLED},
     
@@ -2926,7 +2995,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Using Screen @ %x\
         useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
     }
 
-    _NewWandDrawerMenu__menustrip = __CreateWandererIntuitionMenu__ (isWorkbenchWindow, useBackdrop);
+    _NewWandDrawerMenu__menustrip = Wanderer__Func_CreateWandererIntuitionMenu (isWorkbenchWindow, useBackdrop);
 
 //D(bug("1\n\n")); Delay(100);
     /* Create a new icon drawer window with the correct drawer being set */
@@ -3012,6 +3081,18 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: IconWindows IconLi
 
         if (window_IconList != NULL)
         {
+			struct Hook          *_wand_UpdateMenuStates_hook = NULL;
+			
+			if ((_wand_UpdateMenuStates_hook = AllocMem(sizeof(struct Hook), MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+			{
+				_wand_UpdateMenuStates_hook->h_Entry = ( HOOKFUNC )Wanderer__HookFunc_UpdateMenuStatesFunc;
+				DoMethod
+				(
+				  window_IconList, MUIM_Notify, MUIA_IconList_SelectionChanged, MUIV_EveryTime,
+				  (IPTR) self, 3, 
+				  MUIM_CallHook, _wand_UpdateMenuStates_hook, (IPTR)window
+				);
+			}
             GET(window_IconList, MUIA_IconList_DisplayFlags, &current_DispFlags);
 
 #if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
@@ -3030,7 +3111,7 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList t
 			D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n", current_DispFlags));
             SET(window_IconList, MUIA_IconList_DisplayFlags, current_DispFlags);
 #endif
-			UpdateMenuStates(window, window_IconList);
+			Wanderer__Func_UpdateMenuStates(window, window_IconList);
         }
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: setup notifications\n"));
         DoMethod
