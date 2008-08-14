@@ -2,6 +2,7 @@
 Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
+#define DEBUG 0
 #ifndef __AROS__
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONVOLUMELIST 1 
@@ -269,6 +270,8 @@ IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, str
   //struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
   struct IconEntry  *this_Icon = NULL;
   struct NewDosList *ndl = NULL;
+  struct Process    *me;
+  APTR		     oldwin;
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -288,6 +291,9 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
     mp = CreateMsgPort();
     if (mp)
     { 
+      me = (struct Process *)FindTask(NULL);
+      oldwin = me->pr_WindowPtr;
+      me->pr_WindowPtr = (APTR)-1;
       #ifdef __AROS__
       ForeachNode(ndl, nd)
       #else
@@ -299,13 +305,15 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
         {
           strcpy(buf, nd->name);
           strcat(buf, ":");
-      
+
+	  D(bug("[IconVolList] Adding icon for %s\n", buf));
           if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)buf, (IPTR)nd->name, (IPTR)NULL, (IPTR)NULL)) == NULL)
           {
 D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->name));
           }
           else
           {
+	    D(bug("[IconVolList] Icon added\n"));
             this_Icon->ile_IconListEntry.type = ST_ROOT;
 
             if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
@@ -343,6 +351,7 @@ D(bug("[IconVolList] %s: Setting Ram Disk's icon node priority to 5\n", __PRETTY
           }
         }
       }
+      me->pr_WindowPtr = oldwin;
       IconVolumeList__DestroyDOSList(ndl);
     }
   }

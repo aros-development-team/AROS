@@ -147,10 +147,12 @@ UBYTE i;
 		dl = FindDosEntry(doslist,string,LDF_VOLUMES);
 		if (dl != NULL)
 		{
-			if (((struct AfsHandle *)dl->dol_Ext.dol_AROS.dol_Unit)->volume == volume)
+			if ((dl->dol_Ext.dol_AROS.dol_Device == volume->device) &&
+			    (dl->dol_Ext.dol_AROS.dol_Unit == NULL))
 			{
 				if (dl->dol_misc.dol_volume.dol_LockList != NULL)
 				{
+					dl->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)&volume->ah;
 					volume->locklist = dl->dol_misc.dol_volume.dol_LockList;
 				}
 			}
@@ -212,15 +214,18 @@ UBYTE i;
 			doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
 			if (doslist != NULL)
 			{
+				D(bug("[afs] Looking for entry %s\n", string));
 				dl = FindDosEntry(doslist,string,LDF_VOLUMES);
 				if (dl != NULL)
 				{
 					if (volume->locklist != NULL)
 					{
 						dl->dol_misc.dol_volume.dol_LockList = volume->locklist;
+						dl->dol_Ext.dol_AROS.dol_Unit = NULL;
 					}
 					else
 					{
+						D(bug("[afs] Removing\n"));
 						RemDosEntry(dl);
 						FreeDosEntry(dl);
 					}
