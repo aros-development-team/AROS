@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Convert a string into a long
@@ -51,7 +51,7 @@
     CONST_STRPTR s=string;
 
     /* Skip leading whitespace characters */
-    if(*s==' '||*s=='\t')
+    while(*s==' '||*s=='\t')
 	s++;
 
     /* Swallow sign */
