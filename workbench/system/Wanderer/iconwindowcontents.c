@@ -574,11 +574,37 @@ D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Ico
 
 						if (bdrp_currfile_dob)
 						{
-							struct Node *this_entry = NULL;
+							struct IconEntry *this_entry = NULL;
 							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob))
 							{
+								struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+								if (fib)
+								{
+									BPTR 				fib_lock = (BPTR)NULL;
+									if ((fib_lock = Lock(bdrp_fullfile, SHARED_LOCK)) != NULL)
+									{
+										if (Examine(fib_lock, fib))
+										{
+											if (fib->fib_DirEntryType == ST_FILE)
+											{
+												this_entry->ile_IconListEntry.type = ST_LINKFILE;
+D(bug("[IconWindowIconList] %s: LEAVEOUT ST_LINKFILE Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
+											}
+											else if (fib->fib_DirEntryType == ST_USERDIR)
+											{
+												this_entry->ile_IconListEntry.type = ST_LINKDIR;
+D(bug("[IconWindowIconList] %s: LEAVEOUT ST_LINKDIR Entry @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
+											}
+											else
+											{
+D(bug("[IconWindowIconList] %s: LEAVEOUT Unknown Entry Type @ 0x%p\n", __PRETTY_FUNCTION__, this_entry));
+											}
+										}
+										UnLock(fib_lock);
+									}
+									FreeDosObject(DOS_FIB, fib);
+								}
 								retVal = TRUE;
-D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Icon Entry @ 0x%p\n", this_entry));
 							}
 						}
 					}
@@ -627,6 +653,12 @@ Object *IconWindowIconList__OM_NEW(Class *CLASS, Object *self, struct opSet *mes
       drawerlist_data->iwdcd_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port = _newIconList__FSNotifyPort;
       D(bug("[IconWindowIconList] IconWindowIconList__OM_NEW: FS Notify Port @ 0x%p\n", _newIconList__FSNotifyPort));
     }
+//    DoMethod
+//    (
+//      self, MUIM_Notify, MUIA_IconList_SelectionChanged, MUIV_EveryTime,
+//      (IPTR) self, 3, 
+//      MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_IconListMode
+//    );
   }
 D(bug("[IconWindowIconList] obj = %ld\n", self));
   return self;
