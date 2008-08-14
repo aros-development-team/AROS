@@ -7,7 +7,7 @@
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -451,7 +451,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextIco
 
 D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset = %d, buf = %s\n", offset, buf);)
     
-        if  ( (ent->type == ST_ROOT) || (ent->type == ST_USERDIR) )
+        if  ((ent->type == ST_ROOT) || (ent->type == ST_USERDIR) || (ent->type == ST_LINKDIR))
         {
             Object *cstate = (Object*)(((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
             Object *prefs = (Object*) XGET(_app(obj), MUIA_Wanderer_Prefs);
@@ -495,7 +495,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
             }
 
         } 
-        else if (ent->type == ST_FILE)
+        else if ((ent->type == ST_FILE) || (ent->type == ST_LINKFILE))
         {
             BPTR newwd, oldwd, file;
     
@@ -1011,7 +1011,8 @@ enum
 	MEN_ICON_LEAVEOUT,
 	MEN_ICON_PUTAWAY,
     MEN_ICON_DELETE,
-    MEN_ICON_FORMAT
+    MEN_ICON_FORMAT,
+	MEN_ICON_EMPTYTRASH
 };
 
 
@@ -2065,6 +2066,183 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
     }
 }    
 ///
+
+///UpdateMenuStates()
+VOID UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
+{
+	IPTR   current_DispFlags = NULL, current_SortFlags = NULL;
+	Object *current_Menustrip = NULL, *current_MenuItem = NULL;
+	struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+	int selected_count = 0;
+
+	BOOL icon_men_PutAway = FALSE;
+	BOOL icon_men_LeaveOut = FALSE;
+	BOOL icon_men_Format = FALSE;
+	BOOL icon_men_EmptyTrash = FALSE;
+
+	if (IconlistObj == NULL)
+		return;
+
+D(bug("[Wanderer] UpdateMenuStates(IconList @ %p)\n", IconlistObj));
+
+	GET(IconlistObj, MUIA_IconList_SortFlags, &current_SortFlags);
+	GET(IconlistObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
+	GET(WindowObj, MUIA_Window_Menustrip, &current_Menustrip);
+	
+D(bug("[Wanderer] UpdateMenuStates: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", current_Menustrip, current_DispFlags, current_SortFlags));
+
+	do
+	{
+		DoMethod(IconlistObj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
+
+		if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
+		{
+			if (icon_entry->type == ST_ROOT)
+			{
+D(bug("[Wanderer] UpdateMenuStates: ST_ROOT\n"));
+				icon_men_Format = TRUE;
+			}
+			if ((icon_entry->type == ST_LINKDIR) || (icon_entry->type == ST_LINKFILE))
+			{
+D(bug("[Wanderer] UpdateMenuStates: ST_LINKDIR/ST_LINKFILE\n"));
+				icon_men_PutAway = TRUE;
+			}
+			if ((icon_entry->type == ST_USERDIR) || (icon_entry->type == ST_FILE))
+			{
+D(bug("[Wanderer] UpdateMenuStates: ST_USERDIR/ST_FILE\n"));
+				icon_men_LeaveOut = TRUE;
+			}
+			selected_count++;
+		}
+		else
+		{
+			break;
+		}
+	} while (TRUE);
+
+	if (current_Menustrip != NULL)
+	{
+		if (selected_count > 0)
+		{
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_Format);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_LeaveOut);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_PutAway);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_EmptyTrash);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+			}
+		}
+		else
+		{
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+			if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
+			{
+				SET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
+			}
+		}
+		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_ALL)) != NULL)
+		{
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_DispFlags & ICONLIST_DISP_SHOWINFO));
+		}
+		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
+		{
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
+		}
+		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_NAME)) != NULL)
+		{
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_SortFlags == ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE));
+		}
+		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_DATE)) != NULL)
+		{
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_SortFlags == ICONLIST_SORT_BY_DATE));
+		}
+		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_SIZE)) != NULL)
+		{
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_SortFlags == ICONLIST_SORT_BY_SIZE));
+		}
+		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_TYPE)) != NULL)
+		{
+			//SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_SortFlags & ICONLIST_DISP_SHOWINFO));
+		}
+	}
+}
+
 /*** Methods ****************************************************************/
 ///OM_NEW()
 Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
@@ -2239,8 +2417,13 @@ D(bug("[Wanderer] Wanderer__OM_SET: setting MUIA_Wanderer_Screen isnt yet handle
                 data->wd_ActiveWindow = (Object *) tag->ti_Data;
 D(bug("[Wanderer] Wanderer__OM_SET: MUIA_Wanderer_ActiveWindow = %p\n", tag->ti_Data));
                 if (!(XGET(data->wd_ActiveWindow, MUIA_Window_Activate)))
+				{
                     NNSET(data->wd_ActiveWindow, MUIA_Window_Activate, TRUE);
+				}
+				Object *activatewin_Iconlist = NULL;
 
+				GET(data->wd_ActiveWindow, MUIA_IconWindow_IconList, &activatewin_Iconlist);
+				UpdateMenuStates(data->wd_ActiveWindow, activatewin_Iconlist);
                 break;
         
         case MUIA_Application_Iconified:
@@ -2831,31 +3014,23 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: IconWindows IconLi
         {
             GET(window_IconList, MUIA_IconList_DisplayFlags, &current_DispFlags);
 
+#if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Old Flags : %x\n", current_DispFlags));
 
 #if defined(WANDERER_DEFAULT_SHOWALL)
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'ALL' Files\n"));
             current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
 #endif
+
 #if defined(WANDERER_DEFAULT_SHOWHIDDEN)
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'Hidden' Files\n"));
             current_DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
 #endif
-#if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
-D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n", current_DispFlags));
+
+			D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n", current_DispFlags));
             SET(window_IconList, MUIA_IconList_DisplayFlags, current_DispFlags);
 #endif
-			/* Update menu's accordingly ... */
-			Object* tmp_MenuItem = NULL;
-			if ((tmp_MenuItem = FindMenuitem(_NewWandDrawerMenu__menustrip, MEN_WINDOW_VIEW_ALL)) != NULL)
-			{
-				SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_DispFlags & ICONLIST_DISP_SHOWINFO));
-			}
-			if ((tmp_MenuItem = FindMenuitem(_NewWandDrawerMenu__menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
-			{
-				SET(tmp_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_DispFlags & ICONLIST_DISP_SHOWHIDDEN));
-			}
-#warning "TODO: Set Sort menu correctly depending on IconList settings"
+			UpdateMenuStates(window, window_IconList);
         }
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: setup notifications\n"));
         DoMethod
