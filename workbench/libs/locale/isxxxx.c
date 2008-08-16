@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IsXXXX() - Stub for Language isXXXXX() functions.
@@ -17,7 +17,7 @@
 	AROS_LH2(BOOL, IsXXXX,
 
     SYNOPSIS
-	AROS_LHA(struct Locale *,   locale, A0),
+	AROS_LHA(const struct Locale *,   locale, A0),
 	AROS_LHA(ULONG,             character, D0),
 
     LOCATION
@@ -64,10 +64,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
 
 *****************************************************************************/
 

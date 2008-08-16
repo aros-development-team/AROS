@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -36,10 +36,10 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
 	AROS_LH4(APTR, FormatString,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale *, locale, A0),
-	AROS_LHA(STRPTR         , fmtTemplate, A1),
-	AROS_LHA(APTR           , dataStream, A2),
-	AROS_LHA(struct Hook   *, putCharFunc, A3),
+	AROS_LHA(const struct Locale *, locale, A0),
+	AROS_LHA(CONST_STRPTR, fmtTemplate, A1),
+	AROS_LHA(CONST_APTR           , dataStream, A2),
+	AROS_LHA(const struct Hook   *, putCharFunc, A3),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 11, Locale)
@@ -60,10 +60,6 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
 {
   AROS_LIBFUNC_INIT
@@ -82,7 +78,7 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
   UWORD indices[INDICES];
 
   if (!fmtTemplate)
-    return dataStream;
+    return (APTR)dataStream;
 
   template_pos = 0;      /* Current position in the template string */
   state        = OUTPUT; /* current state of parsing */
@@ -119,8 +115,8 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
         if (!scanning)
         {
           AROS_UFC3(VOID, putCharFunc->h_Entry,
-            AROS_UFCA(struct Hook *,   putCharFunc,                A0),
-            AROS_UFCA(struct Locale *, locale,                     A2),
+            AROS_UFCA(const struct Hook *,   putCharFunc,                A0),
+            AROS_UFCA(const struct Locale *, locale,                     A2),
             AROS_UFCA(UBYTE,           fmtTemplate[template_pos],  A1));
         }
 
@@ -190,8 +186,8 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
           if (!scanning)
           {
             AROS_UFC3(VOID, putCharFunc->h_Entry,
-              AROS_UFCA(struct Hook *  , putCharFunc,                A0),
-              AROS_UFCA(struct Locale *, locale,                     A2),
+              AROS_UFCA(const struct Hook *  , putCharFunc,                A0),
+              AROS_UFCA(const struct Locale *, locale,                     A2),
               AROS_UFCA(UBYTE,           fmtTemplate[template_pos],  A1));
           }
           template_pos++;
@@ -636,8 +632,8 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
             if (!left)
               for (i = buflen; i < width; i++)
                 AROS_UFC3(VOID, putCharFunc->h_Entry,
-                  AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                  AROS_UFCA(struct Locale *, locale              , A2),
+                  AROS_UFCA(const struct Hook *,   putCharFunc         , A0),
+                  AROS_UFCA(const struct Locale *, locale              , A2),
                   AROS_UFCA(UBYTE,           fill                , A1)
                 );
 
@@ -645,8 +641,8 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
             for (i = 0; i < buflen; i++)
             {
               AROS_UFC3(VOID, putCharFunc->h_Entry,
-                AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                AROS_UFCA(struct Locale *, locale              , A2),
+                AROS_UFCA(const struct Hook *,   putCharFunc         , A0),
+                AROS_UFCA(const struct Locale *, locale              , A2),
                 AROS_UFCA(UBYTE,           *buffer++           , A1)
               );
             }
@@ -655,8 +651,8 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
             if (left)
               for (i = buflen; i < width; i++)
                 AROS_UFC3(VOID, putCharFunc->h_Entry,
-                  AROS_UFCA(struct Hook *,   putCharFunc         , A0),
-                  AROS_UFCA(struct Locale *, locale              , A2),
+                  AROS_UFCA(const struct Hook *,   putCharFunc         , A0),
+                  AROS_UFCA(const struct Locale *, locale              , A2),
                   AROS_UFCA(UBYTE,           fill                , A1)
                 );
           }

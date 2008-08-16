@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: StrnCmp() - Stub for the Locale StrnCmp() function.
@@ -20,9 +20,9 @@
 	AROS_LH5(LONG, StrnCmp,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale *, locale, A0),
-	AROS_LHA(STRPTR         , string1, A1),
-	AROS_LHA(STRPTR         , string2, A2),
+	AROS_LHA(const struct Locale *, locale, A0),
+	AROS_LHA(CONST_STRPTR   , string1, A1),
+	AROS_LHA(CONST_STRPTR   , string2, A2),
 	AROS_LHA(LONG           , length, D0),
 	AROS_LHA(ULONG          , type, D1),
 
@@ -42,7 +42,8 @@
 	locale      -   Which locale to use for this comparison.
 	string1     -   NULL terminated string.
 	string2     -   NULL terminated string.
-	length      -   Maximum length of string to compare.
+	length      -   Maximum length of string to compare, or -1 to
+	    compare entire strings.
 	type        -   How to compare the strings, values are:
 
 	    SC_ASCII
@@ -85,10 +86,6 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -107,15 +104,15 @@
 
 #ifdef AROS_CALL4
     Result = AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[16],
-	AROS_LCA(STRPTR, string1, A1),
-	AROS_LCA(STRPTR, string2, A2),
+	AROS_LCA(CONST_STRPTR, string1, A1),
+	AROS_LCA(CONST_STRPTR, string2, A2),
 	AROS_LCA(ULONG, length, D0),
 	AROS_LCA(ULONG, type, D1),
         struct LocaleBase *, LocaleBase);
 #else
     Result = AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[16],
-	AROS_UFCA(STRPTR, string1, A1),
-	AROS_UFCA(STRPTR, string2, A2),
+	AROS_UFCA(CONST_STRPTR, string1, A1),
+	AROS_UFCA(CONST_STRPTR, string2, A2),
 	AROS_UFCA(ULONG, length, D0),
 	AROS_UFCA(ULONG, type, D1));
 #endif

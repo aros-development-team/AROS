@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     OpenLocale() - Give access to a new locale.
@@ -19,7 +19,7 @@
 #define	DEBUG_OPENLOCALE(x)	;
 
 extern void InitLocale(
-    STRPTR filename,
+    CONST_STRPTR filename,
     struct IntLocale *,
     struct LocalePrefs *,
     struct LocaleBase *);
@@ -32,7 +32,7 @@ extern void InitLocale(
 	AROS_LH1(struct Locale *, OpenLocale,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, A0),
+	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 26, Locale)

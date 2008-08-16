@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of OpenCatalog()
@@ -22,7 +22,7 @@ extern struct LocaleBase *LocaleBase;
 
 /*  SYNOPSIS */
 	struct Locale * locale,
-	STRPTR          name,
+	CONST_STRPTR name,
 	Tag             tag1,
 	...             )
 
@@ -31,7 +31,7 @@ extern struct LocaleBase *LocaleBase;
 	For information see locale.library/OpenCatalog()
 
     INPUTS
-	locale      -   The locale describing the language the users
+	locale      -   The locale describing the language the user
 			wants.
 	name        -   Name of the catalog file.
 	tag1        -   TagList of extra arguments.
@@ -57,9 +57,6 @@ extern struct LocaleBase *LocaleBase;
 	locale/GetCatalogStr()
 
     INTERNALS
-
-    HISTORY
-	15-02-1997  iaint   Wrote.
 
 *****************************************************************************/
 {
