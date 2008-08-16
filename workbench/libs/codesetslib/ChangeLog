@@ -5,6 +5,11 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2008-08-16  Staf Verhaegen <staf.verhaegen@skynet.be>
+
+ * codesets.conf (AROS): Update version and copyright
+ * mmakefile.src (AROS): Don't let codesets.library depend on libcodesets.a
+ 
 2008-07-29  Jens Langner <Jens.Langner@light-speed.de>
 
   * developer/docs/codesets.doc: fixed the documentation on the Hook uses
