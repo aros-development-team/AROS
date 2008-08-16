@@ -109,7 +109,7 @@ void SetWindowPointer( struct Window * window, ULONG tag1, ...) __stackparm;
 
 /* Locale */
 #ifndef OpenCatalog
-struct Catalog *OpenCatalog(	struct Locale * locale,
+struct Catalog *OpenCatalog(const struct Locale * locale,
 				CONST_STRPTR name,
 				Tag tag1,
 				...) __stackparm;
