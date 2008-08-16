@@ -15,7 +15,6 @@ Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
-Assign >NIL: Fonts: SYS:Fonts/Russian ADD
 Assign HELP:    LOCALE:Help DEFER
 Assign THEMES:  SYS:System/Themes >NIL:
 Assign IMAGES:  SYS:System/Images DEFER
@@ -59,6 +58,7 @@ If WARN
     Assign FONTS: RAM:Fonts
     Copy >NIL: SYS:Fonts FONTS: ALL CLONE NOREQ
 Endif
+Assign >NIL: FONTS: FONTS:Russian ADD
 
 IF EXISTS FONTS:__TEST__
     Delete FONTS:__TEST__ QUIET
