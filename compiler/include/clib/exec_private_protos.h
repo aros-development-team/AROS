@@ -2,7 +2,7 @@
 #define CLIB_EXEC_PRIVATE_PROTOS_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright © 1995-1997, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Private prototypes for exec.library
