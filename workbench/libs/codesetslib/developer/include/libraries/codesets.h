@@ -5,7 +5,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2008 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -163,6 +163,9 @@ enum
 #define CSA_B64Unix             CODESETSLIB_TAG(26)
 #define CSA_B64FLG_NtCheckErr   CODESETSLIB_TAG(27)
 
+#define CSA_MapForeignChars     CODESETSLIB_TAG(28)
+#define CSA_MapForeignCharsHook CODESETSLIB_TAG(29)
+
 /***********************************************************************/
 /*
 ** Returns code from CodesetsEncodeB64A() CodesetsDecodeB64A()
@@ -189,6 +192,22 @@ enum
 {
   CSV_Translating,
   CSV_End,
+};
+
+/***********************************************************************/
+
+/*
+** the message passed to a CSA_MapForeignCharsHook hook
+** the hook function must return the length of the replacement string
+** == 0 signals 'no replacement found'
+**  > 0 will use the supplied string directly
+**  < 0 signals an UTF8 replacement of negated length
+*/
+struct replaceMsg
+{
+  char **dst;          /* place the replace string here */
+  unsigned char *src;  /* the source UTF8 string */
+  int srclen;          /* length of the UTF8 sequence */
 };
 
 /***********************************************************************/

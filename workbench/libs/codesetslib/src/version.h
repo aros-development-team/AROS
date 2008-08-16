@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2008 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -27,30 +27,54 @@
 #ifndef _VERSION_H_
 #define _VERSION_H_
 
+#include "macros.h"
+
+// for setting all necessary version information
 #define LIB_VERSION    6
-#define LIB_REVISION   5
+#define LIB_REVISION   6
+#define LIB_DATE       "06.07.2008"
+#define LIB_COPYRIGHT  "Copyright (c) 2005-2008 codesets.library Open Source Team"
 
-#define LIB_REV_STRING "6.5"
-#define LIB_DATE       "18.12.2007"
+// set the LIB_REV_STRING
+#define LIB_REV_STRING STR(LIB_VERSION) "." STR(LIB_REVISION)
 
-#if defined(__PPC__)
-  #if defined(__MORPHOS__)
-    #define CPU " [MOS/PPC]"
-  #else
-    #define CPU " [OS4/PPC]"
-  #endif
-#elif defined(_M68060) || defined(__M68060) || defined(__mc68060)
-  #define CPU " [060]"
-#elif defined(_M68040) || defined(__M68040) || defined(__mc68040)
-  #define CPU " [040]"
-#elif defined(_M68030) || defined(__M68030) || defined(__mc68030)
-  #define CPU " [030]"
-#elif defined(_M68020) || defined(__M68020) || defined(__mc68020)
-  #define CPU " [020]"
+// identify the system we are compiling for
+#if defined(__amigaos4__)
+  #define SYSTEM      "AmigaOS4"
+  #define SYSTEMSHORT "OS4"
+#elif defined(__MORPHOS__)
+  #define SYSTEM      "MorphOS"
+  #define SYSTEMSHORT "MOS"
+#elif defined(__AROS__)
+  #define SYSTEM      "AROS"
+  #define SYSTEMSHORT SYSTEM
+#elif defined(__AMIGA__)
+  #define SYSTEM      "AmigaOS3"
+  #define SYSTEMSHORT "OS3"
 #else
-  #define CPU ""
+  #warning "Unsupported System - check SYSTEM define"
+  #define SYSTEM      "???"
+  #define SYSTEMSHORT "???"
 #endif
 
-#define LIB_COPYRIGHT  "Copyright (c) 2005-2007 codesets.library Open Source Team"
+// identify the CPU model
+#if defined(__PPC__)
+  #define CPU "PPC"
+#elif defined(_M68060) || defined(__M68060) || defined(__mc68060)
+  #define CPU "m68060"
+#elif defined(_M68040) || defined(__M68040) || defined(__mc68040)
+  #define CPU "m68040"
+#elif defined(_M68030) || defined(__M68030) || defined(__mc68030)
+  #define CPU "m68030"
+#elif defined(_M68020) || defined(__M68020) || defined(__mc68020)
+  #define CPU "m68k"
+#elif defined(_M68000) || defined(__M68000) || defined(__mc68000)
+  #define CPU "m68000"
+#elif defined(__i386__)
+  #define CPU "i386"
+#else
+  #warning "Unsupported CPU model - check CPU define"
+  #define CPU "???"
+#endif
 
 #endif // _VERSION_H_

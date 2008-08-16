@@ -24,10 +24,11 @@
 
 ***************************************************************************/
 
-#include <proto/exec.h>
-#include <proto/codesets.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <proto/exec.h>
+#include <proto/codesets.h>
 
 struct Library *CodesetsBase = NULL;
 #if defined(__amigaos4__)

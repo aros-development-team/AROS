@@ -5,6 +5,134 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2008-07-29  Jens Langner <Jens.Langner@light-speed.de>
+
+  * developer/docs/codesets.doc: fixed the documentation on the Hook uses
+    as an incorrect hook prototype was used throughout the examples.
+
+#### 6.6 RELEASE #########################################################
+
+2008-07-06  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final release preparations
+
+2008-07-05  Jens Langner <Jens.Langner@light-speed.de>
+
+  * developer/examples: replaced the multiple makefiles by a single
+    multiplatform makefile.
+
+2008-07-04  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: renamed the new mapping functionality to the more untuitive
+    "CSA_MapForeignToASCII" term.
+
+2008-07-03  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: fixed some copy'n'paste bugs in the lookup table.
+  * codesets.c: in case one of the replacement functions returned an UTF8
+    sequence the wrong string was used in the next loop, causing an endless
+    loop.
+
+2008-07-03  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: added official ISO replacements for the currency symbols in
+    case the CSA_MapUnknownToASCII attribute is used.
+  * codesets.c: fixed a bug in the newly reworked replacement function which
+    didn't work as expected and always replace unknown chars with '?' instead
+    of replacing it with the looklike char sequence.
+
+2008-07-02  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: calling the replacement hook will be skipped now if the
+    internal table yielded a suitable replacement.
+  * codesets.c: removed that silly restriction of 10 replacement tries again.
+    It is up to the developer to make sure that no endless loop happens and
+    that the replacement hook handles all data correctly and as documented.
+  * codesets.c, codesets.doc: the internal and the external replacement via
+    hooks are now handled completely independently, however, the hook will be
+    called after the internal replacement and thus can override the internal
+    replacement. Furthermore if either function returns an UTF8 sequence this
+    sequence will be passed again to these functions as long as no suitable
+    code is found in the active codeset. 10 retries will be done at most to
+    avoid endless loops.
+  * codesets.c, codesets.doc: renamed the attribute CSA_MapUnknownToAscii to
+    CSA_MapUnknownToASCII. Also implemented CSA_MapUnknownHook, which will call
+    the specified hook function in case no internal replacement for an unknown
+    UTF8 sequence could be found. This way an application can provide its own
+    additional "to ASCII" remapping.
+
+2008-07-02  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c, codesets.doc: added the new CSA_MapUnknownToAscii attribute to
+    our autodocs and added its use in the CodesetsConvertStrA() function
+    as well.
+
+2008-07-01  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: added the Latin Extended-A section to the lookup table.
+  * codesets.c: implemented the binary search in the new replacement lookup
+    table.
+
+2008-07-01  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: renamed replacement function to mapUTF8toAscii() which more
+    describes what this function does. In addition the new attribute is now
+    named CSA_MapUnknownToAscii. In addition the new function contains a first
+    experimental utf8map lookup table which we can use in future instead of
+    the long switch/case statements.
+
+2008-06-30  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: fixed the PRIME character replacement.
+
+2008-06-29  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: added more replacement UTF8 replaceent characters to the internal
+    list.
+
+2008-06-28  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: slightly updated our char replacement list - still more to come.
+
+2008-06-27  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: changed the source pointer type of getReplacementUTF8Char() from
+    "char *" to "unsigned char *". For OS4 this should make no difference, since
+    the char type defaults to unsigned with GCC 4. For OS3 this makes a huge
+    difference, because for GCC 2 char is still signed and some comparisons will
+    be "const false" or even outside the valid value range in switch() statements
+    in this case.
+  * libinit.c, codesets.c: removed some warnings about uninitialized variables
+    and "void *" pointer arithmetic.
+
+2008-06-26  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c, misc: started implemented feature request #1879875 by
+    introducing a new CSA_ReplaceUnknown attribute for CodesetsConvertStr()
+    and CodesetsUTF8ToStr(). When this attribute is set to TRUE, some
+    well-known UTF8 sequences which can't be directly mapped to a certain
+    destination codeset will be automatically replaced by common 7bit
+    character representations. This should make some UTF8 encoded
+    text passages a bit more readable in case they contain punctation
+    and similar generic characters which can't be directly mapped. Please
+    note, however, that this is still work in progress and that the
+    replacement list should be enhanced by having a look what chars can be
+    mapped.
+  * misc: updated the build environment to take a Makefile.dep dependency
+    file into account.
+
+2008-06-24  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed broken build and renamed the gluecode lib directory name.
+
+2008-06-24  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * libcodesets.a: added MorphOS glue lib to developers dir.
+  * init.c: we must use localised Strnicmp() string comparison routine to
+    support supplement characters properly.
+  * init.c: added localised chech written in local charset (MorphOS uses
+    localised language names).
+
 2008-04-15  Thore Böckelmann <tboeckel@gmx.de>
 
   * developer/examples/vastubs.c, developer/examples/makefile.os3: added

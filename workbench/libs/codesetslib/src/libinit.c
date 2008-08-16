@@ -28,16 +28,14 @@
 
 #include "debug.h"
 
-// transforms a define into a string
-#define STR(x)  STR2(x)
-#define STR2(x) #x
-
 /****************************************************************************/
 
+#if !defined(__MORPHOS__)
 #define MIN_STACKSIZE 65536
 
 // stack cookie for shell v45+
 static const char USED_VAR stack_size[] = "$STACK:" STR(MIN_STACKSIZE) "\n";
+#endif
 
 /****************************************************************************/
 
@@ -55,7 +53,7 @@ struct ExecBase *SysBase = NULL;
 struct LibraryHeader *CodesetsBase = NULL;
 
 static const char UserLibName[] = "codesets.library";
-static const char UserLibID[]   = "$VER: codesets.library " LIB_REV_STRING CPU " (" LIB_DATE ") " LIB_COPYRIGHT;
+static const char UserLibID[]   = "$VER: codesets.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;
 
 /****************************************************************************/
 
@@ -331,7 +329,6 @@ static const USED_VAR struct Resident ROMTag =
  * one for the ppc.library.
  * ** IMPORTANT **
  */
-const USED_VAR ULONG __amigappc__ = 1;
 const USED_VAR ULONG __abox__ = 1;
 
 #endif /* __MORPHOS */
@@ -397,7 +394,7 @@ static BOOL callLibFunction(ULONG (*function)(struct LibraryHeader *), struct Li
   NewGetTaskAttrsA(tc, &stacksize, sizeof(ULONG), TASKINFOTYPE_STACKSIZE, NULL);
   #else
   // on all other systems we query via SPUpper-SPLower calculation
-  stacksize = tc->tc_SPUpper - tc->tc_SPLower;
+  stacksize = (ULONG)tc->tc_SPUpper - (ULONG)tc->tc_SPLower;
   #endif
 
   // Swap stacks only if current stack is insufficient
