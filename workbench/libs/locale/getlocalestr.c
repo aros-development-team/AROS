@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: GetLocaleStr() - Get a builtin system string.
+    Desc: GetLocaleStr() - Get a built-in system string.
     Lang: english
 */
 #include <exec/types.h>
@@ -15,10 +15,10 @@
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH2(STRPTR, GetLocaleStr,
+	AROS_LH2(CONST_STRPTR, GetLocaleStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale *, locale, A0),
+	AROS_LHA(const struct Locale *, locale, A0),
 	AROS_LHA(ULONG          , stringNum, D0),
 
 /*  LOCATION */
@@ -49,20 +49,16 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
 #ifdef AROS_CALL1
-    return AROS_CALL1(STRPTR, IntL(locale)->il_LanguageFunctions[3],
+    return AROS_CALL1(CONST_STRPTR, IntL(locale)->il_LanguageFunctions[3],
 	AROS_LCA(ULONG, stringNum, D0),
 	struct LocaleBase *, LocaleBase);
 #else
-    return AROS_UFC2(STRPTR, IntL(locale)->il_LanguageFunctions[3],
+    return AROS_UFC2(CONST_STRPTR, IntL(locale)->il_LanguageFunctions[3],
 	AROS_UFCA(ULONG, stringNum, D0),
 	AROS_UFCA(struct LocaleBase *, LocaleBase, A6));
 #endif

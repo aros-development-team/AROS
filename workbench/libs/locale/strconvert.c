@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: StrConvert - Stub for the Locale StrConvert function.
@@ -20,8 +20,8 @@
 	AROS_LH5(ULONG, StrConvert,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale *, locale, A0),
-	AROS_LHA(STRPTR         , string, A1),
+	AROS_LHA(const struct Locale *, locale, A0),
+	AROS_LHA(CONST_STRPTR   , string, A1),
 	AROS_LHA(APTR           , buffer, A2),
 	AROS_LHA(ULONG          , bufferSize, D0),
 	AROS_LHA(ULONG          , type, D1),
@@ -65,10 +65,6 @@
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -87,14 +83,14 @@
 
 #ifdef AROS_CALL4
     Result = AROS_CALL4(ULONG, IntL(locale)->il_LanguageFunctions[15],
-	AROS_LCA(STRPTR,    string, A1),
+	AROS_LCA(CONST_STRPTR,    string, A1),
 	AROS_LCA(APTR,      buffer, A2),
 	AROS_LCA(ULONG,     bufferSize, D0),
 	AROS_LCA(ULONG,     type, D1),
         struct LocaleBase *, LocaleBase);
 #else
     Result = AROS_UFC4(ULONG, IntL(locale)->il_LanguageFunctions[15],
-	AROS_UFCA(STRPTR,    string, A1),
+	AROS_UFCA(CONST_STRPTR,    string, A1),
 	AROS_UFCA(APTR,      buffer, A2),
 	AROS_UFCA(ULONG,     bufferSize, D0),
 	AROS_UFCA(ULONG,     type, D1));

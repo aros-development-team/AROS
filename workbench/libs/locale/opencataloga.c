@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -33,9 +33,9 @@ struct header
 	AROS_LH3(struct Catalog *, OpenCatalogA,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale  *, locale, A0),
-	AROS_LHA(STRPTR          , name, A1),
-	AROS_LHA(struct TagItem *, tags, A2),
+	AROS_LHA(const struct Locale  *, locale, A0),
+	AROS_LHA(CONST_STRPTR, name, A1),
+	AROS_LHA(const struct TagItem *, tags, A2),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 25, Locale)
@@ -55,10 +55,6 @@ struct header
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
 
 *****************************************************************************/
 {

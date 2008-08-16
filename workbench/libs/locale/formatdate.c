@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -15,12 +15,15 @@
 
 #include <stdio.h>
 
-VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
-		 struct Locale *locale);
-VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale);
-VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale);
+VOID PrintDigits(UWORD number, char fill, UWORD len, const struct Hook *hook,
+    const struct Locale *locale);
+VOID _WriteChar(char token, const struct Hook *hook,
+    const struct Locale *locale);
+VOID _WriteString(CONST_STRPTR string, const struct Hook *hook,
+    const struct Locale *locale);
 
-static const ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,212,243,273,304,334};
+static const ULONG dayspermonth[13] =
+    {0 /* not used */,0,31,59,90,120,151,181,212,243,273,304,334};
 
 /*****************************************************************************
 
@@ -30,10 +33,10 @@ static const ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,2
 	AROS_LH4(VOID, FormatDate,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale    *, locale, A0),
-	AROS_LHA(STRPTR            , formatString, A1),
-	AROS_LHA(struct DateStamp *, date, A2),
-	AROS_LHA(struct Hook      *, hook, A3),
+	AROS_LHA(const struct Locale    *, locale, A0),
+	AROS_LHA(CONST_STRPTR, formatString, A1),
+	AROS_LHA(const struct DateStamp *, date, A2),
+	AROS_LHA(const struct Hook      *, hook, A3),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 10, Locale)
@@ -108,11 +111,6 @@ static const ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,2
     ParseDate(), <libraries/locale.h>
 
     INTERNALS
-
-    HISTORY
-
-    17.01.2000  bergers implemented U & W, j is still missing
-    07.07.1999  SDuvan  implemented (U, W, j not done yet)
 
 *****************************************************************************/
 {
@@ -349,7 +347,8 @@ static const ULONG dayspermonth[13] = {0 /* not used */,0,31,59,90,120,151,181,2
 } /* FormatDate */
 
 
-VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale)
+VOID _WriteString(CONST_STRPTR string, const struct Hook *hook,
+    const struct Locale *locale)
 {
     while(*string != 0)
     {
@@ -358,18 +357,19 @@ VOID _WriteString(STRPTR string, struct Hook *hook, struct Locale *locale)
 }
 
 
-VOID _WriteChar(char token, struct Hook *hook, struct Locale *locale)
+VOID _WriteChar(char token, const struct Hook *hook,
+    const struct Locale *locale)
 {
      AROS_UFC3(VOID, hook->h_Entry,
-       AROS_UFCA(struct Hook *,   hook,   A0),
-       AROS_UFCA(struct Locale *, locale, A2),
+       AROS_UFCA(const struct Hook *,   hook,   A0),
+       AROS_UFCA(const struct Locale *, locale, A2),
        AROS_UFCA(char,            token,  A1)
      );
 }
 
 
-VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
-		 struct Locale *locale)
+VOID PrintDigits(UWORD number, char fill, UWORD len, const struct Hook *hook,
+    const struct Locale *locale)
 {
     char  buf[7];
     char *ptr = &buf[6];

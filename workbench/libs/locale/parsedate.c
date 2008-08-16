@@ -18,8 +18,8 @@ BOOL _getnum(LONG numchars,
              ULONG *cPtr,
              CONST_STRPTR *fmtTemplatePtr,
              BOOL *checkEOFPtr,
-             struct Locale *locale,
-             struct Hook *getCharFunc,
+             const struct Locale *locale,
+             const struct Hook *getCharFunc,
              struct LocaleBase *LocaleBase);
 #define get2num(x) _getnum(2, (x), &c, &fmtTemplate, &checkEOF, locale, getCharFunc, LocaleBase)
 #define get4num(x) _getnum(4, (x), &c, &fmtTemplate, &checkEOF, locale, getCharFunc, LocaleBase)
@@ -32,10 +32,10 @@ BOOL _getnum(LONG numchars,
 	AROS_LH4(BOOL, ParseDate,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale    *, locale, A0),
+	AROS_LHA(const struct Locale    *, locale, A0),
 	AROS_LHA(struct DateStamp *, date, A1),
 	AROS_LHA(CONST_STRPTR      , fmtTemplate, A2),
-	AROS_LHA(struct Hook      *, getCharFunc, A3),
+	AROS_LHA(const struct Hook      *, getCharFunc, A3),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 27, Locale)
@@ -112,8 +112,8 @@ BOOL _getnum(LONG numchars,
 
 #define GetChar()\
 	AROS_UFC3(ULONG, getCharFunc->h_Entry, \
-		AROS_UFCA(struct Hook *, getCharFunc, A0), \
-		AROS_UFCA(struct Locale *, locale, A2), \
+		AROS_UFCA(const struct Hook *, getCharFunc, A0), \
+		AROS_UFCA(const struct Locale *, locale, A2), \
 		AROS_UFCA(ULONG, 0, A1))
 
     while (*fmtTemplate)
@@ -134,7 +134,7 @@ BOOL _getnum(LONG numchars,
 		/* weekday name */
 		case 'A':
 		{
-		    STRPTR dayStr[7];
+		    CONST_STRPTR dayStr[7];
 		    BOOL dayOk[7];
 		    ULONG i, a;
 
@@ -181,7 +181,7 @@ BOOL _getnum(LONG numchars,
 		/* month name */
 		case 'B':
 		{
-		    STRPTR monthStr[12];
+		    CONST_STRPTR monthStr[12];
 		    BOOL monthOk[12];
 		    ULONG i, a;
 
@@ -284,7 +284,7 @@ BOOL _getnum(LONG numchars,
 		/* AM or PM string */
 		case 'p':
 		{
-		    STRPTR amStr, pmStr;
+		    CONST_STRPTR amStr, pmStr;
 		    BOOL amOk = TRUE, pmOk = TRUE;
 		    ULONG a, b;
 		    amStr = GetLocaleStr(locale, AM_STR);
@@ -433,8 +433,8 @@ BOOL _getnum(LONG numchars,
              ULONG *cPtr,
              CONST_STRPTR *fmtTemplatePtr,
              BOOL *checkEOFPtr,
-             struct Locale *locale,
-             struct Hook *getCharFunc,
+             const struct Locale *locale,
+             const struct Hook *getCharFunc,
              struct LocaleBase *LocaleBase)
 {
     LONG val;

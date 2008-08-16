@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: english.language description file.
@@ -65,7 +65,7 @@ extern const ULONG __code_table_to_upper[];
 /* Language arrays.
    The arrays defined later are valid for "english.language" only.
 */
-extern const STRPTR __language_strings[];
+extern const CONST_STRPTR __language_strings[];
 extern const ULONG  __language_short_order_tab[];
 extern const ULONG  __language_long_order_tab[];
 extern ULONG AROS_SLIB_ENTRY( null, Locale)();
@@ -132,11 +132,11 @@ AROS_LH1(ULONG, convtoupper,
     AROS_LIBFUNC_EXIT
 }
 
-/* STRPTR GetLangString(ULONG num): Language function 3
+/* CONST_STRPTR GetLangString(ULONG num): Language function 3
     This function is called by GetLocaleStr() and should return
     the string matching the string id passed in as num.
 */
-AROS_LH1(STRPTR, getlangstring,
+AROS_LH1(CONST_STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
     struct LocaleBase *, LocaleBase, 9, english)
 {
@@ -293,7 +293,7 @@ AROS_LH1(ULONG, isxdigit,
 
 
 
-/* ULONG strconvert(STRPTR s1, STRPTR s2, ULONG len, ULONG typ): LF 15
+/* ULONG strconvert(CONST_STRPTR s1, STRPTR s2, ULONG len, ULONG typ): LF 15
     This function will convert a string to automatically use the
     character order table. This is a bit dodgy in the opinion of some
     developers. However, the ANSI people saw this differently ...
@@ -303,7 +303,7 @@ AROS_LH1(ULONG, isxdigit,
     do this.
 */
 AROS_LH4(ULONG, strconvert,
-    AROS_LHA(STRPTR,    string1, A1),
+    AROS_LHA(CONST_STRPTR,    string1, A1),
     AROS_LHA(STRPTR,    string2, A2),
     AROS_LHA(ULONG,     length,  D0),
     AROS_LHA(ULONG,     type,    D1),
@@ -338,14 +338,14 @@ AROS_LH4(ULONG, strconvert,
     AROS_LIBFUNC_EXIT
 }
 
-/* LONG strcompare(STRPTR s1, STRPTR s2, LONG len, ULONG typ): LF 16
+/* LONG strcompare(CONST_STRPTR s1, CONST_STRPTR s2, LONG len, ULONG typ): LF 16
     This function will do the comparison using either plain ASCII
     or the collation (character order) information. This is explained in
     more detail in the data file, or in the autodoc...
 */
 AROS_LH4(LONG, strcompare,
-    AROS_LHA(STRPTR,    string1, A1),
-    AROS_LHA(STRPTR,    string2, A2),
+    AROS_LHA(CONST_STRPTR,    string1, A1),
+    AROS_LHA(CONST_STRPTR,    string2, A2),
     AROS_LHA(LONG,      length,  D0),
     AROS_LHA(ULONG,     type,    D1),
     struct LocaleBase *, LocaleBase, 22, english)
@@ -1393,7 +1393,7 @@ const ULONG __language_long_order_tab[ __CODE_TABLE_SIZE] =
     This is the list of strings. It is an array of pointers to strings,
     although how it is laid out is implementation dependant.
 */
-const STRPTR __language_strings[] =
+const CONST_STRPTR __language_strings[] =
 {
     /* A blank string: */
     "",

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ConvToUpper() - stub for the language toupper() function.
@@ -20,7 +20,7 @@
 	AROS_LH2(ULONG, ConvToUpper,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Locale *, locale, A0),
+	AROS_LHA(const struct Locale *, locale, A0),
 	AROS_LHA(ULONG          , character, D0),
 
 /*  LOCATION */
@@ -50,10 +50,6 @@
 	ConvToLower
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
 
 *****************************************************************************/
 {

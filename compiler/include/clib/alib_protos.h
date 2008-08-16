@@ -2,7 +2,7 @@
 #define  CLIB_ALIB_PROTOS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Prototypes for amiga.lib
@@ -110,7 +110,7 @@ void SetWindowPointer( struct Window * window, ULONG tag1, ...) __stackparm;
 /* Locale */
 #ifndef OpenCatalog
 struct Catalog *OpenCatalog(	struct Locale * locale,
-				STRPTR name,
+				CONST_STRPTR name,
 				Tag tag1,
 				...) __stackparm;
 #endif
