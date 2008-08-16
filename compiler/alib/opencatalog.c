@@ -21,7 +21,7 @@ extern struct LocaleBase *LocaleBase;
 	struct Catalog * OpenCatalog (
 
 /*  SYNOPSIS */
-	struct Locale * locale,
+	const struct Locale * locale,
 	CONST_STRPTR name,
 	Tag             tag1,
 	...             )
