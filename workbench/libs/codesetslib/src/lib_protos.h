@@ -35,12 +35,17 @@ ULONG freeBase(struct LibraryHeader* lib);
 ULONG initBase(struct LibraryHeader* lib);
 
 /* utils.c */
+#if defined(__amigaos4__)
+#define allocVecPooled(pool,size) AllocVecPooled(pool,size)
+#define freeVecPooled(pool,mem)   FreeVecPooled(pool,mem)
+#else
 APTR allocVecPooled(APTR pool, ULONG size);
 void freeVecPooled(APTR pool, APTR mem);
-APTR allocArbitratePooled(ULONG s);
-void freeArbitratePooled(APTR mem , ULONG s);
+#endif
+APTR reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize);
 APTR allocArbitrateVecPooled(ULONG size);
 void freeArbitrateVecPooled(APTR mem);
+APTR reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize);
 
 /* base64.c */
 #ifndef __AROS__

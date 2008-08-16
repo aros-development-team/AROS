@@ -24,6 +24,7 @@
 
 /****************************************************************************/
 
+#if !defined(__amigaos4__)
 APTR
 allocVecPooled(APTR pool,ULONG size)
 {
@@ -34,37 +35,33 @@ allocVecPooled(APTR pool,ULONG size)
 
   return mem;
 }
+#endif
 
 /****************************************************************************/
 
+#if !defined(__amigaos4__)
 void
 freeVecPooled(APTR pool,APTR mem)
 {
   FreePooled(pool,(LONG *)mem - 1,*((LONG *)mem - 1));
 }
+#endif
 
 /****************************************************************************/
 
 APTR
-allocArbitratePooled(ULONG s)
+reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize)
 {
-  APTR mem;
+  ULONG *newMem;
 
-  ObtainSemaphore(&CodesetsBase->poolSem);
-  mem = AllocPooled(CodesetsBase->pool, s);
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  if((newMem = allocVecPooled(pool, newSize)) != NULL)
+  {
+    memcpy(newMem, mem, oldSize);
 
-  return mem;
-}
+    freeVecPooled(pool, mem);
+  }
 
-/****************************************************************************/
-
-void
-freeArbitratePooled(APTR mem,ULONG s)
-{
-  ObtainSemaphore(&CodesetsBase->poolSem);
-  FreePooled(CodesetsBase->pool, mem, s);
-  ReleaseSemaphore(&CodesetsBase->poolSem);
+  return newMem;
 }
 
 /****************************************************************************/
@@ -89,6 +86,18 @@ freeArbitrateVecPooled(APTR mem)
   ObtainSemaphore(&CodesetsBase->poolSem);
   freeVecPooled(CodesetsBase->pool, mem);
   ReleaseSemaphore(&CodesetsBase->poolSem);
+}
+
+/****************************************************************************/
+
+APTR
+reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize)
+{
+  ObtainSemaphore(&CodesetsBase->poolSem);
+  mem = reallocVecPooled(CodesetsBase->pool, mem, oldSize, newSize);
+  ReleaseSemaphore(&CodesetsBase->poolSem);
+
+  return mem;
 }
 
 /****************************************************************************/

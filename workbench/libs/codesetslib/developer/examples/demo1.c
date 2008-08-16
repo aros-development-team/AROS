@@ -24,6 +24,14 @@
 
 ***************************************************************************/
 
+#include <proto/codesets.h>
+
+#if defined(__MORPHOS__)
+#if defined(USE_INLINE_STDARG)
+#undef USE_INLINE_STDARG
+#endif
+#endif
+
 #include <clib/alib_protos.h>
 
 #include <proto/exec.h>
@@ -36,21 +44,6 @@
 #include <libraries/mui.h>
 #include <mui/Textinput_mcc.h>
 #include <mui/TextEditor_mcc.h>
-
-#define USE_INLINE_STDARG
-
-// tempoarly disable the INLINE STDARG define here
-#if defined(NO_INLINE_STDARG)
-#undef NO_INLINE_STDARG
-#include <proto/codesets.h>
-#define NO_INLINE_STDARG
-#elif defined(NO_PPCINLINE_STDARG)
-#undef NO_PPCINLINE_STDARG
-#include <proto/codesets.h>
-#define NO_PPCINLINE_STDARG
-#else
-#include <proto/codesets.h>
-#endif
 
 #include <stdio.h>
 #include <string.h>

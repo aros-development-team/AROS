@@ -141,6 +141,7 @@ static const struct loc locs[] =
   { "english",      7,  "ISO-8859-1 + Euro" },
   { "esperanto",    9,  "ISO-8859-3"        },
   { "eesti",        5,  "ISO-8859-15"       },
+  { "èe¹tina",      7,  "ISO-8859-2"        },  /* Czech in MorphOS 2.0 */
   { "español",      7,  "ISO-8859-1 + Euro" },
   { "français",     8,  "ISO-8859-1 + Euro" },
   { "gaeilge",      7,  "ISO-8859-15"       },
@@ -187,32 +188,48 @@ getSystemCodeset(struct LibraryHeader *lib)
 
   #ifdef __MORPHOS__
   {
-    struct Library *KeymapBase;
+    /* The system maintains CODEPAGE environment variable which defines the preferred codepage for this user. */
+    TEXT codepage[40];
 
-    KeymapBase = OpenLibrary("keymap.library", 51);
-
-    if (KeymapBase)
+    if (GetVar("CODEPAGE", codepage, sizeof(codepage), 0) > 0)
     {
-      /* Since we requested V51 it is either V51 or newer */
-      if (KeymapBase->lib_Version > 51 || KeymapBase->lib_Revision >= 4)
+      foundCodeset = codesetsFind(&lib->codesets, codepage);
+    }
+
+    D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "not found", codepage);
+
+    /* If CODEPAGE did not work (maybe user deleted it or something) we try a keymap instead. This only works
+     * in MorphOS 2 and only if an old Amiga keymap is not used.
+     */
+    if (foundCodeset == NULL)
+    {
+      struct Library *KeymapBase;
+
+      KeymapBase = OpenLibrary("keymap.library", 51);
+
+      if (KeymapBase)
       {
-        #ifndef GetKeyMapCodepage
-        #define GetKeyMapCodepage(__p0) LP1(78, CONST_STRPTR , GetKeyMapCodepage, CONST struct KeyMap *, __p0, a0, , KEYMAP_BASE_NAME, 0, 0, 0, 0, 0, 0)
-        #endif
-
-        CONST_STRPTR codepage;
-
-        codepage = GetKeyMapCodepage(NULL);
-
-        if (codepage)
+        /* Since we requested V51 it is either V51 or newer */
+        if (KeymapBase->lib_Version > 51 || KeymapBase->lib_Revision >= 4)
         {
-          foundCodeset = codesetsFind(&lib->codesets, codepage);
+          #ifndef GetKeyMapCodepage
+          #define GetKeyMapCodepage(__p0) LP1(78, CONST_STRPTR , GetKeyMapCodepage, CONST struct KeyMap *, __p0, a0, , KEYMAP_BASE_NAME, 0, 0, 0, 0, 0, 0)
+          #endif
 
-          D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "not found", codepage);
+          CONST_STRPTR codepage;
+
+          codepage = GetKeyMapCodepage(NULL);
+
+          if (codepage)
+          {
+            foundCodeset = codesetsFind(&lib->codesets, codepage);
+
+            D(DBF_STARTUP, "%s system default codeset: '%s' (keymap)", foundCodeset ? "found" : "not found", codepage);
+          }
         }
-      }
 
-      CloseLibrary(KeymapBase);
+        CloseLibrary(KeymapBase);
+      }
     }
   }
   #endif
@@ -251,7 +268,7 @@ getSystemCodeset(struct LibraryHeader *lib)
         if(curLoc == NULL || curLoc->name == NULL)
           break;
 
-        if(!strnicmp(language, curLoc->name, curLoc->len))
+        if(!Strnicmp(language, curLoc->name, curLoc->len))
         {
           found = TRUE;
           break;
@@ -285,7 +302,7 @@ getSystemCodeset(struct LibraryHeader *lib)
         if(curLoc == NULL || curLoc->name == NULL)
           break;
 
-        if(!strnicmp(language, curLoc->name, curLoc->len))
+        if(!Strnicmp(language, curLoc->name, curLoc->len))
         {
           found = TRUE;
           break;

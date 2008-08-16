@@ -2,7 +2,7 @@
 
  codesets.library - Amiga shared library for handling different codesets
  Copyright (C) 2001-2005 by Alfonso [alfie] Ranieri <alforan@tin.it>.
- Copyright (C) 2005-2007 by codesets.library Open Source Team
+ Copyright (C) 2005-2008 by codesets.library Open Source Team
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -3367,6 +3367,275 @@ countCodesets(struct codesetList *csList)
 }
 
 ///
+/// mapUTF8toASCII()
+// in case some UTF8 sequences can not be converted during CodesetsUTF8ToStrA(), this
+// function is used to replace these unknown sequences with lookalike characters that
+// still make the text more readable. For more replacement see
+// http://www.utf8-zeichentabelle.de/unicode-utf8-table.pl
+//
+// The conversion table in this function is partly borrowed from the awebcharset plugin
+// written by Frank Weber. See http://cvs.sunsite.dk/viewcvs.cgi/aweb/plugins/charset/awebcharset.c
+//
+struct UTF8Replacement
+{
+  const char *utf8;     // the original UTF8 string we are going to replace
+  const int utf8len;    // the length of the UTF8 string
+  const char *rep;      // pointer to the replacement string
+  const int replen;     // the length of the replacement string (minus for signalling an UTF8 string)
+};
+
+static int compareUTF8Replacements(const void *p1, const void *p2)
+{
+  struct UTF8Replacement *key = (struct UTF8Replacement *)p1;
+  struct UTF8Replacement *rep = (struct UTF8Replacement *)p2;
+  int cmp;
+
+  // compare the length first, after that compare the strings
+  cmp = key->utf8len - rep->utf8len;
+  if(cmp == 0)
+    cmp = memcmp(key->utf8, rep->utf8, key->utf8len);
+
+  return cmp;
+}
+
+static int mapUTF8toASCII(const char **dst, const unsigned char *src, const int utf8len)
+{
+  int len = 0;
+  struct UTF8Replacement key = { (char *)src, utf8len, NULL, 0 };
+  struct UTF8Replacement *rep;
+
+  static struct UTF8Replacement const utf8map[] =
+  {
+    // U+0100 ... U+017F (Latin Extended-A)
+    { "\xC4\x80", 2, "A",         1 }, // U+0100 -> A       (LATIN CAPITAL LETTER A WITH MACRON)
+    { "\xC4\x81", 2, "a",         1 }, // U+0101 -> a       (LATIN SMALL LETTER A WITH MACRON)
+    { "\xC4\x82", 2, "A",         1 }, // U+0102 -> A       (LATIN CAPITAL LETTER A WITH BREVE)
+    { "\xC4\x83", 2, "a",         1 }, // U+0103 -> a       (LATIN SMALL LETTER A WITH BREVE)
+    { "\xC4\x84", 2, "A",         1 }, // U+0104 -> A       (LATIN CAPITAL LETTER A WITH OGONEK)
+    { "\xC4\x85", 2, "a",         1 }, // U+0105 -> a       (LATIN SMALL LETTER A WITH OGONEK)
+    { "\xC4\x86", 2, "C",         1 }, // U+0106 -> C       (LATIN CAPITAL LETTER C WITH ACUTE)
+    { "\xC4\x87", 2, "c",         1 }, // U+0107 -> c       (LATIN SMALL LETTER C WITH ACUTE)
+    { "\xC4\x88", 2, "C",         1 }, // U+0108 -> C       (LATIN CAPITAL LETTER C WITH CIRCUMFLEX)
+    { "\xC4\x89", 2, "c",         1 }, // U+0109 -> c       (LATIN SMALL LETTER C WITH CIRCUMFLEX)
+    { "\xC4\x8A", 2, "C",         1 }, // U+010A -> C       (LATIN CAPITAL LETTER C WITH DOT ABOVE)
+    { "\xC4\x8B", 2, "c",         1 }, // U+010B -> c       (LATIN SMALL LETTER C WITH DOT ABOVE)
+    { "\xC4\x8C", 2, "C",         1 }, // U+010C -> C       (LATIN CAPITAL LETTER C WITH CARON)
+    { "\xC4\x8D", 2, "c",         1 }, // U+010D -> c       (LATIN SMALL LETTER C WITH CARON)
+    { "\xC4\x8E", 2, "D",         1 }, // U+010E -> D       (LATIN CAPITAL LETTER D WITH CARON)
+    { "\xC4\x8F", 2, "d",         1 }, // U+010F -> d       (LATIN SMALL LETTER D WITH CARON)
+    { "\xC4\x90", 2, "D",         1 }, // U+0110 -> D       (LATIN CAPITAL LETTER D WITH STROKE)
+    { "\xC4\x91", 2, "d",         1 }, // U+0111 -> d       (LATIN SMALL LETTER D WITH STROKE)
+    { "\xC4\x92", 2, "E",         1 }, // U+0112 -> E       (LATIN CAPITAL LETTER E WITH MACRON)
+    { "\xC4\x93", 2, "e",         1 }, // U+0113 -> e       (LATIN SMALL LETTER E WITH MACRON)
+    { "\xC4\x94", 2, "E",         1 }, // U+0114 -> E       (LATIN CAPITAL LETTER E WITH BREVE)
+    { "\xC4\x95", 2, "e",         1 }, // U+0115 -> e       (LATIN SMALL LETTER E WITH BREVE)
+    { "\xC4\x96", 2, "E",         1 }, // U+0116 -> E       (LATIN CAPITAL LETTER E WITH DOT ABOVE)
+    { "\xC4\x97", 2, "e",         1 }, // U+0117 -> e       (LATIN SMALL LETTER E WITH DOT ABOVE)
+    { "\xC4\x98", 2, "E",         1 }, // U+0118 -> E       (LATIN CAPITAL LETTER E WITH OGONEK)
+    { "\xC4\x99", 2, "e",         1 }, // U+0119 -> e       (LATIN SMALL LETTER E WITH OGONEK)
+    { "\xC4\x9A", 2, "E",         1 }, // U+011A -> E       (LATIN CAPITAL LETTER E WITH CARON)
+    { "\xC4\x9B", 2, "e",         1 }, // U+011B -> e       (LATIN SMALL LETTER E WITH CARON)
+    { "\xC4\x9C", 2, "G",         1 }, // U+011C -> G       (LATIN CAPITAL LETTER G WITH CIRCUMFLEX)
+    { "\xC4\x9D", 2, "g",         1 }, // U+011D -> g       (LATIN SMALL LETTER G WITH CIRCUMFLEX)
+    { "\xC4\x9E", 2, "G",         1 }, // U+011E -> G       (LATIN CAPITAL LETTER G WITH BREVE)
+    { "\xC4\x9F", 2, "g",         1 }, // U+011F -> g       (LATIN SMALL LETTER G WITH BREVE)
+    { "\xC4\xA0", 2, "G",         1 }, // U+0120 -> G       (LATIN CAPITAL LETTER G WITH DOT ABOVE)
+    { "\xC4\xA1", 2, "g",         1 }, // U+0121 -> g       (LATIN SMALL LETTER G WITH DOT ABOVE)
+    { "\xC4\xA2", 2, "G",         1 }, // U+0122 -> G       (LATIN CAPITAL LETTER G WITH CEDILLA)
+    { "\xC4\xA3", 2, "g",         1 }, // U+0123 -> g       (LATIN SMALL LETTER G WITH CEDILLA)
+    { "\xC4\xA4", 2, "H",         1 }, // U+0124 -> H       (LATIN CAPITAL LETTER H WITH CIRCUMFLEX)
+    { "\xC4\xA5", 2, "h",         1 }, // U+0125 -> h       (LATIN SMALL LETTER H WITH CIRCUMFLEX)
+    { "\xC4\xA6", 2, "H",         1 }, // U+0126 -> H       (LATIN CAPITAL LETTER H WITH STROKE)
+    { "\xC4\xA7", 2, "h",         1 }, // U+0127 -> h       (LATIN SMALL LETTER H WITH STROKE)
+    { "\xC4\xA8", 2, "I",         1 }, // U+0128 -> I       (LATIN CAPITAL LETTER I WITH TILDE)
+    { "\xC4\xA9", 2, "i",         1 }, // U+0129 -> i       (LATIN SMALL LETTER I WITH TILDE)
+    { "\xC4\xAA", 2, "I",         1 }, // U+012A -> I       (LATIN CAPITAL LETTER I WITH MACRON)
+    { "\xC4\xAB", 2, "i",         1 }, // U+012B -> i       (LATIN SMALL LETTER I WITH MACRON)
+    { "\xC4\xAC", 2, "I",         1 }, // U+012C -> I       (LATIN CAPITAL LETTER I WITH BREVE)
+    { "\xC4\xAD", 2, "i",         1 }, // U+012D -> i       (LATIN SMALL LETTER I WITH BREVE)
+    { "\xC4\xAE", 2, "I",         1 }, // U+012E -> I       (LATIN CAPITAL LETTER I WITH OGONEK)
+    { "\xC4\xAF", 2, "i",         1 }, // U+012F -> i       (LATIN SMALL LETTER I WITH OGONEK)
+    { "\xC4\xB0", 2, "I",         1 }, // U+0130 -> I       (LATIN CAPITAL LETTER I WITH DOT ABOVE)
+    { "\xC4\xB1", 2, "i",         1 }, // U+0131 -> i       (LATIN SMALL LETTER DOTLESS I)
+    { "\xC4\xB2", 2, "Ij",        2 }, // U+0132 -> Ij      (LATIN CAPITAL LIGATURE IJ)
+    { "\xC4\xB3", 2, "ij",        2 }, // U+0133 -> ij      (LATIN SMALL LIGATURE IJ)
+    { "\xC4\xB4", 2, "J",         1 }, // U+0134 -> J       (LATIN CAPITAL LETTER J WITH CIRCUMFLEX)
+    { "\xC4\xB5", 2, "j",         1 }, // U+0135 -> j       (LATIN SMALL LETTER J WITH CIRCUMFLEX)
+    { "\xC4\xB6", 2, "K",         1 }, // U+0136 -> K       (LATIN CAPITAL LETTER K WITH CEDILLA)
+    { "\xC4\xB7", 2, "k",         1 }, // U+0137 -> k       (LATIN SMALL LETTER K WITH CEDILLA)
+    { "\xC4\xB8", 2, "k",         1 }, // U+0138 -> k       (LATIN SMALL LETTER KRA)
+    { "\xC4\xB9", 2, "L",         1 }, // U+0139 -> L       (LATIN CAPITAL LETTER L WITH ACUTE)
+    { "\xC4\xBA", 2, "l",         1 }, // U+013A -> l       (LATIN SMALL LETTER L WITH ACUTE)
+    { "\xC4\xBB", 2, "L",         1 }, // U+013B -> L       (LATIN CAPITAL LETTER L WITH CEDILLA)
+    { "\xC4\xBC", 2, "l",         1 }, // U+013C -> l       (LATIN SMALL LETTER L WITH CEDILLA)
+    { "\xC4\xBD", 2, "L",         1 }, // U+013D -> L       (LATIN CAPITAL LETTER L WITH CARON)
+    { "\xC4\xBE", 2, "l",         1 }, // U+013E -> l       (LATIN SMALL LETTER L WITH CARON)
+    { "\xC4\xBF", 2, "L",         1 }, // U+013F -> L       (LATIN CAPITAL LETTER L WITH MIDDLE DOT)
+    { "\xC5\x80", 2, "l",         1 }, // U+0140 -> l       (LATIN SMALL LETTER L WITH MIDDLE DOT)
+    { "\xC5\x81", 2, "L",         1 }, // U+0141 -> L       (LATIN CAPITAL LETTER L WITH STROKE)
+    { "\xC5\x82", 2, "l",         1 }, // U+0142 -> l       (LATIN SMALL LETTER L WITH STROKE)
+    { "\xC5\x83", 2, "N",         1 }, // U+0143 -> N       (LATIN CAPITAL LETTER N WITH ACUTE)
+    { "\xC5\x84", 2, "n",         1 }, // U+0144 -> n       (LATIN SMALL LETTER N WITH ACUTE)
+    { "\xC5\x85", 2, "N",         1 }, // U+0145 -> N       (LATIN CAPITAL LETTER N WITH CEDILLA)
+    { "\xC5\x86", 2, "n",         1 }, // U+0146 -> n       (LATIN SMALL LETTER N WITH CEDILLA)
+    { "\xC5\x87", 2, "N",         1 }, // U+0147 -> N       (LATIN CAPITAL LETTER N WITH CARON)
+    { "\xC5\x88", 2, "n",         1 }, // U+0148 -> n       (LATIN SMALL LETTER N WITH CARON)
+    { "\xC5\x89", 2, "'n",        2 }, // U+0149 -> 'n      (LATIN SMALL LETTER N PRECEDED BY APOSTROPHE)
+    { "\xC5\x8A", 2, "Ng",        2 }, // U+014A -> Ng      (LATIN CAPITAL LETTER ENG)
+    { "\xC5\x8B", 2, "ng",        2 }, // U+014B -> ng      (LATIN SMALL LETTER ENG)
+    { "\xC5\x8C", 2, "O",         1 }, // U+014C -> O       (LATIN CAPITAL LETTER O WITH MACRON)
+    { "\xC5\x8D", 2, "o",         1 }, // U+014D -> o       (LATIN SMALL LETTER O WITH MACRON)
+    { "\xC5\x8E", 2, "O",         1 }, // U+014E -> O       (LATIN CAPITAL LETTER O WITH BREVE)
+    { "\xC5\x8F", 2, "o",         1 }, // U+014F -> o       (LATIN SMALL LETTER O WITH BREVE)
+    { "\xC5\x90", 2, "O",         1 }, // U+0150 -> O       (LATIN CAPITAL LETTER O WITH DOUBLE ACUTE)
+    { "\xC5\x91", 2, "o",         1 }, // U+0151 -> o       (LATIN SMALL LETTER O WITH DOUBLE ACUTE)
+    { "\xC5\x92", 2, "Oe",        2 }, // U+0152 -> Oe      (LATIN CAPITAL LIGATURE OE)
+    { "\xC5\x93", 2, "oe",        2 }, // U+0153 -> oe      (LATIN SMALL LIGATURE OE)
+    { "\xC5\x94", 2, "R",         1 }, // U+0154 -> R       (LATIN CAPITAL LETTER R WITH ACUTE)
+    { "\xC5\x95", 2, "r",         1 }, // U+0155 -> r       (LATIN SMALL LETTER R WITH ACUTE)
+    { "\xC5\x96", 2, "R",         1 }, // U+0156 -> R       (LATIN CAPITAL LETTER R WITH CEDILLA)
+    { "\xC5\x97", 2, "r",         1 }, // U+0157 -> r       (LATIN SMALL LETTER R WITH CEDILLA)
+    { "\xC5\x98", 2, "R",         1 }, // U+0158 -> R       (LATIN CAPITAL LETTER R WITH CARON)
+    { "\xC5\x99", 2, "r",         1 }, // U+0159 -> r       (LATIN SMALL LETTER R WITH CARON)
+    { "\xC5\x9A", 2, "S",         1 }, // U+015A -> S       (LATIN CAPITAL LETTER S WITH ACUTE)
+    { "\xC5\x9B", 2, "s",         1 }, // U+015B -> s       (LATIN SMALL LETTER S WITH ACUTE)
+    { "\xC5\x9C", 2, "S",         1 }, // U+015C -> S       (LATIN CAPITAL LETTER S WITH CIRCUMFLEX)
+    { "\xC5\x9D", 2, "s",         1 }, // U+015D -> s       (LATIN SMALL LETTER S WITH CIRCUMFLEX)
+    { "\xC5\x9E", 2, "S",         1 }, // U+015E -> S       (LATIN CAPITAL LETTER S WITH CEDILLA)
+    { "\xC5\x9F", 2, "s",         1 }, // U+015F -> s       (LATIN SMALL LETTER S WITH CEDILLA)
+    { "\xC5\xA0", 2, "S",         1 }, // U+0160 -> S       (LATIN CAPITAL LETTER S WITH CARON)
+    { "\xC5\xA1", 2, "s",         1 }, // U+0161 -> s       (LATIN SMALL LETTER S WITH CARON)
+    { "\xC5\xA2", 2, "T",         1 }, // U+0162 -> T       (LATIN CAPITAL LETTER T WITH CEDILLA)
+    { "\xC5\xA3", 2, "t",         1 }, // U+0163 -> t       (LATIN SMALL LETTER T WITH CEDILLA)
+    { "\xC5\xA4", 2, "T",         1 }, // U+0164 -> T       (LATIN CAPITAL LETTER T WITH CARON)
+    { "\xC5\xA5", 2, "t",         1 }, // U+0165 -> t       (LATIN SMALL LETTER T WITH CARON)
+    { "\xC5\xA6", 2, "T",         1 }, // U+0166 -> T       (LATIN CAPITAL LETTER T WITH STROKE)
+    { "\xC5\xA7", 2, "t",         1 }, // U+0167 -> t       (LATIN SMALL LETTER T WITH STROKE)
+    { "\xC5\xA8", 2, "U",         1 }, // U+0168 -> U       (LATIN CAPITAL LETTER U WITH TILDE)
+    { "\xC5\xA9", 2, "u",         1 }, // U+0169 -> u       (LATIN SMALL LETTER U WITH TILDE)
+    { "\xC5\xAA", 2, "U",         1 }, // U+016A -> U       (LATIN CAPITAL LETTER U WITH MACRON)
+    { "\xC5\xAB", 2, "u",         1 }, // U+016B -> u       (LATIN SMALL LETTER U WITH MACRON)
+    { "\xC5\xAC", 2, "U",         1 }, // U+016C -> U       (LATIN CAPITAL LETTER U WITH BREVE)
+    { "\xC5\xAD", 2, "u",         1 }, // U+016D -> u       (LATIN SMALL LETTER U WITH BREVE)
+    { "\xC5\xAE", 2, "U",         1 }, // U+016E -> U       (LATIN CAPITAL LETTER U WITH RING ABOVE)
+    { "\xC5\xAF", 2, "u",         1 }, // U+016F -> u       (LATIN SMALL LETTER U WITH RING ABOVE)
+    { "\xC5\xB0", 2, "U",         1 }, // U+0170 -> U       (LATIN CAPITAL LETTER U WITH DOUBLE ACUTE)
+    { "\xC5\xB1", 2, "u",         1 }, // U+0171 -> u       (LATIN SMALL LETTER U WITH DOUBLE ACUTE)
+    { "\xC5\xB2", 2, "U",         1 }, // U+0172 -> U       (LATIN CAPITAL LETTER U WITH OGONEK)
+    { "\xC5\xB3", 2, "u",         1 }, // U+0173 -> u       (LATIN SMALL LETTER U WITH OGONEK)
+    { "\xC5\xB4", 2, "W",         1 }, // U+0174 -> W       (LATIN CAPITAL LETTER W WITH CIRCUMFLEX)
+    { "\xC5\xB5", 2, "w",         1 }, // U+0175 -> w       (LATIN SMALL LETTER W WITH CIRCUMFLEX)
+    { "\xC5\xB6", 2, "Y",         1 }, // U+0176 -> Y       (LATIN CAPITAL LETTER Y WITH CIRCUMFLEX)
+    { "\xC5\xB7", 2, "y",         1 }, // U+0177 -> y       (LATIN SMALL LETTER Y WITH CIRCUMFLEX)
+    { "\xC5\xB8", 2, "Y",         1 }, // U+0178 -> Y       (LATIN CAPITAL LETTER Y WITH DIAERESIS)
+    { "\xC5\xB9", 2, "Z",         1 }, // U+0179 -> Z       (LATIN CAPITAL LETTER Z WITH ACUTE)
+    { "\xC5\xBA", 2, "z",         1 }, // U+017A -> z       (LATIN SMALL LETTER Z WITH ACUTE)
+    { "\xC5\xBB", 2, "Z",         1 }, // U+017B -> Z       (LATIN CAPITAL LETTER Z WITH DOT ABOVE)
+    { "\xC5\xBC", 2, "z",         1 }, // U+017C -> z       (LATIN SMALL LETTER Z WITH DOT ABOVE)
+    { "\xC5\xBD", 2, "Z",         1 }, // U+017D -> Z       (LATIN CAPITAL LETTER Z WITH CARON)
+    { "\xC5\xBE", 2, "z",         1 }, // U+017E -> z       (LATIN SMALL LETTER Z WITH CARON)
+    { "\xC5\xBF", 2, "s",         1 }, // U+017F -> s       (LATIN SMALL LETTER LONG S
+
+    // U+2000 ... U+206F (General Punctuation)
+    { "\xE2\x80\x90", 3, "-",         1 }, // U+2010 -> -       (HYPHEN)
+    { "\xE2\x80\x91", 3, "-",         1 }, // U+2011 -> -       (NON-BREAKING HYPHEN)
+    { "\xE2\x80\x92", 3, "--",        2 }, // U+2012 -> --      (FIGURE DASH)
+    { "\xE2\x80\x93", 3, "--",        2 }, // U+2013 -> --      (EN DASH)
+    { "\xE2\x80\x94", 3, "---",       3 }, // U+2014 -> ---     (EM DASH)
+    { "\xE2\x80\x95", 3, "---",       3 }, // U+2015 -> ---     (HORIZONTAL BAR)
+    { "\xE2\x80\x96", 3, "||",        2 }, // U+2016 -> ||      (DOUBLE VERTICAL LINE)
+    { "\xE2\x80\x97", 3, "_",         1 }, // U+2017 -> _       (DOUBLE LOW LINE)
+    { "\xE2\x80\x98", 3, "`",         1 }, // U+2018 -> `       (LEFT SINGLE QUOTATION MARK)
+    { "\xE2\x80\x99", 3, "'",         1 }, // U+2019 -> '       (RIGHT SINGLE QUOTATION MARK)
+    { "\xE2\x80\x9A", 3, ",",         1 }, // U+201A -> ,       (SINGLE LOW-9 QUOTATION MARK)
+    { "\xE2\x80\x9B", 3, "'",         1 }, // U+201B -> '       (SINGLE HIGH-REVERSED-9 QUOTATION MARK)
+    { "\xE2\x80\x9C", 3, "\"",        1 }, // U+201C -> "       (LEFT DOUBLE QUOTATION MARK)
+    { "\xE2\x80\x9D", 3, "\"",        1 }, // U+201D -> "       (RIGHT DOUBLE QUOTATION MARK)
+    { "\xE2\x80\x9E", 3, ",,",        2 }, // U+201E -> ,,      (DOUBLE LOW-9 QUOTATION MARK)
+    { "\xE2\x80\x9F", 3, "``",        2 }, // U+201F -> ``      (DOUBLE HIGH-REVERSED-9 QUOTATION MARK)
+    { "\xE2\x80\xA0", 3, "+",         1 }, // U+2020 -> +       (DAGGER)
+    { "\xE2\x80\xA1", 3, "+",         1 }, // U+2021 -> +       (DOUBLE DAGGER)
+    { "\xE2\x80\xA2", 3, "\xC2\xB7", -2 }, // U+2022 -> U+00B7  (BULLET) -> (MIDDLE POINT)
+    { "\xE2\x80\xA3", 3, ".",         1 }, // U+2023 -> .       (TRIANGULAR BULLET)
+    { "\xE2\x80\xA4", 3, ".",         1 }, // U+2024 -> .       (ONE DOT LEADER)
+    { "\xE2\x80\xA5", 3, "..",        2 }, // U+2025 -> ..      (TWO DOT LEADER)
+    { "\xE2\x80\xA6", 3, "...",       3 }, // U+2026 -> ...     (HORIZONTAL ELLIPSIS)
+    { "\xE2\x80\xA7", 3, "\xC2\xB7", -2 }, // U+2027 -> U+00B7  (HYPHENATION POINT) -> (MIDDLE POINT)
+    { "\xE2\x80\xB0", 3, "%.",        2 }, // U+2030 -> %.      (PER MILLE SIGN)
+    { "\xE2\x80\xB1", 3, "%..",       3 }, // U+2031 -> %..     (PER TEN THOUSAND SIGN)
+    { "\xE2\x80\xB2", 3, "'",         1 }, // U+2032 -> `       (PRIME)
+    { "\xE2\x80\xB3", 3, "''",        2 }, // U+2033 -> ''      (DOUBLE PRIME)
+    { "\xE2\x80\xB4", 3, "'''",       3 }, // U+2034 -> '''     (TRIPLE PRIME)
+    { "\xE2\x80\xB5", 3, "`",         1 }, // U+2035 -> `       (REVERSED PRIME)
+    { "\xE2\x80\xB6", 3, "``",        2 }, // U+2036 -> ``      (REVERSED DOUBLE PRIME)
+    { "\xE2\x80\xB7", 3, "```",       3 }, // U+2037 -> ```     (REVERSED TRIPLE PRIME)
+    { "\xE2\x80\xB8", 3, "^",         1 }, // U+2038 -> ^       (CARET)
+    { "\xE2\x80\xB9", 3, "<",         1 }, // U+2039 -> <       (SINGLE LEFT-POINTING ANGLE QUOTATION MARK)
+    { "\xE2\x80\xBA", 3, ">",         1 }, // U+203A -> >       (SINGLE RIGHT-POINTING ANGLE QUOTATION MARK)
+    { "\xE2\x80\xBB", 3, "\xC3\x97", -2 }, // U+203B -> U+00D7  (REFERENCE MARK) -> (MULTIPLICATION SIGN)
+    { "\xE2\x80\xBC", 3, "!!",        2 }, // U+203C -> !!      (DOUBLE EXCLAMATION MARK)
+    { "\xE2\x80\xBD", 3, "?",         1 }, // U+203D -> ?       (INTERROBANG)
+    { "\xE2\x81\x82", 3, "*",         1 }, // U+2042 -> *       (ASTERISM)
+    { "\xE2\x81\x83", 3, ".",         1 }, // U+2043 -> .       (HYPHEN BULLET)
+    { "\xE2\x81\x84", 3, "/",         1 }, // U+2044 -> /       (FRACTION SLASH)
+    { "\xE2\x81\x87", 3, "??",        2 }, // U+2047 -> ??      (DOUBLE QUESTION MARK)
+    { "\xE2\x81\x88", 3, "?!",        2 }, // U+2048 -> ?!      (QUESTION EXCLAMATION MARK)
+    { "\xE2\x81\x89", 3, "!?",        2 }, // U+2049 -> !?      (EXCLAMATION QUESTION MARK)
+    { "\xE2\x81\x8E", 3, "*",         1 }, // U+204E -> *       (LOW ASTERISK)
+    { "\xE2\x81\x8F", 3, ";",         1 }, // U+204F -> ;       (REVERSED SEMICOLON)
+    { "\xE2\x81\x91", 3, "*",         1 }, // U+2051 -> *       (TWO ASTERISKS ALIGNED VERTICALLY)
+    { "\xE2\x81\x92", 3, "-",         1 }, // U+2052 -> -       (COMMERCIAL MINUS SIGN)
+    { "\xE2\x81\x93", 3, "~",         1 }, // U+2053 -> ~       (SWUNG DASH)
+    { "\xE2\x81\x95", 3, "*",         1 }, // U+2055 -> *       (FLOWER PUNCTUATION MARK)
+    { "\xE2\x81\x97", 3, "''''",      4 }, // U+2057 -> ''''    (QUADRUPLE PRIME)
+    { "\xE2\x81\x9A", 3, ":",         1 }, // U+205A -> :       (TWO DOT PUNCTUATION)
+    { "\xE2\x81\x9C", 3, "+",         1 }, // U+205C -> +       (DOTTED CROSS)
+
+    // U+20A0 ... U+20CF (Currency Symbols)
+    { "\xE2\x82\xA0", 3, "ECU",       3 }, // U+20A0 -> ECU     (EURO-CURRENCY SIGN)
+    { "\xE2\x82\xA1", 3, "CRC",       3 }, // U+20A1 -> CRC     (COLON SIGN)
+    { "\xE2\x82\xA2", 3, "BRC",       3 }, // U+20A2 -> BRC     (CRUZEIRO SIGN)
+    { "\xE2\x82\xA3", 3, "BEF",       3 }, // U+20A3 -> BEF     (FRENCH FRANC SIGN)
+    { "\xE2\x82\xA4", 3, "ITL",       3 }, // U+20A4 -> ITL     (LIRA SIGN)
+    { "\xE2\x82\xA6", 3, "NGN",       3 }, // U+20A6 -> NGN     (NEIRA SIGN)
+    { "\xE2\x82\xA7", 3, "ESP",       3 }, // U+20A7 -> ESP     (PESETA SIGN)
+    { "\xE2\x82\xA8", 3, "MVQ",       3 }, // U+20A8 -> MVQ     (RUPEE SIGN)
+    { "\xE2\x82\xA9", 3, "KPW",       3 }, // U+20A9 -> KPW     (WON SIGN)
+    { "\xE2\x82\xAA", 3, "ILS",       3 }, // U+20AA -> ILS     (NEW SHEQEL SIGN)
+    { "\xE2\x82\xAB", 3, "VNC",       3 }, // U+20AB -> VNC     (DONG SIGN)
+    { "\xE2\x82\xAC", 3, "EUR",       3 }, // U+20AC -> EUR     (EURO SIGN)
+    { "\xE2\x82\xAD", 3, "LAK",       3 }, // U+20AD -> LAK     (KIP SIGN)
+    { "\xE2\x82\xAE", 3, "MNT",       3 }, // U+20AE -> MNT     (TUGRIK SIGN)
+    { "\xE2\x82\xAF", 3, "GRD",       3 }, // U+20AF -> GRD     (DRACHMA SIGN)
+    { "\xE2\x82\xB0", 3, "Pf",        2 }, // U+20B0 -> Pf      (GERMAN PENNY SIGN)
+    { "\xE2\x82\xB1", 3, "P",         1 }, // U+20B1 -> P       (PESO SIGN)
+    { "\xE2\x82\xB2", 3, "PYG",       3 }, // U+20B2 -> PYG     (GUARANI SIGN)
+    { "\xE2\x82\xB3", 3, "ARA",       3 }, // U+20B3 -> ARA     (AUSTRAL SIGN)
+    { "\xE2\x82\xB4", 3, "UAH",       3 }, // U+20B4 -> UAH     (HRYVNIA SIGN)
+    { "\xE2\x82\xB5", 3, "GHS",       3 }, // U+20B5 -> GHS     (CEDI SIGN)
+
+    // U+2190 ... U+21FF (Arrows)
+    { "\xE2\x86\x90", 3, "<-",        2 }, // U+2190 -> <-      (LEFTWARDS ARROW)
+    { "\xE2\x86\x92", 3, "->",        2 }, // U+2192 -> ->      (RIGHTWARDS ARROW)
+  };
+
+  ENTER();
+
+  // start with no replacement string
+  *dst = NULL;
+
+  // perform a binary search in the lookup table
+  if((rep = bsearch(&key, utf8map, sizeof(utf8map) / sizeof(utf8map[0]), sizeof(utf8map[0]), compareUTF8Replacements)) != NULL)
+  {
+    // if we found something, then copy this over to the result variables
+    *dst = rep->rep;
+    len = rep->replen;
+  }
+
+  RETURN(len);
+  return len;
+}
+///
 
 /**************************************************************************/
 
@@ -4286,7 +4555,7 @@ codesetsFindBest(struct TagItem *attrs, ULONG csFamily, STRPTR text, int text_le
 
 /// CodesetsSupportedA()
 #ifdef __AROS__
-AROS_LH1(STRPTR *, CodesetsSupportedA, 
+AROS_LH1(STRPTR *, CodesetsSupportedA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 15, Codesets
 )
@@ -4386,7 +4655,7 @@ LIBSTUBVA(CodesetsSupported, STRPTR*, ...)
 ///
 /// CodesetsFreeA()
 #ifdef __AROS__
-AROS_LH2(void, CodesetsFreeA, 
+AROS_LH2(void, CodesetsFreeA,
     AROS_LHA(APTR, obj, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
     struct LibraryHeader *, library, 14, Codesets
@@ -4435,7 +4704,7 @@ LIBSTUBVA(CodesetsFree, void, REG(a0, APTR obj), ...)
 ///
 /// CodesetsSetDefaultA()
 #ifdef __AROS__
-AROS_LH2(struct codeset *, CodesetsSetDefaultA, 
+AROS_LH2(struct codeset *, CodesetsSetDefaultA,
     AROS_LHA(STRPTR, name, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
     struct LibraryHeader *, library, 13, Codesets
@@ -4500,7 +4769,7 @@ LIBSTUBVA(CodesetsSetDefault, struct codeset *, REG(a0, STRPTR name), ...)
 ///
 /// CodesetsFindA()
 #ifdef __AROS__
-AROS_LH2(struct codeset *, CodesetsFindA, 
+AROS_LH2(struct codeset *, CodesetsFindA,
     AROS_LHA(STRPTR, name, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
     struct LibraryHeader *, library, 16, Codesets
@@ -4586,7 +4855,7 @@ LIBSTUBVA(CodesetsFind, struct codeset *, REG(a0, STRPTR name), ...)
 ///
 /// CodesetsFindBestA()
 #ifdef __AROS__
-AROS_LH1(struct codeset *, CodesetsFindBestA, 
+AROS_LH1(struct codeset *, CodesetsFindBestA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 17, Codesets
 )
@@ -4664,7 +4933,7 @@ LIBSTUBVA(CodesetsFindBest, struct codeset *, ...)
 // Returns the number of characters a utf8 string has. This is not
 // identically with the size of memory is required to hold the string.
 #ifdef __AROS__
-AROS_LH1(ULONG, CodesetsUTF8Len, 
+AROS_LH1(ULONG, CodesetsUTF8Len,
     AROS_LHA(const UTF8 *, str, A0),
     struct LibraryHeader *, library, 18, Codesets
 )
@@ -4712,7 +4981,7 @@ LIBSTUB(CodesetsUTF8Len, ULONG, REG(a0, UTF8* str))
 ///
 /// CodesetsStrLenA()
 #ifdef __AROS__
-AROS_LH2(ULONG, CodesetsStrLenA, 
+AROS_LH2(ULONG, CodesetsStrLenA,
     AROS_LHA(STRPTR, str, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
     struct LibraryHeader *, library, 23, Codesets
@@ -4785,7 +5054,7 @@ LIBSTUBVA(CodesetsStrLen, ULONG, REG(a0, STRPTR str), ...)
 // function; it means a NULL str will produce "" as dest; anyway you should
 // check NULL str to not waste your time!).
 #ifdef __AROS__
-AROS_LH1(STRPTR, CodesetsUTF8ToStrA, 
+AROS_LH1(STRPTR, CodesetsUTF8ToStrA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 19, Codesets
 )
@@ -4804,30 +5073,36 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 
   ENTER();
 
-  if((src = (UTF8 *)GetTagData(CSA_Source, 0, attrs)) &&
+  if((src = (UTF8 *)GetTagData(CSA_Source, (ULONG)NULL, attrs)) != NULL &&
      (srcLen = GetTagData(CSA_SourceLen, src != NULL ? strlen((char *)src) : 0, attrs)) > 0)
   {
     struct convertMsg msg;
     struct codeset *codeset;
-    struct Hook *hook;
+    struct Hook *destHook;
+    struct Hook *mapForeignCharsHook;
     char buf[256];
     STRPTR destIter = NULL;
     STRPTR b = NULL;
-    ULONG destLen;
+    ULONG destLen = 0;
     int i = 0;
     unsigned char *s = src;
     unsigned char *e = (src+srcLen);
     int numConvErrors = 0;
     int *numConvErrorsPtr;
+    BOOL mapForeignChars;
+    APTR pool = NULL;
+    struct SignalSemaphore *sem = NULL;
 
     // get some more optional attributes
-    hook = (struct Hook *)GetTagData(CSA_DestHook, 0, attrs);
+    destHook = (struct Hook *)GetTagData(CSA_DestHook, (ULONG)NULL, attrs);
     destLen = GetTagData(CSA_DestLen, 0, attrs);
-    numConvErrorsPtr = (int *)GetTagData(CSA_ErrPtr, 0, attrs);
+    numConvErrorsPtr = (int *)GetTagData(CSA_ErrPtr, (ULONG)NULL, attrs);
+    mapForeignChars = (BOOL)GetTagData(CSA_MapForeignChars, FALSE, attrs);
+    mapForeignCharsHook = (struct Hook *)GetTagData(CSA_MapForeignCharsHook, (ULONG)NULL, attrs);
 
     // first we make sure we allocate enough memory
     // for our destination buffer
-    if(hook)
+    if(destHook != NULL)
     {
       if(destLen < 16 || destLen > sizeof(buf))
         destLen = sizeof(buf);
@@ -4839,9 +5114,9 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
     else
     {
       // in case the user wants us to dynamically generate the
-      // destination buffer ew do it right now
-      if(!(dest = (STRPTR)GetTagData(CSA_Dest, 0, attrs)) ||
-        GetTagData(CSA_AllocIfNeeded, TRUE, attrs))
+      // destination buffer we do it right now
+      if((dest = (STRPTR)GetTagData(CSA_Dest, (ULONG)NULL, attrs)) == NULL ||
+         GetTagData(CSA_AllocIfNeeded, TRUE, attrs) == TRUE)
       {
         ULONG len = 0;
 
@@ -4849,25 +5124,22 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
         while(s < e)
         {
           unsigned char c = *s++;
+
           len++;
           s += trailingBytesForUTF8[c];
         }
 
-        if(!dest || (destLen < len+1))
+        if(dest == NULL || (destLen < len+1))
         {
-          APTR pool;
-
-          if((pool = (APTR)GetTagData(CSA_Pool, 0, attrs)))
+          if((pool = (APTR)GetTagData(CSA_Pool, (ULONG)NULL, attrs)) != NULL)
           {
-            struct SignalSemaphore *sem;
-
-            if((sem = (struct SignalSemaphore *)GetTagData(CSA_PoolSem, 0, attrs)))
+            if((sem = (struct SignalSemaphore *)GetTagData(CSA_PoolSem, (ULONG)NULL, attrs)) != NULL)
               ObtainSemaphore(sem);
 
             // allocate the destination buffer
             dest = allocVecPooled(pool, len+1);
 
-            if(sem)
+            if(sem != NULL)
               ReleaseSemaphore(sem);
           }
           else
@@ -4876,22 +5148,25 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
           destLen = len+1;
         }
 
-        if(!dest)
+        if(dest == NULL)
+        {
+          RETURN(NULL);
           return NULL;
+        }
       }
 
       destIter = dest;
     }
 
     // get the destination codeset pointer
-    if(!(codeset = (struct codeset *)GetTagData(CSA_DestCodeset, 0, attrs)))
+    if((codeset = (struct codeset *)GetTagData(CSA_DestCodeset, (ULONG)NULL, attrs)) == NULL)
       codeset = defaultCodeset(TRUE);
 
     // now we convert the src string to the
     // destination buffer.
     for(s=src;;n++)
     {
-      if(!hook && n >= destLen-1)
+      if(destHook == NULL && n >= destLen-1)
         break;
 
       // convert until we reach the end of the
@@ -4899,22 +5174,85 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
       if(s < e)
       {
         unsigned char c = *s;
-        unsigned char d;
+        unsigned char d = '?';
+        const char *repstr = NULL;
+        int replen = 0;
 
+        // check if the char is a >7bit char
         if(c > 127)
         {
           struct single_convert *f;
           int lenAdd = trailingBytesForUTF8[c];
           int lenStr = lenAdd+1;
+          unsigned char *src = s;
 
-          BIN_SEARCH(codeset->table_sorted, 0, 255, strncmp((char *)s, (char *)codeset->table_sorted[m].utf8+1, lenStr), f);
-
-          if(f)
-            d = f->code;
-          else
+          do
           {
-            d = '?';
-            numConvErrors++;
+            // start each iteration with "no replacement found yet"
+            repstr = NULL;
+            replen = 0;
+
+            // search in the UTF8 conversion table of the current charset if
+            // we have a replacement character for the char sequence starting at s
+            BIN_SEARCH(codeset->table_sorted, 0, 255, strncmp((char *)src, (char *)codeset->table_sorted[m].utf8+1, lenStr), f);
+
+            if(f != NULL)
+            {
+              d = f->code;
+              replen = -1;
+
+              break;
+            }
+            else
+            {
+              // the analysed char sequence (s) is not convertable to a
+              // single visible char replacement, so we normally have to put
+              // a ? sign as a "unknown char" sign at the very position.
+              //
+              // For convienence we, however, allow users to replace these
+              // UTF8 characters with char sequences that "looklike" the
+              // original char.
+              if(mapForeignChars == TRUE)
+                replen = mapUTF8toASCII(&repstr, src, lenStr);
+
+              // call the hook only, if the internal table yielded no suitable
+              // replacement
+              if(replen == 0 && mapForeignCharsHook != NULL)
+              {
+                struct replaceMsg rmsg;
+
+                rmsg.dst = (char **)&repstr;
+                rmsg.src = src;
+                rmsg.srclen = lenStr;
+                replen = CallHookPkt(mapForeignCharsHook, &rmsg, NULL);
+              }
+
+              if(replen < 0)
+              {
+                D(DBF_UTF, "got UTF8 replacement (%ld)", replen);
+
+                // stay in the loop as long as one replacement function delivers
+                // further UTF8 replacement sequences
+                src = (unsigned char *)repstr;
+              }
+              else if(replen == 0)
+              {
+                D(DBF_UTF, "found no ASCII replacement for UTF8 string (%ld)", replen);
+                repstr = NULL;
+              }
+              else
+                D(DBF_UTF, "got replacement string '%s' (%ld)", repstr ? repstr : "<null>", replen);
+            }
+          }
+          while(replen < 0);
+
+          if(repstr == NULL || replen == 0)
+          {
+            if(replen >= 0)
+            {
+              d = '?';
+              numConvErrors++;
+            }
           }
 
           s += lenAdd;
@@ -4922,24 +5260,79 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
         else
           d = c;
 
-        if(hook)
+        if(destHook != NULL)
         {
-          *b++ = d;
-          i++;
+          if(replen > 1)
+          {
+            while(replen > 0)
+            {
+              *b++ = *repstr;
+              repstr++;
+              i++;
+              replen--;
+
+              if(i%(destLen-1)==0)
+              {
+                *b = '\0';
+                msg.len = i;
+                CallHookPkt(destHook, &msg, buf);
+
+                b  = buf;
+                *b = '\0';
+                i  = 0;
+              }
+            }
+          }
+          else
+          {
+            *b++ = replen > 0 ? *repstr : d;
+            i++;
+          }
 
           if(i%(destLen-1)==0)
           {
-            *b = 0;
+            *b = '\0';
             msg.len = i;
-            CallHookPkt(hook, &msg, buf);
+            CallHookPkt(destHook, &msg, buf);
 
             b  = buf;
-            *b = 0;
+            *b = '\0';
             i  = 0;
           }
         }
         else
-          *destIter++ = d;
+        {
+          if(replen > 1)
+          {
+            ULONG destPos = destIter-dest;
+
+            if(pool != NULL)
+            {
+              if(sem != NULL)
+                ObtainSemaphore(sem);
+
+              // allocate the destination buffer
+              dest = reallocVecPooled(pool, dest, destLen, destLen+replen-1);
+
+              if(sem != NULL)
+                ReleaseSemaphore(sem);
+            }
+            else
+              dest = reallocArbitrateVecPooled(dest, destLen, destLen+replen-1);
+
+            if(!dest)
+              return NULL;
+
+            destIter = dest+destPos;
+            memcpy(destIter, repstr, replen);
+            destIter += replen;
+
+          }
+          else if(replen == 1)
+            *destIter++ = *repstr;
+          else
+            *destIter++ = d;
+        }
 
         s++;
       }
@@ -4947,15 +5340,15 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
         break;
     }
 
-    if(hook)
+    if(destHook != NULL)
     {
       msg.state = CSV_End;
       msg.len   = i;
-      *b        = 0;
-      CallHookPkt(hook,&msg,buf);
+      *b        = '\0';
+      CallHookPkt(destHook,&msg,buf);
     }
     else
-      *destIter = 0;
+      *destIter = '\0';
 
     // let us write the number of conversion errors
     // to the proper variable pointer, if wanted
@@ -4965,11 +5358,12 @@ CodesetsUTF8ToStrA(REG(a0, struct TagItem *attrs))
 
   // put the final length of our destination buffer
   // into the destLenPtr
-  if((destLenPtr = (ULONG *)GetTagData(CSA_DestLenPtr, 0, attrs)))
+  if((destLenPtr = (ULONG *)GetTagData(CSA_DestLenPtr, (ULONG)NULL, attrs)) != NULL)
     *destLenPtr = n;
 
   RETURN(dest);
   return dest;
+
 #ifdef __AROS__
     AROS_LIBFUNC_EXIT
 #endif
@@ -5006,7 +5400,7 @@ LIBSTUBVA(CodesetsUTF8ToStr, STRPTR, ...)
 // If a destination hook is supplied always return 0.
 // If from is NULL, it returns NULL and doesn't call the hook.
 #ifdef __AROS__
-AROS_LH1(UTF8 *, CodesetsUTF8CreateA, 
+AROS_LH1(UTF8 *, CodesetsUTF8CreateA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 20, Codesets
 )
@@ -5190,7 +5584,7 @@ LIBSTUBVA(CodesetsUTF8Create, UTF8*, ...)
       (c) != 0xfeff && (c) != 0xfffe && (c) != 0xffff)
 
 #ifdef __AROS__
-AROS_LH1(BOOL, CodesetsIsValidUTF8, 
+AROS_LH1(BOOL, CodesetsIsValidUTF8,
     AROS_LHA(STRPTR, s, A0),
     struct LibraryHeader *, library, 24, Codesets
 )
@@ -5238,7 +5632,7 @@ LIBSTUB(CodesetsIsValidUTF8, BOOL, REG(a0, STRPTR s))
 // Converts a given string from one source Codeset to a given destination
 // codeset and returns the convert string
 #ifdef __AROS__
-AROS_LH1(STRPTR, CodesetsConvertStrA, 
+AROS_LH1(STRPTR, CodesetsConvertStrA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 26, Codesets
 )
@@ -5249,9 +5643,9 @@ STRPTR LIBFUNC
 CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
 {
 #endif
-  STRPTR srcStr;
+  STRPTR srcStr = NULL;
   STRPTR dstStr = NULL;
-  ULONG srcLen;
+  ULONG srcLen = 0;
   ULONG dstLen = 0;
 
   ENTER();
@@ -5284,7 +5678,12 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
       BOOL strCreate = FALSE;
       UTF8 *utf8str;
       ULONG utf8strLen = 0;
-      ULONG *destLenPtr;
+      ULONG *destLenPtr = NULL;
+      BOOL mapForeignChars;
+      struct Hook *mapForeignCharsHook;
+
+      mapForeignChars = (BOOL)GetTagData(CSA_MapForeignChars, FALSE, attrs);
+      mapForeignCharsHook = (struct Hook *)GetTagData(CSA_MapForeignCharsHook, (ULONG)NULL, attrs);
 
       // if the source codeset is UTF-8 we don't have to use the UTF8Create()
       // function and can directly call the UTF8ToStr() function
@@ -5311,11 +5710,13 @@ CodesetsConvertStrA(REG(a0, struct TagItem *attrs))
       // UTF8 string
       if(utf8str && utf8strLen > 0 && dstCodeset != CodesetsBase->utf8Codeset)
       {
-        struct TagItem tags[] = { { CSA_DestCodeset, (ULONG)dstCodeset  },
-                                  { CSA_Source,      (ULONG)utf8str     },
-                                  { CSA_SourceLen,   utf8strLen         },
-                                  { CSA_DestLenPtr,  (ULONG)&dstLen     },
-                                  { TAG_DONE,        0                  } };
+        struct TagItem tags[] = { { CSA_DestCodeset,          (ULONG)dstCodeset          },
+                                  { CSA_Source,               (ULONG)utf8str             },
+                                  { CSA_SourceLen,            utf8strLen                 },
+                                  { CSA_DestLenPtr,           (ULONG)&dstLen             },
+                                  { CSA_MapForeignChars,      mapForeignChars            },
+                                  { CSA_MapForeignCharsHook,  (ULONG)mapForeignCharsHook },
+                                  { TAG_DONE,                 0                          } };
 
         dstStr = CodesetsUTF8ToStrA((struct TagItem *)&tags[0]);
 
@@ -5398,7 +5799,7 @@ LIBSTUBVA(CodesetsConvertStr, STRPTR, ...)
 ///
 /// CodesetsFreeVecPooledA()
 #ifdef __AROS__
-AROS_LH3(void, CodesetsFreeVecPooledA, 
+AROS_LH3(void, CodesetsFreeVecPooledA,
     AROS_LHA(APTR, pool, A0),
     AROS_LHA(APTR, mem, A1),
     AROS_LHA(struct TagItem *, attrs, A2),
@@ -5461,7 +5862,7 @@ LIBSTUBVA(CodesetsFreeVecPooled, void, REG(a0, APTR pool),
 ///
 /// CodesetsListCreateA()
 #ifdef __AROS__
-AROS_LH1(struct codesetList *, CodesetsListCreateA, 
+AROS_LH1(struct codesetList *, CodesetsListCreateA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 27, Codesets
 )
@@ -5565,7 +5966,7 @@ LIBSTUBVA(CodesetsListCreate, struct codesetList *, ...)
 ///
 /// CodesetsListDeleteA()
 #ifdef __AROS__
-AROS_LH1(BOOL, CodesetsListDeleteA, 
+AROS_LH1(BOOL, CodesetsListDeleteA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 28, Codesets
 )
@@ -5653,7 +6054,7 @@ LIBSTUBVA(CodesetsListDelete, BOOL, ...)
 ///
 /// CodesetsListAddA()
 #ifdef __AROS__
-AROS_LH2(BOOL, CodesetsListAddA, 
+AROS_LH2(BOOL, CodesetsListAddA,
     AROS_LHA(struct codesetList *, csList, A0),
     AROS_LHA(struct TagItem *, attrs, A1),
     struct LibraryHeader *, library, 29, Codesets
@@ -5745,7 +6146,7 @@ LIBSTUBVA(CodesetsListAdd, BOOL, struct codesetList *csList, ...)
 ///
 /// CodesetsListRemoveA()
 #ifdef __AROS__
-AROS_LH1(BOOL, CodesetsListRemoveA, 
+AROS_LH1(BOOL, CodesetsListRemoveA,
     AROS_LHA(struct TagItem *, attrs, A0),
     struct LibraryHeader *, library, 30, Codesets
 )

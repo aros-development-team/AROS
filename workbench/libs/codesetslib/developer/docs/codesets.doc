@@ -31,7 +31,7 @@ codesets.library/CodesetsEncodeB64A
 codesets.library/codesets.library
 
     *******************************************************************
-    Copyright (c) 2005-2007 by codesets.library Open Source Team
+    Copyright (c) 2005-2008 by codesets.library Open Source Team
     $Id$
     $URL$
 
@@ -124,7 +124,7 @@ codesets.library/CodesetsEncodeB64A
       The more or less most common function to use in codesets.library is
       definitly this function. It allows to convert a string from
       one "Source Codeset" to another "Destination Codeset". It takes
-      the source string converts it internally into UT8 if necessary and
+      the source string converts it internally into UTF8 if necessary and
       then directly convert the UTF8 to the specified destination codeset.
 
       To convert a string 'str' to a destination codeset:
@@ -419,6 +419,58 @@ codesets.library/CodesetsEncodeB64A
       CSA_DestLenPtr (ULONG *)
         If supplied, will contain the length of the converted string
         which is returned.
+
+      CSA_MapForeignChars (BOOL)
+        If a character of the source string cannot be directly mapped
+        to the destination codeset a "?" character will normally be used
+        to signal this case. If this attribute is set, an internal
+        replacement table will be used which tries to replace these
+        "foreign" characters by "looklike" ASCII character sequences.
+        Please note, that this functionality is mostly just usable by
+        Latin users due to the straight mapping to ASCII (7bit).
+        Default: FALSE
+
+      CSA_MapForeignCharsHook (struct Hook *)
+        If a character of the source string cannot be directly mapped
+        to the destination codeset a "?" character will normally be used
+        to signal this case. By using this attribute, a hook can be
+        supplied which is called for every such foreign character.
+        Within this hook the UTF8 sequence is supplied which cannot be
+        directly mapped to the destination codeset. During the execution
+        of the hook a replacement string might be specified, which in turn
+        will be used by the internals of codesets.library to map this
+        "foreign" char to a difference character or UTF8 sequence.
+
+        If both, CSA_MapForeignChars and CSA_MapForeignCharsHook, are
+        specified the hook will only be executed in case the internal
+        routines don't supply an own mapping for the foreign UTF8 sequence.
+
+        The hook function should be declared as:
+
+        ULONG ASM SAVEDS fun(REG(a0, struct Hook *hook),
+                             REG(a2, struct replaceMsg *msg),
+                             REG(a1, void *dummy))
+
+        struct Hook *hook
+          Your hook
+
+        msg->dst
+          place your desired replacement string here
+
+        msg->src
+          the UTF8 sequence to be replaced, this string is READ-ONLY!
+
+        msg->srclen
+          the length of the UTF8 sequence to be replaced, do NOT peek
+          beyond this limit.
+
+        The return value of this hook function is the length of the replacement
+        string. Return zero if no replacement did happen. Positive values will
+        be treated as lengths of ASCII strings. Negative values signals a
+        replacement by another UTF8 sequence. Please note, that in case you
+        supply a UTF8 sequence as a replacement for the "foreign" UTF8, your
+        hook might be called again if this sequence can still not be mapped to
+        the destination codesets, thus is again a "foreign" sequence.
 
 
    RESULT
@@ -885,8 +937,8 @@ codesets.library/CodesetsEncodeB64A
         The hook function should be declared as:
 
         ULONG ASM SAVEDS fun(REG(a0, struct Hook *hook),
-                             REG(a1, STRPTR buf),
-                             REG(a2, struct convertMsg *msg))
+                             REG(a2, struct convertMsg *msg),
+                             REG(a1, STRPTR buf))
 
         struct Hook *hook
           Your hook
@@ -1038,8 +1090,8 @@ codesets.library/CodesetsEncodeB64A
     -- cut here --
     static ULONG ASM SAVEDS
     destFun(REG(a0, struct Hook *hook),
-            REG(a1, STRPTR buf),
-            REG(a2, struct convertMsg *msg))
+            REG(a2, struct convertMsg *msg),
+            REG(a1, STRPTR buf))
     {
       printf("[%3ld] [%s]\n",msg->len,buf);
       if(msg->state == CSV_End)
@@ -1116,8 +1168,8 @@ codesets.library/CodesetsEncodeB64A
         The hook function should be declared as:
 
         ULONG ASM SAVEDS fun(REG(a0, struct Hook *hook),
-                             REG(a1, STRPTR buf),
-                             REG(a2, struct convertMsg *msg))
+                             REG(a2, struct convertMsg *msg),
+                             REG(a1, STRPTR buf))
 
         struct Hook *hook
           Your hook
@@ -1173,6 +1225,59 @@ codesets.library/CodesetsEncodeB64A
         Pointer to an integer variable which will be filled with the
         number of found issues (number of not convertable chars)
         Default: NULL
+
+      CSA_MapForeignChars (BOOL)
+        If a character of the source string cannot be directly mapped
+        to the destination codeset a "?" character will normally be used
+        to signal this case. If this attribute is set, an internal
+        replacement table will be used which tries to replace these
+        "foreign" characters by "looklike" ASCII character sequences.
+        Please note, that this functionality is mostly just usable by
+        Latin users due to the straight mapping to ASCII (7bit).
+        Default: FALSE
+
+      CSA_MapForeignCharsHook (struct Hook *)
+        If a character of the source string cannot be directly mapped
+        to the destination codeset a "?" character will normally be used
+        to signal this case. By using this attribute, a hook can be
+        supplied which is called for every such foreign character.
+        Within this hook the UTF8 sequence is supplied which cannot be
+        directly mapped to the destination codeset. During the execution
+        of the hook a replacement string might be specified, which in turn
+        will be used by the internals of codesets.library to map this
+        "foreign" char to a difference character or UTF8 sequence.
+
+        If both, CSA_MapForeignChars and CSA_MapForeignCharsHook, are
+        specified the hook will only be executed in case the internal
+        routines don't supply an own mapping for the foreign UTF8 sequence.
+
+        The hook function should be declared as:
+
+        ULONG ASM SAVEDS fun(REG(a0, struct Hook *hook),
+                             REG(a2, struct replaceMsg *msg),
+                             REG(a1, void *dummy))
+
+        struct Hook *hook
+          Your hook
+
+        msg->dst
+          place your desired replacement string here
+
+        msg->src
+          the UTF8 sequence to be replaced, this string is READ-ONLY!
+
+        msg->srclen
+          the length of the UTF8 sequence to be replaced, do NOT peek
+          beyond this limit.
+
+        The return value of this hook function is the length of the replacement
+        string. Return zero if no replacement did happen. Positive values will
+        be treated as lengths of ASCII strings. Negative values signals a
+        replacement by another UTF8 sequence. Please note, that in case you
+        supply a UTF8 sequence as a replacement for the "foreign" UTF8, your
+        hook might be called again if this sequence can still not be mapped to
+        the destination codesets, thus is again a "foreign" sequence.
+
 
    RESULT
     str - the string or NULL

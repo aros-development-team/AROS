@@ -479,9 +479,7 @@ CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
   else
   {
     if(b64.error)
-    {
-      freeArbitratePooled(out,totSize);
-    }
+      freeArbitrateVecPooled(out);
   }
 
   RETURN((ULONG)b64.error);
@@ -708,9 +706,7 @@ end:
   else
   {
     if(b64.error)
-    {
-      freeArbitratePooled(out,totSize);
-    }
+      freeArbitrateVecPooled(out);
   }
 
   RETURN((ULONG)b64.error);

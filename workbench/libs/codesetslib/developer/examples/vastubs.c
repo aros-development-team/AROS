@@ -37,11 +37,30 @@
 #endif
 
 #include <proto/intuition.h>
-
 APTR NewObject( struct IClass *classPtr, CONST_STRPTR classID, Tag tag1, ... )
 { return NewObjectA(classPtr, classID, (struct TagItem *)&tag1); }
 ULONG SetAttrs( APTR object, ULONG tag1, ... )
 { return SetAttrsA(object, (struct TagItem *)&tag1); }
+
+#include <proto/codesets.h>
+STRPTR *CodesetsSupported(Tag tag1, ...)
+{ return CodesetsSupportedA((struct TagItem *)&tag1); }
+struct codeset *CodesetsFind(STRPTR name, Tag tag1, ...)
+{ return CodesetsFindA(name, (struct TagItem *)&tag1); }
+struct codeset *CodesetsFindBest(Tag tag1, ...)
+{ return CodesetsFindBestA((struct TagItem *)&tag1); }
+STRPTR CodesetsConvertStr(Tag tag1, ...)
+{ return CodesetsConvertStrA((struct TagItem *)&tag1); }
+BOOL CodesetsListDelete(Tag tag1, ...)
+{ return CodesetsListDeleteA((struct TagItem *)&tag1); }
+STRPTR CodesetsUTF8ToStr(Tag tag1, ...)
+{ return CodesetsUTF8ToStrA((struct TagItem *)&tag1); }
+UTF8 *CodesetsUTF8Create(Tag tag1, ...)
+{ return CodesetsUTF8CreateA((struct TagItem *)&tag1); }
+ULONG CodesetsDecodeB64(Tag tag1, ...)
+{ return CodesetsDecodeB64A((struct TagItem *)&tag1); }
+ULONG CodesetsEncodeB64(Tag tag1, ...)
+{ return CodesetsEncodeB64A((struct TagItem *)&tag1); }
 
 #else
   #error "VARGS stubs are only save on m68k systems!"

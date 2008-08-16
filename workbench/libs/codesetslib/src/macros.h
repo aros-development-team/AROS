@@ -48,6 +48,10 @@
 #define CLEAR_FLAG(v,f)     ((v) &= ~(f))         // clear the flag f in v
 #define MASK_FLAG(v,f)      ((v) &= (f))          // mask the variable v with flag f bitwise
 
+// transforms a define into a string
+#define STR(x)  STR2(x)
+#define STR2(x) #x
+
 /****************************************************************************/
 
 #endif /* _MACROS_H */

@@ -1,0 +1,7 @@
+If you are not using macro based vararg calls in MorphOS (enabled by
+-DUSE_INLINE_STDARG) you can link against this library.
+
+
+Example:
+
+  gcc -noixemul myprog.c -o myprog -lcodesets
