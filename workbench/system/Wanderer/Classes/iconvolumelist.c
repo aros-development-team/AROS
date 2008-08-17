@@ -2,7 +2,7 @@
 Copyright  2002-2008, The AROS Development Team. All rights reserved.
 $Id$
 */
-#define DEBUG 1
+#define DEBUG 0
 #ifndef __AROS__
 #include "../portable_macros.h"
 #define WANDERER_BUILTIN_ICONVOLUMELIST 1 
@@ -235,8 +235,12 @@ D(bug("[IconVolList] %s: '%s' : Packet Device\n", __PRETTY_FUNCTION__, dosname))
 					ndn = (struct NewDOSVolumeNode*)GetHead(ndl);
 					while ((ndn))
 					{
-						if ((ndn->port != NULL) &&
-							((dl->dol_Task == ndn->port)||(dl->dol_Ext.dol_AROS.dol_Device == ndn->port)))
+						if (
+							(ndn->port != NULL)
+#if defined(__AROS__)
+							&& ((dl->dol_Task == ndn->port)||(dl->dol_Ext.dol_AROS.dol_Device == ndn->port))
+#endif
+						   )
 						{	
 							if (nd_lock == NULL)
 							{
@@ -246,68 +250,76 @@ D(bug("[IconVolList] %s: '%s' : Packet Device\n", __PRETTY_FUNCTION__, dosname))
 								}
 							}
 
-							if (nd_paramblock == NULL)
+							if (ndn->unit == dl->dol_Ext.dol_AROS.dol_Unit)
 							{
-								if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+								if (nd_paramblock == NULL)
 								{
-									UnLock(nd_lock);
-									continue;
-								}
+									if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+									{
+										UnLock(nd_lock);
+										continue;
+									}
 D(bug("[IconVolList] %s: Getting Info for '%s'\n", __PRETTY_FUNCTION__, nd_nambuf));
-								Info(nd_lock, nd_paramblock);
-							}
+									Info(nd_lock, nd_paramblock);
+								}
 
-							if (nd_paramblock->id_DiskState == ID_VALIDATING)
-							{
+								if (nd_paramblock->id_DiskState == ID_VALIDATING)
+								{
 D(bug("[IconVolList] %s: '%s' : Validating\n", __PRETTY_FUNCTION__, nd_nambuf));
-									//nd_namext = "BUSY";
-									//nd_namext_len = 4;
-							}
-							else if (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT)
-							{
+										//nd_namext = "BUSY";
+										//nd_namext_len = 4;
+								}
+								else if (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT)
+								{
 D(bug("[IconVolList] %s: '%s' : Device unit %d, state = %x, Vol node @ %p\n", __PRETTY_FUNCTION__, nd_nambuf, nd_paramblock->id_UnitNumber, nd_paramblock->id_DiskState, BADDR(nd_paramblock->id_VolumeNode)));
 
-								STRPTR nd_namext;
-								int nd_namext_len;
+									STRPTR nd_namext;
+									int nd_namext_len;
 
-								found = TRUE;
+									found = TRUE;
 
-								switch (nd_paramblock->id_DiskType)
-								{
+									switch (nd_paramblock->id_DiskType)
+									{
 
-								case ID_UNREADABLE_DISK:
-									nd_namext = "BAD";
-									nd_namext_len = 3;
-									break;
-								case ID_NOT_REALLY_DOS:
-									nd_namext = "NDOS";
-									nd_namext_len = 4;
-									break;
-								case ID_KICKSTART_DISK:
-									nd_namext = "KICK";
-									nd_namext_len = 4;
-									break;
-								default:
-									/* A filesystem type.. ie  ID_DOS_DISK */
-									nd_namext = NULL;
-									nd_namext_len = 0;
-									break;
-								}
+									case ID_UNREADABLE_DISK:
+										nd_namext = "BAD";
+										nd_namext_len = 3;
+										break;
+									case ID_NOT_REALLY_DOS:
+										nd_namext = "NDOS";
+										nd_namext_len = 4;
+										break;
+									case ID_KICKSTART_DISK:
+										nd_namext = "KICK";
+										nd_namext_len = 4;
+										break;
+									default:
+										/* A filesystem type.. ie  ID_DOS_DISK */
+										nd_namext = NULL;
+										nd_namext_len = 0;
+										break;
+									}
 
-								if (nd_namext_len > 0)
-								{
-									char *newVolName = NULL;
-									newVolName = AllocPooled(pool, strlen(ndn->vn_VolName) + nd_namext_len + 2);
-									sprintf(newVolName, "%s%s", ndn->vn_VolName, nd_namext);
-									ndn->vn_VolName = newVolName;
-								}
+									if (nd_namext_len > 0)
+									{
+										char *newVolName = NULL;
+										newVolName = AllocPooled(pool, strlen(ndn->vn_VolName) + nd_namext_len + 2);
+										sprintf(newVolName, "%s%s", ndn->vn_VolName, nd_namext);
+										ndn->vn_VolName = newVolName;
+									}
 
-								ndn->vn_DevName = nd_nambuf;
+									ndn->vn_DevName = nd_nambuf;
 D(bug("[IconVolList] %s: DeviceName set to '%s' for '%s'\n", __PRETTY_FUNCTION__, ndn->vn_DevName, ndn->vn_VolName));
+								}
+								else
+								{
+D(bug("[IconVolList] %s: '%s' : No Media Inserted\n", __PRETTY_FUNCTION__, nd_nambuf));
+								}
 							}
 							else
 							{
-D(bug("[IconVolList] %s: '%s' : No Media Inserted\n", __PRETTY_FUNCTION__, nd_nambuf));
+D(bug("[IconVolList] %s: Volume OFFLINE '%s'\n", __PRETTY_FUNCTION__, nd_nambuf));
+
 							}
 						}
 						ndn = (struct NewDOSVolumeNode*)GetSucc(ndn);
@@ -414,16 +426,12 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 				{
 D(bug("[IconVolList] %s: Adding icon for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
 
-					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)nd->vn_DevName, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL)) == NULL)
+					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)nd->vn_DevName, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) == NULL)
 					{
 D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
 					}
 					else
 					{
-D(bug("[IconVolList] %s: IconList Entry Created ... changing type from %x", __PRETTY_FUNCTION__, this_Icon->ile_IconListEntry.type));
-						this_Icon->ile_IconListEntry.type = ST_ROOT;
-D(bug(" to %x\n", this_Icon->ile_IconListEntry.type));
-
 						if (!(this_Icon->ile_Flags & ICONENTRY_FLAG_HASICON))
 							this_Icon->ile_Flags |= ICONENTRY_FLAG_HASICON;
 

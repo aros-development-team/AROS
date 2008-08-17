@@ -53,7 +53,7 @@
 struct MUIP_IconList_Clear              {STACKED ULONG MethodID;};
 struct MUIP_IconList_Update             {STACKED ULONG MethodID;};
 struct MUIP_IconList_RethinkDimensions  {STACKED ULONG MethodID; STACKED struct IconEntry *singleicon;};
-struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED char *filename; STACKED char *label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *icon_dob;};/* void *udata; More file attrs to add };*/
+struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED char *filename; STACKED char *label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *icon_dob; STACKED ULONG type;};/* void *udata; More file attrs to add };*/
 struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *icon;};
 struct MUIP_IconList_DrawEntry          {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
 struct MUIP_IconList_DrawEntryLabel     {STACKED ULONG MethodID; STACKED struct IconEntry *icon; STACKED IPTR drawmode;};
@@ -69,6 +69,7 @@ struct IconList_Entry
 	char *filename;  /* The absolute filename of the file which the icons represents (means without the */
 	char *label;     /* The label which is displayed (often FilePart(filename)) */
 	LONG type;
+	LONG flags;      /* If type == ST_ROOT, these flags will set volume attributes */
 	void *udata;     /* userdate given at MUIM_IconList_CreateEntry */
 };
 
