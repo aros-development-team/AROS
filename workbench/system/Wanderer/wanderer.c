@@ -7,7 +7,7 @@
 #ifdef __AROS__
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -427,7 +427,7 @@ HOOKPROTO(Wanderer__HookFunc_ActionFunc, void, Object *obj, struct IconWindow_Ac
     if (msg->type == ICONWINDOW_ACTION_OPEN)
     {
         static unsigned char  buf[1024];
-  IPTR                  offset;
+		IPTR                  offset;
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
 
         DoMethod(msg->iconlist, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent);
@@ -439,10 +439,9 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN: NextIco
 
         offset = strlen(ent->filename) - 5;
 
-        if ((msg->isroot) && (!Stricmp(ent->filename + offset, ":Disk")))
+        if ((msg->isroot) && (ent->type == ST_ROOT))
         {
             strcpy((STRPTR)buf, ent->label);
-            strcat((STRPTR)buf, ":");
         }
         else
         {
@@ -1714,6 +1713,74 @@ D(bug("[wanderer] wanderer_menufunc_icon_snapshot: icon has no diskobj!\n"));
 D(bug("[wanderer] wanderer_menufunc_icon_snapshot: finished ..\n"));
 }
 
+///wanderer_menufunc_icon_leaveout()
+void wanderer_menufunc_icon_leaveout(void)
+{
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconEntry      *node = NULL;
+	char				  *leavout_dir = NULL;
+
+D(bug("[wanderer] wanderer_menufunc_icon_leaveout()\n"));
+
+	GET(window, MUIA_IconWindow_Location, &leavout_dir);
+
+	if (leavout_dir != NULL)
+	{
+D(bug("[wanderer] wanderer_menufunc_icon_leaveout: dir '%s'\n", leavout_dir));
+		do
+		{
+			DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
+
+			if (((IPTR)entry != MUIV_IconList_NextIcon_End) && ((entry->type == ST_FILE) || (entry->type == ST_USERDIR)))
+			{
+				node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
+D(bug("[wanderer] wanderer_menufunc_icon_leaveout: entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
+			}
+			else
+			{
+				break;
+			}
+		} while (TRUE);
+	}
+
+D(bug("[wanderer] wanderer_menufunc_icon_leaveout: finished ..\n"));
+}
+
+///wanderer_menufunc_icon_putaway()
+void wanderer_menufunc_icon_putaway(void)
+{
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconEntry      *node = NULL;
+    struct List            putawayicons;
+
+D(bug("[wanderer] wanderer_menufunc_icon_putaway()\n"));
+
+	NEWLIST(&putawayicons);
+	
+    do
+    {
+        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
+
+        if (((IPTR)entry != MUIV_IconList_NextIcon_End) && ((entry->type == ST_LINKFILE) || (entry->type == ST_LINKDIR)))
+        {
+			node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ile_IconListEntry - (IPTR)node));
+D(bug("[wanderer] wanderer_menufunc_icon_putaway: entry = '%s' @ %p, (%p)\n", entry->filename, entry, node));
+			/* Remove the node from the iconlist .. */
+			/* Add it to our internal list for cleanup.. */
+			//AddTail(&putawayicons, node);
+		}
+        else
+        {
+            break;
+        }
+    } while (TRUE);
+D(bug("[wanderer] wanderer_menufunc_icon_putaway: finished ..\n"));
+}
+
 ///DisposeCopyDisplay()
 /* dispose the file copy display */
 void DisposeCopyDisplay(struct MUIDisplayObjects *d) 
@@ -1971,6 +2038,14 @@ void wanderer_menufunc_wanderer_AROS_about(void)
 }
 ///
 
+///wanderer_menufunc_wanderer_about()
+void wanderer_menufunc_wanderer_about(void)
+{
+	/* Display Information about this version of wanderer */
+#warning "TODO: Add a requestor with ABOUT info"
+}
+///
+
 ///wanderer_menufunc_wanderer_quit()
 void wanderer_menufunc_wanderer_quit(void)
 {
@@ -2078,6 +2153,10 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 				wanderer_menufunc_icon_snapshot,TRUE);
     DoMenuNotify(strip, MEN_ICON_UNSNAPSHOT,
 				wanderer_menufunc_icon_snapshot, FALSE);
+    DoMenuNotify(strip, MEN_ICON_LEAVEOUT,
+				wanderer_menufunc_icon_leaveout, NULL);
+    DoMenuNotify(strip, MEN_ICON_PUTAWAY,
+				wanderer_menufunc_icon_putaway, NULL);
     DoMenuNotify(strip, MEN_ICON_DELETE,
 				wanderer_menufunc_icon_delete, NULL);
     DoMenuNotify(strip, MEN_ICON_FORMAT,

@@ -75,6 +75,12 @@
 #define ICONENTRY_FLAG_TODAY	     (1<<7)		/* entry's timestamp is from today    */
 #define ICONENTRY_FLAG_LASSO         (1<<8)		/* Icon is being altered by a lasso  */
 
+
+/* For Icons of type ST_ROOT */
+#define ICONENTRY_VOL_OFFLINE	     (1<<1)		/* Volume is Offline               */
+#define ICONENTRY_VOL_READONLY	     (1<<2)		/* Media is Read-Only           */
+#define ICONENTRY_VOL_REMOVABLE	     (1<<3)		/* Media is Removable          */
+
 /* iconlist rendering control flags */
 /* SORTFLAGS 
 	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == 0)
