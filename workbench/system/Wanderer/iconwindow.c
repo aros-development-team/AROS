@@ -495,7 +495,6 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 D(bug("[iconwindow]: %s()\n", __PRETTY_FUNCTION__));
 
 	/* More than one GetTagData is not very efficient, however since this isn't called very often... */
-
 	isBackdrop = (BOOL)GetTagData(MUIA_IconWindow_IsBackdrop, (IPTR)FALSE, message->ops_AttrList);
 
 	if (!(isRoot = (BOOL)GetTagData(MUIA_IconWindow_IsRoot, (IPTR)FALSE, message->ops_AttrList)))
@@ -508,7 +507,6 @@ D(bug("[iconwindow]: %s()\n", __PRETTY_FUNCTION__));
 	_newIconWin__FSNotifyPort = (IPTR)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
 	/* Request the screen we should use .. */
-
 	if (!(_newIconWin__Screen = (struct Screen *)GetTagData(MUIA_Wanderer_Screen, (IPTR) NULL, message->ops_AttrList)))
 	{
 		D(bug("[IconWindow] %s: NO SCREEN SET!\n", __PRETTY_FUNCTION__));
@@ -535,16 +533,10 @@ D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTIO
 
 	if (isRoot)
 	{
-/*#ifdef __AROS__
-			_newIconWin__IconListObj = (Object *)IconWindowIconVolumeListObject,
-										   MUIA_Font, (IPTR)_newIconWin__WindowFont,
-										End;
-#else*/
 		iconviewclass = IconWindowIconVolumeList_CLASS;
 		_newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
 											   MUIA_Font, (IPTR)_newIconWin__WindowFont,
 									TAG_DONE);
-/*#endif*/
 
 		_newIconWin__WindowWidth = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_WIDTH);
 		_newIconWin__WindowHeight = GetBitMapAttr(_newIconWin__Screen->RastPort.BitMap, BMA_HEIGHT);
@@ -613,23 +605,33 @@ D(bug("[iconwindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PR
 			switch (drawericon->do_DrawerData->dd_Flags)
 			{
 				case 0:
+				{
 					D(bug("Default"));
 					break;
+				}
 				case 1:
+				{
 					D(bug("Show only icons"));
 					icon__DispFlags |= ICONLIST_DISP_SHOWINFO;
 					break;
+				}
 				case 2:
+				{
 					D(bug("Show all files"));
 					icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
 					break;
+				}
 				case 3:
+				{
 					D(bug("Show all files"));
 					icon__DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
 					icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
 					break;
+				}
 				default:
+				{
 					D(bug("INVALID"));
+				}
 			}
 
 D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
@@ -637,29 +639,43 @@ D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
 			switch (drawericon->do_DrawerData->dd_ViewModes)
 			{
 				case 0:
+				{
 					D(bug("Default (inherit from parent)"));
 					break;
+				}
 				case 1:
+				{
 					D(bug("View as icons"));
 					break;
+				}
 				case 2:
+				{
 					D(bug("View as text, sorted by name"));
 					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
+				}
 				case 3:
+				{
 					D(bug("View as text, sorted by date"));
 					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
+				}
 				case 4:
+				{
 					D(bug("View as text, sorted by size"));
 					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
+				}
 				case 5:
+				{
 					D(bug("View as text, sorted by type"));
 					iconviewclass = IconWindowDetailDrawerList_CLASS;
 					break;
+				}
 				default:
+				{
 					D(bug("INVALID"));
+				}
 			}
 D(bug("]\n"));
 		}
@@ -672,19 +688,11 @@ D(bug("[iconwindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION__));
 			icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
 		}
 
-/*#ifdef __AROS__
-		_newIconWin__IconListObj = (Object *) IconWindowIconDrawerListObject ,
-									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
-									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
-									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
-									End;
-#else*/
 		_newIconWin__IconListObj = (Object *) NewObject(iconviewclass->mcc_Class, NULL,
 									 MUIA_Font, (IPTR)_newIconWin__WindowFont,
 									 MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
 									 MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
 									TAG_DONE);
-/*#endif*/
 
 		GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
 		SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
