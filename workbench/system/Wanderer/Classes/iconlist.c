@@ -573,12 +573,16 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 ///IconList__LabelFunc_SplitLabel()
 void IconList__LabelFunc_SplitLabel(Object *obj, struct IconList_DATA *data, struct IconEntry *icon)
 {
-    ULONG   labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
+    ULONG   	labelSplit_MaxLabelLineLength = data->icld__Option_LabelTextMaxLen;
     ULONG       labelSplit_LabelLength = strlen(icon->ile_IconListEntry.label);
     ULONG       txwidth;
     ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
      int        labelSplit_CharsDone,   labelSplit_CharsSplit;
-    ULONG labelSplit_CurSplitWidth;
+    ULONG 		labelSplit_CurSplitWidth;
+
+	if ((data->icld__Option_TrimVolumeNames) && 
+		((icon->ile_IconListEntry.type == ST_ROOT) && (icon->ile_IconListEntry.label[labelSplit_LabelLength - 1] == ':')))
+		labelSplit_LabelLength--;
 
     if (labelSplit_MaxLabelLineLength >= labelSplit_LabelLength)
     {
@@ -744,14 +748,16 @@ D(bug("[IconList]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
     
     if (icon->ile_TxtBuf_DisplayedLabel == NULL)
     { 
-
-
         ULONG ile_LabelLength = strlen(icon->ile_IconListEntry.label);
         icon->ile_SplitParts = 1;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
-D(bug("[IconList]: %s: Building unsplit label ..\n", __PRETTY_FUNCTION__));
+D(bug("[IconList]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__, ile_LabelLength));
 #endif
+
+		if ((data->icld__Option_TrimVolumeNames) && 
+			((icon->ile_IconListEntry.type == ST_ROOT) && (icon->ile_IconListEntry.label[ile_LabelLength - 1] == ':')))
+			ile_LabelLength--;
 
         if(ile_LabelLength > data->icld__Option_LabelTextMaxLen)
         {
@@ -1493,7 +1499,9 @@ D(bug("[IconList] %s: SELF = 0x%p, muiRenderInfo = 0x%p\n", __PRETTY_FUNCTION__,
     NewList((struct List*)&data->icld_SelectionList);
     data->icld_IconLabelFont = icl_WindowFont;  
 
-    // Get some initial values
+    /* Get/Set initial values */
+#warning "TODO: TrimVolumeNames should be prefs settable"
+	data->icld__Option_TrimVolumeNames = TRUE;
 #warning "TODO: Adjust overlap by window border width"
     data->icld__Option_IconBorderOverlap = 10;
 
@@ -2695,21 +2703,21 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     
     data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
 
-D(bug("[IconList]: %s(), call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
+D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
     SetSuperAttrs(CLASS, obj, MUIA_IconList_Left, data->icld_ViewX,
                   MUIA_IconList_Top, data->icld_ViewY,
             TAG_DONE);
-D(bug("[IconList]: %s() call SetAttrs()\n", __PRETTY_FUNCTION__));
+D(bug("[IconList]: %s: call SetAttrs()\n", __PRETTY_FUNCTION__));
     SetAttrs(obj, MUIA_IconList_Left, data->icld_ViewX,
                   MUIA_IconList_Top, data->icld_ViewY,
             TAG_DONE);
 
-D(bug("[IconList]: %s(), now set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
+D(bug("[IconList]: %s: Set MUIA_IconList_Width and MUIA_IconList_Height\n", __PRETTY_FUNCTION__));
     SetAttrs(obj, MUIA_IconList_Width, data->icld_AreaWidth,
         MUIA_IconList_Height, data->icld_AreaHeight,
         TAG_DONE);
 
-D(bug("[IconList]: %s(), call MUI_Redraw()\n", __PRETTY_FUNCTION__));
+D(bug("[IconList]: %s: call MUI_Redraw()\n", __PRETTY_FUNCTION__));
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
 }
@@ -2900,6 +2908,17 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
         entry->ile_IconListEntry.type = ST_USERDIR;
     }
 
+	/* Override type if specified during createntry */
+	if (message->type != 0)
+	{
+		entry->ile_IconListEntry.type = message->type;
+D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, entry->ile_IconListEntry.type));
+	}
+	else
+	{
+D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ile_IconListEntry.type));
+	}
+	
     strcpy(entry->ile_IconListEntry.filename, message->filename);
     strcpy(entry->ile_IconListEntry.label, message->label);
 
@@ -2922,8 +2941,6 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
     return NULL;
 }
 ///
-
-/* fib_DirEntryType,ST_USERDIR; LONG type */
 
 ///DoWheelMove()
 static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG wheely, UWORD qual)
@@ -4859,8 +4876,9 @@ MUIM_UnselectAll
 **************************************************************************/
 IPTR IconList__MUIM_IconList_UnselectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct Node         *node = NULL, *next_node = NULL;
+    struct IconList_DATA 	*data = INST_DATA(CLASS, obj);
+    struct Node         	*node = NULL, *next_node = NULL;
+	BOOL					changed = FALSE;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -4892,13 +4910,15 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
         if (update_icon)
         {
+			changed = TRUE;
             data->icld_UpdateMode = UPDATE_SINGLEICON;
             data->update_icon = entry;
             MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
     }
 
-	SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+	if (changed)
+		SET(obj, MUIA_IconList_SelectionChanged, TRUE);
 	
     return 1;
 }
@@ -4910,8 +4930,9 @@ MUIM_SelectAll
 **************************************************************************/
 IPTR IconList__MUIM_IconList_SelectAll(struct IClass *CLASS, Object *obj, Msg message)
 {
-    struct IconList_DATA *data = INST_DATA(CLASS, obj);
-    struct IconEntry    *node = NULL;
+    struct IconList_DATA 	*data = INST_DATA(CLASS, obj);
+    struct IconEntry    	*node = NULL;
+	BOOL					changed = FALSE;
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -4939,6 +4960,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
             if (update_icon)
             {
+				changed = TRUE;
                 data->icld_UpdateMode = UPDATE_SINGLEICON;
                 data->update_icon = node;
                 MUI_Redraw(obj, MADF_DRAWUPDATE);
@@ -4960,7 +4982,8 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         }
     }
 
-	SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+	if (changed)
+		SET(obj, MUIA_IconList_SelectionChanged, TRUE);
 
     return 1;
 }
@@ -5213,7 +5236,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         Insert((struct List*)&list_SortedIcons, (struct Node *)&entry->ile_IconNode, (struct Node *)&icon2->ile_IconNode);
     }
 
-#warning "TODO: Onlye enque if xxxx sorting is set.."
+#warning "TODO: Only Enqueue if xxxx sorting is set.."
     /* Quickly resort based on node priorities .. */
     while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
     {

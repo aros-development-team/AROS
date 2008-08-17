@@ -179,7 +179,7 @@ D(bug("[IconDrawerList] %s: Registering file '%s'\n", __PRETTY_FUNCTION__, filen
 
           this_Icon = NULL;
             
-          if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL)))
+          if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)namebuffer, (IPTR)filename, (IPTR)fib, (IPTR)NULL, 0)))
           {
 D(bug("[IconDrawerList] %s: Icon entry allocated @ 0x%p\n", __PRETTY_FUNCTION__, this_Icon));
 

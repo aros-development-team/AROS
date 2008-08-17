@@ -575,7 +575,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__Func_ParseBackdrop: LEAVEOUT Ico
 						if (bdrp_currfile_dob)
 						{
 							struct IconEntry *this_entry = NULL;
-							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob))
+							if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)bdrp_fullfile, (IPTR)bdrp_namepart, (IPTR)NULL, (IPTR)bdrp_currfile_dob, 0))
 							{
 								struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 								if (fib)
@@ -1212,7 +1212,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking e
         if (_nb_dob)
         {
           struct Node *this_entry = NULL;
-          if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob))
+          if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, (IPTR)"?wanderer.networkbrowse?", (IPTR)"Network Access..", (IPTR)NULL, (IPTR)_nb_dob, 0))
           {
             this_entry->ln_Pri = 3;   /// Network Access gets Priority 3 so its displayed after special dirs
             sort_list = TRUE;
@@ -1259,7 +1259,7 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking e
             if (_nb_dob)
             {
               struct Node *this_entry = NULL;
-              if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob))
+              if (this_entry = DoMethod(self, MUIM_IconList_CreateEntry, userfiles_path, (IPTR)"User Files..", (IPTR)NULL, (IPTR)_nb_dob, 0))
               {
                 this_entry->ln_Pri = 5;   /// Special dirs get Priority 5
                 sort_list = TRUE;

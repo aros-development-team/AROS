@@ -89,6 +89,8 @@ struct IconList_DATA
 	ULONG                         icld__Option_LabelTextMultiLine;               /* No. of lines to display for labels*/
 	ULONG                         icld__Option_LastLabelTextMultiLine;
 
+	BOOL						  icld__Option_TrimVolumeNames;
+
 	BOOL                          icld__Option_LabelTextMultiLineOnFocus;        /* Only show "multiline" label for focused icon */
 	UBYTE                         icld__Option_IconBorderOverlap;
 	UBYTE                         icld__Option_IconHorizontalSpacing;            /* Horizontal/Vert Space between Icon "Areas" */
