@@ -564,7 +564,7 @@ D(bug("[IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETTY_FUNCTIO
 		IPTR				geticon_error = NULL, geticon_isdefault = NULL;
 		IPTR				_newIconWin__TitleLen = 0;
 		IPTR 				current_DispFlags = 0, current_SortFlags = 0;
-		IPTR                icon__DispFlags = 0,icon__DispFlagMask = ~0,
+		IPTR                icon__DispFlags = 0,icon__DispFlagMask = ~0;
 
 		_newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
 		_newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
