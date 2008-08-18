@@ -2922,8 +2922,6 @@ D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ile_IconLi
     {
         entry->ile_DiskObj = dob;
         entry->ile_IconListEntry.udata = NULL;
-        entry->ile_IconX = dob->do_CurrentX;
-        entry->ile_IconY = dob->do_CurrentY;
 
         /* Use a geticonrectangle routine that gets textwidth! */
         IconList_GetIconAreaRectangle(obj, data, entry, &rect);
@@ -5101,9 +5099,14 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
     /*move list into our local list struct(s)*/
     while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
     {
+		if (entry->ile_DiskObj)
+		{
+			entry->ile_IconX = entry->ile_DiskObj->do_CurrentX;
+			entry->ile_IconY = entry->ile_DiskObj->do_CurrentY;
+		}
+
         if (!(entry->ile_Flags & ICONENTRY_FLAG_HASICON))
         {
-
             if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
             {
                 if (entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
@@ -5126,7 +5129,10 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             if(entry->ile_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ile_IconHeight;
             if((entry->ile_AreaHeight - entry->ile_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ile_AreaHeight - entry->ile_IconHeight;
 
-            AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ile_IconNode);
+			if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == 0) && (entry->ile_IconX == NO_ICON_POSITION))
+				AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ile_IconNode);
+			else
+				AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ile_IconNode);
             visible_count++;
         }
         else
@@ -5138,7 +5144,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             entry->ile_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
             if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
             if (data->icld_FocusIcon == entry) data->icld_FocusIcon = NULL;
-            AddTail((struct List*)&list_HiddenIcons, (struct Node *)&entry->ile_IconNode);
+            AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ile_IconNode);
         }
     }
 
@@ -5223,6 +5229,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 						else
 						{
 							/* coord sort */
+#warning "TODO: Implement default coord sorting.."
 						}
 					}
 
