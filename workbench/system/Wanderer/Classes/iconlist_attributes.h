@@ -83,21 +83,20 @@
 
 /* iconlist rendering control flags */
 /* SORTFLAGS 
-	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == 0)
-																	 place icons with coords at fixed
-																	 locations and sort remainder by name
+	((flags & (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == 0)
+	place icons with coords at fixed locations and sort remainder by name
 
-	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_NAME)
-																	 sort icons by Name
+	((flags & (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_NAME)
+	sort icons by Name
 
-	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_DATE)
-																	 sort icons by Date
+	((flags & (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_DATE)
+	sort icons by Date
 
-	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_SIZE)
-																	 sort icons by Size
-																	 
-	((flags & ~(ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE))
-																	 sort icons by Type
+	((flags & (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == ICONLIST_SORT_BY_SIZE)
+	sort icons by Size
+
+	((flags & (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE) == (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE))
+	sort icons by Type
 */
 #define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/* mix folders and files when sorting  */
 #define ICONLIST_SORT_DRAWERS_LAST   (1<<1)		/* ignored if mixed is set             */
@@ -105,6 +104,8 @@
 #define ICONLIST_SORT_BY_NAME	     (1<<4)
 #define ICONLIST_SORT_BY_DATE	     (1<<5)
 #define ICONLIST_SORT_BY_SIZE	     (1<<6)
+
+#define ICONLIST_SORT_MASK           (ICONLIST_SORT_BY_NAME|ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE)
 
 /* DISPLAYFLAGS */
 #define ICONLIST_DISP_SHOWHIDDEN     (1<<0)		/* show system "hidden" files          */
