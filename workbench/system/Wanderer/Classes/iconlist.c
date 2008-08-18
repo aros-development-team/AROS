@@ -4703,163 +4703,145 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
-    /* check if dropped on same iconlist object */
-    if (message->obj == obj)
-    {
-#warning "TODO: Read comment about changes needed"
+	struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
 
-        //This code is temporarily disabled since it needs to be reworked to do the following ..
-        // #Check if an "unselected" icon is at the coords specified in the message
-        // #if yes check if it is a directory -> if yes "move" selected icons into it
-        // #if it is an app launch it with the selected icons as params..
-        // #if there is no icon or it is already selected move all the selected icons by the offset
+	/* get selected entries from SOURCE iconlist */
+	DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
 
-/*    struct IconEntry *icon = data->icld_SelectionFirstClicked;
+	/* check if dropped on an icon on the iconlist area */
+	if (entry)
+	{
+		/* check if dropped on a drawer */
+		struct IconEntry *node = NULL;
+		struct IconEntry *drop_target_node = NULL;
+		STRPTR directory_path = NULL;
 
-        if (icon)
-        {
-            struct Region       *region = NULL;
-            struct Rectangle    rect_old,
-                                rect_new;
-            APTR              clip = NULL;
+		/* go through list and check if dropped on icon */
+#ifdef __AROS__
+		ForeachNode(&data->icld_IconList, node)
+#else
+		Foreach_Node(&data->icld_IconList, node);
+#endif
+		{
+		   if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
+			   (message->x >= (node->ile_IconX - data->icld_ViewX)) && 
+			   (message->x <  (node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth))  &&
+			   (message->y >= (node->ile_IconY - data->icld_ViewY + _mtop(obj)))  && 
+			   (message->y <  (node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight + _mtop(obj))))
+		   {
+			   drop_target_node = node;
+			   break;
+		   } 
+		}
 
-            // icon moved, dropped in the same window
-            SET(obj, MUIA_IconList_IconsMoved, (IPTR)&data->icld_SelectionFirstClicked->ile_IconListEntry); // Now notify
-D(bug("[IconList] IconList__MUIM_DragDrop: move entry: %s dropped in same window\n", data->icld_SelectionFirstClicked->ile_IconListEntry.filename); )
-                
-            IconList_GetIconAreaRectangle(obj, data, icon, &rect_old);
+		/* get path to destination directory */
+		GET(obj, MUIA_IconDrawerList_Drawer, &directory_path);
 
-            rect_old.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
-            rect_old.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
-            rect_old.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
-            rect_old.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
+		if (drop_target_node && (drop_target_node->ile_IconListEntry.type == ST_SOFTLINK))
+		{
+			/* Selection dropped on a AppIcon */
 
-            icon->ile_IconX = message->x - _mleft(obj) + data->icld_ViewX - data->touch_x;
-            icon->ile_IconY = message->y - _mtop(obj) + data->icld_ViewY - data->touch_y;
+			/* copy path of AppIcon dropped on */
+			strcpy(data->icld_DragDropEvent.destination_string, drop_target_node->ile_IconListEntry.filename);
 
-            DoMethod(obj, MUIM_IconList_RethinkDimensions, data->icld_SelectionFirstClicked);
+			/* mark the AppIcon the selection was dropped on*/
+			drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+			data->icld_UpdateMode = UPDATE_SINGLEICON;
+			data->update_icon = drop_target_node;
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
 
-            IconList_GetIconAreaRectangle(obj, data, data->icld_SelectionFirstClicked, &rect_new);
-    
-            rect_new.MinX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
-            rect_new.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
-            rect_new.MaxX += _mleft(obj) - data->icld_ViewX + icon->ile_IconX;
-            rect_new.MinY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
-            rect_new.MaxY += _mtop(obj) - data->icld_ViewY + icon->ile_IconY;
-    
-            region = NewRegion();
-            if (region)
-            {
-                OrRectRegion(region, &rect_old);
-                OrRectRegion(region, &rect_new);
-                clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-            }
+D(bug("[IconList] %s: drop entry: Selection dropped on AppIcon '%s'\n", __PRETTY_FUNCTION__, drop_target_node->ile_IconListEntry.filename));
+		}
+		else if (drop_target_node && (drop_target_node->ile_IconListEntry.type == ST_ROOT))
+		{
+			/* Selection dropped on a Volume's Icon */
 
-            MUI_Redraw(obj,MADF_DRAWOBJECT);
+			/* copy path of Drawer Icon dropped on */
+			strcpy(data->icld_DragDropEvent.destination_string, drop_target_node->ile_IconListEntry.label);
 
-            if (region)
-            {
-                MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-            }
-            DoMethod(obj, MUIM_IconList_CoordsSort);
-        }*/
-    } 
-    else
-    {
-        // struct IconEntry      *icon     = NULL;
-        struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
+			/* mark the drive the icon was dropped on*/
+			drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+			data->icld_UpdateMode = UPDATE_SINGLEICON;
+			data->update_icon = drop_target_node;
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
 
-        /* get selected entries from SOURCE iconlist */
-        DoMethod(message->obj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
+D(bug("[IconList] %s: drop entry: Selection dropped on Volume '%s'\n", __PRETTY_FUNCTION__, drop_target_node->ile_IconListEntry.label); )
+		}
+		else if (
+				 drop_target_node &&
+				 (
+				  (drop_target_node->ile_IconListEntry.type == ST_USERDIR) ||
+				  (drop_target_node->ile_IconListEntry.type == ST_LINKDIR)
+				 )
+				)
+		{
+			/* Selection dropped on a Directory's Icon */
 
-        /* check if dropped on an icon on the iconlist area */
-        if (entry)
-        {
-           /* check if dropped on a drawer */
-           struct IconEntry *node = NULL;
-           struct IconEntry *drop_target_node = NULL;
-     STRPTR directory_path;
+			/* copy path of dir icon dropped on */
+			strcpy(data->icld_DragDropEvent.destination_string, drop_target_node->ile_IconListEntry.filename);
 
-           /* go through list and check if dropped on icon */
-     #ifdef __AROS__
-           ForeachNode(&data->icld_IconList, node)
-     #else
-     Foreach_Node(&data->icld_IconList, node);
-     #endif
-           {
-               if ((node->ile_Flags & ICONENTRY_FLAG_VISIBLE) &&
-                   message->x >= node->ile_IconX - data->icld_ViewX && 
-                   message->x <  node->ile_IconX - data->icld_ViewX + node->ile_AreaWidth  &&
-                   message->y >= node->ile_IconY - data->icld_ViewY + _mtop(obj)  && 
-                   message->y <  node->ile_IconY - data->icld_ViewY + node->ile_AreaHeight + _mtop(obj) && !drop_target_node)
-               {
-                   drop_target_node = node;
-               } 
-           }
+			/* mark the directory the icon was dropped on*/
+			drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+			data->icld_UpdateMode = UPDATE_SINGLEICON;
+			data->update_icon = drop_target_node;
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
 
-           /* get path to destination directory */
-           directory_path = NULL;
-           GET(obj, MUIA_IconDrawerList_Drawer, &directory_path);
+D(bug("[IconList] %s: drop entry: Selection dropped on Drawer '%s' (window '%s')\n", __PRETTY_FUNCTION__, drop_target_node->ile_IconListEntry.filename,  directory_path));
+		}
+		else if (
+				 drop_target_node &&
+				 (
+				  (drop_target_node->ile_IconListEntry.type == ST_FILE) ||
+				  (drop_target_node->ile_IconListEntry.type == ST_LINKFILE)
+				 )
+				)
+		{
+			/* Selection dropped on a File's Icon */
 
-           /* check if dropped on a root drive - 
-              last condition is a hack, based upon another hack (adding ":Disk" to rootdrive name) 
-              since ST_ROOT seems not to be set properly right now (?) */
-           if (drop_target_node && ((drop_target_node->ile_IconListEntry.type == ST_ROOT)
-                                || (!strcmp(drop_target_node->ile_IconListEntry.filename + strlen(drop_target_node->ile_IconListEntry.filename) - 5, ":Disk"))))
-           {
-               int tmplen = 0;
+			/* copy path of dir icon dropped on */
+			strcpy(data->icld_DragDropEvent.destination_string, drop_target_node->ile_IconListEntry.filename);
 
-               /* avoid copying "Disk" (hack anyway?!) from root drive name, eg. "Ram Disk:Disk"*/
-               tmplen = strlen(drop_target_node->ile_IconListEntry.filename) - 4;
+			/* mark the directory the icon was dropped on*/
+			drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
+			data->icld_UpdateMode = UPDATE_SINGLEICON;
+			data->update_icon = drop_target_node;
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
 
-               /* copy path of dir icon dropped on */
-               strncpy(data->icld_DragDropEvent.destination_string, drop_target_node->ile_IconListEntry.filename, tmplen);
+D(bug("[IconList] %s: drop entry: Selection dropped on File '%s' (window '%s')\n", __PRETTY_FUNCTION__, drop_target_node->ile_IconListEntry.filename,  directory_path));
+		}
+		else
+		{
+			/* not dropped on icon -> get path of DESTINATION iconlist */
+			if (message->obj != obj)
+			{
+D(bug("[IconList] %s: drop entry: Selection dropped in window '%s'\n", __PRETTY_FUNCTION__, directory_path));
+				/* copy path */
+				strcpy(data->icld_DragDropEvent.destination_string, directory_path);
+			}
+			else
+			{
+D(bug("[IconList] %s: drop entry: Selection dropped in self ... Moving Icons\n", __PRETTY_FUNCTION__));
+				SET(obj, MUIA_IconList_IconsMoved, (IPTR)entry); // Now notify
+				MUI_Redraw(obj,MADF_DRAWOBJECT);
+				DoMethod(obj, MUIM_IconList_CoordsSort);
+				return DoSuperMethodA(CLASS, obj, (Msg)message);
+			}
+		}
 
-               /* mark the drive the icon was dropped on*/
-               drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
-               data->icld_UpdateMode = UPDATE_SINGLEICON;
-               data->update_icon = drop_target_node;
-               MUI_Redraw(obj,MADF_DRAWUPDATE);
-
-D(bug("[IconList] %s: drop entry: %s dropped on disk icon %s\n", __PRETTY_FUNCTION__, entry->filename, drop_target_node->ile_IconListEntry.filename); )
-           }
-           /* check if dropped on a drawer icon in iconlist */
-           else if (drop_target_node && (drop_target_node->ile_IconListEntry.type == ST_USERDIR))
-           {
-               /* copy path of dir icon dropped on */
-               strcpy(data->icld_DragDropEvent.destination_string, drop_target_node->ile_IconListEntry.filename);
-
-               /* mark the directory the icon was dropped on*/
-               drop_target_node->ile_Flags |= ICONENTRY_FLAG_SELECTED;
-               data->icld_UpdateMode = UPDATE_SINGLEICON;
-               data->update_icon = drop_target_node;
-               MUI_Redraw(obj,MADF_DRAWUPDATE);
-
-D(bug("[IconList] %s: drop entry: %s dropped on dir %s icon in window %s\n", __PRETTY_FUNCTION__, entry->filename, drop_target_node->ile_IconListEntry.filename,  directory_path); )
-           }
-           else
-           {
-               /* not dropped on icon -> get path of DESTINATION iconlist */
-D(bug("[IconList] %s: drop entry: %s dropped in window %s\n", __PRETTY_FUNCTION__, entry->filename, directory_path); )
-               /* copy path */
-               strcpy(data->icld_DragDropEvent.destination_string, directory_path);
-           }
-
-           /* copy relevant data to drop entry */
-           data->icld_DragDropEvent.source_iconlistobj = message->obj;
-           data->icld_DragDropEvent.destination_iconlistobj = obj;
-           
-           /* return drop entry */
-           SET(obj, MUIA_IconList_IconsDropped, (IPTR)&data->icld_DragDropEvent); /* Now notify */
-           DoMethod(obj, MUIM_IconList_CoordsSort);
-        }
-        else
-        {
-           /* no drop entry */
-           SET(obj, MUIA_IconList_IconsDropped, (IPTR)NULL); /* Now notify */
-        }
-        
-    }
+	   /* copy relevant data to drop entry */
+	   data->icld_DragDropEvent.source_iconlistobj = message->obj;
+	   data->icld_DragDropEvent.destination_iconlistobj = obj;
+	   
+	   /* return drop entry */
+	   SET(obj, MUIA_IconList_IconsDropped, (IPTR)&data->icld_DragDropEvent); /* Now notify */
+	   DoMethod(obj, MUIM_IconList_CoordsSort);
+	}
+	else
+	{
+	   /* no drop entry */
+	   SET(obj, MUIA_IconList_IconsDropped, (IPTR)NULL); /* Now notify */
+D(bug("[IconList] %s: drop entry: Selection list EMPTY? (error state?)\n", __PRETTY_FUNCTION__));
+	}
     return DoSuperMethodA(CLASS, obj, (Msg)message);
 }
 ///
