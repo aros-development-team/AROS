@@ -12,8 +12,6 @@
 #endif
 
 #define WANDERER_DEFAULT_BACKDROP
-//#define WANDERER_DEFAULT_SHOWALL
-//#define WANDERER_DEFAULT_SHOWHIDDEN
 
 #include <exec/types.h>
 #include <libraries/gadtools.h>
@@ -1430,20 +1428,22 @@ void wanderer_menufunc_window_view_hidden(Object **pstrip)
 ///wanderer_menufunc_window_sort_name()
 void wanderer_menufunc_window_sort_name(Object **pstrip)
 {
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_NAME);
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-    if ( iconList != NULL)
+    if (item != NULL && iconList != NULL)
     {
         IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*name = date and size bit both NOT set*/
-        if( (sort_bits & ICONLIST_SORT_BY_DATE) || (sort_bits & ICONLIST_SORT_BY_SIZE) )
+		sort_bits &= ~ICONLIST_SORT_MASK;
+        if( XGET(item, MUIA_Menuitem_Checked) )
         {
-            sort_bits &= ~(ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
+            sort_bits |= ICONLIST_SORT_BY_NAME;
         }
-
         SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
@@ -1453,22 +1453,22 @@ void wanderer_menufunc_window_sort_name(Object **pstrip)
 ///wanderer_menufunc_window_sort_date()
 void wanderer_menufunc_window_sort_date(Object **pstrip)
 {
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_DATE);
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-    if ( iconList != NULL)
+    if (item != NULL && iconList != NULL)
     {
         IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*exclude size bit*/
-        if( sort_bits & ICONLIST_SORT_BY_SIZE )
+		sort_bits &= ~ICONLIST_SORT_MASK;
+        if( XGET(item, MUIA_Menuitem_Checked) )
         {
-            sort_bits &= ~ICONLIST_SORT_BY_SIZE;
+            sort_bits |= ICONLIST_SORT_BY_DATE;
         }
-
-        sort_bits |= ICONLIST_SORT_BY_DATE;
-
         SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
@@ -1478,22 +1478,22 @@ void wanderer_menufunc_window_sort_date(Object **pstrip)
 ///wanderer_menufunc_window_sort_size()
 void wanderer_menufunc_window_sort_size(Object **pstrip)
 {
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_SIZE);
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-    if ( iconList != NULL)
+    if (item != NULL && iconList != NULL)
     {
         IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
         /*exclude date bit*/
-        if( sort_bits & ICONLIST_SORT_BY_DATE )
+		sort_bits &= ~ICONLIST_SORT_MASK;
+        if( XGET(item, MUIA_Menuitem_Checked) )
         {
-            sort_bits &= ~ICONLIST_SORT_BY_DATE;
+            sort_bits |= ICONLIST_SORT_BY_SIZE;
         }
-
-        sort_bits |= ICONLIST_SORT_BY_SIZE;
-
         SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
@@ -1503,17 +1503,22 @@ void wanderer_menufunc_window_sort_size(Object **pstrip)
 ///wanderer_menufunc_window_sort_type()
 void wanderer_menufunc_window_sort_type(Object **pstrip)
 {
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_TYPE);
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 
-    if ( iconList != NULL)
+    if (item != NULL && iconList != NULL)
     {
         IPTR sort_bits = 0;
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
-        /*type = both date and size bits set*/
-        sort_bits |= (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
-
+        /*type = all sort bits set (name+date+size) */
+		sort_bits &= ~ICONLIST_SORT_MASK;
+        if( XGET(item, MUIA_Menuitem_Checked) )
+        {
+            sort_bits |= ICONLIST_SORT_MASK;
+        }
         SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
@@ -2334,19 +2339,19 @@ D(bug("[Wanderer] Wanderer__Func_UpdateMenuStates: ST_USERDIR/ST_FILE\n"));
 		}
 		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_NAME)) != NULL)
 		{
-			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_SortFlags == ICONLIST_SORT_BY_DATE|ICONLIST_SORT_BY_SIZE));
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME));
 		}
 		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_DATE)) != NULL)
 		{
-			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_SortFlags == ICONLIST_SORT_BY_DATE));
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE));
 		}
 		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_SIZE)) != NULL)
 		{
-			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)(current_SortFlags == ICONLIST_SORT_BY_SIZE));
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE));
 		}
 		if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_TYPE)) != NULL)
 		{
-			//SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)!(current_SortFlags & ICONLIST_DISP_SHOWINFO));
+			SET(current_MenuItem, MUIA_Menuitem_Checked, (BOOL)((current_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK));
 		}
 	}
 }
@@ -2909,30 +2914,30 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
     
             {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
     
-            {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_UPDATE},
+            {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                                    , 0, (APTR) MEN_WINDOW_UPDATE},
             {NM_ITEM, NM_BARLABEL},
-            {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                         , 0, (APTR) MEN_WINDOW_SELECT},
-            {NM_ITEM,  _(MSG_MEN_CLRSEL),  _(MSG_MEN_SC_CLRSEL)  , 0                         , 0, (APTR) MEN_WINDOW_CLEAR},
+            {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                                    , 0, (APTR) MEN_WINDOW_SELECT},
+            {NM_ITEM,  _(MSG_MEN_CLRSEL),  _(MSG_MEN_SC_CLRSEL)  , 0                                    , 0, (APTR) MEN_WINDOW_CLEAR},
             {NM_ITEM, NM_BARLABEL},
             {NM_ITEM,  _(MSG_MEN_SNAPSHT) },
-            {NM_SUB,   _(MSG_MEN_WINDOW),  NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_WIN},
-            {NM_SUB,   _(MSG_MEN_ALL),     NULL                  , 0                         , 0, (APTR) MEN_WINDOW_SNAP_ALL},
+            {NM_SUB,   _(MSG_MEN_WINDOW),  NULL                  , 0                                    , 0, (APTR) MEN_WINDOW_SNAP_WIN},
+            {NM_SUB,   _(MSG_MEN_ALL),     NULL                  , 0                                    , 0, (APTR) MEN_WINDOW_SNAP_ALL},
             {NM_ITEM, NM_BARLABEL},
             {NM_ITEM,  _(MSG_MEN_VIEW)},
-            {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
-            {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
+            {NM_SUB,   _(MSG_MEN_ICVIEW),  NULL                  , CHECKIT|CHECKED                      , 8+16+32, (APTR) MEN_WINDOW_VIEW_ICON},
+            {NM_SUB,   _(MSG_MEN_DCVIEW),  NULL                  , CHECKIT                              , 4+16+32, (APTR) MEN_WINDOW_VIEW_DETAIL},
             {NM_SUB, NM_BARLABEL},
-            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , _NewWandIntMenu__OPTION_SHOWALL, 0, (APTR) MEN_WINDOW_VIEW_ALL},
+            {NM_SUB,   _(MSG_MEN_ALLFIL),  NULL                  , _NewWandIntMenu__OPTION_SHOWALL      , 0, (APTR) MEN_WINDOW_VIEW_ALL},
             {NM_ITEM,  _(MSG_MEN_SORTIC)},
-            {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
+            {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                                    , 0, (APTR) MEN_WINDOW_SORT_NOW},
             {NM_SUB, NM_BARLABEL},
-            {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
-            {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
-            {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT               ,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
-			{NM_SUB,   "..by Type"		,  NULL					 , CHECKIT|ITEMENABLED	,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
+            {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|MENUTOGGLE                   , 8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
+            {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
+            {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
+			{NM_SUB,   "..by Type"		,  NULL					 , CHECKIT|MENUTOGGLE					, 4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
             {NM_SUB, NM_BARLABEL},
-            {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
-            {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
+            {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE                   , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
+            {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED           , 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
         //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
     
         {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
@@ -2993,10 +2998,10 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
             {NM_ITEM,  _(MSG_MEN_SORTIC)},
             {NM_SUB,   _(MSG_MEN_CLNUP),   _(MSG_MEN_SC_CLNUP)   , 0                         , 0, (APTR) MEN_WINDOW_SORT_NOW},
             {NM_SUB, NM_BARLABEL},
-            {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|CHECKED      ,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
-            {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT              ,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
-            {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT              ,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
-			{NM_SUB,   "..by Type",        NULL					 , ITEMENABLED|CHECKIT  ,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
+            {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|MENUTOGGLE                   , 8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
+            {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
+            {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
+			{NM_SUB,   "..by Type"		,  NULL					 , CHECKIT|MENUTOGGLE|ITEMENABLED	    , 4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
             {NM_SUB, NM_BARLABEL},
             {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
             {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
@@ -3044,7 +3049,6 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     Object *_NewWandDrawerMenu__menustrip;
 
 	Object *window_IconList = NULL;
-	IPTR 				current_DispFlags = 0, current_SortFlags = 0;
 
 D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow()\n"));
 
@@ -3172,24 +3176,6 @@ D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: IconWindows IconLi
 				  MUIM_CallHook, _wand_UpdateMenuStates_hook, (IPTR)window
 				);
 			}
-            GET(window_IconList, MUIA_IconList_DisplayFlags, &current_DispFlags);
-
-#if defined(WANDERER_DEFAULT_SHOWALL) || defined(WANDERER_DEFAULT_SHOWHIDDEN)
-D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Old Flags : %x\n", current_DispFlags));
-
-#if defined(WANDERER_DEFAULT_SHOWALL)
-D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'ALL' Files\n"));
-            current_DispFlags &= ~ICONLIST_DISP_SHOWINFO;
-#endif
-
-#if defined(WANDERER_DEFAULT_SHOWHIDDEN)
-D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: Telling IconList to Show 'Hidden' Files\n"));
-            current_DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
-#endif
-
-			D(bug("[Wanderer] Wanderer__MUIM_Wanderer_CreateDrawerWindow: New Flags : %x\n", current_DispFlags));
-            SET(window_IconList, MUIA_IconList_DisplayFlags, current_DispFlags);
-#endif
 			Wanderer__Func_UpdateMenuStates(window, window_IconList);
         }
 D(bug("Wanderer__MUIM_Wanderer_CreateDrawerWindow: setup notifications\n"));

@@ -386,7 +386,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         /*  Date/size sorting has the date/size appended under the icon label
             only list regular files like this (drawers have no size/date output) */
         if(
-            icon->ile_IconListEntry.type != WBDRAWER && 
+            icon->ile_IconListEntry.type != ST_USERDIR && 
             ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE))
         )
         {
@@ -1058,31 +1058,28 @@ D(bug("[IconList] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->ic
 
         /*date/size sorting has the date/size appended under the message->icon label*/
 
-        if( message->icon->ile_IconListEntry.type != WBDRAWER && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) || (data->icld_SortFlags & ICONLIST_SORT_BY_DATE)) )
+        if ((message->icon->ile_IconListEntry.type != ST_USERDIR) && ((data->icld_SortFlags & ICONLIST_SORT_BY_SIZE|ICONLIST_SORT_BY_DATE) != 0))
         {
             buf = NULL;
             SetFont(data->icld_BufferRastPort, data->icld_IconInfoFont);
 
-            if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
+            if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
             {
                 buf = message->icon->ile_TxtBuf_SIZE;
                 txwidth = message->icon->ile_TxtBuf_SIZEWidth;
             }
-            else
+            else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
             {
-                if( !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
-                {
-                    if( message->icon->ile_Flags & ICONENTRY_FLAG_TODAY )
-                    {
-                        buf  = message->icon->ile_TxtBuf_TIME;
-                        txwidth = message->icon->ile_TxtBuf_TIMEWidth;
-                    }
-                    else
-                    {
-                        buf = message->icon->ile_TxtBuf_DATE;
-                        txwidth = message->icon->ile_TxtBuf_DATEWidth;
-                    }
-                }
+				if (message->icon->ile_Flags & ICONENTRY_FLAG_TODAY)
+				{
+					buf  = message->icon->ile_TxtBuf_TIME;
+					txwidth = message->icon->ile_TxtBuf_TIMEWidth;
+				}
+				else
+				{
+					buf = message->icon->ile_TxtBuf_DATE;
+					txwidth = message->icon->ile_TxtBuf_DATEWidth;
+				}
             }
 
             if (buf)
@@ -1522,7 +1519,7 @@ D(bug("[IconList] %s: MaxLineLen : %ld\n", __PRETTY_FUNCTION__, data->icld__Opti
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = CLASS;
 
-    data->icld_SortFlags    = 0;
+    data->icld_SortFlags    = ICONLIST_SORT_BY_NAME;
     data->icld_DisplayFlags = ICONLIST_DISP_SHOWINFO;
 
     __iconlist_UpdateLabels_hook.h_Entry = (HOOKFUNC)IconList__HookFunc_UpdateLabelsFunc;
@@ -1961,7 +1958,7 @@ D(bug("[IconList] %s: Use Font @ 0x%p, RastPort @ 0x%p\n", __PRETTY_FUNCTION__, 
     {
         if (!node->ile_DiskObj)
         {
-            if (!(node->ile_DiskObj = GetIconTags(node->ile_IconListEntry.filename, ICONGETA_GenerateImageMasks, TRUE, ICONGETA_FailIfUnavailable, FALSE, ICONGETA_Label, (IPTR)node->ile_IconListEntry.label, ICONA_ErrorCode, &geticon_error, TAG_DONE)))
+            if (!(node->ile_DiskObj = GetIconTags(node->ile_IconListEntry.filename, ICONGETA_GenerateImageMasks, TRUE, ICONGETA_FailIfUnavailable, FALSE, ICONA_ErrorCode, &geticon_error, TAG_DONE)))
             {
 D(bug("[IconList] %s: Failed to obtain Icon '%s's diskobj! (error code = 0x%p)\n", __PRETTY_FUNCTION__, node->ile_IconListEntry.filename, geticon_error));
                 /*  We should probably remove this node if the icon cant be obtained ? */
@@ -2778,7 +2775,6 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             message->filename, 
             ICONGETA_FailIfUnavailable,        FALSE,
 			ICONGETA_GenerateImageMasks,       TRUE,
-            ICONGETA_Label,                    (IPTR) message->label,
             ICONA_ErrorCode,                   &geticon_error,
             TAG_DONE
         );
@@ -5085,7 +5081,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
                         list_SortedIcons,
                         list_HiddenIcons;
 
-    BOOL                sortme;
+    BOOL                sortme, enqueue = FALSE;
     int                 i, visible_count = 0;
 
 #if defined(DEBUG_ILC_ICONSORTING)
@@ -5121,7 +5117,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             if (!(entry->ile_Flags & ICONENTRY_FLAG_VISIBLE))
                 entry->ile_Flags |= ICONENTRY_FLAG_VISIBLE;
         }
-        
+
         /* Now we have fixed visibility lets dump them into the correct list for sorting */
         if (entry->ile_Flags & ICONENTRY_FLAG_VISIBLE)
         {
@@ -5130,7 +5126,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             if(entry->ile_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ile_IconHeight;
             if((entry->ile_AreaHeight - entry->ile_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ile_AreaHeight - entry->ile_IconHeight;
 
-            AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ile_IconNode);
+            AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ile_IconNode);
             visible_count++;
         }
         else
@@ -5142,12 +5138,12 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
             entry->ile_Flags &= ~(ICONENTRY_FLAG_SELECTED|ICONENTRY_FLAG_FOCUS);
             if (data->icld_SelectionLastClicked == entry) data->icld_SelectionLastClicked = NULL;
             if (data->icld_FocusIcon == entry) data->icld_FocusIcon = NULL;
-            AddHead((struct List*)&list_HiddenIcons, (struct Node *)&entry->ile_IconNode);
+            AddTail((struct List*)&list_HiddenIcons, (struct Node *)&entry->ile_IconNode);
         }
     }
-    /* Copy each visible icon entry back to the main list, sorting as we go*/
 
-    while ((entry = (struct IconEntry *)RemTail((struct List*)&list_VisibleIcons)))
+    /* Copy each visible icon entry back to the main list, sorting as we go*/
+    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_VisibleIcons)))
     {
         icon1 = (struct IconEntry *)GetHead(&list_SortedIcons);
         icon2 = NULL;
@@ -5163,29 +5159,27 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                 if(data->icld_SortFlags & ICONLIST_SORT_DRAWERS_MIXED)
                 {
                     /*drawers mixed*/
-
                     sortme = TRUE;
                 }
                 else
                 {
                     /*drawers first*/
-
-                    if ((icon1->ile_IconListEntry.type == WBDRAWER) && (entry->ile_IconListEntry.type == WBDRAWER))
+                    if ((icon1->ile_IconListEntry.type == ST_USERDIR) && (entry->ile_IconListEntry.type == ST_USERDIR))
                     {
                         sortme = TRUE;
                     }
                     else
                     {
-                        if ((icon1->ile_IconListEntry.type != WBDRAWER) && (entry->ile_IconListEntry.type != WBDRAWER))
+                        if ((icon1->ile_IconListEntry.type != ST_USERDIR) && (entry->ile_IconListEntry.type != ST_USERDIR))
                             sortme = TRUE;
                         else
                         {
                             /* we are the first drawer to arrive or we need to insert ourselves
                                due to being sorted to the end of the drawers*/
 
-                            if ((!icon2 || icon2->ile_IconListEntry.type == WBDRAWER) &&
-                                (entry->ile_IconListEntry.type == WBDRAWER) &&
-                                (icon1->ile_IconListEntry.type != WBDRAWER))
+                            if ((!icon2 || icon2->ile_IconListEntry.type == ST_USERDIR) &&
+                                (entry->ile_IconListEntry.type == ST_USERDIR) &&
+                                (icon1->ile_IconListEntry.type != ST_USERDIR))
                             {
 //D(bug("force %s\n",entry->ile_IconListEntry.label));
                                 break;
@@ -5198,35 +5192,46 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                 {
                     i = 0;
             
-                    if( (data->icld_SortFlags & ICONLIST_SORT_BY_DATE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) )
+                    if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
                     {
                         /* Sort by Date */
                         i = CompareDates((const struct DateStamp *)&entry->ile_FileInfoBlock.fib_Date,(const struct DateStamp *)&icon1->ile_FileInfoBlock.fib_Date);
-//D(bug("     -  %i\n",i));
                     }
-                    else
-                    {
-                        if( (data->icld_SortFlags & ICONLIST_SORT_BY_SIZE) && !(data->icld_SortFlags & ICONLIST_SORT_BY_DATE) )
-                        {
-                            /* Sort by Size .. */
-                            i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
-//D(bug("     -  %i\n",i));
-                        }
-                        else if( data->icld_SortFlags & (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE) )
-                        {
-                           /* Sort by Type .. */
-                        }
-                        else
-                        {
-                            /* Sort by Name .. */
-                            i = Stricmp(entry->ile_IconListEntry.label, icon1->ile_IconListEntry.label);
-                        }
-                    }
+                    else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_SIZE)
+					{
+						/* Sort by Size .. */
+						i = entry->ile_FileInfoBlock.fib_Size - icon1->ile_FileInfoBlock.fib_Size;
+					}
+					else if (((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) && (entry->ile_IconListEntry.type != ST_ROOT))
+					{
+					   /* Sort by Type .. */
+#warning "TODO: Sort icons based on type using datatypes"
+					}
+					else
+					{
+						if (
+							((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK) || 
+							((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_NAME) ||
+							(entry->ile_IconX == NO_ICON_POSITION)
+						   )
+						{
+							/* Sort by Name .. */
+							i = Stricmp(entry->ile_IconListEntry.label, icon1->ile_IconListEntry.label);
+							if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_MASK)
+								enqueue = TRUE;
+						}
+						else
+						{
+							/* coord sort */
+						}
+					}
 
-                    if (!(data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i < 0))
-                        break;
-
-                    if ((data->icld_SortFlags & ICONLIST_SORT_REVERSE) && (i > 0))
+                    if (data->icld_SortFlags & ICONLIST_SORT_REVERSE)
+					{
+						if (i > 0)
+							break;
+					}
+                    else if	(i < 0)
                         break;
                 }
                 icon2 = icon1;
@@ -5236,18 +5241,27 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         Insert((struct List*)&list_SortedIcons, (struct Node *)&entry->ile_IconNode, (struct Node *)&icon2->ile_IconNode);
     }
 
-#warning "TODO: Only Enqueue if xxxx sorting is set.."
-    /* Quickly resort based on node priorities .. */
-    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
-    {
-        Enqueue((struct List*)&data->icld_IconList, (struct Node *)&entry->ile_IconNode);
-    }
+	if (enqueue)
+	{
+		/* Quickly resort based on node priorities .. */
+		while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
+		{
+			Enqueue((struct List*)&data->icld_IconList, (struct Node *)&entry->ile_IconNode);
+		}
+	}
+	else
+	{
+		while ((entry = (struct IconEntry *)RemHead((struct List*)&list_SortedIcons)))
+		{
+			AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ile_IconNode);
+		}
+	}
 
     DoMethod(obj, MUIM_IconList_PositionIcons);
     MUI_Redraw(obj, MADF_DRAWOBJECT);
 
 #warning "TODO: leave hidden icons on a seperate list to speed up normal list parsing"
-    while ((entry = (struct IconEntry *)RemTail((struct List*)&list_HiddenIcons)))
+    while ((entry = (struct IconEntry *)RemHead((struct List*)&list_HiddenIcons)))
     {
         AddTail((struct List*)&data->icld_IconList, (struct Node *)&entry->ile_IconNode);
     }
