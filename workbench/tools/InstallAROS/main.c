@@ -5,7 +5,7 @@
 
 #define INTUITION_NO_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -37,6 +37,7 @@
 #include <proto/utility.h>
 
 #include <mui/NFloattext_mcc.h>
+#include <mui/TextEditor_mcc.h>
 
 #include "install.h"
 
@@ -150,62 +151,62 @@ IPTR Install__OM_NEW
 
 	/* IO Related */
 
-	data->IO_Always_overwrite=IIO_Overwrite_Ask;
+	data->IO_Always_overwrite = IIO_Overwrite_Ask;
 
 	/* Main stuff */
 
-	data->welcomeMsg  		= (APTR) GetTagData (MUIA_WelcomeMsg, (ULONG) NULL, message->ops_AttrList);
-	data->doneMsg       		= (APTR) GetTagData (MUIA_FinishedMsg, (ULONG) NULL, message->ops_AttrList);
+	data->welcomeMsg  		    = (APTR)GetTagData(MUIA_WelcomeMsg, (IPTR)NULL, message->ops_AttrList);
+	data->doneMsg       		= (APTR)GetTagData(MUIA_FinishedMsg, (IPTR)NULL, message->ops_AttrList);
 
-	data->page          		= (APTR) GetTagData (MUIA_Page, (ULONG) NULL, message->ops_AttrList);
-	data->gauge1        		= (APTR) GetTagData (MUIA_Gauge1, (ULONG) NULL, message->ops_AttrList);
-	data->gauge2        		= (APTR) GetTagData (MUIA_Gauge2, (ULONG) NULL, message->ops_AttrList);
-	data->label        		= (APTR) GetTagData (MUIA_Install, (ULONG) NULL, message->ops_AttrList);
+	data->page          		= (APTR)GetTagData(MUIA_Page, (IPTR)NULL, message->ops_AttrList);
+	data->gauge1        		= (APTR)GetTagData(MUIA_Gauge1, (IPTR)NULL, message->ops_AttrList);
+	data->gauge2        		= (APTR)GetTagData(MUIA_Gauge2, (IPTR)NULL, message->ops_AttrList);
+	data->label        		    = (APTR)GetTagData(MUIA_Install, (IPTR)NULL, message->ops_AttrList);
 
-	data->installer     		= (APTR) GetTagData (MUIA_OBJ_Installer, (ULONG) NULL, message->ops_AttrList);
+	data->installer     		= (APTR)GetTagData(MUIA_OBJ_Installer, (IPTR)NULL, message->ops_AttrList);
 
-	data->window        		= (APTR) GetTagData (MUIA_OBJ_Window, (ULONG) NULL, message->ops_AttrList);
-	data->contents      		= (APTR) GetTagData (MUIA_OBJ_WindowContent, (ULONG) NULL, message->ops_AttrList);
+	data->window        		= (APTR)GetTagData(MUIA_OBJ_Window, (IPTR)NULL, message->ops_AttrList);
+	data->contents      		= (APTR)GetTagData(MUIA_OBJ_WindowContent, (IPTR)NULL, message->ops_AttrList);
 
-	data->pagetitle     		= (APTR) GetTagData (MUIA_OBJ_PageTitle, (ULONG) NULL, message->ops_AttrList);
-	data->pageheader   		= (APTR) GetTagData (MUIA_OBJ_PageHeader, (ULONG) NULL, message->ops_AttrList);
+	data->pagetitle     		= (APTR)GetTagData(MUIA_OBJ_PageTitle, (IPTR)NULL, message->ops_AttrList);
+	data->pageheader   		    = (APTR)GetTagData(MUIA_OBJ_PageHeader, (IPTR)NULL, message->ops_AttrList);
 
-	data->actioncurrent 		= (APTR) GetTagData (MUIA_OBJ_CActionStrng, (ULONG) NULL, message->ops_AttrList);
-	data->back          		= (APTR) GetTagData (MUIA_OBJ_Back, (ULONG) NULL, message->ops_AttrList);
-	data->proceed       		= (APTR) GetTagData (MUIA_OBJ_Proceed, (ULONG) NULL, message->ops_AttrList);
-	data->cancel        		= (APTR) GetTagData (MUIA_OBJ_Cancel, (ULONG) NULL, message->ops_AttrList);
+	data->actioncurrent 		= (APTR)GetTagData(MUIA_OBJ_CActionStrng, (IPTR)NULL, message->ops_AttrList);
+	data->back          		= (APTR)GetTagData(MUIA_OBJ_Back, (IPTR)NULL, message->ops_AttrList);
+	data->proceed       		= (APTR)GetTagData(MUIA_OBJ_Proceed, (IPTR)NULL, message->ops_AttrList);
+	data->cancel        		= (APTR)GetTagData(MUIA_OBJ_Cancel, (IPTR)NULL, message->ops_AttrList);
 /**/
-	data->IO_RWindow       	= (APTR) GetTagData (MUIA_OBJ_IO_RWindow, (ULONG) NULL, message->ops_AttrList);
-	data->IO_RText         		= (APTR) GetTagData (MUIA_OBJ_IO_RText, (ULONG) NULL, message->ops_AttrList);
-	data->IO_ROpt1           	= (APTR) GetTagData (MUIA_OBJ_IO_ROpt1, (ULONG) NULL, message->ops_AttrList);
-	data->IO_ROpt2       		= (APTR) GetTagData (MUIA_OBJ_IO_ROpt2, (ULONG) NULL, message->ops_AttrList);
-	data->IO_ROpt3       		= (APTR) GetTagData (MUIA_OBJ_IO_ROpt3, (ULONG) NULL, message->ops_AttrList);
+	data->IO_RWindow       	    = (APTR)GetTagData(MUIA_OBJ_IO_RWindow, (IPTR)NULL, message->ops_AttrList);
+	data->IO_RText         		= (APTR)GetTagData(MUIA_OBJ_IO_RText, (IPTR)NULL, message->ops_AttrList);
+	data->IO_ROpt1           	= (APTR)GetTagData(MUIA_OBJ_IO_ROpt1, (IPTR)NULL, message->ops_AttrList);
+	data->IO_ROpt2       		= (APTR)GetTagData(MUIA_OBJ_IO_ROpt2, (IPTR)NULL, message->ops_AttrList);
+	data->IO_ROpt3       		= (APTR)GetTagData(MUIA_OBJ_IO_ROpt3, (IPTR)NULL, message->ops_AttrList);
 /**/
-	data->instc_lic_file		= (APTR) GetTagData (MUIA_IC_License_File, (ULONG) NULL, message->ops_AttrList);
-	data->instc_lic_mandatory	= (APTR) GetTagData (MUIA_IC_License_Mandatory, (ULONG) NULL, message->ops_AttrList);
+	data->instc_lic_file		= (char *)GetTagData(MUIA_IC_License_File, (IPTR)NULL, message->ops_AttrList);
+	data->instc_copt_licensemandatory	= (BOOL)GetTagData(MUIA_IC_License_Mandatory, (IPTR)FALSE, message->ops_AttrList);
 
 /**/
-	data->instc_options_main      = (APTR) GetTagData (MUIA_List_Options, (ULONG) NULL, message->ops_AttrList);
-	data->instc_options_grub      = (APTR) GetTagData (MUIA_Grub_Options, (ULONG) NULL, message->ops_AttrList);
+	data->instc_options_main    = (APTR)GetTagData(MUIA_List_Options, (IPTR)NULL, message->ops_AttrList);
+	data->instc_options_grub    = (APTR)GetTagData(MUIA_Grub_Options, (IPTR)NULL, message->ops_AttrList);
 
-	data->instc_undoenabled	 =  (APTR) GetTagData (MUIA_IC_EnableUndo, (ULONG) NULL, message->ops_AttrList);
+	data->instc_copt_undoenabled	    =  (BOOL)GetTagData (MUIA_IC_EnableUndo, (IPTR)FALSE, message->ops_AttrList);
 
 	data->instc_options_main->partitioned 	= FALSE;
 	data->instc_options_main->bootloaded 	= FALSE;
 	data->instc_options_grub->bootinfo 		= FALSE;
 /****/
-	get( data->window, MUIA_Window_Width, &data->cur_width);
-	get( data->window, MUIA_Window_Height, &data->cur_height);
+	GET( data->window, MUIA_Window_Width, &data->cur_width);
+	GET( data->window, MUIA_Window_Height, &data->cur_height);
 
-	set(data->welcomeMsg, MUIA_Text_Contents, KMsgWelcome);
-	set(data->back, MUIA_Disabled, TRUE);
+	SET(data->welcomeMsg, MUIA_Text_Contents, KMsgWelcome);
+	SET(data->back, MUIA_Disabled, TRUE);
 
 	data->instc_stage_next     		= EPartitionOptionsStage;
 
 	data->inst_success  		= FALSE;
 	data->disable_back  		= FALSE;
 
-	data->drive_set     		= (BOOL)DoMethod(self, MUIM_FindDrives);
+	data->instc_cflag_driveset     		= (BOOL)DoMethod(self, MUIM_FindDrives);
 
 	DoMethod(data->proceed, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_NextStep);
 	DoMethod(data->back, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) self, 1, MUIM_IC_PrevStep);
@@ -235,7 +236,7 @@ IPTR Install__OM_NEW
 			if ((s = Read(from, data->instc_lic_buffer, fib->fib_Size)) == -1)
 			{
 				D(bug("[INSTALLER.i] Error processing license file!"));
-				if ((BOOL)data->instc_lic_mandatory)
+				if ((BOOL)data->instc_copt_licensemandatory)
 				{
 					Close(from);
 					UnLock(lock);
@@ -244,7 +245,7 @@ IPTR Install__OM_NEW
 			}
 			else
 			{
-				set( data->instc_options_main->opt_lic_box,MUIA_Floattext_Text,data->instc_lic_buffer);
+				DoMethod(data->instc_options_main->opt_lic_box, MUIM_TextEditor_InsertText, data->instc_lic_buffer, MUIV_TextEditor_InsertText_Top);
 			}
 			Close(from);
 		}
@@ -255,8 +256,8 @@ IPTR Install__OM_NEW
 			UnLock(lock);
 		}
 
-		if (!data->instc_lic_mandatory)
-			set(data->instc_options_main->opt_lic_mgrp,MUIA_ShowMe,FALSE);
+		if (!data->instc_copt_licensemandatory)
+			SET(data->instc_options_main->opt_lic_mgrp,MUIA_ShowMe,FALSE);
 		else
 			DoMethod(data->instc_options_main->opt_license, MUIM_Notify,
 				MUIA_Selected, MUIV_EveryTime, (IPTR) data->proceed, 3, MUIM_Set,
@@ -265,10 +266,11 @@ IPTR Install__OM_NEW
 
 /* UNDO Record */
 
-	if (data->instc_undoenabled)
+	if (data->instc_copt_undoenabled)
 	{
 		lock = 0;
 		NEWLIST((struct List *)&data->instc_undorecord);
+D(bug("[INSTALLER.i] Prepaired UNDO list @ %p\n", &data->instc_undorecord));
 
 		if ((lock = Lock(installertmp_path, ACCESS_READ))!=NULL)
 		{
@@ -281,7 +283,7 @@ IPTR Install__OM_NEW
 			if(lock != NULL) UnLock(lock);
 			else
 			{
-				D(bug("[INSTALLER.i] Failed to create %s dir!!\n",installertmp_path));
+				D(bug("[INSTALLER.i] Failed to create dir '%s'!!\n",installertmp_path));
 				data->inst_success = MUIV_Inst_Failed;
 				return 0;
 			}
@@ -298,7 +300,7 @@ IPTR Install__OM_NEW
 			if(lock != NULL) UnLock(lock);
 			else
 			{
-				D(bug("[INSTALLER.i] Failed to create %s dir!!\n",instalationtmp_path));
+				D(bug("[INSTALLER.i] Failed to create dir '%s'!!\n",instalationtmp_path));
 				data->inst_success = MUIV_Inst_Failed;
 				return 0;
 			}
@@ -321,18 +323,18 @@ ULONG AskRetry(Class *CLASS, Object *self, char *Message, char *File, char *Opt1
 
 	sprintf(Temp_Message, Message, File);
 
-	set(data->IO_RText, MUIA_Text_Contents, Temp_Message);
+	SET(data->IO_RText, MUIA_Text_Contents, Temp_Message);
 
-	set(data->IO_ROpt1, MUIA_Text_Contents, Opt1);
-	set(data->IO_ROpt2, MUIA_Text_Contents, Opt2);
-	set(data->IO_ROpt3, MUIA_Text_Contents, Opt3);
+	SET(data->IO_ROpt1, MUIA_Text_Contents, Opt1);
+	SET(data->IO_ROpt2, MUIA_Text_Contents, Opt2);
+	SET(data->IO_ROpt3, MUIA_Text_Contents, Opt3);
 
-	set(data->IO_ROpt1, MUIA_Selected, FALSE);
-	set(data->IO_ROpt2, MUIA_Selected, FALSE);
-	set(data->IO_ROpt3, MUIA_Selected, FALSE);
+	SET(data->IO_ROpt1, MUIA_Selected, FALSE);
+	SET(data->IO_ROpt2, MUIA_Selected, FALSE);
+	SET(data->IO_ROpt3, MUIA_Selected, FALSE);
 
-	set(data->IO_RWindow, MUIA_Window_Open, TRUE);
-	set(data->window,MUIA_Window_Sleep,TRUE);
+	SET(data->IO_RWindow, MUIA_Window_Open, TRUE);
+	SET(data->window,MUIA_Window_Sleep,TRUE);
 
 	DoMethod(data->IO_ROpt1,MUIM_Notify,MUIA_Selected,TRUE, self,3,MUIM_Set,MUIA_IIO_Flag,IIO_Selected_Opt1);
 	DoMethod(data->IO_ROpt2,MUIM_Notify,MUIA_Selected,TRUE, self,3,MUIM_Set,MUIA_IIO_Flag,IIO_Selected_Opt2);
@@ -342,10 +344,10 @@ ULONG AskRetry(Class *CLASS, Object *self, char *Message, char *File, char *Opt1
 
 	while (data->IO_Flags == 0) DoMethod(data->installer, MUIM_Application_InputBuffered);
 
-	set(data->window, MUIA_Window_Sleep, FALSE);
-	set(data->IO_RWindow, MUIA_Window_Open, FALSE);
+	SET(data->window, MUIA_Window_Sleep, FALSE);
+	SET(data->IO_RWindow, MUIA_Window_Open, FALSE);
 
-	set(data->IO_RText, MUIA_Text_Contents, NULL);
+	SET(data->IO_RText, MUIA_Text_Contents, NULL);
 	FreeVec(Temp_Message);
 
 	return (data->IO_Flags - 1);
@@ -538,19 +540,19 @@ IPTR Install__MUIM_IC_NextStep
 	struct Install_DATA*    data = INST_DATA(CLASS, self);
 	IPTR                    this_page=0,next_stage=0,option=0;
 
-	get(data->page,MUIA_Group_ActivePage, &this_page);
+	GET(data->page,MUIA_Group_ActivePage, &this_page);
 
 	if ((EDoneStage == this_page)&&( this_page == data->instc_stage_next )) 
         set(self, MUIA_InstallComplete, TRUE);  //ALL DONE!!
 
-	set(data->back, MUIA_Disabled, (BOOL)data->disable_back);
+	SET(data->back, MUIA_Disabled, (BOOL)data->disable_back);
 
 	next_stage = data->instc_stage_next;
 	data->instc_stage_prev = this_page;
 
-	set(data->back, MUIA_Selected, FALSE);
-	set(data->proceed, MUIA_Selected, FALSE);
-	set(data->cancel, MUIA_Selected, FALSE);
+	SET(data->back, MUIA_Selected, FALSE);
+	SET(data->proceed, MUIA_Selected, FALSE);
+	SET(data->cancel, MUIA_Selected, FALSE);
 
 	switch(data->instc_stage_next)
 	{
@@ -558,11 +560,11 @@ IPTR Install__MUIM_IC_NextStep
 	case ELicenseStage:
 		if (data->instc_lic_file)
 		{
-			if (data->instc_lic_mandatory)
+			if (data->instc_copt_licensemandatory)
 			{
 				/* Force acceptance of the license */
-				set(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
-				set(data->proceed, MUIA_Disabled, TRUE);
+				SET(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
+				SET(data->proceed, MUIA_Disabled, TRUE);
 			}		
 			data->instc_stage_next = EInstallOptionsStage;
 			next_stage = ELicenseStage;
@@ -571,16 +573,16 @@ IPTR Install__MUIM_IC_NextStep
 		/* if no license we ignore this step... and go to partition options */
 
 	case EPartitionOptionsStage:
-		if(data->drive_set)
+		if(data->instc_cflag_driveset)
 		{
-			set(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, 2);
+			SET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, 2);
 		}
 		data->instc_stage_next = EPartitioningStage;
 		next_stage = EPartitionOptionsStage;
 		break;
 
 	case EInstallOptionsStage:
-		set(data->welcomeMsg, MUIA_Text_Contents, KMsgInstallOptions);
+		SET(data->welcomeMsg, MUIA_Text_Contents, KMsgInstallOptions);
 		data->instc_stage_next = EDestOptionsStage;
 		next_stage = EInstallOptionsStage;
 		break;
@@ -588,15 +590,15 @@ IPTR Install__MUIM_IC_NextStep
 	case EDestOptionsStage:
 		if ((BOOL)XGET(data->instc_options_main->opt_format, MUIA_Selected))
 		{
-			set(show_formatsys,MUIA_ShowMe,TRUE);
-			set(show_formatwork,MUIA_ShowMe,TRUE);
+			SET(show_formatsys,MUIA_ShowMe,TRUE);
+			SET(show_formatwork,MUIA_ShowMe,TRUE);
 		}
 		else
 		{
-			set(check_formatsys,MUIA_Selected,FALSE);
-			set(check_formatwork,MUIA_Selected,FALSE);
-			set(show_formatsys,MUIA_ShowMe,FALSE);
-			set(show_formatwork,MUIA_ShowMe,FALSE);
+			SET(check_formatsys,MUIA_Selected,FALSE);
+			SET(check_formatwork,MUIA_Selected,FALSE);
+			SET(show_formatsys,MUIA_ShowMe,FALSE);
+			SET(show_formatwork,MUIA_ShowMe,FALSE);
 		}
 		data->instc_stage_next = EInstallMessageStage;
 		next_stage = EDestOptionsStage;
@@ -607,7 +609,7 @@ IPTR Install__MUIM_IC_NextStep
 		//theprevStage=;
 
 		/* PARTITION DRIVES */
-		get(data->instc_options_main->opt_partition, MUIA_Selected, &option);
+		GET(data->instc_options_main->opt_partition, MUIA_Selected, &option);
 		if (option != 0)
 		{
 			//have we already done this?
@@ -625,7 +627,7 @@ IPTR Install__MUIM_IC_NextStep
 
 		option = 0;
 
-		get(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
+		GET(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
 		if (option != 0)
 		{
 			//have we already done this?
@@ -671,8 +673,8 @@ IPTR Install__MUIM_IC_NextStep
 
 					sprintf(tmp_grub ,"%s:boot/grub",dest_Path);
 
-					set(data->instc_options_grub->gopt_drive, MUIA_Text_Contents, tmp_device);
-					set(data->instc_options_grub->gopt_grub, MUIA_Text_Contents, tmp_grub);
+					SET(data->instc_options_grub->gopt_drive, MUIA_Text_Contents, tmp_device);
+					SET(data->instc_options_grub->gopt_grub, MUIA_Text_Contents, tmp_grub);
 				}
 
 				data->instc_stage_next = EInstallMessageStage;
@@ -684,9 +686,9 @@ IPTR Install__MUIM_IC_NextStep
 
 		if (XGET(check_formatsys, MUIA_Selected)
 			|| XGET(check_formatwork, MUIA_Selected))
-			set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
+			SET(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
 		else
-			set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithoutPartition);
+			SET(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithoutPartition);
 		data->instc_stage_next = EInstallStage;
 		next_stage =  EMessageStage;
 		break;
@@ -710,9 +712,8 @@ IPTR Install__MUIM_IC_NextStep
 #endif
 		data->disable_back = TRUE;
 
-		set(data->page,MUIA_Group_ActivePage, EPartitioningStage);
+		SET(data->page,MUIA_Group_ActivePage, EPartitioningStage);
 
-		
 		switch (option)
 		{
 			case 0:
@@ -721,18 +722,18 @@ IPTR Install__MUIM_IC_NextStep
 				{
 					D(bug("[INSTALLER] Partitioning FAILED!!!!\n"));
 					data->disable_back = FALSE;
-					set(data->page,MUIA_Group_ActivePage, EInstallMessageStage);
+					SET(data->page,MUIA_Group_ActivePage, EInstallMessageStage);
 					data->instc_stage_next = EPartitioningStage;
 					return 0;
 				}
 				next_stage = EDoneStage;
 				DoMethod(data->page, MUIM_Group_InitChange);
-				set(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
-				set(reboot_group, MUIA_ShowMe, TRUE);
-				set(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
+				SET(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
+				SET(reboot_group, MUIA_ShowMe, TRUE);
+				SET(data->instc_options_main->opt_reboot, MUIA_Selected, TRUE);
 				DoMethod(data->page, MUIM_Group_ExitChange);
-				set(data->back, MUIA_Disabled, TRUE);
-				set(data->cancel, MUIA_Disabled, TRUE);
+				SET(data->back, MUIA_Disabled, TRUE);
+				SET(data->cancel, MUIA_Disabled, TRUE);
 				data->instc_stage_next = EDoneStage;
 				break;
 			case 2:
@@ -749,13 +750,13 @@ IPTR Install__MUIM_IC_NextStep
 
 	case EInstallStage:
 		data->disable_back = TRUE;
-		set(data->page,MUIA_Group_ActivePage, EInstallStage);
+		SET(data->page,MUIA_Group_ActivePage, EInstallStage);
 
 		DoMethod(self, MUIM_IC_Install);
 
 		next_stage = EDoneStage;
-		set(data->back, MUIA_Disabled, TRUE);
-		set(data->cancel, MUIA_Disabled, TRUE);
+		SET(data->back, MUIA_Disabled, TRUE);
+		SET(data->cancel, MUIA_Disabled, TRUE);
 		data->instc_stage_next = EDoneStage;
 		break;
 
@@ -763,7 +764,7 @@ IPTR Install__MUIM_IC_NextStep
 		break;
 	}
 
-	set(data->page,MUIA_Group_ActivePage, next_stage);
+	SET(data->page,MUIA_Group_ActivePage, next_stage);
 	return 0;
 }
 
@@ -775,12 +776,12 @@ IPTR Install__MUIM_IC_PrevStep
 	struct Install_DATA* data = INST_DATA(CLASS, self);
 	IPTR    this_page;
 
-	get(data->page,MUIA_Group_ActivePage, &this_page);
-	set(data->back, MUIA_Selected, FALSE);
-	set(data->proceed, MUIA_Selected, FALSE);
-	set(data->cancel, MUIA_Selected, FALSE);
+	GET(data->page,MUIA_Group_ActivePage, &this_page);
+	SET(data->back, MUIA_Selected, FALSE);
+	SET(data->proceed, MUIA_Selected, FALSE);
+	SET(data->cancel, MUIA_Selected, FALSE);
 
-	set(data->back, MUIA_Disabled, (BOOL)data->disable_back);
+	SET(data->back, MUIA_Disabled, (BOOL)data->disable_back);
 	data->instc_stage_next = this_page;
 
 	switch(this_page)
@@ -789,10 +790,10 @@ IPTR Install__MUIM_IC_PrevStep
 		/* BACK should only be possible when page != first_page */
 		if (data->instc_stage_prev != EMessageStage)
 		{
-			set(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
+			SET(data->welcomeMsg, MUIA_Text_Contents, KMsgBeginWithPartition);
 			if (data->instc_stage_prev == EDestOptionsStage)
 			{
-				set(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
+				SET(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
 
 				data->instc_stage_prev = EInstallOptionsStage;
 			}
@@ -800,11 +801,11 @@ IPTR Install__MUIM_IC_PrevStep
 			{
 				if (!data->instc_options_grub->bootinfo)
 				{
-					set(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
+					SET(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
 				}
 				else
 				{
-					set(data->page,MUIA_Group_ActivePage, EGrubOptionsStage);
+					SET(data->page,MUIA_Group_ActivePage, EGrubOptionsStage);
 				}
 				data->instc_stage_prev = EDestOptionsStage;
 			}
@@ -815,35 +816,35 @@ IPTR Install__MUIM_IC_PrevStep
 	case EPartitionOptionsStage:
 		if (data->instc_lic_file)
 		{
-			set(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
-			set(data->proceed, MUIA_Disabled, TRUE);
-			set(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
+			SET(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
+			SET(data->proceed, MUIA_Disabled, TRUE);
+			SET(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
 			data->instc_stage_prev = ELicenseStage;
 			break;
 		}
 
 	case ELicenseStage:
-		set(data->proceed, MUIA_Disabled, FALSE);
-		set(data->back, MUIA_Disabled, TRUE);
-		set(data->welcomeMsg, MUIA_Text_Contents, KMsgWelcome);
-		set(data->page,MUIA_Group_ActivePage, EMessageStage);
+		SET(data->proceed, MUIA_Disabled, FALSE);
+		SET(data->back, MUIA_Disabled, TRUE);
+		SET(data->welcomeMsg, MUIA_Text_Contents, KMsgWelcome);
+		SET(data->page,MUIA_Group_ActivePage, EMessageStage);
 		data->instc_stage_prev = EMessageStage;
 		break;
 
 	case EInstallOptionsStage:
-		set(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
-		set(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
+		SET(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
+		SET(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
 		data->instc_stage_prev = ELicenseStage;
 		break;
 
 	case EDestOptionsStage:
-		set(data->page,MUIA_Group_ActivePage, EInstallOptionsStage);
+		SET(data->page,MUIA_Group_ActivePage, EInstallOptionsStage);
 		data->instc_stage_next = EDestOptionsStage;
 		data->instc_stage_prev = EMessageStage;
 		break;
 
 	case EGrubOptionsStage:
-		set(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
+		SET(data->page,MUIA_Group_ActivePage, EDestOptionsStage);
 		data->instc_options_main->bootloaded = FALSE;
 		data->instc_stage_next = EInstallMessageStage;
 		data->instc_stage_prev = EInstallOptionsStage;
@@ -879,11 +880,11 @@ IPTR Install__MUIM_IC_CancelInstall
 		data->instc_options_backup = backupOptions;
 	}
 
-	get(data->page,MUIA_Group_ActivePage, &this_page);
+	GET(data->page,MUIA_Group_ActivePage, &this_page);
 
-	get(data->back, MUIA_Disabled, &data->status_back);
-	get(data->proceed, MUIA_Disabled, &data->status_proceed);
-	get(data->cancel, MUIA_Disabled, &data->status_cancel);
+	GET(data->back, MUIA_Disabled, &data->status_back);
+	GET(data->proceed, MUIA_Disabled, &data->status_proceed);
+	GET(data->cancel, MUIA_Disabled, &data->status_cancel);
 
 	switch(this_page)
 	{
@@ -894,34 +895,34 @@ IPTR Install__MUIM_IC_CancelInstall
 		break;
 
 	case EInstallOptionsStage:
-		get(data->instc_options_main->opt_partition, MUIA_Disabled, &backupOptions->opt_partition);
-		get(data->instc_options_main->opt_format, MUIA_Disabled, &backupOptions->opt_format);
-		get(data->instc_options_main->opt_locale, MUIA_Disabled, &backupOptions->opt_locale);
-		get(data->instc_options_main->opt_copycore, MUIA_Disabled, &backupOptions->opt_copycore);
-		get(data->instc_options_main->opt_copyextra, MUIA_Disabled, &backupOptions->opt_copyextra);
-		get(data->instc_options_main->opt_development, MUIA_Disabled, &backupOptions->opt_development);
-		get(data->instc_options_main->opt_bootloader, MUIA_Disabled, &backupOptions->opt_bootloader);
-		get(data->instc_options_main->opt_reboot, MUIA_Disabled, &backupOptions->opt_reboot);
+		GET(data->instc_options_main->opt_partition, MUIA_Disabled, &backupOptions->opt_partition);
+		GET(data->instc_options_main->opt_format, MUIA_Disabled, &backupOptions->opt_format);
+		GET(data->instc_options_main->opt_locale, MUIA_Disabled, &backupOptions->opt_locale);
+		GET(data->instc_options_main->opt_copycore, MUIA_Disabled, &backupOptions->opt_copycore);
+		GET(data->instc_options_main->opt_copyextra, MUIA_Disabled, &backupOptions->opt_copyextra);
+		GET(data->instc_options_main->opt_development, MUIA_Disabled, &backupOptions->opt_development);
+		GET(data->instc_options_main->opt_bootloader, MUIA_Disabled, &backupOptions->opt_bootloader);
+		GET(data->instc_options_main->opt_reboot, MUIA_Disabled, &backupOptions->opt_reboot);
 
-		set(data->instc_options_main->opt_partition, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_format, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_locale, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_copycore, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_copyextra, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_development, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_bootloader, MUIA_Disabled, TRUE);
-		set(data->instc_options_main->opt_reboot, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_partition, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_format, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_locale, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_copycore, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_copyextra, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_development, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_bootloader, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_reboot, MUIA_Disabled, TRUE);
 		goto donecancel;
 
 	case EDestOptionsStage:
-		set(dest_volume, MUIA_Disabled, TRUE);
-		set(work_volume, MUIA_Disabled, TRUE);
-		set(check_copytowork, MUIA_Disabled, TRUE);
-		set(check_work, MUIA_Disabled, TRUE);
+		SET(dest_volume, MUIA_Disabled, TRUE);
+		SET(work_volume, MUIA_Disabled, TRUE);
+		SET(check_copytowork, MUIA_Disabled, TRUE);
+		SET(check_work, MUIA_Disabled, TRUE);
 		goto donecancel;
 
 	case EPartitionOptionsStage:
-		set(data->instc_options_main->opt_partmethod, MUIA_Disabled, TRUE);
+		SET(data->instc_options_main->opt_partmethod, MUIA_Disabled, TRUE);
 		goto donecancel;
 
 	case EGrubOptionsStage:
@@ -933,14 +934,14 @@ donecancel:
 		break;
 	}
 
-	set(data->back, MUIA_Selected, FALSE);
-	set(data->back, MUIA_Disabled, TRUE);
+	SET(data->back, MUIA_Selected, FALSE);
+	SET(data->back, MUIA_Disabled, TRUE);
 
-	set(data->proceed, MUIA_Selected, FALSE);
-	set(data->proceed, MUIA_Disabled, TRUE);
+	SET(data->proceed, MUIA_Selected, FALSE);
+	SET(data->proceed, MUIA_Disabled, TRUE);
 
-	set(data->cancel, MUIA_Selected, FALSE);
-	set(data->cancel, MUIA_Disabled, TRUE);
+	SET(data->cancel, MUIA_Selected, FALSE);
+	SET(data->cancel, MUIA_Disabled, TRUE);
 
 	if ( !MUI_RequestA(  data->installer, data->window, 0, "Cancel Installation...", "*Continue Install|Cancel Install", cancelmessage, NULL))
 	{
@@ -962,47 +963,47 @@ Class *CLASS, Object *self, Msg message
 
 	backupOptions = data->instc_options_backup;
 
-	get(data->page,MUIA_Group_ActivePage, &this_page);
+	GET(data->page,MUIA_Group_ActivePage, &this_page);
 
-	if (!(BOOL)data->disable_back) set(data->back, MUIA_Disabled, data->status_back);
-	else set(data->back, MUIA_Disabled, TRUE);
-	set(data->back, MUIA_Selected, FALSE);
+	if (!(BOOL)data->disable_back) SET(data->back, MUIA_Disabled, data->status_back);
+	else SET(data->back, MUIA_Disabled, TRUE);
+	SET(data->back, MUIA_Selected, FALSE);
 
-	set(data->proceed, MUIA_Disabled, data->status_proceed);
-	set(data->proceed, MUIA_Selected, FALSE);
+	SET(data->proceed, MUIA_Disabled, data->status_proceed);
+	SET(data->proceed, MUIA_Selected, FALSE);
 
-	set(data->cancel, MUIA_Disabled, data->status_cancel);
-	set(data->cancel, MUIA_Selected, FALSE);
+	SET(data->cancel, MUIA_Disabled, data->status_cancel);
+	SET(data->cancel, MUIA_Selected, FALSE);
 
 	switch(this_page)
 	{
 	case EInstallOptionsStage:
-		set(data->instc_options_main->opt_partition, MUIA_Disabled, (BOOL) backupOptions->opt_partition);
-		set(data->instc_options_main->opt_format, MUIA_Disabled, (BOOL) backupOptions->opt_format);
-		set(data->instc_options_main->opt_locale, MUIA_Disabled, (BOOL) backupOptions->opt_locale);
-		set(data->instc_options_main->opt_copycore, MUIA_Disabled, (BOOL) backupOptions->opt_copycore);
-		set(data->instc_options_main->opt_copyextra, MUIA_Disabled, (BOOL) backupOptions->opt_copyextra);
-		set(data->instc_options_main->opt_development, MUIA_Disabled, (BOOL) backupOptions->opt_development);
-		set(data->instc_options_main->opt_bootloader, MUIA_Disabled, (BOOL) backupOptions->opt_bootloader);
-		set(data->instc_options_main->opt_reboot, MUIA_Disabled, (BOOL) backupOptions->opt_reboot);
+		SET(data->instc_options_main->opt_partition, MUIA_Disabled, (BOOL) backupOptions->opt_partition);
+		SET(data->instc_options_main->opt_format, MUIA_Disabled, (BOOL) backupOptions->opt_format);
+		SET(data->instc_options_main->opt_locale, MUIA_Disabled, (BOOL) backupOptions->opt_locale);
+		SET(data->instc_options_main->opt_copycore, MUIA_Disabled, (BOOL) backupOptions->opt_copycore);
+		SET(data->instc_options_main->opt_copyextra, MUIA_Disabled, (BOOL) backupOptions->opt_copyextra);
+		SET(data->instc_options_main->opt_development, MUIA_Disabled, (BOOL) backupOptions->opt_development);
+		SET(data->instc_options_main->opt_bootloader, MUIA_Disabled, (BOOL) backupOptions->opt_bootloader);
+		SET(data->instc_options_main->opt_reboot, MUIA_Disabled, (BOOL) backupOptions->opt_reboot);
 		break;
 
 	case EDestOptionsStage:
-		set(dest_volume, MUIA_Disabled, FALSE);
-		set(check_work, MUIA_Disabled, FALSE);
+		SET(dest_volume, MUIA_Disabled, FALSE);
+		SET(check_work, MUIA_Disabled, FALSE);
 
 		IPTR	reenable=0;
-		get(check_work, MUIA_Selected, &reenable);
+		GET(check_work, MUIA_Selected, &reenable);
 
 		if (reenable)
 		{
-			set(check_copytowork, MUIA_Disabled, FALSE);
-			set(work_volume, MUIA_Disabled, FALSE);
+			SET(check_copytowork, MUIA_Disabled, FALSE);
+			SET(work_volume, MUIA_Disabled, FALSE);
 		}
 		break;
 
 	case EPartitionOptionsStage:
-		set(data->instc_options_main->opt_partmethod, MUIA_Disabled, FALSE);
+		SET(data->instc_options_main->opt_partmethod, MUIA_Disabled, FALSE);
 		break;
 
 	case EGrubOptionsStage:
@@ -1062,20 +1063,20 @@ IPTR Install__MUIM_Partition
 
 	if ( data->inst_success ==  MUIV_Inst_InProgress)
 	{
-		set(data->back, MUIA_Disabled, TRUE);
-		set(data->proceed, MUIA_Disabled, TRUE);
+		SET(data->back, MUIA_Disabled, TRUE);
+		SET(data->proceed, MUIA_Disabled, TRUE);
 
 		char tmpcmd[150], tmparg[100];
-		get(dest_device, MUIA_String_Contents, &tmp);
-		get(dest_unit, MUIA_String_Integer, &option);
+		GET(dest_device, MUIA_String_Contents, &tmp);
+		GET(dest_unit, MUIA_String_Integer, &option);
 		sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
 			tmp, option);
 
 		/* Specify SYS size */
-		get(check_sizesys, MUIA_Selected, &option);
+		GET(check_sizesys, MUIA_Selected, &option);
 		if (option)
 		{
-			get(sys_size, MUIA_String_Integer, &tmp);
+			GET(sys_size, MUIA_String_Integer, &tmp);
 			sprintf(&tmparg, " SYSSIZE=%ld", tmp);
 			strcat(tmpcmd, tmparg);
 		}
@@ -1089,13 +1090,13 @@ IPTR Install__MUIM_Partition
     
 
 		/* Specify Work size */
-		get(check_creatework, MUIA_Selected, &option);
+		GET(check_creatework, MUIA_Selected, &option);
 		if (option)
 		{
-			get(check_sizework, MUIA_Selected, &option);
+			GET(check_sizework, MUIA_Selected, &option);
 			if (option)
 			{
-				get(work_size, MUIA_String_Integer, &tmp);
+				GET(work_size, MUIA_String_Integer, &tmp);
 				sprintf(tmparg, " WORKSIZE=%ld", tmp);
 				strcat(tmpcmd, tmparg);
 			}
@@ -1113,7 +1114,7 @@ IPTR Install__MUIM_Partition
             strcat(tmpcmd, " WORKTYPE=SFS");
 
 		/* Specify whether to wipe disk or not */
-		get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
+		GET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active,
 			&option);
 		if (option == 1)
 		{
@@ -1126,7 +1127,7 @@ IPTR Install__MUIM_Partition
 		D(bug("[INSTALLER] ### Executing '%s'\n",&tmpcmd));
 		tmp = SystemTagList(&tmpcmd, NULL);
 
-		set(data->proceed, MUIA_Disabled, FALSE);
+		SET(data->proceed, MUIA_Disabled, FALSE);
 	}
 
 	return tmp;
@@ -1224,19 +1225,19 @@ IPTR Install__MUIM_IC_Install
 	IPTR option = FALSE;
 	int	fixupdir_count=0;
 
-	get(dest_volume, MUIA_String_Contents, &option);
+	GET(dest_volume, MUIA_String_Contents, &option);
 	strcpy(dest_Path, (STRPTR)option);
-	get(work_volume, MUIA_String_Contents, &option);
+	GET(work_volume, MUIA_String_Contents, &option);
 	strcpy(work_Path, (STRPTR)option);
 
-	set(data->back, MUIA_Disabled, TRUE);
-	set(data->proceed, MUIA_Disabled, TRUE);
+	SET(data->back, MUIA_Disabled, TRUE);
+	SET(data->proceed, MUIA_Disabled, TRUE);
 
-	set(data->pagetitle,MUIA_Text_Contents, "Installing AROS...");
+	SET(data->pagetitle,MUIA_Text_Contents, "Installing AROS...");
 
 /** setup work name to use **/
 
-	get(check_copytowork, MUIA_Selected, &option);
+	GET(check_copytowork, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 		extras_path = work_Path;
 	else
@@ -1244,10 +1245,10 @@ IPTR Install__MUIM_IC_Install
 
 /** STEP : FORMAT **/
 
-	get(data->instc_options_main->opt_format, MUIA_Selected, &option);
+	GET(data->instc_options_main->opt_format, MUIA_Selected, &option);
 	if (option && data->inst_success == MUIV_Inst_InProgress)
 	{
-		get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, &option);
+		GET(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, &option);
 
 		DoMethod(self, MUIM_Format);
 	}
@@ -1280,7 +1281,7 @@ IPTR Install__MUIM_IC_Install
 
 /** STEP : LOCALE **/
 
-	get(data->instc_options_main->opt_locale, MUIA_Selected, &option);
+	GET(data->instc_options_main->opt_locale, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Launching Locale Prefs...\n"));
@@ -1428,7 +1429,7 @@ localecopydone:
 
 /** STEP : COPY CORE **/
 
-	get(data->instc_options_main->opt_copycore, MUIA_Selected, &option);
+	GET(data->instc_options_main->opt_copycore, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		char 	tmp[100];
@@ -1454,7 +1455,7 @@ localecopydone:
 
 		// Copying Core system Files
 		D(bug("[INSTALLER] Copying Core files...\n"));
-		set(data->label, MUIA_Text_Contents, "Copying Core System files...");
+		SET(data->label, MUIA_Text_Contents, "Copying Core System files...");
 
 		CopyDirArray( CLASS, self, data, core_dirs, dest_Path);
 
@@ -1468,7 +1469,7 @@ localecopydone:
 
 /** STEP : COPY EXTRAS **/
 
-	get(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
+	GET(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
 	if (option && data->inst_success == MUIV_Inst_InProgress)
 	{
 		TEXT     *extras_dirs[] = 
@@ -1480,7 +1481,7 @@ localecopydone:
 
 		// Copying Extras
 		D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
-		set(data->label, MUIA_Text_Contents, "Copying Extra Software...");
+		SET(data->label, MUIA_Text_Contents, "Copying Extra Software...");
 
 		CopyDirArray( CLASS, self, data, extras_dirs, extras_path);
 		fixupdir_count +=2;
@@ -1493,7 +1494,7 @@ localecopydone:
 
 /** STEP : COPY DEVELOPMENT **/
 
-	get(data->instc_options_main->opt_development, MUIA_Selected, &option);
+	GET(data->instc_options_main->opt_development, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		ULONG srcLen = strlen(source_Path);
@@ -1515,7 +1516,7 @@ localecopydone:
 
 			// Copying Developer stuff
 			D(bug("[INSTALLER] Copying Developer Files...\n"));
-			set(data->label, MUIA_Text_Contents, "Copying Developer Files...");
+			SET(data->label, MUIA_Text_Contents, "Copying Developer Files...");
 
 			CopyDirArray(CLASS, self, data, developer_dirs, extras_path);
 			fixupdir_count +=2;
@@ -1527,7 +1528,7 @@ localecopydone:
 
 /** STEP : INSTALL BOOTLOADER **/
 
-	get(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
+	GET(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		int numgrubfiles = 3,file_count = 0;
@@ -1569,12 +1570,12 @@ localecopydone:
 
 		// Installing GRUB
 		D(bug("[INSTALLER] Installing Grub...\n"));
-		set(data->label, MUIA_Text_Contents, "Installing Grub...");
-		set(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
+		SET(data->label, MUIA_Text_Contents, "Installing Grub...");
+		SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
 
-		set(data->gauge2, MUIA_Gauge_Current, 0);
+		SET(data->gauge2, MUIA_Gauge_Current, 0);
 
-		set(data->label, MUIA_Text_Contents, "Copying BOOT files...");
+		SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
 
 		while (grub_files[file_count]!=NULL)
 		{
@@ -1589,12 +1590,12 @@ localecopydone:
 			AddPart(srcFile, grub_files[file_count], newSrcLen);
 			AddPart(dstFile, grub_files[file_count+1], newDstLen);
 
-			set(data->actioncurrent, MUIA_Text_Contents, srcFile);
+			SET(data->actioncurrent, MUIA_Text_Contents, srcFile);
 			DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 			DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
 
-			set(data->gauge2, MUIA_Gauge_Current, ((100/(numgrubfiles +1)) * (file_count/2)));
+			SET(data->gauge2, MUIA_Gauge_Current, ((100/(numgrubfiles +1)) * (file_count/2)));
 
 			file_count += 2;
 		}
@@ -1651,10 +1652,10 @@ localecopydone:
 
 		D(bug("[INSTALLER] execute: %s\n", tmp));
 		Execute(tmp, NULL, NULL);
-		set(data->gauge2, MUIA_Gauge_Current, 100);
+		SET(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
-	set(data->proceed, MUIA_Disabled, FALSE);
+	SET(data->proceed, MUIA_Disabled, FALSE);
 
 /** STEP : PACKAGE CLEANUP **/
 /*
@@ -1663,14 +1664,14 @@ localecopydone:
 		char		*fixuppackage_dirs = AllocVec((fixupdir_count+1)*sizeof(IPTR),MEMF_PUBLIC|MEMF_CLEAR);
 		int		curfixup = 0;
 
-		get(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
+		GET(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
 		if (option && (data->inst_success == MUIV_Inst_InProgress))
 		{
 			fixuppackage_dirs[curfixup] = "Demos"; curfixup++;
 			fixuppackage_dirs[curfixup] = "Extras"; curfixup++;
 		}
 
-		get(data->instc_options_main->opt_development, MUIA_Selected, &option);
+		GET(data->instc_options_main->opt_development, MUIA_Selected, &option);
 		if (option && (data->inst_success == MUIV_Inst_InProgress))
 		{
 			fixuppackage_dirs[curfixup] = "Development"; curfixup++;
@@ -1678,8 +1679,8 @@ localecopydone:
 		}
 
 		D(bug("[INSTALLER] Fix-Up contirbuted package 'PATHS'\n"));
-		set(data->label, MUIA_Text_Contents, "Setting package paths...");
-		set(data->gauge2, MUIA_Gauge_Current, 0);
+		SET(data->label, MUIA_Text_Contents, "Setting package paths...");
+		SET(data->gauge2, MUIA_Gauge_Current, 0);
 
 		ULONG packagesrcLen = strlen(dest_Path);
 		ULONG newpackagesrcLen = packagesrcLen + strlen("Prefs/Env-Archive/SYS/Packages") + 2;
@@ -1722,7 +1723,7 @@ localecopydone:
 							CopyMem(packagesrc, srcFile, srcLen + 1);
 							if(AddPart(srcFile, ead->ed_Name, newSrcLen))
 							{
-								set(data->actioncurrent, MUIA_Text_Contents, ead->ed_Name);
+								SET(data->actioncurrent, MUIA_Text_Contents, ead->ed_Name);
 
 								DoMethod(data->installer,MUIM_Application_InputBuffered);
 
@@ -1731,7 +1732,7 @@ localecopydone:
 								case ST_FILE:
 									currFile++;
 									ULONG	percent = ((100/(eac->eac_Entries))*currFile);
-									set(data->gauge2, MUIA_Gauge_Current, percent);
+									SET(data->gauge2, MUIA_Gauge_Current, percent);
 
 									FixUpPackageFile(srcFile, &fixuppackage_dirs,fixupdir_count);
 									break;
@@ -1755,18 +1756,19 @@ localecopydone:
 			D(bug("[INSTALLER] Failed to lock package path: %s (Error: %d)\n", packagesrc, IoErr()));
 		}
 
-		set(data->gauge2, MUIA_Gauge_Current, 100);
+		SET(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 */
 /** STEP : UNDORECORD CLEANUP **/
 
-	D(bug("[INSTALLER] Reached end of Install Function - cleaning up undo logs @ %x...\n",&data->instc_undorecord));
+	D(bug("[INSTALLER] Reached end of Install Function - cleaning up undo logs @ %p...\n",&data->instc_undorecord));
 
 	struct InstallC_UndoRecord	*CurUndoNode=NULL;
+    struct Node *undonode_tmp = NULL;
 
-	ForeachNode(&data->instc_undorecord, CurUndoNode)
+	ForeachNodeSafe(&data->instc_undorecord, CurUndoNode, undonode_tmp)
 	{
-		D(bug("[INSTALLER] Removing undo record @ %x\n",CurUndoNode));
+		D(bug("[INSTALLER] Removing undo record @ %p\n", CurUndoNode));
 		Remove(CurUndoNode);
 
 		switch (CurUndoNode->undo_method)
@@ -1795,8 +1797,8 @@ IPTR Install__MUIM_RefreshWindow
 	struct Install_DATA* data = INST_DATA(CLASS, self);
 	ULONG   cur_width,cur_height;
 
-	get( data->window, MUIA_Window_Width, &cur_width);
-	get( data->window, MUIA_Window_Height, &cur_height);
+	GET( data->window, MUIA_Window_Width, &cur_width);
+	GET( data->window, MUIA_Window_Height, &cur_height);
 
 	if ((data->cur_width != cur_width)||(data->cur_height != cur_height))
 	{
@@ -1886,7 +1888,7 @@ int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *c
         ULONG	srcLen = strlen(source_Path);
         ULONG	dstLen = (strlen(destination_Path)+1);
 
-        set(data->gauge2, MUIA_Gauge_Current, 0);
+        SET(data->gauge2, MUIA_Gauge_Current, 0);
 
         while (copy_files[numdirs]!=NULL)
         {
@@ -1909,7 +1911,7 @@ int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *c
 		AddPart(srcDirs, copy_files[dir_count], newSrcLen);
 		AddPart(dstDirs, copy_files[dir_count+1], newDstLen);
 
-		set(data->actioncurrent, MUIA_Text_Contents, srcDirs);
+		SET(data->actioncurrent, MUIA_Text_Contents, srcDirs);
 
 retrycdadir:
 		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
@@ -1945,7 +1947,7 @@ retrycdadir:
 			DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
 		}
 skipcdadir:
-		set(data->gauge2, MUIA_Gauge_Current, ((100/(numdirs +1)) * (dir_count/2)));
+		SET(data->gauge2, MUIA_Gauge_Current, ((100/(numdirs +1)) * (dir_count/2)));
 		/* Folder copied /skipped */
 		dir_count += 2;
         }
@@ -1981,15 +1983,14 @@ IPTR Install__MUIM_Format
 
 	sprintf(fmt_nametmp,"Formatting '%s'...",dest_Path);
 	D(bug("[INSTALLER] %s\n",fmt_nametmp));
-	set(data->label, MUIA_Text_Contents, fmt_nametmp);
-	set(data->gauge2, MUIA_Gauge_Current, 0);
+	SET(data->label, MUIA_Text_Contents, fmt_nametmp);
+	SET(data->gauge2, MUIA_Gauge_Current, 0);
     
 	/* Format Vol0 */
 	sprintf(dev_nametmp,"%s:",dest_Path);
 
 	if ((BOOL)XGET(check_formatsys,MUIA_Selected))
 	{
-
         /* XXX HACK
          * If partition is FFS -> it will format it for FFS
          * If partition is SFS -> it will format it for SFS
@@ -2002,16 +2003,16 @@ IPTR Install__MUIM_Format
     	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
 	}
 
-	get(check_work, MUIA_Selected, &option);
+	GET(check_work, MUIA_Selected, &option);
 	if (option && XGET(check_formatwork,MUIA_Selected))
 	{
         BPTR in;
 		/* Format Vol1, if it's not already formated */
 		sprintf(fmt_nametmp,"Formatting '%s'...",work_Path);
 		D(bug("[INSTALLER] %s\n",fmt_nametmp));
-		set(data->label, MUIA_Text_Contents, fmt_nametmp);
+		SET(data->label, MUIA_Text_Contents, fmt_nametmp);
 
-		set(data->gauge2, MUIA_Gauge_Current, 0);
+		SET(data->gauge2, MUIA_Gauge_Current, 0);
 
 		sprintf(dev_nametmp,"%s:",work_Path);
 
@@ -2027,7 +2028,7 @@ IPTR Install__MUIM_Format
 		if (success)
 		{
 				sprintf(tmp, "%s:", work_Path);
-				set(data->gauge2, MUIA_Gauge_Current, 100);
+				SET(data->gauge2, MUIA_Gauge_Current, 100);
 				lock = Lock(tmp, SHARED_LOCK);     /* check the dest dir exists */
 				if(lock == 0)
 				{
@@ -2041,7 +2042,7 @@ IPTR Install__MUIM_Format
 				}
 		}
 	}
-	if (success) set(data->gauge2, MUIA_Gauge_Current, 100);
+	if (success) SET(data->gauge2, MUIA_Gauge_Current, 100);
     
 	return success;
 }
@@ -2216,7 +2217,7 @@ IPTR Install__MUIM_IC_CopyFiles
 						if(AddPart(srcFile, ead->ed_Name, newSrcLen) && AddPart(dstFile, ead->ed_Name, newDstLen))
 						{
 							//D(bug("[INSTALLER] R: %s -> %s \n", srcFile, dstFile));
-							set(data->actioncurrent, MUIA_Text_Contents, srcFile);
+							SET(data->actioncurrent, MUIA_Text_Contents, srcFile);
 
 							DoMethod(data->installer,MUIM_Application_InputBuffered);
 
@@ -2232,7 +2233,7 @@ IPTR Install__MUIM_IC_CopyFiles
 									if(!message->recursive)
 										break;
 
-					if(data->instc_undoenabled)
+					if(data->instc_copt_undoenabled)
 					{
 						BPTR		dlock = 0;
 						if ((dlock = Lock(message->dstDir, ACCESS_READ))==NULL) break;
@@ -2270,7 +2271,7 @@ IPTR Install__MUIM_IC_CopyFiles
 									break;
 							}
 							ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
-							set(data->gauge2, MUIA_Gauge_Current, percent);
+							SET(data->gauge2, MUIA_Gauge_Current, percent);
 						}
 						else
 						{
@@ -2342,7 +2343,7 @@ copy_backup:
 
 	/* if the user has requested - backup all replaced files */
 
-	if(data->instc_undoenabled)
+	if(data->instc_copt_undoenabled)
 	{
 		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC ))==NULL)DoMethod(self, MUIM_IC_QuitInstall);
 
@@ -2523,7 +2524,7 @@ IPTR Install__MUIM_IC_UndoSteps
 	D(bug("[INSTALLER.US] Performing UNDO steps...\n"));
 
 	/* Disbale "UNDO" mode to prevent new records */
-	data->instc_undoenabled=FALSE;
+	data->instc_copt_undoenabled=FALSE;
 
 	ForeachNode(&data->instc_undorecord, CurUndoNode)
 	{
@@ -2563,7 +2564,7 @@ IPTR Install__MUIM_Reboot
 
 	IPTR                    option = FALSE;
 
-	get(data->instc_options_main->opt_reboot, MUIA_Selected, &option);        // Make sure the user wants to reboot
+	GET(data->instc_options_main->opt_reboot, MUIA_Selected, &option);        // Make sure the user wants to reboot
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
 		D(bug("[INSTALLER] Cold rebooting...\n"));
@@ -2573,7 +2574,7 @@ IPTR Install__MUIM_Reboot
 	{
 		D(bug("[INSTALLER] Install Finished [no reboot]...\n"));
 		if (data->inst_success == MUIV_Inst_InProgress) data->inst_success = MUIV_Inst_Completed;
-		set(data->window,MUIA_Window_CloseRequest,TRUE);
+		SET(data->window,MUIA_Window_CloseRequest,TRUE);
 	}
 
 	return TRUE; /* Keep the compiler happy... */
@@ -2826,14 +2827,14 @@ int main(int argc,char *argv[])
 
 /**/
 
-	LicenseMsg = NFloattextObject,
-			MUIA_Background, MUII_TextBack,
-			TextFrame,
-		End;
+	LicenseMsg= MUI_NewObject(MUIC_TextEditor,
+				MUIA_Background, MUII_SHINE,
+				MUIA_TextEditor_ReadOnly, TRUE,
+				TAG_DONE);
 
 	if (!LicenseMsg)
 	{
-		D(bug("[INST-APP] Failed to create FloattextObject\n"));
+		D(bug("[INST-APP] Failed to create LicenseMsg Object\n"));
 		exit(5);
 	}
 
@@ -3375,7 +3376,7 @@ if (0)
 
 	DoMethod(wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE, app,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
 
-	set(wnd,MUIA_Window_Open,TRUE);
+	SET(wnd,MUIA_Window_Open,TRUE);
 	{
 		ULONG sigs = 0;
 
@@ -3391,7 +3392,7 @@ if (0)
 
 	D(bug("[INST-APP] Closing Window\n"));
 
-	set(wnd,MUIA_Window_Open,FALSE);
+	SET(wnd,MUIA_Window_Open,FALSE);
 
 	D(bug("[INST-APP] Disposing of Installer Object\n"));
 

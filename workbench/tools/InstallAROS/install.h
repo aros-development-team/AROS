@@ -291,6 +291,13 @@ struct optionstmp
 	IPTR	opt_reboot;
 };
 
+enum IO_OVERWRITE_FLAGS
+{
+    IIO_Overwrite_Ask,
+    IIO_Overwrite_Always,
+    IIO_Overwrite_Never
+};
+
 struct Install_DATA
 {
     Object                      *partition;
@@ -316,10 +323,8 @@ struct Install_DATA
     Object                      *proceed;
     Object                      *cancel;
 
-
 /**/
     ULONG                       inst_success;
-    ULONG                       drive_set;
 
     ULONG                       disable_back,
                                 status_back,
@@ -330,33 +335,25 @@ struct Install_DATA
                                 cur_height;
 /** Start IO Related **/
 
-    ULONG                       IO_IOTask;
-	ULONG						IO_Always_overwrite;
+    APTR                        IO_IOTask;
 
-#define IIO_Overwrite_Ask		0
-#define IIO_Overwrite_Always	1
-#define IIO_Overwrite_Never		2
-
-/**/
     Object                      *IO_RWindow;
     Object                      *IO_RText;
     Object                      *IO_ROpt1;
     Object                      *IO_ROpt2;
     Object                      *IO_ROpt3;
 
-	ULONG						IO_Flags;
+	IPTR						IO_Flags;
 
 #define IIO_Selected_Opt1		1
 #define IIO_Selected_Opt2		2
 #define IIO_Selected_Opt3		3
 
 /** END IO Related **/
-	IPTR						instc_lic_file;
+	char                        *instc_lic_file;
 	IPTR						instc_lic_buffer;
-	IPTR						instc_lic_mandatory;
 
-	BOOL						instc_undoenabled;
-	struct MinList				instc_undorecord;
+	struct List     			instc_undorecord;
 
 /** Option Related **/
 
@@ -365,4 +362,10 @@ struct Install_DATA
 	struct optionstmp			*instc_options_backup;
     enum EStage                 instc_stage_prev;
     enum EStage                 instc_stage_next;
+
+	enum IO_OVERWRITE_FLAGS     IO_Always_overwrite;
+
+    BOOL                        instc_cflag_driveset;
+	BOOL						instc_copt_undoenabled;
+	BOOL						instc_copt_licensemandatory;
 };
