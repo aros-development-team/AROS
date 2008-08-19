@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2008, The AROS Development Team. All rights reserved.
+dnl Copyright ï¿½ 1997-2008, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -848,6 +848,22 @@ case "$target_os" in
 	gcc_target_cpu="powerpc"
 	;;
 
+    efika)
+    aros_target_arch="chrp"
+    aros_target_variant="efika"
+    aros_target_suffix="-efika"
+    aros_shared_default="no"
+    aros_target_cpu="ppc"
+    aros_object_format="elf32ppc"
+    aros_flavour="ppcnative"
+    aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
+    aros_kernel_ldflags=""
+    aros_default_wbwidth=640
+    aros_default_wbheight=480
+    aros_config_cflags="$aros_config_cflags -mcpu=603e -mno-toc -fno-asynchronous-unwind-tables"
+    gcc_target_cpu="powerpc"
+    ;;
+    
     amiga*)
 	aros_target_arch="amiga"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
