@@ -124,16 +124,10 @@ struct Hook          *_WandererIntern_hook_action;
 struct Hook          *_WandererIntern_hook_backdrop;
 #endif
 
-
-static unsigned char strtochar(STRPTR st)
-{
-    return *st++;
-}
-
 /*** Instance Data **********************************************************/
 struct Wanderer_DATA
 {
-    struct Screen         *wd_Screen;
+    struct Screen        		*wd_Screen;
 
     Object                      *wd_Prefs,
                                 *wd_ActiveWindow,
@@ -173,7 +167,6 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
     AROS_USERFUNC_INIT
 
     struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
-
     
     if ((obj->flags & ACTION_UPDATE) == 0)
     {
@@ -188,7 +181,10 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
         {
             d->smallobjects = 0;
         }
-        if (d->smallobjects > 0) d->updateme = FALSE;
+
+        if (d->smallobjects > 0)
+			d->updateme = FALSE;
+
         if (d->updateme)
         {
             SET(d->fileObject, MUIA_Text_Contents, obj->file);
@@ -197,8 +193,8 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
     }
     if (d->action != ACTION_DELETE) 
     {
-
         d->bytes += obj->actlen;
+
         if ((obj->flags & ACTION_UPDATE) == 0)
         {
             if (d->updateme)
@@ -217,7 +213,6 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
                 SetAttrs(d->gauge, MUIA_Gauge_Current, (ULONG) (32768.0 * (double) obj->totallen / (double) obj->filelen),  MUIA_Gauge_InfoText, d->SpeedBuffer, TAG_DONE);
             }
         }
-
 
         if (d->updateme)
         {
@@ -258,12 +253,14 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
             SET(d->performanceObject, MUIA_Text_Contents, d->Buffer);
         }
     }
-    
+
     DoMethod(d->copyApp, MUIM_Application_InputBuffered);
 
     /* read the stopflag and return TRUE if the user wanted to stop actionDir() */
-
-    if (d->stopflag == 1) return TRUE; else return FALSE;
+    if (d->stopflag == 1)
+		return TRUE;
+	else
+		return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -352,55 +349,50 @@ void Wanderer__Func_CopyDropEntries()
     /* get filelist from user message */
     struct Wanderer_FilelistMsg *message_filelist = FindTask(NULL)->tc_UserData;
 
-    D(bug("[WANDERER COPY] CopyContent \n" ));
+D(bug("[Wanderer] Wanderer__Func_CopyDropEntries()\n" ));
 
     if (message_filelist)
     {
            
         struct MUIDisplayObjects dobjects;
         struct Wanderer_FileEntry *currententry;
-        #ifdef __AROS__
+#ifdef __AROS__
         struct Hook displayCopyHook;
         struct Hook displayDelHook;
-        #else
+#else
         struct Hook *displayCopyHook;
         struct Hook *displayDelHook;
-        #endif
+#endif
 
-        #ifdef __AROS__
+#ifdef __AROS__
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
         displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
-        #else
+#else
         displayCopyHook = &Hook_DisplayCopyFunc;
         displayDelHook = &Hook_AskDeleteFunc;
-        #endif
-        
+#endif
 
         if (CreateCopyDisplay(ACTION_COPY, &dobjects))
         {
-
             /* process all selected entries */
-            while ( (currententry = (struct Wanderer_FileEntry *)RemTail(&message_filelist->files)) != NULL )
+            while ((currententry = (struct Wanderer_FileEntry *)RemTail(&message_filelist->files)) != NULL)
             {
-
                 /* copy via filesystems.c */
-                D(bug("[WANDERER COPY] CopyContent \"%s\" to \"%s\"\n", &currententry->filename, 
-                                    &message_filelist->destination_string ));
+D(bug("[Wanderer] Wanderer__Func_CopyDropEntries: Copying '%s' to '%s'\n", &currententry->filename, &message_filelist->destination_string));
 
-                CopyContent(NULL, (char*)&currententry->filename, (char*)&message_filelist->destination_string, TRUE, 
-                ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
+                CopyContent(NULL,
+					(char *)&currententry->filename, (char *)&message_filelist->destination_string,
+					TRUE, ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
 
                 FreeVec( currententry );
             } 
-            
             /* delete copy window */
             DisposeCopyDisplay(&dobjects);
         }
-
     }
 
     /* free msg memory */
-    FreeMem( message_filelist, sizeof(struct Wanderer_FilelistMsg) );
+    FreeMem(message_filelist, sizeof(struct Wanderer_FilelistMsg));
 
     return;
 }
@@ -557,58 +549,53 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
     } 
     else if (msg->type == ICONWINDOW_ACTION_ICONDROP)
     {
-    struct Process *child;
+		struct Process *child;
 
-    struct IconList_Drop *drop = (struct IconList_Drop *)msg->drop;
+		struct IconList_Drop *drop = (struct IconList_Drop *)msg->drop;
         struct IconList_Entry *ent = (void*)MUIV_IconList_NextIcon_Start;
-    struct Wanderer_FileEntry *file_recordtmp;
+		struct Wanderer_FileEntry *file_recordtmp;
 
-    struct Wanderer_FilelistMsg *message_filelist = AllocMem( sizeof(struct Wanderer_FilelistMsg), MEMF_CLEAR|MEMF_PUBLIC );
+		struct Wanderer_FilelistMsg *message_filelist = NULL;
 
-    if (message_filelist != NULL)
-    {
-        strcpy( (char*)&message_filelist->destination_string,(STRPTR) drop->destination_string);
-  
-  #ifdef __AROS__
-        NEWLIST(&message_filelist->files);
-  #else
-        NEW_LIST(&message_filelist->files);
-  #endif
+		if ((message_filelist = AllocMem(sizeof(struct Wanderer_FilelistMsg), MEMF_CLEAR|MEMF_PUBLIC )) != NULL)
+		{
+			strcpy( (char*)&message_filelist->destination_string,(STRPTR) drop->destination_string);
+#ifdef __AROS__
+			NEWLIST(&message_filelist->files);
+#else
+			NEW_LIST(&message_filelist->files);
+#endif
             /* process all selected entries */
             do
             {
-                    DoMethod(drop->source_iconlistobj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &ent);
+				DoMethod(drop->source_iconlistobj, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &ent);
 
-                    /* if not end of selection, process */
-                    if ( (int)ent != MUIV_IconList_NextIcon_End)
-                    {
-                file_recordtmp = AllocVec( sizeof(struct Wanderer_FileEntry), MEMF_CLEAR|MEMF_PUBLIC );
-                strcpy( (char*)&file_recordtmp->filename, ent->filename);
-                AddTail(&message_filelist->files, (struct Node *)file_recordtmp);
-                    }
+				/* if not end of selection, process */
+				if ( (int)ent != MUIV_IconList_NextIcon_End)
+				{
+					file_recordtmp = AllocVec( sizeof(struct Wanderer_FileEntry), MEMF_CLEAR|MEMF_PUBLIC );
+					strcpy( (char*)&file_recordtmp->filename, ent->filename);
+					AddTail(&message_filelist->files, (struct Node *)file_recordtmp);
+				}
             } 
-            while ( (int)ent != MUIV_IconList_NextIcon_End );
+            while ((int)ent != MUIV_IconList_NextIcon_End);
 
-  {
-        /* create process and copy files within */
-          const struct TagItem       tags[]=
-          {
-                {NP_Entry    , (IPTR)Wanderer__Func_CopyDropEntries	},
-                {NP_Name     , (IPTR)"wanderer copy"        		},
-                {NP_UserData , (IPTR)message_filelist				},
-                {NP_StackSize, 40000								},
-                {TAG_DONE    , NULL									}
-          };
+			{
+				/* create process and copy files within */
+				const struct TagItem       tags[]=
+				{
+					{NP_Entry    , (IPTR)Wanderer__Func_CopyDropEntries	},
+					{NP_Name     , (IPTR)"wanderer copy"        		},
+					{NP_UserData , (IPTR)message_filelist				},
+					{NP_StackSize, 40000								},
+					{TAG_DONE    , NULL									}
+				};
 
-          child = CreateNewProc(tags);
-  }
-            /* FIXME: update list contents */
-        /* this one should be solved through file notofications, as files are copied in a seperate process now  */
-
-    }
-
-
-
+				child = CreateNewProc(tags);
+			}
+#warning "TODO: update list contents"
+			/* this one should be solved through file notofications, as files are copied in a seperate process now  */
+		}
     }
     else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
     {
@@ -627,7 +614,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_ActionFunc: ICONWINDOW_ACTION_OPEN - offset
                 struct List AppList;
                 ULONG files = 0;
                 BOOL  fail  = FALSE;
-    struct IconList_Entry *ent;
+				struct IconList_Entry *ent;
 
                 NewList(&AppList);
 
@@ -697,11 +684,8 @@ D(bug("[WANDERER] AppWindowMsg: win:%s files:%s mx:%d my:%d\n",win->Title, filel
                         s =  succ;
                     }
                 }
-
             }
         }       
-        
-
     }
 
     AROS_USERFUNC_EXIT
@@ -764,7 +748,7 @@ D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Private data @ %x\n", data));
 D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: No Workbench Window\n"));
         return;
     }
-    
+
     wb_iscurrentlybd = (BOOL)XGET(data->wd_WorkbenchWindow, MUIA_IconWindow_IsBackdrop);
 
     if (wb_iscurrentlybd != data->wd_Option_BackDropMode)
@@ -807,7 +791,6 @@ D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Creating new Workbench window
 D(bug("[WANDERER] Wanderer__HookFunc_BackdropFunc: Creating new Workbench window Obj (NORMAL MODE)..\n"));
         }
 #endif
-
         data->wd_WorkbenchWindow = (Object *) DoMethod
         (
             _WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) NULL
@@ -840,7 +823,7 @@ MakeStaticHook(Hook_BackdropFunc,Wanderer__HookFunc_BackdropFunc);
 static void fmtlarge(UBYTE *buf, ULONG num)
 {
     UQUAD d;
-    UBYTE ch;
+    UBYTE *ch;
     struct
     {
         ULONG val;
@@ -851,29 +834,29 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         0
     };
 
-    if (num >= 1073741824)
+    if (num >= 0x40000000)
     {
         array.val = num >> 30;
-        d = ((UQUAD)num * 10 + 536870912) / 1073741824;
+        d = ((UQUAD)num * 10 + 0x20000000) / 0x40000000;
         array.dec = d % 10;
         //ch = 'G';
-        ch = strtochar((STRPTR)_(MSG_MEM_G));
+        ch = _(MSG_MEM_G);
     }
-    else if (num >= 1048576)
+    else if (num >= 0x100000)
     {
         array.val = num >> 20;
-        d = ((UQUAD)num * 10 + 524288) / 1048576;
+        d = ((UQUAD)num * 10 + 0x80000) / 0x100000;
         array.dec = d % 10;
         //ch = 'M';
-        ch = strtochar((STRPTR)_(MSG_MEM_M));
+        ch = _(MSG_MEM_M);
     }
-    else if (num >= 1024)
+    else if (num >= 0x400)
     {
         array.val = num >> 10;
-        d = (num * 10 + 512) / 1024;
+        d = (num * 10 + 0x200) / 0x400;
         array.dec = d % 10;
         //ch = 'K';
-        ch = strtochar((STRPTR)_(MSG_MEM_K));
+        ch = _(MSG_MEM_K);
     }
     else
     {
@@ -881,7 +864,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         array.dec = 0;
         d = 0;
         //ch = 'B';
-    ch = strtochar((STRPTR)_(MSG_MEM_B));
+		ch = _(MSG_MEM_B);
     }
 
     if (!array.dec && (d > array.val * 10))
@@ -891,7 +874,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
 
     RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
     while (*buf) { buf++; }
-    *buf++ = ch;
+    *buf++ = *ch;
     *buf   = '\0';
 }
 ///
@@ -901,9 +884,9 @@ STRPTR GetScreenTitle(VOID)
 {
     STATIC TEXT title[256];
     UBYTE chip[10], fast[10];
-    fmtlarge(chip,AvailMem(MEMF_CHIP));
-    fmtlarge(fast,AvailMem(MEMF_FAST));
-  
+    fmtlarge(chip, AvailMem(MEMF_CHIP));
+    fmtlarge(fast, AvailMem(MEMF_FAST));
+
     /* AROS probably don't have graphics mem but without it looks so empty */
     sprintf(title, _(MSG_SCREENTITLE), chip, fast);
 

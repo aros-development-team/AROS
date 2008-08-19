@@ -541,7 +541,7 @@ BOOL IconWindowIconList__Func_ParseBackdrop(Class *CLASS, Object *self, char *bd
 	if ((bdrp_dir == NULL) || (bdrp_dir[strlen(bdrp_dir) - 1] != ':'))
 		return retVal;
 
-	if ((bdrp_file = AllocVec(strlen(bdrp_dir) + 8 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+	if ((bdrp_file = AllocVec(strlen(bdrp_dir) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
 	{
 		sprintf(bdrp_file, "%s.backdrop", bdrp_dir);
 		if (bdrp_lock = Open(bdrp_file, MODE_OLDFILE))
@@ -1170,10 +1170,10 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Checking f
 	do
 	{
 		DoMethod(self, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
-		if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
+		if (((IPTR)icon_entry != MUIV_IconList_NextIcon_End) && (icon_entry->type == ST_ROOT))
 		{
-D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking entry '%s'\n", icon_entry->filename));
-			if (IconWindowIconList__Func_ParseBackdrop(CLASS, self, icon_entry->filename))
+D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking entry '%s'\n", icon_entry->label));
+			if (IconWindowIconList__Func_ParseBackdrop(CLASS, self, icon_entry->label))
 				sort_list = TRUE;
 		}
 		else
