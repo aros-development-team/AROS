@@ -232,6 +232,7 @@ D(bug("[IconVolList] %s: '%s' : Packet Device\n", __PRETTY_FUNCTION__, dosname))
 					nd_lock = NULL;
 					nd_paramblock = NULL;
 
+D(bug("[IconVolList] %s: '%s' : Checking for Attached Volumes ... \n", __PRETTY_FUNCTION__, dosname));
 					/* Find the Volume attached to this device */
 					BOOL found = FALSE;
 					ndn = (struct NewDOSVolumeNode*)GetHead(ndl);
@@ -244,82 +245,92 @@ D(bug("[IconVolList] %s: '%s' : Packet Device\n", __PRETTY_FUNCTION__, dosname))
 							   || (ndn->port == dl->dol_Ext.dol_AROS.dol_Device)
 #endif
 							))
-						{	
-							if (nd_lock == NULL)
+						{
+							if (ndn->unit)
 							{
-								if ((nd_lock = Lock(nd_nambuf, ACCESS_READ)) == NULL)
+								if (nd_lock == NULL)
 								{
-									continue;
+D(bug("[IconVolList] %s: '%s' : Attempting to Lock() device ... \n", __PRETTY_FUNCTION__, dosname));
+									if ((nd_lock = Lock(nd_nambuf, SHARED_LOCK)) == NULL)
+									{
+D(bug("[IconVolList] %s: '%s' : Failed to obtain Lock()\n", __PRETTY_FUNCTION__, dosname));
+									}
 								}
-							}
-							if (nd_paramblock == NULL)
-							{
-								if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+								if ((nd_lock) && (nd_paramblock == NULL))
 								{
-									UnLock(nd_lock);
-									continue;
-								}
+									if ((nd_paramblock = AllocMem(sizeof(struct InfoData), MEMF_CLEAR|MEMF_PUBLIC)) == NULL)
+									{
+D(bug("[IconVolList] %s: '%s' : Failed to allocate storage for device paramblock\n", __PRETTY_FUNCTION__, dosname));
+										UnLock(nd_lock);
+									}
 D(bug("[IconVolList] %s: Getting Info for '%s'\n", __PRETTY_FUNCTION__, nd_nambuf));
-								Info(nd_lock, nd_paramblock);
-							}
-							if (ndn->unit == __DL_UNIT)
-							{
-								if (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT)
+									Info(nd_lock, nd_paramblock);
+								}
+								if (ndn->unit == __DL_UNIT)
 								{
+									if ((nd_paramblock) && (nd_paramblock->id_DiskType != ID_NO_DISK_PRESENT))
+									{
 D(bug("[IconVolList] %s: '%s' : Device unit %d, state = %x, Vol node @ %p\n", __PRETTY_FUNCTION__, nd_nambuf, nd_paramblock->id_UnitNumber, nd_paramblock->id_DiskState, BADDR(nd_paramblock->id_VolumeNode)));
 
-									STRPTR nd_namext;
-									int nd_namext_len;
+										STRPTR nd_namext;
+										int nd_namext_len;
 
-									found = TRUE;
+										found = TRUE;
 
-									if (nd_paramblock->id_DiskState == ID_VALIDATING)
-									{
+										if (nd_paramblock->id_DiskState == ID_VALIDATING)
+										{
 D(bug("[IconVolList] %s: '%s' : Validating\n", __PRETTY_FUNCTION__, nd_nambuf));
-											nd_namext = "BUSY";
-											nd_namext_len = 4;
+												nd_namext = "BUSY";
+												nd_namext_len = 4;
+										}
+										else
+										{
+											if (nd_paramblock->id_DiskState == ID_WRITE_PROTECTED)
+											{
+												ndn->vn_FLags |= ICONENTRY_VOL_READONLY;
+D(bug("[IconVolList] %s: '%s' : Volume is WRITE-PROTECTED\n", __PRETTY_FUNCTION__, nd_nambuf));
+											}
+
+											switch (nd_paramblock->id_DiskType)
+											{
+
+											case ID_UNREADABLE_DISK:
+												nd_namext = "BAD";
+												nd_namext_len = 3;
+												break;
+											case ID_NOT_REALLY_DOS:
+												nd_namext = "NDOS";
+												nd_namext_len = 4;
+												break;
+											case ID_KICKSTART_DISK:
+												nd_namext = "KICK";
+												nd_namext_len = 4;
+												break;
+											default:
+												/* A filesystem type.. ie  ID_DOS_DISK */
+												nd_namext_len = 0;
+												break;
+											}
+										}
+
+										if (nd_namext_len > 0)
+										{
+											char *newVolName = NULL;
+											newVolName = AllocPooled(pool, strlen(ndn->vn_VolName) + nd_namext_len + 2);
+											sprintf(newVolName, "%s%s", ndn->vn_VolName, nd_namext);
+											ndn->vn_VolName = newVolName;
+										}
 									}
 									else
 									{
-										if (nd_paramblock->id_DiskState == ID_WRITE_PROTECTED)
-										{
-											ndn->vn_FLags |= ICONENTRY_VOL_READONLY;
-D(bug("[IconVolList] %s: '%s' : Volume is WRITE-PROTECTED\n", __PRETTY_FUNCTION__, nd_nambuf));
-										}
-
-										switch (nd_paramblock->id_DiskType)
-										{
-
-										case ID_UNREADABLE_DISK:
-											nd_namext = "BAD";
-											nd_namext_len = 3;
-											break;
-										case ID_NOT_REALLY_DOS:
-											nd_namext = "NDOS";
-											nd_namext_len = 4;
-											break;
-										case ID_KICKSTART_DISK:
-											nd_namext = "KICK";
-											nd_namext_len = 4;
-											break;
-										default:
-											/* A filesystem type.. ie  ID_DOS_DISK */
-											nd_namext_len = 0;
-											break;
-										}
+D(bug("[IconVolList] %s: '%s' : No Media Inserted (error state?)\n", __PRETTY_FUNCTION__, nd_nambuf));
 									}
-
-									if (nd_namext_len > 0)
-									{
-										char *newVolName = NULL;
-										newVolName = AllocPooled(pool, strlen(ndn->vn_VolName) + nd_namext_len + 2);
-										sprintf(newVolName, "%s%s", ndn->vn_VolName, nd_namext);
-										ndn->vn_VolName = newVolName;
-									}
+									ndn->vn_DevName = nd_nambuf;
+D(bug("[IconVolList] %s: DeviceName set to '%s' for '%s'\n", __PRETTY_FUNCTION__, ndn->vn_DevName, ndn->vn_VolName));
 								}
 								else
 								{
-D(bug("[IconVolList] %s: '%s' : No Media Inserted (error state?)\n", __PRETTY_FUNCTION__, nd_nambuf));
+D(bug("[IconVolList] %s: '%s' : Volume not attached to this device .. skipping\n", __PRETTY_FUNCTION__, nd_nambuf));
 								}
 							}
 							else
@@ -327,8 +338,6 @@ D(bug("[IconVolList] %s: '%s' : No Media Inserted (error state?)\n", __PRETTY_FU
 D(bug("[IconVolList] %s: '%s' : Volume '%s' is OFFLINE\n", __PRETTY_FUNCTION__, nd_nambuf, ndn->vn_VolName));
 								ndn->vn_FLags |= ICONENTRY_VOL_OFFLINE;
 							}
-							ndn->vn_DevName = nd_nambuf;
-D(bug("[IconVolList] %s: DeviceName set to '%s' for '%s'\n", __PRETTY_FUNCTION__, ndn->vn_DevName, ndn->vn_VolName));
 						}
 						ndn = (struct NewDOSVolumeNode*)GetSucc(ndn);
 					} /* ndn */
@@ -397,10 +406,11 @@ MUIM_IconList_Update
 IPTR IconVolumeList__MUIM_IconList_Update(struct IClass *CLASS, Object *obj, struct MUIP_IconList_Update *message)
 {
 	//struct IconVolumeList_DATA *data = INST_DATA(CLASS, obj);
-	struct IconEntry  *this_Icon = NULL;
-	struct NewDosList *ndl = NULL;
-	struct Process    *me;
-	APTR		     oldwin;
+	struct IconEntry  	*this_Icon = NULL;
+	struct NewDosList 	*ndl = NULL;
+	struct Process    	*me;
+	APTR		     	oldwin;
+	char				*devname = NULL;
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -434,7 +444,12 @@ D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 				{
 D(bug("[IconVolList] %s: Adding icon for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
 
-					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)nd->vn_DevName, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) == NULL)
+					if (nd->vn_FLags & ICONENTRY_VOL_OFFLINE)
+						devname = nd->vn_VolName;
+					else
+						devname = nd->vn_DevName;
+
+					if ((this_Icon = (struct IconEntry *)DoMethod(obj, MUIM_IconList_CreateEntry, (IPTR)devname, (IPTR)nd->vn_VolName, (IPTR)NULL, (IPTR)NULL, ST_ROOT)) == NULL)
 					{
 D(bug("[IconVolList] %s: Failed to Add IconEntry for '%s'\n", __PRETTY_FUNCTION__, nd->vn_VolName));
 					}
