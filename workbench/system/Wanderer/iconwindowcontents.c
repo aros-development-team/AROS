@@ -1170,7 +1170,10 @@ D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: Checking f
 	do
 	{
 		DoMethod(self, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
-		if (((IPTR)icon_entry != MUIV_IconList_NextIcon_End) && (icon_entry->type == ST_ROOT))
+		if (
+			((IPTR)icon_entry != MUIV_IconList_NextIcon_End) &&
+			((icon_entry->type == ST_ROOT) && !(icon_entry->flags & ICONENTRY_VOL_OFFLINE))
+		   )
 		{
 D(bug("[IconWindowIconList] IconWindowIconList__MUIM_IconList_Update: checking entry '%s'\n", icon_entry->label));
 			if (IconWindowIconList__Func_ParseBackdrop(CLASS, self, icon_entry->label))
