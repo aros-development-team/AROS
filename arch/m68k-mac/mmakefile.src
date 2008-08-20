@@ -55,7 +55,7 @@ create-mf-inc-again :
 #MM	kernel-console-linklib             \
 #MM	kernel-fs-con                      \
 #MM     kernel-misc-kobj \
-#MM     workbench-fs-afs-kobj \
+#MM     kernel-fs-afs-kobj \
 #MM     workbench-hidd-graphics-kobj \
 #MM	kernel-mac-m68k-drivers
 

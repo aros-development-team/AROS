@@ -26,7 +26,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-workbench \
 #MM	workbench-fs-nil \
 #MM	workbench-fs-ram \
-#MM	workbench-fs-afs \
+#MM	kernel-fs-afs \
 #MM	kernel-pc-x86_64-drivers \
 #MM	kernel-contrib-necessary-pc-x86_64 \
 #MM	kernel-bootmenu \
