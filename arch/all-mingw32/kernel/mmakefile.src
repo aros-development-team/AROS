@@ -1,0 +1,30 @@
+# $Id:  $
+include $(TOP)/config/make.cfg
+
+#MM kernel-kernel-mingw32 : includes kernel-kernel-mingw32-native
+#MM kernel-kernel-mingw32-kobj : includes kernel-kernel-mingw32-native
+
+%build_module mmake=kernel-kernel-mingw32 	\
+  modname=kernel modtype=resource		\
+  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  files="kernel_init kernel_hostlib aros" uselibs="rom"
+
+NATIVE_DIR := $(TARGETDIR)/native
+NATIVE_OBJS :=	$(NATIVE_DIR)/kernel_alert.o \
+				$(NATIVE_DIR)/kernel_hostlib_native.o \
+				$(NATIVE_DIR)/kernel_init_native.o \
+				$(NATIVE_DIR)/kernel_scheduler.o
+				
+SOEXT := .dll
+
+#MM
+kernel-kernel-mingw32-native: $(NATIVE_DIR)/kernel_native$(SOEXT)
+
+$(NATIVE_DIR)/kernel_native$(SOEXT): $(NATIVE_OBJS)
+	dllwrap --mno-cygwin --dllname $@ $(NATIVE_OBJS)
+
+$(NATIVE_DIR) :
+	mkdir $(NATIVE_DIR)
+	 
+$(NATIVE_DIR)/%.o : native/%.c $(NATIVE_DIR)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec -DNATIVE
