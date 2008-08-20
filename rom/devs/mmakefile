@@ -8,7 +8,8 @@
 #MM    kernel-fs-con-kobj \
 #MM    kernel-fs-packet-kobj \
 #MM    workbench-fs-nil-kobj \
-#MM    workbench-fs-ram-kobj
+#MM    workbench-fs-ram-kobj \
+#MM    kernel-fs-afs
 
 #MM- includes-generate : \
 #MM      kernel-input-includes
