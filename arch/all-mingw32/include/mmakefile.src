@@ -1,0 +1,8 @@
+# $Id: mmakefile.src 25924 2007-04-28 00:14:49Z verhaegs $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
+
+%copy_includes mmake=includes-copy-mingw32
+
+#MM- compiler-includes : includes-copy-mingw32
