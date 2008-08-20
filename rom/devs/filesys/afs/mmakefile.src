@@ -1,0 +1,30 @@
+# $Id: mmakefile.src 27618 2008-01-02 16:10:43Z error $
+include $(TOP)/config/make.cfg
+
+ifneq ($(FLAVOUR),palmnative)
+FILES := main \
+	bitmap \
+	cache \
+	checksums \
+	error \
+	extstrings \
+	filehandles1 \
+	filehandles2 \
+	filehandles3 \
+	hashing \
+	misc \
+	os_aros_support \
+	volumes \
+   validator
+else
+FILES :=
+endif
+
+#MM- workbench-fs-complete : workbench-fs-afs
+#MM- workbench-fs-afs : includes linklibs
+
+USER_CFLAGS := -DDEBUG=0
+
+%build_module mmake=workbench-fs-afs \
+    modname=afs modtype=device modsuffix=handler \
+    files="arosdevice $(FILES)" uselibs="arosc"
