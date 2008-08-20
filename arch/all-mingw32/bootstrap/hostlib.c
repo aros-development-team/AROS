@@ -3,7 +3,7 @@
 
 #include "hostlib.h"
 
-#define D(x) x
+#define D(x)
 
 static void GetErrorStr(char **error, BOOL condition)
 {
