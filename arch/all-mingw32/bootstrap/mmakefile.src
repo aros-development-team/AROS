@@ -55,7 +55,7 @@ $(TARGETDIR)/%.o : %.S
 	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.d : %.c
-	%mkdepend_q cc="$(KERNEL_CC) $(KERNEL_CFLAGS)"
+	%mkdepend_q cc="$(KERNEL_CC) $(KERNEL_CFLAGS) -I$(GENINCDIR)"
 
 DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 -include $(DEPS)

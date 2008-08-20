@@ -1,15 +1,17 @@
-#define NATIVE
-#include "elfloader32.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <signal.h>
 #include <windows.h>
 #include <aros/hostboot.h>
+
+#include "elfloader32.h"
 #include "hostlib.h"
 #include "../hostlib/hostlib_intern.h"
 
 static unsigned char __bss_track[32768];
+
+typedef int (*kernel_entry_fun_t)(struct HostBootInfo *);
 
 #define BASE_ALIGNMENT 16
 
@@ -22,12 +24,17 @@ struct HostLibInterface HostLibIFace = {
 };
 
 struct HostBootInfo bootinfo;
+void *SysBase;
 
 int main(int argc, char ** argv)
 {
   char *error;
   unsigned long BadSyms;
   struct TagItem *t;
+  char *kernel = "AROS";
+
+  if (argc > 1)
+      kernel = argv[1];
 
   //alloc mem
   unsigned int memSize = 100;  
@@ -42,14 +49,17 @@ int main(int argc, char ** argv)
 	  fseek(file,0,SEEK_END);
     ksize = ftell(file);
     ksize += BASE_ALIGNMENT - ksize % BASE_ALIGNMENT;
-	  printf("[Bootstrap] opened \"%s\"(%p) size:%p\n", argv[1], file, ksize);
+	  printf("[Bootstrap] opened \"%s\"(%p) size:%p\n", kernel, file, ksize);
 	  fseek(file,0,SEEK_SET);
-  } else return -1;
+  } else {
+  	printf("[Bootstrap] unable to open kernel \"%s\"\n", kernel);
+  	return -1;
+  }
   unsigned int bufsize = 10*ksize;
   void * buf = malloc(bufsize);
   void * base = buf + ksize;
   printf("[Bootstrap] memory allocated: %p-%p kernelBase: %p\n",buf,buf+bufsize,base);
-  set_base_address(base, __bss_track, SysBasePtr);
+  set_base_address(base, __bss_track, &SysBase);
   load_elf_file(file,0);
   kernel_entry_fun_t kernel_entry_fun = (kernel_entry_fun_t)base;
 
@@ -61,7 +71,7 @@ int main(int argc, char ** argv)
   bootinfo.HostLib_Interface = &HostLibIFace;
 
   printf("[Bootstrap] entering kernel@%p...\n",kernel_entry_fun);
-  int retval = kernel_entry_fun(km);
+  int retval = kernel_entry_fun(&bootinfo);
 
   printf("kernel returned %i\n",retval);
 }  
