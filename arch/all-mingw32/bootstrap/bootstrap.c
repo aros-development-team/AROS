@@ -31,7 +31,7 @@ int main(int argc, char ** argv)
   char *error;
   unsigned long BadSyms;
   struct TagItem *t;
-  char *kernel = "AROS";
+  char *kernel = "kernel";
 
   if (argc > 1)
       kernel = argv[1];
