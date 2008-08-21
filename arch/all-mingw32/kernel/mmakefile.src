@@ -1,8 +1,8 @@
 # $Id:  $
 include $(TOP)/config/make.cfg
 
-#MM kernel-kernel-mingw32 : includes kernel-kernel-mingw32-native
-#MM kernel-kernel-mingw32-kobj : includes kernel-kernel-mingw32-native
+#MM kernel-kernel-mingw32 : includes #kernel-kernel-mingw32-native
+#MM kernel-kernel-mingw32-kobj : includes #kernel-kernel-mingw32-native
 
 %build_module mmake=kernel-kernel-mingw32 	\
   modname=kernel modtype=resource		\
