@@ -40,14 +40,13 @@ struct IOHandle {
 	UWORD cmdwrite;
 	UWORD cmdseek;
 	UWORD cmdformat;
-	UBYTE moff_time;
 };
 
 #define IOHF_MOTOR_OFF    (1<<0)
 #define IOHF_MEDIA_CHANGE (1<<1)
 #define IOHF_DISK_IN      (1<<2)
-#define IOHF_TRACKDISK    (1<<3)
 
 void checkDeviceFlags(struct AFSBase *);
+void motorOff(struct AFSBase *afsbase, struct IOHandle *ioh);
 
 #endif

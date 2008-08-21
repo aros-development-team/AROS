@@ -152,6 +152,11 @@ void osMediumFree(struct AFSBase *afsbase, struct Volume *volume, LONG all) {
 	printf("%s: Don't know what to do here\n", __FUNCTION__);
 }
 
+void remDosNode(struct AFSBase *afsbase, struct DosList *dl)
+{
+	printf("%s: Don't know what to do here\n", __FUNCTION__);
+}
+
 /********************************* OS Functions *****************************/
 /* exec */
 void *AllocMem(ULONG size, ULONG flags) {

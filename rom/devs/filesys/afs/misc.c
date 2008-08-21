@@ -83,7 +83,7 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
 	id->id_NumBlocksUsed = volume->usedblockscount;
 	id->id_BytesPerBlock = volume->dosflags==0 ? BLOCK_SIZE(volume)-24 : BLOCK_SIZE(volume);
 	id->id_DiskType = volume->dostype | volume->dosflags;
-	id->id_VolumeNode = 0; /* I think this is useless in AROS */
+	id->id_VolumeNode = volume->volumenode;
 	id->id_InUse = (LONG)TRUE; /* if we are here the device should be in use! */
 	return 0;
 }
@@ -97,12 +97,12 @@ LONG getDiskInfo(struct Volume *volume, struct InfoData *id) {
  Output: 0 = no error
 ********************************************/
 LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
-	D(bug("[FFS] inhibit(%ld)\n", forbid));
+	D(bug("[afs 0x%08lX] inhibit(%ld)\n", volume, forbid));
 	if (forbid)
 	{
 		if (volume->inhibitcounter++ == 0)
 		{
-			D(bug("[FFS] inhibiting\n"));
+			D(bug("[afs 0x%08lX] inhibiting\n", volume));
 /*		if (exclusiveLocks(&volume->locklist)) return DOSFALSE; */
 			if (mediumPresent(&volume->ioh))
 			{
@@ -115,10 +115,10 @@ LONG inhibit(struct AFSBase *afsbase, struct Volume *volume, ULONG forbid) {
 	{
 		if (--volume->inhibitcounter == 0)
 		{
-			D(bug("[FFS] uninhibiting\n"));
+			D(bug("[afs 0x%08lX] uninhibiting\n", volume));
 			if (diskPresent(afsbase, &volume->ioh))
 			{
-				D(bug("[FFS] media inserted\n"));
+				D(bug("[afs 0x%08lX] media inserted\n", volume));
 				newMedium(afsbase, volume);
 				volume->ioh.ioflags |= IOHF_DISK_IN;
 			}

@@ -136,10 +136,15 @@ char string[32];
 BSTR bname;
 UBYTE i;
 
+	if (volume->volumenode) {
+	    D(bug("[afs 0x%08lX] VolumeNode is already present!\n", volume));
+	    return DOSTRUE;
+	}
 	bname = volume->devicelist.dl_Name;
 	for (i=0; i<AROS_BSTR_strlen(bname); i++)
 		string[i] = AROS_BSTR_getchar(bname,i);
 	string[AROS_BSTR_strlen(bname)] = 0;
+	D(bug("[afs 0x%08lX] Processing inserted volume %s\n", volume, string));
 	/* is the volume already in the list? */
 	doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
 	if (doslist != NULL)
@@ -147,6 +152,7 @@ UBYTE i;
 		dl = FindDosEntry(doslist,string,LDF_VOLUMES);
 		if (dl != NULL)
 		{
+			D(bug("[afs 0x%08lX] VolumeNode found, device 0x%08lX, unit 0x%08lX\n", volume, dl->dol_Ext.dol_AROS.dol_Device, dl->dol_Ext.dol_AROS.dol_Unit));
 			if ((dl->dol_Ext.dol_AROS.dol_Device == volume->device) &&
 			    (dl->dol_Ext.dol_AROS.dol_Unit == NULL))
 			{
@@ -154,6 +160,7 @@ UBYTE i;
 				{
 					dl->dol_Ext.dol_AROS.dol_Unit = (struct Unit *)&volume->ah;
 					volume->locklist = dl->dol_misc.dol_volume.dol_LockList;
+					dl->dol_misc.dol_volume.dol_LockList = NULL;
 				}
 			}
 			else
@@ -166,6 +173,7 @@ UBYTE i;
 	/* if not create a new doslist */
 	if (dl == NULL)
 	{
+		D(bug("[afs 0x%08lX] Creating new VolumeNode\n", volume));
 		doslist = MakeDosEntry(string,DLT_VOLUME);
 		if (doslist == NULL)
 			return DOSFALSE;
@@ -180,7 +188,9 @@ UBYTE i;
 		AddDosEntry(doslist);
 		/* if we re-use "volume" clear locklist */
 		volume->locklist = NULL;
+		dl = doslist;
 	}
+	volume->volumenode = dl;
     //SendEvent(afsbase, IECLASS_DISKINSERTED);
 	return DOSTRUE;
 }
@@ -192,8 +202,6 @@ UBYTE i;
          set dol_LockList
  Input : volume - volume to remove
  Output: -
- Note  : displays a message if volume couldn't
-         be found in the system
 ********************************************/
 void remDosVolume(struct AFSBase *afsbase, struct Volume *volume) {
 struct DosList *doslist;
@@ -202,40 +210,34 @@ BSTR bname;
 char string[32];
 UBYTE i;
 
-    //SendEvent(afsbase, IECLASS_DISKREMOVED);
-	if (volume->dostype == 0x444F5300)
-	{
-		bname = volume->devicelist.dl_Name;
-		if (bname != NULL)
+	dl = volume->volumenode;
+	if (dl) {
+		if (volume->locklist != NULL)
 		{
-			for (i=0; i<AROS_BSTR_strlen(bname); i++)
-				string[i] = AROS_BSTR_getchar(bname,i);
-			string[AROS_BSTR_strlen(bname)] = 0;
-			doslist = LockDosList(LDF_WRITE | LDF_VOLUMES);
-			if (doslist != NULL)
-			{
-				D(bug("[afs] Looking for entry %s\n", string));
-				dl = FindDosEntry(doslist,string,LDF_VOLUMES);
-				if (dl != NULL)
-				{
-					if (volume->locklist != NULL)
-					{
-						dl->dol_misc.dol_volume.dol_LockList = volume->locklist;
-						dl->dol_Ext.dol_AROS.dol_Unit = NULL;
-					}
-					else
-					{
-						D(bug("[afs] Removing\n"));
-						RemDosEntry(dl);
-						FreeDosEntry(dl);
-					}
-				}
-				else
-					showText(afsbase, "doslist not in chain");
-				UnLockDosList(LDF_WRITE | LDF_VOLUMES);
-			}
+			D(bug("[afs 0x%08lX] VolumeNode in use, keeping as offline\n", volume));
+			dl->dol_misc.dol_volume.dol_LockList = volume->locklist;
+			dl->dol_Ext.dol_AROS.dol_Unit = NULL;
 		}
+		else
+		{
+			D(bug("[afs 0x%08lX] Removing VolumeNode\n", volume));
+			remDosNode(afsbase, dl);
+		}
+		volume->volumenode = NULL;
 	}
+}
+
+/*******************************************
+ Name  : remDosNode
+ Descr.: removes a DOS volume node
+ Input : dl - volume to remove
+ Output: -
+********************************************/
+void remDosNode(struct AFSBase *afsbase, struct DosList *dl)
+{
+	RemDosEntry(dl);
+	FreeDosEntry(dl);
+//	SendEvent(afsbase, IECLASS_DISKREMOVED);
 }
 
 LONG osMediumInit
@@ -352,8 +354,6 @@ UBYTE diskPresent(struct AFSBase *afsbase, struct IOHandle *ioh) {
 	return ioh->ioreq->iotd_Req.io_Actual == 0;
 }
 
-int timercode(struct Custom *, struct IOHandle *, APTR, struct ExecBase *);
-
 struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh)
 {
 
@@ -367,11 +367,7 @@ struct IOHandle *openBlockDevice(struct AFSBase *afsbase, struct IOHandle *ioh)
 			ioh->cmdwrite = CMD_WRITE;
 			ioh->cmdseek = TD_SEEK;
 			ioh->cmdformat = TD_FORMAT;
-			ioh->vbl_int.is_Code = (void(*)())&timercode;
-			ioh->vbl_int.is_Data = ioh;
 			ioh->afsbase = afsbase;
-			if (StrCmp(ioh->blockdevice, "trackdisk.device"))
-				ioh->ioflags |= IOHF_TRACKDISK;
 			if (diskPresent(afsbase, ioh))
 				ioh->ioflags |= IOHF_DISK_IN;
 			checkAddChangeInt(afsbase, ioh);
@@ -408,19 +404,17 @@ struct IOHandle *ioh;
 	while (volume->ln.ln_Succ != NULL)
 	{
 		ioh = &volume->ioh;
-		if (ioh->ioflags & IOHF_MOTOR_OFF)
+		if ((ioh->ioflags & IOHF_MEDIA_CHANGE) && (!volume->inhibitcounter))
 		{
-			motorOff(afsbase, ioh);
-			ioh->ioflags &= ~IOHF_MOTOR_OFF;
-		}
-		else if ((ioh->ioflags & IOHF_MEDIA_CHANGE) && (!volume->inhibitcounter))
-		{
+			D(bug("[afs 0x%08lX] Media change signalled\n", volume));
 			if (diskPresent(afsbase, ioh)) 
 			{
 			    if (!(ioh->ioflags & IOHF_DISK_IN))
 			    {
-			        if (!volume->inhibitcounter)
+			        if (!volume->inhibitcounter) {
+				    D(bug("[afs 0x%08lX] Media inserted\n", volume));
 				    newMedium(afsbase, volume);
+				}
 				ioh->ioflags |= IOHF_DISK_IN;
 			    }
 			}
@@ -510,7 +504,6 @@ BOOL flush(struct AFSBase *afsbase, struct Volume *volume) {
 	volume->ioh.ioreq->iotd_Req.io_Command = CMD_UPDATE;
 	DoIO((struct IORequest *)&volume->ioh.ioreq->iotd_Req);
 	clearCache(afsbase, volume->blockcache);
-	/* turn off motor */
 	return DOSTRUE;
 }
 
@@ -543,12 +536,7 @@ UQUAD offset;
 		ioh->ioreq->iotd_Req.io_Offset = 0xFFFFFFFF & offset;
 		ioh->ioreq->iotd_Req.io_Actual = offset>>32;
 		retval = DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
-		if (ioh->ioflags & IOHF_TRACKDISK)
-		{
-			ioh->moff_time = 100;
-			if (ioh->moff_time <= 0)
-				AddIntServer(INTB_VERTB, &ioh->vbl_int);
-		}
+		ioh->flags |= IOHF_MOTOR_OFF;
 	}
 	else
 	{
@@ -566,7 +554,7 @@ BOOL retry = TRUE;
 
 	while (retry)
 	{
-		D(bug("[afs]    readDisk: reading blocks %lu to %lu\n", start, start+count-1));
+		DB2(bug("[afs]    readDisk: reading blocks %lu to %lu\n", start, start+count-1));
 		result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdread);
 		if (result == 0)
 			retry = FALSE;
@@ -583,7 +571,7 @@ BOOL retry = TRUE;
 
 	while (retry)
 	{
-		D(bug("[afs]    writeDisk: writing blocks %lu to %lu\n", start, start+count-1));
+		DB2(bug("[afs]    writeDisk: writing blocks %lu to %lu\n", start, start+count-1));
 		result = readwriteDisk(afsbase, volume, start, count, data, volume->ioh.cmdwrite);
 		if (result == 0)
 			retry = FALSE;
@@ -595,27 +583,6 @@ BOOL retry = TRUE;
 }
 
 #undef SysBase
-
-AROS_UFH4(int, timercode,
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct IOHandle *, ioh, A1),
-    AROS_UFHA(APTR, is_Code, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-	AROS_USERFUNC_INIT
-	if (--ioh->moff_time == 0)
-	{
-		ioh->ioflags |= IOHF_MOTOR_OFF;
-		Signal
-		(
-			ioh->afsbase->port.mp_SigTask,
-			1<<ioh->afsbase->port.mp_SigBit
-		);
-		RemIntServer(INTB_VERTB, &ioh->vbl_int);
-	}
-	return 0;
-	AROS_USERFUNC_EXIT
-}
 
 AROS_UFH3(VOID, changeIntCode,
     AROS_UFHA(struct IOHandle *, ioh, A1),

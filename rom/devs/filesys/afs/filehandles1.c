@@ -291,23 +291,39 @@ void addHandle(struct AfsHandle *ah) {
 }
 
 /* remove handle from locklist */
-void remHandle(struct AfsHandle *ah) {
-struct AfsHandle *old;
+void remHandle(struct AFSBase *afsbase, struct AfsHandle *ah) {
+struct AfsHandle *old = NULL;
 
-	if (ah->volume->locklist==ah)
+	D(bug("[afs 0x%08lX] Removing handle 0x%08lX\n", ah->volume, ah));
+	if (ah->volume->volumenode == ah->volumenode) {
+	    D(bug("[afs 0x%08lX] Lock's volume is online\n", ah->volume));
+	    if (ah->volume->locklist==ah)
 		ah->volume->locklist=ah->next;
-	else
-	{
+	    else
 		old=ah->volume->locklist;
-		while (old)
-		{
-			if (old->next==ah)
-			{
-				old->next=ah->next;
-				return;
-			}
-			old=old->next;
+	}
+#ifdef __AROS__
+	else {
+	    D(bug("[afs 0x%08lX] Lock's volume is offline\n", ah->volume));
+	    if (ah->volumenode->dol_misc.dol_volume.dol_LockList == ah)
+		if (ah->next)
+		    ah->volumenode->dol_misc.dol_volume.dol_LockList = ah->next;
+		else {
+		    D(bug("[afs 0x%08lX] Last lock removed, removing VolumeNode\n", ah->volume));
+		    remDosNode(afsbase, ah->volumenode);
 		}
+	    else
+		old = ah->volumenode->dol_misc.dol_volume.dol_LockList;
+	}
+#endif
+	while (old)
+	{
+	    if (old->next==ah)
+	    {
+		old->next=ah->next;
+		return;
+	    }
+	    old=old->next;
 	}
 }
 
@@ -358,6 +374,7 @@ struct AfsHandle *ah;
 		ah->current.offset = 0;
 		ah->filesize = OS_BE2LONG(fileblock->buffer[BLK_BYTE_SIZE(volume)]);
 		ah->volume = volume;
+		ah->volumenode = volume->volumenode;
 		addHandle(ah);
 	}
 	else
@@ -581,7 +598,7 @@ ULONG fileblocknum = -1;
 void closef(struct AFSBase *afsbase, struct AfsHandle *ah) {
 
 	D(bug("[afs] closef(%lu)\n",ah->header_block));
-	remHandle(ah);
+	remHandle(afsbase, ah);
 	FreeMem(ah,sizeof(struct AfsHandle));
 }
 
