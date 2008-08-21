@@ -36,8 +36,8 @@ char *ptr_rw = 0;
 void ** SysBaseAddr;
 
 struct _bss_tracker {
-  unsigned long long addr;
-  unsigned long long len;
+  void *addr;
+  size_t len;
 } *bss_tracker;
 
 void *kernel_lowest()
@@ -156,7 +156,7 @@ static int load_hunk(void *file, struct sheader *sh)
   else
   {
 	memset(ptr, 0, sh->size);
-	bss_tracker->addr = (unsigned long)ptr;
+	bss_tracker->addr = ptr;
 	bss_tracker->len = sh->size;
 	bss_tracker++;
   }

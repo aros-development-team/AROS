@@ -6,7 +6,6 @@
 #include <exec/resident.h>
 #include <exec/memheaderext.h>
 #include <utility/tagitem.h>
-#include <utility/hooks.h>
 
 #include <proto/exec.h>
 #include <proto/alib.h>
@@ -27,16 +26,17 @@ extern ULONG ** Exec_RomTagScanner(struct ExecBase*,UWORD*);
 extern void Exec_Exception();
 extern void Exec_Dispatch();
 
-struct Hook * PutcharHook = 0;
-struct Hook * StartSchedulerHook = 0;
-
 static struct TagItem *BootMsg;
-static struct HostInterface *HostIFace;
-static char cmdLine[200];
+struct HostInterface *HostIFace;
+/* static char cmdLine[200]; TODO */
 
 /* So we can examine the memory */
 static struct MemHeaderExt mhe;
 static struct MemHeader *mh = &mhe.mhe_MemHeader;
+
+#undef kprintf
+#undef rkprintf
+#undef vkprintf
 
 int mykprintf(const UBYTE * fmt, ...)
 {
@@ -44,14 +44,14 @@ int mykprintf(const UBYTE * fmt, ...)
     int r;
 
     va_start(args, fmt);
-    r = HostIFace->KPrintF(fmt, args);
+    r = HostIFace->VKPrintF(fmt, args);
     va_end(args);
     return r;
 }
 
 int myvkprintf (const UBYTE *fmt, va_list args)
 {
-    return HostIFace->KPrintF(fmt, args);
+    return HostIFace->VKPrintF(fmt, args);
 }
 
 int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, ...)
@@ -60,7 +60,7 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
   int r;
 
   va_start(args, fmt);
-  r = HostIFace->KPrintF(fmt, args);
+  r = HostIFace->VKPrintF(fmt, args);
   va_end(args);
   return r;
 }
@@ -68,7 +68,8 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
 void __clear_bss(struct TagItem *msg)
 {
     struct KernelBSS *bss;
-    bss = krnGetTagData(KRN_KernelBss, 0, msg);
+
+    bss = (struct KernelBSS *)krnGetTagData(KRN_KernelBss, 0, msg);
     
     if (bss)
     {
@@ -106,7 +107,7 @@ ADD2INITLIB(Kernel_Init, 0)
 
 
 //make this the entry point
-int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
+int startup(struct TagItem *msg, struct HostInterface *hif) __attribute__ ((section (".aros.init")));
 void prepare_host_hook(struct Hook * hook);
 
 
@@ -117,12 +118,14 @@ int startup(struct TagItem *msg, struct HostInterface *hif)
   
   void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
   void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
-  void * memory = (void*)krnGetTagData(KRN_MemBase, 0, msg);
-  unsigned int memsize = krnGetTagData(KRN_MemSize, 0, msg);
+  void * memory = (void*)krnGetTagData(KRN_MMAPAddress, 0, msg); /* FIXME: These tags are used in non-conforming way */
+  unsigned int memsize = krnGetTagData(KRN_MMAPLength, 0, msg);
 
+/*
   struct TagItem * KernelHooks = (struct TagItem *)krnGetTagData(KRN_KernelHooks, 0, msg);
   struct Hook * hook;
   int i;
+  
   for (i = 0; KernelHooks[i].ti_Tag != TAG_DONE; ++i)
   {
 	  struct Hook* hook = (struct Hook*)KernelHooks[i].ti_Data;
@@ -132,15 +135,15 @@ int startup(struct TagItem *msg, struct HostInterface *hif)
     else if (KernelHooks[i].ti_Tag == KRNH_StartSchedulerImpl)
       StartSchedulerHook = hook;
   }
-    
+
   void (**kexecexceptfunp)() = (void*)krnGetTagData(KRN_ExecExceptionFun, 0, msg);
   *kexecexceptfunp = Exec_Exception;
   void (**kdispatchfunp)() = (void*)krnGetTagData(KRN_ExecDispatchFun, 0, msg);
   *kdispatchfunp = Exec_Dispatch;
 
   mykprintf("[Kernel] got Exec pointers Exception: %p Dispatch: %p\n",Exec_Exception);
-
-  mykprintf("[Kernel] preparing first mem header\n",Exec_Exception);
+*/
+  mykprintf("[Kernel] preparing first mem header\n");
 
   /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
   mh->mh_Node.ln_Name = "chip memory";
@@ -158,9 +161,6 @@ int startup(struct TagItem *msg, struct HostInterface *hif)
   SysBase = PrepareExecBase(mh);
   mykprintf("[Kernel] SysBase=%p mhFirst=%p\n",SysBase,mh->mh_First);
 
-  void ** ksysbasep = (void*)krnGetTagData(KRN_SysBasePtr, 0, msg);
-  *ksysbasep = SysBase;
-
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf = mykprintf;
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
@@ -170,23 +170,10 @@ int startup(struct TagItem *msg, struct HostInterface *hif)
   SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
   mykprintf("[Kernel] starting native scheduler\n");
-  CALLHOOKPKT(StartSchedulerHook,0,0);
+/*CALLHOOKPKT(StartSchedulerHook,0,0);*/
 
   mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
   InitCode(RTF_SINGLETASK, 0);
-
-#if 0
-  
-  
- 
-  mykprintf("[Kernel] Booting into kernel.resource...\n");
-//    intptr_t addr = krnGetTagData(KRN_KernelBase, 0, msg);
-//    intptr_t len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
-    
-    
-  mykprintf("[Kernel] calling initcode...\n");
-  mykprintf("Returned from InitCode()\n");   
-#endif
 
   mykprintf("leaving startup!\n");   
   return 1;
