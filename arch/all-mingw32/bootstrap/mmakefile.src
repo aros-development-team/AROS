@@ -2,8 +2,8 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
-BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o $(TARGETDIR)/hostlib.o
-FILES		:= bootstrap elfloader32 hostlib
+BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o $(TARGETDIR)/hostlib.o $(TARGETDIR)/debug.o
+FILES		:= bootstrap elfloader32 hostlib debug
 KOBJS_DEVICES := $(KOBJSDIR)/timer_device.o
 KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o\
 			   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 

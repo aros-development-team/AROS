@@ -34,7 +34,8 @@ struct HostInterface HostIFace = {
     Host_HostLib_Close,
     Host_HostLib_GetPointer,
     Host_HostLib_FreeErrorStr,
-    Host_HostLib_GetInterface
+    Host_HostLib_GetInterface,
+    Host_VKPrintF
 };
 
 void *SysBase;
