@@ -27,7 +27,7 @@ struct KernelBase {
 
 struct KernelBSS {
     void *addr;
-    uint32_t len;
+    IPTR len;
 };
 
 enum intr_types {
@@ -53,11 +53,13 @@ static inline struct KernelBase *getSysBase()
 {
     return (struct KernelBase *)NULL; /* TODO */
 }
-/*
-intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
+
+extern struct HostInterface *HostIFace;
+
+IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
-
+/*
 void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_Switch(regs_t *regs) __attribute__((noreturn));
 void core_Schedule(regs_t *regs) __attribute__((noreturn));

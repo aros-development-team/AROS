@@ -2,6 +2,7 @@
 #define AROS_KERNEL_H
 
 #include <utility/tagitem.h>
+#include <stdarg.h>
 
 typedef enum {
     SCHED_RR = 1
