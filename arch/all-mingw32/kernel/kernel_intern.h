@@ -1,56 +1,95 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
 
+#include <aros/libcall.h>
 #include <inttypes.h>
-
-#ifdef __AROS__
-    
-#include <exec/nodes.h>
 #include <exec/lists.h>
-#include <aros/kernel.h>
+#include <exec/execbase.h>
+#include <exec/memory.h>
 #include <utility/tagitem.h>
-//#include <asm/cpu.h>
+#include <stdio.h>
+#include <stdarg.h>
 
-//#include <stdio.h>
+//#include "syscall.h"
+
+#define KERNEL_PHYS_BASE        0x00800000
+#define KERNEL_VIRT_BASE        0xff800000
+
+#define STACK_SIZE 4096
 
 struct KernelBase {
     struct Node         kb_Node;
+    void *              kb_MemPool;
+    struct List         kb_Exceptions[16];
+    struct List         kb_Interrupts[64];
+    struct MemHeader    *kb_SupervisorMem;
 };
 
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
-struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
-IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
+struct KernelBSS {
+    void *addr;
+    uint32_t len;
+};
 
-//#define rkprintf(x...) scr_RawPutChars(tab, snprintf(tab, 510, x))
+enum intr_types {
+    it_exception = 0xe0,
+    it_interrupt = 0xf0
+};
 
-#endif
+struct IntrNode {
+    struct MinNode      in_Node;
+    void                (*in_Handler)(void *, void *);
+    void                *in_HandlerData;
+    void                *in_HandlerData2;
+    uint8_t             in_type;
+    uint8_t             in_nr;
+};
 
-#ifndef TAG_USER
-#define TAG_USER    ((STACKULONG)(1L<<31))
-#endif
-
-#define KRN_Dummy               (TAG_USER + 0x03d00000)
-#define KRN_KernelBase          (KRN_Dummy + 1)
-#define KRN_KernelLowest        (KRN_Dummy + 2)
-#define KRN_KernelHighest       (KRN_Dummy + 3)
-#define KRN_KernelBss           (KRN_Dummy + 4)
-#define KRN_CmdLine             (KRN_Dummy + 5)
-#define KRN_MemBase             (KRN_Dummy + 6)
-#define KRN_MemSize             (KRN_Dummy + 7)
-#define KRN_SysBasePtr          (KRN_Dummy + 8)
-
-
-struct KernelInterface
+static inline struct KernelBase *getKernelBase()
 {
-    /* Kernel functions */
-    /* TODO */
+    return (struct KernelBase *)NULL; /* TODO */
+}
 
-    /* Hostlib functions */
-    void *(*HostLib_Open)(const char *, char**);
-    int (*HostLib_Close)(void *, char **);
-    void *(*HostLib_GetPointer)(void *, const char *, char **);
-    void (*HostLib_FreeErrorStr)(char *);
-    unsigned long (*HostLib_GetInterface)(void *, char **, void **);
-};
+static inline struct KernelBase *getSysBase()
+{
+    return (struct KernelBase *)NULL; /* TODO */
+}
+/*
+intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
+struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
+struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
+
+void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
+void core_Switch(regs_t *regs) __attribute__((noreturn));
+void core_Schedule(regs_t *regs) __attribute__((noreturn));
+void core_Dispatch(regs_t *regs) __attribute__((noreturn));
+void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn)); 
+void core_Cause(struct ExecBase *SysBase);
+void mmu_init(struct TagItem *tags);
+void intr_init();
+
+void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self);
+void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void *self);*/
+
+#ifdef bug
+#undef bug
+#endif
+#ifdef D
+#undef D
+#endif
+#define D(x) x
+
+AROS_LD2(int, KrnBug,
+         AROS_LDA(const char *, format, A0),
+         AROS_LDA(va_list, args, A1),
+         struct KernelBase *, KernelBase, 11, Kernel);
+
+static inline void bug(const char *format, ...)
+{
+    struct KernelBase *kbase = getKernelBase();
+    va_list args;
+    va_start(args, format);
+    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
+    va_end(args);
+}
 
 #endif /*KERNEL_INTERN_H_*/

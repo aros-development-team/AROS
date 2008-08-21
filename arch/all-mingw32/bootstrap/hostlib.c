@@ -16,12 +16,12 @@ static void GetErrorStr(char **error, BOOL condition)
     }
 }
 
-void Kern_HostLib_FreeErrorStr(char *error)
+void Host_HostLib_FreeErrorStr(char *error)
 {
     LocalFree(error);
 }
 
-void *Kern_HostLib_Open(const char *filename, char **error)
+void *Host_HostLib_Open(const char *filename, char **error)
 {
     HMODULE handle;
 
@@ -32,7 +32,7 @@ void *Kern_HostLib_Open(const char *filename, char **error)
     return handle;
 }
 
-int Kern_HostLib_Close(void *handle, char **error)
+int Host_HostLib_Close(void *handle, char **error)
 {
     int err;
 
@@ -43,7 +43,7 @@ int Kern_HostLib_Close(void *handle, char **error)
     return err;
 }
 
-void *Kern_HostLib_GetPointer(void *handle, const char *symbol, char **error)
+void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
 {
     void *ptr;
 
@@ -53,7 +53,7 @@ void *Kern_HostLib_GetPointer(void *handle, const char *symbol, char **error)
     return ptr;
 }
 
-unsigned long Kern_HostLib_GetInterface(void *handle, char **names, void **funcs)
+unsigned long Host_HostLib_GetInterface(void *handle, char **names, void **funcs)
 {
     unsigned long unresolved = 0;
 
