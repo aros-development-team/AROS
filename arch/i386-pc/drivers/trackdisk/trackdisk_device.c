@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Amigastyle device for trackdisk
@@ -336,11 +336,13 @@ AROS_LH1(void, beginio,
 	    case CMD_WRITE:
 	    case TD_FORMAT:
 	    case TD_MOTOR:
+	    case TD_SEEK:
 	    case ETD_READ:
 	    case ETD_UPDATE:
 	    case ETD_WRITE:
 	    case ETD_FORMAT:
 	    case ETD_MOTOR:
+	    case ETD_SEEK:
 		PutMsg(&TDBase->td_TaskData->td_Port, &iotd->iotd_Req.io_Message);
 		iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
 		return;
@@ -453,6 +455,7 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_CHANGENUM:
 	    iotd->iotd_Req.io_Actual = tdu->pub.tdu_Counter;
+            iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_CHANGESTATE:
 	    if ((tdu->pub.tdu_PubFlags & TDPF_NOCLICK) && (tdu->tdu_DiskIn == TDU_NODISK)) {
@@ -508,6 +511,7 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    break;
 	case TD_PROTSTATUS:
 	    iotd->iotd_Req.io_Actual = tdu->tdu_ProtStatus;
+            iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_REMCHANGEINT:
 	    Forbid();
@@ -525,12 +529,25 @@ BOOL TD_PerformIO( struct IOExtTD *iotd, struct TrackDiskBase *tdb)
 	    geo->dg_BufMemType = MEMF_PUBLIC;
 	    geo->dg_DeviceType = DG_DIRECT_ACCESS;
 	    geo->dg_Flags = DGF_REMOVABLE;
+            iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_GETDRIVETYPE:
 	    iotd->iotd_Req.io_Actual = DRIVE3_5;
+            iotd->iotd_Req.io_Error=0;
 	    break;
 	case TD_GETNUMTRACKS:
 	    iotd->iotd_Req.io_Actual = DP_TRACKS*2;
+            iotd->iotd_Req.io_Error=0;
+	    break;
+	case ETD_SEEK:
+	    if (iotd->iotd_Count > tdu->pub.tdu_Counter) {
+		iotd->iotd_Req.io_Error = TDERR_DiskChanged;
+		break;
+	    }
+	case TD_SEEK:
+	    temp = (iotd->iotd_Req.io_Offset >> 10) / DP_SECTORS;
+	    tdu->tdu_MotorOn = 1;
+	    iotd->iotd_Req.io_Error = td_recalibrate(tdu->tdu_UnitNum, 0, temp, tdb);
 	    break;
 	default:
 	    /* Not supported */

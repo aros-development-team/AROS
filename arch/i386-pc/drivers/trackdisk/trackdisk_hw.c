@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Intel HW floppy stuff
@@ -389,9 +389,7 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
     skcnt = TDBase->td_Units[unitnum]->pub.tdu_RetryCnt;
     /* Program data rate */
     /* Gentlemen, start your engines */
-/*  TDBase->td_Units[unitnum]->tdu_MotorOn = 1;
-    FIXME: affs on AROS doesn't turn off the motor for some reason.
-    As a workaround, proper motor behavour is left for better times */
+    TDBase->td_Units[unitnum]->tdu_MotorOn = 1;
     td_motoron(unitnum,TDBase,TRUE);
     outb(0, FDC_CCR);	// 500kbit/s only!
     do
@@ -623,8 +621,7 @@ int td_formattrack(struct TDU *unit, UBYTE cyl, UBYTE hd, struct TrackDiskBase *
 
     skcnt = unit->pub.tdu_RetryCnt;
     /* Start motor */
-/*  unit->tdu_MotorOn = 1;
-    FIXME: the same as in td_readwritetrack */
+    unit->tdu_MotorOn = 1;
     td_motoron(unit->tdu_UnitNum,tdb,TRUE);
     /* Set datarate */
     outb(0,FDC_CCR);
