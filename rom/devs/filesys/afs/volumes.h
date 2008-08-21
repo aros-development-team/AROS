@@ -14,6 +14,7 @@ struct Volume {
 	struct Node ln;
 	struct Device *device;       /* the handler this volume uses */
 	struct DeviceList devicelist;
+	struct DosList *volumenode;
 	ULONG SizeBlock;             /* Block size in words */
 	
 	struct AfsHandle *locklist;

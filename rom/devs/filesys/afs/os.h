@@ -19,6 +19,7 @@ struct Volume;
 
 LONG osMediumInit(struct AFSBase *, struct Volume *, struct BlockCache *);
 void osMediumFree(struct AFSBase *, struct Volume *, LONG);
+void remDosNode(struct AFSBase *afsbase, struct DosList *dl);
 LONG readDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
 LONG writeDisk(struct AFSBase *, struct Volume *, ULONG, ULONG, APTR);
 UBYTE diskPresent(struct AFSBase *, struct IOHandle *);

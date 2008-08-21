@@ -30,6 +30,7 @@ typedef short          BOOL;
 struct AFSBase {};
 struct Device {};
 struct DeviceList {};
+struct DosList {};
 struct DriveGeometry {};
 struct Interrupt {};
 struct List {};

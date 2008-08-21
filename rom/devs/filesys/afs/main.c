@@ -34,11 +34,17 @@ static VOID startFlushTimer(struct AFSBase *afsbase)
 struct timerequest *request;
 
 	/* Set up delay for next flush */
-	request = afsbase->timer_request;
-	request->tr_node.io_Command = TR_ADDREQUEST;
-	request->tr_time.tv_secs = 1;
-	request->tr_time.tv_micro = 0;
-	SendIO((struct IORequest *)afsbase->timer_request);
+	if (afsbase->timer_flags & TIMER_ACTIVE) {
+	    afsbase->timer_flags |= TIMER_RESTART;
+	} else {
+	D(bug("[afs] Starting timer\n"));
+	    request = afsbase->timer_request;
+	    request->tr_node.io_Command = TR_ADDREQUEST;
+	    request->tr_time.tv_secs = 1;
+	    request->tr_time.tv_micro = 0;
+	    SendIO((struct IORequest *)afsbase->timer_request);
+	    afsbase->timer_flags = TIMER_ACTIVE;
+	}
 }
 
 /*******************************************
@@ -54,13 +60,17 @@ LONG retval;
 
 	afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
 	afsbase->port.mp_Flags = PA_SIGNAL;
-	startFlushTimer(afsbase);
+	afsbase->timer_flags = 0;
 	for (;;) {
 		while ((iofs=(struct IOFileSys *)GetMsg(&afsbase->port))!=NULL)
 		{
 			/* Flush dirty blocks on all volumes */
 			if (iofs->IOFS.io_Message.mn_Node.ln_Type == NT_REPLYMSG)
 			{
+			    afsbase->timer_flags &= ~TIMER_ACTIVE;
+			    if (afsbase->timer_flags & TIMER_RESTART)
+				startFlushTimer(afsbase);
+			    else {
 				struct Volume *volume, *tail;
 				struct BlockCache *blockbuffer;
 
@@ -78,14 +88,20 @@ LONG retval;
 							writeBlock(afsbase, volume, blockbuffer, -1);
 							blockbuffer->flags &= ~BCF_WRITE;
 						}
+						if (volume->ioh.flags & IOHF_MOTOR_OFF) {
+							D(bug("[afs 0x%08lX] turning off motor\n", volume));
+							motorOff(afsbase, &volume->ioh);
+							volume->ioh.flags &= ~IOHF_MOTOR_OFF;
+						}
 					}
 					volume = (struct Volume *)volume->ln.ln_Succ;
 				}
-				startFlushTimer(afsbase);
+			    }
 			}
 			else
 			{
-				D(bug("[afs] got command %lu\n",iofs->IOFS.io_Command));
+				DB2(bug("[afs] got command %lu\n",iofs->IOFS.io_Command));
+				startFlushTimer(afsbase);
 				error=0;
 				afshandle = (struct AfsHandle *)iofs->IOFS.io_Unit;
 				switch (iofs->IOFS.io_Command)
@@ -144,6 +160,9 @@ LONG retval;
 							iofs->io_Union.io_INHIBIT.io_Inhibit
 						);
 					break;
+				case FSA_CLOSE :
+					closef(afsbase, afshandle);
+					break;
 				default:
 					if (mediumPresent(&afshandle->volume->ioh))
 					{
@@ -157,9 +176,6 @@ LONG retval;
 									iofs->io_Union.io_OPEN.io_Filename,
 									iofs->io_Union.io_OPEN.io_FileMode
 								);
-							break;
-						case FSA_CLOSE :
-							closef(afsbase, afshandle);
 							break;
 						case FSA_READ :
 							iofs->io_Union.io_READ.io_Length=readf
@@ -348,7 +364,6 @@ LONG retval;
 						switch (iofs->IOFS.io_Command)
 						{
 						case FSA_OPEN : /* locateObject, findupdate, findinput */
-						case FSA_CLOSE :
 						case FSA_READ :
 						case FSA_WRITE :
 						case FSA_SEEK :

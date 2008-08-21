@@ -26,6 +26,7 @@ struct AfsHandle
 	ULONG filesize;	// size of file in bytes
 	ULONG dirpos;		// current position for ExamineAll
 	struct Volume *volume;	// the volume the handle refers to
+	struct DosList *volumenode;
 };
 
 #endif
