@@ -5,4 +5,4 @@ INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
 
 %copy_includes mmake=includes-copy-mingw32
 
-#MM- compiler-includes : includes-copy-mingw32
+##MM- compiler-includes : includes-copy-mingw32
