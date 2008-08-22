@@ -17,7 +17,7 @@ KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
 				$(KOBJSDIR)/mathieeesingbas_library.o \
 				$(KOBJSDIR)/oop_library.o
 K_RES		:= $(KOBJSDIR)/kernel_resource.o 
-KOBJS_HANDLERS := $(KOBJSDIR)/emul_handler.o
+KOBJS_HANDLERS := #$(KOBJSDIR)/emul_handler.o
 KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 
 #this needs sdl.hidd
@@ -27,7 +27,7 @@ KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 #				$(KOBJSDIR)/intuition_library.o \
 
 
-#MM kernel-bootstrap-mingw32: kernel kernel-kernel-mingw32-kobj
+#MM kernel-bootstrap-mingw32: kernel-kernel-mingw32-kobj kernel
 #kernel-fs-emul-mingw32-kobj
 
 #MM

@@ -48,6 +48,9 @@ DEPLIBS :=
   ifeq ($(ARCH),darwin)
     FILES	    += romtagscanner
   endif
+  ifeq ($(ARCH),mingw32)
+    FILES	    += romtagscanner
+  endif
 endif
 
 # I need the private includes (for SIZEOF_ALL_REGISTERS) and they
