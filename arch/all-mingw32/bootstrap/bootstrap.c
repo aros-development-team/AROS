@@ -15,6 +15,7 @@ typedef unsigned char UBYTE;
 #include <aros/kernel.h>
 #include <utility/tagitem.h>
 
+#include "debug.h"
 #include "elfloader32.h"
 #include "hostlib.h"
 
@@ -35,7 +36,8 @@ struct HostInterface HostIFace = {
     Host_HostLib_GetPointer,
     Host_HostLib_FreeErrorStr,
     Host_HostLib_GetInterface,
-    Host_VKPrintF
+    Host_VKPrintF,
+    Host_PutChar
 };
 
 void *SysBase;
