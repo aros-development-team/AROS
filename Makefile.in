@@ -16,7 +16,7 @@ export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 export AROS_GUI_THEME := @aros_target_guitheme@
 
 TOP := @AROS_BUILDDIR@
-AROS_SRC := @AROS_SRCDIR@
+SRCDIR := @SRCDIR@
 include $(TOP)/config/make.cfg
 
 all: makedirs tools mmake
@@ -31,7 +31,7 @@ makedirs:
 	    else true ; fi ; \
 	done
 	@$(IF) [ ! -f $(AROSDIR)/.gdbinit ]; then \
-	    $(CP) $(AROS_SRC)/_gdbinit $(AROSDIR)/.gdbinit ; \
+	    $(CP) $(SRCDIR)/_gdbinit $(AROSDIR)/.gdbinit ; \
 	else true ; fi
 
 # Create the tools that are used to build AROS.
@@ -40,91 +40,91 @@ tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 	$(COLLECT-AROS) $(AFSLIB) $(COPYTOAFS) \
 	$(FD2INLINE) $(FD2PRAGMA) $(SFDC)
 
-$(TOOLLIB) : $(wildcard $(AROS_SRC)/tools/toollib/*.[ch])
+$(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/toollib AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(GENMF) : $(AROS_SRC)/tools/genmf/genmf.py
+$(GENMF) : $(SRCDIR)/tools/genmf/genmf.py
 	@$(ECHO) Copying genmf...
 	@./config.status $(subst $(TOP)/,,$(GENMF)) genmf_executable
 
-$(ARCHTOOL) : $(AROS_SRC)/tools/archtools/archtool.c
+$(ARCHTOOL) : $(SRCDIR)/tools/archtools/archtool.c
 	@$(ECHO) Building archtool...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/archtools AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(FLEXCAT) : $(AROS_SRC)/tools/FlexCat/flexcat.c
+$(FLEXCAT) : $(SRCDIR)/tools/FlexCat/flexcat.c
 	@$(ECHO) Building flexcat...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/FlexCat AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/FlexCat SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(CREATEDTDESC) : $(wildcard $(AROS_SRC)/tools/dtdesc/*.[ch]) $(wildcard $(AROS_SRC)/tools/dtdesc/c_iff/*.[ch])
+$(CREATEDTDESC) : $(wildcard $(SRCDIR)/tools/dtdesc/*.[ch]) $(wildcard $(SRCDIR)/tools/dtdesc/c_iff/*.[ch])
 	@$(ECHO) Building createdtdesc...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/dtdesc -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(AFSLIB) : $(wildcard $(AROS_SRC)/workbench/devs/afs/*.[ch])
+$(AFSLIB) : $(wildcard $(SRCDIR)/workbench/devs/afs/*.[ch])
 	@$(ECHO) Building afslib...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/copytoafs -f Makefile.afslib AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/copytoafs -f Makefile.afslib SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(COPYTOAFS) : $(AFSLIB) $(AROS_SRC)/tools/copytoafs/copytoafs.c
+$(COPYTOAFS) : $(AFSLIB) $(SRCDIR)/tools/copytoafs/copytoafs.c
 	@$(ECHO) Building copytoafs...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/copytoafs AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/copytoafs SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(ILBMTOC) : $(AROS_SRC)/tools/ilbmtoc/ilbmtoc.c
+$(ILBMTOC) : $(SRCDIR)/tools/ilbmtoc/ilbmtoc.c
 	@$(ECHO) Building ilbmtoc...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/ilbmtoc AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/ilbmtoc SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(ILBMTOICON) : $(AROS_SRC)/tools/ilbmtoicon/ilbmtoicon.c
+$(ILBMTOICON) : $(SRCDIR)/tools/ilbmtoicon/ilbmtoicon.c
 	@$(ECHO) Building ilbmtoicon...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/ilbmtoicon AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/ilbmtoicon SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(COLLECT-AROS) : $(wildcard $(AROS_SRC)/tools/collect-aros/*.[hc])
+$(COLLECT-AROS) : $(wildcard $(SRCDIR)/tools/collect-aros/*.[hc])
 	@$(ECHO) Building collect-aros...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/collect-aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/collect-aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(FD2INLINE) : $(AROS_SRC)/tools/fd2inline/fd2inline.c
+$(FD2INLINE) : $(SRCDIR)/tools/fd2inline/fd2inline.c
 	@$(ECHO) Building fd2inline...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2inline AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(FD2PRAGMA) : $(AROS_SRC)/tools/fd2pragma/fd2pragma.c
+$(FD2PRAGMA) : $(SRCDIR)/tools/fd2pragma/fd2pragma.c
 	@$(ECHO) Building fd2pragma...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2pragma AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma SRCDIR=$(SRCDIR) TOP=$(TOP)
 
-$(SFDC) : $(AROS_SRC)/tools/sfdc/*.pl 
+$(SFDC) : $(SRCDIR)/tools/sfdc/*.pl 
 	@$(ECHO) Building sfdc...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/sfdc AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
 mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
-$(AROS_SRC)/tools/MetaMake/configure : $(AROS_SRC)/tools/MetaMake/configure.in
+$(SRCDIR)/tools/MetaMake/configure : $(SRCDIR)/tools/MetaMake/configure.in
 	@$(ECHO) Building MetaMake...
-	@cd $(AROS_SRC)/tools/MetaMake && @aros_host_aclocal@ && @aros_host_autoconf@
+	@cd $(SRCDIR)/tools/MetaMake && @aros_host_aclocal@ && @aros_host_autoconf@
 
-$(TOP)/tools/MetaMake/Makefile : $(AROS_SRC)/tools/MetaMake/configure $(AROS_SRC)/tools/MetaMake/Makefile.in
+$(TOP)/tools/MetaMake/Makefile : $(SRCDIR)/tools/MetaMake/configure $(SRCDIR)/tools/MetaMake/Makefile.in
 	@$(IF) [ ! -d $(TOP)/tools/MetaMake ]; then \
 	    $(MECHO) $(MKDIR) "$(TOP)/tools/MetaMake" ; \
 	    $(MKDIR) "$(TOP)/tools/MetaMake"; \
 	fi;
-	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS= $(AROS_SRC)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake
+	@cd $(TOP)/tools/MetaMake ; CC="$(HOST_CC)" CFLAGS= $(SRCDIR)/tools/MetaMake/configure --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --with-objfiledir=$(HOSTGENDIR)/tools/MetaMake
 
-$(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(AROS_SRC)/tools/MetaMake/*.[ch]) $(GENMF)
+$(MMAKE): $(TOP)/tools/MetaMake/Makefile $(wildcard $(SRCDIR)/tools/MetaMake/*.[ch]) $(GENMF)
 	@$(MAKE) $(MKARGS) AUTOHEADER=@aros_host_autoheader@ -C $(TOP)/tools/MetaMake
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake install
 
 # Clean the sources and tools
 clean:
 	@+$(CALL) $(MMAKE) AROS.clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/FlexCat clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/archtools clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/genmf clean
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/toollib clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/dtdesc -f Makefile.aros clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/collect-aros clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2inline clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/fd2pragma clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(AROS_SRC)/tools/sfdc clean AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/FlexCat clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/archtools clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmf clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/dtdesc -f Makefile.aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/collect-aros clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2inline clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/fd2pragma clean SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/sfdc clean SRCDIR=$(SRCDIR) TOP=$(TOP)
 	-@$(RM) $(ARCHDIR) Makefile config.cache config.status config.log mmake.cache mmake.config rom/mmakefile config/make.cfg $(AROS_DEVELOPMENT)/include/aros/config.h $(GENDIR)/include/aros/config.h $(HOSTGENDIR)/config/host.cfg $(GENDIR)/config/target.cfg $(GENDIR)/config/make.defaults $(GENDIR)/config/specs $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld $(GENDIR)/scripts/genshared $(TOOLDIR)/genmf.py tools/adflib/myconf.aros tools/collect-aros/env.h
 
 # Clean the sources and tools

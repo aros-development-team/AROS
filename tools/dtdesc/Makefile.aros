@@ -15,8 +15,8 @@ HOST_CC	    ?= $(CC)
 HOST_CFLAGS ?= -Wall -g -O
 TOOLDIR     ?= .
 ifneq ($(HOSTGENDIR),)
-OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
-CIFFSRCDIR := $(AROS_SRC)/tools/dtdesc/c_iff
+OBJDIR := $(HOSTGENDIR)/$(subst $(SRCDIR)/,,$(CURDIR))
+CIFFSRCDIR := $(SRCDIR)/tools/dtdesc/c_iff
 CIFFLIBDIR := $(TOOLDIR)
 else
 OBJDIR := $(TOOLDIR)/obj
@@ -46,12 +46,12 @@ $(OBJDIR)/%.o : %.c
 
 $(CIFFLIBDIR)/libc_iff.a:
 	@$(ECHO) Building libc_iff.a...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
 
 $(OBJDIR):
 	@$(MKDIR) $(OBJDIR)
 
 clean:
-	@$(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros AROS_SRC=$(AROS_SRC) TOP=$(TOP) clean
+	@$(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP) clean
 	@$(RM) -f *.o examinedtdesc $(CREATEDTDESC) $(OBJDIR)
 

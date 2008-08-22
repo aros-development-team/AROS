@@ -50,8 +50,8 @@ AC_MSG_RESULT($AROS_BUILDDIR)
 
 AC_MSG_CHECKING([AROS Source in .. ])
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
-AROS_SRCDIR=${srcpwd}
-AC_MSG_RESULT($AROS_SRCDIR)
+SRCDIR=${srcpwd}
+AC_MSG_RESULT($SRCDIR)
 
 # Parse the target field into something useful.
 changequote(<<,>>)
@@ -1541,7 +1541,7 @@ AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
 AC_SUBST(AROS_BUILDDIR)
-AC_SUBST(AROS_SRCDIR)
+AC_SUBST(SRCDIR)
 AC_SUBST(AROS_PORTSSRCDIR)
 
 # Host related
