@@ -738,7 +738,7 @@ aros_cpu
 aros_flavour
 aros_flavour_uc
 AROS_BUILDDIR
-AROS_SRCDIR
+SRCDIR
 AROS_PORTSSRCDIR
 aros_cc_pre
 aros_host_arch
@@ -2038,9 +2038,9 @@ echo "${ECHO_T}$AROS_BUILDDIR" >&6; }
 { echo "$as_me:$LINENO: checking AROS Source in .. " >&5
 echo $ECHO_N "checking AROS Source in .. ... $ECHO_C" >&6; }
 srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
-AROS_SRCDIR=${srcpwd}
-{ echo "$as_me:$LINENO: result: $AROS_SRCDIR" >&5
-echo "${ECHO_T}$AROS_SRCDIR" >&6; }
+SRCDIR=${srcpwd}
+{ echo "$as_me:$LINENO: result: $SRCDIR" >&5
+echo "${ECHO_T}$SRCDIR" >&6; }
 
 # Parse the target field into something useful.
 
@@ -13387,7 +13387,7 @@ aros_cpu!$aros_cpu$ac_delim
 aros_flavour!$aros_flavour$ac_delim
 aros_flavour_uc!$aros_flavour_uc$ac_delim
 AROS_BUILDDIR!$AROS_BUILDDIR$ac_delim
-AROS_SRCDIR!$AROS_SRCDIR$ac_delim
+SRCDIR!$SRCDIR$ac_delim
 AROS_PORTSSRCDIR!$AROS_PORTSSRCDIR$ac_delim
 aros_cc_pre!$aros_cc_pre$ac_delim
 aros_host_arch!$aros_host_arch$ac_delim

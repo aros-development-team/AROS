@@ -9,12 +9,12 @@ EXEEXT = @EXEEXT@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 bindir = @bindir@
-srcdir = @METAMAKE_SRCDIR@
+mmsrcdir = @METAMAKE_SRCDIR@
 mmake_LDADD = $(LDADD)
 mmake_objdir = @mmake_objdir@
 DEPDIR = $(mmake_objdir)/.deps
 mmake_OBJECTS =  $(mmake_objdir)/mmake.o $(mmake_objdir)/mem.o $(mmake_objdir)/list.o $(mmake_objdir)/var.o $(mmake_objdir)/dirnode.o $(mmake_objdir)/dep.o $(mmake_objdir)/project.o $(mmake_objdir)/cache.o $(mmake_objdir)/io.o
-DEFAULT_INCLUDES = -I.@am__isrc@
+DEFAULT_INCLUDES = -I.$(mmsrcdir) -I.$(SRCDIR)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -28,40 +28,40 @@ makedirs:
 	    else true ; fi ; \
 	done
 
-$(mmake_objdir)/mmake.o: $(srcdir)/mmake.c
-	$(COMPILE) -MT $(mmake_objdir)/mmake.o -MD -MP -MF $(DEPDIR)/mmake.Tpo -c -o $(mmake_objdir)/mmake.o $(srcdir)/mmake.c
+$(mmake_objdir)/mmake.o: $(mmsrcdir)/mmake.c
+	$(COMPILE) -MT $(mmake_objdir)/mmake.o -MD -MP -MF $(DEPDIR)/mmake.Tpo -c -o $(mmake_objdir)/mmake.o $(mmsrcdir)/mmake.c
 	mv -f $(DEPDIR)/mmake.Tpo $(DEPDIR)/mmake.Po
 
-$(mmake_objdir)/mem.o: $(srcdir)/mem.c
-	$(COMPILE) -MT $(mmake_objdir)/mem.o -MD -MP -MF $(DEPDIR)/mem.Tpo -c -o $(mmake_objdir)/mem.o $(srcdir)/mem.c
+$(mmake_objdir)/mem.o: $(mmsrcdir)/mem.c
+	$(COMPILE) -MT $(mmake_objdir)/mem.o -MD -MP -MF $(DEPDIR)/mem.Tpo -c -o $(mmake_objdir)/mem.o $(mmsrcdir)/mem.c
 	mv -f $(DEPDIR)/mem.Tpo $(DEPDIR)/mem.Po
 
-$(mmake_objdir)/list.o: $(srcdir)/list.c
-	$(COMPILE) -MT $(mmake_objdir)/list.o -MD -MP -MF $(DEPDIR)/list.Tpo -c -o $(mmake_objdir)/list.o $(srcdir)/list.c
+$(mmake_objdir)/list.o: $(mmsrcdir)/list.c
+	$(COMPILE) -MT $(mmake_objdir)/list.o -MD -MP -MF $(DEPDIR)/list.Tpo -c -o $(mmake_objdir)/list.o $(mmsrcdir)/list.c
 	mv -f $(DEPDIR)/list.Tpo $(DEPDIR)/list.Po
 
-$(mmake_objdir)/var.o: $(srcdir)/var.c
-	$(COMPILE) -MT $(mmake_objdir)/var.o -MD -MP -MF $(DEPDIR)/var.Tpo -c -o $(mmake_objdir)/var.o $(srcdir)/var.c
+$(mmake_objdir)/var.o: $(mmsrcdir)/var.c
+	$(COMPILE) -MT $(mmake_objdir)/var.o -MD -MP -MF $(DEPDIR)/var.Tpo -c -o $(mmake_objdir)/var.o $(mmsrcdir)/var.c
 	mv -f $(DEPDIR)/var.Tpo $(DEPDIR)/var.Po
 
-$(mmake_objdir)/dirnode.o: $(srcdir)/dirnode.c
-	$(COMPILE) -MT $(mmake_objdir)/dirnode.o -MD -MP -MF $(DEPDIR)/dirnode.Tpo -c -o $(mmake_objdir)/dirnode.o $(srcdir)/dirnode.c
+$(mmake_objdir)/dirnode.o: $(mmsrcdir)/dirnode.c
+	$(COMPILE) -MT $(mmake_objdir)/dirnode.o -MD -MP -MF $(DEPDIR)/dirnode.Tpo -c -o $(mmake_objdir)/dirnode.o $(mmsrcdir)/dirnode.c
 	mv -f $(DEPDIR)/dirnode.Tpo $(DEPDIR)/dirnode.Po
 
-$(mmake_objdir)/dep.o: $(srcdir)/dep.c
-	$(COMPILE) -MT $(mmake_objdir)/dep.o -MD -MP -MF $(DEPDIR)/dep.Tpo -c -o $(mmake_objdir)/dep.o $(srcdir)/dep.c
+$(mmake_objdir)/dep.o: $(mmsrcdir)/dep.c
+	$(COMPILE) -MT $(mmake_objdir)/dep.o -MD -MP -MF $(DEPDIR)/dep.Tpo -c -o $(mmake_objdir)/dep.o $(mmsrcdir)/dep.c
 	mv -f $(DEPDIR)/dep.Tpo $(DEPDIR)/dep.Po
 
-$(mmake_objdir)/project.o: $(srcdir)/project.c
-	$(COMPILE) -MT $(mmake_objdir)/project.o -MD -MP -MF $(DEPDIR)/project.Tpo -c -o $(mmake_objdir)/project.o $(srcdir)/project.c
+$(mmake_objdir)/project.o: $(mmsrcdir)/project.c
+	$(COMPILE) -MT $(mmake_objdir)/project.o -MD -MP -MF $(DEPDIR)/project.Tpo -c -o $(mmake_objdir)/project.o $(mmsrcdir)/project.c
 	mv -f $(DEPDIR)/project.Tpo $(DEPDIR)/project.Po
 
-$(mmake_objdir)/cache.o: $(srcdir)/cache.c
-	$(COMPILE) -MT $(mmake_objdir)/cache.o -MD -MP -MF $(DEPDIR)/cache.Tpo -c -o $(mmake_objdir)/cache.o $(srcdir)/cache.c
+$(mmake_objdir)/cache.o: $(mmsrcdir)/cache.c
+	$(COMPILE) -MT $(mmake_objdir)/cache.o -MD -MP -MF $(DEPDIR)/cache.Tpo -c -o $(mmake_objdir)/cache.o $(mmsrcdir)/cache.c
 	mv -f $(DEPDIR)/cache.Tpo $(DEPDIR)/cache.Po
 
-$(mmake_objdir)/io.o: $(srcdir)/io.c
-	$(COMPILE) -MT $(mmake_objdir)/io.o -MD -MP -MF $(DEPDIR)/io.Tpo -c -o $(mmake_objdir)/io.o $(srcdir)/io.c
+$(mmake_objdir)/io.o: $(mmsrcdir)/io.c
+	$(COMPILE) -MT $(mmake_objdir)/io.o -MD -MP -MF $(DEPDIR)/io.Tpo -c -o $(mmake_objdir)/io.o $(mmsrcdir)/io.c
 	mv -f $(DEPDIR)/io.Tpo $(DEPDIR)/io.Po
 
 $(mmake_objdir)/mmake$(EXEEXT): $(mmake_OBJECTS)

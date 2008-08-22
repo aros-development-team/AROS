@@ -6,7 +6,7 @@ DEBUG_OPTS := -g -DDEBUG=0
 
 FILES := copytoafs
 
-AFSSRCDIR := $(AROS_SRC)/rom/devs/filesys/afs
+AFSSRCDIR := $(SRCDIR)/rom/devs/filesys/afs
 ifneq ($(HOSTGENDIR),)
 OBJDIR := $(HOSTGENDIR)/tools/host_copytoafs
 else

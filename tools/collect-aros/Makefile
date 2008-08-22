@@ -13,7 +13,7 @@ COLLECT-AROS ?= collect-aros
 RM           ?= rm
 COLLECT-AROS-BACKEND   ?= backend-generic.c
 COLLECT-AROS-DOCOMMAND ?= docommand-exec.c
-ifneq ($(AROS_SRC),)
+ifneq ($(SRCDIR),)
 COLLECT-AROS-DIR := $(TOP)/tools/collect-aros
 else
 COLLECT-AROS-DIR := .

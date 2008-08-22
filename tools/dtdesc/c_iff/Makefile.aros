@@ -27,7 +27,7 @@ HOST_CC ?= $(CC)
 HOST_AR ?= $(AR) cru
 TOOLDIR ?= .
 ifneq ($(HOSTGENDIR),)
-OBJDIR=$(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+OBJDIR=$(HOSTGENDIR)/$(subst $(SRCDIR)/,,$(CURDIR))
 CIFFSRCDIR=$(CURDIR)
 CIFFLIBDIR=$(HOSTDIR)/lib
 else
