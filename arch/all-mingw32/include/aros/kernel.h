@@ -38,6 +38,7 @@ struct HostInterface
     void (*HostLib_FreeErrorStr)(char *);
     unsigned long (*HostLib_GetInterface)(void *, char **, void **);
     int (*VKPrintF)(const char *, va_list);
+    int (*PutChar)(int c);
 };
 
 #endif /*AROS_  KERNEL_H*/

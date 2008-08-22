@@ -27,7 +27,8 @@ KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 #				$(KOBJSDIR)/intuition_library.o \
 
 
-#MM kernel-bootstrap-mingw32: kernel kernel-kernel-mingw32-kobj #kernel-fs-emul-mingw32-kobj
+#MM kernel-bootstrap-mingw32: kernel kernel-kernel-mingw32-kobj
+#kernel-fs-emul-mingw32-kobj
 
 #MM
 kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap $(BINDIR)/boot/kernel
