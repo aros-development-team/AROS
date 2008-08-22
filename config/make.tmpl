@@ -197,13 +197,13 @@ TMP_SRCDIR := %(srcdir)
 
 $(addprefix %(targetdir)/,%(files)) : | %(stampfile)
 
-%(stampfile) : SRCDIR := %(srcdir)
+%(stampfile) : COPYSRCDIR := %(srcdir)
 %(stampfile) : TGTDIR := %(targetdir)
 %(stampfile) : FILES := %(files)
 %(stampfile) : $(addprefix %(srcdir)/,%(files))
 	@for f in $(FILES); do \
-	     $(IF) ! $(CMP) -s $(SRCDIR)/$$f $(TGTDIR)/$$f ; then \
-	         $(CP) $(SRCDIR)/$$f $(TGTDIR)/$$f ; \
+	     $(IF) ! $(CMP) -s $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; then \
+	         $(CP) $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; \
 	     fi ; \
 	done
 	@$(TOUCH) $@
