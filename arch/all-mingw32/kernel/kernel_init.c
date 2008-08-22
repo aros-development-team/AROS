@@ -22,7 +22,7 @@
 #include LC_LIBDEFS_FILE
 
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
-extern ULONG ** Exec_RomTagScanner(struct ExecBase*,UWORD*);
+extern ULONG ** Exec_RomTagScanner(struct ExecBase*,UWORD**);
 extern void Exec_Exception();
 extern void Exec_Dispatch();
 
@@ -158,6 +158,11 @@ int startup(struct TagItem *msg, struct HostInterface *hif)
   mh->mh_Free = mh->mh_First->mc_Bytes;
 
   mykprintf("[Kernel] calling PrepareExecBase@%p mh_First=%p\n",PrepareExecBase,mh->mh_First);
+  /*
+   * FIXME: This routine is part of exec.library, however it doesn't have an LVO
+   * (it can't have one because exec.library is not initialized yet) and is called
+   * only from here. Probably it should be moved into kernel.resource
+   */
   SysBase = PrepareExecBase(mh);
   mykprintf("[Kernel] SysBase=%p mhFirst=%p\n",SysBase,mh->mh_First);
 
@@ -167,6 +172,9 @@ int startup(struct TagItem *msg, struct HostInterface *hif)
       
   mykprintf("[Kernel] calling Exec_RomTagScanner@%p\n",Exec_RomTagScanner);
   UWORD * ranges[] = {klo,khi,(UWORD *)~0};
+  /*
+   * FIXME: Cross-module call again
+   */
   SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
   mykprintf("[Kernel] starting native scheduler\n");

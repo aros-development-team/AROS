@@ -1,0 +1,18 @@
+# $Id: mmakefile.src 20191 2003-11-24 22:03:42Z verhaegs $
+include $(TOP)/config/make.cfg
+
+#MM kernel-exec-mingw32 : kernel-exec-mingw32-setup
+
+#MM
+kernel-exec-mingw32-setup : $(GENINCDIR)/sigcore.h
+
+$(GENINCDIR)/sigcore.h : sigcore.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) sigcore.h $(GENINCDIR)/sigcore.h
+
+CFILES := cause disable enable preparecontext stackswap
+
+USER_CFLAGS := -I$(TOP)/rom/exec
+%build_archspecific \
+	mainmmake=kernel-exec maindir=rom/exec arch=mingw32 \
+	files=$(CFILES) modulename=exec

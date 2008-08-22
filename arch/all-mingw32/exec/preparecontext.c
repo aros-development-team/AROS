@@ -1,0 +1,51 @@
+/*
+ Copyright � 1995-2008, The AROS Development Team. All rights reserved.
+ $Id$
+ 
+ Desc: mingw32 version of PrepareContext().
+ Lang: english
+ */
+
+#include <exec/types.h>
+#include <exec/execbase.h>
+#include <exec/memory.h>
+#include <utility/tagitem.h>
+#include <proto/kernel.h>
+#include <aros/kernel.h>
+#include "etask.h"
+#include "exec_util.h"
+
+#include <aros/libcall.h>
+#include <proto/arossupport.h>
+
+AROS_LH4(BOOL, PrepareContext,
+		 AROS_LHA(struct Task *, task, A0),
+		 AROS_LHA(APTR, entryPoint, A1),
+		 AROS_LHA(APTR, fallBack, A2),
+		 AROS_LHA(struct TagItem *, tagList, A3),
+		 struct ExecBase *, SysBase, 6, Exec)
+{
+  AROS_LIBFUNC_INIT
+
+  kprintf("[PrepareContext] preparing task \"%s\" entry: %p fallback: %p\n",task->tc_Node.ln_Name,entryPoint,fallBack);
+ 
+  if (!(task->tc_Flags & TF_ETASK) )
+	  return FALSE;
+  
+  GetIntETask (task)->iet_Context = AllocTaskMem (task
+												  , SIZEOF_ALL_REGISTERS
+												  , MEMF_PUBLIC|MEMF_CLEAR
+												  );
+  
+  if (!GetIntETask (task)->iet_Context)
+	  return FALSE;
+  
+/*
+  KRNWireImpl(PrepareContext);
+  
+  CALLHOOKPKT(krnPrepareContextImpl,task,TAGLIST(TAG_USER,entryPoint,TAG_USER+1,tagList,TAG_DONE));  
+*/
+  return TRUE;
+  
+  AROS_LIBFUNC_EXIT
+}
