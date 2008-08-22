@@ -37,7 +37,7 @@ getBanner(struct config* config)
 const static char usage[] =
     "\n"
     "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-r reffile]\n"
-    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype\n"
+    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype [--nolinklib]\n"
 ;
 
 static void readconfig(struct config *);
@@ -116,7 +116,7 @@ struct config *initconfig(int argc, char **argv)
 	}
     }
 
-    if (optind + 3 != argc)
+    if ((optind + 3 != argc) && (optind + 4 != argc))
     {
 	fprintf(stderr, "Wrong number of arguments.\n%s", usage);
 	exit(20);
@@ -214,7 +214,10 @@ struct config *initconfig(int argc, char **argv)
     if (!hassuffix)
 	cfg->suffix = argv[optind+2];
 
-
+    if (argc > optind+3) {
+        if (strcmp(argv[optind+3], "--nolinklib")==0)
+            cfg->intcfg &= ~CFG_GENLINKLIB;
+    }
     
     /* Fill fields with default value if not specified on the command line */
     {
