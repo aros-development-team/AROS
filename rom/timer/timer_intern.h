@@ -2,7 +2,7 @@
 #define _TIMER_INTERN_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal information about the timer.device and HIDD's
