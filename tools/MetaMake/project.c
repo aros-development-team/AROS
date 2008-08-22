@@ -35,6 +35,9 @@ Boston, MA 02111-1307, USA.  */
 #include "dep.h"
 #include "mmake.h"
 
+extern char *mm_srcdir;
+extern char *mm_builddir;
+
 List projects;
 static Project * defaultprj = NULL;
 
@@ -52,8 +55,9 @@ readvars (Project * prj)
 
     printf ("Read vars...\n");
 
-    setvar (&prj->vars, "TOP", prj->top);
-    setvar (&prj->vars, "CURDIR", "");
+    setvar (&prj->vars, "TOP", prj->buildtop);
+    setvar (&prj->vars, "SRCDIR", prj->srctop);
+    setvar (&prj->vars, "CURDIR", prj->srctop);
 
     if (prj->globalvarfile)
     {
@@ -162,23 +166,25 @@ initproject (char * name)
 
     if (!defaultprj)
     {
-	prj->maketool = xstrdup ("make \"TOP=$(TOP)\" \"CURDIR=$(CURDIR)\"");
-	prj->defaultmakefilename = xstrdup ("Makefile");
-	prj->top = getcwd (NULL, 1024);
-	prj->defaulttarget = xstrdup ("all");
-	prj->genmakefilescript = NULL;
-	prj->globalvarfile = NULL;
-	prj->genglobalvarfile = NULL;
+        prj->maketool = xstrdup ("make \"TOP=$(TOP)\" \"CURDIR=$(CURDIR)\"");
+        prj->defaultmakefilename = xstrdup ("Makefile");
+        prj->srctop = mm_srcdir;
+        prj->buildtop = mm_builddir;
+        prj->defaulttarget = xstrdup ("all");
+        prj->genmakefilescript = NULL;
+        prj->globalvarfile = NULL;
+        prj->genglobalvarfile = NULL;
     }
     else
     {
-	prj->maketool = xstrdup (defaultprj->maketool);
-	prj->defaultmakefilename = xstrdup (defaultprj->defaultmakefilename);
-	prj->top = xstrdup (defaultprj->top);
-	prj->defaulttarget = xstrdup (defaultprj->defaulttarget);
-	SETSTR (prj->genmakefilescript, defaultprj->genmakefilescript);
-	SETSTR (prj->globalvarfile, defaultprj->globalvarfile);
-	SETSTR (prj->genglobalvarfile, defaultprj->genglobalvarfile);
+        prj->maketool = xstrdup (defaultprj->maketool);
+        prj->defaultmakefilename = xstrdup (defaultprj->defaultmakefilename);
+        prj->srctop = xstrdup (defaultprj->srctop);
+        prj->buildtop = xstrdup (defaultprj->buildtop);
+        prj->defaulttarget = xstrdup (defaultprj->defaulttarget);
+        SETSTR (prj->genmakefilescript, defaultprj->genmakefilescript);
+        SETSTR (prj->globalvarfile, defaultprj->globalvarfile);
+        SETSTR (prj->genglobalvarfile, defaultprj->genglobalvarfile);
     }
 
     prj->node.name = xstrdup (name);
@@ -201,7 +207,10 @@ freeproject (Project * prj)
     cfree (prj->node.name);
     cfree (prj->maketool);
     cfree (prj->defaultmakefilename);
-    cfree (prj->top);
+	if (prj->srctop != mm_srcdir)
+		cfree (prj->srctop);
+	if (prj->buildtop != mm_builddir)
+		cfree (prj->buildtop);
     cfree (prj->defaulttarget);
     cfree (prj->genmakefilescript);
     cfree (prj->globalvarfile);
@@ -225,7 +234,7 @@ callmake (Project * prj, const char * tname, Makefile * makefile)
     const char * path = buildpath (makefile->dir);
     int t;
     
-    chdir (prj->top);
+    chdir (prj->srctop);
     chdir (path);
 
     setvar (&prj->vars, "CURDIR", path);
@@ -279,12 +288,12 @@ initprojects (void)
     /* Try "$HOME/.mmake.config" */
     if (!optfh)
     {
-	if ((home = getenv("HOME")))
-	{
-	    optionfile = xmalloc (strlen(home) + sizeof("/.mmake.config") + 1);
-	    sprintf (optionfile, "%s/.mmake.config", home);
-	    optfh = fopen (optionfile, "r");
-	    free (optionfile);
+        if ((home = getenv("HOME")))
+        {
+            optionfile = xmalloc (strlen(home) + sizeof("/.mmake.config") + 1);
+            sprintf (optionfile, "%s/.mmake.config", home);
+            optfh = fopen (optionfile, "r");
+            free (optionfile);
     	}
     }
 
@@ -373,7 +382,7 @@ printf ("name=%s\n", name);
 	    }
 	    else if (!strcmp (cmd, "top"))
 	    {
-		SETSTR(project->top,args);
+		SETSTR(project->srctop,args);
 	    }
 	    else if (!strcmp (cmd, "defaulttarget"))
 	    {
@@ -509,7 +518,7 @@ maketarget (Project * prj, char * tname)
 
     NewList (&deps);
     
-    chdir (prj->top);
+    chdir (prj->srctop);
 
     readvars (prj);
 

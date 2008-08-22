@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -68,6 +68,9 @@ int mflagc;
 int verbose = 0;
 int debug = 0;
 
+char *mm_srcdir;    /* Location to scan for cfg files */
+char *mm_builddir;  /* Location to generate files/build in */
+
 /* Functions */
 void
 error (char * fmt, ...)
@@ -93,42 +96,59 @@ main (int argc, char ** argv)
 
     currdir = getcwd (NULL, 1024);
 
+    mm_srcdir = currdir;
+    mm_builddir = currdir;
+
     mflagc = targetc = 0;
 
     for (t=1; t<argc; t++)
     {
-	if (argv[t][0] == '-')
-	{
-	    if (!strcmp (argv[t], "--version"))
-	    {
-		printf ("MetaMake %s (%s)\n", PACKAGE_VERSION, __DATE__);
-		if (argc == 2)
-		    exit (0);
-	    }
-	    else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
-	    {
-		verbose = 1;
-	    }
-	    else if (!strcmp (argv[t], "--debug"))
-	    {
-		debug = 1;
-	    }
-	    else if (!strcmp (argv[t], "--help"))
-	    {
-		printf ("%s [--version] [-v,--verbose] [--debug] [--help]\n", argv[0]);
-		return 0;
-	    }
-	    else
-	    {
-		mflags[mflagc++] = argv[t];
-	    }
-	}
-	else
-	{
-	    targets[targetc++] = argv[t];
-	}
+        if (argv[t][0] == '-')
+        {
+            if (!strcmp (argv[t], "--version"))
+            {
+                printf ("MetaMake %s (%s)\n", PACKAGE_VERSION, __DATE__);
+                if (argc == 2)
+                    exit (0);
+            }
+            else if (!strncmp (argv[t], "--srcdir", 8) || !strcmp (argv[t], "-s"))
+            {
+                mm_srcdir = (char *)&argv[t][9];
+            }
+            else if (!strncmp (argv[t], "--builddir", 10) || !strcmp (argv[t], "-b"))
+            {
+                mm_builddir = (char *)&argv[t][11];
+            }
+            else if (!strcmp (argv[t], "--verbose") || !strcmp (argv[t], "-v"))
+            {
+                verbose = 1;
+            }
+            else if (!strcmp (argv[t], "--debug"))
+            {
+                debug = 1;
+            }
+            else if (!strcmp (argv[t], "--help"))
+            {
+                printf ("%s [--srcdir=<directory>] [--builddir=<directory>] [--version] [-v,--verbose] [--debug] [--help]\n", argv[0]);
+                return 0;
+            }
+            else
+            {
+                mflags[mflagc++] = argv[t];
+            }
+        }
+        else
+        {
+            targets[targetc++] = argv[t];
+        }
     }
 
+    if (verbose)
+    {
+        printf ("SRCDIR   '%s'\n", mm_srcdir);
+        printf ("BUILDDIR '%s'\n", mm_builddir);
+    }
+    
     initprojects ();
 
     if (!targetc)
