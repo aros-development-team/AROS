@@ -30,7 +30,8 @@ typedef struct
 
     char * maketool;
     char * defaultmakefilename;
-    char * top;
+    char * srctop;
+    char * buildtop;
     char * defaulttarget;
     char * genmakefilescript;
     char * globalvarfile;

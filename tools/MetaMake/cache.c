@@ -165,69 +165,76 @@ void
 readcache (Cache_priv * cache)
 {
     char path[256];
-    FILE * fh;
+    FILE * fh, *srcfh;
     uint32_t id;
 
-    strcpy (path, cache->project->top);
+    strcpy (path, cache->project->buildtop);
     strcat (path, "/mmake.cache");
     assert (strlen(path) < sizeof(path));
 
     fh = fopen (path, "r");
+    memset (path, 0, strlen(path));
+
+    strcpy (path, cache->project->srctop);
+//    strcat (path, "/mmake.cache");
+    assert (strlen(path) < sizeof(path));
+
+    srcfh = fopen (path, "r");    
 
     if (fh)
     {
-	if (!readuint32 (fh, &id) || !CHECK_ID(id))
-	{
-	    fclose (fh);
-	    fh = NULL;
-	}
+        if (!readuint32 (fh, &id) || !CHECK_ID(id))
+        {
+            fclose (fh);
+            fh = NULL;
+        }
     }
 
     if (fh)
     {
-	char * name;
+        char * name;
 
-	do
-	{
-	    if (!readstring (fh, &name))
-	    {
-		fh = NULL;
-		break;
-	    }
+        do
+        {
+            if (!readstring (fh, &name))
+            {
+                fh = NULL;
+                break;
+            }
 
-	    if (name == NULL)
-		continue;
+            if (name == NULL)
+                continue;
 
-	    addnodeonce (&cache->addedfiles, name);
-	    xfree (name);
-	}
-	while (name != NULL);
+            addnodeonce (&cache->addedfiles, name);
+            xfree (name);
+        }
+        while (name != NULL);
 
-	if (fh)
-	    cache->topdir = readcachedir (fh);
-	else
-	    cache->topdir = NULL;
+        if (srcfh)
+            cache->topdir = readcachedir (srcfh);
+        else
+            cache->topdir = NULL;
 
-	if (!cache->topdir)
-	{
-	    fclose (fh);
-	    fh = NULL;
-	}
+        if (!cache->topdir)
+        {
+            fclose (fh);
+            fh = NULL;
+        }
     }
 
     if (!fh)
     {
-	cache->topdir = newnodesize ("", sizeof (DirNode));
-	cache->topdir->parent = NULL;
-	NewList(&cache->topdir->subdirs);
-	NewList(&cache->topdir->makefiles);
+        cache->topdir = newnodesize ("", sizeof (DirNode));
+        cache->topdir->parent = NULL;
+        NewList(&cache->topdir->subdirs);
+        NewList(&cache->topdir->makefiles);
 	
-	/* Force a check the first time */
-	cache->topdir->time = 0;
+        /* Force a check the first time */
+        cache->topdir->time = 0;
     }
 
     if (fh)
-	fclose (fh);
+        fclose (fh);
 
 #if 0
     printf ("readcache()\n");
@@ -247,7 +254,7 @@ writecache (Cache_priv * cache)
     if (!cache->topdir)
 	return;
 
-    strcpy (path, cache->project->top);
+    strcpy (path, cache->project->buildtop);
     strcat (path, "/mmake.cache");
     assert (strlen(path) < sizeof(path));
 
@@ -542,7 +549,7 @@ activatecache (Project *prj)
     }
 
     /* Add the extra makefiles to the tree if needed */
-    chdir (cache->project->top);
+    chdir (cache->project->buildtop);
     NewList (&newadded);
     ForeachNode (&cache->project->extramakefiles, extrafile)
     {
