@@ -185,7 +185,7 @@
 #endif
 
 #ifndef AROS_CSYM_FROM_ASM_NAME
-#   if defined(__ELF__) || defined(__MACH__)
+#   if defined(__ELF__) || defined(__MACH__) || defined(_WIN32)
 #       define AROS_CSYM_FROM_ASM_NAME(n) n
 #   else
 #       error define AROS_CSYM_FROM_ASM_NAME for your architecture
