@@ -11,8 +11,6 @@ AROS_TARGET_CPU     ?= @aros_target_cpu@
 AROS_TARGET_ARCH    ?= @aros_target_arch@
 AROS_TARGET_VARIANT ?= @aros_target_variant@
 
-MMAKE_OPTIONS ?= --srcdir=$(SRCDIR) --builddir=$(TOP)
-
 # normally, these variable's should go in mmake.config/globalvarfile
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 export AROS_GUI_THEME := @aros_target_guitheme@
@@ -20,6 +18,8 @@ export AROS_GUI_THEME := @aros_target_guitheme@
 TOP := @AROS_BUILDDIR@
 SRCDIR := @SRCDIR@
 include $(TOP)/config/make.cfg
+
+MMAKE_OPTIONS ?= --srcdir=$(SRCDIR) --builddir=$(TOP)
 
 all: makedirs tools mmake
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.AROS
