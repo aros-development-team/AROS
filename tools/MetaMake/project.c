@@ -485,6 +485,8 @@ execute (Project * prj, const char * cmd, const char * in,
     char * cmdstr;
     int rc;
 
+debug(printf("MMAKE:project.c->execute(cmd '%s')\n", cmd));
+
     strcpy (buffer, cmd);
     strcat (buffer, " ");
 
@@ -505,6 +507,8 @@ execute (Project * prj, const char * cmd, const char * in,
     strcat (buffer, args);
 
     cmdstr = substvars (&prj->vars, buffer);
+
+debug(printf("MMAKE:project.c->execute: parsed cmd '%s'\n", buffer));
 
     if (verbose)
 	printf ("Executing %s...\n", cmdstr);
