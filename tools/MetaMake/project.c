@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -18,6 +18,8 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+//#define DEBUG_PROJECT
+
 #include "config.h"
 
 #include <unistd.h>
@@ -35,6 +37,12 @@ Boston, MA 02111-1307, USA.  */
 #include "dep.h"
 #include "mmake.h"
 
+#if defined(DEBUG_PROJECT)
+#define debug(a) a
+#else
+#define debug(v)
+#endif
+
 extern char *mm_srcdir;
 extern char *mm_builddir;
 
@@ -48,6 +56,8 @@ readvars (Project * prj)
     Node * node, * next;
     Dep * dep;
 
+debug(printf("MMAKE:project.c->readvars(Project @ %x)\n", prj));
+
     if (!prj->readvars)
 	return;
 
@@ -57,7 +67,7 @@ readvars (Project * prj)
 
     setvar (&prj->vars, "TOP", prj->buildtop);
     setvar (&prj->vars, "SRCDIR", prj->srctop);
-    setvar (&prj->vars, "CURDIR", prj->srctop);
+    setvar (&prj->vars, "CURDIR", "");
 
     if (prj->globalvarfile)
     {
@@ -118,9 +128,8 @@ readvars (Project * prj)
 
 	    *ptr = 0;
 
-#if 0
-    printf ("%s=%s\n", name, substvars (&prj->vars, value));
-#endif
+		if (debug)
+			printf ("%s=%s\n", name, substvars (&prj->vars, value));
 
 	    setvar (&prj->vars, name, substvars (&prj->vars, value));
 	}
@@ -164,9 +173,12 @@ initproject (char * name)
 
     memset (prj, 0, sizeof(Project));
 
+debug(printf("MMAKE:project.c->initproject('%s')\n", name));
+debug(printf("MMAKE:project.c->initproject: Project node @ %x\n", prj));
+
     if (!defaultprj)
     {
-        prj->maketool = xstrdup ("make \"TOP=$(TOP)\" \"CURDIR=$(CURDIR)\"");
+        prj->maketool = xstrdup ("make \"TOP=$(TOP)\" \"SRCDIR=$(SRCDIR)\" \"CURDIR=$(CURDIR)\"");
         prj->defaultmakefilename = xstrdup ("Makefile");
         prj->srctop = mm_srcdir;
         prj->buildtop = mm_builddir;
@@ -233,7 +245,9 @@ callmake (Project * prj, const char * tname, Makefile * makefile)
     static char buffer[4096];
     const char * path = buildpath (makefile->dir);
     int t;
-    
+
+debug(printf("MMAKE:project.c->callmake()\n"));
+
     chdir (prj->srctop);
     chdir (path);
 
@@ -275,7 +289,9 @@ initprojects (void)
     char line[256];
     FILE * optfh = NULL;
     Project * project;
-    
+
+debug(printf("MMAKE:project.c->initprojects()\n"));
+
     NewList(&projects);
     defaultprj = project = initproject ("default");
     AddTail(&projects, project);
@@ -330,9 +346,7 @@ initprojects (void)
 
 	    *ptr = 0;
 
-#if 0
-printf ("name=%s\n", name);
-#endif
+debug(printf("MMAKE:project.c->initprojects: Adding '%s' from MMAKE_CONFIG\n", name));
 
 	    project = initproject (name);
 
