@@ -20,5 +20,5 @@ GENMODULE_SRCS := \
     writestubs.c \
     writefunclist.c
 GENMODULE_INCS := genmodule.h fileread.h functionhead.h
-GENMODULE_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h) \
+GENMODULE_DEPS := $(addprefix $(SRCDIR)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h) \
                   $(AROS_INCLUDES)/aros/$(AROS_TARGET_CPU)/cpu.h

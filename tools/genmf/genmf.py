@@ -2,8 +2,7 @@
 # -*- coding: iso-8859-1 -*-
 # Copyright © 2003-2004, The AROS Development Team. All rights reserved.
 
-import sys, re
-
+import sys, re, os, errno
 
 if not len(sys.argv) in [2, 4] :
     print "Usage:",sys.argv[0],"tmplfile [inputfile outputfile]"
@@ -336,7 +335,7 @@ templates = read_templates(argv[1])
 #sys.stderr.write("Read %d templates\n" % len(templates))
 
 if listfile == None:
-    # Read on input file and write out one outputfile
+    # Read one input file and write out one outputfile
     if len(sys.argv) == 2:
         lines = sys.stdin.readlines()
     else:
@@ -386,7 +385,14 @@ else:
         infile = open(files[0], "r")
         lines = infile.readlines()
         infile.close()
-    
+        
+        try:
+            # os.makedirs will also create all the parent directories
+            os.makedirs(os.path.dirname(files[1]))
+        except OSError, err:
+            # Do nothing ..
+            s = err.errno
+        
         outfile = open(files[1], "w")
         template.hascommon = 0
     

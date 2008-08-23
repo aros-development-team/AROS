@@ -328,7 +328,7 @@ debug(printf("MMAKE:cache.c->checknewsrc('%s')\n", makefile->node.name));
 	Regenerate *reg = new (Regenerate);
 
 	getcwd(currdir, PATH_MAX);
-	reg->dir = xstrdup (currdir);
+	reg->dir = xstrdup (buildpath(makefile->dir));
 	reg->src = mfsrc;
 	reg->dest = xstrdup (makefile->node.name);
 
@@ -457,8 +457,34 @@ debug(printf("MMAKE:cache.c->regeneratemf()\n"));
     
     ForeachNodeSafe (regeneratefiles, reg, reg2)
     {
-	fprintf (f, "%s/%s %s/%s\n", reg->dir, reg->src, reg->dir, reg->dest);
+	char * mfsrc = xmalloc (strlen(cache->project->srctop) + strlen(reg->dir) + strlen(reg->src) + 3);
+	char * mfdst = xmalloc (strlen(cache->project->buildtop) + strlen(reg->dir) + strlen(reg->dest) + 3);
+
+    strcpy (mfsrc, cache->project->srctop);
+	if (strlen(reg->dir) > 0)
+	{
+		strcat (mfsrc, "/");
+		strcat (mfsrc, reg->dir);
+	}
+	strcat (mfsrc, "/");
+    strcat (mfsrc, reg->src);
+
+    strcpy (mfdst, cache->project->buildtop);
+	if (strlen(reg->dir) > 0)
+	{
+		strcat (mfdst, "/");
+		strcat (mfdst, reg->dir);
+	}
+	strcat (mfdst, "/");
+    strcat (mfdst, reg->dest);
+
+debug(printf("MMAKE:cache.c->regeneratemf: regenerate '%s' as '%s'\n", mfsrc, mfdst));
+
+	fprintf (f, "%s %s\n", mfsrc, mfdst);
 	Remove (reg);
+	xfree (mfsrc);
+	xfree (mfdst);
+
 	xfree (reg->dir);
 	xfree (reg->src);
 	xfree (reg->dest);
