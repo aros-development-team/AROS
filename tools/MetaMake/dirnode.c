@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2008, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
+
+//#define DEBUG_DIRNODE
 
 #include "config.h"
 
@@ -45,7 +47,15 @@ Boston, MA 02111-1307, USA.  */
 #include "mmake.h"
 #include "io.h"
 
+#if defined(DEBUG_DIRNODE)
+#define debug(a) a
+#else
+#define debug(v)
+#endif
+
 #define FLAG_VIRTUAL	0x0001
+
+extern char *mm_srcdir;
 
 static MakefileTarget *
 newmakefiletarget (char *name, int virtualtarget)
@@ -183,7 +193,9 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
     struct dirent * dirent;
 
     int mfnamelen = strlen(mfname), scanned = 0;
-    
+
+debug(printf("MMAKE:dirnode.c->scandirnode('%s')\n", node->node.name));
+	
     if (stat(".", &st) != 0)
     {
 		error("scandirnode(): scanning %s\n",
@@ -199,7 +211,9 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
     	List newdirs, newmakefiles;
     	DirNode * subdir = NULL, * subdir2;
     	Makefile * makefile;
-	
+
+debug(printf("MMAKE:dirnode.c->scandirnode dir->time changed .. scanning\n"));
+
 	if (debug)
 	    printf("scandirnode(): scanning %s\n",
 		   strlen(node->node.name)==0 ? "topdir" : buildpath(node)
@@ -228,9 +242,12 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 	    )
 	    {
 		/* Don't add makefile twice */
+debug(printf("MMAKE:dirnode.c->scandirnode: %s found ('%s')\n", mfname, dirent->d_name));
+
 		makefile = FindNode (&newmakefiles, mfname);
 		if (makefile == NULL)
 		{
+debug(printf("MMAKE:dirnode.c->scandirnode: Creating New Makefile node\n"));
 		    makefile = FindNode (&node->makefiles, mfname);
 		    if (makefile != NULL)
 		    {
@@ -240,6 +257,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 		    {
 			makefile = newnodesize (mfname, sizeof (Makefile));
 			makefile->dir = node;
+debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->node.name));
 			makefile->time = (time_t)0;
 			NewList (&makefile->targets);
 		    }
@@ -299,6 +317,7 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 		    else
 		    {
 			subdir = newnodesize (dirent->d_name, sizeof(DirNode));
+debug(printf("MMAKE:dirnode.c->scandirnode: New SubDir Node '%s' @ %p\n", dirent->d_name, subdir));
 			subdir->parent = node;
 			subdir->time = (time_t)0;
 			NewList (&subdir->subdirs);
@@ -333,10 +352,12 @@ scandirnode (DirNode * node, const char * mfname, List * ignoredirs)
 	scanned = 1;
     }
     
-#if 0
-    printf ("scandirnode()\n");
-    printdirnode (node);
-#endif
+debug(printf("MMAKE:dirnode.c->scandirnode: Finished scanning dir '%s'\n", node->node.name));
+	if (debug)
+	{
+		printf ("scandirnode()\n");
+		printdirnode (node, 1);
+	}
     
     return scanned;
 }
@@ -732,7 +753,7 @@ buildpath (DirNode * node)
 
     do
     {
-	if (strlen (node->node.name) > 0)
+	if ((strlen (node->node.name) > 0) && (strcmp(node->node.name, mm_srcdir) != 0))
 	{
 	    ref = newnodesize ("", sizeof (DirNodeRef));
 	    ref->dirnode = node;

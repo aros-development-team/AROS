@@ -18,6 +18,9 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 /* Includes */
+
+//#define DEBUG_MMAKE
+
 #include "config.h"
 
 #ifdef PROTOTYPES
@@ -61,6 +64,12 @@ Boston, MA 02111-1307, USA.  */
 #include "var.h"
 #include "dep.h"
 #include "project.h"
+
+#if defined(DEBUG_MMAKE)
+#define debug(a) a
+#else
+#define debug(v)
+#endif
 
 /* globals */
 char * mflags[64];
@@ -148,8 +157,12 @@ main (int argc, char ** argv)
         printf ("SRCDIR   '%s'\n", mm_srcdir);
         printf ("BUILDDIR '%s'\n", mm_builddir);
     }
-    
+
+debug(printf("MMAKE:mmake.c->main: parsed command line options\n"));
+
     initprojects ();
+
+debug(printf("MMAKE:mmake.c->main: projects initialised\n"));
 
     if (!targetc)
     {
@@ -158,6 +171,7 @@ main (int argc, char ** argv)
 	assert (firstprj);
 
 	targets[targetc++] = firstprj->node.name;
+debug(printf("MMAKE:mmake.c->main: targetc not set, using default'%s'\n", firstprj->node.name));
     }
 
     for (t=0; t<targetc; t++)
@@ -179,7 +193,8 @@ main (int argc, char ** argv)
 	    printf ("Nothing known about project %s\n", pname);
 	    return 20;
 	}
-	
+
+debug(printf("MMAKE:mmake.c->main: calling maketarget '%s'\n", tname));
 	maketarget (prj, tname);
     }
 
