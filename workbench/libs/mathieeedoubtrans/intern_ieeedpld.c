@@ -17,7 +17,7 @@
 QUAD intern_IEEEDPLd(struct MathIeeeDoubTransBase * MathIeeeDoubTransBase,
                      QUAD fnum)
 {
-QUAD tmp, Res, Mask;
+QUAD tmp, Res, Mask = 0;
 ULONG i = 0;
 
   /* argument = 0.5 -> return -1.0;*/
