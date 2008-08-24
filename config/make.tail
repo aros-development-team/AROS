@@ -14,17 +14,21 @@ include $(SRCDIR)/tools/genmodule/Makefile.deps
 
 # Rules for the AROS build tools
 $(GENMODULE) : $(GENMODULE_DEPS)
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmodule TOP=$(TOP)  SRCDIR=$(SRCDIR) $(GENMODULE)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/genmodule TOP=$(TOP) SRCDIR=$(SRCDIR) $(GENMODULE)
 
-$(TOP)/tools/cxref/configure : $(SRCDIR)/tools/cxref/configure.in
-	cd $(TOP)/tools/cxref ; aclocal ; autoconf
+$(SRCDIR)/tools/cxref/configure : $(SRCDIR)/tools/cxref/configure.in
+	cd $(SRCDIR)/tools/cxref ; aclocal ; autoconf
 
-$(SRCDIR)/tools/cxref/Makefile : $(TOP)/tools/cxref/configure $(SRCDIR)/tools/cxref/Makefile.in
+$(TOP)/tools/cxref/Makefile : $(SRCDIR)/tools/cxref/configure $(SRCDIR)/tools/cxref/Makefile.in
+	@$(IF) [ ! -d $(TOP)/tools/cxref ]; then \
+	    $(MECHO) $(MKDIR) "$(TOP)/tools/cxref" ; \
+	    $(MKDIR) "$(TOP)/tools/cxref"; \
+	fi;
 	cd $(TOP)/tools/cxref ; \
-	CC='' CFLAGS='' ./configure --prefix=$(TOOLDIR)
+	CC='' CFLAGS='' $(SRCDIR)/tools/cxref/configure --prefix=$(TOOLDIR)
 
-$(CXREF): $(SRCDIR)/tools/cxref/*.[chyl] $(TOP)/tools/cxref/cpp/*.[ch] $(SRCDIR)/tools/cxref/query/*.[ch] \
+$(CXREF): $(SRCDIR)/tools/cxref/*.[chyl] $(SRCDIR)/tools/cxref/cpp/*.[ch] $(SRCDIR)/tools/cxref/query/*.[ch] \
 		$(TOP)/tools/cxref/Makefile
-	$(MAKE) $(MKARGS) -C $(TOP)/tools/cxref
+	$(MAKE) $(MKARGS) -C $(SRCDIR)/tools/cxref TOP=$(TOP) SRCDIR=$(SRCDIR) 
 	cp $(TOP)/tools/cxref/cxref$(HOST_EXE_SUFFIX) $(CXREF)
 
