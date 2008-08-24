@@ -60,6 +60,7 @@ Boston, MA 02111-1307, USA.  */
 #define ID		((MAJOR << 24) | (MINOR << 16) | REVISION)
 #define CHECK_ID(id)    (((id) & 0xFFFF0000) == ((ID) & 0xFFFF0000))
 
+extern char *mm_srcdir;
 
 typedef struct {
     Cache publicpart;
@@ -393,33 +394,16 @@ int
 updatetargetlist (Cache_priv * cache, DirNode * node)
 {
     DirNode * subdir;
-    int goup = 0, reread = 0;
-    char curdir[1024];
+    int reread = 0;
 
-    if (strlen(node->node.name) != 0)
-    {
-	if (getcwd(curdir, sizeof(curdir)) == NULL)
-	{
-		error("Could not get current directory");
-		exit (20);
-	}
-	if (chdir(node->node.name) < 0)
-	{
-	    error("Could not change to dir '%s'", node->node.name);
-	    exit (20);
-	}
-	goup = 1;
-    }
-    
+debug(printf("MMAKE:cache.c->updatetargetlist('%s')\n", node->node.name));
+
     reread = scanmakefiles(node, &cache->project->vars);
     
     ForeachNode(&node->subdirs, subdir)
 	reread += updatetargetlist(cache, subdir);
 
     progress (stdout);
-    
-    if (goup)
-	chdir(curdir);
     
     return reread;
 }
@@ -644,6 +628,8 @@ debug(printf("MMAKE:cache.c->activatecache: Updated MF list.\n"));
     AssignList (&cache->addedfiles, &newadded);
     
     regeneratemf (cache, &regeneratefiles);
+
+debug(printf("MMAKE:cache.c->activatecache: Regenerated MFs\n"));
 
     progress_reset (stdout);
     printf ("Scanning makefiles...\n");

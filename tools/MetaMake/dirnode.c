@@ -56,6 +56,7 @@ Boston, MA 02111-1307, USA.  */
 #define FLAG_VIRTUAL	0x0001
 
 extern char *mm_srcdir;
+extern char *mm_builddir;
 
 static MakefileTarget *
 newmakefiletarget (char *name, int virtualtarget)
@@ -263,6 +264,8 @@ debug(printf("MMAKE:dirnode.c->scandirnode: Makefile node dir '%s'\n", node->nod
 		    }
 		    AddTail (&newmakefiles, makefile);
 		}
+		if (strcmp(dirent->d_name + mfnamelen, ".src") == 0)
+			makefile->generated = 1;
 	    }
 	    else
 	    {
@@ -372,7 +375,9 @@ scanmakefiles (DirNode * node, List * vars)
     static int linelen = 512;
     int reread = 0;
     FILE * fh;
-    
+
+debug(printf("MMAKE:dirnode.c->scanmakefiles('%s')\n", node->node.name));
+
     assert (node);
 
     if (line == NULL)
@@ -380,6 +385,34 @@ scanmakefiles (DirNode * node, List * vars)
     
     ForeachNode (&node->makefiles, makefile)
     {
+debug(printf("MMAKE:dirnode.c->scanmakefiles: %d '%s'\n", makefile->generated, makefile->node.name));
+
+	if (makefile->generated == 0)
+	{
+		if (chdir(mm_srcdir) < 0)
+		{
+			error("Could not change to dir '%s'", mm_srcdir);
+			exit (20);
+		}
+	}
+	else
+	{
+		if (chdir(mm_builddir) < 0)
+		{
+			error("Could not change to dir '%s'", mm_builddir);
+			exit (20);
+		}
+	}
+
+    if ((strlen(makefile->dir->node.name) != 0) && (strcmp(makefile->dir->node.name, mm_srcdir) != 0))
+    {
+	if (chdir(buildpath(makefile->dir)) < 0)
+	{
+		error("Could not change to dir '%s'", makefile->dir->node.name);
+		exit (20);
+	}
+    }
+
 	if (stat(makefile->node.name, &st) != 0)
 	{
 	    error("Could not stat %s", makefile->node.name);
