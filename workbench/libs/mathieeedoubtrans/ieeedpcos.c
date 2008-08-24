@@ -56,7 +56,7 @@ AROS_LHQUAD1(double, IEEEDPCos,
     
     z = IEEEDPFloor(IEEEDPDiv(yabs, pi));
     Qtmp  = IEEEDPMul(z,pi);
-    OR64QC(tmp, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) /* Qtmp=-Qtmp */
+    OR64QC(Qtmp, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) /* Qtmp=-Qtmp */
     yabs = IEEEDPAdd(yabs, Qtmp);
     if (is_greaterC(yabs, pio2_Hi, pio2_Lo))
     {
