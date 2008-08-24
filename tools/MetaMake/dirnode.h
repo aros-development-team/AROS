@@ -54,6 +54,7 @@ typedef struct
     DirNode * dir; /* The directory where this makefile is located */
     time_t time; /* Last time this Makefile was scanned for targets */
     List targets; /* list of MakefileTargets: targets present in this makefile */
+	int  generated;
 }
 Makefile;
 
