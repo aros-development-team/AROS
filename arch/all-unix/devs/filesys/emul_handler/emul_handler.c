@@ -31,6 +31,8 @@
 #   include <sys/statfs.h>
 #endif
 #include <sys/time.h>
+#include <time.h>
+#include <utime.h>
 #include <pwd.h>
 #undef timeval
 
@@ -59,12 +61,15 @@
 #include <devices/inputevent.h>
 #include <proto/battclock.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <resources/battclock.h>
 #include <utility/tagitem.h>
+#include <utility/date.h>
 #include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/bptr.h>
+#include <dos/dos.h>
 #define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <proto/expansion.h>
@@ -1122,6 +1127,53 @@ char * filename_from_name(struct emulbase *emulbase, char * name)
 
 /*********************************************************************************************/
 
+void timestamp2datestamp(time_t *timestamp, struct DateStamp *datestamp)
+{
+    struct ClockData date;
+    struct tm *tm;
+    
+    tm = localtime(timestamp);
+    
+    date.year  = tm->tm_year + 1900;
+    date.month = tm->tm_mon + 1;
+    date.mday  = tm->tm_mday;
+    date.hour  = tm->tm_hour;
+    date.min   = tm->tm_min;
+    date.sec   = tm->tm_sec;
+
+    ULONG secs = Date2Amiga(&date);
+    
+    datestamp->ds_Days = secs / (60 * 60 * 24);
+    secs %= (60 * 60 * 24);
+    datestamp->ds_Minute = secs / 60;
+    secs %= 60;
+    datestamp->ds_Tick = secs * TICKS_PER_SECOND;
+}
+
+/*********************************************************************************************/
+
+void datestamp2timestamp(struct DateStamp *datestamp, time_t *timestamp)
+{
+    ULONG secs = datestamp->ds_Days * (60 * 60 * 24) + 
+                 datestamp->ds_Minute * 60 +
+                 datestamp->ds_Tick / TICKS_PER_SECOND;
+    
+    struct ClockData date;
+    Amiga2Date(secs, &date);
+    
+    struct tm tm;
+    tm.tm_year = date.year - 1900;
+    tm.tm_mon = date.month - 1;
+    tm.tm_mday = date.mday;
+    tm.tm_hour = date.hour;
+    tm.tm_min = date.min;
+    tm.tm_sec = date.sec;
+    
+    *timestamp = mktime(&tm);
+}
+
+/*********************************************************************************************/
+
 static LONG examine(struct emulbase *emulbase,
 		    struct filehandle *fh,
                     struct ExAllData *ead,
@@ -1205,9 +1257,13 @@ static LONG examine(struct emulbase *emulbase,
 	case ED_COMMENT:
 	    ead->ed_Comment=NULL;
 	case ED_DATE:
-	    ead->ed_Days	= st.st_ctime/(60*60*24)-(6*365+2*366);
-	    ead->ed_Mins	= (st.st_ctime/60)%(60*24);
-	    ead->ed_Ticks	= (st.st_ctime%60)*TICKS_PER_SECOND;
+	    {
+		struct DateStamp stamp;
+	        timestamp2datestamp(&st.st_mtime, &stamp);
+	        ead->ed_Days	= stamp.ds_Days;
+	        ead->ed_Mins	= stamp.ds_Minute;
+	        ead->ed_Ticks	= stamp.ds_Tick;
+	    }
 	case ED_PROTECTION:
 	    ead->ed_Prot 	= prot_u2a(st.st_mode);
 	case ED_SIZE:
@@ -1323,9 +1379,7 @@ static LONG examine_next(struct emulbase *emulbase,
     FIB->fib_OwnerUID	    = st.st_uid;
     FIB->fib_OwnerGID	    = st.st_gid;
     FIB->fib_Comment[0]	    = '\0'; /* no comments available yet! */
-    FIB->fib_Date.ds_Days   = st.st_ctime/(60*60*24) - (6*365 + 2*366);
-    FIB->fib_Date.ds_Minute = (st.st_ctime/60)%(60*24);
-    FIB->fib_Date.ds_Tick   = (st.st_ctime%60)*TICKS_PER_SECOND;
+    timestamp2datestamp(&st.st_mtime, &FIB->fib_Date);
     FIB->fib_Protection	    = prot_u2a(st.st_mode);
     FIB->fib_Size           = st.st_size;
 
@@ -1604,15 +1658,13 @@ static LONG set_date(struct emulbase *emulbase,
     ret = makefilename(emulbase, &uname, handle->name, name);
     if (!ret)
     {
-        struct sys_timeval times[2];
-            
-        times[0].tv_sec = times[1].tv_sec = 
-            stamp->ds_Days * (60*60*24) + 
-            stamp->ds_Minute * 60 + 
-            stamp->ds_Tick / TICKS_PER_SECOND;
-        times[0].tv_usec = times[1].tv_usec = 
-            1000000 * (stamp->ds_Tick % TICKS_PER_SECOND) / TICKS_PER_SECOND;
-        if(utimes(uname, times) < 0)
+        struct utimbuf times;
+        time_t timestamp;
+        
+        datestamp2timestamp(stamp, &timestamp);
+        times.actime = times.modtime = timestamp;
+        
+        if(utime(uname, &times) < 0)
             ret = err_u2a();
 
 	emul_free(emulbase, uname);
