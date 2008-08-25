@@ -2352,3 +2352,30 @@ GNU_REPOSITORY := gnu://
    extraoptions="%(extraoptions)"
     
 %end
+
+#------------------------------------------------------------------------------
+# Generates a list of dependencies on given directories and assigns it to make
+# macro with given name. Dependecy on directory is generated only in case it
+# doesn't exist. Also generates a rule that creates missing directories. All
+# what is left is to add dependency on $(name) in targets that require
+# existence of specified directories.
+# 
+# example usage:
+# 
+# DIRS := dir1 dir2 dir3
+# 
+# %dir_deps name=DIR_DEPS dirs=$(DIRS)
+# 
+# dir1/file1.c: source_directory1/file1.c $(DIR_DEPS)
+#       @$(CP) $< $@
+#
+# dir2/file2.c: source_directory2/file2.c $(DIR_DEPS)
+#       @$(CP) $< $@
+# 
+
+%define dir_deps name= dirs=
+%(name) := $(foreach DEPDIR, %(dirs), $(filter-out $(wildcard $(DEPDIR)), $(DEPDIR)))
+
+%(dirs) :
+	%mkdir_q dir=$@
+%end
