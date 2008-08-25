@@ -1589,6 +1589,41 @@ static LONG read_softlink(struct emulbase *emulbase,
 
 /*********************************************************************************************/
 
+static LONG set_date(struct emulbase *emulbase, 
+		     struct filehandle *handle, 
+		     CONST_STRPTR name, struct DateStamp *stamp)
+{
+    LONG ret=0;
+    struct filehandle *fh;
+    mode_t prot;
+    long flags;
+    char *uname;
+
+    if (!check_volume(handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+
+    ret = makefilename(emulbase, &uname, handle->name, name);
+    if (!ret)
+    {
+        struct sys_timeval times[2];
+            
+        times[0].tv_sec = times[1].tv_sec = 
+            stamp->ds_Days * (60*60*24) + 
+            stamp->ds_Minute * 60 + 
+            stamp->ds_Tick / TICKS_PER_SECOND;
+        times[0].tv_usec = times[1].tv_usec = 
+            1000000 * (stamp->ds_Tick % TICKS_PER_SECOND) / TICKS_PER_SECOND;
+        if(utimes(uname, times) < 0)
+            ret = err_u2a();
+
+	emul_free(emulbase, uname);
+    }
+    else
+	ret = ERROR_NO_FREE_STORE;
+    return ret;
+}
+
+/*********************************************************************************************/
+
 ULONG parent_dir(struct emulbase *emulbase,
 		 struct filehandle *fh,
 	         char ** DirName)
@@ -2138,10 +2173,16 @@ AROS_LH1(void, beginio,
 	    
 	    break;
 	}
-	
+
+    case FSA_SET_DATE:
+	error = set_date(emulbase,
+			   (struct filehandle *)iofs->IOFS.io_Unit,
+			   iofs->io_Union.io_SET_DATE.io_Filename,
+			   &iofs->io_Union.io_SET_DATE.io_Date);
+	break;
+
     case FSA_SET_COMMENT:
     case FSA_SET_OWNER:
-    case FSA_SET_DATE:
     case FSA_MORE_CACHE:
     case FSA_FORMAT:
     case FSA_MOUNT_MODE:
