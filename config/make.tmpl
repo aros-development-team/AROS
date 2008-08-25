@@ -827,17 +827,15 @@ ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
     TMP_TARGET := %(targetdir)/$(TMP_TARGET)
 endif
-ifneq (%(genlinklib),no)
-    NOLINKLIB :=
-else
-    NOLINKLIB := --nolinklib
+ifeq (%(genlinklib),no)
+    TMP_OPTS += -n
 endif
 
 $(TMP_TARGET) : OPTS := $(TMP_OPTS)
 $(TMP_TARGET) : MODNAME := %(modname)
 $(TMP_TARGET) : MODTYPE := %(modtype)
 $(TMP_TARGET) : $(TMP_DEPS)
-	@$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE) $(NOLINKLIB)
+	@$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
 %end
 #------------------------------------------------------------------------------
 
