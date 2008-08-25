@@ -36,8 +36,8 @@ getBanner(struct config* config)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-r reffile]\n"
-    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype [--nolinklib]\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-r reffile] [-n]\n"
+    "       {writefiles|writemakefile|writeincludes|writedummy|writelibdefs|writefunclist} modname modtype\n"
 ;
 
 static void readconfig(struct config *);
@@ -74,6 +74,7 @@ struct config *initconfig(int argc, char **argv)
     struct config *cfg;
     char *s, **argvit = argv + 1;
     int hassuffix = 0, c;
+    int nolinklib = 0;
     
     cfg = malloc(sizeof(struct config));
     if (cfg == NULL)
@@ -84,10 +85,10 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
     
-    while ((c = getopt(argc, argv, ":c:s:d:r:")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:r:n")) != -1)
     {
 
-	if (c == ':' || *optarg == '-')
+	if (c == ':' || (c != 'n' && *optarg == '-'))
 	{
 	    fprintf(stderr, "Option -%c needs an argument\n",c);
 	    exit(20);
@@ -110,13 +111,16 @@ struct config *initconfig(int argc, char **argv)
 	case 'r':
 	    cfg->reffile = optarg;
 	    break;
+	case 'n':
+	    nolinklib = 1;
+	    break;
 	default:
 	    fprintf(stderr, "Internal error: Unhandled option\n");
 	    exit(20);
 	}
     }
 
-    if ((optind + 3 != argc) && (optind + 4 != argc))
+    if (optind + 3 != argc)
     {
 	fprintf(stderr, "Wrong number of arguments.\n%s", usage);
 	exit(20);
@@ -213,12 +217,10 @@ struct config *initconfig(int argc, char **argv)
 
     if (!hassuffix)
 	cfg->suffix = argv[optind+2];
+  
+    if(nolinklib)
+        cfg->intcfg &= ~CFG_GENLINKLIB;
 
-    if (argc > optind+3) {
-        if (strcmp(argv[optind+3], "--nolinklib")==0)
-            cfg->intcfg &= ~CFG_GENLINKLIB;
-    }
-    
     /* Fill fields with default value if not specified on the command line */
     {
 	char tmpbuf[256];
