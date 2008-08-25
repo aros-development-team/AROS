@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,7 +18,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
-/*  #define MYDEBUG 1 */
+/* #define MYDEBUG 1 */
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -78,6 +78,8 @@ struct MUI_ListData
     struct Hook *compare_hook;
     struct Hook *destruct_hook;
     struct Hook *display_hook;
+
+    struct Hook default_compare_hook;
 
     /* List managment, currently we use a simple flat array, which is not good if many entries are inserted/deleted */
     LONG entries_num; /* Number of Entries in the list */
@@ -292,7 +294,7 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
     STRPTR ptr;
     char c;
 
-    if (!format) format = "";
+    if (!format) format = (STRPTR) "";
 
     ptr = format;
 
@@ -457,6 +459,18 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
     return (old_entries_visible != data->entries_visible) || (old_entries_top_pixel != data->entries_top_pixel);
 }
 
+/**************************************************************************
+ Default hook to compare two list entries. Works for strings only.
+**************************************************************************/
+static int LCompare(struct ListEntry **a, struct ListEntry **b) {
+
+    int result;
+    struct ListEntry *one=*a;
+    struct ListEntry *two=*b;
+
+    result = Stricmp(one->data,two->data);
+    return result;
+}
 
 /**************************************************************************
  OM_NEW
@@ -481,6 +495,9 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->intern_puddle_size = 2008;
     data->intern_tresh_size = 1024;
     data->input = 1;
+    data->default_compare_hook.h_Entry = (HOOKFUNC) LCompare;
+    data->default_compare_hook.h_SubEntry = 0;
+    data->compare_hook = &(data->default_compare_hook);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
@@ -500,6 +517,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_List_CompareHook:
+		    /* Not tested, if List_CompareHook really works. */
 		    data->compare_hook = (struct Hook*)tag->ti_Data;
 		    break;
 
@@ -1541,12 +1559,14 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *
 /**************************************************************************
  MUIM_List_Insert
 **************************************************************************/
+
 IPTR List__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos,count;
+    LONG pos,count,sort;
 
     count = msg->count;
+    sort=0;
 
     if (count == -1)
     {
@@ -1570,7 +1590,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *
 	        break;
 
 	case    MUIV_List_Insert_Sorted:
-		pos = -1;
+		pos  = data->entries_num;
+		sort = 1; /* we sort'em later */
 	        break;
 
 	case    MUIV_List_Insert_Bottom:
@@ -1586,81 +1607,91 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *
 
     if (!(SetListSize(data,data->entries_num + count)))
 	return ~0;
-    if (pos != -1)
+
+    LONG until = pos + count;
+    APTR *toinsert = msg->entries;
+
+    if (!(PrepareInsertListEntries(data, pos, count)))
+	return ~0;
+
+    while (pos < until)
     {
-    	LONG until = pos + count;
-    	APTR *toinsert = msg->entries;
+	struct ListEntry *lentry;
 
-	if (!(PrepareInsertListEntries(data, pos, count)))
+	if (!(lentry = AllocListEntry(data)))
+	{
+	    /* Panic, but we must be in a consistent state, so remove
+	    ** the space where the following list entries should have gone
+	    */
+	    RemoveListEntries(data, pos, until - pos);
 	    return ~0;
-
-	while (pos < until)
-	{
-	    struct ListEntry *lentry;
-
-	    if (!(lentry = AllocListEntry(data)))
-	    {
-	    	/* Panic, but we must be in a consistent state, so remove
-	    	** the space where the following list entries should have gone
-	    	*/
-	    	RemoveListEntries(data, pos, until - pos);
-		return ~0;
-	    }
-
-	    /* now call the construct method which returns us a pointer which
-	       we need to store */
-	    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct,
-					  (IPTR)*toinsert, (IPTR)data->pool);
-	    if (!lentry->data)
-	    {
-	    	FreeListEntry(data,lentry);
-	    	RemoveListEntries(data, pos, until - pos);
-
-		/* TODO: Also check for visible stuff like below */
-	    	if (data->entries_num != data->confirm_entries_num)
-		    set(obj,MUIA_List_Entries,data->confirm_entries_num);
-		return ~0;
-	    }
-	    lentry->parents = 0;
-
-	    data->entries[pos] = lentry;
-	    data->confirm_entries_num++;
-
-	    if (_flags(obj) & MADF_SETUP)
-	    {
-	    	/* We have to calculate the width and height of the newly inserted entry,
-		   this has to be done after inserting the element into the list */
-	    	CalcDimsOfEntry(cl, obj, pos);
-	    }
-
-	    toinsert++;
-	    pos++;
-	} // while (pos < until)
-
-	
-	if (_flags(obj) & MADF_SETUP)
-	    CalcVertVisible(cl,obj); /* Recalculate the number of visible entries */
-
-	if (data->entries_num != data->confirm_entries_num)
-	{
-	    SetAttrs(obj,
-		MUIA_List_Entries, data->confirm_entries_num,
-		MUIA_List_Visible, data->entries_visible,
-		TAG_DONE);
 	}
 
+	/* now call the construct method which returns us a pointer which
+	   we need to store */
+	lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct,
+				      (IPTR)*toinsert, (IPTR)data->pool);
+	if (!lentry->data)
+	{
+	    FreeListEntry(data,lentry);
+	    RemoveListEntries(data, pos, until - pos);
+
+	    /* TODO: Also check for visible stuff like below */
+	    if (data->entries_num != data->confirm_entries_num)
+		set(obj,MUIA_List_Entries,data->confirm_entries_num);
+	    return ~0;
+	}
+	lentry->parents = 0;
+
+	data->entries[pos] = lentry;
+	data->confirm_entries_num++;
+
+	if (_flags(obj) & MADF_SETUP)
+	{
+	    /* We have to calculate the width and height of the newly inserted entry,
+	       this has to be done after inserting the element into the list */
+	    CalcDimsOfEntry(cl, obj, pos);
+	}
+
+	toinsert++;
+	pos++;
+    } // while (pos < until)
+
+    
+    if (_flags(obj) & MADF_SETUP)
+	CalcVertVisible(cl,obj); /* Recalculate the number of visible entries */
+
+    if (data->entries_num != data->confirm_entries_num)
+    {
+	SetAttrs(obj,
+	    MUIA_List_Entries, data->confirm_entries_num,
+	    MUIA_List_Visible, data->entries_visible,
+	    TAG_DONE);
+    }
+
+    /* If the array is already sorted, we could do a simple insert
+     * sort and would be much faster than with qsort.
+     * If an array is not yet sorted, does a MUIV_List_Insert_Sorted
+     * sort the whole array?
+     *
+     * I think, we better sort the whole array:
+     */
+    if(sort) {
+	DoMethod(obj,MUIM_List_Sort);
+	/* TODO: which pos to return here !?        */
+	/* MUIM_List_Sort already called MUI_Redraw */
+    }
+    else 
+    {
 	if (!(data->flags & LIST_QUIET))
 	{
 	    data->update = 1;
 	    MUI_Redraw(obj,MADF_DRAWUPDATE);
 	}
-    	data->insert_position = pos;
-    	return (ULONG)pos;
-    } else
-    {
-	/* Sort insertion must work differently */
     }
-    return ~0;
+    data->insert_position = pos;
+
+    return (ULONG)pos;
 }
 
 /**************************************************************************
@@ -1978,8 +2009,29 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj, struct MUIP_List_Jump *msg)
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_List_Sort
+**************************************************************************/
+IPTR List__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_List_Sort *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
 
+    if(data->entries_num>1) {
+	/* pointer magic taken from asl/fontreqsupport.c */
+	qsort(&data->entries[0],
+	      data->entries_num,
+	      sizeof(*data->entries),
+	      (int (*)(const void *, const void *)) data->compare_hook->h_Entry);
+    }
 
+    if (!(data->flags & LIST_QUIET))
+    {
+	data->update = 1;
+	MUI_Redraw(obj,MADF_DRAWUPDATE);
+    }
+
+    return 0;
+}
 
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 {
@@ -1999,6 +2051,7 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case MUIM_Layout:                  return List__MUIM_Layout(cl,obj,(struct MUIP_Layout *)msg);
 	case MUIM_HandleEvent:             return List__MUIM_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
 	case MUIM_List_Clear:              return List__MUIM_Clear(cl,obj,(struct MUIP_List_Clear *)msg);
+	case MUIM_List_Sort:              return List__MUIM_Sort(cl,obj,(struct MUIP_List_Sort *)msg);
 	case MUIM_List_Exchange:           return List__MUIM_Exchange(cl,obj,(struct MUIP_List_Exchange *)msg);
 	case MUIM_List_Insert:             return List__MUIM_Insert(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingle:       return List__MUIM_InsertSingle(cl,obj,(APTR)msg);
