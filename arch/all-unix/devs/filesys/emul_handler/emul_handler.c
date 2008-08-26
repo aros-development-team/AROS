@@ -602,6 +602,23 @@ ULONG prot_u2a(mode_t protect)
 
 /*********************************************************************************************/
 
+/* Converts AROS file access mode to *nix open() flags */
+int mode2flags(LONG mode)
+{
+    int flags;
+
+    flags=(mode&FMF_CREATE?O_CREAT:0)|
+          (mode&FMF_CLEAR?O_TRUNC:0);
+    if(mode&FMF_WRITE)
+        flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
+    else
+        flags|=O_RDONLY;
+    
+    return flags;
+}
+
+/*********************************************************************************************/
+
 static BOOL check_volume(struct filehandle *fh, struct emulbase *emulbase)
 {
     if (fh->volume == emulbase->current_volume) return TRUE;
@@ -697,12 +714,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 		{
 		    /* file is a plain file */
 		    fh->type=FHD_FILE;
-		    flags=(mode&FMF_CREATE?O_CREAT:0)|
-			  (mode&FMF_CLEAR?O_TRUNC:0);
-		    if(mode&FMF_WRITE)
-			flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-		    else
-			flags|=O_RDONLY;
+		    flags=mode2flags(mode);
 		    fh->fd=open(*fh->name?fh->name:".",flags,0770);
 		    if(fh->fd>=0)
 		    {
@@ -771,12 +783,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
 	if (!ret)
 	{
 	    fh->type=FHD_FILE;
-	    flags=(mode&FMF_CREATE?O_CREAT:0)|
-		  (mode&FMF_CLEAR?O_TRUNC:0);
-	    if(mode&FMF_WRITE)
-		flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-	    else
-		flags|=O_RDONLY;
+	    flags=mode2flags(mode);
 	    prot = prot_a2u((ULONG)protect);
 	    fh->fd=open(fh->name,flags,prot);
 	    if (fh->fd != -1)
