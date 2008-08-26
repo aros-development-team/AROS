@@ -14,7 +14,8 @@ FILES := \
 	tmpfile \
 	chmod \
 	getfsstat \
-	statfs
+	statfs \
+	usleep
 
 EXEDIR := $(AROS_TESTS)/clib
 
