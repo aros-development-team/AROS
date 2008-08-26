@@ -12,7 +12,8 @@ FILES := \
 	spawnv \
 	spawnvp \
 	tmpfile \
-	chmod
+	chmod \
+	getfsstat
 
 EXEDIR := $(AROS_TESTS)/clib
 
