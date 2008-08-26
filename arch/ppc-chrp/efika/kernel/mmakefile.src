@@ -1,0 +1,23 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := kernel_init tags debug
+
+#MM kernel-chrp-ppc-efika: setup-chrp-ppc-efika kernel-kernel-chrp-ppc-efika-kobj 
+kernel-chrp-ppc-efika: $(BINDIR)/boot/aros-efika
+
+$(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o
+	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(LIBDIR) -lrom -larosm -lautoinit -llibinit
+	$(STRIP) --strip-unneeded $@ 
+
+#MM kernel-kernel-chrp-ppc-efika : includes
+#MM kernel-kernel-chrp-ppc-efika-kobj : includes
+
+%build_module mmake=kernel-kernel-chrp-ppc-efika 	\
+  modname=kernel modtype=resource		\
+  cflags="$(CFLAGS) -I$(TOP)/rom/exec"		\
+  files="$(FILES)" uselibs="rom"
+
+#MM setup-chrp-ppc-efika
+setup-chrp-ppc-efika : 
+    %mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
