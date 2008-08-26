@@ -228,7 +228,7 @@ unsigned    sleep(unsigned);
 /* NOTIMPL long        sysconf(int name); */
 /* NOTIMPL pid_t       tcgetpgrp(int fd); */
 /* NOTIMPL int         tcsetpgrp(int fd, pid_t pgrp_id); */
-/* NOTIMPL char        *ttyname(int fd); */
+char        *ttyname(int fd);
 /* NOTIMPL int         ttyname_r(int fd, char *buf, size_t len); */
 int         unlink(const char *path);
 ssize_t     write(int fd, const void *buf, size_t nbytes);

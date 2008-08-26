@@ -336,6 +336,7 @@ SHARED	:= \
 	tmpfile \
 	tmpnam \
 	truncate \
+	ttyname \
 	umask \
 	ungetc \
 	unlink \
