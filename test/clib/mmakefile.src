@@ -13,7 +13,8 @@ FILES := \
 	spawnvp \
 	tmpfile \
 	chmod \
-	getfsstat
+	getfsstat \
+	statfs
 
 EXEDIR := $(AROS_TESTS)/clib
 
