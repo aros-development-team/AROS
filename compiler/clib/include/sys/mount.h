@@ -89,6 +89,7 @@ struct statfs {
 
 __BEGIN_DECLS
 int getfsstat (struct statfs *, long, int);
+int statfs(const char *path, struct statfs *buf);
 __END_DECLS
 
 #endif /* !_SYS_MOUNT_H_ */
