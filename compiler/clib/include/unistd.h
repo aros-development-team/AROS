@@ -207,7 +207,7 @@ gid_t       getegid(void);
 uid_t       geteuid(void);
 gid_t       getgid(void);
 int         getgroups(int gidsetlen, gid_t *gidset);
-/* NOTIMPL char        *getlogin(void); */
+char        *getlogin(void);
 pid_t       getpgrp(void);
 pid_t       getpid(void);
 pid_t       getppid(void);

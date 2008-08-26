@@ -192,6 +192,7 @@ SHARED	:= \
 	getgroups \
 	getgrnam \
 	getgrent \
+	getlogin \
 	getpgrp \
 	getppid \
         getpwent \
