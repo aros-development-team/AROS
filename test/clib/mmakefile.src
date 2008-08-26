@@ -11,7 +11,8 @@ FILES := \
 	stpblk \
 	spawnv \
 	spawnvp \
-	tmpfile
+	tmpfile \
+	chmod
 
 EXEDIR := $(AROS_TESTS)/clib
 
