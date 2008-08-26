@@ -269,7 +269,7 @@ int         symlink(const char *name1, const char *name2);
 /* NOTIMPL char        *crypt(const char *key, const char *salt); */
 /* NOTIMPL char        *ctermid(char *buf); */
 /* NOTIMPL void        encrypt(char block[64], int flag); */
-/* NOTIMPL int         fchdir(int fd); */
+int         fchdir(int fd);
 /* NOTIMPL long        gethostid(void); */
 /* NOTIMPL pid_t       getpgid(pid_t); */
 /* NOTIMPL pid_t       getsid(pid_t pid); */
