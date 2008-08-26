@@ -181,6 +181,7 @@ SHARED	:= \
 	getcwd \
 	getenv \
 	getfsstat \
+	statfs \
         getpid \
 	gettimeofday \
         getuid \
