@@ -1,3 +1,8 @@
+/*
+    Copyright © 2008, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <string.h>
 #include <errno.h>
 #include <sys/mount.h>
