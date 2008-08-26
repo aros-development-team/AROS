@@ -147,6 +147,7 @@ SHARED	:= \
         execvp \
 	exit \
         _exit \
+    fchdir \
 	fchmod \
 	fchown \
 	fclose \
