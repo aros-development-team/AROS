@@ -341,6 +341,7 @@ SHARED	:= \
 	unlink \
 	unsetenv \
 	updatestdio \
+	usleep \
 	utime \
 	utimes \
 	vfprintf \
