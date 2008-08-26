@@ -25,5 +25,8 @@ typedef enum {
 #define KRN_ProtAreaEnd         (KRN_Dummy + 14)
 #define KRN_VBEMode             (KRN_Dummy + 15)
 #define KRN_VBEPaletteWidth     (KRN_Dummy + 16)
+#define KRN_OpenFirmwareTree	(KRN_Dummy + 17)
+#define KRN_ArgC				(KRN_Dummy + 18)
+#define KRN_ArgV				(KRN_Dummy + 19)
 
 #endif /*AROS_KERNEL_H*/
