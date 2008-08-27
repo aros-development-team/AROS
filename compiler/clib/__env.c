@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <dos/var.h>
 
 #include "__env.h"
 
@@ -105,4 +108,77 @@ void __env_delvar(const char *name)
 	free(tmp->value);
 	free(tmp);
     }
+}
+
+struct EnvData
+{
+   int envcount;
+   int varbufsize;
+   char * varbufptr;
+};
+
+/* Hook function counting the number of variables and computing the buffer size
+   needed for name=value character buffer. */
+LONG get_var_len(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
+{
+    struct EnvData *data = (struct EnvData *) userdata;
+    data->envcount++;
+    data->varbufsize += 
+	(ptrdiff_t) strlen((char*)message->sv_Name) + 
+        message->sv_VarLen + 2;
+    return 0;
+}
+
+/* Hook function storing name=value strings in buffer */
+LONG get_var(struct Hook *hook, APTR userdata, struct ScanVarsMsg *message)
+{
+    struct EnvData *data = userdata;
+    data->varbufptr[0] = '\0';
+    strcat(data->varbufptr, (char*) message->sv_Name);
+    strcat(data->varbufptr, "=");
+    strncat(data->varbufptr, (char*) message->sv_Var, message->sv_VarLen);
+    data->varbufptr = data->varbufptr + strlen(data->varbufptr) + 1;
+    return 0;
+}
+
+/* Function storing name=value strings in given environ buffer. When buffer is
+   null, it returns minimal necessary size of the buffer needed to store all
+   name=value strings. */
+int __env_get_environ(char **environ, int size)
+{
+    __env_item **curr;
+    int i;
+    struct Hook hook;
+    struct EnvData u; 
+    char *varbuf;
+
+    u.envcount = 0;
+    u.varbufsize = 0;
+
+    memset(&hook, 0, sizeof(struct Hook));
+    hook.h_Entry = (IPTR) get_var_len;
+    ScanVars(&hook, GVF_LOCAL_ONLY, &u);
+
+    if(environ == NULL)
+	return sizeof(char*) * (u.envcount + 1) + u.varbufsize;
+    else if(size < sizeof(char*) *(u.envcount + 1) + u.varbufsize)
+	return -1;
+
+    /* store name=value strings after table of pointers */
+    varbuf = (char*) (environ + (u.envcount + 1));
+	    
+    /* time to fill in the buffers */
+    u.varbufptr = varbuf;
+    u.varbufptr[0] = '\0';   
+    hook.h_Entry = (IPTR) get_var;
+    ScanVars(&hook, GVF_LOCAL_ONLY, &u);
+
+    for(i = 0; i < u.envcount; i++)
+    {
+        environ[i] = varbuf;
+        varbuf = strchr(varbuf, '\0') + 1;
+    }
+    environ[u.envcount] = NULL;
+
+    return 0;	    
 }
