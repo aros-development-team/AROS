@@ -15,4 +15,7 @@
 #define MOUNT_ADOS_IFFS 8
 #define MOUNT_MAXTYPE   8
 
+static char *mnt_names[] = { "none", "ufs", "nfs", "mfs", "pc", "ofs",
+                             "ffs", "iofs", "iffs" };
+
 #endif /* !_SYS_FS_TYPES_H */
