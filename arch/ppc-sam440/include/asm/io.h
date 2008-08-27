@@ -2,6 +2,7 @@
 #define ASM_IO_H
 
 #include <inttypes.h>
+#include <asm/amcc440.h>
 
 static inline eieio() {
     asm volatile("eieio":::"memory");
