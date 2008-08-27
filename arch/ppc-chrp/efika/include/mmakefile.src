@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 29278 2008-08-26 21:35:02Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
