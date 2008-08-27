@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 29278 2008-08-26 21:35:02Z schulz $
+include $(TOP)/config/make.cfg
+
+INCLUDE_FILES := $(wildcard *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
+
+#MM- includes-copy-chrp-ppc-efika : includes-common-ppc
+
+%copy_includes mmake=includes-copy-chrp-ppc-efika
+
+#MM- kernel-exec-includes-chrp-ppc-efika : includes-copy-chrp-ppc-efika
+
