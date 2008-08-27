@@ -4,9 +4,9 @@
  
     Desc: Reboot CLI command
     Lang: English              
- */
+*/
 
- /******************************************************************************
+/******************************************************************************
 
     NAME
 
@@ -27,7 +27,7 @@
     NOTES
 
         Any programs and data in memory will be lost and all disk
-        activity will cease – Make sure no disk access is being 
+        activity will cease. Make sure no disk access is being 
         carried out by your computer.
 
 
