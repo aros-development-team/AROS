@@ -15,7 +15,7 @@ sc link debug=line idir=include: nostackcheck opt data=far nostartup mountnew.c 
 
         Mount
 
-    USAGE
+    FORMAT
 
         Mount <Device> <From>
 		

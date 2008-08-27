@@ -11,7 +11,7 @@
 
         Diskchange
 
-USAGE
+    FORMAT
 
         Diskchange DEVICE
   

@@ -11,7 +11,7 @@
 
         Conclip
 
-USAGE
+    FORMAT
 
         CONCLIP [ [UNIT | CLIPUNIT] <unitnumber>] [OFF]
   
