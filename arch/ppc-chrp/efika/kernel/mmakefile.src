@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := kernel_init tags debug intr mmu syscall
+FILES := kernel_init tags debug intr mmu syscall scheduler
 
 #MM kernel-chrp-ppc-efika: setup-chrp-ppc-efika kernel-kernel-chrp-ppc-efika-kobj 
 kernel-chrp-ppc-efika: $(BINDIR)/boot/aros-efika
