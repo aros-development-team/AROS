@@ -48,21 +48,21 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
         case SC_CAUSE:
             {
                 struct ExecBase *SysBase = getSysBase();
-//                if (SysBase)
-//                    core_Cause(SysBase);
+                if (SysBase)
+                    core_Cause(SysBase);
             }
             break;
 
         case SC_DISPATCH:
-//            core_Dispatch(ctx);
+            core_Dispatch(ctx);
             break;
 
         case SC_SWITCH:
-//            core_Switch(ctx);
+            core_Switch(ctx);
             break;
 
         case SC_SCHEDULE:
-//            core_Schedule(ctx);
+            core_Schedule(ctx);
             break;
 
         case SC_INVALIDATED:
