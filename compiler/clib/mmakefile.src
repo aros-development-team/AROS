@@ -144,6 +144,7 @@ SHARED	:= \
 	endpwent \
 	erand48 \
         execl \
+        execve \
         execvp \
 	exit \
         _exit \
