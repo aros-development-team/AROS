@@ -164,9 +164,11 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 	wrspr(SPRG4, 0);
 	wrspr(SPRG5, 0);
 
-	/* Set the memlo pointer to the area right behind exception handlers */
-	memlo = (uint8_t *)(0xff000000 + 0x3000);
+	/* Set the memlo pointer */
+	memlo = (uint8_t *)0xff000000;
 	D(bug("[KRN] BootMsg @ %p\n", msg));
+
+	D(bug("[KRN] Copying TagList and data\n"));
 
 	while(msg->ti_Tag != TAG_DONE)
 	{
@@ -219,17 +221,16 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 			tmp->ti_Data = (intptr_t)krnCopyOFWTree((struct OFWNode *)msg->ti_Data);
 		}
 
-		D(bug("[KRN] Copying TAG @ %p (%08x with value of %08x) into TAG @ %p (value %08x)\n",
-				msg, msg->ti_Tag, msg->ti_Data, tmp, tmp->ti_Data));
-
-
 		tmp++;
 		msg++;
 	}
 	*tmp = *msg;
 
+	memlo = (char *)(((intptr_t)memlo + 4095) & ~4095);
+
 	BootMsg = tmp_struct.bootup_tags;
 
+	intr_init();
 
 
 
@@ -242,6 +243,16 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 	}
 }
 
+
+AROS_LH0I(struct TagItem *, KrnGetBootInfo,
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    return BootMsg;
+
+    AROS_LIBFUNC_EXIT
+}
 
 struct OFWNode *krnCopyOFWTree(struct OFWNode *orig)
 {
