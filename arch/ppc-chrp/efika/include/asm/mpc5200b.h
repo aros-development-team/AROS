@@ -73,4 +73,12 @@ static inline void wrmsr(uint32_t msr) {
 #define SPRG6   0x116   /* Special Purpose Register General 6 */
 #define SPRG7   0x117   /* Special Purpose Register General 7 */
 
+#define DMISS	0x3d0
+#define DCMP	0x3d1
+#define HASH1	0xd32
+#define HASH2	0x3d3
+#define IMISS	0x3d4
+#define ICMP	0x3d5
+#define RPA		0x3d6
+
 #endif /* ASM_MPC5200B_H */
