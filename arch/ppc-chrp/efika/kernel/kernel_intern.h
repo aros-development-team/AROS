@@ -13,7 +13,7 @@
 
 #include "syscall.h"
 
-#define KERNEL_PHYS_BASE        0x00800000
+#define KERNEL_PHYS_BASE        0x07800000
 #define KERNEL_VIRT_BASE        0xff800000
 
 #define STACK_SIZE 4096
@@ -21,7 +21,7 @@
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
-    struct List         kb_Exceptions[16];
+    struct List         kb_Exceptions[21];
     struct List         kb_Interrupts[64];
     struct MemHeader    *kb_SupervisorMem;
 };
@@ -63,6 +63,21 @@ struct IntrNode {
     uint8_t             in_nr;
 };
 
+/*
+ * Exception handler differs a bit. It is suppost to have access to the CPU
+ * context...
+ */
+struct ExceptNode {
+    struct MinNode      in_Node;
+    int                 (*in_Handler)(regs_t *, void *, void *);
+    void                *in_HandlerData;
+    void                *in_HandlerData2;
+    uint8_t             in_type;
+    uint8_t             in_nr;
+};
+
+
+
 static inline struct KernelBase *getKernelBase()
 {
     return (struct KernelBase *)rdspr(SPRG4);
@@ -85,6 +100,16 @@ intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 
+void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
+void core_Switch(regs_t *regs) __attribute__((noreturn));
+void core_Schedule(regs_t *regs) __attribute__((noreturn));
+void core_Dispatch(regs_t *regs) __attribute__((noreturn));
+void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn));
+void core_Cause(struct ExecBase *SysBase);
+void mmu_init(struct TagItem *tags);
+void intr_init();
+void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self);
+
 #ifdef bug
 #undef bug
 #endif
@@ -93,6 +118,9 @@ struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
 #endif
 #define D(x) x
 
+#define __STR(x) #x
+#define STR(x) __STR(x)
+
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
          AROS_LDA(va_list, args, A1),
@@ -100,7 +128,7 @@ AROS_LD2(int, KrnBug,
 
 static inline void bug(const char *format, ...)
 {
-    struct KernelBase *kbase = NULL; //getKernelBase();
+    struct KernelBase *kbase = getKernelBase();
     va_list args;
     va_start(args, format);
     AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
