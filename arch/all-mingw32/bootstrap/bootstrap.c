@@ -77,7 +77,7 @@ int main(int argc, char ** argv)
   tag++;
 
   //load elf-kernel and fill in the bootinfo
-  void * file = fopen(argv[1], "rb");
+  void * file = fopen(kernel, "rb");
   size_t ksize=0;
   if (file)
   {
