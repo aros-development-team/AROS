@@ -6,7 +6,7 @@
  Lang: English
  */
 
-#define DEBUG
+/* #define DEBUG */
 #define NATIVE
 
 #include "../include/aros/kernel.h"
