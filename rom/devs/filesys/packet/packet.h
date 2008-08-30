@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007 The AROS Development Team
+ * Copyright © 2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -47,6 +47,8 @@ struct PacketBase {
 };
 
 struct ph_handle {
+    struct FileHandle           fh;
+
     void                        *actual;
     BOOL                        is_lock;
 

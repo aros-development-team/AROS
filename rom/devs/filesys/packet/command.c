@@ -119,7 +119,7 @@
                                     "unknown")
 #endif
 
-static BSTR mkbstr(APTR pool, STRPTR str) {
+static BSTR mkbstr(APTR pool, CONST_STRPTR str) {
     UBYTE *buf;
     UBYTE len;
 
@@ -195,39 +195,28 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 iofs->io_Union.io_OPEN.io_Filename,
                 (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? "EXCLUSIVE" : "SHARED"));
 
-            /* 
-             * NameFromLock() can call FSA_OPEN with a handle to a file rather
-             * than a directory. That seems like a bug, but it doesn't affect
-             * existing handlers because they naively concat the lock name and
-             * the file name, then look backwards through the full name
-             * looking for '/' and going up the tree based on that.
-             * FATFileSystem instead checks a flag inside the lock structure
-             * to see if the lock is a directory, and fails outright if it's
-             * not.
-             *
-             * Here we intercept this special case and explicitly request the
-             * current/parent directory. Unfortunately ACTION_PARENT can't
-             * take a lock parameter - it always returns a shared lock. That's
-             * sufficient for this case but is technically incorrect. The
-             * real solution is for something other than FSA_OPEN to be used
-             * to do this.
-             */ 
-            if (iofs->io_Union.io_OPEN.io_Filename[0] == '/' &&
-                iofs->io_Union.io_OPEN.io_Filename[1] == '\0') {
-
-                /* if they asked for the parent of the root, give it to them */
-                if (handle == &(handle->mount->root_handle)) {
-                    iofs->IOFS.io_Unit = (struct Unit *) &(handle->mount->root_handle);
+            if (!handle->is_lock) {
+                /* If passed a filehandle, we can only deal with locking the
+                 * filehandle itself or its parent (unless we were to resort
+                 * to sending multiple packets)
+                 */
+                if (iofs->io_Union.io_OPEN.io_Filename[0] == '\0') {
+                    dp->dp_Type = ACTION_COPY_DIR_FH;
+                    dp->dp_Arg1 = (IPTR) handle->actual;
+                }
+                else if (iofs->io_Union.io_OPEN.io_Filename[0] == '/' &&
+                    iofs->io_Union.io_OPEN.io_Filename[1] == '\0') {
+                    dp->dp_Type = ACTION_PARENT_FH;
+                    dp->dp_Arg1 = (IPTR) handle->actual;
+                }
+                else {
+                    iofs->io_DosError = ERROR_NOT_IMPLEMENTED;
                     goto reply;
                 }
-
-                dp->dp_Type = ACTION_PARENT;
-                dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
             }
-
             else {
                 dp->dp_Type = ACTION_LOCATE_OBJECT;
-                dp->dp_Arg1 = (IPTR) (handle->is_lock ? handle->actual : NULL);
+                dp->dp_Arg1 = (IPTR) handle->actual;
                 dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_OPEN.io_Filename);
                 dp->dp_Arg3 = (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? EXCLUSIVE_LOCK : SHARED_LOCK;
             }
@@ -236,7 +225,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_OPEN_FILE: {
             ULONG mode = iofs->io_Union.io_OPEN_FILE.io_FileMode;
-            struct FileHandle *fh;
+            struct ph_handle *new_handle;
 
             D(bug("[packet] OPEN_FILE: lock 0x%08x (%s) name '%s' mode 0x%x prot 0x%x\n",
                 handle->actual,
@@ -257,17 +246,19 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 goto reply;
             }
 
-            /* make a new filehandle */
-            fh = (struct FileHandle *) AllocMem(sizeof(struct FileHandle), MEMF_PUBLIC | MEMF_CLEAR);
-            if (fh == NULL) {
+            /* make a new handle */
+            new_handle =
+                (struct ph_handle *) AllocMem(sizeof(struct ph_handle),
+                MEMF_PUBLIC | MEMF_CLEAR);
+            if (new_handle == NULL) {
                 iofs->io_DosError = ERROR_NO_FREE_STORE;
                 goto reply;
             }
 
             /* dos.lib buffer stuff, must be initialised this way */
-            fh->fh_Pos = fh->fh_End = (UBYTE *) -1;
+            new_handle->fh.fh_Pos = new_handle->fh.fh_End = (UBYTE *) -1;
 
-            dp->dp_Arg1 = (IPTR) MKBADDR(fh);
+            dp->dp_Arg1 = (IPTR) MKBADDR(&new_handle->fh);
             dp->dp_Arg2 = (IPTR) (handle->is_lock ? handle->actual : NULL);
             dp->dp_Arg3 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_OPEN.io_Filename);
 
@@ -280,7 +271,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle")));
 
             /* if this is the root handle, then we previously intercepted a
-             * call and returned it (eg FSA_OPEN/ACTION_PARENT), so we don't
+             * call and returned it (e.g. FSA_OPEN/ACTION_PARENT), so we don't
              * want the handler to do anything */
             if (handle == &(handle->mount->root_handle)) {
                 iofs->IOFS.io_Unit = NULL;
@@ -367,24 +358,34 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg3 = (IPTR) iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode;
             break;
 
-        case FSA_FILE_MODE: /* XXX untested */
-            D(bug("[packet] FILE_MODE: lock 0x%08x (%s) mode 0x%x\b\n",
+        case FSA_FILE_MODE: {
+
+            D(bug("[packet] FILE_MODE: object 0x%08x (%s) mode 0x%x\b\n",
                 handle->actual,
                 handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
                 iofs->io_Union.io_FILE_MODE.io_FileMode));
 
             dp->dp_Type = ACTION_CHANGE_MODE;
 
+            /* We can only change access mode */
+            if ((iofs->io_Union.io_FILE_MODE.io_Mask & FMF_LOCK) == 0) {
+                iofs->io_DosError = 0;
+                goto reply;
+            }
             if (handle->is_lock) {
                 dp->dp_Arg1 = CHANGE_LOCK;
-                dp->dp_Arg3 = (IPTR) iofs->io_Union.io_FILE_MODE.io_FileMode;
+                dp->dp_Arg2 = (IPTR) handle->actual;
             }
             else {
                 dp->dp_Arg1 = CHANGE_FH;
-                dp->dp_Arg3 = iofs->io_Union.io_FILE_MODE.io_FileMode & FMF_LOCK ? EXCLUSIVE_LOCK : SHARED_LOCK;
+                handle->fh.fh_Arg1 = (IPTR) handle->actual;
+                dp->dp_Arg2 = (IPTR) MKBADDR(&handle->fh);
             }
+            dp->dp_Arg3 = (iofs->io_Union.io_FILE_MODE.io_FileMode & FMF_LOCK) ?
+                EXCLUSIVE_LOCK : SHARED_LOCK;
 
             break;
+        }
 
         case FSA_IS_INTERACTIVE:
             /* XXX is there some other way to query this? how does (eg) aos
@@ -808,11 +809,15 @@ AROS_UFH3(void, packet_reply,
     iofs->io_DosError = 0;
     
     /* populate the iofs with the results. note that for packets that only
-     * return success/failure we have nothing to do, so they're not listed here */
+     * return success/failure we have nothing to do, so they're not listed
+     * here */
     switch (dp->dp_Type) {
 
+        case ACTION_COPY_DIR:
+        case ACTION_COPY_DIR_FH:
         case ACTION_LOCATE_OBJECT:
         case ACTION_PARENT:
+        case ACTION_PARENT_FH:
             handle = (struct ph_handle *) AllocMem(sizeof(struct ph_handle), MEMF_PUBLIC | MEMF_CLEAR);
             if (handle == NULL) {
                 iofs->io_DosError = ERROR_NO_FREE_STORE;
@@ -831,31 +836,17 @@ AROS_UFH3(void, packet_reply,
         case ACTION_FINDINPUT:
         case ACTION_FINDOUTPUT:
         case ACTION_FINDUPDATE: {
-            struct FileHandle *fh = (struct FileHandle *) BADDR(dp->dp_Arg1);
-
-            /* XXX this is wrong. if we can't get the memory, we still have an
-             * open file which gets leaked. this handle needs to be allocated
-             * before the call goes out to the handler, or we need to schedule
-             * ACTION_END to clean up the file */
-            handle = (struct ph_handle *) AllocMem(sizeof(struct ph_handle), MEMF_PUBLIC | MEMF_CLEAR);
-            if (handle == NULL) {
-                iofs->io_DosError = ERROR_NO_FREE_STORE;
-                FreeMem((APTR) fh, sizeof(struct FileHandle));
-                break;
-            }
-
             /* handlers return "internal data" (typically a lock, though we
              * can't assume that) in fh_Arg1. we need to keep it for later
-             * filehandle operations. the filehandle itself is expendable -
-             * the calls that need this data (eg ACTION_READ/WRITE/SEEK) take
-             * it directly in dp_Arg1 */
-            handle->actual = (void *) fh->fh_Arg1;
+             * filehandle operations.
+             * the calls that need this data (e.g. ACTION_READ/WRITE/SEEK)
+             * take it directly in dp_Arg1 */
+            handle = (struct ph_handle *) BADDR(dp->dp_Arg1);
+            handle->actual = (void *) handle->fh.fh_Arg1;
             handle->is_lock = FALSE;
             handle->mount = mount;
 
             iofs->IOFS.io_Unit = (struct Unit *) handle;
-
-            FreeMem((APTR) fh, sizeof(struct FileHandle));
 
             break;
         }
