@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Open a file with the specified mode.
@@ -69,16 +69,6 @@
     /* Get pointer to process structure */
     me = (struct Process *)FindTask(NULL);
 
-    /* check for an empty filename. this supports this form that was required
-     * pre-2.0, which didn't have OpenFromLock():
-     *
-     *     old = CurrentDir(lock);
-     *     fh = Open("", MODE_OLDFILE);
-     *     CurrentDir(old);
-     */
-    if (*name == '\0')
-	return OpenFromLock(DupLock(me->pr_CurrentDir));
-    
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
 
@@ -125,6 +115,38 @@
 
 	iofs.io_Union.io_OPEN_FILE.io_Protection = 0;
 
+        /* check for an empty filename. this supports this form that was
+         * required pre-2.0, which didn't have OpenFromLock():
+         *
+         *     old = CurrentDir(lock);
+         *     fh = Open("", MODE_OLDFILE);
+         *     CurrentDir(old);
+         */
+        if (*name == '\0') {
+            BPTR cur;
+            struct FileHandle *fh;
+
+            cur = me->pr_CurrentDir;
+            if (!cur)
+                cur = DOSBase->dl_SYSLock;
+
+            if (cur) {
+                fh = BADDR(cur);
+
+                iofs.io_Union.io_OPEN_FILE.io_Filename = "";
+
+                iofs.IOFS.io_Device = fh->fh_Device;
+                iofs.IOFS.io_Unit = fh->fh_Unit;
+
+                DosDoIO(&iofs.IOFS);
+
+                error = me->pr_Result2 = iofs.io_DosError;
+            } else {
+                error = ERROR_OBJECT_NOT_FOUND;
+                SetIoErr(error);
+            }
+        }
+        else
 	if(!Stricmp(name, "CONSOLE:"))
 	{
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(con))->fh_Device;
