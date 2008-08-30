@@ -137,7 +137,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
     	    struct TagItem tags[] =
 	    {
 		{NP_Entry   	, (IPTR) packet_startup },
-        	{NP_Name    	, pr_name   	    	},
+        	{NP_Name    	, (IPTR) pr_name	},
         	{NP_StackSize	, dn->dn_StackSize  	},
         	{NP_Priority	, dn->dn_Priority  	},
         	{NP_UserData	, (IPTR) seglist   	},
@@ -230,6 +230,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
             /* setup the root "handle" to hand back to the caller */
             mount->root_handle.mount = mount;
+            mount->root_handle.is_lock = TRUE;
             iofs->IOFS.io_Unit = (struct Unit *) &(mount->root_handle);
 
             iofs->IOFS.io_Error = 0;
