@@ -1414,6 +1414,8 @@ Optional Features:
                           messages, stack, mungwall, modules, symbols. If no
                           list is provided then "all" is assumed.
                           (default=none)
+  --enable-crosstools     Build cross-compiler toolchains if necessary
+                          (default=no).
   --enable-distcc         Use distcc as a front end to the compiler
                           (default=no).
   --enable-ccache         Use ccache as a front end to the compiler
@@ -3732,7 +3734,7 @@ aros_host_make="make"
 aros_host_cflags=$CFLAGS
 aros_host_ldflags=$LDFLAGS
 aros_host_debug="-g -O0"
-aros_host_mkdep="\$(TOP)/scripts/mkdep"
+aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
 aros_host_incl="/usr/include"
 aros_host_exe_suffix="$EXEEXT"
@@ -8113,6 +8115,28 @@ aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
 aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
+aros_crosstools="no"
+
+#-----------------------------------------------------------------------------
+#   Checking if we should build crosstools..
+{ echo "$as_me:$LINENO: checking whether to build crosstools" >&5
+echo $ECHO_N "checking whether to build crosstools... $ECHO_C" >&6; }
+# Check whether --enable-crosstools was given.
+if test "${enable_crosstools+set}" = set; then
+  enableval=$enable_crosstools; crosstools="$enableval"
+else
+  crosstools="no"
+fi
+
+if test "$crosstools" != "" -a "$crosstools" != "no"; then
+    { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	aros_crosstools="yes"
+else
+    { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
 #-----------------------------------------------------------------------------
 #   Checking for distcc and ccache.
 #
@@ -8526,7 +8550,7 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
     aros_kernel_ldflags=""
     aros_default_wbwidth=640
     aros_default_wbheight=480
-    aros_config_cflags="$aros_config_cflags -mno-toc -fno-asynchronous-unwind-tables"    
+    aros_config_cflags="$aros_config_cflags -mno-toc -fno-asynchronous-unwind-tables"
     gcc_target_cpu="powerpc"
         case "$aros_target_variant" in
             efika)
@@ -9386,6 +9410,8 @@ echo "$as_me: error: ld is required to build AROS. Please install and run config
 fi
 fi
 
+if test "$crosstools" != "yes"; then
+
 if test "$aros_target_as" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${target_tool_prefix}as", so it can be a program name with args.
@@ -9558,7 +9584,7 @@ fi
 
 fi
 
-if test "$aros_target_as_ln" = ""; then
+    if test "$aros_target_as_ln" = ""; then
     { { echo "$as_me:$LINENO: error: as is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: as is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -9736,7 +9762,7 @@ fi
 
 fi
 
-if test "$aros_kernel_ld" = ""; then
+    if test "$aros_kernel_ld" = ""; then
     { { echo "$as_me:$LINENO: error: ld is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: ld is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -9914,7 +9940,7 @@ fi
 
 fi
 
-if test "$aros_target_ar_ln" = ""; then
+    if test "$aros_target_ar_ln" = ""; then
     { { echo "$as_me:$LINENO: error: ar is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: ar is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -10092,7 +10118,7 @@ fi
 
 fi
 
-if test "$aros_target_nm_ln" = ""; then
+    if test "$aros_target_nm_ln" = ""; then
     { { echo "$as_me:$LINENO: error: nm is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: nm is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -10270,7 +10296,7 @@ fi
 
 fi
 
-if test "$aros_target_objcopy_ln" = ""; then
+    if test "$aros_target_objcopy_ln" = ""; then
     { { echo "$as_me:$LINENO: error: objcopy is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: objcopy is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -10448,7 +10474,7 @@ fi
 
 fi
 
-if test "$aros_target_objdump_ln" = ""; then
+    if test "$aros_target_objdump_ln" = ""; then
     { { echo "$as_me:$LINENO: error: objdump is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: objdump is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -10626,7 +10652,7 @@ fi
 
 fi
 
-if test "$aros_target_ranlib_ln" = ""; then
+    if test "$aros_target_ranlib_ln" = ""; then
     { { echo "$as_me:$LINENO: error: ranlib is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: ranlib is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
@@ -10804,10 +10830,11 @@ fi
 
 fi
 
-if test "$aros_target_strip_ln" = ""; then
+    if test "$aros_target_strip_ln" = ""; then
     { { echo "$as_me:$LINENO: error: strip is required to build AROS. Please install and run configure again." >&5
 echo "$as_me: error: strip is required to build AROS. Please install and run configure again." >&2;}
    { (exit 1); exit 1; }; }
+fi
 fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
