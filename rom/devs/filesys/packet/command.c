@@ -785,10 +785,16 @@ AROS_UFH3(void, packet_reply,
                     iofs->io_DosError = ERROR_OBJECT_NOT_FOUND;
                 break;
 
-            /* a zero result is not an error for the following two packet
+            /* a zero result is not an error for the following three packet
              * types. We shouldn't really be here */
             case ACTION_SEEK:
                 iofs->io_Union.io_SEEK.io_Offset = dp->dp_Res1;
+                iofs->io_DosError = 0;
+                break;
+            case ACTION_READ:
+        	iofs->io_Union.io_READ.io_Length = dp->dp_Res1; 
+        	iofs->io_DosError = 0;
+        	break;
             case ACTION_SET_FILE_SIZE:
                 iofs->io_DosError = 0;
                 break;
@@ -860,6 +866,8 @@ AROS_UFH3(void, packet_reply,
             break;
 
         case ACTION_READ:
+            if (dp->dp_Res1 == -1)
+        	iofs->io_DosError = dp->dp_Res2;
             iofs->io_Union.io_READ.io_Length = dp->dp_Res1;
             break;
 
