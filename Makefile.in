@@ -44,7 +44,7 @@ tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 
 $(TOOLLIB) : $(wildcard $(SRCDIR)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
-	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib SRCDIR=$(SRCDIR) TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(SRCDIR)/tools/toollib SRCDIR=$(SRCDIR) TOP=$(TOP) CURDIR=toollib
 
 $(GENMF) : $(SRCDIR)/tools/genmf/genmf.py
 	@$(ECHO) Copying genmf...

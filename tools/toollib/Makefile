@@ -18,7 +18,7 @@ HOST_CC	?= $(CC)
 HOST_AR ?= $(AR) cru 
 TOOLDIR ?= .
 ifneq ($(HOSTGENDIR),)
-OBJDIR := $(HOSTGENDIR)/$(subst $(AROS_SRC)/,,$(CURDIR))
+OBJDIR := $(HOSTGENDIR)/$(CURDIR)
 else
 OBJDIR := $(TOOLDIR)/obj
 endif
