@@ -26,12 +26,11 @@
         #include <proto/desktop.h>
 
         AROS_LH0(struct NewMenu *, BuildDesktopMenus,
-     /*
-        SYNOPSIS 
-      */
-     /*
-        LOCATION 
-      */
+
+/*  SYNOPSIS */
+     
+/*  LOCATION */
+
         struct DesktopBase *, DesktopBase, 11, Desktop)
 /*
    FUNCTION

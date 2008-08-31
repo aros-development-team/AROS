@@ -36,14 +36,14 @@
         #include <proto/desktop.h>
 
         AROS_LH1(struct DesktopOperationItem *, GetMenuItemList,
-     /*
-        SYNOPSIS 
-      */
-            AROS_LHA(ULONG, operationType, D0),
-     /*
-        LOCATION 
-      */
-        struct DesktopBase *, DesktopBase, 10, Desktop)
+
+/*  SYNOPSIS */
+
+	AROS_LHA(ULONG, operationType, D0),
+     
+/*  LOCATION */
+        
+	struct DesktopBase *, DesktopBase, 10, Desktop)
 /*
    FUNCTION
 
