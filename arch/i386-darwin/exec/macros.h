@@ -1,6 +1,6 @@
 /*
     Copyright C 2003, The AROS Development Team. All rights reserved
-    $Id: macros.h 17527 2003-05-09 07:03:26Z schulz $
+    $Id$
 
     Desc: Some usefull macros
     Lang: English

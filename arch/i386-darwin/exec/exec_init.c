@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: exec_init.c 23349 2005-06-04 15:26:33Z verhaegs $
+    $Id$
 
     Desc: exec.library resident and initialization.
     Lang: english
