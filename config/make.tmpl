@@ -1983,7 +1983,7 @@ DEPS := $(DEPS) $(STUBS_DEP)
 # to the name which has to follow it.
 
 
-%define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
+%define build_with_configure mmake=/A package= srcdir=$(TOP)/$(CURDIR) prefix= \
     aros_prefix= extraoptions= nix_dir_layout= nix=no compiler=target \
     install_target=install postconfigure= postinstall= \
     install_env=
@@ -2015,6 +2015,15 @@ else
         %(mmake)-nix_dir_layout := no
     endif
 endif
+
+ifeq (%(package),)
+    %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
+else
+    %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
+endif
+
+%(mmake)-configflag := $(%(mmake)-pkgdir)/.configured
+%(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
 
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
@@ -2060,13 +2069,13 @@ endif
 ifneq (%(install_target),)
     %(mmake)-install_command = \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-        -C $(GENDIR)/$(CURDIR) %(install_target) && \
-        $(TOUCH) $(GENDIR)/$(CURDIR)/.installed
+        -C $(%(mmake)-pkgdir) %(install_target) && \
+        $(TOUCH) $(%(mmake)-installflag)
 
     %(mmake)-uninstall_command = \
-    $(RM) $(GENDIR)/$(CURDIR)/.installed && \
+    $(RM) $(%(mmake)-installflag) && \
     $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-    -C $(GENDIR)/$(CURDIR) uninstall
+    -C $(%(mmake)-pkgdir) uninstall
 else
     %(mmake)-install_command   := true
     %(mmake)-uninstall_command := true
@@ -2075,10 +2084,10 @@ endif
 #MM- %(mmake)-quick : %(mmake)-configure %(postconfigure) %(mmake)-build_and_install-quick %(postinstall)
 
 #MM
-%(mmake)-build_and_install-quick :  $(GENDIR)/$(CURDIR)/.configured
-	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(GENDIR)/$(CURDIR); then \
-            $(RM)  $(GENDIR)/$(CURDIR)/.installed && \
-	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(GENDIR)/$(CURDIR) && \
+%(mmake)-build_and_install-quick :  $(%(mmake)-configflag)
+	if ! $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -q -C $(%(mmake)-pkgdir); then \
+            $(RM)  $(%(mmake)-installflag) && \
+	    $(MAKE) PROGDIR="$(call %(mmake)-volfunc, PROGDIR)" -C $(%(mmake)-pkgdir) && \
 	    $(%(mmake)-install_command); \
         fi
 
@@ -2095,23 +2104,23 @@ ifneq ($(DEBUG),yes)
 endif
 
 #MM
-%(mmake)-configure : $(GENDIR)/$(CURDIR)/.configured
+%(mmake)-configure : $(%(mmake)-configflag)
 
 ifeq (%(compiler),host)
-$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@ 
-	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR) && \
+	%mkdirs_q $(%(mmake)-pkgdir)
+	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(HOST_CC)" \
 	    %(srcdir)/configure $(%(mmake)-config_opts) %(extraoptions) && \
 	    $(TOUCH) $@
 endif
 ifeq (%(compiler),target)
-$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
-	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR) && \
+	%mkdirs_q $(%(mmake)-pkgdir)
+	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(TARGET_CC) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
@@ -2124,10 +2133,10 @@ $(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmak
 	    $(TOUCH) $@
 endif
 ifeq (%(compiler),kernel)
-$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(%(mmake)-configflag) : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
-	%mkdirs_q $(GENDIR)/$(CURDIR)
-	cd $(GENDIR)/$(CURDIR) && \
+	%mkdirs_q $(%(mmake)-pkgdir)
+	cd $(%(mmake)-pkgdir) && \
 	find . -name config.cache -exec $(RM) '{}' \; && \
 	CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-nix) $(%(mmake)-s_flag)" \
 	    AS="$(TARGET_AS)" CC_FOR_BUILD="$(HOST_CC)" RANLIB="$(RANLIB)" \
@@ -2141,7 +2150,7 @@ endif
 	
 #MM
 %(mmake)-clean : %(mmake)-uninstall
-	@$(RM) $(GENDIR)/$(CURDIR)
+	@$(RM) $(%(mmake)-pkgdir)
 %end
 
 #############################################################################
@@ -2234,7 +2243,7 @@ endif
 #    - extraoptions = same meaning as the one for the %build_with_configure macro.
 #    - postinstall  = same meaning as the one for the %build_with_configure macro.
 
-%define fetch_and_build mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
+%define fetch_and_build mmake=/A package=/A subpackage= compiler=target version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix= \
     aros_prefix= extraoptions= postconfigure= postinstall= nix=no nix_dir_layout=
 
@@ -2283,7 +2292,7 @@ endif
 %(mmake)-%(subpackage)-package-basename := \
     $(DISTDIR)/Packages/$(%(mmake)-%(subpackage)-archbase)-aros.$(AROS_TARGET_CPU)
 
-%build_with_configure mmake=%(mmake)-%(subpackage) \
+%build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) \
      srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
@@ -2301,7 +2310,7 @@ endif
 #the package got installed would not exist anymore. 
 #We work this around by using an if statement to manually check the mtimes.
 $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
-	@$(IF) test $(GENDIR)/$(CURDIR)/.installed -nt $@ || ! test -f $@; then \
+	@$(IF) test $(%(mmake)-installflag) -nt $@ || ! test -f $@; then \
         $(RM) $@ ; \
         $(ECHO) "Building \`$(%(mmake)-%(subpackage)-package-basename).tar.bz2'" ; \
         mkdir -p "$(DISTDIR)/Packages" ; \
