@@ -687,7 +687,7 @@ case "$target_os" in
     pc)
 	aros_target_arch="pc"
 	aros_shared_default="no"
-	target_bootloader="grub"
+	target_bootloader="grub2"
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
