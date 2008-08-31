@@ -90,11 +90,12 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
     return subroot;
 }
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH3I(struct AVLNode *, AVL_AddNode,
+    AROS_LH3I(struct AVLNode *, AVL_AddNode,
+
 /*  SYNOPSIS */
 	  AROS_LHA(struct AVLNode **, root, A0),
 	  AROS_LHA(struct AVLNode *, node, A1),
@@ -355,11 +356,12 @@ AROS_LH3I(struct AVLNode *, AVL_AddNode,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_AddNode */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH2I(struct AVLNode *, AVL_RemNodeByAddress,
+    AROS_LH2I(struct AVLNode *, AVL_RemNodeByAddress,
+
 /*  SYNOPSIS */
 	  AROS_LHA(struct AVLNode **, Root, A0),
 	  AROS_LHA(struct AVLNode *, Node, A1),
@@ -640,11 +642,12 @@ AROS_LH2I(struct AVLNode *, AVL_RemNodeByAddress,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_RemNodeByAddress */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH3I(struct AVLNode *, AVL_RemNodeByKey,
+    AROS_LH3I(struct AVLNode *, AVL_RemNodeByKey,
+
 /*  SYNOPSIS */
 	  AROS_LHA(struct AVLNode **, root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
@@ -694,11 +697,12 @@ AROS_LH3I(struct AVLNode *, AVL_RemNodeByKey,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_RemNodeByKey */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH3I(struct AVLNode *, AVL_FindNode,
+    AROS_LH3I(struct AVLNode *, AVL_FindNode,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
@@ -749,11 +753,12 @@ AROS_LH3I(struct AVLNode *, AVL_FindNode,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_FindNode */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH1I(struct AVLNode *, AVL_FindPrevNodeByAddress,
+    AROS_LH1I(struct AVLNode *, AVL_FindPrevNodeByAddress,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Node, A0),
 /*  LOCATION */
@@ -834,11 +839,12 @@ AROS_LH1I(struct AVLNode *, AVL_FindPrevNodeByAddress,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_FindPrevNodeByAddress */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH3I(struct AVLNode *, AVL_FindPrevNodeByKey,
+    AROS_LH3I(struct AVLNode *, AVL_FindPrevNodeByKey,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
@@ -891,11 +897,12 @@ AROS_LH3I(struct AVLNode *, AVL_FindPrevNodeByKey,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_FindPrevNodeByKey */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH1I(struct AVLNode *, AVL_FindNextNodeByAddress,
+    AROS_LH1I(struct AVLNode *, AVL_FindNextNodeByAddress,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Node, A0),
 /*  LOCATION */
@@ -976,11 +983,12 @@ AROS_LH1I(struct AVLNode *, AVL_FindNextNodeByAddress,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_FindNextNodeByAddress */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH3I(struct AVLNode *, AVL_FindNextNodeByKey,
+    AROS_LH3I(struct AVLNode *, AVL_FindNextNodeByKey,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 	  AROS_LHA(AVLKey, key, A1), AROS_LHA(AVLKEYCOMP, func, A2),
@@ -1033,11 +1041,12 @@ AROS_LH3I(struct AVLNode *, AVL_FindNextNodeByKey,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_FindNextNodeByKey */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH1I(struct AVLNode *, AVL_FindFirstNode,
+    AROS_LH1I(struct AVLNode *, AVL_FindFirstNode,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 /*  LOCATION */
@@ -1082,11 +1091,12 @@ AROS_LH1I(struct AVLNode *, AVL_FindFirstNode,
     AROS_LIBFUNC_EXIT;
 }				/* AVL_FindFirstNode */
 
-/*#AROS_LH********************************************************************
+/*****************************************************************************
 
     NAME */
 
-AROS_LH1I(struct AVLNode *, AVL_FindLastNode,
+    AROS_LH1I(struct AVLNode *, AVL_FindLastNode,
+
 /*  SYNOPSIS */
 	  AROS_LHA(const struct AVLNode *, Root, A0),
 /*  LOCATION */
