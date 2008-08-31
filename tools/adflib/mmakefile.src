@@ -41,11 +41,12 @@ includes-copy : $(AROS_INCLUDES)/adf/adflib.h \
 		$(AROS_INCLUDES)/adf/adf_hd.h \
 		$(AROS_INCLUDES)/adf/adf_str.h
 
-$(AROS_INCLUDES)/adf/%.h : %.h
-	$(MKDIR) $(AROS_INCLUDES)/adf
+$(AROS_INCLUDES)/adf/%.h : %.h | $(AROS_INCLUDES)/adf
 	$(CP) $< $(AROS_INCLUDES)/adf
 
-$(AROS_INCLUDES)/adf/defendian.h : myconf.aros
+$(AROS_INCLUDES)/adf/defendian.h : myconf.aros | $(AROS_INCLUDES)/adf
 	@./myconf.aros >> $@
+
+GLOB_MKDIRS += $(AROS_INCLUDES)/adf
 
 %common
