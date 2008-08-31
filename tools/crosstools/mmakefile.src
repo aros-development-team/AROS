@@ -1,0 +1,36 @@
+include $(TOP)/config/make.cfg
+
+#MM- host-build-tools : host-build-tools-hostaroscrosstools
+
+#MM- host-build-tools-hostaroscrosstools : host-build-tools-hostarosgcc
+
+#MM host-build-tools-hostarosgcc : host-build-tools-hostarosgmp host-build-tools-hostarosmpfr host-build-tools-hostarosnewlib host-build-tools-hostarosbinutils
+
+#MM host-build-tools-hostarosgcc--configure : host-build-tools-hostarosnewliblink
+
+%fetch_and_build mmake=host-build-tools-hostarosgmp package=gmp version=4.2.2 compiler=host \
+	    package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no \
+	    extraoptions="--prefix=$(HOSTDIR)/elf-$(AROS_TARGET_CPU)"
+
+%fetch_and_build mmake=host-build-tools-hostarosmpfr package=mpfr version=2.3.1 compiler=host \
+	    package_repo="http://www.mpfr.org/mpfr-current" patch=no \
+	    extraoptions="--prefix=$(HOSTDIR)/elf-$(AROS_TARGET_CPU)"
+
+%fetch_and_build mmake=host-build-tools-hostarosbinutils package=binutils version=2.18 compiler=host \
+	    package_repo="ftp://ftp.sunet.se/pub/gnu/binutils/releasess" patch=no \
+	    extraoptions=" --target=$(AROS_TARGET_CPU)-elf --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --disable-nls --disable-shared --disable-threads"
+
+%fetch_and_build mmake=host-build-tools-hostarosgcc package=gcc version=4.3.0 compiler=host \
+	    package_repo="ftp://ftp.sunet.se/pub/gnu/gcc/releases" patch=no \
+	    extraoptions=" --target=$(AROS_TARGET_CPU)-elf --prefix=$(TOOLDIR) --bindir=$(TOOLDIR) --enable-languages=c,c++ --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TARGET_AS) --with-gnu-as --with-ld=$(TARGET_LD) --with-gnu-ld --with-gmp=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --with-mpfr=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) $(NEWLIB_FLAGS)"
+
+.PHONY : host-build-tools-hostarosnewlib
+#MM
+host-build-tools-hostarosnewlib :
+	%fetch archive=newlib-1.16.0 suffixes="tar.gz" \
+	    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/elf-$(AROS_TARGET_CPU)/Ports/newlib \
+	    archive_origins=". ftp://sources.redhat.com/pub/newlib"
+
+#MM
+host-build-tools-hostarosnewliblink :
+	$(ECHO) "yeah"
