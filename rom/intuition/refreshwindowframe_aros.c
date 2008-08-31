@@ -30,12 +30,12 @@ void clipbordergadgets(struct Region *region,struct Window *w,struct IntuitionBa
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, RefreshWindowFrame,
+    AROS_LH1(void, RefreshWindowFrame,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 76, Intuition)
 
 /*  FUNCTION

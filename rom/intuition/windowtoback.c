@@ -25,12 +25,12 @@ static VOID int_windowtoback(struct WindowToBackActionMsg *msg,
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH1(void, WindowToBack,
+    AROS_LH1(void, WindowToBack,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 51, Intuition)
 
 /*  FUNCTION

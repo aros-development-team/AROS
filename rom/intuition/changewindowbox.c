@@ -27,16 +27,16 @@ static VOID int_changewindowbox(struct ChangeWindowBoxActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH5(void, ChangeWindowBox,
+    AROS_LH5(void, ChangeWindowBox,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(LONG           , left, D0),
          AROS_LHA(LONG           , top, D1),
          AROS_LHA(LONG           , width, D2),
          AROS_LHA(LONG           , height, D3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 81, Intuition)
 
 /*  FUNCTION

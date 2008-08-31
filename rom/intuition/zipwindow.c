@@ -22,12 +22,12 @@ static VOID int_zipwindow(struct ZipWindowActionMsg *msg,
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH1(void, ZipWindow,
+    AROS_LH1(void, ZipWindow,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 84, Intuition)
 
 /*  FUNCTION

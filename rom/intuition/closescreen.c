@@ -41,12 +41,12 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
 #include <intuition/screens.h>
 #include <proto/intuition.h>
 
-AROS_LH1(BOOL, CloseScreen,
+    AROS_LH1(BOOL, CloseScreen,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 11, Intuition)
 
 /*  FUNCTION

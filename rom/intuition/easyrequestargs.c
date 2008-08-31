@@ -13,15 +13,15 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH4(LONG, EasyRequestArgs,
+    AROS_LH4(LONG, EasyRequestArgs,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window     *, window, A0),
          AROS_LHA(struct EasyStruct *, easyStruct, A1),
          AROS_LHA(ULONG             *, IDCMP_ptr, A2),
          AROS_LHA(APTR               , argList, A3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 98, Intuition)
 
 /*  FUNCTION

@@ -14,11 +14,11 @@
  
     NAME */
 
-AROS_LH0(IPTR, OpenWorkBench,
+    AROS_LH0(IPTR, OpenWorkBench,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 35, Intuition)
 
 /*  FUNCTION

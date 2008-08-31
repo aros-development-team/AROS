@@ -21,15 +21,15 @@
 #include <proto/intuition.h>
 #include <utility/tagitem.h>
 
-AROS_LH4(IPTR, SetGadgetAttrsA,
+    AROS_LH4(IPTR, SetGadgetAttrsA,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget *,    gadget,    A0),
          AROS_LHA(struct Window *,    window,    A1),
          AROS_LHA(struct Requester *, requester, A2),
          AROS_LHA(struct TagItem *,   tagList,   A3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 110, Intuition)
 
 /*  FUNCTION

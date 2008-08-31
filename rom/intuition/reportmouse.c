@@ -12,13 +12,13 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH2(void, ReportMouse,
+    AROS_LH2(void, ReportMouse,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(LONG           , flag, D0),
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 39, Intuition)
 
 /*  FUNCTION

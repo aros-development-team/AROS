@@ -14,12 +14,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(ULONG, LockIBase,
+    AROS_LH1(ULONG, LockIBase,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(ULONG, What, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 69, Intuition)
 
 /*  FUNCTION

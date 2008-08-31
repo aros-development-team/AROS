@@ -15,16 +15,16 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH5(BOOL, WindowLimits,
+    AROS_LH5(BOOL, WindowLimits,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(WORD,            MinWidth, D0),
          AROS_LHA(WORD,            MinHeight, D1),
          AROS_LHA(UWORD,           MaxWidth, D2),
          AROS_LHA(UWORD,           MaxHeight, D3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 53, Intuition)
 
 /*  FUNCTION

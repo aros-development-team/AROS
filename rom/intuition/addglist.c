@@ -18,16 +18,16 @@
 #define DEBUG 0
 #   include <aros/debug.h>
 
-AROS_LH5(UWORD, AddGList,
+    AROS_LH5(UWORD, AddGList,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window    *, window, A0),
          AROS_LHA(struct Gadget    *, gadget, A1),
          AROS_LHA(ULONG             , position, D0),
          AROS_LHA(LONG              , numGad, D1),
          AROS_LHA(struct Requester *, requester, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 73, Intuition)
 
 /*  FUNCTION

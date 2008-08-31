@@ -27,13 +27,13 @@ static VOID int_endrequest(struct EndRequestActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(void, EndRequest,
+    AROS_LH2(void, EndRequest,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Requester *, requester, A0),
          AROS_LHA(struct Window *   , window, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 20, Intuition)
 
 /*  FUNCTION

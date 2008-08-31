@@ -22,15 +22,15 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH4(IPTR, DoGadgetMethodA,
+    AROS_LH4(IPTR, DoGadgetMethodA,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget    *, gad, A0),
          AROS_LHA(struct Window    *, win, A1),
          AROS_LHA(struct Requester *, req, A2),
          AROS_LHA(Msg               , msg, A3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 135, Intuition)
 
 /*  FUNCTION

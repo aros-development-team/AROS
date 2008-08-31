@@ -13,11 +13,11 @@
  
     NAME */
 
-AROS_LH0(LONG, CloseWorkBench,
+    AROS_LH0(LONG, CloseWorkBench,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 13, Intuition)
 
 /*  FUNCTION

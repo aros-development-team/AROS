@@ -13,13 +13,13 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(void, SendIntuiMessage,
+    AROS_LH2(void, SendIntuiMessage,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(struct IntuiMessage *, imsg, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 151, Intuition)
 
 /*  FUNCTION

@@ -12,14 +12,14 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(void, RefreshGadgets,
+    AROS_LH3(void, RefreshGadgets,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget    *, gadgets, A0),
          AROS_LHA(struct Window    *, window, A1),
          AROS_LHA(struct Requester *, requester, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 37, Intuition)
 
 /*  FUNCTION

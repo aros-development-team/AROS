@@ -13,13 +13,13 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH2(BOOL, ModifyIDCMP,
+    AROS_LH2(BOOL, ModifyIDCMP,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(ULONG          , flags, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 25, Intuition)
 
 /*  FUNCTION

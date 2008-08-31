@@ -12,9 +12,9 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH8(BOOL, AutoRequest,
+    AROS_LH8(BOOL, AutoRequest,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window    *, window, A0),
          AROS_LHA(struct IntuiText *, body, A1),
          AROS_LHA(struct IntuiText *, posText, A2),
@@ -24,7 +24,7 @@ AROS_LH8(BOOL, AutoRequest,
          AROS_LHA(ULONG             , width, D2),
          AROS_LHA(ULONG             , height, D3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 58, Intuition)
 
 /*  FUNCTION

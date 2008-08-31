@@ -16,15 +16,15 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH4(BOOL, DoubleClick,
+    AROS_LH4(BOOL, DoubleClick,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(ULONG, sSeconds, D0),
          AROS_LHA(ULONG, sMicros, D1),
          AROS_LHA(ULONG, cSeconds, D2),
          AROS_LHA(ULONG, cMicros, D3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 17, Intuition)
 
 /*  FUNCTION

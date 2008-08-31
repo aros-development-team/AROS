@@ -13,13 +13,13 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(struct Preferences *, GetPrefs,
+    AROS_LH2(struct Preferences *, GetPrefs,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Preferences * , prefbuffer, A0),
          AROS_LHA(WORD                 , size, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 22, Intuition)
 
 /*  FUNCTION

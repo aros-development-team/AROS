@@ -12,12 +12,12 @@
 #include <proto/intuition.h>
 #include <proto/layers.h>
 
-AROS_LH1(LONG, IsWindowVisible,
+    AROS_LH1(LONG, IsWindowVisible,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 139, Intuition)
 
 /*  FUNCTION

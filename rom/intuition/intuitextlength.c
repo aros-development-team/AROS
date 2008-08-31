@@ -14,12 +14,12 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH1(LONG, IntuiTextLength,
+    AROS_LH1(LONG, IntuiTextLength,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct IntuiText *, iText, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 55, Intuition)
 
 /*  FUNCTION

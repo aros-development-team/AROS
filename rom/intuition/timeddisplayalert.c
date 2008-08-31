@@ -15,15 +15,15 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH4(BOOL, TimedDisplayAlert,
+    AROS_LH4(BOOL, TimedDisplayAlert,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(ULONG  , alertnumber, D0),
          AROS_LHA(UBYTE *, string     , A0),
          AROS_LHA(UWORD  , height     , D1),
          AROS_LHA(ULONG  , time       , A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 137, Intuition)
 
 /*  FUNCTION

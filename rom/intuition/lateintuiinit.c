@@ -25,12 +25,12 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-AROS_LH1(BOOL, LateIntuiInit,
+    AROS_LH1(BOOL, LateIntuiInit,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(APTR, data, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 150, Intuition)
 
 /*  FUNCTION

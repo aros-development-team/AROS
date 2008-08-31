@@ -14,12 +14,12 @@
 #include <graphics/rastport.h>
 #include <proto/intuition.h>
 
-AROS_LH1(void, ReleaseGIRPort,
+    AROS_LH1(void, ReleaseGIRPort,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct RastPort *, rp, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 94, Intuition)
 
 /*  FUNCTION

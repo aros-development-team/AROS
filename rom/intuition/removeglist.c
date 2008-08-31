@@ -29,14 +29,14 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH3(UWORD, RemoveGList,
+    AROS_LH3(UWORD, RemoveGList,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, remPtr, A0),
          AROS_LHA(struct Gadget *, gadget, A1),
          AROS_LHA(LONG           , numGad, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 74, Intuition)
 
 /*  FUNCTION

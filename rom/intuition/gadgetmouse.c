@@ -14,14 +14,14 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(void, GadgetMouse,
+    AROS_LH3(void, GadgetMouse,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget     *, gadget, A0),
          AROS_LHA(struct GadgetInfo *, ginfo, A1),
          AROS_LHA(WORD              *, mousepoint, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 95, Intuition)
 
 /*  FUNCTION

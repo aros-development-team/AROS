@@ -17,12 +17,12 @@
 #include <intuition/cghooks.h>
 #include <proto/intuition.h>
 
-AROS_LH1(struct RastPort *, ObtainGIRPort,
+    AROS_LH1(struct RastPort *, ObtainGIRPort,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct GadgetInfo *, gInfo, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 93, Intuition)
 
 /*  FUNCTION

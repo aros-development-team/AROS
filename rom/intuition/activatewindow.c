@@ -33,12 +33,12 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, ActivateWindow,
+    AROS_LH1(void, ActivateWindow,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 75, Intuition)
 
 /*  FUNCTION

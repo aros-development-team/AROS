@@ -14,13 +14,13 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH2(void, FreeRemember,
+    AROS_LH2(void, FreeRemember,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Remember **, rememberKey, A0),
          AROS_LHA(LONG              , reallyForget, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 68, Intuition)
 
 /*  FUNCTION

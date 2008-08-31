@@ -45,10 +45,10 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
 AROS_LH1(void, CloseWindow,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 12, Intuition)
 
 /*  FUNCTION

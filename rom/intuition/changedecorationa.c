@@ -26,13 +26,13 @@ struct RemoveDecoratorMsg {
 
 static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBase *IntuitionBase);
 
-AROS_LH2(void, ChangeDecoration,
+    AROS_LH2(void, ChangeDecoration,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 	 AROS_LHA(ULONG, ID, D0),
 	 AROS_LHA(struct NewDecorator *, nd, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 153, Intuition)
 
 /*  FUNCTION

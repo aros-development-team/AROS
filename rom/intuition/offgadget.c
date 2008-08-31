@@ -13,14 +13,14 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH3(void, OffGadget,
+    AROS_LH3(void, OffGadget,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget    *, gadget, A0),
          AROS_LHA(struct Window    *, window, A1),
          AROS_LHA(struct Requester *, requester, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 29, Intuition)
 
 /*  FUNCTION

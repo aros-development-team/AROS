@@ -26,12 +26,12 @@ static VOID int_windowtofront(struct WindowToFrontActionMsg *msg,
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH1(void, WindowToFront,
+    AROS_LH1(void, WindowToFront,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 52, Intuition)
 
 /*  FUNCTION

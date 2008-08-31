@@ -14,12 +14,12 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-AROS_LH1(void, DisposeObject,
+    AROS_LH1(void, DisposeObject,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(APTR, object, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 107, Intuition)
 
 /*  FUNCTION

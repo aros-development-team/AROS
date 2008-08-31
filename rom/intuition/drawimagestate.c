@@ -29,9 +29,9 @@
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
 
-AROS_LH6(void, DrawImageState,
+    AROS_LH6(void, DrawImageState,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct RastPort *, rp,         A0),
          AROS_LHA(struct Image    *, image,      A1),
          AROS_LHA(LONG             , leftOffset, D0),
@@ -39,7 +39,7 @@ AROS_LH6(void, DrawImageState,
          AROS_LHA(ULONG            , state,      D2),
          AROS_LHA(struct DrawInfo *, drawInfo,   A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
 /*  FUNCTION

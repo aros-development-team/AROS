@@ -59,12 +59,12 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
     NAME */
 
-AROS_LH1(struct Window *, OpenWindow,
+    AROS_LH1(struct Window *, OpenWindow,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct NewWindow *, newWindow, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 34, Intuition)
 
 /*  FUNCTION

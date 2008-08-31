@@ -19,14 +19,14 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-AROS_LH3(APTR, NewObjectA,
+    AROS_LH3(APTR, NewObjectA,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct IClass  *, classPtr, A0),
          AROS_LHA(UBYTE          *, classID, A1),
          AROS_LHA(struct TagItem *, tagList, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 106, Intuition)
 
 /*  FUNCTION

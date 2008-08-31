@@ -11,11 +11,11 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH0(BOOL, WBenchToBack,
+    AROS_LH0(BOOL, WBenchToBack,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 56, Intuition)
 
 /*  FUNCTION

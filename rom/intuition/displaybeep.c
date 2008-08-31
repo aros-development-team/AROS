@@ -20,12 +20,12 @@ static inline ULONG beepcolor(ULONG x)
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, DisplayBeep,
+    AROS_LH1(void, DisplayBeep,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 16, Intuition)
 
 /*  FUNCTION

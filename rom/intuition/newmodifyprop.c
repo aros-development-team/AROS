@@ -16,9 +16,9 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH9(void, NewModifyProp,
+    AROS_LH9(void, NewModifyProp,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget    *, gadget, A0),
          AROS_LHA(struct Window    *, window, A1),
          AROS_LHA(struct Requester *, requester, A2),
@@ -29,7 +29,7 @@ AROS_LH9(void, NewModifyProp,
          AROS_LHA(ULONG             , vertBody, D4),
          AROS_LHA(LONG              , numGad, D5),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 78, Intuition)
 
 /*  FUNCTION

@@ -18,12 +18,12 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-AROS_LH1(IPTR, StartScreenNotifyTagList,
+    AROS_LH1(IPTR, StartScreenNotifyTagList,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct TagItem *, tags, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 161, Intuition)
 
 /*  FUNCTION

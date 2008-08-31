@@ -11,9 +11,9 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH6(void, ScreenPosition,
+    AROS_LH6(void, ScreenPosition,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
          AROS_LHA(ULONG          , flags, D0),
          AROS_LHA(LONG           , x1, D1),
@@ -21,7 +21,7 @@ AROS_LH6(void, ScreenPosition,
          AROS_LHA(LONG           , x2, D3),
          AROS_LHA(LONG           , y2, D4),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 132, Intuition)
 
 /*  FUNCTION

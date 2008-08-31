@@ -23,15 +23,15 @@
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
 
-AROS_LH4(void, EraseImage,
+    AROS_LH4(void, EraseImage,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct RastPort *, rp, A0),
          AROS_LHA(struct Image    *, image, A1),
          AROS_LHA(LONG             , leftOffset, D0),
          AROS_LHA(LONG             , topOffset, D1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 105, Intuition)
 
 /*  FUNCTION

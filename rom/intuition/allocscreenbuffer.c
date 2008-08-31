@@ -15,14 +15,14 @@
 #include <intuition/screens.h>
 #include <proto/intuition.h>
 
-AROS_LH3(struct ScreenBuffer *, AllocScreenBuffer,
+    AROS_LH3(struct ScreenBuffer *, AllocScreenBuffer,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
          AROS_LHA(struct BitMap *, bitmap, A1),
          AROS_LHA(ULONG          , flags, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 128, Intuition)
 
 /*  FUNCTION

@@ -23,13 +23,13 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(void, MoveWindowInFrontOf,
+    AROS_LH2(void, MoveWindowInFrontOf,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(struct Window *, behindwindow, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 80, Intuition)
 
 /*  FUNCTION
