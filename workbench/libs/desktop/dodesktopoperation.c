@@ -32,14 +32,14 @@
         #include <proto/desktop.h>
 
         AROS_LH2(ULONG, DoDesktopOperationA,
-     /*
-        SYNOPSIS 
-      */
-            AROS_LHA(ULONG, operationCode, D0),
-            AROS_LHA(struct TagItem *, tags, D2),
-     /*
-        LOCATION 
-      */
+
+/*  SYNOPSIS */
+
+	AROS_LHA(ULONG, operationCode, D0),
+	AROS_LHA(struct TagItem *, tags, D2),
+
+/*  LOCATION */
+
         struct DesktopBase *, DesktopBase, 9, Desktop)
 /*
    FUNCTION

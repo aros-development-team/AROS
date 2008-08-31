@@ -37,15 +37,15 @@
         #include <proto/desktop.h>
 
         AROS_LH2(Object *, CreateDesktopObjectA,
-     /*
-        SYNOPSIS 
-      */
-            AROS_LHA(ULONG, kind, D0), 
-            AROS_LHA(struct TagItem *, tags, A0),
-     /*
-        LOCATION 
-      */
-            struct DesktopBase *, DesktopBase, 8, Desktop)
+
+/*  SYNOPSIS */
+
+	AROS_LHA(ULONG, kind, D0), 
+	AROS_LHA(struct TagItem *, tags, A0),
+
+/*  LOCATION */
+
+	struct DesktopBase *, DesktopBase, 8, Desktop)
 /*
     FUNCTION
     
@@ -53,7 +53,9 @@
     
     RESULT
     
-    NOTES This function is sloppy - sort it out!
+    NOTES
+    
+	This function is sloppy - sort it out!
     
     EXAMPLE
     
