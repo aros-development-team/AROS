@@ -2016,15 +2016,6 @@ else
     endif
 endif
 
-ifeq (%(package),)
-    %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
-else
-    %(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
-endif
-
-%(mmake)-configflag := $(%(mmake)-pkgdir)/.configured
-%(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
-
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
 %(mmake)-install_opts := prefix=$(%(mmake)-prefix) \
@@ -2038,9 +2029,22 @@ endif
 # Set legacy 'host' variable based on chosen compiler
 ifeq (%(compiler),host)
     host := yes
+	ifeq (%(package),)
+		%(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)
+	else
+		%(mmake)-pkgdir := $(HOSTGENDIR)/$(CURDIR)/%(package)
+	endif
 else
     host := no
+	ifeq (%(package),)
+		%(mmake)-pkgdir := $(GENDIR)/$(CURDIR)
+	else
+		%(mmake)-pkgdir := $(GENDIR)/$(CURDIR)/%(package)
+	endif
 endif
+
+%(mmake)-configflag := $(%(mmake)-pkgdir)/.configured
+%(mmake)-installflag := $(%(mmake)-pkgdir)/.installed
 
 ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) $(host)),yes)
     %(mmake)-PROGDIR      := $(%(mmake)-aros_prefix)/bin
