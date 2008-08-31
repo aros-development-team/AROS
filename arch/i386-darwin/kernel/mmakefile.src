@@ -1,4 +1,4 @@
-# $Id:  $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM kernel-kernel-darwin-i386 : includes kernel-kernel-darwin-i386-native
