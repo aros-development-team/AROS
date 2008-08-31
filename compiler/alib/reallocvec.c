@@ -14,18 +14,12 @@
     NAME */
 #include <proto/exec.h>
 
-//	AROS_LH3(APTR, AllocVec,
 	APTR ReAllocVec (
 
 /*  SYNOPSIS */
 	APTR  oldmem,
 	ULONG newsize,
 	ULONG requirements)
-//	AROS_LHA(APTR,  oldmem,       A0),
-//	AROS_LHA(ULONG, byteSize,     D0),
-//	AROS_LHA(ULONG, requirements, D1),
-/*  SYNOPSIS */
-//	struct ExecBase *, SysBase, 1xx, Exec)
 
 /*  FUNCTION
 	Change the size of an AllocVec:ed part of memory. The memory must
