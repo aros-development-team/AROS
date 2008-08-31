@@ -27,14 +27,14 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(void, ScreenDepth,
+    AROS_LH3(void, ScreenDepth,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
          AROS_LHA(ULONG          , flags, D0),
          AROS_LHA(APTR           , reserved, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 131, Intuition)
 
 /*  FUNCTION

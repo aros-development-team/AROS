@@ -14,13 +14,13 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(struct Window *, OpenWindowTagList,
+    AROS_LH2(struct Window *, OpenWindowTagList,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct NewWindow *, newWindow, A0),
          AROS_LHA(struct TagItem   *, tagList, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 101, Intuition)
 
 /*  FUNCTION

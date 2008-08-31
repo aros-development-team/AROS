@@ -14,11 +14,11 @@ static void ShowLayer(struct Layer *);
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH0(void, DumpIntuiState,
+    AROS_LH0(void, DumpIntuiState,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 152, Intuition)
 
 /*  FUNCTION

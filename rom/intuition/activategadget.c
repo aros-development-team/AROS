@@ -30,14 +30,14 @@ static VOID int_activategadget(struct ActivateGadgetActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(BOOL, ActivateGadget,
+    AROS_LH3(BOOL, ActivateGadget,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget *   , gadget, A0),
          AROS_LHA(struct Window *   , window, A1),
          AROS_LHA(struct Requester *, requester, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 77, Intuition)
 
 /*  FUNCTION

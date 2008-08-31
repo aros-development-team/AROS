@@ -28,14 +28,14 @@ static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(struct Region *, ChangeWindowShape,
+    AROS_LH3(struct Region *, ChangeWindowShape,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(struct Region *, newshape, A1),
          AROS_LHA(struct Hook *, callback, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 143, Intuition)
 
 /*  FUNCTION

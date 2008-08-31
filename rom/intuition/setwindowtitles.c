@@ -30,14 +30,14 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(void, SetWindowTitles,
+    AROS_LH3(void, SetWindowTitles,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window,      A0),
          AROS_LHA(CONST_STRPTR,    windowTitle, A1),
          AROS_LHA(CONST_STRPTR,    screenTitle, A2),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 46, Intuition)
 
 /*  FUNCTION

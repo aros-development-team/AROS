@@ -11,12 +11,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(struct Hook *, SetEditHook,
+    AROS_LH1(struct Hook *, SetEditHook,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Hook *, hook, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 82, Intuition)
 
 /*  FUNCTION

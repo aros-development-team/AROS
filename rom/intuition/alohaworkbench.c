@@ -11,12 +11,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, AlohaWorkbench,
+    AROS_LH1(void, AlohaWorkbench,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct MsgPort *, wbmsgport, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 67, Intuition)
 
 /*  FUNCTION

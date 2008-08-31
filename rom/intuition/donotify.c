@@ -68,15 +68,15 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
  
     NAME */
 
-AROS_LH4(IPTR, DoNotify,
+    AROS_LH4(IPTR, DoNotify,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(Class *,      cl, A0),
          AROS_LHA(Object *,     o,  A1),
          AROS_LHA(struct ICData *,  ic, A2),
          AROS_LHA(struct opUpdate *,    msg,    A3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 145, Intuition)
 
 /*  FUNCTION

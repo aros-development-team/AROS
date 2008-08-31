@@ -18,12 +18,12 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-AROS_LH1(BOOL, EndScreenNotify,
+    AROS_LH1(BOOL, EndScreenNotify,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(IPTR, notify, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 162, Intuition)
 
 /*  FUNCTION

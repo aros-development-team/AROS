@@ -17,13 +17,13 @@ void Characterize(struct Menu *menu);
 #include <proto/exec.h>
 #include <intuition/intuition.h>
 
-AROS_LH2(BOOL, SetMenuStrip,
+    AROS_LH2(BOOL, SetMenuStrip,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(struct Menu   *, menu  , A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 44, Intuition)
 
 /*  FUNCTION

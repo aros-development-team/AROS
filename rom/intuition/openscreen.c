@@ -74,12 +74,12 @@ static const char THIS_FILE[] = __FILE__;
  
     NAME */
 
-AROS_LH1(struct Screen *, OpenScreen,
+    AROS_LH1(struct Screen *, OpenScreen,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct NewScreen *, newScreen, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 33, Intuition)
 
 /*  FUNCTION

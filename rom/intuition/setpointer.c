@@ -12,9 +12,9 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH6(void, SetPointer,
+    AROS_LH6(void, SetPointer,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(UWORD         *, pointer, A1),
          AROS_LHA(LONG           , height, D0),
@@ -22,7 +22,7 @@ AROS_LH6(void, SetPointer,
          AROS_LHA(LONG           , xOffset, D2),
          AROS_LHA(LONG           , yOffset, D3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 45, Intuition)
 
 /*  FUNCTION

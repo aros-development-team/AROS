@@ -79,9 +79,9 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 #include <exec/types.h>
 #include <intuition/intuition.h>
 
-AROS_LH7(struct Window *, BuildSysRequest,
+    AROS_LH7(struct Window *, BuildSysRequest,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *   , window, A0),
          AROS_LHA(struct IntuiText *, bodytext, A1),
          AROS_LHA(struct IntuiText *, postext, A2),
@@ -90,7 +90,7 @@ AROS_LH7(struct Window *, BuildSysRequest,
          AROS_LHA(WORD              , width, D2),
          AROS_LHA(WORD              , height, D3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 60, Intuition)
 
 /*  FUNCTION

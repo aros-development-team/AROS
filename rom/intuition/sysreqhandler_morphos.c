@@ -22,14 +22,14 @@
 #include <exec/types.h>
 #include <intuition/intuition.h>
 
-AROS_LH3(LONG, SysReqHandler,
+    AROS_LH3(LONG, SysReqHandler,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window  *, window, A0),
          AROS_LHA(ULONG   *,        IDCMPFlagsPtr, A1),
          AROS_LHA(BOOL            , WaitInput, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 100, Intuition)
 
 /*  FUNCTION

@@ -11,13 +11,13 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(BOOL, ResetMenuStrip,
+    AROS_LH2(BOOL, ResetMenuStrip,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(struct Menu *, menu, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 117, Intuition)
 
 /*  FUNCTION

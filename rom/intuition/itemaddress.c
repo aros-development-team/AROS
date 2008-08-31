@@ -14,13 +14,13 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(struct MenuItem *, ItemAddress,
+    AROS_LH2(struct MenuItem *, ItemAddress,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Menu *, menustrip, A0),
          AROS_LHA(UWORD        , menunumber, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 24, Intuition)
 
 /*  FUNCTION

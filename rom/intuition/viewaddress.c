@@ -12,11 +12,11 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH0(struct View *, ViewAddress,
+    AROS_LH0(struct View *, ViewAddress,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 49, Intuition)
 
 /*  FUNCTION

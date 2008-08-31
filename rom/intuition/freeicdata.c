@@ -16,12 +16,12 @@
  
     NAME */
 
-AROS_LH1(void, FreeICData,
+    AROS_LH1(void, FreeICData,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct ICData *, icdata, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 146, Intuition)
 
 /*  FUNCTION

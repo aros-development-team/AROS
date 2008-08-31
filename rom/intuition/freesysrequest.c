@@ -16,12 +16,12 @@
 #include <exec/types.h>
 #include <intuition/intuition.h>
 
-AROS_LH1(void, FreeSysRequest,
+    AROS_LH1(void, FreeSysRequest,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
 /*  FUNCTION

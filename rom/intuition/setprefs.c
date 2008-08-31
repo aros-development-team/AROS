@@ -17,14 +17,14 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(struct Preferences *, SetPrefs,
+    AROS_LH3(struct Preferences *, SetPrefs,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Preferences * , prefbuffer, A0),
          AROS_LHA(LONG                 , size, D0),
          AROS_LHA(BOOL                 , inform, D1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 54, Intuition)
 
 /*  FUNCTION

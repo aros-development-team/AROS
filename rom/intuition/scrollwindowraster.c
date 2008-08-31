@@ -31,9 +31,9 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH7(void, ScrollWindowRaster,
+    AROS_LH7(void, ScrollWindowRaster,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, win , A1),
          AROS_LHA(WORD           , dx  , D0),
          AROS_LHA(WORD           , dy  , D1),
@@ -42,7 +42,7 @@ AROS_LH7(void, ScrollWindowRaster,
          AROS_LHA(WORD           , xmax, D4),
          AROS_LHA(WORD           , ymax, D5),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 133, Intuition)
 
 /*  FUNCTION

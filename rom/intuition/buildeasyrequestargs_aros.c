@@ -75,15 +75,15 @@ static int charsinstring(STRPTR string, char c);
 #include <exec/types.h>
 #include <intuition/intuition.h>
 
-AROS_LH4(struct Window *, BuildEasyRequestArgs,
+    AROS_LH4(struct Window *, BuildEasyRequestArgs,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window     *, RefWindow, A0),
          AROS_LHA(struct EasyStruct *, easyStruct, A1),
          AROS_LHA(ULONG              , IDCMP, D0),
          AROS_LHA(APTR               , Args, A3),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 99, Intuition)
 
 /*  FUNCTION

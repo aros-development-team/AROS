@@ -24,13 +24,13 @@ static VOID int_request(struct RequestActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(BOOL, Request,
+    AROS_LH2(BOOL, Request,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Requester *, requester, A0),
          AROS_LHA(struct Window *   , window, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 40, Intuition)
 
 /*  FUNCTION

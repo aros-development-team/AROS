@@ -11,11 +11,11 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH0(VOID, UnlockPubScreenList,
+    AROS_LH0(VOID, UnlockPubScreenList,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 88, Intuition)
 
 /*  FUNCTION

@@ -11,12 +11,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(BOOL, ClearDMRequest,
+    AROS_LH1(BOOL, ClearDMRequest,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 8, Intuition)
 
 /*  FUNCTION

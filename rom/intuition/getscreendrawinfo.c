@@ -11,12 +11,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(struct DrawInfo *, GetScreenDrawInfo,
+    AROS_LH1(struct DrawInfo *, GetScreenDrawInfo,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 115, Intuition)
 
 /*  FUNCTION

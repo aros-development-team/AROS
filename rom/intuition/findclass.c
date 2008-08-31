@@ -24,12 +24,12 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-AROS_LH1(struct IClass *, FindClass,
+    AROS_LH1(struct IClass *, FindClass,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(ClassID,  classID, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 112, Intuition)
 
 /*  FUNCTION

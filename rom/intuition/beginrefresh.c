@@ -19,12 +19,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, BeginRefresh,
+    AROS_LH1(void, BeginRefresh,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 59, Intuition)
 
 /*  FUNCTION

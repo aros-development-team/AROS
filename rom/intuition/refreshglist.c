@@ -27,15 +27,15 @@ struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH4(void, RefreshGList,
+    AROS_LH4(void, RefreshGList,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Gadget    *, gadgets, A0),
          AROS_LHA(struct Window    *, window, A1),
          AROS_LHA(struct Requester *, requester, A2),
          AROS_LHA(LONG              , numGad, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 72, Intuition)
 
 /*  FUNCTION

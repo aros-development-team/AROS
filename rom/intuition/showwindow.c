@@ -37,12 +37,12 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(VOID, ShowWindow,
+    AROS_LH1(VOID, ShowWindow,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 140, Intuition)
 
 /*  FUNCTION

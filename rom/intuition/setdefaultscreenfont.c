@@ -11,12 +11,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, SetDefaultScreenFont,
+    AROS_LH1(void, SetDefaultScreenFont,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct TextFont *, textfont, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 144, Intuition)
 
 /*  FUNCTION

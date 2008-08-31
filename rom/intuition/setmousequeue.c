@@ -11,13 +11,13 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(LONG, SetMouseQueue,
+    AROS_LH2(LONG, SetMouseQueue,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(UWORD          , queuelength, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 83, Intuition)
 
 /*  FUNCTION

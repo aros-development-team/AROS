@@ -16,12 +16,12 @@
 #include <intuition/classes.h>
 #include <proto/intuition.h>
 
-AROS_LH1(APTR, NextObject,
+    AROS_LH1(APTR, NextObject,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(APTR, objectPtrPtr, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 111, Intuition)
 
 /*  FUNCTION

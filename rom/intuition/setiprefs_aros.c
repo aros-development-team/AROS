@@ -14,14 +14,14 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(ULONG, SetIPrefs,
+    AROS_LH3(ULONG, SetIPrefs,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(APTR , data, A0),
          AROS_LHA(ULONG, length, D0),
          AROS_LHA(ULONG, type, D1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 96, Intuition)
 
 /*  FUNCTION

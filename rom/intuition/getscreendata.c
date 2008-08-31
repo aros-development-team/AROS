@@ -16,15 +16,15 @@
 #include <intuition/screens.h>
 #include <proto/intuition.h>
 
-AROS_LH4(LONG, GetScreenData,
+    AROS_LH4(LONG, GetScreenData,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(APTR           , buffer, A0),
          AROS_LHA(ULONG          , size, D0),
          AROS_LHA(ULONG          , type, D1),
          AROS_LHA(struct Screen *, screen, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 71, Intuition)
 
 /*  FUNCTION

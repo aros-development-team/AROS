@@ -23,13 +23,13 @@ static VOID int_setdmrequest(struct SetDMRequestActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(BOOL, SetDMRequest,
+    AROS_LH2(BOOL, SetDMRequest,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *   , window, A0),
          AROS_LHA(struct Requester *, dmrequest, A1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 43, Intuition)
 
 /*  FUNCTION

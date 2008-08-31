@@ -11,12 +11,12 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH1(void, SetDefaultPubScreen,
+    AROS_LH1(void, SetDefaultPubScreen,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(UBYTE *, name, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 90, Intuition)
 
 /*  FUNCTION

@@ -23,13 +23,13 @@ static VOID int_showtitle(struct ShowTitleActionMsg *msg,
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH2(void, ShowTitle,
+    AROS_LH2(void, ShowTitle,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Screen *, screen, A0),
          AROS_LHA(BOOL           , ShowIt, D0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 47, Intuition)
 
 /*  FUNCTION

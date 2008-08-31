@@ -16,15 +16,15 @@
 #include <intuition/intuition.h>
 #include <proto/intuition.h>
 
-AROS_LH4(void, DrawBorder,
+    AROS_LH4(void, DrawBorder,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct RastPort *, rp, A0),
          AROS_LHA(struct Border   *, border, A1),
          AROS_LHA(LONG             , leftOffset, D0),
          AROS_LHA(LONG             , topOffset, D1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 18, Intuition)
 
 /*  FUNCTION

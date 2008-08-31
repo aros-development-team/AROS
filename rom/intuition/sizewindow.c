@@ -11,14 +11,14 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH3(void, SizeWindow,
+    AROS_LH3(void, SizeWindow,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(struct Window *, window, A0),
          AROS_LHA(LONG           , dx, D0),
          AROS_LHA(LONG           , dy, D1),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 48, Intuition)
 
 /*  FUNCTION

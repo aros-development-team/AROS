@@ -15,13 +15,13 @@
 #include <intuition/imageclass.h>
 #include <proto/intuition.h>
 
-AROS_LH2(BOOL, PointInImage,
+    AROS_LH2(BOOL, PointInImage,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
          AROS_LHA(ULONG,          point, D0),
          AROS_LHA(struct Image *, image, A0),
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 104, Intuition)
 
 /*  FUNCTION

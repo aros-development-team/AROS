@@ -12,11 +12,11 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH0(LONG, RemakeDisplay,
+    AROS_LH0(LONG, RemakeDisplay,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 64, Intuition)
 
 /*  FUNCTION

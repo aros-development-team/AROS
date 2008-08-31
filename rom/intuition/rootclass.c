@@ -31,9 +31,9 @@
 /*****i************************************************************************
  
     NAME */
-AROS_UFH3(IPTR, rootDispatcher,
+    AROS_UFH3(IPTR, rootDispatcher,
 
-          /*  SYNOPSIS */
+/*  SYNOPSIS */
           AROS_UFHA(Class  *, cl,  A0),
           AROS_UFHA(Object *, o,   A2),
           AROS_UFHA(Msg,      msg, A1))

@@ -14,11 +14,11 @@
     NAME */
 #include <proto/intuition.h>
 
-AROS_LH0(void, lockPubClass,
+    AROS_LH0(void, lockPubClass,
 
-         /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-         /*  LOCATION */
+/*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 120, Intuition)
 
 /*  FUNCTION
