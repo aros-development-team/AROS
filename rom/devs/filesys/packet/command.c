@@ -769,7 +769,7 @@ AROS_UFH3(void, packet_reply,
             case ACTION_FINDINPUT:
             case ACTION_FINDOUTPUT:
             case ACTION_FINDUPDATE:
-                FreeMem((APTR) BADDR(dp->dp_Arg1), sizeof(struct FileHandle));
+                FreeMem((APTR) BADDR(dp->dp_Arg1), sizeof(struct ph_handle));
                 break;
 
             case ACTION_SAME_LOCK:
