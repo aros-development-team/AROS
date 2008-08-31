@@ -129,7 +129,7 @@ struct NewDOSVolumeNode
 ///IconVolumeList__CreateDOSList()
 static struct NewDosList *IconVolumeList__CreateDOSList(void)
 {
-	APTR pool = CreatePool(MEMF_PUBLIC,4096,4096);
+	APTR pool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,4096,4096);
 
 D(bug("[IconVolList]: %s()\n", __PRETTY_FUNCTION__));
 
