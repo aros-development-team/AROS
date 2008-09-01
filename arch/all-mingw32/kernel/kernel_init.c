@@ -107,19 +107,19 @@ ADD2INITLIB(Kernel_Init, 0)
 
 
 //make this the entry point
-int startup(struct TagItem *msg, struct HostInterface *hif) __attribute__ ((section (".aros.init")));
+int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
 void prepare_host_hook(struct Hook * hook);
 
 
-int startup(struct TagItem *msg, struct HostInterface *hif)
+int startup(struct TagItem *msg)
 {
   BootMsg = msg;
-  HostIFace = hif;
   
   void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
   void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
   void * memory = (void*)krnGetTagData(KRN_MMAPAddress, 0, msg); /* FIXME: These tags are used in non-conforming way */
   unsigned int memsize = krnGetTagData(KRN_MMAPLength, 0, msg);
+  HostIFace = krnGetTagData(KRN_HostInterface, 0, msg);
 
 /*
   struct TagItem * KernelHooks = (struct TagItem *)krnGetTagData(KRN_KernelHooks, 0, msg);

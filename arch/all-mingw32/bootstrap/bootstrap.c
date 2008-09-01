@@ -22,7 +22,7 @@ typedef unsigned char UBYTE;
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
 
-typedef int (*kernel_entry_fun_t)(struct TagItem *, struct HostInterface *);
+typedef int (*kernel_entry_fun_t)(struct TagItem *);
 
 #define BASE_ALIGNMENT 16
 
@@ -105,11 +105,15 @@ int main(int argc, char ** argv)
   tag->ti_Tag = KRN_KernelHighest;
   tag->ti_Data = (unsigned long)kernel_highest();
   tag++;
+  
+  tag->ti_Tag = KRN_HostInterface;
+  tag->ti_Data = &HostIFace;
+  tag++;
 
   tag->ti_Tag = TAG_DONE;
 
   printf("[Bootstrap] entering kernel@%p...\n",kernel_entry_fun);
-  int retval = kernel_entry_fun(km, &HostIFace);
+  int retval = kernel_entry_fun(km);
 
   printf("kernel returned %i\n",retval);
 }  

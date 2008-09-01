@@ -13,6 +13,8 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+extern struct HostInterface *HostIFace;
+
         AROS_LH1(void, RawPutChar,
 
 /*  SYNOPSIS */
@@ -51,7 +53,7 @@
     /* Don't write 0 bytes */
     if (chr)
     {
-        KrnRawPutChar(chr);
+        HostIFace->PutChar(chr);
     }
 
     AROS_LIBFUNC_EXIT
