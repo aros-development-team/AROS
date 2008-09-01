@@ -6,6 +6,9 @@
  Lang: english
  */
 
+#define DEBUG 1
+
+#include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -14,6 +17,7 @@
 #include <aros/kernel.h>
 #include "etask.h"
 #include "exec_util.h"
+#include "cpucontext.h"
 
 #include <aros/libcall.h>
 #include <proto/arossupport.h>
@@ -26,25 +30,78 @@ AROS_LH4(BOOL, PrepareContext,
 		 struct ExecBase *, SysBase, 6, Exec)
 {
   AROS_LIBFUNC_INIT
+  IPTR args[8] = {0};
+  WORD numargs = 0;
 
-  kprintf("[PrepareContext] preparing task \"%s\" entry: %p fallback: %p\n",task->tc_Node.ln_Name,entryPoint,fallBack);
+  D(kprintf("[PrepareContext] preparing task \"%s\" entry: %p fallback: %p\n",task->tc_Node.ln_Name,entryPoint,fallBack));
  
   if (!(task->tc_Flags & TF_ETASK) )
 	  return FALSE;
   
-  GetIntETask (task)->iet_Context = AllocTaskMem (task
-												  , SIZEOF_ALL_REGISTERS
-												  , MEMF_PUBLIC|MEMF_CLEAR
-												  );
+  GetIntETask (task)->iet_Context = AllocTaskMem (task, sizeof(CONTEXT), MEMF_PUBLIC|MEMF_CLEAR);
   
   if (!GetIntETask (task)->iet_Context)
 	  return FALSE;
+
+  while(tagList)
+  {
+	switch(tagList->ti_Tag)
+	{
+	  case TAG_MORE:
+		tagList = (struct TagItem *)tagList->ti_Data;
+		continue;
+		
+	  case TAG_SKIP:
+		tagList += tagList->ti_Data;
+		break;
+		
+	  case TAG_DONE:
+		tagList = NULL;
+		break;
+		
+#define HANDLEARG(x) \
+case TASKTAG_ARG ## x: \
+args[x - 1] = (IPTR)tagList->ti_Data; \
+if (x > numargs) numargs = x; \
+break;
+		
+		HANDLEARG(1)
+		HANDLEARG(2)
+		HANDLEARG(3)
+		HANDLEARG(4)
+		HANDLEARG(5)
+		HANDLEARG(6)
+		HANDLEARG(7)
+		HANDLEARG(8)
+		
+#undef HANDLEARG
+	}
+	
+	if (tagList) tagList++;
+  }
+  if (numargs)
+  {
+
+	/* Assume C function gets all param on stack */
+	
+	while(numargs--)
+	{
+	  D(kprintf("  arg %i: %p\n",numargs, args[numargs]));
+	  _PUSH(GetSP(task), args[numargs]);
+	}
+	
+  }
   
-/*
-  KRNWireImpl(PrepareContext);
+  /* First we push the return address */
+  _PUSH(GetSP(task), fallBack);
   
-  CALLHOOKPKT(krnPrepareContextImpl,task,TAGLIST(TAG_USER,entryPoint,TAG_USER+1,tagList,TAG_DONE));  
-*/
+  /* Then set up the frame to be used by Dispatch() */
+  PREPARE_INITIAL_FRAME(GetSP(task), entryPoint);
+  PREPARE_INITIAL_CONTEXT(task, entryPoint);
+
+  D(kprintf("prepared task context:\n"));
+  D(PRINT_CPUCONTEXT(task));
+
   return TRUE;
   
   AROS_LIBFUNC_EXIT
