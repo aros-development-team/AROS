@@ -16,7 +16,7 @@ export CFLAGS        := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 
 %build_with_configure mmake=grub2-host compiler=host nix=yes	\
-	prefix="$(GENDIR)/$(CURDIR)/host_binaries"	install_target=	\
+	prefix="$(HOSTGENDIR)/$(CURDIR)/host_binaries"	install_target=	\
 	extraoptions="--enable-grub-emu --enable-grub-fstest"
 
 GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
@@ -31,7 +31,7 @@ grub2-dirs :
 
 #MM
 grub2-iso-setup :
-	@cd $(GENDIR)/$(CURDIR)					&& \
+	@cd $(HOSTGENDIR)/$(CURDIR)					&& \
 	./grub-mkimage -d . -o core.img $(GRUB2_MODS)		&& \
 	$(CP) *.img $(GRUBBOOTDIR)				&& \
 	$(CP) *.mod $(GRUBBOOTDIR)				&& \
