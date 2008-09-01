@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -61,16 +61,30 @@ static void killdto(struct Dtpic_DATA *data)
     
 };
 
+/*
+ * We copy the filename, as the file is opened later in setup and
+ * not at once.
+ */
 IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Dtpic_DATA *data;
+    STRPTR             n;
  
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
     	data = INST_DATA(cl, obj);
 	
-	data->name = (STRPTR)GetTagData(MUIA_Dtpic_Name, 0, msg->ops_AttrList);
+	n = (STRPTR) GetTagData(MUIA_Dtpic_Name, 0, msg->ops_AttrList);
+
+	data->name = (STRPTR) AllocVec((ULONG) (strlen((char *)n)+1) * sizeof(char),MEMF_ANY);
+
+	if(!data->name)
+	{
+	    CoerceMethod(cl, obj, OM_DISPOSE);
+	    return (IPTR)NULL;
+	}
+	strcpy((char *) data->name,(char *) n);
 	
 	set(obj, MUIA_FillArea, FALSE);
     }
@@ -185,6 +199,16 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
     
     return 0;
+}
+
+IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Dtpic_DATA *data = INST_DATA(cl, obj);
+
+    if(data->name)
+	FreeVec(data->name);
+    
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 #if ZUNE_BUILTIN_DTPIC
