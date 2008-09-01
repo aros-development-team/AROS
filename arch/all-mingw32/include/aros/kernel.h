@@ -25,9 +25,11 @@ typedef enum {
 #define KRN_ProtAreaEnd         (KRN_Dummy + 14)
 #define KRN_VBEMode             (KRN_Dummy + 15)
 #define KRN_VBEPaletteWidth     (KRN_Dummy + 16)
-#define KRN_MEMLower            (KRN_Dummy + 17)
-#define KRN_MEMUpper            (KRN_Dummy + 18)
-#define KRN__TAGCOUNT           (18)
+#define KRN_MEMLower            (KRN_Dummy + 17) /* Also KRN_OpenFirmwareTree */
+#define KRN_MEMUpper            (KRN_Dummy + 18) /* Also KRN_ArgC */
+#define KRN_ArgV		(KRN_Dummy + 19)
+#define KRN_HostInterface	(KRN_Dummy + 20)
+#define KRN__TAGCOUNT           (20)
 
 /* The following structure is private for now */
 struct HostInterface
