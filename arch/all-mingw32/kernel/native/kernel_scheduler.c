@@ -1,5 +1,5 @@
 /*
- Copyright � 1995-2007, The AROS Development Team. All rights reserved.
+ Copyright � 1995-2008, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Initialize the interface to the "hardware".
@@ -424,82 +424,6 @@ void InitCore(void)
 
 }
 
-void do_prepare_context(void * ptask, void * entryPoint, void * fallBack, struct TagItem * tagList)
-{
-  struct Task * task = (struct Task*)ptask;
-  IPTR args[8] = {0};
-  WORD numargs = 0;
-  while(tagList)
-  {
-	switch(tagList->ti_Tag)
-	{
-	  case TAG_MORE:
-		tagList = (struct TagItem *)tagList->ti_Data;
-		continue;
-		
-	  case TAG_SKIP:
-		tagList += tagList->ti_Data;
-		break;
-		
-	  case TAG_DONE:
-		tagList = NULL;
-		break;
-		
-#define HANDLEARG(x) \
-case TASKTAG_ARG ## x: \
-args[x - 1] = (IPTR)tagList->ti_Data; \
-if (x > numargs) numargs = x; \
-break;
-		
-		HANDLEARG(1)
-		HANDLEARG(2)
-		HANDLEARG(3)
-		HANDLEARG(4)
-		HANDLEARG(5)
-		HANDLEARG(6)
-		HANDLEARG(7)
-		HANDLEARG(8)
-		
-#undef HANDLEARG
-	}
-	
-	if (tagList) tagList++;
-  }
-  if (numargs)
-  {
-
-	/* Assume C function gets all param on stack */
-	
-	while(numargs--)
-	{
-    printf("  arg %i: %p\n",args[numargs]);
-	  _PUSH(GetSP(task), args[numargs]);
-	}
-	
-  }
-  
-  /* First we push the return address */
-  _PUSH(GetSP(task), fallBack);
-  
-  /* Then set up the frame to be used by Dispatch() */
-  PREPARE_INITIAL_FRAME(GetSP(task), entryPoint);
-  PREPARE_INITIAL_CONTEXT(task, entryPoint);
-
-  printf("prepared task, context:\n");
-  PRINT_CPUCONTEXT(task);
-
-}
-/*
-void * kernelPrepareContext(struct Hook * hook, unsigned long object, unsigned long message)
-{
-  struct TagItem * msg = (struct TagItem *)message;
-  void * entryPoint = (void *)(msg->ti_Data); ++msg;
-  void * fallback = (void *)(msg->ti_Data); ++msg;  
-  struct TagItem * taglist = (struct TagItem *)(msg->ti_Data);
-  do_prepare_context((void *)object, entryPoint, fallback, taglist);
-  return 0;
-}
-
 void * kernelSoftDisable (struct Hook * hook, unsigned long object, unsigned long message)
 {
   sigset_t set;
@@ -532,12 +456,6 @@ void * kernelIdleTask (struct Hook * hook, unsigned long object, unsigned long m
 void * kernelSoftCause (struct Hook * hook, unsigned long object, unsigned long message)
 {
   kill(getpid(), SIGUSR1);
-  return 0;
-}
-
-void * kernelPutchar (struct Hook * hook, unsigned long object, unsigned long c)
-{
-  putchar(c);
   return 0;
 }
 
