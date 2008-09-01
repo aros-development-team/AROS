@@ -221,6 +221,7 @@ BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
 	case MUIM_Cleanup:   return Dtpic__MUIM_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
 	case MUIM_AskMinMax: return Dtpic__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
 	case MUIM_Draw:      return Dtpic__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+	case OM_DISPOSE:     return Dtpic__OM_DISPOSE(cl, obj, msg);
 	default:             return DoSuperMethodA(cl, obj, msg);
     }   
 }
