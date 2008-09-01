@@ -12,10 +12,10 @@ include $(TOP)/config/make.cfg
 host-build-tools-hostarosmkdir :
 		@$(MKDIR) $(HOSTDIR)/elf-$(AROS_TARGET_CPU)
 
-#MM host-build-tools-hostgmp : host-build-tools-hostarosmkdir
-#MM host-build-tools-hostmpfr : host-build-tools-hostarosmkdir
-#MM host-build-tools-hostarosbinutils : host-build-tools-hostarosmkdir
-#MM host-build-tools-hostarosgcc : host-build-tools-hostarosmkdir
+#MM- host-build-tools-hostgmp : host-build-tools-hostarosmkdir host-build-tools-hostgmp-quick
+#MM- host-build-tools-hostmpfr : host-build-tools-hostarosmkdir host-build-tools-hostmpfr-quick
+#MM- host-build-tools-hostarosbinutils : host-build-tools-hostarosmkdir host-build-tools-hostarosbinutils-quick
+#MM- host-build-tools-hostarosgcc : host-build-tools-hostarosmkdir host-build-tools-hostarosgcc-quick
 
 %fetch_and_build mmake=host-build-tools-hostgmp package=gmp version=4.2.2 compiler=host \
 	    prefix="$(HOSTDIR)/elf-$(AROS_TARGET_CPU)" package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no
