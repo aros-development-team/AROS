@@ -2257,6 +2257,12 @@ endif
  
 %(mmake)-archbase  := %(package)-%(version)
 
+ifeq (%(compiler),host)
+    %(mmake)-portdir  := $(HOSTDIR)/Ports/%(package)
+else
+    %(mmake)-portdir  := $(PORTSDIR)/%(package)
+endif
+
 ifeq (%(prefix),)
     %(mmake)-prefix := $(CONTRIB_DIR)/%(package)
 else
@@ -2285,19 +2291,19 @@ endif
 #MM
 %(mmake)-%(subpackage)-fetch :
 	%fetch archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" \
-	    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/%(package) \
+	    location=$(PORTSSOURCEDIR) destination=$(%(mmake)-portdir) \
 	    archive_origins=". %(package_repo)" \
 	    patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins=". %(patch_repo)"
 
 #MM- %(mmake) : %(mmake)-%(subpackage)
 
-%(mmake)-%(subpackage)-package-dir := $(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-archbase)
+%(mmake)-%(subpackage)-package-dir := $(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-archbase)
 
 %(mmake)-%(subpackage)-package-basename := \
     $(DISTDIR)/Packages/$(%(mmake)-%(subpackage)-archbase)-aros.$(AROS_TARGET_CPU)
 
 %build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) \
-     srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
+     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
      %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)"
