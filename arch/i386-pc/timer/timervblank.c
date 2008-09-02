@@ -122,6 +122,12 @@ AROS_UFH4(ULONG, VBlankInt,
     	}
     }
 
+    if (--SysBase->Elapsed == 0)
+    {
+        SysBase->SysFlags |= 0x2000;
+        SysBase->AttnResched |= 0x80;
+    }
+
     Timer0Setup(TimerBase);
     
     return 0;
