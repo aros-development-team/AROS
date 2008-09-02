@@ -15,6 +15,9 @@
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
 
+#define kprintf printf
+
+#include <aros/atomic.h>
 #include <aros/kernel.h>
 #include <hardware/intbits.h>
 #include <exec/execbase.h>
@@ -25,7 +28,7 @@ typedef unsigned char UBYTE;
 #include <sys/time.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "sigcore.h"
+#include "cpucontext.h"
 
 #define ARF_AttnDispatch    (1L<<15)
 
@@ -43,7 +46,7 @@ struct Task * lastTask;
 sigset_t sig_int_mask;	/* Mask of signals that Disable() blocks */
 int intrap;
 int supervisor;
-extern struct ExecBase * SysBase;
+struct ExecBase *SysBase;
 
 /*
  These tables are used to map signals to interrupts
@@ -75,28 +78,41 @@ static const int sig2trap[][2] =
 };
 */
 /* On TF_EXCEPT make Exec_Exception being called. */
-extern void (*Exec_Exception)(struct ExecBase*);
-extern void (*Exec_Dispatch)(struct ExecBase*);
+typedef void (*Exec_Callback)(struct ExecBase*);
+
+Exec_Callback Exec_Exception;
+Exec_Callback Exec_Dispatch;
 
 void do_enable()
 {
-  AROS_ATOMIC_DEC(&SysBase->IDNestCnt);
+
+  AROS_ATOMIC_DEC(SysBase->IDNestCnt);
+  
+/* TODO: process this somehow else
+  if(SysBase->IDNestCnt < 0)
+  {
+	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
+  }*/
 }
 
 void do_disable()
 {
-  AROS_ATOMIC_INC(&SysBase->IDNestCnt);
-  if (SysBase->IDNestCnt < 0)
+
+/* TODO: implement this in another way
+  sigprocmask(SIG_BLOCK, &sig_int_mask, NULL);
+*/
+  AROS_ATOMIC_INC(SysBase->IDNestCnt);
+  
+  if ((char)SysBase->IDNestCnt < 0)
   {
 	/* If we get here we have big trouble. Someone called
 	 1x Disable() and 2x Enable(). IDNestCnt < 0 would
 	 mean enable interrupts, but the caller of Disable
-	 relies on the function to disable them, so we don¥t
+	 relies on the function to disable them, so we donВҐt
 	 do anything here (or maybe a deadend alert?) */
-   printf("negative nest count!\n");
+        printf("negative nest count!\n");
   }
 }
-
 
 /* 
  * Handle events.
@@ -171,8 +187,6 @@ static void DispatchEvent(DWORD sig, HANDLE sc)
 	
 	typedef void (*icall)(unsigned int, unsigned int, void *, void *, void *);
 	
-#warning direct call to aros, replace with appropriate hook call!
-	
 	((icall)iv->iv_Code)(0,0,iv->iv_Data, iv->iv_Code, SysBase); //on i386 it's just a plain call
 	
 	//	AROS_UFC5(void, iv->iv_Code,
@@ -195,12 +209,9 @@ static void DispatchEvent(DWORD sig, HANDLE sc)
 		iv = &SysBase->IntVects[INTB_VERTB];
 		if (iv->iv_Code)
 		{
-		  
-#warning direct call to aros, replace with appropriate hook call!
-		  
 #if NOISY
-	fprintf(stderr,"********* sighandler: calling timer %p **********\n", iv->iv_Code);
-	fflush(stderr);
+		  fprintf(stderr,"********* sighandler: calling timer %p **********\n", iv->iv_Code);
+		  fflush(stderr);
 #endif
 		  ((icall)iv->iv_Code)(0,0,iv->iv_Data, iv->iv_Code, SysBase); //on i386 it's just a plain call
 		  //		    AROS_UFC5(void, iv->iv_Code,
@@ -247,7 +258,6 @@ static void DispatchEvent(DWORD sig, HANDLE sc)
 #endif
 
 	  /* Tell exec that we have actually switched tasks... */
-	  //core_Dispatch ();
 	  Exec_Dispatch(SysBase);
 	  
 #if NOISY
@@ -348,12 +358,12 @@ static void DispatchEvent(DWORD sig, HANDLE sc)
   AROS_ATOMIC_DEC(supervisor);
   
   sigactive[sig] = FALSE;
-  
+#if NOISY  
   printf("********* sighandler: done pc=%p *********\n",PC(GetCpuContext(SysBase->ThisTask)));
-
+#endif
 } /* sighandler */
 
-#if 0
+#if 0 /* TODO */
 static void traphandler(int sig, sigcontext_t *sc)
 {
   int trapNum = sig2tab[sig];
@@ -404,12 +414,15 @@ DWORD TaskSwitcher(HANDLE *ParentPtr)
 }
 
 /* Set up the kernel. */
-void InitCore(void)
+void __declspec(dllexport) StartScheduler(Exec_Callback ExceptPtr, Exec_Callback DispatchPtr, struct ExecBase *ExecBasePtr)
 {
     HANDLE ThisProcess;
     HANDLE ThisThread, SwitcherThread;
     DWORD SwitcherId;
     
+    Exec_Exception = ExceptPtr;
+    Exec_Dispatch = DispatchPtr;
+    SysBase = ExecBasePtr;
     ThisProcess = GetCurrentProcess();
     if (!DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &ThisThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
         Trace("[Scheduler] failed to get thread handle\n");
@@ -423,7 +436,7 @@ void InitCore(void)
         Trace("[Scheduler] failed to run task switcher thread\n");
 
 }
-
+/*
 void * kernelSoftDisable (struct Hook * hook, unsigned long object, unsigned long message)
 {
   sigset_t set;
@@ -458,22 +471,4 @@ void * kernelSoftCause (struct Hook * hook, unsigned long object, unsigned long 
   kill(getpid(), SIGUSR1);
   return 0;
 }
-
-void * kernelDisable (struct Hook * hook, unsigned long object, unsigned long message)
-{
-  do_disable();
-  return 0;
-}
-
-void * kernelEnable (struct Hook * hook, unsigned long object, unsigned long message)
-{
-  do_enable();
-  return 0;
-}
-
-void * kernelStartScheduler (struct Hook * hook, unsigned long object, unsigned long message)
-{
-  InitCore();
-}
-
 */

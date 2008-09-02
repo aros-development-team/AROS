@@ -10,8 +10,14 @@
 #include <sys/param.h>
 #include <signal.h>
 #include <errno.h>
-#include "etask.h"
+
+#ifdef __AROS__
 #include "winapi.h"
+#else
+#include <windows.h>
+#endif
+
+#include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
