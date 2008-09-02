@@ -29,8 +29,6 @@ AROS_LH0(void, Enable,
 #undef Exec
     AROS_LIBFUNC_INIT
 
-    void *KernelBase = getKernelBase();
-    
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     
     if(SysBase->IDNestCnt < 0)

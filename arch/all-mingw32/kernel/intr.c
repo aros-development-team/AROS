@@ -16,7 +16,6 @@ AROS_LH4(void *, KrnAddIRQHandler,
 {
     AROS_LIBFUNC_INIT
 
-    struct ExecBase *SysBase = getSysBase();
     struct IntrNode *handle = NULL;
     D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
 #ifdef NOT_YET
@@ -66,7 +65,6 @@ AROS_LH1(void, KrnRemIRQHandler,
 {
     AROS_LIBFUNC_INIT
 #ifdef NOT_YET
-    struct ExecBase *SysBase = getSysBase();
     struct IntrNode *h = handle;
     uint8_t irq = h->in_nr;
     
@@ -106,7 +104,6 @@ AROS_LH4(void *, KrnAddExceptionHandler,
 {
     AROS_LIBFUNC_INIT
 
-    struct ExecBase *SysBase = getSysBase();
     struct IntrNode *handle = NULL;
     D(bug("[KRN] KrnAddExceptionHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
 #ifdef NOT_YET
@@ -145,7 +142,6 @@ AROS_LH1(void, KrnRemExceptionHandler,
 {
     AROS_LIBFUNC_INIT
 #ifdef NOT_YET
-    struct ExecBase *SysBase = getSysBase();
     struct IntrNode *h = handle;
     
     if (h && (h->in_type == it_exception))

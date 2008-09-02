@@ -25,7 +25,6 @@ AROS_LH0(void, Disable,
 {
 #undef Exec
     AROS_LIBFUNC_INIT
-    void *KernelBase = getKernelBase();
     
     /* Georg Steger */
     if (KernelBase)

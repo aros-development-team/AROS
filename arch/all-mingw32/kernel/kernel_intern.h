@@ -17,6 +17,8 @@
 
 #define STACK_SIZE 4096
 
+typedef void (*Exec_Callback)(struct ExecBase*);
+
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
@@ -44,33 +46,16 @@ struct IntrNode {
     uint8_t             in_nr;
 };
 
-static inline struct KernelBase *getKernelBase()
-{
-    return (struct KernelBase *)NULL; /* TODO */
-}
-
-static inline struct KernelBase *getSysBase()
-{
-    return (struct KernelBase *)NULL; /* TODO */
-}
+struct KernelInterface {
+    void (*StartScheduler)(Exec_Callback ExceptPtr, Exec_Callback DispatchPtr, struct ExecBase *ExecBasePtr);
+};
 
 extern struct HostInterface *HostIFace;
+extern struct KernelInterface KernelIFace;
 
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
-/*
-void core_LeaveInterrupt(regs_t *regs) __attribute__((noreturn));
-void core_Switch(regs_t *regs) __attribute__((noreturn));
-void core_Schedule(regs_t *regs) __attribute__((noreturn));
-void core_Dispatch(regs_t *regs) __attribute__((noreturn));
-void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn)); 
-void core_Cause(struct ExecBase *SysBase);
-void mmu_init(struct TagItem *tags);
-void intr_init();
-
-void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self);
-void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void *self);*/
 
 #ifdef bug
 #undef bug
@@ -87,10 +72,9 @@ AROS_LD2(int, KrnBug,
 
 static inline void bug(const char *format, ...)
 {
-    struct KernelBase *kbase = getKernelBase();
     va_list args;
     va_start(args, format);
-    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, kbase);
+    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, NULL); /* Warning! It's a HACK (KernelBase == NULL)!!! */
     va_end(args);
 }
 
