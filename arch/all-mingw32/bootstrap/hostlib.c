@@ -59,7 +59,9 @@ unsigned long Host_HostLib_GetInterface(void *handle, char **names, void **funcs
 
     for (; *names; names++) {
         *funcs = GetProcAddress(handle, *names);
+        D(printf("[hostlib] GetInterface: handle=0x%08x, symbol=%s, value=0x%08x\n", handle, *names, *funcs));
         if (*funcs++ == NULL)
             unresolved++;
     }
+    return unresolved;
 }

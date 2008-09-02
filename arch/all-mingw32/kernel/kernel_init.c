@@ -28,6 +28,7 @@ extern void Exec_Dispatch();
 
 static struct TagItem *BootMsg;
 struct HostInterface *HostIFace;
+struct KernelInterface KernelIFace;
 /* static char cmdLine[200]; TODO */
 
 /* So we can examine the memory */
@@ -103,6 +104,11 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
 ADD2INITLIB(Kernel_Init, 0)
 
+char *kernel_functions[] = {
+    "StartScheduler",
+    NULL
+};
+
 /* rom startup */
 
 
@@ -110,9 +116,12 @@ ADD2INITLIB(Kernel_Init, 0)
 int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
 void prepare_host_hook(struct Hook * hook);
 
-
 int startup(struct TagItem *msg)
 {
+  void *hostlib;
+  char *errstr;
+  unsigned long badsyms;
+
   BootMsg = msg;
   
   void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
@@ -121,28 +130,19 @@ int startup(struct TagItem *msg)
   unsigned int memsize = krnGetTagData(KRN_MMAPLength, 0, msg);
   HostIFace = krnGetTagData(KRN_HostInterface, 0, msg);
 
-/*
-  struct TagItem * KernelHooks = (struct TagItem *)krnGetTagData(KRN_KernelHooks, 0, msg);
-  struct Hook * hook;
-  int i;
-  
-  for (i = 0; KernelHooks[i].ti_Tag != TAG_DONE; ++i)
-  {
-	  struct Hook* hook = (struct Hook*)KernelHooks[i].ti_Data;
-	  prepare_host_hook(hook);
-	  if (KernelHooks[i].ti_Tag == KRNH_PutcharImpl)
-	    PutcharHook = hook;
-    else if (KernelHooks[i].ti_Tag == KRNH_StartSchedulerImpl)
-      StartSchedulerHook = hook;
+  hostlib = HostIFace->HostLib_Open("kernel_native.dll", &errstr);
+  if (!hostlib) {
+      mykprintf("[Kernel] failed to load host-side code: %s\n", errstr);
+      HostIFace->HostLib_FreeErrorStr(errstr);
+      return -1;
+  }
+  badsyms = HostIFace->HostLib_GetInterface(hostlib, kernel_functions, &KernelIFace);
+  if (badsyms) {
+      mykprintf("[Kernel] failed to resolve %lu symbols\n", badsyms);
+      HostIFace->HostLib_Close(hostlib, NULL);
+      return -1;
   }
 
-  void (**kexecexceptfunp)() = (void*)krnGetTagData(KRN_ExecExceptionFun, 0, msg);
-  *kexecexceptfunp = Exec_Exception;
-  void (**kdispatchfunp)() = (void*)krnGetTagData(KRN_ExecDispatchFun, 0, msg);
-  *kdispatchfunp = Exec_Dispatch;
-
-  mykprintf("[Kernel] got Exec pointers Exception: %p Dispatch: %p\n",Exec_Exception);
-*/
   mykprintf("[Kernel] preparing first mem header\n");
 
   /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
@@ -178,7 +178,7 @@ int startup(struct TagItem *msg)
   SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
   mykprintf("[Kernel] starting native scheduler\n");
-/*CALLHOOKPKT(StartSchedulerHook,0,0);*/
+  KernelIFace.StartScheduler(Exec_Exception, Exec_Dispatch, SysBase);
 
   mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
   InitCode(RTF_SINGLETASK, 0);

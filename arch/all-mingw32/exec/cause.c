@@ -56,8 +56,6 @@ AROS_UFH5(void, SoftIntDispatch,
 {
     AROS_USERFUNC_INIT
 
-    void *KernelBase = getKernelBase();
-    
     struct Interrupt *intr = 0;
     BYTE i;
 

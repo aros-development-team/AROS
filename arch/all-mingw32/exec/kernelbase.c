@@ -1,4 +1,4 @@
 #include <exec/types.h>
 
-APTR KernelBase;
+APTR KernelBase = NULL;
 /* struct HostInterface *HostIFace; */
