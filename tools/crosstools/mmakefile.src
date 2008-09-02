@@ -1,12 +1,20 @@
 include $(TOP)/config/make.cfg
 
+HOSTAROSGCCUSENEWLIB = TRUE
+
+HOSTGMPVERSION = 4.2.2
+HOSTMPFRVERSION = 2.3.1
+HOSTAROSNEWLIBVERSION = 1.16.0
+HOSTAROSBINUTILSVERSION = 2.18
+HOSTAROSGCCVERSION = 4.3.0
+
+NEWLIB_FLAGS = --with-newlib
+
 #MM- host-build-tools : host-build-tools-hostaroscrosstools
 
 #MM- host-build-tools-hostaroscrosstools : host-build-tools-hostarosgcc
 
-#MM host-build-tools-hostarosgcc : host-build-tools-hostgmp host-build-tools-hostmpfr host-build-tools-hostarosnewlib host-build-tools-hostarosbinutils
-
-#MM host-build-tools-hostarosgcc--configure : host-build-tools-hostarosnewliblink
+#MM- host-build-tools-hostarosgcc : host-build-tools-hostgmp host-build-tools-hostmpfr host-build-tools-hostarosnewlib host-build-tools-hostarosbinutils
 
 #MM
 host-build-tools-hostarosmkdir :
@@ -17,27 +25,31 @@ host-build-tools-hostarosmkdir :
 #MM- host-build-tools-hostarosbinutils : host-build-tools-hostarosmkdir host-build-tools-hostarosbinutils-quick
 #MM- host-build-tools-hostarosgcc : host-build-tools-hostarosmkdir host-build-tools-hostarosgcc-quick
 
-%fetch_and_build mmake=host-build-tools-hostgmp package=gmp version=4.2.2 compiler=host \
+#MM host-build-tools-hostarosgcc--configure : host-build-tools-hostarosnewliblink
+
+#MM host-build-tools-hostarosnewliblink : host-build-tools-hostarosnewlib host-build-tools-hostarosgcc--fetch
+
+%fetch_and_build mmake=host-build-tools-hostgmp package=gmp version=$(HOSTGMPVERSION) compiler=host \
 	    prefix="$(HOSTDIR)/elf-$(AROS_TARGET_CPU)" package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no
 
-%fetch_and_build mmake=host-build-tools-hostmpfr package=mpfr version=2.3.1 compiler=host \
+%fetch_and_build mmake=host-build-tools-hostmpfr package=mpfr version=$(HOSTMPFRVERSION) compiler=host \
 	    prefix="$(HOSTDIR)/elf-$(AROS_TARGET_CPU)" package_repo="http://www.mpfr.org/mpfr-current" patch=no
 
-%fetch_and_build mmake=host-build-tools-hostarosbinutils package=binutils version=2.18 compiler=host \
+%fetch_and_build mmake=host-build-tools-hostarosbinutils package=binutils version=$(HOSTAROSBINUTILSVERSION) compiler=host \
 	    package_repo="http://ftp.gnu.org/gnu/binutils" patch=no \
 	    prefix="$(TOOLDIR) " extraoptions=" --target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --disable-nls --disable-shared --disable-threads"
 
-%fetch_and_build mmake=host-build-tools-hostarosgcc package=gcc version=4.3.0 compiler=host \
+%fetch_and_build mmake=host-build-tools-hostarosgcc package=gcc version=$(HOSTAROSGCCVERSION) compiler=host \
 	    package_repo="http://ftp.gnu.org/gnu/gcc/gcc-4.3.0" patch=no \
 	    prefix="$(TOOLDIR) " extraoptions=" --target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --enable-languages=c,c++ --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TARGET_AS) --with-gnu-as --with-ld=$(TARGET_LD) --with-gnu-ld --with-gmp=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --with-mpfr=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) $(NEWLIB_FLAGS)"
 
 .PHONY : host-build-tools-hostarosnewlib
 #MM
 host-build-tools-hostarosnewlib :
-	%fetch archive=newlib-1.16.0 suffixes="tar.gz" \
-	    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/elf-$(AROS_TARGET_CPU)/Ports/newlib \
-	    archive_origins=". ftp://sources.redhat.com/pub/newlib"
+	%fetch archive=newlib-$(HOSTAROSNEWLIBVERSION) suffixes="tar.gz" \
+		location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/newlib \
+		archive_origins=". ftp://sources.redhat.com/pub/newlib"
 
 #MM
 host-build-tools-hostarosnewliblink :
-	$(ECHO) "yeah"
+	ln -s $(HOSTDIR)/Ports/newlib/newlib-$(HOSTAROSNEWLIBVERSION) $(host-build-tools-hostarosgcc--package-dir)/newlib;
