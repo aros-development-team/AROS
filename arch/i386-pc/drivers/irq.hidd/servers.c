@@ -159,12 +159,6 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	    AROS_UFCA(struct ExecBase *, hw->sysBase, A6)
 	);
     }
-
-    if (--SysBase->Elapsed == 0)
-    {
-	SysBase->SysFlags |= 0x2000;
-	SysBase->AttnResched |= 0x80;
-    }
 }
 
 /*******************************************************************************
