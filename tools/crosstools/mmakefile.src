@@ -41,7 +41,7 @@ host-build-tools-hostarosmkdir :
 
 %fetch_and_build mmake=host-build-tools-hostarosgcc package=gcc version=$(HOSTAROSGCCVERSION) compiler=host \
 	    package_repo="http://ftp.gnu.org/gnu/gcc/gcc-4.3.0" patch=no \
-	    prefix="$(TOOLDIR)" extraoptions="--target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --enable-languages=c,c++ --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-as --with-gnu-as --with-ld=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-ld --with-gnu-ld --with-gmp=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --with-mpfr=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) $(NEWLIB_FLAGS)"
+	    prefix="$(TOOLDIR)" extraoptions="--target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --enable-languages=c,c++ --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-as --with-gnu-as --with-ld=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-ld --with-gnu-ld --with-gmp=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --with-mpfr=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --without-pic $(NEWLIB_FLAGS)"
 
 .PHONY : host-build-tools-hostarosnewlib
 #MM
