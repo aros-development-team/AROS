@@ -77,6 +77,12 @@ AROS_UFH4(ULONG, VBlankInt,
                 AddTime(&tr->tr_time, &TimerBase->tb_Elapsed);
 		
 		timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], tr);	
+
+	        if (--SysBase->Elapsed == 0)
+	        {
+	            SysBase->SysFlags |= 0x2000;
+	            SysBase->AttnResched |= 0x80;
+	        }
 		
 	    }
 	    else
@@ -120,12 +126,6 @@ AROS_UFH4(ULONG, VBlankInt,
     	    */
     	    break;
     	}
-    }
-
-    if (--SysBase->Elapsed == 0)
-    {
-        SysBase->SysFlags |= 0x2000;
-        SysBase->AttnResched |= 0x80;
     }
 
     Timer0Setup(TimerBase);
