@@ -76,7 +76,7 @@ static ULONG * paulWriteBuffer, * paulReadBuffer;
 static ULONG cbyTransfer;
 
 
-static const char szVersion[] = "$VER: BHFormat 43.6 (" __DATE__ ")";
+const char szVersion[] = "$VER: BHFormat 43.7 (" __DATE__ ")";
 
 int main(void)
 {

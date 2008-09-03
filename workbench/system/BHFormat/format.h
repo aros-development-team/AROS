@@ -72,6 +72,7 @@ extern ULLONG ibyStart, ibyEnd;
 extern IPTR MaxTransfer;
 extern IPTR LowCyl, HighCyl;
 extern ULONG DosType;
+extern const char szVersion[];
 
 void ReportErrSz( ErrorType ert, LONG err, const char * pszMessage, ... );
 BOOL bSetSzDosDeviceFromSz( const char * pszDevice );
