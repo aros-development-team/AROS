@@ -2,14 +2,13 @@ include $(TOP)/config/make.cfg
 
 HOSTAROSGCCUSENEWLIB = TRUE
 
-HOSTGMPVERSION = 4.2.2
+HOSTGMPVERSION = 4.2.3
 HOSTMPFRVERSION = 2.3.1
 HOSTAROSNEWLIBVERSION = 1.16.0
 HOSTAROSBINUTILSVERSION = 2.18
-HOSTAROSGCCVERSION = 4.3.0
+HOSTAROSGCCVERSION = 4.3.2
 
-HOSTAROSGCCLANGUAGES = c
-##HOSTAROSGCCLANGUAGES = c,c++
+HOSTAROSGCCLANGUAGES = c,c++
 
 ifeq ($(HOSTAROSGCCUSENEWLIB),TRUE)
 	NEWLIB_FLAGS = --with-newlib
@@ -23,32 +22,28 @@ endif
 
 #MM- host-build-tools-hostarosgcc : host-build-tools-hostgmp host-build-tools-hostmpfr host-build-tools-hostarosnewlib host-build-tools-hostarosbinutils
 
-#MM
-host-build-tools-hostarosmkdir :
-		@$(MKDIR) $(HOSTDIR)/elf-$(AROS_TARGET_CPU)
-
-#MM- host-build-tools-hostgmp : host-build-tools-hostarosmkdir host-build-tools-hostgmp-quick
-#MM- host-build-tools-hostmpfr : host-build-tools-hostarosmkdir host-build-tools-hostmpfr-quick
-#MM- host-build-tools-hostarosbinutils : host-build-tools-hostarosmkdir host-build-tools-hostarosbinutils-quick
-#MM- host-build-tools-hostarosgcc : host-build-tools-hostarosmkdir host-build-tools-hostarosgcc-quick
+#MM- host-build-tools-hostgmp : host-build-tools-hostgmp-quick
+#MM- host-build-tools-hostmpfr : host-build-tools-hostmpfr-quick
+#MM- host-build-tools-hostarosbinutils : host-build-tools-hostarosbinutils-quick
+#MM- host-build-tools-hostarosgcc : host-build-tools-hostarosgcc-quick
 
 #MM host-build-tools-hostarosgcc--configure : host-build-tools-hostarosnewliblink
 
 #MM host-build-tools-hostarosnewliblink : host-build-tools-hostarosnewlib host-build-tools-hostarosgcc--fetch
 
 %fetch_and_build mmake=host-build-tools-hostgmp package=gmp version=$(HOSTGMPVERSION) compiler=host \
-	    prefix="$(HOSTDIR)/elf-$(AROS_TARGET_CPU)" package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no
+	    prefix="$(TOOLDIR)" package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no
 
 %fetch_and_build mmake=host-build-tools-hostmpfr package=mpfr version=$(HOSTMPFRVERSION) compiler=host \
-	    prefix="$(HOSTDIR)/elf-$(AROS_TARGET_CPU)" package_repo="http://www.mpfr.org/mpfr-current" patch=no
+	    prefix="$(TOOLDIR)" package_repo="http://www.mpfr.org/mpfr-current" patch=no
 
 %fetch_and_build mmake=host-build-tools-hostarosbinutils package=binutils version=$(HOSTAROSBINUTILSVERSION) compiler=host \
 	    package_repo="http://ftp.gnu.org/gnu/binutils" patch=no \
 	    prefix="$(TOOLDIR)" extraoptions="--target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --disable-nls --disable-shared --disable-threads"
 
 %fetch_and_build mmake=host-build-tools-hostarosgcc package=gcc version=$(HOSTAROSGCCVERSION) compiler=host \
-	    package_repo="http://ftp.gnu.org/gnu/gcc/gcc-4.3.0" patch=no \
-	    prefix="$(TOOLDIR)" extraoptions="--target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --enable-languages=$(HOSTAROSGCCLANGUAGES) --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-as --with-gnu-as --with-ld=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-ld --with-gnu-ld --with-gmp=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --with-mpfr=$(HOSTDIR)/elf-$(AROS_TARGET_CPU) --without-pic $(NEWLIB_FLAGS)"
+	    package_repo="http://ftp.gnu.org/gnu/gcc/gcc-$(HOSTAROSGCCVERSION)" patch=no \
+	    prefix="$(TOOLDIR)" extraoptions="--target=$(AROS_TARGET_CPU)-elf --bindir=$(TOOLDIR) --enable-languages=$(HOSTAROSGCCLANGUAGES) --disable-libssp --disable-nls --disable-shared --disable-threads --disable-multilib --with-as=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-as --with-gnu-as --with-ld=$(TOOLDIR)/$(AROS_TARGET_CPU)-elf-ld --with-gnu-ld --with-gmp=$(TOOLDIR) --with-mpfr=$(TOOLDIR) --without-pic $(NEWLIB_FLAGS)"
 
 .PHONY : host-build-tools-hostarosnewlib
 #MM
