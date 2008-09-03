@@ -75,10 +75,13 @@
  *  disk...' for the file-system creation and trashcan creation stages.
  */
 
+#define MUIMASTER_YES_INLINE_STDARG
+#include <libraries/mui.h>
+#include <proto/muimaster.h>
+
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 #include <intuition/intuition.h>
-#include <libraries/gadtools.h>
 #include <stdarg.h>
 #include <workbench/startup.h>
 #include <proto/dos.h>
@@ -91,50 +94,111 @@
 
 #include "format.h"
 
+static struct DosList * pdlVolume = 0;
+static char szCapacityInfo[5+1+8+2+2+2+4+1];
+static Object *app, *mainwin, *formatwin, *chk_trash, *chk_intl, *chk_ffs, *chk_cache;
+static Object *txt_action, *str_volume, *gauge;
+static struct Hook btn_format_hook;
 
-static struct Gadget * pgadCreate(
-    struct Gadget * pgadPrevious,
-    ULONG gid, ULONG kind, WORD xLeft, WORD yTop, WORD cxWidth, WORD cyHeight,
-    const char * psz, ULONG flags, ... );
+static void message(CONST_STRPTR s);
 
+AROS_UFH3S(void, btn_format_function,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(IPTR *, msg, A1))
+{
+    AROS_USERFUNC_INIT
 
-enum {
-    gidCancel = 1,
-    gidFormat,
-    gidQuickFormat
-};
+    BOOL bDoFormat = *msg;
+    BOOL bMakeTrashcan, bFFS, bIntl;
+    BOOL bDirCache = FALSE;
+    LONG rc = FALSE;
 
+    D(Printf("Full format? %d\n", bDoFormat));
 
-static struct Window * pwin;
-static APTR vi;
-static UWORD cxScale, cyScale, xOrigin, yOrigin;
+    /* TODO: set volume name same as old one if name is null string */
+    if( !bSetSzVolumeFromSz( XGET(str_volume, MUIA_String_Contents) ) )
+    {
+	goto cleanup;
+    }
+
+    bMakeTrashcan = XGET(chk_trash, MUIA_Selected);
+    bFFS = XGET(chk_ffs, MUIA_Selected);
+    bIntl = XGET(chk_intl, MUIA_Selected);
+    bDirCache = XGET(chk_cache, MUIA_Selected);
+#ifdef __AROS__
+    bDirCache = FALSE;
+#endif
+
+    if(bDoFormat)
+    {
+	set(txt_action, MUIA_Text_Contents, "Formatting Disk...");
+    }
+    else
+    {
+	set(txt_action, MUIA_Text_Contents, "Initializing Disk...");
+    }
+
+    set(formatwin, MUIA_Window_Open, TRUE);
+    
+    {
+	char szVolumeId[11 + MAX_FS_NAME_LEN];
+	if(pdlVolume)
+	    RawDoFmtSz( szVolumeId, "%b", pdlVolume->dol_Name );
+	else
+	    RawDoFmtSz( szVolumeId, "in device %s", szDosDevice );
+	if( MUI_Request ( app, formatwin, 0,
+			    "Format Request", "Format|Cancel", "OK to format volume\n"
+			    "%s?\n\n"
+			    "WARNING!\n\n"
+			    "All data will be lost!\n"
+			    "(%s)", szVolumeId, szCapacityInfo) != 1)
+	    goto cleanup;
+    }
+
+    if(bDoFormat)
+    {
+	ULONG icyl;
+
+	if(!bGetExecDevice(TRUE))
+	    goto cleanup;
+
+	set(gauge, MUIA_Gauge_Max, HighCyl-LowCyl);
+	for( icyl = LowCyl;
+	     icyl <= HighCyl;
+	     ++icyl )
+	{
+	    set(gauge, MUIA_Gauge_Max, icyl-LowCyl);
+	    
+	    if( !bFormatCylinder(icyl) || !bVerifyCylinder(icyl) )
+		goto cleanup;
+
+	}
+	FreeExecDevice();
+    }
+
+    if( bMakeFileSys( bFFS, !bFFS, bIntl, !bIntl, bDirCache, !bDirCache )
+	&& (!bMakeTrashcan || bMakeFiles(FALSE)) )
+	rc = RETURN_OK;
+    
+cleanup:
+    DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+
+    AROS_USERFUNC_EXIT
+}
 
 
 int rcGuiMain(void)
 {
     static char szTitle[6+3+30+1];
-    struct Screen * pscr = 0;
-    struct DrawInfo * pdri = 0;
-    struct TextFont * ptf = 0;
     struct DosList *pdlDevice = NULL;
 #ifdef AROS_FAKE_LOCK
     char volName[108];
 #else
     struct FileLock * pflVolume = 0;
 #endif
-    struct DosList * pdlVolume = 0;
-    struct Gadget * pgadList = 0;
-    BOOL bDoFormat, bMakeTrashcan, bFFS, bIntl;
-    BOOL bDirCache = FALSE;
     static struct InfoData dinf __attribute__((aligned (4)));
-    char szCapacityInfo[5+1+8+2+2+2+4+1];
-    UBYTE ipenText;
     LONG rc = RETURN_FAIL;
-    struct IntuiText init_it = {
-	0, 0, JAM1,
-	0, 0,
-	NULL, "Initializing disk...", 0
-    };
 
 #if DEBUG
     BPTR bpfhStdErr =
@@ -254,387 +318,160 @@ int rcGuiMain(void)
 	D(Printf("Done: %s\n", szCapacityInfo));
     }
 
-    if( (pscr = LockPubScreen(0)) == 0
-	|| (vi = GetVisualInfo( pscr, TAG_END )) == 0
-	|| (pdri = GetScreenDrawInfo(pscr)) == 0
-	|| (ptf = OpenFont(pscr->Font)) == 0 )
-    {
-	D(Printf("Error setting up screen\n"));
-	/* TODO: report error */
-	goto cleanup;
-    }
-
-    D(Printf("Creating GUI...\n"));
-    cxScale = ptf->tf_XSize;
-    cyScale = ptf->tf_YSize;
-    ipenText = pdri->dri_Pens[TEXTPEN];
-    init_it.FrontPen = ipenText;
-    init_it.ITextFont = pscr->Font;
-
-    if( (pwin = OpenWindowTags(
-	0,
-	WA_InnerWidth, 424UL * cxScale >> 3,
-	WA_InnerHeight, 141UL * cyScale >> 3,
-	WA_Flags,
-	WFLG_DRAGBAR|WFLG_DEPTHGADGET|WFLG_ACTIVATE|WFLG_NOCAREREFRESH
-	|WFLG_NEWLOOKMENUS|WFLG_SMART_REFRESH,
-	WA_IDCMP,
-	BUTTONIDCMP|CHECKBOXIDCMP|STRINGIDCMP,
-	WA_Title, (ULONG)"Format",
-	TAG_END )) == 0 )
-    {
-	D(Printf("Failed to open window\n"));
-	/* TODO: report error */
-	goto cleanup;
-    }
-
-    xOrigin = pwin->BorderLeft;
-    yOrigin = pwin->BorderTop;
-
     if( _WBenchMsg->sm_NumArgs == 1 )
     {
-	D(Printf("Started by double-click\n"));
+	message("Must be started from Wanderer with a selected icon\n");
 	/* TODO: display list of devices and have user select one */
 	goto cleanup;
     }
 
     RawDoFmtSz( szTitle, "Format - %s", szDosDevice );
     D(Printf("Setting window title to '%s'\n", szTitle));
-    SetWindowTitles( pwin, szTitle, (UBYTE *)(-1) );
 
     {
-	BOOL bEnd = FALSE;
-	struct Gadget * pgad, * pgadName, * pgadTrashcan,
-	    * pgadFFS, * pgadIntl;
-#ifndef __AROS__
-	struct Gadget * pgadDirCache;
-#endif
+	Object *btn_format, *btn_qformat, *btn_cancel;
+
+	btn_format_hook.h_Entry = (HOOKFUNC)btn_format_function;
 
 	char szDeviceInfo[6+2+MAX_FS_NAME_LEN+2];
 	char szVolumeInfo[6+2+MAX_FS_NAME_LEN+2];
 	RawDoFmtSz( szDeviceInfo, "Device '%s'", szDosDevice );
-	pgad = CreateContext(&pgadList);
-	pgad = pgadCreate(
-	    pgad, 0, TEXT_KIND, 192, 7, 224, 8,
-	    "Current Information:", PLACETEXT_LEFT,
-	    GTTX_Text, (ULONG)szDeviceInfo, TAG_END );
+	szVolumeInfo[0] = '\0';
 	if(pdlVolume)
 	{
 	    RawDoFmtSz( szVolumeInfo, "Volume '%b'", pdlVolume->dol_Name );
-	    pgad = pgadCreate(
-		pgad, 0, TEXT_KIND, 192, 16, 224, 8,
-		"", PLACETEXT_LEFT,
-		GTTX_Text, (ULONG)szVolumeInfo,	TAG_END );
 	}
-	pgad = pgadCreate(
-	    pgad, 0, TEXT_KIND, 192, pdlVolume ? 25 : 16, 224, 8,
-	    "", PLACETEXT_LEFT,
-	    GTTX_Text, (ULONG)szCapacityInfo, TAG_END );
-	pgadName = pgadCreate(
-	    pgad, 0, STRING_KIND, 192, 44, 224, 14,
-	    "New Volume Name:", PLACETEXT_LEFT,
-	    GTST_String, (ULONG)"Empty",
-	    GTST_MaxChars, (ULONG)MAX_FS_NAME_LEN,
-	    TAG_END );
-	pgad = pgadTrashcan = pgadCreate(
-	    pgadName, 0, CHECKBOX_KIND, 192, 60, 26, 11,
-	    "Put Trashcan:", PLACETEXT_LEFT,
-	    GTCB_Checked, (ULONG)TRUE, TAG_END );
-	if( DosType >= 0x444F5300
-	    && DosType <= 0x444F5305 )
+
+	D(Printf("Creating GUI...\n"));
+	
+	app = ApplicationObject,
+	    MUIA_Application_Title, (IPTR) "Format",
+	    MUIA_Application_Version, (IPTR)szVersion,
+	    MUIA_Application_Description, (IPTR)"Disk Formatting Utility",
+	    MUIA_Application_Copyright, (IPTR)"Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin",
+	    MUIA_Application_Author, (IPTR)"Ben Hutchings, Pavel Fedin, The AROS Development Team",
+	    MUIA_Application_Base, (IPTR)"FORMAT",
+	    MUIA_Application_SingleTask, FALSE,
+	    SubWindow, (IPTR)(mainwin = WindowObject,
+		MUIA_Window_ID, MAKE_ID('F','R','M','1'),
+		MUIA_Window_Title, (IPTR)szTitle,
+		WindowContents, (IPTR)(VGroup,
+		    Child, (IPTR)(ColGroup(2),
+			Child, (IPTR)Label2("Current Information:"),
+			Child, (IPTR)(TextObject,
+			    (IPTR)TextFrame,
+			    MUIA_Text_Contents, (IPTR)szDeviceInfo,
+			End),
+			Child, (IPTR)Label2(""),
+			Child, (IPTR)(TextObject,
+			    TextFrame,
+			    MUIA_Text_Contents, (IPTR)szVolumeInfo,
+			End),
+			Child, (IPTR)Label2(""),
+			Child, (IPTR)(TextObject,
+			    TextFrame,
+			    MUIA_Text_Contents, (IPTR)szCapacityInfo,
+			End),
+			Child, (IPTR)Label2("New Volume Name:"),
+			Child, (IPTR)(str_volume = StringObject,
+			    StringFrame,
+			    MUIA_String_Contents, (IPTR)"Empty",
+			    MUIA_String_MaxLen, MAX_FS_NAME_LEN,
+			End),
+			Child, (IPTR)Label2("Put Trashcan:"),
+			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)Label2("Fast File System:"),
+			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)Label2("International Mode:"),
+			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)Label2("Directory Cache:"),
+			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+		    End), /* ColGroup */
+		    Child, (IPTR) (RectangleObject, 
+			MUIA_Rectangle_HBar, TRUE,
+			MUIA_FixHeight,      2,
+		    End),
+		    Child, (IPTR)(HGroup,
+			Child, (IPTR)(btn_format = ImageButton("Format", "THEME:Images/Gadgets/Prefs/Save")),
+			Child, (IPTR)(btn_qformat = ImageButton("Quick Format", "THEME:Images/Gadgets/Prefs/Save")),
+			Child, (IPTR)(btn_cancel = ImageButton("Cancel", "THEME:Images/Gadgets/Prefs/Cancel")),
+		    End), /* HGroup */
+		End), /* VGroup */
+	    End), /* Window */
+	    SubWindow, (IPTR)(formatwin = WindowObject,
+		MUIA_Window_ID, MAKE_ID('F','R','M','2'),
+		MUIA_Window_Title, (IPTR)szTitle,
+		WindowContents, (IPTR)(VGroup,
+		    Child, (IPTR)(txt_action = TextObject,
+			TextFrame,
+		    End),
+		    Child, (IPTR)(gauge = GaugeObject,
+			GaugeFrame,
+		    End),
+		    Child, (IPTR)SimpleButton("Stop"),
+		End), /* VGroup */
+	    End), /* Window */
+	End; /* Application */
+	
+	if ( ! app)
 	{
-	    pgadFFS = pgadCreate(
-		pgadTrashcan, 0, CHECKBOX_KIND, 192, 74, 26, 11,
-		"Fast File System:", PLACETEXT_LEFT,
-		GTCB_Checked, DosType & 1UL, TAG_END );
-	    pgadIntl = pgadCreate(
-		pgadFFS, 0, CHECKBOX_KIND, 192, 88, 26, 11,
-		"International Mode:", PLACETEXT_LEFT,
-		GTCB_Checked, DosType & 6UL, TAG_END );
-#ifdef __AROS__
-	    pgad = pgadIntl;
-#else
-	    pgad = pgadDirCache = pgadCreate(
-		pgadIntl, 0, CHECKBOX_KIND, 192, 102, 26, 11,
-		"Directory Cache:", PLACETEXT_LEFT,
-		GTCB_Checked, DosType & 4UL, TAG_END );
-#endif
-	}
-	pgad = pgadCreate(
-	    pgad, gidFormat, BUTTON_KIND, 8, 124, 134, 14,
-	    "Format", PLACETEXT_IN,
-	    TAG_END );
-	pgad = pgadCreate(
-	    pgad, gidQuickFormat, BUTTON_KIND, 145, 124, 134, 14,
-	    "Quick Format", PLACETEXT_IN,
-	    TAG_END );
-	pgad = pgadCreate(
-	    pgad, gidCancel, BUTTON_KIND, 282, 124, 134, 14,
-	    "Cancel", PLACETEXT_IN,
-	    TAG_END );
-
-	if( pgad == 0 )
-	    goto cleanup;
-
-	AddGList( pwin, pgadList, -1, -1, 0 );
-	RefreshGList( pgadList, pwin, 0, -1 );
-	GT_RefreshWindow( pwin, 0 );
-
-	bDoFormat = TRUE;
-
-	do
-	{
-	    struct IntuiMessage * pim;
-	    BOOL bCancel = FALSE;
-
-	    while( (pim = GT_GetIMsg(pwin->UserPort)) == 0 )
-		WaitPort(pwin->UserPort);
-
-	    if( pim->Class == IDCMP_GADGETUP )
-	    {
-		switch( ((struct Gadget *)(pim->IAddress))->GadgetID )
-		{
-		case gidQuickFormat:
-		    bDoFormat = FALSE;
-		    /* fall through */
-		case gidFormat:
-		    bMakeTrashcan = pgadTrashcan->Flags & GFLG_SELECTED;
-		    bFFS = pgadFFS->Flags & GFLG_SELECTED;
-		    bIntl = pgadIntl->Flags & GFLG_SELECTED;
-#ifndef __AROS__
-		    bDirCache = pgadDirCache->Flags & GFLG_SELECTED;
-#endif
-		    bEnd = TRUE;
-		    break;
-		case gidCancel:
-		    bCancel = TRUE;
-		    bEnd = TRUE;
-		    break;
-		}
-	    }
-
-	    GT_ReplyIMsg(pim);
-
-	    if(bCancel)
-		goto cleanup;
-	}
-	while(!bEnd);
-
-	/* TODO: set volume name same as old one if name is null string */
-	if( !bSetSzVolumeFromSz( (char *)((struct StringInfo *)
-					  pgadName->SpecialInfo)->Buffer ) )
-	{
-	    rc = RETURN_ERROR;
+	    message("Can't create application\n");
 	    goto cleanup;
 	}
+	
+	DoMethod(mainwin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+	    app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(btn_cancel, MUIM_Notify, MUIA_Pressed, FALSE,
+	    app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(btn_format, MUIM_Notify, MUIA_Pressed, FALSE,
+	    app, 3, MUIM_CallHook, (IPTR)&btn_format_hook, TRUE);
+	DoMethod(btn_qformat, MUIM_Notify, MUIA_Pressed, FALSE,
+	    app, 3, MUIM_CallHook, (IPTR)&btn_format_hook, FALSE);
 
-	RemoveGList( pwin, pgadList, -1 );
-	FreeGadgets(pgadList);
-	pgadList = 0;
-
-	EraseRect( pwin->RPort, xOrigin, yOrigin,
-		   pwin->Width - pwin->BorderRight - 1,
-		   pwin->Height - pwin->BorderTop -1 );
-    }
-
-    ChangeWindowBox( pwin,
-		     pwin->LeftEdge, pwin->TopEdge,
-		     pwin->BorderLeft + pwin->BorderRight
-		     + (424 * cxScale >> 3),
-		     pwin->BorderTop + pwin->BorderBottom
-		     + (88 * cyScale >> 3) );
-
-    if(bDoFormat)
-    {
-	struct Gadget * pgad = CreateContext(&pgadList);
-	pgad = pgadCreate(
-	    pgad, 0, TEXT_KIND, 8, 16, 409, 8,
-	    "Formatting Disk...", PLACETEXT_IN,
-	    TAG_END );
-	pgad = pgadCreate(
-	    pgad, gidCancel, BUTTON_KIND, 145, 71, 134, 14,
-	    "Stop", PLACETEXT_IN,
-	    TAG_END );
-	if( pgad == 0 )
-	    goto cleanup;
-
-	AddGList( pwin, pgadList, -1, -1, 0 );
-	RefreshGList( pgadList, pwin, 0, -1 );
-	GT_RefreshWindow( pwin, 0 );
-
-	DrawBevelBox(
-	    pwin->RPort,
-	    xOrigin + (8 * cxScale >> 3), yOrigin + (28 * cyScale >> 3),
-	    409 * cxScale >> 3, 12 * cyScale >> 3,
-	    GTBB_Recessed, TRUE,
-	    GTBB_FrameType, BBFT_BUTTON,
-	    GT_VisualInfo, (ULONG)vi,
-	    TAG_END );
+	set(chk_trash, MUIA_Selected, TRUE);
+	if( DosType >= 0x444F5300 && DosType <= 0x444F5305 )
 	{
-	    struct IntuiText ait[3] = { {
-		ipenText, 0, JAM1,
-		8 * cxScale >> 3, 0,
-		pscr->Font, "0%", &ait[1]
-	    }, {
-		ipenText, 0, JAM1,
-		0, 0,
-		pscr->Font, "50%", &ait[2]
-	    }, {
-		ipenText, 0, JAM1,
-		0, 0,
-		pscr->Font, "100%", 0
-	    } };
-	    ait[1].LeftEdge = (212 * cxScale >> 3)
-		- IntuiTextLength(&ait[1]) / 2;
-	    ait[2].LeftEdge = (416 * cxScale >> 3)
-		- IntuiTextLength(&ait[2]);
-	    PrintIText( pwin->RPort, &ait[0],
-			xOrigin,
-			yOrigin + (46 * cyScale >> 3) );
+	    set(chk_ffs, MUIA_Selected, DosType & 1UL);
+	    set(chk_intl, MUIA_Selected, DosType & 6UL);
+	    set(chk_cache, MUIA_Selected, DosType & 4UL);
 	}
-	{
-	    WORD y = yOrigin + (40 * cyScale >> 3);
-	    WORD cxTicksWidth = (409 * cxScale >> 3) - 2;
-	    WORD xTicksLeft = xOrigin + (8 * cxScale >> 3);
-	    int i;
-
-	    for( i = 0; i <= 4; ++i )
-	    {
-		WORD x = xTicksLeft + cxTicksWidth * i / 4;
-		SetAPen( pwin->RPort, pdri->dri_Pens[TEXTPEN] );
-		WritePixel( pwin->RPort, x, y );
-		WritePixel( pwin->RPort, x, y+1 );
-		WritePixel( pwin->RPort, x+1, y );
-		WritePixel( pwin->RPort, x+1, y+1 );
-	    }
-	}
-    } else
-	PrintIText( pwin->RPort, &init_it,
-		    xOrigin + (212 * cxScale >> 3) - IntuiTextLength(&init_it)/2,
-		    yOrigin + (40 * cyScale >> 3) );
-    {
-	struct EasyStruct es;
-	char szVolumeId[11 + MAX_FS_NAME_LEN];
-	if(pdlVolume)
-	    RawDoFmtSz( szVolumeId, "%b", pdlVolume->dol_Name );
 	else
-	    RawDoFmtSz( szVolumeId, "in device %s", szDosDevice );
-	es.es_StructSize = sizeof(es);
-	es.es_Flags = 0;
-	es.es_Title = "Format Request";
-	es.es_TextFormat =
-	    "OK to format volume\n"
-	    "%s?\n\n"
-	    "WARNING!\n\n"
-	    "All data will be lost!\n"
-	    "(%s)";
-	es.es_GadgetFormat = "Format|Cancel";
-	if( EasyRequest( 0, &es, 0,
-			 (ULONG)szVolumeId, (ULONG)szCapacityInfo ) != 1 )
-	    goto cleanup;
-    }
-
-    if(bDoFormat)
-    {
-	ULONG icyl;
-	UWORD xBarLeft, yBarTop, yBarBottom, xFillFrom, xFillTo, cxBarWidth;
-
-	if(!bGetExecDevice(TRUE))
-	    goto cleanup;
-
-	/* TODO: use the real bevel edge thicknesses here here */
-	xBarLeft = xOrigin + (8 * cxScale >> 3) + 2;
-	cxBarWidth = (409 * cxScale >> 3) - 4;
-	yBarTop = yOrigin + (28 * cyScale >> 3) + 1,
-	yBarBottom = yBarTop + (12 * cyScale >> 3) - 3;
-	xFillFrom = xBarLeft;
-
-	SetAPen( pwin->RPort, pdri->dri_Pens[FILLPEN] );
-
-	for( icyl = LowCyl;
-	     icyl <= HighCyl;
-	     ++icyl )
 	{
-	    struct IntuiMessage * pim;
-	    while( (pim = GT_GetIMsg(pwin->UserPort)) != 0 )
-	    {
-		BOOL bCancel =
-		    pim->Class == IDCMP_GADGETUP
-		    && ((struct Gadget *)(pim->IAddress))->GadgetID
-		    == gidCancel;
-		GT_ReplyIMsg(pim);
-		if(bCancel)
-		    goto cleanup;
-	    }
-
-	    if( !bFormatCylinder(icyl) || !bVerifyCylinder(icyl) )
-		goto cleanup;
-
-	    xFillTo = xBarLeft
-		+ ((icyl - LowCyl) * cxBarWidth) / (HighCyl + 1 - LowCyl);
-	    if( xFillTo >= xFillFrom )
-		RectFill( pwin->RPort,
-			  xFillFrom, yBarTop, xFillTo - 1, yBarBottom );
+	    set(chk_ffs, MUIA_Disabled, TRUE);
+	    set(chk_intl, MUIA_Disabled, TRUE);
+	    set(chk_cache, MUIA_Disabled, TRUE);
 	}
+#ifdef __AROS__
+	set(chk_cache, MUIA_Disabled, TRUE);
+#endif	
+	set(mainwin, MUIA_Window_Open, TRUE);
 
-	FreeExecDevice();
-
-	RemoveGList( pwin, pgadList, -1 );
-	FreeGadgets(pgadList);
-	pgadList = 0;
-
-	EraseRect( pwin->RPort, xOrigin, yOrigin,
-		   pwin->Width - pwin->BorderRight - 1,
-		   pwin->Height - pwin->BorderBottom - 1 );
-	PrintIText( pwin->RPort, &init_it,
-		    xOrigin + (212 * cxScale >> 3) - IntuiTextLength(&init_it)/2,
-		    yOrigin + (40 * cyScale >> 3) );
-    }
-
-    if( bMakeFileSys( bFFS, !bFFS, bIntl, !bIntl, bDirCache, !bDirCache )
-	&& (!bMakeTrashcan || bMakeFiles(FALSE)) )
+	if (! XGET(mainwin, MUIA_Window_Open))
+	{
+	    message("Failed to open window\n");
+	    goto cleanup;
+	}
+	DoMethod(app, MUIM_Application_Execute);
 	rc = RETURN_OK;
+    }
 
 cleanup:
-    if(pwin)
-	CloseWindow(pwin);
-    if(pdri)
-	FreeScreenDrawInfo( pscr, pdri );
-    if(pscr)
-	UnlockPubScreen( 0, pscr );
-    if (pgadList)
-	FreeGadgets(pgadList);
-    if (vi)
-	FreeVisualInfo(vi);
-    if (ptf)
-	CloseFont(ptf);
+    MUI_DisposeObject(app);
 
 #if DEBUG
     SelectInput(OldInput);
     SelectOutput(OldOutput);
     Close(bpfhStdErr);
-#endif
+#endif    
 
     return rc;
 }
 
-
-struct Gadget * pgadCreate(
-    struct Gadget * pgadPrevious,
-    ULONG gid, ULONG kind, WORD xLeft, WORD yTop, WORD cxWidth, WORD cyHeight,
-    const char * psz, ULONG flags, ... )
+static void message(CONST_STRPTR s)
 {
-    struct NewGadget ng;
-    ng.ng_TextAttr = pwin->WScreen->Font;
-    ng.ng_VisualInfo = vi;
-    ng.ng_LeftEdge = xOrigin + (xLeft * cxScale >> 3);
-    ng.ng_TopEdge = yOrigin + (yTop * cyScale >> 3);
-    ng.ng_Width = cxWidth * cxScale >> 3;
-    ng.ng_Height = cyHeight * cyScale >> 3;
-    ng.ng_GadgetText = (UBYTE *)psz;
-    ng.ng_Flags = flags;
-    ng.ng_GadgetID = gid;
-
-    return CreateGadgetA( kind, pgadPrevious, &ng,
-			  (struct TagItem *)(&flags+1) );
+    if (s)
+    {
+	D(Printf(s));
+	MUI_Request(app, NULL, 0, "Error", "OK", s);
+    }
 }
