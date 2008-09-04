@@ -32,10 +32,12 @@ endif
 #MM host-build-tools-hostarosnewliblink : host-build-tools-hostarosnewlib host-build-tools-hostarosgcc--fetch
 
 %fetch_and_build mmake=host-build-tools-hostgmp package=gmp version=$(HOSTGMPVERSION) compiler=host \
-	    prefix="$(TOOLDIR)" package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no
+	    package_repo="http://ftp.sunet.se/pub/gnu/gmp" patch=no \
+	    prefix="$(TOOLDIR)"
 
 %fetch_and_build mmake=host-build-tools-hostmpfr package=mpfr version=$(HOSTMPFRVERSION) compiler=host \
-	    prefix="$(TOOLDIR)" package_repo="http://www.mpfr.org/mpfr-current" patch=no
+	    package_repo="http://www.mpfr.org/mpfr-current" patch=no \
+	    prefix="$(TOOLDIR)" extraoptions="--with-gmp=$(TOOLDIR)"
 
 %fetch_and_build mmake=host-build-tools-hostarosbinutils package=binutils version=$(HOSTAROSBINUTILSVERSION) compiler=host \
 	    package_repo="http://ftp.gnu.org/gnu/binutils" patch=no \
