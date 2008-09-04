@@ -93,6 +93,7 @@
 #include <string.h>
 
 #include "format.h"
+#include "locale.h"
 
 static struct DosList * pdlVolume = 0;
 static char szCapacityInfo[5+1+8+2+2+2+4+1];
@@ -132,11 +133,11 @@ AROS_UFH3S(void, btn_format_function,
 
     if(bDoFormat)
     {
-	set(txt_action, MUIA_Text_Contents, "Formatting Disk...");
+	set(txt_action, MUIA_Text_Contents, _(MSG_GUI_FORMATTING) );
     }
     else
     {
-	set(txt_action, MUIA_Text_Contents, "Initializing Disk...");
+	set(txt_action, MUIA_Text_Contents, _(MSG_GUI_INITIALIZING) );
     }
 
     set(formatwin, MUIA_Window_Open, TRUE);
@@ -146,13 +147,11 @@ AROS_UFH3S(void, btn_format_function,
 	if(pdlVolume)
 	    RawDoFmtSz( szVolumeId, "%b", pdlVolume->dol_Name );
 	else
-	    RawDoFmtSz( szVolumeId, "in device %s", szDosDevice );
+	    RawDoFmtSz( szVolumeId, _(MSG_IN_DEVICE), szDosDevice );
 	if( MUI_Request ( app, formatwin, 0,
-			    "Format Request", "Format|Cancel", "OK to format volume\n"
-			    "%s?\n\n"
-			    "WARNING!\n\n"
-			    "All data will be lost!\n"
-			    "(%s)", szVolumeId, szCapacityInfo) != 1)
+			    _(MSG_FORMAT_REQUEST_TITLE), _(MSG_FORMAT_REQUEST_GADGETS),
+			    _(MSG_FORMAT_REQUEST_TEXT),
+			    szVolumeId, szCapacityInfo) != 1)
 	    goto cleanup;
     }
 
@@ -299,7 +298,7 @@ int rcGuiMain(void)
 	ULLONG cUnits;
 	/* The unit symbols go up to exabytes, since the maximum
            possible disk size is 2^64 bytes = 16 exabytes. */
-	const char * pchUnitSymbol = "KMGTPE";
+	const char * pchUnitSymbol = _(MSG_UNITS);
 
 	D(Printf("Calculating capacity info...\n"));
 	cUnits = ibyEnd - ibyStart;
@@ -307,7 +306,7 @@ int rcGuiMain(void)
 	    ++pchUnitSymbol;
 
 	if(pdlVolume)
-	    RawDoFmtSz( szCapacityInfo, "%lu%lc capacity, %lu%% used",
+	    RawDoFmtSz( szCapacityInfo, _(MSG_CAPACITY_USED),
 			(ULONG)cUnits, (ULONG)*pchUnitSymbol,
 			/* Calculate percentage used, to nearest point. */
 			(ULONG)(((ULLONG)dinf.id_NumBlocksUsed*100ULL
@@ -320,12 +319,12 @@ int rcGuiMain(void)
 
     if( _WBenchMsg->sm_NumArgs == 1 )
     {
-	message("Must be started from Wanderer with a selected icon\n");
+	message(_(MSG_ERROR_WANDERER) );
 	/* TODO: display list of devices and have user select one */
 	goto cleanup;
     }
 
-    RawDoFmtSz( szTitle, "Format - %s", szDosDevice );
+    RawDoFmtSz( szTitle, _(MSG_WINDOW_TITLE), szDosDevice );
     D(Printf("Setting window title to '%s'\n", szTitle));
 
     {
@@ -335,21 +334,21 @@ int rcGuiMain(void)
 
 	char szDeviceInfo[6+2+MAX_FS_NAME_LEN+2];
 	char szVolumeInfo[6+2+MAX_FS_NAME_LEN+2];
-	RawDoFmtSz( szDeviceInfo, "Device '%s'", szDosDevice );
+	RawDoFmtSz( szDeviceInfo, _(MSG_DEVICE), szDosDevice );
 	szVolumeInfo[0] = '\0';
 	if(pdlVolume)
 	{
-	    RawDoFmtSz( szVolumeInfo, "Volume '%b'", pdlVolume->dol_Name );
+	    RawDoFmtSz( szVolumeInfo, _(MSG_VOLUME), pdlVolume->dol_Name );
 	}
 
 	D(Printf("Creating GUI...\n"));
 	
 	app = ApplicationObject,
-	    MUIA_Application_Title, (IPTR) "Format",
+	    MUIA_Application_Title, __(MSG_APPLICATION_TITLE),
 	    MUIA_Application_Version, (IPTR)szVersion,
-	    MUIA_Application_Description, (IPTR)"Disk Formatting Utility",
-	    MUIA_Application_Copyright, (IPTR)"Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin",
-	    MUIA_Application_Author, (IPTR)"Ben Hutchings, Pavel Fedin, The AROS Development Team",
+	    MUIA_Application_Description, __(MSG_DESCRIPTION),
+	    MUIA_Application_Copyright, __(MSG_COPYRIGHT),
+	    MUIA_Application_Author, __(MSG_AUTHOR),
 	    MUIA_Application_Base, (IPTR)"FORMAT",
 	    MUIA_Application_SingleTask, FALSE,
 	    SubWindow, (IPTR)(mainwin = WindowObject,
@@ -357,7 +356,7 @@ int rcGuiMain(void)
 		MUIA_Window_Title, (IPTR)szTitle,
 		WindowContents, (IPTR)(VGroup,
 		    Child, (IPTR)(ColGroup(2),
-			Child, (IPTR)Label2("Current Information:"),
+			Child, (IPTR)Label2( _(MSG_LABEL_CURRENT_INFORMATION) ),
 			Child, (IPTR)(TextObject,
 			    (IPTR)TextFrame,
 			    MUIA_Text_Contents, (IPTR)szDeviceInfo,
@@ -372,19 +371,19 @@ int rcGuiMain(void)
 			    TextFrame,
 			    MUIA_Text_Contents, (IPTR)szCapacityInfo,
 			End),
-			Child, (IPTR)Label2("New Volume Name:"),
+			Child, (IPTR)Label2( _(MSG_LABEL_NEW_VOLUME_NAME) ),
 			Child, (IPTR)(str_volume = StringObject,
 			    StringFrame,
-			    MUIA_String_Contents, (IPTR)"Empty",
+			    MUIA_String_Contents, _(MSG_DEFAULT_VOLUME_NAME),
 			    MUIA_String_MaxLen, MAX_FS_NAME_LEN,
 			End),
-			Child, (IPTR)Label2("Put Trashcan:"),
+			Child, (IPTR)Label2( _(MSG_LABEL_PUT_TRASHCAN) ),
 			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
-			Child, (IPTR)Label2("Fast File System:"),
+			Child, (IPTR)Label2( _(MSG_LABEL_FFS) ),
 			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
-			Child, (IPTR)Label2("International Mode:"),
+			Child, (IPTR)Label2( _(MSG_LABEL_INTL)),
 			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
-			Child, (IPTR)Label2("Directory Cache:"),
+			Child, (IPTR)Label2( _(MSG_LABEL_CACHE) ),
 			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
 		    End), /* ColGroup */
 		    Child, (IPTR) (RectangleObject, 
@@ -392,9 +391,9 @@ int rcGuiMain(void)
 			MUIA_FixHeight,      2,
 		    End),
 		    Child, (IPTR)(HGroup,
-			Child, (IPTR)(btn_format = ImageButton("Format", "THEME:Images/Gadgets/Prefs/Save")),
-			Child, (IPTR)(btn_qformat = ImageButton("Quick Format", "THEME:Images/Gadgets/Prefs/Save")),
-			Child, (IPTR)(btn_cancel = ImageButton("Cancel", "THEME:Images/Gadgets/Prefs/Cancel")),
+			Child, (IPTR)(btn_format  = ImageButton( _(MSG_BTN_FORMAT) , "THEME:Images/Gadgets/Prefs/Save")),
+			Child, (IPTR)(btn_qformat = ImageButton( _(MSG_BTN_QFORMAT), "THEME:Images/Gadgets/Prefs/Save")),
+			Child, (IPTR)(btn_cancel  = ImageButton( _(MSG_BTN_CANCEL) , "THEME:Images/Gadgets/Prefs/Cancel")),
 		    End), /* HGroup */
 		End), /* VGroup */
 	    End), /* Window */
@@ -408,14 +407,14 @@ int rcGuiMain(void)
 		    Child, (IPTR)(gauge = GaugeObject,
 			GaugeFrame,
 		    End),
-		    Child, (IPTR)SimpleButton("Stop"),
+		    Child, (IPTR)SimpleButton( _(MSG_BTN_STOP) ),
 		End), /* VGroup */
 	    End), /* Window */
 	End; /* Application */
 	
 	if ( ! app)
 	{
-	    message("Can't create application\n");
+	    message( _(MSG_ERROR_NO_APPLICATION) );
 	    goto cleanup;
 	}
 	
@@ -448,7 +447,7 @@ int rcGuiMain(void)
 
 	if (! XGET(mainwin, MUIA_Window_Open))
 	{
-	    message("Failed to open window\n");
+	    message( _(MSG_ERROR_NO_WINDOW) );
 	    goto cleanup;
 	}
 	DoMethod(app, MUIM_Application_Execute);
@@ -472,6 +471,6 @@ static void message(CONST_STRPTR s)
     if (s)
     {
 	D(Printf(s));
-	MUI_Request(app, NULL, 0, "Error", "OK", s);
+	MUI_Request(app, NULL, 0, _(MSG_REQ_ERROR_TITLE), _(MSG_OK), s);
     }
 }

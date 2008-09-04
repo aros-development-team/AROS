@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES	:= main cli gui
+FILES	:= main cli gui locale
 
 EXEDIR  := $(AROS_SYSTEM)
 
@@ -11,7 +11,7 @@ EXEDIR  := $(AROS_SYSTEM)
 #USER_CFLAGS := -DDEBUG=1
 
 #MM- workbench-system : workbench-system-format
-#MM workbench-system-format : includes linklibs
+#MM workbench-system-format : includes linklibs workbench-system-format-catalogs
 
 %build_prog mmake=workbench-system-format \
     progname=Format targetdir=$(EXEDIR) \
