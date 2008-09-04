@@ -28,7 +28,7 @@
 #include <proto/exec.h>
 
 #include "format.h"
-
+#include "locale.h"
 
 BPTR bpfhStdErr;
 
@@ -109,8 +109,7 @@ int rcCliMain(void)
 
     /* Get confirmation before we start the process */
     *pchDosDeviceColon = 0;
-    Printf( "Insert disk to be formatted in device %s\n"
-	    "Press RETURN to begin formatting or CTRL-C to abort: ",
+    Printf( _(MSG_INSERT_DISK),
 	    (ULONG)szDosDevice );
     Flush(bpfhStdOut);
     SetMode( bpfhStdIn, 1 ); /* raw input */
@@ -154,7 +153,7 @@ int rcCliMain(void)
 		goto cleanup;
 	    }
 
-	    Printf( "\rFormatting cylinder %lu, %lu to go ", icyl, HighCyl-icyl );
+	    Printf( _(MSG_FORMATTING), icyl, HighCyl-icyl );
 	    D(PutStr("\n"));
 	    Flush(bpfhStdOut);
 	    if(!bFormatCylinder(icyl))
@@ -162,7 +161,7 @@ int rcCliMain(void)
 
 	    if(!args.bNoVerify)
 	    {
-		PutStr("\rVerifying ");
+		PutStr( _(MSG_VERIFYING) );
 		D(PutStr("\n"));
 		Flush(bpfhStdOut);
 		if(!bVerifyCylinder(icyl))
@@ -175,7 +174,7 @@ int rcCliMain(void)
 
     FreeExecDevice();
 
-    PutStr( "Initializing disk...\n" );
+    PutStr( _(MSG_INITIALIZING) );
 
 #ifndef __AROS__
     DirCache = args.bDirCache;

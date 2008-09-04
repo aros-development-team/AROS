@@ -41,6 +41,7 @@
 #include <proto/intuition.h>
 
 #include "format.h"
+#include "locale.h"
 
 #ifndef AROS_BSTR_ADDR
 #define AROS_BSTR_ADDR(x) (char *)BADDR(x) + 1
@@ -88,7 +89,11 @@ int main(void)
 
 void ReportErrSz( ErrorType ert, LONG err, const char * pszMessage, ... )
 {
-    static const char * const apszErrorTypes[] = {"Warning","Error","Failure"};
+    static const char * apszErrorTypes[3];
+    apszErrorTypes[0] = _(MSG_ERRORS_WARNING);
+    apszErrorTypes[1] = _(MSG_ERRORS_ERROR);
+    apszErrorTypes[2] = _(MSG_ERRORS_FAILURE);
+    
     char szSysMessage[FAULT_MAX];
     char szFormat[256];
     static char szOutput[1024];
@@ -101,7 +106,7 @@ void ReportErrSz( ErrorType ert, LONG err, const char * pszMessage, ... )
 		      (_WBenchMsg && !pszMessage) ? 0 : "",
 		      szSysMessage, FAULT_MAX );
 
-    strcpy( szFormat, "Format " );
+    strcpy( szFormat, _(MSG_FORMAT) );
     strcat( szFormat, apszErrorTypes[ert] );
 
     if(!_WBenchMsg)
@@ -131,7 +136,7 @@ void ReportErrSz( ErrorType ert, LONG err, const char * pszMessage, ... )
 	es.es_Flags = 0;
 	es.es_Title = szFormat;
 	es.es_TextFormat = "%s";
-	es.es_GadgetFormat = (ert == ertFailure) ? "Cancel" : "OK";
+	es.es_GadgetFormat = (ert == ertFailure) ? _(MSG_CANCEL) : _(MSG_OK);
 	RawDoVFmtSz( szOutput, pszBodyFormat, args );
 	WordWrapSz(szOutput);
 	(void) EasyRequest( 0, &es, 0, (ULONG)szOutput );
@@ -251,7 +256,7 @@ BOOL bSetFstFromSz( const char * pszFileSysType )
 	return TRUE;
     }
 
-    ReportErrSz( ertError, -1, "Invalid DosType specification" );
+    ReportErrSz( ertError, -1, _(MSG_ERROR_INVALID_DOSTYPE) );
     return FALSE;
 }
 
@@ -371,8 +376,7 @@ BOOL bGetDosDevice(struct DosList *pdlDevice, ULONG flags)
 	    ReportErrSz(
 		ertError,
 		-1,
-		"This device is larger than 4 gigabytes in size. The"
-		" Amiga file-system cannot handle a device this large." );
+		_(MSG_ERROR_TOO_LARGE_1) );
 	    return FALSE;
 	}
 	if( ibyEnd > 0x100000000ULL && verFS < 43 )
@@ -381,9 +385,7 @@ BOOL bGetDosDevice(struct DosList *pdlDevice, ULONG flags)
 	    ReportErrSz(
 		ertError,
 		-1,
-		"This device extends beyond the first 4 gigabytes of the"
-		" disk it is on.  In order to use it, you must install"
-		" version 43 or later of the Amiga file-system." );
+		_(MSG_ERROR_TOO_LARGE_2) );
 	    return FALSE;
 	}
 
@@ -393,9 +395,7 @@ BOOL bGetDosDevice(struct DosList *pdlDevice, ULONG flags)
 	    ReportErrSz(
 		ertError,
 		-1,
-		"This device is larger than 2 gigabytes in size. In order to"
-		" use it, you must install version 40 or later of the Amiga"
-		" file-system." );
+		_(MSG_ERROR_TOO_LARGE_3) );
 	    return FALSE;
 	}
     }
@@ -415,10 +415,7 @@ BOOL bGetDosDevice(struct DosList *pdlDevice, ULONG flags)
 	ReportErrSz(
 	    ertWarning,
 	    -1,
-	    "This device is set to use buffers in memory that may not be"
-	    " \"public\". This can cause your computer to crash if you use a"
-	    " virtual memory system. You should add 1 to the BufMemType"
-	    " setting for this device to avoid this." );
+	    _(MSG_ERROR_TOO_LARGE_4) );
 	BufMemType |= MEMF_PUBLIC;
     }
 #endif
@@ -468,7 +465,7 @@ BOOL bGetExecDevice( BOOL bWillVerify )
 	if( derr != 0 )
 	{
 	    ReportErrSz(
-		ertFailure, -1, "Device open returned error %ld", (ULONG)derr );
+		ertFailure, -1, _(MSG_ERROR_DEVICE), (ULONG)derr );
 	    return FALSE;
 	}
 	bExecDevOpen = TRUE;
@@ -496,12 +493,7 @@ BOOL bGetExecDevice( BOOL bWillVerify )
 		ReportErrSz(
 		    ertWarning,
 		    -1,
-		    "This device appears to be on an IDE drive"
-		    " using an old Commodore IDE driver.  This driver may"
-		    " attempt to perform long data transfers that some IDE"
-		    " drives do not carry out correctly.  To avoid the risk"
-		    " of data loss, you should change this device's"
-		    " MaxTransfer setting to 0x10000." );
+		    _(MSG_ERROR_IDE) );
 	    }
 	}
 	if(GfxBase)
@@ -551,7 +543,7 @@ BOOL bGetExecDevice( BOOL bWillVerify )
 	    ReportErrSz(
 		ertFailure,
 		-1,
-		"Device query (NSCMD_DEVICEQUERY) returned error %ld",
+		_(MSG_ERROR_DEVICE_QUERY),
 		(ULONG)derr );
 	    return FALSE;
 	}
@@ -561,10 +553,7 @@ BOOL bGetExecDevice( BOOL bWillVerify )
 	    ReportErrSz(
 		ertError,
 		-1,
-		"This device extends beyond the first 4 gigabytes of the disk."
-		" In order to use this device, you must either use a driver"
-		" that supports the NSD 64-bit commands or install and run the"
-		" NSDPatch program." );
+		_(MSG_ERROR_64BIT) );
 	    return FALSE;
 	}
     }
@@ -688,9 +677,9 @@ BOOL bFormatCylinder( ULONG icyl )
     }
 
     ReportErrSz( ertFailure, -1,
-		 "Device %s returned error %ld",
+		 _(MSG_ERROR_DEVICE_RETURN),
 		 (piosDisk->io_Command == CMD_UPDATE) ?
-		 "flush (CMD_UPATE)" : "invalidate (CMD_CLEAR)",
+		 _(MSG_ERROR_FLUSH) : _(MSG_ERROR_INVALIDATE),
 		 (ULONG)derr );
     return FALSE;
 }
@@ -704,7 +693,7 @@ BOOL bVerifyCylinder( ULONG icyl )
 
     if( memcmp( paulWriteBuffer, paulReadBuffer, cbyCylinder ) != 0 )
     {
-	ReportErrSz( ertFailure, -1, "Verify error" );
+	ReportErrSz( ertFailure, -1, _(MSG_ERROR_VERIFY) );
 	return FALSE;
     }
 
@@ -748,16 +737,16 @@ static BOOL bTransferCylinder(
 	    switch(piosDisk->io_Command)
 	    {
 	    case NSCMD_TD_FORMAT64:
-		pszCommand = "format (NSCMD_TD_FORMAT64)"; break;
+		pszCommand = _(MSG_COMMAND_FORMAT64); break;
 	    case TD_FORMAT:
-		pszCommand = "format (TD_FORMAT)"; break;
+		pszCommand = _(MSG_COMMAND_FORMAT); break;
 	    case NSCMD_TD_READ64:
-		pszCommand = "read (NSCMD_TD_READ64)"; break;
+		pszCommand = _(MSG_COMMAND_READ64); break;
 	    case CMD_READ:
-		pszCommand = "read (CMD_READ)"; break;
+		pszCommand = _(MSG_COMMAND_READ); break;
 	    }
 	    ReportErrSz( ertFailure, -1,
-			 "Device %s returned error %ld",
+			 _(MSG_ERROR_DEVICE_RETURN),
 			 pszCommand, (ULONG)piosDisk->io_Error );
 	    return FALSE;
 	}
@@ -863,7 +852,7 @@ BOOL bMakeFiles( BOOL bDiskIcon )
 	    if(!bSuccess)
 		ReportErrSz( ertFailure,
 			     -1,
-			     "Couldn't create trashcan on volume\n%s",
+			     _(MSG_ERROR_TRASHCAN),
 			     (ULONG)(szVolume + 1) );
 	    else if( bDiskIcon )
 	    {
@@ -901,7 +890,7 @@ BOOL bMakeFiles( BOOL bDiskIcon )
 		if(!bSuccess)
 		    ReportErrSz( ertFailure,
 				 -1,
-				 "Couldn't create disk icon on volume\n%s",
+				 _(MSG_ERROR_ICON),
 				 (ULONG)(szVolume + 1) );
 	    }
 
