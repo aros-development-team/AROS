@@ -5,6 +5,7 @@
     Desc: i386unix version of Enable()
     Lang: english
 */
+#define DEBUG 1
 
 #include <exec/tasks.h>
 #include <exec/execbase.h>
@@ -30,11 +31,14 @@ AROS_LH0(void, Enable,
     AROS_LIBFUNC_INIT
 
     AROS_ATOMIC_DEC(SysBase->IDNestCnt);
+    D(bug("[Exec] Enable(), new IDNestCnt is %d\n", SysBase->IDNestCnt));
     
     if(SysBase->IDNestCnt < 0)
     {
+        D(bug("[Enable] Enabling interrupts\n"));
         if (KernelBase)
             KrnSti();
+        D(else bug("[Enable] KernelBase is NULL\n"));
 
         /* There's no dff09c like thing in x86 native which would allow
            us to set delayed (mark it as pending but it gets triggered

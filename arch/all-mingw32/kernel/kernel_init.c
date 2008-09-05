@@ -95,12 +95,17 @@ AROS_LH0(struct TagItem *, KrnGetBootInfo,
 }
 
 
+void SetGlobalKernelBase(struct KernelBase *kBase)
+{
+    KernelBase = kBase;
+}
+
 /* auto init */
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
   int i;
 
-  KernelBase = LIBBASE;
+  SetGlobalKernelBase(LIBBASE);
   D(mykprintf("[Kernel] init (KernelBase=%p)\n",LIBBASE));
   D(mykprintf("[Kernel] -1 : %p -2 : %p\n", *((APTR*)(((APTR*)LIBBASE)-1)),*((APTR*)(((APTR*)LIBBASE)-2))));
   for (i=0; i < EXCEPTIONS_NUM; i++)
