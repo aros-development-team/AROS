@@ -1,3 +1,6 @@
+#define DEBUG 1
+
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
@@ -7,6 +10,7 @@
 #include "etask.h"
 */
 #include "kernel_intern.h"
+#include "syscall.h"
 
 AROS_LH0(KRN_SchedType, KrnGetScheduler,
          struct KernelBase *, KernelBase, 1, Kernel)
@@ -34,7 +38,7 @@ AROS_LH0(void, KrnCause,
 {
     AROS_LIBFUNC_INIT
     
-/*  asm volatile("li %%r3,%0; sc"::"i"(SC_CAUSE):"memory","r3"); */
+    KernelIFace.core_syscall(SC_CAUSE);
 
     AROS_LIBFUNC_EXIT
 }
@@ -43,8 +47,8 @@ AROS_LH0(void , KrnDispatch,
          struct KernelBase *, KernelBase, 4, Kernel)
 {
     AROS_LIBFUNC_INIT
-    
-/*  asm volatile("li %%r3,%0; sc"::"i"(SC_DISPATCH):"memory","r3"); */
+
+    KernelIFace.core_syscall(SC_DISPATCH);    
 
     AROS_LIBFUNC_EXIT
 }
@@ -54,7 +58,7 @@ AROS_LH0(void, KrnSwitch,
 {
     AROS_LIBFUNC_INIT
 
-/*  asm volatile("li %%r3,%0; sc"::"i"(SC_SWITCH):"memory","r3"); */
+    KernelIFace.core_syscall(SC_SWITCH);
     
     AROS_LIBFUNC_EXIT
 }
@@ -64,7 +68,7 @@ AROS_LH0(void, KrnSchedule,
 {
     AROS_LIBFUNC_INIT
 
-/*  asm volatile("li %%r3,%0; sc"::"i"(SC_SCHEDULE):"memory","r3"); */
+    KernelIFace.core_syscall(SC_SCHEDULE);
         
     AROS_LIBFUNC_EXIT
 }

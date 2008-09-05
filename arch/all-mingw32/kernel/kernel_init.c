@@ -1,4 +1,5 @@
 #define DEBUG 1
+
 #include <inttypes.h>
 #include <aros/symbolsets.h>
 #include <exec/lists.h>
@@ -29,6 +30,7 @@ extern void Exec_Dispatch();
 static struct TagItem *BootMsg;
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
+APTR KernelBase = NULL;
 /* static char cmdLine[200]; TODO */
 
 /* So we can examine the memory */
@@ -96,16 +98,27 @@ AROS_LH0(struct TagItem *, KrnGetBootInfo,
 /* auto init */
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
-  mykprintf("[Kernel] init (KernelBase=%p)\n",LIBBASE);
-  mykprintf("[Kernel] -1 : %p -2 : %p\n", *((APTR*)(((APTR*)LIBBASE)-1)),*((APTR*)(((APTR*)LIBBASE)-2)));
-  mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo(KernelBase));
+  int i;
+
+  KernelBase = LIBBASE;
+  D(mykprintf("[Kernel] init (KernelBase=%p)\n",LIBBASE));
+  D(mykprintf("[Kernel] -1 : %p -2 : %p\n", *((APTR*)(((APTR*)LIBBASE)-1)),*((APTR*)(((APTR*)LIBBASE)-2))));
+  for (i=0; i < EXCEPTIONS_NUM; i++)
+        NEWLIST(&LIBBASE->kb_Exceptions[i]);
+
+  for (i=0; i < INTERRUPTS_NUM; i++)
+        NEWLIST(&LIBBASE->kb_Interrupts[i]);
+  D(mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo(KernelBase)));
   return 1;
 }
 
 ADD2INITLIB(Kernel_Init, 0)
 
 char *kernel_functions[] = {
-    "StartScheduler",
+    "core_init",
+    "core_intr_disable",
+    "core_intr_enable",
+    "core_syscall",
     NULL
 };
 
@@ -128,11 +141,11 @@ int startup(struct TagItem *msg)
   void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
   void * memory = (void*)krnGetTagData(KRN_MMAPAddress, 0, msg); /* FIXME: These tags are used in non-conforming way */
   unsigned int memsize = krnGetTagData(KRN_MMAPLength, 0, msg);
-  HostIFace = krnGetTagData(KRN_HostInterface, 0, msg);
+  HostIFace = (struct HostInterface *)krnGetTagData(KRN_HostInterface, 0, msg);
 
   hostlib = HostIFace->HostLib_Open("kernel_native.dll", &errstr);
   if (!hostlib) {
-      mykprintf("[Kernel] failed to load host-side code: %s\n", errstr);
+      mykprintf("[Kernel] failed to load host-side module: %s\n", errstr);
       HostIFace->HostLib_FreeErrorStr(errstr);
       return -1;
   }
@@ -177,13 +190,17 @@ int startup(struct TagItem *msg)
    */
   SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
-  mykprintf("[Kernel] starting native scheduler\n");
-  KernelIFace.StartScheduler(Exec_Exception, Exec_Dispatch, SysBase);
+  mykprintf("[Kernel] initializing host-side kernel module\n");
+  if (!KernelIFace.core_init(SysBase->VBlankFrequency*SysBase->PowerSupplyFrequency, &SysBase, &KernelBase)) {
+      mykprintf("[Kernel] Failed to initialize!\n");
+      return -1;
+  }
 
   mykprintf("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n");
   InitCode(RTF_SINGLETASK, 0);
 
-  mykprintf("leaving startup!\n");   
+  mykprintf("leaving startup!\n");
+  HostIFace->HostLib_Close(hostlib, NULL);
   return 1;
 }
 

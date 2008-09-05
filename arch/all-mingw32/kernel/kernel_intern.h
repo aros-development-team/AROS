@@ -12,19 +12,16 @@
 
 //#include "syscall.h"
 
-#define KERNEL_PHYS_BASE        0x00800000
-#define KERNEL_VIRT_BASE        0xff800000
-
 #define STACK_SIZE 4096
 
-typedef void (*Exec_Callback)(struct ExecBase*);
+#define EXCEPTIONS_NUM 2
+#define INTERRUPTS_NUM 2
 
 struct KernelBase {
     struct Node         kb_Node;
     void *              kb_MemPool;
-    struct List         kb_Exceptions[16];
-    struct List         kb_Interrupts[64];
-    struct MemHeader    *kb_SupervisorMem;
+    struct List         kb_Exceptions[EXCEPTIONS_NUM];
+    struct List         kb_Interrupts[INTERRUPTS_NUM];
 };
 
 struct KernelBSS {
@@ -46,8 +43,20 @@ struct IntrNode {
     uint8_t             in_nr;
 };
 
+#ifdef bug
+#undef bug
+#endif
+#ifdef D
+#undef D
+#endif
+#define D(x) x
+
+#ifdef __AROS__
 struct KernelInterface {
-    void (*StartScheduler)(Exec_Callback ExceptPtr, Exec_Callback DispatchPtr, struct ExecBase *ExecBasePtr);
+    long (*core_init)(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, APTR *KernelBasePointer);
+    long (*core_intr_disable)(void);
+    long (*core_intr_enable)(void);
+    void (*core_syscall)(unsigned long n);
 };
 
 extern struct HostInterface *HostIFace;
@@ -56,14 +65,6 @@ extern struct KernelInterface KernelIFace;
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
-
-#ifdef bug
-#undef bug
-#endif
-#ifdef D
-#undef D
-#endif
-#define D(x) x
 
 AROS_LD2(int, KrnBug,
          AROS_LDA(const char *, format, A0),
@@ -77,5 +78,17 @@ static inline void bug(const char *format, ...)
     AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, NULL); /* Warning! It's a HACK (KernelBase == NULL)!!! */
     va_end(args);
 }
+#else
+#define bug printf
+extern unsigned char Ints_Enabled;
+extern struct ExecBase **SysBasePtr;
+extern struct KernelBase **KernelBasePtr;
+
+void core_Dispatch(CONTEXT *regs);
+void core_Switch(CONTEXT *regs);
+void core_Schedule(CONTEXT *regs);
+void core_ExitInterrupt(CONTEXT *regs);
+void core_Cause(struct ExecBase *SysBase);
+#endif
 
 #endif /*KERNEL_INTERN_H_*/

@@ -18,13 +18,9 @@ AROS_LH4(void *, KrnAddIRQHandler,
 
     struct IntrNode *handle = NULL;
     D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-#ifdef NOT_YET
-    if (irq < 63)
+    if (irq < INTERRUPTS_NUM)
     {
-        /* Go to supervisor mode */
-        goSuper(); 
-        
-        handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
+        handle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC);
         D(bug("[KRN]   handle=%012p\n", handle));
         
         if (handle)
@@ -37,23 +33,9 @@ AROS_LH4(void *, KrnAddIRQHandler,
             
             Disable();
             ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
-            
-            if (irq < 32)
-            {
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
-            }
-            else
-            {
-                wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 32)));
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
-            }
-            
             Enable();
         }
-        
-        goUser();
     }
-#endif
     return handle;
 
     AROS_LIBFUNC_EXIT
@@ -64,34 +46,16 @@ AROS_LH1(void, KrnRemIRQHandler,
          struct KernelBase *, KernelBase, 8, Kernel)
 {
     AROS_LIBFUNC_INIT
-#ifdef NOT_YET
     struct IntrNode *h = handle;
-    uint8_t irq = h->in_nr;
     
     if (h && (h->in_type == it_interrupt))
     {
-        goSuper();
-     
         Disable();
         REMOVE(h);
-        if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
-        {
-            if (irq < 30)
-            {
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) & ~(0x80000000 >> irq));
-            }
-            else if (irq > 31)
-            {
-                wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 32)));
-            }
-        }
         Enable();
     
-        Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
-        
-        goUser();
+        FreeMem(h, sizeof(struct IntrNode));
     }
-#endif
     AROS_LIBFUNC_EXIT
 }
 
@@ -106,13 +70,9 @@ AROS_LH4(void *, KrnAddExceptionHandler,
 
     struct IntrNode *handle = NULL;
     D(bug("[KRN] KrnAddExceptionHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-#ifdef NOT_YET
-    if (irq < 16)
+    if (irq < EXCEPTIONS_NUM)
     {
-        /* Go to supervisor mode */
-        goSuper();
-        
-        handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
+        handle = AllocMem(sizeof(struct IntrNode), MEMF_PUBLIC);
         D(bug("[KRN]   handle=%012p\n", handle));
         
         if (handle)
@@ -127,10 +87,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
             ADDHEAD(&KernelBase->kb_Exceptions[irq], &handle->in_Node);
             Enable();
         }
-        
-        goUser();
     }
-#endif
     return handle;
 
     AROS_LIBFUNC_EXIT
@@ -141,22 +98,16 @@ AROS_LH1(void, KrnRemExceptionHandler,
          struct KernelBase *, KernelBase, 8, Kernel)
 {
     AROS_LIBFUNC_INIT
-#ifdef NOT_YET
     struct IntrNode *h = handle;
     
     if (h && (h->in_type == it_exception))
     {
-        goSuper();
-        
         Disable();
         REMOVE(h);
         Enable();
     
-        Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
-        
-        goUser();
+        FreeMem(h, sizeof(struct IntrNode));
     }
-#endif
     AROS_LIBFUNC_EXIT
 }
 
@@ -165,7 +116,7 @@ AROS_LH0I(void, KrnCli,
 {
     AROS_LIBFUNC_INIT
 
-/*  asm volatile("li %%r3,%0; sc"::"i"(SC_CLI):"memory","r3"); */
+    KernelIFace.core_intr_disable();
 
     AROS_LIBFUNC_EXIT
 }
@@ -175,7 +126,7 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-/*  asm volatile("li %%r3,%0; sc"::"i"(SC_STI):"memory","r3"); */
+    KernelIFace.core_intr_enable();
 
     AROS_LIBFUNC_EXIT
 }
