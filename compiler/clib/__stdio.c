@@ -52,6 +52,13 @@ int __smode2oflags(const char *mode)
 	theresb = 1;
 	mode++;
     }
+    else if (*mode == 't')
+    {
+	// Silently ignore 't' (=text).
+	// It's deprecated, but it's still in some sources,
+	// and on other platforms they can compiled without problems. 
+	mode++;
+    }
 
     if (*mode == '+')
     {
