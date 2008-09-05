@@ -17,10 +17,14 @@ typedef unsigned char UBYTE;
 #define DS(x) x
 #define SLOW
 
-#define AROS_EXCEPTION_TIMER   0x80000000
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
-HANDLE VBLTimer;
+struct SwitcherData {
+    HANDLE MainThread;
+    DWORD TimerPeriod;
+};
+
+struct SwitcherData SwData;
 unsigned char Ints_Enabled = 0;
 struct ExecBase **SysBasePtr;
 struct KernelBase **KernelBasePtr;
@@ -50,11 +54,6 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
     	struct KernelBase *KernelBase = *KernelBasePtr;
 
 	switch (Except->ExceptionRecord->ExceptionCode) {
-	case AROS_EXCEPTION_TIMER:
-	    DS(printf("[KRN] Timer exception\n"));
-	    user_handler(0);
-	    core_ExitInterrupt(Except->ContextRecord);
-	    return EXCEPTION_CONTINUE_EXECUTION;
 	case AROS_EXCEPTION_SYSCALL:
 	    D(printf("[KRN] Syscall exception %lu\n", *Except->ExceptionRecord->ExceptionInformation));
 	    switch (*Except->ExceptionRecord->ExceptionInformation)
@@ -86,21 +85,40 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	}
 }
 
-VOID CALLBACK TimerInt(LPVOID IntArg, DWORD TimeLow, DWORD TimeHigh)
+DWORD TaskSwitcher(struct SwitcherData *args)
 {
-    if (Ints_Enabled)
-    	RaiseException(AROS_EXCEPTION_TIMER, 0, 0, NULL);
+    HANDLE IntEvent;
+    DWORD obj;
+    CONTEXT MainCtx;
+    HANDLE MainThread = args->MainThread;
+    DWORD TimerPeriod = args->TimerPeriod;
+
+    for (;;) {
+        Sleep(TimerPeriod);
+    	SuspendThread(MainThread);
+    	if (Ints_Enabled) {
+    	    GetThreadContext(MainThread, &MainCtx);
+    	    user_handler(0);
+    	    core_ExitInterrupt(&MainCtx);
+    	    SetThreadContext(MainThread, &MainCtx);
+    	}
+            DS(else printf("[KRN] Interrupts are disabled\n"));
+        ResumeThread(MainThread);
+    }
+    return 0;
 }
 
 /* ****** Interface functions ****** */
 
 long __declspec(dllexport) core_intr_disable(void)
 {
+    D(printf("[KRN] disabling interrupts\n"));
     Ints_Enabled = 0;
 }
 
 long __declspec(dllexport) core_intr_enable(void)
 {
+    D(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
 }
 
@@ -111,22 +129,30 @@ void __declspec(dllexport) core_syscall(unsigned long n)
 
 int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, struct KernelBase **KernelBasePointer)
 {
-    LARGE_INTEGER VBLInterval;
+    HANDLE ThisProcess;
+    HANDLE SwitcherThread;
+    DWORD SwitcherId;
 
-    D(printf("[KRN] Setting up exception handlers, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
+    D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
     SysBasePtr = SysBasePointer;
     KernelBasePtr = KernelBasePointer;
     SetUnhandledExceptionFilter(ExceptionHandler);
-    VBLTimer = CreateWaitableTimer(NULL, FALSE, NULL);
-    D(printf("[KRN] VBlank timer handle: 0x%08lX\n", VBLTimer));
-    if (VBLTimer) {
+    
+    ThisProcess = GetCurrentProcess();
+    if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
 #ifdef SLOW
-    	TimerPeriod = 5000;
+    	SwData.TimerPeriod = 5000;
 #else
-        TimerPeriod = 1000/TimerPeriod;
+        SwData.TimerPeriod = 1000/TimerPeriod;
 #endif
-        VBLInterval.QuadPart = -10000*TimerPeriod;
-        return SetWaitableTimer(VBLTimer, &VBLInterval, TimerPeriod, TimerInt, NULL, FALSE);
+        SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
+    	if (SwitcherThread) {
+  	    D(printf("[KRN] Task switcher started"));
+  	    CloseHandle(SwitcherThread);
+  	    return 1;
+        }
+            D(else printf("[KRN] Failed to run task switcher thread\n");)
     }
+        D(else printf("[KRN] failed to get thread handle\n");)
     return 0;
 }
