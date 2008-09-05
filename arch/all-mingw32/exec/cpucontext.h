@@ -11,23 +11,14 @@
 #include <signal.h>
 #include <errno.h>
 
-#ifdef __AROS__
-#include "winapi.h"
-#else
-#include <windows.h>
-#endif
-
 #include "etask.h"
+#include "winapi.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
 #define _POP(sp)            (*sp++)
 
 #define SP_TYPE		IPTR
-#define CPU_NUMREGS	0
-
-#define SC_DISABLE(sc)   ((sc)->uc_sigmask = sig_int_mask)
-#define SC_ENABLE(sc)    (sigemptyset(&(sc)->uc_sigmask))
 
 /* this is from mingw32's w32api/winnt.h */
 #ifdef __i386__
@@ -48,16 +39,6 @@
 #error Unsupported CPU
 #endif
 
-/* Here we have to setup a complete stack frame
- so Exec_Exception thinks it was called as a
- normal function. */
-#define SETUP_EXCEPTION(sc,arg)\
-do                                        \
-{                                         \
-_PUSH(GetSP(SysBase->ThisTask), arg); \
-_PUSH(GetSP(SysBase->ThisTask), arg); \
-} while (0)
-
 #define GetCpuContext(task)	((CONTEXT *)(GetIntETask(task)->iet_Context))
 #define GetSP(task)		(*(SP_TYPE **)(&task->tc_SPReg))
 
@@ -65,34 +46,12 @@ _PUSH(GetSP(SysBase->ThisTask), arg); \
     do {                                           \
         FP(GetCpuContext(task)) = 0;               \
         PC(GetCpuContext(task)) = (IPTR)(startpc); \
+        SP(GetCpuContext(task)) = (IPTR)(sp);	   \
     } while (0)
 
 #define PREPARE_INITIAL_CONTEXT(task,startpc)      \
     do {                                           \
     } while (0)
-
-#define SAVEREGS(task,th)                          \
-    do {                                           \
-        CONTEXT *cc = GetCpuContext(task);         \
-        GetThreadContext(th, cc);                  \
-        GetSP(task) = (SP_TYPE *)SP(cc);           \
-    } while (0)
-
-#define RESTOREREGS(task,th)                       \
-    do {                                           \
-        CONTEXT *cc = GetCpuContext(task);         \
-        SP(cc) = (IPTR)GetSP(task);                \
-	SetThreadContext(th, cc);                  \
-    } while (0)
-
-#define PRINT_SC(sc) \
-	kprintf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , SP(sc), FP(sc), PC(sc) \
-	    , R0(sc), R1(sc), R2(sc), R3(sc) \
-	    , R4(sc), R5(sc), R6(sc) \
-      );
 
 #define PRINT_CPUCONTEXT(task) \
 	kprintf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \

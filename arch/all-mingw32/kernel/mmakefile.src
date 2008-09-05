@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
   files="kernel_init debug intr scheduler" uselibs="rom"
 
 NATIVE_DIR := $(GENDIR)/native
-NATIVE_OBJS :=	$(NATIVE_DIR)/host_scheduler.o
+NATIVE_OBJS := $(NATIVE_DIR)/host_intr.o $(NATIVE_DIR)/host_scheduler.o
 				
 SOEXT := .dll
 

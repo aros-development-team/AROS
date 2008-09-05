@@ -150,6 +150,8 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
     };
     
      kprintf("[DosBoot] spawning boot process\n");
+     
+   for (;;); /* TODO: we halt here in order to test scheduler */
 
    if( CreateNewProc( bootprocess ) == NULL )
     {
