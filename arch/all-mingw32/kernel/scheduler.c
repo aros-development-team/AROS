@@ -48,6 +48,7 @@ AROS_LH0(void , KrnDispatch,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[KRN] KrnDispatch()\n"));
     KernelIFace.core_syscall(SC_DISPATCH);    
 
     AROS_LIBFUNC_EXIT
@@ -58,6 +59,7 @@ AROS_LH0(void, KrnSwitch,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[KRN] KrnSwitch()\n"));
     KernelIFace.core_syscall(SC_SWITCH);
     
     AROS_LIBFUNC_EXIT
@@ -68,6 +70,7 @@ AROS_LH0(void, KrnSchedule,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[KRN] KrnSchedule()\n"));
     KernelIFace.core_syscall(SC_SCHEDULE);
         
     AROS_LIBFUNC_EXIT
