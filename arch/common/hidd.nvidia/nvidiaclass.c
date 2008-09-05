@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NVidia gfx class
@@ -79,10 +79,10 @@ VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             {
 		case aoHidd_Gfx_DPMSLevel:
 		    LOCK_HW
-		    
+
 		    DPMS(_sd, tag->ti_Data);
 		    _sd->dpms = tag->ti_Data;
-		    
+
 		    UNLOCK_HW
 		    break;
 	    }
@@ -125,7 +125,7 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_BitMapType,	vHidd_BitMapType_Chunky }, /* 15 */
 	{ TAG_DONE, 0UL }
     };
-    
+
     struct TagItem pftags_16bpp[] = {
 	{ aHidd_PixFmt_RedShift,	16	}, /* 0 */
 	{ aHidd_PixFmt_GreenShift,	21	}, /* 1 */
@@ -176,7 +176,7 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         1024, 1048, 1184, 1344,
          768,  771,  777,  806,
 	 "NVIDIA:1024x768");
-	 
+
     MAKE_SYNC(1152x864_60, 80000,
 	1152, 1216, 1328, 1456,
 	 864,  870,  875,  916,
@@ -185,12 +185,29 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     MAKE_SYNC(1280x1024_60, 107991,
 	1280, 1328, 1440, 1688,
 	1024, 1025, 1028, 1066,
-	"NVIDIA:1280x1024");    
-    
+	"NVIDIA:1280x1024");
+
     MAKE_SYNC(1600x1200_60, 155982,
 	1600, 1632, 1792, 2048,
 	1200, 1210, 1218, 1270,
 	"NVIDIA:1600x1200");
+
+    /* "new" 16:10 modes */
+
+    MAKE_SYNC(1280x800_60, 83530,
+	1280, 1344, 1480, 1680,
+	800, 801, 804, 828,
+	"NVIDIA:1280x800");
+
+    MAKE_SYNC(1440x900_60, 106470,
+	1440, 1520, 1672, 1904,
+	900, 901, 904, 932,
+	"NVIDIA:1440x900");
+
+    MAKE_SYNC(1680x1050_60, 147140,
+	1680, 1784, 1968, 2256,
+	1050, 1051, 1054, 1087,
+	"NVIDIA:1680x1050");
 
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
@@ -202,15 +219,18 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1152x864_60  },
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1280x1024_60 },
 	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1600x1200_60 },
-	
+	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
+	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
+	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
+
 	{ TAG_DONE, 0UL }
     };
-	
+
     struct TagItem mytags[] = {
 	{ aHidd_Gfx_ModeTags,	(IPTR)modetags	},
 	{ TAG_MORE, (IPTR)msg->attrList }
     };
-	
+
     struct pRoot_New mymsg;
 
     mymsg.mID = msg->mID;
@@ -229,23 +249,23 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     return o;
 }
 
-OOP_Object *NV__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, 
+OOP_Object *NV__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 	    struct pHidd_Gfx_NewBitMap *msg)
 {
     BOOL displayable, framebuffer;
     OOP_Class *classptr = NULL;
     struct TagItem mytags[2];
-    struct pHidd_Gfx_NewBitMap mymsg; 
-    
+    struct pHidd_Gfx_NewBitMap mymsg;
+
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
     framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-    
+
 D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displayable));
-    
+
     if (framebuffer)
     {
-	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */ 
+	/* If the user asks for a framebuffer map we must ALLWAYS supply a class */
 	classptr = _sd->onbmclass;
     }
     else if (displayable)
@@ -255,11 +275,11 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
     else
     {
 	HIDDT_ModeID modeid;
-	/* 
+	/*
 	    For the non-displayable case we can either supply a class ourselves
 	    if we can optimize a certain type of non-displayable bitmaps. Or we
 	    can let the superclass create on for us.
-	   
+
 	    The attributes that might come from the user deciding the bitmap
 	    pixel format are:
 		- aHidd_BitMap_ModeID:	a modeid. create a nondisplayable
@@ -269,7 +289,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 		- aHidd_BitMap_Friend: if this is supplied and none of the two above
 		    are supplied, then the pixel format of the created bitmap
 		    will be the same as the one of the friend bitmap.
-		    
+
 	    These tags are listed in prioritized order, so if
 	    the user supplied a ModeID tag, then you should not care about StdPixFmt
 	    or Friend. If there is no ModeID, but a StdPixFmt tag supplied,
@@ -277,8 +297,8 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	    create the correct pixelformat. And as said above, if only Friend
 	    is supplied, you can create a bitmap with same pixelformat as Frien
 	*/
-	
-	
+
+
 	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 	if (vHidd_ModeID_Invalid != modeid) {
 	    /* User supplied a valid modeid. We can use our offscreen class */
@@ -295,7 +315,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	    else if (vHidd_StdPixFmt_Unknown == stdpf) {
 		/* No std pixfmt supplied */
 		OOP_Object *friend;
-	    
+
 		/* Did the user supply a friend bitmap ? */
 		friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
 		if (NULL != friend) {
@@ -305,13 +325,13 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 		    OOP_GetAttr(friend, aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
 		    if (gfxhidd == o) {
 			/* Friend was NVidia hidd bitmap. Now we can supply our own class */
-			classptr = _sd->offbmclass;		    
+			classptr = _sd->offbmclass;
 		    }
 		}
 	    }
 	}
     }
-   
+
     D(bug("classptr = %p\n", classptr));
     /* Do we supply our own class ? */
     if (NULL != classptr) {
@@ -321,19 +341,19 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	mytags[0].ti_Data	= (IPTR)classptr;
 	mytags[1].ti_Tag	= TAG_MORE;
 	mytags[1].ti_Data	= (IPTR)msg->attrList;
-	
+
 	/* Like in Gfx::New() we init a new message struct */
 	mymsg.mID	= msg->mID;
 	mymsg.attrList	= mytags;
-	
+
 	/* Pass the new message to the superclass */
 	msg = &mymsg;
     }
-    
+
     return (OOP_Object*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, 
+OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o,
 		        struct pHidd_Gfx_Show *msg)
 {
     OOP_Object *fb = NULL;
@@ -347,7 +367,7 @@ OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o,
 	    if (bm->fbgfx)
 	    {
 		bm->usecount++;
-		
+
 		LOCK_HW
 
 		LoadState(_sd, bm->state);
@@ -355,12 +375,12 @@ OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o,
 
 		fb = bm->BitMap;
 		NVShowHideCursor(_sd, _sd->Card.cursorVisible);
-	    
+
 		UNLOCK_HW
 	    }
 	}
     }
-    
+
     if (!fb)
         fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
@@ -407,12 +427,12 @@ VOID NV__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBo
 	    LOCK_BITMAP_BM(bm_src)
 	    LOCK_BITMAP_BM(bm_dst)
 	    UNLOCK_MULTI_BITMAP
-	    
+
 	    LOCK_HW
 
     	    _sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
     	    _sd->gpu_busy = TRUE;
-	    
+
 	    NVSetRopSolid(_sd, mode, ~0 << bm_src->depth);
 
 	    if (bm_dst->surface_format != _sd->surface_format)
@@ -449,15 +469,15 @@ VOID NV__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBo
 	    NVDmaNext(&_sd->Card, (msg->srcY << 16) | (msg->srcX & 0xffff));
 	    NVDmaNext(&_sd->Card, (msg->destY << 16) | (msg->destX & 0xffff));
 	    NVDmaNext(&_sd->Card, (msg->height << 16) | (msg->width & 0xffff));
-	    
+
 	    NVDmaKickoff(&_sd->Card);
 	    //NVSync(_sd);
 
 	    UNLOCK_HW
-	    
+
 	    UNLOCK_BITMAP_BM(bm_src)
 	    UNLOCK_BITMAP_BM(bm_dst)
-	    
+
 	}
 	else /* Case 2: different bitmaps. use Stretch engine */
 	{
@@ -473,7 +493,7 @@ VOID NV__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBo
 
 	    if ((bm_dst->surface_format != _sd->surface_format) && bm_dst->depth != 15)
 	    {
-		
+
 		NVDmaStart(&_sd->Card, SURFACE_FORMAT, 1);
 		NVDmaNext(&_sd->Card, bm_dst->surface_format);
 		_sd->surface_format = bm_dst->surface_format;
@@ -533,12 +553,12 @@ VOID NV__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBo
 
 	    NVDmaStart(&_sd->Card, STRETCH_BLIT_SRC_SIZE, 4);
 	    NVDmaNext(&_sd->Card, (msg->height << 16) | (msg->width));// src_h | src_w
-	    NVDmaNext(&_sd->Card, 
+	    NVDmaNext(&_sd->Card,
 		(STRETCH_BLIT_SRC_FORMAT_FILTER_POINT_SAMPLE << 24) |   // BILINEAR | _POINT_SAMPLE
 		(STRETCH_BLIT_SRC_FORMAT_ORIGIN_CORNER << 16) |
 		(bm_src->pitch));				    // src_pitch
 	    NVDmaNext(&_sd->Card, bm_src->framebuffer);		    // src_offset
-	    NVDmaNext(&_sd->Card, ((msg->srcY << 20) & 0xffff0000) 
+	    NVDmaNext(&_sd->Card, ((msg->srcY << 20) & 0xffff0000)
 		    | ((msg->srcX << 4) & 0xffff)); // src_y | src_x
 
 	    NVDmaKickoff(&_sd->Card);
@@ -561,7 +581,7 @@ D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
 		bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
 		bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
 		msg->width, msg->height));
-	
+
 	bm_src->usecount++;
 	bm_dst->usecount++;
     }
@@ -626,12 +646,12 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    maxw = 32;
 	    maxh = 32;
 	}
-	
+
 	LOCK_HW
 
 	for (x = 0; x < maxw*maxh; x++)
 	    curimg[x] = 0;
-	
+
 	for (y = 0; y < height; y++)
 	{
 	    for (x = 0; x < width; x++)
@@ -648,7 +668,7 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 		    pixel = ((color.red << 8) & 0xff0000) |
 			    ((color.green) & 0x00ff00)    |
 			    ((color.blue >> 8) & 0x0000ff);
-		    
+
 		    curimg[maxw*2+3] = pixel ? 0x50000000 : 0x00000000;
 		    if (pixel)
 			*curimg++ = pixel;
@@ -658,7 +678,7 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	    for (x=width; x < maxw; x++, curimg++)
 		if (*curimg!=0x50000000) *curimg = 0;
 	}
-	
+
 	for (y=height; y < maxh; y++)
 	    for (x=0; x < maxw; x++)
 		{ if (*curimg!=0x50000000) *curimg = 0; curimg++; }
@@ -670,7 +690,7 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     return TRUE;
 }
 
-VOID NV__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, 
+VOID NV__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
 		struct pHidd_Gfx_SetCursorVisible *msg)
 {
     NVShowHideCursor(_sd, msg->visible);
@@ -702,7 +722,7 @@ static void TransformCursor(struct staticdata *sd)
 	    UBYTE alp;
 	    if (curimg[i] == 0) alp = 0;
 	    else alp = 0xe0;
-	    
+
 	    if (curimg[i] == 0x50000000) ((ULONG*)tmp)[i] = ToRGB8888(0x50,0);
 	    else ((ULONG*)tmp)[i] = ToRGB8888(alp, curimg[i]);
 	}
@@ -719,7 +739,7 @@ static void TransformCursor(struct staticdata *sd)
     }
 
     LOCK_HW
-    
+
     for (i=0; i < dwords; i++)
 	sd->Card.CURSOR[i] = tmp[i];
 
@@ -741,9 +761,9 @@ IPTR AllocBitmapArea(struct staticdata *sd, ULONG width, ULONG height,
     ULONG bpp, BOOL must_have)
 {
     IPTR result;
-    
+
     LOCK_HW
-    
+
     Forbid();
     result = (IPTR)Allocate(sd->CardMem, ((width * bpp + 63) & ~63) * height);
     Permit();
@@ -776,7 +796,7 @@ VOID FreeBitmapArea(struct staticdata *sd, IPTR bmp, ULONG width, ULONG height,
     Forbid();
     Deallocate(sd->CardMem, ptr, ((width * bpp + 63) & ~63) * height);
     Permit();
-    
+
     UNLOCK_HW
 }
 
