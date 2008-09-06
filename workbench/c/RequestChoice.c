@@ -69,7 +69,7 @@
 
     SEE ALSO
 
-        intuition.library/EasyRequest(), intuition.library/EasyRequestArgs()
+        intuition.library/EasyRequestArgs()
 
     INTERNALS
 

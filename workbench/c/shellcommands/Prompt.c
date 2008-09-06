@@ -51,7 +51,7 @@
 
     SEE ALSO
 
-        SetPrompt()
+        dos.library/SetPrompt()
 
     INTERNALS
 
