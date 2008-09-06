@@ -201,10 +201,10 @@ int vkprintf (const UBYTE * fmt, va_list args)
 	    case 'p': {
 		int t;
 		char puffer[sizeof (void *)*2];
-		ULONG val;
+		IPTR val;
 
 		t = sizeof (void *)*2;
-		val = va_arg (args, ULONG);
+		val = va_arg (args, IPTR);
 
 		while (t)
 		{
