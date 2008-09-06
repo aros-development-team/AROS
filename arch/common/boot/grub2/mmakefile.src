@@ -19,9 +19,7 @@ export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 	prefix="$(HOSTGENDIR)/$(CURDIR)/host_binaries"	install_target=	\
 	extraoptions="--enable-grub-emu --enable-grub-fstest"
 
-GRUB2_MODS :=	affs amiga biosdisk boot cat configfile elf	\
-		fshelp help iso9660 ls multiboot pc serial sfs	\
-		terminal ext2 fat ntfs _linux linux
+GRUB2_MODS := affs amiga biosdisk fshelp pc sfs iso9660
 
 LST_FILES  :=	command fs moddep
 
