@@ -47,7 +47,7 @@
 
     SEE ALSO
 
-        Install-i386-pc, Format
+        Install-i386-pc, Sys:System/Format
 	
     INTERNALS
 

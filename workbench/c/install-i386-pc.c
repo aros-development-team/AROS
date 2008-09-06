@@ -41,7 +41,7 @@
 
     SEE ALSO
 
-        Partition, Format
+        Partition, Sys:System/Format
 	
     INTERNALS
 

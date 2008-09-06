@@ -47,7 +47,7 @@
 	    respond to normal load and save commands.
 
     SEE ALSO
-	C:Date, Prefs/Time
+	Date, Sys:Prefs/Time
 
 *************************************************************************/
 

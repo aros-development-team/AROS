@@ -88,7 +88,7 @@
 
     SEE ALSO
 	
-	Format, SFSFormat
+	Sys:System/Format, SFSFormat
 
 ******************************************************************************/
 
