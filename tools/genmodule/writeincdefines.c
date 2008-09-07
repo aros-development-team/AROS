@@ -27,8 +27,8 @@ void writeincdefines(struct config *cfg)
     }
 
     fprintf(out,
-	    "#ifndef DEFINES_%s_PROTOS_H\n"
-	    "#define DEFINES_%s_PROTOS_H\n"
+	    "#ifndef DEFINES_%s_H\n"
+	    "#define DEFINES_%s_H\n"
 	    "\n"
         "%s"
 	    "\n"
@@ -65,7 +65,7 @@ void writeincdefines(struct config *cfg)
     }
     fprintf(out,
 	    "\n"
-	    "#endif /* DEFINES_%s_PROTOS_H*/\n",
+	    "#endif /* DEFINES_%s_H*/\n",
 	    cfg->modulenameupper
     );
     fclose(out);

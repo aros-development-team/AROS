@@ -74,7 +74,6 @@ struct config *initconfig(int argc, char **argv)
     struct config *cfg;
     char *s, **argvit = argv + 1;
     int hassuffix = 0, c;
-    int nolinklib = 0;
     
     cfg = malloc(sizeof(struct config));
     if (cfg == NULL)
@@ -85,12 +84,11 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
     
-    while ((c = getopt(argc, argv, ":c:s:d:r:n")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:r:")) != -1)
     {
-
-	if (c == ':' || (c != 'n' && *optarg == '-'))
+	if (c == ':')
 	{
-	    fprintf(stderr, "Option -%c needs an argument\n",c);
+	    fprintf(stderr, "Option -%c needs an argument\n",optopt);
 	    exit(20);
 	}
 
@@ -110,9 +108,6 @@ struct config *initconfig(int argc, char **argv)
 	    break;
 	case 'r':
 	    cfg->reffile = optarg;
-	    break;
-	case 'n':
-	    nolinklib = 1;
 	    break;
 	default:
 	    fprintf(stderr, "Internal error: Unhandled option\n");
@@ -164,7 +159,6 @@ struct config *initconfig(int argc, char **argv)
     if (strcmp(argv[optind+2],"library")==0)
     {
     	cfg->modtype = LIBRARY;
-	cfg->intcfg |= CFG_GENLINKLIB;
 	cfg->moddir = "Libs";
     }
     else if (strcmp(argv[optind+2],"mcc")==0)
@@ -185,13 +179,11 @@ struct config *initconfig(int argc, char **argv)
     else if (strcmp(argv[optind+2], "device")==0)
     {
 	cfg->modtype = DEVICE;
-	cfg->intcfg |= CFG_GENLINKLIB;
 	cfg->moddir = "Devs";
     }
     else if (strcmp(argv[optind+2], "resource")==0)
     {
 	cfg->modtype = RESOURCE;
-	cfg->intcfg |= CFG_GENLINKLIB;
 	cfg->moddir = "Devs";
     }
     else if (strcmp(argv[optind+2], "gadget")==0)
@@ -218,9 +210,6 @@ struct config *initconfig(int argc, char **argv)
     if (!hassuffix)
 	cfg->suffix = argv[optind+2];
   
-    if(nolinklib)
-        cfg->intcfg &= ~CFG_GENLINKLIB;
-
     /* Fill fields with default value if not specified on the command line */
     {
 	char tmpbuf[256];
@@ -387,6 +376,7 @@ static void readconfig(struct config *cfg)
 static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 {
     char *line, *s, *s2;
+    int hasconfig = 0;
     
     while ((line=readline())!=NULL)
     {
@@ -428,6 +418,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	    {
 	    case 1: /* config */
 		readsectionconfig(cfg, cl, inclass);
+                hasconfig = 1;
 		break;
 		
 	    case 2: /* cdefprivate */
@@ -466,7 +457,80 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	else if (strlen(line)!=0)
 	    filewarning("warning line outside section ignored\n");
     }
+
+    if(!inclass)
+    {
+        if (!hasconfig)
+            exitfileerror(20, "No config section in conffile\n");
     
+        /* If no indication was given for generating includes or not
+           decide on module type and if there are functions
+         */
+        if(!((cfg->options & OPTION_INCLUDES) || (cfg->options & OPTION_NOINCLUDES)))
+        {
+            switch (cfg->modtype)
+            {
+            case LIBRARY:
+            case DEVICE:
+            case RESOURCE:
+            case GADGET:
+                cfg->options |= OPTION_INCLUDES;
+                break;
+                
+            case DATATYPE:
+            case MCC:
+            case MUI:
+            case MCP:
+            case HIDD:
+                cfg->options |= (cfg->funclist != NULL) ?
+                    OPTION_INCLUDES : OPTION_NOINCLUDES;
+                break;
+	
+            default:
+                fprintf(stderr, "Internal error writemakefile: unhandled modtype for includes\n");
+                exit(20);
+                break;
+            }
+        }
+        
+        /* If no indication was given for not generating stubs only generate them if
+         * the module has functions
+         */
+        if(!((cfg->options & OPTION_STUBS) || (cfg->options & OPTION_NOSTUBS)))
+        {
+            cfg->options |= (cfg->funclist != NULL) ?
+                OPTION_STUBS : OPTION_NOSTUBS;
+        }
+    
+        /* If no indication was given for generating autoinit code or not
+           decide on module type
+         */
+        if(!((cfg->options & OPTION_AUTOINIT) || (cfg->options & OPTION_NOAUTOINIT)))
+        {
+            switch (cfg->modtype)
+            {
+            case LIBRARY:
+                cfg->options |= OPTION_AUTOINIT;
+                break;
+                
+            case RESOURCE:
+            case GADGET:
+            case DEVICE:
+            case DATATYPE:
+            case MCC:
+            case MUI:
+            case MCP:
+            case HIDD:
+                cfg->options |= OPTION_NOAUTOINIT;
+                break;
+	
+            default:
+                fprintf(stderr, "Internal error writemakefile: unhandled modtype for autoinit\n");
+                exit(20);
+                break;
+            }
+        }
+    }
     return NULL;
 }
 
@@ -615,7 +679,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		{
 		    static const char *optionnames[] =
 		    {
-			"noautolib", "noexpunge", "noresident", "peropenerbase", "peridbase"
+			"noautolib", "noexpunge", "noresident", "peropenerbase",
+                        "peridbase", "includes", "noincludes", "nostubs",
+                        "autoinit", "noautoinit"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -657,6 +723,27 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
                                 exitfileerror(20, "Only one option peropenerbase or peridbase allowed\n");
 			    cfg->options |= OPTION_DUPBASE;
 			    break;
+                        case 6: /* includes */
+                            if (cfg->options & OPTION_NOINCLUDES)
+                                exitfileerror(20, "option includes and noincludes are incompatible\n");
+                            cfg->options |= OPTION_INCLUDES;
+                            break;
+                        case 7: /* noincludes */
+                            if (cfg->options & OPTION_INCLUDES)
+                                exitfileerror(20, "option includes and noincludes are incompatible\n");
+                            cfg->options |= OPTION_NOINCLUDES;
+                            break;
+                        case 8: /* nostubs */
+                            cfg->options |= OPTION_NOSTUBS;
+                            break;
+                        case 9: /* autoinit */
+                            if (cfg->options & OPTION_NOAUTOINIT)
+                                exitfileerror(20, "option autoinit and noautoinit are incompatible\n");
+                            cfg->options |= OPTION_AUTOINIT;
+                        case 10: /* noautoinit */
+                            if (cfg->options & OPTION_AUTOINIT)
+                                exitfileerror(20, "option autoinit and noautoinit are incompatible\n");
+                            cfg->options |= OPTION_NOAUTOINIT;
 			}
 			while (isspace(*s)) s++;
 		    } while(*s !='\0');

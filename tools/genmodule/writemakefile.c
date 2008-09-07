@@ -36,69 +36,27 @@ void writemakefile(struct config *cfg)
 	    cfg->modulename, cfg->moddir
     );
 
-    if (!(cfg->intcfg & CFG_GENLINKLIB))
-	fprintf(out,
-		"%s_LINKLIBFILES :=\n"
-		"%s_LINKLIBAFILES :=\n",
-		cfg->modulename,
-		cfg->modulename
-	);
-    else
-    {
-	switch (cfg->modtype)
-	{
-	case LIBRARY:
-	    fprintf(out,
-		    "%s_LINKLIBFILES := %s_stubs %s_autoinit\n",
-		    cfg->modulename, cfg->modulename, cfg->modulename
-	    );
-	    break;
-	
-	case DEVICE:
-	case RESOURCE:
-	    fprintf(out,
-		    "%s_LINKLIBFILES := %s_stubs\n",
-		    cfg->modulename, cfg->modulename
-	    );
-	    break;
-	
-	default:
-	    fprintf(stderr, "Internal error in writemakefile: unsupported modtype for genlinklib\n");
-	    exit(20);
-	}
-	
-	fprintf(out, "%s_LINKLIBAFILES :=", cfg->modulename);
-	if (cfg->intcfg & CFG_GENASTUBS)
-	    fprintf(out, "%s_astubs\n", cfg->modulename);
-	else
-	    fprintf(out, "\n");
-    }
+    fprintf(out, "%s_LINKLIBFILES :=", cfg->modulename);
+    if (cfg->options & OPTION_STUBS)
+        fprintf(out, " %s_stubs", cfg->modulename);
+    if (cfg->options & OPTION_AUTOINIT)
+        fprintf(out, " %s_autoinit", cfg->modulename);
+    fprintf(out, "\n");
+
+    fprintf(out, "%s_LINKLIBAFILES :=", cfg->modulename);
+    if ((cfg->options & OPTION_STUBS) && (cfg->intcfg & CFG_GENASTUBS))
+        fprintf(out, "%s_astubs\n", cfg->modulename);
+    fprintf(out, "\n");
 
     fprintf(out, "%s_INCLUDES := ", cfg->modulename);
-    switch (cfg->modtype)
+    if (cfg->options & OPTION_INCLUDES)
     {
-    case LIBRARY:
-    case DEVICE:
-    case RESOURCE:
-    case GADGET:
 	fprintf(out,
-		"clib/%s_protos.h defines/%s.h proto/%s.h\n",
+		"clib/%s_protos.h defines/%s.h proto/%s.h",
 		cfg->modulename, cfg->modulename, cfg->modulename
 	);
-	break;
-	
-    case DATATYPE:
-    case MCC:
-    case MUI:
-    case MCP:
-    case HIDD:
-	fprintf(out, "\n");
-	break;
-	
-    default:
-	fprintf(out, "Internal error writemakefile: unhandled modtype for includes\n");
-	break;
     }
+    fprintf(out, "\n");
 
     fprintf(out,
 	    "%s_NEEDREF := %s\n",

@@ -10,5 +10,4 @@ USER_CFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-png \
     modname=png modtype=datatype \
-    files=$(FILES) uselibs="png_nostdio amiga z rom m" \
-    genincludes=yes
+    files=$(FILES) uselibs="png_nostdio amiga z rom m"
