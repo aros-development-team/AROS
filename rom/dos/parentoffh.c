@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	Lock(), UnLock(), Parent() 
+	Lock(), UnLock(), ParentDir() 
 	
     INTERNALS
 

@@ -48,7 +48,7 @@
 
     SEE ALSO
 
-    MatchPattern(), ParsePatternNoCase().
+    MatchPattern(), ParsePatternNoCase()
 
     INTERNALS
 
