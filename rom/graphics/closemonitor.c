@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        OpenMonitor() graphics/monitor.h
+        OpenMonitor(), graphics/monitor.h
 
     INTERNALS
 

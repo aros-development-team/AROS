@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	AndRectRegion() OrRectRegion() XorRectRegion()
+	AndRectRegion(), OrRectRegion(), XorRectRegion()
 
     INTERNALS
 

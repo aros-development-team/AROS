@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	NewRegion() DisposeRegion()
+	NewRegion(), DisposeRegion()
 
     INTERNALS
 

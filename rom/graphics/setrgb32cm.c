@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-	GetColorMap() SetRGB32() GetRGB32() SetRGB4CM() graphics/view.h
+	GetColorMap(), SetRGB32(), GetRGB32(), SetRGB4CM(), graphics/view.h
 
     INTERNALS
 	This function depends on the ColorMap->ColorTable structure

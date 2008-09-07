@@ -45,7 +45,8 @@
     BUGS
 
     SEE ALSO
-	InitArea() AreaMove() AreaEllipse() AreaCircle() graphics/rastport.h
+	InitArea(), AreaMove(), AreaEllipse(), AreaCircle()
+	graphics/rastport.h
 
     INTERNALS
 

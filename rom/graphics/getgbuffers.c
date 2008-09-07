@@ -56,7 +56,7 @@
     BUGS
 
     SEE ALSO
-	FreeGBuffers() graphics/gels.h
+	FreeGBuffers(), graphics/gels.h
 
     INTERNALS
 	Are real VSprites possible as a part of an AnimOb?

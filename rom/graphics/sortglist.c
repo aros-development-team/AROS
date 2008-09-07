@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	InitGels() DrawGList() DoCollision() graphics/rastport.h
+	InitGels(), DrawGList(), DoCollision(), graphics/rastport.h
 
     INTERNALS
 

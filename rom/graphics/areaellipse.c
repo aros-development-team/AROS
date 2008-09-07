@@ -50,7 +50,8 @@
     BUGS
 
     SEE ALSO
-	InitArea() AreaMove() AreaDraw() AreaCircle() graphics/rastport.h
+	InitArea(), AreaMove(), AreaDraw(), AreaCircle()
+	graphics/rastport.h
 
     INTERNALS
 

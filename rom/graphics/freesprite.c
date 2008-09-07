@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        GetSprite() ChangeSprite() MoveSprite() graphics/sprite.h
+        GetSprite(), ChangeSprite(), MoveSprite(), graphics/sprite.h
 
     INTERNALS
 

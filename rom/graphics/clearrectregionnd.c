@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	AndRegionRegion() OrRectRegion() XorRectRegion() ClearRectRegion()
+	AndRegionRegion(), OrRectRegion(), XorRectRegion(), ClearRectRegion()
 	NewRegion()
 
     INTERNALS

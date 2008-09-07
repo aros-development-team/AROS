@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-      graphics/gfxnodes.h GfxFree(), GfxNew(), GfxLookUp()
+      graphics/gfxnodes.h, GfxFree(), GfxNew(), GfxLookUp()
 
     INTERNALS
 

@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	CreateRegion()
+	NewRegion()
 
     INTERNALS
 

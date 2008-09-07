@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	InitGels() InitMasks() graphics/gels.h
+	InitGels(), InitMasks(), graphics/gels.h
 
     INTERNALS
 

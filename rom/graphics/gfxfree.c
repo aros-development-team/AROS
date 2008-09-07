@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-      graphics/gfxnodes.h GfxNew(), GfxAssociate(), GfxLookUp()
+      graphics/gfxnodes.h, GfxNew(), GfxAssociate(), GfxLookUp()
 
     INTERNALS
 

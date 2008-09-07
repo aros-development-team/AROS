@@ -57,7 +57,8 @@
         
 
     SEE ALSO
-	InitArea() AreaDraw() AreaEllipse() AreaCircle() graphics/rastport.h
+	InitArea(), AreaDraw(), AreaEllipse(), AreaCircle()
+	graphics/rastport.h
 
     INTERNALS
 

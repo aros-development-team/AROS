@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        CloseMonitor() graphics/monitor.h
+        CloseMonitor(), graphics/monitor.h
 
     INTERNALS
 

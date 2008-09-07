@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-	InitGels() Animate() graphics/rastport.h graphics/gels.h
+	InitGels(), Animate(), graphics/rastport.h, graphics/gels.h
 
     INTERNALS
 
