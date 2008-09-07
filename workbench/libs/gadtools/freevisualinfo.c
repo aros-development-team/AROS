@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	GetVisualInfo()
+	GetVisualInfoA()
 
     INTERNALS
 
