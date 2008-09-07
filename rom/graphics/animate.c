@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	AddAnimOb() graphics/rastport.h graphics/gels.h
+	AddAnimOb(), graphics/rastport.h graphics/gels.h
 
     INTERNALS
 

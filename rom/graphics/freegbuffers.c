@@ -54,7 +54,7 @@
     BUGS
 
     SEE ALSO
-	GetGBuffers() graphics/rastport.h graphics/gels.h
+	GetGBuffers(), graphics/rastport.h, graphics/gels.h
 
     INTERNALS
 	See FreeGBuffers() !!

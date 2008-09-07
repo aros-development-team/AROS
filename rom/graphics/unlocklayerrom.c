@@ -41,7 +41,8 @@
         Does not save all registers.
 
     SEE ALSO
-        LockLayerRom() LockLayer() UnLockLayer()
+        LockLayerRom(), hyperlayers.library/LockLayer()
+	hyperlayers.library/UnLockLayer()
 
     INTERNALS
 

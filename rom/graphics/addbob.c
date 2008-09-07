@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	InitGels() AddVSprite() graphics/rastport.h graphics/gels.h
+	InitGels(), AddVSprite(), graphics/rastport.h, graphics/gels.h
 
     INTERNALS
 

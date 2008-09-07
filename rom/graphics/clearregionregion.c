@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	ClearRectRegion() AndRectRegion() OrRectRegion() XorRectRegion()
+	ClearRectRegion(), AndRectRegion(), OrRectRegion(), XorRectRegion()
 
     INTERNALS
 

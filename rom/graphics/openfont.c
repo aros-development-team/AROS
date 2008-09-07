@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	CloseFont() SetFont() diskfont.library/OpenDiskFont()
+	CloseFont(), SetFont(), diskfont.library/OpenDiskFont()
 
     INTERNALS
 

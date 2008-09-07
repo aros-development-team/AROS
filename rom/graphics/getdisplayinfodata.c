@@ -85,7 +85,7 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
     BUGS
 
     SEE ALSO
-        FindDisplayInfo() NextDisplayInfo() graphics/displayinfo.h
+        FindDisplayInfo(), NextDisplayInfo(), graphics/displayinfo.h
 
     INTERNALS
 

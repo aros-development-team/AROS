@@ -39,7 +39,8 @@
     BUGS
 
     SEE ALSO
-		ExtendFont(), ExtendFontTags()
+	ExtendFont()
+
     INTERNALS
 
     HISTORY

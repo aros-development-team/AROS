@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-	InitGels()  graphics/gels.h graphics/rastport.h
+	InitGels(), graphics/gels.h, graphics/rastport.h
 
     INTERNALS
 

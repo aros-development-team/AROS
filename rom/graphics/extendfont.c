@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-    	ExtendFontTags(), StripFont()
+    	StripFont()
 
     INTERNALS
 

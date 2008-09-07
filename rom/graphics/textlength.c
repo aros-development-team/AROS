@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	Text() TextExtend()
+	Text(), TextExtent()
 
     INTERNALS
 

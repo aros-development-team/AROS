@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-      graphics/gfxnodes.h GfxNew(), GfxAssociate(), GfxFree()
+      graphics/gfxnodes.h, GfxNew(), GfxAssociate(), GfxFree()
 
     INTERNALS
 

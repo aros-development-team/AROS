@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-        FindDisplayInfo() GetDisplayInfoData() graphics/displayinfo.h
+        FindDisplayInfo(), GetDisplayInfoData(), graphics/displayinfo.h
 
     INTERNALS
 

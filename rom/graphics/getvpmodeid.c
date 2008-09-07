@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-        ModeNotAvailable() graphics/displayinfo.h
+        ModeNotAvailable(), graphics/displayinfo.h
 
     INTERNALS
 

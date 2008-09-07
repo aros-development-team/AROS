@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-      graphics/gfxnodes.h GfxFree(), GfxAssociate(), GfxLookUp()
+      graphics/gfxnodes.h, GfxFree(), GfxAssociate(), GfxLookUp()
 
     INTERNALS
 

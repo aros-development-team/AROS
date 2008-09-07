@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-	AndRectRegion() AndRegionRegion()
+	AndRectRegion(), AndRegionRegion()
 
     INTERNALS
 

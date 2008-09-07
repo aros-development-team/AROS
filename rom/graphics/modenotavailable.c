@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        GetVPModeID() graphics/displayinfo.h
+        GetVPModeID(), graphics/displayinfo.h
 
     INTERNALS
 

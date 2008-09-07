@@ -54,7 +54,7 @@
 	On some machines this will never return anything else than -1!
 
     SEE ALSO
-	FreeSprite() ChangeSprite() MoveSprite() GetSprite() graphics/sprite.h
+	FreeSprite(), ChangeSprite(), MoveSprite(), GetSprite(), graphics/sprite.h
 
     INTERNALS
 

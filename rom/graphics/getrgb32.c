@@ -47,8 +47,8 @@
     BUGS
 
     SEE ALSO
-	GetColorMap() FreeColorMap() SetRGB4() LoadRGB4()
-	LoadRGB32() SetRGB32CM() graphics/view.h
+	GetColorMap(), FreeColorMap(), SetRGB4(), LoadRGB4()
+	LoadRGB32(), SetRGB32CM(), graphics/view.h
 
     INTERNALS
 	This function depends on the ColorMap->ColorTable structure

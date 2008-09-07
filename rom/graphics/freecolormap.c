@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	GetColorMap SetRGB4() graphics/view.h
+	GetColorMap, SetRGB4(), graphics/view.h
 
     INTERNALS
 	Also frees a possibly connected PaletteExtra and ViewPortExtra	

@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-      LockLayerRom() UnlockLayerRom(), 
+      LockLayerRom(), UnlockLayerRom()
 
     INTERNALS
 

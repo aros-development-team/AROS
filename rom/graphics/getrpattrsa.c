@@ -83,8 +83,7 @@
 	RPTAG_SoftStyle not supported, yet.
 
     SEE ALSO
-	SetRPAttrsA() GetAPen() GetBPen() GetOutLinePen() GetWriteMask()
-	graphics/rpattr.h
+	SetRPAttrsA(), GetAPen(), GetBPen(), GetOutLinePen(), graphics/rpattr.h
 
     INTERNALS
 

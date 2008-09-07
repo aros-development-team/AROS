@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	InitGels() RemIBob() graphics/gels.h
+	InitGels(), RemIBob(), graphics/gels.h
 
     INTERNALS
 	I don't know whether it is correct to take the VSprite out of the

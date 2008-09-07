@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-	NewRegion() OrRectRegion()
+	NewRegion(), OrRectRegion()
 
     INTERNALS
 
