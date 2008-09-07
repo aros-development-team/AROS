@@ -50,8 +50,8 @@
     BUGS
 
     SEE ALSO
-        CreateUpfrontLayer() CreateUpfrontHookLayer() BehindLayer()
-        CreateBehindLayer() CreateBehindHookLayer()
+        CreateUpfrontLayer(), CreateUpfrontHookLayer(), BehindLayer()
+        CreateBehindLayer(), CreateBehindHookLayer()
 
     INTERNALS
 
