@@ -1234,7 +1234,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= \
   conffile= files="$(basename $(wildcard *.c))" \
-  linklibfiles= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
+  linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   reffile=$(BD_DEFREFFILE) noref= \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
@@ -1442,7 +1442,8 @@ endif
 BD_OBJS       := $(addsuffix .o,$(BD_STARTFILES)) $(BD_ARCHOBJS) \
 	     	 $(addsuffix .o, $(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES))))
 BD_ENDOBJS    := $(addsuffix .o,$(BD_ENDFILES))
-BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES))
+BD_LINKLIBOBJS:= $(addsuffix .o,$(addprefix %(objdir)/,$(notdir %(linklibfiles))) $(BD_LINKLIBFILES)) \
+                 %(linklibobjs)
 
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
