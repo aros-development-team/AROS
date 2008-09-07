@@ -64,15 +64,18 @@
 #include <aros/debug.h>
 
 /* Defines for grub2 data */
-/* Stage 1 pointers */
-#define MBR_BPBSTART		0x3
-#define MBR_BPBEND		0x3e
-#define GRUB_FORCE_LBA		0x41
-#define GRUB_STAGE2_SECTOR	0x44
-#define MBR_PARTSTART		0x1be
-#define MBR_PARTEND		0x1fe
+/* boot.img pointers */
+#define GRUB_BOOT_MACHINE_BPB_START         0x03
+#define GRUB_BOOT_MACHINE_BPB_END           0x3e
+#define GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC	0x01b8 /* Following grub2 grub-setup sources */
+#define GRUB_BOOT_MACHINE_PART_START        0x01be
+#define GRUB_BOOT_MACHINE_PART_END          0x01fe
+#define GRUB_BOOT_MACHINE_KERNEL_SECTOR	    0x44
+#define GRUB_BOOT_MACHINE_BOOT_DRIVE        0x4c
+#define GRUB_BOOT_MACHINE_ROOT_DRIVE        0x4d
+#define GRUB_BOOT_MACHINE_DRIVE_CHECK       0x4f
 
-/* Stage 2 pointers */
+/* core.img pointers */
 #define GRUB_KERNEL_MACHINE_INSTALL_DOS_PART 0x14
 #define GRUB_KERNEL_MACHINE_INSTALL_BSD_PART 0x18
 
@@ -103,7 +106,8 @@ struct Volume
 
 struct BlockNode
 {
-    ULONG sector;
+    ULONG sector_lo;
+    ULONG sector_hi;
     UWORD count;
     UWORD seg_adr;
 };
@@ -328,14 +332,14 @@ static BOOL isKnownFs(ULONG dos_id)
 {
     switch (dos_id)
     {
-    case ID_FFS_DISK:
-    case ID_INTER_DOS_DISK:
-    case ID_INTER_FFS_DISK:
-    case ID_FASTDIR_DOS_DISK:
-    case ID_FASTDIR_FFS_DISK:
-    case ID_SFS_BE_DISK:
-    case ID_SFS_LE_DISK:
-	return TRUE;
+        case ID_FFS_DISK:
+        case ID_INTER_DOS_DISK:
+        case ID_INTER_FFS_DISK:
+        case ID_FASTDIR_DOS_DISK:
+        case ID_FASTDIR_FFS_DISK:
+        case ID_SFS_BE_DISK:
+        case ID_SFS_LE_DISK:
+        	return TRUE;
     }
 
     return FALSE;
@@ -678,93 +682,211 @@ struct Volume *getBBVolume(CONST_STRPTR device, ULONG unit, LONG * partnum)
     return NULL;
 }
 
-BOOL writeStage1(STRPTR stage1path, struct Volume * volume, struct Volume * s2vol, ULONG block,	/* first block of stage2 file */
-		 ULONG unit)
+BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume * coreimgvol, 
+                ULONG block /* first block of core.img file */, ULONG unit)
 {
     BOOL retval = FALSE;
     LONG error = 0;
     BPTR fh;
 
-    D(bug("[install] writeStage1(%x)\n", volume));
+    D(bug("[install] writeBootIMG(%x)\n", bootimgvol));
 
-    fh = Open(stage1path, MODE_OLDFILE);
+    fh = Open(bootimgpath, MODE_OLDFILE);
     if (fh)
     {
-	if (Read(fh, volume->blockbuffer, 512) == 512)
-	{
-	    /* install into MBR ? */
-	    if ((volume->startblock == 0)
-		&& (!(volume->flags & VF_IS_TRACKDISK)))
+	    if (Read(fh, bootimgvol->blockbuffer, 512) == 512)
 	    {
-#define GRUB_BOOT_MACHINE_BOOT_DRIVE  0x4c
-#define GRUB_BOOT_MACHINE_ROOT_DRIVE  0x4d
-#define GRUB_BOOT_MACHINE_DRIVE_CHECK 0x4f
-		APTR boot_img = volume->blockbuffer;
+	        /* install into MBR ? */
+	        if ((bootimgvol->startblock == 0)
+		    && (!(bootimgvol->flags & VF_IS_TRACKDISK)))
+	        {
+		        APTR boot_img = bootimgvol->blockbuffer;
 
-		UBYTE *boot_drive = (UBYTE *) (boot_img
-					       +
-					       GRUB_BOOT_MACHINE_BOOT_DRIVE);
-		UBYTE *root_drive =
-		    (UBYTE *) (boot_img + GRUB_BOOT_MACHINE_ROOT_DRIVE);
-		UWORD *boot_drive_check =
-		    (UWORD *) (boot_img + GRUB_BOOT_MACHINE_DRIVE_CHECK);
+		        UBYTE *boot_drive = 
+                    (UBYTE *) (boot_img + GRUB_BOOT_MACHINE_BOOT_DRIVE);
+		        UBYTE *root_drive =
+		            (UBYTE *) (boot_img + GRUB_BOOT_MACHINE_ROOT_DRIVE);
+		        UWORD *boot_drive_check =
+		            (UWORD *) (boot_img + GRUB_BOOT_MACHINE_DRIVE_CHECK);
 
-		*boot_drive = 0xff;
-		*root_drive = 0xff;
-		*boot_drive_check = 0x9090;
+		        *boot_drive = 0xFF;
+		        *root_drive = 0xFF;
+		        *boot_drive_check = 0x9090;
 
-		D(bug("[install] writeStage1: Install to HARDDISK\n"));
-		// read old MBR
-		error = readBlock(volume, 0, s2vol->blockbuffer, 512);
+		        D(bug("[install] writeBootIMG: Install to HARDDISK\n"));
 
-		D(bug
-		  ("[install] writeStage1: MBR Buffer @ %x\n",
-		   volume->blockbuffer));
-		D(bug
-		  ("[install] writeStage1: Copying MBR BPB to %x\n",
-		   (char *) volume->blockbuffer + 0x04));
-		// copy BPB (BIOS Parameter Block)
-		CopyMem
-		    ((APTR) ((char *) s2vol->blockbuffer + 0x04),
-		     (APTR) ((char *) volume->blockbuffer + 0x04),
-		     (MBR_BPBEND - MBR_BPBSTART));
-		// copy partition table - [Overwrites Floppy boot code]
-		D(bug
-		  ("[install] writeStage1: Copying MBR Partitions to %x\n",
-		   (char *) volume->blockbuffer + MBR_PARTSTART));
-		CopyMem((APTR) ((char *) s2vol->blockbuffer + MBR_PARTSTART),
-			(APTR) ((char *) volume->blockbuffer + MBR_PARTSTART),
-			(MBR_PARTEND - MBR_PARTSTART));
+		        /* read old MBR */
+		        error = readBlock(bootimgvol, 0, coreimgvol->blockbuffer, 512);
 
-		// Store the stage 2 pointer ..
-		ULONG *stage2_sector_start = (ULONG *) (boot_img
-							+ GRUB_STAGE2_SECTOR);
-		stage2_sector_start[0] = block;
-		D(bug("[install] writeStage1: stage2 pointer = %x\n", block));
+		        D(bug("[install] writeBootIMG: MBR Buffer @ %x\n", bootimgvol->blockbuffer));
+		        D(bug("[install] writeBootIMG: Copying MBR BPB to %x\n",
+		           (char *) bootimgvol->blockbuffer + GRUB_BOOT_MACHINE_BPB_START));
+		        /* copy BPB (BIOS Parameter Block) */
+		        CopyMem
+		            ((APTR) ((char *) coreimgvol->blockbuffer + GRUB_BOOT_MACHINE_BPB_START),
+		             (APTR) ((char *) bootimgvol->blockbuffer + GRUB_BOOT_MACHINE_BPB_START),
+		             (GRUB_BOOT_MACHINE_BPB_END - GRUB_BOOT_MACHINE_BPB_START));
+
+		        /* copy partition table - [Overwrites Floppy boot code] */
+		        D(bug("[install] writeBootIMG: Copying MBR Partitions to %x\n",
+		           (char *) bootimgvol->blockbuffer + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC));
+		        CopyMem((APTR) ((char *) coreimgvol->blockbuffer + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC),
+			        (APTR) ((char *) bootimgvol->blockbuffer + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC),
+			        (GRUB_BOOT_MACHINE_PART_END - GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC));
+
+		        /* Store the core.img pointer .. */
+		        ULONG * coreimg_sector_start = (ULONG *) (boot_img
+							        + GRUB_BOOT_MACHINE_KERNEL_SECTOR);
+		        coreimg_sector_start[0] = block;
+		        D(bug("[install] writeBootIMG: core.img pointer = %ld\n", block));
+	        }
+	        else
+	        {
+		        D(bug("[install] writeBootIMG: Install to FLOPPY\n"));
+	        }
+
+	        if (error == 0)
+	        {
+		        error = writeBlock(bootimgvol, 0, bootimgvol->blockbuffer, 512);
+                
+		        if (error)
+		            printf("WriteError %d\n", error);
+		        else
+		            retval = TRUE;
+	        }
+	        else
+		        printf("WriteError %d\n", error);
 	    }
 	    else
-	    {
-		D(bug("[install] writeStage1: Install to FLOPPY\n"));
-	    }
-
-	    if (error == 0)
-	    {
-		error = writeBlock(volume, 0, volume->blockbuffer, 512);
-		if (error)
-		    printf("WriteError %d\n", error);
-		else
-		    retval = TRUE;
-	    }
-	    else
-		printf("WriteError %d\n", error);
-	}
-	else
-	    printf("%s: Read Error\n", stage1path);
-	Close(fh);
+	        printf("%s: Read Error\n", bootimgpath);
+	    Close(fh);
     }
     else
-	PrintFault(IoErr(), stage1path);
+	    PrintFault(IoErr(), bootimgpath);
+
     return retval;
+}
+
+/* Collects the list of blocks that a file occupies */
+ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *blocklist)
+{
+    ULONG retval, first_block;
+    WORD blk_count,count;
+    UWORD i;
+
+    D(bug("[install] collectBlockList(%x, %ld, %x)\n", volume, block, blocklist));
+
+    #warning "TODO: logical/physical blocks"
+	/*
+		initialze stage2-blocklist
+		(it is NULL-terminated)
+	*/
+//	for (blk_count=-1;blocklist[blk_count].sector!=0;blk_count--)
+//		blocklist[blk_count].sector = 0;
+
+//    memset((char *)&blocklist[-20],0x00, 20*sizeof(struct BlockNode)); /* Clear the stage2 sector pointers region! */
+
+//    D(bug("[install] collectBlockList: Cleared sector list (20 entries) [start: %x, end %x]\n", 
+//        &blocklist[-20], &blocklist[-1]));
+
+
+	/*
+		The number of first block of core.img will be stored in boot.img
+		so skip the first filekey in the first loop
+	*/
+    #warning "Block read twice"
+	retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
+			volume->readcmd);
+
+    if (retval)
+    {
+        D(bug("[install] collectBlockList: ERROR reading block (error: %ld\n", retval));
+		printf("ReadError %ld\n", retval);
+		return 0;
+	}
+
+	i = volume->SizeBlock - 52;
+	first_block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock-51]);
+	blk_count=0;
+	
+    D(bug("[install] collectBlockList: First block @ %ld, i:%d\n", first_block, i));
+
+	
+	do
+	{
+		retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
+				volume->readcmd);
+		if (retval)
+		{
+            D(bug("[install] collectBlockList: ERROR reading block (error: %ld)\n", retval));
+			printf("ReadError %ld\n", retval);
+			return 0;
+		}
+        
+        D(bug("[install] collectBlockList: read block %ld, i = %d\n", block, i));
+		while ((i>=6) && (volume->blockbuffer[i]))
+		{
+            D(bug("[install] collectBlockList: i = %d\n", i));
+			/*
+				if current sector follows right after last sector
+				then we don't need a new element
+			*/
+			if ((blocklist[blk_count].sector_lo) &&
+					((blocklist[blk_count].sector_lo+blocklist[blk_count].count)==
+						AROS_BE2LONG(volume->blockbuffer[i])))
+			{
+				blocklist[blk_count].count += 1;
+                D(bug("[install] collectBlockList: sector %d follows previous - increasing count of block %d to %d\n",
+                    i, blk_count, blocklist[blk_count].count));
+			}
+			else
+			{
+				blk_count--; /* decrement first */
+                D(bug("[install] collectBlockList: store new block (%d)\n", blk_count));
+    
+				if (blocklist[blk_count-1].sector_lo != 0)
+				{
+                    D(bug("[install] collectBlockList: ERROR: out of block space at sector %d, block %d\n",
+                        i, blk_count));
+					printf("There is no more space to save blocklist in core.img\n");
+					return 0;
+				}
+                D(bug("[install] collectBlockList: storing sector pointer for %d in block %d\n", 
+                    i, blk_count));
+				blocklist[blk_count].sector_lo = AROS_BE2LONG(volume->blockbuffer[i]);
+				blocklist[blk_count].sector_hi = 0;
+				blocklist[blk_count].count = 1;
+			}
+			i--;
+		}
+		i = volume->SizeBlock - 51;
+		block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock - 2]);
+        D(bug("[install] collectBlockList: next block %d, i = %d\n", block, i));
+	} while (block);
+
+
+	/*
+		blocks in blocklist are relative to the first
+		sector of the HD (not partition)
+	*/
+    
+    D(bug("[install] collectBlockList: successfully updated pointers for %d blocks\n", blk_count));
+
+	i = 0;
+	for (count=-1;count>=blk_count;count--)
+	{
+		blocklist[count].sector_lo += volume->startblock;
+		blocklist[count].seg_adr = 0x820 + (i*32);
+		i += blocklist[count].count;
+        D(bug("[install] collectBlockList: correcting block %d for partition start\n", count));
+        D(bug("[install] collectBlockList: sector : %ld seg_adr : %x\n", 
+            blocklist[count].sector_lo, blocklist[count].seg_adr));
+	}
+
+    first_block += volume->startblock;
+    D(bug("[install] collectBlockList: corrected first block for partition start: %ld\n", first_block));
+    
+	return first_block;
 }
 
 /* Flushes the cache on the volume containing the specified path. */
@@ -781,92 +903,145 @@ VOID flushFS(CONST_STRPTR path)
 	Inhibit(devname, DOSFALSE);
 }
 
-BOOL installStageFiles(struct Volume *s2vol,	/* stage2 volume */
-		       CONST_STRPTR stagepath,	/* path to stage* files */
-		       ULONG unit,	/* unit stage2 is on */
-		       struct Volume *s1vol)	/* boot device for stage 1 */
+BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, STRPTR grubpath, struct Volume *volume)
 {
     BOOL retval = FALSE;
-    TEXT stagename[256];
+
+    D(bug("[install] writeCoreIMG(%x)\n", volume));
+
+	if (Seek(fh, 0, OFFSET_BEGINNING) != -1)
+	{
+        D(bug("[install] writeCoreIMG - write first block\n"));
+
+		/* write back first block */
+		if (Write(fh, buffer, 512) == 512)
+		{
+            
+
+			/* read second core.img block */
+			if (Read(fh, buffer, 512) == 512)
+			{
+				/* set partition number where core.img is on */
+		        LONG dos_part = 0;
+		        LONG bsd_part = 0; /*?? to fix = RDB part number of DH? */
+		        LONG *install_dos_part = 
+                    (LONG *) (buffer + GRUB_KERNEL_MACHINE_INSTALL_DOS_PART);
+		        LONG *install_bsd_part =
+			    (LONG *) (buffer + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART);
+
+			    dos_part = volume->partnum;
+
+		        D(bug("[install] set dos part = %d\n", dos_part));
+		        D(bug("[install] set bsd part = %d\n", bsd_part));
+
+		        *install_dos_part = dos_part;
+		        *install_bsd_part = bsd_part;
+
+				/* write second core.img block back */
+				if (Seek(fh, -512, OFFSET_CURRENT) != -1)
+				{
+					if (Write(fh, buffer, 512) == 512)
+					{
+						retval = TRUE;
+					}
+					else
+						printf("Write Error\n");
+				}
+				else
+					printf("Seek Error\n");
+			}
+			else
+				printf("Read Error\n");
+		}
+		else
+			printf("Write Error\n");
+	}
+	else
+    {
+        printf("Seek Error\n");
+		PrintFault(IoErr(), NULL);
+    }
+	return retval;
+}
+
+ULONG updateCoreIMG(STRPTR grubpath,     /* path of grub dir */
+		            struct Volume *volume, /* volume core.img is on */
+		            ULONG *buffer          /* a buffer of at least 512 bytes */)
+{
+    ULONG block = 0;
+    struct FileInfoBlock fib;
+    BPTR fh;
+    char coreimgpath[256];
+
+    D(bug("[install] updateCoreIMG(%x)\n", volume));
+
+	AddPart(coreimgpath, grubpath, 256);
+	AddPart(coreimgpath, "core.img", 256);
+	fh = Open(coreimgpath, MODE_OLDFILE);
+	if (fh)
+	{
+		if (Examine(fh, &fib))
+		{
+			if (Read(fh, buffer, 512) == 512)
+			{
+				/*
+					Get and store all blocks of core.img in first block of core.img.
+					First block of core.img will be returned.
+                    List of BlockNode starts at 512 - sizeof(BlockNode). List grows downwards.
+                    buffer is ULONG, buffer[128] is one pointer after first element(upwards).
+                    collectBlockList assumes it receives one pointer after first element(upwards).
+				*/
+				block = collectBlockList
+					(volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128]); 
+
+                D(bug("[install] core.img first block @%ld\n", block));
+    
+				if (block)
+				{
+					if (!writeCoreIMG(fh, (UBYTE *)buffer, grubpath, volume))
+						block = 0;
+				}
+			}
+			else
+				printf("%s: Read Error\n", coreimgpath);
+		}
+		else
+			PrintFault(IoErr(), coreimgpath);
+
+		Close(fh);
+        
+	}
+	else
+		PrintFault(IoErr(), coreimgpath);
+	return block;
+}
+
+/* Installs boot.img to MBR and updates core.img */
+BOOL installGrubFiles(struct Volume *coreimgvol,	/* core.img volume */
+		       CONST_STRPTR grubpath,	/* path to grub files */
+		       ULONG unit,	/* unit core.img is on */
+		       struct Volume *bootimgvol)	/* boot device for boot.img */
+{
+    BOOL retval = FALSE;
+    TEXT bootimgpath[256];
     ULONG block;
 
-    D(bug("[install] installStageFiles(%x)\n", s1vol));
+    D(bug("[install] installStageFiles(%x)\n", bootimgvol));
 
     /* Flush GRUB volume's cache */
-    flushFS(stagepath);
+    flushFS(grubpath);
 
-    struct FileInfoBlock fib;
-    ULONG embed_start = 1;	/* embed into MBR for now */
-    ULONG embed_end;
-    ULONG error, i, len;
-    BPTR fh;
-    UBYTE *buffer = (UBYTE *) s1vol->blockbuffer;
-
-    AddPart(stagename, stagepath, 256);
-    AddPart(stagename, (CONST_STRPTR) "core.img", 256);
-
-    fh = Open(stagename, MODE_OLDFILE);
-    if (fh && Examine(fh, &fib))
-    {
-	block = embed_start;
-	embed_end = embed_start + fib.fib_Size / 512 + 1;
-
-	for (i = embed_start; block && i < embed_end; ++i)
-	{
-	    len = Read(fh, buffer, 512);
-
-	    if (len == 0)
-		break;
-	    else if (len < 0)
-	    {
-		block = 0;
-		break;
-	    }
-	    else
-	    {
-		if (i == embed_start + 1)
-		{
-		    LONG dos_part = s1vol->partnum;
-		    LONG bsd_part = 0; /*?? to fix = RDB part number of DH? */
-		    LONG *install_dos_part = (LONG *) (buffer
-						       +
-						       GRUB_KERNEL_MACHINE_INSTALL_DOS_PART);
-		    LONG *install_bsd_part =
-			(LONG *) (buffer +
-				  GRUB_KERNEL_MACHINE_INSTALL_BSD_PART);
-
-		    if (dos_part == -1)
-			dos_part = s2vol->partnum;
-
-		    bug("[install] set dos part = %d\n", dos_part);
-		    bug("[install] set bsd part = %d\n", bsd_part);
-
-		    *install_dos_part = dos_part;
-		    *install_bsd_part = bsd_part;
-		}
-
-		error = writeBlock(s1vol, i, buffer, 512);
-		if (error)
-		{
-		    printf("WriteError %d\n", error);
-		    block = 0;
-		    break;
-		}
-	    }
-	}
-    }
-    else
-	block = 0;
+    block = updateCoreIMG(grubpath, coreimgvol, bootimgvol->blockbuffer);
 
     if (block)
     {
-	AddPart(stagename, stagepath, 256);
-	AddPart(stagename, (CONST_STRPTR) "boot.img", 256);
-	if (writeStage1(stagename, s1vol, s2vol, block, unit))
-	    retval = TRUE;
+	    AddPart(bootimgpath, grubpath, 256);
+	    AddPart(bootimgpath, (CONST_STRPTR) "boot.img", 256);
+	    if (writeBootIMG(bootimgpath, bootimgvol, coreimgvol, block, unit))
+	        retval = TRUE;
     }
     else
-	bug("failed %d\n", IoErr());
+	    bug("failed %d\n", IoErr());
 
     return retval;
 }
@@ -884,73 +1059,73 @@ int main(int argc, char **argv)
     rdargs = ReadArgs(template, myargs, NULL);
     if (rdargs)
     {
-	CONST_STRPTR bootDevice = (CONST_STRPTR) myargs[0];
-	LONG unit = *(LONG *) myargs[1];
-	LONG *partnum = (LONG *) myargs[2];
-	CONST_STRPTR grubpath = (CONST_STRPTR) myargs[3];
+	    CONST_STRPTR bootDevice = (CONST_STRPTR) myargs[0];
+	    LONG unit = *(LONG *) myargs[1];
+	    LONG *partnum = (LONG *) myargs[2];
+	    CONST_STRPTR grubpath = (CONST_STRPTR) myargs[3];
 
-	D(bug("[install] FORCELBA = %d\n", myargs[4]));
-	if (myargs[4])
-	    printf("FORCELBA ignored\n");
+	    D(bug("[install] FORCELBA = %d\n", myargs[4]));
+	    if (myargs[4])
+	        printf("FORCELBA ignored\n");
 
-	if (partnum)
-	{
-	    printf("PARTITIONNUMBER not supported yet\n");
-	    FreeArgs(rdargs);
-	    return RETURN_ERROR;
-	}
-
-	fssm = getDiskFSSM(grubpath);
-	if (fssm != NULL)
-	{
-	    CONST_STRPTR grubDevice = AROS_BSTR_ADDR(fssm->fssm_Device);
-
-	    if (!strcmp((const char *) grubDevice, (const char *) bootDevice))
+	    if (partnum)
 	    {
-		struct DosEnvec *dosEnvec;
-		dosEnvec = (struct DosEnvec *) BADDR(fssm->fssm_Environ);
-
-		grubvol = getGrubStageVolume(grubDevice, fssm->fssm_Unit,
-					     fssm->fssm_Flags, dosEnvec);
-		if (grubvol)
-		{
-
-		    bbvol = getBBVolume(bootDevice, unit, partnum);
-		    if (bbvol)
-		    {
-			if (!installStageFiles(grubvol, grubpath,
-					       fssm->fssm_Unit, bbvol))
-			    ret = RETURN_ERROR;
-
-			uninitVolume(bbvol);
-		    }
-		    else
-		    {
-			D(bug("getBBVolume failed miserably\n"));
-			ret = RETURN_ERROR;
-		    }
-
-		    uninitVolume(grubvol);
-		}
+	        printf("PARTITIONNUMBER not supported yet\n");
+	        FreeArgs(rdargs);
+	        return RETURN_ERROR;
 	    }
-	    else
+
+	    fssm = getDiskFSSM(grubpath);
+	    if (fssm != NULL)
 	    {
-		printf("%s is not on device %s unit %d\n",
-		       grubpath, bootDevice, unit);
-		ret = RETURN_ERROR;
-	    }
-	}
-	else if (fssm)
-	{
-	    printf("kernel path must begin with a device name\n");
-	    FreeArgs(rdargs);
-	    ret = RETURN_ERROR;
-	}
+	        CONST_STRPTR grubDevice = AROS_BSTR_ADDR(fssm->fssm_Device);
 
-	FreeArgs(rdargs);
+	        if (!strcmp((const char *) grubDevice, (const char *) bootDevice))
+	        {
+		        struct DosEnvec *dosEnvec;
+		        dosEnvec = (struct DosEnvec *) BADDR(fssm->fssm_Environ);
+
+		        grubvol = getGrubStageVolume(grubDevice, fssm->fssm_Unit,
+					             fssm->fssm_Flags, dosEnvec);
+		        if (grubvol)
+		        {
+
+		            bbvol = getBBVolume(bootDevice, unit, partnum);
+		            if (bbvol)
+		            {
+			            if (!installGrubFiles(grubvol, grubpath,
+					                   fssm->fssm_Unit, bbvol))
+			                ret = RETURN_ERROR;
+
+			            uninitVolume(bbvol);
+		            }
+		            else
+		            {
+			            D(bug("getBBVolume failed miserably\n"));
+			            ret = RETURN_ERROR;
+		            }
+
+		            uninitVolume(grubvol);
+		        }
+	        }
+	        else
+	        {
+		        printf("%s is not on device %s unit %d\n",
+		           grubpath, bootDevice, unit);
+		        ret = RETURN_ERROR;
+	        }
+	    }
+	    else if (fssm)
+	    {
+	        printf("kernel path must begin with a device name\n");
+	        FreeArgs(rdargs);
+	        ret = RETURN_ERROR;
+	    }
+
+	    FreeArgs(rdargs);
     }
     else
-	PrintFault(IoErr(), (STRPTR) argv[0]);
+	    PrintFault(IoErr(), (STRPTR) argv[0]);
 
     return ret;
 }

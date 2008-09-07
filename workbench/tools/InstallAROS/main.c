@@ -5,7 +5,7 @@
 
 #define INTUITION_NO_INLINE_STDARG
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -696,7 +696,7 @@ IPTR Install__MUIM_IC_NextStep
 	case EPartitioningStage:
 
         get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
-#if GRUB == 1
+#if 1 /* GRUB == 1 */ /* TEMP: disable fs selection for SYS with GRUB2 */
         /* Warn user about partitiong DH0: to non FFS-Intl filesystem on GRUB */
         if ((int)option == 0 || (int)option == 1)
         {
@@ -2789,7 +2789,7 @@ int main(int argc,char *argv[])
 		NULL
 	};
 
-#if GRUB == 2
+#if 0 /* GRUB == 2 */ /* TEMP: disable fs selection for SYS with GRUB2 */
     cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 1, End;
 #else
     cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 0, End;
