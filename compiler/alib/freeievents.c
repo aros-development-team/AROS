@@ -35,7 +35,7 @@
 
     SEE ALSO
 
-    Commodities.library/InvertString()
+    commodities.library/InvertString()
 
     INTERNALS
 

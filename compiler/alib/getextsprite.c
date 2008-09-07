@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        graphics/GetExtSpriteA()
+        graphics.library/GetExtSpriteA()
 
     INTERNALS
 

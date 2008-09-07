@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/SendAmigaGuideCmdA()
+        amigaguide.library/SendAmigaGuideCmdA()
 
     INTERNALS
 

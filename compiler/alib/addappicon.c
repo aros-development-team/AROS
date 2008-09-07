@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-        workbench/AddAppIconA()
+        workbench.library/AddAppIconA()
 
     INTERNALS
 

@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/SetAmigaGuideAttrsA()
+        amigaguide.library/SetAmigaGuideAttrsA()
 
     INTERNALS
 

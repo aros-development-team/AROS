@@ -47,8 +47,9 @@
     BUGS
 
     SEE ALSO
-	NewObject(), SetAttrs(), GetAttr(), DisposeObject(), DoMethod(),
-	DoSuperMethod(), "Basic Object-Oriented Programming System for
+	boopsi.library/NewObject(), boopsi.library/SetAttrs(), boopsi.library/GetAttr(),
+	boopsi.library/DisposeObject(), DoMethodA(),
+	DoSuperMethodA(), "Basic Object-Oriented Programming System for
 	Intuition" and the "boopsi Class Reference" Dokument.
 
     INTERNALS
@@ -158,8 +159,9 @@
     BUGS
 
     SEE ALSO
-	NewObject(), SetAttrs(), GetAttr(), DisposeObject(), DoMethod(),
-	DoSuperMethod(), "Basic Object-Oriented Programming System for
+	boopsi.library/NewObject(), boopsi.library/SetAttrs(), boopsi.library/GetAttr(),
+	boopsi.library/DisposeObject(), DoMethodA(),
+	DoSuperMethodA(), "Basic Object-Oriented Programming System for
 	Intuition" and the "boopsi Class Reference" Dokument.
 
     INTERNALS

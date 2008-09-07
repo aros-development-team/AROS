@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-        SetRexxVar, GetRexxVar
+        SetRexxVar(), GetRexxVar()
 
     INTERNALS
         This function creates a rexx message that is sent to the AREXX

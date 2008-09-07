@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/OpenAmigaGuideA()
+        amigaguide.library/OpenAmigaGuideA()
 
     INTERNALS
 

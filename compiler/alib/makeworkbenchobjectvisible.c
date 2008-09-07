@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        workbench/MakeWorkbenchObjectVisibleA()
+        workbench.library/MakeWorkbenchObjectVisibleA()
 
     INTERNALS
 

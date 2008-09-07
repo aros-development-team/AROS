@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        graphics/ExtendFont()
+        graphics.library/ExtendFont()
 
     INTERNALS
 

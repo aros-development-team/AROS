@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        graphics/AllocSpriteDataA()
+        graphics.library/AllocSpriteDataA()
 
     INTERNALS
 

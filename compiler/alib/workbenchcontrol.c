@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        workbench/WorkbenchControlA()
+        workbench.library/WorkbenchControlA()
 
     INTERNALS
 

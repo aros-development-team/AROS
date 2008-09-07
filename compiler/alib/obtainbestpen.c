@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-        graphics/ObtainBestPenA()
+        graphics.library/ObtainBestPenA()
 
     INTERNALS
 

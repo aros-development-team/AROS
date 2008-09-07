@@ -33,7 +33,7 @@
     BUGS
 
     SEE ALSO
-	RemTask()
+	exec.library/RemTask()
 
     INTERNALS
 

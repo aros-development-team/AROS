@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        workbench/CloseWorkbenchObjectA()
+        workbench.library/CloseWorkbenchObjectA()
 
     INTERNALS
 

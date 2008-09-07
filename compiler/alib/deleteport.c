@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-	CreatePort(), CreateMsgPort(), DeleteMsgPort()
+	CreatePort(), exec.library/CreateMsgPort(), exec.library/DeleteMsgPort()
 
     INTERNALS
 

@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	utility/AllocNamedObjectA()
+	utility.library/AllocNamedObjectA()
 
     INTERNALS
 

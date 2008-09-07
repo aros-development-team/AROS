@@ -40,6 +40,7 @@ extern struct IntuitionBase * IntuitionBase;
     BUGS
 
     SEE ALSO
+	intuition.library/OpenWindowTagList()
 
     INTERNALS
 

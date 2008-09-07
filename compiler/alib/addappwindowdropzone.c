@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        workbench/AddAppWindowDropZoneA()
+        workbench.library/AddAppWindowDropZoneA()
 
     INTERNALS
 

@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        workbench/AddAppWindowA()
+        workbench.library/AddAppWindowA()
 
     INTERNALS
 

@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-        dos/AllocDosObject()
+        dos.library/AllocDosObject()
 
     INTERNALS
 

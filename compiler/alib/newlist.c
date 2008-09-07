@@ -36,8 +36,9 @@
     BUGS
 
     SEE ALSO
-	NEWLIST() macro, AddHead(), AddTail(), Insert(), Enqueue(),
-	Remove(), RemHead(), RemTail()
+	NEWLIST() macro, exec.library/AddHead(), exec.library/AddTail(),
+	exec.library/Insert(), exec.library/Enqueue(),
+	exec.library/Remove(), exec.library/RemHead(), exec.library/RemTail()
 
     INTERNALS
 

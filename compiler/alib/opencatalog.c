@@ -53,8 +53,8 @@ extern struct LocaleBase *LocaleBase;
     BUGS
 
     SEE ALSO
-	locale/OpenCatalogA(), locale/CloseCatalog(),
-	locale/GetCatalogStr()
+	locale.library/OpenCatalogA(), locale.library/CloseCatalog(),
+	locale.library/GetCatalogStr()
 
     INTERNALS
 

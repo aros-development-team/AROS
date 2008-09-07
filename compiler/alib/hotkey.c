@@ -49,7 +49,8 @@ extern struct Library *CxBase;
     BUGS
 
     SEE ALSO
-	CxFilter(), CxTranslate(), CxSender(), commodities.library/SetFilter(),
+	commodities.library/CxFilter(), commodities.library/CxTranslate(),
+	commodities.library/CxSender(), commodities.library/SetFilter(),
 	commodities.library/CxObjError()
 
     INTERNALS

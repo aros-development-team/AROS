@@ -25,9 +25,9 @@ extern struct Library *CyberGfxBase;
 
 /*  FUNCTION
 	This is the varargs version of the cybergraphics.library call
-    BestCModeIDTagList().
+	BestCModeIDTagList().
 	For more information see the documentation of 
-    cybergraphics.library/BestCModeIDTagList().
+	cybergraphics.library/BestCModeIDTagList().
 
     INPUTS
 	tag1        -   TagList of display requirements.
@@ -39,6 +39,7 @@ extern struct Library *CyberGfxBase;
     BUGS
 
     SEE ALSO
+	cgfx.library/BestCModeIDTagList()
 
     INTERNALS
 
