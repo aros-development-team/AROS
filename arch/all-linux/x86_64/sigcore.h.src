@@ -16,6 +16,7 @@
 
 #include <signal.h>
 #include <errno.h>
+#include <stddef.h>
 #include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
@@ -113,9 +114,22 @@ struct AROS_cpu_context
 /*
     Macros to enable or disable all signals after the signal handler
     has returned and the normal execution commences.
+
+    On Linux x86-64 signal mask is restored from uc_sigmask field of ucontext
+    structure. We are computing address of uc_sigmask field from address of 
+    uc_mcontext field given as sc parameter.
 */
-#define SC_DISABLE(sc)   ((sc)->oldmask = ~0L)
-#define SC_ENABLE(sc)    ((sc)->oldmask = 0L)
+#define SC_DISABLE(sc) \
+    sigfillset((sigset_t*)((char*) sc + \
+        offsetof(struct ucontext, uc_sigmask) - \
+        offsetof(struct ucontext, uc_mcontext)) \
+    )
+
+#define SC_ENABLE(sc) \
+    sigemptyset((sigset_t*)((char*) sc + \
+        offsetof(struct ucontext, uc_sigmask) - \
+        offsetof(struct ucontext, uc_mcontext)) \
+    )
 
 /*
     The names of the general purpose registers which are to be saved.
