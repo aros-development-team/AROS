@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        dos/NewLoadSeg()
+        dos.library/NewLoadSeg()
 
     INTERNALS
 

@@ -44,6 +44,7 @@ extern struct Library * GadToolsBase;
     BUGS
 
     SEE ALSO
+	gadtools.library/CreateGadgetA()
 
     INTERNALS
 

@@ -48,7 +48,35 @@
     return CALLHOOKPKT(hook, object, param);
 } /* CallHookA() */
 
-IPTR CallHook (struct Hook * hook, APTR object, ...)
+
+/******************************************************************************
+
+    NAME */
+	IPTR CallHook (
+
+/*  SYNOPSIS */
+	struct Hook * hook,
+	APTR object,
+	...)
+
+/*  FUNCTION
+	Variadic form of CallHookA().
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	CallHookA()
+
+******************************************************************************/
+
 {
     AROS_SLOWSTACKHOOKS_PRE(object)
     retval = CALLHOOKPKT(hook, object, AROS_SLOWSTACKHOOKS_ARG(object));

@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        graphics/SetRPAttrsA()
+        graphics.library/SetRPAttrsA()
 
     INTERNALS
 

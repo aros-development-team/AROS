@@ -41,6 +41,7 @@ extern struct Library *DataTypesBase;
     BUGS
 
     SEE ALSO
+	datatypes.library/RefreshDTObjectA()
 
     INTERNALS
 

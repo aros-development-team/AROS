@@ -57,7 +57,8 @@ extern struct IntuitionBase * IntuitionBase;
     BUGS
 
     SEE ALSO
-	DisposeObject(), SetAttrs(), GetAttr(), MakeClass(),
+	boopsi.library/DisposeObject(), boopsi.library/SetAttrsA(),
+	boopsi.library/GetAttr(), boopsi.library/MakeClass(),
 	"Basic Object-Oriented Programming System for Intuition" and
 	"boopsi Class Reference" Dokument.
 

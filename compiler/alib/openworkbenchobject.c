@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        workbench/OpenWorkbenchObjectA()
+        workbench.library/OpenWorkbenchObjectA()
 
     INTERNALS
 

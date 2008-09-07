@@ -34,6 +34,7 @@ extern struct Library * CyberGfxBase;
     BUGS
 
     SEE ALSO
+	cgfx.library/LockBitMapTagList()
 
     INTERNALS
 

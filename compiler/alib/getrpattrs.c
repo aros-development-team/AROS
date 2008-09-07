@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        graphics/GetRPAttrsA()
+        graphics.library/GetRPAttrsA()
 
     INTERNALS
 

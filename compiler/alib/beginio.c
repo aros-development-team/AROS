@@ -34,7 +34,7 @@
     BUGS
 
     SEE ALSO
-        AbortIO()
+        exec.library/AbortIO()
 
     INTERNALS
 

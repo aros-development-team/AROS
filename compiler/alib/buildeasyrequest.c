@@ -35,7 +35,8 @@
     BUGS
 
     SEE ALSO
-
+	intuition.library/BuildEasyRequestArgs()
+    
     INTERNALS
 
     HISTORY

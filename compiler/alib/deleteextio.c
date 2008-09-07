@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-	CreateStdIO(), CreateExt()
+	CreateStdIO(), CreateExtIO()
 
     INTERNALS
 

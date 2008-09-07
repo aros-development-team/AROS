@@ -39,7 +39,7 @@ extern struct Library *AslBase;
     BUGS
 
     SEE ALSO
-	locale/AllocAslRequest()
+	asl.library/AllocAslRequest()
 
     INTERNALS
 

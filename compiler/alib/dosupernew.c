@@ -39,7 +39,8 @@
     BUGS
 
     SEE ALSO
-	NewObjectA(), SetAttrsA(), GetAttr(), DisposeObject(), DoMethodA(),
+	boopsi.library/NewObjectA(), boopsi.library/SetAttrsA(), boopsi.library/GetAttr(),
+	boopsi.library/DisposeObject(), DoMethodA(),
         CoerceMethodA(), <intuition/classes.h>
 
 ******************************************************************************/

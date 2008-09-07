@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-        graphics/VideoControl()
+        graphics.library/VideoControl()
 
     INTERNALS
 

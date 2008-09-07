@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        dos/CreateNewProc()
+        dos.library/CreateNewProc()
 
     INTERNALS
 

@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        graphics/ChangeExtSpriteA()
+        graphics.library/ChangeExtSpriteA()
 
     INTERNALS
 

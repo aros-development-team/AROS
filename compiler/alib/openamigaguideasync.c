@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/OpenAmigaGuideAsyncA()
+        amigaguide.library/OpenAmigaGuideAsyncA()
 
     INTERNALS
 

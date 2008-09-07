@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/SendAmigaGuideContextA()
+        amigaguide.library/SendAmigaGuideContextA()
 
     INTERNALS
 

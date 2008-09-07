@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-        CheckRexxMsg, GetRexxVar
+        CheckRexxMsg(), GetRexxVar()
 
     INTERNALS
         This function creates a rexx message that is sent to the AREXX

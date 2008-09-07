@@ -48,7 +48,7 @@
     BUGS
 
     SEE ALSO
-	timer/TR_ADDREQUEST
+	timer.device/TR_ADDREQUEST
 
     INTERNALS
 

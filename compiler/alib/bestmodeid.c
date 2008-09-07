@@ -35,7 +35,7 @@
     BUGS
 
     SEE ALSO
-        graphics/BestModeIDA()
+        graphics.library/BestModeIDA()
 
     INTERNALS
 

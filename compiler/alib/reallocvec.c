@@ -53,7 +53,7 @@
     BUGS
 
     SEE ALSO
-	AllocVec(), FreeVec(), CopyMem()
+	exec.library/AllocVec(), exec.library/FreeVec(), exec.library/CopyMem()
 
     INTERNALS
 

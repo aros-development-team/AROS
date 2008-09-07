@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-        workbench/AddAppMenuItemA()
+        workbench.library/AddAppMenuItemA()
 
     INTERNALS
 

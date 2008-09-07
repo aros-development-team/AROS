@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/RemoveAmigaGuideHostA()
+        amigaguide.library/RemoveAmigaGuideHostA()
 
     INTERNALS
 

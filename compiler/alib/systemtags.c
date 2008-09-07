@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        dos/SystemTagList()
+        dos.library/SystemTagList()
 
     INTERNALS
 

@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-        amigaguide/AddAmigaGuideHostA()
+        amigaguide.library/AddAmigaGuideHostA()
 
     INTERNALS
 
