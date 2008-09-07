@@ -95,7 +95,7 @@
     BUGS
 
     SEE ALSO
-	AddBootNode(), AddDosNode(), dos/MakeDosEntry()
+	AddBootNode(), AddDosNode(), dos.library/MakeDosEntry()
 
     INTERNALS
 

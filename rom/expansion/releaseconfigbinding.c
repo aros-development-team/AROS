@@ -23,7 +23,7 @@
 
 /*  FUNCTION
 	This function will release the lock obtained by
-	ObtainCurrentBinding(). It will release the SignalSemaphore,
+	ObtainConfigBinding(). It will release the SignalSemaphore,
 	and allow others to bind to drivers.
 
     INPUTS
@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	ObtainCurrentBinding()
+	ObtainConfigBinding()
 
     INTERNALS
 
