@@ -157,11 +157,29 @@ static void writedecl(FILE *out, struct config *cfg)
         fprintf(out,
                 "#ifndef GM_GETID\n"
                 "#define GM_GETID ((IPTR)FindTask(NULL))\n"
+                "#include <dos/dosextens.h>\n"
+                "static IPTR __GM_Id2(void)\n"
+                "{\n"
+                "    struct Process *process = (struct Process *)FindTask(NULL);\n"
+                "\n"
+                "    if (process->pr_Task.tc_Node.ln_Type == NT_PROCESS)\n"
+                "        return (IPTR)process->pr_ReturnAddr;\n"
+                "\n"
+                "        return (IPTR)NULL;\n"
+                "}\n"
+                "#define GM_GETID2 __GM_Id2()\n"
                 "#endif\n"
+                "#ifndef GM_GETID2\n"
+                "#define GM_GETID2 ((IPTR)NULL)\n"
+                "#endif\n"
+                "\n"
+                "struct __GM_AVLKey {\n"
+                "    IPTR id1, id2;\n"
+                "};\n"
                 "struct __GM_AVLNode {\n"
                 "    struct AVLNode node;\n"
+                "    struct __GM_AVLKey key;\n"
                 "    struct Library *lh;\n"
-                "    IPTR libid;\n"
                 "    ULONG dupopencount;\n"
                 "};\n"
                 "struct __GM_BaseAVL {\n"
@@ -170,14 +188,22 @@ static void writedecl(FILE *out, struct config *cfg)
                 "};\n"
                 "static AROS_UFH2(LONG, __GM_CompKey,\n"
                 "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode, A0),\n"
-                "    AROS_UFHA(IPTR, libid, A1)\n"
+                "    AROS_UFHA(AVLKey, _key, A1)\n"
                 ")\n"
                 "{\n"
                 "    AROS_USERFUNC_INIT\n"
                 "\n"
-                "    if (gm_avlnode->libid == libid)\n"
-                "        return (LONG)0;\n"
-                "    else if (gm_avlnode->libid < libid)\n"
+                "    struct __GM_AVLKey *key = (struct __GM_AVLKey *)_key;\n"
+                "    if (gm_avlnode->key.id1 == key->id1)\n"
+                "    {\n"
+                "        if (gm_avlnode->key.id2 == key->id2)\n"
+                "            return (LONG)0;\n"
+                "        else if (gm_avlnode->key.id2 < key->id2)\n"
+                "            return (LONG)-1;\n"
+                "        else\n"
+                "            return (LONG)1;\n"
+                "    }\n"
+                "    else if (gm_avlnode->key.id1 < key->id1)\n"
                 "        return (LONG)-1;\n"
                 "    else\n"
                 "        return (LONG)1;\n"
@@ -191,17 +217,16 @@ static void writedecl(FILE *out, struct config *cfg)
                 "{\n"
                 "    AROS_USERFUNC_INIT\n"
                 "\n"
-                "    if (gm_avlnode1->libid == gm_avlnode2->libid)\n"
-                "        return (LONG)0;\n"
-                "    else if (gm_avlnode1->libid < gm_avlnode2->libid)\n"
-                "        return (LONG)-1;\n"
-                "    else\n"
-                "        return (LONG)1;\n"
+                "    return AROS_UFC2(LONG, __GM_CompKey,\n"
+                "        AROS_UFPA(const struct __GM_AVLNode *, gm_avlnode1, A0),\n"
+                "        AROS_UFPA(AVLKey, (AVLKey)&gm_avlnode2->key, A1)\n"
+                "    );\n"
                 "\n"
                 "    AROS_USERFUNC_EXIT\n"
                 "}\n"
                 "#define LIBBASESIZE sizeof(struct __GM_BaseAVL)\n"
                 "struct AVLNode *__GM_AVLRoot = NULL;\n"
+                "\n"
         );
     else
         fprintf(out, "#define LIBBASESIZE sizeof(LIBBASETYPE)\n");
@@ -448,10 +473,10 @@ static void writeresident(FILE *out, struct config *cfg)
 		"\n"
 		"static struct InitTable\n"
 		"{\n"
-		"    IPTR                   Size;\n"
-		"    const APTR             *FuncTable;\n"
-		"    const struct DataTable *DataTable;\n"
-		"    APTR                    InitLibTable;\n"
+		"    IPTR              Size;\n"
+		"    APTR             *FuncTable;\n"
+		"    struct DataTable *DataTable;\n"
+		"    APTR              InitLibTable;\n"
 		"}\n"
 		"const GM_UNIQUENAME(InitTable) =\n"
 		"{\n"
@@ -537,7 +562,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    ((struct Library *)lh)->lib_Revision = REVISION_NUMBER;\n"
 	);
     }
-    
+
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
@@ -686,14 +711,14 @@ static void writeopenlib(FILE *out, struct config *cfg)
             );
             if (cfg->options & OPTION_DUPPERID)
                 fprintf(out,
-                        "    IPTR libid = GM_GETID;\n"
+                        "    struct __GM_AVLKey key = {GM_GETID, GM_GETID2};\n"
                         "    struct __GM_AVLNode *avlnode;\n"
                         "\n"
-                        "    avlnode = (struct __GM_AVLNode *)AVL_FindNode(__GM_AVLRoot, (AVLKey)libid, (AVLKEYCOMP)__GM_CompKey);\n"
+                        "    avlnode = (struct __GM_AVLNode *)AVL_FindNode(__GM_AVLRoot, (AVLKey)&key, (AVLKEYCOMP)__GM_CompKey);\n"
                         "    if (avlnode != NULL)\n"
                         "    {\n"
-                        "         newlib = avlnode->lh;\n"
-                        "         avlnode->dupopencount++;\n"
+                        "        avlnode->dupopencount++;\n"
+                        "        newlib = avlnode->lh;\n"
                         "    }\n"
                 );
             fprintf(out,
@@ -714,26 +739,24 @@ static void writeopenlib(FILE *out, struct config *cfg)
             if (cfg->options & OPTION_DUPPERID)
                 fprintf(out,
                         "        avlnode = &((struct __GM_BaseAVL *)newlib)->avlnode;\n"
+                        "        avlnode->key = key;\n"
                         "        avlnode->lh = newlib;\n"
-                        "        avlnode->libid = libid;\n"
                         "        avlnode->dupopencount = 1;\n"
                         "        AVL_AddNode((struct AVLNode **)&__GM_AVLRoot, (struct AVLNode *)avlnode, (AVLNODECOMP)__GM_CompNode);\n"
                 );
             fprintf(out,
+		    "\n"
+		    "        if (!set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib))\n"
+		    "        {\n"
+		    "            __freebase(newlib);\n"
+		    "            return NULL;\n"
+		    "        }\n"
                     "    }\n"
 		    "\n"
-		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib) )\n"
-		    "    {\n"
-		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "    ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "    ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
 		    "\n"
-		    "        return newlib;\n"
-		    "    }\n"
-		    "    else\n"
-		    "    {\n"
-		    "        __freebase(newlib);\n"
-		    "        return NULL;\n"
-		    "    }\n"
+		    "    return (LIBBASETYPEPTR)newlib;\n"
 		    "\n"
 		    "    AROS_LIBFUNC_EXIT\n"
 		    "}\n"
@@ -769,8 +792,10 @@ static void writecloselib(FILE *out, struct config *cfg)
     );
     if (cfg->modtype == DEVICE)
 	fprintf(out,
-		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0));\n"
+		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0))\n"
+                "    {\n"
 		"        return NULL;\n"
+                "    }\n"
 	);
     if (!(cfg->options & OPTION_DUPBASE))
     {
@@ -782,23 +807,21 @@ static void writecloselib(FILE *out, struct config *cfg)
     else
     {
 	fprintf(out,
-		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
-		"    if (lh != GM_ROOTBASE_FIELD(lh))\n"
-		"    {\n"
-		"        LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
+		"    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
         );
         if (cfg->options & OPTION_DUPPERID)
             fprintf(out,
+                    "    {\n"
                     "        struct __GM_AVLNode *avlnode = &((struct __GM_BaseAVL *)lh)->avlnode;\n"
                     "        avlnode->dupopencount--;\n"
-                    "        if (avlnode->dupopencount == 0)\n"
-                    "            __freebase(lh);\n"
+                    "        if (avlnode->dupopencount != 0)\n"
+                    "            return (BPTR)NULL;\n"
+                    "    }\n"
             );
-        else
-            fprintf(out, "        __freebase(lh);\n");
         fprintf(out,
-		"        lh = rootbase;\n"
-		"    }\n"
+		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
+                "    __freebase(lh);\n"
+		"    lh = rootbase;\n"
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
 		"\n"
 	);
