@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	ParsePattern(), MatchPatternNoCase().
+	ParsePattern(), MatchPatternNoCase()
 
     INTERNALS
 

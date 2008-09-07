@@ -48,7 +48,7 @@
 	path assigns very well.
 
     SEE ALSO
-	GetDeviceProc(), FreeDeviceProc().
+	GetDeviceProc(), FreeDeviceProc()
 
     INTERNALS
 
