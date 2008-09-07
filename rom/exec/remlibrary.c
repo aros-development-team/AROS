@@ -50,7 +50,7 @@
     BUGS
 
     SEE ALSO
-	AddLibrary(), MakeLibrary(), MakeFunctions(), InitStruct(), SumLibrary().
+	AddLibrary(), MakeLibrary(), MakeFunctions(), InitStruct(), SumLibrary()
 
     INTERNALS
 

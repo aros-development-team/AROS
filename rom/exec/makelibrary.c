@@ -61,7 +61,7 @@
     BUGS
 
     SEE ALSO
-	AddLibrary(), RemLibrary(), MakeFunctions(), InitStruct(), SumLibrary().
+	AddLibrary(), RemLibrary(), MakeFunctions(), InitStruct(), SumLibrary()
 
     INTERNALS
 

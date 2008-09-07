@@ -385,13 +385,13 @@ rotate_double(struct AVLNode *scan, struct AVLNode *next, const int dir)
 	and no more than 1.44log(n) steps will be required.
 
     EXAMPLE
-	See AVL_NextNodeByAddress(), AVL_PrevNodeByAddress()
+	See AVL_FindNextNodeByAddress(), AVL_FindPrevNodeByAddress()
 
     BUGS
 
     SEE ALSO
-	AVL_AddNode(), AVL_FindNode(), AVL_NextNodeByAddress(),
-	AVL_PrevNodeByAddress()
+	AVL_AddNode(), AVL_FindNode(), AVL_FindNextNodeByAddress(),
+	AVL_FindPrevNodeByAddress()
 
     INTERNALS
 ******************************************************************************/

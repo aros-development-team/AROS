@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-	AddDevice(), OpenDevice(), CloseDevice().
+	AddDevice(), OpenDevice(), CloseDevice()
 
     INTERNALS
 
