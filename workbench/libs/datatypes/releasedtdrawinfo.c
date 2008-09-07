@@ -55,7 +55,7 @@
 
     SEE ALSO
 
-    DrawDTObjectA(), ObtainDTDrawInfo()
+    DrawDTObjectA(), ObtainDTDrawInfoA()
 
     INTERNALS
 

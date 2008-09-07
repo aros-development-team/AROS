@@ -46,7 +46,7 @@
 
     SEE ALSO
 
-    GetDTAttrsA(), intuition.library/SetGadghetAttrsA(),
+    GetDTAttrsA(), intuition.library/SetGadgetAttrsA(),
     <datatypes/datatypesclass.h>
 
     INTERNALS
