@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	AddLibrary(), RemLibrary(), MakeLibrary(), MakeFunctions(), InitStruct().
+	AddLibrary(), RemLibrary(), MakeLibrary(), MakeFunctions(), InitStruct()
 
     INTERNALS
 

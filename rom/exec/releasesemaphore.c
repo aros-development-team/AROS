@@ -19,18 +19,18 @@
 #    define Exec _Exec
 #endif
 
-/*    NAME  */
+/*  NAME  */
 	#include <proto/exec.h>
 
 	AROS_LH1(void, ReleaseSemaphore,
 
-/*    SYNOPSIS  */
+/*  SYNOPSIS  */
 	AROS_LHA(struct SignalSemaphore *, sigSem, A0),
 
-/*    LOCATION  */
+/*  LOCATION  */
 	struct ExecBase *, SysBase, 95, Exec)
 
-/*    FUNCTION
+/*  FUNCTION
 	Releases a lock on a semaphore obtained with either ObtainSemaphore(),
 	ObtainSemaphoreShared(), AttemptSemaphore or AttemptSemaphoreShared().
 	Each call to one of those functions must be accompanied with one

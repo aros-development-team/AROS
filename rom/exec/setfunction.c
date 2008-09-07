@@ -70,7 +70,7 @@
 	upper 16 bits. These programs should be fixed.
 
     SEE ALSO
-	MakeLibrary(), MakeFunctions(), SumLibrary().
+	MakeLibrary(), MakeFunctions(), SumLibrary()
 
     INTERNALS
 
