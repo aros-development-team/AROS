@@ -21,10 +21,10 @@ mail_write()
     echo >>$MAIL_FILE $*
 }
 
-# $1 = extra options (attachements)
+# $* = extra options (attachments)
 mail_send()
 {
-    mutt -s $MAIL_SUBJECT -c $CFG_MAIL_CC $1 $CFG_MAIL_TO <$MAIL_FILE
+    mutt -s $MAIL_SUBJECT -c $CFG_MAIL_CC $* $CFG_MAIL_TO <$MAIL_FILE
 }
 
 mail_stop()
