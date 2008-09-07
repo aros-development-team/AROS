@@ -358,7 +358,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 /*  FUNCTION
 	Adds a resource to be tracked. The arguments after
 	line depend on the type of resource to be traced.
-	The resource›is marked as "must not be freed by the
+	The resource is marked as "must not be freed by the
 	user".
 
     INPUTS

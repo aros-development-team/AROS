@@ -46,7 +46,7 @@ extern struct ExecBase * SysBase;
     BUGS
 
     SEE ALSO
-	FreeMem()
+	exec.library/FreeMem()
 
     INTERNALS
 

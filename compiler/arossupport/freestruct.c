@@ -55,7 +55,8 @@ struct FreeLevel
     BUGS
 
     SEE ALSO
-	Open(), Close(), ReadByte(), ReadWord(), ReadLong(), ReadFloat(),
+	exec.library/Open(), exec.library/Close(), ReadByte(), ReadWord(),
+	ReadLong(), ReadFloat(),
 	ReadString(), ReadStruct(), WriteByte(), WriteWord(), WriteLong(),
 	WriteFloat(), WriteDouble(), WriteString(), WriteStruct()
 
