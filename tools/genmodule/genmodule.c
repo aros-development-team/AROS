@@ -18,12 +18,18 @@ int main(int argc, char **argv)
 	    readref(cfg);
 	writestart(cfg);
 	writeend(cfg);
-	if (cfg->modtype == LIBRARY)
+	if (cfg->options & OPTION_AUTOINIT)
 	    writeautoinit(cfg);
-	writestubs(cfg);
+        if (cfg->options & OPTION_STUBS)
+            writestubs(cfg);
 	break;
 	
     case INCLUDES:
+        if (!(cfg->options & OPTION_INCLUDES))
+        {
+            fprintf(stderr, "%s called with writeincludes when no includes are present\n", argv[0]);
+            exit(20);
+        }
 	if (!(cfg->intcfg & CFG_NOREADREF))
 	    readref(cfg);
 	/* fall through */

@@ -809,7 +809,7 @@ $(TMP_TARGET) : $(TMP_DEPS)
 # Generate a Makefile.%(modname) with the genmodule program and include this
 # generated file in this Makefile
 %define rule_genmodule_makefile modname=/A modtype=/A modsuffix= conffile= \
-    targetdir= genlinklib=yes
+    targetdir=
 
 TMP_TARGET := Makefile.%(modname)
 TMP_DEPS := $(GENMODULE)
@@ -826,9 +826,6 @@ endif
 ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
     TMP_TARGET := %(targetdir)/$(TMP_TARGET)
-endif
-ifeq (%(genlinklib),no)
-    TMP_OPTS += -n
 endif
 
 $(TMP_TARGET) : OPTS := $(TMP_OPTS)
@@ -1241,7 +1238,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
   reffile=$(BD_DEFREFFILE) noref= \
   linklibname=$(BD_DEFLINKLIBNAME) uselibs= usehostlibs= \
-  compiler=target genincludes=
+  compiler=target
 
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
@@ -1284,7 +1281,7 @@ OBJDIR ?= $(GENDIR)/$(CURDIR)
 %rule_genmodule_makefile \
     modname=%(modname) modtype=%(modtype) \
     modsuffix=%(modsuffix) targetdir=%(objdir) \
-    conffile=%(conffile) genlinklib=%(genincludes)
+    conffile=%(conffile)
 
 %(objdir)/Makefile.%(modname) : | %(objdir)
 
@@ -1301,12 +1298,6 @@ BD_DEFMODDIR := $(%(modname)_MODDIR)
 ## include files generation
 ##
 BD_INCDIR    := %(prefix)/$(AROS_DIR_INCLUDE)
-ifeq (%(genincludes),yes)
-    %(modname)_INCLUDES := proto/%(modname).h clib/%(modname)_protos.h defines/%(modname).h 
-endif
-ifeq (%(genincludes),no)
-    %(modname)_INCLUDES :=
-endif
 BD_LIBDEFSINC := %(objdir)/include/%(modname)_libdefs.h
 BD_DEFLIBDEFSINC := %(objdir)/include/%(modname)_deflibdefs.h
 
@@ -1528,14 +1519,17 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - files are the C source files to include in the lib. The list of files
 #   has to be given without the .c suffix
 # - asmfiles are the asm files to include in the lib. The list of files has to
-#   be given with the .s suffix
+#   be given without the .s suffix
+# - objs additional object to link into the linklib. The objects have to be
+#   given with full absolute path and the .o suffix.
 # - cflags are the flags to compile the source (default $(CFLAGS))
 # - dflags are the flags use during makedepend (default equal to cflags)
 # - aflags are the flags use during assembling (default $(AFLAGS))
 # - objdir is where the .o are generated
 # - libdir is the directory where the linklib will be placed (default $(LIBDIR))
-%define build_linklib mmake=/A libname=/A files="$(basename $(wildcard *.c))" \
-  asmfiles= cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
+%define build_linklib mmake=/A libname=/A \
+  files="$(basename $(wildcard *.c))" asmfiles=  objs= \
+  cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
 
 # assign and generate the local variables used in this macro
 OBJDIR        ?= $(GENDIR)/$(CURDIR)
@@ -1547,7 +1541,9 @@ BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_OBJS       := $(BD_ARCHOBJS) $(addsuffix .o,$(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES) $(BD_ASMFILES))))
+BD_OBJS       := $(BD_ARCHOBJS) \
+                 $(addsuffix .o,$(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES) $(BD_ASMFILES)))) \
+                 %(objs)
 BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
 
 BD_CFLAGS     := %(cflags)
