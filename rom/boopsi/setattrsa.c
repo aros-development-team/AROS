@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	NewObject(), DisposeObject(), GetAttr(), MakeClass(),
+	NewObjectA(), DisposeObject(), GetAttr(), MakeClass(),
 	"Basic Object-Oriented Programming System for Intuition" and
 	"boopsi Class Reference" Dokument.
 
