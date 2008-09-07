@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-	SumKickData(), SumLibrary()
+	exec.library/SumKickData(), exec.library/SumLibrary()
 
     INTERNALS
 	The function uses the DOS way: sum all the ULONGs and return the
