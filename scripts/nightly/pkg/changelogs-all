@@ -2,7 +2,7 @@
 # Creates changelogs packages.
 
 source $SP/setup
-setl   changelogs.log 
+setl   changelogs-all.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/ChangeLogs
 

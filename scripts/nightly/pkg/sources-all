@@ -2,7 +2,7 @@
 # Creates source packages.
 
 source $SP/setup
-setl   sources.log 
+setl   sources-all.log 
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Sources
 

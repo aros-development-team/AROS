@@ -2,7 +2,7 @@
 # Creates documentation packages.
 
 source $SP/setup
-setl   documentation.log
+setl   documentation-all.log
 
 ARCHIVE_BASE=$ARCHIVE_BASE/Documentation
 
