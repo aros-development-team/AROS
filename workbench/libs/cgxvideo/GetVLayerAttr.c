@@ -49,7 +49,7 @@
     BUGS
 
     SEE ALSO
-	SetVLayerAttr()
+	SetVLayerAttrTagList()
 
     INTERNALS
 
