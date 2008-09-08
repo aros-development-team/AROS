@@ -471,19 +471,28 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
             switch (cfg->modtype)
             {
             case LIBRARY:
-            case DEVICE:
             case RESOURCE:
-            case GADGET:
                 cfg->options |= OPTION_INCLUDES;
                 break;
                 
+            case DEVICE:
+                cfg->options |= (
+                    (cfg->funclist != NULL)
+                    || (cfg->cdeflines != NULL)
+                    || strcmp(cfg->libbasetypeptrextern, "struct Device *") != 0
+                ) ? OPTION_INCLUDES : OPTION_NOINCLUDES;
+                break;
+                
+            case GADGET:
             case DATATYPE:
             case MCC:
             case MUI:
             case MCP:
             case HIDD:
-                cfg->options |= (cfg->funclist != NULL) ?
-                    OPTION_INCLUDES : OPTION_NOINCLUDES;
+                cfg->options |= (
+                    (cfg->funclist != NULL)
+                    || (cfg->cdeflines != NULL)
+                ) ? OPTION_INCLUDES : OPTION_NOINCLUDES;
                 break;
 	
             default:
@@ -1124,7 +1133,7 @@ static void readsectioncdef(struct config *cfg)
 	    s = line+2;
 	    while (isspace(*s)) s++;
 	    if (strncmp(s, "end", 3)!=0)
-		exitfileerror(20, "\"##end cdef\" expected\n");
+		exitfileerror(20, "\"##end <cdef\" expected\n");
 
 	    s += 3;
 	    while (isspace(*s)) s++;
