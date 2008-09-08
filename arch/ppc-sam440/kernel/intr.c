@@ -397,7 +397,7 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
         }
     }
 
-    core_LeaveInterrupt(ctx);
+    core_ExitInterrupt(ctx);
 }
 
 void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void *self)
