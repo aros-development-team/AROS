@@ -562,6 +562,11 @@ OOP_Object *METHOD(ATI, Root, New)
 	1050, 1051, 1054, 1087,
 	"ATI:1680x1050");
     
+    MAKE_SYNC(1920x1200_60, 193160,
+	1920, 2048, 2256, 2592,
+	1200, 1201, 1204, 1242,
+	"ATI:1680x1050");
+    
     struct TagItem modetags[] = {
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
@@ -575,6 +580,7 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
         { aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
+        { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
 
         { TAG_DONE, 0UL }
     };
