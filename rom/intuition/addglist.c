@@ -56,7 +56,7 @@
     BUGS
  
     SEE ALSO
-    RefreshGadgets(), RefresgGList()
+    RefreshGadgets(), RefreshGList()
  
     INTERNALS
  

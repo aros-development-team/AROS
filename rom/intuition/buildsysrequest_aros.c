@@ -112,8 +112,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
     BUGS
  
     SEE ALSO
-	FreeSysRequest(), DisplayAlert(), ModifyIDCMP(), exec-library/Wait(),
-	Request(), AutoRequest(), EasyRequest(), BuildEasyRequestArgs()
+	FreeSysRequest(), DisplayAlert(), ModifyIDCMP(), exec.library/Wait(),
+	Request(), AutoRequest(), EasyRequestArgs(), BuildEasyRequestArgs()
  
     INTERNALS
  

@@ -55,7 +55,7 @@
     BUGS
  
     SEE ALSO
-    NewObject(), SetAttrsA(), GetAttr(), DoGadgetMethodA(),
+    NewObjectA(), SetAttrsA(), GetAttr(), DoGadgetMethodA(),
     "Basic Object-Oriented Programming System for Intuition" and
     "boopsi Class Reference" Dokument.
  

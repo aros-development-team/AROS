@@ -65,7 +65,7 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
     BUGS
 
     SEE ALSO
-    ModiyIDCMP(), OpenWindow(), CloseWindow()
+    ModifyIDCMP(), OpenWindow(), CloseWindow()
 
     INTERNALS
 
