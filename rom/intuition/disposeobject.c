@@ -45,7 +45,7 @@
     BUGS
  
     SEE ALSO
-    NewObject(), SetAttrs((), GetAttr(), MakeClass()
+    NewObjectA(), SetAttrsA(), GetAttr(), MakeClass()
     "Basic Object-Oriented Programming System for Intuition" and
     "boopsi Class Reference" Dokument.
  

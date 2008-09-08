@@ -50,7 +50,7 @@
     BUGS
  
     SEE ALSO
-    NewObject(), DisposeObject(), SetAttr(), MakeClass(),
+    NewObjectA(), DisposeObject(), SetAttrsA(), MakeClass(),
     "Basic Object-Oriented Programming System for Intuition" and
     "boopsi Class Reference" Dokument.
  

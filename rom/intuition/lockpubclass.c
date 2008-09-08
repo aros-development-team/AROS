@@ -37,7 +37,7 @@
  
     SEE ALSO
  
-    unlockPubClass().
+    unlockPubClass()
  
     INTERNALS
  

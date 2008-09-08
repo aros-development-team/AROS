@@ -70,7 +70,7 @@ AROS_LH1(void, CloseWindow,
     BUGS
 
     SEE ALSO
-    OpenWindow(), OpenWindowTags()
+    OpenWindow(), OpenWindowTagList()
 
     INTERNALS
 
