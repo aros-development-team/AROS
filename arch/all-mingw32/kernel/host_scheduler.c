@@ -188,22 +188,29 @@ void core_Schedule(CONTEXT *regs)
 void core_ExitInterrupt(CONTEXT *regs) 
 {
     struct ExecBase *SysBase = *SysBasePtr;
+    char TDNestCnt;
 
+    DS(printf("[Scheduler] core_ExitInterrupt\n"));
     if (SysBase)
     {
-        
-        if (--SysBase->Elapsed == 0)
+        DS(printf("[Scheduler] Elapsed: %d\n", SysBase->Elapsed));
+        if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
         {
+            DS(printf("[Scheduler] Setting ARF_AttnSwitch\n"));
             SysBase->SysFlags |= 0x2000;
             SysBase->AttnResched |= ARF_AttnSwitch;
         }
         
         /* Soft interrupt requested? It's high time to do it */
-        if (SysBase->SysFlags & SFF_SoftInt)
+        if (SysBase->SysFlags & SFF_SoftInt) {
+            DS(printf("[Scheduler] Causing SoftInt\n"));
             core_Cause(SysBase);
+        }
     
         /* If task switching is disabled, leave immediatelly */
-        if (((char)SysBase->TDNestCnt) < 0) /* BYTE is unsigned in Windows so we have to cast */
+        TDNestCnt = SysBase->TDNestCnt; /* BYTE is unsigned in Windows so we can't use SysBase->TDNestCnt directly */
+        DS(printf("[Scheduler] TDNestCnt is %d\n", TDNestCnt));
+        if (TDNestCnt < 0)
         {
             /* 
              * Do not disturb task if it's not necessary. 
@@ -211,10 +218,12 @@ void core_ExitInterrupt(CONTEXT *regs)
              */
             if (SysBase->AttnResched & ARF_AttnSwitch)
             {
+                DS(printf("[Scheduler] Rescheduling\n"));
                 core_Schedule(regs);
             }
         }
     }
+    	DS(else printf("[Scheduler] SysBase is NULL\n");)
 }
 
 void core_Cause(struct ExecBase *SysBase)
