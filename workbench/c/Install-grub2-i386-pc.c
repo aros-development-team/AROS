@@ -52,6 +52,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
+#include <proto/utility.h>
 #include <aros/macros.h>
 #include <devices/hardblocks.h>
 #include <devices/newstyle.h>
@@ -99,6 +100,7 @@ struct Volume
     UBYTE flags;
     BYTE partnum;
     ULONG *blockbuffer;
+    ULONG dos_id;
 };
 
 #define VF_IS_TRACKDISK (1<<0)
@@ -111,6 +113,8 @@ struct BlockNode
     UWORD count;
     UWORD seg_adr;
 };
+
+CONST_STRPTR CORE_IMG_FILE_NAME = "core.img";
 
 STRPTR template =
     (STRPTR) ("DEVICE/A," "UNIT/N/K/A," "PARTITIONNUMBER=PN/K/N," "GRUB/K/A,"
@@ -251,6 +255,7 @@ struct Volume *initVolume(CONST_STRPTR device, ULONG unit, ULONG flags,
 			volume->readcmd = CMD_READ;
 			volume->writecmd = CMD_WRITE;
 			volume->unitnum = unit;
+            volume->dos_id = 0;
 			fillGeometry(volume, de);
 			nsdCheck(volume);
 			return volume;
@@ -365,19 +370,23 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
 
     if (!isKnownFs(dos_id))
     {
-	/* first block has no DOS\x so we don't have RDB for sure */
-	volume->flags &= ~VF_IS_RDB;
-	if (readBlock(volume, 1, volume->blockbuffer, 512))
-	{
-	    printf("Read Error\n");
-	    return FALSE;
-	}
+      	/* first block has no DOS\x so we don't have RDB for sure */
+	    volume->flags &= ~VF_IS_RDB;
+	    if (readBlock(volume, 1, volume->blockbuffer, 512))
+	    {
+	        printf("Read Error\n");
+	        return FALSE;
+	    }
 
-	dos_id = AROS_BE2LONG(volume->blockbuffer[0]);
+	    dos_id = AROS_BE2LONG(volume->blockbuffer[0]);
 
-	if (!isKnownFs(dos_id))
-	    return FALSE;
+	    if (!isKnownFs(dos_id))
+	        return FALSE;
+        else
+            volume->dos_id = dos_id;
     }
+    else
+        volume->dos_id = dos_id;
 
     volume->partnum = -1;
 
@@ -767,14 +776,14 @@ BOOL writeBootIMG(STRPTR bootimgpath, struct Volume * bootimgvol, struct Volume 
     return retval;
 }
 
-/* Collects the list of blocks that a file occupies */
-ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *blocklist)
+/* Collects the list of blocks that a file occupies on FFS filesystem*/
+ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode *blocklist)
 {
     ULONG retval, first_block;
     WORD blk_count,count;
     UWORD i;
 
-    D(bug("[install] collectBlockList(%x, %ld, %x)\n", volume, block, blocklist));
+    D(bug("[install] collectBlockListFFS(%x, %ld, %x)\n", volume, block, blocklist));
 
     #warning "TODO: logical/physical blocks"
 	/*
@@ -800,7 +809,7 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 
     if (retval)
     {
-        D(bug("[install] collectBlockList: ERROR reading block (error: %ld\n", retval));
+        D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld\n", retval));
 		printf("ReadError %ld\n", retval);
 		return 0;
 	}
@@ -809,7 +818,7 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 	first_block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock-51]);
 	blk_count=0;
 	
-    D(bug("[install] collectBlockList: First block @ %ld, i:%d\n", first_block, i));
+    D(bug("[install] collectBlockListFFS: First block @ %ld, i:%d\n", first_block, i));
 
 	
 	do
@@ -818,15 +827,15 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 				volume->readcmd);
 		if (retval)
 		{
-            D(bug("[install] collectBlockList: ERROR reading block (error: %ld)\n", retval));
+            D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld)\n", retval));
 			printf("ReadError %ld\n", retval);
 			return 0;
 		}
         
-        D(bug("[install] collectBlockList: read block %ld, i = %d\n", block, i));
+        D(bug("[install] collectBlockListFFS: read block %ld, i = %d\n", block, i));
 		while ((i>=6) && (volume->blockbuffer[i]))
 		{
-            D(bug("[install] collectBlockList: i = %d\n", i));
+            D(bug("[install] collectBlockListFFS: i = %d\n", i));
 			/*
 				if current sector follows right after last sector
 				then we don't need a new element
@@ -836,22 +845,22 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 						AROS_BE2LONG(volume->blockbuffer[i])))
 			{
 				blocklist[blk_count].count += 1;
-                D(bug("[install] collectBlockList: sector %d follows previous - increasing count of block %d to %d\n",
+                D(bug("[install] collectBlockListFFS: sector %d follows previous - increasing count of block %d to %d\n",
                     i, blk_count, blocklist[blk_count].count));
 			}
 			else
 			{
 				blk_count--; /* decrement first */
-                D(bug("[install] collectBlockList: store new block (%d)\n", blk_count));
+                D(bug("[install] collectBlockListFFS: store new block (%d)\n", blk_count));
     
 				if (blocklist[blk_count-1].sector_lo != 0)
 				{
-                    D(bug("[install] collectBlockList: ERROR: out of block space at sector %d, block %d\n",
+                    D(bug("[install] collectBlockListFFS: ERROR: out of block space at sector %d, block %d\n",
                         i, blk_count));
 					printf("There is no more space to save blocklist in core.img\n");
 					return 0;
 				}
-                D(bug("[install] collectBlockList: storing sector pointer for %d in block %d\n", 
+                D(bug("[install] collectBlockListFFS: storing sector pointer for %d in block %d\n", 
                     i, blk_count));
 				blocklist[blk_count].sector_lo = AROS_BE2LONG(volume->blockbuffer[i]);
 				blocklist[blk_count].sector_hi = 0;
@@ -861,7 +870,7 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 		}
 		i = volume->SizeBlock - 51;
 		block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock - 2]);
-        D(bug("[install] collectBlockList: next block %d, i = %d\n", block, i));
+        D(bug("[install] collectBlockListFFS: next block %d, i = %d\n", block, i));
 	} while (block);
 
 
@@ -870,7 +879,7 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 		sector of the HD (not partition)
 	*/
     
-    D(bug("[install] collectBlockList: successfully updated pointers for %d blocks\n", blk_count));
+    D(bug("[install] collectBlockListFFS: successfully updated pointers for %d blocks\n", blk_count));
 
 	i = 0;
 	for (count=-1;count>=blk_count;count--)
@@ -878,15 +887,112 @@ ULONG collectBlockList(struct Volume *volume, ULONG block,  struct BlockNode *bl
 		blocklist[count].sector_lo += volume->startblock;
 		blocklist[count].seg_adr = 0x820 + (i*32);
 		i += blocklist[count].count;
-        D(bug("[install] collectBlockList: correcting block %d for partition start\n", count));
-        D(bug("[install] collectBlockList: sector : %ld seg_adr : %x\n", 
+        D(bug("[install] collectBlockListFFS: correcting block %d for partition start\n", count));
+        D(bug("[install] collectBlockListFFS: sector : %ld seg_adr : %x\n", 
             blocklist[count].sector_lo, blocklist[count].seg_adr));
 	}
 
     first_block += volume->startblock;
-    D(bug("[install] collectBlockList: corrected first block for partition start: %ld\n", first_block));
+    D(bug("[install] collectBlockListFFS: corrected first block for partition start: %ld\n", first_block));
     
 	return first_block;
+}
+
+/* Collects the list of blocks that a file occupies on SFS filesystem*/
+ULONG collectBlockListSFS(struct Volume *volume, ULONG block,  struct BlockNode *blocklist, CONST_STRPTR filename)
+{
+    ULONG retval, first_block = 0;
+    WORD blk_count = 0, count = 0;
+    UWORD i = 0;
+    char * sfsobjectname = NULL;
+
+    D(bug("[install] collectBlockListSFS(%x, %ld, %ld, %x)\n", volume, volume->startblock, block, blocklist));
+    D(bug("[install] collectBlockListSFS(%ld, %d, %d)\n", volume->countblock, volume->SizeBlock, volume->partnum));
+ 
+    /* block is the relative block address (from start of volume) of sfs container having information about file */
+   
+    /* Read SFS container */
+	retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
+			volume->readcmd);
+
+    if (retval)
+    {
+        D(bug("[install] collectBlockListSFS: ERROR reading block (error: %ld)\n", retval));
+		printf("ReadError %ld\n", retval);
+		return 0;
+	}
+    /* Iterate over SFS objects and match the name */
+    /* 
+     * The first offset comes from :
+     * sizeof(sfsblockheader) = uint32 + uint32 + uint32 (field of sfsobjectcontainer)
+     * parent, next, previous = uint32 + uint32 + uint32 (fields of sfsobjectcontainers)
+     * owneruid, ownergid, objectnode, protection, data, size, datemodified, bits =
+     * uint16 + uint16 + uint32 + uint32 + uint32 + uint32 + uint32 + uint8 
+     * (fields of sfsobject which is a field in sfsobject container)
+     */
+    sfsobjectname = ((char*)volume->blockbuffer) + 12 + 12 + 25;
+
+    while (AROS_BE2LONG(((ULONG*)(sfsobjectname - 21))[0]) > 0) /* check on the objectnode field */
+    {
+        
+
+        D(bug("[install] collectBlockListSFS: sfsobjectname: %s\n", sfsobjectname));
+
+        /* Compare names */
+        if (!Stricmp(filename, (CONST_STRPTR)sfsobjectname))
+        {
+            /* Found! */
+            first_block = AROS_BE2LONG(((ULONG*)(sfsobjectname - 13))[0]); /* data */
+            D(bug("[install] collectBlockListSFS: %s first block is %ld\n", filename, first_block));
+            break;
+        }
+        
+        /* Move to next name */
+        /* Find end of name and end of comment */
+	    for (i = 2; i > 0; sfsobjectname++, count++)
+		    if (*sfsobjectname == '\0')
+			    i--;
+
+        /* Correction for aligment */
+        if ((count & 0x01) == 0 )
+            sfsobjectname++;
+
+        /* Point to next name */
+        sfsobjectname += 25;
+    }
+
+    if (first_block == 0)
+    {
+        D(bug("[install] collectBlockListSFS: file not found: %s\n", filename));
+		printf("File not found: %s\n", filename);
+		return 0;
+    }
+
+    /* TODO: Fill blocks list */
+    /* XXX: Hack */
+    blk_count = -1;
+	blocklist[blk_count].sector_lo = first_block + 1;
+	blocklist[blk_count].sector_hi = 0;
+	blocklist[blk_count].count = 71;
+
+
+    /* Correct blocks for volume start */
+	
+    /* Blocks in blocklist are relative to the first sector of the HD (not partition) */
+	i = 0;
+	for (count=-1;count>=blk_count;count--)
+	{
+		blocklist[count].sector_lo += volume->startblock;
+		blocklist[count].seg_adr = 0x820 + (i*32);
+		i += blocklist[count].count;
+        D(bug("[install] collectBlockListFFS: correcting block %d for partition start\n", count));
+        D(bug("[install] collectBlockListFFS: sector : %ld seg_adr : %x\n", 
+            blocklist[count].sector_lo, blocklist[count].seg_adr));
+	}
+
+    first_block += volume->startblock;
+
+    return first_block;
 }
 
 /* Flushes the cache on the volume containing the specified path. */
@@ -903,7 +1009,7 @@ VOID flushFS(CONST_STRPTR path)
 	Inhibit(devname, DOSFALSE);
 }
 
-BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, STRPTR grubpath, struct Volume *volume)
+BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
 {
     BOOL retval = FALSE;
 
@@ -964,7 +1070,7 @@ BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, STRPTR grubpath, struct Volume *volume
 	return retval;
 }
 
-ULONG updateCoreIMG(STRPTR grubpath,     /* path of grub dir */
+ULONG updateCoreIMG(CONST_STRPTR grubpath,     /* path of grub dir */
 		            struct Volume *volume, /* volume core.img is on */
 		            ULONG *buffer          /* a buffer of at least 512 bytes */)
 {
@@ -976,7 +1082,7 @@ ULONG updateCoreIMG(STRPTR grubpath,     /* path of grub dir */
     D(bug("[install] updateCoreIMG(%x)\n", volume));
 
 	AddPart(coreimgpath, grubpath, 256);
-	AddPart(coreimgpath, "core.img", 256);
+	AddPart(coreimgpath, CORE_IMG_FILE_NAME, 256);
 	fh = Open(coreimgpath, MODE_OLDFILE);
 	if (fh)
 	{
@@ -991,14 +1097,34 @@ ULONG updateCoreIMG(STRPTR grubpath,     /* path of grub dir */
                     buffer is ULONG, buffer[128] is one pointer after first element(upwards).
                     collectBlockList assumes it receives one pointer after first element(upwards).
 				*/
-				block = collectBlockList
-					(volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128]); 
+    
+                if (volume->dos_id == ID_SFS_BE_DISK)
+                {
+                    D(bug("[install] core.img on SFS file system\n"));
+				    block = collectBlockListSFS
+					    (volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128], fib.fib_FileName);
+                }
+                else 
+                if ((volume->dos_id == ID_FFS_DISK) || (volume->dos_id == ID_INTER_DOS_DISK) ||
+                    (volume->dos_id == ID_INTER_FFS_DISK) || (volume->dos_id == ID_FASTDIR_DOS_DISK) ||
+                    (volume->dos_id == ID_FASTDIR_FFS_DISK))
+                {
+                    D(bug("[install] core.img on FFS file system\n"));
+                    block = collectBlockListFFS
+					    (volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128]);
+                }
+                else
+                {
+                    block = 0;
+                    D(bug("[install] core.img on unsupported file system\n"));
+                    printf("Unsupported file system\n");
+                }
 
-                D(bug("[install] core.img first block @%ld\n", block));
+                D(bug("[install] core.img first block: %ld\n", block));
     
 				if (block)
 				{
-					if (!writeCoreIMG(fh, (UBYTE *)buffer, grubpath, volume))
+					if (!writeCoreIMG(fh, (UBYTE *)buffer, volume))
 						block = 0;
 				}
 			}
