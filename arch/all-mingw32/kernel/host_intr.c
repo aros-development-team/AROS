@@ -21,7 +21,7 @@ typedef unsigned char UBYTE;
 
 struct SwitcherData {
     HANDLE MainThread;
-    DWORD TimerPeriod;
+    HANDLE IntTimer;
 };
 
 struct SwitcherData SwData;
@@ -90,20 +90,19 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     HANDLE IntEvent;
     DWORD obj;
     CONTEXT MainCtx;
-    HANDLE MainThread = args->MainThread;
-    DWORD TimerPeriod = args->TimerPeriod;
 
     for (;;) {
-        Sleep(TimerPeriod);
-    	SuspendThread(MainThread);
+        WaitForSingleObject(args->IntTimer, INFINITE);
+        DS(printf("[KRN] Timer interrupt\n"));
+    	SuspendThread(args->MainThread);
     	if (Ints_Enabled) {
-    	    GetThreadContext(MainThread, &MainCtx);
+    	    GetThreadContext(args->MainThread, &MainCtx);
     	    user_handler(0);
     	    core_ExitInterrupt(&MainCtx);
-    	    SetThreadContext(MainThread, &MainCtx);
+    	    SetThreadContext(args->MainThread, &MainCtx);
     	}
             DS(else printf("[KRN] Interrupts are disabled\n"));
-        ResumeThread(MainThread);
+        ResumeThread(args->MainThread);
     }
     return 0;
 }
@@ -132,27 +131,32 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
     DWORD SwitcherId;
+    LARGE_INTEGER VBLPeriod;
 
     D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
     SysBasePtr = SysBasePointer;
     KernelBasePtr = KernelBasePointer;
     SetUnhandledExceptionFilter(ExceptionHandler);
-    
-    ThisProcess = GetCurrentProcess();
-    if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+    SwData.IntTimer = CreateWaitableTimer(NULL, 0, NULL);
+    if (SwData.IntTimer) {
+	ThisProcess = GetCurrentProcess();
+	if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+	    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
+	    if (SwitcherThread) {
+	  	D(printf("[KRN] Task switcher started\n"));
+	  	CloseHandle(SwitcherThread);
 #ifdef SLOW
-    	SwData.TimerPeriod = 5000;
+		TimerPeriod = 5000;
 #else
-        SwData.TimerPeriod = 1000/TimerPeriod;
+		TimerPeriod = 1000/TimerPeriod;
 #endif
-        SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
-    	if (SwitcherThread) {
-  	    D(printf("[KRN] Task switcher started"));
-  	    CloseHandle(SwitcherThread);
-  	    return 1;
-        }
-            D(else printf("[KRN] Failed to run task switcher thread\n");)
+		VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
+	  	return SetWaitableTimer(SwData.IntTimer, &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+	    }
+	        D(else printf("[KRN] Failed to run task switcher thread\n");)
+	}
+	    D(else printf("[KRN] failed to get thread handle\n");)
     }
-        D(else printf("[KRN] failed to get thread handle\n");)
+        D(else printf("[KRN] failed to create VBlank timer\n");)
     return 0;
 }
