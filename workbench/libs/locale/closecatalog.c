@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	GetCatalogStr(), OpenCatalog() 
+	GetCatalogStr(), OpenCatalogA() 
 
     INTERNALS
 

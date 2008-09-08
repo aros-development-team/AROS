@@ -50,7 +50,7 @@
     BUGS
 
     SEE ALSO
-	OpenCatalog(), CloseCatalog()
+	OpenCatalogA(), CloseCatalog()
 
     INTERNALS
 
