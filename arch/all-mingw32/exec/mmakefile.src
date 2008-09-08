@@ -1,16 +1,7 @@
 # $Id: mmakefile.src 20191 2003-11-24 22:03:42Z verhaegs $
 include $(TOP)/config/make.cfg
 
-#MM kernel-exec-mingw32 : kernel-exec-mingw32-setup
-
-#MM
-kernel-exec-mingw32-setup : $(GENINCDIR)/sigcore.h
-
-$(GENINCDIR)/sigcore.h : sigcore.h
-	%mkdirs_q $(GENINCDIR)
-	$(CP) sigcore.h $(GENINCDIR)/sigcore.h
-
-CFILES := cause disable enable preparecontext stackswap rawputchar reschedule
+CFILES := exec_init cause disable enable preparecontext stackswap rawputchar reschedule
 
 USER_CFLAGS := -I$(TOP)/rom/exec
 %build_archspecific \

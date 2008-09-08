@@ -179,7 +179,7 @@ int startup(struct TagItem *msg)
   /*
    * FIXME: This routine is part of exec.library, however it doesn't have an LVO
    * (it can't have one because exec.library is not initialized yet) and is called
-   * only from here. Probably it should be moved into kernel.resource
+   * only from here. Probably the code should be reorganized
    */
   SysBase = PrepareExecBase(mh);
   mykprintf("[Kernel] SysBase=%p mhFirst=%p\n",SysBase,mh->mh_First);
