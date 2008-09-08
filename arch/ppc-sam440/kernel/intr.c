@@ -26,10 +26,10 @@ AROS_LH4(void *, KrnAddIRQHandler,
     {
         /* Go to supervisor mode */
         goSuper();
-        
+
         handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
         D(bug("[KRN]   handle=%012p\n", handle));
-        
+
         if (handle)
         {
             handle->in_Handler = handler;
@@ -37,10 +37,10 @@ AROS_LH4(void *, KrnAddIRQHandler,
             handle->in_HandlerData2 = handlerData2;
             handle->in_type = it_interrupt;
             handle->in_nr = irq;
-            
+
             Disable();
             ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
-            
+
             if (irq < 32)
             {
                 wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
@@ -50,13 +50,13 @@ AROS_LH4(void *, KrnAddIRQHandler,
                 wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 32)));
                 wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
             }
-            
+
             Enable();
         }
-        
+
         goUser();
     }
-    
+
     return handle;
 
     AROS_LIBFUNC_EXIT
@@ -71,11 +71,11 @@ AROS_LH1(void, KrnRemIRQHandler,
     struct ExecBase *SysBase = getSysBase();
     struct IntrNode *h = handle;
     uint8_t irq = h->in_nr;
-    
+
     if (h && (h->in_type == it_interrupt))
     {
         goSuper();
-     
+
         Disable();
         REMOVE(h);
         if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
@@ -90,9 +90,9 @@ AROS_LH1(void, KrnRemIRQHandler,
             }
         }
         Enable();
-    
+
         Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
-        
+
         goUser();
     }
 
@@ -116,10 +116,10 @@ AROS_LH4(void *, KrnAddExceptionHandler,
     {
         /* Go to supervisor mode */
         goSuper();
-        
+
         handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
         D(bug("[KRN]   handle=%012p\n", handle));
-        
+
         if (handle)
         {
             handle->in_Handler = handler;
@@ -127,15 +127,15 @@ AROS_LH4(void *, KrnAddExceptionHandler,
             handle->in_HandlerData2 = handlerData2;
             handle->in_type = it_exception;
             handle->in_nr = irq;
-            
+
             Disable();
             ADDHEAD(&KernelBase->kb_Exceptions[irq], &handle->in_Node);
             Enable();
         }
-        
+
         goUser();
     }
-    
+
     return handle;
 
     AROS_LIBFUNC_EXIT
@@ -146,20 +146,20 @@ AROS_LH1(void, KrnRemExceptionHandler,
          struct KernelBase *, KernelBase, 8, Kernel)
 {
     AROS_LIBFUNC_INIT
-    
+
     struct ExecBase *SysBase = getSysBase();
     struct IntrNode *h = handle;
-    
+
     if (h && (h->in_type == it_exception))
     {
         goSuper();
-        
+
         Disable();
         REMOVE(h);
         Enable();
-    
+
         Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
-        
+
         goUser();
     }
 
@@ -190,13 +190,13 @@ AROS_LH0I(void, KrnIsSuper,
          struct KernelBase *, KernelBase, 12, Kernel)
 {
     AROS_LIBFUNC_INIT
-    
+
     register int retval asm ("r3");
-    
+
     asm volatile("sc":"=r"(retval):"0"(SC_ISSUPERSTATE):"memory");
 
     return retval;
-    
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -221,7 +221,7 @@ void intr_init()
 {
     D(bug("[KRN] Setting up exception handlers\n"));
     wrspr(IVPR, ((uint32_t)&__EXCEPTION_0_Prolog) & 0xffff0000);
-    
+
     wrspr(IVOR0, ((uint32_t)&__EXCEPTION_0_Prolog) & 0x0000fff0);
     wrspr(IVOR1, ((uint32_t)&__EXCEPTION_1_Prolog) & 0x0000fff0);
     wrspr(IVOR2, ((uint32_t)&__EXCEPTION_2_Prolog) & 0x0000fff0);
@@ -238,7 +238,7 @@ void intr_init()
     wrspr(IVOR13, ((uint32_t)&__EXCEPTION_13_Prolog) & 0x0000fff0);
     wrspr(IVOR14, ((uint32_t)&__EXCEPTION_14_Prolog) & 0x0000fff0);
     wrspr(IVOR15, ((uint32_t)&__EXCEPTION_15_Prolog) & 0x0000fff0);
-    
+
     /* Disable external interrupts completely */
     wrdcr(UIC0_ER, 0);
     wrdcr(UIC1_ER, 0);
@@ -302,7 +302,7 @@ void intr_init()
                   [irq]"i"(num) \
                   ); \
                  /* \
-                  * Registers %r0 to %r5 are now saved together with CPU state. Go to the \ 
+                  * Registers %r0 to %r5 are now saved together with CPU state. Go to the \
                   * trampoline code which will care about the rest. Adjust the stack frame pointer now, \
                   * or else it will be destroyed later by C code. \
                   */ \
@@ -312,12 +312,12 @@ void intr_init()
                   * Go to the trampoline code. Use long call within whole 4GB addresspace in order to \
                   * avoid any trouble in future. \
                   */ \
-                 asm volatile( "b __EXCEPTION_Trampoline\n\t"); 
+                 asm volatile( "b __EXCEPTION_Trampoline\n\t");
 
 void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    
+
     /* Clear the DIS bit - we have received decrementer exception */
     wrspr(TSR, TSR_DIS);
 //    D(bug("[KRN] Decrementer handler. Context @ %p. srr1=%08x\n", ctx, ctx->srr1));
@@ -332,7 +332,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
                 in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
         }
     }
-    
+
     core_ExitInterrupt(ctx);
 }
 
@@ -341,7 +341,18 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct ExecBase *SysBase = getSysBase();
-    
+
+    if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+    {
+        struct IntrNode *in, *in2;
+
+        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
+        {
+            if (in->in_Handler)
+                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
+        }
+    }
+
     D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
     if (SysBase)
     {
@@ -376,36 +387,39 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     {
         D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
     }
-    
-    D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
-    
-    while(1) {
-        wrmsr(rdmsr() | MSR_POW);
+
+    if (IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+    {
+        D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
+
+        while(1) {
+            wrmsr(rdmsr() | MSR_POW);
+        }
     }
-    
+
     core_LeaveInterrupt(ctx);
 }
 
 void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    
+
     uint32_t insn = *(uint32_t *)ctx->srr0;
-    
+
     /* SysBase access at 4UL? Occurs only with lwz instruction and DEAR=4 */
     if ((insn & 0xfc000000) == 0x80000000 && rdspr(DEAR) == 4)
     {
         int reg = (insn & 0x03e00000) >> 21;
-        
+
 //        D(bug("[KRN] Pagefault exception. Someone tries to get SysBase (%08x) from 0x00000004 into r%d. EVIL EVIL EVIL!\n",
 //              getSysBase(), reg));
 
         ctx->gpr[reg] = getSysBase();
         ctx->srr0 += 4;
-        
+
         core_LeaveInterrupt(ctx);
     }
-    else 
+    else
         generic_handler(ctx, exception, self);
 }
 
@@ -417,7 +431,7 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
     /*
      * Create partial context on the stack. It is impossible to save it fully since the
      * exception handlers have limited size. This code will do as much as possible and then
-     * jump to general trampoline... 
+     * jump to general trampoline...
      */
 
     PUT_INTR_TEMPLATE(0, generic_handler); /* crit */
@@ -554,7 +568,7 @@ static void __attribute__((used)) __core_LeaveInterrupt()
         [gpr30]"i"(offsetof(regs_t, gpr[30])),
         [gpr31]"i"(offsetof(regs_t, gpr[31]))
         );
-    
+
     asm volatile(
                  "lwz %%r11,%[gpr11](%%r3)      \n\t"
                  "lwz %%r0,%[srr0](%%r3)        \n\t"
