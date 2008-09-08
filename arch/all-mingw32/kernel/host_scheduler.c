@@ -191,6 +191,13 @@ void core_ExitInterrupt(CONTEXT *regs)
 
     if (SysBase)
     {
+        
+        if (--SysBase->Elapsed == 0)
+        {
+            SysBase->SysFlags |= 0x2000;
+            SysBase->AttnResched |= ARF_AttnSwitch;
+        }
+        
         /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt)
             core_Cause(SysBase);
