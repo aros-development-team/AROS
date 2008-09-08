@@ -42,23 +42,23 @@ void EClockUpdate(struct TimerBase *TimerBase)
     uint32_t time;
     uint32_t diff;
     int show = 0;
-    
+
     time = inl(GPT0_TBC);
     diff = (time - TimerBase->tb_prev_tick);
     TimerBase->tb_prev_tick = time;
-        
+
     TimerBase->tb_ticks_total += diff;
-    
+
     TimerBase->tb_ticks_sec += diff;
     TimerBase->tb_ticks_elapsed += diff;
-    
+
     if (TimerBase->tb_ticks_sec >= 66666666)
     {
         TimerBase->tb_ticks_sec -= 66666666;
         TimerBase->tb_CurrentTime.tv_secs++;
         //show = 1;
     }
-    
+
     if (TimerBase->tb_ticks_elapsed >= 66666666)
     {
         TimerBase->tb_ticks_elapsed -= 66666666;
@@ -84,16 +84,16 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
     struct timeval time;
     struct timerequest *tr;
     uint32_t current_time;
-    
+
     tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_WAITVBL]);
 
     if (tr)
-    {    
+    {
         time.tv_micro = tr->tr_time.tv_micro;
         time.tv_secs  = tr->tr_time.tv_secs;
 
         SubTime(&time, &TimerBase->tb_CurrentTime);
-    
+
         if ((LONG)time.tv_secs < 0)
         {
             delay = 0;
@@ -102,21 +102,21 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
         {
             if (time.tv_micro < 20000)
             {
-                if (delay > usec2tick(time.tv_micro)) 
+                if (delay > usec2tick(time.tv_micro))
                     delay = usec2tick(time.tv_micro);
             }
         }
     }
-    
+
     tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_VBLANK]);
 
     if (tr)
-    {    
+    {
         time.tv_micro = tr->tr_time.tv_micro;
         time.tv_secs  = tr->tr_time.tv_secs;
 
         SubTime(&time, &TimerBase->tb_Elapsed);
-    
+
         if ((LONG)time.tv_secs < 0)
         {
             delay = 0;
@@ -125,19 +125,19 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
         {
             if (time.tv_micro < 20000)
             {
-                if (delay > usec2tick(time.tv_micro)) 
+                if (delay > usec2tick(time.tv_micro))
                     delay = usec2tick(time.tv_micro);
             }
         }
     }
-    
+
     current_time = inl(GPT0_TBC);
     delay -= current_time - waste + corr;
-    
+
     if (delay < 100) delay = 100;
 
     tbc_expected = current_time + delay;
-    
+
     outl(delay, GPT0_DCT0);
 }
 
@@ -158,7 +158,7 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
 void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
     uint32_t startup_time = inl(GPT0_TBC);
-    
+
     if (inl(GPT0_DCIS) & GPT0_DCIS_DCIS)
     {
         struct timerequest *tr, *next;
@@ -172,7 +172,7 @@ void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
         {
             corr = ((int32_t)(tbc_achieved - tbc_expected))-1;
         }
-        
+
 
         /*
             Go through the "wait for x seconds" list and return requests
@@ -209,6 +209,11 @@ void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
                     timer_addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], tr);
 
+                    if (--SysBase->Elapsed == 0)
+                    {
+                    	SysBase->SysFlags |= 0x2000;
+                    	SysBase->AttnResched |= 0x80;
+                    }
                 }
                 else
                 {
@@ -228,7 +233,7 @@ void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
                 break;
             }
         }
-    
+
         /*
             The other this is the "wait until a specified time". Here a request
             is complete if the time we are waiting for is before the current time.
