@@ -5,6 +5,9 @@
     Desc: Wait for some signal.
     Lang: english
 */
+#define DEBUG 1
+
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
@@ -61,6 +64,7 @@
     /* Get pointer to current task - I'll need it very often */
     me = FindTask (NULL);
 
+    D(bug("[Exec] Wait(0x%08lX) called by %s\n", signalSet, me->tc_Node.ln_Name));
     /* Protect the task lists against access by other tasks. */
     Disable();
 
@@ -69,6 +73,7 @@
     {
         BYTE old_TDNestCnt;
 	
+	D(bug("[Exec] Signals are not set, putting the task to sleep\n"));
 	/* Set the wait signal mask */
 	me->tc_SigWait=signalSet;
 

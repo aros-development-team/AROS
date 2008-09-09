@@ -24,8 +24,6 @@
 
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
 extern ULONG ** Exec_RomTagScanner(struct ExecBase*,UWORD**);
-extern void Exec_Exception();
-extern void Exec_Dispatch();
 
 static struct TagItem *BootMsg;
 struct HostInterface *HostIFace;
