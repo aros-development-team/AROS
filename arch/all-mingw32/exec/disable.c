@@ -13,8 +13,6 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include "../kernel/kernel_intern.h"
-
 #undef  Exec
 #ifdef UseExecstubs
 #    define Exec _Exec

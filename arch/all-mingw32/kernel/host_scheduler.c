@@ -92,6 +92,8 @@ void core_Dispatch(CONTEXT *regs)
         CopyMemory(regs, GetIntETask(task)->iet_Context, sizeof(CONTEXT));
     }
     
+    if ((char )SysBase->IDNestCnt < 0)
+        Ints_Enabled = 1;
     /* Leave interrupt and jump to the new task */
 }
 
