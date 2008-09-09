@@ -16,7 +16,6 @@
 #include <proto/kernel.h>
 
 #include <exec_intern.h>
-#include "../kernel/kernel_intern.h"
 
 AROS_LH1(void, Cause,
          AROS_LHA(struct Interrupt *, softint, A1),

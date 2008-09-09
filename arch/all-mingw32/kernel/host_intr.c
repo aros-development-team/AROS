@@ -90,19 +90,24 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     HANDLE IntEvent;
     DWORD obj;
     CONTEXT MainCtx;
+    D(BOOL res);
 
     for (;;) {
         WaitForSingleObject(args->IntTimer, INFINITE);
-        DS(printf("[KRN] Timer interrupt\n"));
-    	SuspendThread(args->MainThread);
+        DS(printf("[Task switcher] Timer interrupt\n"));
+    	DS(res =) SuspendThread(args->MainThread);
+    	DS(printf("[Task switcher] Suspend thread result: %ld\n", res));
     	if (Ints_Enabled) {
-    	    GetThreadContext(args->MainThread, &MainCtx);
+    	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
+    	    DS(printf("[Task switcher] Get context result: %ld\n", res));
     	    user_handler(0);
     	    core_ExitInterrupt(&MainCtx);
-    	    SetThreadContext(args->MainThread, &MainCtx);
+    	    D(res =)SetThreadContext(args->MainThread, &MainCtx);
+    	    DS(printf("[Task switcher] Set context result: %ld\n", res));
     	}
             DS(else printf("[KRN] Interrupts are disabled\n"));
-        ResumeThread(args->MainThread);
+        DS(res =) ResumeThread(args->MainThread);
+        DS(printf("[Task switcher] Resume thread result: %ld\n", res));
     }
     return 0;
 }
