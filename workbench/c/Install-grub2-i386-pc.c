@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: install-pc.c 27903 2008-02-25 21:36:33Z agreppin $
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    $Id$
 */
 /******************************************************************************
 
@@ -899,20 +899,86 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
 }
 
 /* Collects the list of blocks that a file occupies on SFS filesystem*/
-ULONG collectBlockListSFS(struct Volume *volume, ULONG block,  struct BlockNode *blocklist, CONST_STRPTR filename)
+ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct BlockNode *blocklist)
 {
     ULONG retval, first_block = 0;
     WORD blk_count = 0, count = 0;
+    ULONG block_objectnoderoot = 0, nextblock = 0, block_sfsobjectcontainer = 0;
     UWORD i = 0;
-    char * sfsobjectname = NULL;
+    UBYTE * tmpBytePtr = NULL;
 
-    D(bug("[install] collectBlockListSFS(%x, %ld, %ld, %x)\n", volume, volume->startblock, block, blocklist));
+    D(bug("[install] collectBlockListSFS(startblock: %ld, objectnode: %ld)\n", volume->startblock, objectnode));
     D(bug("[install] collectBlockListSFS(%ld, %d, %d)\n", volume->countblock, volume->SizeBlock, volume->partnum));
+    /* Description of actions:
+     * 1. Load SFS root block
+     * 2. From root block find the block containing root of objectnodes
+     * 3. Traverse the tree of objectnodes until block of objectdescriptor is found
+     * 4. Search the objectdescriptor for entry matching given objectnode (TODO: read 
+     *    all blocks of objectdescriptor not just the first one) - from entry read the
+     *    first block of file    
+     */
  
-    /* block is the relative block address (from start of volume) of sfs container having information about file */
-   
+    /* Read root block */
+	retval = _readwriteBlock(volume, 0, volume->blockbuffer, volume->SizeBlock<<2,
+			volume->readcmd);
+
+    if (retval)
+    {
+        D(bug("[install] collectBlockListSFS: ERROR reading root block (error: %ld)\n", retval));
+		printf("ReadError %ld\n", retval);
+		return 0;
+	}
+
+    /* Get block pointers from root block */
+    block_objectnoderoot = AROS_BE2LONG(volume->blockbuffer[28]); /* objectnoderoot - 29th ULONG */
+    
+    D(bug("[install] collectBlockListSFS: objectnoderoot: %ld\n", block_objectnoderoot));
+
+
+
+    /* Find the SFSObjectContainer block for given objectnode */
+    /* Reference: SFS, nodes.c, findnode */
+    nextblock = block_objectnoderoot;
+    D(bug("[install] collectBlockListSFS: searching in nextblock %d for sfsobjectcontainer for objectnode %ld\n", 
+        nextblock, objectnode));
+    while(1)
+    {
+        _readwriteBlock(volume, nextblock, volume->blockbuffer, volume->SizeBlock<<2,
+			volume->readcmd);
+    
+        /* If nodes == 1, we are at the correct nodecontainer, else go to next nodecontainer */
+        if (AROS_BE2LONG(volume->blockbuffer[4]) == 1)
+        {
+            /* read entry from position: be_node + sizeof(fsObjectNode) * (objectnode - be_nodenumber) */
+            tmpBytePtr = (UBYTE*)volume->blockbuffer;
+            ULONG index = 20 + 10 * (objectnode - AROS_BE2LONG(volume->blockbuffer[3]));
+            block_sfsobjectcontainer = AROS_BE2LONG(((ULONG*)(tmpBytePtr + index))[0]);
+            D(bug("[install] collectBlockListSFS: leaf found in nextblock %ld, sfsobjectcontainer block is %ld \n", 
+                nextblock, block_sfsobjectcontainer));
+            break;
+        }
+        else
+        {
+            UWORD containerentry = 
+                (objectnode - AROS_BE2LONG(volume->blockbuffer[3]))/AROS_BE2LONG(volume->blockbuffer[4]);
+            nextblock = AROS_BE2LONG(volume->blockbuffer[containerentry + 5]) >> 4; /* 9-5 (2^9 = 512) */;
+            D(bug("[install] collectBlockListSFS: check next block %ld\n", nextblock));
+        }
+    }
+
+    if (block_sfsobjectcontainer == 0)
+    {
+        D(bug("[install] collectBlockListSFS: SFSObjectContainer not found\n"));
+		printf("SFSObjectContainer not found\n");
+		return 0;
+    }
+
+
+
+    /* Find the SFSObject in SFSObjectContainer for given objectnode */
+    
     /* Read SFS container */
-	retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
+	retval = _readwriteBlock(volume, block_sfsobjectcontainer, volume->blockbuffer, volume->SizeBlock<<2,
 			volume->readcmd);
 
     if (retval)
@@ -926,47 +992,47 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG block,  struct BlockNode 
      * The first offset comes from :
      * sizeof(sfsblockheader) = uint32 + uint32 + uint32 (field of sfsobjectcontainer)
      * parent, next, previous = uint32 + uint32 + uint32 (fields of sfsobjectcontainers)
-     * owneruid, ownergid, objectnode, protection, data, size, datemodified, bits =
-     * uint16 + uint16 + uint32 + uint32 + uint32 + uint32 + uint32 + uint8 
-     * (fields of sfsobject which is a field in sfsobject container)
      */
-    sfsobjectname = ((char*)volume->blockbuffer) + 12 + 12 + 25;
+    tmpBytePtr = ((UBYTE*)volume->blockbuffer) + 12 + 12; /* tmpBytePtr points to first object in container */
 
-    while (AROS_BE2LONG(((ULONG*)(sfsobjectname - 21))[0]) > 0) /* check on the objectnode field */
+    while (AROS_BE2LONG(((ULONG*)(tmpBytePtr + 4))[0]) > 0) /* check on the objectnode field */
     {
         
-
-        D(bug("[install] collectBlockListSFS: sfsobjectname: %s\n", sfsobjectname));
-
-        /* Compare names */
-        if (!Stricmp(filename, (CONST_STRPTR)sfsobjectname))
+        /* Compare objectnode */
+        if (AROS_BE2LONG(((ULONG*)(tmpBytePtr + 4))[0]) == objectnode)
         {
             /* Found! */
-            first_block = AROS_BE2LONG(((ULONG*)(sfsobjectname - 13))[0]); /* data */
-            D(bug("[install] collectBlockListSFS: %s first block is %ld\n", filename, first_block));
+            first_block = AROS_BE2LONG(((ULONG*)(tmpBytePtr + 12))[0]); /* data */
+            D(bug("[install] collectBlockListSFS: first block is %ld\n", first_block));
             break;
         }
         
-        /* Move to next name */
+        /* Move to next object */
         /* Find end of name and end of comment */
-	    for (i = 2; i > 0; sfsobjectname++, count++)
-		    if (*sfsobjectname == '\0')
+        tmpBytePtr += 25; /* Point to name */
+        count = 0;
+	    for (i = 2; i > 0; tmpBytePtr++, count++)
+		    if (*tmpBytePtr == '\0')
 			    i--;
 
         /* Correction for aligment */
         if ((count & 0x01) == 0 )
-            sfsobjectname++;
-
-        /* Point to next name */
-        sfsobjectname += 25;
+            tmpBytePtr++;
     }
 
     if (first_block == 0)
     {
-        D(bug("[install] collectBlockListSFS: file not found: %s\n", filename));
-		printf("File not found: %s\n", filename);
+        D(bug("[install] collectBlockListSFS: First block not found\n"));
+		printf("First block not found\n");
 		return 0;
     }
+
+
+
+
+
+
+
 
     /* TODO: Fill blocks list */
     /* XXX: Hack */
@@ -974,6 +1040,13 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG block,  struct BlockNode 
 	blocklist[blk_count].sector_lo = first_block + 1;
 	blocklist[blk_count].sector_hi = 0;
 	blocklist[blk_count].count = 71;
+
+
+
+
+
+
+
 
 
     /* Correct blocks for volume start */
@@ -1102,7 +1175,7 @@ ULONG updateCoreIMG(CONST_STRPTR grubpath,     /* path of grub dir */
                 {
                     D(bug("[install] core.img on SFS file system\n"));
 				    block = collectBlockListSFS
-					    (volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128], fib.fib_FileName);
+					    (volume, fib.fib_DiskKey, (struct BlockNode *)&buffer[128]);
                 }
                 else 
                 if ((volume->dos_id == ID_FFS_DISK) || (volume->dos_id == ID_INTER_DOS_DISK) ||
