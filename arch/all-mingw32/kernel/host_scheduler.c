@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/system.h>
 #include <windows.h>
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
@@ -15,6 +17,7 @@ typedef unsigned char UBYTE;
 #include <hardware/intbits.h>
 #include "etask.h"
 #include "kernel_intern.h"
+#include "host_debug.h"
 
 /* We have to redefine these flags here because including exec_intern.h causes conflicts
    between dos.h and WinAPI headers. This needs to be fixed - Pavel Fedin <sonic_amiga@rambler.ru */
@@ -58,7 +61,7 @@ void core_Dispatch(CONTEXT *regs)
             SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
             
-            DS(printf("[KRN] TaskReady list empty. Sleeping for a while...\n"));
+            DS(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
             /* Sleep almost forever ;) */
             
             if (SysBase->SysFlags & SFF_SoftInt)
@@ -77,7 +80,7 @@ void core_Dispatch(CONTEXT *regs)
         task->tc_State = TS_RUN;
         SysBase->IDNestCnt = task->tc_IDNestCnt;
 
-        DS(printf("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
+        DS(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
         /* Handle tasks's flags */
         if (task->tc_Flags & TF_EXCEPT)
@@ -108,7 +111,7 @@ void core_Switch(CONTEXT *regs)
     
         task = SysBase->ThisTask;
         
-        DS(printf("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
+        DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
         /* Copy current task's context into the ETask structure */
         CopyMemory(GetIntETask(task)->iet_Context, regs, sizeof(CONTEXT));
@@ -175,7 +178,7 @@ void core_Schedule(CONTEXT *regs)
          * Put the task into the TaskReady list.
          */
         task->tc_State = TS_READY;
-        Enqueue(&SysBase->TaskReady, task);
+        Enqueue(&SysBase->TaskReady, (struct Node *)task);
      }
     
     /* Select new task to run */
@@ -192,26 +195,26 @@ void core_ExitInterrupt(CONTEXT *regs)
     struct ExecBase *SysBase = *SysBasePtr;
     char TDNestCnt;
 
-    DS(printf("[Scheduler] core_ExitInterrupt\n"));
+    DS(bug("[Scheduler] core_ExitInterrupt\n"));
     if (SysBase)
     {
-        DS(printf("[Scheduler] Elapsed: %d\n", SysBase->Elapsed));
+        DS(bug("[Scheduler] Elapsed: %d\n", SysBase->Elapsed));
         if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
         {
-            DS(printf("[Scheduler] Setting ARF_AttnSwitch\n"));
+            DS(bug("[Scheduler] Setting ARF_AttnSwitch\n"));
             SysBase->SysFlags |= 0x2000;
             SysBase->AttnResched |= ARF_AttnSwitch;
         }
         
         /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt) {
-            DS(printf("[Scheduler] Causing SoftInt\n"));
+            DS(bug("[Scheduler] Causing SoftInt\n"));
             core_Cause(SysBase);
         }
     
         /* If task switching is disabled, leave immediatelly */
         TDNestCnt = SysBase->TDNestCnt; /* BYTE is unsigned in Windows so we can't use SysBase->TDNestCnt directly */
-        DS(printf("[Scheduler] TDNestCnt is %d\n", TDNestCnt));
+        DS(bug("[Scheduler] TDNestCnt is %d\n", TDNestCnt));
         if (TDNestCnt < 0)
         {
             /* 
@@ -220,7 +223,7 @@ void core_ExitInterrupt(CONTEXT *regs)
              */
             if (SysBase->AttnResched & ARF_AttnSwitch)
             {
-                DS(printf("[Scheduler] Rescheduling\n"));
+                DS(bug("[Scheduler] Rescheduling\n"));
                 core_Schedule(regs);
             }
         }

@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/system.h>
 #include <windows.h>
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
@@ -13,6 +15,7 @@ typedef unsigned char UBYTE;
 #include <exec/execbase.h>
 #include "kernel_intern.h"
 #include "syscall.h"
+#include "host_debug.h"
 
 #define DS(x) x
 #define SLOW
@@ -90,24 +93,30 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     HANDLE IntEvent;
     DWORD obj;
     CONTEXT MainCtx;
-    D(BOOL res);
+    DS(DWORD res);
 
     for (;;) {
         WaitForSingleObject(args->IntTimer, INFINITE);
-        DS(printf("[Task switcher] Timer interrupt\n"));
+        DS(OutputDebugString("[Task switcher] Timer interrupt\n"));
     	DS(res =) SuspendThread(args->MainThread);
-    	DS(printf("[Task switcher] Suspend thread result: %ld\n", res));
+    	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	if (Ints_Enabled) {
-    	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
-    	    DS(printf("[Task switcher] Get context result: %ld\n", res));
     	    user_handler(0);
+    	    MainCtx.ContextFlags = CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS;
+    	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
+    	    DS(bug("[Task switcher] Get context result: %lu\n", res));
+    	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
+    	    DS(PrintCPUContext(&MainCtx));
     	    core_ExitInterrupt(&MainCtx);
-    	    D(res =)SetThreadContext(args->MainThread, &MainCtx);
-    	    DS(printf("[Task switcher] Set context result: %ld\n", res));
+    	    DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
+    	    DS(PrintCPUContext(&MainCtx));
+    	    MainCtx.ContextFlags = CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS;
+    	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
+    	    DS(bug("[Task switcher] Set context result: %lu\n", res));
     	}
             DS(else printf("[KRN] Interrupts are disabled\n"));
         DS(res =) ResumeThread(args->MainThread);
-        DS(printf("[Task switcher] Resume thread result: %ld\n", res));
+        DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     }
     return 0;
 }

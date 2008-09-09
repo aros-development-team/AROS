@@ -10,8 +10,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-//#include "syscall.h"
-
 #define STACK_SIZE 4096
 
 #define EXCEPTIONS_NUM 2
@@ -75,11 +73,10 @@ static inline void bug(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, NULL); /* Warning! It's a HACK (KernelBase == NULL)!!! */
+    AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, KernelBase);
     va_end(args);
 }
 #else
-#define bug printf
 extern unsigned char Ints_Enabled;
 extern struct ExecBase **SysBasePtr;
 extern struct KernelBase **KernelBasePtr;
