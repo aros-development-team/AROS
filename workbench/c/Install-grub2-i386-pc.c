@@ -903,8 +903,9 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
 {
     ULONG retval, first_block = 0;
     WORD blk_count = 0, count = 0;
-    ULONG block_objectnoderoot = 0, nextblock = 0, block_sfsobjectcontainer = 0;
-    UWORD i = 0;
+    ULONG block_objectnoderoot = 0, block_sfsobjectcontainer = 0, block_extentbnoderoot = 0;
+    ULONG nextblock = 0, searchedblock = 0;
+    WORD i = 0;
     UBYTE * tmpBytePtr = NULL;
 
     D(bug("[install] collectBlockListSFS(startblock: %ld, objectnode: %ld)\n", volume->startblock, objectnode));
@@ -913,9 +914,14 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
      * 1. Load SFS root block
      * 2. From root block find the block containing root of objectnodes
      * 3. Traverse the tree of objectnodes until block of objectdescriptor is found
-     * 4. Search the objectdescriptor for entry matching given objectnode (TODO: read 
-     *    all blocks of objectdescriptor not just the first one) - from entry read the
-     *    first block of file    
+     * 4. Search the objectdescriptor for entry matching given objectnode from entry read the
+     *    first block of file
+     * 5. Having first file block, find the extentbnode for that block and read number 
+     *    of blocks. Put first block and number of blocks into BlockList.
+     * 6. If the file has more blocks than this exntentbnode hold, find first file
+     *    block in next extentbnode. Go to step 5.
+     * Use the SFS source codes for reference. They operate on structures not pointers
+     * and are much easier to understand.
      */
  
     /* Read root block */
@@ -931,13 +937,15 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
 
     /* Get block pointers from root block */
     block_objectnoderoot = AROS_BE2LONG(volume->blockbuffer[28]); /* objectnoderoot - 29th ULONG */
+    block_extentbnoderoot = AROS_BE2LONG(volume->blockbuffer[27]); /* extentbnoderoot - 28th ULONG */
     
-    D(bug("[install] collectBlockListSFS: objectnoderoot: %ld\n", block_objectnoderoot));
+    D(bug("[install] collectBlockListSFS: objectnoderoot: %ld, extentbnoderoot %ld\n", 
+        block_objectnoderoot, block_extentbnoderoot));
 
 
 
     /* Find the SFSObjectContainer block for given objectnode */
-    /* Reference: SFS, nodes.c, findnode */
+    /* Reference: SFS, nodes.c, function findnode */
     nextblock = block_objectnoderoot;
     D(bug("[install] collectBlockListSFS: searching in nextblock %d for sfsobjectcontainer for objectnode %ld\n", 
         nextblock, objectnode));
@@ -976,48 +984,56 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
 
 
     /* Find the SFSObject in SFSObjectContainer for given objectnode */
-    
-    /* Read SFS container */
-	retval = _readwriteBlock(volume, block_sfsobjectcontainer, volume->blockbuffer, volume->SizeBlock<<2,
-			volume->readcmd);
-
-    if (retval)
+    first_block = 0;
+    while((block_sfsobjectcontainer != 0) && (first_block == 0))
     {
-        D(bug("[install] collectBlockListSFS: ERROR reading block (error: %ld)\n", retval));
-		printf("ReadError %ld\n", retval);
-		return 0;
-	}
-    /* Iterate over SFS objects and match the name */
-    /* 
-     * The first offset comes from :
-     * sizeof(sfsblockheader) = uint32 + uint32 + uint32 (field of sfsobjectcontainer)
-     * parent, next, previous = uint32 + uint32 + uint32 (fields of sfsobjectcontainers)
-     */
-    tmpBytePtr = ((UBYTE*)volume->blockbuffer) + 12 + 12; /* tmpBytePtr points to first object in container */
+        /* Read next SFS container block */
+	    retval = _readwriteBlock(volume, block_sfsobjectcontainer, volume->blockbuffer, volume->SizeBlock<<2,
+			    volume->readcmd);
 
-    while (AROS_BE2LONG(((ULONG*)(tmpBytePtr + 4))[0]) > 0) /* check on the objectnode field */
-    {
-        
-        /* Compare objectnode */
-        if (AROS_BE2LONG(((ULONG*)(tmpBytePtr + 4))[0]) == objectnode)
+        if (retval)
         {
-            /* Found! */
-            first_block = AROS_BE2LONG(((ULONG*)(tmpBytePtr + 12))[0]); /* data */
-            D(bug("[install] collectBlockListSFS: first block is %ld\n", first_block));
-            break;
+            D(bug("[install] collectBlockListSFS: ERROR reading block (error: %ld)\n", retval));
+		    printf("ReadError %ld\n", retval);
+		    return 0;
+	    }
+
+        /* Iterate over SFS objects and match the objectnode */
+        /* 
+         * The first offset comes from :
+         * sizeof(sfsblockheader) = uint32 + uint32 + uint32 (field of sfsobjectcontainer)
+         * parent, next, previous = uint32 + uint32 + uint32 (fields of sfsobjectcontainers)
+         */
+        tmpBytePtr = ((UBYTE*)volume->blockbuffer) + 12 + 12; /* tmpBytePtr points to first object in container */
+
+        while (AROS_BE2LONG(((ULONG*)(tmpBytePtr + 4))[0]) > 0) /* check on the objectnode field */
+        {
+            
+            /* Compare objectnode */
+            if (AROS_BE2LONG(((ULONG*)(tmpBytePtr + 4))[0]) == objectnode)
+            {
+                /* Found! */
+                first_block = AROS_BE2LONG(((ULONG*)(tmpBytePtr + 12))[0]); /* data */
+                D(bug("[install] collectBlockListSFS: first block is %ld\n", first_block));
+                break;
+            }
+            
+            /* Move to next object */
+            /* Find end of name and end of comment */
+            tmpBytePtr += 25; /* Point to name */
+            count = 0;
+	        for (i = 2; i > 0; tmpBytePtr++, count++)
+		        if (*tmpBytePtr == '\0')
+			        i--;
+
+            /* Correction for aligment */
+            if ((count & 0x01) == 0 )
+                tmpBytePtr++;
         }
         
-        /* Move to next object */
-        /* Find end of name and end of comment */
-        tmpBytePtr += 25; /* Point to name */
-        count = 0;
-	    for (i = 2; i > 0; tmpBytePtr++, count++)
-		    if (*tmpBytePtr == '\0')
-			    i--;
-
-        /* Correction for aligment */
-        if ((count & 0x01) == 0 )
-            tmpBytePtr++;
+        /* Move to next sfs object container block */
+        block_sfsobjectcontainer =  AROS_BE2LONG(volume->blockbuffer[4]); /* next field */       
+        
     }
 
     if (first_block == 0)
@@ -1029,24 +1045,97 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
 
 
 
+    /* First file block found. Find all blocks of file */
+    searchedblock = first_block;
+    blk_count = 0;
 
+    while(1)
+    {
+        nextblock = block_extentbnoderoot;
+        UBYTE * BNodePtr = NULL;
+        
+        while(1)
+        {
+            /* Find the extentbnode for this block */
 
+            D(bug("[install] collectBlockListSFS: searching in nextblock %d for extentbnode for block %ld\n", 
+                nextblock, searchedblock));
 
+            UBYTE * BTreeContainerPtr = NULL;
+            BNodePtr = NULL;
 
+            _readwriteBlock(volume, nextblock, volume->blockbuffer, volume->SizeBlock<<2,
+			    volume->readcmd);
+            
+            BTreeContainerPtr = (UBYTE*)(volume->blockbuffer + 3); /* Starts right after the header */
 
-    /* TODO: Fill blocks list */
-    /* XXX: Hack */
-    blk_count = -1;
-	blocklist[blk_count].sector_lo = first_block + 1;
-	blocklist[blk_count].sector_hi = 0;
-	blocklist[blk_count].count = 71;
+            D(bug("[install] collectBlockListSFS: tree container nodecount: %d\n", 
+                AROS_BE2WORD(((UWORD*)BTreeContainerPtr)[0])));
 
+            for (i = AROS_BE2WORD(((UWORD*)BTreeContainerPtr)[0]) - 1; i >=0; i--) /* Start from last element */
+            {
+                /* Read the BNode */
+                tmpBytePtr = BTreeContainerPtr + 4 + i * BTreeContainerPtr[3];
 
+                if (AROS_BE2LONG(((ULONG*)(tmpBytePtr))[0]) <= searchedblock) /* Check on the key field */
+                {
+                    BNodePtr = tmpBytePtr;
+                    break;
+                }
+            }
+            
+            /* Fail if BNodePtr still NULL */
+            if (BNodePtr == NULL)
+            {
+                D(bug("[install] collectBlockListSFS: Failed to travers extentbnode tree.\n"));
+		        printf("Failed to travers extentbnode tree.\n");
+		        return 0;
+            }
 
+            /* If we are at the leaf, stop */
+            if (BTreeContainerPtr[2])
+                break;
 
+            /* Else search further */
+            nextblock = AROS_BE2LONG(((ULONG*)(BNodePtr))[1]); /* data / next field */
+        }
 
+        /* Found. Add BlockList entry */
+        D(bug("[install] collectBlockListSFS: extentbnode for block %ld found. Block count: %d\n", 
+            searchedblock, AROS_BE2WORD(((UWORD*)(BNodePtr + 12))[0])));
 
+        /* Add blocklist entry */
+        blk_count--;
 
+        /* TODO: Check if we still have spece left to add data to BlockList */
+	    blocklist[blk_count].sector_lo = searchedblock;
+	    blocklist[blk_count].sector_hi = 0;
+	    blocklist[blk_count].count = AROS_BE2WORD(((UWORD*)(BNodePtr + 12))[0]);
+
+        /* Handling of special situations */
+        if (searchedblock == first_block)
+        { 
+            /* Writting first pack of blocks. Pointer needs to point to second file block */
+	        blocklist[blk_count].sector_lo++;
+	        blocklist[blk_count].count--;
+            if (blocklist[blk_count].count == 0)
+            {
+                /* This means that the first pack of blocks contained only one block - first block */
+                /* Since the first blocklist needs to start at second file block, 'reset' the blk_count */
+                /* so that next iteration will overwrite the current results */
+                blk_count++;
+            }
+        }
+        
+        /* Are there more blocks to read? */
+        if (AROS_BE2LONG(((ULONG*)(BNodePtr))[1]) == 0)
+        {
+            D(bug("[install] All blocks read!\n"));
+            break;
+        }
+        else
+            searchedblock = AROS_BE2LONG(((ULONG*)(BNodePtr))[1]); /* data / next field */
+    }
 
 
     /* Correct blocks for volume start */
