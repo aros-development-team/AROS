@@ -696,7 +696,7 @@ IPTR Install__MUIM_IC_NextStep
 	case EPartitioningStage:
 
         get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
-#if 1 /* GRUB == 1 */ /* TEMP: disable fs selection for SYS with GRUB2 */
+#if GRUB == 1 
         /* Warn user about partitiong DH0: to non FFS-Intl filesystem on GRUB */
         if ((int)option == 0 || (int)option == 1)
         {
@@ -1632,6 +1632,7 @@ localecopydone:
 			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub",
 			boot_Device, boot_Unit, dest_Path);
+        Delay(250); /* Delay so that SFS buffers can be written to disk */
 #elif GRUB == 1
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
@@ -2789,7 +2790,7 @@ int main(int argc,char *argv[])
 		NULL
 	};
 
-#if 0 /* GRUB == 2 */ /* TEMP: disable fs selection for SYS with GRUB2 */
+#if GRUB == 2
     cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 1, End;
 #else
     cycle_fstypesys = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, FALSE, MUIA_Cycle_Active, 0, End;
