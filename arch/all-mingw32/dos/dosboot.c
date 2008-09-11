@@ -5,6 +5,7 @@
     Desc: Boot your operating system.
     Lang: english
 */
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <exec/alerts.h>
@@ -149,11 +150,8 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 	{ TAG_END, }
     };
     
-     kprintf("[DosBoot] spawning boot process\n");
-     
-   for (;;); /* TODO: we halt here in order to test scheduler */
-
-   if( CreateNewProc( bootprocess ) == NULL )
+    D(kprintf("[DosBoot] spawning boot process\n"));
+    if( CreateNewProc( bootprocess ) == NULL )
     {
 	kprintf
         (

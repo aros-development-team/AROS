@@ -12,7 +12,84 @@
 #include <errno.h>
 
 #include "etask.h"
-#include "winapi.h"
+
+/* This was taken from Mingw32's w32api/winnt.h */
+#ifdef __i386__
+#define SIZE_OF_80387_REGISTERS	80
+#define CONTEXT_i386	0x10000
+#define CONTEXT_i486	0x10000
+#define CONTEXT_CONTROL	(CONTEXT_i386|0x00000001L)
+#define CONTEXT_INTEGER	(CONTEXT_i386|0x00000002L)
+#define CONTEXT_SEGMENTS	(CONTEXT_i386|0x00000004L)
+#define CONTEXT_FLOATING_POINT	(CONTEXT_i386|0x00000008L)
+#define CONTEXT_DEBUG_REGISTERS	(CONTEXT_i386|0x00000010L)
+#define CONTEXT_EXTENDED_REGISTERS (CONTEXT_i386|0x00000020L)
+#define CONTEXT_FULL	(CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_SEGMENTS)
+#define MAXIMUM_SUPPORTED_EXTENSION  512
+typedef struct _FLOATING_SAVE_AREA {
+	IPTR	ControlWord;
+	IPTR	StatusWord;
+	IPTR	TagWord;
+	IPTR	ErrorOffset;
+	IPTR	ErrorSelector;
+	IPTR	DataOffset;
+	IPTR	DataSelector;
+	UBYTE	RegisterArea[80];
+	IPTR	Cr0NpxState;
+} FLOATING_SAVE_AREA;
+typedef struct _CONTEXT {
+	IPTR	ContextFlags;
+	IPTR	Dr0;
+	IPTR	Dr1;
+	IPTR	Dr2;
+	IPTR	Dr3;
+	IPTR	Dr6;
+	IPTR	Dr7;
+	FLOATING_SAVE_AREA FloatSave;
+	IPTR	SegGs;
+	IPTR	SegFs;
+	IPTR	SegEs;
+	IPTR	SegDs;
+	IPTR	Edi;
+	IPTR	Esi;
+	IPTR	Ebx;
+	IPTR	Edx;
+	IPTR	Ecx;
+	IPTR	Eax;
+	IPTR	Ebp;
+	IPTR	Eip;
+	IPTR	SegCs;
+	IPTR	EFlags;
+	IPTR	Esp;
+	IPTR	SegSs;
+	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
+} CONTEXT;
+
+#define PRINT_CPUCONTEXT(ctx) \
+	kprintf ("    ContextFlags: 0x%08lX\n" \
+		 "    ESP=%08lx  EBP=%08lx  EIP=%08lx\n" \
+		 "    EAX=%08lx  EBX=%08lx  ECX=%08lx  EDX=%08lx\n" \
+		 "    EDI=%08lx  ESI=%08lx  EFLAGS=%08lx\n" \
+	    , ctx->ContextFlags \
+	    , ctx->Esp \
+	    , ctx->Ebp \
+	    , ctx->Eip \
+	    , ctx->Eax \
+	    , ctx->Ebx \
+	    , ctx->Ecx \
+	    , ctx->Edx \
+	    , ctx->Edi \
+	    , ctx->Esi \
+	    , ctx->EFlags \
+      );
+
+#define PREPARE_INITIAL_CONTEXT(ctx, sp, pc) ctx->Ebp = 0;			 \
+					     ctx->Eip = (IPTR)pc;		 \
+					     ctx->Esp = (IPTR)sp;		 \
+					     ctx->ContextFlags = CONTEXT_CONTROL;
+#else
+#error Unsupported CPU type
+#endif
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
@@ -20,53 +97,6 @@
 
 #define SP_TYPE		IPTR
 
-/* this is from mingw32's w32api/winnt.h */
-#ifdef __i386__
-#define R0(context)     ((context)->Eax)
-#define R1(context)     ((context)->Ebx)
-#define R2(context)     ((context)->Ecx)
-#define R3(context)     ((context)->Edx)
-#define R4(context)     ((context)->Edi)
-#define R5(context)     ((context)->Esi)
-#define R6(context)     ((context)->EFlags)
-
-#define FP(context)     ((context)->Ebp)
-#define PC(context)     ((context)->Eip)
-#define SP(context)     ((context)->Esp)
-
-#define FPSTATE(context) ((context)->FloatSave)
-#else
-#error Unsupported CPU
-#endif
-
-#define GetCpuContext(task)	((CONTEXT *)(GetIntETask(task)->iet_Context))
 #define GetSP(task)		(*(SP_TYPE **)(&task->tc_SPReg))
-
-#define PREPARE_INITIAL_FRAME(sp,startpc)          \
-    do {                                           \
-        FP(GetCpuContext(task)) = 0;               \
-        PC(GetCpuContext(task)) = (IPTR)(startpc); \
-        SP(GetCpuContext(task)) = (IPTR)(sp);	   \
-    } while (0)
-
-#define PREPARE_INITIAL_CONTEXT(task,startpc)      \
-    do {                                           \
-    } while (0)
-
-#define PRINT_CPUCONTEXT(task) \
-	kprintf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , (ULONG)(GetSP(task)) \
-	    , FP(GetCpuContext(task)) \
-	    , PC(GetCpuContext(task)) \
-	    , R0(GetCpuContext(task)) \
-	    , R1(GetCpuContext(task)) \
-	    , R2(GetCpuContext(task)) \
-	    , R3(GetCpuContext(task)) \
-	    , R4(GetCpuContext(task)) \
-	    , R5(GetCpuContext(task)) \
-	    , R6(GetCpuContext(task)) \
-      );
 
 #endif /* _CPUCONTEXT_H */
