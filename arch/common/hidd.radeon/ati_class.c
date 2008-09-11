@@ -565,7 +565,7 @@ OOP_Object *METHOD(ATI, Root, New)
     MAKE_SYNC(1920x1200_60, 193160,
 	1920, 2048, 2256, 2592,
 	1200, 1201, 1204, 1242,
-	"ATI:1680x1050");
+	"ATI:1920x1200");
     
     struct TagItem modetags[] = {
         { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
