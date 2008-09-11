@@ -1,9 +1,9 @@
 /*
 
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) 1995-2008 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
-    $Id: Assign.c,v 1.6 2007/09/21 06:51:45 sonic_amiga Exp $
+    $Id$
  
     Desc: Assign CLI command
     Lang: English
@@ -48,7 +48,7 @@
  
     LOCATION
  
-        Workbench:C
+        C:
  
     FUNCTION
  
@@ -70,13 +70,13 @@
         NAME      --  the name that should be assigned to a file or directory
 	TARGET    --  one or more files or directories to assign the NAME to
 	LIST      --  list all assigns made
-	EXISTS    --  if NAME is not assigned, set the condition flag to
-		      WARN
+	EXISTS    --  display the target of the specified assign. If NAME is
+		      not assigned, set the condition flag to WARN
 	DISMOUNT  --  remove the volume or device NAME from the dos list
 	DEFER     --  make an ASSIGN to a path or directory that not need to
 		      exist at the time of assignment. The first time the
 		      NAME is referenced the NAME is bound to the object
-	PATH      --  path to assign with a non-binding assign. This means
+	PATH      --  path is assigned with a non-binding assign. This means
 		      that the assign is re-evaluated each time a reference
 		      to NAME is done. Like for DEFER, the path doesn't have
 		      to exist when the ASSIGN command is executed
@@ -116,9 +116,7 @@
 	doAssign()     --  make [a number of] assigns
 	showAssigns()  --  show the available assigns
 	checkAssign()  --  check if a particular assign exists
- 
-    HISTORY
- 
+
 ******************************************************************************/
 
 #ifndef __AROS__
