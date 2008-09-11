@@ -18,8 +18,8 @@ typedef unsigned char UBYTE;
 #include "host_debug.h"
 #include "contextsave.h"
 
+#define DI(x)
 #define DS(x)
-//#define SLOW
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
@@ -136,13 +136,13 @@ DWORD TaskSwitcher(struct SwitcherData *args)
 
 long __declspec(dllexport) core_intr_disable(void)
 {
-    D(printf("[KRN] disabling interrupts\n"));
+    DI(printf("[KRN] disabling interrupts\n"));
     Ints_Enabled = 0;
 }
 
 long __declspec(dllexport) core_intr_enable(void)
 {
-    D(printf("[KRN] enabling interrupts\n"));
+    DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
 }
 
