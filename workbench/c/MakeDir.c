@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     MakeDir CLI command.
@@ -24,11 +24,11 @@ const TEXT version[] = "$VER: MakeDir 42.5 (15.12.2007)\n";
 
     SYNOPSIS
 
-        NAME/M,ALL/S
+        NAME/M/A,ALL/S
 
     LOCATION
 
-        Sys:C
+        C:
 
     FUNCTION
 
@@ -75,7 +75,7 @@ int main(void)
     LONG   error = RETURN_OK;
     BPTR   lock;
     
-    rda = ReadArgs("NAME/M,ALL/S", args, NULL);
+    rda = ReadArgs("NAME/M/A,ALL/S", args, NULL);
 
     if(rda != NULL)
     {
