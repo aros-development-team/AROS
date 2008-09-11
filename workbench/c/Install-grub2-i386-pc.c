@@ -47,22 +47,23 @@
 
 ******************************************************************************/
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <stdio.h>
 #include <string.h>
-#include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/partition.h>
 #include <proto/utility.h>
 #include <aros/macros.h>
 #include <devices/hardblocks.h>
 #include <devices/newstyle.h>
-#include <dos/dos.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
 #include <libraries/partition.h>
 
-#define DEBUG 1
-#include <aros/debug.h>
+
 
 /* Defines for grub2 data */
 /* boot.img pointers */
@@ -86,6 +87,7 @@
 #define MBR_MAX_PARTITIONS	4
 #define MBRT_EXTENDED		0x05
 #define MBRT_EXTENDED2		0x0f
+#define BLCKLIST_ELEMENTS   14
 
 struct Volume
 {
@@ -310,9 +312,9 @@ static ULONG _readwriteBlock(struct Volume *volume,
     retval = DoIO((struct IORequest *) &volume->iotd->iotd_Req);
     if (volume->flags & VF_IS_TRACKDISK)
     {
-	volume->iotd->iotd_Req.io_Command = TD_MOTOR;
-	volume->iotd->iotd_Req.io_Length = 0;
-	DoIO((struct IORequest *) &volume->iotd->iotd_Req);
+	    volume->iotd->iotd_Req.io_Command = TD_MOTOR;
+	    volume->iotd->iotd_Req.io_Length = 0;
+	    DoIO((struct IORequest *) &volume->iotd->iotd_Req);
     }
     return retval;
 }
@@ -785,32 +787,22 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
 
     D(bug("[install] collectBlockListFFS(%x, %ld, %x)\n", volume, block, blocklist));
 
-    #warning "TODO: logical/physical blocks"
-	/*
-		initialze stage2-blocklist
-		(it is NULL-terminated)
-	*/
-//	for (blk_count=-1;blocklist[blk_count].sector!=0;blk_count--)
-//		blocklist[blk_count].sector = 0;
 
-//    memset((char *)&blocklist[-20],0x00, 20*sizeof(struct BlockNode)); /* Clear the stage2 sector pointers region! */
-
-//    D(bug("[install] collectBlockList: Cleared sector list (20 entries) [start: %x, end %x]\n", 
-//        &blocklist[-20], &blocklist[-1]));
-
+    /* Clear the core.img sector pointers region! */
+    memset((UBYTE*)&blocklist[-BLCKLIST_ELEMENTS],0x00, BLCKLIST_ELEMENTS*sizeof(struct BlockNode)); 
 
 	/*
 		The number of first block of core.img will be stored in boot.img
 		so skip the first filekey in the first loop
 	*/
-    #warning "Block read twice"
+
 	retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
 			volume->readcmd);
 
     if (retval)
     {
         D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld\n", retval));
-		printf("ReadError %ld\n", retval);
+		printf("ReadError %d\n", retval);
 		return 0;
 	}
 
@@ -828,7 +820,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
 		if (retval)
 		{
             D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld)\n", retval));
-			printf("ReadError %ld\n", retval);
+			printf("ReadError %d\n", retval);
 			return 0;
 		}
         
@@ -853,7 +845,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block,  struct BlockNode 
 				blk_count--; /* decrement first */
                 D(bug("[install] collectBlockListFFS: store new block (%d)\n", blk_count));
     
-				if (blocklist[blk_count-1].sector_lo != 0)
+				if ((blk_count-1) <= -BLCKLIST_ELEMENTS)
 				{
                     D(bug("[install] collectBlockListFFS: ERROR: out of block space at sector %d, block %d\n",
                         i, blk_count));
@@ -910,6 +902,10 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
 
     D(bug("[install] collectBlockListSFS(startblock: %ld, objectnode: %ld)\n", volume->startblock, objectnode));
     D(bug("[install] collectBlockListSFS(%ld, %d, %d)\n", volume->countblock, volume->SizeBlock, volume->partnum));
+
+    /* Clear the core.img sector pointers region! */
+    memset((UBYTE*)&blocklist[-BLCKLIST_ELEMENTS],0x00, BLCKLIST_ELEMENTS*sizeof(struct BlockNode)); 
+
     /* Description of actions:
      * 1. Load SFS root block
      * 2. From root block find the block containing root of objectnodes
@@ -931,7 +927,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
     if (retval)
     {
         D(bug("[install] collectBlockListSFS: ERROR reading root block (error: %ld)\n", retval));
-		printf("ReadError %ld\n", retval);
+		printf("ReadError %d\n", retval);
 		return 0;
 	}
 
@@ -994,7 +990,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
         if (retval)
         {
             D(bug("[install] collectBlockListSFS: ERROR reading block (error: %ld)\n", retval));
-		    printf("ReadError %ld\n", retval);
+		    printf("ReadError %d\n", retval);
 		    return 0;
 	    }
 
@@ -1107,7 +1103,14 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
         /* Add blocklist entry */
         blk_count--;
 
-        /* TODO: Check if we still have spece left to add data to BlockList */
+        /* Check if we still have spece left to add data to BlockList */
+		if ((blk_count-1) <= -BLCKLIST_ELEMENTS)
+		{
+            D(bug("[install] collectBlockListSFS: ERROR: out of block space\n"));
+			printf("There is no more space to save blocklist in core.img\n");
+			return 0;
+		}
+
 	    blocklist[blk_count].sector_lo = searchedblock;
 	    blocklist[blk_count].sector_hi = 0;
 	    blocklist[blk_count].count = AROS_BE2WORD(((UWORD*)(BNodePtr + 12))[0]);
@@ -1130,7 +1133,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode,  struct Block
         /* Are there more blocks to read? */
         if (AROS_BE2LONG(((ULONG*)(BNodePtr))[1]) == 0)
         {
-            D(bug("[install] All blocks read!\n"));
+            D(bug("[install] collectBlockListSFS: All core.img blocks found!\n"));
             break;
         }
         else
@@ -1164,7 +1167,7 @@ VOID flushFS(CONST_STRPTR path)
     UWORD i;
 
     for (i = 0; path[i] != ':'; i++)
-	devname[i] = path[i];
+	    devname[i] = path[i];
     devname[i++] = ':';
     devname[i] = '\0';
     if (Inhibit(devname, DOSTRUE))
@@ -1239,7 +1242,7 @@ ULONG updateCoreIMG(CONST_STRPTR grubpath,     /* path of grub dir */
     ULONG block = 0;
     struct FileInfoBlock fib;
     BPTR fh;
-    char coreimgpath[256];
+    TEXT coreimgpath[256];
 
     D(bug("[install] updateCoreIMG(%x)\n", volume));
 
