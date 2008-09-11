@@ -173,7 +173,7 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
 	}
 
       grub_uint16_t nodescount = grub_be_to_cpu16(tree->nodes);
-      for (i = 0; i < nodescount; i++)
+      for (i = nodescount - 1; i >= 0; i--)
 	{
 
 #define EXTNODE(tree, index)						\
@@ -181,16 +181,8 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
 					 + (index) * (tree)->nodesize))
 
 	  /* Follow the tree down to the leaf level.  */
-	  if ((grub_be_to_cpu32 (EXTNODE(tree, i)->key) >= block)
+	  if ((grub_be_to_cpu32 (EXTNODE(tree, i)->key) <= block)
 	      && !tree->leaf)
-	    {
-	      next = grub_be_to_cpu32 (EXTNODE (tree, i - 1)->data);
-	      break;
-	    }
-
-	  /* In case the last node is reached just use that one, it is
-	     the right match.  */
-	  if (i + 1 == nodescount && !tree->leaf)
 	    {
 	      next = grub_be_to_cpu32 (EXTNODE (tree, i)->data);
 	      break;
