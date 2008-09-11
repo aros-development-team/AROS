@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/system.h>
 #include <windows.h>
@@ -37,7 +37,12 @@ typedef unsigned char UBYTE;
 			               AROS_LCA(struct Node *,(arg2),A1), \
 				       struct ExecBase *, SysBase, 45, Exec)
 
-#define DS(x) x
+/*
+ * Be careful with this, actually enabling this causes AROS to abort on first exception
+ * because of OutputDebugString() calls. Looks like WinAPI functions love to perform stack
+ * check and silently abort if they think something is wrong.
+ */
+#define DS(x)
 
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used

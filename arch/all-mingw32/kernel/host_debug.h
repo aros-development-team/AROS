@@ -19,9 +19,10 @@ static inline void bug(char *format, ...)
 
 static inline void PrintCPUContext(CONTEXT *ctx)
 {
-    bug("SP=%08lx  FP=%08lx  PC=%08lx\n", ctx->Esp, ctx->Ebp, ctx->Eip);
-    bug("R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n", ctx->Eax, ctx->Ebx, ctx->Ecx, ctx->Edx);
-    bug("R4=%08lx  R5=%08lx  R6=%08lx\n", ctx->Edi, ctx->Esi, ctx->EFlags);
+    bug("ContextFlags=0x%08lX\n", ctx->ContextFlags);
+    bug("ESP=%08lx  EFP=%08lx  EIP   =%08lx\n", ctx->Esp, ctx->Ebp, ctx->Eip);
+    bug("EAX=%08lx  EBX=%08lx  ECX   =%08lx  EDX=%08lx\n", ctx->Eax, ctx->Ebx, ctx->Ecx, ctx->Edx);
+    bug("EDI=%08lx  ESI=%08lx  EFLAGS=%08lx\n", ctx->Edi, ctx->Esi, ctx->EFlags);
 }
 
 #endif

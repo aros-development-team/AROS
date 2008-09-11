@@ -59,6 +59,7 @@ struct KernelInterface {
 
 extern struct HostInterface *HostIFace;
 extern struct KernelInterface KernelIFace;
+extern APTR KernelBase;
 
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);

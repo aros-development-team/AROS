@@ -32,15 +32,16 @@ AROS_LH4(BOOL, PrepareContext,
   AROS_LIBFUNC_INIT
   IPTR args[8] = {0};
   WORD numargs = 0;
+  CONTEXT *ctx;
 
   D(kprintf("[PrepareContext] preparing task \"%s\" entry: %p fallback: %p\n",task->tc_Node.ln_Name,entryPoint,fallBack));
  
   if (!(task->tc_Flags & TF_ETASK) )
 	  return FALSE;
   
-  GetIntETask (task)->iet_Context = AllocTaskMem (task, sizeof(CONTEXT), MEMF_PUBLIC|MEMF_CLEAR);
-  
-  if (!GetIntETask (task)->iet_Context)
+  ctx = AllocTaskMem (task, sizeof(CONTEXT), MEMF_PUBLIC|MEMF_CLEAR);
+  GetIntETask (task)->iet_Context = ctx;
+  if (!ctx)
 	  return FALSE;
 
   while(tagList)
@@ -95,12 +96,11 @@ break;
   /* First we push the return address */
   _PUSH(GetSP(task), fallBack);
   
-  /* Then set up the frame to be used by Dispatch() */
-  PREPARE_INITIAL_FRAME(GetSP(task), entryPoint);
-  PREPARE_INITIAL_CONTEXT(task, entryPoint);
+  /* Then set up the context */
+  PREPARE_INITIAL_CONTEXT(ctx, GetSP(task), entryPoint);
 
-  D(kprintf("prepared task context:\n"));
-  D(PRINT_CPUCONTEXT(task));
+  D(kprintf("Prepared task context: *****\n"));
+  D(PRINT_CPUCONTEXT(ctx));
 
   return TRUE;
   

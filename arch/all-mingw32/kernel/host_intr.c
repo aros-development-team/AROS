@@ -16,9 +16,10 @@ typedef unsigned char UBYTE;
 #include "kernel_intern.h"
 #include "syscall.h"
 #include "host_debug.h"
+#include "contextsave.h"
 
-#define DS(x) x
-#define SLOW
+#define DS(x)
+//#define SLOW
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
@@ -55,9 +56,11 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 {
     	struct ExecBase *SysBase = *SysBasePtr;
     	struct KernelBase *KernelBase = *KernelBasePtr;
+    	REG_SAVE_VAR;
 
 	switch (Except->ExceptionRecord->ExceptionCode) {
 	case AROS_EXCEPTION_SYSCALL:
+	    CONTEXT_SAVE_REGS(Except->ContextRecord);
 	    D(printf("[KRN] Syscall exception %lu\n", *Except->ExceptionRecord->ExceptionInformation));
 	    switch (*Except->ExceptionRecord->ExceptionInformation)
 	    {
@@ -75,6 +78,7 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	        core_Schedule(Except->ContextRecord);
 	        break;
 	    }
+	    CONTEXT_RESTORE_REGS(Except->ContextRecord);
 	    return EXCEPTION_CONTINUE_EXECUTION;
 	default:
 	    printf("[KRN] Exception 0x%08lX handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", Except->ExceptionRecord->ExceptionCode, Except->ContextRecord, SysBase, KernelBase);
@@ -93,6 +97,7 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     HANDLE IntEvent;
     DWORD obj;
     CONTEXT MainCtx;
+    REG_SAVE_VAR;
     DS(DWORD res);
 
     for (;;) {
@@ -102,15 +107,21 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	if (Ints_Enabled) {
     	    user_handler(0);
-    	    MainCtx.ContextFlags = CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS;
+
+    	    /* 
+    	     * We will get and store the complete CPU context, but set only part of it.
+    	     * This can be a useful aid for future AROS debuggers.
+    	     */
+    	    CONTEXT_INIT_FLAGS(&MainCtx);
     	    DS(res =) GetThreadContext(args->MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Get context result: %lu\n", res));
+    	    CONTEXT_SAVE_REGS(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
     	    core_ExitInterrupt(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
-    	    MainCtx.ContextFlags = CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS;
+    	    CONTEXT_RESTORE_REGS(&MainCtx);
     	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Set context result: %lu\n", res));
     	}
