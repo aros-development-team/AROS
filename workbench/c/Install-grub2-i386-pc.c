@@ -47,7 +47,7 @@
 
 ******************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <stdio.h>
@@ -1170,8 +1170,26 @@ VOID flushFS(CONST_STRPTR path)
 	    devname[i] = path[i];
     devname[i++] = ':';
     devname[i] = '\0';
-    if (Inhibit(devname, DOSTRUE))
-	Inhibit(devname, DOSFALSE);
+
+    /* Try to flush 10 times. 5 seconds total */
+    
+    /* This is needed for SFS, because Inhibit will fail
+     * if there is unwritten data in the buffers. By waiting
+     * until Inhibit succeds, we can be sure data has been written
+     * The correct way of doing things would be to sent ACTION_FLUSH to
+     * SFS handler.
+     */
+     
+    for (i = 0; i < 10; i++)
+    {
+        if (Inhibit(devname, DOSTRUE))
+        {
+            Inhibit(devname, DOSFALSE);
+            break;
+        }
+        else
+            Delay(25);
+    }
 }
 
 BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)

@@ -1553,6 +1553,9 @@ localecopydone:
 			"boot/grub/aout.mod",		"boot/grub/aout.mod",
 			"boot/grub/gzio.mod",		"boot/grub/gzio.mod",
 			"boot/grub/boot.mod",		"boot/grub/boot.mod",
+			"boot/grub/cat.mod",        "boot/grub/cat.mod",
+			"boot/grub/ls.mod",         "boot/grub/ls.mod",
+			"boot/grub/help.mod",		"boot/grub/help.mod",
 			"boot/grub/serial.mod",		"boot/grub/serial.mod",
 			"boot/grub/terminfo.mod",	"boot/grub/terminfo.mod",
 			"boot/grub/command.lst",	"boot/grub/command.lst",
@@ -1632,7 +1635,6 @@ localecopydone:
 			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub",
 			boot_Device, boot_Unit, dest_Path);
-        Delay(250); /* Delay so that SFS buffers can be written to disk */
 #elif GRUB == 1
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
