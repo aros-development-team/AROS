@@ -16,7 +16,7 @@
 
     LOCATION
 
-    Sys:C
+    C:
 
     FUNCTION
 
@@ -116,7 +116,7 @@ BOOL MatchString(TEXT *string, TEXT *text, TEXT *text_end, UBYTE *pi,
 
 const TEXT template[] =
      "FROM/M,SEARCH/A,ALL/S,NONUM/S,QUIET/S,QUICK/S,FILE/S,PATTERN/S,CASE/S,LINES/N";
-const TEXT version_string[] = "$VER: Search 42.4 (06.04.2008)";
+const TEXT version_string[] = "$VER: Search 42.4 (6.4.2008)";
 const TEXT locale_name[]    = "locale.library";
 
 const TEXT control_codes[]  = { 0x9b, 'K', 13 };
@@ -124,7 +124,7 @@ const TEXT wild_card[]      = { '#', '?'};
 const TEXT new_line[]       = "\n";
 const TEXT abandon_msg[]    = "** File abandoned\n";
 
-const STRPTR defaultfrom[] = {"", 0};
+const STRPTR default_from[] = {"", 0};
 
 int __nocommandline;
 
@@ -162,14 +162,15 @@ int main(void)
 	{
 	    if ( ! args[ARG_FROM] )
 	    {
-		/* /M ignores the default value, so we must set it after ReadARGS */
-		args[ARG_FROM] = (IPTR)defaultfrom;
+		/* /M ignores the default value, so we must set it after
+		   ReadArgs() */
+		args[ARG_FROM] = (IPTR)default_from;
 	    }
 	    
 	    /* Prepare the pattern to be matched */
 	    
 	    pat_length = strlen((TEXT *)args[ARG_SEARCH]);
-	    pat_buf_length = pat_length*2 + 3;
+	    pat_buf_length = pat_length * 2 + 3;
 	    user_pattern = AllocMem(pat_length + 5, MEMF_CLEAR);
 	    pattern = AllocMem(pat_buf_length, MEMF_ANY);
 	    
@@ -195,9 +196,9 @@ int main(void)
 			}
 		    }
 		    else
-		    {		    
-		        if(ParsePatternNoCase(user_pattern, pattern, 
-					  pat_buf_length) < 0)
+		    {
+		        if(ParsePatternNoCase(user_pattern, pattern,
+			    pat_buf_length) < 0)
 			    success = FALSE;
 		    }
 		}
@@ -277,7 +278,7 @@ int main(void)
 			    if(!(args[ARG_FILE] || args[ARG_QUIET] ||
 				 args[ARG_QUICK]))
 			    {
-				WriteChars(spaces, MARGIN + INDENT*indent + 
+				WriteChars(spaces, MARGIN + INDENT * indent +
 					   DIR_MARGIN);
 				text = (TEXT *)&(anchor->ap_Info.fib_FileName);
 				VPrintf("%s (dir)\n", (IPTR *)&text);
@@ -316,7 +317,7 @@ int main(void)
 			if(args[ARG_FILE])
 			{
 			    found = MatchPatternNoCase(pattern,
-				      (TEXT *)&(anchor->ap_Info.fib_FileName));
+				(TEXT *)&(anchor->ap_Info.fib_FileName));
 			}
 			else
 			{
@@ -334,7 +335,6 @@ int main(void)
 			    
 			    found = FindString(anchor, args, pattern, locale,
 					       user_pattern);
-			    
 			}
 			
 			if(found)
@@ -440,9 +440,7 @@ BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
     BPTR   old_lock, file;
     TEXT  *p, *q, *r, *line, *buffer = NULL, ch;
     ULONG  max_line_length = 0, line_length, offset = 0, file_size, buf_size,
-	   line_start = 0, line_count = 1;
-    ULONG Lines=0;
-    ULONG  sigs;
+	   line_start = 0, line_count = 1, sigs, lines_to_show = 0;
     LONG   read_length = 1;
     
     /* Move into the file's directory */
@@ -532,17 +530,17 @@ BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
 			
 			if (args[ARG_CASE])
 			{
-				if (args[ARG_PATTERN])
-					line_matches = MatchPattern(pattern, line);
-				else
-					line_matches = MatchString(pattern, line, p, pi, locale);
+			    if (args[ARG_PATTERN])
+				line_matches = MatchPattern(pattern, line);
+			    else
+				line_matches = MatchString(pattern, line, p, pi, locale);
 			}
 			else
 			{
-				if(args[ARG_PATTERN])
-			    		line_matches = MatchPatternNoCase(pattern, line);
-				else
-			    		line_matches = MatchStringNoCase(pattern, line, p, pi, locale);
+			    if(args[ARG_PATTERN])
+			    	line_matches = MatchPatternNoCase(pattern, line);
+			    else
+			    	line_matches = MatchStringNoCase(pattern, line, p, pi, locale);
 			}
 			if(line_matches)
 			{
@@ -558,37 +556,41 @@ BOOL FindString(struct AnchorPath *anchor, IPTR *args, TEXT *pattern,
 			    else
 			    {
 				if(!args[ARG_NONUM])
-				    VPrintf("%6lu ", (IPTR*)&line_count);
+				    VPrintf("%6lu ", (IPTR *)&line_count);
 				
 				/* Replace invisible characters with dots */
 				
 				for(r = line; r < p; r++)
 				{
 				    if(!IsPrint(locale, *r))
-					*r='.';
+					*r = '.';
 				}
 				
 				VPrintf("%s\n", (IPTR *)&line);
-				if (args[ARG_LINES])
-				{
-					Lines = *((ULONG*) args[ARG_LINES]);
-				}			    }
-			}
-			else
-			{
-				if (Lines != 0)
-				{
-					Printf("%6lu: ", line_count);
-					/* Replace invisible characters with dots */
+                                if (args[ARG_LINES])
+                                {
+                                    lines_to_show =
+                                        *((ULONG *) args[ARG_LINES]);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (lines_to_show != 0)
+                            {
+                                Printf("%6lu: ", line_count);
 
-					for (r = line; r < p; r++)
-					{
-						if (!IsPrint(locale, *r))
-							*r='.';
-					}
-					PutStr(line); PutStr("\n");
-					Lines--;
-				}
+                                /* Replace invisible characters with dots */
+
+                                for (r = line; r < p; r++)
+                                {
+                                    if (!IsPrint(locale, *r))
+                                        *r = '.';
+                                }
+                                PutStr(line);
+                                PutStr("\n");
+                                lines_to_show--;
+                            }
 			}			
 			line = p + 1;
 			
