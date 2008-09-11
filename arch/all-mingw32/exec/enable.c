@@ -5,7 +5,7 @@
     Desc: i386unix version of Enable()
     Lang: english
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/tasks.h>
 #include <exec/execbase.h>
