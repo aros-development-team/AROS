@@ -41,7 +41,7 @@
         CLONE     --  copy comment, protection bits and date as well
         DATES     --  copy dates
         NOPRO     --  do not copy protection bits
-		COMMENT   --  copy file comment
+        COMMENT   --  copy file comment
         NOREQ     --  suppress requesters
 
         PATTERN   --  a pattern the filenames must match
@@ -58,7 +58,7 @@
         FOOVR     --  also overwrite protected files
         DONTOVR   --  do never overwrite destination
         FORCE     --  DO NOT USE. Call compatibility only.
-		NEWER     --  compare version strings and only overwrites older files.
+        NEWER     --  compare version strings and only overwrites older files.
 
 
     More detailed descriptions:
@@ -145,7 +145,7 @@
     move operation the source does no longer exist.
 
     DELETE:
-    This does not copy anything, but delete the source files!
+    This does not copy anything, but deletes the source files!
 
     HARD=HARDLINK:
     Instead of copying the files, a hard link is created. This only works,
@@ -197,7 +197,7 @@
         The separation of the different switches above is according to
         what the AmigaDOS Copy command had, and the extensions respectively.
 
-        Some comments on how the program does it's job:
+        Some comments on how the program does its job:
 
         The program has 6 working modes: COPY, MOVE, SOFTLINK, HARDLINK,
         DELETE and MAKEDIR. Only one of these can be used at same time!

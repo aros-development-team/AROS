@@ -23,7 +23,7 @@
 
     INPUTS
 
-        DEVICE --  Device name (eg. ata.device)
+        DEVICE --  Device name (e.g. ata.device)
         UNIT  --  Unit number
         PN  --  Partition number (advice: the first AROS FFS partition)
         GRUB -- Path to GRUB directory.
@@ -35,7 +35,7 @@
 	
     EXAMPLE
 
-        install-i386-pc device ata.device unit 0 PN 1 grub dh0:boot/grub
+        install-i386-pc DEVICE ata.device UNIT 0 PN 1 grub dh0:boot/grub
 
     BUGS
 
@@ -930,7 +930,7 @@ D(bug("[install-i386] writeStage1: Install to HARDDISK\n"));
 				error = readwriteBlock
 					(volume, 0,	s2vol->blockbuffer, 512, volume->readcmd);
 
-D(bug("[install-i386] writeStage1: MBR Buffer @ %x\n", volume->blockbuffer));					
+D(bug("[install-i386] writeStage1: MBR Buffer @ %x\n", volume->blockbuffer));
 D(bug("[install-i386] writeStage1: Copying MBR BPB to %x\n", (char *)volume->blockbuffer + 0x04));
 				// copy BPB (BIOS Parameter Block)
 				CopyMem

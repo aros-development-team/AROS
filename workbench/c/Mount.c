@@ -1,6 +1,5 @@
 /*
-sc link debug=line idir=include: nostackcheck opt data=far nostartup mountnew.c exit
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) 1995-2008 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -45,7 +44,7 @@ sc link debug=line idir=include: nostackcheck opt data=far nostartup mountnew.c 
     EXAMPLE
 
         Mount DEVS:FAT0    
-        (Mounts a FAT device defined on SYS:Devs/FAT0 file)
+        (Mounts a FAT device defined in the DEVS:FAT0 file)
 
     BUGS
 
