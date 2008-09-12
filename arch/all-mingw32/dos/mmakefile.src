@@ -5,20 +5,6 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 USER_CFLAGS	:= -I$(TOP)/rom/dos -I..
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
-  arch=mingw32 files="dosboot aros"
-
-TESTS		:= runprocess
-
-#MM
-clean::
-	$(RM) $(TESTS)
-
-check : $(TESTS)
-	@$(NOP)
-
-runprocess : runprocess.c ../exec/stackswap.c
-	$(CC) -DTEST -DNO_MAIN $(CFLAGS) -c ../exec/stackswap.c -o ss.o
-	$(CC) -DTEST $(CFLAGS) $< ss.o -o $@
-	$(RM) ss.o
+  arch=mingw32 files="aros boot"
 
 %common
