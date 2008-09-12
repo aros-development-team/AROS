@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: boot.c 13004 2002-01-13 15:18:32Z bergers $
 
     Desc: Boot your operating system.
     Lang: english
@@ -21,7 +21,6 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/arossupport.h>
 
 /* Require this for the stdout defn */
 #include <stdio.h>
@@ -59,8 +58,6 @@ AROS_UFH3(void, boot,
 
     AROS_USERFUNC_INIT
 
-    kprintf("[boot] enter\n");
-
     struct DosLibrary *DOSBase;
     struct emulbase *emulbase;
     struct TagItem fhtags[]= { { TAG_END, 0 } };
@@ -72,7 +69,6 @@ AROS_UFH3(void, boot,
     	/* BootStrap couldn't open dos.library */
     	Alert(AT_DeadEnd | AN_BootStrap | AG_OpenLib | AO_DOSLib );
     }
-    kprintf("[boot] got dos.library\n");
 
     /*
 	This is quite naughty, but I know what I'm doing here, since
@@ -81,6 +77,7 @@ AROS_UFH3(void, boot,
     Forbid();
     emulbase = (struct emulbase *)FindName(&SysBase->DeviceList, "emul.handler");
     Permit();
+    D(bug("[boot] emulbase = 0x%08lX\n", emulbase));
 
     if( emulbase == NULL )
     {
@@ -134,31 +131,3 @@ AROS_UFH3(void, boot,
 
     AROS_USERFUNC_EXIT
 }
-
-void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
-{
-    struct TagItem bootprocess[] =
-    {
-	{ NP_Entry,	 (IPTR) boot },
-	{ NP_Name,	 (IPTR) "Boot Process" },
-	{ NP_Input,	 (IPTR) NULL },
-	{ NP_Output,	 (IPTR) NULL },
-	{ NP_WindowPtr,  -1 },
-	{ NP_CurrentDir, (IPTR) NULL },
-	{ NP_StackSize, AROS_STACKSIZE * 2},
-	{ NP_Cli,	 (IPTR) 0 },
-	{ TAG_END, }
-    };
-    
-    D(kprintf("[DosBoot] spawning boot process\n"));
-    if( CreateNewProc( bootprocess ) == NULL )
-    {
-	kprintf
-        (
-            "CreateNewProc() failed with %ld\n",
-	    ((struct Process *) FindTask( NULL ))->pr_Result2
-        );
-	Alert( AT_DeadEnd | AN_DOSLib | AG_ProcCreate );
-    }
-}
-
