@@ -18,8 +18,8 @@ typedef unsigned char UBYTE;
 #include "host_debug.h"
 #include "contextsave.h"
 
-#define DI(x)
-#define DS(x)
+#define DI(x) /* Interrupts debug     */
+#define DS(x) /* Task switcher debug  */
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 

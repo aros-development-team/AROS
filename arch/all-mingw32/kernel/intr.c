@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <stddef.h>

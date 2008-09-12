@@ -11,7 +11,6 @@ typedef unsigned char UBYTE;
 
 #include <stddef.h>
 #include <stdio.h>
-#include <aros/libcall.h>
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
@@ -74,7 +73,7 @@ void core_Dispatch(CONTEXT *regs)
                 core_Cause(SysBase);
             }
         }
-    
+
         SysBase->DispCount++;
         
         /* Get the first task from the TaskReady list, and populate it's settings through Sysbase */

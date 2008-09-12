@@ -5,6 +5,7 @@
  */
 
 #if DEBUG
+#define D(x) x
 
 static inline void bug(char *format, ...)
 {
@@ -25,4 +26,6 @@ static inline void PrintCPUContext(CONTEXT *ctx)
     bug("EDI=%08lx  ESI=%08lx  EFLAGS=%08lx\n", ctx->Edi, ctx->Esi, ctx->EFlags);
 }
 
+#else
+#define D(x)
 #endif
