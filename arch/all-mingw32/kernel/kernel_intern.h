@@ -44,10 +44,6 @@ struct IntrNode {
 #ifdef bug
 #undef bug
 #endif
-#ifdef D
-#undef D
-#endif
-#define D(x) x
 
 #ifdef __AROS__
 struct KernelInterface {
