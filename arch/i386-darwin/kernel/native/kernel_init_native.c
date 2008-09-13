@@ -1,6 +1,6 @@
-#define NATIVE
-
-#include <aros/kernel.h>
+#include "../include/aros/kernel.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 struct ExecBase;
 
@@ -32,6 +32,16 @@ struct TagItem * kernel_message(struct TagItem *tag)
   return tag;
 }
 
+void * kernelAlloc (struct Hook * hook, long object, long message)
+{
+  return malloc((size_t)object);
+}
+
+void * kernelFree (struct Hook * hook, long object, long message)
+{
+  free((void*)object);
+  return NULL;
+}
 
 void kernel_init_native()
 {
@@ -52,7 +62,9 @@ void kernel_init_native()
 	Add2HookList(KRNH,kernel,PrepareContext);
 	Add2HookList(KRNH,kernel,LoadNativeLib);
 	Add2HookList(KRNH,kernel,UnloadNativeLib);
-  Add2HookList(KRNH,kernel,StartScheduler);
+    Add2HookList(KRNH,kernel,StartScheduler);
+    Add2HookList(KRNH,kernel,Alloc);
+    Add2HookList(KRNH,kernel,Free);
 	EndHookList;
   }
   initialized = 1;

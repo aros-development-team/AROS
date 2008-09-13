@@ -22,6 +22,13 @@
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
 
+//make this the entry point
+int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
+
+void prepare_host_hook(struct Hook * hook);
+
+//exploiting the fact that the kernel is linked in one object
+//so we can obtain exec funpointers
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
 extern ULONG ** Exec_RomTagScanner(struct ExecBase*,UWORD*);
 extern void Exec_Exception();
@@ -29,6 +36,8 @@ extern void Exec_Dispatch();
 
 struct Hook * PutcharHook = 0;
 struct Hook * StartSchedulerHook = 0;
+struct Hook * AllocHook = 0;
+struct Hook * FreeHook = 0;
 
 static struct TagItem *BootMsg;
 static char cmdLine[200];
@@ -36,6 +45,10 @@ static char cmdLine[200];
 /* So we can examine the memory */
 static struct MemHeaderExt mhe;
 static struct MemHeader *mh = &mhe.mhe_MemHeader;
+static struct MemHeaderExt rmhe;
+static struct MemHeader *rmh = &rmhe.mhe_MemHeader;
+BOOL use_hostmem = FALSE;
+size_t memSize = 0;
 
 #undef kprintf
 #undef rkprintf
@@ -43,30 +56,30 @@ static struct MemHeader *mh = &mhe.mhe_MemHeader;
 
 int mykprintf(const UBYTE * fmt, ...)
 {
-    va_list args;
-    int i;
-    char str[1024];
+  va_list args;
+  int i;
+  char str[1024];
 
-    va_start (args, fmt);
+  va_start (args, fmt);
 
-    vsprintf (str, fmt, args);
+  vsprintf (str, fmt, args);
 
-    va_end (args);
-    
-    for (i = 0; str[i] != 0; ++i)
-	    CALLHOOKPKT(PutcharHook,0,str[i]);
-	    
-    return 0;
+  va_end (args);
+
+  for (i = 0; str[i] != 0; ++i)
+    CALLHOOKPKT(PutcharHook,0,str[i]);
+
+  return 0;
 }
 
 int myvkprintf (const UBYTE * fmt, va_list args)
 {
-    UBYTE str[1024];
+  UBYTE str[1024];
 
-    vsprintf (str, fmt, args);
-     
-    return mykprintf(str);
-    
+  vsprintf (str, fmt, args);
+
+  return mykprintf(str);
+
 }
 
 int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, ...)
@@ -78,27 +91,27 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
 
 void __clear_bss(struct TagItem *msg)
 {
-    struct KernelBSS *bss;
-    bss = krnGetTagData(KRN_KernelBss, 0, msg);
-    
-    if (bss)
+  struct KernelBSS *bss;
+  bss = krnGetTagData(KRN_KernelBss, 0, msg);
+
+  if (bss)
+  {
+    while (bss->addr)
     {
-        while (bss->addr)
-        {
-		  bzero((void*)bss->addr, bss->len);
-            bss++;
-        }   
-    }
+      bzero((void*)bss->addr, bss->len);
+      bss++;
+    }   
+  }
 }
 
 AROS_LH0(struct TagItem *, KrnGetBootInfo,
-         struct KernelBase *, KernelBase, 1, Kernel)
+  struct KernelBase *, KernelBase, 1, Kernel)
 {
-    AROS_LIBFUNC_INIT
+  AROS_LIBFUNC_INIT;
 
     return BootMsg;
-    
-    AROS_LIBFUNC_EXIT
+
+  AROS_LIBFUNC_EXIT;
 }
 
 
@@ -111,70 +124,149 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
   return 1;
 }
 
-ADD2INITLIB(Kernel_Init, 0)
 
 /* rom startup */
 
 
-//make this the entry point
-int startup(struct TagItem *msg) __attribute__ ((section (".aros.init")));
-void prepare_host_hook(struct Hook * hook);
 
+static APTR myAlloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
+{
+  APTR ret = 0;
+
+  if (AllocHook)
+  {
+    ret = CALLHOOKPKT(FreeHook,(ULONG)size,0);
+  }
+
+  if (ret)
+    mhe->mhe_MemHeader.mh_Free -= size;
+
+  return ret;
+}
+
+static VOID myFree(struct MemHeaderExt *mhe, APTR mem, ULONG size)
+{
+  if (FreeHook)
+  {
+    mhe->mhe_MemHeader.mh_Free += size;
+    CALLHOOKPKT(FreeHook,(ULONG)mem,0);
+ }
+}
+
+static ULONG myAvail(struct MemHeaderExt *mhe, ULONG flags)
+{
+  if (flags & MEMF_TOTAL)
+    return memSize;
+
+  return mhe->mhe_MemHeader.mh_Free;
+}
+
+void prepareMemHeader(void * memory, size_t memsize)
+{
+  memSize = memsize;
+  
+  /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
+  mh->mh_Node.ln_Name = "chip memory";
+  mh->mh_Node.ln_Pri = -5;
+  mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
+
+  if (memory == NULL)
+  {
+    mh->mh_Attributes |= MEMF_MANAGED;
+    mh->mh_First       = NULL;
+    mh->mh_Lower       = (char *)&_end + 1;
+    mh->mh_Upper       = (APTR)(~(IPTR)0 / 2); /* Should use getrlimit here. */
+    mh->mh_Free        = memsize;
+
+    ((struct MemHeaderExt *)mh)->mhe_Alloc = myAlloc;
+    ((struct MemHeaderExt *)mh)->mhe_Free  = myFree;
+    ((struct MemHeaderExt *)mh)->mhe_Avail = myAvail;
+  }
+  else
+  {
+    mh->mh_First = (struct MemChunk *)(((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
+    mh->mh_First->mc_Next = NULL;
+    mh->mh_First->mc_Bytes = memsize;
+    mh->mh_Lower = memory;
+    mh->mh_Upper = memory + MEMCHUNK_TOTAL + mh->mh_First->mc_Bytes;
+    mh->mh_Free = mh->mh_First->mc_Bytes;
+  }
+
+}
+
+void prepareRomHeader(APTR klo, APTR khi)
+{
+  rmh->mh_Node.ln_Type = NT_MEMORY;
+  rmh->mh_Node.ln_Name = "rom memory";
+  rmh->mh_Node.ln_Pri = -128;
+  rmh->mh_Attributes = MEMF_KICK;
+  rmh->mh_First = NULL;
+  rmh->mh_Lower = klo;
+  rmh->mh_Upper = khi;
+  rmh->mh_Free = 0;                        /* Never allocate from this chunk! */
+  Forbid();
+  Enqueue(&SysBase->MemList, &rmh->mh_Node);
+}
+
+void prepareHooks(struct TagItem * hooklist)
+{
+  int i;
+  for (i = 0; hooklist[i].ti_Tag != TAG_DONE; ++i)
+  {
+    struct Hook* hook = (struct Hook*)hooklist[i].ti_Data;
+    prepare_host_hook(hook);
+    if (hooklist[i].ti_Tag == KRNH_PutcharImpl) 
+      PutcharHook = hook;
+    else if (hooklist[i].ti_Tag == KRNH_StartSchedulerImpl)
+      StartSchedulerHook = hook;
+    else if (hooklist[i].ti_Tag == KRNH_AllocImpl)
+      AllocHook = hook;
+    else if (hooklist[i].ti_Tag == KRNH_FreeImpl)
+      FreeHook = hook;
+  }
+}
 
 int startup(struct TagItem *msg)
 {
   BootMsg = msg;  
-  
+
+  //consume boot message
   void * klo = (void*)krnGetTagData(KRN_KernelLowest, 0, msg);
   void * khi = (void*)krnGetTagData(KRN_KernelHighest, 0, msg);
   void * memory = (void*)krnGetTagData(KRN_MemBase, 0, msg);
   unsigned int memsize = krnGetTagData(KRN_MemSize, 0, msg);
-
+  void ** ksysbasep = (void*)krnGetTagData(KRN_SysBasePtr, 0, msg);
   struct TagItem * KernelHooks = (struct TagItem *)krnGetTagData(KRN_KernelHooks, 0, msg);
-  struct Hook * hook;
-  int i;
-  for (i = 0; KernelHooks[i].ti_Tag != TAG_DONE; ++i)
-  {
-	  struct Hook* hook = (struct Hook*)KernelHooks[i].ti_Data;
-	  prepare_host_hook(hook);
-	  if (KernelHooks[i].ti_Tag == KRNH_PutcharImpl)
-	    PutcharHook = hook;
-    else if (KernelHooks[i].ti_Tag == KRNH_StartSchedulerImpl)
-      StartSchedulerHook = hook;
-  }
-    
   void (**kexecexceptfunp)() = (void*)krnGetTagData(KRN_ExecExceptionFun, 0, msg);
-  *kexecexceptfunp = Exec_Exception;
   void (**kdispatchfunp)() = (void*)krnGetTagData(KRN_ExecDispatchFun, 0, msg);
-  *kdispatchfunp = Exec_Dispatch;
+
+  prepareHooks(KernelHooks);
 
   mykprintf("[Kernel] got Exec pointers Exception: %p Dispatch: %p\n",Exec_Exception);
 
   mykprintf("[Kernel] preparing first mem header\n",Exec_Exception);
 
-  /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
-  mh->mh_Node.ln_Name = "chip memory";
-  mh->mh_Node.ln_Pri = -5;
-  mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
-  mh->mh_First = (struct MemChunk *)
-          (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
-  mh->mh_First->mc_Next = NULL;
-  mh->mh_First->mc_Bytes = memsize;
-  mh->mh_Lower = memory;
-  mh->mh_Upper = memory + MEMCHUNK_TOTAL + mh->mh_First->mc_Bytes;
-  mh->mh_Free = mh->mh_First->mc_Bytes;
+  prepareMemHeader(memory,memsize);
 
   mykprintf("[Kernel] calling PrepareExecBase@%p mh_First=%p\n",PrepareExecBase,mh->mh_First);
+
   SysBase = PrepareExecBase(mh);
+
   mykprintf("[Kernel] SysBase=%p mhFirst=%p\n",SysBase,mh->mh_First);
 
-  void ** ksysbasep = (void*)krnGetTagData(KRN_SysBasePtr, 0, msg);
   *ksysbasep = SysBase;
+  //actually at this point we could properly use the library vectors
+  *kexecexceptfunp = Exec_Exception;
+  *kdispatchfunp = Exec_Dispatch;
 
+  //this makes the rom region known to aros
+  prepareRomHeader(klo,khi);
+
+  //this makes kprintf and friends available from everywhere else in aros
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf = mykprintf;
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf = myvkprintf;
-      
+
   mykprintf("[Kernel] calling Exec_RomTagScanner@%p\n",Exec_RomTagScanner);
   UWORD * ranges[] = {klo,khi,(UWORD *)~0};
   SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
@@ -186,14 +278,14 @@ int startup(struct TagItem *msg)
   InitCode(RTF_SINGLETASK, 0);
 
 #if 0
-  
-  
- 
+
+
+
   mykprintf("[Kernel] Booting into kernel.resource...\n");
 //    intptr_t addr = krnGetTagData(KRN_KernelBase, 0, msg);
 //    intptr_t len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
-    
-    
+
+
   mykprintf("[Kernel] calling initcode...\n");
   mykprintf("Returned from InitCode()\n");   
 #endif
@@ -205,57 +297,58 @@ int startup(struct TagItem *msg)
 
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 {
-    if (!(*tagListPtr)) return 0;
+  if (!(*tagListPtr)) return 0;
 
-    while(1)
+  while(1)
+  {
+    switch((*tagListPtr)->ti_Tag)
     {
-        switch((*tagListPtr)->ti_Tag)
-        {
-            case TAG_MORE:
-                if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
-                    return NULL;
-                continue;
-            case TAG_IGNORE:
-                break;
+      case TAG_MORE:
+      if (!((*tagListPtr) = (struct TagItem *)(*tagListPtr)->ti_Data))
+        return NULL;
+      continue;
+      case TAG_IGNORE:
+      break;
 
-            case TAG_END:
-                (*tagListPtr) = 0;
-                return NULL;
+      case TAG_END:
+      (*tagListPtr) = 0;
+      return NULL;
 
-            case TAG_SKIP:
-                (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
-                continue;
+      case TAG_SKIP:
+      (*tagListPtr) += (*tagListPtr)->ti_Data + 1;
+      continue;
 
-            default:
-                return (struct TagItem *)(*tagListPtr)++;
+      default:
+      return (struct TagItem *)(*tagListPtr)++;
 
-        }
-
-        (*tagListPtr)++;
     }
+
+    (*tagListPtr)++;
+  }
 }
 
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
 {
-    struct TagItem *tag;
-    const struct TagItem *tagptr = tagList;
+  struct TagItem *tag;
+  const struct TagItem *tagptr = tagList;
 
-    while((tag = krnNextTagItem(&tagptr)))
-    {
-        if (tag->ti_Tag == tagValue)
-            return tag;
-    }
+  while((tag = krnNextTagItem(&tagptr)))
+  {
+    if (tag->ti_Tag == tagValue)
+      return tag;
+  }
 
-    return 0;
+  return 0;
 }
 
 IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
 {
-    struct TagItem *ti = 0;
+  struct TagItem *ti = 0;
 
-    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
-        return ti->ti_Data;
+  if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
+    return ti->ti_Data;
 
-        return defaultVal;
+  return defaultVal;
 }
 
+ADD2INITLIB(Kernel_Init, 0)

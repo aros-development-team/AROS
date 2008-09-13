@@ -1,4 +1,4 @@
-#include <aros/kernel.h>
+#include "../include/aros/kernel.h"
 #include <dlfcn.h>
 #include <stdio.h>
 

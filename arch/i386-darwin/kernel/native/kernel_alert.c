@@ -8,7 +8,9 @@
  */
 
 #include "kernel_alert.h"
+#include "../include/aros/kernel.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void Alert(int alertNum)
 {
@@ -255,8 +257,6 @@ void Alert(int alertNum)
   if (alertNum & 0x80000000)
 	abort ();
 }
-
-#include <aros/kernel.h>
 
 void * kernelAlert (struct Hook * hook, unsigned long object, unsigned long message)
 {

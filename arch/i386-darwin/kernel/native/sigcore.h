@@ -22,7 +22,6 @@ typedef ucontext_t sigcontext_t;
 #define SIGHANDLER	darwin_sighandler
 
 #define SP_TYPE		long
-#define CPU_NUMREGS	0
 
 #define SC_DISABLE(sc)   ((sc)->uc_sigmask = sig_int_mask)
 #define SC_ENABLE(sc)    (sigemptyset(&(sc)->uc_sigmask))
@@ -81,8 +80,8 @@ _PUSH(GetSP(SysBase->ThisTask), arg); \
  */
 struct AROS_cpu_context
 {
-    unsigned int regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
-    int	errno_backup;
+  unsigned int regs[9];	/* eax, ebx, ecx, edx, edi, esi, isp, fp, pc */
+  int	errno_backup;
   _STRUCT_X86_FLOAT_STATE32 fpstate;
 	int eflags;
   struct AROS_cpu_context * sc;

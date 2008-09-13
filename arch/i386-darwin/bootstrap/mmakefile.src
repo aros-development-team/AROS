@@ -17,7 +17,7 @@ KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
 				$(KOBJSDIR)/mathieeesingbas_library.o \
 				$(KOBJSDIR)/oop_library.o
 K_RES		:= $(KOBJSDIR)/kernel_resource.o 
-KOBJS_HANDLERS := $(KOBJSDIR)/emul_handler.o
+KOBJS_HANDLERS := $(GENDIR)/arch/i386-darwin/devs/filesys/emul_handler/emul_handler.o
 KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 
 #this needs sdl.hidd
@@ -27,7 +27,10 @@ KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 #				$(KOBJSDIR)/intuition_library.o \
 
 
-#MM kernel-bootstrap-darwin-i386: kernel kernel-kernel-darwin-i386-kobj kernel-fs-emul-darwin-i386-kobj
+#MM kernel-bootstrap-darwin-i386: kernel kernel-kernel-darwin-i386-kobj  kernel-fs-emul-darwin-i386-kobj
+#MM kernel-kernel-darwin-i386-kobj : includes kernel-kernel-darwin-i386-native kernel-kernel-darwin-i386-includes
+
+kernel-kernel-darwin-i386-kobj : $(KOBJS)
 
 kernel-bootstrap-darwin-i386: setup-darwin-i386 $(BINDIR)/boot/AROSBootstrap $(BINDIR)/boot/kernel
 
@@ -46,9 +49,6 @@ $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
 #MM
 clean ::
 	-$(RM) $(TESTS)
-
-#$(TARGETDIR)/%.o : %.c
-#	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
 
 $(TARGETDIR)/%.o : %.S
 	%compile_q opt="$(CFLAGS) -m32 -fomit-frame-pointer -nostdinc -nostdlib"
@@ -70,3 +70,4 @@ $(TARGETDIR)/%.o : %.c
 
 
 %common
+

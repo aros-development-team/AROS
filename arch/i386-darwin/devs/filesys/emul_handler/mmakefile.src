@@ -4,8 +4,10 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I$(GENINCDIR)
 
 #MM kernel-fs-emul-darwin-i386-linklib : includes linklibs kernel-fs-emul-darwin-i386-native
-#MM kernel-fs-emul-darwin-i386-kobj : includes linklibs kernel-fs-emul-darwin-i386-native
+#MM kernel-fs-emul-darwin-i386-kobj : includes linklibs kernel-fs-emul-darwin-i386-native kernel-fs-emul-darwin-i386
 #MM kernel-fs-emul-darwin-i386-native
+
+kernel-fs-emul-darwin-i386-kobj : $(GENDIR)/arch/i386-darwin/devs/filesys/emul_handler/emul_handler.o
 
 %build_module mmake=kernel-fs-emul-darwin-i386 \
   modname=emul modtype=device modsuffix=handler \
