@@ -1,0 +1,7 @@
+# $Id: mmakefile.src 27924 2008-02-27 06:27:04Z schulz $
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-workbench maindir=rom/workbench \
+  arch=chrp-ppc \
+  files="atomic"
