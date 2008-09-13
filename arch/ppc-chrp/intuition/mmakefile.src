@@ -1,0 +1,7 @@
+# $Id: mmakefile.src 27912 2008-02-25 23:16:40Z schulz $
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=kernel-intuition maindir=rom/intuition \
+  arch=chrp-ppc \
+  files="atomic"
