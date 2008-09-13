@@ -6,17 +6,12 @@
  Lang: english
  */
 
-
-
-
 #define timeval sys_timeval
 #include "sigcore.h"
-#include <aros/kernel.h>
+#include "../include/aros/kernel.h"
 #include <libkern/OSAtomic.h>
-#include <hardware/intbits.h>
-#include <exec/execbase.h>
-#include <etask.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/time.h>
@@ -24,12 +19,282 @@
 #include <unistd.h>
 #undef timeval
 
+
+#define GetIntETask(task)   ((struct IntETask *)(((struct Task *) \
+				(task))->tc_UnionETask.tc_ETask))
+#define IntETask(etask)	    ((struct IntETask *)(etask))
+
+
+#define INTB_TBE          0
+#define INTF_TBE     (1L<<0)
+#define INTB_DSKBLK       1
+#define INTF_DSKBLK  (1L<<1)
+#define INTB_SOFTINT      2
+#define INTF_SOFTINT (1L<<2)
+#define INTB_PORTS        3
+#define INTF_PORTS   (1L<<3)
+#define INTB_COPER        4
+#define INTF_COPER   (1L<<4)
+#define INTB_VERTB        5
+#define INTF_VERTB   (1L<<5)
+#define INTB_BLIT         6
+#define INTF_BLIT    (1L<<6)
+#define INTB_AUD0         7
+#define INTF_AUD0    (1L<<7)
+#define INTB_AUD1         8
+#define INTF_AUD1    (1L<<8)
+#define INTB_AUD2         9
+#define INTF_AUD2    (1L<<9)
+#define INTB_AUD3         10
+#define INTF_AUD3    (1L<<10)
+#define INTB_RBF          11
+#define INTF_RBF     (1L<<11)
+#define INTB_DSKSYNC      12
+#define INTF_DSKSYNC (1L<<12)
+#define INTB_EXTER        13
+#define INTF_EXTER   (1L<<13)
+#define INTB_INTEN        14
+#define INTF_INTEN   (1L<<14)
+#define INTB_SETCLR       15
+#define INTF_SETCLR  (1L<<15)
+
+struct Interrupt
+{
+    struct Node is_Node;
+    APTR        is_Data;
+    VOID     (* is_Code)(); /* server code entry */
+};
+
+/* PRIVATE */
+struct IntVector
+{
+    APTR          iv_Data;
+    VOID       (* iv_Code)();
+    struct Node * iv_Node;
+};
+
+/* PRIVATE */
+struct SoftIntList
+{
+    struct List sh_List;
+    UWORD       sh_Pad;
+};
+
+#define SIH_PRIMASK (0xf0)
+
+#define INTB_NMI      15
+#define INTF_NMI (1L<<15)
+
+/* Library structure. Also used by Devices and some Resources. */
+struct Library {
+    struct  Node lib_Node;
+    UBYTE   lib_Flags;
+    UBYTE   lib_pad;
+    UWORD   lib_NegSize;	    /* number of bytes before library */
+    UWORD   lib_PosSize;	    /* number of bytes after library */
+    UWORD   lib_Version;	    /* major */
+    UWORD   lib_Revision;	    /* minor */
+#ifdef AROS_NEED_LONG_ALIGN
+    UWORD   lib_pad1;		    /* make sure it is longword aligned */
+#endif
+    APTR    lib_IdString;	    /* ASCII identification */
+    ULONG   lib_Sum;		    /* the checksum */
+    UWORD   lib_OpenCnt;	    /* How many people use us right now ? */
+#ifdef AROS_NEED_LONG_ALIGN
+    UWORD   lib_pad2;		    /* make sure it is longword aligned */
+#endif
+};
+
+
+/* Most fields are PRIVATE */
+struct ExecBase
+{
+/* Standard Library Structure */
+    struct Library LibNode;
+
+/* System Constants */
+    UWORD SoftVer;      /* OBSOLETE */
+    WORD  LowMemChkSum;
+    IPTR  ChkBase;
+    APTR  ColdCapture;
+    APTR  CoolCapture;
+    APTR  WarmCapture;
+    APTR  SysStkUpper;  /* System Stack Bounds */
+    APTR  SysStkLower;
+    IPTR  MaxLocMem;    /* Chip Memory Pointer */
+    APTR  DebugEntry;
+    APTR  DebugData;
+    APTR  AlertData;
+    APTR  MaxExtMem;    /* Extended Memory Pointer (may be NULL) */
+    UWORD ChkSum;       /* SoftVer to MaxExtMem */
+
+/* Interrupts */
+    struct IntVector IntVects[16];
+
+/* System Variables */
+    struct Task * ThisTask;       /* Pointer to currently running task
+                                     (readable) */
+    ULONG        IdleCount;
+    ULONG        DispCount;
+    UWORD        Quantum;        /* # of ticks, a task may run */
+    UWORD        Elapsed;        /* # of ticks, the current task has run */
+    UWORD        SysFlags;
+    BYTE         IDNestCnt;
+    BYTE         TDNestCnt;
+    UWORD        AttnFlags;      /* Attention Flags (see below) (readable) */
+    UWORD        AttnResched;
+    APTR         ResModules;
+    APTR         TaskTrapCode;
+    APTR         TaskExceptCode;
+    APTR         TaskExitCode;
+    ULONG        TaskSigAlloc;
+    UWORD        TaskTrapAlloc;
+
+/* PRIVATE Lists */
+    struct List        MemList;
+    struct List        ResourceList;
+    struct List        DeviceList;
+    struct List        IntrList;
+    struct List        LibList;
+    struct List        PortList;
+    struct List        TaskReady;      /* Tasks that are ready to run */
+    struct List        TaskWait;       /* Tasks that wait for some event */
+    struct SoftIntList SoftInts[5];
+
+/* Miscellaneous Stuff */
+    LONG               LastAlert[4];
+
+    UBYTE              VBlankFrequency;      /* (readable) */
+    UBYTE              PowerSupplyFrequency; /* (readable) */
+    	    	    	    	    	     /* AROS PRIVATE: VBlankFreq * PowerSupplyFreq = Timer Tick Rate */
+    struct List        SemaphoreList;
+
+/* Kickstart */
+    APTR KickMemPtr;
+    APTR KickTagPtr;
+    APTR KickCheckSum;
+
+/* Miscellaneous Stuff */
+    UWORD          ex_Pad0;            /* PRIVATE */
+    IPTR           ex_LaunchPoint;     /* PRIVATE */
+    APTR           ex_RamLibPrivate;
+    ULONG          ex_EClockFrequency; /* (readable) */
+    ULONG          ex_CacheControl;    /* PRIVATE */
+    ULONG          ex_TaskID;
+    ULONG          ex_Reserved1[5];
+    APTR           ex_MMULock;         /* PRIVATE */
+    ULONG          ex_Reserved2[3];
+    struct MinList ex_MemHandlers;
+    APTR           ex_MemHandler;      /* PRIVATE */
+
+/* Additional fields for AROS */
+    struct Library      * DebugAROSBase;
+    void                * PlatformData;     /* different for all platforms */
+};
+
+/* AttnFlags */
+/* Processors */
+#define AFB_68010        0
+#define AFF_68010   (1L<<0)
+#define AFB_68020        1
+#define AFF_68020   (1L<<1)
+#define AFB_68030        2
+#define AFF_68030   (1L<<2)
+#define AFB_68040        3
+#define AFF_68040   (1L<<3)
+/* Co-Processors */
+#define AFB_68881        4
+#define AFF_68881   (1L<<4)
+#define AFB_68882        5
+#define AFF_68882   (1L<<5)
+#define AFB_FPU40        6
+#define AFF_FPU40   (1L<<6)
+#define AFB_PRIVATE      15 /* PRIVATE */
+#define AFF_PRIVATE (1L<<15)
+
+/* Cache */
+#define CACRF_EnableI       (1L<<0)
+#define CACRF_FreezeI       (1L<<1)
+#define CACRF_ClearI        (1L<<3)
+#define CACRF_IBE           (1L<<4)
+#define CACRF_EnableD       (1L<<8)
+#define CACRF_FreezeD       (1L<<9)
+#define CACRF_ClearD        (1L<<11)
+#define CACRF_DBE           (1L<<12)
+#define CACRF_WriteAllocate (1L<<13)
+#define CACRF_InvalidateD   (1L<<15)
+#define CACRF_EnableE       (1L<<30)
+#define CACRF_CopyBack      (1L<<31)
+
+/* DMA */
+#define DMA_Continue    (1L<<1)
+#define DMA_NoModify    (1L<<2)
+#define DMA_ReadFromRAM (1L<<3)
+
+/* AROS extensions */
+
+/* SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency Hz timer */
+#define INTB_TIMERTICK 	INTB_COPER
+#define INTF_TIMERTICK	INTF_COPER
+
+
 #define ARF_AttnDispatch    (1L<<15)
 
 #define DEBUG_TT    0
 #if DEBUG_TT
 struct Task * lastTask;
 #endif
+
+#define TASKTAG_Dummy	(TAG_USER + 0x100000)
+#define TASKTAG_ARG1	(TASKTAG_Dummy + 16)
+#define TASKTAG_ARG2	(TASKTAG_Dummy + 17)
+#define TASKTAG_ARG3	(TASKTAG_Dummy + 18)
+#define TASKTAG_ARG4	(TASKTAG_Dummy + 19)
+#define TASKTAG_ARG5	(TASKTAG_Dummy + 20)
+#define TASKTAG_ARG6	(TASKTAG_Dummy + 21)
+#define TASKTAG_ARG7	(TASKTAG_Dummy + 22)
+#define TASKTAG_ARG8	(TASKTAG_Dummy + 23)
+
+/* tc_Flags Bits */
+#define TB_PROCTIME	0
+#define TB_ETASK	3
+#define TB_STACKCHK	4
+#define TB_EXCEPT	5
+#define TB_SWITCH	6
+#define TB_LAUNCH	7
+
+#define TF_PROCTIME	(1L<<0)
+#define TF_ETASK	(1L<<3)
+#define TF_STACKCHK	(1L<<4)
+#define TF_EXCEPT	(1L<<5)
+#define TF_SWITCH	(1L<<6)
+#define TF_LAUNCH	(1L<<7)
+
+/* Task States (tc_State) */
+#define TS_INVALID	0
+#define TS_ADDED	1
+#define TS_RUN		2
+#define TS_READY	3
+#define TS_WAIT		4
+#define TS_EXCEPT	5
+#define TS_REMOVED	6
+
+/* Predefined Signals */
+#define SIGB_ABORT	0
+#define SIGB_CHILD	1
+#define SIGB_BLIT	4	/* Note: same as SIGB_SINGLE */
+#define SIGB_SINGLE	4	/* Note: same as SIGB_BLIT */
+#define SIGB_INTUITION	5
+#define SIGB_NET	7
+#define SIGB_DOS	8
+
+#define SIGF_ABORT	(1L<<0)
+#define SIGF_CHILD	(1L<<1)
+#define SIGF_BLIT	(1L<<4)
+#define SIGF_SINGLE	(1L<<4)
+#define SIGF_INTUITION	(1L<<5)
+#define SIGF_NET	(1L<<7)
+#define SIGF_DOS	(1L<<8)
 
 /* Don't do any debugging. At 50Hz its far too quick to read anyway :-) */
 #define NOISY	1
@@ -252,13 +517,18 @@ static void sighandler(int sig, sigcontext_t * sc)
 	  // Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
 #endif
 	  UWORD u = (UWORD) ~(ARF_AttnDispatch);
-	  OSAtomicAdd32 (u, &SysBase->AttnResched);
+	  OSAtomicAnd32 (u, &SysBase->AttnResched);
 	  //        AROS_ATOMIC_AND(SysBase->AttnResched, u);
 	  
 	  /* Save registers for this task (if there is one...) */
 	  if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
 	  {
 	    SAVEREGS(SysBase->ThisTask, sc);
+#if NOISY
+	fprintf(stderr,"********* sighandler: saved task context: **********\n", Exec_Dispatch);
+	fflush(stderr);
+  PRINT_SC(sc);
+#endif
 	  }
 	  
 #if NOISY
@@ -269,11 +539,6 @@ static void sighandler(int sig, sigcontext_t * sc)
 	  /* Tell exec that we have actually switched tasks... */
 	  //core_Dispatch ();
 	  Exec_Dispatch(SysBase);
-	  
-#if NOISY
-	fprintf(stderr,"********* sighandler: dispatched %p **********\n", Exec_Dispatch);
-	fflush(stderr);
-#endif
 
 	  /* Get the registers of the old task */
 	  RESTOREREGS(SysBase->ThisTask, sc);

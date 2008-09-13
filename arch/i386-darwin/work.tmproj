@@ -3,38 +3,38 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Documents/dev/AROS/arch/i386-all/include/aros/i386/cpu.h</string>
+	<string>../x86_64-pc/bootloader/mmakefile.src</string>
 	<key>documents</key>
 	<array>
 		<dict>
 			<key>filename</key>
 			<string>bootstrap/bootstrap.c</string>
 			<key>lastUsed</key>
-			<date>2008-05-07T21:58:29Z</date>
+			<date>2008-05-12T18:36:22Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>bootstrap/elfloader32.c</string>
 			<key>lastUsed</key>
-			<date>2008-05-07T21:59:30Z</date>
+			<date>2008-05-12T15:16:48Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>bootstrap/elfloader32.h</string>
 			<key>lastUsed</key>
-			<date>2008-05-07T21:57:15Z</date>
+			<date>2008-05-12T21:48:29Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>kernel/kernel_init.c</string>
 			<key>lastUsed</key>
-			<date>2008-05-07T22:28:10Z</date>
+			<date>2008-05-17T09:50:40Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
 			<string>../../rom/exec/makefunctions.c</string>
 			<key>lastUsed</key>
-			<date>2008-05-07T22:28:25Z</date>
+			<date>2008-05-12T13:20:58Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -43,10 +43,30 @@
 			<date>2008-05-07T22:28:22Z</date>
 		</dict>
 		<dict>
+			<key>expanded</key>
+			<true/>
+			<key>name</key>
+			<string>arch</string>
+			<key>regexFolderFilter</key>
+			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
+			<key>sourceDirectory</key>
+			<string>..</string>
+		</dict>
+		<dict>
+			<key>expanded</key>
+			<true/>
+			<key>name</key>
+			<string>rom</string>
+			<key>regexFolderFilter</key>
+			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
+			<key>sourceDirectory</key>
+			<string>../../rom</string>
+		</dict>
+		<dict>
 			<key>filename</key>
 			<string>exec/exec_init.c</string>
 			<key>lastUsed</key>
-			<date>2008-05-07T22:28:19Z</date>
+			<date>2008-05-12T14:34:22Z</date>
 		</dict>
 		<dict>
 			<key>filename</key>
@@ -59,204 +79,373 @@
 			<string>../i386-all/include/aros/i386/cpu.h</string>
 			<key>lastUsed</key>
 			<date>2008-05-07T22:29:00Z</date>
-			<key>selected</key>
-			<true/>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>notes</string>
+			<key>lastUsed</key>
+			<date>2008-05-11T19:16:33Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>sigtest.c</string>
+			<key>lastUsed</key>
+			<date>2008-05-13T18:13:31Z</date>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
-	<integer>200</integer>
+	<integer>307</integer>
 	<key>metaData</key>
 	<dict>
-		<key>Documents/dev/AROS/arch/i386-all/include/aros/i386/cpu.h</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>37</integer>
-				<key>line</key>
-				<integer>198</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>176</integer>
-		</dict>
-		<key>Documents/dev/AROS/arch/i386-darwin/bootstrap/bootstrap.c</key>
+		<key>../../rom/exec/makefunctions.c</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>42</integer>
+				<integer>60</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>29</integer>
 		</dict>
-		<key>Documents/dev/AROS/arch/i386-darwin/bootstrap/elfloader32.c</key>
+		<key>../ppc-sam440/boot/mmakefile.src</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>248</integer>
+				<integer>0</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>197</integer>
+			<integer>39</integer>
 		</dict>
-		<key>Documents/dev/AROS/arch/i386-darwin/bootstrap/elfloader32.h</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>69</integer>
-				<key>line</key>
-				<integer>111</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>54</integer>
-		</dict>
-		<key>Documents/dev/AROS/arch/i386-darwin/exec/exec_init.c</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>7</integer>
-				<key>line</key>
-				<integer>362</integer>
-			</dict>
-			<key>columnSelection</key>
-			<false/>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>350</integer>
-			<key>selectFrom</key>
-			<dict>
-				<key>column</key>
-				<integer>1</integer>
-				<key>line</key>
-				<integer>362</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>10</integer>
-				<key>line</key>
-				<integer>362</integer>
-			</dict>
-		</dict>
-		<key>Documents/dev/AROS/arch/i386-darwin/kernel/kernel_init.c</key>
+		<key>../ppc-sam440/bootloader/bootloader.conf</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
 				<integer>0</integer>
 				<key>line</key>
-				<integer>116</integer>
+				<integer>0</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>84</integer>
+			<integer>0</integer>
 		</dict>
-		<key>Documents/dev/AROS/compiler/arossupport/include/asmcall.h</key>
+		<key>../ppc-sam440/bootloader/bootloader_init.c</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>15</integer>
+				<integer>33</integer>
 				<key>line</key>
-				<integer>269</integer>
+				<integer>61</integer>
 			</dict>
-			<key>columnSelection</key>
-			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>259</integer>
-			<key>selectFrom</key>
+			<integer>25</integer>
+		</dict>
+		<key>../ppc-sam440/bootloader/getbootinfo.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>7</integer>
+		</dict>
+		<key>../ppc-sam440/bootloader/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../ppc-sam440/exec/exec_init.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>573</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>513</integer>
+		</dict>
+		<key>../ppc-sam440/kernel/kernel_init.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>86</integer>
+		</dict>
+		<key>../x86_64-pc/boot/grub/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>14</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/boot/grub2/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>23</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/boot/iso/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/bootloader/bootloader_init.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>116</integer>
+		</dict>
+		<key>../x86_64-pc/bootloader/bootloader_intern.h</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/bootloader/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>11</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/bootstrap/elfloader.h</key>
+		<dict>
+			<key>caret</key>
 			<dict>
 				<key>column</key>
 				<integer>11</integer>
 				<key>line</key>
-				<integer>269</integer>
-			</dict>
-			<key>selectTo</key>
-			<dict>
-				<key>column</key>
-				<integer>15</integer>
-				<key>line</key>
-				<integer>269</integer>
-			</dict>
-		</dict>
-		<key>Documents/dev/AROS/rom/exec/cachecleare.c</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>0</integer>
-				<key>line</key>
-				<integer>0</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>21</integer>
-		</dict>
-		<key>Documents/dev/AROS/rom/exec/makefunctions.c</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>10</integer>
-				<key>line</key>
-				<integer>103</integer>
+				<integer>86</integer>
 			</dict>
 			<key>columnSelection</key>
 			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>50</integer>
+			<integer>32</integer>
 			<key>selectFrom</key>
 			<dict>
 				<key>column</key>
-				<integer>4</integer>
+				<integer>5</integer>
 				<key>line</key>
-				<integer>103</integer>
+				<integer>86</integer>
 			</dict>
 			<key>selectTo</key>
 			<dict>
 				<key>column</key>
-				<integer>15</integer>
+				<integer>18</integer>
 				<key>line</key>
-				<integer>103</integer>
+				<integer>86</integer>
 			</dict>
+		</dict>
+		<key>../x86_64-pc/drivers/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/kernel/mmakefile.src</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/kernel/smp.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>../x86_64-pc/kernel/smpbootstrap.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>35</integer>
+				<key>line</key>
+				<integer>38</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>77</integer>
+		</dict>
+		<key>bootstrap/bootstrap.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>73</integer>
+				<key>line</key>
+				<integer>30</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>bootstrap/elfloader32.c</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>21</integer>
+				<key>line</key>
+				<integer>54</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>17</integer>
+		</dict>
+		<key>notes</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>7</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>Documents/dev/AROS/arch/i386-darwin/bootstrap/elfloader32.h</string>
-		<string>Documents/dev/AROS/arch/i386-darwin/bootstrap/bootstrap.c</string>
-		<string>Documents/dev/AROS/arch/i386-darwin/exec/exec_init.c</string>
-		<string>Documents/dev/AROS/arch/i386-all/include/aros/i386/cpu.h</string>
-		<string>Documents/dev/AROS/compiler/arossupport/include/asmcall.h</string>
-		<string>Documents/dev/AROS/rom/exec/makefunctions.c</string>
-		<string>Documents/dev/AROS/rom/exec/cachecleare.c</string>
-		<string>Documents/dev/AROS/arch/i386-darwin/kernel/kernel_init.c</string>
-		<string>Documents/dev/AROS/arch/i386-darwin/bootstrap/elfloader32.c</string>
+		<string>../ppc-sam440/bootloader/bootloader.conf</string>
+		<string>../ppc-sam440/bootloader/bootloader_init.c</string>
+		<string>../ppc-sam440/bootloader/getbootinfo.c</string>
+		<string>../x86_64-pc/bootloader/mmakefile.src</string>
+		<string>../x86_64-pc/bootloader/bootloader_intern.h</string>
+		<string>../x86_64-pc/bootloader/bootloader_init.c</string>
+		<string>../x86_64-pc/kernel/mmakefile.src</string>
+		<string>../x86_64-pc/kernel/smpbootstrap.c</string>
+		<string>../x86_64-pc/kernel/smp.c</string>
+		<string>../x86_64-pc/drivers/mmakefile.src</string>
+		<string>../x86_64-pc/boot/iso/mmakefile.src</string>
+		<string>../x86_64-pc/boot/grub2/mmakefile.src</string>
+		<string>../x86_64-pc/boot/grub/mmakefile.src</string>
+		<string>../x86_64-pc/bootstrap/elfloader.h</string>
+		<string>../ppc-sam440/kernel/kernel_init.c</string>
+		<string>../ppc-sam440/exec/exec_init.c</string>
+		<string>../ppc-sam440/bootloader/mmakefile.src</string>
+		<string>../ppc-sam440/boot/mmakefile.src</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{61, 0}, {846, 878}}</string>
+	<string>{{10, 32}, {849, 846}}</string>
 </dict>
 </plist>

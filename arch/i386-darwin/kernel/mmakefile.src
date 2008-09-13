@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-kernel-darwin-i386 : includes kernel-kernel-darwin-i386-native
-#MM kernel-kernel-darwin-i386-kobj : includes kernel-kernel-darwin-i386-native
+#MM kernel-kernel-darwin-i386 : includes kernel-kernel-darwin-i386-includes kernel-kernel-darwin-i386-native
 #MM kernel-kernel-darwin-i386-native :
 
 %build_module mmake=kernel-kernel-darwin-i386 	\
@@ -28,4 +27,4 @@ $(NATIVE_DIR) :
 	mkdir $(NATIVE_DIR)
 	 
 $(NATIVE_DIR)/%.o : native/%.c $(NATIVE_DIR)
-	$(HOST_CC) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec
+	$(HOST_CC) -o $@ -c $< -I$(TOP)/rom/exec -DNATIVE
