@@ -194,7 +194,7 @@ int startup(struct TagItem *msg)
   SysBase->ResModules = Exec_RomTagScanner(SysBase,ranges);
 
   mykprintf("[Kernel] initializing host-side kernel module\n");
-  if (!KernelIFace.core_init(SysBase->VBlankFrequency*SysBase->PowerSupplyFrequency, &SysBase, &KernelBase)) {
+  if (!KernelIFace.core_init(SysBase->VBlankFrequency, &SysBase, &KernelBase)) {
       mykprintf("[Kernel] Failed to initialize!\n");
       return -1;
   }
