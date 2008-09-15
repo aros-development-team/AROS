@@ -5,7 +5,7 @@
     Desc: exec.library resident and initialization.
     Lang: english
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -28,11 +28,13 @@
 
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <clib/macros.h> /* need ABS() */
 
+#include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
-#include "winapi.h"
+#include "cpucontext.h"
 #include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
@@ -135,6 +137,29 @@ AROS_UFH5S(void, IntServer,
     AROS_USERFUNC_EXIT
 }
 
+void VBlankHandler(struct ExecBase *SysBase, void *dummy)
+{
+    struct IntVector *iv = &SysBase->IntVects[INTB_VERTB];
+
+    /* First decrease Elapsed time for current task */
+    if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
+    {
+        SysBase->SysFlags |= 0x2000;
+        SysBase->AttnResched |= ARF_AttnSwitch;
+    }
+    
+    /* If the VBlank vector in SysBase is set, call it. */
+    if (iv->iv_Code)
+    {
+         AROS_UFC5(void, iv->iv_Code,
+            AROS_UFCA(ULONG, 0, D1),
+            AROS_UFCA(ULONG, 0, A0),
+            AROS_UFCA(APTR, iv->iv_Data, A1),
+            AROS_UFCA(APTR, iv->iv_Code, A5),
+            AROS_UFCA(struct ExecBase *, SysBase, A6)
+        );
+    }
+}
 
 AROS_UFH1(void, idleCount,
     AROS_UFHA(struct ExecBase *, SysBase, A6))
@@ -314,6 +339,8 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	      }
 	    }
     }
+    /* Install the VBlank handler. We drop the handle because exec.library never expunges. */
+    KrnAddExceptionHandler(0, VBlankHandler, sysBase, NULL);
 
     /* We now start up the interrupts */
     Permit();

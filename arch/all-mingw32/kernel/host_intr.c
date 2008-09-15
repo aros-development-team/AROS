@@ -87,7 +87,8 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
         	struct Task *t = SysBase->ThisTask;
         	printf("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--");
     	    }
-	    printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
+    	    PRINT_CPUCONTEXT(Except->ContextRecord);
+    	    printf("[KRN] **UNHANDLED EXCEPTION** stopping here...\n");
 	    return EXCEPTION_EXECUTE_HANDLER;
 	}
 }

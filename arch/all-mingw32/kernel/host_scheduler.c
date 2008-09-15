@@ -202,14 +202,6 @@ void core_ExitInterrupt(CONTEXT *regs)
     DS(bug("[Scheduler] core_ExitInterrupt\n"));
     if (SysBase)
     {
-        DS(bug("[Scheduler] Elapsed: %d\n", SysBase->Elapsed));
-        if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
-        {
-            DS(bug("[Scheduler] Setting ARF_AttnSwitch\n"));
-            SysBase->SysFlags |= 0x2000;
-            SysBase->AttnResched |= ARF_AttnSwitch;
-        }
-        
         /* Soft interrupt requested? It's high time to do it */
         if (SysBase->SysFlags & SFF_SoftInt) {
             DS(bug("[Scheduler] Causing SoftInt\n"));
