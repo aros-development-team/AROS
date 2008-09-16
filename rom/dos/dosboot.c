@@ -165,8 +165,6 @@ AROS_UFH3(void, __dosboot_IntBoot,
             {
                 #define ioStd(x) ((struct IOStdReq *)x)
                 ioStd(tr)->io_Command = TR_ADDREQUEST;
-                tr->tr_time.tv_secs = 5;
-                tr->tr_time.tv_micro = 0;
             }
             else
             {
@@ -249,9 +247,11 @@ AROS_UFH3(void, __dosboot_IntBoot,
             kprintf("Retrying in 5 seconds...\n");
 #endif
 
-            if (tr != NULL)
+            if (tr != NULL) {
+                tr->tr_time.tv_secs = 5;
+                tr->tr_time.tv_micro = 0;
                 DoIO((struct IORequest *)tr);
-            else
+            } else
                 Delay(500);
         }
     }
