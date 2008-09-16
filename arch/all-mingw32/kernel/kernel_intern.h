@@ -51,6 +51,7 @@ struct KernelInterface {
     long (*core_intr_disable)(void);
     long (*core_intr_enable)(void);
     void (*core_syscall)(unsigned long n);
+    unsigned char (*core_is_super)(void);
 };
 
 extern struct HostInterface *HostIFace;

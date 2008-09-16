@@ -1,4 +1,4 @@
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/system.h>
 #include <windows.h>
@@ -43,6 +43,14 @@ typedef unsigned char UBYTE;
  */
 #define DS(x)
 
+static inline void core_LeaveInterrupt(void)
+{
+    struct ExecBase *SysBase = *SysBasePtr;
+    
+    if ((char )SysBase->IDNestCnt < 0)
+        Ints_Enabled = 1;
+}
+
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
  */
@@ -65,7 +73,7 @@ void core_Dispatch(CONTEXT *regs)
             SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
             
-            DS(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
+            printf("[KRN] TaskReady list empty. Sleeping for a while...\n");
             /* Sleep almost forever ;) */
             
             if (SysBase->SysFlags & SFF_SoftInt)
@@ -97,11 +105,10 @@ void core_Dispatch(CONTEXT *regs)
         
         /* Restore the task's state */
         CopyMemory(regs, GetIntETask(task)->iet_Context, sizeof(CONTEXT));
+        
+        /* Leave interrupt and jump to the new task */
+        core_LeaveInterrupt();
     }
-    
-    if ((char )SysBase->IDNestCnt < 0)
-        Ints_Enabled = 1;
-    /* Leave interrupt and jump to the new task */
 }
 
 void core_Switch(CONTEXT *regs)
@@ -162,8 +169,10 @@ void core_Schedule(CONTEXT *regs)
         if (!(task->tc_Flags & TF_EXCEPT))
         {
             /* Is the TaskReady empty? If yes, then the running task is the only one. Let it work */
-            if (IsListEmpty(&SysBase->TaskReady))
-                return;         
+            if (IsListEmpty(&SysBase->TaskReady)) {
+                core_LeaveInterrupt();
+                return;
+            }
     
             /* Does the TaskReady list contains tasks with priority equal or lower than current task?
              * If so, then check further... */
@@ -172,6 +181,7 @@ void core_Schedule(CONTEXT *regs)
                 /* If the running task did not used it's whole quantum yet, let it work */
                 if (!(SysBase->SysFlags & 0x2000))
                 {
+                    core_LeaveInterrupt();
                     return;
                 }
             }

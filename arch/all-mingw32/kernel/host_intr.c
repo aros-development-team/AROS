@@ -1,4 +1,4 @@
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/system.h>
 #include <windows.h>
@@ -18,8 +18,8 @@ typedef unsigned char UBYTE;
 #include "host_debug.h"
 #include "contextsave.h"
 
-#define DI(x) /* Interrupts debug     */
-#define DS(x) /* Task switcher debug  */
+#define DI(x) x /* Interrupts debug     */
+#define DS(x) x /* Task switcher debug  */
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
@@ -30,6 +30,7 @@ struct SwitcherData {
 
 struct SwitcherData SwData;
 unsigned char Ints_Enabled = 0;
+unsigned char Supervisor = 0;
 struct ExecBase **SysBasePtr;
 struct KernelBase **KernelBasePtr;
 
@@ -58,10 +59,11 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
     	struct KernelBase *KernelBase = *KernelBasePtr;
     	REG_SAVE_VAR;
 
+	Supervisor++;
 	switch (Except->ExceptionRecord->ExceptionCode) {
 	case AROS_EXCEPTION_SYSCALL:
 	    CONTEXT_SAVE_REGS(Except->ContextRecord);
-	    D(printf("[KRN] Syscall exception %lu\n", *Except->ExceptionRecord->ExceptionInformation));
+	    DI(printf("[KRN] Syscall exception %lu\n", *Except->ExceptionRecord->ExceptionInformation));
 	    switch (*Except->ExceptionRecord->ExceptionInformation)
 	    {
 	    case SC_CAUSE:
@@ -79,6 +81,7 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	        break;
 	    }
 	    CONTEXT_RESTORE_REGS(Except->ContextRecord);
+	    Supervisor--;
 	    return EXCEPTION_CONTINUE_EXECUTION;
 	default:
 	    printf("[KRN] Exception 0x%08lX handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", Except->ExceptionRecord->ExceptionCode, Except->ContextRecord, SysBase, KernelBase);
@@ -107,6 +110,7 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     	DS(res =) SuspendThread(args->MainThread);
     	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	if (Ints_Enabled) {
+    	    Supervisor++;
     	    user_handler(0);
 
     	    /* 
@@ -125,8 +129,9 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     	    CONTEXT_RESTORE_REGS(&MainCtx);
     	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Set context result: %lu\n", res));
+    	    Supervisor--;
     	}
-            DS(else printf("[KRN] Interrupts are disabled\n"));
+            DS(else OutputDebugString("[KRN] Interrupts are disabled\n"));
         DS(res =) ResumeThread(args->MainThread);
         DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     }
@@ -150,6 +155,11 @@ long __declspec(dllexport) core_intr_enable(void)
 void __declspec(dllexport) core_syscall(unsigned long n)
 {
     RaiseException(AROS_EXCEPTION_SYSCALL, 0, 1, &n);
+}
+
+unsigned char __declspec(dllexport) core_is_super(void)
+{
+    return Supervisor;
 }
 
 int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, struct KernelBase **KernelBasePointer)

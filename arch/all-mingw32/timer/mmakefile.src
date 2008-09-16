@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 26645 2007-09-15 20:24:05Z schulz $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(TOP)/rom/timer
+
+%build_archspecific \
+  mainmmake=kernel-timer maindir=rom/timer \
+  arch=mingw32 modulename=timer \
+  files="timer_init readeclock"
+
+%common

@@ -137,7 +137,7 @@ AROS_LH0I(int, KrnIsSuper,
 {
     AROS_LIBFUNC_INIT
     
-    return 0;
+    return KernelIFace.core_is_super() ? 1 : 0;
     
     AROS_LIBFUNC_EXIT
 }

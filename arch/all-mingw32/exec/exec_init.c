@@ -291,6 +291,8 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	t->tc_Node.ln_Name = "Idle Task";
 	t->tc_Node.ln_Pri = -128;
 	t->tc_Launch = &idleCount;
+	t->tc_IDNestCnt=-1;
+        t->tc_TDNestCnt=-1;
 	t->tc_Flags = TF_LAUNCH;
 	AddTask(t, &idleTask, NULL);
     }

@@ -122,6 +122,7 @@ char *kernel_functions[] = {
     "core_intr_disable",
     "core_intr_enable",
     "core_syscall",
+    "core_is_super",
     NULL
 };
 
