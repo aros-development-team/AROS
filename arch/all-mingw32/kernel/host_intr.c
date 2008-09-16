@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/system.h>
 #include <windows.h>
@@ -18,8 +18,8 @@ typedef unsigned char UBYTE;
 #include "host_debug.h"
 #include "contextsave.h"
 
-#define DI(x) x /* Interrupts debug     */
-#define DS(x) x /* Task switcher debug  */
+#define DI(x) /* Interrupts debug     */
+#define DS(x) /* Task switcher debug  */
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 
