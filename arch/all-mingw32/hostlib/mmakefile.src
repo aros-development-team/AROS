@@ -1,0 +1,5 @@
+include $(TOP)/config/make.cfg
+
+%build_module mmake=kernel-hostlib-mingw32 \
+    modname=hostlib modtype=resource \
+    files=hostlib
