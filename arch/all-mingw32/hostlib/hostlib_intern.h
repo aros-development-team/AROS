@@ -7,6 +7,7 @@
 
 struct HostLibBase {
     struct Node hlb_Node;
+    struct HostInterface *HostIFace;
 };
 
 #endif

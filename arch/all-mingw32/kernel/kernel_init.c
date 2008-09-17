@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <inttypes.h>
 #include <aros/symbolsets.h>
@@ -82,7 +82,7 @@ void __clear_bss(struct TagItem *msg)
     }
 }
 
-AROS_LH0(struct TagItem *, KrnGetBootInfo,
+AROS_LH0I(struct TagItem *, KrnGetBootInfo,
          struct KernelBase *, KernelBase, 1, Kernel)
 {
     AROS_LIBFUNC_INIT
