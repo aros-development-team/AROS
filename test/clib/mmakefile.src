@@ -18,7 +18,8 @@ FILES := \
 	usleep \
 	fchdir \
 	uname \
-	strptime
+	strptime \
+	fchmod
 
 EXEDIR := $(AROS_TESTS)/clib
 
