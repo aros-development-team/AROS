@@ -1,3 +1,9 @@
+struct AROSCPUContext
+{
+    CONTEXT regs;
+    DWORD LastError;
+};
+
 #ifdef __i386__
 #define REG_SAVE_VAR DWORD SegCS_Save, SegSS_Save
 
@@ -9,6 +15,8 @@
 #define CONTEXT_RESTORE_REGS(ctx) (ctx)->SegCs = SegCS_Save; \
 				  (ctx)->SegSs = SegSS_Save; \
 				  (ctx)->ContextFlags &= CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS
+
+#define GetTEB(ctx) (TEB *)(ctx)->SegFs
 
 #define PRINT_CPUCONTEXT(ctx) \
 	printf ("    ContextFlags: 0x%08lX\n" \

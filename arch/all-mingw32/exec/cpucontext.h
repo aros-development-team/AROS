@@ -37,7 +37,7 @@ typedef struct _FLOATING_SAVE_AREA {
 	UBYTE	RegisterArea[80];
 	IPTR	Cr0NpxState;
 } FLOATING_SAVE_AREA;
-typedef struct _CONTEXT {
+struct AROSCPUContext {
 	IPTR	ContextFlags;
 	IPTR	Dr0;
 	IPTR	Dr1;
@@ -63,7 +63,8 @@ typedef struct _CONTEXT {
 	IPTR	Esp;
 	IPTR	SegSs;
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-} CONTEXT;
+	ULONG	LastError;
+};
 
 #define PRINT_CPUCONTEXT(ctx) \
 	kprintf ("    ContextFlags: 0x%08lX\n" \

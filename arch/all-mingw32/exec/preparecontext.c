@@ -32,14 +32,14 @@ AROS_LH4(BOOL, PrepareContext,
   AROS_LIBFUNC_INIT
   IPTR args[8] = {0};
   WORD numargs = 0;
-  CONTEXT *ctx;
+  struct AROSCPUContext *ctx;
 
   D(kprintf("[PrepareContext] preparing task \"%s\" entry: %p fallback: %p\n",task->tc_Node.ln_Name,entryPoint,fallBack));
  
   if (!(task->tc_Flags & TF_ETASK) )
 	  return FALSE;
   
-  ctx = AllocTaskMem (task, sizeof(CONTEXT), MEMF_PUBLIC|MEMF_CLEAR);
+  ctx = AllocTaskMem (task, sizeof(struct AROSCPUContext), MEMF_PUBLIC|MEMF_CLEAR);
   GetIntETask (task)->iet_Context = ctx;
   if (!ctx)
 	  return FALSE;
