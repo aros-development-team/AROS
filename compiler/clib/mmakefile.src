@@ -326,6 +326,7 @@ SHARED	:= \
 	stdtime/timelocal	\
 	strftime \
 	strerror \
+	strptime \
 	strtol \
 	strtoll \
 	strtoul \
