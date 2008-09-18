@@ -16,7 +16,7 @@ typedef unsigned char UBYTE;
 #include "kernel_intern.h"
 #include "syscall.h"
 #include "host_debug.h"
-#include "contextsave.h"
+#include "cpucontext.h"
 
 #define DI(x) /* Interrupts debug     */
 #define DS(x) /* Task switcher debug  */
