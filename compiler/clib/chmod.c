@@ -71,7 +71,7 @@ ULONG prot_u2a(mode_t protect);
 /* taken from emul_handler */
 ULONG prot_u2a(mode_t protect)
 {
-    ULONG aprot = FIBF_SCRIPT;
+    ULONG aprot = 0;
 
     /* The following three (AROS) flags are low-active! */
     if (!(protect & S_IRUSR))
@@ -94,6 +94,9 @@ ULONG prot_u2a(mode_t protect)
 	aprot |= FIBF_OTR_WRITE;
     if ((protect & S_IXOTH))
 	aprot |= FIBF_OTR_EXECUTE;
+
+    if ((protect & S_ISVTX))
+        aprot |= FIBF_SCRIPT;
 
     return aprot;
 }
