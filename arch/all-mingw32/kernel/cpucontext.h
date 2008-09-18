@@ -16,8 +16,6 @@ struct AROSCPUContext
 				  (ctx)->SegSs = SegSS_Save; \
 				  (ctx)->ContextFlags &= CONTEXT_CONTROL|CONTEXT_INTEGER|CONTEXT_FLOATING_POINT|CONTEXT_EXTENDED_REGISTERS
 
-#define GetTEB(ctx) (TEB *)(ctx)->SegFs
-
 #define PRINT_CPUCONTEXT(ctx) \
 	printf ("    ContextFlags: 0x%08lX\n" \
 		"    ESP=%08lx  EBP=%08lx  EIP=%08lx\n" \

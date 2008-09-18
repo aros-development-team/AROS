@@ -2,12 +2,15 @@
 
 #include <aros/system.h>
 #include <windows.h>
+#include <ddk/ntddk.h>
+#include "win32_intern.h"
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
 #define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
 #define __typedef_BYTE /* that you can't use it in OS-native part of the code and can't use any AROS structure     */
 #define __typedef_BOOL /* definition that contains BOOL.                                                           */
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
+#undef IsListEmpty
 
 #include <stddef.h>
 #include <stdio.h>
@@ -29,6 +32,7 @@ struct SwitcherData {
 };
 
 struct SwitcherData SwData;
+TEB *MainTEB;
 unsigned char Ints_Enabled = 0;
 unsigned char Supervisor = 0;
 struct ExecBase **SysBasePtr;
@@ -177,6 +181,7 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     if (SwData.IntTimer) {
 	ThisProcess = GetCurrentProcess();
 	if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+	    MainTEB = NtCurrentTeb();
 	    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
 	    if (SwitcherThread) {
 	  	D(printf("[KRN] Task switcher started\n"));

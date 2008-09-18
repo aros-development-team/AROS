@@ -3,6 +3,7 @@
 #include <aros/system.h>
 #include <windows.h>
 #include <ddk/ntddk.h>
+#include "win32_intern.h"
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
 #define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
 #define __typedef_BYTE /* that you can't use it in OS-native part of the code and can't use any AROS structure     */
@@ -20,7 +21,6 @@ typedef unsigned char UBYTE;
 #include "kernel_intern.h"
 #include "host_debug.h"
 #include "cpucontext.h"
-#include "win32_intern.h"
 
 /* We have to redefine these flags here because including exec_intern.h causes conflicts
    between dos.h and WinAPI headers. This needs to be fixed - Pavel Fedin <sonic_amiga@rambler.ru */
@@ -63,7 +63,6 @@ void core_Dispatch(CONTEXT *regs)
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
     struct AROSCPUContext *ctx;
-    TEB *Teb;
 
     if (SysBase)
     {
@@ -111,10 +110,8 @@ void core_Dispatch(CONTEXT *regs)
         
         /* Restore the task's state */
         ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
-        Teb = GetTEB(regs);
         CopyMemory(regs, ctx, sizeof(CONTEXT));
-/* TODO: This crashes, looks like TEB address is incorrect here
-       Teb->LastErrorValue = ctx->LastError; */
+        MainTEB->LastErrorValue = ctx->LastError;
         
         /* Leave interrupt and jump to the new task */
         core_LeaveInterrupt();
@@ -126,7 +123,6 @@ void core_Switch(CONTEXT *regs)
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
     struct AROSCPUContext *ctx;
-    TEB *Teb;
     
     if (SysBase)
     {
@@ -139,8 +135,7 @@ void core_Switch(CONTEXT *regs)
         /* Copy current task's context into the ETask structure */
         ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
         CopyMemory(ctx, regs, sizeof(CONTEXT));
-        Teb = GetTEB(regs);
-/*      ctx->LastError = Teb->LastErrorValue; */
+        ctx->LastError = MainTEB->LastErrorValue; 
         
         /* store IDNestCnt into tasks's structure */  
         task->tc_IDNestCnt = SysBase->IDNestCnt;

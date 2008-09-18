@@ -75,6 +75,7 @@ static inline void bug(const char *format, ...)
     va_end(args);
 }
 #else
+extern TEB *MainTEB;
 extern unsigned char Ints_Enabled;
 extern struct ExecBase **SysBasePtr;
 extern struct KernelBase **KernelBasePtr;
