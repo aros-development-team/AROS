@@ -109,7 +109,7 @@ struct tm *localtime_r(const time_t *, struct tm *);
 
 #if __XSI_VISIBLE
 /* NOTIMPL struct tm *getdate(const char *); */
-/* NOTIMPL char      *strptime(const char *, const char *, struct tm *); */
+char      *strptime(const char *, const char *, struct tm *);
 #endif
 
 #if __POSIX_VISIBLE >= 199309
