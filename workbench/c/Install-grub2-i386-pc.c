@@ -1173,12 +1173,8 @@ VOID flushFS(CONST_STRPTR path)
 
     /* Try to flush 10 times. 5 seconds total */
     
-    /* This is needed for SFS, because Inhibit will fail
-     * if there is unwritten data in the buffers. By waiting
-     * until Inhibit succeds, we can be sure data has been written
-     * The correct way of doing things would be to sent ACTION_FLUSH to
-     * SFS handler.
-     */
+    /* Failsfase in case first Inhibit fails in some way (was needed
+     * for SFS because non flushed data was failing Inhibit) */
      
     for (i = 0; i < 10; i++)
     {
