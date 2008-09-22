@@ -19,7 +19,8 @@ FILES := \
 	fchdir \
 	uname \
 	strptime \
-	fchmod
+	fchmod \
+	vfork
 
 EXEDIR := $(AROS_TESTS)/clib
 

@@ -112,6 +112,7 @@ SHARED	:= \
 	__upath \
 	__vcformat \
 	__vcscan \
+	__vfork \
 	abort \
 	abs \
 	access \
@@ -360,6 +361,10 @@ SHARED	:= \
 	wait \
 	write
 
+SHARED_ARCH := \
+    vfork \
+    vfork_longjmp
+
 ROM_ONLY := \
 	__assert_kernel
 
@@ -452,7 +457,8 @@ COMMON_OBJ := 	$(foreach f,$(COMMON),$(OBJDIR)/$(f).o) \
  
 SHARED_OBJ :=	$(COMMON_OBJ) $(STUBS) $(OBJDIR)/arosc_autoinit.o
 
-MODULE_OBJ :=	$(foreach f, $(SHARED), $(OBJDIR)/shared/$(f).o)
+MODULE_OBJ :=	$(foreach f, $(SHARED), $(OBJDIR)/shared/$(f).o) \
+	   	$(foreach f,$(SHARED_ARCH),$(OBJDIR)/shared/arch/$(f).o) 
 
 ROM_OBJ	   :=	$(foreach f,$(ROM_ONLY),$(OBJDIR)/rom/$(f).o) \
 		$(foreach f,$(ROM_COMMON),$(OBJDIR)/$(f).o) \

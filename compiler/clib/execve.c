@@ -5,18 +5,25 @@
     POSIX function execve().
 */
 
+#define DEBUG 0
+
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
+#include <dos/filesystem.h>
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <__errno.h>
 #include "__upath.h"
+#include "__open.h"
+#include "__arosc_privdata.h"
+#include "__vfork.h"
 
 /* Return TRUE if there are any white spaces in the string */
 BOOL containswhite(const char *str)
@@ -84,7 +91,63 @@ char * appendarg(char *argptr, int *argptrsize, const char *arg)
 	return argptr;
 }
 
-extern void __execve_exit(int returncode);
+BPTR DupFHFromfd(int fd, ULONG mode);
+
+LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
+{
+    BPTR oldin = MKBADDR(NULL), oldout = MKBADDR(NULL), olderr = MKBADDR(NULL);
+    BPTR in, out, err;
+    char *oldtaskname;
+    APTR udata;
+    LONG returncode;
+        
+    in  = DupFHFromfd(STDIN_FILENO,  FMF_READ);
+    out = DupFHFromfd(STDOUT_FILENO, FMF_WRITE);
+    err = DupFHFromfd(STDERR_FILENO, FMF_WRITE);
+    
+    if(in) 
+        oldin = SelectInput(in);
+    if(out) 
+        oldout = SelectOutput(out);
+    if(err)
+        olderr = SelectError(err);
+
+    oldtaskname = FindTask(NULL)->tc_Node.ln_Name;
+    FindTask(NULL)->tc_Node.ln_Name = taskname;
+    SetProgramName(taskname);
+
+    udata = FindTask(NULL)->tc_UserData;
+    FindTask(NULL)->tc_UserData = NULL;
+    returncode = RunCommand(
+        seglist,
+        stacksize, 
+        args,
+        strlen(args)
+    );
+    FindTask(NULL)->tc_UserData = udata;
+
+    FindTask(NULL)->tc_Node.ln_Name = oldtaskname;
+    SetProgramName(oldtaskname);
+    UnLoadSeg(seglist);
+        
+    if(in)
+    {
+	Close(in);
+        SelectInput(oldin);
+    }
+    if(out)
+    {
+	Close(out);
+        SelectOutput(oldout);
+    }
+    if(err)
+    {
+	Close(err);
+	SelectError(olderr);
+    }
+    
+    return returncode;
+}
 
 /*****************************************************************************
 
@@ -110,17 +173,13 @@ extern void __execve_exit(int returncode);
 
     RESULT
 	Returns -1 and sets errno appropriately in case of error, otherwise
-	returns 0.
+	doesn't return.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	As opposed to *nix execve implementations, this implementation DOES
-	RETURN to caller. Its purpose is to ease porting of programs using
-	exec functions, you still have to make sure that after calling this
-	function program will behave as anticipated.
 
     SEE ALSO
 	
@@ -142,9 +201,8 @@ extern void __execve_exit(int returncode);
     BPTR seglist;
     int returncode;
     struct CommandLineInterface *cli = Cli();
-    const char *afilename;
+    char *afilename = NULL;
     int saved_errno = 0;
-    char *oldtaskname;
 
     /* Sanity check */
     if (filename == NULL || filename[0] == '\0' || argv == NULL || envp == NULL)
@@ -161,7 +219,10 @@ extern void __execve_exit(int returncode);
     		/* It is a script, let's read the first line */
     		if(fgets(firstline, sizeof(firstline) - 1, program))
     		{
-    			linebuf = firstline;
+    		    /* delete end of line if present */
+    		    if(firstline[0] && firstline[strlen(firstline)-1] == '\n')
+    			firstline[strlen(firstline)-1] = '\0';
+    		    linebuf = firstline;
     		    while(isblank(*linebuf)) linebuf++;
     		    if(*linebuf != '\0')
     		    {
@@ -222,7 +283,7 @@ extern void __execve_exit(int returncode);
             	goto error;
             }
             /* Follow with argv */
-            arg = (char**) argv;
+            arg = (char**) argv + 1;
         }
         else
         	arg++;
@@ -258,7 +319,7 @@ extern void __execve_exit(int returncode);
     }
     
     /* Get the path for LoadSeg() */
-    afilename = __path_u2a(inter ? inter : (char*) filename);
+    afilename = strdup(__path_u2a(inter ? inter : (char*) filename));
     if(!afilename)
     {
     	saved_errno = errno;
@@ -285,20 +346,74 @@ extern void __execve_exit(int returncode);
     }
     
     /* Load and run the command */
-    if((seglist = LoadSeg(afilename)))
+    if((seglist = LoadSeg((CONST_STRPTR) afilename)))
     {
-    	oldtaskname = FindTask(NULL)->tc_Node.ln_Name;
-    	FindTask(NULL)->tc_Node.ln_Name = (afilename);
-        SetProgramName(inter ? inter : argv[0]);
-        returncode = RunCommand(
-            seglist,
-            cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT, 
-            argptr,
-            strlen(argptr)
-        );
-        FindTask(NULL)->tc_Node.ln_Name = oldtaskname;
-        UnLoadSeg(seglist);
-        return 0;
+        free(afilename);
+        
+        struct vfork_data *udata = FindTask(NULL)->tc_UserData;
+	if(udata && udata->magic == VFORK_MAGIC)
+	{
+	    /* This execve() was called from vfork()ed process. We are going
+	       to switch from stack borrowed from the parent process to the 
+	       original stack of this process. First we have to store all
+	       local variables in udata to let them survive the stack change */
+	    udata->exec_seglist = seglist;
+	    udata->exec_arguments = argptr;
+	    udata->exec_stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+	    udata->exec_taskname = (inter ? inter : argv[0]);
+	    
+	    /* Set this so we know that execve was called */
+	    udata->child_executed = 1;
+
+	    D(bug("Restoring child stack to %p < %p < %p\n", 
+		udata->child_SPLower, 
+		udata->child_SPReg, 
+		udata->child_SPUpper)
+	    );
+
+            /* Restoring child stack */
+	    Forbid();
+	    udata->child->tc_SPLower = udata->child_SPLower;
+	    udata->child->tc_SPUpper = udata->child_SPUpper;
+	    /* Since we are switching to child's stack and in return jmp_buf we
+	       have parent's stack pointer saved, we have to set stack value in
+	       jmp_buf to child's stack pointer, otherwise it will be outside
+	       tc_SPLower-tc_SPUpper range after longjmp and exception will 
+	       occur. */
+	    udata->child_startup.as_startup_jmp_buf[0].regs[STACK_INDEX] = (unsigned long) udata->child_SPReg;
+	    AROS_GET_SP = udata->child_SPReg;
+	    Permit();
+	    
+	    D(bug("Calling daddy\n"));
+	    /* Now call parent process, so it will resume his work */
+	    Signal(GETUDATA->parent, GETUDATA->parent_signal);
+
+	    GETUDATA->exec_returncode = exec_command(
+		GETUDATA->exec_seglist, 
+		GETUDATA->exec_taskname, 
+		GETUDATA->exec_arguments, 
+		GETUDATA->exec_stacksize
+	    );
+	    
+	    free(GETUDATA->exec_arguments);
+
+	    D(bug("exiting from forked execve()\n"));
+            _exit(GETUDATA->exec_returncode);
+	}
+	else
+	{
+	    returncode = exec_command(
+		seglist, 
+		(inter ? inter : argv[0]), 
+		argptr, 
+		cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT
+	    );
+	        
+	    free(argptr);
+
+	    D(bug("exiting from non-forked execve()\n"));
+	    _exit(returncode);		
+	}
     }
     else
     {
@@ -309,6 +424,7 @@ extern void __execve_exit(int returncode);
 
 error:
     free(argptr);
+    if(afilename != NULL) free(afilename);
     if(saved_errno) errno = saved_errno;
     return -1;
 } /* execve() */
