@@ -7,6 +7,11 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
   arch=i386 \
   asmfiles="longjmp setjmp"
 
+%build_archspecific \
+  mainmmake=linklibs-clib maindir=compiler/clib/shared \
+  arch=i386 \
+  asmfiles="vfork vfork_longjmp"
+
 #MM linklibs-clib-i386 : includes-asm_h-i386
 
 %common

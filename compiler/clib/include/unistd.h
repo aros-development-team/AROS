@@ -286,7 +286,7 @@ void        swab(const void * restrict src, void * restrict dst, size_t len);
 int         truncate(const char *path, off_t length);
 /* NOTIMPL useconds_t  ualarm(useconds_t microseconds, useconds_t interval); */
 int         usleep(useconds_t microseconds);
-/* NOTIMPL pid_t       vfork(void); */
+pid_t       vfork(void);
 #endif
 
 #if __POSIX_VERSION >= 200112
