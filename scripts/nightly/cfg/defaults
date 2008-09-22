@@ -48,7 +48,7 @@ CFG_UPLOAD_PRUNE=yes
 
 #-- Distribution Server ------------------------------------------------------
 # Hostname
-CFG_DS=aros.sf.net
+CFG_DS=web.sourceforge.net
 
 # User to log in as
 CFG_DS_USER=MUST_BE_SET
