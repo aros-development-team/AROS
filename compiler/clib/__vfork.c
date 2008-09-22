@@ -177,7 +177,7 @@ LONG launcher()
 	    Wait(GETUDATA->child_signal);
 	    FreeSignal(GETUDATA->child_signal);
 	    /* Parent won't need udata anymore, we can safely free it */
-	    FreeMem(udata, sizeof(struct vfork_data));   
+	    FreeMem(GETUDATA, sizeof(struct vfork_data));   
 	}
 	D(bug("Returning\n"));
 	return 0;
