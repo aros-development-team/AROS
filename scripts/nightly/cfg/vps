@@ -4,5 +4,5 @@ CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=caffer@cs.ucc.ie
 
 CFG_UPLOAD_ENABLE=yes
-CFG_DS_USER=ncafferkey
+CFG_DS_USER=ncafferkey,aros
 CFG_BACKUP_ENABLE=no
