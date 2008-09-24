@@ -128,7 +128,24 @@ LDLoad(
 	caller, caller->pr_Task.tc_Node.ln_Name, name, basedir
     ));
 
-    if (!strstr(name, ":")) {
+    if (strncmp(name, "PROGDIR:", 8) == 0)
+    {
+	/* Special case for explicit PROGDIR-based path */
+	if (__is_process(caller))
+	{
+	    if (caller->pr_HomeDir != NULL)
+	    {
+		BPTR oldHomeDir = me->pr_HomeDir;
+		D(bug("[LDLoad] Trying homedir\n"));
+		/* Temporarily override pr_HomeDir to let GetDeviceProc handle
+		   PROGDIR: case correctly while opening library file */
+		me->pr_HomeDir = caller->pr_HomeDir;
+		seglist = LoadSeg(name);
+		me->pr_HomeDir = oldHomeDir;
+	    }	
+	}
+    }
+    else if (!strstr(name, ":")) {
         delimPos = strlen(basedir);
 	pathLen = delimPos + strlen(name) + 2;
         path = AllocMem(pathLen, MEMF_ANY);
