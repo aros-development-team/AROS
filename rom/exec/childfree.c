@@ -31,6 +31,9 @@
 	The child will be freed.
 
     NOTES
+	This function will work correctly only for child tasks that are
+	processes created with NP_NotifyOnDeath set to TRUE.
+
 	Calling ChildFree() on a running child is likely to crash your
 	system badly.
 

@@ -47,6 +47,9 @@
 	This allows you to work out which of the children has exited.
 
     NOTES
+	This function will work correctly only for child tasks that are
+	processes created with NP_NotifyOnDeath set to TRUE.
+
 	Calling ChildWait() on a task that isn't your child will result in
 	a deadlock.
 
