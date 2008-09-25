@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 29020 2008-07-13 21:22:33Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 
