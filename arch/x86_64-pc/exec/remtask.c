@@ -12,6 +12,7 @@
 #include <proto/kernel.h>
 
 
+#include "exec_util.h"
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
 #   define DEBUG_RemTask 0
@@ -63,6 +64,7 @@
 {
     AROS_LIBFUNC_INIT
     struct MemList *mb;
+    struct ETask *et;
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -90,6 +92,13 @@
     while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
 	/* Free one MemList node */
 	FreeEntry(mb);
+
+    /* Uninitialize ETask structure */
+    et = GetETask(task);
+    if(et != NULL)
+    {
+	CleanupETask(task, et);
+    }
 
     /* Changing the task lists always needs a Disable(). */
     Disable();

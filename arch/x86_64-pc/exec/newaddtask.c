@@ -132,16 +132,21 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     /* Allocate the ETask structure if requested */
     if (task->tc_Flags & TF_ETASK)
     {
-	task->tc_UnionETask.tc_ETask = AllocTaskMem (task
-	    , sizeof (struct IntETask)
-	    , MEMF_ANY|MEMF_CLEAR
+	/*
+	 *  We don't add this to the task memory, it isn't free'd by
+	 *  RemTask(), rather by somebody else calling ChildFree().
+	 *  Alternatively, an orphaned task will free its own ETask.
+	 */
+	task->tc_UnionETask.tc_ETask = AllocVec
+	(
+	    sizeof (struct IntETask),
+	    MEMF_ANY|MEMF_CLEAR
 	);
 
 	if (!task->tc_UnionETask.tc_ETask)
 	    return NULL;
 
-	/* I'm the parent task */
-	GetETask(task)->et_Parent = FindTask(NULL);
+	InitETask(task, task->tc_UnionETask.tc_ETask);
     }
 
     /* Get new stackpointer. */
