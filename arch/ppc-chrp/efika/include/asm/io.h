@@ -72,75 +72,75 @@ static inline void outl_le(uint32_t val, uint32_t *port) {
     asm volatile("stwbrx %1,0,%2; eieio":"=m"(*port):"r"(val),"r"(port));
 }
 
-static inline void pci_outb(uint8_t val, uint16_t port)
-{
-    outb(val, (uint8_t *)(port + PCIC0_IO));
-}
-
-static inline void pci_outw(uint16_t val, uint16_t port)
-{
-    outw(val, (uint16_t *)(port + PCIC0_IO));
-}
-
-static inline void pci_outw_be(uint16_t val, uint16_t port)
-{
-    outw_be(val, (uint16_t *)(port + PCIC0_IO));
-}
-
-static inline void pci_outw_le(uint16_t val, uint16_t port)
-{
-    outw_le(val, (uint16_t *)(port + PCIC0_IO));
-}
-
-static inline void pci_outl(uint32_t val, uint16_t port)
-{
-    outl(val, (uint32_t *)(port + PCIC0_IO));
-}
-
-static inline void pci_outl_be(uint32_t val, uint16_t port)
-{
-    outl_be(val, (uint32_t *)(port + PCIC0_IO));
-}
-
-static inline void pci_outl_le(uint32_t val, uint16_t port)
-{
-    outl_le(val, (uint32_t *)(port + PCIC0_IO));
-}
-
-static inline uint8_t pci_inb(uint16_t port)
-{
-    return inb((uint8_t *)(port + PCIC0_IO));
-}
-
-static inline uint16_t pci_inw(uint16_t port)
-{
-    return inw((uint16_t *)(port + PCIC0_IO));
-}
-
-static inline uint16_t pci_inw_be(uint16_t port)
-{
-    return inw_be((uint16_t *)(port + PCIC0_IO));
-}
-
-static inline uint16_t pci_inw_le(uint16_t port)
-{
-    return inw_le((uint16_t *)(port + PCIC0_IO));
-}
-
-static inline uint32_t pci_inl(uint16_t port)
-{
-    return inl((uint32_t *)(port + PCIC0_IO));
-}
-
-static inline uint32_t pci_inl_be(uint16_t port)
-{
-    return inl_be((uint32_t *)(port + PCIC0_IO));
-}
-
-static inline uint32_t pci_inl_le(uint16_t port)
-{
-    return inl_le((uint32_t *)(port + PCIC0_IO));
-}
+//static inline void pci_outb(uint8_t val, uint16_t port)
+//{
+//    outb(val, (uint8_t *)(port + PCIC0_IO));
+//}
+//
+//static inline void pci_outw(uint16_t val, uint16_t port)
+//{
+//    outw(val, (uint16_t *)(port + PCIC0_IO));
+//}
+//
+//static inline void pci_outw_be(uint16_t val, uint16_t port)
+//{
+//    outw_be(val, (uint16_t *)(port + PCIC0_IO));
+//}
+//
+//static inline void pci_outw_le(uint16_t val, uint16_t port)
+//{
+//    outw_le(val, (uint16_t *)(port + PCIC0_IO));
+//}
+//
+//static inline void pci_outl(uint32_t val, uint16_t port)
+//{
+//    outl(val, (uint32_t *)(port + PCIC0_IO));
+//}
+//
+//static inline void pci_outl_be(uint32_t val, uint16_t port)
+//{
+//    outl_be(val, (uint32_t *)(port + PCIC0_IO));
+//}
+//
+//static inline void pci_outl_le(uint32_t val, uint16_t port)
+//{
+//    outl_le(val, (uint32_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint8_t pci_inb(uint16_t port)
+//{
+//    return inb((uint8_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint16_t pci_inw(uint16_t port)
+//{
+//    return inw((uint16_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint16_t pci_inw_be(uint16_t port)
+//{
+//    return inw_be((uint16_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint16_t pci_inw_le(uint16_t port)
+//{
+//    return inw_le((uint16_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint32_t pci_inl(uint16_t port)
+//{
+//    return inl((uint32_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint32_t pci_inl_be(uint16_t port)
+//{
+//    return inl_be((uint32_t *)(port + PCIC0_IO));
+//}
+//
+//static inline uint32_t pci_inl_le(uint16_t port)
+//{
+//    return inl_le((uint32_t *)(port + PCIC0_IO));
+//}
 
 
 #endif /*ASM_IO_H*/
