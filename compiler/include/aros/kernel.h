@@ -47,5 +47,6 @@ typedef enum {
 #define KRN_MEMLower         	(KRN_Dummy + 17)
 #define KRN_MEMUpper          	(KRN_Dummy + 18)
 #define KRN_OpenFirmwareTree	(KRN_Dummy + 19)
+#define KRN_HostInterface	(KRN_Dummy + 20)
 
 #endif /* AROS_KERNEL_H */
