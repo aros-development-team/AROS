@@ -9,6 +9,7 @@
 #include <utility/tagitem.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "hostinterface.h"
 
 #define STACK_SIZE 4096
 

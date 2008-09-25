@@ -6,23 +6,13 @@
  Lang: English
  */
 
-/* #define DEBUG */
-#define NATIVE
-
-#include "../include/aros/kernel.h"
 #include "elfloader32.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
-//#include "screen.h"
-//#include "bootstrap.h"
-//#include "support.h"
 
-#ifdef DEBUG
-#define D
-#else
 #define D(X)
-#endif
+
 #define kprintf printf
 
 /*

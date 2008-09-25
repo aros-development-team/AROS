@@ -7,7 +7,8 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
-    
+
+#include "../kernel/hostinterface.h"
 #include "hostlib_intern.h"
 
 #include LC_LIBDEFS_FILE
