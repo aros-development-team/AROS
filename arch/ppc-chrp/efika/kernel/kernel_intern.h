@@ -106,9 +106,18 @@ void core_Schedule(regs_t *regs) __attribute__((noreturn));
 void core_Dispatch(regs_t *regs) __attribute__((noreturn));
 void core_ExitInterrupt(regs_t *regs) __attribute__((noreturn));
 void core_Cause(struct ExecBase *SysBase);
-void mmu_init(struct TagItem *tags);
 void intr_init();
+void mmu_init(char *mmu_dir, uint32_t mmu_size);
+void ictl_init(void *);
+void ictl_enable_irq(uint8_t irqnum);
+void ictl_disable_irq(uint8_t irqnum);
 void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self);
+void __attribute__((noreturn)) ictl_handler(regs_t *ctx, uint8_t exception, void *self);
+void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void *self);
+
+int mmu_map_area(uint64_t virt, uint32_t phys, uint32_t length, uint32_t prot);
+int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot);
+
 
 #ifdef bug
 #undef bug

@@ -16,7 +16,7 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
 {
     struct KernelBase *KernelBase = getKernelBase();
 
-    D(bug("[KRN] SysCall handler. context @ %p SC=%d\n", ctx, ctx->gpr[3]));
+    //D(bug("[KRN] SysCall handler. context @ %p SC=%d\n", ctx, ctx->gpr[3]));
 
     if ((char*)ctx->srr0 < &__text_start || (char*)ctx->srr0 >= &__text_end)
     {
