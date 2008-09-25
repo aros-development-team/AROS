@@ -1,0 +1,28 @@
+#   $Id: mmakefile.src 29479 2008-09-13 18:59:00Z maddanio $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(GENINCDIR)
+
+#MM kernel-fs-emul-mingw32-linklib : includes linklibs kernel-fs-emul-mingw32-native
+#MM kernel-fs-emul-mingw32-kobj : includes linklibs kernel-fs-emul-mingw32-native
+
+%build_module mmake=kernel-fs-emul-mingw32 \
+  modname=emul modtype=device modsuffix=handler \
+  files=emul_handler
+
+NATIVE_DIR := $(GENDIR)/native
+NATIVE_OBJS := $(NATIVE_DIR)/emul_handler_native.o
+SOEXT := .dll
+SO_LDFLAGS := -shared
+
+#MM
+kernel-fs-emul-mingw32-native: $(BINDIR)/boot/emul_handler_native$(SOEXT)
+
+$(BINDIR)/boot/emul_handler_native$(SOEXT): $(NATIVE_OBJS)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
+
+$(NATIVE_DIR) :
+	mkdir $(NATIVE_DIR)
+	 
+$(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/rom/exec

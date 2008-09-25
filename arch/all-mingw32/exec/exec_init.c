@@ -195,6 +195,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
     {
 	struct Task    *t;
 	struct MemList *ml;
+	NT_TIB *tib;
 
 	ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
 	t  = (struct Task *)   AllocMem(sizeof(struct Process), MEMF_PUBLIC|MEMF_CLEAR);
@@ -221,9 +222,11 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	t->tc_Node.ln_Pri = 0;
 	t->tc_State = TS_RUN;
 	t->tc_SigAlloc = 0xFFFF;
-	t->tc_SPLower = 0;	    /* This is the system's stack */
-	t->tc_SPUpper = (APTR)~0UL;
 	t->tc_Flags |= TF_ETASK;
+	
+	tib = NtCurrentTeb();
+	t->tc_SPUpper = (APTR)((IPTR)tib->StackBase+4); /* This is the system's stack */
+	t->tc_SPLower = tib->StackLimit;
 
 	t->tc_UnionETask.tc_ETask = AllocVec
 	(
@@ -241,7 +244,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	InitETask(t, t->tc_UnionETask.tc_ETask);
 
 	GetIntETask(t)->iet_Context = AllocTaskMem(t
-	    , sizeof(CONTEXT)
+	    , sizeof(struct AROSCPUContext)
 	    , MEMF_PUBLIC|MEMF_CLEAR
 	);
 
