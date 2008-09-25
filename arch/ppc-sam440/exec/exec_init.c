@@ -313,12 +313,19 @@ int exec_main(struct TagItem *msg, void *entry)
 
         if (t->tc_Flags & TF_ETASK)
         {
-            t->tc_UnionETask.tc_ETask = AllocTaskMem(t, sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
+            t->tc_UnionETask.tc_ETask = AllocVec
+            (
+        	sizeof(struct IntETask), 
+        	MEMF_ANY|MEMF_CLEAR
+            );
 
             if (!t->tc_UnionETask.tc_ETask)
             {
                 D(bug("[exec] Not enough memory for first task\n"));
             }
+
+            /* Initialise the ETask data. */
+            InitETask(t, t->tc_UnionETask.tc_ETask);
 
             GetIntETask(t)->iet_Context = AllocTaskMem(t
                 , SIZEOF_ALL_REGISTERS

@@ -10,6 +10,7 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#include "exec_util.h"
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
 #   define DEBUG_RemTask 0
@@ -66,7 +67,6 @@
 	task=SysBase->ThisTask;
 
     D(bug("Call RemTask (%08lx (\"%s\"))\n", task, task->tc_Node.ln_Name));
-    et = GetETask(task);
 
     /*
 	Since it's possible that the following will free a task
@@ -96,61 +96,12 @@
 	/* Free one MemList node */
 	FreeEntry(mb);
 
-#if 0
+    /* Uninitialize ETask structure */
+    et = GetETask(task);
     if(et != NULL)
     {
-	struct ETask *child;
-
-	/* Clean up after all the children that the task didn't do itself. */
-	ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
-	{
-	    /* This is effectively ChildFree() */
-	    if(child->et_Result2)
-		FreeVec(child->et_Result2);
-	    FreeVec(child);
-	}
-
-	/* Orphan all our remaining children. */
-	{
-	    struct Task *save;
-
-	    /* Do an effective ChildOrphan(0) */
-	    ForeachNode(et->et_Children, child)
-		child->et_Parent = NULL;
-	}
-
-	/* If we have an ETask parent, tell it we have exited. */
-	if(et->et_Parent != NULL)
-	{
-	    child = GetETask(et->et_Parent);
-	    if(child != NULL)
-		PutMsg(&child->et_TaskMsgPort, et);
-	    else
-		FreeVec(et);
-	}
-	else
-	    FreeVec(et);
+	CleanupETask(task, et);
     }
-#else
-    if(et != NULL)
-    {
-    	/* Orphan all our remaining children. */
-	struct ETask *child;
-
-        /* Do an effective ChildOrphan(0) */
-	#warning FIXME: should we link the children to our parent?
-        ForeachNode(&et->et_Children, child)
-   	    child->et_Parent = NULL;
-
-        /* If we have an ETask parent, unlink us from it */
-        if(et->et_Parent != NULL)
-        {
-            REMOVE(et);
-        }    
-
-        FreeVec(et);	
-    }
-#endif
 
     /* Changing the task lists always needs a Disable(). */
     Disable();

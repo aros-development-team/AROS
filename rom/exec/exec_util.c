@@ -9,6 +9,7 @@
 #include <exec/tasks.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
+#include <dos/dosextens.h>
 
 #include <proto/exec.h>
 
@@ -260,6 +261,11 @@
 	    if (et->et_UniqueID == id)
 		return et;
 	}
+	ForeachNode(&thisET->et_TaskMsgPort.mp_MsgList, et)
+	{
+	    if (et->et_UniqueID == id)
+		return et;
+	}
     }
     return NULL;
 }
@@ -290,7 +296,7 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     }
 #endif
 
-#if 1
+    /* Get an unique identifier for this task */
     Forbid();
     while(et->et_UniqueID == 0)
     {
@@ -307,5 +313,77 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 	Enable();
     }
     Permit();
-#endif
+
+    /* Finally if the parent task is an ETask, add myself as its child */
+    if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
+    {
+	Forbid();
+	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
+	Permit();
+    }
 }
+
+void
+Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
+{
+    struct ETask *child, *parent;
+    if(!et)
+	return;
+
+    /* Clean up after all the children that the task didn't do itself. */
+    ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
+    {
+        /* This is effectively ChildFree() */
+        if(child->et_Result2)
+            FreeVec(child->et_Result2);
+#ifdef DEBUG_ETASK
+	FreeVec(child->iet_Me);
+#endif
+        FreeVec(child);
+    }
+
+    /* Orphan all our remaining children. */
+#warning FIXME: should we link the children to our parent?
+    ForeachNode(&et->et_Children, child)
+        child->et_Parent = NULL;
+
+    /* If we have an ETask parent, tell it we have exited. */
+    if(et->et_Parent != NULL)
+    {
+        parent = GetETask(et->et_Parent);
+        /* Nofity parent only if child was created with NP_NotifyOnDeath set 
+           to TRUE */
+        if(
+            parent != NULL && 
+            (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) && 
+            (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH)
+        )
+        {
+            REMOVE(et);
+            PutMsg(&parent->et_TaskMsgPort, et);
+        }
+        else if(parent != NULL)
+        {
+#ifdef DEBUG_ETASK
+	    FreeVec(et->iet_Me);
+#endif
+	    REMOVE(et);
+            FreeVec(et);
+        }
+        else
+        {
+#ifdef DEBUG_ETASK
+	    FreeVec(et->iet_Me);
+#endif
+            FreeVec(et);
+        }
+    }
+    else
+    {
+#ifdef DEBUG_ETASK
+	FreeVec(et->iet_Me);
+#endif
+        FreeVec(et);
+    }
+}
+

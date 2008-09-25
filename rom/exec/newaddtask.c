@@ -135,8 +135,6 @@
     /* Allocate the ETask structure if requested */
     if (task->tc_Flags & TF_ETASK)
     {
-	struct ETask *et;
-
 	/*
 	 *  We don't add this to the task memory, it isn't free'd by
 	 *  RemTask(), rather by somebody else calling ChildFree().
@@ -151,44 +149,7 @@
 	if (!task->tc_UnionETask.tc_ETask)
 	    return NULL;
 
-	et = (struct ETask *)task->tc_UnionETask.tc_ETask;
-	NEWLIST(&et->et_Children);
-        /* Add the newly created task to the parent's children
-	   list. */
-	et->et_Parent = FindTask(NULL);
-        Forbid();
-	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
-	Permit();
-
-	/* Initialise the message list */
-	NEWLIST(&et->et_TaskMsgPort.mp_MsgList);
-	et->et_TaskMsgPort.mp_Flags = PA_SIGNAL;
-	et->et_TaskMsgPort.mp_Node.ln_Type = NT_MSGPORT;
-	et->et_TaskMsgPort.mp_SigTask = task;
-	et->et_TaskMsgPort.mp_SigBit = SIGB_CHILD;
-
-	/* Initialise the trap fields */
-	et->et_TrapAlloc = SysBase->TaskTrapAlloc;
-	et->et_TrapAble = 0;
-
-#if 0
-	Forbid();
-	while(et->et_UniqueID == 0)
-	{
-	    /*
-	     *	Add some fuzz on wrapping. Its likely that the early numbers
-	     *	where taken by somebody else.
-	     */
-	    if(++SysBase->ex_TaskID == 0)
-		SysBase->exTaskID = 1024;
-
-	    Disable();
-	    if(FindTaskByID(SysBase->ex_TaskID, SysBase) == NULL)
-		et->et_UniqueID = SysBase->ex_TaskID;
-	    Enable();
-	}
-	Permit();
-#endif
+	InitETask(task, task->tc_UnionETask.tc_ETask);
     }
     else
     {
