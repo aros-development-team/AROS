@@ -91,7 +91,9 @@ COMMONTESTFILES := \
     callhooktest \
     scanvarstest \
     runcommand \
-    aroscprivdata
+    aroscprivdata \
+    childwait \
+    childstatus
 
 HOSTEDTESTFILES :=  \
     hostlib
