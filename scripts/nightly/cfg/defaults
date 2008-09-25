@@ -57,7 +57,7 @@ CFG_DS_USER=MUST_BE_SET
 CFG_DS_KEY=.ssh/id_dsa.aros-nightly-upload
 
 # Destination directory
-CFG_DS_DIRECTORY=aros/uploads/nightly/
+CFG_DS_DIRECTORY=uploads/nightly/
 
 #-- Backup Server ------------------------------------------------------------
 # Hostname
