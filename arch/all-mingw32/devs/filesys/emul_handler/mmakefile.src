@@ -10,16 +10,20 @@ USER_INCLUDES := -I$(GENINCDIR)
   modname=emul modtype=device modsuffix=handler \
   files=emul_handler
 
+NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_DIR := $(GENDIR)/native
 NATIVE_OBJS := $(NATIVE_DIR)/emul_handler_native.o
 SOEXT := .dll
 SO_LDFLAGS := -shared
 
 #MM
-kernel-fs-emul-mingw32-native: $(BINDIR)/boot/emul_handler_native$(SOEXT)
+kernel-fs-emul-mingw32-native: $(NATIVE_BINDIR)/emul_handler$(SOEXT)
 
-$(BINDIR)/boot/emul_handler_native$(SOEXT): $(NATIVE_OBJS)
+$(NATIVE_BINDIR)/emul_handler$(SOEXT): $(NATIVE_OBJS) $(NATIVE_BINDIR)
 	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
+
+$(NATIVE_BINDIR) :
+	mkdir -p $(NATIVE_BINDIR)
 
 $(NATIVE_DIR) :
 	mkdir $(NATIVE_DIR)

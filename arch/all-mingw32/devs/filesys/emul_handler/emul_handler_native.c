@@ -46,67 +46,6 @@ static DWORD u2a[][2]=
   { 0, ERROR_UNKNOWN }
 };
 
-static void fixpath(char *pathname)
-{
-  D(printf("supposed to fix path : %s\n",pathname));
-#if 0  
-  struct dirent 	*de;
-  struct stat		st;
-  DIR			*dir;
-  char		*pathstart, *pathend;
-  BOOL		dirfound;
-  
-  pathstart = pathname;
-
-  if (stat((const char *)pathname, &st) != 0)
-  {
-	/* file/dir called pathname does not exist */
-	
-	while((pathstart = strchr(pathstart, '/')))
-	{
-	  pathstart++;
-	  
-	  pathend = strchr(pathstart, '/');
-	  if (pathend) *pathend = '\0';
-	  
-	  dirfound = TRUE;
-	  
-	  if (stat((const char *)pathname, &st) != 0)
-	  {
-		dirfound = FALSE;
-		
-		pathstart[-1] = '\0';
-		dir = opendir(pathname);
-		pathstart[-1] = '/';		
-		
-		if (dir)
-		{
-		  while((de = readdir(dir)))
-		  {
-			if (strcasecmp(de->d_name, pathstart) == 0)
-			{
-			  dirfound = TRUE;
-			  strcpy(pathstart, de->d_name);
-			  break;
-			}
-		  }	    
-		  closedir(dir);
-		  
-		} /* if ((dir = opendir(pathname))) */
-		
-	  } /* if (stat((const char *)pathname, &st) != 0) */
-	  
-	  if (pathend) *pathend = '/';			    
-	  
-	  if (!dirfound) break;
-	  
-	} /* while((pathpos = strchr(pathpos, '/))) */
-	
-  } /* if (stat((const char *)pathname, &st) != 0) */
-  
-#endif
-}
-
 /* Make unix protection bits out of AROS protection bits. */
 mode_t prot_a2u(ULONG protect)
 {

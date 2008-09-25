@@ -125,10 +125,8 @@ static APTR emul_malloc(struct emulbase *emulbase, ULONG size)
 
 static void emul_free(struct emulbase *emulbase, APTR mem)
 {
-  if (!mem)
+  if (mem)
   {
-	kprintf("*** emul_handler: tried to free NULL mem ***\n");
-  } else {
 	ULONG *m = (ULONG *)mem;
 	ULONG size = *--m;
 	
@@ -138,6 +136,7 @@ static void emul_free(struct emulbase *emulbase, APTR mem)
 	FreePooled(emulbase->mempool, m, size);
 	ReleaseSemaphore(&emulbase->memsem);
   }
+  	D(else kprintf("*** emul_handler: tried to free NULL mem ***\n");)
 }
 
 /*********************************************************************************************/
@@ -148,7 +147,7 @@ static BOOL is_root_filename(char *filename)
   
   if ((*filename == '\0') ||
 	  (!strcmp(filename, ".")) ||
-	  (!strcmp(filename, "./")))
+	  (!strcmp(filename, ".\\")))
   {
 	result = TRUE;
   }
@@ -159,7 +158,7 @@ static BOOL is_root_filename(char *filename)
 /*********************************************************************************************/
 
 /* Create a plain path out of the supplied filename.
- Eg 'path1/path2//path3/' becomes 'path1/path3'.
+ Eg 'path1\path2\\path3\' becomes 'path1\path3'.
  */
 BOOL shrink(struct emulbase *emulbase, char *filename)
 {
@@ -174,7 +173,7 @@ BOOL shrink(struct emulbase *emulbase, char *filename)
 	/* leading slashes? --> return FALSE. */
 	if(*filename=='/') return FALSE;
 	
-	/* remove superflous paths (ie paths that are followed by '//') */
+	/* remove superflous paths (ie paths that are followed by '/') */
 	s1=strstr(filename,"//");
 	if(s1==NULL)
 	  break;
@@ -204,6 +203,8 @@ static LONG makefilename(struct emulbase *emulbase,
 {
   LONG ret = 0;
   int len, dirlen;
+  char *c;
+
   dirlen = strlen(dirname) + 1;
   len = strlen(filename) + dirlen + 1 + /*safety*/ 1;
   *dest=(char *)emul_malloc(emulbase, len);
@@ -222,6 +223,12 @@ static LONG makefilename(struct emulbase *emulbase,
 	  emul_free(emulbase, *dest);
 	  *dest = NULL;
 	  ret = ERROR_OBJECT_NOT_FOUND;
+	} else {
+	  /* We are on Windows, so we have to revert slashes */
+	  for (c = *dest; *c; c++) {
+	      if (*c == '/')
+	          *c = '\\';
+	  }
 	}
   } else
 	ret = ERROR_NO_FREE_STORE;
@@ -499,15 +506,15 @@ static LONG startup(struct emulbase *emulbase)
   struct DeviceNode *dlv, *dlv2;
   LONG ret = ERROR_NO_FREE_STORE;
   
-  kprintf("[Emulhandler] startup\n");
+  D(kprintf("[Emulhandler] startup\n"));
   ExpansionBase = OpenLibrary("expansion.library",0);
   if(ExpansionBase != NULL)
   {
-    kprintf("[Emulhandler] startup: got ExpansionBase\n");
+    D(kprintf("[Emulhandler] startup: got ExpansionBase\n"));
 	fhi=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 	if(fhi!=NULL)
 	{
-  kprintf("[Emulhandler] allocated fhi\n");
+	  D(kprintf("[Emulhandler] allocated fhi\n"));
 	  fhi->pathname   = NULL; /* just to make sure... */
 	  fhi->DIR        = NULL;
 	  fhi->volume     = NULL;
@@ -516,7 +523,7 @@ static LONG startup(struct emulbase *emulbase)
 	  fho=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 	  if(fho!=NULL)
 	  {
-  kprintf("[Emulhandler] startup allocated fho\n");
+		D(kprintf("[Emulhandler] startup allocated fho\n"));
 		fho->pathname   = NULL; /* just to make sure... */
 		fho->DIR        = NULL;
 		fho->volume     = NULL;
@@ -525,7 +532,7 @@ static LONG startup(struct emulbase *emulbase)
 		fhe=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 		if(fhe!=NULL)
 		{
-  kprintf("[Emulhandler] startup allocated fhe\n");
+		  D(kprintf("[Emulhandler] startup allocated fhe\n"));
 		  fhe->pathname   = NULL; /* just to make sure... */
 		  fhe->DIR        = NULL;
 		  fhe->volume     = NULL;
@@ -534,7 +541,7 @@ static LONG startup(struct emulbase *emulbase)
 		  fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle) + 256 + AROS_WORSTALIGN, MEMF_PUBLIC);
 		  if(fhv != NULL)
 		  {
-  kprintf("[Emulhandler] startup allocated fhv\n");
+			D(kprintf("[Emulhandler] startup allocated fhv\n"));
 			fhv->name = ".";
 			fhv->type = FHD_DIRECTORY;
 			fhv->pathname = NULL; /* just to make sure... */
@@ -545,7 +552,7 @@ static LONG startup(struct emulbase *emulbase)
 			int kind;
 			if(GetCWD(fhv->volume, 256) && (kind=Stat(fhv->name,0))==2)
 			{
-  kprintf("[Emulhandler] startup got valid directory\n");
+			  D(kprintf("[Emulhandler] startup got valid directory\n"));
 #define DEVNAME "EMU"
 #define VOLNAME "System"
 			  
@@ -587,11 +594,11 @@ static LONG startup(struct emulbase *emulbase)
 			  
 			  if(dlv != NULL && dlv2 != NULL)
 			  {
-  kprintf("[Emulhandler] startup allocated dlv/dlv2\n");
 				BSTR s;
 				BSTR s2;
 				WORD   i;
-				
+
+				D(kprintf("[Emulhandler] startup allocated dlv/dlv2\n"));
 				/*  We want s to point to the first 4-byte
 				 aligned memory after the structure.
 				 */
@@ -676,8 +683,8 @@ char * pathname_from_name (struct emulbase *emulbase, char * name)
   long len = strlen(name);
   long i = len;
   char * result = NULL;
-  /* look for the first '/' in the filename starting at the end */
-  while (i != 0 && name[i] != '/')
+  /* look for the first '\' in the filename starting at the end */
+  while (i != 0 && name[i] != '\\')
     i--;
   
   if (0 != i)
@@ -699,8 +706,8 @@ char * filename_from_name(struct emulbase *emulbase, char * name)
   long len = strlen(name);
   long i = len;
   char * result = NULL;
-  /* look for the first '/' in the filename starting at the end */
-  while (i != 0 && name[i] != '/')
+  /* look for the first '\' in the filename starting at the end */
+  while (i != 0 && name[i] != '\\')
     i--;
   
   if (0 != i)
@@ -831,7 +838,7 @@ static LONG examine(struct emulbase *emulbase,
 		last=name="";
 	  
 	  while(*name)
-		if(*name++=='/')
+		if(*name++=='\\')
 		  last=name;
 	  for(;;)
 	  {
@@ -900,7 +907,7 @@ static LONG examine_next(struct emulbase *emulbase,
   strcpy(name, pathname);
   
   if (*name)
-	strcat(name, "/");
+	strcat(name, "\\");
   
   strcat(name, dirname);
   
@@ -915,16 +922,18 @@ static LONG examine_next(struct emulbase *emulbase,
   
   emul_free(emulbase, name);
     
-  /* fast copying of the filename */
+  /* fast copying of the filename with slashes conversion */
   src  = dirname;
   dest = FIB->fib_FileName;
   
   for (i =0; i<MAXFILENAMELENGTH-1;i++)
   {
-	if(! (*dest++=*src++) )
-	{
-	  break;
-	}
+      if (*src == '\\')
+          *dest = *src;
+      else
+          *dest = '/';
+      if (!*src)
+          break;
   }
   
   FIB->fib_DiskKey = (LONG)TellDir(ReadDIR);
@@ -973,7 +982,7 @@ static LONG examine_all(struct emulbase *emulbase,
 	}
 	strcpy(name,fh->name);
 	if(*name)
-	  strcat(name,"/");
+	  strcat(name,"\\");
 	strcat(name,dirname);
 	old=fh->name;
 	fh->name=name;
@@ -1705,7 +1714,7 @@ int loadhooks(struct emulbase *emulbase)
     return 1;
   D(kprintf("[EmulHandler] got hostlib.resource HostLibBase=%p\n", HostLibBase));
 
-  emulbase->EmulHandle = HostLib_Open("emul_handler_native.dll", NULL);
+  emulbase->EmulHandle = HostLib_Open("Libs\\Host\\emul_handler.dll", NULL);
   if (emulbase->EmulHandle) {
     EmulIFace = (struct EmulInterface *)HostLib_GetInterface(emulbase->EmulHandle, EmulSymbols, &r);
     D(bug("[EmulHandler] Native library interface: 0x%08lX\n", EmulIFace));
