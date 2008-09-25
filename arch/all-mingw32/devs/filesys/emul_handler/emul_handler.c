@@ -2,25 +2,17 @@
  Copyright © 1995-2008, The AROS Development Team. All rights reserved.
  $Id: emul_handler.c 29350 2008-08-31 18:05:43Z neil $
  
- Desc: Filesystem that accesses an underlying POSIX filesystem.
+ Desc: Filesystem that accesses an underlying Windows filesystem.
  Lang: english
- */
 
-/* Implementing this handler is quite complicated as it uses AROS system-calls
- as well as POSIX calls of the underlying operating system. This easily
- leads to complications. So take care, when updating this handler!
- 
  Please always update the version-string below, if you modify the code!
  */
 
 /*********************************************************************************************/
 
-/* AROS includes */
+#define DEBUG 0
 
-# define  DEBUG  1
-# include <aros/debug.h>
-
-
+#include <aros/debug.h>
 #include <aros/system.h>
 #include <aros/symbolsets.h>
 #include <exec/resident.h>
@@ -202,16 +194,18 @@ static LONG makefilename(struct emulbase *emulbase,
 						 char **dest, STRPTR dirname, STRPTR filename)
 {
   LONG ret = 0;
-  int len, dirlen;
+  int len, flen, dirlen;
   char *c;
 
+  D(bug("[emul] makefilename(\"%s\", \"%s\")\n", dirname, filename));
   dirlen = strlen(dirname) + 1;
-  len = strlen(filename) + dirlen + 1 + /*safety*/ 1;
+  flen = strlen(filename);
+  len = flen + dirlen + 1 + /*safety*/ 1;
   *dest=(char *)emul_malloc(emulbase, len);
   if ((*dest))
   {
 	CopyMem(dirname, *dest, dirlen);
-	if (dirlen > 1)
+	if ((dirlen > 1) && flen)
 	{
 	  if ((*dest)[dirlen - 2] != '/') strcat(*dest, "/");
 	}
@@ -229,10 +223,10 @@ static LONG makefilename(struct emulbase *emulbase,
 	      if (*c == '/')
 	          *c = '\\';
 	  }
+	  D(bug("[emul] resulting filename: %s\n", *dest));
 	}
   } else
 	ret = ERROR_NO_FREE_STORE;
-  
   return ret;
 }
 
@@ -332,6 +326,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	  int kind;
 	  if(0<(kind = Stat(*fh->name?fh->name:".",0)))
 	  {
+	        D(bug("[emul] object type: %ld\n", kind));
 		if(kind == 1)
 		{
 		  fh->fd = DoOpen(*fh->name ? fh->name : ".", mode, 0770);
@@ -354,14 +349,19 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 		  ret = ERROR_OBJECT_WRONG_TYPE;
 	  }
 	  /* Stat() failed. If ret is unset, generate it from errno. */
-	  if (!ret)
+	  if (!ret) {
+	        D(bug("[emul] Retrieving error code\n"));
 		ret = Errno();
+	  }
 	  
+	  D(bug("[emul] Freeing pathname\n"));
 	  emul_free(emulbase, fh->name);
 	}
+	D(bug("[emul] Freeing filehandle\n"));
 	FreeMem(fh, sizeof(struct filehandle));
   } else
 	ret = ERROR_NO_FREE_STORE;
+  D(bug("[emul] open_() returns %lu\n", ret));
   return ret;
 }
 
@@ -1344,6 +1344,7 @@ AROS_LH1(void, beginio,
   switch(iofs->IOFS.io_Command)
   {
     case FSA_OPEN:
+          D(bug("[emul] FSA_OPEN(%s)\n", iofs->io_Union.io_OPEN.io_Filename));
 	  error = open_(emulbase,
 					(struct filehandle **)&iofs->IOFS.io_Unit,
 					iofs->io_Union.io_OPEN.io_Filename,
@@ -1353,11 +1354,13 @@ AROS_LH1(void, beginio,
 		  (iofs->io_Union.io_OPEN.io_FileMode & FMF_AMIGADOS)
 		  )
 	  {
+	        D(bug("[emul] Retrying in read mode\n"));
 		error = open_(emulbase,
                       (struct filehandle **)&iofs->IOFS.io_Unit,
                       iofs->io_Union.io_OPEN.io_Filename,
                       iofs->io_Union.io_OPEN.io_FileMode & (~FMF_WRITE));
 	  }
+	  D(bug("[emul] FSA_OPEN returning %lu\n", error));
 	  
 	  break;
 	  

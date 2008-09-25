@@ -67,7 +67,6 @@ struct EmulInterface
     ULONG (*EmulStatFS)(const char *path, struct InfoData *id);
     ULONG (*EmulChDir)(const char *path);
     ULONG (*EmulIsatty)(int fd);
-    ULONG (*EmulLink)(const char *path1, const char *path2);
     LONG (*EmulLSeek)(int fd, long offset, long base);
     ULONG (*EmulChmod)(const char *path, int protect);
     ULONG (*EmulMKDir)(const char *path, int protect);
