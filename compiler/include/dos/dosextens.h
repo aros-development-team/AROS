@@ -234,6 +234,7 @@ struct Process
 #define PRB_CLOSEERROR	6
 #define PRB_SYNCHRONOUS 7
 #define PRB_WAITINGFORCHILD 8 /* This one is subject to change! */
+#define PRB_NOTIFYONDEATH 9
 
 #define PRF_FREESEGLIST (1L << PRB_FREESEGLIST)
 #define PRF_FREECURRDIR (1L << PRB_FREECURRDIR)
@@ -244,6 +245,7 @@ struct Process
 #define PRF_CLOSEERROR	(1L << PRB_CLOSEERROR)
 #define PRF_SYNCHRONOUS (1L << PRB_SYNCHRONOUS)
 #define PRF_WAITINGFORCHILD (1L << PRB_WAITINGFORCHILD)
+#define PRF_NOTIFYONDEATH (1L << PRB_NOTIFYONDEATH)
 
 /* Structure used for CLIs and Shells. Allocate this structure with
    AllocDosObject() only! */
