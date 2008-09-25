@@ -12,6 +12,7 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
+#include "../kernel/hostinterface.h"
 
 extern struct HostInterface *HostIFace;
 

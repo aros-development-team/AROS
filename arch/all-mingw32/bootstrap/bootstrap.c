@@ -18,6 +18,7 @@ typedef unsigned char UBYTE;
 #include "debug.h"
 #include "elfloader32.h"
 #include "hostlib.h"
+#include "../kernel/hostinterface.h"
 
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
