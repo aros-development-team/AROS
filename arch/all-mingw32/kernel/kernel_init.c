@@ -147,7 +147,7 @@ int startup(struct TagItem *msg)
   unsigned int memsize = krnGetTagData(KRN_MMAPLength, 0, msg);
   HostIFace = (struct HostInterface *)krnGetTagData(KRN_HostInterface, 0, msg);
 
-  hostlib = HostIFace->HostLib_Open("kernel_native.dll", &errstr);
+  hostlib = HostIFace->HostLib_Open("Libs\\Host\\kernel.dll", &errstr);
   if (!hostlib) {
       mykprintf("[Kernel] failed to load host-side module: %s\n", errstr);
       HostIFace->HostLib_FreeErrorStr(errstr);
