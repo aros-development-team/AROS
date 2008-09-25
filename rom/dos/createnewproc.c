@@ -89,30 +89,31 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     struct TagItem defaults[]=
     {
-    /* 0 */    { NP_Seglist 	, 0                 	    	},
-    /* 1 */    { NP_Entry   	, (IPTR)NULL        	    	},
-    /* 2 */    { NP_Input   	, TAGDATA_NOT_SPECIFIED       	},
-    /* 3 */    { NP_CloseInput	, 1           	    	    	},
-    /* 4 */    { NP_Output  	, TAGDATA_NOT_SPECIFIED    	},
-    /* 5 */    { NP_CloseOutput , 1           	    	    	},
-    /* 6 */    { NP_Error   	, TAGDATA_NOT_SPECIFIED    	},
-    /* 7 */    { NP_CloseError	, 1           	    	    	},
-    /* 8 */    { NP_CurrentDir	, TAGDATA_NOT_SPECIFIED    	},
-    /* 9 */    { NP_StackSize	, AROS_STACKSIZE    	        },
-    /*10 */    { NP_Name    	, (IPTR)"New Process" 	    	},
-    /*11 */    { NP_Priority	, me->pr_Task.tc_Node.ln_Pri 	},
-    /*12 */    { NP_Arguments	, (IPTR)NULL  	    	    	},
-    /*13 */    { NP_Cli     	, 0           	    	    	},
-    /*14 */    { NP_UserData	, (IPTR)NULL  	    	    	},
-    /*15 */    { NP_ExitCode	, (IPTR)NULL  	    	    	},
-    /*16 */    { NP_ExitData	, (IPTR)NULL  	    	    	},
-    /*17 */    { NP_WindowPtr	, (IPTR)NULL  	    	    	}, /* Default: default public screen */
-    /*18 */    { NP_CopyVars	, (IPTR)TRUE  	    	    	},
-    /*19 */    { NP_Synchronous , (IPTR)FALSE 	    	    	},
-    /*20 */    { NP_FreeSeglist , (IPTR)TRUE  	    	    	},
-    /*21 */    { NP_HomeDir 	, TAGDATA_NOT_SPECIFIED     	},
-    /*22 */    { NP_Path        , TAGDATA_NOT_SPECIFIED         }, /* Default: copy path from parent */
-	       { TAG_END    	, 0           	    	    	}
+    /* 0 */    { NP_Seglist 	  , 0                 	    	},
+    /* 1 */    { NP_Entry   	  , (IPTR)NULL        	    	},
+    /* 2 */    { NP_Input   	  , TAGDATA_NOT_SPECIFIED       },
+    /* 3 */    { NP_CloseInput	  , 1           	    	},
+    /* 4 */    { NP_Output  	  , TAGDATA_NOT_SPECIFIED    	},
+    /* 5 */    { NP_CloseOutput   , 1           	    	},
+    /* 6 */    { NP_Error   	  , TAGDATA_NOT_SPECIFIED    	},
+    /* 7 */    { NP_CloseError	  , 1           	    	},
+    /* 8 */    { NP_CurrentDir	  , TAGDATA_NOT_SPECIFIED    	},
+    /* 9 */    { NP_StackSize	  , AROS_STACKSIZE    	        },
+    /*10 */    { NP_Name    	  , (IPTR)"New Process" 	},
+    /*11 */    { NP_Priority	  , me->pr_Task.tc_Node.ln_Pri 	},
+    /*12 */    { NP_Arguments	  , (IPTR)NULL  	    	},
+    /*13 */    { NP_Cli     	  , 0           	    	},
+    /*14 */    { NP_UserData	  , (IPTR)NULL  	    	},
+    /*15 */    { NP_ExitCode	  , (IPTR)NULL  	    	},
+    /*16 */    { NP_ExitData	  , (IPTR)NULL  	    	},
+    /*17 */    { NP_WindowPtr	  , (IPTR)NULL  	    	}, /* Default: default public screen */
+    /*18 */    { NP_CopyVars	  , (IPTR)TRUE  	    	},
+    /*19 */    { NP_Synchronous   , (IPTR)FALSE 	    	},
+    /*20 */    { NP_FreeSeglist   , (IPTR)TRUE  	    	},
+    /*21 */    { NP_HomeDir 	  , TAGDATA_NOT_SPECIFIED     	},
+    /*22 */    { NP_Path          , TAGDATA_NOT_SPECIFIED       }, /* Default: copy path from parent */
+    /*23 */    { NP_NotifyOnDeath , (IPTR)FALSE                 },
+	       { TAG_END    	  , 0           	    	}
     };
 
     /* C has no exceptions. This is a simple replacement. */
@@ -392,12 +393,13 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_PktWait = NULL;
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data;
     process->pr_HomeDir = (BPTR)defaults[21].ti_Data;
-    process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT  : 0) |
-		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT : 0) |
-		        (defaults[7].ti_Data  ? PRF_CLOSEERROR  : 0) |
-		        (defaults[13].ti_Data ? PRF_FREECLI     : 0) |
-	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS : 0) |
-			(defaults[20].ti_Data ? PRF_FREESEGLIST : 0) |
+    process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT    : 0) |
+		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT   : 0) |
+		        (defaults[7].ti_Data  ? PRF_CLOSEERROR    : 0) |
+		        (defaults[13].ti_Data ? PRF_FREECLI       : 0) |
+	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS   : 0) |
+			(defaults[20].ti_Data ? PRF_FREESEGLIST   : 0) |
+			(defaults[23].ti_Data ? PRF_NOTIFYONDEATH : 0) |
 		        PRF_FREEARGS | PRF_FREECURRDIR;
     process->pr_ExitCode = (APTR)defaults[15].ti_Data;
     process->pr_ExitData = defaults[16].ti_Data;
