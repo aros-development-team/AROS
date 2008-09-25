@@ -1,0 +1,104 @@
+# $Id: mmakefile.src 29020 2008-07-13 21:22:33Z schulz $
+include $(TOP)/config/make.cfg
+
+
+#MM bootiso-chrp-ppc-efika: \
+#MM     kernel-chrp-ppc-efika \
+#MM		kernel-package-chrp-ppc-efika \
+#MM		workbench-complete
+
+#MM kernel-package-chrp-ppc-efika: \
+#MM	linklibs-clib \
+#MM	kernel-bootloader-chrp-ppc-efika \
+#MM	kernel-expansion \
+#MM	kernel-utility \
+#MM	kernel-oop \
+#MM	kernel-battclock \
+#MM	kernel-hidd \
+#MM	kernel-mathieeesingbas \
+#MM	kernel-aros \
+#MM	kernel-misc \
+#MM	kernel-timer \
+#MM	kernel-pci \
+#MM	kernel-graphics \
+#MM	kernel-cgfx-kobj \
+#MM	kernel-layers \
+#MM	kernel-keymap \
+#MM	kernel-intuition \
+#MM	kernel-input \
+#MM	kernel-gameport \
+#MM	kernel-keyboard \
+#MM	kernel-console \
+#MM	kernel-fs-con \
+#MM	kernel-fs-packet \
+#MM	kernel-workbench \
+#MM	kernel-boot \
+#MM	hidd-i2c \
+#MM	hidd-radeon \
+#MM	hidd-usb \
+#MM	workbench-fs-nil \
+#MM	workbench-fs-ram \
+#MM	workbench-libs-partition \
+#MM	contrib-cdvdfs \
+#MM	workbench-hidd-graphics
+
+
+
+# MM	kernel-pci-amcc440 \
+# MM	kernel-sam440-ppc-irq \
+# MM	kernel-dos \
+# MM	kernel-ata \
+
+
+PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench boot
+PKG_RSRC := misc battclock bootloader
+PKG_DEVS :=  input gameport keyboard console timer
+PKG_HANDLERS := con nil ram packet cdrom
+PKG_HIDDS:= graphics hiddclass i2c radeon usb ohci pci
+PKG_USB:= hid
+
+MODULES := \
+	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
+	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
+	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) 
+
+.PHONY: $(PORTSDIR)/aros-efika.iso
+	
+kernel-package-chrp-ppc-efika:
+	$(RM) -rf $(BINDIR)/boot/modules
+	%mkdirs_q $(BINDIR)/boot/modules
+	@mv $(MODULES) $(BINDIR)/boot/modules/
+	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
+	$(KERNEL_LD) -r $(BINDIR)/boot/modules/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/boot/modules/gfx.library
+	$(RM) $(BINDIR)/boot/modules/graphics.library
+	#$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg
+
+
+
+
+
+
+
+bootiso-chrp-ppc-efika: $(PORTSDIR)/aros-efika.iso
+
+$(PORTSDIR)/aros-efika.iso:
+		%mkdirs_q $(AROSDIR)/S
+		@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+		@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
+		@$(MKDIR) -p "$(PORTSDIR)"
+		@mkisofs -f \
+                -o $(PORTSDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso \
+                -allow-leading-dots \
+                -iso-level 4 \
+                -V "AROS Live CD" \
+                -publisher "AROS Development Team" \
+                -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+                $(AROSDIR)
+
+#                -no-emul-boot \
+#                -b bootloader \
+                
