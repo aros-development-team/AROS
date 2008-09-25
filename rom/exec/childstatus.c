@@ -31,6 +31,9 @@
 	One of the CHILD_* values.
 
     NOTES
+	This function will work correctly only for child tasks that are
+	processes created with NP_NotifyOnDeath set to TRUE. Otherwise
+	it may report CHILD_NOTFOUND even if child already exited.
 
     EXAMPLE
 
