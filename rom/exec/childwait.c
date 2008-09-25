@@ -92,7 +92,7 @@
 	ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
 	{
 	    if ((ULONG)tid == 0 || child->et_UniqueID == (ULONG)tid)
-		break;
+		goto child_exited;
 	}
 
 	/* No matching children, we have to wait */
@@ -100,6 +100,7 @@
 	Wait(SIGF_CHILD);
     }
 
+child_exited:
     Permit();
     return (IPTR)child;
 
