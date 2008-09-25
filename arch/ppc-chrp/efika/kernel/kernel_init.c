@@ -5,18 +5,22 @@
  *      Author: misc
  */
 
-#define PCIC0_IO 0
-
 #define DEBUG 1
 
 #include <aros/kernel.h>
+#include <aros/symbolsets.h>
 #include <asm/io.h>
 #include <strings.h>
 
+#include <proto/exec.h>
+
 #include "kernel_intern.h"
+#include LC_LIBDEFS_FILE
+#include "syscall.h"
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 struct OFWNode *krnCopyOFWTree(struct OFWNode *orig);
+int exec_main(struct TagItem *msg, void *entry);
 
 asm(".section .aros.init,\"ax\"\n\t"
     ".globl start\n\t"
@@ -153,19 +157,28 @@ static const void *target_address __attribute__((used, section(".text"))) = (voi
 static struct TagItem *BootMsg;
 
 static uint8_t *memlo;
+static uint8_t *mmu_dir;
+
+static uint32_t *MBAR;
+static struct OFWNode *ofw_root_node;
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
 	D(bug("[KRN] EFika5200B Kernel build on %s\n", __DATE__));
 	struct TagItem *tmp = tmp_struct.bootup_tags;
 	struct TagItem *src = msg;
+	struct OFWNode *node;
 
 	wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-4]);
 	wrspr(SPRG4, 0);
 	wrspr(SPRG5, 0);
 
-	/* Set the memlo pointer */
-	memlo = (uint8_t *)0xff000000;
+	/* MMU directory - 1MB is recommended size for systems with 128MB ram
+	 * USE PHYSICAL ADDRESS HERE! */
+	mmu_dir = (uint8_t *)0x07000000;
+	/* Set the memlo pointer right after MMU dir */
+	memlo = 0xff100000;
+
 	D(bug("[KRN] BootMsg @ %p\n", msg));
 
 	D(bug("[KRN] Copying TagList and data\n"));
@@ -179,6 +192,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 			tmp->ti_Data = (intptr_t)memlo;
 			memlo += (strlen(msg->ti_Data) + 4) & ~3;
 			memcpy(tmp->ti_Data, msg->ti_Data, strlen(msg->ti_Data)+1);
+			D(bug("[KRN] CmdLine: '%s'\n", tmp->ti_Data));
 		}
 		else if (tmp->ti_Tag == KRN_KernelBss)
 		{
@@ -197,28 +211,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
 			memlo = (uint8_t *)bss_out;
 		}
-		else if (tmp->ti_Tag == KRN_ArgV)
-		{
-			char **argv_out = memlo;
-			char **argv_in = msg->ti_Data;
-			int i, argc;
-
-			argc = krnGetTagData(KRN_ArgC, 0, src);
-
-			tmp->ti_Data = argv_out;
-
-			memlo += 4 * argc;
-
-			for (i=0; i < argc; i++)
-			{
-				argv_out[i] = memlo;
-				memcpy(argv_out[i], argv_in[i], strlen(argv_in[i])+1);
-				memlo += (strlen(argv_in[i]) + 4) & ~3;
-			}
-		}
 		else if (tmp->ti_Tag == KRN_OpenFirmwareTree)
 		{
-			tmp->ti_Data = (intptr_t)krnCopyOFWTree((struct OFWNode *)msg->ti_Data);
+			ofw_root_node = krnCopyOFWTree((struct OFWNode *)msg->ti_Data);
+			tmp->ti_Data = (intptr_t)ofw_root_node;
 		}
 
 		tmp++;
@@ -231,11 +227,67 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 	BootMsg = tmp_struct.bootup_tags;
 
 	intr_init();
+	mmu_init(mmu_dir, 0x100000);
 
+	/*
+	 * Find the "/builtin" node in ofw tree and read it's reg property. It is
+	 * the only way to obtain the value of MBAR register (that is, location of
+	 * the CPU in-chip peripherials
+	 */
+	ForeachNode(&ofw_root_node->on_children, node)
+	{
+		if (!strcmp(node->on_name, "builtin"))
+			break;
+	}
 
+	if (node)
+	{
+		struct OFWProperty *prop = NULL;
 
+		ForeachNode(&node->on_properties, prop)
+		{
+			if (!strcmp(prop->op_name,"reg"))
+				break;
+		}
 
-	//goSuper();
+		if (prop)
+		{
+			MBAR = *(uint32_t**)prop->op_value;
+
+			D(bug("[KRN] MBAR at %08x\n", MBAR));
+		}
+	}
+
+	ictl_init(MBAR);
+
+	D(bug("[KRN] Mapping 00003000-06ffffff range for public use\n"));
+	mmu_map_area(0x00003000, 0x00001000, 0x06fff000, (2 << 3) | 2); // PP = 10, WIMG = 0010
+
+	D(bug("[KRN] Mapping %08x-%08x range for MBAR\n", MBAR, MBAR + 0xc000 - 1));
+	mmu_map_area((uint64_t)MBAR & 0xffffffff, (uint64_t)MBAR & 0xffffffff, 0x0000c000, (5 << 3) | 2); // PP = 10, WIMG = 0101
+
+	D(bug("[KRN] Mapping %08x-%08x range for public read-only access\n", 0xff100000, memlo - 1));
+	mmu_map_area(0xff100000, 0x07100000, (intptr_t)memlo - 0xff100000, (2 << 3) | 1); // PP = 01, WIMG = 0010
+
+	uintptr_t krn_base = krnGetTagData(KRN_KernelBase, 0, BootMsg);
+	uintptr_t krn_lowest = krnGetTagData(KRN_KernelLowest, 0, BootMsg) & ~4095;
+	uintptr_t krn_highest = (krnGetTagData(KRN_KernelHighest, 0, BootMsg) + 4095) & ~4095;
+
+	D(bug("[KRN] Mapping %08x-%08x range for supervisor\n", memlo, (krn_lowest ^ 0xf8000000)-1));
+	mmu_map_area((uint32_t)memlo, (uint32_t)memlo ^ 0xf8000000, (krn_lowest ^ 0xf8000000) - (intptr_t)memlo, (2 << 3) | 0); // PP = 00, WIMG = 0010
+
+	D(bug("[KRN] Mapping %08x-%08x range for read-write\n", krn_lowest^0xf8000000, (krn_base ^ 0xf8000000)-1));
+	mmu_map_area((uint32_t)krn_lowest^0xf8000000, (uint32_t)krn_lowest, (krn_base - krn_lowest), (2 << 3) | 2); // PP = 10, WIMG = 0010
+
+	D(bug("[KRN] Mapping %08x-%08x range for read-only\n", krn_base^0xf8000000, (krn_highest ^ 0xf8000000)-1));
+	mmu_map_area((uint32_t)krn_base^0xf8000000, (uint32_t)krn_base, (krn_highest - krn_base), (2 << 3) | 3); // PP = 11, WIMG = 0010
+
+	D(bug("[KRN] Mapping %08x-%08x range for supervisor\n", krn_highest ^ 0xf8000000, 0xffffffff));
+	mmu_map_area((uint32_t)krn_highest^0xf8000000, (uint32_t)krn_highest, -(krn_highest^0xf8000000), (2 << 3) | 0); // PP = 00, WIMG = 0010
+
+    exec_main(BootMsg, NULL);
+
+	goSuper();
 	D(bug("[KRN] Uhm? Nothing to do?\n[KRN] STOPPED\n"));
 	/* Dead end */
 	while(1) {
@@ -290,3 +342,45 @@ struct OFWNode *krnCopyOFWTree(struct OFWNode *orig)
 
 	return new_node;
 }
+
+static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
+{
+    int i;
+    struct ExecBase *SysBase = getSysBase();
+
+    /*
+     * Set the KernelBase into SPRG4. At this stage the SPRG5 should be already set by
+     * exec.library itself.
+     */
+    wrspr(SPRG4, LIBBASE);
+
+    D(bug("[KRN] Kernel resource post-exec init\n"));
+
+//    D(bug("[KRN] Allowing userspace to flush caches\n"));
+//    wrspr(MMUCR,rdspr(MMUCR) & ~0x000c0000);
+
+    for (i=0; i < 21; i++)
+        NEWLIST(&LIBBASE->kb_Exceptions[i]);
+
+    for (i=0; i < 64; i++)
+        NEWLIST(&LIBBASE->kb_Interrupts[i]);
+
+    /* Prepare private memory block */
+    LIBBASE->kb_SupervisorMem = (struct MemHeader *)0xff000000;
+
+    /*
+     * kernel.resource is ready to run. Enable external interrupts and leave
+     * supervisor mode
+     */
+    wrmsr(rdmsr() | (MSR_EE|MSR_FP));
+    D(bug("[KRN] Interrupts enabled\n"));
+
+    wrmsr(rdmsr() | (MSR_PR));
+    D(bug("[KRN] Entered user mode \n"));
+
+
+    Permit();
+
+}
+
+ADD2INITLIB(Kernel_Init, 0)

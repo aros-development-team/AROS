@@ -143,7 +143,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
     struct ExecBase *SysBase = getSysBase();
     struct IntrNode *handle = NULL;
     D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-#if 0
+
     if (irq < 63)
     {
         /* Go to supervisor mode */
@@ -161,24 +161,17 @@ AROS_LH4(void *, KrnAddIRQHandler,
             handle->in_nr = irq;
 
             Disable();
+
             ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
 
-            if (irq < 32)
-            {
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
-            }
-            else
-            {
-                wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 32)));
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
-            }
+            ictl_enable_irq(irq);
 
             Enable();
         }
 
         goUser();
     }
-#endif
+
     return handle;
 
     AROS_LIBFUNC_EXIT
@@ -189,7 +182,7 @@ AROS_LH1(void, KrnRemIRQHandler,
          struct KernelBase *, KernelBase, 8, Kernel)
 {
     AROS_LIBFUNC_INIT
-#if 0
+
     struct ExecBase *SysBase = getSysBase();
     struct IntrNode *h = handle;
     uint8_t irq = h->in_nr;
@@ -202,14 +195,7 @@ AROS_LH1(void, KrnRemIRQHandler,
         REMOVE(h);
         if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
         {
-            if (irq < 30)
-            {
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) & ~(0x80000000 >> irq));
-            }
-            else if (irq > 31)
-            {
-                wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 32)));
-            }
+        	ictl_disable_irq(irq);
         }
         Enable();
 
@@ -217,7 +203,7 @@ AROS_LH1(void, KrnRemIRQHandler,
 
         goUser();
     }
-#endif
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -255,26 +241,30 @@ AROS_LH1(void, KrnRemIRQHandler,
  *    asm part of exception handler) which in turn enables MMU for CODE.
  */
 
+extern uint32_t __vector_imiss;
+extern uint32_t __vector_dmiss;
+extern uint32_t __vector_dmissw;
+
 void intr_init()
 {
 	D(bug("[KRN] Initializing exception handlers\n"));
 
 	init_interrupt( 1, generic_handler);	/* RESET */
 	init_interrupt( 2, generic_handler);	/* Machine check */
-	init_interrupt( 3, generic_handler);	/* DSI */
-	init_interrupt( 4, generic_handler);	/* ISI */
-	init_interrupt( 5, generic_handler);	/* External Intr */
+	init_interrupt( 3, mmu_handler);		/* DSI */
+	init_interrupt( 4, mmu_handler);		/* ISI */
+	init_interrupt( 5, ictl_handler);		/* External Intr */
 	init_interrupt( 6, generic_handler);	/* Alignment */
 	init_interrupt( 7, generic_handler);	/* Program */
 	init_interrupt( 8, generic_handler);	/* Floating point unavailable */
 	init_interrupt( 9, generic_handler);	/* Decrementer */
 	init_interrupt(12, syscall_handler);	/* Syscall */
-	init_interrupt(13, syscall_handler);	/* Trace */
-	init_interrupt(16, syscall_handler);	/* Instruction translation miss */
-	init_interrupt(17, syscall_handler);	/* Data load translation miss */
-	init_interrupt(18, syscall_handler);	/* Data store translation miss */
-	init_interrupt(19, syscall_handler);	/* Instruction address breakpoint */
-	init_interrupt(20, syscall_handler);	/* SMI */
+	init_interrupt(13, generic_handler);	/* Trace */
+	init_interrupt(16, generic_handler);	/* Instruction translation miss */
+	init_interrupt(17, generic_handler);	/* Data load translation miss */
+	init_interrupt(18, generic_handler);	/* Data store translation miss */
+	init_interrupt(19, generic_handler);	/* Instruction address breakpoint */
+	init_interrupt(20, generic_handler);	/* SMI */
 }
 
 /*
@@ -293,26 +283,35 @@ static void init_interrupt(uint8_t num, void *handler)
 	{
 		intptr_t target = num << 8;
 
-		memcpy((void*)target, __tmpl_start, __tmpl_length);
+		if (num == 16)
+			memcpy((void*)target, &__vector_imiss, 256);
+		else if (num == 17)
+			memcpy((void*)target, &__vector_dmiss, 256);
+		else if (num == 18)
+			memcpy((void*)target, &__vector_dmissw, 256);
+		else
+		{
+			memcpy((void*)target, __tmpl_start, __tmpl_length);
 
-		/* Fix the exception  number */
-		*(uint16_t *)(target + __tmpl_irq_num) = num;
+			/* Fix the exception  number */
+			*(uint16_t *)(target + __tmpl_irq_num) = num;
 
-		/* Fix the handler address */
-		*(uint16_t *)(target + __tmpl_addr_lo) = (intptr_t)handler & 0x0000ffff;
-		*(uint16_t *)(target + __tmpl_addr_hi) = (intptr_t)handler >> 16;
+			/* Fix the handler address */
+			*(uint16_t *)(target + __tmpl_addr_lo) = (intptr_t)handler & 0x0000ffff;
+			*(uint16_t *)(target + __tmpl_addr_hi) = (intptr_t)handler >> 16;
 
-		/*
-		 * Adjustment of the lower halfword of address is done through "la"
-		 * instruction, which happens to be the same as addi:
-		 *
-		 * "la %reg1, offset(%reg2) <=> addi %reg1, %reg1, offset"
-		 *
-		 * If the offset is bigger then 32KB (thus seen by addi as a negative
-		 * number), increase the upper halfword by one.
-		 */
-		if ((intptr_t)handler & 0x00008000)
-			(*(uint16_t *)(target + __tmpl_addr_hi))++;
+			/*
+			 * Adjustment of the lower halfword of address is done through "la"
+			 * instruction, which happens to be the same as addi:
+			 *
+			 * "la %reg1, offset(%reg2) <=> addi %reg1, %reg1, offset"
+			 *
+			 * If the offset is bigger then 32KB (thus seen by addi as a negative
+			 * number), increase the upper halfword by one.
+			 */
+			if ((intptr_t)handler & 0x00008000)
+				(*(uint16_t *)(target + __tmpl_addr_hi))++;
+		}
 
 		/* Flush the cache */
 		flush_cache((char*)target, (char*)target + 0xff);
@@ -377,6 +376,13 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
     D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
     D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
+
+    D(bug("[KRN] HASH1=%08x HASH2=%08x IMISS=%08x DMISS=%08x ICMP=%08x DCMP=%08x\n",
+        		rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
+
+    D(bug("[KRN] SPRG0=%08x SPRG1=%08x SPRG2=%08x SPRG3=%08x SPRG4=%08x SPRG5=%08x\n",
+    		rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
+
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
              ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
     D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
@@ -583,7 +589,7 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
                  [gpr29]"i"(offsetof(regs_t, gpr[29])),
                  [gpr30]"i"(offsetof(regs_t, gpr[30])),
                  [gpr31]"i"(offsetof(regs_t, gpr[31])),
-                 [msrval]"i"(MSR_ME|MSR_CE|MSR_FP|MSR_IS|MSR_DS)
+                 [msrval]"i"(MSR_ME|MSR_FP|MSR_IS|MSR_DS|MSR_RI)
     );
 }
 
