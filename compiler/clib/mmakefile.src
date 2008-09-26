@@ -359,6 +359,7 @@ SHARED	:= \
 	vsprintf \
 	vsscanf \
 	wait \
+	waitpid \
 	write
 
 SHARED_ARCH := \
