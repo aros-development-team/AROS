@@ -347,7 +347,7 @@ int __declspec(dllexport) EmulErrno(void)
   D(printf("[EmulHandler] Win32 error code: %lu\n", e));
   for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
 	if(u2a[i][0]==e) {
-	  D(printf("[EmulHandler] Translated to AROS error code: 0x%08lX\n", u2a[i][1]));
+	  D(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
 	  return u2a[i][1];
 	}
   D(printf("[EmulHandler] Unknown error code\n"));
