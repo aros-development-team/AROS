@@ -4,50 +4,84 @@
 */
 
 #define DEBUG 0
+
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <exec/lists.h>
+#include <aros/startup.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
 
+#include "etask.h"
+
 pid_t waitpid(pid_t pid, int *status, int options)
 {
     struct ETask *et;
-    APTR tid = (APTR)pid;
+    APTR tid = (APTR) pid;
     pid_t ret = -1;
+    int exchildno;
 
-    if (pid < 0)
+    D(bug("waitpid(%d, %p, %d)\n", pid, status, options));
+
+    et = GetETask(FindTask(NULL));
+    if(!et)
+    {
+	/* only ETasks are fertile */
+	errno = ECHILD;
+	return -1;
+    }
+    
+    if (pid < -1 || pid == 0)
+    {
+	/* process groups not yet supported */
+	errno = EINVAL;
+	return -1;
+    }
+
+    if (pid == -1)
 	tid = 0;
+
+    if(tid != 0 && ChildStatus(tid) == CHILD_NOTFOUND)
+    {
+	/* error if there's no such child */
+	errno = ECHILD;
+        return -1;
+    }
 
     if (options & ~WNOHANG)
     {
 	/* option not yet supported */
 	errno = EINVAL;
+	return -1;
     }
-    else if (options & WNOHANG)
+    
+    /* not very pretty, perhaps we need a function for counting dead 
+       children? */
+    ListLength(&et->et_TaskMsgPort.mp_MsgList, exchildno);
+    if ((options & WNOHANG) && (
+	(tid != 0 && ChildStatus(tid) != CHILD_EXITED) ||
+	(tid == 0 && exchildno == 0)
+    ))
     {
-	switch (ChildStatus(tid))
-	{
-	case CHILD_EXITED:
-	    ret = 0;
-	    break;
-	default:
-	    errno = ECHILD;
-	    break;
-	}
+	/* no dead children atm */
+	return 0;
+    }
+
+    et = (struct ETask *)ChildWait(tid);
+    if (et != CHILD_NOTNEW)
+    {
+        if(status && IntETask(et)->iet_startup)
+        {
+            struct aros_startup *startup = IntETask(et)->iet_startup;
+            *status = startup->as_startup_error;
+        }
+        ret = et->et_UniqueID;
+        ChildFree(et->et_UniqueID);
     }
     else
-    {
-	et = (struct ETask *)ChildWait(tid);
-	if (et)
-	{
-	    ChildFree(et->et_UniqueID);
-	    ret = 0;
-	}
-	else
-	    errno = ECHILD;
-    }
+        errno = ECHILD;
     
     return ret;
 }

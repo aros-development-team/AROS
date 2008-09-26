@@ -20,7 +20,9 @@ FILES := \
 	uname \
 	strptime \
 	fchmod \
-	vfork
+	vfork \
+	wait \
+	waitpid
 
 EXEDIR := $(AROS_TESTS)/clib
 
