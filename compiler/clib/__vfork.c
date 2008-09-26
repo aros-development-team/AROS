@@ -45,7 +45,8 @@ LONG launcher()
 
     /* Allocate signal for parent->child communication */
     udata->child_signal = AllocSignal(-1);
-    Signal(udata->parent, udata->parent_signal);
+    D(bug("Allocated child signal: %d\n", udata->child_signal));
+    Signal(udata->parent, 1 << udata->parent_signal);
 
     udata->aroscbase = OpenLibrary("arosc.library", 0);
     if (udata->aroscbase == NULL)
@@ -53,7 +54,7 @@ LONG launcher()
 	/* Most likely there's not enough memory */
 	udata->child_errno = ENOMEM;
 	FreeSignal(udata->child_signal);
-	Signal(udata->parent, udata->parent_signal);
+	Signal(udata->parent, 1 << udata->parent_signal);
 	return -1;
     }
 
@@ -81,7 +82,7 @@ LONG launcher()
 	cpriv->acpd_fd_array = udata->child_acpd_fd_array;
 	CloseLibrary(udata->aroscbase);
 	udata->child_errno = ENOMEM;
-	Signal(udata->parent, udata->parent_signal);
+	Signal(udata->parent, 1 << udata->parent_signal);
 	return -1;
     }
     cpriv->acpd_numslots = ppriv->acpd_numslots;
@@ -117,7 +118,7 @@ LONG launcher()
     cpriv->acpd_doupath = ppriv->acpd_doupath;
   
     D(bug("Waiting for parent to set up his temporary stack\n"));
-    Wait(udata->child_signal);
+    Wait(1 << udata->child_signal);
     D(bug("Parent ready, stealing his stack\n"));
 
     /* Steal parent's stack */
@@ -169,12 +170,13 @@ LONG launcher()
 	if(!GETUDATA->child_executed)
 	{
 	    D(bug("Calling daddy\n"));
-	    Signal(GETUDATA->parent, GETUDATA->parent_signal);
+	    Signal(GETUDATA->parent, 1 << GETUDATA->parent_signal);
 	    FreeSignal(GETUDATA->child_signal);
 	}
 	else
 	{
-	    Wait(GETUDATA->child_signal);
+	    D(bug("Waiting for signal from the parent\n"));
+	    Wait(1 << GETUDATA->child_signal);
 	    FreeSignal(GETUDATA->child_signal);
 	    /* Parent won't need udata anymore, we can safely free it */
 	    FreeMem(GETUDATA, sizeof(struct vfork_data));   
@@ -196,14 +198,16 @@ void FreeAndJump(struct vfork_data *udata)
 
     if(!udata->child_executed)
     {
+	D(bug("Child not executed, freeing udata\n"));
 	/* If child process didn't call execve() then it's no longer alive and we
 	   can safely free udata. Otherwise it's freed during child exit */
 	FreeMem(udata, sizeof(struct vfork_data));
     }
     else
     {
+	D(bug("Child executed, signaling\n"));
 	/* Otherwise inform child that we don't need udata anymore */
-	Signal(udata->child, udata->child_signal);
+	Signal(udata->child, 1 << udata->child_signal);
     }
     D(bug("ip: %p, stack: %p\n", jump[0].retaddr, jump[0].regs[_JMPLEN - 1]));
     longjmp(jump, child_id);
@@ -223,17 +227,18 @@ pid_t __vfork(jmp_buf env)
 
     struct TagItem tags[] =
     {
-	{ NP_Entry,       (IPTR) launcher  },
-	{ NP_Input,       (IPTR) NULL      }, /* 1 */
-	{ NP_Output,      (IPTR) NULL      }, /* 2 */
-	{ NP_Error,       (IPTR) NULL      }, /* 3 */
-	{ NP_CloseInput,  (IPTR) FALSE     },
-	{ NP_CloseOutput, (IPTR) FALSE     },
-	{ NP_CloseError,  (IPTR) FALSE     },
-        { NP_Cli,         (IPTR) TRUE      },
-        { NP_Name,        (IPTR) "vfork()" },
-        { NP_UserData,    (IPTR) udata     },
-        { TAG_DONE,       0                }
+	{ NP_Entry,         (IPTR) launcher  },
+	{ NP_Input,         (IPTR) NULL      }, /* 1 */
+	{ NP_Output,        (IPTR) NULL      }, /* 2 */
+	{ NP_Error,         (IPTR) NULL      }, /* 3 */
+	{ NP_CloseInput,    (IPTR) FALSE     },
+	{ NP_CloseOutput,   (IPTR) FALSE     },
+	{ NP_CloseError,    (IPTR) FALSE     },
+        { NP_Cli,           (IPTR) TRUE      },
+        { NP_Name,          (IPTR) "vfork()" },
+        { NP_UserData,      (IPTR) udata     },
+        { NP_NotifyOnDeath, (IPTR) TRUE      },
+        { TAG_DONE,         0                }
     };
 
     BPTR in, out, err;
@@ -286,7 +291,7 @@ pid_t __vfork(jmp_buf env)
     D(bug("Child created %p\n", udata->child));
 
     /* Wait until children allocates a signal for communication */
-    Wait(udata->parent_signal);
+    Wait(1 << udata->parent_signal);
 
     if(udata->child_signal == -1)
     {
@@ -309,11 +314,11 @@ pid_t __vfork(jmp_buf env)
     
     /* Now we can't use local variables allocated on the parent's stack */
     D(bug("Temporary stack set up, child can steal ours\n"));
-    Signal(GETUDATA->child, GETUDATA->child_signal);
+    Signal(GETUDATA->child, 1 << GETUDATA->child_signal);
     D(bug("Child signaled\n"));
 
     D(bug("Waiting for child to die or execve\n"));
-    Wait(GETUDATA->parent_signal);
+    Wait(1 << GETUDATA->parent_signal);
     D(bug("Child died or execved, returning\n"));
 
     if(GETUDATA->child_errno)

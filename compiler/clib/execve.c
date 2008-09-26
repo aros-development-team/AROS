@@ -386,7 +386,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    
 	    D(bug("Calling daddy\n"));
 	    /* Now call parent process, so it will resume his work */
-	    Signal(GETUDATA->parent, GETUDATA->parent_signal);
+	    Signal(GETUDATA->parent, 1 << GETUDATA->parent_signal);
 
 	    GETUDATA->exec_returncode = exec_command(
 		GETUDATA->exec_seglist, 
