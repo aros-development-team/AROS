@@ -27,10 +27,15 @@ KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 #				$(KOBJSDIR)/intuition_library.o \
 
 
-#MM kernel-bootstrap-mingw32: kernel-kernel-mingw32-kobj kernel-hostlib-mingw32-kobj kernel kernel-fs-emul-mingw32-kobj
+#MM kernel-link-mingw32: kernel-kernel-mingw32-kobj kernel-hostlib-mingw32-kobj kernel kernel-fs-emul-mingw32-kobj
+
+#MM kernel-bootstrap-mingw32: kernel-link-mingw32
 
 #MM
-kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap $(BINDIR)/boot/kernel
+kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap
+
+#MM
+kernel-link-mingw32: $(BINDIR)/boot/kernel
 
 setup-mingw32 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)

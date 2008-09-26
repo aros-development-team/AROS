@@ -5,9 +5,9 @@
     Desc: This is the "boot code" of AROS when it runs as an emulation.
     Lang: english
 */
+#define DEBUG 1
 
 #include <aros/debug.h>
-
 #include <dos/dostags.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -24,6 +24,7 @@ int submain(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
 {
     LONG            rc = RETURN_FAIL;
 
+    D(bug("[boot] Opening boot shell\n"));
     BPTR cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
 
     if (cis)
@@ -43,6 +44,7 @@ int submain(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
                 { TAG_DONE,       0           }
             };
 
+	D(bug("[SubMain] Boot shell opened\n"));
         if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
         {
             opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
@@ -70,9 +72,11 @@ int submain(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
     }
     else
     {
+        D(bug("[SubMain] Failed to open Boot shell\n"));
         PutStr(CANNOT_OPEN_CON);
     }
 
+    D(bug("[SubMain] Closing Boot shell\n"));
     Close(cis);
 
     return rc;

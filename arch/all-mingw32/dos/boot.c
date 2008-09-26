@@ -104,11 +104,13 @@ AROS_UFH3(void, boot,
     if(Output())
     	Close(Output());
 
+    D(bug("[boot] Selecting input and output for DOS\n"));
     SelectInput(MKBADDR(fh_stdin));
     SelectOutput(MKBADDR(fh_stdout));
     ((struct Process *)FindTask(NULL))->pr_CES = MKBADDR(fh_stdout);
 
-    AROSSupportBase_SetStdOut (stderr);
+    D(bug("[boot] Selecting output for AROSSupport\n"));
+    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = stderr;
 
     submain(SysBase, DOSBase);
 

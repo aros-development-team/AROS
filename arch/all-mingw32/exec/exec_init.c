@@ -87,11 +87,6 @@ struct Library * PrepareAROSSupportBase (struct ExecBase * SysBase)
 	return (struct Library *)AROSSupportBase;
 }
 
-void AROSSupportBase_SetStdOut (struct AROSSupportBase * AROSSupportBase, void * stdout)
-{
-	AROSSupportBase->StdOut = stdout;
-}
-
 void _aros_not_implemented(char *X)
 {
     kprintf("Unsupported function at offset -0x%h in %s\n",
