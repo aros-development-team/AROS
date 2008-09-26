@@ -33,7 +33,9 @@ INCSUBDIRS :=	aros \
 		workbench
 
 INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp))
-INCLUDES      := $(filter-out rexx/rexxcall-%.h,$(INCLUDES))
+ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
+ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
+INCLUDES      := $(filter-out rexx/rexxcall-%.h $(ARCH_INCLUDES),$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
