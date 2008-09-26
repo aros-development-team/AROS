@@ -380,7 +380,9 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	       jmp_buf to child's stack pointer, otherwise it will be outside
 	       tc_SPLower-tc_SPUpper range after longjmp and exception will 
 	       occur. */
-	    udata->child_startup.as_startup_jmp_buf[0].regs[STACK_INDEX] = (unsigned long) udata->child_SPReg;
+	    /* Create space on child stack for the return address written during longjmp. Otherwise
+	       data on the stack would be overwritten. */
+	    udata->child_startup.as_startup_jmp_buf[0].regs[STACK_INDEX] = (unsigned long) udata->child_SPReg - sizeof(APTR);
 	    AROS_GET_SP = udata->child_SPReg;
 	    Permit();
 	    
