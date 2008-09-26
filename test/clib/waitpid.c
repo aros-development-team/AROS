@@ -65,6 +65,8 @@ int main()
 	printf("Created child with pid %d\n", (int) pid);
 	printf("Waiting for any child to exit without hang.\n");
 	wait_pid = waitpid(-1, &status, WNOHANG);
+	if(wait_pid == 0) 
+	    wait_pid = waitpid(-1, &status, 0);
 	TEST((wait_pid == pid));
 	printf("Child %d exited with exit status %d\n", (int) wait_pid, status);
 	TEST((status == EXIT_STATUS));
