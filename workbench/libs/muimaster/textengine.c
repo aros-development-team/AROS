@@ -315,9 +315,22 @@ static CONST_STRPTR parse_escape_code (ZTextLine *ztl, struct zune_context *zc, 
         *t = 0;
         if (HexToLong(s,&tmp) != -1)
         {
-        li = (struct ListImage *)tmp;
-        D(bug("listimage = %lx\n", li));
-        zc->obj = li->obj;
+            D(bug("listimage = %lx\n", tmp));
+            if (tmp == NULL)
+            {
+                /* According to the MUI autodocs, the result of
+                 * CreateImage may be NULL, but then \33O[] has to
+                 * simply draw nothing, so it shouldn't be considered 
+                 * an error.
+                 * Without this, AROS crashed, if 00000000 was used.
+                 */ 
+                 *t = ']';
+                 zc->text = t+1;
+                 zc->text_start=t+1;
+                 break;
+            }
+            li = (struct ListImage *)tmp;
+            zc->obj = li->obj;
         }
         *t = ']';
         zc->text = t;
