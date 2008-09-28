@@ -90,12 +90,12 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 
 int mmu_map_area(uint64_t virt, uint32_t phys, uint32_t length, uint32_t prot)
 {
-//	D(bug("[KRN] mmu_map_area(%06x%07x - %06x%07x, %08x, %08x)\n",
-//			(uint32_t)(virt >> 28), (uint32_t)(virt & 0x0fffffff),
-//			(uint32_t)((virt + length - 1) >> 28), (uint32_t)((virt + length - 1) & 0x0fffffff),
-//			phys, prot
-//			));
-//
+	D(bug("[KRN] mmu_map_area(%06x%07x - %06x%07x, %08x, %08x)\n",
+			(uint32_t)(virt >> 28), (uint32_t)(virt & 0x0fffffff),
+			(uint32_t)((virt + length - 1) >> 28), (uint32_t)((virt + length - 1) & 0x0fffffff),
+			phys, prot
+			));
+
 	while (length)
 	{
 		if (!mmu_map_page(virt, phys, prot))
@@ -146,6 +146,9 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
     struct KernelBase *KernelBase = getKernelBase();
     struct ExecBase *SysBase = getSysBase();
 
+    ctx->dar = rdspr(19);
+    ctx->dsisr = rdspr(18);
+
     D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
     if (SysBase)
     {
@@ -180,8 +183,27 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
     D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
              ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
 
-    D(bug("[KRN] Instruction dump:\n"));
     int i;
+    D(bug("[KRN] Hash1 dump:\n[KRN]  "));
+    uint32_t *hash = (uint32_t)rdspr(978);
+    for (i=0; i < 8; i++)
+    {
+    	D(bug("%08x.%08x  ", hash[0], hash[1]));
+    	hash += 2;
+    	if (i == 3)
+    		D(bug("\n[KRN]  "));
+    }
+    D(bug("\n[KRN] Hash2 dump:\n[KRN]  "));
+	hash = (uint32_t)rdspr(979);
+    for (i=0; i < 8; i++)
+    {
+    	D(bug("%08x.%08x  ", hash[0], hash[1]));
+    	hash += 2;
+    	if (i == 3)
+    		D(bug("\n[KRN]  "));
+    }
+    D(bug("\n"));
+    D(bug("[KRN] Instruction dump:\n"));
     ULONG *p = (ULONG*)ctx->srr0;
     for (i=0; i < 8; i++)
     {
@@ -373,7 +395,7 @@ static void __attribute__((used)) __exception_template()
 "dm0:	mtctr	%r1			\n"
 "dm1:	lwzu	%r1, 8(%r2)	\n"
 "		cmp		c0, %r1, %r3\n"
-"		bdnzf	0, dm1		\n"
+"		bdnzf	eq, dm1		\n"
 "		bne		dataSecHash	\n"
 "		l		%r1, +4(%r2)\n"
 "		mtctr	%r0			\n"
@@ -408,7 +430,7 @@ static void __attribute__((used)) __exception_template()
 "ceq0:	mtctr	%r1			\n"
 "ceq1:	lwzu	%r1, 8(%r2)	\n"
 "		cmp		c0, %r1, %r3\n"
-"		bdnzf	0, ceq1		\n"
+"		bdnzf	eq, ceq1		\n"
 "		bne		cEq0SecHash	\n"
 "		l		%r1, +4(%r2)\n"
 "		andi.	%r3,%r1,0x80\n"
