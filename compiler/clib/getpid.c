@@ -6,6 +6,7 @@
 */
 
 #include <proto/exec.h>
+#include <assert.h>
 
 /*****************************************************************************
 
@@ -36,5 +37,9 @@
 
 ******************************************************************************/
 {
-    return (pid_t)FindTask(NULL);
+    struct ETask *et;
+
+    et = GetETask(FindTask(NULL));
+    assert(et); 
+    return (pid_t) et->et_UniqueID;
 } /* getpid */
