@@ -1,0 +1,216 @@
+## version $VER: wanderer.catalog 1.0 (20.09.2008)
+## language português
+## codeset 0
+;
+; Translated by João Ralha (hardwired)
+;
+MSG_TITLE
+Wanderer
+;
+MSG_DESCRIPTION
+Administrador de Arquivos
+; File Manager
+;
+MSG_SCREENTITLE
+Wanderer: Memória Gráfica %s | Outra Memória %s
+; Wanderer %s graphics mem %s other mem
+;
+MSG_MEM_B
+B
+;
+MSG_MEM_K
+K
+;
+MSG_MEM_M
+M
+;
+MSG_MEM_G
+G
+;
+MSG_MEN_WANDERER
+Wanderer
+;
+MSG_MEN_BACKDROP
+Fundo
+; Backdrop
+;
+MSG_MEN_SC_BACKDROP
+B
+;
+MSG_MEN_EXECUTE
+Executar...
+; Execute...
+;
+MSG_MEN_SC_EXECUTE
+E
+;
+MSG_MEN_SHELL
+Shell...
+;
+MSG_MEN_SC_SHELL
+W
+;
+MSG_MEN_GUISET
+Configuração do GUI
+; GUI Settings...
+;
+MSG_MEN_ABOUT
+Acerca de ...
+; About...
+;
+MSG_MEN_SC_ABOUT
+?
+;
+MSG_MEN_QUIT
+Sair...
+; Quit...
+;
+MSG_MEN_SC_QUIT
+Q
+;
+MSG_MEN_WINDOW
+Janela
+; Window
+;
+MSG_MEN_NEWDRAW
+Novo Directório...
+; New Drawer...
+;
+MSG_MEN_SC_NEWDRAW
+N
+;
+MSG_MEN_OPENPAR
+Abrir Anterior
+; Open Parent
+;
+MSG_MEN_CLOSE
+Fechar
+; Close
+;
+MSG_MEN_SC_CLOSE
+K
+;
+MSG_MEN_UPDATE
+Actualizar
+; Update
+;
+MSG_MEN_CONTENTS
+Selecionar conteúdo
+; Select Contents
+;
+MSG_MEN_SC_CONTENTS
+A
+;
+MSG_MEN_CLRSEL
+Limpar selecção
+; Clear selection
+;
+MSG_MEN_SC_CLRSEL
+Z
+;
+MSG_MEN_SNAPSHT
+Guardar posição
+; Snapshot
+;
+MSG_MEN_ALL
+Todos
+; All
+;
+MSG_MEN_VIEW
+Ver
+; View
+;
+MSG_MEN_ICVIEW
+Ver como icones
+; Vista con íconos
+;Icon view
+;
+MSG_MEN_DCVIEW
+Ver detalhes
+; Vista con detalles
+; Detail view
+;
+MSG_MEN_ALLFIL
+Todos ficheiros
+; All files
+;
+MSG_MEN_SORTIC
+Ordenar
+; Ordenado
+;Sorted
+;
+MSG_MEN_CLNUP
+Limpar
+; Clean Up
+;
+MSG_MEN_SC_CLNUP
+U
+;
+MSG_MEN_BYNAME
+Por nome
+; By name
+;
+MSG_MEN_BYDATE
+Por data
+; By Date
+;
+MSG_MEN_BYSIZE
+Por tamanho
+; By size
+;
+MSG_MEN_REVERSE
+Reverso
+; Reverse
+;
+MSG_MEN_DRWFRST
+Primeiro os dir.
+; Drawers first
+;
+MSG_MEN_ICON
+Icone
+; Icon
+;
+MSG_MEN_OPEN
+Abrir
+; Open
+;
+MSG_MEN_SC_OPEN
+O
+;
+MSG_MEN_RENAME
+Mudar nome...
+; Rename...
+;
+MSG_MEN_SC_RENAME
+R
+;
+MSG_MEN_INFO
+Informacão...
+; Information...
+;
+MSG_MEN_SC_INFO
+I
+;
+MSG_MEN_DELETE
+APAGAR...
+; Delete...
+;
+MSG_MEN_TOOLS 
+Ferramentas
+; Tools
+;
+MSG_REALLYQUIT
+¿Quer sair do Wanderer?
+; Do you really want to quit Wanderer?
+;
+MSG_YESNO
+*Sí|No
+; *Sim|Não
+;
+MSG_DUMMY
+DUMMY
+; DUMMY :)
+MSG_USERSCREENTITLE
+Wanderer: Memória Gráfica %pc - Outra memória %f
+; Wanderer %pc graphics mem %pf other mem
+;
