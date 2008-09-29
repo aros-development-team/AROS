@@ -8,6 +8,7 @@
 #define DEBUG 0
 
 #include <exec/types.h>
+#include <exec/lists.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
@@ -203,9 +204,13 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     struct CommandLineInterface *cli = Cli();
     char *afilename = NULL;
     int saved_errno = 0;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct MinList tempenv;
+    struct LocalVar *varNode;
+    struct Node *tempNode;
 
     /* Sanity check */
-    if (filename == NULL || filename[0] == '\0' || argv == NULL || envp == NULL)
+    if (filename == NULL || filename[0] == '\0' || argv == NULL)
     {
         errno = EINVAL;
         return -1;
@@ -294,30 +299,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     else
     	strcat(argptr, "\n");
     
-    /* Store environment variables */
-    env = (char**) envp;
-    while(*env)
-    {
-    	varvalue = strchr(*env, '=');
-    	if(!varvalue || varvalue == *env)
-    	{
-    		/* No variable value? Empty variable name? */
-    		saved_errno = EINVAL;
-    		goto error;
-    	}
-    	varname = malloc(1 + varvalue - *env);
-    	if(!varname)
-    	{
-    		saved_errno = ENOMEM;
-    		goto error;
-    	}
-        varname[0] = '\0';
-    	strncat(varname, *env, varvalue - *env);
-    	setenv(varname, varvalue, 1);
-    	free(varname);
-    	env++;
-    }
-    
     /* Get the path for LoadSeg() */
     afilename = strdup(__path_u2a(inter ? inter : (char*) filename));
     if(!afilename)
@@ -344,11 +325,61 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	saved_errno = errno;
 	goto error;
     }
+
+    /* Store environment variables */
+    if(envp)
+    {
+	/* Backup and clear the environment */
+	NEWLIST(&tempenv);
+	ForeachNodeSafe(&me->pr_LocalVars, varNode, tempNode)
+	{
+	    Remove((struct Node*) varNode);
+	    AddTail((struct List*) &tempenv, (struct Node*) varNode);
+	}
+	    
+	NEWLIST(&me->pr_LocalVars);
+	env = (char**) envp;
+	while(*env)
+	{
+	    varvalue = strchr(*env, '=');
+	    if(!varvalue || varvalue == *env)
+	    {
+    		/* No variable value? Empty variable name? */
+    		saved_errno = EINVAL;
+    		goto error_env;
+    	    }
+	    varname = malloc(1 + varvalue - *env);
+	    if(!varname)
+	    {
+    		saved_errno = ENOMEM;
+    		goto error_env;
+	    }
+	    varname[0] = '\0';
+	    strncat(varname, *env, varvalue - *env);
+	    /* skip '=' */
+	    varvalue++;
+	    setenv(varname, varvalue, 1);
+	    free(varname);
+	    env++;
+	}
+    }
     
     /* Load and run the command */
     if((seglist = LoadSeg((CONST_STRPTR) afilename)))
     {
         free(afilename);
+        
+        if(envp)
+        {
+            /* Everything went fine, execve won't return so we can free the old
+               environment variables */
+            ForeachNodeSafe(&tempenv, varNode, tempNode)
+            {
+        	FreeMem(varNode->lv_Value, varNode->lv_Len);
+        	Remove((struct Node *)varNode);
+        	FreeVec(varNode);
+            }
+        }
         
         struct vfork_data *udata = FindTask(NULL)->tc_UserData;
 	if(udata && udata->magic == VFORK_MAGIC)
@@ -421,9 +452,17 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     {
 	/* most likely file is not a executable */
     	saved_errno = ENOEXEC;
-    	goto error;
+    	goto error_env;
     }
 
+error_env:
+    /* Restore environment in case of error */
+    NEWLIST(&me->pr_LocalVars);
+    ForeachNodeSafe(&tempenv, varNode, tempNode)
+    {
+	Remove((struct Node*) varNode);
+	AddTail((struct List*) &me->pr_LocalVars, (struct Node*) varNode);
+    }
 error:
     free(argptr);
     if(afilename != NULL) free(afilename);
