@@ -5,7 +5,7 @@
     Desc: Boot your operating system.
     Lang: english
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <exec/alerts.h>
@@ -15,6 +15,7 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <dos/dosextens.h>
+#include <dos/stdio.h>
 #include <utility/tagitem.h>
 #include <aros/arossupportbase.h>
 #include <aros/debug.h>
@@ -98,6 +99,8 @@ AROS_UFH3(void, boot,
     fh_stdin->fh_Unit    =emulbase->eb_stdin;
     fh_stdout->fh_Device =&emulbase->eb_device;
     fh_stdout->fh_Unit   =emulbase->eb_stdout;
+    SetVBuf(fh_stdin, NULL, BUF_LINE, -1);
+    SetVBuf(fh_stdout, NULL, BUF_LINE, -1);
 
     if(Input())
     	Close(Input());
@@ -107,7 +110,7 @@ AROS_UFH3(void, boot,
     D(bug("[boot] Selecting input and output for DOS\n"));
     SelectInput(MKBADDR(fh_stdin));
     SelectOutput(MKBADDR(fh_stdout));
-    ((struct Process *)FindTask(NULL))->pr_CES = MKBADDR(fh_stdout);
+    SelectError(MKBADDR(fh_stdout));
 
     D(bug("[boot] Selecting output for AROSSupport\n"));
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = stderr;

@@ -68,7 +68,7 @@ static void SendEvent(struct emulbase *emulbase, LONG event) {
   struct IOStdReq *InputRequest;
   struct MsgPort *InputPort;
   struct InputEvent *ie;
-  D(bug("[afs] os_aros_support/SendEvent\n"));
+  D(bug("[emul] SendEvent\n"));
   if ((InputPort = (struct MsgPort*)CreateMsgPort())) {
 	
 	if ((InputRequest = (struct IOStdReq*)CreateIORequest(InputPort, sizeof(struct IOStdReq)))) {
@@ -1381,7 +1381,9 @@ AROS_LH1(void, beginio,
 		
 		if (error == 0)
 		{
+		  D(bug("[emul] Reading %lu bytes\n"));
 		  iofs->io_Union.io_READ.io_Length = DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length);
+		  D(bug("[emul] Read %ld bytes\n", iofs->io_Union.io_READ.io_Length));
 		  
 		  if (iofs->io_Union.io_READ.io_Length < 0)
 		  {
@@ -1433,9 +1435,11 @@ AROS_LH1(void, beginio,
 	  LONG mode = iofs->io_Union.io_SEEK.io_SeekMode;
 	  LONG oldpos;
 	  
+	  D(bug("[emul] FSA_SEEK, mode 0x%08lX, offset %lu\n"));
 	  if (fh->type == FHD_FILE)
 	  {
 		oldpos = LSeek(fh->fd, 0, SEEK_CUR);
+		D(bug("[emul] Original position: %lu\n", oldpos));
 		
 		if (mode == OFFSET_BEGINNING)
 		{

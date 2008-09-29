@@ -145,6 +145,7 @@ int __declspec(dllexport) EmulOpen(const char *path, int mode, int protect)
 	flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
   else
 	flags|=O_RDONLY;
+  flags |= O_BINARY;
   protect = prot_a2u(protect);
   return open(path, flags, protect);
 }  
