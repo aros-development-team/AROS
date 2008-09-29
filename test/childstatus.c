@@ -49,4 +49,5 @@ int main()
     }
     else
 	PrintFault(IoErr(), "Couldn't create child process");
+    return 0;
 }
