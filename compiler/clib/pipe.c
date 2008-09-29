@@ -31,7 +31,7 @@ int pipe(int *pipedes)
         return -1;
     }
 
-    if (Pipe("PIPEFS:", &reader, &writer) != DOSTRUE) {
+    if (Pipe("XPIPE:", &reader, &writer) != DOSTRUE) {
         errno = IoErr2errno(IoErr());
         free(rdesc);
         free(wdesc);
