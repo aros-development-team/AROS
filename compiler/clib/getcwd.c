@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-        chdir
+        chdir()
 
     INTERNALS
 

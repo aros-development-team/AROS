@@ -16,7 +16,33 @@
 #include <sys/wait.h>
 #include <errno.h>
 
-pid_t wait(int *status)
+/*****************************************************************************
+
+    NAME */
+
+	pid_t wait(
+
+/*  SYNOPSIS */
+	int *status)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     pid_t ret = -1;
     struct ETask *et;

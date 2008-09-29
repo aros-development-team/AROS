@@ -12,8 +12,34 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-int mknod(const char *pathname, mode_t mode, dev_t dev)
+/*****************************************************************************
 
+    NAME */
+
+	int mknod(
+
+/*  SYNOPSIS */
+	const char *pathname,
+	mode_t mode,
+	dev_t dev)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     errno = EPERM;
     return -1;

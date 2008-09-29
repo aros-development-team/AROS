@@ -16,7 +16,34 @@
 
 #include "etask.h"
 
-pid_t waitpid(pid_t pid, int *status, int options)
+/*****************************************************************************
+
+    NAME */
+
+	pid_t waitpid(
+
+/*  SYNOPSIS */
+	pid_t pid,
+	int *status,
+	int options)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     struct ETask *et;
     APTR tid = (APTR) pid;

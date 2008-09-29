@@ -18,9 +18,34 @@ __FBSDID("$FreeBSD$");
 
 extern unsigned short _rand48_seed[3];
 
-long
-lrand48(void)
+/*****************************************************************************
+
+    NAME */
+
+	long lrand48(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	_dorand48(_rand48_seed);
 	return ((long) _rand48_seed[2] << 15) + ((long) _rand48_seed[1] >> 1);
 }
+

@@ -5,12 +5,39 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <pwd.h>
 
-struct passwd *getpwnam(const char *name)
+	struct passwd *getpwnam(
+
+/*  SYNOPSIS */
+	const char *name)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement getpwnam()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return NULL;
 }
+

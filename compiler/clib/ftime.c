@@ -3,10 +3,35 @@
     $Id$
 */
 
+/*****************************************************************************
+
+    NAME */
+
 #include <time.h>
 #include <sys/timeb.h>
 
-int ftime(struct timeb *tb)
+	int ftime(
+
+/*  SYNOPSIS */
+	struct timeb *tb)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     tb->time     = time(NULL);
     tb->millitm  = 0; // FIXME
@@ -15,3 +40,4 @@ int ftime(struct timeb *tb)
 
     return 0;
 }
+

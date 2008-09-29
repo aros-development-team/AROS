@@ -7,9 +7,34 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <sys/times.h>
 
-clock_t times(struct tms *tms)
+	clock_t times(
+
+/*  SYNOPSIS */
+	struct tms *tms)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement times()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");

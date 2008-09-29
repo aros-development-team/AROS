@@ -6,7 +6,33 @@
 #include <stdlib.h>
 #include "__exitfunc.h"
 
-int on_exit(void (*func)(int, void *), void *arg)
+/*****************************************************************************
+
+    NAME */
+
+	int on_exit(
+
+/*  SYNOPSIS */
+	void (*func)(int, void *),
+	void *arg)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     struct AtExitNode *aen = malloc(sizeof(*aen));
 
@@ -18,3 +44,4 @@ int on_exit(void (*func)(int, void *), void *arg)
 
     return __addexitfunc(aen);
 }
+

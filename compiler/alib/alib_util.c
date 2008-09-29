@@ -333,7 +333,7 @@
     BUGS
 
     SEE ALSO
-	CallHook().
+	CallHook()
 
     INTERNALS
 	HPPA: Allocate a structure which can contain all APTRs between the

@@ -54,8 +54,7 @@ static int _vsscanf_unget (int c, char ** str)
     BUGS
 
     SEE ALSO
-	scanf(), sscanf(), fscanf(), vscanf(), vfscanf(), snscanf(),
-	vsnscanf()
+	scanf(), sscanf(), fscanf(), vscanf(), vfscanf()
 
     INTERNALS
 

@@ -11,7 +11,32 @@
 
 #include <assert.h>
 
-pid_t getppid(void)
+/*****************************************************************************
+
+    NAME */
+
+	pid_t getppid(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
   struct Task *ThisTask, *ParentTask;
   struct ETask *eThisTask;

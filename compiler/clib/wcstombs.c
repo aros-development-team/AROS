@@ -7,10 +7,39 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <stdlib.h>
 
-size_t wcstombs(char *s, const wchar_t *pwcs, size_t n) {
+	size_t wcstombs(
+
+/*  SYNOPSIS */
+	char *s,
+	const wchar_t *pwcs,
+	size_t n)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+{
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return (size_t) -1;
 }
+

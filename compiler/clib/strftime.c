@@ -71,7 +71,35 @@ static size_t strfnumb(char *s, size_t maxsize, signed int places, size_t value)
     return size;
 }
 
-size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *timeptr)
+/*****************************************************************************
+
+    NAME */
+
+	size_t strftime(
+
+/*  SYNOPSIS */
+	char *s,
+	size_t maxsize,
+	const char *format,
+	const struct tm *timeptr)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     size_t size = 0, tmp;
     
@@ -182,3 +210,4 @@ size_t strftime(char *s, size_t maxsize, const char *format, const struct tm *ti
     
     return size - 1;
 }
+

@@ -3,9 +3,35 @@
     $Id$
 */
 
+/*****************************************************************************
+
+    NAME */
+
 #include <dirent.h>
 
-void rewinddir(DIR *dir)
+	void rewinddir(
+
+/*  SYNOPSIS */
+	DIR *dir)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     seekdir(dir, 0);
 }
+

@@ -43,7 +43,7 @@
         See execve documentation.
 
     SEE ALSO
-        execve
+        execve()
 	
     INTERNALS
 

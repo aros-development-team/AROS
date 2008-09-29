@@ -5,12 +5,40 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <grp.h>
 
-struct group *getgrgid(gid_t gid)
+/*  SYNOPSIS */
+	struct group *getgrgid(
+
+/*  SYNOPSIS */
+	gid_t gid)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement getgrgid()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return NULL;
 }
+

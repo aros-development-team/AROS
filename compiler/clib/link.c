@@ -7,10 +7,35 @@
 
 #include "__errno.h"
 
+/*****************************************************************************
+
+    NAME */
+
 #include <unistd.h>
 
-int link(const char *oldpath, const char *newpath)
+	int link(
 
+/*  SYNOPSIS */
+	const char *oldpath,
+	const char *newpath)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     errno = EPERM;
     return -1;

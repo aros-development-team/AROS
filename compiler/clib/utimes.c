@@ -12,7 +12,33 @@
 #include "__errno.h"
 #include "__upath.h"
 
-int utimes(const char *file, struct timeval tvp[2])
+/*****************************************************************************
+
+    NAME */
+
+	int utimes(
+/*  SYNOPSIS */
+
+	const char *file,
+	struct timeval tvp[2])
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     struct DateStamp ds;
 

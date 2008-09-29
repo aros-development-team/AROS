@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-    	unlink
+    	unlink()
 
     INTERNALS
 

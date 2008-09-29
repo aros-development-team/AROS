@@ -31,8 +31,7 @@
     BUGS
 
     SEE ALSO
-	fscanf(), vscanf(), vfscanf(), sscanf(), vsscanf(),
-	vnsscanf()
+	fscanf(), vscanf(), vfscanf(), sscanf(), vsscanf()
 
     INTERNALS
 

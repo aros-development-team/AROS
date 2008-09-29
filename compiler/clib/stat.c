@@ -13,9 +13,35 @@
 #include "__stat.h"
 #include "__upath.h"
 
+/*****************************************************************************
+
+    NAME */
+
 #include <sys/stat.h>
 
-int stat(const char *path, struct stat *sb)
+	int stat(
+
+/*  SYNOPSIS */
+	const char *path,
+	struct stat *sb)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     int res = 0;
     BPTR lock;
@@ -48,3 +74,4 @@ int stat(const char *path, struct stat *sb)
 
     return res;
 }
+

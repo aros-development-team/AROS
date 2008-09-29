@@ -12,11 +12,35 @@
 #include "__errno.h"
 #include "__open.h"
 
+/*****************************************************************************
+
+    NAME */
+
 #include <fcntl.h>
 #include <unistd.h>
 
-int fsync(int fd)
-/* FIXME: documentation */
+	int fsync(
+
+/*  SYNOPSIS */
+	int fd)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     fdesc *fdesc = __getfdesc(fd);
 
