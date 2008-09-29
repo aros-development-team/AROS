@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	strcmp(), strncmp(), strcasecmp() strncasecmp()
+	strcmp(), strncmp(), strcasecmp(), strncasecmp()
 
     INTERNALS
 

@@ -16,9 +16,33 @@ __FBSDID("$FreeBSD$");
 
 #include "rand48.h"
 
-long
-jrand48(unsigned short xseed[3])
+/*****************************************************************************
+
+    NAME */
+	long jrand48(
+
+/*  SYNOPSIS */
+	unsigned short xseed[3])
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	_dorand48(xseed);
 	return ((long) xseed[2] << 16) + (long) xseed[1];
 }
+

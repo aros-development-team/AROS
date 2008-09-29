@@ -10,7 +10,33 @@
 #include <sys/stat.h>
 
 #warning FIXME: Implement umask() properly
-mode_t umask(mode_t numask)
+
+/*****************************************************************************
+
+    NAME */
+
+	mode_t umask(
+
+/*  SYNOPSIS */
+	mode_t numask)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     mode_t oumask = __umask;
 

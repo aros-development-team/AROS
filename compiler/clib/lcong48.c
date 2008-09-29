@@ -20,8 +20,33 @@ extern unsigned short _rand48_seed[3];
 extern unsigned short _rand48_mult[3];
 extern unsigned short _rand48_add;
 
-void
-lcong48(unsigned short p[7])
+/*****************************************************************************
+
+    NAME */
+#include <stdlib.h>
+
+	void lcong48(
+
+/*  SYNOPSIS */
+	unsigned short p[7])
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	_rand48_seed[0] = p[0];
 	_rand48_seed[1] = p[1];
@@ -31,3 +56,4 @@ lcong48(unsigned short p[7])
 	_rand48_mult[2] = p[5];
 	_rand48_add = p[6];
 }
+

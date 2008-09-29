@@ -20,8 +20,32 @@ extern unsigned short _rand48_seed[3];
 extern unsigned short _rand48_mult[3];
 extern unsigned short _rand48_add;
 
-unsigned short *
-seed48(unsigned short xseed[3])
+/*****************************************************************************
+
+    NAME */
+
+	unsigned short *seed48(
+
+/*  SYNOPSIS */
+	unsigned short xseed[3])
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	static unsigned short sseed[3];
 
@@ -37,3 +61,4 @@ seed48(unsigned short xseed[3])
 	_rand48_add = RAND48_ADD;
 	return sseed;
 }
+

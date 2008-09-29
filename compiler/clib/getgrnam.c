@@ -5,12 +5,40 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <grp.h>
 
-struct group *getgrnam(const char *name)
+/*  SYNOPSIS */
+	struct group *getgrnam(
+
+/*  SYNOPSIS */
+	const char *name)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement getgrnam()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return NULL;
 }
+

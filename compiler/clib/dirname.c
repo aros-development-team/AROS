@@ -10,7 +10,35 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-char *dirname(char *filename)
+/*****************************************************************************
+
+    NAME */
+	char *dirname(
+
+/*  SYNOPSIS */
+	char *filename)
+
+/*  FUNCTION
+	Returns the string up to the latest '/'.
+	
+    INPUTS
+	filename - Path which should be split
+
+    RESULT
+	Directory part of the path.
+	
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	basename()
+
+    INTERNALS
+
+******************************************************************************/
 {
     char *uname;
     char *pos;

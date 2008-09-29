@@ -5,9 +5,35 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
 #include <pwd.h>
 
-void endpwent()
+/*  SYNOPSIS */
+	void endpwent(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement endpwent()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");

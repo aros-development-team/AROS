@@ -7,9 +7,34 @@
 
 #include "__open.h"
 
+/*****************************************************************************
+
+    NAME */
+
 #include <unistd.h>
 
-int isatty(int fd)
+	int isatty(
+
+/*  SYNOPSIS */
+	int fd)
+	
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     fdesc *desc = __getfdesc(fd);
 
@@ -18,3 +43,4 @@ int isatty(int fd)
 
     return 0;
 }
+

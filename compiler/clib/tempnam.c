@@ -57,9 +57,33 @@ __warn_references(tempnam,
 extern char *_mktemp(char *);
 #endif
 
-char *
-tempnam(dir, pfx)
-	const char *dir, *pfx;
+/*****************************************************************************
+
+    NAME */
+
+	char * tempnam(
+
+/*  SYNOPSIS */
+	const char *dir,
+	const char *pfx)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	int sverrno;
 	char *f, *name;

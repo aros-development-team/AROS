@@ -49,7 +49,8 @@
     BUGS
 
     SEE ALSO
-	 accept(),  open(),  close(),  fcntl(),  pipe(),  socket()
+	 bsdsocket.library/accept(),  open(),  close(),  fcntl(),  pipe()
+	 bsdsocket.library/socket()
 
     INTERNALS
 

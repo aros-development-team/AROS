@@ -6,9 +6,35 @@
 #include <errno.h>
 #include <sys/time.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <utime.h>
 
-int utime(const char *filename, struct utimbuf *buf)
+	int utime(
+
+/*  SYNOPSIS */
+	const char *filename,
+	struct utimbuf *buf)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     struct timeval ts[2];
     

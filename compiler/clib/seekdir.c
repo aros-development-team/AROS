@@ -6,9 +6,36 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include "__open.h"
+
+/*****************************************************************************
+
+    NAME */
+
 #include <dirent.h>
 
-void seekdir(DIR *dir, off_t offset)
+	void seekdir(
+
+/*  SYNOPSIS */
+	DIR *dir,
+	off_t offset)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     int pos = offset;
     fdesc *desc = __getfdesc(dir->fd);
@@ -27,3 +54,4 @@ void seekdir(DIR *dir, off_t offset)
 	);
     dir->pos = pos;
 }
+

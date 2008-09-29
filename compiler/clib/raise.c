@@ -1,7 +1,32 @@
 #include <unistd.h>
 #include <signal.h>
 
-int raise(int signal)
+/*****************************************************************************
+
+    NAME */
+
+	int raise(
+
+/*  SYNOPSIS */
+	int signal)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     kill(getpid(), signal);
 }

@@ -15,7 +15,33 @@
 #include "__upath.h"
 #include <aros/debug.h>
 
-int symlink(const char *oldpath, const char *newpath)
+/*****************************************************************************
+
+    NAME */
+
+	int symlink(
+
+/*  SYNOPSIS */
+	const char *oldpath,
+	const char *newpath)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	int retval = -1;
     BPTR lock;

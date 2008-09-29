@@ -3,10 +3,35 @@
     $Id$
 */
 
+/*****************************************************************************
+
+    NAME */
+
 #include <dirent.h>
 
-long
-telldir(DIR *dir)
+	long telldir(
+
+/*  SYNOPSIS */
+	DIR *dir)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     return dir->pos;
 }
+

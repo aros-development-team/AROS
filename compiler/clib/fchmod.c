@@ -39,6 +39,7 @@ ULONG prot_u2a(mode_t protect);
     RESULT
 
     NOTES
+	Not implemented.
 
     EXAMPLE
 

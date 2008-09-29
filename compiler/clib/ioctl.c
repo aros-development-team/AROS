@@ -6,9 +6,38 @@
 #include <aros/debug.h>
 
 #include <errno.h>
+
+/*****************************************************************************
+
+    NAME */
+
 #include <sys/ioctl.h>
 
-int ioctl(int fd, int request, ...)
+	int ioctl(
+
+/*  SYNOPSIS */
+	int fd,
+	int request,
+	...)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement ioctl()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
@@ -16,3 +45,4 @@ int ioctl(int fd, int request, ...)
     errno = ENOSYS;
     return -1;
 }
+

@@ -55,9 +55,32 @@ __warn_references(tmpnam,
 extern char *_mktemp(char *);
 #endif
 
-char *
-tmpnam(s)
-	char *s;
+/*****************************************************************************
+
+    NAME */
+
+	char *tmpnam(
+
+/*  SYNOPSIS */
+	char *s)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	static u_long tmpcount;
 	static char buf[L_tmpnam];

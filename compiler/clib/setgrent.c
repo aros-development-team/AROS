@@ -5,12 +5,39 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <grp.h>
 
-void setgrent()
+	void setgrent(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement setgrent()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
     return;
 }
+

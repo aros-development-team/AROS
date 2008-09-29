@@ -12,7 +12,33 @@
 #include "__errno.h"
 #include "__open.h"
 
-int fcntl(int fd, int cmd, ...)
+/*****************************************************************************
+
+    NAME */
+	int fcntl(
+
+/*  SYNOPSIS */
+	int fd,
+	int cmd,
+	...)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     fdesc *desc = __getfdesc(fd);
 

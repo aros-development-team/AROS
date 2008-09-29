@@ -3,11 +3,38 @@
     $Id$
 */
 
+/*****************************************************************************
+
+    NAME */
+
 #include <pwd.h>
 
-void setpwent()
+	void setpwent(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     #warning Implement setpwent()
     
     return;
 }
+

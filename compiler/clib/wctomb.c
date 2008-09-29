@@ -7,10 +7,39 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <stdlib.h>
 
-int wctomb(char *s, wchar_t wchar) {
+	int wctomb(
+
+/*  SYNOPSIS */
+	char *s,
+	wchar_t wchar)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+{
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return -1;
 }
+

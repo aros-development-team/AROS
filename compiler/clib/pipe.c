@@ -12,7 +12,32 @@
 #include "__errno.h"
 #include "__open.h"
 
-int pipe(int *pipedes)
+/*****************************************************************************
+
+    NAME */
+
+	int pipe(
+
+/*  SYNOPSIS */
+	int *pipedes)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     BPTR reader, writer;
     fdesc *rdesc, *wdesc;
@@ -52,3 +77,4 @@ int pipe(int *pipedes)
 
     return 0;
 }
+

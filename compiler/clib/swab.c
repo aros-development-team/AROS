@@ -38,13 +38,36 @@
 static char *rcsid = "$OpenBSD: swab.c,v 1.3 1998/02/10 02:19:48 deraadt Exp $";
 #endif /* LIBC_SCCS and not lint */
 
+/*****************************************************************************
+
+    NAME */
+
 #include <unistd.h>
 
-void
-swab(from, to, len)
-	const void *from;
-	void *to;
-	size_t len;
+void swab(
+
+/*  SYNOPSIS */
+	const void *from,
+	void *to,
+	size_t len)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 	register unsigned long temp;
 	register int n;
@@ -63,3 +86,4 @@ swab(from, to, len)
 		STEP; STEP; STEP; STEP;
 	}
 }
+

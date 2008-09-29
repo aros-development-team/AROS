@@ -5,9 +5,37 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
+
 #include <unistd.h>
 
-int fchown(int fd, uid_t owner, gid_t group)
+	int fchown(
+
+/*  SYNOPSIS */
+	int fd,
+	uid_t owner,
+	gid_t group)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement fchown()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");

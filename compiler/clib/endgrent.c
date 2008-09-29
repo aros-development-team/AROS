@@ -5,9 +5,34 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************
+
+    NAME */
 #include <grp.h>
 
-void endgrent()
+	void endgrent(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+	Not implemented.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
 #   warning Implement endgrent()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");

@@ -42,7 +42,7 @@
 
     SEE ALSO
 	fprintf(), vprintf(), vfprintf(), snprintf(), vsprintf(),
-	vnsprintf()
+	vsnprintf()
 
     INTERNALS
 

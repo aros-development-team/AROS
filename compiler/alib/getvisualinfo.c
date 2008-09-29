@@ -42,6 +42,7 @@ extern struct Library * GadToolsBase;
     BUGS
 
     SEE ALSO
+	gadtools.library/GetVisualInfoA()
 
     INTERNALS
 

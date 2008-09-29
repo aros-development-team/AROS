@@ -5,9 +5,34 @@
     SVID function getw().
 */
 
+/*****************************************************************************
+
+    NAME */
+
 #include <stdio.h>
 
-int getw(FILE *stream)
+	int getw(
+
+/*  SYNOPSIS */
+	FILE *stream)
+
+/*  FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
 {
     int word;
     
