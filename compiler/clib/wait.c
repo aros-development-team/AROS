@@ -8,6 +8,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <aros/startup.h>
+#include <aros/debug.h>
 
 #include "etask.h"
 
@@ -19,6 +20,8 @@ pid_t wait(int *status)
 {
     pid_t ret = -1;
     struct ETask *et;
+
+    D(bug("wait()\n"));
 
     et = GetETask(FindTask(NULL));
     if(!et)
