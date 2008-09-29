@@ -1,0 +1,258 @@
+## version $VER: dos.catalog 1.1 (28.09.2008)
+## codeset 0
+## language português
+;
+MSG_ERROR_NO_FREE_STORE (103//)
+memória disponível insuficiente
+;not enough memory available
+;
+MSG_ERROR_TASK_TABLE_FULL (105//)
+Tabela de processos cheia
+;process table full
+;
+MSG_ERROR_BAD_TEMPLATE (114//)
+mau template
+;bad template
+;
+MSG_ERROR_BAD_NUMBER (115//)
+número incorrecto
+;bad number
+;
+MSG_ERROR_REQUIRED_ARG_MISSING (116//)
+falta argumento obrigatório
+;required argument missing
+;
+MSG_ERROR_KEY_NEEDS_ARG (117//)
+falta valor após "keyword"
+;value after keyword missing
+;
+MSG_ERROR_TOO_MANY_ARGS (118//)
+número errado de argumentos
+;wrong number of arguments
+;
+MSG_ERROR_UNMATCHED_QUOTES (119//)
+incorrecta abertura/fecho de aspas
+;comillas desparejas
+;unmatched quotes
+;
+MSG_ERROR_LINE_TOO_LONG (120//)
+linha de argumento inválida ou demasiado longa
+;argument line invalid or too long
+;
+MSG_ERROR_FILE_NOT_OBJECT (121//)
+o ficheiro não é executável
+;file is not executable
+;
+MSG_ERROR_INVALID_RESIDENT_LIBRARY (122//)
+libraria residente inválida
+;invalid resident library
+;
+MSG_ERROR_NO_DEFAULT_DIR (201//)
+erro 201
+;
+MSG_ERROR_OBJECT_IN_USE (202//)
+o objecto está em uso
+;object is in use
+;
+MSG_ERROR_OBJECT_EXISTS (203//)
+o objecto já existe
+;object already exists
+;
+MSG_ERROR_DIR_NOT_FOUND (204//)
+directório não encontrado
+;directory not found
+;
+MSG_ERROR_OBJECT_NOT_FOUND (205//)
+objecto não encontrado
+;object not found
+;
+MSG_ERROR_BAD_STREAM_NAME (206//)
+descrição da janela inválida
+;invalid window description
+;
+MSG_ERROR_OBJECT_TOO_LARGE (207//)
+o objecto é demasiado grande
+;object too large
+;
+MSG_ERROR_ACTION_NOT_KNOWN (209//)
+tipo de acção do sistema de ficheiros desconhecido
+;filesystem action type unknown
+;
+MSG_ERROR_INVALID_COMPONENT_NAME (210//)
+nome de objeto inválido
+;object name invalid
+;
+MSG_ERROR_INVALID_LOCK (211//)
+bloqueio de objeto inválido
+;invalid object lock
+;
+MSG_ERROR_OBJECT_WRONG_TYPE (212//)
+o objeto não é do tipo esperado
+;object is not of required type
+;
+MSG_ERROR_DISK_NOT_VALIDATED (213//)
+o disco não está validado
+;disk not validated
+;
+MSG_ERROR_DISK_WRITE_PROTECTED (214//)
+disco protegido contra escrita
+;disk is write-protected
+;
+MSG_ERROR_RENAME_ACROSS_DEVICES (215//)
+tentativa de mudança de nome nos dispositivos
+;rename across devices attempted
+;
+MSG_ERROR_DIRECTORY_NOT_EMPTY (216//)
+o directório não está vazio
+;directory not empty
+;
+MSG_ERROR_TOO_MANY_LEVELS (217//)
+demasiados níveis
+;too many levels
+;
+MSG_ERROR_DEVICE_NOT_MOUNTED (218//)
+o dispositivo (ou volume) não está montado
+;device (or volume) is not mounted
+;
+MSG_ERROR_SEEK_ERROR (219//)
+ocorreu una falha na procura
+;seek failure
+;
+MSG_ERROR_COMMENT_TOO_BIG (220//)
+o comentário é demasiado longo
+;comment is too long
+;
+MSG_ERROR_DISK_FULL (221//)
+o disco está cheio
+;disk is full
+;
+MSG_ERROR_DELETE_PROTECTED (222//)
+objeto protegido contra eliminação
+;object is protected from deletion
+;
+MSG_ERROR_WRITE_PROTECTED (223//)
+ficheiro protegido contra escrita
+;file is write protected
+;
+MSG_ERROR_READ_PROTECTED (224//)
+ficheiro protegido contra leitura
+;file is read protected
+;
+MSG_ERROR_NOT_A_DOS_DISK (225//)
+Não é um disco válido para o DOS
+;not a valid DOS disk
+;
+MSG_ERROR_NO_DISK (226//)
+não existe um disco na unidade
+;no disk in drive
+;
+MSG_ERROR_NO_MORE_ENTRIES (232//)
+não há mais entradas no directório
+;no more entries in directory
+;
+MSG_ERROR_IS_SOFT_LINK (233//)
+o objeto é um softlink
+;object is soft link
+;
+MSG_ERROR_OBJECT_LINKED (234//)
+o objeto está ligado
+;object is linked
+;
+MSG_ERROR_BAD_HUNK (235//)
+;mau segmento na abertura do ficheiro
+bad loadfile hunk
+;
+MSG_ERROR_NOT_IMPLEMENTED (236//)
+a funcção não está implementada
+;function not implemented
+;
+MSG_ERROR_RECORD_NOT_LOCKED (240//)
+o registo não está bloqueado
+;record not locked
+;
+MSG_ERROR_LOCK_COLLISION (241//)
+colisão no bloqueio do registo
+;record lock collision
+;
+MSG_ERROR_LOCK_TIMEOUT (242//)
+timeout: bloqueio do registo
+;record lock timeout
+;
+MSG_ERROR_UNLOCK_ERROR (243//)
+erro ao desbloquear o registo
+;record unlock error
+;
+MSG_ERROR_BUFFER_OVERFLOW (303//)
+desbordamiento del búfer
+;buffer overflow
+;
+MSG_ERROR_BREAK (304//)
+***Break
+;
+MSG_ERROR_NOT_EXECUTABLE (305//)
+o ficheiro não é executável
+;file not executable
+;
+MSG_STRING_DISK_NOT_VALIDATED (4000//)
+O volume "%s" não está validado
+;Volume "%s" is not validated
+;
+MSG_STRING_DISK_WRITE_PROTECTED (4001//)
+O volume "%s" está protegido contra escrita
+;Volume "%s" is write protected
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_INSERT (4002//)
+Por favor insira o volume "%s" em qualquer unidade
+;Please insert volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE (4003//)
+Por favor substitua o volume "%s" em qualquer unidade
+;Please replace volume "%s" in any drive
+;
+MSG_STRING_DEVICE_NOT_MOUNTED_REPLACE_TARGET (4004//)
+Por favor substitua o volume "%s" em "%s"
+;Please replace volume "%s" in "%s"
+;
+MSG_STRING_DISK_FULL (4005//)
+O volume "%s" está cheio
+;Volume "%s" is full
+;
+MSG_STRING_NOT_A_DOS_DISK (4006//)
+Não é um disco DOS presente em "%s"
+;Not a DOS disk in "%s"
+;
+MSG_STRING_NO_DISK (4007//)
+Nenhum disco presente em "%s"
+;No disk present in "%s"
+;
+MSG_STRING_ABORT_BUSY (4008//)
+DEVE substituir o volume "%s" em "%s"!
+;You MUST replace volume "%s" in "%s"!
+;
+MSG_STRING_ABORT_DISK_ERROR (4009//)
+O volume "%s" têm um erro de leitura/escrita
+;Volume "%s" has a read/write error
+;
+MSG_STRING_RETRY (5000//)
+Tentar de novo
+;Retry
+;
+MSG_STRING_CANCEL (5001//)
+Cancelar
+;Cancel
+;
+MSG_STRING_REQUESTTITLE (5002//)
+Pedido do sistema
+;System requester
+;
+MSG_ERROR_NO_MATCHING_ELSEENDIF (10000//)
+no matching Else or EndIf
+;
+MSG_ERROR_SCRIPT_ONLY (10001//)
+este comando é de uso em ficheiros de comandos ('script')
+;this command is supposed to be used in command files only
+;
+MSG_ERROR_UNKNOWN (100//)
+erro indefinido
+;undefined error
+;
