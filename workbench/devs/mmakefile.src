@@ -14,6 +14,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-fs-complete : workbench-fs
 #MM- workbench-fs : \
 #MM    workbench-fs-pipefs \
+#MM    workbench-fs-xpipe \
 #MM    workbench-fs-fdsk \
 #MM    workbench-fs-zero
 #MM- workbench-fs-quick : \
@@ -39,6 +40,11 @@ include $(TOP)/config/make.cfg
 %build_module mmake=workbench-fs-pipefs \
   modname=pipefs modtype=device modsuffix=handler \
   files=pipefs_handler \
+  uselibs="arossupport amiga rom"
+
+%build_module mmake=workbench-fs-xpipe \
+  modname=xpipe modtype=device modsuffix=handler \
+  files=xpipe_handler \
   uselibs="arossupport amiga rom"
 
 %build_module mmake=workbench-fs-zero \
