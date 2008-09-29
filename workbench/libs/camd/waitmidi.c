@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-		GetMidi
+		GetMidi()
 
     INTERNALS
 

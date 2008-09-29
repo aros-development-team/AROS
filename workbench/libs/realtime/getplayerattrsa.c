@@ -55,7 +55,7 @@
 
     SEE ALSO
 
-    CreatePlayer(), SetPlayerAttrs()
+    CreatePlayerA(), SetPlayerAttrsA()
 
     INTERNALS
 

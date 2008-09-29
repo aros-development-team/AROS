@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-      CreateMenusA() LayoutMenuItemsA() GetVisualInfoA()
+      CreateMenusA(), LayoutMenuItemsA(), GetVisualInfoA()
 
     INTERNALS
 

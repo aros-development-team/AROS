@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-		PutMidi, PutMidiMsg, Midi2Driver
+		PutMidi(), PutMidiMsg(), Midi2Driver()
 
     INTERNALS
 

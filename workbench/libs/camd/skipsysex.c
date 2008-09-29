@@ -37,7 +37,7 @@
     BUGS
 
     SEE ALSO
-		QuerySysEx, GetSysEx
+		QuerySysEx(), GetSysEx()
 
     INTERNALS
 

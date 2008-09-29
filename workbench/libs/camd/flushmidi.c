@@ -39,7 +39,7 @@
 		Not tested.
 
     SEE ALSO
-		GetMidi, GetSysEx
+		GetMidi(), GetSysEx()
 
     INTERNALS
 

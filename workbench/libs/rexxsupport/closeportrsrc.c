@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-         CreateRexxMsg()
+         rexxsyslib.library/CreateRexxMsg()
 
     INTERNALS
 

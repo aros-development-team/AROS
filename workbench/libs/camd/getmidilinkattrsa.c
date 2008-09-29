@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-		SetMidiLinkAttrsA
+		SetMidiLinkAttrsA()
 
     INTERNALS
 

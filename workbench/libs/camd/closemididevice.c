@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-		OpenMidiDevice
+		OpenMidiDevice()
 
     INTERNALS
 

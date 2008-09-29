@@ -53,7 +53,7 @@
 	none known
 
     SEE ALSO
-	rtFileRequest(), rtFontRequest()
+	rtFileRequestA(), rtFontRequestA()
 
     INTERNALS
 

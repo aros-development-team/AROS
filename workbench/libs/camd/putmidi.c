@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-		PutMidiMsg
+		PutMidiMsg()
 
     INTERNALS
 

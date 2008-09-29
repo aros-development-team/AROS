@@ -119,7 +119,7 @@ struct Conductor *createConductor(BOOL private, LONG *error,STRPTR name,
 
     SEE ALSO
 
-    DeletePlayer(), GetPlayerAttrs(), SetPlayerAttrs()
+    DeletePlayer(), GetPlayerAttrsA(), SetPlayerAttrsA()
 
     INTERNALS
 

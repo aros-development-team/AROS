@@ -82,7 +82,7 @@
     BUGS
 
     SEE ALSO
-	OpenLocale(), CloseLocale(), StrConvert().
+	OpenLocale(), CloseLocale(), StrConvert()
 
     INTERNALS
 

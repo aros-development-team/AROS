@@ -47,7 +47,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
     BUGS
 
     SEE ALSO
-		CloseMidiDevice
+		CloseMidiDevice()
 
     INTERNALS
 

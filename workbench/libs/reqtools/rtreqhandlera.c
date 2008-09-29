@@ -141,7 +141,7 @@
 	none known
 
     SEE ALSO
-	rtEZRequest() (RT_ReqHandler explanation)
+	rtEZRequestA(), (RT_ReqHandler explanation)
 
     INTERNALS
 

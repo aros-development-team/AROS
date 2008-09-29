@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-		GetMidiLinkAttrsA
+		GetMidiLinkAttrsA()
 
     INTERNALS
 

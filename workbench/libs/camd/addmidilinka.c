@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-		CreateMidi, SetMidiLinkAttrsA
+		CreateMidiA(), SetMidiLinkAttrsA()
 
     INTERNALS
 

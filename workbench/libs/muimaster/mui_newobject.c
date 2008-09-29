@@ -42,7 +42,7 @@
     BUGS
 
     SEE ALSO
-	MUI_DisposeObject(), intuition.library/SetAttrs()
+	MUI_DisposeObject(), intuition.library/SetAttrsA()
 	intuition.library/GetAttr()
 
     INTERNALS

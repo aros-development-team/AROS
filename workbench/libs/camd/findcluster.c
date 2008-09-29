@@ -39,7 +39,7 @@
     BUGS
 
     SEE ALSO
-		FindMidi
+		FindMidi()
 
     INTERNALS
 
