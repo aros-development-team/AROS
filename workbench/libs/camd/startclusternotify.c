@@ -50,7 +50,7 @@
     BUGS
 
     SEE ALSO
-        EndClusterNotify();
+        EndClusterNotify()
 
     INTERNALS
 

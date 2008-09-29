@@ -86,7 +86,7 @@
     BUGS
 
     SEE ALSO
-		GetMidiAttrsA
+		GetMidiAttrsA()
 
     INTERNALS
 

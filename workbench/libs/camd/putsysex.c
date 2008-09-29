@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-		GetSysEx
+		GetSysEx()
 
     INTERNALS
 

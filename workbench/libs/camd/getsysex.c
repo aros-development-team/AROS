@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-		SkipSysEx, QuerySysEx
+		SkipSysEx(), QuerySysEx()
 
     INTERNALS
 

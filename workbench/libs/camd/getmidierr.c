@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-		GetMidi, WaitMidi
+		GetMidi(), WaitMidi()
 
     INTERNALS
 

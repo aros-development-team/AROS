@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-	CollectionChunks(), FindCollection, PropChunk
+	CollectionChunks(), FindCollection(), PropChunk()
 
     INTERNALS
 

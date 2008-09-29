@@ -206,7 +206,7 @@
 	none known
 
     SEE ALSO
-	graphics/GetDisplayInfoData(), graphics/displayinfo.h,
+	graphics.library/GetDisplayInfoData(), graphics/displayinfo.h,
 	exec.library/SetSignal(), Intuition/SA_DisplayID screen tag
 
     INTERNALS

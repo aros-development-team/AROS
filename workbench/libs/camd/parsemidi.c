@@ -54,7 +54,7 @@
     BUGS
 
     SEE ALSO
-		PutMidi, PutSysEx
+		PutMidi(), PutSysEx()
 
     INTERNALS
 

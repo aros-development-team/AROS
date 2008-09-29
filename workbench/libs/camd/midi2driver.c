@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-		PutMidi, GoodPutMidi, PutMidiMsg
+		PutMidi(), GoodPutMidi(), PutMidiMsg()
 
     INTERNALS
 

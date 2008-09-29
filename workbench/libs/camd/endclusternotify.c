@@ -41,7 +41,7 @@
 		None known
 
     SEE ALSO
-        StartClusterNotify();
+        StartClusterNotify()
 
     INTERNALS
 

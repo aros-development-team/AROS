@@ -89,7 +89,7 @@
     BUGS
 
     SEE ALSO
-		NextMidiLink, NextMidi, FindCluster
+		NextMidiLink(), NextMidi(), FindCluster()
 
     INTERNALS
 

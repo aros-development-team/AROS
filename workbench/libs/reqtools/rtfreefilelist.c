@@ -52,7 +52,7 @@
 
     SEE ALSO
 
-        rtFileRequest()
+        rtFileRequestA()
 
     INTERNALS
 

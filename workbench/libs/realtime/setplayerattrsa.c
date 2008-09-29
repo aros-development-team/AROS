@@ -54,7 +54,7 @@
 
     SEE ALSO
 
-    DeletePlayer(), GetPlayerAttrs(), SetPlayerAttrs()
+    DeletePlayer(), GetPlayerAttrsA()
 
     INTERNALS
 

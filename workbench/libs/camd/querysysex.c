@@ -41,7 +41,7 @@
 		Tested.
 
     SEE ALSO
-		SkipSysEx, GetSysEx
+		SkipSysEx(), GetSysEx()
 
     INTERNALS
 

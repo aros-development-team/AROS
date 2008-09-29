@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-		WaitMidi
+		WaitMidi()
 
     INTERNALS
 

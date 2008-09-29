@@ -56,7 +56,7 @@
 	none known
 
     SEE ALSO
-	rtEZRequest (RT_WaitPointer and RT_LockWindow tags), rtLockWindow()
+	rtEZRequestA(), (RT_WaitPointer and RT_LockWindow tags), rtLockWindow()
 
     INTERNALS
 

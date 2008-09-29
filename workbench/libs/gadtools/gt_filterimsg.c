@@ -52,7 +52,7 @@
     BUGS
 
     SEE ALSO
-	GT_PostFilterIMsg(), GT_GetIMsg(), intuition.library/ReplyMsg()
+	GT_PostFilterIMsg(), GT_GetIMsg(), exec.library/ReplyMsg()
 
     INTERNALS
 

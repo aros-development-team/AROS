@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-		LockCAMD
+		LockCAMD()
 
     INTERNALS
 

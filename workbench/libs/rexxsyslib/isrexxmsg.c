@@ -36,7 +36,7 @@
     BUGS
 
     SEE ALSO
-        CreateRexxMsg
+        CreateRexxMsg()
 
     INTERNALS
         The name of the Node part of the Message is used to see if this
