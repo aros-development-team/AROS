@@ -52,7 +52,7 @@
     BUGS
 
     SEE ALSO
-	utility/ToLower()
+	ToLower()
 
     INTERNALS
 	This function is patched by locale.library.

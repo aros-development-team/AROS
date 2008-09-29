@@ -26,7 +26,7 @@
 
 /*  FUNCTION
     Determines the current mouse position relative to the upper-left
-    corner of a cusrom gadget.
+    corner of a custom gadget.
     It is recommended not to call this function!
  
     INPUTS

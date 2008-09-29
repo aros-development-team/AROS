@@ -54,7 +54,7 @@
     BUGS
 
     SEE ALSO
-	FreeTagsItems()
+	FreeTagItems()
 
     INTERNALS
 

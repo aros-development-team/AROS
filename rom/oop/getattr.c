@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-	OOP_SetAttrs().
+	OOP_SetAttrs()
 
     INTERNALS
 

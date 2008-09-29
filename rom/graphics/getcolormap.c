@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	FreeColorMap, SetRGB4(), graphics/view.h
+	FreeColorMap(), SetRGB4(), graphics/view.h
 
     INTERNALS
 	RGB Colortable with preference values is incomplete.

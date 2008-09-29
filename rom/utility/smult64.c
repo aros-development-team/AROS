@@ -47,7 +47,7 @@
     BUGS
 
     SEE ALSO
-	utility/SMult32(), utility/UMult32(), utility/UMult64()
+	SMult32(), UMult32(), UMult64()
 
     INTERNALS
 	Actually handled in config/$(KERNEL)/utility_math.s

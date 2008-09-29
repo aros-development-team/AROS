@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	utility/name.h, utility/AllocNamedObject()
+	utility/name.h, AllocNamedObjectA()
 
     INTERNALS
 	AllocMem:

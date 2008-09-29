@@ -50,7 +50,7 @@
     BUGS
 
     SEE ALSO
-	OpenLibrary().
+	OpenLibrary()
 
     INTERNALS
 

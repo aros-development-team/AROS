@@ -55,7 +55,7 @@
     BUGS
 
     SEE ALSO
-	utility/SMult32(), utility/UMult64(), utility/SMult64()
+	SMult32(), UMult64(), SMult64()
 
     INTERNALS
 	May be handled by code in config/$(KERNEL), may not be...

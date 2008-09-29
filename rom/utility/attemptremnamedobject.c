@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-	utility/name.h RemNamedObject(), AddNamedObject()
+	utility/name.h, RemNamedObject(), AddNamedObject()
 
     INTERNALS
 

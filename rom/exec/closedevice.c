@@ -53,7 +53,7 @@
     BUGS
 
     SEE ALSO
-	OpenDevice().
+	OpenDevice()
 
     INTERNALS
 

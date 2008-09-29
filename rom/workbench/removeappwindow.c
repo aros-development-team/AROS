@@ -53,7 +53,7 @@
 
     SEE ALSO
 
-    AddAppWindow(), RemoveAppWindowDropZone()
+    AddAppWindowA(), RemoveAppWindowDropZone()
 
     INTERNALS
 

@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-	utility/tagitem.h, utility/AllocateTagItems()
+	utility/tagitem.h, AllocateTagItems()
 
     INTERNALS
 

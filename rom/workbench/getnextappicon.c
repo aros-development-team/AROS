@@ -73,7 +73,7 @@
 
     SEE ALSO
 
-    AddAppIconA(), RemoveAppIcon(), WorkbenchControlA(), DrawIconStateA()
+    AddAppIconA(), RemoveAppIcon(), WorkbenchControlA(), icon.library/DrawIconStateA()
 
     INTERNALS
 

@@ -199,7 +199,7 @@
 
     SEE ALSO
 
-    RemoveAppIcon(), WorkbenchControlA(), DrawIconStateA()
+    RemoveAppIcon(), WorkbenchControlA(), icon.library/DrawIconStateA()
 
     INTERNALS
 

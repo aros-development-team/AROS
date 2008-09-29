@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	CloseLibrary().
+	CloseLibrary()
 
     INTERNALS
 

@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-	RemConfigDev
+	RemConfigDev()
 
     INTERNALS
 

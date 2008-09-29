@@ -44,7 +44,7 @@
     BUGS
 
     SEE ALSO
-	NewLayerInfo
+	NewLayerInfo()
 
     INTERNALS
 

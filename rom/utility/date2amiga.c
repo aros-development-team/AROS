@@ -38,7 +38,7 @@
     BUGS
 
     SEE ALSO
-	Amiga2Date(), CheckData()
+	Amiga2Date(), CheckDate()
 
     INTERNALS
 	Bit of a hack in the leap year handling.
