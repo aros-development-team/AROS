@@ -49,21 +49,36 @@
 
 ******************************************************************************/
 {
-    char *path, *path_item, *path_ptr;
-    char *emptyenv[] = { NULL };
+    char *path = NULL, *path_item, *path_ptr;
     char default_path[] = ":/bin:/usr/bin";
     char *full_path;
     int saved_errno;
+    int i;
     
     if(index(file, '/') || index(file, ':'))
     {
 	/* file argument is a path, don't search */
-	return execve(file, argv, emptyenv);
+	return execve(file, argv, environ);
     }
     
     /* argument is a file, search for this file in PATH variable entries */
+    char *name = "PATH";
+    if(environ)
+    {
+	for(i = 0; environ[i]; i++)
+	{
+	    if(strncmp(environ[i], name, strlen(name)) == 0)
+	    {
+		path = &environ[i][strlen(name)+1];
+		break;
+	    }
+	}
+    }
+  
+    if(!path)
+	path = getenv("PATH");
     
-    if(!(path = getenv("PATH")))
+    if(!path)
 	path = default_path;
     else
 	path = strdup(path);
@@ -83,7 +98,7 @@
 	    strcat(full_path, file);
 	    
 	    /* try executing execve with this path */
-	    if(execve(full_path, argv, emptyenv) == 0)
+	    if(execve(full_path, argv, environ) == 0)
 	    {
 		free(full_path);
 		return 0;
