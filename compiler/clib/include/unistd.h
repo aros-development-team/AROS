@@ -295,4 +295,17 @@ pid_t       vfork(void);
 
 __END_DECLS
 
+/* The environ variable in AROS is not initialized by default. If you
+   want to get environment variables from it, you have to initialize
+   it manually first, for example by using __env_get_environ function. */
+
+#include <sys/arosc.h>
+__pure static __inline__ char ***__get_environ_ptr(void);
+__pure static __inline__ char ***__get_environ_ptr(void)
+{
+    return &__get_arosc_userdata()->acud_environ;
+}
+
+#define environ (*__get_environ_ptr())
+
 #endif /* _UNISTD_H_ */

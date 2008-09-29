@@ -26,6 +26,9 @@ struct arosc_userdata
 
     /* Used by multi-byte functions */
     int acud_mb_cur_max;
+    
+    /* environ variable value */
+    char **acud_environ;
 };
 
 __BEGIN_DECLS
