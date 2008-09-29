@@ -15,11 +15,16 @@ pid_t getppid(void)
 {
   struct Task *ThisTask, *ParentTask;
   struct ETask *eThisTask;
+  struct ETask *et;
 
   ThisTask = FindTask(NULL);
   eThisTask = GetETask(ThisTask);
   assert(eThisTask);
   ParentTask = (struct Task *)eThisTask->et_Parent;
-  return (pid_t)ParentTask;
+  if(!ParentTask)
+    return (pid_t) 1;
+  et = GetETask(ParentTask);
+  assert(et); 
+  return (pid_t) et->et_UniqueID;
 }
 
