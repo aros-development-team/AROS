@@ -5,7 +5,7 @@
     Desc: This is the "boot code" of AROS when it runs as an emulation.
     Lang: english
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <dos/dostags.h>
@@ -17,32 +17,30 @@
 #include <proto/intuition.h>
 #include <proto/exec.h>
 
-#define CANNOT_LOAD_SHELL	"Unable to load C:shell\n"
 #define CANNOT_OPEN_CON		"Cannot open boot console\n"
 
 int submain(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
 {
-    LONG            rc = RETURN_FAIL;
+    struct TagItem tags[] =
+    {
+        { SYS_Asynch,      TRUE       }, /* 0 */
+        { SYS_Background,  FALSE      }, /* 1 */
+        { SYS_ScriptInput, 0          }, /* 2 */
+        { SYS_Input,       0          }, /* 3 */
+        { SYS_Output,      0          }, /* 4 */
+        { SYS_Error,       0          }, /* 5 */
+        { TAG_DONE,        0          }
+    };
+    BPTR sseq = NULL;
+    LONG rc = RETURN_FAIL;
 
-    D(bug("[boot] Opening boot shell\n"));
+    D(bug("[SubMain] Opening boot shell\n"));
     BPTR cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
 
     if (cis)
     {
         struct ExpansionBase *ExpansionBase;
-        BPTR sseq = NULL;
         BOOL opensseq = TRUE;
-
-        struct TagItem tags[] =
-            {
-                { SYS_Asynch,      TRUE       }, /* 0 */
-                { SYS_Background,  FALSE      }, /* 1 */
-                { SYS_Input,       (IPTR)cis  }, /* 2 */
-                { SYS_Output,      (IPTR)NULL }, /* 3 */
-                { SYS_Error,       (IPTR)NULL }, /* 4 */
-                { SYS_ScriptInput, (IPTR)NULL }, /* 5 */
-                { TAG_DONE,       0           }
-            };
 
 	D(bug("[SubMain] Boot shell opened\n"));
         if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
@@ -56,28 +54,26 @@ int submain(struct ExecBase * SysBase, struct DosLibrary * DOSBase)
         if (opensseq)
         {
             sseq = Open("S:Startup-Sequence", FMF_READ);
-            tags[5].ti_Data = (IPTR)sseq;
+            tags[2].ti_Data = (IPTR)sseq;
         }
-
-        rc = SystemTagList("", tags);
-        if (rc != -1)
-        {
-            cis  = NULL;
-            sseq = NULL;
-        }
-        else
-            rc = RETURN_FAIL;
-        if (sseq != NULL)
-            Close(sseq);
+        tags[3].ti_Data = (IPTR)cis;
+    } else {
+        tags[3].ti_Tag = TAG_DONE;
+        PutStr("Entering emergency shell\n");
     }
-    else
+    rc = SystemTagList("", tags);
+    if (rc != -1)
     {
-        D(bug("[SubMain] Failed to open Boot shell\n"));
-        PutStr(CANNOT_OPEN_CON);
+        cis  = NULL;
+        sseq = NULL;
     }
-
-    D(bug("[SubMain] Closing Boot shell\n"));
-    Close(cis);
-
+    else {
+        PutStr(CANNOT_OPEN_CON);
+        rc = RETURN_FAIL;
+    }
+    if (sseq)
+        Close(sseq);
+    if (cis)
+        Close(cis);
     return rc;
 }
