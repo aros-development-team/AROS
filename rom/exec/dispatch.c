@@ -28,7 +28,7 @@
 /*  FUNCTION
 	Inform SysBase that the task has been switched. This function
 	only does all the non-system-dependant dispatching. It is up
-	to the implementation to unsure that the tasks do actually get
+	to the implementation to ensure that the tasks do actually get
 	switched.
 
 	The tc_Switch and tc_Launch functions will be called with

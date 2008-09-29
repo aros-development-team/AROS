@@ -49,7 +49,7 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
     BUGS
  
     SEE ALSO
-    WindowToFront(), WindowToBack(), layers.library/MoveLayerInFrontOf()
+    WindowToFront(), WindowToBack(), hyperlayers.library/MoveLayerInFrontOf()
  
     INTERNALS
     Uses layers.library/MoveLayerInFrontOf().

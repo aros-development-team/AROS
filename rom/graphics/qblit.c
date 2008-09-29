@@ -51,7 +51,7 @@
     BUGS
 
     SEE ALSO
-        QBSBlit(), OwnBlitter, DisownBlitter(), hardware/blit.h
+        QBSBlit(), OwnBlitter(), DisownBlitter(), hardware/blit.h
 
     INTERNALS
 

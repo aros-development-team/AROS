@@ -25,7 +25,7 @@
 	struct Library *, OOPBase, 10, OOP)
 
 /*  FUNCTION
-	Delete an object that was previously allocated with NewObjectA().
+	Delete an object that was previously allocated with OOP_NewObject().
 
     INPUTS
     	obj	- pointer to object to dispose.
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-    	OOP_NewObjectA()
+    	OOP_NewObject()
 
     INTERNALS
 

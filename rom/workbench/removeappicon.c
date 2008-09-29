@@ -45,7 +45,7 @@
 
     SEE ALSO
 
-    AddAppIcon()
+    AddAppIconA()
 
     INTERNALS
 

@@ -73,7 +73,7 @@
 	    /* No. Store it for later. */
 	    SysBase->AttnResched|=0x80;
 	else
-	    /* Switches are allowed. Force a rescedule. */
+	    /* Switches are allowed. Force a reschedule. */
 	    Switch();
     }
     Enable();

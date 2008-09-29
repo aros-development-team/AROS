@@ -47,7 +47,7 @@
 
     SEE ALSO
 
-    AddAppMenuItem()
+    AddAppMenuItemA()
 
     INTERNALS
 

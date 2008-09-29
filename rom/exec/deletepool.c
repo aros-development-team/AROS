@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Delete a memory pool including all it's memory.
+    Desc: Delete a memory pool including all its memory.
     Lang: english
 */
 #include "exec_intern.h"

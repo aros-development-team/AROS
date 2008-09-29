@@ -54,7 +54,7 @@
     BUGS
 
     SEE ALSO
-	utility/name.h, utility/FindNamedObject()
+	utility/name.h, FindNamedObject()
 
     INTERNALS
 

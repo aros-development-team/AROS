@@ -69,7 +69,7 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
     BUGS
 
     SEE ALSO
-	exec/Abort(), exec/SendIO(), exec/DoIO()
+	exec.library/Abort(), exec.library/SendIO(), exec.library/DoIO()
 
     INTERNALS
 
