@@ -80,25 +80,22 @@ Res_taurar
 ; ** 2.5 **
 ;
 MSG_COPY_TITLE
-Copy to...
+Copiar para...
 ;
 MSG_SWAP_TITLE
-Swap with...
+Trocar com...
 ;
 MSG_SPREAD_TITLE
-Spread to...
+Espalhar até...
 ;
 ; *** File Requester ***
 ;
 MSG_CREATE_DRAWER
-A Gaveta '%s'\nnão existe. Crio-a?
+O Directório '%s'\nnão existe. Crio-o?
 ;
 MSG_DIR_ERROR
-Erro de Gaveta!
+Erro no Directório!
 ;
-; This term 'gaveta' it's not very used... i would use instead 'Directoria'.
-; but it seems that C= portugal is using this, so i don't know what to put.
-; you decide! :-)
 ;
 MSG_MATCH_WINTITLE
 Padrão...
@@ -142,7 +139,7 @@ MSG_FULL
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-Não pude abrir a fonte!
+Não pode abrir a fonte!
 ;
 MSG_BOLD
 _Negrito
@@ -196,5 +193,5 @@ MSG_MAX
 Max:
 ;
 MSG_AUTOSCROLL
-_Scroll Automatico:
+_Scroll Automático:
 ;

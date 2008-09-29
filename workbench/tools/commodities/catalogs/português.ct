@@ -1,0 +1,345 @@
+## version $VER: Commodities.catalog 1.2 (29.09.2008)
+## language português
+## codeset 0
+;
+; FIXME: This file requires updating. When done, bump revision to 2
+;
+;
+MSG_CANT_OPEN_LIB
+Não foi possível abrir %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_OPEN_INPUTDEVICE
+Não foi possível abrir 'input.device'
+; Can't open 'input.device'
+;
+; ***NEW***
+;
+MSG_CANT_LOCK_SCR
+Não foi possível utilizar o écran público!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+¡No puedo tomar la información visual!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Não foi possível criar os botões!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Não foi possível criar os menus!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Não foi possível acomodar os menus!\n
+;!No puedo layout los menús!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Não foi possível criar a janela!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Não foi possível disponibilizar memória para a aplicação\n
+;¡No puedo reservar memory para la aplicación\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Não foi possível criar a porta de mensagens!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Não foi possível criar o objeto CxBroker!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Não foi possível criar o objeto CxCustom!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+Aceitar
+;OK
+; Ok
+;
+MSG_MEN_PROJECT
+Projecto
+; Project
+;
+MSG_MEN_PROJECT_HIDE
+O\0Ocultar
+; H\0Hide
+;
+; ***NEW***
+;
+MSG_MEN_PROJECT_ICONIFY
+I\0Iconificar
+; I\0Iconify
+;
+; ***NEW***
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Sair
+; Q\0Quit
+;
+; ===============================================
+; EXCHANGE
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Cambia Commodities
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Controla as comodidades de sistema
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Cambio: Tecla designada = <%s>
+;Cambio
+; Exchange: Hot Key = <%s>
+;
+MSG_EXCHANGE_LISTVIEW
+Commodidades disponíveis
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Informação
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Mostra
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Oculta
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Remove
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Activo
+;activo
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Inactivo
+;inactivo
+; Inactive
+;
+; ===============================================
+; BLANKER
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Protecção de écran do sistema
+;System Screen Blanker
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+A inactividade de sistema aciona a protecção de écran
+;Ennegrece pantalla cuando el system esta inactivo
+; Blanks screen when system inactive
+;
+; ===============================================
+; CLICK2FNT
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+Trazer para a frente
+;ClickToFront
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Coloca a janela em primeiro plano com apenas por selecção desta
+; Click windows to front
+;
+; ===============================================
+; OPAQUE
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Janelas sólidas
+; Solid Windows
+;
+MSG_OPAQUE_CXDESCR
+Move as janelas em tempo real
+; Realtime moving of windows
+;
+; ===============================================
+; AUTOPOINT
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Auto selecção
+;Foco automatico
+; Autopointer
+;
+MSG_AUTOPOINT_CXDESCR
+Activa automaticamente a janela abaixo do ponteiro do rato
+;Activa la ventana debajo de la mouse
+; Activates the window under the mouse
+;
+; ===============================================
+; STARTMENU
+;
+MSG_STARTMENU_CXNAME
+Menu Iniciar
+;StartMenú
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Menu de arranque de programas
+;System Programm Starter
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Inicia os programas a partir do menu
+;Lanza programas del menú
+; Program launch commodity
+;
+; ===============================================
+; FKEY
+;
+MSG_FKEY_CXNAME
+FKey
+; FKey
+;
+MSG_FKEY_CXTITLE
+Designa funções a teclas
+; Function To Keys:
+;
+MSG_FKEY_CXDESCR
+Designa funções especiais lançadas a partir do teclado
+; Attach special functions to keys
+;
+MSG_FKEY_WINTITLE
+FKey: Tecla Funcional = <%s>
+;FKey: Hot Key = <%s>
+; FKey: Hot Key = <%s>
+;
+MSG_FKEY_DEFINED_KEYS
+Teclas definidas
+; Defined Keys
+;
+MSG_FKEY_NEW_KEY
+_Nova tecla
+; _New Key
+;
+MSG_FKEY_DELETE_KEY
+_Apagar tecla
+; _Delete Key
+;
+MSG_FKEY_SAVE_KEY
+Guardar as Teclas Definidas
+; Save Defined Keys
+;
+; ***NEW***
+;
+MSG_FKEY_COMMAND
+Comando
+; Command
+;
+MSG_FKEY_COMMAND_PARAMS
+Parâmetros do comando
+; Command Parameters
+;
+MSG_FKEY_CMD_CYCLE_WIN
+Circula ventanas
+Alternar janelas
+; Cycle Windows
+;
+MSG_FKEY_CMD_CYCLE_SCR
+Alternar écrans
+; Cycle Screens
+;
+MSG_FKEY_CMD_ENLARGE_WIN
+Aumentar janela
+; Enlarge Window
+;
+MSG_FKEY_CMD_SHRINK_WIN
+Diminuir janela
+;Empqueñecer ventana
+; Shrink Window
+;
+MSG_FKEY_CMD_TOGGLE_WIN_SIZE
+Alterar a dimensão da janela
+; Toggle Window Size
+;
+MSG_FKEY_CMD_RESCUE_WIN
+Resgatar Janela
+; Rescue Window
+;
+; ***NEW***
+;
+MSG_FKEY_CMD_INSERT_TEXT
+Inserir texto
+;Rellenar texto
+; Insert Text
+;
+MSG_FKEY_CMD_RUN_PROG
+Lançar programa
+; Run Program
+;
+MSG_FKEY_CMD_RUN_AREXX
+Lança um ARexx-script
+;Lanza ARexx-Script
+; Run Arexx Script
+;
+MSG_FKEY_MEN_PROJECT_SAVE
+G\0Guardar teclas
+; S\0Save Defined Keys
+;
+; ===============================================
+; NOCAPSLOCK
+;
+MSG_NOCAPSLOCK_CXNAME
+Sem_CAPS-LOCK
+; NoCapsLock
+;
+; ***NEW***
+;
+MSG_NOCAPSLOCK_CXTITLE
+Sem bloqueio de maiúsculas
+; NoCapsLock:
+;
+; ***NEW***
+;
+MSG_NOCAPSLOCK_CXDESCR
+Desactiva a tecla CAPS-LOCK
+; Renders the CAPS LOCK key ineffective
+;
+; ***NEW***
+;
+; ===============================================
+; DepthMenu
+;
+MSG_DEPTHMENU_CXNAME
+Menu Profundidade
+;DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+Menu Profundidade:
+;DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR
+Providencia um menu Pop-up para os botões de profundidade
+;Popup menu for depth gadgets
+;
