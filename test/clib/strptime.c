@@ -12,6 +12,7 @@ int main()
     TEST((tm.tm_hour == 6));
     TEST((tm.tm_min == 7));
     TEST((tm.tm_sec == 8));
+    return 0;
 }
 
 void cleanup()

@@ -53,6 +53,7 @@ int main()
     {
 	TEST(0);
     }
+    return 0;
 }
 
 void cleanup()

@@ -30,5 +30,6 @@ int main()
     free(buffer);
 
     Close(fh);
+    return 0;
 }
 
