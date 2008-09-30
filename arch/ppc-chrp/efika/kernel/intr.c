@@ -24,7 +24,9 @@ extern uint32_t __tmpl_addr_hi;
 extern uint32_t __tmpl_irq_num;
 extern uint32_t __tmpl_length;
 static void init_interrupt(uint8_t num, void *handler);
+void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, void *self);
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self);
+void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self);
 static void flush_cache(char *start, char *end);
 
 AROS_LH0I(void, KrnCli,
@@ -255,9 +257,9 @@ void intr_init()
 	init_interrupt( 4, mmu_handler);		/* ISI */
 	init_interrupt( 5, ictl_handler);		/* External Intr */
 	init_interrupt( 6, generic_handler);	/* Alignment */
-	init_interrupt( 7, generic_handler);	/* Program */
+	init_interrupt( 7, program_handler);	/* Program */
 	init_interrupt( 8, generic_handler);	/* Floating point unavailable */
-	init_interrupt( 9, generic_handler);	/* Decrementer */
+	init_interrupt( 9, decrementer_handler);	/* Decrementer */
 	init_interrupt(12, syscall_handler);	/* Syscall */
 	init_interrupt(13, generic_handler);	/* Trace */
 	init_interrupt(16, generic_handler);	/* Instruction translation miss */
@@ -337,6 +339,74 @@ static void flush_cache(char *start, char *end)
     }
 
     asm volatile("sync; isync; ");
+}
+
+/* Decrementer handler */
+void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+    struct ExecBase *SysBase = getSysBase();
+
+    asm volatile("mtdec %0"::"r"(132000000/200));
+
+    if (KernelBase)
+    {
+    	if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+    	{
+			struct ExceptNode *in, *intemp;
+
+			ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
+			{
+				/*
+				 * call every handler tied to this exception.
+				 */
+				if (in->in_Handler)
+					in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
+			}
+    	}
+    }
+
+    if (SysBase && SysBase->Elapsed)
+    {
+        if (--SysBase->Elapsed == 0)
+        {
+        	SysBase->SysFlags |= 0x2000;
+        	SysBase->AttnResched |= 0x80;
+        }
+    }
+
+    core_ExitInterrupt(ctx);
+}
+
+/* Generic boring handler */
+void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, void *self)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+    struct ExecBase *SysBase = getSysBase();
+    int handled = 0;
+
+    uint32_t insn = *(uint32_t *)ctx->srr0;
+
+    if ((insn & 0xfc1fffff) == 0x7c1442a6) /* mfspr sprg4 */
+    {
+    	ctx->gpr[(insn >> 21) & 0x1f] = getKernelBase();
+    	ctx->srr0 += 4;
+    	core_LeaveInterrupt(ctx);
+    }
+    else if ((insn & 0xfc1fffff) == 0x7c1542a6) /* mfspr sprg5 */
+    {
+    	ctx->gpr[(insn >> 21) & 0x1f] = getSysBase();
+    	ctx->srr0 += 4;
+    	core_LeaveInterrupt(ctx);
+    }
+    else if (insn == 0x7fe00008)
+    {
+    	D(bug("[KRN] trap @ %08x (r3=%08x)\n", ctx->srr0, ctx->gpr[3]));
+    	ctx->srr0 += 4;
+    	core_LeaveInterrupt(ctx);
+    }
+    else
+    	generic_handler(ctx, exception, self);
 }
 
 /* Generic boring handler */
@@ -589,7 +659,7 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
                  [gpr29]"i"(offsetof(regs_t, gpr[29])),
                  [gpr30]"i"(offsetof(regs_t, gpr[30])),
                  [gpr31]"i"(offsetof(regs_t, gpr[31])),
-                 [msrval]"i"(MSR_ME|MSR_FP|MSR_IS|MSR_DS|MSR_RI)
+                 [msrval]"i"(MSR_ME|MSR_FP|MSR_IS|MSR_DS)
     );
 }
 
@@ -649,7 +719,7 @@ static void __attribute__((used)) __core_LeaveInterrupt()
                  "lwz %%r0,%[srr0](%%r3)        \n\t"
                  "mtsrr0 %%r0                   \n\t"
                  "lwz %%r0,%[srr1](%%r3)        \n\t"
-                 //"rlwinm %%r0,%%r0,0,14,12      \n\t"
+                 "rlwinm %%r0,%%r0,0,14,12      \n\t"
                  "mtsrr1 %%r0                   \n\t"
                  "lwz %%r0,%[ctr](%%r3)         \n\t"
                  "mtctr %%r0                    \n\t"

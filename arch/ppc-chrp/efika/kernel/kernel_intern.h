@@ -96,6 +96,17 @@ static inline void goUser() {
     wrmsr(rdmsr() | (MSR_PR));
 }
 
+static inline uint64_t mftbu()
+{
+	uint32_t lo,hi,tmp;
+
+	do {
+		asm volatile("mftbu %0; mftb %1; mftbu %2":"=r"(hi),"=r"(lo),"=r"(tmp));
+	} while(tmp != hi);
+
+	return (((uint64_t)hi) << 32) | ((uint64_t)lo);
+}
+
 intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList);
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList);
 struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr);
