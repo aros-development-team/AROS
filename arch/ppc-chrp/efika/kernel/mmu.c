@@ -84,17 +84,18 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 	*pte = local_pte;
 
 	asm volatile("dcbst 0,%0; sync;"::"r"(pte));
+	asm volatile("tlbie %0"::"r"((uint32_t)virt));
 
 	return 1;
 }
 
 int mmu_map_area(uint64_t virt, uint32_t phys, uint32_t length, uint32_t prot)
 {
-	D(bug("[KRN] mmu_map_area(%06x%07x - %06x%07x, %08x, %08x)\n",
-			(uint32_t)(virt >> 28), (uint32_t)(virt & 0x0fffffff),
-			(uint32_t)((virt + length - 1) >> 28), (uint32_t)((virt + length - 1) & 0x0fffffff),
-			phys, prot
-			));
+//	D(bug("[KRN] mmu_map_area(%06x%07x - %06x%07x, %08x, %08x)\n",
+//			(uint32_t)(virt >> 28), (uint32_t)(virt & 0x0fffffff),
+//			(uint32_t)((virt + length - 1) >> 28), (uint32_t)((virt + length - 1) & 0x0fffffff),
+//			phys, prot
+//			));
 
 	while (length)
 	{
@@ -122,6 +123,7 @@ void mmu_init(char *mmu_dir, uint32_t mmu_size)
 	}
 	else
 	{
+		uint32_t ea;
 		/* Clear the MMU tables */
 		bzero(mmu_dir, mmu_size);
 
@@ -138,6 +140,10 @@ void mmu_init(char *mmu_dir, uint32_t mmu_size)
 		{
 			asm volatile ("mtsrin %0,%1"::"r"(0x20000000 | i),"r"(i << 28));
 		}
+
+		D(bug("[KRN] Flushing TLB\n"));
+		for (ea=0x00001000; ea <= 0x0001f000; ea+=0x1000)
+			asm volatile("tlbie %0"::"r"(ea));
 	}
 }
 
@@ -149,72 +155,88 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
     ctx->dar = rdspr(19);
     ctx->dsisr = rdspr(18);
 
-    D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
-    if (SysBase)
+    /* SysBase access at 4UL? Occurs only with lwz instruction and DAR=4 */
+    if ((exception == 3) && (ctx->dar == 4))
     {
-        struct Task *t = FindTask(NULL);
-        D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
+        uint32_t insn = *(uint32_t *)ctx->srr0;
+
+        if ((insn & 0xfc000000) == 0x80000000)
+        {
+        	int reg = (insn & 0x03e00000) >> 21;
+
+        	ctx->gpr[reg] = getSysBase();
+        	ctx->srr0 += 4;
+
+        	core_LeaveInterrupt(ctx);
+        }
     }
-    D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
-    D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
-    D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
 
-    D(bug("[KRN] HASH1=%08x HASH2=%08x IMISS=%08x DMISS=%08x ICMP=%08x DCMP=%08x\n",
-        		rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
+	D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
+	if (SysBase)
+	{
+		struct Task *t = FindTask(NULL);
+		D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
+	}
+	D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
+	D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
+	D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
 
-    D(bug("[KRN] SPRG0=%08x SPRG1=%08x SPRG2=%08x SPRG3=%08x SPRG4=%08x SPRG5=%08x\n",
-    		rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
+	D(bug("[KRN] HASH1=%08x HASH2=%08x IMISS=%08x DMISS=%08x ICMP=%08x DCMP=%08x\n",
+				rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
 
-    D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
-             ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
-    D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
-             ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]));
-    D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
-             ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
-    D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
-             ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
+	D(bug("[KRN] SPRG0=%08x SPRG1=%08x SPRG2=%08x SPRG3=%08x SPRG4=%08x SPRG5=%08x\n",
+			rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
 
-    D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
-             ctx->gpr[16],ctx->gpr[17],ctx->gpr[18],ctx->gpr[19]));
-    D(bug("[KRN] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
-             ctx->gpr[20],ctx->gpr[21],ctx->gpr[22],ctx->gpr[23]));
-    D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
-             ctx->gpr[24],ctx->gpr[25],ctx->gpr[26],ctx->gpr[27]));
-    D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
-             ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
+	D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
+			 ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
+	D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
+			 ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]));
+	D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
+			 ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
+	D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
+			 ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
 
-    int i;
-    D(bug("[KRN] Hash1 dump:\n[KRN]  "));
-    uint32_t *hash = (uint32_t)rdspr(978);
-    for (i=0; i < 8; i++)
-    {
-    	D(bug("%08x.%08x  ", hash[0], hash[1]));
-    	hash += 2;
-    	if (i == 3)
-    		D(bug("\n[KRN]  "));
-    }
-    D(bug("\n[KRN] Hash2 dump:\n[KRN]  "));
+	D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
+			 ctx->gpr[16],ctx->gpr[17],ctx->gpr[18],ctx->gpr[19]));
+	D(bug("[KRN] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
+			 ctx->gpr[20],ctx->gpr[21],ctx->gpr[22],ctx->gpr[23]));
+	D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
+			 ctx->gpr[24],ctx->gpr[25],ctx->gpr[26],ctx->gpr[27]));
+	D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
+			 ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
+
+	int i;
+	D(bug("[KRN] Hash1 dump:\n[KRN]  "));
+	uint32_t *hash = (uint32_t)rdspr(978);
+	for (i=0; i < 8; i++)
+	{
+		D(bug("%08x.%08x  ", hash[0], hash[1]));
+		hash += 2;
+		if (i == 3)
+			D(bug("\n[KRN]  "));
+	}
+	D(bug("\n[KRN] Hash2 dump:\n[KRN]  "));
 	hash = (uint32_t)rdspr(979);
-    for (i=0; i < 8; i++)
-    {
-    	D(bug("%08x.%08x  ", hash[0], hash[1]));
-    	hash += 2;
-    	if (i == 3)
-    		D(bug("\n[KRN]  "));
-    }
-    D(bug("\n"));
-    D(bug("[KRN] Instruction dump:\n"));
-    ULONG *p = (ULONG*)ctx->srr0;
-    for (i=0; i < 8; i++)
-    {
-        D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
-    }
+	for (i=0; i < 8; i++)
+	{
+		D(bug("%08x.%08x  ", hash[0], hash[1]));
+		hash += 2;
+		if (i == 3)
+			D(bug("\n[KRN]  "));
+	}
+	D(bug("\n"));
+	D(bug("[KRN] Instruction dump:\n"));
+	ULONG *p = (ULONG*)ctx->srr0;
+	for (i=0; i < 8; i++)
+	{
+		D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
+	}
 
-    D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
+	D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
 
-    while(1) {
-    	wrmsr(rdmsr() | MSR_POW);
-    }
+	while(1) {
+		wrmsr(rdmsr() | MSR_POW);
+	}
 }
 
 
@@ -359,7 +381,7 @@ static void __attribute__((used)) __exception_template()
 "		mtctr	%r0			\n"
 "		mtspr	srr1,%r2	\n"
 "		mfmsr	%r0			\n"
-"		xoris	%r0,%r0,0x8002\n"
+"		xoris	%r0,%r0, 0x8002\n"
 "		mtcrf	0x80,%r3	\n"
 "		mtmsr	%r0			\n"
 "		ba		0x0400		\n"
@@ -404,7 +426,7 @@ static void __attribute__((used)) __exception_template()
 "		mtcrf	0x80, %r3	\n"
 "		mtspr	rpa, %r1	\n"
 "		ori		%r1, %r1, 0x100\n"
-"		srw		%r1, %r1, 8	\n"
+"		srwi	%r1, %r1, 8	\n"
 "		tlbld	%r0			\n"
 "		stb		%r1, +6(%r2)\n"
 "		rfi					\n"
