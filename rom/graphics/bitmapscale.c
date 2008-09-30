@@ -71,7 +71,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
     BUGS
 
     SEE ALSO
-	ScalerDiv(), graphics/scales.h
+	ScalerDiv(), graphics/scale.h
 
     INTERNALS
 

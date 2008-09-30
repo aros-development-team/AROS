@@ -86,7 +86,7 @@
     BUGS
  
     SEE ALSO
-    OpenWindow(), CloseWindow(), intuition_extend.h
+    OpenWindow(), CloseWindow(), intuition/extensions.h
  
     INTERNALS
  

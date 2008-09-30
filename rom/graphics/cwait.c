@@ -46,7 +46,7 @@
 	It's illegal to wait for horizontal values greater than 222 decimal!
 
     SEE ALSO
-	CINIT CMOVE CEND graphics/copper.h
+	CINIT(), CMOVE(), CEND(), graphics/copper.h
 
     INTERNALS
 

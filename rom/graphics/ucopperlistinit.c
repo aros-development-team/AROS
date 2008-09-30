@@ -46,7 +46,7 @@
     BUGS
 
     SEE ALSO
-        CINIT CMOVE CWAIT CEND graphics/copper.h
+        CINIT(), CMOVE(), CWAIT(), CEND(), graphics/copper.h
 
     INTERNALS
 

@@ -43,7 +43,7 @@
     BUGS
 
     SEE ALSO
-        graphics/modeid.h graphics/displayinfo.h
+        graphics/modeid.h, graphics/displayinfo.h
 
     INTERNALS
 
