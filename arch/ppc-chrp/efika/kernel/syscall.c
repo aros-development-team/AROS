@@ -38,6 +38,7 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
             break;
 
         case SC_SUPERSTATE:
+        	ctx->gpr[3] = ctx->srr1;
             ctx->srr1 &= ~MSR_PR;
             break;
 

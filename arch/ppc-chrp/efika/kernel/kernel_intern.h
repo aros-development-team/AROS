@@ -88,8 +88,10 @@ static inline struct KernelBase *getSysBase()
     return (struct KernelBase *)rdspr(SPRG5);
 }
 
-static inline void goSuper() {
-    asm volatile("li %%r3,%0; sc"::"i"(SC_SUPERSTATE):"memory","r3");
+static inline uint32_t goSuper() {
+	register uint32_t oldmsr asm("r3");
+    asm volatile("li %0,%1; sc":"=r"(oldmsr):"i"(SC_SUPERSTATE):"memory");
+    return oldmsr;
 }
 
 static inline void goUser() {
