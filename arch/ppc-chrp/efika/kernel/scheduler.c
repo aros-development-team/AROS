@@ -104,8 +104,8 @@ void core_Dispatch(regs_t *regs)
             //D(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
             /* Sleep almost forever ;) */
             //__asm__ __volatile__("wrteei 1; sync; isync;");
-            wrmsr(rdmsr() | MSR_POW | MSR_EE);
-            //D(bug("[\n"));
+            wrmsr(rdmsr() | MSR_EE);
+            wrmsr(rdmsr() | MSR_POW);
 
             if (SysBase->SysFlags & SFF_SoftInt)
             {
