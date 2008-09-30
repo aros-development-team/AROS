@@ -367,8 +367,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     /* Load and run the command */
     if((seglist = LoadSeg((CONST_STRPTR) afilename)))
     {
-        free(afilename);
-        
         if(envp)
         {
             /* Everything went fine, execve won't return so we can free the old
@@ -391,7 +389,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    udata->exec_seglist = seglist;
 	    udata->exec_arguments = argptr;
 	    udata->exec_stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
-	    udata->exec_taskname = (inter ? inter : argv[0]);
+	    udata->exec_taskname = afilename;
 	    
 	    /* Set this so we know that execve was called */
 	    udata->child_executed = 1;
@@ -429,6 +427,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    );
 	    
 	    free(GETUDATA->exec_arguments);
+	    free(GETUDATA->exec_taskname);
 
 	    D(bug("exiting from forked execve()\n"));
             _exit(GETUDATA->exec_returncode);
@@ -437,12 +436,13 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	{
 	    returncode = exec_command(
 		seglist, 
-		(inter ? inter : argv[0]), 
+		afilename, 
 		argptr, 
 		cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT
 	    );
 	        
 	    free(argptr);
+	    free(afilename);
 
 	    D(bug("exiting from non-forked execve()\n"));
 	    _exit(returncode);		
