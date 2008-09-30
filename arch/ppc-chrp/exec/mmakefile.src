@@ -1,0 +1,20 @@
+# $Id: mmakefile.src 28969 2008-07-03 18:50:17Z schulz $
+include $(TOP)/config/make.cfg
+
+CFILES          := \
+        exec_init cause disable enable preparecontext rawputchar initcode alert coldreboot \
+        findresident newaddtask permit prepareexecbase remtask reschedule setexcept settaskpri \
+        signal wait cachecleare cachepostdma cachepredma supervisor superstate userstate 
+
+AFILES		:= \
+	stackswap 
+
+#MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes
+
+USER_CFLAGS     := -I$(TOP)/rom/exec -Os
+USER_AFLAGS     := -I$(TOP)/rom/exec -I$(GENINCDIR) -Os
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=chrp-ppc \
+  files=$(CFILES) asmfiles=$(AFILES) modulename=exec
+
+TARGETDIR = $(BD_OBJDIR$(BDID))
