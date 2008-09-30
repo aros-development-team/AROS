@@ -24,6 +24,7 @@ struct KernelBase {
     struct List         kb_Exceptions[21];
     struct List         kb_Interrupts[64];
     struct MemHeader    *kb_SupervisorMem;
+    context_t			 *kb_FPUOwner;
 };
 
 struct OFWNode {

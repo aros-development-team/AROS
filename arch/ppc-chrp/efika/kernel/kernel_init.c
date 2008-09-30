@@ -367,6 +367,10 @@ AROS_LH1(void, KrnDeleteContext,
     else
     	FreeMem(context, sizeof(context_t));
 
+    /* Was this context owning a FPU? Make FPU totally free then */
+    if (KernelBase->kb_FPUOwner == context)
+    	KernelBase->kb_FPUOwner = NULL;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -418,6 +422,8 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      * exec.library itself.
      */
     wrspr(SPRG4, LIBBASE);
+
+    LIBBASE->kb_FPUOwner = NULL;
 
     D(bug("[KRN] Kernel resource post-exec init.\n"));
 
