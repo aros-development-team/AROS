@@ -9,6 +9,7 @@
 
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
+#include <exec/memory.h>
 #include <asm/io.h>
 #include <strings.h>
 
@@ -17,6 +18,7 @@
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
 #include "syscall.h"
+#include "memory.h"
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
 struct OFWNode *krnCopyOFWTree(struct OFWNode *orig);
@@ -154,13 +156,13 @@ static uint32_t stack[STACK_SIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_super[STACK_SIZE] __attribute__((used,aligned(16)));
 static const uint32_t *stack_end __attribute__((used, section(".text"))) = &stack[STACK_SIZE-4];
 static const void *target_address __attribute__((used, section(".text"))) = (void*)kernel_cstart;
-static struct TagItem *BootMsg;
-
-static uint8_t *memlo;
 static uint8_t *mmu_dir;
-
 static uint32_t *MBAR;
-static struct OFWNode *ofw_root_node;
+
+/* Variables which should go to the .data section */
+static struct OFWNode *ofw_root_node __attribute__((used,section(".data"))) = NULL;
+struct TagItem *BootMsg __attribute__((used,section(".data"))) = NULL;
+static uint8_t *memlo __attribute__((used,section(".data"))) = NULL;
 
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
@@ -176,55 +178,63 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 	/* MMU directory - 1MB is recommended size for systems with 128MB ram
 	 * USE PHYSICAL ADDRESS HERE! */
 	mmu_dir = (uint8_t *)0x07000000;
-	/* Set the memlo pointer right after MMU dir */
-	memlo = 0xff100000;
 
 	D(bug("[KRN] BootMsg @ %p\n", msg));
 
-	D(bug("[KRN] Copying TagList and data\n"));
-
-	while(msg->ti_Tag != TAG_DONE)
+	if (msg == BootMsg)
 	{
+		D(bug("[KRN] Reboot detected\n"));
+	}
+	else
+	{
+		/* Set the memlo pointer right after MMU dir */
+		memlo = 0xff100000;
+
+		D(bug("[KRN] Copying TagList and data\n"));
+
+		while(msg->ti_Tag != TAG_DONE)
+		{
+			*tmp = *msg;
+
+			if (tmp->ti_Tag == KRN_CmdLine)
+			{
+				tmp->ti_Data = (intptr_t)memlo;
+				memlo += (strlen(msg->ti_Data) + 4) & ~3;
+				memcpy(tmp->ti_Data, msg->ti_Data, strlen(msg->ti_Data)+1);
+				D(bug("[KRN] CmdLine: '%s'\n", tmp->ti_Data));
+			}
+			else if (tmp->ti_Tag == KRN_KernelBss)
+			{
+				struct KernelBSS *bss_in, *bss_out;
+
+				bss_out = (struct KernelBSS *)memlo;
+				bss_in = msg->ti_Data;
+
+				tmp->ti_Data = (intptr_t)bss_out;
+
+				while(bss_in->addr && bss_in->len)
+				{
+					*bss_out++ = *bss_in++;
+				}
+				*bss_out++ = *bss_in++;
+
+				memlo = (uint8_t *)bss_out;
+			}
+			else if (tmp->ti_Tag == KRN_OpenFirmwareTree)
+			{
+				ofw_root_node = krnCopyOFWTree((struct OFWNode *)msg->ti_Data);
+				tmp->ti_Data = (intptr_t)ofw_root_node;
+			}
+
+			tmp++;
+			msg++;
+		}
 		*tmp = *msg;
 
-		if (tmp->ti_Tag == KRN_CmdLine)
-		{
-			tmp->ti_Data = (intptr_t)memlo;
-			memlo += (strlen(msg->ti_Data) + 4) & ~3;
-			memcpy(tmp->ti_Data, msg->ti_Data, strlen(msg->ti_Data)+1);
-			D(bug("[KRN] CmdLine: '%s'\n", tmp->ti_Data));
-		}
-		else if (tmp->ti_Tag == KRN_KernelBss)
-		{
-			struct KernelBSS *bss_in, *bss_out;
+		memlo = (char *)(((intptr_t)memlo + 4095) & ~4095);
 
-			bss_out = (struct KernelBSS *)memlo;
-			bss_in = msg->ti_Data;
-
-			tmp->ti_Data = (intptr_t)bss_out;
-
-			while(bss_in->addr && bss_in->len)
-			{
-				*bss_out++ = *bss_in++;
-			}
-			*bss_out++ = *bss_in++;
-
-			memlo = (uint8_t *)bss_out;
-		}
-		else if (tmp->ti_Tag == KRN_OpenFirmwareTree)
-		{
-			ofw_root_node = krnCopyOFWTree((struct OFWNode *)msg->ti_Data);
-			tmp->ti_Data = (intptr_t)ofw_root_node;
-		}
-
-		tmp++;
-		msg++;
+		BootMsg = tmp_struct.bootup_tags;
 	}
-	*tmp = *msg;
-
-	memlo = (char *)(((intptr_t)memlo + 4095) & ~4095);
-
-	BootMsg = tmp_struct.bootup_tags;
 
 	intr_init();
 	mmu_init(mmu_dir, 0x100000);
@@ -258,10 +268,12 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 		}
 	}
 
+	D(bug("[KRN] HID0=%08x HID1=%08x\n", rdspr(1008), rdspr(1009)));
+
 	ictl_init(MBAR);
 
 	D(bug("[KRN] Mapping 00003000-06ffffff range for public use\n"));
-	mmu_map_area(0x00003000, 0x00001000, 0x06fff000, (2 << 3) | 2); // PP = 10, WIMG = 0010
+	mmu_map_area(0x00003000, 0x00003000, 0x06ffd000, (2 << 3) | 2); // PP = 10, WIMG = 0010
 
 	D(bug("[KRN] Mapping %08x-%08x range for MBAR\n", MBAR, MBAR + 0xc000 - 1));
 	mmu_map_area((uint64_t)MBAR & 0xffffffff, (uint64_t)MBAR & 0xffffffff, 0x0000c000, (5 << 3) | 2); // PP = 10, WIMG = 0101
@@ -284,6 +296,15 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
 	D(bug("[KRN] Mapping %08x-%08x range for supervisor\n", krn_highest ^ 0xf8000000, 0xffffffff));
 	mmu_map_area((uint32_t)krn_highest^0xf8000000, (uint32_t)krn_highest, -(krn_highest^0xf8000000), (2 << 3) | 0); // PP = 00, WIMG = 0010
+
+    /* Prepare the MemHeader structure for this region */
+	struct MemHeader *mh = (struct MemHeader *)memlo;
+	mh->mh_First = (struct MemChunk *)((uint8_t *)mh + MEMHEADER_TOTAL);
+	mh->mh_Free = ((krn_lowest^0xf8000000) - MEMHEADER_TOTAL - (intptr_t)memlo) & ~(MEMCHUNK_TOTAL-1);
+	mh->mh_First->mc_Next = NULL;
+	mh->mh_First->mc_Bytes = mh->mh_Free;
+
+	D(bug("[KRN] Supervisor mem: %dKB free\n", mh->mh_Free >> 10));
 
     exec_main(BootMsg, NULL);
 
@@ -354,10 +375,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      */
     wrspr(SPRG4, LIBBASE);
 
-    D(bug("[KRN] Kernel resource post-exec init\n"));
-
-//    D(bug("[KRN] Allowing userspace to flush caches\n"));
-//    wrspr(MMUCR,rdspr(MMUCR) & ~0x000c0000);
+    D(bug("[KRN] Kernel resource post-exec init.\n"));
 
     for (i=0; i < 21; i++)
         NEWLIST(&LIBBASE->kb_Exceptions[i]);
@@ -366,21 +384,23 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
         NEWLIST(&LIBBASE->kb_Interrupts[i]);
 
     /* Prepare private memory block */
-    LIBBASE->kb_SupervisorMem = (struct MemHeader *)0xff000000;
+    LIBBASE->kb_SupervisorMem = (struct MemHeader *)memlo;
 
-    /*
+	/*
      * kernel.resource is ready to run. Enable external interrupts and leave
      * supervisor mode
      */
+    D(bug("[KRN] MSR=%08x\n", rdmsr()));
     wrmsr(rdmsr() | (MSR_EE|MSR_FP));
     D(bug("[KRN] Interrupts enabled\n"));
 
+    asm volatile("mtdec %0"::"r"(132000000/50));
+
+    D(bug("[KRN] MSR=%08x\n", rdmsr()));
     wrmsr(rdmsr() | (MSR_PR));
     D(bug("[KRN] Entered user mode \n"));
 
-
-    Permit();
-
+    return TRUE;
 }
 
 ADD2INITLIB(Kernel_Init, 0)

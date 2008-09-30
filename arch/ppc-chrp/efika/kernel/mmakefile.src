@@ -3,15 +3,15 @@ include $(TOP)/config/make.cfg
 
 FILES := kernel_init tags debug intr mmu syscall scheduler ictl
 
-#MM kernel-chrp-ppc-efika: setup-chrp-ppc-efika kernel-kernel-chrp-ppc-efika-kobj kernel-exec-kobj
+#MM kernel-chrp-ppc-efika: setup-chrp-ppc-efika linklibs kernel-kernel-chrp-ppc-efika-kobj kernel-exec-kobj
 kernel-chrp-ppc-efika: $(BINDIR)/boot/aros-efika
 
 $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
 	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o -L$(LIBDIR) -lrom -larosm -lautoinit -llibinit
 	$(STRIP) --strip-unneeded $@ 
 
-#MM kernel-kernel-chrp-ppc-efika : includes includes-copy-chrp-ppc-efika
-#MM kernel-kernel-chrp-ppc-efika-kobj : includes includes-copy-chrp-ppc-efika
+#MM kernel-kernel-chrp-ppc-efika : includes includes-copy-chrp-ppc-efika linklibs 
+#MM kernel-kernel-chrp-ppc-efika-kobj : includes includes-copy-chrp-ppc-efika linklibs 
 
 %build_module mmake=kernel-kernel-chrp-ppc-efika 	\
   modname=kernel modtype=resource		\
