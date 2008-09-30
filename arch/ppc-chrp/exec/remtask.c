@@ -13,6 +13,9 @@
 
 extern void *priv_KernelBase;
 
+#include "etask.h"
+#include "exec_util.h"
+
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
 #   define DEBUG_RemTask 0
@@ -64,6 +67,7 @@ extern void *priv_KernelBase;
 {
     AROS_LIBFUNC_INIT
     struct MemList *mb;
+    void *KernelBase = priv_KernelBase;
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -87,6 +91,8 @@ extern void *priv_KernelBase;
         Remove(&task->tc_Node);
     }
 
+    KrnDeleteContext(GetIntETask(task)->iet_Context);
+
     /* Free all memory in the tc_MemEntry list. */
     while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
         /* Free one MemList node */
@@ -98,8 +104,6 @@ extern void *priv_KernelBase;
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
     {
-        void *KernelBase = priv_KernelBase;
-
         /* Can't do that - let the dispatcher do it. */
         task->tc_State=TS_REMOVED;
 

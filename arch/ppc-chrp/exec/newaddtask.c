@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id: newaddtask.c 28674 2008-05-11 22:20:10Z schulz $
 
     Desc: Add a task.
@@ -105,11 +105,11 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
     task->tc_State = TS_ADDED;
     task->tc_Flags = 0;
-    
+
     task->tc_SigWait = 0;
     task->tc_SigRecvd = 0;
     task->tc_SigExcept = 0;
-        
+
     /* Signals default to all system signals allocated. */
     if(task->tc_SigAlloc==0)
         task->tc_SigAlloc=SysBase->TaskSigAlloc;
@@ -120,7 +120,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
     if(task->tc_ExceptCode==NULL)
         task->tc_ExceptCode=SysBase->TaskExceptCode;
-        
+
     task->tc_Flags |= TF_ETASK;
 
     task->tc_UnionETask.tc_ETask = AllocTaskMem (task
@@ -147,15 +147,15 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     {
 	bug("[exec] NewAddTask with unaligned stack pointer! fixing %08x->%08x\n",
 	    task->tc_SPReg, (IPTR)task->tc_SPReg & 0xfffffff0);
-	
+
 	task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & 0xfffffff0);
     }
 
 #ifdef STACKSNOOP
     {
         UBYTE *startfill, *endfill;
-        
-    #if AROS_STACK_GROWS_DOWNWARDS      
+
+    #if AROS_STACK_GROWS_DOWNWARDS
         startfill = (UBYTE *)task->tc_SPLower;
         endfill   = ((UBYTE *)task->tc_SPReg) - 16;
     #else
@@ -167,7 +167,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
         {
             *startfill++ = 0xE1;
         }
-        
+
     }
 #endif
 
