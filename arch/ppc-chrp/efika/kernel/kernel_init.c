@@ -327,6 +327,50 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH0(void *, KrnCreateContext,
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    context_t *ctx;
+
+    uint32_t oldmsr = goSuper();
+
+    ctx = Allocate(KernelBase->kb_SupervisorMem, sizeof(context_t));
+    bzero(ctx, sizeof(context_t));
+
+    wrmsr(oldmsr);
+
+    if (!ctx)
+    	ctx = AllocMem(sizeof(context_t), MEMF_PUBLIC|MEMF_CLEAR);
+
+    return ctx;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1(void, KrnDeleteContext,
+		AROS_LHA(void *, context, A0),
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    /* Was context in supervisor space? Deallocate it there :) */
+    if ((intptr_t)context & 0xf0000000)
+    {
+        uint32_t oldmsr = goSuper();
+
+        Deallocate(KernelBase->kb_SupervisorMem, context, sizeof(context_t));
+
+        wrmsr(oldmsr);
+    }
+    else
+    	FreeMem(context, sizeof(context_t));
+
+    AROS_LIBFUNC_EXIT
+}
+
+
 struct OFWNode *krnCopyOFWTree(struct OFWNode *orig)
 {
 	uint32_t node_length = sizeof(struct OFWNode) + strlen(orig->on_name) + 1;
