@@ -37,7 +37,8 @@ struct vfork_data
     APTR parent_SPLower;
     APTR parent_SPUpper;
     APTR parent_SPReg;
-    char ministack[4096] __attribute__ ((aligned));
+    char ministack[8192] __attribute__ ((aligned));
+    jmp_buf startup_jmp_buf;
 
     APTR old_UserData;
     ULONG child_id;
