@@ -46,7 +46,13 @@ LONG launcher()
     /* Allocate signal for parent->child communication */
     udata->child_signal = AllocSignal(-1);
     D(bug("Allocated child signal: %d\n", udata->child_signal));
-    Signal(udata->parent, 1 << udata->parent_signal);
+    if(udata->child_signal == -1)
+    {
+	/* Lie */
+	udata->child_errno = ENOMEM;
+	Signal(udata->parent, 1 << udata->parent_signal);
+	return -1;
+    }
 
     udata->aroscbase = OpenLibrary("arosc.library", 0);
     if (udata->aroscbase == NULL)
@@ -85,6 +91,10 @@ LONG launcher()
 	Signal(udata->parent, 1 << udata->parent_signal);
 	return -1;
     }
+    
+    /* Setup complete, signal parent */
+    Signal(udata->parent, 1 << udata->parent_signal);
+
     cpriv->acpd_numslots = ppriv->acpd_numslots;
 
     CopyMem(
@@ -181,6 +191,9 @@ LONG launcher()
 	    /* Parent won't need udata anymore, we can safely free it */
 	    FreeMem(GETUDATA, sizeof(struct vfork_data));   
 	}
+	/* Restore parent startup buffer */
+	CopyMem(&GETUDATA->startup_jmp_buf, &__aros_startup_jmp_buf, sizeof(jmp_buf));
+
 	D(bug("Returning\n"));
 	return 0;
     }
@@ -220,7 +233,7 @@ pid_t __vfork(jmp_buf env)
     if(udata == NULL)
     {
 	errno = ENOMEM;
-	longjmp(udata->vfork_jump, -1);	
+	longjmp(env, -1);	
     }
     D(bug("allocated udata %p\n", udata));
     udata->magic = VFORK_MAGIC;
@@ -266,6 +279,9 @@ pid_t __vfork(jmp_buf env)
     udata->parent_SPReg = AROS_GET_SP;
     bcopy(env, &udata->vfork_jump, sizeof(jmp_buf));
     D(bug("Set jmp_buf %p\n", &udata->vfork_jump));
+
+    /* Backup startup buffer */
+    CopyMem(&__aros_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
    
     /* Allocate signal for child->parent communication */
     udata->parent_signal = AllocSignal(-1);
@@ -290,12 +306,13 @@ pid_t __vfork(jmp_buf env)
     }
     D(bug("Child created %p\n", udata->child));
 
-    /* Wait until children allocates a signal for communication */
+    /* Wait until child finishes setup */
     Wait(1 << udata->parent_signal);
 
-    if(udata->child_signal == -1)
+    if(udata->child_errno)
     {
-	/* Child couldn't allocate the signal */
+	/* An error occured during child setup */
+	errno = udata->child_errno;
 	FreeSignal(udata->parent_signal);
 	FreeMem(udata, sizeof(struct vfork_data));
 	longjmp(env, -1);    
@@ -320,13 +337,6 @@ pid_t __vfork(jmp_buf env)
     D(bug("Waiting for child to die or execve\n"));
     Wait(1 << GETUDATA->parent_signal);
     D(bug("Child died or execved, returning\n"));
-
-    if(GETUDATA->child_errno)
-    {
-	/* An error occured during child setup */
-	errno = udata->child_errno;
-	udata->child_id = -1;
-    }
 
     D(bug("Restoring stack to %p < %p < %p\n", GETUDATA->parent_SPLower, GETUDATA->parent_SPReg, GETUDATA->parent_SPUpper));
     /* Getting back our stack */
