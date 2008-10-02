@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 28379 2008-04-19 11:37:31Z schulz $
+include $(TOP)/config/make.cfg
+
+AFILES		:= stackswap
+
+#MM kernel-exec-mingw32-i386 : kernel-exec-includes
+
+USER_AFLAGS 	:= -I$(TOP)/rom/exec -I$(GENINCDIR)
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=mingw32-i386 \
+  asmfiles=$(AFILES) modulename=exec
