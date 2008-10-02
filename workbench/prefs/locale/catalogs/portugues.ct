@@ -1,0 +1,138 @@
+## version $VER: localeprefs.catalog 1.0 (30.09.2008)
+## codeset 0
+## language português
+;
+; Translated by João ralha
+;
+MSG_CANT_OPEN_LIB
+Não foi possível abrir %s V%ld!\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Não foi possível bloquear écran público!
+;Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Não foi possível obter DrawInfo!
+;
+MSG_CANT_GET_VI
+Não foi possível obter VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Não foi possível criar os botões!
+;Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Não foi possível criar os menus!
+;Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Não foi possível criar a janela!
+;Can't create window!
+;
+MSG_WINTITLE
+Preferências Internacionais (Locale)
+;Locale Preferences
+;
+MSG_MEN_PROJECT
+Projecto
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+A\0Abrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+G\0Guardar como...
+;A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+S\0Sair
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Editar
+;Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Valores por defeito
+;E\0Restaurar valores
+;D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Última gravação
+;U\0Últimos guardados
+;L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Restaurar
+;R\0Restore
+;
+MSG_MEN_SETTINGS
+Configurações
+;Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Criar Ícones?
+;I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Carregar as Preferências para o Locale
+;Load Locale Preferences
+;
+MSG_ASL_SAVE_TITLE
+Guardar as Preferências para o Locale
+;Save Locale Preferences
+;
+MSG_OK
+Aceitar
+;Ok
+;
+MSG_GAD_AVAIL_LANGUAGES
+Idiomas disponíveis
+;Available Languages
+;
+MSG_GAD_PREF_LANGUAGES
+Idiomas preferidos
+;Preferred Languages
+;
+MSG_GAD_CLEAR_LANGUAGES
+Limpar idiomas
+;Clear Languages
+;
+MSG_GAD_SAVE
+Guardar
+;Save
+;
+MSG_GAD_USE
+Utilizar
+;Use
+;
+MSG_GAD_CANCEL
+Cancelar
+;Cancel
+;
+MSG_GAD_TAB_LANGUAGE
+Língua
+;Language
+;
+MSG_GAD_TAB_COUNTRY
+País
+;Country
+;
+MSG_GAD_TAB_TIMEZONE
+Fusos Horários
+;Time Zone
+;
+MSG_TIMEZONE_1HOUR
+Fuso Horário: Uma hora da GMT
+;Time Zone: 1 Hour from GMT
+;
+MSG_TIMEZONE_HOURS
+Fuso Horário: %ld horas da GMT
+;Time Zone: %ld Hours from GMT
+;
+MSG_TIMEZONE_HOURSMINS
+Fuso Horário: %ld horas, %ld minutos da GMT
+;Time Zone: %ld Hours, %ld Minutes from GMT
+;

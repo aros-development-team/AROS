@@ -1,0 +1,34 @@
+## version $VER: screenmodeprefs.catalog 1.0 (29.09.2008)
+## codeset 0
+## language português
+;
+; Translated by João Ralha
+;
+MSG_NAME
+Preferêncida do Modo de Écran
+;ScreenMode Preferences
+; 
+MSG_WIDTH
+\33lLargura:
+;\33lWidth:
+;
+MSG_DEFAULT
+\33l_defeito
+;\33l_default
+;
+MSG_HEIGHT
+\33lAltura:
+;\33lHeight:
+;
+MSG_DEPTH
+\33lNº de Cores:
+;\33lDepth:
+;
+MSG_AUTOSCROLL
+\33lScroll automático
+;\33lAutoscroll
+;
+MSG_SELECT
+Selecione um modo de écran
+;Select a Screen Mode
+;
