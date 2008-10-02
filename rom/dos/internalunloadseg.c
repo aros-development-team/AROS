@@ -26,10 +26,14 @@
         struct DosLibrary *, DOSBase, 127, Dos)
 
 /*  FUNCTION
-
+	Unloads a seglist loaded with InternalLoadSeg().
+	
     INPUTS
+	seglist  - Seglist
+	freefunc - Function to be called to free memory
 
     RESULT
+	DOSTRUE if everything wents O.K.
 
     NOTES
 

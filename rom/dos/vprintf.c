@@ -31,10 +31,14 @@ AROS_UFP2(void, vfp_hook,
 	struct DosLibrary *, DOSBase, 159, Dos)
 
 /*  FUNCTION
+	Writes a formatted string to standard output.
 
     INPUTS
+	format   - RawDoFmt like format string
+	argarray - Pointer to array of formatting values
 
     RESULT
+	Number of bytes written or -1 for an error
 
     NOTES
 

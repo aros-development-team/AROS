@@ -2,7 +2,7 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: DosGetString() - Support for localized strings.
+    Desc: DosGetLocalizedString() - Support for localized strings.
     Lang: english
 */
 

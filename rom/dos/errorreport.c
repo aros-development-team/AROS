@@ -31,7 +31,9 @@
 	struct DosLibrary *, DOSBase, 80, Dos)
 
 /*  FUNCTION
-
+    Displays a requester with Retry/Cancel buttons for an error.
+    IoErr() is set to "code".
+	
     INPUTS
 
     code    --  The error to put up the requester for
@@ -46,6 +48,9 @@
     device  --  Optional handler task address (obsolete!)
 
     RESULT
+    DOSFALSE - user has selected "Retry"
+    DOSTRUE  - user has selected "Cancel" or code wasn't understood or
+	       pr_WindowPtr is -1 or if an attempt to open the requester fails.
 
     NOTES
 

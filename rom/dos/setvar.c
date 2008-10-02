@@ -33,7 +33,7 @@
         struct DosLibrary *, DOSBase, 150, Dos)
 
 /*  FUNCTION
-        This function will set a local of environmental variable. Although
+        This function will set a local or environmental variable. Although
         it is recommended that you only use ASCII strings within variables,
         this is not actually required.
 
