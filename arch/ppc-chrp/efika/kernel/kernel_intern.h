@@ -79,15 +79,6 @@ struct ExceptNode {
 
 
 
-static inline struct KernelBase *getKernelBase()
-{
-    return (struct KernelBase *)rdspr(SPRG4);
-}
-
-static inline struct KernelBase *getSysBase()
-{
-    return (struct KernelBase *)rdspr(SPRG5);
-}
 
 static inline uint32_t goSuper() {
 	register uint32_t oldmsr asm("r3");
