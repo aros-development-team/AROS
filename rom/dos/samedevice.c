@@ -22,10 +22,13 @@
 	struct DosLibrary *, DOSBase, 164, Dos)
 
 /*  FUNCTION
+	Checks if two locks are on the same device.
 
     INPUTS
+	lock1, lock2 - locks
 
     RESULT
+	DOSTRUE when they are on the same device
 
     NOTES
 

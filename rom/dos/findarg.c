@@ -23,10 +23,15 @@
 	struct DosLibrary *, DOSBase, 134, Dos)
 
 /*  FUNCTION
+	Search for keyword in the template string.
+	Abbreviations are handled.
 
     INPUTS
+	template - template string to be searched
+	keyword  - keyword to search for
 
     RESULT
+	Index of the keyword or -1 if not found.
 
     NOTES
 

@@ -22,10 +22,15 @@
 	struct DosLibrary *, DOSBase, 70, Dos)
 
 /*  FUNCTION
+	Compares two locks.
 
     INPUTS
+	lock1, lock2 - locks
 
     RESULT
+	LOCK_SAME        - locks points to the same object
+	LOCK_SAME_VOLUME - locks are on the same volume
+	LOCK_DIFFERENT   - locks are different
 
     NOTES
 

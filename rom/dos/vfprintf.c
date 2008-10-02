@@ -51,10 +51,15 @@ AROS_UFH2(void,vfp_hook,
 	struct DosLibrary *, DOSBase, 59, Dos)
 
 /*  FUNCTION
+	Write a formatted (RawDoFmt) string to a specified file (buffered).
 
     INPUTS
+	file     - Filehandle to write to
+	format   - RawDoFmt() style formatting string
+	argarray - Pointer to array of formatting values
 
     RESULT
+	Number of bytes written or -1 for an error
 
     NOTES
 

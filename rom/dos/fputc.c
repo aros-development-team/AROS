@@ -30,7 +30,8 @@
 	struct DosLibrary *, DOSBase, 52, Dos)
 
 /*  FUNCTION
-
+	Write a character to a file.
+	
     INPUTS
 	file	  - Filehandle to write to.
 	character - Character to write.

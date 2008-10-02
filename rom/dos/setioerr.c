@@ -24,7 +24,7 @@
 	struct DosLibrary *, DOSBase, 77, Dos)
 
 /*  FUNCTION
-	Sets to dos error code for the current process.
+	Sets the dos error code for the current process.
 
     INPUTS
 	result -- new error code

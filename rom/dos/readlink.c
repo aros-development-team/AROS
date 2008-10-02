@@ -2,7 +2,7 @@
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Read the soft link information.
+    Desc: Read the soft-link information.
     Lang: English
 */
 #include "dos_intern.h"
