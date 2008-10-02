@@ -2,15 +2,12 @@
 
 #include <aros/system.h>
 #include <windows.h>
-#include <ddk/ntddk.h>
-#include "win32_intern.h"
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
 #define __typedef_WORD /* is the same except BOOL. It's defined to short on AROS and to int on Windows. This means */
 #define __typedef_BYTE /* that you can't use it in OS-native part of the code and can't use any AROS structure     */
 #define __typedef_BOOL /* definition that contains BOOL.                                                           */
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
-#undef IsListEmpty
 
 #include <stddef.h>
 #include <stdio.h>
@@ -62,7 +59,7 @@ void core_Dispatch(CONTEXT *regs)
 {
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
-    struct AROSCPUContext *ctx;
+    CONTEXT *ctx;
 
     if (SysBase)
     {
@@ -109,9 +106,8 @@ void core_Dispatch(CONTEXT *regs)
         }
         
         /* Restore the task's state */
-        ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
+        ctx = (CONTEXT *)GetIntETask(task)->iet_Context;
         CopyMemory(regs, ctx, sizeof(CONTEXT));
-        MainTEB->LastErrorValue = ctx->LastError;
         
         /* Leave interrupt and jump to the new task */
         core_LeaveInterrupt();
@@ -122,7 +118,7 @@ void core_Switch(CONTEXT *regs)
 {
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
-    struct AROSCPUContext *ctx;
+    CONTEXT *ctx;
     
     if (SysBase)
     {
@@ -133,9 +129,8 @@ void core_Switch(CONTEXT *regs)
         DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
         /* Copy current task's context into the ETask structure */
-        ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
+        ctx = (CONTEXT *)GetIntETask(task)->iet_Context;
         CopyMemory(ctx, regs, sizeof(CONTEXT));
-        ctx->LastError = MainTEB->LastErrorValue; 
         
         /* store IDNestCnt into tasks's structure */  
         task->tc_IDNestCnt = SysBase->IDNestCnt;

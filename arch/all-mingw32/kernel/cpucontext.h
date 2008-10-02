@@ -1,9 +1,3 @@
-struct AROSCPUContext
-{
-    CONTEXT regs;
-    DWORD LastError;
-};
-
 #ifdef __i386__
 #define REG_SAVE_VAR DWORD SegCS_Save, SegSS_Save
 
