@@ -244,7 +244,7 @@ BPTR DupFHFromfd(int fd, ULONG mode)
         LONG pos = Seek(fdesc->fh, 0, OFFSET_CURRENT);
         BPTR olddir = CurrentDir(fdesc->fh);
         ret = Open("", mode);
-        if((mode & FMF_WRITE) && ret && pos != -1); 
+        if((mode & FMF_WRITE) && ret && pos != -1)
             Seek(ret, pos, OFFSET_BEGINNING);
         CurrentDir(olddir);
     }
