@@ -14,32 +14,6 @@
 #include "etask.h"
 
 /* This was taken from Mingw32's w32api/winnt.h */
-typedef struct _NT_TIB {
-	APTR ExceptionList;
-	APTR StackBase;
-	APTR StackLimit;
-	APTR SubSystemTib;
-	union {
-		APTR FiberData;
-		IPTR Version;
-	} DUMMYUNIONNAME;
-	APTR ArbitraryUserPointer;
-	struct _NT_TIB *Self;
-} NT_TIB,*PNT_TIB;
-
-static __inline__ struct _NT_TIB * NtCurrentTeb(void)
-{
-    struct _NT_TIB *ret;
-
-    __asm__ __volatile__ (
-        "mov{l} {%%fs:0x18,%0|%0,%%fs:0x18}\n"
-        : "=r" (ret)
-        : /* no inputs */
-    );
-
-    return ret;
-}
-
 #ifdef __i386__
 #define SIZE_OF_80387_REGISTERS	80
 #define CONTEXT_i386	0x10000
@@ -89,7 +63,6 @@ struct AROSCPUContext {
 	IPTR	Esp;
 	IPTR	SegSs;
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
-	ULONG	LastError;
 };
 
 #define PRINT_CPUCONTEXT(ctx) \
