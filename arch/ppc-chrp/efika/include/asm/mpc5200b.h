@@ -63,6 +63,16 @@ static inline void wrmsr(uint32_t msr) {
 #define wrspr(reg, val) \
     do { asm volatile("mtspr %0,%1"::"i"(reg),"r"(val)); } while(0)
 
+static inline struct KernelBase *getKernelBase()
+{
+    return (struct KernelBase *)rdspr(SPRG4);
+}
+
+static inline struct ExecBase *getSysBase()
+{
+    return (struct ExecBase *)rdspr(SPRG5);
+}
+
 /* SPR registers */
 #define XER     0x001   /* Integer Exception Register */
 #define LR      0x008   /* Link Register */
