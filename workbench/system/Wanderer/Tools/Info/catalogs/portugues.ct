@@ -1,0 +1,180 @@
+## version $VER: info.catalog 1.0 (30.09.2007)
+## language português
+## codeset 0
+;
+; Translated by João Ralha (hardwired)
+;
+MSG_TITLE
+Informações
+;Informations
+;
+MSG_DESCRIPTION
+Informações do icone
+;Icon informations
+;
+MSG_COPYRIGHT
+Info. do icone\n©AROS Dev Team
+;Icon informations\n©AROS Dev Team
+;
+MSG_ICON
+Icone
+;Icon
+;
+MSG_NAME
+Nome
+;Name
+;
+MSG_COMMENT
+Comentário
+;Comment
+;
+MSG_STACK
+Pilha (Stack)
+;Stack
+;
+MSG_DEFTOOL
+Ferramenta
+;Tool
+;
+MSG_ICONTYPE
+Tipo de Icone
+;Icon type
+;
+MSG_DISK
+Disco
+;Disk
+;
+MSG_DRAWER
+Directório
+;Drawer
+;
+MSG_TOOL
+Ferramenta
+;Tool
+;
+MSG_PROJECT
+Projecto
+;Project
+;
+MSG_GARBAGE
+Lixo
+;Garbage
+;
+MSG_DEVICE
+Dispositivo
+;Device
+;
+MSG_KICK
+Kick
+;
+MSG_APPICON
+AppIcon
+;
+MSG_INFORMATION
+Informação
+;Information
+;
+MSG_PROTECTION
+Protecção
+;Protection
+;
+MSG_TOOLTYPES
+(Tooltypes)
+;Tooltypes
+;
+MSG_ERROR_SHELLSTART
+Erro: No pode inical da shell
+;Error: Cannot be started from shell
+;
+MSG_ABOUT
+Acerca de...
+;About...
+;
+MSG_QUIT
+Sair
+;Quit
+;
+MSG_READ
+Ler
+;Read
+;
+MSG_WRITE
+Escrever
+;Write
+;
+MSG_EXECUTE
+Executar
+;Execute
+;
+MSG_DELETE
+Apagar
+;Delete
+;
+MSG_SCRIPT
+Script
+;Script
+;
+MSG_PURE
+Puro
+;Pure
+;
+MSG_ARCHIVED
+Comprimido
+;Archived
+;
+MSG_STICKY
+Adesivo
+;Sticky
+;
+MSG_SIZE
+Tamanho
+;Size
+;
+MSG_VERSION
+Versão
+;Version
+;
+MSG_OWNERID
+ID proprietário
+;Owner ID
+;
+MSG_GROUPID
+ID do grupo
+;Group ID
+;
+MSG_OWNERNAME
+Proprietário
+;Owner
+;
+MSG_GROUPNAME
+Grupo
+;Group
+;
+MSG_TYPE
+Tipo
+;Type
+;
+MSG_DATE
+Data
+;Date
+;
+MSG_NEW_KEY
+Nova tecla
+;New key
+;
+MSG_DELETE_KEY
+Apagar tecla
+;Delete key
+;
+MSG_SAVE
+_Guardar
+;_Save
+;
+MSG_CANCEL
+_Cancelar
+;_Cancel
+;
+MSG_OK
+Aceitar
+;Ok
+;
