@@ -440,15 +440,13 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      * kernel.resource is ready to run. Enable external interrupts and leave
      * supervisor mode
      */
-    D(bug("[KRN] MSR=%08x\n", rdmsr()));
     wrmsr(rdmsr() | (MSR_EE|MSR_FP));
     D(bug("[KRN] Interrupts enabled\n"));
 
-    asm volatile("mtdec %0"::"r"(132000000/50));
+    asm volatile("mtdec %0"::"r"(132000000/200));
 
-    D(bug("[KRN] MSR=%08x\n", rdmsr()));
     wrmsr(rdmsr() | (MSR_PR));
-    D(bug("[KRN] Entered user mode \n"));
+    D(bug("[KRN] Entered user mode\n"));
 
     return TRUE;
 }
