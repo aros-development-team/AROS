@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES := cause disable enable exec_init newaddtask permit preparecontext rawputchar \
-          remtask reschedule setexcept settaskpri signal stackswap wait
+          remtask reschedule setexcept settaskpri signal wait
 
 USER_CFLAGS := -I$(TOP)/rom/exec
 %build_archspecific \
