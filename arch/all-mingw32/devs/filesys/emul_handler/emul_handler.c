@@ -10,7 +10,7 @@
 
 /*********************************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/system.h>
@@ -1501,14 +1501,16 @@ AROS_LH1(void, beginio,
 	{
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  ULONG mode;
-	  ULONG oldpos;
+	  ULONG pos_high = 0;
+	  UQUAD oldpos;
 	  
 	  D(bug("[emul] FSA_SEEK, mode %ld, offset %lu\n", iofs->io_Union.io_SEEK.io_SeekMode, iofs->io_Union.io_SEEK.io_Offset));
 	  if (fh->type == FHD_FILE)
 	  {
 	        DB2(bug("[emul] LSeek() - getting current position\n"));
-		oldpos = LSeek(fh->fd, 0, NULL, FILE_CURRENT);
-		D(bug("[emul] Original position: %lu\n", oldpos));
+		oldpos = LSeek(fh->fd, 0, &pos_high, FILE_CURRENT);
+		oldpos |= (UQUAD)pos_high << 32;
+		D(bug("[emul] Original position: %llu\n", oldpos));
 		
 		switch(iofs->io_Union.io_SEEK.io_SeekMode) {
 		case OFFSET_BEGINNING:
@@ -1520,8 +1522,9 @@ AROS_LH1(void, beginio,
 		default:
 		  mode = FILE_END;
 		}
+		pos_high = iofs->io_Union.io_SEEK.io_Offset >> 32;
 		DB2(bug("[emul] LSeek() - setting new position\n"));
-		if (LSeek(fh->fd, iofs->io_Union.io_SEEK.io_Offset, NULL, mode) == (ULONG)-1)
+		if (LSeek(fh->fd, iofs->io_Union.io_SEEK.io_Offset, &pos_high, mode) == (ULONG)-1)
 		{
 		  error = Errno();
 		}

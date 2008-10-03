@@ -93,17 +93,17 @@ struct EmulInterface
 
 struct KernelInterface
 {
-    void *(*CreateFile)(const char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
-			ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
-    ULONG (*CloseHandle)(void *hObject);
-    ULONG (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
-    ULONG (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
-    ULONG (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
-    ULONG (*GetFileType)(void *hFile);
-    void *(*GetStdHandle)(ULONG nStdHandle);
-    ULONG (*MoveFile)(const char *lpExistingFileName, const char *lpNewFileName);
-    ULONG (*CreateHardLink)(const char *lpFileName, const char *lpExistingFileName, void *lpSecurityAttributes);
-    ULONG (*CreateSymbolicLink)(const char *lpSymlinkFileName, const char *lpTargetFileName, ULONG dwFlags);
+    __attribute__((stdcall)) void *(*CreateFile)(const char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
+						 ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
+    __attribute__((stdcall)) ULONG (*CloseHandle)(void *hObject);
+    __attribute__((stdcall)) ULONG (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
+    __attribute__((stdcall)) ULONG (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
+    __attribute__((stdcall)) ULONG (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
+    __attribute__((stdcall)) ULONG (*GetFileType)(void *hFile);
+    __attribute__((stdcall)) void *(*GetStdHandle)(ULONG nStdHandle);
+    __attribute__((stdcall)) ULONG (*MoveFile)(const char *lpExistingFileName, const char *lpNewFileName);
+    __attribute__((stdcall)) ULONG (*CreateHardLink)(const char *lpFileName, const char *lpExistingFileName, void *lpSecurityAttributes);
+    __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(const char *lpSymlinkFileName, const char *lpTargetFileName, ULONG dwFlags);
 };
 
 #define OpenFile KernelIFace->CreateFile
