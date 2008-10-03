@@ -23,9 +23,12 @@ struct emulbase
 {
     struct Device		  device;
     				/* nlorentz: Cal it eb_std* because std* is reserved */
-    struct Unit       		* eb_stdin;
-    struct Unit       		* eb_stdout;
-    struct Unit       		* eb_stderr;
+    struct filehandle  		* eb_stdin;
+    struct filehandle 		* eb_stdout;
+    struct filehandle 		* eb_stderr;
+    void			* stdin_handle;
+    void			* stdout_handle;
+    void			* stderr_handle;
     struct SignalSemaphore 	  sem;
     struct SignalSemaphore	  memsem;
     char    	    	    	* current_volume;
@@ -41,18 +44,16 @@ struct filehandle
     int    type;     /* type can either be FHD_FILE or FHD_DIRECTORY */
     char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
     long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
-    void  * DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
+    void * DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
     char * volume;
     char * volumename;
-    long   fd;
+    void * fd;
 };
 #define FHD_FILE      0
 #define FHD_DIRECTORY 1
 
 struct EmulInterface
 {
-    ULONG (*EmulOpen)(const char *path, int mode, int protect);
-    ULONG (*EmulClose)(int fd);
     void *(*EmulOpenDir)(const char *path);
     ULONG (*EmulCloseDir)(void *dir);
     ULONG (*EmulStat)(const char *path, struct FileInfoBlock *FIB);
@@ -60,32 +61,21 @@ struct EmulInterface
     ULONG (*EmulTellDir)(void *dir);
     void (*EmulSeekDir)(void *dir, long loc);
     void (*EmulRewindDir)(void *dir);
-    void (*EmulDelete)(const char *filename);
-    ULONG (*EmulRename)(const char *spath, const char *dpath);
+    ULONG (*EmulDelete)(const char *filename);
     unsigned long (*EmulGetHome)(const char *name, char *home);
     char *(*EmulGetCWD)(char *buf, long len);
     ULONG (*EmulStatFS)(const char *path, struct InfoData *id);
     ULONG (*EmulChDir)(const char *path);
-    ULONG (*EmulIsatty)(int fd);
-    LONG (*EmulLSeek)(int fd, long offset, long base);
     ULONG (*EmulChmod)(const char *path, int protect);
     ULONG (*EmulMKDir)(const char *path, int protect);
-    ULONG (*EmulRead)(int fd, char *buf, long len);
-    ULONG (*EmulWrite)(int fd, char *buf, long len);
     ULONG (*EmulErrno)(void);
 };
 
 #define Chmod EmulIFace->EmulChmod
-#define Isatty EmulIFace->EmulIsatty
-#define LSeek EmulIFace->EmulLSeek
 #define MKDir EmulIFace->EmulMKDir
-#define DoRead EmulIFace->EmulRead
-#define DoWrite EmulIFace->EmulWrite
 #define Stat EmulIFace->EmulStat
 #define Errno EmulIFace->EmulErrno
 #define CloseDir EmulIFace->EmulCloseDir
-#define DoClose EmulIFace->EmulClose
-#define DoOpen EmulIFace->EmulOpen
 #define OpenDir EmulIFace->EmulOpenDir
 #define ChDir EmulIFace->EmulChDir
 #define DirName EmulIFace->EmulDirName
@@ -93,7 +83,6 @@ struct EmulInterface
 #define SeekDir EmulIFace->EmulSeekDir
 #define RewindDir EmulIFace->EmulRewindDir
 #define Delete EmulIFace->EmulDelete
-#define DoRename EmulIFace->EmulRename
 #define GetCWD EmulIFace->EmulGetCWD
 #define GetHome EmulIFace->EmulGetHome
 #define StatFS EmulIFace->EmulStatFS
@@ -104,10 +93,27 @@ struct EmulInterface
 
 struct KernelInterface
 {
+    void *(*CreateFile)(const char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
+			ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
+    ULONG (*CloseHandle)(void *hObject);
+    ULONG (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
+    ULONG (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
+    ULONG (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
+    ULONG (*GetFileType)(void *hFile);
+    void *(*GetStdHandle)(ULONG nStdHandle);
+    ULONG (*MoveFile)(const char *lpExistingFileName, const char *lpNewFileName);
     ULONG (*CreateHardLink)(const char *lpFileName, const char *lpExistingFileName, void *lpSecurityAttributes);
     ULONG (*CreateSymbolicLink)(const char *lpSymlinkFileName, const char *lpTargetFileName, ULONG dwFlags);
 };
 
+#define OpenFile KernelIFace->CreateFile
+#define DoClose KernelIFace->CloseHandle
+#define DoRead KernelIFace->ReadFile
+#define DoWrite KernelIFace->WriteFile
+#define LSeek KernelIFace->SetFilePointer
+#define GetFileType KernelIFace->GetFileType
+#define GetStdFile KernelIFace->GetStdHandle
+#define DoRename KernelIFace->MoveFile
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
 
