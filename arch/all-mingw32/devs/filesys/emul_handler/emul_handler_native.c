@@ -27,7 +27,10 @@
 #define ST_USERDIR 2
 #define ST_FILE -3
 
-#define D(x) x
+#define DERROR(x) x  /* Error code translation debug */
+#define DSTAT(x)     /* Stat() debug                 */
+#define DSTATFS(x)   /* StatFS() debug		     */
+#define DWINAPI(x)   /* WinAPI calls debug           */
 
 /* Make an AROS error-code (<dos/dos.h>) out of an Windows error-code. */
 static DWORD u2a[][2]=
@@ -41,7 +44,7 @@ static DWORD u2a[][2]=
   { ERROR_SHARING_VIOLATION, ERROR_OBJECT_IN_USE },
   { ERROR_LOCK_VIOLATION, ERROR_OBJECT_IN_USE },
   { ERROR_BUFFER_OVERFLOW, ERROR_OBJECT_TOO_LARGE },
-  { 0, ERROR_UNKNOWN }
+  { 0, 0 }
 };
 
 /* Make unix protection bits out of AROS protection bits. */
@@ -115,59 +118,32 @@ ULONG prot_u2a(mode_t protect)
 
 void * __declspec(dllexport) EmulOpenDir(const char *path)
 {
+  DWINAPI(printf("opendir(\"%s\")\n", path));
   return opendir(path);
 }
 
 int __declspec(dllexport) EmulCloseDir(void *dir)
 {
+  DWINAPI(printf("closedir()\n"));
   return closedir((DIR *)dir);
-}
-
-int __declspec(dllexport) EmulClose(int fd)
-{
-  return close(fd);
 }
 
 char * __declspec(dllexport) EmulGetCWD(char *buf, long len)
 {
-  char * retval = 0;
-  if (buf != 0) //do not alloc mem here!
+  char * retval = NULL;
+
+  if (buf != 0) { //do not alloc mem here!
+    DWINAPI(printf("getcwd()\n"));
     retval = getcwd(buf,len);
+  }
   printf("[EmulHandler] cwd: \"%s\"\n",retval);
-  return (struct TagItem *)retval;
-}
-
-int __declspec(dllexport) EmulOpen(const char *path, int mode, int protect)
-{
-  int flags=(mode&FMF_CREATE?O_CREAT:0)|(mode&FMF_CLEAR?O_TRUNC:0);
-
-  if(mode&FMF_WRITE)
-	flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-  else
-	flags|=O_RDONLY;
-  flags |= O_BINARY;
-  protect = prot_a2u(protect);
-  return open(path, flags, protect);
-}  
-
-long __declspec(dllexport) EmulLSeek(int fd, long offset, long base)
-{
-  return lseek(fd,offset,base);
-}
-
-int __declspec(dllexport) EmulRead(int fd, char *buf, long len)
-{
-  return read(fd,buf,len);
-}
-
-int __declspec(dllexport) EmulWrite(int fd, char *buf, long len)
-{
-  return write(fd,buf,len);
+  return retval;
 }
 
 int __declspec(dllexport) EmulChmod(const char *path, int protect)
 {
   protect = prot_a2u(protect);
+  DWINAPI(printf("[EmulHandler] chnmod(\"%s\")\n", path));
   return chmod(path,protect);
 }
 
@@ -176,20 +152,19 @@ int __declspec(dllexport) EmulMKDir(const char *path, int protect)
   int r;
 
   protect = prot_a2u(protect);
+  DWINAPI(printf("[EmulHandler] mkdir(\"%s\")\n", path));
   r = mkdir(path);
-  if (!r)
+  if (!r) {
+      DWINAPI(printf("[EmulHandler] chnmod(\"%s\")\n", path));
       r = chmod(path, protect);
+  }
   return r;
 
 }
 
-int __declspec(dllexport) EmulIsatty(int fd)
-{
-  return isatty(fd);
-}
-
 int __declspec(dllexport) EmulChDir(const char *path)
 {
+  DWINAPI(printf("[EmulHandler] chdir(\"%s\")\n", path));
   return chdir(path);
 }
 
@@ -203,18 +178,20 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
   int retval = 0;
   LPTSTR newbuf = NULL;
 
-  D(printf("[EmulHandler] StatFS(\"%s\")\n", path));
+  DSTATFS(printf("[EmulHandler] StatFS(\"%s\")\n", path));
   buflen = GetFullPathName(path, sizeof(buf), buf, &c);
   if (buflen) {
       if (buflen > sizeof(buf)) {
+          DWINAPI(printf("[EmulHandler] LocalAlloc()\n", path));
           newbuf = LocalAlloc(LMEM_FIXED, buflen);
           if (newbuf) {
+              DWINAPI(printf("[EmulHandler] GetFullPathName(\"%s\")\n", path));
               GetFullPathName(path, buflen, newbuf, &c);
           } else
               return 0;
       } else
           newbuf = buf;
-      D(printf("[EmulHandler] Full path: %s\n", newbuf));
+      DSTATFS(printf("[EmulHandler] Full path: %s\n", newbuf));
 /* TODO: this works only with drive letters, no mounts/UNC paths support yet */
       for (c = newbuf; *c; c++) {
 	  if (*c == '\\') {
@@ -223,7 +200,7 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
       	  }
       }
       if (*c) {
-          D(printf("[EmulHandler] Root path: %s\n", newbuf));
+          DSTATFS(printf("[EmulHandler] Root path: %s\n", newbuf));
       	  retval = GetDiskFreeSpace(newbuf, &SectorsPerCluster, &BytesPerSector, &FreeBlocks, &id->id_NumBlocks);
   	  id->id_NumSoftErrors = 0;
 	  id->id_UnitNumber = 0;
@@ -232,10 +209,14 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
 	  id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
 	  id->id_DiskType = ID_DOS_DISK;
 	  id->id_InUse = TRUE;
-      } else
+      } else {
+          DWINAPI(printf("[EmulHandler] SetLastError()\n"));
           SetLastError(ERROR_BAD_PATHNAME);
-      if (newbuf != buf)
+      }
+      if (newbuf != buf) {
+          DWINAPI(printf("[EmulHandler] LocalFree()\n"));
           LocalFree(newbuf);
+      }
   }
   return retval;
 }
@@ -245,6 +226,7 @@ unsigned long __declspec(dllexport) EmulGetHome(const char *name, char *home)
   HRESULT res;
 
   /* TODO: currently username is ignored, however we should acquire an access token for it */
+  DWINAPI(printf("[EmulHandler] SHGetFolderPath()\n"));
   res = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_DEFAULT, home);
   if (res)
       return AROS_ERROR_OBJECT_NOT_FOUND;
@@ -252,37 +234,46 @@ unsigned long __declspec(dllexport) EmulGetHome(const char *name, char *home)
       return 0;
 }
 
-void __declspec(dllexport) EmulDelete(const char *filename)
+BOOL __declspec(dllexport) EmulDelete(const char *filename)
 {
-  struct stat st;
-  if (!stat(filename,&st))
-  {
-	if (S_ISDIR(st.st_mode))
-	  rmdir(filename);
-	else
-	  unlink(filename);
+  DWORD attrs;
+  unsigned long res = FALSE;
+  
+  attrs = GetFileAttributes(filename);
+  if (attrs != INVALID_FILE_ATTRIBUTES) {
+      if (attrs & FILE_ATTRIBUTE_DIRECTORY)
+          res = RemoveDirectory(filename);
+      else
+          res = DeleteFile(filename);
   }
+  return res;
 }
 
 const char * __declspec(dllexport) EmulDirName(void *dir)
 {
-  struct dirent * entry = readdir((DIR *)dir);
+  struct dirent *entry;
+
+  DWINAPI(printf("[EmulHandler] readdir()\n"));
+  entry = readdir((DIR *)dir);
   const char * name = entry ? entry->d_name : NULL;
   return name;
 }
 
 int __declspec(dllexport) EmulTellDir(void *dir)
 {
+  DWINAPI(printf("[EmulHandler] telldir()\n"));
   return telldir((DIR *)dir);
 }
 
 void __declspec(dllexport) EmulRewindDir(void *dir)
 {
+  DWINAPI(printf("[EmulHandler] rewinddir()\n"));
   rewinddir((DIR *)dir);
 }
 
 void __declspec(dllexport) EmulSeekDir(void *dir, long loc)
 {
+  DWINAPI(printf("[EmulHandler] seekdir()\n"));
   seekdir((DIR *)dir,loc);
 }
 
@@ -310,24 +301,27 @@ void stat2FIB(struct stat * s, struct FileInfoBlock * FIB)
 int __declspec(dllexport) EmulStat(const char *path, struct FileInfoBlock *FIB)
 {
   struct stat st;
-  int retval = stat(path,&st);
-  int m = st.st_mode;
+  int retval;
+  int m;
 
-  D(printf("[EmulHandler] stat(%s) returned %i kind: ",path,retval));
+  DWINAPI(printf("[EmulHandler] EmulStat(\"%s\")\n", path));
+  retval = stat(path,&st);
+  m = st.st_mode;
+  DSTAT(printf("[EmulHandler] stat(\"%s\") returned %i kind: ",path,retval));
   if (retval == 0)
   {
     if (S_ISREG(m)) {
         retval = 1;
-        D(printf("regular\n"));
+        DSTAT(printf("regular\n"));
     } else if (S_ISDIR(m)) {
         retval = 2;
-        D(printf("directory\n"));
-    } else {
-        retval = -1;
-        D(printf("other\n"));
+        DSTAT(printf("directory\n"));
     }
+        DSTAT(else printf("other\n");)
+  } else {
+    retval = -1;
+    DSTAT(printf("unknown or not existing\n");)
   }
-  D(else printf("unknown or not existing\n");)
   if (FIB)
   {
 	  stat2FIB(&st,FIB);
@@ -335,27 +329,19 @@ int __declspec(dllexport) EmulStat(const char *path, struct FileInfoBlock *FIB)
   return retval;
 }
 
-int __declspec(dllexport) EmulRename(const char *spath, const char *dpath)
-{
-  return rename(spath,dpath);
-}
-
 int __declspec(dllexport) EmulErrno(void)
 {
   ULONG i;
-  DWORD e = GetLastError();
-
-  D(printf("[EmulHandler] Win32 error code: %lu\n", e));
+  DWORD e;
+  
+  DWINAPI(printf("[EmulHandler] GetLastError\n"));
+  e = GetLastError();
+  DERROR(printf("[EmulHandler] Windows error code: %lu\n", e));
   for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
 	if(u2a[i][0]==e) {
-	  D(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
+	  DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
 	  return u2a[i][1];
 	}
-  D(printf("[EmulHandler] Unknown error code\n"));
-#if PassThroughErrnos
-  return e+PassThroughErrnos;
-#else
+  DERROR(printf("[EmulHandler] Unknown error code\n"));
   return ERROR_UNKNOWN;
-#endif
 }
-
