@@ -24,8 +24,13 @@
 	struct DosLibrary *, DOSBase, 44, Dos)
 
 /*  FUNCTION
+	Tries to abort an asynchronous packet. There is no guarantee
+	that this succeeds. You must wait for the packet to return
+	before you can reuse or deallocate it.
 
     INPUTS
+	port - the message port to where the packet was sent
+	pkt  - the packet to be aborted
 
     RESULT
 

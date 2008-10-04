@@ -20,7 +20,8 @@
          struct IntuitionBase *, IntuitionBase, 64, Intuition)
 
 /*  FUNCTION
- 
+    Remake the entire Intuition display.
+    
     INPUTS
     None.
  

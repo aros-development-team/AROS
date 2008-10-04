@@ -51,7 +51,7 @@
     leftOffset, topOffset - Add this offset to the position stored in the
         image.
     state - Which state (see intuition/imageclass.h for possible
-        valued).
+        values).
     drawInfo - The DrawInfo from the screen.
  
     RESULT

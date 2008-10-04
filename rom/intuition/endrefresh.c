@@ -23,9 +23,14 @@
          struct IntuitionBase *, IntuitionBase, 61, Intuition)
 
 /*  FUNCTION
- 
+	Finishes refreshing which was initialized with BeginRefresh().
+	The argument |complete| is usually TRUE, It can be useful to
+	set it to FALSE when refreshing is split in several tasks.
+
     INPUTS
- 
+	window   - the window to be refreshed
+	complete - BOOL which states if all refreshing is done
+
     RESULT
  
     NOTES
@@ -35,7 +40,8 @@
     BUGS
  
     SEE ALSO
- 
+	BeginRefresh()
+
     INTERNALS
  
 *****************************************************************************/

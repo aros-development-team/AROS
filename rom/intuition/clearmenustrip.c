@@ -20,9 +20,12 @@
          struct IntuitionBase *, IntuitionBase, 9, Intuition)
 
 /*  FUNCTION
- 
+	Detach menu stript from a window.
+	Call this function before you change memu data.
+	
     INPUTS
- 
+	window - the window from which the menu bar should be detached
+
     RESULT
  
     NOTES
@@ -32,7 +35,8 @@
     BUGS
  
     SEE ALSO
- 
+	SetMenuStrip()
+    
     INTERNALS
  
     HISTORY

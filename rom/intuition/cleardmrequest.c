@@ -20,12 +20,14 @@
          struct IntuitionBase *, IntuitionBase, 8, Intuition)
 
 /*  FUNCTION
- 
+    Detach the DMRequest from the window
+
     INPUTS
     window - The window from which the DMRequest is to be cleared
  
     RESULT
- 
+    TRUE if requester could successfully be detached.
+
     NOTES
  
     EXAMPLE

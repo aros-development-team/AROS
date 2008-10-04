@@ -28,18 +28,33 @@
          struct IntuitionBase *, IntuitionBase, 59, Intuition)
 
 /*  FUNCTION
-
+	Initializes optimized refreshing. It restricts redrawing to areas which
+	need refreshing after a window has been moved or has changed size.
+	
     INPUTS
+	window - window which needs refreshing
 
     RESULT
 
     NOTES
-
+	Only simple graphics.library functions are allowed between
+	BeginRefresh() and EndRefresh().
+	
+	BeginRefresh()/EndRefresh() should always be called when an
+	IDCMP_REFRESHWINDWOW message happens.
+	
     EXAMPLE
+	somewhere in your window's event handling loop:
+	
+	case IDCMP_REFRESHWINDWOW:
+	    BeginRefresh(mywindow);
+	    EndRefresh(mywindow, TRUE);
+	    break;
 
     BUGS
 
     SEE ALSO
+	EndRefresh()
 
     INTERNALS
 

@@ -34,7 +34,7 @@
          struct IntuitionBase *, IntuitionBase, 135, Intuition)
 
 /*  FUNCTION
-    Invokes a boopsi method on a object with a GadgetInfo derived from
+    Invokes a BOOPSI method on an object with a GadgetInfo derived from
     the supplied window or requester parameter.
 
     INPUTS
@@ -63,7 +63,7 @@
     There are likely a few differences between this routine and the
     real code, but this gets the job done.
 
-    One thing to note, the Amiga Rom routinecauses some form of
+    One thing to note, the Amiga Rom routine causes some form of
     (layer?) locking. I presume the point of the lock is to avoid
     removing the gadget from the window durring a refresh, or to avoid
     resizing the window durring refresh, etc.
