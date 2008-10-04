@@ -35,9 +35,11 @@
          struct IntuitionBase *, IntuitionBase, 76, Intuition)
 
 /*  FUNCTION
- 
+	Redraw window borders.
+
     INPUTS
- 
+	window - pointer to a window whose borders should be redrawn
+
     RESULT
  
     NOTES

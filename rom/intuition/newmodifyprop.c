@@ -61,7 +61,7 @@
     BUGS
 
     SEE ALSO
-    NewModifyProp(), RefreshGadgets(), RefreshGList()
+    ModifyProp(), RefreshGadgets(), RefreshGList()
 
     INTERNALS
 

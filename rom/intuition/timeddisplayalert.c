@@ -27,7 +27,8 @@
          struct IntuitionBase *, IntuitionBase, 137, Intuition)
 
 /*  FUNCTION
- 
+	Display an alert with automatic time-out.
+    
     INPUTS
  
     RESULT
@@ -39,7 +40,8 @@
     BUGS
  
     SEE ALSO
- 
+	DisplayAlert()
+	
     INTERNALS
  
     HISTORY

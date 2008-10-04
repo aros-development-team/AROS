@@ -36,24 +36,26 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
          struct IntuitionBase *, IntuitionBase, 153, Intuition)
 
 /*  FUNCTION
-    setup a new decorator for intuition windows, screens or menus
+    Setup a new decorator for intuition windows, screens or menus.
 
     INPUTS
     ID - identifier for decorations, see screens.h
     nd -  an ID dependent NewDecorator structure
+
     RESULT
     void - this Function cannot fail, 
 
     NOTES
-    the function fails if screens are open, use ChangeIntuition() to notify applications that
-    the UI will be changed
+    The function fails if screens are open, use ChangeIntuition() to notify applications that
+    the UI will be changed.
 
     EXAMPLE
  
     BUGS
  
     SEE ALSO
- 
+	intuition/screens.h
+
     INTERNALS
 
 *****************************************************************************/

@@ -23,11 +23,16 @@
          struct IntuitionBase *, IntuitionBase, 102, Intuition)
 
 /*  FUNCTION
- 
+    Open a screen
+    
     INPUTS
- 
+    newScreen - struct with screen specification. This is for compatibility
+		with OpenScreen() and usually set to NULL.
+    tagList   - tags which specify the screen
+    
     RESULT
- 
+    Pointer to screen or NULL if opening fails.
+    
     NOTES
  
     EXAMPLE

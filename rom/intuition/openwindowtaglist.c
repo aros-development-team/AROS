@@ -24,10 +24,17 @@
          struct IntuitionBase *, IntuitionBase, 101, Intuition)
 
 /*  FUNCTION
- 
+	Open a new window.
+
     INPUTS
- 
+	NewWindow - structure with window specification. This is for
+	            compatibility with OpenWindow() and usually set to NULL
+	tagList   - tags which specify appearance and behaviour of the window
+
     RESULT
+    A pointer to the new window or NULL if it couldn't be
+    opened. Reasons for this might be lack of memory or illegal
+    attributes.
  
     NOTES
  

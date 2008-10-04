@@ -24,9 +24,13 @@
          struct IntuitionBase *, IntuitionBase, 68, Intuition)
 
 /*  FUNCTION
- 
+	Free memory allocated by AllocRemember().
+	
     INPUTS
- 
+	rememberKey  - address of a pointer to struct Remember
+	reallyForget - TRUE  release all memory
+	               FALSE release only link nodes
+
     RESULT
  
     NOTES
@@ -36,7 +40,8 @@
     BUGS
  
     SEE ALSO
- 
+	AllocRemember()
+
     INTERNALS
  
     HISTORY

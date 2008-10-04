@@ -94,7 +94,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
          struct IntuitionBase *, IntuitionBase, 60, Intuition)
 
 /*  FUNCTION
- 
+	Build and display a system requester.
+
     INPUTS
 	window - The window in which the requester will appear
 	bodytext - The Text to be shown in the body of the requester

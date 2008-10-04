@@ -28,7 +28,8 @@
     Allocate some memory and remeber it in the Remember-List.
  
     INPUTS
-    rememberKey - Store information in this list
+    rememberKey - Store information in this list. Must be NULL for
+                  initial call.
     size - How many bytes to allocate
     flags - Attributes (see AllocMem())
  
@@ -38,7 +39,11 @@
     NOTES
  
     EXAMPLE
- 
+	struct Remember *remkey;
+	remkey = NULL;
+	AllocRemember(&remkey, BUFSIZE, MEMF_ANY);
+	FreeRemember(&remkey, TRUE);
+
     BUGS
  
     SEE ALSO

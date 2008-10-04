@@ -21,7 +21,8 @@
          struct IntuitionBase *, IntuitionBase, 63, Intuition)
 
 /*  FUNCTION
- 
+    Create viewport of the screen.
+    
     INPUTS
     Pointer to your custom screen.
  

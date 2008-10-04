@@ -27,11 +27,19 @@
          struct IntuitionBase *, IntuitionBase, 161, Intuition)
 
 /*  FUNCTION
-    Add Notifications to Intuitionn.
+    Add Notifications to Intuition.
  
     INPUTS
-    taglist - A OS4 Styled Taglist for 
- 
+    taglist - 
+	SNA_PubName   STRPTR
+	SNA_MsgPort   struct MsgPort*
+	SNA_SigBit    BYTE
+	SNA_SigTask   struct Task*
+	SNA_Notify    ULONG
+	SNA_UserData  IPTR
+	SNA_Hook      struct Hook*
+	SNA_Priority  Byte
+
     RESULT
     the value is private only a test against ZERO is allowed and means Failure
  
@@ -43,6 +51,7 @@
  
     SEE ALSO
     EndScreenNotify() 
+
     INTERNALS
  
     HISTORY

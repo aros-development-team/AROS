@@ -27,7 +27,7 @@
          struct IntuitionBase *, IntuitionBase, 162, Intuition)
 
 /*  FUNCTION
-    Remove a Screen Notifications from Intuitionn.
+    Remove a Screen Notifications from Intuition.
  
     INPUTS
     notify - notification returned from StartScreenNotifyTagList() 
@@ -43,6 +43,7 @@
  
     SEE ALSO
     StartScreenNotifyTagList() 
+    
     INTERNALS
  
     HISTORY
