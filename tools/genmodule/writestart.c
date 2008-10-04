@@ -751,10 +751,10 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "            __freebase(newlib);\n"
 		    "            return NULL;\n"
 		    "        }\n"
-                    "    }\n"
 		    "\n"
-		    "    ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "    ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+                    "    }\n"
 		    "\n"
 		    "    return (LIBBASETYPEPTR)newlib;\n"
 		    "\n"
@@ -811,14 +811,13 @@ static void writecloselib(FILE *out, struct config *cfg)
         );
         if (cfg->options & OPTION_DUPPERID)
             fprintf(out,
-                    "    {\n"
-                    "        struct __GM_AVLNode *avlnode = &((struct __GM_BaseAVL *)lh)->avlnode;\n"
-                    "        avlnode->dupopencount--;\n"
-                    "        if (avlnode->dupopencount != 0)\n"
-                    "            return (BPTR)NULL;\n"
-                    "    }\n"
+                    "    struct __GM_AVLNode *avlnode = &((struct __GM_BaseAVL *)lh)->avlnode;\n"
+                    "    avlnode->dupopencount--;\n"
+                    "    if (avlnode->dupopencount != 0)\n"
+                    "        return (BPTR)NULL;\n"
             );
         fprintf(out,
+                "\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
                 "    __freebase(lh);\n"
 		"    lh = rootbase;\n"
