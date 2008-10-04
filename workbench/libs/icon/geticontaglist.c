@@ -24,7 +24,7 @@
 	struct Library *, IconBase, 30, Icon)
 
 /*  FUNCTION
-
+	Open icon from disk
     INPUTS
 
     TAGS

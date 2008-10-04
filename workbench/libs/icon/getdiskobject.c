@@ -20,10 +20,13 @@
 	struct Library *, IconBase, 13, Icon)
 
 /*  FUNCTION
-
+	Opens an icon from disk.
+	
     INPUTS
+	name - filename without ".info" or NULL for an empty diskobject.
 
     RESULT
+	Pointer to diskobject.
 
     NOTES
 

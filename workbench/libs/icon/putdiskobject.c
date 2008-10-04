@@ -20,11 +20,15 @@
 	struct Library *, IconBase, 14, Icon)
 
 /*  FUNCTION
-
+	Writes icon to disk.
+	
     INPUTS
-
+	name - filename, ".info" will be appended.
+	icon - diskobject to write
+	
     RESULT
-
+	TRUE on success, FALSE on error
+	
     NOTES
 
     EXAMPLE

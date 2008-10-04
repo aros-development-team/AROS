@@ -25,8 +25,10 @@
         struct Library *, IconBase, 33, Icon)
 
 /*  FUNCTION
-
+	Change a color register for selected icon state.
+	
     INPUTS
+	cr - colorregister to be changed.
 
     RESULT
 

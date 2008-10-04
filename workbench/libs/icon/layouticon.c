@@ -27,12 +27,14 @@
         struct Library *, IconBase, 32, Icon)
 
 /*  FUNCTION
-
+	Adapt a palette-mapped icon for display.
+	
     INPUTS
 
     RESULT
 
     NOTES
+	Not implemented.
 
     EXAMPLE
 

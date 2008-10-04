@@ -22,12 +22,19 @@
 	struct Library *, IconBase, 28, Icon)
 
 /*  FUNCTION
-
+	Query size of icon.
+	
     INPUTS
+	rp        - reference RastPort (for font)
+	icon      - icon to be queried
+	label     - label string
+	rectangle - resulting size
 
     RESULT
+	TRUE success
 
     NOTES
+	Only very limited implemented.
 
     EXAMPLE
 
