@@ -27,19 +27,27 @@
 	struct Library *, IconBase, 27, Icon)
 
 /*  FUNCTION
-
+	Draw an icon like an image.
+	
     INPUTS
-
+	rp       - rastport to draw into
+	icon     - the icon
+	label    - label string
+	leftEdge, 
+	topEdge  - drawing position 
+	state    - drawing state, see intuition/imageclass.h
+    
     RESULT
 
     NOTES
+	Only very limited implemented.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	AddFreeList()
+	intuition/imageclass.h
 
     INTERNALS
 

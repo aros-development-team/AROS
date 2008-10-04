@@ -24,12 +24,16 @@
         struct Library *, IconBase, 29, Icon)
 
 /*  FUNCTION
-
+	Create empty diskobject structure.
+	
     INPUTS
+	type - WBDISK, WBDRAWER, WBTOOL, WBPROJECT,
+	       WBGARBAGE, WBDEVICE or WBKICK
 
     RESULT
 
     NOTES
+	Not implemented.
 
     EXAMPLE
 

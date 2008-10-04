@@ -26,10 +26,13 @@
         struct Library *, IconBase, 26, Icon)
 
 /*  FUNCTION
-
+	Set and get icon and icon.library options.
+	
     INPUTS
+	icon - icon to be queried
 
     RESULT
+	Number of processed tags.
 
     NOTES
 
