@@ -13,6 +13,7 @@
 /.settings
 /.cproject
 /.project
+/.externalToolBuilders
 
 # /arch/.unmaintained/all-netbsd/
 /arch/.unmaintained/all-netbsd/mmakefile
@@ -209,6 +210,24 @@
 # /arch/all-mingw32/bootstrap/
 /arch/all-mingw32/bootstrap/mmakefile
 
+# /arch/all-mingw32/devs/filesys/emul_handler/
+/arch/all-mingw32/devs/filesys/emul_handler/mmakefile
+
+# /arch/all-mingw32/dos/
+/arch/all-mingw32/dos/mmakefile
+
+# /arch/all-mingw32/exec/
+/arch/all-mingw32/exec/mmakefile
+
+# /arch/all-mingw32/hostlib/
+/arch/all-mingw32/hostlib/mmakefile
+
+# /arch/all-mingw32/kernel/
+/arch/all-mingw32/kernel/mmakefile
+
+# /arch/all-mingw32/timer/
+/arch/all-mingw32/timer/mmakefile
+
 # /arch/all-sdl/hidd/
 /arch/all-sdl/hidd/mmakefile
 
@@ -278,6 +297,9 @@
 # /arch/common/ata.device/
 /arch/common/ata.device/mmakefile
 
+# /arch/common/boot/
+/arch/common/boot/mmakefile
+
 # /arch/common/boot/floppy/
 /arch/common/boot/floppy/mmakefile
 
@@ -343,6 +365,7 @@
 
 # /arch/common/boot/grub2/
 /arch/common/boot/grub2/mmakefile
+/arch/common/boot/grub2/autom4te.cache
 
 # /arch/common/boot/grub2/AROS/
 /arch/common/boot/grub2/AROS/mmakefile
@@ -420,11 +443,11 @@
 # /arch/i386-darwin/exec/
 /arch/i386-darwin/exec/mmakefile
 
-# /arch/i386-darwin/include/
-/arch/i386-darwin/include/mmakefile
-
 # /arch/i386-darwin/kernel/
 /arch/i386-darwin/kernel/mmakefile
+
+# /arch/i386-darwin/kernel/include/
+/arch/i386-darwin/kernel/include/mmakefile
 
 # /arch/i386-linux/bootloader/
 /arch/i386-linux/bootloader/mmakefile
@@ -586,6 +609,33 @@
 
 # /arch/ppc-all/prep/startup/
 /arch/ppc-all/prep/startup/mmakefile
+
+# /arch/ppc-chrp/efika/boot/
+/arch/ppc-chrp/efika/boot/mmakefile
+
+# /arch/ppc-chrp/efika/bootloader/
+/arch/ppc-chrp/efika/bootloader/mmakefile
+
+# /arch/ppc-chrp/efika/include/
+/arch/ppc-chrp/efika/include/mmakefile
+
+# /arch/ppc-chrp/efika/kernel/
+/arch/ppc-chrp/efika/kernel/mmakefile
+
+# /arch/ppc-chrp/exec/
+/arch/ppc-chrp/exec/mmakefile
+
+# /arch/ppc-chrp/graphics/
+/arch/ppc-chrp/graphics/mmakefile
+
+# /arch/ppc-chrp/intuition/
+/arch/ppc-chrp/intuition/mmakefile
+
+# /arch/ppc-chrp/pci/
+/arch/ppc-chrp/pci/mmakefile
+
+# /arch/ppc-chrp/workbench/
+/arch/ppc-chrp/workbench/mmakefile
 
 # /arch/ppc-linux/bootloader/
 /arch/ppc-linux/bootloader/mmakefile
@@ -1023,6 +1073,9 @@
 /rom/devs/filesys/mmakefile
 /rom/devs/filesys/makefile.bak
 
+# /rom/devs/filesys/afs/
+/rom/devs/filesys/afs/mmakefile
+
 # /rom/devs/filesys/console_handler/
 /rom/devs/filesys/console_handler/mmakefile
 
@@ -1205,6 +1258,9 @@
 
 # /tools/cpak/
 /tools/cpak/mmakefile
+
+# /tools/crosstools/
+/tools/crosstools/mmakefile
 
 # /tools/cxref/
 /tools/cxref/Makefile
@@ -1504,9 +1560,6 @@
 /workbench/devs/mmakefile
 /workbench/devs/makefile
 /workbench/devs/makefile.bak
-
-# /workbench/devs/afs/
-/workbench/devs/afs/mmakefile
 
 # /workbench/devs/clipboard/
 /workbench/devs/clipboard/mmakefile
@@ -1981,6 +2034,10 @@
 
 # /workbench/system/BHFormat/
 /workbench/system/BHFormat/mmakefile
+/workbench/system/BHFormat/strings.h
+
+# /workbench/system/BHFormat/catalogs/
+/workbench/system/BHFormat/catalogs/mmakefile
 
 # /workbench/system/Wanderer/
 /workbench/system/Wanderer/mmakefile
