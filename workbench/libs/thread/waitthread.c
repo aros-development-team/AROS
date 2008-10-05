@@ -115,10 +115,7 @@
         return TRUE;
     }
 
-    /* nobody else cares about this thread, so it can be cleaned up */
-    ObtainSemaphore(&ThreadBase->lock);
-    REMOVE(thread);
-    ReleaseSemaphore(&ThreadBase->lock);
+    /* nobody else cares about this thread */
 
     /* remove it from the thread list */
     ObtainSemaphore(&ThreadBase->lock);
