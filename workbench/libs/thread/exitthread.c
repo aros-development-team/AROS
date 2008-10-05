@@ -31,10 +31,10 @@
         None, this function never returns.
 
     NOTES
-	This function is similar to the exit() function of arosc library.
-	
+        This function is similar to the exit() function of arosc library.
+
     EXAMPLE
-	ExitThread(5);
+        ExitThread(5);
 
     BUGS
 
@@ -49,7 +49,7 @@
 
     struct _Thread *thread = _getthreadbytask(FindTask(NULL), ThreadBase);
     if (thread == NULL)
-	/* if called from a task that is not a thread */
+        /* if called from a task that is not a thread */
         return;
 
     thread->result = result;
