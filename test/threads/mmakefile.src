@@ -6,7 +6,8 @@ FILES := \
     cleanupatexit \
     mutex \
     signalcondition \
-    broadcastcondition
+    broadcastcondition \
+    exitthread
 
 EXEDIR := $(AROS_TESTS)/threads
 
