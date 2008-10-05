@@ -373,25 +373,76 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     /* Load and run the command */
     if((seglist = LoadSeg((CONST_STRPTR) afilename)))
     {
-        if(envp)
-        {
-            /* Everything went fine, execve won't return so we can free the old
-               environment variables */
-            ForeachNodeSafe(&tempenv, varNode, tempNode)
-            {
-        	FreeMem(varNode->lv_Value, varNode->lv_Len);
-        	Remove((struct Node *)varNode);
-        	FreeVec(varNode);
-            }
-        }
-        
         struct vfork_data *udata = FindTask(NULL)->tc_UserData;
 	if(udata && udata->magic == VFORK_MAGIC)
 	{
-	    /* This execve() was called from vfork()ed process. We are going
-	       to switch from stack borrowed from the parent process to the 
-	       original stack of this process. First we have to store all
-	       local variables in udata to let them survive the stack change */
+	    struct Process *child = udata->child;
+	    /* Free old child process environment variables */
+	    ForeachNodeSafe(&child->pr_LocalVars, varNode, tempNode)
+	    {
+	        FreeMem(varNode->lv_Value, varNode->lv_Len);
+		Remove((struct Node *)varNode);
+		FreeVec(varNode);
+	    }
+		
+	    if(envp)
+	    {
+		/* We set environment variables above in the parent process,
+		   now we have to move them to the child process */
+		NEWLIST(&child->pr_LocalVars);
+		ForeachNodeSafe(&me->pr_LocalVars, varNode, tempNode)
+		{
+		    Remove((struct Node*) varNode);
+		    AddTail((struct List*) &child->pr_LocalVars, (struct Node*) varNode);
+		}
+		/* Restore old parent process variables */
+		NEWLIST(&me->pr_LocalVars);
+		ForeachNodeSafe(&tempenv, varNode, tempNode)
+		{
+		    Remove((struct Node*) varNode);
+		    AddTail((struct List*) &me->pr_LocalVars, (struct Node*) varNode);
+		}
+	    } else {
+		/* envp is null, that means not initialized environ was used, so
+		   we have to duplicate parent process environment variables */
+
+		struct LocalVar *newVar;
+		/* code taken from createnewproc.c */
+		ForeachNode(&me->pr_LocalVars, varNode)
+		{
+		    LONG  copyLength = strlen(varNode->lv_Node.ln_Name) + 1 +
+			sizeof(struct LocalVar);
+		    
+		    newVar = (struct LocalVar *) AllocVec(copyLength, MEMF_PUBLIC | MEMF_CLEAR);
+		    if (newVar == NULL)
+		    {
+			saved_errno = ENOMEM;
+			goto error;
+		    }
+
+		    CopyMem(varNode, newVar, copyLength);
+		    newVar->lv_Node.ln_Name = (char *)newVar + sizeof(struct LocalVar);
+		    
+		    if (varNode->lv_Len)
+		    {
+			newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
+			    
+			if (newVar->lv_Value == NULL)
+			{
+			    /* Free variable node before shutting down */
+			    FreeVec(newVar);
+			    saved_errno = ENOMEM;
+			    goto error;
+			}
+			    
+		        CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
+		    }
+
+		    AddTail((struct List *)&child->pr_LocalVars, (struct Node *)newVar);
+		}
+	    }
+
+	    /* Store all local variables in udata to pass them to child */
 	    udata->exec_seglist = seglist;
 	    udata->exec_arguments = argptr;
 	    udata->exec_stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
@@ -415,6 +466,18 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	}
 	else
 	{
+	    if(envp)
+	    {
+	        /* Everything went fine, execve won't return so we can free the old
+	           environment variables */
+	        ForeachNodeSafe(&tempenv, varNode, tempNode)
+	        {
+	            FreeMem(varNode->lv_Value, varNode->lv_Len);
+	            Remove((struct Node *)varNode);
+	            FreeVec(varNode);
+	        }
+	    }
+	        
 	    returncode = exec_command(
 		seglist, 
 		afilename, 
