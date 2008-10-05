@@ -34,26 +34,19 @@ struct vfork_data
     jmp_buf vfork_jump;
     
     struct Task *parent;
-    APTR parent_SPLower;
-    APTR parent_SPUpper;
-    APTR parent_SPReg;
-    char ministack[8192] __attribute__ ((aligned));
     jmp_buf startup_jmp_buf;
 
     APTR old_UserData;
     ULONG child_id;
     BYTE parent_signal;
+    void *parent_acpd_fd_array;
+    int parent_acpd_numslots;
+    BPTR parent_curdir;
 
     struct Task *child;
-    APTR child_SPLower;
-    APTR child_SPUpper;
-    APTR child_SPReg;
-    APTR child_mempool;
     struct aros_startup child_startup;
     struct Library *aroscbase;
     int child_executed;
-    int child_acpd_numslots;
-    void *child_acpd_fd_array;
     int child_errno;
     BYTE child_signal;
 

@@ -318,6 +318,12 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    saved_errno = EACCES;
 	    goto error;
 	}
+	if(st.st_mode & S_IFDIR)
+	{
+	    /* it's a directory */
+	    saved_errno = EACCES;
+	    goto error;	
+	}
     }
     else
     {
@@ -393,44 +399,19 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    
 	    /* Set this so we know that execve was called */
 	    udata->child_executed = 1;
-
-	    D(bug("Restoring child stack to %p < %p < %p\n", 
-		udata->child_SPLower, 
-		udata->child_SPReg, 
-		udata->child_SPUpper)
-	    );
-
-            /* Restoring child stack */
-	    Forbid();
-	    udata->child->tc_SPLower = udata->child_SPLower;
-	    udata->child->tc_SPUpper = udata->child_SPUpper;
-	    /* Since we are switching to child's stack and in return jmp_buf we
-	       have parent's stack pointer saved, we have to set stack value in
-	       jmp_buf to child's stack pointer, otherwise it will be outside
-	       tc_SPLower-tc_SPUpper range after longjmp and exception will 
-	       occur. */
-	    /* Create space on child stack for the return address written during longjmp. Otherwise
-	       data on the stack would be overwritten. */
-	    udata->child_startup.as_startup_jmp_buf[0].regs[STACK_INDEX] = (unsigned long) udata->child_SPReg - sizeof(APTR);
-	    AROS_GET_SP = udata->child_SPReg;
-	    Permit();
 	    
-	    D(bug("Calling daddy\n"));
-	    /* Now call parent process, so it will resume his work */
-	    Signal(GETUDATA->parent, 1 << GETUDATA->parent_signal);
+	    /* Set the child process current directory */
+	    if(((struct Process*) udata->child)->pr_CurrentDir)
+	        UnLock(((struct Process*) udata->child)->pr_CurrentDir);
 
-	    GETUDATA->exec_returncode = exec_command(
-		GETUDATA->exec_seglist, 
-		GETUDATA->exec_taskname, 
-		GETUDATA->exec_arguments, 
-		GETUDATA->exec_stacksize
-	    );
+	    ((struct Process*) udata->child)->pr_CurrentDir = DupLock(((struct Process*) FindTask(NULL))->pr_CurrentDir);
+
+	    D(bug("Calling child\n"));
+	    /* Now call child process, so it will execute this command */
+	    Signal(udata->child, 1 << udata->child_signal);	    
 	    
-	    free(GETUDATA->exec_arguments);
-	    free(GETUDATA->exec_taskname);
-
 	    D(bug("exiting from forked execve()\n"));
-            _exit(GETUDATA->exec_returncode);
+            _exit(0);
 	}
 	else
 	{
@@ -445,7 +426,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    free(afilename);
 
 	    D(bug("exiting from non-forked execve()\n"));
-	    _exit(returncode);		
+	    _exit(returncode);
 	}
     }
     else
