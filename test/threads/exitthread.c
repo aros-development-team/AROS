@@ -1,4 +1,3 @@
-#include <libraries/thread.h>
 #include <proto/thread.h>
 #include <proto/dos.h>
 #include <stdio.h>
@@ -13,7 +12,7 @@ void *thread_sub(void *data) {
     printf("[%d] exiting sub\n", id);
 
     ExitThread((void*) id);
-	
+
     return NULL;
 }
 
@@ -38,7 +37,7 @@ void *thread_main(void *data) {
         WaitThread(id_sub[i], (void **) &ret);
         printf("sub thread %d return %d\n", id_sub[i], ret);
     }
-    
+
     ExitThread((void*) id);
 
     return NULL;
@@ -58,6 +57,6 @@ int main (int argc, char **argv) {
         WaitThread(id[i], (void **) &ret);
         printf("thread %d return %d\n", id[i], ret);
     }
-    
+
     return 0;
 }
