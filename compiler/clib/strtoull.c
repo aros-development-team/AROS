@@ -18,8 +18,6 @@
 #	define ULLONG_MAX	0xffffffffffffffffULL
 #endif
 
-/* Function disabled because of the long long support fns not in the libs */
-#if 0
 /*****************************************************************************
 
     NAME */
@@ -188,11 +186,5 @@
 
     return val;
 } /* strtoull */
-#else
-unsigned long long
-strtoull(const char * restrict str, char ** restrict endptr, int base)
-{
-    abort();
-}
-#endif
+
 #endif /* AROS_HAVE_LONG_LONG */
