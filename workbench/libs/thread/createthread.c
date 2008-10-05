@@ -136,7 +136,6 @@ static void entry_trampoline(void) {
     struct ThreadBase *ThreadBase = td->ThreadBase;
     struct Library *aroscbase;
     struct _Thread *thread;
-    void *result;
 
     /* wait for the parent to let us go */
     Wait(SIGBREAKF_CTRL_C);
@@ -178,10 +177,12 @@ static void entry_trampoline(void) {
     /* inform the parent that we're ready to go */
     Signal(td->parent, SIGBREAKF_CTRL_C);
 
-    /* call the actual thread entry */
-    result = AROS_UFC1(void *, td->entry,
-                       AROS_UFCA(void *, td->data, A0));
-
+    if (setjmp(thread->jmp) == 0) {
+        /* call the actual thread entry */
+        thread->result = AROS_UFC1(void *, td->entry,
+                                   AROS_UFCA(void *, td->data, A0));
+    }
+    
     CloseLibrary(aroscbase);
 
     /* its over, update its state */
@@ -201,9 +202,6 @@ static void entry_trampoline(void) {
         
         return;
     }
-
-    /* save the result */
-    thread->result = result;
 
     /* mark it as done */
     thread->task = NULL;
