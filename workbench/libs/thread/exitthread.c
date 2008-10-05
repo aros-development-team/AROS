@@ -28,18 +28,18 @@
                     pass NULL here if you don't care about the return value.
 
     RESULT
-        This function never returns.
+        None, this function never returns.
 
     NOTES
-
+	This function is similar to the exit() function of arosc library.
+	
     EXAMPLE
-	void *result = (void*) 5;
-	ExitThread(result);
+	ExitThread(5);
 
     BUGS
 
     SEE ALSO
-        WaitThread(), WaitAllThreads()
+        WaitThread(), WaitAllThreads(), exit()
 
     INTERNALS
 
