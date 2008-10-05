@@ -21,6 +21,8 @@
 #include <libraries/thread.h>
 #include <stdint.h>
 
+#include <setjmp.h>
+
 /* a single thread */
 struct _Thread {
     struct Node             node;       /* node for ThreadBase->threads */
@@ -35,6 +37,8 @@ struct _Thread {
 
     void                    *result;    /* storage for the thread exit value
                                          * for thread completion waiters */
+
+    jmp_buf                 jmp;	/* jump point for thread exit */
 
     struct _Condition       *exit;      /* condition for threads waiting for
                                          * this thread to finish */

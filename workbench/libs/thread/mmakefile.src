@@ -17,7 +17,8 @@ FUNCS := \
         destroycondition \
         waitcondition \
         signalcondition \
-        broadcastcondition
+        broadcastcondition \
+	exitthread
 
 #MM workbench-libs-thread-includes : \
 #MM    kernel-exec-includes \
