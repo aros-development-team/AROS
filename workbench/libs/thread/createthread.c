@@ -150,7 +150,7 @@ static void entry_trampoline(void) {
     }
 
     /* give each thread its own C library, so it can reliably printf() etc */
-    if ((aroscbase = OpenLibrary("arosc.library", 0)) == NULL) {
+    if ((aroscbase = OpenLibrary((CONST_STRPTR) "arosc.library", 0)) == NULL) {
         FreeVec(thread);
         Signal(td->parent, SIGBREAKF_CTRL_C);
         return;
