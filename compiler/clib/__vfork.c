@@ -31,20 +31,22 @@
 BPTR DupFHFromfd(int fd, ULONG mode);
 void vfork_longjmp (jmp_buf env, int val);
 int __init_stdio(void);
+LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize);
 
 LONG launcher()
 {
     D(bug("Entered child launcher\n"));
 
     struct Task *this = FindTask(NULL);
-    struct vfork_data *udata;
-    udata = this->tc_UserData;
-    struct arosc_privdata *ppriv = GetIntETask(udata->parent)->iet_acpd;
-    struct arosc_privdata *cpriv;;
-    int i;
+    struct vfork_data *udata = this->tc_UserData;
+    BYTE child_signal;
+    LONG ret = 0;
+
+#warning this is memory leak, must be fixed somehow!
+    GetIntETask(this)->iet_startup = AllocMem(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
 
     /* Allocate signal for parent->child communication */
-    udata->child_signal = AllocSignal(-1);
+    child_signal = udata->child_signal = AllocSignal(-1);
     D(bug("Allocated child signal: %d\n", udata->child_signal));
     if(udata->child_signal == -1)
     {
@@ -54,180 +56,60 @@ LONG launcher()
 	return -1;
     }
 
-    udata->aroscbase = OpenLibrary("arosc.library", 0);
-    if (udata->aroscbase == NULL)
-    {
-	/* Most likely there's not enough memory */
-	udata->child_errno = ENOMEM;
-	FreeSignal(udata->child_signal);
-	Signal(udata->parent, 1 << udata->parent_signal);
-	return -1;
-    }
-
-    cpriv = GetIntETask(this)->iet_acpd;
-
-    /* store child's mempool */
-    udata->child_mempool = cpriv->acpd_startup_mempool;
-    /* Switch to parent's mempool to allow freeing of fdesc structures 
-       allocated by parent during file closing. We can't copy them because 
-       they contain reference counters for open files. */
-    cpriv->acpd_startup_mempool = ppriv->acpd_startup_mempool;
-
-    /* store child's fd_array */
-    udata->child_acpd_numslots = cpriv->acpd_numslots;
-    udata->child_acpd_fd_array = cpriv->acpd_fd_array;
-
-    /* Child inherits all file descriptors of the parent, allocate enough
-       memory and copy them */
-    cpriv->acpd_fd_array = malloc((ppriv->acpd_numslots)*sizeof(fdesc *));
-    if(cpriv->acpd_fd_array == NULL)
-    {
-	FreeSignal(udata->child_signal);
-	/* Restore overwritten mempool and fd_array before closing library */
-	cpriv->acpd_startup_mempool = udata->child_mempool;
-	cpriv->acpd_fd_array = udata->child_acpd_fd_array;
-	CloseLibrary(udata->aroscbase);
-	udata->child_errno = ENOMEM;
-	Signal(udata->parent, 1 << udata->parent_signal);
-	return -1;
-    }
-    
     /* Setup complete, signal parent */
+    D(bug("Signaling parent that we finished setup\n"));
     Signal(udata->parent, 1 << udata->parent_signal);
 
-    cpriv->acpd_numslots = ppriv->acpd_numslots;
-
-    CopyMem(
-	ppriv->acpd_fd_array, 
-	cpriv->acpd_fd_array, 
-	(ppriv->acpd_numslots)*sizeof(fdesc *)
-    );
-
-    /* Reinit stdio files to make them use parent's mempool */
-    __init_stdio();
-
-    /* "Open" all copied descriptors */
-    for(i = 0; i < ppriv->acpd_numslots; i++)
-    {
-	if(ppriv->acpd_fd_array[i])
-	{
-	    ppriv->acpd_fd_array[i]->opencount++;
-	}
-    }
-
-    /* Store child's stack to restore it later */
-    udata->child = this;
-    udata->child_SPLower = this->tc_SPLower;
-    udata->child_SPUpper = this->tc_SPUpper;
-    udata->child_SPReg = AROS_GET_SP;
-    this->tc_UserData = udata;
-
-    GetIntETask(this)->iet_startup = &udata->child_startup;
-
-    cpriv->acpd_parent_does_upath = ppriv->acpd_parent_does_upath;
-    cpriv->acpd_doupath = ppriv->acpd_doupath;
-  
-    D(bug("Waiting for parent to set up his temporary stack\n"));
+    D(bug("Child waiting for execve or exit\n"));
     Wait(1 << udata->child_signal);
-    D(bug("Parent ready, stealing his stack\n"));
 
-    /* Steal parent's stack */
-    Forbid();
-    this->tc_SPLower = udata->parent_SPLower;
-    this->tc_SPUpper = udata->parent_SPUpper;
-    /* We have to switch stack before setjmp to assure correct %esp value after
-       longjmp during child exit */
-    AROS_GET_SP = udata->parent_SPReg;
-    Permit();
-    
-    /* Now we can't use local variables anymore */
-    
-    D(bug("Setting jmp_buf at %p\n", &__aros_startup_jmp_buf));
-    if(setjmp(__aros_startup_jmp_buf))
+    if(udata->child_executed)
     {
-	D(bug("Child exited\n"));
+	D(bug("child executed\n"));
+	BPTR seglist = udata->exec_seglist;
+	char *taskname = strdup(udata->exec_taskname);
+	char *arguments = strdup(udata->exec_arguments);
+	ULONG stacksize = udata->exec_stacksize;
 
-	D(bug("Restoring stack to %p < %p < %p\n", GETUDATA->child_SPLower, GETUDATA->child_SPReg, GETUDATA->child_SPUpper));
-	/* Restoring child stack */
-	Forbid();
-	GETUDATA->child->tc_SPLower = GETUDATA->child_SPLower;
-	GETUDATA->child->tc_SPUpper = GETUDATA->child_SPUpper;
-	AROS_GET_SP = GETUDATA->child_SPReg;
-	Permit();
-
-	fflush(NULL);
-
-	/* Close all opened files in child */
-	for(i = 0; i < ((struct arosc_privdata *) GetIntETask(GETUDATA->child)->iet_acpd)->acpd_numslots; i++)
-	{
-	    if(((struct arosc_privdata *) GetIntETask(GETUDATA->child)->iet_acpd)->acpd_fd_array[i])
-	    {
-		close(i);
-	    }
-	}
-
-	/* Switch back to child's fd_array and mempool */
-	((struct arosc_privdata *) GetIntETask(GETUDATA->child)->iet_acpd)->acpd_numslots = GETUDATA->child_acpd_numslots;
-	free(((struct arosc_privdata *) GetIntETask(GETUDATA->child)->iet_acpd)->acpd_fd_array);
-	((struct arosc_privdata *) GetIntETask(GETUDATA->child)->iet_acpd)->acpd_fd_array =  GETUDATA->child_acpd_fd_array;
-	((struct arosc_privdata *) GetIntETask(GETUDATA->child)->iet_acpd)->acpd_startup_mempool = GETUDATA->child_mempool;
-
-	D(bug("Closing aroscbase\n"));
-	CloseLibrary(GETUDATA->aroscbase);
-
-	/* If child called execve and just exited, it has already signaled 
-	   parent, so skip that step */
-	if(!GETUDATA->child_executed)
-	{
-	    D(bug("Calling daddy\n"));
-	    Signal(GETUDATA->parent, 1 << GETUDATA->parent_signal);
-	    FreeSignal(GETUDATA->child_signal);
-	}
-	else
-	{
-	    D(bug("Waiting for signal from the parent\n"));
-	    Wait(1 << GETUDATA->child_signal);
-	    FreeSignal(GETUDATA->child_signal);
-	    /* Parent won't need udata anymore, we can safely free it */
-	    FreeMem(GETUDATA, sizeof(struct vfork_data));   
-	}
-	/* Restore parent startup buffer */
-	CopyMem(&GETUDATA->startup_jmp_buf, &__aros_startup_jmp_buf, sizeof(jmp_buf));
-
-	D(bug("Returning\n"));
-	return 0;
+	D(bug("informing parent that we won't use udata anymore\n"));
+	/* Inform parent that we won't use udata anymore */
+	Signal(udata->parent, 1 << udata->parent_signal);
+	
+	D(bug("executing command\n"));
+	/* Run executed command */
+	ret = exec_command(
+	    seglist, 
+	    taskname, 
+	    arguments, 
+	    stacksize
+	);
+	
+	D(bug("freeing taskname and arguments\n"));
+	free(taskname);
+	free(arguments);
+	__aros_startup_error = ret;
+	D(bug("exec_command returned %d\n", ret));
     }
-
-    D(bug("Jumping to jmp_buf %p\n", &GETUDATA->vfork_jump));
-    vfork_longjmp(GETUDATA->vfork_jump, 0);
-    return 0; /* not reached */
+    D(bug("freeing child_signal\n"));
+    FreeSignal(child_signal);
+    return 0;
 }
 
 void FreeAndJump(struct vfork_data *udata)
 {
-    jmp_buf jump;
+    jmp_buf env;
     ULONG child_id = udata->child_id;
-    CopyMem(&udata->vfork_jump, &jump, sizeof(jmp_buf));
-
-    if(!udata->child_executed)
-    {
-	D(bug("Child not executed, freeing udata\n"));
-	/* If child process didn't call execve() then it's no longer alive and we
-	   can safely free udata. Otherwise it's freed during child exit */
-	FreeMem(udata, sizeof(struct vfork_data));
-    }
-    else
-    {
-	D(bug("Child executed, signaling\n"));
-	/* Otherwise inform child that we don't need udata anymore */
-	Signal(udata->child, 1 << udata->child_signal);
-    }
-    D(bug("ip: %p, stack: %p\n", jump[0].retaddr, jump[0].regs[_JMPLEN - 1]));
-    longjmp(jump, child_id);
+    bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
+    D(bug("Restoring old parent's UserData: %p\n", udata->old_UserData));
+    udata->parent->tc_UserData = udata->old_UserData;
+    D(bug("freeing udata\n"));
+    FreeMem(udata, sizeof(struct vfork_data));
+    longjmp(env, child_id);
 }
 
 pid_t __vfork(jmp_buf env)
 {
+    int i;
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = AllocMem(sizeof(struct vfork_data), MEMF_ANY | MEMF_CLEAR);
     if(udata == NULL)
@@ -237,6 +119,7 @@ pid_t __vfork(jmp_buf env)
     }
     D(bug("allocated udata %p\n", udata));
     udata->magic = VFORK_MAGIC;
+    bcopy(env, &udata->vfork_jump, sizeof(jmp_buf));
 
     struct TagItem tags[] =
     {
@@ -255,7 +138,7 @@ pid_t __vfork(jmp_buf env)
     };
 
     BPTR in, out, err;
-    in = Input();
+    in  = Input();
     out = Output();
     err = Error();
     D(bug("in = %p - out = %p - err = %p\n", BADDR(in), BADDR(out), BADDR(err)));
@@ -273,22 +156,57 @@ pid_t __vfork(jmp_buf env)
     D(bug("Saved old parent's UserData: %p\n", udata->old_UserData));
     udata->parent->tc_UserData = udata;
     
-    /* Store parent's stack to restore it later */
-    udata->parent_SPLower = udata->parent->tc_SPLower;
-    udata->parent_SPUpper = udata->parent->tc_SPUpper;
-    udata->parent_SPReg = AROS_GET_SP;
-    bcopy(env, &udata->vfork_jump, sizeof(jmp_buf));
-    D(bug("Set jmp_buf %p\n", &udata->vfork_jump));
-
+    D(bug("backuping startup buffer\n"));
     /* Backup startup buffer */
     CopyMem(&__aros_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
-   
+
+    D(bug("backuping current directory\n"));
+    udata->parent_curdir = CurrentDir(NULL);
+
+    CurrentDir(DupLock(udata->parent_curdir));
+    
+    D(bug("backuping descriptor table\n"));
+    /* Backup parent fd descriptor table */
+    struct arosc_privdata *ppriv = GetIntETask(this)->iet_acpd;
+
+    udata->parent_acpd_numslots = ppriv->acpd_numslots;
+    udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
+
+    fdesc **acpd_fd_array = malloc((ppriv->acpd_numslots)*sizeof(fdesc *));
+    if(acpd_fd_array == NULL)
+    {
+	/* Couldn't allocate fd array, return -1 */
+	FreeMem(udata, sizeof(struct vfork_data));
+	errno = ENOMEM;
+	longjmp(udata->vfork_jump, -1);    	    
+    }
+    
+    CopyMem(
+	ppriv->acpd_fd_array, 
+	acpd_fd_array, 
+	(ppriv->acpd_numslots)*sizeof(fdesc *)
+    );
+
+    D(bug("opening descriptors\n"));
+    /* "Open" all copied descriptors */
+    for(i = 0; i < ppriv->acpd_numslots; i++)
+    {
+	if(acpd_fd_array[i])
+	{
+	    acpd_fd_array[i]->opencount++;
+	}
+    }
+
+    ppriv->acpd_fd_array = acpd_fd_array;
+    
+    D(bug("Allocating parent signal\n"));
     /* Allocate signal for child->parent communication */
     udata->parent_signal = AllocSignal(-1);
     if(udata->parent_signal == -1)
     {
 	/* Couldn't allocate the signal, return -1 */
 	FreeMem(udata, sizeof(struct vfork_data));
+	errno = ENOMEM;
 	longjmp(udata->vfork_jump, -1);    
     }
     
@@ -304,59 +222,73 @@ pid_t __vfork(jmp_buf env)
 	errno = ENOMEM; /* Most likely */
 	longjmp(env, -1);
     }
-    D(bug("Child created %p\n", udata->child));
+    D(bug("Child created %p, waiting to finish setup\n", udata->child));
 
-    /* Wait until child finishes setup */
+    /* Wait for child to finish setup */
     Wait(1 << udata->parent_signal);
-
+    
     if(udata->child_errno)
     {
 	/* An error occured during child setup */
 	errno = udata->child_errno;
-	FreeSignal(udata->parent_signal);
-	FreeMem(udata, sizeof(struct vfork_data));
-	longjmp(env, -1);    
+	longjmp(env, -1);
     }
     
-    /* Switch temporarily to mini stack, child process will use the old 
-       stack soon */
-    Forbid();
-    udata->parent->tc_SPLower = (APTR) udata->ministack;
-    udata->parent->tc_SPUpper = (APTR) ((char*) udata->ministack + sizeof(udata->ministack));
-    /* Compiler needs some space to store function arguments.
-       We can't get the specific amount, but this should be
-       enough... */
-    AROS_GET_SP = udata->parent->tc_SPUpper - AROS_ALIGN(sizeof(udata->ministack)/2);
-    Permit();
-    
-    /* Now we can't use local variables allocated on the parent's stack */
-    D(bug("Temporary stack set up, child can steal ours\n"));
-    Signal(GETUDATA->child, 1 << GETUDATA->child_signal);
-    D(bug("Child signaled\n"));
+    D(bug("Setting jmp_buf at %p in %p\n", __aros_startup, &__aros_startup_jmp_buf));
+    if(setjmp(__aros_startup_jmp_buf))
+    {
+	D(bug("child exited\n or executed\n"));
 
-    D(bug("Waiting for child to die or execve\n"));
-    Wait(1 << GETUDATA->parent_signal);
-    D(bug("Child died or execved, returning\n"));
+	if(!GETUDATA->child_executed)
+	{
+	    D(bug("not executed\n"));
+	    ((struct aros_startup*) GetIntETask(GETUDATA->child)->iet_startup)->as_startup_error = __aros_startup_error;
+	    D(bug("Signaling child\n"));
+	    Signal(GETUDATA->child, 1 << GETUDATA->child_signal);
+	}
+	else
+	{
+	    D(bug("Waiting for child to finish using udata\n"));
+	    /* Wait for child to finish using GETUDATA */
+	    Wait(1 << GETUDATA->parent_signal);
+	}
 
-    D(bug("Restoring stack to %p < %p < %p\n", GETUDATA->parent_SPLower, GETUDATA->parent_SPReg, GETUDATA->parent_SPUpper));
-    /* Getting back our stack */
-    Forbid();
-    GETUDATA->parent->tc_SPLower = GETUDATA->parent_SPLower;
-    GETUDATA->parent->tc_SPUpper = GETUDATA->parent_SPUpper;
-    AROS_GET_SP = GETUDATA->parent_SPReg;
-    Permit();
+	D(bug("fflushing\n"));
+	fflush(NULL);
 
-    /* Stack is restored, we can use local variables again */
+	D(bug("Restoring current directory\n"));
+	UnLock(CurrentDir(GETUDATA->parent_curdir));
+	
+	D(bug("Closing opened files\n"));
+	/* Close all opened files in "child" */
+	int i;
+	for(i = 0; i < ((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_numslots; i++)
+	{
+	    if(((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array[i])
+	    {
+		close(i);
+	    }
+	}
 
-    /* Restore udata variable in case child clobbered it */
-    udata = GETUDATA;
+	D(bug("restoring old fd_array\n"));
+	/* Restore parent's old fd_array */
+	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_numslots = GETUDATA->parent_acpd_numslots;
+	free(((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array);
+	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array =  GETUDATA->parent_acpd_fd_array;
 
-    /* Restore parent's UserData */
-    udata->parent->tc_UserData = udata->old_UserData;
-    D(bug("Restored old parent's UserData: %p\n", udata->old_UserData));
+	D(bug("restoring startup buffer\n"));
+	/* Restore parent startup buffer */
+	CopyMem(&GETUDATA->startup_jmp_buf, &__aros_startup_jmp_buf, sizeof(jmp_buf));
 
-    FreeSignal(udata->parent_signal);
+	D(bug("freeing parent signal\n"));
+	FreeSignal(GETUDATA->parent_signal);
+
+	FreeAndJump(GETUDATA);
+	return (pid_t) 1; /* not reached */
+    }
+
+    D(bug("Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
-    FreeAndJump(udata);
-    return (pid_t) udata->child_id; // not reached
+    vfork_longjmp(udata->vfork_jump, 0);
+    return (pid_t) 0; /* not reached */
 }
