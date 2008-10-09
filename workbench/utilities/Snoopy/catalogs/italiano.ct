@@ -1,0 +1,137 @@
+;
+MSG_TITLE (//)
+Snoopy
+;
+MSG_COPYRIGHT (//)
+© 2006-2008, The AROS Development Team
+;
+MSG_AUTHOR (//)
+The AROS Development Team
+;
+MSG_PORTNAME (//)
+SNOOPY
+;
+MSG_DESCRIPTION (//)
+Semplice monitor di sistema
+;
+MSG_SETTINGS (//)
+Impostazioni
+;
+MSG_SHOW_FAILS (//)
+Mostra solo errori
+;
+MSG_CLI_NUMBER (//)
+Mostra numero CLI
+;
+MSG_FULL_PATH (//)
+Mostra percorsi completi
+;
+MSG_DEVICE (//)
+Usa i nomi dei dispositivi
+;
+MSG_IGNORE_WB (//)
+Ignora Workbench/Shell
+;
+MSG_BREAKPOINT (//)
+Inserisci punto di blocco
+;
+MSG_MATCH (//)
+Ricerca
+;
+MSG_SYSTEM_FUNC (//)
+Funzioni di sistema
+;
+MSG_DOS_FUNC (//)
+Funzioni AmigaDOS
+;
+MSG_SAVE (//)
+Salva
+;
+MSG_OPEN (//)
+Apri
+;
+MSG_USE (//)
+Usa
+;
+MSG_UNDO (//)
+Ripristina
+;
+MSG_RESET (//)
+Azzera
+;
+MSG_CANCEL (//)
+Annulla
+;
+MSG_OUTPUT_FIELD (//)
+Larghezza risultati
+;
+MSG_NAME (//)
+Nome
+;
+MSG_ACTION (//)
+Azione
+;
+MSG_TARGET (//)
+Obiettivo
+;
+MSG_OPTION (//)
+Opzione
+;
+MSG_OK (//)
+OK
+;
+MSG_FAIL (//)
+Fallito
+;
+MSG_ERROR_SAVE (//)
+Errore durante il salvataggio di %s
+;
+MSG_ERROR_LOAD (//)
+Errore durante il caricamento di %s
+;
+MSG_RESET_PATCHES (//)
+Rimuovi tutto|Annulla
+;
+MSG_ASK_RESET (//)
+Vuoi davvero riportare tutte le funzioni del sistema allo stato originale?
+;
+MSG_REMOVE_SNOOP (//)
+Riporta|Mantieni
+;
+MSG_ASK_REMOVE (//)
+Vuoi davvero chiudere il processo di Snoopy?\n\
+Può rendere il sistema instabile se un altro processo modifica le patch di Snoopy.
+;
+MSG_GLOBAL (//)
+Globale
+;
+MSG_LOCAL (//)
+Locale
+;
+MSG_ALIAS (//)
+Alias
+;
+MSG_UNKNOWN (//)
+Unknown
+;
+MSG_ANY (//)
+Qualsiasi
+;
+MSG_READ (//)
+Leggi
+;
+MSG_WRITE (//)
+Scrivi
+;
+MSG_READ_ASK (//)
+Leggi???
+;
+MSG_MODIFY (//)
+Modifica
+;
+MSG_VERSION (//)
+Versione %ld
+;
+MSG_SIZE (//)
+Dimensioni %d
+;
