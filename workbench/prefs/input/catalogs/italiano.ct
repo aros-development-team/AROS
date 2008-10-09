@@ -1,3 +1,7 @@
+## version $VER: inputprefs.catalog 1.1 (25.9.2007)
+## language italiano
+## codeset 0
+;
 ;
 MSG_ERROR_CANT_CREATE_APPLICATION (//)
 Impossibile creare oggetto.
