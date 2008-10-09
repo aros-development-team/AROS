@@ -1,0 +1,34 @@
+;
+MSG_TITLE (//)
+Informazioni disco
+;
+MSG_ERROR_HEADER (//)
+ERRORE
+;
+MSG_ERROR_OK (//)
+_OK
+;
+MSG_ERROR_LOCALE (//)
+Impossibile inizializzare lingua.
+;
+MSG_ERROR_CLASSES (//)
+Impossibile inizializzare classi personalizzate.
+;
+MSG_DESCRIPTION (//)
+Informazioni sull'icona
+;
+MSG_PERCENTFULL (//)
+%ld %% Pieno
+;
+MSG_FORMAT (//)
+Formatta
+;
+MSG_UNKNOWN (//)
+Sconosciuto
+;
+MSG_AUTHOR (//)
+Olivier Adam
+;
+MSG_COPYRIGHT (//)
+©2006 AROS Dev Team
+;
