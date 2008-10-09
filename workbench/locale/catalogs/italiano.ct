@@ -1,0 +1,95 @@
+;
+;	$VER: Security.cd 1.0 (28.02.94)
+;
+; misc. strings
+;
+MSG_OK(//)
+OK
+;
+MSG_RESUME(//)
+Riprendi
+;
+MSG_WARNING_GUI(//)
+Avviso sicurezza
+;
+MSG_LOGINREQ_GUI(//)
+Richiesta di login
+;
+MSG_LOGINPROMPT_GUI(//)
+\33cBenvenuto in AROS Research OS\nAROS Versione: %s\n\nPer cortesia, inserisci i tuoi dati\nper accedere ad %s.
+;
+MSG_LOGINREQ_CON(//)
+\033[0;0H\033[J\n\n\n     AROS %s at %s\n
+;
+MSG_LOGINPROMPT_CON(//)
+\n\nLogin    :
+;
+MSG_PASSWDPROMPT_GUI(//)
+Inserisci la password
+;
+MSG_PASSWDPROMPT_CON(//)
+Password :
+;
+MSG_LOGINFAIL_GUI(//)
+Errore di login
+;
+MSG_LOGINFAIL_CON(//)
+\n    Errore di login !!\n
+;
+MSG_LASTLOGIN(//)
+Ingresso avvenuto %s, %s alle %s.\n\nUltimo ingresso il %s, %s alle %s.
+;
+MSG_FIRSTLOGIN(//)
+Ingresso il %s, %s alle %s.\n\nMai entrato prima.
+;
+; warning strings
+;
+MSG_NOMUFS(100//)
+Devi avere almeno una partizione con filesystem AFFS
+;
+MSG_NOCONFIGFILE(//)
+Impossibile leggere il file di configurazione\nUtilizzate le impostazioni di default
+;
+MSG_BADKEYFILE(//)
+Violazione di sicurezza: Trovato un file di accesso inutilizzabile.
+;
+MSG_BADENTRY_PASSWD(//)
+Dati corrotti nella riga %ld del file delle password\nQuesta riga verrà ignorata.
+;
+MSG_BADENTRY_GROUP(//)
+Dati corrotti nella riga %ld del file dei gruppi\nQuesta riga verrà ignorata.
+;
+MSG_BADVALUE_CONFIG(//)
+Valore/i errato/i alla riga %ld del file di configurazione\n\
+Quanto non valido sarà ignorato.
+;
+MSG_BADOPTION_CONFIG(//)
+Opzione non valida alla riga %ld del file di configurazione\nQuesta riga sarà ignorata.
+;
+MSG_TOOMANYSECGROUPS(//)
+Troppi gruppi secondari per l'utente con uid %ld\n\
+La riga %ld del gruppo sarà ignorata.
+;
+; logfile strings
+;
+MSG_LOG_STARTUP(200//)
+Avvio
+;
+MSG_LOG_LOGIN(//)
+Login da %ld a \'%s\'
+;
+MSG_LOG_LOGINFAIL(//)
+Login da %ld a \'%s\' fallito
+;
+MSG_LOG_PASSWD(//)
+Passwd per %ld
+;
+MSG_LOG_PASSWDFAIL(//)
+Passwd per %ld errata
+;
+MSG_LOG_CHECKPASSWD(//)
+Controllo per %ld
+;
+MSG_LOG_CHECKPASSWDFAIL(//)
+Controllo per %ld fallito
+;
