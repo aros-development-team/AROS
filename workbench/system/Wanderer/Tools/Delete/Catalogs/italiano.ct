@@ -1,0 +1,37 @@
+; 
+MSG_TITLE (//)
+Elimina
+;
+MSG_DELETE_REQUEST (//)
+Elimino?
+;
+MSG_DELETE_CHOICE (//)
+Elimina|Annulla
+;
+MSG_REQUEST (//)
+Sei sicuro di voler eliminare '%s'?
+;
+MSG_ERROR (//)
+Errore
+;
+MSG_OK (//)
+OK
+;
+MSG_COULDNT_DELETE (//)
+Impossibile eliminare il file.
+;
+MSG_COULDNT_ALLOCATE (//)
+Impossibile allocare la memoria.
+;
+MSG_COULDNT_LOCK (//)
+Impossibile marcare il file per la cancellazione.
+;
+MSG_INFO (//)
+Informazioni
+;
+MSG_WRONG_ARGS (//)
+Errore: numero di argomenti sbagliato.
+;
+MSG_WB_ONLY (//)
+Errore: l'operazione va avviata da Wanderer.\n
+;
