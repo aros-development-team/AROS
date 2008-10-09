@@ -1,0 +1,133 @@
+;
+MSG_TITLE (//)
+Informazioni
+;
+MSG_DESCRIPTION (//)
+Informazioni sull'icona
+;
+MSG_COPYRIGHT (//)
+Icon informations\n©AROS Dev Team
+;
+MSG_ICON (//)
+Icona
+;
+MSG_NAME (//)
+Nome
+;
+MSG_COMMENT (//)
+Commento
+;
+MSG_STACK (//)
+Stack
+;
+MSG_DEFTOOL (//)
+Strumento
+;
+MSG_ICONTYPE (//)
+Tipologia
+;
+MSG_DISK (//)
+Disco
+;
+MSG_DRAWER (//)
+Cassetto
+;
+MSG_TOOL (//)
+Strumento
+;
+MSG_PROJECT (//)
+Progetto
+;
+MSG_GARBAGE (//)
+Immondizia
+;
+MSG_DEVICE (//)
+Dispositivo
+;
+MSG_KICK (//)
+Kick
+;
+MSG_APPICON (//)
+AppIcon
+;
+MSG_INFORMATION (//)
+Informazioni
+;
+MSG_PROTECTION (//)
+Protezione
+;
+MSG_TOOLTYPES (//)
+Tooltypes
+;
+MSG_ERROR_SHELLSTART (//)
+Errore: non si può avviare da shell
+;
+MSG_ABOUT (//)
+Informazioni su...
+;
+MSG_QUIT (//)
+Chiudi
+;
+MSG_READ (//)
+Lettura
+;
+MSG_WRITE (//)
+Scrittura
+;
+MSG_EXECUTE (//)
+Esecuzione
+;
+MSG_DELETE (//)
+Eliminazione
+;
+MSG_SCRIPT (//)
+Script
+;
+MSG_PURE (//)
+Puro
+;
+MSG_ARCHIVED (//)
+Archivio
+;
+MSG_STICKY (//)
+Importante
+;
+MSG_SIZE (//)
+Dimensioni
+;
+MSG_VERSION (//)
+Versione
+;
+MSG_OWNERID (//)
+ID Proprietario
+;
+MSG_GROUPID (//)
+ID Gruppo
+;
+MSG_OWNERNAME (//)
+Proprietario
+;
+MSG_GROUPNAME (//)
+Gruppo
+;
+MSG_TYPE (//)
+Tipo
+;
+MSG_DATE (//)
+Data
+;
+MSG_NEW_KEY (//)
+Nuova chiave
+;
+MSG_DELETE_KEY (//)
+Chiave cancellazione
+;
+MSG_SAVE (//)
+_Salva
+;
+MSG_CANCEL (//)
+_Annulla
+;
+MSG_OK (//)
+Ok
+;
