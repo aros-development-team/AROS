@@ -1,0 +1,51 @@
+;
+MSG_TITLE (//)
+Rinomina
+;
+MSG_DESCRIPTION (//)
+Rinomina file e cartelle
+;
+MSG_COPYRIGHT (//)
+©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE (//)
+Rinomina
+;
+MSG_LINE (//)
+Inserisci il nuovo nome
+;
+MSG_NAME (//)
+Nuovo nome:
+;
+MSG_OK (//)
+_OK
+;
+MSG_CANCEL (//)
+A_nnulla
+;
+MSG_ERROR_TITLE (//)
+Rinomina: Errore
+;
+MSG_ALREADY_EXIST (//)
+'%s' esiste già!
+;
+MSG_FAILED (//)
+L'operazione su '%s' è fallita con l'errore:\n'%s'!
+;
+MSG_ILLEGAL_CHARS (//)
+'%s' contiene caratteri proibiti!
+;
+MSG_NEEDS_MORE_ARGS (//)
+Servono 2 argomenti!
+;
+MSG_INVALID_LOCK (//)
+Blocco della directory invalido!
+;
+MSG_WB_ONLY (//)
+Impossibile avviare da shell!\n
+;
+MSG_FAILED_CREATE_APP (//)
+Impossibile creare l'applicazione!
+;
+MSG_OUTOFMEMORY (//)
+Impossibile allocare la RAM!
