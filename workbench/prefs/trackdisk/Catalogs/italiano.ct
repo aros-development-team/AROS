@@ -1,0 +1,31 @@
+;
+MSG_NAME (//) 
+Trackdisk
+;
+MSG_TITLE (//)
+Impostazioni floppy
+;
+MSG_SAVE (//)
+Salva
+;
+MSG_USE (//)
+Usa
+;
+MSG_CANCEL (//)
+Cancella
+;
+MSG_DESCRIPTION (//)
+Preferenze trackdisk.device
+;
+MSG_WINDOW_TITLE (//)
+Preferenze trackdisk.device
+;
+MSG_DRIVE (//)
+Drive %u
+;
+MSG_NOCLICK (//)
+No click:
+;
+MSG_RETRIES (//)
+Prove:
+;
