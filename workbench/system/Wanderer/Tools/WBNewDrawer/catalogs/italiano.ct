@@ -1,0 +1,60 @@
+;
+MSG_TITLE (//)
+Nuovo cassetto
+;
+MSG_DESCRIPTION (//)
+Crea una nuovo cassetto con icona opzionale
+;
+MSG_COPYRIGHT (//)
+©2006, AROS Dev Team
+;
+MSG_WINDOW_TITLE (//)
+Crea nuovo cassetto
+;
+MSG_LINE (//)
+Dai un nome al nuovo cassetto
+;
+MSG_NAME (//)
+Nome del cassetto:
+;
+MSG_ICON (//)
+Icona
+;
+MSG_OK (//)
+_OK
+;
+MSG_CANCEL (//)
+A_nnulla
+;
+MSG_BASENAME (//)
+Ca_mbia nome
+;
+MSG_ERROR_TITLE (//)
+Errore
+;
+MSG_ALREADY_EXIST (//)
+'%s' esiste già!
+;
+MSG_CANT_CREATE (//)
+Impossibile creare cassetto '%s'!
+;
+MSG_INFO_ALREADY (//)
+'%s'.info esiste già!
+;
+MSG_ILLEGAL_CHARS (//)
+'%s' contiene caratteri proibiti!
+;
+MSG_NEEDS_MORE_ARGS (//)
+Servono 2 argomenti!
+;
+MSG_INVALID_LOCK (//)
+Blocco della directory invalido!
+;
+MSG_WB_ONLY (//)
+Impossibile avviare da shell!\n
+;
+MSG_FAILED_CREATE_APP (//)
+Impossibile creare l'applicazione!
+;
+MSG_WRONG_ICON_TYPE (//)
+L'icona '%s'.info non è associata a un cassetto!
