@@ -1,0 +1,112 @@
+;
+MSG_ERROR_CANT_CREATE_APPLICATION (//)
+Impossibile creare oggetto.
+;
+MSG_CANT_CREATE_REQ (//)
+Impossibile aprire file requester!
+;
+MSG_CANT_CREATE_CONTEXT (//)
+Impossibile creare contesto per Gadtools!
+;
+MSG_CANT_OPEN_STREAM (//)
+Impossibile aprire flusso IFF!
+;
+MSG_CANT_WRITE_PREFFILE (//)
+Impossibile registrare le impostazioni!
+;
+MSG_CANT_READ_PREFFILE (//)
+Impossibile accedere alle impostazioni!
+;
+MSG_CANT_ALLOCATE_IFFPTR (//)
+Impossibile allocare risorse IFF!
+;
+MSG_CANT_ALLOCATE_MEM (//)
+Impossibile allocare la memoria dell'applicazione (%s)!
+;
+MSG_NAME (//)
+Impostazioni Input
+;
+MSG_MENU_PREFERENCES (//)
+Impostazioni
+;
+MSG_MENU_PREFERENCES_IMPORT (//)
+I\0Importa...
+;
+MSG_MENU_PREFERENCES_EXPORT (//)
+E\0Esporta...
+
+MSG_ASL_OPEN_TITLE (//)
+Carica impostazioni
+;
+MSG_ASL_SAVE_TITLE (//)
+Salva impostazioni
+;
+MSG_OK (//)
+Ok
+;
+MSG_DESCRIPTION (//)
+Impostazioni Input
+;
+MSG_GAD_TAB_MOUSE (//)
+Mouse
+;
+MSG_GAD_TAB_KEYBOARD (//)
+Tastiera
+;
+MSG_GAD_MOUSE_SPEED (//)
+Velocità mouse
+;
+MSG_GAD_MOUSE_ACCELERATED (//)
+Accelerato
+;
+MSG_GAD_MOUSE_DOUBLE_CLICK_DELAY (//)
+Intervallo doppio click
+;
+MSG_GAD_KEY_REPEAT_DELAY (//)
+Ritardo ripetizione
+;
+MSG_GAD_KEY_REPEAT_RATE (//)
+Velocità ripetizione
+;
+MSG_GAD_KEY_TEST (//)
+Prova
+;
+MSG_GAD_KEY_TYPE (//)
+Scrivi
+;
+MSG_TIME_FORMAT (//)
+%d.%02d s
+;
+MSG_GAD_MOUSE_BUTTON_MAPPING (//)
+Impostazione tasti
+;
+MSG_GAD_MOUSE_MAPPING_SELECT (//)
+Seleziona
+;
+MSG_GAD_MOUSE_MAPPING_MENU (//)
+Menu
+;
+MSG_GAD_MOUSE_MAPPING_THIRD (//)
+Terzo
+;
+MSG_GAD_MOUSE_DOUBLECLICK_DELAY (//)
+Intervallo doppio click
+;
+MSG_GAD_MOUSE_SPEED_SLOW (//)
+Lento
+;
+MSG_GAD_MOUSE_SPEED_NORMAL (//)
+Normale
+;
+MSG_GAD_MOUSE_SPEED_FAST (//)
+Veloce
+;
+MSG_GAD_MOUSE_LEFT (//)
+Tasto sinistro
+;
+MSG_GAD_MOUSE_MIDDLE (//)
+Tasto centrale
+;
+MSG_GAD_MOUSE_RIGHT (//)
+Tasto destro
+;
