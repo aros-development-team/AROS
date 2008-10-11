@@ -1,6 +1,6 @@
 /*
     Copyright � 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: supervisor.c 28969 2008-07-03 18:50:17Z schulz $
+    $Id$
 
     Desc: Supervisor() - Execute some code in a priviledged environment.
     Lang: english

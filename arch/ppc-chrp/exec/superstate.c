@@ -1,6 +1,6 @@
 /*
     Copyright � 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: superstate.c 28969 2008-07-03 18:50:17Z schulz $
+    $Id$
 
     Desc: SuperState() - Switch the processor into a higher plane.
     Lang: english
