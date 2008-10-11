@@ -1,4 +1,4 @@
-#   $Id: mmakefile.src 29479 2008-09-13 18:59:00Z maddanio $
+#   $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(GENINCDIR)

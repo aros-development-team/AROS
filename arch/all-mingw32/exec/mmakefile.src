@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 20191 2003-11-24 22:03:42Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 CFILES := cause disable enable exec_init newaddtask permit preparecontext rawputchar \

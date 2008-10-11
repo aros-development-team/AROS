@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: permit.c 27909 2008-02-25 23:13:36Z schulz $
+    $Id$
 
     Desc: Permit() - Allow tasks switches to occur.
     Lang: english

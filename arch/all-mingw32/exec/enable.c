@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: enable.c 27888 2008-02-19 23:01:50Z schulz $
+    $Id$
 
     Desc: i386unix version of Enable()
     Lang: english

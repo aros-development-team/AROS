@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: rawputchar.c 27909 2008-02-25 23:13:36Z schulz $
+    $Id$
 
     Desc: Emit one character via raw IO
     Lang: english
