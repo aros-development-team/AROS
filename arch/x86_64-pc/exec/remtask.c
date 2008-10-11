@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: remtask.c 21320 2004-03-21 12:06:51Z stegerg $
+    $Id$
 
     Desc: Remove a task
     Lang: english

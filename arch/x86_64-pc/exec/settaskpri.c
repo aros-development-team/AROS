@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: settaskpri.c 12747 2001-12-08 20:11:50Z chodorowski $
+    $Id$
 
     Desc: Change the priority of a task.
     Lang: english

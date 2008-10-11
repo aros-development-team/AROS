@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: io.h 13216 2002-02-13 06:22:32Z iaint $
+    $Id$
 */
 
 #ifndef ASM_IO_H

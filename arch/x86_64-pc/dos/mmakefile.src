@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 23905 2005-12-29 17:24:07Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.. -I$(TOP)/rom/dos

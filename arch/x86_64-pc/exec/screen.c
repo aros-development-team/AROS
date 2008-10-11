@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: screen.c 23064 2005-03-08 21:43:00Z stegerg $
+    $Id$
 */
 
 #define SCREEN_SERIAL_DEBUG

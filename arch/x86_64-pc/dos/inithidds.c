@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: inithidds.c 25340 2007-03-05 06:44:22Z sonic $
+    $Id$
 
     Desc: Code that loads and initializes necessary HIDDs.
     Lang: english

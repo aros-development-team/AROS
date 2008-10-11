@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: disable.c 21505 2004-04-11 19:44:09Z stegerg $
+    $Id$
 
     Desc: i386unix version of Disable()
     Lang: english

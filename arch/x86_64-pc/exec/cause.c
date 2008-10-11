@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: cause.c 22006 2004-08-05 19:06:53Z stegerg $
+    $Id$
 
     Desc: i386native version of Cause().
     Lang: english

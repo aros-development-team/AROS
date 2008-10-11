@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: readbattclock.c 19714 2003-09-09 17:48:30Z hkiel $
+    $Id$
 
     Desc: ReadBattClock() function.
     Lang: english

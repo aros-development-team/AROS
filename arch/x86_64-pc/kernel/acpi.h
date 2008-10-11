@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: acpi.h,v 1.1 2004/01/02 22:23:57 nicja Exp $
+    $Id$
 
     Desc: AROS ACPI Definitions.
     Lang: english

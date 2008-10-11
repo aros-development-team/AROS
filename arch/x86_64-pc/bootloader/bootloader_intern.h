@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: bootloader_intern.h 24260 2006-04-05 20:16:56Z verhaegs $
+    $Id$
 
     Internal data structures for bootloader.resource
 */

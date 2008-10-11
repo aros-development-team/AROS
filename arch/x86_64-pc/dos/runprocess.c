@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: runprocess.c 24234 2006-03-27 20:09:51Z verhaegs $
+    $Id$
 
     Desc: RunProcess() - Run a process from an entry point with args
     Lang: english
