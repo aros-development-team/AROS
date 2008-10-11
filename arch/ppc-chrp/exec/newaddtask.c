@@ -1,6 +1,6 @@
 /*
     Copyright � 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: newaddtask.c 28674 2008-05-11 22:20:10Z schulz $
+    $Id$
 
     Desc: Add a task.
     Lang: english

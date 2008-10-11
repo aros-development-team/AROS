@@ -1,6 +1,6 @@
 /*
     Copyright � 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.c 25924 2007-04-28 00:14:49Z verhaegs $
+    $Id$
 
     Desc: ColdReboot() - Reboot the computer.
     Lang: english

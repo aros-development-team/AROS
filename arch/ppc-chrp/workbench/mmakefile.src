@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 27924 2008-02-27 06:27:04Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 %build_archspecific \

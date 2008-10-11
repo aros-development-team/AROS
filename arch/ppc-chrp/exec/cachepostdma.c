@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: cachepostdma.c 28568 2008-04-30 19:41:19Z schulz $
+    $Id$
 
     Desc: CachePostDMA() - Do what is necessary for DMA.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: findresident.c 27909 2008-02-25 23:13:36Z schulz $
+    $Id$
 
     Desc: Search a resident module by name
     Lang: english

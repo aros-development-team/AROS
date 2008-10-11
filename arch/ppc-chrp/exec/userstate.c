@@ -1,6 +1,6 @@
 /*
     Copyright � 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: userstate.c 28969 2008-07-03 18:50:17Z schulz $
+    $Id$
 
     Desc: UserState() - Return to normal mode after changing things.
     Lang: english
