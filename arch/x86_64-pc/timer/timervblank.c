@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: timervblank.c 26645 2007-09-15 20:24:05Z schulz $
+    $Id$
 
     Desc: VBlank server for the timer.device/timer.hidd
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: rawdofmt.c 26100 2007-05-15 20:06:02Z verhaegs $
+    $Id$
 
     Desc: Format a string and emit it.
     Lang: english

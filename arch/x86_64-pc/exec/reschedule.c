@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: reschedule.c 19491 2003-08-28 20:21:48Z falemagn $
+    $Id$
 
     Desc: 
     Lang: english

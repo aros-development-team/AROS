@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
-    $Id: findresident.c 26020 2007-05-07 19:49:07Z verhaegs $
+    $Id$
 
     Desc: Search a resident module by name
     Lang: english

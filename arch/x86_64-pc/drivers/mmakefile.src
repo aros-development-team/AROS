@@ -1,4 +1,4 @@
-# $Id: mmakefile 28549 2008-04-29 11:15:02Z NicJA $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #

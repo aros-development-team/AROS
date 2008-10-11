@@ -1,4 +1,4 @@
-# $Id:  $
+# $Id$
 include $(TOP)/config/make.cfg
 
 KERNELFILES := kernel_init intr apic acpi_tables acpi_parsers scheduler mmu

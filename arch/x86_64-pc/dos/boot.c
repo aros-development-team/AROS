@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: boot.c 21768 2004-06-17 21:59:56Z hkiel $
+    $Id$
 
     Desc: Boot your operating system.
     Lang: english

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: newaddtask.c 20554 2004-01-08 18:52:47Z stegerg $
+    $Id$
 
     Desc: Add a task.
     Lang: english

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 22626 2004-12-27 16:17:54Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS 	:= -I$(TOP)/rom/battclock

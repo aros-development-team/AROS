@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 24262 2006-04-05 20:32:55Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM kernel-pc-x86_64-irq-kobj : hidd-irq-stubs

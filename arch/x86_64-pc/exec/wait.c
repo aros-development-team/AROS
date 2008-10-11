@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: wait.c 16613 2003-03-05 15:23:47Z stegerg $
+    $Id$
 
     Desc: Wait for some signal.
     Lang: english

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 22621 2004-12-25 16:05:59Z verhaegs $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM bootloader-grub2-pc-x86_64 : grub2-dirs grub2-pc-x86_64

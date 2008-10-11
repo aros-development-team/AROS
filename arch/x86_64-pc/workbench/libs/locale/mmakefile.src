@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 26645 2007-09-15 20:24:05Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.. -I$(TOP)/workbench/libs/locale

@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: serialrawio.c 26020 2007-05-07 19:49:07Z verhaegs $
+    $Id$
 
     Desc: functions for serial RawIOInit/RawPutChar
     Lang: english
