@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: boot.c 13004 2002-01-13 15:18:32Z bergers $
+    $Id$
 
     Desc: Boot your operating system.
     Lang: english

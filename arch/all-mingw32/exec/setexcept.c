@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: setexcept.c 27909 2008-02-25 23:13:36Z schulz $
+    $Id$
 
     Desc: Examine and/or modify the signals which cause an exception.
     Lang: english

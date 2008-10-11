@@ -1,6 +1,6 @@
 /*
  Copyright © 1995-2008, The AROS Development Team. All rights reserved.
- $Id: emul_handler.c 29350 2008-08-31 18:05:43Z neil $
+ $Id$
  
  Desc: Filesystem that accesses an underlying Windows filesystem.
  Lang: english

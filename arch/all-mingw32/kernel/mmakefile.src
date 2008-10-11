@@ -1,4 +1,4 @@
-# $Id:  $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM kernel-kernel-mingw32 : includes kernel-kernel-mingw32-native

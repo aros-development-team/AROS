@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 26763 2007-09-20 23:29:57Z NicJA $
+# $Id$
 include $(TOP)/config/make.cfg
 
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
