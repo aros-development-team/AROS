@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 28379 2008-04-19 11:37:31Z schulz $
+# $Id$
 include $(TOP)/config/make.cfg
 
 AFILES		:= stackswap
