@@ -109,6 +109,8 @@ asm(".section .aros.init,\"ax\"\n\t"
 	"mtspr 574, %r0;"
 	"mtspr 575, %r0;"
 
+	"mttbl %r0; mttbu %r0; mttbl %r0;"
+
 	/* Enable address translation again. All accesses will be done through BAT registers */
 	"li %r0, 0x2030;"
 	"mtmsr %r0;sync;isync;"
@@ -312,6 +314,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 	D(bug("[KRN] Uhm? Nothing to do?\n[KRN] STOPPED\n"));
 	/* Dead end */
 	while(1) {
+		wrmsr(rdmsr() | MSR_EE);
 		wrmsr(rdmsr() | MSR_POW);
 	}
 }

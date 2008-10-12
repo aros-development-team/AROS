@@ -266,7 +266,7 @@ void intr_init()
 	init_interrupt(17, generic_handler);	/* Data load translation miss */
 	init_interrupt(18, generic_handler);	/* Data store translation miss */
 	init_interrupt(19, generic_handler);	/* Instruction address breakpoint */
-	init_interrupt(20, generic_handler);	/* SMI */
+	init_interrupt(20, ictl_handler);		/* SMI */
 }
 
 /*
@@ -408,6 +408,8 @@ void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, v
     else
     	generic_handler(ctx, exception, self);
 }
+
+
 
 /* Generic boring handler */
 void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
