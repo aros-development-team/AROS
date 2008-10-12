@@ -63,16 +63,6 @@ static inline void wrmsr(uint32_t msr) {
 #define wrspr(reg, val) \
     do { asm volatile("mtspr %0,%1"::"i"(reg),"r"(val)); } while(0)
 
-static inline struct KernelBase *getKernelBase()
-{
-    return (struct KernelBase *)rdspr(SPRG4);
-}
-
-static inline struct ExecBase *getSysBase()
-{
-    return (struct ExecBase *)rdspr(SPRG5);
-}
-
 /* SPR registers */
 #define XER     0x001   /* Integer Exception Register */
 #define LR      0x008   /* Link Register */
@@ -99,6 +89,16 @@ static inline struct ExecBase *getSysBase()
 #define IMISS	0x3d4
 #define ICMP	0x3d5
 #define RPA		0x3d6
+
+static inline struct KernelBase *getKernelBase()
+{
+    return (struct KernelBase *)rdspr(SPRG4);
+}
+
+static inline struct ExecBase *getSysBase()
+{
+    return (struct ExecBase *)rdspr(SPRG5);
+}
 
 /* Interrupt controller */
 
@@ -216,5 +216,18 @@ typedef struct {
 #define ICTL_EE_MEE			__BV32(19)
 #define ICTL_EE_CEB			__BV32(31)
 
+/* Slice timer */
+typedef struct {
+	uint32_t 	slt_tc;	/* Terminal count register */
+	uint32_t	slt_cf;	/* Control field register */
+	uint32_t	slt_cv;	/* Count value register. Read only! */
+	uint32_t	slt_ts;	/* Timer Status register */
+} slt_t;
+
+#define SLT_CF_RUNWAIT		0x04000000	/* Run/Wait */
+#define SLT_CF_INTRENA		0x02000000	/* Interrupt enable */
+#define SLT_CF_ENABLE		0x01000000	/* Enable/Disable timer */
+
+#define SLT_TS_ST			0x01000000	/* Terminal count reached. Write 1 to clear */
 
 #endif /* ASM_MPC5200B_H */
