@@ -84,10 +84,10 @@ static inline void bug(const char *format, ...)
                         ((struct Resident *)(*list))->rt_Name));
                 InitResident((struct Resident *)*list, NULL);
             }
-            else
-                D(bug("NOT calling InitResident(\"%s\", NULL)\n",
-                      ((struct Resident *)(*list))->rt_Name)
-                );
+//            else
+//                D(bug("NOT calling InitResident(\"%s\", NULL)\n",
+//                      ((struct Resident *)(*list))->rt_Name)
+//                );
             list++;
         }
     }
