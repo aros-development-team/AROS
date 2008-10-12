@@ -40,6 +40,10 @@ void ictl_init(void *MBAR)
 
 	/* Critical interrupts should generate EE */
 	outl(ICTL_EE_MEE | ICTL_EE_CEB,&ictl->ictl_ee);
+
+	/* Set all Main priorities to 0 */
+	outl(0, &ictl->ictl_mip[0]);
+	outl(0, &ictl->ictl_mip[1]);
 }
 
 void ictl_enable_irq(uint8_t irqnum)
@@ -50,13 +54,13 @@ void ictl_enable_irq(uint8_t irqnum)
 	{
 		D(bug("[KRN] Enabling main irq %d.\n", irqnum));
 
-		outl(inl(&ictl->ictl_cpmim) & ~(0x00010000 > irqnum - MPC5200B_ST1), &ictl->ictl_cpmim);
+		outl(inl(&ictl->ictl_cpmim) & ~(0x00010000 >> (irqnum - MPC5200B_ST1)), &ictl->ictl_cpmim);
 	}
 	else if (irqnum <= MPC5200B_BESTCOMMLP)
 	{
 		D(bug("[KRN] Enabling peripheral irq %d.\n", irqnum));
 
-		outl(inl(&ictl->ictl_pim) & ~(0x80000000 > irqnum - MPC5200B_BESTCOMM), &ictl->ictl_pim);
+		outl(inl(&ictl->ictl_pim) & ~(0x80000000 >> (irqnum - MPC5200B_BESTCOMM)), &ictl->ictl_pim);
 	}
 	else
 		D(bug("[KRN] Uhh?! Someone tried to enable non-existing irq %d\n", irqnum));
@@ -85,7 +89,7 @@ void ictl_disable_irq(uint8_t irqnum)
 
 void __attribute__((noreturn)) ictl_handler(regs_t *ctx, uint8_t exception, void *self)
 {
-	D(bug("[KRN] ictl_handler\n"));
+	//D(bug("[KRN] ictl_handler\n"));
 	struct KernelBase *KernelBase = getKernelBase();
 
 	int irqnum = 0;
@@ -135,11 +139,6 @@ void __attribute__((noreturn)) ictl_handler(regs_t *ctx, uint8_t exception, void
 						if (in->in_Handler)
 							in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
 					}
-				}
-				else
-				{
-					D(bug("[KRN] Orphan main interrupt %d! Disabling\n", i));
-					outl(inl(&ictl->ictl_cpmim) | __BV32(i+15), &ictl->ictl_cpmim);
 				}
 			}
 		}
@@ -206,12 +205,9 @@ void __attribute__((noreturn)) ictl_handler(regs_t *ctx, uint8_t exception, void
 						in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
 				}
 			}
-			else
-			{
-				D(bug("[KRN] Orphan peripheral interrupt %d! Disabling\n", 23));
-				outl(inl(&ictl->ictl_pim) | __BV32(23), &ictl->ictl_pim);
-			}
 		}
 		irqnum++;
 	}
+
+	core_ExitInterrupt(ctx);
 }
