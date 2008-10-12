@@ -12,6 +12,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-bootloader-chrp-ppc-efika \
 #MM	kernel-expansion \
 #MM	kernel-utility \
+#MM kernel-openfirmware \
 #MM	kernel-oop \
 #MM	kernel-battclock \
 #MM	kernel-hidd \
@@ -33,6 +34,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-packet \
 #MM	kernel-workbench \
 #MM	kernel-boot \
+#MM kernel-dos \
 #MM	hidd-i2c \
 #MM	hidd-radeon \
 #MM	hidd-usb \
@@ -46,12 +48,11 @@ include $(TOP)/config/make.cfg
 
 # MM	kernel-pci-amcc440 \
 # MM	kernel-sam440-ppc-irq \
-# MM	kernel-dos \
 # MM	kernel-ata \
 
 
-PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench boot
-PKG_RSRC := misc battclock bootloader
+PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench boot dos
+PKG_RSRC := misc battclock bootloader openfirmware
 PKG_DEVS :=  input gameport keyboard console timer
 PKG_HANDLERS := con nil ram packet cdrom
 PKG_HIDDS:= graphics hiddclass i2c radeon usb ohci pci
