@@ -8,6 +8,7 @@
 #define __typedef_BOOL /* definition that contains BOOL.                                                           */
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
+#undef IsListEmpty
 
 #include <stddef.h>
 #include <stdio.h>
@@ -59,7 +60,7 @@ void core_Dispatch(CONTEXT *regs)
 {
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
-    CONTEXT *ctx;
+    struct AROSCPUContext *ctx;
 
     if (SysBase)
     {
@@ -106,8 +107,9 @@ void core_Dispatch(CONTEXT *regs)
         }
         
         /* Restore the task's state */
-        ctx = (CONTEXT *)GetIntETask(task)->iet_Context;
+        ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
         CopyMemory(regs, ctx, sizeof(CONTEXT));
+        *LastErrorPtr = ctx->LastError;
         
         /* Leave interrupt and jump to the new task */
         core_LeaveInterrupt();
@@ -118,7 +120,7 @@ void core_Switch(CONTEXT *regs)
 {
     struct ExecBase *SysBase = *SysBasePtr;
     struct Task *task;
-    CONTEXT *ctx;
+    struct AROSCPUContext *ctx;
     
     if (SysBase)
     {
@@ -129,8 +131,9 @@ void core_Switch(CONTEXT *regs)
         DS(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
         
         /* Copy current task's context into the ETask structure */
-        ctx = (CONTEXT *)GetIntETask(task)->iet_Context;
+        ctx = (struct AROSCPUContext *)GetIntETask(task)->iet_Context;
         CopyMemory(ctx, regs, sizeof(CONTEXT));
+        ctx->LastError = *LastErrorPtr;
         
         /* store IDNestCnt into tasks's structure */  
         task->tc_IDNestCnt = SysBase->IDNestCnt;
@@ -206,7 +209,7 @@ void core_Schedule(CONTEXT *regs)
 
 
 /*
- * Leave the interrupt. This function recieves the register frame used to leave the supervisor
+ * Leave the interrupt. This function receives the register frame used to leave the supervisor
  * mode. It never returns and reschedules the task if it was asked for.
  */
 void core_ExitInterrupt(CONTEXT *regs) 

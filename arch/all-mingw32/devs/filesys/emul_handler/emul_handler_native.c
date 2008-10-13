@@ -128,18 +128,6 @@ int __declspec(dllexport) EmulCloseDir(void *dir)
   return closedir((DIR *)dir);
 }
 
-char * __declspec(dllexport) EmulGetCWD(char *buf, long len)
-{
-  char * retval = NULL;
-
-  if (buf != 0) { //do not alloc mem here!
-    DWINAPI(printf("getcwd()\n"));
-    retval = getcwd(buf,len);
-  }
-  printf("[EmulHandler] cwd: \"%s\"\n",retval);
-  return retval;
-}
-
 int __declspec(dllexport) EmulChmod(const char *path, int protect)
 {
   protect = prot_a2u(protect);
@@ -161,13 +149,6 @@ int __declspec(dllexport) EmulMKDir(const char *path, int protect)
   return r;
 
 }
-
-int __declspec(dllexport) EmulChDir(const char *path)
-{
-  DWINAPI(printf("[EmulHandler] chdir(\"%s\")\n", path));
-  return chdir(path);
-}
-
 
 int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
 {
