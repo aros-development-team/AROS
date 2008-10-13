@@ -327,11 +327,12 @@ void
 Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 {
     struct ETask *child, *parent;
+    struct Node *tmpNode;
     if(!et)
 	return;
 
     /* Clean up after all the children that the task didn't do itself. */
-    ForeachNode(&et->et_TaskMsgPort.mp_MsgList, child)
+    ForeachNodeSafe(&et->et_TaskMsgPort.mp_MsgList, child, tmpNode)
     {
         /* This is effectively ChildFree() */
         if(child->et_Result2)
