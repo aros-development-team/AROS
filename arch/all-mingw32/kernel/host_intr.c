@@ -8,6 +8,7 @@
 #define __typedef_BOOL /* definition that contains BOOL.                                                           */
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
+#undef IsListEmpty
 
 #include <stddef.h>
 #include <stdio.h>
@@ -29,6 +30,7 @@ struct SwitcherData {
 };
 
 struct SwitcherData SwData;
+DWORD *LastErrorPtr;
 unsigned char Ints_Enabled = 0;
 unsigned char Supervisor = 0;
 struct ExecBase **SysBasePtr;
@@ -168,6 +170,7 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     HANDLE SwitcherThread;
     DWORD SwitcherId;
     LARGE_INTEGER VBLPeriod;
+    void *MainTEB;
 
     D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
     SysBasePtr = SysBasePointer;
@@ -177,6 +180,14 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     if (SwData.IntTimer) {
 	ThisProcess = GetCurrentProcess();
 	if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+	    MainTEB = NtCurrentTeb();
+	    /* TODO: This currently works only on Windows NT family. In order to get it running on earlier Windows versions (98 and Me)
+	     * we should determine OS version and use appropriate offsets:
+	     * Windows 95 - 0x60
+	     * Windows 98 - ????
+	     * Windows Me - 0x74
+	     */
+	    LastErrorPtr = MainTEB + 0x34;
 	    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
 	    if (SwitcherThread) {
 	  	D(printf("[KRN] Task switcher started\n"));

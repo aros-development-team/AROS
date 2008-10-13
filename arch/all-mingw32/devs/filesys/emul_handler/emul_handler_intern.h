@@ -29,7 +29,7 @@ struct emulbase
     void			* stdin_handle;
     void			* stdout_handle;
     void			* stderr_handle;
-    struct SignalSemaphore 	  sem;
+    struct SignalSemaphore	  sem;
     struct SignalSemaphore	  memsem;
     char    	    	    	* current_volume;
     APTR			  mempool;
@@ -63,9 +63,7 @@ struct EmulInterface
     void (*EmulRewindDir)(void *dir);
     ULONG (*EmulDelete)(const char *filename);
     unsigned long (*EmulGetHome)(const char *name, char *home);
-    char *(*EmulGetCWD)(char *buf, long len);
     ULONG (*EmulStatFS)(const char *path, struct InfoData *id);
-    ULONG (*EmulChDir)(const char *path);
     ULONG (*EmulChmod)(const char *path, int protect);
     ULONG (*EmulMKDir)(const char *path, int protect);
     ULONG (*EmulErrno)(void);
@@ -77,13 +75,11 @@ struct EmulInterface
 #define Errno EmulIFace->EmulErrno
 #define CloseDir EmulIFace->EmulCloseDir
 #define OpenDir EmulIFace->EmulOpenDir
-#define ChDir EmulIFace->EmulChDir
 #define DirName EmulIFace->EmulDirName
 #define TellDir EmulIFace->EmulTellDir
 #define SeekDir EmulIFace->EmulSeekDir
 #define RewindDir EmulIFace->EmulRewindDir
 #define Delete EmulIFace->EmulDelete
-#define GetCWD EmulIFace->EmulGetCWD
 #define GetHome EmulIFace->EmulGetHome
 #define StatFS EmulIFace->EmulStatFS
 
@@ -102,6 +98,8 @@ struct KernelInterface
     __attribute__((stdcall)) ULONG (*GetFileType)(void *hFile);
     __attribute__((stdcall)) void *(*GetStdHandle)(ULONG nStdHandle);
     __attribute__((stdcall)) ULONG (*MoveFile)(const char *lpExistingFileName, const char *lpNewFileName);
+    __attribute__((stdcall)) ULONG (*GetCurrentDirectory)(ULONG nBufferLength, char *lpBuffer);
+    __attribute__((stdcall)) ULONG (*SetCurrentDirectory)(const char *lpPathName);
     __attribute__((stdcall)) ULONG (*CreateHardLink)(const char *lpFileName, const char *lpExistingFileName, void *lpSecurityAttributes);
     __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(const char *lpSymlinkFileName, const char *lpTargetFileName, ULONG dwFlags);
 };
@@ -114,6 +112,8 @@ struct KernelInterface
 #define GetFileType KernelIFace->GetFileType
 #define GetStdFile KernelIFace->GetStdHandle
 #define DoRename KernelIFace->MoveFile
+#define GetCWD KernelIFace->GetCurrentDirectory
+#define ChDir KernelIFace->SetCurrentDirectory
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
 

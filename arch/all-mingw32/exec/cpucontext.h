@@ -63,6 +63,7 @@ struct AROSCPUContext {
 	IPTR	Esp;
 	IPTR	SegSs;
 	BYTE	ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
+	ULONG	LastError;
 };
 
 #define PRINT_CPUCONTEXT(ctx) \

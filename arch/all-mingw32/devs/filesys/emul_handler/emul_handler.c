@@ -556,6 +556,8 @@ static LONG startup(struct emulbase *emulbase)
   struct filehandle *fhv;
   struct DeviceNode *dlv, *dlv2;
   LONG ret = ERROR_NO_FREE_STORE;
+  ULONG res;
+  int kind;
   
   D(kprintf("[Emulhandler] startup\n"));
   ExpansionBase = OpenLibrary("expansion.library",0);
@@ -573,8 +575,11 @@ static LONG startup(struct emulbase *emulbase)
 	fhv->volume=(char *)(fhv + 1);
 			
 	/* Make sure that the root directory is valid */
-	int kind;
-	if(GetCWD(fhv->volume, 256) && (kind=Stat(fhv->name,0))==2)
+	res = GetCWD(256, fhv->volume);
+	kind=Stat(fhv->name,0);
+	if (res > 256)
+	    res = 0;
+	if(res && (kind == 2))
 	{
 	    D(kprintf("[Emulhandler] startup got valid directory\n"));
 #define DEVNAME "EMU"
@@ -1098,7 +1103,7 @@ static LONG create_hardlink(struct emulbase *emulbase,
   error = makefilename(emulbase, &fh->name, (*handle)->name, name);
   if (!error)
   {
-	if (!Link(oldfile->name, fh->name, NULL))
+	if (Link(oldfile->name, fh->name, NULL))
 	  *handle = fh;
 	else
 	  error = Errno();
@@ -1135,7 +1140,7 @@ static LONG create_softlink(struct emulbase * emulbase,
   error = makefilename(emulbase, &fh->name, (*handle)->name, name);
   if (!error)
   {
-	if (!SymLink(ref, fh->name, 0))
+	if (SymLink(ref, fh->name, 0))
 	  *handle = fh;
 	else
 	  error = Errno();
@@ -1762,9 +1767,7 @@ const char *EmulSymbols[] = {
     "EmulRewindDir",
     "EmulDelete",
     "EmulGetHome",
-    "EmulGetCWD",
     "EmulStatFS",
-    "EmulChDir",
     "EmulChmod",
     "EmulMKDir",
     "EmulErrno",
@@ -1780,6 +1783,8 @@ const char *KernelSymbols[] = {
     "GetFileType",
     "GetStdHandle",
     "MoveFileA",
+    "GetCurrentDirectoryA",
+    "SetCurrentDirectoryA",
     "CreateHardLinkA",
     "CreateSymbolicLinkA",
     NULL
