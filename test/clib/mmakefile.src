@@ -22,7 +22,8 @@ FILES := \
 	fchmod \
 	vfork \
 	wait \
-	waitpid
+	waitpid \
+	lseek
 
 EXEDIR := $(AROS_TESTS)/clib
 
