@@ -80,10 +80,10 @@
             size = 208;
         }
 
+        vbuf_free(fh);
+
         if (NULL != buff)
         {
-            vbuf_free(fh);
-
             fh->fh_Size = size;
             fh->fh_Pos = fh->fh_Buf = fh->fh_End = buff;
         }
