@@ -23,7 +23,9 @@ FILES := \
 	vfork \
 	wait \
 	waitpid \
-	lseek
+	lseek \
+	opendir \
+	pipe
 
 EXEDIR := $(AROS_TESTS)/clib
 
