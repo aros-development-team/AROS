@@ -74,14 +74,14 @@
 	return NULL;
     }
 
-    oflags = fdesc->flags;
+    oflags = fdesc->fcb->flags;
 
     if (mode)
     {
     	oflags          = __smode2oflags(mode);
     	
         wanted_accmode  = oflags & O_ACCMODE;
-        current_accmode = fdesc->flags & O_ACCMODE;
+        current_accmode = fdesc->fcb->flags & O_ACCMODE;
         
         /* 
            Check if the requested access mode flags are a valid subset of the 

@@ -51,7 +51,7 @@
 	) return -1;
 	else
 	{ 
-		*(BPTR*)file_handle = (BPTR) __fd_array[file_descriptor]->fh;
+		*(BPTR*)file_handle = (BPTR) __fd_array[file_descriptor]->fcb->fh;
 	}
 	return 0;
 }

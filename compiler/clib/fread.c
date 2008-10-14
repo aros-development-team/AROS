@@ -64,7 +64,7 @@
 	return 0;
     }
 
-    cnt = FRead ((BPTR)fdesc->fh, buf, size, nblocks);
+    cnt = FRead ((BPTR)fdesc->fcb->fh, buf, size, nblocks);
 
     if (cnt == -1)
     {

@@ -68,13 +68,13 @@
         }
 	
         case F_GETFL:
-            return desc->flags & (O_NONBLOCK|O_APPEND|O_ASYNC);
+            return desc->fcb->flags & (O_NONBLOCK|O_APPEND|O_ASYNC);
 
         case F_SETFL:
         {
             va_list ap;
             int     arg;
-            int     oldmode = __oflags2amode(desc->flags & ~(O_NONBLOCK|O_APPEND|O_ASYNC));
+            int     oldmode = __oflags2amode(desc->fcb->flags & ~(O_NONBLOCK|O_APPEND|O_ASYNC));
 
             va_start(ap, cmd);
             arg = va_arg(ap, int);
@@ -82,10 +82,10 @@
   
             arg &= (O_NONBLOCK|O_APPEND|O_ASYNC);
 
-            if (ChangeMode(CHANGE_FH, desc->fh, oldmode | __oflags2amode(arg)) == DOSTRUE)
+            if (ChangeMode(CHANGE_FH, desc->fcb->fh, oldmode | __oflags2amode(arg)) == DOSTRUE)
             {
-                desc->flags &= ~(O_NONBLOCK|O_APPEND|O_ASYNC);
-                desc->flags |= arg;
+                desc->fcb->flags &= ~(O_NONBLOCK|O_APPEND|O_ASYNC);
+                desc->fcb->flags |= arg;
                 return 0;
             }
 

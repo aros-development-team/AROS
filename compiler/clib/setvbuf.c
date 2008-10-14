@@ -66,6 +66,6 @@
 	return EOF;
     }
 
-    return SetVBuf(desc->fh, buf, mode, size ? size : -1);
+    return SetVBuf(desc->fcb->fh, buf, mode, size ? size : -1);
 } /* setvbuf */
 

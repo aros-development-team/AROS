@@ -172,7 +172,7 @@ pid_t __vfork(jmp_buf env)
     udata->parent_acpd_numslots = ppriv->acpd_numslots;
     udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
 
-    fdesc **acpd_fd_array = malloc((ppriv->acpd_numslots)*sizeof(fdesc *));
+    fdesc **acpd_fd_array = calloc((ppriv->acpd_numslots), sizeof(fdesc *));
     if(acpd_fd_array == NULL)
     {
 	/* Couldn't allocate fd array, return -1 */
@@ -180,20 +180,22 @@ pid_t __vfork(jmp_buf env)
 	errno = ENOMEM;
 	longjmp(udata->vfork_jump, -1);    	    
     }
-    
-    CopyMem(
-	ppriv->acpd_fd_array, 
-	acpd_fd_array, 
-	(ppriv->acpd_numslots)*sizeof(fdesc *)
-    );
 
     D(bug("opening descriptors\n"));
-    /* "Open" all copied descriptors */
+    /* Copy and "Open" all parent descriptors */
     for(i = 0; i < ppriv->acpd_numslots; i++)
     {
-	if(acpd_fd_array[i])
+	if(ppriv->acpd_fd_array[i])
 	{
-	    acpd_fd_array[i]->opencount++;
+	    acpd_fd_array[i] = malloc(sizeof(fdesc));
+	    if(!acpd_fd_array[i])
+	    {
+		FreeMem(udata, sizeof(struct vfork_data));
+		errno = ENOMEM;
+		longjmp(udata->vfork_jump, -1);		
+	    }
+	    acpd_fd_array[i]->fcb = ppriv->acpd_fd_array[i]->fcb;
+	    acpd_fd_array[i]->fcb->opencount++;
 	}
     }
 

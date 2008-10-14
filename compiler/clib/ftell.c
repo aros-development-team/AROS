@@ -55,7 +55,7 @@
 	return 0;
     }
 
-    fh = (BPTR)(fdesc->fh);
+    fh = (BPTR)(fdesc->fcb->fh);
 
     Flush (fh);
     cnt = Seek (fh, 0, OFFSET_CURRENT);

@@ -39,7 +39,7 @@ static void syncFilePos(int from_fd, BPTR to_fh)
    desc = __getfdesc(from_fd);
    if (desc)
    {
-	fh = (BPTR)(desc->fh);
+	fh = (BPTR)(desc->fcb->fh);
 	Flush(fh);
 	offset = Seek(fh, 0, OFFSET_CURRENT);
 
@@ -58,7 +58,7 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
    desc = __getfdesc(to_fd);
    if (desc)
    {
-	fh = (BPTR)(desc->fh);
+	fh = (BPTR)(desc->fcb->fh);
 	Flush(fh);
 	offset = Seek(from_fh, 0, OFFSET_CURRENT);
 

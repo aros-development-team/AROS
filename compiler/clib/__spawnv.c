@@ -239,10 +239,10 @@ BPTR DupFHFromfd(int fd, ULONG mode)
     fdesc *fdesc = __getfdesc(fd);
     BPTR ret = MKBADDR(NULL);
 
-    if (fdesc != NULL && fdesc->fh != MKBADDR(NULL))
+    if (fdesc != NULL && fdesc->fcb->fh != MKBADDR(NULL))
     {
-        LONG pos = Seek(fdesc->fh, 0, OFFSET_CURRENT);
-        BPTR olddir = CurrentDir(fdesc->fh);
+        LONG pos = Seek(fdesc->fcb->fh, 0, OFFSET_CURRENT);
+        BPTR olddir = CurrentDir(fdesc->fcb->fh);
         ret = Open("", mode);
         if((mode & FMF_WRITE) && ret && pos != -1)
             Seek(ret, pos, OFFSET_BEGINNING);

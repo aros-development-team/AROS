@@ -59,7 +59,7 @@
 
     /* Note: changes here might require changes in vfscanf.c!! */
     
-    c = FGetC ((BPTR)(fdesc->fh));
+    c = FGetC ((BPTR)(fdesc->fcb->fh));
     if (c == EOF)
     {
 	c = IoErr ();

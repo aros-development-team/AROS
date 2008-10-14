@@ -58,6 +58,7 @@
 {
     DIR *dir;
     int fd;
+    fcb *cblock;
     fdesc *desc;
     BPTR lock;
     char *aname;
@@ -120,10 +121,22 @@
 	goto err4;
     }
 
+    cblock = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR);
+    if(!cblock)
+    {
+        errno = ENOMEM;
+        goto err4;
+    }
     desc = malloc(sizeof(fdesc));
-    desc->fh = lock;
-    desc->flags = O_RDONLY;
-    desc->opencount = 1;
+    if(!desc)
+    {
+        errno = ENOMEM;
+        goto err5;
+    }
+    desc->fcb = cblock;
+    desc->fcb->fh = lock;
+    desc->fcb->flags = O_RDONLY;
+    desc->fcb->opencount = 1;
 
     fd = __getfdslot(__getfirstfd(3));
     __setfdesc(fd, desc);
@@ -135,6 +148,8 @@
     D(bug("opendir(%s) fd=%d\n", name, fd));
     return dir;
 
+err5:
+    FreeVec(cblock);
 err4:
     UnLock(lock);
 err3:

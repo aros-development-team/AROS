@@ -66,7 +66,7 @@
     if (c < -1)
 	c = (unsigned int)c;
 
-    if (!UnGetC ((BPTR)fdesc->fh, c))
+    if (!UnGetC ((BPTR)fdesc->fcb->fh, c))
     {
 	errno = IoErr2errno (IoErr ());
 

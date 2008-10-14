@@ -71,7 +71,7 @@
 	    return -1;
     }
 
-    fh = (BPTR)(fdesc->fh);
+    fh = (BPTR)(fdesc->fcb->fh);
 
     /* This is buffered IO, flush the buffer before any Seek */
     Flush (fh);
@@ -128,7 +128,7 @@
     /* Seek beyond end of file and in write mode */
     if (finalseekposition > eofposition)
     {
-        if (fdesc->flags & O_WRITE)
+        if (fdesc->fcb->flags & O_WRITE)
         {
             /* Write '0' to fill up to requested size - compatible fseek does not write but allows write */
             int i = 0;

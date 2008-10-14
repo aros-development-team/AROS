@@ -49,6 +49,6 @@
 	return -1;
     }
 
-    return __stat(desc->fh, sb);
+    return __stat(desc->fcb->fh, sb);
 }
 

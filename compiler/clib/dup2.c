@@ -5,6 +5,7 @@
     ANSI C function dup2().
 */
 
+#include <stdlib.h>
 #include <errno.h>
 #include "__open.h"
 
@@ -56,6 +57,7 @@
 ******************************************************************************/
 {
     fdesc *oldfdesc;
+    fdesc *newfdesc;
 
     oldfdesc = __getfdesc(oldfd);
     if (!oldfdesc)
@@ -64,11 +66,20 @@
 	return -1;
     }
 
+    newfdesc = malloc(sizeof(fdesc));
+    if(!newfdesc)
+    {
+	errno = ENOMEM;
+	return -1;
+    }
+    
+    newfdesc->fcb = oldfdesc->fcb;
+    
     newfd =__getfdslot(newfd);
     if (newfd != -1)
     {
-	oldfdesc->opencount++;
-	__setfdesc(newfd, oldfdesc);
+	newfdesc->fcb->opencount++;
+	__setfdesc(newfd, newfdesc);
     }
 
     return newfd;

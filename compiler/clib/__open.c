@@ -112,6 +112,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
     BPTR fh = NULL, lock = NULL;
     fdesc *currdesc = NULL;
+    fcb *cblock = NULL;
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
 
@@ -134,8 +135,11 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
         return -1;
     }
 
+    cblock = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR);
+    if (!cblock) { D(bug("__open: no memory [1]\n")); goto err; }
     currdesc = malloc(sizeof(fdesc));
-    if (!currdesc) { D(bug("__open: no memory [1]\n")); goto err; }
+    if (!currdesc) { D(bug("__open: no memory [2]\n")); goto err; }
+    currdesc->fcb = cblock;
 
     wanted_fd = __getfdslot(wanted_fd);
     if (wanted_fd == -1) { D(bug("__open: no free fd\n")); goto err; }
@@ -223,9 +227,9 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     }
 
 success:
-    currdesc->fh        = fh;
-    currdesc->flags     = flags;
-    currdesc->opencount = 1;
+    currdesc->fcb->fh        = fh;
+    currdesc->fcb->flags     = flags;
+    currdesc->fcb->opencount = 1;
 
     __setfdesc(wanted_fd, currdesc);
 
@@ -235,6 +239,7 @@ success:
 
 err:
     if (fib) FreeDosObject(DOS_FIB, fib);
+    if (cblock) FreeVec(cblock);
     if (currdesc) free(currdesc);
     if (fh && fh != lock) Close(fh);
     if (lock) UnLock(lock);
@@ -249,31 +254,51 @@ err:
 int __init_stdfiles(void)
 {
     struct Process *me;
+    fcb *infcb = NULL, *outfcb = NULL, *errfcb = NULL;
     fdesc *indesc=NULL, *outdesc=NULL, *errdesc=NULL;
     int res = __getfdslot(2);
 
     if
     (
         res == -1                           ||
+	!(infcb  = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
 	!(indesc  = malloc(sizeof(fdesc))) ||
+	!(outfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
 	!(outdesc = malloc(sizeof(fdesc))) ||
+	!(errfcb = AllocVec(sizeof(fcb), MEMF_ANY | MEMF_CLEAR)) ||
 	!(errdesc = malloc(sizeof(fdesc)))
     )
     {
+        if(infcb)
+            FreeVec(infcb);
+        if(indesc)
+            free(indesc);
+        if(outfcb)
+            FreeVec(outfcb);
+        if(outdesc)
+            free(outdesc);
+        if(errfcb)
+            FreeVec(errfcb);
+        if(errdesc)
+            free(errdesc);
     	SetIoErr(ERROR_NO_FREE_STORE);
     	return 0;
     }
 
+    indesc->fcb = infcb;
+    outdesc->fcb = outfcb;
+    errdesc->fcb = errfcb;
+
     me = (struct Process *)FindTask (NULL);
-    indesc->fh  = __stdfiles[STDIN_FILENO]  = Input();
-    outdesc->fh = __stdfiles[STDOUT_FILENO] = Output();
-    errdesc->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
+    indesc->fcb->fh  = __stdfiles[STDIN_FILENO]  = Input();
+    outdesc->fcb->fh = __stdfiles[STDOUT_FILENO] = Output();
+    errdesc->fcb->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
 
-    indesc->flags  = O_RDONLY;
-    outdesc->flags = O_WRONLY | O_APPEND;
-    errdesc->flags = O_WRONLY | O_APPEND;
+    indesc->fcb->flags  = O_RDONLY;
+    outdesc->fcb->flags = O_WRONLY | O_APPEND;
+    errdesc->fcb->flags = O_WRONLY | O_APPEND;
 
-    indesc->opencount = outdesc->opencount = errdesc->opencount = 1;
+    indesc->fcb->opencount = outdesc->fcb->opencount = errdesc->fcb->opencount = 1;
 
     __fd_array[STDIN_FILENO]  = indesc;
     __fd_array[STDOUT_FILENO] = outdesc;
@@ -304,9 +329,9 @@ void __updatestdio(void)
     fflush(stdout);
     fflush(stderr);
 
-    __fd_array[STDIN_FILENO]->fh  = __stdfiles[STDIN_FILENO]  = Input();
-    __fd_array[STDOUT_FILENO]->fh = __stdfiles[STDOUT_FILENO] = Output();
-    __fd_array[STDERR_FILENO]->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
+    __fd_array[STDIN_FILENO]->fcb->fh  = __stdfiles[STDIN_FILENO]  = Input();
+    __fd_array[STDOUT_FILENO]->fcb->fh = __stdfiles[STDOUT_FILENO] = Output();
+    __fd_array[STDERR_FILENO]->fcb->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
 }
 
 ADD2INIT(__init_stdfiles, 2);
