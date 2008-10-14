@@ -7,6 +7,9 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
+#include <exec/exec.h>
+#include <proto/exec.h>
+#include <clib/macros.h>
 #include "__errno.h"
 #include "__open.h"
 
@@ -46,6 +49,8 @@
     EXAMPLE
 
     BUGS
+	File is extended with zeros if desired position is beyond the end of 
+	file.
 
     SEE ALSO
 	fopen(), fwrite()
@@ -77,7 +82,66 @@
     cnt = Seek ((BPTR)fdesc->fh, offset, whence);
 
     if (cnt == -1)
-    	errno = IoErr2errno (IoErr ());
+    {
+	if(IoErr() == ERROR_SEEK_ERROR)
+	{
+	    LONG saved_error = IoErr();
+	    /* Most likely we tried to seek behind EOF. POSIX lseek allows
+	       that, and if anything is written at the end on the gap, 
+	       reads from the gap should return 0 unless some real data
+	       is written there. Since implementing it would be rather
+	       difficult, we simply extend the file by writing zeros
+	       and hope for the best. */
+	    LONG abs_cur_pos = Seek(fdesc->fh, 0, OFFSET_CURRENT);
+	    if(abs_cur_pos == -1)
+	        goto error;
+	    LONG file_size = Seek(fdesc->fh, 0, OFFSET_END);
+	    if(file_size == -1)
+		goto error;
+	    /* Now compute how much we have to extend the file */
+	    LONG abs_new_pos = 0;
+	    switch(whence)
+	    {
+	        case OFFSET_BEGINNING: abs_new_pos = offset; break;
+	        case OFFSET_CURRENT: abs_new_pos = abs_cur_pos + offset; break;
+	        case OFFSET_END: abs_new_pos = file_size + offset; break;
+	    }
+	    if(abs_new_pos > abs_cur_pos)
+	    {
+		ULONG bufsize = 4096;
+		APTR zeros = AllocMem(bufsize, MEMF_ANY | MEMF_CLEAR);
+		if(!zeros)
+		{
+		    /* Restore previous position */
+		    Seek(fdesc->fh, abs_cur_pos, OFFSET_BEGINNING);
+		    errno = ENOMEM;
+		    return -1;
+		}
+		
+		LONG towrite = abs_new_pos - abs_cur_pos;
+		do
+		{
+		    Write(fdesc->fh, zeros, MIN(towrite, bufsize));
+		    towrite -= bufsize;
+		}
+		while(towrite > 0);
+		
+		FreeMem(zeros, bufsize);
+	    }
+	    else
+	    {
+		/* Hmm, that's strange. Looks like ERROR_SEEK_ERROR has
+		   been caused by something else */
+		SetIoErr(saved_error);
+		goto error;
+	    }
+	}
+	else
+	    goto error;
+    }
 
     return Seek((BPTR)fdesc->fh, 0, OFFSET_CURRENT);
+error:
+    errno = IoErr2errno (IoErr ());
+    return (off_t) -1;
 } /* lseek */
