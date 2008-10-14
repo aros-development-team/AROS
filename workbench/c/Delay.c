@@ -61,8 +61,10 @@ int main(void)
 	if (ticks >= 0 && ticks <= TICKS_PER_SECOND * 300)
 	{
 	    Delay(ticks);
+	    FreeArgs(rda);
 	    return RETURN_OK;
 	}
+	FreeArgs(rda);
     }
     return RETURN_FAIL;
 }
