@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <string.h>
 
@@ -26,12 +26,8 @@
 #include <proto/expansion.h>
 #include <proto/partition.h>
 
-#ifdef DEBUG
 #include <aros/debug.h>
-#endif
 #include <aros/macros.h>
-
-#define BOOT_CHECK 0
 
 #define uppercase(x) ((x >= 'a' && x <= 'z') ? (x & 0xdf) : x)
 
@@ -58,22 +54,23 @@ const struct Resident boot_resident =
 };
 
 static const struct _dt {
-    IPTR    mask,type,fs;
+    IPTR    mask,type;
+    STRPTR  fs;
 } DosTypes[] = {
-    { 0xffffffff, AROS_MAKE_ID('B','E','F','S' ), (IPTR)"befs.handler"  },
-    { 0xffffff00, AROS_MAKE_ID('B','S','D','\0'), (IPTR)"bsd.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('C','P','M','\0'), (IPTR)"cpm.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('D','O','S','\0'), (IPTR)"afs.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('E','X','T','\0'), (IPTR)"ext.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('F','A','T','\0'), (IPTR)"fat.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('L','V','M','\0'), (IPTR)"lvm.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('M','N','X','\0'), (IPTR)"minix.handler" },
-    { 0xffffffff, AROS_MAKE_ID('N','T','F','S' ), (IPTR)"ntfs.handler"  },
-    { 0xffffffff, AROS_MAKE_ID('R','A','I','D' ), (IPTR)"raid.handler"  },
-    { 0xffffff00, AROS_MAKE_ID('S','F','S','\0'), (IPTR)"sfs.handler"   },
-    { 0xffffff00, AROS_MAKE_ID('S','K','Y','\0'), (IPTR)"skyfs.handler" },
-    { 0xffffffff, AROS_MAKE_ID('V','F','A','T' ), (IPTR)"fat.handler"   },
-    { 0,0,0, }
+    { 0xffffffff, AROS_MAKE_ID('B','E','F','S' ), "befs.handler"  },
+    { 0xffffff00, AROS_MAKE_ID('B','S','D','\0'), "bsd.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('C','P','M','\0'), "cpm.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('D','O','S','\0'), "afs.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('E','X','T','\0'), "ext.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('F','A','T','\0'), "fat.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('L','V','M','\0'), "lvm.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('M','N','X','\0'), "minix.handler" },
+    { 0xffffffff, AROS_MAKE_ID('N','T','F','S' ), "ntfs.handler"  },
+    { 0xffffffff, AROS_MAKE_ID('R','A','I','D' ), "raid.handler"  },
+    { 0xffffff00, AROS_MAKE_ID('S','F','S','\0'), "sfs.handler"   },
+    { 0xffffff00, AROS_MAKE_ID('S','K','Y','\0'), "skyfs.handler" },
+    { 0xffffffff, AROS_MAKE_ID('V','F','A','T' ), "fat.handler"   },
+    { 0,0,NULL }
 };
 
 static const struct _pt {
@@ -104,7 +101,7 @@ static const struct _pt {
     { 0, 0 }
 };
 
-static IPTR MatchHandler(IPTR DosType)
+static STRPTR MatchHandler(IPTR DosType)
 {
     int i;
     IPTR fs = 0;
@@ -169,13 +166,15 @@ static VOID AddPartitionVolume
     UBYTE name[32];
     ULONG i, blockspercyl;
     const struct PartitionAttribute *attrs;
-    IPTR tags[7];
+    IPTR tags[9];
     IPTR *pp;
     struct DeviceNode *devnode;
     struct PartitionType ptyp;
     LONG ppos;
     TEXT *devname, *handler;
+    LONG bootable;
 
+    D(bug("[Boot] AddPartitionVolume\n"));
     pp = AllocVec(sizeof(struct DosEnvec) + sizeof(IPTR) * 4,
         MEMF_PUBLIC | MEMF_CLEAR);
     if (pp)
@@ -185,19 +184,24 @@ static VOID AddPartitionVolume
             attrs++;  /* look for name attr */
         if (attrs->attribute != PTA_DONE)
         {
+	    D(bug("[Boot] RDB partition\n"));
             /* partition has a name => RDB partition */
 	    tags[0] = PT_NAME;
 	    tags[1] = (IPTR)name;
 	    tags[2] = PT_DOSENVEC;
 	    tags[3] = (IPTR)&pp[4];
-	    tags[4] = TAG_DONE;
+	    tags[4] = PT_BOOTABLE;
+	    tags[5] = (IPTR)&bootable;
+	    tags[6] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
+	    D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
 	    /* BHFormat complains if this bit is not set, and it's really wrong to have it unset. So we explicitly set it here.
 	       Pavel Fedin <sonic_amiga@rambler.ru> */
 	    pp[4 + DE_BUFMEMTYPE] |= MEMF_PUBLIC;
         }
         else
         {
+	    D(bug("[Boot] MBR partition\n"));
             /* partition doesn't have a name => MBR partition */
 	    tags[0] = PT_POSITION;
 	    tags[1] = (IPTR)&ppos;
@@ -205,7 +209,9 @@ static VOID AddPartitionVolume
 	    tags[3] = (IPTR)&ptyp;
 	    tags[4] = PT_DOSENVEC;
 	    tags[5] = (IPTR)&pp[4];
-	    tags[6] = TAG_DONE;
+	    tags[6] = PT_ACTIVE;
+	    tags[7] = (IPTR)&bootable;
+	    tags[8] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
 
             /* make the name */
@@ -227,6 +233,7 @@ static VOID AddPartitionVolume
                 name[i++] = '0' + (UBYTE)(ppos / 10);
             name[i++] = '0' + (UBYTE)(ppos % 10);
             name[i] = '\0';
+	    D(bug("[Boot] Parition name: %s type: %lu bootable: %d\n", name, ptyp.id[0], bootable));
             /* set DOSTYPE based on the partition type */
             pp[4 + DE_DOSTYPE] = MatchPartType(ptyp.id[0]);
             /* set some common DOSENV fields */
@@ -261,11 +268,13 @@ static VOID AddPartitionVolume
         pp[4 + DE_LOWCYL] += i;
         pp[4 + DE_HIGHCYL] += i;
 
+	D(bug("[Boot] Looking up handler for 0x%08lX\n", pp[4+DE_DOSTYPE]));
         handler = MatchHandler(pp[4 + DE_DOSTYPE]);
 
         /* Skip unknown partition types */
         if (handler != NULL)
         {
+	    D(bug("[Boot] found handler: %s\n", handler));
             devnode = MakeDosNode(pp);
             if (devnode != NULL)
             {
@@ -280,7 +289,7 @@ static VOID AddPartitionVolume
                         i++;
                     }
                     AROS_BSTR_setstrlen(devnode->dn_Handler, i);
-                    AddBootNode(pp[4 + DE_BOOTPRI], 0, devnode, 0);
+                    AddBootNode(bootable ? pp[4 + DE_BOOTPRI] : -128, 0, devnode, 0);
                     D(bug("[Boot] AddBootNode(%s,0x%lx,'%s')\n",
                         devnode->dn_Ext.dn_AROS.dn_DevName,
                         pp[4 + DE_DOSTYPE], handler));

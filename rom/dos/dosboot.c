@@ -6,11 +6,6 @@
     Lang: english 
 */
 
-/* This definition enables mounting
-   disk-based handlers (e.g. fat.handler) at bootup.
-   Comment it out in case if some critical bugs appear. */
-#define MOUNT_DISK_HANDLERS
-
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
 # define  DEBUG 0
@@ -77,7 +72,7 @@ static BOOL __dosboot_IsBootable(CONST_STRPTR deviceName, struct DosLibrary * DO
     LONG            bufferLength;
     struct InfoData info;
 
-#define STARTUP_SEQUENCE_FILE ":S/Startup-Sequence"
+#define STARTUP_SEQUENCE_FILE ":C/Shell"
 
     bufferLength = strlen(deviceName) + sizeof(STARTUP_SEQUENCE_FILE) + 1;
 
@@ -162,10 +157,8 @@ AROS_UFH3(void, __dosboot_IntBoot,
         if ((tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest))) != NULL)
         {
             if ((OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0)) == 0)
-            {
                 #define ioStd(x) ((struct IOStdReq *)x)
                 ioStd(tr)->io_Command = TR_ADDREQUEST;
-            }
             else
             {
                 D(bug("[DOS] __dosboot_IntBoot: Could not open timer.device, something's wrong!\n"));
@@ -202,13 +195,7 @@ AROS_UFH3(void, __dosboot_IntBoot,
 
         if( !__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode , 
                     (struct DosLibrary *) DOSBase))
-        {
-#ifdef MOUNT_DISK_HANDLERS
             bootNode->bn_Flags |= BNF_RETRY;
-#else
-            REMOVE(bootNode);
-#endif
-        }
         else
             bootNode->bn_Flags &= ~BNF_RETRY;
     }
@@ -222,7 +209,8 @@ AROS_UFH3(void, __dosboot_IntBoot,
                 it's probably some kind of transient error (ie. no disk
                 in drive or wrong disk) so we only move it to the end of
                 the list. */
-            if ((!(bootNode->bn_Flags & BNF_RETRY)) && __dosboot_IsBootable( deviceName, (struct DosLibrary *)DOSBase ) )
+            if ((!(bootNode->bn_Flags & BNF_RETRY)) && (bootNode->bn_Node.ln_Pri != -128) &&
+		__dosboot_IsBootable(deviceName, (struct DosLibrary *)DOSBase))
             {
                 bootdevicefound = TRUE;
                 break;
