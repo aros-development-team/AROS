@@ -54,7 +54,7 @@
 
     if(tvp != NULL)
     {   
-	ULONG t = (ULONG)tvp[1].tv_sec;
+	ULONG t = (ULONG)tvp[1].tv_sec - 2922 * 1440 * 60;
 
 	ds.ds_Days   = t / (60*60*24);
 	ds.ds_Minute = (t / 60) % (60*24);
