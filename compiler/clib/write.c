@@ -58,7 +58,7 @@
 	return -1;
     }
 
-    cnt = Write ((BPTR)fdesc->fh, (void *)buf, count);
+    cnt = Write ((BPTR)fdesc->fcb->fh, (void *)buf, count);
 
     if (cnt == -1)
 	errno = IoErr2errno (IoErr ());

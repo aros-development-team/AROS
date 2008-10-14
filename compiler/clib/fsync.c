@@ -44,13 +44,13 @@
 {
     fdesc *fdesc = __getfdesc(fd);
 
-    if (!fdesc || !(fdesc->flags & O_WRITE))
+    if (!fdesc || !(fdesc->fcb->flags & O_WRITE))
     {
         errno = EBADF;
         return -1;
     }
 
-    if (!Flush((BPTR) fdesc->fh))
+    if (!Flush((BPTR) fdesc->fcb->fh))
     {
         errno = IoErr2errno(IoErr());
         return -1;

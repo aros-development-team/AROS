@@ -54,7 +54,7 @@
 	return EOF;
     }
 
-    if (FPutC((BPTR)fdesc->fh, c) == EOF)
+    if (FPutC((BPTR)fdesc->fcb->fh, c) == EOF)
     {
 	errno = IoErr2errno(IoErr());
 	c = EOF;

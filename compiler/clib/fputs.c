@@ -54,7 +54,7 @@
 
     if (!str) str = "(null)";
 
-    if (FPuts((BPTR)fdesc->fh, str) == -1)
+    if (FPuts((BPTR)fdesc->fcb->fh, str) == -1)
     {
 	errno = IoErr2errno(IoErr());
 	return EOF;

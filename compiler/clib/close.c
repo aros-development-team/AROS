@@ -60,7 +60,7 @@
 	return -1;
     }
 
-    if (--fdesc->opencount == 0)
+    if (--fdesc->fcb->opencount == 0)
     {
         /* Due to a *stupid* behaviour of the dos.library we cannot handle closing failures cleanly :-(
 	if (
@@ -82,17 +82,18 @@
 
 	if
         (
-	    fdesc->fh!=__stdfiles[STDIN_FILENO] &&
-	    fdesc->fh!=__stdfiles[STDOUT_FILENO] &&
-	    fdesc->fh!=__stdfiles[STDERR_FILENO]
+	    fdesc->fcb->fh!=__stdfiles[STDIN_FILENO] &&
+	    fdesc->fcb->fh!=__stdfiles[STDOUT_FILENO] &&
+	    fdesc->fcb->fh!=__stdfiles[STDERR_FILENO]
         )
 	{
-            (void)Close(fdesc->fh);
+            (void)Close(fdesc->fcb->fh);
 	}
 
-	free(fdesc);
+	FreeVec(fdesc->fcb);
     }
 
+    free(fdesc);
     __setfdesc(fd, NULL);
 
     return 0;

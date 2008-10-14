@@ -79,7 +79,7 @@
 	    return -1;
     }
 
-    cnt = Seek ((BPTR)fdesc->fh, offset, whence);
+    cnt = Seek ((BPTR)fdesc->fcb->fh, offset, whence);
 
     if (cnt == -1)
     {
@@ -92,10 +92,10 @@
 	       is written there. Since implementing it would be rather
 	       difficult, we simply extend the file by writing zeros
 	       and hope for the best. */
-	    LONG abs_cur_pos = Seek(fdesc->fh, 0, OFFSET_CURRENT);
+	    LONG abs_cur_pos = Seek(fdesc->fcb->fh, 0, OFFSET_CURRENT);
 	    if(abs_cur_pos == -1)
 	        goto error;
-	    LONG file_size = Seek(fdesc->fh, 0, OFFSET_END);
+	    LONG file_size = Seek(fdesc->fcb->fh, 0, OFFSET_END);
 	    if(file_size == -1)
 		goto error;
 	    /* Now compute how much we have to extend the file */
@@ -113,7 +113,7 @@
 		if(!zeros)
 		{
 		    /* Restore previous position */
-		    Seek(fdesc->fh, abs_cur_pos, OFFSET_BEGINNING);
+		    Seek(fdesc->fcb->fh, abs_cur_pos, OFFSET_BEGINNING);
 		    errno = ENOMEM;
 		    return -1;
 		}
@@ -121,7 +121,7 @@
 		LONG towrite = abs_new_pos - abs_cur_pos;
 		do
 		{
-		    Write(fdesc->fh, zeros, MIN(towrite, bufsize));
+		    Write(fdesc->fcb->fh, zeros, MIN(towrite, bufsize));
 		    towrite -= bufsize;
 		}
 		while(towrite > 0);
@@ -140,7 +140,7 @@
 	    goto error;
     }
 
-    return Seek((BPTR)fdesc->fh, 0, OFFSET_CURRENT);
+    return Seek((BPTR)fdesc->fcb->fh, 0, OFFSET_CURRENT);
 error:
     errno = IoErr2errno (IoErr ());
     return (off_t) -1;

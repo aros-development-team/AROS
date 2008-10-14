@@ -58,7 +58,7 @@ static int __putc(int c, BPTR fh);
 	return 0;
     }
 
-    return __vcformat (fdesc->fh, __putc, format, args);
+    return __vcformat (fdesc->fcb->fh, __putc, format, args);
 } /* vfprintf */
 
 

@@ -11,11 +11,19 @@
 
 #include <dos/dos.h>
 
-typedef struct _fdesc
+/* file control block - one per file handle */
+typedef struct _fcb
 {
     BPTR fh;
     int  flags;
     unsigned int opencount;
+} fcb;
+
+/* file descriptor structure - one per descriptor */
+typedef struct _fdesc
+{
+    fcb  *fcb;
+    int  fdflags;
 } fdesc;
 
 fdesc *__getfdesc(register int fd);

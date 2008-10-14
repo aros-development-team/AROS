@@ -6,6 +6,7 @@
 */
 
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -61,11 +62,12 @@
 	return -1;
     }
 
-    if (--desc->opencount == 0)
+    if (--desc->fcb->opencount == 0)
     {
-        UnLock(desc->fh);
-        free(desc);
+        UnLock(desc->fcb->fh);
+        FreeVec(desc->fcb);
     }
+    free(desc);
     __setfdesc(dir->fd, NULL);
 
     FreeDosObject(DOS_FIB, dir->priv);

@@ -67,7 +67,7 @@
 		    return EOF;
       		}
 
-		if (!Flush((BPTR)fdesc->fh))
+		if (!Flush((BPTR)fdesc->fcb->fh))
 		{
 		    errno = IoErr2errno(IoErr());
 		    return EOF;
@@ -85,7 +85,7 @@
 	    return EOF;
 	}
 
-	if (Flush((BPTR)fdesc->fh))
+	if (Flush((BPTR)fdesc->fcb->fh))
 	    return 0;
     }
 
