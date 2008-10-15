@@ -1,392 +1,426 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  2003-2008, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
-/*********************************************************************************************/
+// #define MUIMASTER_YES_INLINE_STDARG
+
+#include <exec/types.h>
+#include <utility/tagitem.h>
+#include <libraries/asl.h>
+#include <libraries/mui.h>
+#include <prefs/locale.h>
+#include <prefs/prefhdr.h>
+#define DEBUG 1
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
+
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
+#include <proto/muimaster.h>
+#include <proto/dos.h>
+#include <proto/iffparse.h>
+
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <aros/debug.h>
 
 #include "global.h"
-#include <string.h>
+#include "page_country.h"
+#include "registertab.h"
 
-/*********************************************************************************************/
+/*** String Data ************************************************************/
 
-static struct Gadget *gadlist, *countrygad, *gad;
-static struct Hook lvhook;
-static WORD domleft, domtop, domwidth, domheight;
-static WORD max_flagw, max_flagh;
-static WORD active_country = 0;
-static BOOL page_active;
+/*** Instance Data **********************************************************/
 
-/*********************************************************************************************/
-
-static LONG country_init(void)
+typedef struct MUI_CountryPic
 {
+  char          *strings_country;
+  Object        *pic;
+  Object        *list_pic;
+} MUI_CountryPic;
+
+struct MUI_CountryData
+{
+  Object         *me;
+  Object         *child;
+  Object         *prefs;
+  ULONG           active;
+  unsigned int    nr_countries;
+  unsigned int    filled;
+  MUI_CountryPic **pic;
+};
+
+struct MUI_CustomClass     *Country_CLASS;
+
+/*** Helpers *****************************************************************/
+
+#define MAX_COUNTRY_LEN 256
+
+/*******************************
+ * prepare for fill_country_list
+ *******************************/
+
+STATIC VOID init_country_list(struct MUI_CountryData *data) {
+
     struct CountryEntry *entry;
-    static UBYTE   	 filename[256];
-    
-    if (!DataTypesBase) return TRUE;
-    
+    BPTR                 lock;
+    int                  i;
+    LONG                 act;
+    char                 filename[MAX_COUNTRY_LEN];
+
+    if(data->filled)
+    {
+	return;
+    }
+
+    data->filled=1;
+
+    /* count countries */
+    data->nr_countries=0;
     ForeachNode(&country_list, entry)
     {
-    	strcpy(filename, "LOCALE:Flags/Countries");
-	AddPart(filename, entry->lve.realname, 256);
-	
-	entry->dto = NewDTObject(filename, DTA_GroupID	    	, GID_PICTURE	    ,
-	    	    	    	    	   OBP_Precision    	, PRECISION_IMAGE   ,
-					   PDTA_Screen	    	, (IPTR)scr 	    ,
-					   PDTA_Remap	    	, TRUE	    	    ,
-					   PDTA_FreeSourceBitMap, TRUE	    	    ,
-					   PDTA_DestMode    	, PMODE_V43 	    ,
-					   PDTA_UseFriendBitMap , TRUE	    	    ,
-					   TAG_DONE);
-					   
-	if (entry->dto)
-	{
-	    IPTR val;
-	    
-	    DoMethod(entry->dto, DTM_PROCLAYOUT, (IPTR) NULL, 1);
-	    
-	    GetDTAttrs(entry->dto, PDTA_DestBitMap, (IPTR) &entry->flagbm, TAG_DONE);
-	    if (!entry->flagbm)
+	data->nr_countries++;
+    }
+
+    D(bug("[country class] nr of countries: %d\n",data->nr_countries));
+
+    data->pic=AllocVec(sizeof(struct MUI_CountryPic *) * (data->nr_countries+1),MEMF_CLEAR);
+
+    i=0;
+    ForeachNode(&country_list, entry)
+    {
+	data->pic[i]=AllocVec(sizeof(struct MUI_CountryPic),MEMF_CLEAR);
+
+	snprintf(filename,MAX_COUNTRY_LEN-1,
+	            "LOCALE:Flags/Countries/%s",entry->lve.realname);
+
+	if ((lock = Lock(filename, ACCESS_READ)) != NULL) {
+	    data->pic[i]->pic=(APTR) MUI_NewObject("Dtpic.mui",
+	                               MUIA_Dtpic_Name,(ULONG) filename,
+				       TAG_DONE);
+
+	    UnLock(lock);
+	    if(!data->pic[i]->pic) 
 	    {
-	    	GetDTAttrs(entry->dto, PDTA_BitMap, (IPTR) &entry->flagbm, TAG_DONE);
-	    }
-	    
-	    GetDTAttrs(entry->dto, DTA_NominalHoriz, (IPTR) &val, TAG_DONE);
-	    entry->flagw = (WORD)val;
-	    
-	    GetDTAttrs(entry->dto, DTA_NominalVert, (IPTR) &val, TAG_DONE);
-	    entry->flagh = (WORD)val;
-	    
-	    if (entry->flagbm)
-	    {
-	    	if (entry->flagw > max_flagw) max_flagw = entry->flagw;
-		if (entry->flagh > max_flagh) max_flagh = entry->flagh;
-		
-		if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15)
-		{
-		    struct BitMap *bm;
-		    
-		    bm = AllocBitMap(entry->flagw,
-		    	    	     entry->flagh,
-				     GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH),
-				     BMF_MINPLANES | BMF_INTERLEAVED,
-				     scr->RastPort.BitMap);
-				     
-		    if (bm)
-		    {
-		    	BltBitMap(entry->flagbm, 0, 0, bm, 0, 0, entry->flagw, entry->flagh, 192, 255, 0);
-			DisposeDTObject(entry->dto);
-			
-			entry->dto = NULL;
-			entry->flagbm = bm;
-		    }
-		}
+		D(bug("[country class] Picture %s failed to load\n",filename));
 	    }
 	    else
 	    {
-	    	DisposeDTObject(entry->dto);
-		entry->dto = NULL;
+		D(bug("[country class] Picture %s loaded: %lx\n",filename,data->pic[i]->pic));
 	    }
-	    
-	} /* if (entry->dto) */
-	
-    } /* ForeachNode(&country_list, entry) */
+	}
+
+	if(data->pic[i]->pic)
+	{
+	    data->pic[i]->list_pic=(Object *) DoMethod(data->child,
+	       		  MUIM_List_CreateImage,data->pic[i]->pic, 
+	    		  0);
+	}
+	else
+	{
+	    data->pic[i]->list_pic=NULL; /* should be ok */
+	    D(bug("ERROR: [country class] data->pic[%d]->pic is NULL!\n",i));
+	}
+	data->pic[i]->strings_country=AllocVec(sizeof(char) * MAX_COUNTRY_LEN,MEMF_CLEAR);
+	snprintf(data->pic[i]->strings_country,
+	         MAX_COUNTRY_LEN,"\33O[%08lx] %s",
+		 (long unsigned int) data->pic[i]->list_pic,
+		 entry->lve.name); /* 64-bit !? */
+
+	DoMethod(data->child,
+		      MUIM_List_InsertSingle, data->pic[i]->strings_country,
+		      MUIV_List_Insert_Bottom);
+
+	i++;
+    }
+
+    /* we did remember that */
+    nnset(data->child, MUIA_List_Active, data->active);
+}
+
+/*** Methods ****************************************************************
+ *
+ */
+
+Object *Country_New(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_CountryData *data;
+    struct TagItem *tstate, *tag;
+
+    D(bug("[country class] Country Class New\n"));
+
+    /* 
+     * country flags are at the moment 17 pixels high
+     * MUIA_List_MinLineHeight, 18 leaves at least one
+     * pixel space between the images
+     * If images ever get bigger, this should be
+     * no problem.
+     */
+
+    obj = (Object *) DoSuperNewTags(
+			  cl, obj, NULL,
+			  InputListFrame,
+			  MUIA_List_MinLineHeight, 18,
+			  TAG_DONE
+		      );
+    
+    if (obj == NULL) 
+    {
+	D(bug("ERROR: [country class] DoSuperNewTags failed!\n"));
+	return NULL;
+    }
+
+    data = INST_DATA(cl, obj);
+
+    tstate=((struct opSet *)msg)->ops_AttrList;
+    while ((tag = (struct TagItem *) NextTagItem((APTR) &tstate)))
+    {
+	switch (tag->ti_Tag)
+	{
+	    case MA_PrefsObject:
+		data->prefs = (Object *) tag->ti_Data;
+		break;
+	}
+    }
+
+    data->filled=0;
+    data->child=obj;
+
+    /* changed hook */
+    DoMethod(obj, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, (IPTR) data->prefs, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE);
+
+    data->me=obj;
+    return obj;
+}
+
+/**************************************************************
+ * seems like you can only call CreateImage after the list
+ * is setup, which is quite late. So we do it, after
+ * the list is shown. Nice? Not really. Maybe I did
+ * not understand, why this needs to be.
+ **************************************************************/
+static IPTR Country_Fill(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_CountryData *data = INST_DATA(cl, obj);
+
+    IPTR         ret;
+
+    ret=DoSuperMethodA(cl, obj, (Msg)msg);
+
+    init_country_list(data);
+
+    return ret;
+}
+
+/******************************************
+ * According to the MUI docs, you should
+ * call DeleteImage and Dispose during
+ * Cleanup. 
+ ******************************************/
+static IPTR Country_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    struct MUI_CountryData *data = INST_DATA(cl, obj);
+    unsigned int i;
+
+    D(bug("[country class] Country_Cleanup\n"));
+
+    if(data->filled)
+    {
+	for(i=0; i<data->nr_countries; i++)
+	{
+	    if(data->pic[i])
+	    {
+		if(data->pic[i]->list_pic)
+		{
+		    DoMethod(data->child,
+			      MUIM_List_DeleteImage,data->pic[i]->list_pic);
+		    data->pic[i]->list_pic=NULL;
+		}
+		if(data->pic[i]->pic)
+		{
+		    DoMethod(data->pic[i]->pic,OM_DISPOSE);
+		    data->pic[i]->pic=NULL;
+		}
+	    }
+	}
+    }
+    else
+    {
+	D(bug("[country class] Country_Cleanup and !data->filled!?\n"));
+    }
+
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+static IPTR Country_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_CountryData *data = INST_DATA(cl, obj);
+    unsigned int i;
+
+    D(bug("[country class] Country_Dispose\n"));
+
+    if(!data->pic)
+	return DoSuperMethodA(cl, obj, msg);
+
+    for(i=0;i<data->nr_countries;i++)
+    {
+	if(data->pic[i])
+	{
+	    if(data->pic[i]->strings_country)
+	    {
+		FreeVec(data->pic[i]->strings_country);
+	    }
+	    FreeVec(data->pic[i]);
+	}
+    }
+    FreeVec(data->pic);
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/*** Get ******************************************************************/
+static IPTR Country_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct MUI_CountryData *data = INST_DATA(cl, obj);
+    struct CountryEntry    *entry;
+    ULONG rc;
+    ULONG nr;
+    ULONG i;
+
+
+    switch (msg->opg_AttrID)
+    {
+	case MA_CountryName:
+	    get(data->child, MUIA_List_Active, &nr);
+	    rc = -1;
+	    i  = 0;
+	    ForeachNode(&country_list, entry) {
+		if(i==nr)
+		{
+		    rc=entry->lve.realname;
+		}
+		i++;
+	    }
+
+	    if(rc == -1)
+	    {
+		*msg->opg_Storage = NULL; /* hmm.. */
+		return FALSE; 
+	    }
+	    break;
+
+	default:
+	    return DoSuperMethodA(cl, obj, (Msg)msg);
+    }
+
+    *msg->opg_Storage = rc;
+    return TRUE;
+}
+
+/*** Set ******************************************************************/
+static IPTR Country_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_CountryData *data = INST_DATA(cl, obj);
+    struct TagItem *tstate, *tag;
+    struct CountryEntry    *entry;
+    ULONG update;
+    ULONG nr;
+    ULONG i;
+
+    tstate = msg->ops_AttrList;
+    update = FALSE;
+
+    while ((tag = (struct TagItem *) NextTagItem((APTR) &tstate)))
+    {
+	switch (tag->ti_Tag)
+	{
+	    case MA_CountryName:
+
+		nr = -1;
+		i  = 0;
+		ForeachNode(&country_list, entry) {
+		    if(!stricmp(entry->lve.realname,tag->ti_Data))
+		    {
+			nr=i;
+		    }
+		    i++;
+		}
+
+		if(nr < 0)
+		{
+		    D(bug("ERROR: [country class] could not find >%s< !?\n",tag->ti_Data));
+		}
+		else
+		{
+		    if(data->filled)
+		    {
+			nnset(data->child, MUIA_List_Active, nr);
+			update=TRUE;
+		    }
+    		    else
+    		    {
+    			/* remember */
+    			data->active=nr;
+		    }
+		}
+		break;
+
+	    default:
+		return DoSuperMethodA(cl, obj, (Msg)msg);
+	}
+    }
+
+    if(update)
+    {
+	MUI_Redraw(obj, MADF_DRAWOBJECT);
+    }
 
     return TRUE;
 }
 
-/*********************************************************************************************/
+/*** Setup ******************************************************************/
 
-static IPTR LVRenderHook(struct Hook *hook, struct Node *node, struct LVDrawMsg *msg)
+BOOPSI_DISPATCHER(IPTR, Country_Dispatcher, cl, obj, msg)
 {
-    IPTR retval;
-    
-    if (msg->lvdm_MethodID == LV_DRAW)
+    switch (msg->MethodID)
     {
-    	struct DrawInfo *dri = msg->lvdm_DrawInfo;
-    	struct RastPort *rp  = msg->lvdm_RastPort;
-    	
-    	WORD min_x = msg->lvdm_Bounds.MinX;
-    	WORD min_y = msg->lvdm_Bounds.MinY;
-    	WORD max_x = msg->lvdm_Bounds.MaxX;
-    	WORD max_y = msg->lvdm_Bounds.MaxY;
-
-        UWORD erasepen = BACKGROUNDPEN;
-
-     	SetDrMd(rp, JAM1);
-     	      	
-     	switch (msg->lvdm_State)
-     	{
-     	    case LVR_SELECTED:
-     	    case LVR_SELECTEDDISABLED:
- 		erasepen = FILLPEN;
-		/* Fall through */
-		
-     	    case LVR_NORMAL:
-     	    case LVR_NORMALDISABLED:
-	    {
-
-    	    	struct TextExtent   te;
-		struct CountryEntry *ce;
-    	    	WORD 	    	    numfit;
-    	    
-		SetAPen(rp, dri->dri_Pens[erasepen]);
-     	    	RectFill(rp, min_x, min_y, max_x, max_y);
-     	    	
-		ce = (struct CountryEntry *)node;
-		if (ce->flagbm)
-		{
-		    BltBitMapRastPort(ce->flagbm,
-		    	    	      0,
-				      0,
-		    	    	      rp,
-				      min_x + 1,
-				      (min_y + max_y + 1 - ce->flagh) / 2,
-				      ce->flagw,
-				      ce->flagh,
-				      192);
-		}
-		
-		if (max_flagh) min_x += max_flagw + 3;
-		
-    	    	numfit = TextFit(rp, node->ln_Name, strlen(node->ln_Name),
-    	    		&te, NULL, 1, max_x - min_x + 1, max_y - min_y + 1);
-
-	    	SetAPen(rp, dri->dri_Pens[TEXTPEN]);
-	    	
-    	    	/* Render text */
-    	    	Move(rp, min_x, (min_y + max_y + 1 - rp->Font->tf_YSize) / 2 + rp->Font->tf_Baseline);
-    	    	Text(rp, node->ln_Name, numfit);
-  	    	     	    }
-	    break;
-     	    	     	
-     	}
-     	
-     	retval = LVCB_OK;
-     }
-     else
-     {
-     	retval = LVCB_UNKNOWN;
-     }
-     	
-     return retval;
-}
-
-/*********************************************************************************************/
-
-static LONG country_makegadgets(void)
-{
-    struct NewGadget ng;
-    WORD    	     itemheight;
-    
-    gad = CreateContext(&gadlist);
-    
-    ng.ng_LeftEdge   = domleft;
-    ng.ng_TopEdge    = domtop;
-    ng.ng_Width      = domwidth;
-    ng.ng_Height     = domheight;
-    ng.ng_GadgetText = NULL;
-    ng.ng_TextAttr   = 0;
-    ng.ng_GadgetID   = MSG_GAD_TAB_COUNTRY;
-    ng.ng_Flags      = 0;
-    ng.ng_VisualInfo = vi;
-
-    itemheight = dri->dri_Font->tf_YSize;
-    if (max_flagh > itemheight) itemheight = max_flagh;
-    itemheight += 2;
-   
-    lvhook.h_Entry = HookEntry;
-    lvhook.h_SubEntry = LVRenderHook;
-    
-    gad = countrygad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels    	, (IPTR)&country_list,
-    	    	    	    	    	    	    	     GTLV_ShowSelected	, (IPTR) NULL	    	     ,
-							     GTLV_Selected    	, active_country     ,
-							     GTLV_MakeVisible	, active_country     ,
-							     GTLV_ItemHeight    , itemheight  	     ,
-							     GTLV_CallBack  	, (IPTR)&lvhook      ,
-   	    	    	    	    	    	    	     TAG_DONE);
-    
-
-    return gad ? TRUE : FALSE;
-}
-
-/*********************************************************************************************/
-
-static void country_cleanup(void)
-{
-    struct CountryEntry *entry;
-    
-    ForeachNode(&country_list, entry)
-    {
-    	if (entry->dto)
-	{
-	    DisposeDTObject(entry->dto);
-	}
-	else if (entry->flagbm)
-	{
-	    FreeBitMap(entry->flagbm);
-	}
+	case OM_NEW:       return (IPTR) Country_New(cl, obj, (struct opSet *)msg);
+    	case MUIM_Show:    return Country_Fill(cl, obj, (struct MUIP_Show *)msg);
+	case OM_GET:       return Country_Get(cl, obj, msg);
+	case OM_SET:       return Country_Set(cl, obj, msg);
+	case MUIM_Cleanup: return Country_Cleanup(cl, obj, (struct MUIP_Clean *)msg);
+	case OM_DISPOSE:   return Country_Dispose(cl, obj, msg);
     }
     
-    if (gadlist) FreeGadgets(gadlist);
-    gadlist = NULL;
+    return DoSuperMethodA(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
+
+/*
+ * Class descriptor.
+ */
+const struct __MUIBuiltinClass _MUIP_Country_desc = 
+{ 
+    "Country",
+    MUIC_List,
+    sizeof(struct MUI_CountryData),
+    (void*)Country_Dispatcher 
+};
+
+void InitCountry() 
+{
+    Country_CLASS=MUI_CreateCustomClass(NULL,MUIC_List,NULL,sizeof(struct MUI_CountryData),(IPTR) &Country_Dispatcher);
+
 }
 
-/*********************************************************************************************/
-
-static LONG country_input(struct IntuiMessage *msg)
+void CleanCountry() 
 {
-    struct CountryEntry *entry;    
-    LONG    	retval = FALSE;
-    
-    if (msg->Class == IDCMP_GADGETUP)
+    if(Country_CLASS)
     {
-    	struct Gadget *gad = (struct Gadget *)msg->IAddress;
-	
-	switch(gad->GadgetID)
-	{
-	    case MSG_GAD_TAB_COUNTRY:
-	    	if ((entry = (struct CountryEntry *)FindListNode(&country_list, msg->Code)))
-		{
-		    if (active_country != msg->Code)
-		    {
-			active_country = msg->Code;
-			strcpy(localeprefs.lp_CountryName, entry->lve.realname);
-			LoadCountry(localeprefs.lp_CountryName, &localeprefs.lp_CountryData);
-		    }
-		}
-		retval = TRUE;
-		break;
-		
-	} /* switch(gad->GadgetID) */
-	
-    } /* if (msg->Class == IDCMP_GADGETUP) */
-    else if (msg->Class == IDCMP_RAWKEY)
-    {
-   	switch(msg->Code)
-	{
-	    case RAWKEY_NM_WHEEL_UP:
-	    	ScrollListview(countrygad, -1);
-	    	break;
-		
-	    case RAWKEY_NM_WHEEL_DOWN:
-	    	ScrollListview(countrygad, 1);
-	    	break;
-	}
+	MUI_DeleteCustomClass(Country_CLASS);
+	Country_CLASS=NULL;
     }
-    
-    return retval;
-}
-
-/*********************************************************************************************/
-
-static void country_prefs_changed(void)
-{
-    struct CountryEntry *entry;
-    WORD                i = 0;
-    
-    active_country = 0;
-    
-    ForeachNode(&country_list, entry)
-    {
-    	if (Stricmp(localeprefs.lp_CountryName, entry->lve.realname) == 0)
-	{
-	    active_country = i;
-	    break;
-	}
-	i++;
-    }
-    
-    if (gadlist)
-    {
-    	struct Window *winparam = page_active ? win : NULL;
-	
-	GT_SetGadgetAttrs(countrygad, winparam, NULL, GTLV_Selected   , active_country,
-	    	    	    	    	    	      GTLV_MakeVisible, active_country,
-						      TAG_DONE); 
-    }
-}
-
-/*********************************************************************************************/
-
-LONG page_country_handler(LONG cmd, IPTR param)
-{
-    LONG retval = TRUE;
-    
-    switch(cmd)
-    {
-    	case PAGECMD_INIT:
-	    retval = country_init();
-	    break;
-	    
-	case PAGECMD_LAYOUT:
-	    break;
-	    
-	case PAGECMD_GETMINWIDTH:
-	    retval = 20;
-	    break;
-	    
-	case PAGECMD_GETMINHEIGHT:
-	    retval = 20;
-	    break;
-	    
-	case PAGECMD_SETDOMLEFT:
-	    domleft = param;
-	    break;
-	    
-	case PAGECMD_SETDOMTOP:
-	    domtop = param;
-	    break;
-	    
-	case PAGECMD_SETDOMWIDTH:
-	    domwidth = param;
-	    break;
-	    
-	case PAGECMD_SETDOMHEIGHT:
-	    domheight = param;
-	    break;
-	    
-	case PAGECMD_MAKEGADGETS:
-	    retval = country_makegadgets();
-	    break;
-	    
-	case PAGECMD_ADDGADGETS:
-	    if (!page_active)
-	    {
-		GT_SetGadgetAttrs(countrygad, NULL, NULL, GTLV_MakeVisible, active_country, TAG_DONE);
-		AddGList(win, gadlist, -1, -1, NULL);
-		GT_RefreshWindow(win, NULL);
-		RefreshGList(gadlist, win, NULL, -1);
-		
-		page_active = TRUE;
-	    }
-    	    break;
-	    
-	case PAGECMD_REMGADGETS:
-	    if (page_active)
-	    {
-		if (gadlist) RemoveGList(win, gadlist, -1);
-		
-		page_active = FALSE;
-	    }
-	    break;
-	
-	case PAGECMD_PREFS_CHANGED:
-	    country_prefs_changed();
-	    break;
-	    
-	case PAGECMD_HANDLEINPUT:
-	    retval = country_input((struct IntuiMessage *)param);
-	    break;
-	    
-	case PAGECMD_CLEANUP:
-	    country_cleanup();
-	    break;
-    }
-    
-    return retval;
 }

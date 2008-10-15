@@ -1,349 +1,371 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  2003-2008, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
-#include "global.h"
-#include "registertab.h"
+// #define MUIMASTER_YES_INLINE_STDARG
+
+#include <exec/types.h>
+#include <utility/tagitem.h>
+#include <libraries/asl.h>
+#include <libraries/mui.h>
+#include <prefs/locale.h>
+#include <prefs/prefhdr.h>
+#define DEBUG 1
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
+
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
+#include <proto/muimaster.h>
+#include <proto/dos.h>
+#include <proto/iffparse.h>
+
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-/****************************************************************************************/
+#include <aros/debug.h>
 
-#define IMWIDTH(x)  (((struct Image *)(x))->Width)
-#define IMHEIGHT(x) (((struct Image *)(x))->Height)
+#include "global.h"
+#include "locale.h"
+#include "registertab.h"
+#include "page_language.h"
+#include "page_country.h"
+#include "page_timezone.h"
 
-/****************************************************************************************/
+/*** Instance Data **********************************************************/
 
-void InitRegisterTab(struct RegisterTab *reg, struct RegisterTabItem *items)
+struct LocaleRegister_DATA
 {
-    reg->items = items;
-    reg->numitems = 0;
+  int i;
 
-    while(items->text)
+  Object *child;
+  Object *language;
+  Object *country;
+  Object *timezone;
+
+  char *LocaleRegisterLabels[2];
+  char *tab_label;
+};
+
+STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data);
+STATIC VOID Gadgets2LocalePrefs(struct LocaleRegister_DATA *data);
+       VOID ShowMsg(char *msg);
+
+
+/*** Macros *****************************************************************/
+#define SETUP_INST_DATA struct LocaleRegister_DATA *data = INST_DATA(CLASS, self)
+
+/*** Methods ****************************************************************/
+
+
+static Object *handle_New_error(Object *obj, struct IClass *cl, char *error)
+{
+    struct LocaleRegister_DATA *data;
+
+    ShowMsg(error);
+    D(bug("[Register class] %s\n",error));
+
+    if(!obj)
+	return NULL;
+
+    data = INST_DATA(cl, obj);
+
+    if(data->language)
     {
-    	reg->numitems++;
-	items++;
+	D(bug("[Register class] DisposeObject(data->language);\n"));
+	DisposeObject(data->language);
+	data->language=NULL;
     }
+
+    if(data->country)
+    {
+	D(bug("[Register class] DisposeObject(data->country);\n"));
+	DisposeObject(data->country);
+	data->country=NULL;
+    }
+
+    if(data->timezone)
+    {
+	D(bug("[Register class] DisposeObject(data->timezone);\n"));
+	DisposeObject(data->timezone);
+	data->timezone=NULL;
+    }
+
+    if(data->tab_label)
+    {
+	FreeVec(data->tab_label);
+	data->tab_label=NULL;
+    }
+ 
+    CoerceMethod(cl, obj, OM_DISPOSE);
+    return NULL;
 }
 
-/****************************************************************************************/
-
-void LayoutRegisterTab(struct RegisterTab *reg, struct Screen *scr,
-    	    	       struct DrawInfo *dri, BOOL samewidth)
+Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    struct RastPort temprp;
-    WORD    	    i, x, h, biggest_w = 0;
-    
-    InitRastPort(&temprp);
-    SetFont(&temprp, dri->dri_Font);
-    
-    reg->dri = dri;
-    reg->fonth = dri->dri_Font->tf_YSize;
-    reg->fontb = dri->dri_Font->tf_Baseline;
-    
-    h = 0;
-    for(i = 0; i < reg->numitems; i++)
+    D(bug("[register class] LocaleRegister Class New\n"));
+
+    /* 
+     * we create self first and then create the child,
+     * so we have self->data available already
+     */
+
+    self = (Object *) DoSuperNewTags(
+			  CLASS, self, NULL,
+	     		  MUIA_PrefsEditor_Name, MSG(MSG_WINTITLE),
+ 			  MUIA_PrefsEditor_Path, (IPTR) "SYS/locale.prefs",
+			  TAG_DONE
+		      );
+    if (self == NULL) 
     {
-    	if (reg->items[i].image)
-	{
-	    if (IMHEIGHT(reg->items[i].image) > h) h = IMHEIGHT(reg->items[i].image);
-	}
-    }
-    
-    if (h) h += REGISTERTAB_IMEXTRA_HEIGHT;
-        
-    i = reg->fonth + REGISTERTAB_EXTRA_HEIGHT;
-    h = (i > h) ? i : h;
-    
-    reg->height = (h + 3) & ~3; /* Multiple of 4 */
-    
-    reg->height += 4;
-    
-    reg->slopew = (reg->height - 4) / 2;
-    
-    for(i = 0; i < reg->numitems; i++)
-    {
-    	reg->items[i].textlen = strlen(reg->items[i].text);
-    	reg->items[i].w = TextLength(&temprp, reg->items[i].text, reg->items[i].textlen);
-	reg->items[i].w += REGISTERTABITEM_EXTRA_WIDTH + reg->slopew * 2;
-	
-	if (reg->items[i].image)
-	{
-	    reg->items[i].w += REGISTERTAB_IMAGE_TEXT_SPACE +
-	    	    	       ((struct Image *)reg->items[i].image)->Width;
-	}
-	
-	if (reg->items[i].w > biggest_w) biggest_w = reg->items[i].w;
-    }
-    
-    if (samewidth)
-    {
-	for(i = 0; i < reg->numitems; i++)
-	{
-    	    reg->items[i].w = biggest_w;
-	}
+	return handle_New_error(self, CLASS, "ERROR: Unable to create register object!\n");
     }
 
-    x = REGISTERTAB_SPACE_LEFT;
-    for(i = 0; i < reg->numitems; i++)
-    {
-	WORD itemwidth;
-    	WORD to = 0;
-	itemwidth = TextLength(&temprp, reg->items[i].text, reg->items[i].textlen);
+    SETUP_INST_DATA;
 
-	if (reg->items[i].image)
-	{
-	    to = IMWIDTH(reg->items[i].image) + REGISTERTAB_IMAGE_TEXT_SPACE;
-            itemwidth += to;
-    	}
-	
-	reg->items[i].x1 = x;
-	reg->items[i].y1 = 0;
-	reg->items[i].x2 = x + reg->items[i].w - 1;
-	reg->items[i].y2 = reg->height - 1;
-	reg->items[i].h  = reg->items[i].y2 - reg->items[i].y1 + 1;
-    	reg->items[i].ix = (reg->items[i].w - itemwidth) / 2;
-	if (reg->items[i].image)
-	{
-	    reg->items[i].iy = (reg->items[i].h - IMHEIGHT(reg->items[i].image)) / 2;
-	}
-	
-	reg->items[i].tx = reg->items[i].ix + to;
-	reg->items[i].ty = reg->fontb + (reg->items[i].h - reg->fonth) / 2;
-	
-	
-	x += reg->items[i].w - reg->slopew;
+    data->language=NewObject(Language_CLASS->mcc_Class,NULL,
+			      MA_PrefsObject, (ULONG) self,
+			      TAG_DONE);
+
+    if(!data->language)
+	return handle_New_error(self,CLASS,"ERROR: Unable to create language object!\n");
+
+    data->country= ListviewObject, MUIA_Listview_List,
+			NewObject(Country_CLASS->mcc_Class,0,
+				  MA_PrefsObject, (ULONG) self,
+			  	  TAG_DONE),
+		   End;
+
+    if(!data->country)
+	return handle_New_error(self,CLASS,"ERROR: Unable to create country object!\n");
+
+    data->timezone=NewObject(Timezone_CLASS->mcc_Class,NULL,
+                             MA_PrefsObject, (ULONG) self,
+			     TAG_DONE);
+
+    if(!data->timezone)
+    {
+      D(bug("icall register handle error\n"));
+	return handle_New_error(self,CLASS,"ERROR: Unable to create timezone object!\n");
     }
 
-    reg->width = x + reg->slopew + REGISTERTAB_SPACE_RIGHT;
+    /*
+     * Maybe, it would be easier to change the catalog,
+     * but for me it's easier this way ;)
+     */
+    data->tab_label=AllocVec( strlen(MSG(MSG_GAD_TAB_LANGUAGE)) +
+                              strlen(MSG(MSG_GAD_TAB_COUNTRY)) +
+			      strlen(" / "),
+			      MEMF_ANY);
 
-    DeinitRastPort(&temprp);
+    if(!data->tab_label)
+	return handle_New_error(self,CLASS,"ERROR: Unable to allocate tab_label!\n");
+
+    sprintf(data->tab_label,"%s / %s",MSG(MSG_GAD_TAB_COUNTRY),
+                                      MSG(MSG_GAD_TAB_LANGUAGE));
+
+    data->LocaleRegisterLabels[0]=data->tab_label;
+    data->LocaleRegisterLabels[1]=MSG(MSG_GAD_TAB_TIMEZONE);
+    data->LocaleRegisterLabels[2]=NULL;
+
+    data->child=
+    RegisterGroup(data->LocaleRegisterLabels),
+    MUIA_Register_Frame, TRUE,
+    Child,
+	HGroup,
+	MUIA_Group_SameSize, TRUE, 
+	Child,
+	    HGroup,
+	    MUIA_Frame, MUIV_Frame_Group,
+	    MUIA_FrameTitle, MSG(MSG_GAD_TAB_COUNTRY),
+	    Child,
+  		data->country,
+	    End,
+	Child,
+	    HGroup,
+	    MUIA_Frame, MUIV_Frame_Group,
+	    MUIA_FrameTitle, MSG(MSG_GAD_TAB_LANGUAGE),
+	    Child,
+  		data->language,
+	    End,
+	End,
+    Child,
+	data->timezone,
+    End;
+
+    if(!data->child)
+	return handle_New_error(self, CLASS, "ERROR: unable to create registergroup\n");
+
+    DoMethod(self,OM_ADDMEMBER,(ULONG) data->child);
+
+    DoMethod(data->country,COUNTRY_FILL);
+
+    LocalePrefs2Gadgets(data);
+  
+    return self;
 }
 
-/****************************************************************************************/
-
-void SetRegisterTabPos(struct RegisterTab *reg, WORD left, WORD top)
+/*
+ * update struct localprefs with actual data selected in gadgets:
+ *
+ * see prefs/locale.h
+ *
+ * struct LocalePrefs {
+ *     char  lp_CountryName[32];
+ *     char  lp_PreferredLanguages[10][30];
+ *     LONG  lp_GMTOffset;
+ *     ULONG lp_Flags;
+ *
+ *     struct CountryPrefs lp_CountryData;
+ * };
+ *
+ */
+STATIC VOID Gadgets2LocalePrefs (struct LocaleRegister_DATA *data)
 {
-    reg->left = left;
-    reg->top  = top;
-}
+    char *tmp;
+    char **preferred;
+    ULONG i;
 
-/****************************************************************************************/
-
-void SetRegisterTabFrameSize(struct RegisterTab *reg, WORD width, WORD height)
-{
-    reg->framewidth  = width;
-    reg->frameheight = height;
-}
-
-/****************************************************************************************/
-
-void RenderRegisterTabItem(struct RastPort *rp, struct RegisterTab *reg, WORD item)
-{
-    struct RegisterTabItem *ri = &reg->items[item];
-    WORD x, y;
-    
-    SetDrMd(rp, JAM1);
-    SetFont(rp, reg->dri->dri_Font);
-    
-    x = reg->left + ri->x1;
-    y = reg->top + ri->y1;
-
-    
-    SetAPen(rp, reg->dri->dri_Pens[(reg->active == item) ? TEXTPEN : BACKGROUNDPEN]);       
-    Move(rp, x + ri->tx + 1, y + ri->ty);
-    Text(rp, ri->text, ri->textlen);
-    SetAPen(rp, reg->dri->dri_Pens[TEXTPEN]);       
-    Move(rp, x + ri->tx, y + ri->ty);
-    Text(rp, ri->text, ri->textlen);
-    
-    if (ri->image)
+    if(get(data->country,MA_CountryName,&tmp))
     {
-    	DrawImageState(rp, (struct Image *)ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, dri);
+	strncpy(localeprefs.lp_CountryName,tmp,32);
     }
-    
-    /* upper / at left side */
-    
-    SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);
-    WritePixel(rp, x + reg->slopew, y + 2);
-    Move(rp, x + reg->slopew / 2, y + 3 + reg->slopew - 1);
-    Draw(rp, x + reg->slopew - 1, y + 3);
-    
-    /* --- at top side */
-    
-    RectFill(rp, x + reg->slopew + 1, y + 1, x + reg->slopew + 2, y + 1);
-    RectFill(rp, x + reg->slopew + 3, y, x + ri->w - 1 - reg->slopew - 3, y);
 
-    SetAPen(rp, reg->dri->dri_Pens[SHADOWPEN]);
-    RectFill(rp, x + ri->w - 1 - reg->slopew - 2, y + 1, x + ri->w - 1 - reg->slopew - 1, y + 1);
-    
-    /* upper \ at right side */
-    
-    WritePixel(rp, x + ri->w - 1 - reg->slopew, y + 2);
-    Move(rp, x + ri->w - 1 - reg->slopew + 1, y + 3);
-    Draw(rp, x + ri->w - 1 - reg->slopew / 2, y + 3 + reg->slopew - 1);
-    
-    /* lower / at left side. */
-    
-    if ((item == 0) || (reg->active == item))
+    if(get(data->language,MA_Preferred,&preferred))
     {
-    	SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);
-    }
-    else
-    {
-    	SetAPen(rp, reg->dri->dri_Pens[BACKGROUNDPEN]);
-    }
-    Move(rp, x, y + ri->h - 2);
-    Draw(rp, x + reg->slopew / 2 - 1, y + ri->h - 2 - reg->slopew + 1);
-    
-    /* lower \ at the lefst side from the previous item */
-    
-    if (item > 0)
-    {
-    	if (reg->active == item)
+	for(i=0;i<10;i++)
 	{
-    	    SetAPen(rp, reg->dri->dri_Pens[BACKGROUNDPEN]);
-	}
-	else
-	{
-    	    SetAPen(rp, reg->dri->dri_Pens[SHADOWPEN]);
-	}
-	Move(rp, x + reg->slopew / 2, y + ri->h - 2 - reg->slopew + 1);
-	Draw(rp, x + reg->slopew - 1, y + ri->h - 2);
-    }
-    
-    /* lower \ at right side. */
-    
-    if (reg->active == item + 1)
-    {
-    	SetAPen(rp, reg->dri->dri_Pens[BACKGROUNDPEN]);
-    }
-    else
-    {
-    	SetAPen(rp, reg->dri->dri_Pens[SHADOWPEN]);
-    }
-    Move(rp, x + ri->w - 1 - reg->slopew / 2 + 1, y + ri->h - 2 - reg->slopew + 1);
-    Draw(rp, x + ri->w - 1, y + ri->h - 2);
-    
-    if (reg->active == item)
-    {
-    	SetAPen(rp, reg->dri->dri_Pens[BACKGROUNDPEN]);
-    	RectFill(rp, x, y + ri->h - 1, x + ri->w - 1, y + ri->h - 1);
-    }
-    else
-    {
-    	WORD x1, x2;
-	
-	x1 = x;
-	x2 = x + ri->w - 1;
-	
-	if (reg->active == item - 1)
-	    x1 += reg->slopew;
-	else if (reg->active == item + 1)
-	    x2 -= reg->slopew;
-	    
-    	SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);
-    	RectFill(rp, x1, y + ri->h - 1, x2, y + ri->h - 1);
-    }
-
-}
-
-/****************************************************************************************/
-
-void RenderRegisterTab(struct RastPort *rp, struct RegisterTab *reg, BOOL alsoframe)
-{
-    WORD i;
-
-    SetDrMd(rp, JAM1);
-    
-    SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);   
-     
-    RectFill(rp, reg->left,
-    	    	 reg->top + reg->height - 1,
-		 reg->left + REGISTERTAB_SPACE_LEFT - 1,
-		 reg->top + reg->height - 1);
-		 
-    RectFill(rp, reg->left + reg->width - REGISTERTAB_SPACE_RIGHT,
-    	    	 reg->top + reg->height - 1,
-		 reg->left + reg->width - 1,
-		 reg->top + reg->height - 1); 
-		 
-    for(i = 0; i < reg->numitems; i++)
-    {
-    	RenderRegisterTabItem(rp, reg, i); 
-    }
-    
-    if (alsoframe)
-    {
-    	SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);
-	
-	RectFill(rp, reg->left,
-	    	     reg->top + reg->height - 1,
-		     reg->left,
-		     reg->top + reg->height + reg->frameheight - 1);
-		     		     
-	RectFill(rp, reg->left + reg->width,
-	    	     reg->top + reg->height - 1,
-		     reg->left + reg->framewidth - 2,
-		     reg->top + reg->height - 1);
-		     
-	SetAPen(rp, reg->dri->dri_Pens[SHADOWPEN]);
-	
-	RectFill(rp, reg->left + reg->framewidth - 1,
-	    	     reg->top + reg->height - 1,
-		     reg->left + reg->framewidth - 1,
-		     reg->top + reg->height + reg->frameheight - 1);
-		     
-	RectFill(rp, reg->left + 1,
-	    	     reg->top + reg->height + reg->frameheight - 1,
-		     reg->left + reg->framewidth - 2,
-		     reg->top + reg->height + reg->frameheight - 1);
-    }
-}
-
-/****************************************************************************************/
-
-BOOL HandleRegisterTabInput(struct RegisterTab *reg, struct IntuiMessage *msg)
-{
-    struct Window *win = msg->IDCMPWindow;
-    BOOL    	   retval = FALSE;
-    
-    if ((msg->Class == IDCMP_MOUSEBUTTONS) &&
-    	(msg->Code == SELECTDOWN))
-    {
-    	WORD i;
-	WORD x = win->MouseX - reg->left;
-	WORD y = win->MouseY - reg->top;
-	
-	for(i = 0; i < reg->numitems; i++)
-	{
-	    if ((x >= reg->items[i].x1) &&
-	    	(y >= reg->items[i].y1) &&
-		(x <= reg->items[i].x2) &&
-		(y <= reg->items[i].y2))
+	    if(preferred[i])
 	    {
-	    	retval = TRUE;
-		
-	    	if (reg->active != i)
-		{
-		    WORD oldactive = reg->active;
-		    
-		    reg->active = i;
-		    RenderRegisterTabItem(win->RPort, reg, oldactive);
-		    RenderRegisterTabItem(win->RPort, reg, i);
-		}
-	    	break;
+		strncpy(localeprefs.lp_PreferredLanguages[i],preferred[i],30);
+	    }
+	    else
+	    {
+		localeprefs.lp_PreferredLanguages[i][0]=(char) 0;
 	    }
 	}
     }
-    
-    return retval;
-    
+
+    get(data->timezone, MA_TimeOffset, &localeprefs.lp_GMTOffset);
 }
 
+/*
+ * update gadgets with values of struct localeprefs 
+ */
+STATIC VOID LocalePrefs2Gadgets(struct LocaleRegister_DATA *data)
+{
 
-/****************************************************************************************/
-/****************************************************************************************/
+    set(data->country, MA_CountryName, localeprefs.lp_CountryName);
+
+    set(data->language, MA_Preferred, TRUE);
+
+    set(data->timezone, MA_TimeOffset, -localeprefs.lp_GMTOffset);
+
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_ImportFH (
+    Class *CLASS, Object *self, 
+    struct MUIP_PrefsEditor_ImportFH *message
+)
+{
+    SETUP_INST_DATA;
+
+    if (!LoadPrefsFH(message->fh)) {
+	D(bug("[register class] LocaleRegister__MUIM_PrefsEditor_ImportFH failed\n"));
+	return FALSE;
+    }
+
+    BackupPrefs();
+    LocalePrefs2Gadgets(data);
+    SET(self, MUIA_PrefsEditor_Changed, FALSE);
+    SET(self, MUIA_PrefsEditor_Testing, FALSE);
+
+    return TRUE;
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_ExportFH
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_ExportFH *message
+)
+{
+    SETUP_INST_DATA;
+    D(bug("[register class] SerEdit Class Export\n"));
+
+    Gadgets2LocalePrefs(data);
+    return SavePrefsFH(message->fh);
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_Test
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    BOOL result;
+
+    D(bug("[register class] SerEdit Class Test\n"));
+
+    Gadgets2LocalePrefs(data);
+
+    result=SaveEnv();
+
+    if(result) { /* TRUE -> success */
+	SET(self, MUIA_PrefsEditor_Changed, FALSE);
+	SET(self, MUIA_PrefsEditor_Testing, TRUE);
+    }
+
+    return result; 
+}
+
+IPTR LocaleRegister__MUIM_PrefsEditor_Revert
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    BOOL result;
+
+    D(bug("[register class] SerEdit Class Revert\n"));
+
+    RestorePrefs();
+    LocalePrefs2Gadgets(data);
+
+    result=SaveEnv();
+
+    if(result) {
+	SET(self, MUIA_PrefsEditor_Changed, FALSE);
+	SET(self, MUIA_PrefsEditor_Testing, FALSE);
+    }
+
+    return result;
+}
+
+IPTR LocaleRegister__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_INST_DATA;
+
+    if(data->tab_label)
+    {
+	FreeVec(data->tab_label);
+	data->tab_label=NULL;
+    }
+	 
+    return DoSuperMethodA(CLASS, self, message);
+}
+
+/*** Setup ******************************************************************/
+ZUNE_CUSTOMCLASS_6
+(
+    LocaleRegister, NULL, MUIC_PrefsEditor, NULL,
+    OM_NEW,                    struct opSet *,
+    OM_DISPOSE,                Msg,
+    MUIM_PrefsEditor_ImportFH, struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_ExportFH, struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Test,     Msg,
+    MUIM_PrefsEditor_Revert,   Msg
+);
+

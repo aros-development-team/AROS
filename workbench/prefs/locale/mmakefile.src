@@ -4,7 +4,8 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main vars locale misc prefs registertab page_language page_country page_timezone
+FILES 	    := main locale page_language page_country page_timezone prefs registertab
+
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-locale
@@ -14,7 +15,7 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-locale \
     progname=Locale targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
+    files=$(FILES) uselibs="coolimagesstatic mui arossupport amiga arosc m"
 
 
 IMAGES      := earthmap_small timezones_small
