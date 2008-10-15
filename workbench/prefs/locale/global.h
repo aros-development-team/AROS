@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc:
+    Lang: English
 */
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-/*********************************************************************************************/
-
+#include <prefs/locale.h>
 
 #ifndef DOS_DOS_H
 #include <dos/dos.h>
@@ -61,14 +63,6 @@
 #include <graphics/layers.h>
 #endif
 
-#ifndef DEVICES_INPUTEVENT_H
-#include <devices/inputevent.h>
-#endif
-
-#ifndef DEVICES_RAWKEYCODES_H
-#include <devices/rawkeycodes.h>
-#endif
-
 #ifndef LIBRARIES_GADTOOLS_H
 #include <libraries/gadtools.h>
 #endif
@@ -118,8 +112,6 @@
 #ifndef PREFS_PREFHDR_H
 #include <prefs/prefhdr.h>
 #endif
-
-/*********************************************************************************************/
 
 #ifndef PROTO_EXEC_H
 #include <proto/exec.h>
@@ -171,124 +163,75 @@
 
 /*********************************************************************************************/
 
-#include "vars.h"
-
-#undef CATCOMP_STRINGS
-#undef CATCOMP_NUMBERS
-
-#define CATCOMP_NUMBERS
-
-#include "strings.h"
-
-/*********************************************************************************************/
-
-#define USE_SHARED_COOLIMAGES 1
-
-/*********************************************************************************************/
-
 #define CONFIGNAME_ENV	    	"ENV:Sys/locale.prefs"
 #define CONFIGNAME_ENVARC   	"ENVARC:Sys/locale.prefs"
 
-#define PAGECMD_INIT         	1
-#define PAGECMD_LAYOUT       	2
-#define PAGECMD_GETMINWIDTH  	3
-#define PAGECMD_GETMINHEIGHT 	4
-#define PAGECMD_SETDOMLEFT   	5
-#define PAGECMD_SETDOMTOP    	6
-#define PAGECMD_SETDOMWIDTH  	7
-#define PAGECMD_SETDOMHEIGHT 	8
-#define PAGECMD_MAKEGADGETS  	9
-#define PAGECMD_ADDGADGETS   	10
-#define PAGECMD_REMGADGETS   	11
-#define PAGECMD_REFRESH     	12
-#define PAGECMD_HANDLEINPUT  	13
-#define PAGECMD_PREFS_CHANGING  14
-#define PAGECMD_PREFS_CHANGED   15
-#define PAGECMD_CLEANUP      	16
+#define MA_PrefsObject MUIA_UserData
 
-#define BORDER_X    	    	4
-#define BORDER_Y    	    	4
-#define TABBORDER_X 	    	8
-#define TABBORDER_Y 	    	8
-#define SPACE_X     	    	4
-#define SPACE_Y     	    	4
+#define LP_TAGBASE 0xfece0000 /* ok ?? */
 
-#define BUTTON_EXTRAWIDTH   	16
-#define BUTTON_EXTRAHEIGHT  	6
-#define IMBUTTON_EXTRAWIDTH  	4
-#define IMBUTTON_EXTRAHEIGHT 	4
-
-/*********************************************************************************************/
-
-struct ListviewEntry
+enum
 {
-    struct Node node;
-    UBYTE   	name[30];
-    UBYTE   	realname[30];
-};
-
-struct CountryEntry
-{
-    struct ListviewEntry lve;
-    Object  	    	 *dto;
-    struct BitMap   	 *flagbm;
-    WORD    	    	 flagw;
-    WORD    	    	 flagh;
-    
-};
-
-struct LanguageEntry
-{
-    struct ListviewEntry lve;
+    MA_CountryName = LP_TAGBASE,
+    MA_Preferred,
+    MA_TimeOffset,
 };
 
 /*********************************************************************************************/
 
 /* main.c */
 
-void Cleanup(CONST_STRPTR msg);
-void TellGUI(LONG cmd);
-
-/* misc.c */
-
-void InitMenus(void);
-void MakeMenus(void);
-void KillMenus(void);
-void SetMenuFlags(void);
-struct Node *FindListNode(struct List *list, WORD which);
-void SortInNode(struct List *list, struct Node *node);
-STRPTR GetFile(CONST_STRPTR title, CONST_STRPTR dir, BOOL savemode);
-void ScrollListview(struct Gadget *gad, WORD delta);
-
-/* page_language.c */
-
-LONG page_language_handler(LONG cmd, IPTR param);
-
-/* page_country.c */
-
-LONG page_country_handler(LONG cmd, IPTR param);
-
-/* page_timezone.c */
-
-LONG page_timezone_handler(LONG cmd, IPTR param);
+VOID ShowMsg      (char *msg);
 
 /* locale.c */
 
-void InitLocale(STRPTR catname, ULONG version);
-void CleanupLocale(void);
-CONST_STRPTR MSG(ULONG id);
+VOID InitLocale   (VOID);
+VOID CleanupLocale(VOID);
+CONST_STRPTR MSG  (ULONG id);
 
 /* prefs.c */
 
-void InitPrefs(STRPTR filename, BOOL use, BOOL save);
-void CleanupPrefs(void);
-BOOL LoadCountry(STRPTR name, struct CountryPrefs *country);
-BOOL LoadPrefs(STRPTR filename);
-BOOL SavePrefs(STRPTR filename);
-BOOL DefaultPrefs(void);
-void RestorePrefs(void);
+ULONG InitPrefs   (STRPTR filename, BOOL use, BOOL save);
+VOID  CleanupPrefs(void);
+BOOL  LoadPrefs   (STRPTR filename);
+BOOL  LoadPrefsFH (BPTR fh);
+BOOL  SavePrefs   (STRPTR filename);
+BOOL  SavePrefsFH (BPTR fh);
+BOOL  SaveEnv     ();
+BOOL  DefaultPrefs(void);
+VOID  RestorePrefs(void);
+VOID  BackupPrefs (void);
+VOID  CopyPrefs   (struct LocalePrefs *s, struct LocalePrefs *d);
 
 /*********************************************************************************************/
-/*********************************************************************************************/
+
+
+struct ListviewEntry
+{
+    struct Node node;
+    char   	name[30];
+    char   	realname[30];
+};
+
+struct CountryEntry
+{
+    struct ListviewEntry lve;
+    struct BitMap       *flagbm;
+    WORD                 flagw;
+    WORD                 flagh;
+    Object              *pic;
+    Object              *list_pic;
+    
+};
+
+struct LanguageEntry
+{
+    struct ListviewEntry lve;
+    BOOL                 preferred;
+};
+
+struct List                  country_list, language_list, pref_language_list;
+struct LocalePrefs           localeprefs;
+APTR   mempool;
 
 #endif /* GLOBAL_H */

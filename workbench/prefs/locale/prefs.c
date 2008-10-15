@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -8,15 +8,17 @@
 
 /*********************************************************************************************/
 
-#include "global.h"
-#include <aros/macros.h>
-
-#define DEBUG 0
-#include <aros/debug.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "global.h"
+#include <aros/macros.h>
+
+#define DEBUG 1 
+#include <aros/debug.h>
+
+#include <prefs/prefhdr.h>
 
 /*********************************************************************************************/
 
@@ -30,15 +32,63 @@ struct FilePrefHeader
 /*********************************************************************************************/
 
 static struct LocalePrefs   restore_prefs;
-static APTR 	    	    mempool;
+struct LocalePrefs          localeprefs;
 
 /*********************************************************************************************/
 
-static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
+void CleanupPrefs(void)
+{
+    D(bug("[locale prefs] CleanupPrefs\n"));
+    if (mempool) DeletePool(mempool);
+}
+
+/*********************************************************************************************/
+
+void CopyPrefs(struct LocalePrefs *s, struct LocalePrefs *d)
+{
+    CopyMem(s, d, sizeof(struct LocalePrefs));
+}
+
+void BackupPrefs(void)
+{
+    CopyPrefs(&localeprefs, &restore_prefs);
+}
+
+void RestorePrefs(void)
+{
+    CopyPrefs(&restore_prefs, &localeprefs);
+}
+
+/*********************************************************************************************/
+
+void SortInNode(struct List *list, struct Node *node)
+{
+    struct Node *sort, *prev = NULL;
+    struct Locale *loc;
+
+    loc = OpenLocale(NULL);
+
+    ForeachNode(list, sort)
+    {
+        if (StrnCmp(loc,
+                node->ln_Name, sort->ln_Name,
+                strlen(node->ln_Name), SC_COLLATE2)
+            < 0)
+        {
+            break;
+        }
+	prev = sort;
+    }
+
+    Insert(list, node, prev);
+    CloseLocale(loc);
+}
+
+static void ScanDirectory(char *pattern, struct List *list, LONG entrysize)
 {
     struct AnchorPath 	    ap;
     struct ListviewEntry    *entry;
-    STRPTR  	    	    sp;
+    char   	    	    *sp;
     LONG    	    	    error;
     
     memset(&ap, 0, sizeof(ap));
@@ -52,7 +102,9 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 	    if (entry)
 	    {
 	    	entry->node.ln_Name = entry->name;
-		strncpy(entry->name, ap.ap_Info.fib_FileName, sizeof(entry->name));
+		strncpy( entry->name, 
+		         (const char *) ap.ap_Info.fib_FileName, 
+			 sizeof(entry->name) );
 		
 		entry->name[0] = ToUpper(entry->name[0]);
 		sp = strchr(entry->name, '.');
@@ -81,36 +133,37 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
     }
     MatchEnd(&ap);
 }
-
 /*********************************************************************************************/
 
-static BOOL GetCountryFromDefLocale(struct CountryPrefs *country)
-{
-    BOOL retval = FALSE;
-    
-    if (LocaleBase)
-    {
-    	struct Locale *loc = OpenLocale(NULL);
-	
-	CloseLocale(loc);
-    }
-    
-    return retval;
-}
+/* 1 is success */
 
-/*********************************************************************************************/
-
-void InitPrefs(STRPTR filename, BOOL use, BOOL save)
+ULONG InitPrefs(STRPTR filename, BOOL use, BOOL save)
 {
     struct LanguageEntry *entry;
-           
+
+    D(bug("[locale prefs] InitPrefs\n"));
+
+    mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
+    if (!mempool) 
+    {
+	ShowMsg("Out of memory!");
+	return 0;
+    }
+
+    if (!LoadPrefs(filename))
+    {
+    	if (!DefaultPrefs())
+	{
+    	    CleanupPrefs();
+	    ShowMsg("Panic! Cannot setup default prefs!");
+	    return 0;
+	}
+    }
+    
     NewList(&country_list);
     NewList(&language_list);
     NewList(&pref_language_list);
     
-    mempool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR, 2048, 2048);
-    if (!mempool) Cleanup("Out of memory!");
-
     ScanDirectory("LOCALE:Countries/~(#?.info)", &country_list, sizeof(struct CountryEntry));    
     ScanDirectory("LOCALE:Languages/#?.language", &language_list, sizeof(struct LanguageEntry));
     
@@ -118,44 +171,28 @@ void InitPrefs(STRPTR filename, BOOL use, BOOL save)
     
     if ((entry = AllocPooled(mempool, sizeof(struct LanguageEntry))))
     {
-    	strcpy(entry->lve.name, "English");
-    	strcpy(entry->lve.realname, "English");
+    	strcpy( entry->lve.name, "English");
+    	strcpy( entry->lve.realname, "English");
 	entry->lve.node.ln_Name = entry->lve.name;
 	
 	SortInNode(&language_list, &entry->lve.node);
-    }
-    
-    if (!LoadPrefs(filename))
-    {
-    	if (!DefaultPrefs())
-	{
-	    if (!GetCountryFromDefLocale(&localeprefs.lp_CountryData))
-	    {
-	    	Cleanup("Panic! Cannot setup default prefs!");
-    	    }
-	}
     }
     
     restore_prefs = localeprefs;
     
     if (use || save)
     {
-    	SavePrefs(CONFIGNAME_ENV);
+    	SavePrefs((CONST STRPTR) CONFIGNAME_ENV);
     }
     
     if (save)
     {
-    	SavePrefs(CONFIGNAME_ENVARC);
+    	SavePrefs((CONST STRPTR) CONFIGNAME_ENVARC);
     }
     
-    if (use || save) Cleanup(NULL);
-}
+    if (use || save) CleanupPrefs();
 
-/*********************************************************************************************/
-
-void CleanupPrefs(void)
-{
-    if (mempool) DeletePool(mempool);
+    return 1;
 }
 
 /*********************************************************************************************/
@@ -185,52 +222,50 @@ static void FixLocaleEndianess(struct LocalePrefs *localeprefs)
 }
 #endif
 
-/*********************************************************************************************/
-
 BOOL LoadCountry(STRPTR name, struct CountryPrefs *country)
 {
     static struct CountryPrefs  loadcountry;
     struct IFFHandle 	    	*iff;    
-    UBYTE   	    	    	fullname[100];
+    char   	    	    	fullname[100];
     BOOL    	    	    	retval = FALSE;
     
     strcpy(fullname, "LOCALE:Countries");
     AddPart(fullname, name, 100);
     strcat(fullname, ".country");
     
-    D(bug("LoadCountry: Trying to open \"%s\"\n", fullname));
+    D(bug("[locale prefs] LoadCountry: Trying to open \"%s\"\n", fullname));
     
     if ((iff = AllocIFF()))
     {
     	if ((iff->iff_Stream = (IPTR)Open(fullname, MODE_OLDFILE)))
 	{
-    	    D(bug("LoadCountry: stream opened.\n"));
+    	    D(bug("[locale prefs] LoadCountry: stream opened.\n"));
 	    
 	    InitIFFasDOS(iff);
 	    
 	    if (!OpenIFF(iff, IFFF_READ))
 	    {
-    	    	D(bug("LoadCountry: OpenIFF okay.\n"));
+    	    	D(bug("[locale prefs] LoadCountry: OpenIFF okay.\n"));
 		
 	    	if (!StopChunk(iff, ID_PREF, ID_CTRY))
 		{
-    	    	    D(bug("LoadCountry: StopChunk okay.\n"));
+    	    	    D(bug("[locale prefs] LoadCountry: StopChunk okay.\n"));
 		    
 		    if (!ParseIFF(iff, IFFPARSE_SCAN))
 		    {
 			struct ContextNode *cn;
 			
-    	    	    	D(bug("LoadCountry: ParseIFF okay.\n"));
+    	    	    	D(bug("[locale prefs] LoadCountry: ParseIFF okay.\n"));
 			
 			cn = CurrentChunk(iff);
 
 			if (cn->cn_Size == sizeof(struct CountryPrefs))
 			{
-   	    	    	    D(bug("LoadCountry: ID_CTRY chunk size okay.\n"));
+   	    	    	    D(bug("[locale prefs] LoadCountry: ID_CTRY chunk size okay.\n"));
 			    
 		    	    if (ReadChunkBytes(iff, &loadcountry, sizeof(struct CountryPrefs)) == sizeof(struct CountryPrefs))
 			    {
-   	    	    	    	D(bug("LoadCountry: Reading chunk successful.\n"));
+   	    	    	    	D(bug("[locale prefs] LoadCountry: Reading chunk successful.\n"));
 
     	    	    	    	*country = loadcountry;
 				
@@ -238,7 +273,7 @@ BOOL LoadCountry(STRPTR name, struct CountryPrefs *country)
     	    	    	    	FixCountryEndianess(country);
     	    	    	    #endif
 			    
-   	    	    	    	D(bug("LoadCountry: Everything okay :-)\n"));
+   	    	    	    	D(bug("[locale prefs] LoadCountry: Everything okay :-)\n"));
 				
 				retval = TRUE;
 			    }
@@ -263,49 +298,45 @@ BOOL LoadCountry(STRPTR name, struct CountryPrefs *country)
     return retval;
 }
 
-/*********************************************************************************************/
-
-BOOL LoadPrefs(STRPTR filename)
+BOOL LoadPrefsFH(BPTR fh)
 {
     static struct LocalePrefs loadprefs;
     struct IFFHandle 	    	*iff;    
     BOOL    	    	    	retval = FALSE;
     
-    D(bug("LoadPrefs: Trying to open \"%s\"\n", filename));
+    D(bug("[locale prefs] LoadPrefsFH\n"));
     
     if ((iff = AllocIFF()))
     {
-    	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE)))
+    	if ((iff->iff_Stream = (IPTR) fh))
 	{
-    	    D(bug("LoadPrefs: stream opened.\n"));
+    	    D(bug("[locale prefs] LoadPrefs: stream is ok.\n"));
 	    
 	    InitIFFasDOS(iff);
 	    
 	    if (!OpenIFF(iff, IFFF_READ))
 	    {
-    	    	D(bug("LoadPrefs: OpenIFF okay.\n"));
+    	    	D(bug("[locale prefs] LoadPrefs: OpenIFF okay.\n"));
 		
 	    	if (!StopChunk(iff, ID_PREF, ID_LCLE))
 		{
-    	    	    D(bug("LoadPrefs: StopChunk okay.\n"));
+    	    	    D(bug("[locale prefs] LoadPrefs: StopChunk okay.\n"));
 		    
 		    if (!ParseIFF(iff, IFFPARSE_SCAN))
 		    {
 			struct ContextNode *cn;
 			
-    	    	    	D(bug("LoadPrefs: ParseIFF okay.\n"));
+    	    	    	D(bug("[locale prefs] LoadPrefs: ParseIFF okay.\n"));
 			
 			cn = CurrentChunk(iff);
 
 			if (cn->cn_Size == sizeof(struct LocalePrefs))
 			{
-   	    	    	    D(bug("LoadPrefs: ID_LCLE chunk size okay.\n"));
+   	    	    	    D(bug("[locale prefs] LoadPrefs: ID_LCLE chunk size okay.\n"));
 			    
 		    	    if (ReadChunkBytes(iff, &loadprefs, sizeof(struct LocalePrefs)) == sizeof(struct LocalePrefs))
 			    {
-   	    	    	    	D(bug("LoadPrefs: Reading chunk successful.\n"));
-
-    	    	    	    	TellGUI(PAGECMD_PREFS_CHANGING);
+   	    	    	    	D(bug("[locale prefs] LoadPrefs: Reading chunk successful.\n"));
 
     	    	    	    	localeprefs = loadprefs;
 				
@@ -313,9 +344,8 @@ BOOL LoadPrefs(STRPTR filename)
  				FixLocaleEndianess(&localeprefs);
     	    	    	    	FixCountryEndianess(&localeprefs.lp_CountryData);
     	    	    	    #endif
-    	    	    	    	TellGUI(PAGECMD_PREFS_CHANGED);
 			    
-   	    	    	    	D(bug("LoadPrefs: Everything okay :-)\n"));
+   	    	    	    	D(bug("[locale prefs] LoadPrefs: Everything okay :-)\n"));
 				
 				retval = TRUE;
 			    }
@@ -329,44 +359,62 @@ BOOL LoadPrefs(STRPTR filename)
 				
 	    } /* if (!OpenIFF(iff, IFFF_READ)) */
 	    
-	    Close((BPTR)iff->iff_Stream);
-	    
 	} /* if ((iff->iff_Stream = (IPTR)Open(filename, MODE_OLDFILE))) */
 	
 	FreeIFF(iff);
 	
     } /* if ((iff = AllocIFF())) */
     
+    D(bug("[locale prefs] CountryName: %s\n",localeprefs.lp_CountryName));
+    int i=0;
+    while(i<10 && localeprefs.lp_PreferredLanguages[i])
+    {
+      D(bug("[locale prefs] preferred %d: %s\n",i,localeprefs.lp_PreferredLanguages[i]));
+      i++;
+    }
+    D(bug("[locale prefs] lp_GMTOffset: %d\n",localeprefs.lp_GMTOffset));
     return retval;
 }
 
+BOOL LoadPrefs(STRPTR filename) 
+{
+    BPTR fh;
+    BOOL ret;
+
+    D(bug("[locale prefs] LoadPrefsFH: Trying to open \"%s\"\n", filename));
+
+    fh=Open(filename, MODE_OLDFILE);
+
+    if(!fh) return FALSE;
+
+    ret=LoadPrefsFH(fh);
+
+    Close(fh);
+    return ret;
+}
+
+
 /*********************************************************************************************/
 
-BOOL SavePrefs(STRPTR filename)
+BOOL SavePrefsFH(BPTR fh)
 {
     static struct LocalePrefs 	saveprefs;
-    struct IFFHandle 	     	*iff;
-    WORD    	    	    	i;
+    struct IFFHandle 	     	*iff;    
     BOOL    	    	    	retval = FALSE, delete_if_error = FALSE;
     
+    D(bug("[locale prefs] SavePrefsFH: fh: %lx\n", fh));
+
     saveprefs = localeprefs;
+
 #if !AROS_BIG_ENDIAN
     FixLocaleEndianess(&saveprefs);
     FixCountryEndianess(&saveprefs.lp_CountryData);
 #endif
     
-    for(i = 0; i < 10; i++)
-    {
-    	saveprefs.lp_PreferredLanguages[i][0] = ToLower(saveprefs.lp_PreferredLanguages[i][0]);
-    }
-    
-    D(bug("SavePrefs: Trying to open \"%s\"\n", filename));
-    
     if ((iff = AllocIFF()))
     {
-    	if ((iff->iff_Stream = (IPTR)Open(filename, MODE_NEWFILE)))
-	{
-    	    D(bug("SavePrefs: stream opened.\n"));
+	iff->iff_Stream = (IPTR) fh;
+	D(bug("[locale prefs] SavePrefsFH: stream opened.\n"));
 	    
 	    delete_if_error = TRUE;
 	    
@@ -374,19 +422,19 @@ BOOL SavePrefs(STRPTR filename)
 	    
 	    if (!OpenIFF(iff, IFFF_WRITE))
 	    {
-    	    	D(bug("SavePrefs: OpenIFF okay.\n"));
+    	    	D(bug("[locale prefs] SavePrefsFH: OpenIFF okay.\n"));
 		
 		if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
 		{
-    	    	    D(bug("SavePrefs: PushChunk(FORM) okay.\n"));
+    	    	    D(bug("[locale prefs] SavePrefsFH: PushChunk(FORM) okay.\n"));
 		    
 		    if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
 		    {
 		    	struct FilePrefHeader head;
 
-    	    	    	D(bug("SavePrefs: PushChunk(PRHD) okay.\n"));
+    	    	    	D(bug("[locale prefs] SavePrefsFH: PushChunk(PRHD) okay.\n"));
 			
-			head.ph_Version  = 0; // FIXME: shouold be PHV_CURRENT, but see <prefs/prefhdr.h> 
+			head.ph_Version  = PHV_CURRENT; 
 			head.ph_Type     = 0;
 			head.ph_Flags[0] =
 			head.ph_Flags[1] =
@@ -395,25 +443,25 @@ BOOL SavePrefs(STRPTR filename)
 			
 			if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
 			{
-    	    	    	    D(bug("SavePrefs: WriteChunkBytes(PRHD) okay.\n"));
+    	    	    	    D(bug("[locale prefs] SavePrefsFH: WriteChunkBytes(PRHD) okay.\n"));
 			    
 			    PopChunk(iff);
 			    
 			    if (!PushChunk(iff, ID_PREF, ID_LCLE, sizeof(struct LocalePrefs)))
 			    {
-    	    	    	    	D(bug("SavePrefs: PushChunk(LCLE) okay.\n"));
+    	    	    	    	D(bug("[locale prefs] SavePrefsFH: PushChunk(LCLE) okay.\n"));
 				
 			    	if (WriteChunkBytes(iff, &saveprefs, sizeof(saveprefs)) == sizeof(saveprefs))
 				{
-   	    	    	    	    D(bug("SavePrefs: WriteChunkBytes(LCLE) okay.\n"));
-  	    	    	    	    D(bug("SavePrefs: Everything okay :-)\n"));
+   	    	    	    	    D(bug("[locale prefs] SavePrefsFH: WriteChunkBytes(SERL) okay.\n"));
+  	    	    	    	    D(bug("[locale prefs] SavePrefsFH: Everything okay :-)\n"));
 				    
 				    retval = TRUE;
 				}
 				
     			    	PopChunk(iff);
 
-			    } /* if (!PushChunk(iff, ID_PREF, ID_LCLE, sizeof(struct LocalePrefs))) */
+			    } /* if (!PushChunk(iff, ID_PREF, ID_SERL, sizeof(struct LocalePrefs))) */
 			    			    
 			} /* if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head)) */
 			else
@@ -431,20 +479,64 @@ BOOL SavePrefs(STRPTR filename)
 				
 	    } /* if (!OpenIFF(iff, IFFFWRITE)) */
 	    
-	    Close((BPTR)iff->iff_Stream);
-	    
-	} /* if ((iff->iff_Stream = (IPTR)Open(filename, MODE_NEWFILE))) */
 	
 	FreeIFF(iff);
 	
     } /* if ((iff = AllocIFF())) */
     
+#if 0
     if (!retval && delete_if_error)
     {
     	DeleteFile(filename);
     }
+#endif
+	    
     
     return retval;    
+}
+
+BOOL SavePrefs(CONST STRPTR filename) 
+{
+    BPTR fh;
+    BOOL ret;
+
+    D(bug("[locale prefs] SavePrefs: Trying to open \"%s\"\n", filename));
+
+    fh=Open(filename, MODE_NEWFILE);
+
+    if(fh == NULL) 
+    {
+      	D(bug("[locale prefs] open \"%s\" failed!\n", filename));
+       	return FALSE;
+    }
+
+    ret=SavePrefsFH(fh);
+
+    Close(fh);
+    return ret;
+}
+
+/*********************************************************************************************/
+
+BOOL SaveEnv() {
+    BPTR fh;
+    BOOL result;
+
+    D(bug("[locale prefs] SaveEnv: Trying to open \"%s\"\n", CONFIGNAME_ENV));
+
+    fh=Open((CONST_STRPTR) CONFIGNAME_ENV, MODE_NEWFILE);
+
+    if(fh == NULL) 
+    {
+	D(bug("[locale prefs] open \"%s\" failed!\n", CONFIGNAME_ENV));
+	return FALSE;
+    }
+
+    result=SavePrefsFH(fh);
+
+    Close(fh);
+
+    return result;
 }
 
 /*********************************************************************************************/
@@ -453,8 +545,6 @@ BOOL DefaultPrefs(void)
 {
     BOOL retval = FALSE;
     WORD i;
-    
-    TellGUI(PAGECMD_PREFS_CHANGING);
     
     localeprefs.lp_Reserved[0] = 0;
     localeprefs.lp_Reserved[1] = 0;
@@ -470,23 +560,11 @@ BOOL DefaultPrefs(void)
     localeprefs.lp_GMTOffset = 5 * 60;
     localeprefs.lp_Flags = 0;
     
-    if (LoadCountry("united_states", &localeprefs.lp_CountryData))
+    if (LoadCountry((STRPTR) "united_states", &localeprefs.lp_CountryData))
     {
     	retval = TRUE;
     }
 
-    TellGUI(PAGECMD_PREFS_CHANGED);
-    
     return retval;
 }
 
-/*********************************************************************************************/
-
-void RestorePrefs(void)
-{
-    TellGUI(PAGECMD_PREFS_CHANGING);
-    localeprefs = restore_prefs;
-    TellGUI(PAGECMD_PREFS_CHANGED);   
-}
-
-/*********************************************************************************************/
