@@ -60,6 +60,12 @@
 	return -1;
     }
 
+    if(fdesc->fcb->isdir)
+    {
+	errno = EISDIR;
+	return -1;
+    }
+
     cnt = Read ((BPTR)fdesc->fcb->fh, buf, count);
 
     if (cnt == -1)

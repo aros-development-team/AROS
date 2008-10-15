@@ -64,6 +64,12 @@
 	return -1;
     }
 
+    if(fdesc->fcb->isdir)
+    {
+	errno = EISDIR;
+	return -1;
+    }
+
     if (!(fdesc->fcb->flags & (O_WRONLY|O_RDWR)))
     {
     	errno = EINVAL;
