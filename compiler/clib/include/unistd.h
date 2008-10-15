@@ -196,7 +196,7 @@ int         dup(int oldfd);
 int         dup2(int oldfd, int newfd);
 int         execl(const char *path, const char *arg, ...);
 /* NOTIMPL int         execle(const char *path, const char *arg, ...); */
-/* NOTIMPL int         execlp(const char *path, const char *arg, ...); */
+int         execlp(const char *path, const char *arg, ...);
 int         execv(const char *path, char *const argv[]);
 int         execve(const char *path, char *const argv[], char *const envp[]);
 int         execvp(const char *path, char *const argv[]);
