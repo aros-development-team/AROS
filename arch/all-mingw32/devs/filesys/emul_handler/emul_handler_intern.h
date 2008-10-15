@@ -8,16 +8,27 @@
     Lang: english
 */
 
+struct EmulThreadMessage
+{
+    unsigned char op;
+    void *fh;
+    void *addr;
+    unsigned long len;
+    unsigned long actual;
+    unsigned long error;
+};
+
+#define EMUL_CMD_READ     0
+#define EMUL_CMD_WRITE    1
+#define EMUL_CMD_SHUTDOWN 255
+
+#ifdef __AROS__
+
+#include <aros/hostthread.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
 #include <hidd/hidd.h>
-
-/* POSIX includes */
-//#define timeval sys_timeval
-//#include <dirent.h>
-//#include <sys/types.h>
-//#undef timeval
 
 struct emulbase
 {
@@ -35,6 +46,7 @@ struct emulbase
     APTR			  mempool;
     void			* EmulHandle;
     void			* KernelHandle;
+    struct EmulUnitControl	* HWUnit;
 };
 
 
@@ -48,12 +60,14 @@ struct filehandle
     char * volume;
     char * volumename;
     void * fd;
+    struct DosList *dl;
 };
 #define FHD_FILE      0
 #define FHD_DIRECTORY 1
 
 struct EmulInterface
 {
+    __attribute__((stdcall)) ULONG (*EmulThread)(struct ThreadHandle *myhandle);
     void *(*EmulOpenDir)(const char *path);
     ULONG (*EmulCloseDir)(void *dir);
     ULONG (*EmulStat)(const char *path, struct FileInfoBlock *FIB);
@@ -116,5 +130,7 @@ struct KernelInterface
 #define ChDir KernelIFace->SetCurrentDirectory
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
+
+#endif
 
 #endif /* __EMUL_HANDLER_INTERN_H */

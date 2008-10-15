@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/system.h>
 #include <windows.h>
@@ -8,7 +8,6 @@
 #define __typedef_BOOL /* definition that contains BOOL.                                                           */
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
-#undef IsListEmpty
 
 #include <stddef.h>
 #include <stdio.h>

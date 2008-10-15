@@ -10,7 +10,7 @@
 
 /*********************************************************************************************/
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/debug.h>
 #include <aros/system.h>
@@ -35,8 +35,6 @@
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
-#include <proto/oop.h>
-#include <oop/oop.h>
 
 #include <aros/host-conf.h>
 
@@ -349,6 +347,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
   {
 	fh->pathname = NULL; /* just to make sure... */
 	fh->DIR      = NULL;
+	fh->dl = (*handle)->dl;
 	/* If no filename is given and the file-descriptor is one of the
 	 standard filehandles (stdin, stdout, stderr) ... */
 	if((!name[0]) && ((*handle)->type == FHD_FILE) &&
@@ -427,6 +426,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
   {
 	fh->pathname = NULL; /* just to make sure... */
 	fh->DIR      = NULL;
+	fh->dl = (*handle)->dl;
 	/* If no filename is given and the file-descriptor is one of the
 	 standard filehandles (stdin, stdout, stderr) ... */
 	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
@@ -481,7 +481,8 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 	fh->DIR        = NULL;
 	fh->fd         = NULL;
 	fh->volume     = (*handle)->volume;
-	fh->volumename =(*handle)->volumename;
+	fh->volumename = (*handle)->volumename;
+	fh->dl	       = (*handle)->dl;
 	
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
 	if (!ret)
@@ -615,6 +616,7 @@ static LONG startup(struct emulbase *emulbase)
 		    fhi->DIR        = NULL;
 		    fhi->volume     = NULL;
 		    fhi->volumename = NULL;
+		    fhi->dl	    = NULL;
 		    fhi->type = FHD_FILE;
 		    fhi->fd   = emulbase->stdin_handle;
 		    fhi->name = "";
@@ -630,6 +632,7 @@ static LONG startup(struct emulbase *emulbase)
 		    fho->DIR        = NULL;
 		    fho->volume     = NULL;
 		    fho->volumename = NULL;
+		    fho->dl	    = NULL;
 		    fho->type = FHD_FILE;
 		    fho->fd   = emulbase->stdout_handle;
 		    fho->name = "";
@@ -645,6 +648,7 @@ static LONG startup(struct emulbase *emulbase)
 		    fhe->DIR        = NULL;
 		    fhe->volume     = NULL;
 		    fhe->volumename = NULL;
+		    fhe->dl	    = NULL;
 		    fhe->type = FHD_FILE;
 		    fhe->fd   = emulbase->stderr_handle;
 		    fhe->name = "";
@@ -713,6 +717,7 @@ static LONG startup(struct emulbase *emulbase)
 				
 		    /* Make sure this is not booted from */
 		    AddBootNode(-128, 0, dlv2, NULL);
+		    fhv->dl = dlv2;
 				
 		    return 0;
 		}
@@ -1099,6 +1104,7 @@ static LONG create_hardlink(struct emulbase *emulbase,
   
   fh->pathname = NULL; /* just to make sure... */
   fh->DIR      = NULL;
+  fh->dl       = (*handle)->dl;
   
   error = makefilename(emulbase, &fh->name, (*handle)->name, name);
   if (!error)
@@ -1136,6 +1142,7 @@ static LONG create_softlink(struct emulbase * emulbase,
   
   fh->pathname = NULL; /* just to make sure... */
   fh->DIR      = NULL;
+  fh->dl       = (*handle)->dl;
   
   error = makefilename(emulbase, &fh->name, (*handle)->name, name);
   if (!error)
@@ -1316,7 +1323,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 	
 	if (unixpath)
 	{
-	  if (Stat(unixpath,0)>0)
+	  if (Stat(unixpath, NULL)>0)
 	  {
 		fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 		if (fhv != NULL)
@@ -1330,6 +1337,7 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 		  
 		  if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
 		  {
+		      	fhv->dl = doslist;
 			doslist->dol_Ext.dol_AROS.dol_Unit=(struct Unit *)fhv;
 			doslist->dol_Ext.dol_AROS.dol_Device=&emulbase->device;
 			AddDosEntry(doslist);
@@ -1707,10 +1715,17 @@ AROS_LH1(void, beginio,
 	  
 	  case FSA_DISK_INFO:
 	{
+	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  struct InfoData *id = iofs->io_Union.io_INFO.io_Info;
 
-	  StatFS(".",id);
-	  
+	  if (check_volume(fh, emulbase)) {
+	      if (StatFS(".", id)) {
+	      	id->id_VolumeNode = fh->dl;
+	      	error = 0;
+	      } else
+	          error = Errno();
+	  } else
+	      error = ERROR_OBJECT_NOT_FOUND;
 	  break;
 	}
 	  
@@ -1758,6 +1773,7 @@ AROS_LH1(LONG, abortio,
 /*********************************************************************************************/
 
 const char *EmulSymbols[] = {
+    "EmulThread",
     "EmulOpenDir",
     "EmulCloseDir",
     "EmulStat",
@@ -1805,8 +1821,8 @@ int loadhooks(struct emulbase *emulbase)
     D(bug("[EmulHandler] Native library interface: 0x%08lX\n", EmulIFace));
     if (EmulIFace) {
         if (!r) {
-            emulbase->KernelHandle = HostLib_Open("kernel32.dll", NULL);
-            if (emulbase->KernelHandle) {
+              emulbase->KernelHandle = HostLib_Open("kernel32.dll", NULL);
+              if (emulbase->KernelHandle) {
             	KernelIFace = (struct KernelInterface *)HostLib_GetInterface(emulbase->KernelHandle, KernelSymbols, &r);
             	if (KernelIFace) {
             	    D(bug("[EmulHandler] %lu unresolved symbols\n", r));
@@ -1819,7 +1835,7 @@ int loadhooks(struct emulbase *emulbase)
             	}
             	D(bug("[EmulHandler] Unable to get kernel32.dll interface!\n"));
             	HostLib_Close(emulbase->KernelHandle, NULL);
-            }
+              }
         }
             D(else bug("[EmulHandler] %lu unresolved symbols!\n", r);)
         HostLib_DropInterface((APTR *)EmulIFace);

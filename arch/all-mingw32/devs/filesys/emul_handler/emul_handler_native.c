@@ -20,8 +20,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <aros/hostthread.h>
 
 #include "dos_native.h"
+#include "emul_handler_intern.h"
 
 #define ST_ROOT 1
 #define ST_USERDIR 2
@@ -31,6 +33,9 @@
 #define DSTAT(x)     /* Stat() debug                 */
 #define DSTATFS(x)   /* StatFS() debug		     */
 #define DWINAPI(x)   /* WinAPI calls debug           */
+
+HMODULE kernel_lib;
+void (*CauseIRQ)(unsigned char irq, void *data);
 
 /* Make an AROS error-code (<dos/dos.h>) out of an Windows error-code. */
 static DWORD u2a[][2]=
@@ -325,4 +330,27 @@ int __declspec(dllexport) EmulErrno(void)
 	}
   DERROR(printf("[EmulHandler] Unknown error code\n"));
   return ERROR_UNKNOWN;
+}
+
+DWORD __declspec(dllexport) EmulThread(struct ThreadHandle *THandle)
+{
+    struct EmulThreadMessage *emsg;
+    BOOL res;
+
+    for (;;) {
+        emsg = HT_GetMsg();
+        if (emsg && (emsg != (struct EmulThreadMessage *)-1)) {
+	    switch(emsg->op) {
+	    case EMUL_CMD_READ:
+	        res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
+	    	break;
+	    case EMUL_CMD_WRITE:
+	        res = WriteFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
+	    	break;
+	    }
+	    emsg->error = res ? 0 : GetLastError();
+	    HT_CauseInterrupt(emsg);
+	} else
+	    return 0;
+    }
 }
