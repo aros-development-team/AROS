@@ -137,6 +137,7 @@
     desc->fcb->fh = lock;
     desc->fcb->flags = O_RDONLY;
     desc->fcb->opencount = 1;
+    desc->fcb->isdir = 1;
 
     fd = __getfdslot(__getfirstfd(3));
     __setfdesc(fd, desc);
