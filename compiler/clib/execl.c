@@ -40,7 +40,7 @@
 ******************************************************************************/
 {
     va_list args;
-    char default_argv[] = { NULL };
+    char *default_argv[] = { NULL };
     char **argv;
 
     if(arg != NULL)
@@ -58,11 +58,11 @@
             return -1;
         }
         
-        argv[0] = arg;
+        argv[0] = (char*) arg;
         int argi;
         va_start(args,arg);
         for(argi = 1; argi < argc; argi++)
-            argv[argi] = va_arg(args,const char *);
+            argv[argi] = va_arg(args,char *);
         va_end(args);
         argv[argc] = NULL;
     }
