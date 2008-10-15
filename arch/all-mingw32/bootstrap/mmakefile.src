@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
 BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o $(TARGETDIR)/hostlib.o $(TARGETDIR)/debug.o
 FILES		:= bootstrap elfloader32 hostlib debug
-KOBJS_DEVICES := $(KOBJSDIR)/timer_device.o
+KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o
 KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o\
 			   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
 KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
@@ -16,8 +16,8 @@ KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
 				$(KOBJSDIR)/keymap_library.o \
 				$(KOBJSDIR)/mathieeesingbas_library.o \
 				$(KOBJSDIR)/oop_library.o
-K_RES		:= $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/hostlib_resource.o
-KOBJS_HANDLERS := $(KOBJSDIR)/emul_handler.o
+K_RES		:= $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/hostlib_resource.o $(KOBJSDIR)/hostthread_resource.o
+KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o
 KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 
 #this needs sdl.hidd
@@ -27,7 +27,7 @@ KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 #				$(KOBJSDIR)/intuition_library.o \
 
 #MM- AROS-mingw32-i386: kernel-link-mingw32 kernel-bootstrap-mingw32
-#MM kernel-link-mingw32: kernel-kernel-mingw32-kobj kernel-hostlib-mingw32-kobj kernel kernel-fs-emul-mingw32-kobj
+#MM kernel-link-mingw32: kernel-kernel-mingw32-kobj kernel-hostlib-mingw32-kobj kernel-hostthread-mingw32-kobj kernel kernel-fs-emul-mingw32-kobj
 
 #MM
 kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap

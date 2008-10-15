@@ -8,7 +8,6 @@
 #define __typedef_BOOL /* definition that contains BOOL.                                                           */
 typedef unsigned AROS_16BIT_TYPE UWORD;
 typedef unsigned char UBYTE;
-#undef IsListEmpty
 
 #include <stddef.h>
 #include <stdio.h>
@@ -23,6 +22,7 @@ typedef unsigned char UBYTE;
 #define DS(x) /* Task switcher debug  */
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
+#define HW_INTS_NUM 2
 
 struct SwitcherData {
     HANDLE MainThread;
@@ -30,9 +30,11 @@ struct SwitcherData {
 };
 
 struct SwitcherData SwData;
+DWORD SwitcherId;
 DWORD *LastErrorPtr;
-unsigned char Ints_Enabled = 0;
-unsigned char Supervisor = 0;
+unsigned char Ints_Enabled;
+unsigned char PendingInts[HW_INTS_NUM];
+unsigned char Supervisor;
 struct ExecBase **SysBasePtr;
 struct KernelBase **KernelBasePtr;
 
@@ -52,7 +54,6 @@ void user_handler(uint8_t exception)
             }
         }
     }
-    
 }
 
 LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
@@ -98,23 +99,23 @@ LONG CALLBACK ExceptionHandler(PEXCEPTION_POINTERS Except)
 	}
 }
 
-DWORD TaskSwitcher(struct SwitcherData *args)
+DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
 {
     HANDLE IntEvent;
     DWORD obj;
     CONTEXT MainCtx;
     REG_SAVE_VAR;
     DS(DWORD res);
+    MSG msg;
 
     for (;;) {
-        WaitForSingleObject(args->IntTimer, INFINITE);
-        DS(OutputDebugString("[Task switcher] Timer interrupt\n"));
+        obj = MsgWaitForMultipleObjects(1, &args->IntTimer, FALSE, INFINITE, QS_SENDMESSAGE);
+        DS(bug("[Task switcher] Object %lu signalled\n", obj));
     	DS(res =) SuspendThread(args->MainThread);
     	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	if (Ints_Enabled) {
     	    Supervisor++;
-    	    user_handler(0);
-
+    	    PendingInts[obj] = 0;
     	    /* 
     	     * We will get and store the complete CPU context, but set only part of it.
     	     * This can be a useful aid for future AROS debuggers.
@@ -125,6 +126,13 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     	    CONTEXT_SAVE_REGS(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
+	    user_handler(obj);
+	    if (obj == HW_INTS_NUM-1) {
+		while (PeekMessage(&msg, NULL, MSG_IRQ_0, MSG_IRQ_PENDING, PM_REMOVE)) {
+		    if (msg.message == MSG_IRQ_0)
+		    	user_irq_handler_2(0, (void *)msg.wParam, (void *)msg.lParam);
+		}
+	    }
     	    core_ExitInterrupt(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
@@ -132,8 +140,11 @@ DWORD TaskSwitcher(struct SwitcherData *args)
     	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    Supervisor--;
-    	}
-            DS(else OutputDebugString("[KRN] Interrupts are disabled\n"));
+    	} else {
+    	    PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
+    	    PendingInts[obj] = 1;
+            DS(OutputDebugString("[KRN] Interrupts are disabled\n"));
+        }
         DS(res =) ResumeThread(args->MainThread);
         DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     }
@@ -150,8 +161,13 @@ long __declspec(dllexport) core_intr_disable(void)
 
 long __declspec(dllexport) core_intr_enable(void)
 {
+    int i;
+
     DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
+    /* FIXME: here we do not force timer interrupt, probably this is wrong */
+    if (PendingInts[1])
+        PostThreadMessage(SwitcherId, MSG_IRQ_PENDING, 0, 0);
 }
 
 void __declspec(dllexport) core_syscall(unsigned long n)
@@ -168,13 +184,17 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
-    DWORD SwitcherId;
     LARGE_INTEGER VBLPeriod;
     void *MainTEB;
+    int i;
 
     D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
     SysBasePtr = SysBasePointer;
     KernelBasePtr = KernelBasePointer;
+    Ints_Enabled = 0;
+    for (i = 0; i < HW_INTS_NUM; i++)
+        PendingInts[i] = 0;
+    Supervisor = 0;
     SetUnhandledExceptionFilter(ExceptionHandler);
     SwData.IntTimer = CreateWaitableTimer(NULL, 0, NULL);
     if (SwData.IntTimer) {
@@ -190,8 +210,8 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
 	    LastErrorPtr = MainTEB + 0x34;
 	    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
 	    if (SwitcherThread) {
+	        CloseHandle(SwitcherThread);
 	  	D(printf("[KRN] Task switcher started\n"));
-	  	CloseHandle(SwitcherThread);
 #ifdef SLOW
 		TimerPeriod = 5000;
 #else
