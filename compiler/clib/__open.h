@@ -17,6 +17,7 @@ typedef struct _fcb
     BPTR fh;
     int  flags;
     unsigned int opencount;
+    char  isdir;
 } fcb;
 
 /* file descriptor structure - one per descriptor */
