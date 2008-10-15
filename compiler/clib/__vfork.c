@@ -42,8 +42,7 @@ LONG launcher()
     BYTE child_signal;
     LONG ret = 0;
 
-#warning this is memory leak, must be fixed somehow!
-    GetIntETask(this)->iet_startup = AllocMem(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
+    GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
 
     /* Allocate signal for parent->child communication */
     child_signal = udata->child_signal = AllocSignal(-1);
