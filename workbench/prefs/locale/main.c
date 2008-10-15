@@ -38,12 +38,11 @@
 #include "page_country.h"
 #include "page_timezone.h"
 
-#define DEBUG 1 
+//#define DEBUG 1 
 #include <aros/debug.h>
 
 #define VERSION "$VER: Locale 2.0 (09.08.2008) AROS Dev Team"
 /*********************************************************************************************/
-
 
 #define ARG_FROM        0
 #define ARG_EDIT    	1
