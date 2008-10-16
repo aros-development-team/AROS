@@ -25,7 +25,8 @@ FILES := \
 	waitpid \
 	lseek \
 	opendir \
-	pipe
+	pipe \
+	fcntl
 
 EXEDIR := $(AROS_TESTS)/clib
 
