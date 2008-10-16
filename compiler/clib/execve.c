@@ -307,14 +307,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     else
     	strcat(argptr, "\n");
     
-    /* Get the path for LoadSeg() */
-    afilename = strdup(__path_u2a(inter ? inter : (char*) filename));
-    if(!afilename)
-    {
-    	saved_errno = errno;
-    	goto error;
-    }
-    
     /* let's make some sanity tests */
     
     struct stat st;
