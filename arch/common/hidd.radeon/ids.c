@@ -8,7 +8,7 @@
 
 #include "ids.h"
 
-/* List of DeviceID's of supported nvidia cards */
+/* List of DeviceIDs of supported ATI cards */
 const struct ATIDevice support[] = {
     { 0x1002, 0x5144, RADEON,   RADEONInit,    FALSE },
     { 0x1002, 0x5145, RADEON,   RADEONInit,    FALSE },

@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 28046 2008-03-17 23:02:42Z agreppin $
+# $Id$
 include $(TOP)/config/make.cfg
 
 .PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso

@@ -350,7 +350,7 @@ Exec_Dispatch_x:    cli
 		    movw    Quantum(%ebp),%ax
 		    movw    %ax,Elapsed(%ebp)
 
-                    andw    $~0x2000,SysFlags(%ebp) /* stegerg: fixme, should be andw!! */
+                    andw    $~0x2000,SysFlags(%ebp)
                     movb    $TS_RUN,tc_State(%ecx)
                     movb    tc_IDNestCnt(%ecx),%al
                     movb    %al,IDNestCnt(%ebp)
