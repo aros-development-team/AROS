@@ -15,7 +15,7 @@ typedef struct
 {
     BPTR command;
     LONG returncode;
-    int  parent_does_upath;
+    struct arosc_privdata *ppriv;
 } childdata_t;
 
 int __spawnv(int mode, BPTR seg, char *const argv[]);
