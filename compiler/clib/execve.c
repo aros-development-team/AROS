@@ -501,11 +501,14 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 
 error_env:
     /* Restore environment in case of error */
-    NEWLIST(&me->pr_LocalVars);
-    ForeachNodeSafe(&tempenv, varNode, tempNode)
+    if(envp)
     {
-	Remove((struct Node*) varNode);
-	AddTail((struct List*) &me->pr_LocalVars, (struct Node*) varNode);
+	NEWLIST(&me->pr_LocalVars);
+	ForeachNodeSafe(&tempenv, varNode, tempNode)
+	{
+	    Remove((struct Node*) varNode);
+	    AddTail((struct List*) &me->pr_LocalVars, (struct Node*) varNode);
+	}
     }
 error:
     free(argptr);
