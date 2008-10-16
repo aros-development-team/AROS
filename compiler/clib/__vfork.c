@@ -214,8 +214,6 @@ pid_t __vfork(jmp_buf env)
     
     D(bug("Creating child\n"));
     udata->child = (struct Task*) CreateNewProc(tags);
-    udata->child_id = GetETaskID(udata->child);
-    D(bug("Got unique child id: %d\n", udata->child_id));
 
     if(udata->child == NULL)
     {
@@ -225,6 +223,8 @@ pid_t __vfork(jmp_buf env)
 	longjmp(env, -1);
     }
     D(bug("Child created %p, waiting to finish setup\n", udata->child));
+    udata->child_id = GetETaskID(udata->child);
+    D(bug("Got unique child id: %d\n", udata->child_id));
 
     /* Wait for child to finish setup */
     Wait(1 << udata->parent_signal);
