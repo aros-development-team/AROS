@@ -66,6 +66,21 @@
             
             return dup2(fd, __getfirstfd(arg));
         }
+        case F_GETFD:
+            return desc->fdflags;
+            
+        case F_SETFD:
+        {
+            va_list ap;
+            int     arg;
+
+            va_start(ap, cmd);
+            arg = va_arg(ap, int);
+            va_end(ap);
+
+            desc->fdflags = arg;
+            return 0;
+        }
 	
         case F_GETFL:
             return desc->fcb->flags & (O_NONBLOCK|O_APPEND|O_ASYNC);
