@@ -92,32 +92,19 @@ char * appendarg(char *argptr, int *argptrsize, const char *arg)
 	return argptr;
 }
 
-BPTR DupFHFromfd(int fd, ULONG mode);
-
 LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 {
     BPTR oldin = MKBADDR(NULL), oldout = MKBADDR(NULL), olderr = MKBADDR(NULL);
-    BPTR in, out, err;
     char *oldtaskname;
     APTR udata;
     LONG returncode;
-        
-    in  = DupFHFromfd(STDIN_FILENO,  FMF_READ);
-    out = DupFHFromfd(STDOUT_FILENO, FMF_WRITE);
-    err = DupFHFromfd(STDERR_FILENO, FMF_WRITE);
-    
-    if(in) 
-        oldin = SelectInput(in);
-    if(out) 
-        oldout = SelectOutput(out);
-    if(err)
-        olderr = SelectError(err);
+
+    udata = FindTask(NULL)->tc_UserData;
 
     oldtaskname = FindTask(NULL)->tc_Node.ln_Name;
     FindTask(NULL)->tc_Node.ln_Name = taskname;
     SetProgramName(taskname);
 
-    udata = FindTask(NULL)->tc_UserData;
     FindTask(NULL)->tc_UserData = NULL;
     returncode = RunCommand(
         seglist,
@@ -129,23 +116,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 
     FindTask(NULL)->tc_Node.ln_Name = oldtaskname;
     SetProgramName(oldtaskname);
-        
-    if(in)
-    {
-	Close(in);
-        SelectInput(oldin);
-    }
-    if(out)
-    {
-	Close(out);
-        SelectOutput(oldout);
-    }
-    if(err)
-    {
-	Close(err);
-	SelectError(olderr);
-    }
-    
+
     return returncode;
 }
 
@@ -477,6 +448,23 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	}
 	else
 	{
+	    struct Library *aroscbase;
+	    int oldspawned;
+	    
+	    fdesc *in, *out, *err;
+	    BPTR oldin, oldout, olderr;
+	    in = __fd_array[STDIN_FILENO];
+	    out = __fd_array[STDOUT_FILENO];
+	    err = __fd_array[STDERR_FILENO];
+
+	    /* update dos.library input, output and error handles */
+	    if(in) 
+	        oldin = SelectInput(in->fcb->fh);
+	    if(out) 
+	        oldout = SelectOutput(out->fcb->fh);
+	    if(err)
+	        olderr = SelectError(err->fcb->fh);
+
 	    if(envp)
 	    {
 	        /* Everything went fine, execve won't return so we can free the old
@@ -488,17 +476,28 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	            FreeVec(varNode);
 	        }
 	    }
-	        
+	    oldspawned = __get_arosc_privdata()->acpd_spawned;
+	    __get_arosc_privdata()->acpd_spawned = 1;
+	    
 	    returncode = exec_command(
 		seglist, 
 		afilename, 
 		argptr, 
 		cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT
 	    );
+
+	    __get_arosc_privdata()->acpd_spawned = oldspawned;
 	        
 	    UnLoadSeg(seglist);
 	    free(argptr);
 	    free(afilename);
+
+	    if(in)
+	        SelectInput(oldin);
+	    if(out)
+	        SelectOutput(oldout);
+	    if(err)
+		SelectError(olderr);
 
 	    D(bug("exiting from non-forked execve()\n"));
 	    _exit(returncode);

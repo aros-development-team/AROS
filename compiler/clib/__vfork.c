@@ -41,6 +41,8 @@ LONG launcher()
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
     LONG ret = 0;
+    struct Library *aroscbase;
+    fdesc *newin, *newout, *newerr;
 
     GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
 
@@ -55,6 +57,32 @@ LONG launcher()
 	return -1;
     }
 
+    aroscbase = OpenLibrary("arosc.library", 0);
+    if(!aroscbase)
+    {
+	FreeSignal(child_signal);
+	udata->child_errno = ENOMEM;
+	Signal(udata->parent, 1 << udata->parent_signal);
+	return -1;	
+    }
+
+    __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_parent_does_upath;
+    __get_arosc_privdata()->acpd_spawned = 1;
+    __stdfiles[STDIN_FILENO] = udata->ppriv->acpd_stdfiles[STDIN_FILENO];
+    __stdfiles[STDOUT_FILENO] = udata->ppriv->acpd_stdfiles[STDOUT_FILENO];
+    __stdfiles[STDERR_FILENO] = udata->ppriv->acpd_stdfiles[STDERR_FILENO];
+
+    newin = malloc(sizeof(fdesc));
+    newout = malloc(sizeof(fdesc));
+    newerr = malloc(sizeof(fdesc));
+    if(!newin || !newout || !newerr)
+    {
+	FreeSignal(child_signal);
+	udata->child_errno = ENOMEM;
+	Signal(udata->parent, 1 << udata->parent_signal);
+	return -1;
+    }
+    
     /* Setup complete, signal parent */
     D(bug("Signaling parent that we finished setup\n"));
     Signal(udata->parent, 1 << udata->parent_signal);
@@ -69,6 +97,37 @@ LONG launcher()
 	char *taskname = udata->exec_taskname;
 	char *arguments = udata->exec_arguments;
 	ULONG stacksize = udata->exec_stacksize;
+
+	fdesc *in, *out, *err;
+	BPTR oldin, oldout, olderr;
+
+	if(__fd_array[STDIN_FILENO])
+	    close(STDIN_FILENO);
+	if(__fd_array[STDOUT_FILENO])
+	    close(STDOUT_FILENO);
+	if(__fd_array[STDERR_FILENO])
+	    close(STDERR_FILENO);
+
+	in = udata->ppriv->acpd_fd_array[STDIN_FILENO];
+	out = udata->ppriv->acpd_fd_array[STDOUT_FILENO];
+	err = udata->ppriv->acpd_fd_array[STDERR_FILENO];
+
+	if(in) 
+	    SelectInput(in->fcb->fh);
+	if(out) 
+	    SelectOutput(out->fcb->fh);
+	if(err)
+	    SelectError(err->fcb->fh);
+
+	in->fcb->opencount++;
+	out->fcb->opencount++;
+	err->fcb->opencount++;
+	newin->fcb  = in->fcb;
+	newout->fcb = out->fcb;
+	newerr->fcb = err->fcb;
+	__fd_array[STDIN_FILENO] = newin;
+	__fd_array[STDOUT_FILENO] = newout;
+	__fd_array[STDERR_FILENO] = newerr;
 
 	D(bug("informing parent that we won't use udata anymore\n"));
 	/* Inform parent that we won't use udata anymore */
@@ -92,6 +151,8 @@ LONG launcher()
     }
     D(bug("freeing child_signal\n"));
     FreeSignal(child_signal);
+    __get_arosc_privdata()->acpd_spawned = 0;
+    CloseLibrary(aroscbase);
     return 0;
 }
 
@@ -124,9 +185,6 @@ pid_t __vfork(jmp_buf env)
     struct TagItem tags[] =
     {
 	{ NP_Entry,         (IPTR) launcher  },
-	{ NP_Input,         (IPTR) NULL      }, /* 1 */
-	{ NP_Output,        (IPTR) NULL      }, /* 2 */
-	{ NP_Error,         (IPTR) NULL      }, /* 3 */
 	{ NP_CloseInput,    (IPTR) FALSE     },
 	{ NP_CloseOutput,   (IPTR) FALSE     },
 	{ NP_CloseError,    (IPTR) FALSE     },
@@ -137,24 +195,12 @@ pid_t __vfork(jmp_buf env)
         { TAG_DONE,         0                }
     };
 
-    BPTR in, out, err;
-    in  = Input();
-    out = Output();
-    err = Error();
-    D(bug("in = %p - out = %p - err = %p\n", BADDR(in), BADDR(out), BADDR(err)));
-
-    if (in)  tags[1].ti_Data = (IPTR)in;
-    else     tags[1].ti_Tag  = TAG_IGNORE;
-    if (out) tags[2].ti_Data = (IPTR)out;
-    else     tags[2].ti_Tag  = TAG_IGNORE;
-    if (err) tags[3].ti_Data = (IPTR)err;
-    else     tags[3].ti_Tag  = TAG_IGNORE;
-
     udata->parent = this;
     /* Store parent's UserData to restore it later */
     udata->old_UserData = udata->parent->tc_UserData;
     D(bug("Saved old parent's UserData: %p\n", udata->old_UserData));
     udata->parent->tc_UserData = udata;
+    udata->ppriv = __get_arosc_privdata();
     
     D(bug("backuping startup buffer\n"));
     /* Backup startup buffer */

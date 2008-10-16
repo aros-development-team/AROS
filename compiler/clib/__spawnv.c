@@ -22,13 +22,13 @@
 
 #include "__errno.h"
 #include "__spawnv.h"
+#include "__open.h"
 
 AROS_UFP3(LONG, wait_entry,
 AROS_UFPA(char *, argstr,A0),
 AROS_UFPA(ULONG, argsize,D0),
 AROS_UFPA(struct ExecBase *,SysBase,A6));
 
-BPTR DupFHFromfd(int fd, ULONG mode);
 static char *join_args(char * const *argv);
 /*****************************************************************************
 
@@ -118,10 +118,7 @@ static char *join_args(char * const *argv);
 	    struct TagItem tags[] =
 	    {
 	        { NP_Entry,       (IPTR)wait_entry },
-		{ NP_Input,       0                }, /* 1 */
-		{ NP_Output,      0                }, /* 2 */
-		{ NP_Error,       0                }, /* 3 */
-		{ NP_Arguments,   0                }, /* 4 */
+		{ NP_Arguments,   0                }, /* 1 */
 		{ NP_CloseInput,  FALSE            },
 		{ NP_CloseOutput, FALSE            },
 		{ NP_CloseError,  FALSE            },
@@ -137,27 +134,13 @@ static char *join_args(char * const *argv);
 	       the usedsata field of the task structure.  */
 	    childdata.command = seg;
 
-	    tags[4].ti_Data = (IPTR)join_args(&argv[1]);
-	    if (!tags[4].ti_Data)
+	    tags[1].ti_Data = (IPTR)join_args(&argv[1]);
+	    if (!tags[1].ti_Data)
 	        break;
 
 	    D(bug("Args joined = %s\n", (char *)tags[4].ti_Data));
 
-	    in  = DupFHFromfd(STDIN_FILENO,  FMF_READ);
-	    out = DupFHFromfd(STDOUT_FILENO, FMF_WRITE);
-	    err = DupFHFromfd(STDERR_FILENO, FMF_WRITE);
-
-	    D(bug("in = %p - out = %p - err = %p\n", BADDR(in), BADDR(out), BADDR(err)));
-
-	    if (in)  tags[1].ti_Data = (IPTR)in;
-	    else     tags[1].ti_Tag  = TAG_IGNORE;
-	    if (out) tags[2].ti_Data = (IPTR)out;
-	    else     tags[2].ti_Tag  = TAG_IGNORE;
-	    if (err) tags[3].ti_Data = (IPTR)err;
-	    else     tags[3].ti_Tag  = TAG_IGNORE;
-
-
-	    childdata.parent_does_upath = __doupath;
+	    childdata.ppriv = __get_arosc_privdata();
 
 	    if (CreateNewProc(tags) != NULL)
 	        ret = childdata.returncode;
@@ -165,8 +148,6 @@ static char *join_args(char * const *argv);
 	        ret = -1;
 
 	    D(bug("Process created successfully: %s\n", ret == -1 ? "NO" : "YES"));
-
-	    Close(in); Close(out); Close(err);
 
 	    D(bug("Command unloaded\n"));
             break;
@@ -199,6 +180,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     childdata_t *childdata = (childdata_t *)FindTask(NULL)->tc_UserData;
     struct CommandLineInterface *cli;
     LONG stacksize;
+    fdesc *in, *out, *err;
+    fdesc *newin, *newout, *newerr;
 
     DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
     if (DOSBase == NULL)
@@ -208,9 +191,20 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     if (aroscbase == NULL)
         goto err2;
 
+    newin = malloc(sizeof(fdesc));
+    newout = malloc(sizeof(fdesc));
+    newerr = malloc(sizeof(fdesc));
+    if(!newin || !newout || !newerr)
+    {
+	goto err2;
+    }
 #define privdata __get_arosc_privdata()
-    privdata->acpd_parent_does_upath = childdata->parent_does_upath;
+    D(bug("privdata: %p, ppriv: %p\n", privdata, childdata->ppriv));
+    privdata->acpd_parent_does_upath = childdata->ppriv->acpd_doupath;
     privdata->acpd_spawned = 1;
+    __stdfiles[STDIN_FILENO] = childdata->ppriv->acpd_stdfiles[STDIN_FILENO];
+    __stdfiles[STDOUT_FILENO] = childdata->ppriv->acpd_stdfiles[STDOUT_FILENO];
+    __stdfiles[STDERR_FILENO] = childdata->ppriv->acpd_stdfiles[STDERR_FILENO];
 
     cli = Cli();
     if (cli)
@@ -218,8 +212,37 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     else
 	stacksize = AROS_STACKSIZE;
 
+    if(__fd_array[STDIN_FILENO])
+	close(STDIN_FILENO);
+    if(__fd_array[STDOUT_FILENO])
+	close(STDOUT_FILENO);
+    if(__fd_array[STDERR_FILENO])
+	close(STDERR_FILENO);
+	
+    in = childdata->ppriv->acpd_fd_array[STDIN_FILENO];
+    out = childdata->ppriv->acpd_fd_array[STDOUT_FILENO];
+    err = childdata->ppriv->acpd_fd_array[STDERR_FILENO];
+
+    if(in) 
+	SelectInput(in->fcb->fh);
+    if(out) 
+	SelectOutput(out->fcb->fh);
+    if(err)
+	SelectError(err->fcb->fh);
+	
+    in->fcb->opencount++;
+    out->fcb->opencount++;
+    err->fcb->opencount++;
+    newin->fcb  = in->fcb;
+    newout->fcb = out->fcb;
+    newerr->fcb = err->fcb;
+    __fd_array[STDIN_FILENO] = newin;
+    __fd_array[STDOUT_FILENO] = newout;
+    __fd_array[STDERR_FILENO] = newerr;
+	
     rc = RunCommand(childdata->command, stacksize, argstr, argsize);
 
+    privdata->acpd_spawned = 0;
     CloseLibrary(aroscbase);
 
 err2:
@@ -231,25 +254,6 @@ err1:
     return rc;
     
     AROS_USERFUNC_EXIT
-}
-
-#include "__open.h"
-BPTR DupFHFromfd(int fd, ULONG mode)
-{
-    fdesc *fdesc = __getfdesc(fd);
-    BPTR ret = MKBADDR(NULL);
-
-    if (fdesc != NULL && fdesc->fcb->fh != MKBADDR(NULL))
-    {
-        LONG pos = Seek(fdesc->fcb->fh, 0, OFFSET_CURRENT);
-        BPTR olddir = CurrentDir(fdesc->fcb->fh);
-        ret = Open("", mode);
-        if((mode & FMF_WRITE) && ret && pos != -1)
-            Seek(ret, pos, OFFSET_BEGINNING);
-        CurrentDir(olddir);
-    }
-
-    return ret;
 }
 
 /* Join all elements of an argv array so to build one big string with

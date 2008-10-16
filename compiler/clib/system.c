@@ -28,46 +28,6 @@ AROS_UFPA(char *, argstr,A0),
 AROS_UFPA(ULONG, argsize,D0),
 AROS_UFPA(struct ExecBase *,SysBase,A6));
 
-extern BPTR DupFHFromfd(int fd, ULONG mode);
-
-static void syncFilePos(int from_fd, BPTR to_fh)
-{
-   fdesc *desc;
-   BPTR fh;
-   LONG offset;
-
-   desc = __getfdesc(from_fd);
-   if (desc)
-   {
-	fh = (BPTR)(desc->fcb->fh);
-	Flush(fh);
-	offset = Seek(fh, 0, OFFSET_CURRENT);
-
-	if (offset > 0)
-	    if (Seek(to_fh, offset, OFFSET_BEGINNING) < 0)
-		D(bug("system: Seek error: %d\n", IoErr()));
-   }
-}
-
-static void syncFilePosBack(BPTR from_fh, int to_fd)
-{
-   fdesc *desc;
-   BPTR fh;
-   LONG offset;
-
-   desc = __getfdesc(to_fd);
-   if (desc)
-   {
-	fh = (BPTR)(desc->fcb->fh);
-	Flush(fh);
-	offset = Seek(from_fh, 0, OFFSET_CURRENT);
-
-	if (offset > 0)
-	    if (Seek(fh, offset, OFFSET_BEGINNING) < 0)
-		D(bug("system: Seek error: %d\n", IoErr()));
-   }
-}
-
 /*****************************************************************************
 
     NAME */
@@ -174,10 +134,7 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
 	struct TagItem tags[] =
 	{
 	    { NP_Entry,       (IPTR)wait_entry },
-	    { NP_Input,       0                }, /* 1 */
-	    { NP_Output,      0                }, /* 2 */
-	    { NP_Error,       0                }, /* 3 */
-	    { NP_Arguments,   (IPTR)args       }, /* 4 */
+	    { NP_Arguments,   (IPTR)args       },
 	    { NP_CloseInput,  FALSE            },
 	    { NP_CloseOutput, FALSE            },
 	    { NP_CloseError,  FALSE            },
@@ -190,39 +147,7 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
 	};
 
 	childdata.command = seg;
-
-	in  = DupFHFromfd(STDIN_FILENO,  FMF_READ);
-	out = DupFHFromfd(STDOUT_FILENO, FMF_WRITE);
-	err = DupFHFromfd(STDERR_FILENO, FMF_WRITE);
-
-	/* isnt the responsability of DupFH/DupLock/Open(""/Lock(""
-           to keep files pointers in sync ??? 
-           or better, the filesystem ??? */
-	if (in)
-	{
-	    tags[1].ti_Data = (IPTR)in;
-	    syncFilePos(STDIN_FILENO, in);
-	}
-	else
-	    tags[1].ti_Tag  = TAG_IGNORE;
-
-	if (in)
-	{
-	    tags[2].ti_Data = (IPTR)out;
-	    syncFilePos(STDOUT_FILENO, out);
-	}
-	else
-	    tags[2].ti_Tag  = TAG_IGNORE;
-
-	if (in)
-	{
-	    tags[3].ti_Data = (IPTR)err;
-	    syncFilePos(STDERR_FILENO, err);
-	}
-	else
-	    tags[3].ti_Tag  = TAG_IGNORE;
-
-	childdata.parent_does_upath = __doupath;
+	childdata.ppriv = __get_arosc_privdata();
 
 	if (CreateNewProc(tags) != NULL)
 	    ret = childdata.returncode;
@@ -233,24 +158,6 @@ static void syncFilePosBack(BPTR from_fh, int to_fd)
 	}
 
 	UnLoadSeg(seg);
-
-	if (in)
-	{
-	    syncFilePosBack(in, STDIN_FILENO);
-	    Close(in);
-	}
-
-	if (out)
-	{
-	    syncFilePosBack(out, STDOUT_FILENO);
-	    Close(out);
-	}
-
-	if (err)
-	{
-	    syncFilePosBack(err, STDERR_FILENO);
-	    Close(err);
-	}
     }
 
     D(bug("system(cmd=%s, args=%s)=%d, errno=%d\n",

@@ -42,6 +42,7 @@ struct vfork_data
     void *parent_acpd_fd_array;
     int parent_acpd_numslots;
     BPTR parent_curdir;
+    struct arosc_privdata *ppriv;
 
     struct Task *child;
     struct aros_startup child_startup;
