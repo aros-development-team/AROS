@@ -45,10 +45,10 @@
 
 __BEGIN_DECLS
 
-/* NOTIMPL intmax_t strtoimax(const char * restrict nptr,
-		    char ** restrict endptr, int base); */
-/* NOTIMPL uintmax_t strtoumax(const char * restrict nptr,
-		    char ** restrict endptr, int base); */
+intmax_t strtoimax(const char * restrict nptr,
+		    char ** restrict endptr, int base);
+uintmax_t strtoumax(const char * restrict nptr,
+		    char ** restrict endptr, int base);
 
 /* NOTIMPL intmax_t wcstoimax(const wchar_t * restrict nptr,
 		    wchar_t ** restrict endptr, int base); */
