@@ -331,10 +331,12 @@ SHARED	:= \
 	strftime \
 	strerror \
 	strptime \
+	strtoimax \
 	strtol \
 	strtoll \
 	strtoul \
 	strtoull \
+	strtoumax \
 	symlink \
 	system \
 	telldir \
