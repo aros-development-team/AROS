@@ -139,6 +139,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     if (!cblock) { D(bug("__open: no memory [1]\n")); goto err; }
     currdesc = malloc(sizeof(fdesc));
     if (!currdesc) { D(bug("__open: no memory [2]\n")); goto err; }
+    currdesc->fdflags = 0;
     currdesc->fcb = cblock;
 
     wanted_fd = __getfdslot(wanted_fd);
@@ -285,6 +286,10 @@ int __init_stdfiles(void)
     	SetIoErr(ERROR_NO_FREE_STORE);
     	return 0;
     }
+
+    indesc->fdflags = 0;
+    outdesc->fdflags = 0;
+    errdesc->fdflags = 0;
 
     indesc->fcb = infcb;
     outdesc->fcb = outfcb;

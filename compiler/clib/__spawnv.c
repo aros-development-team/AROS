@@ -233,6 +233,9 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     in->fcb->opencount++;
     out->fcb->opencount++;
     err->fcb->opencount++;
+    newin->fdflags = 0;
+    newout->fdflags = 0;
+    newerr->fdflags = 0;
     newin->fcb  = in->fcb;
     newout->fcb = out->fcb;
     newerr->fcb = err->fcb;
