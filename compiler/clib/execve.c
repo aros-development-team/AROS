@@ -188,7 +188,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 
 ******************************************************************************/
 {
-    FILE *program;
+    BPTR fh;
     char firstline[128];    /* buffer to read first line of the script */
     char *inter = NULL;     /* interpreter in case of script */
     char *interargs = "";   /* interpreter arguments */
@@ -216,13 +216,21 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
         return -1;
     }
 
-    /* Let's check if it's a script */
-    if((program = fopen(filename, "r")))
+    /* Get the AmigaOS-like path */
+    afilename = strdup(__path_u2a(inter ? inter : (char*) filename));
+    if(!afilename)
     {
-    	if(fgetc(program) == '#' && fgetc(program) == '!')
+    	saved_errno = errno;
+    	goto error;
+    }
+
+    /* Let's check if it's a script */
+    if((fh = Open(afilename, MODE_OLDFILE)))
+    {
+    	if(FGetC(fh) == '#' && FGetC(fh) == '!')
     	{
     		/* It is a script, let's read the first line */
-    		if(fgets(firstline, sizeof(firstline) - 1, program))
+    		if(FGets(fh, firstline, sizeof(firstline) - 1))
     		{
     		    /* delete end of line if present */
     		    if(firstline[0] && firstline[strlen(firstline)-1] == '\n')
@@ -245,12 +253,12 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     		    }
     		}
     	}
-    	fclose(program);
+    	Close(fh);
     }
     else
     {
         /* Simply assume it doesn't exist */
-        saved_errno = ENOENT;
+        saved_errno = IoErr2errno(IoErr());
         goto error;
     }
 
@@ -376,7 +384,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
         struct vfork_data *udata = FindTask(NULL)->tc_UserData;
 	if(udata && udata->magic == VFORK_MAGIC)
 	{
-	    struct Process *child = udata->child;
+	    struct Process *child = (struct Process*) udata->child;
 	    /* Free old child process environment variables */
 	    ForeachNodeSafe(&child->pr_LocalVars, varNode, tempNode)
 	    {
