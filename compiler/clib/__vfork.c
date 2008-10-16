@@ -66,8 +66,8 @@ LONG launcher()
     {
 	D(bug("child executed\n"));
 	BPTR seglist = udata->exec_seglist;
-	char *taskname = strdup(udata->exec_taskname);
-	char *arguments = strdup(udata->exec_arguments);
+	char *taskname = udata->exec_taskname;
+	char *arguments = udata->exec_arguments;
 	ULONG stacksize = udata->exec_stacksize;
 
 	D(bug("informing parent that we won't use udata anymore\n"));
@@ -84,8 +84,9 @@ LONG launcher()
 	);
 	
 	D(bug("freeing taskname and arguments\n"));
-	free(taskname);
-	free(arguments);
+	UnLoadSeg(seglist);
+	FreeVec(taskname);
+	FreeVec(arguments);
 	__aros_startup_error = ret;
 	D(bug("exec_command returned %d\n", ret));
     }
