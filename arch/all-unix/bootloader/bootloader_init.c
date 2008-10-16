@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id: bootloader_init.c 25411 2007-03-12 06:54:19Z sonic $
+    $Id$
 
     Bootloader information initialisation.
 */

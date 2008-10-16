@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: cachepredma.c 28250 2008-04-07 20:12:59Z schulz $
+    $Id$
 
     Desc: CachePreDMA() - Do what is necessary for DMA.
     Lang: english

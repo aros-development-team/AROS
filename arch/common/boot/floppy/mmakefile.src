@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 27689 2008-01-09 02:19:05Z neil $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM- bootdisk : bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)

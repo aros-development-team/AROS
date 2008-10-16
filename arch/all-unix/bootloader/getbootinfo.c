@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
-    $Id: getbootinfo.c 16670 2003-03-08 19:02:51Z jogr0326 $
+    $Id$
 
     GetBootInfo() function.
 */

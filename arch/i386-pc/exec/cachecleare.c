@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2008, The AROS Development Team. All rights reserved.
-    $Id: cachecleare.c 28252 2008-04-07 20:30:41Z schulz $
+    $Id$
 
     Desc: CacheClearE() - Clear the caches with extended control.
     Lang: english
