@@ -85,7 +85,15 @@
         if (NULL != buff)
         {
             fh->fh_Size = size;
-            fh->fh_Pos = fh->fh_Buf = fh->fh_End = buff;
+            if(fh->fh_Flags & FHF_WRITE)
+            {
+                fh->fh_Pos = fh->fh_Buf = buff;
+                fh->fh_End = fh->fh_Buf + fh->fh_Size;
+            }
+            else
+            {
+                fh->fh_Pos = fh->fh_Buf = fh->fh_End = buff;
+            }
         }
     	else
     	{
@@ -129,7 +137,15 @@ vbuf_alloc(FileHandlePtr fh, ULONG size, struct DosLibrary *DOSBase)
         fh->fh_Size = size;
         fh->fh_Flags |= FHF_BUF;
 
-        fh->fh_Pos = fh->fh_Buf = fh->fh_End = buf;
+        if(fh->fh_Flags & FHF_WRITE)
+        {
+            fh->fh_Pos = fh->fh_Buf = buf;
+            fh->fh_End = fh->fh_Buf + fh->fh_Size;
+        }
+        else
+        {
+            fh->fh_Pos = fh->fh_Buf = fh->fh_End = buf;
+        }
     }
 
     return(fh->fh_Buf);
