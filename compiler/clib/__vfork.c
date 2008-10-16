@@ -122,6 +122,9 @@ LONG launcher()
 	in->fcb->opencount++;
 	out->fcb->opencount++;
 	err->fcb->opencount++;
+	newin->fdflags = 0;
+	newout->fdflags = 0;
+	newerr->fdflags = 0;
 	newin->fcb  = in->fcb;
 	newout->fcb = out->fcb;
 	newerr->fcb = err->fcb;
@@ -240,6 +243,7 @@ pid_t __vfork(jmp_buf env)
 		errno = ENOMEM;
 		longjmp(udata->vfork_jump, -1);		
 	    }
+	    acpd_fd_array[i]->fdflags = 0;
 	    acpd_fd_array[i]->fcb = ppriv->acpd_fd_array[i]->fcb;
 	    acpd_fd_array[i]->fcb->opencount++;
 	}

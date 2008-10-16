@@ -133,6 +133,7 @@
         errno = ENOMEM;
         goto err5;
     }
+    desc->fdflags = 0;
     desc->fcb = cblock;
     desc->fcb->fh = lock;
     desc->fcb->flags = O_RDONLY;

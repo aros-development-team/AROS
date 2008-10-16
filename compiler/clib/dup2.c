@@ -73,6 +73,7 @@
 	return -1;
     }
     
+    newfdesc->fdflags = 0;
     newfdesc->fcb = oldfdesc->fcb;
     
     newfd =__getfdslot(newfd);
