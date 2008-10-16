@@ -129,7 +129,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 
     FindTask(NULL)->tc_Node.ln_Name = oldtaskname;
     SetProgramName(oldtaskname);
-    UnLoadSeg(seglist);
         
     if(in)
     {
@@ -376,6 +375,20 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
         struct vfork_data *udata = FindTask(NULL)->tc_UserData;
 	if(udata && udata->magic == VFORK_MAGIC)
 	{
+	    udata->exec_arguments = AllocVec(strlen(argptr)+1, MEMF_ANY);
+	    if(!udata->exec_arguments)
+		goto error_env;
+	    udata->exec_taskname = AllocVec(strlen(afilename)+1, MEMF_ANY);
+	    if(!udata->exec_taskname)
+	    {
+		FreeVec(udata->exec_arguments);
+		goto error_env;
+	    }
+	    CopyMem(argptr, udata->exec_arguments, strlen(argptr)+1);
+	    CopyMem(afilename, udata->exec_taskname, strlen(afilename)+1);
+	    free(argptr);
+	    free(afilename);
+
 	    struct Process *child = (struct Process*) udata->child;
 	    /* Free old child process environment variables */
 	    ForeachNodeSafe(&child->pr_LocalVars, varNode, tempNode)
@@ -444,9 +457,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 
 	    /* Store all local variables in udata to pass them to child */
 	    udata->exec_seglist = seglist;
-	    udata->exec_arguments = argptr;
 	    udata->exec_stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
-	    udata->exec_taskname = afilename;
 	    
 	    /* Set this so we know that execve was called */
 	    udata->child_executed = 1;
@@ -485,6 +496,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 		cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT
 	    );
 	        
+	    UnLoadSeg(seglist);
 	    free(argptr);
 	    free(afilename);
 
