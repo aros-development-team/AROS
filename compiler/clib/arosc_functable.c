@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
+#include <sys/file.h>
 #include <signal.h>
 #include <assert.h>
 #include <dirent.h>
