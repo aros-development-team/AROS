@@ -164,6 +164,7 @@ SHARED	:= \
 	fgetpos \
 	fgets \
 	fileno \
+	flock \
 	fopen \
 	fprintf \
 	fscanf \
