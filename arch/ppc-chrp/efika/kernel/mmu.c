@@ -250,6 +250,8 @@ AROS_LH4(int, KrnMapGlobal,
 {
     AROS_LIBFUNC_INIT
 
+    int retval = 0;
+    uint32_t msr;
     uint32_t ppc_prot = 2 << 3;	/* WIMG = 0010 */
 
     D(bug("[KRN] KrnMapGlobal(%08x->%08x %08x %04x)\n", virtual, physical, length, flags));
@@ -276,7 +278,11 @@ AROS_LH4(int, KrnMapGlobal,
     	ppc_prot = (ppc_prot | 4 << 3) & ~ (8 << 3);
     }
 
-    return mmu_map_area((uint64_t)virtual & 0xffffffff, physical, length, ppc_prot);
+    msr = goSuper();
+    retval = mmu_map_area((uint64_t)virtual & 0xffffffff, physical, length, ppc_prot);
+    wrmsr(msr);
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
 }
