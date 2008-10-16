@@ -26,7 +26,8 @@ FILES := \
 	lseek \
 	opendir \
 	pipe \
-	fcntl
+	fcntl \
+	flock
 
 EXEDIR := $(AROS_TESTS)/clib
 
