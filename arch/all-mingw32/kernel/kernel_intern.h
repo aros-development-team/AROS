@@ -80,9 +80,12 @@ static inline void bug(const char *format, ...)
 #define MSG_IRQ_PENDING  WM_USER
 #define MSG_IRQ_0	(WM_USER+1)
 
+#define HW_INTS_NUM 2
+
 extern DWORD SwitcherId;
 extern DWORD *LastErrorPtr;
 extern unsigned char Ints_Enabled;
+extern unsigned char PendingInts[HW_INTS_NUM];
 extern struct ExecBase **SysBasePtr;
 extern struct KernelBase **KernelBasePtr;
 

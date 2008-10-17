@@ -1,4 +1,4 @@
-#define DEBUG 0
+#define DEBUG 1
 
 #include <aros/system.h>
 #include <windows.h>
@@ -23,7 +23,6 @@ typedef unsigned char UBYTE;
 #define DIRQ(x) /* IRQ debug		*/
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
-#define HW_INTS_NUM 2
 
 struct SwitcherData {
     HANDLE MainThread;
@@ -112,9 +111,9 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     for (;;) {
         obj = MsgWaitForMultipleObjects(1, &args->IntTimer, FALSE, INFINITE, QS_POSTMESSAGE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
-    	DS(res =) SuspendThread(args->MainThread);
-    	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
-    	if (Ints_Enabled) {
+        if (Ints_Enabled) {
+    	    DS(res =) SuspendThread(args->MainThread);
+    	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	    Supervisor++;
     	    PendingInts[obj] = 0;
     	    /* 
@@ -142,13 +141,13 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    Supervisor--;
+    	    DS(res =) ResumeThread(args->MainThread);
+            DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     	} else {
     	    PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
     	    PendingInts[obj] = 1;
-            DS(OutputDebugString("[KRN] Interrupts are disabled\n"));
+            DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
-        DS(res =) ResumeThread(args->MainThread);
-        DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     }
     return 0;
 }
@@ -168,8 +167,10 @@ long __declspec(dllexport) core_intr_enable(void)
     DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
     /* FIXME: here we do not force timer interrupt, probably this is wrong */
-    if (PendingInts[1])
+    if (PendingInts[1]) {
+        DI(printf("[KRN] enable: sigalling about pending interrupt 1\n"));
         PostThreadMessage(SwitcherId, MSG_IRQ_PENDING, 0, 0);
+    }
 }
 
 void __declspec(dllexport) core_syscall(unsigned long n)
