@@ -72,15 +72,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     NEWLIST( &LIBBASE->tb_Lists[3] );
     NEWLIST( &LIBBASE->tb_Lists[4] );
 
-    /* Start up the interrupt server. This is shared between us and the
-        HIDD that deals with the vblank */
-    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
-
-    LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(MPC5200B_ST1, SliceHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
-
     void *OpenFirmwareBase = OpenResource("openfirmware.resource");
     void *key = OF_OpenKey("/builtin");
     if (key)
@@ -96,10 +87,22 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	}
     }
 
-    /* Start the slice timer 1 */
+    /* Start up the interrupt server. This is shared between us and the
+        HIDD that deals with the vblank */
+    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
+    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
+    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
+    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
 
+    LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(MPC5200B_ST1, SliceHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
+
+
+    /* Start the slice timer 1 */
     outl(SLT_TS_ST, &slice_timer->slt_ts);
     TimerSetup(TimerBase, mftbl());
+
+//    outl(SLT_TS_ST, &slice_timer->slt_ts);
+//    TimerSetup(TimerBase, 0);
 
     /* VBlank EMU */
 
