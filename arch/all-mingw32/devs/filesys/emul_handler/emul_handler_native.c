@@ -29,7 +29,7 @@
 #define ST_USERDIR 2
 #define ST_FILE -3
 
-#define DERROR(x) x  /* Error code translation debug  */
+#define DERROR(x)    /* Error code translation debug  */
 #define DSTAT(x)     /* Stat() debug                  */
 #define DSTATFS(x)   /* StatFS() debug		      */
 #define DWINAPI(x)   /* WinAPI calls debug            */
@@ -41,7 +41,8 @@ void (*CauseIRQ)(unsigned char irq, void *data);
 /* Make an AROS error-code (<dos/dos.h>) out of an Windows error-code. */
 static DWORD u2a[][2]=
 {
-  { ERROR_ACCESS_DENIED, ERROR_READ_PROTECTED },
+  { ERROR_ACCESS_DENIED, ERROR_OBJECT_WRONG_TYPE },
+  { ERROR_NO_MORE_FILES, ERROR_NO_MORE_ENTRIES },
   { ERROR_NOT_ENOUGH_MEMORY, ERROR_NO_FREE_STORE },
   { ERROR_FILE_NOT_FOUND, AROS_ERROR_OBJECT_NOT_FOUND },
   { ERROR_FILE_EXISTS, ERROR_OBJECT_EXISTS },

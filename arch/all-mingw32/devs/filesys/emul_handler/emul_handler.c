@@ -261,12 +261,14 @@ void *DoOpen(const char *path, int mode, int protect)
       flags = GENERIC_WRITE;
   if (mode & FMF_READ)
       flags |= GENERIC_READ;
-  lock = (mode & FMF_LOCK) ? 0 : FILE_SHARE_READ;
+  /* FILE_SHARE_WRITE looks strange here, however without it i can't reopen file which
+     is already open with MODE_OLDFILE, even just for reading with FMF_READ */
+  lock = (mode & FMF_LOCK) ? 0 : FILE_SHARE_READ|FILE_SHARE_WRITE;
   if (mode & FMF_CREATE)
       create = (flags & FMF_CLEAR) ? CREATE_ALWAYS : OPEN_ALWAYS;
   else
       create = (flags & FMF_CLEAR) ? TRUNCATE_EXISTING : OPEN_EXISTING;
-  DB2(bug("[emul] CreateFile(\"%s\")\n", path));
+  DB2(bug("[emul] CreateFile: name \"%s\", flags 0x%08lX, lock 0x%08lX, create %lu\n", path, flags, lock, create));
   res = OpenFile(path, flags, lock, NULL, create, prot_a2w(protect), NULL);
   DB2(bug("[emul] FileHandle = 0x%08lX\n", res));
   return res;
@@ -1675,6 +1677,7 @@ AROS_LH1(void, beginio,
 	  break;
 	  
 	  case FSA_OPEN_FILE:
+	  D(bug("[emul] FSA_OPEN_FILE: name \"%s\", mode 0x%08lX)\n", iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode));
 	  error = open_file(emulbase,
 						(struct filehandle **)&iofs->IOFS.io_Unit,
 						iofs->io_Union.io_OPEN_FILE.io_Filename,
@@ -1685,12 +1688,14 @@ AROS_LH1(void, beginio,
 		  (iofs->io_Union.io_OPEN_FILE.io_FileMode & FMF_AMIGADOS)
 		  )
 	  {
+	        D(bug("[emul] Retrying in read-only mode\n"));
 		error = open_file(emulbase,
 						  (struct filehandle **)&iofs->IOFS.io_Unit,
 						  iofs->io_Union.io_OPEN_FILE.io_Filename,
 						  iofs->io_Union.io_OPEN_FILE.io_FileMode & (~FMF_WRITE),
 						  iofs->io_Union.io_OPEN_FILE.io_Protection);
 	  }
+	  D(bug("[emul] FSA_OPEN_FILE returning %lu\n", error));
 	  break;
 	  
 	  case FSA_CREATE_DIR:
