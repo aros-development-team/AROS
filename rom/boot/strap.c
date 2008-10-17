@@ -166,7 +166,7 @@ static VOID AddPartitionVolume
     UBYTE name[32];
     ULONG i, blockspercyl;
     const struct PartitionAttribute *attrs;
-    IPTR tags[9];
+    IPTR tags[7];
     IPTR *pp;
     struct DeviceNode *devnode;
     struct PartitionType ptyp;
@@ -209,10 +209,9 @@ static VOID AddPartitionVolume
 	    tags[3] = (IPTR)&ptyp;
 	    tags[4] = PT_DOSENVEC;
 	    tags[5] = (IPTR)&pp[4];
-	    tags[6] = PT_ACTIVE;
-	    tags[7] = (IPTR)&bootable;
-	    tags[8] = TAG_DONE;
+	    tags[6] = TAG_DONE;
 	    GetPartitionAttrs(pn, (struct TagItem *)tags);
+	    bootable = TRUE;
 
             /* make the name */
             devname = AROS_BSTR_ADDR(fssm->fssm_Device);
