@@ -111,7 +111,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
   for (i=0; i < INTERRUPTS_NUM; i++)
         NEWLIST(&LIBBASE->kb_Interrupts[i]);
-  D(mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo(KernelBase)));
+  D(mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo()));
   return 1;
 }
 

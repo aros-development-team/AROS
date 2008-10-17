@@ -18,8 +18,9 @@ typedef unsigned char UBYTE;
 #include "host_debug.h"
 #include "cpucontext.h"
 
-#define DI(x) /* Interrupts debug     */
-#define DS(x) /* Task switcher debug  */
+#define DI(x)   /* Interrupts debug     */
+#define DS(x)   /* Task switcher debug  */
+#define DIRQ(x) /* IRQ debug		*/
 
 #define AROS_EXCEPTION_SYSCALL 0x80000001
 #define HW_INTS_NUM 2
@@ -109,7 +110,7 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     MSG msg;
 
     for (;;) {
-        obj = MsgWaitForMultipleObjects(1, &args->IntTimer, FALSE, INFINITE, QS_SENDMESSAGE);
+        obj = MsgWaitForMultipleObjects(1, &args->IntTimer, FALSE, INFINITE, QS_POSTMESSAGE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
     	DS(res =) SuspendThread(args->MainThread);
     	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
@@ -128,9 +129,10 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    DS(PrintCPUContext(&MainCtx));
 	    user_handler(obj);
 	    if (obj == HW_INTS_NUM-1) {
-		while (PeekMessage(&msg, NULL, MSG_IRQ_0, MSG_IRQ_PENDING, PM_REMOVE)) {
-		    if (msg.message == MSG_IRQ_0)
-		    	user_irq_handler_2(0, (void *)msg.wParam, (void *)msg.lParam);
+		while (PeekMessage(&msg, NULL, MSG_IRQ_PENDING, MSG_IRQ_0, PM_REMOVE)) {
+		    DIRQ(printf("[Task switcher] IRQ message %lu\n", msg.message));
+		    if (msg.message != MSG_IRQ_PENDING)
+		    	user_irq_handler_2(msg.message-MSG_IRQ_0, (void *)msg.wParam, (void *)msg.lParam);
 		}
 	    }
     	    core_ExitInterrupt(&MainCtx);
@@ -211,7 +213,7 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
 	    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
 	    if (SwitcherThread) {
 	        CloseHandle(SwitcherThread);
-	  	D(printf("[KRN] Task switcher started\n"));
+	  	D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
 #ifdef SLOW
 		TimerPeriod = 5000;
 #else

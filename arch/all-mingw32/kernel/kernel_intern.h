@@ -77,8 +77,8 @@ static inline void bug(const char *format, ...)
 }
 #else
 
-#define MSG_IRQ_PENDING WM_USER
-#define MSG_IRQ_0	WM_USER+1
+#define MSG_IRQ_PENDING  WM_USER
+#define MSG_IRQ_0	(WM_USER+1)
 
 extern DWORD SwitcherId;
 extern DWORD *LastErrorPtr;

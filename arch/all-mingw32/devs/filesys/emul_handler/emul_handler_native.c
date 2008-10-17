@@ -29,10 +29,11 @@
 #define ST_USERDIR 2
 #define ST_FILE -3
 
-#define DERROR(x) x  /* Error code translation debug */
-#define DSTAT(x)     /* Stat() debug                 */
-#define DSTATFS(x)   /* StatFS() debug		     */
-#define DWINAPI(x)   /* WinAPI calls debug           */
+#define DERROR(x) x  /* Error code translation debug  */
+#define DSTAT(x)     /* Stat() debug                  */
+#define DSTATFS(x)   /* StatFS() debug		      */
+#define DWINAPI(x)   /* WinAPI calls debug            */
+#define DASYNC(x)    /* Asynchronous I/O thread debug */
 
 HMODULE kernel_lib;
 void (*CauseIRQ)(unsigned char irq, void *data);
@@ -40,6 +41,7 @@ void (*CauseIRQ)(unsigned char irq, void *data);
 /* Make an AROS error-code (<dos/dos.h>) out of an Windows error-code. */
 static DWORD u2a[][2]=
 {
+  { ERROR_ACCESS_DENIED, ERROR_READ_PROTECTED },
   { ERROR_NOT_ENOUGH_MEMORY, ERROR_NO_FREE_STORE },
   { ERROR_FILE_NOT_FOUND, AROS_ERROR_OBJECT_NOT_FOUND },
   { ERROR_FILE_EXISTS, ERROR_OBJECT_EXISTS },
@@ -49,6 +51,7 @@ static DWORD u2a[][2]=
   { ERROR_SHARING_VIOLATION, ERROR_OBJECT_IN_USE },
   { ERROR_LOCK_VIOLATION, ERROR_OBJECT_IN_USE },
   { ERROR_BUFFER_OVERFLOW, ERROR_OBJECT_TOO_LARGE },
+  { ERROR_INVALID_NAME, AROS_ERROR_OBJECT_NOT_FOUND },
   { 0, 0 }
 };
 
@@ -337,20 +340,27 @@ DWORD __declspec(dllexport) EmulThread(struct ThreadHandle *THandle)
     struct EmulThreadMessage *emsg;
     BOOL res;
 
+    DASYNC(printf("[EmulHandler I/O] Thread started, handle 0x%08lX, host handle 0x%08lX, host ID %lu\n", THandle, THandle->handle, THandle->id));
     for (;;) {
         emsg = HT_GetMsg();
+        DASYNC(printf("[EmulHandler I/O] Got message: 0x%p\n", emsg));
         if (emsg && (emsg != (struct EmulThreadMessage *)-1)) {
 	    switch(emsg->op) {
 	    case EMUL_CMD_READ:
+	        DASYNC(printf("[EmulHandler I/O] READ %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
 	        res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
 	    	break;
 	    case EMUL_CMD_WRITE:
+	        DASYNC(printf("[EmulHandler I/O] WRITE %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
 	        res = WriteFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
 	    	break;
 	    }
-	    emsg->error = res ? 0 : GetLastError();
+	    emsg->error = res ? 0 : EmulErrno();
+	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
 	    HT_CauseInterrupt(emsg);
-	} else
+	} else {
+	    DASYNC(printf("[EmulHandler I/O] shutting down thread\n"));
 	    return 0;
+	}
     }
 }

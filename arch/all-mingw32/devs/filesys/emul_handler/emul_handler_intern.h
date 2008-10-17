@@ -11,6 +11,7 @@
 struct EmulThreadMessage
 {
     unsigned char op;
+    void *task;
     void *fh;
     void *addr;
     unsigned long len;
@@ -20,7 +21,6 @@ struct EmulThreadMessage
 
 #define EMUL_CMD_READ     0
 #define EMUL_CMD_WRITE    1
-#define EMUL_CMD_SHUTDOWN 255
 
 #ifdef __AROS__
 
@@ -46,7 +46,9 @@ struct emulbase
     APTR			  mempool;
     void			* EmulHandle;
     void			* KernelHandle;
-    struct EmulUnitControl	* HWUnit;
+    struct ThreadHandle		* HostThread;
+    struct EmulThreadMessage	  EmulMsg;
+    struct Interrupt		  EmulInt;
 };
 
 
@@ -67,7 +69,7 @@ struct filehandle
 
 struct EmulInterface
 {
-    __attribute__((stdcall)) ULONG (*EmulThread)(struct ThreadHandle *myhandle);
+    ULONG (*EmulThread)(struct ThreadHandle *myhandle);
     void *(*EmulOpenDir)(const char *path);
     ULONG (*EmulCloseDir)(void *dir);
     ULONG (*EmulStat)(const char *path, struct FileInfoBlock *FIB);
