@@ -11,7 +11,7 @@
 /*********************************************************************************************/
 
 #define DEBUG 0
-#define DASYNC(x) x
+#define DASYNC(x)
 
 #include <aros/debug.h>
 #include <aros/hostthread.h>

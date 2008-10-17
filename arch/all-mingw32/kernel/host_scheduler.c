@@ -48,8 +48,11 @@ static inline void core_LeaveInterrupt(void)
 {
     struct ExecBase *SysBase = *SysBasePtr;
     
-    if ((char )SysBase->IDNestCnt < 0)
+    if ((char )SysBase->IDNestCnt < 0) {
         Ints_Enabled = 1;
+        if (PendingInts[1])
+            PostThreadMessage(SwitcherId, MSG_IRQ_PENDING, 0, 0);
+    }
 }
 
 /*
