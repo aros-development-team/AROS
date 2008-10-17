@@ -10,9 +10,11 @@
 
 /*********************************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
+#define DASYNC(x) x
 
 #include <aros/debug.h>
+#include <aros/hostthread.h>
 #include <aros/system.h>
 #include <aros/symbolsets.h>
 #include <exec/resident.h>
@@ -32,16 +34,14 @@
 #include <proto/arossupport.h>
 #include <proto/expansion.h>
 #include <proto/hostlib.h>
+#include <proto/hostthread.h>
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
 
 #include <aros/host-conf.h>
 
-#include <unistd.h>
 #include <string.h>
-#include <stddef.h>
-#include <sys/stat.h>
 
 #include "emul_handler_intern.h"
 #include "winapi.h"
@@ -54,7 +54,7 @@
 
 /* Init DOSBase ourselves because emul_handler is initialized before dos.library */
 static struct DosLibrary *DOSBase;
-static APTR HostLibBase;
+static APTR HostLibBase, HostThreadBase;
 static struct EmulInterface *EmulIFace;
 static struct KernelInterface *KernelIFace;
 
@@ -548,6 +548,21 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
 
 /*********************************************************************************************/
 
+AROS_UFH3(static int, EmulIntHandler,
+	  AROS_UFCA(struct EmulThreadMessage *, msg, A0),
+	  AROS_UFCA(APTR, data, A1),
+	  AROS_UFCA(APTR, code, A5))
+{
+    AROS_USERFUNC_INIT
+
+    DASYNC(bug("[emul] Interrupt on request 0x%p, task 0x%p\n", msg, msg->task));
+    Signal(msg->task, SIGF_BLIT);
+    return 1;
+
+    AROS_USERFUNC_EXIT
+}
+
+/*********************************************************************************************/
 static LONG startup(struct emulbase *emulbase)
 {
   struct Library *ExpansionBase;
@@ -655,17 +670,24 @@ static LONG startup(struct emulbase *emulbase)
 		    emulbase->eb_stderr = fhe;
 		}
 	    }
-			  
-	    /*
-	       Allocate space for the string from same mem,
-	       Use AROS_BSTR_MEMSIZE4LEN macro for space to
-	       to allocate and add an extra 4 for alignment
-	       purposes.
-	    */
+
 	    ret = ERROR_NO_FREE_STORE;
 
-	    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-	    if (dlv) {
+	    emulbase->EmulInt.is_Code = EmulIntHandler;
+	    D(bug("[Emulhandler] Creating host thread\n"));
+	    emulbase->HostThread = HT_CreateNewThread(EmulIFace->EmulThread, NULL);
+	    if (emulbase->HostThread) {
+	      D(bug("[Emulhandler] Created host thread 0x%08lX, handle 0x%08lX, ID %lu\n", emulbase->HostThread, emulbase->HostThread->handle, emulbase->HostThread->id));
+	      HT_AddIntServer(&emulbase->EmulInt, emulbase->HostThread);
+	      /*
+	         Allocate space for the string from same mem,
+	         Use AROS_BSTR_MEMSIZE4LEN macro for space to
+	         to allocate and add an extra 4 for alignment
+	         purposes.
+	      */
+
+	      dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
+	      if (dlv) {
 		dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
 		if(dlv2 != NULL)
 		{
@@ -722,6 +744,7 @@ static LONG startup(struct emulbase *emulbase)
 		    return 0;
 		}
 		FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));
+	      }
 	    }
 	    if (fhe)
 		FreeMem(fhe, sizeof(struct filehandle));
@@ -805,7 +828,7 @@ static LONG examine(struct emulbase *emulbase,
                     struct ExAllData *ead,
                     ULONG  size,
                     ULONG  type,
-                    off_t  *dirpos)
+                    LONG  *dirpos)
 {
   STRPTR next, end, last, name;
   
@@ -1029,10 +1052,10 @@ static LONG examine_all(struct emulbase *emulbase,
 {
   struct ExAllData *last=NULL;
   STRPTR end=(STRPTR)ead+size, name, old;
-  off_t oldpos;
+  ULONG oldpos;
   const char * dirname;
   LONG error;
-  off_t dummy; /* not anything is done with this value but passed to examine */
+  LONG dummy; /* not anything is done with this value but passed to examine */
   
   eac->eac_Entries = 0;
   if(fh->type!=FHD_DIRECTORY)
@@ -1460,21 +1483,35 @@ AROS_LH1(void, beginio,
 		{
 		  fh->fd = emulbase->stdin_handle;
 		}
-		
-		if (error == 0)
-		{
-		  D(bug("[emul] Reading %lu bytes\n", iofs->io_Union.io_READ.io_Length));
-		  if (!DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length,
-			      &iofs->io_Union.io_READ.io_Length, NULL))
-		  {
-			error = Errno();
-			D(bug("[emul] Read failed, error = %lu\n", error));
-		  }
-		  	D(else bug("[emul] Read %ld bytes\n", iofs->io_Union.io_READ.io_Length));
-		}
-		else
-		{
-		  error = Errno();
+		DASYNC(bug("[emul] Reading %lu bytes\n", iofs->io_Union.io_READ.io_Length));
+		/* TODO: This stuff is a quick hack made to get things up and running quickly.
+		 * The whole handler needs total reengineering. */
+		emulbase->EmulMsg.op = EMUL_CMD_READ;
+		emulbase->EmulMsg.fh = fh->fd;
+		emulbase->EmulMsg.addr = iofs->io_Union.io_READ.io_Buffer;
+		emulbase->EmulMsg.len = iofs->io_Union.io_READ.io_Length;
+		emulbase->EmulMsg.task = FindTask(NULL);
+		if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
+		    Wait(SIGF_BLIT);
+		    DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
+		    iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
+		    error = emulbase->EmulMsg.error;
+		    if ((!error) && (fh->fd == emulbase->stdin_handle)) {
+		        char *c, *d;
+
+		        c = iofs->io_Union.io_READ.io_Buffer;
+		        d = c;
+		        while (*c) {
+		            if ((c[0] == '\r') && (c[1] == '\n')) {
+		            	c++;
+		            	iofs->io_Union.io_READ.io_Length--;
+		            }
+		            *d++ = *c++;
+		        }
+		    }
+		} else {
+		    DASYNC(bug("[emul] FSA_READ: HT_PutMsg failed!\n"));
+		    error = ERROR_UNKNOWN;
 		}
 	  }
 	  else
@@ -1495,11 +1532,20 @@ AROS_LH1(void, beginio,
 		{
 		  fh->fd=emulbase->stdout_handle;
 		}
-		DB2(bug("[emul] WriteFile\n"));
-		if (!DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length,
-		    	     &iofs->io_Union.io_WRITE.io_Length, NULL))
-		{
-		  error = Errno();
+		DASYNC(bug("[emul] Writing %lu bytes at 0x%p\n", iofs->io_Union.io_WRITE.io_Length, iofs->io_Union.io_WRITE.io_Buffer));
+		emulbase->EmulMsg.op = EMUL_CMD_WRITE;
+		emulbase->EmulMsg.fh = fh->fd;
+		emulbase->EmulMsg.addr = iofs->io_Union.io_WRITE.io_Buffer;
+		emulbase->EmulMsg.len = iofs->io_Union.io_WRITE.io_Length;
+		emulbase->EmulMsg.task = FindTask(NULL);
+		if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
+		    Wait(SIGF_BLIT);
+		    DASYNC(bug("[emul] Wrote %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
+		    iofs->io_Union.io_WRITE.io_Length = emulbase->EmulMsg.actual;
+		    error = emulbase->EmulMsg.error;
+		} else {
+		    DASYNC(bug("[emul] FSA_WRITE: HT_PutMsg failed!\n"));
+		    error = ERROR_UNKNOWN;
 		}
 	  }
 	  else
@@ -1821,21 +1867,23 @@ int loadhooks(struct emulbase *emulbase)
     D(bug("[EmulHandler] Native library interface: 0x%08lX\n", EmulIFace));
     if (EmulIFace) {
         if (!r) {
-              emulbase->KernelHandle = HostLib_Open("kernel32.dll", NULL);
-              if (emulbase->KernelHandle) {
+            emulbase->KernelHandle = HostLib_Open("kernel32.dll", NULL);
+            if (emulbase->KernelHandle) {
             	KernelIFace = (struct KernelInterface *)HostLib_GetInterface(emulbase->KernelHandle, KernelSymbols, &r);
             	if (KernelIFace) {
-            	    D(bug("[EmulHandler] %lu unresolved symbols\n", r));
+            	    D(bug("[EmulHandler] %lu unresolved symbols in kernel32.dll\n", r));
             	    if (r < 3) {
             	    	D(bug("[EmulHandler] CreateHardLink()     : 0x%08lX\n", KernelIFace->CreateHardLink));
             	    	D(bug("[EmulHandler] CreateSymbolicLink() : 0x%08lX\n", KernelIFace->CreateSymbolicLink));
-            	    	return 0;
+            	    	HostThreadBase = OpenResource("hostthread.resource");
+            	    	if (HostThreadBase)
+            	    	    return 0;
             	    }
             	    HostLib_DropInterface((APTR *)KernelIFace);
             	}
-            	D(bug("[EmulHandler] Unable to get kernel32.dll interface!\n"));
+            	    D(else bug("[EmulHandler] Unable to get kernel32.dll interface!\n");)
             	HostLib_Close(emulbase->KernelHandle, NULL);
-              }
+            }
         }
             D(else bug("[EmulHandler] %lu unresolved symbols!\n", r);)
         HostLib_DropInterface((APTR *)EmulIFace);

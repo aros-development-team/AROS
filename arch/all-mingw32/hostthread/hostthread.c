@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 #include <aros/asmcall.h>
@@ -61,7 +61,10 @@
     
     tn = AllocMem(sizeof(struct ThreadNode), 0);
     if (tn) {
-        if (HostThreadBase->HTIFace->CreateNewThread(entry, tn)) {
+        tn->th.HTIFace = HostThreadBase->HTIFace;
+        tn->th.entry = entry;
+        tn->th.data = data;
+        if (HostThreadBase->HTIFace->CreateNewThread(tn)) {
             NEWLIST(&tn->intservers);
             ObtainSemaphore(&HostThreadBase->sem);
             AddTail((struct List *)&HostThreadBase->threads_list, (struct Node *)tn);

@@ -1,5 +1,3 @@
-#define DEBUG 0
-
 #include <aros/system.h>
 #include <windows.h>
 #define __typedef_LONG /* LONG, ULONG, WORD, BYTE and BOOL are declared in Windows headers. Looks like everything  */
@@ -12,6 +10,8 @@ typedef unsigned char UBYTE;
 #include <stddef.h>
 #include <exec/lists.h>
 #include "kernel_intern.h"
+
+#define D(x)
 
 /*
  * IRQs are used in a bit different way from native ports. They are used by hostthread.resource 
@@ -26,6 +26,8 @@ void user_irq_handler_2(uint8_t irq, void *data1, void *data2)
 {
     struct KernelBase *KernelBase = *KernelBasePtr;
 
+    D(printf("[IRQ] IRQ %lu, data1 0x%p, data2 0x%p\n", irq, data1, data2));
+    D(printf("[IRQ] KernelBase = 0x%p\n", KernelBase));
     if (KernelBase) {
         if (!IsListEmpty(&KernelBase->kb_Interrupts[irq]))
         {
@@ -33,8 +35,10 @@ void user_irq_handler_2(uint8_t irq, void *data1, void *data2)
 
             ForeachNodeSafe(&KernelBase->kb_Interrupts[irq], in, in2)
             {
-                if (in->in_Handler)
+                if (in->in_Handler) {
+                    D(printf("[IRQ] Calling handler 0x%08lX\n"));
                     in->in_Handler(data1, data2);
+                }
             }
         }
     }
@@ -46,7 +50,13 @@ void user_irq_handler_2(uint8_t irq, void *data1, void *data2)
  * Probably in future it will go completely public.
  */
 
-void __declspec(dllexport) CauseIRQ(unsigned char irq, void *data1, void *data2)
+unsigned long __declspec(dllexport) CauseIRQ(unsigned char irq, void *data1, void *data2)
 {
-    PostThreadMessage(SwitcherId, MSG_IRQ_0+irq, (WPARAM)data1, (LPARAM)data2);
+    unsigned long res;
+
+    D(printf("[kernel IRQ] Causing IRQ %u, data1 = 0x%p, data2 = 0x%p\n", irq, data1, data2));
+    D(printf("[kernel IRQ] Switcher thread ID 0x %lu\n", SwitcherId));
+    res = PostThreadMessage(SwitcherId, MSG_IRQ_0+irq, (WPARAM)data1, (LPARAM)data2);
+    D(printf("[kernel IRQ] Result: %ld\n", res));
+    return res;
 }

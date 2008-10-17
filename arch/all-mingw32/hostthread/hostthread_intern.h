@@ -13,7 +13,7 @@ struct ThreadNode {
 struct MyHTInterface
 {
     struct HostThreadInterface hostside;
-    APTR (*CreateNewThread)(void *entry, struct ThreadNode *tn);
+    APTR (*CreateNewThread)(struct ThreadNode *tn);
     ULONG (*KillThread)(struct ThreadNode *tn);
     ULONG (*PutThreadMsg)(struct ThreadNode *tn, void *msg);
 };
