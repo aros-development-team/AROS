@@ -94,7 +94,6 @@ char * appendarg(char *argptr, int *argptrsize, const char *arg)
 
 LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 {
-    BPTR oldin = MKBADDR(NULL), oldout = MKBADDR(NULL), olderr = MKBADDR(NULL);
     char *oldtaskname;
     APTR udata;
     LONG returncode;
@@ -186,16 +185,8 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
         return -1;
     }
 
-    /* Get the AmigaOS-like path */
-    afilename = strdup(__path_u2a(inter ? inter : (char*) filename));
-    if(!afilename)
-    {
-    	saved_errno = errno;
-    	goto error;
-    }
-
     /* Let's check if it's a script */
-    if((fh = Open(afilename, MODE_OLDFILE)))
+    if((fh = Open(__path_u2a(filename), MODE_OLDFILE)))
     {
     	if(FGetC(fh) == '#' && FGetC(fh) == '!')
     	{
@@ -230,6 +221,14 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
         /* Simply assume it doesn't exist */
         saved_errno = IoErr2errno(IoErr());
         goto error;
+    }
+
+    /* Get the AmigaOS-like path */
+    afilename = strdup(__path_u2a(inter ? inter : (char*) filename));
+    if(!afilename)
+    {
+    	saved_errno = errno;
+    	goto error;
     }
 
     /* Build RunCommand argument string by escaping and appending all
@@ -477,7 +476,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	        }
 	    }
 	    oldspawned = __get_arosc_privdata()->acpd_spawned;
-	    __get_arosc_privdata()->acpd_spawned = 1;
+	    __get_arosc_privdata()->acpd_spawned = 0;
 	    
 	    returncode = exec_command(
 		seglist, 
