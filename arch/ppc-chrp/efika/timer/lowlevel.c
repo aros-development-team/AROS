@@ -77,11 +77,11 @@ void EClockUpdate(struct TimerBase *TimerBase)
     TimerBase->tb_Elapsed.tv_micro = tick2usec(TimerBase->tb_ticks_elapsed);
     TimerBase->tb_CurrentTime.tv_micro = tick2usec(TimerBase->tb_ticks_sec);
 
-    if (show)
-    {
-        bug("[timer] CurrentTime: %d:%06d\n", TimerBase->tb_CurrentTime.tv_secs, TimerBase->tb_CurrentTime.tv_micro);
-        bug("[timer] %08x %08x %d \n", tbc_expected, tbc_achieved, corr);
-    }
+//    if (show)
+//    {
+//        bug("[timer] CurrentTime: %d:%06d\n", TimerBase->tb_CurrentTime.tv_secs, TimerBase->tb_CurrentTime.tv_micro);
+//        bug("[timer] %08x %08x %d %d \n", tbc_expected, tbc_achieved, tbc_achieved-tbc_expected, corr);
+//    }
 }
 
 void EClockSet(struct TimerBase *TimerBase)
@@ -111,11 +111,11 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
         }
         else if (time.tv_secs == 0)
         {
-            if (time.tv_micro < 20000)
-            {
+//            if (time.tv_micro < 20000)
+//            {
                 if (delay > usec2tick(time.tv_micro))
                     delay = usec2tick(time.tv_micro);
-            }
+//            }
         }
     }
 
@@ -134,16 +134,16 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
         }
         else if (time.tv_secs == 0)
         {
-            if (time.tv_micro < 20000)
-            {
+//            if (time.tv_micro < 20000)
+//            {
                 if (delay > usec2tick(time.tv_micro))
                     delay = usec2tick(time.tv_micro);
-            }
+//            }
         }
     }
 
     current_time = mftbl();
-    delay -= current_time - waste + corr;
+    delay -= ((int32_t)(current_time - waste)) + corr;
 
     if (delay < 256) delay = 256;
 
@@ -191,7 +191,7 @@ void SliceHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
         tbc_achieved = startup_time;
 
         /* Timer errors bigger than approx 15 microseconds shouldn't be taken into account */
-        if (tbc_achieved > tbc_expected && (tbc_achieved - tbc_expected) < 1000)
+        //if (tbc_achieved > tbc_expected) // && (tbc_achieved - tbc_expected) < 1000)
         {
             corr = ((int32_t)(tbc_achieved - tbc_expected))-1;
         }
