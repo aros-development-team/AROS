@@ -38,6 +38,20 @@
                  for the sprite image
         tags   - pointer to a taglist
 
+    TAGS
+	SPRITEA_Width (ULONG)        - Width of the sprite. If bitmap is smaller it will
+                                       be filled on the right side with transparent
+                                       pixels. Defaults to 16.
+	SPRITEA_XReplication (LONG)  -  0 - perform a 1 to 1 conversion
+                                        1 - each pixel from the source is replicated twice
+			                2 - each pixel is replicated 4 times.
+		                       -1 - skip every 2nc pixel in the source bitmap
+		                       -2 - only include every fourth pixel from the source.
+	SPRITEA_YReplication (LONG)  - like SPRITEA_YReplication, but for vertical direction.
+	SPRITEA_OutputHeight (ULONG) - Output height of the sprite. Must be at least as high
+                                       as the bitmap. Defaults to bitmap height.
+	SPRITEA_Attach               - (Not implemented)
+
     RESULT
         SpritePtr - pointer to a ExtSprite structure,
                     or NULL if there is a failure.

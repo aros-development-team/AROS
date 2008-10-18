@@ -33,6 +33,7 @@
         Sprite_number - a sprite number or -1 for an error
 
     NOTES
+	Not implemented.
 
     EXAMPLE
 
