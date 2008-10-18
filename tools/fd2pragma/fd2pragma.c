@@ -1568,7 +1568,7 @@ static const strptr Keywords[] =
   0
 };
 
-#ifndef __SASC
+#if !defined __SASC && !defined __AROS__
 static int stricmp(const char *a, const char *b)
 {
   while(*a && tolower(*a) == tolower(*b))
