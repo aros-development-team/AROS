@@ -32,24 +32,27 @@
 
     INPUTS
 	rp   - RastPort
-	tags - tagarray
-	       - RPTAG_Font:       text font
-	       - RPTAG_APen:       primary pen
-	       - RPTAG_BPen:       secondary pen
-	       - RPTAG_DrMd:       draw mode
-	       - RPTAG_OutlinePen: outline pen
-	       - RPTAG_WriteMask:  bit mask
-	       - RPTAG_MaxPen:     see SetMaxPen()
-	       
-	       AROS extensions
-	       - RPTAG_DrawBounds: 
-	       - RPTAG_FgColor:
-	       - RPTAG_BgColor:
-	       - RPTAG_PatternOriginX:
-	       - RPTAG_PatternOriginY:
-	       - RPTAG_ClipRectangle:       (struct Rectangle *)
-	       - RPTAG_ClipRectangleFlags:  RPCRF_RELRIGHT | RPCRF_RELBOTTOM
-	       - RPTAG_RemapColorFonts:     (BOOL)
+	tags - see below
+
+    TAGS
+	RPTAG_Font (struct TextFont *)        - Font for Text()
+	RPTAG_APen (UBYTE)                    - Primary rendering pen
+	RPTAG_BPen (UBYTE)                    - Secondary rendering pen
+	RPTAG_DrMd (UBYTE)                    - Drawing mode (graphics/rastport.h)
+	RPTAG_OutlinePen (UBYTE)              - Area Outline pen
+	RPTAG_WriteMask (ULONG)               - Bit mask for writing
+	
+	AROS extensions
+	RPTAG_FgColor (ULONG)                 - Primary rendering color in A8R8G8B8 format.
+		                                Only working on hicolor/truecolor bitmaps/screens.
+	RPTAG_BgColor (ULONG)                 - Secondary rendering color in A8R8G8B8 format.
+		    	    	    	        Only working on hicolor/truecolor bitmaps/screens.
+	RPTAG_PatternOriginX (WORD)           - X origin of pattern
+	RPTAG_PatternOriginY (WORD)           - Y origin of pattern
+	RPTAG_ClipRectangle (struct Rectangle *) - Clipping rectangle
+	RPTAG_ClipRectangleFlags (LONG)       - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see graphics/rpattrs.h)
+	RPTAG_RemapColorFonts (BOOL)          - Automatically remap colorfonts to their color
+						on hicolor/truecolor screens.
 
     RESULT
 
@@ -60,6 +63,7 @@
     BUGS
 
     SEE ALSO
+	GetRPAttrsA(), graphics/rpattr.h
 
     INTERNALS
 

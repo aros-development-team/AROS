@@ -39,6 +39,7 @@
         success - 0 if there was an error
 
     NOTES
+	Not implemented.
 
     EXAMPLE
 

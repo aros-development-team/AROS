@@ -34,42 +34,33 @@
 	ti_Data field points to an address where to store the result.
 	All results are stored as IPTRs!
 
-	Available tags:
-
-		RPTAG_Font		Font for Text()
-		RPTAG_APen		Primary rendering pen
-		RPTAG_BPen		Secondary rendering pen
-		RPTAG_DrMd		Drawing mode (graphics/rastport.h)
-		RPTAG_OutlinePen	Area Outline pen
-		RPTAG_WriteMask		Bit Mask for writing
-		RPTAG_MaxPen		Maximum pen to render (see SetMaxPen())
-		RPTAG_DrawBounds	Determine the area that will be rendered
-					into by rendering commands. Can be used
-					to optimize window refresh. Pass a pointer
-					to a rectangle in the ti_Data field. On
-					return the rectangle's MinX will be
-					greater than its MaxX if there are no
-					active cliprects.
-    	    	RPTAG_FgColor	        Primary rendering color in A8R8G8B8 format.
-		                        Only working on hicolor/truecolor bitmaps/
-					screens. (MorphOS extension)
-    	    	RPTAG_BgColor	    	Secondary rendering color in A8R8G8B8 format.
-		    	    	    	Only working on hicolor/truecolor bitmaps/
-					screens. (MorphOS extension)
-    	    	RPTAG_PatternOriginX	X Origin of fill pattern. (AROS extension)
-		RPTAG_PatternOriginY   	Y Origin of fill pattern. (AROS extension)
-		RPTAG_ClipRectangle 	Rectangle to clip rendering to. Rectangle will
-		                        be cloned. (AROS extension)
-		RPTAG_ClipRectangleFlags See <graphics/rpattr.h> (AROS extension)
-		RPTAG_RemapColorFonts   Automatically remap colorfonts to their color
-		    	    	    	on hicolor/truecolor screens.
-		       
-
     INPUTS
 	rp   = pointer to a RastPort structure
 	tags = pointer to a taglist specifying the attributes to read and
 	       the addresses to store the results
 
+    TAGS
+	RPTAG_Font (UBYTE)              - Font for Text()
+	RPTAG_APen (UBYTE)              - Primary rendering pen
+	RPTAG_BPen (UBYTE)              - Secondary rendering pen
+	RPTAG_DrMd (UBYTE)              - Drawing mode (graphics/rastport.h)
+	RPTAG_OutlinePen (UBYTE)        - Area Outline pen
+	RPTAG_WriteMask	(ULONG)	        - Bit Mask for writing
+	RPTAG_MaxPen (ULONG)            - Maximum pen to render (see SetMaxPen())
+
+	AROS extensions
+	RPTAG_FgColor (ULONG)           - Primary rendering color in A8R8G8B8 format.
+		                          Only working on hicolor/truecolor bitmaps/screens.
+    	RPTAG_BgColor (ULONG)           - Secondary rendering color in A8R8G8B8 format.
+		    	    	          Only working on hicolor/truecolor bitmaps/screens.
+    	RPTAG_PatternOriginX (WORD)     - X Origin of fill pattern.
+	RPTAG_PatternOriginY (WORD)     - Y Origin of fill pattern.
+	RPTAG_ClipRectangle (struct Rectangle *) - Rectangle to clip rendering to. Rectangle will
+		                                   be cloned.
+	RPTAG_ClipRectangleFlags (LONG) - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see <graphics/rpattr.h>)
+    	RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to their color
+					  on hicolor/truecolor screens.
+		
     RESULT
 
     NOTES

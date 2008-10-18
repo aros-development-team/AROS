@@ -33,6 +33,7 @@
         error - 0 if no error ocurred in the control operation
                 non-0 if bad colormap pointer, no tagitems or bad tag
     NOTES
+	Not implemented
 
     EXAMPLE
 

@@ -27,21 +27,26 @@
          struct IntuitionBase *, IntuitionBase, 161, Intuition)
 
 /*  FUNCTION
-    Add Notifications to Intuition.
+    Add Notifications to Intuition. You will be notified when
+    the screen changes.
  
     INPUTS
-    taglist - 
-	SNA_PubName   STRPTR
-	SNA_MsgPort   struct MsgPort*
-	SNA_SigBit    BYTE
-	SNA_SigTask   struct Task*
-	SNA_Notify    ULONG
-	SNA_UserData  IPTR
-	SNA_Hook      struct Hook*
-	SNA_Priority  Byte
+	tags - see below
+
+    TAGS 
+	SNA_PubName (STRPTR)          - Name of the public screen. NULL means
+                                        you'll get notifications for all screens.
+	SNA_MsgPort (struct MsgPort*) - Notifications will be sent to this port.
+	SNA_SigBit (BYTE)             - The signal bit to use
+	SNA_SigTask (struct Task*)    - The task to signal
+	SNA_UserData (IPTR)           - For your personal use. Will be copied
+                                        into snm_UserData of the messages you receive
+	SNA_Hook (struct Hook*)
+	SNA_Priority (Byte)           - Priority in the notification queue.
+	SNA_Notify (ULONG)            - SNOTIFY_ flags, see intuition/intuition.h
 
     RESULT
-    the value is private only a test against ZERO is allowed and means Failure
+    The value is private, only a test against ZERO is allowed and means Failure
  
     NOTES
  

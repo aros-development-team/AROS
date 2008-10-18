@@ -32,6 +32,32 @@
     INPUTS
         TagItems - pointer to an array of TagItems
 
+    TAGS
+	BIDTAG_ViewPort (struct ViewPort *) - Viewport for which a mode is searched. Default: NULL
+	BIDTAG_MonitorID (ULONG)            - Returned ID must use this monitor
+	BIDTAG_SourceID (ULONG)             - Use this ModeID instead of a ViewPort.
+	                                      DIPFMustHave mask is made up of the
+	                                      ((DisplayInfo->PropertyFlags of this ID & SPECIAL_FLAGS) |
+	                                      DIPFMustHave flags).
+	                                      Default:
+                                              if BIDTAG_ViewPort was passed: VPModeID(vp), else the
+                                              DIPFMustHave and DIPFMustNotHave are unchanged.
+	BIDTAG_Depth (UBYTE)                - Minimal depth. Default:
+                                              if BIDTAG_ViewPort is passed: vp->RasInfo->BitMap->Depth,
+                                              else 1.
+	BIDTAG_NominalWidth (UWORD),
+	BIDTAG_NominalHeight (UWORD)        - Aspect radio. Default:
+                                              if BIDTAG_SourceID: SourceID NominalDimensionInfo
+                                              if BIDTAG_ViewPort: vp->DWidth and vp->DHeight
+                                              or 640 x 200.
+	BIDTAG_DesiredWidth (UWORD)         - Width. Default: DIBTAG_NominalWidth.
+	BIDTAG_DesiredHeight (UWORD)        - Height. Default: BIDTAG_NominalHeight.
+	BIDTAG_RedBits (UBYTE),
+	BIDTAG_GreenBits (UBYTE),
+	BIDTAG_BlueBits (UBYTE)             - Bits per gun the mode must support. Default: 4
+	BIDTAG_DIPFMustHave (ULONG)         - DIPF flags the resulting mode must have
+	BIDTAG_DIPFMustNotHave (ULONG)      - DIPF flags the resulting mode must not have
+ 
     RESULT
         ID - ID of the best mode to use, or INVALID_ID if a match
              could not be found
