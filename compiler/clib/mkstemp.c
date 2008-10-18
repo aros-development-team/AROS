@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <proto/dos.h>
 
+#include "__upath.h"
+
 /*****************************************************************************
 
     NAME */
@@ -44,7 +46,8 @@
     BPTR  lock= NULL;
     int ctr = 0;
     static char filename_letters[] = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZFILLTO64";
-    
+    char *atemplate;
+
     while (c > template && *--c == 'X') {
         ctr++;
     }
@@ -63,7 +66,10 @@
             c++;
         }
 
-        if (!(lock = Lock(template, ACCESS_READ))) {
+        atemplate = __path_u2a(template);
+        if(!atemplate)
+            return -1;
+        if (!(lock = Lock(atemplate, ACCESS_READ))) {
             int fd = open(template, O_WRITE|O_CREAT|O_EXCL);
             if (fd > 0) 
                 return fd;
