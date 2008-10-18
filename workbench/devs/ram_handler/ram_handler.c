@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     RAM: handler.
@@ -184,12 +184,6 @@ struct filehandle
     IPTR position;
 };
 
-/* Use This from now on */
-#ifdef DOSBase
-    #undef DOSBase
-#endif
-#define DOSBase rambase->dosbase
-
 static int OpenDev(LIBBASETYPEPTR rambase, struct IOFileSys *iofs);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
@@ -201,130 +195,119 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR rambase)
     struct SignalSemaphore *semaphore;
     APTR stack;
 
-    rambase->dosbase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
-
-    if (rambase->dosbase != NULL)
+    port = (struct MsgPort *)AllocMem(sizeof(struct MsgPort),
+                                      MEMF_PUBLIC | MEMF_CLEAR
+    );
+    if (port != NULL)
     {
-	rambase->utilitybase = (struct UtilityBase *)OpenLibrary(UTILITYNAME, 39);
+        rambase->port = port;
+        NewList(&port->mp_MsgList);
+        port->mp_Node.ln_Type = NT_MSGPORT;
+        port->mp_SigBit = SIGB_SINGLE;
 
-	if (rambase->utilitybase != NULL)
-	{
-	    port = (struct MsgPort *)AllocMem(sizeof(struct MsgPort),
-					      MEMF_PUBLIC | MEMF_CLEAR);
-	    if (port != NULL)
-	    {
-		rambase->port = port;
-		NewList(&port->mp_MsgList);
-		port->mp_Node.ln_Type = NT_MSGPORT;
-		port->mp_SigBit = SIGB_SINGLE;
+        task = (struct Task *)AllocMem(sizeof(struct Task),
+                                       MEMF_PUBLIC | MEMF_CLEAR
+        );
 
-		task = (struct Task *)AllocMem(sizeof(struct Task),
-					       MEMF_PUBLIC | MEMF_CLEAR);
+        if (task != NULL)
+        {
+            port->mp_SigTask = task;
+            port->mp_Flags = PA_IGNORE;
+            NewList(&task->tc_MemEntry);
+            task->tc_Node.ln_Type = NT_TASK;
+            task->tc_Node.ln_Name = "ram.handler task";
 
-		if (task != NULL)
-		{
-		    port->mp_SigTask = task;
-		    port->mp_Flags = PA_IGNORE;
-		    NewList(&task->tc_MemEntry);
-		    task->tc_Node.ln_Type = NT_TASK;
-		    task->tc_Node.ln_Name = "ram.handler task";
+            stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC);
 
-		    stack = AllocMem(AROS_STACKSIZE, MEMF_PUBLIC);
-
-		    if (stack != NULL)
-		    {
-		    	struct TagItem tasktags[] =
-			{
-			    {TASKTAG_ARG1, (IPTR)rambase},
-			    {TAG_DONE	    	    	}
-			};
+            if (stack != NULL)
+            {
+                struct TagItem tasktags[] =
+                {
+                    {TASKTAG_ARG1, (IPTR)rambase},
+                    {TAG_DONE	    	    	}
+                };
 			
-			task->tc_SPLower = stack;
-			task->tc_SPUpper = (BYTE *)stack + AROS_STACKSIZE;
-    	    	    #if AROS_STACK_GROWS_DOWNWARDS
-			task->tc_SPReg = (BYTE *)task->tc_SPUpper - SP_OFFSET;
-   	    	    #else
-			task->tc_SPReg = (BYTE *)task->tc_SPLower + SP_OFFSET;
-   	    	    #endif
+                task->tc_SPLower = stack;
+                task->tc_SPUpper = (BYTE *)stack + AROS_STACKSIZE;
+#if AROS_STACK_GROWS_DOWNWARDS
+                task->tc_SPReg = (BYTE *)task->tc_SPUpper - SP_OFFSET;
+#else
+                task->tc_SPReg = (BYTE *)task->tc_SPLower + SP_OFFSET;
+#endif
 
-			semaphore = (struct SignalSemaphore *)AllocMem(sizeof(struct SignalSemaphore),
-								       MEMF_PUBLIC | MEMF_CLEAR);
+                semaphore = (struct SignalSemaphore *)AllocMem(sizeof(struct SignalSemaphore),
+                                                               MEMF_PUBLIC | MEMF_CLEAR
+                );
 
-			if (semaphore != NULL)
-			{
-			    rambase->sigsem = semaphore;
-			    InitSemaphore(semaphore);
+                if (semaphore != NULL)
+                {
+                    rambase->sigsem = semaphore;
+                    InitSemaphore(semaphore);
 
-			    if (rambase->seglist==NULL) /* Are we a ROM module? */
-			    {
-			        struct DeviceNode *dn;
-        		        /* Install RAM: handler into device list
-	 		         *
-	 	                 * KLUDGE: ram.handler should create only one device node, depending on
-	 	                 * the startup packet it gets. The mountlists for RAM: should be into dos.library bootstrap
-	 		         * routines.
-	 	                 */
+                    /*
+                     * Modules compiled with noexpunge always have seglist == NULL
+                     * The seglist is not kept as it is not needed because the module never
+                     * can be expunged
+                    if (rambase->seglist==NULL) /* Are we a ROM module? * /
+                     */
+                    {
+                        struct DeviceNode *dn;
+                        /* Install RAM: handler into device list
+                         *
+                         * KLUDGE: ram.handler should create only one device node, depending on
+                         * the startup packet it gets. The mountlists for RAM: should be into dos.library bootstrap
+                         * routines.
+                         */
 
-			        if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
-			        {
-	    			    struct IOFileSys dummyiofs;
+                        if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + 3 + 2, MEMF_CLEAR|MEMF_PUBLIC)))
+                        {
+                            struct IOFileSys dummyiofs;
 
-	   			    if (OpenDev(rambase, &dummyiofs))
-	   			    {
-				        BSTR s = MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
+                            if (OpenDev(rambase, &dummyiofs))
+                            {
+                                BSTR s = MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 
-					rambase->device.dd_Library.lib_OpenCnt++;
+                                ((struct Library *)rambase)->lib_OpenCnt++;
 					
-	    			        AROS_BSTR_putchar(s, 0, 'R');
-	    			        AROS_BSTR_putchar(s, 1, 'A');
-	    			        AROS_BSTR_putchar(s, 2, 'M');
-				        AROS_BSTR_setstrlen(s, 3);
+                                AROS_BSTR_putchar(s, 0, 'R');
+                                AROS_BSTR_putchar(s, 1, 'A');
+                                AROS_BSTR_putchar(s, 2, 'M');
+                                AROS_BSTR_setstrlen(s, 3);
 
-	    			        dn->dn_Type	    = DLT_DEVICE;
-	    			        dn->dn_Ext.dn_AROS.dn_Unit	    = dummyiofs.IOFS.io_Unit;
-	    			        dn->dn_Ext.dn_AROS.dn_Device   = dummyiofs.IOFS.io_Device;
-	    			        dn->dn_Handler  = NULL;
-	    			        dn->dn_Startup  = NULL;
-	     			        dn->dn_Name  = s;
-	    			        dn->dn_Ext.dn_AROS.dn_DevName  = AROS_BSTR_ADDR(dn->dn_Name);
+                                dn->dn_Type	    = DLT_DEVICE;
+                                dn->dn_Ext.dn_AROS.dn_Unit	    = dummyiofs.IOFS.io_Unit;
+                                dn->dn_Ext.dn_AROS.dn_Device   = dummyiofs.IOFS.io_Device;
+                                dn->dn_Handler  = NULL;
+                                dn->dn_Startup  = NULL;
+                                dn->dn_Name  = s;
+                                dn->dn_Ext.dn_AROS.dn_DevName  = AROS_BSTR_ADDR(dn->dn_Name);
 
-				        if (AddDosEntry((struct DosList *)dn))
-				            if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
-		    		                return TRUE;
-	    			    }
+                                if (AddDosEntry((struct DosList *)dn))
+                                    if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
+                                        return TRUE;
+                            }
 
-				    FreeMem(dn, sizeof (struct DeviceNode));
-			        }
-			    }
-			    else
- 			    if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
-		    		return TRUE;
+                            FreeMem(dn, sizeof (struct DeviceNode));
+                        }
+                    }
+/*                    else
+                        if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
+                            return TRUE;
+*/
+                    FreeMem(semaphore, sizeof(struct SignalSemaphore));
+                }
 
-			    FreeMem(semaphore, sizeof(struct SignalSemaphore));
-			}
+                FreeMem(stack, AROS_STACKSIZE);
+            }
 
-			FreeMem(stack, AROS_STACKSIZE);
-		    }
+            FreeMem(task, sizeof(struct Task));
+        }
 
-		    FreeMem(task, sizeof(struct Task));
-		}
-
-		FreeMem(port, sizeof(struct MsgPort));
-	    }
-
-	    CloseLibrary((struct Library *)rambase->utilitybase);
-	}
-
-	CloseLibrary((struct Library *)rambase->dosbase);
+        FreeMem(port, sizeof(struct MsgPort));
     }
 
     return FALSE;
 }
-
-#ifdef UtilityBase
-    #undef UtilityBase
-#endif
-#define UtilityBase rambase->utilitybase
 
 
 /***************************************************************************/
@@ -525,8 +508,6 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR rambase)
 	    AROS_STACKSIZE);
     FreeMem(rambase->port->mp_SigTask, sizeof(struct Task));
     FreeMem(rambase->port, sizeof(struct MsgPort));
-    CloseLibrary((struct Library *)rambase->utilitybase);
-    CloseLibrary((struct Library *)rambase->dosbase);
     
     return TRUE;
 }

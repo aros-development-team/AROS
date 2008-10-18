@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -344,7 +344,6 @@ struct class_static_data
 struct IntHIDDGraphicsBase
 {
     struct Library            hdg_LibNode;
-    struct Library           *hdg_UtilityBase;
 
     struct class_static_data  hdg_csd;
 };
@@ -359,8 +358,5 @@ BOOL parse_sync_tags(struct TagItem *tags, struct sync_data *data, ULONG attrche
 
 #define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
 #define csd CSD(cl)
-
-#undef UtilityBase
-#define UtilityBase (csd->utilitybase)
 
 #endif /* GRAPHICS_HIDD_INTERN_H */

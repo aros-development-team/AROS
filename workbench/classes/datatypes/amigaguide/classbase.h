@@ -135,11 +135,11 @@ struct ClassBase
 {
    struct ClassLibrary cb_Lib;
 
+#ifndef __AROS__
    struct ExecBase *cb_SysBase;
    struct Library *cb_IntuitionBase;
    struct Library *cb_UtilityBase;
 
-#ifndef __AROS__
 #ifdef USE_DOSLIB
 #define DOSBase                 cb->cb_DOSBase
    struct Library *cb_DOSBase;
@@ -205,9 +205,9 @@ struct ClassBase
 #define SuperClassBase          cb->cb_SuperClassBase
    struct Library *cb_SuperClassBase;
 #endif
-#endif /* !__AROS__ */
     
    BPTR cb_SegList;
+#endif /* !__AROS__ */
 
    struct SignalSemaphore cb_Lock;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     An Hash Table implementation.
@@ -14,11 +14,6 @@
 
 #define  DEBUG 0
 #include <aros/debug.h>
-
-#ifdef UtilityBase
-    #undef UtilityBase
-#endif
-#define UtilityBase rambase->utilitybase
 
 extern STRPTR Strdup(struct rambase *rambase, STRPTR string);
 extern void Strfree(struct rambase *rambase, STRPTR string);

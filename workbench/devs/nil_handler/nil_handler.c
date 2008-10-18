@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -17,9 +17,6 @@
 #include <proto/dos.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
-#include "nil_handler_gcc.h"
-#endif
 
 #include LC_LIBDEFS_FILE
 
@@ -29,52 +26,57 @@ static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR nilbase)
 {
-    nilbase->dosbase=(struct DosLibrary *)OpenLibrary("dos.library",39);
-    if(nilbase->dosbase!=NULL)
+/*
+ * Modules compiled with noexpunge always have seglist == NULL
+ * The seglist is not kept as it is not needed because the module never
+ * can be expunged
+ if (GM_SEGLIST_FIELD(nilbase)==NULL) /* Are we a ROM module? * /
+*/
     {
-	if (nilbase->seglist==NULL) /* Are we a ROM module? */
-	{
-	    struct DeviceNode *dn;
-            /* Install NIL: handler into device list
-	     *
-	     * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
-	     */
+        struct DeviceNode *dn;
+        /* Install NIL: handler into device list
+         *
+         * KLUDGE: The mountlists for NIL: should be into dos.library bootstrap routines.
+         */
 
-	    if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
-                              MEMF_CLEAR|MEMF_PUBLIC)))
-	    {
-	        struct IOFileSys dummyiofs;
+        if((dn = AllocMem(sizeof (struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(3),
+                          MEMF_CLEAR|MEMF_PUBLIC)
+           )
+        )
+        {
+            struct IOFileSys dummyiofs;
 
-		if (OpenDev(nilbase, &dummyiofs))
-		{
-		    BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
+            if (OpenDev(nilbase, &dummyiofs))
+            {
+                BSTR s = (BSTR)MKBADDR(((IPTR)dn + sizeof(struct DeviceNode) + 3) & ~3);
 
-		    nilbase->device.dd_Library.lib_OpenCnt++;
+                ((struct Library *)nilbase)->lib_OpenCnt++;
 
-	    	    AROS_BSTR_putchar(s, 0, 'N');
-	    	    AROS_BSTR_putchar(s, 1, 'I');
-	    	    AROS_BSTR_putchar(s, 2, 'L');
-	    	    AROS_BSTR_setstrlen(s, 3);
+                AROS_BSTR_putchar(s, 0, 'N');
+                AROS_BSTR_putchar(s, 1, 'I');
+                AROS_BSTR_putchar(s, 2, 'L');
+                AROS_BSTR_setstrlen(s, 3);
 
-	    	    dn->dn_Type    = DLT_DEVICE;
-	    	    dn->dn_Ext.dn_AROS.dn_Unit    = dummyiofs.IOFS.io_Unit;
-	    	    dn->dn_Ext.dn_AROS.dn_Device  = dummyiofs.IOFS.io_Device;
-	    	    dn->dn_Handler = NULL;
-	    	    dn->dn_Startup = NULL;
-	    	    dn->dn_Name = s;
-	    	    dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
+                dn->dn_Type    = DLT_DEVICE;
+                dn->dn_Ext.dn_AROS.dn_Unit    = dummyiofs.IOFS.io_Unit;
+                dn->dn_Ext.dn_AROS.dn_Device  = dummyiofs.IOFS.io_Device;
+                dn->dn_Handler = NULL;
+                dn->dn_Startup = NULL;
+                dn->dn_Name = s;
+                dn->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dn->dn_Name);
 
-		    if (AddDosEntry((struct DosList *)dn))
-		        return TRUE;
-	        }
+                if (AddDosEntry((struct DosList *)dn))
+                    return TRUE;
+            }
 
-	        FreeMem(dn, sizeof (struct DeviceNode));
-	    }
-	}
-        else
-	    return TRUE;
+            FreeMem(dn, sizeof (struct DeviceNode));
+        }
     }
-
+    /*
+    else
+        return TRUE;
+     */
+    
     return FALSE;
 }
 
@@ -105,7 +107,7 @@ static int OpenDev(LIBBASETYPEPTR nilbase, struct IOFileSys *iofs)
     if(dev!=NULL)
     {
         iofs->IOFS.io_Unit   = (struct Unit *)dev;
-        iofs->IOFS.io_Device = &nilbase->device;
+        iofs->IOFS.io_Device = (struct Device *)nilbase;
     	iofs->IOFS.io_Error = 0;
     	return TRUE;
     }

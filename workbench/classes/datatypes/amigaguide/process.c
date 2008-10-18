@@ -190,7 +190,6 @@ struct ProcMessage
    struct Task *pm_Parent;
 };
 
-#undef SysBase
 #ifdef __AROS__
 AROS_UFH3S(void, asyncmethodfunc,
     AROS_UFHA(STRPTR, argptr_unused, A0),
@@ -199,6 +198,7 @@ AROS_UFH3S(void, asyncmethodfunc,
 {
     AROS_USERFUNC_INIT
 #else
+#undef SysBase
 static
 RegCall GetA4 void asyncmethodfunc(void)
 {
@@ -381,7 +381,9 @@ RegCall GetA4 void asyncmethodfunc(void)
     AROS_USERFUNC_EXIT
 #endif       
 }
+#ifndef __AROS__
 #define SysBase ((struct ExecBase *)cb->cb_SysBase)
+#endif
 
 /* --------------------------- public functions --------------------------- */
 
