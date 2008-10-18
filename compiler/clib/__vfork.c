@@ -66,7 +66,7 @@ LONG launcher()
 	return -1;	
     }
 
-    __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_parent_does_upath;
+    __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
     __get_arosc_privdata()->acpd_spawned = 1;
     __stdfiles[STDIN_FILENO] = udata->ppriv->acpd_stdfiles[STDIN_FILENO];
     __stdfiles[STDOUT_FILENO] = udata->ppriv->acpd_stdfiles[STDOUT_FILENO];
