@@ -96,13 +96,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(MPC5200B_ST1, SliceHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
 
-
     /* Start the slice timer 1 */
     outl(SLT_TS_ST, &slice_timer->slt_ts);
-    TimerSetup(TimerBase, mftbl());
+//    TimerSetup(TimerBase, mftbl());
 
 //    outl(SLT_TS_ST, &slice_timer->slt_ts);
-//    TimerSetup(TimerBase, 0);
+    TimerSetup(TimerBase, 0);
 
     /* VBlank EMU */
 
