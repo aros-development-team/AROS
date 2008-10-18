@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -20,9 +20,6 @@ struct vnode;			/* Predeclaration */
 struct rambase
 {
     struct Device device;
-    struct DosLibrary *dosbase;
-    struct UtilityBase *utilitybase;
-    BPTR seglist;
     struct MsgPort *port;		/* Port to put IORequests to */
     struct SignalSemaphore *sigsem;	/* Semaphore for iofs */
     struct IOFileSys *iofs;		/* IORequest to be aborted or NULL */
@@ -33,12 +30,6 @@ struct rambase
     struct MsgPort *notifyPort;	        /* Notification messages will be
 					   replied here */
 };
-
-#define beginio(iob) \
-AROS_LC1(void, beginio, AROS_LCA(struct ramrequest *, iob, A1), struct rambase *, rambase, 5, ram)
-
-#define abortio(iob) \
-AROS_LC1(LONG, abortio, AROS_LCA(struct ramrequest *, iob, A1), struct rambase *, rambase, 6, ram)
 
 #endif
 

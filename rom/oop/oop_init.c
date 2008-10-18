@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: OOP Library
@@ -45,8 +45,6 @@ static int OOPInit(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("Enter OOPInit\n"));
 
-    UtilityBase = OpenLibrary("utility.library", 0);
-    
     NEWLIST(&LIBBASE->ob_ClassList);
     InitSemaphore(&LIBBASE->ob_ClassListLock);
 

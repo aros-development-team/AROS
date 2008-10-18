@@ -1,5 +1,5 @@
 /*
-    Copyright © 1998-2006, The AROS Development Team. All rights reserved. 
+    Copyright © 1998-2008, The AROS Development Team. All rights reserved. 
     $Id$
 
     Clipboard device.
@@ -142,31 +142,6 @@ static int GM_UNIQUENAME(Open)
 
     ObtainSemaphore(&CBBase->cb_SignalSemaphore);
 
-    if (!CBBase->cb_DosBase)
-    {
-	CBBase->cb_DosBase = OpenLibrary("dos.library", 39);
-    }
-
-    if (!CBBase->cb_DosBase)
-    {
-	ioreq->io_Error = IOERR_OPENFAIL;
-	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-	return FALSE;
-    }
-
-    if (!CBBase->cb_UtilityBase)
-    {
-	CBBase->cb_UtilityBase = OpenLibrary("utility.library", 39);
-    }
-
-    if (!CBBase->cb_UtilityBase)
-    {
-	ioreq->io_Error = IOERR_OPENFAIL;
-	CloseLibrary(CBBase->cb_DosBase);
-	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-	return FALSE;
-    }
-
     /* Set up clipboard directory if we are the first opener */
 
     if(CBBase->cb_ClipDir == NULL)
@@ -213,8 +188,6 @@ static int GM_UNIQUENAME(Open)
 
 	if (ioreq->io_Error)
 	{
-	    CloseLibrary(CBBase->cb_DosBase);
-	    CloseLibrary(CBBase->cb_UtilityBase);
 	    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 	    return FALSE;
 	}
@@ -343,20 +316,7 @@ static int GM_UNIQUENAME(Close)
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR CBBase)
-{
-    D(bug("clipboard.device/expunge:\n"));
-
-    CloseLibrary(CBBase->cb_DosBase);
-    CloseLibrary(CBBase->cb_UtilityBase);
-    
-    return TRUE;
-}
-
-/****************************************************************************************/
-
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
-ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
