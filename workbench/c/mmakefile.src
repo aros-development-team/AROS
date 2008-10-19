@@ -35,7 +35,6 @@ FILES := \
     MakeLink \
     Mount \
     Protect \
-    QuitAROS \
     Reboot \
     Relabel \
     Rename \
@@ -48,6 +47,7 @@ FILES := \
     SetDefaultFont \
     SetKeyboard \
     SetLocale \
+    Shutdown \
     Sort \
     StackSnoop \
     TaskList \
