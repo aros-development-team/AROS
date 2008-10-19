@@ -44,7 +44,7 @@
 *****************************************************************************/
 {
     va_list args;
-    
+
     va_start(args, format);
     VNewRawDoFmt(format, RAWFMTFUNC_STRING, buffer, args);
     va_end(args);
