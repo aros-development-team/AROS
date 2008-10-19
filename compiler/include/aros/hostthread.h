@@ -32,6 +32,7 @@ struct ThreadHandle
     unsigned long id;					/* Thread ID, another thing used in some OSes			   */
     struct HostThreadInterface *HTIFace;		/* A pointer to host-side API					   */
     unsigned long (*entry)(struct ThreadHandle *th);	/* Thread entry point						   */
+    void *data;						/* User-defined data passed to the thread			   */
     /* Private data follows, do not rely on the size! */
 };
 

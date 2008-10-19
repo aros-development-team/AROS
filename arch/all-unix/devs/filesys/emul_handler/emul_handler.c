@@ -1024,7 +1024,7 @@ static LONG startup(struct emulbase *emulbase)
 				dlv->dn_Name    = s;
 				dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
 
-				AddBootNode(0, 0, dlv, NULL);
+				AddBootNode(5, 0, dlv, NULL);
 
 				/* Unfortunately, we cannot do the stuff below
 				   as dos is not yet initialized... */

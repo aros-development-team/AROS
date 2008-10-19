@@ -166,5 +166,9 @@ struct ETask
 #define TASKTAG_ARG7	(TASKTAG_Dummy + 22)
 #define TASKTAG_ARG8	(TASKTAG_Dummy + 23)
 
+/* Actions for ShutdownA() */
+
+#define SD_ACTION_POWEROFF   0
+#define SD_ACTION_COLDREBOOT 1
 
 #endif /* EXEC_TASKS_H */

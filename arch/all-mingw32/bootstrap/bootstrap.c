@@ -18,10 +18,14 @@ typedef unsigned char UBYTE;
 #include "debug.h"
 #include "elfloader32.h"
 #include "hostlib.h"
+#include "shutdown.h"
 #include "../kernel/hostinterface.h"
 
 static unsigned char __bss_track[32768];
 struct TagItem km[64];
+char bootstrapdir[MAX_PATH];
+char *bootstrapname;
+char *cmdline;
 
 typedef int (*kernel_entry_fun_t)(struct TagItem *);
 
@@ -38,7 +42,8 @@ struct HostInterface HostIFace = {
     Host_HostLib_FreeErrorStr,
     Host_HostLib_GetInterface,
     Host_VKPrintF,
-    Host_PutChar
+    Host_PutChar,
+    Host_Shutdown
 };
 
 void *SysBase;
@@ -50,6 +55,9 @@ int main(int argc, char ** argv)
   struct TagItem *t;
   char *kernel = "boot\\kernel";
 
+  GetCurrentDirectory(MAX_PATH, bootstrapdir);
+  bootstrapname = argv[0];
+  cmdline = GetCommandLine();
   if (argc > 1)
       kernel = argv[1];
 
@@ -106,6 +114,9 @@ int main(int argc, char ** argv)
   tag->ti_Tag = KRN_KernelHighest;
   tag->ti_Data = (unsigned long)kernel_highest();
   tag++;
+
+  tag->ti_Tag = KRN_CmdLine;
+  tag->ti_Data = cmdline;
   
   tag->ti_Tag = KRN_HostInterface;
   tag->ti_Data = &HostIFace;
