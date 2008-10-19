@@ -1,21 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
+#include <exec/rawfmt.h>
 #include <proto/exec.h>
-#include <aros/asmcall.h>
-
-/* Putchar procedure needed by RawDoFmt() */
-AROS_UFH2(void, __putChr,
-    AROS_UFHA(UBYTE   , chr, D0),
-    AROS_UFHA(STRPTR *, p  , A3))
-{
-    AROS_USERFUNC_INIT
-    *(*p)++ = chr;
-    AROS_USERFUNC_EXIT
-}
-
+#include <stdarg.h>
 
 /*****************************************************************************
 
@@ -53,5 +43,9 @@ AROS_UFH2(void, __putChr,
 
 *****************************************************************************/
 {
-    RawDoFmt(format, &format+1, (VOID_FUNC)__putChr, &buffer);
+    va_list args;
+    
+    va_start(args, format);
+    VNewRawDoFmt(format, RAWFMTFUNC_STRING, buffer, args);
+    va_end(args);
 } /* sprintf */
