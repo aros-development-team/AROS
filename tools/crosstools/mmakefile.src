@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 HOSTAROSGCCUSENEWLIB = TRUE
 
 HOSTGMPVERSION = 4.2.3
-HOSTMPFRVERSION = 2.3.1
+HOSTMPFRVERSION = 2.3.2
 HOSTAROSNEWLIBVERSION = 1.16.0
 HOSTAROSBINUTILSVERSION = 2.18
 HOSTAROSGCCVERSION = 4.3.2
@@ -56,5 +56,5 @@ host-build-tools-hostarosnewlib :
 
 #MM
 host-build-tools-hostarosnewliblink :
-	ln -s $(HOSTDIR)/Ports/newlib/newlib-$(HOSTAROSNEWLIBVERSION)/newlib $(host-build-tools-hostarosgcc--package-dir)/newlib;
-	ln -s $(HOSTDIR)/Ports/newlib/newlib-$(HOSTAROSNEWLIBVERSION)/libgloss $(host-build-tools-hostarosgcc--package-dir)/libgloss;
+	ln -sf $(HOSTDIR)/Ports/newlib/newlib-$(HOSTAROSNEWLIBVERSION)/newlib $(host-build-tools-hostarosgcc--package-dir)/newlib;
+	ln -sf $(HOSTDIR)/Ports/newlib/newlib-$(HOSTAROSNEWLIBVERSION)/libgloss $(host-build-tools-hostarosgcc--package-dir)/libgloss;
