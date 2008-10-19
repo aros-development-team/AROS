@@ -1485,35 +1485,40 @@ AROS_LH1(void, beginio,
 		{
 		  fh->fd = emulbase->stdin_handle;
 		}
-		DASYNC(bug("[emul] Reading %lu bytes\n", iofs->io_Union.io_READ.io_Length));
-		/* TODO: This stuff is a quick hack made to get things up and running quickly.
-		 * The whole handler needs total reengineering. */
-		emulbase->EmulMsg.op = EMUL_CMD_READ;
-		emulbase->EmulMsg.fh = fh->fd;
-		emulbase->EmulMsg.addr = iofs->io_Union.io_READ.io_Buffer;
-		emulbase->EmulMsg.len = iofs->io_Union.io_READ.io_Length;
-		emulbase->EmulMsg.task = FindTask(NULL);
-		if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
-		    Wait(SIGF_BLIT);
-		    DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
-		    iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
-		    error = emulbase->EmulMsg.error;
-		    if ((!error) && (fh->fd == emulbase->stdin_handle)) {
-		        char *c, *d;
+		if (fh->fd == emulbase->stdin_handle) {
+		    DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", iofs->io_Union.io_READ.io_Length));
+		    /* TODO: This stuff will be probably replaced with overlapped I/O and hostthread.resource
+		     * will be removed */
+		    emulbase->EmulMsg.op = EMUL_CMD_READ;
+		    emulbase->EmulMsg.fh = fh->fd;
+		    emulbase->EmulMsg.addr = iofs->io_Union.io_READ.io_Buffer;
+		    emulbase->EmulMsg.len = iofs->io_Union.io_READ.io_Length;
+		    emulbase->EmulMsg.task = FindTask(NULL);
+		    if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
+		    	Wait(SIGF_BLIT);
+		    	DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
+		    	iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
+		    	error = emulbase->EmulMsg.error;
+		    	if (!error) {
+		            char *c, *d;
 
-		        c = iofs->io_Union.io_READ.io_Buffer;
-		        d = c;
-		        while (*c) {
-		            if ((c[0] == '\r') && (c[1] == '\n')) {
-		            	c++;
-		            	iofs->io_Union.io_READ.io_Length--;
+		            c = iofs->io_Union.io_READ.io_Buffer;
+		            d = c;
+		            while (*c) {
+		            	if ((c[0] == '\r') && (c[1] == '\n')) {
+		            	    c++;
+		            	    iofs->io_Union.io_READ.io_Length--;
+		            	}
+		                *d++ = *c++;
 		            }
-		            *d++ = *c++;
 		        }
+		    } else {
+		        DASYNC(bug("[emul] FSA_READ: HT_PutMsg failed!\n"));
+		        error = ERROR_UNKNOWN;
 		    }
 		} else {
-		    DASYNC(bug("[emul] FSA_READ: HT_PutMsg failed!\n"));
-		    error = ERROR_UNKNOWN;
+		    if (!DoRead(fh->fd, iofs->io_Union.io_READ.io_Buffer, iofs->io_Union.io_READ.io_Length, &iofs->io_Union.io_READ.io_Length, NULL))
+		        error = Errno();
 		}
 	  }
 	  else
@@ -1534,7 +1539,7 @@ AROS_LH1(void, beginio,
 		{
 		  fh->fd=emulbase->stdout_handle;
 		}
-		DASYNC(bug("[emul] Writing %lu bytes at 0x%p\n", iofs->io_Union.io_WRITE.io_Length, iofs->io_Union.io_WRITE.io_Buffer));
+/*		DASYNC(bug("[emul] Writing %lu bytes at 0x%p\n", iofs->io_Union.io_WRITE.io_Length, iofs->io_Union.io_WRITE.io_Buffer));
 		emulbase->EmulMsg.op = EMUL_CMD_WRITE;
 		emulbase->EmulMsg.fh = fh->fd;
 		emulbase->EmulMsg.addr = iofs->io_Union.io_WRITE.io_Buffer;
@@ -1548,7 +1553,9 @@ AROS_LH1(void, beginio,
 		} else {
 		    DASYNC(bug("[emul] FSA_WRITE: HT_PutMsg failed!\n"));
 		    error = ERROR_UNKNOWN;
-		}
+		}*/
+		if (!DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL))
+		    error = Errno();
 	  }
 	  else
 	  {
