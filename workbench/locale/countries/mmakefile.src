@@ -26,7 +26,7 @@ $(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
 
 $(MAKECOUNTRY) : $(OBJS)
 	@$(ECHO) "Making $(@F)..."
-	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@ -liconv
+	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@
 
 $(OBJS) $(DEPS) : | $(OBJDIR)
 %rule_compile_multi basenames="makecountry/makecountry $(COUNTRIES)" \
