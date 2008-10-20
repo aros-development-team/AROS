@@ -7,11 +7,11 @@
 */
 
 #include <aros/debug.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/exec.h>
 
 	AROS_LH1(ULONG, ShutdownA,
 
@@ -51,7 +51,7 @@
 
     struct MsgPort *port;
     
-    if (action != SD_ACTION_REBOOT)
+    if (action != SD_ACTION_COLDREBOOT)
         return 0;
 
     Forbid();
