@@ -125,16 +125,8 @@
     /* If fib != NULL it means we've already been called and found out that
        we needed to emulate ExAll, thus don't waste time sending messages to the
        handler.  */
-    if (((struct InternalExAllControl *)control)->fib != NULL ||
-          control->eac_MatchString || control->eac_MatchFunc)
+    if (((struct InternalExAllControl *)control)->fib != NULL)
     {
-    	#warning "Hack because of problem with our filesystem API regarding"
-	#warning "ExAll handling. Filesystems don't get passed matchstring/matchfunc"
-	#warning "so they cannot handle it. As workaround for now we force emulation"
-	#warning "of ExAll() if any of matchstring/matchfunc is set."
-	#warning "It would be better to pass ExAllControl structure to filesystems."
-	#warning "Ie. change filesystem API. Also because of eac_LastKey!!!"
-	
     	iofs.io_DosError = ERROR_ACTION_NOT_KNOWN;
     }
     else
@@ -312,11 +304,7 @@
 		}
 		    
 		/* Do some more matching... */
-		if (control->eac_MatchFunc &&
-		    !AROS_UFC3(LONG, control->eac_MatchFunc,
-			       AROS_UFCA(struct Hook *, control->eac_MatchFunc, A0),
-			       AROS_UFCA(struct ExAllData *, curr, A2),
-			       AROS_UFCA(LONG *, &data, A1)))
+		if (control->eac_MatchFunc && !CALLHOOKPKT(control->eac_MatchFunc, curr, &data))
 		    continue;
 		    
 		/* Finally go to the next entry in the buffer.  */

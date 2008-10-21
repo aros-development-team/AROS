@@ -30,6 +30,8 @@ struct EmulThreadMessage
 #include <dos/dosextens.h>
 #include <hidd/hidd.h>
 
+#include "winapi.h"
+
 struct emulbase
 {
     struct Device		  device;
@@ -42,7 +44,6 @@ struct emulbase
     void			* stderr_handle;
     struct SignalSemaphore	  sem;
     struct SignalSemaphore	  memsem;
-    char    	    	    	* current_volume;
     APTR			  mempool;
     void			* EmulHandle;
     void			* KernelHandle;
@@ -54,14 +55,13 @@ struct emulbase
 
 struct filehandle
 {
-    char * name;     /* full name including pathname                 */
-    int    type;     /* type can either be FHD_FILE or FHD_DIRECTORY */
-    char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
-    long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
-    void * DIR;      /* both of these vars will be filled in by examine *only* (at the moment) */
-    char * volume;
+    char * hostname; /* full host's pathname (includes volume root prefix 		       */
+    char * name;     /* full name including pathname					       */
+    int    type;     /* type can either be FHD_FILE or FHD_DIRECTORY			       */
+    char * pathname; /* if type == FHD_FILE then you'll find the pathname here		       */
     char * volumename;
     void * fd;
+    ULONG  dirpos;
     struct DosList *dl;
 };
 #define FHD_FILE      0
@@ -70,18 +70,12 @@ struct filehandle
 struct EmulInterface
 {
     ULONG (*EmulThread)(struct ThreadHandle *myhandle);
-    void *(*EmulOpenDir)(const char *path);
-    ULONG (*EmulCloseDir)(void *dir);
-    ULONG (*EmulStat)(const char *path, struct FileInfoBlock *FIB);
-    const char *(*EmulDirName)(void *dir);
-    ULONG (*EmulTellDir)(void *dir);
-    void (*EmulSeekDir)(void *dir, long loc);
-    void (*EmulRewindDir)(void *dir);
-    ULONG (*EmulDelete)(const char *filename);
-    unsigned long (*EmulGetHome)(const char *name, char *home);
-    ULONG (*EmulStatFS)(const char *path, struct InfoData *id);
-    ULONG (*EmulChmod)(const char *path, int protect);
-    ULONG (*EmulMKDir)(const char *path, int protect);
+    ULONG (*EmulStat)(char *path, struct FileInfoBlock *FIB);
+    ULONG (*EmulDelete)(char *filename);
+    unsigned long (*EmulGetHome)(char *name, char *home);
+    ULONG (*EmulStatFS)(char *path, struct InfoData *id);
+    ULONG (*EmulChmod)(char *path, int protect);
+    ULONG (*EmulMKDir)(char *path, int protect);
     ULONG (*EmulErrno)(void);
 };
 
@@ -89,12 +83,6 @@ struct EmulInterface
 #define MKDir EmulIFace->EmulMKDir
 #define Stat EmulIFace->EmulStat
 #define Errno EmulIFace->EmulErrno
-#define CloseDir EmulIFace->EmulCloseDir
-#define OpenDir EmulIFace->EmulOpenDir
-#define DirName EmulIFace->EmulDirName
-#define TellDir EmulIFace->EmulTellDir
-#define SeekDir EmulIFace->EmulSeekDir
-#define RewindDir EmulIFace->EmulRewindDir
 #define Delete EmulIFace->EmulDelete
 #define GetHome EmulIFace->EmulGetHome
 #define StatFS EmulIFace->EmulStatFS
@@ -105,7 +93,7 @@ struct EmulInterface
 
 struct KernelInterface
 {
-    __attribute__((stdcall)) void *(*CreateFile)(const char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
+    __attribute__((stdcall)) void *(*CreateFile)(char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
 						 ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
     __attribute__((stdcall)) ULONG (*CloseHandle)(void *hObject);
     __attribute__((stdcall)) ULONG (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
@@ -113,11 +101,13 @@ struct KernelInterface
     __attribute__((stdcall)) ULONG (*SetFilePointer)(void *hFile, LONG lDistanceToMove, LONG *lpDistanceToMoveHigh, ULONG dwMoveMethod);
     __attribute__((stdcall)) ULONG (*GetFileType)(void *hFile);
     __attribute__((stdcall)) void *(*GetStdHandle)(ULONG nStdHandle);
-    __attribute__((stdcall)) ULONG (*MoveFile)(const char *lpExistingFileName, const char *lpNewFileName);
+    __attribute__((stdcall)) ULONG (*MoveFile)(char *lpExistingFileName, char *lpNewFileName);
     __attribute__((stdcall)) ULONG (*GetCurrentDirectory)(ULONG nBufferLength, char *lpBuffer);
-    __attribute__((stdcall)) ULONG (*SetCurrentDirectory)(const char *lpPathName);
-    __attribute__((stdcall)) ULONG (*CreateHardLink)(const char *lpFileName, const char *lpExistingFileName, void *lpSecurityAttributes);
-    __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(const char *lpSymlinkFileName, const char *lpTargetFileName, ULONG dwFlags);
+    __attribute__((stdcall)) void *(*FindFirstFile)(char *lpFileName, LPWIN32_FIND_DATA lpFindFileData);
+    __attribute__((stdcall)) ULONG (*FindNextFile)(void *hFindFile, LPWIN32_FIND_DATA lpFindFileData);
+    __attribute__((stdcall)) ULONG (*FindClose)(void *hFindFile);
+    __attribute__((stdcall)) ULONG (*CreateHardLink)(char *lpFileName, char *lpExistingFileName, void *lpSecurityAttributes);
+    __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
 };
 
 #define OpenFile KernelIFace->CreateFile
@@ -129,7 +119,9 @@ struct KernelInterface
 #define GetStdFile KernelIFace->GetStdHandle
 #define DoRename KernelIFace->MoveFile
 #define GetCWD KernelIFace->GetCurrentDirectory
-#define ChDir KernelIFace->SetCurrentDirectory
+#define FindFirst KernelIFace->FindFirstFile
+#define FindNext KernelIFace->FindNextFile
+#define FindEnd KernelIFace->FindClose
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
 

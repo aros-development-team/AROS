@@ -44,7 +44,6 @@
 #include <string.h>
 
 #include "emul_handler_intern.h"
-#include "winapi.h"
 
 #include <string.h>
 
@@ -129,46 +128,32 @@ static void emul_free(struct emulbase *emulbase, APTR mem)
 
 /*********************************************************************************************/
 
-static BOOL is_root_filename(char *filename)
-{
-  BOOL result = FALSE;
-  
-  if ((*filename == '\0') ||
-	  (!strcmp(filename, ".")) ||
-	  (!strcmp(filename, ".\\")))
-  {
-	result = TRUE;
-  }
-  
-  return result;
-}
-
-/*********************************************************************************************/
-
 /* Create a plain path out of the supplied filename.
  Eg 'path1\path2\\path3\' becomes 'path1\path3'.
  */
 BOOL shrink(struct emulbase *emulbase, char *filename)
 {
-  char	  *s1,*s2;
+  char *s, *s1,*s2;
   unsigned long len;
-  
-  if (filename[0] == '.')
-	if (filename[1] == '/') filename += 2;
+
+  /* We skip the first slash because it separates volume root prefix and the actual pathname */
+  s = filename;
+  if (*s == '\\')
+      *s++;
   
   for(;;)
   {
 	/* leading slashes? --> return FALSE. */
-	if(*filename=='/') return FALSE;
+	if(*s == '\\') return FALSE;
 	
-	/* remove superflous paths (ie paths that are followed by '/') */
-	s1=strstr(filename,"//");
+	/* remove superflous paths (ie paths that are followed by '\') */
+	s1 = strstr(s, "\\\\");
 	if(s1==NULL)
 	  break;
 	s2=s1;
-	while(s2 > filename)
+	while(s2 > s)
 	{
-	  if (s2[-1] == '/') break;
+	  if (s2[-1] == '\\') break;
 	  s2--;
 	}
 	
@@ -176,50 +161,52 @@ BOOL shrink(struct emulbase *emulbase, char *filename)
   }
   
   /* strip trailing slash */
-  len=strlen(filename);
-  if(len&&filename[len-1]=='/')
-	filename[len-1]=0;
-  
+  len = strlen(filename);
+  if (len && (filename[len-1] == '\\'))
+      filename[len-1]=0;
+
   return TRUE;
 }
 
 /*********************************************************************************************/
 
 /* Allocate a buffer, in which the filename is appended to the pathname. */
-static LONG makefilename(struct emulbase *emulbase,
-						 char **dest, STRPTR dirname, STRPTR filename)
+static LONG makefilename(struct emulbase *emulbase, char **dest, char **part, struct filehandle * fh, STRPTR filename)
 {
   LONG ret = 0;
   int len, flen, dirlen;
-  char *c;
+  char *c, *s;
 
-  D(bug("[emul] makefilename(\"%s\", \"%s\")\n", dirname, filename));
-  dirlen = strlen(dirname) + 1;
+  D(bug("[emul] makefilename(): directory \"%s\", file \"%s\")\n", fh->hostname, filename));
+  dirlen = strlen(fh->hostname);
   flen = strlen(filename);
-  len = flen + dirlen + 1 + /*safety*/ 1;
+  len = flen + dirlen + 2;
   *dest=(char *)emul_malloc(emulbase, len);
   if ((*dest))
   {
-	CopyMem(dirname, *dest, dirlen);
-	if ((dirlen > 1) && flen)
-	{
-	  if ((*dest)[dirlen - 2] != '/') strcat(*dest, "/");
+	CopyMem(fh->hostname, *dest, dirlen);
+	c = *dest + dirlen;
+	if (flen) {
+            *c++ = '\\';
+            /* We are on Windows, so we have to revert slashes while copying filename */
+            for (s = filename; *s; s++)
+                *c++ = (*s == '/') ? '\\' : *s;
 	}
-	
-	strcat(*dest, filename);
-	
-	if (!shrink(emulbase, *dest))
+	*c = 0;
+
+	c = *dest + (fh->name - fh->hostname);
+	D(bug("[emul] Shrinking filename: \"%s\"\n", c));
+	if (!shrink(emulbase, c))
 	{
 	  emul_free(emulbase, *dest);
 	  *dest = NULL;
 	  ret = ERROR_OBJECT_NOT_FOUND;
 	} else {
-	  /* We are on Windows, so we have to revert slashes */
-	  for (c = *dest; *c; c++) {
-	      if (*c == '/')
-	          *c = '\\';
+	  D(bug("[emul] resulting host filename: \"%s\"\n", *dest));
+	  if (part) {
+	      *part = c;
+	      D(bug("[emul] resulting AROS filename: \"%s\"\n", c));
 	  }
-	  D(bug("[emul] resulting filename: %s\n", *dest));
 	}
   } else
 	ret = ERROR_NO_FREE_STORE;
@@ -250,7 +237,7 @@ ULONG prot_a2w(ULONG protect)
 
 /*********************************************************************************************/
 
-void *DoOpen(const char *path, int mode, int protect)
+void *DoOpen(char *path, int mode, int protect)
 {
   ULONG flags = 0;
   ULONG lock;
@@ -276,63 +263,38 @@ void *DoOpen(const char *path, int mode, int protect)
 
 /*********************************************************************************************/
 
-static BOOL check_volume(struct filehandle *fh, struct emulbase *emulbase)
-{
-  if (fh->volume == emulbase->current_volume) return TRUE;
-  
-  if (ChDir(fh->volume))
-  {
-	emulbase->current_volume = fh->volume;
-	return TRUE;
-  }
-  
-  return FALSE;
-}
-
-/*********************************************************************************************/
-
 /* Free a filehandle */
 static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 {
-  D(bug("[emul] Lock type = %lu\n", current->type));
-  switch(current->type)
-  {
+    D(bug("[emul] Lock type = %lu\n", current->type));
+    switch(current->type)
+    {
 	case FHD_FILE:
 	  if((current->fd != emulbase->stdin_handle) && (current->fd != emulbase->stdout_handle) &&
 	     (current->fd != emulbase->stderr_handle))
 	  {
 	        DB2(bug("[emul] CloseHandle(), fd = 0x%08lX\n", current->fd));
 		DoClose(current->fd);
-		D(bug("[emul] Freeing name: \"%s\"\n", current->name));
-		emul_free(emulbase, current->name);
-		
-		if (current->pathname)
-		{
-		  D(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
-		  emul_free(emulbase, current->pathname);
-		}
-		
-		if (current->DIR)
-		{
-		  D(bug("[emul] Closing DIR\n"));
-		  CloseDir(current->DIR);
-		}
 	  }
 	  break;
-	  case FHD_DIRECTORY:
-	  if (current->fd)
+	case FHD_DIRECTORY:
+	  if (current->fd != INVALID_HANDLE_VALUE)
 	  {
-		CloseDir(current->fd);
+	        D(bug("[emul] Closing directory search handle\n"));
+		FindEnd(current->fd);
 	  }
-	  
-	  if (current->name)
-		emul_free(emulbase, current->name);
 	  break;
-  }
-  D(bug("[emul] Freeing filehandle\n"));
-  FreeMem(current, sizeof(struct filehandle));
-  D(bug("[emul] Done\n"));
-  return 0;
+    }
+    if (current->pathname) {
+	D(bug("[emul] Freeing pathname: \"%s\"\n", current->pathname));
+	emul_free(emulbase, current->pathname);
+    }
+    D(bug("[emul] Freeing name: \"%s\"\n", current->hostname));
+    emul_free(emulbase, current->hostname);
+    D(bug("[emul] Freeing filehandle\n"));
+    FreeMem(current, sizeof(struct filehandle));
+    D(bug("[emul] Done\n"));
+    return 0;
 }
 
 /*********************************************************************************************/
@@ -342,13 +304,10 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
   LONG ret = 0;
   struct filehandle *fh;
   
-  if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
   fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
   if(fh!=NULL)
   {
 	fh->pathname = NULL; /* just to make sure... */
-	fh->DIR      = NULL;
 	fh->dl = (*handle)->dl;
 	/* If no filename is given and the file-descriptor is one of the
 	 standard filehandles (stdin, stdout, stderr) ... */
@@ -356,29 +315,29 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	   (((*handle)->fd == emulbase->stdin_handle) || ((*handle)->fd == emulbase->stdout_handle) || ((*handle)->fd == emulbase->stderr_handle)))
 	{
 	  /* ... then just reopen that standard filehandle. */
-	  fh->type=FHD_FILE;
-	  fh->fd=(*handle)->fd;
-	  fh->name="";
-	  fh->volume=NULL;
-	  fh->volumename=NULL;
-	  *handle=fh;
+	  fh->type       = FHD_FILE;
+	  fh->fd         = (*handle)->fd;
+	  fh->name       = NULL;
+	  fh->hostname   = NULL;
+	  fh->volumename = NULL;
+	  *handle = fh;
 	  return 0;
 	}
-	
-	fh->volume=(*handle)->volume;
+
 	fh->volumename=(*handle)->volumename;
 	
-	ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
+	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
 	if (!ret)
 	{
-	  int kind;
-	  if(0<(kind = Stat(*fh->name?fh->name:".",0)))
+	  int kind = Stat(fh->hostname, 0);
+
+	  D(bug("[emul] object type: %ld\n", kind));
+	  if(0 < kind)
 	  {
-	        D(bug("[emul] object type: %ld\n", kind));
 		if(kind == 1)
 		{
 		  fh->type=FHD_FILE;
-		  fh->fd = DoOpen(*fh->name ? fh->name : ".", mode, 0770);
+		  fh->fd = DoOpen(fh->hostname, mode, 0770);
 		  if(fh->fd != INVALID_HANDLE_VALUE)
 		  {
 			*handle=fh;
@@ -387,13 +346,11 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 		}else if(kind == 2)
 		{
 		  /* file is a directory */
-		  fh->type=FHD_DIRECTORY;
-		  fh->fd = OpenDir(*fh->name?fh->name:".");
-		  if(fh->fd)
-		  {
-			*handle=fh;
-			return 0;
-		  }
+		  fh->type   = FHD_DIRECTORY;
+		  fh->fd     = INVALID_HANDLE_VALUE;
+		  fh->dirpos = 0;
+		  *handle=fh;
+		  return 0;
 		}else
 		  ret = ERROR_OBJECT_WRONG_TYPE;
 	  }
@@ -404,7 +361,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	  }
 	  
 	  D(bug("[emul] Freeing pathname\n"));
-	  emul_free(emulbase, fh->name);
+	  emul_free(emulbase, fh->hostname);
 	}
 	D(bug("[emul] Freeing filehandle\n"));
 	FreeMem(fh, sizeof(struct filehandle));
@@ -421,43 +378,40 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
   LONG ret=ERROR_NO_FREE_STORE;
   struct filehandle *fh;
   
-  if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
   fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
   if(fh!=NULL)
   {
 	fh->pathname = NULL; /* just to make sure... */
-	fh->DIR      = NULL;
-	fh->dl = (*handle)->dl;
+	fh->dl       = (*handle)->dl;
 	/* If no filename is given and the file-descriptor is one of the
 	 standard filehandles (stdin, stdout, stderr) ... */
 	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
 	    (((*handle)->fd==emulbase->stdin_handle) || ((*handle)->fd==emulbase->stdout_handle) || ((*handle)->fd==emulbase->stderr_handle)))
 	{
 	  /* ... then just reopen that standard filehandle. */
-	  fh->type=FHD_FILE;
-	  fh->fd=(*handle)->fd;
-	  fh->name="";
-	  fh->volume=0;
+	  fh->type       = FHD_FILE;
+	  fh->fd         = (*handle)->fd;
+	  fh->name       = NULL;
+	  fh->hostname   = NULL;
+	  fh->volumename = NULL;
 	  *handle=fh;
 	  return 0;
 	}
 	
-	fh->volume=(*handle)->volume;
 	fh->volumename=(*handle)->volumename;
 	
-	ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
+	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
 	if (!ret)
 	{
-	  fh->type=FHD_FILE;
-	  fh->fd=DoOpen(fh->name,mode,protect);
+	  fh->type = FHD_FILE;
+	  fh->fd = DoOpen(fh->hostname, mode, protect);
 	  if (fh->fd != INVALID_HANDLE_VALUE)
 	  {
 		*handle=fh;
 		return 0;
 	  }
 	  ret=Errno();
-	  emul_free(emulbase, fh->name);
+	  emul_free(emulbase, fh->hostname);
 	}
 	FreeMem(fh, sizeof(struct filehandle));
   }
@@ -472,30 +426,24 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
   LONG ret = 0;
   struct filehandle *fh;
   
-  if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
   fh = (struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
   if (fh)
   {
 	fh->pathname   = NULL; /* just to make sure... */
-	fh->name       = NULL;
 	fh->type       = FHD_DIRECTORY;
-	fh->DIR        = NULL;
-	fh->fd         = NULL;
-	fh->volume     = (*handle)->volume;
+	fh->fd         = INVALID_HANDLE_VALUE;
+	fh->dirpos     = 0;
 	fh->volumename = (*handle)->volumename;
 	fh->dl	       = (*handle)->dl;
 	
-	ret = makefilename(emulbase, &fh->name, (*handle)->name, filename);
+	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, filename);
 	if (!ret)
 	{
 	  
-	  if (!MKDir(fh->name, protect))
+	  if (!MKDir(fh->hostname, protect))
 	  {
 		*handle = fh;
-		(*handle)->fd = OpenDir((*handle)->name);
-		if ((*handle)->fd)
-		  return 0;
+		return 0;
 	  }
 	  ret = Errno();
 	}
@@ -514,9 +462,7 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
   LONG ret = 0;
   char *filename = NULL;
   
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
-  ret = makefilename(emulbase, &filename, fh->name, file);
+  ret = makefilename(emulbase, &filename, NULL, fh, file);
   if (!ret)
   {
 	if (!Delete(filename))
@@ -535,9 +481,7 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
   LONG ret = 0;
   char *filename = NULL;
   
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
-  if ((ret = makefilename(emulbase, &filename, fh->name, file)))
+  if ((ret = makefilename(emulbase, &filename, NULL, fh, file)))
 	return ret;
   
   if (Chmod(filename, aprot))
@@ -575,7 +519,6 @@ static LONG startup(struct emulbase *emulbase)
   struct DeviceNode *dlv, *dlv2;
   LONG ret = ERROR_NO_FREE_STORE;
   ULONG res;
-  int kind;
   
   D(kprintf("[Emulhandler] startup\n"));
   ExpansionBase = OpenLibrary("expansion.library",0);
@@ -586,20 +529,19 @@ static LONG startup(struct emulbase *emulbase)
     if(fhv != NULL)
     {
 	D(kprintf("[Emulhandler] startup allocated fhv\n"));
-	fhv->name = ".";
-	fhv->type = FHD_DIRECTORY;
+	fhv->hostname = (char *)(fhv + 1);
+	fhv->type     = FHD_DIRECTORY;
+	fhv->fd       = INVALID_HANDLE_VALUE;
+	fhv->dirpos   = 0;
 	fhv->pathname = NULL; /* just to make sure... */
-	fhv->DIR      = NULL;
-	fhv->volume=(char *)(fhv + 1);
-			
-	/* Make sure that the root directory is valid */
-	res = GetCWD(256, fhv->volume);
-	kind=Stat(fhv->name,0);
+
+	res = GetCWD(256, fhv->hostname);
 	if (res > 256)
 	    res = 0;
-	if(res && (kind == 2))
+	if(res)
 	{
-	    D(kprintf("[Emulhandler] startup got valid directory\n"));
+	    D(bug("[Emulhandler] startup got directory %s\n", fhv->hostname));
+	    fhv->name = fhv->hostname + res;
 #define DEVNAME "EMU"
 #define VOLNAME "System"
 			  
@@ -607,9 +549,6 @@ static LONG startup(struct emulbase *emulbase)
 	    static const char *volname = VOLNAME;
 			  
 	    fhv->volumename = VOLNAME;
-	    emulbase->current_volume = fhv->volume;
-			  
-	    fhv->fd = OpenDir(fhv->name);
 
 	    DB2(bug("[emul] GetStdFile(STD_INPUT_HANDLE)\n"));
 	    emulbase->stdin_handle = GetStdFile(STD_INPUT_HANDLE);
@@ -629,15 +568,14 @@ static LONG startup(struct emulbase *emulbase)
 		if(fhi!=NULL)
 		{
 		    D(kprintf("[Emulhandler] allocated fhi\n"));
+		    fhi->hostname   = NULL;
+		    fhi->name	    = NULL;
 		    fhi->pathname   = NULL; /* just to make sure... */
-		    fhi->DIR        = NULL;
-		    fhi->volume     = NULL;
 		    fhi->volumename = NULL;
 		    fhi->dl	    = NULL;
-		    fhi->type = FHD_FILE;
-		    fhi->fd   = emulbase->stdin_handle;
-		    fhi->name = "";
-		    emulbase->eb_stdin  = fhi;
+		    fhi->type	    = FHD_FILE;
+		    fhi->fd	    = emulbase->stdin_handle;
+		    emulbase->eb_stdin = fhi;
 		}
 	    }
 	    if (emulbase->stdout_handle != INVALID_HANDLE_VALUE) {
@@ -645,14 +583,13 @@ static LONG startup(struct emulbase *emulbase)
 		if(fho!=NULL)
 		{
 		    D(kprintf("[Emulhandler] startup allocated fho\n"));
+		    fho->hostname   = NULL;
+		    fho->name	    = NULL;
 		    fho->pathname   = NULL; /* just to make sure... */
-		    fho->DIR        = NULL;
-		    fho->volume     = NULL;
 		    fho->volumename = NULL;
 		    fho->dl	    = NULL;
-		    fho->type = FHD_FILE;
-		    fho->fd   = emulbase->stdout_handle;
-		    fho->name = "";
+		    fho->type	    = FHD_FILE;
+		    fho->fd	    = emulbase->stdout_handle;
 		    emulbase->eb_stdout = fho;
 		}
 	    }
@@ -661,14 +598,13 @@ static LONG startup(struct emulbase *emulbase)
 		if(fhe!=NULL)
 		{
 		    D(kprintf("[Emulhandler] startup allocated fhe\n"));
+		    fhe->hostname   = NULL;
+		    fhe->name	    = NULL;
 		    fhe->pathname   = NULL; /* just to make sure... */
-		    fhe->DIR        = NULL;
-		    fhe->volume     = NULL;
 		    fhe->volumename = NULL;
 		    fhe->dl	    = NULL;
-		    fhe->type = FHD_FILE;
-		    fhe->fd   = emulbase->stderr_handle;
-		    fhe->name = "";
+		    fhe->type	    = FHD_FILE;
+		    fhe->fd	    = emulbase->stderr_handle;
 		    emulbase->eb_stderr = fhe;
 		}
 	    }
@@ -780,21 +716,25 @@ sizeof(struct ExAllData) };
 /* Returns a emul_malloc()'ed buffer, containing a pathname, stripped by the
  filename.
  */
-char * pathname_from_name (struct emulbase *emulbase, char * name)
+char *pathname_from_name (struct emulbase *emulbase, char *name)
 {
   long len = strlen(name);
   long i = len;
-  char * result = NULL;
+  char *result = NULL;
+  long c;
+
   /* look for the first '\' in the filename starting at the end */
   while (i != 0 && name[i] != '\\')
     i--;
   
   if (0 != i)
   {
-    result = (char *)emul_malloc(emulbase, i+1);
+    result = (char *)emul_malloc(emulbase, i + 1);
     if(!result)
       return NULL;
-    strncpy(result, name, i);
+
+    for (c = 0; c < i; c++)
+        result[c] = (name[c] == '\\') ? '/' : name[c];
     result[i]=0x0;
   }
   return result;
@@ -802,112 +742,153 @@ char * pathname_from_name (struct emulbase *emulbase, char * name)
 
 /*********************************************************************************************/
 
-/* Returns a emul_malloc()'ed buffer, containing the filename without its path. */
-char * filename_from_name(struct emulbase *emulbase, char * name)
+ULONG examine_start(struct emulbase *emulbase, struct filehandle *fh)
 {
-  long len = strlen(name);
-  long i = len;
-  char * result = NULL;
-  /* look for the first '\' in the filename starting at the end */
-  while (i != 0 && name[i] != '\\')
-    i--;
-  
-  if (0 != i)
-  {
-    result = (char *)emul_malloc(emulbase, len-i);
-    if(!result)
-      return NULL;
-    strncpy(result, &name[i+1], len-i);
-    result[len-i-1]=0x0;
-  }
-  return result;
+    char *c;
+    ULONG len;
+
+    if (fh->type != FHD_DIRECTORY)
+	return ERROR_OBJECT_WRONG_TYPE;
+
+    if (!fh->pathname) {
+        len = strlen(fh->hostname);
+        fh->pathname = emul_malloc(emulbase, len + 3);
+        if (!fh->pathname)
+            return ERROR_NO_FREE_STORE;
+        CopyMem(fh->hostname, fh->pathname, len);
+        c = fh->pathname + len;
+        strcpy(c, "\\*");
+    }
+    D(bug("[emul] Created search path: %s\n", fh->pathname));
+    return 0;
 }
 
 /*********************************************************************************************/
 
-static LONG examine(struct emulbase *emulbase,
-					struct filehandle *fh,
-                    struct ExAllData *ead,
-                    ULONG  size,
-                    ULONG  type,
-                    LONG  *dirpos)
+/* Resets dirpos in directory handle and close existing search handle */
+static LONG CloseDir(struct filehandle *fh)
 {
-  STRPTR next, end, last, name;
-  
-  /* Return an error, if supplied type is not supported. */
-  if(type>ED_OWNER)
-	return ERROR_BAD_NUMBER;
-  
+    if (fh->fd != INVALID_HANDLE_VALUE) {
+        if (!FindEnd(fh->fd))
+            return Errno();
+        fh->fd = INVALID_HANDLE_VALUE;
+    }
+    fh->dirpos = 0;
+    return 0;
+}
+
+/*********************************************************************************************/
+
+#define is_special_dir(x) (x[0] == '.' && (!x[1] || (x[1] == '.' && !x[2])))
+
+/* Positions to dirpos in directory, retrieves next item in it and updates dirpos */
+ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, ULONG *dirpos)
+{
+  ULONG res;
+
+  /*
+   * Windows does not support positioning within directory. The only thing i can do is to
+   * scan the directory in forward direction. In order to bypass this limitation we do the
+   * following:
+   * 1. Before starting we explicitly set current position (dirpos) to 0. Examine() will place
+   *    it into our fib_DiskKey; in case of ExAll() this is eac_LastKey. We also maintain second
+   *	directory position counter - in our directory handle. It reflects the real position of
+   *	our file search handle.
+   * 2. Here we compare position in dirpos with position in the handle. If dirpos is smaller than
+   *    filehandle's counter, we have to rewind the directory. This is done by closing the search
+   *    handle in order to be able to restart from the beginning and setting handle's counter to 0.
+   */
+  D(bug("[emul] Current dirpos %lu, requested %lu\n", fh->dirpos, *dirpos));
+  if (fh->dirpos > *dirpos) {
+      D(bug("[emul] Resetting search handle\n"));
+      CloseDir(fh);
+  }
+  do
+  {
+  /* 
+   * 3. Now we will scan the next directory entry until its index is greater than original index
+   *    in dirpos. This means that we've repositioned and scanned the next entry. After this we
+   *	update dirpos.
+   */
+      do {
+          if (fh->fd == INVALID_HANDLE_VALUE) {
+              D(bug("[emul] Finding first file\n"));
+              fh->fd = FindFirst(fh->pathname, FindData);
+              res = (fh->fd != INVALID_HANDLE_VALUE);
+          } else
+              res = FindNext(fh->fd, FindData);
+          if (!res)
+	      return Errno();
+	  fh->dirpos++;
+	  D(bug("[emul] Found %s, position %lu\n", FindData->cFileName, fh->dirpos));
+      } while (fh->dirpos <= *dirpos);
+      (*dirpos)++;
+      D(bug("[emul] New dirpos: %lu\n", *dirpos));
+  /*
+   * We also skip "." and ".." entries (however we count their indexes - just in case), because
+   * AmigaOS donesn't have them.
+   */
+  } while (is_special_dir(FindData->cFileName));
+
+  return 0;
+}
+
+/*********************************************************************************************/
+
+ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName,
+		    struct ExAllData *ead, ULONG size, ULONG type)
+{
+  STRPTR filename;
+  STRPTR next, last, end, name;
+  ULONG plen, flen;
+  struct FileInfoBlock FIB;
+  int kind;
+  ULONG error;
+
   /* Check, if the supplied buffer is large enough. */
   next=(STRPTR)ead+sizes[type];
   end =(STRPTR)ead+size;
   
-  if(next>end) /* > is correct. Not >= */
-	return ERROR_BUFFER_OVERFLOW;
-  
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
+  if(next>end) {
+      D(bug("[emul] examine_entry(): end of buffer\n"));
+      return ERROR_BUFFER_OVERFLOW;
+  }
 
-  struct FileInfoBlock FIB;
-/* TODO: Symbolic links are not supported under Windows. We can either leave it as is or implement them using .lnk files
-  int kind = LStat(*fh->name?fh->name:".",&FIB); */
-  int kind = Stat(*fh->name?fh->name:".",&FIB);
-  if (kind < 0)
-	return Errno();
+  D(bug("[emul] examine_entry(): filehandle's path: %s\n", fh->hostname));
+  if (FoundName) {
+      D(bug("[emul] ...containing object: %s\n", FoundName));
+      plen = strlen(fh->hostname);
+      flen = strlen(FoundName);
+      name = emul_malloc(emulbase, plen + flen + 2);
+      if (NULL == name)
+	  return ERROR_NO_FREE_STORE;
+      strcpy(name, fh->hostname);
+      filename = name + plen;
+      *filename++ = '\\';
+      strcpy(filename, FoundName);
+      filename = FoundName;
+  } else {
+      name = fh->hostname;
+      filename = fh->name;
+  }
   
-  if (FHD_FILE == fh->type)
-  /* What we have here is a file, so it's no that easy to
-   deal with it when the user is calling ExNext() after
-   Examine(). So I better prepare it now. */
-  {
-	/* We're going to opendir the directory where the file is in
-	 and then actually start searching for the file. Yuk! */
-	if (NULL == fh->pathname)
-	{
-	  char * filename;
-	  const char * dirname;
-	  fh->pathname = pathname_from_name(emulbase, fh->name);
-	  filename     = filename_from_name(emulbase, fh->name);
-	  if(!fh->pathname || !filename)
-	  {
-		emul_free(emulbase, filename);
-		return ERROR_NO_FREE_STORE;
-	  }
-	  fh->DIR      = OpenDir(fh->pathname);
-	  if(!fh->DIR)
-	  {
-		emul_free(emulbase, filename);
-		return Errno();
-	  }
-	  do 
-	  {
-		dirname = DirName(fh->DIR);
-	  }
-	  while (NULL != dirname &&
-			 0    != strcmp(dirname, filename));
-	  emul_free(emulbase, filename);
-	  if(!dirname)
-	  {
-		int errno = Errno();
-		if(!errno)
-		  return ERROR_NO_MORE_ENTRIES;
-		else
-		  return errno;
-	  }
-	  
-	  *dirpos = (LONG)TellDir(fh->DIR);
-	  
-	}
+  D(bug("[emul] Full name: %s\n", name));
+  kind = Stat(name, &FIB);
+  error = Errno();
+  if (FoundName) {
+      D(bug("[emul] Freeing full name\n"));
+      emul_free(emulbase, name);
   }
-  else
-  {
-	*dirpos = (LONG)TellDir(fh->fd);
-  }
+  if (kind < 0)
+	return error;
+
+  D(bug("[emul] Filling in object information\n"));
   switch(type)
   {
 	default:
 	case ED_OWNER:
-	  ead->ed_OwnerUID	= FIB.fib_OwnerUID;
-	  ead->ed_OwnerGID	= FIB.fib_OwnerGID;
+	  ead->ed_OwnerUID = FIB.fib_OwnerUID;
+	  ead->ed_OwnerGID = FIB.fib_OwnerGID;
 	case ED_COMMENT:
 	  ead->ed_Comment=NULL;
 	case ED_DATE:
@@ -921,24 +902,15 @@ static LONG examine(struct emulbase *emulbase,
 	case ED_TYPE:
 	  if (kind == 2)
 	  {
-		if (is_root_filename(fh->name))
-		{
-		  ead->ed_Type = ST_ROOT;
-		} else {
-		  ead->ed_Type = ST_USERDIR;
-		}
+	      ead->ed_Type = (*fh->name) ? ST_USERDIR : ST_ROOT;
 	  } else {
-		ead->ed_Type 	= ST_FILE;
+	      ead->ed_Type = ST_FILE;
 	  }
 	  
-	  case ED_NAME:
+	case ED_NAME:
 	  ead->ed_Name=next;
-	  last=name=is_root_filename(fh->name)?fh->volumename:fh->name;
-	  
-	  /* do not show the "." but "" instead */
-	  if (last[0] == '.' && last[1] == '\0')
-		last=name="";
-	  
+	  last = name = (filename[0]) ? filename : fh->volumename;
+
 	  while(*name)
 		if(*name++=='\\')
 		  last=name;
@@ -949,237 +921,186 @@ static LONG examine(struct emulbase *emulbase,
 		if(!(*next++=*last++))
 		  break;
 	  }
-	  case 0:
+	case 0:
 	  ead->ed_Next=(struct ExAllData *)(((IPTR)next+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1));
+	  
 	  return 0;
   }
 }
 
 /*********************************************************************************************/
 
-static LONG examine_next(struct emulbase *emulbase, 
-						 struct filehandle *fh,
-                         struct FileInfoBlock *FIB)
+static LONG examine(struct emulbase *emulbase, struct filehandle *fh,
+                    struct ExAllData *ead,
+                    ULONG  size,
+                    ULONG  type,
+                    LONG  *dirpos)
 {
-  int		i;
-  const char * dirname;
-  char 	  *name, *src, *dest, *pathname;
-  void *ReadDIR;
-  /* first of all we have to go to the position where Examine() or
-   ExamineNext() stopped the previous time so we can read the next entry! */
-  
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
-  switch(fh->type)
-  {
-    case FHD_DIRECTORY:
-	  SeekDir(fh->fd, FIB->fib_DiskKey);
-	  pathname = fh->name; /* it's just a directory! */
-	  ReadDIR  = fh->fd;
-	  break;
-	  
-    case FHD_FILE:
-	  SeekDir((void *)fh->DIR, FIB->fib_DiskKey);
-	  pathname = fh->pathname;
-	  ReadDIR  = (void *)fh->DIR;
-	  break; 
+  LONG error;
+
+  /* Return an error, if supplied type is not supported. */
+  if(type>ED_OWNER)
+	return ERROR_BAD_NUMBER;
+
+  /* Reset fh->dirpos to 0. If there is already a directory scan handle, it will be closed in order to start from the beginning */
+  if (fh->type == FHD_DIRECTORY) {
+      D(bug("[emul] examine(): Resetting search handle\n"));
+      error = CloseDir(fh);
+      if (error)
+          return error;
   }
-  /* hm, let's read the data now! 
-   but skip '.' and '..' (they're not available on Amigas and
-   Amiga progs wouldn't know how to treat '.' and '..', i.e. they
-   might want to scan recursively the directory and end up scanning
-   ./././ etc. */
-  /*#undef kprintf*/
-  do
-  {
-	dirname = DirName(ReadDIR);
-	
-	if (NULL == dirname)
-	  return ERROR_NO_MORE_ENTRIES;  
-	
-  } while ( 0 == strcmp(dirname,"." ) || 
-		   0 == strcmp(dirname,"..") ); 
+  *dirpos = 0;
   
+  return examine_entry(emulbase, fh, NULL, ead, size, type);
+}
+
+/*********************************************************************************************/
+
+static LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB)
+{
+  int i;
+  char *name, *src, *dest;
+  ULONG res;
+  WIN32_FIND_DATA FindData;
+
+  res = examine_start(emulbase, fh);
+  if (res)
+      return res;
+
+  res = ReadDir(fh, &FindData, &FIB->fib_DiskKey);
+  if (res) {
+      CloseDir(fh);
+      return res;
+  }
   
-  name = (STRPTR)emul_malloc(emulbase, strlen(pathname) + strlen(dirname) + 2);
+  /* TODO: remove code duplication with examine_entry() */
+  name = (STRPTR)emul_malloc(emulbase, strlen(fh->hostname) + strlen(FindData.cFileName) + 2);
   
   if (NULL == name)
 	return ERROR_NO_FREE_STORE;
   
-  strcpy(name, pathname);
+  strcpy(name, fh->hostname);
+  strcat(name, "\\");
+  strcat(name, FindData.cFileName);
   
-  if (*name)
-	strcat(name, "\\");
-  
-  strcat(name, dirname);
-  
+  D(bug("[emul] Examining found entry %s\n", name));
   if (Stat(name,FIB) < 0)
   {
-	D(bug("Stat() failed for %s\n", name));
+	D(bug("Stat() failed\n", name));
 	
 	emul_free(emulbase, name);
-	
 	return Errno();
   }
   
   emul_free(emulbase, name);
-    
-  /* fast copying of the filename with slashes conversion */
-  src  = dirname;
+
+  src  = FindData.cFileName;
   dest = FIB->fib_FileName;
-  
-  for (i =0; i<MAXFILENAMELENGTH-1;i++)
+  for (i = 0; i<MAXFILENAMELENGTH-1;i++)
   {
-      if (*src == '\\')
-          *dest = *src;
-      else
-          *dest = '/';
-      if (!*src)
-          break;
+      if(! (*dest++=*src++) )
+      {
+	  break;
+      }
   }
-  
-  FIB->fib_DiskKey = (LONG)TellDir(ReadDIR);
-  
+
   return 0;
 }
 
 /*********************************************************************************************/
 
-static LONG examine_all(struct emulbase *emulbase,
-						struct filehandle *fh,
+static LONG examine_all(struct emulbase *emulbase, struct filehandle *fh,
                         struct ExAllData *ead,
                         struct ExAllControl *eac,
                         ULONG  size,
                         ULONG  type)
 {
-  struct ExAllData *last=NULL;
-  STRPTR end=(STRPTR)ead+size, name, old;
-  ULONG oldpos;
-  const char * dirname;
+  struct ExAllData *last = NULL;
+  STRPTR end = (STRPTR)ead + size;
   LONG error;
-  LONG dummy; /* not anything is done with this value but passed to examine */
-  
+  WIN32_FIND_DATA FindData;
+
   eac->eac_Entries = 0;
-  if(fh->type!=FHD_DIRECTORY)
-	return ERROR_OBJECT_WRONG_TYPE;
-  
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
+  error = examine_start(emulbase, fh);
+  if (error)
+      return error;
+
   for(;;)
   {
-	oldpos=TellDir(fh->fd);
-	dirname=DirName(fh->fd);
-	error = Errno();
-	if(dirname==NULL)
-	{
-	  break;
-	}
-	if(dirname[0]=='.'&&(!dirname[1]||(dirname[1]=='.'&&!dirname[2])))
+      error = ReadDir(fh, &FindData, &eac->eac_LastKey);
+      if (error) {
+          D(bug("[emul] ReadDir() returned %lu\n", error));
+          break;
+      }
+      /* Try to match the filename, if required.  */
+      D(bug("[emul] Checking against MatchString\n"));
+      if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, FindData.cFileName))
 	  continue;
-	name=(STRPTR)emul_malloc(emulbase, strlen(fh->name)+strlen(dirname)+2);
-	if(name==NULL)
-	{
-	  error=ERROR_NO_FREE_STORE;
+      D(bug("[emul] Examining object\n"));
+      error = examine_entry(emulbase, fh, FindData.cFileName, ead, end-(STRPTR)ead, type);
+      if(error)
 	  break;
-	}
-	strcpy(name,fh->name);
-	if(*name)
-	  strcat(name,"\\");
-	strcat(name,dirname);
-	old=fh->name;
-	fh->name=name;
-	error=examine(emulbase,fh,ead,end-(STRPTR)ead,type,&dummy);
-	fh->name=old;
-	emul_free(emulbase, name);
-	if(error)
-	  break;
-	eac->eac_Entries++;
-	last=ead;
-	ead=ead->ed_Next;
+      /* Do some more matching... */
+      if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
+	  continue;
+      eac->eac_Entries++;
+      last = ead;
+      ead = ead->ed_Next;
   }
   if (last!=NULL)
 	last->ed_Next=NULL;
   if((error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
   {
-	SeekDir(fh->fd,oldpos);
 	return 0;
   }
-  if(!error)
-	error=ERROR_NO_MORE_ENTRIES;
-  RewindDir(fh->fd);
+      
   return error;
 }
 
 /*********************************************************************************************/
 
-static LONG create_hardlink(struct emulbase *emulbase,
-							struct filehandle **handle,STRPTR name,struct filehandle *oldfile)
+static LONG create_hardlink(struct emulbase *emulbase, struct filehandle *handle, STRPTR name, struct filehandle *oldfile)
 {
   LONG error=0L;
-  struct filehandle *fh;
+  char *fn;
   
   if (!KernelIFace->CreateHardLink)
       return ERROR_ACTION_NOT_KNOWN;
   
-  if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
-  fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-  if (!fh)
-	return ERROR_NO_FREE_STORE;
-  
-  fh->pathname = NULL; /* just to make sure... */
-  fh->DIR      = NULL;
-  fh->dl       = (*handle)->dl;
-  
-  error = makefilename(emulbase, &fh->name, (*handle)->name, name);
+  error = makefilename(emulbase, &fn, NULL, handle, name);
   if (!error)
   {
-	if (Link(oldfile->name, fh->name, NULL))
-	  *handle = fh;
-	else
+      D(bug("[emul] Creating hardlink %s to file %s\n", fn, oldfile->hostname));
+      if (!Link(fn, oldfile->hostname, NULL))
 	  error = Errno();
-  } else
-  {
-	error = ERROR_NO_FREE_STORE;
-	FreeMem(fh, sizeof(struct filehandle));
+      emul_free(emulbase, fn);
   }
-  
+
   return error;
 }
 
 /*********************************************************************************************/
 
 static LONG create_softlink(struct emulbase * emulbase,
-                            struct filehandle **handle, STRPTR name, STRPTR ref)
+                            struct filehandle *handle, STRPTR name, STRPTR ref)
 {
   LONG error=0L;
-  struct filehandle *fh;
+  char *src, *dest;
   
   /* TODO: implement symbolic links on earlier Windows versions using shell shortcuts */
   if (!KernelIFace->CreateSymbolicLink)
       return ERROR_ACTION_NOT_KNOWN;
   
-  if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
-  fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-  if(!fh)
-	return ERROR_NO_FREE_STORE;
-  
-  fh->pathname = NULL; /* just to make sure... */
-  fh->DIR      = NULL;
-  fh->dl       = (*handle)->dl;
-  
-  error = makefilename(emulbase, &fh->name, (*handle)->name, name);
+  error = makefilename(emulbase, &src, NULL, handle, name);
   if (!error)
   {
-	if (SymLink(ref, fh->name, 0))
-	  *handle = fh;
-	else
-	  error = Errno();
-  } else
-  {
-	error = ERROR_NO_FREE_STORE;
-	FreeMem(fh, sizeof(struct filehandle));
+      error = makefilename(emulbase, &dest, NULL, handle, ref);
+      if (!error) {
+	  if (!SymLink(src, dest, 0))
+	      error = Errno();
+	  emul_free(emulbase, dest);
+      }
+      emul_free(emulbase, src);
   }
   
   return error;
@@ -1194,12 +1115,10 @@ static LONG rename_object(struct emulbase * emulbase,
   
   char *filename = NULL , *newfilename = NULL;
   
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-  
-  ret = makefilename(emulbase, &filename, fh->name, file);
+  ret = makefilename(emulbase, &filename, NULL, fh, file);
   if (!ret)
   {
-	ret = makefilename(emulbase, &newfilename, fh->name, newname);
+	ret = makefilename(emulbase, &newfilename, NULL, fh, newname);
 	if (!ret)
 	{
 	  if (!DoRename(filename,newfilename))
@@ -1219,7 +1138,6 @@ static LONG read_softlink(struct emulbase *emulbase,
                           ULONG size)
 {
 /* TODO: implement symbolic links on pre-Vista using shell shortcuts
-  if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
   
   if (DoReadLink(fh->name, buffer, size-1) == -1)
 	return Errno();
@@ -1235,6 +1153,7 @@ ULONG parent_dir(struct emulbase *emulbase,
 				 char ** DirectoryName)
 {
   *DirectoryName = pathname_from_name(emulbase, fh->name);
+  D(bug("[emul] Parent directory: \"%s\"\n", *DirectoryName));
   return 0;
 }
 
@@ -1353,11 +1272,10 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 		fhv=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
 		if (fhv != NULL)
 		{
-		  fhv->name       = ".";
+		  fhv->hostname   = unixpath;
+		  fhv->name       = unixpath + strlen(unixpath);
 		  fhv->type       = FHD_DIRECTORY;
 		  fhv->pathname   = NULL; /* just to make sure... */
-		  fhv->DIR        = NULL;
-		  fhv->volume     = unixpath;
 		  fhv->volumename = iofs->io_Union.io_OpenDevice.io_DeviceName;
 		  
 		  if ((doslist = MakeDosEntry(fhv->volumename, DLT_VOLUME)))
@@ -1539,21 +1457,6 @@ AROS_LH1(void, beginio,
 		{
 		  fh->fd=emulbase->stdout_handle;
 		}
-/*		DASYNC(bug("[emul] Writing %lu bytes at 0x%p\n", iofs->io_Union.io_WRITE.io_Length, iofs->io_Union.io_WRITE.io_Buffer));
-		emulbase->EmulMsg.op = EMUL_CMD_WRITE;
-		emulbase->EmulMsg.fh = fh->fd;
-		emulbase->EmulMsg.addr = iofs->io_Union.io_WRITE.io_Buffer;
-		emulbase->EmulMsg.len = iofs->io_Union.io_WRITE.io_Length;
-		emulbase->EmulMsg.task = FindTask(NULL);
-		if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
-		    Wait(SIGF_BLIT);
-		    DASYNC(bug("[emul] Wrote %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
-		    iofs->io_Union.io_WRITE.io_Length = emulbase->EmulMsg.actual;
-		    error = emulbase->EmulMsg.error;
-		} else {
-		    DASYNC(bug("[emul] FSA_WRITE: HT_PutMsg failed!\n"));
-		    error = ERROR_UNKNOWN;
-		}*/
 		if (!DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL))
 		    error = Errno();
 	  }
@@ -1642,7 +1545,7 @@ AROS_LH1(void, beginio,
 	  struct filehandle *lock1 = iofs->io_Union.io_SAME_LOCK.io_Lock[0],
 	  *lock2 = iofs->io_Union.io_SAME_LOCK.io_Lock[1];
 	  
-	  if ((lock1->volume != lock2->volume) || strcmp(lock1->name, lock2->name))
+	  if (strcmp(lock1->hostname, lock2->hostname))
 	  {
 		iofs->io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
 	  }
@@ -1665,12 +1568,14 @@ AROS_LH1(void, beginio,
 	  break;
 	  
 	  case FSA_EXAMINE_NEXT:
+	  D(bug("[emul] FSA_EXAMINE_NEXT\n"));
 	  error = examine_next(emulbase,
 						   (struct filehandle *)iofs->IOFS.io_Unit,
 						   iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	  break;
 	  
 	  case FSA_EXAMINE_ALL:
+	  D(bug("[emul] FSA_EXAMINE_ALL\n"));
 	  error = examine_all(emulbase,
 						  (struct filehandle *)iofs->IOFS.io_Unit,
 						  iofs->io_Union.io_EXAMINE_ALL.io_ead,
@@ -1680,6 +1585,7 @@ AROS_LH1(void, beginio,
 	  break;
 	  
 	  case FSA_EXAMINE_ALL_END:
+	  CloseDir((struct filehandle *)iofs->IOFS.io_Unit);
 	  error = 0;
 	  break;
 	  
@@ -1713,15 +1619,17 @@ AROS_LH1(void, beginio,
 	  break;
 	  
 	  case FSA_CREATE_HARDLINK:
+	  D(bug("[emul] FSA_CREATE_HARDLINK: link name \"%s\"\n", iofs->io_Union.io_CREATE_HARDLINK.io_Filename));
 	  error = create_hardlink(emulbase,
-							  (struct filehandle **)&iofs->IOFS.io_Unit,
+							  (struct filehandle *)iofs->IOFS.io_Unit,
 							  iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
 							  (struct filehandle *)iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
+	  D(bug("[emul] FSA_CREATE_HARDLINK returning %lu\n", error));
 	  break;
 	  
 	  case FSA_CREATE_SOFTLINK:
 	  error = create_softlink(emulbase,
-							  (struct filehandle **)&iofs->IOFS.io_Unit,
+							  (struct filehandle *)&iofs->IOFS.io_Unit,
 							  iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
 							  iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
 	  break;
@@ -1776,14 +1684,11 @@ AROS_LH1(void, beginio,
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  struct InfoData *id = iofs->io_Union.io_INFO.io_Info;
 
-	  if (check_volume(fh, emulbase)) {
-	      if (StatFS(".", id)) {
-	      	id->id_VolumeNode = fh->dl;
-	      	error = 0;
-	      } else
-	          error = Errno();
+	  if (StatFS(fh->hostname, id)) {
+	      id->id_VolumeNode = fh->dl;
+	      error = 0;
 	  } else
-	      error = ERROR_OBJECT_NOT_FOUND;
+	      error = Errno();
 	  break;
 	}
 	  
@@ -1832,13 +1737,7 @@ AROS_LH1(LONG, abortio,
 
 const char *EmulSymbols[] = {
     "EmulThread",
-    "EmulOpenDir",
-    "EmulCloseDir",
     "EmulStat",
-    "EmulDirName",
-    "EmulTellDir",
-    "EmulSeekDir",
-    "EmulRewindDir",
     "EmulDelete",
     "EmulGetHome",
     "EmulStatFS",
@@ -1858,7 +1757,9 @@ const char *KernelSymbols[] = {
     "GetStdHandle",
     "MoveFileA",
     "GetCurrentDirectoryA",
-    "SetCurrentDirectoryA",
+    "FindFirstFileA",
+    "FindNextFileA",
+    "FindClose",
     "CreateHardLinkA",
     "CreateSymbolicLinkA",
     NULL

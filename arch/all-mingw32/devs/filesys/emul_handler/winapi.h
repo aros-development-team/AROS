@@ -66,3 +66,17 @@
 #define FILE_BEGIN	0
 #define FILE_CURRENT	1
 #define FILE_END	2
+
+typedef struct _WIN32_FIND_DATA
+{
+   ULONG dwFileAttributes;
+   UQUAD ftCreationTime;
+   UQUAD ftLastAccessTime;
+   UQUAD ftLastWriteTime;
+   ULONG nFileSizeHigh;
+   ULONG nFileSizeLow;
+   ULONG dwReserved0;
+   ULONG dwReserved1;
+   char cFileName[260];
+   char cAlternateFileName[14];
+} WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
