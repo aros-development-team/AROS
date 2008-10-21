@@ -111,9 +111,9 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     for (;;) {
         obj = MsgWaitForMultipleObjects(1, &args->IntTimer, FALSE, INFINITE, QS_POSTMESSAGE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
+        DS(res =) SuspendThread(args->MainThread);
+    	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
         if (Ints_Enabled) {
-    	    DS(res =) SuspendThread(args->MainThread);
-    	    DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
     	    Supervisor++;
     	    PendingInts[obj] = 0;
     	    /* 
@@ -141,13 +141,13 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    DS(res =)SetThreadContext(args->MainThread, &MainCtx);
     	    DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    Supervisor--;
-    	    DS(res =) ResumeThread(args->MainThread);
-            DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     	} else {
     	    PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
     	    PendingInts[obj] = 1;
             DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
+        DS(res =) ResumeThread(args->MainThread);
+        DS(bug("[Task switcher] Resume thread result: %lu\n", res));
     }
     return 0;
 }
