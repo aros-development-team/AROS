@@ -29,7 +29,7 @@
 #define ST_USERDIR 2
 #define ST_FILE -3
 
-#define DERROR(x)    /* Error code translation debug  */
+#define DERROR(x) x   /* Error code translation debug  */
 #define DSTAT(x)     /* Stat() debug                  */
 #define DSTATFS(x)   /* StatFS() debug		      */
 #define DWINAPI(x)   /* WinAPI calls debug            */
@@ -41,6 +41,7 @@ void (*CauseIRQ)(unsigned char irq, void *data);
 /* Make an AROS error-code (<dos/dos.h>) out of an Windows error-code. */
 static DWORD u2a[][2]=
 {
+  { ERROR_PATH_NOT_FOUND, AROS_ERROR_OBJECT_NOT_FOUND },
   { ERROR_ACCESS_DENIED, ERROR_OBJECT_WRONG_TYPE },
   { ERROR_NO_MORE_FILES, ERROR_NO_MORE_ENTRIES },
   { ERROR_NOT_ENOUGH_MEMORY, ERROR_NO_FREE_STORE },
@@ -123,18 +124,6 @@ ULONG prot_u2a(mode_t protect)
 	aprot |= FIBF_SCRIPT;*/
   
   return aprot;
-}
-
-void * __declspec(dllexport) EmulOpenDir(const char *path)
-{
-  DWINAPI(printf("opendir(\"%s\")\n", path));
-  return opendir(path);
-}
-
-int __declspec(dllexport) EmulCloseDir(void *dir)
-{
-  DWINAPI(printf("closedir()\n"));
-  return closedir((DIR *)dir);
 }
 
 int __declspec(dllexport) EmulChmod(const char *path, int protect)
@@ -239,45 +228,17 @@ BOOL __declspec(dllexport) EmulDelete(const char *filename)
   return res;
 }
 
-const char * __declspec(dllexport) EmulDirName(void *dir)
-{
-  struct dirent *entry;
-
-  DWINAPI(printf("[EmulHandler] readdir()\n"));
-  entry = readdir((DIR *)dir);
-  const char * name = entry ? entry->d_name : NULL;
-  return name;
-}
-
-int __declspec(dllexport) EmulTellDir(void *dir)
-{
-  DWINAPI(printf("[EmulHandler] telldir()\n"));
-  return telldir((DIR *)dir);
-}
-
-void __declspec(dllexport) EmulRewindDir(void *dir)
-{
-  DWINAPI(printf("[EmulHandler] rewinddir()\n"));
-  rewinddir((DIR *)dir);
-}
-
-void __declspec(dllexport) EmulSeekDir(void *dir, long loc)
-{
-  DWINAPI(printf("[EmulHandler] seekdir()\n"));
-  seekdir((DIR *)dir,loc);
-}
-
 void stat2FIB(struct stat * s, struct FileInfoBlock * FIB)
 {
-  FIB->fib_OwnerUID	    = s->st_uid;
-  FIB->fib_OwnerGID	    = s->st_gid;
-  FIB->fib_Comment[0]	    = '\0'; /* no comments available yet! */
+  FIB->fib_OwnerUID	  = s->st_uid;
+  FIB->fib_OwnerGID	  = s->st_gid;
+  FIB->fib_Comment[0]	  = '\0'; /* no comments available yet! */
   FIB->fib_Date.ds_Days   = s->st_ctime/(60*60*24) - (6*365 + 2*366);
   FIB->fib_Date.ds_Minute = (s->st_ctime/60)%(60*24);
   FIB->fib_Date.ds_Tick   = (s->st_ctime%60)*TICKS_PER_SECOND;
-  FIB->fib_Protection	    = s->st_mode;
+  FIB->fib_Protection	  = prot_u2a(s->st_mode);
   FIB->fib_Size           = s->st_size;
-  
+
   if (S_ISDIR(s->st_mode))
   {
 	FIB->fib_DirEntryType = ST_USERDIR;

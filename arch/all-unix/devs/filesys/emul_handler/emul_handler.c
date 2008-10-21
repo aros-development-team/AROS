@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Filesystem that accesses an underlying POSIX filesystem.
@@ -1453,6 +1453,8 @@ static LONG examine_all(struct emulbase *emulbase,
 	}
 	if(dir->d_name[0]=='.'&&(!dir->d_name[1]||(dir->d_name[1]=='.'&&!dir->d_name[2])))
 	    continue;
+	if (eac->eac_MatchString && !MatchPatternNoCase(eac->eac_MatchString, dir->d_name))
+	  continue;
 	name=(STRPTR)emul_malloc(emulbase, strlen(fh->name)+strlen(dir->d_name)+2);
 	if(name==NULL)
 	{
@@ -1470,6 +1472,8 @@ static LONG examine_all(struct emulbase *emulbase,
 	emul_free(emulbase, name);
 	if(error)
 	    break;
+	if ((eac->eac_MatchFunc) && !CALLHOOKPKT(eac->eac_MatchFunc, ead, &type))
+	  continue;
 	eac->eac_Entries++;
 	last=ead;
 	ead=ead->ed_Next;
