@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: Reboot CLI command
@@ -14,7 +14,7 @@
 
     SYNOPSIS
 
-        (N/A)
+        COLD/S
 
     LOCATION
 
@@ -22,7 +22,12 @@
 
     FUNCTION
 
-        It reboots the machine ( performs a cold reboot - Coldreboot() )
+        It reboots the machine
+
+    INPUTS
+
+        COLD --  tells to perform cold (complete) reboot of the machine.
+        	 Otherwise only AROS is restarted.
 
     NOTES
 
@@ -33,14 +38,37 @@
 
     SEE ALSO
 
-	QuitAROS
+	Shutdown
 
 ******************************************************************************/
- 
+
+#include <dos/dos.h>
+#include <exec/tasks.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 
-int main() {
-    ColdReboot();
+int __nocommandline;
 
+int main()
+{
+    struct RDArgs *rda;
+    IPTR cold = 0;
+
+    rda = ReadArgs("COLD/S", &cold, NULL);
+
+    if (rda == NULL)
+    {
+	PrintFault(IoErr(),"Reboot");
+        return RETURN_FAIL;
+    }
+    FreeArgs(rda);
+
+    if (cold)
+        ShutdownA(SD_ACTION_COLDREBOOT);
+    else
+	ColdReboot();
+
+    /* If we are here, shutdown did not work for some reason */
+    PutStr("This action is not supported\n");
     return 0;
 }
