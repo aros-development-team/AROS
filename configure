@@ -8554,7 +8554,7 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
     gcc_target_cpu="powerpc"
         case "$aros_target_variant" in
             efika)
-            aros_config_cflags="$aros_config_cflags -mcpu=603e"
+            aros_config_cflags="$aros_config_cflags -DBIG_ENDIAN_OHCI=1 -mcpu=603e"
             ;;
         esac
     ;;
