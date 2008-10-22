@@ -72,20 +72,20 @@ static void init_builtin_ohci(struct ohci_staticdata *sd)
 			D(bug("[OHCI_MPC5200B] HC @ %08x\n", sd->ramBase[0]));
 
 			sd->numDevices = 1;
-		    sd->numPorts[0] = HC_RHA_GET_NDP(AROS_LE2LONG(mmio(regs->HcRhDescriptorA)));
+		    sd->numPorts[0] = HC_RHA_GET_NDP(AROS_OHCI2LONG(mmio(regs->HcRhDescriptorA)));
 
 		    D(bug("[OHCI_MPC5200B]   %d-port Device %d @ %08x with MMIO @ %08x\n", sd->numPorts[0], 1, sd->pciDriver[0], sd->ramBase[0]));
 
-		    uint32_t ctrl = AROS_LE2LONG(mmio(regs->HcControl));
+		    uint32_t ctrl = AROS_OHCI2LONG(mmio(regs->HcControl));
 		    if (ctrl & HC_CTRL_IR)
 		    {
 		        D(bug("[OHCI_MPC5200B]   Performing BIOS handoff\n"));
 		        int delay = 500; /* 0.5 second */
-		        mmio(regs->HcInterruptEnable) = AROS_LONG2LE(HC_INTR_OC);
-		        mmio(regs->HcCommandStatus) = AROS_LONG2LE(HC_CS_OCR);
+		        mmio(regs->HcInterruptEnable) = AROS_LONG2OHCI(HC_INTR_OC);
+		        mmio(regs->HcCommandStatus) = AROS_LONG2OHCI(HC_CS_OCR);
 
 		        /* Loop */
-		        while ((delay > 0) && AROS_LE2LONG(mmio(regs->HcControl) & HC_CTRL_IR))
+		        while ((delay > 0) && AROS_OHCI2LONG(mmio(regs->HcControl) & HC_CTRL_IR))
 		        {
 		            delay -= 2;
 		            ohci_Delay(tr, 2);
@@ -93,12 +93,12 @@ static void init_builtin_ohci(struct ohci_staticdata *sd)
 		        if (delay < 0)
 		            D(bug("[OHCI_MPC5200B]   BIOS handoff failed!\n"));
 
-		        mmio(regs->HcControl) = AROS_LONG2LE(ctrl & HC_CTRL_RWC);
+		        mmio(regs->HcControl) = AROS_LONG2OHCI(ctrl & HC_CTRL_RWC);
 		    }
 
 		    /* Disable all interrupts */
-		    mmio(regs->HcInterruptDisable) = AROS_LONG2LE(0xffffffff);
-		    mmio(regs->HcInterruptStatus)  = AROS_LONG2LE(0xffffffff);
+		    mmio(regs->HcInterruptDisable) = AROS_LONG2OHCI(0xffffffff);
+		    mmio(regs->HcInterruptStatus)  = AROS_LONG2OHCI(0xffffffff);
 
 		    ohci_DeleteTimer(tr);
 		}
@@ -136,20 +136,20 @@ AROS_UFH3(void, Enumerator,
 
     regs = (ohci_registers_t *)LIBBASE->sd.ramBase[counter];
 
-    LIBBASE->sd.numPorts[counter] = HC_RHA_GET_NDP(AROS_LE2LONG(mmio(regs->HcRhDescriptorA)));
+    LIBBASE->sd.numPorts[counter] = HC_RHA_GET_NDP(AROS_OHCI2LONG(mmio(regs->HcRhDescriptorA)));
 
     D(bug("[OHCI_MPC5200B]   %d-port Device %d @ %08x with MMIO @ %08x\n", LIBBASE->sd.numPorts[counter], counter + 1, pciDevice, LIBBASE->sd.ramBase[counter]));
 
-    uint32_t ctrl = AROS_LE2LONG(mmio(regs->HcControl));
+    uint32_t ctrl = AROS_OHCI2LONG(mmio(regs->HcControl));
     if (ctrl & HC_CTRL_IR)
     {
         D(bug("[OHCI_MPC5200B]   Performing BIOS handoff\n"));
         int delay = 500; /* 0.5 second */
-        mmio(regs->HcInterruptEnable) = AROS_LONG2LE(HC_INTR_OC);
-        mmio(regs->HcCommandStatus) = AROS_LONG2LE(HC_CS_OCR);
+        mmio(regs->HcInterruptEnable) = AROS_LONG2OHCI(HC_INTR_OC);
+        mmio(regs->HcCommandStatus) = AROS_LONG2OHCI(HC_CS_OCR);
 
         /* Loop */
-        while ((delay > 0) && AROS_LE2LONG(mmio(regs->HcControl) & HC_CTRL_IR))
+        while ((delay > 0) && AROS_OHCI2LONG(mmio(regs->HcControl) & HC_CTRL_IR))
         {
             delay -= 2;
             ohci_Delay(tr, 2);
@@ -157,12 +157,12 @@ AROS_UFH3(void, Enumerator,
         if (delay < 0)
             D(bug("[OHCI_MPC5200B]   BIOS handoff failed!\n"));
 
-        mmio(regs->HcControl) = AROS_LONG2LE(ctrl & HC_CTRL_RWC);
+        mmio(regs->HcControl) = AROS_LONG2OHCI(ctrl & HC_CTRL_RWC);
     }
 
     /* Disable all interrupts */
-    mmio(regs->HcInterruptDisable) = AROS_LONG2LE(0xffffffff);
-    mmio(regs->HcInterruptStatus)  = AROS_LONG2LE(0xffffffff);
+    mmio(regs->HcInterruptDisable) = AROS_LONG2OHCI(0xffffffff);
+    mmio(regs->HcInterruptStatus)  = AROS_LONG2OHCI(0xffffffff);
 
     LIBBASE->sd.numDevices = ++counter;
 
