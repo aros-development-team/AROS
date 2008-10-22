@@ -17,7 +17,7 @@ KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
 				$(KOBJSDIR)/mathieeesingbas_library.o \
 				$(KOBJSDIR)/oop_library.o
 K_RES		:= $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/hostlib_resource.o $(KOBJSDIR)/hostthread_resource.o
-KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o $(KOBJSDIR)/packet_handler.o $(KOBJSDIR)/amberram_handler.o
+KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o $(KOBJSDIR)/packet_handler.o $(KOBJSDIR)/amberram_handler.o $(KOBJSDIR)/nil_handler.o
 KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 
 #this needs sdl.hidd
