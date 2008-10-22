@@ -11,6 +11,14 @@ OBJS         := $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).o)
 DEPS         := $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).d)
 USER_CFLAGS  := -D_EURO
 
+# FIXME: Building makecountry on Cygwin requires to explicitly specify -liconv. Probably this should
+#        be handled by configure script
+ifeq ($(AROS_HOST_ARCH),cygwin)
+LIBICONV := -liconv
+else
+LIBICONV :=
+endif
+
 #MM- workbench-locale : workbench-locale-countries
 #MM workbench-locale-countries : includes
 
@@ -26,7 +34,7 @@ $(COUNTRYDIR)/%.country : $(OBJDIR)/%.o
 
 $(MAKECOUNTRY) : $(OBJS)
 	@$(ECHO) "Making $(@F)..."
-	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@
+	@$(HOST_CC) $(HOST_LDFLAGS) $^ -o $@ $(LIBICONV)
 
 $(OBJS) $(DEPS) : | $(OBJDIR)
 %rule_compile_multi basenames="makecountry/makecountry $(COUNTRIES)" \
