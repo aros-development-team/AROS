@@ -1,7 +1,7 @@
 /*
  * packet.handler - Proxy filesystem for DOS packet handlers
  *
- * Copyright © 2007-2008 The AROS Development Team
+ * Copyright  2007-2008 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -45,11 +45,6 @@ AROS_UFH3(void, packet_startup,
 
     D(bug("[packet] in packet_startup\n"));
 
-    WaitPort(&(me->pr_MsgPort));
-    ReplyMsg(GetMsg(&(me->pr_MsgPort)));
-
-    D(bug("[packet] calling handler\n"));
-
     AROS_UFC1(void, (LONG_FUNC) ((BPTR *) BADDR(seglist) + 1),
               AROS_UFCA(struct ExecBase *, SysBase, A6));
 
@@ -68,7 +63,6 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
     BPTR seglist;
     BOOL loaded = FALSE;
     char pr_name[256];
-    struct Message *msg;
     struct MsgPort *reply_port;
     TEXT *dos_path;
     struct DosPacket *dp;
@@ -131,44 +125,15 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
 
         /* start it up */
         snprintf(pr_name, sizeof(pr_name), "filesys process for %s", mount->mount_point);
-#if 1
-#warning "CreateNewProcTags (alib) crashes because DOSBase = NULL"
-	{
-    	    struct TagItem tags[] =
-	    {
-		{NP_Entry   	, (IPTR) packet_startup },
-        	{NP_Name    	, (IPTR) pr_name	},
-        	{NP_StackSize	, dn->dn_StackSize  	},
-        	{NP_Priority	, dn->dn_Priority  	},
-        	{NP_UserData	, (IPTR) seglist   	},
-        	{TAG_DONE   	    	    	    	}
-	    };
-
-	    mount->process = CreateNewProc(tags);
-	}
-#else
         mount->process = CreateNewProcTags(NP_Entry,     (IPTR) packet_startup,
                                            NP_Name,      pr_name,
                                            NP_StackSize, dn->dn_StackSize,
                                            NP_Priority,  dn->dn_Priority,
                                            NP_UserData,  (IPTR) seglist,
                                            TAG_DONE);
-#endif
-        reply_port = CreateMsgPort();
-
-        msg = (struct Message *) AllocVec(sizeof(struct Message), MEMF_PUBLIC | MEMF_CLEAR);
-        msg->mn_ReplyPort = reply_port;
-        msg->mn_Length = sizeof(struct Message);
-
-        PutMsg(&(mount->process->pr_MsgPort), msg);
-        WaitPort(reply_port);
-        GetMsg(reply_port);
-
-        FreeVec(msg);
-
         /* something went horribly wrong? */
         if (mount->process == NULL) {
-            kprintf("[packet] couldn't start filesys process for %s\n", mount->mount_point);
+            D(kprintf("[packet] couldn't start filesys process for %s\n", mount->mount_point));
 
             if (loaded)
                 UnLoadSeg(seglist);
@@ -179,6 +144,7 @@ static int GM_UNIQUENAME(open)(struct PacketBase *pb, struct IOFileSys *iofs, UL
         }
 
         D(bug("[packet] started, process structure is 0x%08x\n", mount->process));
+        reply_port = CreateMsgPort();
 
         /* build the startup packet */
         dp = (struct DosPacket *) AllocDosObject(DOS_STDPKT, NULL);
