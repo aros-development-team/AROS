@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 28503 2008-04-28 09:32:13Z schulz $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(TOP)/rom/dos
+USER_CFLAGS := -Dmain=submain
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos \
+  arch=chrp-ppc \
+  files="boot aros inithidds runprocess"
+
+#MM- kernel-dos-chrp-ppc : kernel-bootloader-chrp-ppc-includes
