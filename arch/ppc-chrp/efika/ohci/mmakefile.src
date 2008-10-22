@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 29732 2008-10-12 18:14:15Z schulz $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(TOP)/contrib/necessary/USB/drivers/OHCI
+
+%build_archspecific \
+  mainmmake=hidd-usb-drivers-ohci maindir=contrib/necessary/USB/drivers/OHCI \
+  arch=chrp-ppc-efika modulename=ohci \
+  files="ohci_init" 
+
+%common
