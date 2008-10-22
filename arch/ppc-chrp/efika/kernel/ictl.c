@@ -44,6 +44,11 @@ void ictl_init(void *MBAR)
 	/* Set all Main priorities to 0 */
 	outl(0, &ictl->ictl_mip[0]);
 	outl(0, &ictl->ictl_mip[1]);
+
+	/* Set all Peripheral priorities to 0 */
+	outl(0, &ictl->ictl_ppri[0]);
+	outl(0, &ictl->ictl_ppri[1]);
+	outl(0, &ictl->ictl_ppri[2]);
 }
 
 void ictl_enable_irq(uint8_t irqnum)
@@ -64,6 +69,9 @@ void ictl_enable_irq(uint8_t irqnum)
 	}
 	else
 		D(bug("[KRN] Uhh?! Someone tried to enable non-existing irq %d\n", irqnum));
+
+	D(bug("[KRN] CPMIM=%08x PIM=%08x\n", inl(&ictl->ictl_cpmim), inl(&ictl->ictl_pim)));
+	D(bug("[KRN] PMCE=%08x  PIS=%08x\n", inl(&ictl->ictl_pmce), inl(&ictl->ictl_pis)));
 }
 
 void ictl_disable_irq(uint8_t irqnum)
@@ -209,5 +217,6 @@ void __attribute__((noreturn)) ictl_handler(regs_t *ctx, uint8_t exception, void
 		irqnum++;
 	}
 
+	outl(inl(&ictl->ictl_pmce), &ictl->ictl_pmce);
 	core_ExitInterrupt(ctx);
 }
