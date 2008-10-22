@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 
 #MM bootiso-chrp-ppc-efika: \
 #MM     kernel-chrp-ppc-efika \
+#MM		kernel-chrp-ppc-irq \
 #MM		kernel-package-chrp-ppc-efika \
 #MM		workbench-complete
 
@@ -21,6 +22,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-misc \
 #MM	kernel-timer \
 #MM	kernel-pci \
+#MM kernel-pci-efika \
 #MM	kernel-graphics \
 #MM	kernel-cgfx-kobj \
 #MM	kernel-layers \
@@ -46,8 +48,6 @@ include $(TOP)/config/make.cfg
 
 
 
-# MM	kernel-pci-amcc440 \
-# MM	kernel-sam440-ppc-irq \
 # MM	kernel-ata \
 
 
@@ -55,7 +55,7 @@ PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers
 PKG_RSRC := misc battclock bootloader openfirmware
 PKG_DEVS :=  input gameport keyboard console timer
 PKG_HANDLERS := con nil ram packet cdrom
-PKG_HIDDS:= graphics hiddclass i2c radeon usb ohci pci
+PKG_HIDDS:= graphics hiddclass i2c radeon usb ohci pci pci-efika irq
 PKG_USB:= hid
 
 MODULES := \
