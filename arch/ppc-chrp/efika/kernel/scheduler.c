@@ -136,7 +136,8 @@ void core_Dispatch(regs_t *regs)
         }
 
         /* Restore the task's state */
-        bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
+        //bcopy(GetIntETask(task)->iet_Context, regs, sizeof(regs_t));
+        regs = GetIntETask(task)->iet_Context;
         /* Copy the fpu, mmx, xmm state */
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
 #warning TODO: No FPU support yet!!!!!!! Yay, it sucks! :-D
