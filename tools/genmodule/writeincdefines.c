@@ -178,10 +178,15 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
     else
     {
 	char *p;
-		    
-	if (strncmp(arglistit->arg, "struct", 6)==0)
+	
+	if (strncmp(arglistit->arg, "const", 5) == 0) {
+	    p = arglistit->arg + 5;
+	    while (isspace(*p)) p++;
+	} else
+	    p = arglistit->arg;
+	if (strncmp(p, "struct", 6)==0)
 	{
-	    p = arglistit->arg + 6;
+	    p += 6;
 	    while (isspace(*p)) p++;
 	    if (strncmp(p, "TagItem", 7) == 0)
 	    {
