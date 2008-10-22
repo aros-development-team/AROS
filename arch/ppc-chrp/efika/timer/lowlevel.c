@@ -179,10 +179,10 @@ void SliceHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     {
         struct timerequest *tr, *next;
 
-        /* Stop the timer */
-        outl(SLT_CF_INTRENA, &slice_timer->slt_cf);
         /* Clear interrupt request. */
         outl(SLT_TS_ST, &slice_timer->slt_ts);
+        /* Stop the timer */
+        outl(SLT_CF_INTRENA, &slice_timer->slt_cf);
 
 //        D(bug("[timer] SliceHandler on %08x%08x slt->cv=%08x\n", (uint32_t)(mftb() >> 32),mftbl(),inl(&slice_timer->slt_cv)));
 
