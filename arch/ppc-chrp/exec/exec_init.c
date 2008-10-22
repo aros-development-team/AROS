@@ -336,8 +336,7 @@ int exec_main(struct TagItem *msg, void *entry)
                 D(bug("[exec] Not enough memory for first task\n"));
             }
 
-            GetIntETask(t)->iet_Context = AllocTaskMem(t
-                , SIZEOF_ALL_REGISTERS
+            GetIntETask(t)->iet_Context = AllocMem(SIZEOF_ALL_REGISTERS
                 , MEMF_PUBLIC|MEMF_CLEAR
             );
 
