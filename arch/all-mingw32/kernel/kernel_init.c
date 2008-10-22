@@ -163,9 +163,10 @@ int startup(struct TagItem *msg)
   mykprintf("[Kernel] preparing first mem header\n");
 
   /* Prepare the first mem header and hand it to PrepareExecBase to take SysBase live */
+  mh->mh_Node.ln_Type  = NT_MEMORY;
   mh->mh_Node.ln_Name = "chip memory";
   mh->mh_Node.ln_Pri = -5;
-  mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC;
+  mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA | MEMF_KICK;
   mh->mh_First = (struct MemChunk *)
           (((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
   mh->mh_First->mc_Next = NULL;
@@ -182,6 +183,22 @@ int startup(struct TagItem *msg)
    */
   SysBase = PrepareExecBase(mh);
   mykprintf("[Kernel] SysBase=%p mhFirst=%p\n",SysBase,mh->mh_First);
+  
+  /* ROM memory header. This special memory header covers all ROM code and data sections
+   * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
+   */
+  if ((mh = (struct MemHeader *)AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC)))
+  {
+      mh->mh_Node.ln_Type = NT_MEMORY;
+      mh->mh_Node.ln_Name = "rom memory";
+      mh->mh_Node.ln_Pri = -128;
+      mh->mh_Attributes = MEMF_KICK;
+      mh->mh_First = NULL;
+      mh->mh_Lower = klo;
+      mh->mh_Upper = khi;
+      mh->mh_Free = 0;                        /* Never allocate from this chunk! */
+      Enqueue(&SysBase->MemList, &mh->mh_Node);
+   }
 
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf = mykprintf;
   ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf = myrkprintf;

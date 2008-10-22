@@ -29,7 +29,7 @@
 #define ST_USERDIR 2
 #define ST_FILE -3
 
-#define DERROR(x) x   /* Error code translation debug  */
+#define DERROR(x)    /* Error code translation debug  */
 #define DSTAT(x)     /* Stat() debug                  */
 #define DSTATFS(x)   /* StatFS() debug		      */
 #define DWINAPI(x)   /* WinAPI calls debug            */
