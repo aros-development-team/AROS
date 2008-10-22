@@ -1,0 +1,8 @@
+# $Id: mmakefile.src 27949 2008-03-02 21:54:29Z schulz $
+include $(TOP)/config/make.cfg
+
+%build_archspecific \
+  mainmmake=hidd-radeon maindir=arch/common/hidd.radeon \
+  arch=chrp-ppc cflags="$(CFLAGS) -I$(TOP)/arch/common/hidd.radeon"\
+  files="radeon_bios"
+
