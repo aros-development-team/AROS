@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Info Cli Command
@@ -244,13 +244,10 @@ CONST_STRPTR GetStrFromCat(ULONG id, CONST_STRPTR def)
 }
 
 
-void LPrintf(ULONG id, CONST_STRPTR def, ...) __stackparm;
-
-void LPrintf(ULONG id, CONST_STRPTR def, ...)
+void VLPrintf(ULONG id, CONST_STRPTR def, const IPTR* argarray)
 {
     def = GetStrFromCat(id, def);
-    
-    VPrintf(def, ((IPTR *)(&def))+1);
+    VPrintf(def, argarray);
 }
 
 
@@ -500,12 +497,13 @@ void PrintNum(ULONG num)
 		num++;
 	    }
 	}
-	
-	LPrintf(BIGNUMFMT, "%5ld.%ld%lc", num, x, fmt);
+
+        IPTR args[] = {num, x, fmt};
+        VLPrintf(BIGNUMFMT, "%5ld.%ld%lc", args);
     } 
     else 
     {
-	LPrintf(SMALLNUMFMT, "%7ldK", num);
+        VLPrintf(SMALLNUMFMT, "%7ldK", (IPTR*) &num);
     }
 }
 
@@ -671,8 +669,8 @@ void doInfo()
 
 			    D(bug("Printing device\n"));
 			    
-			    LPrintf(~0, nfmtstr, unit);
-			    LPrintf(DEVTITLE, "    Size    Used    Free Full Errs   State    Type    Name\n");
+                            VLPrintf(~0, nfmtstr, (IPTR*) &unit);
+                            VLPrintf(DEVTITLE, "    Size    Used    Free Full Errs   State    Type    Name\n", NULL);
 			    
 			    first = FALSE;
 			}
@@ -692,7 +690,7 @@ void doInfo()
 				
 				D(bug("Got info on %s\n", name));
 
-				LPrintf(~0, nfmtstr, name);
+                                VLPrintf(~0, nfmtstr, (IPTR*) &name);
 				
 				x = ComputeKBytes(id.id_NumBlocks, id.id_BytesPerBlock);
 				y = ComputeKBytes(id.id_NumBlocksUsed, id.id_BytesPerBlock);
@@ -737,18 +735,26 @@ void doInfo()
 				if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
 				    y = idn->DosType;
 				
-				LPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n",
-					x, id.id_NumSoftErrors,
-					((id.id_DiskState >= ID_WRITE_PROTECTED) && (id.id_DiskState <= ID_VALIDATED)) ?
-					dstate[id.id_DiskState - ID_WRITE_PROTECTED] : (STRPTR)"", GetFSysStr(y), name);
+                                IPTR args[] = {
+                                    x,
+                                    id.id_NumSoftErrors,
+                                    ((id.id_DiskState >= ID_WRITE_PROTECTED) && (id.id_DiskState <= ID_VALIDATED)) ?
+		                    (IPTR) dstate[id.id_DiskState - ID_WRITE_PROTECTED] : (IPTR) "",
+                                    (IPTR) GetFSysStr(y),
+                                    (IPTR) name};
+                                VLPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n", args);
 				
 				if(blocks)
 				{
-				    LPrintf(BLOCKSSTR,
-					    "\nTotal blocks: %-10ld  Blocks used: %ld\n"
-					    " Blocks free: %-10ld    Blocksize: %ld\n",
-					    id.id_NumBlocks, id.id_NumBlocksUsed,
-					    id.id_NumBlocks-id.id_NumBlocksUsed, id.id_BytesPerBlock );
+                                    IPTR args[] = {
+                                        id.id_NumBlocks,
+                                        id.id_NumBlocksUsed,
+                                        id.id_NumBlocks-id.id_NumBlocksUsed,
+                                        id.id_BytesPerBlock};
+                                    VLPrintf(BLOCKSSTR,
+                                            "\nTotal blocks: %-10ld  Blocks used: %ld\n"
+                                            " Blocks free: %-10ld    Blocksize: %ld\n",
+                                            args);
 				}
 			    }
 			    else
@@ -762,7 +768,7 @@ void doInfo()
 			    
 			    if((err != 0) && showall)
 			    {
-				LPrintf(~0, nfmtstr, name);
+                                VLPrintf(~0, nfmtstr, (IPTR*) &name);
 				PrintFault(err, NULL);
 			    }
 			}
@@ -776,7 +782,7 @@ void doInfo()
 		if(!first)
 		    PutStr("\n");
 		
-		LPrintf(DISKSTITLE, "Volumes\n");
+                VLPrintf(DISKSTITLE, "Volumes\n", NULL);
 		
 		for(MaxLen = 15, idn = head; idn; idn = idn->Next)
 		{
@@ -794,10 +800,12 @@ void doInfo()
 		for(idn = head; idn; idn = idn->Next)
 		{
 		    if(idn->IsVolume)
-		    {     			
-			LPrintf(VOLNAMEFMTSTR, nfmtstr, idn->Name,
-				GetStrFromCat(MOUNTEDSTR, "[Mounted]"));
-				// idn->Task ? GetStrFromCat(MOUNTEDSTR, "[Mounted]") : ""); TODO
+		    {
+                        IPTR args[] = {
+                            (IPTR) idn->Name,
+                            (IPTR) GetStrFromCat(MOUNTEDSTR, "[Mounted]")};
+                            // idn->Task ? GetStrFromCat(MOUNTEDSTR, "[Mounted]") : ""); TODO
+                        VLPrintf(VOLNAMEFMTSTR, nfmtstr, args);
 			
 			if(datetimeFmt)
 			{
@@ -836,8 +844,8 @@ void doInfo()
 				    DateToStr(&dt);		
 				}
 				
-				LPrintf(DATEFMTSTR, "created %.3s, %-10s %s", 
-					StrDay, StrDate, StrTime);
+                                IPTR args[] = {(IPTR) StrDay, (IPTR) StrDate, (IPTR) StrTime};
+                                VLPrintf(DATEFMTSTR, "created %.3s, %-10s %s", args);
 			    }
 			}
 			
