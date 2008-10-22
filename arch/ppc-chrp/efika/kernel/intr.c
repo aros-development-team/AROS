@@ -402,6 +402,40 @@ void __attribute__((noreturn)) program_handler(regs_t *ctx, uint8_t exception, v
     else if (insn == 0x7fe00008)
     {
     	D(bug("[KRN] trap @ %08x (r3=%08x)\n", ctx->srr0, ctx->gpr[3]));
+
+    	if (SysBase)
+        {
+            struct Task *t = FindTask(NULL);
+            D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
+        }
+        D(bug("[KRN] SRR0=%08x, SRR1=%08x\n",ctx->srr0, ctx->srr1));
+        D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
+        D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
+
+        D(bug("[KRN] HASH1=%08x HASH2=%08x IMISS=%08x DMISS=%08x ICMP=%08x DCMP=%08x\n",
+            		rdspr(978), rdspr(979), rdspr(980), rdspr(976), rdspr(981), rdspr(977)));
+
+        D(bug("[KRN] SPRG0=%08x SPRG1=%08x SPRG2=%08x SPRG3=%08x SPRG4=%08x SPRG5=%08x\n",
+        		rdspr(SPRG0),rdspr(SPRG1),rdspr(SPRG2),rdspr(SPRG3),rdspr(SPRG4),rdspr(SPRG5)));
+
+        D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
+                 ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
+        D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
+                 ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]));
+        D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
+                 ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
+        D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
+                 ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
+
+        D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
+                 ctx->gpr[16],ctx->gpr[17],ctx->gpr[18],ctx->gpr[19]));
+        D(bug("[KRN] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
+                 ctx->gpr[20],ctx->gpr[21],ctx->gpr[22],ctx->gpr[23]));
+        D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
+                 ctx->gpr[24],ctx->gpr[25],ctx->gpr[26],ctx->gpr[27]));
+        D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
+                 ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
+
     	ctx->srr0 += 4;
     	core_LeaveInterrupt(ctx);
     }
@@ -721,7 +755,7 @@ static void __attribute__((used)) __core_LeaveInterrupt()
                  "lwz %%r0,%[srr0](%%r3)        \n\t"
                  "mtsrr0 %%r0                   \n\t"
                  "lwz %%r0,%[srr1](%%r3)        \n\t"
-                 "rlwinm %%r0,%%r0,0,14,12      \n\t"
+//                 "rlwinm %%r0,%%r0,0,14,12      \n\t"
                  "mtsrr1 %%r0                   \n\t"
                  "lwz %%r0,%[ctr](%%r3)         \n\t"
                  "mtctr %%r0                    \n\t"
