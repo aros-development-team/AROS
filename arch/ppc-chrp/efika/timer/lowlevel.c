@@ -150,11 +150,13 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
     tbc_expected = current_time + delay;
 
     /* Stop the timer */
-    outl(0, &slice_timer->slt_cf);
+    outl(SLT_CF_INTRENA, &slice_timer->slt_cf);
     /* Set the delay */
     outl(delay, &slice_timer->slt_tc);
     /* Let timer go */
     outl(SLT_CF_INTRENA | SLT_CF_ENABLE, &slice_timer->slt_cf);
+    /* Clear interrupt request. */
+    outl(SLT_TS_ST, &slice_timer->slt_ts);
 }
 
 /*
@@ -181,8 +183,10 @@ void SliceHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
         /* Clear interrupt request. */
         outl(SLT_TS_ST, &slice_timer->slt_ts);
+        sync();
         /* Stop the timer */
-        outl(SLT_CF_INTRENA, &slice_timer->slt_cf);
+        outl(0, &slice_timer->slt_cf);
+//        outl(SLT_CF_RUNWAIT | SLT_CF_INTRENA | SLT_CF_ENABLE, &slice_timer->slt_cf);
 
 //        D(bug("[timer] SliceHandler on %08x%08x slt->cv=%08x\n", (uint32_t)(mftb() >> 32),mftbl(),inl(&slice_timer->slt_cv)));
 

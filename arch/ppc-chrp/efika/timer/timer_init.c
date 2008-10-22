@@ -97,6 +97,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     LIBBASE->tb_VBlankInt.is_Code = KrnAddIRQHandler(MPC5200B_ST1, SliceHandler, LIBBASE, SysBase); //KrnAddExceptionHandler(10, DecrementerHandler, LIBBASE, SysBase);
 
     /* Start the slice timer 1 */
+//    outl(SLT_CF_RUNWAIT | SLT_CF_INTRENA | SLT_CF_ENABLE, &slice_timer->slt_cf);
+
     outl(SLT_TS_ST, &slice_timer->slt_ts);
 //    TimerSetup(TimerBase, mftbl());
 
