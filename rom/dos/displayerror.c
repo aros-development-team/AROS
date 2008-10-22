@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -74,7 +74,7 @@
     /* Supress requesters? */
     if ((IPTR)window == (IPTR)-1L)
     {
-	return 0;
+	return 1;
     }
 
     if (DOSBase->dl_IntuitionBase == NULL)
@@ -84,7 +84,7 @@
 
     if (DOSBase->dl_IntuitionBase == NULL)
     {
-	/* XXX Do something else here please */
+	return 1;
     }
     else
     {
