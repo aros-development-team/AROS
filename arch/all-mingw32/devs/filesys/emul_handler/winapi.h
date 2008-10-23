@@ -80,3 +80,13 @@ typedef struct _WIN32_FIND_DATA
    char cFileName[260];
    char cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
+
+typedef struct _WIN32_FILE_ATTRIBUTE_DATA
+{
+   ULONG dwFileAttributes;
+   UQUAD ftCreationTime;
+   UQUAD ftLastAccessTime;
+   UQUAD ftLastWriteTime;
+   ULONG nFileSizeHigh;
+   ULONG nFileSizeLow;
+} WIN32_FILE_ATTRIBUTE_DATA,  *LPWIN32_FILE_ATTRIBUTE_DATA;

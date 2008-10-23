@@ -25,90 +25,16 @@ struct InfoData
 #define ID_NO_DISK_PRESENT  (-1L)
 #define ID_DOS_DISK         0x444F5300
 
-/* Number of so-called "ticks" in a second. */
-#define TICKS_PER_SECOND 50
-
-/* DateStamp structure as used in different library-functions. This
-   structure sufficiently describes a system-date and -time (i.e. any
-   date since 1.1.1978). */
-struct DateStamp
-{
-   LONG ds_Days;   /* Number of days since 1.1.1978 */
-   LONG ds_Minute; /* Number of minutes since midnight */
-   LONG ds_Tick;   /* Number of ticks (1/50 second) in the current minute
-                      Note that this may not be exact */
-};
-
-/* The maximum length of filenames in AmigaOS. You should not depend on
-   this value, as it may change in future versions. */
-#define MAXFILENAMELENGTH 108
-
-/* The maximum length of comments in AmigaOS. You should not depend on
-   this value, as it may change in future versions. */
-#define MAXCOMMENTLENGTH 80
-
-/* Structure used to describe a directory entry. Note that not all fields
-   are supported by all filesystems. This structure should be allocated
-   with AllocDosObject(). */
-struct FileInfoBlock
-{
-    LONG	     fib_DiskKey;
-      /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
-         the file described is a directory, otherwise it is a plain file. */
-    LONG	     fib_DirEntryType;
-      /* The filename (null-terminated). */
-    BYTE	     fib_FileName[MAXFILENAMELENGTH];
-    LONG	     fib_Protection;   /* The protection bits (see below). */
-    LONG	     fib_EntryType;
-    LONG	     fib_Size;         /* The size of the file. */
-    LONG	     fib_NumBlocks;    /* Number of blocks used for file. */
-    struct DateStamp fib_Date;         /* Date of last change to file. */
-    BYTE	     fib_Comment[MAXCOMMENTLENGTH];  /* The filecomment (null-terminated). */
-    WORD	     fib_OwnerUID;     /* UserID of fileowner. */
-    WORD	     fib_OwnerGID;     /* GroupID of fileowner. */
-    BYTE	     fib_Reserved[32]; /* PRIVATE */
-};
-
-/* Protection bits for files (fib_Protection). */
-/* Flags for owner (they a low-active, i.e. not set means the action is
-   allowed!) */
-#define FIBB_DELETE      0  /* File is deleteable. */
-#define FIBB_EXECUTE     1  /* File is executable (no scripts!). */
-#define FIBB_WRITE       2  /* File is writable. */
-#define FIBB_READ        3  /* File is readable. */
-/* General flags, not owner-dependant. */
-#define FIBB_ARCHIVE     4  /* File was archived (not used by OS). */
-#define FIBB_PURE        5  /* Make program resident on execution. */
-#define FIBB_SCRIPT      6  /* File is a script (DOS or ARexx). */
-/* Flag number 7 is not defined. It used to describe different conditions
-   in different revisions of AmigaOS and was also misused as hidden flag.
-   Because of this confusion, this flag should not be used! */
-/* Flags for group (meaning see above, these are high-active!). */
-#define FIBB_GRP_DELETE  8
-#define FIBB_GRP_EXECUTE 9
-#define FIBB_GRP_WRITE   10
-#define FIBB_GRP_READ    11
-/* Flags for other/world (meaning see above, these are high-active!). */
-#define FIBB_OTR_DELETE  12
-#define FIBB_OTR_EXECUTE 13
-#define FIBB_OTR_WRITE   14
-#define FIBB_OTR_READ    15
-
-#define FIBF_DELETE      (1<<FIBB_DELETE)
-#define FIBF_EXECUTE     (1<<FIBB_EXECUTE)
-#define FIBF_WRITE       (1<<FIBB_WRITE)
-#define FIBF_READ        (1<<FIBB_READ)
-#define FIBF_ARCHIVE     (1<<FIBB_ARCHIVE)
-#define FIBF_PURE        (1<<FIBB_PURE)
-#define FIBF_SCRIPT      (1<<FIBB_SCRIPT)
-#define FIBF_GRP_DELETE  (1<<FIBB_GRP_DELETE)
-#define FIBF_GRP_EXECUTE (1<<FIBB_GRP_EXECUTE)
-#define FIBF_GRP_WRITE   (1<<FIBB_GRP_WRITE)
-#define FIBF_GRP_READ    (1<<FIBB_GRP_READ)
-#define FIBF_OTR_DELETE  (1<<FIBB_OTR_DELETE)
-#define FIBF_OTR_EXECUTE (1<<FIBB_OTR_EXECUTE)
-#define FIBF_OTR_WRITE   (1<<FIBB_OTR_WRITE)
-#define FIBF_OTR_READ    (1<<FIBB_OTR_READ)
+/* Constants, defining of what kind a file is. These constants are used in
+   many structures, including FileInfoBlock (<dos/dos.h>) and ExAllData
+   (<dos/exall.h>). */
+#define ST_PIPEFILE -5 /* File is a pipe */
+#define ST_LINKFILE -4 /* Hard link to a file */
+#define ST_FILE     -3 /* Plain file */
+#define ST_ROOT      1 /* Root directory of filesystem */
+#define ST_USERDIR   2 /* Normal directory */
+#define ST_SOFTLINK  3 /* Soft link (may be a file or directory) */
+#define ST_LINKDIR   4 /* Hard link to a directory */
 
 /* Secondary errors codes as used for IoErr(), SetIoErr() and in
    Process->pr_Result2. The term 'object' refers to files of all kinds

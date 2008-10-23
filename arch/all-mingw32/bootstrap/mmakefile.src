@@ -45,8 +45,8 @@ setup-mingw32 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 
 $(BINDIR)/boot/kernel: setup-mingw32 $(KOBJS)
-	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds\
-	  -o $@ $(KOBJS)\
+	$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map -Wl,-T,kernel.lds\
+	  -o $@ $(KOBJS) $(NOSTARTUP_LDFLAGS)\
 	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
 
 
