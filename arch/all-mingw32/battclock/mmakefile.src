@@ -1,0 +1,11 @@
+# $Id: mmakefile.src 21653 2004-05-22 10:47:19Z verhaegs $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES	:= -I$(GENINCDIR)
+USER_CFLAGS	:= -I$(TOP)/rom/battclock -I..
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock \
+  arch=mingw32 \
+  files="battclock_init readbattclock writebattclock"
+
+%common

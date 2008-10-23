@@ -151,7 +151,7 @@ void IRQ0Handler(struct ThreadNode *tn, void *data)
     }
 }
 
-const char *Symbols[] = {
+static const char *Symbols[] = {
     "GetMsg",
     "CauseInterrupt",
     "CreateNewThread",

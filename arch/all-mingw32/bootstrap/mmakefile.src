@@ -6,17 +6,20 @@ BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o $(TARGETDIR)/hostl
 FILES		:= bootstrap elfloader32 hostlib debug
 KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o
 KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o\
-			   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
-KOBJS_LIBS	:=	$(KOBJSDIR)/exec_library.o\
-				$(KOBJSDIR)/expansion_library.o \
-				$(KOBJSDIR)/boot_library.o \
-				$(KOBJSDIR)/dos_library.o \
-				$(KOBJSDIR)/aros_library.o \
-				$(KOBJSDIR)/utility_library.o\
-				$(KOBJSDIR)/keymap_library.o \
-				$(KOBJSDIR)/mathieeesingbas_library.o \
-				$(KOBJSDIR)/oop_library.o
-K_RES		:= $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/hostlib_resource.o $(KOBJSDIR)/hostthread_resource.o
+		   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
+KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o\
+		   $(KOBJSDIR)/expansion_library.o \
+		   $(KOBJSDIR)/boot_library.o \
+		   $(KOBJSDIR)/dos_library.o \
+		   $(KOBJSDIR)/aros_library.o \
+		   $(KOBJSDIR)/utility_library.o\
+		   $(KOBJSDIR)/keymap_library.o \
+		   $(KOBJSDIR)/mathieeesingbas_library.o \
+		   $(KOBJSDIR)/oop_library.o
+K_RES		:= $(KOBJSDIR)/kernel_resource.o     \
+		   $(KOBJSDIR)/hostlib_resource.o    \
+		   $(KOBJSDIR)/hostthread_resource.o \
+		   $(KOBJSDIR)/battclock_resource.o
 KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o $(KOBJSDIR)/packet_handler.o $(KOBJSDIR)/amberram_handler.o $(KOBJSDIR)/nil_handler.o
 KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 
