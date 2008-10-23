@@ -70,17 +70,13 @@ struct filehandle
 struct EmulInterface
 {
     ULONG (*EmulThread)(struct ThreadHandle *myhandle);
-    ULONG (*EmulStat)(char *path, struct FileInfoBlock *FIB);
+    LONG (*EmulStat)(char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB);
     ULONG (*EmulDelete)(char *filename);
     unsigned long (*EmulGetHome)(char *name, char *home);
     ULONG (*EmulStatFS)(char *path, struct InfoData *id);
-    ULONG (*EmulChmod)(char *path, int protect);
-    ULONG (*EmulMKDir)(char *path, int protect);
     ULONG (*EmulErrno)(void);
 };
 
-#define Chmod EmulIFace->EmulChmod
-#define MKDir EmulIFace->EmulMKDir
 #define Stat EmulIFace->EmulStat
 #define Errno EmulIFace->EmulErrno
 #define Delete EmulIFace->EmulDelete
@@ -106,6 +102,8 @@ struct KernelInterface
     __attribute__((stdcall)) void *(*FindFirstFile)(char *lpFileName, LPWIN32_FIND_DATA lpFindFileData);
     __attribute__((stdcall)) ULONG (*FindNextFile)(void *hFindFile, LPWIN32_FIND_DATA lpFindFileData);
     __attribute__((stdcall)) ULONG (*FindClose)(void *hFindFile);
+    __attribute__((stdcall)) ULONG (*CreateDirectory)(char *lpPathName, void *lpSecurityAttributes);
+    __attribute__((stdcall)) ULONG (*SetFileAttributes)(char *lpFileName, ULONG dwFileAttributes);
     __attribute__((stdcall)) ULONG (*CreateHardLink)(char *lpFileName, char *lpExistingFileName, void *lpSecurityAttributes);
     __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
 };
@@ -122,6 +120,8 @@ struct KernelInterface
 #define FindFirst KernelIFace->FindFirstFile
 #define FindNext KernelIFace->FindNextFile
 #define FindEnd KernelIFace->FindClose
+#define MKDir KernelIFace->CreateDirectory
+#define Chmod KernelIFace->SetFileAttributes
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
 

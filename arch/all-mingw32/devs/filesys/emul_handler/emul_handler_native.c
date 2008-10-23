@@ -11,23 +11,11 @@
 #include <windows.h>
 #include <shlobj.h>
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/param.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <aros/hostthread.h>
 
 #include "dos_native.h"
 #include "emul_handler_intern.h"
-
-#define ST_ROOT 1
-#define ST_USERDIR 2
-#define ST_FILE -3
 
 #define DERROR(x)    /* Error code translation debug  */
 #define DSTAT(x)     /* Stat() debug                  */
@@ -38,7 +26,7 @@
 HMODULE kernel_lib;
 void (*CauseIRQ)(unsigned char irq, void *data);
 
-/* Make an AROS error-code (<dos/dos.h>) out of an Windows error-code. */
+/* Make an AROS error-code (<dos/dos.h>) out of a Windows error-code. */
 static DWORD u2a[][2]=
 {
   { ERROR_PATH_NOT_FOUND, AROS_ERROR_OBJECT_NOT_FOUND },
@@ -57,148 +45,7 @@ static DWORD u2a[][2]=
   { 0, 0 }
 };
 
-/* Make unix protection bits out of AROS protection bits. */
-mode_t prot_a2u(ULONG protect)
-{
-  mode_t uprot = 0;
-  
-  /* The following three flags are low-active! */
-  if (!(protect & FIBF_EXECUTE))
-	uprot |= S_IXUSR;
-  if (!(protect & FIBF_WRITE))
-	uprot |= S_IWUSR;
-  if (!(protect & FIBF_READ))
-	uprot |= S_IRUSR;
-  
-/*if ((protect & FIBF_GRP_EXECUTE))
-	uprot |= S_IXGRP;
-  if ((protect & FIBF_GRP_WRITE))
-	uprot |= S_IWGRP;
-  if ((protect & FIBF_GRP_READ))
-	uprot |= S_IRGRP;
-  
-  if ((protect & FIBF_OTR_EXECUTE))
-	uprot |= S_IXOTH;
-  if ((protect & FIBF_OTR_WRITE))
-	uprot |= S_IWOTH;
-  if ((protect & FIBF_OTR_READ))
-	uprot |= S_IROTH;
-  
-  if ((protect & FIBF_SCRIPT))
-	uprot |= S_ISVTX;*/
-  
-  return uprot;
-}
-
 /*********************************************************************************************/
-
-/* Make AROS protection bits out of unix protection bits. */
-ULONG prot_u2a(mode_t protect)
-{
-  ULONG aprot = 0;
-  
-  /* The following three (AROS) flags are low-active! */
-  if (!(protect & S_IRUSR))
-	aprot |= FIBF_READ;
-  if (!(protect & S_IWUSR))
-	aprot |= FIBF_WRITE;
-  if (!(protect & S_IXUSR))
-	aprot |= FIBF_EXECUTE;
-  
-  /* The following flags are high-active again. */
-/*if ((protect & S_IRGRP))
-	aprot |= FIBF_GRP_READ;
-  if ((protect & S_IWGRP))
-	aprot |= FIBF_GRP_WRITE;
-  if ((protect & S_IXGRP))
-	aprot |= FIBF_GRP_EXECUTE;
-  
-  if ((protect & S_IROTH))
-	aprot |= FIBF_OTR_READ;
-  if ((protect & S_IWOTH))
-	aprot |= FIBF_OTR_WRITE;
-  if ((protect & S_IXOTH))
-	aprot |= FIBF_OTR_EXECUTE;
-  
-  if ((protect & S_ISVTX))
-	aprot |= FIBF_SCRIPT;*/
-  
-  return aprot;
-}
-
-int __declspec(dllexport) EmulChmod(const char *path, int protect)
-{
-  protect = prot_a2u(protect);
-  DWINAPI(printf("[EmulHandler] chnmod(\"%s\")\n", path));
-  return chmod(path,protect);
-}
-
-int __declspec(dllexport) EmulMKDir(const char *path, int protect)
-{
-  int r;
-
-  protect = prot_a2u(protect);
-  DWINAPI(printf("[EmulHandler] mkdir(\"%s\")\n", path));
-  r = mkdir(path);
-  if (!r) {
-      DWINAPI(printf("[EmulHandler] chnmod(\"%s\")\n", path));
-      r = chmod(path, protect);
-  }
-  return r;
-
-}
-
-int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
-{
-  char buf[256];
-  DWORD buflen;
-  LPTSTR c;
-  DWORD SectorsPerCluster, BytesPerSector, FreeBlocks;
-  int retval = 0;
-  LPTSTR newbuf = NULL;
-
-  DSTATFS(printf("[EmulHandler] StatFS(\"%s\")\n", path));
-  buflen = GetFullPathName(path, sizeof(buf), buf, &c);
-  if (buflen) {
-      if (buflen > sizeof(buf)) {
-          DWINAPI(printf("[EmulHandler] LocalAlloc()\n", path));
-          newbuf = LocalAlloc(LMEM_FIXED, buflen);
-          if (newbuf) {
-              DWINAPI(printf("[EmulHandler] GetFullPathName(\"%s\")\n", path));
-              GetFullPathName(path, buflen, newbuf, &c);
-          } else
-              return 0;
-      } else
-          newbuf = buf;
-      DSTATFS(printf("[EmulHandler] Full path: %s\n", newbuf));
-/* TODO: this works only with drive letters, no mounts/UNC paths support yet */
-      for (c = newbuf; *c; c++) {
-	  if (*c == '\\') {
-      	      c[1] = 0;
-      	      break;
-      	  }
-      }
-      if (*c) {
-          DSTATFS(printf("[EmulHandler] Root path: %s\n", newbuf));
-      	  retval = GetDiskFreeSpace(newbuf, &SectorsPerCluster, &BytesPerSector, &FreeBlocks, &id->id_NumBlocks);
-  	  id->id_NumSoftErrors = 0;
-	  id->id_UnitNumber = 0;
-	  id->id_DiskState = ID_VALIDATED;
-	  id->id_NumBlocksUsed = id->id_NumBlocks - FreeBlocks;
-	  id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
-	  id->id_DiskType = ID_DOS_DISK;
-	  id->id_InUse = TRUE;
-      } else {
-          DWINAPI(printf("[EmulHandler] SetLastError()\n"));
-          SetLastError(ERROR_BAD_PATHNAME);
-      }
-      if (newbuf != buf) {
-          DWINAPI(printf("[EmulHandler] LocalFree()\n"));
-          LocalFree(newbuf);
-      }
-  }
-  return retval;
-}
 
 unsigned long __declspec(dllexport) EmulGetHome(const char *name, char *home)
 {
@@ -228,59 +75,34 @@ BOOL __declspec(dllexport) EmulDelete(const char *filename)
   return res;
 }
 
-void stat2FIB(struct stat * s, struct FileInfoBlock * FIB)
+LONG __declspec(dllexport) EmulStat(const char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB)
 {
-  FIB->fib_OwnerUID	  = s->st_uid;
-  FIB->fib_OwnerGID	  = s->st_gid;
-  FIB->fib_Comment[0]	  = '\0'; /* no comments available yet! */
-  FIB->fib_Date.ds_Days   = s->st_ctime/(60*60*24) - (6*365 + 2*366);
-  FIB->fib_Date.ds_Minute = (s->st_ctime/60)%(60*24);
-  FIB->fib_Date.ds_Tick   = (s->st_ctime%60)*TICKS_PER_SECOND;
-  FIB->fib_Protection	  = prot_u2a(s->st_mode);
-  FIB->fib_Size           = s->st_size;
+  DWORD retval;
+  DWORD m;
 
-  if (S_ISDIR(s->st_mode))
-  {
-	FIB->fib_DirEntryType = ST_USERDIR;
-  }
-  else
-  {
-	FIB->fib_DirEntryType = ST_FILE;
-  }
-}
-
-int __declspec(dllexport) EmulStat(const char *path, struct FileInfoBlock *FIB)
-{
-  struct stat st;
-  int retval;
-  int m;
-
-  DWINAPI(printf("[EmulHandler] EmulStat(\"%s\")\n", path));
-  retval = stat(path,&st);
-  m = st.st_mode;
-  DSTAT(printf("[EmulHandler] stat(\"%s\") returned %i kind: ",path,retval));
-  if (retval == 0)
-  {
-    if (S_ISREG(m)) {
-        retval = 1;
-        DSTAT(printf("regular\n"));
-    } else if (S_ISDIR(m)) {
-        retval = 2;
-        DSTAT(printf("directory\n"));
-    }
-        DSTAT(else printf("other\n");)
+  DSTAT(printf("[EmulHandler] Stat(%s, 0x%p)\n", path, FIB));
+  if (FIB) {
+      retval = GetFileAttributesEx(path, GetFileExInfoStandard, FIB);
+      m = FIB->dwFileAttributes;
   } else {
-    retval = -1;
-    DSTAT(printf("unknown or not existing\n");)
+      m = GetFileAttributes(path);
+      retval = (m != INVALID_FILE_ATTRIBUTES);
   }
-  if (FIB)
-  {
-	  stat2FIB(&st,FIB);
+  DSTAT(printf("[EmulHandler] Return value %ld, object attributes 0x%08lX\n", retval, m));
+  if (retval) {
+      /* TODO: Here we may also probably recognize hard and soft links */
+      if (m & FILE_ATTRIBUTE_DIRECTORY) {
+          DSTAT(printf("[EmulHandler] Object is a directory\n"));
+          retval = ST_USERDIR;
+      } else {
+          DSTAT(printf("[EmulHandler] Object is a file\n"));
+          retval = ST_FILE;
+      }
   }
   return retval;
 }
 
-int __declspec(dllexport) EmulErrno(void)
+ULONG __declspec(dllexport) EmulErrno(void)
 {
   ULONG i;
   DWORD e;
@@ -295,6 +117,51 @@ int __declspec(dllexport) EmulErrno(void)
 	}
   DERROR(printf("[EmulHandler] Unknown error code\n"));
   return ERROR_UNKNOWN;
+}
+
+int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
+{
+  LPTSTR c;
+  char s;
+  DWORD SectorsPerCluster, BytesPerSector, FreeBlocks;
+  BOOL res = 0;
+
+  DSTATFS(printf("[EmulHandler] StatFS(\"%s\")\n", path));
+  /* GetDiskFreeSpace() can be called only on root path. We always work with absolute pathnames, so let's get first part of the path */
+  c = path;
+  if ((c[0] == '\\') && (c[1] == '\\')) {
+      /* If the path starts with "\\", it's a UNC path. Its root is "\\Server\Share\", so we skip "\\Server\" part */
+      c += 2;
+      while (*c != '\\') {
+          if (*c == 0)
+              return AROS_ERROR_OBJECT_NOT_FOUND;
+          c++;
+      }
+      c++;
+  }
+  /* Skip everything up to the first '\'. */
+  while (*c != '\\') {
+      if (*c == 0)
+          return AROS_ERROR_OBJECT_NOT_FOUND;
+      c++;
+  }
+  /* Temporarily terminate the path */
+  s = c[1];
+  c[1] = 0;
+  DSTATFS(printf("[EmulHandler] Root path: %s\n", path));
+  res = GetDiskFreeSpace(path, &SectorsPerCluster, &BytesPerSector, &FreeBlocks, &id->id_NumBlocks);
+  c[1] = s;
+  if (res) {
+      id->id_NumSoftErrors = 0;
+      id->id_UnitNumber = 0;
+      id->id_DiskState = ID_VALIDATED;
+      id->id_NumBlocksUsed = id->id_NumBlocks - FreeBlocks;
+      id->id_BytesPerBlock = SectorsPerCluster*BytesPerSector;
+      id->id_DiskType = ID_DOS_DISK;
+      id->id_InUse = TRUE;
+      return 0;
+  }
+  return EmulErrno();
 }
 
 DWORD __declspec(dllexport) EmulThread(struct ThreadHandle *THandle)

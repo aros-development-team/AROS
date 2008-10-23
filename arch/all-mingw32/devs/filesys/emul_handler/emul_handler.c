@@ -1,5 +1,5 @@
 /*
- Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+ Copyright  1995-2008, The AROS Development Team. All rights reserved.
  $Id$
  
  Desc: Filesystem that accesses an underlying Windows filesystem.
@@ -220,9 +220,9 @@ ULONG prot_a2w(ULONG protect)
 {
   ULONG uprot = 0;
   
-  /* The following three flags are low-active! */
-  if (protect & FIBF_WRITE)
-	uprot |= FILE_ATTRIBUTE_READONLY;
+  /* The following flags are low-active! */
+  if ((protect & (FIBF_WRITE|FIBF_DELETE)) == FIBF_WRITE|FIBF_DELETE)
+	uprot = FILE_ATTRIBUTE_READONLY;
   /* The following flags are high-active again. */
   if (protect & FIBF_ARCHIVE)
       	uprot |= FILE_ATTRIBUTE_ARCHIVE;
@@ -233,6 +233,43 @@ ULONG prot_a2w(ULONG protect)
            2) Write complete AROS protection bits support using NTFS streams */
   
   return uprot;
+}
+
+/*********************************************************************************************/
+
+/* Make AROS protection bits out of Windows protection bits. */
+ULONG prot_w2a(ULONG protect)
+{
+  ULONG uprot = 0;
+  
+  /* The following three flags are low-active! */
+  if (protect & FILE_ATTRIBUTE_READONLY)
+      uprot = FIBF_WRITE|FIBF_DELETE;
+  if (protect & FILE_ATTRIBUTE_DIRECTORY)
+      uprot |= FIBF_EXECUTE;
+  /* The following flags are high-active again. */
+  if (protect & FILE_ATTRIBUTE_ARCHIVE)
+      uprot |= FIBF_ARCHIVE;
+  if (protect & FILE_ATTRIBUTE_SYSTEM)
+      uprot |= FIBF_SCRIPT;
+
+  /* TODO: 1) Support more NT-specific attributes ('Executable')
+           2) Write complete AROS protection bits support using NTFS streams */
+
+  return uprot;
+}
+
+/*********************************************************************************************/
+
+static void FileTime2DateStamp(struct DateStamp *ds, UQUAD ft)
+{
+    UQUAD totalmins;
+
+    ft /= 200000;
+    totalmins = ft / 300;
+    ds->ds_Days = totalmins / 1440;
+    ds->ds_Minute = totalmins - (ds->ds_Days * 1440);
+    ds->ds_Tick = ft - (totalmins * 300);
 }
 
 /*********************************************************************************************/
@@ -299,7 +336,7 @@ static LONG free_lock(struct emulbase *emulbase, struct filehandle *current)
 
 /*********************************************************************************************/
 
-static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode)
+static LONG open_(struct emulbase *emulbase, struct filehandle **handle, STRPTR name, LONG mode, LONG protect, BOOL AllowDir)
 {
   LONG ret = 0;
   struct filehandle *fh;
@@ -329,92 +366,48 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
 	if (!ret)
 	{
-	  int kind = Stat(fh->hostname, 0);
+	    int kind = Stat(fh->hostname, NULL);
 
-	  D(bug("[emul] object type: %ld\n", kind));
-	  if(0 < kind)
-	  {
-		if(kind == 1)
+	    D(bug("[emul] object type: %ld\n", kind));
+	    switch (kind) {
+	    case ST_SOFTLINK:
+	        ret = ERROR_IS_SOFT_LINK;
+	        break;
+	    case ST_FILE:
+		fh->type=FHD_FILE;
+		fh->fd = DoOpen(fh->hostname, mode, protect);
+		if(fh->fd != INVALID_HANDLE_VALUE)
 		{
-		  fh->type=FHD_FILE;
-		  fh->fd = DoOpen(fh->hostname, mode, 0770);
-		  if(fh->fd != INVALID_HANDLE_VALUE)
-		  {
-			*handle=fh;
-			return 0;
-		  }
-		}else if(kind == 2)
-		{
-		  /* file is a directory */
-		  fh->type   = FHD_DIRECTORY;
-		  fh->fd     = INVALID_HANDLE_VALUE;
-		  fh->dirpos = 0;
-		  *handle=fh;
-		  return 0;
-		}else
-		  ret = ERROR_OBJECT_WRONG_TYPE;
-	  }
-	  /* Stat() failed. If ret is unset, generate it from errno. */
-	  if (!ret) {
-	        D(bug("[emul] Retrieving error code\n"));
+		    *handle=fh;
+		    return 0;
+		}
 		ret = Errno();
-	  }
-	  
-	  D(bug("[emul] Freeing pathname\n"));
-	  emul_free(emulbase, fh->hostname);
+		break;
+	    case ST_USERDIR:
+		/* file is a directory */
+		if (AllowDir) {
+		    fh->type   = FHD_DIRECTORY;
+		    fh->fd     = INVALID_HANDLE_VALUE;
+		    fh->dirpos = 0;
+		    *handle=fh;
+		    return 0;
+		}
+		ret = ERROR_OBJECT_WRONG_TYPE;
+		break;
+	    case 0:
+	        ret = Errno();
+	        break;
+	    default:
+		ret = ERROR_OBJECT_WRONG_TYPE;
+	    }
+	    D(bug("[emul] Freeing pathname\n"));
+	    emul_free(emulbase, fh->hostname);
 	}
 	D(bug("[emul] Freeing filehandle\n"));
 	FreeMem(fh, sizeof(struct filehandle));
   } else
 	ret = ERROR_NO_FREE_STORE;
   D(bug("[emul] open_() returns %lu\n", ret));
-  return ret;
-}
-
-/*********************************************************************************************/
-
-static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRPTR name,LONG mode,LONG protect)
-{
-  LONG ret=ERROR_NO_FREE_STORE;
-  struct filehandle *fh;
-  
-  fh=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
-  if(fh!=NULL)
-  {
-	fh->pathname = NULL; /* just to make sure... */
-	fh->dl       = (*handle)->dl;
-	/* If no filename is given and the file-descriptor is one of the
-	 standard filehandles (stdin, stdout, stderr) ... */
-	if ((!name[0]) && ((*handle)->type==FHD_FILE) &&
-	    (((*handle)->fd==emulbase->stdin_handle) || ((*handle)->fd==emulbase->stdout_handle) || ((*handle)->fd==emulbase->stderr_handle)))
-	{
-	  /* ... then just reopen that standard filehandle. */
-	  fh->type       = FHD_FILE;
-	  fh->fd         = (*handle)->fd;
-	  fh->name       = NULL;
-	  fh->hostname   = NULL;
-	  fh->volumename = NULL;
-	  *handle=fh;
-	  return 0;
-	}
-	
-	fh->volumename=(*handle)->volumename;
-	
-	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, name);
-	if (!ret)
-	{
-	  fh->type = FHD_FILE;
-	  fh->fd = DoOpen(fh->hostname, mode, protect);
-	  if (fh->fd != INVALID_HANDLE_VALUE)
-	  {
-		*handle=fh;
-		return 0;
-	  }
-	  ret=Errno();
-	  emul_free(emulbase, fh->hostname);
-	}
-	FreeMem(fh, sizeof(struct filehandle));
-  }
   return ret;
 }
 
@@ -439,13 +432,12 @@ static LONG create_dir(struct emulbase *emulbase, struct filehandle **handle,
 	ret = makefilename(emulbase, &fh->hostname, &fh->name, *handle, filename);
 	if (!ret)
 	{
-	  
-	  if (!MKDir(fh->hostname, protect))
-	  {
-		*handle = fh;
-		return 0;
-	  }
-	  ret = Errno();
+	    if (MKDir(fh->hostname, NULL)) {
+	        *handle = fh;
+	        Chmod(fh->hostname, prot_a2w(protect));
+	        return 0;
+	    }
+	    ret = Errno();
 	}
 	free_lock(emulbase, fh);
   } else
@@ -484,7 +476,7 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
   if ((ret = makefilename(emulbase, &filename, NULL, fh, file)))
 	return ret;
   
-  if (Chmod(filename, aprot))
+  if (!Chmod(filename, prot_a2w(aprot)))
 	ret = Errno();
   
   emul_free(emulbase, filename);
@@ -835,26 +827,13 @@ ULONG ReadDir(struct filehandle *fh, LPWIN32_FIND_DATA FindData, ULONG *dirpos)
 
 /*********************************************************************************************/
 
-ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName,
-		    struct ExAllData *ead, ULONG size, ULONG type)
+ULONG examine_entry_sub(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName, WIN32_FILE_ATTRIBUTE_DATA *FIB, LONG *kind)
 {
-  STRPTR filename;
-  STRPTR next, last, end, name;
+  STRPTR filename, name;
   ULONG plen, flen;
-  struct FileInfoBlock FIB;
-  int kind;
-  ULONG error;
+  ULONG error = 0;
 
-  /* Check, if the supplied buffer is large enough. */
-  next=(STRPTR)ead+sizes[type];
-  end =(STRPTR)ead+size;
-  
-  if(next>end) {
-      D(bug("[emul] examine_entry(): end of buffer\n"));
-      return ERROR_BUFFER_OVERFLOW;
-  }
-
-  D(bug("[emul] examine_entry(): filehandle's path: %s\n", fh->hostname));
+  D(bug("[emul] examine_entry_sub(): filehandle's path: %s\n", fh->hostname));
   if (FoundName) {
       D(bug("[emul] ...containing object: %s\n", FoundName));
       plen = strlen(fh->hostname);
@@ -866,54 +845,75 @@ ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR Fou
       filename = name + plen;
       *filename++ = '\\';
       strcpy(filename, FoundName);
-      filename = FoundName;
-  } else {
+  } else
       name = fh->hostname;
-      filename = fh->name;
-  }
   
   D(bug("[emul] Full name: %s\n", name));
-  kind = Stat(name, &FIB);
-  error = Errno();
+  *kind = Stat(name, FIB);
+  if (*kind == 0)
+      error = Errno();
   if (FoundName) {
       D(bug("[emul] Freeing full name\n"));
       emul_free(emulbase, name);
   }
-  if (kind < 0)
-	return error;
+  return error;
+}	
+
+/*********************************************************************************************/
+
+ULONG examine_entry(struct emulbase *emulbase, struct filehandle *fh, STRPTR FoundName,
+		    struct ExAllData *ead, ULONG size, ULONG type)
+{
+  STRPTR next, last, end, name;
+  WIN32_FILE_ATTRIBUTE_DATA FIB;
+  LONG kind;
+  ULONG error;
+
+  /* Check, if the supplied buffer is large enough. */
+  next=(STRPTR)ead+sizes[type];
+  end =(STRPTR)ead+size;
+  
+  if(next>end) {
+      D(bug("[emul] examine_entry(): end of buffer\n"));
+      return ERROR_BUFFER_OVERFLOW;
+  }
+
+  error = examine_entry_sub(emulbase, fh, FoundName, &FIB, &kind);
+  if (error)
+      return error;
 
   D(bug("[emul] Filling in object information\n"));
   switch(type)
   {
 	default:
 	case ED_OWNER:
-	  ead->ed_OwnerUID = FIB.fib_OwnerUID;
-	  ead->ed_OwnerGID = FIB.fib_OwnerGID;
+	  ead->ed_OwnerUID = 0;
+	  ead->ed_OwnerGID = 0;
 	case ED_COMMENT:
-	  ead->ed_Comment=NULL;
+	  ead->ed_Comment = NULL;
+	  /* TODO: Write Windows shell-compatible comments support using NTFS streams */
 	case ED_DATE:
-	  ead->ed_Days	= FIB.fib_Date.ds_Days;
-	  ead->ed_Mins	= FIB.fib_Date.ds_Minute;
-	  ead->ed_Ticks	= FIB.fib_Date.ds_Tick;
+	  FileTime2DateStamp(&ead->ed_Days, FIB.ftLastWriteTime);
 	case ED_PROTECTION:
-	  ead->ed_Prot 	= FIB.fib_Protection;
+	  ead->ed_Prot 	= prot_w2a(FIB.dwFileAttributes);
 	case ED_SIZE:
-	  ead->ed_Size	= FIB.fib_Size;
+	  ead->ed_Size	= FIB.nFileSizeLow;
 	case ED_TYPE:
-	  if (kind == 2)
-	  {
-	      ead->ed_Type = (*fh->name) ? ST_USERDIR : ST_ROOT;
-	  } else {
-	      ead->ed_Type = ST_FILE;
-	  }
-	  
+	  if ((kind == ST_USERDIR) && (!fh->name[0]))
+	      kind = ST_ROOT;
+	  ead->ed_Type = kind;
 	case ED_NAME:
-	  ead->ed_Name=next;
-	  last = name = (filename[0]) ? filename : fh->volumename;
-
-	  while(*name)
+	  if (FoundName)
+	      last = FoundName;
+	  else if (*fh->name) {
+	      name = fh->name;
+	      last = name;
+	      while(*name)
 		if(*name++=='\\')
-		  last=name;
+		  last = name;
+	  } else
+	      last = fh->volumename;
+	  ead->ed_Name=next;
 	  for(;;)
 	  {
 		if(next>=end)
@@ -958,45 +958,33 @@ static LONG examine(struct emulbase *emulbase, struct filehandle *fh,
 
 static LONG examine_next(struct emulbase *emulbase,  struct filehandle *fh, struct FileInfoBlock *FIB)
 {
-  int i;
-  char *name, *src, *dest;
+  char *src, *dest;
   ULONG res;
   WIN32_FIND_DATA FindData;
+  WIN32_FILE_ATTRIBUTE_DATA AttrData;
 
   res = examine_start(emulbase, fh);
   if (res)
       return res;
 
   res = ReadDir(fh, &FindData, &FIB->fib_DiskKey);
+  if (!res)
+      res = examine_entry_sub(emulbase, fh, FindData.cFileName, &AttrData, &FIB->fib_DirEntryType);
   if (res) {
       CloseDir(fh);
       return res;
   }
-  
-  /* TODO: remove code duplication with examine_entry() */
-  name = (STRPTR)emul_malloc(emulbase, strlen(fh->hostname) + strlen(FindData.cFileName) + 2);
-  
-  if (NULL == name)
-	return ERROR_NO_FREE_STORE;
-  
-  strcpy(name, fh->hostname);
-  strcat(name, "\\");
-  strcat(name, FindData.cFileName);
-  
-  D(bug("[emul] Examining found entry %s\n", name));
-  if (Stat(name,FIB) < 0)
-  {
-	D(bug("Stat() failed\n", name));
-	
-	emul_free(emulbase, name);
-	return Errno();
-  }
-  
-  emul_free(emulbase, name);
+
+  FIB->fib_OwnerUID	  = 0;
+  FIB->fib_OwnerGID	  = 0;
+  FIB->fib_Comment[0]	  = '\0'; /* TODO: no comments available yet! */
+  FIB->fib_Protection	  = prot_w2a(AttrData.dwFileAttributes);
+  FIB->fib_Size           = AttrData.nFileSizeLow;
+  FileTime2DateStamp(&FIB->fib_Date, AttrData.ftLastWriteTime);
 
   src  = FindData.cFileName;
   dest = FIB->fib_FileName;
-  for (i = 0; i<MAXFILENAMELENGTH-1;i++)
+  for (res = 0; res<MAXFILENAMELENGTH-1; res++)
   {
       if(! (*dest++=*src++) )
       {
@@ -1091,6 +1079,7 @@ static LONG create_softlink(struct emulbase * emulbase,
   if (!KernelIFace->CreateSymbolicLink)
       return ERROR_ACTION_NOT_KNOWN;
   
+  /* TODO: currently relative paths are converted to absolute one, this needs to be improved */
   error = makefilename(emulbase, &src, NULL, handle, name);
   if (!error)
   {
@@ -1368,20 +1357,16 @@ AROS_LH1(void, beginio,
   {
     case FSA_OPEN:
           D(bug("[emul] FSA_OPEN(\"%s\")\n", iofs->io_Union.io_OPEN.io_Filename));
-	  error = open_(emulbase,
-					(struct filehandle **)&iofs->IOFS.io_Unit,
-					iofs->io_Union.io_OPEN.io_Filename,
-					iofs->io_Union.io_OPEN.io_FileMode);
+	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
+			iofs->io_Union.io_OPEN.io_Filename, iofs->io_Union.io_OPEN.io_FileMode, 0, TRUE);
 	  if (
 		  (error == ERROR_WRITE_PROTECTED) &&
 		  (iofs->io_Union.io_OPEN.io_FileMode & FMF_AMIGADOS)
 		  )
 	  {
 	        D(bug("[emul] Retrying in read mode\n"));
-		error = open_(emulbase,
-                      (struct filehandle **)&iofs->IOFS.io_Unit,
-                      iofs->io_Union.io_OPEN.io_Filename,
-                      iofs->io_Union.io_OPEN.io_FileMode & (~FMF_WRITE));
+		error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
+	                      iofs->io_Union.io_OPEN.io_Filename, iofs->io_Union.io_OPEN.io_FileMode & (~FMF_WRITE), 0, TRUE);
 	  }
 	  D(bug("[emul] FSA_OPEN returning %lu\n", error));
 	  
@@ -1591,22 +1576,18 @@ AROS_LH1(void, beginio,
 	  
 	  case FSA_OPEN_FILE:
 	  D(bug("[emul] FSA_OPEN_FILE: name \"%s\", mode 0x%08lX)\n", iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode));
-	  error = open_file(emulbase,
-						(struct filehandle **)&iofs->IOFS.io_Unit,
-						iofs->io_Union.io_OPEN_FILE.io_Filename,
-						iofs->io_Union.io_OPEN_FILE.io_FileMode,
-						iofs->io_Union.io_OPEN_FILE.io_Protection);
+	  error = open_(emulbase, (struct filehandle **)&iofs->IOFS.io_Unit,
+			iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode,
+			iofs->io_Union.io_OPEN_FILE.io_Protection, FALSE);
 	  if (
 		  (error == ERROR_WRITE_PROTECTED) &&
 		  (iofs->io_Union.io_OPEN_FILE.io_FileMode & FMF_AMIGADOS)
 		  )
 	  {
 	        D(bug("[emul] Retrying in read-only mode\n"));
-		error = open_file(emulbase,
-						  (struct filehandle **)&iofs->IOFS.io_Unit,
-						  iofs->io_Union.io_OPEN_FILE.io_Filename,
-						  iofs->io_Union.io_OPEN_FILE.io_FileMode & (~FMF_WRITE),
-						  iofs->io_Union.io_OPEN_FILE.io_Protection);
+		error = open_(emulbase,(struct filehandle **)&iofs->IOFS.io_Unit,
+			      iofs->io_Union.io_OPEN_FILE.io_Filename, iofs->io_Union.io_OPEN_FILE.io_FileMode & (~FMF_WRITE),
+			      iofs->io_Union.io_OPEN_FILE.io_Protection, FALSE);
 	  }
 	  D(bug("[emul] FSA_OPEN_FILE returning %lu\n", error));
 	  break;
@@ -1741,8 +1722,6 @@ const char *EmulSymbols[] = {
     "EmulDelete",
     "EmulGetHome",
     "EmulStatFS",
-    "EmulChmod",
-    "EmulMKDir",
     "EmulErrno",
     NULL
 };
@@ -1760,6 +1739,8 @@ const char *KernelSymbols[] = {
     "FindFirstFileA",
     "FindNextFileA",
     "FindClose",
+    "CreateDirectoryA",
+    "SetFileAttributesA",
     "CreateHardLinkA",
     "CreateSymbolicLinkA",
     NULL
