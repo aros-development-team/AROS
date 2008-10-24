@@ -103,7 +103,7 @@
             c = *str ++; 
 
         /* Assume base ? */
-        if (base == 0)
+        if (base == 0 || base == 16)
         {
             if (*str == '0') /* Base 8 or 16 */
             {
@@ -113,10 +113,10 @@
                     str++;
                     base = 16;
                 }
-                else
+                else if(base == 0)
                     base = 8;
             }
-            else /* Any other digit: Base 10 (decimal) */
+            else if(base == 0) /* Any other digit: Base 10 (decimal) */
                 base = 10;
         }
 
