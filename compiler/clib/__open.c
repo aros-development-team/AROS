@@ -100,7 +100,6 @@ LONG __oflags2amode(int flags)
     if (flags & O_WRITE)    openmode |= FMF_WRITE;
     if (flags & O_READ)     openmode |= FMF_READ;
     if (flags & O_EXEC)     openmode |= FMF_EXECUTE;
-    if (flags & O_TRUNC)    openmode |= FMF_CLEAR;
     if (flags & O_CREAT)    openmode |= FMF_CREATE;
     if (flags & O_NONBLOCK) openmode |= FMF_NONBLOCK;
     if (flags & O_APPEND)   openmode |= FMF_APPEND;
@@ -226,6 +225,19 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	D(bug("[clib] Open ioerr=%d\n", ioerr));
 	errno = IoErr2errno(ioerr);
         goto err;
+    }
+    
+    if((flags & O_TRUNC) && (flags & (O_RDWR | O_WRONLY)))
+    {
+	if(SetFileSize(fh, 0, OFFSET_BEGINNING) != 0)
+	{
+	    /* Ignore error if FSA_SET_FILE_SIZE is not implemented */
+	    if(IoErr() != ERROR_NOT_IMPLEMENTED)
+	    {
+	        errno = IoErr2errno(IoErr());
+                goto err;	    
+	    }
+	}
     }
 
 success:
