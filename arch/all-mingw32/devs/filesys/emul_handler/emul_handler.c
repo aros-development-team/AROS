@@ -680,7 +680,9 @@ static LONG startup(struct emulbase *emulbase)
 		    /* Make sure this is not booted from */
 		    AddBootNode(-128, 0, dlv2, NULL);
 		    fhv->dl = dlv2;
-				
+		    
+		    /* Increment our open counter because we use ourselves */
+		    emulbase->device.dd_Library.lib_OpenCnt++;
 		    return 0;
 		}
 		FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));

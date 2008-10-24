@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
@@ -35,11 +35,7 @@ struct emulbase
     struct Unit *eb_stderr;
 };
 
-AROS_UFH3(void, boot,
-    AROS_UFHA(STRPTR, argString, A0),
-    AROS_UFHA(ULONG, argSize, D0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+void boot(struct ExecBase *SysBase, BOOL hidds_ok)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
@@ -54,8 +50,6 @@ AROS_UFH3(void, boot,
     	a) We want to use the XTerm as our boot shell
     	b) Don't have a working console.device/CON: handler.
     */
-
-    AROS_USERFUNC_INIT
 
     struct DosLibrary *DOSBase;
     struct emulbase *emulbase;
@@ -127,5 +121,4 @@ AROS_UFH3(void, boot,
        --> Dead stuff in there -> Crash
     */
 
-    AROS_USERFUNC_EXIT
 }

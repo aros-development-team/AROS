@@ -26,7 +26,7 @@
 #undef SDEBUG
 #undef DEBUG
 // #define SDEBUG 1
-// #define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
@@ -41,21 +41,6 @@
 #define ioReq(x) ((struct IORequest *)x)
 
 /****************************************************************************************/
-
-
-#if 0
-static const struct TagItem win_tags[] =
-{
-    {WA_Width,		500},
-    {WA_Height,		300},
-    {WA_SmartRefresh,	TRUE},
-    {WA_DragBar,	TRUE},
-    {WA_IDCMP,		0},
-    {WA_Title,		(IPTR)"CON:"},
-    {WA_Flags,		WFLG_DEPTHGADGET | WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_SIZEBRIGHT },
-    {TAG_DONE,		0UL}
-};
-#endif
 
 static const struct NewWindow default_nw =
 {
@@ -227,6 +212,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
     };
 
     win_tags[2].ti_Data = (IPTR)fh->screenname;
+    D(bug("[contask] Opening window on screen %s, IntuitionBase = 0x%p\n", fh->screenname, IntuitionBase));
     fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
 
     if (fh->window)
@@ -265,6 +251,7 @@ LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
     } /* if (fh->window) */
     else
     {
+        D(bug("[contask] Failed to open a window\n"));
 	err = ERROR_NO_FREE_STORE;
     }
     
@@ -293,6 +280,7 @@ BOOL MakeSureWinIsOpen(struct conbase *conbase, struct IOFileSys *iofs, struct f
 {
     LONG err;
     
+    D(bug("[contask] Console window handle: 0x%p\n", fh->window));
     if (fh->window) return TRUE;
     
     err = MakeConWindow(fh, conbase);
@@ -575,25 +563,30 @@ AROS_UFH3(VOID, conTaskEntry,
 		switch(iofs->IOFS.io_Command)
 		{
 		    case FSA_CLOSE:
+		        D(bug("[contask] FSA_CLOSE\n"));
 	    		close_con(conbase, iofs);
 	    		break;
 
 		    case FSA_READ:
+		        D(bug("[contask] FSA_READ\n"));
 		    	if (!MakeSureWinIsOpen(conbase, iofs, fh)) break;
  			con_read(conbase, iofs);
 			break;
 
 		    case FSA_WRITE:
+		        D(bug("[contask] FSA_WRITE\n"));
 		    	if (!MakeSureWinIsOpen(conbase, iofs, fh)) break;
 			con_write(conbase, iofs);
 			break;
 
     	    	    case FSA_CHANGE_SIGNAL:
+    	    	        D(bug("[contask] FSA_CHANGE_SIGNAL\n"));
 		    	fh->breaktask = iofs->io_Union.io_CHANGE_SIGNAL.io_Task;
     	    	    	ReplyMsg(&iofs->IOFS.io_Message);
 			break;
 
     	    	    case FSA_CONSOLE_MODE:
+    	    	        D(bug("[contask] FSA_CONSOLE_MODE\n"));
 			{
                             LONG wantmode = iofs->io_Union.io_CONSOLE_MODE.io_ConsoleMode;
 
@@ -624,6 +617,7 @@ AROS_UFH3(VOID, conTaskEntry,
 		    	break;
 
     	    	    case FSA_WAIT_CHAR:
+    	    	        D(bug("[contask] FSA_WAIT_CHAR\n"));
 			{
 			    struct IFS_WAIT_CHAR *wc;
 			    wc = &iofs->io_Union.io_WAIT_CHAR;
@@ -656,7 +650,7 @@ AROS_UFH3(VOID, conTaskEntry,
 				while (treq1->next)
 				    treq1 = treq1->next;
 				treq1->next = treq;
-bug("CONTASK: AddTail treq=%x\n", (unsigned)treq);
+				D(bug("CONTASK: AddTail treq=%x\n", (unsigned)treq));
 
 				SendIO(ioreq);
 			    }
