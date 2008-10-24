@@ -6,16 +6,29 @@
 */
 
 #define DEBUG 0
+
 #include <proto/exec.h>
 #include <exec/exec.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <aros/debug.h>
+#include <aros/startup.h>
+#include <aros/symbolsets.h>
 
 #include <errno.h>
 
 #include "__open.h"
 #include "__errno.h"
+#include "__arosc_privdata.h"
+
+struct FlockNode
+{
+    struct Node node;
+    struct SignalSemaphore *sem;
+};
+
+LONG AddToList(struct SignalSemaphore *sem);
+void RemoveFromList(struct SignalSemaphore *sem);
 
 /*****************************************************************************
 
@@ -124,6 +137,7 @@
     {
 	D(bug("[flock] Releasing semaphore %s\n", sem->ss_Link.ln_Name));
 	ReleaseSemaphore(sem);
+	RemoveFromList(sem);
 	if(sem->ss_Owner == NULL && sem->ss_QueueCount == -1)
 	{
 	    D(bug("[flock] All locks unlocked, removing semaphore %s\n", sem->ss_Link.ln_Name));
@@ -153,6 +167,7 @@
 	    else
 		ObtainSemaphoreShared(sem);
 	    D(bug("[flock] Shared lock obtained\n"));
+	    AddToList(sem);
 	    break;
 	case LOCK_EX:
 	    D(bug("[flock] Obtaining exclusive lock\n"));
@@ -167,7 +182,73 @@
 	    else
 		ObtainSemaphore(sem);
 	    D(bug("[flock] Exclusive lock obtained\n"));
+	    AddToList(sem);
 	    break;
     }
     return 0;
 }
+
+LONG AddToList(struct SignalSemaphore *sem)
+{
+    struct FlockNode *node;
+    node = AllocMem(sizeof(struct FlockNode), MEMF_ANY | MEMF_CLEAR);
+    if(!node)
+	return -1;
+    node->sem = sem;
+    AddHead((struct List *)&__flocks_list, (struct Node*) node);
+    return 0;
+}
+
+void RemoveFromList(struct SignalSemaphore *sem)
+{
+    struct FlockNode *varNode;
+    struct Node *tmpNode;
+    
+    ForeachNodeSafe(&__flocks_list, varNode, tmpNode)
+    {
+	if(varNode->sem == sem)
+	{
+	    Remove((struct Node*) varNode);
+	    FreeMem(varNode, sizeof(struct FlockNode));
+	    break;
+	}
+    }
+}
+
+int __init_flocks(void)
+{
+    NEWLIST((struct List *)&__flocks_list);
+
+    return 1;
+}
+
+void __unlock_flocks(void)
+{
+    {
+	struct FlockNode *lock;
+	struct SignalSemaphore *sem;
+
+	Forbid();
+	while ((lock = (struct FlockNode *) REMHEAD(
+	    (struct List *) &__flocks_list)))
+	{
+	    sem = lock->sem;
+    	    ReleaseSemaphore(sem);
+	    FreeMem(lock, sizeof(struct FlockNode));
+
+    	    if(sem->ss_Owner == NULL && sem->ss_QueueCount == -1)
+    	    {
+    	        D(bug("[flock] All locks unlocked, removing semaphore %s\n", sem->ss_Link.ln_Name));
+    	        /* All locks for this file were unlocked, we don't need semaphore
+                 * anymore */
+                RemSemaphore(sem);
+                FreeVec(sem->ss_Link.ln_Name);
+                FreeVec(sem);
+            }
+	}
+	Permit();
+    }
+}
+
+ADD2INIT(__init_flocks, 1);
+ADD2EXIT(__unlock_flocks, 1);
