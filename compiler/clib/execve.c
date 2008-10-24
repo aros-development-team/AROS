@@ -348,14 +348,14 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    udata->exec_arguments = AllocVec(strlen(argptr)+1, MEMF_ANY);
 	    if(!udata->exec_arguments)
 		goto error_env;
-	    udata->exec_taskname = AllocVec(strlen(afilename)+1, MEMF_ANY);
+	    udata->exec_taskname = AllocVec(strlen(inter ? inter : argv[0])+1, MEMF_ANY);
 	    if(!udata->exec_taskname)
 	    {
 		FreeVec(udata->exec_arguments);
 		goto error_env;
 	    }
 	    CopyMem(argptr, udata->exec_arguments, strlen(argptr)+1);
-	    CopyMem(afilename, udata->exec_taskname, strlen(afilename)+1);
+	    CopyMem((inter ? inter : argv[0]), udata->exec_taskname, strlen(inter ? inter : argv[0])+1);
 	    free(argptr);
 	    free(afilename);
 
@@ -449,6 +449,8 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	{
 	    struct Library *aroscbase;
 	    int oldspawned;
+	    int parent_does_upath;
+	    APTR old_return_addr;
 	    
 	    fdesc *in, *out, *err;
 	    BPTR oldin, oldout, olderr;
@@ -464,6 +466,20 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    if(err)
 	        olderr = SelectError(err->fcb->fh);
 
+	    oldspawned = __get_arosc_privdata()->acpd_spawned;
+	    parent_does_upath = __doupath;
+	    
+	    /* Force arosc.library to open with new private data */
+	    __get_arosc_privdata()->acpd_spawned = 0;
+	    old_return_addr = __get_arosc_privdata()->acpd_process_returnaddr;
+	    __get_arosc_privdata()->acpd_process_returnaddr = NULL;
+	    aroscbase = OpenLibrary("arosc.library", 0);
+	    if(!aroscbase)
+	    {
+		saved_errno = ENOMEM;
+		goto error_env;
+	    }
+	    
 	    if(envp)
 	    {
 	        /* Everything went fine, execve won't return so we can free the old
@@ -475,17 +491,21 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	            FreeVec(varNode);
 	        }
 	    }
-	    oldspawned = __get_arosc_privdata()->acpd_spawned;
-	    __get_arosc_privdata()->acpd_spawned = 0;
+	    
+	    __get_arosc_privdata()->acpd_parent_does_upath = parent_does_upath;
+	    __get_arosc_privdata()->acpd_spawned = 1;
 	    
 	    returncode = exec_command(
 		seglist, 
-		afilename, 
+		(inter ? inter : argv[0]), 
 		argptr, 
 		cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT
 	    );
 
+	    CloseLibrary(aroscbase);
+	    /* Restore previous values */
 	    __get_arosc_privdata()->acpd_spawned = oldspawned;
+	    __get_arosc_privdata()->acpd_process_returnaddr = old_return_addr;
 	        
 	    UnLoadSeg(seglist);
 	    free(argptr);
