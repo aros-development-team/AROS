@@ -2,40 +2,38 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR 	:= $(GENDIR)/$(CURDIR)
-BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o $(TARGETDIR)/hostlib.o $(TARGETDIR)/debug.o $(TARGETDIR)/shutdown.o
-FILES		:= bootstrap elfloader32 hostlib debug
-KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o
-KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o\
-		   $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
-KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o\
-		   $(KOBJSDIR)/expansion_library.o \
-		   $(KOBJSDIR)/boot_library.o \
-		   $(KOBJSDIR)/dos_library.o \
-		   $(KOBJSDIR)/aros_library.o \
-		   $(KOBJSDIR)/utility_library.o\
-		   $(KOBJSDIR)/keymap_library.o \
-		   $(KOBJSDIR)/mathieeesingbas_library.o \
-		   $(KOBJSDIR)/oop_library.o
-K_RES		:= $(KOBJSDIR)/kernel_resource.o     \
-		   $(KOBJSDIR)/hostlib_resource.o    \
-		   $(KOBJSDIR)/hostthread_resource.o \
-		   $(KOBJSDIR)/battclock_resource.o
-KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o $(KOBJSDIR)/packet_handler.o $(KOBJSDIR)/amberram_handler.o $(KOBJSDIR)/nil_handler.o
-KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES)
 
-#this needs sdl.hidd
-#				$(KOBJSDIR)/graphics_library.o \
-#				$(KOBJSDIR)/layers_library.o \
-#				$(KOBJSDIR)/workbench_library.o
-#				$(KOBJSDIR)/intuition_library.o \
+BOBJS		:= $(TARGETDIR)/bootstrap.o $(TARGETDIR)/elfloader32.o \
+		   $(TARGETDIR)/hostlib.o $(TARGETDIR)/debug.o	       \
+		   $(TARGETDIR)/shutdown.o
+FILES		:= bootstrap elfloader32 hostlib debug
+
+KOBJS_DEVICES   := $(KOBJSDIR)/timer_device.o	     $(KOBJSDIR)/gameport_device.o	   \
+		   $(KOBJSDIR)/input_device.o	     $(KOBJSDIR)/console_device.o	   \
+		   $(KOBJSDIR)/keyboard_device.o
+KOBJS_HIDD	:= $(KOBJSDIR)/hiddclass_hidd.o	     $(KOBJSDIR)/graphics_hidd.o
+KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o	     $(KOBJSDIR)/expansion_library.o	   \
+		   $(KOBJSDIR)/boot_library.o	     $(KOBJSDIR)/dos_library.o		   \
+		   $(KOBJSDIR)/utility_library.o     $(KOBJSDIR)/intuition_library.o	   \
+		   $(KOBJSDIR)/keymap_library.o      $(KOBJSDIR)/cybergraphics_library.o   \
+		   $(KOBJSDIR)/oop_library.o	     $(KOBJSDIR)/graphics_library.o	   \
+		   $(KOBJSDIR)/layers_library.o
+K_RES		:= $(KOBJSDIR)/kernel_resource.o     $(KOBJSDIR)/hostlib_resource.o	   \
+		   $(KOBJSDIR)/hostthread_resource.o $(KOBJSDIR)/battclock_resource.o
+KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o	     $(KOBJSDIR)/packet_handler.o	   \
+		   $(KOBJSDIR)/amberram_handler.o    $(KOBJSDIR)/nil_handler.o		   \
+		   $(KOBJSDIR)/con_handler.o
+
+KOBJS := $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(K_RES) $(KOBJS_HIDD)
 
 #MM- AROS-mingw32-i386: kernel-link-mingw32 kernel-bootstrap-mingw32
-#MM kernel-link-mingw32: kernel-kernel-mingw32-kobj	    \
+#MM kernel-link-mingw32: kernel				    \
+#MM			 kernel-kernel-mingw32-kobj	    \
 #MM			 kernel-hostlib-mingw32-kobj	    \
 #MM			 kernel-hostthread-mingw32-kobj	    \
-#MM			 kernel				    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-fs-packet-kobj		    \
+#MM			 workbench-hidd-graphics-kobj	    \
 #MM			 contrib-amberram-kobj
 
 #MM
@@ -43,6 +41,8 @@ kernel-bootstrap-mingw32: setup-mingw32 $(BINDIR)/boot/AROSBootstrap
 
 #MM
 kernel-link-mingw32: $(BINDIR)/boot/kernel
+#MM
+kernel-link-mingw32-quick: $(BINDIR)/boot/kernel
 
 setup-mingw32 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
@@ -50,7 +50,7 @@ setup-mingw32 :
 $(BINDIR)/boot/kernel: setup-mingw32 $(KOBJS)
 	$(TARGET_CC) $(GENMAP) $(OSGENDIR)/boot/kernel.map -Wl,-T,kernel.lds\
 	  -o $@ $(KOBJS) $(NOSTARTUP_LDFLAGS)\
-	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
+	  -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs -lhiddgraphicsstubs
 
 
 $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
