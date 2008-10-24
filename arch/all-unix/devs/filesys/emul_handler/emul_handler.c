@@ -2059,9 +2059,49 @@ AROS_LH1(void, beginio,
 	}
 	
     case FSA_SET_FILE_SIZE:
-#warning FIXME: Implement FSA_SET_FILE_SIZE
-	/* We could manually change the size, but this is currently not
-	   implemented. FIXME */
+        {
+            struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+            QUAD offset = iofs->io_Union.io_SET_FILE_SIZE.io_Offset;
+            LONG mode = iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode;
+                        
+            off_t absolute;
+            if(mode == OFFSET_BEGINNING)
+            {
+        	absolute = offset;
+            } 
+            else if(mode == OFFSET_CURRENT)
+            {
+        	absolute = lseek(fh->fd, 0, SEEK_CUR); 
+                if(absolute == -1)
+                {
+                    error = err_u2a();
+                    break;
+                }
+        	absolute += offset;
+            } 
+            else if(mode == OFFSET_END)
+            {
+        	absolute = lseek(fh->fd, 0, SEEK_END); 
+                if(absolute == -1)
+                {
+                    error = err_u2a();
+                    break;
+                }
+        	absolute -= offset;
+            } 
+            else 
+            {
+        	error = ERROR_UNKNOWN;
+        	break;
+            }
+            if(ftruncate(fh->fd, absolute) == -1)
+            {
+        	error = err_u2a();
+        	break;
+            }
+            iofs->io_Union.io_SET_FILE_SIZE.io_Offset = (QUAD) absolute;
+	    break;
+        }
     case FSA_WAIT_CHAR:
 #warning FIXME: Implement FSA_WAIT_CHAR
 	/* We could manually wait for a character to arrive, but this is
