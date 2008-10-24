@@ -106,7 +106,7 @@ long __gmtoffset;
         GetSysTime(tv);
 
         /* Adjust with the current timezone, stored in minutes west of GMT */
-        tv->tv_sec += __gmtoffset * 60;
+        tv->tv_sec += (2922 * 1440 + __gmtoffset) * 60;
     }
 
     if (tz)
