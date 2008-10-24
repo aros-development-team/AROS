@@ -1,4 +1,5 @@
 #include <exec/tasks.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 
 /**************************************************************************
@@ -21,5 +22,6 @@
 int main(void)
 {
     ShutdownA(SD_ACTION_POWEROFF);
+    PutStr("Software power off is not supported\n");
     return 0;
 }
