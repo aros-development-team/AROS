@@ -5,6 +5,6 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 USER_CFLAGS	:= -I$(TOP)/rom/dos -I..
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
-  arch=mingw32 files="aros boot"
+  arch=mingw32 files="boot"
 
 %common

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start up the ol' Dos boot process.
@@ -39,7 +39,7 @@
 #define BNF_RETRY 0x8000 /* Private flag for the BootNode */
 
 extern BOOL init_hidds(struct ExecBase *, struct DosLibrary *);
-extern void boot();
+extern void boot(struct ExecBase *SysBase, BOOL hidds_ok);
 
 BOOL attemptingboot = FALSE;
 BOOL bootdevicefound = FALSE;
@@ -128,6 +128,7 @@ AROS_UFH3(void, __dosboot_IntBoot,
     STRPTR                bootName;
     LONG                  bootNameLength;        
     BPTR                  lock;
+    BOOL		  hidds_ok;
 
     struct MsgPort *mp;         // Message port used with timer.device
     struct timerequest *tr = NULL;     // timer's time request message
@@ -346,13 +347,10 @@ AROS_UFH3(void, __dosboot_IntBoot,
         CloseLibrary( (struct Library *) ExpansionBase );
 
         /* Initialize HIDDs */
-        init_hidds(SysBase, (struct DosLibrary *)DOSBase);
+        hidds_ok = init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 
         /* We now call the system dependant boot - should NEVER return! */
-        AROS_UFC3(void, boot, 
-              AROS_UFCA(STRPTR, argString, A0),
-              AROS_UFCA(ULONG, argSize, D0),
-              AROS_UFCA(struct ExecBase *, SysBase, A6));
+        boot(SysBase, hidds_ok);
     }
 
     //We Should NEVER reach here!

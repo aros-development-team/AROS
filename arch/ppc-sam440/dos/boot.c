@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
@@ -24,19 +24,11 @@
 /* Require this for the stdout defn */
 #include <stdio.h>
 
-extern void AROSSupportBase_SetStdOut (void *);
 extern int submain(struct ExecBase *, struct DosLibrary *);
 
-AROS_UFH3(void, boot,
-    AROS_UFHA(STRPTR, argString, A0),
-    AROS_UFHA(ULONG, argSize, D0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+void boot(struct ExecBase *SysBase, BOOL hidds_ok)
 {
-    AROS_USERFUNC_INIT
-
     struct DosLibrary *DOSBase;
-    struct TagItem fhtags[]= { { TAG_END, 0 } };
 
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if( DOSBase == NULL )
@@ -53,5 +45,4 @@ AROS_UFH3(void, boot,
        --> Dead stuff in there -> Crash
     */
     return;
-    AROS_USERFUNC_EXIT
 }

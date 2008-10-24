@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
@@ -15,7 +15,9 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <dos/dosextens.h>
+#include <dos/filesystem.h>
 #include <dos/stdio.h>
+#include <libraries/expansionbase.h>
 #include <utility/tagitem.h>
 #include <aros/arossupportbase.h>
 #include <aros/debug.h>
@@ -23,25 +25,15 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-/* Require this for the stdout defn */
-#include <stdio.h>
-
-extern void AROSSupportBase_SetStdOut (void *);
-extern int submain(struct ExecBase *, struct DosLibrary * );
-
 struct emulbase
 {
     struct Device eb_device;
-    struct Unit *eb_stdin;
-    struct Unit *eb_stdout;
-    struct Unit *eb_stderr;
+    APTR eb_stdin;
+    APTR eb_stdout;
+    APTR eb_stderr;
 };
 
-AROS_UFH3(void, boot,
-    AROS_UFHA(STRPTR, argString, A0),
-    AROS_UFHA(ULONG, argSize, D0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+void boot(struct ExecBase *SysBase, BOOL hidds_ok)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
@@ -53,16 +45,27 @@ AROS_UFH3(void, boot,
     	our own, which we get from emul.handler.
 
     	This is really only necessary if
-    	a) We want to use the XTerm as our boot shell
+    	a) We want to use the host console as our boot shell
     	b) Don't have a working console.device/CON: handler.
     */
-
-    AROS_USERFUNC_INIT
 
     struct DosLibrary *DOSBase;
     struct emulbase *emulbase;
     struct TagItem fhtags[]= { { TAG_END, 0 } };
     struct FileHandle *fh_stdin, *fh_stdout;
+    struct TagItem tags[] =
+    {
+        { SYS_Asynch,      TRUE       }, /* 0 */
+        { SYS_Background,  FALSE      }, /* 1 */
+        { SYS_ScriptInput, 0          }, /* 2 */
+        { SYS_Input,       0          }, /* 3 */
+        { SYS_Output,      0          }, /* 4 */
+        { SYS_Error,       0          }, /* 5 */
+        { TAG_DONE,        0          }
+    };
+    BPTR cis = NULL;
+    BPTR sseq = NULL;
+    LONG rc = RETURN_FAIL;
 
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if( DOSBase == NULL )
@@ -113,13 +116,54 @@ AROS_UFH3(void, boot,
     SelectError(MKBADDR(fh_stdout));
 
     D(bug("[boot] Selecting output for AROSSupport\n"));
-    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = stderr;
+    ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
 
-    submain(SysBase, DOSBase);
+    if (hidds_ok) {
+        D(bug("[SubMain] Opening boot shell\n"));
+        cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
+    } else
+        PutStr("Failed to load system HIDDs\n");
+    if (cis)
+    {
+        struct ExpansionBase *ExpansionBase;
+        BOOL opensseq = TRUE;
 
-    /* submain() returns, when the Boot Shell Window is left with EndShell/EndCli */
+	D(bug("[SubMain] Boot shell opened\n"));
+        if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
+        {
+            opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
+            CloseLibrary(ExpansionBase);
+        }
 
-    /* To avoid that the input/output/error handles of emul.handler
+        D(bug("[SubMain] Open Startup Sequence = %d\n", opensseq));
+
+        if (opensseq)
+        {
+            sseq = Open("S:Startup-Sequence", FMF_READ);
+            tags[2].ti_Data = (IPTR)sseq;
+        }
+        tags[3].ti_Data = (IPTR)cis;
+    } else {
+        tags[3].ti_Tag = TAG_DONE;
+        PutStr("Entering emergency shell\n");
+    }
+    rc = SystemTagList("", tags);
+    if (rc != -1)
+    {
+        cis  = NULL;
+        sseq = NULL;
+    }
+    else {
+        PutStr("Cannot open boot console\n");
+        rc = RETURN_FAIL;
+    }
+    if (sseq)
+        Close(sseq);
+    if (cis)
+        Close(cis);
+
+    /* We get here when the Boot Shell Window is left with EndShell/EndCli.
+       To avoid that the input/output/error handles of emul.handler
        are closed when the Boot Process dies, we set the in/out/err
        handles of this process to 0.
     */
@@ -133,6 +177,4 @@ AROS_UFH3(void, boot,
        Boot Process (having a CLI) is not removed from the rootnode.
        --> Dead stuff in there -> Crash
     */
-
-    AROS_USERFUNC_EXIT
 }
