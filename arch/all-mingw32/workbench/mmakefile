@@ -1,0 +1,9 @@
+# $Id: mmakefile 19843 2003-09-27 13:17:16Z chodorowski $
+include $(TOP)/config/make.cfg
+
+# First try to install arch/cpu specific hidd.prefs
+#MM
+workbench-s-hiddprefs-mingw32: $(AROS_S)/hidd.prefs
+
+$(AROS_S)/hidd.prefs : hidd.prefs
+	@$(CP) $^ $@
