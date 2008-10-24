@@ -30,6 +30,7 @@ int __stat(BPTR lock, struct stat *sb)
     int buffersize = 256;
     uint64_t hash;
     uint32_t pc = 1, pb = 1; /* initial hash values */
+    int fallback_to_defaults = 0;
 
     fib = AllocDosObject(DOS_FIB, NULL);
 
@@ -42,54 +43,67 @@ int __stat(BPTR lock, struct stat *sb)
 
     if (!Examine(lock, fib))
     {
-        errno = IoErr2errno(IoErr());
-        FreeDosObject(DOS_FIB, fib);
-
-        return -1;
+	if(IoErr() == ERROR_NOT_IMPLEMENTED)
+	{
+	    fallback_to_defaults = 1;
+	}
+	else
+	{
+            errno = IoErr2errno(IoErr());
+            FreeDosObject(DOS_FIB, fib);
+            return -1;
+	}
     }
 
-    if(fib->fib_DirEntryType != ST_PIPEFILE)
+    /* Get the full path of the stated filesystem object and use it to
+       compute hash value */
+    do
     {
-        /* Get the full path of the stated filesystem object and use it to
-           compute hash value */
-        do
+        if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
         {
-            if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
-            {
-            	errno = IoErr2errno(IoErr());
-            	FreeDosObject(DOS_FIB, fib);
-            	return -1;
-            }
-                
-            if(NameFromLock(lock, buffer, buffersize))
-                break;
-            else if(IoErr() == ERROR_OBJECT_IN_USE)
-            {
-            	/* We can't retrieve name because lock is an exclusive lock */
-            	buffer[0] = '\0';
-            	break;
-            }
-            else if(IoErr() != ERROR_LINE_TOO_LONG)
-            {
-            	errno = IoErr2errno(IoErr());
-            	FreeDosObject(DOS_FIB, fib);
-                FreeVec(buffer);
-                return -1;
-            }
-            FreeVec(buffer);
-           buffersize *= 2;
+            errno = IoErr2errno(IoErr());
+            FreeDosObject(DOS_FIB, fib);
+            return -1;
         }
-        while(TRUE);
-	    
-        hashlittle2(buffer, strlen(buffer), &pc, &pb);
-        hash = pc + (((uint64_t)pb)<<32);
+            
+        if(NameFromLock(lock, buffer, buffersize))
+            break;
+        else if(IoErr() == ERROR_OBJECT_IN_USE || ERROR_NOT_IMPLEMENTED)
+        {
+            /* We can't retrieve name because lock is an exclusive lock
+               or Examine is not implemented in this handler */
+            buffer[0] = '\0';
+            break;
+        }
+        else if(IoErr() != ERROR_LINE_TOO_LONG)
+        {
+            errno = IoErr2errno(IoErr());
+            FreeDosObject(DOS_FIB, fib);
+            FreeVec(buffer);
+            return -1;
+        }
         FreeVec(buffer);
+       buffersize *= 2;
     }
-    else
+    while(TRUE);
+	    
+    hashlittle2(buffer, strlen(buffer), &pc, &pb);
+    hash = pc + (((uint64_t)pb)<<32);
+    FreeVec(buffer);
+
+    if(fallback_to_defaults)
     {
-        /* NameFromLock won't work for pipe and console locks, so let's
-           just set hash value for them to 0 */
-    	hash = 0;
+	/* Empty file, not protected, as old as it can be... */
+	fib->fib_Size = 0;
+	fib->fib_NumBlocks = 0;
+	fib->fib_Date.ds_Days = 0;
+	fib->fib_Date.ds_Minute = 0;
+	fib->fib_Date.ds_Tick = 0;
+	fib->fib_OwnerUID = 0;
+	fib->fib_OwnerGID = 0;
+	fib->fib_Protection = 0;
+	/* Most probable value */
+	fib->fib_DirEntryType = ST_PIPEFILE;
     }
 
     sb->st_dev     = (dev_t)((struct FileHandle *)lock)->fh_Device;
@@ -114,14 +128,12 @@ int __stat(BPTR lock, struct stat *sb)
         }
         else
         {
-        /* The st_blksize is just a guideline anyway, so we set it
-           to 1024 in case Info() didn't succeed */
-        sb->st_blksize = 1024;
+            /* The st_blksize is just a guideline anyway, so we set it
+               to 1024 in case Info() didn't succeed */
+            sb->st_blksize = 1024;
         }
     }
 
-    /* With SAS/C++ 6.55 on the Amiga, `stat' sets the `st_nlink'
-       field to -1 for a file, or to 1 for a directory.  */
     switch (fib->fib_DirEntryType)
     {
         case ST_PIPEFILE:
@@ -144,7 +156,7 @@ int __stat(BPTR lock, struct stat *sb)
         case ST_FILE:
         case ST_LINKFILE:
         default:
-            sb->st_nlink = -1;
+            sb->st_nlink = 1;
             sb->st_mode |= S_IFREG;
     }
 
