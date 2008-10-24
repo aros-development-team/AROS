@@ -27,7 +27,9 @@ FILES := \
 	opendir \
 	pipe \
 	fcntl \
-	flock
+	flock \
+	strtoul \
+	strtoull
 
 EXEDIR := $(AROS_TESTS)/clib
 
