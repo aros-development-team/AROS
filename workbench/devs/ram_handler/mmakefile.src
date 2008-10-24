@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fs-complete : workbench-fs-ram
 #MM- workbench-fs-ram : includes linklibs
 
 %build_module mmake=workbench-fs-ram \

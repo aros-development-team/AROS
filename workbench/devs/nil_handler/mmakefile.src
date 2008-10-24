@@ -1,7 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fs-complete : workbench-fs-nil
 #MM- workbench-fs-nil : includes linklibs
 
 USER_CFLAGS := -DDEBUG=0
