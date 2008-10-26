@@ -35,18 +35,18 @@ BPTR bpfhStdErr;
 static struct {
     char   *pszDevice;
     char   *pszName;
-    LONG    bOFS;
-    LONG    bFFS;
-    LONG    bIntl;
-    LONG    bNoIntl;
+    IPTR    bOFS;
+    IPTR    bFFS;
+    IPTR    bIntl;
+    IPTR    bNoIntl;
 #ifndef __AROS__
-    LONG    bDirCache;
-    LONG    bNoDirCache;
+    IPTR    bDirCache;
+    IPTR    bNoDirCache;
 #endif
-    LONG    bNoIcons;
-    LONG    bDiskIcon;
-    LONG    bQuick;
-    LONG    bNoVerify;
+    IPTR    bNoIcons;
+    IPTR    bDiskIcon;
+    IPTR    bQuick;
+    IPTR    bNoVerify;
     char   *pszType;
     char   *pszFlags;
 } args;
@@ -73,7 +73,7 @@ int rcCliMain(void)
     BOOL NoDirCache = TRUE;
     char ch;
 
-    prda = ReadArgs(ARGS_TEMPLATE, (LONG *)&args, 0 );
+    prda = ReadArgs(ARGS_TEMPLATE, (IPTR *)&args, 0 );
     if( prda == 0 )
     {
 	PrintFault( IoErr(), 0 );
