@@ -36,6 +36,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-packet \
 #MM	kernel-workbench \
 #MM	kernel-boot \
+#MM	kernel-bootmenu \
 #MM kernel-dos \
 #MM	hidd-i2c \
 #MM	hidd-radeon \

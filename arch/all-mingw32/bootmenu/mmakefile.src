@@ -1,0 +1,9 @@
+# $Id: mmakefile.src 29725 2008-10-11 23:48:13Z neil $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.. -I$(TOP)/rom/bootmenu
+
+%build_archspecific \
+  mainmmake=kernel-bootmenu maindir=rom/bootmenu \
+  arch=mingw32 \
+  files="bootconfig" modulename=bootmenu

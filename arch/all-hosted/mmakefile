@@ -45,9 +45,6 @@ LIBS :=	-L$(LIBDIR) \
 	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga -lautoinit -llibinit
 
 USER_CFLAGS := -I$(GENINCDIR) -D__AROS__
-$(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
-	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \
+$(BINDIR)/aros: $(DEP_LIBS) $(KOBJS)
+	$(HOST_CC) $(CFLAGS) $(HOST_LDFLAGS) $< $(KOBJS) $(LIBS) \
 		-o $@ $(KERNEL_LDFLAGS) $(DBUS_LIBFLAGS)
-
-$(GENDIR)/aros.o : aros.c
-	$(HOST_CC) $(CFLAGS) -Dmain=submain $< -c -o $@

@@ -132,7 +132,7 @@ void boot(struct ExecBase *SysBase, BOOL hidds_ok)
         if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
         {
             opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
-            CloseLibrary(ExpansionBase);
+            CloseLibrary((struct Library *)ExpansionBase);
         }
 
         D(bug("[SubMain] Open Startup Sequence = %d\n", opensseq));

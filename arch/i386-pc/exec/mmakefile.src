@@ -6,7 +6,7 @@ CFILES		:= \
 	newaddtask cause dispatch debug supervisor reschedule permit \
 	wait remtask settaskpri signal setexcept superstate userstate \
 	core traps screen serialrawio execfunctions prepareexecbase \
-	cachecleare cachepredma cachepostdma
+	cachecleare cachepredma cachepostdma shutdowna
 
 AFILES		:= coldreboot corelow stackswap
 
