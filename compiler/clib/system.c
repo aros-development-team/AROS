@@ -12,6 +12,8 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "__errno.h"
 #include "__open.h"
@@ -27,6 +29,9 @@ AROS_UFP3(extern LONG, wait_entry,
 AROS_UFPA(char *, argstr,A0),
 AROS_UFPA(ULONG, argsize,D0),
 AROS_UFPA(struct ExecBase *,SysBase,A6));
+
+int system_sh(const char *string);
+int system_no_sh(const char *string);
 
 /*****************************************************************************
 
@@ -56,16 +61,61 @@ AROS_UFPA(struct ExecBase *,SysBase,A6));
 
 ******************************************************************************/
 {
-    CONST_STRPTR apath;
-    char *args, *cmd;
-    BPTR seg;
-    int ret;
+    BPTR lock;
+    APTR old_proc_window;
+    struct Process *me;
 
     if (string == NULL || string[0] == '\0')
     {
 	D(bug("system(cmd=, args=)=1\n"));
 	return 1;
     }
+
+    me = (struct Process*) FindTask(NULL);
+    old_proc_window = me->pr_WindowPtr;
+    me->pr_WindowPtr = (APTR) -1;
+    lock = Lock((STRPTR) "bin:sh", SHARED_LOCK);
+    me->pr_WindowPtr = old_proc_window;
+    
+    if(lock)
+    {
+	UnLock(lock);
+	return system_sh(string);
+    }
+    else
+    {
+	return system_no_sh(string);
+    }
+} /* system */
+
+int system_sh(const char *string)
+{
+    pid_t pid = vfork();
+    int status;
+
+    if(pid > 0)
+    {
+	if(waitpid(pid, &status, 0) == -1)
+	    return -1;
+	return status;
+    }
+    else if(pid == 0)
+    {
+	execl((__doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
+	_exit(127);
+    }
+    else
+    {
+        return -1;
+    }
+}
+	
+int system_no_sh(const char *string)
+{
+    CONST_STRPTR apath;
+    char *args, *cmd;
+    BPTR seg;
+    int ret;
 
     cmd = strdup(string);
     args = cmd;
@@ -96,7 +146,7 @@ AROS_UFPA(struct ExecBase *,SysBase,A6));
 
     D(bug("system(cmd=%s, args=%s)\n", cmd, args ? args : ""));
 
-    apath = __path_u2a(cmd);
+    apath = (STRPTR) __path_u2a(cmd);
     seg = LoadSeg(apath);
     if (seg == MKBADDR(NULL))
     {
@@ -128,7 +178,6 @@ AROS_UFPA(struct ExecBase *,SysBase,A6));
 	errno = 0;
 
     {
-	BPTR in, out, err;
 	childdata_t childdata;
 
 	struct TagItem tags[] =
