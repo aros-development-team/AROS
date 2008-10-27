@@ -481,7 +481,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Type = ACTION_MAKE_LINK;
             dp->dp_Arg1 = (IPTR) handle->actual;
             dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_CREATE_SOFTLINK.io_Filename);
-            dp->dp_Arg3 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_CREATE_SOFTLINK.io_Reference);
+            dp->dp_Arg3 = (IPTR) iofs->io_Union.io_CREATE_SOFTLINK.io_Reference;
             dp->dp_Arg4 = LINK_SOFT;
             break;
 
@@ -514,7 +514,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
             dp->dp_Type = ACTION_READ_LINK;
             dp->dp_Arg1 = (IPTR) handle->actual;
-            dp->dp_Arg2 = 0; /* XXX we don't have this (path that caused ERROR_IS_SOFT_LINK) */
+            dp->dp_Arg2 = (IPTR) iofs->io_Union.io_READ_SOFTLINK.io_Filename;
             dp->dp_Arg3 = (IPTR) iofs->io_Union.io_READ_SOFTLINK.io_Buffer;
             dp->dp_Arg4 = (IPTR) iofs->io_Union.io_READ_SOFTLINK.io_Size;
             break;
