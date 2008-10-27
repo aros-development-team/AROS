@@ -45,11 +45,9 @@
 {
     int retval = -1;
     BPTR lock;
-    int errorset = FALSE;
-    LONG ioerr;
+    LONG ioerr = 0;
     UBYTE *buffer;
-    int bufferincrease = 256;
-    int buffersize = bufferincrease;
+    int buffersize = 256;
 
     if (!oldpath || !newpath) /*safety check */
     {
@@ -57,81 +55,79 @@
         return -1;
     }
 
-    if((oldpath = strdup(__path_u2a(oldpath))))
+    oldpath = __path_u2a(oldpath);
+    if(!oldpath)
+	return -1;
+    
+    oldpath = strdup(oldpath);
+    if(!oldpath)
     {
-	newpath = __path_u2a(newpath);
-	if (!newpath)
-	{
-	    free((void*) oldpath);
-	    return -1;
-	}
+	errno = ENOMEM;
+	return -1;
+    }
+
+    newpath = __path_u2a(newpath);
+    if (!newpath)
+    {
+	free((void*) oldpath);
+	return -1;
+    }
 	
-	if((lock = Lock((STRPTR)oldpath, SHARED_LOCK))) {
-	    do
-	    {
-		if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
-		{
-		    ioerr = ERROR_NO_FREE_STORE;
-		    errorset = TRUE;
-		    break;
-		}
-				
-	    	/* Get the full path of oldpath */
-		if(NameFromLock(lock, buffer, buffersize))
-		{
-		    if(MakeLink((STRPTR)newpath, (STRPTR)buffer, TRUE) == 
-			    DOSTRUE)
-			retval = RETURN_OK;
-		    else
-		    {
-			ioerr = IoErr();
-			errorset = TRUE;
-			break;
-		    }
-		}
-		else if(IoErr() != ERROR_LINE_TOO_LONG)
-		{
-		    ioerr = IoErr();
-		    errorset = TRUE;
-		    break;
-		}
-		FreeVec(buffer);
-		buffersize += bufferincrease;
-	    }
-	    while(retval != RETURN_OK);
-	    UnLock(lock);
-	}
-	else
+    if((lock = Lock((STRPTR)oldpath, SHARED_LOCK))) 
+    {
+	do
 	{
-	    ioerr = IoErr();
-	    /* I'm not sure if MakeLink is allowed to create symlinks to
-	       non-existing files or directories. If yes, then it's fine to
-	       enable the following code */
-#if 0
-	    if(ioerr == ERROR_OBJECT_NOT_FOUND)
+	    if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
 	    {
-		/* On Unices it's perfectly fine to create symlinks to
-		   non-existing files or directories, however in this case it
-		   may be difficult to get the full absolute path, so we are
-		   simply trusting the user here for now */
-		if(MakeLink((STRPTR)newpath,
-			(STRPTR)oldpath,
-			TRUE) == DOSTRUE)
-		    retval = RETURN_OK;
+		ioerr = ERROR_NO_FREE_STORE;
+		break;
+	    }
+				
+	    /* Get the full path of oldpath */
+	    if(NameFromLock(lock, buffer, buffersize))
+	    {
+		if(MakeLink((STRPTR)newpath, (STRPTR)buffer, TRUE))
+		    retval = 0;
 		else
 		{
 		    ioerr = IoErr();
-		    errorset = TRUE;
-		}			
+		    FreeVec(buffer);
+		    break;
+		}
 	    }
-	    else
-#endif
-		errorset = TRUE;		
+	    else if(IoErr() != ERROR_LINE_TOO_LONG)
+	    {
+		ioerr = IoErr();
+		FreeVec(buffer);
+		break;
+	    }
+	    FreeVec(buffer);
+	    buffersize *= 2;
 	}
-	free((void*) oldpath);
+	while(retval != RETURN_OK);
+	UnLock(lock);
     }
+    else
+    {
+	/* MakeLink can create symlinks to non-existing files or 
+	   directories. */
+	if(IoErr() == ERROR_OBJECT_NOT_FOUND)
+	{
+	    /* In this case it may be difficult to get the full absolute 
+	       path, so we simply trust the caller here for now */
+	    if(MakeLink((STRPTR)newpath, (STRPTR)oldpath, TRUE))
+		retval = 0;
+	    else
+		ioerr = IoErr();
+	}
+	else
+	    ioerr = IoErr();		
+    }
+    free((void*) oldpath);
 
-    if(errorset) errno = IoErr2errno(ioerr);
+    if(ioerr)
+	errno = IoErr2errno(ioerr);
+
     return retval;
 } /* symlink */
 
