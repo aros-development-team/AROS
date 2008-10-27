@@ -2,11 +2,10 @@
 include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.. -I$(TOP)/rom/dos
-USER_CFLAGS := -Dmain=submain -fno-omit-frame-pointer
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos \
   arch=pc-x86_64 \
-  files="boot aros inithidds runprocess"
+  files="runprocess"
 
 #MM- kernel-dos-pc-x86_64 : kernel-bootloader-pc-x86_64-includes kernel-bootmenu-includes

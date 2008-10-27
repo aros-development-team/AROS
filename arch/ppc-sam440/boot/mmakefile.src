@@ -39,6 +39,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-bootloader-sam440-ppc \
 #MM	kernel-dos \
 #MM	kernel-boot \
+#MM	kernel-bootmenu \
 #MM	kernel-ata \
 #MM	hidd-i2c \
 #MM	hidd-radeon \

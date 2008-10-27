@@ -1,5 +1,4 @@
-#Windows hosted hidd.prefs
-library graphics.hidd
+# Windows hosted hidd.prefs
 library wingdi.hidd
 gfx	hidd.gfx.gdi
 mouse	hidd.mouse.gdi

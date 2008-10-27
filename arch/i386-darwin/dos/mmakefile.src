@@ -1,11 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I$(GENINCDIR)
-USER_CFLAGS	:= -I$(TOP)/rom/dos -I..
-%build_archspecific \
-  mainmmake=kernel-dos maindir=rom/dos \
-  arch=darwin files="dosboot aros"
+# Architecture-dependant files dosboot.c and aros.c are removed
+# Nothing left here, so the whole thing is commented out.
+# Revisit or remove this file. - Pavel Fedin <sonic_amiga@rambler.ru>
+
+#USER_INCLUDES	:= -I$(GENINCDIR)
+#USER_CFLAGS	:= -I$(TOP)/rom/dos -I..
+#%build_archspecific \
+#  mainmmake=kernel-dos maindir=rom/dos \
+#  arch=darwin files="dosboot aros"
 
 TESTS		:= runprocess
 

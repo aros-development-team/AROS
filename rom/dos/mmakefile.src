@@ -5,7 +5,7 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 USER_CFLAGS := -D__DOS_NOLIBBASE__
 
 IMAGE_TYPES := aos aout elf elf64 elf_aros
-FILES	  := dosboot errorlist inithidds lddemon runprocess \
+FILES	  := boot dosboot errorlist inithidds lddemon runprocess \
 	     filesystem_support match_misc newcliproc rootnode dosdoio\
 	     patternmatching internalseek internalflush \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
@@ -38,9 +38,9 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars
 
-#MM kernel-dos-linklib : kernel-dos-$(ARCH)-$(CPU)
-#MM kernel-dos-kobj : kernel-bootmenu-includes kernel-dos-$(ARCH)-$(CPU)
-#MM kernel-dos : kernel-bootmenu-includes kernel-dos-$(ARCH)-$(CPU)
+#MM kernel-dos-linklib : kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
+#MM kernel-dos-kobj : kernel-bootmenu-includes kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
+#MM kernel-dos : kernel-bootmenu-includes kernel-dos-$(ARCH)-$(CPU) kernel-dos-$(ARCH)
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \

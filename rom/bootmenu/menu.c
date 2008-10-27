@@ -23,105 +23,6 @@
 
 #define BUFSIZE 100
 
-#if 0
-struct RastPort rp;
-struct ViewPort vp;
-
-static const ULONG coltab[] = {
-    (16L << 16) + 0,    /* 16 colors, loaded at index 0 */
-
-                                        /* X11 color names      */
-    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70       */
-    0x00000000, 0x00000000, 0x00000000, /* Black        */
-    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White        */
-    0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
-
-    0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue         */
-    0x00000000, 0xFFFFFFFF, 0x00000000, /* Green        */
-    0xFFFFFFFF, 0x00000000, 0x00000000, /* Red          */
-    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan         */
-
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, /* Magenta      */
-    0xEEEEEEEE, 0x82828282, 0xEEEEEEEE, /* Violet       */
-    0xA5A5A5A5, 0x2A2A2A2A, 0x2A2A2A2A, /* Brown        */
-    0xFFFFFFFF, 0xE4E4E4E4, 0xC4C4C4C4, /* Bisque       */
-
-    0xE6E6E6E6, 0xE6E6E6E6, 0xFAFAFAFA, /* Lavender     */
-    0x00000000, 0x00000000, 0x80808080, /* Navy         */
-    0xF0F0F0F0, 0xE6E6E6E6, 0x8C8C8C8C, /* Khaki        */
-    0xA0A0A0A0, 0x52525252, 0x2D2D2D2D, /* Sienna       */
-    0L          /* Termination */
-};
-
-static ULONG pointercoltab[] = {
-    0,
-    0xE0E0E0E0, 0x40404040, 0x40404040,
-    0x00000000, 0x00000000, 0x00000000,
-    0xE0E0E0E0, 0xE0E0E0E0, 0xC0C0C0C0,
-    0L
-};
-
-BOOL initScreen(STRPTR gfxhiddname, struct BootMenuBase *BootMenuBase)
-{
-    struct TagItem modetags[] =
-    {
-        {BIDTAG_Depth, 2},
-        {BIDTAG_DesiredWidth, 640},
-        {BIDTAG_DesiredHeight, 200},
-        {TAG_DONE, 0UL}
-    };
-    ULONG modeid, depth;
-
-    D(bug("[BootMenu] initScreen(gfxhidd='%s')\n", gfxhiddname));
-
-    if (LateGfxInit(gfxhiddname))
-    {
-        modeid = BestModeIDA(modetags);
-        if (modeid != INVALID_ID)
-        {
-            InitRastPort(&rp);
-            InitVPort(&vp);
-            rp.BitMap = AllocScreenBitMap(modeid);
-            if (rp.BitMap)
-            {
-                vp.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
-                if (vp.RasInfo)
-                {
-                    vp.RasInfo->BitMap = rp.BitMap;
-                    vp.ColorMap = GetColorMap(4);
-                    vp.ColorMap->VPModeID = modeid;
-                    if (AttachPalExtra(vp.ColorMap, &vp) == 0)
-                    {
-                        LoadRGB32(&vp, (ULONG *)coltab);
-                        depth = GetBitMapAttr(rp.BitMap, BMA_DEPTH);
-                        if (depth > 4)
-                            pointercoltab[0] = (3L << 16) + 17;
-                        else
-                            pointercoltab[0] = (3L << 16) + (1 << depth) - 3;
-                        LoadRGB32(&vp, pointercoltab);
-                        rp.BitMap->Flags |= BMF_AROS_HIDD;
-                        SetFont(&rp, GfxBase->DefaultFont);
-                        SetFrontBitMap(rp.BitMap, TRUE);
-                        Forbid();
-                        rp.Font->tf_Accessors++;
-                        Permit();
-                        SetAPen(&rp, 1);
-                        Move(&rp, 100, 100);
-                        Text(&rp, "Sucker", 6);
-kprintf("done\n");
-                        return TRUE;
-                    }
-                    FreeMem(vp.RasInfo, sizeof(struct RasInfo));
-                }
-                FreeBitMap(rp.BitMap);
-            }
-        }
-    }
-kprintf("no screen!\n");
-    return FALSE;
-}
-#else
-
 /*****************
 **  init_gfx()  **
 *****************/
@@ -199,6 +100,8 @@ static BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *BootMenuB
     OpenLibrary(bootcfg->defaultgfx.libname, 0);
     init_gfx(bootcfg->defaultgfx.hiddname, BootMenuBase);
 
+    if (!bootcfg->defaultmouse.hiddname[0])
+        return TRUE;
     OpenLibrary(bootcfg->defaultmouse.libname, 0);
     init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase);
 
@@ -386,25 +289,11 @@ static BOOL buttonsPressed(struct BootMenuBase *BootMenuBase, struct DefaultHidd
     return success;
 }
 
-#endif
-
-static struct BootConfig bootcfg =
-{
-    &bootcfg,
-    NULL,
-    {"vgah.hidd", "hidd.gfx.vga"},
-    {"kbd.hidd", "hidd.kbd.hw"},
-    {"mouse.hidd", "hidd.bus.mouse"},
-};
-
 static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[BootMenu] bootmenu_EarlyPrep()\n"));
 
     struct BootLoaderBase *BootLoaderBase = NULL;
-    struct VesaInfo *vi = NULL;
-
-    LIBBASE->bm_BootConfig = bootcfg;
     struct DefaultHidd *kbd = &LIBBASE->bm_BootConfig.defaultkbd;
 
     if ((ExpansionBase = OpenLibrary("expansion.library", 0)) != NULL)
@@ -413,18 +302,31 @@ static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
         {
             if ((IntuitionBase = OpenLibrary("intuition.library", 37)) != NULL)
             {
-                if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
-                {
-                    if ((vi = (struct VesaInfo *)GetBootInfo(BL_Video)) != NULL)
-                    {
-                        if (vi->ModeNumber != 3)
-                        {
-                            strcpy(LIBBASE->bm_BootConfig.defaultgfx.libname, "vesagfx.hidd");
-                            strcpy(LIBBASE->bm_BootConfig.defaultgfx.hiddname, "hidd.gfx.vesa");
-                        }
-                    }
-                }
-                
+                BootLoaderBase = OpenResource("bootloader.resource");
+		InitBootConfig(&LIBBASE->bm_BootConfig, BootLoaderBase);
+		if (BootLoaderBase)
+	        {
+		    struct List *list;
+		    struct Node *node;
+	
+		    list = (struct List *)GetBootInfo(BL_Args);
+		    if (list)
+		    {
+			ForeachNode(list,node)
+			{
+			    if (0 == strcmp(node->ln_Name,"bootmenu"))
+			    {
+		    		D(bug("[BootMenu] Forced with bootloader argument\n"));
+				LIBBASE->bm_Force = TRUE;
+			    }
+			}
+		    }
+		}
+
+		if (!kbd->hiddname[0]) {
+		    D(bug("[BootMenu] This system uses no keyboard HIDD\n"));
+		    return TRUE;
+		}
                 if (OpenLibrary(kbd->libname, 0) != NULL)
                 {
                     if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
@@ -474,9 +376,9 @@ static int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
     D(bug("[BootMenu] bootmenu_CheckAndDisplay()\n"));
 
     /* check keyboard */
-    if (buttonsPressed(LIBBASE, &LIBBASE->bm_BootConfig.defaultkbd))
+    if (LIBBASE->bm_Force || buttonsPressed(LIBBASE, &LIBBASE->bm_BootConfig.defaultkbd))
     {
-        kprintf("Entering Boot Menu ...\n");
+        D(kprintf("Entering Boot Menu ...\n"));
         /* init mouse + gfx */
         if (initHidds(&LIBBASE->bm_BootConfig, LIBBASE))
         {
