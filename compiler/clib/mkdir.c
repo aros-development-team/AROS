@@ -5,8 +5,10 @@
     POSIX function mkdir().
 */
 
+#include <string.h>
 #include <proto/dos.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "__errno.h"
 #include "__upath.h"
 
@@ -47,6 +49,7 @@
 
 {
     BPTR lock;
+    char *apath;
 
     if (!path) /*safety check */
     {
@@ -54,11 +57,24 @@
 	return -1;
     }
 
-    path = __path_u2a(path);
-    if (!path)
+    apath = (char*) __path_u2a(path);
+    if (!apath)
         return -1;
-	    
-    lock = CreateDir(path);
+        
+    /* Duplicate apath to avoid modifying function argument if !__upath */
+    apath = strdup(apath);
+    if (!apath)
+    {
+        errno = ENOMEM;
+        return -1;
+    }
+
+    /* Remove possible trailing / to avoid problems in handlers */
+    if(strlen(apath) > 0 && apath[strlen(apath)-1] == '/')
+	apath[strlen(apath)-1] = '\0';
+    
+    lock = CreateDir((STRPTR) apath);
+    free(apath);
 
     if (!lock)
     {
