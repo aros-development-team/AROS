@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 # First try to install arch/cpu specific hidd.prefs
-#MM workbench-s : workbench-s-$(ARCH)-$(CPU) workbench-s-hiddprefs-$(ARCH)-$(CPU) workbench-s-hiddprefs-$(ARCH) workbench-s-setup
+#MM workbench-s : workbench-s-$(ARCH)-$(CPU) workbench-s-hiddprefs-$(ARCH)-$(CPU) workbench-s-setup workbench-s-hiddprefs-$(ARCH) 
 workbench-s : $(AROS_S)/Startup-Sequence $(AROS_S)/hidd.prefs $(AROS_S)/Shell-Startup
 
 $(AROS_S)/Startup-Sequence : Startup-Sequence
