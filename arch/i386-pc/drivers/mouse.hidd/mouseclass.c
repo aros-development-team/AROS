@@ -120,7 +120,7 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	    memset(&data->u.com, 0, sizeof(data->u.com));
 	    data->type = MDT_SERIELL;
 
-	    if (1) //!test_mouse_com(cl, o))
+	    if (!test_mouse_com(cl, o))
 	    {
 	    	memset(&data->u.ps2, 0, sizeof(data->u.ps2));
 		data->type = MDT_PS2;
