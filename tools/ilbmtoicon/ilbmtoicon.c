@@ -531,7 +531,6 @@ static void skipbytes(ULONG howmany)
 static void openimage(struct ILBMImage *img)
 {    
     file = fopen(filename, "rb");
-printf("filename %s\n", filename);
     if (!file) cleanup("Can't open file!", 1);
     
     fseek(file, 0, SEEK_END);
@@ -1932,7 +1931,6 @@ static void writepngicon(void)
 	/* Handle the case where 2 PNG images are just joined together
 	   to one file. */
 	long bytecnt = filebuffer + filesize - dualpngstart;
-printf("bytecnt %ld filesize %ld dualpngstart %x filebuffer %x\n", bytecnt, filesize, dualpngstart, filebuffer);
 	if (fwrite(dualpngstart, 1, bytecnt, outfile) != bytecnt)
 	{
 	    cleanup("Error writing dual PNG icon file!", 1);
