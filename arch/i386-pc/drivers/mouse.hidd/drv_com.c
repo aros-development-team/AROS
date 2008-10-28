@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: COM mouse driver.
@@ -68,7 +68,7 @@ void mouse_usleep(LONG usec)
     outb(0x80, 0x43);
     oldtick = inb(0x42);
     oldtick += inb(0x42) << 8;
-    
+
     while (usec > 0)
     {
         outb(0x80, 0x43);
@@ -77,7 +77,7 @@ void mouse_usleep(LONG usec)
 
         usec -= (oldtick - tick);
         if (tick > oldtick) usec -= 0x10000;
-        oldtick = tick;            
+        oldtick = tick;
     }
 }
 
@@ -257,7 +257,7 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
     /* Try to detect mouse according to XF86 sources. */
     HIDD_SerialUnit_SetBaudrate(unit, 1200);
     HIDD_SerialUnit_SetParameters(unit, stags);
-    
+
     /* Set DTR=1, RTS=0 */
 //    mcr[0].ti_Data = 1;
     /* Set DTR=0, RTS=0 */
@@ -530,11 +530,11 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
             return 0;
         if(buf[0] == 79)
             return 1;
-	   
+
 	/* stegerg: checkme! Added this return -1, because if this is
 	   not there, then below the "return (t->val)" is used to leave
 	   the function, with t pointing to random address */
-	    
+
 	return -1;
     }
     else if(len > 1)
@@ -542,9 +542,9 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
         if(!mouse_pnpparse(&pnpid, buf, len))
         {
             // theowl: !HACK! Even though PnP failed, check for a non-PnP serial mouse.
-            if(buf[0] == 77) 
+            if(buf[0] == 77)
                 return 0;
-                
+
             return -1;
         }
         if ((t = mouse_pnpproto(&pnpid)) == NULL)
