@@ -4,9 +4,12 @@
 #include "math.h"
 #include "math_private.h"
 
+void sincos(double x, double *sin, double *cos);
+
 void sincosf(float x, float *sin, float *cos)
 {
-#warning "TODO: Implement sincosf()"
-	AROS_FUNCTION_NOT_IMPLEMENTED("m");
-	return;
+	double s, c;
+	sincos(x, &s, &c);
+	*sin = s;
+	*cos = c;
 }
