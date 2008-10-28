@@ -87,7 +87,7 @@ int __stat(BPTR lock, struct stat *sb)
     }
     while(TRUE);
 	    
-    hashlittle2(buffer, strlen(buffer), &pc, &pb);
+    hashlittle2(buffer, strlen((char*) buffer), &pc, &pb);
     hash = pc + (((uint64_t)pb)<<32);
     FreeVec(buffer);
 
@@ -110,7 +110,6 @@ int __stat(BPTR lock, struct stat *sb)
     sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
                                  smaller than uint64_t, but it's ok */
     sb->st_size    = (off_t)fib->fib_Size;
-    sb->st_blocks  = (long)fib->fib_NumBlocks;
     sb->st_atime   =
     sb->st_ctime   =
     sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __gmtoffset) * 60 +
@@ -133,6 +132,12 @@ int __stat(BPTR lock, struct stat *sb)
             sb->st_blksize = 1024;
         }
     }
+    if(fib->fib_Size > 0 && sb->st_blksize > 0)
+	sb->st_blocks = 
+	    (1 + ((long) fib->fib_Size - 1) / sb->st_blksize) * 
+	    (sb->st_blksize / 512);
+    else
+	sb->st_blocks  = 0;
 
     switch (fib->fib_DirEntryType)
     {
