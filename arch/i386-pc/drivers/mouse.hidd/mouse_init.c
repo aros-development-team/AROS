@@ -1,6 +1,6 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
-    $Id$ 
+    Copyright ï¿½ 1995-2006, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Mouse hidd (COM/PS2/USB) for standalone i386 AROS
     Lang: english

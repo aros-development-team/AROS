@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: USB mouse driver.

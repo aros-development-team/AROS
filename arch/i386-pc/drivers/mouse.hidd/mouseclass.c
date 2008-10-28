@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2006, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main mouse class.
@@ -10,7 +10,7 @@
     This is the native-i386 hidd maintaining all available mouse types. It
     maintains all COM/PS2 mouses available. USB is in a way (we need pci.hidd
     working, then usb.hidd).
-    
+
     Please keep code clean from all .bss and .data sections. .rodata may exist
     as it will be connected together with .text section during linking. In near
     future this driver will be compiled as elf executable (instead of object)
@@ -67,18 +67,18 @@ void getps2State(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
 OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
-   
+
     EnterFunc(bug("_Mouse::New()\n"));
- 
+
     ObtainSemaphoreShared( &MSD(cl)->sema);
- 
+
     if (MSD(cl)->mousehidd)
         has_mouse_hidd = TRUE;
 
     ReleaseSemaphore( &MSD(cl)->sema);
- 
+
     if (has_mouse_hidd) /* Cannot open twice */
-        ReturnPtr("_Mouse::New", Object *, NULL); /* Should have some error code here */
+        ReturnPtr("_Mouse::New", OOP_Object *, NULL); /* Should have some error code here */
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
@@ -107,24 +107,24 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
                         break;
                 }
             }
-	    
+
         } /* while (tags to process) */
 
         /* Search for mouse installed. As USB is the fastest to test, do it
         first, if not found search for PS/2 mouse. If failure then check every
         COM port in the system - the las chance to see... */
-	
+
 	data->type = MDT_USB;
         if (!test_mouse_usb(cl, o))
         {
 	    memset(&data->u.com, 0, sizeof(data->u.com));
 	    data->type = MDT_SERIELL;
-	    
-	    if (!test_mouse_com(cl, o))
+
+	    if (1) //!test_mouse_com(cl, o))
 	    {
 	    	memset(&data->u.ps2, 0, sizeof(data->u.ps2));
 		data->type = MDT_PS2;
-		
+
         	if (!test_mouse_ps2(cl, o))
                 {
                     /* No mouse found. What we can do now is just Dispose() :( */
@@ -142,7 +142,7 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         MSD(cl)->mousehidd = o;
         ReleaseSemaphore( &MSD(cl)->sema);
     }
-    
+
     return o;
 }
 
@@ -161,7 +161,7 @@ VOID PCMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 	   break;
 
 	case MDT_SERIELL:
-	   dispose_mouse_seriell(cl, o);	  
+	   dispose_mouse_seriell(cl, o);
 	   break;
 
 	case MDT_PS2:
@@ -185,11 +185,11 @@ VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_Mouse_IrqHandler:
 		*msg->storage = (IPTR)data->mouse_callback;
 		return;
-		
+
 	    case aoHidd_Mouse_IrqHandlerData:
 		*msg->storage = (IPTR)data->callbackdata;
 		return;
-		
+
 	    case aoHidd_Mouse_State:
 		if (data->type == MDT_PS2)
 		    getps2State(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
@@ -199,9 +199,9 @@ VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = TRUE;
 	    	return;
 	}
-	
+
     }
-    
+
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -229,7 +229,7 @@ static int PCMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
         { NULL	    	, NULL      	    }
     };
-	
+
     EnterFunc(bug("PCMouse_InitAttrs\n"));
 
     ReturnInt("PCMouse_InitAttr", ULONG, OOP_ObtainAttrBases(attrbases));
@@ -243,7 +243,7 @@ static int PCMouse_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
         { NULL	    	, NULL      	    }
     };
-    
+
     EnterFunc(bug("PCMouse_InitClass\n"));
 
     OOP_ReleaseAttrBases(attrbases);
