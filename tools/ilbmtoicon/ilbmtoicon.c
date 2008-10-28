@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tool to convert IFF ILBM images into Amiga icon file.
@@ -132,6 +132,9 @@ static LONG 	    	    drawervtopoption = 0;
 static LONG 	    	    drawershowoption = 0;
 static LONG 	    	    drawershowasoption = 0;
 static LONG 	    	    transparentoption = 0;
+
+static BOOL		    dualpng; /* png file contains second image */
+static unsigned char	    *dualpngstart; /* address of 2nd image in filebuffer */
 
 /****************************************************************************************/
 
@@ -472,8 +475,6 @@ static void showoptions(void)
 	    printf(" %s\n", *strarray++);
 	}
     }
-    
-    
 }
 
 /****************************************************************************************/
@@ -530,6 +531,7 @@ static void skipbytes(ULONG howmany)
 static void openimage(struct ILBMImage *img)
 {    
     file = fopen(filename, "rb");
+printf("filename %s\n", filename);
     if (!file) cleanup("Can't open file!", 1);
     
     fseek(file, 0, SEEK_END);
@@ -562,6 +564,21 @@ static void checkimage(struct ILBMImage *img)
     if (memcmp(filebuffer, pngsig, 8) == 0)
     {
     	is_png = 1;
+	
+	/* search for second image */
+	for
+	(
+	    dualpngstart = filebuffer + 8 ;
+	    dualpngstart < filebuffer + filesize - 8 ;
+	    dualpngstart++
+	)
+	{
+	    if (memcmp(dualpngstart, pngsig, 8) == 0)
+	    {
+		dualpng = 1;
+		break;
+	    }
+	}
     }
     else if (is_png == 0)
     {   
@@ -1894,12 +1911,13 @@ static void writepngicon(void)
 	
 	filepos += chunksize;
     }
-    
-    /* Two images: If filenames are different, cat/attach the 2nd
-       file onto the first one */
-         
+
+    /* Create icons with two images */
     if (image2option && strcasecmp(image1option, image2option))
     {
+	/* If filenames are different, cat/attach the 2nd
+	   file onto the first one. */
+	
     	freeimage(&img1);
 	
 	loadimage(image2option, &img2);
@@ -1909,7 +1927,17 @@ static void writepngicon(void)
 	    cleanup("Error writing 2nd PNG Image!", 1);
 	}
     }
-    
+    else if (dualpng)
+    {
+	/* Handle the case where 2 PNG images are just joined together
+	   to one file. */
+	long bytecnt = filebuffer + filesize - dualpngstart;
+printf("bytecnt %ld filesize %ld dualpngstart %x filebuffer %x\n", bytecnt, filesize, dualpngstart, filebuffer);
+	if (fwrite(dualpngstart, 1, bytecnt, outfile) != bytecnt)
+	{
+	    cleanup("Error writing dual PNG icon file!", 1);
+	}
+    }
 }
 
 /****************************************************************************************/
