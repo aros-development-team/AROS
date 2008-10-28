@@ -26,6 +26,10 @@
 #include "datatype.h"
 #include "cxref.h"
 
+#ifdef __AROS__
+#define fork vfork
+#endif
+
 /*+ The default value of the CPP command. +*/
 #ifdef CXREF_CPP
 #define CPP_COMMAND CXREF_CPP
