@@ -30,7 +30,6 @@
 
 struct vfork_data
 {
-    int magic;
     jmp_buf vfork_jump;
     
     struct Task *parent;

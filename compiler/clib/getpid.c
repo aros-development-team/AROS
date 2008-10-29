@@ -8,6 +8,9 @@
 #include <proto/exec.h>
 #include <assert.h>
 
+#include "__vfork.h"
+#include "__arosc_privdata.h"
+
 /*****************************************************************************
 
     NAME */
@@ -39,7 +42,13 @@
 {
     struct ETask *et;
 
-    et = GetETask(FindTask(NULL));
+    if(__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
+    {
+	struct vfork_data *udata = FindTask(NULL)->tc_UserData;
+	et = GetETask(udata->child);
+    }
+    else
+	et = GetETask(FindTask(NULL));
     assert(et); 
     return (pid_t) et->et_UniqueID;
 } /* getpid */

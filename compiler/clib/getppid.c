@@ -11,6 +11,9 @@
 
 #include <assert.h>
 
+#include "__vfork.h"
+#include "__arosc_privdata.h"
+
 /*****************************************************************************
 
     NAME */
@@ -38,12 +41,17 @@
 
 ******************************************************************************/
 {
-  struct Task *ThisTask, *ParentTask;
+  struct Task *ParentTask;
   struct ETask *eThisTask;
   struct ETask *et;
 
-  ThisTask = FindTask(NULL);
-  eThisTask = GetETask(ThisTask);
+  if(__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
+  {
+    struct vfork_data *udata = FindTask(NULL)->tc_UserData;
+    eThisTask = GetETask(udata->child);
+  }
+  else
+    eThisTask = GetETask(FindTask(NULL));
   assert(eThisTask);
   ParentTask = (struct Task *)eThisTask->et_Parent;
   if(!ParentTask)
