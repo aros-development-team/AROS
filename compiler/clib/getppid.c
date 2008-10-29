@@ -47,7 +47,7 @@
 
   if(__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
   {
-    struct vfork_data *udata = FindTask(NULL)->tc_UserData;
+    struct vfork_data *udata = __get_arosc_privdata()->acpd_vfork_data;
     eThisTask = GetETask(udata->child);
   }
   else

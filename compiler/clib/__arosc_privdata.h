@@ -10,6 +10,7 @@
 #include <sys/arosc.h>
 
 #include "etask.h"
+#include "__vfork.h"
 
 struct _fdesc;
 struct __env_item;
@@ -90,6 +91,9 @@ struct arosc_privdata
 
     /* flock.c */
     struct MinList acpd_file_locks;
+    
+    /* __vfork.c */
+    struct vfork_data *acpd_vfork_data;
 };
 
 /* acpd_flags */
@@ -109,6 +113,11 @@ struct arosc_privdata
    execution of child code, even though that it's actually executed by parent
    process until execve() is called. */
 #define PRETEND_CHILD 4
+
+/* By default arosc.library creates new arosc_privdata when opened if 
+   pr_ReturnAddr has changed (for example during RunCommand()). Setting 
+   this flag prevents creation of new arosc_privdata. */
+#define KEEP_OLD_ACPD 8
 
 /* !acpd_flags */
 

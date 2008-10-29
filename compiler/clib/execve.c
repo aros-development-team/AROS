@@ -95,23 +95,18 @@ char * appendarg(char *argptr, int *argptrsize, const char *arg)
 LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 {
     char *oldtaskname;
-    APTR udata;
     LONG returncode;
-
-    udata = FindTask(NULL)->tc_UserData;
 
     oldtaskname = FindTask(NULL)->tc_Node.ln_Name;
     FindTask(NULL)->tc_Node.ln_Name = taskname;
     SetProgramName(taskname);
 
-    FindTask(NULL)->tc_UserData = NULL;
     returncode = RunCommand(
         seglist,
         stacksize, 
         args,
         strlen(args)
     );
-    FindTask(NULL)->tc_UserData = udata;
 
     FindTask(NULL)->tc_Node.ln_Name = oldtaskname;
     SetProgramName(oldtaskname);
@@ -342,9 +337,9 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     /* Load and run the command */
     if((seglist = LoadSeg((CONST_STRPTR) afilename)))
     {
-        struct vfork_data *udata = FindTask(NULL)->tc_UserData;
 	if(__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
 	{
+	    struct vfork_data *udata = __get_arosc_privdata()->acpd_vfork_data;
 	    udata->exec_arguments = AllocVec(strlen(argptr)+1, MEMF_ANY);
 	    if(!udata->exec_arguments)
 		goto error_env;
@@ -477,6 +472,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 		saved_errno = ENOMEM;
 		goto error_env;
 	    }
+	    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD;
 	    
 	    if(envp)
 	    {

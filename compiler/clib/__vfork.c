@@ -67,6 +67,7 @@ LONG launcher()
     }
 
     __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
+    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD;
     __stdfiles[STDIN_FILENO] = udata->ppriv->acpd_stdfiles[STDIN_FILENO];
     __stdfiles[STDOUT_FILENO] = udata->ppriv->acpd_stdfiles[STDOUT_FILENO];
     __stdfiles[STDERR_FILENO] = udata->ppriv->acpd_stdfiles[STDERR_FILENO];
@@ -161,8 +162,9 @@ void FreeAndJump(struct vfork_data *udata)
     jmp_buf env;
     ULONG child_id = udata->child_id;
     bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
-    D(bug("Restoring old parent's UserData: %p\n", udata->old_UserData));
-    udata->parent->tc_UserData = udata->old_UserData;
+    D(bug("Restoring old vfork_data: %p\n", udata->prev));
+    __get_arosc_privdata()->acpd_vfork_data = udata->prev;
+    __get_arosc_privdata()->acpd_flags = udata->old_acpd_flags;
     D(bug("freeing udata\n"));
     FreeMem(udata, sizeof(struct vfork_data));
     longjmp(env, child_id);
@@ -195,10 +197,10 @@ pid_t __vfork(jmp_buf env)
     };
 
     udata->parent = this;
-    /* Store parent's UserData to restore it later */
-    udata->old_UserData = udata->parent->tc_UserData;
-    D(bug("Saved old parent's UserData: %p\n", udata->old_UserData));
-    udata->parent->tc_UserData = udata;
+    /* Store parent's vfork_data to restore it later */
+    udata->old_acpd_flags = __get_arosc_privdata()->acpd_flags;
+    udata->prev = __get_arosc_privdata()->acpd_vfork_data;
+    D(bug("Saved old parent's vfork_data: %p\n", udata->prev));
     udata->ppriv = __get_arosc_privdata();
     
     D(bug("backuping startup buffer\n"));
@@ -336,6 +338,7 @@ pid_t __vfork(jmp_buf env)
 	return (pid_t) 1; /* not reached */
     }
 
+    __get_arosc_privdata()->acpd_vfork_data = udata;
     __get_arosc_privdata()->acpd_flags |= PRETEND_CHILD;
     D(bug("Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
