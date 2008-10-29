@@ -50,6 +50,12 @@ extern struct DosLibrary *DOSBase;
 
 static struct aros_startup __aros_startup;
 
+AROS_UFP3(static LONG, __startup_entry,
+    AROS_UFHA(char *,argstr,A0),
+    AROS_UFHA(ULONG,argsize,D0),
+    AROS_UFHA(struct ExecBase *,sysbase,A6)
+) __attribute__((section(".aros.startup")));
+
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
 AROS_UFH3(static LONG, __startup_entry,
