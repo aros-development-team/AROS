@@ -32,7 +32,6 @@
     RESULT
 
     NOTES
-	Not implemented.
 
     EXAMPLE
 
