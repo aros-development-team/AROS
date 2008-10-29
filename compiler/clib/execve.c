@@ -343,7 +343,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
     if((seglist = LoadSeg((CONST_STRPTR) afilename)))
     {
         struct vfork_data *udata = FindTask(NULL)->tc_UserData;
-	if(udata && udata->magic == VFORK_MAGIC)
+	if(__get_arosc_privdata()->acpd_flags & PRETEND_CHILD)
 	{
 	    udata->exec_arguments = AllocVec(strlen(argptr)+1, MEMF_ANY);
 	    if(!udata->exec_arguments)
@@ -448,7 +448,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	else
 	{
 	    struct Library *aroscbase;
-	    int oldspawned;
+	    int oldflags;
 	    int parent_does_upath;
 	    APTR old_return_addr;
 	    
@@ -466,13 +466,11 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    if(err)
 	        olderr = SelectError(err->fcb->fh);
 
-	    oldspawned = __get_arosc_privdata()->acpd_spawned;
+	    oldflags = __get_arosc_privdata()->acpd_flags;
 	    parent_does_upath = __doupath;
 	    
 	    /* Force arosc.library to open with new private data */
-	    __get_arosc_privdata()->acpd_spawned = 0;
-	    old_return_addr = __get_arosc_privdata()->acpd_process_returnaddr;
-	    __get_arosc_privdata()->acpd_process_returnaddr = NULL;
+	    __get_arosc_privdata()->acpd_flags |= CREATE_NEW_ACPD | CLONE_ENV_VARS;
 	    aroscbase = OpenLibrary("arosc.library", 0);
 	    if(!aroscbase)
 	    {
@@ -493,7 +491,6 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    }
 	    
 	    __get_arosc_privdata()->acpd_parent_does_upath = parent_does_upath;
-	    __get_arosc_privdata()->acpd_spawned = 1;
 	    
 	    returncode = exec_command(
 		seglist, 
@@ -504,8 +501,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 
 	    CloseLibrary(aroscbase);
 	    /* Restore previous values */
-	    __get_arosc_privdata()->acpd_spawned = oldspawned;
-	    __get_arosc_privdata()->acpd_process_returnaddr = old_return_addr;
+	    __get_arosc_privdata()->acpd_flags = oldflags;
 	        
 	    UnLoadSeg(seglist);
 	    free(argptr);

@@ -57,7 +57,7 @@ LONG launcher()
 	return -1;
     }
 
-    aroscbase = OpenLibrary("arosc.library", 0);
+    aroscbase = OpenLibrary((STRPTR) "arosc.library", 0);
     if(!aroscbase)
     {
 	FreeSignal(child_signal);
@@ -67,7 +67,6 @@ LONG launcher()
     }
 
     __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
-    __get_arosc_privdata()->acpd_spawned = 1;
     __stdfiles[STDIN_FILENO] = udata->ppriv->acpd_stdfiles[STDIN_FILENO];
     __stdfiles[STDOUT_FILENO] = udata->ppriv->acpd_stdfiles[STDOUT_FILENO];
     __stdfiles[STDERR_FILENO] = udata->ppriv->acpd_stdfiles[STDERR_FILENO];
@@ -99,7 +98,6 @@ LONG launcher()
 	ULONG stacksize = udata->exec_stacksize;
 
 	fdesc *in, *out, *err;
-	BPTR oldin, oldout, olderr;
 
 	if(__fd_array[STDIN_FILENO])
 	    close(STDIN_FILENO);
@@ -154,7 +152,6 @@ LONG launcher()
     }
     D(bug("freeing child_signal\n"));
     FreeSignal(child_signal);
-    __get_arosc_privdata()->acpd_spawned = 0;
     CloseLibrary(aroscbase);
     return 0;
 }
@@ -182,7 +179,6 @@ pid_t __vfork(jmp_buf env)
 	longjmp(env, -1);	
     }
     D(bug("allocated udata %p\n", udata));
-    udata->magic = VFORK_MAGIC;
     bcopy(env, &udata->vfork_jump, sizeof(jmp_buf));
 
     struct TagItem tags[] =
@@ -290,6 +286,7 @@ pid_t __vfork(jmp_buf env)
     if(setjmp(__aros_startup_jmp_buf))
     {
 	D(bug("child exited\n or executed\n"));
+	__get_arosc_privdata()->acpd_flags &= ~PRETEND_CHILD;
 
 	if(!GETUDATA->child_executed)
 	{
@@ -339,6 +336,7 @@ pid_t __vfork(jmp_buf env)
 	return (pid_t) 1; /* not reached */
     }
 
+    __get_arosc_privdata()->acpd_flags |= PRETEND_CHILD;
     D(bug("Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
     vfork_longjmp(udata->vfork_jump, 0);

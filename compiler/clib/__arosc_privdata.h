@@ -80,7 +80,7 @@ struct arosc_privdata
 
     /* spawn* */
     char *acpd_joined_args;
-    int   acpd_spawned;
+    int   acpd_flags;
 
     /* strerror */
     char acpd_fault_buf[100];
@@ -91,6 +91,26 @@ struct arosc_privdata
     /* flock.c */
     struct MinList acpd_file_locks;
 };
+
+/* acpd_flags */
+
+/* By default arosc.library keeps the old arosc_privdata if it's opened another
+   time in the same process. Setting this flag forces it to create new 
+   arosc_privdata. */
+#define CREATE_NEW_ACPD 1
+
+/* If this flag is set then programs compiled with -nix flag will clone
+   dos.library environment variables before execution and restore them
+   during exit. It prevents clobbering the process environment variables
+   by another program ran with RunCommand() or similar means. */
+#define CLONE_ENV_VARS 2
+
+/* This flag is set by vfork() to correctly report child process ID during
+   execution of child code, even though that it's actually executed by parent
+   process until execve() is called. */
+#define PRETEND_CHILD 4
+
+/* !acpd_flags */
 
 #define __get_arosc_privdata() ((struct arosc_privdata *)__get_arosc_userdata())
 

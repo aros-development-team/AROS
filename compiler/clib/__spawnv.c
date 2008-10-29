@@ -201,7 +201,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 #define privdata __get_arosc_privdata()
     D(bug("privdata: %p, ppriv: %p\n", privdata, childdata->ppriv));
     privdata->acpd_parent_does_upath = childdata->ppriv->acpd_doupath;
-    privdata->acpd_spawned = 1;
+
     __stdfiles[STDIN_FILENO] = childdata->ppriv->acpd_stdfiles[STDIN_FILENO];
     __stdfiles[STDOUT_FILENO] = childdata->ppriv->acpd_stdfiles[STDOUT_FILENO];
     __stdfiles[STDERR_FILENO] = childdata->ppriv->acpd_stdfiles[STDERR_FILENO];
@@ -245,7 +245,6 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	
     rc = RunCommand(childdata->command, stacksize, argstr, argsize);
 
-    privdata->acpd_spawned = 0;
     CloseLibrary(aroscbase);
 
 err2:
