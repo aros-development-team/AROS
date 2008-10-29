@@ -219,7 +219,10 @@ int arosc_internalinit(void)
     (
         !oldprivdata ||
 	(oldprivdata->acpd_flags & CREATE_NEW_ACPD) ||
-	oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr
+	(
+	    !(oldprivdata->acpd_flags & KEEP_OLD_ACPD) && 
+	    oldprivdata->acpd_process_returnaddr != me->pr_ReturnAddr
+	)
     )
     {
         D(bug("arosc_internalinit(): AllocMem()\n"));

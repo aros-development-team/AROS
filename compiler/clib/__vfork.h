@@ -26,10 +26,11 @@
 
 #define VFORK_MAGIC 0x666
 
-#define GETUDATA ((struct vfork_data*) ((struct Task*) FindTask(NULL))->tc_UserData)
+#define GETUDATA ((struct vfork_data*) __get_arosc_privdata()->acpd_vfork_data)
 
 struct vfork_data
 {
+    struct vfork_data *prev;
     jmp_buf vfork_jump;
     
     struct Task *parent;
@@ -42,6 +43,7 @@ struct vfork_data
     int parent_acpd_numslots;
     BPTR parent_curdir;
     struct arosc_privdata *ppriv;
+    int old_acpd_flags;
 
     struct Task *child;
     struct aros_startup child_startup;
