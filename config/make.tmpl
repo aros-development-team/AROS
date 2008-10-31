@@ -2067,10 +2067,13 @@ endif
 
 #MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
 
+# Using -j1 in install_command may result in a warning but finally
+# it does its job. make install for gcc does not work reliable for -jN
+# where N > 1.
 ifneq (%(install_target),)
     %(mmake)-install_command = \
         $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" $(%(mmake)-install_opts) \
-        -C $(%(mmake)-pkgdir) %(install_target) && \
+        -C $(%(mmake)-pkgdir) %(install_target) -j1 && \
         $(TOUCH) $(%(mmake)-installflag)
 
     %(mmake)-uninstall_command = \
