@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id: coldreboot.c 18441 2003-07-07 20:01:00Z hkiel $
+    $Id$
 
     Desc: ShutdownA() - Shut down the operating system.
     Lang: english
