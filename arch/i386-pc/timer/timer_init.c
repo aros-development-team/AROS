@@ -64,7 +64,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     /* Start the timer2 */
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    outb(0xb2, 0x43);   /* Binary mode on Timer2, count mode 1 */
+    outb(0xb6, 0x43);   /* Binary mode on Timer2, count mode 3? */
     outb(0x00, 0x42);   /* We're counting whole range */
     outb(0x00, 0x42);
 
