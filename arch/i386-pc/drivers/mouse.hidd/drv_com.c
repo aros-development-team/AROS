@@ -709,12 +709,9 @@ int mouse_GetFromRing(struct mouse_data *data, char *c)
  * This functions waits for data present in Ring buffer for usec. Returns
  * non-zero if there is something in buffer, 0 otherwise.
  */
-#warning: Incompatible with BOCHS busy loop! Change to precise timer.device!
 int mouse_Select(struct mouse_data *data, ULONG usec)
 {
-    ULONG hz;
     int step;
-    int latch;
     int avail = 0;
     struct Ring *r = data->u.com.rx;
 
@@ -724,23 +721,9 @@ int mouse_Select(struct mouse_data *data, ULONG usec)
          * If we want to wait longer than 50000 usec, then we have to do it
          * in several steps
          */
-
         step = (usec > 50000) ? 50000 : usec;
-        hz = 1000000 / step;
-
-        latch = (1193180 + (hz >> 1)) / hz;
-
-        /* Do the timer like cpu.c file */
-
-        outb((inb(0x61) & ~0x02) | 0x01, 0x61);
-        outb(0xb0, 0x43);           /* binary, mode 0, LSB/MSB, Ch 2 */
-        outb(latch & 0xff, 0x42); /* LSB of count */
-        outb(latch >> 8, 0x42);   /* MSB of count */
-
-        /* Speaker counter will start now. Just wait till it finishes */
-        do {
-            avail = r->top - r->ptr;
-        } while (((inb(0x61) & 0x20) == 0) && !avail);
+        mouse_usleep(step);
+        avail = r->top - r->ptr;
 
         /* Decrease wait counter */
         usec -= step;
