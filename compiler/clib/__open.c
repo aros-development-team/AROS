@@ -177,8 +177,8 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
         if (!Examine(lock, fib))
         {
             /*
-                The filesystem in which the files resides doesn't support
-                the EXAMINE action. It might be broken or migth also not
+                The filesystem in which the file resides doesn't support
+                the EXAMINE action. It might be broken or might also not
                 be a filesystem at all. So let's assume the file is not a
                 diretory.
            */

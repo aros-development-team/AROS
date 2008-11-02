@@ -56,7 +56,7 @@
 	if  (IoErr() == ERROR_OBJECT_IN_USE)
 	{
 	    /* the file is already locked exclusively, so the only way to get
-	       info about it is to find it in the parent directoy with the ExNext() function
+	       info about it is to find it in the parent directory with the ExNext() function
             */
 
 	    /* return an error for now */
