@@ -2,8 +2,8 @@ Assign Development: SYS:Development
 Assign INCLUDE: Development:include
 Assign LIB: Development:lib
 Assign USR: Development:
-Assign BIN: Development:bin
 
 If Exists Development:bin
+	Assign BIN: Development:bin
     Path ADD Development:bin
 EndIf
