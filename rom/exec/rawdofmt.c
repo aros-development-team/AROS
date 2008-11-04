@@ -372,10 +372,8 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 		       maxwidth  - maximum width of field (for strings only).
 				   Defaults to no limit.
 
-		       size	 - 'w' means WORD.
-		                   'l' means IPTR (LONG on 32-bit architectures and QUAD on 64-bit).
-
-				   defaults to WORD, if nothing is specified.
+		       size	 - 'l' means IPTR (LONG on 32-bit architectures and QUAD on 64-bit).
+				   Defaults to WORD, if nothing is specified.
 
 		       type	 - 'b' BSTR. It will use the internal representation
                                        of the BSTR defined by the ABI.
@@ -394,6 +392,10 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
                        AROS_UFC2(void, PutChProc,
                                  AROS_UFCA(UBYTE, char,      D0),
                                  AROS_UFCA(APTR , PutChData, A3));
+		    
+		       The argument may be NULL. This makes RawDoFmt() use an internal
+		       function. If you want to be compatible with AmigaOS you
+		       should check that exec.library has at least version 45.
 
 	PutChData    - Data propagated to each call of the callback hook.
 
@@ -401,8 +403,15 @@ APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutC
 	Pointer to the rest of the DataStream.
 
     NOTES
-	The field size defaults to words which may be different from the
-	default integer size of the compiler.
+	The field size defaults to WORD which may be different from the
+	default integer size of the compiler. If you don't take care about
+	this the result will be messy.
+	
+	There are different solutions for GCC:
+	- Define Datastream between #pragma pack(2) / #pragma pack().
+	- Use __attribute__((packed)) for Datastream.
+	- Only use type of LONG/ULONG for integer variables. Additionally only use
+	  %ld/%lu in FormatString.
 
     EXAMPLE
 	Build a sprintf style function:
