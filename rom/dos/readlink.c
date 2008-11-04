@@ -59,7 +59,8 @@
 
     struct IOFileSys iofs;
     struct FileHandle *fh = BADDR(lock);	
-    LONG err;
+    LONG err = 0;
+    LONG ret = DOSFALSE;
 
     InitIOFS(&iofs, FSA_READ_SOFTLINK, DOSBase);
 
@@ -71,9 +72,12 @@
 
     DosDoIO(&iofs.IOFS);
     err = iofs.io_DosError;
+    if(!err)
+        ret = iofs.io_Union.io_READ_SOFTLINK.io_Size;
+
     SetIoErr(err);
 
-    return err == 0 ? DOSTRUE : DOSFALSE;
+    return err == 0 ? ret : DOSFALSE;
 
     AROS_LIBFUNC_EXIT
 } /* ReadLink */
