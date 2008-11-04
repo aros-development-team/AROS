@@ -1,4 +1,4 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2008, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -9,6 +9,6 @@ include $(TOP)/config/make.cfg
 workbench-images : files-copy
 %copy_files_q files="$(wildcard *.png) $(wildcard *.jpg)" dst=$(AROS_IMAGES)
 
-%copy_dir_recursive mmake=workbench-images-themes src=Themes dst=$(AROSDIR)/System/Themes
+%copy_dir_recursive mmake=workbench-images-themes src=$(TOP)/images/Themes dst=$(AROSDIR)/System/Themes
 
 
