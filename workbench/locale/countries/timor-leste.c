@@ -12,7 +12,7 @@
 
 /* timor_leste.country: based on this file by João Ralha  */
    
-struct CountryPrefs timor-lestePrefs =
+struct CountryPrefs timor_lestePrefs =
 {
     /* Reserved */
     { 0, 0, 0, 0 },
