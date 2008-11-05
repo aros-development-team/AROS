@@ -32,7 +32,7 @@ struct CountryEntry
 
 extern struct CountryPrefs
     andorraPrefs,
-	angolaPrefs,
+    angolaPrefs,
     argentinaPrefs,
     australiaPrefs,
     belgiePrefs,
@@ -40,7 +40,7 @@ extern struct CountryPrefs
     bosna_i_hercegovinaPrefs,
     bulgarijaPrefs,
     brasilPrefs,
-	cabo_verdePrefs,
+    cabo_verdePrefs,
     canadaPrefs,
     canada_francaisPrefs,
     czech_republicPrefs,
@@ -77,7 +77,7 @@ extern struct CountryPrefs
     suomiPrefs,
     sverigePrefs,
     svizzeraPrefs,
-	timor_lestePrefs,
+    timor_lestePrefs,
     turkiyePrefs,
     ukrajinaPrefs,
     united_kingdomPrefs,
@@ -89,7 +89,7 @@ extern struct CountryPrefs
 struct CountryEntry CountryArray[] =
 {
     { "andorra"     	, &andorraPrefs     	},
-	{ "angola"     		, &angolaPrefs     	},
+    { "angola"     	, &angolaPrefs     	},
     { "argentina"     	, &argentinaPrefs     	},
     { "australia"   	, &australiaPrefs 	},
     { "belgië"	    	, &belgiePrefs    	},
@@ -97,7 +97,7 @@ struct CountryEntry CountryArray[] =
     { "bosna_i_hercegovina", &bosna_i_hercegovinaPrefs},
     { "brasil"          , &brasilPrefs          },
     { "bulgarija"	, &bulgarijaPrefs	},
-	{ "cabo_verde"	    , &cabo_verdePrefs  	},
+    { "cabo_verde"	, &cabo_verdePrefs  	},
     { "canada"	    	, &canadaPrefs    	},
     { "canada_français" , &canada_francaisPrefs },
     { "czech_republic" 	, &czech_republicPrefs 	},
@@ -134,7 +134,7 @@ struct CountryEntry CountryArray[] =
     { "suomi"	    	, &suomiPrefs     	},
     { "sverige"     	, &sverigePrefs   	},
     { "svizzera"    	, &svizzeraPrefs    	},
-	{ "timor-leste"    	, &timor_lestePrefs    	},
+    { "timor-leste"    	, &timor_lestePrefs    	},
     { "türkiye"     	, &turkiyePrefs     	},
     { "ukrajina"	, &ukrajinaPrefs	},
     { "united_kingdom"	, &united_kingdomPrefs	},
