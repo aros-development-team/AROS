@@ -39,8 +39,9 @@
 	size		- Length of the buffer.
 
     RESULT
-	!= 0	success
-	== 0	failure, see IoErr() for more information.
+	>= 0	length of resolved filename in case of success
+	== -1	failure, see IoErr() for more information
+	== -2   buffer size was too small to store resolved filename
 
     NOTES
 
@@ -77,7 +78,7 @@
 
     SetIoErr(err);
 
-    return err == 0 ? ret : DOSFALSE;
+    return err == 0 ? ret : -1;
 
     AROS_LIBFUNC_EXIT
 } /* ReadLink */
