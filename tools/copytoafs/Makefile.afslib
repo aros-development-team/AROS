@@ -18,6 +18,10 @@ FILES := \
 	volumes \
 	validator
 
+ifeq ($(AROS_HOST_ARCH),aros)
+FILES := error $(subst os_unix_support,os_aros_support,$(FILES))
+endif
+
 AFSSRCDIR := $(SRCDIR)/rom/devs/filesys/afs
 ifneq ($(HOSTGENDIR),)
 OBJDIR := $(HOSTGENDIR)/tools/host_afs
