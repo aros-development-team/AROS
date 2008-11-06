@@ -25,7 +25,7 @@ $(TOP)/tools/cxref/Makefile : $(SRCDIR)/tools/cxref/configure $(SRCDIR)/tools/cx
 	    $(MKDIR) "$(TOP)/tools/cxref"; \
 	fi;
 	cd $(TOP)/tools/cxref ; \
-	CC='' CFLAGS='' $(SRCDIR)/tools/cxref/configure --prefix=$(TOOLDIR)
+	CC='' CFLAGS="$(HOST_CFLAGS)" LDFLAGS="$(HOST_LDFLAGS)" $(SRCDIR)/tools/cxref/configure --prefix=$(TOOLDIR) --oldincludedir=/include
 
 $(CXREF): $(SRCDIR)/tools/cxref/*.[chyl] $(SRCDIR)/tools/cxref/cpp/*.[ch] $(SRCDIR)/tools/cxref/query/*.[ch] \
 		$(TOP)/tools/cxref/Makefile
