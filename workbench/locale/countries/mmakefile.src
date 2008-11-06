@@ -11,9 +11,9 @@ OBJS         := $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).o)
 DEPS         := $(foreach f,makecountry $(COUNTRIES),$(OBJDIR)/$(f).d)
 USER_CFLAGS  := -D_EURO
 
-# FIXME: Building makecountry on Cygwin requires to explicitly specify -liconv. Probably this should
+# FIXME: Building makecountry on Cygwin and AROS requires to explicitly specify -liconv. Probably this should
 #        be handled by configure script
-ifeq ($(AROS_HOST_ARCH),cygwin)
+ifeq ($(filter-out aros cygwin,$(AROS_HOST_ARCH)),)
 LIBICONV := -liconv
 else
 LIBICONV :=
