@@ -200,6 +200,6 @@ USER_CFLAGS     := -D_IEEE_LIBM -Dlint '-D__FBSDID(x)=' \
 #MM
 arosm-setup-link :
 	@$(RM) $(AROS_LIB)/libm.a
-	@ln -s libarosm.a $(AROS_LIB)/libm.a
+	@ln -s $(if $(filter aros, $(AROS_HOST_ARCH)),$(AROS_LIB)/libarosm.a,libarosm.a) $(AROS_LIB)/libm.a
 
 %common
