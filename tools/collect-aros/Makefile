@@ -20,6 +20,13 @@ COLLECT-AROS-DIR := .
 endif
 COLLECT_CFLAGS  ?= $(USER_CFLAGS) -I $(COLLECT-AROS-DIR)
 
+ifeq ($(AROS_HOST_ARCH),aros)
+COLLECT_CFLAGS += -D_HAVE_LIBIBERTY_
+HOST_LDFLAGS += -lbfd -liberty -lz
+COLLECT-AROS-BACKEND   := backend-bfd.c
+COLLECT-AROS-DOCOMMAND := docommand-spawn.c
+endif
+
 all : $(COLLECT-AROS)
 
 COLLECT-AROS-FILES := collect-aros.c gensets.c misc.c $(COLLECT-AROS-BACKEND) \
