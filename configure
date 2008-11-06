@@ -3940,6 +3940,24 @@ aros_target_cc_includes=""
 # to that later.
 
 case "$host_os" in
+    aros*)
+	aros_host_arch="aros"
+	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	case "$host_cpu" in
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *x86_64*)
+		aros_host_cpu="x86_64"
+		;;
+	    *)
+		{ echo "$as_me:$LINENO: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&5
+echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+        ;;
+
     linux*)
 	aros_host_arch="linux"
 	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
