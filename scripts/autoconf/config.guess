@@ -293,6 +293,9 @@ EOF
     *:[Mm]orph[Oo][Ss]:*:*)
 	echo ${UNAME_MACHINE}-unknown-morphos
 	exit 0 ;;
+    *:AROS:*:*)
+	echo ${UNAME_MACHINE}-unknown-aros
+	exit 0 ;;
     *:OS/390:*:*)
 	echo i370-ibm-openedition
 	exit 0 ;;
