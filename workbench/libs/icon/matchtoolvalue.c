@@ -24,6 +24,7 @@
 
 /*  FUNCTION
 	Checks if the given tooltype has the supplied value.
+	Search is case-insensitive.
 
     INPUTS
 	typeString - string containing the tooltype.

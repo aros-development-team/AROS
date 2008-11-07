@@ -22,6 +22,7 @@
 
 /*  FUNCTION
 	Finds the supplied typeName inside the given toolTypeArray.
+	Search is case-insensitive.
 
     INPUTS
 	toolTypeArray  -  pointer to an array of tooltype strings.
@@ -57,10 +58,11 @@
 
     while (*toolTypeArray)
     {
-	/* case sensetive compare */
-	if (!strncmp (*toolTypeArray, typeName, typenamelen) )
+	/* case insensitive compare */
+	if (!Strnicmp (*toolTypeArray, typeName, typenamelen) )
 	{
-            return (*toolTypeArray+typenamelen+1);
+	    if ( (*toolTypeArray)[typenamelen] == '=') typenamelen++;
+            return (*toolTypeArray + typenamelen);
 	}
 
 	toolTypeArray ++;
