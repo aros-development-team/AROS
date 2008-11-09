@@ -151,6 +151,12 @@ LONG launcher()
 	__aros_startup_error = ret;
 	D(bug("exec_command returned %d\n", ret));
     }
+    else
+    {
+	D(bug("informing parent that we won't use udata anymore\n"));
+	/* Inform parent that we won't use udata anymore */
+	Signal(udata->parent, 1 << udata->parent_signal);	
+    }
     D(bug("freeing child_signal\n"));
     FreeSignal(child_signal);
     CloseLibrary(aroscbase);
@@ -297,12 +303,10 @@ pid_t __vfork(jmp_buf env)
 	    D(bug("Signaling child\n"));
 	    Signal(GETUDATA->child, 1 << GETUDATA->child_signal);
 	}
-	else
-	{
-	    D(bug("Waiting for child to finish using udata\n"));
-	    /* Wait for child to finish using GETUDATA */
-	    Wait(1 << GETUDATA->parent_signal);
-	}
+
+	D(bug("Waiting for child to finish using udata\n"));
+	/* Wait for child to finish using GETUDATA */
+	Wait(1 << GETUDATA->parent_signal);
 
 	D(bug("fflushing\n"));
 	fflush(NULL);
