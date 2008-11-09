@@ -92,6 +92,18 @@ If WARN
     Assign Extras: SYS:Extras >NIL:
 EndIf
 
+Assign EXISTS Development: >NIL:
+If WARN
+    If Exists $DEVELPATH
+        Assign Development: $DEVELPATH
+    EndIf
+Endif
+Assign EXISTS Development: >NIL:
+If WARN
+    Assign Development: SYS:Development >NIL:
+EndIf
+
+
 If EXISTS ENV:SYS/Packages
     List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="If EXISTS $SYS/Packages/%s*NCD $SYS/Packages/%s*NIf EXISTS S/Package-Startup*NExecute S/Package-Startup*NEndif*NEndif*N"
     Execute T:P
