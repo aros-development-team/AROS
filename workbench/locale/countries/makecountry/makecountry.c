@@ -6,27 +6,14 @@
     Lang: english
 */
 
-#include <exec/types.h>
-#include <libraries/locale.h>
-#include <prefs/locale.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <aros/system.h>
 #include <iconv.h>
-
-#define EC(x)\
-{\
-    (x) =   (((x) & 0xFF000000) >> 24)\
-	  | (((x) & 0x00FF0000) >> 8)\
-	  | (((x) & 0x0000FF00) << 8)\
-	  | (((x) & 0x000000FF) << 24);\
-}
 
 struct CountryEntry
 {
-    STRPTR ca_Name;
+    char *ca_Name;
     struct CountryPrefs *ca_Data;
 };
 
@@ -157,8 +144,10 @@ char preamble[] =
 	"CTRY" "\x00\x00\x01\xF8"
 };
 
+void convertEndianness(struct CountryPrefs *cp);
+unsigned long getCountryPrefsSize(void);
 
-int doCountry(struct CountryPrefs *cp, STRPTR progname, STRPTR filename)
+int doCountry(struct CountryPrefs *cp, char *progname, char *filename)
 {
     FILE *fp;
 
@@ -182,16 +171,9 @@ int doCountry(struct CountryPrefs *cp, STRPTR progname, STRPTR filename)
 	return(20);
     }
 
-#if (AROS_BIG_ENDIAN == 0)
-    /* We have to convert the endianness of this data,
-       thankfully there are only two fields which this applies
-       to.
-    */
-    EC(cp->cp_CountryCode);
-    EC(cp->cp_TelephoneCode);
-#endif
+    convertEndianness(cp);
 
-    if(fwrite(cp, sizeof(struct CountryPrefs), 1, fp) < 1)
+    if(fwrite(cp, getCountryPrefsSize(), 1, fp) < 1)
     {
 	printf("%s: Write error during data for %s.\n", progname, filename);
 	fclose(fp);
