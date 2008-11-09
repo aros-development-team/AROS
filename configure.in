@@ -1133,6 +1133,22 @@ if test "$cross_compiling" = "yes" ; then
     CC=${target_tool_prefix}gcc
 fi
 
+#-----------------------------------------------------------------------------
+
+# Disable pointer-signedness warnings if the compiler recognises the option
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wno-pointer-sign])
+save_cflags="$CFLAGS"
+CFLAGS="$CFLAGS -Wno-pointer-sign"
+AC_TRY_COMPILE(,, use_no_sign_warning="yes", use_no_sign_warning="no")
+AC_MSG_RESULT($use_no_sign_warning)
+if test "x-$use_no_sign_warning" = "x-yes" ; then
+    aros_config_cflags="$aros_config_cflags -Wno-pointer-sign"
+fi
+CFLAGS="$save_cflags"
+
+#-----------------------------------------------------------------------------
+
 # Find all the tools we need to compile. This could be cross-compiling
 # though! If that is the case we use the GNU form of the target and
 # simply add this to the front of the binary name. This is rather simple,
