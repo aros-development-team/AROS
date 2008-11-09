@@ -1188,29 +1188,24 @@ void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
 	}
 }
 
-void create_extraspath_variable(CONST_STRPTR dest_path,
-	CONST_STRPTR extras_path)
+void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value)
 {
-	if (dest_path == NULL || extras_path == NULL)
-	{
-		return;
-	}
-
 	BPTR env_variable_fh = NULL;
-	TEXT env_variable[100];
-	TEXT extraspath[100];
+	TEXT env_variable_path[100];
 
-	sprintf(env_variable, "%s:", dest_path);
-	AddPart(env_variable, "Prefs/Env-Archive/EXTRASPATH", 100);
+    if ((envarchiveDisk == NULL) || (name == NULL) || (value == NULL))
+        return;
 
-	sprintf(extraspath, "%s:", extras_path);
-	AddPart(extraspath, "Extras", 100);
 
-D(bug("[INSTALLER] create_extraspath_variable: Setting Var '%s' to '%s'\n", env_variable, extraspath));
+	sprintf(env_variable_path, "%s:", envarchiveDisk);
+	AddPart(env_variable_path, "Prefs/Env-Archive/", 100);
+    AddPart(env_variable_path, name, 100);
 
-	if ((env_variable_fh = Open(env_variable, MODE_NEWFILE)) != NULL)
+    D(bug("[INSTALLER] create_environment_variable: Setting Var '%s' to '%s'\n", env_variable_path, value));
+
+	if ((env_variable_fh = Open(env_variable_path, MODE_NEWFILE)) != NULL)
 	{
-		FPuts(env_variable_fh, extraspath);
+		FPuts(env_variable_fh, value);
 		Close(env_variable_fh);
 	}
 }
@@ -1479,15 +1474,21 @@ localecopydone:
 			NULL
 		};
 
-		// Copying Extras
+	    TEXT extraspath[100];
+
+
+		/* Copying Extras */
 		D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
 		SET(data->label, MUIA_Text_Contents, "Copying Extra Software...");
 
 		CopyDirArray( CLASS, self, data, extras_dirs, extras_path);
 		fixupdir_count +=2;
 		
-		// Set EXTRASPATH environment variable
-		create_extraspath_variable(dest_Path, extras_path);
+		/* Set EXTRASPATH environment variable */
+	    sprintf(extraspath, "%s:", extras_path);
+	    AddPart(extraspath, "Extras", 100);
+
+        create_environment_variable(dest_Path, "EXTRASPATH", extraspath);
 	}
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
@@ -1506,20 +1507,28 @@ localecopydone:
 
 		if ((lock = Lock(&developerDir, ACCESS_READ)) != NULL)
 		{
-			UnLock(lock);
 			TEXT     *developer_dirs[((2+1)*2)] = 
 			{
 				"Development",	"Development",
 				"Tests",		"Tests",
 				NULL
 			};
+            TEXT developmentpath[100];
 
-			// Copying Developer stuff
+			UnLock(lock);
+
+			/* Copying Developer stuff */
 			D(bug("[INSTALLER] Copying Developer Files...\n"));
 			SET(data->label, MUIA_Text_Contents, "Copying Developer Files...");
 
 			CopyDirArray(CLASS, self, data, developer_dirs, extras_path);
 			fixupdir_count +=2;
+            
+		    /* Set DEVELPATH environment variable */
+	        sprintf(developmentpath, "%s:", extras_path);
+	        AddPart(developmentpath, "Development", 100);
+
+            create_environment_variable(dest_Path, "DEVELPATH", developmentpath);
 		}
 		else D(bug("[INSTALLER] Couldn't locate Developer Files...\n"));
 	}
@@ -1620,7 +1629,7 @@ localecopydone:
 
 		TEXT tmp[200];
 #if GRUB == 2
-		/* Add entry to boot MS Windows if present XXX NOT TESTED */
+		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
 			STRPTR menu_file_path = "boot/grub/grub.cfg";
