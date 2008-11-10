@@ -71,7 +71,7 @@
 
 int __init_memstuff(void)
 {
-    __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 4096L, 2000L);
+    __startup_mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
     if (!__startup_mempool)
     {
