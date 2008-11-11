@@ -314,7 +314,8 @@ D(bug("[INSTALLER.i] Prepaired UNDO list @ %p\n", &data->instc_undorecord));
 
 /**/
 
-ULONG AskRetry(Class *CLASS, Object *self, char *Message, char *File, char *Opt1, char *Opt2, char *Opt3)
+ULONG AskRetry(Class *CLASS, Object *self, const char *Message, const char *File, 
+                const char *Opt1, const char *Opt2, const char *Opt3)
 {
 	struct Install_DATA 	*data    = INST_DATA(CLASS, self);
 	char				*Temp_Message=NULL;
@@ -497,7 +498,7 @@ IPTR Install__MUIM_FindDrives
 		}
 	}
 
-	return result;
+	return (IPTR)result;
 }
 
 void w2strcpy(STRPTR name, UWORD *wstr, ULONG len)
@@ -774,7 +775,7 @@ IPTR Install__MUIM_IC_PrevStep
 )
 {
 	struct Install_DATA* data = INST_DATA(CLASS, self);
-	IPTR    this_page;
+	IPTR    this_page = 0;
 
 	GET(data->page,MUIA_Group_ActivePage, &this_page);
 	SET(data->back, MUIA_Selected, FALSE);
@@ -869,10 +870,10 @@ IPTR Install__MUIM_IC_CancelInstall
     Class *CLASS, Object *self, Msg message 
 )
 {
-	struct Install_DATA 		*data = INST_DATA(CLASS, self);
-	struct optionstmp 		*backupOptions = NULL;
-	IPTR         				this_page=0;
-	char					*cancelmessage=NULL;
+	struct Install_DATA *data = INST_DATA(CLASS, self);
+	struct optionstmp   *backupOptions = NULL;
+	IPTR                this_page = 0;
+	const char          *cancelmessage = NULL;
 
 	if ((backupOptions = data->instc_options_backup) == NULL)
 	{
@@ -959,7 +960,7 @@ Class *CLASS, Object *self, Msg message
 {
 	struct Install_DATA* data = INST_DATA(CLASS, self);
 	struct optionstmp *backupOptions = NULL;
-	IPTR    this_page;
+	IPTR    this_page = 0;
 
 	backupOptions = data->instc_options_backup;
 
@@ -1069,15 +1070,15 @@ IPTR Install__MUIM_Partition
 		char tmpcmd[150], tmparg[100];
 		GET(dest_device, MUIA_String_Contents, &tmp);
 		GET(dest_unit, MUIA_String_Integer, &option);
-		sprintf(&tmpcmd,"C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
-			tmp, option);
+		sprintf(tmpcmd,"C:Partition DEVICE=%s UNIT=%ld FORCE QUIET",
+			(char *)tmp, option);
 
 		/* Specify SYS size */
 		GET(check_sizesys, MUIA_Selected, &option);
 		if (option)
 		{
 			GET(sys_size, MUIA_String_Integer, &tmp);
-			sprintf(&tmparg, " SYSSIZE=%ld", tmp);
+			sprintf(tmparg, " SYSSIZE=%ld", tmp);
 			strcat(tmpcmd, tmparg);
 		}
         
@@ -1125,7 +1126,7 @@ IPTR Install__MUIM_Partition
 			D(bug("[INSTALLER] Partitioning Free Space...\n"));
 
 		D(bug("[INSTALLER] ### Executing '%s'\n",&tmpcmd));
-		tmp = SystemTagList(&tmpcmd, NULL);
+		tmp = SystemTagList(tmpcmd, NULL);
 
 		SET(data->proceed, MUIA_Disabled, FALSE);
 	}
@@ -1503,9 +1504,9 @@ localecopydone:
 		TEXT developerDir[srcLen + developerDirLen];
 
 		CopyMem(source_Path, &developerDir, srcLen + 1);
-		AddPart(&developerDir, "Development", srcLen + developerDirLen);
+		AddPart(developerDir, "Development", srcLen + developerDirLen);
 
-		if ((lock = Lock(&developerDir, ACCESS_READ)) != NULL)
+		if ((lock = Lock(developerDir, ACCESS_READ)) != NULL)
 		{
 			TEXT     *developer_dirs[((2+1)*2)] = 
 			{
@@ -1796,7 +1797,7 @@ localecopydone:
 	ForeachNodeSafe(&data->instc_undorecord, CurUndoNode, undonode_tmp)
 	{
 		D(bug("[INSTALLER] Removing undo record @ %p\n", CurUndoNode));
-		Remove(CurUndoNode);
+		Remove((struct Node *)CurUndoNode);
 
 		switch (CurUndoNode->undo_method)
 		{
@@ -1822,7 +1823,7 @@ IPTR Install__MUIM_RefreshWindow
 )
 {
 	struct Install_DATA* data = INST_DATA(CLASS, self);
-	ULONG   cur_width,cur_height;
+	ULONG   cur_width = 0,cur_height = 0;
 
 	GET( data->window, MUIA_Window_Width, &cur_width);
 	GET( data->window, MUIA_Window_Height, &cur_height);
@@ -1978,7 +1979,7 @@ skipcdadir:
 		/* Folder copied /skipped */
 		dir_count += 2;
         }
-exitcdadir:
+
 	return ((dir_count/2) - skip_count);   /* Return no. of successfully copied dirs */
 }
 
@@ -2033,7 +2034,6 @@ IPTR Install__MUIM_Format
 	GET(check_work, MUIA_Selected, &option);
 	if (option && XGET(check_formatwork,MUIA_Selected))
 	{
-        BPTR in;
 		/* Format Vol1, if it's not already formated */
 		sprintf(fmt_nametmp,"Formatting '%s'...",work_Path);
 		D(bug("[INSTALLER] %s\n",fmt_nametmp));
@@ -2269,10 +2269,9 @@ IPTR Install__MUIM_IC_CopyFiles
 						char		*tmppath = AllocVec((strlen(message->dstDir) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
 						BPTR	ulock=NULL;
 
-						IPTR		src_point = (((message->dstDir) + strlen(dest_Path))+1),
-								src_len = (strlen(message->dstDir) - strlen(dest_Path));
+						IPTR		src_point = (((IPTR)(message->dstDir) + strlen(dest_Path))+1);
 
-						sprintf(tmppath,"%s/%s", instalationtmp_path, src_point);
+						sprintf(tmppath,"%s/%s", instalationtmp_path, (char *)src_point);
 
 						D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
 						if ((ulock = Lock(tmppath, ACCESS_READ))!=NULL)
@@ -2379,10 +2378,10 @@ copy_backup:
 		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
 		undorecord->undo_dst = AllocVec(strlen(message->dstFile)+2, MEMF_CLEAR | MEMF_PUBLIC );
 
-		IPTR		src_point = (((message->dstFile) + strlen(dest_Path))+1),
+		IPTR		src_point = (((IPTR)(message->dstFile) + strlen(dest_Path))+1),
 				src_len = (strlen(message->dstFile) - strlen(dest_Path));
 
-		CopyMem(src_point, tmppath, src_len);
+		CopyMem((CONST_APTR)src_point, tmppath, src_len);
 		sprintf(undorecord->undo_src,"%s/%s", instalationtmp_path, tmppath);
 
 		CopyMem( message->dstFile, undorecord->undo_dst, strlen(message->dstFile));
@@ -2510,7 +2509,7 @@ copy_skip:
 			if (copysuccess) 
 			{
 				D(bug("[INSTALLER.CF] Adding undo record @ %x to undo list @ %x \n", undorecord, &data->instc_undorecord));
-				AddHead(&data->instc_undorecord, undorecord);
+				AddHead(&data->instc_undorecord, (struct Node *)undorecord);
 			}
 			else
 			{
@@ -2532,12 +2531,6 @@ copy_skip:
 		data->inst_success = MUIV_Inst_Failed;
 	}
 	return 0;
- fail:
-	D(bug("[INSTALLER.CF] Failed to copy: %s [%d]\n", message->srcFile, IoErr()));
-	data->inst_success = MUIV_Inst_Failed;
-	if(from) Close(from);
-	if(to) Close(to);
-	return RETURN_FAIL;
 }
 
 IPTR Install__MUIM_IC_UndoSteps
@@ -2556,7 +2549,7 @@ IPTR Install__MUIM_IC_UndoSteps
 	ForeachNode(&data->instc_undorecord, CurUndoNode)
 	{
 		D(bug("[INSTALLER.US] Removing undo record @ %x\n",CurUndoNode));
-		Remove(CurUndoNode);
+		Remove((struct Node *)CurUndoNode);
 
 		switch (CurUndoNode->undo_method)
 		{
@@ -2613,10 +2606,9 @@ IPTR Install__OM_SET
     Class *CLASS, Object *self, struct opSet *message
 )
 {
-	struct Install_DATA* data = INST_DATA(CLASS, self);
+	struct Install_DATA *data = INST_DATA(CLASS, self);
 
-	struct TagItem              *tstate = message->ops_AttrList,
-					*tag = NULL;
+	struct TagItem      *tstate = message->ops_AttrList, *tag = NULL;
 
 	while ((tag = NextTagItem(&tstate)) != NULL)
 	{
@@ -2832,7 +2824,7 @@ int main(int argc,char *argv[])
 		D(bug("[INST-APP] Couldn't get progdir\n"));
 		goto main_error;
 	}
-	pathend = FilePart(source_path);
+	pathend = (IPTR)FilePart(source_path);
 	pathend = pathend - (IPTR)source_path;
 
 	D(bug("[INST-APP] Path length = %d bytes\n", pathend));
