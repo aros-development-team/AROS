@@ -117,6 +117,11 @@
     cmd == ACTION_REMOVE_NOTIFY   ? "ACTION_REMOVE_NOTIFY"   : \
     cmd == ACTION_SERIALIZE_DISK  ? "ACTION_SERIALIZE_DISK"  : \
                                     "unknown")
+
+#define handle_desc(handle) \
+    (handle == &(handle->mount->root_handle) ? \
+        "root" : (handle->is_lock ? "lock" : "handle"))
+
 #endif
 
 static BSTR mkbstr(APTR pool, CONST_STRPTR str) {
@@ -190,8 +195,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_OPEN:
             D(bug("[packet] OPEN: lock 0x%08x (%s) name '%s' type %s\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_OPEN.io_Filename,
                 (iofs->io_Union.io_OPEN.io_FileMode & FMF_LOCK) ? "EXCLUSIVE" : "SHARED"));
 
@@ -228,8 +232,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             struct ph_handle *new_handle;
 
             D(bug("[packet] OPEN_FILE: lock 0x%08x (%s) name '%s' mode 0x%x prot 0x%x\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_OPEN_FILE.io_Filename,
                 mode,
                 iofs->io_Union.io_OPEN_FILE.io_Protection));
@@ -267,8 +270,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_CLOSE:
             D(bug("[packet] CLOSE: lock 0x%08x (%s)\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle")));
+                handle->actual, handle_desc(handle)));
 
             /* if this is the root handle, then we previously intercepted a
              * call and returned it (e.g. FSA_OPEN/ACTION_PARENT), so we don't
@@ -361,8 +363,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
         case FSA_FILE_MODE: {
 
             D(bug("[packet] FILE_MODE: object 0x%08x (%s) mode 0x%x\b\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_FILE_MODE.io_FileMode));
 
             dp->dp_Type = ACTION_CHANGE_MODE;
@@ -400,10 +401,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             h2 = (struct ph_handle *) iofs->io_Union.io_SAME_LOCK.io_Lock[1];
 
             D(bug("[packet] SAME_LOCK: lock1 0x%08x (%s) lock2 0x%08x (%s)\n",
-                h1->actual,
-                h1 == &(h1->mount->root_handle) ? "root" : (h1->is_lock ? "lock" : "handle"),
-                h2->actual,
-                h2 == &(h2->mount->root_handle) ? "root" : (h2->is_lock ? "lock" : "handle")));
+                h1->actual, handle_desc(h1), h2->actual, handle_desc(h2)));
 
             dp->dp_Type = ACTION_SAME_LOCK;
             dp->dp_Arg1 = (IPTR) h1->actual;
@@ -415,8 +413,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             struct FileInfoBlock *fib;
 
             D(bug("[packet] EXAMINE: lock 0x%08x (%s)\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle")));
+                handle->actual, handle_desc(handle)));
 
             fib = (struct FileInfoBlock *) AllocMem(sizeof(struct FileInfoBlock), MEMF_PUBLIC | MEMF_CLEAR);
 
@@ -428,8 +425,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_EXAMINE_NEXT:
             D(bug("[packet] EXAMINE_NEXT: lock 0x%08x (%s) fib 0x%08x\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_EXAMINE_NEXT.io_fib));
 
             dp->dp_Type = ACTION_EXAMINE_NEXT;
@@ -439,8 +435,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_CREATE_DIR:
             D(bug("[packet] CREATE_DIR: lock 0x%08x (%s) name '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_CREATE_DIR.io_Filename));
 
             dp->dp_Type = ACTION_CREATE_DIR;
@@ -457,24 +452,29 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg1 = (IPTR) MKBADDR(iofs->io_Union.io_INFO.io_Info);
             break;
 
-        case FSA_CREATE_HARDLINK: /* XXX untested */
-            D(bug("[packet] CREATE_HARDLINK: lock 0x%08x (%s) name '%s' target '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
-                iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
-                iofs->io_Union.io_CREATE_HARDLINK.io_OldFile));
+        case FSA_CREATE_HARDLINK:
+            {
+                struct ph_handle *target = (struct ph_handle *)
+                    iofs->io_Union.io_CREATE_HARDLINK.io_OldFile;
 
-            dp->dp_Type = ACTION_MAKE_LINK;
-            dp->dp_Arg1 = (IPTR) handle->actual;
-            dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_CREATE_HARDLINK.io_Filename);
-            dp->dp_Arg3 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_CREATE_HARDLINK.io_OldFile);
-            dp->dp_Arg4 = LINK_HARD;
-            break;
+                D(bug("[packet] CREATE_HARDLINK: lock 0x%08x (%s) name '%s' "
+                    "target 0x%08x (%s)\n",
+                    handle->actual, handle_desc(handle),
+                    iofs->io_Union.io_CREATE_HARDLINK.io_Filename,
+                    target->actual, handle_desc(target)));
 
-        case FSA_CREATE_SOFTLINK: /* XXX untested */
+                dp->dp_Type = ACTION_MAKE_LINK;
+                dp->dp_Arg1 = (IPTR) handle->actual;
+                dp->dp_Arg2 = (IPTR) mkbstr(pkt->pool,
+                    iofs->io_Union.io_CREATE_HARDLINK.io_Filename);
+                dp->dp_Arg3 = (IPTR) target->actual;
+                dp->dp_Arg4 = LINK_HARD;
+                break;
+            }
+
+        case FSA_CREATE_SOFTLINK:
             D(bug("[packet] CREATE_SOFTLINK: lock 0x%08x (%s) name '%s' target '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_CREATE_SOFTLINK.io_Filename,
                 iofs->io_Union.io_CREATE_SOFTLINK.io_Reference));
 
@@ -487,8 +487,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_RENAME:
             D(bug("[packet] RENAME: lock 0x%08x (%s) name '%s' target '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_RENAME.io_Filename,
                 iofs->io_Union.io_RENAME.io_NewName));
 
@@ -509,8 +508,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_READ_SOFTLINK: /* XXX untested */
             D(bug("[packet] READ_SOFTLINK: lock 0x%08x (%s)\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle")));
+                handle->actual, handle_desc(handle)));
 
             dp->dp_Type = ACTION_READ_LINK;
             dp->dp_Arg1 = (IPTR) handle->actual;
@@ -521,8 +519,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_DELETE_OBJECT:
             D(bug("[packet] DELETE: lock 0x%08x (%s) name '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_DELETE_OBJECT.io_Filename));
 
             dp->dp_Type = ACTION_DELETE_OBJECT;
@@ -532,8 +529,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_SET_COMMENT:
             D(bug("[packet] SET_COMMENT: lock 0x%08x (%s) name '%s' comment '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_SET_COMMENT.io_Filename,
                 iofs->io_Union.io_SET_COMMENT.io_Comment));
 
@@ -546,8 +542,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             
         case FSA_SET_PROTECT:
             D(bug("[packet] SET_PROTECT: lock 0x%08x (%s) name '%s' attrs 0x%x\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_SET_PROTECT.io_Filename,
                 iofs->io_Union.io_SET_PROTECT.io_Protection));
 
@@ -560,8 +555,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
 
         case FSA_SET_OWNER: /* XXX untested */
             D(bug("[packet] SET_OWNER: lock 0x%08x (%s) name '%s' uid 0x%x gid 0x%x\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_SET_OWNER.io_Filename,
                 iofs->io_Union.io_SET_OWNER.io_UID,
                 iofs->io_Union.io_SET_OWNER.io_GID));
@@ -589,8 +583,7 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             DateToStr(&dt);
 
             bug("[packet] SET_DATE: lock 0x%08x (%s) name '%s' date '%s'\n",
-                handle->actual,
-                handle == &(handle->mount->root_handle) ? "root" : (handle->is_lock ? "lock" : "handle"),
+                handle->actual, handle_desc(handle),
                 iofs->io_Union.io_SET_DATE.io_Filename,
                 datestr);
         }
