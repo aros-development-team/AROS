@@ -24,12 +24,15 @@ int main(void)
   c = 0 ;
   while (c < 20)
   {
-    double d = drand48();
-    int * iptr = (int *)&d;
-    int a = iptr[0];
-    int b = iptr[1];
+    union { 
+	double d;
+	int i[2];
+    } tmp;
+    tmp.d = drand48();
+    int a = tmp.i[0];
+    int b = tmp.i[1];
     
-    printf("%d. %e  (%x %x) %x\n",c,d,a,b,array[c]);
+    printf("%d. %e  (%x %x) %x\n",c,tmp.d,a,b,array[c]);
     c++;
   }
 
