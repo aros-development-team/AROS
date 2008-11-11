@@ -539,7 +539,7 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     tf = rp->Font;
     if (!ExtendFont(tf, NULL)) return;
     
-    chunky = TFE_INTERN(tf->tf_Extension)->hash->chunky_colorfont;
+    chunky = ((struct TextFontExtension_intern *)(tf->tf_Extension))->hash->chunky_colorfont;
    
     TextExtent(rp, text, len, &te);
 
