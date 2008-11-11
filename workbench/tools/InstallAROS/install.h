@@ -38,11 +38,6 @@ static const char* KMsgBeginWithoutPartition =
 "You are being " MUIX_B "warned" MUIX_N ", this is pre-alpha software.\n"
 "\n Press Proceed to begin installation...";
 
-static const char* KMsgLanguage =
-"The system prefs for your language settings\n"
-"will now launch\n\n"
-"Choose the settings that are relevant to you\n";
-
 static const char* KMsgPartitionOptions =
 "We will now create AROS partitions on your hard drive\n\n"
 "Please select how you would like to proceed...\n";
@@ -94,12 +89,6 @@ static const char* KMsgDone =
 "power switch or reset button.\n\n"
 "Select Proceed to finish\n";
 
-static const char* KMsgNoDrives =
-"It appears you do not have a hard\n"
-"drive installed in your PC.\n\n"
-"Installation of AROS can only be performed on to\n"
-"a hard drive just now. Sorry.\n\nPress Proceed To Exit\n";
-
 static const char* KMsgCancelOK =
 "Are you sure you wish to cancel\n"
 "this installation?\n";
@@ -115,6 +104,7 @@ static const char* KMsgCancelDanger =
 static const char* KMsgProceed =
 "_Proceed";
 
+#if GRUB == 1
 static const char* KMsgGRUBNonFFSWarning =
 "You have selected a filesystem different\n"
 "than FFS-Intl for the DH0 partition. Since\n"
@@ -122,6 +112,24 @@ static const char* KMsgGRUBNonFFSWarning =
 "GRUB bootloader, you will not be able to\n"
 "boot the system after installation\n\n"
 "Should the partitioning continue?\n";
+#endif
+
+/* Unused strings. Kept for reference */
+
+/*
+
+static const char* KMsgLanguage =
+"The system prefs for your language settings\n"
+"will now launch\n\n"
+"Choose the settings that are relevant to you\n";
+
+static const char* KMsgNoDrives =
+"It appears you do not have a hard\n"
+"drive installed in your PC.\n\n"
+"Installation of AROS can only be performed on to\n"
+"a hard drive just now. Sorry.\n\nPress Proceed To Exit\n";
+
+*/
 
 #define MUIM_IC_NextStep           (0x00335551)
 #define MUIM_IC_PrevStep           (0x00335552)
@@ -273,7 +281,7 @@ struct Grub_Options
 
 struct InstallC_UndoRecord
 {
-	struct Node		undo_Node;
+	struct Node		undo_Node;      /* Inherits from struct Node */
 	ULONG			undo_method;
 	char			*undo_src;
 	char			*undo_dst;
@@ -351,7 +359,7 @@ struct Install_DATA
 
 /** END IO Related **/
 	char                        *instc_lic_file;
-	IPTR						instc_lic_buffer;
+	APTR						instc_lic_buffer;
 
 	struct List     			instc_undorecord;
 
