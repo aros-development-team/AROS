@@ -894,7 +894,7 @@ void driver_Text (struct RastPort * rp, CONST_STRPTR string, LONG len,
     
     if (ExtendFont(tf, NULL))
     {
-    	fontbm = TFE_INTERN(tf->tf_Extension)->hash->font_bitmap;
+    	fontbm = ((struct TextFontExtension_intern *)(tf->tf_Extension))->hash->font_bitmap;
     }
     
     /* Check if font has character data as a HIDD bitmap */

@@ -102,7 +102,7 @@
     {
     	/* Back pointer from tfe to hash */
 	
-    	TFE_INTERN(tfe)->hash = hn;
+    	((struct TextFontExtension_intern *)tfe)->hash = hn;
 	
 	/* We make a copy of the tagitems */
 	if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
@@ -143,7 +143,7 @@
 			hn->ext = tfe;
 		    }
 
-    	            TFE(font->tf_Extension) = tfe;
+    	            font->tf_Extension = (void *)tfe;
     	            font->tf_Style |= FSF_TAGGED;
 
 		    ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
