@@ -1541,7 +1541,7 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object * obj,
 	    case MUIKEY_PRESS: {
 		UBYTE *buf = NULL;
 
-		get(obj, MUIA_String_Contents, (IPTR *)&buf);
+		get(obj, MUIA_String_Contents, &buf);
 
     	    	if (data->msd_Flags & MSDF_STAYACTIVE)
 		{

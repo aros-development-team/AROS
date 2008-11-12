@@ -205,7 +205,7 @@ ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase)
     wnd = _win(child);
     obj = child;
 
-    while (get(obj,MUIA_Parent, (IPTR *)&obj))
+    while (get(obj,MUIA_Parent, &obj))
     {
     	if (!obj) break;
 	if (obj == wnd) break;

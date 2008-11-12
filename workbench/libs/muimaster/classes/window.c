@@ -1221,7 +1221,7 @@ static Object *ObjectUnderPointer(struct MUI_WindowData *data, Object *obj,
         return NULL;
     }
 
-    if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)))
+    if (get(obj, MUIA_Group_ChildList, &(ChildList)))
     {
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
@@ -1256,7 +1256,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
         return FALSE;
     }
 
-    if (get(obj, MUIA_Group_ChildList, (IPTR *)&(ChildList)) && (ChildList != 0))
+    if (get(obj, MUIA_Group_ChildList, &(ChildList)) && (ChildList != 0))
     {
 		      
         cstate = (Object *)ChildList->mlh_Head;
@@ -1357,7 +1357,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 		Object                *child;
 		struct MinList        *ChildList;
 
-		get(_app(oWin), MUIA_Application_WindowList, (IPTR *)&(ChildList));
+		get(_app(oWin), MUIA_Application_WindowList, &(ChildList));
 		cstate = (Object *)ChildList->mlh_Head;
 		while ((child = NextObject(&cstate)))
 		{
@@ -1377,7 +1377,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 	    if (dest_wnd)
 	    {
 		Object *root;
-		get(dest_wnd, MUIA_Window_RootObject, (IPTR *)&root);
+		get(dest_wnd, MUIA_Window_RootObject, &root);
 
 		if (root)
 		{
@@ -1821,7 +1821,7 @@ static ULONG InvokeEventHandler (struct MUI_EventHandlerNode *ehn,
     	Object *parent = obj;
     	Object *wnd = _win(obj);
 
-	while (get(parent,MUIA_Parent,(IPTR *)&parent))
+	while (get(parent,MUIA_Parent,&parent))
 	{
 	    if (!parent) break;
 	    if (wnd == parent) break;
@@ -3409,7 +3409,7 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
 
     /* Decide which menustrip should be used */
     if (!data->wd_ChildMenustrip)
-	get(_app(obj), MUIA_Application_Menustrip, (IPTR *)&data->wd_Menustrip);
+	get(_app(obj), MUIA_Application_Menustrip, &data->wd_Menustrip);
     else
 	data->wd_Menustrip = data->wd_ChildMenustrip;
 
