@@ -379,7 +379,7 @@ void SuggestWord (struct InstData *data)
       {
         Object *group;
 
-        get(data->SuggestWindow, MUIA_Window_RootObject, (IPTR *)&group);
+        get(data->SuggestWindow, MUIA_Window_RootObject, &group);
         set(group, MUIA_Group_ActivePage, MUIV_Group_ActivePage_First);
         SetAttrs(data->SuggestWindow,
               MUIA_Window_Activate, TRUE,
@@ -411,7 +411,7 @@ void SuggestWord (struct InstData *data)
             }
             Close(fh);
 
-            get(data->SuggestWindow, MUIA_Window_RootObject, (IPTR *)&group);
+            get(data->SuggestWindow, MUIA_Window_RootObject, &group);
             set(group, MUIA_Group_ActivePage, MUIV_Group_ActivePage_Last);
             SetAttrs(data->SuggestWindow,
                   MUIA_Window_Activate, TRUE,
