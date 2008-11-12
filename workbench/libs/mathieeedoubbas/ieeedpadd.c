@@ -141,9 +141,11 @@ AROS_LHQUAD2(double, IEEEDPAdd,
         
         if (is_eqC(Mant1, 0x0, 0x0))
         {
+            union { QUAD i; double d; } tmp;
             SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
             Set_Value64C(Res, 0x0, 0x0);
-            return *(double *)&Res;
+            tmp.i = Res;
+            return tmp.d;
         }
         else
         {
