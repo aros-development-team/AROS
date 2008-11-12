@@ -41,14 +41,19 @@ AROS_LHQUAD2(double, IEEEDPDiv,
 )
 {
     AROS_LIBFUNC_INIT
+
+    union {
+        QUAD i;
+        double d;
+    } Res;
     
 #if 0
     QUAD * Qy = (QUAD *)&y;
     QUAD * Qz = (QUAD *)&z;
 #endif
     
-    QUAD Res = 0x0badc0de0badc0deULL;
-    return *(double *)&Res;
+    Res.i = 0x0badc0de0badc0deULL;
+    return Res.d;
 
     AROS_LIBFUNC_EXIT
 }
