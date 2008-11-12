@@ -267,9 +267,9 @@
     union {                                                             \
        IPTR  __zune_get_storage;                                        \
        typeof(*storage) __zune_val_storage;                             \
-    } tmp;                                                              \
-    ULONG __zune_get_ret = GetAttr((attr), (obj), &tmp.__zune_get_storage); \
-    *(storage) = tmp.__zune_val_storage;                                \
+    } __tmp;                                                              \
+    ULONG __zune_get_ret = GetAttr((attr), (obj), &__tmp.__zune_get_storage); \
+    *(storage) = __tmp.__zune_val_storage;                                \
     __zune_get_ret;                                                     \
 })
 #else  /* !__GNUC__ */
