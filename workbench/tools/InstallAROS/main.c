@@ -1534,6 +1534,15 @@ localecopydone:
 		else D(bug("[INSTALLER] Couldn't locate Developer Files...\n"));
 	}
 
+    if (!option && (data->inst_success == MUIV_Inst_InProgress))
+    {
+        /* If not installing Development, delete the package file */
+        TEXT packagePath[100];
+        sprintf(packagePath, "%s:Prefs/Env-Archive/SYS/Packages/Developer", dest_Path);
+        D(bug("[INSTALLER] Deleting Developer Package...\n"));
+        DeleteFile(packagePath);
+    }
+
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : INSTALL BOOTLOADER **/
