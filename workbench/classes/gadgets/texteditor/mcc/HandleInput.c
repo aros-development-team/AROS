@@ -90,8 +90,8 @@ ULONG HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
     Object *defaultobj;
     struct IntuiMessage *imsg = msg->imsg;
 
-    get(_win(obj), MUIA_Window_ActiveObject, (IPTR *)&activeobj);
-    get(_win(obj), MUIA_Window_DefaultObject, (IPTR *)&defaultobj);
+    get(_win(obj), MUIA_Window_ActiveObject, &activeobj);
+    get(_win(obj), MUIA_Window_DefaultObject, &defaultobj);
 
     if(data->CtrlChar && activeobj != obj && defaultobj != obj && RAWToANSI(imsg) == data->CtrlChar)
     {
