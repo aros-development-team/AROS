@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 
 GRUBBOOTDIR := $(AROSDIR)/boot/grub
 
-CFLAGS1 := $(filter-out -Werror-implicit-function-declaration,$(CFLAGS))
+CFLAGS1 := $(filter-out -Werror=strict-aliasing -Werror-implicit-function-declaration,$(CFLAGS))
 
 export CFLAGS        := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
 export TARGET_CFLAGS := $(CFLAGS1) -D__AROS__ #-g -O0 -fno-inline
