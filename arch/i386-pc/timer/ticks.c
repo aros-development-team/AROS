@@ -37,8 +37,8 @@ void EClockUpdate(struct TimerBase *TimerBase)
 
     outb(0x80, 0x43);
     /* Read out current 16-bit time */
-    time = inb(0x42);
-    time += inb(0x42) << 8;
+    time = inb(0x42) >> 1;
+    time += inb(0x42) << 7;
     
     diff = (TimerBase->tb_prev_tick - time);
 
@@ -78,8 +78,8 @@ void EClockSet(struct TimerBase *TimerBase)
     /* Latch the current time value */
     outb(0x80, 0x43);
     /* Read out current 16-bit time */
-    time = inb(0x42);
-    time += inb(0x42) << 8;
+    time = inb(0x42) >> 1;
+    time += inb(0x42) << 7;
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
 
     TimerBase->tb_prev_tick = time;
