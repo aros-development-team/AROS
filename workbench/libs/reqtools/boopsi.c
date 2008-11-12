@@ -157,6 +157,13 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
  	    if (retval)
 	    {
 	        UBYTE underscorechar;
+	        union {
+	    	    struct {
+	    		WORD Width;
+	    		WORD Height;
+	    	    } size;
+	    	    ULONG magic;
+	        } __tmp;
 		
  	        im = (struct Image *)retval;
 		
@@ -182,7 +189,9 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 		}
 		
 		im->ImageData = (UWORD *)im;
-		*(ULONG *)&im->Width = BUTTON_MAGIC_LONGWORD;
+		__tmp.magic = BUTTON_MAGIC_LONGWORD;
+		im->Width = __tmp.size.Width;
+		im->Height = __tmp.size.Height;
 	    }
 	    break;
 	
