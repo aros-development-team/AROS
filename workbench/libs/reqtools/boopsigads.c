@@ -130,12 +130,23 @@ struct Gadget * REGARGS my_CreateButtonGadget (
 static struct Image *IsButtonGad (struct Gadget *gad)
 {
     struct Image *im;
+    union {
+	struct {
+	    WORD Width;
+	    WORD Height;
+	} size;
+	ULONG magic;
+    } __tmp;
 
     if (gad->Flags & (GFLG_GADGIMAGE|GFLG_GADGHIMAGE))
 	if ((im = (struct Image *)gad->SelectRender))
 	    if (im->Depth == CUSTOMIMAGEDEPTH)
-		if (*(ULONG *)&im->Width == BUTTON_MAGIC_LONGWORD)
+	    {
+		__tmp.size.Width = im->Width;
+		__tmp.size.Height = im->Height;
+		if (__tmp.magic == BUTTON_MAGIC_LONGWORD)
 		    if (im->ImageData == (UWORD *)im) return (im);
+	    }
 
     return (NULL);
 }
