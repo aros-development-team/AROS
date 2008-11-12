@@ -263,7 +263,7 @@ static Object *find_application_by_base(struct IClass *cl, Object *obj, STRPTR b
     {
     	STRPTR tn_base = "";
 	
-	get(tn->tn_Application, MUIA_Application_Base, (IPTR *)&tn_base);
+	get(tn->tn_Application, MUIA_Application_Base, &tn_base);
 	
 	if (tn_base && (strcmp(base, tn_base)) == 0)
 	{
