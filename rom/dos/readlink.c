@@ -138,6 +138,7 @@ struct ReadLinkDeviceUnit
 	    {
 		iofs.IOFS.io_Device = deviceunit->device;
 		iofs.IOFS.io_Unit = deviceunit->unit;
+		iofs.io_Union.io_READ_SOFTLINK.io_Size     = size;
     
 		DosDoIO(&iofs.IOFS);
 		err = iofs.io_DosError;
