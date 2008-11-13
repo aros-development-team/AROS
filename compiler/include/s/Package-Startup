@@ -3,6 +3,6 @@ Assign LIB: Development:lib
 Assign USR: Development:
 
 If Exists Development:bin
-	Assign BIN: Development:bin
+    Assign BIN: Development:bin
     Path ADD Development:bin
 EndIf
