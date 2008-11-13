@@ -7,6 +7,15 @@
 */
 #include "dos_intern.h"
 #include <dos/filesystem.h>
+#include <exec/lists.h>
+#include <proto/exec.h>
+
+struct ReadLinkDeviceUnit
+{
+    struct MinNode node;
+    struct Device *device;
+    struct Unit *unit;
+};
 
 /*****************************************************************************
 
@@ -61,20 +70,96 @@
     struct IOFileSys iofs;
     struct FileHandle *fh = BADDR(lock);	
     LONG err = 0;
-    LONG ret = DOSFALSE;
+    LONG ret = -1;
 
     InitIOFS(&iofs, FSA_READ_SOFTLINK, DOSBase);
 
-    iofs.IOFS.io_Device = fh->fh_Device;
-    iofs.IOFS.io_Unit   = fh->fh_Unit;
     iofs.io_Union.io_READ_SOFTLINK.io_Filename = path;
     iofs.io_Union.io_READ_SOFTLINK.io_Buffer   = buffer;
     iofs.io_Union.io_READ_SOFTLINK.io_Size     = size;
 
-    DosDoIO(&iofs.IOFS);
-    err = iofs.io_DosError;
-    if(!err)
-        ret = iofs.io_Union.io_READ_SOFTLINK.io_Size;
+    if(fh)
+    {
+        iofs.IOFS.io_Device = fh->fh_Device;
+        iofs.IOFS.io_Unit   = fh->fh_Unit;
+
+        DosDoIO(&iofs.IOFS);
+        err = iofs.io_DosError;
+        if(!err)
+           ret = iofs.io_Union.io_READ_SOFTLINK.io_Size;
+    }
+    else
+    {
+	struct DosList *dl = NULL;
+	struct ReadLinkDeviceUnit *deviceunit;
+	struct MinList deviceunits;
+	struct Node *tmpNode;
+	char found = 0;
+	NEWLIST(&deviceunits);
+
+	/* Quickly get all device units with such port, store them in 
+	   temporary list. */
+	for (
+	    dl = LockDosList(LDF_DEVICES | LDF_READ); 
+	    dl != NULL; 
+	    dl = dl->dol_Next
+	)
+	{
+	    if(
+		dl->dol_Type == DLT_DEVICE && (
+		(struct MsgPort *)dl->dol_Ext.dol_AROS.dol_Device == port)
+	    )
+	    {
+		if((deviceunit = AllocMem(
+		    sizeof(struct ReadLinkDeviceUnit),
+		    MEMF_ANY | MEMF_CLEAR
+		)))
+		{
+		    deviceunit->device = dl->dol_Ext.dol_AROS.dol_Device;
+		    deviceunit->unit = dl->dol_Ext.dol_AROS.dol_Unit;
+		    AddTail(
+			(struct List*) &deviceunits, 
+			(struct Node*) deviceunit
+		    );
+		}
+		else
+		{
+		    err = ERROR_NO_FREE_STORE;
+		    break;
+		}
+	    }
+	}
+	UnLockDosList(LDF_DEVICES | LDF_READ);
+
+	if(!err)
+	{
+    	    /* Now try all units from the list */
+	    ForeachNode(&deviceunits, deviceunit)
+	    {
+		iofs.IOFS.io_Device = deviceunit->device;
+		iofs.IOFS.io_Unit = deviceunit->unit;
+    
+		DosDoIO(&iofs.IOFS);
+		err = iofs.io_DosError;
+		if(!err)
+		{
+		    ret = iofs.io_Union.io_READ_SOFTLINK.io_Size;
+		    found = 1;
+		    break;
+		}
+	    }
+    
+	    if(!found)
+		err = ERROR_OBJECT_NOT_FOUND;
+	}
+
+	/* Free our temporary list */
+	ForeachNodeSafe(&deviceunits, deviceunit, tmpNode)
+	{
+	    Remove((struct Node*) deviceunit);
+	    FreeMem(deviceunit, sizeof(struct ReadLinkDeviceUnit));
+	}
+    }
 
     SetIoErr(err);
 
