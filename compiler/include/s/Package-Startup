@@ -1,6 +1,7 @@
 Assign INCLUDE: Development:include
 Assign LIB: Development:lib
 Assign USR: Development:
+Assign TMP: T:
 Stack 262144
 
 If Exists Development:bin
