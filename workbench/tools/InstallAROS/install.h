@@ -257,7 +257,6 @@ struct Install_Options
     Object	*opt_license;
     Object	*opt_lic_box;
     Object	*opt_lic_mgrp;
-    Object	*opt_partition;
     Object	*opt_partmethod;
     Object	*opt_format;
     Object	*opt_locale;
@@ -289,7 +288,6 @@ struct InstallC_UndoRecord
 
 struct optionstmp
 {
-	IPTR	opt_partition;
 	IPTR	opt_format;
 	IPTR	opt_locale;
 	IPTR	opt_copycore;

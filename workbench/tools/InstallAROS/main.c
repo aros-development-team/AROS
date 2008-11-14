@@ -606,22 +606,16 @@ IPTR Install__MUIM_IC_NextStep
 		break;
 
 	case EInstallMessageStage:
-		//enum EStage                 theprevStage;
-		//theprevStage=;
-
 		/* PARTITION DRIVES */
-		GET(data->instc_options_main->opt_partition, MUIA_Selected, &option);
-		if (option != 0)
+
+		/* have we already done this? */
+		if (!data->instc_options_main->partitioned)
 		{
-			//have we already done this?
-			if (!data->instc_options_main->partitioned)
-			{
-				data->instc_options_main->partitioned = TRUE;
-				data->instc_stage_next = EPartitioningStage;
-				next_stage =  EPartitionOptionsStage;
-				data->instc_stage_prev = this_page;
-				break;
-			}
+			data->instc_options_main->partitioned = TRUE;
+			data->instc_stage_next = EPartitioningStage;
+			next_stage =  EPartitionOptionsStage;
+			data->instc_stage_prev = this_page;
+			break;
 		}
 
 		/* BOOTLOADER */
@@ -695,7 +689,6 @@ IPTR Install__MUIM_IC_NextStep
 		break;
 
 	case EPartitioningStage:
-
         get(data->instc_options_main->opt_partmethod,MUIA_Radio_Active,&option);
 #if GRUB == 1 
         /* Warn user about partitiong DH0: to non FFS-Intl filesystem on GRUB */
@@ -725,8 +718,10 @@ IPTR Install__MUIM_IC_NextStep
 					data->disable_back = FALSE;
 					SET(data->page,MUIA_Group_ActivePage, EInstallMessageStage);
 					data->instc_stage_next = EPartitioningStage;
+                    data->instc_options_main->partitioned = FALSE;
 					return 0;
 				}
+                data->instc_options_main->partitioned = TRUE;
 				next_stage = EDoneStage;
 				DoMethod(data->page, MUIM_Group_InitChange);
 				SET(data->doneMsg,MUIA_Text_Contents,KMsgDoneReboot);
@@ -739,6 +734,7 @@ IPTR Install__MUIM_IC_NextStep
 				break;
 			case 2:
 				data->disable_back = FALSE;
+                data->instc_options_main->partitioned = TRUE;
 				data->instc_stage_next = EDestOptionsStage;
 				next_stage = EInstallOptionsStage;
 				break;
@@ -836,6 +832,7 @@ IPTR Install__MUIM_IC_PrevStep
 		SET(data->instc_options_main->opt_license, MUIA_Selected, FALSE);
 		SET(data->page,MUIA_Group_ActivePage, EPartitionOptionsStage);
 		data->instc_stage_prev = ELicenseStage;
+        data->instc_stage_next = EPartitioningStage;
 		break;
 
 	case EDestOptionsStage:
@@ -896,7 +893,6 @@ IPTR Install__MUIM_IC_CancelInstall
 		break;
 
 	case EInstallOptionsStage:
-		GET(data->instc_options_main->opt_partition, MUIA_Disabled, &backupOptions->opt_partition);
 		GET(data->instc_options_main->opt_format, MUIA_Disabled, &backupOptions->opt_format);
 		GET(data->instc_options_main->opt_locale, MUIA_Disabled, &backupOptions->opt_locale);
 		GET(data->instc_options_main->opt_copycore, MUIA_Disabled, &backupOptions->opt_copycore);
@@ -905,7 +901,6 @@ IPTR Install__MUIM_IC_CancelInstall
 		GET(data->instc_options_main->opt_bootloader, MUIA_Disabled, &backupOptions->opt_bootloader);
 		GET(data->instc_options_main->opt_reboot, MUIA_Disabled, &backupOptions->opt_reboot);
 
-		SET(data->instc_options_main->opt_partition, MUIA_Disabled, TRUE);
 		SET(data->instc_options_main->opt_format, MUIA_Disabled, TRUE);
 		SET(data->instc_options_main->opt_locale, MUIA_Disabled, TRUE);
 		SET(data->instc_options_main->opt_copycore, MUIA_Disabled, TRUE);
@@ -979,7 +974,6 @@ Class *CLASS, Object *self, Msg message
 	switch(this_page)
 	{
 	case EInstallOptionsStage:
-		SET(data->instc_options_main->opt_partition, MUIA_Disabled, (BOOL) backupOptions->opt_partition);
 		SET(data->instc_options_main->opt_format, MUIA_Disabled, (BOOL) backupOptions->opt_format);
 		SET(data->instc_options_main->opt_locale, MUIA_Disabled, (BOOL) backupOptions->opt_locale);
 		SET(data->instc_options_main->opt_copycore, MUIA_Disabled, (BOOL) backupOptions->opt_copycore);
