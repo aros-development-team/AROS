@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (14.02.2004)
+## version $VER: wanderer.catalog 1.0 (10.11.2008)
 ## language deutsch
 ## codeset 0
 ;;
@@ -6,7 +6,7 @@ MSG_NAME
 Wanderer Einstellungen
 ;
 MSG_BACKGROUNDS
-Hintergrnde
+Hintergründe
 ;
 MSG_BACKGROUND_WORKBENCH
 Workbench
@@ -15,10 +15,10 @@ MSG_BACKGROUND_DRAWERS
 Verzeichnisse
 ;
 MSG_SELECT_WORKBENCH_BACKGROUND
-Wï¿½le Workbench Hintergrund
+Wähle Workbench Hintergrund
 ;
 MSG_SELECT_DRAWER_BACKGROUND
-Wï¿½le Verzeichnis Hintergrund
+Wähle Verzeichnis Hintergrund
 ;
 MSG_DOUBLEBUFFERED
 Gepufferte Anzeige
