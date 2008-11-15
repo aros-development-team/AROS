@@ -67,7 +67,7 @@ LONG launcher()
     }
 
     __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
-    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD;
+    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD | DO_NOT_CLONE_ENV_VARS;
     __stdfiles[STDIN_FILENO] = udata->ppriv->acpd_stdfiles[STDIN_FILENO];
     __stdfiles[STDOUT_FILENO] = udata->ppriv->acpd_stdfiles[STDOUT_FILENO];
     __stdfiles[STDERR_FILENO] = udata->ppriv->acpd_stdfiles[STDERR_FILENO];

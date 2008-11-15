@@ -465,7 +465,7 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	    parent_does_upath = __doupath;
 	    
 	    /* Force arosc.library to open with new private data */
-	    __get_arosc_privdata()->acpd_flags |= CREATE_NEW_ACPD | CLONE_ENV_VARS;
+	    __get_arosc_privdata()->acpd_flags |= CREATE_NEW_ACPD;
 	    aroscbase = OpenLibrary("arosc.library", 0);
 	    if(!aroscbase)
 	    {

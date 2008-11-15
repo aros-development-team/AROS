@@ -201,7 +201,7 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 #define privdata __get_arosc_privdata()
     D(bug("privdata: %p, ppriv: %p\n", privdata, childdata->ppriv));
     privdata->acpd_parent_does_upath = childdata->ppriv->acpd_doupath;
-    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD;
+    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD | DO_NOT_CLONE_ENV_VARS;
 
     __stdfiles[STDIN_FILENO] = childdata->ppriv->acpd_stdfiles[STDIN_FILENO];
     __stdfiles[STDOUT_FILENO] = childdata->ppriv->acpd_stdfiles[STDOUT_FILENO];
