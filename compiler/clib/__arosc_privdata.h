@@ -103,11 +103,12 @@ struct arosc_privdata
    arosc_privdata. */
 #define CREATE_NEW_ACPD 1
 
-/* If this flag is set then programs compiled with -nix flag will clone
-   dos.library environment variables before execution and restore them
-   during exit. It prevents clobbering the process environment variables
-   by another program ran with RunCommand() or similar means. */
-#define CLONE_ENV_VARS 2
+/* Programs compiled with -nix flag are cloning dos.library environment 
+   variables before execution and restoring them during exit. Cloning 
+   prevents clobbering the process environment variables by another program
+   ran with RunCommand() or similar means. Setting this flag disables
+   environment cloning. */
+#define DO_NOT_CLONE_ENV_VARS 2
 
 /* This flag is set by vfork() to correctly report child process ID during
    execution of child code, even though that it's actually executed by parent

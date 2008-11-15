@@ -60,7 +60,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        with the caller, but we do not want that. It's kind of wasteful to do
        it even if we've been started as a fresh process, though, so if we can
        we avoid it. */
-    if (__get_arosc_privdata()->acpd_flags & CLONE_ENV_VARS)
+    if (!(__get_arosc_privdata()->acpd_flags & DO_NOT_CLONE_ENV_VARS))
     {
         if (!clone_vars(&old_vars))
 	{
@@ -81,7 +81,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     }
 
 
-    if (__get_arosc_privdata()->acpd_flags & CLONE_ENV_VARS)
+    if (!(__get_arosc_privdata()->acpd_flags & DO_NOT_CLONE_ENV_VARS))
         restore_vars(&old_vars);
 
 err_vars:
