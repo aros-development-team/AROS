@@ -2137,7 +2137,7 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     
     ecrd.destbm = bm;
     
-    pixread = do_render_func(rp, NULL, &rr, extcol_render, NULL, TRUE, GfxBase);
+    pixread = do_render_func(rp, NULL, &rr, extcol_render, &ecrd, TRUE, GfxBase);
 	
     RELEASE_DRIVERDATA(rp, GfxBase);
     
