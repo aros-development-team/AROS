@@ -74,6 +74,10 @@ static const char* KMsgBootLoader =
 "Copying the GRUB bootloader to your\n"
 "hard drive, and installing...\n";
 
+static const char* KMsgPostInstall =
+"Running the external post-install\n"
+"script. Please wait.\n";
+
 static const char* KMsgDoneReboot =
 "AROS partitions have now been created!\n"
 "To continue installation, you must\n"

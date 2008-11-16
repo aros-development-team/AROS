@@ -69,6 +69,8 @@
 #define DEF_BACK_IMAGE          "IMAGES:Logos/install.logo"
 #define DEF_LIGHTBACK_IMAGE     "IMAGES:Logos/install.logo"
 
+#define POST_INSTALL_SCRIPT     "PROGDIR:InstallAROS-Post-Install"
+
 /** Start - NEW!! this is part of the "class" change ;) **/
 
 #define OPTION_PREPDRIVES       	1
@@ -1634,6 +1636,42 @@ localecopydone:
 
 /** STEP : PACKAGE CLEANUP **/
 /* REMOVED - handled by DEVELPATH and EXTRASPATH variables */
+
+/** STEP : EXECUTE EXTERNAL POST-INSTALL SCRIPT **/
+    {
+        BPTR scriptfile = Open(POST_INSTALL_SCRIPT, MODE_OLDFILE);
+        if (scriptfile)
+        {
+
+            D(bug("[INSTALLER] Running post-install script...\n"));
+            SET(data->label, MUIA_Text_Contents, "Running post-install script...");
+            SET(data->pageheader, MUIA_Text_Contents, KMsgPostInstall);
+            SET(data->gauge2, MUIA_Gauge_Current, 0);
+            SET(data->actioncurrent, MUIA_Text_Contents, POST_INSTALL_SCRIPT);  
+
+
+            /* Post install script (at this momement) does not allow user interaction.
+               Set SYS_Input to opened console and SYS_Background to FALSE to allow it.*/
+
+            struct TagItem tags[] =
+            {
+                { SYS_Input,        (IPTR)NULL          },
+                { SYS_Output,       (IPTR)NULL          },
+                { SYS_Error,        (IPTR)NULL          },
+                { SYS_ScriptInput,  (IPTR)scriptfile    },
+                { SYS_UserShell,    TRUE                },
+                { TAG_DONE,         0                   }
+            };
+
+            D(bug("[INSTALLER] execute: %s\n", POST_INSTALL_SCRIPT));
+            
+            SystemTagList("", tags);
+            
+            /* Do not close scriptfile. It was closed by SystemTagList */
+
+            SET(data->gauge2, MUIA_Gauge_Current, 100);
+        }
+    }
 
 /** STEP : UNDORECORD CLEANUP **/
 
