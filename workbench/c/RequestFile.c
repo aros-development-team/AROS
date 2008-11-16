@@ -172,7 +172,7 @@ int main(void)
                     {
 			strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
 			
-                        /* is NULL when using DRAWERSONLY */
+                        /* FileReq->fr_File is NULL when using DRAWERSONLY */
                         Success = AddPart(Buffer,
                                           FileReq->fr_File ? FileReq->fr_File : "",
                                           MAX_PATH_LEN);
