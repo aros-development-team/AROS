@@ -36,7 +36,6 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
-#include <mui/NFloattext_mcc.h>
 #include <mui/TextEditor_mcc.h>
 
 #include "install.h"
@@ -1128,61 +1127,6 @@ IPTR Install__MUIM_Partition
 	return tmp;
 }
 
-void FixUpPackageFile(char * packagefile, IPTR **fixupdirs, int dircnt)
-{
-	IPTR					*fixuppackage_dirs = *fixupdirs;
-	TEXT					fixdirbuf[1024];
-	register struct FileInfoBlock 	*fib=NULL;
-	char 					*oldpackageline=NULL;
-	BPTR					from=NULL,lock=NULL;
-	LONG					s=0,i;
-
-	lock = (BPTR) Lock(packagefile, SHARED_LOCK);
-	if(lock != NULL)
-	{
-		fib = (void *) AllocVec(sizeof(struct FileInfoBlock), MEMF_PUBLIC);
-		Examine(lock, fib);
-	}
-
-	/* Read in the files content to retrieve the current path */
-
-	if((from = Open(packagefile, MODE_OLDFILE)))
-	{
-		D(bug("[INSTALLER] FixUpPackageFile() Allocating buffer [%d] for package path '%s'!\n", fib->fib_Size, packagefile));
-		oldpackageline = AllocVec(fib->fib_Size+1, MEMF_CLEAR | MEMF_PUBLIC );
-		if ((s = Read(from, oldpackageline, fib->fib_Size)) == -1)
-		{
-			D(bug("[INSTALLER] FixUpPackageFile() Error processing package file!\n"));
-		}
-		else
-		{
-			for (i = 0; &fixuppackage_dirs[i] !=NULL; i++)
-			{
-				sprintf( fixdirbuf, "%s", package_Path);
-				AddPart( fixdirbuf, &fixuppackage_dirs[i], strlen(package_Path));
-				/* replace files in extras with the work equivelant path */
-				if (!strcmp(fixdirbuf,oldpackageline))
-				{
-					D(bug("[INSTALLER] FixUpPackageFile() Found package path needing changed '%s'\n",oldpackageline));
-					//AllocVec(strlen(oldpackageline)-strlen(package_Path)+strlen(work_Path),MEMF_PUBLIC|MEMF_CLEAR);
-					sprintf(fixdirbuf, "%s", extras_path);
-					AddPart( fixdirbuf, (IPTR)oldpackageline + strlen(package_Path), 1024);
-					D(bug("[INSTALLER] FixUpPackageFile() Corrected path = '%s'\n",fixdirbuf));
-					break;
-				}
-			}
-		}
-		Close(from);
-		FreeVec(oldpackageline);
-	}
-
-	if (lock != NULL)
-	{
-		if( fib ) FreeVec( fib );
-		UnLock(lock);
-	}
-}
-
 void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name, CONST_STRPTR value)
 {
 	BPTR env_variable_fh = NULL;
@@ -1689,107 +1633,8 @@ localecopydone:
 	SET(data->proceed, MUIA_Disabled, FALSE);
 
 /** STEP : PACKAGE CLEANUP **/
-/*
-	if ((BOOL)XGET(check_work, MUIA_Selected))
-	{
-		char		*fixuppackage_dirs = AllocVec((fixupdir_count+1)*sizeof(IPTR),MEMF_PUBLIC|MEMF_CLEAR);
-		int		curfixup = 0;
+/* REMOVED - handled by DEVELPATH and EXTRASPATH variables */
 
-		GET(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
-		if (option && (data->inst_success == MUIV_Inst_InProgress))
-		{
-			fixuppackage_dirs[curfixup] = "Demos"; curfixup++;
-			fixuppackage_dirs[curfixup] = "Extras"; curfixup++;
-		}
-
-		GET(data->instc_options_main->opt_development, MUIA_Selected, &option);
-		if (option && (data->inst_success == MUIV_Inst_InProgress))
-		{
-			fixuppackage_dirs[curfixup] = "Development"; curfixup++;
-			fixuppackage_dirs[curfixup] = "Tests"; curfixup++;
-		}
-
-		D(bug("[INSTALLER] Fix-Up contirbuted package 'PATHS'\n"));
-		SET(data->label, MUIA_Text_Contents, "Setting package paths...");
-		SET(data->gauge2, MUIA_Gauge_Current, 0);
-
-		ULONG packagesrcLen = strlen(dest_Path);
-		ULONG newpackagesrcLen = packagesrcLen + strlen("Prefs/Env-Archive/SYS/Packages") + 2;
-		TEXT packagesrc[newpackagesrcLen];
-
-		sprintf(packagesrc,"%s:",dest_Path);
-		AddPart(packagesrc, "Prefs/Env-Archive/SYS/Packages", newpackagesrcLen);
-
-		TEXT		fixupBUF[1024];
-		BPTR lock = Lock(packagesrc, SHARED_LOCK);
-
-		if(lock != 0)
-		{
-			UBYTE buffer[kExallBufSize];
-			struct ExAllData *ead = (struct ExAllData*)buffer;
-			struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-			eac->eac_LastKey = 0;
-			int currFile = 0;
-
-			BOOL  loop;
-			struct ExAllData *oldEad = ead;
-
-			do
-			{
-				ead = oldEad;
-				loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
-
-				if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
-
-				if(eac->eac_Entries != 0)
-				{
-					do
-					{
-						if(ead->ed_Type == ST_FILE || ead->ed_Type == ST_USERDIR)
-						{
-							ULONG srcLen = strlen(packagesrc);
-							ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
-							TEXT srcFile[newSrcLen];
-
-							CopyMem(packagesrc, srcFile, srcLen + 1);
-							if(AddPart(srcFile, ead->ed_Name, newSrcLen))
-							{
-								SET(data->actioncurrent, MUIA_Text_Contents, ead->ed_Name);
-
-								DoMethod(data->installer,MUIM_Application_InputBuffered);
-
-								switch(ead->ed_Type)
-								{
-								case ST_FILE:
-									currFile++;
-									ULONG	percent = ((100/(eac->eac_Entries))*currFile);
-									SET(data->gauge2, MUIA_Gauge_Current, percent);
-
-									FixUpPackageFile(srcFile, &fixuppackage_dirs,fixupdir_count);
-									break;
-								}
-							}
-							else
-							{
-							D(bug("[INSTALLER] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
-							}
-						}
-						ead = ead->ed_Next;
-					} while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
-				}
-			} while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
-
-			FreeDosObject(DOS_EXALLCONTROL, eac);
-			UnLock(lock);
-		}
-		else
-		{
-			D(bug("[INSTALLER] Failed to lock package path: %s (Error: %d)\n", packagesrc, IoErr()));
-		}
-
-		SET(data->gauge2, MUIA_Gauge_Current, 100);
-	}
-*/
 /** STEP : UNDORECORD CLEANUP **/
 
 	D(bug("[INSTALLER] Reached end of Install Function - cleaning up undo logs @ %p...\n",&data->instc_undorecord));
@@ -2613,7 +2458,7 @@ IPTR Install__OM_SET
 
 	struct TagItem      *tstate = message->ops_AttrList, *tag = NULL;
 
-	while ((tag = NextTagItem(&tstate)) != NULL)
+	while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
 	{
 		switch (tag->ti_Tag)
 		{
