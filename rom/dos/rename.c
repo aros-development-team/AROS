@@ -128,6 +128,7 @@
 		    newName = buf2;
 		}
 	    }
+	    UnLock(lock);
 	}
     }
     else
