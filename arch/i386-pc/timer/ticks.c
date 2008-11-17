@@ -43,7 +43,7 @@ void EClockUpdate(struct TimerBase *TimerBase)
     diff = (TimerBase->tb_prev_tick - time);
 
     if (time > TimerBase->tb_prev_tick)
-        diff += 0x10000;
+        diff += 0x8000;
     
     TimerBase->tb_prev_tick = time;
 
