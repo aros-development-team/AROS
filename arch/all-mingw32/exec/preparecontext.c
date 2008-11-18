@@ -17,10 +17,19 @@
 #include <aros/kernel.h>
 #include "etask.h"
 #include "exec_util.h"
-#include "cpucontext.h"
+#include "../kernel/cpucontext.h"
 
 #include <aros/libcall.h>
 #include <proto/arossupport.h>
+#include <proto/kernel.h>
+
+/* Put a value of type SP_TYPE on the stack or get it off the stack. */
+#define _PUSH(sp,val) (*--sp = (SP_TYPE)(val))
+#define _POP(sp)      (*sp++)
+
+#define SP_TYPE	IPTR
+
+#define GetSP(task) (*(SP_TYPE **)(&task->tc_SPReg))
 
 AROS_LH4(BOOL, PrepareContext,
 		 AROS_LHA(struct Task *, task, A0),
@@ -39,7 +48,7 @@ AROS_LH4(BOOL, PrepareContext,
   if (!(task->tc_Flags & TF_ETASK) )
 	  return FALSE;
   
-  ctx = AllocTaskMem (task, sizeof(struct AROSCPUContext), MEMF_PUBLIC|MEMF_CLEAR);
+  ctx = KrnCreateContext();
   GetIntETask (task)->iet_Context = ctx;
   if (!ctx)
 	  return FALSE;

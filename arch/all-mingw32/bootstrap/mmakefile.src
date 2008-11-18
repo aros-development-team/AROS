@@ -29,12 +29,13 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 
 #MM- AROS-mingw32-i386: kernel-link-mingw32 kernel-bootstrap-mingw32
 #MM kernel-link-mingw32: kernel-bootloader-mingw32-kobj	    \
-#MM			 kernel				    \
 #MM			 kernel-kernel-mingw32-kobj	    \
+#MM			 kernel				    \
 #MM			 kernel-hostlib-mingw32-kobj	    \
 #MM			 kernel-hostthread-mingw32-kobj	    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-fs-packet-kobj		    \
+#MM			 kernel-aros			    \
 #MM			 workbench-hidd-graphics-kobj	    \
 #MM			 contrib-amberram-kobj
 
@@ -57,7 +58,7 @@ $(BINDIR)/boot/kernel: setup-mingw32 $(KOBJS)
 
 $(BINDIR)/boot/AROSBootstrap: $(BOBJS)
 	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(BOBJS)
-	 
+
 #MM
 clean ::
 	-$(RM) $(TESTS)

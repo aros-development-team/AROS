@@ -1454,8 +1454,28 @@ AROS_LH1(void, beginio,
 		{
 		  fh->fd=emulbase->stdout_handle;
 		}
-		if (!DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL))
-		    error = Errno();
+		if ((fh->fd == emulbase->stdout_handle) || (fh->fd == emulbase->stderr_handle)) {
+		    DASYNC(bug("[emul] Writing %lu bytes asynchronously \n", iofs->io_Union.io_WRITE.io_Length));
+		    /* TODO: This stuff will be probably replaced with overlapped I/O and hostthread.resource
+		     * will be removed */
+		    emulbase->EmulMsg.op = EMUL_CMD_WRITE;
+		    emulbase->EmulMsg.fh = fh->fd;
+		    emulbase->EmulMsg.addr = iofs->io_Union.io_WRITE.io_Buffer;
+		    emulbase->EmulMsg.len = iofs->io_Union.io_WRITE.io_Length;
+		    emulbase->EmulMsg.task = FindTask(NULL);
+		    if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
+		    	Wait(SIGF_BLIT);
+		    	DASYNC(bug("[emul] Wrote %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
+		    	iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
+		    	error = emulbase->EmulMsg.error;
+		    } else {
+		        DASYNC(bug("[emul] FSA_WRITE: HT_PutMsg failed!\n"));
+		        error = ERROR_UNKNOWN;
+		    }
+		} else {
+		    if (!DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL))
+		        error = Errno();
+		}
 	  }
 	  else
 	  {

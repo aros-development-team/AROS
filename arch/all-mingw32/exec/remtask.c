@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -11,6 +11,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#include "etask.h"
 #include "exec_util.h"
 #include "exec_debug.h"
 #ifndef DEBUG_RemTask
@@ -96,6 +97,7 @@
     et = GetETask(task);
     if(et != NULL)
     {
+        KrnDeleteContext(((struct IntETask *)et)->iet_Context);
 	CleanupETask(task, et);
     }
 
