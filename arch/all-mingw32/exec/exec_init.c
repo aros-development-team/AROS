@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: exec.library resident and initialization.
@@ -34,7 +34,6 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
-#include "cpucontext.h"
 #include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
@@ -235,11 +234,7 @@ AROS_UFH3(LIBBASETYPEPTR, GM_UNIQUENAME(init),
 	/* Initialise the ETask data. */
 	InitETask(t, t->tc_UnionETask.tc_ETask);
 
-	GetIntETask(t)->iet_Context = AllocTaskMem(t
-	    , sizeof(struct AROSCPUContext)
-	    , MEMF_PUBLIC|MEMF_CLEAR
-	);
-
+	GetIntETask(t)->iet_Context = KrnCreateContext();
 	if (!GetIntETask(t)->iet_Context)
 	{
 	    kprintf("Not enough memory for first task\n");

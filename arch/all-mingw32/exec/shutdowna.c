@@ -52,6 +52,9 @@ extern struct HostInterface *HostIFace;
 {
     AROS_LIBFUNC_INIT
 
+    /* WinAPI CreateProcess() call may silently abort if scheduler attempts task switching
+       while it's running. There's no sense in this beyond this point, so we simply Disable() */
+    Disable();
     HostIFace->_Shutdown(action);
     return 0;
 

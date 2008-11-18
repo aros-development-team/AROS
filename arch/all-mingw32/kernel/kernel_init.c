@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include "cpucontext.h"
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
 
@@ -92,6 +93,26 @@ AROS_LH0I(struct TagItem *, KrnGetBootInfo,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH0I(void *, KrnCreateContext,
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    return AllocMem(sizeof(struct AROSCPUContext), MEMF_PUBLIC|MEMF_CLEAR);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH1I(void, KrnDeleteContext,
+		AROS_LHA(void *, context, A0),
+         struct KernelBase *, KernelBase, 10, Kernel)
+{
+    AROS_LIBFUNC_INIT
+
+    FreeMem(context, sizeof(struct AROSCPUContext));
+
+    AROS_LIBFUNC_EXIT
+}
 
 void SetGlobalKernelBase(struct KernelBase *kBase)
 {
