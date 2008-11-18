@@ -958,6 +958,7 @@ enum
     MEN_WANDERER_AROS_ABOUT,
 	MEN_WANDERER_ABOUT,
     MEN_WANDERER_QUIT,
+    MEN_WANDERER_SHUTDOWN,
     
     MEN_WINDOW_NEW_DRAWER,
     MEN_WINDOW_OPEN_PARENT,
@@ -2048,6 +2049,29 @@ void wanderer_menufunc_wanderer_quit(void)
 }
 ///
 
+///wanderer_menufunc_wanderer_shutdown()
+void wanderer_menufunc_wanderer_shutdown(void)
+{
+    LONG action;
+
+    action = MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_SHUTDOWN_BUTTONS), _(MSG_SHUTDOWN_BODY), NULL);
+    switch (action) {
+    case 0:
+	return;
+    case 1:
+	ShutdownA(SD_ACTION_POWEROFF);
+	break;
+    case 2:
+	ShutdownA(SD_ACTION_COLDREBOOT);
+	break;
+    case 3:
+	ColdReboot();
+    }
+    MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_OK), _(MSG_ACTION_NOT_SUPPORTED), NULL);
+}
+///
+
+
 ///FindMenuitem()
 /**************************************************************************
 This function returns a Menu Object with the given id
@@ -2095,6 +2119,8 @@ VOID DoAllMenuNotifies(Object *strip, STRPTR path)
 				wanderer_menufunc_wanderer_AROS_about, NULL);
     DoMenuNotify(strip, MEN_WANDERER_QUIT,
 				wanderer_menufunc_wanderer_quit, NULL);
+    DoMenuNotify(strip, MEN_WANDERER_SHUTDOWN,
+				wanderer_menufunc_wanderer_shutdown, NULL);
 
     DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER,
 				wanderer_menufunc_window_newdrawer, path);
@@ -2894,7 +2920,8 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
 #endif
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
-    
+	    {NM_ITEM,  _(MSG_MEN_SHUTDOWN), NULL		 , 0			     , 0, (APTR) MEN_WANDERER_SHUTDOWN},
+
             {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
     
             {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                                    , 0, (APTR) MEN_WINDOW_UPDATE},
@@ -2958,6 +2985,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
 #endif
             {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
+	    {NM_ITEM,  _(MSG_MEN_SHUTDOWN), NULL		 , 0			     , 0, (APTR) MEN_WANDERER_SHUTDOWN},
     
         {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
     

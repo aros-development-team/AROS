@@ -173,3 +173,21 @@ Wanderer %pc graphics mem %pf other mem
 MSG_MEN_FORMAT (//)
 Format disk...
 ;
+MSG_MEN_SHUTDOWN (//)
+Shut down...
+;
+MSG_SHUTDOWN_TITLE (//)
+System shut down
+;
+MSG_SHUTDOWN_BODY (//)
+What would you like to do ?
+;
+MSG_SHUTDOWN_BUTTONS (//)
+Power off|Reboot machine|Reboot AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED (//)
+Selected action is not supported by your system
+;
+MSG_OK (//)
+*Ok
+;
