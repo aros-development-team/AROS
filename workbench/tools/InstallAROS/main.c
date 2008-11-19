@@ -71,6 +71,31 @@
 
 #define POST_INSTALL_SCRIPT     "PROGDIR:InstallAROS-Post-Install"
 
+#define GRUB_COPY_FILE_LOOP                                             \
+while (grub_files[file_count]!=NULL)                                    \
+{                                                                       \
+    ULONG newSrcLen = srcLen + strlen(grub_files[file_count]) + 2;      \
+    ULONG newDstLen = dstLen + strlen(grub_files[file_count+1]) + 2;    \
+                                                                        \
+    TEXT srcFile[newSrcLen];                                            \
+    TEXT dstFile[newDstLen];                                            \
+                                                                        \
+    CopyMem(source_Path, srcFile, srcLen + 1);                          \
+    sprintf(dstFile,"%s:",dest_Path);                                   \
+    AddPart(srcFile, grub_files[file_count], newSrcLen);                \
+    AddPart(dstFile, grub_files[file_count+1], newDstLen);              \
+                                                                        \
+    SET(data->actioncurrent, MUIA_Text_Contents, srcFile);              \
+    DoMethod(data->installer,MUIM_Application_InputBuffered);           \
+                                                                        \
+    DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);                 \
+                                                                        \
+    SET(data->gauge2, MUIA_Gauge_Current,                               \
+        (LONG)((100.0/(numgrubfiles +1)) * (file_count/2.0)));          \
+                                                                        \
+    file_count += 2;                                                    \
+}
+
 /** Start - NEW!! this is part of the "class" change ;) **/
 
 #define OPTION_PREPDRIVES       	1
@@ -1490,19 +1515,40 @@ localecopydone:
 	GET(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
 	if (option && (data->inst_success == MUIV_Inst_InProgress))
 	{
-		int numgrubfiles = 3,file_count = 0;
+		int numgrubfiles = 0,file_count = 0;
 		LONG part_no;
 		ULONG srcLen = strlen(source_Path);
 		ULONG dstLen = (strlen(dest_Path)+1);
 		TEXT srcPath[srcLen + strlen(boot_path) + 1];
 		TEXT dstPath[dstLen + strlen(boot_path) + 2];
 
+		CreateDestDIR( CLASS, self, boot_path, dest_Path);
+		CreateDestDIR( CLASS, self, boot_path "/grub", dest_Path);
+
+		/* Copy kernel files */
+		CopyMem(source_Path, srcPath, srcLen + 1);
+		AddPart(srcPath, boot_path, srcLen + strlen(boot_path) + 1);
+		sprintf(dstPath, "%s:%s", dest_Path, boot_path);
+		DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, 2, 0, FALSE);
+
+		/* Installing GRUB */
+		D(bug("[INSTALLER] Installing Grub...\n"));
+		SET(data->label, MUIA_Text_Contents, "Installing Grub...");
+		SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
+
+		SET(data->gauge2, MUIA_Gauge_Current, 0);
+
+		SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
+
+#if GRUB == 2
+        numgrubfiles = 76;
 		TEXT *grub_files[] =
 		{
-#if GRUB == 2
             "boot/grub/boot.img",       "boot/grub/boot.img",
             "boot/grub/core.img",       "boot/grub/core.img",
-            "boot/grub/grub.cfg.DH0",   "boot/grub/grub.cfg",
+            "boot/grub/grub.cfg",       "boot/grub/grub.cfg",
+            "boot/grub/splash.png",     "boot/grub/splash.png",
+            "boot/grub/_unifont.pff",   "boot/grub/_unifont.pff",
             "boot/grub/normal.mod",     "boot/grub/normal.mod",
             "boot/grub/chain.mod",      "boot/grub/chain.mod",
             "boot/grub/_chain.mod",     "boot/grub/_chain.mod",
@@ -1575,62 +1621,46 @@ localecopydone:
             "boot/grub/video.mod",      "boot/grub/video.mod",
             "boot/grub/videotest.mod",  "boot/grub/videotest.mod",
             "boot/grub/xfs.mod",        "boot/grub/xfs.mod",
-#elif GRUB == 1
-			"boot/grub/stage1",		"boot/grub/stage1",
-			"boot/grub/stage2_hdisk",	"boot/grub/stage2",
-			"boot/grub/menu.lst.DH0",	"boot/grub/menu.lst",
-#else
-#error bootloader not supported
-#endif
 			NULL
-		};
+        };
 
-		CreateDestDIR( CLASS, self, boot_path, dest_Path);
-		CreateDestDIR( CLASS, self, boot_path "/grub", dest_Path);
+        GRUB_COPY_FILE_LOOP
 
-		// Copy kernel files
-		CopyMem(source_Path, srcPath, srcLen + 1);
-		AddPart(srcPath, boot_path, srcLen + strlen(boot_path) + 1);
-		sprintf(dstPath, "%s:%s", dest_Path, boot_path);
-		DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, 3, 0, FALSE);
+        /* Grub 2 text/gfx mode */
+        GET(data->instc_options_grub->gopt_grub2mode, MUIA_Cycle_Active, &option);
+	    if ((int)option == 1)
+        {
+            /* gfx mode - copy _unifont.pff -> unifont.pff */
+            
+            TEXT srcFile[200];
+			TEXT dstFile[200];
+            
+            sprintf(srcFile, "%s:", dest_Path);
+            sprintf(dstFile, "%s:", dest_Path);
+            AddPart(srcFile, "boot/grub/_unifont.pff", 200);
+            AddPart(dstFile, "boot/grub/unifont.pff", 200);
+            
+            DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
+        }
+        else
+        {
+            /* other - delete unifont.pff */
 
-		// Installing GRUB
-		D(bug("[INSTALLER] Installing Grub...\n"));
-		SET(data->label, MUIA_Text_Contents, "Installing Grub...");
-		SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
+			TEXT dstFile[200];
+            
+            sprintf(dstFile, "%s:", dest_Path);
+            AddPart(dstFile, "boot/grub/unifont.pff", 200);
+            
+            DeleteFile(dstFile);
+               
+        }
 
-		SET(data->gauge2, MUIA_Gauge_Current, 0);
+        TEXT tmp[200];
 
-		SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
-
-		while (grub_files[file_count]!=NULL)
-		{
-			ULONG newSrcLen = srcLen + strlen(grub_files[file_count]) + 2;
-			ULONG newDstLen = dstLen + strlen(grub_files[file_count+1]) + 2;
-
-			TEXT srcFile[newSrcLen];
-			TEXT dstFile[newDstLen];
-
-			CopyMem(source_Path, srcFile, srcLen + 1);
-			sprintf(dstFile,"%s:",dest_Path);
-			AddPart(srcFile, grub_files[file_count], newSrcLen);
-			AddPart(dstFile, grub_files[file_count+1], newDstLen);
-
-			SET(data->actioncurrent, MUIA_Text_Contents, srcFile);
-			DoMethod(data->installer,MUIM_Application_InputBuffered);
-
-			DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
-
-			SET(data->gauge2, MUIA_Gauge_Current, ((100/(numgrubfiles +1)) * (file_count/2)));
-
-			file_count += 2;
-		}
-
-		TEXT tmp[200];
-#if GRUB == 2
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
+            
 			STRPTR menu_file_path = "boot/grub/grub.cfg";
 			sprintf(tmp, "%s:%s", dest_Path, menu_file_path);
 			BPTR menu_file = Open(tmp, MODE_READWRITE);
@@ -1650,7 +1680,21 @@ localecopydone:
 			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub",
 			boot_Device, boot_Unit, dest_Path);
+
 #elif GRUB == 1
+        numgrubfiles = 3;
+		TEXT *grub_files[] =
+		{
+			"boot/grub/stage1",		"boot/grub/stage1",
+			"boot/grub/stage2_hdisk",	"boot/grub/stage2",
+			"boot/grub/menu.lst.DH0",	"boot/grub/menu.lst",
+            NULL
+        };
+
+        GRUB_COPY_FILE_LOOP
+
+        TEXT tmp[200];
+
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
@@ -1674,6 +1718,9 @@ localecopydone:
 			"C:install-i386-pc DEVICE %s UNIT %d "
 			"GRUB %s:boot/grub FORCELBA",
 			boot_Device, boot_Unit, dest_Path, dest_Path);
+
+#else
+#error bootloader not supported
 #endif
 
 		D(bug("[INSTALLER] execute: %s\n", tmp));
@@ -2742,6 +2789,16 @@ int main(int argc,char *argv[])
 #endif
     cycle_fstypework = CycleObject, MUIA_Cycle_Entries, opt_fstypes, MUIA_Disabled, TRUE, MUIA_Cycle_Active, 1, End;
 
+    static char *opt_grub2mode[] =
+    {
+        "Text",
+        "Gfx",
+        NULL
+    };
+
+    Object * cycle_grub2mode = CycleObject, MUIA_Cycle_Entries, opt_grub2mode, MUIA_Disabled, 
+        FALSE, MUIA_Cycle_Active, 0, End;
+
 	install_opts = AllocMem( sizeof(struct Install_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	grub_opts = AllocMem( sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC );
 	source_path = AllocVec( 256, MEMF_CLEAR | MEMF_PUBLIC );
@@ -2794,7 +2851,7 @@ int main(int argc,char *argv[])
 
 	Object *app = ApplicationObject,
 		MUIA_Application_Title,       (IPTR) "AROS Installer",
-		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.6 (31.07.2008)",
+		MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 0.6 (19.11.2008)",
 		MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2008, The AROS Development Team. All rights reserved.",
 		MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson & Nic Andrews",
 		MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
@@ -2934,6 +2991,12 @@ int main(int argc,char *argv[])
 											Child, (IPTR) check_bootloader,
 											Child, (IPTR) LLabel("Install Bootloader"),
 										End,
+                                        Child, (IPTR) ColGroup(4),
+                                            Child, (IPTR) HVSpace,
+                                            Child, (IPTR) HVSpace,
+                                            Child, (IPTR) cycle_grub2mode,
+                                            Child, (IPTR) LLabel("Bootloader Menu Mode"),
+                                        End,
 										Child, (IPTR) HVSpace,
 									End,
 								End,
@@ -3149,6 +3212,11 @@ int main(int argc,char *argv[])
 		(IPTR) dest_volume, 3, MUIM_WriteString,
 		MUIV_TriggerValue, dest_Path);
 #endif
+    /* Notifications on installing bootloader */
+    DoMethod(check_bootloader, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) cycle_grub2mode, 3, MUIM_Set,
+        MUIA_Disabled, MUIV_NotTriggerValue);
+
 
 	DoMethod(check_core, MUIM_Notify, MUIA_Selected, FALSE,
 		(IPTR) check_formatsys, 3, MUIM_Set,
@@ -3187,6 +3255,7 @@ int main(int argc,char *argv[])
 /**/
 	grub_opts->gopt_drive = grub_drive;
 	grub_opts->gopt_grub = grub_grub;
+    grub_opts->gopt_grub2mode = cycle_grub2mode;
 /**/
 	struct MUI_CustomClass *mcc = MUI_CreateCustomClass(NULL, MUIC_Notify, NULL, sizeof(struct Install_DATA), Install_Dispatcher);
 	Object *installer = NewObject(mcc->mcc_Class, NULL,
@@ -3227,106 +3296,6 @@ int main(int argc,char *argv[])
 		MUIA_IC_License_Mandatory, TRUE,
 
 	TAG_DONE);
-
-#if 0
-/** Start - NEW!! this is part of the "class" change ;) **/
-if (0)
-{
-
-	IPTR        install_content1[20],install_content2[20],install_content3[20],install_content4[20],install_content5[20],install_content6[20];
-	IPTR        install_pages[20];
-
-	/* page descriptions */
-	/* welcome page */
-	install_content1[0] = INSTV_TEXT;
-	install_content1[1] = (IPTR) KMsgWelcome;
-
-	install_content1[2] = TAG_DONE;
-
-	/* Options Page */
-	install_content2[0] = INSTV_TEXT;
-	install_content2[1] = (IPTR) KMsgInstallOptions;
-
-	install_content2[0] = INSTV_SPACE;
-	install_content2[1] = TAG_IGNORE;
-
-	install_content2[0] = INSTV_BOOL;
-	install_content2[1] = (IPTR) check_autopart;
-
-	install_content2[2] = INSTV_BOOL;
-	install_content2[3] = (IPTR) check_locale;
-
-	install_content2[4] = INSTV_BOOL;
-	install_content2[5] = (IPTR) check_core;
-
-	install_content2[6] = INSTV_BOOL;
-	install_content2[7] = (IPTR) check_extras;
-
-	install_content2[8] = INSTV_BOOL;
-	install_content2[9] = (IPTR) check_bootloader;
-
-	install_content2[10] = TAG_DONE;
-
-	/* Prepare Drives Page */
-	install_content3[0] = INSTV_TEXT;
-	install_content3[1] = (IPTR) KMsgPartitioning;
-
-	install_content3[2] = INSTV_RETURN;
-	install_content3[3] = OPTION_PREPDRIVES;
-
-	install_content3[4] = TAG_DONE;
-
-	/* Wipe Drives */
-	install_content4[0] = INSTV_TEXT;
-	install_content4[1] = (IPTR) KMsgPartitioningWipe;
-
-	install_content4[2] = INSTV_RETURN;
-	install_content4[3] = OPTION_FORMAT;
-
-	install_content4[4] = TAG_DONE;
-
-	/* */
-	install_content5[4] = TAG_DONE;
-
-	/* ALL DONE !! */
-	install_content6[0] = INSTV_TEXT;
-	install_content6[1] = (IPTR) KMsgDone;
-
-	install_content6[2] = TAG_DONE;
-	/* installer pages */
-
-	install_pages[0] = INSTV_CURR;
-	install_pages[1] = (IPTR) install_content1;
-
-	install_pages[0] = INSTV_TITLE;
-	install_pages[1] = (IPTR)"AROS Installer";
-
-	install_pages[0] = INSTV_LOGO;
-	install_pages[1] = (IPTR)"3:"DEF_INSTALL_IMAGE;
-
-	install_pages[0] = INSTV_PAGE;
-	install_pages[1] = (IPTR) install_content1;
-
-	install_pages[2] = INSTV_PAGE;
-	install_pages[3] = (IPTR) install_content2;
-
-	install_pages[4] = INSTV_PAGE;
-	install_pages[5] = (IPTR) install_content3;
-
-	install_pages[6] = INSTV_PAGE;
-	install_pages[7] = (IPTR) install_content4;
-
-	install_pages[8] = INSTV_PAGE;
-	install_pages[9] = (IPTR) install_content5;
-
-	install_pages[10] = INSTV_PAGE;
-	install_pages[11] = (IPTR) install_content6;
-
-	install_pages[12] = TAG_DONE;
-
-}
-/** End - NEW!! this is part of the "class" change ;) **/
-#endif
 
 	DoMethod(wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE, app,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
 
