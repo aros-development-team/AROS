@@ -279,6 +279,7 @@ struct Grub_Options
 {
     Object	*gopt_drive;
     Object	*gopt_grub;
+    Object  *gopt_grub2mode;
     BOOL	bootinfo;
 };
 
