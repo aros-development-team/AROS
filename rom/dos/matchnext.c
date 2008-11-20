@@ -31,12 +31,12 @@
 	Find next file or directory that matches a given pattern.
 	See <dos/dosasl.h> for more docs and how to control MatchNext().
 
-
     INPUTS
 	AP  - pointer to Anchor Path structure which had been passed to
               MatchFirst() before.
 
     RESULT
+	Zero on success, or error code on failure.
 
     NOTES
 
