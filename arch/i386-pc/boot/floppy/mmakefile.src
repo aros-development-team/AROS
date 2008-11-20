@@ -118,7 +118,7 @@ endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
 BOOT_FILES += boot/grub/grub.cfg
-BOOT_TAR_MISC += boot/grub/grub.cfg.DH0
+BOOT_TAR_MISC += boot/grub/grub.cfg
 endif
 
 BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
