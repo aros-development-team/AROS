@@ -46,7 +46,7 @@ struct LocaleRegister_DATA
   Object *country;
   Object *timezone;
 
-  char *LocaleRegisterLabels[2];
+  char *LocaleRegisterLabels[3];
   char *tab_label;
 };
 
@@ -152,13 +152,14 @@ Object *LocaleRegister__OM_NEW(Class *CLASS, Object *self, struct opSet *message
 	return handle_New_error(self,CLASS,"ERROR: Unable to create timezone object!\n");
     }
 
+
     /*
      * Maybe, it would be easier to change the catalog,
      * but for me it's easier this way ;)
      */
     data->tab_label=AllocVec( strlen(MSG(MSG_GAD_TAB_LANGUAGE)) +
                               strlen(MSG(MSG_GAD_TAB_COUNTRY)) +
-			      strlen(" / "),
+			      strlen(" / ") + 1,
 			      MEMF_ANY);
 
     if(!data->tab_label)
