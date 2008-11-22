@@ -29,7 +29,7 @@ chainloader_command (struct grub_arg_list *state __attribute__ ((unused)),
   if (argc == 0)
     grub_error (GRUB_ERR_BAD_ARGUMENT, "no file specified");
   else
-    grub_chainloader_cmd (args[0]);
+    grub_rescue_cmd_chainloader (argc, args);
   return grub_errno;
 }
 

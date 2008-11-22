@@ -1,7 +1,7 @@
 /* ext2.c - Second Extended filesystem */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -71,6 +71,23 @@
          ? EXT2_GOOD_OLD_INODE_SIZE \
          : grub_le_to_cpu16 (data->sblock.inode_size))
 
+#define EXT3_FEATURE_COMPAT_HAS_JOURNAL	0x0004
+
+#define EXT3_JOURNAL_MAGIC_NUMBER	0xc03b3998U
+
+#define EXT3_JOURNAL_DESCRIPTOR_BLOCK	1
+#define EXT3_JOURNAL_COMMIT_BLOCK	2
+#define EXT3_JOURNAL_SUPERBLOCK_V1	3
+#define EXT3_JOURNAL_SUPERBLOCK_V2	4
+#define EXT3_JOURNAL_REVOKE_BLOCK	5
+
+#define EXT3_JOURNAL_FLAG_ESCAPE	1
+#define EXT3_JOURNAL_FLAG_SAME_UUID	2
+#define EXT3_JOURNAL_FLAG_DELETED	4
+#define EXT3_JOURNAL_FLAG_LAST_TAG	8
+
+#define EXT4_EXTENTS_FLAG		0x80000
+
 /* The ext2 superblock.  */
 struct grub_ext2_sblock
 {
@@ -105,10 +122,25 @@ struct grub_ext2_sblock
   grub_uint32_t feature_compatibility;
   grub_uint32_t feature_incompat;
   grub_uint32_t feature_ro_compat;
-  grub_uint32_t unique_id[4];
+  grub_uint16_t uuid[8];
   char volume_name[16];
   char last_mounted_on[64];
   grub_uint32_t compression_info;
+  grub_uint8_t prealloc_blocks;
+  grub_uint8_t prealloc_dir_blocks;
+  grub_uint16_t reserved_gdt_blocks;
+  grub_uint8_t journal_uuid[16];
+  grub_uint32_t journal_inum;
+  grub_uint32_t journal_dev;
+  grub_uint32_t last_orphan;
+  grub_uint32_t hash_seed[4];
+  grub_uint8_t def_hash_version;
+  grub_uint8_t jnl_backup_type;
+  grub_uint16_t reserved_word_pad;
+  grub_uint32_t default_mount_opts;
+  grub_uint32_t first_meta_bg;
+  grub_uint32_t mkfs_time;
+  grub_uint32_t jnl_blocks[17];
 };
 
 /* The ext2 blockgroup.  */
@@ -166,6 +198,63 @@ struct ext2_dirent
   grub_uint8_t filetype;
 };
 
+struct grub_ext3_journal_header
+{
+  grub_uint32_t magic;
+  grub_uint32_t block_type;
+  grub_uint32_t sequence;
+};
+
+struct grub_ext3_journal_revoke_header
+{
+  struct grub_ext3_journal_header header;
+  grub_uint32_t count;
+  grub_uint32_t data[0];
+};
+
+struct grub_ext3_journal_block_tag
+{
+  grub_uint32_t block;
+  grub_uint32_t flags;
+};
+
+struct grub_ext3_journal_sblock
+{
+  struct grub_ext3_journal_header header;
+  grub_uint32_t block_size;
+  grub_uint32_t maxlen;
+  grub_uint32_t first;
+  grub_uint32_t sequence;
+  grub_uint32_t start;
+};
+
+#define EXT4_EXT_MAGIC		0xf30a
+
+struct grub_ext4_extent_header
+{
+  grub_uint16_t magic;
+  grub_uint16_t entries;
+  grub_uint16_t max;
+  grub_uint16_t depth;
+  grub_uint32_t generation;
+};
+
+struct grub_ext4_extent
+{
+  grub_uint32_t block;
+  grub_uint16_t len;
+  grub_uint16_t start_hi;
+  grub_uint32_t start;
+};
+
+struct grub_ext4_extent_idx
+{
+  grub_uint32_t block;
+  grub_uint32_t leaf;
+  grub_uint16_t leaf_hi;
+  grub_uint16_t unused;
+};
+
 struct grub_fshelp_node
 {
   struct grub_ext2_data *data;
@@ -196,22 +285,105 @@ grub_ext2_blockgroup (struct grub_ext2_data *data, int group,
 		      struct grub_ext2_block_group *blkgrp)
 {
   return grub_disk_read (data->disk,
-			 ((grub_le_to_cpu32 (data->sblock.first_data_block) + 1)
-			  << LOG2_EXT2_BLOCK_SIZE (data)),
-			 group * sizeof (struct grub_ext2_block_group), 
+                         ((grub_le_to_cpu32 (data->sblock.first_data_block) + 1)
+                          << LOG2_EXT2_BLOCK_SIZE (data)),
+			 group * sizeof (struct grub_ext2_block_group),
 			 sizeof (struct grub_ext2_block_group), (char *) blkgrp);
 }
 
+static struct grub_ext4_extent_header *
+grub_ext4_find_leaf (struct grub_ext2_data *data, char *buf,
+                     struct grub_ext4_extent_header *ext_block,
+                     grub_uint32_t fileblock)
+{
+  struct grub_ext4_extent_idx *index;
 
-static int
-grub_ext2_read_block (grub_fshelp_node_t node, int fileblock)
+  while (1)
+    {
+      int i;
+      grub_disk_addr_t block;
+
+      index = (struct grub_ext4_extent_idx *) (ext_block + 1);
+
+      if (grub_le_to_cpu16(ext_block->magic) != EXT4_EXT_MAGIC)
+        return 0;
+
+      if (ext_block->depth == 0)
+        return ext_block;
+
+      for (i = 0; i < grub_le_to_cpu16 (ext_block->entries); i++)
+        {
+          if (fileblock < grub_le_to_cpu32(index[i].block))
+            break;
+        }
+
+      if (--i < 0)
+        return 0;
+
+      block = grub_le_to_cpu16 (index[i].leaf_hi);
+      block = (block << 32) + grub_le_to_cpu32 (index[i].leaf);
+      if (grub_disk_read (data->disk,
+                          block << LOG2_EXT2_BLOCK_SIZE (data),
+                          0, EXT2_BLOCK_SIZE(data), buf))
+        return 0;
+
+      ext_block = (struct grub_ext4_extent_header *) buf;
+    }
+}
+
+static grub_disk_addr_t
+grub_ext2_read_block (grub_fshelp_node_t node, grub_disk_addr_t fileblock)
 {
   struct grub_ext2_data *data = node->data;
   struct grub_ext2_inode *inode = &node->inode;
-  int blknr;
-  int blksz = EXT2_BLOCK_SIZE (data);
+  int blknr = -1;
+  unsigned int blksz = EXT2_BLOCK_SIZE (data);
   int log2_blksz = LOG2_EXT2_BLOCK_SIZE (data);
   
+  if (inode->flags & EXT4_EXTENTS_FLAG)
+    {
+      char buf[EXT2_BLOCK_SIZE(data)];
+      struct grub_ext4_extent_header *leaf;
+      struct grub_ext4_extent *ext;
+      int i;
+
+      leaf = grub_ext4_find_leaf (data, buf,
+                                  (struct grub_ext4_extent_header *) inode->blocks.dir_blocks,
+                                  fileblock);
+      if (! leaf)
+        {
+          grub_error (GRUB_ERR_BAD_FS, "invalid extent");
+          return -1;
+        }
+
+      ext = (struct grub_ext4_extent *) (leaf + 1);
+      for (i = 0; i < grub_le_to_cpu16 (leaf->entries); i++)
+        {
+          if (fileblock < grub_le_to_cpu32 (ext[i].block))
+            break;
+        }
+
+      if (--i >= 0)
+        {
+          fileblock -= grub_le_to_cpu32 (ext[i].block);
+          if (fileblock >= grub_le_to_cpu16 (ext[i].len))
+            return 0;
+          else
+            {
+              grub_disk_addr_t start;
+
+              start = grub_le_to_cpu16 (ext[i].start_hi);
+              start = (start << 32) + grub_le_to_cpu32 (ext[i].start);
+
+              return fileblock + start;
+            }
+        }
+      else
+        {
+          grub_error (GRUB_ERR_BAD_FS, "something wrong with extent");
+          return -1;
+        }
+    }
   /* Direct blocks.  */
   if (fileblock < INDIRECT_BLOCKS)
     blknr = grub_le_to_cpu32 (inode->blocks.dir_blocks[fileblock]);
@@ -220,7 +392,7 @@ grub_ext2_read_block (grub_fshelp_node_t node, int fileblock)
     {
       grub_uint32_t indir[blksz / 4];
 
-      if (grub_disk_read (data->disk, 
+      if (grub_disk_read (data->disk,
 			  grub_le_to_cpu32 (inode->blocks.indir_block)
 			  << log2_blksz,
 			  0, blksz, (char *) indir))
@@ -236,8 +408,8 @@ grub_ext2_read_block (grub_fshelp_node_t node, int fileblock)
 					 + blksz / 4);
       grub_uint32_t indir[blksz / 4];
 
-      if (grub_disk_read (data->disk, 
-			  grub_le_to_cpu32 (inode->blocks.double_indir_block) 
+      if (grub_disk_read (data->disk,
+			  grub_le_to_cpu32 (inode->blocks.double_indir_block)
 			  << log2_blksz,
 			  0, blksz, (char *) indir))
 	return grub_errno;
@@ -256,12 +428,10 @@ grub_ext2_read_block (grub_fshelp_node_t node, int fileblock)
     {
       grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
 		  "ext2fs doesn't support triple indirect blocks");
-      blknr = -1;
     }
 
   return blknr;
 }
-
 
 /* Read LEN bytes from the file described by DATA starting with byte
    POS.  Return the amount of read bytes in READ.  */
@@ -287,7 +457,6 @@ grub_ext2_read_inode (struct grub_ext2_data *data,
   struct grub_ext2_block_group blkgrp;
   struct grub_ext2_sblock *sblock = &data->sblock;
   int inodes_per_block;
-  
   unsigned int blkno;
   unsigned int blkoff;
 
@@ -305,11 +474,11 @@ grub_ext2_read_inode (struct grub_ext2_data *data,
     / inodes_per_block;
   blkoff = (ino % grub_le_to_cpu32 (sblock->inodes_per_group))
     % inodes_per_block;
-  
+
   /* Read the inode.  */
-  if (grub_disk_read (data->disk, 
+  if (grub_disk_read (data->disk,
 		      ((grub_le_to_cpu32 (blkgrp.inode_table_id) + blkno)
-		       << LOG2_EXT2_BLOCK_SIZE (data)),
+		        << LOG2_EXT2_BLOCK_SIZE (data)),
 		      EXT2_INODE_SIZE (data) * blkoff,
 		      sizeof (struct grub_ext2_inode), (char *) inode))
     return grub_errno;
@@ -336,12 +505,13 @@ grub_ext2_mount (grub_disk_t disk)
   if (grub_le_to_cpu16 (data->sblock.magic) != EXT2_MAGIC)
     goto fail;
   
+  data->disk = disk;
+
   data->diropen.data = data;
   data->diropen.ino = 2;
   data->diropen.inode_read = 1;
 
   data->inode = &data->diropen.inode;
-  data->disk = disk;
 
   grub_ext2_read_inode (data, 2, data->inode);
   if (grub_errno)
@@ -626,7 +796,39 @@ grub_ext2_label (grub_device_t device, char **label)
   if (data)
     *label = grub_strndup (data->sblock.volume_name, 14);
   else
-    *label = 0;
+    *label = NULL;
+
+#ifndef GRUB_UTIL
+  grub_dl_unref (my_mod);
+#endif
+
+  grub_free (data);
+
+  return grub_errno;
+}
+
+static grub_err_t
+grub_ext2_uuid (grub_device_t device, char **uuid)
+{
+  struct grub_ext2_data *data;
+  grub_disk_t disk = device->disk;
+
+#ifndef GRUB_UTIL
+  grub_dl_ref (my_mod);
+#endif
+
+  data = grub_ext2_mount (disk);
+  if (data)
+    {
+      *uuid = grub_malloc (40 + sizeof ('\0'));
+      grub_sprintf (*uuid, "%04x%04x-%04x-%04x-%04x-%04x%04x%04x",
+		    grub_be_to_cpu16 (data->sblock.uuid[0]), grub_be_to_cpu16 (data->sblock.uuid[1]),
+		    grub_be_to_cpu16 (data->sblock.uuid[2]), grub_be_to_cpu16 (data->sblock.uuid[3]),
+		    grub_be_to_cpu16 (data->sblock.uuid[4]), grub_be_to_cpu16 (data->sblock.uuid[5]),
+		    grub_be_to_cpu16 (data->sblock.uuid[6]), grub_be_to_cpu16 (data->sblock.uuid[7]));
+    }
+  else
+    *uuid = NULL;
 
 #ifndef GRUB_UTIL
   grub_dl_unref (my_mod);
@@ -646,6 +848,7 @@ static struct grub_fs grub_ext2_fs =
     .read = grub_ext2_read,
     .close = grub_ext2_close,
     .label = grub_ext2_label,
+    .uuid = grub_ext2_uuid,
     .next = 0
   };
 

@@ -30,9 +30,30 @@
 /* VBE status codes.  */
 #define GRUB_VBE_STATUS_OK		0x004f
 
-/* VBE memory model types.  */
-#define GRUB_VBE_MEMORY_MODEL_PACKED_PIXEL	0x04
-#define GRUB_VBE_MEMORY_MODEL_DIRECT_COLOR	0x06
+/* Bits from the GRUB_VBE "mode_attributes" field in the mode info struct.  */
+#define GRUB_VBE_MODEATTR_SUPPORTED                 (1 << 0)
+#define GRUB_VBE_MODEATTR_RESERVED_1                (1 << 1)
+#define GRUB_VBE_MODEATTR_BIOS_TTY_OUTPUT_SUPPORT   (1 << 2)
+#define GRUB_VBE_MODEATTR_COLOR                     (1 << 3)
+#define GRUB_VBE_MODEATTR_GRAPHICS                  (1 << 4)
+#define GRUB_VBE_MODEATTR_VGA_COMPATIBLE            (1 << 5)
+#define GRUB_VBE_MODEATTR_VGA_WINDOWED_AVAIL        (1 << 6)
+#define GRUB_VBE_MODEATTR_LFB_AVAIL                 (1 << 7)
+#define GRUB_VBE_MODEATTR_DOUBLE_SCAN_AVAIL         (1 << 8)
+#define GRUB_VBE_MODEATTR_INTERLACED_AVAIL          (1 << 9)
+#define GRUB_VBE_MODEATTR_TRIPLE_BUF_AVAIL          (1 << 10)
+#define GRUB_VBE_MODEATTR_STEREO_AVAIL              (1 << 11)
+#define GRUB_VBE_MODEATTR_DUAL_DISPLAY_START        (1 << 12)
+
+/* Values for the GRUB_VBE memory_model field in the mode info struct.  */
+#define GRUB_VBE_MEMORY_MODEL_TEXT           0x00
+#define GRUB_VBE_MEMORY_MODEL_CGA            0x01
+#define GRUB_VBE_MEMORY_MODEL_HERCULES       0x02
+#define GRUB_VBE_MEMORY_MODEL_PLANAR         0x03
+#define GRUB_VBE_MEMORY_MODEL_PACKED_PIXEL   0x04
+#define GRUB_VBE_MEMORY_MODEL_NONCHAIN4_256  0x05
+#define GRUB_VBE_MEMORY_MODEL_DIRECT_COLOR   0x06
+#define GRUB_VBE_MEMORY_MODEL_YUV            0x07
 
 /* Note:
 

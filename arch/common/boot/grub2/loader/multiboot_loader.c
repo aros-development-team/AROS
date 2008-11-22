@@ -71,6 +71,34 @@ find_multi_boot1_header (grub_file_t file)
    return found_status;
 }
 
+static int
+find_multi_boot2_header (grub_file_t file)
+{
+  struct multiboot_header *header;
+  char buffer[MULTIBOOT_SEARCH];
+  int found_status = 0;
+  grub_ssize_t len;
+ 
+  len = grub_file_read (file, buffer, MULTIBOOT_SEARCH);
+  if (len < 32)
+    return found_status;
+
+  /* Look for the multiboot header in the buffer.  The header should
+     be at least 8 bytes and aligned on a 8-byte boundary.  */
+  for (header = (struct multiboot_header *) buffer;
+      ((char *) header <= buffer + len - 8) || (header = 0);
+      header = (struct multiboot_header *) ((char *) header + 8))
+    {
+      if (header->magic == MULTIBOOT2_HEADER_MAGIC)
+        {
+           found_status = 1;
+           break;
+        }
+     }
+
+   return found_status;
+}
+
 void
 grub_rescue_cmd_multiboot_loader (int argc, char *argv[])
 {
@@ -94,16 +122,14 @@ grub_rescue_cmd_multiboot_loader (int argc, char *argv[])
     }
 
   /* find which header is in the file */
-  if (find_multi_boot1_header(file))
+  if (find_multi_boot1_header (file))
     header_multi_ver_found = 1;
+  else if (find_multi_boot2_header (file))
+    header_multi_ver_found = 2;
   else
     {
-      /* The behavior is that if you don't find a multiboot 1 header
-         use multiboot 2 loader (as you do not have to have a header
-         to use multiboot 2 */
-      grub_dprintf ("multiboot_loader", "No multiboot 1 header found. \n \
-                       Using multiboot 2 loader\n");
-      header_multi_ver_found = 0;
+      grub_error (GRUB_ERR_BAD_OS, "Multiboot header not found");
+      goto fail;
     }
 
    /* close file before calling functions */

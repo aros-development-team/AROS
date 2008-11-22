@@ -7,9 +7,6 @@ COMMON_CFLAGS = -fno-builtin -mrtd -mregparm=3 -m32
 COMMON_LDFLAGS = -m32 -nostdlib
 
 # Used by various components.  These rules need to precede them.
-normal/execute.c_DEPENDENCIES = grub_script.tab.h
-normal/command.c_DEPENDENCIES = grub_script.tab.h
-normal/function.c_DEPENDENCIES = grub_script.tab.h
 normal/lexer.c_DEPENDENCIES = grub_script.tab.h
 
 # Images.
@@ -19,44 +16,50 @@ pkglib_IMAGES = boot.img diskboot.img kernel.img pxeboot.img lnxboot.img \
 # For boot.img.
 boot_img_SOURCES = boot/i386/pc/boot.S
 boot_img_ASFLAGS = $(COMMON_ASFLAGS)
-boot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,7C00
+boot_img_LDFLAGS = $(COMMON_LDFLAGS) $(TARGET_IMG_LDFLAGS) -Wl,-Ttext,7C00
 
 # For pxeboot.img
 pxeboot_img_SOURCES = boot/i386/pc/pxeboot.S
 pxeboot_img_ASFLAGS = $(COMMON_ASFLAGS)
-pxeboot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,7C00
+pxeboot_img_LDFLAGS = $(COMMON_LDFLAGS) $(TARGET_IMG_LDFLAGS) -Wl,-Ttext,7C00
 
 # For diskboot.img.
 diskboot_img_SOURCES = boot/i386/pc/diskboot.S
 diskboot_img_ASFLAGS = $(COMMON_ASFLAGS)
-diskboot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,8000
+diskboot_img_LDFLAGS = $(COMMON_LDFLAGS) $(TARGET_IMG_LDFLAGS) -Wl,-Ttext,8000
 
 # For lnxboot.img.
 lnxboot_img_SOURCES = boot/i386/pc/lnxboot.S
 lnxboot_img_ASFLAGS = $(COMMON_ASFLAGS)
-lnxboot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,6000
+lnxboot_img_LDFLAGS = $(COMMON_LDFLAGS) $(TARGET_IMG_LDFLAGS) -Wl,-Ttext,6000
 
 # For cdboot.img.
 cdboot_img_SOURCES = boot/i386/pc/cdboot.S
 cdboot_img_ASFLAGS = $(COMMON_ASFLAGS)
-cdboot_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,7C00
+cdboot_img_LDFLAGS = $(COMMON_LDFLAGS) $(TARGET_IMG_LDFLAGS) -Wl,-Ttext,7C00
 
 # For kernel.img.
 kernel_img_SOURCES = kern/i386/pc/startup.S kern/main.c kern/device.c \
 	kern/disk.c kern/dl.c kern/file.c kern/fs.c kern/err.c \
 	kern/misc.c kern/mm.c kern/loader.c kern/rescue.c kern/term.c \
-	kern/i386/dl.c kern/i386/pc/init.c kern/parser.c kern/partition.c \
+	kern/time.c \
+	kern/i386/dl.c kern/i386/pc/init.c kern/i386/pc/mmap.c \
+	kern/parser.c kern/partition.c \
+	kern/i386/tsc.c kern/i386/pit.c \
+	kern/generic/rtc_get_time_ms.c \
+	kern/generic/millisleep.c \
 	kern/env.c \
-	term/i386/pc/console.c \
+	term/i386/pc/console.c term/i386/vga_common.c \
 	symlist.c
 kernel_img_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
 	env.h err.h file.h fs.h kernel.h loader.h misc.h mm.h net.h parser.h \
 	partition.h pc_partition.h rescue.h symbol.h term.h time.h types.h \
 	machine/biosdisk.h machine/boot.h machine/console.h machine/init.h \
-	machine/memory.h machine/loader.h machine/vga.h machine/vbe.h machine/kernel.h
+	machine/memory.h machine/loader.h machine/vga.h machine/vbe.h \
+	machine/kernel.h machine/pxe.h
 kernel_img_CFLAGS = $(COMMON_CFLAGS)
 kernel_img_ASFLAGS = $(COMMON_ASFLAGS)
-kernel_img_LDFLAGS = $(COMMON_LDFLAGS) -Wl,-N,-Ttext,$(GRUB_MEMORY_MACHINE_LINK_ADDR) $(COMMON_CFLAGS)
+kernel_img_LDFLAGS = $(COMMON_LDFLAGS) $(TARGET_IMG_LDFLAGS) -Wl,-Ttext,$(GRUB_MEMORY_MACHINE_LINK_ADDR) $(COMMON_CFLAGS)
 
 MOSTLYCLEANFILES += symlist.c kernel_syms.lst
 DEFSYMFILES += kernel_syms.lst
@@ -75,14 +78,20 @@ sbin_UTILITIES += grub-emu
 endif
 
 # For grub-mkimage.
+ifeq ($(enable_lzo), yes)
 grub_mkimage_SOURCES = util/i386/pc/grub-mkimage.c util/misc.c \
 	util/resolve.c
-grub_mkimage_CFLAGS = -DGRUB_MEMORY_MACHINE_LINK_ADDR=$(GRUB_MEMORY_MACHINE_LINK_ADDR)
 grub_mkimage_LDFLAGS = $(LIBLZO)
+else
+grub_mkimage_SOURCES = util/i386/pc/grub-mkimage.c util/misc.c \
+	util/resolve.c lib/LzmaEnc.c lib/LzFind.c
+endif
+grub_mkimage_CFLAGS = -DGRUB_MEMORY_MACHINE_LINK_ADDR=$(GRUB_MEMORY_MACHINE_LINK_ADDR)
+util/i386/pc/grub-mkimage.c_DEPENDENCIES = Makefile
 
 # For grub-setup.
 util/i386/pc/grub-setup.c_DEPENDENCIES = grub_setup_init.h
-grub_setup_SOURCES = util/i386/pc/grub-setup.c util/biosdisk.c	\
+grub_setup_SOURCES = util/i386/pc/grub-setup.c util/hostdisk.c	\
 	util/misc.c util/getroot.c kern/device.c kern/disk.c	\
 	kern/err.c kern/misc.c kern/parser.c kern/partition.c	\
 	kern/file.c kern/fs.c kern/env.c fs/fshelp.c		\
@@ -94,13 +103,12 @@ grub_setup_SOURCES = util/i386/pc/grub-setup.c util/biosdisk.c	\
 	\
 	partmap/pc.c partmap/gpt.c				\
 	\
-	disk/raid.c disk/lvm.c					\
+	disk/raid.c disk/mdraid_linux.c disk/lvm.c		\
 	util/raid.c util/lvm.c					\
 	grub_setup_init.c
 
 # For grub-mkdevicemap.
-grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c		\
-	util/i386/get_disk_name.c
+grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c
 
 # For grub-emu.
 util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
@@ -108,7 +116,7 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	commands/configfile.c commands/echo.c commands/help.c		\
 	commands/terminal.c commands/ls.c commands/test.c 		\
 	commands/search.c commands/blocklist.c commands/hexdump.c	\
-	commands/i386/pc/halt.c commands/reboot.c			\
+	lib/hexdump.c commands/i386/pc/halt.c commands/reboot.c		\
 	commands/i386/cpuid.c						\
 	disk/host.c disk/loopback.c					\
 	fs/fshelp.c 	\
@@ -131,10 +139,11 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c	\
 	fs/ufs.c fs/xfs.c fs/afs.c					\
 	\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
-	util/biosdisk.c util/getroot.c					\
+	util/hostdisk.c util/getroot.c					\
 	util/i386/pc/misc.c						\
 	\
-	disk/raid.c disk/lvm.c						\
+	disk/raid.c disk/raid5_recover.c disk/raid6_recover.c		\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c disk/lvm.c		\
 	grub_emu_init.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
@@ -153,9 +162,10 @@ grub_mkrescue_SOURCES = util/i386/pc/grub-mkrescue.in
 pkglib_MODULES = biosdisk.mod _chain.mod _linux.mod linux.mod normal.mod \
 	_multiboot.mod chain.mod multiboot.mod reboot.mod halt.mod	\
 	vbe.mod vbetest.mod vbeinfo.mod video.mod gfxterm.mod \
-	videotest.mod play.mod bitmap.mod tga.mod cpuid.mod serial.mod	\
+	videotest.mod play.mod bitmap.mod tga.mod serial.mod	\
 	ata.mod vga.mod memdisk.mod jpeg.mod png.mod pci.mod lspci.mod \
-	aout.mod _bsd.mod bsd.mod
+	aout.mod _bsd.mod bsd.mod pxe.mod pxecmd.mod datetime.mod date.mod \
+	datehook.mod
 
 # For biosdisk.mod.
 biosdisk_mod_SOURCES = disk/i386/pc/biosdisk.c
@@ -178,7 +188,7 @@ _linux_mod_CFLAGS = $(COMMON_CFLAGS)
 _linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For linux.mod.
-linux_mod_SOURCES = loader/i386/pc/linux_normal.c
+linux_mod_SOURCES = loader/linux_normal.c
 linux_mod_CFLAGS = $(COMMON_CFLAGS)
 linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
@@ -267,11 +277,6 @@ tga_mod_SOURCES = video/readers/tga.c
 tga_mod_CFLAGS = $(COMMON_CFLAGS)
 tga_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For cpuid.mod.
-cpuid_mod_SOURCES = commands/i386/cpuid.c
-cpuid_mod_CFLAGS = $(COMMON_CFLAGS)
-cpuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
 # For ata.mod.
 ata_mod_SOURCES = disk/ata.c
 ata_mod_CFLAGS = $(COMMON_CFLAGS)
@@ -322,4 +327,30 @@ bsd_mod_SOURCES = loader/i386/bsd_normal.c
 bsd_mod_CFLAGS = $(COMMON_CFLAGS)
 bsd_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For pxe.mod
+pxe_mod_SOURCES = fs/i386/pc/pxe.c
+pxe_mod_CFLAGS = $(COMMON_CFLAGS)
+pxe_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For pxecmd.mod
+pxecmd_mod_SOURCES = commands/i386/pc/pxecmd.c
+pxecmd_mod_CFLAGS = $(COMMON_CFLAGS)
+pxecmd_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For datetime.mod
+datetime_mod_SOURCES = lib/datetime.c lib/i386/datetime.c
+datetime_mod_CFLAGS = $(COMMON_CFLAGS)
+datetime_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For date.mod
+date_mod_SOURCES = commands/date.c
+date_mod_CFLAGS = $(COMMON_CFLAGS)
+date_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For datehook.mod
+datehook_mod_SOURCES = hook/datehook.c
+datehook_mod_CFLAGS = $(COMMON_CFLAGS)
+datehook_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+include $(srcdir)/conf/i386.mk
 include $(srcdir)/conf/common.mk

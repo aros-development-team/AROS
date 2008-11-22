@@ -16,9 +16,12 @@
 : ${srcdir=@srcdir@}
 : ${CC=@CC@}
 
+u=
+grep "^#define HAVE_ASM_USCORE" config.h >/dev/null 2>&1 && u="_"
+
 $CC -DGRUB_SYMBOL_GENERATOR=1 -E -I. -Iinclude -I"$srcdir/include" $* \
   | grep -v '^#' \
   | sed -n \
-        -e '/EXPORT_FUNC *([a-zA-Z0-9_]*)/{s/.*EXPORT_FUNC *(\([a-zA-Z0-9_]*\)).*/\1 kernel/;p;}' \
-        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/\1 kernel/;p;}' \
+        -e '/EXPORT_FUNC *([a-zA-Z0-9_]*)/{s/.*EXPORT_FUNC *(\([a-zA-Z0-9_]*\)).*/'"$u"'\1 kernel/;p;}' \
+        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/'"$u"'\1 kernel/;p;}' \
   | sort -u

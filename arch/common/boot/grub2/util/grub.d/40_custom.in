@@ -1,0 +1,3 @@
+#!/bin/sh
+exec tail -n +3 $0
+# This file is an example on how to add custom entries

@@ -36,11 +36,21 @@
 #define _GNU_SOURCE	1
 #include <getopt.h>
 
+#if defined(ENABLE_LZO)
+
 #if defined(HAVE_LZO_LZO1X_H)
 # include <lzo/lzo1x.h>
 #elif defined(HAVE_LZO1X_H)
 # include <lzo1x.h>
 #endif
+
+#elif defined(ENABLE_LZMA)
+
+#include <grub/lib/LzmaEnc.h>
+
+#endif
+
+#if defined(ENABLE_LZO)
 
 static void
 compress_kernel (char *kernel_img, size_t kernel_size,
@@ -76,6 +86,48 @@ compress_kernel (char *kernel_img, size_t kernel_size,
   *core_size = (size_t) size + GRUB_KERNEL_MACHINE_RAW_SIZE;
 }
 
+#elif defined(ENABLE_LZMA)
+
+static void *SzAlloc(void *p, size_t size) { p = p; return xmalloc(size); }
+static void SzFree(void *p, void *address) { p = p; free(address); }
+static ISzAlloc g_Alloc = { SzAlloc, SzFree };
+
+static void
+compress_kernel (char *kernel_img, size_t kernel_size,
+		 char **core_img, size_t *core_size)
+{
+  CLzmaEncProps props;
+  unsigned char out_props[5];
+  size_t out_props_size = 5;
+
+  LzmaEncProps_Init(&props);
+  props.dictSize = 1 << 16;
+  props.lc = 3;
+  props.lp = 0;
+  props.pb = 2;
+  props.numThreads = 1;
+
+  grub_util_info ("kernel_img=%p, kernel_size=0x%x", kernel_img, kernel_size);
+  if (kernel_size < GRUB_KERNEL_MACHINE_RAW_SIZE)
+    grub_util_error ("the core image is too small");
+
+  *core_img = xmalloc (kernel_size);
+  memcpy (*core_img, kernel_img, GRUB_KERNEL_MACHINE_RAW_SIZE);
+
+  *core_size = kernel_size - GRUB_KERNEL_MACHINE_RAW_SIZE;
+  if (LzmaEncode((unsigned char *) *core_img + GRUB_KERNEL_MACHINE_RAW_SIZE,
+                 core_size,
+                 (unsigned char *) kernel_img + GRUB_KERNEL_MACHINE_RAW_SIZE,
+                 kernel_size - GRUB_KERNEL_MACHINE_RAW_SIZE,
+                 &props, out_props, &out_props_size,
+                 0, NULL, &g_Alloc, &g_Alloc) != SZ_OK)
+    grub_util_error ("cannot compress the kernel image");
+
+  *core_size += GRUB_KERNEL_MACHINE_RAW_SIZE;
+}
+
+#endif
+
 static void
 generate_image (const char *dir, char *prefix, FILE *out, char *mods[], char *memdisk_path)
 {
@@ -94,19 +146,21 @@ generate_image (const char *dir, char *prefix, FILE *out, char *mods[], char *me
   kernel_size = grub_util_get_image_size (kernel_path);
 
   total_module_size = sizeof (struct grub_module_info);
+
+  if (memdisk_path)
+    {
+      memdisk_size = ALIGN_UP(grub_util_get_image_size (memdisk_path), 512);
+      grub_util_info ("the size of memory disk is 0x%x", memdisk_size);
+      total_module_size += memdisk_size + sizeof (struct grub_module_header);
+    }
+
   for (p = path_list; p; p = p->next)
     total_module_size += (grub_util_get_image_size (p->name)
 			  + sizeof (struct grub_module_header));
 
   grub_util_info ("the total module size is 0x%x", total_module_size);
 
-  if (memdisk_path)
-    {
-      memdisk_size = ALIGN_UP(grub_util_get_image_size (memdisk_path), 512);
-      grub_util_info ("the size of memory disk is 0x%x", memdisk_size);
-    }
-
-  kernel_img = xmalloc (kernel_size + total_module_size + memdisk_size);
+  kernel_img = xmalloc (kernel_size + total_module_size);
   grub_util_load_image (kernel_path, kernel_img);
 
   if (GRUB_KERNEL_MACHINE_PREFIX + strlen (prefix) + 1 > GRUB_KERNEL_MACHINE_DATA_END)
@@ -128,7 +182,7 @@ generate_image (const char *dir, char *prefix, FILE *out, char *mods[], char *me
       mod_size = grub_util_get_image_size (p->name);
       
       header = (struct grub_module_header *) (kernel_img + offset);
-      header->offset = grub_cpu_to_le32 (sizeof (*header));
+      header->type = grub_cpu_to_le32 (OBJ_TYPE_ELF);
       header->size = grub_cpu_to_le32 (mod_size + sizeof (*header));
       offset += sizeof (*header);
 
@@ -138,11 +192,18 @@ generate_image (const char *dir, char *prefix, FILE *out, char *mods[], char *me
 
   if (memdisk_path)
     {
+      struct grub_module_header *header;
+      
+      header = (struct grub_module_header *) (kernel_img + offset);
+      header->type = grub_cpu_to_le32 (OBJ_TYPE_MEMDISK);
+      header->size = grub_cpu_to_le32 (memdisk_size + sizeof (*header));
+      offset += sizeof (*header);
+
       grub_util_load_image (memdisk_path, kernel_img + offset);
       offset += memdisk_size;
     }
 
-  compress_kernel (kernel_img, kernel_size + total_module_size + memdisk_size,
+  compress_kernel (kernel_img, kernel_size + total_module_size,
 		   &core_img, &core_size);
 
   grub_util_info ("the core size is 0x%x", core_size);
@@ -177,10 +238,18 @@ generate_image (const char *dir, char *prefix, FILE *out, char *mods[], char *me
     = grub_cpu_to_le32 (total_module_size);
   *((grub_uint32_t *) (core_img + GRUB_KERNEL_MACHINE_KERNEL_IMAGE_SIZE))
     = grub_cpu_to_le32 (kernel_size);
-  *((grub_uint32_t *) (core_img + GRUB_KERNEL_MACHINE_MEMDISK_IMAGE_SIZE))
-    = grub_cpu_to_le32 (memdisk_size);
   *((grub_uint32_t *) (core_img + GRUB_KERNEL_MACHINE_COMPRESSED_SIZE))
     = grub_cpu_to_le32 (core_size - GRUB_KERNEL_MACHINE_RAW_SIZE);
+
+  /* If we included a drive in our prefix, let GRUB know it doesn't have to
+     prepend the drive told by BIOS.  */
+  if (prefix[0] == '(')
+    {
+      *((grub_int32_t *) (core_img + GRUB_KERNEL_MACHINE_INSTALL_DOS_PART))
+	= grub_cpu_to_le32 (-2);
+      *((grub_int32_t *) (core_img + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART))
+	= grub_cpu_to_le32 (-2);
+    }
 
   if (core_size > GRUB_MEMORY_MACHINE_UPPER - GRUB_MEMORY_MACHINE_LINK_ADDR)
     grub_util_error ("Core image is too big (%p > %p)\n", core_size,
@@ -278,6 +347,11 @@ main (int argc, char *argv[])
 	      free (memdisk);
 
 	    memdisk = xstrdup (optarg);
+	
+	    if (prefix)
+	      free (prefix);
+
+	    prefix = xstrdup ("(memdisk)/boot/grub");
 	    break;
 
 	  case 'h':

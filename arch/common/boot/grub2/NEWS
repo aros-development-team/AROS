@@ -1,3 +1,52 @@
+New in 1.97 - :
+
+* update-grub is renamed to grub-mkconfig.
+
+* When booting from PXE, PXE can be used to load files.
+
+* High resolution timer support.
+
+* Image loaders now support IO buffering.
+
+* Add `crc' command.
+
+* Add Cygwin support.
+
+* Add grub-pe2elf to convert PE modules to ELF modules.
+
+* Add x86_64 EFI support.
+
+* Add support for LZMA compression.
+
+* Support for saving the environment from and loading the environment
+  from a file.
+
+* Allow the UUID to be used as device name.
+
+* The `search' command can use UUIDs now.
+
+* Add support for IEEE 1275 on i386.
+
+* Create partmap.lst and use it to automatically load partition map
+  modules.
+
+* grub-mkconfig supports os-prober to add operating systems to the
+  boot menu.
+
+* The ATA driver supports filesystems bigger than 2TB.
+
+* Add support for the UDF, AFS and EXT4 filesystems.
+
+* The ISO9660 filesystem supports the Joliet extension
+
+* Add aout and BSD kernel loaders.
+
+* Add new command `sleep'.
+
+* Support for direct access to AT keyboards.
+
+* New utility `grub-fstest'.
+
 New in 1.96 - 2008-02-03:
 
 * The license term is changed to GNU General Public License Version 3.

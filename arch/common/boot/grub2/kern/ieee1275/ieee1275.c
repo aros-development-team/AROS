@@ -90,7 +90,7 @@ grub_ieee1275_get_integer_property (grub_ieee1275_phandle_t phandle,
   /* Integer properties are always in big endian.  */
   if (ret == 0)
     {
-      int i;
+      unsigned int i;
       size /= sizeof (grub_uint32_t);
       for (i = 0; i < size; i++)
 	buf[i] = grub_be_to_cpu32 (buf[i]);
@@ -389,6 +389,9 @@ grub_ieee1275_interpret (const char *command, grub_ieee1275_cell_t *catch)
     grub_ieee1275_cell_t catch;
   }
   args;
+
+  if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_CANNOT_INTERPRET))
+    return -1;
 
   INIT_IEEE1275_COMMON (&args.common, "interpret", 1, 1);
   args.command = (grub_ieee1275_cell_t) command;

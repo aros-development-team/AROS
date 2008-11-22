@@ -21,7 +21,7 @@
 #include <grub/misc.h>
 #include <grub/loader.h>
 #include <grub/mm.h>
-#include <grub/machine/time.h>
+#include <grub/time.h>
 #include <grub/env.h>
 #include <grub/script.h>
 
@@ -326,7 +326,7 @@ static int
 run_menu (grub_menu_t menu, int nested)
 {
   int first, offset;
-  unsigned long saved_time;
+  grub_uint64_t saved_time;
   int default_entry;
   int timeout;
   
@@ -351,7 +351,7 @@ run_menu (grub_menu_t menu, int nested)
     }
 
   /* Initialize the time.  */
-  saved_time = grub_get_rtc ();
+  saved_time = grub_get_time_ms ();
 
  refresh:
   grub_setcursor (0);
@@ -371,10 +371,10 @@ run_menu (grub_menu_t menu, int nested)
       
       if (timeout > 0)
 	{
-	  unsigned long current_time;
+	  grub_uint64_t current_time;
 
-	  current_time = grub_get_rtc ();
-	  if (current_time - saved_time >= GRUB_TICKS_PER_SECOND)
+	  current_time = grub_get_time_ms ();
+	  if (current_time - saved_time >= 1000)
 	    {
 	      timeout--;
 	      set_timeout (timeout);
@@ -405,7 +405,23 @@ run_menu (grub_menu_t menu, int nested)
 	  
 	  switch (c)
 	    {
-	    case 16:
+	    case GRUB_TERM_HOME:
+	      first = 0;
+	      offset = 0;
+	      print_entries (menu, first, offset);
+	      break;
+
+	    case GRUB_TERM_END:
+	      offset = menu->size - 1;
+	      if (offset > GRUB_TERM_NUM_ENTRIES - 1)
+		{
+		  first = offset - (GRUB_TERM_NUM_ENTRIES - 1);
+		  offset = GRUB_TERM_NUM_ENTRIES - 1;
+		}
+		print_entries (menu, first, offset);
+	      break;
+
+	    case GRUB_TERM_UP:
 	    case '^':
 	      if (offset > 0)
 		{
@@ -422,7 +438,7 @@ run_menu (grub_menu_t menu, int nested)
 		}
 	      break;
 	      
-	    case 14:
+	    case GRUB_TERM_DOWN:
 	    case 'v':
 	      if (menu->size > first + offset + 1)
 		{
@@ -440,6 +456,57 @@ run_menu (grub_menu_t menu, int nested)
 		      print_entries (menu, first, offset);
 		    }
 		}
+	      break;
+	    
+	    case GRUB_TERM_PPAGE:
+	      if (first == 0)
+		{
+		  offset = 0;
+		}
+	      else
+		{
+		  first -= GRUB_TERM_NUM_ENTRIES;
+
+		  if (first < 0)
+		    {
+		      offset += first;
+		      first = 0;
+		    }
+		}
+	      print_entries (menu, first, offset);
+	      break;
+
+	    case GRUB_TERM_NPAGE:
+	      if (offset == 0)
+		{
+		  offset += GRUB_TERM_NUM_ENTRIES - 1;
+		  if (first + offset >= menu->size)
+		    {
+		      offset = menu->size - first - 1;
+		    }
+		}
+	      else
+		{
+		  first += GRUB_TERM_NUM_ENTRIES;
+			
+		  if (first + offset >= menu->size)
+		    {
+		      first -= GRUB_TERM_NUM_ENTRIES;
+		      offset += GRUB_TERM_NUM_ENTRIES;
+		      
+		      if (offset > menu->size - 1 ||
+		                     offset > GRUB_TERM_NUM_ENTRIES - 1)
+			{
+			  offset = menu->size - first - 1;
+			}
+		      if (offset > GRUB_TERM_NUM_ENTRIES)
+		        {
+			  first += offset - GRUB_TERM_NUM_ENTRIES + 1;
+			  offset = GRUB_TERM_NUM_ENTRIES - 1;
+			}
+		    }
+		}
+	      print_entries (menu, first, offset);
 	      break;
 	      
 	    case '\n':

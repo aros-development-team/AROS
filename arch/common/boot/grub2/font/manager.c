@@ -23,6 +23,7 @@
 #include <grub/types.h>
 #include <grub/mm.h>
 #include <grub/font.h>
+#include <grub/bufio.h>
 
 struct entry
 {
@@ -69,7 +70,7 @@ add_font (const char *filename)
   grub_uint32_t num, i;
   struct font *font = 0;
 
-  file = grub_file_open (filename);
+  file = grub_buffile_open (filename, 0);
   if (! file)
     goto fail;
 

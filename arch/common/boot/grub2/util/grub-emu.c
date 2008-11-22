@@ -27,7 +27,7 @@
 #include <grub/mm.h>
 #include <grub/setjmp.h>
 #include <grub/fs.h>
-#include <grub/util/biosdisk.h>
+#include <grub/util/hostdisk.h>
 #include <grub/dl.h>
 #include <grub/machine/console.h>
 #include <grub/util/misc.h>
@@ -71,8 +71,6 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 void
 grub_machine_init (void)
 {
-  signal (SIGINT, SIG_IGN);
-  grub_console_init ();
 }
 
 void
@@ -183,10 +181,11 @@ main (int argc, char *argv[])
       sleep (1);
     }
   
+  signal (SIGINT, SIG_IGN);
+  grub_console_init ();
+
   /* XXX: This is a bit unportable.  */
   grub_util_biosdisk_init (dev_map);
-
-  grub_hostfs_init ();
 
   grub_init_all ();
 
@@ -216,8 +215,6 @@ main (int argc, char *argv[])
     grub_main ();
 
   grub_fini_all ();
-
-  grub_hostfs_fini ();
 
   grub_machine_fini ();
   

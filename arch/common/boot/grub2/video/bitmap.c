@@ -78,7 +78,7 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
 
   switch (blit_format)
     {
-      case GRUB_VIDEO_BLIT_FORMAT_R8G8B8A8:
+      case GRUB_VIDEO_BLIT_FORMAT_RGBA_8888:
         mode_info->mode_type = GRUB_VIDEO_MODE_TYPE_RGB 
                                | GRUB_VIDEO_MODE_TYPE_ALPHA;
         mode_info->bpp = 32;
@@ -94,7 +94,7 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
         mode_info->reserved_field_pos = 24;
         break;
 
-      case GRUB_VIDEO_BLIT_FORMAT_R8G8B8:
+      case GRUB_VIDEO_BLIT_FORMAT_RGB_888:
         mode_info->mode_type = GRUB_VIDEO_MODE_TYPE_RGB;
         mode_info->bpp = 24;
         mode_info->bytes_per_pixel = 3;

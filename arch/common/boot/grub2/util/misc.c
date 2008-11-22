@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,9 +27,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include <grub/kernel.h>
+#include <grub/misc.h>
+#include <grub/cache.h>
 #include <grub/util/misc.h>
 #include <grub/mm.h>
 #include <grub/term.h>
+#include <grub/time.h>
 #include <grub/machine/time.h>
 
 /* Include malloc.h, only if memalign is available. It is known that
@@ -68,6 +72,19 @@ grub_util_error (const char *fmt, ...)
   va_end (ap);
   fputc ('\n', stderr);
   exit (1);
+}
+
+int
+grub_err_printf (const char *fmt, ...)
+{
+  va_list ap;
+  int ret;
+  
+  va_start (ap, fmt);
+  ret = vfprintf (stderr, fmt, ap);
+  va_end (ap);
+
+  return ret;
 }
 
 void *
@@ -242,6 +259,8 @@ grub_memalign (grub_size_t align, grub_size_t size)
 #elif defined(HAVE_MEMALIGN)
   p = memalign (align, size);
 #else
+  (void) align;
+  (void) size;
   grub_util_error ("grub_memalign is not supported");
 #endif
   
@@ -281,8 +300,97 @@ grub_get_rtc (void)
 	     * GRUB_TICKS_PER_SECOND / 1000000));
 }
 
+grub_uint64_t
+grub_get_time_ms (void)
+{
+  struct timeval tv;
+
+  gettimeofday (&tv, 0);
+  
+  return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
+
 void 
 grub_arch_sync_caches (void *address __attribute__ ((unused)),
 		       grub_size_t len __attribute__ ((unused)))
 {
 }
+
+#ifndef  HAVE_ASPRINTF
+
+int
+asprintf (char **buf, const char *fmt, ...)
+{
+  int status;
+  va_list ap;
+
+  /* Should be large enough.  */
+  *buf = xmalloc (512);
+
+  va_start (ap, fmt);
+  status = vsprintf (*buf, fmt, ap);
+  va_end (ap);
+
+  return status;
+}
+
+#endif
+
+#ifdef __MINGW32__
+
+#include <windows.h>
+#include <winioctl.h>
+
+void sync (void)
+{
+}
+
+void sleep (int s)
+{
+  Sleep (s * 1000);
+}
+
+grub_int64_t
+grub_util_get_disk_size (char *name)
+{
+  HANDLE hd;
+  grub_int64_t size = -1LL;
+
+  hd = CreateFile (name, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   0, OPEN_EXISTING, 0, 0);
+
+  if (hd == INVALID_HANDLE_VALUE)
+    return size;
+
+  if (((name[0] == '/') || (name[0] == '\\')) &&
+      ((name[1] == '/') || (name[1] == '\\')) &&
+      (name[2] == '.') &&
+      ((name[3] == '/') || (name[3] == '\\')) &&
+      (! strncasecmp (name + 4, "PHYSICALDRIVE", 13)))
+    {
+      DWORD nr;
+      DISK_GEOMETRY g;
+
+      if (! DeviceIoControl (hd, IOCTL_DISK_GET_DRIVE_GEOMETRY,
+                             0, 0, &g, sizeof (g), &nr, 0))
+        goto fail;
+
+      size = g.Cylinders.QuadPart;
+      size *= g.TracksPerCylinder * g.SectorsPerTrack * g.BytesPerSector;
+    }
+  else
+    {
+      LARGE_INTEGER s;
+
+      s.LowPart = GetFileSize (hd, &s.HighPart);
+      size = s.QuadPart;
+    }
+
+fail:
+
+  CloseHandle (hd);
+
+  return size;
+}
+
+#endif

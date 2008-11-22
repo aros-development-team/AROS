@@ -66,12 +66,6 @@ grub_biosdisk_iterate (int (*hook) (const char *name))
   int drive;
   int num_floppies;
 
-  /* For floppy disks, we can get the number safely.  */
-  num_floppies = grub_biosdisk_get_num_floppies ();
-  for (drive = 0; drive < num_floppies; drive++)
-    if (grub_biosdisk_call_hook (hook, drive))
-      return 1;
-  
   /* For hard disks, attempt to read the MBR.  */
   for (drive = 0x80; drive < 0x90; drive++)
     {
@@ -91,6 +85,12 @@ grub_biosdisk_iterate (int (*hook) (const char *name))
       if (grub_biosdisk_call_hook (hook, cd_drive))
       return 1;
     }
+
+  /* For floppy disks, we can get the number safely.  */
+  num_floppies = grub_biosdisk_get_num_floppies ();
+  for (drive = 0; drive < num_floppies; drive++)
+    if (grub_biosdisk_call_hook (hook, drive))
+      return 1;
 
   return 0;
 }
@@ -120,7 +120,7 @@ grub_biosdisk_open (const char *name, grub_disk_t disk)
     {
       data->flags = GRUB_BIOSDISK_FLAG_LBA | GRUB_BIOSDISK_FLAG_CDROM;
       data->sectors = 32;
-      total_sectors = 9000000;  /* TODO: get the correct size.  */
+      total_sectors = ULONG_MAX;  /* TODO: get the correct size.  */
     }
   else if (drive & 0x80)
     {
@@ -234,15 +234,17 @@ grub_biosdisk_rw (int cmd, grub_disk_t disk,
     {
       unsigned coff, hoff, soff;
       unsigned head;
-      unsigned real_sector = (unsigned) sector;
       
-      /* It is impossible to reach over 2TB with the traditional
-	 CHS access.  */
-      if (sector > ~0UL)
+      /* It is impossible to reach over 8064 MiB (a bit less than LBA24) with
+	 the traditional CHS access.  */
+      if (sector >
+	  1024 /* cylinders */ *
+	  256 /* heads */ *
+	  63 /* spt */)
 	return grub_error (GRUB_ERR_OUT_OF_RANGE, "out of disk");
 
-      soff = real_sector % data->sectors + 1;
-      head = real_sector / data->sectors;
+      soff = ((grub_uint32_t) sector) % data->sectors + 1;
+      head = ((grub_uint32_t) sector) / data->sectors;
       hoff = head % data->heads;
       coff = head / data->heads;
 

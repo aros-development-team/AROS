@@ -1,7 +1,7 @@
 /* xfs.c - XFS.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,25 +37,31 @@ struct grub_xfs_sblock
 {
   grub_uint8_t magic[4];
   grub_uint32_t bsize;
-  grub_uint8_t unused1[48];
+  grub_uint8_t unused1[24];
+  grub_uint16_t uuid[8];
+  grub_uint8_t unused2[8];
   grub_uint64_t rootino;
-  grub_uint8_t unused2[20];
-  grub_uint32_t agsize; 
   grub_uint8_t unused3[20];
+  grub_uint32_t agsize; 
+  grub_uint8_t unused4[20];
   grub_uint8_t label[12];
   grub_uint8_t log2_bsize;
-  grub_uint8_t unused4[2];
+  grub_uint8_t unused5[2];
   grub_uint8_t log2_inop;
   grub_uint8_t log2_agblk;
-  grub_uint8_t unused5[67];
+  grub_uint8_t unused6[67];
   grub_uint8_t log2_dirblk;
 } __attribute__ ((packed));
 
 struct grub_xfs_dir_header
 {
-  grub_uint8_t entries;
+  grub_uint8_t count;
   grub_uint8_t smallino;
-  grub_uint32_t parent;
+  union
+  {
+    grub_uint32_t i4;
+    grub_uint64_t i8;
+  } parent __attribute__ ((packed));
 } __attribute__ ((packed));
 
 struct grub_xfs_dir_entry
@@ -161,6 +167,10 @@ static grub_dl_t my_mod;
 #define GRUB_XFS_INO_AG(data,ino)		\
   (grub_be_to_cpu64 (ino) >> GRUB_XFS_INO_AGBITS (data))
 
+#define GRUB_XFS_FSB_TO_BLOCK(data, fsb) \
+  (((fsb) >> (data)->sblock.log2_agblk) * (data)->agsize \
+ + ((fsb) & ((1 << (data)->sblock.log2_agblk) - 1)))
+
 #define GRUB_XFS_EXTENT_OFFSET(exts,ex) \
 	((grub_be_to_cpu32 (exts[ex][0]) & ~(1 << 31)) << 23 \
 	| grub_be_to_cpu32 (exts[ex][1]) >> 9)
@@ -220,8 +230,8 @@ grub_xfs_read_inode (struct grub_xfs_data *data, grub_uint64_t ino,
 }
 
 
-static int
-grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
+static grub_disk_addr_t
+grub_xfs_read_block (grub_fshelp_node_t node, grub_disk_addr_t fileblock)
 {
   struct grub_xfs_btree_node *leaf = 0;
   int ex, nrec;
@@ -244,7 +254,7 @@ grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
 
           for (i = 0; i < nrec; i++)
             {
-              if ((grub_uint64_t) fileblock < grub_be_to_cpu64 (keys[i]))
+              if (fileblock < grub_be_to_cpu64 (keys[i]))
                 break;
             }
 
@@ -292,8 +302,8 @@ grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
   for (ex = 0; ex < nrec; ex++)
     {
       grub_uint64_t start = GRUB_XFS_EXTENT_BLOCK (exts, ex);
-      int offset = GRUB_XFS_EXTENT_OFFSET (exts, ex);
-      int size = GRUB_XFS_EXTENT_SIZE (exts, ex);
+      grub_uint64_t offset = GRUB_XFS_EXTENT_OFFSET (exts, ex);
+      grub_uint64_t size = GRUB_XFS_EXTENT_SIZE (exts, ex);
 
       /* Sparse block.  */
       if (fileblock < offset)
@@ -308,7 +318,7 @@ grub_xfs_read_block (grub_fshelp_node_t node, int fileblock)
   if (leaf)
     grub_free (leaf);
 
-  return ret;
+  return GRUB_XFS_FSB_TO_BLOCK(node->data, ret);
 }
 
 
@@ -421,14 +431,14 @@ grub_xfs_iterate_dir (grub_fshelp_node_t dir,
 	   parent inode number is small too.  */
 	if (smallino)
 	  {
-	    parent = grub_be_to_cpu32 (diro->inode.data.dir.dirhead.parent);
+	    parent = grub_be_to_cpu32 (diro->inode.data.dir.dirhead.parent.i4);
 	    parent = grub_cpu_to_be64 (parent);
+	    /* The header is a bit smaller than usual.  */
+	    de = (struct grub_xfs_dir_entry *) ((char *) de - 4);
 	  }
 	else
 	  {
-	    parent = *(grub_uint64_t *) &diro->inode.data.dir.dirhead.parent;
-	    /* The header is a bit bigger than usual.  */
-	    de = (struct grub_xfs_dir_entry *) ((char *) de + 4);
+	    parent = diro->inode.data.dir.dirhead.parent.i8;
 	  }
 
 	/* Synthesize the direntries for `.' and `..'.  */
@@ -438,7 +448,7 @@ grub_xfs_iterate_dir (grub_fshelp_node_t dir,
 	if (call_hook (parent, ".."))
 	  return 1;
 
-	for (i = 0; i < diro->inode.data.dir.dirhead.entries; i++)
+	for (i = 0; i < diro->inode.data.dir.dirhead.count; i++)
 	  {
 	    grub_uint64_t ino;
 	    void *inopos = (((char *) de)
@@ -763,6 +773,38 @@ grub_xfs_label (grub_device_t device, char **label)
   return grub_errno;
 }
 
+static grub_err_t
+grub_xfs_uuid (grub_device_t device, char **uuid)
+{
+  struct grub_xfs_data *data;
+  grub_disk_t disk = device->disk;
+
+#ifndef GRUB_UTIL
+  grub_dl_ref (my_mod);
+#endif
+
+  data = grub_xfs_mount (disk);
+  if (data)
+    {
+      *uuid = grub_malloc (sizeof ("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"));
+      grub_sprintf (*uuid, "%04x%04x-%04x-%04x-%04x-%04x%04x%04x",
+		    grub_be_to_cpu16 (data->sblock.uuid[0]), grub_be_to_cpu16 (data->sblock.uuid[1]),
+		    grub_be_to_cpu16 (data->sblock.uuid[2]), grub_be_to_cpu16 (data->sblock.uuid[3]),
+		    grub_be_to_cpu16 (data->sblock.uuid[4]), grub_be_to_cpu16 (data->sblock.uuid[5]),
+		    grub_be_to_cpu16 (data->sblock.uuid[6]), grub_be_to_cpu16 (data->sblock.uuid[7]));
+    }
+  else
+    *uuid = NULL;
+
+#ifndef GRUB_UTIL
+  grub_dl_unref (my_mod);
+#endif
+
+  grub_free (data);
+
+  return grub_errno;
+}
+
 
 
 static struct grub_fs grub_xfs_fs =
@@ -773,6 +815,7 @@ static struct grub_fs grub_xfs_fs =
     .read = grub_xfs_read,
     .close = grub_xfs_close,
     .label = grub_xfs_label,
+    .uuid = grub_xfs_uuid,
     .next = 0
   };
 

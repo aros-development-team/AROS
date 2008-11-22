@@ -19,12 +19,27 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-. ${libdir}/grub/update-grub_lib
+. ${libdir}/grub/grub-mkconfig_lib
 
 if [ "x${GRUB_DISTRIBUTOR}" = "x" ] ; then
   OS=GNU/Linux
 else
   OS="${GRUB_DISTRIBUTOR} GNU/Linux"
+fi
+
+# loop-AES arranges things so that /dev/loop/X can be our root device, but
+# the initrds that Linux uses don't like that.
+case ${GRUB_DEVICE} in
+  /dev/loop/*|/dev/loop[0-9])
+    GRUB_DEVICE=`losetup ${GRUB_DEVICE} | sed -e "s/^[^(]*(\([^)]\+\)).*/\1/"`
+  ;;
+esac
+
+if [ "x${GRUB_DEVICE_UUID}" = "x" ] || [ "x${GRUB_DISABLE_LINUX_UUID}" = "xtrue" ] \
+    || ! test -e "/dev/disk/by-uuid/${GRUB_DEVICE_UUID}" ; then
+  LINUX_ROOT_DEVICE=${GRUB_DEVICE}
+else
+  LINUX_ROOT_DEVICE=UUID=${GRUB_DEVICE_UUID}
 fi
 
 test_numeric ()
@@ -87,9 +102,10 @@ while [ "x$list" != "x" ] ; do
   echo "Found linux image: $linux" >&2
   basename=`basename $linux`
   dirname=`dirname $linux`
-  grub_dirname=`echo ${dirname} | sed -e "s%^/boot%${GRUB_DRIVE_BOOT}%g"`
+  rel_dirname=`make_system_path_relative_to_its_root $dirname`
   version=`echo $basename | sed -e "s,^[^0-9]*-,,g"`
   alt_version=`echo $version | sed -e "s,\.old$,,g"`
+  linux_root_device_thisversion="${LINUX_ROOT_DEVICE}"
 
   initrd=
   for i in "initrd.img-${version}" "initrd-${version}.img" \
@@ -101,15 +117,21 @@ while [ "x$list" != "x" ] ; do
   done
   if test -n "${initrd}" ; then
     echo "Found initrd image: ${dirname}/${initrd}" >&2
+  else
+    # "UUID=" magic is parsed by initrds.  Since there's no initrd, it can't work here.
+    linux_root_device_thisversion=${GRUB_DEVICE}
   fi
 
   cat << EOF
 menuentry "${OS}, linux ${version}" {
-	linux	${grub_dirname}/${basename} root=${GRUB_DEVICE} ro ${GRUB_CMDLINE_LINUX}
+EOF
+  prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/"
+  cat << EOF
+	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro ${GRUB_CMDLINE_LINUX} ${GRUB_CMDLINE_LINUX_DEFAULT}
 EOF
   if test -n "${initrd}" ; then
     cat << EOF
-	initrd	${grub_dirname}/${initrd}
+	initrd	${rel_dirname}/${initrd}
 EOF
   fi
   cat << EOF
@@ -118,11 +140,14 @@ EOF
 
   cat << EOF
 menuentry "${OS}, linux ${version} (single-user mode)" {
-	linux	${grub_dirname}/${basename} root=${GRUB_DEVICE} ro single ${GRUB_CMDLINE_LINUX}
+EOF
+  prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/"
+  cat << EOF
+	linux	${rel_dirname}/${basename} root=${linux_root_device_thisversion} ro single ${GRUB_CMDLINE_LINUX}
 EOF
   if test -n "${initrd}" ; then
     cat << EOF
-	initrd	${grub_dirname}/${initrd}
+	initrd	${rel_dirname}/${initrd}
 EOF
   fi
   cat << EOF

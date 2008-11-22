@@ -123,9 +123,9 @@ grub_elf32_load_phdrs (grub_elf_t elf)
 
   phdrs_size = elf->ehdr.ehdr32.e_phnum * elf->ehdr.ehdr32.e_phentsize;
 
-  grub_dprintf ("elf", "Loading program headers at 0x%llx, size 0x%x.\n",
+  grub_dprintf ("elf", "Loading program headers at 0x%llx, size 0x%lx.\n",
 		(unsigned long long) elf->ehdr.ehdr32.e_phoff,
-		phdrs_size);
+		(unsigned long) phdrs_size);
 
   elf->phdrs = grub_malloc (phdrs_size);
   if (! elf->phdrs)
@@ -232,9 +232,9 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
     if (phdr->p_type != PT_LOAD)
       return 0;
 
+    load_addr = phdr->p_paddr;
     if (load_hook && load_hook (phdr, &load_addr))
       return 1;
-    load_addr = phdr->p_paddr;
 
     if (load_addr < load_base)
       load_base = load_addr;
@@ -301,9 +301,9 @@ grub_elf64_load_phdrs (grub_elf_t elf)
 
   phdrs_size = elf->ehdr.ehdr64.e_phnum * elf->ehdr.ehdr64.e_phentsize;
 
-  grub_dprintf ("elf", "Loading program headers at 0x%llx, size 0x%x.\n",
+  grub_dprintf ("elf", "Loading program headers at 0x%llx, size 0x%lx.\n",
 		(unsigned long long) elf->ehdr.ehdr64.e_phoff,
-		phdrs_size);
+		(unsigned long) phdrs_size);
 
   elf->phdrs = grub_malloc (phdrs_size);
   if (! elf->phdrs)
@@ -411,9 +411,9 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
     if (phdr->p_type != PT_LOAD)
       return 0;
 
+    load_addr = phdr->p_paddr;
     if (load_hook && load_hook (phdr, &load_addr))
       return 1;
-    load_addr = phdr->p_paddr;
 
     if (load_addr < load_base)
       load_base = load_addr;

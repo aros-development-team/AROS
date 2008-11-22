@@ -26,7 +26,8 @@
 .globl _start; _start:
 
         /* Root drive will default to boot drive */
-        movb    $0xFF, %dh
+        movb	$0xFF, %dh
+        movb	$0x7F, %dl
         
 	/* Jump to the real world */
 	ljmp	$0, $0x8200

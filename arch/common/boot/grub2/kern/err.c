@@ -1,7 +1,7 @@
 /* err.c - error handling routines */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -121,14 +121,14 @@ grub_print_error (void)
   do
     {
       if (grub_errno != GRUB_ERR_NONE)
-        grub_printf ("error: %s\n", grub_errmsg);
+        grub_err_printf ("error: %s\n", grub_errmsg);
     } 
   while (grub_error_pop ());
   
   /* If there was an assert while using error stack, report about it.  */
   if (grub_error_stack_assert)
     {
-      grub_printf ("assert: error stack overflow detected!\n");
+      grub_err_printf ("assert: error stack overflow detected!\n");
       grub_error_stack_assert = 0;
     }
 }

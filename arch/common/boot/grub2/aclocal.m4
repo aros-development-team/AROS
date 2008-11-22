@@ -1,3 +1,19 @@
+dnl Check whether target compiler is working
+AC_DEFUN(grub_PROG_TARGET_CC,
+[AC_MSG_CHECKING([whether target compiler is working])
+AC_CACHE_VAL(grub_cv_prog_target_cc,
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+  		[grub_cv_prog_target_cc=yes],
+		[grub_cv_prog_target_cc=no])
+])
+AC_MSG_RESULT([$grub_cv_prog_target_cc])
+
+if test "x$grub_cv_prog_target_cc" = xno; then
+  AC_MSG_ERROR([cannot compile for the target])
+fi
+])
+
+
 dnl grub_ASM_USCORE checks if C symbols get an underscore after
 dnl compiling to assembler.
 dnl Written by Pavel Roskin. Based on grub_ASM_EXT_C written by
@@ -57,11 +73,11 @@ else
 fi
 grub_cv_prog_objcopy_absolute=yes
 for link_addr in 2000 8000 7C00; do
-  if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} ${LDFLAGS} -nostdlib -Wl,-N -Wl,-Ttext -Wl,$link_addr conftest.o -o conftest.exec]); then :
+  if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} -Wl,-Ttext -Wl,$link_addr conftest.o -o conftest.exec]); then :
   else
     AC_MSG_ERROR([${CC-cc} cannot link at address $link_addr])
   fi
-  if AC_TRY_COMMAND([${OBJCOPY-objcopy} -O binary conftest.exec conftest]); then :
+  if AC_TRY_COMMAND([${OBJCOPY-objcopy} --only-section=.text -O binary conftest.exec conftest]); then :
   else
     AC_MSG_ERROR([${OBJCOPY-objcopy} cannot create binary files])
   fi
@@ -77,6 +93,26 @@ AC_MSG_RESULT([$grub_cv_prog_objcopy_absolute])
 
 if test "x$grub_cv_prog_objcopy_absolute" = xno; then
   AC_MSG_ERROR([GRUB requires a working absolute objcopy; upgrade your binutils])
+fi
+])
+
+
+dnl Supply --build-id=none to ld if building modules.
+dnl This suppresses warnings from ld on some systems
+AC_DEFUN(grub_PROG_LD_BUILD_ID_NONE,
+[AC_MSG_CHECKING([whether linker accepts --build-id=none])
+AC_CACHE_VAL(grub_cv_prog_ld_build_id_none,
+[save_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS -Wl,--build-id=none"
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+	       [grub_cv_prog_ld_build_id_none=yes],
+	       [grub_cv_prog_ld_build_id_none=no])
+LDFLAGS="$save_LDFLAGS"
+])
+AC_MSG_RESULT([$grub_cv_prog_ld_build_id_none])
+
+if test "x$grub_cv_prog_ld_build_id_none" = xyes; then
+  MODULE_LDFLAGS="$MODULE_LDFLAGS -Wl,--build-id=none"
 fi
 ])
 
@@ -194,17 +230,19 @@ AC_DEFUN(grub_CHECK_START_SYMBOL,
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if start is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_start_symbol,
-[AC_TRY_LINK([], [asm ("incl start")],
-   grub_cv_check_start_symbol=yes,
-   grub_cv_check_start_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl start")]])],
+		[grub_cv_check_start_symbol=yes],
+		[grub_cv_check_start_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_start_symbol])
 
 AC_MSG_CHECKING([if _start is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_start_symbol,
-[AC_TRY_LINK([], [asm ("incl _start")],
-   grub_cv_check_uscore_start_symbol=yes,
-   grub_cv_check_uscore_start_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl _start")]])],
+		[grub_cv_check_uscore_start_symbol=yes],
+		[grub_cv_check_uscore_start_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_uscore_start_symbol])
 
@@ -225,25 +263,28 @@ AC_DEFUN(grub_CHECK_BSS_START_SYMBOL,
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if __bss_start is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_uscore_bss_start_symbol,
-[AC_TRY_LINK([], [asm ("incl __bss_start")],
-   grub_cv_check_uscore_uscore_bss_start_symbol=yes,
-   grub_cv_check_uscore_uscore_bss_start_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl __bss_start")]])],
+		[grub_cv_check_uscore_uscore_bss_start_symbol=yes],
+		[grub_cv_check_uscore_uscore_bss_start_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_uscore_uscore_bss_start_symbol])
 
 AC_MSG_CHECKING([if edata is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_edata_symbol,
-[AC_TRY_LINK([], [asm ("incl edata")],
-   grub_cv_check_edata_symbol=yes,
-   grub_cv_check_edata_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl edata")]])],
+		[grub_cv_check_edata_symbol=yes],
+		[grub_cv_check_edata_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_edata_symbol])
 
 AC_MSG_CHECKING([if _edata is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_edata_symbol,
-[AC_TRY_LINK([], [asm ("incl _edata")],
-   grub_cv_check_uscore_edata_symbol=yes,
-   grub_cv_check_uscore_edata_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl _edata")]])],
+		[grub_cv_check_uscore_edata_symbol=yes],
+		[grub_cv_check_uscore_edata_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_uscore_edata_symbol])
 
@@ -266,17 +307,19 @@ AC_DEFUN(grub_CHECK_END_SYMBOL,
 [AC_REQUIRE([AC_PROG_CC])
 AC_MSG_CHECKING([if end is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_end_symbol,
-[AC_TRY_LINK([], [asm ("incl end")],
-   grub_cv_check_end_symbol=yes,
-   grub_cv_check_end_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl end")]])],
+		[grub_cv_check_end_symbol=yes],
+		[grub_cv_check_end_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_end_symbol])
 
 AC_MSG_CHECKING([if _end is defined by the compiler])
 AC_CACHE_VAL(grub_cv_check_uscore_end_symbol,
-[AC_TRY_LINK([], [asm ("incl _end")],
-   grub_cv_check_uscore_end_symbol=yes,
-   grub_cv_check_uscore_end_symbol=no)])
+[AC_LINK_IFELSE([AC_LANG_PROGRAM([[]],
+		[[asm ("incl _end")]])],
+		[grub_cv_check_uscore_end_symbol=yes],
+		[grub_cv_check_uscore_end_symbol=no])])
 
 AC_MSG_RESULT([$grub_cv_check_uscore_end_symbol])
 
@@ -343,6 +386,33 @@ dnl So use regparm 2 until a better test is found.
 	[Catch gcc bug])
 fi
 ])
+
+dnl Check if the C compiler generates calls to `__enable_execute_stack()'.
+AC_DEFUN(grub_CHECK_ENABLE_EXECUTE_STACK,[
+AC_MSG_CHECKING([whether `$CC' generates calls to `__enable_execute_stack()'])
+AC_LANG_CONFTEST([[
+void f (int (*p) (void));
+void g (int i)
+{
+  int nestedfunc (void) { return i; }
+  f (nestedfunc);
+}
+]])
+if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} -S conftest.c]) && test -s conftest.s; then
+  true
+else
+  AC_MSG_ERROR([${CC-cc} failed to produce assembly code])
+fi
+if grep __enable_execute_stack conftest.s >/dev/null 2>&1; then
+  AC_DEFINE([NEED_ENABLE_EXECUTE_STACK], 1,
+	    [Define to 1 if GCC generates calls to __enable_execute_stack()])
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_RESULT([no])
+fi
+rm -f conftest*
+])
+
 
 dnl Check if the C compiler supports `-fstack-protector'.
 AC_DEFUN(grub_CHECK_STACK_PROTECTOR,[
@@ -359,6 +429,22 @@ if eval "$ac_compile -S -fstack-protector -o conftest.s" 2> /dev/null; then]
   rm -f conftest.s
 else
   ssp_possible=no]
+  AC_MSG_RESULT([no])
+[fi]
+])
+
+dnl Check if the C compiler supports `-mstack-arg-probe' (Cygwin).
+AC_DEFUN(grub_CHECK_STACK_ARG_PROBE,[
+[# Smashing stack arg probe.
+sap_possible=yes]
+AC_MSG_CHECKING([whether `$CC' accepts `-mstack-arg-probe'])
+AC_LANG_CONFTEST([[void foo (void) { volatile char a[8]; a[3]; }]])
+[if eval "$ac_compile -S -mstack-arg-probe -o conftest.s" 2> /dev/null; then]
+  AC_MSG_RESULT([yes])
+  [# Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
+  rm -f conftest.s
+else
+  sap_possible=no]
   AC_MSG_RESULT([no])
 [fi]
 ])

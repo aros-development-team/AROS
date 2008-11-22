@@ -30,7 +30,7 @@
 
 /* The size of a memory map obtained from the firmware. This must be
    a multiplier of 4KB.  */
-#define MEMORY_MAP_SIZE	0x1000
+#define MEMORY_MAP_SIZE	0x3000
 
 /* Maintain the list of allocated pages.  */
 struct allocated_page
@@ -59,7 +59,7 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
   grub_efi_status_t status;
   grub_efi_boot_services_t *b;
 
-#if GRUB_CPU_SIZEOF_VOID_P < 8
+#if GRUB_TARGET_SIZEOF_VOID_P < 8
   /* Limit the memory access to less than 4GB for 32-bit platforms.  */
   if (address > 0xffffffff)
     return 0;
@@ -79,7 +79,7 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
 #endif
 
   b = grub_efi_system_table->boot_services;
-  status = b->allocate_pages (type, GRUB_EFI_LOADER_DATA, pages, &address);
+  status = efi_call_4 (b->allocate_pages, type, GRUB_EFI_LOADER_DATA, pages, &address);
   if (status != GRUB_EFI_SUCCESS)
     return 0;
 
@@ -88,7 +88,7 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
       /* Uggh, the address 0 was allocated... This is too annoying,
 	 so reallocate another one.  */
       address = 0xffffffff;
-      status = b->allocate_pages (type, GRUB_EFI_LOADER_DATA, pages, &address);
+      status = efi_call_4 (b->allocate_pages, type, GRUB_EFI_LOADER_DATA, pages, &address);
       grub_efi_free_pages (0, pages);
       if (status != GRUB_EFI_SUCCESS)
 	return 0;
@@ -135,7 +135,7 @@ grub_efi_free_pages (grub_efi_physical_address_t address,
     }
   
   b = grub_efi_system_table->boot_services;
-  b->free_pages (address, pages);
+  efi_call_2 (b->free_pages, address, pages);
 }
 
 /* Get the memory map as defined in the EFI spec. Return 1 if successful,
@@ -159,7 +159,7 @@ grub_efi_get_memory_map (grub_efi_uintn_t *memory_map_size,
     descriptor_version = &version;
   
   b = grub_efi_system_table->boot_services;
-  status = b->get_memory_map (memory_map_size, memory_map, map_key,
+  status = efi_call_5 (b->get_memory_map, memory_map_size, memory_map, map_key,
 			      descriptor_size, descriptor_version);
   if (status == GRUB_EFI_SUCCESS)
     return 1;
@@ -218,7 +218,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
        desc = NEXT_MEMORY_DESCRIPTOR (desc, desc_size))
     {
       if (desc->type == GRUB_EFI_CONVENTIONAL_MEMORY
-#if GRUB_CPU_SIZEOF_VOID_P < 8
+#if GRUB_TARGET_SIZEOF_VOID_P < 8
 	  && desc->physical_start <= 0xffffffff
 #endif
 	  && desc->physical_start + PAGES_TO_BYTES (desc->num_pages) > 0x100000
@@ -234,7 +234,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
 	      desc->physical_start = 0x100000;
 	    }
 	  
-#if GRUB_CPU_SIZEOF_VOID_P < 8
+#if GRUB_TARGET_SIZEOF_VOID_P < 8
 	  if (BYTES_TO_PAGES (filtered_desc->physical_start)
 	      + filtered_desc->num_pages
 	      > BYTES_TO_PAGES (0x100000000LL))

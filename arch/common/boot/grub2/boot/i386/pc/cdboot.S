@@ -37,6 +37,7 @@
         .globl  start, _start
 
 start:
+_start:
 	call	next
 
 next:

@@ -1,0 +1,60 @@
+#! /bin/sh -e
+
+# grub-mkconfig helper script.
+# Copyright (C) 2008  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+. ${libdir}/grub/grub-mkconfig_lib
+
+devices=/boot/devices.hints
+if ! test -e ${devices} ; then
+  # not FreeBSD
+  exit 0
+fi
+
+if test -e /boot/kernel/kernel ; then
+  kfreebsd=/boot/kernel/kernel
+fi
+
+if [ "x$kfreebsd" != "x" ] ; then
+  echo "Found kernel of FreeBSD: $kfreebsd" >&2
+
+  kfreebsd_basename=`basename $kfreebsd`
+  kfreebsd_dirname=`dirname $kfreebsd`
+  kfreebsd_rel_dirname=`make_system_path_relative_to_its_root $kfreebsd_dirname`
+
+  devices_basename=`basename $devices`
+  devices_dirname=`dirname $devices`
+  devices_rel_dirname=`make_system_path_relative_to_its_root $devices_dirname`
+
+  root_device=`basename ${GRUB_DEVICE}`
+
+  # For "ufs" it's the same.  Do we care about the others?
+  kfreebsd_fs=${GRUB_FS}
+
+  cat << EOF
+menuentry "FreeBSD" {
+EOF
+  prepare_grub_to_access_device ${GRUB_DEVICE_BOOT} | sed -e "s/^/\t/"
+  cat << EOF
+	freebsd			${kfreebsd_rel_dirname}/${kfreebsd_basename}
+	freebsd_loadenv		${devices_rel_dirname}/${devices_basename}
+	set FreeBSD.vfs.root.mountfrom=${kfreebsd_fs}:${root_device}
+}
+EOF
+fi

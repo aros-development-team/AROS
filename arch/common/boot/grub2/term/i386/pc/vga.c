@@ -473,15 +473,13 @@ grub_vga_setcursor (int on)
     }
 }
 
-static struct grub_term grub_vga_term =
+static struct grub_term_output grub_vga_term =
   {
     .name = "vga",
     .init = grub_vga_mod_init,
     .fini = grub_vga_mod_fini,
     .putchar = grub_vga_putchar,
     .getcharwidth = grub_vga_getcharwidth,
-    .checkkey = grub_console_checkkey,
-    .getkey = grub_console_getkey,
     .getwh = grub_vga_getwh,
     .getxy = grub_vga_getxy,
     .gotoxy = grub_vga_gotoxy,
@@ -489,7 +487,6 @@ static struct grub_term grub_vga_term =
     .setcolorstate = grub_vga_setcolorstate,
     .setcursor = grub_vga_setcursor,
     .flags = 0,
-    .next = 0
   };
 
 GRUB_MOD_INIT(vga)
@@ -497,10 +494,10 @@ GRUB_MOD_INIT(vga)
 #ifndef GRUB_UTIL
   my_mod = mod;
 #endif
-  grub_term_register (&grub_vga_term);
+  grub_term_register_output (&grub_vga_term);
 }
 
 GRUB_MOD_FINI(vga)
 {
-  grub_term_unregister (&grub_vga_term);
+  grub_term_unregister_output (&grub_vga_term);
 }

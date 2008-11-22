@@ -13,11 +13,20 @@
 /* Define it to \"data32\" or \"data32;\" to make GAS happy */
 #undef DATA32
 
+/* Use lzma compression */
+#undef ENABLE_LZMA
+
+/* Use lzo compression */
+#undef ENABLE_LZO
+
 /* Define it to either end or _end */
 #undef END_SYMBOL
 
 /* Define if C symbols get an underscore after compilation */
 #undef HAVE_ASM_USCORE
+
+/* Define to 1 if you have the `asprintf' function. */
+#undef HAVE_ASPRINTF
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
@@ -69,6 +78,9 @@
 
 /* Define to 1 if you enable memory manager debugging. */
 #undef MM_DEBUG
+
+/* Define to 1 if GCC generates calls to __enable_execute_stack() */
+#undef NEED_ENABLE_EXECUTE_STACK
 
 /* Catch gcc bug */
 #undef NESTED_FUNC_ATTR

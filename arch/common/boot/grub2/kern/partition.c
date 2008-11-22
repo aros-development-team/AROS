@@ -103,12 +103,10 @@ grub_partition_iterate (struct grub_disk *disk,
   
   int part_map_iterate (const grub_partition_map_t p)
     {
-      grub_err_t err;
-
       grub_dprintf ("partition", "Detecting %s...\n", p->name);
-      err = p->iterate (disk, part_map_iterate_hook);
+      p->iterate (disk, part_map_iterate_hook);
 
-      if (err != GRUB_ERR_NONE)
+      if (grub_errno != GRUB_ERR_NONE)
 	{
 	  /* Continue to next partition map type.  */
 	  grub_dprintf ("partition", "%s detection failed.\n", p->name);

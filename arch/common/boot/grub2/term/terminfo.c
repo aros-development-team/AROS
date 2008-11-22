@@ -98,8 +98,8 @@ grub_terminfo_set_current (const char *str)
       term.cls               = grub_strdup ("\e[H\e[J");
       term.reverse_video_on  = grub_strdup ("\e[7m");
       term.reverse_video_off = grub_strdup ("\e[m");
-      term.cursor_on         = grub_strdup ("\e[?25l");
-      term.cursor_off        = grub_strdup ("\e[?25h");
+      term.cursor_on         = grub_strdup ("\e[?25h");
+      term.cursor_off        = grub_strdup ("\e[?25l");
       return grub_errno;
     }
   

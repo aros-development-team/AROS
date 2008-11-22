@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,23 +25,28 @@
 struct grub_video_i386_vbeblit_info;
 
 void
-grub_video_i386_vbefill_R8G8B8A8 (struct grub_video_i386_vbeblit_info *dst,
+grub_video_i386_vbefill (struct grub_video_i386_vbeblit_info *dst,
+                         grub_video_color_t color, int x, int y,
+                         int width, int height);
+
+void
+grub_video_i386_vbefill_direct32 (struct grub_video_i386_vbeblit_info *dst,
                                   grub_video_color_t color,  int x, int y,
                                   int width, int height);
 
 void
-grub_video_i386_vbefill_R8G8B8 (struct grub_video_i386_vbeblit_info *dst,
-                                grub_video_color_t color, int x, int y,
-                                int width, int height);
+grub_video_i386_vbefill_direct24 (struct grub_video_i386_vbeblit_info *dst,
+                                  grub_video_color_t color, int x, int y,
+                                  int width, int height);
 
 void
-grub_video_i386_vbefill_index (struct grub_video_i386_vbeblit_info *dst,
-                               grub_video_color_t color, int x, int y,
-                               int width, int height);
+grub_video_i386_vbefill_direct16 (struct grub_video_i386_vbeblit_info *dst,
+                                  grub_video_color_t color, int x, int y,
+                                  int width, int height);
 
 void
-grub_video_i386_vbefill (struct grub_video_i386_vbeblit_info *dst,
-                         grub_video_color_t color, int x, int y,
-                         int width, int height);
+grub_video_i386_vbefill_direct8 (struct grub_video_i386_vbeblit_info *dst,
+				 grub_video_color_t color, int x, int y,
+				 int width, int height);
 
 #endif /* ! GRUB_VBEFILL_MACHINE_HEADER */

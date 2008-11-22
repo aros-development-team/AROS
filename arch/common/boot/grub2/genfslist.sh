@@ -15,6 +15,11 @@
 
 module=$1
 
+# Ignore kernel.mod.
+if test $module = kernel; then
+    exit
+fi
+
 # For now, this emits only a module name, if the module registers a filesystem.
 if grep -v "^#" | grep '^ *grub_fs_register' >/dev/null 2>&1; then
     echo $module

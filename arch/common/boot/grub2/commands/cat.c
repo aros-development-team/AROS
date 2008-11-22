@@ -1,7 +1,7 @@
 /* cat.c - command to show the contents of a file  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ grub_cmd_cat (struct grub_arg_list *state __attribute__ ((unused)),
   grub_file_t file;
   char buf[GRUB_DISK_SECTOR_SIZE];
   grub_ssize_t size;
+  int key = 0;
 
   if (argc != 1)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
@@ -42,7 +43,8 @@ grub_cmd_cat (struct grub_arg_list *state __attribute__ ((unused)),
   if (! file)
     return 0;
   
-  while ((size = grub_file_read (file, buf, sizeof (buf))) > 0)
+  while ((size = grub_file_read (file, buf, sizeof (buf))) > 0
+	 && key != GRUB_TERM_ESC)
     {
       int i;
       
@@ -60,11 +62,9 @@ grub_cmd_cat (struct grub_arg_list *state __attribute__ ((unused)),
 	    }
 	}
 
-      if (GRUB_TERM_ASCII_CHAR (grub_checkkey ()) == GRUB_TERM_ESC)
-	{
-	  grub_getkey ();
-	  break;
-	}
+      while (grub_checkkey () >= 0 &&
+	     (key = GRUB_TERM_ASCII_CHAR (grub_getkey ())) != GRUB_TERM_ESC)
+	;
     }
 
   grub_putchar ('\n');

@@ -25,9 +25,15 @@
 /* The module header.  */
 struct grub_module_header
 {
-  /* The offset of object code.  */
-  grub_target_off_t offset;
-  /* The size of object code plus this header.  */
+  /* The type of object.  */
+  grub_int8_t type;
+  enum
+  {
+    OBJ_TYPE_ELF,
+    OBJ_TYPE_MEMDISK,
+  }  grub_module_header_types;
+
+  /* The size of object (including this header).  */
   grub_target_size_t size;
 };
 
@@ -38,6 +44,9 @@ struct grub_module_info
 {
   /* Magic number so we know we have modules present.  */
   grub_uint32_t magic;
+#if GRUB_TARGET_SIZEOF_VOID_P == 8
+  grub_uint32_t padding;
+#endif
   /* The offset of the modules.  */
   grub_target_off_t offset;
   /* The size of all modules plus this header.  */
@@ -45,6 +54,8 @@ struct grub_module_info
 };
 
 extern grub_addr_t grub_arch_modules_addr (void);
+
+extern void EXPORT_FUNC(grub_module_iterate) (int (*hook) (struct grub_module_header *));
 
 /* The start point of the C code.  */
 void grub_main (void);

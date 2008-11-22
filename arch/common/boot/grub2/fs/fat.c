@@ -1,7 +1,7 @@
 /* fat.c - FAT filesystem */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2000,2001,2002,2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@
 #define GRUB_FAT_ATTR_DIRECTORY	0x10
 #define GRUB_FAT_ATTR_ARCHIVE	0x20
 
+#define GRUB_FAT_MAXFILE	256
+
 #define GRUB_FAT_ATTR_LONG_NAME	(GRUB_FAT_ATTR_READ_ONLY \
 				 | GRUB_FAT_ATTR_HIDDEN \
 				 | GRUB_FAT_ATTR_SYSTEM \
@@ -61,14 +63,34 @@ struct grub_fat_bpb
   grub_uint16_t num_heads;
   grub_uint32_t num_hidden_sectors;
   grub_uint32_t num_total_sectors_32;
-  
-  /* The following fields are only used by FAT32.  */
-  grub_uint32_t sectors_per_fat_32;
-  grub_uint16_t extended_flags;
-  grub_uint16_t fs_version;
-  grub_uint32_t root_cluster;
-  grub_uint16_t fs_info;
-  grub_uint16_t backup_boot_sector;
+  union
+  {
+    struct
+    {
+      grub_uint8_t num_ph_drive;
+      grub_uint8_t reserved;
+      grub_uint8_t boot_sig;
+      grub_uint32_t num_serial;
+      grub_uint8_t label[11];
+      grub_uint8_t fstype[8];
+    } __attribute__ ((packed)) fat12_or_fat16;
+    struct
+    {
+      grub_uint32_t sectors_per_fat_32;
+      grub_uint16_t extended_flags;
+      grub_uint16_t fs_version;
+      grub_uint32_t root_cluster;
+      grub_uint16_t fs_info;
+      grub_uint16_t backup_boot_sector;
+      grub_uint8_t reserved[12];
+      grub_uint8_t num_ph_drive;
+      grub_uint8_t reserved1;
+      grub_uint8_t boot_sig;
+      grub_uint32_t num_serial;
+      grub_uint8_t label[11];
+      grub_uint8_t fstype[8];
+    } __attribute__ ((packed)) fat32;
+  } __attribute__ ((packed)) version_specific;
 } __attribute__ ((packed));
 
 struct grub_fat_dir_entry
@@ -122,6 +144,8 @@ struct grub_fat_data
   grub_uint32_t file_cluster;
   grub_uint32_t cur_cluster_num;
   grub_uint32_t cur_cluster;
+
+  grub_uint32_t uuid;
 };
 
 #ifndef GRUB_UTIL
@@ -183,7 +207,7 @@ grub_fat_mount (grub_disk_t disk)
 
   data->sectors_per_fat = ((bpb.sectors_per_fat_16
 			    ? grub_le_to_cpu16 (bpb.sectors_per_fat_16)
-			    : grub_le_to_cpu32 (bpb.sectors_per_fat_32))
+			    : grub_le_to_cpu32 (bpb.version_specific.fat32.sectors_per_fat_32))
 			   << data->logical_sector_bits);
   if (data->sectors_per_fat == 0)
     goto fail;
@@ -219,9 +243,9 @@ grub_fat_mount (grub_disk_t disk)
   if (! bpb.sectors_per_fat_16)
     {
       /* FAT32.  */
-      grub_uint16_t flags = grub_le_to_cpu16 (bpb.extended_flags);
+      grub_uint16_t flags = grub_le_to_cpu16 (bpb.version_specific.fat32.extended_flags);
       
-      data->root_cluster = grub_le_to_cpu32 (bpb.root_cluster);
+      data->root_cluster = grub_le_to_cpu32 (bpb.version_specific.fat32.root_cluster);
       data->fat_size = 32;
       data->cluster_eof_mark = 0x0ffffff8;
       
@@ -236,7 +260,7 @@ grub_fat_mount (grub_disk_t disk)
 	  data->fat_sector += active_fat * data->sectors_per_fat;
 	}
 
-      if (bpb.num_root_entries != 0 || bpb.fs_version != 0)
+      if (bpb.num_root_entries != 0 || bpb.version_specific.fat32.fs_version != 0)
 	goto fail;
     }
   else
@@ -286,6 +310,12 @@ grub_fat_mount (grub_disk_t disk)
       first_fat &= 0x00000fff;
       magic = 0x0f00;
     }
+
+  /* Serial number.  */
+  if (bpb.sectors_per_fat_16)
+    data->uuid = grub_le_to_cpu32 (bpb.version_specific.fat12_or_fat16.num_serial);
+  else
+    data->uuid = grub_le_to_cpu32 (bpb.version_specific.fat32.num_serial);
   
   /* Ignore the 3rd bit, because some BIOSes assigns 0xF0 to the media
      descriptor, even if it is a so-called superfloppy (e.g. an USB key).
@@ -601,7 +631,7 @@ grub_fat_find_dir (grub_disk_t disk, struct grub_fat_data *data,
 	  if (hook (filename, dir.attr & GRUB_FAT_ATTR_DIRECTORY))
 	    break;
 	}
-      else if (grub_strcmp (dirname, filename) == 0)
+      else if (grub_strncasecmp (dirname, filename, GRUB_FAT_MAXFILE) == 0)
 	{
 	  if (call_hook)
 	    hook (filename, dir.attr & GRUB_FAT_ATTR_DIRECTORY);
@@ -797,6 +827,35 @@ grub_fat_label (grub_device_t device, char **label)
   return grub_errno;
 }
 
+static grub_err_t
+grub_fat_uuid (grub_device_t device, char **uuid)
+{
+  struct grub_fat_data *data;
+  grub_disk_t disk = device->disk;
+
+#ifndef GRUB_UTIL
+  grub_dl_ref (my_mod);
+#endif
+
+  data = grub_fat_mount (disk);
+  if (data)
+    {
+      *uuid = grub_malloc (sizeof ("xxxx-xxxx"));
+      grub_sprintf (*uuid, "%04x-%04x", (grub_uint16_t) (data->uuid >> 8),
+		    (grub_uint16_t) data->uuid);
+    }
+  else
+    *uuid = NULL;
+
+#ifndef GRUB_UTIL
+  grub_dl_unref (my_mod);
+#endif
+
+  grub_free (data);
+
+  return grub_errno;
+}
+
 static struct grub_fs grub_fat_fs =
   {
     .name = "fat",
@@ -805,6 +864,7 @@ static struct grub_fs grub_fat_fs =
     .read = grub_fat_read,
     .close = grub_fat_close,
     .label = grub_fat_label,
+    .uuid = grub_fat_uuid,
     .next = 0
   };
 

@@ -24,21 +24,21 @@
 #include <grub/term.h>
 
 static grub_err_t
-grub_cmd_terminal (struct grub_arg_list *state __attribute__ ((unused)),
-		   int argc, char **args)
+grub_cmd_terminal_input (struct grub_arg_list *state __attribute__ ((unused)),
+			 int argc, char **args)
 {
-  grub_term_t term = 0;
+  grub_term_input_t term = 0;
   
-  auto int print_terminal (grub_term_t);
-  auto int find_terminal (grub_term_t);
+  auto int print_terminal (grub_term_input_t);
+  auto int find_terminal (grub_term_input_t);
   
-  int print_terminal (grub_term_t t)
+  int print_terminal (grub_term_input_t t)
     {
       grub_printf (" %s", t->name);
       return 0;
     }
 
-  int find_terminal (grub_term_t t)
+  int find_terminal (grub_term_input_t t)
     {
       if (grub_strcmp (t->name, args[0]) == 0)
 	{
@@ -51,19 +51,65 @@ grub_cmd_terminal (struct grub_arg_list *state __attribute__ ((unused)),
   
   if (argc == 0)
     {
-      grub_printf ("Available terminal(s):");
-      grub_term_iterate (print_terminal);
+      grub_printf ("Available input terminal(s):");
+      grub_term_iterate_input (print_terminal);
       grub_putchar ('\n');
       
-      grub_printf ("Current terminal: %s\n", grub_term_get_current ()->name);
+      grub_printf ("Current input terminal: %s\n", grub_term_get_current_input ()->name);
     }
   else
     {
-      grub_term_iterate (find_terminal);
+      grub_term_iterate_input (find_terminal);
       if (! term)
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "no such terminal");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, "no such input terminal");
 
-      grub_term_set_current (term);
+      grub_term_set_current_input (term);
+    }
+
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+grub_cmd_terminal_output (struct grub_arg_list *state __attribute__ ((unused)),
+			  int argc, char **args)
+{
+  grub_term_output_t term = 0;
+  
+  auto int print_terminal (grub_term_output_t);
+  auto int find_terminal (grub_term_output_t);
+  
+  int print_terminal (grub_term_output_t t)
+    {
+      grub_printf (" %s", t->name);
+      return 0;
+    }
+
+  int find_terminal (grub_term_output_t t)
+    {
+      if (grub_strcmp (t->name, args[0]) == 0)
+	{
+	  term = t;
+	  return 1;
+	}
+
+      return 0;
+    }
+  
+  if (argc == 0)
+    {
+      grub_printf ("Available output terminal(s):");
+      grub_term_iterate_output (print_terminal);
+      grub_putchar ('\n');
+      
+      grub_printf ("Current output terminal: %s\n", grub_term_get_current_output ()->name);
+    }
+  else
+    {
+      grub_term_iterate_output (find_terminal);
+      if (! term)
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, "no such output terminal");
+
+      grub_term_set_current_output (term);
     }
 
   return GRUB_ERR_NONE;
@@ -73,11 +119,14 @@ grub_cmd_terminal (struct grub_arg_list *state __attribute__ ((unused)),
 GRUB_MOD_INIT(terminal)
 {
   (void)mod;			/* To stop warning. */
-  grub_register_command ("terminal", grub_cmd_terminal, GRUB_COMMAND_FLAG_BOTH,
-			 "terminal [TERM...]", "Select a terminal.", 0);
+  grub_register_command ("terminal_input", grub_cmd_terminal_input, GRUB_COMMAND_FLAG_BOTH,
+			 "terminal_input [TERM...]", "Select an input terminal.", 0);
+  grub_register_command ("terminal_output", grub_cmd_terminal_output, GRUB_COMMAND_FLAG_BOTH,
+			 "terminal_output [TERM...]", "Select an output terminal.", 0);
 }
 
 GRUB_MOD_FINI(terminal)
 {
-  grub_unregister_command ("terminal");
+  grub_unregister_command ("terminal_input");
+  grub_unregister_command ("terminal_output");
 }

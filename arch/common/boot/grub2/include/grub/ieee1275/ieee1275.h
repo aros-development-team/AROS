@@ -89,6 +89,15 @@ enum grub_ieee1275_flag
 
   /* Open Hack'Ware stops when trying to set colors */
   GRUB_IEEE1275_FLAG_CANNOT_SET_COLORS,
+
+  /* Open Hack'Ware stops when grub_ieee1275_interpret is used.  */
+  GRUB_IEEE1275_FLAG_CANNOT_INTERPRET,
+
+  /* Open Hack'Ware has no memory map, just claim what we need.  */
+  GRUB_IEEE1275_FLAG_FORCE_CLAIM,
+
+  /* Open Hack'Ware don't support the ANSI sequence.  */
+  GRUB_IEEE1275_FLAG_NO_ANSI,
 };
 
 extern int EXPORT_FUNC(grub_ieee1275_test_flag) (enum grub_ieee1275_flag flag);
@@ -97,6 +106,7 @@ extern void EXPORT_FUNC(grub_ieee1275_set_flag) (enum grub_ieee1275_flag flag);
 
 
 
+void EXPORT_FUNC(grub_ieee1275_init) (void);
 int EXPORT_FUNC(grub_ieee1275_finddevice) (char *name,
 					   grub_ieee1275_phandle_t *phandlep);
 int EXPORT_FUNC(grub_ieee1275_get_property) (grub_ieee1275_phandle_t phandle,
@@ -158,7 +168,7 @@ grub_err_t EXPORT_FUNC(grub_devalias_iterate)
 grub_err_t EXPORT_FUNC(grub_children_iterate) (char *devpath,
      int (*hook) (struct grub_ieee1275_devalias *alias));
 grub_err_t EXPORT_FUNC(grub_available_iterate)
-     (int (*hook) (grub_uint64_t, grub_uint64_t));
+     (int NESTED_FUNC_ATTR (*hook) (grub_uint64_t, grub_uint64_t));
 int EXPORT_FUNC(grub_claimmap) (grub_addr_t addr, grub_size_t size);
 
 char *EXPORT_FUNC(grub_ieee1275_encode_devname) (const char *path);

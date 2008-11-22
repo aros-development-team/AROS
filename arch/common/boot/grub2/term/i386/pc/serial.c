@@ -67,15 +67,20 @@ static struct serial_port serial_settings;
 #ifdef GRUB_MACHINE_PCBIOS
 /* The BIOS data area.  */
 static const unsigned short *serial_hw_io_addr = (const unsigned short *) 0x0400;
+#define GRUB_SERIAL_PORT_NUM 4
 #else
-static const unsigned short serial_hw_io_addr[] = { 0x3f8, 0x2f8 };
+static const unsigned short serial_hw_io_addr[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
+#define GRUB_SERIAL_PORT_NUM (sizeof(serial_hw_io_addr)/sizeof(serial_hw_io_addr[0]))
 #endif
 
 /* Return the port number for the UNITth serial device.  */
 static inline unsigned short
-serial_hw_get_port (const unsigned short unit)
+serial_hw_get_port (const unsigned int unit)
 {
-  return serial_hw_io_addr[unit];
+  if (unit < GRUB_SERIAL_PORT_NUM)
+    return serial_hw_io_addr[unit];
+  else
+    return 0;
 }
 
 /* Fetch a key.  */
@@ -462,15 +467,18 @@ grub_serial_setcursor (const int on)
     grub_terminfo_cursor_off ();
 }
 
-static struct grub_term grub_serial_term =
+static struct grub_term_input grub_serial_term_input =
 {
   .name = "serial",
-  .init = 0,
-  .fini = 0,
-  .putchar = grub_serial_putchar,
-  .getcharwidth = grub_serial_getcharwidth,
   .checkkey = grub_serial_checkkey,
   .getkey = grub_serial_getkey,
+};
+
+static struct grub_term_output grub_serial_term_output =
+{
+  .name = "serial",
+  .putchar = grub_serial_putchar,
+  .getcharwidth = grub_serial_getcharwidth,
   .getwh = grub_serial_getwh,
   .getxy = grub_serial_getxy,
   .gotoxy = grub_serial_gotoxy,
@@ -478,7 +486,6 @@ static struct grub_term grub_serial_term =
   .setcolorstate = grub_serial_setcolorstate,
   .setcursor = grub_serial_setcursor,
   .flags = 0,
-  .next = 0
 };
 
 
@@ -490,14 +497,14 @@ grub_cmd_serial (struct grub_arg_list *state,
 {
   struct serial_port backup_settings = serial_settings;
   grub_err_t hwiniterr;
-  int arg;
 
   if (state[0].set)
     {
-      arg = grub_strtoul (state[0].arg, 0, 0);
-      if (arg >= 0 && arg < 4)
-	serial_settings.port = serial_hw_get_port ((int) arg);
-      else
+      unsigned int unit;
+
+      unit = grub_strtoul (state[0].arg, 0, 0);
+      serial_settings.port = serial_hw_get_port (unit);
+      if (!serial_settings.port)
 	return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad unit number.");
     }
   
@@ -570,7 +577,8 @@ grub_cmd_serial (struct grub_arg_list *state,
       /* Register terminal if not yet registered.  */
       if (registered == 0)
 	{
-	  grub_term_register (&grub_serial_term);
+	  grub_term_register_input (&grub_serial_term_input);
+	  grub_term_register_output (&grub_serial_term_output);
 	  registered = 1;
 	}
     }
@@ -585,7 +593,8 @@ grub_cmd_serial (struct grub_arg_list *state,
 	  if (serial_hw_init () != GRUB_ERR_NONE)
 	    {
 	      /* If unable to restore settings, unregister terminal.  */
-	      grub_term_unregister (&grub_serial_term);
+	      grub_term_unregister_input (&grub_serial_term_input);
+	      grub_term_unregister_output (&grub_serial_term_output);
 	      registered = 0;
 	    }
 	}
@@ -611,5 +620,8 @@ GRUB_MOD_FINI(serial)
 {
   grub_unregister_command ("serial");
   if (registered == 1)		/* Unregister terminal only if registered. */
-    grub_term_unregister (&grub_serial_term);
+    {
+      grub_term_unregister_input (&grub_serial_term_input);
+      grub_term_unregister_output (&grub_serial_term_output);
+    }
 }

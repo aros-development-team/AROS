@@ -25,6 +25,9 @@
 #include <grub/machine/kernel.h>
 #elif defined(GRUB_MACHINE_EFI)
 #include <grub/efi/efi.h>
+#else
+/* Platforms shipping standalone halt, such as coreboot.  */
+#include <grub/cpu/halt.h>
 #endif
 
 static grub_err_t

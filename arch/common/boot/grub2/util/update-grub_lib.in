@@ -1,4 +1,4 @@
-# Helper library for update-grub
+# stub for new grub-mkconfig_lib
 # Copyright (C) 2007,2008  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
@@ -14,110 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-transform="@program_transform_name@"
-
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-datarootdir=@datarootdir@
-datadir=@datadir@
-sbindir=@sbindir@
-pkgdatadir=${datadir}/`echo @PACKAGE_TARNAME@ | sed "${transform}"`
+libdir=@libdir@
 
-grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
-
-make_system_path_relative_to_its_root ()
-{
-  path=$1
-  # abort if file doesn't exist
-  if test -e $path ; then : ;else
-    return 1
-  fi
-
-  # canonicalize
-  if path=`readlink -f $path` ; then : ; else
-    return 1
-  fi
-
-  # if not a directory, climb up to the directory containing it
-  if test -d $path ; then
-    dir=$path
-  else
-    dir=`echo $path | sed -e "s,/[^/]*$,,g"`
-  fi
-
-  num=`stat -c %d $dir`
-
-  # this loop sets $dir to the root directory of the filesystem we're inspecting
-  while : ; do
-    parent=`readlink -f $dir/..`
-    if [ "x`stat -c %d $parent`" = "x$num" ] ; then : ; else
-      # $parent is another filesystem; we found it.
-      break
-    fi
-    if [ "x$dir" = "x/" ] ; then
-      # / is our root.
-      break
-    fi
-    dir=$parent
-  done
-
-  echo $path | sed -e "s,^$dir,/,g" -e "s,//,/,g"
-}
-
-convert_system_path_to_grub_path ()
-{
-  path=$1
-
-  # abort if file doesn't exist
-  if test -e $path ; then : ;else
-    return 1
-  fi
-
-  # abort if file is in a filesystem we can't read
-  if ${grub_probe} -t fs $path > /dev/null 2>&1 ; then : ; else
-    return 1
-  fi
-
-  if drive=`${grub_probe} -t drive $path` ; then : ; else
-    return 1
-  fi
-
-  if relative_path=`make_system_path_relative_to_its_root $path` ; then : ; else
-    return 1
-  fi
-
-  # remove any trailing slash, even if that slash is everything we have
-  relative_path=`echo ${relative_path} | sed -e "s,/*$,,g"`
-
-  echo ${drive}${relative_path}
-}
-
-font_path ()
-{
-  # Prefer system path for space reasons (/boot/grub might be a very small
-  # partition in case of OpenFirmware, etc).
-  for dir in ${pkgdatadir} /usr/share/grub /boot/grub ; do
-    # Prefer complete fonts over incomplete ones.
-    for basename in unicode unifont ascii ; do
-      path="${dir}/${basename}.pff"
-      if convert_system_path_to_grub_path ${path} > /dev/null ; then
-        echo "${path}"
-        return 0
-      fi
-    done
-  done
-
-  return 1
-}
-
-grub_file_is_not_garbage ()
-{
-  if test -f "$1" ; then
-    case "$1" in
-      *.dpkg-dist|*.dpkg-old|*.dpkg-tmp) return 1 ;; # debian dpkg
-    esac
-  else
-    return 1
-  fi
-  return 0
-}
+echo "warning: update-grub_lib is deprecated, use grub-mkconfig_lib instead" >&2
+. ${libdir}/grub/grub-mkconfig_lib

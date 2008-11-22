@@ -5,9 +5,6 @@ COMMON_CFLAGS = -fno-builtin -m32
 COMMON_LDFLAGS = -melf_i386 -nostdlib
 
 # Used by various components.  These rules need to precede them.
-normal/execute.c_DEPENDENCIES = grub_script.tab.h
-normal/command.c_DEPENDENCIES = grub_script.tab.h
-normal/function.c_DEPENDENCIES = grub_script.tab.h
 normal/lexer.c_DEPENDENCIES = grub_script.tab.h
 
 # Utilities.
@@ -20,9 +17,10 @@ sbin_UTILITIES = grub-mkdevicemap
 # For grub-mkimage.
 grub_mkimage_SOURCES = util/i386/efi/grub-mkimage.c util/misc.c \
 	util/resolve.c
+util/i386/efi/grub-mkimage.c_DEPENDENCIES = Makefile
 
 # For grub-setup.
-#grub_setup_SOURCES = util/i386/pc/grub-setup.c util/biosdisk.c	\
+#grub_setup_SOURCES = util/i386/pc/grub-setup.c util/hostdisk.c	\
 #	util/misc.c util/getroot.c kern/device.c kern/disk.c	\
 #	kern/err.c kern/misc.c fs/fat.c fs/ext2.c fs/xfs.c fs/affs.c	\
 #	fs/sfs.c kern/parser.c kern/partition.c partmap/pc.c		\
@@ -30,15 +28,14 @@ grub_mkimage_SOURCES = util/i386/efi/grub-mkimage.c util/misc.c \
 #	kern/fs.c kern/env.c fs/fshelp.c
 
 # For grub-mkdevicemap.
-grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c		\
-	util/i386/get_disk_name.c
+grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c
 
 # For grub-emu.
 util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
 grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
 	commands/configfile.c commands/help.c				\
 	commands/terminal.c commands/ls.c commands/test.c 		\
-	commands/search.c commands/hexdump.c				\
+	commands/search.c commands/hexdump.c lib/hexdump.c		\
 	commands/halt.c commands/reboot.c				\
 	commands/i386/cpuid.c						\
 	disk/loopback.c							\
@@ -61,10 +58,11 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
 	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
 	partmap/acorn.c partmap/gpt.c					\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
-	util/biosdisk.c util/getroot.c					\
+	util/hostdisk.c util/getroot.c					\
 	util/i386/pc/misc.c						\
 	\
-	disk/raid.c disk/lvm.c						\
+	disk/raid.c disk/raid5_recover.c disk/raid6_recover.c		\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c disk/lvm.c		\
 	grub_emu_init.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
@@ -76,8 +74,9 @@ sbin_SCRIPTS = grub-install
 grub_install_SOURCES = util/i386/efi/grub-install.in
 
 # Modules.
-pkglib_MODULES = kernel.mod normal.mod _chain.mod chain.mod \
-	_linux.mod linux.mod cpuid.mod halt.mod reboot.mod
+pkglib_MODULES = kernel.mod normal.mod _chain.mod chain.mod appleldr.mod \
+	_linux.mod linux.mod halt.mod reboot.mod pci.mod lspci.mod \
+	datetime.mod date.mod datehook.mod
 
 # For kernel.mod.
 kernel_mod_EXPORTS = no
@@ -86,7 +85,11 @@ kernel_mod_SOURCES = kern/i386/efi/startup.S kern/main.c kern/device.c \
 	kern/misc.c kern/mm.c kern/loader.c kern/rescue.c kern/term.c \
 	kern/i386/dl.c kern/i386/efi/init.c kern/parser.c kern/partition.c \
 	kern/env.c symlist.c kern/efi/efi.c kern/efi/init.c kern/efi/mm.c \
-	term/efi/console.c disk/efi/efidisk.c
+	term/efi/console.c disk/efi/efidisk.c \
+	kern/time.c \
+	kern/i386/tsc.c kern/i386/pit.c \
+	kern/generic/rtc_get_time_ms.c \
+	kern/generic/millisleep.c
 kernel_mod_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
 	env.h err.h file.h fs.h kernel.h loader.h misc.h mm.h net.h parser.h \
 	partition.h pc_partition.h rescue.h symbol.h term.h time.h types.h \
@@ -125,20 +128,20 @@ chain_mod_SOURCES = loader/efi/chainloader_normal.c
 chain_mod_CFLAGS = $(COMMON_CFLAGS)
 chain_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For appleldr.mod.
+appleldr_mod_SOURCES = loader/efi/appleloader.c
+appleldr_mod_CFLAGS = $(COMMON_CFLAGS)
+appleldr_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # For _linux.mod.
 _linux_mod_SOURCES = loader/i386/efi/linux.c
 _linux_mod_CFLAGS = $(COMMON_CFLAGS)
 _linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For linux.mod.
-linux_mod_SOURCES = loader/i386/efi/linux_normal.c
+linux_mod_SOURCES = loader/linux_normal.c
 linux_mod_CFLAGS = $(COMMON_CFLAGS)
 linux_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For cpuid.mod.
-cpuid_mod_SOURCES = commands/i386/cpuid.c
-cpuid_mod_CFLAGS = $(COMMON_CFLAGS)
-cpuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For halt.mod.
 halt_mod_SOURCES = commands/halt.c
@@ -150,4 +153,30 @@ reboot_mod_SOURCES = commands/reboot.c
 reboot_mod_CFLAGS = $(COMMON_CFLAGS)
 reboot_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For pci.mod
+pci_mod_SOURCES = bus/pci.c
+pci_mod_CFLAGS = $(COMMON_CFLAGS)
+pci_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For lspci.mod
+lspci_mod_SOURCES = commands/lspci.c
+lspci_mod_CFLAGS = $(COMMON_CFLAGS)
+lspci_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For datetime.mod
+datetime_mod_SOURCES = lib/datetime.c lib/efi/datetime.c
+datetime_mod_CFLAGS = $(COMMON_CFLAGS)
+datetime_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For date.mod
+date_mod_SOURCES = commands/date.c
+date_mod_CFLAGS = $(COMMON_CFLAGS)
+date_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For datehook.mod
+datehook_mod_SOURCES = hook/datehook.c
+datehook_mod_CFLAGS = $(COMMON_CFLAGS)
+datehook_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+include $(srcdir)/conf/i386.mk
 include $(srcdir)/conf/common.mk

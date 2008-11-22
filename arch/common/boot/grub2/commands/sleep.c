@@ -43,16 +43,17 @@ do_print (int n)
   grub_printf ("%d    ", n);
 }
 
-/* Based on grub_millisleep() from kern/misc.c.  */
+/* Based on grub_millisleep() from kern/generic/millisleep.c.  */
 static int
 grub_interruptible_millisleep (grub_uint32_t ms)
 {
-  grub_uint32_t end_at;
-  
-  end_at = grub_get_rtc () + grub_div_roundup (ms * GRUB_TICKS_PER_SECOND, 1000);
-  
-  while (grub_get_rtc () < end_at)
-    if (GRUB_TERM_ASCII_CHAR (grub_checkkey ()) == GRUB_TERM_ESC)
+  grub_uint64_t start;
+
+  start = grub_get_time_ms ();
+
+  while (grub_get_time_ms () - start < ms)
+    if (grub_checkkey () >= 0 &&
+	GRUB_TERM_ASCII_CHAR (grub_getkey ()) == GRUB_TERM_ESC)
       return 1;
 
   return 0;

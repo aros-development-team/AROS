@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -33,77 +33,7 @@
 #include <grub/types.h>
 #include <grub/video.h>
 
-void
-grub_video_i386_vbefill_R8G8B8A8 (struct grub_video_i386_vbeblit_info *dst,
-                                  grub_video_color_t color, int x, int y,
-                                  int width, int height)
-{
-  int i;
-  int j;
-  grub_uint32_t *dstptr;
-
-  /* We do not need to worry about data being out of bounds
-     as we assume that everything has been checked before.  */
-
-  for (j = 0; j < height; j++)
-    {
-      dstptr = (grub_uint32_t *)grub_video_vbe_get_video_ptr (dst, x, y + j);
-
-      for (i = 0; i < width; i++)
-        *dstptr++ = color;
-    }
-}
-
-void
-grub_video_i386_vbefill_R8G8B8 (struct grub_video_i386_vbeblit_info *dst,
-                                grub_video_color_t color, int x, int y,
-                                int width, int height)
-{
-  int i;
-  int j;
-  grub_uint8_t *dstptr;
-  grub_uint8_t fillr = (grub_uint8_t)((color >> 0) & 0xFF);
-  grub_uint8_t fillg = (grub_uint8_t)((color >> 8) & 0xFF);
-  grub_uint8_t fillb = (grub_uint8_t)((color >> 16) & 0xFF);
-
-  /* We do not need to worry about data being out of bounds
-     as we assume that everything has been checked before.  */
-
-  for (j = 0; j < height; j++)
-    {
-      dstptr = (grub_uint8_t *)grub_video_vbe_get_video_ptr (dst, x, y + j);
-
-      for (i = 0; i < width; i++)
-        {
-          *dstptr++ = fillr;
-          *dstptr++ = fillg;
-          *dstptr++ = fillb;
-        }
-    }
-}
-
-void
-grub_video_i386_vbefill_index (struct grub_video_i386_vbeblit_info *dst,
-                               grub_video_color_t color, int x, int y,
-                               int width, int height)
-{
-  int i;
-  int j;
-  grub_uint8_t *dstptr;
-  grub_uint8_t fill = (grub_uint8_t)color & 0xFF;
-
-  /* We do not need to worry about data being out of bounds
-     as we assume that everything has been checked before.  */
-
-  for (j = 0; j < height; j++)
-    {
-      dstptr = (grub_uint8_t *)grub_video_vbe_get_video_ptr (dst, x, y + j);
-
-      for (i = 0; i < width; i++)
-        *dstptr++ = fill;
-    }
-}
-
+/* Generic filler that works for every supported mode.  */
 void
 grub_video_i386_vbefill (struct grub_video_i386_vbeblit_info *dst,
                          grub_video_color_t color, int x, int y,
@@ -112,10 +42,136 @@ grub_video_i386_vbefill (struct grub_video_i386_vbeblit_info *dst,
   int i;
   int j;
 
-  /* We do not need to worry about data being out of bounds
-     as we assume that everything has been checked before.  */
-
   for (j = 0; j < height; j++)
     for (i = 0; i < width; i++)
       set_pixel (dst, x+i, y+j, color);
+}
+
+/* Optimized filler for direct color 32 bit modes.  It is assumed that color
+   is already mapped to destination format.  */
+void
+grub_video_i386_vbefill_direct32 (struct grub_video_i386_vbeblit_info *dst,
+                                  grub_video_color_t color, int x, int y,
+                                  int width, int height)
+{
+  int i;
+  int j;
+  grub_uint32_t *dstptr;
+  grub_size_t rowskip;
+
+  /* Calculate the number of bytes to advance from the end of one line
+     to the beginning of the next line.  */
+  rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
+
+  /* Get the start address.  */
+  dstptr = (grub_uint32_t *) grub_video_vbe_get_video_ptr (dst, x, y);
+
+  for (j = 0; j < height; j++)
+    {
+      for (i = 0; i < width; i++)
+        *dstptr++ = color;
+
+      /* Advance the dest pointer to the right location on the next line.  */
+      dstptr = (grub_uint32_t *) (((char *) dstptr) + rowskip);
+    }
+}
+
+/* Optimized filler for direct color 24 bit modes.  It is assumed that color
+   is already mapped to destination format.  */
+void
+grub_video_i386_vbefill_direct24 (struct grub_video_i386_vbeblit_info *dst,
+                                  grub_video_color_t color, int x, int y,
+                                  int width, int height)
+{
+  int i;
+  int j;
+  grub_size_t rowskip;
+  grub_uint8_t *dstptr;
+  grub_uint8_t fill0 = (grub_uint8_t)((color >> 0) & 0xFF);
+  grub_uint8_t fill1 = (grub_uint8_t)((color >> 8) & 0xFF);
+  grub_uint8_t fill2 = (grub_uint8_t)((color >> 16) & 0xFF);
+
+  /* Calculate the number of bytes to advance from the end of one line
+     to the beginning of the next line.  */
+  rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
+
+  /* Get the start address.  */
+  dstptr = (grub_uint8_t *) grub_video_vbe_get_video_ptr (dst, x, y);
+
+  for (j = 0; j < height; j++)
+    {
+      for (i = 0; i < width; i++)
+        {
+          *dstptr++ = fill0;
+          *dstptr++ = fill1;
+          *dstptr++ = fill2;
+        }
+
+      /* Advance the dest pointer to the right location on the next line.  */
+      dstptr += rowskip;
+    }
+}
+
+/* Optimized filler for direct color 16 bit modes.  It is assumed that color
+   is already mapped to destination format.  */
+void
+grub_video_i386_vbefill_direct16 (struct grub_video_i386_vbeblit_info *dst,
+                                  grub_video_color_t color, int x, int y,
+                                  int width, int height)
+{
+  int i;
+  int j;
+  grub_size_t rowskip;
+  grub_uint8_t *dstptr;
+  grub_uint8_t fill0 = (grub_uint8_t)((color >> 0) & 0xFF);
+  grub_uint8_t fill1 = (grub_uint8_t)((color >> 8) & 0xFF);
+
+  /* Calculate the number of bytes to advance from the end of one line
+     to the beginning of the next line.  */
+  rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
+
+  /* Get the start address.  */
+  dstptr = (grub_uint8_t *) grub_video_vbe_get_video_ptr (dst, x, y);
+
+  for (j = 0; j < height; j++)
+    {
+      for (i = 0; i < width; i++)
+        {
+          *dstptr++ = fill0;
+          *dstptr++ = fill1;
+        }
+
+      /* Advance the dest pointer to the right location on the next line.  */
+      dstptr += rowskip;
+    }
+}
+
+/* Optimized filler for index color.  It is assumed that color
+   is already mapped to destination format.  */
+void
+grub_video_i386_vbefill_direct8 (struct grub_video_i386_vbeblit_info *dst,
+				 grub_video_color_t color, int x, int y,
+				 int width, int height)
+{
+  int i;
+  int j;
+  grub_size_t rowskip;
+  grub_uint8_t *dstptr;
+  grub_uint8_t fill = (grub_uint8_t)color & 0xFF;
+
+  /* Calculate the number of bytes to advance from the end of one line
+     to the beginning of the next line.  */
+  rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
+
+  /* Get the start address.  */
+  dstptr = (grub_uint8_t *) grub_video_vbe_get_video_ptr (dst, x, y);
+
+  for (j = 0; j < height; j++)
+    {
+      for (i = 0; i < width; i++)
+        *dstptr++ = fill;
+
+      /* Advance the dest pointer to the right location on the next line.  */
+      dstptr += rowskip;
+    }
 }

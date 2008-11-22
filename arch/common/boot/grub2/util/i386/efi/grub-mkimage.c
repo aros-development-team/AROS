@@ -31,16 +31,56 @@
 #include <grub/efi/pe32.h>
 #include <grub/machine/kernel.h>
 
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
+
+typedef Elf32_Word Elf_Word;
+typedef Elf32_Addr Elf_Addr;
+typedef Elf32_Ehdr Elf_Ehdr;
+typedef Elf32_Shdr Elf_Shdr;
+typedef Elf32_Sym Elf_Sym;
+typedef Elf32_Half Elf_Half;
+typedef Elf32_Off Elf_Off;
+typedef Elf32_Section Elf_Section;
+typedef Elf32_Rel Elf_Rel;
+typedef Elf32_Rela Elf_Rela;
+
+#define ELF_R_SYM	ELF32_R_SYM
+#define ELF_R_TYPE	ELF32_R_TYPE
+#define ELF_R_INFO	ELF32_R_INFO
+
+#define grub_le_to_cpu	grub_le_to_cpu32
+
+#elif GRUB_TARGET_SIZEOF_VOID_P == 8
+
+typedef Elf64_Word Elf_Word;
+typedef Elf64_Addr Elf_Addr;
+typedef Elf64_Ehdr Elf_Ehdr;
+typedef Elf64_Shdr Elf_Shdr;
+typedef Elf64_Sym Elf_Sym;
+typedef Elf64_Half Elf_Half;
+typedef Elf64_Off Elf_Off;
+typedef Elf64_Section Elf_Section;
+typedef Elf64_Rel Elf_Rel;
+typedef Elf64_Rela Elf_Rela;
+
+#define ELF_R_SYM	ELF64_R_SYM
+#define ELF_R_TYPE	ELF64_R_TYPE
+#define ELF_R_INFO	ELF64_R_INFO
+
+#define grub_le_to_cpu	grub_le_to_cpu64
+
+#endif
+
 static const grub_uint8_t stub[] = GRUB_PE32_MSDOS_STUB;
 
-static inline Elf32_Addr
-align_address (Elf32_Addr addr, unsigned alignment)
+static inline Elf_Addr
+align_address (Elf_Addr addr, unsigned alignment)
 {
   return (addr + alignment - 1) & ~(alignment - 1);
 }
 
-static inline Elf32_Addr
-align_pe32_section (Elf32_Addr addr)
+static inline Elf_Addr
+align_pe32_section (Elf_Addr addr)
 {
   return align_address (addr, GRUB_PE32_SECTION_ALIGNMENT);
 }
@@ -60,14 +100,15 @@ read_kernel_module (const char *dir, char *prefix, size_t *size)
 
   if (GRUB_KERNEL_MACHINE_PREFIX + strlen (prefix) + 1 > GRUB_KERNEL_MACHINE_DATA_END)
     grub_util_error ("prefix too long");
-  strcpy (kernel_image + 0x34 + GRUB_KERNEL_MACHINE_PREFIX, prefix);
+
+  strcpy (kernel_image + sizeof (Elf_Ehdr) + GRUB_KERNEL_MACHINE_PREFIX, prefix);
 
   return kernel_image;
 }
 
 /* Return if the ELF header is valid.  */
 static int
-check_elf_header (Elf32_Ehdr *e, size_t size)
+check_elf_header (Elf_Ehdr *e, size_t size)
 {
   if (size < sizeof (*e)
       || e->e_ident[EI_MAG0] != ELFMAG0
@@ -76,9 +117,11 @@ check_elf_header (Elf32_Ehdr *e, size_t size)
       || e->e_ident[EI_MAG3] != ELFMAG3
       || e->e_ident[EI_VERSION] != EV_CURRENT
       || e->e_version != grub_cpu_to_le32 (EV_CURRENT)
-      || e->e_ident[EI_CLASS] != ELFCLASS32
+      || ((e->e_ident[EI_CLASS] != ELFCLASS32) &&
+          (e->e_ident[EI_CLASS] != ELFCLASS64))
       || e->e_ident[EI_DATA] != ELFDATA2LSB
-      || e->e_machine != grub_cpu_to_le16 (EM_386))
+      || ((e->e_machine != grub_cpu_to_le16 (EM_386)) &&
+          (e->e_machine != grub_cpu_to_le16 (EM_X86_64))))
     return 0;
 
   return 1;
@@ -87,7 +130,7 @@ check_elf_header (Elf32_Ehdr *e, size_t size)
 /* Return the starting address right after the header,
    aligned by the section alignment. Allocate 4 section tables for
    .text, .data, .reloc, and mods.  */
-static Elf32_Addr
+static Elf_Addr
 get_starting_section_address (void)
 {
   return align_pe32_section (sizeof (struct grub_pe32_header)
@@ -97,7 +140,7 @@ get_starting_section_address (void)
 /* Determine if this section is a text section. Return false if this
    section is not allocated.  */
 static int
-is_text_section (Elf32_Shdr *s)
+is_text_section (Elf_Shdr *s)
 {
   return ((s->sh_flags & grub_cpu_to_le32 (SHF_EXECINSTR | SHF_ALLOC))
 	  == grub_cpu_to_le32 (SHF_EXECINSTR | SHF_ALLOC));
@@ -107,7 +150,7 @@ is_text_section (Elf32_Shdr *s)
    BSS is also a data section, since the converter initializes BSS
    when producing PE32 to avoid a bug in EFI implementations.  */
 static int
-is_data_section (Elf32_Shdr *s)
+is_data_section (Elf_Shdr *s)
 {
   return (s->sh_flags & grub_cpu_to_le32 (SHF_ALLOC)
 	  && ! (s->sh_flags & grub_cpu_to_le32 (SHF_EXECINSTR)));
@@ -116,14 +159,14 @@ is_data_section (Elf32_Shdr *s)
 /* Locate section addresses by merging code sections and data sections
    into .text and .data, respectively. Return the array of section
    addresses.  */
-static Elf32_Addr *
-locate_sections (Elf32_Shdr *sections, Elf32_Half section_entsize,
-		 Elf32_Half num_sections, const char *strtab)
+static Elf_Addr *
+locate_sections (Elf_Shdr *sections, Elf_Half section_entsize,
+		 Elf_Half num_sections, const char *strtab)
 {
   int i;
-  Elf32_Addr current_address;
-  Elf32_Addr *section_addresses;
-  Elf32_Shdr *s;
+  Elf_Addr current_address;
+  Elf_Addr *section_addresses;
+  Elf_Shdr *s;
   
   section_addresses = xmalloc (sizeof (*section_addresses) * num_sections);
   memset (section_addresses, 0, sizeof (*section_addresses) * num_sections);
@@ -133,10 +176,10 @@ locate_sections (Elf32_Shdr *sections, Elf32_Half section_entsize,
   /* .text */
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
     if (is_text_section (s))
       {
-	Elf32_Word align = grub_le_to_cpu32 (s->sh_addralign);
+	Elf_Word align = grub_le_to_cpu32 (s->sh_addralign);
 	const char *name = strtab + grub_le_to_cpu32 (s->sh_name);
 	
 	if (align)
@@ -153,10 +196,10 @@ locate_sections (Elf32_Shdr *sections, Elf32_Half section_entsize,
   /* .data */
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
     if (is_data_section (s))
       {
-	Elf32_Word align = grub_le_to_cpu32 (s->sh_addralign);
+	Elf_Word align = grub_le_to_cpu32 (s->sh_addralign);
 	const char *name = strtab + grub_le_to_cpu32 (s->sh_name);
 	
 	if (align)
@@ -172,16 +215,16 @@ locate_sections (Elf32_Shdr *sections, Elf32_Half section_entsize,
 }
 
 /* Return the symbol table section, if any.  */
-static Elf32_Shdr *
-find_symtab_section (Elf32_Shdr *sections,
-		     Elf32_Half section_entsize, Elf32_Half num_sections)
+static Elf_Shdr *
+find_symtab_section (Elf_Shdr *sections,
+		     Elf_Half section_entsize, Elf_Half num_sections)
 {
   int i;
-  Elf32_Shdr *s;
+  Elf_Shdr *s;
   
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
     if (s->sh_type == grub_cpu_to_le32 (SHT_SYMTAB))
       return s;
 
@@ -190,12 +233,12 @@ find_symtab_section (Elf32_Shdr *sections,
 
 /* Return the address of the string table.  */
 static const char *
-find_strtab (Elf32_Ehdr *e, Elf32_Shdr *sections, Elf32_Half section_entsize)
+find_strtab (Elf_Ehdr *e, Elf_Shdr *sections, Elf_Half section_entsize)
 {
-  Elf32_Shdr *s;
+  Elf_Shdr *s;
   char *strtab;
   
-  s = (Elf32_Shdr *) ((char *) sections
+  s = (Elf_Shdr *) ((char *) sections
 		      + grub_le_to_cpu16 (e->e_shstrndx) * section_entsize);
   strtab = (char *) e + grub_le_to_cpu32 (s->sh_offset);
   return strtab;
@@ -203,21 +246,21 @@ find_strtab (Elf32_Ehdr *e, Elf32_Shdr *sections, Elf32_Half section_entsize)
 
 /* Relocate symbols; note that this function overwrites the symbol table.
    Return the address of a start symbol.  */
-static Elf32_Addr
-relocate_symbols (Elf32_Ehdr *e, Elf32_Shdr *sections,
-		  Elf32_Shdr *symtab_section, Elf32_Addr *section_addresses,
-		  Elf32_Half section_entsize, Elf32_Half num_sections)
+static Elf_Addr
+relocate_symbols (Elf_Ehdr *e, Elf_Shdr *sections,
+		  Elf_Shdr *symtab_section, Elf_Addr *section_addresses,
+		  Elf_Half section_entsize, Elf_Half num_sections)
 {
-  Elf32_Word symtab_size, sym_size, num_syms;
-  Elf32_Off symtab_offset;
-  Elf32_Addr start_address = 0;
-  Elf32_Sym *sym;
-  Elf32_Word i;
-  Elf32_Shdr *strtab_section;
+  Elf_Word symtab_size, sym_size, num_syms;
+  Elf_Off symtab_offset;
+  Elf_Addr start_address = 0;
+  Elf_Sym *sym;
+  Elf_Word i;
+  Elf_Shdr *strtab_section;
   const char *strtab;
   
   strtab_section
-    = (Elf32_Shdr *) ((char *) sections
+    = (Elf_Shdr *) ((char *) sections
 		      + (grub_le_to_cpu32 (symtab_section->sh_link)
 			 * section_entsize));
   strtab = (char *) e + grub_le_to_cpu32 (strtab_section->sh_offset);
@@ -227,17 +270,21 @@ relocate_symbols (Elf32_Ehdr *e, Elf32_Shdr *sections,
   symtab_offset = grub_le_to_cpu32 (symtab_section->sh_offset);
   num_syms = symtab_size / sym_size;
 
-  for (i = 0, sym = (Elf32_Sym *) ((char *) e + symtab_offset);
+  for (i = 0, sym = (Elf_Sym *) ((char *) e + symtab_offset);
        i < num_syms;
-       i++, sym = (Elf32_Sym *) ((char *) sym + sym_size))
+       i++, sym = (Elf_Sym *) ((char *) sym + sym_size))
     {
-      Elf32_Section index;
+      Elf_Section index;
       const char *name;
       
       name = strtab + grub_le_to_cpu32 (sym->st_name);
       
       index = grub_le_to_cpu16 (sym->st_shndx);
-      if (index == STN_UNDEF)
+      if (index == STN_ABS)
+        {
+          continue;
+        }
+      else if ((index == STN_UNDEF))
 	{
 	  if (sym->st_name)
 	    grub_util_error ("undefined symbol %s", name);
@@ -260,22 +307,22 @@ relocate_symbols (Elf32_Ehdr *e, Elf32_Shdr *sections,
 }
 
 /* Return the address of a symbol at the index I in the section S.  */
-static Elf32_Addr
-get_symbol_address (Elf32_Ehdr *e, Elf32_Shdr *s, Elf32_Word i)
+static Elf_Addr
+get_symbol_address (Elf_Ehdr *e, Elf_Shdr *s, Elf_Word i)
 {
-  Elf32_Sym *sym;
+  Elf_Sym *sym;
   
-  sym = (Elf32_Sym *) ((char *) e
+  sym = (Elf_Sym *) ((char *) e
 		       + grub_le_to_cpu32 (s->sh_offset)
 		       + i * grub_le_to_cpu32 (s->sh_entsize));
   return sym->st_value;
 }
 
 /* Return the address of a modified value.  */
-static Elf32_Addr
-get_target_address (Elf32_Ehdr *e, Elf32_Shdr *s, Elf32_Addr offset)
+static Elf_Addr *
+get_target_address (Elf_Ehdr *e, Elf_Shdr *s, Elf_Addr offset)
 {
-  return (Elf32_Addr) e + grub_le_to_cpu32 (s->sh_offset) + offset;
+  return (Elf_Addr *) ((char *) e + grub_le_to_cpu32 (s->sh_offset) + offset);
 }
 
 /* Deal with relocation information. This function relocates addresses
@@ -283,34 +330,35 @@ get_target_address (Elf32_Ehdr *e, Elf32_Shdr *s, Elf32_Addr offset)
    addresses can be fully resolved. Absolute addresses must be relocated
    again by a PE32 relocator when loaded.  */
 static void
-relocate_addresses (Elf32_Ehdr *e, Elf32_Shdr *sections,
-		    Elf32_Addr *section_addresses,
-		    Elf32_Half section_entsize, Elf32_Half num_sections,
+relocate_addresses (Elf_Ehdr *e, Elf_Shdr *sections,
+		    Elf_Addr *section_addresses,
+		    Elf_Half section_entsize, Elf_Half num_sections,
 		    const char *strtab)
 {
-  Elf32_Half i;
-  Elf32_Shdr *s;
+  Elf_Half i;
+  Elf_Shdr *s;
   
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
-    if (s->sh_type == grub_cpu_to_le32 (SHT_REL))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
+    if ((s->sh_type == grub_cpu_to_le32 (SHT_REL)) ||
+        (s->sh_type == grub_cpu_to_le32 (SHT_RELA)))
       {
-	Elf32_Rel *r;
-	Elf32_Word rtab_size, r_size, num_rs;
-	Elf32_Off rtab_offset;
-	Elf32_Shdr *symtab_section;
-	Elf32_Word target_section_index;
-	Elf32_Addr target_section_addr;
-	Elf32_Shdr *target_section;
-	Elf32_Word j;
+	Elf_Rela *r;
+	Elf_Word rtab_size, r_size, num_rs;
+	Elf_Off rtab_offset;
+	Elf_Shdr *symtab_section;
+	Elf_Word target_section_index;
+	Elf_Addr target_section_addr;
+	Elf_Shdr *target_section;
+	Elf_Word j;
 
-	symtab_section = (Elf32_Shdr *) ((char *) sections
+	symtab_section = (Elf_Shdr *) ((char *) sections
 					 + (grub_le_to_cpu32 (s->sh_link)
 					    * section_entsize));
 	target_section_index = grub_le_to_cpu32 (s->sh_info);
 	target_section_addr = section_addresses[target_section_index];
-	target_section = (Elf32_Shdr *) ((char *) sections
+	target_section = (Elf_Shdr *) ((char *) sections
 					 + (target_section_index
 					    * section_entsize));
 
@@ -323,47 +371,84 @@ relocate_addresses (Elf32_Ehdr *e, Elf32_Shdr *sections,
 	rtab_offset = grub_le_to_cpu32 (s->sh_offset);
 	num_rs = rtab_size / r_size;
 
-	for (j = 0, r = (Elf32_Rel *) ((char *) e + rtab_offset);
+	for (j = 0, r = (Elf_Rela *) ((char *) e + rtab_offset);
 	     j < num_rs;
-	     j++, r = (Elf32_Rel *) ((char *) r + r_size))
+	     j++, r = (Elf_Rela *) ((char *) r + r_size))
 	  {
-	    Elf32_Word info;
-	    Elf32_Addr offset;
-	    Elf32_Addr sym_addr;
-	    Elf32_Addr *target;
+            Elf_Addr info;
+	    Elf_Addr offset;
+	    Elf_Addr sym_addr;
+	    Elf_Addr *target, *value;
 	    
-	    offset = grub_le_to_cpu32 (r->r_offset);
-	    target = (Elf32_Addr *) get_target_address (e, target_section,
-							offset);
-	    info = grub_le_to_cpu32 (r->r_info);
+	    offset = grub_le_to_cpu (r->r_offset);
+	    target = get_target_address (e, target_section, offset);
+	    info = grub_le_to_cpu (r->r_info);
 	    sym_addr = get_symbol_address (e, symtab_section,
-					   ELF32_R_SYM (info));
+					   ELF_R_SYM (info));
 
-	    switch (ELF32_R_TYPE (info))
+            value = (s->sh_type == grub_cpu_to_le32 (SHT_RELA)) ?
+               (Elf_Addr *) &r->r_addend : target;
+
+            switch (ELF_R_TYPE (info))
 	      {
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
 	      case R_386_NONE:
 		break;
 
 	      case R_386_32:
 		/* This is absolute.  */
-		*target = grub_cpu_to_le32 (grub_le_to_cpu32 (*target)
-					    + sym_addr);
+		*target = grub_cpu_to_le32 (grub_le_to_cpu32 (*value)
+                                            + sym_addr);
 		grub_util_info ("relocating an R_386_32 entry to 0x%x at the offset 0x%x",
 				*target, offset);
 		break;
 
 	      case R_386_PC32:
 		/* This is relative.  */
-		*target = grub_cpu_to_le32 (grub_le_to_cpu32 (*target)
+		*target = grub_cpu_to_le32 (grub_le_to_cpu32 (*value)
 					    + sym_addr
 					    - target_section_addr - offset);
 		grub_util_info ("relocating an R_386_PC32 entry to 0x%x at the offset 0x%x",
 				*target, offset);
 		break;
 
+#else
+
+              case R_X86_64_NONE:
+                break;
+
+              case R_X86_64_64:
+		*target = grub_cpu_to_le64 (grub_le_to_cpu64 (*value) + sym_addr);
+		grub_util_info ("relocating an R_X86_64_64 entry to 0x%llx at the offset 0x%llx",
+				*target, offset);
+		break;
+
+              case R_X86_64_PC32:
+                {
+                  grub_uint32_t *t32 = (grub_uint32_t *) target;
+                  *t32 = grub_cpu_to_le64 (grub_le_to_cpu64 (*value)
+                                           + sym_addr
+                                           - target_section_addr - offset);
+                  grub_util_info ("relocating an R_X86_64_PC32 entry to 0x%x at the offset 0x%llx",
+                                  *t32, offset);
+                  break;
+                }
+
+              case R_X86_64_32:
+              case R_X86_64_32S:
+                {
+                  grub_uint32_t *t32 = (grub_uint32_t *) target;
+                  *t32 = grub_cpu_to_le64 (grub_le_to_cpu64 (*value)
+                                           + sym_addr);
+                  grub_util_info ("relocating an R_X86_64_32(S) entry to 0x%x at the offset 0x%llx",
+                                  *t32, offset);
+                  break;
+                }
+
+#endif
 	      default:
 		grub_util_error ("unknown relocation type %d",
-				 ELF32_R_TYPE (info));
+				 ELF_R_TYPE (info));
 		break;
 	      }
 	  }
@@ -382,9 +467,9 @@ write_padding (FILE *out, size_t size)
 
 /* Add a PE32's fixup entry for a relocation. Return the resulting address
    after having written to the file OUT.  */
-Elf32_Addr
+Elf_Addr
 add_fixup_entry (struct grub_pe32_fixup_block **block, grub_uint16_t type,
-		 Elf32_Addr addr, int flush, Elf32_Addr current_address,
+		 Elf_Addr addr, int flush, Elf_Addr current_address,
 		 FILE *out)
 {
   struct grub_pe32_fixup_block *b = *block;
@@ -400,7 +485,7 @@ add_fixup_entry (struct grub_pe32_fixup_block **block, grub_uint16_t type,
 	    {
 	      /* Add as much padding as necessary to align the address
 		 with a section boundary.  */
-	      Elf32_Addr next_address;
+	      Elf_Addr next_address;
 	      unsigned padding_size;
               size_t index;
 	      
@@ -473,10 +558,10 @@ add_fixup_entry (struct grub_pe32_fixup_block **block, grub_uint16_t type,
 }
 
 /* Write out zeros to make space for the header.  */
-static Elf32_Addr
+static Elf_Addr
 make_header_space (FILE *out)
 {
-  Elf32_Addr addr;
+  Elf_Addr addr;
   
   addr = get_starting_section_address ();
   write_padding (out, addr);
@@ -485,24 +570,24 @@ make_header_space (FILE *out)
 }
 
 /* Write text sections.  */
-static Elf32_Addr
-write_text_sections (FILE *out, Elf32_Addr current_address,
-		     Elf32_Ehdr *e, Elf32_Shdr *sections,
-		     Elf32_Half section_entsize, Elf32_Half num_sections,
+static Elf_Addr
+write_text_sections (FILE *out, Elf_Addr current_address,
+		     Elf_Ehdr *e, Elf_Shdr *sections,
+		     Elf_Half section_entsize, Elf_Half num_sections,
 		     const char *strtab)
 {
-  Elf32_Half i;
-  Elf32_Shdr *s;
-  Elf32_Addr addr;
+  Elf_Half i;
+  Elf_Shdr *s;
+  Elf_Addr addr;
   
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
     if (is_text_section (s))
       {
-	Elf32_Word align = grub_le_to_cpu32 (s->sh_addralign);
-	Elf32_Off offset = grub_le_to_cpu32 (s->sh_offset);
-	Elf32_Word size = grub_le_to_cpu32 (s->sh_size);
+	Elf_Word align = grub_le_to_cpu32 (s->sh_addralign);
+	Elf_Off offset = grub_le_to_cpu32 (s->sh_offset);
+	Elf_Word size = grub_le_to_cpu32 (s->sh_size);
 	const char *name = strtab + grub_le_to_cpu32 (s->sh_name);
 	
 	if (align)
@@ -538,24 +623,24 @@ write_text_sections (FILE *out, Elf32_Addr current_address,
 }
 
 /* Write data sections.  */
-static Elf32_Addr
-write_data_sections (FILE *out, Elf32_Addr current_address,
-		     Elf32_Ehdr *e, Elf32_Shdr *sections,
-		     Elf32_Half section_entsize, Elf32_Half num_sections,
+static Elf_Addr
+write_data_sections (FILE *out, Elf_Addr current_address,
+		     Elf_Ehdr *e, Elf_Shdr *sections,
+		     Elf_Half section_entsize, Elf_Half num_sections,
 		     const char *strtab)
 {
-  Elf32_Half i;
-  Elf32_Shdr *s;
-  Elf32_Addr addr;
+  Elf_Half i;
+  Elf_Shdr *s;
+  Elf_Addr addr;
   
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
     if (is_data_section (s))
       {
-	Elf32_Word align = grub_le_to_cpu32 (s->sh_addralign);
-	Elf32_Off offset = grub_le_to_cpu32 (s->sh_offset);
-	Elf32_Word size = grub_le_to_cpu32 (s->sh_size);
+	Elf_Word align = grub_le_to_cpu32 (s->sh_addralign);
+	Elf_Off offset = grub_le_to_cpu32 (s->sh_offset);
+	Elf_Word size = grub_le_to_cpu32 (s->sh_size);
 	const char *name = strtab + grub_le_to_cpu32 (s->sh_name);
 	
 	if (align)
@@ -594,15 +679,15 @@ write_data_sections (FILE *out, Elf32_Addr current_address,
 }
 
 /* Write modules.  */
-static Elf32_Addr
-make_mods_section (FILE *out, Elf32_Addr current_address,
+static Elf_Addr
+make_mods_section (FILE *out, Elf_Addr current_address,
 		   const char *dir, char *mods[])
 {
   struct grub_util_path_list *path_list;
   grub_size_t total_module_size;
   struct grub_util_path_list *p;
   struct grub_module_info modinfo;
-  Elf32_Addr addr;
+  Elf_Addr addr;
 
   path_list = grub_util_resolve_dependencies (dir, "moddep.lst", mods);
   
@@ -631,7 +716,7 @@ make_mods_section (FILE *out, Elf32_Addr current_address,
       grub_util_info ("adding module %s", p->name);
       
       mod_size = grub_util_get_image_size (p->name);
-      header.offset = grub_cpu_to_le32 (sizeof (header));
+      header.type = grub_cpu_to_le32 (OBJ_TYPE_ELF);
       header.size = grub_cpu_to_le32 (mod_size + sizeof (header));
       
       mod_image = grub_util_read_image (p->name);
@@ -666,26 +751,27 @@ make_mods_section (FILE *out, Elf32_Addr current_address,
 }
 
 /* Make a .reloc section.  */
-static Elf32_Addr
-make_reloc_section (FILE *out, Elf32_Addr current_address, Elf32_Ehdr *e, 
-		    Elf32_Addr *section_addresses, Elf32_Shdr *sections,
-		    Elf32_Half section_entsize, Elf32_Half num_sections,
+static Elf_Addr
+make_reloc_section (FILE *out, Elf_Addr current_address, Elf_Ehdr *e,
+		    Elf_Addr *section_addresses, Elf_Shdr *sections,
+		    Elf_Half section_entsize, Elf_Half num_sections,
 		    const char *strtab)
 {
-  Elf32_Half i;
-  Elf32_Shdr *s;
+  Elf_Half i;
+  Elf_Shdr *s;
   struct grub_pe32_fixup_block *fixup_block = 0;
   
   for (i = 0, s = sections;
        i < num_sections;
-       i++, s = (Elf32_Shdr *) ((char *) s + section_entsize))
-    if (s->sh_type == grub_cpu_to_le32 (SHT_REL))
+       i++, s = (Elf_Shdr *) ((char *) s + section_entsize))
+    if ((s->sh_type == grub_cpu_to_le32 (SHT_REL)) ||
+        (s->sh_type == grub_cpu_to_le32 (SHT_RELA)))
       {
-	Elf32_Rel *r;
-	Elf32_Word rtab_size, r_size, num_rs;
-	Elf32_Off rtab_offset;
-	Elf32_Addr section_address;
-	Elf32_Word j;
+	Elf_Rel *r;
+	Elf_Word rtab_size, r_size, num_rs;
+	Elf_Off rtab_offset;
+	Elf_Addr section_address;
+	Elf_Word j;
 	
 	grub_util_info ("translating the relocation section %s",
 			strtab + grub_le_to_cpu32 (s->sh_name));
@@ -697,20 +783,21 @@ make_reloc_section (FILE *out, Elf32_Addr current_address, Elf32_Ehdr *e,
 	
 	section_address = section_addresses[grub_le_to_cpu32 (s->sh_info)];
 
-	for (j = 0, r = (Elf32_Rel *) ((char *) e + rtab_offset);
+	for (j = 0, r = (Elf_Rel *) ((char *) e + rtab_offset);
 	     j < num_rs;
-	     j++, r = (Elf32_Rel *) ((char *) r + r_size))
+	     j++, r = (Elf_Rel *) ((char *) r + r_size))
 	  {
-	    Elf32_Word info;
-	    Elf32_Addr offset;
+	    Elf_Addr info;
+	    Elf_Addr offset;
 
 	    offset = grub_le_to_cpu32 (r->r_offset);
 	    info = grub_le_to_cpu32 (r->r_info);
 
 	    /* Necessary to relocate only absolute addresses.  */
-	    if (ELF32_R_TYPE (info) == R_386_32)
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
+	    if (ELF_R_TYPE (info) == R_386_32)
 	      {
-		Elf32_Addr addr;
+		Elf_Addr addr;
 
 		addr = section_address + offset;
 		grub_util_info ("adding a relocation entry for 0x%x", addr);
@@ -719,6 +806,21 @@ make_reloc_section (FILE *out, Elf32_Addr current_address, Elf32_Ehdr *e,
 						   addr, 0, current_address,
 						   out);
 	      }
+#else
+	    if ((ELF_R_TYPE (info) == R_X86_64_64) ||
+                (ELF_R_TYPE (info) == R_X86_64_32) ||
+                (ELF_R_TYPE (info) == R_X86_64_32S))
+	      {
+		Elf_Addr addr;
+
+		addr = section_address + offset;
+		grub_util_info ("adding a relocation entry for 0x%llx", addr);
+		current_address = add_fixup_entry (&fixup_block,
+						   GRUB_PE32_REL_BASED_HIGHLOW,
+						   addr, 0, current_address,
+						   out);
+	      }
+#endif
 	  }
       }
 
@@ -730,9 +832,9 @@ make_reloc_section (FILE *out, Elf32_Addr current_address, Elf32_Ehdr *e,
 
 /* Create the header.  */
 static void
-make_header (FILE *out, Elf32_Addr text_address, Elf32_Addr data_address,
-	     Elf32_Addr mods_address, Elf32_Addr reloc_address,
-	     Elf32_Addr end_address, Elf32_Addr start_address)
+make_header (FILE *out, Elf_Addr text_address, Elf_Addr data_address,
+	     Elf_Addr mods_address, Elf_Addr reloc_address,
+	     Elf_Addr end_address, Elf_Addr start_address)
 {
   struct grub_pe32_header header;
   struct grub_pe32_coff_header *c;
@@ -747,14 +849,22 @@ make_header (FILE *out, Elf32_Addr text_address, Elf32_Addr data_address,
 
   /* The COFF file header.  */
   c = &header.coff_header;
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
   c->machine = grub_cpu_to_le16 (GRUB_PE32_MACHINE_I386);
+#else
+  c->machine = grub_cpu_to_le16 (GRUB_PE32_MACHINE_X86_64);
+#endif
+
   c->num_sections = grub_cpu_to_le16 (4);
   c->time = grub_cpu_to_le32 (time (0));
   c->optional_header_size = grub_cpu_to_le16 (sizeof (header.optional_header));
   c->characteristics = grub_cpu_to_le16 (GRUB_PE32_EXECUTABLE_IMAGE
 					 | GRUB_PE32_LINE_NUMS_STRIPPED
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
+                                         | GRUB_PE32_32BIT_MACHINE
+#endif
 					 | GRUB_PE32_LOCAL_SYMS_STRIPPED
-					 | GRUB_PE32_32BIT_MACHINE);
+                                         | GRUB_PE32_DEBUG_STRIPPED);
 
   /* The PE Optional header.  */
   o = &header.optional_header;
@@ -764,7 +874,9 @@ make_header (FILE *out, Elf32_Addr text_address, Elf32_Addr data_address,
   o->bss_size = 0;
   o->entry_addr = grub_cpu_to_le32 (start_address);
   o->code_base = grub_cpu_to_le32 (text_address);
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
   o->data_base = grub_cpu_to_le32 (data_address);
+#endif
   o->image_base = 0;
   o->section_alignment = grub_cpu_to_le32 (GRUB_PE32_SECTION_ALIGNMENT);
   o->file_alignment = grub_cpu_to_le32 (GRUB_PE32_FILE_ALIGNMENT);
@@ -847,30 +959,31 @@ convert_elf (const char *dir, char *prefix, FILE *out, char *mods[])
   char *kernel_image;
   size_t kernel_size;
   const char *strtab;
-  Elf32_Ehdr *e;
-  Elf32_Shdr *sections;
-  Elf32_Off section_offset;
-  Elf32_Half section_entsize;
-  Elf32_Half num_sections;
-  Elf32_Addr *section_addresses;
-  Elf32_Shdr *symtab_section;
-  Elf32_Addr start_address;
-  Elf32_Addr text_address, data_address, reloc_address, mods_address;
-  Elf32_Addr end_address;
+  Elf_Ehdr *e;
+  Elf_Shdr *sections;
+  Elf_Off section_offset;
+  Elf_Half section_entsize;
+  Elf_Half num_sections;
+  Elf_Addr *section_addresses;
+  Elf_Shdr *symtab_section;
+  Elf_Addr start_address;
+  Elf_Addr text_address, data_address, reloc_address, mods_address;
+  Elf_Addr end_address;
 
   /* Get the kernel image and check the format.  */
   kernel_image = read_kernel_module (dir, prefix, &kernel_size);
-  e = (Elf32_Ehdr *) kernel_image;
+  e = (Elf_Ehdr *) kernel_image;
   if (! check_elf_header (e, kernel_size))
     grub_util_error ("invalid ELF header");
   
   section_offset = grub_cpu_to_le32 (e->e_shoff);
   section_entsize = grub_cpu_to_le16 (e->e_shentsize);
   num_sections = grub_cpu_to_le16 (e->e_shnum);
+
   if (kernel_size < section_offset + section_entsize * num_sections)
     grub_util_error ("invalid ELF format");
 
-  sections = (Elf32_Shdr *) (kernel_image + section_offset);
+  sections = (Elf_Shdr *) (kernel_image + section_offset);
   strtab = find_strtab (e, sections, section_entsize);
 
   /* Relocate sections then symbols in the virtual address space.  */

@@ -31,6 +31,9 @@
 #include <grub/dl.h>
 #include <grub/cpu/linux.h>
 
+#define GRUB_LINUX_CL_OFFSET		0x9000
+#define GRUB_LINUX_CL_END_OFFSET	0x90FF
+
 static grub_dl_t my_mod;
 
 static grub_size_t linux_mem_size;
@@ -146,8 +149,7 @@ grub_rescue_cmd_linux (int argc, char *argv[])
   grub_linux_tmp_addr = (char *) GRUB_LINUX_BZIMAGE_ADDR + prot_size;
 
   if (! grub_linux_is_bzimage
-      && ((char *) GRUB_LINUX_ZIMAGE_ADDR + prot_size
-	  > (grub_size_t) grub_linux_real_addr))
+      && ((char *) GRUB_LINUX_ZIMAGE_ADDR + prot_size > grub_linux_real_addr))
     {
       grub_error (GRUB_ERR_BAD_OS, "too big zImage (0x%x > 0x%x), use bzImage instead",
 		  (char *) GRUB_LINUX_ZIMAGE_ADDR + prot_size,
@@ -345,7 +347,7 @@ grub_rescue_cmd_initrd (int argc, char *argv[])
 
   size = grub_file_size (file);
 
-  /* Put the initrd as high as possible, 4Ki aligned.  */
+  /* Put the initrd as high as possible, 4KiB aligned.  */
   addr = (addr_max - size) & ~0xFFF;
 
   if (addr < addr_min)

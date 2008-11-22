@@ -30,17 +30,22 @@ grub_getline (void)
   int i;
   char *line;
   char *tmp;
+  char c;
 
   i = 0;
   line = grub_malloc (1 + i + sizeof('\0'));
   if (! line)
     return NULL;
 
-  while ((line[i - 1] != '\n') && (line[i - 1] != '\r'))
+  while (1)
     {
-      line[i] = grub_getkey ();
-      if (grub_isprint (line[i]))
-	grub_putchar (line[i]);
+      c = grub_getkey ();
+      if ((c == '\n') || (c == '\r'))
+	break;
+
+      line[i] = c;
+      if (grub_isprint (c))
+	grub_putchar (c);
       i++;
       tmp = grub_realloc (line, 1 + i + sizeof('\0'));
       if (! tmp)

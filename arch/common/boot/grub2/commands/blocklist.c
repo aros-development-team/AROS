@@ -72,7 +72,7 @@ grub_cmd_blocklist (struct grub_arg_list *state __attribute__ ((unused)),
       if (num_entries++)
 	grub_printf (",");
 
-      grub_printf ("%llu", sector - part_start);
+      grub_printf ("%llu", (unsigned long long) (sector - part_start));
       if (num > 0)
 	grub_printf ("+%u", num);
       if (offset != 0 || length != 0)

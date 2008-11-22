@@ -21,6 +21,7 @@
 #ifdef __linux__
 
 #include <grub/util/misc.h>
+#include <grub/util/lvm.h>
 
 #include <string.h>
 #include <sys/stat.h>

@@ -326,7 +326,7 @@ general_error:
 /* go here when you need to stop the machine hard after an error condition */
 stop:	jmp	stop
 
-notification_string:	.string "Loading kernel"
+notification_string:	.string "loading"
 
 notification_step:	.string "."
 notification_done:	.string "\r\n"

@@ -55,7 +55,7 @@ grub_mb2_arch_module_alloc (grub_size_t size, grub_addr_t *addr)
 {
   grub_addr_t modaddr;
 
-  modaddr = grub_memalign (MULTIBOOT2_MOD_ALIGN, size);
+  modaddr = (grub_addr_t) grub_memalign (MULTIBOOT2_MOD_ALIGN, size);
   if (! modaddr)
     return grub_errno;
 
