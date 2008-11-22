@@ -1,7 +1,7 @@
 /* multiboot.h - multiboot header file with grub definitions. */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2003,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -100,6 +100,16 @@ struct grub_multiboot_info
   grub_uint16_t vbe_interface_off;
   grub_uint16_t vbe_interface_len;
 };
+
+struct grub_multiboot_mmap_entry
+{
+  grub_uint32_t size;
+  grub_uint64_t addr;
+  grub_uint64_t len;
+#define GRUB_MULTIBOOT_MEMORY_AVAILABLE		1
+#define GRUB_MULTIBOOT_MEMORY_RESERVED		2
+  grub_uint32_t type;
+} __attribute__((packed));
 
 struct grub_mod_list
 {

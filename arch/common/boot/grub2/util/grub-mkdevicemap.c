@@ -1,7 +1,7 @@
 /* grub-mkdevicemap.c - make a device map file automatically */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2007 Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2007,2008 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -166,6 +166,12 @@ get_floppy_disk_name (char *name, int unit)
 #elif defined(__QNXNTO__)
   /* QNX RTP */
   sprintf (name, "/dev/fd%d", unit);
+#elif defined(__CYGWIN__)
+  /* Cygwin */
+  sprintf (name, "/dev/fd%d", unit);
+#elif defined(__MINGW32__)
+  (void) unit;
+  *name = 0;
 #else
 # warning "BIOS floppy drives cannot be guessed in your operating system."
   /* Set NAME to a bogus string.  */
@@ -207,6 +213,12 @@ get_ide_disk_name (char *name, int unit)
   /* Actually, QNX RTP doesn't distinguish IDE from SCSI, so this could
      contain SCSI disks.  */
   sprintf (name, "/dev/hd%d", unit);
+#elif defined(__CYGWIN__)
+  /* Cygwin emulates all disks as /dev/sdX.  */
+  (void) unit;
+  *name = 0;
+#elif defined(__MINGW32__)
+  sprintf (name, "//./PHYSICALDRIVE%d", unit);
 #else
 # warning "BIOS IDE drives cannot be guessed in your operating system."
   /* Set NAME to a bogus string.  */
@@ -248,6 +260,12 @@ get_scsi_disk_name (char *name, int unit)
   /* QNX RTP doesn't distinguish SCSI from IDE, so it is better to
      disable the detection of SCSI disks here.  */
   *name = 0;
+#elif defined(__CYGWIN__)
+  /* Cygwin emulates all disks as /dev/sdX.  */
+  sprintf (name, "/dev/sd%c", unit + 'a');
+#elif defined(__MINGW32__)
+  (void) unit;
+  *name = 0;
 #else
 # warning "BIOS SCSI drives cannot be guessed in your operating system."
   /* Set NAME to a bogus string.  */
@@ -256,6 +274,12 @@ get_scsi_disk_name (char *name, int unit)
 }
 
 #ifdef __linux__
+static void
+get_virtio_disk_name (char *name, int unit)
+{
+  sprintf (name, "/dev/vd%c", unit + 'a');
+}
+
 static void
 get_dac960_disk_name (char *name, int controller, int drive)
 {
@@ -273,19 +297,43 @@ get_i2o_disk_name (char *name, char unit)
 {
   sprintf (name, "/dev/i2o/hd%c", unit);
 }
+
+static void
+get_cciss_disk_name (char *name, int controller, int drive)
+{
+  sprintf (name, "/dev/cciss/c%dd%d", controller, drive);
+}
+
+static void
+get_ida_disk_name (char *name, int controller, int drive)
+{
+  sprintf (name, "/dev/ida/c%dd%d", controller, drive);
+}
+
+static void
+get_mmc_disk_name (char *name, int unit)
+{
+  sprintf (name, "/dev/mmcblk%d", unit);
+}
+
+static void
+get_xvd_disk_name (char *name, int unit)
+{
+  sprintf (name, "/dev/xvd%c", unit + 'a');
+}
 #endif
 
 /* Check if DEVICE can be read. If an error occurs, return zero,
    otherwise return non-zero.  */
-int
+static int
 check_device (const char *device)
 {
   char buf[512];
   FILE *fp;
 
-  /* If DEVICE is empty, just return 1.  */
+  /* If DEVICE is empty, just return error.  */
   if (*device == 0)
-    return 1;
+    return 0;
   
   fp = fopen (device, "r");
   if (! fp)
@@ -402,11 +450,8 @@ make_device_map (const char *device_map, int floppy_disks)
 	  
 	  if (realpath (discn, name))
 	    {
-	      char *p;
 	      strcat (name, "/disc");
-	      p = grub_util_get_disk_name (num_hd, name);
-	      fprintf (fp, "(%s)\t%s\n", p, name);
-	      free (p);
+	      fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
 	    }
 	  
 	  num_hd++;
@@ -424,15 +469,25 @@ make_device_map (const char *device_map, int floppy_disks)
       get_ide_disk_name (name, i);
       if (check_device (name))
 	{
-	  char *p;
-	  p = grub_util_get_disk_name (num_hd, name);
-	  fprintf (fp, "(%s)\t%s\n", p, name);
-	  free (p);
+	  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
 	  num_hd++;
 	}
     }
   
 #ifdef __linux__
+  /* Virtio disks.  */
+  for (i = 0; i < 20; i++)
+    {
+      char name[16];
+      
+      get_virtio_disk_name (name, i);
+      if (check_device (name))
+	{
+	  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
+	  num_hd++;
+	}
+    }
+  
   /* ATARAID disks.  */
   for (i = 0; i < 8; i++)
     {
@@ -441,12 +496,22 @@ make_device_map (const char *device_map, int floppy_disks)
       get_ataraid_disk_name (name, i);
       if (check_device (name))
 	{
-	  char *p;
-	  p = grub_util_get_disk_name (num_hd, name);
-	  fprintf (fp, "(%s)\t%s\n", p, name);
-	  free (p);
+	  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
           num_hd++;
         }
+    }
+
+  /* Xen virtual block devices.  */
+  for (i = 0; i < 16; i++)
+    {
+      char name[16];
+
+      get_xvd_disk_name (name, i);
+      if (check_device (name))
+	{
+	  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
+	  num_hd++;
+	}
     }
 #endif /* __linux__ */
 
@@ -458,10 +523,7 @@ make_device_map (const char *device_map, int floppy_disks)
       get_scsi_disk_name (name, i);
       if (check_device (name))
 	{
-	  char *p;
-	  p = grub_util_get_disk_name (num_hd, name);
-	  fprintf (fp, "(%s)\t%s\n", p, name);
-	  free (p);
+	  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
 	  num_hd++;
 	}
     }
@@ -484,10 +546,49 @@ make_device_map (const char *device_map, int floppy_disks)
 	    get_dac960_disk_name (name, controller, drive);
 	    if (check_device (name))
 	      {
-		char *p;
-		p = grub_util_get_disk_name (num_hd, name);
-		fprintf (fp, "(%s)\t%s\n", p, name);
-		free (p);
+		fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
+		num_hd++;
+	      }
+	  }
+      }
+  }
+    
+  /* This is for CCISS - we have
+     /dev/cciss/c<controller>d<logical drive>p<partition>.  */
+  {
+    int controller, drive;
+    
+    for (controller = 0; controller < 3; controller++)
+      {
+	for (drive = 0; drive < 10; drive++)
+	  {
+	    char name[24];
+	    
+	    get_cciss_disk_name (name, controller, drive);
+	    if (check_device (name))
+	      {
+		fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
+		num_hd++;
+	      }
+	  }
+      }
+  }
+
+  /* This is for Compaq Intelligent Drive Array - we have
+     /dev/ida/c<controller>d<logical drive>p<partition>.  */
+  {
+    int controller, drive;
+    
+    for (controller = 0; controller < 3; controller++)
+      {
+	for (drive = 0; drive < 10; drive++)
+	  {
+	    char name[24];
+	    
+	    get_ida_disk_name (name, controller, drive);
+	    if (check_device (name))
+	      {
+		fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
 		num_hd++;
 	      }
 	  }
@@ -505,17 +606,28 @@ make_device_map (const char *device_map, int floppy_disks)
 	get_i2o_disk_name (name, unit);
 	if (check_device (name))
 	  {
-	    char *p;
-	    p = grub_util_get_disk_name (num_hd, name);
-	    fprintf (fp, "(%s)\t%s\n", p, name);
-	    free (p);
+	    fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
 	    num_hd++;
 	  }
       }
   }
-#endif /* __linux__ */
+
+  /* MultiMediaCard (MMC).  */
+  for (i = 0; i < 10; i++)
+    {
+      char name[16];
+      
+      get_mmc_disk_name (name, i);
+      if (check_device (name))
+	{
+	  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
+	  num_hd++;
+	}
+    }
 
  finish:
+#endif /* __linux__ */
+
   if (fp != stdout)
     fclose (fp);
 }

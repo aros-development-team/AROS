@@ -22,6 +22,7 @@
 #include <grub/disk.h>
 #include <grub/misc.h>
 #include <grub/dl.h>
+#include <grub/util/misc.h>
 
 #include <dirent.h>
 #include <stdio.h>
@@ -95,15 +96,19 @@ grub_hostfs_open (struct grub_file *file, const char *name)
 {
   FILE *f;
 
-  f = fopen (name, "r");
+  f = fopen (name, "rb");
   if (! f)
     return grub_error (GRUB_ERR_BAD_FILENAME,
 		       "can't open `%s'", name);
   file->data = f;
 
+#ifdef __MINGW32__
+  file->size = grub_util_get_disk_size (name);
+#else
   fseeko (f, 0, SEEK_END);
   file->size = ftello (f);
   fseeko (f, 0, SEEK_SET);
+#endif
 
   return GRUB_ERR_NONE;
 }

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,64 +25,70 @@
 struct grub_video_i386_vbeblit_info;
 
 void
-grub_video_i386_vbeblit_R8G8B8A8_R8G8B8A8 (struct grub_video_i386_vbeblit_info *dst,
-                                           struct grub_video_i386_vbeblit_info *src,
-                                           int x, int y, int width, int height,
-                                           int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace (struct grub_video_i386_vbeblit_info *dst,
+                                 struct grub_video_i386_vbeblit_info *src,
+                                 int x, int y, int width, int height,
+                                 int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_R8G8B8X8_R8G8B8X8 (struct grub_video_i386_vbeblit_info *dst,
-                                           struct grub_video_i386_vbeblit_info *src,
-                                           int x, int y, int width, int height,
-                                           int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_directN (struct grub_video_i386_vbeblit_info *dst,
+					 struct grub_video_i386_vbeblit_info *src,
+					 int x, int y, int width, int height,
+					 int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_R8G8B8_R8G8B8A8 (struct grub_video_i386_vbeblit_info *dst,
-                                         struct grub_video_i386_vbeblit_info *src,
-                                         int x, int y, int width, int height,
-                                         int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_BGRX8888_RGBX8888 (struct grub_video_i386_vbeblit_info *dst,
+						   struct grub_video_i386_vbeblit_info *src,
+						   int x, int y, int width, int height,
+						   int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_R8G8B8_R8G8B8X8 (struct grub_video_i386_vbeblit_info *dst,
-                                         struct grub_video_i386_vbeblit_info *src,
-                                         int x, int y, int width, int height,
-                                         int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_BGRX8888_RGB888 (struct grub_video_i386_vbeblit_info *dst,
+						 struct grub_video_i386_vbeblit_info *src,
+						 int x, int y,
+						 int width, int height,
+						 int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_index_R8G8B8A8 (struct grub_video_i386_vbeblit_info *dst,
-                                        struct grub_video_i386_vbeblit_info *src,
-                                        int x, int y, int width, int height,
-                                        int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_BGR888_RGBX8888 (struct grub_video_i386_vbeblit_info *dst,
+						 struct grub_video_i386_vbeblit_info *src,
+						 int x, int y,
+						 int width, int height,
+						 int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_index_R8G8B8X8 (struct grub_video_i386_vbeblit_info *dst,
-                                        struct grub_video_i386_vbeblit_info *src,
-                                        int x, int y, int width, int height,
-                                        int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_BGR888_RGB888 (struct grub_video_i386_vbeblit_info *dst,
+					       struct grub_video_i386_vbeblit_info *src,
+					       int x, int y,
+					       int width, int height,
+					       int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_R8G8B8A8_R8G8B8 (struct grub_video_i386_vbeblit_info *dst,
-                                         struct grub_video_i386_vbeblit_info *src,
-                                         int x, int y, int width, int height,
-                                         int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_RGBX8888_RGB888 (struct grub_video_i386_vbeblit_info *dst,
+						 struct grub_video_i386_vbeblit_info *src,
+						 int x, int y,
+						 int width, int height,
+						 int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_R8G8B8_R8G8B8 (struct grub_video_i386_vbeblit_info *dst,
-                                       struct grub_video_i386_vbeblit_info *src,
-                                       int x, int y, int width, int height,
-                                       int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_RGB888_RGBX8888 (struct grub_video_i386_vbeblit_info *dst,
+						 struct grub_video_i386_vbeblit_info *src,
+						 int x, int y,
+						 int width, int height,
+						 int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_index_R8G8B8 (struct grub_video_i386_vbeblit_info *dst,
-                                      struct grub_video_i386_vbeblit_info *src,
-                                      int x, int y, int width, int height,
-                                      int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_index_RGBX8888 (struct grub_video_i386_vbeblit_info *dst,
+						struct grub_video_i386_vbeblit_info *src,
+						int x, int y,
+						int width, int height,
+						int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_index_index (struct grub_video_i386_vbeblit_info *dst,
-                                     struct grub_video_i386_vbeblit_info *src,
-                                     int x, int y, int width, int height,
-                                     int offset_x, int offset_y);
+grub_video_i386_vbeblit_replace_index_RGB888 (struct grub_video_i386_vbeblit_info *dst,
+					      struct grub_video_i386_vbeblit_info *src,
+					      int x, int y, int width, int height,
+					      int offset_x, int offset_y);
 
 void
 grub_video_i386_vbeblit_blend (struct grub_video_i386_vbeblit_info *dst,
@@ -91,9 +97,38 @@ grub_video_i386_vbeblit_blend (struct grub_video_i386_vbeblit_info *dst,
                                int offset_x, int offset_y);
 
 void
-grub_video_i386_vbeblit_replace (struct grub_video_i386_vbeblit_info *dst,
-                                 struct grub_video_i386_vbeblit_info *src,
-                                 int x, int y, int width, int height,
-                                 int offset_x, int offset_y);
+grub_video_i386_vbeblit_blend_BGRA8888_RGBA8888 (struct grub_video_i386_vbeblit_info *dst,
+						 struct grub_video_i386_vbeblit_info *src,
+						 int x, int y,
+						 int width, int height,
+						 int offset_x, int offset_y);
+
+void
+grub_video_i386_vbeblit_blend_BGR888_RGBA8888 (struct grub_video_i386_vbeblit_info *dst,
+					       struct grub_video_i386_vbeblit_info *src,
+					       int x, int y,
+					       int width, int height,
+					       int offset_x, int offset_y);
+
+void
+grub_video_i386_vbeblit_blend_RGBA8888_RGBA8888 (struct grub_video_i386_vbeblit_info *dst,
+						 struct grub_video_i386_vbeblit_info *src,
+						 int x, int y,
+						 int width, int height,
+						 int offset_x, int offset_y);
+
+void
+grub_video_i386_vbeblit_blend_RGB888_RGBA8888 (struct grub_video_i386_vbeblit_info *dst,
+					       struct grub_video_i386_vbeblit_info *src,
+					       int x, int y,
+					       int width, int height,
+					       int offset_x, int offset_y);
+
+void
+grub_video_i386_vbeblit_blend_index_RGBA8888 (struct grub_video_i386_vbeblit_info *dst,
+					      struct grub_video_i386_vbeblit_info *src,
+					      int x, int y,
+					      int width, int height,
+					      int offset_x, int offset_y);
 
 #endif /* ! GRUB_VBEBLIT_MACHINE_HEADER */

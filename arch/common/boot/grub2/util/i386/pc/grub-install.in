@@ -118,7 +118,7 @@ for option in "$@"; do
 done
 
 # for make_system_path_relative_to_its_root()
-. ${libdir}/grub/update-grub_lib
+. ${libdir}/grub/grub-mkconfig_lib
 
 if test "x$install_device" = x; then
     echo "install_device not specified." 1>&2
@@ -127,8 +127,10 @@ if test "x$install_device" = x; then
 fi
 
 # If the debugging feature is enabled, print commands.
+setup_verbose=
 if test $debug = yes; then
     set -x
+    setup_verbose="--verbose"
 fi
 
 # Initialize these directories here, since ROOTDIR was initialized.
@@ -147,6 +149,8 @@ esac
 
 grubdir=${bootdir}/`echo grub | sed ${transform}`
 device_map=${grubdir}/device.map
+
+grub_probe="${grub_probe} --device-map=${device_map}"
 
 # Check if GRUB is installed.
 set $grub_setup dummy
@@ -210,8 +214,11 @@ for file in ${pkglibdir}/*.mod ${pkglibdir}/*.lst ${pkglibdir}/*.img; do
     cp -f $file ${grubdir} || exit 1
 done
 
+# Write device to a variable so we don't have to traverse /dev every time.
+grub_device=`$grub_probe --target=device ${grubdir}`
+
 # Create the core image. First, auto-detect the filesystem module.
-fs_module=`$grub_probe --target=fs --device-map=${device_map} ${grubdir}`
+fs_module=`$grub_probe --target=fs --device ${grub_device}`
 if test "x$fs_module" = x -a "x$modules" = x; then
     echo "Auto-detection of a filesystem module failed." 1>&2
     echo "Please specify the module with the option \`--modules' explicitly." 1>&2
@@ -221,18 +228,48 @@ fi
 # Then the partition map module.  In order to support partition-less media,
 # this command is allowed to fail (--target=fs already grants us that the
 # filesystem will be accessible).
-partmap_module=`$grub_probe --target=partmap --device-map=${device_map} ${grubdir} 2> /dev/null`
+partmap_module=`$grub_probe --target=partmap --device ${grub_device} 2> /dev/null`
 
 # Device abstraction module, if any (lvm, raid).
-devabstraction_module=`$grub_probe --target=abstraction --device-map=${device_map} ${grubdir}`
+devabstraction_module=`$grub_probe --target=abstraction --device ${grub_device}`
 
-# _chain is often useful
-modules="$modules $fs_module $partmap_module biosdisk $devabstraction_module _chain"
+# The order in this list is critical.  Be careful when modifying it.
+modules="$modules $fs_module $partmap_module biosdisk $devabstraction_module"
 
-$grub_mkimage --output=${grubdir}/core.img --prefix=`make_system_path_relative_to_its_root ${grubdir}` $modules || exit 1
+prefix_drive=
+if [ "x${devabstraction_module}" = "x" ] ; then
+    if echo "${install_device}" | grep -qx "(.*)" ; then
+      install_drive="${install_device}"
+    else
+      install_drive="`$grub_probe --target=drive --device ${install_device}`"
+    fi
+    grub_drive="`$grub_probe --target=drive --device ${grub_device}`"
+
+    # Strip partition number
+    install_drive="`echo ${install_drive} | sed -e s/,[0-9]*//g`"
+    grub_drive="`echo ${grub_drive} | sed -e s/,[0-9]*//g`"
+    if [ "x${grub_drive}" != "x${install_drive}" ] ; then
+        uuid="`$grub_probe --target=fs_uuid --device ${grub_device}`"
+        if [ "x${uuid}" = "x" ] ; then
+          echo "You attempted a cross-disk install, but the filesystem containing ${grubdir} does not support UUIDs." 1>&2
+          exit 1
+        fi
+        prefix_drive="(UUID=${uuid})"
+        modules="$modules fs_uuid"
+    fi
+else
+    prefix_drive=`$grub_probe --target=drive --device ${grub_device}`
+fi
+
+relative_grubdir=`make_system_path_relative_to_its_root ${grubdir}` || exit 1
+if [ "x${relative_grubdir}" = "x" ] ; then
+    relative_grubdir=/
+fi
+
+$grub_mkimage --output=${grubdir}/core.img --prefix=${prefix_drive}${relative_grubdir} $modules || exit 1
 
 # Now perform the installation.
-$grub_setup --directory=${grubdir} --device-map=${device_map} \
+$grub_setup ${setup_verbose} --directory=${grubdir} --device-map=${device_map} \
     ${install_device} || exit 1
 
 # Prompt the user to check if the device map is correct.

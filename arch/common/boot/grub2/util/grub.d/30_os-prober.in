@@ -1,0 +1,89 @@
+#! /bin/sh -e
+
+# update-grub helper script.
+# Copyright (C) 2006,2007,2008  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+if [ -z "`which os-prober 2> /dev/null`" -o -z "`which linux-boot-prober 2> /dev/null`" ] ; then
+  # missing os-prober and/or linux-boot-prober
+  exit 0
+fi
+
+OSPROBED="`os-prober 2> /dev/null | tr ' ' '^' | paste -s -d ' '`"
+if [ -z "${OSPROBED}" ] ; then
+  # empty os-prober output, nothing doing
+  exit 0
+fi
+
+for OS in ${OSPROBED} ; do
+  DEVICE="`echo ${OS} | cut -d ':' -f 1`"
+  LONGNAME="`echo ${OS} | cut -d ':' -f 2 | tr '^' ' '`"
+  LABEL="`echo ${OS} | cut -d ':' -f 3 | tr '^' ' '`"
+  BOOT="`echo ${OS} | cut -d ':' -f 4`"
+
+  if [ -z "${LONGNAME}" ] ; then
+    LONGNAME="${LABEL}"
+  fi
+
+  echo "Found ${LONGNAME} on ${DEVICE}" >&2
+
+  case ${BOOT} in
+    chain)
+      CHAINROOT="`grub-probe --target=drive --device ${DEVICE} 2> /dev/null`"
+
+      cat << EOF
+menuentry "${LONGNAME} (on ${DEVICE})" {
+	set root=${CHAINROOT}
+	chainloader +1
+}
+EOF
+    ;;
+    linux)
+      LINUXPROBED="`linux-boot-prober ${DEVICE} 2> /dev/null | tr ' ' '^' | paste -s -d ' '`"
+ 
+      for LINUX in ${LINUXPROBED} ; do
+        LROOT="`echo ${LINUX} | cut -d ':' -f 1`"
+        LBOOT="`echo ${LINUX} | cut -d ':' -f 2`"
+        LLABEL="`echo ${LINUX} | cut -d ':' -f 3 | tr '^' ' '`"
+        LKERNEL="`echo ${LINUX} | cut -d ':' -f 4`"
+        LINITRD="`echo ${LINUX} | cut -d ':' -f 5`"
+        LPARAMS="`echo ${LINUX} | cut -d ':' -f 6- | tr '^' ' '`"
+
+        LINUXROOT="`grub-probe --target=drive --device ${LBOOT} 2> /dev/null`"
+
+        if [ -z "${LLABEL}" ] ; then
+          LLABEL="${LONGNAME}"
+        fi
+
+        cat << EOF
+menuentry "${LLABEL} (on ${DEVICE})" {
+	set root=${LINUXROOT}
+	linux ${LKERNEL} ${LPARAMS}
+EOF
+        if [ -n "${LINITRD}" ] ; then
+          cat << EOF
+	initrd ${LINITRD}
+EOF
+        fi
+        cat << EOF
+}
+EOF
+      done
+    ;;
+    hurd|*)
+      echo "  ${LONGNAME} is not yet supported by grub-mkconfig." >&2
+    ;;
+  esac
+done

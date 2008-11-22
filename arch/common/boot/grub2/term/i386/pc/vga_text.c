@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2007, 2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,8 +16,9 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/machine/console.h>
-#include <grub/cpu/io.h>
+#include <grub/dl.h>
+#include <grub/i386/vga_common.h>
+#include <grub/i386/io.h>
 #include <grub/types.h>
 
 #define COLS	80
@@ -33,6 +34,8 @@ static int grub_curr_x, grub_curr_y;
 #define CRTC_CURSOR		0x0a
 #define CRTC_CURSOR_ADDR_HIGH	0x0e
 #define CRTC_CURSOR_ADDR_LOW	0x0f
+
+#define CRTC_CURSOR_DISABLE	(1 << 5)
 
 static void
 screen_write_char (int x, int y, short c)
@@ -104,33 +107,64 @@ grub_console_real_putchar (int c)
   update_cursor ();
 }
 
-grub_uint16_t
-grub_console_getxy (void)
+static grub_uint16_t
+grub_vga_text_getxy (void)
 {
   return (grub_curr_x << 8) | grub_curr_y;
 }
 
-void
-grub_console_gotoxy (grub_uint8_t x, grub_uint8_t y)
+static void
+grub_vga_text_gotoxy (grub_uint8_t x, grub_uint8_t y)
 {
   grub_curr_x = x;
   grub_curr_y = y;
   update_cursor ();
 }
 
-void
-grub_console_cls (void)
+static void
+grub_vga_text_cls (void)
 {
   int i;
   for (i = 0; i < ROWS * COLS; i++)
     ((short *) VGA_TEXT_SCREEN)[i] = ' ' | (grub_console_cur_color << 8);
+  grub_vga_text_gotoxy (0, 0);
 }
 
-void
-grub_console_setcursor (int on)
+static void
+grub_vga_text_setcursor (int on)
 {
   grub_uint8_t old;
   grub_outb (CRTC_CURSOR, CRTC_ADDR_PORT);
   old = grub_inb (CRTC_DATA_PORT);
-  grub_outb ((old & ~(on << 5)), CRTC_DATA_PORT);
+  if (on)
+    grub_outb (old & ~CRTC_CURSOR_DISABLE, CRTC_DATA_PORT);
+  else
+    grub_outb (old | CRTC_CURSOR_DISABLE, CRTC_DATA_PORT);
+}
+
+static struct grub_term_output grub_vga_text_term =
+  {
+    .name = "vga_text",
+    .init = grub_vga_text_cls,
+    .fini = grub_vga_text_cls,
+    .putchar = grub_console_putchar,
+    .getcharwidth = grub_console_getcharwidth,
+    .getwh = grub_console_getwh,
+    .getxy = grub_vga_text_getxy,
+    .gotoxy = grub_vga_text_gotoxy,
+    .cls = grub_vga_text_cls,
+    .setcolorstate = grub_console_setcolorstate,
+    .setcolor = grub_console_setcolor,
+    .getcolor = grub_console_getcolor,
+    .setcursor = grub_vga_text_setcursor,
+  };
+
+GRUB_MOD_INIT(vga_text)
+{
+  grub_term_register_output (&grub_vga_text_term);
+}
+
+GRUB_MOD_FINI(vga_text)
+{
+  grub_term_unregister_output (&grub_vga_text_term);
 }

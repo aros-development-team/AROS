@@ -1,10 +1,16 @@
 # -*- makefile -*-
 
+# For grub-mkelfimage.
+bin_UTILITIES += grub-mkelfimage
+grub_mkelfimage_SOURCES = util/elf/grub-mkimage.c util/misc.c \
+	util/resolve.c
+util/elf/grub-mkimage.c_DEPENDENCIES = Makefile
+
 # For grub-probe.
 sbin_UTILITIES += grub-probe
 util/grub-probe.c_DEPENDENCIES = grub_probe_init.h
 grub_probe_SOURCES = util/grub-probe.c	\
-	util/biosdisk.c	util/misc.c util/getroot.c		\
+	util/hostdisk.c	util/misc.c util/getroot.c		\
 	kern/device.c kern/disk.c kern/err.c kern/misc.c	\
 	kern/parser.c kern/partition.c kern/file.c		\
 	\
@@ -15,7 +21,7 @@ grub_probe_SOURCES = util/grub-probe.c	\
 	\
 	partmap/pc.c partmap/apple.c partmap/gpt.c 		\
 	kern/fs.c kern/env.c fs/fshelp.c			\
-	disk/lvm.c disk/raid.c grub_probe_init.c
+	disk/lvm.c disk/raid.c disk/mdraid_linux.c grub_probe_init.c
 
 ifeq ($(enable_grub_fstest), yes)
 bin_UTILITIES += grub-fstest
@@ -26,7 +32,7 @@ util/grub-fstest.c_DEPENDENCIES = grub_fstest_init.h
 grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
 	kern/file.c kern/device.c kern/disk.c kern/err.c kern/misc.c	\
 	disk/host.c disk/loopback.c  normal/arg.c normal/misc.c		\
-	io/gzio.c commands/hexdump.c commands/blocklist.c commands/ls.c \
+	lib/hexdump.c lib/crc.c commands/blocklist.c commands/ls.c 	\
 	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c			\
 	fs/hfsplus.c fs/iso9660.c fs/udf.c fs/jfs.c fs/minix.c		\
@@ -34,7 +40,9 @@ grub_fstest_SOURCES = util/grub-fstest.c util/hostfs.c util/misc.c 	\
 	fs/ufs.c fs/xfs.c fs/afs.c					\
 	\
 	kern/partition.c partmap/pc.c partmap/apple.c partmap/gpt.c 	\
-	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c	\
+	kern/fs.c kern/env.c fs/fshelp.c disk/lvm.c disk/raid.c		\
+	disk/raid5_recover.c disk/raid6_recover.c 			\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c 			\
 	grub_fstest_init.c
 
 # For the parser.
@@ -94,12 +102,31 @@ grub_fstest_init.c: grub_fstest_init.lst $(filter-out grub_fstest_init.c,$(grub_
 	rm -f $@; sh $(srcdir)/geninit.sh $< $(filter %.c,$^) > $@
 DISTCLEANFILES += grub_fstest_init.c
 
-# For update-grub
-update-grub: util/update-grub.in config.status
+# for grub-editenv
+bin_UTILITIES += grub-editenv
+grub_editenv_SOURCES = util/grub-editenv.c lib/envblk.c util/misc.c kern/misc.c kern/err.c
+CLEANFILES += grub-editenv
+
+# for grub-pe2elf
+ifeq ($(enable_grub_pe2elf), yes)
+bin_UTILITIES += grub-pe2elf
+endif
+
+grub_pe2elf_SOURCES = util/grub-pe2elf.c util/misc.c
+CLEANFILES += grub-pe2elf
+
+# For grub-mkconfig
+grub-mkconfig: util/grub-mkconfig.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-sbin_SCRIPTS += update-grub
-CLEANFILES += update-grub
+sbin_SCRIPTS += grub-mkconfig
+CLEANFILES += grub-mkconfig
+
+grub-mkconfig_lib: util/grub-mkconfig_lib.in config.status
+	./config.status --file=$@:$<
+	chmod +x $@
+lib_DATA += grub-mkconfig_lib
+CLEANFILES += grub-mkconfig_lib
 
 update-grub_lib: util/update-grub_lib.in config.status
 	./config.status --file=$@:$<
@@ -107,25 +134,17 @@ update-grub_lib: util/update-grub_lib.in config.status
 lib_DATA += update-grub_lib
 CLEANFILES += update-grub_lib
 
-00_header: util/grub.d/00_header.in config.status
+%: util/grub.d/%.in config.status
 	./config.status --file=$@:$<
 	chmod +x $@
-update-grub_SCRIPTS += 00_header
-CLEANFILES += 00_header
+grub-mkconfig_SCRIPTS = 00_header 10_linux 10_hurd 10_freebsd 30_os-prober 40_custom
+ifeq ($(target_os), cygwin)
+grub-mkconfig_SCRIPTS += 10_windows
+endif
 
-10_linux: util/grub.d/10_linux.in config.status
-	./config.status --file=$@:$<
-	chmod +x $@
-update-grub_SCRIPTS += 10_linux
-CLEANFILES += 10_linux
+CLEANFILES += $(grub-mkconfig_SCRIPTS)
 
-10_hurd: util/grub.d/10_hurd.in config.status
-	./config.status --file=$@:$<
-	chmod +x $@
-update-grub_SCRIPTS += 10_hurd
-CLEANFILES += 10_hurd
-
-update-grub_DATA += util/grub.d/README
+grub-mkconfig_DATA += util/grub.d/README
 
 
 # Filing systems.
@@ -257,26 +276,52 @@ gpt_mod_SOURCES = partmap/gpt.c
 gpt_mod_CFLAGS = $(COMMON_CFLAGS)
 gpt_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# Special disk structures
+# Special disk structures and generic drivers
 
-pkglib_MODULES += raid.mod lvm.mod
+pkglib_MODULES += raid.mod raid5rec.mod raid6rec.mod mdraid.mod dm_nv.mod \
+	lvm.mod scsi.mod
 
 # For raid.mod
 raid_mod_SOURCES = disk/raid.c
 raid_mod_CFLAGS = $(COMMON_CFLAGS)
 raid_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For raid.mod
+# For raid5rec.mod
+raid5rec_mod_SOURCES = disk/raid5_recover.c
+raid5rec_mod_CFLAGS = $(COMMON_CFLAGS)
+raid5rec_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For raid6rec.mod
+raid6rec_mod_SOURCES = disk/raid6_recover.c
+raid6rec_mod_CFLAGS = $(COMMON_CFLAGS)
+raid6rec_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For mdraid.mod
+mdraid_mod_SOURCES = disk/mdraid_linux.c
+mdraid_mod_CFLAGS = $(COMMON_CFLAGS)
+mdraid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For dm_nv.mod
+dm_nv_mod_SOURCES = disk/dmraid_nvidia.c
+dm_nv_mod_CFLAGS = $(COMMON_CFLAGS)
+dm_nv_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For lvm.mod
 lvm_mod_SOURCES = disk/lvm.c
 lvm_mod_CFLAGS = $(COMMON_CFLAGS)
 lvm_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For scsi.mod
+scsi_mod_SOURCES = disk/scsi.c
+scsi_mod_CFLAGS = $(COMMON_CFLAGS)
+scsi_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # Commands.
 pkglib_MODULES += hello.mod boot.mod terminal.mod ls.mod	\
 	cmp.mod cat.mod help.mod font.mod search.mod		\
-	loopback.mod configfile.mod echo.mod			\
+	loopback.mod fs_uuid.mod configfile.mod echo.mod	\
 	terminfo.mod test.mod blocklist.mod hexdump.mod		\
-	read.mod sleep.mod
+	read.mod sleep.mod loadenv.mod crc.mod
 
 # For hello.mod.
 hello_mod_SOURCES = hello/hello.c
@@ -338,6 +383,11 @@ loopback_mod_SOURCES = disk/loopback.c
 loopback_mod_CFLAGS = $(COMMON_CFLAGS)
 loopback_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For fs_uuid.mod
+fs_uuid_mod_SOURCES = disk/fs_uuid.c
+fs_uuid_mod_CFLAGS = $(COMMON_CFLAGS)
+fs_uuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # For configfile.mod
 configfile_mod_SOURCES = commands/configfile.c
 configfile_mod_CFLAGS = $(COMMON_CFLAGS)
@@ -354,12 +404,32 @@ blocklist_mod_CFLAGS = $(COMMON_CFLAGS)
 blocklist_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For hexdump.mod.
-hexdump_mod_SOURCES = commands/hexdump.c
+hexdump_mod_SOURCES = commands/hexdump.c lib/hexdump.c
 hexdump_mod_CFLAGS = $(COMMON_CFLAGS)
 hexdump_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
+# For read.mod.
+read_mod_SOURCES = commands/read.c
+read_mod_CFLAGS = $(COMMON_CFLAGS)
+read_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For sleep.mod.
+sleep_mod_SOURCES = commands/sleep.c
+sleep_mod_CFLAGS = $(COMMON_CFLAGS)
+sleep_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For loadenv.mod.
+loadenv_mod_SOURCES = commands/loadenv.c lib/envblk.c
+loadenv_mod_CFLAGS = $(COMMON_CFLAGS)
+loadenv_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+# For crc.mod.
+crc_mod_SOURCES = commands/crc.c lib/crc.c
+crc_mod_CFLAGS = $(COMMON_CFLAGS)
+crc_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
 # Misc.
-pkglib_MODULES += gzio.mod elf.mod
+pkglib_MODULES += gzio.mod bufio.mod elf.mod
 
 # For elf.mod.
 elf_mod_SOURCES = kern/elf.c
@@ -371,12 +441,7 @@ gzio_mod_SOURCES = io/gzio.c
 gzio_mod_CFLAGS = $(COMMON_CFLAGS)
 gzio_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
-# For read.mod.
-read_mod_SOURCES = commands/read.c
-read_mod_CFLAGS = $(COMMON_CFLAGS)
-read_mod_LDFLAGS = $(COMMON_LDFLAGS)
-
-# For sleep.mod.
-sleep_mod_SOURCES = commands/sleep.c
-sleep_mod_CFLAGS = $(COMMON_CFLAGS)
-sleep_mod_LDFLAGS = $(COMMON_LDFLAGS)
+# For bufio.mod.
+bufio_mod_SOURCES = io/bufio.c
+bufio_mod_CFLAGS = $(COMMON_CFLAGS)
+bufio_mod_LDFLAGS = $(COMMON_LDFLAGS)

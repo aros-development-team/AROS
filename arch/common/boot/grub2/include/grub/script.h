@@ -23,7 +23,6 @@
 #include <grub/types.h>
 #include <grub/err.h>
 #include <grub/parser.h>
-#include "grub_script.tab.h"
 
 struct grub_script_mem;
 
@@ -238,7 +237,8 @@ struct grub_script_mem *grub_script_mem_record_stop (struct grub_parser_param *s
 void *grub_script_malloc (struct grub_parser_param *state, grub_size_t size);
 
 /* Functions used by bison.  */
-int grub_script_yylex (YYSTYPE *, struct grub_parser_param *);
+union YYSTYPE;
+int grub_script_yylex (union YYSTYPE *, struct grub_parser_param *);
 int grub_script_yyparse (struct grub_parser_param *);
 void grub_script_yyerror (struct grub_parser_param *, char const *);
 

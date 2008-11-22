@@ -1,0 +1,173 @@
+# Helper library for grub-mkconfig
+# Copyright (C) 2007,2008  Free Software Foundation, Inc.
+#
+# GRUB is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GRUB is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+
+transform="@program_transform_name@"
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+datadir=@datadir@
+sbindir=@sbindir@
+pkgdatadir=${datadir}/`echo @PACKAGE_TARNAME@ | sed "${transform}"`
+
+grub_probe=${sbindir}/`echo grub-probe | sed ${transform}`
+
+make_system_path_relative_to_its_root ()
+{
+  path=$1
+  # abort if file doesn't exist
+  if test -e $path ; then : ;else
+    return 1
+  fi
+
+  # canonicalize
+  if path=`readlink -f $path` ; then : ; else
+    return 1
+  fi
+
+  # if not a directory, climb up to the directory containing it
+  if test -d $path ; then
+    dir=$path
+  else
+    dir=`echo $path | sed -e "s,/[^/]*$,,g"`
+  fi
+
+  num=`stat -c %d $dir`
+
+  # this loop sets $dir to the root directory of the filesystem we're inspecting
+  while : ; do
+    parent=`readlink -f $dir/..`
+    if [ "x`stat -c %d $parent`" = "x$num" ] ; then : ; else
+      # $parent is another filesystem; we found it.
+      break
+    fi
+    if [ "x$dir" = "x/" ] ; then
+      # / is our root.
+      break
+    fi
+    dir=$parent
+  done
+
+  # This function never prints trailing slashes (so that its output can be
+  # appended a slash unconditionally).  Each slash in $dir is considered a
+  # preceding slash, and therefore the root directory is an empty string.
+  if [ "$dir" = "/" ] ; then
+    dir=""
+  fi
+
+  # XXX: This fails if $dir contains ','.
+  path=`echo "$path" | sed -e "s,^$dir,,g"` || return 1
+
+  case "`uname 2>/dev/null`" in
+    CYGWIN*)
+      # Cygwin: Check if regular or emulated mount.
+      if [ -z "$dir" ] || [ "`stat -c %D "$dir/.."`" != 620000 ] ; then
+        # Reached some mount point not below /cygdrive.
+        # GRUB does not know Cygwin's emulated mounts,
+        # convert to Win32 path and remove drive letter.
+        path=`cygpath -m "$path" | sed -n 's,^[A-Za-z]:,,p'`
+        test ! -z "$path" || return 1
+      fi ;;
+  esac
+
+  echo "$path"
+}
+
+is_path_readable_by_grub ()
+{
+  path=$1
+
+  # abort if path doesn't exist
+  if test -e $path ; then : ;else
+    return 1
+  fi
+
+  # abort if file is in a filesystem we can't read
+  if ${grub_probe} -t fs $path > /dev/null 2>&1 ; then : ; else
+    return 1
+  fi
+
+  return 0
+}
+
+convert_system_path_to_grub_path ()
+{
+  path=$1
+
+  echo "Warning: convert_system_path_to_grub_path() is deprecated.  Use prepare_grub_to_access_device() instead." >&2
+
+  # abort if GRUB can't access the path
+  if is_path_readable_by_grub ${path} ; then : ; else
+    return 1
+  fi
+
+  if drive=`${grub_probe} -t drive $path` ; then : ; else
+    return 1
+  fi
+
+  if relative_path=`make_system_path_relative_to_its_root $path` ; then : ; else
+    return 1
+  fi
+
+  echo ${drive}${relative_path}
+}
+
+prepare_grub_to_access_device ()
+{
+  device=$1
+
+  # Abstraction modules aren't auto-loaded.
+  abstraction="`${grub_probe} --device ${device} --target=abstraction`"
+  if [ "x${abstraction}" = "x" ] ; then : ; else
+    echo "insmod ${abstraction}"
+  fi
+
+  # If there's a filesystem UUID that GRUB is capable of identifying, use it;
+  # otherwise set root as per value in device.map.
+  echo "set root=`${grub_probe} --device ${device} --target=drive`"
+  if fs_uuid="`${grub_probe} --device ${device} --target=fs_uuid 2> /dev/null`" ; then
+    echo "search --fs-uuid --set ${fs_uuid}"
+  fi
+}
+
+font_path ()
+{
+  for dir in ${pkgdatadir} /boot/grub /usr/share/grub ; do
+    # FIXME: We prefer ascii because loading complete fonts is too slow (and
+    # we don't yet provide the gettext magic that would make unicode useful).
+    for basename in ascii unicode unifont ; do
+      path="${dir}/${basename}.pff"
+      if is_path_readable_by_grub ${path} > /dev/null ; then
+        echo "${path}"
+        return 0
+      fi
+    done
+  done
+
+  return 1
+}
+
+grub_file_is_not_garbage ()
+{
+  if test -f "$1" ; then
+    case "$1" in
+      *.dpkg-dist|*.dpkg-old|*.dpkg-tmp) return 1 ;; # debian dpkg
+    esac
+  else
+    return 1
+  fi
+  return 0
+}

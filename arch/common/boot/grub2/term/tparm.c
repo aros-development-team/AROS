@@ -361,6 +361,8 @@ analyze(const char *string, char *p_is_s[NUM_PARM], int *popcount)
     const char *cp = string;
     static char dummy[] = "";
 
+    *popcount = 0;
+
     if (cp == 0)
 	return 0;
 
@@ -371,7 +373,6 @@ analyze(const char *string, char *p_is_s[NUM_PARM], int *popcount)
     }
 
     grub_memset(p_is_s, 0, sizeof(p_is_s[0]) * NUM_PARM);
-    *popcount = 0;
 
     while ((cp - string) < (int) len2) {
 	if (*cp == '%') {

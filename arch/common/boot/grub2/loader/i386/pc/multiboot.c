@@ -1,7 +1,7 @@
 /* multiboot.c - boot a multiboot OS image. */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2003,2004,2005,2007,2008  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,10 +21,7 @@
  *  FIXME: The following features from the Multiboot specification still
  *         need to be implemented:
  *  - VBE support
- *  - a.out support
- *  - boot device
  *  - symbol table
- *  - memory map
  *  - drives table
  *  - ROM configuration table
  *  - APM table
@@ -49,6 +46,8 @@
 extern grub_dl_t my_mod;
 static struct grub_multiboot_info *mbi;
 static grub_addr_t entry;
+
+static char *playground = NULL;
 
 static grub_err_t
 grub_multiboot_boot (void)
@@ -76,12 +75,53 @@ grub_multiboot_unload (void)
       grub_free ((void *) mbi->cmdline);
       grub_free (mbi);
     }
-
-
+  
   mbi = 0;
   grub_dl_unref (my_mod);
 
   return GRUB_ERR_NONE;
+}
+
+/* Return the length of the Multiboot mmap that will be needed to allocate
+   our platform's map.  */
+static grub_uint32_t
+grub_get_multiboot_mmap_len (void)
+{
+  grub_size_t count = 0;
+
+  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t, grub_uint32_t);
+  int NESTED_FUNC_ATTR hook (grub_uint64_t addr __attribute__ ((unused)),
+			     grub_uint64_t size __attribute__ ((unused)),
+			     grub_uint32_t type __attribute__ ((unused)))
+    {
+      count++;
+      return 0;
+    }
+  
+  grub_machine_mmap_iterate (hook);
+  
+  return count * sizeof (struct grub_multiboot_mmap_entry);
+}
+
+/* Fill previously allocated Multiboot mmap.  */
+static void
+grub_fill_multiboot_mmap (struct grub_multiboot_mmap_entry *first_entry)
+{
+  struct grub_multiboot_mmap_entry *mmap_entry = (struct grub_multiboot_mmap_entry *) first_entry;
+
+  auto int NESTED_FUNC_ATTR hook (grub_uint64_t, grub_uint64_t, grub_uint32_t);
+  int NESTED_FUNC_ATTR hook (grub_uint64_t addr, grub_uint64_t size, grub_uint32_t type)
+    {
+      mmap_entry->addr = addr;
+      mmap_entry->len = size;
+      mmap_entry->type = type;
+      mmap_entry->size = sizeof (struct grub_multiboot_mmap_entry) - sizeof (mmap_entry->size);
+      mmap_entry++;
+
+      return 0;
+    }
+
+  grub_machine_mmap_iterate (hook);
 }
 
 /* Check if BUFFER contains ELF32.  */
@@ -97,8 +137,8 @@ static grub_err_t
 grub_multiboot_load_elf32 (grub_file_t file, void *buffer)
 {
   Elf32_Ehdr *ehdr = (Elf32_Ehdr *) buffer;
-  Elf32_Phdr *phdr;
-  grub_addr_t physical_entry_addr = 0;
+  char *phdr_base;
+  int lowest_segment = 0, highest_segment = 0;
   int i;
 
   if (ehdr->e_ident[EI_CLASS] != ELFCLASS32)
@@ -114,48 +154,55 @@ grub_multiboot_load_elf32 (grub_file_t file, void *buffer)
   if (ehdr->e_phoff + ehdr->e_phnum * ehdr->e_phentsize > MULTIBOOT_SEARCH)
     return grub_error (GRUB_ERR_BAD_OS, "program header at a too high offset");
 
-  entry = ehdr->e_entry;
+  phdr_base = (char *) buffer + ehdr->e_phoff;
+#define phdr(i)			((Elf32_Phdr *) (phdr_base + (i) * ehdr->e_phentsize))
+
+  for (i = 0; i < ehdr->e_phnum; i++)
+    if (phdr(i)->p_type == PT_LOAD && phdr(i)->p_filesz != 0)
+      {
+	if (phdr(i)->p_paddr < phdr(lowest_segment)->p_paddr)
+	  lowest_segment = i;
+	if (phdr(i)->p_paddr > phdr(highest_segment)->p_paddr)
+	  highest_segment = i;
+      }
+  grub_multiboot_payload_size += (phdr(highest_segment)->p_paddr + phdr(highest_segment)->p_memsz) - phdr(lowest_segment)->p_paddr;
+  grub_multiboot_payload_dest = phdr(lowest_segment)->p_paddr;
+
+  playground = grub_malloc (RELOCATOR_SIZEOF(forward) + grub_multiboot_payload_size + RELOCATOR_SIZEOF(backward));
+  if (! playground)
+    return grub_errno;
+
+  grub_multiboot_payload_orig = (long) playground + RELOCATOR_SIZEOF(forward);
 
   /* Load every loadable segment in memory.  */
   for (i = 0; i < ehdr->e_phnum; i++)
     {
-      phdr = (Elf32_Phdr *) ((char *) buffer + ehdr->e_phoff
-			     + i * ehdr->e_phentsize);
-      if (phdr->p_type == PT_LOAD)
+      if (phdr(i)->p_type == PT_LOAD && phdr(i)->p_filesz != 0)
         {
-          /* The segment should fit in the area reserved for the OS.  */
-          if (phdr->p_paddr < grub_os_area_addr)
-	    return grub_error (GRUB_ERR_BAD_OS,
-			       "segment doesn't fit in memory reserved for the OS (0x%lx < 0x%lx)",
-			       phdr->p_paddr, grub_os_area_addr);
-          if (phdr->p_paddr + phdr->p_memsz > grub_os_area_addr + grub_os_area_size)
-	    return grub_error (GRUB_ERR_BAD_OS,
-			       "segment doesn't fit in memory reserved for the OS (0x%lx > 0x%lx)",
-			       phdr->p_paddr + phdr->p_memsz,
-			       grub_os_area_addr + grub_os_area_size);
+	  char *load_this_module_at = (char *) (grub_multiboot_payload_orig + (phdr(i)->p_paddr - phdr(lowest_segment)->p_paddr));
 
-          if (grub_file_seek (file, (grub_off_t) phdr->p_offset)
+	  grub_dprintf ("multiboot_loader", "segment %d: paddr=%p, memsz=0x%x\n",
+			i, (void *) phdr(i)->p_paddr, phdr(i)->p_memsz);
+
+	  if (grub_file_seek (file, (grub_off_t) phdr(i)->p_offset)
 	      == (grub_off_t) -1)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "invalid offset in program header");
 
-          if ((phdr->p_filesz > 0) && (grub_file_read (file, (void *) phdr->p_paddr, phdr->p_filesz)
-              != (grub_ssize_t) phdr->p_filesz))
+          if ((phdr(i)->p_filesz > 0) && (grub_file_read (file, load_this_module_at, phdr(i)->p_filesz)
+              != (grub_ssize_t) phdr(i)->p_filesz))
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "couldn't read segment from file");
 
-          if (phdr->p_filesz < phdr->p_memsz)
-            grub_memset ((char *) phdr->p_paddr + phdr->p_filesz, 0,
-			 phdr->p_memsz - phdr->p_filesz);
-
-          if ((entry >= phdr->p_vaddr) &&
-	      (entry < phdr->p_vaddr + phdr->p_memsz))
-	    physical_entry_addr = entry + phdr->p_paddr - phdr->p_vaddr;
+          if (phdr(i)->p_filesz < phdr(i)->p_memsz)
+            grub_memset (load_this_module_at + phdr(i)->p_filesz, 0,
+			 phdr(i)->p_memsz - phdr(i)->p_filesz);
         }
     }
 
-  if (physical_entry_addr)
-    entry = physical_entry_addr;
+  grub_multiboot_payload_entry_offset = ehdr->e_entry - phdr(lowest_segment)->p_vaddr;
+
+#undef phdr
 
   return grub_errno;
 }
@@ -173,7 +220,7 @@ static grub_err_t
 grub_multiboot_load_elf64 (grub_file_t file, void *buffer)
 {
   Elf64_Ehdr *ehdr = (Elf64_Ehdr *) buffer;
-  Elf64_Phdr *phdr;
+  char *phdr_base;
   grub_addr_t physical_entry_addr = 0;
   int i;
 
@@ -202,47 +249,49 @@ grub_multiboot_load_elf64 (grub_file_t file, void *buffer)
 
   entry = ehdr->e_entry;
 
+  phdr_base = (char *) buffer + ehdr->e_phoff;
+#define phdr(i)			((Elf64_Phdr *) (phdr_base + (i) * ehdr->e_phentsize))
+
   /* Load every loadable segment in memory.  */
   for (i = 0; i < ehdr->e_phnum; i++)
     {
-      phdr = (Elf64_Phdr *) ((char *) buffer + ehdr->e_phoff
-			     + i * ehdr->e_phentsize);
-      if (phdr->p_type == PT_LOAD)
+      if (phdr(i)->p_type == PT_LOAD)
         {
           /* The segment should fit in the area reserved for the OS.  */
-          if (phdr->p_paddr < (grub_uint64_t) grub_os_area_addr)
+          if (phdr(i)->p_paddr < (grub_uint64_t) grub_os_area_addr)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "segment doesn't fit in memory reserved for the OS (0x%lx < 0x%lx)",
-			       phdr->p_paddr, (grub_uint64_t) grub_os_area_addr);
-          if (phdr->p_paddr + phdr->p_memsz
+			       phdr(i)->p_paddr, (grub_uint64_t) grub_os_area_addr);
+          if (phdr(i)->p_paddr + phdr(i)->p_memsz
 		  > (grub_uint64_t) grub_os_area_addr + (grub_uint64_t) grub_os_area_size)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "segment doesn't fit in memory reserved for the OS (0x%lx > 0x%lx)",
-			       phdr->p_paddr + phdr->p_memsz,
+			       phdr(i)->p_paddr + phdr(i)->p_memsz,
 			       (grub_uint64_t) grub_os_area_addr + (grub_uint64_t) grub_os_area_size);
 
-	  if (grub_file_seek (file, (grub_off_t) phdr->p_offset)
+	  if (grub_file_seek (file, (grub_off_t) phdr(i)->p_offset)
 	      == (grub_off_t) -1)
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "invalid offset in program header");
 
-	  if ((phdr->p_filesz > 0) && (grub_file_read (file, (void *) ((grub_uint32_t) phdr->p_paddr),
-			      phdr->p_filesz))
-              != (grub_ssize_t) phdr->p_filesz)
+	  if ((phdr(i)->p_filesz > 0) && (grub_file_read (file, (void *) ((grub_uint32_t) phdr(i)->p_paddr),
+			      phdr(i)->p_filesz)
+              != (grub_ssize_t) phdr(i)->p_filesz))
 	    return grub_error (GRUB_ERR_BAD_OS,
 			       "couldn't read segment from file");
 
-          if (phdr->p_filesz < phdr->p_memsz)
-	    grub_memset (((char *) ((grub_uint32_t) phdr->p_paddr)
-			  + phdr->p_filesz),
+          if (phdr(i)->p_filesz < phdr(i)->p_memsz)
+	    grub_memset (((char *) ((grub_uint32_t) phdr(i)->p_paddr)
+			  + phdr(i)->p_filesz),
 			 0,
-			 phdr->p_memsz - phdr->p_filesz);
+			 phdr(i)->p_memsz - phdr(i)->p_filesz);
 
-	  if ((entry >= phdr->p_vaddr) &&
-	      (entry < phdr->p_vaddr + phdr->p_memsz))
-	    physical_entry_addr = entry + phdr->p_paddr - phdr->p_vaddr;
+	  if ((entry >= phdr(i)->p_vaddr) &&
+	      (entry < phdr(i)->p_vaddr + phdr(i)->p_memsz))
+	    physical_entry_addr = entry + phdr(i)->p_paddr - phdr(i)->p_vaddr;
         }
     }
+#undef phdr
 
   if (physical_entry_addr)
     entry = physical_entry_addr;
@@ -362,23 +411,11 @@ grub_multiboot (int argc, char *argv[])
       goto fail;
     }
 
-  if (header->flags & MULTIBOOT_AOUT_KLUDGE)
+  if (playground)
     {
-      int ofs;
-
-      ofs = (char *) header - buffer -
-            (header->header_addr - header->load_addr);
-      if ((grub_aout_load (file, ofs, header->load_addr,
-                           ((header->load_end_addr == 0) ? 0 :
-                            header->load_end_addr - header->load_addr),
-                           header->bss_end_addr))
-          !=GRUB_ERR_NONE)
-        goto fail;
-
-      entry = header->entry_addr;
+      grub_free (playground);
+      playground = NULL;
     }
-  else if (grub_multiboot_load_elf (file, buffer) != GRUB_ERR_NONE)
-    goto fail;
 
   mbi = grub_malloc (sizeof (struct grub_multiboot_info));
   if (! mbi)
@@ -386,11 +423,76 @@ grub_multiboot (int argc, char *argv[])
 
   grub_memset (mbi, 0, sizeof (struct grub_multiboot_info));
 
-  mbi->flags = MULTIBOOT_INFO_MEMORY;
+  mbi->mmap_length = grub_get_multiboot_mmap_len ();
+  grub_multiboot_payload_size = mbi->mmap_length;
+
+  if (header->flags & MULTIBOOT_AOUT_KLUDGE)
+    {
+      int offset = ((char *) header - buffer -
+		    (header->header_addr - header->load_addr));
+      int load_size = ((header->load_end_addr == 0) ? file->size - offset :
+		       header->load_end_addr - header->load_addr);
+
+      if (header->bss_end_addr)
+	grub_multiboot_payload_size += (header->bss_end_addr - header->load_addr);
+      else
+	grub_multiboot_payload_size += load_size;
+      grub_multiboot_payload_dest = header->load_addr;
+
+      playground = grub_malloc (RELOCATOR_SIZEOF(forward) + grub_multiboot_payload_size + RELOCATOR_SIZEOF(backward));
+      if (! playground)
+	goto fail;
+
+      grub_multiboot_payload_orig = (long) playground + RELOCATOR_SIZEOF(forward);
+
+      if ((grub_file_seek (file, offset)) == (grub_off_t) - 1)
+	goto fail;
+
+      grub_file_read (file, (void *) grub_multiboot_payload_orig, load_size);
+      if (grub_errno)
+	goto fail;
+      
+      if (header->bss_end_addr)
+	grub_memset ((void *) (grub_multiboot_payload_orig + load_size), 0,
+		     header->bss_end_addr - header->load_addr - load_size);
+      
+      grub_multiboot_payload_entry_offset = header->entry_addr - header->load_addr;
+
+    }
+  else if (grub_multiboot_load_elf (file, buffer) != GRUB_ERR_NONE)
+    goto fail;
+
+      
+  grub_fill_multiboot_mmap ((struct grub_multiboot_mmap_entry *) (grub_multiboot_payload_orig
+								  + grub_multiboot_payload_size
+								  - mbi->mmap_length));
+
+  /* FIXME: grub_uint32_t will break for addresses above 4 GiB, but is mandated
+     by the spec.  Is there something we can do about it?  */
+  mbi->mmap_addr = grub_multiboot_payload_dest + grub_multiboot_payload_size - mbi->mmap_length;
+  mbi->flags |= MULTIBOOT_INFO_MEM_MAP;
+
+  if (grub_multiboot_payload_dest >= grub_multiboot_payload_orig)
+    {
+      grub_memmove (playground, &grub_multiboot_forward_relocator, RELOCATOR_SIZEOF(forward));
+      entry = (grub_addr_t) playground;
+    }
+  else
+    {
+      grub_memmove ((char *) (grub_multiboot_payload_orig + grub_multiboot_payload_size),
+		    &grub_multiboot_backward_relocator, RELOCATOR_SIZEOF(backward));
+      entry = (grub_addr_t) grub_multiboot_payload_orig + grub_multiboot_payload_size;
+    }
+  
+  grub_dprintf ("multiboot_loader", "dest=%p, size=0x%x, entry_offset=0x%x\n",
+		(void *) grub_multiboot_payload_dest,
+		grub_multiboot_payload_size,
+		grub_multiboot_payload_entry_offset);
 
   /* Convert from bytes to kilobytes.  */
   mbi->mem_lower = grub_lower_mem / 1024;
   mbi->mem_upper = grub_upper_mem / 1024;
+  mbi->flags |= MULTIBOOT_INFO_MEMORY;
 
   for (i = 0, len = 0; i < argc; i++)
     len += grub_strlen (argv[i]) + 1;

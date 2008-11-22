@@ -1621,6 +1621,7 @@ localecopydone:
             "boot/grub/video.mod",      "boot/grub/video.mod",
             "boot/grub/videotest.mod",  "boot/grub/videotest.mod",
             "boot/grub/xfs.mod",        "boot/grub/xfs.mod",
+            "boot/grub/bufio.mod",      "boot/grub/bufio.mod",
 			NULL
         };
 

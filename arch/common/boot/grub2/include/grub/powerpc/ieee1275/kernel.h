@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,14 +21,15 @@
 
 #include <grub/symbol.h>
 
-#define GRUB_MOD_ALIGN 0x1000
-
-/* Minimal gap between _end and the start of the modules.  It's a hack
-   for PowerMac to prevent "CLAIM failed" error.  The real fix is to
-   rewrite grub-mkimage to generate valid ELF files.  */
-#define GRUB_MOD_GAP 0x8000
+#ifndef ASM_FILE
 
 void EXPORT_FUNC (grub_reboot) (void);
 void EXPORT_FUNC (grub_halt) (void);
+
+/* The prefix which points to the directory where GRUB modules and its
+   configuration file are located.  */
+extern char grub_prefix[];
+
+#endif
 
 #endif /* ! GRUB_KERNEL_MACHINE_HEADER */

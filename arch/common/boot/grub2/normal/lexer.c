@@ -136,10 +136,11 @@ nextchar (struct grub_lexer_param *state)
 }
 
 int
-grub_script_yylex2 (YYSTYPE *yylval, struct grub_parser_param *parsestate);
+grub_script_yylex2 (union YYSTYPE *yylval,
+		    struct grub_parser_param *parsestate);
 
 int
-grub_script_yylex (YYSTYPE *yylval, struct grub_parser_param *parsestate)
+grub_script_yylex (union YYSTYPE *yylval, struct grub_parser_param *parsestate)
 {
   int r = -1;
 
@@ -153,7 +154,7 @@ grub_script_yylex (YYSTYPE *yylval, struct grub_parser_param *parsestate)
 }
 
 int
-grub_script_yylex2 (YYSTYPE *yylval, struct grub_parser_param *parsestate)
+grub_script_yylex2 (union YYSTYPE *yylval, struct grub_parser_param *parsestate)
 {
   grub_parser_state_t newstate;
   char use;

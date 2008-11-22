@@ -42,7 +42,6 @@
 #define DEFAULT_STANDARD_COLOR  0x07
 #define DEFAULT_NORMAL_COLOR    0x07
 #define DEFAULT_HIGHLIGHT_COLOR 0x70
-#define DEFAULT_CURSOR_COLOR	0x07
 
 struct grub_dirty_region
 {
@@ -100,7 +99,6 @@ struct grub_virtual_screen
   /* Color settings.  */
   grub_video_color_t fg_color;
   grub_video_color_t bg_color;
-  grub_video_color_t cursor_color;
 
   /* Text buffer for virtual screen.  Contains (columns * rows) number
      of entries.  */
@@ -218,8 +216,6 @@ grub_virtual_screen_setup (unsigned int x, unsigned int y,
   virtual_screen.term_color = virtual_screen.normal_color_setting;
   
   set_term_color (virtual_screen.term_color);
-
-  virtual_screen.cursor_color = grub_video_map_color (DEFAULT_CURSOR_COLOR);
 
   grub_video_set_active_render_target (GRUB_VIDEO_RENDER_TARGET_DISPLAY);
 
@@ -709,7 +705,7 @@ write_cursor (void)
   width = virtual_screen.char_width;
   height = 2;
 
-  color = virtual_screen.cursor_color;
+  color = virtual_screen.fg_color;
 
   /* Render cursor to text layer.  */
   grub_video_set_active_render_target (text_layer);
@@ -1060,15 +1056,13 @@ grub_gfxterm_background_image_cmd (struct grub_arg_list *state __attribute__ ((u
   return grub_errno;
 }
 
-static struct grub_term grub_video_term =
+static struct grub_term_output grub_video_term =
   {
     .name = "gfxterm",
     .init = grub_gfxterm_init,
     .fini = grub_gfxterm_fini,
     .putchar = grub_gfxterm_putchar,
     .getcharwidth = grub_gfxterm_getcharwidth,
-    .checkkey = grub_console_checkkey,
-    .getkey = grub_console_getkey,
     .getwh = grub_virtual_screen_getwh,
     .getxy = grub_virtual_screen_getxy,
     .gotoxy = grub_gfxterm_gotoxy,
@@ -1085,7 +1079,7 @@ static struct grub_term grub_video_term =
 GRUB_MOD_INIT(term_gfxterm)
 {
   my_mod = mod;
-  grub_term_register (&grub_video_term);
+  grub_term_register_output (&grub_video_term);
 
   grub_register_command ("background_image",
                          grub_gfxterm_background_image_cmd,
@@ -1098,5 +1092,5 @@ GRUB_MOD_INIT(term_gfxterm)
 GRUB_MOD_FINI(term_gfxterm)
 {
   grub_unregister_command ("bgimage");
-  grub_term_unregister (&grub_video_term);
+  grub_term_unregister_output (&grub_video_term);
 }

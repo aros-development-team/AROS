@@ -539,7 +539,7 @@ grub_efidisk_open (const char *name, struct grub_disk *disk)
   /* FIXME: Probably it is better to store the block size in the disk,
      and total sectors should be replaced with total blocks.  */
   grub_dprintf ("efidisk", "m = %p, last block = %llx, block size = %x\n",
-		m, m->last_block, m->block_size);
+		m, (unsigned long long) m->last_block, m->block_size);
   disk->total_sectors = (m->last_block
 			 * (m->block_size >> GRUB_DISK_SECTOR_BITS));
   disk->data = d;
@@ -571,10 +571,10 @@ grub_efidisk_read (struct grub_disk *disk, grub_disk_addr_t sector,
   bio = d->block_io;
 
   grub_dprintf ("efidisk",
-		"reading 0x%x sectors at the sector 0x%llx from %s\n",
-		size, sector, disk->name);
+		"reading 0x%lx sectors at the sector 0x%llx from %s\n",
+		(unsigned long) size, (unsigned long long) sector, disk->name);
   
-  status = dio->read (dio, bio->media->media_id,
+  status = efi_call_5 (dio->read, dio, bio->media->media_id,
 		      (grub_efi_uint64_t) sector << GRUB_DISK_SECTOR_BITS,
 		      (grub_efi_uintn_t) size << GRUB_DISK_SECTOR_BITS,
 		      buf);
@@ -599,10 +599,10 @@ grub_efidisk_write (struct grub_disk *disk, grub_disk_addr_t sector,
   bio = d->block_io;
   
   grub_dprintf ("efidisk",
-		"writing 0x%x sectors at the sector 0x%llx to %s\n",
-		size, sector, disk->name);
+		"writing 0x%lx sectors at the sector 0x%llx to %s\n",
+		(unsigned long) size, (unsigned long long) sector, disk->name);
   
-  status = dio->write (dio, bio->media->media_id,
+  status = efi_call_5 (dio->write, dio, bio->media->media_id,
 		       (grub_efi_uint64_t) sector << GRUB_DISK_SECTOR_BITS,
 		       (grub_efi_uintn_t) size << GRUB_DISK_SECTOR_BITS,
 		       (void *) buf);

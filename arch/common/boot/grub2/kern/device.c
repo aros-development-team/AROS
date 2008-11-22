@@ -49,10 +49,7 @@ grub_device_open (const char *name)
   /* Try to open a disk.  */
   disk = grub_disk_open (name);
   if (! disk)
-    {
-      grub_error (GRUB_ERR_BAD_DEVICE, "unknown device");
-      goto fail;
-    }
+    goto fail;
 
   dev->disk = disk;
   dev->net = 0;	/* FIXME */

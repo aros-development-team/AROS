@@ -39,15 +39,46 @@
 #define GRUB_LINUX_VID_MODE_EXTENDED	0xFFFE
 #define GRUB_LINUX_VID_MODE_ASK		0xFFFD
 
-#define GRUB_LINUX_CL_OFFSET		0x9000
-#define GRUB_LINUX_CL_END_OFFSET	0x90FF
 #define GRUB_LINUX_SETUP_MOVE_SIZE	0x9100
 #define GRUB_LINUX_CL_MAGIC		0xA33F
 
+#ifdef __x86_64__
+
 #define GRUB_LINUX_EFI_SIGNATURE	\
-  ('E' << 24 | 'F' << 16 | 'I' << 8 | 'L')
+  ('4' << 24 | '6' << 16 | 'L' << 8 | 'E')
+
+#else
+
+#define GRUB_LINUX_EFI_SIGNATURE	\
+  ('2' << 24 | '3' << 16 | 'L' << 8 | 'E')
+
+#endif
+
+#define GRUB_LINUX_EFI_SIGNATURE_0204	\
+  ('L' << 24 | 'I' << 16 | 'F' << 8 | 'E')
+
+#define GRUB_LINUX_OFW_SIGNATURE	\
+  (' ' << 24 | 'W' << 16 | 'F' << 8 | 'O')
 
 #ifndef ASM_FILE
+
+#define GRUB_E820_RAM        1
+#define GRUB_E820_RESERVED   2
+#define GRUB_E820_ACPI       3
+#define GRUB_E820_NVS        4
+#define GRUB_E820_EXEC_CODE  5
+
+#define GRUB_E820_MAX_ENTRY  128
+
+struct grub_e820_mmap
+{
+  grub_uint64_t addr;
+  grub_uint64_t size;
+  grub_uint32_t type;
+} __attribute__((packed));
+
+#define GRUB_VIDEO_TYPE_VLFB	0x23    /* VESA VGA in graphic mode     */
+#define GRUB_VIDEO_TYPE_EFI	0x70
 
 /* For the Linux/i386 boot protocol version 2.03.  */
 struct linux_kernel_header
@@ -71,6 +102,17 @@ struct linux_kernel_header
   grub_uint16_t start_sys;		/* The load-low segment (obsolete) */
   grub_uint16_t kernel_version;		/* Points to kernel version string */
   grub_uint8_t type_of_loader;		/* Boot loader identifier */
+#define LINUX_LOADER_ID_LILO		0x0
+#define LINUX_LOADER_ID_LOADLIN		0x1
+#define LINUX_LOADER_ID_BOOTSECT	0x2
+#define LINUX_LOADER_ID_SYSLINUX	0x3
+#define LINUX_LOADER_ID_ETHERBOOT	0x4
+#define LINUX_LOADER_ID_ELILO		0x5
+#define LINUX_LOADER_ID_GRUB		0x7
+#define LINUX_LOADER_ID_UBOOT		0x8
+#define LINUX_LOADER_ID_XEN		0x9
+#define LINUX_LOADER_ID_GUJIN		0xa
+#define LINUX_LOADER_ID_QEMU		0xb
   grub_uint8_t loadflags;		/* Boot protocol option flags */
   grub_uint16_t setup_move_size;	/* Move to high memory size */
   grub_uint32_t code32_start;		/* Boot loader hook */
@@ -154,16 +196,41 @@ struct linux_kernel_params
   grub_uint8_t hd1_drive_info[0x10];	/* 90 */
   grub_uint16_t rom_config_len;		/* a0 */
 
-  grub_uint8_t padding6[0x1c0 - 0xa2];
-  
-  grub_uint32_t efi_signature;		/* 1c0 */
-  grub_uint32_t efi_system_table;	/* 1c4 */
-  grub_uint32_t efi_mem_desc_size;	/* 1c8 */
-  grub_uint32_t efi_mem_desc_version;	/* 1cc */
-  grub_uint32_t efi_mmap;		/* 1d0 */
-  grub_uint32_t efi_mmap_size;		/* 1d4 */
-  
-  grub_uint8_t padding7[0x1e0 - 0x1d8];
+  grub_uint8_t padding6[0xb0 - 0xa2];
+
+  grub_uint32_t ofw_signature;		/* b0 */
+  grub_uint32_t ofw_num_items;		/* b4 */
+  grub_uint32_t ofw_cif_handler;	/* b8 */
+  grub_uint32_t ofw_idt;		/* bc */
+
+  grub_uint8_t padding7[0x1b8 - 0xc0];
+
+  union
+    {
+      struct
+        {
+          grub_uint32_t efi_system_table;	/* 1b8 */
+          grub_uint32_t padding7_1;		/* 1bc */
+          grub_uint32_t efi_signature;		/* 1c0 */
+          grub_uint32_t efi_mem_desc_size;	/* 1c4 */
+          grub_uint32_t efi_mem_desc_version;	/* 1c8 */
+          grub_uint32_t efi_mmap_size;		/* 1cc */
+          grub_uint32_t efi_mmap;		/* 1d0 */
+        } v0204;
+      struct
+        {
+          grub_uint32_t padding7_1;		/* 1b8 */
+          grub_uint32_t padding7_2;		/* 1bc */
+          grub_uint32_t efi_signature;		/* 1c0 */
+          grub_uint32_t efi_system_table;	/* 1c4 */
+          grub_uint32_t efi_mem_desc_size;	/* 1c8 */
+          grub_uint32_t efi_mem_desc_version;	/* 1cc */
+          grub_uint32_t efi_mmap;		/* 1d0 */
+          grub_uint32_t efi_mmap_size;		/* 1d4 */
+          grub_uint32_t efi_system_table_hi;	/* 1d8 */
+          grub_uint32_t efi_mmap_hi;		/* 1dc */
+        } v0206;
+    };
   
   grub_uint32_t alt_mem;		/* 1e0 */
   
@@ -171,9 +238,39 @@ struct linux_kernel_params
   
   grub_uint32_t mmap_size;		/* 1e8 */
 
-  grub_uint8_t padding9[0x1ff - 0x1ec];
+  grub_uint8_t padding9[0x1f1 - 0x1ec];
   
+  grub_uint8_t setup_sects;		/* The size of the setup in sectors */
+  grub_uint16_t root_flags;		/* If the root is mounted readonly */
+  grub_uint16_t syssize;		/* obsolete */
+  grub_uint16_t swap_dev;		/* obsolete */
+  grub_uint16_t ram_size;		/* obsolete */
+  grub_uint16_t vid_mode;		/* Video mode control */
+  grub_uint16_t root_dev;		/* Default root device number */
+
+  grub_uint8_t padding10;		/* 1fe */
   grub_uint8_t ps_mouse;		/* 1ff */
+
+  grub_uint16_t jump;			/* Jump instruction */
+  grub_uint32_t header;			/* Magic signature "HdrS" */
+  grub_uint16_t version;		/* Boot protocol version supported */
+  grub_uint32_t realmode_swtch;		/* Boot loader hook */
+  grub_uint16_t start_sys;		/* The load-low segment (obsolete) */
+  grub_uint16_t kernel_version;		/* Points to kernel version string */
+  grub_uint8_t type_of_loader;		/* Boot loader identifier */
+  grub_uint8_t loadflags;		/* Boot protocol option flags */
+  grub_uint16_t setup_move_size;	/* Move to high memory size */
+  grub_uint32_t code32_start;		/* Boot loader hook */
+  grub_uint32_t ramdisk_image;		/* initrd load address */
+  grub_uint32_t ramdisk_size;		/* initrd size */
+  grub_uint32_t bootsect_kludge;	/* obsolete */
+  grub_uint16_t heap_end_ptr;		/* Free memory after setup end */
+  grub_uint16_t pad1;			/* Unused */
+  grub_uint32_t cmd_line_ptr;		/* Points to the kernel command line */
+
+  grub_uint8_t pad2[164];		/* 22c */
+  struct grub_e820_mmap e820_map[GRUB_E820_MAX_ENTRY];	/* 2d0 */
+
 } __attribute__ ((packed));
 #endif /* ! ASM_FILE */
 

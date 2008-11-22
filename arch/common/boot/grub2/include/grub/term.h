@@ -137,7 +137,29 @@ grub_term_color_state;
                                  - 1)
 
 
-struct grub_term
+struct grub_term_input
+{
+  /* The terminal name.  */
+  const char *name;
+
+  /* Initialize the terminal.  */
+  grub_err_t (*init) (void);
+
+  /* Clean up the terminal.  */
+  grub_err_t (*fini) (void);
+  
+  /* Check if any input character is available.  */
+  int (*checkkey) (void);
+  
+  /* Get a character.  */
+  int (*getkey) (void);
+
+  /* The next terminal.  */
+  struct grub_term_input *next;
+};
+typedef struct grub_term_input *grub_term_input_t;
+
+struct grub_term_output
 {
   /* The terminal name.  */
   const char *name;
@@ -154,12 +176,6 @@ struct grub_term
   /* Get the number of columns occupied by a given character C. C is
      encoded in Unicode.  */
   grub_ssize_t (*getcharwidth) (grub_uint32_t c);
-  
-  /* Check if any input character is available.  */
-  int (*checkkey) (void);
-  
-  /* Get a character.  */
-  int (*getkey) (void);
   
   /* Get the screen size. The return value is ((Width << 8) | Height).  */
   grub_uint16_t (*getwh) (void);
@@ -194,16 +210,21 @@ struct grub_term
   grub_uint32_t flags;
   
   /* The next terminal.  */
-  struct grub_term *next;
+  struct grub_term_output *next;
 };
-typedef struct grub_term *grub_term_t;
+typedef struct grub_term_output *grub_term_output_t;
 
-void EXPORT_FUNC(grub_term_register) (grub_term_t term);
-void EXPORT_FUNC(grub_term_unregister) (grub_term_t term);
-void EXPORT_FUNC(grub_term_iterate) (int (*hook) (grub_term_t term));
+void EXPORT_FUNC(grub_term_register_input) (grub_term_input_t term);
+void EXPORT_FUNC(grub_term_register_output) (grub_term_output_t term);
+void EXPORT_FUNC(grub_term_unregister_input) (grub_term_input_t term);
+void EXPORT_FUNC(grub_term_unregister_output) (grub_term_output_t term);
+void EXPORT_FUNC(grub_term_iterate_input) (int (*hook) (grub_term_input_t term));
+void EXPORT_FUNC(grub_term_iterate_output) (int (*hook) (grub_term_output_t term));
 
-grub_err_t EXPORT_FUNC(grub_term_set_current) (grub_term_t term);
-grub_term_t EXPORT_FUNC(grub_term_get_current) (void);
+grub_err_t EXPORT_FUNC(grub_term_set_current_input) (grub_term_input_t term);
+grub_err_t EXPORT_FUNC(grub_term_set_current_output) (grub_term_output_t term);
+grub_term_input_t EXPORT_FUNC(grub_term_get_current_input) (void);
+grub_term_output_t EXPORT_FUNC(grub_term_get_current_output) (void);
 
 void EXPORT_FUNC(grub_putchar) (int c);
 void EXPORT_FUNC(grub_putcode) (grub_uint32_t code);

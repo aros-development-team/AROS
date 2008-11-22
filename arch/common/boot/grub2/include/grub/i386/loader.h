@@ -43,10 +43,21 @@ void EXPORT_FUNC(grub_multiboot2_real_boot) (grub_addr_t entry,
 void EXPORT_FUNC(grub_unix_real_boot) (grub_addr_t entry, ...)
      __attribute__ ((cdecl,noreturn));
 
+extern grub_addr_t EXPORT_VAR(grub_multiboot_payload_orig);
+extern grub_addr_t EXPORT_VAR(grub_multiboot_payload_dest);
+extern grub_size_t EXPORT_VAR(grub_multiboot_payload_size);
+extern grub_uint32_t EXPORT_VAR(grub_multiboot_payload_entry_offset);
 
 /* It is necessary to export these functions, because normal mode commands
    reuse rescue mode commands.  */
 void grub_rescue_cmd_linux (int argc, char *argv[]);
 void grub_rescue_cmd_initrd (int argc, char *argv[]);
+
+extern grub_uint8_t EXPORT_VAR(grub_multiboot_forward_relocator);
+extern grub_uint8_t EXPORT_VAR(grub_multiboot_forward_relocator_end);
+extern grub_uint8_t EXPORT_VAR(grub_multiboot_backward_relocator);
+extern grub_uint8_t EXPORT_VAR(grub_multiboot_backward_relocator_end);
+
+#define RELOCATOR_SIZEOF(x)	(&grub_multiboot_##x##_relocator_end - &grub_multiboot_##x##_relocator)
 
 #endif /* ! GRUB_LOADER_CPU_HEADER */

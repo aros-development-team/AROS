@@ -1095,4 +1095,42 @@ struct grub_efi_block_io
 };
 typedef struct grub_efi_block_io grub_efi_block_io_t;
 
+#if GRUB_TARGET_SIZEOF_VOID_P == 4
+
+#define efi_call_0(func)		func()
+#define efi_call_1(func, a)		func(a)
+#define efi_call_2(func, a, b)		func(a, b)
+#define efi_call_3(func, a, b, c)	func(a, b, c)
+#define efi_call_4(func, a, b, c, d)	func(a, b, c, d)
+#define efi_call_5(func, a, b, c, d, e)	func(a, b, c, d, e)
+#define efi_call_6(func, a, b, c, d, e, f) func(a, b, c, d, e, f)
+
+#else
+
+#define efi_call_0(func)		efi_wrap_0(func)
+#define efi_call_1(func, a)		efi_wrap_1(func, (grub_uint64_t) a)
+#define efi_call_2(func, a, b)		efi_wrap_2(func, (grub_uint64_t) a, (grub_uint64_t) b)
+#define efi_call_3(func, a, b, c)	efi_wrap_3(func, (grub_uint64_t) a, (grub_uint64_t) b, (grub_uint64_t) c)
+#define efi_call_4(func, a, b, c, d)	efi_wrap_4(func, (grub_uint64_t) a, (grub_uint64_t) b, (grub_uint64_t) c, (grub_uint64_t) d)
+#define efi_call_5(func, a, b, c, d, e)	efi_wrap_5(func, (grub_uint64_t) a, (grub_uint64_t) b, (grub_uint64_t) c, (grub_uint64_t) d, (grub_uint64_t) e)
+#define efi_call_6(func, a, b, c, d, e, f) efi_wrap_6(func, (grub_uint64_t) a, (grub_uint64_t) b, (grub_uint64_t) c, (grub_uint64_t) d, (grub_uint64_t) e, (grub_uint64_t) f)
+
+grub_uint64_t EXPORT_FUNC(efi_wrap_0) (void *func);
+grub_uint64_t EXPORT_FUNC(efi_wrap_1) (void *func, grub_uint64_t arg1);
+grub_uint64_t EXPORT_FUNC(efi_wrap_2) (void *func, grub_uint64_t arg1,
+                                       grub_uint64_t arg2);
+grub_uint64_t EXPORT_FUNC(efi_wrap_3) (void *func, grub_uint64_t arg1,
+                                       grub_uint64_t arg2, grub_uint64_t arg3);
+grub_uint64_t EXPORT_FUNC(efi_wrap_4) (void *func, grub_uint64_t arg1,
+                                       grub_uint64_t arg2, grub_uint64_t arg3,
+                                       grub_uint64_t arg4);
+grub_uint64_t EXPORT_FUNC(efi_wrap_5) (void *func, grub_uint64_t arg1,
+                                       grub_uint64_t arg2, grub_uint64_t arg3,
+                                       grub_uint64_t arg4, grub_uint64_t arg5);
+grub_uint64_t EXPORT_FUNC(efi_wrap_6) (void *func, grub_uint64_t arg1,
+                                       grub_uint64_t arg2, grub_uint64_t arg3,
+                                       grub_uint64_t arg4, grub_uint64_t arg5,
+                                       grub_uint64_t arg6);
+#endif
+
 #endif /* ! GRUB_EFI_API_HEADER */

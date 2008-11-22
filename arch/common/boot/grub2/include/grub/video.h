@@ -26,7 +26,7 @@
    specific coding format.  */
 typedef grub_uint32_t grub_video_color_t;
 
-/* This structure is driver specific and should not be accessed directly by 
+/* This structure is driver specific and should not be accessed directly by
    outside code.  */
 struct grub_video_render_target;
 
@@ -55,14 +55,22 @@ struct grub_video_bitmap;
 /* Defined blitting formats.  */
 enum grub_video_blit_format
   {
-    /* Follow exactly field & mask information.  */
+    /* Generic RGBA, use fields & masks.  */
     GRUB_VIDEO_BLIT_FORMAT_RGBA,
-    /* Make optimization assumption.  */
-    GRUB_VIDEO_BLIT_FORMAT_R8G8B8A8,
-    /* Follow exactly field & mask information.  */
+
+    /* Optimized RGBA's.  */
+    GRUB_VIDEO_BLIT_FORMAT_RGBA_8888,
+    GRUB_VIDEO_BLIT_FORMAT_BGRA_8888,
+
+    /* Generic RGB, use fields & masks.  */
     GRUB_VIDEO_BLIT_FORMAT_RGB,
-    /* Make optimization assumption.  */
-    GRUB_VIDEO_BLIT_FORMAT_R8G8B8,
+
+    /* Optimized RGB's.  */
+    GRUB_VIDEO_BLIT_FORMAT_RGB_888,
+    GRUB_VIDEO_BLIT_FORMAT_BGR_888,
+    GRUB_VIDEO_BLIT_FORMAT_RGB_565,
+    GRUB_VIDEO_BLIT_FORMAT_BGR_565,
+
     /* When needed, decode color or just use value as is.  */
     GRUB_VIDEO_BLIT_FORMAT_INDEXCOLOR
   };
@@ -84,7 +92,7 @@ struct grub_video_mode_info
   /* Height of the screen.  */
   unsigned int height;
 
-  /* Mode type bitmask.  Contains information like is it Index color or 
+  /* Mode type bitmask.  Contains information like is it Index color or
      RGB mode.  */
   unsigned int mode_type;
 
@@ -124,7 +132,7 @@ struct grub_video_mode_info
   /* How many bits are reserved in color.  */
   unsigned int reserved_mask_size;
 
-  /* What is location of reserved color bits.  In Index Color mode, 
+  /* What is location of reserved color bits.  In Index Color mode,
      this is 0.  */
   unsigned int reserved_field_pos;
 };

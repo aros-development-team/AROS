@@ -74,7 +74,7 @@ union grub_aout_header
 #define	AOUT_MID_HPUX		0x20C	/* hp200/300 HP-UX binary */
 #define	AOUT_MID_HPUX800	0x20B	/* hp800 HP-UX binary */
 
-#define AOUT_FLAG_PIC		0x10	/* contains position independant code */
+#define AOUT_FLAG_PIC		0x10	/* contains position independent code */
 #define AOUT_FLAG_DYNAMIC	0x20	/* contains run-time link-edit info */
 #define AOUT_FLAG_DPMASK	0x30	/* mask for the above */
 

@@ -686,6 +686,10 @@ CPP
 GREP
 EGREP
 LIBLZO
+enable_lzo
+TARGET_IMG_LDSCRIPT
+TARGET_IMG_LDFLAGS
+TARGET_OBJ2ELF
 TARGET_CC
 ac_ct_TARGET_CC
 OBJCOPY
@@ -694,9 +698,11 @@ NM
 TARGET_CFLAGS
 TARGET_CPPFLAGS
 TARGET_LDFLAGS
+MODULE_LDFLAGS
 LIBCURSES
 enable_grub_emu
 enable_grub_fstest
+enable_grub_pe2elf
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -1290,9 +1296,12 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
+  --enable-lzo            use lzo to compress kernel (default is lzma)
   --enable-mm-debug       include memory manager debugging
   --enable-grub-emu       build and install the `grub-emu' debugging utility
   --enable-grub-fstest    build and install the `grub-fstest' debugging
+                          utility
+  --enable-grub-pe2elf    build and install the `grub-pe2elf' conversion
                           utility
 
 Optional Packages:
@@ -1927,13 +1936,6 @@ esac
 
 case "$target_cpu" in
   i[3456]86) target_cpu=i386 ;;
-  x86_64) target_cpu=i386 target_m32=1 ;;
-  powerpc) ;;
-  powerpc64) target_cpu=powerpc target_m32=1;;
-  sparc64) ;;
-  *) { { echo "$as_me:$LINENO: error: unsupported CPU type" >&5
-echo "$as_me: error: unsupported CPU type" >&2;}
-   { (exit 1); exit 1; }; } ;;
 esac
 
 # Specify the platform (such as firmware).
@@ -1949,28 +1951,56 @@ if test "x$with_platform" = x; then
   case "$target_cpu"-"$target_vendor" in
     i386-apple) platform=efi ;;
     i386-*) platform=pc ;;
+    x86_64-apple) platform=efi ;;
+    x86_64-*) platform=pc ;;
     powerpc-*) platform=ieee1275 ;;
+    powerpc64-*) platform=ieee1275 ;;
     sparc64-*) platform=ieee1275 ;;
-    *) { { echo "$as_me:$LINENO: error: unsupported machine type" >&5
-echo "$as_me: error: unsupported machine type" >&2;}
+    *) { { echo "$as_me:$LINENO: error: unsupported CPU: \"$target_cpu\"" >&5
+echo "$as_me: error: unsupported CPU: \"$target_cpu\"" >&2;}
    { (exit 1); exit 1; }; } ;;
   esac
 else
   platform="$with_platform"
 fi
 
-# Sanity check.
+# Adjust CPU unless target was explicitly specified.
+if test -z "$target_alias"; then
+  case "$target_cpu"-"$platform" in
+    x86_64-efi) ;;
+    x86_64-*) target_cpu=i386 ;;
+    powerpc64-ieee1275) target_cpu=powerpc ;;
+  esac
+fi
+
+# Check if the platform is supported, make final adjustments.
 case "$target_cpu"-"$platform" in
   i386-efi) ;;
+  x86_64-efi) ;;
   i386-pc) ;;
-  i386-linuxbios) ;;
+  i386-coreboot) ;;
+  i386-linuxbios) platform=coreboot ;;
   i386-ieee1275) ;;
   powerpc-ieee1275) ;;
   sparc64-ieee1275) ;;
-  *) { { echo "$as_me:$LINENO: error: unsupported machine type" >&5
-echo "$as_me: error: unsupported machine type" >&2;}
+  *) { { echo "$as_me:$LINENO: error: platform \"$platform\" is not supported for target CPU \"$target_cpu\"" >&5
+echo "$as_me: error: platform \"$platform\" is not supported for target CPU \"$target_cpu\"" >&2;}
    { (exit 1); exit 1; }; } ;;
 esac
+
+case "$target_cpu" in
+  i386 | powerpc) target_m32=1 ;;
+  x86_64 | sparc64) target_m64=1 ;;
+esac
+
+case "$host_os" in
+  mingw32) host_os=cygwin ;;
+esac
+
+case "$target_os" in
+  mingw32) target_os=cygwin ;;
+esac
+
 
 
 
@@ -5298,9 +5328,20 @@ fi
 
 # Check LZO when compiling for the i386-pc.
 if test "$target_cpu"-"$platform" = i386-pc; then
-  # There are three possibilities. LZO version 2 installed with the name
-  # liblzo2, with the name liblzo, and LZO version 1.
-  { echo "$as_me:$LINENO: checking for __lzo_init_v2 in -llzo2" >&5
+  # Check whether --enable-lzo was given.
+if test "${enable_lzo+set}" = set; then
+  enableval=$enable_lzo;
+fi
+
+  if [ x"$enable_lzo" = xyes ]; then
+    # There are three possibilities. LZO version 2 installed with the name
+    # liblzo2, with the name liblzo, and LZO version 1.
+
+cat >>confdefs.h <<\_ACEOF
+#define ENABLE_LZO 1
+_ACEOF
+
+    { echo "$as_me:$LINENO: checking for __lzo_init_v2 in -llzo2" >&5
 echo $ECHO_N "checking for __lzo_init_v2 in -llzo2... $ECHO_C" >&6; }
 if test "${ac_cv_lib_lzo2___lzo_init_v2+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -5502,8 +5543,8 @@ fi
 fi
 
 
-  LIBS="$LIBS $LIBLZO"
-  { echo "$as_me:$LINENO: checking for lzo1x_999_compress" >&5
+    LIBS="$LIBS $LIBLZO"
+    { echo "$as_me:$LINENO: checking for lzo1x_999_compress" >&5
 echo $ECHO_N "checking for lzo1x_999_compress... $ECHO_C" >&6; }
 if test "${ac_cv_func_lzo1x_999_compress+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -5593,7 +5634,7 @@ echo "$as_me: error: LZO1X-999 must be enabled" >&2;}
 fi
 
 
-  # LZO version 2 uses lzo/lzo1x.h, while LZO version 1 uses lzo1x.h.
+    # LZO version 2 uses lzo/lzo1x.h, while LZO version 1 uses lzo1x.h.
 
 
 for ac_header in lzo/lzo1x.h lzo1x.h
@@ -5740,12 +5781,21 @@ fi
 
 done
 
+  else
+
+cat >>confdefs.h <<\_ACEOF
+#define ENABLE_LZMA 1
+_ACEOF
+
+  fi
+
 fi
 
 # Check for functions.
 
 
-for ac_func in posix_memalign memalign
+
+for ac_func in posix_memalign memalign asprintf
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 { echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -5842,6 +5892,35 @@ done
 #
 # Check for target programs.
 #
+
+
+# Use linker script if present, otherwise use builtin -N script.
+{ echo "$as_me:$LINENO: checking for option to link raw image" >&5
+echo $ECHO_N "checking for option to link raw image... $ECHO_C" >&6; }
+if test -f "${srcdir}/conf/${target_cpu}-${platform}-${target_os}-img-ld.sc"; then
+  TARGET_IMG_LDSCRIPT='$(top_srcdir)'"/conf/${target_cpu}-${platform}-${target_os}-img-ld.sc"
+  TARGET_IMG_LDFLAGS="-Wl,-T${TARGET_IMG_LDSCRIPT}"
+  TARGET_IMG_LDFLAGS_AC="-Wl,-T${srcdir}/conf/${target_cpu}-${platform}-${target_os}-img-ld.sc"
+else
+  TARGET_IMG_LDSCRIPT=
+  TARGET_IMG_LDFLAGS='-Wl,-N'
+  TARGET_IMG_LDFLAGS_AC='-Wl,-N'
+fi
+
+
+{ echo "$as_me:$LINENO: result: $TARGET_IMG_LDFLAGS_AC" >&5
+echo "${ECHO_T}$TARGET_IMG_LDFLAGS_AC" >&6; }
+
+# For platforms where ELF is not the default link format.
+{ echo "$as_me:$LINENO: checking for command to convert module to ELF format" >&5
+echo $ECHO_N "checking for command to convert module to ELF format... $ECHO_C" >&6; }
+case "${host_os}:${target_os}" in
+  cygwin:cygwin) TARGET_OBJ2ELF='grub-pe2elf' ;;
+  *) ;;
+esac
+
+{ echo "$as_me:$LINENO: result: $TARGET_OBJ2ELF" >&5
+echo "${ECHO_T}$TARGET_OBJ2ELF" >&6; }
 
 # For cross-compiling.
 if test "x$target" != "x$host"; then
@@ -6561,7 +6640,7 @@ if test "x$TARGET_CFLAGS" = x; then
   # optimization flags.
   { echo "$as_me:$LINENO: checking whether optimization for size works" >&5
 echo $ECHO_N "checking whether optimization for size works... $ECHO_C" >&6; }
-if test "${size_flag+set}" = set; then
+if test "${grub_cv_cc_Os+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
@@ -6598,20 +6677,20 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test -z "$ac_c_werror_flag" ||
 	 test ! -s conftest.err
        } && test -s conftest.$ac_objext; then
-  size_flag=yes
+  grub_cv_cc_Os=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	size_flag=no
+	grub_cv_cc_Os=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
-{ echo "$as_me:$LINENO: result: $size_flag" >&5
-echo "${ECHO_T}$size_flag" >&6; }
-  if test "x$size_flag" = xyes; then
+{ echo "$as_me:$LINENO: result: $grub_cv_cc_Os" >&5
+echo "${ECHO_T}$grub_cv_cc_Os" >&6; }
+  if test "x$grub_cv_cc_Os" = xyes; then
     TARGET_CFLAGS="$TARGET_CFLAGS -Os"
   else
     TARGET_CFLAGS="$TARGET_CFLAGS -O2 -fno-strength-reduce -fno-unroll-loops"
@@ -6621,7 +6700,7 @@ echo "${ECHO_T}$size_flag" >&6; }
   if test "x$target_cpu" = xi386; then
     { echo "$as_me:$LINENO: checking whether -falign-loops works" >&5
 echo $ECHO_N "checking whether -falign-loops works... $ECHO_C" >&6; }
-if test "${falign_loop_flag+set}" = set; then
+if test "${grub_cv_cc_falign_loop+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
@@ -6658,21 +6737,21 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test -z "$ac_c_werror_flag" ||
 	 test ! -s conftest.err
        } && test -s conftest.$ac_objext; then
-  falign_loop_flag=yes
+  grub_cv_cc_falign_loop=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	falign_loop_flag=no
+	grub_cv_cc_falign_loop=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
-{ echo "$as_me:$LINENO: result: $falign_loop_flag" >&5
-echo "${ECHO_T}$falign_loop_flag" >&6; }
+{ echo "$as_me:$LINENO: result: $grub_cv_cc_falign_loop" >&5
+echo "${ECHO_T}$grub_cv_cc_falign_loop" >&6; }
 
-    if test "x$falign_loop_flag" = xyes; then
+    if test "x$grub_cv_cc_falign_loop" = xyes; then
       TARGET_CFLAGS="$TARGET_CFLAGS -falign-jumps=1 -falign-loops=1 -falign-functions=1"
     else
       TARGET_CFLAGS="$TARGET_CFLAGS -malign-jumps=1 -malign-loops=1 -malign-functions=1"
@@ -6686,9 +6765,259 @@ if test "x$target_m32" = x1; then
   TARGET_LDFLAGS="$TARGET_LDFLAGS -m32"
 fi
 
-{ echo "$as_me:$LINENO: checking whether the linker accepts \`--build-id=none'" >&5
-echo $ECHO_N "checking whether the linker accepts \`--build-id=none'... $ECHO_C" >&6; }
-save_LDFLAGS="$LDFLAGS"
+if test "x$target_m64" = x1; then
+  # Force 64-bit mode.
+  TARGET_CFLAGS="$TARGET_CFLAGS -m64"
+  TARGET_LDFLAGS="$TARGET_LDFLAGS -m64"
+fi
+
+#
+# Compiler features.
+#
+
+# Need __enable_execute_stack() for nested function trampolines?
+
+{ echo "$as_me:$LINENO: checking whether \`$CC' generates calls to \`__enable_execute_stack()'" >&5
+echo $ECHO_N "checking whether \`$CC' generates calls to \`__enable_execute_stack()'... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+
+void f (int (*p) (void));
+void g (int i)
+{
+  int nestedfunc (void) { return i; }
+  f (nestedfunc);
+}
+
+_ACEOF
+if { ac_try='${CC-cc} ${CFLAGS} -S conftest.c'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } && test -s conftest.s; then
+  true
+else
+  { { echo "$as_me:$LINENO: error: ${CC-cc} failed to produce assembly code" >&5
+echo "$as_me: error: ${CC-cc} failed to produce assembly code" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if grep __enable_execute_stack conftest.s >/dev/null 2>&1; then
+
+cat >>confdefs.h <<\_ACEOF
+#define NEED_ENABLE_EXECUTE_STACK 1
+_ACEOF
+
+  { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+rm -f conftest*
+
+
+# Smashing stack protector.
+
+# Smashing stack protector.
+ssp_possible=yes
+{ echo "$as_me:$LINENO: checking whether \`$CC' accepts \`-fstack-protector'" >&5
+echo $ECHO_N "checking whether \`$CC' accepts \`-fstack-protector'... $ECHO_C" >&6; }
+# Is this a reliable test case?
+cat >conftest.$ac_ext <<_ACEOF
+void foo (void) { volatile char a[8]; a[3]; }
+_ACEOF
+# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
+# `ac_compile' like this correct, after all?
+if eval "$ac_compile -S -fstack-protector -o conftest.s" 2> /dev/null; then
+  { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+  # Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
+  rm -f conftest.s
+else
+  ssp_possible=no
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+# Need that, because some distributions ship compilers that include
+# `-fstack-protector' in the default specs.
+if test "x$ssp_possible" = xyes; then
+  TARGET_CFLAGS="$TARGET_CFLAGS -fno-stack-protector"
+fi
+
+# Smashing stack arg probe.
+sap_possible=yes
+{ echo "$as_me:$LINENO: checking whether \`$CC' accepts \`-mstack-arg-probe'" >&5
+echo $ECHO_N "checking whether \`$CC' accepts \`-mstack-arg-probe'... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
+void foo (void) { volatile char a[8]; a[3]; }
+_ACEOF
+if eval "$ac_compile -S -mstack-arg-probe -o conftest.s" 2> /dev/null; then
+  { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+  # Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
+  rm -f conftest.s
+else
+  sap_possible=no
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+# Cygwin's GCC uses alloca() to probe the stackframe on static
+# stack allocations above some threshold.
+if test x"$sap_possible" = xyes; then
+  TARGET_CFLAGS="$TARGET_CFLAGS -mno-stack-arg-probe"
+fi
+
+
+
+
+
+
+# Set them to their new values for the tests below.
+CC="$TARGET_CC"
+CFLAGS="$TARGET_CFLAGS"
+CPPFLAGS="$TARGET_CPPFLAGS"
+LDFLAGS="$TARGET_LDFLAGS"
+
+# Defined in aclocal.m4.
+{ echo "$as_me:$LINENO: checking whether target compiler is working" >&5
+echo $ECHO_N "checking whether target compiler is working... $ECHO_C" >&6; }
+if test "${grub_cv_prog_target_cc+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  grub_cv_prog_target_cc=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	grub_cv_prog_target_cc=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+
+fi
+
+{ echo "$as_me:$LINENO: result: $grub_cv_prog_target_cc" >&5
+echo "${ECHO_T}$grub_cv_prog_target_cc" >&6; }
+
+if test "x$grub_cv_prog_target_cc" = xno; then
+  { { echo "$as_me:$LINENO: error: cannot compile for the target" >&5
+echo "$as_me: error: cannot compile for the target" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+{ echo "$as_me:$LINENO: checking whether ${OBJCOPY} works for absolute addresses" >&5
+echo $ECHO_N "checking whether ${OBJCOPY} works for absolute addresses... $ECHO_C" >&6; }
+if test "${grub_cv_prog_objcopy_absolute+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat > conftest.c <<\EOF
+void
+cmain (void)
+{
+   *((int *) 0x1000) = 2;
+}
+EOF
+
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && test -s conftest.o; then :
+else
+  { { echo "$as_me:$LINENO: error: ${CC-cc} cannot compile C source code" >&5
+echo "$as_me: error: ${CC-cc} cannot compile C source code" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+grub_cv_prog_objcopy_absolute=yes
+for link_addr in 2000 8000 7C00; do
+  if { ac_try='${CC-cc} ${CFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} -Wl,-Ttext -Wl,$link_addr conftest.o -o conftest.exec'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then :
+  else
+    { { echo "$as_me:$LINENO: error: ${CC-cc} cannot link at address $link_addr" >&5
+echo "$as_me: error: ${CC-cc} cannot link at address $link_addr" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  if { ac_try='${OBJCOPY-objcopy} --only-section=.text -O binary conftest.exec conftest'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then :
+  else
+    { { echo "$as_me:$LINENO: error: ${OBJCOPY-objcopy} cannot create binary files" >&5
+echo "$as_me: error: ${OBJCOPY-objcopy} cannot create binary files" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  if test ! -f conftest.old || { ac_try='cmp -s conftest.old conftest'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+    mv -f conftest conftest.old
+  else
+    grub_cv_prog_objcopy_absolute=no
+    break
+  fi
+done
+rm -f conftest*
+fi
+
+{ echo "$as_me:$LINENO: result: $grub_cv_prog_objcopy_absolute" >&5
+echo "${ECHO_T}$grub_cv_prog_objcopy_absolute" >&6; }
+
+if test "x$grub_cv_prog_objcopy_absolute" = xno; then
+  { { echo "$as_me:$LINENO: error: GRUB requires a working absolute objcopy; upgrade your binutils" >&5
+echo "$as_me: error: GRUB requires a working absolute objcopy; upgrade your binutils" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+{ echo "$as_me:$LINENO: checking whether linker accepts --build-id=none" >&5
+echo $ECHO_N "checking whether linker accepts --build-id=none... $ECHO_C" >&6; }
+if test "${grub_cv_prog_ld_build_id_none+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  save_LDFLAGS="$LDFLAGS"
 LDFLAGS="$LDFLAGS -Wl,--build-id=none"
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -6723,136 +7052,25 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test ! -s conftest.err
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
-  build_id_flag=yes
+  grub_cv_prog_ld_build_id_none=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	build_id_flag=no
+	grub_cv_prog_ld_build_id_none=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
-{ echo "$as_me:$LINENO: result: $build_id_flag" >&5
-echo "${ECHO_T}$build_id_flag" >&6; }
 LDFLAGS="$save_LDFLAGS"
-if test "x$build_id_flag" = xyes; then
-  TARGET_LDFLAGS="$TARGET_LDFLAGS -Wl,--build-id=none"
+
 fi
 
-#
-# Compiler features.
-#
+{ echo "$as_me:$LINENO: result: $grub_cv_prog_ld_build_id_none" >&5
+echo "${ECHO_T}$grub_cv_prog_ld_build_id_none" >&6; }
 
-# Smashing stack protector.
-
-# Smashing stack protector.
-ssp_possible=yes
-{ echo "$as_me:$LINENO: checking whether \`$CC' accepts \`-fstack-protector'" >&5
-echo $ECHO_N "checking whether \`$CC' accepts \`-fstack-protector'... $ECHO_C" >&6; }
-# Is this a reliable test case?
-cat >conftest.$ac_ext <<_ACEOF
-void foo (void) { volatile char a[8]; a[3]; }
-_ACEOF
-# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
-# `ac_compile' like this correct, after all?
-if eval "$ac_compile -S -fstack-protector -o conftest.s" 2> /dev/null; then
-  { echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6; }
-  # Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
-  rm -f conftest.s
-else
-  ssp_possible=no
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-# Need that, because some distributions ship compilers that include
-# `-fstack-protector' in the default specs.
-if test "x$ssp_possible" = xyes; then
-  TARGET_CFLAGS="$TARGET_CFLAGS -fno-stack-protector"
-fi
-
-
-
-
-
-# Set them to their new values for the tests below.
-CC="$TARGET_CC"
-CFLAGS="$TARGET_CFLAGS"
-CPPFLAGS="$TARGET_CPPFLAGS"
-LDFLAGS="$TARGET_LDFLAGS"
-
-# Defined in aclocal.m4.
-{ echo "$as_me:$LINENO: checking whether ${OBJCOPY} works for absolute addresses" >&5
-echo $ECHO_N "checking whether ${OBJCOPY} works for absolute addresses... $ECHO_C" >&6; }
-if test "${grub_cv_prog_objcopy_absolute+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  cat > conftest.c <<\EOF
-void
-cmain (void)
-{
-   *((int *) 0x1000) = 2;
-}
-EOF
-
-if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && test -s conftest.o; then :
-else
-  { { echo "$as_me:$LINENO: error: ${CC-cc} cannot compile C source code" >&5
-echo "$as_me: error: ${CC-cc} cannot compile C source code" >&2;}
-   { (exit 1); exit 1; }; }
-fi
-grub_cv_prog_objcopy_absolute=yes
-for link_addr in 2000 8000 7C00; do
-  if { ac_try='${CC-cc} ${CFLAGS} ${LDFLAGS} -nostdlib -Wl,-N -Wl,-Ttext -Wl,$link_addr conftest.o -o conftest.exec'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then :
-  else
-    { { echo "$as_me:$LINENO: error: ${CC-cc} cannot link at address $link_addr" >&5
-echo "$as_me: error: ${CC-cc} cannot link at address $link_addr" >&2;}
-   { (exit 1); exit 1; }; }
-  fi
-  if { ac_try='${OBJCOPY-objcopy} -O binary conftest.exec conftest'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then :
-  else
-    { { echo "$as_me:$LINENO: error: ${OBJCOPY-objcopy} cannot create binary files" >&5
-echo "$as_me: error: ${OBJCOPY-objcopy} cannot create binary files" >&2;}
-   { (exit 1); exit 1; }; }
-  fi
-  if test ! -f conftest.old || { ac_try='cmp -s conftest.old conftest'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-    mv -f conftest conftest.old
-  else
-    grub_cv_prog_objcopy_absolute=no
-    break
-  fi
-done
-rm -f conftest*
-fi
-
-{ echo "$as_me:$LINENO: result: $grub_cv_prog_objcopy_absolute" >&5
-echo "${ECHO_T}$grub_cv_prog_objcopy_absolute" >&6; }
-
-if test "x$grub_cv_prog_objcopy_absolute" = xno; then
-  { { echo "$as_me:$LINENO: error: GRUB requires a working absolute objcopy; upgrade your binutils" >&5
-echo "$as_me: error: GRUB requires a working absolute objcopy; upgrade your binutils" >&2;}
-   { (exit 1); exit 1; }; }
+if test "x$grub_cv_prog_ld_build_id_none" = xyes; then
+  MODULE_LDFLAGS="$MODULE_LDFLAGS -Wl,--build-id=none"
 fi
 
 
@@ -6905,6 +7123,11 @@ fi
 echo "${ECHO_T}$grub_cv_asm_uscore" >&6; }
 
 if test "x$target_cpu" = xi386; then
+  if test ! -z "$TARGET_IMG_LDSCRIPT"; then
+    # Check symbols provided by linker script.
+    CFLAGS="$TARGET_CFLAGS -nostdlib $TARGET_IMG_LDFLAGS_AC -Wl,-Ttext,8000,--defsym,___main=0x8100"
+  fi
+  if test "x$platform" = xpc; then
 
 { echo "$as_me:$LINENO: checking if start is defined by the compiler" >&5
 echo $ECHO_N "checking if start is defined by the compiler... $ECHO_C" >&6; }
@@ -7348,6 +7571,8 @@ echo "$as_me: error: neither end nor _end is defined" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
+  fi
+  CFLAGS="$TARGET_CFLAGS"
 
 { echo "$as_me:$LINENO: checking whether addr32 must be in the same line as the instruction" >&5
 echo $ECHO_N "checking whether addr32 must be in the same line as the instruction... $ECHO_C" >&6; }
@@ -8193,6 +8418,13 @@ fi
 
 
 
+# Check whether --enable-grub-pe2elf was given.
+if test "${enable_grub_pe2elf+set}" = set; then
+  enableval=$enable_grub_pe2elf;
+fi
+
+
+
 # Output files.
 ac_config_links="$ac_config_links include/grub/cpu:include/grub/$target_cpu include/grub/machine:include/grub/$target_cpu/$platform"
 
@@ -8897,6 +9129,10 @@ CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIBLZO!$LIBLZO$ac_delim
+enable_lzo!$enable_lzo$ac_delim
+TARGET_IMG_LDSCRIPT!$TARGET_IMG_LDSCRIPT$ac_delim
+TARGET_IMG_LDFLAGS!$TARGET_IMG_LDFLAGS$ac_delim
+TARGET_OBJ2ELF!$TARGET_OBJ2ELF$ac_delim
 TARGET_CC!$TARGET_CC$ac_delim
 ac_ct_TARGET_CC!$ac_ct_TARGET_CC$ac_delim
 OBJCOPY!$OBJCOPY$ac_delim
@@ -8905,14 +9141,16 @@ NM!$NM$ac_delim
 TARGET_CFLAGS!$TARGET_CFLAGS$ac_delim
 TARGET_CPPFLAGS!$TARGET_CPPFLAGS$ac_delim
 TARGET_LDFLAGS!$TARGET_LDFLAGS$ac_delim
+MODULE_LDFLAGS!$MODULE_LDFLAGS$ac_delim
 LIBCURSES!$LIBCURSES$ac_delim
 enable_grub_emu!$enable_grub_emu$ac_delim
 enable_grub_fstest!$enable_grub_fstest$ac_delim
+enable_grub_pe2elf!$enable_grub_pe2elf$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 84; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 90; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

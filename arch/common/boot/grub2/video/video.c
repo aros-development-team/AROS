@@ -108,7 +108,7 @@ grub_video_setup (unsigned int width, unsigned int height,
     }
 
   /* We couldn't find suitable adapter for specified mode.  */
-  return grub_error (GRUB_ERR_UNKNOWN_DEVICE, 
+  return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
                      "Can't locate valid adapter for mode");
 }
 
@@ -140,7 +140,7 @@ grub_video_get_info (struct grub_video_mode_info *mode_info)
       grub_errno = GRUB_ERR_NONE;
       return grub_errno;
     }
-  
+
   return grub_video_adapter_active->get_info (mode_info);
 }
 
@@ -152,40 +152,82 @@ grub_video_get_blit_format (struct grub_video_mode_info *mode_info)
   if (mode_info->bpp == 32)
     {
       if ((mode_info->red_mask_size == 8)
-          && (mode_info->red_field_pos == 0)
-          && (mode_info->green_mask_size == 8)
-          && (mode_info->green_field_pos == 8)
-          && (mode_info->blue_mask_size == 8)
-          && (mode_info->blue_field_pos == 16)
-          && (mode_info->reserved_mask_size == 8)
-          && (mode_info->reserved_field_pos == 24))
-        {
-          return GRUB_VIDEO_BLIT_FORMAT_R8G8B8A8;
-        }
+	  && (mode_info->red_field_pos == 16)
+	  && (mode_info->green_mask_size == 8)
+	  && (mode_info->green_field_pos == 8)
+	  && (mode_info->blue_mask_size == 8)
+	  && (mode_info->blue_field_pos == 0))
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_BGRA_8888;
+	}
+      else if ((mode_info->red_mask_size == 8)
+	       && (mode_info->red_field_pos == 0)
+	       && (mode_info->green_mask_size == 8)
+	       && (mode_info->green_field_pos == 8)
+	       && (mode_info->blue_mask_size == 8)
+	       && (mode_info->blue_field_pos == 16))
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_RGBA_8888;
+	}
     }
-
   /* Check if we have any known 24 bit modes.  */
-  if (mode_info->bpp == 24)
+  else if (mode_info->bpp == 24)
     {
       if ((mode_info->red_mask_size == 8)
-          && (mode_info->red_field_pos == 0)
-          && (mode_info->green_mask_size == 8)
-          && (mode_info->green_field_pos == 8)
-          && (mode_info->blue_mask_size == 8)
-          && (mode_info->blue_field_pos == 16))
-        {
-          return GRUB_VIDEO_BLIT_FORMAT_R8G8B8;
-        }
+	  && (mode_info->red_field_pos == 16)
+	  && (mode_info->green_mask_size == 8)
+	  && (mode_info->green_field_pos == 8)
+	  && (mode_info->blue_mask_size == 8)
+	  && (mode_info->blue_field_pos == 0))
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_BGR_888;
+	}
+      else if ((mode_info->red_mask_size == 8)
+	       && (mode_info->red_field_pos == 0)
+	       && (mode_info->green_mask_size == 8)
+	       && (mode_info->green_field_pos == 8)
+	       && (mode_info->blue_mask_size == 8)
+	       && (mode_info->blue_field_pos == 16))
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_RGB_888;
+	}
     }
+  /* Check if we have any known 16 bit modes.  */
+  else if (mode_info->bpp == 16)
+    {
+      if ((mode_info->red_mask_size == 5)
+	  && (mode_info->red_field_pos == 11)
+	  && (mode_info->green_mask_size == 6)
+	  && (mode_info->green_field_pos == 5)
+	  && (mode_info->blue_mask_size == 5)
+	  && (mode_info->blue_field_pos == 0))
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_BGR_565;
+	}
+      else if ((mode_info->red_mask_size == 5)
+	       && (mode_info->red_field_pos == 0)
+	       && (mode_info->green_mask_size == 6)
+	       && (mode_info->green_field_pos == 5)
+	       && (mode_info->blue_mask_size == 5)
+	       && (mode_info->blue_field_pos == 11))
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_RGB_565;
+	}
+    }
+
+  /* Backup route.  Unknown format.  */
 
   /* If there are more than 8 bits per color, assume RGB(A) mode.  */
   if (mode_info->bpp > 8)
     {
       if (mode_info->reserved_mask_size > 0)
-        {
-          return GRUB_VIDEO_BLIT_FORMAT_RGBA;
-        }
-      return GRUB_VIDEO_BLIT_FORMAT_RGB;
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_RGBA;
+	}
+      else
+	{
+	  return GRUB_VIDEO_BLIT_FORMAT_RGB;
+	}
     }
 
   /* Assume as indexcolor mode.  */
@@ -269,8 +311,8 @@ grub_video_map_rgba (grub_uint8_t red, grub_uint8_t green, grub_uint8_t blue,
 
 /* Unmap video color back to RGBA components.  */
 grub_err_t
-grub_video_unmap_color (grub_video_color_t color, grub_uint8_t *red, 
-                        grub_uint8_t *green, grub_uint8_t *blue, 
+grub_video_unmap_color (grub_video_color_t color, grub_uint8_t *red,
+                        grub_uint8_t *green, grub_uint8_t *blue,
                         grub_uint8_t *alpha)
 {
   if (! grub_video_adapter_active)

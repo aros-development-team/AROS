@@ -1,0 +1,16 @@
+# -*- makefile -*-
+
+pkglib_MODULES += cpuid.mod
+cpuid_mod_SOURCES = commands/i386/cpuid.c
+cpuid_mod_CFLAGS = $(COMMON_CFLAGS)
+cpuid_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += at_keyboard.mod
+at_keyboard_mod_SOURCES = term/i386/pc/at_keyboard.c
+at_keyboard_mod_CFLAGS = $(COMMON_CFLAGS)
+at_keyboard_mod_LDFLAGS = $(COMMON_LDFLAGS)
+
+pkglib_MODULES += vga_text.mod
+vga_text_mod_SOURCES = term/i386/pc/vga_text.c term/i386/vga_common.c
+vga_text_mod_CFLAGS = $(COMMON_CFLAGS)
+vga_text_mod_LDFLAGS = $(COMMON_LDFLAGS)

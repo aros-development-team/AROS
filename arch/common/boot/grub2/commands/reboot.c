@@ -27,6 +27,9 @@
 #include <grub/efi/efi.h>
 #elif defined(GRUB_MACHINE_PCBIOS)
 #include <grub/machine/init.h>
+#else
+/* Platforms shipping standalone reboot, such as coreboot.  */
+#include <grub/cpu/reboot.h>
 #endif
 
 

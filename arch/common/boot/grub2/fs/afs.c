@@ -198,13 +198,13 @@ grub_afs_read_inode (struct grub_afs_data *data,
                          (char *) inode);
 }
 
-static int
-grub_afs_read_block (grub_fshelp_node_t node, int fileblock)
+static grub_disk_addr_t
+grub_afs_read_block (grub_fshelp_node_t node, grub_disk_addr_t fileblock)
 {
   struct grub_afs_sblock *sb = &node->data->sblock;
   struct grub_afs_datastream *ds = &node->inode.stream;
 
-  if ((grub_uint32_t) fileblock < U64 (sb, ds->max_direct_range))
+  if (fileblock < U64 (sb, ds->max_direct_range))
     {
       int i;
 
@@ -215,7 +215,7 @@ grub_afs_read_block (grub_fshelp_node_t node, int fileblock)
           fileblock -= U16 (sb, ds->direct[i].len);
         }
     }
-  else if ((grub_uint32_t) fileblock < U64 (sb, ds->max_indirect_range))
+  else if (fileblock < U64 (sb, ds->max_indirect_range))
     {
       int ptrs_per_blk = sb->block_size / sizeof (struct grub_afs_blockrun);
       struct grub_afs_blockrun indir[ptrs_per_blk];

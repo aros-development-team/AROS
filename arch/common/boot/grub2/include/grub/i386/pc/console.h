@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2005,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2005,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,19 +29,19 @@
 #define GRUB_CONSOLE_KEY_BACKSPACE	0x0008
 #define GRUB_CONSOLE_KEY_HOME		0x4700
 #define GRUB_CONSOLE_KEY_END		0x4F00
-#define GRUB_CONSOLE_KEY_NPAGE		0x4900
-#define GRUB_CONSOLE_KEY_PPAGE		0x5100
+#define GRUB_CONSOLE_KEY_NPAGE		0x5100
+#define GRUB_CONSOLE_KEY_PPAGE		0x4900
 
 #ifndef ASM_FILE
 
 #include <grub/types.h>
 #include <grub/symbol.h>
+#include <grub/term.h>
+#include <grub/i386/vga_common.h>
 
 /* These are global to share code between C and asm.  */
-extern grub_uint8_t grub_console_cur_color;
-void grub_console_real_putchar (int c);
-int EXPORT_FUNC(grub_console_checkkey) (void);
-int EXPORT_FUNC(grub_console_getkey) (void);
+int grub_console_checkkey (void);
+int grub_console_getkey (void);
 grub_uint16_t grub_console_getxy (void);
 void grub_console_gotoxy (grub_uint8_t x, grub_uint8_t y);
 void grub_console_cls (void);

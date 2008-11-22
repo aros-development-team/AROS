@@ -23,7 +23,6 @@
   test tail packing & direct files
   validate partition label position
 */
-#warning "TODO : journal, tail packing (?)"
 
 #if 0
 # define GRUB_REISERFS_DEBUG
@@ -52,7 +51,8 @@
 
 #define REISERFS_SUPER_BLOCK_OFFSET 0x10000
 #define REISERFS_MAGIC_LEN 12
-#define REISERFS_MAGIC_STRING "ReIsEr2Fs\0\0\0"
+#define REISERFS_MAGIC_STRING "ReIsEr"
+#define REISERFS_MAGIC_DESC_BLOCK "ReIsErLB"
 /* If the 3rd bit of an item state is set, then it's visible.  */
 #define GRUB_REISERFS_VISIBLE_MASK ((grub_uint16_t) 0x04)
 #define REISERFS_MAX_LABEL_LENGTH 16
@@ -107,10 +107,10 @@ struct grub_reiserfs_superblock
   grub_uint16_t version;
   grub_uint16_t reserved;
   grub_uint32_t inode_generation;
+  grub_uint8_t unused[4];
+  grub_uint16_t uuid[8];
 } __attribute__ ((packed));
 
-#ifdef GRUB_REISERFS_JOURNALING
-# error "Journaling not yet supported."
 struct grub_reiserfs_journal_header
 {
   grub_uint32_t last_flush_uid;
@@ -118,15 +118,20 @@ struct grub_reiserfs_journal_header
   grub_uint32_t mount_id;
 } __attribute__ ((packed));
 
-struct grub_reiserfs_transaction_header
+struct grub_reiserfs_description_block
 {
   grub_uint32_t id;
   grub_uint32_t len;
   grub_uint32_t mount_id;
-  char *data;
-  char checksum[12];
+  grub_uint32_t real_blocks[0];
 } __attribute__ ((packed));
-#endif
+
+struct grub_reiserfs_commit_block
+{
+  grub_uint32_t id;
+  grub_uint32_t len;
+  grub_uint32_t real_blocks[0];
+} __attribute__ ((packed));
 
 struct grub_reiserfs_stat_item_v1
 {
@@ -504,8 +509,7 @@ grub_reiserfs_get_item (struct grub_reiserfs_data *data,
   do
     {
       grub_disk_read (data->disk,
-                      (((grub_disk_addr_t) block_number * block_size)
-                       >> GRUB_DISK_SECTOR_BITS),
+                      block_number * (block_size >> GRUB_DISK_SECTOR_BITS),
                       (((grub_off_t) block_number * block_size)
                        & (GRUB_DISK_SECTOR_SIZE - 1)),
                       block_size, (char *) block_header);
@@ -655,8 +659,7 @@ grub_reiserfs_read_symlink (grub_fshelp_node_t node)
 
   block_size = grub_le_to_cpu16 (node->data->superblock.block_size);
   len = grub_le_to_cpu16 (found.header.item_size);
-  block = (((grub_disk_addr_t) found.block_number * block_size)
-           >> GRUB_DISK_SECTOR_BITS);
+  block = found.block_number * (block_size  >> GRUB_DISK_SECTOR_BITS);
   offset = grub_le_to_cpu16 (found.header.item_location);
 
   symlink_buffer = grub_malloc (len + 1);
@@ -688,7 +691,7 @@ grub_reiserfs_mount (grub_disk_t disk)
   if (grub_errno)
     goto fail;
   if (grub_memcmp (data->superblock.magic_string,
-                   REISERFS_MAGIC_STRING, REISERFS_MAGIC_LEN))
+                   REISERFS_MAGIC_STRING, sizeof (REISERFS_MAGIC_STRING) - 1))
     {
       grub_error (GRUB_ERR_BAD_FS, "not a reiserfs filesystem");
       goto fail;
@@ -741,8 +744,7 @@ grub_reiserfs_iterate_dir (grub_fshelp_node_t item,
       struct grub_reiserfs_item_header *item_headers;
       
       grub_disk_read (data->disk,
-                      (((grub_disk_addr_t) block_number * block_size)
-                       >> GRUB_DISK_SECTOR_BITS),
+                      block_number * (block_size >> GRUB_DISK_SECTOR_BITS),
                       (((grub_off_t) block_number * block_size)
                        & (GRUB_DISK_SECTOR_SIZE - 1)),
                       block_size, (char *) block_header);
@@ -836,7 +838,7 @@ grub_reiserfs_iterate_dir (grub_fshelp_node_t item,
                         {
                           struct grub_reiserfs_stat_item_v1 entry_v1_stat;
                           grub_disk_read (data->disk,
-                                          ((grub_disk_addr_t) entry_block_number * block_size) >> GRUB_DISK_SECTOR_BITS,
+                                          entry_block_number * (block_size >> GRUB_DISK_SECTOR_BITS),
                                           grub_le_to_cpu16 (entry_item->header.item_location),
                                           sizeof (entry_v1_stat),
                                           (char *) &entry_v1_stat);
@@ -878,7 +880,7 @@ grub_reiserfs_iterate_dir (grub_fshelp_node_t item,
                         {
                           struct grub_reiserfs_stat_item_v2 entry_v2_stat;
                           grub_disk_read (data->disk,
-                                          ((grub_disk_addr_t) entry_block_number * block_size) >> GRUB_DISK_SECTOR_BITS,
+                                          entry_block_number * (block_size >> GRUB_DISK_SECTOR_BITS),
                                           grub_le_to_cpu16 (entry_item->header.item_location),
                                           sizeof (entry_v2_stat),
                                           (char *) &entry_v2_stat);
@@ -1026,8 +1028,7 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
     {
       struct grub_reiserfs_stat_item_v1 entry_v1_stat;
       grub_disk_read (data->disk,
-                      (((grub_disk_addr_t) block_number * block_size)
-                       >> GRUB_DISK_SECTOR_BITS),
+                      block_number * (block_size >> GRUB_DISK_SECTOR_BITS),
                       entry_location
                       + (((grub_off_t) block_number * block_size)
                          & (GRUB_DISK_SECTOR_SIZE - 1)),
@@ -1040,8 +1041,7 @@ grub_reiserfs_open (struct grub_file *file, const char *name)
     {
       struct grub_reiserfs_stat_item_v2 entry_v2_stat;
       grub_disk_read (data->disk,
-                      (((grub_disk_addr_t) block_number * block_size)
-                       >> GRUB_DISK_SECTOR_BITS),
+                      block_number * (block_size  >> GRUB_DISK_SECTOR_BITS),
                       entry_location
                       + (((grub_off_t) block_number * block_size)
                          & (GRUB_DISK_SECTOR_SIZE - 1)),
@@ -1079,7 +1079,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
   grub_uint16_t item_size;
   grub_uint32_t *indirect_block_ptr = 0;
   grub_uint64_t current_key_offset = 1;
-  grub_size_t initial_position, current_position, final_position, length;
+  grub_off_t initial_position, current_position, final_position, length;
   grub_disk_addr_t block;
   grub_off_t offset;
 
@@ -1094,9 +1094,11 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
   current_position = 0;
   final_position = MIN (len + initial_position, file->size);
   grub_dprintf ("reiserfs",
-                "Reading from %d to %d (%d instead of requested %d)\n",
-                initial_position, final_position,
-                final_position - initial_position, len);
+		"Reading from %lld to %lld (%lld instead of requested %ld)\n",
+		(unsigned long long) initial_position,
+		(unsigned long long) final_position,
+		(unsigned long long) (final_position - initial_position),
+		(unsigned long) len);
   while (current_position < final_position)
     {
       grub_reiserfs_set_key_offset (&key, current_key_offset);
@@ -1109,8 +1111,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
       switch (found.type)
         {
         case GRUB_REISERFS_DIRECT:
-          block = (((grub_disk_addr_t) found.block_number * block_size)
-                   >> GRUB_DISK_SECTOR_BITS);
+          block = found.block_number * (block_size  >> GRUB_DISK_SECTOR_BITS);
           grub_dprintf ("reiserfs_blocktype", "D: %u\n", (unsigned) block);
           if (initial_position < current_position + item_size)
             {
@@ -1120,7 +1121,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
               grub_dprintf ("reiserfs",
                             "Reading direct block %u from %u to %u...\n",
                             (unsigned) block, (unsigned) offset,
-                            (unsigned) offset + length);
+                            (unsigned) (offset + length));
               found.data->disk->read_hook = file->read_hook;
               grub_disk_read (found.data->disk,
                               block,
@@ -1142,8 +1143,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
           if (! indirect_block_ptr)
             goto fail;
           grub_disk_read (found.data->disk,
-                          (((grub_disk_addr_t) found.block_number * block_size)
-                           >> GRUB_DISK_SECTOR_BITS),
+                          found.block_number * (block_size >> GRUB_DISK_SECTOR_BITS),
                           grub_le_to_cpu16 (found.header.item_location),
                           item_size, (char *) indirect_block_ptr);
           if (grub_errno)
@@ -1154,9 +1154,8 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
                  && current_position < final_position;
                indirect_block++)
             {
-              block = ((grub_disk_addr_t)
-                       grub_le_to_cpu32 (indirect_block_ptr[indirect_block])
-                       * block_size) >> GRUB_DISK_SECTOR_BITS;
+              block = grub_le_to_cpu32 (indirect_block_ptr[indirect_block]) *
+                      (block_size >> GRUB_DISK_SECTOR_BITS);
               grub_dprintf ("reiserfs_blocktype", "I: %u\n", (unsigned) block);
               if (current_position + block_size >= initial_position)
                 {
@@ -1167,7 +1166,7 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
                   grub_dprintf ("reiserfs",
                                 "Reading indirect block %u from %u to %u...\n",
                                 (unsigned) block, (unsigned) offset,
-                                (unsigned) offset + length);
+                                (unsigned) (offset + length));
 #if 0
                   grub_dprintf ("reiserfs",
                                 "\nib=%04d/%04d, ip=%d, cp=%d, fp=%d, off=%d, l=%d, tl=%d\n",
@@ -1194,9 +1193,10 @@ grub_reiserfs_read (grub_file_t file, char *buf, grub_size_t len)
       current_key_offset = current_position + 1;
     }
   
-  grub_dprintf("reiserfs",
-               "Have successfully read %d bytes (%d requested)\n",
-               current_position - initial_position, len);
+  grub_dprintf ("reiserfs",
+		"Have successfully read %lld bytes (%ld requested)\n",
+		(unsigned long long) (current_position - initial_position),
+		(unsigned long) len);
   return current_position - initial_position;
 /*
   switch (found.type)
@@ -1341,6 +1341,38 @@ grub_reiserfs_label (grub_device_t device, char **label)
   return grub_errno;
 }
 
+static grub_err_t
+grub_reiserfs_uuid (grub_device_t device, char **uuid)
+{
+  struct grub_reiserfs_data *data;
+  grub_disk_t disk = device->disk;
+
+#ifndef GRUB_UTIL
+  grub_dl_ref (my_mod);
+#endif
+
+  data = grub_reiserfs_mount (disk);
+  if (data)
+    {
+      *uuid = grub_malloc (sizeof ("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"));
+      grub_sprintf (*uuid, "%04x%04x-%04x-%04x-%04x-%04x%04x%04x",
+		    grub_be_to_cpu16 (data->superblock.uuid[0]), grub_be_to_cpu16 (data->superblock.uuid[1]),
+		    grub_be_to_cpu16 (data->superblock.uuid[2]), grub_be_to_cpu16 (data->superblock.uuid[3]),
+		    grub_be_to_cpu16 (data->superblock.uuid[4]), grub_be_to_cpu16 (data->superblock.uuid[5]),
+		    grub_be_to_cpu16 (data->superblock.uuid[6]), grub_be_to_cpu16 (data->superblock.uuid[7]));
+    }
+  else
+    *uuid = NULL;
+
+#ifndef GRUB_UTIL
+  grub_dl_unref (my_mod);
+#endif
+
+  grub_free (data);
+
+  return grub_errno;
+}
+
 static struct grub_fs grub_reiserfs_fs =
   {
     .name = "reiserfs",
@@ -1349,6 +1381,7 @@ static struct grub_fs grub_reiserfs_fs =
     .read = grub_reiserfs_read,
     .close = grub_reiserfs_close,
     .label = grub_reiserfs_label,
+    .uuid = grub_reiserfs_uuid,
     .next = 0
   };
 

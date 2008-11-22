@@ -23,10 +23,12 @@
 #include <grub/env.h>
 
 /* The list of terminals.  */
-static grub_term_t grub_term_list;
+static grub_term_input_t grub_term_list_input;
+static grub_term_output_t grub_term_list_output;
 
 /* The current terminal.  */
-static grub_term_t grub_cur_term;
+static grub_term_input_t grub_cur_term_input;
+static grub_term_output_t grub_cur_term_output;
 
 /* The amount of lines counted by the pager.  */
 static int grub_more_lines;
@@ -38,18 +40,29 @@ static int grub_more;
 static int cursor_state = 1;
 
 void
-grub_term_register (grub_term_t term)
+grub_term_register_input (grub_term_input_t term)
 {
-  term->next = grub_term_list;
-  grub_term_list = term;
+  term->next = grub_term_list_input;
+  grub_term_list_input = term;
+  if (! grub_cur_term_input)
+    grub_term_set_current_input (term);
 }
 
 void
-grub_term_unregister (grub_term_t term)
+grub_term_register_output (grub_term_output_t term)
 {
-  grub_term_t *p, q;
+  term->next = grub_term_list_output;
+  grub_term_list_output = term;
+  if (! grub_cur_term_output)
+    grub_term_set_current_output (term);
+}
+
+void
+grub_term_unregister_input (grub_term_input_t term)
+{
+  grub_term_input_t *p, q;
   
-  for (p = &grub_term_list, q = *p; q; p = &(q->next), q = q->next)
+  for (p = &grub_term_list_input, q = *p; q; p = &(q->next), q = q->next)
     if (q == term)
       {
         *p = q->next;
@@ -58,36 +71,78 @@ grub_term_unregister (grub_term_t term)
 }
 
 void
-grub_term_iterate (int (*hook) (grub_term_t term))
+grub_term_unregister_output (grub_term_output_t term)
 {
-  grub_term_t p;
+  grub_term_output_t *p, q;
   
-  for (p = grub_term_list; p; p = p->next)
+  for (p = &grub_term_list_output, q = *p; q; p = &(q->next), q = q->next)
+    if (q == term)
+      {
+        *p = q->next;
+	break;
+      }
+}
+
+void
+grub_term_iterate_input (int (*hook) (grub_term_input_t term))
+{
+  grub_term_input_t p;
+  
+  for (p = grub_term_list_input; p; p = p->next)
+    if (hook (p))
+      break;
+}
+
+void
+grub_term_iterate_output (int (*hook) (grub_term_output_t term))
+{
+  grub_term_output_t p;
+  
+  for (p = grub_term_list_output; p; p = p->next)
     if (hook (p))
       break;
 }
 
 grub_err_t
-grub_term_set_current (grub_term_t term)
+grub_term_set_current_input (grub_term_input_t term)
 {
-  if (grub_cur_term && grub_cur_term->fini)
-    if ((grub_cur_term->fini) () != GRUB_ERR_NONE)
+  if (grub_cur_term_input && grub_cur_term_input->fini)
+    if ((grub_cur_term_input->fini) () != GRUB_ERR_NONE)
       return grub_errno;
 
   if (term->init)
     if ((term->init) () != GRUB_ERR_NONE)
       return grub_errno;
   
-  grub_cur_term = term;
-  grub_cls ();
-  grub_setcursor (grub_getcursor ());
+  grub_cur_term_input = term;
   return GRUB_ERR_NONE;
 }
 
-grub_term_t
-grub_term_get_current (void)
+grub_err_t
+grub_term_set_current_output (grub_term_output_t term)
 {
-  return grub_cur_term;
+  if (grub_cur_term_output && grub_cur_term_output->fini)
+    if ((grub_cur_term_output->fini) () != GRUB_ERR_NONE)
+      return grub_errno;
+
+  if (term->init)
+    if ((term->init) () != GRUB_ERR_NONE)
+      return grub_errno;
+  
+  grub_cur_term_output = term;
+  return GRUB_ERR_NONE;
+}
+
+grub_term_input_t
+grub_term_get_current_input (void)
+{
+  return grub_cur_term_input;
+}
+
+grub_term_output_t
+grub_term_get_current_output (void)
+{
+  return grub_cur_term_output;
 }
 
 /* Put a Unicode character.  */
@@ -96,7 +151,7 @@ grub_putcode (grub_uint32_t code)
 {
   int height = grub_getwh () & 255;
 
-  if (code == '\t' && grub_cur_term->getxy)
+  if (code == '\t' && grub_cur_term_output->getxy)
     {
       int n;
       
@@ -107,7 +162,7 @@ grub_putcode (grub_uint32_t code)
       return;
     }
   
-  (grub_cur_term->putchar) (code);
+  (grub_cur_term_output->putchar) (code);
   
   if (code == '\n')
     {
@@ -171,70 +226,70 @@ grub_putchar (int c)
 grub_ssize_t
 grub_getcharwidth (grub_uint32_t code)
 {
-  return (grub_cur_term->getcharwidth) (code);
+  return (grub_cur_term_output->getcharwidth) (code);
 }
 
 int
 grub_getkey (void)
 {
-  return (grub_cur_term->getkey) ();
+  return (grub_cur_term_input->getkey) ();
 }
 
 int
 grub_checkkey (void)
 {
-  return (grub_cur_term->checkkey) ();
+  return (grub_cur_term_input->checkkey) ();
 }
 
 grub_uint16_t
 grub_getxy (void)
 {
-  return (grub_cur_term->getxy) ();
+  return (grub_cur_term_output->getxy) ();
 }
 
 grub_uint16_t
 grub_getwh (void)
 {
-  return (grub_cur_term->getwh) ();
+  return (grub_cur_term_output->getwh) ();
 }
 
 void
 grub_gotoxy (grub_uint8_t x, grub_uint8_t y)
 {
-  (grub_cur_term->gotoxy) (x, y);
+  (grub_cur_term_output->gotoxy) (x, y);
 }
 
 void
 grub_cls (void)
 {
-  if ((grub_cur_term->flags & GRUB_TERM_DUMB) || (grub_env_get ("debug")))
+  if ((grub_cur_term_output->flags & GRUB_TERM_DUMB) || (grub_env_get ("debug")))
     {
       grub_putchar ('\n');
       grub_refresh ();
     }
   else
-    (grub_cur_term->cls) ();
+    (grub_cur_term_output->cls) ();
 }
 
 void
 grub_setcolorstate (grub_term_color_state state)
 {
-  if (grub_cur_term->setcolorstate)
-    (grub_cur_term->setcolorstate) (state);
+  if (grub_cur_term_output->setcolorstate)
+    (grub_cur_term_output->setcolorstate) (state);
 }
 
 void
 grub_setcolor (grub_uint8_t normal_color, grub_uint8_t highlight_color)
 {
-  if (grub_cur_term->setcolor)
-    (grub_cur_term->setcolor) (normal_color, highlight_color);
+  if (grub_cur_term_output->setcolor)
+    (grub_cur_term_output->setcolor) (normal_color, highlight_color);
 }
 
 void
 grub_getcolor (grub_uint8_t *normal_color, grub_uint8_t *highlight_color)
 {
-  if (grub_cur_term->getcolor)
-    (grub_cur_term->getcolor) (normal_color, highlight_color);
+  if (grub_cur_term_output->getcolor)
+    (grub_cur_term_output->getcolor) (normal_color, highlight_color);
 }
 
 int
@@ -242,9 +297,9 @@ grub_setcursor (int on)
 {
   int ret = cursor_state;
 
-  if (grub_cur_term->setcursor)
+  if (grub_cur_term_output->setcursor)
     {
-      (grub_cur_term->setcursor) (on);
+      (grub_cur_term_output->setcursor) (on);
       cursor_state = on;
     }
   
@@ -260,8 +315,8 @@ grub_getcursor (void)
 void
 grub_refresh (void)
 {
-  if (grub_cur_term->refresh)
-    (grub_cur_term->refresh) ();
+  if (grub_cur_term_output->refresh)
+    (grub_cur_term_output->refresh) ();
 }
 
 void

@@ -454,7 +454,7 @@ grub_dl_resolve_dependencies (grub_dl_t mod, Elf_Ehdr *e)
 	const char *name = (char *) e + s->sh_offset;
 	const char *max = name + s->sh_size;
 
-	while (name < max)
+	while ((name < max) && (*name))
 	  {
 	    grub_dl_t m;
 	    grub_dl_dep_t dep;
@@ -509,8 +509,8 @@ grub_dl_flush_cache (grub_dl_t mod)
 
   for (seg = mod->segment; seg; seg = seg->next) {
     if (seg->size) {
-      grub_dprintf ("modules", "flushing 0x%x bytes at %p\n", seg->size,
-		    seg->addr);
+      grub_dprintf ("modules", "flushing 0x%lx bytes at %p\n",
+		    (unsigned long) seg->size, seg->addr);
       grub_arch_sync_caches (seg->addr, seg->size);
     }
   }
@@ -523,7 +523,8 @@ grub_dl_load_core (void *addr, grub_size_t size)
   Elf_Ehdr *e;
   grub_dl_t mod;
 
-  grub_dprintf ("modules", "module at %p, size 0x%x\n", addr, size);
+  grub_dprintf ("modules", "module at %p, size 0x%lx\n", addr,
+		(unsigned long) size);
   e = addr;
   if (grub_dl_check_header (e, size))
     return 0;

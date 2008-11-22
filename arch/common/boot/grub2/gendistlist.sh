@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Copyright (C) 2005  Free Software Foundation, Inc.
+# Copyright (C) 2005, 2008  Free Software Foundation, Inc.
 #
 # This gendistlist.sh is free software; the author
 # gives unlimited permission to copy and/or distribute it,
@@ -16,11 +16,15 @@
 EXTRA_DISTFILES="AUTHORS COPYING ChangeLog DISTLIST INSTALL NEWS README \
 	THANKS TODO Makefile.in aclocal.m4 autogen.sh config.guess \
 	config.h.in config.sub configure configure.ac gencmdlist.sh \
-	gendistlist.sh genfslist.sh genkernsyms.sh genmk.rb \
-	genmodsrc.sh gensymlist.sh install-sh mkinstalldirs stamp-h.in"
+	gendistlist.sh genfslist.sh geninit.sh geninitheader.sh genkernsyms.sh.in \
+	genmk.rb genmoddep.awk genmodsrc.sh genpartmaplist.sh gensymlist.sh.in
+	install-sh mkinstalldirs stamp-h.in"
 
-DISTDIRS="boot commands conf disk font fs hello include io kern loader \
-	normal partmap term util video"
+DISTDIRS="boot bus commands conf disk docs font fs hello hook include io kern lib \
+	loader normal partmap term util video"
+
+LC_COLLATE=C
+export LC_COLLATE
 
 for f in $EXTRA_DISTFILES; do
     echo $f
@@ -31,8 +35,9 @@ cd $dir
 
 for dir in $DISTDIRS; do
   for d in `find $dir -type d | sort`; do
-    find $d -maxdepth 1 -name '*.[chS]' -o -name '*.mk' -o -name '*.rmk' \
-      -o -name '*.rb' -o -name '*.in' \
+    find $d -maxdepth 1 -name '*.[chSy]' -o -name '*.mk' -o -name '*.rmk' \
+      -o -name '*.rb' -o -name '*.in' -o -name '*.tex' -o -name '*.texi' \
+      -o -name 'grub.cfg' -o -name 'README' -o -name '*.sc' -o -name 'mdate.sh' \
       | sort
   done
 done

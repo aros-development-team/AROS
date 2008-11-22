@@ -66,12 +66,6 @@ _start (uint64_t r0 __attribute__((unused)),
   /* Never reached.  */
 }
 
-void
-grub_millisleep (grub_uint32_t ms)
-{
-  grub_millisleep_generic (ms);
-}
-
 int
 grub_ieee1275_test_flag (enum grub_ieee1275_flag flag)
 {
@@ -145,6 +139,8 @@ grub_machine_set_prefix (void)
   grub_free (prefix);
 }
 
+grub_uint64_t ieee1275_get_time_ms (void);
+
 void
 grub_machine_init (void)
 {
@@ -201,6 +197,7 @@ grub_machine_init (void)
 	}
     }
 
+  grub_install_get_time_ms (ieee1275_get_time_ms);
 }
 
 void
@@ -214,6 +211,12 @@ void
 grub_exit (void)
 {
   grub_ieee1275_enter ();
+}
+
+grub_uint64_t
+ieee1275_get_time_ms (void)
+{
+  return grub_get_rtc ();
 }
 
 grub_uint32_t

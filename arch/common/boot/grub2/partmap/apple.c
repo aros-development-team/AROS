@@ -1,7 +1,7 @@
 /* apple.c - Read macintosh partition tables.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2004,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,11 +22,19 @@
 #include <grub/mm.h>
 #include <grub/partition.h>
 
+#define GRUB_APPLE_HEADER_MAGIC	0x4552
 #define GRUB_APPLE_PART_MAGIC	0x504D
+
+struct grub_apple_header
+{
+  /* The magic number to identify the partition map, it should have
+     the value `0x4552'.  */
+  grub_uint16_t magic;
+};
 
 struct grub_apple_part
 {
-  /* The magic number to idenify this as a partition, it should have
+  /* The magic number to identify this as a partition, it should have
      the value `0x504D'.  */
   grub_uint16_t magic;
 
@@ -98,6 +106,7 @@ apple_partition_map_iterate (grub_disk_t disk,
 					  const grub_partition_t partition))
 {
   struct grub_partition part;
+  struct grub_apple_header aheader;
   struct grub_apple_part apart;
   struct grub_disk raw;
   int partno = 0;
@@ -108,6 +117,18 @@ apple_partition_map_iterate (grub_disk_t disk,
   raw.partition = 0;
 
   part.partmap = &grub_apple_partition_map;
+
+  if (grub_disk_read (&raw, 0, 0, sizeof (aheader), (char *) &aheader))
+    return grub_errno;
+
+  if (grub_be_to_cpu16 (aheader.magic) != GRUB_APPLE_HEADER_MAGIC)
+    {
+      grub_dprintf ("partition",
+		    "bad magic (found 0x%x; wanted 0x%x\n",
+		    grub_be_to_cpu16 (aheader.magic),
+		    GRUB_APPLE_HEADER_MAGIC);
+      goto fail;
+    }
 
   for (;;)
     {
@@ -147,11 +168,12 @@ apple_partition_map_iterate (grub_disk_t disk,
       partno++;
     }
 
-  if (pos == GRUB_DISK_SECTOR_SIZE)
-    return grub_error (GRUB_ERR_BAD_PART_TABLE,
-		       "Apple partition map not found.");
+  if (pos != GRUB_DISK_SECTOR_SIZE)
+    return 0;
 
-  return 0;
+ fail:
+  return grub_error (GRUB_ERR_BAD_PART_TABLE,
+		     "Apple partition map not found.");
 }
 
 

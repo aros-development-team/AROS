@@ -1,7 +1,7 @@
 /* misc.c - definitions of misc functions */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@
 #include <stdarg.h>
 #include <grub/term.h>
 #include <grub/env.h>
-#include <grub/time.h>
 
 void *
 grub_memmove (void *dest, const void *src, grub_size_t n)
@@ -94,8 +93,11 @@ grub_strcat (char *dest, const char *src)
   while (*p)
     p++;
 
-  while ((*p++ = *src++) != '\0')
-    ;
+  while ((*p = *src) != '\0')
+    {
+      p++;
+      src++;
+    }
 
   return dest;
 }
@@ -108,10 +110,14 @@ grub_strncat (char *dest, const char *src, int c)
   while (*p)
     p++;
 
-  while ((*p++ = *src++) != '\0' && --c)
-    ;
-  *(--p) = '\0';
-  
+  while ((*p = *src) != '\0' && c--)
+    {
+      p++;
+      src++;
+    }
+
+  *p = '\0';
+
   return dest;
 }
 
@@ -127,6 +133,11 @@ grub_printf (const char *fmt, ...)
 
   return ret;
 }  
+
+#ifndef GRUB_UTIL
+int grub_err_printf (const char *fmt, ...)
+__attribute__ ((alias("grub_printf")));
+#endif
 
 void
 grub_real_dprintf (const char *file, const int line, const char *condition,
@@ -648,24 +659,6 @@ grub_lltoa (char *str, int c, unsigned long long n)
   return p;
 }
 
-static char *
-grub_ftoa (char *str, double f, int round)
-{
-  unsigned int intp;
-  unsigned int fractp;
-  unsigned int power = 1;
-  int i;
-
-  for (i = 0; i < round; i++)
-    power *= 10;
-
-  intp = f;
-  fractp = (f - (float) intp) * power;
-
-  grub_sprintf (str, "%d.%d", intp, fractp);
-  return str;
-}
-
 int
 grub_vsprintf (char *str, const char *fmt, va_list args)
 {
@@ -800,19 +793,6 @@ grub_vsprintf (char *str, const char *fmt, va_list args)
 	      write_char (n & 0xff);
 	      break;
 
-	    case 'f':
-	      {
-		float f;
-		f = va_arg (args, double);
-		grub_ftoa (tmp, f, format2);
-		if (!rightfill && grub_strlen (tmp) < format1)
-		  write_fill (zerofill, format1 - grub_strlen (tmp));
-		write_str (tmp);
-		if (rightfill && grub_strlen (tmp) < format1)
-		  write_fill (zerofill, format1 - grub_strlen (tmp));
-		break;
-	      }
-	      
 	    case 'C':
 	      {
 		grub_uint32_t code = va_arg (args, grub_uint32_t);
@@ -1042,28 +1022,31 @@ grub_utf8_to_ucs4 (grub_uint32_t *dest, const grub_uint8_t *src,
   return p - dest;
 }
 
-void
-grub_millisleep_generic (grub_uint32_t ms)
-{
-  grub_uint32_t end_at;
-
-  end_at = grub_get_rtc () + grub_div_roundup (ms * GRUB_TICKS_PER_SECOND, 1000);
-
-  while (grub_get_rtc () < end_at)
-    grub_cpu_idle ();
-}
-
 /* Abort GRUB. This function does not return.  */
 void
 grub_abort (void)
 {
-  if (grub_term_get_current ())
+  if (grub_term_get_current_output ())
     {
-      grub_printf ("\nAborted. Press any key to exit.");
-      grub_getkey ();
+      grub_printf ("\nAborted.");
+
+      if (grub_term_get_current_input ())
+	{
+	  grub_printf (" Press any key to exit.");
+	  grub_getkey ();
+	}
     }
 
   grub_exit ();
 }
 /* GCC emits references to abort().  */
 void abort (void) __attribute__ ((alias ("grub_abort")));
+
+#ifdef NEED_ENABLE_EXECUTE_STACK
+/* Some gcc versions generate a call to this function
+   in trampolines for nested functions.  */
+__enable_execute_stack (void *addr __attribute__ ((unused)))
+{
+}
+#endif
+

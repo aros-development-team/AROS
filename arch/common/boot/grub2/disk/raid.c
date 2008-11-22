@@ -26,6 +26,8 @@
 
 /* Linked list of RAID arrays. */
 static struct grub_raid_array *array_list;
+grub_raid5_recover_func_t grub_raid5_recover_func;
+grub_raid6_recover_func_t grub_raid6_recover_func;
 
 
 static char
@@ -43,10 +45,29 @@ grub_is_array_readable (struct grub_raid_array *array)
 	return 1;
       break;
 
+    case 4:
     case 5:
-      if (array->nr_devs >= array->total_devs - 1)
-	return 1;
-      break;
+    case 6:
+    case 10:
+      {
+        unsigned int n;
+
+        if (array->level == 10)
+          {
+            n = array->layout & 0xFF;
+            if (n == 1)
+              n = (array->layout >> 8) & 0xFF;
+
+            n--;
+          }
+        else
+          n = array->level / 3;
+
+        if (array->nr_devs >= array->total_devs - n)
+          return 1;
+
+        break;
+      }
     }
 
   return 0;
@@ -76,12 +97,13 @@ grub_raid_memberlist (grub_disk_t disk)
   unsigned int i;
   
   for (i = 0; i < array->total_devs; i++)
-    {
-      tmp = grub_malloc (sizeof (*tmp));
-      tmp->disk = array->device[i];
-      tmp->next = list;
-      list = tmp;
-    }
+    if (array->device[i])
+      {
+        tmp = grub_malloc (sizeof (*tmp));
+        tmp->disk = array->device[i];
+        tmp->next = list;
+        list = tmp;
+      }
   
   return list;
 }
@@ -91,6 +113,7 @@ static grub_err_t
 grub_raid_open (const char *name, grub_disk_t disk)
 {
   struct grub_raid_array *array;
+  unsigned n;
   
   for (array = array_list; array != NULL; array = array->next)
     {
@@ -100,31 +123,44 @@ grub_raid_open (const char *name, grub_disk_t disk)
     }
 
   if (!array)
-    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Unknown device");
+    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Unknown RAID device %s",
+                       name);
 
   disk->has_partitions = 1;
   disk->id = array->number;
   disk->data = array;
 
-  grub_dprintf ("raid", "%s: total_devs=%d, disk_size=%d\n", name, array->total_devs, array->disk_size);
+  grub_dprintf ("raid", "%s: total_devs=%d, disk_size=%lld\n", name,
+		array->total_devs, (unsigned long long) array->disk_size);
 
   switch (array->level)
     {
-    case 0:
-      /* FIXME: RAID0 disks can have different sizes! */
-      disk->total_sectors = array->total_devs * array->disk_size;
-      break;
-
     case 1:
       disk->total_sectors = array->disk_size;
       break;
 
+    case 10:
+      n = array->layout & 0xFF;
+      if (n == 1)
+        n = (array->layout >> 8) & 0xFF;
+
+      disk->total_sectors = grub_divmod64 (array->total_devs *
+                                           array->disk_size,
+                                           n, 0);
+      break;
+
+    case 0:
+    case 4:
     case 5:
-      disk->total_sectors = (array->total_devs - 1) * array->disk_size;
+    case 6:
+      n = array->level / 3;
+
+      disk->total_sectors = (array->total_devs - n) * array->disk_size;
       break;
     }
 
-  grub_dprintf ("raid", "%s: level=%d, total_sectors=%d\n", name, array->level, disk->total_sectors);
+  grub_dprintf ("raid", "%s: level=%d, total_sectors=%lld\n", name,
+		array->level, (unsigned long long) disk->total_sectors);
   
   return 0;
 }
@@ -133,6 +169,22 @@ static void
 grub_raid_close (grub_disk_t disk __attribute ((unused)))
 {
   return;
+}
+
+void
+grub_raid_block_xor (char *buf1, char *buf2, int size)
+{
+  grub_size_t *p1, *p2;
+
+  p1 = (grub_size_t *) buf1;
+  p2 = (grub_size_t *) buf2;
+  size /= GRUB_CPU_SIZEOF_VOID_P;
+
+  while (size)
+    {
+      *(p1++) ^= *(p2++);
+      size--;
+    }
 }
 
 static grub_err_t
@@ -145,190 +197,264 @@ grub_raid_read (grub_disk_t disk, grub_disk_addr_t sector,
   switch (array->level)
     {
     case 0:
-      {
-	grub_uint64_t a;
-	grub_uint32_t b;
-	unsigned int disknr;
-	grub_disk_addr_t read_sector;
-	grub_size_t read_size;
-
-	/* Find the first sector to read. */
-	a = grub_divmod64 (sector, array->chunk_size, NULL);
-	grub_divmod64 (a, array->total_devs, &disknr);
-
-	a = grub_divmod64 (sector, array->chunk_size * array->total_devs, NULL);
-	grub_divmod64 (sector, array->chunk_size, &b);
-	read_sector = a * array->chunk_size + b;
-
-	grub_divmod64 (read_sector, array->chunk_size, &b);
-	read_size = array->chunk_size - b;
-	
-	if (read_size > size)
-	  read_size = size;
-	
-	while (1)
-	  {
-	    grub_uint32_t i;
-
-	    err = grub_disk_read (array->device[disknr], read_sector, 0,
-				  read_size << GRUB_DISK_SECTOR_BITS, buf);
-	    if (err)
-	      break;
-
-	    buf += read_size;
-	    size -= read_size;
-	    if (! size)
-	      break;
-
-	    if (size > array->chunk_size)
-	      read_size = array->chunk_size;
-	    else
-	      read_size = size;
-
-	    /* Check whether the sector was aligned on a chunk size
-	       boundary. If this isn't the case, it's the first read
-	       and the next read should be set back to start of the
-	       boundary.  */
-	    grub_divmod64 (read_sector, array->chunk_size, &i);
-	    read_sector -= i;
-
-	    disknr++;
-	    /* See whether the disk was the last disk, and start
-	       reading from the first disk in that case. */
-	    if (disknr == array->total_devs)
-	      {
-		disknr = 0;
-		read_sector += array->chunk_size;
-	      }
-	  }
-      }
-      break;
-
     case 1:
-      /* This is easy, we can read from any disk we want. We will loop
-	 over all disks until we've found one that is available. In
-	 case of errs, we will try the to read the next disk. */
+    case 10:
       {
-	unsigned int i = 0;
-	
-	for (i = 0; i < array->total_devs; i++)
-	  {
-	    if (array->device[i])
-	      {
-		err = grub_disk_read (array->device[i], sector, 0,
-				      size << GRUB_DISK_SECTOR_BITS, buf);
+        grub_disk_addr_t read_sector, far_ofs;
+	grub_uint32_t disknr, b, near, far, ofs;
 
-		if (!err)
-		  break;
-	      }
-	  }
-      }
-      break;
+        read_sector = grub_divmod64 (sector, array->chunk_size, &b);
+        far = ofs = near = 1;
+        far_ofs = 0;
 
-    case 5:
-      {
-	grub_uint64_t a;
-	grub_uint32_t b;
-	int disknr;
-	grub_disk_addr_t read_sector;
-	grub_size_t read_size;
+        if (array->level == 1)
+          near = array->total_devs;
+        else if (array->level == 10)
+          {
+            near = array->layout & 0xFF;
+            far = (array->layout >> 8) & 0xFF;
+            if (array->layout >> 16)
+              {
+                ofs = far;
+                far_ofs = 1;
+              }
+            else
+              far_ofs = grub_divmod64 (array->disk_size,
+                                       far * array->chunk_size, 0);
 
-	/* Find the first sector to read. */
-	a = grub_divmod64 (sector, array->chunk_size, NULL);
-	grub_divmod64 (a, (array->total_devs - 1), &b);
-	disknr = b;
+            far_ofs *= array->chunk_size;
+          }
 
-	a = grub_divmod64 (sector, array->chunk_size * (array->total_devs - 1),
-			   NULL);
-	grub_divmod64 (sector, array->chunk_size, &b);
-	read_sector = a * array->chunk_size + b;
+        read_sector = grub_divmod64 (read_sector * near, array->total_devs,
+                                     &disknr);
 
-	grub_divmod64 (read_sector, array->chunk_size * array->total_devs, &b);
-	disknr -= (b / array->chunk_size);
-	if (disknr < 0)
-	  disknr += array->total_devs;
-	  
-	grub_divmod64 (read_sector, array->chunk_size, &b);
-	read_size = array->chunk_size - b;
+        ofs *= array->chunk_size;
+        read_sector *= ofs;
 
-	if (read_size > size)
-	  read_size = size;
-	
-	while (1)
-	  {
-	    grub_uint32_t i;
+        while (1)
+          {
+            grub_size_t read_size;
+            unsigned int i, j;
 
-	    if (array->device[disknr])
-	      err = grub_disk_read (array->device[disknr], read_sector, 0,
-				    read_size << GRUB_DISK_SECTOR_BITS, buf);
+            read_size = array->chunk_size - b;
+            if (read_size > size)
+              read_size = size;
 
-	    /* If an error occurs when we already have an degraded
-	       array we can't recover from that. */
-	    if (err && ((array->total_devs - 1) == array->nr_devs))
-	      break;
-	    
-	    if (err || ! array->device[disknr])
-	      {
-		/* Either an error occured or the disk is not
-		   available.  We have to compute this block from the
-		   blocks on the other hard disks. */
-		grub_size_t buf_size = read_size << GRUB_DISK_SECTOR_BITS;
-		char buf2[buf_size];
-		unsigned int j;
+            for (i = 0; i < near; i++)
+              {
+                unsigned int k;
 
-		grub_memset (buf, 0, buf_size);
-		
-		for (j = 0; j < array->total_devs; j++)
-		  {
-		    unsigned int k;
+                k = disknr;
+                for (j = 0; j < far; j++)
+                  {
+                    if (array->device[k])
+                      {
+                        if (grub_errno == GRUB_ERR_READ_ERROR)
+                          grub_errno = GRUB_ERR_NONE;
 
-		    if (j != (unsigned int) disknr)
-		      {
-			err = grub_disk_read (array->device[j], read_sector,
-					      0, buf_size, buf2);
-			if (err)
-			  return err;
-			
-			for (k = 0; k < buf_size; k++)
-			  buf[k] = buf[k] ^ buf2[k];
-		      }
-		  }
-	      }
+                        err = grub_disk_read (array->device[k],
+                                              read_sector + j * far_ofs + b,
+                                              0,
+                                              read_size << GRUB_DISK_SECTOR_BITS,
+                                              buf);
+                        if (! err)
+                          break;
+                        else if (err != GRUB_ERR_READ_ERROR)
+                          return err;
+                      }
+                    else
+                      err = grub_error (GRUB_ERR_READ_ERROR,
+                                        "disk missing.");
 
-	    buf += (read_size << GRUB_DISK_SECTOR_BITS);
+                    k++;
+                    if (k == array->total_devs)
+                      k = 0;
+                  }
+
+                if (! err)
+                  break;
+
+                disknr++;
+                if (disknr == array->total_devs)
+                  {
+                    disknr = 0;
+                    read_sector += ofs;
+                  }
+              }
+
+            if (err)
+              return err;
+
+            buf += read_size << GRUB_DISK_SECTOR_BITS;
 	    size -= read_size;
 	    if (! size)
 	      break;
 
-	    if (size > array->chunk_size)
-	      read_size = array->chunk_size;
-	    else
-	      read_size = size;
+            b = 0;
+            disknr += (near - i);
+            while (disknr >= array->total_devs)
+              {
+                disknr -= array->total_devs;
+                read_sector += ofs;
+              }
+          }
+        break;
+      }
 
-	    /* Check whether the sector was aligned on a chunk size
-	       boundary. If this isn't the case, it's the first read
-	       and the next read should be set back to start of the
-	       boundary.  */
-	    grub_divmod64 (read_sector, array->chunk_size, &i);
-	    read_sector -= i;
+    case 4:
+    case 5:
+    case 6:
+      {
+	grub_disk_addr_t read_sector;
+	grub_uint32_t b, p, n, disknr, e;
 
+        /* n = 1 for level 4 and 5, 2 for level 6.  */
+        n = array->level / 3;
+
+	/* Find the first sector to read. */
+	read_sector = grub_divmod64 (sector, array->chunk_size, &b);
+	read_sector = grub_divmod64 (read_sector, array->total_devs - n,
+                                     &disknr);
+        if (array->level >= 5)
+          {
+            grub_divmod64 (read_sector, array->total_devs, &p);
+
+            if (! (array->layout & GRUB_RAID_LAYOUT_RIGHT_MASK))
+              p = array->total_devs - 1 - p;
+
+            if (array->layout & GRUB_RAID_LAYOUT_SYMMETRIC_MASK)
+              {
+                disknr += p + n;
+              }
+            else
+              {
+                grub_uint32_t q;
+
+                q = p + (n - 1);
+                if (q >= array->total_devs)
+                  q -= array->total_devs;
+
+                if (disknr >= p)
+                  disknr += n;
+                else if (disknr >= q)
+                  disknr += q + 1;
+              }
+
+            if (disknr >= array->total_devs)
+              disknr -= array->total_devs;
+          }
+        else
+          p = array->total_devs - n;
+
+	read_sector *= array->chunk_size;
+	
+	while (1)
+	  {
+            grub_size_t read_size;
+            int next_level;
+
+            read_size = array->chunk_size - b;
+            if (read_size > size)
+              read_size = size;
+
+            e = 0;
+            if (array->device[disknr])
+              {
+                /* Reset read error.  */
+                if (grub_errno == GRUB_ERR_READ_ERROR)
+                  grub_errno = GRUB_ERR_NONE;
+
+                err = grub_disk_read (array->device[disknr],
+                                      read_sector + b, 0,
+                                      read_size << GRUB_DISK_SECTOR_BITS,
+                                      buf);
+
+                if ((err) && (err != GRUB_ERR_READ_ERROR))
+                  break;
+                e++;
+              }
+            else
+              err = GRUB_ERR_READ_ERROR;
+
+	    if (err)
+              {
+                if (array->nr_devs < array->total_devs - n + e)
+                  break;
+
+                grub_errno = GRUB_ERR_NONE;
+                if (array->level == 6)
+                  {
+                    err = ((grub_raid6_recover_func) ?
+                           (*grub_raid6_recover_func) (array, disknr, p,
+                                                       buf, read_sector + b,
+                                                       read_size) :
+                           grub_error (GRUB_ERR_BAD_DEVICE,
+                                       "raid6rec is not loaded"));
+                  }
+                else
+                  {
+                    err = ((grub_raid5_recover_func) ?
+                           (*grub_raid5_recover_func) (array, disknr,
+                                                       buf, read_sector + b,
+                                                       read_size) :
+                           grub_error (GRUB_ERR_BAD_DEVICE,
+                                       "raid5rec is not loaded"));
+                  }
+
+                if (err)
+                  break;
+              }
+	    
+	    buf += read_size << GRUB_DISK_SECTOR_BITS;
+	    size -= read_size;
+	    if (! size)
+	      break;
+
+            b = 0;
 	    disknr++;
-	    grub_divmod64 (read_sector,
-			   array->chunk_size * array->total_devs, &i);
-	    if ((unsigned int) disknr == (array->total_devs - (i / array->chunk_size) - 1))
-	      disknr++;
-	    /* See whether the disk was the last disk, and start
-	       reading from the first disk in that case. */
-	    if ((unsigned int) disknr == array->total_devs)
-	      {
-		disknr = 0;
-		read_sector += array->chunk_size;
-		grub_divmod64 (read_sector,
-			       array->chunk_size * array->total_devs, &i);
 
-		if ((i / array->chunk_size) == (array->total_devs - 1))
-		  disknr++;
-	      }
+            if (array->layout & GRUB_RAID_LAYOUT_SYMMETRIC_MASK)
+              {
+                if (disknr == array->total_devs)
+                  disknr = 0;
+
+                next_level = (disknr == p);
+              }
+            else
+              {
+                if (disknr == p)
+                  disknr += n;
+
+                next_level = (disknr >= array->total_devs);
+              }
+
+            if (next_level)
+              {
+                read_sector += array->chunk_size;
+
+                if (array->level >= 5)
+                  {
+                    if (array->layout & GRUB_RAID_LAYOUT_RIGHT_MASK)
+                      p = (p == array->total_devs - 1) ? 0 : p + 1;
+                    else
+                      p = (p == 0) ? array->total_devs - 1 : p - 1;
+
+                    if (array->layout & GRUB_RAID_LAYOUT_SYMMETRIC_MASK)
+                      {
+                        disknr = p + n;
+                        if (disknr >= array->total_devs)
+                          disknr -= array->total_devs;
+                      }
+                    else
+                      {
+                        disknr -= array->total_devs;
+                        if (disknr == p)
+                          disknr += n;
+                      }
+                  }
+                else
+                  disknr = 0;
+              }
 	  }
       }
       break;
@@ -346,221 +472,227 @@ grub_raid_write (grub_disk_t disk __attribute ((unused)),
   return GRUB_ERR_NOT_IMPLEMENTED_YET;
 }
 
-static int
-grub_raid_scan_device (const char *name)
+static grub_err_t
+insert_array (grub_disk_t disk, struct grub_raid_array *new_array,
+              const char *scanner_name)
 {
-  grub_err_t err;
-  grub_disk_t disk;
-  grub_disk_addr_t sector;
-  grub_uint64_t size;
-  struct grub_raid_super_09 sb;
-  struct grub_raid_array *p, *array = NULL;
-
-  grub_dprintf ("raid", "Scanning for RAID devices\n");
-
-  disk = grub_disk_open (name);
-  if (!disk)
-    return 0;
-
-  /* The sector where the RAID superblock is stored, if available. */
-  size = grub_disk_get_size (disk);
-  sector = GRUB_RAID_NEW_SIZE_SECTORS(size);
-
-  err = grub_disk_read (disk, sector, 0, GRUB_RAID_SB_BYTES, (char *) &sb);
-  grub_disk_close (disk);
-  if (err)
-    {
-      grub_errno = GRUB_ERR_NONE;
-      return 0;
-    }
-
-  /* Look whether there is a RAID superblock. */
-  if (sb.md_magic != GRUB_RAID_SB_MAGIC)
-    return 0;
-  
-  /* FIXME: Also support version 1.0. */
-  if (sb.major_version != 0 || sb.minor_version != 90)
-    {
-      grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		  "Unsupported RAID version: %d.%d",
-		  sb.major_version, sb.minor_version);
-      return 0;
-    }
-
-  /* FIXME: Check the checksum. */
-
-  /* FIXME: Support all RAID levels.  */
-  if (sb.level != 0 && sb.level != 1 && sb.level != 5)
-    {
-      grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		  "Unsupported RAID level: %d",
-		  sb.level);
-      return 0;
-    }
-
-  /* FIXME: Support all layouts.  */
-  if (sb.level == 5 && sb.layout != 2)
-    {
-      grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		  "Unsupported RAID5 layout: %d",
-		  sb.layout);
-      return 0;
-    }
+  struct grub_raid_array *array = 0, *p;
   
   /* See whether the device is part of an array we have already seen a
      device from. */
   for (p = array_list; p != NULL; p = p->next)
-    {
-      if (p->uuid[0] == sb.set_uuid0 && p->uuid[1] == sb.set_uuid1
-	  && p->uuid[2] == sb.set_uuid2 && p->uuid[3] == sb.set_uuid3)
-	{
-	  array = p;
-	  break;
-	}
-    }
+    if ((p->uuid_len == new_array->uuid_len) &&
+        (! grub_memcmp (p->uuid, new_array->uuid, p->uuid_len)))
+      {
+        grub_free (new_array->uuid);
+        array = p;
 
-  /* Do some checks before adding the device to the array.  */
-  if (array)
-    {
-      /* FIXME: Check whether the update time of the superblocks are
-	 the same. */
-      
-      if (array->total_devs == array->nr_devs)
-	{
-	  /* We found more members of the array than the array
-	     actually has according to its superblock.  This shouldn't
-	     happen normally, but what is the sanest things to do in such
-	     a case? */
-	     
-	  grub_error (GRUB_ERR_BAD_NUMBER,
-		      "array->nr_devs > array->total_devs (%d)?!?",
-		      array->total_devs);
+        /* Do some checks before adding the device to the array.  */
 
-	  return 0;
-	}
-  
-      if (array->device[sb.this_disk.number] != NULL)
-	{
-	  /* We found multiple devices with the same number. Again,
-	     this shouldn't happen.*/
+        /* FIXME: Check whether the update time of the superblocks are
+           the same. */
 
-	  grub_error (GRUB_ERR_BAD_NUMBER,
-		      "Found two disks with the number %d?!?",
-		      sb.this_disk.number);
+        if (array->total_devs == array->nr_devs)
+          /* We found more members of the array than the array
+             actually has according to its superblock.  This shouldn't
+             happen normally, but what is the sanest things to do in such
+             a case? */
+          return grub_error (GRUB_ERR_BAD_NUMBER,
+                             "array->nr_devs > array->total_devs (%d)?!?",
+                             array->total_devs);
 
-	  return 0;
-	}
-    }
+        if (array->device[new_array->index] != NULL)
+          /* We found multiple devices with the same number. Again,
+             this shouldn't happen.*/
+          return grub_error (GRUB_ERR_BAD_NUMBER,
+                             "Found two disks with the number %d?!?",
+                             new_array->number);
+
+        if (new_array->disk_size < array->disk_size)
+          array->disk_size = new_array->disk_size;
+        break;
+      }
 
   /* Add an array to the list if we didn't find any.  */
   if (!array)
     {
       array = grub_malloc (sizeof (*array));
       if (!array)
-	return 0;
-      grub_memset (array, 0, sizeof (*array));      
-      array->number = sb.md_minor;
-      array->version = sb.major_version;
-      array->level = sb.level;
-      array->layout = sb.layout;
-      array->total_devs = sb.nr_disks;
+        {
+          grub_free (new_array->uuid);
+          return grub_errno;
+        }
+
+      *array = *new_array;
       array->nr_devs = 0;
-      array->uuid[0] = sb.set_uuid0;
-      array->uuid[1] = sb.set_uuid1;
-      array->uuid[2] = sb.set_uuid2;
-      array->uuid[3] = sb.set_uuid3;
-      /* The superblock specifies the size in 1024-byte sectors. */
-      array->disk_size = sb.size * 2;
-      array->chunk_size = sb.chunk_size / 512;
+      grub_memset (&array->device, 0, sizeof (array->device));
       
       /* Check whether we don't have multiple arrays with the same number. */
       for (p = array_list; p != NULL; p = p->next)
-	{
-	  if (p->number == array->number)
-	    break;
-	}
+        {
+          if (p->number == array->number)
+            break;
+        }
 
       if (p)
-	{
-	  /* The number is already in use, so we need to find an new number. */
-	  int i = 0;
+        {
+          /* The number is already in use, so we need to find an new number. */
+          int i = 0;
 
-	  while (1)
-	    {
-	      for (p = array_list; p != NULL; p = p->next)
-		{
-		  if (p->number == i)
-		    break;
-		}
+          while (1)
+            {
+              for (p = array_list; p != NULL; p = p->next)
+                {
+                  if (p->number == i)
+                    break;
+                }
 
-	      if (!p)
-		{
-		  /* We found an unused number.  */
-		  array->number = i;
-		  break;
-		}
+              if (!p)
+                {
+                  /* We found an unused number.  */
+                  array->number = i;
+                  break;
+                }
 
-	      i++;
-	    }
-	}
+              i++;
+            }
+        }
 
       array->name = grub_malloc (13);
       if (! array->name)
-	{
-	  grub_free (array);
+        {
+          grub_free (array->uuid);
+          grub_free (array);
 
-	  return 0;
-	}
+          return grub_errno;
+        }
 
       grub_sprintf (array->name, "md%d", array->number);
 
-      grub_dprintf ("raid", "Found array: %s\n", array->name);
+      grub_dprintf ("raid", "Found array %s (%s)\n", array->name,
+                    scanner_name);
 
       /* Add our new array to the list.  */
       array->next = array_list;
       array_list = array;
+
+      /* RAID 1 doestn't use a chunksize but code assumes one so set
+	 one. */
+      if (array->level == 1)
+	array->chunk_size = 64;
     }
 
   /* Add the device to the array. */
-  array->device[sb.this_disk.number] = grub_disk_open (name);
+  array->device[new_array->index] = disk;
+  array->nr_devs++;
 
-  if (array->disk_size != array->device[sb.this_disk.number]->total_sectors)
+  return 0;
+}
+
+static grub_raid_t grub_raid_list;
+
+static void
+grub_raid_scan_device (int head_only)
+{
+  auto int hook (const char *name);
+  int hook (const char *name)
     {
-      if (array->total_devs == 1)
-	{
-	  grub_dprintf ("raid", "Array contains only one disk, but its size (0x%llx) "
-			"doesn't match with size indicated by superblock (0x%llx).  "
-			"Assuming superblock is wrong.\n",
-			array->device[sb.this_disk.number]->total_sectors, array->disk_size);
-	  array->disk_size = array->device[sb.this_disk.number]->total_sectors;
-	}
-      else if (array->level == 1)
-	{
-	  grub_dprintf ("raid", "Array is RAID level 1, but the size of disk %d (0x%llx) "
-			"doesn't match with size indicated by superblock (0x%llx).  "
-			"Assuming superblock is wrong.\n",
-			sb.this_disk.number,
-			array->device[sb.this_disk.number]->total_sectors, array->disk_size);
-	  array->disk_size = array->device[sb.this_disk.number]->total_sectors;
-	}
-    }
-  
-  if (! array->device[sb.this_disk.number])
-    {
-      /* Remove array from the list if we have just added it. */
-      if (array->nr_devs == 0)
-	{
-	  array_list = array->next;
-	  grub_free (array->name);
-	  grub_free (array);
-	}
-	  
+      grub_disk_t disk;
+      struct grub_raid_array array;
+      struct grub_raid *p;
+
+      grub_dprintf ("raid", "Scanning for RAID devices\n");
+
+      disk = grub_disk_open (name);
+      if (!disk)
+        return 0;
+
+      if (disk->total_sectors == ULONG_MAX)
+        {
+          grub_disk_close (disk);
+          return 0;
+        }
+
+      for (p = grub_raid_list; p; p = p->next)
+        {
+          if (! p->detect (disk, &array))
+            {
+              if (! insert_array (disk, &array, p->name))
+                return 0;
+
+              break;
+            }
+
+          /* This error usually means it's not raid, no need to display
+             it.  */
+          if (grub_errno != GRUB_ERR_OUT_OF_RANGE)
+            grub_print_error ();
+
+          grub_errno = GRUB_ERR_NONE;
+          if (head_only)
+            break;
+        }
+
+      grub_disk_close (disk);
+
       return 0;
     }
-
-  array->nr_devs++;
   
-  return 0;
+  grub_device_iterate (&hook);
+}
+
+static void
+free_array (void)
+{
+  struct grub_raid_array *array;
+
+  array = array_list;
+  while (array)
+    {
+      struct grub_raid_array *p;
+      int i;
+	  
+      p = array;
+      array = array->next;
+
+      for (i = 0; i < GRUB_RAID_MAX_DEVICES; i++)
+        if (p->device[i])
+          grub_disk_close (p->device[i]);
+
+      grub_free (p->uuid);
+      grub_free (p->name);
+      grub_free (p);
+    }
+
+  array_list = 0;
+}
+  
+void
+grub_raid_register (grub_raid_t raid)
+{
+  raid->next = grub_raid_list;
+  grub_raid_list = raid;
+  grub_raid_scan_device (1);
+}
+
+void
+grub_raid_unregister (grub_raid_t raid)
+{
+  grub_raid_t *p, q;
+
+  for (p = &grub_raid_list, q = *p; q; p = &(q->next), q = q->next)
+    if (q == raid)
+      {
+	*p = q->next;
+	break;
+      }
+}
+
+void
+grub_raid_rescan (void)
+{
+  free_array ();
+  grub_raid_scan_device (0);
 }
 
 static struct grub_disk_dev grub_raid_dev =
@@ -581,12 +713,11 @@ static struct grub_disk_dev grub_raid_dev =
 
 GRUB_MOD_INIT(raid)
 {
-  grub_device_iterate (&grub_raid_scan_device);
   grub_disk_dev_register (&grub_raid_dev);
 }
 
 GRUB_MOD_FINI(raid)
 {
   grub_disk_dev_unregister (&grub_raid_dev);
-  /* FIXME: free the array list. */
+  free_array ();
 }

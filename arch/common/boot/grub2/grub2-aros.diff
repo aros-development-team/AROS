@@ -1,0 +1,243 @@
+diff -ur -x .svn ./grub2-1919/fs/affs.c ./grub2/fs/affs.c
+--- ./grub2-1919/fs/affs.c	2008-11-20 16:40:19.000000000 +0100
++++ ./grub2/fs/affs.c	2008-11-20 19:16:38.000000000 +0100
+@@ -25,6 +25,9 @@
+ #include <grub/dl.h>
+ #include <grub/types.h>
+ #include <grub/fshelp.h>
++#ifdef __AROS__
++#include <grub/partition.h>
++#endif
+ 
+ /* The affs bootblock.  */
+ struct grub_affs_bblock
+@@ -210,8 +213,22 @@
+   rblock = (struct grub_affs_rblock *) rootblock;
+ 
+   /* Read the rootblock.  */
++#ifdef __AROS__
++  grub_uint64_t reservedblocks = 2;
++  grub_uint64_t countblocks;
++  if (disk->partition)
++    countblocks = disk->partition->len;
++  else
++    countblocks = disk->total_sectors;
++
++  grub_disk_addr_t rblknum = (countblocks - 1 + reservedblocks) / 2;
++
++  grub_disk_read (disk, rblknum, 0,
++		  GRUB_DISK_SECTOR_SIZE * 16, (char *) rootblock);
++#else
+   grub_disk_read (disk, (disk->total_sectors >> 1) + blocksize, 0,
+ 		  GRUB_DISK_SECTOR_SIZE * 16, (char *) rootblock);
++#endif
+   if (grub_errno)
+     goto fail;
+ 
+@@ -242,7 +259,11 @@
+   data->disk = disk;
+   data->htsize = grub_be_to_cpu32 (rblock->htsize);
+   data->diropen.data = data;
++#ifdef __AROS__
++  data->diropen.block = rblknum;
++#else
+   data->diropen.block = (disk->total_sectors >> 1);
++#endif
+ 
+   grub_free (rootblock);
+ 
+@@ -381,7 +402,7 @@
+  fail:
+   grub_free (node);
+   grub_free (hashtable);
+-  return 1;
++  return 0;
+ }
+ 
+ 
+diff -ur -x .svn ./grub2-1919/fs/sfs.c ./grub2/fs/sfs.c
+--- ./grub2-1919/fs/sfs.c	2008-11-20 16:40:19.000000000 +0100
++++ ./grub2/fs/sfs.c	2008-11-20 19:21:53.000000000 +0100
+@@ -172,7 +172,8 @@
+ 	  return grub_errno;
+ 	}
+ 
+-      for (i = 0; i < grub_be_to_cpu16 (tree->nodes); i++)
++      grub_uint16_t nodescount = grub_be_to_cpu16(tree->nodes);
++      for (i = nodescount - 1; i >= 0; i--)
+ 	{
+ 
+ #define EXTNODE(tree, index)						\
+@@ -180,17 +181,9 @@
+ 					 + (index) * (tree)->nodesize))
+ 
+ 	  /* Follow the tree down to the leaf level.  */
+-	  if ((grub_be_to_cpu32 (EXTNODE(tree, i)->key) >= block)
++	  if ((grub_be_to_cpu32 (EXTNODE(tree, i)->key) <= block)
+ 	      && !tree->leaf)
+ 	    {
+-	      next = grub_be_to_cpu32 (EXTNODE (tree, i - 1)->data);
+-	      break;
+-	    }
+-
+-	  /* In case the last node is reached just use that one, it is
+-	     the right match.  */
+-	  if (i + 1 == grub_be_to_cpu16 (tree->nodes) && !tree->leaf)
+-	    {
+ 	      next = grub_be_to_cpu32 (EXTNODE (tree, i)->data);
+ 	      break;
+ 	    }
+@@ -451,7 +444,7 @@
+ 
+  fail:
+   grub_free (objc_data);
+-  return 1;
++  return 0;
+ }
+ 
+ 
+diff -ur -x .svn ./grub2-1919/include/grub/pc_partition.h ./grub2/include/grub/pc_partition.h
+--- ./grub2-1919/include/grub/pc_partition.h	2008-11-20 16:40:22.000000000 +0100
++++ ./grub2/include/grub/pc_partition.h	2008-11-20 18:41:04.000000000 +0100
+@@ -206,4 +206,10 @@
+ 	  || type == GRUB_PC_PARTITION_TYPE_NETBSD);
+ }
+ 
++static inline int
++grub_pc_partition_is_rdb(int type)
++{
++  return (type == 0x30);
++}
++
+ #endif /* ! GRUB_PC_PARTITION_HEADER */
+diff -ur -x .svn ./grub2-1919/loader/i386/pc/multiboot.c ./grub2/loader/i386/pc/multiboot.c
+--- ./grub2-1919/loader/i386/pc/multiboot.c	2008-11-20 16:40:28.000000000 +0100
++++ ./grub2/loader/i386/pc/multiboot.c	2008-11-20 19:48:44.000000000 +0100
+@@ -189,8 +189,8 @@
+ 	    return grub_error (GRUB_ERR_BAD_OS,
+ 			       "invalid offset in program header");
+ 
+-          if (grub_file_read (file, load_this_module_at, phdr(i)->p_filesz)
+-              != (grub_ssize_t) phdr(i)->p_filesz)
++          if ((phdr(i)->p_filesz > 0) && (grub_file_read (file, load_this_module_at, phdr(i)->p_filesz)
++              != (grub_ssize_t) phdr(i)->p_filesz))
+ 	    return grub_error (GRUB_ERR_BAD_OS,
+ 			       "couldn't read segment from file");
+ 
+@@ -274,9 +274,9 @@
+ 	    return grub_error (GRUB_ERR_BAD_OS,
+ 			       "invalid offset in program header");
+ 
+-	  if (grub_file_read (file, (void *) ((grub_uint32_t) phdr(i)->p_paddr),
++	  if ((phdr(i)->p_filesz > 0) && (grub_file_read (file, (void *) ((grub_uint32_t) phdr(i)->p_paddr),
+ 			      phdr(i)->p_filesz)
+-              != (grub_ssize_t) phdr(i)->p_filesz)
++              != (grub_ssize_t) phdr(i)->p_filesz))
+ 	    return grub_error (GRUB_ERR_BAD_OS,
+ 			       "couldn't read segment from file");
+ 
+diff -ur -x .svn ./grub2-1919/partmap/amiga.c ./grub2/partmap/amiga.c
+--- ./grub2-1919/partmap/amiga.c	2008-11-20 16:40:26.000000000 +0100
++++ ./grub2/partmap/amiga.c	2008-11-20 18:44:40.000000000 +0100
+@@ -87,7 +87,10 @@
+   
+   /* Enforce raw disk access.  */
+   raw = *disk;
++#ifndef __AROS__
+   raw.partition = 0;
++#endif
++  part.data = NULL;
+   
+   /* The RDSK block is one of the first 15 blocks.  */
+   for (pos = 0; pos < 15; pos++)
+@@ -210,6 +213,10 @@
+ 
+ GRUB_MOD_INIT(amiga_partition_map)
+ {
++#ifdef __AROS__
++  extern struct grub_partition_map *grub_rdb_partition_map;
++  grub_rdb_partition_map = &grub_amiga_partition_map;
++#endif
+   grub_partition_map_register (&grub_amiga_partition_map);
+ #ifndef GRUB_UTIL
+   my_mod = mod;
+diff -ur -x .svn ./grub2-1919/partmap/pc.c ./grub2/partmap/pc.c
+--- ./grub2-1919/partmap/pc.c	2008-11-20 16:40:26.000000000 +0100
++++ ./grub2/partmap/pc.c	2008-11-20 18:54:46.000000000 +0100
+@@ -24,6 +24,9 @@
+ #include <grub/misc.h>
+ #include <grub/dl.h>
+ 
++/* RDB partition tables for AROS */
++struct grub_partition_map *grub_rdb_partition_map = NULL;
++
+ static struct grub_partition_map grub_pc_partition_map;
+ 
+ #ifndef GRUB_UTIL
+@@ -152,8 +155,45 @@
+ 	    {
+ 	      pcdata.dos_part++;
+ 	      
+-	      if (hook (disk, &p))
+-		return 1;
++
++
++        /* Check if this is a RDB partition table.  */
++        if (grub_rdb_partition_map && grub_pc_partition_is_rdb(e->type))
++        {
++            struct grub_partition p2;
++            struct grub_disk raw2;
++            int ok = 0;
++
++            auto int rdb_hook(grub_disk_t disk, const grub_partition_t p);
++
++            int rdb_hook(grub_disk_t disk __attribute__((unused)),
++                 const grub_partition_t part)
++            {
++                p2 = *part;
++                pcdata.bsd_part = part->index;
++
++                p2.start  += p.start;
++                p2.offset += p.offset;
++                p2.data    = &pcdata;
++                p2.partmap = &grub_pc_partition_map;
++
++                grub_dprintf("partition", "RDB part %c start=%ld\n",
++                       (char)('a' + part->index), (long)p2.start);
++
++                ok = hook(disk, &p2);
++                return ok;
++            }
++
++            raw2 = raw;
++            raw2.partition = &p;
++
++            grub_rdb_partition_map->iterate(&raw2, rdb_hook);
++            if (ok)
++                goto finish;
++        }
++        else 
++            if (hook (disk, &p))
++                return 1;
+ 
+ 	      /* Check if this is a BSD partition.  */
+ 	      if (grub_pc_partition_is_bsd (e->type))
+diff -ur -x .svn ./grub2-1919/util/grub-fstest.c ./grub2/util/grub-fstest.c
+--- ./grub2-1919/util/grub-fstest.c	2008-11-20 16:40:31.000000000 +0100
++++ ./grub2/util/grub-fstest.c	2008-11-20 18:10:15.000000000 +0100
+@@ -53,13 +53,13 @@
+   return -1;
+ }
+ 
+-grub_term_t
++grub_term_input_t
+ grub_term_get_current_input (void)
+ {
+   return 0;
+ }
+ 
+-grub_term_t
++grub_term_output_t
+ grub_term_get_current_output (void)
+ {
+   return 0;

@@ -19,6 +19,6 @@
 #ifndef GRUB_EFI_CHAINLOADER_HEADER
 #define GRUB_EFI_CHAINLOADER_HEADER	1
 
-void grub_chainloader_cmd (const char *filename);
+void grub_rescue_cmd_chainloader (int argc, char *argv[]);
 
 #endif /* ! GRUB_EFI_CHAINLOADER_HEADER */

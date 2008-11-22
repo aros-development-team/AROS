@@ -55,7 +55,7 @@ grub_aout_load (grub_file_t file, int offset,
     return grub_errno;
 
   if (bss_end_addr)
-    grub_memset (load_addr + load_size, 0,
+    grub_memset ((char *) load_addr + load_size, 0,
                  bss_end_addr - load_addr - load_size);
 
   return GRUB_ERR_NONE;

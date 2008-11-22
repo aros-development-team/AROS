@@ -51,8 +51,8 @@ grub_cmd_cmp (struct grub_arg_list *state __attribute__ ((unused)),
 
   if (grub_file_size (file1) != grub_file_size (file2))
     grub_printf ("Differ in size: %llu [%s], %llu [%s]\n", 
-		 grub_file_size (file1), args[0], 
-		 grub_file_size (file2), args[1]);
+		 (unsigned long long) grub_file_size (file1), args[0],
+		 (unsigned long long) grub_file_size (file2), args[1]);
   else
     {
       pos = 0;
@@ -78,7 +78,7 @@ grub_cmd_cmp (struct grub_arg_list *state __attribute__ ((unused)),
 	      if (buf1[i] != buf2[i])
 		{
 		  grub_printf ("Differ at the offset %llu: 0x%x [%s], 0x%x [%s]\n",
-			       i + pos, buf1[i], args[0],
+			       (unsigned long long) (i + pos), buf1[i], args[0],
 			       buf2[i], args[1]);
 		  goto cleanup;
 		}

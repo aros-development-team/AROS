@@ -262,6 +262,7 @@ grub_cpio_open (grub_file_t file, const char *name)
   struct grub_cpio_data *data;
   grub_uint32_t ofs;
   char *fn;
+  int i, j;
 
 #ifndef GRUB_UTIL
   grub_dl_ref (my_mod);
@@ -283,15 +284,33 @@ grub_cpio_open (grub_file_t file, const char *name)
 	  break;
 	}
 
-      if (grub_strcmp (name + 1, fn) == 0)
+      /* Compare NAME and FN by hand in order to cope with duplicate
+	 slashes.  */
+      i = 1;
+      j = 0;
+      while (1)
 	{
-	  file->data = data;
-	  file->size = data->size;
-	  grub_free (fn);
-
-	  return GRUB_ERR_NONE;
+	  if (name[i] != fn[j])
+	    goto no_match;
+	  
+	  if (name[i] == '\0')
+	    break;
+	  
+	  if (name[i] == '/' && name[i+1] == '/')
+	    i++;
+	  
+	  i++;
+	  j++;
 	}
 
+      file->data = data;
+      file->size = data->size;
+      grub_free (fn);
+
+      return GRUB_ERR_NONE;
+
+    no_match:
+      
       grub_free (fn);
       data->hofs = ofs;
     }

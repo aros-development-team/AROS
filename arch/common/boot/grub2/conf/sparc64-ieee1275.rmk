@@ -6,14 +6,11 @@ COMMON_CFLAGS = -ggdb -ffreestanding -m64 -mno-app-regs
 COMMON_LDFLAGS = -melf64_sparc -nostdlib
 
 # Used by various components.  These rules need to precede them.
-normal/execute.c_DEPENDENCIES = grub_script.tab.h
-normal/command.c_DEPENDENCIES = grub_script.tab.h
-normal/function.c_DEPENDENCIES = grub_script.tab.h
 normal/lexer.c_DEPENDENCIES = grub_script.tab.h
 
 # Images.
 
-MOSTLYCLEANFILES += kernel_elf_symlist.c kernel_syms.lst
+MOSTLYCLEANFILES += symlist.c kernel_syms.lst
 DEFSYMFILES += kernel_syms.lst
 
 kernel_elf_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
@@ -21,7 +18,7 @@ kernel_elf_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
 	symbol.h term.h time.h types.h sparc64/libgcc.h loader.h partition.h \
 	pc_partition.h ieee1275/ieee1275.h machine/kernel.h
 
-kernel_elf_symlist.c: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h gensymlist.sh
+symlist.c: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h gensymlist.sh
 	/bin/sh gensymlist.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
 
 # For the parser.
@@ -65,7 +62,7 @@ grub_mkimage_SOURCES = util/sparc64/ieee1275/grub-mkimage.c util/misc.c \
 #	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
 #	partmap/acorn.c							\
 #	util/console.c util/grub-emu.c util/misc.c			\
-#	util/biosdisk.c util/getroot.c			\
+#	util/hostdisk.c util/getroot.c			\
 #	util/sparc64/ieee1275/misc.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
@@ -75,7 +72,8 @@ kernel_elf_SOURCES = kern/sparc64/ieee1275/init.c kern/ieee1275/ieee1275.c \
 	kern/fs.c kern/err.c kern/misc.c kern/mm.c kern/loader.c \
 	kern/rescue.c kern/term.c term/ieee1275/ofconsole.c \
 	kern/sparc64/ieee1275/openfw.c disk/ieee1275/ofdisk.c \
-	kern/partition.c kern/env.c kern/sparc64/dl.c kernel_elf_symlist.c \
+	kern/partition.c kern/env.c kern/sparc64/dl.c symlist.c \
+	kern/generic/millisleep.c kern/generic/get_time_ms.c \
 	kern/sparc64/cache.S kern/parser.c
 kernel_elf_HEADERS = grub/sparc64/ieee1275/ieee1275.h
 kernel_elf_CFLAGS = $(COMMON_CFLAGS)

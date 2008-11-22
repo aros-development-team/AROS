@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
+transform="@program_transform_name@"
+
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
-platform=@platform@
+grub_prefix=`echo /boot/grub | sed ${transform}`
 
-# for convert_system_path_to_grub_path()
-. ${libdir}/grub/update-grub_lib
+. ${libdir}/grub/grub-mkconfig_lib
 
 # Do this as early as possible, since other commands might depend on it.
 # (e.g. the `font' command might need lvm or raid modules)
@@ -32,35 +33,82 @@ done
 
 if [ "x${GRUB_DEFAULT}" = "x" ] ; then GRUB_DEFAULT=0 ; fi
 if [ "x${GRUB_TIMEOUT}" = "x" ] ; then GRUB_TIMEOUT=5 ; fi
+if [ "x${GRUB_GFXMODE}" = "x" ] ; then GRUB_GFXMODE=640x480 ; fi
 
 cat << EOF
 set default=${GRUB_DEFAULT}
 set timeout=${GRUB_TIMEOUT}
 EOF
 
-if [ "x${GRUB_DRIVE}" = "x" ] ; then : ; else
-  echo "set root=${GRUB_DRIVE}"
-fi
+case ${GRUB_TERMINAL_INPUT}:${GRUB_TERMINAL_OUTPUT} in
+  serial:* | *:serial)
+    if ! test -e ${grub_prefix}/serial.mod ; then
+      echo "Serial terminal not available on this platform." >&2 ; exit 1
+    fi
 
-case ${platform}:${GRUB_TERMINAL} in
-  pc:gfxterm) cat << EOF
-if font ${GRUB_FONT_PATH} ; then
-  set gfxmode=640x480
-  insmod gfxterm
-  insmod vbe
-  terminal gfxterm
-fi
-EOF
-  ;;
-  *:serial)
     if [ "x${GRUB_SERIAL_COMMAND}" = "x" ] ; then
       echo "Warning, requested serial terminal but GRUB_SERIAL_COMMAND is unspecified. Default parameters will be used." >&2
       GRUB_SERIAL_COMMAND=serial
     fi
     echo "${GRUB_SERIAL_COMMAND}"
-    echo "terminal serial"
   ;;
-  *:*)
-    echo "terminal ${GRUB_TERMINAL}"
+esac
+
+case x${GRUB_TERMINAL_INPUT} in
+  x)
+    # Just use the native terminal
+  ;;
+  x*)
+    cat << EOF
+if terminal_input ${GRUB_TERMINAL_INPUT} ; then true ; else
+  # For backward compatibility with versions of terminal.mod that don't
+  # understand terminal_input
+  terminal ${GRUB_TERMINAL_INPUT}
+fi
+EOF
+  ;;
+esac
+
+case x${GRUB_TERMINAL_OUTPUT} in
+ xgfxterm)
+    # Make the font accessible
+    prepare_grub_to_access_device `${grub_probe} --target=device ${GRUB_FONT_PATH}`
+
+    # Pick a video backend
+    video_backend=
+    for i in vbe ; do
+      if test -e ${grub_prefix}/$i.mod ; then
+        video_backend=$i
+        break
+      fi
+    done
+    if ! [ "${video_backend}" ] ; then
+      echo "No suitable backend could be found for gfxterm." >&2 ; exit 1
+    fi
+
+    cat << EOF
+if font `make_system_path_relative_to_its_root ${GRUB_FONT_PATH}` ; then
+  set gfxmode=${GRUB_GFXMODE}
+  insmod gfxterm
+  insmod ${video_backend}
+  if terminal_output gfxterm ; then true ; else
+    # For backward compatibility with versions of terminal.mod that don't
+    # understand terminal_output
+    terminal gfxterm
+  fi
+fi
+EOF
+  ;;
+  x)
+    # Just use the native terminal
+  ;;
+  x*)
+    cat << EOF
+if terminal_output ${GRUB_TERMINAL_OUTPUT} ; then true ; else
+  # For backward compatibility with versions of terminal.mod that don't
+  # understand terminal_output
+  terminal ${GRUB_TERMINAL_OUTPUT}
+fi
+EOF
   ;;
 esac

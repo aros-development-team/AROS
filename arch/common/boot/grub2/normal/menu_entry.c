@@ -996,7 +996,7 @@ run (struct screen *screen)
       linep->len = p - linep->buf;
       for (p = linep->buf; grub_isspace (*p); p++)
 	;
-      *line = p;
+      *line = grub_strdup (p);
       currline++;
       return 0;
     }

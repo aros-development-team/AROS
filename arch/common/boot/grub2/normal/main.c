@@ -97,9 +97,6 @@ get_line (grub_file_t file)
 	}
       else
 	{
-	  if (c == '\n')
-	    break;
-
 	  if (pos >= max_len)
 	    {
 	      char *old_cmdline = cmdline;
@@ -111,6 +108,9 @@ get_line (grub_file_t file)
 		  return 0;
 		}
 	    }
+
+	  if (c == '\n')
+	    break;
 
 	  cmdline[pos++] = c;
 	}

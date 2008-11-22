@@ -454,7 +454,7 @@ grub_bsd_load_aout (grub_file_t file)
 }
 
 static grub_err_t
-grub_bsd_elf32_hook (Elf32_Phdr * phdr, UNUSED grub_addr_t * addr)
+grub_bsd_elf32_hook (Elf32_Phdr * phdr, grub_addr_t * addr)
 {
   Elf32_Addr paddr;
 
@@ -471,6 +471,8 @@ grub_bsd_elf32_hook (Elf32_Phdr * phdr, UNUSED grub_addr_t * addr)
 
   if (paddr + phdr->p_memsz > kern_end)
     kern_end = paddr + phdr->p_memsz;
+
+  *addr = paddr;
 
   return GRUB_ERR_NONE;
 }

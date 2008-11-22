@@ -2,18 +2,15 @@
 # -*- makefile -*-
 
 COMMON_ASFLAGS = -nostdinc -D__ASSEMBLY__
-COMMON_CFLAGS = -ffreestanding -msoft-float
+COMMON_CFLAGS = -ffreestanding
 COMMON_LDFLAGS += -nostdlib
 
 # Used by various components.  These rules need to precede them.
-normal/execute.c_DEPENDENCIES = grub_script.tab.h
-normal/command.c_DEPENDENCIES = grub_script.tab.h
-normal/function.c_DEPENDENCIES = grub_script.tab.h
 normal/lexer.c_DEPENDENCIES = grub_script.tab.h
 
 # Images.
 
-MOSTLYCLEANFILES += kernel_elf_symlist.c kernel_syms.lst
+MOSTLYCLEANFILES += symlist.c kernel_syms.lst
 DEFSYMFILES += kernel_syms.lst
 
 kernel_elf_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
@@ -21,7 +18,7 @@ kernel_elf_HEADERS = arg.h boot.h cache.h device.h disk.h dl.h elf.h elfload.h \
 	symbol.h term.h time.h types.h powerpc/libgcc.h loader.h partition.h \
 	pc_partition.h ieee1275/ieee1275.h machine/kernel.h
 
-kernel_elf_symlist.c: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h gensymlist.sh
+symlist.c: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h gensymlist.sh
 	/bin/sh gensymlist.sh $(filter %.h,$^) > $@ || (rm -f $@; exit 1)
 
 kernel_syms.lst: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h genkernsyms.sh
@@ -31,19 +28,13 @@ kernel_syms.lst: $(addprefix include/grub/,$(kernel_elf_HEADERS)) config.h genke
 pkglib_PROGRAMS = kernel.elf
 
 # Utilities.
-bin_UTILITIES = grub-mkimage
 sbin_UTILITIES = grub-mkdevicemap
 ifeq ($(enable_grub_emu), yes)
 sbin_UTILITIES += grub-emu
 endif
  
-# For grub-mkimage.
-grub_mkimage_SOURCES = util/elf/grub-mkimage.c util/misc.c \
-        util/resolve.c 
-
 # For grub-mkdevicemap.
-grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c		\
-	util/ieee1275/get_disk_name.c
+grub_mkdevicemap_SOURCES = util/grub-mkdevicemap.c util/misc.c
 
 # For grub-emu
 util/grub-emu.c_DEPENDENCIES = grub_emu_init.h
@@ -51,7 +42,7 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
 	commands/configfile.c commands/help.c				\
 	commands/search.c commands/terminal.c commands/test.c 		\
 	commands/ls.c commands/blocklist.c commands/hexdump.c		\
-	commands/halt.c commands/reboot.c		\
+	lib/hexdump.c commands/halt.c commands/reboot.c			\
 	disk/loopback.c							\
 	\
 	fs/affs.c fs/cpio.c fs/ext2.c fs/fat.c fs/hfs.c		\
@@ -72,22 +63,24 @@ grub_emu_SOURCES = commands/boot.c commands/cat.c commands/cmp.c 	\
 	partmap/amiga.c	partmap/apple.c partmap/pc.c partmap/sun.c	\
 	partmap/acorn.c							\
 	util/console.c util/hostfs.c util/grub-emu.c util/misc.c	\
-	util/biosdisk.c util/getroot.c					\
+	util/hostdisk.c util/getroot.c					\
 	util/powerpc/ieee1275/misc.c					\
 	\
-	disk/raid.c disk/lvm.c						\
+	disk/raid.c disk/raid5_recover.c disk/raid6_recover.c		\
+	disk/mdraid_linux.c disk/dmraid_nvidia.c disk/lvm.c		\
 	grub_script.tab.c grub_emu_init.c
 
 grub_emu_LDFLAGS = $(LIBCURSES)
 
-kernel_elf_SOURCES = kern/powerpc/ieee1275/crt0.S kern/powerpc/ieee1275/cmain.c \
+kernel_elf_SOURCES = kern/powerpc/ieee1275/startup.S kern/ieee1275/cmain.c \
 	kern/ieee1275/ieee1275.c kern/main.c kern/device.c 		\
 	kern/disk.c kern/dl.c kern/err.c kern/file.c kern/fs.c 		\
 	kern/misc.c kern/mm.c kern/loader.c kern/rescue.c kern/term.c 	\
-	kern/powerpc/ieee1275/init.c term/ieee1275/ofconsole.c 		\
-	kern/powerpc/ieee1275/openfw.c disk/ieee1275/ofdisk.c 		\
+	kern/ieee1275/init.c term/ieee1275/ofconsole.c 		\
+	kern/ieee1275/openfw.c disk/ieee1275/ofdisk.c 		\
 	kern/parser.c kern/partition.c kern/env.c kern/powerpc/dl.c 	\
-	kernel_elf_symlist.c kern/powerpc/cache.S
+	kern/generic/millisleep.c kern/time.c                            \
+	symlist.c kern/powerpc/cache.S
 kernel_elf_HEADERS = grub/powerpc/ieee1275/ieee1275.h
 kernel_elf_CFLAGS = $(COMMON_CFLAGS)
 kernel_elf_ASFLAGS = $(COMMON_ASFLAGS)
@@ -99,7 +92,7 @@ sbin_SCRIPTS = grub-install
 bin_SCRIPTS = grub-mkrescue
 
 # For grub-install.
-grub_install_SOURCES = util/powerpc/ieee1275/grub-install.in
+grub_install_SOURCES = util/ieee1275/grub-install.in
 
 # For grub-mkrescue.
 grub_mkrescue_SOURCES = util/powerpc/ieee1275/grub-mkrescue.in
@@ -112,7 +105,8 @@ pkglib_MODULES = halt.mod \
 	reboot.mod \
 	suspend.mod \
         _multiboot.mod \
-        multiboot.mod
+        multiboot.mod \
+	memdisk.mod
 
 # For _linux.mod.
 _linux_mod_SOURCES = loader/powerpc/ieee1275/linux.c
@@ -150,7 +144,7 @@ halt_mod_CFLAGS = $(COMMON_CFLAGS)
 halt_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 # For _multiboot.mod
-_multiboot_mod_SOURCES = loader/powerpc/ieee1275/multiboot2.c \
+_multiboot_mod_SOURCES = loader/ieee1275/multiboot2.c \
                          loader/multiboot2.c \
                          loader/multiboot_loader.c
 _multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
@@ -161,6 +155,10 @@ multiboot_mod_SOURCES = loader/multiboot_loader_normal.c
 multiboot_mod_CFLAGS = $(COMMON_CFLAGS)
 multiboot_mod_LDFLAGS = $(COMMON_LDFLAGS) 
 
+# For memdisk.mod.
+memdisk_mod_SOURCES = disk/memdisk.c
+memdisk_mod_CFLAGS = $(COMMON_CFLAGS)
+memdisk_mod_LDFLAGS = $(COMMON_LDFLAGS)
 
 include $(srcdir)/conf/common.mk
 

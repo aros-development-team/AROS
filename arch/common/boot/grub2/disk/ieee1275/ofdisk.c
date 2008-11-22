@@ -109,7 +109,7 @@ grub_ofdisk_open (const char *name, grub_disk_t disk)
   if (grub_ieee1275_get_property (dev, "device_type", prop, sizeof (prop),
 				  &actual))
     {
-      grub_error (GRUB_ERR_BAD_DEVICE, "Can't read the device type");
+      grub_error (GRUB_ERR_UNKNOWN_DEVICE, "Can't read the device type");
       goto fail;
     }
 

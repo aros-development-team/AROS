@@ -422,6 +422,8 @@ grub_minix_mount (grub_disk_t disk)
   /* Read the superblock.  */
   grub_disk_read (disk, GRUB_MINIX_SBLOCK, 0,
 		  sizeof (struct grub_minix_sblock),(char *) &data->sblock);
+  if (grub_errno)
+    goto fail;
 
   if (grub_le_to_cpu16 (data->sblock.magic) == GRUB_MINIX_MAGIC)
     {
@@ -444,16 +446,17 @@ grub_minix_mount (grub_disk_t disk)
       data->filename_size = 30;
     }
   else
-    {
-      grub_free (data);
-      grub_error (GRUB_ERR_BAD_FS, "not an minix filesystem");
-      return 0;
-    }
-  
+    goto fail;
+
   data->disk = disk;
   data->linknest = 0;
 
   return data;
+
+ fail:
+  grub_free (data);
+  grub_error (GRUB_ERR_BAD_FS, "not a minix filesystem");
+  return 0;
 }
 
 static grub_err_t

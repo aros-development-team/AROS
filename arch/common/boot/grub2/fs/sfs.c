@@ -1,7 +1,7 @@
 /* sfs.c - Amiga Smart FileSystem.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2005,2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2005,2006,2007,2008  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -212,8 +212,8 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
   return grub_error (GRUB_ERR_FILE_READ_ERROR, "SFS extent not found");
 }
 
-static int
-grub_sfs_read_block (grub_fshelp_node_t node, int fileblock)
+static grub_disk_addr_t
+grub_sfs_read_block (grub_fshelp_node_t node, grub_disk_addr_t fileblock)
 {
   int blk = node->block;
   int size = 0;
@@ -232,7 +232,7 @@ grub_sfs_read_block (grub_fshelp_node_t node, int fileblock)
       if (err)
 	return 0;
 
-      if (fileblock < size)
+      if (fileblock < (unsigned int) size)
 	return fileblock + blk;
 
       fileblock -= size;

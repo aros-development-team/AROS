@@ -46,6 +46,7 @@ typedef uint32_t multiboot_word;
 struct multiboot_header
 {
   uint32_t magic;
+  uint32_t flags;
 };
 
 struct multiboot_tag_header
@@ -77,8 +78,8 @@ struct multiboot_tag_module
   struct multiboot_tag_header header;
   multiboot_word addr;
   multiboot_word size;
-  unsigned char type[36];
-  unsigned char cmdline[1];
+  char type[36];
+  char cmdline[1];
 };
 
 #define MULTIBOOT2_TAG_MEMORY    4

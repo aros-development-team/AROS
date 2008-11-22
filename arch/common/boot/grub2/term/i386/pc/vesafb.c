@@ -578,15 +578,13 @@ grub_vesafb_setcursor (int on)
     }
 }
 
-static struct grub_term grub_vesafb_term =
+static struct grub_term_output grub_vesafb_term =
   {
     .name = "vesafb",
     .init = grub_vesafb_mod_init,
     .fini = grub_vesafb_mod_fini,
     .putchar = grub_vesafb_putchar,
     .getcharwidth = grub_vesafb_getcharwidth,
-    .checkkey = grub_console_checkkey,
-    .getkey = grub_console_getkey,
     .getwh = grub_virtual_screen_getwh,
     .getxy = grub_virtual_screen_getxy,
     .gotoxy = grub_vesafb_gotoxy,
@@ -594,16 +592,15 @@ static struct grub_term grub_vesafb_term =
     .setcolorstate = grub_virtual_screen_setcolorstate,
     .setcursor = grub_vesafb_setcursor,
     .flags = 0,
-    .next = 0
   };
 
 GRUB_MOD_INIT(vesafb)
 {
   my_mod = mod;
-  grub_term_register (&grub_vesafb_term);
+  grub_term_register_output (&grub_vesafb_term);
 }
 
 GRUB_MOD_FINI(vesafb)
 {
-  grub_term_unregister (&grub_vesafb_term);
+  grub_term_unregister_output (&grub_vesafb_term);
 }

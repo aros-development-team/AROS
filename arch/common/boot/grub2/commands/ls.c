@@ -105,28 +105,32 @@ grub_ls_list_files (char *dirname, int longlist, int all, int human)
 	    }
 
 	  if (! human)
-	    grub_printf ("%-12llu", file->size);
+	    grub_printf ("%-12llu", (unsigned long long) file->size);
 	  else
 	    {
-	      float fsize = file->size;
+	      grub_uint64_t fsize = file->size * 100ULL;
 	      int fsz = file->size;
 	      int units = 0;
 	      char buf[20];
 	      
 	      while (fsz / 1024)
 		{
-		  fsize /= 1024;
+		  fsize = (fsize + 512) / 1024;
 		  fsz /= 1024;
 		  units++;
 		}
 
 	      if (units)
 		{
-		  grub_sprintf (buf, "%0.2f%c", fsize, grub_human_sizes[units]);
+		  grub_uint32_t whole, fraction;
+
+		  whole = grub_divmod64 (fsize, 100, &fraction);
+		  grub_sprintf (buf, "%u.%02u%c", whole, fraction,
+				grub_human_sizes[units]);
 		  grub_printf ("%-12s", buf);
 		}
 	      else
-		grub_printf ("%-12llu", file->size);
+		grub_printf ("%-12llu", (unsigned long long) file->size);
 	      
 	    }
 	  grub_file_close (file);

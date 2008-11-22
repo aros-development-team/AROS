@@ -51,6 +51,11 @@ struct grub_fs
      caller.  */
   grub_err_t (*label) (grub_device_t device, char **label);
 
+  /* Return the uuid of the device DEVICE in UUID.  The uuid is
+     returned in a grub_malloc'ed buffer and should be freed by the
+     caller.  */
+  grub_err_t (*uuid) (grub_device_t device, char **uuid);
+
   /* The next filesystem.  */
   struct grub_fs *next;
 };
