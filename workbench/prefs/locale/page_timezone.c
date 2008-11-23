@@ -404,18 +404,22 @@ static void timezone_cleanup(Object *obj, struct MUI_TimezoneData *data)
 	earthmap_chunky_remapped = NULL;
     }
     
-    for(i = 0; i < EARTHMAP_SMALL_COLORS; i++)
+    if (pens_alloced)
     {
-	if (data->remaptable[i]       != -1) 
+	for(i = 0; i < EARTHMAP_SMALL_COLORS; i++)
 	{
-	    ReleasePen(_screen(obj)->ViewPort.ColorMap, data->remaptable[i]);
-	    data->remaptable[i] = -1;
+	    if (data->remaptable[i]       != -1) 
+	    {
+		ReleasePen(_screen(obj)->ViewPort.ColorMap, data->remaptable[i]);
+		data->remaptable[i] = -1;
+	    }
+	    if (data->remaptable[128 + i] != -1) 
+	    {
+		ReleasePen(_screen(obj)->ViewPort.ColorMap, data->remaptable[128 + i]);
+		data->remaptable[128 + i] = -1;
+	    }
 	}
-	if (data->remaptable[128 + i] != -1) 
-	{
-	    ReleasePen(_screen(obj)->ViewPort.ColorMap, data->remaptable[128 + i]);
-	    data->remaptable[128 + i] = -1;
-	}
+	pens_alloced = FALSE;
     }
 }
 
