@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 2.0 (13.08.2006)
+## version $VER: Commodities.catalog 2.1 (24.11.2008)
 ## language russian
 ## codeset 0
 ;
@@ -160,7 +160,7 @@ MSG_OPAQUE_CXTITLE
 ; Solid Windows
 ;
 MSG_OPAQUE_CXDESCR
-Двигайте окна "как есть"
+Двигайте окна с показом содержимого
 ; Realtime moving of windows
 ;
 ; ===============================================
@@ -290,4 +290,19 @@ MSG_NOCAPSLOCK_CXTITLE
 MSG_NOCAPSLOCK_CXDESCR
 Отключает клавишу CAPS LOCK
 ; Renders the CAPS LOCK key ineffective
+;
+; ===============================================
+; DepthMenu
+;
+MSG_DEPTHMENU_CXNAME
+DepthMenu
+; DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+Список открытых окон
+; DepthMenu:
+;
+MSG_DEPTHMENU_CXDESCR
+Всплывающий (по RMB) список открытых окон для быстрого переключения
+; Popup menu for depth gadgets
 ;

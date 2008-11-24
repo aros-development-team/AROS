@@ -5,11 +5,11 @@
 ;
 ;
 MSG_TITLE
-WBНовДиректория
+WBНовПапка
 ;WBNewDrawer
 ;
 MSG_DESCRIPTION
-Создаёт новую директорию
+Создаёт новую папку
 ;
 MSG_COPYRIGHT
 c2006, AROS Dev Team
@@ -46,19 +46,19 @@ MSG_CANT_CREATE
 Не могу создать '%s' !
 ;
 MSG_INFO_ALREADY
-Иконка '%s'.info уже существует !
+Иконка '%s'.info уже существует
 ;
 MSG_NEEDS_MORE_ARGS
-Требует 2 аргумента !
+Требуется 2 аргумента
 ;
 MSG_INVALID_LOCK
-Ошибка занятие директории !
+Ошибка занятия директории
 ;
 MSG_WB_ONLY
-Не может быть запущено из shell !\n
+Данное приложение не может быть запущено из командной строки\n
 ;
 MSG_FAILED_CREATE_APP
-Не могу создать Приложение !
+Не могу создать приложение
 ;
-MSG_WRONG_ICON_TYPE (//)
-Существующий файл иконки '%s'.info не имеет тип Drawer!
+MSG_WRONG_ICON_TYPE
+Существующий файл иконки '%s'.info имеет тип, отличный от Drawer

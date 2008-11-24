@@ -1,4 +1,4 @@
-## version $VER: Zune.catalog 0.1 (13.08.2006)
+## version $VER: Zune.catalog 0.2 (13.08.2006)
 ## language russian
 ## codeset 0
 ;
@@ -392,6 +392,7 @@ MSG_KL_POPUP
 MSG_DRAG_DROP
 Drag & Drop
 ; Drag & Drop
+MSG_LEFT_BUTTON
 Левая кнопка:
 ; Left Button:
 ;
@@ -819,7 +820,7 @@ MSG_DSC_LISTVIEWS
 ; Listviews
 ;
 MSG_DSC_STRINGS
-Строчки
+Строки
 ; Strings
 ;
 MSG_DSC_NAVIGATION
@@ -830,10 +831,19 @@ MSG_DSC_SPECIAL
 Специальные
 ; Special
 ;
+MSG_DSC_FRAMES
+Frames
+;
 ;=============================
 ; zunestuff.c
 ;------------
 MSG_ADJUST_PEN
 Регулировка пера
 ; Adjust Pen
+;
+;=============================
+; framesp.c
+;----------
+MSG_CUSTOMFRAMES
+Customframes
 ;

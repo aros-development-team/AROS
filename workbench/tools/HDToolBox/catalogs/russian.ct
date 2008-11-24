@@ -1,4 +1,4 @@
-## version $VER: hdtoolbox.catalog 1.0 (13.08.2006)
+## version $VER: hdtoolbox.catalog 1.1 (24.11.2008)
 ## codeset 0
 ## language russian
 ;
@@ -75,13 +75,13 @@ WORD_Rename
 Переименовать
 ;
 WORD_Resize_Move
-Размер/
+Размер/Место
 ;
 WORD_Save_Changes
 Записать изменения
 ;
 WORD_Size
-Размер/место
+Размер
 ;
 WORD_Unit
 Устройство
@@ -102,34 +102,34 @@ WORD_MENU_Quit
 Выход
 ;
 MSG_ASK_SAVE
-Все данные на измененных разделах будут уничтожены!\n Вы уверены, что надо записать изменения таблицы разделов '%s' ?
-;Alle Daten auf modifizierten Partitionen werden zerst|rt!\nBist du dir sicher die +nderungen der Partitionstabelle '%s' zu speichern?
+Все данные на измененных разделах будут уничтожены!\n Вы уверены, что пора записать изменения таблицы разделов '%s' ?
+; All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
 ;
 MSG_NO_MEMORY
 Недостаточно памяти
-;Nicht genug Speicher vorhanden
+; Not enough memory
 ;
 MSG_PARTITION_TABLE_FULL
 Таблица разделов заполнена
-;Partitionstabelle voll
+; Partition table full
 ;
 MSG_Select_Empty_Area
 Выберите свободное место
-;Wфhle eine freien Bereich
+; Select empty area
 ;
 MSG_Select_Partition_Resize_Move
 Выберите раздел для изменения размера или перемещения
-;Wфhle eine Partition und фndere die Gr|яe bzw. bewege sie
+; Select a partition and resize/move it
 ;
 MSG_Welcome
-Вас приветствует инструмент для управления разделами! 
-;Willkommen zum Partitionierungswerkzeug
+Инструмент для управления разделами
+; Welcome to the partitioning tool
 ;
 MSG_WriteTableError
 Ошибка при записи таблицы разделов
-;Fehler beim Schreiben der Partitionstabelle
+; Error while writing partition table
 ;
 MSG_CreateTableError
 Ошибка при создании таблицы разделов
-;Fehler beim Erstellen der Partitionstabelle
+; Error while creating partition table
 ;
