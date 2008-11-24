@@ -1,4 +1,4 @@
-## version $VER: AboutAROS.catalog 1.1 (13.05.2006)
+## version $VER: AboutAROS.catalog 1.2 (24.11.2008)
 ## language russian
 ## codeset 0
 ;
@@ -46,7 +46,7 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Посетите http://www.aros.org/, чтобы иметь полную информацию .
+Дополнительные сведения ищите на http://www.aros.org/ .
 ; Please visit http://www.aros.org/ for more information.
 ;
 MSG_PAGE_AUTHORS
@@ -66,7 +66,7 @@ MSG_SECTION_COORDINATION
 ; Coordination
 ;
 MSG_SECTION_EVANGELISM
-Духовенство =)
+"Духовенство"
 ; Evangelism
 ;
 MSG_SECTION_HIDD
@@ -130,7 +130,7 @@ MSG_SECTION_TRANSLATION
 ; Translation
 ;
 MSG_SECTION_ARTISTRY
-Художества
+Художественное оформление
 ; Artistry
 ;
 MSG_SECTION_WEBSITE

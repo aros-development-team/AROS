@@ -1,4 +1,4 @@
-## version $VER: executecommand.catalog 1.2 (12.09.2006)
+## version $VER: executecommand.catalog 1.2 (24.11.2008)
 ## language russian
 ## codeset 0
 ;
@@ -36,11 +36,11 @@ MSG_ERROR_OK
 ; *OK
 ;
 MSG_ERROR_LOCALE
-Ќе могу инициализировать локаль.
+Ќевозможно инициализацировать локаль.
 ; Can't initialize locale.
 ;
 MSG_ERROR_CLASSES
-Ќе могу инициализировать специальные (custom) классы.
+Ќевозможно инициализацировать специальные (custom) классы.
 ; Can't initialize custom classes.
 ;
 MSG_ERROR_OPEN_CONSOLE

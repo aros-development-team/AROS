@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.1 (13.05.2006)
+## version $VER: wanderer.catalog 1.2 (24.11.2008)
 ## language russian
 ## codeset 0
 ;
@@ -64,7 +64,7 @@ MSG_MEN_GUISET
 ; GUI Settings ...
 ;
 MSG_MEN_ABOUT
-Про AROS
+О системе
 ; About ...
 ;
 MSG_MEN_SC_ABOUT
@@ -160,19 +160,19 @@ U
 ; U
 ;
 MSG_MEN_BYNAME
-по имени
+По имени
 ; By name
 ;
 MSG_MEN_BYDATE
-...по дате
+По дате
 ; By Date
 ;
 MSG_MEN_BYSIZE
-...по размеру
+По размеру
 ; By size
 ;
 MSG_MEN_REVERSE
-...наоборот
+Наоборот
 ; Reverse
 ;
 MSG_MEN_DRWFRST
@@ -224,5 +224,29 @@ MSG_YESNO
 ;
 MSG_DUMMY
 DUMMY
-; DUMMY
 ; DUMMY :)
+;
+MSG_USERSCREENTITLE
+Wanderer %pc графической памяти, %pf прочей памяти
+;
+MSG_MEN_FORMAT
+Форматировать диск...
+;
+MSG_MEN_SHUTDOWN
+Выключить...
+;
+MSG_SHUTDOWN_TITLE
+Выключение системы
+;
+MSG_SHUTDOWN_BODY
+Выберите действие
+;
+MSG_SHUTDOWN_BUTTONS
+Выключить|Рестарт машины|Рестарт AROS|*Отменить
+;
+MSG_ACTION_NOT_SUPPORTED
+Выбранное действие не поддерживается на вашей машине
+;
+MSG_OK
+*Ok
+;

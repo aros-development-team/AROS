@@ -1,0 +1,49 @@
+## version $VER: diskinfo.catalog 1.0 (24.11.2008)
+## language russian
+## codeset 0
+;
+;
+MSG_TITLE
+Сведения о диске
+; Disk Info
+;
+MSG_ERROR_HEADER
+Ошибка
+; ERROR
+;
+MSG_ERROR_OK
+_OK
+; _OK
+;
+MSG_ERROR_LOCALE
+Невозможно инициализацировать локаль.
+; Can't initialize locale.
+;
+MSG_ERROR_CLASSES
+Невозможно инициализировать специальные классы.
+; Can't initialize custom classes.
+;
+MSG_DESCRIPTION
+Сведения о диске
+; Disk Icon Informations
+;
+MSG_PERCENTFULL
+Занято %ld %%
+; %ld %% Full
+;
+MSG_FORMAT
+Формат
+; Format
+;
+MSG_UNKNOWN
+Неизвестный
+; Unknown
+;
+MSG_AUTHOR
+Olivier Adam
+; Olivier Adam
+;
+MSG_COPYRIGHT
+Copyright (C) 2006 AROS Dev Team
+; ©2006 AROS Dev Team
+;

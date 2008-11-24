@@ -1,0 +1,215 @@
+## version $VER: Format.catalog 1.0 (24.11.2008)
+## language russian
+## codeset 0
+;
+MSG_OK
+OK
+;
+MSG_CANCEL
+Отмена
+;
+; ===========================================================
+; cli.c
+;
+MSG_INSERT_DISK 
+Вставьте диск для форматирования в привод %s\n\
+Нажмите RETURN чтобы начать форматирование или CTRL-C для его отмены: 
+;
+MSG_FORMATTING
+\rФорматируется цилиндр %lu, %lu осталось 
+;
+MSG_VERIFYING
+\rПроверка 
+;
+MSG_INITIALIZING
+Инициализация диска...\n
+;
+; ===========================================================
+; gui.c
+;
+MSG_GUI_FORMATTING
+Форматирование диска...
+;
+MSG_GUI_INITIALIZING
+Инициализация диска...
+;
+MSG_IN_DEVICE
+на устройстве %s
+;
+MSG_FORMAT_REQUEST_TITLE
+Форматирование
+;
+MSG_FORMAT_REQUEST_GADGETS
+Форматирование|Отмена
+;
+MSG_FORMAT_REQUEST_TEXT
+Форматировать том\n\
+%s?\n\n\
+ВНИМАНИЕ!\n\n\
+Все данные будут утеряны!\n\
+(%s)
+;
+MSG_UNITS (/6/6)
+KMGTPE
+; Kilo, Mega ...
+;
+MSG_CAPACITY_USED
+%lu%lc всего, %lu%% занято
+;
+MSG_CAPACITY
+%lu%lc всего
+;
+MSG_ERROR_WANDERER
+Нужно запускать из меню Wanderer, выбрав иконку диска\n
+;
+MSG_WINDOW_TITLE
+Форматирование - %s
+;
+MSG_DEVICE
+Устройство '%s'
+;
+MSG_VOLUME
+Том '%b'
+;
+MSG_APPLICATION_TITLE
+Форматирование
+;
+MSG_DESCRIPTION
+Утилита форматирования дисков
+;
+MSG_COPYRIGHT
+Copyright © 1999 Ben Hutchings, 2008 Pavel Fedin, 2008 The AROS Development Team
+;
+MSG_AUTHOR
+Ben Hutchings, Pavel Fedin, The AROS Development Team
+;
+MSG_LABEL_CURRENT_INFORMATION
+Текущие данные:
+;
+MSG_LABEL_NEW_VOLUME_NAME
+Новая метка тома:
+;
+MSG_DEFAULT_VOLUME_NAME
+Нет метки
+;
+MSG_LABEL_PUT_TRASHCAN
+Включить Корзину:
+;
+MSG_LABEL_FFS
+Fast File System:
+;
+MSG_LABEL_INTL
+International Mode:
+;
+MSG_LABEL_CACHE
+Directory Cache:
+;
+MSG_BTN_FORMAT
+Обычное
+;
+MSG_BTN_QFORMAT
+Быстрое
+;
+MSG_BTN_CANCEL
+Отмена
+;
+MSG_BTN_STOP
+Stop
+;
+MSG_ERROR_NO_APPLICATION
+Ошибка создания приложения\n
+;
+MSG_ERROR_NO_WINDOW
+Ошибка открытия окна\n
+;
+MSG_REQ_ERROR_TITLE
+Ошибка
+;
+; ===========================================================
+; main.c
+;
+MSG_ERRORS_WARNING
+Предупреждение
+;
+MSG_ERRORS_ERROR
+Ошибка
+;
+MSG_ERRORS_FAILURE
+Отказ
+;
+MSG_FORMAT
+Format 
+;
+MSG_ERROR_INVALID_DOSTYPE
+Неправильно указан DosType
+;
+MSG_ERROR_TOO_LARGE_1
+Размер устройства превышает 4 ГБ. \
+ ФС Amiga не поддерживает такие размеры томов.
+;
+MSG_ERROR_TOO_LARGE_2
+Рамки тома выходят за первые 4 ГБ диска\
+ где он расположен. Чтобы его использовать, установите\
+ версию 43 или новее файловой системы Amiga.
+;
+MSG_ERROR_TOO_LARGE_3
+Размер тома превышает 2 ГБ. Чтобы использовать его,\
+ потребуется установить версию 40 или новее файловой\
+ системы Amiga.
+;
+MSG_ERROR_TOO_LARGE_4
+Устройство настроено для использования буфера в памяти, которая\
+ не может быть \"public\". Это может вызвать отказ системы, если используется\
+ виртуальная память. Во избежание этого следует установить значение 1\
+ для BufMemTypesetting.
+;
+MSG_ERROR_DEVICE
+Ошибка открытия устройства %ld
+;
+MSG_ERROR_IDE
+Возможно, устройство расположено на IDE-диске,\
+ использующим старый драйвер IDE от Commodore. Данный драйвер\
+ может попытаться выполнить передачу данных, которая не\
+ поддерживается некоторыми дисками IDE. Во избежание\
+ потери данных, следует установить значение 0x10000 для\
+ MaxTransfer этого устройства.
+;
+MSG_ERROR_DEVICE_QUERY
+Опрос устройства (NSCMD_DEVICEQUERY) вернул ошибку %ld
+;
+MSG_ERROR_64BIT
+This device extends beyond the first 4 gigabytes of the disk.\
+ In order to use this device, you must either use a driver\
+ that supports the NSD 64-bit commands or install and run the\
+ NSDPatch program.
+;
+MSG_ERROR_DEVICE_RETURN
+Устройство %s вернуло ошибку %ld
+;
+MSG_ERROR_FLUSH
+flush (CMD_UPATE)
+;
+MSG_ERROR_INVALIDATE
+invalidate (CMD_CLEAR)
+;
+MSG_ERROR_VERIFY
+Ошибка проверки
+;
+MSG_COMMAND_FORMAT64
+format (NSCMD_TD_FORMAT64)
+;
+MSG_COMMAND_FORMAT
+format (TD_FORMAT)
+;
+MSG_COMMAND_READ64
+read (NSCMD_TD_READ64)
+;
+MSG_COMMAND_READ
+read (CMD_READ)
+;
+MSG_ERROR_TRASHCAN
+Ошибка создания Корзины на томе\n%s
+;
+MSG_ERROR_ICON
+Ошибка создания иконки диска для тома\n%s
+;

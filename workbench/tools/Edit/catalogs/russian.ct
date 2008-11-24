@@ -1,4 +1,4 @@
-## version $VER: JanoEditor.catalog 1.0 (27.09.2006).
+## version $VER: JanoEditor.catalog 1.1 (24.11.2008).
 ## codeset 0
 ## language russian
 ;
@@ -130,7 +130,7 @@ MSG_FINDBRACKET
 Закрывающая скобка
 ;
 MSG_LASTMODIF
-Last modification
+Последнее изменение
 ;
 MSG_BEGOFLINE
 Начало строки
