@@ -50,6 +50,7 @@
  * 2008-06-03  K. Smiechowicz      Added 400ns delay in ata_WaitBusyTO before read of device status.
  * 2008-06-25  P. Fedin            Added "nomulti" flag
  *                                 PIO works correctly again
+ * 2008-11-28  T. Wiszkowski       updated test unit ready to suit individual taste of hw manufacturers
  */
 /*
  * TODO: 
@@ -2139,7 +2140,13 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     /*
      * we may have just lost the disc...? 
      */
-    int p1 = ((sense[2] == 2) && (sense[12] == 0x3a)) ? 1 : 0;
+    /*
+     * per MMC, drives are expected to return 02-3a-0# status, when disc is not present
+     * that would translate into following code:
+     *    int p1 = ((sense[2] == 2) && (sense[12] == 0x3a)) ? 1 : 0;
+     * unfortunately, it's what MMC says, not what vendors code.
+     */
+    int p1 = (sense[2] == 2) ? 1 : 0;
     int p2 = (0 != (AF_DiscPresent & unit->au_Flags)) ? 1 : 0;
 
     if (p1 == p2)
