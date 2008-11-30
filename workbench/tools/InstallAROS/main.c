@@ -160,7 +160,7 @@ Object* 			work_size = NULL;
 Object *reboot_group = NULL;
 
 static LONG FindWindowsPartition(STRPTR device, LONG unit);
-int CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
+LONG CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
                         CONST_STRPTR directories[]);
 
 IPTR Install__OM_NEW
@@ -1278,6 +1278,7 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
     UBYTE   *buffer = NULL;
     TEXT    matchString[3 * strlen(fileMask)];     
     BPTR    srcDirLock = NULL, dstDirLock = NULL;
+    LONG    totalFilesCopiedThis = 0;
 
     /* Check entry condition */
     if (data->inst_success != MUIV_Inst_InProgress)
@@ -1296,10 +1297,10 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
                 case 0: /*retry */
                     break;
                 case 1: /* skip */
-                    return totalFilesCopied;
+                    return -1;
                 default: /* quit */
                     DoMethod(self, MUIM_IC_QuitInstall);
-                    return totalFilesCopied;
+                    return -1;
             }
         }
     } while (srcDirLock == NULL);
@@ -1317,7 +1318,7 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
         else
         {
             UnLock(srcDirLock);
-            return -1; //XXX: report error
+            return -1;
         }
     }
 
@@ -1353,7 +1354,7 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
                 D(bug("[INSTALLER.CFs] Failed to create %s dir!!\n",tmppath));
                 UnLock(srcDirLock);
                 data->inst_success = MUIV_Inst_Failed;
-                return -1; //XXX: report error
+                return -1;
             }
         }
     }
@@ -1364,11 +1365,15 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
     if (buffer == NULL)
     {
         UnLock(srcDirLock);
-        return -1; //XXX: report error
+        return -1;
     }
 
     if (ParsePatternNoCase(fileMask, matchString, 3 * strlen(fileMask)) < 0)
-        return -1; //XXX: report error
+    {
+        UnLock(srcDirLock);
+        FreeVec(buffer);
+        return -1;
+    }
 
     struct ExAllData *ead = (struct ExAllData*)buffer;
     struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
@@ -1406,27 +1411,34 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
                 sprintf(srcFile, "%s", srcDir);
                 sprintf(dstFile, "%s", dstDir);
 
-                AddPart(srcFile, ead->ed_Name, newSrcLen); //XXX: check return code
-                AddPart(dstFile, ead->ed_Name, newDstLen); //XXX: check return code
+                AddPart(srcFile, ead->ed_Name, newSrcLen);
+                AddPart(dstFile, ead->ed_Name, newDstLen);
                 
                 if (ead->ed_Type == ST_FILE)
                 {
                     DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
                     
-                    totalFilesCopied++;
+                    totalFilesCopiedThis++;
                 
                     if (totalFiles > 0)
                     {
                         SET(data->gauge2, MUIA_Gauge_Current, 
-                            (LONG)((100.0 / totalFiles) * totalFilesCopied));
+                            (LONG)((100.0 / totalFiles) * (totalFilesCopied + totalFilesCopiedThis)));
                     }
                 }
 
                 if (ead->ed_Type == ST_USERDIR)
                 {
-                    /// XXX: Needs code for error checking
-                    totalFilesCopied = InternalCopyFiles(CLASS, self, srcFile, dstFile, fileMask, 
-                                                            recursive, totalFiles, totalFilesCopied);
+                    
+                    LONG totalFilesCopiedSub = InternalCopyFiles(CLASS, self, srcFile, dstFile, fileMask, 
+                                                            recursive, totalFiles, 
+                                                            totalFilesCopied + totalFilesCopiedThis);
+                    if (totalFilesCopiedSub >= 0)
+                        totalFilesCopiedThis += totalFilesCopiedSub;
+                    else
+                    {
+                        /* Do nothing. It will be caught at level of Install__MUIM_IC_CopyFiles */
+                    }
                 }
             }
 
@@ -1439,7 +1451,7 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
     UnLock(srcDirLock);
     FreeVec(buffer);
 
-    return totalFilesCopied;
+    return totalFilesCopiedThis;
 }
 
 IPTR Install__MUIM_IC_CopyFiles
@@ -1448,7 +1460,7 @@ IPTR Install__MUIM_IC_CopyFiles
 )
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
-    LONG    totalFiles = 0, totalFilesCopied = 0;
+    LONG    totalFiles = -1, totalFilesCopied = 0;
 
 
     D(bug("[INSTALLER.CFs] Entry, src: %s, dst: %s, mask: %s\n", message->srcDir, message->dstDir, 
@@ -1461,16 +1473,34 @@ IPTR Install__MUIM_IC_CopyFiles
     SET(data->gauge2, MUIA_Gauge_Current, 0);
 
     /* Get file count */
-    totalFiles = CountFiles(message->srcDir, message->fileMask, message->recursive); //XXX: check return code
-    D(bug("[INSTALLER.CFs] Found %ld files in %s\n", totalFiles, message->srcDir));
+    do
+    {
+        totalFiles = CountFiles(message->srcDir, message->fileMask, message->recursive);
+        D(bug("[INSTALLER.CFs] Found %ld files in %s\n", totalFiles, message->srcDir));
+        
+        if (totalFiles < 0)
+        {
+            ULONG retry = AskRetry( CLASS, self, "Error scanning %s\nRetry?", message->srcDir, "Yes","Skip","Quit");
+            switch(retry)
+            {
+                case 0: /* retry */
+                    break;
+                case 1: /* skip */
+                    totalFiles = 0;
+                    break;
+                default: /* quit */
+                    DoMethod(self, MUIM_IC_QuitInstall);
+                    return totalFilesCopied;
+            }            
+        }
+    } while(totalFiles < 0);
 
     /* Copy files */
     totalFilesCopied = InternalCopyFiles(CLASS, self, message->srcDir, message->dstDir, message->fileMask, 
-                                            message->recursive, totalFiles < 0 ? 0 : totalFiles, 
-                                            totalFilesCopied);
+                                            message->recursive, totalFiles, totalFilesCopied);
 
     /* Check final condition */
-    if (totalFiles >= 0 && totalFiles != totalFilesCopied)
+    if ((data->inst_success == MUIV_Inst_InProgress) && (totalFiles != totalFilesCopied))
     {
         return -1; ///XXX: report error
     }
@@ -2082,12 +2112,12 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
 	return partition_no;
 }
 
-// XXX: what should it return (?)
-int CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
+
+LONG CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
                         CONST_STRPTR directories[]) 
 {
     struct Install_DATA *data = INST_DATA(CLASS, self);
-    int     numdirs = 0, dir_count = 0, skip_count = 0;
+    LONG    numdirs = 0, dir_count = 0;
     BPTR    lock = 0;
 
     while (directories[numdirs] != NULL) numdirs++;
@@ -2107,7 +2137,7 @@ int CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRP
         sprintf(srcDirs, "%s", sourcePath);
         sprintf(dstDirs, "%s", destinationPath);
         AddPart(srcDirs, directories[dir_count], newSrcLen);
-        AddPart(dstDirs, directories[dir_count+1], newDstLen);
+        AddPart(dstDirs, directories[dir_count + 1], newDstLen);
 
         SET(data->actioncurrent, MUIA_Text_Contents, srcDirs);
 
@@ -2123,11 +2153,11 @@ int CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRP
 	        DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
         }
 
-        /* Folder copied or skipped */
+        /* Folder copied */
         dir_count += 2;
     }
 
-    return ((dir_count/2) - skip_count);   /* Return no. of successfully copied dirs */
+    return dir_count / 2;   /* Return no. of copied dirs */
 }
 
 BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name, ULONG dostype)
