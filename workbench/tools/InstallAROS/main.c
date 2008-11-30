@@ -38,11 +38,13 @@
 
 #include <mui/TextEditor_mcc.h>
 
-#include "install.h"
-
 #ifndef GRUB
 #define GRUB 2
 #endif
+
+#include "install.h"
+
+
 
 #define kBufSize  		(4*65536)
 #define kExallBufSize  		(4096)
@@ -53,14 +55,15 @@
 #define kDstPartName 		"AROS"
 #define kDstWorkName 		"Work"
 
-#define installertmp_path     	"T:Installer"
-#define instalationtmp_path     "T:Installer/InstallAROS"
+#define INSTALLER_TMP_PATH      "T:Installer"
+#define INSTALLAROS_TMP_PATH    "T:Installer/InstallAROS"
 
 #define localeFile_path     	"Prefs/Locale\""
 #define inputFile_path      	"Prefs/Input\""
 #define prefssrc_path      	"ENV:SYS"
 #define prefs_path          	"Prefs/Env-Archive/SYS"
-#define boot_path          	"boot"
+#define BOOT_PATH               "boot"
+#define GRUB_PATH               "grub"
 
 #define locale_prfs_file		"locale.prefs"						/* please note the suffixed \" */
 #define input_prfs_file		"input.prefs"
@@ -71,29 +74,31 @@
 
 #define POST_INSTALL_SCRIPT     "PROGDIR:InstallAROS-Post-Install"
 
-#define GRUB_COPY_FILE_LOOP                                             \
-while (grub_files[file_count]!=NULL)                                    \
-{                                                                       \
-    ULONG newSrcLen = srcLen + strlen(grub_files[file_count]) + 2;      \
-    ULONG newDstLen = dstLen + strlen(grub_files[file_count+1]) + 2;    \
-                                                                        \
-    TEXT srcFile[newSrcLen];                                            \
-    TEXT dstFile[newDstLen];                                            \
-                                                                        \
-    CopyMem(source_Path, srcFile, srcLen + 1);                          \
-    sprintf(dstFile,"%s:",dest_Path);                                   \
-    AddPart(srcFile, grub_files[file_count], newSrcLen);                \
-    AddPart(dstFile, grub_files[file_count+1], newDstLen);              \
-                                                                        \
-    SET(data->actioncurrent, MUIA_Text_Contents, srcFile);              \
-    DoMethod(data->installer,MUIM_Application_InputBuffered);           \
-                                                                        \
-    DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);                 \
-                                                                        \
-    SET(data->gauge2, MUIA_Gauge_Current,                               \
-        (LONG)((100.0/(numgrubfiles +1)) * (file_count/2.0)));          \
-                                                                        \
-    file_count += 2;                                                    \
+#define GRUB_COPY_FILE_LOOP                                                     \
+SET(data->gauge2, MUIA_Gauge_Current, 0);                                       \
+                                                                                \
+while (grub_files[file_count]!=NULL)                                            \
+{                                                                               \
+    ULONG newSrcLen = strlen(srcPath) + strlen(grub_files[file_count]) + 2;     \
+    ULONG newDstLen = strlen(dstPath) + strlen(grub_files[file_count + 1]) + 2; \
+                                                                                \
+    TEXT srcFile[newSrcLen];                                                    \
+    TEXT dstFile[newDstLen];                                                    \
+                                                                                \
+    sprintf(srcFile, "%s", srcPath);                                            \
+    sprintf(dstFile, "%s", dstPath);                                            \
+    AddPart(srcFile, grub_files[file_count], newSrcLen);                        \
+    AddPart(dstFile, grub_files[file_count + 1], newDstLen);                    \
+                                                                                \
+    DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);                         \
+                                                                                \
+    file_count += 2;                                                            \
+                                                                                \
+    if (numgrubfiles > 0)                                                       \
+    {                                                                           \
+        SET(data->gauge2, MUIA_Gauge_Current,                                   \
+            (LONG)((100.0 / numgrubfiles) * (file_count / 2.0)));               \
+    }                                                                           \
 }
 
 /** Start - NEW!! this is part of the "class" change ;) **/
@@ -154,10 +159,9 @@ Object* 			work_size = NULL;
 
 Object *reboot_group = NULL;
 
-//extern ULONG InitTask(void);
 static LONG FindWindowsPartition(STRPTR device, LONG unit);
-int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *copy_files[], TEXT *destination_Path);
-int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir, TEXT *destination_Path);
+int CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
+                        CONST_STRPTR directories[]);
 
 IPTR Install__OM_NEW
 (
@@ -298,35 +302,35 @@ IPTR Install__OM_NEW
 		NEWLIST((struct List *)&data->instc_undorecord);
 D(bug("[INSTALLER.i] Prepaired UNDO list @ %p\n", &data->instc_undorecord));
 
-		if ((lock = Lock(installertmp_path, ACCESS_READ))!=NULL)
+		if ((lock = Lock(INSTALLER_TMP_PATH, ACCESS_READ))!=NULL)
 		{
-			D(bug("[INSTALLER.i] Dir '%s' Exists - no nead to create\n",installertmp_path));
+			D(bug("[INSTALLER.i] Dir '%s' Exists - no nead to create\n",INSTALLER_TMP_PATH));
 			UnLock(lock);
 		}
 		else
 		{
-			lock = CreateDir(installertmp_path);
+			lock = CreateDir(INSTALLER_TMP_PATH);
 			if(lock != NULL) UnLock(lock);
 			else
 			{
-				D(bug("[INSTALLER.i] Failed to create dir '%s'!!\n",installertmp_path));
+				D(bug("[INSTALLER.i] Failed to create dir '%s'!!\n",INSTALLER_TMP_PATH));
 				data->inst_success = MUIV_Inst_Failed;
 				return 0;
 			}
 		}
 
-		if ((lock = Lock(instalationtmp_path, ACCESS_READ))!=NULL)
+		if ((lock = Lock(INSTALLAROS_TMP_PATH, ACCESS_READ))!=NULL)
 		{
-			D(bug("[INSTALLER.i] Dir '%s' Exists - no nead to create\n",instalationtmp_path));
+			D(bug("[INSTALLER.i] Dir '%s' Exists - no nead to create\n",INSTALLAROS_TMP_PATH));
 			UnLock(lock);
 		}
 		else
 		{
-			lock = CreateDir(instalationtmp_path);
+			lock = CreateDir(INSTALLAROS_TMP_PATH);
 			if(lock != NULL) UnLock(lock);
 			else
 			{
-				D(bug("[INSTALLER.i] Failed to create dir '%s'!!\n",instalationtmp_path));
+				D(bug("[INSTALLER.i] Failed to create dir '%s'!!\n",INSTALLAROS_TMP_PATH));
 				data->inst_success = MUIV_Inst_Failed;
 				return 0;
 			}
@@ -369,7 +373,11 @@ ULONG AskRetry(Class *CLASS, Object *self, const char *Message, const char *File
 
 	data->IO_Flags = 0;
 
-	while (data->IO_Flags == 0) DoMethod(data->installer, MUIM_Application_InputBuffered);
+	while (data->IO_Flags == 0) 
+    {
+        Delay(1);
+        DoMethod(data->installer, MUIM_Application_InputBuffered);
+    }
 
 	SET(data->window, MUIA_Window_Sleep, FALSE);
 	SET(data->IO_RWindow, MUIA_Window_Open, FALSE);
@@ -1176,6 +1184,300 @@ void create_environment_variable(CONST_STRPTR envarchiveDisk, CONST_STRPTR name,
 	}
 }
 
+LONG CountFiles(CONST_STRPTR directory, CONST_STRPTR fileMask, BOOL recursive)
+{
+    UBYTE   *buffer = NULL;
+    TEXT    matchString[3 * strlen(fileMask)];     
+    BPTR    dirLock = NULL;
+    LONG    fileCount = 0;
+
+    D(bug("[INSTALLER.Count] Entry, directory: %s, mask: %s\n", directory, fileMask));
+
+    /* Check if directory exists */
+    dirLock = Lock(directory, SHARED_LOCK);
+
+    if (dirLock == NULL)
+    {
+        return -1;
+    }
+
+    buffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC);
+    
+    if (buffer == NULL)
+    {
+        UnLock(dirLock);
+        return -1;
+    }
+
+    if (ParsePatternNoCase(fileMask, matchString, 3 * strlen(fileMask)) < 0)
+    {
+        UnLock(dirLock);
+        FreeVec(buffer);
+        return -1;
+    }
+
+    struct ExAllData *ead = (struct ExAllData*)buffer;
+    struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    eac->eac_LastKey = 0;
+
+    BOOL  loop;
+    struct ExAllData *oldEad = ead;
+
+    do
+    {
+	    ead = oldEad;
+	    loop = ExAll(dirLock, ead, kExallBufSize, ED_COMMENT, eac);
+
+	    if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
+
+	    if(eac->eac_Entries != 0)
+	    {
+	    do
+	    {
+            if(ead->ed_Type == ST_FILE && MatchPatternNoCase(matchString, ead->ed_Name))
+			    fileCount++;
+
+            if(ead->ed_Type == ST_USERDIR && recursive)
+            {
+                LONG subFileCount = 0;
+                ULONG subDirNameLen = strlen(directory) + strlen(ead->ed_Name) + 2;
+                TEXT subDirName[subDirNameLen];
+
+                sprintf(subDirName, "%s", directory);
+                AddPart(subDirName, ead->ed_Name, subDirNameLen);
+
+                subFileCount = CountFiles(subDirName, fileMask, recursive);
+                
+                if (subFileCount >= 0)
+                    fileCount += subFileCount;
+                else
+                {
+                    /* Error at lower level */
+                    FreeDosObject(DOS_EXALLCONTROL, eac);
+                    UnLock(dirLock);
+                    FreeVec(buffer);
+                    return -1;
+                }
+            }
+		    ead = ead->ed_Next;
+	    } while(ead != NULL);
+	    }
+    } while(loop);
+
+    FreeDosObject(DOS_EXALLCONTROL, eac);
+    UnLock(dirLock);
+    FreeVec(buffer);
+    
+    return fileCount;
+}
+
+LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_STRPTR dstDir, 
+                    CONST_STRPTR fileMask, BOOL recursive, LONG totalFiles, LONG totalFilesCopied)
+{
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    UBYTE   *buffer = NULL;
+    TEXT    matchString[3 * strlen(fileMask)];     
+    BPTR    srcDirLock = NULL, dstDirLock = NULL;
+
+    /* Check entry condition */
+    if (data->inst_success != MUIV_Inst_InProgress)
+        return totalFilesCopied;
+
+    /* Check if source directory exists */
+    do
+    {
+        srcDirLock = Lock(srcDir, SHARED_LOCK);
+
+        if (srcDirLock == NULL)
+        {
+            ULONG retry = AskRetry( CLASS, self, "Could not find %s\nRetry?", srcDir, "Yes","Skip","Quit");
+            switch(retry)
+            {
+                case 0: /*retry */
+                    break;
+                case 1: /* skip */
+                    return totalFilesCopied;
+                default: /* quit */
+                    DoMethod(self, MUIM_IC_QuitInstall);
+                    return totalFilesCopied;
+            }
+        }
+    } while (srcDirLock == NULL);
+
+    /* Check if destination directory exists and create it */
+    dstDirLock = Lock(dstDir, SHARED_LOCK);
+
+    if (dstDirLock != NULL)
+        UnLock(dstDirLock);
+    else
+    {
+        dstDirLock = CreateDir(dstDir);
+        if (dstDirLock != NULL)
+            UnLock(dstDirLock);
+        else
+        {
+            UnLock(srcDirLock);
+            return -1; //XXX: report error
+        }
+    }
+
+    /* Create undo directory if needed */
+    /* XXX: Is this really needed? Can't undo directories be created during file copying (== only when needed?) */
+    /* XXX: Undo records should also contain volume name, DH0:Tools should be T:Installer/InstallAROS/DH0/Tools */
+    if(data->instc_copt_undoenabled)
+    {
+        BPTR    ulock = NULL;
+        IPTR    src_point = (((IPTR)(dstDir) + strlen(dest_Path))+1);
+        TEXT    tmppath[(strlen(dstDir) - strlen(dest_Path))
+                            + strlen(INSTALLAROS_TMP_PATH) + 3];
+        /* FIXME: This works only becuse strlen("DH0") == strlen("DH1")
+         * The volume name should be remove from string on other way, not
+         * depending on length of dest_Path
+         */
+
+        sprintf(tmppath,"%s/%s", INSTALLAROS_TMP_PATH, (char *)src_point);
+
+        D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
+
+        if ((ulock = Lock(tmppath, SHARED_LOCK))!=NULL)
+        {
+            D(bug("[INSTALLER.CFs] Dir '%s' Exists - no nead to create\n",tmppath));
+            UnLock(ulock);
+        }
+        else
+        {
+            ulock = CreateDir(tmppath);
+            if(ulock != NULL) UnLock(ulock);
+            else
+            {
+                D(bug("[INSTALLER.CFs] Failed to create %s dir!!\n",tmppath));
+                UnLock(srcDirLock);
+                data->inst_success = MUIV_Inst_Failed;
+                return -1; //XXX: report error
+            }
+        }
+    }
+
+    /* Allocate buffer for ExAll */
+    buffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC);
+    
+    if (buffer == NULL)
+    {
+        UnLock(srcDirLock);
+        return -1; //XXX: report error
+    }
+
+    if (ParsePatternNoCase(fileMask, matchString, 3 * strlen(fileMask)) < 0)
+        return -1; //XXX: report error
+
+    struct ExAllData *ead = (struct ExAllData*)buffer;
+    struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    eac->eac_LastKey = 0;
+
+    BOOL  loop;
+    struct ExAllData *oldEad = ead;
+
+
+    /* Main copy file loop */
+    do
+    {
+	    ead = oldEad;
+	    loop = ExAll(srcDirLock, ead, kExallBufSize, ED_COMMENT, eac);
+
+	    if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
+
+	    if(eac->eac_Entries != 0)
+	    {
+	    do
+	    {
+            if(
+                ((ead->ed_Type == ST_FILE) && MatchPatternNoCase(matchString, ead->ed_Name)) ||
+                ((ead->ed_Type == ST_USERDIR) && recursive)
+              )
+            {
+			    ULONG srcLen = strlen(srcDir);
+			    ULONG dstLen = strlen(dstDir);
+			    ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
+			    ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
+
+			    TEXT srcFile[newSrcLen];
+			    TEXT dstFile[newDstLen];
+                
+                sprintf(srcFile, "%s", srcDir);
+                sprintf(dstFile, "%s", dstDir);
+
+                AddPart(srcFile, ead->ed_Name, newSrcLen); //XXX: check return code
+                AddPart(dstFile, ead->ed_Name, newDstLen); //XXX: check return code
+                
+                if (ead->ed_Type == ST_FILE)
+                {
+                    DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
+                    
+                    totalFilesCopied++;
+                
+                    if (totalFiles > 0)
+                    {
+                        SET(data->gauge2, MUIA_Gauge_Current, 
+                            (LONG)((100.0 / totalFiles) * totalFilesCopied));
+                    }
+                }
+
+                if (ead->ed_Type == ST_USERDIR)
+                {
+                    /// XXX: Needs code for error checking
+                    totalFilesCopied = InternalCopyFiles(CLASS, self, srcFile, dstFile, fileMask, 
+                                                            recursive, totalFiles, totalFilesCopied);
+                }
+            }
+
+		    ead = ead->ed_Next;
+	    } while((ead != NULL) && (data->inst_success == MUIV_Inst_InProgress)); 
+	    }
+    } while((loop) && (data->inst_success == MUIV_Inst_InProgress)); 
+
+    FreeDosObject(DOS_EXALLCONTROL, eac);
+    UnLock(srcDirLock);
+    FreeVec(buffer);
+
+    return totalFilesCopied;
+}
+
+IPTR Install__MUIM_IC_CopyFiles
+(
+    Class *CLASS, Object *self, struct MUIP_CopyFiles * message 
+)
+{
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    LONG    totalFiles = 0, totalFilesCopied = 0;
+
+
+    D(bug("[INSTALLER.CFs] Entry, src: %s, dst: %s, mask: %s\n", message->srcDir, message->dstDir, 
+            message->fileMask));
+
+    /* Check entry condition */
+    if (data->inst_success != MUIV_Inst_InProgress)
+        return totalFilesCopied;
+
+    SET(data->gauge2, MUIA_Gauge_Current, 0);
+
+    /* Get file count */
+    totalFiles = CountFiles(message->srcDir, message->fileMask, message->recursive); //XXX: check return code
+    D(bug("[INSTALLER.CFs] Found %ld files in %s\n", totalFiles, message->srcDir));
+
+    /* Copy files */
+    totalFilesCopied = InternalCopyFiles(CLASS, self, message->srcDir, message->dstDir, message->fileMask, 
+                                            message->recursive, totalFiles < 0 ? 0 : totalFiles, 
+                                            totalFilesCopied);
+
+    /* Check final condition */
+    if (totalFiles >= 0 && totalFiles != totalFilesCopied)
+    {
+        return -1; ///XXX: report error
+    }
+
+    return totalFilesCopied;
+}
+
 IPTR Install__MUIM_IC_Install
 (
 	Class *CLASS, Object *self, Msg message 
@@ -1184,7 +1486,6 @@ IPTR Install__MUIM_IC_Install
 	struct Install_DATA *data = INST_DATA(CLASS, self);
 	BPTR lock   = NULL;
 	IPTR option = FALSE;
-	int	fixupdir_count=0;
 
 	GET(dest_volume, MUIA_String_Contents, &option);
 	strcpy(dest_Path, (STRPTR)option);
@@ -1390,114 +1691,109 @@ localecopydone:
 
 /** STEP : COPY CORE **/
 
-	GET(data->instc_options_main->opt_copycore, MUIA_Selected, &option);
-	if (option && (data->inst_success == MUIV_Inst_InProgress))
-	{
-		char 	tmp[100];
-		BOOL	success = FALSE;
-		TEXT	*core_dirs[] = 
-		{
-			"C",			"C",
-			"Classes",		"Classes",
-			"Devs",		"Devs",
-			"Fonts",		"Fonts",
-			"Libs",		"Libs",
-			"Locale",		"Locale",
-			"Prefs",		"Prefs",
-			"Rexxc",			"Rexxc",
-			"S",			"S",
-			"Storage",		"Storage",
-			"System",		"System",
-			"Tools",		"Tools",
-			"Utilities",		"Utilities",
-			"WBStartup",		"WBStartup",
-			NULL
-		};
+    GET(data->instc_options_main->opt_copycore, MUIA_Selected, &option);
+    if (option && (data->inst_success == MUIV_Inst_InProgress))
+    {
+        TEXT            tmp[100];
+        BOOL            success = FALSE;
+        CONST_STRPTR    core_dirs[] = 
+        {
+            "C",            "C",
+            "Classes",      "Classes",
+            "Devs",         "Devs",
+            "Fonts",        "Fonts",
+            "Libs",         "Libs",
+            "Locale",       "Locale",
+            "Prefs",        "Prefs",
+            "Rexxc",        "Rexxc",
+            "S",            "S",
+            "Storage",      "Storage",
+            "System",       "System",
+            "Tools",        "Tools",
+            "Utilities",    "Utilities",
+            "WBStartup",    "WBStartup",
+            NULL
+        };
+        TEXT destinationPath[strlen(dest_Path) + 2];
 
-		// Copying Core system Files
-		D(bug("[INSTALLER] Copying Core files...\n"));
-		SET(data->label, MUIA_Text_Contents, "Copying Core System files...");
+        /* Copying Core system Files */
+        D(bug("[INSTALLER] Copying Core files...\n"));
+        SET(data->label, MUIA_Text_Contents, "Copying Core System files...");
+        sprintf(destinationPath, "%s:", dest_Path);
+        CopyDirArray(CLASS, self, source_Path, destinationPath, core_dirs);
 
-		CopyDirArray( CLASS, self, data, core_dirs, dest_Path);
-
-		//Make Env-Archive Writeable ..
-		sprintf(tmp,"Protect ADD FLAGS=W ALL QUIET %s:Prefs/Env-Archive", dest_Path);
-		D(bug("[INSTALLER] Changing Protection on Env Files (command='%s')\n", tmp));
-		success = (BOOL)Execute(tmp, NULL, NULL);
-	}
+        /* Make Env-Archive Writeable .. */
+        sprintf(tmp,"Protect ADD FLAGS=W ALL QUIET %s:Prefs/Env-Archive", dest_Path);
+        D(bug("[INSTALLER] Changing Protection on Env Files (command='%s')\n", tmp));
+        success = (BOOL)Execute(tmp, NULL, NULL);
+    }
 	
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : COPY EXTRAS **/
 
-	GET(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
-	if (option && data->inst_success == MUIV_Inst_InProgress)
-	{
-		TEXT     *extras_dirs[] = 
-		{
-			"Demos",		"Demos",
-			"Extras",		"Extras",
-			NULL
-		};
+    GET(data->instc_options_main->opt_copyextra, MUIA_Selected, &option);
+    if (option && data->inst_success == MUIV_Inst_InProgress)
+    {
+        CONST_STRPTR    extras_dirs[] = 
+        {
+	        "Demos",		"Demos",
+	        "Extras",		"Extras",
+	        NULL
+        };
 
-	    TEXT extraspath[100];
+        TEXT extraspath[100];
 
 
-		/* Copying Extras */
-		D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
-		SET(data->label, MUIA_Text_Contents, "Copying Extra Software...");
+        /* Copying Extras */
+        D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
+        SET(data->label, MUIA_Text_Contents, "Copying Extra Software...");
+        sprintf(extraspath, "%s:", extras_path);
+        CopyDirArray(CLASS, self, source_Path, extraspath, extras_dirs);
 
-		CopyDirArray( CLASS, self, data, extras_dirs, extras_path);
-		fixupdir_count +=2;
-		
-		/* Set EXTRASPATH environment variable */
-	    sprintf(extraspath, "%s:", extras_path);
-	    AddPart(extraspath, "Extras", 100);
-
+        /* Set EXTRASPATH environment variable */
+        AddPart(extraspath, "Extras", 100);
         create_environment_variable(dest_Path, "EXTRASPATH", extraspath);
-	}
+    }
 
 	DoMethod(data->installer,MUIM_Application_InputBuffered);
 
 /** STEP : COPY DEVELOPMENT **/
 
-	GET(data->instc_options_main->opt_development, MUIA_Selected, &option);
-	if (option && (data->inst_success == MUIV_Inst_InProgress))
-	{
-		ULONG srcLen = strlen(source_Path);
-		ULONG developerDirLen = srcLen + strlen("Development") + 2;
-		TEXT developerDir[srcLen + developerDirLen];
+    GET(data->instc_options_main->opt_development, MUIA_Selected, &option);
+    if (option && (data->inst_success == MUIV_Inst_InProgress))
+    {
+        ULONG srcLen = strlen(source_Path);
+        ULONG developerDirLen = srcLen + strlen("Development") + 2;
+        TEXT developerDir[srcLen + developerDirLen];
 
-		CopyMem(source_Path, &developerDir, srcLen + 1);
-		AddPart(developerDir, "Development", srcLen + developerDirLen);
+        CopyMem(source_Path, &developerDir, srcLen + 1);
+        AddPart(developerDir, "Development", srcLen + developerDirLen);
 
-		if ((lock = Lock(developerDir, ACCESS_READ)) != NULL)
-		{
-			TEXT     *developer_dirs[((2+1)*2)] = 
-			{
-				"Development",	"Development",
-				"Tests",		"Tests",
-				NULL
-			};
+        if ((lock = Lock(developerDir, SHARED_LOCK)) != NULL)
+        {
+            CONST_STRPTR    developer_dirs[] = 
+            {
+                "Development",	"Development",
+                "Tests",		"Tests",
+                NULL
+            };
             TEXT developmentpath[100];
 
-			UnLock(lock);
+            UnLock(lock);
 
-			/* Copying Developer stuff */
-			D(bug("[INSTALLER] Copying Developer Files...\n"));
-			SET(data->label, MUIA_Text_Contents, "Copying Developer Files...");
+            /* Copying Developer stuff */
+            D(bug("[INSTALLER] Copying Developer Files...\n"));
+            SET(data->label, MUIA_Text_Contents, "Copying Developer Files...");
+            sprintf(developmentpath, "%s:", extras_path);
+            CopyDirArray(CLASS, self, source_Path, developmentpath, developer_dirs);
 
-			CopyDirArray(CLASS, self, data, developer_dirs, extras_path);
-			fixupdir_count +=2;
-            
-		    /* Set DEVELPATH environment variable */
-	        sprintf(developmentpath, "%s:", extras_path);
-	        AddPart(developmentpath, "Development", 100);
-
+            /* Set DEVELPATH environment variable */
+            AddPart(developmentpath, "Development", 100);
             create_environment_variable(dest_Path, "DEVELPATH", developmentpath);
-		}
-		else D(bug("[INSTALLER] Couldn't locate Developer Files...\n"));
-	}
+        }
+        else D(bug("[INSTALLER] Couldn't locate Developer Files...\n"));
+    }
 
     if (!option && (data->inst_success == MUIV_Inst_InProgress))
     {
@@ -1517,111 +1813,41 @@ localecopydone:
 	{
 		int numgrubfiles = 0,file_count = 0;
 		LONG part_no;
-		ULONG srcLen = strlen(source_Path);
-		ULONG dstLen = (strlen(dest_Path)+1);
-		TEXT srcPath[srcLen + strlen(boot_path) + 1];
-		TEXT dstPath[dstLen + strlen(boot_path) + 2];
-
-		CreateDestDIR( CLASS, self, boot_path, dest_Path);
-		CreateDestDIR( CLASS, self, boot_path "/grub", dest_Path);
+		ULONG srcLen = strlen(source_Path) + strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
+		ULONG dstLen = strlen(dest_Path)+ strlen(BOOT_PATH) + strlen(GRUB_PATH) + 4;
+		TEXT srcPath[srcLen];
+		TEXT dstPath[dstLen];
 
 		/* Copy kernel files */
-		CopyMem(source_Path, srcPath, srcLen + 1);
-		AddPart(srcPath, boot_path, srcLen + strlen(boot_path) + 1);
-		sprintf(dstPath, "%s:%s", dest_Path, boot_path);
-		DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, 2, 0, FALSE);
+        sprintf(srcPath, "%s", source_Path);
+		sprintf(dstPath, "%s:", dest_Path);
+		AddPart(srcPath, BOOT_PATH, srcLen);
+		AddPart(dstPath, BOOT_PATH, dstLen);
+        DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?", FALSE);
 
 		/* Installing GRUB */
 		D(bug("[INSTALLER] Installing Grub...\n"));
 		SET(data->label, MUIA_Text_Contents, "Installing Grub...");
 		SET(data->pageheader, MUIA_Text_Contents, KMsgBootLoader);
-
-		SET(data->gauge2, MUIA_Gauge_Current, 0);
-
 		SET(data->label, MUIA_Text_Contents, "Copying BOOT files...");
 
+		AddPart(srcPath, GRUB_PATH, srcLen);
+		AddPart(dstPath, GRUB_PATH, dstLen);
+        /* Warning: do not modify srcPath or dstPath beyond this point */
+
 #if GRUB == 2
-        numgrubfiles = 76;
-		TEXT *grub_files[] =
-		{
-            "boot/grub/boot.img",       "boot/grub/boot.img",
-            "boot/grub/core.img",       "boot/grub/core.img",
-            "boot/grub/grub.cfg",       "boot/grub/grub.cfg",
-            "boot/grub/splash.png",     "boot/grub/splash.png",
-            "boot/grub/_unifont.pff",   "boot/grub/_unifont.pff",
-            "boot/grub/normal.mod",     "boot/grub/normal.mod",
-            "boot/grub/chain.mod",      "boot/grub/chain.mod",
-            "boot/grub/_chain.mod",     "boot/grub/_chain.mod",
-            "boot/grub/multiboot.mod",  "boot/grub/multiboot.mod",
-            "boot/grub/_multiboot.mod", "boot/grub/_multiboot.mod",
-            "boot/grub/elf.mod",        "boot/grub/elf.mod",
-            "boot/grub/aout.mod",       "boot/grub/aout.mod",
-            "boot/grub/gzio.mod",       "boot/grub/gzio.mod",
-            "boot/grub/boot.mod",       "boot/grub/boot.mod",
-            "boot/grub/cat.mod",        "boot/grub/cat.mod",
-            "boot/grub/ls.mod",         "boot/grub/ls.mod",
-            "boot/grub/help.mod",       "boot/grub/help.mod",
-            "boot/grub/serial.mod",     "boot/grub/serial.mod",
-            "boot/grub/terminfo.mod",   "boot/grub/terminfo.mod",
-            "boot/grub/terminal.mod",   "boot/grub/terminal.mod",
-            "boot/grub/ntfs.mod",       "boot/grub/ntfs.mod",
-            "boot/grub/fat.mod",        "boot/grub/fat.mod",
-            "boot/grub/ext2.mod",       "boot/grub/ext2.mod",
-            "boot/grub/linux.mod",      "boot/grub/linux.mod",
-            "boot/grub/_linux.mod",     "boot/grub/_linux.mod",
-            "boot/grub/configfile.mod", "boot/grub/configfile.mod",
-            "boot/grub/command.lst",    "boot/grub/command.lst",
-            "boot/grub/fs.lst",         "boot/grub/fs.lst",
-            "boot/grub/acorn.mod",      "boot/grub/acorn.mod",                
-            "boot/grub/afs.mod",        "boot/grub/afs.mod",
-            "boot/grub/apple.mod",      "boot/grub/apple.mod",
-            "boot/grub/ata.mod",        "boot/grub/ata.mod",
-            "boot/grub/bitmap.mod",     "boot/grub/bitmap.mod",
-            "boot/grub/blocklist.mod",  "boot/grub/blocklist.mod",
-            "boot/grub/_bsd.mod",       "boot/grub/_bsd.mod",
-            "boot/grub/bsd.mod",        "boot/grub/bsd.mod",
-            "boot/grub/cmp.mod",        "boot/grub/cmp.mod",
-            "boot/grub/cpio.mod",       "boot/grub/cpio.mod",
-            "boot/grub/cpuid.mod",      "boot/grub/cpuid.mod",
-            "boot/grub/echo.mod",       "boot/grub/echo.mod",
-            "boot/grub/font.mod",       "boot/grub/font.mod",
-            "boot/grub/gfxterm.mod",    "boot/grub/gfxterm.mod",
-            "boot/grub/gpt.mod",        "boot/grub/gpt.mod",
-            "boot/grub/halt.mod",       "boot/grub/halt.mod",
-            "boot/grub/hello.mod",      "boot/grub/hello.mod",
-            "boot/grub/hexdump.mod",    "boot/grub/hexdump.mod",
-            "boot/grub/hfs.mod",        "boot/grub/hfs.mod",
-            "boot/grub/hfsplus.mod",    "boot/grub/hfsplus.mod",
-            "boot/grub/jfs.mod",        "boot/grub/jfs.mod",
-            "boot/grub/jpeg.mod",       "boot/grub/jpeg.mod",
-            "boot/grub/loopback.mod",   "boot/grub/loopback.mod",
-            "boot/grub/lspci.mod",      "boot/grub/lspci.mod",
-            "boot/grub/lvm.mod",        "boot/grub/lvm.mod",
-            "boot/grub/memdisk.mod",    "boot/grub/memdisk.mod",
-            "boot/grub/minix.mod",      "boot/grub/minix.mod",
-            "boot/grub/ntfscomp.mod",   "boot/grub/ntfscomp.mod",
-            "boot/grub/pci.mod",        "boot/grub/pci.mod",
-            "boot/grub/play.mod",       "boot/grub/play.mod",
-            "boot/grub/png.mod",        "boot/grub/png.mod",
-            "boot/grub/raid.mod",       "boot/grub/raid.mod",
-            "boot/grub/read.mod",       "boot/grub/read.mod",
-            "boot/grub/reboot.mod",     "boot/grub/reboot.mod",
-            "boot/grub/reiserfs.mod",   "boot/grub/reiserfs.mod",
-            "boot/grub/search.mod",     "boot/grub/search.mod",
-            "boot/grub/sleep.mod",      "boot/grub/sleep.mod",
-            "boot/grub/sun.mod",        "boot/grub/sun.mod",
-            "boot/grub/test.mod",       "boot/grub/test.mod",
-            "boot/grub/tga.mod",        "boot/grub/tga.mod",
-            "boot/grub/udf.mod",        "boot/grub/udf.mod",
-            "boot/grub/ufs.mod",        "boot/grub/ufs.mod",
-            "boot/grub/vbeinfo.mod",    "boot/grub/vbeinfo.mod",
-            "boot/grub/vbe.mod",        "boot/grub/vbe.mod",
-            "boot/grub/vbetest.mod",    "boot/grub/vbetest.mod",
-            "boot/grub/vga.mod",        "boot/grub/vga.mod",
-            "boot/grub/video.mod",      "boot/grub/video.mod",
-            "boot/grub/videotest.mod",  "boot/grub/videotest.mod",
-            "boot/grub/xfs.mod",        "boot/grub/xfs.mod",
-            "boot/grub/bufio.mod",      "boot/grub/bufio.mod",
+        DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?.mod", FALSE);
+
+        numgrubfiles = 7;
+        TEXT *grub_files[] =
+        {
+            "boot.img",       "boot.img",
+            "core.img",       "core.img",
+            "grub.cfg",       "grub.cfg",
+            "splash.png",     "splash.png",
+            "_unifont.pff",   "_unifont.pff",
+            "command.lst",    "command.lst",
+            "fs.lst",         "fs.lst",
 			NULL
         };
 
@@ -1632,38 +1858,36 @@ localecopydone:
 	    if ((int)option == 1)
         {
             /* gfx mode - copy _unifont.pff -> unifont.pff */
+            ULONG newDstLen = strlen(dstPath) + strlen("_unifont.pff") + 2;
+            TEXT srcFile[newDstLen];
+            TEXT dstFile[newDstLen];
             
-            TEXT srcFile[200];
-			TEXT dstFile[200];
-            
-            sprintf(srcFile, "%s:", dest_Path);
-            sprintf(dstFile, "%s:", dest_Path);
-            AddPart(srcFile, "boot/grub/_unifont.pff", 200);
-            AddPart(dstFile, "boot/grub/unifont.pff", 200);
+            sprintf(srcFile, "%s", dstPath);
+            sprintf(dstFile, "%s", dstPath);
+            AddPart(srcFile, "_unifont.pff", newDstLen);
+            AddPart(dstFile, "unifont.pff", newDstLen);
             
             DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
         }
         else
         {
             /* other - delete unifont.pff */
-
-			TEXT dstFile[200];
+            ULONG newDstLen = strlen(dstPath) + strlen("unifont.pff") + 2;
+            TEXT dstFile[newDstLen];
             
-            sprintf(dstFile, "%s:", dest_Path);
-            AddPart(dstFile, "boot/grub/unifont.pff", 200);
+            sprintf(dstFile, "%s", dstPath);
+            AddPart(dstFile, "unifont.pff", newDstLen);
             
             DeleteFile(dstFile);
-               
         }
 
-        TEXT tmp[200];
+        TEXT tmp[256];
 
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
-            
-			STRPTR menu_file_path = "boot/grub/grub.cfg";
-			sprintf(tmp, "%s:%s", dest_Path, menu_file_path);
+			sprintf(tmp, "%s", dstPath);
+            AddPart(tmp, "grub.cfg", 256);
 			BPTR menu_file = Open(tmp, MODE_READWRITE);
 			if (menu_file != NULL)
 			{
@@ -1679,28 +1903,30 @@ localecopydone:
 
 		sprintf(tmp,
 			"C:Install-grub2-i386-pc DEVICE %s UNIT %d "
-			"GRUB %s:boot/grub",
-			boot_Device, boot_Unit, dest_Path);
+			"GRUB %s",
+			boot_Device, boot_Unit, dstPath);
 
 #elif GRUB == 1
+        CreateDir(dstPath);
+
         numgrubfiles = 3;
 		TEXT *grub_files[] =
 		{
-			"boot/grub/stage1",		"boot/grub/stage1",
-			"boot/grub/stage2_hdisk",	"boot/grub/stage2",
-			"boot/grub/menu.lst.DH0",	"boot/grub/menu.lst",
+			"stage1",		"stage1",
+			"stage2_hdisk",	"stage2",
+			"menu.lst.DH0",	"menu.lst",
             NULL
         };
 
         GRUB_COPY_FILE_LOOP
 
-        TEXT tmp[200];
+        TEXT tmp[256];
 
 		/* Add entry to boot MS Windows if present */
 		if ((part_no = FindWindowsPartition(boot_Device, boot_Unit)) != -1)
 		{
-			STRPTR menu_file_path = "boot/grub/menu.lst";
-			sprintf(tmp, "%s:%s", dest_Path, menu_file_path);
+			sprintf(tmp, "%s", dstPath);
+            AddPart(tmp, "menu.lst", 256);
 			BPTR menu_file = Open(tmp, MODE_READWRITE);
 			if (menu_file != NULL)
 			{
@@ -1717,8 +1943,8 @@ localecopydone:
 
 		sprintf(tmp,
 			"C:install-i386-pc DEVICE %s UNIT %d "
-			"GRUB %s:boot/grub FORCELBA",
-			boot_Device, boot_Unit, dest_Path, dest_Path);
+			"GRUB %s FORCELBA",
+			boot_Device, boot_Unit, dest_Path, dstPath);
 
 #else
 #error bootloader not supported
@@ -1856,114 +2082,52 @@ static LONG FindWindowsPartition(STRPTR device, LONG unit)
 	return partition_no;
 }
 
-int CreateDestDIR( Class *CLASS, Object *self, TEXT *dest_dir, TEXT * destination_Path) 
+// XXX: what should it return (?)
+int CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STRPTR destinationPath, 
+                        CONST_STRPTR directories[]) 
 {
-	struct Install_DATA* data = INST_DATA(CLASS, self);
-	ULONG   dstLen      = (strlen(destination_Path)+1);
-	ULONG   destDirLen  = dstLen + strlen(dest_dir) + 2;
-	TEXT    newDestDir[destDirLen];
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    int     numdirs = 0, dir_count = 0, skip_count = 0;
+    BPTR    lock = 0;
 
-	sprintf(newDestDir,"%s:",destination_Path);
-	AddPart(newDestDir, dest_dir, destDirLen);
+    while (directories[numdirs] != NULL) numdirs++;
 
-	BPTR destDirLock = Lock(newDestDir, ACCESS_READ);
-	if (destDirLock == NULL)
-	{
-		destDirLock = CreateDir(newDestDir);              /* create the newDestDir dir */
-		if(destDirLock == NULL) 
-		{
-			D(bug("[INSTALLER] CreateDestDIR: Failed to create '%s' dir!!\n",newDestDir));
-			data->inst_success = MUIV_Inst_Failed;
-			return FALSE;
-		}
-		D(bug("[INSTALLER] CreateDestDIR: Created dest dir '%s'\n",newDestDir));
-	}
-	else 
-	{
-		D(bug("[INSTALLER] CreateDestDIR: Dir '%s' already exists\n",newDestDir));
-	}
+    numdirs = (numdirs - 1) / 2;
 
-	UnLock(destDirLock);
+    D(bug("[INSTALLER.CDA] Copying %d Dirs...\n", numdirs));
 
-	return TRUE;
-}
+    while ((directories[dir_count] != NULL) && (data->inst_success == MUIV_Inst_InProgress))
+    {
+        ULONG newSrcLen = strlen(sourcePath) + strlen(directories[dir_count]) + 2;
+        ULONG newDstLen = strlen(destinationPath) + strlen(directories[dir_count + 1]) + 2;
 
-int CopyDirArray( Class *CLASS, Object *self, struct Install_DATA* data, TEXT *copy_files[], TEXT * destination_Path) 
-{
-        int         	numdirs = 0,
-			dir_count = 0,
-			skip_count = 0;
-        int		noOfFiles = 0;
-        BPTR		lock = 0;
-	ULONG					retry=0;
-        ULONG	srcLen = strlen(source_Path);
-        ULONG	dstLen = (strlen(destination_Path)+1);
+        TEXT srcDirs[newSrcLen + strlen(".info") ];
+        TEXT dstDirs[newDstLen + strlen(".info")];
+        
+        sprintf(srcDirs, "%s", sourcePath);
+        sprintf(dstDirs, "%s", destinationPath);
+        AddPart(srcDirs, directories[dir_count], newSrcLen);
+        AddPart(dstDirs, directories[dir_count+1], newDstLen);
 
-        SET(data->gauge2, MUIA_Gauge_Current, 0);
+        SET(data->actioncurrent, MUIA_Text_Contents, srcDirs);
 
-        while (copy_files[numdirs]!=NULL)
+        /* OK Now copy the contents */
+        DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, "#?", TRUE);
+
+        /* Check if folder has an icon */
+        CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
+        CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
+        if ((lock = Lock(srcDirs, SHARED_LOCK)) != NULL)
         {
-		numdirs += 1;
-        }
-        numdirs = (numdirs - 1)/2;
-
-	D(bug("[INSTALLER.CDA] Copying %d Dirs...\n",numdirs));
-
-        while (copy_files[dir_count]!=NULL)
-        {
-		ULONG newSrcLen = srcLen + strlen(copy_files[dir_count]) + 2;
-		ULONG newDstLen = dstLen + strlen(copy_files[dir_count+1]) + 2;
-
-		TEXT srcDirs[newSrcLen + strlen(".info") ];
-		TEXT dstDirs[newDstLen + strlen(".info")];
-
-		CopyMem(source_Path, srcDirs, srcLen + 1);
-		sprintf(dstDirs,"%s:",destination_Path);
-		AddPart(srcDirs, copy_files[dir_count], newSrcLen);
-		AddPart(dstDirs, copy_files[dir_count+1], newDstLen);
-
-		SET(data->actioncurrent, MUIA_Text_Contents, srcDirs);
-
-retrycdadir:
-		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
-		{
-			UnLock(lock);
-		}
-		else
-		{
-			retry = AskRetry( CLASS, self,"Couldn't find %s\nRetry?",dstDirs,"Yes","Skip","Cancel");
-			switch(retry)
-			{
-				case 0: /*retry */
-					goto retrycdadir;
-				case 1: /* skip */
-					skip_count += 1;
-					goto skipcdadir;
-				default: /* cancel */
-					DoMethod(self, MUIM_IC_QuitInstall);
-			}
-		}
-
-		noOfFiles = DoMethod(self, MUIM_IC_MakeDirs, srcDirs, dstDirs);
-
-		/* OK Now copy the contents */
-		noOfFiles += DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, noOfFiles, 0, TRUE);
-
-		/* check if folder has an icon */
-		CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
-		CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
-		if ((lock = Lock(srcDirs, ACCESS_READ)) != NULL)
-		{
-			UnLock(lock);
-			DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
-		}
-skipcdadir:
-		SET(data->gauge2, MUIA_Gauge_Current, ((100/(numdirs +1)) * (dir_count/2)));
-		/* Folder copied /skipped */
-		dir_count += 2;
+	        UnLock(lock);
+	        DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
         }
 
-	return ((dir_count/2) - skip_count);   /* Return no. of successfully copied dirs */
+        /* Folder copied or skipped */
+        dir_count += 2;
+    }
+
+    return ((dir_count/2) - skip_count);   /* Return no. of successfully copied dirs */
 }
 
 BOOL FormatPartition(CONST_STRPTR device, CONST_STRPTR name, ULONG dostype)
@@ -2057,254 +2221,6 @@ IPTR Install__MUIM_Format
 	return success;
 }
 
-IPTR Install__MUIM_IC_MakeDirs
-(
-    Class *CLASS, Object *self, struct MUIP_Dir* message 
-)
-{
-    struct Install_DATA *data    = INST_DATA(CLASS, self);
-
-    UBYTE *buffer = NULL;
-	LONG  noOfFiles=0;
-
-	if ((buffer = AllocVec(4096, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-	{
-		struct ExAllData *ead = (struct ExAllData*)buffer;
-		struct ExAllData *oldEad = ead;
-		struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-		eac->eac_LastKey = 0;
-
-		BPTR lock = Lock(message->dstDir, SHARED_LOCK);     /* check the dest dir exists */
-		if(lock == 0)
-		{
-			BPTR dstLock = CreateDir(message->dstDir);      /* no, so create it */
-			if(dstLock != NULL) UnLock(dstLock);
-			else
-			{
-				D(bug("[INSTALLER.MD] Failed to create dest dir: %s (Error: %d)\n", message->dstDir, IoErr()));
-				data->inst_success = MUIV_Inst_Failed;
-				return 0;
-			}
-		}
-		else
-		{
-			UnLock(lock);
-			lock = 0;
-		}
-
-		lock = Lock(message->srcDir, SHARED_LOCK);          /* get the source dir */
-		if(lock == 0)
-		{
-			D(bug("[INSTALLER.MD] Failed to lock dir when making the dirs: %s (Error: %d)\n", message->srcDir, IoErr()));
-			data->inst_success = MUIV_Inst_Failed;
-			return 0;
-		}
-
-		BOOL  loop;
-
-		//D(bug("[INSTALLER.MD] Locked and loaded\n"));
-
-		do
-		{
-			ead = oldEad;
-			loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
-
-			if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES)
-			{
-				break;
-			}
-
-			if(eac->eac_Entries != 0)
-			{
-				do
-				{
-					//D(bug("[INSTALLER.MD] Doin the entries: %d\n", ead->ed_Type));
-
-					switch(ead->ed_Type)
-					{
-						default:
-							//D(bug("[INSTALLER.MD] Type: %d\tName: %s\n", ead->ed_Type, ead->ed_Name));
-							break;
-						case ST_FILE:
-							noOfFiles++;
-
-#warning: TODO - add the file size to a global count for total time estimation		    
-
-							break;
-						case ST_USERDIR:
-						{
-							ULONG srcLen = strlen(message->srcDir);
-							ULONG dstLen = strlen(message->dstDir);
-							ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
-							ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
-
-							TEXT srcDir[newSrcLen];
-							TEXT dstDir[newDstLen];
-
-							CopyMem(message->srcDir, srcDir, srcLen + 1);
-							CopyMem(message->dstDir, dstDir, dstLen + 1);
-							if(AddPart(srcDir, ead->ed_Name, newSrcLen) && AddPart(dstDir, ead->ed_Name, newDstLen))
-							{
-								//D(bug("[INSTALLER.MD] R: %s -> %s \n", srcDir, dstDir));
-								BPTR dirLock = CreateDir(dstDir);
-								if(dirLock != NULL) UnLock(dirLock);
-								noOfFiles += DoMethod(self, MUIM_IC_MakeDirs, srcDir, dstDir);
-							}
-							else
-							{
-								data->inst_success = MUIV_Inst_Failed;
-								D(bug("[INSTALLER.MD] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
-							}
-							break;
-						}
-					}               
-					ead = ead->ed_Next;
-				} while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
-			}
-		} while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
-
-		FreeDosObject(DOS_EXALLCONTROL, eac);
-		UnLock(lock);
-
-		FreeVec(buffer);
-	}
-	else
-	{
-#warning "TODO: Warn out of mem creating dir tree"
-	}
-
-    return noOfFiles;
-}
-
-IPTR Install__MUIM_IC_CopyFiles
-(
-    Class *CLASS, Object *self, struct MUIP_CopyFiles* message 
-)
-{
-    struct Install_DATA *data = INST_DATA(CLASS, self);
-    UBYTE               *buffer = NULL;
-    BPTR                lock = Lock(message->srcDir, SHARED_LOCK);
-
-    if(lock == 0)
-    {
-        D(bug("[INSTALLER.CFs] Failed to lock dir/file when copying files: %s (Error: %d)\n", message->srcDir, IoErr()));
-        data->inst_success = MUIV_Inst_Failed;
-        return 0;
-    }
-
-	if ((buffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-	{
-		struct ExAllData *ead = (struct ExAllData*)buffer;
-		struct ExAllControl  *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
-		eac->eac_LastKey = 0;
-
-		BOOL  loop;
-		struct ExAllData *oldEad = ead;
-
-		do
-		{
-			ead = oldEad;
-			loop = ExAll(lock, ead, kExallBufSize, ED_COMMENT, eac);
-
-			if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
-
-			if(eac->eac_Entries != 0)
-			{
-				do
-				{
-					if(ead->ed_Type == ST_FILE || ead->ed_Type == ST_USERDIR)
-					{
-						ULONG srcLen = strlen(message->srcDir);
-						ULONG dstLen = strlen(message->dstDir);
-						ULONG newSrcLen = srcLen + strlen(ead->ed_Name) + 2;
-						ULONG newDstLen = dstLen + strlen(ead->ed_Name) + 2;
-
-						TEXT srcFile[newSrcLen];
-						TEXT dstFile[newDstLen];
-
-						CopyMem(message->srcDir, srcFile, srcLen + 1);
-						CopyMem(message->dstDir, dstFile, dstLen + 1);
-						if(AddPart(srcFile, ead->ed_Name, newSrcLen) && AddPart(dstFile, ead->ed_Name, newDstLen))
-						{
-							//D(bug("[INSTALLER] R: %s -> %s \n", srcFile, dstFile));
-							SET(data->actioncurrent, MUIA_Text_Contents, srcFile);
-
-							DoMethod(data->installer,MUIM_Application_InputBuffered);
-
-							switch(ead->ed_Type)
-							{
-								case ST_FILE:
-									DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
-
-									message->currFile++;
-									break;
-
-								case ST_USERDIR:
-									if(!message->recursive)
-										break;
-
-					if(data->instc_copt_undoenabled)
-					{
-						BPTR		dlock = 0;
-						if ((dlock = Lock(message->dstDir, ACCESS_READ))==NULL) break;
-						UnLock(dlock);
-
-						char		*tmppath = AllocVec((strlen(message->dstDir) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
-						BPTR	ulock=NULL;
-
-						IPTR		src_point = (((IPTR)(message->dstDir) + strlen(dest_Path))+1);
-
-						sprintf(tmppath,"%s/%s", instalationtmp_path, (char *)src_point);
-
-						D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
-						if ((ulock = Lock(tmppath, ACCESS_READ))!=NULL)
-						{
-							D(bug("[INSTALLER.CFs] Dir '%s' Exists - no nead to create\n",tmppath));
-							UnLock(ulock);
-						}
-						else
-						{
-							ulock = CreateDir(tmppath);
-							if(ulock != NULL) UnLock(ulock);
-							else
-							{
-								D(bug("[INSTALLER.CFs] Failed to create %s dir!!\n",tmppath));
-								data->inst_success = MUIV_Inst_Failed;
-								return 0;
-							}
-						}
-				
-						FreeVec(tmppath);
-					}
-									message->currFile = DoMethod(self, MUIM_IC_CopyFiles, srcFile, dstFile, message->noOfFiles, message->currFile, TRUE);
-									break;
-							}
-							ULONG percent = message->currFile == 0 ? 0 : (message->currFile*100)/message->noOfFiles;
-							SET(data->gauge2, MUIA_Gauge_Current, percent);
-						}
-						else
-						{
-							D(bug("[INSTALLER.CFs] BUG"));// %s%s (%d - %d - %d) %s\n",message->dir,  ead->ed_Name, dirlen, strlen(ead->ed_Name), newlen, dir));
-						}
-					}               
-					ead = ead->ed_Next;
-				} while((ead != NULL)&&(data->inst_success == MUIV_Inst_InProgress));
-			}
-		} while((loop)&&(data->inst_success == MUIV_Inst_InProgress));
-
-		FreeDosObject(DOS_EXALLCONTROL, eac);
-		UnLock(lock);
-
-		FreeVec(buffer);
-	}
-	else
-	{
-#warning "TODO: Warn out of mem copying files"
-	}
-
-    return message->currFile;
-}
-
 IPTR Install__MUIM_IC_CopyFile
 (
     Class *CLASS, Object *self, struct MUIP_CopyFile* message 
@@ -2321,6 +2237,13 @@ IPTR Install__MUIM_IC_CopyFile
 							to=NULL,
 							lock = 0;
 
+
+    /* Display copied file name */
+	SET(data->actioncurrent, MUIA_Text_Contents, message->srcFile);
+
+	DoMethod(data->installer,MUIM_Application_InputBuffered);
+
+    /* Check if destination file exists */
 	if((to = Open(message->dstFile, MODE_OLDFILE)))
 	{
 		/* File exists */
@@ -2358,14 +2281,14 @@ copy_backup:
 
 		char *tmppath=AllocVec((strlen(message->dstFile) - strlen(dest_Path))+2, MEMF_CLEAR | MEMF_PUBLIC );
 
-		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(instalationtmp_path) + 3, MEMF_CLEAR | MEMF_PUBLIC );
+		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(INSTALLAROS_TMP_PATH) + 3, MEMF_CLEAR | MEMF_PUBLIC );
 		undorecord->undo_dst = AllocVec(strlen(message->dstFile)+2, MEMF_CLEAR | MEMF_PUBLIC );
 
 		IPTR		src_point = (((IPTR)(message->dstFile) + strlen(dest_Path))+1),
 				src_len = (strlen(message->dstFile) - strlen(dest_Path));
 
 		CopyMem((CONST_APTR)src_point, tmppath, src_len);
-		sprintf(undorecord->undo_src,"%s/%s", instalationtmp_path, tmppath);
+		sprintf(undorecord->undo_src,"%s/%s", INSTALLAROS_TMP_PATH, tmppath);
 
 		CopyMem( message->dstFile, undorecord->undo_dst, strlen(message->dstFile));
 
@@ -2652,9 +2575,6 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 
         case MUIM_Format:
 		return Install__MUIM_Format(CLASS, self, message);
-            
-        case MUIM_IC_MakeDirs:
-		return Install__MUIM_IC_MakeDirs(CLASS, self, (struct MUIP_Dir*)message);
 
         case MUIM_IC_CopyFiles:
 		return Install__MUIM_IC_CopyFiles(CLASS, self, (struct MUIP_CopyFiles*)message);

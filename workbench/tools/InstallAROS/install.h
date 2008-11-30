@@ -146,7 +146,6 @@ static const char* KMsgNoDrives =
 #define MUIM_Partition          (0x00335557)
 #define MUIM_Format             (0x00335558)
 
-#define MUIM_IC_MakeDirs           (0x00335559)
 #define MUIM_IC_CopyFiles          (0x0033555a)
 #define MUIM_IC_CopyFile           (0x0033555b)
 
@@ -210,28 +209,12 @@ static const char* KMsgNoDrives =
 #define MUIV_Inst_Cancelled     (0x01)
 #define MUIV_Inst_Failed        (0x10)
 
-/*
-struct MUIP_Prepare
-{
-    ULONG MethodID;
-    Object* prepare;
-    Object* done;
-};
-*/
-struct MUIP_Dir
-{
-    STACKED ULONG MethodID;
-    STACKED CONST_STRPTR srcDir;
-    STACKED CONST_STRPTR dstDir;
-};
-
 struct MUIP_CopyFiles
 {
     STACKED ULONG MethodID;
     STACKED CONST_STRPTR srcDir;
     STACKED CONST_STRPTR dstDir;
-    STACKED ULONG noOfFiles;
-    STACKED ULONG currFile;
+    STACKED CONST_STRPTR fileMask;
     STACKED BOOL recursive;
 };
 
