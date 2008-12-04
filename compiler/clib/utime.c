@@ -19,18 +19,35 @@
 	struct utimbuf *buf)
 
 /*  FUNCTION
+	Change last access and last modification time of the given file to
+	times specified in given utimbuf structure. If buf is NULL, the
+	current time will be used instead.
+
+	The utimbuf structure contains of two fields:
+
+	time_t actime;  - last access time
+	time_t modtime; - last modification time
 
     INPUTS
+	filename - Name of the file
+	buf - Pointer to utimbuf structure describing specified time.
 
     RESULT
+	0 on success and -1 on error. If an error occurred, the global
+	variable errno is set.
 
     NOTES
+	This function can be used to set access and modification times with
+	a resolution of 1 second, use utimes() if you need better precision.
 
     EXAMPLE
 
     BUGS
+	Since AROS has no notion of last access time, actime field is silently
+	ignored, only modification time of the file is set.
 
     SEE ALSO
+	utimes()
 
     INTERNALS
 
