@@ -23,18 +23,32 @@
 	struct timeval tvp[2])
 
 /*  FUNCTION
+	Change last access and last modification time of the given file to
+	times specified in tvp array. If tvp is NULL, the current time will be
+	used instead.
 
     INPUTS
+	filename - Name of the file
+	buf - Pointer to an array of two timeval structures. First structure
+		specifies the last access time, second specifies the last
+		modification time
 
     RESULT
+	0 on success and -1 on error. If an error occurred, the global
+	variable errno is set.
 
     NOTES
+	The timeval structure has microsecond resolution, but in reality
+	this function has time resolution of 1 tick.
 
     EXAMPLE
 
     BUGS
+	Since AROS has no notion of last access time, it's silently ignored
+	and only modification time of the file is set.
 
     SEE ALSO
+	utime()
 
     INTERNALS
 
