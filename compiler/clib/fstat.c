@@ -23,10 +23,18 @@
 	struct stat *sb)
 
 /*  FUNCTION
+	Returns information about a file specified by an open file descriptor.
+	Information is stored in stat structure. Consult stat() documentation
+	for detailed description of that structure.
 
     INPUTS
+	filedes - File descriptor of the file
+	sb - Pointer to stat structure that will be filled by the fstat()
+	call.
 
     RESULT
+	0 on success and -1 on error. If an error occurred, the global
+	variable errno is set.
 
     NOTES
 
@@ -35,8 +43,10 @@
     BUGS
 
     SEE ALSO
+	stat()
 
     INTERNALS
+	Consult stat() documentation for details.
 
 ******************************************************************************/
 {
