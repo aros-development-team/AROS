@@ -21,29 +21,29 @@
 
 /*  SYNOPSIS */
 	const char *file, 
-        char *const argv[])
+	char *const argv[])
         
 /*  FUNCTION
-	Executes a file with specified arguments.
+	Executes a file with given name. The search paths for the executed
+	file are paths specified in the PATH environment variable.
 
     INPUTS
-        file - Name of the file to execute.
-        argv - Array of arguments given to main() function of the executed
-        file.
+	file - Name of the file to execute.
+	argv - Array of arguments given to main() function of the executed
+	file.
 
     RESULT
-        0 in case of success. In case of failure errno is set appropriately
-        and function returns -1.
+	Returns -1 and sets errno appropriately in case of error, otherwise
+	doesn't return.
 
     NOTES
 
     EXAMPLE
 
     BUGS
-        See execve documentation.
 
     SEE ALSO
-        execve()
+	execve(), execl(), execlp(), execv()
 	
     INTERNALS
 
