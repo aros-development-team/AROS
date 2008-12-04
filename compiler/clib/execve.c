@@ -130,11 +130,11 @@ LONG exec_command(BPTR seglist, char *taskname, char *args, ULONG stacksize)
 	Executes a file with given name.
 
     INPUTS
-        filename - Name of the file to execute.
-        argv - Array of arguments provided to main() function of the executed
-        file.
-        envp - Array of environment variables passed as environment to the
-        executed program.
+	filename - Name of the file to execute.
+	argv - Array of arguments provided to main() function of the executed
+	file.
+	envp - Array of environment variables passed as environment to the
+	executed program.
 
     RESULT
 	Returns -1 and sets errno appropriately in case of error, otherwise

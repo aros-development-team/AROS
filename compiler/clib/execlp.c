@@ -18,13 +18,20 @@
 
 /*  SYNOPSIS */
 	const char *file, 
-        const char *arg, ...)
+	const char *arg, ...)
         
 /*  FUNCTION
+	Executes a file with given name. The search paths for the executed
+	file are paths specified in the PATH environment variable.
 
     INPUTS
+	file - Name of the file to execute.
+	arg - First argument passed to the executed file.
+	... - Other arguments passed to the executed file.
 
     RESULT
+	Returns -1 and sets errno appropriately in case of error, otherwise
+	doesn't return.
 
     NOTES
 
@@ -33,6 +40,7 @@
     BUGS
 
     SEE ALSO
+	execve(), execl(), execv(), execvp()
 	
     INTERNALS
 
