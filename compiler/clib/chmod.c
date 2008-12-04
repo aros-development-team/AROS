@@ -29,22 +29,51 @@ ULONG prot_u2a(mode_t protect);
 	Change permission bits of a specified file.
 
     INPUTS
-	path - path to the file
-	mode - permission bits
+	path - Pathname of the file
+	mode - Bit mask created by ORing zero or more of the following
+	       permission bit masks:
+
+	       S_ISUID - set user id on execution
+	       S_ISGID - set group id on execution
+	       S_ISVTX - sticky bit (restricted deletion flag)
+	       S_IRUSR - allow owner to read
+	       S_IWUSR - allow owner to write
+	       S_IXUSR - allow owner to execute/search directory
+	       S_IRGRP - allow group to read
+	       S_IWGRP - allow group to write
+	       S_IXGRP - allow group to execute/search directory
+	       S_IROTH - allow others to read
+	       S_IWOTH - allow others to write
+	       S_IXOTH - allow others to execute/search directory
     
     RESULT
-    	Permission bits of the file given by path are changed accordingly
-    	to given mode.
+	0 on success and -1 on error. If an error occurred, the global
+	variable errno is set.
     
     NOTES
 
     EXAMPLE
 
     BUGS
+	S_ISUID and S_ISGID are silently ignored.
 
     SEE ALSO
+	fchmod()
 
     INTERNALS
+	Permission bit masks are converted to their respective dos.library
+	counterparts:
+
+	S_ISVTX to FIBF_SCRIPT
+	!S_IRUSR to FIBF_READ
+	!S_IWUSR to FIBF_WRITE
+	!S_IXUSR to FIBF_EXECUTE
+	S_IRGRP to FIBF_GRP_READ
+	S_IWGRP to FIBF_GRP_WRITE
+	S_IXGRP to FIBF_GRP_EXECUTE
+	S_IROTH to FIBF_OTR_READ
+	S_IWOTH to FIBF_OTR_WRITE
+	S_IXOTH to FIBF_OTR_EXECUTE
 
 ******************************************************************************/
 {

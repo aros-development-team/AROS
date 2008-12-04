@@ -33,23 +33,27 @@ ULONG prot_u2a(mode_t protect);
 	mode_t mode)
 
 /*  FUNCTION
+	Change permission bits of a file specified by an open file descriptor.
 
     INPUTS
+	filedes - File descriptor of the file
+	mode - Permission bits to set
 
     RESULT
+	0 on success and -1 on error. If an error occurred, the global
+	variable errno is set.
 
     NOTES
-	Not implemented.
+	See chmod() documentation for more details about the mode parameter.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+	chmod()
 
     INTERNALS
-
-    HISTORY
 
 ******************************************************************************/
 {
