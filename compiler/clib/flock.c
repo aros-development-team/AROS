@@ -42,20 +42,53 @@ void RemoveFromList(struct SignalSemaphore *sem);
 	int operation)
 
 /*  FUNCTION
+	Apply or remove an advisory lock on open file descriptor fd. Operation
+	argument can be one of the following constants:
+	
+	LOCK_SH - Place a shared lock on the file specified by fd. More that
+	          one process can hold a shared lock on a given file at a
+	          time.
+	
+	LOCK_EX - Place an exclusive lock on the file specified by fd. Only
+	          one process can hold an exclusive lock on a given file at
+	          a time.
+	
+	LOCK_UN - Remove an existing lock from the file specified by fd.
 
+	LOCK_EX operation blocks if there is a lock already placed on the
+	file. LOCK_SH blocks if there is an exclusive lock already placed
+	on the file. If you want to do a non-blocking request, OR the
+	operation specifier with LOCK_NB constant. In this case flock() will
+	return -1 instead of blocking and set errno to EWOULDBLOCK.
+	
+	Advisory locks created with flock() are shared among duplicated file
+	descriptors.
+	
     INPUTS
+	fd - File descriptor of the file you want to place or remove lock from.
+	operation - Lock operation to be performed.
 
     RESULT
+	0 on success, -1 on error. In case of error a global errno variable
+	is set.
 
     NOTES
+	Locks placed with flock() are only advisory, they place no
+	restrictions to any file or file descriptor operations.
 
     EXAMPLE
 
     BUGS
+	It's currently possible to remove lock placed by another process.
 
     SEE ALSO
 
     INTERNALS
+	Since advisory locks semantics is equal to exec.library semaphores
+	semantics, semaphores are used to implement locks. For a given file
+	a semaphore named FLOCK(path) is created where path is a full path to
+	the file. Locks held by a given process are stored on __flocks_list
+	and released during process exit.
 
 ******************************************************************************/
 {
