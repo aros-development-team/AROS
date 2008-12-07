@@ -113,6 +113,10 @@ static const char * KMsgNotAllFilesCopied =
 "were copied.\n"
 "Should the instalation continue?\n";
 
+static const char * KMsgPartitioningFailed =
+"Partitionig of disk failed. InstallAROS\n"
+"will now quit.";
+
 #if GRUB == 1
 static const char* KMsgGRUBNonFFSWarning =
 "You have selected a filesystem different\n"
@@ -194,15 +198,6 @@ static const char* KMsgNoDrives =
 #define MUIA_IC_License_Mandatory	(0x00335599)
 
 #define MUIA_IC_EnableUndo			(0x00335599)
-/* IO Retry Window */
-
-#define MUIA_OBJ_IO_RWindow     (0x0033559a)
-#define MUIA_OBJ_IO_RText       (0x0033559b)
-#define MUIA_OBJ_IO_ROpt1       (0x0033559c)
-#define MUIA_OBJ_IO_ROpt2		(0x0033559d)
-#define MUIA_OBJ_IO_ROpt3		(0x0033559e)
-
-#define MUIA_IIO_Flag			(0x0033559f)
 
 /* Install Results */
 
@@ -332,23 +327,7 @@ struct Install_DATA
 
     ULONG                       cur_width,
                                 cur_height;
-/** Start IO Related **/
 
-    APTR                        IO_IOTask;
-
-    Object                      *IO_RWindow;
-    Object                      *IO_RText;
-    Object                      *IO_ROpt1;
-    Object                      *IO_ROpt2;
-    Object                      *IO_ROpt3;
-
-	IPTR						IO_Flags;
-
-#define IIO_Selected_Opt1		1
-#define IIO_Selected_Opt2		2
-#define IIO_Selected_Opt3		3
-
-/** END IO Related **/
 	char                        *instc_lic_file;
 	APTR						instc_lic_buffer;
 
