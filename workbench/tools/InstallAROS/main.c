@@ -77,7 +77,7 @@
 #define GRUB_COPY_FILE_LOOP                                                     \
 SET(data->gauge2, MUIA_Gauge_Current, 0);                                       \
                                                                                 \
-while (grub_files[file_count]!=NULL)                                            \
+while (grub_files[file_count] != NULL && data->inst_success == MUIV_Inst_InProgress)    \
 {                                                                               \
     ULONG newSrcLen = strlen(srcPath) + strlen(grub_files[file_count]) + 2;     \
     ULONG newDstLen = strlen(dstPath) + strlen(grub_files[file_count + 1]) + 2; \
@@ -172,11 +172,7 @@ IPTR Install__OM_NEW
 
 	struct Install_DATA		*data = INST_DATA(CLASS, self);
 	BPTR					lock=NULL;
-/**/
-//	if (( data->IO_IOTask = InitTask())==0) /** LAUNCH THE IO TASK! **/
-//		return NULL;
-    
-/**/
+
 /* We will generate this info shortly */
 
 	/* IO Related */
@@ -205,12 +201,6 @@ IPTR Install__OM_NEW
 	data->back          		= (APTR)GetTagData(MUIA_OBJ_Back, (IPTR)NULL, message->ops_AttrList);
 	data->proceed       		= (APTR)GetTagData(MUIA_OBJ_Proceed, (IPTR)NULL, message->ops_AttrList);
 	data->cancel        		= (APTR)GetTagData(MUIA_OBJ_Cancel, (IPTR)NULL, message->ops_AttrList);
-/**/
-	data->IO_RWindow       	    = (APTR)GetTagData(MUIA_OBJ_IO_RWindow, (IPTR)NULL, message->ops_AttrList);
-	data->IO_RText         		= (APTR)GetTagData(MUIA_OBJ_IO_RText, (IPTR)NULL, message->ops_AttrList);
-	data->IO_ROpt1           	= (APTR)GetTagData(MUIA_OBJ_IO_ROpt1, (IPTR)NULL, message->ops_AttrList);
-	data->IO_ROpt2       		= (APTR)GetTagData(MUIA_OBJ_IO_ROpt2, (IPTR)NULL, message->ops_AttrList);
-	data->IO_ROpt3       		= (APTR)GetTagData(MUIA_OBJ_IO_ROpt3, (IPTR)NULL, message->ops_AttrList);
 /**/
 	data->instc_lic_file		= (char *)GetTagData(MUIA_IC_License_File, (IPTR)NULL, message->ops_AttrList);
 	data->instc_copt_licensemandatory	= (BOOL)GetTagData(MUIA_IC_License_Mandatory, (IPTR)FALSE, message->ops_AttrList);
@@ -344,48 +334,26 @@ D(bug("[INSTALLER.i] Prepaired UNDO list @ %p\n", &data->instc_undorecord));
 
 /**/
 
-ULONG AskRetry(Class *CLASS, Object *self, const char *Message, const char *File, 
-                const char *Opt1, const char *Opt2, const char *Opt3)
+ULONG AskRetry(Class *CLASS, Object *self, CONST_STRPTR message, CONST_STRPTR file, 
+                CONST_STRPTR opt1, CONST_STRPTR opt2, CONST_STRPTR opt3)
 {
-	struct Install_DATA 	*data    = INST_DATA(CLASS, self);
-	char				*Temp_Message=NULL;
+    struct Install_DATA *data = INST_DATA(CLASS, self);
+    STRPTR finalmessage = NULL;
+    STRPTR finaloptions = NULL;
+    ULONG result = -1;
 
-	Temp_Message = AllocVec(1000, MEMF_CLEAR | MEMF_PUBLIC );
+    finalmessage = AllocVec(strlen(message) + strlen(file) + 2, MEMF_CLEAR | MEMF_PUBLIC);
+    finaloptions = AllocVec(strlen(opt1) + strlen(opt2) + strlen(opt3) + 5, MEMF_CLEAR | MEMF_PUBLIC);
 
-	sprintf(Temp_Message, Message, File);
+    sprintf(finalmessage, message, file);
+    sprintf(finaloptions, "%s|%s|%s", opt1, opt2, opt3);
 
-	SET(data->IO_RText, MUIA_Text_Contents, Temp_Message);
+    result = MUI_RequestA(data->installer, data->window, 0, "IO Error has occured", 
+                            finaloptions, finalmessage, NULL);
+    FreeVec(finalmessage);
+    FreeVec(finaloptions);
 
-	SET(data->IO_ROpt1, MUIA_Text_Contents, Opt1);
-	SET(data->IO_ROpt2, MUIA_Text_Contents, Opt2);
-	SET(data->IO_ROpt3, MUIA_Text_Contents, Opt3);
-
-	SET(data->IO_ROpt1, MUIA_Selected, FALSE);
-	SET(data->IO_ROpt2, MUIA_Selected, FALSE);
-	SET(data->IO_ROpt3, MUIA_Selected, FALSE);
-
-	SET(data->IO_RWindow, MUIA_Window_Open, TRUE);
-	SET(data->window,MUIA_Window_Sleep,TRUE);
-
-	DoMethod(data->IO_ROpt1,MUIM_Notify,MUIA_Selected,TRUE, self,3,MUIM_Set,MUIA_IIO_Flag,IIO_Selected_Opt1);
-	DoMethod(data->IO_ROpt2,MUIM_Notify,MUIA_Selected,TRUE, self,3,MUIM_Set,MUIA_IIO_Flag,IIO_Selected_Opt2);
-	DoMethod(data->IO_ROpt3,MUIM_Notify,MUIA_Selected,TRUE, self,3,MUIM_Set,MUIA_IIO_Flag,IIO_Selected_Opt3);
-
-	data->IO_Flags = 0;
-
-	while (data->IO_Flags == 0) 
-    {
-        Delay(1);
-        DoMethod(data->installer, MUIM_Application_InputBuffered);
-    }
-
-	SET(data->window, MUIA_Window_Sleep, FALSE);
-	SET(data->IO_RWindow, MUIA_Window_Open, FALSE);
-
-	SET(data->IO_RText, MUIA_Text_Contents, NULL);
-	FreeVec(Temp_Message);
-
-	return (data->IO_Flags - 1);
+    return result - 1;
 }
 
 /* Return TRUE if we suspect a floppy disk */
@@ -753,6 +721,9 @@ IPTR Install__MUIM_IC_NextStep
 					SET(data->page,MUIA_Group_ActivePage, EInstallMessageStage);
 					data->instc_stage_next = EPartitioningStage;
                     data->instc_options_main->partitioned = FALSE;
+                    MUI_RequestA(data->installer, data->window, 0, "Error", 
+                        "Quit", KMsgPartitioningFailed, NULL);
+                    DoMethod(self, MUIM_IC_QuitInstall);
 					return 0;
 				}
                 data->instc_options_main->partitioned = TRUE;
@@ -2111,13 +2082,16 @@ LONG CopyDirArray(Class *CLASS, Object *self, CONST_STRPTR sourcePath, CONST_STR
         /* OK Now copy the contents */
         DoMethod(self, MUIM_IC_CopyFiles, srcDirs, dstDirs, "#?", TRUE);
 
-        /* Check if folder has an icon */
-        CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
-        CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
-        if ((lock = Lock(srcDirs, SHARED_LOCK)) != NULL)
+        if (data->inst_success == MUIV_Inst_InProgress)
         {
-	        UnLock(lock);
-	        DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
+            /* Check if folder has an icon */
+            CopyMem(".info", srcDirs + strlen(srcDirs) , strlen(".info") + 1);
+            CopyMem(".info", dstDirs + strlen(dstDirs) , strlen(".info") + 1);
+            if ((lock = Lock(srcDirs, SHARED_LOCK)) != NULL)
+            {
+	            UnLock(lock);
+	            DoMethod(self, MUIM_IC_CopyFile, srcDirs, dstDirs);
+            }
         }
 
         /* Folder copied */
@@ -2304,8 +2278,6 @@ BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath, struct InstallC_
 
     D(bug("[INSTALLER.CF] Backup '%s' @ '%s'\n", undorecord->undo_dst, undorecord->undo_src));
 
-    printf("[INSTALLER.CF] Backup '%s' @ '%s @ %s'\n", undorecord->undo_dst, undorecord->undo_src, tmp);
-
     undorecord->undo_method=MUIM_IC_CopyFile;
 
     /* Create backup directory */    
@@ -2444,6 +2416,7 @@ copy_retry:
 							goto copy_skip;
 						default:
 							DoMethod(self, MUIM_IC_QuitInstall);
+                            goto copy_skip;
 					}
 				}
 		
@@ -2467,6 +2440,7 @@ copy_retry:
 							goto copy_skip;
 						default:
 							DoMethod(self, MUIM_IC_QuitInstall);
+                            goto copy_skip;
 					}
 				}
 			} while ((s == kBufSize)&&(data->inst_success == MUIV_Inst_InProgress));
@@ -2482,6 +2456,7 @@ copy_retry:
 			data->inst_success = MUIV_Inst_Failed;
 		}
 		Close(from);
+
 copy_skip:
 		/* Add the undo record */
 		if (undorecord!=NULL)
@@ -2581,28 +2556,11 @@ IPTR Install__MUIM_Reboot
 	return TRUE; /* Keep the compiler happy... */
 }
 
-
 IPTR Install__OM_SET
 (
     Class *CLASS, Object *self, struct opSet *message
 )
 {
-	struct Install_DATA *data = INST_DATA(CLASS, self);
-
-	struct TagItem      *tstate = message->ops_AttrList, *tag = NULL;
-
-	while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
-	{
-		switch (tag->ti_Tag)
-		{
-		case MUIA_IIO_Flag:
-			data->IO_Flags = tag->ti_Data;
-			return TRUE;
-		default:
-			break;
-		}
-	}
-
 	return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
@@ -2616,7 +2574,7 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
         case OM_SET: 
 		return Install__OM_SET(CLASS, self, (struct opSet *) message);
 
-        case MUIM_FindDrives:
+       case MUIM_FindDrives:
 		return Install__MUIM_FindDrives(CLASS, self, message);
 
         case MUIM_IC_NextStep:   
@@ -2705,14 +2663,6 @@ int main(int argc,char *argv[])
 	Object			*gad_back    = SimpleButton("<< _Back...");
 	Object			*gad_proceed = SimpleButton(KMsgProceed);
 	Object			*gad_cancel  = SimpleButton("_Cancel");
-
-/**/
-	Object			*io_retrywnd = NULL;            /* IO retry objects */
-	Object			*io_retrymessage = NULL;
-
-	Object			*gad_io_opt1    = SimpleButton("");
-	Object			*gad_io_opt2    = SimpleButton("");
-	Object			*gad_io_opt3    = SimpleButton("");
 
 /**/
 	Object			*grub_drive = NULL;
@@ -3125,25 +3075,6 @@ int main(int argc,char *argv[])
 			End),
 		End),
 
-		SubWindow, (IPTR) (io_retrywnd = WindowObject,
-			MUIA_Window_Title, (IPTR) "IO Error has occured",
-			MUIA_Window_SizeGadget, TRUE,
-			WindowContents, (IPTR) VGroup,
-				Child, (IPTR) HVSpace,
-				Child, (IPTR) (io_retrymessage = TextObject, MUIA_Text_PreParse, (IPTR) "" MUIX_C, MUIA_Text_Contents, (IPTR)" ",End),
-				Child, (IPTR) HVSpace,
-				Child, (IPTR) HGroup,
-					MUIA_Weight,0,
-					Child, (IPTR) HSpace(0),
-					Child, (IPTR) HGroup,
-						Child, (IPTR) gad_io_opt1,
-						Child, (IPTR) gad_io_opt2,
-						Child, (IPTR) gad_io_opt3,
-					End,
-				End,
-			End,
-		End),
-
 	End;
 
 	if (!app)
@@ -3279,12 +3210,6 @@ int main(int argc,char *argv[])
                 MUIA_OBJ_Back,(IPTR) gad_back,
                 MUIA_OBJ_Proceed,(IPTR) gad_proceed,
                 MUIA_OBJ_Cancel,(IPTR) gad_cancel,
-/**/
-                MUIA_OBJ_IO_RWindow,(IPTR) io_retrywnd,
-                MUIA_OBJ_IO_RText, (IPTR) io_retrymessage,
-                MUIA_OBJ_IO_ROpt1, (IPTR) gad_io_opt1,
-                MUIA_OBJ_IO_ROpt2, (IPTR) gad_io_opt2,
-                MUIA_OBJ_IO_ROpt3, (IPTR) gad_io_opt3,
 
 		MUIA_IC_EnableUndo, TRUE,
 
