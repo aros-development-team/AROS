@@ -108,6 +108,11 @@ static const char* KMsgCancelDanger =
 static const char* KMsgProceed =
 "_Proceed";
 
+static const char * KMsgNotAllFilesCopied =
+"Not all files in '%s'\n"
+"were copied.\n"
+"Should the instalation continue?\n";
+
 #if GRUB == 1
 static const char* KMsgGRUBNonFFSWarning =
 "You have selected a filesystem different\n"
