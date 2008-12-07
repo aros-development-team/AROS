@@ -1322,43 +1322,6 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
         }
     }
 
-    /* Create undo directory if needed */
-    /* XXX: Is this really needed? Can't undo directories be created during file copying (== only when needed?) */
-    /* XXX: Undo records should also contain volume name, DH0:Tools should be T:Installer/InstallAROS/DH0/Tools */
-    if(data->instc_copt_undoenabled)
-    {
-        BPTR    ulock = NULL;
-        IPTR    src_point = (((IPTR)(dstDir) + strlen(dest_Path))+1);
-        TEXT    tmppath[(strlen(dstDir) - strlen(dest_Path))
-                            + strlen(INSTALLAROS_TMP_PATH) + 3];
-        /* FIXME: This works only becuse strlen("DH0") == strlen("DH1")
-         * The volume name should be remove from string on other way, not
-         * depending on length of dest_Path
-         */
-
-        sprintf(tmppath,"%s/%s", INSTALLAROS_TMP_PATH, (char *)src_point);
-
-        D(bug("[INSTALLER.CFs] Creating UNDO dir %s \n", tmppath));			
-
-        if ((ulock = Lock(tmppath, SHARED_LOCK))!=NULL)
-        {
-            D(bug("[INSTALLER.CFs] Dir '%s' Exists - no nead to create\n",tmppath));
-            UnLock(ulock);
-        }
-        else
-        {
-            ulock = CreateDir(tmppath);
-            if(ulock != NULL) UnLock(ulock);
-            else
-            {
-                D(bug("[INSTALLER.CFs] Failed to create %s dir!!\n",tmppath));
-                UnLock(srcDirLock);
-                data->inst_success = MUIV_Inst_Failed;
-                return -1;
-            }
-        }
-    }
-
     /* Allocate buffer for ExAll */
     buffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC);
     
@@ -1416,9 +1379,7 @@ LONG InternalCopyFiles(Class *CLASS, Object *self, CONST_STRPTR srcDir, CONST_ST
                 
                 if (ead->ed_Type == ST_FILE)
                 {
-                    DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
-                    
-                    totalFilesCopiedThis++;
+                    totalFilesCopiedThis += (ULONG)DoMethod(self, MUIM_IC_CopyFile, srcFile, dstFile);
                 
                     if (totalFiles > 0)
                     {
@@ -1502,7 +1463,13 @@ IPTR Install__MUIM_IC_CopyFiles
     /* Check final condition */
     if ((data->inst_success == MUIV_Inst_InProgress) && (totalFiles != totalFilesCopied))
     {
-        return -1; ///XXX: report error
+        TEXT msg[strlen(KMsgNotAllFilesCopied) + strlen(message->srcDir) + 3];
+        sprintf(msg, KMsgNotAllFilesCopied, message->srcDir);
+
+        if(MUI_RequestA(data->installer, data->window, 0, "Error", "Continue|*Quit", msg , NULL) != 1)
+            DoMethod(self, MUIM_IC_QuitInstall);
+
+        return totalFilesCopied;
     }
 
     return totalFilesCopied;
@@ -2251,6 +2218,141 @@ IPTR Install__MUIM_Format
 	return success;
 }
 
+BPTR RecursiveCreateDir(CONST_STRPTR dirpath)
+{
+    /* Will create directory even if top level directory does not exist */
+    
+    BPTR lock = NULL;
+    ULONG lastdirseparator = 0;
+    ULONG dirpathlen = strlen(dirpath);
+    STRPTR tmpdirpath = AllocVec(dirpathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
+
+    CopyMem(dirpath, tmpdirpath, dirpathlen);
+
+    /* Recurvice directory creation */
+    while(TRUE)
+    {
+        if (lastdirseparator >= dirpathlen) break;
+
+        for (; lastdirseparator < dirpathlen; lastdirseparator++)
+            if (tmpdirpath[lastdirseparator] == '/') break;
+
+        tmpdirpath[lastdirseparator] = '\0'; /* cut */
+
+        /* Unlock any lock from previous interation. Last iteration lock will be returned. */
+        if (lock != NULL)
+        {
+            UnLock(lock);
+            lock = NULL;
+        }
+
+        /* Check if directory exists */
+        lock = Lock(tmpdirpath, SHARED_LOCK);
+        if (lock == NULL)
+        {
+            lock = CreateDir(tmpdirpath);
+            if (lock == NULL)
+                break; /* Error with creation */
+        }
+    
+        tmpdirpath[lastdirseparator] = '/'; /* restore */
+        lastdirseparator++;
+    }
+    
+    FreeVec(tmpdirpath);
+    return lock;
+}
+
+BOOL BackUpFile(CONST_STRPTR filepath, CONST_STRPTR backuppath, struct InstallC_UndoRecord * undorecord)
+{
+    ULONG filepathlen = strlen(filepath);
+    ULONG backuppathlen = strlen(backuppath);
+    ULONG i = 0;
+    STRPTR tmp = NULL;
+    STRPTR pathpart = NULL;
+    BPTR lock = NULL, from = NULL, to = NULL;
+    static TEXT buffer[kBufSize];
+    BOOL err = FALSE;
+
+    if (undorecord == NULL)
+        return FALSE;
+
+    undorecord->undo_src = AllocVec(filepathlen + backuppathlen + 3, MEMF_CLEAR | MEMF_PUBLIC);
+    undorecord->undo_dst = AllocVec(filepathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
+
+    /* Create backup file name */
+    tmp = AllocVec(filepathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
+    CopyMem(filepath, tmp, filepathlen);
+    for (i = 0; i < filepathlen; i++)
+        if (tmp[i] == ':') tmp[i] = '/'; /* Substitute : with / */
+    sprintf(undorecord->undo_src, "%s/%s", backuppath, tmp);
+    FreeVec(tmp);
+
+    /* Create source file name */
+    CopyMem(filepath, undorecord->undo_dst, filepathlen);
+    
+    /* Create backup file path */
+    tmp = AllocVec(strlen(undorecord->undo_src) + 2, MEMF_CLEAR | MEMF_PUBLIC);
+    CopyMem(undorecord->undo_src, tmp, strlen(undorecord->undo_src));
+    pathpart = PathPart(tmp);
+    if (pathpart == NULL)
+    {
+        FreeVec(tmp);
+        return FALSE;
+    }
+    *pathpart = '\0' /* 'cut' string at end of path */
+
+    D(bug("[INSTALLER.CF] Backup '%s' @ '%s'\n", undorecord->undo_dst, undorecord->undo_src));
+
+    printf("[INSTALLER.CF] Backup '%s' @ '%s @ %s'\n", undorecord->undo_dst, undorecord->undo_src, tmp);
+
+    undorecord->undo_method=MUIM_IC_CopyFile;
+
+    /* Create backup directory */    
+    if ((lock = Lock(tmp, SHARED_LOCK)) != NULL)
+    {
+	    D(bug("[INSTALLER.CF] Dir '%s' Exists - no need to create\n", tmp));
+	    UnLock(lock);
+    }
+    else
+    {
+	    lock = RecursiveCreateDir(tmp);
+	    if(lock != NULL) 
+            UnLock(lock);
+	    else
+	    {
+            D(bug("[INSTALLER.CF] Failed to create %s dir!!\n",tmp));
+            FreeVec(tmp);
+            return FALSE;
+	    }
+    }
+
+    FreeVec(tmp);
+
+    /* Copy file */
+    if((from = Open(undorecord->undo_dst, MODE_OLDFILE)))
+    {
+	    if((to = Open(undorecord->undo_src, MODE_NEWFILE)))
+	    {
+		    LONG s = 0;
+        
+		    do
+		    {
+			    if ((s = Read(from, buffer, kBufSize)) == -1) {err = TRUE; break;};
+		
+			    if (Write(to, buffer, s) == -1) {err = TRUE; break;};
+
+		    } while (s == kBufSize && !err);
+
+		    Close(to);
+	    }
+
+	    Close(from);
+    }
+    
+    return !err;
+}
+
 IPTR Install__MUIM_IC_CopyFile
 (
     Class *CLASS, Object *self, struct MUIP_CopyFile* message 
@@ -2260,12 +2362,10 @@ IPTR Install__MUIM_IC_CopyFile
 	static TEXT 				buffer[kBufSize];
 	struct	InstallC_UndoRecord	*undorecord=NULL;
 	ULONG					retry=0;
-
-	BOOL						copysuccess=FALSE;
-
+    ULONG filescopied = 0;
 	BPTR 					from=NULL,
-							to=NULL,
-							lock = 0;
+							to=NULL;
+							
 
 
     /* Display copied file name */
@@ -2307,72 +2407,14 @@ copy_backup:
 
 	if(data->instc_copt_undoenabled)
 	{
-		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC ))==NULL)DoMethod(self, MUIM_IC_QuitInstall);
-
-		char *tmppath=AllocVec((strlen(message->dstFile) - strlen(dest_Path))+2, MEMF_CLEAR | MEMF_PUBLIC );
-
-		undorecord->undo_src = AllocVec((strlen(message->dstFile) - strlen(dest_Path))+strlen(INSTALLAROS_TMP_PATH) + 3, MEMF_CLEAR | MEMF_PUBLIC );
-		undorecord->undo_dst = AllocVec(strlen(message->dstFile)+2, MEMF_CLEAR | MEMF_PUBLIC );
-
-		IPTR		src_point = (((IPTR)(message->dstFile) + strlen(dest_Path))+1),
-				src_len = (strlen(message->dstFile) - strlen(dest_Path));
-
-		CopyMem((CONST_APTR)src_point, tmppath, src_len);
-		sprintf(undorecord->undo_src,"%s/%s", INSTALLAROS_TMP_PATH, tmppath);
-
-		CopyMem( message->dstFile, undorecord->undo_dst, strlen(message->dstFile));
-
-		D(bug("[INSTALLER.CF] Backup '%s' @ '%s'\n", undorecord->undo_dst, undorecord->undo_src));
-
-		undorecord->undo_method=MUIM_IC_CopyFile;
-
-		FreeVec(tmppath);
-		IPTR		undosrcpath = (((IPTR)FilePart(undorecord->undo_src) - (IPTR)(undorecord->undo_src)) - 1);
-		tmppath=AllocVec(undosrcpath+2, MEMF_CLEAR | MEMF_PUBLIC );
-
-		CopyMem(undorecord->undo_src, tmppath, undosrcpath);
-
-		if ((lock = Lock(tmppath, ACCESS_READ))!=NULL)
-		{
-			D(bug("[INSTALLER.CF] Dir '%s' Exists - no nead to create\n",tmppath));
-			UnLock(lock);
-		}
-		else
-		{
-			lock = CreateDir(tmppath);
-			if(lock != NULL) UnLock(lock);
-			else
-			{
-				D(bug("[INSTALLER.CF] Failed to create %s dir!!\n",tmppath));
-				data->inst_success = MUIV_Inst_Failed;
-				return 0;
-			}
-		}
-
-		FreeVec(tmppath);
-
-		if((from = Open(undorecord->undo_dst, MODE_OLDFILE)))
-		{
-			if((to = Open(undorecord->undo_src, MODE_NEWFILE)))
-			{
-				LONG	s=0,
-						err = 0;
-		    
-				do
-				{
-					if ((s = Read(from, buffer, kBufSize)) == -1) return 0;
-			
-					DoMethod(data->installer,MUIM_Application_InputBuffered);
-			
-					if (Write(to, buffer, s) == -1) return 0;
-
-				} while ((s == kBufSize && !err)&&(data->inst_success == MUIV_Inst_InProgress));
-				Close(to);
-			}
-			Close(from);
-		}
-		to = NULL;
-		from = NULL;
+		if ((undorecord = AllocMem(sizeof(struct InstallC_UndoRecord), MEMF_CLEAR | MEMF_PUBLIC )) == NULL)
+            DoMethod(self, MUIM_IC_QuitInstall);
+        
+        if (!BackUpFile(message->dstFile, INSTALLAROS_TMP_PATH, undorecord))
+        {
+            data->inst_success = MUIV_Inst_Failed;
+            return 0;
+        }
 	}
 
 	/* Main copy code */
@@ -2382,8 +2424,7 @@ copy_retry:
 	{
 		if((to = Open(message->dstFile, MODE_NEWFILE)))
 		{
-			LONG	s=0,
-				err = 0;
+			LONG	s=0;
 
 			do
 			{
@@ -2428,8 +2469,11 @@ copy_retry:
 							DoMethod(self, MUIM_IC_QuitInstall);
 					}
 				}
-			} while ((s == kBufSize && !err)&&(data->inst_success == MUIV_Inst_InProgress));
-			copysuccess=TRUE;
+			} while ((s == kBufSize)&&(data->inst_success == MUIV_Inst_InProgress));
+            
+            if (data->inst_success == MUIV_Inst_InProgress)
+                filescopied = 1;
+
 			Close(to);
 		}
 		else
@@ -2442,7 +2486,7 @@ copy_skip:
 		/* Add the undo record */
 		if (undorecord!=NULL)
 		{
-			if (copysuccess) 
+			if (filescopied > 0) 
 			{
 				D(bug("[INSTALLER.CF] Adding undo record @ %x to undo list @ %x \n", undorecord, &data->instc_undorecord));
 				AddHead(&data->instc_undorecord, (struct Node *)undorecord);
@@ -2466,7 +2510,8 @@ copy_skip:
 		D(bug("[INSTALLER.CF] Failed to open: %s [ioerr=%d]\n", message->srcFile, IoErr()));
 		data->inst_success = MUIV_Inst_Failed;
 	}
-	return 0;
+
+	return filescopied;
 }
 
 IPTR Install__MUIM_IC_UndoSteps
