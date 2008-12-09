@@ -11,8 +11,10 @@
 /*********************************************************************************************/
 
 #define DEBUG 0
+#define DERROR(x)
 #define DASYNC(x)
 
+#define __DOS_NOLIBBASE__
 #include <aros/debug.h>
 #include <aros/hostthread.h>
 #include <aros/system.h>
@@ -29,7 +31,6 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <dos/bptr.h>
-#define __DOS_NOLIBBASE__
 #include <proto/dos.h>
 #include <proto/arossupport.h>
 #include <proto/expansion.h>
@@ -221,7 +222,7 @@ ULONG prot_a2w(ULONG protect)
   ULONG uprot = 0;
   
   /* The following flags are low-active! */
-  if ((protect & (FIBF_WRITE|FIBF_DELETE)) == FIBF_WRITE|FIBF_DELETE)
+  if ((protect & (FIBF_WRITE|FIBF_DELETE)) == (FIBF_WRITE|FIBF_DELETE))
 	uprot = FILE_ATTRIBUTE_READONLY;
   /* The following flags are high-active again. */
   if (protect & FIBF_ARCHIVE)
@@ -281,6 +282,43 @@ static void FileTime2DateStamp(struct DateStamp *ds, UQUAD ft)
     ds->ds_Minute = 0;
     ds->ds_Tick = 0;
 }
+
+/*********************************************************************************************/
+
+/* Make an AROS error-code (<dos/dos.h>) out of a Windows error-code. */
+static ULONG u2a[][2]=
+{
+  { ERROR_PATH_NOT_FOUND, ERROR_OBJECT_NOT_FOUND },
+  { ERROR_ACCESS_DENIED, ERROR_OBJECT_WRONG_TYPE },
+  { ERROR_NO_MORE_FILES, ERROR_NO_MORE_ENTRIES },
+  { ERROR_NOT_ENOUGH_MEMORY, ERROR_NO_FREE_STORE },
+  { ERROR_FILE_NOT_FOUND, ERROR_OBJECT_NOT_FOUND },
+  { ERROR_FILE_EXISTS, ERROR_OBJECT_EXISTS },
+  { ERROR_WRITE_PROTECT, ERROR_WRITE_PROTECTED },
+  { WIN32_ERROR_DISK_FULL, ERROR_DISK_FULL },
+  { ERROR_DIR_NOT_EMPTY, ERROR_DIRECTORY_NOT_EMPTY },
+  { ERROR_SHARING_VIOLATION, ERROR_OBJECT_IN_USE },
+  { ERROR_LOCK_VIOLATION, ERROR_OBJECT_IN_USE },
+  { WIN32_ERROR_BUFFER_OVERFLOW, ERROR_OBJECT_TOO_LARGE },
+  { ERROR_INVALID_NAME, ERROR_OBJECT_NOT_FOUND },
+  { 0, 0 }
+};
+
+ULONG Errno_w2a(ULONG e)
+{
+  ULONG i;
+  
+  DERROR(printf("[EmulHandler] Windows error code: %lu\n", e));
+  for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
+	if(u2a[i][0]==e) {
+	  DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
+	  return u2a[i][1];
+	}
+  DERROR(printf("[EmulHandler] Unknown error code\n"));
+  return ERROR_UNKNOWN;
+}
+
+#define Errno() Errno_w2a(GetLastError())
 
 /*********************************************************************************************/
 
@@ -566,45 +604,30 @@ static LONG startup(struct emulbase *emulbase)
 		emulbase->stderr_handle = INVALID_HANDLE_VALUE;
 
 	    if (emulbase->stdin_handle != INVALID_HANDLE_VALUE) {
-		fhi=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+		fhi=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
 		if(fhi!=NULL)
 		{
 		    D(kprintf("[Emulhandler] allocated fhi\n"));
-		    fhi->hostname   = NULL;
-		    fhi->name	    = NULL;
-		    fhi->pathname   = NULL; /* just to make sure... */
-		    fhi->volumename = NULL;
-		    fhi->dl	    = NULL;
 		    fhi->type	    = FHD_FILE;
 		    fhi->fd	    = emulbase->stdin_handle;
 		    emulbase->eb_stdin = fhi;
 		}
 	    }
 	    if (emulbase->stdout_handle != INVALID_HANDLE_VALUE) {
-		fho=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+		fho=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
 		if(fho!=NULL)
 		{
 		    D(kprintf("[Emulhandler] startup allocated fho\n"));
-		    fho->hostname   = NULL;
-		    fho->name	    = NULL;
-		    fho->pathname   = NULL; /* just to make sure... */
-		    fho->volumename = NULL;
-		    fho->dl	    = NULL;
 		    fho->type	    = FHD_FILE;
 		    fho->fd	    = emulbase->stdout_handle;
 		    emulbase->eb_stdout = fho;
 		}
 	    }
 	    if (emulbase->stderr_handle != INVALID_HANDLE_VALUE) {
-		fhe=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+		fhe=(struct filehandle *)AllocMem(sizeof(struct filehandle), MEMF_PUBLIC|MEMF_CLEAR);
 		if(fhe!=NULL)
 		{
 		    D(kprintf("[Emulhandler] startup allocated fhe\n"));
-		    fhe->hostname   = NULL;
-		    fhe->name	    = NULL;
-		    fhe->pathname   = NULL; /* just to make sure... */
-		    fhe->volumename = NULL;
-		    fhe->dl	    = NULL;
 		    fhe->type	    = FHD_FILE;
 		    fhe->fd	    = emulbase->stderr_handle;
 		    emulbase->eb_stderr = fhe;
@@ -619,6 +642,8 @@ static LONG startup(struct emulbase *emulbase)
 	    if (emulbase->HostThread) {
 	      D(bug("[Emulhandler] Created host thread 0x%08lX, handle 0x%08lX, ID %lu\n", emulbase->HostThread, emulbase->HostThread->handle, emulbase->HostThread->id));
 	      HT_AddIntServer(&emulbase->EmulInt, emulbase->HostThread);
+
+
 	      /*
 	         Allocate space for the string from same mem,
 	         Use AROS_BSTR_MEMSIZE4LEN macro for space to
@@ -1245,8 +1270,9 @@ static BOOL new_volume(struct IOFileSys *iofs, struct emulbase *emulbase)
 		
 	  sp[cmplen+1] = tmp;
 		
-	  if (!err)
-	  {
+	  if (err)
+	      err = Errno_w2a(err);
+	  else {
 		newunixpath = AllocVec(strlen(unixpath) + strlen(home) + 1, MEMF_CLEAR);
 		if (newunixpath)
 		{
@@ -1397,9 +1423,7 @@ AROS_LH1(void, beginio,
 	  if (fh->type == FHD_FILE)
 	  {
 		if (fh->fd == emulbase->stdout_handle)
-		{
-		  fh->fd = emulbase->stdin_handle;
-		}
+		    fh->fd = emulbase->stdin_handle;
 		if (fh->fd == emulbase->stdin_handle) {
 		    DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", iofs->io_Union.io_READ.io_Length));
 		    /* TODO: This stuff will be probably replaced with overlapped I/O and hostthread.resource
@@ -1413,7 +1437,7 @@ AROS_LH1(void, beginio,
 		    	Wait(SIGF_BLIT);
 		    	DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
 		    	iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
-		    	error = emulbase->EmulMsg.error;
+		    	error = Errno_w2a(emulbase->EmulMsg.error);
 		    	if (!error) {
 		            char *c, *d;
 
@@ -1451,31 +1475,11 @@ AROS_LH1(void, beginio,
 	  if (fh->type == FHD_FILE)
 	  {
 		if (fh->fd == emulbase->stdin_handle)
-		{
 		  fh->fd=emulbase->stdout_handle;
-		}
-		if ((fh->fd == emulbase->stdout_handle) || (fh->fd == emulbase->stderr_handle)) {
-		    DASYNC(bug("[emul] Writing %lu bytes asynchronously \n", iofs->io_Union.io_WRITE.io_Length));
-		    /* TODO: This stuff will be probably replaced with overlapped I/O and hostthread.resource
-		     * will be removed */
-		    emulbase->EmulMsg.op = EMUL_CMD_WRITE;
-		    emulbase->EmulMsg.fh = fh->fd;
-		    emulbase->EmulMsg.addr = iofs->io_Union.io_WRITE.io_Buffer;
-		    emulbase->EmulMsg.len = iofs->io_Union.io_WRITE.io_Length;
-		    emulbase->EmulMsg.task = FindTask(NULL);
-		    if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
-		    	Wait(SIGF_BLIT);
-		    	DASYNC(bug("[emul] Wrote %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
-		    	iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
-		    	error = emulbase->EmulMsg.error;
-		    } else {
-		        DASYNC(bug("[emul] FSA_WRITE: HT_PutMsg failed!\n"));
-		        error = ERROR_UNKNOWN;
-		    }
-		} else {
-		    if (!DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL))
-		        error = Errno();
-		}
+		Forbid();
+		error = DoWrite(fh->fd, iofs->io_Union.io_WRITE.io_Buffer, iofs->io_Union.io_WRITE.io_Length, &iofs->io_Union.io_WRITE.io_Length, NULL);
+		Permit();
+		error = error ? 0 : Errno();
 	  }
 	  else
 	  {
@@ -1697,11 +1701,11 @@ AROS_LH1(void, beginio,
 	  struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 	  struct InfoData *id = iofs->io_Union.io_INFO.io_Info;
 
-	  if (StatFS(fh->hostname, id)) {
+	  error = StatFS(fh->hostname, id);
+	  if (error)
+	      error = Errno_w2a(error);
+	  else
 	      id->id_VolumeNode = fh->dl;
-	      error = 0;
-	  } else
-	      error = Errno();
 	  break;
 	}
 	  
@@ -1754,7 +1758,6 @@ const char *EmulSymbols[] = {
     "EmulDelete",
     "EmulGetHome",
     "EmulStatFS",
-    "EmulErrno",
     NULL
 };
     
@@ -1773,6 +1776,7 @@ const char *KernelSymbols[] = {
     "FindClose",
     "CreateDirectoryA",
     "SetFileAttributesA",
+    "GetLastError",
     "CreateHardLinkA",
     "CreateSymbolicLinkA",
     NULL

@@ -46,14 +46,25 @@ int mykprintf(const UBYTE * fmt, ...)
     int r;
 
     va_start(args, fmt);
+    if (SysBase)
+        Forbid();
     r = HostIFace->VKPrintF(fmt, args);
+    if (SysBase)
+        Permit();
     va_end(args);
     return r;
 }
 
 int myvkprintf (const UBYTE *fmt, va_list args)
 {
-    return HostIFace->VKPrintF(fmt, args);
+    int res;
+    
+    if (SysBase)
+        Forbid();
+    res = HostIFace->VKPrintF(fmt, args);
+    if (SysBase)
+        Permit();
+    return res;
 }
 
 int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, ...)
@@ -62,7 +73,11 @@ int myrkprintf(const STRPTR foo, const STRPTR bar, int baz, const UBYTE * fmt, .
   int r;
 
   va_start(args, fmt);
+  if (SysBase)
+      Forbid();
   r = HostIFace->VKPrintF(fmt, args);
+  if (SysBase)
+      Permit();
   va_end(args);
   return r;
 }
@@ -114,24 +129,19 @@ AROS_LH1I(void, KrnDeleteContext,
     AROS_LIBFUNC_EXIT
 }
 
-void SetGlobalKernelBase(struct KernelBase *kBase)
-{
-    KernelBase = kBase;
-}
-
 /* auto init */
-static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
+static int Kernel_Init(LIBBASETYPEPTR kBase)
 {
   int i;
 
-  SetGlobalKernelBase(LIBBASE);
-  D(mykprintf("[Kernel] init (KernelBase=%p)\n",LIBBASE));
-  D(mykprintf("[Kernel] -1 : %p -2 : %p\n", *((APTR*)(((APTR*)LIBBASE)-1)),*((APTR*)(((APTR*)LIBBASE)-2))));
+  KernelBase = kBase;
+  D(mykprintf("[Kernel] init (KernelBase=%p)\n", kBase));
+  D(mykprintf("[Kernel] -1 : %p -2 : %p\n", *((APTR*)(((APTR*)kBase)-1)),*((APTR*)(((APTR*)kBase)-2))));
   for (i=0; i < EXCEPTIONS_NUM; i++)
-        NEWLIST(&LIBBASE->kb_Exceptions[i]);
+        NEWLIST(&kBase->kb_Exceptions[i]);
 
   for (i=0; i < INTERRUPTS_NUM; i++)
-        NEWLIST(&LIBBASE->kb_Interrupts[i]);
+        NEWLIST(&kBase->kb_Interrupts[i]);
   D(mykprintf("[Kernel] KrnGetBootInfo yields %p\n",Kernel_KrnGetBootInfo()));
   return 1;
 }

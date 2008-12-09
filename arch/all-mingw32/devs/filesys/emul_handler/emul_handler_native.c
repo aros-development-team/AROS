@@ -26,25 +26,6 @@
 HMODULE kernel_lib;
 void (*CauseIRQ)(unsigned char irq, void *data);
 
-/* Make an AROS error-code (<dos/dos.h>) out of a Windows error-code. */
-static DWORD u2a[][2]=
-{
-  { ERROR_PATH_NOT_FOUND, AROS_ERROR_OBJECT_NOT_FOUND },
-  { ERROR_ACCESS_DENIED, ERROR_OBJECT_WRONG_TYPE },
-  { ERROR_NO_MORE_FILES, ERROR_NO_MORE_ENTRIES },
-  { ERROR_NOT_ENOUGH_MEMORY, ERROR_NO_FREE_STORE },
-  { ERROR_FILE_NOT_FOUND, AROS_ERROR_OBJECT_NOT_FOUND },
-  { ERROR_FILE_EXISTS, ERROR_OBJECT_EXISTS },
-  { ERROR_WRITE_PROTECT, ERROR_WRITE_PROTECTED },
-  { ERROR_DISK_FULL, AROS_ERROR_DISK_FULL },
-  { ERROR_DIR_NOT_EMPTY, ERROR_DIRECTORY_NOT_EMPTY },
-  { ERROR_SHARING_VIOLATION, ERROR_OBJECT_IN_USE },
-  { ERROR_LOCK_VIOLATION, ERROR_OBJECT_IN_USE },
-  { ERROR_BUFFER_OVERFLOW, ERROR_OBJECT_TOO_LARGE },
-  { ERROR_INVALID_NAME, AROS_ERROR_OBJECT_NOT_FOUND },
-  { 0, 0 }
-};
-
 /*********************************************************************************************/
 
 unsigned long __declspec(dllexport) EmulGetHome(const char *name, char *home)
@@ -55,7 +36,7 @@ unsigned long __declspec(dllexport) EmulGetHome(const char *name, char *home)
   DWINAPI(printf("[EmulHandler] SHGetFolderPath()\n"));
   res = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_DEFAULT, home);
   if (res)
-      return AROS_ERROR_OBJECT_NOT_FOUND;
+      return ERROR_FILE_NOT_FOUND;
   else
       return 0;
 }
@@ -102,23 +83,6 @@ LONG __declspec(dllexport) EmulStat(const char *path, WIN32_FILE_ATTRIBUTE_DATA 
   return retval;
 }
 
-ULONG __declspec(dllexport) EmulErrno(void)
-{
-  ULONG i;
-  DWORD e;
-  
-  DWINAPI(printf("[EmulHandler] GetLastError\n"));
-  e = GetLastError();
-  DERROR(printf("[EmulHandler] Windows error code: %lu\n", e));
-  for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
-	if(u2a[i][0]==e) {
-	  DERROR(printf("[EmulHandler] Translated to AROS error code: %lu\n", u2a[i][1]));
-	  return u2a[i][1];
-	}
-  DERROR(printf("[EmulHandler] Unknown error code\n"));
-  return ERROR_UNKNOWN;
-}
-
 int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
 {
   LPTSTR c;
@@ -134,7 +98,7 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
       c += 2;
       while (*c != '\\') {
           if (*c == 0)
-              return AROS_ERROR_OBJECT_NOT_FOUND;
+              return ERROR_FILE_NOT_FOUND;
           c++;
       }
       c++;
@@ -142,7 +106,7 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
   /* Skip everything up to the first '\'. */
   while (*c != '\\') {
       if (*c == 0)
-          return AROS_ERROR_OBJECT_NOT_FOUND;
+          return ERROR_FILE_NOT_FOUND;
       c++;
   }
   /* Temporarily terminate the path */
@@ -161,7 +125,7 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
       id->id_InUse = TRUE;
       return 0;
   }
-  return EmulErrno();
+  return GetLastError();
 }
 
 DWORD __declspec(dllexport) EmulThread(struct ThreadHandle *THandle)
@@ -184,7 +148,7 @@ DWORD __declspec(dllexport) EmulThread(struct ThreadHandle *THandle)
 	        res = WriteFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
 	    	break;
 	    }
-	    emsg->error = res ? 0 : EmulErrno();
+	    emsg->error = res ? 0 : GetLastError();
 	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
 	    HT_CauseInterrupt(emsg);
 	} else {

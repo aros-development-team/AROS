@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Emit one character via raw IO
@@ -54,7 +54,9 @@ extern struct HostInterface *HostIFace;
     /* Don't write 0 bytes */
     if (chr)
     {
+        Forbid();
         HostIFace->PutChar(chr);
+        Permit();
     }
 
     AROS_LIBFUNC_EXIT
