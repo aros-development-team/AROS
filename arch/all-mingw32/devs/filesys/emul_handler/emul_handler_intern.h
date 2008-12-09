@@ -52,7 +52,6 @@ struct emulbase
     struct Interrupt		  EmulInt;
 };
 
-
 struct filehandle
 {
     char * hostname; /* full host's pathname (includes volume root prefix 		       */
@@ -74,11 +73,9 @@ struct EmulInterface
     ULONG (*EmulDelete)(char *filename);
     unsigned long (*EmulGetHome)(char *name, char *home);
     ULONG (*EmulStatFS)(char *path, struct InfoData *id);
-    ULONG (*EmulErrno)(void);
 };
 
 #define Stat EmulIFace->EmulStat
-#define Errno EmulIFace->EmulErrno
 #define Delete EmulIFace->EmulDelete
 #define GetHome EmulIFace->EmulGetHome
 #define StatFS EmulIFace->EmulStatFS
@@ -104,6 +101,7 @@ struct KernelInterface
     __attribute__((stdcall)) ULONG (*FindClose)(void *hFindFile);
     __attribute__((stdcall)) ULONG (*CreateDirectory)(char *lpPathName, void *lpSecurityAttributes);
     __attribute__((stdcall)) ULONG (*SetFileAttributes)(char *lpFileName, ULONG dwFileAttributes);
+    __attribute__((stdcall)) ULONG (*GetLastError)(void);
     __attribute__((stdcall)) ULONG (*CreateHardLink)(char *lpFileName, char *lpExistingFileName, void *lpSecurityAttributes);
     __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
 };
@@ -122,6 +120,7 @@ struct KernelInterface
 #define FindEnd KernelIFace->FindClose
 #define MKDir KernelIFace->CreateDirectory
 #define Chmod KernelIFace->SetFileAttributes
+#define GetLastError KernelIFace->GetLastError
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
 
