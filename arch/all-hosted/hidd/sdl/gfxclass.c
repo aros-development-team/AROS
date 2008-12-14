@@ -276,7 +276,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         }
 
         desc = AllocPooled(tagpool, 16);
-        sprintf(desc, "SDL:%dx%d", modes[i]->w, modes[i]->h);
+        __sprintf(desc, "SDL:%dx%d", modes[i]->w, modes[i]->h);
 
         synctags[i] = AllocPooled(tagpool, sizeof(struct TagItem) * 4);
         synctags[i][0].ti_Tag = aHidd_Sync_HDisp;       synctags[i][0].ti_Data = modes[i]->w;
