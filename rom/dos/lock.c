@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Locks a file or directory.
@@ -192,7 +192,7 @@ LONG InternalLock(CONST_STRPTR name, LONG accessMode,
             do
             {
                 continue_loop = FALSE;
-                if(!(softname = AllocVec(buffer_size, MEMF_ANY)))
+                if(!(softname = AllocVec(buffer_size, MEMF_PUBLIC)))
                 {
                     error2 = ERROR_NO_FREE_STORE;
                     break;
