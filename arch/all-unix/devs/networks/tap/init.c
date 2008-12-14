@@ -125,7 +125,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
 
         /* and create the virtual network */
         if (error == 0) {
-            snprintf(unit->name, IFNAMSIZ, TAP_IFACE_FORMAT, unit->num);
+            __sprintf(unit->name, TAP_IFACE_FORMAT, unit->num);
 
             memset(&ifr, 0, sizeof(struct ifreq));
             ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
@@ -181,7 +181,7 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             unit->iosyncport = CreateMsgPort();
 
             /* make a unique name for this unit */
-            snprintf(unit->iotask_name, sizeof(unit->iotask_name), TAP_TASK_FORMAT, (int) unit->num);
+            __sprintf(unit->iotask_name, TAP_TASK_FORMAT, (int) unit->num);
 
             /* make it fly */
             unit->iotask = CreateNewProcTags(NP_Entry,      (IPTR) tap_iotask,
