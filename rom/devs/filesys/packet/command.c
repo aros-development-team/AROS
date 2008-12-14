@@ -506,9 +506,10 @@ void packet_handle_request(struct IOFileSys *iofs, struct PacketBase *PacketBase
             dp->dp_Arg4 = (IPTR) mkbstr(pkt->pool, iofs->io_Union.io_RENAME.io_NewName);
             break;
 
-        case FSA_READ_SOFTLINK: /* XXX untested */
-            D(bug("[packet] READ_SOFTLINK: lock 0x%08x (%s)\n",
-                handle->actual, handle_desc(handle)));
+        case FSA_READ_SOFTLINK:
+            D(bug("[packet] READ_SOFTLINK: lock 0x%08x (%s) name '%s'\n",
+                handle->actual, handle_desc(handle),
+                iofs->io_Union.io_READ_SOFTLINK.io_Filename));
 
             dp->dp_Type = ACTION_READ_LINK;
             dp->dp_Arg1 = (IPTR) handle->actual;
@@ -978,6 +979,7 @@ AROS_UFH3(void, packet_reply,
 
         case ACTION_READ_LINK:
             iofs->io_Union.io_READ_SOFTLINK.io_Size = dp->dp_Res1;
+            iofs->io_DosError = dp->dp_Res1 < 0 ? dp->dp_Res2 : 0;
             break;
 
         case ACTION_MORE_CACHE:
