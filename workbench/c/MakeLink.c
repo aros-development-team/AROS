@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -22,14 +22,14 @@
 
     FUNCTION
 
-        Create a link to a file
+        Create a link to a file.
 
     INPUTS
 
         FROM   --  The name of the link
         TO     --  The name of the file or directory to link to
-        HARD   --  If specified, the link will be a hard-link; default is
-                   to create a soft-link
+        HARD   --  If specified, the link will be a hard link; default is
+                   to create a soft link
         FORCE  --  Allow a hard-link to point to a directory
 
     RESULT
@@ -38,13 +38,12 @@
 
     NOTES
 
-        Avoid using hard links in FFS disk devices. AROS FFS may not hande
-        these in a proper manner.
+        Not all file systems support links.
 
     EXAMPLE
 
-        Makelink ls c:list
-         Creates an 'ls' file with a symlink to the 'list' command in C:.
+        Makelink ls C:List
+         Creates an 'ls' file with a soft link to the 'List' command in C:.
 
     BUGS
 
@@ -57,10 +56,8 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
-#include <dos/stdio.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include <utility/tagitem.h>
 #include <aros/debug.h>
 
 const TEXT version[] = "$VER: MakeLink 41.1 (2.6.2000)\n";
@@ -72,91 +69,59 @@ int __nocommandline;
 int main(void)
 {
     int  retval = RETURN_FAIL;
-    IPTR args[] = { NULL, NULL, (IPTR)FALSE, (IPTR)FALSE };
+    IPTR args[] = { (IPTR)NULL, (IPTR)NULL, (IPTR)FALSE, (IPTR)FALSE };
     struct RDArgs *rda;
-    UBYTE *buffer;
-    int bufferincrease = 256;
-    int buffersize = bufferincrease;
 
     rda = ReadArgs("FROM/A,TO/A,HARD/S,FORCE/S", args, NULL);
 
     if(rda != NULL)
     {
-        BPTR lock;
-
-        lock = Lock((STRPTR)args[ARG_TO], SHARED_LOCK);
-
-        if(lock != NULL)
+        if(args[ARG_HARD])
         {
-            struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+            BPTR lock;
 
-            if(fib != NULL)
+            lock = Lock((STRPTR)args[ARG_TO], SHARED_LOCK);
+
+            if(lock != NULL)
             {
-                if(Examine(lock, fib) == DOSTRUE)
+                struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+
+                if(fib != NULL)
                 {
-                    if(args[ARG_HARD])
+                    if(Examine(lock, fib))
                     {
                         /* Directories may only be hard-linked to if FORCE is
                            specified */
                         if(fib->fib_DirEntryType >= 0 && !(BOOL)args[ARG_FORCE])
                         {
-                            PutStr("Hard-links to directories require the FORCE"
-                                "keyword\n");
+                            PutStr("Hard links to directories require the"
+                                " FORCE keyword\n");
                         }
                         else
+                        {
                             /* Check loops? */
-                            if(MakeLink((STRPTR)args[ARG_FROM],
-                                lock,
-                                FALSE) == DOSTRUE)
+                            if(MakeLink((STRPTR)args[ARG_FROM], lock, FALSE))
                                 retval = RETURN_OK;
                             else
                                 PrintFault(IoErr(), "MakeLink");
-                    }
-                    else
-                    {
-                        do
-                        {
-                            if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
-                            {
-                                SetIoErr(ERROR_NO_FREE_STORE);
-                                PrintFault(IoErr(), "MakeLink");
-                                break;
-                            }
-
-                            /* Get the full path of oldpath */
-                            if(NameFromLock(lock, buffer, buffersize))
-                            {
-                                if(MakeLink((STRPTR)args[ARG_FROM],
-                                    (STRPTR)buffer,
-                                    TRUE) == DOSTRUE)
-                                    retval = RETURN_OK;
-                                else
-                                {
-                                    PrintFault(IoErr(), "MakeLink");
-                                    break;
-                                }
-                            }
-                            else if(IoErr() != ERROR_LINE_TOO_LONG)
-                            {
-                                PrintFault(IoErr(), "MakeLink");
-                                break;
-                            }
-                            FreeVec(buffer);
-                            buffersize += bufferincrease;
                         }
-                        while(retval != RETURN_OK);
                     }
+
+                    FreeDosObject(DOS_FIB, fib);
                 }
 
-                FreeDosObject(DOS_FIB, fib);
+                UnLock(lock);
             }
-
-            UnLock(lock);
+            else
+            {
+                PutStr((STRPTR)args[ARG_TO]);
+                PrintFault(IoErr(), "");
+            }
         }
         else
         {
-            PutStr((STRPTR)args[ARG_TO]);
-            PrintFault(IoErr(), "");
+            if(MakeLink((STRPTR)args[ARG_FROM], (STRPTR)args[ARG_TO], TRUE))
+                retval = RETURN_OK;
         }
     }
     else
