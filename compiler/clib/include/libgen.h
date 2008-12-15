@@ -1,8 +1,17 @@
-#ifndef _LINGEN_H
-#define _LINGEN_H
+/*
+    Copyright © 2007, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
-extern char *basename(char *);
-extern char *dirname(char *);
+#ifndef _LIBGEN_H
+#define _LIBGEN_H
+
+__BEGIN_DECLS
+
+char *basename(char *);
+char *dirname(char *);
+
+__END_DECLS
 
 #endif
 
