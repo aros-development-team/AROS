@@ -1,10 +1,12 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright © 2008, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #ifndef _LIBGEN_H
 #define _LIBGEN_H
+
+#include <aros/system.h>
 
 __BEGIN_DECLS
 
