@@ -44,7 +44,7 @@ void atomic_inc_l(LONG* p)
         CONST IPTR old = *p;
         CONST IPTR new = old + 1;
         
-        success = set_atomic(p, old, new);
+        success = set_atomic((IPTR*) p, old, new);
     }
 }
 
