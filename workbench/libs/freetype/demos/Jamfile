@@ -6,6 +6,12 @@ if $(FT2DEMO_TOP) != $(DOT)
   SubDir  FT2DEMO_TOP ;
 }
 
+# compile FreeType library here!
+#
+FT2_TOP ?= ../freetype2 ;
+
+SubInclude FT2_TOP ;
+
 FT2DEMO_SRC   = [ FT2DEMO_SubDir  src ] ;
 FT2DEMO_GRAPH = [ FT2DEMO_SubDir  graph ] ;
 

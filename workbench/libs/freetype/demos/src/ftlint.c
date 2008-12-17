@@ -160,7 +160,7 @@
 #ifdef  TEST_PSNAMES
       {
         const char*  ps_name = FT_Get_Postscript_Name( face );
-        
+
         printf( "[%s] ", ps_name ? ps_name : "." );
       }
 #endif

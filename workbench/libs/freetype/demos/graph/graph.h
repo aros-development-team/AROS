@@ -4,7 +4,7 @@
  *
  *    Graphics Subsystem interface
  *
- *  Copyright 1999, 2000, 2001, 2002
+ *  Copyright 1999, 2000, 2001, 2002, 2003, 2004, 2005
  *     - The FreeType Development Team - www.freetype.org
  *
  ***************************************************************************/
@@ -29,12 +29,6 @@
   /* define the global error variable */
   extern int  grError;
 
-  /* initialisation */
-  extern int  grInit( void );
-
-  /* finalisation */
-  extern void grDone( void );
-
 
   /* pixel mode constants */
   typedef enum grPixelMode
@@ -50,6 +44,8 @@
     gr_pixel_mode_rgb32,       /* 32-bits mode - 16 million colors */
     gr_pixel_mode_lcd,         /* horizontal RGB-decimated         */
     gr_pixel_mode_lcdv,        /* vertical RGB-decimated           */
+    gr_pixel_mode_lcd2,        /* horizontal BGR-decimated         */
+    gr_pixel_mode_lcdv2,       /* vertical BGR-decimated           */
 
     gr_pixel_mode_max          /* don't remove */
 
@@ -163,7 +159,6 @@
   *    writes a given glyph bitmap to a target surface.
   *
   * <Input>
-  *    is_bgr  :: 1 if BGR, 0 if RGB
   *    target  :: handle to target bitmap
   *    glyph   :: handle to source glyph bitmap
   *    x       :: position of left-most pixel of glyph image in target surface
@@ -188,13 +183,22 @@
   **********************************************************************/
 
   extern int
-  grBlitGlyphToBitmap( int        is_bgr,
-                       grBitmap*  target,
+  grBlitGlyphToBitmap( grBitmap*  target,
                        grBitmap*  glyph,
                        grPos      x,
                        grPos      y,
                        grColor    color );
 
+
+  /* values must be in 0..255 range */
+  extern grColor
+  grFindColor( grBitmap*  target,
+               int        red,
+               int        green,
+               int        blue,
+               int        alpha );
+
+#if 0
 
  /**********************************************************************
   *
@@ -221,6 +225,7 @@
                                 grPos      height,
                                 grColor    color );
 
+#endif /* 0 */
 
 
  /**********************************************************************
@@ -300,6 +305,27 @@
   extern  void  grDoneBitmap( grBitmap*  bit );
 
 
+  extern void
+  grFillHLine( grBitmap*  target,
+               int        x,
+               int        y,
+               int        width,
+               grColor    color );
+
+  extern void
+  grFillVLine( grBitmap*  target,
+               int        x,
+               int        y,
+               int        height,
+               grColor    color );
+
+  extern void
+  grFillRect( grBitmap*   target,
+              int         x,
+              int         y,
+              int         width,
+              int         height,
+              grColor     color );
 
 
  /*************************************************************************/
@@ -370,7 +396,7 @@
   *    the device chain returned by this function. For example, if an
   *    X11 device was compiled in the library, it will be part of
   *    the returned device chain only if a connection to the display
-  *    could be establisged
+  *    could be established
   *
   *    If no driver could be initialised, this function returns NULL.
   *
@@ -379,6 +405,19 @@
   extern
   grDeviceChain*  grInitDevices( void );
 
+
+ /**********************************************************************
+  *
+  * <Function>
+  *    grDoneDevices
+  *
+  * <Description>
+  *    Finalize all devices activated with grInitDevices.
+  *
+  **********************************************************************/
+
+  extern
+  void  grDoneDevices( void );
 
 
  /**********************************************************************
@@ -476,7 +515,7 @@
   extern grSurface*  grNewSurface( const char*  device,
                                    grBitmap*    bitmap );
 
-
+  extern void  grDoneSurface( grSurface*  surface );
 
  /**********************************************************************
   *
@@ -631,5 +670,23 @@
                          int         event_mask,
                          grEvent    *event );
 
+ /**********************************************************************
+  *
+  * <Function>
+  *    grSetGlyphGamma
+  *
+  * <Description>
+  *    set the gamma-correction coefficient. This is only used to
+  *    blit glyphs
+  *
+  * <Input>
+  *    gamma      :: gamma value. <= 0 to select sRGB transfer function
+  *
+  **********************************************************************/
+
+  extern
+  void  grSetGlyphGamma( double  gamma_value );
+
+/* */
 
 #endif /* GRAPH_H */

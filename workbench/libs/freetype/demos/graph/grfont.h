@@ -7,6 +7,7 @@
 
   extern void grGotobitmap( grBitmap*  bitmap );
   extern void grSetMargin( int right, int top );
+  extern void grSetPixelMargin( int  right, int  top );
   extern void grGotoxy ( int x, int y );
 
   extern void grWrite  ( const char*  string );

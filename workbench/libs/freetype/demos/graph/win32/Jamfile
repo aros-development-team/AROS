@@ -4,8 +4,8 @@
 SubDir  FT2DEMO_TOP graph win32 ;
 
 SubDirHdrs  $(GRAPH_INCLUDE) ;
-                   
-if $(TOOLSET) = MINGW
+
+if $(JAM_TOOLSET) = MINGW
 {
   GRAPH_LINKLIBS = "-luser32 -lgdi32" ;
 }

@@ -204,7 +204,7 @@
 
  /************************************************************************
   *
-  * Technical note : how the OS/2 Presntation Manager driver works
+  * Technical note : how the OS/2 Presentation Manager driver works
   *
   * PM is, in my opinion, a bloated and over-engineered graphics
   * sub-system, even though it has lots of nice features. Here are

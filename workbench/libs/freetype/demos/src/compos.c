@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-1998 by                                                  */
+/*  Copyright 1996-1998, 2001, 2003 by                                      */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  compos: this is a very simple program used to test the flag             */
@@ -139,7 +139,7 @@
           int  has_scale;
 
           error = FT_Load_Glyph( face, id, FT_LOAD_NO_RECURSE );
-          if (!error && slot->format == ft_glyph_format_composite)
+          if ( !error && slot->format == FT_GLYPH_FORMAT_COMPOSITE )
           {
             int           n;
             FT_SubGlyph*  subg = slot->subglyphs;

@@ -155,6 +155,26 @@
   }
 
 
+
+  extern
+  void  grDoneSurface( grSurface*  surface )
+  {
+    if (surface)
+    {
+      /* first of all, call the device-specific destructor */
+      surface->done(surface);
+
+      /* then remove the bitmap if we're owner */
+      if (surface->owner)
+        grFree( surface->bitmap.buffer );
+
+      surface->owner         = 0;
+      surface->bitmap.buffer = 0;
+      grFree( surface );
+    }
+  }
+
+
  /**********************************************************************
   *
   * <Function>
@@ -339,24 +359,4 @@
     return surface->listen_event( surface, event_mask, event );
   }
 
-
-#if 0
-  static
-  void  gr_done_surface( grSurface*  surface )
-  {
-    if (surface)
-    {
-      /* first of all, call the device-specific destructor */
-      surface->done(surface);
-
-      /* then remove the bitmap if we're owner */
-      if (surface->owner)
-        grFree( surface->bitmap.buffer );
-
-      surface->owner         = 0;
-      surface->bitmap.buffer = 0;
-      grFree( surface );
-    }
-  }
-#endif
 

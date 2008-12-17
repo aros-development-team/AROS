@@ -5,7 +5,7 @@
  *  This is the driver for displaying inside a window under X11,
  *  used by the graphics utility of the FreeType test suite.
  *
- *  Copyright 1999-2000, 2001, 2002 by Antoine Leca, David Turner
+ *  Copyright 1999-2000, 2001, 2002, 2005, 2006 by Antoine Leca,
  *  David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  This file is part of the FreeType project, and may only be used
@@ -16,10 +16,14 @@
  *
  ******************************************************************/
 
+#ifdef __VMS
+#include <vms_x_fix.h>
+#endif
+
 #include <grobjs.h>
 #include <grdevice.h>
 
-#define TEST
+#define xxTEST
 
 #ifdef TEST
 #include "grfont.h"
@@ -857,8 +861,7 @@ typedef  unsigned long   uint32;
     &gr_x11_format_bgr0888,
     &gr_x11_format_rgb8880,
     &gr_x11_format_bgr8880,
-
-    NULL,
+    NULL
   };
 
   typedef struct  grX11DeviceRec_
@@ -868,6 +871,7 @@ typedef  unsigned long   uint32;
     Cursor              busy;
     const grX11Format*  format;
     int                 scanline_pad;
+    Visual*             visual;
 
   } grX11Device;
 
@@ -880,6 +884,9 @@ typedef  unsigned long   uint32;
   {
     if ( x11dev.display )
     {
+      XFreeCursor( x11dev.display, x11dev.busy );
+      XFreeCursor( x11dev.display, x11dev.idle );
+
       XCloseDisplay( x11dev.display );
       x11dev.display = NULL;
     }
@@ -889,23 +896,19 @@ typedef  unsigned long   uint32;
   static int
   gr_x11_device_init( void )
   {
-    grX11Device*  dev = &x11dev;
-
-
     memset( &x11dev, 0, sizeof ( x11dev ) );
 
     XrmInitialize();
 
-
-    dev->display = XOpenDisplay( "" );
-    if ( !dev->display )
+    x11dev.display = XOpenDisplay( "" );
+    if ( !x11dev.display )
     {
       fprintf( stderr, "cannot open X11 display\n" );
       return -1;
     }
 
-    dev->idle = XCreateFontCursor( dev->display, XC_left_ptr );
-    dev->busy = XCreateFontCursor( dev->display, XC_watch );
+    x11dev.idle = XCreateFontCursor( x11dev.display, XC_left_ptr );
+    x11dev.busy = XCreateFontCursor( x11dev.display, XC_watch );
 
     {
       int          count;
@@ -913,8 +916,8 @@ typedef  unsigned long   uint32;
       XDepth*      formats;
       XVisualInfo  templ;
 
-
-      formats = XListPixmapFormats( dev->display, &count );
+      templ.screen = DefaultScreen( x11dev.display );
+      formats      = XListPixmapFormats( x11dev.display, &count );
 
 #ifdef TEST
       printf( "available pixmap formats\n" );
@@ -939,42 +942,42 @@ typedef  unsigned long   uint32;
         case 32:
           {
             int           count2;
-            XVisualInfo*  visuals;
             XVisualInfo*  visual;
+            XVisualInfo*  visuals;
 
-
-            templ.depth = format->depth;
-            visuals     = XGetVisualInfo( dev->display,
-                                          VisualDepthMask,
+            templ.depth  = format->depth;
+            visuals      = XGetVisualInfo( x11dev.display,
+                                           VisualScreenMask | VisualDepthMask,
                                           &templ,
                                           &count2 );
 
             for ( visual = visuals; count2 > 0; count2--, visual++ )
             {
 #ifdef TEST
-              const char*  string = "unknown";
-
+              const char*  visualClass;
 
               switch ( visual->Class )
               {
               case TrueColor:
-                string = "TrueColor";
+                visualClass = "TrueColor";
                 break;
               case DirectColor:
-                string = "DirectColor";
+                visualClass = "DirectColor";
                 break;
               case PseudoColor:
-                string = "PseudoColor";
+                visualClass = "PseudoColor";
                 break;
               case StaticGray:
-                string = "StaticGray";
+                visualClass = "StaticGray";
                 break;
               case StaticColor:
-                string = "StaticColor";
+                visualClass = "StaticColor";
                 break;
               case GrayScale:
-                string = "GrayScale";
+                visualClass = "GrayScale";
                 break;
+              default:
+                visualClass = "unknown";
               }
 
               printf( ">   RGB %04lx:%04lx:%04lx, colors %3d, bits %2d  %s\n",
@@ -983,7 +986,7 @@ typedef  unsigned long   uint32;
                       visual->blue_mask,
                       visual->colormap_size,
                       visual->bits_per_rgb,
-                      string );
+                      visualClass );
 #endif /* TEST */
 
               /* compare to the list of supported formats */
@@ -1004,13 +1007,19 @@ typedef  unsigned long   uint32;
                        visual->green_mask     == cur_format->x_green_mask     &&
                        visual->blue_mask      == cur_format->x_blue_mask      )
                   {
-                    dev->format       = cur_format;
-                    dev->scanline_pad = format->scanline_pad;
+                    x11dev.format       = cur_format;
+                    x11dev.scanline_pad = format->scanline_pad;
+                    x11dev.visual       = visual->visual;
+
+                    XFree( visuals );
+                    XFree( formats );
                     return 0;
                   }
                 }
               }
             } /* for visuals */
+
+            XFree( visuals );
           }
           break;
 
@@ -1018,6 +1027,7 @@ typedef  unsigned long   uint32;
           ;
         } /* switch format depth */
       } /* for formats */
+      XFree( formats );
     }
 
     fprintf( stderr, "unsupported X11 display depth!\n" );
@@ -1069,6 +1079,8 @@ typedef  unsigned long   uint32;
 
     if ( display )
     {
+      XFreeGC( display, surface->gc );
+
       if ( surface->ximage )
       {
         XDestroyImage( surface->ximage );
@@ -1260,9 +1272,8 @@ typedef  unsigned long   uint32;
 
     screen = DefaultScreen( display );
 
-    surface->colormap = DefaultColormap( display, screen );
-    surface->depth    = DefaultDepth( display, screen );
-    surface->visual   = DefaultVisual( display, screen );
+    surface->depth    = x11dev.format->x_depth;
+    surface->visual   = x11dev.visual;
 
     surface->format      = format = x11dev.format;
     surface->root.bitmap = *bitmap;
@@ -1302,7 +1313,8 @@ typedef  unsigned long   uint32;
       pximage->rows   = bitmap->rows;
     }
 
-    pximage->buffer = grAlloc( pximage->pitch * pximage->rows );
+    pximage->buffer =
+      (unsigned char*)grAlloc( pximage->pitch * pximage->rows );
     if ( !pximage->buffer )
       return 0;
 
@@ -1325,19 +1337,37 @@ typedef  unsigned long   uint32;
                                     (char*)pximage->buffer,
                                     pximage->width,
                                     pximage->rows,
-                                    8,
+                                    x11dev.scanline_pad,
                                     0 );
     if ( !surface->ximage )
       return 0;
 
     {
+      XColor                color, dummy;
       XTextProperty         xtp;
       XSizeHints            xsh;
       XSetWindowAttributes  xswa;
+      long                  xswa_mask = CWBackPixel | CWEventMask | CWCursor;
 
+      xswa.border_pixel = BlackPixel( display, screen );
 
-      xswa.border_pixel     = BlackPixel( display, screen );
-      xswa.background_pixel = WhitePixel( display, screen );
+      if (surface->visual == DefaultVisual( display, screen ) )
+      {
+        xswa.background_pixel = WhitePixel( display, screen );
+        surface->colormap     = DefaultColormap( display, screen );
+      }
+      else
+      {
+        xswa_mask             |= CWColormap | CWBorderPixel;
+        xswa.colormap         = XCreateColormap( display,
+                                                 RootWindow( display, screen ),
+                                                 surface->visual,
+                                                 AllocNone );
+        XAllocNamedColor( display, xswa.colormap, "white", &color, &dummy );
+        xswa.background_pixel = color.pixel;
+        surface->colormap     = xswa.colormap;
+      }
+
       xswa.cursor           = x11dev.busy;
 
       xswa.event_mask = KeyPressMask | ExposureMask;
@@ -1352,13 +1382,12 @@ typedef  unsigned long   uint32;
                                     format->x_depth,
                                     InputOutput,
                                     surface->visual,
-                                    CWBackPixel | CWBorderPixel |
-                                    CWEventMask | CWCursor,
+                                    xswa_mask,
                                     &xswa );
 
       XMapWindow( display, surface->win );
 
-      surface->gc = XCreateGC( display, RootWindow( display, screen ),
+      surface->gc = XCreateGC( display, surface->win,
                                0L, NULL );
       XSetForeground( display, surface->gc, xswa.border_pixel     );
       XSetBackground( display, surface->gc, xswa.background_pixel );
@@ -1492,7 +1521,7 @@ typedef  unsigned long   uint32;
         if ( event.key == grKeyEsc )
           return 0;
 
-        /* otherwise, display key string */
+        /* otherwise, display key name */
         color.value = ( color.value + 8 ) & 127;
         {
           int          count = sizeof ( key_names ) / sizeof ( key_names[0] );

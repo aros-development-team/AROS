@@ -18,12 +18,14 @@ USER_INCLUDES		:= -I../graph -I../../include -I../../src/base -I../../config
 
 %build_prog mmake=workbench-libs-freetype-demos-ftstring \
     progname=ftstring targetdir=$(BINDIR)/Demos/FreeType \
-    files="ftstring common" \
+    files="ftstring common ftcommon" \
     uselibs="freetype2 freetypegraph arossupport amiga arosc m"
+
+USER_CFLAGS		:= -DFT2_BUILD_LIBRARY
 
 %build_prog mmake=workbench-libs-freetype-demos-ftview \
     progname=ftview targetdir=$(BINDIR)/Demos/FreeType \
-    files="ftview common" \
+    files="ftview common ftcommon" \
     uselibs="freetype2 freetypegraph arossupport amiga arosc m"
 
 %common

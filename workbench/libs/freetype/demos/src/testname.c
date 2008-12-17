@@ -1,9 +1,10 @@
-# include <stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 
-#include <freetype/freetype.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 
   int main( int    argc,
@@ -37,8 +38,8 @@
       if ( FT_Load_Glyph( font_face, glyph_ind, FT_LOAD_DEFAULT ) )
         exit( 1 );
       cur_glyph = font_face->glyph;
-      if ( cur_glyph->format != ft_glyph_format_bitmap )
-        if ( FT_Render_Glyph( font_face->glyph, ft_render_mode_mono ) )
+      if ( cur_glyph->format != FT_GLYPH_FORMAT_BITMAP )
+        if ( FT_Render_Glyph( font_face->glyph, FT_RENDER_MODE_MONO ) )
           exit( 1 );
       if ( FT_Get_Glyph_Name( font_face, glyph_ind, char_name, 16 ) )
         exit( 1 );

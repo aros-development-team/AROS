@@ -139,14 +139,14 @@
 #ifdef DUMP_NAME
       {
         char name[1024];
-        
+
         error = FT_Get_Glyph_Name( face, glyph_index, name, 1024 );
         if (error)
           printf( "no glyph name available\n" );
         else
           printf( "glyph name = '%s'\n", name );
       }
-      
+
 #endif
 
       error = FT_Load_Glyph( face,

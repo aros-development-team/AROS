@@ -1,12 +1,15 @@
+This package contains example programs for the FreeType 2 library.
+
+
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 
   The Makefile and Jamfile contained in this directory assume that the
   FreeType 2  library sources are  located in `../freetype2'.   If you
   downloaded one  of the  stable FreeType 2  source packages  from our
   server, you most probably have to rename its directory, for example:
-  
-    mv freetype-2.0.6 freetype2       on Unix
-    rename freetype-2.0.6 freetype2   on Windows
+
+    mv freetype-2.3.7 freetype2       on Unix
+    rename freetype-2.3.7 freetype2   on Windows
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 
@@ -20,7 +23,11 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
   BeOS, Mac,  and OS/2.  The build system  should automatically detect
   which driver to use based on the current platform.
 
-  UNIX USERS:
+  UNIX USERS
+  ==========
+
+    X11 issues
+    ----------
 
     When building the demos, the build system tries to detect your X11
     path  by  looking for  the  patterns  `X11/bin', `X11R6/bin',  and
@@ -34,3 +41,19 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 
     If  you don't  have X11  at all,  fix the  definition of  the EXES
     variable as described in the top-level Makefile.
+
+    Using a different build directory
+    ---------------------------------
+
+    If the `configure' script of the FreeType 2 library is  run from a
+    separate build directory,  it creates a dummy  Makefile which sets
+    some  variables before  including  the top-level  Makefile of  the
+    source  directory.  This dummy  Makefile can also be  used for the
+    ft2demos package to be compiled in a different build directory:
+
+       make FT2DEMOS=1 -f /path/to/freetype2/build-dir/Makefile
+
+    If necessary, adapt  the `TOP_DIR_2' variable to make it  point to
+    the ft2demos source directory.
+
+--- end of README ---

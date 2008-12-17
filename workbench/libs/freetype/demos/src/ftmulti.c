@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-2000 by                                                  */
+/*  Copyright 1996-2000, 2003, 2004, 2005 by                                */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*                                                                          */
@@ -48,7 +48,7 @@
   FT_Size       size;         /* the font size               */
   FT_GlyphSlot  glyph;        /* the glyph slot              */
 
-  FT_Encoding   encoding = ft_encoding_none;
+  FT_Encoding   encoding = FT_ENCODING_NONE;
 
   FT_Error      error;        /* error returned by FreeType? */
 
@@ -76,8 +76,10 @@
   int  render_mode = 1;
   int  use_grays   = 1;
 
-  FT_Multi_Master  multimaster;
-  FT_Long          design_pos[T1_MAX_MM_AXIS];
+  FT_MM_Var       *multimaster = NULL;
+  FT_Fixed         design_pos   [T1_MAX_MM_AXIS];
+  FT_Fixed         requested_pos[T1_MAX_MM_AXIS];
+  int              requested_cnt = 0;
 
 #define RASTER_BUFF_SIZE  32768
   char             raster_buff[RASTER_BUFF_SIZE];
@@ -91,8 +93,8 @@
 #endif
 
 #ifdef DEBUG
-  static
-  void  LogMessage( const char*  fmt, ... )
+  static void
+  LogMessage( const char*  fmt, ... )
   {
     va_list  ap;
 
@@ -105,8 +107,8 @@
 
 
   /* PanicZ */
-  static
-  void PanicZ( const char*  message )
+  static void
+  PanicZ( const char*  message )
   {
     fprintf( stderr, "%s\n  error = 0x%04x\n", message, error );
     exit( 1 );
@@ -132,9 +134,23 @@
   }
 
 
+  static void
+  parse_design_coords( char  *s )
+  {
+    for ( requested_cnt = 0; requested_cnt < T1_MAX_MM_AXIS && *s;
+          requested_cnt++ )
+    {
+      requested_pos[requested_cnt] = (FT_Fixed)( strtod( s, &s ) * 65536.0 );
+
+      while ( *s==' ' )
+        ++s;
+    }
+  }
+
+
   /* Clears the Bit bitmap/pixmap */
-  static
-  void  Clear_Display( void )
+  static void
+  Clear_Display( void )
   {
     long  bitmap_size = (long)bit.pitch * bit.rows;
 
@@ -146,8 +162,8 @@
 
 
   /* Initialize the display bitmap named `bit' */
-  static
-  void  Init_Display( void )
+  static void
+  Init_Display( void )
   {
     grInitDevices();
 
@@ -170,65 +186,66 @@
 
 
   /* Render a single glyph with the `grays' component */
-  static
-  FT_Error  Render_Glyph( int  x_offset,
-                          int  y_offset )
+  static FT_Error
+  Render_Glyph( int  x_offset,
+                int  y_offset )
   {
     grBitmap  bit3;
     FT_Pos    x_top, y_top;
-    
+
+
     /* first, render the glyph image into a bitmap */
-    if (glyph->format != ft_glyph_format_bitmap)
+    if ( glyph->format != FT_GLYPH_FORMAT_BITMAP )
     {
-      error = FT_Render_Glyph( glyph, antialias ? ft_render_mode_normal
-                                                : ft_render_mode_mono );
-      if (error) return error;                               
-                               
+      error = FT_Render_Glyph( glyph, antialias ? FT_RENDER_MODE_NORMAL
+                                                : FT_RENDER_MODE_MONO );
+      if ( error )
+        return error;
     }
-    
+
     /* now blit it to our display screen */
     bit3.rows   = glyph->bitmap.rows;
     bit3.width  = glyph->bitmap.width;
     bit3.pitch  = glyph->bitmap.pitch;
     bit3.buffer = glyph->bitmap.buffer;
 
-    switch (glyph->bitmap.pixel_mode)
+    switch ( glyph->bitmap.pixel_mode )
     {
-      case ft_pixel_mode_mono:
-         bit3.mode   = gr_pixel_mode_mono;
-         bit3.grays  = 0;
-         break;
-         
-      case ft_pixel_mode_grays:
-         bit3.mode   = gr_pixel_mode_gray;
-         bit3.grays  = glyph->bitmap.num_grays;
+    case FT_PIXEL_MODE_MONO:
+      bit3.mode  = gr_pixel_mode_mono;
+      bit3.grays = 0;
+      break;
+
+    case FT_PIXEL_MODE_GRAY:
+      bit3.mode  = gr_pixel_mode_gray;
+      bit3.grays = glyph->bitmap.num_grays;
     }
 
     /* Then, blit the image to the target surface */
     x_top = x_offset + glyph->bitmap_left;
     y_top = y_offset - glyph->bitmap_top;
 
-    grBlitGlyphToBitmap( 0, &bit, &bit3, x_top, y_top, fore_color );
+    grBlitGlyphToBitmap( &bit, &bit3, x_top, y_top, fore_color );
 
     return 0;
   }
 
 
-  static
-  void  Reset_Scale( int  pointSize )
+  static void
+  Reset_Scale( int  pointSize )
   {
     (void)FT_Set_Char_Size( face, pointSize << 6, pointSize << 6, res, res );
   }
 
 
-  static
-  FT_Error  LoadChar( int  idx,
-                      int  hint )
+  static FT_Error
+  LoadChar( int  idx,
+            int  hint )
   {
     int  flags;
 
 
-    flags = FT_LOAD_DEFAULT;
+    flags = FT_LOAD_DEFAULT | FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH;
 
     if ( !hint )
       flags |= FT_LOAD_NO_HINTING;
@@ -240,9 +257,9 @@
   }
 
 
-  static
-  FT_Error  Render_All( int  first_glyph,
-                        int  pt_size )
+  static FT_Error
+  Render_All( int  first_glyph,
+              int  pt_size )
   {
     FT_F26Dot6  start_x, start_y, step_x, step_y, x, y;
     int         i;
@@ -303,8 +320,8 @@
   }
 
 
-  static
-  FT_Error  Render_Text( int  first_glyph )
+  static FT_Error
+  Render_Text( int  first_glyph )
   {
     FT_F26Dot6  start_x, start_y, step_x, step_y, x, y;
     int         i;
@@ -372,8 +389,8 @@
   }
 
 
-  static
-  void Help( void )
+  static void
+  Help( void )
   {
     grEvent  dummy_event;
 
@@ -384,44 +401,51 @@
     grSetMargin( 2, 1 );
     grGotobitmap( &bit );
 
-    grWriteln("FreeType Glyph Viewer - part of the FreeType test suite" );
+    grWriteln( "FreeType Multiple Masters Glyph Viewer - part of the FreeType test suite" );
     grLn();
-    grWriteln("This program is used to display all glyphs from one or" );
-    grWriteln("several font files, with the FreeType library.");
+    grWriteln( "This program is used to display all glyphs from one or" );
+    grWriteln( "several Multiple Masters font files, with the FreeType library.");
     grLn();
-    grWriteln("Use the following keys:");
+    grWriteln( "Use the following keys:");
     grLn();
-    grWriteln("  F1 or ?   : display this help screen" );
-    grWriteln("  a         : toggle anti-aliasing" );
-    grWriteln("  h         : toggle outline hinting" );
-    grWriteln("  b         : toggle embedded bitmaps" );
-    grWriteln("  l         : toggle low precision rendering" );
-    grWriteln("  space     : toggle rendering mode" );
+    grWriteln( "  F1 or ?   : display this help screen" );
+    grWriteln( "  a         : toggle anti-aliasing" );
+    grWriteln( "  h         : toggle outline hinting" );
+    grWriteln( "  b         : toggle embedded bitmaps" );
+    grWriteln( "  l         : toggle low precision rendering" );
+    grWriteln( "  space     : toggle rendering mode" );
     grLn();
-    grWriteln("  Up        : increase pointsize by 1 unit" );
-    grWriteln("  Down      : decrease pointsize by 1 unit" );
-    grWriteln("  Page Up   : increase pointsize by 10 units" );
-    grWriteln("  Page Down : decrease pointsize by 10 units" );
+    grWriteln( "  n         : next font" );
+    grWriteln( "  p         : previous font" );
     grLn();
-    grWriteln("  Right     : increment first glyph index" );
-    grWriteln("  Left      : decrement first glyph index" );
+    grWriteln( "  Up        : increase pointsize by 1 unit" );
+    grWriteln( "  Down      : decrease pointsize by 1 unit" );
+    grWriteln( "  Page Up   : increase pointsize by 10 units" );
+    grWriteln( "  Page Down : decrease pointsize by 10 units" );
     grLn();
-    grWriteln("  F3        : decrement first axis position by 20" );
-    grWriteln("  F4        : increment first axis position by 20" );
-    grWriteln("  F5        : decrement second axis position by 20" );
-    grWriteln("  F6        : increment second axis position by 20" );
-    grWriteln("  F7        : decrement third axis position by 20" );
-    grWriteln("  F8        : increment third axis position by 20" );
+    grWriteln( "  Right     : increment first glyph index" );
+    grWriteln( "  Left      : decrement first glyph index" );
     grLn();
-    grWriteln("press any key to exit this help screen");
+    grWriteln( "  F3        : decrement first axis pos by 1/50th of its range" );
+    grWriteln( "  F4        : increment first axis pos by 1/50th of its range" );
+    grWriteln( "  F5        : decrement second axis pos by 1/50th of its range" );
+    grWriteln( "  F6        : increment second axis pos by 1/50th of its range" );
+    grWriteln( "  F7        : decrement third axis pos by 1/50th of its range" );
+    grWriteln( "  F8        : increment third axis pos by 1/50th of its range" );
+    grWriteln( "  F9        : decrement index by 100" );
+    grWriteln( "  F10       : increment index by 100" );
+    grWriteln( "  F11       : decrement index by 1000" );
+    grWriteln( "  F12       : increment index by 1000" );
+    grLn();
+    grWriteln( "press any key to exit this help screen" );
 
     grRefreshSurface( surface );
     grListenSurface( surface, gr_event_key, &dummy_event );
   }
 
 
-  static
-  int  Process_Event( grEvent*  event )
+  static int
+  Process_Event( grEvent*  event )
   {
     int  i, axis;
 
@@ -557,19 +581,22 @@
     return 1;
 
   Do_Axis:
-    if ( axis < (int)multimaster.num_axis )
+    if ( axis < (int)multimaster->num_axis )
     {
-      FT_MM_Axis*  a   = multimaster.axis + axis;
-      FT_Long      pos = design_pos[axis];
+      FT_Var_Axis* a   = multimaster->axis + axis;
+      FT_Fixed     pos = design_pos[axis];
 
-      
-      pos += i;
+      /* Normalize i. changing by 20 is all very well for PostScript fonts  */
+      /*  which tend to have a range of ~1000 per axis, but it's not useful */
+      /*  for mac fonts which have a range of ~3.                           */
+      /* And it's rather extreme for optical size even in PS                */
+      pos += FT_MulDiv( i, a->maximum-a->minimum, 1000 );
       if ( pos < a->minimum ) pos = a->minimum;
       if ( pos > a->maximum ) pos = a->maximum;
-      
+
       design_pos[axis] = pos;
-      
-      FT_Set_MM_Design_Coordinates( face, multimaster.num_axis, design_pos );
+
+      FT_Set_Var_Design_Coordinates( face, multimaster->num_axis, design_pos );
     }
     return 1;
 
@@ -587,19 +614,21 @@
   }
 
 
-  static
-  void  usage( char*  execname )
+  static void
+  usage( char*  execname )
   {
     fprintf( stderr,  "\n" );
     fprintf( stderr,  "ftmulti: multiple masters font viewer - part of FreeType\n" );
     fprintf( stderr,  "--------------------------------------------------------\n" );
     fprintf( stderr,  "\n" );
-    fprintf( stderr,  "Usage: %s [options below] ppem fontname[.ttf|.ttc] ...\n",
+    fprintf( stderr,  "Usage: %s [options below] ppem fontname[.pfb|.ttf] ...\n",
              execname );
     fprintf( stderr,  "\n" );
     fprintf( stderr,  "  -e encoding  select encoding (default: no encoding)\n" );
     fprintf( stderr,  "  -r R         use resolution R dpi (default: 72 dpi)\n" );
     fprintf( stderr,  "  -f index     specify first glyph index to display\n" );
+    fprintf( stderr,  "  -d \"axis1 axis2 ...\"\n"
+                      "               specify the design coordinates for each axis\n" );
     fprintf( stderr,  "\n" );
 
     exit( 1 );
@@ -617,19 +646,24 @@
     int    option;
     int    file_loaded;
 
-    grEvent   event;
+    grEvent  event;
+
 
     execname = ft_basename( argv[0] );
 
     while ( 1 )
     {
-      option = getopt( argc, argv, "e:f:r:" );
+      option = getopt( argc, argv, "d:e:f:r:" );
 
       if ( option == -1 )
         break;
 
       switch ( option )
       {
+      case 'd':
+        parse_design_coords( optarg );
+        break;
+
       case 'e':
         encoding = (FT_Encoding)make_tag( optarg );
         break;
@@ -676,7 +710,7 @@
     if ( error )
       goto Display_Font;
 
-    if ( encoding != ft_encoding_none )
+    if ( encoding != FT_ENCODING_NONE )
     {
       error = FT_Select_Charmap( face, encoding );
       if ( error )
@@ -684,26 +718,33 @@
     }
 
     /* retrieve multiple master information */
-    error = FT_Get_Multi_Master( face, &multimaster ); 
+    error = FT_Get_MM_Var( face, &multimaster );
     if ( error )
       goto Display_Font;
 
+    /* if the user specified a position, use it, otherwise */
     /* set the current position to the median of each axis */
     {
       int  n;
 
-      
-      for ( n = 0; n < (int)multimaster.num_axis; n++ )
-        design_pos[n] =
-          ( multimaster.axis[n].minimum + multimaster.axis[n].maximum ) / 2;
+
+      for ( n = 0; n < (int)multimaster->num_axis; n++ )
+      {
+        design_pos[n] = n < requested_cnt ? requested_pos[n]
+                                          : multimaster->axis[n].def;
+        if ( design_pos[n] < multimaster->axis[n].minimum )
+          design_pos[n] = multimaster->axis[n].minimum;
+        else if ( design_pos[n] > multimaster->axis[n].maximum )
+          design_pos[n] = multimaster->axis[n].maximum;
+      }
     }
-    
-    error = FT_Set_MM_Design_Coordinates( face,
-                                          multimaster.num_axis,
-                                          design_pos );
+
+    error = FT_Set_Var_Design_Coordinates( face,
+                                           multimaster->num_axis,
+                                           design_pos );
     if ( error )
       goto Display_Font;
-    
+
     file_loaded++;
 
     Reset_Scale( ptsize );
@@ -770,26 +811,26 @@
           int  n;
 
 
-          for ( n = 0; n < (int)multimaster.num_axis; n++ )
+          for ( n = 0; n < (int)multimaster->num_axis; n++ )
           {
             char  temp[32];
 
 
-            sprintf( temp, "  %s:%ld",
-                           multimaster.axis[n].name,
-                           design_pos[n] );
+            sprintf( temp, "  %s:%g",
+                           multimaster->axis[n].name,
+                           design_pos[n]/65536. );
             strcat( Header, temp );
           }
         }
         grWriteCellString( &bit, 0, 16, Header, fore_color );
-          
+
         sprintf( Header, "at %d points, first glyph = %d",
                          ptsize,
                          Num );
       }
       else
       {
-        sprintf( Header, "%s : not an MM font file, or could not be opened",
+        sprintf( Header, "%s: not an MM font file, or could not be opened",
                          ft_basename( argv[file] ) );
       }
 
@@ -831,17 +872,19 @@
     }
 
   End:
-#if 0
     grDoneSurface( surface );
-    grDone();
-#endif
+    grDoneDevices();
+
+    free            ( multimaster );
+    FT_Done_Face    ( face        );
+    FT_Done_FreeType( library     );
 
     printf( "Execution completed successfully.\n" );
     printf( "Fails = %d\n", Fail );
 
     exit( 0 );      /* for safety reasons */
     return 0;       /* never reached */
-}
+  }
 
 
 /* End */

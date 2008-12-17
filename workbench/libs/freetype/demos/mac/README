@@ -15,6 +15,14 @@ value as their first command line argument: for the Mac version
 this has been hard-coded into the source. Also: the additional
 options for ftview cannot be set.
 
+Appendix
+Makefile, ftoldmac.m68k_far.make.txt, ftoldmac.ppc_classic.make.txt
+and ftoldmac.c are for commandline program "ftoldmac" to test MacOS
+specific API, written by suzuki toshiya. On MacOS X, you can build
+ftoldmac by "make -C mac" in the top directory of ft2demos. Also
+you can generate MPW makefiles by "make -C mac makefiles", in MacOS
+X commandline.
+
 Have fun with FreeType on the Mac!
 
 Just van Rossum, <just@letterror.com>

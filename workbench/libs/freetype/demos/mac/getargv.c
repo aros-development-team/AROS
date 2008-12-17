@@ -4,10 +4,10 @@ The Netherlands.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the names of Stichting Mathematisch
 Centrum or CWI not be used in advertising or publicity pertaining to
 distribution of the software without specific, written prior permission.
@@ -143,7 +143,7 @@ init_app_name()
 	ProcessInfoRec info;
 	OSErr err;
 	FSSpec appSpec;
-	
+
 	if ( app_name_inited ) return 0;
 	currentPSN.highLongOfPSN = 0;
 	currentPSN.lowLongOfPSN = kCurrentProcess;
@@ -161,13 +161,13 @@ init_app_name()
 
 /* Check that there aren't any args remaining in the event */
 
-static OSErr 
+static OSErr
 get_missing_params(const AppleEvent *theAppleEvent)
 {
 	DescType theType;
 	Size actualSize;
 	OSErr err;
-	
+
 	err = AEGetAttributePtr(theAppleEvent, keyMissedKeywordAttr, typeWildCard,
 				&theType, nil, 0, &actualSize);
 	if (err == errAEDescNotFound)
@@ -217,7 +217,7 @@ handle_open_doc(const AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
 	long i, ndocs, size;
 	FSSpec fss;
 	char path[256];
-	
+
 	got_one = 1;
 	if (err = AEGetParamDesc(theAppleEvent,
 				 keyDirectObject, typeAEList, &doclist))
@@ -283,13 +283,13 @@ reset_ae_handlers()
 
 /* Wait for events until a core event has been handled */
 
-static void 
+static void
 event_loop()
 {
 	EventRecord event;
 	int n;
 	int ok;
-	
+
 	got_one = 0;
 	for (n = 0; n < 100 && !got_one; n++) {
 	#ifndef USING_CARBON

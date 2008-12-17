@@ -2,7 +2,7 @@
  *
  *  grobjs.h
  *
- *    basic object classes defintions
+ *    basic object classes definitions
  *
  *  Copyright 1999 - The FreeType Development Team - www.freetype.org
  *

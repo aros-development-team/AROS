@@ -7,6 +7,8 @@
  *  This code is hereby expressly placed in the public domain.
  *  mleisher@crl.nmsu.edu (Mark Leisher)
  *  10 October 1997
+ *
+ *  Last update 2005-11-30.
  */
 
 #include "common.h"
@@ -135,7 +137,7 @@
     if ( *pp == 0 )
     {
       if ( opterr )
-        fprintf( stderr, "%s: illegal option -- %c\n", cmdname, opt );
+        fprintf( stderr, "%s: invalid option -- %c\n", cmdname, opt );
       return '?';
     }
 

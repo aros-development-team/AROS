@@ -98,8 +98,8 @@ grKey   grkey;
 
  static Translator* find_key(int32 key, Translator t[], int size) {
    for (int i = 0; i < size; i++) {
-     if (t[i].beoskey == key) { 
-     	return &t[i];
+     if (t[i].beoskey == key) {
+	return &t[i];
      }
    }
    return NULL;
@@ -115,7 +115,7 @@ static const grPixelMode  pixel_modes[] =
 
 class Window;
 
-typedef struct grBeOSSurface_ 
+typedef struct grBeOSSurface_
 {
   grSurface root;
   Window*   window;
@@ -128,26 +128,26 @@ class Window : public BWindow {
   BBitmap*       _bitmap;
   BMessageQueue  _event_queue;
   sem_id         _locker;
-  
+
   class View : public BView {
     BBitmap*       _offscreen;
     BMessageQueue* _event_queue;
     sem_id         _locker;
-    
+
     public:
      View(BBitmap* offscreen, BMessageQueue* event_queue, sem_id locker, BRect r);
      void Draw(BRect r);
      void KeyDown(const char *bytes, int32 numBytes);
   };
   View* _view;
-  
+
  public:
   Window(grBeOSSurface* surface, grBitmap* bitmap);
   ~Window();
 
   void Refresh(int x, int y, int w, int h);
   int listen_event(int event_mask, grEvent* grevent);
-  
+
   static grSurface*     init_surface(grSurface* surface, grBitmap* bitmap);
   static void           done_surface(grSurface* surface);
   static void           refresh_rectangle(grSurface* surface, int x, int y, int w, int h);
@@ -208,7 +208,7 @@ void Window::View::KeyDown(const char *bytes, int32 numBytes) {
 	  if (*bytes == B_FUNCTION_KEY) {
         t = find_key(key, fkey_translators, sizeof(fkey_translators)/sizeof(Translator));
       } else {
-        t = find_key(*bytes, key_translators, sizeof(key_translators)/sizeof(Translator)); 
+        t = find_key(*bytes, key_translators, sizeof(key_translators)/sizeof(Translator));
       }
     }
     if (t || numBytes == 1) {
@@ -218,8 +218,8 @@ void Window::View::KeyDown(const char *bytes, int32 numBytes) {
 	  _event_queue->Unlock();
 	  return;
 	}
-  } 
-  BView::KeyDown(bytes, numBytes);  
+  }
+  BView::KeyDown(bytes, numBytes);
 }
 
 int Window::listen_event(int event_mask, grEvent* grevent) {
@@ -247,7 +247,7 @@ Window::Window(grBeOSSurface* surface, grBitmap* bitmap) :
   int h = bitmap->rows;
   BRect r(0, 0, w, h);
   switch (bitmap->mode) {
-	case gr_pixel_mode_mono:   
+	case gr_pixel_mode_mono:
 	  _bitmap = new BBitmap(r, B_GRAY1);
 	  break;
 	case gr_pixel_mode_gray:
@@ -263,12 +263,12 @@ Window::Window(grBeOSSurface* surface, grBitmap* bitmap) :
 	  LOG(("unsupported mode"));
 	  exit(-1);
   }
-    
+
   bitmap->buffer = (unsigned char*)_bitmap->Bits();
   bitmap->pitch  = _bitmap->BytesPerRow();
   _surface->root.bitmap = *bitmap;
   _offscreen = new BBitmap(r, B_RGB32);
-  
+
   _view = new View(_offscreen, &_event_queue, _locker, r);
   AddChild(_view);
   _view->MakeFocus(true);
@@ -288,7 +288,7 @@ void Window::Refresh(int x, int y, int w, int h) {
   uint8* sl = s;
   if (Lock()) {
     switch(_surface->root.bitmap.mode) {
- 	case gr_pixel_mode_mono:   
+	case gr_pixel_mode_mono:
 	  for (y = 0; y < _surface->root.bitmap.rows; y++) {
 	    sl = s;
 	    dl = d;
@@ -298,22 +298,22 @@ void Window::Refresh(int x, int y, int w, int h) {
 	    }
 	    s += _bitmap->BytesPerRow();
 	    d = (int32*)(((char*)d) + _offscreen->BytesPerRow());
-	  } 
+	  }
 	  break;
 	case gr_pixel_mode_gray:
 	  for (y = 0; y < _surface->root.bitmap.rows; y++) {
 	    sl = s;
 	    int8* dx = (int8*)d;
 	    for (x = 0; x < _surface->root.bitmap.width; x++) {
-	      *dx = *sl; dx++;  
-	      *dx = *sl; dx++;  
-	      *dx = *sl; dx++;  
-	      *dx = *sl; dx++;  
+	      *dx = *sl; dx++;
+	      *dx = *sl; dx++;
+	      *dx = *sl; dx++;
+	      *dx = *sl; dx++;
 	      sl++;
 	    }
 	    s += _bitmap->BytesPerRow();
 	    d = (int32*)(((char*)d) + _offscreen->BytesPerRow());
-	  } 
+	  }
 	  break;
 	default:
 	  fprintf(stderr, "unsupported mode: %d\n", _surface->root.bitmap.mode);
@@ -321,7 +321,7 @@ void Window::Refresh(int x, int y, int w, int h) {
     }
     _view->Invalidate();
     Unlock();
-  } 
+  }
 }
 
 grSurface* Window::init_surface( grSurface* surface, grBitmap* bitmap) {
@@ -332,7 +332,7 @@ grSurface* Window::init_surface( grSurface* surface, grBitmap* bitmap) {
 void Window::done_surface(grSurface* surface) {
   Window* w = ((grBeOSSurface*)surface)->window;
   if (w->Lock()) {
-    w->PostMessage(B_QUIT_REQUESTED); 
+    w->PostMessage(B_QUIT_REQUESTED);
     w->Unlock();
   }
 }
@@ -345,9 +345,9 @@ void Window::refresh_rectangle(grSurface* surface, int x, int y, int w, int h) {
 void Window::set_title(grSurface* surface, const char* title) {
   Window* win = ((grBeOSSurface*)surface)->window;
   if (win->Lock()) {
-    win->SetTitle(title); 
+    win->SetTitle(title);
     win->Unlock();
-  }  
+  }
 }
 
 int Window::listen_event(grSurface* surface, int event_mask, grEvent* grevent) {
