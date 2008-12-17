@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    FreeType trigonometric functions (body).                             */
 /*                                                                         */
-/*  Copyright 2001 by                                                      */
+/*  Copyright 2001, 2002, 2003, 2004, 2005 by                              */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -17,6 +17,7 @@
 
 
 #include <ft2build.h>
+#include FT_INTERNAL_OBJECTS_H
 #include FT_TRIGONOMETRY_H
 
 
@@ -71,10 +72,10 @@
     val = ( val >= 0 ) ? val : -val;
 
     v1 = (FT_UInt32)val >> 16;
-    v2 = (FT_UInt32)val & 0xFFFF;
+    v2 = (FT_UInt32)val & 0xFFFFL;
 
     k1 = FT_TRIG_SCALE >> 16;       /* constant */
-    k2 = FT_TRIG_SCALE & 0xFFFF;    /* constant */
+    k2 = FT_TRIG_SCALE & 0xFFFFL;   /* constant */
 
     hi   = k1 * v1;
     lo1  = k1 * v2 + k2 * v1;       /* can't overflow */
@@ -108,6 +109,50 @@
     z     = ( ( x >= 0 ) ? x : - x ) | ( (y >= 0) ? y : -y );
     shift = 0;
 
+#if 1
+    /* determine msb bit index in `shift' */
+    if ( z >= ( 1L << 16 ) )
+    {
+      z     >>= 16;
+      shift  += 16;
+    }
+    if ( z >= ( 1L << 8 ) )
+    {
+      z     >>= 8;
+      shift  += 8;
+    }
+    if ( z >= ( 1L << 4 ) )
+    {
+      z     >>= 4;
+      shift  += 4;
+    }
+    if ( z >= ( 1L << 2 ) )
+    {
+      z     >>= 2;
+      shift  += 2;
+    }
+    if ( z >= ( 1L << 1 ) )
+    {
+      z    >>= 1;
+      shift += 1;
+    }
+
+    if ( shift <= 27 )
+    {
+      shift  = 27 - shift;
+      vec->x = x << shift;
+      vec->y = y << shift;
+    }
+    else
+    {
+      shift -= 27;
+      vec->x = x >> shift;
+      vec->y = y >> shift;
+      shift  = -shift;
+    }
+
+#else /* 0 */
+
     if ( z < ( 1L << 27 ) )
     {
       do
@@ -115,7 +160,6 @@
         shift++;
         z <<= 1;
       } while ( z < ( 1L << 27 ) );
-
       vec->x = x << shift;
       vec->y = y << shift;
     }
@@ -131,6 +175,9 @@
       vec->y = y >> shift;
       shift  = -shift;
     }
+
+#endif /* 0 */
+
     return shift;
   }
 
@@ -271,9 +318,9 @@
 
     /* round theta */
     if ( theta >= 0 )
-      theta = ( theta + 16 ) & -32;
+      theta = FT_PAD_ROUND( theta, 32 );
     else
-      theta = - (( -theta + 16 ) & -32);
+      theta = -FT_PAD_ROUND( -theta, 32 );
 
     vec->x = x;
     vec->y = theta;
@@ -356,6 +403,14 @@
   }
 
 
+  /* these macros return 0 for positive numbers,
+     and -1 for negative ones */
+#define FT_SIGN_LONG( x )   ( (x) >> ( FT_SIZEOF_LONG * 8 - 1 ) )
+#define FT_SIGN_INT( x )    ( (x) >> ( FT_SIZEOF_INT * 8 - 1 ) )
+#define FT_SIGN_INT32( x )  ( (x) >> 31 )
+#define FT_SIGN_INT16( x )  ( (x) >> 15 )
+
+
   /* documentation is in fttrigon.h */
 
   FT_EXPORT_DEF( void )
@@ -376,10 +431,13 @@
       v.x = ft_trig_downscale( v.x );
       v.y = ft_trig_downscale( v.y );
 
-      if ( shift >= 0 )
+      if ( shift > 0 )
       {
-        vec->x = v.x >> shift;
-        vec->y = v.y >> shift;
+        FT_Int32  half = 1L << ( shift - 1 );
+
+
+        vec->x = ( v.x + half + FT_SIGN_LONG( v.x ) ) >> shift;
+        vec->y = ( v.y + half + FT_SIGN_LONG( v.y ) ) >> shift;
       }
       else
       {
@@ -473,7 +531,10 @@
   {
     FT_Angle  delta = angle2 - angle1;
 
+
     delta %= FT_ANGLE_2PI;
+    if ( delta < 0 )
+      delta += FT_ANGLE_2PI;
 
     if ( delta > FT_ANGLE_PI )
       delta -= FT_ANGLE_2PI;

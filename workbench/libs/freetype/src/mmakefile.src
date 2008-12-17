@@ -3,16 +3,26 @@
 include $(TOP)/config/make.cfg
 
 FT2FILES := \
+    autofit/autofit \
     base/ftbase \
+    base/ftbitmap \
     base/ftinit \
     ../config/aros/ftsystem \
     base/ftdebug \
     base/ftglyph \
     base/ftbbox \
     base/ftmm \
+    base/ftstroke \
     base/ftsynth \
-    autohint/autohint \
-    autohint/ahoptim \
+    base/ftlcdfil \
+    base/ftcid \
+    base/ftgasp \
+    base/ftgxval \
+    base/ftotval \
+    base/ftpfr \
+    base/fttype1 \
+    base/ftwinfnt \
+    base/ftxf86 \
     cache/ftcache \
     cff/cff \
     pshinter/pshinter \
@@ -29,7 +39,10 @@ FT2FILES := \
     pcf/pcf \
     pfr/pfr \
     winfonts/winfnt \
-    gzip/ftgzip
+    gzip/ftgzip \
+    lzw/ftlzw \
+    gxvalid/gxvalid \
+    otvalid/otvalid
 
 SHFILES := \
     aros/ftglyphengine \
@@ -42,6 +55,8 @@ SHFILES := \
     aros/releaseinfoa \
 
 USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
+
+USER_CFLAGS := -DFT2_BUILD_LIBRARY
 
 #MM- workbench-libs : workbench-libs-freetype-module
 #MM workbench-libs-freetype-linklib : workbench-libs-freetype-includes
