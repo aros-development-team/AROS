@@ -1,9 +1,32 @@
-# FreeType 2 JamRules (c) 2001 David Turner
+# FreeType 2 JamRules.
 #
+# Copyright 2001, 2002, 2003 by
+# David Turner, Robert Wilhelm, and Werner Lemberg.
+#
+# This file is part of the FreeType project, and may only be used, modified,
+# and distributed under the terms of the FreeType project license,
+# LICENSE.TXT.  By continuing to use, modify, or distribute this file you
+# indicate that you have read the license and understand and accept it
+# fully.
+
+
 # This file contains the Jam rules needed to build the FreeType 2 library.
 # It is shared by all Jamfiles and is included only once in the build
 # process.
 #
+
+
+# Call SubDirHdrs on a list of directories.
+#
+rule AddSubDirHdrs
+{
+  local x ;
+
+  for x in $(<)
+  {
+    SubDirHdrs $(x) ;
+  }
+}
 
 
 # Determine prefix of library file.  We must use "libxxxxx" on Unix systems,
@@ -38,11 +61,6 @@ rule FT2_SubDir
     return [ FDirName  $(FT2_TOP) $(<) ] ;
   }
 }
-
-# The directory "include" must be in the current include path when compiling
-# any part of FreeType.  We thus update the HDRS variable there.
-#
-HDRS += [ FT2_SubDir  include ] ;
 
 # We also set ALL_LOCATE_TARGET in order to place all object and library
 # files in "objs".

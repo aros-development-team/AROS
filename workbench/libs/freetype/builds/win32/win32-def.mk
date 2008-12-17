@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000 by
+# Copyright 1996-2000, 2003, 2005, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -13,31 +13,15 @@
 # fully.
 
 
-DELETE   := del
-HOSTSEP  := $(strip \ )
-BUILD    := $(TOP_DIR)$(SEP)builds$(SEP)win32
-PLATFORM := win32
+DELETE    := del
+CAT       := type
+SEP       := $(strip \ )
+BUILD_DIR := $(TOP_DIR)/builds/win32
+PLATFORM  := win32
 
-# by default, we use "\" as a separator on Win32
-# but certain compilers accept "/" as well
+# The executable file extension (for tools). NOTE: WE INCLUDE THE DOT HERE !!
 #
-ifndef SEP
-  SEP    := $(HOSTSEP)
-endif
-
-
-# The directory where all object files are placed.
-#
-# This lets you build the library in your own directory with something like
-#
-#   set TOP_DIR=.../path/to/freetype2/top/dir...
-#   set OBJ_DIR=.../path/to/obj/dir
-#   make -f %TOP_DIR%/Makefile setup [options]
-#   make -f %TOP_DIR%/Makefile
-#
-ifndef OBJ_DIR
-  OBJ_DIR := $(TOP_DIR)$(SEP)objs
-endif
+E := .exe
 
 
 # The directory where all library files are placed.
@@ -57,5 +41,6 @@ LIBRARY := $(PROJECT)
 # The NO_OUTPUT macro is used to ignore the output of commands.
 #
 NO_OUTPUT = 2> nul
+
 
 # EOF

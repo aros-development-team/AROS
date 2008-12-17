@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000 by
+# Copyright 1996-2000, 2003, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -15,7 +15,8 @@
 
 # Command line name
 #
-CC := lcc
+CC           := lcc
+COMPILER_SEP := $(SEP)
 
 
 # The object file extension (for standard and static libraries).  This can be
@@ -62,9 +63,7 @@ T := -Fo
 #   Use the ANSIFLAGS variable to define the compiler flags used to enfore
 #   ANSI compliance.
 #
-ifndef CFLAGS
-  CFLAGS := -c -g2 -O
-endif
+CFLAGS ?= -c -g2 -O
 
 # ANSIFLAGS: Put there the flags used to make your compiler ANSI-compliant.
 #
@@ -76,6 +75,7 @@ ANSIFLAGS :=
 # library linking
 #
 #CLEAN_LIBRARY :=
-LINK_LIBRARY = lcclib /out:$(subst $(SEP),\\,$@) $(subst $(SEP),\\,$(OBJECTS_LIST))
+LINK_LIBRARY = lcclib /out:$(subst /,$(COMPILER_SEP),$@ $(OBJECTS_LIST))
+
 
 # EOF

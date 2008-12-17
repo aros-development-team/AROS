@@ -1,11 +1,21 @@
-# template for Unix-specific compiler definitions
+#
+# FreeType 2 template for Unix-specific compiler definitions
 #
 
-CC      := @CC@
+# Copyright 1996-2000, 2002, 2003, 2005, 2006 by
+# David Turner, Robert Wilhelm, and Werner Lemberg.
+#
+# This file is part of the FreeType project, and may only be used, modified,
+# and distributed under the terms of the FreeType project license,
+# LICENSE.TXT.  By continuing to use, modify, or distribute this file you
+# indicate that you have read the license and understand and accept it
+# fully.
 
-ifndef LIBTOOL
-  LIBTOOL := $(BUILD)/libtool
-endif
+
+CC           := @CC@
+COMPILER_SEP := $(SEP)
+
+LIBTOOL ?= $(BUILD_DIR)/libtool
 
 
 # The object file extension (for standard and static libraries).  This can be
@@ -13,6 +23,13 @@ endif
 #
 O  := lo
 SO := o
+
+
+# The executable file extension.  Although most Unix platforms use no
+# extension, we copy the extension detected by autoconf.  Useful for cross
+# building on Unix systems for non-Unix systems.
+#
+E := @EXEEXT@
 
 
 # The library file extension (for standard and static libraries).  This can
@@ -48,7 +65,7 @@ L := -l
 
 # Target flag.
 #
-T := -o # Don't remove this comment line!  We need the space after `-o'.
+T := -o$(space)
 
 
 # C flags
@@ -58,7 +75,10 @@ T := -o # Don't remove this comment line!  We need the space after `-o'.
 #   Use the ANSIFLAGS variable to define the compiler flags used to enfore
 #   ANSI compliance.
 #
-CFLAGS := -c @XX_CFLAGS@ @CFLAGS@
+#   We use our own FreeType configuration file.
+#
+CPPFLAGS := @CPPFLAGS@
+CFLAGS   := -c @XX_CFLAGS@ @CFLAGS@ -DFT_CONFIG_CONFIG_H="<ftconfig.h>"
 
 # ANSIFLAGS: Put there the flags used to make your compiler ANSI-compliant.
 #
@@ -75,9 +95,19 @@ CC    := $(LIBTOOL) --mode=compile $(CCraw)
 LDFLAGS := @LDFLAGS@
 
 
+# export symbols
+#
+CCraw_build  := @CC_BUILD@	# native CC of building system
+E_BUILD      := @EXEEXT_BUILD@	# extension for exexutable on building system
+EXPORTS_LIST := $(OBJ_DIR)/ftexport.sym
+CCexe        := $(CCraw_build)	# used to compile `apinames' only
+
+
 # Library linking
 #
 LINK_LIBRARY = $(LIBTOOL) --mode=link $(CCraw) -o $@ $(OBJECTS_LIST) \
-                          -rpath $(libdir) -version-info $(version_info)
+                          -rpath $(libdir) -version-info $(version_info) \
+                          $(LDFLAGS) -no-undefined \
+                          # -export-symbols $(EXPORTS_LIST)
 
 # EOF

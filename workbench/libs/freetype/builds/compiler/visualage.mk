@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000 by
+# Copyright 1996-2000, 2003, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -15,7 +15,8 @@
 
 # command line compiler name
 #
-CC := icc
+CC           := icc
+COMPILER_SEP := $(SEP)
 
 
 # The object file extension (for standard and static libraries).  This can be
@@ -59,9 +60,7 @@ T := /Fo
 #
 #   These should concern: debug output, optimization & warnings.
 #
-ifndef CFLAGS
-  CFLAGS := /Q- /Gd+ /O2 /G5 /W3 /C
-endif
+CFLAGS ?= /Q- /Gd+ /O2 /G5 /W3 /C
 
 # ANSIFLAGS: Put there the flags used to make your compiler ANSI-compliant.
 #
@@ -71,6 +70,7 @@ ANSI_FLAGS := /Sa
 # Library linking
 #
 #CLEAN_LIBRARY :=
-LINK_LIBRARY   = lib /nologo /out:$@ $(OBJECTS_LIST)
+LINK_LIBRARY = lib /nologo /out:$(subst /,$(COMPILER_SEP),$@ $(OBJECTS_LIST))
+
 
 # EOF
