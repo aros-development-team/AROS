@@ -13,39 +13,39 @@
  * compile with -DZ_PREFIX. The "standard" zlib should be compiled without it.
  */
 #ifdef Z_PREFIX
-#  define deflateInit_	z_deflateInit_
-#  define deflate	z_deflate
-#  define deflateEnd	z_deflateEnd
-#  define inflateInit_ 	z_inflateInit_
-#  define inflate	z_inflate
-#  define inflateEnd	z_inflateEnd
-#  define deflateInit2_	z_deflateInit2_
+#  define deflateInit_         z_deflateInit_
+#  define deflate              z_deflate
+#  define deflateEnd           z_deflateEnd
+#  define inflateInit_         z_inflateInit_
+#  define inflate              z_inflate
+#  define inflateEnd           z_inflateEnd
+#  define deflateInit2_        z_deflateInit2_
 #  define deflateSetDictionary z_deflateSetDictionary
-#  define deflateCopy	z_deflateCopy
-#  define deflateReset	z_deflateReset
-#  define deflateParams	z_deflateParams
-#  define inflateInit2_	z_inflateInit2_
+#  define deflateCopy          z_deflateCopy
+#  define deflateReset         z_deflateReset
+#  define deflateParams        z_deflateParams
+#  define inflateInit2_        z_inflateInit2_
 #  define inflateSetDictionary z_inflateSetDictionary
-#  define inflateSync	z_inflateSync
-#  define inflateSyncPoint z_inflateSyncPoint
-#  define inflateReset	z_inflateReset
-#  define compress	z_compress
-#  define compress2	z_compress2
-#  define uncompress	z_uncompress
-#  define adler32	z_adler32
-#  define crc32		z_crc32
-#  define get_crc_table z_get_crc_table
+#  define inflateSync          z_inflateSync
+#  define inflateSyncPoint     z_inflateSyncPoint
+#  define inflateReset         z_inflateReset
+#  define compress             z_compress
+#  define compress2            z_compress2
+#  define uncompress           z_uncompress
+#  define adler32              z_adler32
+#  define crc32                z_crc32
+#  define get_crc_table        z_get_crc_table
 
-#  define Byte		z_Byte
-#  define uInt		z_uInt
-#  define uLong		z_uLong
-#  define Bytef	        z_Bytef
-#  define charf		z_charf
-#  define intf		z_intf
-#  define uIntf		z_uIntf
-#  define uLongf	z_uLongf
-#  define voidpf	z_voidpf
-#  define voidp		z_voidp
+#  define Byte   z_Byte
+#  define uInt   z_uInt
+#  define uLong  z_uLong
+#  define Bytef  z_Bytef
+#  define charf  z_charf
+#  define intf   z_intf
+#  define uIntf  z_uIntf
+#  define uLongf z_uLongf
+#  define voidpf z_voidpf
+#  define voidp  z_voidp
 #endif
 
 #if (defined(_WIN32) || defined(__WIN32__)) && !defined(WIN32)
@@ -91,11 +91,14 @@
 #  define NO_DUMMY_DECL
 #endif
 
-/* Old Borland C incorrectly complains about missing returns: */
+/* Old Borland C and LCC incorrectly complains about missing returns: */
 #if defined(__BORLANDC__) && (__BORLANDC__ < 0x500)
 #  define NEED_DUMMY_RETURN
 #endif
 
+#if defined(__LCC__)
+#  define  NEED_DUMMY_RETURN
+#endif
 
 /* Maximum value for memLevel in deflateInit2 */
 #ifndef MAX_MEM_LEVEL
@@ -167,22 +170,22 @@
 #      undef FAR
 #    endif
 #    include <windows.h>
-#    define ZEXPORT  WINAPI
+#    define ZEXPORT(x)  x WINAPI
 #    ifdef WIN32
-#      define ZEXPORTVA  WINAPIV
+#      define ZEXPORTVA(x)  x WINAPIV
 #    else
-#      define ZEXPORTVA  FAR _cdecl _export
+#      define ZEXPORTVA(x)  x FAR _cdecl _export
 #    endif
 #  endif
 #  if defined (__BORLANDC__)
 #    if (__BORLANDC__ >= 0x0500) && defined (WIN32)
 #      include <windows.h>
-#      define ZEXPORT __declspec(dllexport) WINAPI
-#      define ZEXPORTRVA __declspec(dllexport) WINAPIV
+#      define ZEXPORT(x) x __declspec(dllexport) WINAPI
+#      define ZEXPORTRVA(x)  x __declspec(dllexport) WINAPIV
 #    else
 #      if defined (_Windows) && defined (__DLL__)
-#        define ZEXPORT _export
-#        define ZEXPORTVA _export
+#        define ZEXPORT(x) x _export
+#        define ZEXPORTVA(x) x _export
 #      endif
 #    endif
 #  endif
@@ -190,16 +193,16 @@
 
 
 #ifndef ZEXPORT
-#  define ZEXPORT
+#  define ZEXPORT(x)   static x
 #endif
 #ifndef ZEXPORTVA
-#  define ZEXPORTVA
+#  define ZEXPORTVA(x)   static x
 #endif
 #ifndef ZEXTERN
-#  define ZEXTERN static
+#  define ZEXTERN(x) static x
 #endif
 #ifndef ZEXTERNDEF
-#  define ZEXTERNDEF  static
+#  define ZEXTERNDEF(x)  static x
 #endif
 
 #ifndef FAR

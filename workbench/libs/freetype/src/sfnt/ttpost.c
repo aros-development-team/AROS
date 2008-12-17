@@ -5,7 +5,7 @@
 /*    Postcript name table processing for TrueType and OpenType fonts      */
 /*    (body).                                                              */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002 by                                           */
+/*  Copyright 1996-2001, 2002, 2003, 2006, 2007 by                         */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -50,7 +50,7 @@
 #ifdef FT_CONFIG_OPTION_POSTSCRIPT_NAMES
 
 
-#include FT_INTERNAL_POSTSCRIPT_NAMES_H
+#include FT_SERVICE_POSTSCRIPT_CMAPS_H
 
 #define MAC_NAME( x )  ( (FT_String*)psnames->macintosh_name( x ) )
 
@@ -175,7 +175,7 @@
     /* There already exist fonts which have more than 32768 glyph names */
     /* in this table, so the test for this threshold has been dropped.  */
 
-    if ( num_glyphs > face->root.num_glyphs )
+    if ( num_glyphs > face->max_profile.numGlyphs )
     {
       error = SFNT_Err_Invalid_File_Format;
       goto Exit;
@@ -240,7 +240,7 @@
       }
     }
 
-    /* all right, set table fields and exit successfuly */
+    /* all right, set table fields and exit successfully */
     {
       TT_Post_20  table = &face->postscript_names.names.format_20;
 
@@ -286,13 +286,13 @@
       goto Exit;
 
     /* check the number of glyphs */
-    if ( num_glyphs > face->root.num_glyphs || num_glyphs > 258 )
+    if ( num_glyphs > face->max_profile.numGlyphs || num_glyphs > 258 )
     {
       error = SFNT_Err_Invalid_File_Format;
       goto Exit;
     }
 
-    if ( FT_ALLOC( offset_table, num_glyphs )       ||
+    if ( FT_NEW_ARRAY( offset_table, num_glyphs )   ||
          FT_STREAM_READ( offset_table, num_glyphs ) )
       goto Fail;
 
@@ -314,7 +314,7 @@
       }
     }
 
-    /* OK, set table fields and exit successfuly */
+    /* OK, set table fields and exit successfully */
     {
       TT_Post_25  table = &face->postscript_names.names.format_25;
 
@@ -441,18 +441,18 @@
     FT_Fixed         format;
 
 #ifdef FT_CONFIG_OPTION_POSTSCRIPT_NAMES
-    PSNames_Service  psnames;
+    FT_Service_PsCMaps  psnames;
 #endif
 
 
     if ( !face )
       return SFNT_Err_Invalid_Face_Handle;
 
-    if ( idx >= (FT_UInt)face->root.num_glyphs )
+    if ( idx >= (FT_UInt)face->max_profile.numGlyphs )
       return SFNT_Err_Invalid_Glyph_Index;
 
 #ifdef FT_CONFIG_OPTION_POSTSCRIPT_NAMES
-    psnames = (PSNames_Service)face->psnames;
+    psnames = (FT_Service_PsCMaps)face->psnames;
     if ( !psnames )
       return SFNT_Err_Unimplemented_Feature;
 #endif
@@ -510,7 +510,7 @@
         *PSname = MAC_NAME( idx );
       }
     }
-    
+
     /* nothing to do for format == 0x00030000L */
 
   End:

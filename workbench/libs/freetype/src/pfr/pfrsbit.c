@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    FreeType PFR bitmap loader (body).                                   */
 /*                                                                         */
-/*  Copyright 2002 by                                                      */
+/*  Copyright 2002, 2003, 2006 by                                          */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -107,7 +107,7 @@
       }
       else if ( mask == 0 )
       {
-        cur[0] = c;
+        cur[0] = (FT_Byte)c;
         mask   = 0x80;
         c      = 0;
         cur ++;
@@ -115,7 +115,7 @@
     }
 
     if ( mask != 0x80 )
-      cur[0] = c;
+      cur[0] = (FT_Byte)c;
   }
 
 
@@ -185,7 +185,7 @@
       }
       else if ( mask == 0 )
       {
-        cur[0] = c;
+        cur[0] = (FT_Byte)c;
         mask   = 0x80;
         c      = 0;
         cur ++;
@@ -249,7 +249,7 @@
       }
       else if ( mask == 0 )
       {
-        cur[0] = c;
+        cur[0] = (FT_Byte)c;
         c      = 0;
         mask   = 0x80;
         cur ++;
@@ -274,14 +274,14 @@
   static void
   pfr_lookup_bitmap_data( FT_Byte*   base,
                           FT_Byte*   limit,
-                          FT_Int     count,
-                          FT_Byte    flags,
+                          FT_UInt    count,
+                          FT_UInt    flags,
                           FT_UInt    char_code,
                           FT_ULong*  found_offset,
                           FT_ULong*  found_size )
   {
     FT_UInt   left, right, char_len;
-    FT_Bool   two = flags & 1;
+    FT_Bool   two = FT_BOOL( flags & 1 );
     FT_Byte*  buff;
 
 
@@ -481,7 +481,7 @@
   pfr_load_bitmap_bits( FT_Byte*    p,
                         FT_Byte*    limit,
                         FT_UInt     format,
-                        FT_UInt     decreasing,
+                        FT_Bool     decreasing,
                         FT_Bitmap*  target )
   {
     FT_Error          error = 0;
@@ -508,7 +508,7 @@
 
       default:
         FT_ERROR(( "pfr_read_bitmap_data: invalid image type\n" ));
-        error = FT_Err_Invalid_File_Format;
+        error = PFR_Err_Invalid_File_Format;
       }
     }
 
@@ -560,7 +560,7 @@
       }
 
       /* couldn't find it */
-      return FT_Err_Invalid_Argument;
+      return PFR_Err_Invalid_Argument;
     }
 
   Found_Strike:
@@ -593,7 +593,7 @@
       if ( gps_size == 0 )
       {
         /* Could not find a bitmap program string for this glyph */
-        error = FT_Err_Invalid_Argument;
+        error = PFR_Err_Invalid_Argument;
         goto Exit;
       }
     }
@@ -605,11 +605,20 @@
       FT_Byte*  p;
 
 
-      advance = FT_MulDiv( size->root.metrics.x_ppem << 8,
+      /* compute linear advance */
+      advance = character->advance;
+      if ( phys->metrics_resolution != phys->outline_resolution )
+        advance = FT_MulDiv( advance,
+                             phys->outline_resolution,
+                             phys->metrics_resolution );
+
+      glyph->root.linearHoriAdvance = advance;
+
+      /* compute default advance, i.e., scaled advance.  This can be */
+      /* overridden in the bitmap header of certain glyphs.          */
+      advance = FT_MulDiv( (FT_Fixed)size->root.metrics.x_ppem << 8,
                            character->advance,
                            phys->metrics_resolution );
-
-      /* XXX: handle linearHoriAdvance correctly! */
 
       if ( FT_STREAM_SEEK( face->header.gps_section_offset + gps_offset ) ||
            FT_FRAME_ENTER( gps_size )                                     )
@@ -624,7 +633,7 @@
       if ( !error )
       {
         glyph->root.format = FT_GLYPH_FORMAT_BITMAP;
-      
+
         /* Set up glyph bitmap and metrics */
         glyph->root.bitmap.width      = (FT_Int)xsize;
         glyph->root.bitmap.rows       = (FT_Int)ysize;
@@ -635,7 +644,7 @@
         glyph->root.metrics.height       = (FT_Long)ysize << 6;
         glyph->root.metrics.horiBearingX = xpos << 6;
         glyph->root.metrics.horiBearingY = ypos << 6;
-        glyph->root.metrics.horiAdvance  = ( ( advance >> 2 ) + 32 ) & -64;
+        glyph->root.metrics.horiAdvance  = FT_PIX_ROUND( ( advance >> 2 ) );
         glyph->root.metrics.vertBearingX = - glyph->root.metrics.width >> 1;
         glyph->root.metrics.vertBearingY = 0;
         glyph->root.metrics.vertAdvance  = size->root.metrics.height;
@@ -645,17 +654,18 @@
 
         /* Allocate and read bitmap data */
         {
-          FT_Memory  memory = face->root.memory;
-          FT_Long    len    = glyph->root.bitmap.pitch * ysize;
+          FT_ULong  len = glyph->root.bitmap.pitch * ysize;
 
 
-          if ( !FT_ALLOC( glyph->root.bitmap.buffer, len ) )
+          error = ft_glyphslot_alloc_bitmap( &glyph->root, len );
+          if ( !error )
           {
-            error = pfr_load_bitmap_bits( p,
-                                          stream->limit,
-                                          format,
-                                          face->header.color_flags & 2,
-                                          &glyph->root.bitmap );
+            error = pfr_load_bitmap_bits(
+                      p,
+                      stream->limit,
+                      format,
+                      FT_BOOL(face->header.color_flags & 2),
+                      &glyph->root.bitmap );
           }
         }
       }

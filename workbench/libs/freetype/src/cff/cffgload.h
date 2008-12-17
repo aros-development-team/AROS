@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    OpenType Glyph Loader (specification).                               */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002 by                                           */
+/*  Copyright 1996-2001, 2002, 2003, 2004, 2006, 2007, 2008 by             */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -55,10 +55,6 @@ FT_BEGIN_HEADER
   /*                                                                       */
   /*    last          :: The last point position.                          */
   /*                                                                       */
-  /*    scale_x       :: The horizontal scale (FUnits to sub-pixels).      */
-  /*                                                                       */
-  /*    scale_y       :: The vertical scale (FUnits to sub-pixels).        */
-  /*                                                                       */
   /*    pos_x         :: The horizontal translation (if composite glyph).  */
   /*                                                                       */
   /*    pos_y         :: The vertical translation (if composite glyph).    */
@@ -74,9 +70,6 @@ FT_BEGIN_HEADER
   /*    load_points   :: If this flag is not set, no points are loaded.    */
   /*                                                                       */
   /*    no_recurse    :: Set but not used.                                 */
-  /*                                                                       */
-  /*    error         :: An error code that is only used to report memory  */
-  /*                     allocation problems.                              */
   /*                                                                       */
   /*    metrics_only  :: A boolean indicating that we only want to compute */
   /*                     the metrics of a given glyph, not load all of its */
@@ -97,9 +90,6 @@ FT_BEGIN_HEADER
 
     FT_Vector       last;
 
-    FT_Fixed        scale_x;
-    FT_Fixed        scale_y;
-
     FT_Pos          pos_x;
     FT_Pos          pos_y;
 
@@ -111,10 +101,7 @@ FT_BEGIN_HEADER
     FT_Bool         load_points;
     FT_Bool         no_recurse;
 
-    FT_Error        error;         /* only used for memory errors */
     FT_Bool         metrics_only;
-
-    FT_UInt32       hint_flags;
 
     void*           hints_funcs;    /* hinter-specific */
     void*           hints_globals;  /* hinter-specific */
@@ -181,8 +168,9 @@ FT_BEGIN_HEADER
                     FT_Bool         hinting,
                     FT_Render_Mode  hint_mode );
 
-  FT_LOCAL( void )
+  FT_LOCAL( FT_Error )
   cff_decoder_prepare( CFF_Decoder*  decoder,
+                       CFF_Size      size,
                        FT_UInt       glyph_index );
 
 #if 0  /* unused until we support pure CFF fonts */
@@ -202,7 +190,7 @@ FT_BEGIN_HEADER
   FT_LOCAL( FT_Error )
   cff_slot_load( CFF_GlyphSlot  glyph,
                  CFF_Size       size,
-                 FT_Int         glyph_index,
+                 FT_UInt        glyph_index,
                  FT_Int32       load_flags );
 
 
