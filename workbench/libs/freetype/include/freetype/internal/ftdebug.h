@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Debugging and logging component (specification).                     */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002 by                                           */
+/*  Copyright 1996-2001, 2002, 2004, 2006, 2007, 2008 by                   */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -15,7 +15,7 @@
 /*                                                                         */
 /*                                                                         */
 /*  IMPORTANT: A description of FreeType's debugging support can be        */
-/*             found in "docs/DEBUG.TXT".  Read it if you need to use or   */
+/*             found in `docs/DEBUG.TXT'.  Read it if you need to use or   */
 /*             understand this code.                                       */
 /*                                                                         */
 /***************************************************************************/
@@ -27,6 +27,7 @@
 
 #include <ft2build.h>
 #include FT_CONFIG_CONFIG_H
+#include FT_FREETYPE_H
 
 
 FT_BEGIN_HEADER
@@ -53,7 +54,7 @@ FT_BEGIN_HEADER
 #define FT_TRACE_DEF( x )  trace_ ## x ,
 
   /* defining the enumeration */
-  typedef enum
+  typedef enum  FT_Trace_
   {
 #include FT_INTERNAL_TRACE_H
     trace_count
@@ -98,9 +99,58 @@ FT_BEGIN_HEADER
 
   /*************************************************************************/
   /*                                                                       */
-  /* You need two opening resp. closing parentheses!                       */
+  /* <Function>                                                            */
+  /*    FT_Trace_Get_Count                                                 */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    Return the number of available trace components.                   */
+  /*                                                                       */
+  /* <Return>                                                              */
+  /*    The number of trace components.  0 if FreeType 2 is not built with */
+  /*    FT_DEBUG_LEVEL_TRACE definition.                                   */
+  /*                                                                       */
+  /* <Note>                                                                */
+  /*    This function may be useful if you want to access elements of      */
+  /*    the internal `ft_trace_levels' array by an index.                  */
+  /*                                                                       */
+  FT_BASE( FT_Int )
+  FT_Trace_Get_Count( void );
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* <Function>                                                            */
+  /*    FT_Trace_Get_Name                                                  */
+  /*                                                                       */
+  /* <Description>                                                         */
+  /*    Return the name of a trace component.                              */
+  /*                                                                       */
+  /* <Input>                                                               */
+  /*    The index of the trace component.                                  */
+  /*                                                                       */
+  /* <Return>                                                              */
+  /*    The name of the trace component.  This is a statically allocated   */
+  /*    C string, so do not free it after use.  NULL if FreeType 2 is not  */
+  /*    built with FT_DEBUG_LEVEL_TRACE definition.                        */
+  /*                                                                       */
+  /* <Note>                                                                */
+  /*    Use @FT_Trace_Get_Count to get the number of available trace       */
+  /*    components.                                                        */
+  /*                                                                       */
+  /*    This function may be useful if you want to control FreeType 2's    */
+  /*    debug level in your application.                                   */
+  /*                                                                       */
+  FT_BASE( const char * )
+  FT_Trace_Get_Name( FT_Int  idx );
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* You need two opening and closing parentheses!                         */
   /*                                                                       */
   /* Example: FT_TRACE0(( "Value is %i", foo ))                            */
+  /*                                                                       */
+  /* Output of the FT_TRACEX macros is sent to stderr.                     */
   /*                                                                       */
   /*************************************************************************/
 
@@ -116,7 +166,9 @@ FT_BEGIN_HEADER
 
   /*************************************************************************/
   /*                                                                       */
-  /*  Define the FT_ERROR macro                                            */
+  /* Define the FT_ERROR macro.                                            */
+  /*                                                                       */
+  /* Output of this macro is sent to stderr.                               */
   /*                                                                       */
   /*************************************************************************/
 
@@ -133,7 +185,7 @@ FT_BEGIN_HEADER
 
   /*************************************************************************/
   /*                                                                       */
-  /* Define the FT_ASSERT macro                                            */
+  /* Define the FT_ASSERT macro.                                           */
   /*                                                                       */
   /*************************************************************************/
 
@@ -156,21 +208,23 @@ FT_BEGIN_HEADER
 
   /*************************************************************************/
   /*                                                                       */
-  /*  Define 'FT_Message' and 'FT_Panic' when needed                       */
+  /* Define `FT_Message' and `FT_Panic' when needed.                       */
   /*                                                                       */
   /*************************************************************************/
 
 #ifdef FT_DEBUG_LEVEL_ERROR
 
-#include "stdio.h"  /* for vprintf() */
+#include "stdio.h"  /* for vfprintf() */
 
   /* print a message */
-  FT_EXPORT( void )
-  FT_Message( const char*  fmt, ... );
+  FT_BASE( void )
+  FT_Message( const char*  fmt,
+              ... );
 
   /* print a message and exit */
-  FT_EXPORT( void )
-  FT_Panic( const char*  fmt, ... );
+  FT_BASE( void )
+  FT_Panic( const char*  fmt,
+            ... );
 
 #endif /* FT_DEBUG_LEVEL_ERROR */
 
@@ -181,8 +235,8 @@ FT_BEGIN_HEADER
 
 #if defined( _MSC_VER )      /* Visual C++ (and Intel C++) */
 
-  /* we disable the warning `conditional expression is constant' here */
-  /* in order to compile cleanly with the maximum level of warnings   */
+  /* We disable the warning `conditional expression is constant' here */
+  /* in order to compile cleanly with the maximum level of warnings.  */
 #pragma warning( disable : 4127 )
 
 #endif /* _MSC_VER */

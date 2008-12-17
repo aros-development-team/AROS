@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    FreeType exact bbox computation (specification).                     */
 /*                                                                         */
-/*  Copyright 1996-2001 by                                                 */
+/*  Copyright 1996-2001, 2003, 2007 by                                     */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -34,6 +34,12 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#ifdef FREETYPE_H
+#error "freetype.h of FreeType 1 has been loaded!"
+#error "Please fix the directory search order for header files"
+#error "so that freetype.h of FreeType 2 is found first."
+#endif
+
 
 FT_BEGIN_HEADER
 
@@ -52,10 +58,10 @@ FT_BEGIN_HEADER
   /*    FT_Outline_Get_BBox                                                */
   /*                                                                       */
   /* <Description>                                                         */
-  /*    Computes the exact bounding box of an outline.  This is slower     */
+  /*    Compute the exact bounding box of an outline.  This is slower      */
   /*    than computing the control box.  However, it uses an advanced      */
   /*    algorithm which returns _very_ quickly when the two boxes          */
-  /*    coincide.  Otherwise, the outline Bezier arcs are walked over to   */
+  /*    coincide.  Otherwise, the outline Bézier arcs are traversed to     */
   /*    extract their extrema.                                             */
   /*                                                                       */
   /* <Input>                                                               */
@@ -65,7 +71,7 @@ FT_BEGIN_HEADER
   /*    abbox   :: The outline's exact bounding box.                       */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    FreeType error code.  0 means success.                             */
+  /*    FreeType error code.  0~means success.                             */
   /*                                                                       */
   FT_EXPORT( FT_Error )
   FT_Outline_Get_BBox( FT_Outline*  outline,
@@ -81,3 +87,8 @@ FT_END_HEADER
 
 
 /* END */
+
+
+/* Local Variables: */
+/* coding: utf-8    */
+/* End:             */

@@ -5,7 +5,7 @@
 /*    FreeType synthesizing code for emboldening and slanting              */
 /*    (specification).                                                     */
 /*                                                                         */
-/*  Copyright 2000-2001 by                                                 */
+/*  Copyright 2000-2001, 2003, 2006 by                                     */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -41,13 +41,21 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#ifdef FREETYPE_H
+#error "freetype.h of FreeType 1 has been loaded!"
+#error "Please fix the directory search order for header files"
+#error "so that freetype.h of FreeType 2 is found first."
+#endif
+
 
 FT_BEGIN_HEADER
 
+  /* Make sure slot owns slot->bitmap. */
+  FT_EXPORT( FT_Error )
+  FT_GlyphSlot_Own_Bitmap( FT_GlyphSlot  slot );
 
-  /* This code is completely experimental -- use with care! */
-  /* It will probably be completely rewritten in the future */
-  /* or even integrated into the library.                   */
+  /* Do not use this function directly!  Copy the code to */
+  /* your application and modify it to suit your need.    */
   FT_EXPORT( void )
   FT_GlyphSlot_Embolden( FT_GlyphSlot  slot );
 

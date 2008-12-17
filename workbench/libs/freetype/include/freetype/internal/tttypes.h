@@ -5,7 +5,7 @@
 /*    Basic SFNT/TrueType type definitions and interface (specification    */
 /*    only).                                                               */
 /*                                                                         */
-/*  Copyright 1996-2001, 2002 by                                           */
+/*  Copyright 1996-2001, 2002, 2004, 2005, 2006, 2007, 2008 by             */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -24,6 +24,10 @@
 #include <ft2build.h>
 #include FT_TRUETYPE_TABLES_H
 #include FT_INTERNAL_OBJECTS_H
+
+#ifdef TT_CONFIG_OPTION_GX_VAR_SUPPORT
+#include FT_MULTIPLE_MASTERS_H
+#endif
 
 
 FT_BEGIN_HEADER
@@ -108,41 +112,6 @@ FT_BEGIN_HEADER
   /*************************************************************************/
   /*                                                                       */
   /* <Struct>                                                              */
-  /*    TT_TableDirRec                                                     */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    This structure models a TrueType table directory.  It is used to   */
-  /*    access the various tables of the font face.                        */
-  /*                                                                       */
-  /* <Fields>                                                              */
-  /*    version       :: The version number; starts with 0x00010000.       */
-  /*                                                                       */
-  /*    numTables     :: The number of tables.                             */
-  /*                                                                       */
-  /*    searchRange   :: Unused.                                           */
-  /*                                                                       */
-  /*    entrySelector :: Unused.                                           */
-  /*                                                                       */
-  /*    rangeShift    :: Unused.                                           */
-  /*                                                                       */
-  /* <Note>                                                                */
-  /*    This structure is only used during font opening.                   */
-  /*                                                                       */
-  typedef struct  TT_TableDirRec_
-  {
-    FT_Fixed   version;        /* should be 0x10000 */
-    FT_UShort  numTables;      /* number of tables  */
-
-    FT_UShort  searchRange;    /* These parameters are only used  */
-    FT_UShort  entrySelector;  /* for a dichotomy search in the   */
-    FT_UShort  rangeShift;     /* directory.  We ignore them.     */
-
-  } TT_TableDirRec;
-
-
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Struct>                                                              */
   /*    TT_TableRec                                                        */
   /*                                                                       */
   /* <Description>                                                         */
@@ -166,61 +135,6 @@ FT_BEGIN_HEADER
     FT_ULong  Length;     /*      table length */
 
   } TT_TableRec, *TT_Table;
-
-
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Struct>                                                              */
-  /*    TT_CMapDirRec                                                      */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    This structure describes the directory of the `cmap' table,        */
-  /*    containing the font's character mappings table.                    */
-  /*                                                                       */
-  /* <Fields>                                                              */
-  /*    tableVersionNumber :: The version number.                          */
-  /*                                                                       */
-  /*    numCMaps           :: The number of charmaps in the font.          */
-  /*                                                                       */
-  /* <Note>                                                                */
-  /*    This structure is only used during font loading.                   */
-  /*                                                                       */
-  typedef struct  TT_CMapDirRec_
-  {
-    FT_UShort  tableVersionNumber;
-    FT_UShort  numCMaps;
-
-  } TT_CMapDirRec, *TT_CMapDir;
-
-
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Struct>                                                              */
-  /*    TT_CMapDirEntryRec                                                 */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    This structure describes a charmap in a TrueType font.             */
-  /*                                                                       */
-  /* <Fields>                                                              */
-  /*    platformID :: An ID used to specify for which platform this        */
-  /*                  charmap is defined (FreeType manages all platforms). */
-  /*                                                                       */
-  /*    encodingID :: A platform-specific ID used to indicate which source */
-  /*                  encoding is used in this charmap.                    */
-  /*                                                                       */
-  /*    offset     :: The offset of the charmap relative to the start of   */
-  /*                  the `cmap' table.                                    */
-  /*                                                                       */
-  /* <Note>                                                                */
-  /*    This structure is only used during font loading.                   */
-  /*                                                                       */
-  typedef struct  TT_CMapDirEntryRec_
-  {
-    FT_UShort  platformID;
-    FT_UShort  platformEncodingID;
-    FT_Long    offset;
-
-  } TT_CMapDirEntryRec, *TT_CMapDirEntry;
 
 
   /*************************************************************************/
@@ -397,6 +311,8 @@ FT_BEGIN_HEADER
   } TT_GaspRec;
 
 
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
+
   /*************************************************************************/
   /*                                                                       */
   /* <Struct>                                                              */
@@ -472,6 +388,8 @@ FT_BEGIN_HEADER
     FT_FWord   value;  /* kerning value                */
 
   } TT_Kern0_PairRec, *TT_Kern0_Pair;
+
+#endif /* FT_CONFIG_OPTION_OLD_INTERNALS */
 
 
   /*************************************************************************/
@@ -668,7 +586,7 @@ FT_BEGIN_HEADER
   /*    table_offset  :: The offset of the index table in the `EBLC'       */
   /*                     table.  Only used during strike loading.          */
   /*                                                                       */
-  typedef struct  TT_SBit_RangeRec
+  typedef struct  TT_SBit_RangeRec_
   {
     FT_UShort           first_glyph;
     FT_UShort           last_glyph;
@@ -913,7 +831,7 @@ FT_BEGIN_HEADER
   /*************************************************************************/
   /***                                                                   ***/
   /***                                                                   ***/
-  /***                  TRUETYPE CHARMAPS SUPPORT                        ***/
+  /***                    GX VARIATION TABLE SUPPORT                     ***/
   /***                                                                   ***/
   /***                                                                   ***/
   /*************************************************************************/
@@ -921,187 +839,76 @@ FT_BEGIN_HEADER
   /*************************************************************************/
 
 
-  /* format 0 */
+#ifdef TT_CONFIG_OPTION_GX_VAR_SUPPORT
+  typedef struct GX_BlendRec_  *GX_Blend;
+#endif
 
-  typedef struct  TT_CMap0_
+  /*************************************************************************/
+  /*************************************************************************/
+  /*************************************************************************/
+  /***                                                                   ***/
+  /***                                                                   ***/
+  /***              EMBEDDED BDF PROPERTIES TABLE SUPPORT                ***/
+  /***                                                                   ***/
+  /***                                                                   ***/
+  /*************************************************************************/
+  /*************************************************************************/
+  /*************************************************************************/
+
+  /*
+   * These types are used to support a `BDF ' table that isn't part of the
+   * official TrueType specification.  It is mainly used in SFNT-based
+   * bitmap fonts that were generated from a set of BDF fonts.
+   *
+   * The format of the table is as follows.
+   *
+   *   USHORT   version      `BDF ' table version number, should be 0x0001.
+   *   USHORT   strikeCount  Number of strikes (bitmap sizes) in this table.
+   *   ULONG    stringTable  Offset (from start of BDF table) to string
+   *                         table.
+   *
+   * This is followed by an array of `strikeCount' descriptors, having the
+   * following format.
+   *
+   *   USHORT   ppem         Vertical pixels per EM for this strike.
+   *   USHORT   numItems     Number of items for this strike (properties and
+   *                         atoms).  Maximum is 255.
+   *
+   * This array in turn is followed by `strikeCount' value sets.  Each
+   * `value set' is an array of `numItems' items with the following format.
+   *
+   *   ULONG    item_name    Offset in string table to item name.
+   *   USHORT   item_type    The item type.  Possible values are
+   *                            0 => string (e.g., COMMENT)
+   *                            1 => atom   (e.g., FONT or even SIZE)
+   *                            2 => int32
+   *                            3 => uint32
+   *                         0x10 => A flag to indicate a properties.  This
+   *                                 is ORed with the above values.
+   *   ULONG    item_value   For strings  => Offset into string table without
+   *                                         the corresponding double quotes.
+   *                         For atoms    => Offset into string table.
+   *                         For integers => Direct value.
+   *
+   * All strings in the string table consist of bytes and are
+   * zero-terminated.
+   *
+   */
+
+#ifdef TT_CONFIG_OPTION_BDF
+
+  typedef struct  TT_BDFRec_
   {
-    FT_ULong  language;       /* for Mac fonts (originally ushort) */
-
-    FT_Byte*  glyphIdArray;
-
-  } TT_CMap0Rec, *TT_CMap0;
-
-
-  /* format 2 */
-
-  typedef struct  TT_CMap2SubHeaderRec_
-  {
-    FT_UShort  firstCode;      /* first valid low byte         */
-    FT_UShort  entryCount;     /* number of valid low bytes    */
-    FT_Short   idDelta;        /* delta value to glyphIndex    */
-    FT_UShort  idRangeOffset;  /* offset from here to 1st code */
-
-  } TT_CMap2SubHeaderRec, *TT_CMap2SubHeader;
-
-
-  typedef struct  TT_CMap2Rec_
-  {
-    FT_ULong            language;     /* for Mac fonts (originally ushort) */
-
-    FT_UShort*          subHeaderKeys;  /* high byte mapping table     */
-                                        /* value = subHeader index * 8 */
-    TT_CMap2SubHeader   subHeaders;
-    FT_UShort*          glyphIdArray;
-    FT_UShort           numGlyphId;   /* control value */
-
-  } TT_CMap2Rec, *TT_CMap2;
-
-
-  /* format 4 */
-
-  typedef struct  TT_CMap4Segment_
-  {
-    FT_UShort  endCount;
-    FT_UShort  startCount;
-    FT_Short   idDelta;
-    FT_UShort  idRangeOffset;
-
-  } TT_CMap4SegmentRec, *TT_CMap4Segment;
-
-
-  typedef struct  TT_CMap4Rec_
-  {
-    FT_ULong         language;       /* for Mac fonts (originally ushort) */
-
-    FT_UShort        segCountX2;     /* number of segments * 2            */
-    FT_UShort        searchRange;    /* these parameters can be used      */
-    FT_UShort        entrySelector;  /* for a binary search               */
-    FT_UShort        rangeShift;
-
-    TT_CMap4Segment  segments;
-    FT_UShort*       glyphIdArray;
-    FT_UShort        numGlyphId;     /* control value */
-
-    TT_CMap4Segment  last_segment;   /* last used segment; this is a small  */
-                                     /* cache to potentially increase speed */
-  } TT_CMap4Rec, *TT_CMap4;
-
-
-  /* format 6 */
-
-  typedef struct  TT_CMap6_
-  {
-    FT_ULong    language;       /* for Mac fonts (originally ushort)     */
-
-    FT_UShort   firstCode;      /* first character code of subrange      */
-    FT_UShort   entryCount;     /* number of character codes in subrange */
-
-    FT_UShort*  glyphIdArray;
-
-  } TT_CMap6Rec, *TT_CMap6;
-
-
-  /* auxiliary table for format 8 and 12 */
-
-  typedef struct  TT_CMapGroupRec_
-  {
-    FT_ULong  startCharCode;
-    FT_ULong  endCharCode;
-    FT_ULong  startGlyphID;
-
-  } TT_CMapGroupRec, *TT_CMapGroup;
-
-
-  /* FreeType handles format 8 and 12 identically.  It is not necessary to
-     cover mixed 16bit and 32bit codes since FreeType always uses FT_ULong
-     for input character codes -- converting Unicode surrogates to 32bit
-     character codes must be done by the application.                      */
-
-  typedef struct  TT_CMap8_12Rec_
-  {
-    FT_ULong      language;        /* for Mac fonts */
-
-    FT_ULong      nGroups;
-    TT_CMapGroup  groups;
-
-    TT_CMapGroup  last_group;      /* last used group; this is a small    */
-                                   /* cache to potentially increase speed */
-  } TT_CMap8_12Rec, *TT_CMap8_12;
-
-
-  /* format 10 */
-
-  typedef struct  TT_CMap10Rec_
-  {
-    FT_ULong    language;           /* for Mac fonts */
-
-    FT_ULong    startCharCode;      /* first character covered */
-    FT_ULong    numChars;           /* number of characters covered */
-
-    FT_UShort*  glyphs;
-
-  } TT_CMap10Rec, *TT_CMap10;
-
-
-  typedef struct TT_CMapTableRec_*  TT_CMapTable;
-
-
-  typedef FT_UInt
-  (*TT_CharMap_Func)( TT_CMapTable  charmap,
-                      FT_ULong      char_code );
-
-  typedef FT_ULong
-  (*TT_CharNext_Func)( TT_CMapTable  charmap,
-                       FT_ULong      char_code );
-
-
-  /* charmap table */
-  typedef struct  TT_CMapTableRec_
-  {
-    FT_UShort  platformID;
-    FT_UShort  platformEncodingID;
-    FT_UShort  format;
-    FT_ULong   length;          /* must be ulong for formats 8, 10, and 12 */
-
+    FT_Byte*   table;
+    FT_Byte*   table_end;
+    FT_Byte*   strings;
+    FT_UInt32  strings_size;
+    FT_UInt    num_strikes;
     FT_Bool    loaded;
-    FT_ULong   offset;
 
-    union
-    {
-      TT_CMap0Rec     cmap0;
-      TT_CMap2Rec     cmap2;
-      TT_CMap4Rec     cmap4;
-      TT_CMap6Rec     cmap6;
-      TT_CMap8_12Rec  cmap8_12;
-      TT_CMap10Rec    cmap10;
-    } c;
+  } TT_BDFRec, *TT_BDF;
 
-    TT_CharMap_Func   get_index;
-    TT_CharNext_Func  get_next_char;
-
-  } TT_CMapTableRec;
-
-
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Struct>                                                              */
-  /*    TT_CharMapRec                                                      */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    The TrueType character map object type.                            */
-  /*                                                                       */
-  /* <Fields>                                                              */
-  /*    root :: The parent character map structure.                        */
-  /*                                                                       */
-  /*    cmap :: The used character map.                                    */
-  /*                                                                       */
-  typedef struct  TT_CharMapRec_
-  {
-    FT_CharMapRec    root;
-    TT_CMapTableRec  cmap;
-
-  } TT_CharMapRec;
-
+#endif /* TT_CONFIG_OPTION_BDF */
 
   /*************************************************************************/
   /*************************************************************************/
@@ -1121,9 +928,8 @@ FT_BEGIN_HEADER
   /* This structure/class is defined here because it is common to the      */
   /* following formats: TTF, OpenType-TT, and OpenType-CFF.                */
   /*                                                                       */
-  /* Note, however, that the classes TT_Size, TT_GlyphSlot, and TT_CharMap */
-  /* are not shared between font drivers, and are thus defined in          */
-  /* `ttobjs.h'.                                                           */
+  /* Note, however, that the classes TT_Size and TT_GlyphSlot are not      */
+  /* shared between font drivers, and are thus defined in `ttobjs.h'.      */
   /*                                                                       */
   /*************************************************************************/
 
@@ -1143,17 +949,6 @@ FT_BEGIN_HEADER
   /*    OpenType-CFF class (T2_Face).                                      */
   /*                                                                       */
   typedef struct TT_FaceRec_*  TT_Face;
-
-
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Type>                                                                */
-  /*    TT_CharMap                                                         */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    A handle to a TrueType character mapping object.                   */
-  /*                                                                       */
-  typedef struct TT_CharMapRec_*  TT_CharMap;
 
 
   /* a function type used for the truetype bytecode interpreter hooks */
@@ -1307,10 +1102,6 @@ FT_BEGIN_HEADER
   /*                            table.  We thus define additional fields   */
   /*                            below to hold the computed maxima.         */
   /*                                                                       */
-  /*    max_components       :: The maximum number of glyph components     */
-  /*                            required to load any composite glyph from  */
-  /*                            this font.  Used to size the load stack.   */
-  /*                                                                       */
   /*    vertical_info        :: A boolean which is set when the font file  */
   /*                            contains vertical metrics.  If not, the    */
   /*                            value of the `vertical' field is           */
@@ -1341,15 +1132,6 @@ FT_BEGIN_HEADER
   /*    cmap_size            :: The size in bytes of the `cmap_table'      */
   /*                            described above.                           */
   /*                                                                       */
-  /*    num_charmaps         :: The number of character mappings in the    */
-  /*                            font.                                      */
-  /*                                                                       */
-  /*    charmaps             :: The array of charmap objects for this font */
-  /*                            file.  Note that this field is a typeless  */
-  /*                            pointer.  The Reason is that the format of */
-  /*                            charmaps varies with the underlying font   */
-  /*                            format and cannot be determined here.      */
-  /*                                                                       */
   /*    goto_table           :: A function called by each TrueType table   */
   /*                            loader to position a stream's cursor to    */
   /*                            the start of a given table according to    */
@@ -1375,10 +1157,9 @@ FT_BEGIN_HEADER
   /*                            It must be called after the header was     */
   /*                            read, and before the `forget'.             */
   /*                                                                       */
-  /*    sfnt                 :: A pointer to the SFNT `driver' interface.  */
+  /*    sfnt                 :: A pointer to the SFNT service.             */
   /*                                                                       */
-  /*    psnames              :: A pointer to the `PSNames' module          */
-  /*                            interface.                                 */
+  /*    psnames              :: A pointer to the PostScript names service. */
   /*                                                                       */
   /*    hdmx                 :: The face's horizontal device metrics       */
   /*                            (`hdmx' table).  This table is optional in */
@@ -1416,6 +1197,9 @@ FT_BEGIN_HEADER
   /*    glyph_locations      :: An array of longs.  These are offsets to   */
   /*                            glyph data within the `glyf' table.        */
   /*                            Ignored for Type 2 font faces.             */
+  /*                                                                       */
+  /*    glyf_len             :: The length of the `glyf' table.  Needed    */
+  /*                            for malformed `loca' tables.               */
   /*                                                                       */
   /*    font_program_size    :: Size in bytecodes of the face's font       */
   /*                            program.  0 if none defined.  Ignored for  */
@@ -1456,7 +1240,20 @@ FT_BEGIN_HEADER
   /*                            interpreters field is also used to hook    */
   /*                            the debugger in `ttdebug'.                 */
   /*                                                                       */
+  /*    unpatented_hinting   :: If true, use only unpatented methods in    */
+  /*                            the bytecode interpreter.                  */
+  /*                                                                       */
+  /*    doblend              :: A boolean which is set if the font should  */
+  /*                            be blended (this is for GX var).           */
+  /*                                                                       */
+  /*    blend                :: Contains the data needed to control GX     */
+  /*                            variation tables (rather like Multiple     */
+  /*                            Master data).                              */
+  /*                                                                       */
   /*    extra                :: Reserved for third-party font drivers.     */
+  /*                                                                       */
+  /*    postscript_name      :: The PS name of the font.  Used by the      */
+  /*                            postscript name service.                   */
   /*                                                                       */
   typedef struct  TT_FaceRec_
   {
@@ -1472,7 +1269,9 @@ FT_BEGIN_HEADER
     TT_HoriHeader         horizontal;   /* TrueType horizontal header     */
 
     TT_MaxProfile         max_profile;
-    FT_ULong              max_components;
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
+    FT_ULong              max_components;  /* stubbed to 0 */
+#endif
 
     FT_Bool               vertical_info;
     TT_VertHeader         vertical;     /* TT Vertical header, if present */
@@ -1483,7 +1282,7 @@ FT_BEGIN_HEADER
     TT_OS2                os2;          /* TrueType OS/2 table            */
     TT_Postscript         postscript;   /* TrueType Postscript table      */
 
-    FT_Byte*              cmap_table;   /* extracted 'cmap' table */
+    FT_Byte*              cmap_table;   /* extracted `cmap' table */
     FT_ULong              cmap_size;
 
     TT_Loader_GotoTableFunc   goto_table;
@@ -1494,13 +1293,14 @@ FT_BEGIN_HEADER
     TT_Loader_ReadGlyphFunc   read_simple_glyph;
     TT_Loader_ReadGlyphFunc   read_composite_glyph;
 
-    /* a typeless pointer to the SFNT_Interface table used to load     */
-    /* the basic TrueType tables in the face object                    */
+    /* a typeless pointer to the SFNT_Interface table used to load */
+    /* the basic TrueType tables in the face object                */
     void*                 sfnt;
 
-    /* a typeless pointer to the PSNames_Interface table used to       */
-    /* handle glyph names <-> unicode & Mac values                     */
+    /* a typeless pointer to the FT_Service_PsCMapsRec table used to */
+    /* handle glyph names <-> unicode & Mac values                   */
     void*                 psnames;
+
 
     /***********************************************************************/
     /*                                                                     */
@@ -1509,7 +1309,9 @@ FT_BEGIN_HEADER
     /***********************************************************************/
 
     /* horizontal device metrics */
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
     TT_HdmxRec            hdmx;
+#endif
 
     /* grid-fitting and scaling table */
     TT_GaspRec            gasp;                 /* the `gasp' table */
@@ -1518,8 +1320,10 @@ FT_BEGIN_HEADER
     TT_PCLT               pclt;
 
     /* embedded bitmaps support */
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
     FT_ULong              num_sbit_strikes;
     TT_SBit_Strike        sbit_strikes;
+#endif
 
     FT_ULong              num_sbit_scales;
     TT_SBit_Scale         sbit_scales;
@@ -1535,8 +1339,10 @@ FT_BEGIN_HEADER
     /***********************************************************************/
 
     /* the glyph locations */
-    FT_UShort             num_locations;
-    FT_Long*              glyph_locations;
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
+    FT_UShort             num_locations_stub;
+    FT_Long*              glyph_locations_stub;
+#endif
 
     /* the font program, if any */
     FT_ULong              font_program_size;
@@ -1550,15 +1356,21 @@ FT_BEGIN_HEADER
     FT_ULong              cvt_size;
     FT_Short*             cvt;
 
+#ifdef FT_CONFIG_OPTION_OLD_INTERNALS
     /* the format 0 kerning table, if any */
     FT_Int                num_kern_pairs;
     FT_Int                kern_table_index;
     TT_Kern0_Pair         kern_pairs;
+#endif
 
     /* A pointer to the bytecode interpreter to use.  This is also */
     /* used to hook the debugger for the `ttdebug' utility.        */
     TT_Interpreter        interpreter;
 
+#ifdef TT_CONFIG_OPTION_UNPATENTED_HINTING
+    /* Use unpatented hinting only. */
+    FT_Bool               unpatented_hinting;
+#endif
 
     /***********************************************************************/
     /*                                                                     */
@@ -1568,6 +1380,53 @@ FT_BEGIN_HEADER
     /***********************************************************************/
 
     FT_Generic            extra;
+
+    const char*           postscript_name;
+
+    /* since version 2.1.8, but was originally placed after */
+    /* `glyph_locations_stub'                               */
+    FT_ULong              glyf_len;
+
+    /* since version 2.1.8, but was originally placed before `extra' */
+#ifdef TT_CONFIG_OPTION_GX_VAR_SUPPORT
+    FT_Bool               doblend;
+    GX_Blend              blend;
+#endif
+
+    /* since version 2.2 */
+
+    FT_Byte*              horz_metrics;
+    FT_ULong              horz_metrics_size;
+
+    FT_Byte*              vert_metrics;
+    FT_ULong              vert_metrics_size;
+
+    FT_UInt               num_locations;
+    FT_Byte*              glyph_locations;
+
+    FT_Byte*              hdmx_table;
+    FT_ULong              hdmx_table_size;
+    FT_UInt               hdmx_record_count;
+    FT_ULong              hdmx_record_size;
+    FT_Byte*              hdmx_record_sizes;
+
+    FT_Byte*              sbit_table;
+    FT_ULong              sbit_table_size;
+    FT_UInt               sbit_num_strikes;
+
+    FT_Byte*              kern_table;
+    FT_ULong              kern_table_size;
+    FT_UInt               num_kern_tables;
+    FT_UInt32             kern_avail_bits;
+    FT_UInt32             kern_order_bits;
+
+#ifdef TT_CONFIG_OPTION_BDF
+    TT_BDFRec             bdf;
+#endif /* TT_CONFIG_OPTION_BDF */
+
+    /* since 2.3.0 */
+    FT_ULong              horz_metrics_offset;
+    FT_ULong              vert_metrics_offset;
 
   } TT_FaceRec;
 
@@ -1586,7 +1445,7 @@ FT_BEGIN_HEADER
   /*                                                                       */
   /*     max_points   :: The maximal size in points of the zone.           */
   /*                                                                       */
-  /*     max_contours :: Max size in links contours of thez one.           */
+  /*     max_contours :: Max size in links contours of the zone.           */
   /*                                                                       */
   /*     n_points     :: The current number of points in the zone.         */
   /*                                                                       */
@@ -1601,19 +1460,24 @@ FT_BEGIN_HEADER
   /*                                                                       */
   /*     contours     :: The contours end points.                          */
   /*                                                                       */
+  /*     first_point  :: Offset of the current subglyph's first point.     */
+  /*                                                                       */
   typedef struct  TT_GlyphZoneRec_
   {
     FT_Memory   memory;
     FT_UShort   max_points;
     FT_UShort   max_contours;
-    FT_UShort   n_points;   /* number of points in zone    */
-    FT_Short    n_contours; /* number of contours          */
+    FT_UShort   n_points;    /* number of points in zone    */
+    FT_Short    n_contours;  /* number of contours          */
 
-    FT_Vector*  org;        /* original point coordinates  */
-    FT_Vector*  cur;        /* current point coordinates   */
+    FT_Vector*  org;         /* original point coordinates  */
+    FT_Vector*  cur;         /* current point coordinates   */
+    FT_Vector*  orus;        /* original (unscaled) point coordinates */
 
-    FT_Byte*    tags;       /* current touch flags         */
-    FT_UShort*  contours;   /* contour end points          */
+    FT_Byte*    tags;        /* current touch flags         */
+    FT_UShort*  contours;    /* contour end points          */
+
+    FT_UShort   first_point; /* offset of first (#0) point  */
 
   } TT_GlyphZoneRec, *TT_GlyphZone;
 
@@ -1657,6 +1521,16 @@ FT_BEGIN_HEADER
 
     /* for possible extensibility in other formats */
     void*            other;
+
+    /* since version 2.1.8 */
+    FT_Int           top_bearing;
+    FT_Int           vadvance;
+    FT_Vector        pp3;
+    FT_Vector        pp4;
+
+    /* since version 2.2.1 */
+    FT_Byte*         cursor;
+    FT_Byte*         limit;
 
   } TT_LoaderRec;
 
