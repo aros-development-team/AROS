@@ -195,7 +195,7 @@ or in full-screen mode, is required. MiGS thus makes a difference between
 surfaces</i>, which only contain a bitmap, <i>windowed surfaces</i>, which
 are used to display their content in a window, and <i>screen surfaces</i>,
 which are used to display their content in a full-screen mode (SVGAlib,
-DirectX, GGI or wathever).
+DirectX, GGI or whatever).
 <p>A few important things must be said about non-simple surfaces.
 <br>&nbsp;
 <ul>
@@ -262,14 +262,14 @@ III - Important implementation issues :</h1>
 
 <blockquote>
 <h3>
-1. Display surface negociation :</h3>
+1. Display surface negotiation :</h3>
 
 <blockquote>A display surface is created with the function grNewScreenSurface
 which takes parameters indicating which device should be used, the pixel
 dimensions of the requested surface, as well as its pixel mode.
 <p>Because of some device-specific limitations, the resulting surface's
 properties might not match exactly those requested for the call. Hence,
-a developper should <b>always take care </b>of reading a new display surface's
+a developer should <b>always take care </b>of reading a new display surface's
 <b>bitmap</b> descriptor in order to get its <i>real</i> dimensions, pixel
 mode and eventually number of grays.
 <p>The function grNewSurface will create a memory surface with the corresponding
@@ -286,7 +286,7 @@ bitmap.&nbsp;This is useful to draw text on loaded images, for example.
 
 <blockquote>It is important, for the debugging of FreeType anti-aliased
 renderer(s), that <b><i>_all_ devices should support the 8-bit gray mode</i></b>.
-The number of gray levels can be fixed or negociated as required by implementation-specific
+The number of gray levels can be fixed or negotiated as required by implementation-specific
 issues.
 <p>As most existing devices do not provide direct support for such a mode,
 each 8-bit surface must thus contain :

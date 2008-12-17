@@ -5,6 +5,52 @@
   int  grError = 0;
 
 
+  /* values must be in 0..255 range */
+  grColor
+  grFindColor( grBitmap*  target,
+               int        red,
+               int        green,
+               int        blue,
+               int        alpha )
+  {
+    grColor  color;
+
+    color.value = 0;
+
+    switch (target->mode)
+    {
+      case gr_pixel_mode_mono:
+        if ( (red|green|blue) )
+          color.value = 1;
+        break;
+
+      case gr_pixel_mode_gray:
+        color.value = (3*red + 6*green + blue)/10;
+        break;
+
+      case gr_pixel_mode_rgb565:
+        color.value = ((red & 0xF8) << 8) | ((green & 0xFC) << 3) | ((blue & 0xF8) >> 3);
+        break;
+
+      case gr_pixel_mode_rgb24:
+        color.chroma[0] = red;
+        color.chroma[1] = green;
+        color.chroma[2] = blue;
+        break;
+
+      case gr_pixel_mode_rgb32:
+        color.chroma[0] = red;
+        color.chroma[1] = green;
+        color.chroma[2] = blue;
+        color.chroma[3] = alpha;
+        break;
+
+      default:
+        ;
+    }
+    return color;
+  }
+
  /********************************************************************
   *
   * <Function>

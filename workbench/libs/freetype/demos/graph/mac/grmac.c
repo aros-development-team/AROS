@@ -1,12 +1,12 @@
 /*******************************************************************
  *
- *  grmac.c  graphics driver for MacOS platform.              0.1
+ *  grmac.c  graphics driver for MacOS platform.
  *
  *  This is the driver for displaying inside a window under MacOS,
  *  used by the graphics utility of the FreeType test suite.
  *
  *  Largely written by Just van Rossum, but derived from grwin32.c.
- *  Copyright 1999-2000 by Just van Rossum, Antoine Leca,
+ *  Copyright 1999-2000, 2004 by Just van Rossum, Antoine Leca,
  *  David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  *  Borrowing liberally from the other FreeType drivers.
@@ -23,15 +23,16 @@
 #include <string.h>
 
 /* Mac Toolbox */
-#include <Windows.h>
+#include <MacWindows.h>
 
 /* FT graphics subsystem */
 #include "grobjs.h"
 #include "grdevice.h"
 
+#ifdef __MWERKS__
 /* CodeWarrior's poor excuse for a console */
 #include <SIOUX.h>
-
+#endif
 
 /*  Mac function key definitions. The 0x100 is a kludge, see listen_event(). */
 #define        KEY_F1        (0x7A | 0x100)
@@ -131,9 +132,14 @@
   {
     Rect bounds;
     SetRect( &bounds, x, y, x+w, y+h );
-    if ( theWindow )
-      CopyBits( (BitMap*)&thePixMap, &theWindow->portBits,
-                &bounds, &bounds, srcCopy, theWindow->visRgn );
+    if ( theWindow ) {
+      GrafPtr windowPort = GetWindowPort(theWindow);
+      RgnHandle visRgn = GetPortVisibleRegion(windowPort, NewRgn());
+      SetPort(windowPort);
+      CopyBits( (BitMap*)&thePixMap, GetPortBitMapForCopyBits(windowPort),
+                &bounds, &bounds, srcCopy, visRgn);
+      DisposeRgn(visRgn);
+  }
   }
 
   static
@@ -153,7 +159,6 @@
   {
     grEvent  our_grevent;
     EventRecord mac_event;
-    short theEventMask = keyDownMask | autoKeyMask /* | updateEvtMask */ ;
 
     our_grevent.type = gr_event_none;
     our_grevent.key = grKeyNone;
@@ -198,17 +203,19 @@
           case updateEvt:
             if ( theWindow && (WindowPtr)mac_event.message == theWindow )
             {
-              SetPort( theWindow );
+              SetPortWindowPort( theWindow );
               BeginUpdate( theWindow );
               refresh_rectangle( surface,
                                  0, 0,
                                  thePixMap.bounds.right, thePixMap.bounds.bottom );
               EndUpdate( theWindow );
             }
+#ifdef __MWERKS__
             else
             {
               SIOUXHandleOneEvent( &mac_event );
             }
+#endif
             break;
           case mouseDown:
             {
@@ -218,8 +225,14 @@
               part = FindWindow( mac_event.where, &wid );
               if ( wid == theWindow )
               {
-                if ( theWindow && part == inDrag)
-                  DragWindow( wid, mac_event.where, &qd.screenBits.bounds );
+                if ( theWindow && part == inDrag) {
+#if TARGET_API_MAC_CARBON
+#define screenBounds NULL
+#else
+                  Rect *screenBounds = &qd.screenBits.bounds;
+#endif
+                  DragWindow( wid, mac_event.where, screenBounds);
+                }
                 else if (part == inGoAway)
                 {
                   if ( TrackGoAway( theWindow, mac_event.where ) )
@@ -237,10 +250,12 @@
                   SelectWindow( theWindow );
                 }
               }
+#ifdef __MWERKS__
               else
               {
                 SIOUXHandleOneEvent( &mac_event );
               }
+#endif
             }
             break;
           default:
@@ -256,8 +271,22 @@ static
 grSurface*  init_surface( grSurface*  surface,
                           grBitmap*   bitmap )
 {
+  PixMapPtr pixMap = &thePixMap;
+
   Rect bounds;
   SetRect(&bounds, 0, 0, bitmap->width, bitmap->rows);
+
+  switch (bitmap->mode)
+  {
+  case gr_pixel_mode_rgb24:
+    bitmap->mode = gr_pixel_mode_rgb32;
+    break;
+
+  default:
+    bitmap->mode = gr_pixel_mode_mono;
+    bitmap->grays = 0;
+    break;
+  }
 
   /* create the bitmap - under MacOS, we support all modes as the GDI */
   /* handles all conversions automatically..                          */
@@ -271,35 +300,53 @@ grSurface*  init_surface( grSurface*  surface,
   surface->bitmap = *bitmap;
 
   /* initialize the PixMap to appropriate values */
-  thePixMap.baseAddr = (char*)bitmap->buffer;
-  thePixMap.rowBytes = bitmap->pitch;
-  if (thePixMap.rowBytes < 0)
-     thePixMap.rowBytes = -thePixMap.rowBytes;
-  thePixMap.rowBytes |= 0x8000; /* flag indicating it's a PixMap, not a BitMap */
-  thePixMap.bounds = bounds;
-  thePixMap.pmVersion = 0;
-  thePixMap.packType = 0;
-  thePixMap.packSize = 0;
-  thePixMap.hRes = 72 << 16;
-  thePixMap.vRes = 72 << 16;
-  thePixMap.pixelType = 0;
-  thePixMap.cmpCount = 1;
-  thePixMap.pmTable = 0;
-  thePixMap.planeBytes = 0;
-  thePixMap.pmReserved = 0;
+  pixMap->baseAddr = (char*)bitmap->buffer;
+  pixMap->rowBytes = bitmap->pitch;
+  if (pixMap->rowBytes < 0)
+     pixMap->rowBytes = -pixMap->rowBytes;
+  pixMap->rowBytes |= 0x8000; /* flag indicating it's a PixMap, not a BitMap */
+  pixMap->bounds = bounds;
+  pixMap->pmVersion = baseAddr32; /* pixmap base address is 32-bit address */
+  pixMap->packType = 0;
+  pixMap->packSize = 0;
+  pixMap->hRes = 72 << 16;
+  pixMap->vRes = 72 << 16;
+  pixMap->pmTable = 0;
+#if OLDPIXMAPSTRUCT
+  pixMap->planeBytes = 0;
+  pixMap->pmReserved = 0;
+#else
+  pixMap->pixelFormat = 0;
+  pixMap->pmExt = 0;
+#endif
 
   switch ( bitmap->mode )
   {
   case gr_pixel_mode_mono:
-    thePixMap.cmpSize = 1;
-    thePixMap.pixelSize = 1;
+  case gr_pixel_mode_gray:
+
+    pixMap->pixelType = 0;   /* indexed color */
+    pixMap->cmpCount = 1;
+
+    if (bitmap->mode == gr_pixel_mode_mono)
+    {
+      pixMap->pixelSize = 1;
+    }
+    else
+    {
+      pixMap->pixelSize = 8;
+      pixMap->pmTable = GetCTable(256); /* color palette matching FT's idea */
+      break;                            /* of grayscale. See ftview.rsrc */
+    }
+    pixMap->cmpSize = pixMap->pixelSize;
     break;
 
-  case gr_pixel_mode_gray:
-    thePixMap.cmpSize = 8;
-    thePixMap.pixelSize = 8;
-    thePixMap.pmTable = GetCTable(256); /* color palette matching FT's idea
-                                           of grayscale. See ftview.rsrc */
+  case gr_pixel_mode_rgb32:
+    pixMap->pixelSize = 32;
+    pixMap->pixelType = RGBDirect;
+    pixMap->cmpCount = 3;
+    pixMap->cmpSize = 8;
+    pixMap->baseAddr -= 1;  /*SHH: goofy hack to reinterpret bitmap's RGBx -> xRGB */
     break;
 
   default:
@@ -308,7 +355,7 @@ grSurface*  init_surface( grSurface*  surface,
 
   /* create the window */
   OffsetRect(&bounds, 10, 44); /* place it at a decent location */
-  theWindow = NewCWindow(NULL, &bounds, "\p???", 1, 0, (GrafPtr)-1, 1, 0);
+  theWindow = NewCWindow(NULL, &bounds, "\p???", 1, 0, (WindowRef)-1, 1, 0);
 
   /* fill in surface interface */
   surface->done         = (grDoneSurfaceFunc) done_surface;

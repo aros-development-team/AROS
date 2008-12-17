@@ -2,7 +2,7 @@
 /*                                                                          */
 /*  The FreeType project - a Free and Portable Quality TrueType Renderer.   */
 /*                                                                          */
-/*  Copyright 1996-1998 by                                                  */
+/*  Copyright 1996-1998, 2003 by                                            */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
 /*  fttimer: A simple performance benchmark.  Now with graylevel rendering  */
@@ -47,7 +47,7 @@
 
   int         num_glyphs;
   FT_Glyph    glyphs[MAX_GLYPHS];
-  
+
   int         tab_glyphs;
   int         cur_glyph;
 
@@ -96,7 +96,7 @@
   LoadChar( int  idx )
   {
     FT_Glyph  glyph;
-    
+
 
     /* load the glyph in the glyph slot */
     error = FT_Load_Glyph( face, idx, FT_LOAD_DEFAULT ) ||
@@ -121,21 +121,21 @@
   {
     FT_Glyph  bitmap;
 
-    
+
     bitmap = glyphs[idx];
-    if ( bitmap->format == ft_glyph_format_bitmap )
+    if ( bitmap->format == FT_GLYPH_FORMAT_BITMAP )
       error = 0;  /* we already have a (embedded) bitmap */
     else
     {
       error = FT_Glyph_To_Bitmap( &bitmap,
-                                  antialias ? ft_render_mode_normal
-                                            : ft_render_mode_mono,
+                                  antialias ? FT_RENDER_MODE_NORMAL
+                                            : FT_RENDER_MODE_MONO,
                                   0,
                                   0 );
       if ( !error )
         FT_Done_Glyph( bitmap );
     }
-      
+
     return error;
   }
 

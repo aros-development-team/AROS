@@ -161,14 +161,14 @@ FT_CALLBACK_DEF( void* )  my_realloc( FT_Memory  memory,
 static FT_Memory  my_memory( void )
 {
   FT_Memory  memory;
-  
+
   memory = (FT_Memory)my_alloc( 0, sizeof(*memory) );
   if (!memory)
   {
     fprintf( stderr, "Unable to allocate debug memory manager !?!\n" );
     exit(2);
   }
-  
+
   memory->user    = 0;
   memory->alloc   = my_alloc;
   memory->free    = my_free;

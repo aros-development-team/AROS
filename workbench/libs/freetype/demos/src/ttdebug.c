@@ -46,10 +46,10 @@ FT_Error        error;
 
 TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 
-  typedef FT_Byte ByteStr[2];
-  typedef FT_Byte WordStr[4];
-  typedef FT_Byte LongStr[8];
-  typedef FT_Byte DebugStr[128];
+  typedef char    ByteStr[2];
+  typedef char    WordStr[4];
+  typedef char    LongStr[8];
+  typedef char    DebugStr[128];
 
   static  DebugStr tempStr;
 
@@ -752,7 +752,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 
     op = exec->code[ exec->IP ];
 
-    sprintf( tempStr, "%04lx: %02hx  %s", exec->IP, op, OpStr[op] );
+    sprintf( tempStr, "%s", OpStr[op] );
 
     if ( op == 0x40 )
     {
@@ -804,6 +804,11 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
         strncat( tempStr, s, 8 );
       }
     }
+    else if ( op == 0x39 )  /* IP */
+    {
+        sprintf( s, " rp1=%d, rp2=%d", exec->GS.rp1, exec->GS.rp2 );
+        strncat( tempStr, s, 31 );
+    }
 
     return (FT_String*)tempStr;
   }
@@ -826,7 +831,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
   {
     FT_Int    A, diff, key;
     FT_Long   next_IP;
-    FT_Char   ch, oldch = '\0', *temp;
+    FT_String ch, oldch = '\0', *temp;
 
     FT_Error  error = 0;
 
@@ -914,6 +919,11 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
           args = CUR.top - 1;
           pop  = Pop_Push_Count[CUR.opcode] >> 4;
           col  = 48;
+
+          /* special case for IP */
+          if (CUR.opcode == 0x39)
+              pop = exc->GS.loop;
+
           for ( n = 6; n > 0; n-- )
           {
             if ( pop == 0 )
@@ -993,15 +1003,17 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
           printf( "rounding   %s\n", round_str[exc->GS.round_state] );
           printf( "min dist   %04lx\n", exc->GS.minimum_distance );
           printf( "cvt_cutin  %04lx\n", exc->GS.control_value_cutin );
+          printf( "RP 0,1,2   %4x %4x %4x\n", exc->GS.rp0, exc->GS.rp1, exc->GS.rp2 );
           break;
 
         /* Show points table */
         case 'p':
           for ( A = 0; A < exc->pts.n_points; A++ )
           {
-            printf( "%02hx  ", A );
-            printf( "%08lx,%08lx - ", pts.org[A].x, pts.org[A].y );
-            printf( "%08lx,%08lx\n",  pts.cur[A].x, pts.cur[A].y );
+            printf( "%3hd  ", A );
+            printf( "(%6d,%6d) - ", pts.orus[A].x, pts.orus[A].y );
+            printf( "(%8ld,%8ld) - ", pts.org[A].x, pts.org[A].y );
+            printf( "(%8ld,%8ld)\n",  pts.cur[A].x, pts.cur[A].y );
           }
           printf(( "\n" ));
           break;
@@ -1071,43 +1083,44 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 
         if ( diff )
         {
-          printf( "%02hx  ", A );
+          printf( "%3hd  ", A );
+          printf( "%6d,%6d  ", pts.orus[A].x, pts.orus[A].y );
 
           if ( diff & 16 ) temp = "(%01hx)"; else temp = " %01hx ";
           printf( temp, old_tag_to_new(save.tags[A]) );
 
-          if ( diff & 1 ) temp = "(%08lx)"; else temp = " %08lx ";
+          if ( diff & 1 ) temp = "(%8ld)"; else temp = " %8ld ";
           printf( temp, save.org[A].x );
 
-          if ( diff & 2 ) temp = "(%08lx)"; else temp = " %08lx ";
+          if ( diff & 2 ) temp = "(%8ld)"; else temp = " %8ld ";
           printf( temp, save.org[A].y );
 
-          if ( diff & 4 ) temp = "(%08lx)"; else temp = " %08lx ";
+          if ( diff & 4 ) temp = "(%8ld)"; else temp = " %8ld ";
           printf( temp, save.cur[A].x );
 
-          if ( diff & 8 ) temp = "(%08lx)"; else temp = " %08lx ";
+          if ( diff & 8 ) temp = "(%8ld)"; else temp = " %8ld ";
           printf( temp, save.cur[A].y );
 
           printf( "\n" );
 
-          printf( "%02hx  ", A );
+          printf( "                    " );
 
-          if ( diff & 16 ) temp = "[%01hx]"; else temp = " %01hx ";
+          if ( diff & 16 ) temp = "[%01hx]"; else temp = "  ";
           printf( temp, old_tag_to_new(pts.tags[A]) );
 
-          if ( diff & 1 ) temp = "[%08lx]"; else temp = " %08lx ";
+          if ( diff & 1 ) temp = "[%8ld]"; else temp = "          ";
           printf( temp, pts.org[A].x );
 
-          if ( diff & 2 ) temp = "[%08lx]"; else temp = " %08lx ";
+          if ( diff & 2 ) temp = "[%8ld]"; else temp = "          ";
           printf( temp, pts.org[A].y );
 
-          if ( diff & 4 ) temp = "[%08lx]"; else temp = " %08lx ";
+          if ( diff & 4 ) temp = "[%8ld]"; else temp = "          ";
           printf( temp, pts.cur[A].x );
 
-          if ( diff & 8 ) temp = "[%08lx]"; else temp = " %08lx ";
+          if ( diff & 8 ) temp = "[%8ld]"; else temp = "          ";
           printf( temp, pts.cur[A].y );
 
-          printf( "\n\n" );
+          printf( "\n" );
         }
       }
     } while ( TRUE );
@@ -1239,7 +1252,7 @@ int    glyph_size;
 
     if (glyph_index < 0)
     {
-      exec = TT_New_Context( face );
+      exec = TT_New_Context( (TT_Driver)face->root.driver );
       size->debug   = 1;
       size->context = exec;
 

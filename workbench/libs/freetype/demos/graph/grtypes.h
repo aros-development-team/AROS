@@ -2,7 +2,7 @@
  *
  *  grtypes.h
  *
- *    basic type defintions
+ *    basic type definitions
  *
  *  Copyright 1999 - The FreeType Development Team - www.freetype.org
  *

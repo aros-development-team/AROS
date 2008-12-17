@@ -7,27 +7,28 @@
 
 ifeq ($(PLATFORM),beos)
 
-# directory of the BeOS graphics driver
-#
-GR_BEOS  := $(GRAPH_)beos
-GR_BEOS_ := $(GR_BEOS)$(SEP)
+  # directory of the BeOS graphics driver
+  #
+  GR_BEOS := $(GRAPH)/beos
 
-# Add the BeOS driver object file to the graphics library "graph.a"
-#
-GRAPH_OBJS += $(OBJ_)grbeos.$(SO)
+  # add the BeOS driver object file to the graphics library `graph.a'
+  #
+  GRAPH_OBJS += $(OBJ_DIR_2)/grbeos.$(SO)
 
-DEVICES         += BEOS
-DEVICE_INCLUDES += $(GR_BEOS)
+  DEVICES         += BEOS
+  DEVICE_INCLUDES += $(GR_BEOS)
 
-# the rule used to compile the graphics driver
-#
-  $(OBJ_)grbeos.$(SO): $(GR_BEOS_)grbeos.cpp $(GR_BEOS_)grbeos.h
-	  $(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%) $I$(GR_BEOS) \
-                $(X11_INCLUDE:%=$I%) $T$@ $<
+  # the rule used to compile the graphics driver
+  #
+  $(OBJ_DIR_2)/grbeos.$(SO): $(GR_BEOS)/grbeos.cpp $(GR_BEOS)/grbeos.h
+	  $(CC) $(CFLAGS) $(GRAPH_INCLUDES:%=$I%) \
+                $I$(subst /,$(COMPILER_SEP),$(GR_BEOS)) \
+                $(X11_INCLUDE:%=$I%) \
+                $T$(subst /,$(COMPILER_SEP),$@ $<)
 
-# Now update GRAPH_LINK according to the compiler used on BeOS
-GRAPH_LINK        = $(COMMON_LINK) $(GRAPH_LIB) -lbe -lstdc++.r4
+  # Now update GRAPH_LINK according to the compiler used on BeOS
+  GRAPH_LINK += -lbe -lstdc++.r4
 
 endif
 
-
+# EOF

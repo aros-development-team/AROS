@@ -2,11 +2,10 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
-/*  Copyright 1996-1998 by                                                  */
+/*  Copyright 2003 by                                                       */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
-/*  ftlint: a simple font tester. This program tries to load all the        */
-/*          glyphs of a given font.                                         */
+/*  ftchkwd                                                                 */
 /*                                                                          */
 /*  NOTE:  This is just a test program that is used to show off and         */
 /*         debug the current engine.                                        */
@@ -21,26 +20,13 @@
 #include <string.h>
 
 
-#define gettext( x )  ( x )
-
-  FT_Error      error;
-
-  FT_Library    library;
-  FT_Face       face;
-  FT_Size       size;
-  FT_GlyphSlot  slot;
-
-  unsigned int  num_glyphs;
-  int           ptsize;
-
-  int  Fail;
-  int  Num;
+  FT_Error  error;
 
 
-
-  static void  Usage( char*  name )
+  static void
+  Usage( char*  name )
   {
-    printf( "ftcheckfixedwidth: simple font tester -- part of the FreeType project\n" );
+    printf( "ftchkwd: test fixed font width -- part of the FreeType project\n" );
     printf( "---------------------------------------------------------------------\n" );
     printf( "\n" );
     printf( "Usage: %s fontname[.ttf|.ttc] [fontname2..]\n", name );
@@ -50,7 +36,8 @@
   }
 
 
-  static void  Panic( const char*  message )
+  static void
+  Panic( const char*  message )
   {
     fprintf( stderr, "%s\n  error code = 0x%04x\n", message, error );
     exit(1);
@@ -63,10 +50,11 @@
     const char*  base = pathname;
     const char*  p    = pathname;
 
+
     while ( *p )
     {
       if ( *p == '/' || *p == '\\' )
-        base = p+1;
+        base = p + 1;
 
       p++;
     }
@@ -76,15 +64,17 @@
 
 
   static void
-  check_face( FT_Face       face,
-              const char*   filepathname,
-              int           index )
+  check_face( FT_Face      face,
+              const char*  filepathname,
+              int          idx )
   {
     int  face_has_fixed_flag = FT_IS_FIXED_WIDTH(face);
     int  face_max_advance    = face->max_advance_width;
-    int  max_advance         = 0;
     int  num_proportional    = 0;
     int  n;
+
+    FT_UNUSED( idx );
+
 
     printf( "%15s : %20s : ",
             file_basename( filepathname ),
@@ -93,7 +83,8 @@
     for ( n = 0; n < face->num_glyphs; n++ )
     {
       /* load the glyph outline */
-      error = FT_Load_Glyph( face, n, FT_LOAD_NO_SCALE | FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH );
+      error = FT_Load_Glyph( face, n, FT_LOAD_NO_SCALE |
+                                      FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH );
       if ( error )
         continue;
 
@@ -104,7 +95,7 @@
     if ( num_proportional > 0 )
     {
       if ( face_has_fixed_flag )
-        printf( "KO !! tagged fixed, but has %d 'proportional' glyphs",
+        printf( "KO!  Tagged as fixed, but has %d `proportional' glyphs",
                  num_proportional );
       else
         printf( "OK (proportional)" );
@@ -114,20 +105,24 @@
       if ( face_has_fixed_flag )
         printf( "OK (fixed-width)" );
       else
-        printf( "KO !! tagged proportional but has fixed width" );
+        printf( "KO!  Tagged as proportional but has fixed width" );
     }
     printf( "\n" );
   }
 
 
-  int  main( int  argc, char**  argv )
+  int
+  main( int     argc,
+        char**  argv )
   {
-    int           i, file_index;
-    unsigned int  id;
-    char          filename[128 + 4];
-    char          alt_filename[128 + 4];
-    char*         execname;
-    char*         fname;
+    FT_Face     face;
+    FT_Library  library;
+
+    int         i, file_index;
+    char        filename[128 + 4];
+    char        alt_filename[128 + 4];
+    char*       execname;
+    char*       fname;
 
 
     execname = argv[0];
@@ -136,7 +131,8 @@
       Usage( execname );
 
     error = FT_Init_FreeType( &library );
-    if (error) Panic( "Could not create library object" );
+    if ( error )
+      Panic( "Could not create library object" );
 
     /* Now check all files */
     for ( file_index = 1; file_index < argc; file_index++ )
@@ -145,9 +141,8 @@
 
       /* try to open the file with no extra extension first */
       error = FT_New_Face( library, fname, 0, &face );
-      if (!error)
+      if ( !error )
         goto Success;
-
 
       if ( error == FT_Err_Unknown_File_Format )
       {
@@ -155,10 +150,10 @@
         continue;
       }
 
-      /* ok, we could not load the file, try to add an extension to */
-      /* its name if possible..                                     */
+      /* Ok, we could not load the file.  Try to add an extension to */
+      /* its name if possible.                                       */
 
-      i     = strlen( fname );
+      i = strlen( fname );
       while ( i > 0 && fname[i] != '\\' && fname[i] != '/' )
       {
         if ( fname[i] == '.' )
@@ -182,9 +177,9 @@
 
       /* Load face */
       error = FT_New_Face( library, filename, 0, &face );
-      if (error)
+      if ( error )
       {
-        if (error == FT_Err_Unknown_File_Format)
+        if ( error == FT_Err_Unknown_File_Format )
           printf( "unknown format\n" );
         else
           printf( "could not find/open file (error: %d)\n", error );
@@ -197,7 +192,7 @@
       FT_Done_Face( face );
     }
 
-    FT_Done_FreeType(library);
+    FT_Done_FreeType( library );
     exit( 0 );      /* for safety reasons */
 
     return 0;       /* never reached */

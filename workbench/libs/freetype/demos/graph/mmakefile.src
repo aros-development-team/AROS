@@ -5,13 +5,17 @@ include $(TOP)/config/make.cfg
 
 FILES := \
 	grblit \
+    gblender \
+    gblblit \
 	grobjs \
+    grfill \
 	grfont \
 	grdevice \
 	grinit \
+    grswizzle \
 	aros/graros
 
-USER_INCLUDES		:= -I. -Igraph -I./aros
+USER_INCLUDES		:= -I. -Igraph
 USER_CFLAGS		:= -DDEVICE_AROS
 
 %build_linklib mmake=workbench-libs-freetype-graph \

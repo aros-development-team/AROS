@@ -1,0 +1,103 @@
+#   File:       ftoldmac.m68k_far.make
+#   Target:     ftoldmac.m68k_far
+#   Created:    Wednesday, November 23, 2005 04:21:20 PM
+
+
+MAKEFILE        = ftoldmac.m68k_far.make
+\xA5MondoBuild\xA5    = {MAKEFILE}  # Make blank to avoid rebuilds when makefile is modified
+
+FT2Dir		= ::freetype2:
+ObjDir          = :obj:
+Includes        =  \xB6
+			-i "{FT2Dir}include:" \xB6
+			-i "{FT2Dir}src:" \xB6
+			-i :src: \xB6
+			-i "{FT2Dir}include:freetype:config:"
+
+Sym-68K         = -sym off
+
+COptions        = \xB6
+			-d HAVE_FSSPEC=1 \xB6
+			-d HAVE_FSREF=0 \xB6
+			-d HAVE_QUICKDRAW_TOOLBOX=1 \xB6
+			-d HAVE_QUICKDRAW_CARBON=0 \xB6
+			-d HAVE_ATS=0 \xB6
+			-d FT2_BUILD_LIBRARY \xB6
+			-d FT_CONFIG_CONFIG_H="<ftconfig.h>" \xB6
+			-d FT_CONFIG_MODULES_H="<ftmodule.h>" \xB6
+			{Includes} {Sym-68K} -model far -includes unix
+
+
+### Source Files ###
+
+SrcFiles        =  \xB6
+				  :mac:ftoldmac.c \xB6
+				  :src:common.c
+
+
+### Object Files ###
+
+ObjFiles-68K    =  \xB6
+				  "{ObjDir}ftoldmac.c.o" \xB6
+				  "{ObjDir}common.c.o"
+
+
+### Libraries ###
+
+LibFiles-68K    =  \xB6
+				  "{FT2Dir}FreeType.m68k_far.o" \xB6
+				  "{Libraries}Stubs.o" \xB6
+				  "{Libraries}MathLib.far.o" \xB6
+				  "{CLibraries}StdCLib.far.o" \xB6
+				  "{Libraries}MacRuntime.o" \xB6
+				  "{Libraries}IntEnv.far.o" \xB6
+				  "{Libraries}ToolLibs.far.o" \xB6
+				  "{Libraries}Interface.o"
+
+
+### Default Rules ###
+
+.c.o  \xC4  .c  {\xA5MondoBuild\xA5}
+	{C} {depDir}{default}.c -o {targDir}{default}.c.o {COptions}
+
+
+### Build Rules ###
+
+ftoldmac.m68k_far  \xC4\xC4  {ObjFiles-68K} {LibFiles-68K} {\xA5MondoBuild\xA5}
+	ILink \xB6
+		-o {Targ} \xB6
+		{ObjFiles-68K} \xB6
+		{LibFiles-68K} \xB6
+		{Sym-68K} \xB6
+		-mf -d \xB6
+		-t 'MPST' \xB6
+		-c 'MPS ' \xB6
+		-model far \xB6
+		-state rewrite \xB6
+		-compact -pad 0 \xB6
+		-br on
+	If "{Sym-68K}" =~ /-sym \xC5[nNuU]\xC5/
+		ILinkToSYM {Targ}.NJ -mf -sym 3.2 -c 'sade'
+	End
+
+
+
+### Required Dependencies ###
+
+"{ObjDir}ftoldmac.c.o"  \xC4  :mac:ftoldmac.c
+"{ObjDir}common.c.o"  \xC4  :src:common.c
+
+
+### Optional Dependencies ###
+### Build this target to generate "include file" dependencies. ###
+
+Dependencies  \xC4  $OutOfDate
+	MakeDepend \xB6
+		-append {MAKEFILE} \xB6
+		-ignore "{CIncludes}" \xB6
+		-objdir "{ObjDir}" \xB6
+		-objext .o \xB6
+		{Includes} \xB6
+		{SrcFiles}
+
+

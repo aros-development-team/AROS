@@ -125,4 +125,12 @@
   extern int            gr_max_devices;
 
 
+extern void
+gr_swizzle_rgb24( unsigned char*    read_buff,
+                  int               read_pitch,
+                  unsigned char*    write_buff,
+                  int               write_pitch,
+                  int               width,
+                  int               height );
+
 #endif /* GRDEVICE_H */
