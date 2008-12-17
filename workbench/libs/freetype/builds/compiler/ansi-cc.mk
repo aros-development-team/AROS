@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000 by
+# Copyright 1996-2000, 2003, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -15,7 +15,9 @@
 
 # Compiler command line name
 #
-CC := cc
+CC           := cc
+COMPILER_SEP := $(SEP)
+
 
 # The object file extension (for standard and static libraries).  This can be
 # .o, .tco, .obj, etc., depending on the platform.
@@ -60,9 +62,7 @@ T := -o$(space)
 #   Use the ANSIFLAGS variable to define the compiler flags used to enfore
 #   ANSI compliance.
 #
-ifndef CFLAGS
-  CFLAGS := -c
-endif
+CFLAGS ?= -c
 
 # ANSIFLAGS: Put there the flags used to make your compiler ANSI-compliant.
 #
@@ -73,9 +73,8 @@ ANSIFLAGS :=
 
 # Library linking
 #
-ifndef CLEAN_LIBRARY
-  CLEAN_LIBRARY = $(DELETE) $(subst $(SEP),$(HOSTSEP),$(PROJECT_LIBRARY))
-endif
-LINK_LIBRARY = $(AR) -r $@ $(OBJECTS_LIST)
+CLEAN_LIBRARY ?= $(DELETE) $(subst /,$(SEP),$(PROJECT_LIBRARY))
+LINK_LIBRARY   = $(AR) -r $@ $(subst /,$(COMPILER_SEP),$(OBJECTS_LIST))
+
 
 # EOF

@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000 by
+# Copyright 1996-2000, 2003, 2004, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -23,7 +23,8 @@ ifeq ($(PLATFORM),ansi)
   # `make' utility is run).
   #
   # We test for the COMSPEC environment variable, then run the `ver'
-  # command-line program to see if its output contains the word `Dos'.
+  # command-line program to see if its output contains the word `Dos' or
+  # `DOS'.
   #
   # If this is true, we are running a Dos-ish platform (or an emulation).
   #
@@ -31,7 +32,7 @@ ifeq ($(PLATFORM),ansi)
     PLATFORM := dos
   else
     ifdef COMSPEC
-      is_dos := $(findstring Dos,$(shell ver))
+      is_dos := $(findstring DOS,$(subst Dos,DOS,$(shell ver)))
 
       # We try to recognize a Dos session under OS/2.  The `ver' command
       # returns `Operating System/2 ...' there, so `is_dos' should be empty.
@@ -42,6 +43,21 @@ ifeq ($(PLATFORM),ansi)
       ifeq ($(is_dos),)
         is_dos := $(findstring MDOS\COMMAND,$(COMSPEC))
       endif
+
+      # We also try to recognize Dos 7.x without Windows 9X launched.
+      # See builds/win32/detect.mk for explanations about the logic.
+      #
+      ifeq ($(is_dos),)
+        ifdef winbootdir
+#ifneq ($(OS),Windows_NT)
+          # If win32 is available, do not trigger this test.
+          ifndef windir
+            is_dos := $(findstring Windows,$(strip $(shell ver)))
+          endif
+#endif
+        endif
+      endif
+
     endif # test COMSPEC
 
     ifneq ($(is_dos),)
@@ -57,16 +73,19 @@ ifeq ($(PLATFORM),dos)
   # Use DJGPP (i.e. gcc) by default.
   #
   CONFIG_FILE := dos-gcc.mk
-  SEP         := /
-  ifndef CC
-    CC        := gcc
-  endif
+  CC          ?= gcc
 
   # additionally, we provide hooks for various other compilers
   #
+  ifneq ($(findstring emx,$(MAKECMDGOALS)),)        # EMX gcc
+    CONFIG_FILE := dos-emx.mk
+    CC          := gcc
+    emx: setup
+    .PHONY: emx
+  endif
+
   ifneq ($(findstring turboc,$(MAKECMDGOALS)),)     # Turbo C
     CONFIG_FILE := dos-tcc.mk
-    SEP         := $(BACKSLASH)
     CC          := tcc
     turboc: setup
     .PHONY: turboc
@@ -74,7 +93,6 @@ ifeq ($(PLATFORM),dos)
 
   ifneq ($(findstring watcom,$(MAKECMDGOALS)),)     # Watcom C/C++
     CONFIG_FILE := dos-wat.mk
-    SEP         := $(BACKSLASH)
     CC          := wcc386
     watcom: setup
     .PHONY: watcom
@@ -82,7 +100,6 @@ ifeq ($(PLATFORM),dos)
 
   ifneq ($(findstring borlandc,$(MAKECMDGOALS)),)   # Borland C/C++ 32-bit
     CONFIG_FILE := dos-bcc.mk
-    SEP         := $(BACKSLASH)
     CC          := bcc32
     borlandc: setup
     .PHONY: borlandc
@@ -90,22 +107,36 @@ ifeq ($(PLATFORM),dos)
 
   ifneq ($(findstring borlandc16,$(MAKECMDGOALS)),) # Borland C/C++ 16-bit
     CONFIG_FILE := dos-bcc.mk
-    SEP         := $(BACKSLASH)
     CC          := bcc
     borlandc16: setup
     .PHONY: borlandc16
   endif
 
   ifneq ($(findstring bash,$(SHELL)),)              # check for bash
+    SEP    := /
     DELETE := rm
     COPY   := cp
+    CAT    := cat
     setup: std_setup
   else
+    SEP    := $(BACKSLASH)
     DELETE := del
-    COPY   := copy
+    CAT    := type
+
+    # Setting COPY is a bit trickier.  We can be running DJGPP on some
+    # Windows NT derivatives, like XP.  See builds/win32/detect.mk for
+    # explanations why we need hacking here.
+    #
+    ifeq ($(OS),Windows_NT)
+      COPY := cmd.exe /c copy
+    else
+      COPY := copy
+    endif  # test NT
+
     setup: dos_setup
   endif
 
 endif     # test PLATFORM dos
+
 
 # EOF

@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000, 2002 by
+# Copyright 1996-2000, 2002, 2004, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -12,14 +12,18 @@
 # indicate that you have read the license and understand and accept it
 # fully.
 
-have_mk := $(strip $(wildcard $(TOP_DIR)/builds/unix/unix-def.mk))
+# We need these declarations here since unix-def.mk is a generated file.
+BUILD_DIR := $(TOP_DIR)/builds/unix
+PLATFORM  := unix
+
+have_mk := $(wildcard $(OBJ_DIR)/unix-def.mk)
 ifneq ($(have_mk),)
-  include $(TOP_DIR)/builds/unix/unix-def.mk
-  include $(TOP_DIR)/builds/unix/unix-cc.mk
-else
-  # we are building FT2 not in the src tree
+  # We are building FreeType 2 not in the src tree.
   include $(OBJ_DIR)/unix-def.mk
   include $(OBJ_DIR)/unix-cc.mk
+else
+  include $(BUILD_DIR)/unix-def.mk
+  include $(BUILD_DIR)/unix-cc.mk
 endif
 
 ifdef BUILD_PROJECT
@@ -44,14 +48,15 @@ ifdef BUILD_PROJECT
   #
   #   librarian library_file {list of object files}
   #
-  $(PROJECT_LIBRARY): $(OBJECTS_LIST)
-ifdef CLEAN_LIBRARY
-	  -$(CLEAN_LIBRARY) $(NO_OUTPUT)
-endif
-	  $(LINK_LIBRARY)
+    $(PROJECT_LIBRARY): $(OBJECTS_LIST)
+  ifdef CLEAN_LIBRARY
+	    -$(CLEAN_LIBRARY) $(NO_OUTPUT)
+  endif
+	    $(LINK_LIBRARY)
+
+  include $(TOP_DIR)/builds/unix/install.mk
 
 endif
 
-include $(TOP_DIR)/builds/unix/install.mk
 
 # EOF

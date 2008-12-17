@@ -3,7 +3,7 @@
 #
 
 
-# Copyright 1996-2000 by
+# Copyright 1996-2000, 2003, 2004, 2005, 2006 by
 # David Turner, Robert Wilhelm, and Werner Lemberg.
 #
 # This file is part of the FreeType project, and may only be used, modified,
@@ -15,7 +15,9 @@
 
 # Compiler command line name
 #
-CC := gcc
+CC           := gcc
+COMPILER_SEP := /
+
 
 # The object file extension (for standard and static libraries).  This can be
 # .o, .tco, .obj, etc., depending on the platform.
@@ -61,6 +63,11 @@ T := -o$(space)
 #   ANSI compliance.
 #
 ifndef CFLAGS
+  ifeq ($(findstring g++,$(CC)),)
+    nested_externs    := -Wnested-externs
+    strict_prototypes := -Wstrict-prototypes
+  endif
+
   CFLAGS := -c -g -O0 \
             -Wall \
             -W \
@@ -68,10 +75,10 @@ ifndef CFLAGS
             -Wshadow \
             -Wpointer-arith \
             -Wwrite-strings \
-            -Wstrict-prototypes \
             -Wredundant-decls \
-            -Wnested-externs \
-            -Wno-long-long
+            -Wno-long-long \
+            $(nested_externs) \
+            $(strict_prototypes)
 endif
 
 # ANSIFLAGS: Put there the flags used to make your compiler ANSI-compliant.
@@ -81,9 +88,8 @@ ANSIFLAGS := -ansi -pedantic
 
 # Library linking
 #
-ifndef CLEAN_LIBRARY
-  CLEAN_LIBRARY = $(DELETE) $(subst $(SEP),$(HOSTSEP),$(PROJECT_LIBRARY))
-endif
-LINK_LIBRARY = $(AR) -r $@ $(OBJECTS_LIST)
+CLEAN_LIBRARY ?= $(DELETE) $(subst /,$(SEP),$(PROJECT_LIBRARY))
+LINK_LIBRARY   = $(AR) -r $@ $(OBJECTS_LIST)
+
 
 # EOF

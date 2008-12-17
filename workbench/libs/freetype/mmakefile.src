@@ -2,5 +2,4 @@
 #MM     workbench-libs-freetype-linklib \
 #MM     workbench-libs-freetype-module \
 #MM	workbench-libs-freetype-graph \
-#MM	workbench-libs-freetype-demos \
-#MM     workbench-libs-freetype-ftmanager
+#MM	workbench-libs-freetype-demos
