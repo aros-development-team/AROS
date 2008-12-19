@@ -212,9 +212,9 @@ static void printProcess(struct DosLibrary *DOSBase, BOOL full, BOOL tcb,
 
     if (tcb || full)
     {
-	PrintF(DOSBase,"stk %lu, pri %lu ",
+	PrintF(DOSBase,"stk %lu, pri %ld ",
 	       (ULONG)cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
-	       (ULONG)process->pr_Task.tc_Node.ln_Pri);
+	       (LONG)process->pr_Task.tc_Node.ln_Pri);
     }
 
     if (!tcb || full)
@@ -230,7 +230,7 @@ static void PrintF(struct DosLibrary *DOSBase, STRPTR format, ...)
     va_list args;
     va_start(args, format);
 
-    VPrintf(format, (LONG *) args);
+    VPrintf(format, (IPTR *) args);
 
     va_end(args);
 }
