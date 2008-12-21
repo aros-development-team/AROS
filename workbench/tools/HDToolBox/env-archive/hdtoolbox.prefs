@@ -1,6 +1,7 @@
 [Devices]
 scsi.device
 ata.device
+usbmss.device
 
 [TableIDs]
 TableType = "PC-MBR"
