@@ -152,6 +152,31 @@ for                                                        \
 #endif
 #endif
 
+#define RPALPHAFLAT (1 << 0)
+#define RPALPHARADIAL (1 << 1)
+
+void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, UBYTE val, UBYTE alphamode)
+{
+	ULONG x, y;
+	ULONG alphaval, pixelval;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			if ((pixelval = ReadRGBPixel(arport, x, y)))
+			{
+                if (alphamode == RPALPHARADIAL){
+                    //Set the alpha value based on distance from ax,ay
+                } else {
+                    alphaval = val;
+                }
+				WriteRGBPixel(arport, x, y, ((pixelval & 0xffffff)|(alphaval << 24)));
+			}
+		}
+	}
+}
+
 ///RectAndRect()
 // Icon/Label Area support functions
 int RectAndRect(struct Rectangle *a, struct Rectangle *b)
@@ -2873,7 +2898,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
         dt.dat_StrDay   = NULL;
         dt.dat_StrDate  = entry->ile_TxtBuf_DATE;
         dt.dat_StrTime  = entry->ile_TxtBuf_TIME;
-    
+
         DateToStr(&dt);
         DateStamp(&now);
 
@@ -2882,7 +2907,7 @@ D(bug("[IconList] %s: Failed to Allocate Entry label string Storage!\n", __PRETT
             entry->ile_Flags |= ICONENTRY_FLAG_TODAY;
         else
             entry->ile_Flags &= ~ICONENTRY_FLAG_TODAY;
-        
+
         sp = entry->ile_TxtBuf_PROT;
         *sp++ = (entry->ile_FileInfoBlock.fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
         *sp++ = (entry->ile_FileInfoBlock.fib_Protection & FIBF_PURE)    ? 'p' : '-';
@@ -2910,7 +2935,7 @@ D(bug("[IconList] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__,
 	{
 D(bug("[IconList] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->ile_IconListEntry.type));
 	}
-	
+
     strcpy(entry->ile_IconListEntry.filename, message->filename);
     strcpy(entry->ile_IconListEntry.label, message->label);
 
@@ -2983,7 +3008,6 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
             MUIA_IconList_Top, newtop,
             TAG_DONE);
     }
-
 }
 ///
 
@@ -4554,10 +4578,8 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
 {
     struct IconList_DATA     *data = INST_DATA(CLASS, obj);
     struct MUI_DragImage    *img = NULL;
-#if defined(CREATE_FULL_DRAGIMAGE)
     LONG                    first_x = -1,
                             first_y = -1;
-#endif
 
 D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -4592,14 +4614,19 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         entry = data->icld_SelectionLastClicked;
         img->width = entry->ile_IconWidth;
         img->height = entry->ile_IconHeight;
+        first_x = entry->ile_IconX;
+        first_y = entry->ile_IconY;
 #endif
-    
-        if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_MINPLANES|BMF_CLEAR, _screen(obj)->RastPort.BitMap)))
+
+        img->touchx = data->click_x - first_x;
+        img->touchy = data->click_y - first_y;
+
+        if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_MINPLANES|BMF_CLEAR|BMF_SPECIALFMT|(PIXFMT_ARGB32<<24), _screen(obj)->RastPort.BitMap)))
         {
             struct RastPort temprp;
             InitRastPort(&temprp);
             temprp.BitMap = img->bm;
-    
+
 #if defined(CREATE_FULL_DRAGIMAGE)
             ForeachNode(&data->icld_SelectionList, node)
             {
@@ -4624,6 +4651,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                     __iconList_DrawIconStateTags
                 );
 #endif
+            RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0x80, RPALPHAFLAT);
             DeinitRastPort(&temprp);
         }
     
