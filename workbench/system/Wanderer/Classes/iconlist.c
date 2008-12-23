@@ -21,12 +21,6 @@ $Id$
 
 //#define CREATE_FULL_DRAGIMAGE
 
-#if !defined(__AROS__)
-#define DRAWICONSTATE DrawIconState
-#else
-#define DRAWICONSTATE DrawIconStateA
-#endif
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -84,9 +78,6 @@ $Id$
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <libraries/mui.h>
-//#include "muimaster_intern.h"
-//#include "support.h"
-//#include "imspec.h"
 #include "iconlist_attributes.h"
 #include "iconlist.h"
 #include "iconlist_private.h"
@@ -111,9 +102,17 @@ $Id$
 #define _isinobject(x,y) (_between(_mleft(obj),(x),_mright (obj)) \
                           && _between(_mtop(obj) ,(y),_mbottom(obj)))
 
-extern struct Library *MUIMasterBase;
+extern struct Library   *MUIMasterBase;
 
-struct Hook                  __iconlist_UpdateLabels_hook;
+struct Hook             __iconlist_UpdateLabels_hook;
+
+// N.B: We Handle frame/background rendering so make sure icon.library doesnt do it ..
+struct TagItem          __iconList_DrawIconStateTags[] = {
+    { ICONDRAWA_Frameless, TRUE},
+    { ICONDRAWA_Borderless, TRUE},
+    { ICONDRAWA_EraseBackground, FALSE},
+    { TAG_DONE, }
+};
 
 #ifndef NO_ICON_POSITION
 #define NO_ICON_POSITION                               (0x8000000) /* belongs to workbench/workbench.h */
@@ -551,20 +550,17 @@ D(bug("[IconList] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
     if (message->drawmode == ICONENTRY_DRAWMODE_NONE) return TRUE;
     
     // Center icon image
-
     iconX = iconrect.MinX - _mleft(obj) + data->icld_DrawOffsetX;
     iconY = iconrect.MinY - _mtop(obj) + data->icld_DrawOffsetY;
 
-    DRAWICONSTATE(
-        data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->ile_DiskObj, NULL,
-        iconX, 
-        iconY, 
-        (message->icon->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL, 
-#if !defined(__AROS__)
-        ICONDRAWA_EraseBackground, FALSE, 
-#endif
-        TAG_DONE
-    );
+    DrawIconStateA
+        (
+            data->icld_BufferRastPort ? data->icld_BufferRastPort : data->icld_BufferRastPort, message->icon->ile_DiskObj, NULL,
+            iconX, 
+            iconY, 
+            (message->icon->ile_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+            __iconList_DrawIconStateTags
+        );
 
     return TRUE;
 }
@@ -2567,7 +2563,7 @@ D(bug("[IconList] %s#%d: UPDATE_RESIZE.\n", __PRETTY_FUNCTION__, draw_id));
                 {
                     /* View became smaller both in horizontal and vertical direction.
                        Nothing to do */
-                       
+
                     DisposeRegion(region);
                     goto draw_done;
                 }
@@ -4610,27 +4606,24 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
                 entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ile_SelectionNode - (IPTR)entry));
                 if ((entry->ile_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ile_Flags & ICONENTRY_FLAG_SELECTED))
                 {
-                    DRAWICONSTATE(
+                    DrawIconStateA
+                        (
                             &temprp, entry->ile_DiskObj, NULL,
                             (entry->ile_IconX + 1) - first_x, (entry->ile_IconY + 1) - first_y,
                             IDS_SELECTED,
-                          #if !defined(__AROS__)
-                            ICONDRAWA_EraseBackground, TRUE,
-                          #endif
-                            TAG_DONE);
+                            __iconList_DrawIconStateTags
+                        );
                 }
             }
 #else
-            DRAWICONSTATE(
+            DrawIconStateA
+                (
                     &temprp, entry->ile_DiskObj, NULL,
                     0, 0,
                     IDS_SELECTED,
-                  #if !defined(__AROS__)
-                    ICONDRAWA_EraseBackground, TRUE,
-                  #endif
-                    TAG_DONE);
+                    __iconList_DrawIconStateTags
+                );
 #endif
-
             DeinitRastPort(&temprp);
         }
     
@@ -4638,7 +4631,7 @@ D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
         img->touchy = message->touchy;
         img->flags = 0;
     }
-    return (ULONG)img;
+    return (IPTR)img;
 }
 ///
 
