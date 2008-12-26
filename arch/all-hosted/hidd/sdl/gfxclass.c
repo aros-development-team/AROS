@@ -15,6 +15,7 @@
 #include <utility/tagitem.h>
 #include <oop/oop.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
