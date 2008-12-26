@@ -26,8 +26,6 @@
 #include "__open.h"
 #include "__upath.h"
 
-int c;
-
 fdesc *__getfdesc(register int fd)
 {
     return ((__numslots>fd) && (fd>=0))?__fd_array[fd]:NULL;
