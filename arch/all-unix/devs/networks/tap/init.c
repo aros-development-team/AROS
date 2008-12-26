@@ -8,6 +8,8 @@
 
 #include "tap.h"
 
+#include <proto/alib.h>
+
 HIDD    *unixio = NULL;
 
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR LIBBASE) {
