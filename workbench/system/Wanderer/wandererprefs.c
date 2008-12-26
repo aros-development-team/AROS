@@ -698,8 +698,12 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Tags copied to 
       int i = 0;
       for (i = 0; i < _viewSettings_TagCount; i++)
       {
-D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Setting Tag 0x%p Value %d\n", AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag), AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data)));
-      SET(_viewSettings_Node->wpbn_NotifyObject, AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag), AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data));
+#if AROS_BIG_ENDIAN
+      _viewSettings_Node->wpbn_Options[i].ti_Tag  = AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Tag);
+      _viewSettings_Node->wpbn_Options[i].ti_Data = AROS_LE2LONG(_viewSettings_Node->wpbn_Options[i].ti_Data);
+#endif
+D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Setting Tag 0x%p Value %d\n", _viewSettings_Node->wpbn_Options[i].ti_Tag, _viewSettings_Node->wpbn_Options[i].ti_Data));
+      SET(_viewSettings_Node->wpbn_NotifyObject, _viewSettings_Node->wpbn_Options[i].ti_Tag, _viewSettings_Node->wpbn_Options[i].ti_Data);
       }
     }
   }
