@@ -252,7 +252,7 @@ MSG_ABOUT
 Tietoa
 ;
 MSG_FORMATINFO
-%s for %s\nSuunnittelu: T.Pierron ja C.Guillaume © 2000\n\nTiedosto muokattavana: %s\nKoko: %ld %s, %ld %s.
+%s\nSuunnittelu: T.Pierron ja C.Guillaume © 2000\n\nTiedosto muokattavana: %s\nKoko: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 Jatka

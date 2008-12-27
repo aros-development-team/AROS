@@ -29,5 +29,5 @@
 #define	TARGET		"CBM-AmigaDOS-" ARCH
 #endif
 
-#define	SVERID		APPNAME " " VERSION " http://perso.wanadoo.fr/cyrille.guillaume/"
-#define	SVER			"$VER: " APPNAME " " VERSION " (" DATE ") for " TARGET
+#define	SVERID		APPNAME " " VERSION
+#define	SVER			"$VER: " APPNAME " " VERSION " (" DATE ")"

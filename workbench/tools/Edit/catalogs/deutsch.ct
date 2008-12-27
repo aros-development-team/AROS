@@ -350,12 +350,12 @@ Information
 ; Information
 ;
 MSG_FORMATINFO
-%s für %s\n\
+%s\n\
 Programm von T.Pierron und C.Guillaume © 2000\n\
 \n\
-Datei : %s\n\
-Länge : %ld %s, %ld %s.\n
-; %s for %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited : %s\nLength : %ld %s, %ld %s.
+Datei: %s\n\
+Länge: %ld %s, %ld %s.\n
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 Weiter

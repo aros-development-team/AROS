@@ -267,7 +267,7 @@ MSG_ABOUT
 Informazioni
 ;
 MSG_FORMATINFO
-%s per %s\nConçu di T.Pierron et C.Guillaume © 2000\n\nDocumento attuale : %s\nLunghezza: %ld %s, %ld %s.
+%s\nConçu di T.Pierron et C.Guillaume © 2000\n\nDocumento attuale: %s\nLunghezza: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 Continua

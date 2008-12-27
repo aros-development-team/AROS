@@ -57,8 +57,8 @@ STRPTR CatPath ( STRPTR dir, STRPTR file );
 void ThrowError    (struct Window *, STRPTR);
 void ThrowDOSError (struct Window *, STRPTR);
 
-/** Set a permanent title **/
-void SetTitle(struct Window *, STRPTR);
+/** Update window title **/
+void UpdateTitle(struct Window *, Project);
 
 /** Stop countdown msg. and restore original title */
 void StopError(struct Window *);

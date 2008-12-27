@@ -350,8 +350,8 @@ Informace
 ; Information
 ;
 MSG_FORMATINFO
-%s pro %s\nAutoøi: T.Pierron a C.Guillaume\nCopyright (C) 2000\n\nOtevøený soubor: %s\Statistika: %ld %s, %ld %s.
-; %s for %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited : %s\nLength : %ld %s, %ld %s.
+%s\nAutoøi: T.Pierron a C.Guillaume\nCopyright (C) 2000\n\nOtevøený soubor: %s\Statistika: %ld %s, %ld %s.
+; %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 OK

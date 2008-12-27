@@ -571,7 +571,7 @@ void rollback( JBuf jb )
 
 	PRJ(jb)->state &= ~DONT_FLUSH;
 
-	/* Last savepoint reached or leaved ? */
+	/* Last savepoint reached or left? */
 	if((PRJ(jb)->state & MODIFIED) == 0)
 		set_modif_mark(PRJ(jb));
 	else if(jb->rbtype ? commit : PRJ(jb)->savepoint == ptr)

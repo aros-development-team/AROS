@@ -185,7 +185,7 @@ struct Scroll ScrollBar = {
 /* Menu color information */
 struct TagItem MenuTags[] = {
 	{GTMN_FrontPen, 0L},
-	TAG_DONE
+	{TAG_DONE, 0}
 };
 
 /* Information about edit area */
