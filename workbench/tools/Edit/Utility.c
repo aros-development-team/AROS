@@ -20,6 +20,8 @@
 #define  CATCOMP_NUMBERS
 #include "strings.h"
 
+void SetTitle(struct Window *, STRPTR);
+
 extern struct IntuitionBase *IntuitionBase;
 extern ULONG  err_time;
 static UBYTE  SPrintfBuf[80], *savea3;
@@ -57,7 +59,7 @@ void __asm PutChProc(register __d0 UBYTE data, register __a3 STRPTR out)
 #endif
 }
 
-/** This is a very simplified routine, but takes only a few hundreed of bytes **/
+/** This is a very simplified routine, but takes only a few hundred bytes **/
 STRPTR my_SPrintf(STRPTR fmt, APTR data)
 {
 	savea3 = SPrintfBuf;
@@ -65,23 +67,25 @@ STRPTR my_SPrintf(STRPTR fmt, APTR data)
 	return SPrintfBuf;
 }
 
-STRPTR InfoTmpl = "%4ld, %5ld ";
-
 /** Write column/line in top of window **/
 void draw_info(Project p)
 {
-	extern WORD fginfo, bginfo;
-	struct { ULONG x; ULONG y; } coord;
-	struct RastPort *RP;
+	UpdateTitle(Wnd, p);
+}
 
-	coord.x = p->nbrc+1; coord.y = p->nbl+1; savea3 = SPrintfBuf;
-	RawDoFmt(InfoTmpl, &coord, (void *)PutChProc, 0);
+CONST_STRPTR InfoTmpl = "%s%s    (%ld, %ld)";
 
-	RP = (prefs.use_pub ? &Scr->RastPort : &RPT);
+/** Update window title **/
+void UpdateTitle(struct Window *W, Project p)
+{
+	struct { TEXT *name; TEXT *modified; ULONG x; ULONG y; } info;
 
-	SetABPenDrMd(RP,fginfo,bginfo,JAM2);
-	Move(RP,gui.xinfo,gui.yinfo);
-	Text(RP, SPrintfBuf, savea3-SPrintfBuf-1);
+	info.name = p->path? p->path: p->name;
+	info.modified = (p->state & MODIFIED) ? STR_MODIF : "";
+	info.x = p->nbrc+1; info.y = p->nbl+1; savea3 = SPrintfBuf;
+	RawDoFmt(InfoTmpl, &info, (void *)PutChProc, 0);
+
+	SetTitle(W, SPrintfBuf);
 }
 
 /** Convert argv table into a WBArg one **/
@@ -222,7 +226,7 @@ void ThrowError(struct Window *W, STRPTR Msg)
 		else SetWindowTitles(W,Msg,(UBYTE *)-1);
 
 		err_time = 0;
-		/* To be sure that mesage will be disappear one day */
+		/* To be sure that message will disappear one day */
 		ModifyIDCMP(W,W->IDCMPFlags | IDCMP_INTUITICKS);
 	}	else puts(Msg);
 }
@@ -266,7 +270,7 @@ ULONG IDCMPFlags;
 struct TagItem busy_pointer_tags[] =
 {
 	{WA_BusyPointer,TRUE},
-	TAG_END
+	{TAG_END,0}
 };
 
 /*** Shutdown window IDCMP port ***/
@@ -294,10 +298,10 @@ void WakeUp(struct Window *W)
 /* Information window about current project */
 struct EasyStruct request;
 
-/*** Don't know where to put this one... ***/
+/*** Show information window ***/
 void show_info(Project p)
 {
-	extern UBYTE Version[], WinTitle[], szEOL[];
+	extern UBYTE WinTitle[], szEOL[];
 	STRPTR file;
 	ULONG  bytes;
 
@@ -307,12 +311,13 @@ void show_info(Project p)
 	bytes = size_count(p->the_line, szEOL[ p->eol ]);
 	split_path((AskArgs *)&p->path, NULL, &file);
 
-	EasyRequest(Wnd,&request,0,(ULONG)WinTitle,(ULONG)(Version+sizeof(SVER)-sizeof(TARGET)),(ULONG)file,
-	            p->max_lines,(ULONG)MsgAbout[ p->max_lines>1 ? 6:5 ],bytes,(ULONG)MsgAbout[ bytes>1 ? 4:3 ]);
+	EasyRequest(Wnd,&request,NULL,(ULONG)WinTitle,file,
+		p->max_lines,MsgAbout[ p->max_lines!=1 ? 6:5 ],
+		bytes,MsgAbout[ bytes!=1 ? 4:3 ]);
 	WakeUp(Wnd);
 }
 
-/*** Avert user that its file has been modified ***/
+/*** Warn user that file has been modified ***/
 char warn_modif(Project p)
 {
 	STRPTR file;
@@ -333,7 +338,7 @@ char warn_modif(Project p)
 	return 1;
 }
 
-/*** Avert user that he is going to overwrite a file ***/
+/*** Warn user that he is going to overwrite a file ***/
 char warn_overwrite( STRPTR path )
 {
 	APTR lock;

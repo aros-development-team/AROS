@@ -90,8 +90,7 @@ void stop_macro( void )
 			free_macro( MainMacro ); MainMacro = MacCur; MacCur = NULL;
 			ThrowError(Wnd, ErrMsg(WARN_RECORDED));
 		}
-		else SetTitle(Wnd, Wnd->UserData);
-		draw_info( edit );
+		else UpdateTitle(Wnd, edit);
 	}
 }
 

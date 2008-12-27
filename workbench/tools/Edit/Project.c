@@ -203,7 +203,7 @@ void set_project_name( Project p, STRPTR path )
 	p->labsize = strlen(p->name);
 }
 
-/*** Save one projet ***/
+/*** Save one project ***/
 char save_project(Project p, char refresh, char ask)
 {
 	/* Ask for a name if file doesn't have one */
@@ -221,7 +221,7 @@ char save_project(Project p, char refresh, char ask)
 	unset_modif_mark(p, FALSE);
 
 	if( refresh )
-		SetTitle(Wnd, p->path),
+		UpdateTitle(Wnd, p),
 		update_panel_name( p );
 
 	return save_file(p->path, p->the_line, p->eol, p->protection);
@@ -236,7 +236,7 @@ Project save_projects(Project active, char close)
 		/* Auto-save modified project */
 		if(p->state & MODIFIED) {
 			if(save_project(p, FALSE, FALSE) == 0) break; else nb ++;
-			if(p == active && close == 0) SetTitle(Wnd, p->path);
+			if(p == active && close == 0) UpdateTitle(Wnd, p);
 		}
 
 		if(close == TRUE)
@@ -267,7 +267,7 @@ char active_project(Project p, char InitCurs)
 
 	prop_adj(p);
 	init_tabstop(p->tabsize);
-	SetTitle(Wnd, p->path ? p->path : p->name);
+	UpdateTitle(Wnd, p);
 	SetABPenDrMd(RP,pen.fg,pen.bg,JAM2);
 	if(InitCurs)
 		p->ycurs = gui.topcurs,
@@ -389,22 +389,19 @@ void set_modif_mark(Project p)
 	p->state |= MODIFIED;
 	if( p->path )
 	{
-		strcat(p->name, STR_MODIF);
 		update_panel_name( p );
-		SetTitle(Wnd, p->path);
+		UpdateTitle(Wnd, p);
 	}
 }
 void unset_modif_mark(Project p, char update)
 {
 	commit_work( p );
-	if( p->path && (p->state & MODIFIED) )
-	{
-		p->labsize = strlen(p->name) - sizeof(STR_MODIF) + 1;
-		p->name[p->labsize] = 0;
-		if( update ) SetTitle(Wnd, p->path);
-	}
 	p->state = 0;
-	if( update ) update_panel_name(p);
+	if(update)
+	{
+		update_panel_name(p);
+		UpdateTitle(Wnd, p);
+	}
 }
 
 /*** Close one project and ressources allocated ***/
@@ -476,9 +473,12 @@ void draw_panel(Project p, BYTE rclear, BYTE lclear, BYTE activ)
 	SetABPenDrMd(&RPT, pen.fgpan, bgpan, JAM2);
 
 	/* Text in the box */
-	Move(&RPT,p->pleft+((p->pwidth-p->labwid)>>1), gui.oldtop+prefs.scrfont->tf_Baseline+3 );
+	Move(&RPT,p->pleft+((p->pwidth-(p->labwid+p->modwid))>>1),
+		gui.oldtop+prefs.scrfont->tf_Baseline+3 );
 	if(!activ && (p->state & PAGINATED)) RPT.AlgoStyle |= FSF_ITALIC;
 	Text(&RPT,p->name,p->labsize);
+	if(p->state & MODIFIED)
+		Text(&RPT,STR_MODIF,1);
 
 	/* Right shape */
 	for(i=0,right++; i<max; i++) {
@@ -531,20 +531,24 @@ Project select_panel(Project current, WORD x)
 }
 
 /*** Title of panel has changed, update it ***/
-void update_panel_name( Project activ )
+void update_panel_name( Project active )
 {
-	/* Assuming that activ is the currently selected */
-	activ->labwid = TextLength(&RPT, activ->name, activ->labsize=strlen(activ->name));
+	/* Assuming that active is the currently selected */
+	active->labwid = TextLength(&RPT, active->name,
+		active->labsize=strlen(active->name));
+	if(active->state & MODIFIED)
+		active->labwid +=
+			(active->modwid=TextLength(&RPT, STR_MODIF, 1));
 	if(NbProject > 1)
 	{
 		RPT.AlgoStyle = FSF_BOLD;
-		draw_panel(activ, FALSE, FALSE, TRUE);
+		draw_panel(active, FALSE, FALSE, TRUE);
 	}
 }
 #endif
 
 /*** Recompute size of each item and show the active project ***/
-void reshape_panel(Project activ)
+void reshape_panel(Project active)
 {
 	Project lst; UBYTE i;
 	/* Do not show the project bar if there is only one project */
@@ -568,11 +572,11 @@ void reshape_panel(Project activ)
 		for(lst=first; lst; lst=lst->next) {
 			RPT.AlgoStyle = FS_NORMAL;
 			/* Active project should be the last drawn */
-			if(lst != activ)
-				draw_panel(lst, lst->prev==activ || !lst->prev, TRUE, FALSE);
+			if(lst != active)
+				draw_panel(lst, lst->prev==active || !lst->prev, TRUE, FALSE);
 		}
 		RPT.AlgoStyle = FSF_BOLD;
-		draw_panel(activ, !activ->prev, !activ->next, TRUE);
+		draw_panel(active, !active->prev, !active->next, TRUE);
 	}
 #ifndef	JANOPREF
 	else if(gui.oldtop != gui.top) {

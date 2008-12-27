@@ -265,7 +265,7 @@ MSG_ABOUT
 Информация
 ;
 MSG_FORMATINFO
-%s для %s\n Авторы: T.Pierron и C.Guillaume ? 2000\n\nРедактируемый файл:: %s\nДлина : %ld %s, %ld %s.\n
+%s\n Авторы: T.Pierron и C.Guillaume ? 2000\n\nРедактируемый файл:: %s\nДлина : %ld %s, %ld %s.\n
 ;
 MSG_CONTINUE
 Продолжить

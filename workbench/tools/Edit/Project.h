@@ -42,6 +42,7 @@ typedef	struct _project				/* MAIN PROJECT STRUCTURE */
 
 	WORD    pleft, pwidth;				/* Panel tab information */
 	WORD    labwid, labsize;			/* Label width in pixels and size in bytes */
+	WORD    modwid;			/* Modification-flag width in pixels */
 
 	STRPTR  path, name;					/* Access path */
 	LONG    protection;					/* protection flags */

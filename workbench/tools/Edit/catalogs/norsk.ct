@@ -252,7 +252,7 @@ MSG_ABOUT
 Om
 ;
 MSG_FORMATINFO
-%s for %s\nProgram av T.Pierron and C.Guillaume © 2000\n\nRedigert fil : %s\nLengde : %ld %s, %ld %s.
+%s\nProgram av T.Pierron and C.Guillaume © 2000\n\nRedigert fil: %s\nLengde: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 Fortsett
