@@ -27,40 +27,36 @@
 /*  FUNCTION
     Opens and handles a requester, which provides one or more choices.
     It blocks the application until the user closes the requester.
-    Returned is a integer indicating which gadget had been selected.
- 
+    Returned is an integer indicating which gadget had been selected.
+
     INPUTS
     Window - A reference window. If NULL, the requester opens on
          the default public screen.
-    easyStruct - The EasyStruct structure (<intuition/intuition.h>),
-             which describes the requester.
-    IDCMP_Ptr - Pointer to IDCMP flags, which satisfy the requester,
-            too. This is useful for requesters, which want to
-            listen to disk changes, etc. The contents of this
-            pointer is set to the IDCMP flag, which caused the
-            requester to close. This pointer may be NULL.
+    easyStruct - The EasyStruct structure (<intuition/intuition.h>)
+        describing the requester.
+    IDCMP_Ptr - Pointer to IDCMP flags. The requester will be closed early
+        if any of the specified message types is received. This is useful
+        for requesters that want to listen to disk changes etc. The contents
+        of this pointer is set to the IDCMP flag that caused the requester
+        to close. This pointer may be NULL.
     ArgList - The arguments for easyStruct->es_TextFormat.
- 
+
     RESULT
-    -1, if one of the IDCMP flags of idcmpPTR was set.
+    -1, if one of the IDCMP flags of IDCMP_ptr was set.
      0, if the rightmost button was clicked or an error occured.
      n, if the n-th button from the left was clicked.
- 
+
     NOTES
- 
+
     EXAMPLE
- 
+
     BUGS
- 
+
     SEE ALSO
     BuildEasyRequestArgs()
- 
+
     INTERNALS
- 
-    HISTORY
-    29-10-95    digulla automatically created from
-                intuition_lib.fd and clib/intuition_protos.h
- 
+
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
