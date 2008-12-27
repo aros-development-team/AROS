@@ -43,23 +43,34 @@ static LONG display_func(struct Hook *hook, char **array, struct Volumelist_Entr
 {
     /* MUI: logo | devicename | %-used | bytes free | bytes used */
     
-    if (entry->type == DLT_DEVICE)
+    if (entry)
     {
-    	*array++ = "\33I[6:24]";
-    }
-    else if (entry->type == DLT_VOLUME)
-    {
-    	*array++ = "\33I[6:26]";
+	if (entry->type == DLT_DEVICE)
+	{
+	    *array++ = "\33I[6:24]";
+	}
+	else if (entry->type == DLT_VOLUME)
+	{
+	    *array++ = "\33I[6:26]";
+	}
+	else
+	{
+	    *array++ = "\33I[6:29]";
+	}
+	
+	*array++ = entry->name;
+	*array++ = "";
+	*array++ = "";
+	*array   = "";
     }
     else
     {
-    	*array++ = "\33I[6:29]";
+	*array++ = "Logo";
+	*array++ = "Name";
+	*array++ = "% Used";
+	*array++ = "Bytes Free";
+	*array   = "Bytes Used";
     }
-    
-    *array++ = entry->name;
-    *array++ = "";
-    *array++ = "";
-    *array   = "";
     
     return 0;
 }

@@ -48,42 +48,53 @@ static LONG display_func(struct Hook *hook, char **array, struct Dirlist_Entry *
     struct DateTime	 dt;
     
     /* MUI: name | size | Date  | Time  | Protection | Comment */
-    
-    *array++ = entry->fib.fib_FileName;
-    
-    if (entry->fib.fib_DirEntryType > 0)
+    if (entry)
     {
-    	*array++ = "\33r\33I[6:22]";
+	*array++ = entry->fib.fib_FileName;
+	
+	if (entry->fib.fib_DirEntryType > 0)
+	{
+	    *array++ = "\33r\33I[6:22]";
+	}
+	else
+	{
+	    snprintf(data->size_string, sizeof(data->size_string), "\33r%ld", entry->fib.fib_Size);
+	    *array++ = data->size_string;
+	}
+	
+	dt.dat_Stamp   = entry->fib.fib_Date;
+	dt.dat_Format  = FORMAT_DOS;
+	dt.dat_Flags   = 0;
+	dt.dat_StrDay  = NULL;
+	dt.dat_StrDate = data->date_string;
+	dt.dat_StrTime = data->time_string;
+	
+	DateToStr(&dt);
+	
+	*array++ = data->date_string;
+	*array++ = data->time_string;
+	
+	data->prot_string[0] = (entry->fib.fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
+	data->prot_string[1] = (entry->fib.fib_Protection & FIBF_PURE)    ? 'p' : '-';
+	data->prot_string[2] = (entry->fib.fib_Protection & FIBF_ARCHIVE) ? 'a' : '-';
+	data->prot_string[3] = (entry->fib.fib_Protection & FIBF_READ)    ? '-' : 'r';
+	data->prot_string[4] = (entry->fib.fib_Protection & FIBF_WRITE)   ? '-' : 'w';
+	data->prot_string[5] = (entry->fib.fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
+	data->prot_string[6] = (entry->fib.fib_Protection & FIBF_DELETE ) ? '-' : 'd';
+	data->prot_string[7] = '\0';
+	
+	*array++ = data->prot_string;
+	*array   = entry->fib.fib_Comment;
     }
     else
     {
-    	snprintf(data->size_string, sizeof(data->size_string), "\33r%ld", entry->fib.fib_Size);
-    	*array++ = data->size_string;
+	*array++ = "Name";
+	*array++ = "Size";
+	*array++ = "Date";
+	*array++ = "Time";
+	*array++ = "Flags";
+	*array   = "Comment";
     }
-    
-    dt.dat_Stamp   = entry->fib.fib_Date;
-    dt.dat_Format  = FORMAT_DOS;
-    dt.dat_Flags   = 0;
-    dt.dat_StrDay  = NULL;
-    dt.dat_StrDate = data->date_string;
-    dt.dat_StrTime = data->time_string;
-    
-    DateToStr(&dt);
-    
-    *array++ = data->date_string;
-    *array++ = data->time_string;
-    
-    data->prot_string[0] = (entry->fib.fib_Protection & FIBF_SCRIPT)  ? 's' : '-';
-    data->prot_string[1] = (entry->fib.fib_Protection & FIBF_PURE)    ? 'p' : '-';
-    data->prot_string[2] = (entry->fib.fib_Protection & FIBF_ARCHIVE) ? 'a' : '-';
-    data->prot_string[3] = (entry->fib.fib_Protection & FIBF_READ)    ? '-' : 'r';
-    data->prot_string[4] = (entry->fib.fib_Protection & FIBF_WRITE)   ? '-' : 'w';
-    data->prot_string[5] = (entry->fib.fib_Protection & FIBF_EXECUTE) ? '-' : 'e';
-    data->prot_string[6] = (entry->fib.fib_Protection & FIBF_DELETE ) ? '-' : 'd';
-    data->prot_string[7] = '\0';
-    
-    *array++ = data->prot_string;
-    *array   = entry->fib.fib_Comment;
     
     return 0;
 }
