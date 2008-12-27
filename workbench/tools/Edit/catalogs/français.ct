@@ -267,7 +267,7 @@ MSG_ABOUT
 Informations
 ;
 MSG_FORMATINFO
-%s pour %s\nConçu par T.Pierron et C.Guillaume © 2000\n\nProjet en cours : %s\nLongueur : %ld %s, %ld %s.
+%s\nConçu par T.Pierron et C.Guillaume © 2000\n\nProjet en cours: %s\nLongueur: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 Continuer

@@ -351,8 +351,8 @@ Informação
 ;Information
 ;
 MSG_FORMATINFO
-%s para %s\nProgramado por T.Pierron y C.Guillaume © 2000\n\nFicheiro editado : %s\nTamanho : %ld %s, %ld %s.
-;%s for %s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited : %s\nLength : %ld %s, %ld %s.
+%s\nProgramado por T.Pierron y C.Guillaume © 2000\n\nFicheiro editado: %s\nTamanho: %ld %s, %ld %s.
+;%s\nDesigned by T.Pierron and C.Guillaume © 2000\n\nFile edited: %s\nLength: %ld %s, %ld %s.
 ;
 MSG_CONTINUE
 Continuar
