@@ -3,18 +3,20 @@
     $Id$
 
     Desc: Start up the ol' Dos boot process.
-    Lang: english 
+    Lang: english
 */
 
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
-# define  DEBUG 0
+# define  DEBUG 1
 # include <aros/debug.h>
 
 #include <aros/macros.h>
 #include <aros/asmcall.h>
+#include <aros/bootloader.h>
 
 #include <proto/bootmenu.h>
+#include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -33,6 +35,7 @@
 #include <devices/trackdisk.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "dos_intern.h"
 
@@ -47,14 +50,14 @@ BOOL bootdevicefound = FALSE;
 /** Support Functions **/
 static BOOL __dosboot_Mount(struct DeviceNode *dn, struct DosLibrary * DOSBase)
 {
-    BOOL rc; 
+    BOOL rc;
 
     if (!dn->dn_Ext.dn_AROS.dn_Device)
         rc = RunHandler(dn, DOSBase);
     else
         rc = TRUE;
 
-    if (rc)    
+    if (rc)
     {
         if (!AddDosEntry((struct DosList *) dn))
         {
@@ -123,10 +126,11 @@ AROS_UFH3(void, __dosboot_IntBoot,
     struct ExpansionBase *ExpansionBase = NULL;
     struct DosLibrary    *DOSBase       = NULL;
     struct BootMenuBase  *BootMenuBase  = NULL;
+    void 				 *BootLoaderBase = NULL;
 
     struct BootNode      *bootNode      = NULL;
     STRPTR                bootName;
-    LONG                  bootNameLength;        
+    LONG                  bootNameLength;
     BPTR                  lock;
     BOOL		  hidds_ok;
 
@@ -140,6 +144,36 @@ AROS_UFH3(void, __dosboot_IntBoot,
     {
         D(bug("[DOS] __dosboot_IntBoot: Could not open dos.library, something's wrong!\n" ));
         Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
+    }
+
+    /* Try to open bootloader.resource */
+    if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
+    {
+    	struct List *args;
+    	struct Node *node;
+    	ULONG delay = 0;
+
+    	D(bug("[DOS] __dosboot_IntBoot: got BootLoaderBase\n"));
+
+    	args = GetBootInfo(BL_Args);
+
+    	if (args)
+    	{
+    		D(bug("[DOS] __dosboot_IntBoot: got args\n"));
+    		/*
+    		 * Search the kernel parameters for the bootdelay=%d string. It determines the
+    		 * delay in seconds.
+    		 */
+    		ForeachNode(args, node)
+    		{
+    			if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
+    			{
+    				sscanf(node->ln_Name, "bootdelay=%d", &delay);
+    				D(bug("[DOS] __dosboot_IntBoot: delay of %d seconds requested.", delay));
+    				Delay(50*delay);
+    			}
+    		}
+    	}
     }
 
     if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) == NULL)
@@ -156,6 +190,7 @@ AROS_UFH3(void, __dosboot_IntBoot,
     if ((mp = CreateMsgPort()) != NULL)
     {
         if ((tr = (struct timerequest *)CreateIORequest(mp, sizeof(struct timerequest))) != NULL)
+
         {
             if ((OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0)) == 0)
                 #define ioStd(x) ((struct IOStdReq *)x)
@@ -187,21 +222,21 @@ AROS_UFH3(void, __dosboot_IntBoot,
                 bootNode, bootNode->bn_DeviceNode,
                 deviceName ? deviceName : "(null)", bootNode->bn_Node.ln_Pri
         ));
-        /* 
+        /*
             Try to mount the filesystem. If it fails, mark the BootNode
             so DOS doesn't try to boot from it later but will retry to
             mount it after boot device is found and system directories
             assigned.
-        */ 
+        */
 
-        if( !__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode , 
+        if( !__dosboot_Mount( (struct DeviceNode *) bootNode->bn_DeviceNode ,
                     (struct DosLibrary *) DOSBase))
             bootNode->bn_Flags |= BNF_RETRY;
         else
             bootNode->bn_Flags &= ~BNF_RETRY;
     }
 
-    /**** Try to find a bootable filesystem ****************************************/   
+    /**** Try to find a bootable filesystem ****************************************/
     while (bootdevicefound == FALSE)
     {
         ForeachNode(&ExpansionBase->MountList, bootNode)
@@ -327,7 +362,7 @@ AROS_UFH3(void, __dosboot_IntBoot,
         /* Late binding ENVARC: assign, only if used */
         AssignLate("ENVARC", "SYS:Prefs/env-archive");
 
-        /* 
+        /*
             Attempt to mount filesystems marked for retry. If it fails again,
             remove the BootNode from the list.
         */
@@ -373,7 +408,7 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
         { NP_Cli,	        (IPTR) 0                    },
         { TAG_END,                                      }
     };
-    
+
     if (CreateNewProc(bootprocess) == NULL)
     {
         D(bug("[DOS] DOSBoot: CreateNewProc() failed with %ld\n", ((struct Process *)FindTask(NULL))->pr_Result2));
