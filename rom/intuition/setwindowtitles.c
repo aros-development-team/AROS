@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2008, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -97,6 +97,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
 
     LOCKWINDOWLAYERS(window);
 
+    /* Change window's title */
     if (windowTitle == (CONST_STRPTR)~0)
     {
          change = FALSE;
@@ -117,11 +118,7 @@ static VOID int_setwindowtitles(struct SetWindowTitlesActionMsg *msg,
     }
 
     /* Change screen's title */
-    change = TRUE;
-
-    if ((screenTitle == window->ScreenTitle) || (screenTitle == (CONST_STRPTR)~0)) change = FALSE;
-
-    if (change)
+    if (screenTitle != (CONST_STRPTR)~0)
     {
         //LONG lock = LockIBase(0);
 
