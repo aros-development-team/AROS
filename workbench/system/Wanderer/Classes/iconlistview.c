@@ -258,7 +258,8 @@ IPTR IconListview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             MUIA_Group_VertSpacing, 0,
             MUIA_Frame, MUIV_Frame_None,
 
-            Child, (IPTR) group);
+            Child, (IPTR) group,
+            TAG_DONE);
 
     if (!obj)
     {
