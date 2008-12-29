@@ -98,6 +98,8 @@ ULONG sizePCIBaseReg(OOP_Object *driver, struct pci_staticdata *psd, UBYTE bus, 
 	sz &= PCIBAR_MASK_IO;
 	sz = ~sz;
 	sz++;
+	/* Upper 16 bits of result is ignored if BAR is for I/O *AND* bits 16-31 returned zero upon read */
+	if(!(bak>>16)) sz &= 0xffff;
     }
     else
     {
