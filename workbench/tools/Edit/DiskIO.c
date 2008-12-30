@@ -119,7 +119,6 @@ void split_path(AskArgs *src, STRPTR *dir, STRPTR *file)
 
 		/* Copy file name */
 		*file = BufTxt+Len+1; Len = strlen( src->file );
-		if( src->modifmark ) Len -= sizeof(STR_MODIF)-1;
 		CopyMem(src->file, *file, Len); (*file)[Len] = '\0';
 	}
 	else
@@ -178,7 +177,7 @@ STRPTR ask_save(struct Window *wnd, AskArgs *path, CONST_STRPTR title)
 			{
 			    	STRPTR fullpath;
 				WORD err = get_full_path(path, &fullpath);
-				/* get_full_path, allocate a new buffer since size may varry */
+				/* get_full_path, allocate a new buffer since size may vary */
 				FreeVec( path );
 				if( err == 0 ) return fullpath;
 				ThrowError(Wnd, ErrMsg(err));

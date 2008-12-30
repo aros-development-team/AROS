@@ -36,7 +36,6 @@ typedef	struct
 {
 	STRPTR dir;				/* Directory name */
 	STRPTR file;			/* File name */
-	UBYTE  modifmark;		/* True if file has modif. mark */
 }	AskArgs;
 
 /** Split a name into two pointers **/
