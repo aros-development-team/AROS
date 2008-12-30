@@ -135,7 +135,7 @@ Project load_and_activate(Project ins, STRPTR name, BYTE use_prj)
 	return NULL;
 }
 
-/*** Reload project, fluch redolog, reduce fragmentation ***/
+/*** Reload project, flush redolog, reduce fragmentation ***/
 void reload_project( Project p )
 {
 	/* Save cursor position */
@@ -214,7 +214,7 @@ char save_project(Project p, char refresh, char ask)
 		   0    != warn_overwrite( newname ))
 			set_project_name(p, newname);
 		else
-			/* User cancels or there was errors */
+			/* User cancelled or there was an error */
 			return 0;
 		p->state = 0;
 	}

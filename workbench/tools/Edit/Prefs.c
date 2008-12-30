@@ -372,14 +372,13 @@ ULONG change_screen_mode(WORD *whd, ULONG ModeID)
 #ifndef	JANOPREF       /** Following functions are used only by the editor **/
 #include "DiskIO.h"
 
-/*** Ask where to load/save a preference file ***/
+/*** Ask where to load/save a preferences file ***/
 void ask_prefs(Project edit, char save, CONST_STRPTR title )
 {
 	STRPTR  new;
 	AskArgs arg;
 
 	arg.file = (STRPTR) FilePart( arg.dir = Path );
-	arg.modifmark = 0;
 
 	if((new = (STRPTR) (save ? ask_save(Wnd, &arg, title) : ask_load(Wnd, &arg, TRUE, title))))
 	{
