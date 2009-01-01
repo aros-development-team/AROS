@@ -33,7 +33,7 @@ int main()
 {
     Object *application;
 
-    if ((application = AboutAROSObject, End) != NULL)
+    if ((application = (Object *)(AboutAROSObject, End)) != NULL)
     {
         DoMethod(application, MUIM_Application_Execute);
         MUI_DisposeObject(application);

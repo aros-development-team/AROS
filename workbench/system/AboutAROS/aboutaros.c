@@ -213,8 +213,8 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 AI_ArosArchitecture, (IPTR) &str_arosarch,
                 TAG_DONE);
 
-    str_buildtype = AllocPooled(pool, strlen(__(MSG_BUILD_TYPE)) + strlen(str_arosarch) + 1);
-    sprintf(str_buildtype, __(MSG_BUILD_TYPE), str_arosarch);
+    str_buildtype = AllocPooled(pool, strlen(_(MSG_BUILD_TYPE)) + strlen(str_arosarch) + 1);
+    sprintf(str_buildtype, _(MSG_BUILD_TYPE), str_arosarch);
 
     /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
@@ -276,6 +276,12 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
                         MUIA_Text_Contents, (IPTR) str_builddate,
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) TextObject,
+                        MUIA_Font,                 MUIV_Font_Big,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents, (IPTR) "SVN: $Revision$",
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) HVSpace,
