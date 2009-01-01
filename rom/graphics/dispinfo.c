@@ -404,7 +404,7 @@ BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
     HIDDT_ModeID hiddmode = 0;
     OOP_Object *sync, *pf;
     
-    hiddmode = AMIGA_TO_HIDD_MODEID(hiddmode);
+    hiddmode = AMIGA_TO_HIDD_MODEID(modeid);
     
     if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf)) {
 	HIDDT_StdPixFmt stdpf;
