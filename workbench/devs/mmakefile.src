@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-complete : workbench-devs
+#MM- workbench-devs-complete : workbench-devs contrib-networking-drivers
 #MM- workbench-devs : \
 #MM    workbench-devs-fdsk \
 #MM    workbench-devs-ramdrive \
