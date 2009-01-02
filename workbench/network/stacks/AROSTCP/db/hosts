@@ -1,0 +1,33 @@
+;
+; hosts -- the hosts database file for AROSTCP
+;
+; Copyright © 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+;                  Helsinki University of Technology, Finland.
+;                  All rights reserved.
+;
+; Comments are from ';' or '#' to end of line
+;
+; This file should be included from netdb-file using the following line:
+; WITH protocols PREFIX=H
+;
+; You can append to or replace this file with "/etc/hosts" from your
+; local *IX computer. Entries in this file have following format: 
+; (without ';' at begining of line) 
+;
+; 224.254.43.1 mail.mut.edu.mars mail ftp.mut.edu.mars ftp mut.edu.mars
+; ^	       ^		 ^    ^                ^   ^
+; |	       |		 \ these are aliases for the host name
+; |	       \ this is the canonicial name of the host
+; \ this is the IP address of the host 
+;
+; You can include here all computers that you access with your Amiga.
+; If you can use nameserver, it is unnecessary. (This file may contain
+; only the most important hosts.)
+;
+; Using nameserver:
+; + saves your diskspace (of what there is never enough)
+; + protects you from changes in address of computers.
+; - if nameserver is down, you can access computers only with its IP
+;  number if it is not in your hosts file.
+
+; EOF

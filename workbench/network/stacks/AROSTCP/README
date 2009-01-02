@@ -1,0 +1,106 @@
+Below are brief instructions on how to configure and run AROSTCP under
+native AROS. It is assumed that AROS has already been installed onto
+hard disk.
+
+
+Configuration
+=============
+
+
+ENVARC:SYS/Packages/AROSTCP
+----------------------------
+The first thing to be aware of is the AROS package file.  It allows AROS to
+perform startup operations for software packages in a friendly manner.
+The main file is ENVARC:SYS/Packages/AROSTCP which points to the installed
+location of the AROSTCP package.
+
+During boot AROS will call the file s/Package-Startup in the directory pointed
+to by the AROSTCP package file to add its own path variables, etc.
+
+If you have AROSTCP installled to a different location than
+SYS:Extras/Networking/Stacks/AROSTCP you will need to alter this file.
+
+  SetEnv SAVE SYS/Packages/AROSTCP <Installed location>
+
+ENVARC:AROSTCP/AutoRun
+----------------------
+
+Set to "True" to enable AROSTCP to launch during boot - i.e when its Package-Startup script is executed.
+
+ENVARC:AROSTCP/Config
+----------------------
+If The ENV Variable "AROSTCP/Config" is specified - it is used to find
+the location of the database files that will configure AROSTCP.  If not
+specified AROSTCP will default to it's 'db' subdirectory. From here
+on this dir will be refered to as the AROSTCP-CONFIG dir.
+
+This option is mostly of use to systems which boot from read only media,
+or environments where a number of differing network configs may be
+necessary.
+
+DB/*
+----
+There are a number of files in the AROSTCP-CONFIG that need to
+be changed using a text editor (eg. 'Editor', found in AROS's Tools
+directory):
+
+* static-routes: Change the IP address for "DEFAULT GATEWAY" to
+that of your actual gateway, eg. your router.
+
+* netdb-myhost: In the 'HOST' line, change the IP address to the real
+IP address of your computer. You will likely need to change the DOMAIN
+entry to your own networks address (ie 192.168.0.) and also the NAMESERVER
+entry to that of your real DNS server.  Multiple NAMESERVER lines can be
+specified for networks which use them.
+
+* interfaces: At the end of the file, there are configuration entries
+for different network cards. Enable the entry for your network card by
+removing the '#' from the start of one of the lines that begin with
+"#eth0".  You will need to alter the IP address to the correct one for
+your card, and optionaly specify a NETMASK.
+
+ N.B. - You must specify different names if you network has more than one
+        NIC - ie eth0, eth1, etc.
+
+If you're using a home network, and you don't know what values to use in
+the 'hosts' and 'netdb-myhost' files, try running AROSTCP without
+changing them. The default values might work in a lot of cases.
+
+
+Usage
+=====
+
+###
+To start AROSTCP, open a shell and type the following two commands:
+
+ CD SYS:Extras/Networking/Stacks/AROSTCP
+ Execute s/startnet
+
+###
+To stop AROSTCP, run the Status command in a shell to get its process
+number, and then enter
+
+ Break N
+
+where N is the process number.
+
+### 
+If you have configured your db files in a differing location to the default (ie not the /db/ subfolder) then use
+
+   SetEnv AROSTCP/Config <path to modified files>
+   
+to enable AROSTCP to use it.  Please note that this must be done before launching AROSTCP.
+
+ie.
+
+   CD SYS:Extras/Networking/Stacks/AROSTCP
+   Copy db SYS:NetConfig ALL
+   SetEnv SAVE AROSTCP/Config SYS:NetConfig/
+ 
+ ..
+ edit the files in SYS:NetConfig/ to suit your network
+ ..
+
+   Execute s/startnet
+
+And AROSTCP will use your configuration on subsequent reboots (with no worry of it being overwritten during an update of your installation - unless ofcourse you reformat the partition ;P)

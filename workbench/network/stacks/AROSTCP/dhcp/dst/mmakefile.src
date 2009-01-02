@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+#MM contrib-dhcp-libdst : arostcp-includes
+
+USER_CFLAGS :=	-I../includes				\
+		-I$(AROS_DEVELOPMENT)/netinclude	\
+		-DHMAC_MD5 -DMINIRES_LIB
+
+FILES :=	base64 dst_api dst_support hmac_link md5_dgst prandom
+
+%build_linklib mmake=contrib-dhcp-libdst	\
+	libname=dst				\
+	files="$(FILES)"

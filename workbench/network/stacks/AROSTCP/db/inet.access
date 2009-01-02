@@ -1,0 +1,73 @@
+;
+; inet.access -- Access control list for AROSTCP
+;
+; Copyright © 1993, 1994  AmiTCP/IP Group, <amitcp-group@hut.fi>
+;                         Helsinki University of Technology, Finland.
+;                         All rights reserved.
+;
+; Comments are from ';' or '#' to end of line
+;
+; This file should be included from netdb-file with following line:
+; WITH inet.access PREFIX=ACCESS
+;
+; AROSTCP implements an access control feature similar to `tcpd' inside the 
+; protocol stack. This means connection doesn't even get established if the
+; connection is to be denied, remote end just gets the usual 
+; `connection refused' error message.
+;
+; When connection request arrives, the access entry list is searched through 
+; sequentially line by line until a match is found. Access entry lines looks
+; like the following...
+;
+; <service>	<host/mask>			<access>	[LOG]
+;
+; It is first checked whether the port where connection is made matches the
+; port given <service>. Service can be given as a port number, already parsed
+; netdb service entry, or `*' or `@', meaning that check host for every 
+; destination port or every privileged destination port, respectively.
+;
+; Now, if port matched the source host internet address is compared with the
+; host value given in current access entry. Mask can be used to ignore some
+; bits when comparing, for example whole subnet can be checked with only one
+; entry in access control list. The host value may also contain that mask 
+; information by having `*' in place of some number in host value given in
+; internet not notation format (see the examples).
+;
+; If host matched, The next thing to do is to see whether connection is to
+; be accepted or not. if <access> says `allow' connection is to be established,
+; if `deny' connection request is dropped.
+;
+; If LOG is written last in the access entry list, Info whether connection
+; was accepted or denied, with corresponding remote host and destination port
+; is written to the syslog.
+;
+; *Example list
+;
+; Service	Host[/Mask]			Access		[LOG]
+;
+; finger	127.1				allow		LOG	
+; *		130.233.*.*			allow
+; nntp		130.233.0/255.252.0.0		allow		LOG
+; @		*.*.*.*				deny
+; *		*.*.*.*				allow		LOG
+;
+; The list tells that finger queries from local host is to be logged. (2)
+; All connections from hosts whose addresses start with 130.233 are to be
+; allowed and (3) hosts in a bit wider set of class b -networks can access
+; nntpd server of this host. and these connections will be logged. 
+; Next line tells that connections to any incoming privileged ports are to
+; be disallowed and the last one will then allow the rest ports and this 
+; activity will be logged. Without this line these connections would be
+; accepted silently, since that would be the default operation if no matches
+; were found.
+; The last 2 lines in that example are quite useful. It doesn't permit ftp to 
+; work since it binds a data transfer socket greater than 1023, but it 
+; disallows unwanted hosts to access normal features effectively. Some 
+; nonstandard services, such as netfs and irc can then be access controlled
+; with port-spesific entries in this access control list.
+
+;Service	Host[/Mask]			Access		[LOG]
+; *** add your entries here ***
+
+; EOF
+

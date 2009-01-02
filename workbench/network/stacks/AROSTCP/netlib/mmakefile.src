@@ -1,0 +1,46 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -isystem ../netinclude/
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT
+
+#MM arostcp-linklibs : includes arostcp-linklibs-netlib arostcp-linklibs-sana2 arostcp-linklibs-miami
+
+NETLIBSRC = strerror \
+           autoinit \
+           dummy \
+           lineread \
+           printfault \
+           stubs \
+           herror \
+           syslog \
+           getpid \
+           getppid \
+           chmod \
+           popen\
+           printuserfault \
+           init_inet_daemon \
+           serveraccept \
+           linkaddr \
+           linkntoa \
+           random \
+           kill \
+           writev \
+           vasprintf \
+           asprintf \
+           err
+
+SANA2LIBSRC = sana2perror \
+             sana2errlist \
+             sana2printfault
+
+MIAMILIBSRC = miami_autoinit
+
+%build_linklib mmake=arostcp-linklibs-netlib libname=net files=$(NETLIBSRC)
+
+%build_linklib mmake=arostcp-linklibs-sana2 libname=sana2 files=$(SANA2LIBSRC)
+
+%build_linklib mmake=arostcp-linklibs-miami libname=miami files=$(MIAMILIBSRC)
+
+%common

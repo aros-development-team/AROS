@@ -1,0 +1,19 @@
+# $Id$
+#
+# Makefile for SysLog
+
+include $(TOP)/config/make.cfg
+
+FILES  := main hooks colorlist str
+
+EXEDIR := $(CONTRIBDIR)/Networking/Stacks/AROSTCP
+
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I $(TOP)/contrib/Networking/Stacks/AROSTCP/netinclude
+
+##MM- contrib : aros-tcpip-apps-syslog
+
+%build_prog mmake=aros-tcpip-apps-syslog \
+    progname=SysLog targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc"
+
+%common

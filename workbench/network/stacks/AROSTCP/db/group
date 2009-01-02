@@ -1,0 +1,15 @@
+wheel|*|0|
+rcsid|*|-1|$Id: group,v 1.1 2006/12/15 08:51:40 sonic_amiga Exp $
+nobody|*|-2|
+daemon|*|1|daemon
+kmem|*|2|root
+sys|*|3|root
+tty|*|4|root
+operator|*|5|operator
+news|*|6|news
+mail|*|7|mail
+anon|*|8|
+staff|*|10|
+guest|*|99|ppessi,erkki,aminet
+users|*|100|
+aminet|*|300|ppessi,erkki
