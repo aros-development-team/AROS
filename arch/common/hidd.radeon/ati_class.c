@@ -471,7 +471,7 @@ OOP_Object *METHOD(ATI, Root, New)
         { aHidd_PixFmt_BlueMask,    0x000000ff }, /* 6 */
         { aHidd_PixFmt_AlphaMask,   0x00000000 }, /* 7 */
         { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
-        { aHidd_PixFmt_Depth,       24  }, /* 9 */
+        { aHidd_PixFmt_Depth,       32  }, /* 9 */
         { aHidd_PixFmt_BytesPerPixel,   4   }, /* 10 */
         { aHidd_PixFmt_BitsPerPixel,    24  }, /* 11 */
 //        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_Native }, /* 12 Native */
