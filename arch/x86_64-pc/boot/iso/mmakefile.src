@@ -5,9 +5,10 @@ include $(TOP)/config/make.cfg
 
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
 
-#MM bootiso-pc-x86_64 :	kernel-bootstrap-x86_64		\
-#MM			kernel-package-x86_64		\
-#MM                     AROS-pc-x86_64-drivers          \
+#MM bootiso-pc-x86_64 :	kernel-bootstrap-x86_64		  \
+#MM			kernel-package-x86_64		  \
+#MM                     AROS-pc-x86_64-drivers            \
+#MM                     arch-common-boot-generatebootsig  \
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64
 
 bootiso-pc-x86_64: $(TARGET_ISO)
