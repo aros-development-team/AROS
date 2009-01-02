@@ -1,0 +1,16 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM- contrib-networking-drivers-rtl8029 : workbench-libs-prometheus
+
+USER_CFLAGS := \
+	-Wno-uninitialized -Wno-parentheses \
+	-Wno-implicit-function-declaration
+
+%build_prog mmake=contrib-networking-drivers-rtl8029 \
+    progname=prm-rtl8029.device \
+    files="header driver" \
+    targetdir=$(AROSDIR)/Devs/Networks
+
+%common
+
