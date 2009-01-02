@@ -8,6 +8,7 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 #MM bootiso-pc-i386 :	AROS-complete		\
 #MM			kernel-package-pc-i386		\
 #MM			AROS-pc-i386-drivers		\
+#MM                     arch-common-boot-generatebootsig  \
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386
 
 bootiso-pc-i386: $(TARGET_ISO)
