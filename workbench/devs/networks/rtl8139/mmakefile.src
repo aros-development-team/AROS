@@ -1,0 +1,12 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM- contrib-networking-drivers-rtl8139-i386 : contrib-networking-drivers-rtl8139
+#MM- contrib-networking-drivers-rtl8139-x86_64 : contrib-networking-drivers-rtl8139
+
+FILES := handler unit rtl8139
+
+%build_module mmake=contrib-networking-drivers-rtl8139 \
+    modname=rtl8139 modtype=device \
+    files="rtl8139_init $(FILES)" \
+    moduledir=Storage/Networks uselibs="oop rom amiga hiddstubs"

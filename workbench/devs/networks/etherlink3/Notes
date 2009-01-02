@@ -1,0 +1,43 @@
+TO DO:
+
+ - "Boomerang" generation cards don't work with this driver yet.
+
+
+DESIGN NOTES:
+
+ - The single-fragment bus-master mode of 3c59x cards is unused as it
+   does not appear to be worthwhile.
+ - Type tracking has been implemented in an unusual way in order to make it
+   more suitable for multiple users. Each client that tracks a particular
+   packet type is given the impression that it is the only one doing so.
+   When a client begins tracking a packet type that is already being
+   tracked, the current packet statistics are recorded internally. These
+   initial statistics are then subtracted from the figures returned from
+   every S2_GETTYPESTATS call the client makes.
+ - The port_choices array gives the order of preference for the media ports.
+ - When selecting which media port to use, we progressively filter the
+   ports, first by availability, then by user choice, and finally by the
+   detection of an active link. We then choose from the remainder in order
+   of priority.
+ - We can't run out of space in the header buffer...
+ - The driver is designed to work best with protocols that provide the S2R3
+   DMA hooks. Other protocols may suffer poor transmission performance, as
+   the driver's single transmit buffer must be used.
+ - tx_out_slot points to the next packet to finish. tx_in_slot points to the
+   next free slot. If tx_out_slot equals tx_in_slot, there are no packets
+   waiting to complete.
+ - There is nothing in the SANA-II docs to indicate that providing a tag
+   list is optional, so it is assumed to be present.
+
+
+TCP/IP STACK BUGS TO CONSIDER:
+
+ - Miami(DX) doesn't like requests being aborted upon S2_OFFLINE.
+ - MiamiDX's CopyFromBuff16/32 functions appear to be broken.
+ - Genesis calls S2_ONLINE before S2_CONFIGINTERFACE?
+ - When a device goes back online without Genesis's intervention, Genesis
+   displays the message "eth0 is online again" or similar, but keeps the
+   interface's indicator red and doesn't disable the "Online" button or
+   enable the "Offline" button.
+
+

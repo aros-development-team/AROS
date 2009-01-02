@@ -1,0 +1,45 @@
+
+POSSIBLE ENHANCEMENTS:
+
+ - Use extended TX block?
+ - MWI.
+
+
+DESIGN NOTES:
+
+ - Type tracking has been implemented in an unusual way in order to make it
+   more suitable for multiple users. Each client that tracks a particular
+   packet type is given the impression that it is the only one doing so.
+   When a client begins tracking a packet type that is already being
+   tracked, the current packet statistics are recorded internally. These
+   initial statistics are then subtracted from the figures returned from
+   every S2_GETTYPESTATS call the client makes.
+ - The driver is designed to work best with protocols that provide the S2R3
+   DMA hooks. Other protocols may suffer poor transmission performance, as
+   the driver's single transmit buffer must be used.
+ - first_cb points to the next CB to finish (even if it hasn't started yet).
+   last_cb points to the most recently sent CB. Unused CBs have their
+   control field set to zero (this could potentially be confused with a NOP
+   command).
+ - We can't use the S2_CopyToBuff32 function for non-raw packets because
+   the non-raw portion of the receive buffer is not aligned to 32 bits.
+
+
+TCP/IP STACK BUGS TO CONSIDER:
+
+ - Miami(DX) doesn't like requests being aborted upon S2_OFFLINE.
+ - Genesis calls S2_ONLINE before S2_CONFIGINTERFACE?
+ - When a device goes back online without Genesis's intervention, Genesis
+   displays the message "eth0 is online again" or similar, but keeps the
+   interface's indicator red and doesn't disable the "Online" button or
+   enable the "Offline" button.
+
+
+OPENPCI/POWERPCI BUGS:
+
+ - 0xffff doesn't work as a product wildcard in pci_find_device().
+ - IRQ 12 not reported on my machine.
+ - powerpci.library sometimes reports an IO base address that is 0x10000
+   less than it should be.
+
+

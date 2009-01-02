@@ -1,0 +1,51 @@
+e1000.device
+-----------------
+
+see "COPYING" for license information
+This driver is incomplete/ experimental - use at your own risk!
+
+Based on the gpl Linux Intel gigabit NIC driver version 8.0.1
+(http://sourceforge.net/projects/e1000) 
+
+supported NIC's:
+    0x8086, 0x1000 - Intel 82542
+    0x8086, 0x1001 - Intel 82543GC [Fiber]
+    0x8086, 0x1004 - Intel 82543GC [Copper]
+    0x8086, 0x1008 - Intel 82544EI [Copper]
+    0x8086, 0x1009 - Intel 82544EI [Fiber]
+    0x8086, 0x100C - Intel 82544GC [Copper}
+    0x8086, 0x100D - Intel 82544GC [LOM]
+    0x8086, 0x100E - Intel 82540EM
+    0x8086, 0x100F - Intel 82545EM [Copper
+    0x8086, 0x1010 - Intel 82546EB [Copper
+    0x8086, 0x1011 - Intel 82545EM [Fiber]
+    0x8086, 0x1012 - Intel 82546EB [Fiber]
+    0x8086, 0x1013 - Intel 82541EI
+    0x8086, 0x1014 - Intel 82541ER [LOM]
+    0x8086, 0x1015 - Intel 82540EM [LOM]
+    0x8086, 0x1016 - Intel 82540EP [LOM]
+    0x8086, 0x1017 - Intel 82540EP
+    0x8086, 0x1018 - Intel 82541EI [Mobile]
+    0x8086, 0x1019 - Intel 82547EI
+    0x8086, 0x101A - Intel 82547EI [Mobile]
+    0x8086, 0x101D - Intel 82546EB [Quad Copper]
+    0x8086, 0x101E - Intel 82540EP [LP]
+    0x8086, 0x1026 - Intel 82545GM [Copper]
+    0x8086, 0x1027 - Intel 82545GM [Fiber]
+    0x8086, 0x1028 - Intel 82545GM [Serdes]
+    0x8086, 0x1075 - Intel 82547GI
+    0x8086, 0x1076 - Intel 82541GI
+    0x8086, 0x1077 - Intel 82541GI [Mobile]
+    0x8086, 0x1078 - Intel 82541ER
+    0x8086, 0x1079 - Intel 82546GB [Copper]
+    0x8086, 0x107A - Intel 82546GB [Fiber]
+    0x8086, 0x107B - Intel 82546GB [Serdes]
+    0x8086, 0x107C - Intel 82541GI [LF]
+    0x8086, 0x108A - Intel 82546GB [PCI-e]
+    0x8086, 0x1099 - Intel 82546GB [Quad Copper]
+    0x8086, 0x10B5 - Intel 82546GB [Quad Copper KSP3]
+
+TODO/Known Issues:
+Fix releasing recieve buffers after Rx
+Fix deadlock at end of Rx queue
+Use pre-allocated Tx buffers to improve performance
