@@ -21,7 +21,8 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-utilities \
 #MM	    workbench-tools \
 #MM	    workbench-prefs \
-#MM	    workbench-fs-fat
+#MM	    workbench-fs-fat \
+#MM	    workbench-network-stacks-arostcp
 
 WBSTARTUPDIR := $(AROSDIR)/WBStartup
 WBSTORAGEDIR := $(AROSDIR)/Storage
