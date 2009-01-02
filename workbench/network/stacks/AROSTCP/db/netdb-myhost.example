@@ -1,0 +1,7 @@
+; This host
+HOST 135.233.226.22 slip-2.hut.fi slip-2 amy
+; Domain names
+DOMAIN hut.fi
+DOMAIN cs.hut.fi
+; Name servers
+NAMESERVER 135.233.224.1

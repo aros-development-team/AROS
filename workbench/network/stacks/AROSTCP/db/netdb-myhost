@@ -1,0 +1,9 @@
+; This host : Since it is often not defined on a
+; nameserver we set our hostname and domain here..
+; If a nameserver does provide the fully qualified
+; name we can disregard the HOST and DOMAIN entry.
+HOST 192.168.0.188 arosbox.arosnet arosbox
+; Domain names
+DOMAIN arosnet 192.168.0.
+; Name servers
+NAMESERVER 192.168.0.1

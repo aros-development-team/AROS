@@ -1,0 +1,10 @@
+; $VER: AROSTCP-startnet 1.0 (01/08/06)
+; AROSTCP-startnet (c) The AROS Dev Team.
+;
+Run <NIL: >NIL: AROSTCP
+WaitForPort AROSTCP
+If NOT Warn
+  ; echo "Stack online"
+Else
+  ; echo "Wait for Stack Failed"
+EndIf

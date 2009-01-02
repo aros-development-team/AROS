@@ -1,0 +1,12 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM- contrib-networking-stacks-arostcp : contrib-networking-stacks-arostcp-s
+#MM contrib-networking-stacks-arostcp-s
+
+contrib-networking-stacks-arostcp-s : files-copy
+%copy_files_q files="Package-Startup startnet stopnet" \
+    dst=$(CONTRIBDIR)/Networking/Stacks/AROSTCP/S
+	$(ECHO) "Extras:Networking/Stacks/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
+
+#%common

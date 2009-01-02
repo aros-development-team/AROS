@@ -1,0 +1,313 @@
+#
+# Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+#                    Helsinki University of Technology, Finland.
+#                    All rights reserved.
+# Copyright (C) 2005 - 2007 The AROS Dev Team
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+# MA 02111-1307, USA.
+#
+
+#
+# Code for AmiTCP
+# FS="[\t ]*;[\t ]*", comment = ^#
+# $1= [alias=...]variable
+# $2= level of variable
+# $3= description of variable
+# 
+WITH ;	1 ;	Include a file with multiple settings. (This pseudo variable is a extension to the @code{SET} command.)
+/* read_sets() is declared in amiga_config.h */
+{ VAR_FUNC, VF_RW, NULL, NULL, (notify_f)read_sets }
+# 
+# ICMP
+#
+IC=ICMP ;	1 ;	Variables related to Internet Message Control Protocol.
+extern LONG icmpstat;
+{ VAR_LONG, VF_TABLE|VF_READ, KW_ICMP, &icmpstat, NULL }
+E=ERROR ;	2 ;	Number of calls to icmp_error().
+S=SHORTOLD ;	2 ;	No error because old IP was too short.
+I=ICMPOLD ;	2 ;	No error because old was ICMP.
+CO=CODE ;	2 ;	ICMP code out of range.
+T=TOOSHORT ;	2 ;	Packet too short.
+CH=CHKSUM ;	2 ;	Checksum error.
+L=LENGTH ;	2 ;	Data length larger than packet.
+R=RESPONSES ;	2 ;	Number of responses.
+#
+# ICMP HISTORY
+#
+ICH=ICMPHIST;	1 ;	ICMP packet send and reception history. For details on the output format, see @ref{ICMPHIST output}.
+extern LONG read_icmphist(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+{ VAR_FUNC, VF_READ, NULL, (notify_f)read_icmphist, NULL }
+#
+# IP
+#
+IP ;	1 ;	Variables related to Internet Protocol.
+extern LONG ipstat;
+{ VAR_LONG, VF_TABLE|VF_READ, KW_IP,   &ipstat,   NULL }
+T=TOTAL ;	2 ;	Total number of packets.
+CH=CHKSUM ;	2 ;	Checksum error.
+TOOSH=TOOSHORT ;2 ;	Packet too short.
+TOOSM=TOOSMALL ;2 ;	Not enough data.
+H=HEADER ;	2 ;	IP header length less than data size.
+LE=LENGTH ;	2 ;	IP header length larger than packet.
+FS=FRAGMENTS ;	2 ;	Packet fragments received.
+FD=FDROP ;	2 ;	Fragments dropped (duplicates, out of space).
+FT=FTIMEOUT ;	2 ;	Fragments timed out.
+FO=FORWARD ;	2 ;	Packets forwarded.
+FW=FWDCANT ;	2 ;	Packets received for unreachable destination.
+RED=REDIRECTSENT ;2 ;	Packets forwarded on same net.
+N=NOPROTO ;	2 ;	Unknown or unsupported protocol.
+D=DELIVER ;	2 ;	Packets consumed here.
+LO=LOCALOUT ;	2 ;	Total IP packets generated here.
+OD=ODROPPED ;	2 ;	Lost packets due to nobufs, etc.
+REA=REASSEMBLED ;2 ;	Total packets reassembled ok.
+FE=FED ;	2 ;	Output packets fragmented ok.
+OF=OFRAGMENTS ;	2 ;	Output fragments created.
+FC=FCANT ;	2 ;	Don't fragment flag was set, etc.
+#
+# TCP
+#
+T=TCP ;	1 ;	Variables related to Transmission Control Protocol.
+extern LONG tcpstat;
+{ VAR_LONG, VF_TABLE|VF_READ, KW_TCP,  &tcpstat,  NULL }
+CA=CATTEM ;	2 ;	Connections initiated.
+A=ACCEPTS ;	2 ;	Connections accepted.
+CO=CONNECT ;	2 ;	Connections established.
+DR=DROPS ;	2 ;	Connections dropped.
+CD=CDROPS ;	2 ;	Embryonic connections dropped.
+CL=CLOSED ;	2 ;	Connections closed (incl. drops).
+SE=SEGSTIMED ;	2 ;	Segments where we tried to get rtt.
+RTT=RTTUPDATE ;	2 ;	Times we succeed rtt.
+DE=DELACK ;	2 ;	Delayed acknowledgments sent.
+T=TIMEODROP ;	2 ;	Connection dropped in rxmt timeout.
+RE=REXMTT ;	2 ;	Retransmit timeouts.
+P=PERSIST ;	2 ;	Persist timeouts.
+KAT=KATIMEO ;	2 ;	Keepalive timeouts.
+KAP=KAPROBE ;	2 ;	Keepalive probes sent.
+KAD=KADROPS ;	2 ;	Connections dropped in keepalive.
+ST=STOTAL ;	2 ;	Total packets sent.
+SP=SPACK ;	2 ;	Data packets sent.
+SB=SBYTE ;	2 ;	Data bytes sent.
+SREP=SREPACK ;	2 ;	Data packets retransmitted.
+SREB=SREBYTE ;	2 ;	Data bytes retransmitted.
+SA=SACKS ;	2 ;	Ack-only packets sent.
+SWP=SWPROBE ;	2 ;	Window probes sent.
+SU=SURGENT ;	2 ;	Packets sent with URG only.
+SWU=SWUPDATE ;	2 ;	Window update-only packets sent.
+SC=SCTRL ;	2 ;	Control @code{(SYN|FIN|RST)} packets sent.
+RTO=RTOTAL ;	2 ;	Total packets received.
+RPA=RPACK ;	2 ;	Packets received in sequence.
+RB=RBYTE ;	2 ;	Bytes received in sequence.
+RC=RCHKSUM ;	2 ;	Packets received with checksum errors.
+ROF=ROFFSET ;	2 ;	Packets received with bad offset.
+RPS=RPSHORT ;	2 ;	Packets received too short.
+RDUPP=RDUPPACK ;2 ;	Duplicate-only packets received.
+RDUPB=RDUPBYTE ;2 ;	Duplicate-only bytes received.
+RPDUPD=RPDUPDATA ;2 ;	Packets with some duplicate data.
+RPDUPB=RPDUPBYTE ;2 ;	Dup. bytes in part-dup. packets.
+ROOP=ROOPACK ;	2 ;	Out-of-order packets received.
+ROOB=ROOBYTE ;	2 ;	Out-of-order bytes received.
+RPL=RPLATE ;	2 ;	Packets with data after window.
+RBL=RBLATE ;	2 ;	Bytes received after window.
+RAF=RAFTER ;	2 ;	Packets received after close.
+RWP=RWPROBE ;	2 ;	Received window probe packets.
+RDUPA=RDUPACK ;	2 ;	Received duplicate acknowledgments.
+RACKT=RACKTOOM ;2 ;	Received acknowledgments for unsent data.
+RACKP=RACKPACK ;2 ;	Received acknowledgment packets.
+RACKB=RACKBYTE ;2 ;	Bytes acknowledged by received acknowledgments.
+RWU=RWUPDATE ;	2 ;	Received window update packets.
+#
+# UDP
+#
+U=UDP ;	1 ;	Variables related to User Datagram Protocol.
+extern LONG udpstat;
+{ VAR_LONG, VF_TABLE|VF_READ, KW_UDP,  &udpstat,  NULL }
+I=ITOTAL ;	2 ;	Total input packets.
+H=HEADSHORT ;	2 ;	Packet shorter than header.
+C=CHKSUM ;	2 ;	Checksum error.
+L=LENGTH ;	2 ;	Data length larger than packet.
+N=NOPORT ;	2 ;	No socket on port.
+B=BCNOPORT ;	2 ;	No socket on port, arrived as broadcast.
+F=FULLSOC ;	2 ;	Not delivered, input socket full.
+M=MISPCB ;	2 ;	Input packets missing pcb cache.
+O=OTOTAL ;	2 ;	Total output packets.
+#
+# Connection table
+#
+CONNECTIONS;	1 ;	Returns a list of all TCP and UDP connections, including server (listening) sockets. For the output format description, see @ref{CONNECTIONS output}.
+LONG getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+{ VAR_FUNC, VF_READ, NULL, (notify_f)getsockets, NULL }
+#
+# Host Name
+#
+HOSTNAME ;        1 ;     The name of the host returned by the gethostname() function.
+LONG rexx_gethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res); LONG rexx_sethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+{ VAR_FUNC, VF_RW, NULL, (notify_f)rexx_gethostname, (notify_f)rexx_sethostname }
+#
+# Routing table
+#
+ROUTES ;        1 ;     Returns a list of routing entries for specified protocol family. For the output format description, see @ref{Routing Format}.
+LONG getroutes(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+{ VAR_FUNC, VF_READ, NULL, (notify_f)getroutes, NULL }
+#
+# These are in the numeric order as in <sys/socket.h>.
+# Do not change the order!
+#
+global STRPTR KW_Protocols = KW_ROUTES;
+ALL		; 2 ;	Unspecified
+UNIX		; 2 ;	Local to host (pipes, portals)
+INET		; 2 ;	Internetwork: UDP, TCP, etc.
+IMPLINK		; 2 ;	Arpanet IMP Addresses
+PUP		; 2 ;	PUP Protocols: e.g. BSP
+CHAOS		; 2 ;	mit CHAOS protocols
+NS		; 2 ;	XEROX NS protocols
+ISO		; 2 ;	ISO protocols
+ECMA		; 2 ;	European Computer Manufacturers
+DATAKIT		; 2 ;	Datakit Protocols
+CCITT		; 2 ;	CCITT protocols, X.25 etc
+SNA		; 2 ;	IBM SNA
+DECnet		; 2 ;	DECnet
+DLI		; 2 ;	DEC Direct Data Link Interface
+LAT		; 2 ;	LAT
+HYLINK		; 2 ;	NSC Hyperchannel
+APPLETALK	; 2 ;	Apple Talk
+ROUTE		; 2 ;	Internal Routing Protocol
+LINK		; 2 ;	Link layer interface
+XTP		; 2 ;	eXpress Transfer Protocol
+#
+# MBUF
+#
+MBS=MBUF_STAT ;	1 ;	Memory buffer statistics.
+extern struct mbstat mbstat;
+{ VAR_LONG, VF_TABLE|VF_READ, KW_MBUF_STAT, &mbstat, NULL }
+M=MBUFS ;	2 ;	Total number of allocated memory buffers.
+CL=CLUSTERS ;	2 ;	Total number of allocated memory buffer clusters.
+CLF=CLFREE ;	2 ;	Number of memory buffer clusters free.
+MD=MDROPS ;	2 ;	Times failed to find space.
+NW=NWAITED ;	2 ;	Times waited for space.
+ND=NDRAINED ;	2 ;	Times drained protocols for space.
+TMU=TOTALMEMORYUSED ;2;	Total amount of memory used for the mbufs.
+#
+# MBUF type specific statistics
+#
+MBTS=MBUF_TYPE_STATS;	1 ;	Returns type specific statistics of mbuf allocations. The last number is the total number of mbufs allocated.
+extern LONG mb_read_stats(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+{ VAR_FUNC, VF_READ, NULL, (notify_f)mb_read_stats, NULL }
+#
+# MBUF Configuration
+#
+MBC=MBUF_CONF ;	1 ;	Memory buffer configuration.
+extern struct mbconf mbconf; int mb_check_conf(void *pt, LONG new);
+{ VAR_LONG, VF_TABLE|VF_RCONF,   KW_MBUF_CONF, &mbconf, mb_check_conf }
+I=INITIAL ;	2 ;	Number of mbuf chunks to allocate initially.
+CH=CHUNK ;	2 ;	Number of mbufs to allocate at a time.
+CL=CLCHUNK ;	2 ;	Number of clusters to allocate at a time.
+MM=MAXMEM ;	2 ;	Maximum memory to use (in kilobytes).
+CS=CLUSTERSIZE ;2 ;	Size of an mbuf cluster.
+#
+# LOG configuration
+#
+LOG ;	     1 ;     Logging system configuration.
+extern LONG log_cnf;
+{ VAR_LONG, VF_TABLE|VF_RCONF,   KW_LOG, &log_cnf, NULL }
+COUNT ;	     2 ;     Number of log messages to use.
+LEN ;	     2 ;     Maximum length of a log message.
+FILTERFILE ; 2 ;     Log level filter
+#
+# GUI configuration
+GUI ;		1 ; GUI system configuration
+extern LONG gui_cnf;
+{ VAR_STRP, VF_TABLE|VF_RCONF,   KW_GUI, &gui_cnf, NULL }
+PANEL ;		2 ; Panel name
+FONT ;		2 ; Font name for the panel
+#
+SHOW;		1 ; What to show in the panel
+extern LONG gui_show[];
+{ VAR_ENUM, VF_TABLE|VF_RCONF,   KW_SHOW, gui_show, boolean_enum }
+SPEED ;		2 ; Interace speed
+RATE ;		2 ; Transfer rate
+UPTIME ;	2 ; Uptime
+BYTES ;		2 ; Transferred bytes counter
+IFCONTROL ;	2 ; Interface control buttons
+GUICONTROL ;	2 ; Panel control buttons
+#
+#
+# Single variables
+#
+# This is an example of the VAR_INET type variable
+#
+#NS=NS1=NSPRIM ;	1 ;	Address of the primary nameserver.
+#struct sockaddr_in ns_1 = { sizeof(ns_1), AF_INET };
+#{ VAR_INET, VF_RW, NULL, &ns_1.sin_addr, NULL }
+#
+TASKNAME ;	1 ;	Name of @AMITCP task.
+extern STRPTR taskname; int taskname_changed(void *pt, LONG new);
+{ VAR_STRP, VF_RCONF, NULL, &taskname, taskname_changed }
+#
+NTH=NTHBASE ;	1 ;	Current @AMITCP has nth @LIB base currently in memory.
+extern LONG nthLibrary;
+{ VAR_LONG, VF_RW, NULL, &nthLibrary,  NULL }
+#
+DBSANA=DEBUGSANA ;	1 ;	Boolean to switch the SANA-II device interface debugging on and off@footnote{For description about boolean variable, see @ref{Boolean Variables}.}.
+extern LONG debug_sana;
+{ VAR_ENUM, VF_RW, NULL, &debug_sana, boolean_enum }
+#
+DBICMP=DEBUGICMP ;	1 ;	Boolean to switch the ICMP debugging on and off.
+extern LONG icmpprintfs;
+{ VAR_ENUM, VF_RW, NULL, &icmpprintfs, boolean_enum }
+#
+DBIP=DEBUGIP ;	1 ;	Boolean telling whether IP should log debugging information.
+extern LONG ipprintfs;
+{ VAR_ENUM, VF_RW, NULL, &ipprintfs, boolean_enum }
+#
+GTW=GATEWAY ;	1 ;	Boolean to switch gateway functionality on and off.
+extern LONG ipforwarding;
+{ VAR_ENUM, VF_RW, NULL, &ipforwarding, boolean_enum }
+#
+REDIR=IPSENDREDIRECTS ;	1 ;	Boolean telling whether IP should send ICMP redirect messages.
+extern LONG ipsendredirects;
+{ VAR_ENUM, VF_RW, NULL, &ipsendredirects, boolean_enum }
+#
+USENS=USENAMESERVER ;	1 ;	How to use name server. Possible values are:\n@table @code\n@item NO\nDo not use name server at all. Local database will be used instead.\n@item FIRST\nQuery the name servers first and if that fails, use local database.\n@item SECOND\nFirst look up the local database, then, if that fails, query the name servers.\n@end table
+extern LONG usens;
+{ VAR_ENUM, VF_RW, NULL, &usens, (notify_f)"NO,FIRST,SECOND" }
+#
+ULO=USELOOPBACK ;	1 ;	If true use the local loop device for local traffic.
+extern LONG useloopback;
+{ VAR_ENUM, VF_RW, NULL, &useloopback, boolean_enum }
+#
+TCPSND=TCP_SENDSPACE ;	1 ;	Default size of the sending socket buffer (TCP).
+extern ULONG tcp_sendspace;
+{ VAR_LONG, VF_RW, NULL, (LONG*)&tcp_sendspace, NULL }
+#
+TCPRCV=TCP_RECVSPACE ;	1 ;	Default size of the receiving socket buffer (TCP).
+extern ULONG tcp_recvspace;
+{ VAR_LONG, VF_RW, NULL, (LONG*)&tcp_recvspace, NULL }
+#
+CON=CONSOLENAME ;	1 ;	Filename for the log console.
+extern STRPTR consolename ;	 int logname_changed(void *pt, LONG new);
+{ VAR_STRP, VF_RW, NULL, &consolename, logname_changed }
+#
+LOGF=LOGFILENAME ;	1 ;	Filename for the log file.
+extern STRPTR logfilename;
+{ VAR_STRP, VF_RW, NULL, &logfilename, logname_changed }
+#
+OPENGUI ; 1 ; Boolean to open GUI on startup
+extern LONG OpenGUIOnStartup;
+{ VAR_ENUM, VF_RCONF, NULL, &OpenGUIOnStartup, boolean_enum }
+#
+REFRESH ; 1 ; GUI refresh period in seconds
+extern ULONG gui_refresh;
+{ VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL }
+

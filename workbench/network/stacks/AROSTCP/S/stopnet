@@ -1,0 +1,1 @@
+RX "address AROSTCP; KILL" ; Send "KILL" to the TCP/IP stack

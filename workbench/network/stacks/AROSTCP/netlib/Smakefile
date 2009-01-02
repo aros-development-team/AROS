@@ -1,0 +1,306 @@
+#
+#       $Id: Smakefile,v 1.1.1.2 2005/12/07 10:50:34 sonic_amiga Exp $
+#
+#       Smakefile for AmiTCP/IP network support library 
+#
+#       Copyright © 1994 AmiTCP/IP Group, 
+#                        Network Solutions Development Inc.
+#                        All rights reserved.
+#
+
+DEST = AmiTCP:
+
+MAKE = smake
+
+RM= delete
+RM_RECURSIVE= delete all
+MKDIR= makedir
+CP= copy dates
+
+CC= sc
+LD= slink
+AUTODOC= autodoc -c -C -I -t8
+
+OFLAGS= Optimize 
+GFLAGS= NoOptimize Debug=fullflush
+
+CFLAGS=    DATA=NEAR
+CFLAGS_D=  DATA=NEAR DEF=USE_DOSIO
+CFLAGS_NB= DATA=FAR
+CFLAGS_DNB=DATA=FAR DEF=USE_DOSIO
+CFLAGS_S=  DATA=NEAR SHORTINTS
+
+DEFS= DEF "RCS_ID_C=//" DEF AMITCP=1 DEF NETLIB=1 \
+      DEF __USE_SYSBASE=1 DEF USE_BUILTIN_MATH=1
+
+IDIRS= IDIR=netinclude: 
+SCOPTIONS= parm=BOTH Nostackcheck \
+	Stringmerge Noerrorsource Nomultipleincludes Structureequivalence \
+	noversion noerrorhighlight IGNORE=224 IGNORE=92 \
+	optinl optinlocal opttime optcomp=5 optdep=5 optrdep=5 optsched \
+	 $(IDIRS) $(DEFS) 
+
+#
+# Note: sources with leading underscore "_" are specific with SAS C UFB 
+# 
+# As the standard autodoc extractor is broken (it allows only for 32 arguments)
+# don't add sources with autodocs to the end of macro
+#
+DOCSRC= autoinit.c gettimeofday.c herror.c \
+	lineread.c perror.c printfault.c rcmd.c strerror.c \
+	syslog.c timerinit.c dostat.c utime.c chmod.c _dup.c _dup2.c \
+	chown.c printuserfault.c init_usergroup.c \
+	popen.c sleep.c usleep.c \
+	init_inet_daemon.c set_socket_stdio.c serveraccept.c \
+	dosio_init.c dosio_sprintf.c
+
+SASSTDIOSRC= popen.c _dup.c _dup2.c _fstat.c \
+        _allocufb.c _chkufb.c _close.c _lseek.c _open.c _read.c \
+        _write.c fhopen.c iomode.c isatty.c \
+	set_socket_stdio.c pkts.c
+
+NETLIBSRC= strerror.c autoinit.c dummy.c lineread.c \
+        getopt.c printfault.c stubs.c perror.c herror.c \
+        timerinit.c gettimeofday.c rcmd.c syslog.c \
+        getpid.c chmod.c chown.c utime.c sleep.c usleep.c \
+	printuserfault.c init_usergroup.c setegid.c seteuid.c \
+	stat.c fib.c dostat.c access.c ioctl.c \
+	init_inet_daemon.c serveraccept.c \
+	linkaddr.c linkntoa.c \
+	dosio_init.c dosio_sprintf.c \
+	$(SASSTDIOSRC)
+
+SANA2LIBSRC= sana2perror.c sana2errlist.c sana2printfault.c
+
+DOCS= netlib.doc sana2lib.doc
+
+LIBS= netd.lib net.lib sana2.lib
+
+FARLIBS= netdnb.lib netnb.lib sana2nb.lib 
+
+DLIBS= gnetd.lib gnet.lib gsana2.lib
+
+DFARLIBS= gnetdnb.lib gnetnb.lib gsana2nb.lib 
+
+NETOBJ= strerror.o autoinit.o dummy.o lineread.o \
+        getopt.o printfault.o stubs.o perror.o herror.o \
+        timerinit.o gettimeofday.o rcmd.o syslog.o \
+        getpid.o chmod.o chown.o utime.o popen.o sleep.o usleep.o \
+	printuserfault.o init_usergroup.o setegid.o seteuid.o \
+	_dup.o _dup2.o stat.o _fstat.o fib.o dostat.o access.o \
+        _allocufb.o _chkufb.o _close.o _lseek.o _open.o _read.o \
+        _write.o fhopen.o ioctl.o iomode.o isatty.o \
+	init_inet_daemon.o set_socket_stdio.o serveraccept.o \
+	linkaddr.o linkntoa.o \
+	dosio_init.o dosio_sprintf.o pkts.o
+
+NETDOBJ= strerror.do autoinit.do dummy.do lineread.do \
+        getopt.do printfault.do stubs.do perror.do herror.do \
+        timerinit.do gettimeofday.do rcmd.do syslog.do \
+        getpid.do chmod.do chown.do utime.do sleep.do usleep.do \
+	printuserfault.do init_usergroup.do setegid.do seteuid.do \
+	stat.do fib.do dostat.do access.do ioctl.do \
+	init_inet_daemon.do serveraccept.do \
+	linkaddr.do linkntoa.do \
+	dosio_init.do dosio_sprintf.do
+
+NETNBOBJ=  strerror.nbo autoinit.nbo dummy.nbo lineread.nbo \
+        getopt.nbo printfault.nbo stubs.nbo perror.nbo herror.nbo \
+        timerinit.nbo gettimeofday.nbo rcmd.nbo syslog.nbo \
+        getpid.nbo chmod.nbo chown.nbo utime.nbo popen.nbo sleep.nbo usleep.nbo \
+	printuserfault.nbo init_usergroup.nbo setegid.nbo seteuid.nbo \
+	_dup.nbo _dup2.nbo stat.nbo _fstat.nbo fib.nbo dostat.nbo access.nbo \
+        _allocufb.nbo _chkufb.nbo _close.nbo _lseek.nbo _open.nbo _read.nbo \
+        _write.nbo fhopen.nbo ioctl.nbo iomode.nbo isatty.nbo \
+	init_inet_daemon.nbo set_socket_stdio.nbo serveraccept.nbo \
+	linkaddr.nbo linkntoa.nbo \
+	dosio_init.nbo dosio_sprintf.nbo pkts.nbo
+
+NETDNBOBJ= strerror.dnbo autoinit.dnbo dummy.dnbo lineread.dnbo \
+        getopt.dnbo printfault.dnbo stubs.dnbo perror.dnbo herror.dnbo \
+        timerinit.dnbo gettimeofday.dnbo rcmd.dnbo syslog.dnbo \
+        getpid.dnbo chmod.dnbo chown.dnbo utime.dnbo sleep.dnbo usleep.dnbo \
+	printuserfault.dnbo init_usergroup.dnbo setegid.dnbo seteuid.dnbo \
+	stat.dnbo fib.dnbo dostat.dnbo access.dnbo ioctl.dnbo \
+	init_inet_daemon.dnbo serveraccept.dnbo \
+	linkaddr.dnbo linkntoa.dnbo \
+	dosio_init.dnbo dosio_sprintf.dnbo
+
+SANA2OBJ=   sana2perror.o   sana2errlist.o   sana2printfault.o
+SANA2NBOBJ= sana2perror.nbo sana2errlist.nbo sana2printfault.nbo
+
+GNETOBJ= strerror.go autoinit.go dummy.go lineread.go \
+        getopt.go printfault.go stubs.go perror.go herror.go \
+        timerinit.go gettimeofday.go rcmd.go syslog.go \
+        getpid.go chmod.go chown.go utime.go popen.go sleep.go usleep.go \
+	printuserfault.go init_usergroup.go setegid.go seteuid.go \
+	_dup.go _dup2.go stat.go _fstat.go fib.go dostat.go access.go \
+        _allocufb.go _chkufb.go _close.go _lseek.go _open.go _read.go \
+        _write.go fhopen.go ioctl.go iomode.go isatty.go \
+	init_inet_daemon.go set_socket_stdio.go serveraccept.go \
+	linkaddr.go linkntoa.go \
+	dosio_init.go dosio_sprintf.go pkts.go
+
+GNETDOBJ= strerror.gdo autoinit.gdo dummy.gdo lineread.gdo \
+        getopt.gdo printfault.gdo stubs.gdo perror.gdo herror.gdo \
+        timerinit.gdo gettimeofday.gdo rcmd.gdo syslog.gdo \
+        getpid.gdo chmod.gdo chown.gdo utime.gdo sleep.gdo usleep.gdo \
+	printuserfault.gdo init_usergroup.gdo setegid.gdo seteuid.gdo \
+	stat.gdo fib.gdo dostat.gdo access.gdo ioctl.gdo \
+	init_inet_daemon.gdo serveraccept.gdo \
+	linkaddr.gdo linkntoa.gdo \
+	dosio_init.gdo dosio_sprintf.gdo
+
+GNETNBOBJ=  strerror.gnbo autoinit.gnbo dummy.gnbo lineread.gnbo \
+        getopt.gnbo printfault.gnbo stubs.gnbo perror.gnbo herror.gnbo \
+        timerinit.gnbo gettimeofday.gnbo rcmd.gnbo syslog.gnbo \
+        getpid.gnbo chmod.gnbo chown.gnbo utime.gnbo popen.gnbo sleep.gnbo usleep.gnbo \
+	printuserfault.gnbo init_usergroup.gnbo setegid.gnbo seteuid.gnbo \
+	_dup.gnbo _dup2.gnbo stat.gnbo _fstat.gnbo fib.gnbo dostat.gnbo access.gnbo \
+        _allocufb.gnbo _chkufb.gnbo _close.gnbo _lseek.gnbo _open.gnbo _read.gnbo \
+        _write.gnbo fhopen.gnbo ioctl.gnbo iomode.gnbo isatty.gnbo \
+	init_inet_daemon.gnbo set_socket_stdio.gnbo serveraccept.gnbo \
+	linkaddr.gnbo linkntoa.gnbo \
+	dosio_init.gnbo dosio_sprintf.gnbo pkts.gnbo
+
+GNETDNBOBJ= strerror.gdnbo autoinit.gdnbo dummy.gdnbo lineread.gdnbo \
+        getopt.gdnbo printfault.gdnbo stubs.gdnbo perror.gdnbo herror.gdnbo \
+        timerinit.gdnbo gettimeofday.gdnbo rcmd.gdnbo syslog.gdnbo \
+        getpid.gdnbo chmod.gdnbo chown.gdnbo utime.gdnbo sleep.gdnbo usleep.gdnbo \
+	printuserfault.gdnbo init_usergroup.gdnbo setegid.gdnbo seteuid.gdnbo \
+	stat.gdnbo fib.gdnbo dostat.gdnbo access.gdnbo ioctl.gdnbo \
+	init_inet_daemon.gdnbo serveraccept.gdnbo \
+	linkaddr.gdnbo linkntoa.gdnbo \
+	dosio_init.gdnbo dosio_sprintf.gdnbo
+
+GSANA2OBJ=   sana2perror.go   sana2errlist.go   sana2printfault.go
+GSANA2NBOBJ= sana2perror.gnbo sana2errlist.gnbo sana2printfault.gnbo
+
+.SUFFIXES: .c .o .go .do .gdo .nbo .gnbo .dnbo .gdnbo
+#
+# Generic rules
+#
+.c.o:
+	$(CC) $(CFLAGS) $(OFLAGS) $*.c
+.c.do:
+	$(CC) $(CFLAGS_D) $(OFLAGS) $*.c OBJNAME=$*.do
+.c.nbo:
+	$(CC) $(CFLAGS_NB) $(OFLAGS) $*.c OBJNAME=$*.nbo
+.c.dnbo:
+	$(CC) $(CFLAGS_DNB) $(OFLAGS) $*.c OBJNAME=$*.dnbo
+.c.so:
+	$(CC) $(CFLAGS_S) $(OFLAGS) $*.c  OBJNAME=$*.so
+.c.go:
+	$(CC) $(CFLAGS) $(GFLAGS) $*.c OBJNAME=$*.go
+.c.gdo:
+	$(CC) $(CFLAGS_D) $(GFLAGS) $*.c OBJNAME=$*.gdo
+.c.gnbo:
+	$(CC) $(CFLAGS_NB) $(GFLAGS) $*.c OBJNAME=$*.gnbo
+.c.gdnbo:
+	$(CC) $(CFLAGS_DNB) $(GFLAGS) $*.c OBJNAME=$*.gdnbo
+.c.gso:
+	$(CC) $(CFLAGS_S) $(GFLAGS) $*.c  OBJNAME=$*.gso
+
+normal: SCOPTIONS $(LIBS) $(DOCS)
+
+all: normal $(FARLIBS)
+
+debug: SCOPTIONS $(DLIBS) $(DFARLIBS)
+
+install:  normal $(DEST)netlib $(DEST)doc
+	$(CP) $(LIBS) $(DEST)netlib
+	$(CP) $(DOCS) $(DEST)doc
+install-all:  all install $(DEST)netlib
+	$(CP) $(FARLIBS) $(DEST)netlib
+install-debug: debug $(DEST)netlib 
+	$(CP) $(DLIBS) $(DFARLIBS) $(DEST)netlib 
+
+$(DEST)netlib:
+	-$(MKDIR) $@
+$(DEST)doc:
+	-$(MKDIR) $@
+	
+netlib.doc: $(NETLIBSRC)
+	$(AUTODOC) $(DOCSRC) >$@
+sana2lib.doc: $(SANA2LIBSRC)
+	$(AUTODOC) $(SANA2LIBSRC) >$@
+
+SCOPTIONS: Smakefile
+	copy to $@ <from < 
+$(SCOPTIONS) 
+<
+
+#
+# Network libraries
+#
+net.lib: $(NETOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(NETOBJ)
+<
+
+netd.lib: $(NETDOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(NETDOBJ)
+<
+
+netnb.lib: $(NETNBOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(NETNBOBJ)
+<
+
+netdnb.lib: $(NETDNBOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(NETDNBOBJ)
+<
+
+#
+# Sana2.lib, convenience functions for Sana2 utilities
+#
+sana2.lib: $(SANA2OBJ)
+	-$(RM) $@
+	oml $@ r $(SANA2OBJ)
+sana2nb.lib: $(SANA2NBOBJ)
+	-$(RM) $@
+	oml $@ r $(SANA2NBOBJ)
+#
+# Debugging libraries
+#
+gnet.lib: $(GNETOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(GNETOBJ)
+<
+
+gnetd.lib: $(GNETDOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(GNETDOBJ)
+<
+
+gnetnb.lib: $(GNETNBOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(GNETNBOBJ)
+<
+
+gnetdnb.lib: $(GNETDNBOBJ)
+	-$(RM) $@
+	oml $@ r <@<
+$(GNETDNBOBJ)
+<
+
+gsana2.lib: $(GSANA2OBJ)
+	-$(RM) $@
+	oml $@ r $(GSANA2OBJ)
+gsana2nb.lib: $(GSANA2NBOBJ)
+	-$(RM) $@
+	oml $@ r $(GSANA2NBOBJ)
+
+clean:
+	-$(RM) \#?.(lib|o|do|nbo|dnbo|so|go|gdo|gnbo|gdnbo|gso) SCOPTIONS
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
