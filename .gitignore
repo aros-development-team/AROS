@@ -48,9 +48,6 @@
 # /arch/.unmaintained/hidd/
 /arch/.unmaintained/hidd/mmakefile
 
-# /arch/.unmaintained/i386-cygwin/
-/arch/.unmaintained/i386-cygwin/mmakefile
-
 # /arch/.unmaintained/m68k-emul/
 /arch/.unmaintained/m68k-emul/mmakefile
 
@@ -194,6 +191,16 @@
 # /arch/all-freebsd/exec/
 /arch/all-freebsd/exec/mmakefile
 
+# /arch/all-hosted/dos/
+/arch/all-hosted/dos/mmakefile
+
+# /arch/all-hosted/hidd/sdl/
+/arch/all-hosted/hidd/sdl/mmakefile
+
+# /arch/all-hosted/hidd/x11/
+/arch/all-hosted/hidd/x11/mmakefile
+/arch/all-hosted/hidd/x11/libdefs.h
+
 # /arch/all-linux/
 /arch/all-linux/mmakefile
 
@@ -207,14 +214,20 @@
 # /arch/all-mingw32/
 /arch/all-mingw32/mmakefile
 
+# /arch/all-mingw32/battclock/
+/arch/all-mingw32/battclock/mmakefile
+
+# /arch/all-mingw32/bootloader/
+/arch/all-mingw32/bootloader/mmakefile
+
+# /arch/all-mingw32/bootmenu/
+/arch/all-mingw32/bootmenu/mmakefile
+
 # /arch/all-mingw32/bootstrap/
 /arch/all-mingw32/bootstrap/mmakefile
 
 # /arch/all-mingw32/devs/filesys/emul_handler/
 /arch/all-mingw32/devs/filesys/emul_handler/mmakefile
-
-# /arch/all-mingw32/dos/
-/arch/all-mingw32/dos/mmakefile
 
 # /arch/all-mingw32/exec/
 /arch/all-mingw32/exec/mmakefile
@@ -222,14 +235,14 @@
 # /arch/all-mingw32/hostlib/
 /arch/all-mingw32/hostlib/mmakefile
 
+# /arch/all-mingw32/hostthread/
+/arch/all-mingw32/hostthread/mmakefile
+
 # /arch/all-mingw32/kernel/
 /arch/all-mingw32/kernel/mmakefile
 
 # /arch/all-mingw32/timer/
 /arch/all-mingw32/timer/mmakefile
-
-# /arch/all-sdl/hidd/
-/arch/all-sdl/hidd/mmakefile
 
 # /arch/all-unix/
 /arch/all-unix/*.err
@@ -284,15 +297,6 @@
 
 # /arch/all-unix/libs/oss/
 /arch/all-unix/libs/oss/mmakefile
-
-# /arch/all-x11/
-/arch/all-x11/mmakefile
-/arch/all-x11/makefile
-/arch/all-x11/makefile.bak
-
-# /arch/all-x11/hidd/
-/arch/all-x11/hidd/mmakefile
-/arch/all-x11/hidd/libdefs.h
 
 # /arch/common/ata.device/
 /arch/common/ata.device/mmakefile
@@ -455,6 +459,9 @@
 # /arch/i386-linux/pcilinux/
 /arch/i386-linux/pcilinux/mmakefile
 
+# /arch/i386-mingw32/exec/
+/arch/i386-mingw32/exec/mmakefile
+
 # /arch/i386-pc/
 /arch/i386-pc/build
 /arch/i386-pc/geninc
@@ -492,9 +499,6 @@
 
 # /arch/i386-pc/cpu/
 /arch/i386-pc/cpu/mmakefile
-
-# /arch/i386-pc/dos/
-/arch/i386-pc/dos/mmakefile
 
 # /arch/i386-pc/drivers/
 /arch/i386-pc/drivers/mmakefile
@@ -610,11 +614,17 @@
 # /arch/ppc-all/prep/startup/
 /arch/ppc-all/prep/startup/mmakefile
 
+# /arch/ppc-chrp/dos/
+/arch/ppc-chrp/dos/mmakefile
+
 # /arch/ppc-chrp/efika/boot/
 /arch/ppc-chrp/efika/boot/mmakefile
 
 # /arch/ppc-chrp/efika/bootloader/
 /arch/ppc-chrp/efika/bootloader/mmakefile
+
+# /arch/ppc-chrp/efika/bootmenu/
+/arch/ppc-chrp/efika/bootmenu/mmakefile
 
 # /arch/ppc-chrp/efika/include/
 /arch/ppc-chrp/efika/include/mmakefile
@@ -622,14 +632,29 @@
 # /arch/ppc-chrp/efika/kernel/
 /arch/ppc-chrp/efika/kernel/mmakefile
 
+# /arch/ppc-chrp/efika/ohci/
+/arch/ppc-chrp/efika/ohci/mmakefile
+
+# /arch/ppc-chrp/efika/pci/
+/arch/ppc-chrp/efika/pci/mmakefile
+
+# /arch/ppc-chrp/efika/timer/
+/arch/ppc-chrp/efika/timer/mmakefile
+
 # /arch/ppc-chrp/exec/
 /arch/ppc-chrp/exec/mmakefile
 
 # /arch/ppc-chrp/graphics/
 /arch/ppc-chrp/graphics/mmakefile
 
+# /arch/ppc-chrp/hidd.radeon/
+/arch/ppc-chrp/hidd.radeon/mmakefile
+
 # /arch/ppc-chrp/intuition/
 /arch/ppc-chrp/intuition/mmakefile
+
+# /arch/ppc-chrp/irq.hidd/
+/arch/ppc-chrp/irq.hidd/mmakefile
 
 # /arch/ppc-chrp/pci/
 /arch/ppc-chrp/pci/mmakefile
@@ -648,6 +673,9 @@
 
 # /arch/ppc-sam440/bootloader/
 /arch/ppc-sam440/bootloader/mmakefile
+
+# /arch/ppc-sam440/bootmenu/
+/arch/ppc-sam440/bootmenu/mmakefile
 
 # /arch/ppc-sam440/dos/
 /arch/ppc-sam440/dos/mmakefile
@@ -885,6 +913,9 @@
 
 # /images/Gorilla/Icons/Medium/AROS/System/
 /images/Gorilla/Icons/Medium/AROS/System/mmakefile
+
+# /images/Gorilla/Icons/Medium/AROS/Tests/
+/images/Gorilla/Icons/Medium/AROS/Tests/mmakefile
 
 # /images/Gorilla/Icons/Medium/AROS/Tools/
 /images/Gorilla/Icons/Medium/AROS/Tools/mmakefile
@@ -1143,6 +1174,9 @@
 # /rom/oop/
 /rom/oop/mmakefile
 /rom/oop/libdefs.h
+
+# /rom/openfirmware/
+/rom/openfirmware/mmakefile
 
 # /rom/timer/
 /rom/timer/mmakefile
@@ -1730,9 +1764,6 @@
 
 # /workbench/libs/freetype/include/freetype/
 /workbench/libs/freetype/include/freetype/mmakefile
-
-# /workbench/libs/freetype/include/freetype/cache/
-/workbench/libs/freetype/include/freetype/cache/mmakefile
 
 # /workbench/libs/freetype/include/freetype/config/
 /workbench/libs/freetype/include/freetype/config/mmakefile
