@@ -1608,6 +1608,39 @@
 /workbench/devs/midi/mmakefile
 /workbench/devs/midi/*.o
 
+# /workbench/devs/networks/e1000/
+/workbench/devs/networks/e1000/mmakefile
+
+# /workbench/devs/networks/emac/
+/workbench/devs/networks/emac/mmakefile
+
+# /workbench/devs/networks/etherlink3/
+/workbench/devs/networks/etherlink3/mmakefile
+
+# /workbench/devs/networks/intelpro100/
+/workbench/devs/networks/intelpro100/mmakefile
+
+# /workbench/devs/networks/nForce/
+/workbench/devs/networks/nForce/mmakefile
+
+# /workbench/devs/networks/pcnet32/
+/workbench/devs/networks/pcnet32/mmakefile
+
+# /workbench/devs/networks/prism2/
+/workbench/devs/networks/prism2/mmakefile
+
+# /workbench/devs/networks/rtl8029/
+/workbench/devs/networks/rtl8029/mmakefile
+
+# /workbench/devs/networks/rtl8139/
+/workbench/devs/networks/rtl8139/mmakefile
+
+# /workbench/devs/networks/sis900/
+/workbench/devs/networks/sis900/mmakefile
+
+# /workbench/devs/networks/via-rhine/
+/workbench/devs/networks/via-rhine/mmakefile
+
 # /workbench/devs/nil_handler/
 /workbench/devs/nil_handler/mmakefile
 
@@ -1951,6 +1984,54 @@
 
 # /workbench/locale/languages/
 /workbench/locale/languages/mmakefile
+
+# /workbench/network/stacks/AROSTCP/
+/workbench/network/stacks/AROSTCP/mmakefile
+
+# /workbench/network/stacks/AROSTCP/C/
+/workbench/network/stacks/AROSTCP/C/mmakefile
+
+# /workbench/network/stacks/AROSTCP/C/netstat/
+/workbench/network/stacks/AROSTCP/C/netstat/mmakefile
+
+# /workbench/network/stacks/AROSTCP/MUI.MiamiPanel/
+/workbench/network/stacks/AROSTCP/MUI.MiamiPanel/mmakefile
+
+# /workbench/network/stacks/AROSTCP/MUI.MiamiPanel/Catalogs/
+/workbench/network/stacks/AROSTCP/MUI.MiamiPanel/Catalogs/mmakefile
+
+# /workbench/network/stacks/AROSTCP/S/
+/workbench/network/stacks/AROSTCP/S/mmakefile
+
+# /workbench/network/stacks/AROSTCP/bsdsocket/
+/workbench/network/stacks/AROSTCP/bsdsocket/mmakefile
+
+# /workbench/network/stacks/AROSTCP/db/
+/workbench/network/stacks/AROSTCP/db/mmakefile
+
+# /workbench/network/stacks/AROSTCP/dhcp/client/
+/workbench/network/stacks/AROSTCP/dhcp/client/mmakefile
+
+# /workbench/network/stacks/AROSTCP/dhcp/common/
+/workbench/network/stacks/AROSTCP/dhcp/common/mmakefile
+
+# /workbench/network/stacks/AROSTCP/dhcp/dst/
+/workbench/network/stacks/AROSTCP/dhcp/dst/mmakefile
+
+# /workbench/network/stacks/AROSTCP/dhcp/minires/
+/workbench/network/stacks/AROSTCP/dhcp/minires/mmakefile
+
+# /workbench/network/stacks/AROSTCP/dhcp/omapip/
+/workbench/network/stacks/AROSTCP/dhcp/omapip/mmakefile
+
+# /workbench/network/stacks/AROSTCP/netinclude/
+/workbench/network/stacks/AROSTCP/netinclude/mmakefile
+
+# /workbench/network/stacks/AROSTCP/netlib/
+/workbench/network/stacks/AROSTCP/netlib/mmakefile
+
+# /workbench/network/stacks/AROSTCP/syslog/
+/workbench/network/stacks/AROSTCP/syslog/mmakefile
 
 # /workbench/prefs/
 /workbench/prefs/mmakefile
