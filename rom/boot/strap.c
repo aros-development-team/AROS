@@ -1,17 +1,19 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
     Lang: english
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <string.h>
+#include <stdio.h>
 
 #include <exec/alerts.h>
 #include <aros/asmcall.h>
+#include <aros/bootloader.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
@@ -21,10 +23,12 @@
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
 #include <devices/bootblock.h>
+#include <devices/timer.h>
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
 #include <proto/partition.h>
+#include <proto/bootloader.h>
 
 #include <aros/debug.h>
 #include <aros/macros.h>
@@ -403,6 +407,7 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     struct BootNode *bootNode;
     struct List list;
     struct Resident *DOSResident;
+    void *BootLoaderBase;
 
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
     ExpansionBase =
@@ -411,6 +416,47 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     {
         D(bug( "Could not open expansion.library, something's wrong!\n"));
         Alert(AT_DeadEnd | AG_OpenLib | AN_BootStrap | AO_ExpansionLib);
+    }
+
+    /* Try to open bootloader.resource */
+    if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
+    {
+    	struct List *args;
+    	struct Node *node;
+    	ULONG delay = 0;
+
+    	args = GetBootInfo(BL_Args);
+
+    	if (args)
+    	{
+    		/*
+    		 * Search the kernel parameters for the bootdelay=%d string. It determines the
+    		 * delay in seconds.
+    		 */
+    		ForeachNode(args, node)
+    		{
+    			if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
+    			{
+    				struct MsgPort *port = CreateMsgPort();
+    				struct timerequest *tr = CreateIORequest(port, sizeof(struct timerequest));
+
+    				OpenDevice("timer.device", UNIT_VBLANK, tr, 0);
+
+    				sscanf(node->ln_Name, "bootdelay=%d", &delay);
+    				D(bug("[Boot] delay of %d seconds requested.", delay));
+
+    				tr->tr_node.io_Command = TR_ADDREQUEST;
+    				tr->tr_time.tv_sec = delay;
+    				tr->tr_time.tv_usec = 0;
+
+    				DoIO(tr);
+
+    				CloseDevice(tr);
+    				DeleteIORequest(tr);
+    				DeleteMsgPort(port);
+    			}
+    		}
+    	}
     }
 
     /* move all boot nodes into another list */
