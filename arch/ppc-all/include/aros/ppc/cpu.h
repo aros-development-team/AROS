@@ -32,6 +32,8 @@
  */
 
 #define AROS_32BIT_TYPE         int
+/* For ABI V1 this should be done in common cpu.h */
+#define AROS_LARGEST_TYPE   long long
 
 /* Use C pointer and string for the BCPL pointers and strings
  * For a normal ABI these should not be defined for maximum source code
