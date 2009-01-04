@@ -8,12 +8,11 @@
 
 #define DOSBOOT_DISCINSERT_SCREENPRINT
 
-# define  DEBUG 1
+# define  DEBUG 0
 # include <aros/debug.h>
 
 #include <aros/macros.h>
 #include <aros/asmcall.h>
-#include <aros/bootloader.h>
 
 #include <proto/bootmenu.h>
 #include <proto/bootloader.h>
@@ -146,35 +145,6 @@ AROS_UFH3(void, __dosboot_IntBoot,
         Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
     }
 
-    /* Try to open bootloader.resource */
-    if ((BootLoaderBase = OpenResource("bootloader.resource")) != NULL)
-    {
-    	struct List *args;
-    	struct Node *node;
-    	ULONG delay = 0;
-
-    	D(bug("[DOS] __dosboot_IntBoot: got BootLoaderBase\n"));
-
-    	args = GetBootInfo(BL_Args);
-
-    	if (args)
-    	{
-    		D(bug("[DOS] __dosboot_IntBoot: got args\n"));
-    		/*
-    		 * Search the kernel parameters for the bootdelay=%d string. It determines the
-    		 * delay in seconds.
-    		 */
-    		ForeachNode(args, node)
-    		{
-    			if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
-    			{
-    				sscanf(node->ln_Name, "bootdelay=%d", &delay);
-    				D(bug("[DOS] __dosboot_IntBoot: delay of %d seconds requested.", delay));
-    				Delay(50*delay);
-    			}
-    		}
-    	}
-    }
 
     if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) == NULL)
     {
