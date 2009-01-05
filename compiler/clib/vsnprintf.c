@@ -20,11 +20,9 @@ static int _vsnprintf_uc (int c, struct data * data)
     {
 	*(data->str) ++ = c;
 	data->n --;
-
-	return 1;
     }
 
-    return EOF;
+    return 1;
 }
 
 /*****************************************************************************
@@ -53,12 +51,14 @@ static int _vsnprintf_uc (int c, struct data * data)
 	args - A list of arguments for the format string.
 
     RESULT
-	The number of characters written or -1 if the string was too small.
-	In this case, the string is not 0-terminated.
+	The number of characters written into the string. The 0 byte at the
+	end is not included. If this is greater than or equal to n then
+	there was not enough room to write all characters. In this case the
+	output string is not null-terminated, and the return value is the
+	number of characters which would have been written if enough space had
+	been available.
 
     NOTES
-	No check is beeing made that str is large enough to contain
-	the result.
 
     EXAMPLE
 
@@ -83,9 +83,7 @@ static int _vsnprintf_uc (int c, struct data * data)
     if (data.n)
     {
 	*(data.str) = 0;
-
-	return (n - data.n);
     }
 
-    return -1;
+    return rc;
 } /* vsnprintf */
