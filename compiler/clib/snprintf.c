@@ -31,9 +31,12 @@
 	... - Arguments for the format string
 
     RESULT
-	The number of characters written into the string. If this is
-	-1, then there was not enough room. The 0 byte at the end is not
-	included.
+	The number of characters written into the string. The 0 byte at the
+	end is not included. If this is greater than or equal to n then
+	there was not enough room to write all characters. In this case the
+	output string is not null-terminated, and the return value is the
+	number of characters which would have been written if enough space had
+	been available.
 
     NOTES
 
