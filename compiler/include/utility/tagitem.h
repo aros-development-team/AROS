@@ -25,8 +25,10 @@ struct TagItem
 };
 
 #ifdef AROS_SLOWSTACKTAGS
+__BEGIN_DECLS
     struct TagItem * GetTagsFromStack  (IPTR firstTag, va_list args);
     void             FreeTagsFromStack (struct TagItem * tags);
+__END_DECLS
 #endif
 
 /* constants for Tag.ti_Tag, control tag values */
