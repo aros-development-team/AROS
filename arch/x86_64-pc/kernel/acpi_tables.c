@@ -105,7 +105,7 @@ struct acpi_oemblacklist_entry _ACPI_OEMBlacklist[] =
 /* Portege 310/320, BIOS 7.1 */
     {"TOSHIB",      "310     ", 0x19990511, ACPI_DSDT, all_versions, "Implicit Return", 0},
 
-    {""}
+    {"\0"}
 };
 
 /************************************************************************************************
@@ -128,7 +128,7 @@ int core_ACPITableHeaderEarly(int id, struct acpi_table_header ** header)
     struct acpi_table_sdt           *header_tmp;
     enum acpi_table_id              temp_id;
 
-    rkprintf("[Kernel] core_ACPITableHeaderEarly()\n");
+    rkprintf("[Kernel] core_ACPITableHeaderEarly(id=%d)\n", id);
 
     /* DSDT is different from the rest */
     if (id == ACPI_DSDT) temp_id = ACPI_FADT;
@@ -138,6 +138,9 @@ int core_ACPITableHeaderEarly(int id, struct acpi_table_header ** header)
     for (i = 0; i < _Kern_ACPIData.kb_ACPI_SDT_Count; i++)
     {
         header_tmp = _Kern_ACPIData.kb_ACPI_SDT_Entry[i];
+
+        rkprintf("[Kernel] core_ACPITableHeaderEarly: header_tmp = %p\n", header_tmp);
+
         if (header_tmp->id != temp_id)
             continue;
 
@@ -420,6 +423,7 @@ int core_ACPIIsBlacklisted()
     
     while (_ACPI_OEMBlacklist[i].oem_id[0] != '\0')
     {
+        table_header = NULL;
         if (core_ACPITableHeaderEarly(_ACPI_OEMBlacklist[i].acpi_tableid, &table_header)) 
         {
             i++;
@@ -438,21 +442,24 @@ int core_ACPIIsBlacklisted()
             continue;
         }
 
-        if ((_ACPI_OEMBlacklist[i].oem_revision_match == all_versions) ||
-           ((_ACPI_OEMBlacklist[i].oem_revision_match == less_than_or_equal) &&
-            (table_header->oem_revision <= _ACPI_OEMBlacklist[i].oem_revision)) ||
-           ((_ACPI_OEMBlacklist[i].oem_revision_match == greater_than_or_equal) &&
-            (table_header->oem_revision >= _ACPI_OEMBlacklist[i].oem_revision)) ||
-           ((_ACPI_OEMBlacklist[i].oem_revision_match == equal) &&
-            (table_header->oem_revision == _ACPI_OEMBlacklist[i].oem_revision)))
+        if (table_header != NULL)
         {
-            rkprintf("[Kernel] core_ACPIIsBlacklisted: ERROR - Vendor \"%6.6s\" System \"%8.8s\" Revision 0x%x has a known ACPI BIOS problem.\n",
-                _ACPI_OEMBlacklist[i].oem_id, _ACPI_OEMBlacklist[i].oem_table_id, _ACPI_OEMBlacklist[i].oem_revision);
-            rkprintf("[Kernel] core_ACPIIsBlacklisted: ERROR - Reason: %s. This is a %s error\n",
-                _ACPI_OEMBlacklist[i].blacklist_reason, ( _ACPI_OEMBlacklist[i].blacklist_critical ? "non-recoverable" : "recoverable" ));
+            if ((_ACPI_OEMBlacklist[i].oem_revision_match == all_versions) ||
+               ((_ACPI_OEMBlacklist[i].oem_revision_match == less_than_or_equal) &&
+                (table_header->oem_revision <= _ACPI_OEMBlacklist[i].oem_revision)) ||
+               ((_ACPI_OEMBlacklist[i].oem_revision_match == greater_than_or_equal) &&
+                (table_header->oem_revision >= _ACPI_OEMBlacklist[i].oem_revision)) ||
+               ((_ACPI_OEMBlacklist[i].oem_revision_match == equal) &&
+                (table_header->oem_revision == _ACPI_OEMBlacklist[i].oem_revision)))
+            {
+                rkprintf("[Kernel] core_ACPIIsBlacklisted: ERROR - Vendor \"%6.6s\" System \"%8.8s\" Revision 0x%x has a known ACPI BIOS problem.\n",
+                    _ACPI_OEMBlacklist[i].oem_id, _ACPI_OEMBlacklist[i].oem_table_id, _ACPI_OEMBlacklist[i].oem_revision);
+                rkprintf("[Kernel] core_ACPIIsBlacklisted: ERROR - Reason: %s. This is a %s error\n",
+                    _ACPI_OEMBlacklist[i].blacklist_reason, ( _ACPI_OEMBlacklist[i].blacklist_critical ? "non-recoverable" : "recoverable" ));
 
-            blacklisted = _ACPI_OEMBlacklist[i].blacklist_critical;
-            break;
+                blacklisted = _ACPI_OEMBlacklist[i].blacklist_critical;
+                break;
+            }
         }
         else i++;
     }
