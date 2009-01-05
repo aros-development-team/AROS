@@ -14,12 +14,12 @@
     NAME */
 #include <unistd.h>
 
-	int readlink(
+	ssize_t readlink(
 
 /*  SYNOPSIS */
         const char *path,
 	char       *buf,
-	int         bufsiz)
+	size_t      bufsiz)
 
 /*  FUNCTION
         Places the contents of a symbolic link in a buffer of given size. No NUL
