@@ -149,6 +149,10 @@ extern APTR __libc_calloc(size_t, size_t);
 extern APTR __libc_realloc(APTR mem, size_t newsize);
 
 
+static int memnest;
+#define MEMLOCK Forbid();
+#define MEMUNLOCK Permit();
+
 static APTR myAlloc(struct MemHeaderExt *mhe, ULONG size, ULONG *flags)
 {
     APTR ret;
@@ -186,10 +190,24 @@ BOOL use_hostmem = FALSE;
 
 APTR malloc(size_t size)
 {
+    APTR retval;
+    
     if (use_hostmem)
         return AllocVec(size, MEMF_ANY);
 
-    return __libc_malloc(size);
+    //kprintf("malloc %s\n", FindTask(0)->tc_Node.ln_Name);
+    MEMLOCK
+    
+    memnest++;
+    if (memnest > 1) kprintf("==== NESTING in malloc %d %s\n", memnest, FindTask(0)->tc_Node.ln_Name);
+
+    retval = __libc_malloc(size);
+    
+    memnest--;
+    
+    MEMUNLOCK
+    
+    return retval;
 }
 
 VOID free(APTR mem)
@@ -197,15 +215,32 @@ VOID free(APTR mem)
     if (use_hostmem)
         return FreeVec(mem);
 
-    return __libc_free(mem);
+    MEMLOCK
+    memnest++;
+    if (memnest > 1) kprintf("==== NESTING in free %d\n", memnest);
+
+    __libc_free(mem);
+    memnest--;
+    MEMUNLOCK
 }
 
 APTR calloc(size_t n, size_t size)
 {
+    APTR retval;
+    
     if (use_hostmem)
         return AllocVec(size * n, MEMF_CLEAR);
 
-    return __libc_calloc(n, size);
+    MEMLOCK
+    memnest++;
+    if (memnest > 1) kprintf("==== NESTING in calloc %d\n", memnest);
+
+    retval = __libc_calloc(n, size);
+    
+    memnest--;
+    MEMUNLOCK
+    
+    return retval;
 }
 
 
@@ -215,10 +250,13 @@ static APTR ReAllocVec(APTR old, size_t size, ULONG flags)
     
     if (new)
     {
-        ULONG oldsize = *(ULONG *)((char *)old - AROS_ALIGN(sizeof(ULONG)));
+    	if (old)
+	{
+            ULONG oldsize = *(ULONG *)((char *)old - AROS_ALIGN(sizeof(ULONG)));
         
-        memcpy(new, old, oldsize > size ? size : oldsize);
-        FreeVec(old);
+            memcpy(new, old, oldsize > size ? size : oldsize);
+            FreeVec(old);
+	}
         old = new;
     }
     
@@ -227,10 +265,21 @@ static APTR ReAllocVec(APTR old, size_t size, ULONG flags)
 
 APTR realloc(APTR mem, size_t size)
 {
+    APTR retval;
+    
     if (use_hostmem)
         return ReAllocVec(mem, size, MEMF_ANY);
 
-    return __libc_realloc(mem, size);
+    MEMLOCK
+    memnest++;
+    if (memnest > 1) kprintf("==== NESTING in realloc %d\n", memnest);
+
+    retval = __libc_realloc(mem, size);
+    
+    memnest--;
+    MEMUNLOCK
+    
+    return retval;
 }
 
 /*
