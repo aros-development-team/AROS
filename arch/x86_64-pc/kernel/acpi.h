@@ -28,7 +28,7 @@ struct KernelACPIData {
     IPTR                kb_APIC_Driver;
 
     IPTR                kb_ACPI_SDT_Phys;
-    int                 kb_ACPI_SDT_Count;
+    unsigned int                 kb_ACPI_SDT_Count;
     IPTR                kb_ACPI_SDT_Entry[ACPI_MAX_TABLES];
 /*..*/
     int                 kb_ACPI_Disabled;
@@ -121,7 +121,7 @@ struct acpi_generic_address
 struct acpi_table_header                                        /* ACPI common table header */
 {
 	ACPI_TABLE_HEADER_DEF
-};
+}__attribute__ ((packed));
 
 /* Table Handlers */
 
@@ -142,7 +142,7 @@ struct acpi_table_rsdp
 	char			            oem_id[6];
 	unsigned char			            revision;
 	unsigned int			            rsdt_address;
-};
+}__attribute__ ((packed));
 
 struct acpi20_table_rsdp 
 {
@@ -155,13 +155,13 @@ struct acpi20_table_rsdp
 	UQUAD			            xsdt_address;
 	unsigned char			            ext_checksum;
 	unsigned char			            reserved[3];
-};
+}__attribute__ ((packed));
 
 struct acpi_table_entry_header
 {
 	unsigned char			            type;
 	unsigned char			            length;
-};
+}__attribute__ ((packed));
 
 /* Root System Description Table "RSDT" structures */
 
@@ -169,7 +169,7 @@ struct acpi_table_rsdt
 {
 	struct acpi_table_header    header;
 	unsigned int			            entry[8];
-};
+}__attribute__ ((packed));
 
 /* Extended System Description Table "XSDT" structures */
 
@@ -177,7 +177,7 @@ struct acpi_table_xsdt
 {
 	struct acpi_table_header    header;
 	UQUAD			            entry[1];
-};
+}__attribute__ ((packed));
 
 /* Fixed ACPI Description Table "FADT" structures  */
 
@@ -187,7 +187,7 @@ struct acpi_table_fadt
 	unsigned int                       facs_addr;
 	unsigned int                       dsdt_addr;
 	/* ... */
-};
+}__attribute__ ((packed));
 
 /* Multiple APIC Description Table "MADT" structures */
 
@@ -200,7 +200,7 @@ struct acpi_table_madt
 		unsigned int			            pcat_compat:1;
 		unsigned int			            reserved:31;
 	}	flags;
-};
+}__attribute__ ((packed));
 
 enum acpi_madt_entry_id 
 {
@@ -214,7 +214,7 @@ enum acpi_madt_entry_id
 	ACPI_MADT_LSAPIC,
 	ACPI_MADT_PLAT_INT_SRC,
 	ACPI_MADT_ENTRY_COUNT
-};
+}__attribute__ ((packed));
 
 typedef struct 
 {
@@ -233,7 +233,7 @@ struct acpi_table_lapic
 		unsigned int			            enabled:1;
 		unsigned int			            reserved:31;
 	}	flags;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_ioapic 
 {
@@ -242,7 +242,7 @@ struct acpi_table_ioapic
 	unsigned char			            reserved;
 	unsigned int			            address;
 	unsigned int			            global_irq_base;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_int_src_ovr 
 {
@@ -251,14 +251,14 @@ struct acpi_table_int_src_ovr
 	unsigned char			            bus_irq;
 	unsigned int			            global_irq;
 	acpi_interrupt_flags        flags;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_nmi_src 
 {
 	struct acpi_table_entry_header     header;
 	acpi_interrupt_flags        flags;
 	unsigned int			            global_irq;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_lapic_nmi 
 {
@@ -266,14 +266,14 @@ struct acpi_table_lapic_nmi
 	unsigned char			            acpi_id;
 	acpi_interrupt_flags	    flags;
 	unsigned char			            lint;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_lapic_addr_ovr 
 {
 	struct acpi_table_entry_header     header;
 	unsigned char			            reserved[2];
 	UQUAD			            address;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_iosapic 
 {
@@ -282,7 +282,7 @@ struct acpi_table_iosapic
 	unsigned char			            reserved;
 	unsigned int			            global_irq_base;
 	UQUAD			            address;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_lsapic
 {
@@ -295,7 +295,7 @@ struct acpi_table_lsapic
 		unsigned int			            enabled:1;
 		unsigned int			            reserved:31;
 	}	flags;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_plat_int_src
 {
@@ -307,7 +307,7 @@ struct acpi_table_plat_int_src
 	unsigned char			            iosapic_vector;
 	unsigned int			            global_irq;
 	unsigned int			            reserved;
-};
+}__attribute__ ((packed));
 
 enum acpi_interrupt_id 
 {
@@ -327,7 +327,7 @@ struct acpi_gen_regaddr
 	unsigned char                       resv;
 	unsigned int                       addrl;
 	unsigned int                       addrh;
-};
+}__attribute__ ((packed));
 
 struct acpi_table_hpet
 {
@@ -337,7 +337,7 @@ struct acpi_table_hpet
 	unsigned char                       number;
 	UWORD                       min_tick;
 	unsigned char                       page_protect;
-};
+}__attribute__ ((packed));
 
 /*
  * System Resource Affinity Table (SRAT)
@@ -348,7 +348,7 @@ struct acpi_table_srat
 	struct acpi_table_header    header;
 	unsigned int			            table_revision;
 	UQUAD			            reserved;
-};
+}__attribute__ ((packed));
 
 enum acpi_srat_entry_id 
 {
@@ -368,7 +368,7 @@ struct acpi_table_processor_affinity {
 	}	flags;
 	unsigned char			            lsapic_eid;
 	unsigned char			            reserved[7];
-};
+}__attribute__ ((packed));
 
 struct acpi_table_memory_affinity {
 	struct acpi_table_entry_header	    header;
@@ -386,7 +386,7 @@ struct acpi_table_memory_affinity {
 		unsigned int			            reserved:30;
 	}	flags;
 	UQUAD			            reserved2;
-};
+}__attribute__ ((packed));
 
 enum acpi_address_range_id 
 {
@@ -406,7 +406,7 @@ struct acpi_table_slit
 	struct acpi_table_header    header;
 	UQUAD			            localities;
 	unsigned char			            entry[1];	                    /* real size = localities^2 */
-};
+}__attribute__ ((packed));
 
 /* Smart Battery Description Table (SBST) */
 struct acpi_table_sbst
@@ -415,7 +415,7 @@ struct acpi_table_sbst
 	unsigned int			            warning;	                    /* Warn user */
 	unsigned int			            low;		                    /* Critical sleep */
 	unsigned int			            critical;	                    /* Critical shutdown */
-};
+}__attribute__ ((packed));
 
 /* Embedded Controller Boot Resources Table (ECDT) */
 struct acpi_table_ecdt
@@ -426,7 +426,7 @@ struct acpi_table_ecdt
 	unsigned int				        uid;
 	unsigned char				        gpe_bit;
 	char				        ec_id[0];
-};
+}__attribute__ ((packed));
 
 /* ACPI Table Parser hook func protos */
 

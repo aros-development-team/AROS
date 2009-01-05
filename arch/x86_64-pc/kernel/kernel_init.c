@@ -25,6 +25,17 @@ extern const unsigned char start64[];
 extern const unsigned char _binary_smpbootstrap_start[];
 extern const unsigned char _binary_smpbootstrap_size[];
 
+IPTR           _kern_initflags;
+
+#define        KERNBOOTFLAG_BOOTCPUSET                1
+
+IPTR           _kern_early_ACPIRSDP;
+IPTR           _Kern_APICTrampolineBase;
+
+static char _kern_early_BOOTCmdLine[200];
+
+UBYTE          _kern_early_BOOTAPICID;
+
 /* Pre-exec init */
 
 asm(".section .aros.init,\"ax\"\n\t"
@@ -58,16 +69,6 @@ void __clear_bss(struct TagItem *msg)
 
 /* Post exec init */
 
-IPTR           _kern_initflags;
-
-#define        KERNBOOTFLAG_BOOTCPUSET                1
-
-IPTR           _kern_early_ACPIRSDP;
-UBYTE          _kern_early_BOOTAPICID;
-IPTR           _Kern_APICTrampolineBase;
-
-static char _kern_early_BOOTCmdLine[200];
-
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
@@ -96,11 +97,12 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
 
     if (LIBBASE->kb_APICBase == NULL)
-        LIBBASE->kb_APICBase= core_APICGetMSRAPICBase();;   
+        LIBBASE->kb_APICBase= core_APICGetMSRAPICBase();
+
     D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
 
     core_APICInitialise(LIBBASE->kb_APICBase);
-    
+
 #warning "TODO: Check if NOACPI is set on the boot command line"
     if (_kern_early_ACPIRSDP)
     {
@@ -113,7 +115,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     }
 
     uint32_t *localAPIC = (uint32_t*)LIBBASE->kb_APICBase + 0x320;
-    
+
     LIBBASE->kb_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, 8192, 4096);
     D(bug("[Kernel] Kernel_Init: MemPool @ %012p\n", LIBBASE->kb_MemPool));
 
@@ -160,6 +162,8 @@ BOOL serial_initialised = FALSE;
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
     struct TagItem *tag;
+    IPTR _APICBase = NULL;
+    UBYTE kern_apic_id = 0;
 
 #if (AROS_SERIAL_DEBUG > 0)
     if (!serial_initialised)
@@ -225,8 +229,8 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
 
-    IPTR _APICBase = core_APICGetMSRAPICBase();
-    UBYTE kern_apic_id = core_APICGetID(_APICBase);
+    _APICBase = core_APICGetMSRAPICBase();
+    kern_apic_id = core_APICGetID(_APICBase);
     rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", kern_apic_id, _APICBase);
 
     /* Enable fxsave/fxrstor */ 
@@ -276,7 +280,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         core_APICProbe();
 
         /* Initialize the ACPI boot-time table parser. */
-        _kern_early_ACPIRSDP = core_ACPIProbe();
+        _kern_early_ACPIRSDP = core_ACPIProbe(msg);
         rkprintf("[Kernel] kernel_cstart: core_ACPIProbe() returned %p\n", _kern_early_ACPIRSDP);
 
 #warning "TODO: Allocate Trampoline page better"
