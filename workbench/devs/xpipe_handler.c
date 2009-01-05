@@ -64,6 +64,7 @@ struct XPipe
 
 struct XPipeUnit
 {
+    struct Node node;
     struct List pipes;
 };
 
@@ -76,6 +77,7 @@ struct XPipeEnd
 };
 
 enum { NONE, PROCESS_READS, PROCESS_WRITES };
+enum { NT_PIPEROOT, NT_PIPEEND };
 
 static ULONG            SendRequest  (struct XPipeBase *xpipebase, struct IOFileSys *iofs, BOOL abort);
 
@@ -121,6 +123,7 @@ static int GM_UNIQUENAME(Open)
     if(un)
     {
 	NEWLIST(&un->pipes);
+	un->node.ln_Type = NT_PIPEROOT;
 	iofs->IOFS.io_Unit=(struct Unit *)un;
         iofs->IOFS.io_Device=&xpipebase->device;
 	return TRUE;
@@ -286,6 +289,7 @@ LONG DuplicatePipeEnd(struct XPipeEnd **oldend, ULONG mode)
         return ERROR_NO_FREE_STORE;;
     }
     
+    newend->node.ln_Type = NT_PIPEEND;
     newend->mode = mode;
     newend->pipe = (*oldend)->pipe;
     newend->bufpos = (*oldend)->bufpos;
@@ -525,7 +529,7 @@ AROS_UFH3(LONG, xpipeproc,
     struct Process       *me;
     struct XPipeBase     *xpipebase;
     struct XPipeMessage  *msg;
-    struct XPipeUnit     *un;
+    struct Node          *pn;
     BOOL cont = TRUE;
 
     me         = (struct Process *)FindTask(0);
@@ -544,14 +548,20 @@ AROS_UFH3(LONG, xpipeproc,
 	{
 	    D(bug("[xpipe] Message received.\n"));
 
-	    un = (struct XPipeUnit *)msg->iofs->IOFS.io_Unit;
+	    pn = (struct Node *)msg->iofs->IOFS.io_Unit;
 
 	    switch (msg->iofs->IOFS.io_Command)
 	    {
 		case FSA_OPEN:
 		{
 		    D(bug("[xpipe] Cmd is FSA_OPEN\n"));
-		    
+
+                    if(pn->ln_Type != NT_PIPEEND)
+                    {
+                        SendBack (msg, ERROR_OBJECT_NOT_FOUND);
+                        break;                	
+                    }
+
 		    if (msg->iofs->io_Union.io_OPEN.io_Filename[0])
 		    {
 			SendBack (msg, ERROR_OBJECT_NOT_FOUND);
@@ -573,7 +583,13 @@ AROS_UFH3(LONG, xpipeproc,
 		case FSA_OPEN_FILE:
 		{
 	            D(bug("[xpipe] Cmd is FSA_OPEN_FILE\n"));
-	                    
+
+                    if(pn->ln_Type != NT_PIPEEND)
+                    {
+                        SendBack (msg, ERROR_OBJECT_NOT_FOUND);
+                        break;                	
+                    }
+
 	            if (msg->iofs->io_Union.io_OPEN_FILE.io_Filename[0])
 		    {
 			SendBack (msg, ERROR_OBJECT_NOT_FOUND);
@@ -594,14 +610,23 @@ AROS_UFH3(LONG, xpipeproc,
                 {
                     struct XPipeEnd *reader, *writer;
                     struct XPipe *pipe;
+                    struct XPipeUnit *un;
 
                     D(bug("[xpipe] Cmd is FSA_PIPE\n"));
+                    
+                    if(pn->ln_Type != NT_PIPEROOT)
+                    {
+                        SendBack (msg, ERROR_OBJECT_WRONG_TYPE);
+                        break;                	
+                    }
+                    un = (struct XPipeUnit*) pn;
 
                     if ((reader = AllocVec (sizeof(struct XPipeEnd), MEMF_PUBLIC | MEMF_CLEAR)) == NULL) 
                     {
                         SendBack (msg, ERROR_NO_FREE_STORE);
                         break;
-                    }                   
+                    }
+                    reader->node.ln_Type = NT_PIPEEND;
                     reader->mode = FMF_READ;
                     reader->bufpos = 0;
                     
@@ -610,7 +635,8 @@ AROS_UFH3(LONG, xpipeproc,
                 	FreeVec (reader);
                         SendBack (msg, ERROR_NO_FREE_STORE);
                         break;
-                    }                 
+                    }
+                    writer->node.ln_Type = NT_PIPEEND;
                     writer->mode = FMF_WRITE;
                     writer->bufpos = 0;
                     
@@ -645,7 +671,12 @@ AROS_UFH3(LONG, xpipeproc,
 		{
 		    D(bug("[xpipe] Cmd is FSA_CLOSE\n"));
 
-		    struct XPipeEnd *pipeend = (struct XPipeEnd*) msg->iofs->IOFS.io_Unit;
+                    if(pn->ln_Type != NT_PIPEEND)
+                    {
+                        SendBack (msg, ERROR_OBJECT_NOT_FOUND);
+                        break;                	
+                    }
+		    struct XPipeEnd *pipeend = (struct XPipeEnd*) pn;
 		    struct XPipe *pipe = pipeend->pipe;
 
 		    D(bug("[xpipe] Closing pipe end %p\n", pipeend));
@@ -765,7 +796,12 @@ AROS_UFH3(LONG, xpipeproc,
 		{
 		    D(bug("[xpipe] Cmd is FSA_WRITE.\n"));
 		    
-		    struct XPipeEnd *writer = (struct XPipeEnd *) un;
+                    if(pn->ln_Type != NT_PIPEEND)
+                    {
+                        SendBack (msg, ERROR_OBJECT_NOT_FOUND);
+                        break;                	
+                    }
+		    struct XPipeEnd *writer = (struct XPipeEnd *) pn;
 		    
 		    D(bug("[xpipe] Writer end %p\n", writer));
 		    struct XPipe *pipe = writer->pipe;
@@ -824,7 +860,12 @@ AROS_UFH3(LONG, xpipeproc,
 		{
 		    D(bug("[xpipe] Cmd is FSA_READ.\n"));
 
-		    struct XPipeEnd *reader = (struct XPipeEnd *) un;
+                    if(pn->ln_Type != NT_PIPEEND)
+                    {
+                        SendBack (msg, ERROR_OBJECT_NOT_FOUND);
+                        break;                	
+                    }
+		    struct XPipeEnd *reader = (struct XPipeEnd *) pn;
 
 		    D(bug("[xpipe] Reader end %p\n", reader));
 		    struct XPipe *pipe = reader->pipe;
@@ -856,7 +897,7 @@ AROS_UFH3(LONG, xpipeproc,
 
 		    msg->curlen = ReadFromPipe (
 			pipe, 
-			(IPTR) msg->iofs->io_Union.io_READ_WRITE.io_Buffer,
+			(APTR) msg->iofs->io_Union.io_READ_WRITE.io_Buffer,
 			length
 		    );	    
 		    D(bug("[xpipe] Read %d bytes\n", msg->curlen));
