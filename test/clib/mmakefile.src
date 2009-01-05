@@ -29,7 +29,8 @@ FILES := \
 	fcntl \
 	flock \
 	strtoul \
-	strtoull
+	strtoull \
+	snprintf
 
 EXEDIR := $(AROS_TESTS)/clib
 
