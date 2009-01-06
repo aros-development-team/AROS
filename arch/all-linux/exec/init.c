@@ -14,6 +14,7 @@
 #include <exec/execbase.h>
 
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 #if (AROS_BIG_ENDIAN == 0)
 #define SWAP(x) ((((ULONG)x >> 24) & 0x000000ff) |\
