@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     WiMP -- Window manipulation program.
@@ -80,7 +80,7 @@ static struct Hook openinfo_hook, updateinfo_hook;
 
 
 static const STRPTR ABOUT_TXT		= "WiMP - The Window Manipulation Program\n\n"
-					  "Copyright © 2000-2006 by The AROS Development Team";
+					  "Copyright © 2000-2009 by The AROS Development Team";
 static const STRPTR TITLE_TXT		= "WiMP - The Window Manipulation Program";
 static const STRPTR INFOTITLE_TXT	= "WiMP - InfoWindow";
 static const STRPTR CLOSESCREEN_TXT	= "Do you really want to Close the selected Screen?";
@@ -108,7 +108,7 @@ struct ListEntry
     TEXT title[40];
 };
 
-static const char version[] = "$VER: WiMP 0.12 (04.05.2006) © AROS Dev Team";
+static const char version[] = "$VER: WiMP 0.13 (06.01.2009) © AROS Dev Team";
 
 /*********************************************************************************************/
 
@@ -302,7 +302,7 @@ AROS_UFH3(void, update_func,
 	sprintf(entry.size, "%d x %d", scr->Width, scr->Height);
 	sprintf(entry.pos, "%d x %d", scr->LeftEdge, scr->TopEdge);
 	entry.status[0] = '\0';
-	snprintf(entry.title, sizeof(entry.title) - 1, "%s", scr->Title ? scr->Title : "");
+	snprintf(entry.title, sizeof(entry.title) - 1, "%s", scr->Title ? (char *)scr->Title : "");
 	DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
 
 	/* Traverse through all Windows of current Screen */
@@ -318,7 +318,7 @@ AROS_UFH3(void, update_func,
 		    (IsWindowVisible(win) ? ' ' : 'H'),
 		    (IS_CHILD(win)        ? 'C' : ' '),
 		    (HAS_CHILDREN(win)    ? 'P' : ' '));
-	    snprintf(entry.title, sizeof(entry.title) - 1, "%s", win->Title ? win->Title : "");
+	    snprintf(entry.title, sizeof(entry.title) - 1, "%s", win->Title ? (char *)win->Title : "");
 	    DoMethod(list_gad, MUIM_List_InsertSingle, &entry, MUIV_List_Insert_Bottom);
 
 	    win = win->NextWindow;
@@ -598,22 +598,37 @@ AROS_UFH3(void, rescue_func,
 	    /* Move Window onto the Screen if outside */
 	    if ( win->parent == NULL )
 	    {
-		width = scr->Width;
-		height = scr->Height;
+		WORD dx = 0, dy = 0;
+		if (win->LeftEdge < 0)
+		    dx = -win->LeftEdge;
+		else if (win->LeftEdge + win->Width > win->WScreen->Width)
+		    dx = win->WScreen->Width - win->Width - win->LeftEdge;
+		
+		if (win->TopEdge + win->Height > win->WScreen->Height)
+		    dy = win->WScreen->Height - win->Height - win->TopEdge;
+		else if (win->TopEdge < win->WScreen->BarHeight)
+		{
+		    // try to keep the screen title bar visible
+		    if (win->WScreen->BarHeight + win->Height < win->WScreen->Height)
+			dy = -win->TopEdge + win->WScreen->BarHeight;
+		    else
+			dy = win->WScreen->Height - win->Height - win->TopEdge;
+		}
+		MoveWindow(win, dx, dy);
 	    }
 	    else
 	    {
 		width = win->parent->Width;
 		height = win->parent->Height;
-	    }
-	    /* TODO:	calculate reasonable values:
-	       eg. this way only the Close Gadget my be visible :-( */
-	    if ( win->RelLeftEdge < 0
+		/* TODO:	calculate reasonable values:
+		   eg. this way only the Close Gadget my be visible :-( */
+		if ( win->RelLeftEdge < 0
 		    || win->RelTopEdge  <= -(win->BorderTop)
 		    || win->RelLeftEdge > width
 		    || win->RelTopEdge  >= (height - win->BorderTop) )
-	    {
-		MoveWindow ( win, - win->RelLeftEdge, - win->RelTopEdge );
+		{
+		    MoveWindow ( win, - win->RelLeftEdge, - win->RelTopEdge );
+		}
 	    }
 	    win = win->NextWindow;
 	}
@@ -764,10 +779,10 @@ AROS_UFH3(void, update_info_func,
 		    sprintf(buffer, "%d", win->MaxHeight);
 		    set(info_win_maxheight_gad, MUIA_Text_Contents, buffer);
 
-		    sprintf(buffer, "0x%08lx", win->Flags);
+		    sprintf(buffer, "0x%08x", win->Flags);
 		    set(info_win_flags_gad, MUIA_Text_Contents, buffer);
 
-		    sprintf(buffer, "0x%08lx", win->IDCMPFlags);
+		    sprintf(buffer, "0x%08x", win->IDCMPFlags);
 		    set(info_win_idcmp_gad, MUIA_Text_Contents, buffer);
 
 		    set(info_win_title_gad, MUIA_Text_Contents, win->Title);
@@ -891,23 +906,23 @@ static void MakeGUI(void)
     openinfo_hook.h_Entry = (HOOKFUNC)openinfo_func;
     updateinfo_hook.h_Entry = (HOOKFUNC)update_info_func;
     
-    app = ApplicationObject,
+    app = (Object *)ApplicationObject,
 	MUIA_Application_Title, (IPTR)"WiMP",
 	MUIA_Application_Version, (IPTR)version,
-	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2006, The AROS Development Team",
+	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2009, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)"Window Manipulator",
 	MUIA_Application_Base, (IPTR)"WIMP",
 	MUIA_Application_SingleTask, TRUE,
 	MUIA_Application_Menustrip, (IPTR)menu,
-	SubWindow, (IPTR)(wnd = WindowObject,
+	SubWindow, (IPTR)(wnd = (Object *)WindowObject,
 	    MUIA_Window_Title, (IPTR)TITLE_TXT,
 	    MUIA_Window_ID, MAKE_ID('W', 'I', 'M', 'P'),
 	    WindowContents, (IPTR)(VGroup,
 		Child, (IPTR)(VGroup,
 		    GroupFrameT("Screen/Window List"),
 		    Child, (IPTR)(ListviewObject,
-			MUIA_Listview_List, (IPTR)(list_gad = ListObject,
+			MUIA_Listview_List, (IPTR)(list_gad = (Object *)ListObject,
 			    InputListFrame,
 			    MUIA_List_Format, (IPTR)"BAR,BAR,P=\033c BAR,P=\033c BAR,BAR,BAR",
 			    MUIA_List_ConstructHook, (IPTR)&construct_hook,
@@ -937,91 +952,91 @@ static void MakeGUI(void)
 		End),
 	    End),
 	End), // wnd
-	SubWindow, (IPTR)(info_wnd = WindowObject,
+	SubWindow, (IPTR)(info_wnd = (Object *)WindowObject,
 	    MUIA_Window_Title, (IPTR)INFOTITLE_TXT,
 	    MUIA_Window_ID, MAKE_ID('W', 'I', 'N', 'F'),
-	    WindowContents, (IPTR)(page_gad = PageGroup,
+	    WindowContents, (IPTR)(page_gad = (Object *)PageGroup,
 		Child, (IPTR)(HGroup,
 		    Child, (IPTR)(ColGroup(2),
 		    GroupFrameT("Screen"),
 
 			Child, (IPTR)Label("Address"),
-			Child, (IPTR)(info_scr_addr_gad = TextObject,
+			Child, (IPTR)(info_scr_addr_gad = (Object *)TextObject,
 			    TextFrame,
 			    MUIA_Text_Contents, (IPTR)"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 			    MUIA_Text_SetMin, TRUE,
 			End),
 			Child, (IPTR)Label("LeftEdge"),
-			Child, (IPTR)(info_scr_leftedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_leftedge_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("TopEdge"),
-			Child, (IPTR)(info_scr_topedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_topedge_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Width"),
-			Child, (IPTR)(info_scr_width_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_width_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Height"),
-			Child, (IPTR)(info_scr_height_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_height_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Flags"),
-			Child, (IPTR)(info_scr_flags_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_flags_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Title"),
-			Child, (IPTR)(info_scr_title_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_title_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("DefaultTitle"),
-			Child, (IPTR)(info_scr_deftitle_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_deftitle_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("FirstWindow"),
-			Child, (IPTR)(info_scr_firstwindow_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_scr_firstwindow_gad = (Object *)TextObject, TextFrame, End),
 		    End),
 		End),
 		Child, (IPTR)(HGroup,
 		    Child, (IPTR)(ColGroup(2),
 			GroupFrameT("Window"),
 			Child, (IPTR)Label("Address"),
-			Child, (IPTR)(info_win_addr_gad = TextObject,
+			Child, (IPTR)(info_win_addr_gad = (Object *)TextObject,
 			    TextFrame,
 			    MUIA_Text_Contents, (IPTR)"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 			    MUIA_Text_SetMin, TRUE,
 			End),
 			Child, (IPTR)Label("NextWindow"),
-			Child, (IPTR)(info_win_nextwin_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_nextwin_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("LeftEdge"),
-			Child, (IPTR)(info_win_leftedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_leftedge_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("TopEdge"),
-			Child, (IPTR)(info_win_topedge_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_topedge_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Width"),
-			Child, (IPTR)(info_win_width_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_width_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Height"),
-			Child, (IPTR)(info_win_height_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_height_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("MinWidth"),
-			Child, (IPTR)(info_win_minwidth_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_minwidth_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("MinHeight"),
-			Child, (IPTR)(info_win_minheight_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_minheight_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("MaxWidth"),
-			Child, (IPTR)(info_win_maxwidth_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_maxwidth_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("MaxHeight"),
-			Child, (IPTR)(info_win_maxheight_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_maxheight_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Flags"),
-			Child, (IPTR)(info_win_flags_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_flags_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("IDCMPFlags"),
-			Child, (IPTR)(info_win_idcmp_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_idcmp_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Title"),
-			Child, (IPTR)(info_win_title_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_title_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("ReqCount"),
-			Child, (IPTR)(info_win_req_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_req_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("WScreen"),
-			Child, (IPTR)(info_win_screen_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_screen_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("BorderLeft"),
-			Child, (IPTR)(info_win_borderleft_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_borderleft_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("BorderTop"),
-			Child, (IPTR)(info_win_bordertop_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_bordertop_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("BorderRight"),
-			Child, (IPTR)(info_win_borderright_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_borderright_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("BoderBottom"),
-			Child, (IPTR)(info_win_borderbottom_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_borderbottom_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Parent Window"),
-			Child, (IPTR)(info_win_parentwin_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_parentwin_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("First Child"),
-			Child, (IPTR)(info_win_firstchild_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_firstchild_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Parent"),
-			Child, (IPTR)(info_win_parent_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_parent_gad = (Object *)TextObject, TextFrame, End),
 			Child, (IPTR)Label("Descendant"),
-			Child, (IPTR)(info_win_descendant_gad = TextObject, TextFrame, End),
+			Child, (IPTR)(info_win_descendant_gad = (Object *)TextObject, TextFrame, End),
 		    End),
 		End),
 	    End),
