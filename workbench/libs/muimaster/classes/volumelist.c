@@ -25,16 +25,16 @@
 extern struct Library *MUIMasterBase;
 
 
-static void printSize(STRPTR string, UQUAD size)
+static void printSize(STRPTR string, size_t bufsize, UQUAD size)
 {
     char unit = 'B';
     
-    if (size >= 9999999999)
+    if (size >= 9999999999ULL)
     {
 	size = size >> 30;
 	unit = 'G';
     }
-    else if (size >= 9999999)
+    else if (size >= 9999999UL)
     {
 	size = size >> 20;
 	unit = 'M';
@@ -45,7 +45,8 @@ static void printSize(STRPTR string, UQUAD size)
 	unit = 'K';
     }
     
-    sprintf(string, "\33r%u%c", (ULONG)size, unit);
+    snprintf(string, bufsize, "%u%c", (ULONG)size, unit);
+    string[bufsize - 1] = '\0';
 }
 
 static APTR construct_func(struct Hook *hook, APTR pool, struct Volumelist_Entry *entry)
@@ -105,10 +106,14 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DosList *dl, *actdl;
     
+    STRPTR format = (STRPTR)GetTagData(MUIA_List_Format, 0, msg->ops_AttrList);
+
     obj = (Object *)DoSuperNewTags
     (
         cl, obj, NULL,
-	MUIA_List_Format, (IPTR)",,,,",
+	MUIA_List_Format, format
+	    ? TAG_IGNORE
+	    : (IPTR)",,P=\33r,P=\33r,P=\33r",
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
     
@@ -155,7 +160,7 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	actdl = dl;
 	while((actdl = NextDosEntry(actdl, LDF_VOLUMES)))
 	{
-	    struct Volumelist_Entry entry ;
+	    struct Volumelist_Entry entry;
 	    struct InfoData diskinfo;
 	    BPTR lock;
 	    UQUAD free;
@@ -179,11 +184,19 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    {
 		if (Info(lock, &diskinfo) != DOSFALSE)
 		{
-		    sprintf(entry.full, "\33r%3d%%", 100 * diskinfo.id_NumBlocksUsed / diskinfo.id_NumBlocks);
+		    snprintf
+		    (
+			entry.full,
+			sizeof(entry.full),
+			"%d%%",
+			100 * diskinfo.id_NumBlocksUsed / diskinfo.id_NumBlocks
+		    );
+		    entry.full[sizeof(entry.full) - 1] = '\0';
+		    
 		    used = (UQUAD)diskinfo.id_NumBlocksUsed * diskinfo.id_BytesPerBlock;
 		    free = (UQUAD)diskinfo.id_NumBlocks * diskinfo.id_BytesPerBlock - used;
-		    printSize(entry.free, free);
-		    printSize(entry.used, used);
+		    printSize(entry.free, sizeof entry.free, free);
+		    printSize(entry.used, sizeof entry.used, used);
 		}
 		UnLock(lock);
 	    }
