@@ -11,6 +11,9 @@ struct Volumelist_DATA
 struct Volumelist_Entry
 {
     char name[100];
+    char full[20];
+    char free[20];
+    char used[20];
     int  type;
 };
 
