@@ -54,11 +54,11 @@ static LONG display_func(struct Hook *hook, char **array, struct Dirlist_Entry *
 	
 	if (entry->fib.fib_DirEntryType > 0)
 	{
-	    *array++ = "\33r\33I[6:22]";
+	    *array++ = "\33I[6:22]";
 	}
 	else
 	{
-	    snprintf(data->size_string, sizeof(data->size_string), "\33r%ld", entry->fib.fib_Size);
+	    snprintf(data->size_string, sizeof(data->size_string), "%d", entry->fib.fib_Size);
 	    *array++ = data->size_string;
 	}
 	
@@ -103,13 +103,17 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg);
 
 IPTR Dirlist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
+    STRPTR format = (STRPTR)GetTagData(MUIA_List_Format, 0, msg->ops_AttrList);
+
     obj = (Object *)DoSuperNewTags
     (
         cl, obj, NULL,
-	MUIA_List_Format, (IPTR)",,,,,",
+	MUIA_List_Format, format
+	    ? TAG_IGNORE
+	    : (IPTR)",P=\33r,,,,",
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
-    
+
     if (obj)
     {
     	struct Dirlist_DATA *data = INST_DATA(cl, obj);
