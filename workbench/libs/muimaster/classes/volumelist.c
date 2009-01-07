@@ -14,6 +14,7 @@
 #include <proto/muimaster.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -22,6 +23,30 @@
 #include "volumelist_private.h"
 
 extern struct Library *MUIMasterBase;
+
+
+static void printSize(STRPTR string, UQUAD size)
+{
+    char unit = 'B';
+    
+    if (size >= 9999999999)
+    {
+	size = size >> 30;
+	unit = 'G';
+    }
+    else if (size >= 9999999)
+    {
+	size = size >> 20;
+	unit = 'M';
+    }
+    else if (size > 9999)
+    {
+	size = size >> 10;
+	unit = 'K';
+    }
+    
+    sprintf(string, "\33r%u%c", (ULONG)size, unit);
+}
 
 static APTR construct_func(struct Hook *hook, APTR pool, struct Volumelist_Entry *entry)
 {
@@ -59,17 +84,17 @@ static LONG display_func(struct Hook *hook, char **array, struct Volumelist_Entr
 	}
 	
 	*array++ = entry->name;
-	*array++ = "";
-	*array++ = "";
-	*array   = "";
+	*array++ = entry->full;
+	*array++ = entry->free;
+	*array   = entry->used;
     }
     else
     {
-	*array++ = "Logo";
+	*array++ = "";
 	*array++ = "Name";
-	*array++ = "% Used";
-	*array++ = "Bytes Free";
-	*array   = "Bytes Used";
+	*array++ = "full";
+	*array++ = "free";
+	*array   = "used";
     }
     
     return 0;
@@ -110,6 +135,10 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    struct Volumelist_Entry entry;
 	    
+	    entry.full[0] = '\0';
+	    entry.free[0] = '\0';
+	    entry.used[0] = '\0';
+	    
 	    entry.type = DLT_DEVICE;
 	#ifdef __AROS__
 	    strncpy(entry.name, actdl->dol_Ext.dol_AROS.dol_DevName, sizeof(entry.name));
@@ -126,7 +155,15 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	actdl = dl;
 	while((actdl = NextDosEntry(actdl, LDF_VOLUMES)))
 	{
-	    struct Volumelist_Entry entry;
+	    struct Volumelist_Entry entry ;
+	    struct InfoData diskinfo;
+	    BPTR lock;
+	    UQUAD free;
+	    UQUAD used;
+
+	    entry.full[0] = '\0';
+	    entry.free[0] = '\0';
+	    entry.used[0] = '\0';
 	    
 	    entry.type = DLT_VOLUME;
 	#ifdef __AROS__
@@ -138,6 +175,19 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    entry.name[sizeof(entry.name) - 2] = '\0';
 	    strcat(entry.name, ":");
 	    
+	    if ((lock = Lock(entry.name, SHARED_LOCK)) != NULL)
+	    {
+		if (Info(lock, &diskinfo) != DOSFALSE)
+		{
+		    sprintf(entry.full, "\33r%3d%%", 100 * diskinfo.id_NumBlocksUsed / diskinfo.id_NumBlocks);
+		    used = (UQUAD)diskinfo.id_NumBlocksUsed * diskinfo.id_BytesPerBlock;
+		    free = (UQUAD)diskinfo.id_NumBlocks * diskinfo.id_BytesPerBlock - used;
+		    printSize(entry.free, free);
+		    printSize(entry.used, used);
+		}
+		UnLock(lock);
+	    }
+	    
 	    DoMethod(obj, MUIM_List_InsertSingle, (IPTR)&entry, MUIV_List_Insert_Bottom);
 	}
 
@@ -145,6 +195,10 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	while((actdl = NextDosEntry(actdl, LDF_ASSIGNS)))
 	{
 	    struct Volumelist_Entry entry;
+
+	    entry.full[0] = '\0';
+	    entry.free[0] = '\0';
+	    entry.used[0] = '\0';
 	    
 	    entry.type = DLT_DIRECTORY;
 	#ifdef __AROS__
