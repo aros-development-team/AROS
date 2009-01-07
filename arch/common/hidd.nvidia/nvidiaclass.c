@@ -209,6 +209,11 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	1050, 1051, 1054, 1087,
 	"NVIDIA:1680x1050");
 
+    MAKE_SYNC(1920x1200_60, 154000,
+        1920, 1968, 2000, 2080,
+        1200, 1203, 1209, 1235,
+        "NVIDIA:1920x1200");
+
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
@@ -222,6 +227,7 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
 	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
+	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
 
 	{ TAG_DONE, 0UL }
     };
