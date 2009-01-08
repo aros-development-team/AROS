@@ -118,7 +118,7 @@ AROS_UFH3S(void, btn_format_function,
     D(Printf("Full format? %d\n", bDoFormat));
 
     /* TODO: set volume name same as old one if name is null string */
-    if( !bSetSzVolumeFromSz( XGET(str_volume, MUIA_String_Contents) ) )
+    if( !bSetSzVolumeFromSz( (char *)XGET(str_volume, MUIA_String_Contents) ) )
     {
 	goto cleanup;
     }
@@ -343,7 +343,7 @@ int rcGuiMain(void)
 
 	D(Printf("Creating GUI...\n"));
 	
-	app = ApplicationObject,
+	app = (Object *)ApplicationObject,
 	    MUIA_Application_Title, __(MSG_APPLICATION_TITLE),
 	    MUIA_Application_Version, (IPTR)szVersion,
 	    MUIA_Application_Description, __(MSG_DESCRIPTION),
@@ -351,7 +351,7 @@ int rcGuiMain(void)
 	    MUIA_Application_Author, __(MSG_AUTHOR),
 	    MUIA_Application_Base, (IPTR)"FORMAT",
 	    MUIA_Application_SingleTask, FALSE,
-	    SubWindow, (IPTR)(mainwin = WindowObject,
+	    SubWindow, (IPTR)(mainwin = (Object *)WindowObject,
 		MUIA_Window_ID, MAKE_ID('F','R','M','1'),
 		MUIA_Window_Title, (IPTR)szTitle,
 		WindowContents, (IPTR)(VGroup,
@@ -372,19 +372,19 @@ int rcGuiMain(void)
 			    MUIA_Text_Contents, (IPTR)szCapacityInfo,
 			End),
 			Child, (IPTR)Label2( _(MSG_LABEL_NEW_VOLUME_NAME) ),
-			Child, (IPTR)(str_volume = StringObject,
+			Child, (IPTR)(str_volume = (Object *)StringObject,
 			    StringFrame,
-			    MUIA_String_Contents, _(MSG_DEFAULT_VOLUME_NAME),
+			    MUIA_String_Contents, __(MSG_DEFAULT_VOLUME_NAME),
 			    MUIA_String_MaxLen, MAX_FS_NAME_LEN,
 			End),
 			Child, (IPTR)Label2( _(MSG_LABEL_PUT_TRASHCAN) ),
-			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)(chk_trash = MUI_MakeObject(MUIO_Checkmark, NULL)),
 			Child, (IPTR)Label2( _(MSG_LABEL_FFS) ),
-			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)(chk_ffs = MUI_MakeObject(MUIO_Checkmark, NULL)),
 			Child, (IPTR)Label2( _(MSG_LABEL_INTL)),
-			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)(chk_intl = MUI_MakeObject(MUIO_Checkmark, NULL)),
 			Child, (IPTR)Label2( _(MSG_LABEL_CACHE) ),
-			Child, (IPTR)MUI_MakeObject(MUIO_Checkmark, NULL),
+			Child, (IPTR)(chk_cache = MUI_MakeObject(MUIO_Checkmark, NULL)),
 		    End), /* ColGroup */
 		    Child, (IPTR) (RectangleObject, 
 			MUIA_Rectangle_HBar, TRUE,
@@ -397,14 +397,14 @@ int rcGuiMain(void)
 		    End), /* HGroup */
 		End), /* VGroup */
 	    End), /* Window */
-	    SubWindow, (IPTR)(formatwin = WindowObject,
+	    SubWindow, (IPTR)(formatwin = (Object *)WindowObject,
 		MUIA_Window_ID, MAKE_ID('F','R','M','2'),
 		MUIA_Window_Title, (IPTR)szTitle,
 		WindowContents, (IPTR)(VGroup,
-		    Child, (IPTR)(txt_action = TextObject,
+		    Child, (IPTR)(txt_action = (Object *)TextObject,
 			TextFrame,
 		    End),
-		    Child, (IPTR)(gauge = GaugeObject,
+		    Child, (IPTR)(gauge = (Object *)GaugeObject,
 			GaugeFrame,
 		    End),
 		    Child, (IPTR)SimpleButton( _(MSG_BTN_STOP) ),
