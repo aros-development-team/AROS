@@ -20,7 +20,8 @@ FILES  := test      	    \
 	  knob              \
 	  texticonlist	    \
 	  loginwindow	    \
-	  busy
+	  busy              \
+	  hideshow
 
 EXEDIR := $(AROS_TESTS)/Zune
 
