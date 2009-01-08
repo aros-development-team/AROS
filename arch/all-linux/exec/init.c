@@ -1,11 +1,13 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux init code for emulated (Unix) systems.
     Lang: english
 */
 
+
+#define _XOPEN_SOURCE 600L /* for posix_memalign */
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -25,7 +27,6 @@
 #define SWAP(x) x
 #endif
 
-#define _XOPEN_SOURCE 600L /* for posix_memalign */
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
