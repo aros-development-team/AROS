@@ -1159,10 +1159,19 @@ static BOOL WindowResize (struct MUI_WindowData *data)
     WORD dx = data->wd_Width  - win->Width + hborders;
     WORD dy = data->wd_Height - win->Height + vborders;
 
+    /* Temporarily disable window limits to let SizeWindow below work
+       regardless of the previous limits */
+    WindowLimits
+    (
+        win, 1,
+        1,
+        -1,
+        -1
+    );
 /*      D(bug("_zune_window_resize : dx=%d, dy=%d\n", dx, dy)); */
     SizeWindow(win, dx, dy);
 
-    /* The following WindowLimits() call doesn't really work because SizeWindow() is async */
+    /* Set new window limits */
     WindowLimits
     (
         win, data->wd_MinMax.MinWidth + hborders,

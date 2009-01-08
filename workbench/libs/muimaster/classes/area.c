@@ -646,7 +646,11 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                         #if 0 /* SHOWME affects only show/hide */
                         if (_flags(parent) & MADF_SETUP) DoSetupMethod(obj,muiRenderInfo(parent));
                         #endif
-                        if (_flags(parent) & MADF_CANDRAW) DoShowMethod(obj);
+                        if (_flags(parent) & MADF_CANDRAW) 
+                        {
+                            DoShowMethod(obj);
+                            recalc = 1;
+                        }
                         } else
                         {
                         /* Check if window is open... */
