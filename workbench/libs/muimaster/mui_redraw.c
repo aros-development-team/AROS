@@ -54,7 +54,7 @@
     AROS_LIBFUNC_INIT
 
     APTR clip = (APTR)-1;
-    ULONG disabled;
+    IPTR disabled;
 
     if (!(_flags(obj) & MADF_CANDRAW)) return;
 
@@ -141,15 +141,21 @@
 
     if (get(obj, MUIA_Disabled, &disabled))
     {
+#if 0
+        /*
+          Commented out, because group childs were drawn wrongly
+          when they have been disabled while window is open.
+        */
         if (_parent(obj))
         {
-            ULONG parentDisabled;
+            IPTR parentDisabled;
             if (get(_parent(obj), MUIA_Disabled, &parentDisabled))
             {
                 /* Let the parent draw the pattern... */
                 if (parentDisabled) disabled = FALSE;
             }
         }
+#endif
         
 	if (disabled)
 	{
@@ -241,4 +247,4 @@
 
     AROS_LIBFUNC_EXIT
 
-	} /* MUIA_Redraw */
+} /* MUIA_Redraw */
