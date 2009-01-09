@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Exchange -- controls commodities.
@@ -80,7 +80,7 @@
 #endif
 #define CATALOG_VERSION  2
 
-TEXT version[] = "$VER: Exchange 1.0 (28.08.2007)";
+TEXT version[] = "$VER: Exchange 1.1 (08.01.2009)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt h"
@@ -304,7 +304,7 @@ AROS_UFH3(void, broker_func,
 	if (CxMsgID(msg) == CXCMD_APPEAR)
 	{
 	    //This opens window if application was started with cx_popup=no
-	    set(wnd, MUIA_Window_Open, TRUE);
+	    set(app, MUIA_Application_Iconified, FALSE);
 	}
 	else if (CxMsgID(msg) == CXCMD_LIST_CHG)
 	{
@@ -392,10 +392,10 @@ static void MakeGUI(void)
     
     snprintf(wintitle, sizeof(wintitle), _(MSG_EXCHANGE_WINTITLE), cx_popkey);
     
-    app = ApplicationObject,
+    app = (Object *)ApplicationObject,
 	MUIA_Application_Title, __(MSG_EXCHANGE_CXNAME),
 	MUIA_Application_Version, (IPTR)version,
-	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2006, The AROS Development TEAM",
+	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2009, The AROS Development TEAM",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, __(MSG_EXCHANGE_CXDESCR),
 	MUIA_Application_BrokerPri, cx_pri,
@@ -403,14 +403,14 @@ static void MakeGUI(void)
 	MUIA_Application_Base, (IPTR)"EXCHANGE",
 	MUIA_Application_SingleTask, TRUE,
 	MUIA_Application_Menustrip, (IPTR)menu,
-	SubWindow, (IPTR)(wnd = WindowObject,
+	SubWindow, (IPTR)(wnd = (Object *)WindowObject,
 	    MUIA_Window_Title, (IPTR)wintitle,
 	    MUIA_Window_ID, MAKE_ID('E', 'X', 'C', 'H'),
 	    WindowContents, (IPTR)(HGroup,
 		Child, (IPTR)(VGroup,
 		    GroupFrameT(_(MSG_EXCHANGE_LISTVIEW)),
 		    Child, (IPTR)(ListviewObject,
-			MUIA_Listview_List, (IPTR)(listgad = ListObject,
+			MUIA_Listview_List, (IPTR)(listgad = (Object *)ListObject,
 			    InputListFrame,
 			    MUIA_List_DisplayHook, (IPTR)&list_disp_hook,
 			    MUIA_CycleChain, 1,
@@ -422,9 +422,9 @@ static void MakeGUI(void)
 		    MUIA_HorizWeight, 150,
 		    Child, (IPTR)(VGroup,
 			GroupFrameT(_(MSG_EXCHANGE_INFO)),
-			Child, (IPTR)(textgad1 = TextObject, TextFrame,
+			Child, (IPTR)(textgad1 = (Object *)TextObject, TextFrame,
 				MUIA_Background, MUII_TextBack, End),
-			Child, (IPTR)(textgad2 = TextObject, TextFrame,
+			Child, (IPTR)(textgad2 = (Object *)TextObject, TextFrame,
 				MUIA_Background, MUII_TextBack, End),
 		    End),
 		    Child, (IPTR)HVSpace,
@@ -468,13 +468,17 @@ static void MakeGUI(void)
     update_list();
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
 
     DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
-	(IPTR)app, 3, MUIM_Set, MUIA_Window_Open, TRUE);
+	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, FALSE);
+
+    // Open the window when app isn't iconified
+    DoMethod(app, MUIM_Notify, MUIA_Application_Iconified, FALSE,
+	(IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, TRUE);
 
     DoMethod(listgad, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-	    (IPTR)listgad, 2, MUIM_CallHook, (IPTR)&list_select_hook);
+	(IPTR)listgad, 2, MUIM_CallHook, (IPTR)&list_select_hook);
 
     DoMethod(cyclegad, MUIM_Notify, MUIA_Cycle_Active, 0 /* Enable */,
 	(IPTR)app, 3, MUIM_CallHook, (IPTR)&inform_broker_hook, CXCMD_ENABLE);
@@ -508,8 +512,8 @@ static void HandleAll(void)
 {
     ULONG sigs = 0;
 
-    if (cx_popup)
-	set(wnd, MUIA_Window_Open, TRUE);
+    set(app, MUIA_Application_Iconified, cx_popup ? FALSE : TRUE);
+    
     while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
 	    != MUIV_Application_ReturnID_Quit)
     {
@@ -523,8 +527,6 @@ static void HandleAll(void)
 	    if (sigs & SIGBREAKF_CTRL_F)
 	    {
 		set(app, MUIA_Application_Iconified, FALSE);
-		set(wnd, MUIA_Window_Open, TRUE);
-		DoMethod(wnd, MUIM_Window_ToFront);
 	    }
 	}
     }
