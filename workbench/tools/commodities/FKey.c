@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,9 +41,9 @@
 /*********************************************************************************************/
 
 #define VERSION 	1
-#define REVISION 	4
-#define DATESTR 	"11.04.2006"
-#define VERSIONSTR	"$VER: FKey 1.4 (" DATESTR ")"
+#define REVISION 	5
+#define DATESTR 	"09.01.2009"
+#define VERSIONSTR	"$VER: FKey 1.5 (" DATESTR ")"
 
 /*********************************************************************************************/
 
@@ -361,7 +361,7 @@ static void broker_func(struct Hook *hook, Object *obj, CxMsg *msg)
     if ( (CxMsgType(msg) == CXM_COMMAND) && (CxMsgID(msg) == CXCMD_APPEAR) )
     {
 	// This opens the window if FKey was started with CX_POPUP=NO
-	set(wnd, MUIA_Window_Open, TRUE);
+	set(app, MUIA_Application_Iconified, FALSE);
 	D(bug("FKey: CXCMD_APPEAR message\n"));
     }
 }
@@ -427,7 +427,7 @@ static void MakeGUI(void)
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)MSG(MSG_FKEY_CXNAME),
 	MUIA_Application_Version, (IPTR)VERSIONSTR,
-	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2006, The AROS Development Team",
+	MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2009, The AROS Development Team",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, (IPTR)MSG(MSG_FKEY_CXDESCR),
 	MUIA_Application_BrokerPri, cx_pri,
@@ -530,8 +530,8 @@ static void MakeGUI(void)
     set(liststr, MUIA_String_AttachedList, (IPTR)list);
 
     DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_DOUBLESTART);
+    DoMethod(app, MUIM_Notify, MUIA_Application_Iconified, FALSE, (IPTR) wnd, 3, MUIM_Set, MUIA_Window_Open, TRUE);
     
-    //DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -1244,7 +1244,11 @@ static void HandleAll(void)
     get(list, MUIA_List_Entries, &num_list_entries);
     if ((num_list_entries == 0) || cx_popup)
     {
-    	set (wnd, MUIA_Window_Open, TRUE);
+    	set (app, MUIA_Application_Iconified, FALSE);
+    }
+    else
+    {
+    	set (app, MUIA_Application_Iconified, TRUE);
     }
     
     for(;;)
@@ -1280,7 +1284,7 @@ static void HandleAll(void)
 		break;
 		
 	    case RETURNID_DOUBLESTART:
-	    	set(wnd, MUIA_Window_Open, TRUE);
+	    	set(app, MUIA_Application_Iconified, FALSE);
 		break;
 	}
 	
@@ -1292,8 +1296,6 @@ static void HandleAll(void)
 	    if (sigs & SIGBREAKF_CTRL_F)
 	    {
 	    	set(app, MUIA_Application_Iconified, FALSE);
-		set(wnd, MUIA_Window_Open, TRUE);
-		DoMethod(wnd, MUIM_Window_ToFront);
 	    }
 	}
     }
