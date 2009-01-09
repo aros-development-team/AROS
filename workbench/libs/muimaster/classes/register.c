@@ -46,6 +46,7 @@ struct Register_DATA
     struct MUI_EventHandlerNode ehn;
     struct RegisterTabItem     *items;
     char    	    	      **labels;
+    BOOL                        frame;
     WORD    	    	     	active;
     WORD    	    	        numitems;
     WORD    	    	    	oldactive;
@@ -364,6 +365,8 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     
+    data->frame = GetTagData(MUIA_Register_Frame, 0, msg->ops_AttrList);
+
     data->labels = (char**)GetTagData(MUIA_Register_Titles, 0, msg->ops_AttrList);
 
     if (!data->labels)
@@ -416,6 +419,28 @@ IPTR Register__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     
     return (IPTR)obj;
 }
+
+
+IPTR Register__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct Register_DATA *data = INST_DATA(cl, obj);
+    
+    #define STORE *(msg->opg_Storage)
+    
+    switch(msg->opg_AttrID)
+    {
+    	case MUIA_Register_Frame:
+	    STORE = (IPTR)data->frame;
+	    return 1;
+	    
+	case MUIA_Register_Titles:
+	    STORE = (IPTR)data->labels;
+	    return 1;
+    }
+    
+    return DoSuperMethodA(cl, obj, (Msg)msg);    
+}
+
 
 IPTR Register__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
@@ -690,6 +715,7 @@ BOOPSI_DISPATCHER(IPTR, Register_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
 	case OM_NEW:           return Register__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_GET:           return Register__OM_GET(cl, obj, (struct opGet *)msg);
 	case OM_DISPOSE:       return Register__OM_DISPOSE(cl, obj, msg);
 	case MUIM_Setup:       return Register__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
     	case MUIM_Cleanup:     return Register__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
