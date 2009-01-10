@@ -5,6 +5,10 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2009-01-10  Staf Verhaegen <staf.verhaegen@skynet.be>
+
+  * codesets.conf (AROS): Update version, date and copyright info
+
 #### 6.8 RELEASE #########################################################
 
 2009-01-04  Jens Langner <Jens.Langner@light-speed.de>
