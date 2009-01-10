@@ -245,6 +245,7 @@ OBJS += libinit.o    \
         base64.o     \
         convertUTF.o \
         codesets.o   \
+        codepages.o  \
         debug.o
 
 # main target

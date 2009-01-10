@@ -35,11 +35,19 @@ ULONG freeBase(struct LibraryHeader* lib);
 ULONG initBase(struct LibraryHeader* lib);
 
 /* utils.c */
-#if defined(__amigaos4__)
+#if defined(__amigaos4__) || defined(__MORPHOS__)
+  #define HAVE_ALLOCVECPOOLED 1
+  #define HAVE_FREEVECPOOLED  1
+#endif
+
+#if defined(HAVE_ALLOCVECPOOLED)
 #define allocVecPooled(pool,size) AllocVecPooled(pool,size)
-#define freeVecPooled(pool,mem)   FreeVecPooled(pool,mem)
 #else
 APTR allocVecPooled(APTR pool, ULONG size);
+#endif
+#if defined(HAVE_FREEVECPOOLED)
+#define freeVecPooled(pool,mem)   FreeVecPooled(pool,mem)
+#else
 void freeVecPooled(APTR pool, APTR mem);
 #endif
 APTR reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize);

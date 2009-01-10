@@ -94,9 +94,13 @@ freeBase(struct LibraryHeader *lib)
   #endif
 
   // delete our private memory pool
-  if(lib->pool)
+  if(lib->pool != NULL)
   {
+    #if defined(__amigaos4__)
+    FreeSysObject(ASOT_MEMPOOL, lib->pool);
+    #else
     DeletePool(lib->pool);
+    #endif
     lib->pool = NULL;
   }
 
@@ -361,7 +365,15 @@ initBase(struct LibraryHeader *lib)
         GETINTERFACE(IDiskfont, DiskfontBase))
       {
       #endif
-        if((lib->pool = CreatePool(MEMF_ANY, 4096, 512)))
+        #if defined(__amigaos4__)
+        lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags, MEMF_SHARED,
+                                                     ASOPOOL_Puddle, 4096,
+                                                     ASOPOOL_Threshold, 512,
+                                                     TAG_DONE);
+        #else
+        lib->pool = CreatePool(MEMF_ANY, 4096, 512);
+        #endif
+        if(lib->pool != NULL)
         {
           if(codesetsInit(&lib->codesets))
           {
