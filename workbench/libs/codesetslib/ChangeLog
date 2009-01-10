@@ -5,11 +5,89 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+#### 6.8 RELEASE #########################################################
+
+2009-01-04  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.8 release preparations.
+
+2009-01-02  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * codesets.c: MorphOS code was using LocaleBase before it was initialised
+    and using library under MorphOS 2.0 or newer would always crash. Locale
+    library is now opened locally to make sure we have correct version (V51).
+    This fixes bug #2459558.
+  * base64.c: avoid using now obsolete AllocDosObject() in MorphOS.
+
+#### 6.7 RELEASE #########################################################
+
+2008-12-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.7 release preparations.
+
+2008-12-19  Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c, codepages.c: separated the constant code pages from the actual
+    code to create smaller source files.
+
+2008-12-19  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: minor cosmetic changes to make the new MorphOS functionality
+    fit better into our current environment.
+
+2008-12-18  Ilkka Lehtoranta <ilkleht@isoveli.org>
+
+  * codesets.c: query and add currently active code page to codesets if
+    running on MorphOS 2.
+
+2008-12-16  Thore Böckelmann <tboeckel@gmx.de>
+
+  * init.c: replaced the obsolete CreatePool() and DeletePool() calls with
+    AllocSysObject() and FreeSysObject() call for the OS4 build. Also restored
+    the old MEMF_ANY memory flags for the other platforms. For OS4 MEMF_SHARED
+    will be used as before.
+
+2008-12-16  Jens Langner <Jens.Langner@light-speed.de>
+
+  * codesets.c: replaced the obsolete ExAll() usage with a proper ExamineDir()
+    usage for the OS4 build.
+  * base64.c: replaced the obsolete ExamineFH() use with ExamineObject() for
+    the OS4 build.
+  * codesets.c: added an internal list of well-known codeset aliases. This
+    alias list is used whenever CodesetsFind() is used. It allows applications
+    to supply an alias name of a codeset and see it directly matched to the
+    correct MIME name.
+
+2008-12-14  Thore Böckelmann <tboeckel@gmx.de>
+
+ * codesets.c: when replacing UTF8 chars by ASCII look-alike replacements the
+   destination buffer size was never increased but the index for the new
+   characters was correctly increased. This caused random memory accesses after
+   a few replacements which usually went unnoticed when only very replacements
+   happened. On OS3 this went completely unnoticed.
+
+2008-12-12  Thore Böckelmann <tboeckel@gmx.de>
+
+ * codesets.c: massive code cleanup. Replaced all TAB characters by spaces and
+   changed lots of implicit result checks to explicit ones.
+ * utils.c: added the usual ENTER/RETURN/LEAVE macro calls.
+ * utils.c: the custom implementations of AllocVecPooled() and FreeVecPooled()
+   can now be enabled and disabled by single #define's. By default OS4 and
+   MorphOS will use their own kernel supplied versions.
+
+2008-12-08  Thore Böckelmann <tboeckel@gmx.de>
+
+ * utils.c: added a size check to reallocVecPooled() just in case the new
+   allocation is smaller than the old one.
+ * codesets.c: added missing RETURN() macro call.
+ * codesets.c: added more missing macro calls and cleaned up some code passages.
+ * init.c: replaced MEMF_ANY by MEMF_SHARED for OS4.
+
 2008-08-16  Staf Verhaegen <staf.verhaegen@skynet.be>
 
  * codesets.conf (AROS): Update version and copyright
  * mmakefile.src (AROS): Don't let codesets.library depend on libcodesets.a
- 
+
 2008-07-29  Jens Langner <Jens.Langner@light-speed.de>
 
   * developer/docs/codesets.doc: fixed the documentation on the Hook uses

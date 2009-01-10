@@ -21,29 +21,38 @@
 ***************************************************************************/
 
 #include "lib.h"
+#include "debug.h"
 
 /****************************************************************************/
 
-#if !defined(__amigaos4__)
+#if !defined(HAVE_ALLOCVECPOOLED)
 APTR
 allocVecPooled(APTR pool,ULONG size)
 {
   ULONG *mem;
 
-  if((mem = AllocPooled(pool,size += sizeof(ULONG))))
+  ENTER();
+
+  size += sizeof(ULONG);
+  if((mem = AllocPooled(pool, size)))
     *mem++ = size;
 
+  RETURN(mem);
   return mem;
 }
 #endif
 
 /****************************************************************************/
 
-#if !defined(__amigaos4__)
+#if !defined(HAVE_FREEVECPOOLED)
 void
 freeVecPooled(APTR pool,APTR mem)
 {
+  ENTER();
+
   FreePooled(pool,(LONG *)mem - 1,*((LONG *)mem - 1));
+
+  LEAVE();
 }
 #endif
 
@@ -54,13 +63,16 @@ reallocVecPooled(APTR pool, APTR mem, ULONG oldSize, ULONG newSize)
 {
   ULONG *newMem;
 
+  ENTER();
+
   if((newMem = allocVecPooled(pool, newSize)) != NULL)
   {
-    memcpy(newMem, mem, oldSize);
+    memcpy(newMem, mem, (oldSize < newSize) ? oldSize : newSize);
 
     freeVecPooled(pool, mem);
   }
 
+  RETURN(newMem);
   return newMem;
 }
 
@@ -71,10 +83,13 @@ allocArbitrateVecPooled(ULONG size)
 {
   ULONG *mem;
 
+  ENTER();
+
   ObtainSemaphore(&CodesetsBase->poolSem);
   mem = allocVecPooled(CodesetsBase->pool, size);
   ReleaseSemaphore(&CodesetsBase->poolSem);
 
+  RETURN(mem);
   return mem;
 }
 
@@ -83,9 +98,13 @@ allocArbitrateVecPooled(ULONG size)
 void
 freeArbitrateVecPooled(APTR mem)
 {
+  ENTER();
+
   ObtainSemaphore(&CodesetsBase->poolSem);
   freeVecPooled(CodesetsBase->pool, mem);
   ReleaseSemaphore(&CodesetsBase->poolSem);
+
+  LEAVE();
 }
 
 /****************************************************************************/
@@ -93,10 +112,13 @@ freeArbitrateVecPooled(APTR mem)
 APTR
 reallocArbitrateVecPooled(APTR mem, ULONG oldSize, ULONG newSize)
 {
+  ENTER();
+
   ObtainSemaphore(&CodesetsBase->poolSem);
   mem = reallocVecPooled(CodesetsBase->pool, mem, oldSize, newSize);
   ReleaseSemaphore(&CodesetsBase->poolSem);
 
+  RETURN(mem);
   return mem;
 }
 

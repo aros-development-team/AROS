@@ -11,6 +11,7 @@ FILES := \
     base64 \
     convertUTF \
     codesets \
+    codepages \
     debug
 
 #MM- workbench-libs-codesets : workbench-libs-codesets-lib

@@ -123,6 +123,56 @@ static const UBYTE dtable[] =
 
 /****************************************************************************/
 
+#if defined(__amigaos4__)
+static BPTR
+openIn(STRPTR name, int64 *size)
+{
+  BPTR file = 0;
+  struct ExamineData *exd;
+
+  ENTER();
+
+  if((exd = ExamineObjectTags(EX_StringNameInput, name, TAG_END)) != NULL)
+  {
+    if(EXD_IS_FILE(exd))
+    {
+      if((file = Open(name, MODE_OLDFILE)))
+      	*size = exd->FileSize;
+    }
+
+  	FreeDosObject(DOS_EXAMINEDATA, exd);
+  }
+
+  RETURN(file);
+  return file;
+}
+
+#elif defined(__MORPHOS__)
+static BPTR
+openIn(STRPTR name, ULONG * size)
+{
+  struct FileInfoBlock fib;
+  BPTR file;
+
+  ENTER();
+
+  if((file = Open(name,MODE_OLDFILE)))
+  {
+    if(!ExamineFH(file,&fib))
+    {
+  	   Close(file);
+      file = 0;
+    }
+    else
+    {
+    	*size = fib.fib_Size;
+    }
+  }
+
+  RETURN(file);
+  return file;
+}
+#else
 static BPTR
 openIn(STRPTR name, ULONG * size)
 {
@@ -154,6 +204,7 @@ openIn(STRPTR name, ULONG * size)
   RETURN(file);
   return file;
 }
+#endif
 
 /****************************************************************************/
 
@@ -303,7 +354,11 @@ CodesetsEncodeB64A(REG(a0, struct TagItem *attrs))
   STRPTR         source;
   APTR           dest, in, out;
   ULONG          totSize, stop, flags;
+  #if defined(__amigaos4__)
+  int64          size;
+  #else
   ULONG          size;
+  #endif
   int            sourceLen = 0, maxLineLen;
 
   flags = 0;
@@ -533,8 +588,12 @@ CodesetsDecodeB64A(REG(a0, struct TagItem *attrs))
   STRPTR         source;
   APTR           dest, in, out;
   ULONG          totSize, flags, errcheck;
-  ULONG                   size;
-  int                     sourceLen = 0;
+  #if defined(__amigaos4__)
+  int64          size;
+  #else
+  ULONG          size;
+  #endif
+  int            sourceLen = 0;
 
   ENTER();
 
