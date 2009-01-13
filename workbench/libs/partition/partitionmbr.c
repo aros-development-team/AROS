@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -25,27 +25,112 @@ struct MBRData {
     UBYTE position;
 };
 
+struct FATBootSector {
+    UBYTE bs_jmp_boot[3];
+    UBYTE bs_oem_name[8];
+    UWORD bpb_bytes_per_sect;
+    UBYTE bpb_sect_per_clust;
+    UWORD bpb_rsvd_sect_count;
+    UBYTE bpb_num_fats;
+    UWORD bpb_root_entries_count;
+    UWORD bpb_total_sectors_16;
+    UBYTE bpb_media;
+    UWORD bpb_fat_size_16;
+    UWORD bpb_sect_per_track;
+    UWORD bpb_num_heads;
+    ULONG bpb_hidden_sect;
+    ULONG bpb_total_sectors_32;
+
+    union {
+        struct {
+            UBYTE bs_drvnum;
+            UBYTE bs_reserved1;
+            UBYTE bs_bootsig;
+            ULONG bs_volid;
+            UBYTE bs_vollab[11];
+            UBYTE bs_filsystype[8];
+        } __attribute__ ((__packed__)) fat16;
+
+        struct {
+            ULONG bpb_fat_size_32;
+            UWORD bpb_extflags;
+            UWORD bpb_fs_verion;
+            ULONG bpb_root_cluster;
+            UWORD bpb_fs_info;
+            UWORD bpb_back_bootsec;
+            UBYTE bpb_reserved[12];
+            UBYTE bs_drvnum;
+            UBYTE bs_reserved1;
+            UBYTE bs_bootsig;
+            ULONG bs_volid;
+            UBYTE bs_vollab[11];
+            UBYTE bs_filsystype[8];
+        } __attribute__ ((__packed__)) fat32;
+    } type;
+    UBYTE pad[420];
+    UBYTE bpb_signature[2];
+} __attribute__ ((__packed__));
+
 static LONG PartitionMBRCheckPartitionTable
     (
         struct Library *PartitionBase,
         struct PartitionHandle *root
     )
 {
-struct MBR mbr;
-
-    if (readBlock(PartitionBase, root, 0, &mbr) == 0)
+struct
+{
+    union
     {
+        struct MBR mbr;
+        struct FATBootSector bs;
+    }
+    u;
+}
+blk;
+BOOL isfat = TRUE;
+ULONG sectorsize, clustersectors;
+struct PCPartitionTable *pcpt;
+
+    if (readBlock(PartitionBase, root, 0, &blk) == 0)
+    {
+        /* Check it doesn't look like a FAT boot sector */
+
+        /* Valid sector size: 512, 1024, 2048, 4096 */
+        sectorsize = AROS_LE2WORD(blk.u.bs.bpb_bytes_per_sect);
         if (
-                (AROS_LE2WORD(mbr.magic) == 0xAA55) &&
-                (((mbr.pcpt[0].status & 0x0F)==0) || (mbr.pcpt[0].status & 0x80)) &&
-                (((mbr.pcpt[1].status & 0x0F)==0) || (mbr.pcpt[1].status & 0x80)) &&
-                (((mbr.pcpt[2].status & 0x0F)==0) || (mbr.pcpt[2].status & 0x80)) &&
-                (((mbr.pcpt[3].status & 0x0F)==0) || (mbr.pcpt[3].status & 0x80))
+                sectorsize != 512 && sectorsize != 1024 && sectorsize != 2048 &&
+                sectorsize != 4096
+            )
+            isfat = FALSE;
+
+        /* Valid bpb_sect_per_clust: 1, 2, 4, 8, 16, 32, 64, 128 */
+        clustersectors = blk.u.bs.bpb_sect_per_clust;
+        if (
+                (clustersectors & (clustersectors - 1)) != 0 ||
+                clustersectors == 0 || clustersectors > 128
+            )
+            isfat = FALSE;
+
+        /* Valid cluster size: 512, 1024, 2048, 4096, 8192, 16k, 32k, 64k */
+        if (clustersectors * sectorsize > 64 * 1024)
+            isfat = FALSE;
+
+        if (blk.u.bs.bpb_media < 0xF0)
+            isfat = FALSE;
+
+        /* Check status bytes of all partition slots and block signature */
+        pcpt = blk.u.mbr.pcpt;
+        if (
+                (AROS_LE2WORD(blk.u.mbr.magic) == 0xAA55) &&
+                (((pcpt[0].status & 0x0F)==0) || (pcpt[0].status & 0x80)) &&
+                (((pcpt[1].status & 0x0F)==0) || (pcpt[1].status & 0x80)) &&
+                (((pcpt[2].status & 0x0F)==0) || (pcpt[2].status & 0x80)) &&
+                (((pcpt[3].status & 0x0F)==0) || (pcpt[3].status & 0x80))
             )
         {
-            if (root->root)
+            if (root->root || isfat)
             {
-                    return 0;
+                return 0;
             }
             return 1;
         }
