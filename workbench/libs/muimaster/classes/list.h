@@ -138,7 +138,7 @@ enum
 
 enum
 {
-	  MUIV_List_Remove_First    =  0,
+    MUIV_List_Remove_First    =  0,
     MUIV_List_Remove_Active   = -1,
     MUIV_List_Remove_Last     = -2,
     MUIV_List_Remove_Selected = -3,
