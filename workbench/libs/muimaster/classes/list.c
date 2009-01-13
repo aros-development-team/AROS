@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,6 +32,20 @@ extern struct Library *MUIMasterBase;
 
 #define ENTRY_TITLE (-1)
 
+#define FORMAT_TEMPLATE "DELTA=D/N,PREPARSE=P/K,WEIGHT=W/N,MINWIDTH=MIW/N,MAXWIDTH=MAW/N,COL=C/N,BAR/S"
+
+enum {
+    ARG_DELTA,
+    ARG_PREPARSE,
+    ARG_WEIGHT,
+    ARG_MINWIDTH,
+    ARG_MAXWIDTH,
+    ARG_COL,
+    ARG_BAR,
+    ARG_CNT
+};
+
+
 struct ListEntry
 {
     APTR data;
@@ -57,7 +71,7 @@ struct ColumnInfo
     int weight;
     int delta; /* ignored for the first and last column, defaults to 4 */
     int bar;
-    STRPTR prepare;
+    STRPTR preparse;
 
     int entries_width; /* width of the entries (the maximum of the widths of all entries) */
 };
@@ -266,8 +280,15 @@ static void RemoveListEntries(struct MUI_ListData *data, int pos, int count)
 **************************************************************************/
 static void FreeListFormat(struct MUI_ListData *data)
 {
+    int i;
+    
     if (data->ci)
     {
+	for (i = 0; i < data->columns; i++)
+	{
+	    FreeVec(data->ci[i].preparse);
+	    data->ci[i].preparse = NULL;
+	}
     	FreeVec(data->ci);
     	data->ci = NULL;
     }
@@ -292,7 +313,11 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
 {
     int new_columns,i;
     STRPTR ptr;
+    STRPTR format_sep;
     char c;
+
+    IPTR args[ARG_CNT];
+    struct RDArgs *rdargs;
 
     if (!format) format = (STRPTR) "";
 
@@ -307,23 +332,85 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
 	if (c == ',')
 	    new_columns++;
 
-    if (!(data->preparses = (STRPTR *)AllocVec((new_columns+10)*sizeof(STRPTR),0)))
+    if (!(data->preparses = AllocVec((new_columns + 10) * sizeof(STRPTR), 0)))
 	return 0;
 
-    if (!(data->strings = (STRPTR *)AllocVec((new_columns+1+10)*sizeof(STRPTR),0))) /* hold enough space also for the entry pos, used by orginal MUI and also some security space */
+    if (!(data->strings = AllocVec((new_columns + 1 + 10) * sizeof(STRPTR), 0))) /* hold enough space also for the entry pos, used by orginal MUI and also some security space */
 	return 0;
 
-    if (!(data->ci = (struct ColumnInfo *)AllocVec(new_columns*sizeof(struct ColumnInfo),MEMF_CLEAR)))
+    if (!(data->ci = AllocVec(new_columns * sizeof(struct ColumnInfo), 0)))
 	return 0;
 
-    for (i=0;i<new_columns;i++)
+    // set defaults
+    for (i = 0; i < new_columns; i++)
     {
-	data->ci[i].colno = i;
-	data->ci[i].weight = 100;
-	data->ci[i].delta = 4;
+	data->ci[i].colno      = -1; // -1 means: use unassigned column
+	data->ci[i].weight     = 100;
+	data->ci[i].delta      = 4;
+	data->ci[i].min_width  = -1;
+	data->ci[i].max_width  = -1;
 	data->ci[i].user_width = -1;
+	data->ci[i].bar        = FALSE;
+	data->ci[i].preparse   = NULL;
     }
 
+    if ((format_sep = StrDup(format)) != 0)
+    {
+	for (i = 0 ; format_sep[i] != '\0' ; i++)
+	{
+	    if (format_sep[i] == ',')
+		format_sep[i] = '\0';
+	}
+	
+	ptr = format_sep;
+	i = 0;
+	do
+	{
+	    if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)) != 0)
+	    {
+		rdargs->RDA_Source.CS_Buffer = format;
+		rdargs->RDA_Source.CS_Length = strlen(format);
+		rdargs->RDA_Source.CS_CurChr = 0;
+		rdargs->RDA_DAList           = 0;
+		rdargs->RDA_Buffer           = NULL;
+		rdargs->RDA_BufSiz           = 0;
+		rdargs->RDA_ExtHelp          = NULL;
+		rdargs->RDA_Flags            = 0;
+
+		memset(args, 0, sizeof args);
+		if (ReadArgs(FORMAT_TEMPLATE, args, rdargs))
+		{
+		    if (args[ARG_COL])
+			data->ci[i].colno = *(LONG *)args[ARG_COL];
+		    if (args[ARG_WEIGHT])
+			data->ci[i].weight = *(LONG *)args[ARG_WEIGHT];
+		    if (args[ARG_DELTA])
+			data->ci[i].delta = *(LONG *)args[ARG_DELTA];
+		    if (args[ARG_MINWIDTH])
+			data->ci[i].min_width = *(LONG *)args[ARG_MINWIDTH];
+		    if (args[ARG_MAXWIDTH])
+			data->ci[i].max_width = *(LONG *)args[ARG_MAXWIDTH];
+		    data->ci[i].bar = args[ARG_BAR];
+		    if (args[ARG_PREPARSE])
+			data->ci[i].preparse = StrDup((STRPTR)args[ARG_PREPARSE]);
+		    
+		    FreeArgs(rdargs);
+		}
+		FreeDosObject(DOS_RDARGS, rdargs);
+	    }
+	    ptr += strlen(ptr) + 1;
+	    i++;
+	} while(i < new_columns);
+
+	FreeVec(format_sep);
+    }
+
+    for (i = 0; i < new_columns; i++)
+    {
+	D(bug("colno %d weight %d delta %d preparse %s\n",
+	    data->ci[i].colno, data->ci[i].weight, data->ci[i].delta, data->ci[i].preparse));
+    }
+    
     data->columns = new_columns;
     data->strings++; /* Skip entry pos */
 
@@ -342,7 +429,7 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
 
     /* Preparses are not required to be set, so we clear them first */
     for (col = 0; col < data->columns; col++)
-	data->preparses[col] = NULL;
+	data->preparses[col] = data->ci[col].preparse;
 
     if (entry_pos == ENTRY_TITLE)
     {
@@ -478,10 +565,12 @@ static int LCompare(struct ListEntry **a, struct ListEntry **b) {
 IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListData   *data;
-    struct TagItem  	    *tag, *tags;
+    struct TagItem        *tag;
+    const struct TagItem  *tags;
     APTR *array = NULL;
     STRPTR format = NULL;
-    
+    LONG new_entries_active = MUIV_List_Active_Off;
+
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Font, MUIV_Font_List,
 	MUIA_Background, MUII_ListBack,
@@ -500,10 +589,14 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->compare_hook = &(data->default_compare_hook);
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_List_Active:
+		    new_entries_active = tag->ti_Data;
+		    break;
+
 	    case    MUIA_List_Pool:
 		    data->pool = (APTR)tag->ti_Data;
 		    break;
@@ -605,6 +698,30 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     	DoMethod(obj, MUIM_List_Insert, (IPTR)array, i, MUIV_List_Insert_Top);
     }
 
+
+    if ((data->entries_num) && (new_entries_active != MUIV_List_Active_Off))
+    {
+	switch (new_entries_active)
+	{
+	    case    MUIV_List_Active_Top:
+		    new_entries_active = 0;
+		    break;
+
+	    case    MUIV_List_Active_Bottom:
+		    new_entries_active = data->entries_num - 1;
+		    break;
+	}
+
+	if (new_entries_active < 0)
+	    new_entries_active = 0;
+	else if (new_entries_active >= data->entries_num)
+	    new_entries_active = data->entries_num - 1;
+
+	data->entries_active = new_entries_active;
+	/* Selected entry will be moved into visible area */
+    }
+
+
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS |
     	    	    	     IDCMP_RAWKEY       |
 			     IDCMP_ACTIVEWINDOW |
@@ -657,10 +774,11 @@ IPTR List__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListData   *data = INST_DATA(cl, obj);
-    struct TagItem  	    *tag, *tags;
+    struct TagItem        *tag;
+    const struct TagItem  *tags;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -994,6 +1112,9 @@ IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 }
 
 
+/**************************************************************************
+ MUIM_Show
+**************************************************************************/
 IPTR List__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -1006,6 +1127,9 @@ IPTR List__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 }
 
 
+/**************************************************************************
+ MUIM_Hide
+**************************************************************************/
 IPTR List__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -1212,8 +1336,13 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    if (data->entries_num == 0)
+	return;
+
     LONG eclicky = rely + _top(obj) - data->entries_top_pixel; /* y coordinates transfromed to the entries */
     LONG new_act = eclicky / data->entry_maxheight + data->entries_first;
+    LONG old_act = data->entries_active;
 
     if (eclicky < 0)
     {
@@ -1227,7 +1356,9 @@ static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely
     if (new_act >= data->entries_num) new_act = data->entries_num - 1;
     else if (new_act < 0) new_act = 0;
 
-    set(obj, MUIA_List_Active, new_act);
+    /* Notify only when active entry has changed */
+    if (old_act != new_act)
+	set(obj, MUIA_List_Active, new_act);
 }
 
 static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely, UWORD qual)
@@ -1362,9 +1493,6 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEv
 			data->mouse_click = 0;			
 		    }
 		    break;
-		    
-		    
-		    
 	}
     }
 
@@ -1392,7 +1520,8 @@ IPTR List__MUIM_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *ms
 	SetAttrs(obj,
 	    MUIA_List_Entries,0,
 	    MUIA_List_First,0,
-	    MUIA_List_Active, MUIV_List_Active_Off,
+	    /* Notify only when no entry was active */
+	    data->entries_active != MUIV_List_Active_Off ? MUIA_List_Active : TAG_DONE, MUIV_List_Active_Off,
 	    TAG_DONE);
 
 	data->update = 1;
@@ -1547,7 +1676,8 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *
 
     SetAttrs(obj,
 	MUIA_List_Entries, data->confirm_entries_num,
-	new_act != data->entries_active?MUIA_List_Active:TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
+	(new_act >= pos) || (new_act != data->entries_active) ?
+	MUIA_List_Active : TAG_DONE, new_act, /* Inform only if neccessary (for notify) */
 	TAG_DONE);
 
     data->update = 1;
@@ -2033,6 +2163,9 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_List_Sort *msg)
     return 0;
 }
 
+/**************************************************************************
+ Dispatcher
+**************************************************************************/
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -2051,7 +2184,7 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 	case MUIM_Layout:                  return List__MUIM_Layout(cl,obj,(struct MUIP_Layout *)msg);
 	case MUIM_HandleEvent:             return List__MUIM_HandleEvent(cl,obj,(struct MUIP_HandleEvent *)msg);
 	case MUIM_List_Clear:              return List__MUIM_Clear(cl,obj,(struct MUIP_List_Clear *)msg);
-	case MUIM_List_Sort:              return List__MUIM_Sort(cl,obj,(struct MUIP_List_Sort *)msg);
+	case MUIM_List_Sort:               return List__MUIM_Sort(cl,obj,(struct MUIP_List_Sort *)msg);
 	case MUIM_List_Exchange:           return List__MUIM_Exchange(cl,obj,(struct MUIP_List_Exchange *)msg);
 	case MUIM_List_Insert:             return List__MUIM_Insert(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingle:       return List__MUIM_InsertSingle(cl,obj,(APTR)msg);
@@ -2083,4 +2216,3 @@ const struct __MUIBuiltinClass _MUI_List_desc = {
     sizeof(struct MUI_ListData), 
     (void*)List_Dispatcher 
 };
-
