@@ -206,17 +206,6 @@ AROS_UFH0(void, add_function)
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH0(void, add_child_function)
-{
-    AROS_USERFUNC_INIT
-
-    int act = XGET(list2,MUIA_List_Active);
-
-    DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
-
-    AROS_USERFUNC_EXIT
-}
-
 #if defined(TEST_ICONLIST)
 /* IconList callbacks */
 void volume_doubleclicked(void)
@@ -329,7 +318,7 @@ int main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
     Object *popobject, *listview;
-    Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
+    Object *list_add_button, *list_remove_button, *list_clear_button;
     Object *country_radio[2];
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio","Icon List","Balancing",NULL};
@@ -494,7 +483,6 @@ int main(void)
 			    End,
 			Child, HGroup,
 			    Child, list_add_button = MUI_MakeObject(MUIO_Button,"_Add"),
-			    Child, list_add_child_button = MUI_MakeObject(MUIO_Button,"_Add Child"),
 			    Child, list_remove_button = MUI_MakeObject(MUIO_Button,"_Remove"),
 			    Child, list_clear_button = MUI_MakeObject(MUIO_Button,"_Clear"),
 			    End,
@@ -635,7 +623,6 @@ Child, BalanceObject, End,
 
         /* The callbacks of the buttons within the list page */
 	DoMethod(list_add_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_function);
-	DoMethod(list_add_child_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_child_function);
         DoMethod(list_remove_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 2, MUIM_List_Remove, MUIV_List_Remove_Active);
 	DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 1, MUIM_List_Clear);
 
