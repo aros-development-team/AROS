@@ -53,14 +53,8 @@ struct ListEntry
     LONG width;   /* Line width */
     LONG height;  /* Line height */
     WORD flags;   /* see below */
-    WORD parents; /* number of entries parent's, used for the list tree stuff */
 };
 
-#define LE_FLAG_PARENT      (1<<0)  /* Entry is a parent, possibly containing children */
-#define LE_FLAG_CLOSED      (1<<1)  /* The entry (parent) is closed (means that all children are invisible) */
-#define LE_FLAG_VISIBLE     (1<<2)  /* The entry is visible */
-#define LE_FLAG_SELECTED    (1<<3)  /* The entry is selected */
-#define LE_FLAG_HASCHILDREN (1<<4)  /* The entry really has children */
 
 struct ColumnInfo
 {
@@ -150,10 +144,6 @@ struct MUI_ListData
     /* list type */
     ULONG input; /* FALSE - readonly, otherwise TRUE */
 
-    /* tree stuff */
-    ULONG parent_space; /* full number of pixels a parent takes */
-    ULONG treecolumn;
-
     /* list images */
     struct MinList images;
 
@@ -185,7 +175,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
     struct ListEntry *le;
     int size = sizeof(struct ListEntry) + sizeof(LONG)*data->columns + 4; /* sizeinfo */
 
-    mem = (ULONG*)AllocPooled(data->pool, size);
+    mem = AllocPooled(data->pool, size);
     if (!mem) return NULL;
     D(bug("List AllocListEntry %p, %ld bytes\n", mem, size));
 
@@ -224,7 +214,7 @@ static int SetListSize(struct MUI_ListData *data, LONG size)
 
     D(bug("List %p : SetListSize allocating %ld bytes\n", data,
 	  new_entries_allocated * sizeof(struct ListEntry *)));
-    new_entries = (struct ListEntry**)AllocVec(new_entries_allocated * sizeof(struct ListEntry *),0);
+    new_entries = AllocVec(new_entries_allocated * sizeof(struct ListEntry *),0);
     if (NULL == new_entries)
 	return 0;
     if (data->entries)
@@ -361,15 +351,15 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
 	    if (format_sep[i] == ',')
 		format_sep[i] = '\0';
 	}
-	
-	ptr = format_sep;
-	i = 0;
-	do
+
+	if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)) != 0)
 	{
-	    if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)) != 0)
+	    ptr = format_sep;
+	    i = 0;
+	    do
 	    {
-		rdargs->RDA_Source.CS_Buffer = format;
-		rdargs->RDA_Source.CS_Length = strlen(format);
+		rdargs->RDA_Source.CS_Buffer = ptr;
+		rdargs->RDA_Source.CS_Length = strlen(ptr);
 		rdargs->RDA_Source.CS_CurChr = 0;
 		rdargs->RDA_DAList           = 0;
 		rdargs->RDA_Buffer           = NULL;
@@ -396,12 +386,11 @@ static int ParseListFormat(struct MUI_ListData *data, STRPTR format)
 		    
 		    FreeArgs(rdargs);
 		}
-		FreeDosObject(DOS_RDARGS, rdargs);
-	    }
-	    ptr += strlen(ptr) + 1;
-	    i++;
-	} while(i < new_columns);
-
+		ptr += strlen(ptr) + 1;
+		i++;
+	    } while(i < new_columns);
+	    FreeDosObject(DOS_RDARGS, rdargs);
+	}
 	FreeVec(format_sep);
     }
 
@@ -476,9 +465,6 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 	    if (text->height > data->entries[pos]->height)
 		data->entries[pos]->height = text->height;
 	    data->entries[pos]->widths[j] = text->width;
-
-	    if (j == data->treecolumn)
-		data->entries[pos]->widths[j] += data->entries[pos]->parents * data->parent_space;
 
 	    if (text->width > data->ci[j].entries_width)
 	    {
@@ -731,8 +717,6 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 
-    data->parent_space = 10;
-    data->treecolumn = 0;
     NewList((struct List *)&data->images);
 
     D(bug("List_New(%lx)\n", obj));
@@ -1171,12 +1155,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
     {
 	ZText *text;
         x2 = x1 + data->ci[col].entries_width;
-	
-        if (entry_pos != ENTRY_TITLE && col == data->treecolumn)
-        {
-            x1 += data->entries[entry_pos]->parents * data->parent_space;
-        }
-        
+
 	if ((text = zune_text_new(data->preparses[col], data->strings[col], ZTEXT_ARG_NONE, 0)))
 	{
             /* Could be made simpler, as we don't really need the bounds */
@@ -1617,7 +1596,6 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *
     LONG new_act;
     struct ListEntry *lentry;
     //int rem_count = 1;
-    int parents;
 
     if (!data->entries_num) return 0;
 
@@ -1656,17 +1634,7 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove *
     lentry = data->entries[pos];
     DoMethod(obj, MUIM_List_Destruct, (IPTR)lentry->data, (IPTR)data->pool);
 
-    parents = lentry->parents;
     cur = pos + 1;
-
-    /* Now remove all children of the element */
-    while (cur < data->entries_num)
-    {
-	lentry = data->entries[cur];
-	if (lentry->parents <= parents) break;
-	DoMethod(obj, MUIM_List_Destruct, (IPTR)lentry->data, (IPTR)data->pool);
-	cur++;
-    }
 
     RemoveListEntries(data, pos, cur - pos);
     data->confirm_entries_num -= cur - pos;
@@ -1771,7 +1739,6 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *
 		set(obj,MUIA_List_Entries,data->confirm_entries_num);
 	    return ~0;
 	}
-	lentry->parents = 0;
 
 	data->entries[pos] = lentry;
 	data->confirm_entries_num++;
@@ -1806,7 +1773,8 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *
      *
      * I think, we better sort the whole array:
      */
-    if(sort) {
+    if (sort)
+    {
 	DoMethod(obj,MUIM_List_Sort);
 	/* TODO: which pos to return here !?        */
 	/* MUIM_List_Sort already called MUI_Redraw */
@@ -1830,104 +1798,6 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *
 IPTR List__MUIM_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingle *msg)
 {
     return DoMethod(obj,MUIM_List_Insert, (IPTR)&msg->entry, 1, msg->pos);
-}
-
-/**************************************************************************
- MUIM_List_InsertSingleAsTree
-**************************************************************************/
-IPTR List__MUIM_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingleAsTree *msg)
-{
-    struct MUI_ListData *data = INST_DATA(cl, obj);
-    struct ListEntry *lentry;
-    int pos;
-    int into_root;
-
-    /* Do we insert the element into the root? */
-    into_root = msg->parent == MUIV_List_InsertSingleAsTree_Root;
-
-    switch (msg->rel_entry_pos)
-    {
-
-	case    MUIV_List_InsertSingleAsTree_Top:
-		pos = 0;
-		break;
-
-	case    MUIV_List_InsertSingleAsTree_Active:
-		pos = 0;
-		break;
-
-	case    MUIV_List_InsertSingleAsTree_Sorted:
-		pos = 0;
-		break;
-
-	case    MUIV_List_InsertSingleAsTree_Bottom:
-		pos = 0;
-		break;
-                
-        default:
-            pos = -1;
-    }
-
-    pos += msg->parent + 1;
-
-    if (pos < 0 || pos > data->entries_num)
-	return ~0;
-
-    if (!(SetListSize(data,data->entries_num + 1)))
-	return ~0;
-
-    if (!(PrepareInsertListEntries(data, pos, 1)))
-	return ~0;
-
-    if (!(lentry = AllocListEntry(data)))
-    {
-	RemoveListEntries(data, pos, 1);
-	return ~0;
-    }
-
-    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, (IPTR)msg->entry, (IPTR)data->pool);
-    if (!lentry->data)
-    {
-	RemoveListEntries(data, pos, 1);
-    	FreeListEntry(data, lentry);
-	return ~0;
-    }
-
-    /* Set the correct number of parants */
-    if (into_root) lentry->parents = 0;
-    else lentry->parents = data->entries[msg->parent]->parents + 1;
-
-    /* The parent is gets really a parent */
-    if (!into_root) data->entries[msg->parent]->flags |= LE_FLAG_PARENT | LE_FLAG_HASCHILDREN;
-
-    data->entries[pos] = lentry;
-    data->confirm_entries_num++;
-
-    if (_flags(obj) & MADF_SETUP)
-    {
-    	/* We have to calulate the width and height of the newly inserted entry, this
-    	** has to be done after inserting the element into the list */
-    	CalcDimsOfEntry(cl,obj,pos);
-
-	CalcVertVisible(cl,obj); /* Recalculate the number of visible entries */
-    }
-
-    if (data->entries_num != data->confirm_entries_num)
-    {
-	SetAttrs(obj,
-	    MUIA_List_Entries, data->confirm_entries_num,
-	    MUIA_List_Visible, data->entries_visible,
-	    TAG_DONE);
-    }
-
-    if (!(data->flags & LIST_QUIET))
-    {
-	data->update = 1;
-	MUI_Redraw(obj,MADF_DRAWUPDATE);
-    }
-
-    data->insert_position = pos;
-    return (IPTR)pos;
 }
 
 /**************************************************************************
@@ -1994,15 +1864,6 @@ IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destru
     {
 	CallHookPkt(data->destruct_hook, msg->pool, msg->entry);
     }
-    return 0;
-}
-
-/**************************************************************************
- MUIM_List_Compare
-**************************************************************************/
-IPTR List__MUIM_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare *msg)
-{
-    //struct MUI_ListData *data = INST_DATA(cl, obj);
     return 0;
 }
 
@@ -2146,7 +2007,8 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_List_Sort *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    if(data->entries_num>1) {
+    if (data->entries_num>1)
+    {
 	/* pointer magic taken from asl/fontreqsupport.c */
 	qsort(&data->entries[0],
 	      data->entries_num,
@@ -2194,10 +2056,8 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 
 	case MUIM_List_Construct:          return List__MUIM_Construct(cl,obj,(APTR)msg);
 	case MUIM_List_Destruct:           return List__MUIM_Destruct(cl,obj,(APTR)msg);
-	case MUIM_List_Compare:            return List__MUIM_Compare(cl,obj,(APTR)msg);
 	case MUIM_List_Display:            return List__MUIM_Display(cl,obj,(APTR)msg);
 	case MUIM_List_SelectChange:       return List__MUIM_SelectChange(cl,obj,(APTR)msg);
-	case MUIM_List_InsertSingleAsTree: return List__MUIM_InsertSingleAsTree(cl,obj,(APTR)msg);
 	case MUIM_List_CreateImage:        return List__MUIM_CreateImage(cl,obj,(APTR)msg);
 	case MUIM_List_DeleteImage:        return List__MUIM_DeleteImage(cl,obj,(APTR)msg);
 	case MUIM_List_Jump:               return List__MUIM_Jump(cl,obj,(APTR)msg);
