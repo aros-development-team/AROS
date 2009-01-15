@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory in a pool.
@@ -129,9 +129,18 @@
 	    /* Try to get the memory */
 	    ret = Allocate(mh, memSize);
 
-	    /* Got it? */
-	    if(ret != NULL)
-		break;
+        /* Got it? */
+        if(ret != NULL)
+        {
+            /* If this is not the first MemHeader and it has some free space, move it to the head */
+            if (mh->mh_Node.ln_Pred != NULL && mh->mh_Free > 32)
+            {
+                Remove(mh);
+                AddHead((struct List *)&pool->pool.PuddleList, (struct Node *)&mh->mh_Node);
+            }
+
+            break;
+        }
 
 	    /* No. Try next MemHeader */
 	    mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
