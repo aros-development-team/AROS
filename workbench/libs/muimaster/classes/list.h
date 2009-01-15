@@ -50,13 +50,11 @@ struct MUIP_List_TestPos              {STACKED ULONG MethodID; STACKED LONG x; S
 #define MUIM_List_Compare             (MUIB_List | 0x00000002) /* Zune: v1 same like NList, PRIV for now! */
 #define MUIM_List_Display             (MUIB_List | 0x00000003) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_SelectChange        (MUIB_List | 0x00000004) /* Zune: V1 same like NLIST, PRIV for now! */
-#define MUIM_List_InsertSingleAsTree  (MUIB_List | 0x00000005) /* Zune: V1 */
 struct MUIP_List_Construct            {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
 struct MUIP_List_Destruct             {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
 struct MUIP_List_Compare              {STACKED ULONG MethodID; STACKED APTR entry1; STACKED APTR entry2; STACKED LONG sort_type1; STACKED LONG sort_type2;};
 struct MUIP_List_Display              {STACKED ULONG MethodID; STACKED APTR entry; STACKED LONG entry_pos; STACKED STRPTR *strings; STACKED STRPTR *preparses;};
 struct MUIP_List_SelectChange         {STACKED ULONG MethodID; STACKED LONG pos; STACKED LONG state; STACKED ULONG flags;};
-struct MUIP_List_InsertSingleAsTree   {STACKED ULONG MethodID; STACKED APTR entry; STACKED LONG parent; STACKED LONG rel_entry_pos; STACKED ULONG flags;};
 
 /*** Attributes *************************************************************/
 #define MUIA_List_Active              (MUIB_MUI|0x0042391c) /* MUI: V4  isg LONG          */
@@ -199,15 +197,6 @@ enum
 
 #define MUIV_NList_SelectChange_Flag_Multi (1 << 0)
 
-#define MUIV_List_InsertSingleAsTree_Root     (-1)
-
-#define MUIV_List_InsertSingleAsTree_Top      (0)
-#define MUIV_List_InsertSingleAsTree_Active   (-1)
-#define MUIV_List_InsertSingleAsTree_Sorted   (-2)
-#define MUIV_List_InsertSingleAsTree_Bottom   (-3)
-
-#define MUIV_List_InsertSingleAsTree_List    (1<<0)
-#define MUIV_List_InsertSingleAsTree_Closed  (1<<1)
 
 extern const struct __MUIBuiltinClass _MUI_List_desc; /* PRIV */
 
