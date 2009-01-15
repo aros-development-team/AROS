@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 26710 2007-09-18 21:05:16Z j.koivisto $
+include $(TOP)/config/make.cfg
+
+FILES	:= intelG33_init \
+           intelG33_hardware \
+           intelG33_class
+
+%build_module mmake=hidd-intelG33 \
+           modname=intelG33 modtype=hidd \
+           files=$(FILES) uselibs="oop rom amiga hiddstubs"
+
+
