@@ -71,7 +71,7 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
 					 MUIA_Pendisplay_RGBcolor);
 
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
-	     "%s:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+	     "%s:%d,%08x,%08x,%08x-%08x,%08x,%08x",
 	     is_tiled ? "8" : "7",
                  angle,
                  start_rgb->red,start_rgb->green,start_rgb->blue,
@@ -276,12 +276,12 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 		    ele.namelen = strlen(ele.filename);
 		    ele.type = ead->ed_Type;
 
-		    num = DoMethod(list, MUIM_List_InsertSingleAsTree,
+		    if (! is_directory)
+		    {
+			num = DoMethod(list, MUIM_List_InsertSingle,
 				   (IPTR)&ele,
-				   (IPTR)parent,
-				   MUIV_List_InsertSingleAsTree_Bottom,
-				   is_directory ?
-				   MUIV_List_InsertSingleAsTree_List : 0);
+				   MUIV_List_Insert_Bottom);
+		    }
 		}
 #warning "FIXME: where does num's value come from here?"
 		if (num != -1 && is_directory)
@@ -450,7 +450,8 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imageadjust_DATA   *data;
-    struct TagItem  	    *tag, *tags;
+    struct TagItem            *tag;
+    const struct TagItem      *tags;
     static const char * const labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", "Gradient", NULL};
     static const char * const labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
     static const char * const labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
@@ -487,8 +488,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (adjust_type == MUIV_Imageadjust_Type_All ||
 	adjust_type == MUIV_Imageadjust_Type_Image)
     {
-	external_group = ListviewObject,
-	    MUIA_Listview_List, (IPTR)(external_list = ListObject,
+	external_group = (Object *)ListviewObject,
+	    MUIA_Listview_List, (IPTR)(external_list = (Object *)ListObject,
 	        InputListFrame,
 	        MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
 		MUIA_List_DestructHook, MUIV_List_DestructHook_String,
@@ -499,16 +500,16 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (adjust_type == MUIV_Imageadjust_Type_All ||
 	adjust_type == MUIV_Imageadjust_Type_Background)
     {
-	bitmap_group = VGroup,
-	    Child, (IPTR)(bitmap_image = ImagedisplayObject,
+	bitmap_group = (Object *)VGroup,
+	    Child, (IPTR)(bitmap_image = (Object *)ImagedisplayObject,
 	        TextFrame,
 	        InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
 		MUIA_Dropable, FALSE,
 	        End),
-	    Child, (IPTR)(bitmap_popasl = PopaslObject,
-	        MUIA_Popstring_String, (IPTR)(bitmap_string = StringObject,
+	    Child, (IPTR)(bitmap_popasl = (Object *)PopaslObject,
+	        MUIA_Popstring_String, (IPTR)(bitmap_string = (Object *)StringObject,
                     StringFrame,
                     MUIA_CycleChain, 1,
                     End),
@@ -516,21 +517,22 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        End),
 	    End;
 
-	gradient_group = ColGroup(2),
+	gradient_group = (Object *)ColGroup(2),
 	    Child, (IPTR)FreeLabel("Type:"),
-	    Child, (IPTR)(gradient_type_cycle = MUI_MakeObject(MUIO_Cycle, (IPTR)"Type:", (IPTR)gradient_type_entries)),
+	    Child, (IPTR)(gradient_type_cycle = MUI_MakeObject(MUIO_Cycle,
+		(IPTR)"Type:", (IPTR)gradient_type_entries)),
 	    Child, (IPTR)FreeLabel("Angle:"),
 	    Child, (IPTR)VGroup,
 	        Child, (IPTR)HGroup,
 	            MUIA_Group_SameWidth, TRUE,
-	            Child, (IPTR)(gradient_horiz_button = TextObject,
+	            Child, (IPTR)(gradient_horiz_button = (Object *)TextObject,
 			  ButtonFrame,
 			  MUIA_Background,               MUII_ButtonBack,
 			  MUIA_InputMode, MUIV_InputMode_RelVerify,
 			  MUIA_Text_PreParse, (IPTR)"\33c",
 			  MUIA_Text_Contents, (IPTR)"Vertical",
 			  End),
-	            Child, (IPTR)(gradient_vert_button = TextObject,
+	            Child, (IPTR)(gradient_vert_button = (Object *)TextObject,
 			  ButtonFrame,
 			  MUIA_Background,               MUII_ButtonBack,
 			  MUIA_InputMode, MUIV_InputMode_RelVerify,
@@ -538,26 +540,30 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 			  MUIA_Text_Contents, (IPTR)"Horizontal",
 			  End),
 	            End,
-	        Child, (IPTR)(gradient_angle_slider = SliderObject, MUIA_Group_Horiz, TRUE, MUIA_Numeric_Min, 0, MUIA_Numeric_Max, 179, End),
+	        Child, (IPTR)(gradient_angle_slider = (Object *)SliderObject,
+		    MUIA_Group_Horiz, TRUE,
+		    MUIA_Numeric_Min, 0,
+		    MUIA_Numeric_Max, 179,
+		    End),
 	        End,
 	    Child, (IPTR)FreeLabel("Colors:"),
 	    Child, (IPTR)HGroup,
-		Child, (IPTR)(gradient_start_poppen = PoppenObject,
+		Child, (IPTR)(gradient_start_poppen = (Object *)PoppenObject,
 			      MUIA_Window_Title,    (IPTR) "Start pen",
 			      MUIA_Pendisplay_Spec, (IPTR) "rbbbbbbbb,bbbbbbbb,bbbbbbbb", End),
-	        Child, (IPTR)VCenter((gradient_swap_button = TextObject,
+	        Child, (IPTR)VCenter((gradient_swap_button = (Object *)TextObject,
 			      ButtonFrame,
 			      MUIA_Background,               MUII_ButtonBack,
 			      MUIA_InputMode, MUIV_InputMode_RelVerify,
 			      MUIA_Text_Contents, (IPTR)"<->",
 			      MUIA_Weight, 0,
 			      End)),
-		Child, (IPTR)(gradient_end_poppen = PoppenObject,
+		Child, (IPTR)(gradient_end_poppen = (Object *)PoppenObject,
 			      MUIA_Window_Title,    (IPTR) "End pen",
 			      MUIA_Pendisplay_Spec, (IPTR)"r55555555,55555555,55555555", End),
 		End,
 	    Child, (IPTR)FreeLabel("Preview:"),
-	    Child, (IPTR)(gradient_imagedisplay = ImagedisplayObject,
+	    Child, (IPTR)(gradient_imagedisplay = (Object *)ImagedisplayObject,
 		TextFrame,
 		InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
@@ -572,8 +578,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIV_Imageadjust_Type_All:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, (IPTR)labels_all,
-				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
-				       Child, (IPTR)HCenter((vector_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((pattern_group = (Object *)ColGroup(6), End)),
+				       Child, (IPTR)HCenter((vector_group = (Object *)ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
 				       Child, (IPTR)bitmap_group,
@@ -583,7 +589,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIV_Imageadjust_Type_Background:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, (IPTR)labels_bg,
-				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((pattern_group = (Object *)ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)bitmap_group,
 				       Child, (IPTR)gradient_group,
@@ -592,8 +598,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	case MUIV_Imageadjust_Type_Image:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				       MUIA_Register_Titles, (IPTR)labels_image,
-				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
-				       Child, (IPTR)HCenter((vector_group = ColGroup(6), End)),
+				       Child, (IPTR)HCenter((pattern_group = (Object *)ColGroup(6), End)),
+				       Child, (IPTR)HCenter((vector_group = (Object *)ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
 				       TAG_MORE, (IPTR)msg->ops_AttrList);
@@ -622,7 +628,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	for (i=0;i<18;i++)
 	{
-	    data->pattern_image[i] = ImageObject,
+	    data->pattern_image[i] = (Object *)ImageObject,
 		ButtonFrame,
 		MUIA_CycleChain, 1,
 		InnerSpacing(4,4),
@@ -652,8 +658,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    {
 		char spec[10];
 
-		snprintf(spec, sizeof(spec), "1:%ld", i);
-		data->vector_image[i] = ImageObject,
+		snprintf(spec, sizeof(spec), "1:%d", i);
+		data->vector_image[i] = (Object *)ImageObject,
 		    ButtonFrame,
 		    InnerSpacing(4,4),
 		    MUIA_CycleChain, 1,
@@ -774,7 +780,8 @@ IPTR Imageadjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 IPTR Imageadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem *tags,*tag;
+    const struct TagItem *tags;
+    struct TagItem *tag;
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -835,7 +842,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(40,0)))
 				{
 				    if (data->last_pattern_selected != -1)
-					snprintf(data->imagespec, 40, "0:%ld",
+					snprintf(data->imagespec, 40, "0:%d",
 						 data->last_pattern_selected+128);
 				    else
 					strcpy(data->imagespec,"0:128");
@@ -846,7 +853,7 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(20,0)))
 				{
 				    if (data->last_vector_selected != -1)
-					snprintf(data->imagespec, 20, "1:%ld",
+					snprintf(data->imagespec, 20, "1:%d",
 						 data->last_vector_selected);
 				    else
 					strcpy(data->imagespec,"0:128");
