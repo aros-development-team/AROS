@@ -69,17 +69,21 @@ MMADR+
 #define G33_RD_REGL(a, reg) ( readl(sd->Chipset.a + reg) )
 #define G33_RD_REGW(a, reg) ( readw(sd->Chipset.a + reg) )
 #define G33_RD_REGB(a, reg) ( readb(sd->Chipset.a + reg) )
-#define G33_RD_REG_ARRAY(a, reg, offset) ( readl((sd->Chipset.a + reg) + ((offset) << 2)) )
 
 #define G33_WR_REGL(a, reg, value) ( writel((value), (sd->Chipset.a + reg)) )
 #define G33_WR_REGW(a, reg, value) ( writew((value), (sd->Chipset.a + reg)) )
 #define G33_WR_REGB(a, reg, value) ( writeb((value), (sd->Chipset.a + reg)) )
 
-/* Should get away with this... or not...*/
-#define G33_RMW_REGL(a, reg, value) ( writel((readl(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
-#define G33_RMW_REGW(a, reg, value) ( writew((readw(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
-#define G33_RMW_REGB(a, reg, value) ( writeb((readb(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
+/* Should get away with this... or not... */
+#define G33_SETBMASK_REGL(a, reg, value) ( writel((readl(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
+#define G33_SETBMASK_REGW(a, reg, value) ( writew((readw(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
+#define G33_SETBMASK_REGB(a, reg, value) ( writeb((readb(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
 
+#define G33_CLRBMASK_REGL(a, reg, value) ( writel((readl(sd->Chipset.a + reg )&(~value)), (sd->Chipset.a + reg)) )
+#define G33_CLRBMASK_REGW(a, reg, value) ( writew((readw(sd->Chipset.a + reg )&(~value)), (sd->Chipset.a + reg)) )
+#define G33_CLRBMASK_REGB(a, reg, value) ( writeb((readb(sd->Chipset.a + reg )&(~value)), (sd->Chipset.a + reg)) )
+
+#define G33_RD_REG_ARRAY(a, reg, offset) ( readl((sd->Chipset.a + reg) + ((offset) << 2)) )
 #define G33_WR_REG_ARRAY(a, reg, offset, value) ( writel((value), ((sd->Chipset.a + reg) + ((offset) << 2))) )
 
 #define G33_PGETBL_SIZE_MASK        (3 << 8)
