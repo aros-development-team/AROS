@@ -1,6 +1,6 @@
 /*
     Copyright � 2009-2010, The AROS Development Team. All rights reserved.
-    $Id: intelG33_hardware.c 29403 2008-09-05 19:13:26Z j.koivisto $
+    $Id: intelG33_hardware.c $
 
     Desc: intelG33_hardware.c
     Lang: English
