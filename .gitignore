@@ -385,6 +385,9 @@
 /arch/common/hidd.i2c/stubs/
 /arch/common/hidd.i2c/stubs/mmakefile
 
+# /arch/common/hidd.intelG33/
+/arch/common/hidd.intelG33/mmakefile
+
 # /arch/common/hidd.nvidia/
 /arch/common/hidd.nvidia/mmakefile
 
