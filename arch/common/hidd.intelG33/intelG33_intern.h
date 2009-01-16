@@ -28,7 +28,7 @@
 #define HiddPixFmtAttrBase    (sd->pixFmtAttrBase)
 #define HiddGfxAttrBase       (sd->gfxAttrBase)
 #define HiddSyncAttrBase      (sd->syncAttrBase)
-#define HiddG33BitMapAttrBase (sd->g33BitMapAttrBase)
+#define HiddG33BitMapAttrBase (sd->G33BitMapAttrBase)
 #define __IHidd_PlanarBM      (sd->planarAttrBase)
 
 #define IID_Hidd_Gfx_IntelG33   "IntelG33"
@@ -52,13 +52,6 @@ struct IntelG33Chipset {
 
 };
 
-extern OOP_AttrBase PCIDeviceAttrBase;
-extern OOP_AttrBase BitMapAttrBase;
-extern OOP_AttrBase PixFmtAttrBase;
-extern OOP_AttrBase SyncAttrBase;
-extern OOP_AttrBase GfxAttrBase;
-extern OOP_AttrBase G33BitMapAttrBase;
-
 struct staticdata {
 
     APTR          memPool;
@@ -75,7 +68,7 @@ struct staticdata {
     OOP_AttrBase  gfxAttrBase;
     OOP_AttrBase  syncAttrBase;
     OOP_AttrBase  planarAttrBase;
-    OOP_AttrBase  g33BitMapAttrBase;
+    OOP_AttrBase  G33BitMapAttrBase;
 
     OOP_Object   *IntelG33Object;
     OOP_Class    *IntelG33Class;
@@ -95,5 +88,8 @@ struct IntelG33Base {
 };
 
 #define XSD(cl) (&((struct IntelG33Base *)cl->UserData)->sd)
+
+void GMBUS_Init(struct staticdata *sd);
+UWORD GMBUS_GetStatus(struct staticdata *sd);
 
 #endif
