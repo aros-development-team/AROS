@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 26710 2007-09-18 21:05:16Z j.koivisto $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES	:= intelG33_init \
