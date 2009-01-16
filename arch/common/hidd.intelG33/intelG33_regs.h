@@ -77,8 +77,8 @@ MMADR+
 
 /* Should get away with this... or not...*/
 #define G33_RMW_REGL(a, reg, value) ( writel((readl(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
-#define G33_RMW_REGW(a, reg, value) ( writew((readl(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
-#define G33_RMW_REGB(a, reg, value) ( writeb((readl(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
+#define G33_RMW_REGW(a, reg, value) ( writew((readw(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
+#define G33_RMW_REGB(a, reg, value) ( writeb((readb(sd->Chipset.a + reg )|value), (sd->Chipset.a + reg)) )
 
 #define G33_WR_REG_ARRAY(a, reg, offset, value) ( writel((value), ((sd->Chipset.a + reg) + ((offset) << 2))) )
 
