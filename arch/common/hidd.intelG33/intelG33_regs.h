@@ -93,6 +93,11 @@ MMADR+
 #define G33_GMCH_GMS_STOLEN_128M    (0x8 << 4)
 #define G33_GMCH_GMS_STOLEN_256M    (0x9 << 4)
 
+#define GMBUSRate1MHz   3
+#define GMBUSRate400KHz 2
+#define GMBUSRate100KHz 0
+#define GMBUSRate50KHz  1
+
 #define GMBUS0  0x5100
 #define GMBUS1  0x5104
 #define GMBUS2  0x5108

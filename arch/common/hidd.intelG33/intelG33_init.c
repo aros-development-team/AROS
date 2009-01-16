@@ -94,12 +94,12 @@ AROS_UFH3(void, Enumerator,
         };
         OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
 
-        /*
-          Read some PCI config registers
-        */
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&pciDriver);
         sd->pciDriver = pciDriver;
 
+        /*
+          Read some PCI config registers
+        */
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&Base0);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,  (APTR)&Base0size);
 
