@@ -39,6 +39,11 @@
 static BOOL Chip_Init(struct staticdata *sd) {
     D(bug("[G33] IntelG33 chip init\n"));
 
+    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
+
+    GMBUS_Init();
+    D(bug("[G33]   GMBUS status %04x\n",GMBUS_GetStatus(sd)));
+    D(bug("[G33]   GMBUS status %04x\n",GMBUS_GetStatus(sd)));
     return TRUE;
 }
 

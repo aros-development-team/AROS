@@ -58,15 +58,39 @@ MMADR+
                     id == 0x29c2 || \
                     id == 0x29d2)
 
-#define mmio(var) (*(volatile uint32_t *)&(var))
+#define readb(addr) (*(volatile uint8_t *) (addr))
+#define readw(addr) (*(volatile uint16_t *) (addr))
+#define readl(addr) (*(volatile uint32_t *) (addr))
 
-#define G33_PGETBL_SIZE_MASK	(3 << 8)
-#define G33_PGETBL_SIZE_1M	(1 << 8)
-#define G33_PGETBL_SIZE_2M	(2 << 8)
+#define writeb(b,addr) ((*(volatile uint8_t *) (addr)) = (b))
+#define writew(b,addr) ((*(volatile uint16_t *) (addr)) = (b))
+#define writel(b,addr) ((*(volatile uint32_t *) (addr)) = (b))
 
-#define G33_GMCH_GMS_STOLEN_128M	(0x8 << 4)
-#define G33_GMCH_GMS_STOLEN_256M	(0x9 << 4)
+#define G33_RD_REGL(a, reg) (readl(sd->Chipset.a + reg ))
+#define G33_RD_REGW(a, reg) (readw(sd->Chipset.a + reg))
+#define G33_RD_REGB(a, reg) (readb(sd->Chipset.a + reg))
+#define G33_RD_REG_ARRAY(a, reg, offset) (readl((sd->Chipset.a + reg) + ((offset) << 2)))
 
+#define G33_WR_REGL(a, reg, value) (writel((value), (sd->Chipset.a + reg)))
+#define G33_WR_REGW(a, reg, value) (writew((value), (sd->Chipset.a + reg)))
+#define G33_WR_REGB(a, reg, value) (writeb((value), (sd->Chipset.a + reg)))
+#define G33_WR_REG_ARRAY(a, reg, offset, value) (writel((value), ((sd->Chipset.a + reg) + ((offset) << 2))))
+
+#define G33_PGETBL_SIZE_MASK        (3 << 8)
+#define G33_PGETBL_SIZE_1M          (1 << 8)
+#define G33_PGETBL_SIZE_2M          (2 << 8)
+
+#define G33_GMCH_GMS_STOLEN_128M    (0x8 << 4)
+#define G33_GMCH_GMS_STOLEN_256M    (0x9 << 4)
+
+#define GMBUS0  0x5100
+#define GMBUS1  0x5104
+#define GMBUS2  0x5108
+#define GMBUS3  0x510c
+#define GMBUS4  0x5110
+#define GMBUS5  0x5120
+
+#define ADPA    0x61100
 
 
 
