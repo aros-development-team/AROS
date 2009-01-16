@@ -366,22 +366,24 @@ static VOID CheckPartitions
             fssm->fssm_Unit);
         if (pt)
         {
+        	LONG table = 1;
+
         	/*
         	 * OpenRootPartition may success even if partition table is invalid.
         	 * Attempt to open the partition table (which performs validity checks),
         	 * and if it fails, add the boot node as a whole.
         	 */
-        	LONG table = OpenPartitionTable(pt);
-        	if (table == 0)
-        		ClosePartitionTable(pt);
 
-            if (table || IsRemovable(SysBase, pt->bd->ioreq))
+            if (IsRemovable(SysBase, pt->bd->ioreq) || (table = OpenPartitionTable(pt)))
             {
                 /* don't check removable devices for partition tables */
                 Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
             }
             else
             {
+            	if (table == 0)
+            		ClosePartitionTable(pt);
+
 		CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
 /* FIXME: This causes out-of-range access to disk by afs.handler with following system lockup during boot.
    Probably the root of the problem lies in ata.device supplying wrong geometry data to the handler.
