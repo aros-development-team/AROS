@@ -111,8 +111,8 @@ void        DisposeCopyDisplay(struct MUIDisplayObjects *d);
 BOOL        CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d);
 
 /* Stored in the main wanderer executable */
-extern Object        *_WandererIntern_AppObj;
-extern Class     *_WandererIntern_CLASS;
+extern Object       *_WandererIntern_AppObj;
+extern Class        *_WandererIntern_CLASS;
 /* Internal Hooks */
 #ifdef __AROS__
 struct Hook          _WandererIntern_hook_standard;
@@ -127,7 +127,7 @@ struct Hook          *_WandererIntern_hook_backdrop;
 /*** Instance Data **********************************************************/
 struct Wanderer_DATA
 {
-    struct Screen        		*wd_Screen;
+    struct Screen               *wd_Screen;
 
     Object                      *wd_Prefs,
                                 *wd_ActiveWindow,
@@ -1249,7 +1249,6 @@ void wanderer_menufunc_window_snapshot(IPTR *flags)
     Object              *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
 	Object 				*iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
 	char                *dir_name = XGET(window, MUIA_IconWindow_Location);
-	IPTR				dir_name_len = strlen(dir_name);
 	struct DiskObject 	*drawericon = NULL;
 	IPTR				geticon_error = NULL;
 	IPTR 				display_bits = 0, sort_bits = 0;
