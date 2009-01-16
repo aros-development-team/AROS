@@ -58,6 +58,8 @@
 OOP_Object *METHOD(IntelG33, Root, New) {
     D(bug("[G33] Root New\n"));
 
+/* TODO: Calculate timings for allowed screen modes based on (E-)EDID information */
+
     MAKE_SYNC(1024x768_60, 65000,
         1024, 1048, 1184, 1344,
          768,  771,  777,  806,
