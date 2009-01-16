@@ -36,6 +36,7 @@
 #include "authors.h"
 #include "sponsors.h"
 #include "acknowledgements.h"
+#include "svnrev.h"
 
 #define VERSION "$VER: AboutAROS 0.1 ("ADATE") ©AROS Dev Team"
 
@@ -231,7 +232,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Application_Copyright, (IPTR)"© 2006, The AROS Development Team",
         MUIA_Application_Description, __(MSG_TITLE),
         MUIA_Application_Base, (IPTR) "ABOUTAROS",
-        SubWindow, (IPTR) (window = WindowObject,
+        SubWindow, (IPTR) (window = (Object *)WindowObject,
             MUIA_Window_Title,    __(MSG_TITLE),
             MUIA_Window_Width,    MUIV_Window_Width_MinMax(0),
             MUIA_Window_NoMenus,  TRUE,
@@ -281,7 +282,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
                         MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                        MUIA_Text_Contents, (IPTR) "SVN: $Revision$",
+                        MUIA_Text_Contents, (IPTR) "SVN: " SVNREV,
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) HVSpace,
@@ -305,7 +306,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Text_Contents, (IPTR) " ",
                         MUIA_Weight,               0,
                     End,
-                    Child, (IPTR) (licenseButton = TextObject,
+                    Child, (IPTR) (licenseButton = (Object *)TextObject,
                         MUIA_InputMode,            MUIV_InputMode_RelVerify,
                         MUIA_Text_PreParse, (IPTR) "\0333\033u",
                         MUIA_Text_Contents,        __(MSG_LICENSE_2),
@@ -330,19 +331,19 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Background, REGISTER_BG,
 
                         Child, (IPTR) ListviewObject,
-                            MUIA_Listview_List, (IPTR) (authorsList = ListObject,
+                            MUIA_Listview_List, (IPTR) (authorsList = (Object *)ListObject,
                                 TextFrame,
                                 MUIA_Background, LIST_BG,
                             End),
                         End,
                         Child, (IPTR) ListviewObject,
-                            MUIA_Listview_List, (IPTR) (sponsorsList = ListObject,
+                            MUIA_Listview_List, (IPTR) (sponsorsList = (Object *)ListObject,
                                 TextFrame,
                                 MUIA_Background, LIST_BG,
                             End),
                         End,
                         Child, (IPTR) ListviewObject,
-                            MUIA_Listview_List, (IPTR) (acknowledgementsList = ListObject,
+                            MUIA_Listview_List, (IPTR) (acknowledgementsList = (Object *)ListObject,
                                 TextFrame,
                                 MUIA_Background, LIST_BG,
                             End),

@@ -18,7 +18,7 @@ USER_CFLAGS     := -DADATE="\"$(shell date '+%d.%m.%Y')\""
     files=$(FILES) uselibs="arossupport amiga arosc m"
 
 
-GENERATED   := authors.h sponsors.h acknowledgements.h
+GENERATED   := authors.h sponsors.h acknowledgements.h svnrev
 
 #MM
 workbench-system-aboutaros-generated : $(GENERATED)
@@ -34,5 +34,10 @@ sponsors.h : db/sponsors scripts/sponsors2header.py
 acknowledgements.h : $(TOP)/ACKNOWLEDGEMENTS scripts/acknowledgements2header.py
 	@$(ECHO) Generating $@
 	@$(PYTHON) scripts/acknowledgements2header.py <$< >$@
+
+.PHONY : svnrev
+
+svnrev :
+	- $(ECHO) '#define SVNREV "'`svnversion $(TOP)`'"' >svnrev.h
 
 %common
