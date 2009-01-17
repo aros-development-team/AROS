@@ -22,9 +22,6 @@
 	MA 02111-1307, USA.
 */
 
-//#define RTL_DEBUG
-
-#define DEBUG 1
 #include <aros/debug.h>
 
 #define RTLD(d) \

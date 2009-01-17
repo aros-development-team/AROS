@@ -4,7 +4,7 @@
 #MM     contrib-networking-drivers-viarhine-$(AROS_TARGET_CPU) \
 #MM     contrib-networking-drivers-e1000-$(AROS_TARGET_CPU) \
 #MM     contrib-networking-drivers-sis900-$(AROS_TARGET_CPU) \
-#MM     contrib-networking-drivers-rtl8139-$(AROS_TARGET_CPU) \
+#MM     devs-networks-drivers-rtl8139-$(AROS_TARGET_CPU) \
 #MM     contrib-networking-drivers-etherlink3 \
 #MM     contrib-networking-drivers-intelpro100 \
 #MM     contrib-networking-drivers-prism2 \
