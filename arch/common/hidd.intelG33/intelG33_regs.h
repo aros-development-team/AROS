@@ -93,10 +93,11 @@ MMADR+
 #define G33_GMCH_GMS_STOLEN_128M    (0x8 << 4)
 #define G33_GMCH_GMS_STOLEN_256M    (0x9 << 4)
 
-#define GMBUSRate1MHz   3
-#define GMBUSRate400KHz 2
+#define GMBUSRate1MHz   3<<8
+#define GMBUSRate400KHz 2<<8
 #define GMBUSRate100KHz 0
-#define GMBUSRate50KHz  1
+#define GMBUSRate50KHz  1<<8
+#define GMBUSHTimeExt   1<<7
 
 #define GMBUS0  0x5100
 #define GMBUS1  0x5104
@@ -105,7 +106,9 @@ MMADR+
 #define GMBUS4  0x5110
 #define GMBUS5  0x5120
 
-#define ADPA    0x61100
+#define ADPA        0x61100
 
+#define VGADisable  1<<31
+#define VGACNTRL    0x71400
 
 

@@ -39,11 +39,15 @@
 static BOOL Chip_Init(struct staticdata *sd) {
     D(bug("[G33] IntelG33 chip init\n"));
 
-    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
-    G33_SETBMASK_REGL(MMADR, ADPA, 0x0c00); // Warning! Turns monitor OFF! Just testing mmio register reads/writes...
-    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
-    G33_CLRBMASK_REGL(MMADR, ADPA, 0x0c00); // Warning! Turns monitor ON! Just testing mmio register reads/writes...
-    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
+//    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
+//    G33_SETBMASK_REGL(MMADR, ADPA, 0x0c00); // Warning! Turns monitor OFF! Just testing mmio register reads/writes...
+//    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
+//    G33_CLRBMASK_REGL(MMADR, ADPA, 0x0c00); // Warning! Turns monitor ON! Just testing mmio register reads/writes...
+//    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
+
+    D(bug("[G33]   VGACNTRL %08x\n",G33_RD_REGL(MMADR, VGACNTRL) ));
+    G33_SETBMASK_REGL(MMADR, VGACNTRL, VGADisable); //Disable VGA
+    D(bug("[G33]   VGACNTRL %08x\n",G33_RD_REGL(MMADR, VGACNTRL) ));
 
     GMBUS_Init(sd);
     D(bug("[G33]   GMBUS status %04x\n",GMBUS_GetStatus(sd))); // Testing hardware "semaphore"
