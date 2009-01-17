@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM workbench-network-dhcp-libiminires : arostcp-includes
+#MM network-dhcp-libiminires : arostcp-includes
 
 USER_CFLAGS :=	-I../includes				\
 		-I$(AROS_DEVELOPMENT)/netinclude	\
@@ -10,6 +10,6 @@ FILES :=	ns_date ns_name	ns_parse ns_samedomain ns_sign 		\
 		ns_verify res_comp res_findzonecut res_init res_mkquery	\
 		res_mkupdate res_send res_sendsigned res_update
 
-%build_linklib mmake=workbench-network-dhcp-libminires	\
-	libname=minires					\
+%build_linklib mmake=network-dhcp-libminires	\
+	libname=minires				\
 	files="$(FILES)"

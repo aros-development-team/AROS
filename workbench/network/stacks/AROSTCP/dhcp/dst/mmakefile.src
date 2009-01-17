@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM workbench-network-dhcp-libdst : arostcp-includes
+#MM network-dhcp-libdst : arostcp-includes
 
 USER_CFLAGS :=	-I../includes				\
 		-I$(AROS_DEVELOPMENT)/netinclude	\
@@ -8,6 +8,6 @@ USER_CFLAGS :=	-I../includes				\
 
 FILES :=	base64 dst_api dst_support hmac_link md5_dgst prandom
 
-%build_linklib mmake=workbench-network-dhcp-libdst	\
-	libname=dst					\
+%build_linklib mmake=network-dhcp-libdst\
+	libname=dst			\
 	files="$(FILES)"
