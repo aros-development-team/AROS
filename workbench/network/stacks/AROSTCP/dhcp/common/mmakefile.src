@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM contrib-dhcp-libdhcp : arostcp-includes
+#MM workbench-network-dhcp-libdhcp : arostcp-includes
 
 USER_CFLAGS :=	-I.. -I../includes -I$(AROS_DEVELOPMENT)/netinclude
 
@@ -9,6 +9,6 @@ FILES :=	alloc bpf comapi conflex ctrace discover dispatch	\
 		nit options packet parse print raw resolv socket	\
 		tables tr tree upf
 
-%build_linklib mmake=contrib-dhcp-libdhcp	\
-	libname=dhcp				\
+%build_linklib mmake=workbench-network-dhcp-libdhcp	\
+	libname=dhcp					\
 	files="$(FILES)"

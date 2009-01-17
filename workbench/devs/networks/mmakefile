@@ -1,11 +1,11 @@
-#MM- contrib-networking-drivers : \
-#MM     contrib-networking-drivers-nforce-$(AROS_TARGET_CPU) \
-#MM     contrib-networking-drivers-pcnet32-$(AROS_TARGET_CPU) \
-#MM     contrib-networking-drivers-viarhine-$(AROS_TARGET_CPU) \
-#MM     contrib-networking-drivers-e1000-$(AROS_TARGET_CPU) \
-#MM     contrib-networking-drivers-sis900-$(AROS_TARGET_CPU) \
+#MM- workbench-devs-networks-drivers : \
+#MM     devs-networks-drivers-nforce-$(AROS_TARGET_CPU) \
+#MM     devs-networks-drivers-pcnet32-$(AROS_TARGET_CPU) \
+#MM     devs-networks-drivers-viarhine-$(AROS_TARGET_CPU) \
+#MM     devs-networks-drivers-e1000-$(AROS_TARGET_CPU) \
+#MM     devs-networks-drivers-sis900-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-rtl8139-$(AROS_TARGET_CPU) \
-#MM     contrib-networking-drivers-etherlink3 \
-#MM     contrib-networking-drivers-intelpro100 \
-#MM     contrib-networking-drivers-prism2 \
-#MM     contrib-networking-drivers-rtl8029
+#MM     devs-networks-drivers-etherlink3 \
+#MM     devs-networks-drivers-intelpro100 \
+#MM     devs-networks-drivers-prism2 \
+#MM     devs-networks-drivers-rtl8029

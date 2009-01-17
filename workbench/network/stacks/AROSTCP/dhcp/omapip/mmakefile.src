@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM contrib-dhcp-libomapip : arostcp-includes
+#MM workbench-network-dhcp-libomapip : arostcp-includes
 
 USER_CFLAGS :=	-I.. -I../includes -I$(AROS_DEVELOPMENT)/netinclude
 
@@ -8,6 +8,6 @@ FILES :=	alloc array auth buffer connection convert dispatch	\
 		errwarn generic handle hash inet_addr iscprint listener	\
 		message mrtrace protocol result support test toisc trace
 
-%build_linklib mmake=contrib-dhcp-libomapip	\
+%build_linklib mmake=workbench-network-dhcp-libomapip	\
 	libname=omapip				\
 	files="$(FILES)"

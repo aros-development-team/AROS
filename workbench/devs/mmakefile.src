@@ -1,15 +1,17 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-complete : workbench-devs contrib-networking-drivers
+#MM- workbench-devs-complete : workbench-devs
 #MM- workbench-devs : \
 #MM    workbench-devs-fdsk \
 #MM    workbench-devs-ramdrive \
-#MM    workbench-devs-mountlist
+#MM    workbench-devs-mountlist \
+#MM    workbench-devs-networks-drivers
 #MM- workbench-devs-quick : \
 #MM    workbench-devs-fdsk-quick \
 #MM    workbench-devs-ramdrive-quick \
-#MM    workbench-devs-mountlist
+#MM    workbench-devs-mountlist \
+#MM    workbench-devs-networks-drivers
 
 #MM- workbench-fs-complete : workbench-fs
 #MM- workbench-fs : \

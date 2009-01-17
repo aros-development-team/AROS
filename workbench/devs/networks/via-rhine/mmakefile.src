@@ -1,12 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- contrib-networking-drivers-viarhine-i386 : contrib-networking-drivers-viarhine-x86
-#MM- contrib-networking-drivers-viarhine-x86_64 : contrib-networking-drivers-viarhine-x86
+#MM- devs-networks-drivers-viarhine-i386 : networking-drivers-viarhine-x86
+#MM- devs-networks-drivers-viarhine-x86_64 : networking-drivers-viarhine-x86
 
 FILES := handler unit via-rhine
 
-%build_module mmake=contrib-networking-drivers-viarhine-x86 \
+%build_module mmake=networking-drivers-viarhine-x86 \
     modname=viarhine modtype=device \
     files="via-rhine_init $(FILES)" \
     moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"
