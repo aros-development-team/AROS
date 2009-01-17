@@ -2143,6 +2143,7 @@
 /workbench/system/AboutAROS/authors.h
 /workbench/system/AboutAROS/sponsors.h
 /workbench/system/AboutAROS/acknowledgements.h
+/workbench/system/AboutAROS/svnrev.h
 
 # /workbench/system/AboutAROS/catalogs/
 /workbench/system/AboutAROS/catalogs/mmakefile
