@@ -1,22 +1,22 @@
 include $(TOP)/config/make.cfg
 
-#MM- workbench-network :	workbench-network-dhcp-client
+#MM- workbench-network : network-dhcp-client
 
-#MM workbench-network-client :	arostcp-includes	\
-#MM				workbench-network-client-quick
+#MM network-dhcp-client : arostcp-includes \
+#MM                       network-dhcp-client-quick
 
-#MM workbench-network-dhcp-client-quick : workbench-network-dhcp-libdhcp\
-#MM				workbench-network-dhcp-libdst		\
-#MM				workbench-network-dhcp-libomapip	\
-#MM				workbench-network-dhcp-libminires
+#MM network-dhcp-client-quick : network-dhcp-libdhcp   \
+#MM				network-dhcp-libdst    \
+#MM				network-dhcp-libomapip \
+#MM				network-dhcp-libminires
 
-USER_CFLAGS :=	-I../includes				\
-		-I$(AROS_DEVELOPMENT)/netinclude	\
+USER_CFLAGS :=	-I../includes			\
+		-I$(AROS_DEVELOPMENT)/netinclude\
 		-DCLIENT_PATH="C:"
 
 FILES :=	dhclient clparse
 
-%build_prog mmake=workbench-network-dhcp-client nix=yes		\
+%build_prog mmake=network-dhcp-client nix=yes		\
 	targetdir="$(AROS_CONTRIB)/Networking/Stacks/AROSTCP/C"	\
 	progname=dhclient					\
 	files="$(FILES)"					\
