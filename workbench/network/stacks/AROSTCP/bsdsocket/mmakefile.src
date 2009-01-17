@@ -164,8 +164,8 @@ USER_CFLAGS := \
 	-Wno-implicit-function-declaration -DAMITCP -DKERNEL \
 	-DDIRECTED_BROADCAST
 
-#MM- contrib-networking-stacks-arostcp : contrib-networking-stacks-arostcp-bsdsocket
-%build_prog mmake=contrib-networking-stacks-arostcp-bsdsocket \
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-bsdsocket
+%build_prog mmake=workbench-network-stacks-arostcp-bsdsocket \
     progname=$(STACK_NAME) \
     files="$(NET_C) $(NETINET_C) $(KERN_C) $(API_C)" \
     targetdir=$(CONTRIBDIR)/Networking/Stacks/$(STACK_NAME)/C

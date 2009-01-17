@@ -4,8 +4,8 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -isystem ../netinclude  -isystem  ../bsdsocket/
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
-#MM- contrib-networking-stacks-arostcp : contrib-networking-stacks-arostcp-c
-%build_progs mmake=contrib-networking-stacks-arostcp-c \
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-c
+%build_progs mmake=workbench-network-stacks-arostcp-c \
     files="ifconfig route ping resolve arp logger hostname" \
     targetdir=$(CONTRIBDIR)/Networking/Stacks/AROSTCP/C
 
