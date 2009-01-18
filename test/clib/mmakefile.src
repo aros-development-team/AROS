@@ -30,7 +30,8 @@ FILES := \
 	flock \
 	strtoul \
 	strtoull \
-	snprintf
+	snprintf \
+	setjmp
 
 EXEDIR := $(AROS_TESTS)/clib
 
