@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write libdefs.h. Part of genmodule.
@@ -50,6 +50,8 @@ void writeinclibdefs(struct config *cfg)
         out,
         "#ifndef _%s_LIBDEFS_H\n"
         "#define _%s_LIBDEFS_H\n"
+        "\n"
+        "#include <exec/types.h>\n"
         "\n",
         cfg->modulenameupper, cfg->modulenameupper
     );
@@ -146,6 +148,28 @@ void writeinclibdefs(struct config *cfg)
 		cfg->rootbase_field
 	);
 
+    if (cfg->options & OPTION_DUPPERID)
+    {
+        fprintf(out,
+                "\n"
+                "#ifndef GM_GETID\n"
+                "#define GM_GETID ((IPTR)FindTask(NULL))\n"
+                "\n"
+                "IPTR __GM_Id2(void);\n"
+                "#define GM_GETID2 __GM_Id2()\n"
+                "\n"
+                "#define __GM_OWNGETID\n"
+                "#endif\n"
+                "\n"
+                "#if defined(GM_GETID2) && !defined(GM_GETPARENTBASEID2)\n"
+                "LIBBASETYPEPTR GM_UNIQUENAME(__GetParentLibbase)(LIBBASETYPEPTR lh);\n"
+                "#define GM_GETPARENTBASEID2(lh) GM_UNIQUENAME(__GetParentLibbase)(lh)\n"
+                "\n"
+                "#define __GM_OWNPARENTBASEID2\n"
+                "#endif\n"
+         );
+    }
+        
     fprintf
     (
         out,
