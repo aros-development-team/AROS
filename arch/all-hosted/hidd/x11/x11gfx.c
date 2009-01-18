@@ -167,6 +167,14 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ TAG_DONE  	    	, 0UL       	    	}
     };
     
+    struct TagItem tags_1280_800[] =
+    {
+        { aHidd_Sync_HDisp      , 1280                  },
+        { aHidd_Sync_VDisp      , 800                   },
+        { aHidd_Sync_Description, (IPTR)"X11:1280x800"  },
+        { TAG_DONE              , 0UL                   }
+    };
+
     struct TagItem tags_1280_960[] = 
     {
     	{ aHidd_Sync_HDisp  	, 1280      	    	},
@@ -216,6 +224,7 @@ OOP_Object *X11Cl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_800_600	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1024_768	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1152_864	},
+        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_800   },
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_960	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1280_1024	},
 	{ aHidd_Gfx_SyncTags	, (IPTR)tags_1600_1200	},
