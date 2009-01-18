@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CachePreDMA() - Do what is necessary for DMA.
@@ -12,10 +12,13 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 
+extern void *priv_KernelBase;
+
 /*****************************************************************************
 
     NAME */
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
 	AROS_LH3(APTR, CachePreDMA,
 
@@ -66,12 +69,16 @@
 {
     AROS_LIBFUNC_INIT
 
+    void *KernelBase = priv_KernelBase;
+
+    void *addr = KrnVirtualToPhysical(address);
+
     /* At PreDMA stage only data caches need to be flushed */
     //if (flags & DMA_ReadFromRAM)
-    
+
     CacheClearE(address, *length, CACRF_ClearD);
 
-    return address;
+    return addr;
 
     AROS_LIBFUNC_EXIT
 } /* CachePreDMA() */
