@@ -297,7 +297,78 @@ AROS_LH2(int, KrnUnmapGlobal,
 	AROS_LIBFUNC_EXIT
 }
 
+AROS_LH1(void *, KrnVirtualToPhysical,
+		AROS_LHA(void *, virtual, A0),
+		struct KernelBase *, KernelBase, 0, Kernel)
+{
+	AROS_LIBFUNC_INIT
 
+	uint32_t msr;
+	uintptr_t virt = (uintptr_t)virtual;
+	uintptr_t phys = 0xffffffff;
+	uint32_t mask;
+	pte_t *pteg;
+	uint32_t vsid;
+	int i;
+
+	/* Calculate the hash function */
+	uint32_t hash = (((virt >> 12) & 0xffff) ^ (virt >> 28)) & 0x7ffff;
+
+	/* what vsid we are looking for? */
+	vsid = 0x80000000 | ((virt >> 28) << 7) | ((virt >> 22) & 0x3f);
+
+	/* Promote yourself in order to access the MMU table */
+	msr = goSuper();
+
+	/* What mask are we using? Depends on the size of MMU hashtable */
+	mask = ((rdspr(SDR1) & 0x1ff) << 16) | 0xffc0;
+
+	/* Get the first group of pte's */
+	pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash << 6) & mask));
+
+	/* Search the primary group */
+	for (i=0; i < 8; i++)
+	{
+		if (pteg[i].vsid == vsid)
+		{
+			phys = pteg[i].rpn & ~0xfff;
+			break;
+		}
+	}
+
+	/*
+	 * If the page was not found in primary group, get the second hash, second
+	 * vsid and search the secondary group.
+	 */
+	if (phys == 0xffffffff)
+	{
+		uint32_t hash2 = (~hash) & 0x7ffff;
+		vsid |= 0x40;
+		pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash2 << 6) & mask));
+
+		/* Search the secondary group */
+		for (i=0; i < 8; i++)
+		{
+			if (pteg[i].vsid == vsid)
+			{
+				phys = pteg[i].rpn & ~0xfff;
+				break;
+			}
+		}
+	}
+
+	goUser(msr);
+
+	/* If the page has been found, add the offset taken from virtual address. */
+	if (phys != 0xffffffff)
+	{
+		phys |= virt & 0xfff;
+	}
+
+	return (void*)phys;
+
+	AROS_LIBFUNC_EXIT
+}
 
 
 
