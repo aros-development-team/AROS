@@ -62,7 +62,7 @@ AROS_UFP5S(void, IntServer,
 
 const char exec_name[] = "exec.library";
 const char exec_idstring[] = "$VER: exec 41.11 (16.12.2000)\r\n";
-const char exec_fastname[] = "Fast Memory";
+const char exec_fastname[] = "System Memory";
 
 const short exec_Version = 41;
 const short exec_Revision = 11;
@@ -207,7 +207,7 @@ int exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] Adding memory\n"));
 
     AddMemList(0x07000000 - lowmem,
-               MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
+               MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
                0,
                (APTR)lowmem,
                (STRPTR)exec_fastname);
