@@ -151,7 +151,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
                     CopyMem(handler, AROS_BSTR_ADDR(devnode->dn_Handler), len);
                     AROS_BSTR_setstrlen(devnode->dn_Handler, len);
 
-                    D(bug("-Adding volume %s with SC=%d, EC=%d\n",
+                    D(bug("-AddVolume %s with SC=%d, EC=%d .. ",
                           &(devnode->dn_Ext.dn_AROS.dn_DevName[0]), StartCyl, EndCyl));
                     AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
                     D(bug("done\n"));
@@ -213,7 +213,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
             IOAlt   = 0;
             DMABase = 0;
             INTLine = 0;
-            bug("[ATA>>] Found more controllers\n");
+            bug("[ATA>>] Add_Device: Found more controllers\n");
             /*
              * we're all done. no idea what else they want from us
              */
@@ -221,7 +221,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
 	}
     }
 
-    D(bug("[ATA>>] IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
+    D(bug("[ATA>>] Add_Device: IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
 
     /*
      * initialize structure
@@ -246,7 +246,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
     ab->ab_Task         = 0;
     ab->ab_HandleIRQ    = 0;
 
-    D(bug("[ATA>>] Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
+    D(bug("[ATA>>] Add_Device: Analysing bus %d, units %d and %d\n", ab->ab_BusNum, ab->ab_BusNum<<1, (ab->ab_BusNum<<1)+1));
 
     /*
      * allocate DMA PRD
@@ -272,7 +272,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
         ata_init_unit(ab, 1);
     }
 
-    D(bug("[ATA>>] Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
+    D(bug("[ATA>>] Add_Device: Bus %ld: Unit 0 - %x, Unit 1 - %x\n", ab->ab_BusNum, ab->ab_Dev[0], ab->ab_Dev[1]));
 
     /*
      * start things up :)
@@ -363,17 +363,17 @@ AROS_UFH3(void, Enumerator,
         }
         OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
 
-	D(bug("[ATA.scanbus] IDE device %04x:%04x - IO: %x:%x DMA: %x\n", ProductID, VendorID, IOBase, IOAlt, DMABase));
-	Add_Device(IOBase, IOAlt, INTLine, DMABase, x, a);
-
+#warning "TODO: Check if status = OK and alt control = 0xff to identify AHCI devices (which we dont support!)"
+		D(bug("[ATA  ] Enumerator: IDE device %04x:%04x - IO: %x:%x DMA: %x\n", ProductID, VendorID, IOBase, IOAlt, DMABase));
+		Add_Device(IOBase, IOAlt, INTLine, DMABase, x, a);
     }
 
     /*
      * check dma status
      */
     if (DMABase != 0)
-        D(bug("[ATA  ] Bus0 status says %02x, Bus1 status says %02x\n", ata_in(2, DMABase), ata_in(10, DMABase)));
-    
+        D(bug("[ATA  ] Enumerator: Bus0 status says %02x, Bus1 status says %02x\n", ata_in(2, DMABase), ata_in(10, DMABase)));
+
     OOP_SetAttrs(Device, attrs);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
 
@@ -395,7 +395,7 @@ void ata_Scan(struct ataBase *base)
         0
     };
 
-    D(bug("[ATA--] Enumerating devices\n"));
+    D(bug("[ATA--] ata_Scan: Enumerating devices\n"));
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
@@ -431,7 +431,7 @@ void ata_Scan(struct ataBase *base)
         if (!base->ata_NoSubclass)
         {
            /* 
-             * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be find
+             * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be found
              * with the enumeration above. Do an explicit search now since ata.device may handle it
              * in legacy mode without any issues.
              * 
@@ -454,19 +454,20 @@ void ata_Scan(struct ataBase *base)
 
         OOP_DisposeObject(pci);
     }
-    if (!Args.CurrentBus) {
-	D(bug("[ATA--] No PCI devices found, attempting defaults\n"));
+    if (base->ata_Legacy) {
+	D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
 	for (i=0; i<4; i++)
 	    Add_Device(0, 0, 0, 0, i & 1, &Args);
     }
 
-
+	D(bug("[ATA--] ata_Scan: Init Bus Tasks..\n"));
     InitSemaphore(&ssem);
     ForeachNode(&base->ata_Buses, node)
     {
         ata_InitBusTask((struct ata_Bus*)node, &ssem);
     }
 
+	D(bug("[ATA--] ata_Scan: Waiting for busses to finish Init'ing\n"));
     /*
      * wait for all buses to complete their init
      */
@@ -476,6 +477,7 @@ void ata_Scan(struct ataBase *base)
      * and leave.
      */
     ReleaseSemaphore(&ssem);
+	D(bug("[ATA--] ata_Scan: Finished\n"));
 }
 
 /*
@@ -497,6 +499,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     /*
      * store library pointer so we can use it later
      */
+	LIBBASE->ata_Legacy = TRUE;
     LIBBASE->ata_32bit = FALSE;
     LIBBASE->ata_NoMulti = FALSE;
     LIBBASE->ata_NoDMA = FALSE;
@@ -506,9 +509,9 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
      * start initialization: 
      * obtain kernel parameters
      */
-    D(bug("[ATA--] ata.device initialization\n"));
+    D(bug("[ATA--] ata_init: ata.device initialization\n"));
     BootLoaderBase = OpenResource("bootloader.resource");
-    D(bug("[ATA--] BootloaderBase = %p\n", BootLoaderBase));
+    D(bug("[ATA--] ata_init: BootloaderBase = %p\n", BootLoaderBase));
     if (BootLoaderBase != NULL)
     {
         struct List *list;
@@ -521,24 +524,29 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
             {
                 if (strncmp(node->ln_Name, "ATA=", 4) == 0)
                 {
+                    if (strstr(node->ln_Name, "nolegacy"))
+                    {
+                        D(bug("[ATA  ] ata_init: Disabling Legacy ports\n"));
+                        LIBBASE->ata_Legacy = FALSE;
+                    }
                     if (strstr(node->ln_Name, "32bit"))
                     {
-                        D(bug("[ATA  ] Using 32-bit IO transfers\n"));
+                        D(bug("[ATA  ] ata_init: Using 32-bit IO transfers\n"));
                         LIBBASE->ata_32bit = TRUE;
                     }
-		    if (strstr(node->ln_Name, "nomulti"))
-		    {
-			D(bug("[ATA  ] Disabled multisector transfers\n"));
-			LIBBASE->ata_NoMulti = TRUE;
-		    }
+					if (strstr(node->ln_Name, "nomulti"))
+					{
+						D(bug("[ATA  ] ata_init: Disabled multisector transfers\n"));
+						LIBBASE->ata_NoMulti = TRUE;
+					}
                     if (strstr(node->ln_Name, "nodma"))
                     {
-                        D(bug("[ATA  ] Disabled DMA transfers\n"));
+                        D(bug("[ATA  ] ata_init: Disabled DMA transfers\n"));
                         LIBBASE->ata_NoDMA = TRUE;
                     }
                     if (strstr(node->ln_Name, "nosubclass"))
                     {
-                	D(bug("[ATA  ] Disabling Subclass check during PCI scan\n"));
+                	D(bug("[ATA  ] ata_init: Disabling Subclass check during PCI scan\n"));
                 	LIBBASE->ata_NoSubclass = TRUE;
                     }
                 }

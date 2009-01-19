@@ -164,12 +164,12 @@ static VOID ata_outsl(APTR address, UWORD port, ULONG count)
  * Very short delay (TM) by someone who assumes slow data ports.
  * well, glad it works anyways.
  */
-void ata_400ns()
+void ata_400ns(ULONG port)
 {
-    ata_in(ata_AltControl, 0x3f6);
-    ata_in(ata_AltControl, 0x3f6);
-    ata_in(ata_AltControl, 0x3f6);
-    ata_in(ata_AltControl, 0x3f6);
+    ata_in(ata_AltControl, port);
+    ata_in(ata_AltControl, port);
+    ata_in(ata_AltControl, port);
+    ata_in(ata_AltControl, port);
 }
 
 #else
@@ -177,7 +177,7 @@ extern VOID ata_insw(APTR address, UWORD port, ULONG count);
 extern VOID ata_insl(APTR address, UWORD port, ULONG count);
 extern VOID ata_outsw(APTR address, UWORD port, ULONG count);
 extern VOID ata_outsl(APTR address, UWORD port, ULONG count);
-extern void ata_400ns();
+extern void ata_400ns(ULONG port);
 #endif
 
 static void dump(APTR mem, ULONG len)
@@ -256,7 +256,7 @@ inline BOOL ata_SelectUnit(struct ata_Unit* unit)
 
     do 
     {
-        ata_400ns();
+        ata_400ns(unit->au_Bus->ab_Alt);
     } 
     while (0 != (ATAF_BUSY & ata_ReadStatus(unit->au_Bus)));
 
@@ -548,7 +548,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
          * delay the check - this was found needed for some hardware
          */
 
-        ata_400ns();
+        ata_400ns(unit->au_Bus->ab_Alt);
 
         /*
          * lets check if the drive is already good
@@ -615,7 +615,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
                  * no timeout just yet, but it's not a good idea to keep spinning like that.
                  * let's give the system some time.
                  */
-                ata_400ns();
+                ata_400ns(unit->au_Bus->ab_Alt);
                 // TODO: Put some delay here!
             }
         }
@@ -792,7 +792,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
      */
     DATA(bug("[ATA%02ld] Sending command\n", au->au_UnitNum));
     ata_out(block->command, ata_Command, port);
-    ata_400ns();
+    ata_400ns(au->au_Bus->ab_Alt);
     
     /*
      * In case of PIO write the drive won't issue an IRQ before first
@@ -921,7 +921,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
      */
     DATAPI(bug("[ATAPI] Issuing ATA_PACKET command.\n"));
     ata_out(ATA_PACKET, atapi_Command, port);
-    ata_400ns();
+    ata_400ns(unit->au_Bus->ab_Alt);
     
     ata_WaitBusyTO(unit, 30, FALSE, NULL);
     if (0 == (ata_ReadStatus(unit->au_Bus) & ATAF_DATAREQ))
@@ -941,7 +941,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
 
     DATAPI(bug("[ATAPI] Sending packet\n"));
     unit->au_outs(cmd, unit->au_Bus->ab_Port, 12);
-    ata_400ns();    /* give drive time to think about what we just said, then move on */
+    ata_400ns(unit->au_Bus->ab_Alt);    /* give drive time to think about what we just said, then move on */
     /* how much time could it take for drive to raise DMARQ signal?? */
     
     DATAPI(bug("[ATAPI] Status after packet: %lx\n", ata_ReadStatus(unit->au_Bus)));
@@ -957,7 +957,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
                 break;
             }
             DATAPI(bug("[ATAPI] status %02lx\n", ata_ReadStatus(unit->au_Bus)));
-            ata_400ns();
+            ata_400ns(unit->au_Bus->ab_Alt);
         }
 
         DATAPI(bug("[ATAPI] status %02lx\n", ata_ReadStatus(unit->au_Bus)));
@@ -2278,7 +2278,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
                 ata_out(0xa0 | (unit << 4), ata_DevHead, port);
 
                 while (ata_ReadStatus(bus) & ATAF_BUSY)
-                    ata_400ns();
+                    ata_400ns(bus->ab_Alt);
                     
                 DINIT(bug("[ATA  ] Further validating  ATA signature: %lx & 0x7f = 1, %lx & 0x10 = unit\n", ata_in(ata_Error, port), ata_in(ata_DevHead, port)));
 
@@ -2334,7 +2334,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         if (DEV_NONE != bus->ab_Dev[id])
         {
             ata_out(0xa0 | (id << 4), ata_DevHead, port);
-            ata_400ns();
+            ata_400ns(bus->ab_Alt);
 
             ata_out(0x04, ata_AltControl, alt);
             ata_usleep(tr, 10);                /* minimum required: 5us */
@@ -2342,7 +2342,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
             ata_usleep(tr, 20000);               /* minimum required: 2ms */
 
             ata_out(0xa0 | (id << 4), ata_DevHead, port);
-            ata_400ns();
+            ata_400ns(bus->ab_Alt);
 
             while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
                 ata_usleep(tr, 200);
@@ -2379,6 +2379,8 @@ void ata_InitBus(struct ata_Bus *bus)
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
 
+    bug("[ATA  ] ata_InitBus()\n");
+
     struct MsgPort *p = CreateMsgPort();
     struct timerequest *tr = (struct timerequest *)CreateIORequest((struct MsgPort *)p,
         sizeof(struct timerequest));
@@ -2387,6 +2389,8 @@ void ata_InitBus(struct ata_Bus *bus)
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
 
+    ata_ResetBus(tr, bus);
+    
     /* Disable IDE IRQ */
     ata_EnableIRQ(bus, FALSE);
 
@@ -2431,6 +2435,7 @@ void ata_InitBus(struct ata_Bus *bus)
     CloseDevice((struct IORequest *)tr);
     DeleteIORequest((struct IORequest *)tr);
     DeleteMsgPort(p);
+    bug("[ATA  ] ata_InitBus: Finished\n");
 }
 
 /*
