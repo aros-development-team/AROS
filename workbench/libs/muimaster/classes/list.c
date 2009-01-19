@@ -416,7 +416,6 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
     APTR entry_data;
     int col;
 
-    /* Preparses are not required to be set, so we clear them first */
     for (col = 0; col < data->columns; col++)
 	data->preparses[col] = data->ci[col].preparse;
 
@@ -535,14 +534,16 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
 /**************************************************************************
  Default hook to compare two list entries. Works for strings only.
 **************************************************************************/
-static int LCompare(struct ListEntry **a, struct ListEntry **b) {
+AROS_UFH3S(int, default_compare_func,
+AROS_UFHA(struct Hook *, h, A0),
+AROS_UFHA(char *, s1, A2),
+AROS_UFHA(char *, s2, A1))
+{
+    AROS_USERFUNC_INIT
 
-    int result;
-    struct ListEntry *one=*a;
-    struct ListEntry *two=*b;
-
-    result = Stricmp(one->data,two->data);
-    return result;
+    return Stricmp(s1, s2);
+    
+    AROS_USERFUNC_EXIT
 }
 
 /**************************************************************************
@@ -570,7 +571,7 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->intern_puddle_size = 2008;
     data->intern_tresh_size = 1024;
     data->input = 1;
-    data->default_compare_hook.h_Entry = (HOOKFUNC) LCompare;
+    data->default_compare_hook.h_Entry = (HOOKFUNC) default_compare_func;
     data->default_compare_hook.h_SubEntry = 0;
     data->compare_hook = &(data->default_compare_hook);
 
@@ -1868,6 +1869,16 @@ IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destru
 }
 
 /**************************************************************************
+ MUIM_List_Compare
+**************************************************************************/
+IPTR List__MUIM_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    return CallHookPkt(data->compare_hook, msg->entry1, msg->entry2);
+}
+
+/**************************************************************************
  MUIM_List_Display
 **************************************************************************/
 IPTR List__MUIM_Display(struct IClass *cl, Object *obj, struct MUIP_List_Display *msg)
@@ -2007,13 +2018,33 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj, struct MUIP_List_Sort *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
-    if (data->entries_num>1)
+    int i, j, max;
+    struct MUIP_List_Compare cmpmsg = {MUIM_List_Compare, NULL, NULL, 0, 0};
+
+    if (data->entries_num > 1)
     {
-	/* pointer magic taken from asl/fontreqsupport.c */
-	qsort(&data->entries[0],
-	      data->entries_num,
-	      sizeof(*data->entries),
-	      (int (*)(const void *, const void *)) data->compare_hook->h_Entry);
+	/*
+	    Simple sort algorithm. Feel free to improve it.
+	*/
+	for (i = 0; i < data->entries_num - 1; i++)
+	{
+	    max = i;
+	    for (j = i + 1; j < data->entries_num; j++)
+	    {
+		cmpmsg.entry1 = data->entries[max]->data;
+		cmpmsg.entry2 = data->entries[j]->data;
+		if ((LONG)DoMethodA(obj, (Msg)&cmpmsg) > 0)
+		{
+		    max = j;
+		}
+	    }
+	    if (i != max)
+	    {
+		APTR tmp = data->entries[i];
+		data->entries[i] = data->entries[max];
+		data->entries[max] = tmp;
+	    }
+	}
     }
 
     if (!(data->flags & LIST_QUIET))
@@ -2056,6 +2087,7 @@ BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 
 	case MUIM_List_Construct:          return List__MUIM_Construct(cl,obj,(APTR)msg);
 	case MUIM_List_Destruct:           return List__MUIM_Destruct(cl,obj,(APTR)msg);
+	case MUIM_List_Compare:            return List__MUIM_Compare(cl,obj,(APTR)msg);
 	case MUIM_List_Display:            return List__MUIM_Display(cl,obj,(APTR)msg);
 	case MUIM_List_SelectChange:       return List__MUIM_SelectChange(cl,obj,(APTR)msg);
 	case MUIM_List_CreateImage:        return List__MUIM_CreateImage(cl,obj,(APTR)msg);
