@@ -60,7 +60,7 @@ VOID ata_outsl(APTR address, UWORD port, ULONG count)
     }
 }
 
-void ata_400ns()
+void ata_400ns(ULONG port)
 {
     register ULONG tick_old, tick;
     
