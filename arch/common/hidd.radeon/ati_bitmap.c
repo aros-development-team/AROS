@@ -47,44 +47,44 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         EnterFunc(bug("[ATIBitMap] OnBitmap::New()\n"));
     else
         EnterFunc(bug("[ATIBitMap] OffBitmap::New()\n"));
-    
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
         atiBitMap *bm = OOP_INST_DATA(cl, o);
-        
+
         ULONG width, height, depth;
         UBYTE bytesPerPixel;
         ULONG fb;
-        
+
         OOP_Object *pf;
-        
+
         InitSemaphore(&bm->bmLock);
-        
+
         D(bug("[ATIBitMap] Super called. o=%p\n", o));
-        
+
         bm->onbm = (cl == sd->OnBMClass);
-        
+
         OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
         fb = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
-        
+
         D(bug("[ATIBitmap] width=%d height=%d depth=%d\n", width, height, depth));
-        
+
         if (width == 0 || height == 0 || depth == 0)
         {
             bug("[ATIBitMap] size mismatch!\n");
         }
-        
+
         if (depth <= 8)
             bytesPerPixel = 1;
         else if (depth <= 16)
             bytesPerPixel = 2;
         else
             bytesPerPixel = 4;
-        
+
         if (fb)
         {
             width = 640;
@@ -92,7 +92,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
             bytesPerPixel = 4;
             depth = 32;
         }
-        
+
         bm->width = width;
         bm->height = height;
         bm->pitch = (width * bytesPerPixel + 63) & ~63;
@@ -103,62 +103,63 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         bm->state = NULL;
         bm->BitMap = o;
         bm->usecount = 0;
-        
+
         if (bm->framebuffer != -1)
         {
             ULONG pitch64 = ((bm->pitch)) >> 6;
-            
+
             switch(depth)
             {
                 case 15:
                     bm->datatype = 3;
                     break;
-                    
+
                 case 16:
                     bm->datatype = 4;
                     break;
-                    
+
                 case 32:
                     bm->datatype = 6;
                     break;
-            }         
+            }
 
-            bm->dp_gui_master_cntl = 
+            bm->dp_gui_master_cntl =
                         ((bm->datatype << RADEON_GMC_DST_DATATYPE_SHIFT)
                         |RADEON_GMC_CLR_CMP_CNTL_DIS
                         |RADEON_GMC_DST_PITCH_OFFSET_CNTL);
-            
+
             bm->pitch_offset = ((bm->framebuffer >> 10) | (bm->pitch << 16));
-            
+
             D(bug("[ATIBitMap] PITCH_OFFSET=%08x\n", bm->pitch_offset));
         }
-        
+
         if (cl == sd->OnBMClass)
         {
             if (fb && bm->framebuffer != -1)
             {
-                bm->state = (struct CardState *)AllocPooled(sd->memPool, 
+                bm->state = (struct CardState *)AllocPooled(sd->memPool,
                             sizeof(struct CardState));
-                
+
                 bzero((APTR)(sd->Card.FrameBuffer + bm->framebuffer), 640*480*2);
-                
+
                 if (bm->state)
                 {
                     LOCK_HW
-            
-                    InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer, 
+
+                    InitMode(sd, bm->state, 640, 480, 16, 25200, bm->framebuffer,
                         640, 480,
                         656, 752, 800,
                         490, 492, 525);
-            
+
                     LoadState(sd, bm->state);
-                    DPMS(sd, sd->dpms);
-                    
+                    //LoadState(sd, sd->poweron_state);
+					DPMS(sd, sd->dpms);
+
                     RADEONEngineReset(sd);
                     RADEONEngineRestore(sd);
-                                
+
                     UNLOCK_HW
-            
+
                     return o;
                 }
             }
@@ -166,27 +167,27 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
             {
                 HIDDT_ModeID modeid;
                 OOP_Object *sync;
-                        
+
                 /* We should be able to get modeID from the bitmap */
                 OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-            
+
                 D(bug("[ATIBitMap] BM_ModeID=%x\n", modeid));
-                        
+
                 if (modeid != vHidd_ModeID_Invalid)
                 {
                     ULONG pixel;
                     ULONG hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
-                
+
                     /* Get Sync and PixelFormat properties */
                     struct pHidd_Gfx_GetMode __getmodemsg = {
                         modeID: modeid,
                         syncPtr:    &sync,
                         pixFmtPtr:  &pf,
                     }, *getmodemsg = &__getmodemsg;
-                
+
                     getmodemsg->mID = OOP_GetMethodID((STRPTR)CLID_Hidd_Gfx, moHidd_Gfx_GetMode);
                     OOP_DoMethod(sd->AtiObject, (OOP_Msg)getmodemsg);
-                
+
                     OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
                     OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
                     OOP_GetAttr(sync, aHidd_Sync_VDisp,         &vdisp);
@@ -196,29 +197,29 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
                     OOP_GetAttr(sync, aHidd_Sync_VSyncEnd,      &vend);
                     OOP_GetAttr(sync, aHidd_Sync_HTotal,        &htotal);
                     OOP_GetAttr(sync, aHidd_Sync_VTotal,        &vtotal);
-            
-                    bm->state = (struct CardState *)AllocPooled(sd->memPool, 
+
+                    bm->state = (struct CardState *)AllocPooled(sd->memPool,
                             sizeof(struct CardState));
-            
+
                     pixel /= 1000;
-            
+
                     if (bm->state)
                     {
                         LOCK_HW
-                        
+
                         InitMode(sd, bm->state, width, height, depth, pixel, bm->framebuffer,
                                     hdisp, vdisp,
                                     hstart, hend, htotal,
                                     vstart, vend, vtotal);
-                
+
                         LoadState(sd, bm->state);
                         DPMS(sd, sd->dpms);
 
                         RADEONEngineReset(sd);
                         RADEONEngineRestore(sd);
-                
+
                         UNLOCK_HW
-                
+
                         return o;
                     }
                 }
@@ -234,7 +235,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
             }
             else
                 bm->fbgfx = TRUE;
-    
+
             if ((bm->framebuffer != 0xffffffff) && (bm->framebuffer != 0))
             {
                 return o;
@@ -244,7 +245,7 @@ OOP_Object *METHOD(ATIOnBM, Root, New)
         OOP_MethodID disp_mid = OOP_GetMethodID((STRPTR)IID_Root, moRoot_Dispose);
         OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
     }
-   
+
     return NULL;
 }
 
@@ -260,7 +261,7 @@ VOID METHOD(ATIOnBM, Root, Dispose)
     LOCK_HW
 //    NVDmaKickoff(&sd->Card);
     RADEONWaitForIdleMMIO(sd);
-    
+
     if (bm->fbgfx)
     {
         FreeBitmapArea(sd, bm->framebuffer, bm->width, bm->height, bm->bpp);
@@ -301,7 +302,7 @@ VOID METHOD(ATIOnBM, Root, Get)
                 else
                     *msg->storage = bm->framebuffer;
                 break;
-        
+
             default:
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
@@ -309,7 +310,7 @@ VOID METHOD(ATIOnBM, Root, Get)
     else
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    }  
+    }
 }
 
 
@@ -322,9 +323,9 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
 
     D(bug("[ATI] Clear(%p)\n",
         bm->framebuffer));
-    
+
     LOCK_BITMAP
-    
+
     if (bm->fbgfx)
     {
         LOCK_HW
@@ -340,7 +341,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
                                      | RADEON_ROP[GC_DRMD(vHidd_GC_DrawMode_Copy)].pattern);
 
         RADEONWaitForFifo(sd, 4);
-    
+
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_BG(msg->gc));
         OUTREG(RADEON_DP_WRITE_MASK,      ~0);
@@ -359,7 +360,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
         ULONG *ptr = (ULONG*)bm->framebuffer;
         ULONG val = 0;
         int i = (bm->pitch * bm->height) >> 2;
-        
+
         switch (bm->bpp)
         {
             case 2:
@@ -370,10 +371,10 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
                 val = GC_BG(msg->gc) << 16 | (GC_BG(msg->gc) & 0xffff);
                 break;
         }
-        
+
         do { *ptr++ = val; } while(--i);
     }
-    
+
     UNLOCK_BITMAP
 }
 
@@ -409,7 +410,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
                                      | RADEON_ROP[GC_DRMD(gc)].pattern);
 
         RADEONWaitForFifo(sd, 4);
-    
+
         OUTREG(RADEON_DP_GUI_MASTER_CNTL, bm->dp_gui_master_cntl_clip);
         OUTREG(RADEON_DP_BRUSH_FRGD_CLR,  GC_FG(gc));
         OUTREG(RADEON_DP_WRITE_MASK,      ~0);
@@ -429,7 +430,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
     }
 
     UNLOCK_BITMAP
-    
+
 }
 
 
@@ -445,7 +446,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
         bm->framebuffer, msg->x1, msg->y1, msg->x2, msg->y2,GC_FG(gc)));
 
     LOCK_BITMAP
-    
+
     if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -458,12 +459,12 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
 
         RADEONWaitForFifo(sd, 1);
         OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
-        
-        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl 
+
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
                                      | RADEON_GMC_BRUSH_SOLID_COLOR
                                      | RADEON_GMC_SRC_DATATYPE_COLOR
                                      | RADEON_ROP[GC_DRMD(gc)].pattern);
-        
+
         if (sd->Card.Type >= RV200) {
             RADEONWaitForFifo(sd, 1);
             OUTREG(RADEON_DST_LINE_PATCOUNT,
@@ -478,7 +479,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
             y1 = GC_CLIPY1(gc);
             x2 = GC_CLIPX2(gc) + 1;
             y2 = GC_CLIPY2(gc) + 1;
-            
+
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
             OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
@@ -496,7 +497,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawLine)
         OUTREG(RADEON_DST_LINE_END,   (msg->y2 << 16) | msg->x2);
         OUTREG(RADEON_DST_LINE_START, (msg->y2 << 16) | msg->x2);
         OUTREG(RADEON_DST_LINE_END,   ((msg->y2+1) << 16) | (msg->x2+1));
-        
+
         UNLOCK_HW
     }
 
@@ -520,7 +521,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
     if (msg->minY == msg->maxY) addY = 1; else addY = 0;
 
     LOCK_BITMAP
-    
+
     if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -533,12 +534,12 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
 
         RADEONWaitForFifo(sd, 1);
         OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
-        
-        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl 
+
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
                                      | RADEON_GMC_BRUSH_SOLID_COLOR
                                      | RADEON_GMC_SRC_DATATYPE_COLOR
                                      | RADEON_ROP[GC_DRMD(gc)].pattern);
-        
+
         if (sd->Card.Type >= RV200) {
             RADEONWaitForFifo(sd, 1);
             OUTREG(RADEON_DST_LINE_PATCOUNT,
@@ -553,7 +554,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
             y1 = GC_CLIPY1(gc);
             x2 = GC_CLIPX2(gc) + 1;
             y2 = GC_CLIPY2(gc) + 1;
-            
+
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
             OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
@@ -569,16 +570,16 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawRect)
 
         OUTREG(RADEON_DST_LINE_START, (msg->minY << 16) | (msg->minX & 0xffff));
         OUTREG(RADEON_DST_LINE_END,   (msg->minY << 16) | (msg->maxX & 0xffff));
-        
+
         OUTREG(RADEON_DST_LINE_START, ((msg->minY + addY) << 16) | (msg->maxX & 0xffff));
         OUTREG(RADEON_DST_LINE_END,   ((msg->maxY << 16)) | (msg->maxX & 0xffff));
 
         OUTREG(RADEON_DST_LINE_START, ((msg->maxY << 16)) | ((msg->maxX - addX) & 0xffff));
         OUTREG(RADEON_DST_LINE_END,   ((msg->maxY << 16)) | ((msg->minX) & 0xffff));
-        
+
         OUTREG(RADEON_DST_LINE_START, ((msg->maxY - addY) << 16) | (msg->minX & 0xffff));
         OUTREG(RADEON_DST_LINE_END,   ((msg->minY + addY) << 16) | (msg->minX & 0xffff));
-       
+
         UNLOCK_HW
     }
 
@@ -599,7 +600,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
         bm->framebuffer));
 
     LOCK_BITMAP
-    
+
     if ((GC_LINEPAT(gc) =! (UWORD)~0) || !bm->fbgfx)
     {
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -612,12 +613,12 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
 
         RADEONWaitForFifo(sd, 1);
         OUTREG(RADEON_DST_PITCH_OFFSET, bm->pitch_offset);
-        
-        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl 
+
+        bm->dp_gui_master_cntl_clip = (bm->dp_gui_master_cntl
                                      | RADEON_GMC_BRUSH_SOLID_COLOR
                                      | RADEON_GMC_SRC_DATATYPE_COLOR
                                      | RADEON_ROP[GC_DRMD(gc)].pattern);
-        
+
         if (sd->Card.Type >= RV200) {
             RADEONWaitForFifo(sd, 1);
             OUTREG(RADEON_DST_LINE_PATCOUNT,
@@ -632,7 +633,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
             y1 = GC_CLIPY1(gc);
             x2 = GC_CLIPX2(gc) + 1;
             y2 = GC_CLIPY2(gc) + 1;
-            
+
             RADEONWaitForFifo(sd, 2);
             OUTREG(RADEON_SC_TOP_LEFT,        (y1 << 16) | x1);
             OUTREG(RADEON_SC_BOTTOM_RIGHT,    (y2 << 16) | x2);
@@ -650,7 +651,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPolygon)
             OUTREG(RADEON_DST_LINE_START, (msg->coords[i-1] << 16) | msg->coords[i-2]);
             OUTREG(RADEON_DST_LINE_END,   (msg->coords[i+1] << 16) | msg->coords[i]);
         }
-        
+
         UNLOCK_HW
     }
 
@@ -665,7 +666,7 @@ VOID METHOD(ATIOffBM, Hidd_BitMap, PutPixel)
 VOID METHOD(ATIOnBM, Hidd_BitMap, PutPixel)
 {
     atiBitMap *bm = OOP_INST_DATA(cl, o);
-    
+
     LOCK_BITMAP
 
     UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer + bm->bpp * msg->x + bm->pitch * msg->y);
@@ -706,9 +707,9 @@ HIDDT_Pixel METHOD(ATIOnBM, Hidd_BitMap, GetPixel)
 {
     HIDDT_Pixel pixel=0;
     atiBitMap *bm = OOP_INST_DATA(cl, o);
-    
+
     LOCK_BITMAP
-    
+
     UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer + bm->bpp * msg->x + bm->pitch * msg->y);
 
     if (bm->fbgfx)
@@ -774,7 +775,7 @@ BOOL METHOD(ATIOnBM, Hidd_BitMap, ObtainDirectAccess)
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
-    }   
+    }
 
     *msg->addressReturn = (UBYTE*)VideoData;
     *msg->widthReturn = bm->pitch / bm->bpp;
@@ -839,14 +840,14 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
                     msg->height,
                     msg->modulo,
                     bm->pitch,
-                    msg->pixlut         
+                    msg->pixlut
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
-        
-        case 4: 
+
+        case 4:
             {
             struct pHidd_BitMap_CopyLUTMemBox32 __m = {
                     sd->mid_CopyLUTMemBox32,
@@ -860,9 +861,9 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
                     msg->height,
                     msg->modulo,
                     bm->pitch,
-                    msg->pixlut         
+                    msg->pixlut
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
@@ -870,9 +871,9 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImageLUT)
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
             break;
-        
+
     } /* switch(data->bytesperpix) */
- 
+
     UNLOCK_BITMAP
 }
 
@@ -919,13 +920,13 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
                             msg->width,
                             msg->height,
                             msg->modulo,
-                            bm->pitch           
+                            bm->pitch
                     }, *m = &__m;
-                    
+
                     OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                
+
             case 2:
                 {
                     struct pHidd_BitMap_CopyMemBox16 __m = {
@@ -939,14 +940,14 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
                             msg->width,
                             msg->height,
                             msg->modulo,
-                            bm->pitch           
+                            bm->pitch
                     }, *m = &__m;
-                
+
                     OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-               
-            case 4: 
+
+            case 4:
                 {
                     struct pHidd_BitMap_CopyMemBox32 __m = {
                             sd->mid_CopyMemBox32,
@@ -959,16 +960,16 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
                             msg->width,
                             msg->height,
                             msg->modulo,
-                            bm->pitch           
+                            bm->pitch
                     }, *m = &__m;
-                
+
                     OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                 
+
                 } /* switch(data->bytesperpix) */
             break;
-    
+
         case vHidd_StdPixFmt_Native32:
             switch(bm->bpp)
             {
@@ -986,9 +987,9 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
                             bm->pitch
                     }, *m = &__m;
                 OOP_DoMethod(o, (OOP_Msg)m);
-                }   
+                }
                 break;
-                
+
             case 2:
                 {
                 struct pHidd_BitMap_PutMem32Image16 __m = {
@@ -1003,9 +1004,9 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
                             bm->pitch
                     }, *m = &__m;
                 OOP_DoMethod(o, (OOP_Msg)m);
-                }   
+                }
                 break;
-            
+
             case 4:
                 {
                 struct pHidd_BitMap_CopyMemBox32 __m = {
@@ -1019,16 +1020,16 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutImage)
                         msg->width,
                         msg->height,
                         msg->modulo,
-                        bm->pitch           
+                        bm->pitch
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                
+
             } /* switch(data->bytesperpix) */
             break;
-    
+
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
             break;
@@ -1045,7 +1046,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
-    
+
     IPTR VideoData = bm->framebuffer;
 
     if (bm->fbgfx)
@@ -1058,7 +1059,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
-    }   
+    }
 
     switch(msg->pixFmt)
     {
@@ -1080,11 +1081,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
                         bm->pitch,
                         msg->modulo
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                
+
             case 2:
                 {
                 struct pHidd_BitMap_CopyMemBox16 __m = {
@@ -1100,11 +1101,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
                         bm->pitch,
                         msg->modulo
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-            
+
             case 4:
                 {
                 struct pHidd_BitMap_CopyMemBox32 __m = {
@@ -1120,11 +1121,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
                         bm->pitch,
                         msg->modulo
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                 
+
                 } /* switch(data->bytesperpix) */
             break;
 
@@ -1142,13 +1143,13 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
                     msg->width,
                     msg->height,
                     bm->pitch,
-                    msg->modulo         
+                    msg->modulo
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                
+
             case 2:
                 {
                 struct pHidd_BitMap_GetMem32Image16 __m = {
@@ -1160,14 +1161,14 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
                     msg->width,
                     msg->height,
                     bm->pitch,
-                    msg->modulo         
+                    msg->modulo
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-            
-            case 4:     
+
+            case 4:
                 {
                 struct pHidd_BitMap_CopyMemBox32 __m = {
                             sd->mid_CopyMemBox32,
@@ -1182,22 +1183,22 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, GetImage)
                         bm->pitch,
                         msg->modulo
                 }, *m = &__m;
-            
+
                 OOP_DoMethod(o, (OOP_Msg)m);
                 }
                 break;
-                
+
             } /* switch(data->bytesperpix) */
             break;
-        
+
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
             break;
-        
+
     } /* switch(msg->pixFmt) */
 
     UNLOCK_BITMAP
-        
+
 }
 
 VOID METHOD(ATIOffBM, Hidd_BitMap, PutTemplate)
@@ -1208,7 +1209,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
-    
+
     IPTR VideoData = bm->framebuffer;
 
     if (bm->fbgfx)
@@ -1221,7 +1222,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
-    }   
+    }
 
 
     switch(bm->bpp)
@@ -1242,11 +1243,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
                     msg->height,
                     msg->inverttemplate
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
-        
+
         case 2:
             {
             struct pHidd_BitMap_PutMemTemplate16 __m = {
@@ -1263,11 +1264,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
                     msg->height,
                     msg->inverttemplate
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
-        
+
         case 4:
             {
             struct pHidd_BitMap_PutMemTemplate32 __m = {
@@ -1284,7 +1285,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutTemplate)
                     msg->height,
                     msg->inverttemplate
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
@@ -1301,7 +1302,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
     LOCK_BITMAP
-    
+
     IPTR VideoData = bm->framebuffer;
 
     if (bm->fbgfx)
@@ -1314,7 +1315,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
             RADEONWaitForIdleMMIO(sd);
             UNLOCK_HW
         }
-    }   
+    }
 
 
     switch(bm->bpp)
@@ -1341,11 +1342,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
                     msg->width,
                     msg->height
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
-        
+
         case 2:
             {
             struct pHidd_BitMap_PutMemPattern16 __m = {
@@ -1368,11 +1369,11 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
                     msg->width,
                     msg->height
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;
-        
+
         case 4:
             {
             struct pHidd_BitMap_PutMemPattern32 __m = {
@@ -1395,7 +1396,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, PutPattern)
                     msg->width,
                     msg->height
             }, *m = &__m;
-        
+
             OOP_DoMethod(o, (OOP_Msg)m);
             }
             break;

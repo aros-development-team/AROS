@@ -14,7 +14,7 @@
 
 #include <math.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/oop.h>
@@ -29,9 +29,9 @@ static void usleep(struct ati_staticdata *sd, ULONG usec)
     sd->tr.tr_node.io_Command = TR_ADDREQUEST;
     sd->tr.tr_time.tv_secs = usec / 1000000;
     sd->tr.tr_time.tv_micro = usec % 1000000;
-    
+
     DoIO((struct IORequest *)&sd->tr);
-    
+
     sd->mp.mp_SigTask = NULL;
 }
 
@@ -112,7 +112,7 @@ unsigned RADEONINPLL(struct ati_staticdata *sd, int addr)
 static void RADEONBlank(struct ati_staticdata *sd)
 {
     if (!sd->Card.IsSecondary) {
-        switch(sd->Card.MonType2) {
+        switch(sd->Card.MonType1) {
         case MT_LCD:
         case MT_CRT:
         case MT_DFP:
@@ -136,7 +136,7 @@ static void RADEONBlank(struct ati_staticdata *sd)
 static void RADEONUnblank(struct ati_staticdata *sd)
 {
     if (!sd->Card.IsSecondary) {
-        switch (sd->Card.MonType2) {
+        switch (sd->Card.MonType1) {
             case MT_LCD:
             case MT_CRT:
             case MT_DFP:
@@ -224,7 +224,7 @@ static void RADEONInitDispBandwidth(struct ati_staticdata *sd, struct CardState 
      * Determine if there is enough bandwidth for current display mode
      */
     mem_bw = sd->Card.mclk * (sd->Card.RamWidth / 8) * (sd->Card.IsDDR ? 2 : 1);
-   
+
     pix_clk = mode->pixelc/1000.0;
     pix_clk2 = 0;
 
@@ -413,12 +413,12 @@ static void RADEONInitDispBandwidth(struct ati_staticdata *sd, struct CardState 
  *
  * Note for current DAC mapping when calling this function:
  * For most of cards:
- * single CRT:  Driver doesn't change the existing CRTC->DAC mapping, 
+ * single CRT:  Driver doesn't change the existing CRTC->DAC mapping,
  *              CRTC1 could be driving either DAC or both DACs.
  * CRT+CRT:     CRTC1->TV DAC, CRTC2->Primary DAC
  * DFP/LCD+CRT: CRTC2->TV DAC, CRTC2->Primary DAC.
  * Some boards have two DACs reversed or don't even have a primary DAC,
- * this is reflected in pRADEONEnt->ReversedDAC. And radeon 7200 doesn't 
+ * this is reflected in pRADEONEnt->ReversedDAC. And radeon 7200 doesn't
  * have a second DAC.
  * It's kind of messy, we'll need to redo DAC mapping part some day.
  */
@@ -468,7 +468,7 @@ static void RADEONDacPowerSet(struct ati_staticdata *sd, BOOL IsOn, BOOL IsPrima
             }
             OUTREG(RADEON_FP2_GEN_CNTL, fp2_gen_cntl);
         }
-    }   
+    }
 }
 
 /* Define common registers for requested video mode */
@@ -527,7 +527,7 @@ static BOOL RADEONInitCrtcRegisters(struct ati_staticdata *sd, struct CardState 
             mode->VTotal        = mode->VDisplay + sd->Card.VBlank;
             mode->VSyncStart    = mode->VDisplay + sd->Card.VOverPlus;
             mode->VSyncEnd      = mode->VSyncStart + sd->Card.VSyncWidth;
-            
+
             mode->pixelc        = sd->Card.DotClock;
             mode->Flags         = sd->Card.Flags | RADEON_USE_RMX;
         }
@@ -540,19 +540,19 @@ static BOOL RADEONInitCrtcRegisters(struct ati_staticdata *sd, struct CardState 
                | ((mode->height < 400)
                   ? RADEON_CRTC_DBL_SCAN_EN
                   : 0));
-                  
-//    if ((sd->Card.MonType1 == MT_DFP) ||
-//        (sd->Card.MonType1 == MT_LCD)) {
-//        save->crtc_ext_cntl = RADEON_VGA_ATI_LINEAR | RADEON_XCRT_CNT_EN;
-//        save->crtc_gen_cntl &= ~(RADEON_CRTC_DBL_SCAN_EN |
-//                     RADEON_CRTC_CSYNC_EN |
-//                     RADEON_CRTC_INTERLACE_EN);
-//    } else {
+
+    if ((sd->Card.MonType1 == MT_DFP) ||
+        (sd->Card.MonType1 == MT_LCD)) {
+        save->crtc_ext_cntl = RADEON_VGA_ATI_LINEAR | RADEON_XCRT_CNT_EN;
+        save->crtc_gen_cntl &= ~(RADEON_CRTC_DBL_SCAN_EN |
+                     RADEON_CRTC_CSYNC_EN |
+                     RADEON_CRTC_INTERLACE_EN);
+    } else {
         save->crtc_ext_cntl = (RADEON_VGA_ATI_LINEAR |
                        RADEON_XCRT_CNT_EN |
                        RADEON_CRTC_CRT_ON);
-//    }
-    
+    }
+
     save->dac_cntl = (RADEON_DAC_MASK_ALL
               | RADEON_DAC_VGA_ADR_EN
               | RADEON_DAC_8BIT_EN);
@@ -570,7 +570,7 @@ static BOOL RADEONInitCrtcRegisters(struct ati_staticdata *sd, struct CardState 
     /* This works for double scan mode. */
     save->crtc_v_total_disp = (((mode->VTotal - 1) & 0xffff)
                    | ((mode->VDisplay - 1) << 16));
-    
+
     vsync_wid = mode->VSyncEnd - mode->VSyncStart;
     if (!vsync_wid) vsync_wid = 1;
 
@@ -635,12 +635,12 @@ static BOOL RADEONInitCrtc2Registers(struct ati_staticdata *sd, struct CardState
         default:
             return FALSE;
     }
-    
+
     if (mode->bpp == 16)
         save->bpp = 2;
     else
         save->bpp = 4;
-    
+
     save->crtc2_gen_cntl = (RADEON_CRTC2_EN
                 | RADEON_CRTC2_CRT2_ON
                 | RADEON_CRTC_ARGB_EN
@@ -703,7 +703,7 @@ static BOOL RADEONInitCrtc2Registers(struct ati_staticdata *sd, struct CardState
 
     /* This works for double scan mode. */
     save->crtc2_v_total_disp = (((mode->VTotal - 1) & 0xffff)
-                | ((mode->VDisplay - 1) << 16));   
+                | ((mode->VDisplay - 1) << 16));
 
     vsync_wid = mode->VSyncEnd - mode->VSyncStart;
     if (!vsync_wid) vsync_wid = 1;
@@ -731,14 +731,14 @@ static BOOL RADEONInitCrtc2Registers(struct ati_staticdata *sd, struct CardState
         if (sd->Card.Type == R200 || IS_R300_VARIANT) {
             save->fp2_gen_cntl   &= ~(R200_FP2_SOURCE_SEL_MASK |
                           RADEON_FP2_DVO_RATE_SEL_SDR);
-    
-            save->fp2_gen_cntl |= (R200_FP2_SOURCE_SEL_CRTC2 | 
+
+            save->fp2_gen_cntl |= (R200_FP2_SOURCE_SEL_CRTC2 |
                        RADEON_FP2_DVO_EN);
         } else {
             save->fp2_gen_cntl &= ~RADEON_FP2_SRC_SEL_MASK;
             save->fp2_gen_cntl |= RADEON_FP2_SRC_SEL_CRTC2;
         }
-    
+
         save->fp2_gen_cntl |= RADEON_FP2_PANEL_FORMAT; /* 24 bit format */
     }
 
@@ -800,11 +800,11 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
     } else {
         if (xres > sd->Card.PanelXRes) xres = sd->Card.PanelXRes;
         if (yres > sd->Card.PanelYRes) yres = sd->Card.PanelYRes;
-    
+
         Hratio = (float)xres/(float)sd->Card.PanelXRes;
         Vratio = (float)yres/(float)sd->Card.PanelYRes;
     }
-    
+
     if (Hratio == 1.0 || !(mode->Flags & RADEON_USE_RMX)) {
         save->fp_horz_stretch = sd->poweron_state->fp_horz_stretch;
         save->fp_horz_stretch &= ~(RADEON_HORZ_STRETCH_BLEND |
@@ -821,7 +821,7 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
                           RADEON_HORZ_AUTO_RATIO_INC));
         save->fp_horz_stretch |= (RADEON_HORZ_STRETCH_BLEND |
                       RADEON_HORZ_STRETCH_ENABLE);
-    
+
         save->fp_horz_stretch &= ~(RADEON_HORZ_AUTO_RATIO |
                        RADEON_HORZ_PANEL_SIZE);
         save->fp_horz_stretch |= ((sd->Card.PanelXRes / 8 - 1) << 16);
@@ -842,13 +842,13 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
                            RADEON_VERT_STRETCH_RESERVED)));
         save->fp_vert_stretch |= (RADEON_VERT_STRETCH_ENABLE |
                       RADEON_VERT_STRETCH_BLEND);
-    
+
         save->fp_vert_stretch &= ~(RADEON_VERT_AUTO_RATIO_EN |
                        RADEON_VERT_PANEL_SIZE);
         save->fp_vert_stretch |= ((sd->Card.PanelYRes-1) << 12);
     }
 
-    save->fp_gen_cntl = (sd->poweron_state->fp_gen_cntl & (ULONG)
+    save->fp_gen_cntl = (sd->poweron_state->fp_gen_cntl	& (ULONG)
              ~(RADEON_FP_SEL_CRTC2 |
                RADEON_FP_RMX_HVSYNC_CONTROL_EN |
                RADEON_FP_DFP_SYNC_SEL |
@@ -864,11 +864,11 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
 
     if (IS_R300_VARIANT || (sd->Card.Type == R200)) {
         save->fp_gen_cntl &= ~R200_FP_SOURCE_SEL_MASK;
-        if (sd->Card.Flags & RADEON_USE_RMX) 
+        if (sd->Card.Flags & RADEON_USE_RMX)
             save->fp_gen_cntl |= R200_FP_SOURCE_SEL_RMX;
         else
             save->fp_gen_cntl |= R200_FP_SOURCE_SEL_CRTC1;
-    } else 
+    } else
         save->fp_gen_cntl |= RADEON_FP_SEL_CRTC1;
 
     save->lvds_gen_cntl = sd->poweron_state->lvds_gen_cntl;
@@ -899,13 +899,13 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
                 save->tmds_pll_cntl = (sd->poweron_state->tmds_pll_cntl & 0xfff00000) | tmp;
         } else save->tmds_pll_cntl = tmp;
 
-        D(bug("[ATI] TMDS_PLL from %x to %x\n", 
-             sd->poweron_state->tmds_pll_cntl, 
+        D(bug("[ATI] TMDS_PLL from %x to %x\n",
+             sd->poweron_state->tmds_pll_cntl,
              save->tmds_pll_cntl));
 
         save->tmds_transmitter_cntl &= ~(RADEON_TMDS_TRANSMITTER_PLLRST);
 
-        if (IS_R300_VARIANT || (sd->Card.Type == R200) || !sd->Card.HasCRTC2)
+        if (IS_R300_VARIANT || (sd->Card.Type == R200)) // || !sd->Card.HasCRTC2)
             save->tmds_transmitter_cntl &= ~(RADEON_TMDS_TRANSMITTER_PLLEN);
         else /* weird, RV chips got this bit reversed? */
             save->tmds_transmitter_cntl |= (RADEON_TMDS_TRANSMITTER_PLLEN);
@@ -918,8 +918,8 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
          * Since there is no machnism for accessing ACPI evnets
          * and the driver currently doesn't know how to validate
          * a mode dynamically, we have to tell BIOS don't do
-         * display switching after X has started.  
-         * If LCD is on, lid close/open should still work 
+         * display switching after X has started.
+         * If LCD is on, lid close/open should still work
          * with below settings
          */
         if (sd->Card.MonType1 == MT_LCD) {
@@ -935,7 +935,7 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
             else if (sd->Card.MonType2 == MT_DFP)
                 save->bios_5_scratch = 0x0800;
             else
-                save->bios_5_scratch = 0x0; 
+                save->bios_5_scratch = 0x0;
         }
         save->bios_4_scratch = 0x4;
         save->bios_6_scratch = sd->poweron_state->bios_6_scratch | 0x40000000;
@@ -950,7 +950,7 @@ static void RADEONInitFPRegisters(struct ati_staticdata *sd, struct CardState *s
 static void RADEONInitPLLRegisters(struct ati_staticdata *sd, struct CardState *save, RADEONModeInfo *mode)
 {
     double freq = mode->pixelc/10.0;
-    
+
     struct {
         int divider;
         int bitvalue;
@@ -976,7 +976,7 @@ static void RADEONInitPLLRegisters(struct ati_staticdata *sd, struct CardState *
 
     for (post_div = &post_divs[0]; post_div->divider; ++post_div) {
         save->pll_output_freq = post_div->divider * freq;
-    
+
         if (save->pll_output_freq >= sd->Card.pll.min_pll_freq
             && save->pll_output_freq <= sd->Card.pll.max_pll_freq) break;
     }
@@ -1223,19 +1223,19 @@ RADEONMonitorType RADEONDisplayDDCConnected(struct ati_staticdata *sd, RADEONDDC
 {
     OOP_Object *i2c;
     RADEONMonitorType montyp = MT_NONE;
-    
+
     D(bug("[ATI] Probing monitor type\n"));
-    
+
     switch (type)
     {
         case DDC_MONID:
             sd->Card.DDCReg = RADEON_GPIO_MONID;
             break;
-            
+
         case DDC_DVI:
             sd->Card.DDCReg = RADEON_GPIO_DVI_DDC;
             break;
-           
+
         case DDC_VGA:
             sd->Card.DDCReg = RADEON_GPIO_VGA_DDC;
             break;
@@ -1243,57 +1243,57 @@ RADEONMonitorType RADEONDisplayDDCConnected(struct ati_staticdata *sd, RADEONDDC
         case DDC_CRT2:
             sd->Card.DDCReg = RADEON_GPIO_CRT2_DDC;
             break;
-            
+
         default:
             return MT_NONE;
     }
-    
+
     i2c = OOP_NewObject(sd->AtiI2C, NULL, NULL);
-    
+
     if (HIDD_I2C_ProbeAddress(i2c, 0xa0))
     {
         char edid[128];
         char wb[2] = {0, 0};
-        
+
         struct TagItem attrs[] = {
             { aHidd_I2CDevice_Driver,   (IPTR)i2c       },
             { aHidd_I2CDevice_Address,  0xa0            },
             { aHidd_I2CDevice_Name,     (IPTR)"Display" },
             { TAG_DONE, 0UL }
         };
-        
+
         D(bug("[ATI] I2C device found\n"));
-        
+
         OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
-        
+
         if (obj)
         {
             D(bug("[ATI] I2C Device @ %p\n", obj));
-            
+
             struct pHidd_I2CDevice_WriteRead msg;
-            
+
             msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
             msg.readBuffer = &edid[0];
             msg.readLength = 128;
             msg.writeBuffer = &wb[0];
             msg.writeLength = 1;
-            
+
             OOP_DoMethod(obj, &msg.mID);
-            
+
             int i;
-            
+
             D(bug("[ATI] DDC1 Dump:\n[ATI] "));
             for (i=0; i < 128; i++)
             {
                 D(bug("%02x ", edid[i]));
-                
+
                 if (i % 20 == 19)
                     D(bug("\n[ATI] "));
             }
             D(bug("\n"));
-            
+
             OOP_DisposeObject(obj);
-            
+
             if (edid[0x14] & 0x80) {
                 /* Note some laptops have a DVI output that uses internal TMDS,
                  * when its DVI is enabled by hotkey, LVDS panel is not used.
@@ -1312,9 +1312,9 @@ RADEONMonitorType RADEONDisplayDDCConnected(struct ati_staticdata *sd, RADEONDDC
             } else montyp = MT_CRT;
         }
     }
-    
+
     OOP_DisposeObject(i2c);
-    
+
     return montyp;
 }
 
@@ -1435,7 +1435,7 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
         sd->Card.PortInfo[1].TMDSType = TMDS_EXT;
         sd->Card.PortInfo[1].ConnectorType = CONNECTOR_CRT;
     }
-    
+
     /* always make TMDS_INT port first*/
     if (sd->Card.PortInfo[1].TMDSType == TMDS_INT) {
         RADEONConnector connector;
@@ -1452,7 +1452,7 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
             sd->Card.PortInfo[1] = connector;
         }
     }
-    
+
     if (sd->Card.HasSingleDAC) {
         /* For RS300/RS350/RS400 chips, there is no primary DAC. Force VGA port to use TVDAC*/
         if (sd->Card.PortInfo[0].ConnectorType == CONNECTOR_CRT) {
@@ -1465,15 +1465,16 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
     } else if (!sd->Card.HasCRTC2) {
         sd->Card.PortInfo[0].DACType = DAC_PRIMARY;
     }
-    
+
     if(((!sd->Card.HasCRTC2) || sd->Card.IsDellServer)) {
         if (sd->Card.PortInfo[0].MonType == MT_UNKNOWN) {
             if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, DDC_DVI, &sd->Card.PortInfo[0])));
             else if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, DDC_VGA, &sd->Card.PortInfo[0])));
             else if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, DDC_CRT2, &sd->Card.PortInfo[0])));
             else
-                sd->Card.PortInfo[0].MonType = MT_CRT; 
+                sd->Card.PortInfo[0].MonType = MT_CRT;
         }
+
         sd->Card.MonType1 = sd->Card.PortInfo[0].MonType;
 //        pRADEONEnt->MonInfo1 = sd->Card.PortInfo[0].  .MonInfo;
         sd->Card.MonType2 = MT_NONE;
@@ -1497,7 +1498,7 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
         /* A ddc capable display connected on DVI port */
         if (sd->Card.PortInfo[0].MonType == MT_UNKNOWN) {
             if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, sd->Card.PortInfo[0].DDCType, &sd->Card.PortInfo[0])));
-            else 
+            else
 //            if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, DDC_DVI, &sd->Card.PortInfo[0])));
 //            else if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, DDC_VGA, &sd->Card.PortInfo[0])));
 //            else if((sd->Card.PortInfo[0].MonType = RADEONDisplayDDCConnected(sd, DDC_CRT2, &sd->Card.PortInfo[0])));
@@ -1516,7 +1517,7 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
         if (sd->Card.PortInfo[1].MonType == MT_UNKNOWN) {
             if((sd->Card.PortInfo[1].MonType =
                 RADEONDisplayDDCConnected(sd, sd->Card.PortInfo[1].DDCType, &sd->Card.PortInfo[1])));
-            else 
+            else
 //            if((sd->Card.PortInfo[1].MonType = RADEONDisplayDDCConnected(sd, DDC_DVI, &sd->Card.PortInfo[1])));
 //            else if((sd->Card.PortInfo[1].MonType = RADEONDisplayDDCConnected(sd, DDC_VGA, &sd->Card.PortInfo[1])));
 //            else if((sd->Card.PortInfo[1].MonType = RADEONDisplayDDCConnected(sd, DDC_CRT2, &sd->Card.PortInfo[1])));
@@ -1525,10 +1526,10 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
                      (INREG(RADEON_FP2_GEN_CNTL) & RADEON_FP2_ON)) {
                 /* non-DDC TMDS panel connected through DVO */
                 sd->Card.PortInfo[1].MonType = MT_DFP;
-            } 
+            }
             //else
 //                sd->Card.PortInfo[1].MonType = RADEONCrtIsPhysicallyConnected(pScrn, !(pRADEONEnt->PortInfo[1].DACType));
-        
+
         }
     }
 
@@ -1588,7 +1589,7 @@ static BOOL RADEONQueryConnectedMonitors(struct ati_staticdata *sd)
 
 void InitMode(struct ati_staticdata *sd, struct CardState *save,
                 ULONG width, ULONG height, UBYTE bpp, ULONG pixelc, IPTR base,
-                ULONG HDisplay, ULONG VDisplay, 
+                ULONG HDisplay, ULONG VDisplay,
                 ULONG HSyncStart, ULONG HSyncEnd, ULONG HTotal,
                 ULONG VSyncStart, ULONG VSyncEnd, ULONG VTotal)
 {
@@ -1596,21 +1597,21 @@ void InitMode(struct ati_staticdata *sd, struct CardState *save,
         width, height, bpp, pixelc, base,
         HDisplay, VDisplay, HSyncStart, HSyncEnd, HTotal,
         VSyncStart, VSyncEnd, VTotal };
-      
+
     RADEONInitCommonRegisters(sd, save, &info);
 
     if (sd->Card.IsSecondary)
     {
         RADEONInitCrtc2Registers(sd, save, &info);
         RADEONInitPLL2Registers(sd, save, &info);
-    } 
+    }
     else
     {
         RADEONInitCrtcRegisters(sd, save, &info);
-        RADEONInitPLLRegisters(sd, save, &info);        
+        RADEONInitPLLRegisters(sd, save, &info);
     }
     RADEONInitFPRegisters(sd, save, &info);
-    
+
     save->pixelc = info.pixelc;
     save->HDisplay = info.HDisplay;
 }
@@ -1623,14 +1624,14 @@ void ShowHideCursor(struct ati_staticdata *sd, BOOL visible)
     {
         if (sd->Card.IsSecondary)
             OUTREGP(RADEON_CRTC2_GEN_CNTL, RADEON_CRTC2_CUR_EN, ~RADEON_CRTC2_CUR_EN);
-        else    
+        else
             OUTREGP(RADEON_CRTC_GEN_CNTL, RADEON_CRTC_CUR_EN, ~RADEON_CRTC_CUR_EN);
     }
     else
     {
         if (sd->Card.IsSecondary)
             OUTREGP(RADEON_CRTC2_GEN_CNTL, 0, ~RADEON_CRTC2_CUR_EN);
-        else        
+        else
             OUTREGP(RADEON_CRTC_GEN_CNTL, 0, ~RADEON_CRTC_CUR_EN);
     }
 }
@@ -1665,7 +1666,7 @@ void SaveState(struct ati_staticdata *sd, struct CardState *save)
         save->ppll_div_3   = RADEONINPLL(sd, RADEON_PPLL_DIV_3);
         save->htotal_cntl  = RADEONINPLL(sd, RADEON_HTOTAL_CNTL);
 
-        // CRTC    
+        // CRTC
         save->crtc_gen_cntl        = INREG(RADEON_CRTC_GEN_CNTL);
         save->crtc_ext_cntl        = INREG(RADEON_CRTC_EXT_CNTL);
         save->dac_cntl             = INREG(RADEON_DAC_CNTL);
@@ -1678,14 +1679,14 @@ void SaveState(struct ati_staticdata *sd, struct CardState *save)
         save->crtc_pitch           = INREG(RADEON_CRTC_PITCH);
         save->disp_merge_cntl      = INREG(RADEON_DISP_MERGE_CNTL);
         save->crtc_more_cntl       = INREG(RADEON_CRTC_MORE_CNTL);
-    
+
         if (sd->Card.IsDellServer) {
             save->tv_dac_cntl      = INREG(RADEON_TV_DAC_CNTL);
             save->dac2_cntl        = INREG(RADEON_DAC_CNTL2);
             save->disp_hw_debug    = INREG (RADEON_DISP_HW_DEBUG);
             save->crtc2_gen_cntl   = INREG(RADEON_CRTC2_GEN_CNTL);
         }
-    
+
         // Flat panel
         save->fp_crtc_h_total_disp = INREG(RADEON_FP_CRTC_H_TOTAL_DISP);
         save->fp_crtc_v_total_disp = INREG(RADEON_FP_CRTC_V_TOTAL_DISP);
@@ -1701,7 +1702,7 @@ void SaveState(struct ati_staticdata *sd, struct CardState *save)
         save->bios_4_scratch       = INREG(RADEON_BIOS_4_SCRATCH);
         save->bios_5_scratch       = INREG(RADEON_BIOS_5_SCRATCH);
         save->bios_6_scratch       = INREG(RADEON_BIOS_6_SCRATCH);
-    
+
         if (sd->Card.Type == RV280) {
             /* bit 22 of TMDS_PLL_CNTL is read-back inverted */
             save->tmds_pll_cntl ^= (1 << 22);
@@ -1713,7 +1714,7 @@ void SaveState(struct ati_staticdata *sd, struct CardState *save)
         save->dac2_cntl             = INREG(RADEON_DAC_CNTL2);
         save->disp_output_cntl      = INREG(RADEON_DISP_OUTPUT_CNTL);
         save->disp_hw_debug         = INREG (RADEON_DISP_HW_DEBUG);
-    
+
         save->crtc2_gen_cntl        = INREG(RADEON_CRTC2_GEN_CNTL);
         save->crtc2_h_total_disp    = INREG(RADEON_CRTC2_H_TOTAL_DISP);
         save->crtc2_h_sync_strt_wid = INREG(RADEON_CRTC2_H_SYNC_STRT_WID);
@@ -1722,12 +1723,12 @@ void SaveState(struct ati_staticdata *sd, struct CardState *save)
         save->crtc2_offset          = INREG(RADEON_CRTC2_OFFSET);
         save->crtc2_offset_cntl     = INREG(RADEON_CRTC2_OFFSET_CNTL);
         save->crtc2_pitch           = INREG(RADEON_CRTC2_PITCH);
-    
+
         save->fp2_h_sync_strt_wid   = INREG (RADEON_FP_H2_SYNC_STRT_WID);
         save->fp2_v_sync_strt_wid   = INREG (RADEON_FP_V2_SYNC_STRT_WID);
         save->fp2_gen_cntl          = INREG (RADEON_FP2_GEN_CNTL);
         save->disp2_merge_cntl      = INREG(RADEON_DISP2_MERGE_CNTL);
-    
+
         // PLL2
         save->p2pll_ref_div = RADEONINPLL(sd, RADEON_P2PLL_REF_DIV);
         save->p2pll_div_0   = RADEONINPLL(sd, RADEON_P2PLL_DIV_0);
@@ -1795,7 +1796,7 @@ static void RADEONRestoreCrtcRegisters(struct ati_staticdata *sd, struct CardSta
 static void RADEONRestoreCrtc2Registers(struct ati_staticdata *sd, struct CardState *restore)
 {
     ULONG crtc2_gen_cntl;
-    
+
     crtc2_gen_cntl = INREG(RADEON_CRTC2_GEN_CNTL) &
             (RADEON_CRTC2_VSYNC_DIS |
              RADEON_CRTC2_HSYNC_DIS |
@@ -1863,7 +1864,7 @@ static void RADEONRestoreFPRegisters(struct ati_staticdata *sd, struct CardState
         OUTREG(RADEON_BIOS_5_SCRATCH, restore->bios_5_scratch);
         OUTREG(RADEON_BIOS_6_SCRATCH, restore->bios_6_scratch);
     }
-    
+
     if (sd->Card.MonType1 != MT_DFP) {
         unsigned long tmpPixclksCntl = INPLL(sd, RADEON_PIXCLKS_CNTL);
 
@@ -2014,7 +2015,7 @@ static void RADEONRestorePLLRegisters(struct ati_staticdata *sd, struct CardStat
      OUTPLLP(sd, RADEON_PPLL_DIV_3,
              restore->ppll_div_3,
              ~RADEON_PPLL_POST3_DIV_MASK);
-     
+
      RADEONPLLWriteUpdate(sd);
      RADEONPLLWaitForReadUpdateComplete(sd);
 
@@ -2092,7 +2093,7 @@ void LoadState(struct ati_staticdata *sd, struct CardState *restore)
         RADEONRestorePLLRegisters(sd, restore);
 
         RADEONUnblank(sd);
-        
+
         RADEONInitDispBandwidth(sd, restore);
 
         SetGamma(sd, 1.0, 1.0, 1.0);
@@ -2105,7 +2106,7 @@ void LoadState(struct ati_staticdata *sd, struct CardState *restore)
         RADEONRestoreCrtc2Registers(sd, restore);
         RADEONRestorePLL2Registers(sd, restore);
     }
-    else 
+    else
     {
         RADEONRestoreCommonRegisters(sd, restore);
 
@@ -2123,7 +2124,7 @@ void LoadState(struct ati_staticdata *sd, struct CardState *restore)
     }
 
     RADEONUnblank(sd);
-    
+
     RADEONInitDispBandwidth(sd, restore);
 
     SetGamma(sd, 1.0, 1.0, 1.0);
@@ -2148,7 +2149,7 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
                 OUTREGP(RADEON_CRTC_EXT_CNTL, 0, ~mask1);
             }
             break;
-        
+
         case vHidd_Gfx_DPMSLevel_Standby:
              /* Screen: Off; HSync: Off, VSync: On */
             if (sd->Card.IsSecondary)
@@ -2161,7 +2162,7 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
                         ~mask1);
             }
             break;
-        
+
         case vHidd_Gfx_DPMSLevel_Suspend:
             /* Screen: Off; HSync: On, VSync: Off */
             if (sd->Card.IsSecondary)
@@ -2174,7 +2175,7 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
                         ~mask1);
             }
             break;
-       
+
         case vHidd_Gfx_DPMSLevel_Off:
             /* Screen: Off; HSync: Off, VSync: Off */
             if (sd->Card.IsSecondary)
@@ -2215,7 +2216,7 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
                 }
             }
         }
-    }   
+    }
     else if ((level == vHidd_Gfx_DPMSLevel_Off) ||
              (level == vHidd_Gfx_DPMSLevel_Suspend) ||
              (level == vHidd_Gfx_DPMSLevel_Standby))
@@ -2253,7 +2254,7 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
                 if (sd->Card.HasSecondary) {
                     RADEONDacPowerSet(sd, FALSE, sd->Card.ReversedDAC);
                 } else {
-                    /* single CRT, turning both DACs off, we don't really know 
+                    /* single CRT, turning both DACs off, we don't really know
                      * which DAC is actually connected.
                      */
                     RADEONDacPowerSet(sd, FALSE, TRUE);
@@ -2268,13 +2269,16 @@ void DPMS(struct ati_staticdata *sd, HIDDT_DPMSLevel level)
 BOOL RADEONInit(struct ati_staticdata *sd)
 {
     APTR int10_save = NULL;
-    
-    sd->Card.IsSecondary = FALSE;
-    
-    RADEONPreInt10Save(sd, &int10_save);
-    RADEONPostInt10Check(sd, int10_save);
 
-D(bug("[ATI] Radeon init\n"));
+    sd->Card.IsSecondary = FALSE;
+
+//    RADEONPreInt10Save(sd, &int10_save);
+//    RADEONPostInt10Check(sd, int10_save);
+
+    D(bug("[ATI] Radeon init\n"));
+#if AROS_BIG_ENDIAN
+    D(bug("[ATI] BigEndian machine\n"));
+#endif
 
     sd->Card.HasCRTC2 = TRUE;
     sd->Card.IsMobility = FALSE;
@@ -2283,11 +2287,11 @@ D(bug("[ATI] Radeon init\n"));
     sd->Card.HasSingleDAC = FALSE;
 
     sd->Card.PanelPwrDly = 500;
-    
+
     sd->Card.ChipErrata = 0;
-    
+
     D(bug("[ATI] flags:"));
-    
+
     switch (sd->Card.ProductID)
     {
         case 0x4c59:
@@ -2313,7 +2317,7 @@ D(bug("[ATI] Radeon init\n"));
             sd->Card.IsMobility = TRUE;
             D(bug(" IsMobility\n"));
             break;
-        
+
         case 0x4336:
         case 0x4337:
             sd->Card.IsMobility = TRUE;
@@ -2323,7 +2327,7 @@ D(bug("[ATI] Radeon init\n"));
             sd->Card.IsIGP = TRUE;
             D(bug(" IsIGP\n"));
             break;
-        
+
         case 0x5835:
         case 0x7835:
             sd->Card.IsMobility = TRUE;
@@ -2334,7 +2338,7 @@ D(bug("[ATI] Radeon init\n"));
             sd->Card.HasSingleDAC = TRUE;
             D(bug(" IsIGP HasSingleDAC\n"));
             break;
-        
+
         default:
             sd->Card.HasCRTC2 = FALSE;
     }
@@ -2380,17 +2384,17 @@ D(bug("[ATI] Radeon init\n"));
 
     /* Some production boards of m6 will return 0 if it's 8 MB */
     if (sd->Card.FbUsableSize == 0) sd->Card.FbUsableSize = 8192*1024;
-    
+
 #if 0
     if (sd->Card.IsSecondary) {
         /* FIXME: For now, split FB into two equal sections. This should
          * be able to be adjusted by user with a config option. */
         RADEONEntPtr pRADEONEnt = RADEONEntPriv(pScrn);
         RADEONInfoPtr  info1;
-        
+
         pScrn->videoRam /= 2;
         pRADEONEnt->pPrimaryScrn->videoRam = pScrn->videoRam;
-        
+
         info1 = RADEONPTR(pRADEONEnt->pPrimaryScrn);
         info1->FbMapSize  = pScrn->videoRam * 1024;
         info->LinearAddr += pScrn->videoRam * 1024;
@@ -2400,10 +2404,10 @@ D(bug("[ATI] Radeon init\n"));
 
     sd->Card.R300CGWorkaround = (sd->Card.Type == R300 &&
          (INREG(RADEON_CONFIG_CNTL) & RADEON_CFG_ATI_REV_ID_MASK)
-         == RADEON_CFG_ATI_REV_A11);    
-         
+         == RADEON_CFG_ATI_REV_A11);
+
     D(bug("[ATI] R300CGWorkaroung = %s\n", sd->Card.R300CGWorkaround? "Yes":"No"));
-    
+
     sd->Card.MemCntl            = INREG(RADEON_SDRAM_MODE_REG);
     sd->Card.BusCntl            = INREG(RADEON_BUS_CNTL);
 
@@ -2415,7 +2419,7 @@ D(bug("[ATI] Radeon init\n"));
         sd->Card.RamWidth, sd->Card.IsDDR ? "DDR":"SDR"));
 
     BitmapInit(sd);
-    
+
     /* RADEONPreInitDDC */
     sd->Card.DDC1 = FALSE;
     sd->Card.DDC2 = FALSE;
@@ -2447,11 +2451,11 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
     ULONG size = (((width * bpp + 63) & ~63) * height + 1023) & ~1023;
 
     LOCK_HW
-    
+
 //    Forbid();
 //    result = (IPTR)Allocate(&sd->CardMem, size);
 //    Permit();
-//   
+//
 //    /*
 //        If Allocate failed, make the 0xffffffff as return. If it succeeded, make
 //        the memory pointer relative to the begin of GFX memory
@@ -2462,7 +2466,7 @@ IPTR AllocBitmapArea(struct ati_staticdata *sd, ULONG width, ULONG height,
     Forbid();
     result = BitmapAlloc(sd, size);
     Permit();
-    
+
     D(bug("[ATI] AllocBitmapArea(%dx%d@%d) = %p\n", width, height, bpp, result));
 
     UNLOCK_HW
@@ -2485,25 +2489,25 @@ VOID FreeBitmapArea(struct ati_staticdata *sd, IPTR bmp, ULONG width, ULONG heig
 //    Deallocate(&sd->CardMem, ptr, size);
     BitmapFree(sd, bmp, size);
     Permit();
-    
+
     UNLOCK_HW
 }
 
 VOID SetGamma(struct ati_staticdata *sd, float r, float g, float b)
 {
     int i;
-    
+
     if (sd->Card.IsSecondary)
         PAL_SELECT(1);
     else
         PAL_SELECT(0);
-    
+
     for (i=0; i < 256; i++)
     {
         int ri = 256.0*pow((double)i / 256.0, 1/r);
         int gi = 256.0*pow((double)i / 256.0, 1/g);
         int bi = 256.0*pow((double)i / 256.0, 1/b);
-        
+
         RADEONWaitForFifo(sd, 32);
         OUTPAL(i, ri, gi, bi);
     }

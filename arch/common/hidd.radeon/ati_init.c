@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2003-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -56,10 +56,10 @@ AROS_UFH3(void, Enumerator,
     AROS_UFHA(OOP_Object *, pciDevice,  A2),
     AROS_UFHA(APTR,         message,    A1))
 {
-    AROS_USERFUNC_INIT  
+    AROS_USERFUNC_INIT
     LIBBASETYPEPTR LIBBASE = (LIBBASETYPEPTR)hook->h_Data;
     struct ati_staticdata *sd = &LIBBASE->sd;
-    
+
     struct ATIDevice *sup = (struct ATIDevice *)support;
     IPTR ProductID;
     IPTR VendorID;
@@ -70,7 +70,7 @@ AROS_UFH3(void, Enumerator,
     /* Get the Device's ProductID */
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
-    
+
     D(bug("[ATI] Enumerator: checking productid %04x vendorid %04x %08x\n",
           ProductID, VendorID, pciDevice));
 
@@ -78,7 +78,7 @@ AROS_UFH3(void, Enumerator,
     while (sup->VendorID)
     {
         BOOL found = FALSE;
-    
+
         if (sup->VendorID == VendorID)
         {
             if (!sup->masked_check && (sup->ProductID == ProductID))
@@ -105,24 +105,24 @@ AROS_UFH3(void, Enumerator,
                 { aHidd_PCIDevice_isMaster, TRUE }, /* Can work in BusMaster */
                 { TAG_DONE, 0UL },
             };
-    
+
             D(bug("[ATI] Enumerator: found productid %04x vendorid %04x masked_check %d\n",
                   sup->ProductID, sup->VendorID, sup->masked_check));
-        
+
             sd->Card.ProductID = ProductID;
             sd->Card.VendorID = VendorID;
             sd->Card.Type = sup->Type;
 
             /*
-                Fix PCI device attributes (perhaps already set, but if the 
+                Fix PCI device attributes (perhaps already set, but if the
                 ATI would be the second card in the system, it may stay
                 uninitialized.
             */
             OOP_SetAttrs(pciDevice, (struct TagItem*)&attrs);
-            
+
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
             sd->PCIDriver = driver;
-    
+
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (APTR)&buf);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, (APTR)&size);
 
@@ -134,9 +134,9 @@ AROS_UFH3(void, Enumerator,
             sd->CardMem.mh_Node.ln_Name = "ATI Framebuffer";
             sd->CardMem.mh_First = mc;
             sd->CardMem.mh_Lower = (APTR)mc;
-    
+
             D(bug("[ATI] Got framebuffer @ %x (size=%dMiB)\n", sd->Card.FrameBuffer, size>>20));
-    
+
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2, (APTR)&buf);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2, (APTR)&size);
 
@@ -146,8 +146,12 @@ AROS_UFH3(void, Enumerator,
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_RomBase, (APTR)&buf);
             OOP_GetAttr(pciDevice, aHidd_PCIDevice_RomSize, (APTR)&size);
 
-//            sd->Card.vbios_org = (APTR)HIDD_PCIDriver_MapPCI(driver, buf, size);
-            sd->Card.vbios_org = (APTR)HIDD_PCIDriver_MapPCI(driver, (APTR)0x000c0000, size);
+            D(bug("[ATI] RomBase provided by ATI card: %x\n", buf));
+
+            if (buf)
+            	sd->Card.vbios_org = (APTR)HIDD_PCIDriver_MapPCI(driver, buf, size);
+            else
+            	sd->Card.vbios_org = (APTR)HIDD_PCIDriver_MapPCI(driver, (APTR)0x000c0000, size);
             sd->Card.VBIOS = sd->Card.vbios_org;
             D(bug("[ATI] Got BIOS @ %x (size=%dKiB)\n", sd->Card.VBIOS, size>>10));
 
@@ -160,10 +164,10 @@ AROS_UFH3(void, Enumerator,
 
                 sd->CardMem.mh_Free = sd->Card.FbUsableSize;
                 sd->CardMem.mh_Upper = (APTR)(sd->CardMem.mh_Free + (IPTR)mc);
-        
+
                 mc->mc_Next = NULL;
                 mc->mc_Bytes = sd->CardMem.mh_Free;
-        
+
                 D(bug("[ATI] Usable size: %dKB\n", sd->CardMem.mh_Free >> 10));
 
                 sd->scratch_buffer = AllocBitmapArea(sd, 4096, 16, 4, TRUE);
@@ -172,7 +176,7 @@ AROS_UFH3(void, Enumerator,
                 OUTREG(RADEON_CUR_HORZ_VERT_OFF,RADEON_CUR_LOCK |  0);
                 OUTREG(RADEON_CUR_HORZ_VERT_POSN,RADEON_CUR_LOCK | 0);
                 OUTREG(RADEON_CUR_OFFSET, sd->Card.CursorStart);
-        
+
                 sd->PCIDevice = pciDevice;
 
                 /*-------- DO NOT CHANGE/REMOVE -------------*/
@@ -199,7 +203,7 @@ AROS_UFH3(void, Enumerator,
     D(bug("[ATI] Enumerator found a card (ProductID=%04x)\n", ProductID));
     D(bug("[ATI] The card is %ssupported\n",
             sd->PCIDevice ? "":"un"));
-   
+
     AROS_USERFUNC_EXIT
 }
 
@@ -207,7 +211,7 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct ati_staticdata *sd = &LIBBASE->sd;
 
-    struct OOP_ABDescr attrbases[] = 
+    struct OOP_ABDescr attrbases[] =
     {
         { (STRPTR)IID_Hidd_PCIDevice,   &HiddPCIDeviceAttrBase },
         { (STRPTR)IID_Hidd_BitMap,      &HiddBitMapAttrBase },
@@ -248,17 +252,17 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
 
             InitSemaphore(&LIBBASE->sd.HWLock);
             InitSemaphore(&LIBBASE->sd.MultiBMLock);
-        
+
             /* Initialize MsgPort */
             LIBBASE->sd.mp.mp_SigBit = SIGB_SINGLE;
             LIBBASE->sd.mp.mp_Flags = PA_SIGNAL;
             LIBBASE->sd.mp.mp_SigTask = FindTask(NULL);
             LIBBASE->sd.mp.mp_Node.ln_Type = NT_MSGPORT;
             NEWLIST(&LIBBASE->sd.mp.mp_MsgList);
-            
+
             LIBBASE->sd.tr.tr_node.io_Message.mn_ReplyPort = &LIBBASE->sd.mp;
             LIBBASE->sd.tr.tr_node.io_Message.mn_Length = sizeof(LIBBASE->sd.tr);
-            
+
             if (!OpenDevice((STRPTR)"timer.device", UNIT_MICROHZ, (struct IORequest *)&LIBBASE->sd.tr, 0))
             {
                 if ((LIBBASE->sd.PCIObject = OOP_NewObject(NULL, (STRPTR)CLID_Hidd_PCI, NULL)))
@@ -267,7 +271,7 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
                         h_Entry:    (IPTR (*)())Enumerator,
                         h_Data:     LIBBASE,
                     };
-            
+
                     struct TagItem Requirements[] = {
                         { tHidd_PCI_Interface,  0x00 },
                         { tHidd_PCI_Class,  0x03 },
@@ -275,27 +279,27 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
                         { tHidd_PCI_VendorID,   0x1002 }, // ATI VendorID. May require more of them
                         { TAG_DONE, 0UL }
                     };
-                    
+
                     HIDD_PCI_EnumDevices(LIBBASE->sd.PCIObject, &FindHook, Requirements);
-                    
+
                     return TRUE;
                 }
             }
-            
+
             OOP_ReleaseAttrBases(attrbases);
         }
 
         DeletePool(LIBBASE->sd.memPool);
     }
-    
+
     return FALSE;
 }
 
 static int ATI_Expunge(LIBBASETYPEPTR LIBBASE)
 {
     struct ati_staticdata *sd = &LIBBASE->sd;
-    
-    struct OOP_ABDescr attrbases[] = 
+
+    struct OOP_ABDescr attrbases[] =
     {
         { (STRPTR)IID_Hidd_PCIDevice,   &HiddPCIDeviceAttrBase },
         { (STRPTR)IID_Hidd_BitMap,      &HiddBitMapAttrBase },
@@ -308,7 +312,7 @@ static int ATI_Expunge(LIBBASETYPEPTR LIBBASE)
         { (STRPTR)IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
         { NULL, NULL }
     };
-    
+
     if (sd->PCIDevice)
     {
         IPTR size;

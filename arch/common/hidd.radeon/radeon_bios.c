@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ATI radeon driver. BIOS part.
@@ -28,7 +28,7 @@
 #include "radeon_macros.h"
 #include "radeon_bios.h"
 
-#define DEBUG 1 
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef HiddPCIDeviceAttrBase
@@ -65,7 +65,7 @@ BOOL RADEONGetBIOSInfo(struct ati_staticdata *sd)
 
     if (sd->Card.VBIOS[0] != 0x55 || sd->Card.VBIOS[1] != 0xaa) {
         D(bug("[ATI] Unrecognized BIOS signature, BIOS data will not be used\n"));
-        if (sd->Card.VBIOS != sd->Card.vbios_org) 
+        if (sd->Card.VBIOS != sd->Card.vbios_org)
             FreePooled(sd->memPool, sd->Card.VBIOS, 65536);
         sd->Card.VBIOS = NULL;
         return FALSE;
@@ -75,7 +75,7 @@ BOOL RADEONGetBIOSInfo(struct ati_staticdata *sd)
 
     if(!sd->Card.ROMHeaderStart) {
         D(bug("[ATI] Invalid ROM pointer, BIOS data will not be used\n"));
-        if (sd->Card.VBIOS != sd->Card.vbios_org) 
+        if (sd->Card.VBIOS != sd->Card.vbios_org)
             FreePooled(sd->memPool, sd->Card.VBIOS, 65536);
         sd->Card.VBIOS = NULL;
         return FALSE;
@@ -333,7 +333,7 @@ BOOL RADEONGetClockInfoFromBIOS(struct ati_staticdata *sd)
             sd->Card.sclk = RADEON_BIOS16(pll_info_block + 8) / 100.0;
             sd->Card.mclk = RADEON_BIOS16(pll_info_block + 10) / 100.0;
         }
-    }    
-    
+    }
+
     return TRUE;
 }
