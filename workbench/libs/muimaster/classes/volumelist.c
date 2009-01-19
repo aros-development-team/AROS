@@ -49,8 +49,13 @@ static void printSize(STRPTR string, size_t bufsize, UQUAD size)
     string[bufsize - 1] = '\0';
 }
 
-static APTR construct_func(struct Hook *hook, APTR pool, struct Volumelist_Entry *entry)
+AROS_UFH3S(APTR, construct_func,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Volumelist_Entry *, entry, A1))
 {
+    AROS_USERFUNC_INIT
+
     struct Volumelist_Entry *new;
     
     if ((new = AllocPooled(pool, sizeof(*new))))
@@ -58,15 +63,29 @@ static APTR construct_func(struct Hook *hook, APTR pool, struct Volumelist_Entry
     	*new = *entry;
     }
     return new;
+
+    AROS_USERFUNC_EXIT
 }
 
-static void destruct_func(struct Hook *hook, APTR pool, struct Volumelist_Entry *entry)
+AROS_UFH3S(void, destruct_func,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Volumelist_Entry *, entry, A1))
 {
+    AROS_USERFUNC_INIT
+
     FreePooled(pool, entry, sizeof(struct Volumelist_Entry));
+
+    AROS_USERFUNC_EXIT
 }
 
-static LONG display_func(struct Hook *hook, char **array, struct Volumelist_Entry *entry)
+AROS_UFH3S(LONG, display_func,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Volumelist_Entry *, entry, A1))
 {
+    AROS_USERFUNC_INIT
+
     /* MUI: logo | devicename | %-used | bytes free | bytes used */
     
     if (entry)
@@ -99,6 +118,8 @@ static LONG display_func(struct Hook *hook, char **array, struct Volumelist_Entr
     }
     
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -121,12 +142,9 @@ IPTR Volumelist__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
     	struct Volumelist_DATA *data = INST_DATA(cl, obj);
 	
-	data->construct_hook.h_Entry 	= HookEntry;
-	data->construct_hook.h_SubEntry = (HOOKFUNC)construct_func;
-	data->destruct_hook.h_Entry 	= HookEntry;
-	data->destruct_hook.h_SubEntry  = (HOOKFUNC)destruct_func;
-	data->display_hook.h_Entry  	= HookEntry;
-	data->display_hook.h_SubEntry 	= (HOOKFUNC)display_func;
+	data->construct_hook.h_Entry = (HOOKFUNC)construct_func;
+	data->destruct_hook.h_Entry  = (HOOKFUNC)destruct_func;
+	data->display_hook.h_Entry   = (HOOKFUNC)display_func;
 	
 	SetAttrs(obj, MUIA_List_ConstructHook, (IPTR)&data->construct_hook,
 	    	      MUIA_List_DestructHook,  (IPTR)&data->destruct_hook,
