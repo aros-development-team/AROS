@@ -110,6 +110,7 @@ struct ataBase
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_NoSubclass;
+   UBYTE                   ata_Legacy;
 
    /*
     * memory pool
