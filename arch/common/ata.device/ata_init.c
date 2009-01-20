@@ -72,7 +72,6 @@
 #include "ata.h"
 #include LC_LIBDEFS_FILE
 
-
 typedef struct 
 {
     struct ataBase     *ATABase;
@@ -218,8 +217,8 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
              * we're all done. no idea what else they want from us
              */
             return;
+		}
 	}
-    }
 
     D(bug("[ATA>>] Add_Device: IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
 
@@ -397,67 +396,70 @@ void ata_Scan(struct ataBase *base)
 
     D(bug("[ATA--] ata_Scan: Enumerating devices\n"));
 
-    pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+    if (base->ata_ScanFlags & ATA_SCANPCI) {
+		D(bug("[ATA--] ata_Scan: Checking for supported PCI devices ..\n"));
+		pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-    if (pci)
-    {
-        struct Hook FindHook = {
-            h_Entry:    (IPTR (*)())Enumerator,
-            h_Data:     &Args
-        };
+		if (pci)
+		{
+			struct Hook FindHook = {
+				h_Entry:    (IPTR (*)())Enumerator,
+				h_Data:     &Args
+			};
 
-        struct TagItem Requirements[] = {
-            {tHidd_PCI_Class,       0x01},
-            {tHidd_PCI_SubClass,    0x01}, 
-            {TAG_DONE,              0x00}
-        };
+			struct TagItem Requirements[] = {
+				{tHidd_PCI_Class,       0x01},
+				{tHidd_PCI_SubClass,    0x01}, 
+				{TAG_DONE,              0x00}
+			};
 
-        /*
-         * Do not chech the subclass if the proper kernel option was given. It may 
-         * It will let AROS use SATA controllers on some architectures, like eg. the 
-         * Intel ICH8.
-         */
-        if (base->ata_NoSubclass)
-            Requirements[1].ti_Tag = TAG_IGNORE;
+			/*
+			 * Do not chech the subclass if the proper kernel option was given. It may 
+			 * It will let AROS use SATA controllers on some architectures, like eg. the 
+			 * Intel ICH8.
+			 */
+			if (base->ata_NoSubclass)
+				Requirements[1].ti_Tag = TAG_IGNORE;
 
-        struct pHidd_PCI_EnumDevices enummsg = {
-            mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-            callback:       &FindHook,
-            requirements:   (struct TagItem *)&Requirements,
-        }, *msg = &enummsg;
-        
-        OOP_DoMethod(pci, (OOP_Msg)msg);
+			struct pHidd_PCI_EnumDevices enummsg = {
+				mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+				callback:       &FindHook,
+				requirements:   (struct TagItem *)&Requirements,
+			}, *msg = &enummsg;
+			
+			OOP_DoMethod(pci, (OOP_Msg)msg);
 
-        if (!base->ata_NoSubclass)
-        {
-           /* 
-             * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be found
-             * with the enumeration above. Do an explicit search now since ata.device may handle it
-             * in legacy mode without any issues.
-             * 
-             * Note: This chip is used on Sam440 board.
-             */
-            Requirements[0].ti_Tag = tHidd_PCI_VendorID;
-            Requirements[0].ti_Data = 0x1095;
-            Requirements[1].ti_Tag = tHidd_PCI_ProductID;
-            Requirements[1].ti_Data = 0x3114;
+			if (!base->ata_NoSubclass)
+			{
+			   /* 
+				 * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be found
+				 * with the enumeration above. Do an explicit search now since ata.device may handle it
+				 * in legacy mode without any issues.
+				 * 
+				 * Note: This chip is used on Sam440 board.
+				 */
+				Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+				Requirements[0].ti_Data = 0x1095;
+				Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+				Requirements[1].ti_Data = 0x3114;
 
-            OOP_DoMethod(pci, (OOP_Msg)msg);
+				OOP_DoMethod(pci, (OOP_Msg)msg);
 
-            Requirements[0].ti_Tag = tHidd_PCI_VendorID;
-            Requirements[0].ti_Data = 0x1095;
-            Requirements[1].ti_Tag = tHidd_PCI_ProductID;
-            Requirements[1].ti_Data = 0x3512;
+				Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+				Requirements[0].ti_Data = 0x1095;
+				Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+				Requirements[1].ti_Data = 0x3512;
 
-            OOP_DoMethod(pci, (OOP_Msg)msg);
-        }
+				OOP_DoMethod(pci, (OOP_Msg)msg);
+			}
 
-        OOP_DisposeObject(pci);
-    }
-    if (base->ata_Legacy) {
-	D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
-	for (i=0; i<4; i++)
-	    Add_Device(0, 0, 0, 0, i & 1, &Args);
+			OOP_DisposeObject(pci);
+		}
+	}
+    if (base->ata_ScanFlags & ATA_SCANLEGACY) {
+		D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
+		for (i=0; i<4; i++)
+			Add_Device(0, 0, 0, 0, i & 1, &Args);
     }
 
 	D(bug("[ATA--] ata_Scan: Init Bus Tasks..\n"));
@@ -499,7 +501,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     /*
      * store library pointer so we can use it later
      */
-	LIBBASE->ata_Legacy = TRUE;
+	LIBBASE->ata_ScanFlags = ATA_SCANPCI | ATA_SCANLEGACY;
     LIBBASE->ata_32bit = FALSE;
     LIBBASE->ata_NoMulti = FALSE;
     LIBBASE->ata_NoDMA = FALSE;
@@ -524,10 +526,15 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
             {
                 if (strncmp(node->ln_Name, "ATA=", 4) == 0)
                 {
+                    if (strstr(node->ln_Name, "nopci"))
+                    {
+                        D(bug("[ATA  ] ata_init: Disabling PCI device scan\n"));
+                        LIBBASE->ata_Legacy &= ~ATA_SCANPCI;
+                    }
                     if (strstr(node->ln_Name, "nolegacy"))
                     {
                         D(bug("[ATA  ] ata_init: Disabling Legacy ports\n"));
-                        LIBBASE->ata_Legacy = FALSE;
+                        LIBBASE->ata_Legacy &= ~ATA_SCANLEGACY;
                     }
                     if (strstr(node->ln_Name, "32bit"))
                     {
