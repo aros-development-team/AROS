@@ -529,12 +529,12 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                     if (strstr(node->ln_Name, "nopci"))
                     {
                         D(bug("[ATA  ] ata_init: Disabling PCI device scan\n"));
-                        LIBBASE->ata_Legacy &= ~ATA_SCANPCI;
+                        LIBBASE->ata_ScanFlags &= ~ATA_SCANPCI;
                     }
                     if (strstr(node->ln_Name, "nolegacy"))
                     {
                         D(bug("[ATA  ] ata_init: Disabling Legacy ports\n"));
-                        LIBBASE->ata_Legacy &= ~ATA_SCANLEGACY;
+                        LIBBASE->ata_ScanFlags &= ~ATA_SCANLEGACY;
                     }
                     if (strstr(node->ln_Name, "32bit"))
                     {
