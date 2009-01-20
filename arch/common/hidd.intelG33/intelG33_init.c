@@ -22,6 +22,7 @@
 #include <exec/lists.h>
 
 #include <hidd/graphics.h>
+#include <hidd/irq.h>
 #include <hidd/pci.h>
 #include <hidd/graphics.h>
 
@@ -35,6 +36,10 @@
 
 #include "intelG33_intern.h"
 #include "intelG33_regs.h"
+
+static void IntelG33_int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
+    D(bug("[G33IRQ] IntelG33 INTERRUPT\n"));
+}
 
 static BOOL Chip_Init(struct staticdata *sd) {
     D(bug("[G33] IntelG33 chip init\n"));
@@ -72,7 +77,7 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
 
 
-    if(IS_G33(ProductID)){
+    if( (IS_G33(ProductID) & (sd->pciG33 == NULL)) ){
         D(bug("[G33]   found (%04x:%04x)",VendorID, ProductID));
 
 /*-------- DO NOT CHANGE/REMOVE -------------*/
@@ -104,8 +109,11 @@ AROS_UFH3(void, Enumerator,
         /*
           Read some PCI config registers
         */
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,  (APTR)&Base0);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,  (APTR)&Base0size);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,   (APTR)&Base0);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,   (APTR)&Base0size);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &sd->G33IntLine);
+
+        D(bug("[G33]   IntLine %d\n",sd->G33IntLine));
 
         /*
           Maps the PCI address space to CPU address space
@@ -118,7 +126,7 @@ AROS_UFH3(void, Enumerator,
         Chip_Init(sd);
 
     }else{
-        D(bug("[G33]   not supported (%04x:%04x)",VendorID, ProductID));
+        D(bug("[G33]   not supported (%04x:%04x)\n",VendorID, ProductID));
     }
 
     AROS_USERFUNC_EXIT
@@ -163,8 +171,29 @@ static int IntelG33_Init(LIBBASETYPEPTR LIBBASE) {
                 HIDD_PCI_EnumDevices(LIBBASE->sd.pci, &FindHook, Requirements);
 
                 if (sd->pciG33 != NULL) {
-                    D(bug("[G33] IntelG33 hidd init (exit TRUE)\n"));
-                    return TRUE;
+
+                    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+
+                    sd->G33IRQ = AllocVec(sizeof (HIDDT_IRQ_Handler), MEMF_CLEAR | MEMF_PUBLIC);
+
+                    if (sd->G33IRQ) {
+                        struct pHidd_IRQ_AddHandler __msg__ = {
+                            mID:         OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_AddHandler),
+                            handlerinfo: sd->G33IRQ,
+                            id:          sd->G33IntLine,
+                        }, *msg = &__msg__;
+      
+                        sd->G33IRQ->h_Node.ln_Pri = 0;
+                        sd->G33IRQ->h_Node.ln_Name = "G33 Int";
+                        sd->G33IRQ->h_Code = IntelG33_int;
+                        sd->G33IRQ->h_Data = sd;
+	
+                        OOP_DoMethod(irq, (OOP_Msg)msg);
+                        OOP_DisposeObject(irq);
+                        D(bug("[G33]   Created interrupt handler\n"));
+                        D(bug("[G33] IntelG33 hidd init (exit TRUE)\n"));
+                        return TRUE;
+                    }
                 }
                 OOP_DisposeObject(sd->pci);
             }
