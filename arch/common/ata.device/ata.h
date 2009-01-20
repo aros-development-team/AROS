@@ -110,8 +110,9 @@ struct ataBase
    UBYTE                   ata_NoMulti;
    UBYTE                   ata_NoDMA;
    UBYTE                   ata_NoSubclass;
-   UBYTE                   ata_Legacy;
-
+   UBYTE                   ata_ScanFlags;
+#define ATA_SCANPCI			(1 << 0)
+#define ATA_SCANLEGACY		(1 << 1)
    /*
     * memory pool
     */
