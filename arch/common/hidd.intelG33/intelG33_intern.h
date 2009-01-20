@@ -13,6 +13,7 @@
 #include <exec/types.h>
 
 #include <hidd/graphics.h>
+#include <hidd/irq.h>
 
 #include "intelG33_regs.h"
 
@@ -61,6 +62,9 @@ struct staticdata {
     OOP_Object   *pci;
     OOP_Object   *pciG33;
     OOP_Object   *pciDriver;
+
+    IPTR          G33IntLine;
+    HIDDT_IRQ_Handler *G33IRQ;
 
     OOP_AttrBase  pciAttrBase;
     OOP_AttrBase  bitMapAttrBase;
