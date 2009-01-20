@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2008, The AROS Development Team. All rights reserved
+    Copyright ï¿½ 2004-2008, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -51,6 +51,7 @@
  * 2008-06-25  P. Fedin            Added "nomulti" flag
  *                                 PIO works correctly again
  * 2008-11-28  T. Wiszkowski       updated test unit ready to suit individual taste of hw manufacturers
+ * 2009-01-20  J. Koivisto         Modified bus reseting scheme
  */
 /*
  * TODO: 
@@ -2250,6 +2251,9 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
     ULONG port = bus->ab_Port;
     UBYTE tmp1, tmp2;
 
+    ata_out(0xa0 | (unit << 4), ata_DevHead, port);
+    ata_400ns(bus->ab_Alt);
+
     /* Check basic signature. All live devices should provide it */
     tmp1 = ata_in(ata_Count, port);
     tmp2 = ata_in(ata_LBALow, port);
@@ -2321,35 +2325,54 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit)
 
 void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 {
+
     ULONG alt = bus->ab_Alt;
     ULONG port = bus->ab_Port;
-    int id;
+    UBYTE sc, sn;
 
-    /*
-     * issue and clear the software reset signal
-     */
-    /* at this time both devices should report ready immediately */
-    for (id = 0; id < 2; id++)
-    {
-        if (DEV_NONE != bus->ab_Dev[id])
-        {
-            ata_out(0xa0 | (id << 4), ata_DevHead, port);
+// Set and then reset the soft reset bit in the Device Control
+// register.  This causes device 0 be selected.
+
+    D(bug("[ATALOW] Reset\n"));
+    ata_out(0xa0 | (0 << 4), ata_DevHead, port);    //Select it never the less
+    ata_400ns(bus->ab_Alt);
+
+    ata_out(0x04, ata_AltControl, alt);
+    ata_usleep(tr, 10);                 /* minimum required: 5us */
+    ata_out(0x02, ata_AltControl, alt);
+    ata_usleep(tr, 4*1000);             /* minimum required: 2ms */
+
+// If there is a device 0, wait for device 0 to set BSY=0.
+    if (DEV_NONE != bus->ab_Dev[0]) {
+        D(bug("[ATALOW] Wait DEV0 to clear BSY\n"));
+        while ( 1 ) {
+            ata_out(0xa0 | (0 << 4), ata_DevHead, port);
             ata_400ns(bus->ab_Alt);
-
-            ata_out(0x04, ata_AltControl, alt);
-            ata_usleep(tr, 10);                /* minimum required: 5us */
-            ata_out(0x02, ata_AltControl, alt);
-            ata_usleep(tr, 20000);               /* minimum required: 2ms */
-
-            ata_out(0xa0 | (id << 4), ata_DevHead, port);
-            ata_400ns(bus->ab_Alt);
-
-            while (0 != (ata_in(ata_Status, port) & ATAF_BUSY))
-                ata_usleep(tr, 200);
-
-            bus->ab_Dev[id] = ata_ReadSignature(bus, id);
+            if((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
+                break;
         }
     }
+
+// If there is a device 1, wait until device 1 allows
+// register access.
+    if (DEV_NONE != bus->ab_Dev[1]) {
+        D(bug("[ATALOW] Wait DEV1 to allow access\n"));
+        while ( 1 ) {
+            ata_out(0xa0 | (1 << 4), ata_DevHead, port);
+            ata_400ns(bus->ab_Alt);
+
+            sc = ata_in(2, port);
+            sn = ata_in(3, port);
+            D(bug("sc = %x sn = %x\n",sc, sn));
+            if ( ( sc == 0x01 ) && ( sn == 0x01 ) )
+                break;
+        }
+        D(bug("[ATALOW] Wait DEV1 to clear BSY\n"));
+        while(ata_ReadStatus(bus) & ATAF_BUSY);
+    }
+
+    bus->ab_Dev[0] = ata_ReadSignature(bus, 0);
+    bus->ab_Dev[1] = ata_ReadSignature(bus, 1);
 }
 
 /*
@@ -2370,6 +2393,7 @@ void ata_usleep(struct timerequest *tr, ULONG usec)
 
 /*
     Device scan routines - TO BE REPLACED
+        Note: This code checks if a drive "shadows" non existent drive's register
 */
 /*
  * same here
@@ -2388,8 +2412,6 @@ void ata_InitBus(struct ata_Bus *bus)
 
     bus->ab_Dev[0] = DEV_NONE;
     bus->ab_Dev[1] = DEV_NONE;
-
-    ata_ResetBus(tr, bus);
     
     /* Disable IDE IRQ */
     ata_EnableIRQ(bus, FALSE);
@@ -2411,6 +2433,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[0] = DEV_UNKNOWN;
+    D(bug("[ATALOW] DEV0 type = %x",bus->ab_Dev[0]));
 
     /* Select device 1 */
     ata_out(0xb0, ata_DevHead, port);
@@ -2429,6 +2452,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[1] = DEV_UNKNOWN;
+    D(bug("[ATALOW] DEV1 type = %x",bus->ab_Dev[1]));
 
     ata_ResetBus(tr, bus);
 
