@@ -24,6 +24,10 @@
 
 #include <aros/debug.h>
 
+#if DEBUG > 0
+#define RTL_DEBUG
+#endif
+
 #define RTLD(d) \
 	if (unit->rtl8139u_flags & IFF_DEBUG) \
 	{ \
