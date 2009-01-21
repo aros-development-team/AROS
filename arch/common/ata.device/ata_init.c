@@ -225,7 +225,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
             IOAlt   = 0;
             DMABase = 0;
             INTLine = 0;
-            bug("[ATA>>] Add_Device: Found more controllers\n");
+            bug("[ATA>>] Add_Device: Found more legacy controllers\n");
             /*
              * we're all done. no idea what else they want from us
              */
@@ -233,7 +233,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
 		}
 	}
 
-    D(bug("[ATA>>] Add_Device: IO: %x:%x DMA: %x\n", IOBase, IOAlt, DMABase));
+    D(bug("[ATA>>] Add_Device: IRQ %d, IO: %x:%x, DMA: %x\n", INTLine, IOBase, IOAlt, DMABase));
 
     /*
      * initialize structure
@@ -502,7 +502,7 @@ void ata_Scan(struct ataBase *base)
     if (base->ata_ScanFlags & ATA_SCANLEGACY) {
 		probedport = NULL;
 		D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
-		for (i=3; i!=0; i--)
+		for (i = 3; i >= 0; i--)
 		{
 			probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
 			probedport->atapp_x = i & 1;
