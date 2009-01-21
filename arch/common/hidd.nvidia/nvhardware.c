@@ -1902,6 +1902,9 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     ULONG   HBlankStart, HBlankEnd, VBlankStart, VBlankEnd, OrgHDisplay = HDisplay;
     ULONG mode_ratio, panel_ratio;
 
+    /* this should pad non-widescreen modes on widescreen displays, but is
+     * overruled by later flatpanel handling which simply adopts the full
+     * screen width and height */
     if (sd->Card.FlatPanel)
     {
         mode_ratio = (1 << 12) * HDisplay / VDisplay;
