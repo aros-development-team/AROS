@@ -2328,7 +2328,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
     ULONG alt = bus->ab_Alt;
     ULONG port = bus->ab_Port;
-    UBYTE sc, sn;
+    ULONG TimeOut;
 
 // Set and then reset the soft reset bit in the Device Control
 // register.  This causes device 0 be selected.
@@ -2342,37 +2342,66 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
     ata_out(0x02, ata_AltControl, alt);
     ata_usleep(tr, 4*1000);             /* minimum required: 2ms */
 
-// If there is a device 0, wait for device 0 to set BSY=0.
+// If there is a device 0, wait for device 0 to clear BSY.
     if (DEV_NONE != bus->ab_Dev[0]) {
         D(bug("[ATALOW] Wait DEV0 to clear BSY\n"));
+        TimeOut = 1000*1000;     //Timeout 1s ?
         while ( 1 ) {
-            ata_out(0xa0 | (0 << 4), ata_DevHead, port);
-            ata_400ns(bus->ab_Alt);
-            if((ata_ReadStatus(bus) & ATAF_BUSY) == 0)
+            if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                 break;
+            ata_usleep(tr, 1);
+            --TimeOut;
+            if (TimeOut == 1) {
+                D(bug("DEV0 TimeOut!\n"));
+                bus->ab_Dev[0] = DEV_NONE;
+                break;
+            }
         }
+        D(bug("DEV0 TimeOut left %d us\n",TimeOut));
     }
 
 // If there is a device 1, wait until device 1 allows
 // register access.
     if (DEV_NONE != bus->ab_Dev[1]) {
         D(bug("[ATALOW] Wait DEV1 to allow access\n"));
+        ata_out(0xa0 | (1 << 4), ata_DevHead, port);
+        ata_400ns(bus->ab_Alt);
+        TimeOut = 1000*1000;     //Timeout 1s ?
         while ( 1 ) {
-            ata_out(0xa0 | (1 << 4), ata_DevHead, port);
-            ata_400ns(bus->ab_Alt);
-
-            sc = ata_in(2, port);
-            sn = ata_in(3, port);
-            D(bug("sc = %x sn = %x\n",sc, sn));
-            if ( ( sc == 0x01 ) && ( sn == 0x01 ) )
+            if ( (ata_in(2, port) == 0x01) && (ata_in(3, port) == 0x01) )
                 break;
+            ata_usleep(tr, 1);
+            --TimeOut;
+            if (TimeOut == 1) {
+                D(bug("DEV1 1/2 TimeOut!\n"));
+                bus->ab_Dev[1] = DEV_NONE;
+                break;
+            }
         }
-        D(bug("[ATALOW] Wait DEV1 to clear BSY\n"));
-        while(ata_ReadStatus(bus) & ATAF_BUSY);
+        D(bug("DEV1 1/2 TimeOut left %d us\n",TimeOut));
+
+        if (DEV_NONE != bus->ab_Dev[1]) {
+            D(bug("[ATALOW] Wait DEV1 to clear BSY\n"));
+            TimeOut = 1000*1000;     //Timeout 1s ?
+            while ( 1 ) {
+                if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
+                    break;
+                ata_usleep(tr, 1);
+                --TimeOut;
+                if (TimeOut == 1) {
+                    D(bug("DEV1 2/2 TimeOut!\n"));
+                    bus->ab_Dev[1] = DEV_NONE;
+                    break;
+                }
+            }
+            D(bug("DEV1 2/2 TimeOut left %d us\n",TimeOut));
+        }
     }
 
-    bus->ab_Dev[0] = ata_ReadSignature(bus, 0);
-    bus->ab_Dev[1] = ata_ReadSignature(bus, 1);
+    if (DEV_NONE != bus->ab_Dev[0])
+        bus->ab_Dev[0] = ata_ReadSignature(bus, 0);
+    if (DEV_NONE != bus->ab_Dev[1])
+        bus->ab_Dev[1] = ata_ReadSignature(bus, 1);
 }
 
 /*
@@ -2393,7 +2422,7 @@ void ata_usleep(struct timerequest *tr, ULONG usec)
 
 /*
     Device scan routines - TO BE REPLACED
-        Note: This code checks if a drive "shadows" non existent drive's register
+        Note: This code checks if a drive "shadows" non existent drive's registers
 */
 /*
  * same here
@@ -2433,7 +2462,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[0] = DEV_UNKNOWN;
-    D(bug("[ATALOW] DEV0 type = %x",bus->ab_Dev[0]));
+    D(bug("[ATALOW] DEV0 type = %x\n",bus->ab_Dev[0]));
 
     /* Select device 1 */
     ata_out(0xb0, ata_DevHead, port);
@@ -2452,7 +2481,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[1] = DEV_UNKNOWN;
-    D(bug("[ATALOW] DEV1 type = %x",bus->ab_Dev[1]));
+    D(bug("[ATALOW] DEV1 type = %x\n",bus->ab_Dev[1]));
 
     ata_ResetBus(tr, bus);
 
