@@ -30,6 +30,21 @@
 
 #define IID_Hidd_nvBitMap	"hidd.bitmap.nv"
 
+	#define NV_RAMDAC_FP_VDISP_END 0x00680800
+	#define NV_RAMDAC_FP_VTOTAL 0x00680804
+	#define NV_RAMDAC_FP_VCRTC 0x00680808
+	#define NV_RAMDAC_FP_VSYNC_START 0x0068080c
+	#define NV_RAMDAC_FP_VSYNC_END 0x00680810
+	#define NV_RAMDAC_FP_VVALID_START 0x00680814
+	#define NV_RAMDAC_FP_VVALID_END 0x00680818
+	#define NV_RAMDAC_FP_HDISP_END 0x00680820
+	#define NV_RAMDAC_FP_HTOTAL 0x00680824
+	#define NV_RAMDAC_FP_HCRTC 0x00680828
+	#define NV_RAMDAC_FP_HSYNC_START 0x0068082c
+	#define NV_RAMDAC_FP_HSYNC_END 0x00680830
+	#define NV_RAMDAC_FP_HVALID_START 0x00680834
+	#define NV_RAMDAC_FP_HVALID_END 0x00680838
+
 enum {
     aoHidd_nvBitMap_Drawable,
 
@@ -96,6 +111,9 @@ typedef struct CardState {
     ULONG   timingH;
     ULONG   timingV;
     ULONG   displayV;
+    ULONG control;
+    ULONG crtcSync;
+    ULONG crtcVSync;
     struct {
 	UBYTE	attr[0x15];
 	UBYTE	crtc[0x41];
@@ -104,6 +122,8 @@ typedef struct CardState {
 	UBYTE	dac[256*3];
 	UBYTE	misc;
     } Regs;
+    ULONG   fp_horiz_regs[7];
+    ULONG   fp_vert_regs[7];
 } RIVA_HW_STATE;
 
 struct staticdata;
@@ -115,10 +135,12 @@ typedef struct Card {
     UBYTE	    *FrameBuffer;
     ULONG	    FrameBufferSize;
     ULONG	    FbUsableSize;
+    BOOL            FpScale;
     APTR	    Registers;
     CardType	    Type;
     BOOL	    FlatPanel;
     BOOL	    paletteEnabled;
+    BOOL            LVDS;
 
     UWORD	    Architecture;
     UWORD	    Chipset;	    /* == ProductID */
@@ -138,6 +160,9 @@ typedef struct Card {
     ULONG	    Television;
     ULONG	    fpWidth;
     ULONG	    fpHeight;
+    ULONG           fpVTotal;
+    ULONG           fpSyncs;
+    ULONG           FPDither;
     BOOL	    twoHeads;
     BOOL	    twoStagePLL;
     BOOL	    fpScaler;

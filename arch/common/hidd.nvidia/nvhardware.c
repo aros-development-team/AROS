@@ -145,10 +145,7 @@ void nv10GetConfig (struct staticdata *sd)
 
     pNv->CrystalFreqKHz = (pNv->PEXTDEV[0x0000/4] & (1 << 6)) ? 14318 : 13500;
     
-    if((implementation == 0x0170) ||
-       (implementation == 0x0180) ||
-       (implementation == 0x01F0) ||
-       (implementation >= 0x0250))
+    if(pNv->twoHeads && (implementation != 0x0110))
     {
        if(pNv->PEXTDEV[0x0000/4] & (1 << 22))
            pNv->CrystalFreqKHz = 27000;
@@ -330,16 +327,23 @@ static void nvGetClocks(NVPtr pNv, ULONG *MClk, ULONG *NVClk)
 
     if(pNv->Architecture >= NV_ARCH_40) {
        pll = pNv->PMC[0x4020/4];
-       P = (pll >> 16) & 0x03;
+       P = (pll >> 16) & 0x07;
        pll = pNv->PMC[0x4024/4];
        M = pll & 0xFF;
        N = (pll >> 8) & 0xFF;
-       MB = (pll >> 16) & 0xFF;
-       NB = (pll >> 24) & 0xFF;
+       if(((pNv->Chipset & 0xfff0) == 0x0290) ||
+          ((pNv->Chipset & 0xfff0) == 0x0390))
+       {
+          MB = 1;
+          NB = 1;
+       } else {
+          MB = (pll >> 16) & 0xFF;
+          NB = (pll >> 24) & 0xFF;
+       }
        *MClk = ((N * NB * pNv->CrystalFreqKHz) / (M * MB)) >> P;
 
        pll = pNv->PMC[0x4000/4];
-       P = (pll >> 16) & 0x03;  
+       P = (pll >> 16) & 0x07;  
        pll = pNv->PMC[0x4004/4];
        M = pll & 0xFF;
        N = (pll >> 8) & 0xFF;
@@ -418,6 +422,10 @@ static void nvGetClocks(NVPtr pNv, ULONG *MClk, ULONG *NVClk)
        P = (pll >> 16) & 0x0F;
        *NVClk = (N * pNv->CrystalFreqKHz / M) >> P;
     }
+
+#if 0
+    ErrorF("NVClock = %i MHz, MEMClock = %i MHz\n", *NVClk/1000, *MClk/1000);
+#endif
 }
 
 static void nv4CalcArbitration (
@@ -813,7 +821,6 @@ static void nv10UpdateArbitrationSettings (
     sim_data.pclk_khz       = VClk;
     sim_data.mclk_khz       = MClk;
     sim_data.nvclk_khz      = NVClk;
-
     nv10CalcArbitration(&fifo_data, &sim_data);
     if (fifo_data.valid) {
         int  b = fifo_data.graphics_burst_size >> 4;
@@ -1055,10 +1062,20 @@ void NVCalcStateExt (
             state->general  = bpp == 16 ? 0x00101100 : 0x00100100;
             state->repaint1 = hDisplaySize < 1280 ? 0x04 : 0x00;
             break;
+        case NV_ARCH_40:
+            if(!pNv->FlatPanel)
+                state->control = pNv->PRAMDAC0[0x0580/4] & 0xeffffeff;
+                /* fallthrough */
         case NV_ARCH_10:
         case NV_ARCH_20:
         case NV_ARCH_30:
         default:
+           if(((pNv->Chipset & 0xfff0) == 0x0240) ||
+	      ((pNv->Chipset & 0xfff0) == 0x03D0))
+	   {
+	        state->arbitration0 = 128;
+	        state->arbitration1 = 0x0480;
+	   } else
             if(((pNv->Chipset & 0xffff) == 0x01A0) ||
                ((pNv->Chipset & 0xffff) == 0x01f0))
             {
@@ -1110,7 +1127,7 @@ void NVLoadStateExt (
     RIVA_HW_STATE *state
 )
 {
-    int i;
+    int i, j;
 
     pNv->PMC[0x0140/4] = 0x00000000;
     pNv->PMC[0x0200/4] = 0xFFFF00FF;
@@ -1122,25 +1139,33 @@ void NVLoadStateExt (
     pNv->PTIMER[0x0100] = 0xFFFFFFFF;
 
     if(pNv->Architecture == NV_ARCH_04) {
-        pNv->PFB[0x0200/4] = state->config;
-    } else {
-        pNv->PFB[0x0240/4] = 0;
-        pNv->PFB[0x0244/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x0250/4] = 0;
-        pNv->PFB[0x0254/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x0260/4] = 0;
-        pNv->PFB[0x0264/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x0270/4] = 0;
-        pNv->PFB[0x0274/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x0280/4] = 0;
-        pNv->PFB[0x0284/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x0290/4] = 0;
-        pNv->PFB[0x0294/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x02A0/4] = 0;
-        pNv->PFB[0x02A4/4] = pNv->FrameBufferSize - 1;
-        pNv->PFB[0x02B0/4] = 0;
-        pNv->PFB[0x02B4/4] = pNv->FrameBufferSize - 1;
-    }
+        if (state)
+            pNv->PFB[0x0200/4] = state->config;
+    } else
+    if((pNv->Architecture < NV_ARCH_40) ||
+        ((pNv->Chipset & 0xfff0) == 0x0040))
+    {
+	for(i = 0; i < 8; i++) {
+	   pNv->PFB[(0x0240 + (i * 0x10))/4] = 0;
+	   pNv->PFB[(0x0244 + (i * 0x10))/4] = pNv->FrameBufferSize - 1;
+	 }
+     } else {
+	int regions = 12;
+	
+	if(((pNv->Chipset & 0xfff0) == 0x0090) ||
+	   ((pNv->Chipset & 0xfff0) == 0x01D0) ||
+	   ((pNv->Chipset & 0xfff0) == 0x0290) ||
+	   ((pNv->Chipset & 0xfff0) == 0x0390) ||
+	   ((pNv->Chipset & 0xfff0) == 0x03D0))
+	{
+	   regions = 15;
+	}
+	
+	for(i = 0; i < regions; i++) {
+	   pNv->PFB[(0x0600 + (i * 0x10))/4] = 0;
+	   pNv->PFB[(0x0604 + (i * 0x10))/4] = pNv->FrameBufferSize - 1;
+	}
+      }
  
     if(pNv->Architecture >= NV_ARCH_40) {
        pNv->PRAMIN[0x0000] = 0x80000010;
@@ -1360,6 +1385,13 @@ void NVLoadStateExt (
               pNv->PGRAPH[0x008C/4] = 0x60de8051; 
               pNv->PGRAPH[0x0090/4] = 0x00008000;
               pNv->PGRAPH[0x0610/4] = 0x00be3c5f;
+              pNv->PGRAPH[0x0bc4/4] |= 0x00008000;
+
+              /*j = pNv->Registers[0x1540/4] & 0xff;
+              if(j) {
+        	for(i = 0; !(j & 1); j >>= 1, i++);
+        	pNv->PGRAPH[0x5000/4] = i;
+              }*/
 
               if((pNv->Chipset & 0xfff0) == 0x0040) {
                  pNv->PGRAPH[0x09b0/4] = 0x83280fff;
@@ -1370,16 +1402,21 @@ void NVLoadStateExt (
               }
 
               switch(pNv->Chipset & 0xfff0) {
-              case 0x0040:	      
+              case 0x0040:
+              case 0x0210:
                  pNv->PGRAPH[0x09b8/4] = 0x0078e366;
                  pNv->PGRAPH[0x09bc/4] = 0x0000014c;
                  pNv->PFB[0x033C/4] &= 0xffff7fff;
                  break;
               case 0x00C0:
+              case 0x0120:
                  pNv->PGRAPH[0x0828/4] = 0x007596ff;
                  pNv->PGRAPH[0x082C/4] = 0x00000108;
                  break;
               case 0x0160:
+              case 0x01D0:
+              case 0x0240:
+              case 0x03D0:
                  pNv->PMC[0x1700/4] = pNv->PFB[0x020C/4];
                  pNv->PMC[0x1704/4] = 0;
                  pNv->PMC[0x1708/4] = 0;
@@ -1392,6 +1429,18 @@ void NVLoadStateExt (
                  pNv->PGRAPH[0x0828/4] = 0x0072cb77;
                  pNv->PGRAPH[0x082C/4] = 0x00000108;
                  break;
+              case 0x0220:
+        	pNv->PGRAPH[0x0860/4] = 0;
+        	pNv->PGRAPH[0x0864/4] = 0;
+        	pNv->PRAMDAC[0x0608/4] |= 0x00100000;
+        	break;
+              case 0x0090:
+              case 0x0290:
+              case 0x0390:
+        	pNv->PRAMDAC[0x0608/4] |= 0x00100000;
+        	pNv->PGRAPH[0x0828/4] = 0x07830610;
+        	pNv->PGRAPH[0x082C/4] = 0x0000016A;
+        	break;
               default:
                  break;
               };
@@ -1435,8 +1484,36 @@ void NVLoadStateExt (
               }
            }
 
-           for(i = 0; i < 32; i++)
-             pNv->PGRAPH[(0x0900/4) + i] = pNv->PFB[(0x0240/4) + i];
+        if((pNv->Architecture < NV_ARCH_40) ||
+           ((pNv->Chipset & 0xfff0) == 0x0040))
+        {
+        	for(i = 0; i < 32; i++) {
+        	  pNv->PGRAPH[(0x0900/4) + i] = pNv->PFB[(0x0240/4) + i];
+        	  pNv->PGRAPH[(0x6900/4) + i] = pNv->PFB[(0x0240/4) + i];
+        	}
+        } else {
+        	if(((pNv->Chipset & 0xfff0) == 0x0090) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x01D0) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x0290) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x0390) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x03D0))
+            {
+        	for(i = 0; i < 60; i++) {
+        	   pNv->PGRAPH[(0x0D00/4) + i] = pNv->PFB[(0x0600/4) + i];
+        	   pNv->PGRAPH[(0x6900/4) + i] = pNv->PFB[(0x0600/4) + i];
+        	}
+             } else {
+        	for(i = 0; i < 48; i++) {
+        	pNv->PGRAPH[(0x0900/4) + i] = pNv->PFB[(0x0600/4) + i];
+        	if(((pNv->Chipset & 0xfff0) != 0x0160) &&
+        	   ((pNv->Chipset & 0xfff0) != 0x0220) &&
+        	   ((pNv->Chipset & 0xfff0) != 0x0240))
+        	{
+        	        pNv->PGRAPH[(0x6900/4) + i] = pNv->PFB[(0x0600/4) + i];
+        	}
+               }
+             }
+           }
 
            if(pNv->Architecture >= NV_ARCH_40) {
               if((pNv->Chipset & 0xfff0) == 0x0040) {
@@ -1449,9 +1526,18 @@ void NVLoadStateExt (
                  pNv->PGRAPH[0x0824/4] = 0;
                  pNv->PGRAPH[0x0864/4] = pNv->FrameBufferSize - 1;
                  pNv->PGRAPH[0x0868/4] = pNv->FrameBufferSize - 1;
-              } else {
-                 pNv->PGRAPH[0x09F0/4] = pNv->PFB[0x0200/4];
-                 pNv->PGRAPH[0x09F4/4] = pNv->PFB[0x0204/4];
+               } else {
+                if(((pNv->Chipset & 0xfff0) == 0x0090) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x01D0) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x0290) ||
+        	   ((pNv->Chipset & 0xfff0) == 0x0390))
+        	{
+        	   pNv->PGRAPH[0x0DF0/4] = pNv->PFB[0x0200/4];
+        	   pNv->PGRAPH[0x0DF4/4] = pNv->PFB[0x0204/4];
+                 } else {
+                   pNv->PGRAPH[0x09F0/4] = pNv->PFB[0x0200/4];
+                   pNv->PGRAPH[0x09F4/4] = pNv->PFB[0x0204/4];
+                 }
                  pNv->PGRAPH[0x69F0/4] = pNv->PFB[0x0200/4];
                  pNv->PGRAPH[0x69F4/4] = pNv->PFB[0x0204/4];
 
@@ -1519,6 +1605,11 @@ void NVLoadStateExt (
     pNv->PFIFO[0x0494] = 0x00000001;
     pNv->PFIFO[0x0495] = 0x00000001;
     pNv->PFIFO[0x0140] = 0x00000001;
+
+    if(!state) {
+        pNv->CurrentState = NULL;
+        return;
+    }
 
     if(pNv->Architecture >= NV_ARCH_10) {
         if(pNv->twoHeads) {
@@ -1589,6 +1680,10 @@ void NVLoadStateExt (
     VGA_WR08(pNv->PCIO, 0x03D5, state->interlace);
 
     if(!pNv->FlatPanel) {
+       if(pNv->Architecture >= NV_ARCH_40) {
+           pNv->PRAMDAC0[0x0580/4] = state->control;
+       }
+
        pNv->PRAMDAC0[0x050C/4] = state->pllsel;
        pNv->PRAMDAC0[0x0508/4] = state->vpll;
        if(pNv->twoHeads)
@@ -1599,27 +1694,12 @@ void NVLoadStateExt (
        }
     } else {
        pNv->PRAMDAC[0x0848/4] = state->scale;
-
-
-       /* begin flat panel hacks */
-       /* This is unfortunate, but some chips need this register
-          tweaked or else you get artifacts where adjacent pixels are
-          swapped.  There are no hard rules for what to set here so all
-          we can do is experiment and apply hacks. */
-
-       if(((pNv->Chipset & 0xffff) == 0x0328) && (state->bpp == 32)) {
-          /* At least one NV34 laptop needs this workaround. */
-          pNv->PRAMDAC[0x0828/4] &= ~1;
-       }
-
-       if((pNv->Chipset & 0xfff0) == 0x0310) {
-          pNv->PRAMDAC[0x0828/4] |= 1;
-       }
-
-       /* end flat panel hacks */
+       pNv->PRAMDAC[0x0828/4] = state->crtcSync;
+       pNv->PRAMDAC[0x0808/4] = state->crtcVSync;
     }
+    
     pNv->PRAMDAC[0x0600/4] = state->general;
-
+    
     pNv->PCRTC[0x0140/4] = 0;
     pNv->PCRTC[0x0100/4] = 1;
 
@@ -1678,6 +1758,10 @@ void NVUnloadStateExt
     state->scale        = pNv->PRAMDAC[0x0848/4];
     state->config       = pNv->PFB[0x0200/4];
 
+    if(pNv->Architecture >= NV_ARCH_40 && !pNv->FlatPanel) {
+	state->control = pNv->PRAMDAC0[0x0580/4];
+    }
+
     if(pNv->Architecture >= NV_ARCH_10) {
         if(pNv->twoHeads) {
            state->head     = pNv->PCRTC0[0x0860/4];
@@ -1703,6 +1787,11 @@ void NVUnloadStateExt
            state->timingV = VGA_RD08(pNv->PCIO, 0x03D5);
         }
     }
+
+    if(pNv->FlatPanel) {
+	state->crtcSync = pNv->PRAMDAC[0x0828/4];
+	state->crtcVSync = pNv->PRAMDAC[0x0808/4];
+     }
 }
 
 void NVSetStartAddress (
@@ -1710,7 +1799,12 @@ void NVSetStartAddress (
     ULONG start
 )
 {
-    pNv->PCRTC[0x800/4] = start;
+    /*if (pNv->VBEDualhead) {
+	pNv->PCRTC0[0x800/4] = start;
+	pNv->PCRTC0[0x2800/4] = start + pNv->vbeCRTC1Offset;
+    } else {*/
+        pNv->PCRTC[0x800/4] = start;
+    /*}*/
 }
 
 void NVLoadDAC(
@@ -1806,7 +1900,50 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     D(bug("[NVidia] Init %dx%dx%d @%x mode\n", width, height, bpp, base));
 
     ULONG   HBlankStart, HBlankEnd, VBlankStart, VBlankEnd, OrgHDisplay = HDisplay;
-    
+    ULONG mode_ratio, panel_ratio;
+
+    if (sd->Card.FlatPanel)
+    {
+        mode_ratio = (1 << 12) * HDisplay / VDisplay;
+	panel_ratio = (1 << 12) * sd->Card.fpWidth / sd->Card.fpHeight;
+	/* if ratios are equal, SCALE_ASPECT will automatically (and correctly)
+	* get treated the same as SCALE_FULLSCREEN */
+	if (mode_ratio != panel_ratio) {
+	        ULONG diff, scale;
+	
+	        if (mode_ratio < panel_ratio) {
+	                /* vertical needs to expand to glass size (automatic)
+	                * horizontal needs to be scaled at vertical scale factor
+	                * to maintain aspect */
+	
+	                scale = (1 << 12) * VDisplay / sd->Card.fpHeight;
+	                //regp->debug_1 = 1 << 12 | ((scale >> 1) & 0xfff);
+	
+	                /* restrict area of screen used, horizontally */
+	                diff = sd->Card.fpWidth -
+	                sd->Card.fpHeight * mode_ratio / (1 << 12);
+	                HSyncStart += diff / 2;
+	                HSyncEnd -= diff / 2;
+	        }
+	
+	        if (mode_ratio > panel_ratio) {
+	                /* horizontal needs to expand to glass size (automatic)
+	                * vertical needs to be scaled at horizontal scale factor
+	                * to maintain aspect */
+	
+	                scale = (1 << 12) * HDisplay / sd->Card.fpWidth;
+	                //regp->debug_1 = 1 << 28 | ((scale >> 1) & 0xfff) << 16;
+	
+	                /* restrict area of screen used, vertically */
+	                diff = sd->Card.fpHeight -
+	                (1 << 12) * sd->Card.fpWidth / mode_ratio;
+	                VSyncStart += diff / 2;
+	                VSyncEnd -= diff / 2;
+	        }
+          }
+    }
+
+
     Sync mode = {
 	pixelc, 0,
 	HDisplay, HSyncStart, HSyncEnd, HTotal,
@@ -1815,12 +1952,12 @@ void InitMode(struct staticdata *sd, struct CardState *state,
 
     InitBaseRegs(sd, state, &mode);
 
-    HDisplay	= (HDisplay >> 3) - 1;
-    HSyncStart	= (HSyncStart >> 3) - 1;
-    HSyncEnd	= (HSyncEnd >> 3) - 1;
-    HTotal	= (HTotal >> 3) - 5;
+    HDisplay	= (HDisplay /8) - 1;
+    HSyncStart	= (HSyncStart /8) - 1;
+    HSyncEnd	= (HSyncEnd /8) - 1;
+    HTotal	= (HTotal /8) - 5;
     HBlankStart	= HDisplay;
-    HBlankEnd	= HTotal + 4;
+    HBlankEnd	= HTotal+4;
 
     VDisplay	-= 1;
     VSyncStart	-= 1;
@@ -1844,6 +1981,8 @@ void InitMode(struct staticdata *sd, struct CardState *state,
 	HSyncStart = HTotal - 5;
 	HSyncEnd = HTotal - 2;
 	HBlankEnd = HTotal + 4;
+        if(sd->Card.Architecture >= NV_ARCH_10)
+             HTotal += 2;
     }
 
     state->Regs.crtc[0x00] = Set8Bits(HTotal);
@@ -1872,6 +2011,9 @@ void InitMode(struct staticdata *sd, struct CardState *state,
 
     state->Regs.attr[0x10] = 0x01;
     
+    if(sd->Card.Television)
+        state->Regs.attr[0x11] = 0x00;
+
     state->screen =
 	SetBitField(HBlankEnd, 6:6, 4:4) |
 	SetBitField(VBlankStart, 10:10, 3:3) |
@@ -1908,34 +2050,75 @@ void InitMode(struct staticdata *sd, struct CardState *state,
 	if (!sd->Card.fpScaler 	|| (sd->Card.fpWidth <= mode.HDisplay)
 				|| (sd->Card.fpHeight <= mode.VDisplay))
 	{
+            /* enables centre mode*/
 	    state->scale |= (1 << 8);
 	}
+        if (sd->Card.fpScaler) {
+            if ((sd->Card.fpWidth == mode.HDisplay) && (sd->Card.fpHeight == mode.VDisplay))
+            {
+                 /* enables native mode */
+                 state->scale |= (2 << 8); 
+            }
+            else {
+                 /* enables scaling */
+                 state->scale |= (0 << 8);
+            }
+        }
+
+        state->crtcSync = sd->Card.PRAMDAC[0x0828/4];
+	//state->crtcSync += NVDACPanelTweaks(pNv, state);
+	state->crtcVSync = sd->Card.fpVTotal - 6;
     }
     
+    state->vpll = state->pll;
+    state->vpll2 = state->pll;
+    state->vpllB = state->pllB;
+    state->vpll2B = state->pllB;
+
+    VGA_WR08(sd->Card.PCIO, 0x03D4, 0x1C);
+    state->fifo = VGA_RD08(sd->Card.PCIO, 0x03D5) & ~(1<<5);
+	
+    if(sd->Card.CRTCnumber) {
+      state->head = sd->Card.PCRTC0[0x00000860/4] & ~0x00001000;
+      state->head2 = sd->Card.PCRTC0[0x00002860/4] | 0x00001000;
+      state->crtcOwner = 3;
+      state->pllsel |= 0x20000800;
+      state->vpll = sd->Card.PRAMDAC0[0x0508/4];
+      if(sd->Card.twoStagePLL)
+	state->vpllB = sd->Card.PRAMDAC0[0x0578/4];
+    } else
+    if(sd->Card.twoHeads) {
+      state->head = sd->Card.PCRTC0[0x00000860/4] | 0x00001000;
+      state->head2 = sd->Card.PCRTC0[0x00002860/4] & ~0x00001000;
+      state->crtcOwner = 0;
+      state->vpll2 = sd->Card.PRAMDAC0[0x0520/4];
+      if(sd->Card.twoStagePLL)
+	state->vpll2B = sd->Card.PRAMDAC0[0x057C/4];
+    }
     
     state->cursorConfig = 0x00000100;
     if (sd->Card.alphaCursor)
     {
-        state->cursorConfig |= 0x04011000;
+        if((sd->Card.Chipset & 0x0ff0) != 0x0110)
+            state->cursorConfig |= 0x04011000;
+        else
+            state->cursorConfig |= 0x14011000;
         state->general |= (1 << 29);
+     } else
+        state->cursorConfig |= 0x02000000;
 
-        if((sd->Card.Chipset & 0x0ff0) == 0x0110) {
-            state->dither = sd->Card.PRAMDAC[0x0528/4] & ~0x00010000;
-            if(0) //sd->Card.FPDither)
-               state->dither |= 0x00010000;
-            else
-               state->cursorConfig |= (1 << 28);
-        } else 
-        if((sd->Card.Chipset & 0x0ff0) >= 0x0170) {
-           state->dither = sd->Card.PRAMDAC[0x083C/4] & ~1;
-           state->cursorConfig |= (1 << 28);
-           if(0) //pNv->FPDither)
-              state->dither |= 1;
+     if(sd->Card.twoHeads) {
+        if((sd->Card.Chipset & 0x0ff0) == 0x0110) 
+        {
+                state->dither = sd->Card.PRAMDAC[0x0528/4] & ~0x00010000;
+                if(sd->Card.FPDither)
+                        state->dither |= 0x00010000;
         } else {
-           state->cursorConfig |= (1 << 28);
-        }
-    } else
-       state->cursorConfig |= 0x02000000;
+                state->dither = sd->Card.PRAMDAC[0x083C/4] & ~1;
+                if(sd->Card.FPDither)
+                        state->dither |= 1;
+        } 
+     }
 
 
     // Init DAC
@@ -1950,36 +2133,11 @@ void InitMode(struct staticdata *sd, struct CardState *state,
 	}
     }
 
-    state->offset = base;
-    state->vpll = state->pll;
-    state->vpll2 = state->pll;
-    state->vpllB = state->pllB;
-    state->vpll2B = state->pllB;
-
-    VGA_WR08(sd->Card.PCIO, 0x03D4, 0x1C);
-    state->fifo = VGA_RD08(sd->Card.PCIO, 0x03D5) & ~(1<<5);
-    
-    if(sd->Card.CRTCnumber) {
-       state->head  = sd->Card.PCRTC0[0x00000860/4] & ~0x00001000;
-       state->head2 = sd->Card.PCRTC0[0x00002860/4] | 0x00001000;
-       state->crtcOwner = 3;
-       state->pllsel |= 0x20000800;
-       state->vpll = sd->Card.PRAMDAC0[0x0508/4];
-       if(sd->Card.twoStagePLL)
-          state->vpllB = sd->Card.PRAMDAC0[0x0578/4];
-    } else
-    if(sd->Card.twoHeads) {
-       state->head  =  sd->Card.PCRTC0[0x00000860/4] | 0x00001000;
-       state->head2 =  sd->Card.PCRTC0[0x00002860/4] & ~0x00001000;
-       state->crtcOwner = 0;
-       state->vpll2 = sd->Card.PRAMDAC0[0x0520/4];
-       if(sd->Card.twoStagePLL)
-          state->vpll2B = sd->Card.PRAMDAC0[0x057C/4];
-    }
-    
+    state->offset = base;    
     state->timingH = 0;
     state->timingV = 0;
     state->displayV = VDisplay;
+
 }
 
 void acc_reset(struct staticdata *);
@@ -2144,6 +2302,19 @@ NVDmaWait (
        } else
            pNv->dmaFree = dmaGet - pNv->dmaCurrent - 1;
     }
+}
+
+void
+NVWaitVSync(NVPtr pNv)
+{
+	NVDmaStart(pNv, 0x0000A12C, 1);
+	NVDmaNext (pNv, 0);
+	NVDmaStart(pNv, 0x0000A134, 1);
+	NVDmaNext (pNv, pNv->CRTCnumber);
+	NVDmaStart(pNv, 0x0000A100, 1);
+	NVDmaNext (pNv, 0);
+	NVDmaStart(pNv, 0x0000A130, 1);
+	NVDmaNext (pNv, 0);
 }
 
 void NVSetPattern(
@@ -2315,11 +2486,14 @@ BOOL NVIsConnected (struct staticdata *sd, UBYTE output)
 {
     NVPtr pNv = &sd->Card;
     volatile ULONG *PRAMDAC = pNv->PRAMDAC0;
-    ULONG reg52C, reg608;
+    ULONG reg52C, reg608, dac0_reg608 = 0;
     BOOL present;
     int i;
 
-    if(output) PRAMDAC += 0x800;
+    if(output) {
+        dac0_reg608 = PRAMDAC[0x608/4];
+        PRAMDAC += 0x800;
+    }
 
     reg52C = PRAMDAC[0x052C/4];
     reg608 = PRAMDAC[0x0608/4];
@@ -2345,7 +2519,7 @@ BOOL NVIsConnected (struct staticdata *sd, UBYTE output)
  
     present = (PRAMDAC[0x0608/4] & (1 << 28)) ? TRUE : FALSE;
 
-    pNv->PRAMDAC0[0x0608/4] &= 0x0000EFFF;
+    pNv->PRAMDAC0[0x0608/4] = dac0_reg608; //&= 0x0000EFFF;
 
     PRAMDAC[0x052C/4] = reg52C;
     PRAMDAC[0x0608/4] = reg608;
