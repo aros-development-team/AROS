@@ -994,7 +994,9 @@ RTLD(bug("[%s] ERRORS occured during Device setup - ABORTING\n", unit->rtl8139u_
 			}
 		}
 		else
+		{
 RTLD(bug("[rtl8139] PANIC! Couldn't get MMIO area. Aborting\n"))
+		}
 	}
 	else if (doDebug)
 	{
