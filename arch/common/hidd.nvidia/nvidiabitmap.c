@@ -567,9 +567,9 @@ VOID NVBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
         NVDmaNext(&_sd->Card, ((msg->maxX - msg->minX + 1) << 16)
 	    | ((msg->maxY - msg->minY + 1) & 0xffff));
 
-//ME - temporary change to test
-if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
-	NVDmaKickoff(&_sd->Card);
+        /* This clause was new in the xorg driver */
+        if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
+        	NVDmaKickoff(&_sd->Card);
 	
 //	if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
 //	    NVSync(_sd);

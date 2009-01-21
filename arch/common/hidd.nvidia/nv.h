@@ -30,21 +30,6 @@
 
 #define IID_Hidd_nvBitMap	"hidd.bitmap.nv"
 
-	#define NV_RAMDAC_FP_VDISP_END 0x00680800
-	#define NV_RAMDAC_FP_VTOTAL 0x00680804
-	#define NV_RAMDAC_FP_VCRTC 0x00680808
-	#define NV_RAMDAC_FP_VSYNC_START 0x0068080c
-	#define NV_RAMDAC_FP_VSYNC_END 0x00680810
-	#define NV_RAMDAC_FP_VVALID_START 0x00680814
-	#define NV_RAMDAC_FP_VVALID_END 0x00680818
-	#define NV_RAMDAC_FP_HDISP_END 0x00680820
-	#define NV_RAMDAC_FP_HTOTAL 0x00680824
-	#define NV_RAMDAC_FP_HCRTC 0x00680828
-	#define NV_RAMDAC_FP_HSYNC_START 0x0068082c
-	#define NV_RAMDAC_FP_HSYNC_END 0x00680830
-	#define NV_RAMDAC_FP_HVALID_START 0x00680834
-	#define NV_RAMDAC_FP_HVALID_END 0x00680838
-
 enum {
     aoHidd_nvBitMap_Drawable,
 
@@ -111,9 +96,9 @@ typedef struct CardState {
     ULONG   timingH;
     ULONG   timingV;
     ULONG   displayV;
-    ULONG control;
-    ULONG crtcSync;
-    ULONG crtcVSync;
+    ULONG   control;
+    ULONG   crtcSync;
+    ULONG   crtcVSync;
     struct {
 	UBYTE	attr[0x15];
 	UBYTE	crtc[0x41];
