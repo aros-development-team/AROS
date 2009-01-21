@@ -1,9 +1,9 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-network : network-stacks-arostcp
+#MM- workbench-network : workbench-network-stacks-arostcp
 
-network-stacks-arostcp : files-copy arostcp-libs-miamipanel
+workbench-network-stacks-arostcp : files-copy arostcp-libs-miamipanel
 %copy_files_q files="README" \
     dst=$(CONTRIBDIR)/Networking/Stacks/AROSTCP
 
