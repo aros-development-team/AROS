@@ -162,7 +162,7 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	{ TAG_DONE, 0UL }
     };
 
-    MAKE_SYNC(640x480_60,   25174,
+    MAKE_SYNC(640x480_60,   25200,
          640,  656,  752,  800,
          480,  490,  492,  525,
 	 "NVIDIA:640x480");
@@ -177,36 +177,36 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
          768,  771,  777,  806,
 	 "NVIDIA:1024x768");
 
-    MAKE_SYNC(1152x864_60, 80000,
-	1152, 1216, 1328, 1456,
-	 864,  870,  875,  916,
+    MAKE_SYNC(1152x864_60, 83500,
+	1152, 1184, 1496, 1528,
+	 864,  881,  890,  908,
 	 "NVIDIA:1152x864");
 
-    MAKE_SYNC(1280x1024_60, 107991,
+    MAKE_SYNC(1280x1024_60, 108000,
 	1280, 1328, 1440, 1688,
 	1024, 1025, 1028, 1066,
 	"NVIDIA:1280x1024");
 
-    MAKE_SYNC(1600x1200_60, 155982,
-	1600, 1632, 1792, 2048,
-	1200, 1210, 1218, 1270,
+    MAKE_SYNC(1600x1200_60, 162000,
+	1600, 1664, 1856, 2160,
+	1200, 1201, 1204, 1250,
 	"NVIDIA:1600x1200");
 
     /* "new" 16:10 modes */
 
-    MAKE_SYNC(1280x800_60, 83530,
+    MAKE_SYNC(1280x800_60, 83500,
 	1280, 1344, 1480, 1680,
 	800, 801, 804, 828,
 	"NVIDIA:1280x800");
 
-    MAKE_SYNC(1440x900_60, 106470,
-	1440, 1520, 1672, 1904,
-	900, 901, 904, 932,
+    MAKE_SYNC(1440x900_60, 108800,
+	1440, 1472, 1880, 1912,
+	900, 918, 927, 946,
 	"NVIDIA:1440x900");
 
-    MAKE_SYNC(1680x1050_60, 147140,
-	1680, 1784, 1968, 2256,
-	1050, 1051, 1054, 1087,
+    MAKE_SYNC(1680x1050_60, 119000,
+	1680, 1728, 1760, 1840,
+	1050, 1053, 1059, 1080,
 	"NVIDIA:1680x1050");
 
     MAKE_SYNC(1920x1200_60, 154000,
@@ -536,8 +536,6 @@ VOID NV__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBo
 	    switch (bm_src->depth)
 	    {
 		case 15:
-		    NVDmaNext(&_sd->Card, STRETCH_BLIT_FORMAT_DEPTH15);
-		    break;
 		case 16:
 		    NVDmaNext(&_sd->Card, STRETCH_BLIT_FORMAT_DEPTH16);
 		    break;
