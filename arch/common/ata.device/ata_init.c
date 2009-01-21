@@ -79,6 +79,34 @@ typedef struct
     UWORD               PredefBus;
 } EnumeratorArgs;
 
+struct List __probedports;
+
+struct ata_ProbedPort
+{
+	struct Node 		atapp_Node;
+	IPTR 				atapp_IOBase;
+	IPTR 				atapp_IOAlt;
+	IPTR 				atapp_INTLine;
+	IPTR 				atapp_DMABase;
+	int 				atapp_x;
+	EnumeratorArgs 		*atapp_a;
+};
+
+/* static list of io/irqs that we can handle */
+static struct __bus 
+{
+	ULONG port;
+	ULONG alt;
+	APTR  DMA;
+	UBYTE irq;
+} Buses[] = 
+{
+	{0x1f0, 0x3f4, NULL, 14},
+	{0x170, 0x374, NULL, 15},
+	{0x168, 0x36c, NULL, 10},
+	{0x1e8, 0x3ec, NULL, 11},
+};
+
 /* Add a bootnode using expansion.library */
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 {
@@ -170,22 +198,6 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
 		      IPTR DMABase, int x, EnumeratorArgs *a)
 {
     /*
-     * static list of io/irqs that we can handle
-     */
-    static struct __bus 
-    {
-        ULONG port;
-        ULONG alt;
-        UBYTE irq;
-    } Buses[] = 
-    {
-        {0x1f0, 0x3f4, 14},
-        {0x170, 0x374, 15},
-        {0x168, 0x36c, 10},
-        {0x1e8, 0x3ec, 11},
-    };
-
-    /*
      * ata bus - this is going to be created and linked to the master list here
      */
     struct ata_Bus *ab;
@@ -203,6 +215,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
              */
             IOBase  = Buses[a->PredefBus].port;
             IOAlt   = Buses[a->PredefBus].alt;
+            DMABase = Buses[a->PredefBus].DMA;
             INTLine = Buses[a->PredefBus].irq;
             a->PredefBus++;
         }
@@ -337,9 +350,8 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(Device, aHidd_PCIDevice_ProductID,          &ProductID);
     OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,           &VendorID);
     OOP_GetAttr(Device, aHidd_PCIDevice_Base4,              &DMABase);
-
-    if (a->ATABase->ata_NoDMA)
-        DMABase = 0;
+	if (a->ATABase->ata_NoDMA)
+		DMABase = 0;
 
     /*
      * we can have as many as four ports assigned to this device
@@ -362,16 +374,46 @@ AROS_UFH3(void, Enumerator,
         }
         OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
 
-#warning "TODO: Check if status = OK and alt control = 0xff to identify AHCI devices (which we dont support!)"
-		D(bug("[ATA  ] Enumerator: IDE device %04x:%04x - IO: %x:%x DMA: %x\n", ProductID, VendorID, IOBase, IOAlt, DMABase));
-		Add_Device(IOBase, IOAlt, INTLine, DMABase, x, a);
+		if (IOBase == NULL)
+		{
+			D(bug("[ATA  ] Enumerator: Device using Legacy Ports\n"));
+			Buses[x*2].DMA = DMABase;
+			Buses[x*2 + 1].DMA = DMABase;
+		}
+		else
+		{
+#warning "TODO: Check for AHCI devices and skip them (we dont/cant handle them)"
+			/*D(bug("[ATA  ] Enumerator: Device Status %02x, Control %02x\n", ata_in(ata_Status, IOAlt), ata_in(ata_AltControl, IOAlt)));
+			if ((ata_in(ata_Status, IOAlt) != 0xFF) && (ata_in(ata_AltControl, IOAlt) == 0xFF))
+			{
+				D(bug("[ATA  ] Enumerator: Unhandled AHCI Device .. skipping\n"));
+				return;
+			}*/
+		}
+
+		if (x == 0)
+		{
+			bug("[ATA  ] Enumerator: Found supported IDE device %04x:%04x\n", ProductID, VendorID);
+		}
+		D(bug("[ATA  ] Enumerator: Registering Port %d - IO: %x:%x DMA: %x\n", x, IOBase, IOAlt, DMABase));
+
+		if (IOBase != NULL)
+		{
+			struct ata_ProbedPort *probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
+			probedport->atapp_IOBase = IOBase;
+			probedport->atapp_IOAlt = IOAlt;
+			probedport->atapp_INTLine = INTLine;
+			probedport->atapp_DMABase = DMABase;
+			probedport->atapp_x = x;
+			probedport->atapp_a = a;
+
+			AddTail((struct List *)&__probedports, (struct Node *)probedport);
+		}
     }
 
-    /*
-     * check dma status
-     */
+    /* check dma status if applicable */
     if (DMABase != 0)
-        D(bug("[ATA  ] Enumerator: Bus0 status says %02x, Bus1 status says %02x\n", ata_in(2, DMABase), ata_in(10, DMABase)));
+        D(bug("[ATA  ] Enumerator: Bus0 DMA Status %02x, Bus1 DMA Status %02x\n", ata_in(2, DMABase), ata_in(10, DMABase)));
 
     OOP_SetAttrs(Device, attrs);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
@@ -384,6 +426,7 @@ void ata_Scan(struct ataBase *base)
 {
     OOP_Object *pci;
     struct SignalSemaphore ssem;
+	struct ata_ProbedPort *probedport = NULL;
 
     struct Node* node;
     int i;
@@ -457,10 +500,31 @@ void ata_Scan(struct ataBase *base)
 		}
 	}
     if (base->ata_ScanFlags & ATA_SCANLEGACY) {
+		probedport = NULL;
 		D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
-		for (i=0; i<4; i++)
-			Add_Device(0, 0, 0, 0, i & 1, &Args);
+		for (i=3; i!=0; i--)
+		{
+			probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
+			probedport->atapp_x = i & 1;
+			probedport->atapp_a = &Args;
+			AddHead((struct List *)&__probedports, (struct Node *)probedport);
+		}
     }
+
+	D(bug("[ATA--] ata_Scan: Registering Probed Ports..\n"));
+	probedport = NULL;
+	while ((probedport = RemHead((struct List *)&__probedports)) != NULL)
+	{
+		Add_Device(
+			probedport->atapp_IOBase,
+			probedport->atapp_IOAlt,
+			probedport->atapp_INTLine,
+			probedport->atapp_DMABase,
+			probedport->atapp_x,
+			probedport->atapp_a);
+
+		FreeMem(probedport, sizeof(struct ata_ProbedPort));
+	}
 
 	D(bug("[ATA--] ata_Scan: Init Bus Tasks..\n"));
     InitSemaphore(&ssem);
@@ -497,6 +561,9 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->ata_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
     if (LIBBASE->ata_MemPool == NULL)
         return FALSE;
+
+	/* Prepair list for found ide ports */
+	NEWLIST((struct List *)&__probedports);
 
     /*
      * store library pointer so we can use it later
