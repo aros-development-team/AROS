@@ -1,5 +1,5 @@
 /*
-    Copyright � 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright � 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot AROS
@@ -236,7 +236,7 @@ static VOID AddPartitionVolume
                 name[i++] = '0' + (UBYTE)(ppos / 10);
             name[i++] = '0' + (UBYTE)(ppos % 10);
             name[i] = '\0';
-	    D(bug("[Boot] Parition name: %s type: %lu bootable: %d\n", name, ptyp.id[0], bootable));
+	    D(bug("[Boot] Partition name: %s type: %lu bootable: %d\n", name, ptyp.id[0], bootable));
             /* set DOSTYPE based on the partition type */
             pp[4 + DE_DOSTYPE] = MatchPartType(ptyp.id[0]);
             /* set some common DOSENV fields */
@@ -366,35 +366,19 @@ static VOID CheckPartitions
             fssm->fssm_Unit);
         if (pt)
         {
-        	LONG table = 1;
-
-        	/*
-        	 * OpenRootPartition may success even if partition table is invalid.
-        	 * Attempt to open the partition table (which performs validity checks),
-        	 * and if it fails, add the boot node as a whole.
-        	 */
-
-            if (IsRemovable(SysBase, pt->bd->ioreq) || (table = OpenPartitionTable(pt)))
+            if (IsRemovable(SysBase, pt->bd->ioreq))
             {
                 /* don't check removable devices for partition tables */
                 Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
             }
             else
             {
-            	if (table == 0)
-            		ClosePartitionTable(pt);
-
-		CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
-/* FIXME: This causes out-of-range access to disk by afs.handler with following system lockup during boot.
-   Probably the root of the problem lies in ata.device supplying wrong geometry data to the handler.
-   To solve this, we will not reinsert the BootNode for unpartitioned hard drives. Anyway i don't know any
-   practical case when unpartitioned hard drive is used.
                 if (!CheckTables(ExpansionBase, PartitionBase, fssm, pt,
                     SysBase))
-                {*/
+                {
                     /* no partition table found, so reinsert node */
-/*                  Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
-                }*/
+                  Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
+                }
             }
             CloseRootPartition(pt);
         }
