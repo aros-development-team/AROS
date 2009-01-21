@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2006, The AROS Development Team. All rights reserved
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -141,7 +141,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         {
             if ((0 == (unit->au_XferModes & AF_XFER_PACKET)) && ((block + count) > unit->au_Capacity48))
             {
-                bug("[ATA!!] Requested block (%lx:%08lx;%ld) outside disk range (%lx:%08lx;%ld)\n", block>>32, block&0xfffffffful, count, unit->au_Capacity48>>32, unit->au_Capacity48 & 0xfffffffful);
+                bug("[ATA!!] Requested block (%lx:%08lx;%ld) outside disk range (%lx:%08lx)\n", block>>32, block&0xfffffffful, count, unit->au_Capacity48>>32, unit->au_Capacity48 & 0xfffffffful);
                 io->io_Error = IOERR_BADADDRESS;
                 return;
             }
@@ -175,6 +175,15 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         block >>= unit->au_SectorShift;
         count >>= unit->au_SectorShift;
         ULONG cnt = 0;
+
+        if ((0 == (unit->au_XferModes & AF_XFER_PACKET))
+            && ((block + count) > unit->au_Capacity))
+        {
+            bug("[ATA!!] Requested block (%lx;%ld) outside disk range (%lx)\n",
+                block, count, unit->au_Capacity);
+            io->io_Error = IOERR_BADADDRESS;
+            return;
+        }
 
         /* Call the Unit's access funtion */
         io->io_Error = unit->au_Write32(unit, block, count,
@@ -213,11 +222,34 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
             Otherwise do the 48-bit LBA addressing.
         */
         if ((block + count) < 0x0fffffff)
-            io->io_Error = unit->au_Write32(unit, (ULONG)(block & 0x0fffffff), count,
-                IOStdReq(io)->io_Data, &cnt);
+        {
+            if ((0 == (unit->au_XferModes & AF_XFER_PACKET))
+                && ((block + count) > unit->au_Capacity))
+            {
+                bug("[ATA!!] Requested block (%lx;%ld) outside disk range "
+                    "(%lx)\n", block, count, unit->au_Capacity);
+                io->io_Error = IOERR_BADADDRESS;
+                return;
+            }
+            io->io_Error = unit->au_Write32(unit, (ULONG)(block & 0x0fffffff),
+                count, IOStdReq(io)->io_Data, &cnt);
+        }
         else
+        {
+            if ((0 == (unit->au_XferModes & AF_XFER_PACKET))
+                && ((block + count) > unit->au_Capacity48))
+            {
+                bug("[ATA!!] Requested block (%lx:%08lx;%ld) outside disk "
+                    "range (%lx:%08lx)\n", block>>32, block&0xfffffffful,
+                     count, unit->au_Capacity48>>32,
+                     unit->au_Capacity48 & 0xfffffffful);
+                io->io_Error = IOERR_BADADDRESS;
+                return;
+            }
+
             io->io_Error = unit->au_Write64(unit, block, count,
                 IOStdReq(io)->io_Data, &cnt);
+        }
         IOStdReq(io)->io_Actual = cnt;
    }
 }
@@ -241,7 +273,7 @@ static void cmd_Flush(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 }
 
 /*
-    Internal command used to check, whether the media in drive has been changed
+    Internal command used to check whether the media in drive has been changed
     since last call. If so, the handlers given by user are called.
 */
 static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -551,7 +583,7 @@ static const ULONG IMMEDIATE_COMMANDS = 0x803ff1e3; // 1000000000111111111100011
 /* See whether the command can be done quick */
 BOOL isSlow(ULONG comm)
 {
-    BOOL slow = TRUE;   /* Assume alwasy slow command */
+    BOOL slow = TRUE;   /* Assume always slow command */
 
     /* For commands with numbers <= 31 check the mask */
     if (comm <= 31)
@@ -833,8 +865,8 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
     }
     else
     {
-        /* 
-         * Well, when there are no ATAPI device, daemon is useless. Say goodbay and quit then 
+        /*
+         * Well, when there are no ATAPI devices, daemon is useless. Say goodbye and quit then
          */
         D(bug("[%s] Deamon useless (no ATAPI devices in system). Bye\n",FindTask(NULL)->tc_Node.ln_Name));
         DeleteMsgPort(myport);
@@ -862,7 +894,7 @@ int ata_InitBusTask(struct ata_Bus *bus, struct SignalSemaphore *ready)
     };
     
     /*
-        Need some memory. I don't know however, wheter it wouldn't be better
+        Need some memory. I don't know however, whether it wouldn't be better
         to take some RAM from device's memory pool.
     */
     t = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
@@ -935,10 +967,10 @@ static int CreateInterrupt(struct ata_Bus *bus)
                 id:             bus->ab_Irq,
             }, *msg = &__msg__;
             
-            if (OOP_DoMethod(o, (OOP_Msg)msg))
+            if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
                 retval = 1;
 
-            OOP_DisposeObject(o);
+            OOP_DisposeObject((OOP_Object *)o);
         }
     }
 
@@ -946,8 +978,8 @@ static int CreateInterrupt(struct ata_Bus *bus)
 }
 
 /*
-    Bus task body. It doesn't really do much. It recives simply all IORequests 
-    in endless lopp and calls proper handling function. The IO is Semaphore-
+    Bus task body. It doesn't really do much. It receives simply all IORequests
+    in endless loop and calls proper handling function. The IO is Semaphore-
     protected within a bus.
 */
 static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphore *ssem)
@@ -955,7 +987,8 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
     ULONG sig;
     int iter;
     struct IORequest *msg;
-    
+    struct ata_Unit *unit;
+
     D(bug("[ATA**] Task started (IO: 0x%x)\n", bus->ab_Port));
 
     /*
@@ -985,14 +1018,13 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
 
     for (iter=0; iter<MAX_UNIT; ++iter)
     {
-       if (TRUE == ata_setup_unit(bus, iter))
+       if (ata_setup_unit(bus, iter))
        {
-          if (bus->ab_Units[iter]->au_XferModes & AF_XFER_PACKET)
-             AddVolume(0, 0, bus->ab_Units[iter]);
-          else if (bus->ab_Units[iter]->au_Capacity48 != 0)
-             AddVolume(0, bus->ab_Units[iter]->au_Capacity48, bus->ab_Units[iter]);
+          unit = bus->ab_Units[iter];
+          if (unit->au_XferModes & AF_XFER_PACKET)
+             AddVolume(0, 0, unit);
           else
-             AddVolume(0, bus->ab_Units[iter]->au_Capacity, bus->ab_Units[iter]);
+             AddVolume(0, unit->au_Cylinders - 1, unit);
        }
     }
 
