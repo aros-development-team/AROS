@@ -107,6 +107,8 @@ static struct __bus
 	{0x1e8, 0x3ec, NULL, 11},
 };
 
+UBYTE legacyportcount;
+
 /* Add a bootnode using expansion.library */
 BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
 {
@@ -377,8 +379,8 @@ AROS_UFH3(void, Enumerator,
 		if (IOBase == NULL)
 		{
 			D(bug("[ATA  ] Enumerator: Device using Legacy Ports\n"));
-			Buses[x*2].DMA = DMABase;
-			Buses[x*2 + 1].DMA = DMABase;
+			/* This may be wrong (how do you determine which legacy port it relates to?) */
+			Buses[legacyportcount++].DMA = DMABase;
 		}
 		else
 		{
@@ -395,7 +397,7 @@ AROS_UFH3(void, Enumerator,
 		{
 			bug("[ATA  ] Enumerator: Found supported IDE device %04x:%04x\n", ProductID, VendorID);
 		}
-		D(bug("[ATA  ] Enumerator: Registering Port %d - IO: %x:%x DMA: %x\n", x, IOBase, IOAlt, DMABase));
+		D(bug("[ATA  ] Enumerator: Registering Port %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
 
 		if (IOBase != NULL)
 		{
@@ -564,6 +566,7 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
 
 	/* Prepair list for found ide ports */
 	NEWLIST((struct List *)&__probedports);
+	legacyportcount = 0;
 
     /*
      * store library pointer so we can use it later
