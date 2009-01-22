@@ -1523,6 +1523,8 @@ void zune_close_menu(struct ZMenu *zmenu)
 
 //	MH2Int_MakeMenusInactive(mhd->win, mhd->firstmenupick);
     zmenu->mhd.active = FALSE;
+    
+    FreeVec(zmenu);
 }
 
 struct Menu *zune_get_menu_pointer(struct ZMenu *menu)
