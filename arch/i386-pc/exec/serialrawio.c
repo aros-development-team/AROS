@@ -58,6 +58,16 @@
 
 #define SER_MAXBAUD 115200L
 
+#if AROS_SERIAL_DEBUG == 1
+UWORD __serial_rawio_port = 0x3F8;
+#else
+#if AROS_SERIAL_DEBUG == 2
+UWORD __serial_rawio_port = 0x2F8;
+#else
+UWORD __serial_rawio_port = 0;
+#endif
+#endif
+
 int ser_UARTType (short);
 void ser_FIFOLevel(short, BYTE);
 int ser_Init(short, LONG, BYTE);
@@ -98,14 +108,12 @@ int ser_Init(short, LONG, BYTE);
 *****************************************************************************/
 {
    AROS_LIBFUNC_INIT
-#if AROS_SERIAL_DEBUG == 1
-	if (ser_Init(0x3F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
-		ser_FIFOLevel(0x3F8, 0);
-#endif
-#if AROS_SERIAL_DEBUG == 2
-   	if (ser_Init(0x2F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
-		ser_FIFOLevel(0x2F8, 0);
-#endif
+    if (__serial_rawio_port > 0)
+    {
+	if (ser_Init(__serial_rawio_port, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
+		ser_FIFOLevel(__serial_rawio_port, 0);
+    }
+
    return;
    AROS_LIBFUNC_EXIT
 } /* RawIOInit */
@@ -225,35 +233,31 @@ int ser_IsWritingPossible(short);
 
 *****************************************************************************/
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-    	/* stegerg: Don't use Disable/Enable, because we want
-	            interrupt enabled flag to stay the same as
-		    it was before the Disable() call */
-		    
-    	unsigned long flags;
-	
+    unsigned long flags;
+
+    if ((__serial_rawio_port > 0) && (chr))
+    {
 	__save_flags(flags);
+
+        /* stegerg: Don't use Disable/Enable, because we want
+           interrupt enabled flag to stay the same as
+           it was before the Disable() call */
 	__cli();
 	
-	/* Disable(); */
-    
-    	/* Don't write 0 bytes */
-	if (chr)
-	{
-    	    //if (chr==0x0A)
-    	    //	ser_WriteByte(0x2F8, 0x0D, 1, 0, 0);
-#if AROS_SERIAL_DEBUG == 1
-	    ser_WriteByte(0x3F8, chr, 0, 0, 0);
-#endif
-#if AROS_SERIAL_DEBUG == 2
-	    ser_WriteByte(0x2F8, chr, 0, 0, 0);
-#endif
+	if (chr==0x0A)
+        {
+            // Send <CR> before <LF>
+    	    ser_WriteByte(__serial_rawio_port, 0x0D, 0, 0, 0);
 	}
+	ser_WriteByte(__serial_rawio_port, chr, 0, 0, 0);
 
+        /* Interrupt flag is stored in flags - if it was
+           enabled before, it will be renabled when the flags
+           are restored */
     	__restore_flags(flags);
-	
-	/* Enable(); */
+    }
     
 	AROS_LIBFUNC_EXIT
 } /* RawPutChar */
