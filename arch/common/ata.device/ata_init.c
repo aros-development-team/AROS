@@ -344,7 +344,7 @@ AROS_UFH3(void, Enumerator,
     /*
      * temporary variables
      */
-    int             x;
+    int             x, i;
 
     /*
      * obtain more or less useful data
@@ -384,6 +384,19 @@ AROS_UFH3(void, Enumerator,
 		}
 		else
 		{
+		    /*
+			Sanity Check! some devices have reportedly 
+			returned the actual legacy port rather than 0
+			make sure we arent one of those ..
+		    */
+		    for (i = 0; i < (sizeof(Buses) / sizeof(Buses[0])); i++)
+		    {
+			if (IOBase == Buses[i].port)
+			{
+			    IOBase = NULL;
+			    D(bug("[ATA  ] Enumerator: Device lists Legacy Port Address!!\n"));
+			}
+		    }
 #warning "TODO: Check for AHCI devices and skip them (we dont/cant handle them)"
 			/*D(bug("[ATA  ] Enumerator: Device Status %02x, Control %02x\n", ata_in(ata_Status, IOAlt), ata_in(ata_AltControl, IOAlt)));
 			if ((ata_in(ata_Status, IOAlt) != 0xFF) && (ata_in(ata_AltControl, IOAlt) == 0xFF))
@@ -395,7 +408,7 @@ AROS_UFH3(void, Enumerator,
 
 		if (x == 0)
 		{
-			bug("[ATA  ] Enumerator: Found supported IDE device %04x:%04x\n", ProductID, VendorID);
+			bug("[ATA  ] Enumerator: Found supported IDE device %04x:%04x\n", VendorID, ProductID);
 		}
 		D(bug("[ATA  ] Enumerator: Registering Port %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
 
