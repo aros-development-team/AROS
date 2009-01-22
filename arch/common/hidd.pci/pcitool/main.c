@@ -163,18 +163,18 @@ AROS_UFH3(void, display_function,
     AROS_USERFUNC_EXIT
 }
 
-void memoryPrint(STRPTR buffer, unsigned int base, unsigned int size, unsigned int type)
+void memoryPrint(STRPTR buffer, unsigned int bar, unsigned int base, unsigned int size, unsigned int type)
 {
     if(type & ADDRF_IO)
     {
-	snprintf(buffer, 59, "%s%s at 0x%04x (size 0x%04x)",
+	snprintf(buffer, 59, "Bar%d: %s%s at 0x%04x (size 0x%04x)", bar,
 	    (type & ADDRF_PREFETCH) ? "Prefetchable " :"",
 	    (type & ADDRF_IO)?"I/O":"Memory",
 	    base, size);
     }
     else
     {
-	snprintf(buffer, 59, "%s%s at 0x%08x (size 0x%08x)",
+	snprintf(buffer, 59, "Bar%d: %s%s at 0x%08x (size 0x%08x)", bar,
 	    (type & ADDRF_PREFETCH) ? "Prefetchable " :"",
 	    (type & ADDRF_IO)?"I/O":"Memory",
 	    base, size);
@@ -293,7 +293,7 @@ AROS_UFH3(void, select_function,
 
 	if (val)
 	{
-	    memoryPrint(ranges[0], val, val2, val3);
+	    memoryPrint(ranges[0], 0, val, val2, val3);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[0], MUIV_List_Insert_Bottom);
 	}
 
@@ -303,7 +303,7 @@ AROS_UFH3(void, select_function,
 
 	if (val)
 	{
-	    memoryPrint(ranges[1], val, val2, val3);
+	    memoryPrint(ranges[1], 1, val, val2, val3);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[1], MUIV_List_Insert_Bottom);
 	}
 
@@ -317,7 +317,7 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-	        memoryPrint(ranges[2], val, val2, val3);
+	        memoryPrint(ranges[2], 2, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[2], MUIV_List_Insert_Bottom);
 	    }
 
@@ -327,7 +327,7 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-	        memoryPrint(ranges[3], val, val2, val3);
+	        memoryPrint(ranges[3], 3, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[3], MUIV_List_Insert_Bottom);
 	    }
 
@@ -337,7 +337,7 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-	        memoryPrint(ranges[4], val, val2, val3);
+	        memoryPrint(ranges[4], 4, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[4], MUIV_List_Insert_Bottom);
 	    }
 
@@ -347,7 +347,7 @@ AROS_UFH3(void, select_function,
 
 	    if (val)
 	    {
-		memoryPrint(ranges[5], val, val2, val3);
+		memoryPrint(ranges[5], 5, val, val2, val3);
 		DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
 	    }
 	}
