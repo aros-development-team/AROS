@@ -102,21 +102,17 @@ static BOOL GenericInit(struct staticdata *sd)
     UWORD architecture = sd->Card.Architecture;
     UWORD implementation = sd->Card.Chipset;
     UWORD implementation_masked = implementation & 0x0FF0;
-    /* turn off scaler by default */
-    sd->Card.FpScale = TRUE;
+    
     sd->Card.EnableIRQ	= 0;
     sd->Card.IO		= 0x3d0;
-    /* original didn't have /4 in here */
-    sd->Card.PRAMDAC0	= (ULONG*)(regs + (0x00680000));
-    sd->Card.PFB	= (ULONG*)(regs + (0x00100000));
-    sd->Card.PFIFO	= (ULONG*)(regs + (0x00002000));
-    sd->Card.PGRAPH	= (ULONG*)(regs + (0x00400000));
-    sd->Card.PEXTDEV	= (ULONG*)(regs + (0x00101000));
-    sd->Card.PTIMER	= (ULONG*)(regs + (0x00009000));
-    sd->Card.PMC	= (ULONG*)(regs + (0x00000000));
-    sd->Card.FIFO	= (ULONG*)(regs + (0x00800000));
-    
-    /* 8 bit registers */
+    sd->Card.PRAMDAC0	= (ULONG*)(regs + 0x00680000);
+    sd->Card.PFB	= (ULONG*)(regs + 0x00100000);
+    sd->Card.PFIFO	= (ULONG*)(regs + 0x00002000);
+    sd->Card.PGRAPH	= (ULONG*)(regs + 0x00400000);
+    sd->Card.PEXTDEV	= (ULONG*)(regs + 0x00101000);
+    sd->Card.PTIMER	= (ULONG*)(regs + 0x00009000);
+    sd->Card.PMC	= (ULONG*)(regs + 0x00000000);
+    sd->Card.FIFO	= (ULONG*)(regs + 0x00800000);
     sd->Card.PCIO0	= (UBYTE*)(regs + 0x00601000);
     sd->Card.PDIO0	= (UBYTE*)(regs + 0x00681000);
     sd->Card.PVIO	= (UBYTE*)(regs + 0x000C0000);
@@ -129,7 +125,7 @@ static BOOL GenericInit(struct staticdata *sd)
                      (implementation_masked != 0x01A0) &&
                      (implementation_masked != 0x0200);
 
-    sd->Card.fpScaler = (sd->Card.FpScale && sd->Card.twoHeads && (implementation_masked != 0x0110));
+    sd->Card.fpScaler = (sd->Card.twoHeads && (implementation_masked != 0x0110));
 
     sd->Card.twoStagePLL = (implementation_masked == 0x0310) ||
                            (implementation_masked == 0x0340) ||
@@ -139,52 +135,47 @@ static BOOL GenericInit(struct staticdata *sd)
 
     switch (implementation)
     {
-	    case 0x0112:
-	    case 0x0174:
-	    case 0x0175:
-	    case 0x0176:
-	    case 0x0177:
-	    case 0x0179:
-	    case 0x017C:
-	    case 0x017D:
-	    case 0x0186:
-	    case 0x0187:
-	    case 0x018D:
-	    case 0x0228:
-	    case 0x0286:
-	    case 0x028C:
-	    case 0x0316:
-	    case 0x0317:
-	    case 0x031A:
-	    case 0x031B:
-	    case 0x031C:
-	    case 0x031D:
-	    case 0x031E:
-	    case 0x031F:
-	    case 0x0324:
-	    case 0x0325:
-	    case 0x0328:
-	    case 0x0329:
-	    case 0x032C:
-	    case 0x032D:
-	    case 0x0347:
-	    case 0x0348:
-	    case 0x0349:
-	    case 0x034B:
-	    case 0x034C:
-	    case 0x0160:
-	    case 0x0166:
-	    case 0x0169:
-	    case 0x016B:
-	    case 0x016C:
-	    case 0x016D:
-	    case 0x00C8:
-	    case 0x00CC:
-	    case 0x0144:
-	    case 0x0146:
-	    case 0x0148:
-	    case 0x0098:
-	    case 0x0099:
+	case 0x0112:
+	case 0x0174:
+	case 0x0175:
+	case 0x0176:
+	case 0x0177:
+	case 0x0179:
+	case 0x017c:
+	case 0x017d:
+	case 0x0186:
+	case 0x0187:
+	case 0x0286:
+	case 0x028c:
+	case 0x0316:
+	case 0x0317:
+	case 0x031a:
+	case 0x031b:
+	case 0x031c:
+	case 0x031d:
+	case 0x031e:
+	case 0x031f:
+    	case 0x0324:
+    	case 0x0325:
+	case 0x0326: /* stegerg: checkme, not listed in xfree nv_setup.c */
+	case 0x0328:
+	case 0x0329:
+	case 0x032C:
+	case 0x032D:
+	case 0x032e: /* stegerg: checkme, not listed in xfree nv_setup.c */
+	case 0x0347:
+	case 0x0349:
+	case 0x034B:
+	case 0x034C:
+	case 0x0160:
+	case 0x0166:
+	case 0x00C8:
+	case 0x00C9:
+	case 0x00CC:
+	case 0x0147:
+	case 0x0148:
+	case 0x0149:
+	case 0x014C:
 	    D(bug("[NVidia] Assuming Digital FlatPanel\n"));
 	    sd->Card.FlatPanel = 1;
 	    break;
@@ -204,15 +195,10 @@ static BOOL GenericInit(struct staticdata *sd)
     if (!sd->Card.twoHeads)
     {
 	VGA_WR08(sd->Card.PCIO, 0x3d4, 0x28);
-	if (VGA_RD08(sd->Card.PCIO, 0x3d5) & 0x80) 
-        {
-	    VGA_WR08(sd->Card.PCIO, 0x3d4, 0x33);
-             sd->Card.FlatPanel = 1;
-            if (!(VGA_RD08(sd->Card.PCIO, 0x3d5) & 0x01)) 
-                sd->Card.Television=1;
-	} else {
+	if (VGA_RD08(sd->Card.PCIO, 0x3d5) & 0x80)
+	    sd->Card.FlatPanel = 1;
+	else
 	    sd->Card.FlatPanel = 0;
-	}
     }
     else
     {
@@ -320,17 +306,7 @@ static BOOL GenericInit(struct staticdata *sd)
     {
 	sd->Card.fpWidth = sd->Card.PRAMDAC[0x0820/4] + 1;
 	sd->Card.fpHeight= sd->Card.PRAMDAC[0x0800/4] + 1;
-        sd->Card.fpVTotal = sd->Card.PRAMDAC[0x804/4] + 1;
-        sd->Card.fpSyncs = sd->Card.PRAMDAC[0x0848/4] & 0x30000033;
     }
-
-    sd->Card.LVDS = FALSE;
-
-     if(sd->Card.FlatPanel && sd->Card.twoHeads) {
-        sd->Card.PRAMDAC0[0x08B0/4] = 0x00010004;
-        if(sd->Card.PRAMDAC0[0x08B4/4] & 1)
-           sd->Card.LVDS = TRUE;
-        }
 
     sd->Card.PRAMDAC[0x0300/4] = 0;
 
@@ -382,31 +358,27 @@ static const struct NVDevice {
 
     /* Known: match ProductID exactly */
     { 0x10de, 0x0020, NV04,	NV_ARCH_04, NV4Init, FALSE }, /* RIVA TNT */
-
     { 0x10de, 0x0028, NV05,	NV_ARCH_04, NV4Init, FALSE }, /* RIVA TNT2 */
+    { 0x10de, 0x0029, NV05,	NV_ARCH_04, NV4Init, FALSE }, /* RIVA TNT2 Ultra */
     { 0x10de, 0x002a, NV05,	NV_ARCH_04, NV4Init, FALSE }, /* Unknown TNT2 */
+    { 0x10de, 0x002b, NV05,	NV_ARCH_04, NV4Init, FALSE },
     { 0x10de, 0x002c, NV05,	NV_ARCH_04, NV4Init, FALSE }, /* Vanta */
-    { 0x10de, 0x0029, NV05,	NV_ARCH_04, NV4Init, FALSE }, /* RIVA TNT2 Ultra -needs confirmation */
     { 0x10de, 0x002d, NV05M64,	NV_ARCH_04, NV4Init, FALSE }, /* RIVA TNT2 Model 64 */
-
+    { 0x10de, 0x002e, NV06,	NV_ARCH_04, NV4Init, FALSE },
+    { 0x10de, 0x002f, NV06,	NV_ARCH_04, NV4Init, FALSE },
     { 0x10de, 0x00a0, NV05,	NV_ARCH_04, NV4Init, FALSE }, /* Aladdin TNT2 */
-
     { 0x10de, 0x0100, NV10,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce 256 */
     { 0x10de, 0x0101, NV10,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce DDR */
+    { 0x10de, 0x0102, NV10,	NV_ARCH_10, NV10Init, FALSE },
     { 0x10de, 0x0103, NV10,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro */
-
     { 0x10de, 0x0110, NV11,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 MX/MX 400 */
     { 0x10de, 0x0111, NV11,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 MX 100/200 */
     { 0x10de, 0x0112, NV11,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 Go */
     { 0x10de, 0x0113, NV11,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro2 MXR/EX/Go */
-
-    { 0x10de, 0x01A0, NV11,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 Integrated GPU - needs confirmation */
-
     { 0x10de, 0x0150, NV15,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 GTS */
     { 0x10de, 0x0151, NV15,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 Ti */
     { 0x10de, 0x0152, NV15,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 Ultra */
     { 0x10de, 0x0153, NV15,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro2 Pro */
-
     { 0x10de, 0x0170, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 460 */
     { 0x10de, 0x0171, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 440 */
     { 0x10de, 0x0172, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 420 */
@@ -416,62 +388,57 @@ static const struct NVDevice {
     { 0x10de, 0x0176, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 420 Go 32M */
     { 0x10de, 0x0177, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 460 Go */
     { 0x10de, 0x0178, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro4 550 XGL */
-
     { 0x10de, 0x0179, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 440 Go 64M / GeForce4 Mx (Mac) */
-
     { 0x10de, 0x017a, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro4 NVS */
     { 0x10de, 0x017c, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro4 500 GoGL */
     { 0x10de, 0x017d, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 410 Go 16M */
-
+    { 0x10de, 0x0180, NV18,	NV_ARCH_10, NV10Init, FALSE },
     { 0x10de, 0x0181, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 440 with AGP8x */
     { 0x10de, 0x0182, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 440SE with AGP8x */
     { 0x10de, 0x0183, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 420 with AGP8x */
-    { 0x10de, 0x0185, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX 4000 */
     { 0x10de, 0x0186, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 448 Go */
     { 0x10de, 0x0187, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 488 Go */
     { 0x10de, 0x0188, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro4 580 XGL */
-
     { 0x10de, 0x0189, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX with AGP8X (Mac) */
-
     { 0x10de, 0x018a, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro4 280 NVS */
     { 0x10de, 0x018b, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro4 380 XGL */
-    { 0x10de, 0x018c, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* Quadro NVS 50 PCI */
-    { 0x10de, 0x018d, NV18,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 448 Go */
-
+    { 0x10de, 0x01a0, NV11,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce2 Integrated GPU */
     { 0x10de, 0x01f0, NV17,	NV_ARCH_10, NV10Init, FALSE }, /* GeForce4 MX Integerated GPU */
-    
     { 0x10de, 0x0200, NV20,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce3 */
     { 0x10de, 0x0201, NV20,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce3 Ti 200 */
     { 0x10de, 0x0202, NV20,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce3 Ti 500 */
     { 0x10de, 0x0203, NV20,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro DCC */
-
     { 0x10de, 0x0250, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 Ti 4600 */
     { 0x10de, 0x0251, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 Ti 4400 */
+    { 0x10de, 0x0252, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* 0x252 */
     { 0x10de, 0x0253, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 Ti 4200 */
     { 0x10de, 0x0258, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 900 XGL */
     { 0x10de, 0x0259, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 750 XGL */
     { 0x10de, 0x025b, NV25,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 700 XGL */
-
     { 0x10de, 0x0280, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 Ti 4800 */
     { 0x10de, 0x0281, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 Ti 4200 with AGP8X */
     { 0x10de, 0x0282, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 Ti 4800 SE */
     { 0x10de, 0x0286, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* GeForce4 4200 Go */
-    { 0x10de, 0x028c, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 700 GoGL */
     { 0x10de, 0x0288, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 980 XGL */
     { 0x10de, 0x0289, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 780 XGL */
-
+    { 0x10de, 0x028c, NV28,	NV_ARCH_20, NV20Init, FALSE }, /* Quadro4 700 GoGL */
+    { 0x10de, 0x02a0, NV20,	NV_ARCH_20, NV20Init, FALSE }, 
     { 0x10de, 0x0301, NV30,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5800 Ultra */
     { 0x10de, 0x0302, NV30,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5800 */
     { 0x10de, 0x0308, NV30,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX 2000 */
     { 0x10de, 0x0309, NV30,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX 1000 */
-
     { 0x10de, 0x0311, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5600 Ultra */
     { 0x10de, 0x0312, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5600 */
+    { 0x10de, 0x0313, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* 0x313 */
     { 0x10de, 0x0314, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5600 SE */
+    { 0x10de, 0x0316, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* 0x316 */
+    { 0x10de, 0x0317, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* 0x317 */
     { 0x10de, 0x031a, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go5600 */
     { 0x10de, 0x031b, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go5650 */
     { 0x10de, 0x031c, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX Go700 */
- 
+    { 0x10de, 0x031d, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* 0x31d */
+    { 0x10de, 0x031e, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* 0x31e */
+    { 0x10de, 0x031f, NV31,	NV_ARCH_30, NV20Init, FALSE }, /* 0x31f */
     { 0x10de, 0x0320, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5200 */
     { 0x10de, 0x0321, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5200 Ultra */
     { 0x10de, 0x0322, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5200 */
@@ -481,14 +448,13 @@ static const struct NVDevice {
     { 0x10de, 0x0326, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5500 */
     { 0x10de, 0x0327, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5100 */
     { 0x10de, 0x0328, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go5200 32M/64M */
-
     { 0x10de, 0x0329, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* 0x329 / GeForce FX 5200 (Mac) */
-
     { 0x10de, 0x032a, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro NVS 280 PCI */
     { 0x10de, 0x032b, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX 500/600 PCI */
     { 0x10de, 0x032c, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go53xx Series */
     { 0x10de, 0x032d, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go5100 */
-
+    { 0x10de, 0x032e, NV34,	NV_ARCH_30, NV20Init, FALSE },
+    { 0x10de, 0x032f, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* 0x32F */
     { 0x10de, 0x0330, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce Fx 5900 Ultra */
     { 0x10de, 0x0331, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5900 */
     { 0x10de, 0x0332, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5900XT */
@@ -496,126 +462,74 @@ static const struct NVDevice {
     { 0x10de, 0x0334, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5900ZT */
     { 0x10de, 0x0338, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX 3000 */
     { 0x10de, 0x033F, NV34,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX 700 */
-
     { 0x10de, 0x0341, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5700 Ultra */
     { 0x10de, 0x0342, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5700 */
     { 0x10de, 0x0343, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5700LE */
     { 0x10de, 0x0344, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX 5700VE */
+    { 0x10de, 0x0345, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* 0x345 */
     { 0x10de, 0x0347, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go5700 */
     { 0x10de, 0x0348, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* GeForce FX Go5700 */
+    { 0x10de, 0x0349, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* 0x349 */
+    { 0x10de, 0x034B, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* 0x34B */
     { 0x10de, 0x034C, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX Go1000 */
     { 0x10de, 0x034E, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* Quadro FX 1100 */
-
+    { 0x10de, 0x034F, NV36,	NV_ARCH_30, NV20Init, FALSE }, /* 0x34F */
     { 0x10de, 0x0040, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 Ultra */
     { 0x10de, 0x0041, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 */
     { 0x10de, 0x0042, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 LE */
-    { 0x10de, 0x0043, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 XE */
-    { 0x10de, 0x0044, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 XT */
+    { 0x10de, 0x0043, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x043 */
     { 0x10de, 0x0045, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 GT */
-    { 0x10de, 0x0046, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 GT */
-    { 0x10de, 0x0047, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 GS */
-    { 0x10de, 0x0048, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 XT */
+    { 0x10de, 0x0049, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* 0x049 */
     { 0x10de, 0x004E, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 4000 */
-
-    { 0x10de, 0x00C0, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 GS */
-    { 0x10de, 0x00C1, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 */
-    { 0x10de, 0x00C2, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 LE */
-    { 0x10de, 0x00C3, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 XT */
-    { 0x10de, 0x00C8, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6800 */
-    { 0x10de, 0x00C9, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6800 Ultr */
-    { 0x10de, 0x00CC, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX Go1400 */
-    { 0x10de, 0x00CD, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 3450/4000 SDI */
-    { 0x10de, 0x00CE, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 1400 */
-
+    { 0x10de, 0x00C0, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0C0 */
+    { 0x10de, 0x00C1, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0C1 */
+    { 0x10de, 0x00C2, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0C2 */
+    { 0x10de, 0x00C8, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0C8 */
+    { 0x10de, 0x00C9, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0C9 */
+    { 0x10de, 0x00CC, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0CC */
+    { 0x10de, 0x00CE, NV36,	NV_ARCH_40, NV20Init, FALSE }, /* 0x0CE */
     { 0x10de, 0x00F1, NV36,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 / GeForce 6600 GT (Verified: LeadTek GeForce 6600 GT) */
     { 0x10de, 0x00F2, NV43,     NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 / GeForce 6600 GT (Verified: Club3D GeForce 6600) */
-
     { 0x10de, 0x0140, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 GT */
     { 0x10de, 0x0141, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 */
-    { 0x10de, 0x0142, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 LE */
-    { 0x10de, 0x0143, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6600 VE */
-    { 0x10de, 0x0144, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6600 */
+    { 0x10de, 0x0142, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0142 */
+    { 0x10de, 0x0143, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0143 */
+    { 0x10de, 0x0144, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0144 */
     { 0x10de, 0x0145, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6610 XL */
-    { 0x10de, 0x0146, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6600 TE/6200 TE */
-    { 0x10de, 0x0147, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6700 XL */
-    { 0x10de, 0x0148, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6600 */
-    { 0x10de, 0x0149, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6600 GT */
-    { 0x10de, 0x014C, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 550 */
-    { 0x10de, 0x014D, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 550 */
+    { 0x10de, 0x0146, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0146 */
+    { 0x10de, 0x0147, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0147 */
+    { 0x10de, 0x0148, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0148 */
+    { 0x10de, 0x0149, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0149 */
+    { 0x10de, 0x014B, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x014B */
+    { 0x10de, 0x014C, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x014C */
+    { 0x10de, 0x014D, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x014D */
     { 0x10de, 0x014E, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 540 */
     { 0x10de, 0x014F, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6200 */
-
-    { 0x10de, 0x0160, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6500 */
-    { 0x10de, 0x0161, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6200 TurboCache */
-    { 0x10de, 0x0162, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6200SE TurboCache */
-    { 0x10de, 0x0163, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6200 LE */
-    { 0x10de, 0x0164, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6200 */
-    { 0x10de, 0x0165, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro NVS 285 */
-    { 0x10de, 0x0166, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6400 */
-    { 0x10de, 0x0167, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6200 */
-    { 0x10de, 0x0168, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6400 */
-    { 0x10de, 0x0169, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6250 */
+    { 0x10de, 0x0160, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0160 */
+    { 0x10de, 0x0166, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0166 */
+    { 0x10de, 0x0210, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0210 */
+    { 0x10de, 0x0211, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x0211 */
+    { 0x10de, 0x021D, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x021D */
+    { 0x10de, 0x021E, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* 0x021E */
     
-    { 0x10de, 0x0211, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 */
-    { 0x10de, 0x0212, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 LE */
-    { 0x10de, 0x0215, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 GT */
-    { 0x10de, 0x0218, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6800 XT */
-
-    { 0x10de, 0x0221, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6200 */
-    { 0x10de, 0x0222, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6200 A-LE */
-
-    { 0x10de, 0x0090, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7800 GTX */
-    { 0x10de, 0x0091, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7800 GTX */
-    { 0x10de, 0x0092, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7800 GT */
-    { 0x10de, 0x0093, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7800 GS */
-    { 0x10de, 0x0095, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7800 SLI */
-    { 0x10de, 0x0098, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7800 */
-    { 0x10de, 0x0099, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7800 GTX */
-    { 0x10de, 0x009D, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 4500 */
-
-    { 0x10de, 0x01D1, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7300 LE */
-    { 0x10de, 0x01D3, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7300 SE */
-    { 0x10de, 0x01D6, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7200 */
-    { 0x10de, 0x01D7, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7300 */
-    { 0x10de, 0x01D8, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7400 */
-    { 0x10de, 0x01D9, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7400 GS */
-    { 0x10de, 0x01DA, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro NVS 110M */
-    { 0x10de, 0x01DB, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro NVS 120M */
-    { 0x10de, 0x01DC, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 350M */
-    { 0x10de, 0x01DD, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7500 LE */
-    { 0x10de, 0x01DE, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 350 */
-    { 0x10de, 0x01DF, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7300 GS */
-
-    { 0x10de, 0x0391, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7600 GT */
-    { 0x10de, 0x0392, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7600 GS */
-    { 0x10de, 0x0393, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7600 GT */
-    { 0x10de, 0x0394, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7600 LE */
-    { 0x10de, 0x0395, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7600 GT */
-    { 0x10de, 0x0397, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7700 */
-    { 0x10de, 0x0398, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7600 */
-    { 0x10de, 0x0399, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7600 GT */
-    { 0x10de, 0x039A, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce NVS 300M */
-    { 0x10de, 0x039B, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7900 SE */
-    { 0x10de, 0x039C, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 550M */
-    { 0x10de, 0x039E, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 560 */
-    
-    { 0x10de, 0x0290, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7900 GTX */
-    { 0x10de, 0x0291, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7900 GT */
-    { 0x10de, 0x0292, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 7900 GS */
-    { 0x10de, 0x0298, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7900 GS */
-    { 0x10de, 0x0299, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 7900 GTX */
-    { 0x10de, 0x029A, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 2500M */
-    { 0x10de, 0x029B, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 1500M */
-    { 0x10de, 0x029C, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 5500 */
-    { 0x10de, 0x029D, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 3500 */
-    { 0x10de, 0x029E, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 1500 */
-    { 0x10de, 0x029F, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* Quadro FX 4500 X2 */
-
-    { 0x10de, 0x0240, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6150 */
-    { 0x10de, 0x0241, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6150 LE */
-    { 0x10de, 0x0242, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce 6100 */
-    { 0x10de, 0x0244, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6150 */
-    { 0x10de, 0x0247, NV36, 	NV_ARCH_40, NV20Init, FALSE }, /* GeForce Go 6100 */
+    /* Unknown: Match ProductID & 0xFFF0 */
+    { 0x10de, 0x0170, NV17, NV_ARCH_10, NV10Init, TRUE },
+    { 0x10de, 0x0180, NV18, NV_ARCH_10, NV10Init, TRUE },
+    { 0x10de, 0x0250, NV25, NV_ARCH_20, NV20Init, TRUE },
+    { 0x10de, 0x0280, NV28, NV_ARCH_20, NV20Init, TRUE },
+    { 0x10de, 0x0300, NV30, NV_ARCH_30, NV20Init, TRUE },
+    { 0x10de, 0x0310, NV31, NV_ARCH_30, NV20Init, TRUE },
+    { 0x10de, 0x0320, NV34, NV_ARCH_30, NV20Init, TRUE },
+    { 0x10de, 0x0340, NV34, NV_ARCH_30, NV20Init, TRUE },
+    { 0x10de, 0x0040, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x00C0, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x0120, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x0140, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x0160, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x0130, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x01D0, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x0090, NV36, NV_ARCH_40, NV20Init, TRUE },
+    { 0x10de, 0x0210, NV36, NV_ARCH_40, NV20Init, TRUE },
     
     { 0x0000, 0x0000, }
 };

@@ -96,9 +96,6 @@ typedef struct CardState {
     ULONG   timingH;
     ULONG   timingV;
     ULONG   displayV;
-    ULONG   control;
-    ULONG   crtcSync;
-    ULONG   crtcVSync;
     struct {
 	UBYTE	attr[0x15];
 	UBYTE	crtc[0x41];
@@ -107,8 +104,6 @@ typedef struct CardState {
 	UBYTE	dac[256*3];
 	UBYTE	misc;
     } Regs;
-    ULONG   fp_horiz_regs[7];
-    ULONG   fp_vert_regs[7];
 } RIVA_HW_STATE;
 
 struct staticdata;
@@ -120,12 +115,10 @@ typedef struct Card {
     UBYTE	    *FrameBuffer;
     ULONG	    FrameBufferSize;
     ULONG	    FbUsableSize;
-    BOOL            FpScale;
     APTR	    Registers;
     CardType	    Type;
     BOOL	    FlatPanel;
     BOOL	    paletteEnabled;
-    BOOL            LVDS;
 
     UWORD	    Architecture;
     UWORD	    Chipset;	    /* == ProductID */
@@ -145,9 +138,6 @@ typedef struct Card {
     ULONG	    Television;
     ULONG	    fpWidth;
     ULONG	    fpHeight;
-    ULONG           fpVTotal;
-    ULONG           fpSyncs;
-    ULONG           FPDither;
     BOOL	    twoHeads;
     BOOL	    twoStagePLL;
     BOOL	    fpScaler;
