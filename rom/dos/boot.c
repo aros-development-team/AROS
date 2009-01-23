@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2001, The AROS Development Team. All rights reserved.
     $Id: boot.c 21768 2004-06-17 21:59:56Z hkiel $
 
     Desc: Boot your operating system.
@@ -25,7 +25,7 @@
 void boot(struct ExecBase *SysBase, BOOL hidds_ok)
 {
     LONG rc = RETURN_FAIL;
-    BPTR cis;
+    BPTR cis = NULL;
 
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
@@ -87,7 +87,7 @@ void boot(struct ExecBase *SysBase, BOOL hidds_ok)
     } else
 	kprintf("Cannot open boot console\n");
 
-    /* We get here when the Boot Shell Window is left with EndShell/EndCli. 
+    /* We get here when the Boot Shell Window is left with EndShell/EndCli.
        There's no RemTask() here, otherwise the process cleanup routines
        are not called. And that would for example mean, that the
        Boot Process (having a CLI) is not removed from the rootnode.
