@@ -552,7 +552,7 @@ VOID NVBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 	
 	_sd->surface_format = bm->surface_format;
 	_sd->dst_pitch 	= bm->pitch;
-	_sd->dst_offset = bm->framebuffer;
+	_sd->dst_offset 	= bm->framebuffer;
 
 	NVDmaStart(&_sd->Card, RECT_FORMAT, 1);
 	NVDmaNext(&_sd->Card, bm->rect_format);
@@ -567,9 +567,7 @@ VOID NVBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
         NVDmaNext(&_sd->Card, ((msg->maxX - msg->minX + 1) << 16)
 	    | ((msg->maxY - msg->minY + 1) & 0xffff));
 
-        /* This clause was new in the xorg driver */
-        if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
-        	NVDmaKickoff(&_sd->Card);
+	NVDmaKickoff(&_sd->Card);
 	
 //	if ((msg->maxX - msg->minX) * (msg->maxY - msg->minY) > 512)
 //	    NVSync(_sd);
