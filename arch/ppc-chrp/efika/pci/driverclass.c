@@ -167,6 +167,33 @@ void *PCIEfika__Hidd_PCIDriver__MapPCI(OOP_Class *cl, OOP_Object *o,
 	return msg->PCIAddress;
 }
 
+void *PCIEfika__Hidd_PCIDriver__AllocPCIMem(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_AllocPCIMem *msg)
+{
+	void *KernelBase = OpenResource("kernel.resource");
+    void *memory = OOP_DoSuperMethod(cl, o, msg);
+
+    if (memory)
+    {
+    	KrnSetProtection(memory, msg->Size, MAP_CacheInhibit | MAP_Guarded | MAP_Readable | MAP_Writable);
+    }
+
+    return memory;
+}
+
+/*
+    PCIDriver::FreePCIMemory(Address) frees previously allocated memory for PCI
+    devices
+*/
+VOID PCIEfika__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_FreePCIMem *msg)
+{
+	void *KernelBase = OpenResource("kernel.resource");
+	KrnSetProtection(msg->Address, 4096, MAP_Readable | MAP_Writable);
+    OOP_DoSuperMethod(cl, o, msg);
+}
+
+
 /* Class initialization and destruction */
 
 static int PCIEfika_InitClass(LIBBASETYPEPTR LIBBASE)
