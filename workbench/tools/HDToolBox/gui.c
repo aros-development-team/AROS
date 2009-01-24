@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -406,7 +406,7 @@ AROS_UFH3(void, buttons_function,
                 struct TypeNode *tn;
                 STRPTR name;
                 DoMethod(partitiontypegadgets.lv, MUIM_List_GetEntry, active, (IPTR)&name);
-                tn = (struct TypeNode *)FindName(&partitiontypegadgets.ttn->typelist, name);
+                tn = (struct TypeNode *)FindName(partitiontypegadgets.ttn->typelist, name);
                 setTypeString(&tn->type, partitiontypegadgets.hexid);
                 CopyMem(&tn->type, &partitiontypegadgets.type, sizeof(struct PartitionType));
             }
@@ -1035,7 +1035,7 @@ AROS_UFH3(void, buttons_function,
                     partitiontypegadgets.ttn = findTableTypeNode(partition->root->table->type);
                     if (partitiontypegadgets.ttn)
                     {
-                        tn = (struct TypeNode *)partitiontypegadgets.ttn->typelist.lh_Head;
+                        tn = (struct TypeNode *)partitiontypegadgets.ttn->typelist->lh_Head;
                         while (tn->ln.ln_Succ)
                         {
                             DoMethod
