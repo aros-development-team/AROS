@@ -18,6 +18,7 @@ extern struct TagItem *BootMsg;
 void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
+    int cause = 0;
 
     //D(bug("[KRN] SysCall handler. context @ %p SC=%d\n", ctx, ctx->gpr[3]));
 
@@ -50,11 +51,12 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
             break;
 
         case SC_CAUSE:
-            {
-                struct ExecBase *SysBase = getSysBase();
-                if (SysBase)
-                    core_Cause(SysBase);
-            }
+//            {
+//                struct ExecBase *SysBase = getSysBase();
+//                if (SysBase)
+//                    core_Cause(SysBase);
+//            }
+        	cause = 1;
             break;
 
         case SC_DISPATCH:
@@ -105,5 +107,8 @@ void __attribute__((noreturn)) syscall_handler(regs_t *ctx, uint8_t exception, v
         }
     }
 
-    core_LeaveInterrupt(ctx);
+    if (cause)
+    	core_ExitInterrupt(ctx);
+    else
+    	core_LeaveInterrupt(ctx);
 }
