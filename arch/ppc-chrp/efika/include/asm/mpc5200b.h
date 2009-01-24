@@ -218,10 +218,10 @@ typedef struct {
 
 /* Slice timer */
 typedef struct {
-	uint32_t 	slt_tc;	/* Terminal count register */
-	uint32_t	slt_cf;	/* Control field register */
-	uint32_t	slt_cv;	/* Count value register. Read only! */
-	uint32_t	slt_ts;	/* Timer Status register */
+	volatile uint32_t 	slt_tc;	/* Terminal count register */
+	volatile uint32_t	slt_cf;	/* Control field register */
+	volatile uint32_t	slt_cv;	/* Count value register. Read only! */
+	volatile uint32_t	slt_ts;	/* Timer Status register */
 } slt_t;
 
 #define SLT_CF_RUNWAIT		0x04000000	/* Run/Wait */
