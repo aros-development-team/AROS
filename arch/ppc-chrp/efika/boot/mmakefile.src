@@ -36,18 +36,19 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-packet \
 #MM	kernel-workbench \
 #MM	kernel-boot \
-#MM	kernel-bootmenu \
 #MM kernel-dos \
 #MM	hidd-i2c \
 #MM	hidd-radeon \
 #MM	hidd-usb \
 #MM	workbench-fs-nil \
-#MM	workbench-fs-ram \
 #MM	workbench-libs-partition \
 #MM	contrib-cdvdfs \
+#MM contrib-sfs \
+#MM contrib-amberram \
 #MM	workbench-hidd-graphics
 
 
+# MM	workbench-fs-ram \
 
 # MM	kernel-ata \
 
@@ -55,9 +56,9 @@ include $(TOP)/config/make.cfg
 PKG_LIBS := aros mathieeesingbas partition expansion utility oop graphics layers intuition keymap workbench boot dos
 PKG_RSRC := misc battclock bootloader openfirmware
 PKG_DEVS :=  input gameport keyboard console timer
-PKG_HANDLERS := con nil ram packet cdrom
+PKG_HANDLERS := con nil amberram packet cdrom
 PKG_HIDDS:= graphics hiddclass i2c radeon usb ohci pci pci-efika irq
-PKG_USB:= hid
+PKG_USB:= hid storage
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
