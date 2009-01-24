@@ -7,7 +7,7 @@
 
 /****************************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <exec/types.h>
 #include <exec/io.h>
