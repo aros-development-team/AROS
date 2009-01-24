@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -63,12 +63,10 @@ struct TypeNode *findPartitionType(struct PartitionType *type, ULONG tabletype)
 
     D(bug("[HDToolBox] findPartitionType()\n"));
 
-    if (tabletype == PHPTT_EBR)
-        tabletype = PHPTT_MBR;    // EBR uses same types as MBR
     ttn = findTableTypeNode(tabletype);
     if (ttn)
     {
-        tn = (struct TypeNode *)ttn->typelist.lh_Head;
+        tn = (struct TypeNode *)ttn->typelist->lh_Head;
         while (tn->ln.ln_Succ)
         {
             if (tn->type.id_len == type->id_len)
@@ -95,9 +93,19 @@ void getTableTypeList(struct List *list)
         ttn = AllocMem(sizeof(struct TableTypeNode), MEMF_PUBLIC | MEMF_CLEAR);
         if (ttn)
         {
-            ttn->pti = PartitionBase->tables[i];
-            NEWLIST(&ttn->typelist);
-            AddTail(list, &ttn->ln);
+            ttn->typelist =
+                AllocMem(sizeof(struct List), MEMF_PUBLIC | MEMF_CLEAR);
+            if (ttn->typelist != NULL)
+            {
+                ttn->pti = PartitionBase->tables[i];
+                NEWLIST(ttn->typelist);
+                AddTail(list, &ttn->ln);
+            }
+            else
+            {
+                FreeMem(ttn, sizeof(struct TableTypeNode));
+                ttn = NULL;
+            }
         }
     }
 }
@@ -281,7 +289,7 @@ LONG parsePrefs(char *buffer, LONG size)
                     printf("LINE %d: Unexpected item after table id\n", line);
                     return 0;
                 }
-                AddTail(&ttn->typelist, &tn->ln);
+                AddTail(ttn->typelist, &tn->ln);
             }
             else
             {
@@ -294,6 +302,11 @@ LONG parsePrefs(char *buffer, LONG size)
             break;
         }
     }
+
+    // EBR uses same types as MBR
+    findTableTypeNode(PHPTT_EBR)->typelist =
+        findTableTypeNode(PHPTT_MBR)->typelist;
+
     return 0;
 }
 

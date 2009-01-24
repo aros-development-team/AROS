@@ -6,7 +6,7 @@
 
 struct TableTypeNode {
 	struct Node ln;
-	struct List typelist;
+	struct List *typelist;
 	struct PartitionTableInfo *pti;
 	struct PartitionType defaulttype;
 };
