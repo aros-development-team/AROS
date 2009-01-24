@@ -23,6 +23,92 @@ typedef struct {
 	uint32_t	rpn;
 } pte_t;
 
+/* Search the MMU hash table for page table entry corresponding to virtual address given */
+
+pte_t *find_pte(uint64_t virt)
+{
+	pte_t *ret = (pte_t *)0;
+
+	uint32_t mask;
+	pte_t *pteg;
+	uint32_t vsid;
+	int i;
+
+	/* Calculate the hash function */
+	uint32_t hash = (((virt >> 12) & 0xffff) ^ (virt >> 28)) & 0x7ffff;
+
+	/* what vsid we are looking for? */
+	vsid = 0x80000000 | ((virt >> 28) << 7) | ((virt >> 22) & 0x3f);
+
+	/* What mask are we using? Depends on the size of MMU hashtable */
+	mask = ((rdspr(SDR1) & 0x1ff) << 16) | 0xffc0;
+
+	/* Get the first group of pte's */
+	pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash << 6) & mask));
+
+	/* Search the primary group */
+	for (i=0; i < 8; i++)
+	{
+		if (pteg[i].vsid == vsid)
+		{
+			ret = &pteg[i];
+			break;
+		}
+	}
+
+	/*
+	 * If the page was not found in primary group, get the second hash, second
+	 * vsid and search the secondary group.
+	 */
+	if (!ret)
+	{
+		uint32_t hash2 = (~hash) & 0x7ffff;
+		vsid |= 0x40;
+		pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash2 << 6) & mask));
+
+		/* Search the secondary group */
+		for (i=0; i < 8; i++)
+		{
+			if (pteg[i].vsid == vsid)
+			{
+				ret = &pteg[i];
+				break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+uint16_t mmu_protection(KRN_MapAttr flags)
+{
+	uint16_t ppc_prot = 2 << 3;	/* WIMG = 0010 */
+
+    if (flags & MAP_Readable)
+    {
+    	ppc_prot |= 0x03;
+    }
+    if (flags & MAP_Writable)
+    {
+    	ppc_prot = (ppc_prot | 2) & ~1;
+    }
+
+    if (flags & MAP_WriteThrough)
+    {
+    	ppc_prot |= 8 << 3;
+    }
+    if (flags & MAP_Guarded)
+    {
+    	ppc_prot |= 1 << 3;
+    }
+    if (flags & MAP_CacheInhibit)
+    {
+    	ppc_prot = (ppc_prot | 4 << 3) & ~ (8 << 3);
+    }
+
+    return ppc_prot & 0xfff;
+}
+
 int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 {
 	uint32_t mask = ((rdspr(SDR1) & 0x1ff) << 16) | 0xffc0;
@@ -31,20 +117,15 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 	pte_t local_pte;
 	int ptenum;
 
-//	D(bug("[KRN] mmu_map_page(%06x%07x, %08x, %08x)\n", (uint32_t)(virt >> 28), (uint32_t)(virt & 0x0fffffff), phys, prot));
-
 	/* Calculate the hash function */
 	uint32_t hash = (((uint32_t)(virt >> 12) & 0xffff) ^ (uint32_t)(virt >> 28)) & 0x7ffff;
 
 	pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash << 6) & mask));
 
-//	D(bug("[KRN] primary hash: %08x, pteg: %08x\n", hash, pteg));
-
 	for (ptenum = 0; ptenum < 8; ptenum++)
 	{
 		if (!(pteg[ptenum].vsid & 0x80000000))
 		{
-//			D(bug("[KRN] found free pteg at %08x\n", &pteg[ptenum]));
 			pte = &pteg[ptenum];
 			local_pte.vsid = 0;
 			break;
@@ -54,13 +135,11 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 	{
 		uint32_t hash2 = (~hash) & 0x7ffff;
 		pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash2 << 6) & mask));
-//		D(bug("[KRN] primary hash: %08x, pteg: %08x\n", hash, pteg));
 
 		for (ptenum = 0; ptenum < 8; ptenum++)
 		{
 			if (!(pteg[ptenum].vsid & 0x80000000))
 			{
-//				D(bug("[KRN] found free pteg at %08x\n", &pteg[ptenum]));
 				pte = &pteg[ptenum];
 				local_pte.vsid = 0x40;
 				break;
@@ -80,7 +159,6 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 	local_pte.vsid |= 0x80000000;
 	local_pte.rpn = (phys & ~0xfff) | (prot & 0xfff);
 
-//	D(bug("[KRN] pte=%08x:%08x\n", local_pte.vsid, local_pte.rpn));
 	*pte = local_pte;
 
 	asm volatile("dcbst 0,%0; sync;"::"r"(pte));
@@ -91,12 +169,6 @@ int mmu_map_page(uint64_t virt, uint32_t phys, uint32_t prot)
 
 int mmu_map_area(uint64_t virt, uint32_t phys, uint32_t length, uint32_t prot)
 {
-//	D(bug("[KRN] mmu_map_area(%06x%07x - %06x%07x, %08x, %08x)\n",
-//			(uint32_t)(virt >> 28), (uint32_t)(virt & 0x0fffffff),
-//			(uint32_t)((virt + length - 1) >> 28), (uint32_t)((virt + length - 1) & 0x0fffffff),
-//			phys, prot
-//			));
-
 	while (length)
 	{
 		if (!mmu_map_page(virt, phys, prot))
@@ -239,7 +311,41 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
 	}
 }
 
+AROS_LH3(void, KrnSetProtection,
+		 AROS_LHA(void *, address, A0),
+		 AROS_LHA(uint32_t, length, D0),
+         AROS_LHA(KRN_MapAttr, flags, D1),
+         struct KernelBase *, KernelBase, 9, Kernel)
+{
+    AROS_LIBFUNC_INIT
 
+    uint32_t ppc_prot = mmu_protection(flags);
+	uintptr_t virt = (uintptr_t)address;
+	pte_t *pte;
+
+	D(bug("[KRN] KrnSetProtection(%08x, %08x, %04x)\n", virt, virt + length - 1, ppc_prot));
+
+	virt  &= ~4095;
+	length = (length + 4095) & ~4095;
+
+	uint32_t msr;
+	msr = goSuper();
+    while (length)
+    {
+    	pte = find_pte(virt);
+
+    	if (pte)
+    	{
+    		pte->rpn = (pte->rpn & 0xfffff000) | ppc_prot;
+    	}
+
+    	virt += 4096;
+    	length -= 4096;
+    }
+	goUser(msr);
+
+    AROS_LIBFUNC_EXIT
+}
 
 AROS_LH4(int, KrnMapGlobal,
          AROS_LHA(void *, virtual, A0),
@@ -252,31 +358,9 @@ AROS_LH4(int, KrnMapGlobal,
 
     int retval = 0;
     uint32_t msr;
-    uint32_t ppc_prot = 2 << 3;	/* WIMG = 0010 */
+    uint32_t ppc_prot = mmu_protection(flags);
 
     D(bug("[KRN] KrnMapGlobal(%08x->%08x %08x %04x)\n", virtual, physical, length, flags));
-
-    if (flags & MAP_Readable)
-    {
-    	ppc_prot |= 0x03;
-    }
-    if (flags & MAP_Writable)
-    {
-    	ppc_prot = (ppc_prot | 2) & ~1;
-    }
-
-    if (flags & MAP_WriteThrough)
-    {
-    	ppc_prot |= 8 << 3;
-    }
-    if (flags & MAP_Guarded)
-    {
-    	ppc_prot |= 1 << 3;
-    }
-    if (flags & MAP_CacheInhibit)
-    {
-    	ppc_prot = (ppc_prot | 4 << 3) & ~ (8 << 3);
-    }
 
     msr = goSuper();
     retval = mmu_map_area((uint64_t)virtual & 0xffffffff, physical, length, ppc_prot);
@@ -294,6 +378,24 @@ AROS_LH2(int, KrnUnmapGlobal,
 {
 	AROS_LIBFUNC_INIT
 
+	int retval = 0;
+	uint32_t msr;
+	uintptr_t virt = (uintptr_t)virtual;
+	virt &= ~4095;
+	length = (length + 4095) & ~4095;
+
+	msr = goSuper();
+	while(length)
+	{
+		pte_t *pte = find_pte(virt);
+		pte->vsid = 0;
+		virt += 4096;
+		length -= 4096;
+	}
+	goUser(msr);
+
+	return retval;
+
 	AROS_LIBFUNC_EXIT
 }
 
@@ -303,59 +405,15 @@ AROS_LH1(void *, KrnVirtualToPhysical,
 {
 	AROS_LIBFUNC_INIT
 
-	uint32_t msr;
+	pte_t *pte;
 	uintptr_t virt = (uintptr_t)virtual;
 	uintptr_t phys = 0xffffffff;
-	uint32_t mask;
-	pte_t *pteg;
-	uint32_t vsid;
-	int i;
+	uint32_t msr = goSuper();
 
-	/* Calculate the hash function */
-	uint32_t hash = (((virt >> 12) & 0xffff) ^ (virt >> 28)) & 0x7ffff;
+	pte = find_pte(virtual);
 
-	/* what vsid we are looking for? */
-	vsid = 0x80000000 | ((virt >> 28) << 7) | ((virt >> 22) & 0x3f);
-
-	/* Promote yourself in order to access the MMU table */
-	msr = goSuper();
-
-	/* What mask are we using? Depends on the size of MMU hashtable */
-	mask = ((rdspr(SDR1) & 0x1ff) << 16) | 0xffc0;
-
-	/* Get the first group of pte's */
-	pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash << 6) & mask));
-
-	/* Search the primary group */
-	for (i=0; i < 8; i++)
-	{
-		if (pteg[i].vsid == vsid)
-		{
-			phys = pteg[i].rpn & ~0xfff;
-			break;
-		}
-	}
-
-	/*
-	 * If the page was not found in primary group, get the second hash, second
-	 * vsid and search the secondary group.
-	 */
-	if (phys == 0xffffffff)
-	{
-		uint32_t hash2 = (~hash) & 0x7ffff;
-		vsid |= 0x40;
-		pteg = (pte_t *)((rdspr(SDR1) & ~0x1ff) | ((hash2 << 6) & mask));
-
-		/* Search the secondary group */
-		for (i=0; i < 8; i++)
-		{
-			if (pteg[i].vsid == vsid)
-			{
-				phys = pteg[i].rpn & ~0xfff;
-				break;
-			}
-		}
-	}
+	if (pte)
+		phys = pte->rpn & ~0xfff;
 
 	goUser(msr);
 
