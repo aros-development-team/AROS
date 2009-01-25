@@ -79,18 +79,5 @@
 
 ******************************************************************************/
 {
-    const char *apath;
-
-    if (path == NULL || argv == NULL || argv[0] == NULL)
-    {
-        errno = EFAULT;
-
-	return -1;
-    }
-
-    apath = __path_u2a(path);
-    if (!apath)
-        return -1;
-
-    return __spawnv(mode, LoadSeg(apath), argv);
+    return __spawnv(mode, path, 0, argv);
 }
