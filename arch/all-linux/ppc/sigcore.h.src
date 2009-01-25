@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals
@@ -21,7 +21,13 @@
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 
-#define _PUSH(sp,val)	(*--sp = (SP_TYPE)(val))
+#define _PUSH(sp,val)              \
+    do                             \
+    {                              \
+       SP_TYPE **stackp = (sp);    \
+       --*stackp;                  \
+       **stackp = (SP_TYPE) (val); \
+    } while (0)
 #define _POP(sp)	(*sp++)
 
 #ifndef _SIGNAL_H
@@ -86,7 +92,7 @@ struct AROS_cpu_context
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
 #define GetCpuContext(task)	((struct AROS_cpu_context *)\
 				 (GetIntETask(task)->iet_Context))
-#define GetSP(task)		(*(SP_TYPE **)&task->tc_SPReg)
+#define GetSP(task)		((SP_TYPE **)&task->tc_SPReg)
 
 
 /* Macros to access the stack pointer and program counter,
@@ -155,10 +161,11 @@ struct AROS_cpu_context
 	*(double*)&(sc->regs->gpr[PT_FPR0 + 2 * i]) = GetCpuContext(task)->fpregs[i];\
 }
 
-#define PREPARE_RETURN_ADDRESS(task, addr)\
-{\
-    GetCpuContext(task)->regs.link = addr;\
-}
+#define PREPARE_RETURN_ADDRESS(task, addr)                    \
+    do                                                        \
+    {                                                         \
+        GetCpuContext(task)->regs.link = (unsigned long) addr;\
+    } while (0)
 
 #define PREPARE_INITIAL_ARGS(task, args, numargs)\
 {\
@@ -167,11 +174,12 @@ struct AROS_cpu_context
 	GetCpuContext(task)->regs.gpr[3+i] = args[i];\
 }
 
-#define PREPARE_INITIAL_FRAME(sp,pc)\
-{\
-    GetCpuContext(task)->regs.gpr[1] = sp;\
-    GetCpuContext(task)->regs.nip    = pc;\
-}
+#define PREPARE_INITIAL_FRAME(sp,pc)                           \
+    do                                                         \
+    {                                                          \
+        GetCpuContext(task)->regs.gpr[1] = (unsigned long) sp; \
+        GetCpuContext(task)->regs.nip    = (unsigned long) pc; \
+    } while (0)
 
 /* For PowerPc setting up a task exception
     is just passing the SysBase as argument
@@ -208,25 +216,29 @@ struct AROS_cpu_context
    must store the value of "sp" after the macro and hand it to
    RESTOREREGS() below to restore this context. */
 
-#define SAVEREGS(task,sc)\
-{\
-    GetSP(task) = (SP_TYPE *)SP(sc); \
-    SAVE_CPU(task,sc);		     \
-    SAVE_FPU(task,sc);               \
-}
+#define SAVEREGS(task,sc)           \
+    do                              \
+    {                               \
+        SP_TYPE **sp = GetSP(task); \
+        *sp = (SP_TYPE *)SP(sc);    \
+        SAVE_CPU(task,sc);          \
+        SAVE_FPU(task,sc);          \
+    } while(0)
 
 /* This macro does the opposite to SAVEREGS(). It restores all
    general purpose registers. After that, you can enter the new
    tasks' context. Both "sp" and "sc" must be initialized.
    The macro will save the new SP into the sigcontext "sc". */
 
-#define RESTOREREGS(task,sc)\
-{\
-    RESTORE_FPU(task,sc);		  \
-    RESTORE_CPU(task,sc);		  \
-    SP(sc) = (typeof(SP(sc)))GetSP(task); \
-}
-    
+#define RESTOREREGS(task,sc)           \
+    do                                 \
+    {                                  \
+        RESTORE_FPU(task,sc);          \
+        RESTORE_CPU(task,sc);          \
+        SP_TYPE** sp = GetSP(task);    \
+        SP(sc) = (typeof(SP(sc))) *sp; \
+    } while(0)
+
 /* This macro prints the current signals' context */
 
 #define PRINT_SC(sc) \
