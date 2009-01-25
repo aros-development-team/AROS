@@ -876,6 +876,9 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
         case 0x2a:  // write
         case 0xaa:  // write12
         case 0x2e:  // writeverify
+        case 0xad:  // readdvdstructure
+        case 0xa4:  // reportkey
+        case 0xa3:  // sendkey
             break;
         default:
             *dma = FALSE;
