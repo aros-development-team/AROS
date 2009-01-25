@@ -1,23 +1,14 @@
-#ifndef ___STAT_H
-#define ___STAT_H
+#ifndef ___SPAWN_H
+#define ___SPAWN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: stat() internals - header file
     Lang: english
 */
 
-#include <dos/bptr.h>
-
-typedef struct
-{
-    BPTR command;
-    LONG returncode;
-    struct arosc_privdata *ppriv;
-} childdata_t;
-
-int __spawnv(int mode, BPTR seg, char *const argv[]);
+int __spawnv(int mode, const char *filename, int searchpath, char *const argv[]);
 
 #endif

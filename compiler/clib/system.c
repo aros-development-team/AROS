@@ -17,21 +17,26 @@
 
 #include "__errno.h"
 #include "__open.h"
-#include "__spawnv.h"
 #include "__upath.h"
 #include <process.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 
-/* defined in __spawnv.c */
-AROS_UFP3(extern LONG, wait_entry, 
-AROS_UFPA(char *, argstr,A0),
-AROS_UFPA(ULONG, argsize,D0),
-AROS_UFPA(struct ExecBase *,SysBase,A6));
+typedef struct
+{
+    BPTR command;
+    LONG returncode;
+    struct arosc_privdata *ppriv;
+} childdata_t;
 
-int system_sh(const char *string);
-int system_no_sh(const char *string);
+static AROS_UFP3(LONG, wait_entry,
+    AROS_UFPA(char *, argstr,A0),
+    AROS_UFPA(ULONG, argsize,D0),
+    AROS_UFPA(struct ExecBase *,SysBase,A6)
+);
+static int system_sh(const char *string);
+static int system_no_sh(const char *string);
 
 /*****************************************************************************
 
@@ -88,7 +93,101 @@ int system_no_sh(const char *string);
     }
 } /* system */
 
-int system_sh(const char *string)
+
+static AROS_UFH3(LONG, wait_entry,
+    AROS_UFHA(char *, argstr,A0),
+    AROS_UFHA(ULONG, argsize,D0),
+    AROS_UFHA(struct ExecBase *,SysBase,A6)
+)
+{
+    AROS_USERFUNC_INIT
+
+    struct DosLibrary *DOSBase;
+    struct Library *aroscbase;
+    LONG rc = -1;
+    childdata_t *childdata = (childdata_t *)FindTask(NULL)->tc_UserData;
+    struct CommandLineInterface *cli;
+    LONG stacksize;
+    fdesc *in, *out, *err;
+    fdesc *newin, *newout, *newerr;
+
+    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
+    if (DOSBase == NULL)
+        goto err1;
+
+    aroscbase = OpenLibrary("arosc.library", 0);
+    if (aroscbase == NULL)
+        goto err2;
+
+    newin = malloc(sizeof(fdesc));
+    newout = malloc(sizeof(fdesc));
+    newerr = malloc(sizeof(fdesc));
+    if(!newin || !newout || !newerr)
+    {
+	goto err2;
+    }
+#define privdata __get_arosc_privdata()
+    D(bug("privdata: %p, ppriv: %p\n", privdata, childdata->ppriv));
+    privdata->acpd_parent_does_upath = childdata->ppriv->acpd_doupath;
+    __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD | DO_NOT_CLONE_ENV_VARS;
+
+    __stdfiles[STDIN_FILENO] = childdata->ppriv->acpd_stdfiles[STDIN_FILENO];
+    __stdfiles[STDOUT_FILENO] = childdata->ppriv->acpd_stdfiles[STDOUT_FILENO];
+    __stdfiles[STDERR_FILENO] = childdata->ppriv->acpd_stdfiles[STDERR_FILENO];
+
+    cli = Cli();
+    if (cli)
+	stacksize = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+    else
+	stacksize = AROS_STACKSIZE;
+
+    if(__fd_array[STDIN_FILENO])
+	close(STDIN_FILENO);
+    if(__fd_array[STDOUT_FILENO])
+	close(STDOUT_FILENO);
+    if(__fd_array[STDERR_FILENO])
+	close(STDERR_FILENO);
+	
+    in = childdata->ppriv->acpd_fd_array[STDIN_FILENO];
+    out = childdata->ppriv->acpd_fd_array[STDOUT_FILENO];
+    err = childdata->ppriv->acpd_fd_array[STDERR_FILENO];
+
+    if(in) 
+	SelectInput(in->fcb->fh);
+    if(out) 
+	SelectOutput(out->fcb->fh);
+    if(err)
+	SelectError(err->fcb->fh);
+	
+    in->fcb->opencount++;
+    out->fcb->opencount++;
+    err->fcb->opencount++;
+    newin->fdflags = 0;
+    newout->fdflags = 0;
+    newerr->fdflags = 0;
+    newin->fcb  = in->fcb;
+    newout->fcb = out->fcb;
+    newerr->fcb = err->fcb;
+    __fd_array[STDIN_FILENO] = newin;
+    __fd_array[STDOUT_FILENO] = newout;
+    __fd_array[STDERR_FILENO] = newerr;
+	
+    rc = RunCommand(childdata->command, stacksize, argstr, argsize);
+
+    CloseLibrary(aroscbase);
+
+err2:
+    CloseLibrary((struct Library *)DOSBase);
+
+err1:
+    childdata->returncode = rc;
+
+    return rc;
+    
+    AROS_USERFUNC_EXIT
+}
+
+static int system_sh(const char *string)
 {
     pid_t pid = vfork();
     int status;
@@ -110,7 +209,7 @@ int system_sh(const char *string)
     }
 }
 	
-int system_no_sh(const char *string)
+static int system_no_sh(const char *string)
 {
     CONST_STRPTR apath;
     char *args, *cmd;
