@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2008, The AROS Development Team. All rights reserved
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -217,7 +217,7 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
              */
             IOBase  = Buses[a->PredefBus].port;
             IOAlt   = Buses[a->PredefBus].alt;
-            DMABase = Buses[a->PredefBus].DMA;
+            DMABase = (IPTR)Buses[a->PredefBus].DMA;
             INTLine = Buses[a->PredefBus].irq;
             a->PredefBus++;
         }
@@ -376,11 +376,11 @@ AROS_UFH3(void, Enumerator,
         }
         OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
 
-		if (IOBase == NULL)
+		if (IOBase == (IPTR)NULL)
 		{
 			D(bug("[ATA  ] Enumerator: Device using Legacy Ports\n"));
 			/* This may be wrong (how do you determine which legacy port it relates to?) */
-			Buses[legacyportcount++].DMA = DMABase;
+			Buses[legacyportcount++].DMA = (APTR)DMABase;
 		}
 		else
 		{
@@ -393,7 +393,7 @@ AROS_UFH3(void, Enumerator,
 		    {
 			if (IOBase == Buses[i].port)
 			{
-			    IOBase = NULL;
+			    IOBase = (IPTR)NULL;
 			    D(bug("[ATA  ] Enumerator: Device lists Legacy Port Address!!\n"));
 			}
 		    }
@@ -412,7 +412,7 @@ AROS_UFH3(void, Enumerator,
 		}
 		D(bug("[ATA  ] Enumerator: Registering Port %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
 
-		if (IOBase != NULL)
+		if (IOBase != (IPTR)NULL)
 		{
 			struct ata_ProbedPort *probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
 			probedport->atapp_IOBase = IOBase;
@@ -528,7 +528,8 @@ void ata_Scan(struct ataBase *base)
 
 	D(bug("[ATA--] ata_Scan: Registering Probed Ports..\n"));
 	probedport = NULL;
-	while ((probedport = RemHead((struct List *)&__probedports)) != NULL)
+	while ((probedport = (struct ata_ProbedPort *)
+        RemHead((struct List *)&__probedports)) != NULL)
 	{
 		Add_Device(
 			probedport->atapp_IOBase,
@@ -577,13 +578,10 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->ata_MemPool == NULL)
         return FALSE;
 
-	/* Prepair list for found ide ports */
+	/* Prepare list for found ide ports */
 	NEWLIST((struct List *)&__probedports);
 	legacyportcount = 0;
 
-    /*
-     * store library pointer so we can use it later
-     */
 	LIBBASE->ata_ScanFlags = ATA_SCANPCI | ATA_SCANLEGACY;
     LIBBASE->ata_32bit = FALSE;
     LIBBASE->ata_NoMulti = FALSE;

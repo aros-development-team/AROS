@@ -1,5 +1,5 @@
 /*
-    Copyright ï¿½ 2004-2008, The AROS Development Team. All rights reserved
+    Copyright © 2004-2009, The AROS Development Team. All rights reserved
     $Id$
 
     Desc:
@@ -229,13 +229,15 @@ static void ata_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
  */
 static ULONG ata_STUB(struct ata_Unit *au)
 {
-    bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum);
+    bug("[ATA%02ld] CALLED STUB FUNCTION (GENERIC). THIS OPERATION IS NOT "
+        "SUPPORTED BY DEVICE\n", au->au_UnitNum);
     return CDERR_NOCMD;
 }
 
 static ULONG ata_STUB_IO32(struct ata_Unit *au, ULONG blk, ULONG len, APTR buf, ULONG* act)
 {
-    bug("[ATA%02ld] CALLED STUB FUNCTION. THIS OPERATION IS NOT SUPPORTED BY DEVICE\n", au->au_UnitNum);
+    bug("[ATA%02ld] CALLED STUB FUNCTION (IO32). THIS OPERATION IS NOT "
+        "SUPPORTED BY DEVICE\n", au->au_UnitNum);
     return CDERR_NOCMD;
 }
 
@@ -309,7 +311,7 @@ void ata_HandleIRQ(struct ata_Bus *bus)
     if (0 != bus->ab_HandleIRQ)
     {
         /*
-         * ok, we have a routine to handle any form of transmission etc
+         * ok, we have a routine to handle any form of transmission etc.
          */
         DIRQ(bug("[ATA  ] IRQ: Calling dedicated handler... \n"));
         bus->ab_HandleIRQ(u, status);
@@ -538,7 +540,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
     /*
      * this loop may experience one of two scenarios
      * 1) we get a valid irq and the drive wanted to let us know that it's ready
-     * 2) we get an invalid irq due to some collissions. We may still want to go ahead and get some extra irq breaks
+     * 2) we get an invalid irq due to some collisions. We may still want to go ahead and get some extra irq breaks
      *    this would reduce system load a little
      */
 
@@ -552,7 +554,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
         ata_400ns(unit->au_Bus->ab_Alt);
 
         /*
-         * lets check if the drive is already good
+         * let's check if the drive is already good
          */
         status = ata_in(ata_Status, unit->au_Bus->ab_Port);
         if (0 == (status & (ATAF_DATAREQ | ATAF_BUSY)))
@@ -565,7 +567,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 
         /*
          * if IRQ wait is requested then allow either timeout or irq;
-         * then clear irq flag so we dont keep receiving more of these (especially when system suffers collissions)
+         * then clear irq flag so we don't keep receiving more of these (especially when system suffers collisions)
          */
         if (irq)
         {
@@ -591,10 +593,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
             break;
         }
         else
-        { 
-            /*
-             * device not ready just yet. lets set whether we want an IRQ and move on - to polling or irq wait
-             */
+        {
             ++step;
 
             /*
@@ -665,7 +664,7 @@ void ata_Wait(struct ata_Unit *unit, UWORD tout)
  * Procedure for sending ATA command blocks
  * it appears LARGE but there's a lot of COMMENTS here :)
  * handles *all* ata commands (no data, pio and dma)
- * naturally could be splitted at some point in the future
+ * naturally could be split at some point in the future
  * depends if anyone believes that the change for 50 lines 
  * would make slow ATA transfers any faster 
  */
@@ -797,7 +796,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
     
     /*
      * In case of PIO write the drive won't issue an IRQ before first
-     * data transfer, so we should poll the status and send the firs
+     * data transfer, so we should poll the status and send the first
      * block upon request.
      */
     if (block->method == CM_PIOWrite) {
@@ -852,7 +851,7 @@ static ULONG ata_exec_cmd(struct ata_Unit* au, ata_CommandBlock *block)
  */
 int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen, BOOL *dma, BOOL write)
 {
-    *dma &= (unit->au_XferModes & AF_XFER_DMA) ? TRUE : FALSE;
+    *dma = *dma && (unit->au_XferModes & AF_XFER_DMA) ? TRUE : FALSE;
     LONG err = 0;
 
     UBYTE cmd[12] = {
@@ -913,7 +912,7 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     }
 
     /*
-     * tell device if whether we want to read or write and if we want a dma transfer
+     * tell device whether we want to read or write and if we want a dma transfer
      */
     ata_out(((*dma) ? 1 : 0) | ((write) ? 4 : 0), atapi_Features, port);
     ata_out((datalen & 0xff), atapi_ByteCntL, port);
@@ -981,13 +980,13 @@ int atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen
     else
         err = atapi_EndCmd(unit);
 
-    if (TRUE == *dma)
+    if (*dma)
     {
         dma_StopDMA(unit);
         dma_Cleanup(data, datalen, !write);
     }
 
-    D(bug("[ATAPI] Error code %ld\n", err));
+    D(bug("[ATAPI] IO error code %ld\n", err));
     return err;
 }
 
@@ -996,14 +995,12 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
     APTR buffer = cmd->scsi_Data;
     ULONG length = cmd->scsi_Length;
     BOOL read = FALSE;
-    UBYTE status;
     UBYTE err = 0;
     BOOL dma = FALSE;
 
     cmd->scsi_Actual = 0;
 
     DATAPI(bug("[DSCSI] Sending packet!\n"));
-
 
     /*
      * setup DMA & push command
@@ -1035,8 +1032,9 @@ ULONG atapi_DirectSCSI(struct ata_Unit *unit, struct SCSICmd *cmd)
     DATAPI(bug("[ATA%02lx] SCSI Flags: %02lx / Error: %ld\n", unit->au_UnitNum, cmd->scsi_Flags, err));
     if ((err != 0) && (cmd->scsi_Flags & SCSIF_AUTOSENSE))
     {
-       atapi_RequestSense(unit, cmd->scsi_SenseData, cmd->scsi_SenseLength);
-       DUMP(dump(cmd->scsi_SenseData, cmd->scsi_SenseLength));
+        DATAPI(bug("[DSCSI] Packet Failed. Calling atapi_RequestSense\n"));
+        atapi_RequestSense(unit, cmd->scsi_SenseData, cmd->scsi_SenseLength);
+        DUMP(dump(cmd->scsi_SenseData, cmd->scsi_SenseLength));
     }
 
     return err;
@@ -1332,7 +1330,7 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     if (dma)
         unit->au_XferModes |= AF_XFER_DMA;
     else
-        unit->au_XferModes &=~AF_XFER_DMA;
+        unit->au_XferModes &= ~AF_XFER_DMA;
 }
     
 static void common_SetBestXferMode(struct ata_Unit* unit)
@@ -1712,7 +1710,7 @@ ULONG ata_Identify(struct ata_Unit* unit)
        For drive capacities > 8.3GB assume maximal possible layout.
        It really doesn't matter here, as BIOS will not handle them in
        CHS way anyway :)
-       i guess this just solves that weirdo div-by-zero crash, if anything else...
+       i guess this just solves that weirdo div-by-zero crash, if nothing else...
        */
     if ((unit->au_Drive->id_LBA48Sectors > (63 * 255 * 1024)) ||
         (unit->au_Drive->id_LBASectors > (63 * 255 * 1024)))
@@ -2138,6 +2136,7 @@ int atapi_TestUnitOK(struct ata_Unit *unit)
     sc.scsi_SenseLength = sizeof(sense);
     sc.scsi_Flags = SCSIF_AUTOSENSE;
 
+    DATAPI(bug("[ATA%02ld] Testing Unit Ready sense...\n", unit->au_UnitNum));
     unit->au_DirectSCSI(unit, &sc);
     unit->au_SenseKey = sense[2];
 
@@ -2537,7 +2536,7 @@ static ULONG atapi_EndCmd(struct ata_Unit *unit)
     else
     {
        status = ata_in(atapi_Error, unit->au_Bus->ab_Port);
-       DATAPI(bug("[ATAPI] Error code %lx\n", status >> 4));
+       DATAPI(bug("[ATAPI] Error code 0x%lx\n", status >> 4));
        return ErrorMap[status >> 4];
     }
 }
