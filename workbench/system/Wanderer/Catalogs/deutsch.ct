@@ -67,10 +67,6 @@ MSG_MEN_ABOUT
 Über
 ; About...
 ;
-MSG_MEN_SC_ABOUT
-?
-; ?
-;
 MSG_MEN_QUIT
 Wanderer beenden ...
 ; Quit...
@@ -171,6 +167,10 @@ MSG_MEN_BYSIZE
 nach Größe
 ; By size
 ;
+MSG_MEN_BYTYPE
+nach Art
+; By type
+;
 MSG_MEN_REVERSE
 umgekehrt
 ; Reverse
@@ -231,4 +231,24 @@ DUMMY
 MSG_USERSCREENTITLE
 Wanderer %pc Grafikspeicher %pf sonstiger Speicher
 ; Wanderer %pc graphics mem %pf other mem
+;
+MSG_MEN_SHUTDOWN (//)
+Herunterfahren...
+; Shut down...
+;
+MSG_SHUTDOWN_TITLE (//)
+System herunterfahren
+; System shut down
+;
+MSG_SHUTDOWN_BODY (//)
+Was möchten Sie tun?
+; What would you like to do ?
+;
+MSG_SHUTDOWN_BUTTONS (//)
+Abschalten|Rechner neustarten|AROS neustarten|*Abbrechen
+; Power off|Reboot machine|Reboot AROS|*Cancel
+;
+MSG_ACTION_NOT_SUPPORTED (//)
+Die gewählte Funktion wird von Ihrem System nicht unterstützt
+; Selected action is not supported by your system
 ;

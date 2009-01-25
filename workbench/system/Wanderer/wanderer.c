@@ -2908,21 +2908,18 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
     {
         struct NewMenu nm[] = {
             {NM_TITLE,     _(MSG_MEN_WANDERER)},
-            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), _NewWandIntMenu__OPTION_BACKDROP, 0, (APTR) MEN_WANDERER_BACKDROP},
-            {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                         , 0, (APTR) MEN_WANDERER_EXECUTE},
+            {NM_ITEM,  _(MSG_MEN_BACKDROP),_(MSG_MEN_SC_BACKDROP), _NewWandIntMenu__OPTION_BACKDROP     , 0, (APTR) MEN_WANDERER_BACKDROP},
+            {NM_ITEM,  _(MSG_MEN_EXECUTE), _(MSG_MEN_SC_EXECUTE) , 0                                    , 0, (APTR) MEN_WANDERER_EXECUTE},
     
-            {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                         , 0, (APTR) MEN_WANDERER_SHELL},
+            {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                                    , 0, (APTR) MEN_WANDERER_SHELL},
 #if defined(__AROS__)
             {NM_ITEM,  "AROS .."},
-            {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
-            {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
+            {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                                    , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
+            {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                                    , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
 #endif
-            {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
-            {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
-	    {NM_ITEM,  _(MSG_MEN_SHUTDOWN), NULL		 , 0			     , 0, (APTR) MEN_WANDERER_SHUTDOWN},
-
+            {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                                    , 0, (APTR) MEN_WANDERER_QUIT},
+            {NM_ITEM,  _(MSG_MEN_SHUTDOWN), NULL                 , 0			                        , 0, (APTR) MEN_WANDERER_SHUTDOWN},
             {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
-    
             {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                                    , 0, (APTR) MEN_WINDOW_UPDATE},
             {NM_ITEM, NM_BARLABEL},
             {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                                    , 0, (APTR) MEN_WINDOW_SELECT},
@@ -2943,15 +2940,14 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
             {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|MENUTOGGLE                   , 8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
             {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
             {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
-			{NM_SUB,   "..by Type"		,  NULL					 , CHECKIT|MENUTOGGLE					, 4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
+			{NM_SUB,   _(MSG_MEN_BYTYPE),  NULL					 , CHECKIT|MENUTOGGLE					, 4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
             {NM_SUB, NM_BARLABEL},
             {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE                   , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
             {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED           , 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
-        //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
-    
-        {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
+            //{NM_SUB,  "Group Icons",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_GROUP},
+            {NM_TITLE,    _(MSG_MEN_ICON),     NULL, 0},
             {NM_ITEM,  _(MSG_MEN_OPEN), _(MSG_MEN_SC_OPEN), ITEMENABLED, 0, (APTR) MEN_ICON_OPEN},
-    //    {NM_ITEM,  "Close","C" },
+            //{NM_ITEM,  "Close","C" },
             {NM_ITEM,  _(MSG_MEN_RENAME), _(MSG_MEN_SC_RENAME), ITEMENABLED, 0, (APTR) MEN_ICON_RENAME},
             {NM_ITEM,  _(MSG_MEN_INFO), _(MSG_MEN_SC_INFO), ITEMENABLED, 0, (APTR) MEN_ICON_INFORMATION},
 			{NM_ITEM,  "Snapshot", "S", ITEMENABLED, 0, (APTR) MEN_ICON_SNAPSHOT},
@@ -2962,10 +2958,9 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
             {NM_ITEM,  _(MSG_MEN_DELETE), NULL, ITEMENABLED, 0, (APTR) MEN_ICON_DELETE},
     	    {NM_ITEM,  _(MSG_MEN_FORMAT), NULL, ITEMENABLED, 0, (APTR) MEN_ICON_FORMAT},
 			{NM_ITEM,  "Empty Trash...",     NULL, ITEMENABLED},
-    
-        {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, 0},
-    //    {NM_ITEM,  "ResetWanderer" },
-        {NM_END}
+            {NM_TITLE, _(MSG_MEN_TOOLS),          NULL, 0},
+            //{NM_ITEM,  "ResetWanderer" },
+            {NM_END}
         };
         _NewWandIntMenu__menustrip = MUI_MakeObject(MUIO_MenustripNM, nm, (IPTR) NULL);
     }
@@ -2982,7 +2977,6 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
             {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
             {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                         , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
 #endif
-            {NM_ITEM,  _(MSG_MEN_ABOUT),   _(MSG_MEN_SC_ABOUT)   , 0                         , 0, (APTR) MEN_WANDERER_ABOUT},
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                         , 0, (APTR) MEN_WANDERER_QUIT},
 	    {NM_ITEM,  _(MSG_MEN_SHUTDOWN), NULL		 , 0			     , 0, (APTR) MEN_WANDERER_SHUTDOWN},
     
@@ -3011,7 +3005,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
             {NM_SUB,   _(MSG_MEN_BYNAME),  NULL                  , CHECKIT|MENUTOGGLE                   , 8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
             {NM_SUB,   _(MSG_MEN_BYDATE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
             {NM_SUB,   _(MSG_MEN_BYSIZE),  NULL                  , CHECKIT|MENUTOGGLE                   , 4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
-			{NM_SUB,   "..by Type"		,  NULL					 , CHECKIT|MENUTOGGLE|ITEMENABLED	    , 4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
+			{NM_SUB,   _(MSG_MEN_BYTYPE),  NULL					 , CHECKIT|MENUTOGGLE|ITEMENABLED	    , 4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},
             {NM_SUB, NM_BARLABEL},
             {NM_SUB,  _(MSG_MEN_REVERSE),  NULL                  , CHECKIT|MENUTOGGLE        , 0, (APTR) MEN_WINDOW_SORT_REVERSE},
             {NM_SUB,  _(MSG_MEN_DRWFRST),  NULL                  , CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
