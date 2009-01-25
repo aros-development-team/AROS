@@ -47,9 +47,6 @@ GUI Settings...
 MSG_MEN_ABOUT (//)
 About...
 ;
-MSG_MEN_SC_ABOUT (//)
-?
-;
 MSG_MEN_QUIT (//)
 Quit...
 ;
@@ -125,6 +122,9 @@ By Date
 MSG_MEN_BYSIZE (//)
 By size
 ;
+MSG_MEN_BYTYPE (//)
+By type
+;
 MSG_MEN_REVERSE (//)
 Reverse
 ;
@@ -180,7 +180,7 @@ MSG_SHUTDOWN_TITLE (//)
 System shut down
 ;
 MSG_SHUTDOWN_BODY (//)
-What would you like to do ?
+What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS (//)
 Power off|Reboot machine|Reboot AROS|*Cancel
