@@ -2,7 +2,7 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals
@@ -21,7 +21,13 @@
 #include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
-#define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
+#define _PUSH(sp,val)              \
+    do                             \
+    {                              \
+       SP_TYPE **stackp = (sp);    \
+       --*stackp;                  \
+       **stackp = (SP_TYPE) (val); \
+    } while (0)
 #define _POP(sp)            (*sp++)
 
 #ifndef _SIGNAL_H
@@ -107,10 +113,11 @@ struct AROS_cpu_context
     struct AROS_cpu_context * sc;
 };
 
+#undef SIZEOF_ALL_REGISTERS
 #define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
 #define GetCpuContext(task)     ((struct AROS_cpu_context *)\
 				(GetIntETask(task)->iet_Context))
-#define GetSP(task)             (*(SP_TYPE **)&task->tc_SPReg)
+#define GetSP(task)             ((SP_TYPE **)&task->tc_SPReg)
 
 /*
     Macros to access the stack pointer, frame pointer and program
@@ -332,7 +339,8 @@ struct AROS_cpu_context
     do                                                     \
     {                                                      \
         struct AROS_cpu_context *cc = GetCpuContext(task); \
-	GetSP(task) = (SP_TYPE *)SP(sc); \
+        SP_TYPE **sp = GetSP(task);      \
+        *sp = (SP_TYPE *)SP(sc);         \
 	SAVE_FPU(cc,sc);                 \
 	SAVE_CPU(cc,sc);                 \
 	SAVE_ERRNO(cc);                  \
@@ -352,7 +360,8 @@ struct AROS_cpu_context
 	RESTORE_ERRNO(cc);    \
 	RESTORE_FPU(cc,sc);   \
 	RESTORE_CPU(cc,sc);   \
-	SP(sc) = (typeof(SP(sc)))GetSP(task); \
+        SP_TYPE** sp = GetSP(task);    \
+        SP(sc) = (typeof(SP(sc))) *sp; \
     } while (0)
 
 
@@ -369,18 +378,18 @@ struct AROS_cpu_context
 
     /* This macro prints the current stack (after SAVEREGS()) */
 #define PRINT_CPUCONTEXT(task) \
-	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
-		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
-		"    R4=%08lx  R5=%08lx\n" \
-	    , (ULONG)(GetSP(task)) \
-	    , GetSP(task)[-1] \
-	    , GetSP(task)[-2] \
-	    , GetCpuContext(task)->regs[0] \
-	    , GetCpuContext(task)->regs[1] \
-	    , GetCpuContext(task)->regs[2] \
-	    , GetCpuContext(task)->regs[3] \
-	    , GetCpuContext(task)->regs[4] \
-	    , GetCpuContext(task)->regs[5] \
-	)
+        printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
+                "    R0=%08x  R1=%08x  R2=%08x  R3=%08x\n" \
+                "    R4=%08x  R5=%08x\n" \
+            , (*GetSP(task))[ 0] \
+            , (*GetSP(task))[-1] \
+            , (*GetSP(task))[-2] \
+            , GetCpuContext(task)->regs[0] \
+            , GetCpuContext(task)->regs[1] \
+            , GetCpuContext(task)->regs[2] \
+            , GetCpuContext(task)->regs[3] \
+            , GetCpuContext(task)->regs[4] \
+            , GetCpuContext(task)->regs[5] \
+        )
 
 #endif /* _SIGCORE_H */
