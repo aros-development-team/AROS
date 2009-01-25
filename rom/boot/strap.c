@@ -108,7 +108,7 @@ static const struct _pt {
 static STRPTR MatchHandler(IPTR DosType)
 {
     int i;
-    IPTR fs = 0;
+    STRPTR fs = NULL;
 
     for (i = 0; i < (sizeof(DosTypes) / sizeof(struct _dt)); i++)
     {
@@ -433,9 +433,11 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     			if (strncmp(node->ln_Name, "bootdelay=", 10) == 0)
     			{
     				struct MsgPort *port = CreateMsgPort();
-    				struct timerequest *tr = CreateIORequest(port, sizeof(struct timerequest));
+    				struct timerequest *tr = (struct timerequest *)
+                        CreateIORequest(port, sizeof(struct timerequest));
 
-    				OpenDevice("timer.device", UNIT_VBLANK, tr, 0);
+    				OpenDevice("timer.device", UNIT_VBLANK,
+                        (struct IORequest *)tr, 0);
 
     				sscanf(node->ln_Name, "bootdelay=%d", &delay);
     				D(bug("[Boot] delay of %d seconds requested.", delay));
@@ -444,10 +446,10 @@ AROS_UFH3(int, AROS_SLIB_ENTRY(init, boot),
     				tr->tr_time.tv_sec = delay;
     				tr->tr_time.tv_usec = 0;
 
-    				DoIO(tr);
+    				DoIO((struct IORequest *)tr);
 
-    				CloseDevice(tr);
-    				DeleteIORequest(tr);
+    				CloseDevice((struct IORequest *)tr);
+    				DeleteIORequest((struct IORequest *)tr);
     				DeleteMsgPort(port);
     			}
     		}
