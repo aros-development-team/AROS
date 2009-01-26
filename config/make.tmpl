@@ -1724,13 +1724,13 @@ ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(BD_COBJS$(BDID)) : TMP_CMD:=$(TARGET_CC)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(TARGET_CC)
 endif
 ifeq (%(compiler),host)
-$(BD_COBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(HOST_CC)
 endif
 ifeq (%(compiler),kernel)
-$(BD_COBJS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(BD_COBJS$(BDID)) $(BD_DEPS$(BDID)) : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
 endif
 ifneq (%(modulename),)
 $(BD_COBJS$(BDID)) : TMP_CFLAGS:=%(cflags) -I$(GENDIR)/%(maindir) \
@@ -1750,7 +1750,7 @@ $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
 ifeq ($(TARGET),%(mainmmake)-%(arch))
 $(BD_OBJDIR$(BDID))/%.d : %.c
-	%mkdepend_q flags=$(TMP_DFLAGS)
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
 endif
 
 $(BD_ASMOBJS$(BDID)) : AFLAGS:=%(aflags)
