@@ -259,7 +259,7 @@ void intr_init()
 	init_interrupt( 6, generic_handler);	/* Alignment */
 	init_interrupt( 7, program_handler);	/* Program */
 	init_interrupt( 8, generic_handler);	/* Floating point unavailable */
-	init_interrupt( 9, decrementer_handler);	/* Decrementer */
+	init_interrupt( 9, decrementer_handler);/* Decrementer */
 	init_interrupt(12, syscall_handler);	/* Syscall */
 	init_interrupt(13, generic_handler);	/* Trace */
 	init_interrupt(16, generic_handler);	/* Instruction translation miss */
@@ -341,13 +341,46 @@ static void flush_cache(char *start, char *end)
     asm volatile("sync; isync; ");
 }
 
+/* FPU handler */
+void __attribute__((noreturn)) fpu_handler(context_t *ctx, uint8_t exception, void *self)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+
+    if (KernelBase)
+    {
+    	if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+    	{
+			struct ExceptNode *in, *intemp;
+
+			ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, intemp)
+			{
+				/*
+				 * call every handler tied to this exception.
+				 */
+				if (in->in_Handler)
+					in->in_Handler(ctx, in->in_HandlerData, in->in_HandlerData2);
+			}
+    	}
+    }
+
+    core_LeaveInterrupt(ctx);
+}
+
+extern uint64_t tbu1;
+extern uint64_t tbu2;
+extern uint64_t last_calc;
+extern uint64_t idle_time;
+extern uint32_t cpu_usage;
+extern struct Task *idle_task;
+
 /* Decrementer handler */
 void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct ExecBase *SysBase = getSysBase();
+//    static uint32_t cnt = 0;
 
-    asm volatile("mtdec %0"::"r"(132000000/200));
+    asm volatile("mtdec %0"::"r"(33000000/200));
 
     if (KernelBase)
     {
@@ -374,6 +407,30 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
         	SysBase->AttnResched |= 0x80;
         }
     }
+
+    /* CPU usage meter. it should not be here, actually */
+    uint64_t current = mftbu();
+	if (current - last_calc > 33000000)
+	{
+		uint32_t total_time = current - last_calc;
+
+		if (SysBase->ThisTask == idle_task)
+		{
+			tbu2 = mftbu();
+			idle_time += tbu2 - tbu1;
+			tbu1 = tbu2;
+		}
+
+		if (total_time < idle_time)
+			total_time=idle_time;
+
+		cpu_usage = 1000 - ((uint32_t)(idle_time))/(total_time /1000);
+
+		D(bug("[KRN] CPU usage: %3d.%d\n", cpu_usage / 10, cpu_usage % 10));
+
+		last_calc = current;
+		idle_time = 0;
+	}
 
     core_ExitInterrupt(ctx);
 }
@@ -553,7 +610,7 @@ static void __attribute__((used)) __exception_template()
 "2:     addi %%r3,%%r3,%1       \n"
 
 
-::"i"(MSR_PR),"i"(-sizeof(regs_t)),"i"(MSR_DS));
+::"i"(MSR_PR),"i"(-sizeof(context_t)),"i"(MSR_DS));
 
     asm volatile(
 "		stw %%r0, %[gpr0](%%r3) \n"   /* Store bunch of registers already. I could */
@@ -660,14 +717,6 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
                  "stw %%r29,%[gpr29](%%r3) \n\t"
                  "stw %%r30,%[gpr30](%%r3) \n\t"
                  "stw %%r31,%[gpr31](%%r3) \n\t"
-                 "mr %%r28,%%r3            \n\t"
-                 "mr %%r29,%%r4            \n\t"
-                 "mr %%r30,%%r5            \n\t"
-                 "mtsrr0 %%r5           \n\t"
-                 "lis %%r9, %[msrval]@ha  \n\t"
-                 "ori %%r9,%%r9, %[msrval]@l \n\t"
-                 "mtsrr1 %%r9              \n\t"
-                 "sync; isync; rfi"
                  ::
                  [gpr6]"i"(offsetof(regs_t, gpr[6])),
                  [gpr7]"i"(offsetof(regs_t, gpr[7])),
@@ -694,9 +743,95 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
                  [gpr28]"i"(offsetof(regs_t, gpr[28])),
                  [gpr29]"i"(offsetof(regs_t, gpr[29])),
                  [gpr30]"i"(offsetof(regs_t, gpr[30])),
-                 [gpr31]"i"(offsetof(regs_t, gpr[31])),
-                 [msrval]"i"(MSR_ME|MSR_FP|MSR_IS|MSR_DS)
+                 [gpr31]"i"(offsetof(regs_t, gpr[31]))
     );
+//    asm volatile(
+//				"mfmsr %%r0						\n\t"
+//				"ori %%r0,%%r0, %[msrval]@l \n\t"
+//				"mtmsr %%r0; isync				\n\t"
+//				"mffs %%r0						\n\t"
+//				"stw %%r0,%[fpscr](%%r3)		\n\t"
+//				"stfd %%f0,%[fr0](%%r3)		\n\t"
+//				"stfd %%f1,%[fr1](%%r3)		\n\t"
+//				"stfd %%f2,%[fr2](%%r3)		\n\t"
+//				"stfd %%f3,%[fr3](%%r3)		\n\t"
+//				"stfd %%f4,%[fr4](%%r3)		\n\t"
+//				"stfd %%f5,%[fr5](%%r3)		\n\t"
+//				"stfd %%f6,%[fr6](%%r3)		\n\t"
+//				"stfd %%f7,%[fr7](%%r3)		\n\t"
+//				"stfd %%f8,%[fr8](%%r3)		\n\t"
+//				"stfd %%f9,%[fr9](%%r3)		\n\t"
+//				"stfd %%f10,%[fr10](%%r3)		\n\t"
+//				"stfd %%f11,%[fr11](%%r3)		\n\t"
+//				"stfd %%f12,%[fr12](%%r3)		\n\t"
+//				"stfd %%f13,%[fr13](%%r3)		\n\t"
+//				"stfd %%f14,%[fr14](%%r3)		\n\t"
+//				"stfd %%f15,%[fr15](%%r3)		\n\t"
+//				::
+//				[fpscr]"i"(offsetof(context_t, fpu.fpscr)),
+//				[fr0]"i"(offsetof(context_t, fpu.fpr[0])),
+//				[fr1]"i"(offsetof(context_t, fpu.fpr[1])),
+//				[fr2]"i"(offsetof(context_t, fpu.fpr[2])),
+//				[fr3]"i"(offsetof(context_t, fpu.fpr[3])),
+//				[fr4]"i"(offsetof(context_t, fpu.fpr[4])),
+//				[fr5]"i"(offsetof(context_t, fpu.fpr[5])),
+//				[fr6]"i"(offsetof(context_t, fpu.fpr[6])),
+//				[fr7]"i"(offsetof(context_t, fpu.fpr[7])),
+//				[fr8]"i"(offsetof(context_t, fpu.fpr[8])),
+//				[fr9]"i"(offsetof(context_t, fpu.fpr[9])),
+//				[fr10]"i"(offsetof(context_t, fpu.fpr[10])),
+//				[fr11]"i"(offsetof(context_t, fpu.fpr[11])),
+//				[fr12]"i"(offsetof(context_t, fpu.fpr[12])),
+//				[fr13]"i"(offsetof(context_t, fpu.fpr[13])),
+//				[fr14]"i"(offsetof(context_t, fpu.fpr[14])),
+//				[fr15]"i"(offsetof(context_t, fpu.fpr[15])),
+//				[msrval]"i"(MSR_FP)
+//    );
+	asm volatile(
+//			"stfd %%f16,%[fr16](%%r3)		\n\t"
+//			"stfd %%f17,%[fr17](%%r3)		\n\t"
+//			"stfd %%f18,%[fr18](%%r3)		\n\t"
+//			"stfd %%f19,%[fr19](%%r3)		\n\t"
+//			"stfd %%f20,%[fr20](%%r3)		\n\t"
+//			"stfd %%f21,%[fr21](%%r3)		\n\t"
+//			"stfd %%f22,%[fr22](%%r3)		\n\t"
+//			"stfd %%f23,%[fr23](%%r3)		\n\t"
+//			"stfd %%f24,%[fr24](%%r3)		\n\t"
+//			"stfd %%f25,%[fr25](%%r3)		\n\t"
+//			"stfd %%f26,%[fr26](%%r3)		\n\t"
+//			"stfd %%f27,%[fr27](%%r3)		\n\t"
+//			"stfd %%f28,%[fr28](%%r3)		\n\t"
+//			"stfd %%f29,%[fr29](%%r3)		\n\t"
+//			"stfd %%f30,%[fr30](%%r3)		\n\t"
+//			"stfd %%f31,%[fr31](%%r3)		\n\t"
+				"mr %%r28,%%r3            \n\t"
+				"mr %%r29,%%r4            \n\t"
+				"mr %%r30,%%r5            \n\t"
+				"mtsrr0 %%r5           \n\t"
+				"lis %%r9, %[msrval]@ha  \n\t"
+				"ori %%r9,%%r9, %[msrval]@l \n\t"
+				"mtsrr1 %%r9              \n\t"
+				"sync; isync; rfi"
+				::
+				[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
+				[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
+				[fr18]"i"(offsetof(context_t, fpu.fpr[18])),
+				[fr19]"i"(offsetof(context_t, fpu.fpr[19])),
+				[fr20]"i"(offsetof(context_t, fpu.fpr[20])),
+				[fr21]"i"(offsetof(context_t, fpu.fpr[21])),
+				[fr22]"i"(offsetof(context_t, fpu.fpr[22])),
+				[fr23]"i"(offsetof(context_t, fpu.fpr[23])),
+				[fr24]"i"(offsetof(context_t, fpu.fpr[24])),
+				[fr25]"i"(offsetof(context_t, fpu.fpr[25])),
+				[fr26]"i"(offsetof(context_t, fpu.fpr[26])),
+				[fr27]"i"(offsetof(context_t, fpu.fpr[27])),
+				[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
+				[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
+				[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
+				[fr31]"i"(offsetof(context_t, fpu.fpr[31])),
+                [msrval]"i"(MSR_ME|MSR_FP|MSR_IS|MSR_DS)
+
+	);
 }
 
 /*
@@ -749,6 +884,81 @@ static void __attribute__((used)) __core_LeaveInterrupt()
         [gpr30]"i"(offsetof(regs_t, gpr[30])),
         [gpr31]"i"(offsetof(regs_t, gpr[31]))
         );
+
+//    asm volatile(
+//				"lwz  %%r0,%[fpscr](%%r3)		\n\t"
+//				"mtfsf 255,%%r0						\n\t"
+//				"lfd %%f0,%[fr0](%%r3)		\n\t"
+//				"lfd %%f1,%[fr1](%%r3)		\n\t"
+//				"lfd %%f2,%[fr2](%%r3)		\n\t"
+//				"lfd %%f3,%[fr3](%%r3)		\n\t"
+//				"lfd %%f4,%[fr4](%%r3)		\n\t"
+//				"lfd %%f5,%[fr5](%%r3)		\n\t"
+//				"lfd %%f6,%[fr6](%%r3)		\n\t"
+//				"lfd %%f7,%[fr7](%%r3)		\n\t"
+//				"lfd %%f8,%[fr8](%%r3)		\n\t"
+//				"lfd %%f9,%[fr9](%%r3)		\n\t"
+//				"lfd %%f10,%[fr10](%%r3)		\n\t"
+//				"lfd %%f11,%[fr11](%%r3)		\n\t"
+//				"lfd %%f12,%[fr12](%%r3)		\n\t"
+//				"lfd %%f13,%[fr13](%%r3)		\n\t"
+//				"lfd %%f14,%[fr14](%%r3)		\n\t"
+//				"lfd %%f15,%[fr15](%%r3)		\n\t"
+//				::
+//				[fpscr]"i"(offsetof(context_t, fpu.fpscr)),
+//				[fr0]"i"(offsetof(context_t, fpu.fpr[0])),
+//				[fr1]"i"(offsetof(context_t, fpu.fpr[1])),
+//				[fr2]"i"(offsetof(context_t, fpu.fpr[2])),
+//				[fr3]"i"(offsetof(context_t, fpu.fpr[3])),
+//				[fr4]"i"(offsetof(context_t, fpu.fpr[4])),
+//				[fr5]"i"(offsetof(context_t, fpu.fpr[5])),
+//				[fr6]"i"(offsetof(context_t, fpu.fpr[6])),
+//				[fr7]"i"(offsetof(context_t, fpu.fpr[7])),
+//				[fr8]"i"(offsetof(context_t, fpu.fpr[8])),
+//				[fr9]"i"(offsetof(context_t, fpu.fpr[9])),
+//				[fr10]"i"(offsetof(context_t, fpu.fpr[10])),
+//				[fr11]"i"(offsetof(context_t, fpu.fpr[11])),
+//				[fr12]"i"(offsetof(context_t, fpu.fpr[12])),
+//				[fr13]"i"(offsetof(context_t, fpu.fpr[13])),
+//				[fr14]"i"(offsetof(context_t, fpu.fpr[14])),
+//				[fr15]"i"(offsetof(context_t, fpu.fpr[15]))
+//    );
+//	asm volatile(
+//			"lfd %%f16,%[fr16](%%r3)		\n\t"
+//			"lfd %%f17,%[fr17](%%r3)		\n\t"
+//			"lfd %%f18,%[fr18](%%r3)		\n\t"
+//			"lfd %%f19,%[fr19](%%r3)		\n\t"
+//			"lfd %%f20,%[fr20](%%r3)		\n\t"
+//			"lfd %%f21,%[fr21](%%r3)		\n\t"
+//			"lfd %%f22,%[fr22](%%r3)		\n\t"
+//			"lfd %%f23,%[fr23](%%r3)		\n\t"
+//			"lfd %%f24,%[fr24](%%r3)		\n\t"
+//			"lfd %%f25,%[fr25](%%r3)		\n\t"
+//			"lfd %%f26,%[fr26](%%r3)		\n\t"
+//			"lfd %%f27,%[fr27](%%r3)		\n\t"
+//			"lfd %%f28,%[fr28](%%r3)		\n\t"
+//			"lfd %%f29,%[fr29](%%r3)		\n\t"
+//			"lfd %%f30,%[fr30](%%r3)		\n\t"
+//			"lfd %%f31,%[fr31](%%r3)		\n\t"
+//				::
+//				[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
+//				[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
+//				[fr18]"i"(offsetof(context_t, fpu.fpr[18])),
+//				[fr19]"i"(offsetof(context_t, fpu.fpr[19])),
+//				[fr20]"i"(offsetof(context_t, fpu.fpr[20])),
+//				[fr21]"i"(offsetof(context_t, fpu.fpr[21])),
+//				[fr22]"i"(offsetof(context_t, fpu.fpr[22])),
+//				[fr23]"i"(offsetof(context_t, fpu.fpr[23])),
+//				[fr24]"i"(offsetof(context_t, fpu.fpr[24])),
+//				[fr25]"i"(offsetof(context_t, fpu.fpr[25])),
+//				[fr26]"i"(offsetof(context_t, fpu.fpr[26])),
+//				[fr27]"i"(offsetof(context_t, fpu.fpr[27])),
+//				[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
+//				[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
+//				[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
+//				[fr31]"i"(offsetof(context_t, fpu.fpr[31]))
+//	);
+
 
     asm volatile(
                  "lwz %%r11,%[gpr11](%%r3)      \n\t"
