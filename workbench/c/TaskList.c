@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: 
+    Desc:
     Lang: english
 */
 
@@ -10,10 +10,18 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
+#include <proto/timer.h>
+#include <aros/debug.h>
+#include <devices/timer.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
+/* Dirty hack! Is there a better way? */
+#include "../../rom/exec/etask.h"
+
 const TEXT version[] = "$VER: tasklist 41.1 (14.3.1997)\n";
+
+ULONG eclock;
 
 struct task
 {
@@ -24,11 +32,13 @@ struct task
     IPTR stacksize;
     IPTR stackused;
     WORD pri;
+    UQUAD cputime;
 };
 
 static int addtask(struct Task *task, struct task **t, STRPTR *e)
 {
     STRPTR s1,s2;
+    (*t)->cputime = GetIntETask(task)->iet_CpuTime;
     (*t)->address=task;
     (*t)->type=task->tc_Node.ln_Type;
     (*t)->pri =(WORD)task->tc_Node.ln_Pri;
@@ -104,6 +114,19 @@ int main(void)
 {
     IPTR size;
     struct task *buffer,*tasks,*tasks2;
+
+    /* Is all this code really needed to read the EClock frequency? sigh... */
+    struct TimerBase *TimerBase = NULL;
+    struct EClockVal ec;
+    struct MsgPort *port = CreateMsgPort();
+    struct timerequest *io = CreateIORequest(port, sizeof(struct timerequest));
+    OpenDevice("timer.device", UNIT_VBLANK, io, 0);
+    TimerBase = io->tr_node.io_Device;
+    eclock = ReadEClock(&ec);
+    CloseDevice(io);
+    DeleteIORequest(io);
+    DeleteMsgPort(port);
+
     for(size=2048;;size+=2048)
     {
         buffer=AllocVec(size,MEMF_ANY);
@@ -115,23 +138,36 @@ int main(void)
         tasks=buffer;
         if(fillbuffer(&tasks,size))
         {
-            FPuts(Output(),"address\t\ttype\tpri\tstate\tstack\tused\tname\n");
+            FPuts(Output(),"address\t\ttype\tpri\tstate\tcpu time\t\tstack\tused\tname\n");
             for(tasks2=buffer;tasks2<tasks;tasks2++)
             {
-                IPTR args[7];
+            	ULONG time;
+
+            	/* If eclock was not null, use it */
+            	if (eclock)
+					time = tasks2->cputime / eclock;
+            	else /* Otherwise we cannot calculate the cpu time :/ */
+            		time = 0;
+
+                IPTR args[10];
                 args[0]=(IPTR)tasks2->address;
                 args[1]=(IPTR)(tasks2->type==NT_TASK?"task":
                 	       tasks2->type==NT_PROCESS?"process":"CLI");
                 args[2]=tasks2->pri;
                 args[3]=(IPTR)(tasks2->state==TS_RUN?"running":
                 	       tasks2->state==TS_READY?"ready":"waiting");
-                args[4]=tasks2->stacksize;
-                args[5]=tasks2->stackused;
-                args[6]=tasks2->name!=NULL?(IPTR)tasks2->name:0;
-                VPrintf("0x%08.lx\t%s\t%ld\t%s\t%ld\t%ld\t%s\n",args);
+                args[6]=time % 60;
+                time /= 60;
+                args[5]=time % 60;
+                time /= 60;
+                args[4]=time;
+                args[7]=tasks2->stacksize;
+                args[8]=tasks2->stackused;
+                args[9]=tasks2->name!=NULL?(IPTR)tasks2->name:0;
+                VPrintf("0x%08.lx\t%s\t%ld\t%s\t%02ld:%02ld:%02ld\t%ld\t%ld\t%s\n",args);
             }
             FreeVec(buffer);
-            return 0; 
+            return 0;
         }
         FreeVec(buffer);
     }
