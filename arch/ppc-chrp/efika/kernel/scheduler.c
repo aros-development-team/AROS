@@ -98,14 +98,16 @@ void core_Dispatch(regs_t *regs)
          */
         while (IsListEmpty(&SysBase->TaskReady))
         {
-            SysBase->IdleCount++;
+//            SysBase->IdleCount++;
             SysBase->AttnResched |= ARF_AttnSwitch;
 
             //D(bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
             /* Sleep almost forever ;) */
-            //__asm__ __volatile__("wrteei 1; sync; isync;");
+
             wrmsr(rdmsr() | MSR_EE);
-            wrmsr(rdmsr() | MSR_POW);
+            asm volatile("sync");
+//            wrmsr(rdmsr() | MSR_POW);
+//            asm volatile("isync");
 
             if (SysBase->SysFlags & SFF_SoftInt)
             {
@@ -128,6 +130,9 @@ void core_Dispatch(regs_t *regs)
         /* Handle tasks's flags */
         if (task->tc_Flags & TF_EXCEPT)
             Exception();
+
+        /* Store the launch time */
+        GetIntETask(task)->iet_private1 = mftbu();
 
         if (task->tc_Flags & TF_LAUNCH)
         {
@@ -155,7 +160,7 @@ void core_Switch(regs_t *regs)
 {
     struct ExecBase *SysBase = getSysBase();
     struct Task *task;
-
+    context_t *ctx = (context_t *)regs;
     if (SysBase)
     {
         /* Disable interrupts for a while */
@@ -166,9 +171,10 @@ void core_Switch(regs_t *regs)
         //D(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
         /* Copy current task's context into the ETask structure */
-        bcopy(regs, GetIntETask(task)->iet_Context, sizeof(regs_t));
+        bcopy(regs, GetIntETask(task)->iet_Context, sizeof(context_t));
 
         /* Copy the fpu, mmx, xmm state */
+
 #warning FIXME: Change to the lazy saving of the FPU state!!!!
 #warning TODO: Write the damn FPU handling at all!!!!!!!! ;-D LOL
     //    IPTR sse_ctx = ((IPTR)GetIntETask(task)->iet_Context + sizeof(regs_t) + 15) & ~15;
@@ -182,6 +188,9 @@ void core_Switch(regs_t *regs)
         SysBase->IDNestCnt = -1;
 
         wrmsr(rdmsr() | MSR_EE);
+
+        /* Task says byebye. Update the CPU Time now. */
+        GetIntETask(task)->iet_CpuTime += mftbu() - GetIntETask(task)->iet_private1;
 
         /* TF_SWITCH flag set? Call the switch routine */
         if (task->tc_Flags & TF_SWITCH)

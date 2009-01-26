@@ -10,10 +10,18 @@
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
 #include <exec/memory.h>
+#include <exec/tasks.h>
+#include <exec/alerts.h>
+#include <exec/execbase.h>
 #include <asm/io.h>
+#include <asm/mpc5200b.h>
+#include <proto/kernel.h>
 #include <strings.h>
 
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "etask.h"
 
 #include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
@@ -176,6 +184,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 	wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-4]);
 	wrspr(SPRG4, 0);
 	wrspr(SPRG5, 0);
+	wrmsr(rdmsr() | MSR_FP);
 
 	/* MMU directory - 1MB is recommended size for systems with 128MB ram
 	 * USE PHYSICAL ADDRESS HERE! */
@@ -415,6 +424,68 @@ struct OFWNode *krnCopyOFWTree(struct OFWNode *orig)
 	return new_node;
 }
 
+uint64_t tbu1;
+uint64_t tbu2;
+uint64_t last_calc;
+uint64_t idle_time;
+uint32_t cpu_usage;
+struct Task *idle_task;
+
+/* As soon as IdleTask gets CPU again, it records the current cycle count */
+AROS_UFH1(void, idleCount,
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    tbu1 = mftbu();
+    SysBase->IdleCount++;
+
+    AROS_USERFUNC_EXIT
+}
+
+/*
+ * When CPU time gets lost, the cycle count spent in idle task is summed
+ * with the total idle time
+ */
+AROS_UFH1(void, idleOff,
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    tbu2 = mftbu();
+    idle_time += tbu2 - tbu1;
+
+    AROS_USERFUNC_EXIT
+}
+
+/*
+ * Idle task on Efika does not do much. It enters supervisor mode, enables
+ * interrupts (so that it survived even in Disable()'d state) and then enters
+ * power save mode. Once woken up, a Reschedule is forced.
+ */
+void idleTask(struct ExecBase *SysBase, struct KernelBase *KernelBase)
+{
+	D(bug("[KRN] IdleTask entered\n"));
+
+	while(1)
+	{
+		/* Superstate() done quickly */
+		uint32_t msr = goSuper();
+		/* Enable external/decrementer interrupts */
+		wrmsr(rdmsr() | MSR_EE);
+		/* Sleep! */
+		wrmsr(rdmsr() | MSR_POW);
+		/* Changing the POW bit needs a context synchronization now. */
+		asm volatile("isync");
+		/* Userstate() */
+		goUser(msr);
+		/* And reschedule! */
+		KrnSchedule();
+	}
+}
+
+extern void *priv_KernelBase;
+
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
@@ -450,6 +521,55 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     wrmsr(rdmsr() | (MSR_PR));
     D(bug("[KRN] Entered user mode\n"));
+
+    priv_KernelBase = LIBBASE;
+
+    {
+    	/* Add idle task now. */
+    	struct Task *t;
+    	struct MemList *ml;
+    	uint8_t *s;
+    	struct TagItem tags[] = {
+    			{ TASKTAG_ARG1,   (IPTR)SysBase },
+    			{ TASKTAG_ARG2,   (IPTR)LIBBASE },
+    			{ TAG_DONE,       0UL }};
+
+    	/* Allocate MemEntry for this task and stack */
+    	ml = (struct MemList *)AllocMem(sizeof(struct MemList)+sizeof(struct MemEntry),
+    			MEMF_PUBLIC|MEMF_CLEAR);
+    	t = (struct Task *)    AllocMem(sizeof(struct Task), MEMF_CLEAR|MEMF_PUBLIC);
+    	s = (uint8_t *)          AllocMem(4096,      MEMF_CLEAR|MEMF_PUBLIC);
+
+    	if( !ml || !t || !s )
+    	{
+    		bug("ERROR: Cannot create Idle Task!\n");
+    		Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+    	}
+
+    	ml->ml_NumEntries = 2;
+    	ml->ml_ME[0].me_Addr = t;
+    	ml->ml_ME[0].me_Length = sizeof(struct Task);
+    	ml->ml_ME[1].me_Addr = s;
+    	ml->ml_ME[1].me_Length = 4096;
+
+    	NEWLIST(&t->tc_MemEntry);
+    	AddHead(&t->tc_MemEntry, &ml->ml_Node);
+    	t->tc_SPLower = s;
+    	t->tc_SPUpper = s + 4096 - SP_OFFSET;
+#if AROS_STACK_GROWS_DOWNWARDS
+    	t->tc_SPReg = (char *)t->tc_SPUpper - SP_OFFSET;
+#else
+    	t->tc_SPReg = (char *)t->tc_SPLower + SP_OFFSET;
+#endif
+
+    	t->tc_Node.ln_Name = "Idle Task";
+    	t->tc_Node.ln_Pri = -128;
+    	t->tc_Launch = &idleCount;
+    	t->tc_Switch = &idleOff;
+    	t->tc_Flags = TF_LAUNCH | TF_SWITCH;
+    	NewAddTask(t, &idleTask, NULL, &tags);
+    	idle_task = t;
+    }
 
     return TRUE;
 }
