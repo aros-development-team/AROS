@@ -1,0 +1,27 @@
+rtl8168.device
+-----------------
+
+see "COPYING" for license information
+
+This is an AROS "SANA-2" NIC Driver for RealTek Gigabit Ethernet
+controllers with PCI-Express interface.
+
+Based on the GPL RealTek r8168 NIC driver
+
+Development sponsored by ClusterUK - who provided the iMica Hardware
+it was primarily designed for.
+
+supported NIC's:
+    0x10ec,0x8168  - RealTek RTL8168B/8111B
+    0x10ec,0x8168  - RealTek RTL8168C/8111C
+    0x10ec,0x8168  - RealTek RTL8168CP/8111CP
+    0x10ec,0x8168  - RealTek RTL8168D/8111D
+
+TODO/Limitations/Known Issues:
+* Fix shutdown (currently doesnt cleanup/shutdown)
+* Handle Rx more efficiently (reduce  processing in int handler)
+* Fix multicast hashlist
+* Make sure all stats get recorded correctly.
+* Support for Jumbo frames.
+* Support for checksum offloading.
+* Move generic defines to generic driver header files.

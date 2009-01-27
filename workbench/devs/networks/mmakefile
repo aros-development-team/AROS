@@ -5,6 +5,7 @@
 #MM     devs-networks-drivers-e1000-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-sis900-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-rtl8139-$(AROS_TARGET_CPU) \
+#MM     devs-networks-drivers-rtl8168-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-etherlink3 \
 #MM     devs-networks-drivers-intelpro100 \
 #MM     devs-networks-drivers-prism2 \
