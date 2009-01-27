@@ -2334,8 +2334,8 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
     /* Set and then reset the soft reset bit in the Device Control
      * register.  This causes device 0 be selected */
-    D(bug("[ATALOW] Reset\n"));
-    ata_out(0xa0 | (0 << 4), ata_DevHead, port);    //Select it never the less
+    D(bug("[ATALOW] Reset bus\n"));
+    ata_out(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
     ata_400ns(bus->ab_Alt);
 
     ata_out(0x04, ata_AltControl, alt);
@@ -2351,14 +2351,13 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
             if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                 break;
             ata_usleep(tr, 1000);
-            --TimeOut;
-            if (TimeOut == 1) {
+            if (!(--TimeOut)) {
                 D(bug("DEV0 TimeOut!\n"));
                 bus->ab_Dev[0] = DEV_NONE;
                 break;
             }
         }
-        D(bug("DEV0 TimeOut left %d us\n",TimeOut));
+        D(bug("DEV0 TimeOut left %d ms\n",TimeOut));
     }
 
     /* If there is a device 1, wait until device 1 allows
@@ -2372,14 +2371,13 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
             if ( (ata_in(2, port) == 0x01) && (ata_in(3, port) == 0x01) )
                 break;
             ata_usleep(tr, 1000);
-            --TimeOut;
-            if (TimeOut == 1) {
+            if (!(--TimeOut)) {
                 D(bug("DEV1 1/2 TimeOut!\n"));
                 bus->ab_Dev[1] = DEV_NONE;
                 break;
             }
         }
-        D(bug("DEV1 1/2 TimeOut left %d us\n",TimeOut));
+        D(bug("DEV1 1/2 TimeOut left %d ms\n",TimeOut));
 
         if (DEV_NONE != bus->ab_Dev[1]) {
             D(bug("[ATALOW] Wait DEV1 to clear BSY\n"));
@@ -2388,14 +2386,13 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
                 if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                     break;
                 ata_usleep(tr, 1000);
-                --TimeOut;
-                if (TimeOut == 1) {
+                if (!(--TimeOut)) {
                     D(bug("DEV1 2/2 TimeOut!\n"));
                     bus->ab_Dev[1] = DEV_NONE;
                     break;
                 }
             }
-            D(bug("DEV1 2/2 TimeOut left %d us\n",TimeOut));
+            D(bug("DEV1 2/2 TimeOut left %d ms\n",TimeOut));
         }
     }
 
