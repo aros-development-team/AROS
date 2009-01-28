@@ -311,7 +311,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
 
                 D(kprintf("[BOOT] * ELF module %s @ %p\n", mo->name, mo->address));
             }
-            else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x00)
+            else if (p[0] == 'P' && p[1] == 'K' && p[2] == 'G' && p[3] == 0x01)
             {
                 /* 
                  * The loaded file is an PKG\0 archive. Scan it to find all modules which are 
