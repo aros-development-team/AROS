@@ -2,9 +2,10 @@
 # -*- coding: iso-8859-1 -*-
 
 import os, sys, struct
+from stat import ST_SIZE
 
 PKG_PREFIX                 = 'PKG'
-PKG_VERSION                = 0
+PKG_VERSION                = 1
 
 PKG_HEADER_FORMAT          = '3cB' 
 
@@ -20,6 +21,11 @@ def readHeader( file ):
     )
     version = header[3]
     
+    size = struct.unpack(
+        PKG_FILE_DATALENGTH_FORMAT,
+        file.read( struct.calcsize( PKG_FILE_DATALENGTH_FORMAT ) )
+    )
+    
     return version
     
 
@@ -30,6 +36,13 @@ def writeHeader( file, version ):
         struct.pack( 
             PKG_HEADER_FORMAT, 
             PKG_PREFIX[0], PKG_PREFIX[1], PKG_PREFIX[2], PKG_VERSION
+        )
+    )
+    
+    file.write(
+        struct.pack(
+            PKG_FILE_DATALENGTH_FORMAT,
+            0
         )
     )
     
@@ -129,6 +142,17 @@ def pack( source, destination ):
         input.close()
     
     os.chdir( oldwd )
+    
+    output.seek( struct.calcsize( PKG_HEADER_FORMAT ) )
+    st = os.fstat( output.fileno() )
+    
+    output.write(
+        struct.pack(
+            PKG_FILE_DATALENGTH_FORMAT,
+            st[ST_SIZE]
+        )
+    )
+    
     
     output.close()
     
