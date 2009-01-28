@@ -209,9 +209,9 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	1050, 1053, 1059, 1080,
 	"NVIDIA:1680x1050");
 
-    MAKE_SYNC(1920x1200_60, 154000,
-        1920, 1968, 2000, 2080,
-        1200, 1203, 1209, 1235,
+    MAKE_SYNC(1920x1200_60, 162090,
+        1920, 1984, 2176, 2480,
+        1200, 1201, 1204, 1250,
         "NVIDIA:1920x1200");
 
     struct TagItem modetags[] = {
