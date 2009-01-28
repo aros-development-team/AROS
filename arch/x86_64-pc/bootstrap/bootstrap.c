@@ -317,7 +317,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  * The loaded file is an PKG\0 archive. Scan it to find all modules which are 
                  * stored here.
                  */
-                void *file = p + 4;
+                void *file = p + 8;
 
                 D(kprintf("[BOOT] * package %s @ %p:\n", remove_path((char *)mod->string), mod->mod_start));
 
