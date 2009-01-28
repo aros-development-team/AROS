@@ -5,16 +5,19 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/icon.h>
 
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <exec/lists.h>
 #include <exec/memory.h>
+#include <workbench/icon.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
 
+#define DEBUG 0
 #include "debug.h"
 
 #include "prefs.h"
@@ -115,6 +118,7 @@ LONG parsePrefs(char *buffer, LONG size)
     struct TableTypeNode *ttn=NULL;
     struct TypeNode *tn;
     struct CSource csrc = {buffer, size, 0};
+    struct DiskObject *hdtbicon=NULL;
     char ident[256];
     LONG res;
     ULONG id_len = 0;
@@ -301,6 +305,33 @@ LONG parsePrefs(char *buffer, LONG size)
             line++;
             break;
         }
+    }
+
+   hdtbicon = GetIconTags("HDToolBox",
+            ICONGETA_FailIfUnavailable, TRUE,
+            ICONGETA_IsDefaultIcon, FALSE,
+            TAG_DONE);
+
+    if (hdtbicon != NULL)
+    {
+D(bug("[HDToolBox] Got our Icon..\n"));
+	if (hdtbicon->do_ToolTypes)
+	{
+	    char *tt = NULL, *devicename;
+	    int   i  = 0;
+D(bug("[HDToolBox] Icon has tooltypes..\n"));
+
+	    while ((tt = hdtbicon->do_ToolTypes[i]) != NULL)
+	    {
+                if (strncmp(hdtbicon->do_ToolTypes[i], "DEVICE=", 7) == 0)
+                {
+		    devicename = hdtbicon->do_ToolTypes[i] + 7;
+D(bug("[HDToolBox] Adding Device '%s' from ToolType\n", devicename));
+		    addDeviceName(devicename);
+		}
+		i++;
+	    }
+	}
     }
 
     // EBR uses same types as MBR

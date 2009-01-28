@@ -1533,21 +1533,21 @@ LONG initGUI(void)
                     End,
                     Child, HGroup,
                         Child, ListviewObject,
-                            MUIA_Listview_List, gadgets.leftlv=ListObject,
+                            MUIA_Listview_List, (gadgets.leftlv = ListObject,
                                 InputListFrame,
                                 MUIA_List_DisplayHook, &hook_display,
                                 MUIA_List_Format, ",",
                                 MUIA_List_Title, TRUE,
-                            End,
+                            End),
                         End,
                         Child, ListviewObject,
-                            MUIA_Listview_List, gadgets.rightlv=ListObject,
+                            MUIA_Listview_List, (gadgets.rightlv = ListObject,
                                 ReadListFrame,
                                 MUIA_Listview_Input, FALSE,
                                 MUIA_List_Title, TRUE,
                                 MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
                                 MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-                            End,
+                            End),
                         End,
                     End,
                 End,
@@ -2249,7 +2249,7 @@ BOOL QuitGUI(ULONG *sigs)
 {
     // moved debug from this place because it produces too much garbage 
 
-    if ((LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)sigs) == MUIV_Application_ReturnID_Quit)
+    if ((IPTR)DoMethod(app, MUIM_Application_NewInput, (IPTR)sigs) == MUIV_Application_ReturnID_Quit)
     {
 	D(bug("[HDToolBox] QuitGUI()\n"));
         return TRUE;

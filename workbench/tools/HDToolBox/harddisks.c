@@ -58,7 +58,7 @@ BOOL identify(struct IOStdReq *ioreq, STRPTR name)
     return TRUE;
 }
 
-void findHDs(struct ListNode *parent)
+void findHDs(struct HDTBDevice *parent)
 {
     struct IOStdReq *ioreq;
     struct MsgPort *mp;
@@ -73,7 +73,11 @@ void findHDs(struct ListNode *parent)
         ioreq = (struct IOStdReq *)CreateIORequest(mp, sizeof(struct IOStdReq));
         if (ioreq)
         {
-            for (i=0;i<8;i++)
+	    int maxunits = 8;
+	    if (parent->maxunits > maxunits)
+		maxunits = parent->maxunits;
+
+            for (i=0;i<maxunits;i++)
             {
                 node = AllocMem(sizeof(struct HDNode), MEMF_PUBLIC | MEMF_CLEAR);
                 if (node)
@@ -85,17 +89,18 @@ void findHDs(struct ListNode *parent)
                         {
                             node->root_partition.listnode.ln.ln_Type = LNT_Harddisk;
                             node->unit = i;
-                            if (OpenDevice(parent->ln.ln_Name, i, (struct IORequest *)ioreq, 0) == 0)
+                            if (OpenDevice(parent->listnode.ln.ln_Name, i, (struct IORequest *)ioreq, 0) == 0)
                             {
+                                D(bug("[HDToolBox] findHDs: Opened %s:%d\n",parent->listnode.ln.ln_Name, i));
                                 if (!identify(ioreq, node->root_partition.listnode.ln.ln_Name))
                                     sprintf(node->root_partition.listnode.ln.ln_Name, "Unit %d", i);
                                 CloseDevice((struct IORequest *)ioreq);
-                                node->root_partition.ph = OpenRootPartition(parent->ln.ln_Name, node->unit);
+                                node->root_partition.ph = OpenRootPartition(parent->listnode.ln.ln_Name, node->unit);
                                 if (node->root_partition.ph)
                                 {
-				    D(bug("[HDToolBox] - appending ROOT partition %p to list %p\n", &node->root_partition.listnode.ln, &parent->list));
+				    D(bug("[HDToolBox] - appending ROOT partition %p to list %p\n", &node->root_partition.listnode.ln, &parent->listnode.list));
 				    D(bug("[HDToolBox] - first entry at %p\n", node->root_partition.listnode.list.lh_Head));
-                                    AddTail(&parent->list, &node->root_partition.listnode.ln);
+                                    AddTail(&parent->listnode.list, &node->root_partition.listnode.ln);
                                     if (findPartitionTable(&node->root_partition))
                                     {
 					D(bug("[HDToolBox] - partition table found. searching for partitions\n"));
