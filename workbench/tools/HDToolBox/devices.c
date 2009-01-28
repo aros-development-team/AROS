@@ -6,6 +6,7 @@
 #include <proto/exec.h>
 #include <exec/memory.h>
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "devices.h"
@@ -22,20 +23,37 @@ struct ListNode root;
 struct HDTBDevice *addDevice(struct ListNode *parent, STRPTR name)
 {
     struct HDTBDevice *ln;
+    STRPTR seppoint = NULL;
+    int devnamelen = 0;
 
     D(bug("[HDToolBox] addDevice('%s')\n", name));
 
+    seppoint = strstr(name, ":");
+
+    if (seppoint != NULL)
+	devnamelen = (int)(seppoint - name);
+    else
+	devnamelen = strlen(name);
+    
     ln = AllocMem(sizeof(struct HDTBDevice), MEMF_PUBLIC | MEMF_CLEAR);
     if (ln)
     {
-        ln->listnode.ln.ln_Name = AllocVec(strlen(name)+1, MEMF_PUBLIC);
+        ln->listnode.ln.ln_Name = AllocVec(devnamelen+1, MEMF_PUBLIC | MEMF_CLEAR);
         if (ln->listnode.ln.ln_Name)
         {
             if (InitListNode(&ln->listnode, parent))
             {
                 ln->listnode.ln.ln_Type = LNT_Device;
-                CopyMem(name, ln->listnode.ln.ln_Name, strlen(name)+1);
-                findHDs(&ln->listnode);
+                CopyMem(name, ln->listnode.ln.ln_Name, devnamelen);
+		D(bug("[HDToolBox] addDevice: device '%s'\n", ln->listnode.ln.ln_Name));
+
+		if (seppoint != NULL)
+		{
+		    ln->maxunits = atoi(name + devnamelen + 1);
+		    D(bug("[HDToolBox] addDevice: maxunits %d\n", ln->maxunits));
+		}
+
+                findHDs(ln);
 
 		/*
 		 * check if device carries at least one element (empty partition?)

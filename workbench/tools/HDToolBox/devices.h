@@ -4,7 +4,8 @@
 #include "gui.h"
 
 struct HDTBDevice {
-	struct ListNode listnode;
+    struct ListNode listnode;
+    int             maxunits;
 };
 
 struct HDTBDevice *addDeviceName(STRPTR);

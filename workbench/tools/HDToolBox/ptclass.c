@@ -427,7 +427,7 @@ struct HDTBPartition *getActive(struct PTableData *data)
 void DrawBox(struct RastPort *rport, struct DrawInfo *dri,
             UWORD sx, UWORD sy, UWORD ex, UWORD ey, BOOL recessed)
 {
-    D(bug("[HDToolBox] DrawBox()\n"));
+    D(bug("[HDToolBox] DrawBox(rport @ %p, dri @ %p, %d,%dx%d,%d)\n", rport, dri, sx, sy, ex, ey));
 
     SetAPen(rport, dri->dri_Pens[recessed ? SHINEPEN : SHADOWPEN]);
     Move(rport, ex, sy);

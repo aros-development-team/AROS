@@ -12,7 +12,7 @@ struct HDNode {
 	LONG unit;
 };
 
-void findHDs(struct ListNode *);
+void findHDs(struct HDTBDevice *);
 void freeHDList(struct List *);
 
 #endif /* HARDDISK_H */
