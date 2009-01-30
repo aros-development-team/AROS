@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_LIST_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,8 +15,12 @@
 
 /*** Methods ****************************************************************/
 #define MUIM_List_Clear               (MUIB_MUI|0x0042ad89) /* MUI: V4  */
+#define MUIM_List_Compare             (MUIB_MUI|0x00421b68) /* MUI: V20 */
+#define MUIM_List_Construct           (MUIB_MUI|0x0042d662) /* MUI: V20 */
 #define MUIM_List_CreateImage         (MUIB_MUI|0x00429804) /* MUI: V11 */
 #define MUIM_List_DeleteImage         (MUIB_MUI|0x00420f58) /* MUI: V11 */
+#define MUIM_List_Destruct            (MUIB_MUI|0x00427d51) /* MUI: V20 */
+#define MUIM_List_Display             (MUIB_MUI|0x00425377) /* MUI: V20 */
 #define MUIM_List_Exchange            (MUIB_MUI|0x0042468c) /* MUI: V4  */
 #define MUIM_List_GetEntry            (MUIB_MUI|0x004280ec) /* MUI: V4  */
 #define MUIM_List_Insert              (MUIB_MUI|0x00426c87) /* MUI: V4  */
@@ -30,8 +34,12 @@
 #define MUIM_List_Sort                (MUIB_MUI|0x00422275) /* MUI: V4  */
 #define MUIM_List_TestPos             (MUIB_MUI|0x00425f48) /* MUI: V11 */
 struct MUIP_List_Clear                {STACKED ULONG MethodID;};
+struct MUIP_List_Compare              {STACKED ULONG MethodID; STACKED APTR entry1; STACKED APTR entry2; STACKED LONG sort_type1; STACKED LONG sort_type2;};
+struct MUIP_List_Construct            {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
 struct MUIP_List_CreateImage          {STACKED ULONG MethodID; STACKED Object *obj; STACKED ULONG flags;};
 struct MUIP_List_DeleteImage          {STACKED ULONG MethodID; STACKED APTR listimg;};
+struct MUIP_List_Destruct             {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
+struct MUIP_List_Display              {STACKED ULONG MethodID; STACKED APTR entry; STACKED STRPTR *array; STACKED LONG entry_pos; STACKED STRPTR *preparses;};
 struct MUIP_List_Exchange             {STACKED ULONG MethodID; STACKED LONG pos1; STACKED LONG pos2;};
 struct MUIP_List_GetEntry             {STACKED ULONG MethodID; STACKED LONG pos; STACKED APTR *entry;};
 struct MUIP_List_Insert               {STACKED ULONG MethodID; STACKED APTR *entries; STACKED LONG count; STACKED LONG pos;};
@@ -45,15 +53,7 @@ struct MUIP_List_Select               {STACKED ULONG MethodID; STACKED LONG pos;
 struct MUIP_List_Sort                 {STACKED ULONG MethodID;};
 struct MUIP_List_TestPos              {STACKED ULONG MethodID; STACKED LONG x; STACKED LONG y; STACKED struct MUI_List_TestPos_Result *res;};
 
-#define MUIM_List_Construct           (MUIB_List | 0x00000000) /* Zune: V1 same like NList, PRIV for now! */
-#define MUIM_List_Destruct            (MUIB_List | 0x00000001) /* Zune: V1 same like NList, PRIV for now! */
-#define MUIM_List_Compare             (MUIB_List | 0x00000002) /* Zune: v1 same like NList, PRIV for now! */
-#define MUIM_List_Display             (MUIB_List | 0x00000003) /* Zune: V1 same like NList, PRIV for now! */
 #define MUIM_List_SelectChange        (MUIB_List | 0x00000004) /* Zune: V1 same like NLIST, PRIV for now! */
-struct MUIP_List_Construct            {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
-struct MUIP_List_Destruct             {STACKED ULONG MethodID; STACKED APTR entry; STACKED APTR pool;};
-struct MUIP_List_Compare              {STACKED ULONG MethodID; STACKED APTR entry1; STACKED APTR entry2; STACKED LONG sort_type1; STACKED LONG sort_type2;};
-struct MUIP_List_Display              {STACKED ULONG MethodID; STACKED APTR entry; STACKED LONG entry_pos; STACKED STRPTR *strings; STACKED STRPTR *preparses;};
 struct MUIP_List_SelectChange         {STACKED ULONG MethodID; STACKED LONG pos; STACKED LONG state; STACKED ULONG flags;};
 
 /*** Attributes *************************************************************/
