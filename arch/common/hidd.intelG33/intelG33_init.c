@@ -141,6 +141,8 @@ static int IntelG33_Init(LIBBASETYPEPTR LIBBASE) {
     if ((sd->memPool == NULL))
         return FALSE;
 
+	InitSemaphore(&sd->Chipset.CSLock);
+
     struct OOP_ABDescr attrbases[] = {
         { (STRPTR)IID_Hidd_PCIDevice, &HiddPCIDeviceAttrBase },
         { (STRPTR)IID_Hidd_BitMap,    &HiddBitMapAttrBase },

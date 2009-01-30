@@ -130,21 +130,27 @@ void METHOD(IntelG33, Root, Get) {
     BOOL found = FALSE;
     if (IS_GFX_ATTR(msg->attrID, idx)) {
 	    switch (idx) {
-            D(bug("      ...%08x\n",idx));
             case aoHidd_Gfx_SupportsHWCursor:
                 D(bug("      ...HWCursor\n"));
                 *msg->storage = (IPTR)TRUE;
                 found = TRUE;
                 break;
-
             case aoHidd_Gfx_DPMSLevel:
                 D(bug("      ...DPMSLevel\n"));
-                /*
-                  vHidd_Gfx_DPMSLevel_On
-                  vHidd_Gfx_DPMSLevel_Standby
-                  vHidd_Gfx_DPMSLevel_Suspend
-                  vHidd_Gfx_DPMSLevel_Off
-                */
+                switch(((G33_RD_REGW(MMADR, ADPA)>>10)&0x3)) {
+                    case 0:
+                        *msg->storage = vHidd_Gfx_DPMSLevel_On;
+                        break;
+                    case 1:
+                        *msg->storage = vHidd_Gfx_DPMSLevel_Suspend;
+                        break;
+                    case 2:
+                        *msg->storage = vHidd_Gfx_DPMSLevel_Standby;
+                        break;
+                    case 3:
+                        *msg->storage = vHidd_Gfx_DPMSLevel_Off;
+                        break;
+                }
                 found = TRUE;
                 break;
             default:
@@ -171,16 +177,25 @@ void METHOD(IntelG33, Root, Set) {
 
     while ((tag = NextTagItem(&tags))) {
         if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
-            D(bug("      ...%08x\n",idx));
             switch(idx) {
                 case aoHidd_Gfx_DPMSLevel:
                     D(bug("      ...DPMSLevel\n"));
-                    /*
-                      vHidd_Gfx_DPMSLevel_On
-                      vHidd_Gfx_DPMSLevel_Standby
-                      vHidd_Gfx_DPMSLevel_Suspend
-                      vHidd_Gfx_DPMSLevel_Off
-                    */
+                    ObtainSemaphore(&sd->Chipset.CSLock);
+                    switch(tag->ti_Data) {
+                        case vHidd_Gfx_DPMSLevel_On:
+                            G33_WRM_REGW(MMADR, ADPA, 0x0000, DPMSMASK);
+                            break;
+                        case vHidd_Gfx_DPMSLevel_Suspend:
+                            G33_WRM_REGW(MMADR, ADPA, 0x0400, DPMSMASK);
+                            break;
+                        case vHidd_Gfx_DPMSLevel_Standby:
+                            G33_WRM_REGW(MMADR, ADPA, 0x0800, DPMSMASK);
+                            break;
+                        case vHidd_Gfx_DPMSLevel_Off:
+                            G33_WRM_REGW(MMADR, ADPA, 0x0c00, DPMSMASK);
+                            break;
+                    }
+                    ReleaseSemaphore(&sd->Chipset.CSLock);
                     break;
                 default:
                     D(bug("      ...ID = %d\n",idx));

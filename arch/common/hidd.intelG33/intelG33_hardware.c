@@ -12,8 +12,6 @@
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 
-#include <inttypes.h>
-
 #include "intelG33_intern.h"
 #include "intelG33_regs.h"
 
