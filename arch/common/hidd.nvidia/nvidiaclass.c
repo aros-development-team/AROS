@@ -78,12 +78,10 @@ VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             switch(idx)
             {
 		case aoHidd_Gfx_DPMSLevel:
-		    LOCK_HW
 
 		    DPMS(_sd, tag->ti_Data);
 		    _sd->dpms = tag->ti_Data;
 
-		    UNLOCK_HW
 		    break;
 	    }
 	}
