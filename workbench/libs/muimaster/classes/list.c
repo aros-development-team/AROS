@@ -432,8 +432,8 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
 	entry_data = data->entries[entry_pos]->data;
 
     /* Get the display formation */
-    DoMethod(obj, MUIM_List_Display, (IPTR)entry_data, entry_pos,
-	     (IPTR)data->strings, (IPTR)data->preparses);
+    DoMethod(obj, MUIM_List_Display, (IPTR)entry_data, (IPTR)data->strings,
+        entry_pos, (IPTR)data->preparses);
 }
 
 /**************************************************************************
@@ -1888,14 +1888,14 @@ IPTR List__MUIM_Display(struct IClass *cl, Object *obj, struct MUIP_List_Display
     if (NULL == data->display_hook)
     {
     	if (msg->entry)
-	    *msg->strings = msg->entry;
+	    *msg->array = msg->entry;
 	else
-	    *msg->strings = 0;
+	    *msg->array = 0;
     	return 1;
     }
 
-    *((ULONG*)(msg->strings - 1)) = msg->entry_pos;
-    return CallHookPkt(data->display_hook, msg->strings, msg->entry);
+    *((ULONG*)(msg->array - 1)) = msg->entry_pos;
+    return CallHookPkt(data->display_hook, msg->array, msg->entry);
 }
 
 /**************************************************************************
