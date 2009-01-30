@@ -38,6 +38,8 @@
 
 struct IntelG33Chipset {
 
+    struct        SignalSemaphore CSLock;
+
     UWORD	      VendorID;
     UWORD	      ProductID;
 
@@ -92,6 +94,10 @@ struct IntelG33Base {
 };
 
 #define XSD(cl) (&((struct IntelG33Base *)cl->UserData)->sd)
+
+#define LOCK_CS		     { ObtainSemaphore(&sd->Chipset.CSLock); }
+#define UNLOCK_CS	     { ReleaseSemaphore(&sd->Chipset.CSLock); }
+
 
 void GMBUS_Init(struct staticdata *sd);
 UWORD GMBUS_GetStatus(struct staticdata *sd);

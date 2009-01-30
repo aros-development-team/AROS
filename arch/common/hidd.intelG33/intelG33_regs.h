@@ -1,4 +1,6 @@
 
+#include <inttypes.h>
+
 /*
 Address Range Description
 MMADR+
@@ -83,6 +85,10 @@ MMADR+
 #define G33_CLRBMASK_REGW(a, reg, value) ( writew((readw(sd->Chipset.a + reg )&(~value)), (sd->Chipset.a + reg)) )
 #define G33_CLRBMASK_REGB(a, reg, value) ( writeb((readb(sd->Chipset.a + reg )&(~value)), (sd->Chipset.a + reg)) )
 
+#define G33_WRM_REGL(a, reg, value, mask) ( writel( (((readl(sd->Chipset.a + reg )&(~mask)))&value), (sd->Chipset.a + reg)) )
+#define G33_WRM_REGW(a, reg, value, mask) ( writew( (((readw(sd->Chipset.a + reg )&(~mask)))&value), (sd->Chipset.a + reg)) )
+#define G33_WRM_REGB(a, reg, value, mask) ( writeb( (((readb(sd->Chipset.a + reg )&(~mask)))&value), (sd->Chipset.a + reg)) )
+
 #define G33_RD_REG_ARRAY(a, reg, offset) ( readl((sd->Chipset.a + reg) + ((offset) << 2)) )
 #define G33_WR_REG_ARRAY(a, reg, offset, value) ( writel((value), ((sd->Chipset.a + reg) + ((offset) << 2))) )
 
@@ -107,6 +113,8 @@ MMADR+
 #define GMBUS5  0x5120
 
 #define ADPA        0x61100
+
+#define DPMSMASK    0x0c00
 
 #define VGADisable  1<<31
 #define VGACNTRL    0x71400
