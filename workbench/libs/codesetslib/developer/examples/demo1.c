@@ -42,7 +42,6 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <libraries/mui.h>
-#include <mui/Textinput_mcc.h>
 #include <mui/TextEditor_mcc.h>
 
 #include <stdio.h>
@@ -175,22 +174,25 @@ HOOKPROTONH(popupOpenFun, ULONG, Object *list, Object *str)
     STRPTR s, x;
     int i;
 
-    get(str, MUIA_Textinput_Contents, (ULONG)&s);
+    get(str, MUIA_Text_Contents, (ULONG)&s);
 
-    for (i = 0; ;i++)
+    if(s != NULL)
     {
-        DoMethod(list,MUIM_List_GetEntry,i,&x);
-        if (!x)
+        for (i = 0; ;i++)
         {
-            set(list,MUIA_List_Active,MUIV_List_Active_Off);
-            break;
-        }
-        else
-            if (!stricmp(x,s))
+            DoMethod(list,MUIM_List_GetEntry,i,&x);
+            if (x == NULL)
             {
-                set(list,MUIA_List_Active,i);
+                set(list,MUIA_List_Active,MUIV_List_Active_Off);
                 break;
             }
+            else
+                if (stricmp(x,s) == 0)
+                {
+                    set(list,MUIA_List_Active,i);
+                    break;
+                }
+        }
     }
 
     return TRUE;
@@ -208,7 +210,7 @@ HOOKPROTONH(popupCloseFun, void, Object *list, Object *str)
     STRPTR e;
 
     DoMethod(list,MUIM_List_GetEntry,MUIV_List_GetEntry_Active,&e);
-    set(str,MUIA_Textinput_Contents,e);
+    set(str,MUIA_Text_Contents,e);
 }
 MakeStaticHook(popupCloseHook, popupCloseFun);
 
@@ -224,12 +226,9 @@ mpopupNew(struct IClass *cl,Object *obj,struct opSet *msg)
 
     if((obj = (Object *)DoSuperNew(cl,obj,
 
-            MUIA_Popstring_String, str = TextinputObject,
-                MUIA_ControlChar,           (ULONG)'h',
-                MUIA_CycleChain,            TRUE,
-                StringFrame,
-                MUIA_Textinput_AdvanceOnCR, TRUE,
-                MUIA_Textinput_MaxLen,      256,
+            MUIA_Popstring_String, str = TextObject,
+                TextFrame,
+                MUIA_Background, MUII_TextBack,
             End,
 
             MUIA_Popstring_Button, bt = MUI_MakeObject(MUIO_PopButton,MUII_PopUp),
@@ -265,7 +264,7 @@ mpopupNew(struct IClass *cl,Object *obj,struct opSet *msg)
 
         /* Use the default codeset */
         codeset = CodesetsFindA(NULL,NULL);
-        set(str,MUIA_Textinput_Contents,codeset->name);
+        set(str,MUIA_Text_Contents,codeset->name);
     }
 
     return (ULONG)obj;
@@ -359,7 +358,7 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
         char fname[256];
         BPTR lock;
 
-        strcpy(fname,data->req->fr_Drawer);
+        strlcpy(fname,data->req->fr_Drawer,sizeof(fname));
         AddPart(fname,data->req->fr_File,sizeof(fname));
 
         /* Get size */
@@ -415,7 +414,7 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
                                     STRPTR                  cname;
 
                                     /* Get used codeset */
-                                    get(data->codesetsObj, MUIA_Textinput_Contents, (ULONG)&cname);
+                                    get(data->codesetsObj, MUIA_Text_Contents, (ULONG)&cname);
                                     codeset = CodesetsFindA(cname,NULL);
 
                                     /* Convert */
@@ -456,7 +455,7 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
 */
 
 static ULONG
-meditorSave(struct IClass *cl, Object *obj, Msg msg)
+meditorSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
     struct editorData *data = INST_DATA(cl,obj);
     STRPTR                     text;
@@ -472,7 +471,7 @@ meditorSave(struct IClass *cl, Object *obj, Msg msg)
         ULONG                   dlen;
 
         /* Get current user codeset */
-        get(data->codesetsObj, MUIA_Textinput_Contents, (ULONG)&cname);
+        get(data->codesetsObj, MUIA_Text_Contents, (ULONG)&cname);
         codeset = CodesetsFindA(cname,NULL);
 
         /* Convert text as utf8 */
@@ -488,7 +487,7 @@ meditorSave(struct IClass *cl, Object *obj, Msg msg)
                 char fname[256];
                 BPTR file;
 
-                strcpy(fname,data->req->fr_Drawer);
+                strlcpy(fname,data->req->fr_Drawer,sizeof(fname));
                 AddPart(fname,data->req->fr_File,sizeof(fname));
 
                 if((file = Open(fname,MODE_NEWFILE)))
@@ -593,7 +592,7 @@ mappNew(struct IClass *cl,Object *obj,struct opSet *msg)
                     WindowContents, VGroup,
 
                         Child, HGroup,
-                            Child, Label2("C_harset"),
+                            Child, Label2("Charset"),
                             Child, codesets = popupCodesetObject, End,
                         End,
 
@@ -686,7 +685,7 @@ mappDisposeWin(struct IClass *cl,Object *obj,struct MUIP_App_DisposeWin *msg)
 */
 
 static ULONG
-mappAbout(struct IClass *cl,Object *obj,Msg msg)
+mappAbout(struct IClass *cl,Object *obj,UNUSED Msg msg)
 {
     struct appData *data = INST_DATA(cl,obj);
 
@@ -740,7 +739,7 @@ mappAbout(struct IClass *cl,Object *obj,Msg msg)
 */
 
 static ULONG
-mappAboutMUI(struct IClass *cl,Object *obj,Msg msg)
+mappAboutMUI(struct IClass *cl,Object *obj, UNUSED Msg msg)
 {
     struct appData *data = INST_DATA(cl,obj);
 
@@ -806,7 +805,7 @@ DISPATCHERPROTO(appDispatcher)
 */
 
 int
-main(int argc,char **argv)
+main(UNUSED int argc,char **argv)
 {
     int res = RETURN_FAIL;
 
@@ -824,9 +823,9 @@ main(int argc,char **argv)
                GETINTERFACE(IMUIMaster, MUIMasterBase))
             {
                 /* Create classes */
-                if ((appClass = MUI_CreateCustomClass(NULL,MUIC_Application,NULL,sizeof(struct appData),appDispatcher)) &&
-                    (popupCodesetsClass = MUI_CreateCustomClass(NULL,MUIC_Popobject,NULL,0,popupDispatcher)) &&
-                    (editorClass = MUI_CreateCustomClass(NULL,MUIC_TextEditor,NULL,sizeof(struct editorData),editorDispatcher)))
+                if ((appClass = MUI_CreateCustomClass(NULL, 		MUIC_Application, NULL, sizeof(struct appData), appDispatcher)) &&
+                    (popupCodesetsClass = MUI_CreateCustomClass(NULL, MUIC_Popobject, NULL, 0,popupDispatcher)) &&
+                    (editorClass = MUI_CreateCustomClass(NULL, MUIC_TextEditor, NULL, sizeof(struct editorData), editorDispatcher)))
                 {
                     Object *app;
 

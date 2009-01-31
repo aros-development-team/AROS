@@ -5,6 +5,19 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+2009-01-28  Thore Böckelmann <tboeckel@gmx.de>
+
+  * developer/examples/demo1.c: replaced use of the custom class Textinput.mcc
+    by a simple Text object, as this class is not installed on all systems and
+    may also have caused bug #2539755. However, the custom TextEditor.mcc class
+    is still required, but this one is correctly checked if it should be
+    missing.
+
+2009-01-27  Thore Böckelmann <tboeckel@gmx.de>
+
+  * developer/examples/demo1.c: added some NULL checks to avoid stricmp() to be
+    called with NULL pointers. This should fix bug #2539755.
+
 2009-01-10  Staf Verhaegen <staf.verhaegen@skynet.be>
 
   * codesets.conf (AROS): Update version, date and copyright info
