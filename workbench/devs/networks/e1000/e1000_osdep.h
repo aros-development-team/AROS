@@ -165,52 +165,47 @@
 #define DEBUGOUT7 DEBUGOUT3
 #endif
 
-#define E1000_REGISTER(a, reg) (((a)->mac.type >= e1000_82543) \
-                               ? reg                           \
-                               : e1000_translate_register_82542(reg))
+#define MMIO_R8(addr)		(*((volatile UBYTE *)(addr)))
+#define MMIO_R16(addr)		(*((volatile UWORD *)(addr)))
+#define MMIO_R32(addr)		(*((volatile ULONG *)(addr)))
 
-#define E1000_WRITE_REG(a, reg, value) ( \
-    writel((value), ((a)->hw_addr + E1000_REGISTER(a, reg))))
+extern void MMIO_W8(APTR, UBYTE);
+extern void MMIO_W16(APTR, UWORD);
+extern void MMIO_W32(APTR, ULONG);
 
-#define E1000_READ_REG(a, reg) (readl((a)->hw_addr + E1000_REGISTER(a, reg)))
+#define E1000_REGISTER(a, reg) (((a)->mac.type >= e1000_82543) ? reg : e1000_translate_register_82542(reg))
 
-#define E1000_WRITE_REG_ARRAY(a, reg, offset, value) ( \
-    writel((value), ((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2))))
+#define E1000_WRITE_REG(a, reg, value) (MMIO_W32((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg)), (value)))
 
-#define E1000_READ_REG_ARRAY(a, reg, offset) ( \
-    readl((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2)))
+#define E1000_READ_REG(a, reg) (*((volatile ULONG *)((a)->hw_addr + E1000_REGISTER(a, reg))))
+
+#define E1000_WRITE_REG_ARRAY(a, reg, offset, value) (MMIO_W32((APTR)(((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2))), (value)))
+#define E1000_READ_REG_ARRAY(a, reg, offset) (*((volatile ULONG *)((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 2))))
 
 #define E1000_READ_REG_ARRAY_DWORD E1000_READ_REG_ARRAY
 #define E1000_WRITE_REG_ARRAY_DWORD E1000_WRITE_REG_ARRAY
 
-#define E1000_WRITE_REG_ARRAY_WORD(a, reg, offset, value) ( \
-    writew((value), ((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1))))
+#define E1000_WRITE_REG_ARRAY_WORD(a, reg, offset, value) (MMIO_W16((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1)), (value)))
+ 
+#define E1000_READ_REG_ARRAY_WORD(a, reg, offset) (*((volatile UWORD *)((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1)))))
 
-#define E1000_READ_REG_ARRAY_WORD(a, reg, offset) ( \
-    readw((a)->hw_addr + E1000_REGISTER(a, reg) + ((offset) << 1)))
+#define E1000_WRITE_REG_ARRAY_BYTE(a, reg, offset, value) (MMIO_W8((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg) + (offset)), (value)))
 
-#define E1000_WRITE_REG_ARRAY_BYTE(a, reg, offset, value) ( \
-    writeb((value), ((a)->hw_addr + E1000_REGISTER(a, reg) + (offset))))
+#define E1000_READ_REG_ARRAY_BYTE(a, reg, offset) (*((volatile UBYTE *)((a)->hw_addr + E1000_REGISTER(a, reg) + (offset)))))
 
-#define E1000_READ_REG_ARRAY_BYTE(a, reg, offset) ( \
-    readb((a)->hw_addr + E1000_REGISTER(a, reg) + (offset)))
-
-#define outl writel
 #define E1000_WRITE_REG_IO(a, reg, offset) do { \
-    outl(reg, ((a)->io_base));                  \
-    outl(offset, ((a)->io_base + 4));      } while(0)
+    LONGOUT(((a)->io_base), reg);                  \
+    LONGOUT(((a)->io_base + 4), offset);      } while(0)
 
 #define E1000_WRITE_FLUSH(a) E1000_READ_REG(a, E1000_STATUS)
 
-#define E1000_WRITE_FLASH_REG(a, reg, value) ( \
-    writel((value), ((a)->flash_address + reg)))
+#define E1000_WRITE_FLASH_REG(a, reg, value) (MMIO_W32((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg)), (value)))
 
-#define E1000_WRITE_FLASH_REG16(a, reg, value) ( \
-    writew((value), ((a)->flash_address + reg)))
+#define E1000_WRITE_FLASH_REG16(a, reg, value) (MMIO_W16((APTR) ((a)->hw_addr + E1000_REGISTER(a, reg)), (value)))
 
-#define E1000_READ_FLASH_REG(a, reg) (readl((a)->flash_address + reg))
+#define E1000_READ_FLASH_REG(a, reg) (*((volatile ULONG *)((a)->hw_addr + E1000_REGISTER(a, reg))))
 
-#define E1000_READ_FLASH_REG16(a, reg) (readw((a)->flash_address + reg))
+#define E1000_READ_FLASH_REG16(a, reg) (*((volatile UWORD *)((a)->hw_addr + E1000_REGISTER(a, reg))))
 
 #define SANA2_SPECIAL_STAT_COUNT 3
 
@@ -295,7 +290,7 @@ struct e1000Unit {
 	ULONG                   e1ku_tx_head_addr;
 	ULONG                   e1ku_tx_fifo_size;
 
-	APTR                    *e1ku_hw_stats;
+	APTR                    e1ku_hw_stats;
 
 	BOOL                    detect_tx_hung;
 

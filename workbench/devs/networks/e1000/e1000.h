@@ -20,9 +20,9 @@
     MA 02111-1307, USA.
 */
 
-#define DEBUG 1
-//#define intel_debug
 #include <aros/debug.h>
+
+#include <aros/io.h>
 
 #include <exec/types.h>
 #include <exec/libraries.h>
@@ -52,7 +52,7 @@ typedef ULONG u32;
 typedef LONG s32;
 typedef UQUAD u64;
 
-#define __iomem
+#define __iomem volatile
 
 #define e1000_TASK_NAME	"%s.task"
 #define e1000_PORT_NAME	"%s.port"

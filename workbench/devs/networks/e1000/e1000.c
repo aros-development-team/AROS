@@ -82,6 +82,34 @@ void e1000_msec_delay_irq(struct net_device *unit, ULONG msec)
     e1000_usec_delay(unit, 1000 * msec);
 }
 
+void MMIO_W8(APTR addr, UBYTE val8)
+{
+    UBYTE tmp;
+    
+    *((volatile UBYTE *)(addr)) = (val8);
+
+    tmp = MMIO_R8(addr);
+}
+
+void MMIO_W16(APTR addr, UWORD val16)
+{
+    UWORD tmp;
+    
+    *((volatile UWORD *)(addr)) = (val16);
+
+    tmp = MMIO_R16(addr);
+    
+}
+
+void MMIO_W32(APTR addr, ULONG val32)
+{
+    ULONG tmp;
+    
+    *((volatile ULONG *)(addr)) = (val32);
+
+    tmp = MMIO_R32(addr);
+}
+
 static BOOL e1000func_check_64k_bound(struct net_device *unit,
                                        void *start, unsigned long len)
 {
@@ -100,18 +128,21 @@ static BOOL e1000func_check_64k_bound(struct net_device *unit,
 
 void e1000func_irq_disable(struct net_device *unit)
 {
-	E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMC, ~0);
-	E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    ULONG tmp;
+    E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMC, ~0);
+    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 }
 
 void e1000func_irq_enable(struct net_device *unit)
 {
-	E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMS, IMS_ENABLE_MASK);
-	E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    ULONG tmp;
+    E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMS, IMS_ENABLE_MASK);
+    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 }
 
 static void e1000func_enter_82542_rst(struct net_device *unit)
 {
+    ULONG tmp;
 	ULONG rctl;
 
 	if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type != e1000_82542)
@@ -124,7 +155,7 @@ static void e1000func_enter_82542_rst(struct net_device *unit)
 	rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
 	rctl |= E1000_RCTL_RST;
 	E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL, rctl);
-	E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+	tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
     e1000_msec_delay(unit, 5);
 
@@ -134,6 +165,7 @@ static void e1000func_enter_82542_rst(struct net_device *unit)
 
 static void e1000func_leave_82542_rst(struct net_device *unit)
 {
+    ULONG tmp;
 	ULONG rctl;
 
 	if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type != e1000_82542)
@@ -144,7 +176,7 @@ static void e1000func_leave_82542_rst(struct net_device *unit)
 	rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
 	rctl &= ~E1000_RCTL_RST;
 	E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL, rctl);
-	E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+	tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
     e1000_msec_delay(unit, 5);
 
@@ -170,7 +202,7 @@ D(bug("[%s]: e1000func_configure_tx()\n", unit->e1ku_name));
 
 	/* Setup the HW Tx Head and Tail descriptor pointers */
 	for (i = 0; i < unit->e1ku_txRing_QueueSize; i++) {
-		tdba = unit->e1ku_txRing[i].dma;
+		tdba = (UQUAD)unit->e1ku_txRing[i].dma;
 		tdlen = unit->e1ku_txRing[i].count * sizeof(struct e1000_tx_desc);
 D(bug("[%s]: e1000func_configure_tx: Tx Queue %d Ring Descriptor DMA @ %p, len %d\n", unit->e1ku_name, i, tdba, tdlen));
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAL(i), (tdba & 0x00000000ffffffffULL));
@@ -306,6 +338,7 @@ D(bug("[%s]: e1000func_setup_rctl()\n", unit->e1ku_name));
 
 static void e1000func_configure_rx(struct net_device *unit)
 {
+    ULONG tmp;
 	ULONG rdlen, rctl, rxcsum;
 	UQUAD rdba;
 	int i;
@@ -315,7 +348,7 @@ D(bug("[%s]: e1000func_configure_rx()\n", unit->e1ku_name));
 	/* disable receivers while setting up the descriptors */
 	rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
 	E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL, rctl & ~E1000_RCTL_EN);
-	E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+	tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
     e1000_msec_delay(unit, 10);
 
@@ -334,7 +367,7 @@ D(bug("[%s]: e1000func_configure_rx()\n", unit->e1ku_name));
 	for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++) {
 		rdlen = unit->e1ku_rxRing[i].count *
 			sizeof(struct e1000_rx_desc);
-		rdba = unit->e1ku_rxRing[i].dma;
+		rdba = (UQUAD)unit->e1ku_rxRing[i].dma;
 D(bug("[%s]: e1000func_configure_rx: Rx Queue %d Ring Descriptor DMA @ %p, len %d\n", unit->e1ku_name, i, rdba, rdlen));
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAL(i), (rdba & 0x00000000ffffffffULL));
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAH(i), (rdba >> 32));
@@ -489,7 +522,9 @@ D(bug("[%s]: e1000func_reset()\n", unit->e1ku_name));
 	e1000_reset_hw((struct e1000_hw *)unit->e1ku_Private00);
 
 	if (mac->type >= e1000_82544)
+	{
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_WUC, 0);
+	}
 
 	if (e1000_init_hw((struct e1000_hw *)unit->e1ku_Private00))
     {
@@ -829,8 +864,8 @@ D(bug("[%s]: e1000func_clean_tx_ring()\n", unit->e1ku_name));
 	tx_ring->next_to_clean = 0;
 //	tx_ring->last_tx_tso = 0;
 
-	writel(0, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdh);
-	writel(0, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt);
+	MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdh), 0);
+	MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), 0);
 }
 
 void e1000func_free_tx_resources(struct net_device *unit,
@@ -858,7 +893,7 @@ D(bug("[%s]: e1000func_clean_rx_ring()\n", unit->e1ku_name));
 
 	/* Free all the Rx ring buffers */
 	for (i = 0; i < rx_ring->count; i++) {
-		buffer_info = &rx_ring->buffer_info[i];
+		buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 		if (buffer_info->dma != NULL) {
             buffer_info->dma = NULL;
 		}
@@ -878,8 +913,8 @@ D(bug("[%s]: e1000func_clean_rx_ring()\n", unit->e1ku_name));
 	rx_ring->next_to_clean = 0;
 	rx_ring->next_to_use = 0;
 
-	writel(0, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh);
-	writel(0, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
+	MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdh), 0);
+	MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt), 0);
 }
 
 void e1000func_free_rx_resources(struct net_device *unit,
@@ -934,7 +969,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
 	unsigned int i;
 
 	i = rx_ring->next_to_use;
-	buffer_info = &rx_ring->buffer_info[i];
+	buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
 	while (cleaned_count--) {
 		if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
@@ -948,12 +983,12 @@ D(bug("[%s]: e1000func_alloc_rx_buffers: Buffer %d DMA @ %p\n", unit->e1ku_name,
 
             rx_desc = E1000_RX_DESC(*rx_ring, i);
 //    		rx_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
-            rx_desc->buffer_addr = buffer_info->dma;
+            rx_desc->buffer_addr = (UQUAD)buffer_info->dma;
         }
 
 		if (++i == rx_ring->count)
 			i = 0;
-		buffer_info = &rx_ring->buffer_info[i];
+		buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 	}
 
 	if (rx_ring->next_to_use != i) {
@@ -961,7 +996,7 @@ D(bug("[%s]: e1000func_alloc_rx_buffers: Buffer %d DMA @ %p\n", unit->e1ku_name,
 		if (i-- == 0)
 			i = (rx_ring->count - 1);
 
-		writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);
+		MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt), i);
 	}
 }
 
@@ -1055,8 +1090,8 @@ D(bug("[%s]: e1000func_clean_tx_irq: cleaning Tx buffer %d\n", unit->e1ku_name, 
 			/* detected Tx unit hang */
 D(bug("[%s]: e1000func_clean_tx_irq: Detected Tx Unit Hang -:\n", unit->e1ku_name));
 D(bug("[%s]: e1000func_clean_tx_irq:     Tx Queue             <%lu>\n", unit->e1ku_name, (unsigned long)((tx_ring - unit->e1ku_txRing) / sizeof(struct e1000_tx_ring))));
-D(bug("[%s]: e1000func_clean_tx_irq:     TDH                  <%x>\n", unit->e1ku_name, readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdh)));
-D(bug("[%s]: e1000func_clean_tx_irq:     TDT                  <%x>\n", unit->e1ku_name, readl(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt)));
+D(bug("[%s]: e1000func_clean_tx_irq:     TDH                  <%x>\n", unit->e1ku_name, MMIO_R32(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdh)));
+D(bug("[%s]: e1000func_clean_tx_irq:     TDT                  <%x>\n", unit->e1ku_name, MMIO_R32(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt)));
 D(bug("[%s]: e1000func_clean_tx_irq:     next_to_use          <%x>\n", unit->e1ku_name, tx_ring->next_to_use));
 D(bug("[%s]: e1000func_clean_tx_irq:     next_to_clean        <%x>\n", unit->e1ku_name, tx_ring->next_to_clean));
 D(bug("[%s]: e1000func_clean_tx_irq:   buffer_info[next_to_clean]\n", unit->e1ku_name));
@@ -1088,7 +1123,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 
 	i = rx_ring->next_to_clean;
 	rx_desc = E1000_RX_DESC(*rx_ring, i);
-	buffer_info = &rx_ring->buffer_info[i];
+	buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
 	while (rx_desc->status & E1000_RXD_STAT_DD) {
 		cleaned = TRUE;
@@ -1098,7 +1133,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 		if (++i == rx_ring->count) i = 0;
 		next_rxd = E1000_RX_DESC(*rx_ring, i);
 
-		next_buffer = &rx_ring->buffer_info[i];
+		next_buffer = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
 		cleaned_count++;
 
@@ -1111,7 +1146,7 @@ D(bug("[%s]: e1000func_clean_rx_irq: Receive packet consumed multiple buffers\n"
 			goto next_desc;
 		}
 
-        frame = rx_desc->buffer_addr;
+        frame = (struct eth_frame *)rx_desc->buffer_addr;
 
 		if (rx_desc->errors & E1000_RXD_ERR_FRAME_ERR_MASK){
 			UBYTE last_byte = *(frame->eth_packet_data + length - 1);
@@ -1242,11 +1277,13 @@ D(bug("[%s]: e1000func_clean_rx_irq: Received %d packets (%d bytes)\n", unit->e1
 void e1000_pci_clear_mwi(struct e1000_hw *hw)
 {
 D(bug("[%s]: e1000_pci_clear_mwi()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
+#warning "TODO: How to CLEAR Memory Write Invalidate on AROS!"
 }
 
 void e1000_pci_set_mwi(struct e1000_hw *hw)
 {
 D(bug("[%s]: e1000_pci_set_mwi()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
+#warning "TODO: How to SET Memory Write Invalidate on AROS!"
 }
 
 LONG  e1000_alloc_zeroed_dev_spec_struct(struct e1000_hw *hw, ULONG size)
@@ -1262,7 +1299,7 @@ D(bug("[%s]: e1000_alloc_zeroed_dev_spec_struct()\n", ((struct e1000Unit *)hw->b
 LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
 D(bug("[%s]: e1000_read_pcie_cap_reg()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
-
+#warning "TODO: How to READ PCI-Express Cap Register on AROS!"
     return 0;
 }
 
@@ -1278,16 +1315,17 @@ void e1000_read_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_ReadConfigWord pcireadmsg;
 D(bug("[%s]: e1000_read_pci_cfg()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
-    pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDevice_ReadConfigWord);
+    pcireadmsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
     pcireadmsg.reg = reg;
     *value = (UWORD)OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, &pcireadmsg);
+    D(bug("[%s]: e1000_read_pci_cfg: returning %x\n", ((struct e1000Unit *)hw->back)->e1ku_name, *value));
 }
 
 void e1000_write_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     struct pHidd_PCIDevice_WriteConfigWord pciwritemsg;
-D(bug("[%s]: e1000_write_pci_cfg()\n", ((struct e1000Unit *)hw->back)->e1ku_name));
-    pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDevice_WriteConfigWord);
+D(bug("[%s]: e1000_write_pci_cfg(%d, %x)\n", ((struct e1000Unit *)hw->back)->e1ku_name, reg, *value));
+    pciwritemsg.mID = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord);
     pciwritemsg.reg = reg;
     pciwritemsg.val = *value;
     OOP_DoMethod(((struct e1000Unit *)hw->back)->e1ku_PCIDevice, &pciwritemsg);
