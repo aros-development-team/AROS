@@ -51,36 +51,6 @@
 #include "unit.h"
 #include LC_LIBDEFS_FILE
 
-/* BYTE IO */
-volatile UBYTE readb(APTR base)
-{
-    return BYTEIN(base);
-}
-volatile void writeb(UBYTE val, APTR base)
-{
-    BYTEOUT(base, val);
-}
-
-/* WORD IO */
-volatile UWORD readw(APTR base)
-{
-    return WORDIN(base);
-}
-volatile void writew(UWORD val, APTR base)
-{
-    WORDOUT(base, val);
-}
-
-/* LONG IO */
-volatile ULONG readl(APTR base)
-{
-    return LONGIN(base);
-}
-volatile void writel(ULONG val, APTR base)
-{
-    LONGOUT(base, val);
-}
-
 /*
  * Report incoming events to all hyphotetical event receivers
  */
@@ -258,7 +228,7 @@ D(bug("[%s]: e1000func_TX_Int: Tx DMA buffer %d @ %p\n", unit->e1ku_name, i, buf
                 buffer = frame->eth_packet_data;
             }
             else
-                buffer = frame;
+                buffer = (UBYTE *)frame;
 
             if (!opener->tx_function(buffer, request->ios2_Data, data_size))
             {
@@ -294,11 +264,11 @@ D(bug("[%s]: e1000func_TX_Int: packet %d [type = %d] queued for transmission.\n"
                 buffer_info->length = packet_size;
 
                 tx_desc = E1000_TX_DESC(*tx_ring, i);
-                tx_desc->buffer_addr = buffer_info->dma;
+                tx_desc->buffer_addr = (UQUAD)buffer_info->dma;
                 tx_desc->lower.data = AROS_WORD2LE(txd_lower | buffer_info->length);
                 tx_desc->upper.data = AROS_WORD2LE(txd_upper);
                 tx_desc->lower.data |= AROS_WORD2LE(unit->txd_cmd);
-                writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt);
+		MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), i);
             }
         }
 
@@ -376,7 +346,7 @@ static void e1000func_IntHandler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *irq_h
 
 	ULONG icr = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_ICR);
 
-D(bug("[%s]: e1000func_IntHandler: ", unit->e1ku_name));
+D(bug("[%s]: e1000func_IntHandler(status %x): ", unit->e1ku_name, icr));
 
 	if (!icr)
     {
@@ -630,7 +600,7 @@ D(bug("[%s] e1000func_Schedular: Process shutdown.\n", unit->e1ku_name));
                         struct IOSana2Req *io;
 
                         /* Handle incoming transactions */
-                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL);
+                        while ((io = (struct IOSana2Req *)GetMsg(input))!= NULL)
                         {
 D(bug("[%s] e1000func_Schedular: Handle incomming transaction.\n", unit->e1ku_name));
                             ObtainSemaphore(&unit->e1ku_unit_lock);
@@ -666,7 +636,7 @@ D(bug("[e1000] CreateUnit()\n"));
 
     if ((unit = AllocMem(sizeof(struct e1000Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
-        IPTR        DeviceID, RevisionID, BaseType, BaseLen, IOBase = NULL, MAPPEDBase = NULL, MB_len;
+        IPTR        DeviceID, RevisionID, BaseType, BaseLen, IOBase = (IPTR)NULL, MAPPEDBase = (IPTR)NULL, MB_len;
         OOP_Object  *driver;
 
         unit->e1ku_UnitNum = e1KBase->e1kb_UnitCount++;
@@ -675,17 +645,17 @@ D(bug("[e1000] CreateUnit()\n"));
         unit->e1ku_Sana2Info.MTU = ETH_MTU;
         unit->e1ku_Sana2Info.AddrFieldSize = 8 * ETH_ADDRESSSIZE;
 
-        if ((unit->e1ku_Private00 = (struct e1000_hw *)AllocMem(sizeof(struct e1000_hw), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
+        if ((unit->e1ku_Private00 = (IPTR)AllocMem(sizeof(struct e1000_hw), MEMF_PUBLIC | MEMF_CLEAR)) == (IPTR)NULL)
         {
             FreeMem(unit, sizeof(struct e1000Unit));
-            return NULL;
+            return (IPTR)NULL;
         }
 
         if ((unit->e1ku_hw_stats = AllocMem(sizeof(struct e1000_hw_stats), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         {
             FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
             FreeMem(unit, sizeof(struct e1000Unit));
-            return NULL;
+            return (IPTR)NULL;
         }
 
         ((struct e1000_hw *)unit->e1ku_Private00)->back = unit;
@@ -695,7 +665,7 @@ D(bug("[e1000] CreateUnit()\n"));
             FreeMem(unit->e1ku_hw_stats, sizeof(struct e1000_hw_stats));
             FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
             FreeMem(unit, sizeof(struct e1000Unit));
-            return NULL;
+            return (IPTR)NULL;
         }
 
         sprintf((char *)unit->e1ku_name, "e1000.%d", unit->e1ku_UnitNum);
@@ -948,12 +918,12 @@ D(bug("[%s]  CreateUnit: Device Initialised. Unit %d @ %p\n", unit->e1ku_name, u
         }
         else
         {
-            if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) == NULL)
+            if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) == (IPTR)NULL)
             {
 D(bug("[%s]  CreateUnit: PANIC! Couldn't find IO area. Aborting\n", unit->e1ku_name));
             }
 
-            if ((((struct e1000_hw *)unit->e1ku_Private00)->hw_addr) == NULL)
+            if ((((struct e1000_hw *)unit->e1ku_Private00)->hw_addr) == (IPTR)NULL)
             {
 D(bug("[%s]  CreateUnit: PANIC! Couldn't get MMIO area. Aborting\n", unit->e1ku_name));
             }
