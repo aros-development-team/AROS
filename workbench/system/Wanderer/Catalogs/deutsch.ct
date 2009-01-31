@@ -233,8 +233,8 @@ Wanderer %pc Grafikspeicher %pf sonstiger Speicher
 ; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_SHUTDOWN (//)
-Herunterfahren...
-; Shut down...
+Herunterfahren ...
+; Shut down ...
 ;
 MSG_SHUTDOWN_TITLE (//)
 System herunterfahren
@@ -251,4 +251,28 @@ Abschalten|Rechner neustarten|AROS neustarten|*Abbrechen
 MSG_ACTION_NOT_SUPPORTED (//)
 Die gewählte Funktion wird von Ihrem System nicht unterstützt
 ; Selected action is not supported by your system
+;
+MSG_EMPTY_TRASH (//)
+Papierkorb leeren
+;Empty Trash
+;
+MSG_MEN_FORMAT (//)
+Disk formatieren ...
+;Format disk ...
+;
+MSG_PUT_AWAY (//)
+Zurücklegen
+;Put Away
+;
+MSG_LEAVE_OUT (//)
+Auslagern
+;Leave Out
+;
+MSG_UNSNAPSHOT (//)
+Position freigeben
+;Unsnapshot
+;
+MSG_SNAPSHOT (//)
+Fixieren
+;Snapshot
 ;
