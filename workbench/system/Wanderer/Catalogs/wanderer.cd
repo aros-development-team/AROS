@@ -30,25 +30,25 @@ MSG_MEN_SC_BACKDROP (//)
 B
 ;
 MSG_MEN_EXECUTE (//)
-Execute...
+Execute ...
 ;
 MSG_MEN_SC_EXECUTE (//)
 E
 ;
 MSG_MEN_SHELL (//)
-Shell...
+Shell ...
 ;
 MSG_MEN_SC_SHELL (//)
 W
 ;
 MSG_MEN_GUISET (//)
-GUI Settings...
+GUI Settings ...
 ;
 MSG_MEN_ABOUT (//)
-About...
+About ...
 ;
 MSG_MEN_QUIT (//)
-Quit...
+Quit ...
 ;
 MSG_MEN_SC_QUIT (//)
 Q
@@ -57,7 +57,7 @@ MSG_MEN_WINDOW (//)
 Window
 ;
 MSG_MEN_NEWDRAW (//)
-New Drawer...
+New drawer...
 ;
 MSG_MEN_SC_NEWDRAW (//)
 N
@@ -75,7 +75,7 @@ MSG_MEN_UPDATE (//)
 Update
 ;
 MSG_MEN_CONTENTS (//)
-Select Contents
+Select contents
 ;
 MSG_MEN_SC_CONTENTS (//)
 A
@@ -117,7 +117,7 @@ MSG_MEN_BYNAME (//)
 By name
 ;
 MSG_MEN_BYDATE (//)
-By Date
+By date
 ;
 MSG_MEN_BYSIZE (//)
 By size
@@ -141,19 +141,19 @@ MSG_MEN_SC_OPEN (//)
 O
 ;
 MSG_MEN_RENAME (//)
-Rename...
+Rename ...
 ;
 MSG_MEN_SC_RENAME (//)
 R
 ;
 MSG_MEN_INFO (//)
-Information...
+Information ...
 ;
 MSG_MEN_SC_INFO (//)
 I
 ;
 MSG_MEN_DELETE (//)
-Delete...
+Delete ...
 ;
 MSG_MEN_TOOLS  (//)
 Tools
@@ -171,10 +171,10 @@ MSG_USERSCREENTITLE (//)
 Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT (//)
-Format disk...
+Format disk ...
 ;
 MSG_MEN_SHUTDOWN (//)
-Shut down...
+Shut down ...
 ;
 MSG_SHUTDOWN_TITLE (//)
 System shut down
@@ -190,4 +190,19 @@ Selected action is not supported by your system
 ;
 MSG_OK (//)
 *Ok
+;
+MSG_EMPTY_TRASH (//)
+Empty trash
+;
+MSG_PUT_AWAY (//)
+Put away
+;
+MSG_LEAVE_OUT (//)
+Leave out
+;
+MSG_UNSNAPSHOT (//)
+Unsnapshot
+;
+MSG_SNAPSHOT (//)
+Snapshot
 ;
