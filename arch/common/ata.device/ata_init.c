@@ -39,7 +39,7 @@
  * 2008-06-24  P. Fedin            Added 'NoMulti' flag to disable multisector transfers
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>
