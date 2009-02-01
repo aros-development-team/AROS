@@ -2334,7 +2334,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
     /* Set and then reset the soft reset bit in the Device Control
      * register.  This causes device 0 be selected */
-    D(bug("[ATALOW] Reset bus\n"));
+    D(bug("[ATA] ata_ResetBus(%d)\n", bus->ab_BusNum));
     ata_out(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
     ata_400ns(bus->ab_Alt);
 
@@ -2345,19 +2345,19 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
     /* If there is a device 0, wait for device 0 to clear BSY */
     if (DEV_NONE != bus->ab_Dev[0]) {
-        D(bug("[ATALOW] Wait DEV0 to clear BSY\n"));
+        D(bug("[ATA%02d] Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 0)));
         TimeOut = 1000;     //Timeout 1s (1ms x 1000)
         while ( 1 ) {
             if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                 break;
             ata_usleep(tr, 1000);
             if (!(--TimeOut)) {
-                D(bug("DEV0 TimeOut!\n"));
+                D(bug("[ATA%02d] Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 0)));
                 bus->ab_Dev[0] = DEV_NONE;
                 break;
             }
         }
-        D(bug("DEV0 TimeOut left %d ms\n",TimeOut));
+        D(bug("[ATA%02d] Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 0), (1000 - TimeOut)));
     }
 
     /* If there is a device 1, wait until device 1 allows
@@ -2377,22 +2377,22 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
                 break;
             }
         }
-        D(bug("DEV1 1/2 TimeOut left %d ms\n",TimeOut));
+        D(bug("DEV1 1/2 Wait left after %d ms\n", (1000 - TimeOut)));
 
         if (DEV_NONE != bus->ab_Dev[1]) {
-            D(bug("[ATALOW] Wait DEV1 to clear BSY\n"));
+            D(bug("[ATA%02d] Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 1)));
             TimeOut = 1000;     //Timeout 1s (1ms x 1000)
             while ( 1 ) {
                 if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                     break;
                 ata_usleep(tr, 1000);
                 if (!(--TimeOut)) {
-                    D(bug("DEV1 2/2 TimeOut!\n"));
+                    D(bug("[ATA%02d] Device Timed Out!\n", ((bus->ab_BusNum << 1 ) + 1)));
                     bus->ab_Dev[1] = DEV_NONE;
                     break;
                 }
             }
-            D(bug("DEV1 2/2 TimeOut left %d ms\n",TimeOut));
+            D(bug("[ATA%02d] Wait left after %d ms\n", ((bus->ab_BusNum << 1 ) + 1), 1000 - TimeOut));
         }
     }
 
@@ -2460,7 +2460,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[0] = DEV_UNKNOWN;
-    D(bug("[ATALOW] DEV0 type = %x\n",bus->ab_Dev[0]));
+    D(bug("[ATA%02d] Device type = %x\n", (bus->ab_BusNum << 1 ) + 0, bus->ab_Dev[0]));
 
     /* Select device 1 */
     ata_out(0xb0, ata_DevHead, port);
@@ -2479,7 +2479,7 @@ void ata_InitBus(struct ata_Bus *bus)
 
     if ((tmp1 == 0x55) && (tmp2 == 0xaa))
         bus->ab_Dev[1] = DEV_UNKNOWN;
-    D(bug("[ATALOW] DEV1 type = %x\n",bus->ab_Dev[1]));
+    D(bug("[ATA%02d] Device type = %x\n", (bus->ab_BusNum << 1 ) + 1, bus->ab_Dev[1]));
 
     ata_ResetBus(tr, bus);
 

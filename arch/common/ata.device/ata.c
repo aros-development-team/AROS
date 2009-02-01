@@ -770,7 +770,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
        b = bus->ab_BusNum;
        D(bug("[ATA++] Checking bus %d\n", b));
 
-       for (d=0; d < MAX_UNIT; d++)
+       for (d=0; d < MAX_BUSUNITS; d++)
        {
           /* 
            * Is a device ATAPI? 
@@ -1016,15 +1016,15 @@ static void TaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSema
 
     sig = 1L << bus->ab_MsgPort->mp_SigBit;
 
-    for (iter=0; iter<MAX_UNIT; ++iter)
+    for (iter=0; iter<MAX_BUSUNITS; ++iter)
     {
        if (ata_setup_unit(bus, iter))
        {
           unit = bus->ab_Units[iter];
           if (unit->au_XferModes & AF_XFER_PACKET)
-             AddVolume(0, 0, unit);
+             ata_RegisterVolume(0, 0, unit);
           else
-             AddVolume(0, unit->au_Cylinders - 1, unit);
+             ata_RegisterVolume(0, unit->au_Cylinders - 1, unit);
        }
     }
 
