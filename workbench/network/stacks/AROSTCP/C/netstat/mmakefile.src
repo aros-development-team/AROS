@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 FILES  := if inet iso main mbuf mroute ns route unix
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I $(TOP)/contrib/Networking/Stacks/AROSTCP/netinclude
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 ##MM- workbench-network-stacks-arostcp-c : arostcp-c-netstat
 
