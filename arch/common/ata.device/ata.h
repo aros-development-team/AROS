@@ -55,9 +55,10 @@ Lang: English
 
 #include LC_LIBDEFS_FILE
 
-#define MAX_UNIT    2
-#define STACK_SIZE  16384
-#define TASK_PRI    10
+#define MAX_DEVICEBUSES		2
+#define MAX_BUSUNITS		2
+#define STACK_SIZE		16384
+#define TASK_PRI		10
 
 /*
    Don't blame me for information redundance here!
@@ -98,6 +99,9 @@ struct ataBase
     */
    struct Task            *ata_Daemon;
 
+    struct List		ata__legacybuses;
+    struct List		ata__probedbuses;
+    int 		ata__buscount;
    /*
     * list of all buses - we may have more than just 4
     */
@@ -137,7 +141,7 @@ struct ata_Bus
    BOOL                    ab_IRQ;     /* set if IRQ is enabled */
    LONG                    ab_Timeout; /* in seconds; please note that resolution is low (1sec) */
 
-   struct ata_Unit         *ab_Units[MAX_UNIT];    /* Units on the bus */
+   struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
 
    HIDDT_IRQ_Handler       *ab_IntHandler;
    ULONG                   ab_IntCnt;
@@ -503,7 +507,7 @@ VOID dma_Cleanup(APTR adr, ULONG len, BOOL read);
 
 BOOL ata_setup_unit(struct ata_Bus *bus, UBYTE u);
 BOOL ata_init_unit(struct ata_Bus *bus, UBYTE u);
-BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
+BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
  
 #define ATAPI_SS_EJECT  0x02
 #define ATAPI_SS_LOAD   0x03
