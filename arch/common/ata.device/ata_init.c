@@ -74,7 +74,7 @@
 
 typedef struct 
 {
-    struct ataBase     *ATABase;
+    struct ataBase      *ATABase;
     UWORD               CurrentBus;
     UWORD               PredefBus;
 } EnumeratorArgs;
@@ -83,28 +83,28 @@ struct List __probedports;
 
 struct ata_ProbedPort
 {
-	struct Node 		atapp_Node;
-	IPTR 				atapp_IOBase;
-	IPTR 				atapp_IOAlt;
-	IPTR 				atapp_INTLine;
-	IPTR 				atapp_DMABase;
-	int 				atapp_x;
-	EnumeratorArgs 		*atapp_a;
+    struct Node 	atapp_Node;
+    IPTR 		atapp_IOBase;
+    IPTR 		atapp_IOAlt;
+    IPTR 		atapp_INTLine;
+    IPTR 		atapp_DMABase;
+    int 		atapp_x;
+    EnumeratorArgs 	*atapp_a;
 };
 
 /* static list of io/irqs that we can handle */
 static struct __bus 
 {
-	ULONG port;
-	ULONG alt;
-	APTR  DMA;
-	UBYTE irq;
+    ULONG port;
+    ULONG alt;
+    APTR  DMA;
+    UBYTE irq;
 } Buses[] = 
 {
-	{0x1f0, 0x3f4, NULL, 14},
-	{0x170, 0x374, NULL, 15},
-	{0x168, 0x36c, NULL, 10},
-	{0x1e8, 0x3ec, NULL, 11},
+    {0x1f0, 0x3f4, NULL, 14},
+    {0x170, 0x374, NULL, 15},
+    {0x168, 0x36c, NULL, 10},
+    {0x1e8, 0x3ec, NULL, 11},
 };
 
 UBYTE legacyportcount;
@@ -232,8 +232,8 @@ static void Add_Device(IPTR IOBase, IPTR IOAlt, IPTR INTLine,
              * we're all done. no idea what else they want from us
              */
             return;
-		}
-	}
+        }
+    }
 
     D(bug("[ATA>>] Add_Device: IRQ %d, IO: %x:%x, DMA: %x\n", INTLine, IOBase, IOAlt, DMABase));
 
@@ -352,8 +352,8 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(Device, aHidd_PCIDevice_ProductID,          &ProductID);
     OOP_GetAttr(Device, aHidd_PCIDevice_VendorID,           &VendorID);
     OOP_GetAttr(Device, aHidd_PCIDevice_Base4,              &DMABase);
-	if (a->ATABase->ata_NoDMA)
-		DMABase = 0;
+    if (a->ATABase->ata_NoDMA)
+        DMABase = 0;
 
     /*
      * we can have as many as four ports assigned to this device
@@ -376,54 +376,54 @@ AROS_UFH3(void, Enumerator,
         }
         OOP_GetAttr(Device, aHidd_PCIDevice_INTLine, &INTLine);
 
-		if (IOBase == (IPTR)NULL)
-		{
-			D(bug("[ATA  ] Enumerator: Device using Legacy Ports\n"));
-			/* This may be wrong (how do you determine which legacy port it relates to?) */
-			Buses[legacyportcount++].DMA = (APTR)DMABase;
-		}
-		else
-		{
-		    /*
-			Sanity Check! some devices have reportedly 
-			returned the actual legacy port rather than 0
-			make sure we arent one of those ..
-		    */
-		    for (i = 0; i < (sizeof(Buses) / sizeof(Buses[0])); i++)
-		    {
-			if (IOBase == Buses[i].port)
-			{
-			    IOBase = (IPTR)NULL;
-			    D(bug("[ATA  ] Enumerator: Device lists Legacy Port Address!!\n"));
-			}
-		    }
+        if (IOBase == (IPTR)NULL)
+        {
+            D(bug("[ATA  ] Enumerator: Device using Legacy Ports\n"));
+            /* This may be wrong (how do you determine which legacy port it relates to?) */
+            Buses[legacyportcount++].DMA = (APTR)DMABase;
+        }
+        else
+        {
+            /*
+                Sanity Check! some devices have reportedly 
+                returned the actual legacy port rather than 0
+                make sure we arent one of those ..
+            */
+            for (i = 0; i < (sizeof(Buses) / sizeof(Buses[0])); i++)
+            {
+                if (IOBase == Buses[i].port)
+                {
+                    IOBase = (IPTR)NULL;
+                    D(bug("[ATA  ] Enumerator: Device lists Legacy Port Address!!\n"));
+                }
+            }
 #warning "TODO: Check for AHCI devices and skip them (we dont/cant handle them)"
-			/*D(bug("[ATA  ] Enumerator: Device Status %02x, Control %02x\n", ata_in(ata_Status, IOAlt), ata_in(ata_AltControl, IOAlt)));
-			if ((ata_in(ata_Status, IOAlt) != 0xFF) && (ata_in(ata_AltControl, IOAlt) == 0xFF))
-			{
-				D(bug("[ATA  ] Enumerator: Unhandled AHCI Device .. skipping\n"));
-				return;
-			}*/
-		}
+            /*D(bug("[ATA  ] Enumerator: Device Status %02x, Control %02x\n", ata_in(ata_Status, IOAlt), ata_in(ata_AltControl, IOAlt)));
+            if ((ata_in(ata_Status, IOAlt) != 0xFF) && (ata_in(ata_AltControl, IOAlt) == 0xFF))
+            {
+                    D(bug("[ATA  ] Enumerator: Unhandled AHCI Device .. skipping\n"));
+                    return;
+            }*/
+        }
 
-		if (x == 0)
-		{
-			bug("[ATA  ] Enumerator: Found supported IDE device %04x:%04x\n", VendorID, ProductID);
-		}
-		D(bug("[ATA  ] Enumerator: Registering Port %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
+        if (x == 0)
+        {
+            bug("[ATA  ] Enumerator: Found supported IDE device %04x:%04x\n", VendorID, ProductID);
+        }
+        D(bug("[ATA  ] Enumerator: Registering Port %d - IRQ %d, IO: %x:%x, DMA: %x\n", x, INTLine, IOBase, IOAlt, DMABase));
 
-		if (IOBase != (IPTR)NULL)
-		{
-			struct ata_ProbedPort *probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
-			probedport->atapp_IOBase = IOBase;
-			probedport->atapp_IOAlt = IOAlt;
-			probedport->atapp_INTLine = INTLine;
-			probedport->atapp_DMABase = DMABase;
-			probedport->atapp_x = x;
-			probedport->atapp_a = a;
+        if (IOBase != (IPTR)NULL)
+        {
+            struct ata_ProbedPort *probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
+            probedport->atapp_IOBase = IOBase;
+            probedport->atapp_IOAlt = IOAlt;
+            probedport->atapp_INTLine = INTLine;
+            probedport->atapp_DMABase = DMABase;
+            probedport->atapp_x = x;
+            probedport->atapp_a = a;
 
-			AddTail((struct List *)&__probedports, (struct Node *)probedport);
-		}
+            AddTail((struct List *)&__probedports, (struct Node *)probedport);
+        }
     }
 
     /* check dma status if applicable */
@@ -441,7 +441,7 @@ void ata_Scan(struct ataBase *base)
 {
     OOP_Object *pci;
     struct SignalSemaphore ssem;
-	struct ata_ProbedPort *probedport = NULL;
+    struct ata_ProbedPort *probedport = NULL;
 
     struct Node* node;
     int i;
@@ -455,94 +455,94 @@ void ata_Scan(struct ataBase *base)
     D(bug("[ATA--] ata_Scan: Enumerating devices\n"));
 
     if (base->ata_ScanFlags & ATA_SCANPCI) {
-		D(bug("[ATA--] ata_Scan: Checking for supported PCI devices ..\n"));
-		pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+        D(bug("[ATA--] ata_Scan: Checking for supported PCI devices ..\n"));
+        pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-		if (pci)
-		{
-			struct Hook FindHook = {
-				h_Entry:    (IPTR (*)())Enumerator,
-				h_Data:     &Args
-			};
+        if (pci)
+        {
+            struct Hook FindHook = {
+                h_Entry:    (IPTR (*)())Enumerator,
+                h_Data:     &Args
+            };
 
-			struct TagItem Requirements[] = {
-				{tHidd_PCI_Class,       0x01},
-				{tHidd_PCI_SubClass,    0x01}, 
-				{TAG_DONE,              0x00}
-			};
+            struct TagItem Requirements[] = {
+                {tHidd_PCI_Class,       0x01},
+                {tHidd_PCI_SubClass,    0x01}, 
+                {TAG_DONE,              0x00}
+            };
 
-			/*
-			 * Do not chech the subclass if the proper kernel option was given. It may 
-			 * It will let AROS use SATA controllers on some architectures, like eg. the 
-			 * Intel ICH8.
-			 */
-			if (base->ata_NoSubclass)
-				Requirements[1].ti_Tag = TAG_IGNORE;
+            /*
+             * Do not chech the subclass if the proper kernel option was given. It may 
+             * It will let AROS use SATA controllers on some architectures, like eg. the 
+             * Intel ICH8.
+             */
+            if (base->ata_NoSubclass)
+                Requirements[1].ti_Tag = TAG_IGNORE;
 
-			struct pHidd_PCI_EnumDevices enummsg = {
-				mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-				callback:       &FindHook,
-				requirements:   (struct TagItem *)&Requirements,
-			}, *msg = &enummsg;
-			
-			OOP_DoMethod(pci, (OOP_Msg)msg);
+            struct pHidd_PCI_EnumDevices enummsg = {
+                mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+                callback:       &FindHook,
+                requirements:   (struct TagItem *)&Requirements,
+            }, *msg = &enummsg;
+            
+            OOP_DoMethod(pci, (OOP_Msg)msg);
 
-			if (!base->ata_NoSubclass)
-			{
-			   /* 
-				 * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be found
-				 * with the enumeration above. Do an explicit search now since ata.device may handle it
-				 * in legacy mode without any issues.
-				 * 
-				 * Note: This chip is used on Sam440 board.
-				 */
-				Requirements[0].ti_Tag = tHidd_PCI_VendorID;
-				Requirements[0].ti_Data = 0x1095;
-				Requirements[1].ti_Tag = tHidd_PCI_ProductID;
-				Requirements[1].ti_Data = 0x3114;
+            if (!base->ata_NoSubclass)
+            {
+               /* 
+                 * The SiL3114 chip yields Class 0x01 and SubClass 0x80. Therefore it will not be found
+                 * with the enumeration above. Do an explicit search now since ata.device may handle it
+                 * in legacy mode without any issues.
+                 * 
+                 * Note: This chip is used on Sam440 board.
+                 */
+                Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+                Requirements[0].ti_Data = 0x1095;
+                Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+                Requirements[1].ti_Data = 0x3114;
 
-				OOP_DoMethod(pci, (OOP_Msg)msg);
+                OOP_DoMethod(pci, (OOP_Msg)msg);
 
-				Requirements[0].ti_Tag = tHidd_PCI_VendorID;
-				Requirements[0].ti_Data = 0x1095;
-				Requirements[1].ti_Tag = tHidd_PCI_ProductID;
-				Requirements[1].ti_Data = 0x3512;
+                Requirements[0].ti_Tag = tHidd_PCI_VendorID;
+                Requirements[0].ti_Data = 0x1095;
+                Requirements[1].ti_Tag = tHidd_PCI_ProductID;
+                Requirements[1].ti_Data = 0x3512;
 
-				OOP_DoMethod(pci, (OOP_Msg)msg);
-			}
+                OOP_DoMethod(pci, (OOP_Msg)msg);
+            }
 
-			OOP_DisposeObject(pci);
-		}
-	}
+            OOP_DisposeObject(pci);
+        }
+    }
     if (base->ata_ScanFlags & ATA_SCANLEGACY) {
-		probedport = NULL;
-		D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
-		for (i = 3; i >= 0; i--)
-		{
-			probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
-			probedport->atapp_x = i & 1;
-			probedport->atapp_a = &Args;
-			AddHead((struct List *)&__probedports, (struct Node *)probedport);
-		}
+        probedport = NULL;
+        D(bug("[ATA--] ata_Scan: Adding Legacy Ports\n"));
+        for (i = 3; i >= 0; i--)
+        {
+            probedport = AllocMem(sizeof(struct ata_ProbedPort), MEMF_CLEAR | MEMF_PUBLIC);
+            probedport->atapp_x = i & 1;
+            probedport->atapp_a = &Args;
+            AddHead((struct List *)&__probedports, (struct Node *)probedport);
+        }
     }
 
-	D(bug("[ATA--] ata_Scan: Registering Probed Ports..\n"));
-	probedport = NULL;
-	while ((probedport = (struct ata_ProbedPort *)
-        RemHead((struct List *)&__probedports)) != NULL)
-	{
-		Add_Device(
-			probedport->atapp_IOBase,
-			probedport->atapp_IOAlt,
-			probedport->atapp_INTLine,
-			probedport->atapp_DMABase,
-			probedport->atapp_x,
-			probedport->atapp_a);
+    D(bug("[ATA--] ata_Scan: Registering Probed Ports..\n"));
+    probedport = NULL;
+    while ((probedport = (struct ata_ProbedPort *)
+    RemHead((struct List *)&__probedports)) != NULL)
+    {
+        Add_Device(
+                probedport->atapp_IOBase,
+                probedport->atapp_IOAlt,
+                probedport->atapp_INTLine,
+                probedport->atapp_DMABase,
+                probedport->atapp_x,
+                probedport->atapp_a);
 
-		FreeMem(probedport, sizeof(struct ata_ProbedPort));
-	}
+        FreeMem(probedport, sizeof(struct ata_ProbedPort));
+    }
 
-	D(bug("[ATA--] ata_Scan: Init Bus Tasks..\n"));
+    D(bug("[ATA--] ata_Scan: Init Bus Tasks..\n"));
     InitSemaphore(&ssem);
     ForeachNode(&base->ata_Buses, node)
     {
@@ -559,7 +559,7 @@ void ata_Scan(struct ataBase *base)
      * and leave.
      */
     ReleaseSemaphore(&ssem);
-	D(bug("[ATA--] ata_Scan: Finished\n"));
+    D(bug("[ATA--] ata_Scan: Finished\n"));
 }
 
 /*
@@ -578,11 +578,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
     if (LIBBASE->ata_MemPool == NULL)
         return FALSE;
 
-	/* Prepare list for found ide ports */
-	NEWLIST((struct List *)&__probedports);
-	legacyportcount = 0;
+    /* Prepare list for found ide ports */
+    NEWLIST((struct List *)&__probedports);
+    legacyportcount = 0;
 
-	LIBBASE->ata_ScanFlags = ATA_SCANPCI | ATA_SCANLEGACY;
+    LIBBASE->ata_ScanFlags = ATA_SCANPCI | ATA_SCANLEGACY;
     LIBBASE->ata_32bit = FALSE;
     LIBBASE->ata_NoMulti = FALSE;
     LIBBASE->ata_NoDMA = FALSE;
@@ -622,11 +622,11 @@ static int ata_init(LIBBASETYPEPTR LIBBASE)
                         D(bug("[ATA  ] ata_init: Using 32-bit IO transfers\n"));
                         LIBBASE->ata_32bit = TRUE;
                     }
-					if (strstr(node->ln_Name, "nomulti"))
-					{
-						D(bug("[ATA  ] ata_init: Disabled multisector transfers\n"));
-						LIBBASE->ata_NoMulti = TRUE;
-					}
+                    if (strstr(node->ln_Name, "nomulti"))
+                    {
+                            D(bug("[ATA  ] ata_init: Disabled multisector transfers\n"));
+                            LIBBASE->ata_NoMulti = TRUE;
+                    }
                     if (strstr(node->ln_Name, "nodma"))
                     {
                         D(bug("[ATA  ] ata_init: Disabled DMA transfers\n"));
