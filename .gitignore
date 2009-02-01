@@ -1638,6 +1638,9 @@
 # /workbench/devs/networks/rtl8139/
 /workbench/devs/networks/rtl8139/mmakefile
 
+# /workbench/devs/networks/rtl8168/
+/workbench/devs/networks/rtl8168/mmakefile
+
 # /workbench/devs/networks/sis900/
 /workbench/devs/networks/sis900/mmakefile
 
