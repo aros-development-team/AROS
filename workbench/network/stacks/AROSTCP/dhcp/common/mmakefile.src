@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 #MM network-dhcp-libdhcp : arostcp-includes
 
-USER_CFLAGS :=	-I.. -I../includes -I$(AROS_DEVELOPMENT)/netinclude
+USER_CFLAGS :=	-I.. -I../includes
 
 FILES :=	alloc bpf comapi conflex ctrace discover dispatch	\
 		dlpi dns ethernet execute fddi icmp inet lpf memory	\

@@ -2,9 +2,7 @@ include $(TOP)/config/make.cfg
 
 #MM network-dhcp-libiminires : arostcp-includes
 
-USER_CFLAGS :=	-I../includes				\
-		-I$(AROS_DEVELOPMENT)/netinclude	\
-		-DHMAC_MD5 -DMINIRES_LIB
+USER_CFLAGS :=	-I../includes -DHMAC_MD5 -DMINIRES_LIB
 
 FILES :=	ns_date ns_name	ns_parse ns_samedomain ns_sign 		\
 		ns_verify res_comp res_findzonecut res_init res_mkquery	\

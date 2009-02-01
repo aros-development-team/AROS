@@ -8,7 +8,7 @@ FILES  := main hooks colorlist str
 
 EXEDIR := $(AROS_SYSTEM)/Network/AROSTCP
 
-USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I $(TOP)/contrib/Networking/Stacks/AROSTCP/netinclude
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 ##MM- contrib : aros-tcpip-apps-syslog
 

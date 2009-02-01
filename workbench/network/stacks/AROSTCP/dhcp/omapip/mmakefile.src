@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 #MM network-dhcp-libomapip : arostcp-includes
 
-USER_CFLAGS :=	-I.. -I../includes -I$(AROS_DEVELOPMENT)/netinclude
+USER_CFLAGS :=	-I.. -I../includes
 
 FILES :=	alloc array auth buffer connection convert dispatch	\
 		errwarn generic handle hash inet_addr iscprint listener	\
