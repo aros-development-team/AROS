@@ -18,7 +18,7 @@ During boot AROS will call the file s/Package-Startup in the directory pointed
 to by the AROSTCP package file to add its own path variables, etc.
 
 If you have AROSTCP installled to a different location than
-SYS:Extras/Networking/Stacks/AROSTCP you will need to alter this file.
+SYS:System/Network/AROSTCP you will need to alter this file.
 
   SetEnv SAVE SYS/Packages/AROSTCP <Installed location>
 
@@ -73,7 +73,7 @@ Usage
 ###
 To start AROSTCP, open a shell and type the following two commands:
 
- CD SYS:Extras/Networking/Stacks/AROSTCP
+ CD SYS:System/Network/AROSTCP
  Execute s/startnet
 
 ###
@@ -93,7 +93,7 @@ to enable AROSTCP to use it.  Please note that this must be done before launchin
 
 ie.
 
-   CD SYS:Extras/Networking/Stacks/AROSTCP
+   CD SYS:System/Network/AROSTCP
    Copy db SYS:NetConfig ALL
    SetEnv SAVE AROSTCP/Config SYS:NetConfig/
  

@@ -489,7 +489,7 @@ Setting up the Network
 ----------------------
 
 To communicate with other computers on network, AROS uses a TCP Stack, AROSTCP, 
-which is a port of AmiTCP. This software is located in /Extras/Networking/Stacks/AROSTCP
+which is a port of AmiTCP. This software is located in Sys:System/Network/AROSTCP
 directory. Setting up is not easy but some kind of GUI tool is in development. 
 Also please note that actually there`s a very little amount of networking
 program on AROS yet (but some interesting tools is in development to be 
@@ -560,7 +560,7 @@ ENVARC:AROSTCP/db directory, that way the Config file could be::
     ENV:AROSTCP/db
 
 Now make AROSTCP start at boot with the word "True" in ENVARC:AROSTCP/Autorun
-Edit the Sys:extras/Networking/Stacks/AROSTCP/S/Package-Startup::
+Edit the Sys:System/Network/AROSTCP/S/Package-Startup::
 
     ; $VER: AROSTCP-PackageStartup 1.0 (01/08/06)
     ; AROSTCP-PackageStartup (c) The AROS Dev Team.
@@ -577,7 +577,7 @@ Edit the Sys:extras/Networking/Stacks/AROSTCP/S/Package-Startup::
         EndIf
     EndIf
 
-The Sys:extras/Networking/Stacks/AROSTCP/S/Startnet file should be 
+The Sys:System/Network/AROSTCP/S/Startnet file should be
 something like::
 
     ; $VER: AROSTCP-startnet 1.0 (01/08/06)
@@ -665,7 +665,7 @@ Net on VMWare
 VMWare`s side network is relatively easy to set up. All you need is to add
 the NIC to configuration of your VM and assign the IP to new network connection,
 associated with that card. Other using notes is the same as with QEMU above, 
-except for the adapter type in SYS:Extras/Networking/Stacks/AROSTCP/db/interfaces 
+except for the adapter type in Sys:System/Network/AROSTCP/db/interfaces 
 file ::
 
     eth0 DEV=DEVS:networks/pcnet.device UNIT=0 IP=10.0.2.2 UP

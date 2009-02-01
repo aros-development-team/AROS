@@ -77,7 +77,7 @@ extern int h_errno;
 
 #ifndef AROSTCP_DB
 /* this is the default path, overridable with ENV:AROTCP/Config */
-#define	AROSTCP_DB "Extras:Networking/Stacks/AROSTCP/db/"
+#define	AROSTCP_DB "SYS:System/Network/AROSTCP/db/"
 #endif
 
 #ifndef AROSTCP_T

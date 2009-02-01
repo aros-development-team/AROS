@@ -7,5 +7,5 @@ include $(TOP)/config/make.cfg
 
 workbench-network-stacks-arostcp-db : files-copy
 %copy_files_q files="$(wildcard [^Cm]*)" \
-    dst=$(CONTRIBDIR)/Networking/Stacks/AROSTCP/db
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/db
 

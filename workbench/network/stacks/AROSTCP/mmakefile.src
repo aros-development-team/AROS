@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 workbench-network-stacks-arostcp : files-copy arostcp-libs-miamipanel
 %copy_files_q files="README" \
-    dst=$(CONTRIBDIR)/Networking/Stacks/AROSTCP
+    dst=$(AROS_SYSTEM)/Network/AROSTCP
 
 #%common
 
