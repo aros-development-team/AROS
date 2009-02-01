@@ -29,14 +29,14 @@ INSTALLATION
 
     % ./aros
 
- - Edit SYS:Extras/Networking/Stacks/AROSTCP/db/interfaces and add the
+ - Edit SYS:System/Network/AROSTCP/db/interfaces and add the
    following line:
 
    eth0 DEV=DEVS:networks/tap.device UNIT=0 IP=192.168.0.188 UP
  
  - Start AROSTCP
 
-   > execute SYS:Extras/Networking/Stacks/AROSTCP/S/startnet
+   > execute SYS:System/Network/AROSTCP/S/startnet
 
  - Ping AROS from Linux
 

@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 
 workbench-network-stacks-arostcp-s : files-copy
 %copy_files_q files="Package-Startup startnet stopnet" \
-    dst=$(CONTRIBDIR)/Networking/Stacks/AROSTCP/S
-	$(ECHO) "Extras:Networking/Stacks/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
+    dst=$(AROS_SYSTEM)/Network/AROSTCP/S
+	$(ECHO) "SYS:System/Network/AROSTCP" >$(AROS_PACKAGES)/AROSTCP
 
 #%common

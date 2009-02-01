@@ -11,7 +11,7 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I $(TOP)/contrib/Networking/
 ##MM- workbench-network-stacks-arostcp-c : arostcp-c-netstat
 
 %build_prog mmake=arostcp-c-netstat \
-    progname=netstat targetdir=$(CONTRIBDIR)/Networking/Stacks/AROSTCP/C \
+    progname=netstat targetdir=$(AROS_SYSTEM)/Networks/AROSTCP/C \
     files=$(FILES) uselibs="mui arossupport amiga arosc"
 
 %common

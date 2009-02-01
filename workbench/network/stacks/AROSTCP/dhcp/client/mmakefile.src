@@ -17,7 +17,7 @@ USER_CFLAGS :=	-I../includes			\
 FILES :=	dhclient clparse
 
 %build_prog mmake=network-dhcp-client nix=yes		\
-	targetdir="$(AROS_CONTRIB)/Networking/Stacks/AROSTCP/C"	\
+	targetdir="$(AROS_SYSTEM)/Network/AROSTCP/C"	\
 	progname=dhclient					\
 	files="$(FILES)"					\
 	uselibs="arossupport amiga arosc dhcp minires omapip dst"
