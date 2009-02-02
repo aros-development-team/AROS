@@ -36,14 +36,24 @@
 #define CLID_Hidd_Gfx_IntelG33  "IntelG33"
 #define IID_Hidd_G33BitMap      "IntelG33Bitmap"
 
-struct IntelG33Chipset {
+/*
+  Divide semaphores so that registers not related to some other locked registers could still be used.
+  Hopefully no Global lock is ever needed, otherwise needs to get ALL semaphores...
+*/
+struct Locks {
+    struct SignalSemaphore DPMS;
+};
 
-    struct        SignalSemaphore CSLock;
+struct Chipset {
+
+    struct        Locks Locks;
 
     UWORD	      VendorID;
     UWORD	      ProductID;
 
     APTR          MMADR;
+    APTR          GMADR;
+    APTR          GTTADR;
 
     /*
       (MMADR) is used to access graphics control registers.
@@ -84,7 +94,7 @@ struct staticdata {
 
     OOP_MethodID  mid_ReadLong;
 
-    struct        IntelG33Chipset Chipset;
+    struct        Chipset Chipset;
  
 };
 
