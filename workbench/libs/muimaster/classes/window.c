@@ -1219,7 +1219,7 @@ static Object *ObjectUnderPointer(struct MUI_WindowData *data, Object *obj,
 {
     Object                *cstate;
     Object                *child;
-    struct MinList        *ChildList;
+    struct MinList        *ChildList = NULL;
 
     if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW))
 	return NULL;
@@ -1230,7 +1230,7 @@ static Object *ObjectUnderPointer(struct MUI_WindowData *data, Object *obj,
         return NULL;
     }
 
-    if (get(obj, MUIA_Group_ChildList, &(ChildList)))
+    if ((get(obj, MUIA_Group_ChildList, &(ChildList))) && (ChildList != NULL))
     {
         cstate = (Object *)ChildList->mlh_Head;
         while ((child = NextObject(&cstate)))
@@ -1257,7 +1257,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
 {
     Object                *cstate;
     Object                *child;
-    struct MinList        *ChildList = 0;
+    struct MinList        *ChildList = NULL;
 
     if (!(x >= _left(obj) && x <= _right(obj) 
 	  && y >= _top(obj)  && y <= _bottom(obj))) 
@@ -1265,7 +1265,7 @@ static BOOL ContextMenuUnderPointer(struct MUI_WindowData *data, Object *obj, LO
         return FALSE;
     }
 
-    if (get(obj, MUIA_Group_ChildList, &(ChildList)) && (ChildList != 0))
+    if ((get(obj, MUIA_Group_ChildList, &(ChildList))) && (ChildList != NULL))
     {
 		      
         cstate = (Object *)ChildList->mlh_Head;
