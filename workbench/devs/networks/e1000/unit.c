@@ -263,7 +263,7 @@ D(bug("[%s]: e1000func_TX_Int: packet %d [type = %d] queued for transmission.\n"
                 /* Set the ring details for the packet .. */
                 buffer_info->length = packet_size;
 
-                tx_desc = E1000_TX_DESC(*tx_ring, i);
+                tx_desc = E1000_TX_DESC(tx_ring, i);
                 tx_desc->buffer_addr = (UQUAD)buffer_info->dma;
                 tx_desc->lower.data = AROS_WORD2LE(txd_lower | buffer_info->length);
                 tx_desc->upper.data = AROS_WORD2LE(txd_upper);
@@ -636,8 +636,17 @@ D(bug("[e1000] CreateUnit()\n"));
 
     if ((unit = AllocMem(sizeof(struct e1000Unit), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
     {
-        IPTR        DeviceID, RevisionID, BaseType, BaseLen, IOBase = (IPTR)NULL, MAPPEDBase = (IPTR)NULL, MB_len;
-        OOP_Object  *driver;
+        IPTR                    DeviceID,
+                                RevisionID,
+                                BaseAddr,
+                                BaseType,
+                                BaseLen,
+                                IOBase = (IPTR)NULL,
+                                Flash_Base = (IPTR)NULL,
+                                MMIO_Base = (IPTR)NULL,
+                                Flash_Size = 0,
+                                MMIO_Size = 0;
+        OOP_Object              *driver;
 
         unit->e1ku_UnitNum = e1KBase->e1kb_UnitCount++;
 
@@ -651,7 +660,7 @@ D(bug("[e1000] CreateUnit()\n"));
             return (IPTR)NULL;
         }
 
-        if ((unit->e1ku_hw_stats = AllocMem(sizeof(struct e1000_hw_stats), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
+        if ((unit->e1ku_hw_stats = (struct e1000_hw_stats *)AllocMem(sizeof(struct e1000_hw_stats), MEMF_PUBLIC | MEMF_CLEAR)) == (IPTR)NULL)
         {
             FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
             FreeMem(unit, sizeof(struct e1000Unit));
@@ -693,24 +702,43 @@ D(bug("[e1000] CreateUnit()\n"));
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &unit->e1ku_IRQ);
 D(bug("[%s] CreateUnit: Device IRQ  : %d\n", unit->e1ku_name, unit->e1ku_IRQ));
-        for (i = aHidd_PCIDevice_Base1; i <= aHidd_PCIDevice_Base5 ; i++)
+
+        for (i = 1; i <= 5; i++)
         {
-            OOP_GetAttr(pciDevice, (i - aHidd_PCIDevice_Base1) + aHidd_PCIDevice_Type1, &BaseType);
-            OOP_GetAttr(pciDevice, (i - aHidd_PCIDevice_Base1) + aHidd_PCIDevice_Size1, &BaseLen);
-            if ((BaseLen != 0) && (BaseType == PCIBAR_TYPE_IO))
-                OOP_GetAttr(pciDevice, i, &IOBase);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0 + (i * 3), &BaseAddr);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Type0 + (i * 3), &BaseType);
+            OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0 + (i * 3), &BaseLen);
+            if ((BaseAddr != (IPTR)NULL) && (BaseLen > 0))
+            {
+                if (BaseType & ADDRF_IO)
+                {
+                    IOBase = BaseAddr;
+D(bug("[%s] CreateUnit: Device IO @ %p [%d bytes]\n", unit->e1ku_name, IOBase, BaseLen));
+                }
+                else
+                {
+                    Flash_Base = BaseAddr;
+                    Flash_Size = BaseLen;
+D(bug("[%s] CreateUnit: Device Flash @ %p [%d bytes]\n", unit->e1ku_name, Flash_Base, Flash_Size));
+                }
+            }
         }
-D(bug("[%s] CreateUnit: Device IO   : %p\n", unit->e1ku_name, IOBase));
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &MAPPEDBase);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &MB_len);
-D(bug("[%s] CreateUnit: Device MMIO : %p [%d bytes]\n", unit->e1ku_name, MAPPEDBase, MB_len));
+
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &MMIO_Base);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0, &MMIO_Size);
+D(bug("[%s] CreateUnit: Device MMIO @ %p\n", unit->e1ku_name, MMIO_Base));
 
         ((struct e1000_hw *)unit->e1ku_Private00)->io_base = (unsigned long)IOBase;
-        ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr = (UBYTE *)HIDD_PCIDriver_MapPCI(driver, (APTR)MAPPEDBase, MB_len);
-        unit->e1ku_SizeMem = MB_len;
+        ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr = (UBYTE *)HIDD_PCIDriver_MapPCI(driver, (APTR)MMIO_Base, MMIO_Size);
+        unit->e1ku_MMIOSize = MMIO_Size;
 
-D(bug("[%s] CreateUnit: Mapped MMIO : %p\n", unit->e1ku_name, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr));
-        
+D(bug("[%s] CreateUnit: Mapped MMIO @ %p [%d bytes]\n", unit->e1ku_name, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr, unit->e1ku_MMIOSize));
+
+        ((struct e1000_hw *)unit->e1ku_Private00)->flash_address = (UBYTE *)HIDD_PCIDriver_MapPCI(driver, (APTR)Flash_Base, Flash_Size);
+        unit->e1ku_FlashSize = Flash_Size;
+
+D(bug("[%s] CreateUnit: Mapped Flash Memory @ %p [%d bytes]\n", unit->e1ku_name, ((struct e1000_hw *)unit->e1ku_Private00)->flash_address, unit->e1ku_FlashSize));
+
         if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) && (((struct e1000_hw *)unit->e1ku_Private00)->hw_addr))
         {
             struct TagItem attrs[] = {
@@ -753,7 +781,8 @@ D(bug("[%s] CreateUnit: Called on unsupported NIC type!!\n", unit->e1ku_name));
 D(bug("[%s] CreateUnit: Failed to Allocate Tx Ring Queue!!!\n", unit->e1ku_name));
                 return NULL;
             }
-            
+            D(bug("[%s] CreateUnit: Queue 0 TxRing @ %p\n", unit->e1ku_name, unit->e1ku_txRing));
+
             unit->e1ku_rxRing_QueueSize = 1;
             if ((unit->e1ku_rxRing = AllocMem(sizeof(struct e1000_rx_ring) * unit->e1ku_rxRing_QueueSize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
             {
@@ -761,35 +790,45 @@ D(bug("[%s] CreateUnit: Failed to Allocate Tx Ring Queue!!!\n", unit->e1ku_name)
 D(bug("[%s] CreateUnit: Failed to Allocate Rx Ring Queue!!!\n", unit->e1ku_name));
                 return NULL;
             }
+            D(bug("[%s] CreateUnit: Queue 0 RxRing @ %p\n", unit->e1ku_name, unit->e1ku_rxRing));
 
             e1000func_irq_disable(unit);
+            D(bug("[%s] CreateUnit: e1000 IRQ disabled\n", unit->e1ku_name));
 
             if (e1000_init_mac_params((struct e1000_hw *)unit->e1ku_Private00) != E1000_SUCCESS)
             {
 D(bug("[%s] CreateUnit: Failed to init mac params\n", unit->e1ku_name));
             }
+            D(bug("[%s] CreateUnit: MAC Params Initialised\n", unit->e1ku_name));
 
             if (e1000_init_nvm_params((struct e1000_hw *)unit->e1ku_Private00) != E1000_SUCCESS)
             {
 D(bug("[%s] CreateUnit: Failed to init nvm params\n", unit->e1ku_name));
             }
+            D(bug("[%s] CreateUnit: NVM Params Initialised\n", unit->e1ku_name));
 
             if (e1000_init_phy_params((struct e1000_hw *)unit->e1ku_Private00) != E1000_SUCCESS)
             {
 D(bug("[%s] CreateUnit: Failed to init phy params\n", unit->e1ku_name));
             }
+            D(bug("[%s] CreateUnit: PHY Params Initialised\n", unit->e1ku_name));
 
             e1000_get_bus_info((struct e1000_hw *)unit->e1ku_Private00);
 
+            D(bug("[%s] CreateUnit: Retrieved Bus information..\n", unit->e1ku_name));
+
             e1000_init_script_state_82541((struct e1000_hw *)unit->e1ku_Private00, TRUE);
             e1000_set_tbi_compatibility_82543((struct e1000_hw *)unit->e1ku_Private00, TRUE);
+
+            D(bug("[%s] CreateUnit: 82541/82543 Setup complete\n", unit->e1ku_name));
 
             ((struct e1000_hw *)unit->e1ku_Private00)->phy.autoneg_wait_to_complete = FALSE;
             ((struct e1000_hw *)unit->e1ku_Private00)->mac.adaptive_ifs = TRUE;
 
             /* Copper options */
 
-            if (((struct e1000_hw *)unit->e1ku_Private00)->phy.media_type == e1000_media_type_copper) {
+            if (((struct e1000_hw *)unit->e1ku_Private00)->phy.media_type == e1000_media_type_copper)
+            {
                 ((struct e1000_hw *)unit->e1ku_Private00)->phy.mdix = AUTO_ALL_MODES;
                 ((struct e1000_hw *)unit->e1ku_Private00)->phy.disable_polarity_correction = FALSE;
                 ((struct e1000_hw *)unit->e1ku_Private00)->phy.ms_type = E1000_MASTER_SLAVE;
@@ -810,17 +849,26 @@ D(bug("[%s] CreateUnit: PHY reset is blocked due to SOL/IDER session.\n", unit->
                 unit->e1ku_hwflags |= E1000_FLAG_BAD_TX_CARRIER_STATS_FD;
 
             e1000_reset_hw((struct e1000_hw *)unit->e1ku_Private00);
+            D(bug("[%s] CreateUnit: e1000 hardware reset\n", unit->e1ku_name));
 
             if (e1000_validate_nvm_checksum((struct e1000_hw *)unit->e1ku_Private00) < 0) {
-D(bug("[%s] CreateUnit: The NVM Checksum Is Not Valid\n", unit->e1ku_name));
+D(bug("[%s] CreateUnit: Warning: The NVM Checksum Is Not Valid!\n", unit->e1ku_name));
                 return NULL;
             }
-
+            else
+            {
+                D(bug("[%s] CreateUnit: NVM Checksum validated succesfully\n", unit->e1ku_name));
+            }
+    
             /* copy the MAC address out of the NVM */
 
             if (e1000_read_mac_addr((struct e1000_hw *)unit->e1ku_Private00))
             {
 D(bug("[%s] CreateUnit: NVM Read Error\n", unit->e1ku_name));
+            }
+            else
+            {
+                D(bug("[%s] CreateUnit: MAC Address Read\n", unit->e1ku_name));
             }
             memcpy(unit->e1ku_org_addr, ((struct e1000_hw *)unit->e1ku_Private00)->mac.addr, ETH_ADDRESSSIZE);
             memcpy(unit->e1ku_dev_addr, unit->e1ku_org_addr, ETH_ADDRESSSIZE);
@@ -865,7 +913,7 @@ D(bug("[%s] CreateUnit: (PCI%s:%s:%s)\n", unit->e1ku_name,
                 unit->e1ku_tx_int.is_Code = e1000func_TX_Int;
                 unit->e1ku_tx_int.is_Data = unit;
 
-                for (i=0; i < REQUEST_QUEUE_COUNT; i++)
+                for (i = 0; i < REQUEST_QUEUE_COUNT; i++)
                 {
                     struct MsgPort *port;
 
@@ -889,7 +937,6 @@ D(bug("[%s] CreateUnit: (PCI%s:%s:%s)\n", unit->e1ku_name,
 
                     if ((sm_UD = AllocMem(sizeof(struct e1000Startup), MEMF_PUBLIC | MEMF_CLEAR)) != NULL)
                     {
-
                         sprintf((char *)tmpbuff, e1000_TASK_NAME, unit->e1ku_name);
 
                         sm_UD->e1ksm_SyncPort = CreateMsgPort();
@@ -968,7 +1015,7 @@ void DeleteUnit(struct e1000Base *e1KBase, struct e1000Unit *unit)
             {
                 HIDD_PCIDriver_UnmapPCI(unit->e1ku_PCIDriver, 
                                         (APTR)((struct e1000_hw *)unit->e1ku_Private00)->hw_addr,
-                                        unit->e1ku_SizeMem);
+                                        unit->e1ku_MMIOSize);
             }
             FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
         }

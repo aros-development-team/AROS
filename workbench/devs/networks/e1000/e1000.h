@@ -241,13 +241,13 @@ struct e1000_rx_buffer {
 
 struct e1000_tx_ring {
 	/* pointer to the descriptor ring memory */
-	APTR desc;
+	struct e1000_tx_desc *desc;
 	/* physical address of the descriptor ring */
 	APTR dma;
 	/* length of descriptor ring in bytes */
-	unsigned int size;
+	ULONG size;
 	/* number of descriptors in the ring */
-	unsigned int count;
+	ULONG count;
 	/* next descriptor to associate a buffer with */
 	unsigned int next_to_use;
 	/* next descriptor to check for DD status bit */
@@ -260,13 +260,13 @@ struct e1000_tx_ring {
 
 struct e1000_rx_ring {
 	/* pointer to the descriptor ring memory */
-	APTR desc;
+	struct e1000_rx_desc *desc;
 	/* physical address of the descriptor ring */
 	APTR dma;
 	/* length of descriptor ring in bytes */
-	unsigned int size;
+	ULONG size;
 	/* number of descriptors in the ring */
-	unsigned int count;
+	ULONG count;
 	/* next descriptor to associate a buffer with */
 	unsigned int next_to_use;
 	/* next descriptor to check for DD status bit */
