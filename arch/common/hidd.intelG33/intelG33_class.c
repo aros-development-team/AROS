@@ -131,12 +131,13 @@ void METHOD(IntelG33, Root, Get) {
     if (IS_GFX_ATTR(msg->attrID, idx)) {
 	    switch (idx) {
             case aoHidd_Gfx_SupportsHWCursor:
-                D(bug("      ...HWCursor\n"));
+                D(bug("      (GET) HWCursor\n"));
                 *msg->storage = (IPTR)TRUE;
                 found = TRUE;
                 break;
             case aoHidd_Gfx_DPMSLevel:
-                D(bug("      ...DPMSLevel\n"));
+                D(bug("      (GET) DPMSLevel\n"));
+                ObtainSemaphore(&sd->Chipset.Locks.DPMS);
                 switch(((G33_RD_REGW(MMADR, ADPA)>>10)&0x3)) {
                     case 0:
                         *msg->storage = vHidd_Gfx_DPMSLevel_On;
@@ -151,14 +152,15 @@ void METHOD(IntelG33, Root, Get) {
                         *msg->storage = vHidd_Gfx_DPMSLevel_Off;
                         break;
                 }
+                ReleaseSemaphore(&sd->Chipset.Locks.DPMS);
                 found = TRUE;
                 break;
             default:
-                D(bug("      ...ID = %d\n",idx));
+                D(bug("      (GET) ID = %d\n",idx));
                 break;
         }
     }else{
-        D(bug("      ...Not gfx attribute\n"));
+        D(bug("      (GET) Not gfx attribute\n"));
     }
 
     if (!found)
@@ -179,8 +181,8 @@ void METHOD(IntelG33, Root, Set) {
         if (IS_GFX_ATTR(tag->ti_Tag, idx)) {
             switch(idx) {
                 case aoHidd_Gfx_DPMSLevel:
-                    D(bug("      ...DPMSLevel\n"));
-                    ObtainSemaphore(&sd->Chipset.CSLock);
+                    D(bug("      (SET) DPMSLevel\n"));
+                    ObtainSemaphore(&sd->Chipset.Locks.DPMS);
                     switch(tag->ti_Data) {
                         case vHidd_Gfx_DPMSLevel_On:
                             G33_WRM_REGW(MMADR, ADPA, 0x0000, DPMSMASK);
@@ -195,14 +197,14 @@ void METHOD(IntelG33, Root, Set) {
                             G33_WRM_REGW(MMADR, ADPA, 0x0c00, DPMSMASK);
                             break;
                     }
-                    ReleaseSemaphore(&sd->Chipset.CSLock);
+                    ReleaseSemaphore(&sd->Chipset.Locks.DPMS);
                     break;
                 default:
-                    D(bug("      ...ID = %d\n",idx));
+                    D(bug("      (SET) ID = %d\n",idx));
                     break;
             }
         }else{
-            D(bug("      ...Not gfx attribute\n"));
+            D(bug("      (SET) Not gfx attribute\n"));
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

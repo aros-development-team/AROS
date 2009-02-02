@@ -41,6 +41,18 @@ static void IntelG33_int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
     D(bug("[G33IRQ] IntelG33 INTERRUPT\n"));
 }
 
+static inline __attribute__((always_inline))
+    ULONG pciReadLong(struct staticdata *sd,
+	UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+{
+    struct pHidd_PCIDriver_ReadConfigLong __msg = {
+	sd->mid_ReadLong,
+	bus, dev, sub, reg
+    }, *msg = &__msg;
+    
+    return (ULONG)OOP_DoMethod(sd->pciDriver, (OOP_Msg)msg);
+}
+
 static BOOL Chip_Init(struct staticdata *sd) {
     D(bug("[G33] IntelG33 chip init\n"));
 
@@ -84,8 +96,9 @@ AROS_UFH3(void, Enumerator,
         bug("\003\n");
 /*-------- DO NOT CHANGE/REMOVE -------------*/
 
-        APTR Base0;
-        IPTR Base0size;
+        APTR Base0, Base1, Base2, Base3;
+        IPTR sizeBase0, sizeBase1, sizeBase2, sizeBase3;
+//        IPTR BSM;
 
         OOP_Object *pciDriver;
 
@@ -110,17 +123,37 @@ AROS_UFH3(void, Enumerator,
           Read some PCI config registers
         */
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0,   (APTR)&Base0);
-        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,   (APTR)&Base0size);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size0,   (APTR)&sizeBase0);
+
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base1,   (APTR)&Base1);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size1,   (APTR)&sizeBase1);
+
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base2,   (APTR)&Base2);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size2,   (APTR)&sizeBase2);
+
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base3,   (APTR)&Base3);
+        OOP_GetAttr(pciDevice, aHidd_PCIDevice_Size3,   (APTR)&sizeBase3);
+
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &sd->G33IntLine);
 
-        D(bug("[G33]   IntLine %d\n",sd->G33IntLine));
+        D(bug("     10 Base0 = %x (%x)\n",Base0, sizeBase0));   //MMADR
+        D(bug("     14 Base1 = %x (%x)\n",Base1, sizeBase1));   //IOBAR
+        D(bug("     18 Base2 = %x (%x)\n",Base2, sizeBase2));   //GMADR
+        D(bug("     1c Base3 = %x (%x)\n",Base3, sizeBase3));   //GTTADR
+
+        D(bug("        IntLine %d\n",sd->G33IntLine));
+
+        sd->mid_ReadLong = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_ReadConfigLong);
+
+//        BSM = pciReadLong(sd, 0, 0, 1, 0x5c);
+//        D(bug("      5c BSM = %x\n",BSM));
 
         /*
-          Maps the PCI address space to CPU address space
+          Map the PCI address space to CPU address space
         */
         mappci.mID = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
         mappci.PCIAddress = Base0;
-        mappci.Length = Base0size;
+        mappci.Length = sizeBase0;
         sd->Chipset.MMADR = (APTR)OOP_DoMethod(pciDriver, (OOP_Msg)msg);
 
         Chip_Init(sd);
@@ -141,7 +174,7 @@ static int IntelG33_Init(LIBBASETYPEPTR LIBBASE) {
     if ((sd->memPool == NULL))
         return FALSE;
 
-	InitSemaphore(&sd->Chipset.CSLock);
+	InitSemaphore(&sd->Chipset.Locks.DPMS);
 
     struct OOP_ABDescr attrbases[] = {
         { (STRPTR)IID_Hidd_PCIDevice, &HiddPCIDeviceAttrBase },
