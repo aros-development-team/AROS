@@ -268,7 +268,8 @@ struct e1000Unit {
 /* Start : Intel e1000 specific */
 
 	IPTR                    e1ku_Private00;                 /* Pointer to Intels driver-code hardware struct */
-    ULONG                   e1ku_SizeMem;
+    ULONG                   e1ku_MMIOSize;
+    ULONG                   e1ku_FlashSize;
 
     ULONG                   e1ku_hwflags;
 
@@ -290,7 +291,7 @@ struct e1000Unit {
 	ULONG                   e1ku_tx_head_addr;
 	ULONG                   e1ku_tx_fifo_size;
 
-	APTR                    e1ku_hw_stats;
+	struct e1000_hw_stats *e1ku_hw_stats;
 
 	BOOL                    detect_tx_hung;
 
@@ -309,9 +310,9 @@ struct e1000Unit {
 
 #define E1000_RX_DESC_EXT(R, i)	    \
 	(&(((union e1000_rx_desc_extended *)((R).desc))[i]))
-#define E1000_GET_DESC(R, i, type)	(&(((struct type *)((R).desc))[i]))
-#define E1000_RX_DESC(R, i)		E1000_GET_DESC(R, i, e1000_rx_desc)
-#define E1000_TX_DESC(R, i)		E1000_GET_DESC(R, i, e1000_tx_desc)
+#define E1000_GET_DESC(R, i, type) ((struct type *)&((R)->desc[i]))
+#define E1000_RX_DESC(R, i)		&(R->desc[i])
+#define E1000_TX_DESC(R, i)		&(R->desc[i])
 #define E1000_CONTEXT_DESC(R, i)	E1000_GET_DESC(R, i, e1000_context_desc)
 
 /* e1000.c definitions */
@@ -341,14 +342,5 @@ int e1000func_set_mac(struct net_device *);
 void e1000func_set_multi(struct net_device *);
 BOOL e1000func_clean_tx_irq(struct net_device *, struct e1000_tx_ring *);
 BOOL e1000func_clean_rx_irq(struct net_device *, struct e1000_rx_ring *);
-
-/* unit.c definitions */
-/* IO functions */
-volatile UBYTE readb(APTR);
-volatile void  writeb(UBYTE, APTR);
-volatile UWORD readw(APTR);
-volatile void  writew(UWORD, APTR);
-volatile ULONG readl(APTR);
-volatile void  writel(ULONG, APTR);
 
 #endif /* _E1000_OSDEP_H_ */

@@ -198,21 +198,24 @@ static void e1000func_configure_tx(struct net_device *unit)
     UQUAD tdba;
 	int i;
 
-D(bug("[%s]: e1000func_configure_tx()\n", unit->e1ku_name));
+D(bug("[%s]: e1000func_configure_tx(unit @ %p)\n", unit->e1ku_name, unit));
 
 	/* Setup the HW Tx Head and Tail descriptor pointers */
-	for (i = 0; i < unit->e1ku_txRing_QueueSize; i++) {
+	for (i = 0; i < unit->e1ku_txRing_QueueSize; i++)
+	{
+D(bug("[%s]: e1000func_configure_tx: Tx Queue %d @ %p)\n", unit->e1ku_name, i, &unit->e1ku_txRing[i]));
+D(bug("[%s]: e1000func_configure_tx: Tx Queue count = %d)\n", unit->e1ku_name, unit->e1ku_txRing[i].count));
 		tdba = (UQUAD)unit->e1ku_txRing[i].dma;
-		tdlen = unit->e1ku_txRing[i].count * sizeof(struct e1000_tx_desc);
-D(bug("[%s]: e1000func_configure_tx: Tx Queue %d Ring Descriptor DMA @ %p, len %d\n", unit->e1ku_name, i, tdba, tdlen));
-		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAL(i), (tdba & 0x00000000ffffffffULL));
-		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAH(i), (tdba >> 32));
+		tdlen = (ULONG)(unit->e1ku_txRing[i].count * sizeof(struct e1000_tx_desc));
+D(bug("[%s]: e1000func_configure_tx: Tx Queue Ring Descriptor DMA @ %p [%d bytes]\n", unit->e1ku_name, unit->e1ku_txRing[i].dma, tdlen));
+		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAL(i), (ULONG)(tdba & 0x00000000ffffffffULL));
+		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDBAH(i), (ULONG)(tdba >> 32));
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDLEN(i), tdlen);
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDH(i), 0);
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TDT(i), 0);
 		unit->e1ku_txRing[i].tdh = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_TDH(i));
 		unit->e1ku_txRing[i].tdt = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_TDT(i));
-D(bug("[%s]: e1000func_configure_tx: Tx Queue %d rdh=%d, rdt=%d\n", unit->e1ku_name, i, unit->e1ku_txRing[i].tdh, unit->e1ku_txRing[i].tdt));
+D(bug("[%s]: e1000func_configure_tx: Tx Queue TDH=%d, TDT=%d\n", unit->e1ku_name, unit->e1ku_txRing[i].tdh, unit->e1ku_txRing[i].tdt));
 	}
 
 	/* Set the default values for the Tx Inter Packet Gap timer */
@@ -364,19 +367,21 @@ D(bug("[%s]: e1000func_configure_rx()\n", unit->e1ku_name));
 
 	/* Setup the HW Rx Head and Tail Descriptor Pointers and
 	 * the Base and Length of the Rx Descriptor Ring */
-	for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++) {
-		rdlen = unit->e1ku_rxRing[i].count *
-			sizeof(struct e1000_rx_desc);
+	for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++)
+	{
+D(bug("[%s]: e1000func_configure_rx: Rx Queue %d @ %p)\n", unit->e1ku_name, i, &unit->e1ku_rxRing[i]));
+D(bug("[%s]: e1000func_configure_rx: Rx Queue count = %d)\n", unit->e1ku_name, unit->e1ku_rxRing[i].count));
+		rdlen = (ULONG)(unit->e1ku_rxRing[i].count * sizeof(struct e1000_rx_desc));
 		rdba = (UQUAD)unit->e1ku_rxRing[i].dma;
-D(bug("[%s]: e1000func_configure_rx: Rx Queue %d Ring Descriptor DMA @ %p, len %d\n", unit->e1ku_name, i, rdba, rdlen));
-		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAL(i), (rdba & 0x00000000ffffffffULL));
-		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAH(i), (rdba >> 32));
+D(bug("[%s]: e1000func_configure_rx: Rx Queue Ring Descriptor DMA @ %p, [%d bytes]\n", unit->e1ku_name, unit->e1ku_rxRing[i].dma, rdlen));
+		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAL(i), (ULONG)(rdba & 0x00000000ffffffffULL));
+		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAH(i), (ULONG)(rdba >> 32));
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDLEN(i), rdlen);
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDH(i), 0);
 		E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDT(i), 0);
 		unit->e1ku_rxRing[i].rdh = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_RDH(i));
 		unit->e1ku_rxRing[i].rdt = E1000_REGISTER((struct e1000_hw *)unit->e1ku_Private00, E1000_RDT(i));
-D(bug("[%s]: e1000func_configure_rx: Rx Queue %d rdh=%d, rdt=%d\n", unit->e1ku_name, i, unit->e1ku_rxRing[i].rdh, unit->e1ku_rxRing[i].rdt));
+D(bug("[%s]: e1000func_configure_rx: Rx Queue RDH=%d, RDT=%d\n", unit->e1ku_name, unit->e1ku_rxRing[i].rdh, unit->e1ku_rxRing[i].rdt));
 	}
 
 D(bug("[%s]: e1000func_configure_rx: Configuring checksum Offload..\n", unit->e1ku_name));
@@ -666,18 +671,20 @@ static void free_irq(struct net_device *unit)
 static int e1000func_setup_tx_resources(struct net_device *unit,
                                     struct e1000_tx_ring *tx_ring)
 {
-	int size;
+	ULONG size;
 
 D(bug("[%s]: e1000func_setup_tx_resources()\n", unit->e1ku_name));
     
 	size = sizeof(struct e1000_buffer) * tx_ring->count;
 
-D(bug("[%s]: e1000func_setup_tx_resources: tx_ring->count = %d\n", unit->e1ku_name, tx_ring->count));
+D(bug("[%s]: e1000func_setup_tx_resources: Configuring for %d buffers\n", unit->e1ku_name, tx_ring->count));
     
 	if ((tx_ring->buffer_info = AllocMem(size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
 D(bug("[%s]: e1000func_setup_tx_resources: Unable to allocate memory for the transmit descriptor ring\n", unit->e1ku_name));
 		return -E1000_ERR_CONFIG;
 	}
+
+D(bug("[%s]: e1000func_setup_tx_resources: Tx Buffer Info @ %p [%d bytes]\n", unit->e1ku_name, tx_ring->buffer_info, size));
 
 	/* round up to nearest 4K */
 	tx_ring->size = tx_ring->count * sizeof(struct e1000_tx_desc);
@@ -719,6 +726,8 @@ D(bug("[%s]: e1000func_setup_tx_resources: Unable to allocate aligned memory for
 		}
 	}
 
+D(bug("[%s]: e1000func_setup_tx_resources: Tx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, tx_ring->desc, tx_ring->size));
+
 	tx_ring->next_to_use = 0;
 	tx_ring->next_to_clean = 0;
 
@@ -752,19 +761,21 @@ D(bug("[%s]: e1000func_setup_rx_resources()\n", unit->e1ku_name));
     
 	buffer_size = sizeof(struct e1000_rx_buffer) * rx_ring->count;
 
-D(bug("[%s]: e1000func_setup_rx_resources: rx_ring->count = %d\n", unit->e1ku_name, rx_ring->count));
+D(bug("[%s]: e1000func_setup_rx_resources: Configuring for %d buffers\n", unit->e1ku_name, rx_ring->count));
 
 	if ((rx_ring->buffer_info = AllocMem(buffer_size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
-D(bug("[%s]: e1000_setup_rx_resources: Unable to allocate memory for the receive ring buffers\n", unit->e1ku_name));
+D(bug("[%s]: e1000func_setup_rx_resources: Unable to allocate memory for the receive ring buffers\n", unit->e1ku_name));
 		return -E1000_ERR_CONFIG;
 	}
+
+D(bug("[%s]: e1000func_setup_rx_resources: Rx Buffer Info @ %p [%d bytes]\n", unit->e1ku_name, rx_ring->buffer_info, buffer_size));
 
 	/* Round up to nearest 4K */
 	rx_ring->size = rx_ring->count * sizeof(struct e1000_rx_desc);
 	rx_ring->size = ALIGN(rx_ring->size, 4096);
 
 	if ((rx_ring->desc = AllocMem(rx_ring->size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
-D(bug("[%s]: e1000_setup_rx_resources: Unable to allocate memory for the receive ring descriptors\n", unit->e1ku_name));
+D(bug("[%s]: e1000func_setup_rx_resources: Unable to allocate memory for the receive ring descriptors\n", unit->e1ku_name));
 setup_rx_desc_die:
 		FreeMem(rx_ring->buffer_info, buffer_size);
 		return -E1000_ERR_CONFIG;
@@ -774,14 +785,14 @@ setup_rx_desc_die:
 	/* Fix for errata 23, can't cross 64kB boundary */
 	if (!e1000func_check_64k_bound(unit, rx_ring->desc, rx_ring->size)) {
 		void *olddesc = rx_ring->desc;
-D(bug("[%s]: e1000_setup_rx_resources: rx_ring align check failed: %u bytes at %p\n", unit->e1ku_name, rx_ring->size, rx_ring->desc));
+D(bug("[%s]: e1000func_setup_rx_resources: rx_ring align check failed: %u bytes at %p\n", unit->e1ku_name, rx_ring->size, rx_ring->desc));
 
 		/* Try again, without freeing the previous */
 		if ((rx_ring->desc = AllocMem(rx_ring->size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL) {
             /* Failed allocation, critical failure */
             FreeMem(olddesc, rx_ring->size);
             rx_ring->dma = NULL;
-D(bug("[%s]: e1000_setup_rx_resources: Unable to allocate memory for the receive descriptor ring\n", unit->e1ku_name));
+D(bug("[%s]: e1000func_setup_rx_resources: Unable to allocate memory for the receive descriptor ring\n", unit->e1ku_name));
 			goto setup_rx_desc_die;
 		}
         rx_ring->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)rx_ring->desc);
@@ -792,13 +803,15 @@ D(bug("[%s]: e1000_setup_rx_resources: Unable to allocate memory for the receive
             FreeMem(rx_ring->desc, rx_ring->size);
             FreeMem(olddesc, rx_ring->size);
             rx_ring->dma = NULL;
-D(bug("[%s]: e1000_setup_rx_resources: Unable to allocate aligned memory for the receive descriptor ring\n", unit->e1ku_name));
+D(bug("[%s]: e1000func_setup_rx_resources: Unable to allocate aligned memory for the receive descriptor ring\n", unit->e1ku_name));
 			goto setup_rx_desc_die;
 		} else {
 			/* Free old allocation, new allocation was successful */
             FreeMem(olddesc, rx_ring->size);
 		}
 	}
+
+D(bug("[%s]: e1000func_setup_rx_resources: Rx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, rx_ring->desc, rx_ring->size));
 
 	/* set up ring defaults */
 	rx_ring->next_to_clean = 0;
@@ -974,14 +987,14 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
 	while (cleaned_count--) {
 		if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
         {
-D(bug("[%s]: e1000func_alloc_rx_buffers: Buffer %d Allocated @ %p\n", unit->e1ku_name, i, buffer_info->buffer));
+D(bug("[%s]: e1000func_alloc_rx_buffers: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, i, buffer_info->buffer, unit->rx_buffer_len));
             if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
             {
 D(bug("[%s]: e1000func_alloc_rx_buffers: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, i));
             }
 D(bug("[%s]: e1000func_alloc_rx_buffers: Buffer %d DMA @ %p\n", unit->e1ku_name, i, buffer_info->dma));
 
-            rx_desc = E1000_RX_DESC(*rx_ring, i);
+            rx_desc = E1000_RX_DESC(rx_ring, i);
 //    		rx_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
             rx_desc->buffer_addr = (UQUAD)buffer_info->dma;
         }
@@ -1038,14 +1051,14 @@ D(bug("[%s]: e1000func_clean_tx_irq()\n", unit->e1ku_name));
 
 	i = tx_ring->next_to_clean;
 	eop = tx_ring->buffer_info[i].next_to_watch;
-	eop_desc = E1000_TX_DESC(*tx_ring, eop);
+	eop_desc = E1000_TX_DESC(tx_ring, eop);
 
-D(bug("[%s]: e1000func_clean_tx_irq: nxt to clean=%d, eop=%d\n", unit->e1ku_name, i, eop));
+D(bug("[%s]: e1000func_clean_tx_irq: starting at  %d, eop=%d, desc @ %p\n", unit->e1ku_name, i, eop, eop_desc));
 
 	while (eop_desc->upper.data & AROS_LONG2LE(E1000_TXD_STAT_DD)) {
 		for (cleaned = FALSE; !cleaned; ) {
 D(bug("[%s]: e1000func_clean_tx_irq: cleaning Tx buffer %d\n", unit->e1ku_name, i));
-			tx_desc = E1000_TX_DESC(*tx_ring, i);
+			tx_desc = E1000_TX_DESC(tx_ring, i);
 			buffer_info = &tx_ring->buffer_info[i];
 			cleaned = (i == eop);
 
@@ -1062,7 +1075,7 @@ D(bug("[%s]: e1000func_clean_tx_irq: cleaning Tx buffer %d\n", unit->e1ku_name, 
 		}
 
 		eop = tx_ring->buffer_info[i].next_to_watch;
-		eop_desc = E1000_TX_DESC(*tx_ring, eop);
+		eop_desc = E1000_TX_DESC(tx_ring, eop);
 	}
 
 	tx_ring->next_to_clean = i;
@@ -1122,16 +1135,18 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
     BOOL accepted, is_orphan, cleaned = FALSE;
 
 	i = rx_ring->next_to_clean;
-	rx_desc = E1000_RX_DESC(*rx_ring, i);
+	rx_desc = E1000_RX_DESC(rx_ring, i);
 	buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
+D(bug("[%s]: e1000func_clean_rx_irq: Starting at %d, Rx Desc @ %p, Buffer Info @ %p\n", unit->e1ku_name, i, rx_desc, buffer_info));
+    
 	while (rx_desc->status & E1000_RXD_STAT_DD) {
 		cleaned = TRUE;
 		status = rx_desc->status;
 		length = AROS_LE2WORD(rx_desc->length);
 
 		if (++i == rx_ring->count) i = 0;
-		next_rxd = E1000_RX_DESC(*rx_ring, i);
+		next_rxd = E1000_RX_DESC(rx_ring, i);
 
 		next_buffer = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
@@ -1260,6 +1275,8 @@ next_desc:
 		buffer_info = next_buffer;
 	}
 	rx_ring->next_to_clean = i;
+
+D(bug("[%s]: e1000func_clean_rx_irq: Next to clean = %d\n", unit->e1ku_name, rx_ring->next_to_clean));
 
 //	if ((cleaned_count = E1000_DESC_UNUSED(rx_ring)))
 //        writel(i, ((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + rx_ring->rdt);

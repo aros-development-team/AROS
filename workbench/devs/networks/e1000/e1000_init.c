@@ -315,7 +315,7 @@ D(bug("[e1000] OpenDevice: Unit %d @ %p\n", unitnum, unit));
         else
         {
 D(bug("[e1000] OpenDevice: Starting Unit %d\n", unitnum));
-            unsigned int rx_ring_count, tx_ring_count;
+            ULONG rx_ring_count, tx_ring_count;
             e1000_mac_type mac_type;
 
             mac_type = ((struct e1000_hw *)unit->e1ku_Private00)->mac.type;
