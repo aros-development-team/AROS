@@ -2341,12 +2341,12 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
     ata_out(0x04, ata_AltControl, alt);
     ata_usleep(tr, 10);                 /* minimum required: 5us */
     ata_out(0x02, ata_AltControl, alt);
-    ata_usleep(tr, 4*1000);             /* minimum required: 2ms */
+    ata_usleep(tr, 20*1000);             /* minimum required: 2ms, but wait 20ms to make sure drive is awake from reset */
 
     /* If there is a device 0, wait for device 0 to clear BSY */
     if (DEV_NONE != bus->ab_Dev[0]) {
         D(bug("[ATA%02d] Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 0)));
-        TimeOut = 1000;     //Timeout 1s (1ms x 1000)
+        TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
         while ( 1 ) {
             if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                 break;
@@ -2366,7 +2366,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
         D(bug("[ATALOW] Wait DEV1 to allow access\n"));
         ata_out(0xa0 | (1 << 4), ata_DevHead, port);
         ata_400ns(bus->ab_Alt);
-        TimeOut = 1000;     //Timeout 1s (1ms x 1000)
+        TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
         while ( 1 ) {
             if ( (ata_in(2, port) == 0x01) && (ata_in(3, port) == 0x01) )
                 break;
@@ -2381,7 +2381,7 @@ void ata_ResetBus(struct timerequest *tr, struct ata_Bus *bus)
 
         if (DEV_NONE != bus->ab_Dev[1]) {
             D(bug("[ATA%02d] Wait for Device to clear BSY\n", ((bus->ab_BusNum << 1 ) + 1)));
-            TimeOut = 1000;     //Timeout 1s (1ms x 1000)
+            TimeOut = 1000;     /* Timeout 1s (1ms x 1000) */
             while ( 1 ) {
                 if( (ata_ReadStatus(bus) & ATAF_BUSY) == 0 )
                     break;
