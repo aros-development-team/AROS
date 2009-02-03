@@ -113,7 +113,6 @@ MMADR+
 #define GMBUS5  0x5120
 
 #define ADPA        0x61100
-
 #define DPMSMASK    0x0c00
 
 #define VGADisable  1<<31

@@ -93,6 +93,7 @@ struct staticdata {
     OOP_Class    *PlanarBMClass;
 
     OOP_MethodID  mid_ReadLong;
+    OOP_MethodID  mid_ReadWord;
 
     struct        Chipset Chipset;
  
