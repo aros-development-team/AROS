@@ -55,9 +55,9 @@ void udelay(LONG usec)
 /**********************************************************
                             HOOKS
  **********************************************************/
-static const char str_APICdefault[] = "default";
+static const char str_APICdefault[] = "IA32 default";
 
-AROS_UFH1(int, probe_APIC_default,
+AROS_UFH1(IPTR, probe_APIC_default,
     AROS_UFHA(struct GenericAPIC *,	hook,	A0))
 {
     AROS_USERFUNC_INIT
