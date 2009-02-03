@@ -137,7 +137,7 @@ void METHOD(IntelG33, Root, Get) {
                 break;
             case aoHidd_Gfx_DPMSLevel:
                 D(bug("      (GET) DPMSLevel\n"));
-                ObtainSemaphore(&sd->Chipset.Locks.DPMS);
+//                ObtainSemaphore(&sd->Chipset.Locks.DPMS);
                 switch(((G33_RD_REGW(MMADR, ADPA)>>10)&0x3)) {
                     case 0:
                         *msg->storage = vHidd_Gfx_DPMSLevel_On;
@@ -152,7 +152,7 @@ void METHOD(IntelG33, Root, Get) {
                         *msg->storage = vHidd_Gfx_DPMSLevel_Off;
                         break;
                 }
-                ReleaseSemaphore(&sd->Chipset.Locks.DPMS);
+//                ReleaseSemaphore(&sd->Chipset.Locks.DPMS);
                 found = TRUE;
                 break;
             default:
