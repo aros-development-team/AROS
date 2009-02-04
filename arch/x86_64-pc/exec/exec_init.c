@@ -347,6 +347,8 @@ int exec_main(struct TagItem *msg, void *entry)
         rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
         mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
 
+        uintptr_t addr_lower = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+
         while(len >= sizeof(struct mb_mmap))
         {
             if (mmap->type == MMAP_TYPE_RAM)
@@ -356,6 +358,13 @@ int exec_main(struct TagItem *msg, void *entry)
                 uintptr_t tmp;
 
 #warning TODO: Add proper handling of the memory above 4GB!
+                if ((addr_lower != 0)  &&
+                    ((addr_lower >= addr) && ((addr_lower <= (addr+size) ))))
+                {
+                    rkprintf("[exec]   Fixup entry for lowpages [size %012p -> ", size);
+                    size = addr_lower - addr;
+                    rkprintf("%012p]\n", size);
+                }
 
                 if (addr < (uintptr_t)SysBase)
                 {
@@ -363,6 +372,7 @@ int exec_main(struct TagItem *msg, void *entry)
                     size -= (tmp-addr);
                     addr = tmp;
                 }
+
                 rkprintf("[exec]   %012p - %012p\n", addr, addr+size-1);
 
                 if (addr < 0x01000000 && (addr+size) <= 0x01000000)

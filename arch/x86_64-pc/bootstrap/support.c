@@ -8,7 +8,7 @@
 
 #include "support.h"
 
-void *memset(void *ptr, int c, long len)
+void *__bs_memset(void *ptr, int c, long len)
 {
     void *p = ptr;
     long c32 = c | (c << 8) | (c << 16) | (c << 24);
@@ -32,12 +32,12 @@ void *memset(void *ptr, int c, long len)
     return p;
 }
 
-void *bzero(void *ptr, long len)
+void *__bs_bzero(void *ptr, long len)
 {
-    return memset(ptr, 0, len);
+    return __bs_memset(ptr, 0, len);
 }
 
-void memcpy(void *dest, const void *src, long len)
+void __bs_memcpy(void *dest, const void *src, long len)
 {
     while (len >= 4)
     {
@@ -59,7 +59,7 @@ void memcpy(void *dest, const void *src, long len)
     }
 }
 
-int strncmp(const char *s1, const char*s2, long length)
+int __bs_strncmp(const char *s1, const char*s2, long length)
 {
     if (!length)
         return 0;
@@ -72,24 +72,24 @@ int strncmp(const char *s1, const char*s2, long length)
     return 0;
 }
 
-int strlen(const char *s)
+int __bs_strlen(const char *s)
 {
     int len=0;
     while(*s++ != 0) len++;
     return len;
 }
 
-const char *remove_path(const char *in)
+const char *__bs_remove_path(const char *in)
 {
-    const char *p = &in[strlen(in)-1];
+    const char *p = &in[__bs_strlen(in)-1];
     while (p > in && p[-1] != '/' && p[-1] != ':') p--;
     return p;
 }
 
-char *strstr (const char * str, const char * search)
+char *__bs_strstr (const char * str, const char * search)
 {
     long done;
-    long len_s = strlen(search);
+    long len_s = __bs_strlen(search);
     const char * t;
 
     do
