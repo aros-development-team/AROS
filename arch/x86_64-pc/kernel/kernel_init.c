@@ -25,14 +25,16 @@ extern const unsigned char start64[];
 extern const unsigned char _binary_smpbootstrap_start[];
 extern const unsigned char _binary_smpbootstrap_size[];
 
-IPTR           _kern_initflags;
+IPTR           _kern_initflags = 0;
 
-#define        KERNBOOTFLAG_BOOTCPUSET                1
+#define KERNBOOTFLAG_SERDEBUGCONFIGURED (1 << 0)
+#define KERNBOOTFLAG_DEBUG              (1 << 1)
+#define KERNBOOTFLAG_BOOTCPUSET         (1 << 2)
 
 IPTR           _kern_early_ACPIRSDP;
 IPTR           _Kern_APICTrampolineBase;
 
-static char _kern_early_BOOTCmdLine[200];
+static char     _kern_early_BOOTCmdLine[200];
 
 UBYTE          _kern_early_BOOTAPICID;
 
@@ -103,7 +105,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     core_APICInitialise(LIBBASE->kb_APICBase);
 
-#warning "TODO: Check if NOACPI is set on the boot command line"
     if (_kern_early_ACPIRSDP)
     {
         LIBBASE->kb_ACPIRSDP = _kern_early_ACPIRSDP;
@@ -155,22 +156,26 @@ ADD2INITLIB(Kernel_Init, 0)
 static struct TagItem *BootMsg;
 static struct vbe_controller vbectrl;
 static struct vbe_mode vbemd;
-intptr_t addr;
-intptr_t len;
-BOOL serial_initialised = FALSE;
+static intptr_t addr;
+static intptr_t len;
 
 int kernel_cstart(struct TagItem *msg, void *entry)
 {
     struct TagItem *tag;
-    IPTR _APICBase = NULL;
-    UBYTE kern_apic_id = 0;
+    IPTR _APICBase;
+    UBYTE _APICID;
+    BOOL _EnableDebug = FALSE;
 
-#if (AROS_SERIAL_DEBUG > 0)
-    if (!serial_initialised)
+    /* Enable fxsave/fxrstor */ 
+    wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
+
+    /* Initialise the serial hardware ASAP so all debug is output correctly!
+        rkprintf (screen output) _may_ also be directed to the serial output */
+    if (!(_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
     {
         struct ExecBase *SysBase = NULL;
-        /* Initialise the serial hardware ASAP so all debug is output correctly!
-            rkprintf (screen output) _may_ also be directed to the serial output*/
+        BOOL            _DoDebug = FALSE;
+
         tag = krnFindTagItem(KRN_CmdLine, msg);
         if (tag)
         {
@@ -181,72 +186,96 @@ int kernel_cstart(struct TagItem *msg, void *entry)
             {
                 /* Split the command line */
                 temp = strcspn(cmd," ");
-                if (strncmp(cmd, "serial-debug=", 13)==0)
+                if (strncmp(cmd, "DEBUG", 5)==0)
                 {
-                    if (cmd[13] == '1')
+                    _EnableDebug = TRUE;
+                    if (cmd[5] == '=')
+                    {
+                        /* Check if our debug is requested .. */
+#warning "TODO: Check for kernel.resource in the debug line and set _DoDebug if found"
+                    }
+                    else
+                    {
+                        /* All debug is enabled ... so dump ours also */
+                        _DoDebug = TRUE;
+                    }
+
+                    if (_DoDebug)
+                    {
+                        _kern_initflags |= KERNBOOTFLAG_DEBUG;
+                        __serial_rawio_debug = 1;
+                    }
+                }
+                else if (strncmp(cmd, "SERIAL=", 7)==0)
+                {
+                    ULONG sertemp;
+                    /*
+                        Parse the serial debug port options
+                        Format: SERIAL=<port>,<speed>,<databits>,<parity>,stopbits>
+                    */
+                    if (cmd[7] == '1')
                         __serial_rawio_port = 0x3F8;
-                    else if (cmd[13] == '2')
+                    else if (cmd[7] == '2')
                         __serial_rawio_port = 0x2F8;
-                }
-                else if (strncmp(cmd, "serial-databits=", 16)==0)
-                {
-                    if (cmd[16] == '5')
+
+                    sertemp = strcspn(cmd + 9,",") + 9;
+                    cmd[sertemp] = '\0';
+                    __serial_rawio_speed = atoi(&cmd[9]);
+                    cmd[sertemp] = ',';
+
+                    if (cmd[sertemp + 1] == '5')
                         __serial_rawio_databits = 0x00;
-                    else if (cmd[16] == '6')
+                    else if (cmd[sertemp + 1] == '6')
                         __serial_rawio_databits = 0x01;
-                    else if (cmd[16] == '7')
+                    else if (cmd[sertemp + 1] == '7')
                         __serial_rawio_databits = 0x02;
-                    else if (cmd[16] == '8')
+                    else if (cmd[sertemp + 1] == '8')
                         __serial_rawio_databits = 0x03;
-                }
-                else if (strncmp(cmd, "serial-stopbits=", 16)==0)
-                {
-                    if (cmd[16] == '1')
-                        __serial_rawio_stopbits = 0x00;
-                    else if (cmd[16] == '2')
-                        __serial_rawio_stopbits = 0x04;
-                }
-                else if (strncmp(cmd, "serial-parity=", 14)==0)
-                {
-                    if (cmd[14] == 'n')
+
+                    if (cmd[sertemp + 3] == 'n')
                         __serial_rawio_parity = 0x00;
-                    else if (cmd[14] == 'o')
+                    else if (cmd[sertemp + 3] == 'o')
                         __serial_rawio_parity = 0x08;
-                    else if (cmd[14] == 'e')
+                    else if (cmd[sertemp + 3] == 'e')
                         __serial_rawio_parity = 0x18;
-                }
-                else if (strncmp(cmd, "serial-speed=", 13)==0)
-                {
-                    __serial_rawio_speed = atoi(&cmd[13] );
+
+                    if (cmd[sertemp + 5] == '1')
+                        __serial_rawio_stopbits = 0x00;
+                    else if (cmd[sertemp + 5] == '2')
+                        __serial_rawio_stopbits = 0x04;
                 }
                 cmd = stpblk(cmd+temp);
             }
         }
-        Exec_SerialRawIOInit();
-        serial_initialised = TRUE;
+        if (_EnableDebug)
+        {
+            Exec_SerialRawIOInit();
+        }
+        _kern_initflags |= KERNBOOTFLAG_SERDEBUGCONFIGURED;
     }
-#endif
 
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
 
     _APICBase = core_APICGetMSRAPICBase();
-    kern_apic_id = core_APICGetID(_APICBase);
-    rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", kern_apic_id, _APICBase);
+    _APICID = core_APICGetID(_APICBase);
+    rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", _APICID, _APICBase);
 
-    /* Enable fxsave/fxrstor */ 
-    wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
-    
     if (!(_kern_initflags & KERNBOOTFLAG_BOOTCPUSET))
     {
-        if(serial_initialised)
+        if ((_EnableDebug) && (_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
         {
-            rkprintf("[Kernel] kernel_cstart: Serial Debug initialised [port 0x%x, speed=%u, flags=0x%x].\n", __serial_rawio_port, __serial_rawio_speed, (__serial_rawio_databits | __serial_rawio_parity | __serial_rawio_stopbits));
+            rkprintf("[Kernel] kernel_cstart: Serial Debug initialised [port 0x%x, speed=%d, flags=0x%x].\n", __serial_rawio_port, __serial_rawio_speed, (__serial_rawio_databits | __serial_rawio_parity | __serial_rawio_stopbits));
         }
-        _kern_early_BOOTAPICID = kern_apic_id;
+        _kern_early_BOOTAPICID = _APICID;
         _kern_initflags |= KERNBOOTFLAG_BOOTCPUSET;
 
-        addr = krnGetTagData(KRN_KernelBase, 0, msg);
-        len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
+        /* Prepair GDT */
+        core_SetupGDT();
+
+        /* Set TSS, GDT, LDT and MMU up */
+        core_CPUSetup(_APICBase);
+        core_SetupIDT();
+        core_SetupMMU();
 
         tag = krnFindTagItem(KRN_CmdLine, msg);
         if (tag)
@@ -303,14 +332,8 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 #endif
         }
 
-        /* Prepair GDT */
-        core_SetupGDT();
-
-        /* Set TSS, GDT, LDT and MMU up */
-        core_CPUSetup(_APICBase);
-        core_SetupIDT();
-        core_SetupMMU();
-
+        addr = krnGetTagData(KRN_KernelBase, 0, msg);
+        len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
         core_ProtKernelArea(addr, len, 1, 0, 1);
 
         /* Lock page 0! */
@@ -322,9 +345,9 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         core_SetupIDT();
     }
 
-    (rkprintf("[Kernel] kernel_cstart[%d]: APIC_BASE_MSR=%016p\n", kern_apic_id, rdmsrq(27)));
+    (rkprintf("[Kernel] kernel_cstart[%d]: APIC_BASE_MSR=%016p\n", _APICID, rdmsrq(27)));
 
-    if (kern_apic_id == _kern_early_BOOTAPICID)
+    if (_APICID == _kern_early_BOOTAPICID)
     {
         /* Setup the 8259 */
         asm("outb   %b0,%b1\n\tcall delay"::"a"((char)0x11),"i"(0x20)); /* Initialization sequence for 8259A-1 */
@@ -348,7 +371,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     {
         /* A temporary solution - the code for smp is not ready yet... */
 #warning "TODO: launch idle task ..."
-        rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", kern_apic_id);
+        rkprintf("[Kernel] kernel_cstart[%d]: Going into endless loop...\n", _APICID);
         while(1) asm volatile("hlt");
     }
 
@@ -539,7 +562,7 @@ IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagL
     if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
         return ti->ti_Data;
 
-        return defaultVal;
+    return defaultVal;
 }
 
 void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList)

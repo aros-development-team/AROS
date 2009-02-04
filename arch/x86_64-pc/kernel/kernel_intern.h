@@ -82,15 +82,15 @@ IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagL
 void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tagList);
 
 /* Debug support .. */
-#if (AROS_SERIAL_DEBUG > 0)
-extern void   Exec_SerialRawIOInit();
-extern ULONG  __serial_rawio_speed;
-extern UBYTE  __serial_rawio_databits;
-extern UBYTE  __serial_rawio_parity;
-extern UBYTE  __serial_rawio_stopbits;
-extern UWORD  __serial_rawio_port;
-#endif
-void scr_RawPutChars(char *, int);
+extern void Exec_SerialRawIOInit();
+extern void scr_RawPutChars(char *, int);
+extern ULONG            __serial_rawio_speed;
+extern UBYTE            __serial_rawio_databits;
+extern UBYTE            __serial_rawio_parity;
+extern UBYTE            __serial_rawio_stopbits;
+extern UWORD            __serial_rawio_port;
+extern unsigned char    __serial_rawio_debug;
+
 void clr();
 static char tab[512];
 #ifdef rkprintf

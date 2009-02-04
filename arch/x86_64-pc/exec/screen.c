@@ -3,8 +3,6 @@
     $Id$
 */
 
-#define SCREEN_SERIAL_DEBUG
-
 #include <aros/config.h>
 #include <strings.h>
 #include <stdarg.h>
@@ -13,11 +11,7 @@
 
 #include "font8x14.c"
 
-#if defined(SCREEN_SERIAL_DEBUG)
-#if (AROS_SERIAL_DEBUG > 0)
 extern void Exec_SerialRawPutChar(char chr);
-#endif
-#endif
 
 #undef __save_flags
 #undef __restore_flags
@@ -31,6 +25,7 @@ extern void Exec_SerialRawPutChar(char chr);
 
 static int x,y, dead, vesa, w, wc=80, h, hc=25, bpp;
 static int scr_rpclock;
+unsigned char __serial_rawio_debug  = 0;
 
 void *fb;
 
@@ -117,15 +112,10 @@ void Putc(char chr)
     __save_flags(flags);
     __cli();
 
-#warning "TODO: Enable screen debug to serial at config time, and note that it doesnt work properly on real hardware since it doesnt initialise the serial port to a given baud_rate"
-#if defined(SCREEN_SERIAL_DEBUG)
-    if (chr != 3)
+    if ((__serial_rawio_debug == 1) && (chr != 3))
     {
-#if (AROS_SERIAL_DEBUG > 0)
         Exec_SerialRawPutChar(chr);
-#endif
     }
-#endif
 
     if (chr == 3) /* die / CTRL-C / "signal" */
     {
