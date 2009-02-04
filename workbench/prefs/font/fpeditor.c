@@ -28,6 +28,22 @@
 #include "locale.h"
 #include "fpeditor.h"
 
+/* Data is stored on disk in this format */
+struct FileFontPrefs
+{
+    UBYTE   fp_Reserved[4 * 3];
+    UBYTE   fp_Reserved2[2];
+    UBYTE   fp_Type[2];
+    UBYTE   fp_FrontPen;
+    UBYTE   fp_BackPen;
+    UBYTE   fp_Drawmode;
+    UBYTE   fp_pad;
+    UBYTE   fp_TextAttr_ta_Name[4];
+    UBYTE   fp_TextAttr_ta_YSize[2];
+    UBYTE   fp_TextAttr_ta_Style;
+    UBYTE   fp_TextAttr_ta_Flags;
+    BYTE    fp_Name[FONTNAMESIZE];
+};
 
 /*** Instance Data **********************************************************/
 #define FP_COUNT (3)  /* Number of entries in fped_FontPrefs array */
@@ -82,6 +98,49 @@ STATIC VOID convertEndian(struct FontPrefs *fp)
     fp->fp_TextAttr.ta_YSize = AROS_BE2WORD(fp->fp_TextAttr.ta_YSize);
 }
 
+VOID FileFontPrefs2FontPrefs(struct FileFontPrefs *ffp, struct FontPrefs *fp)
+{
+    /* Copy field by field to avoid any alignment problems whatsoever */
+    CopyMem(&ffp->fp_Reserved, &fp->fp_Reserved, sizeof(fp->fp_Reserved));
+    CopyMem(&ffp->fp_Reserved2, &fp->fp_Reserved2, sizeof(fp->fp_Reserved2));
+    CopyMem(&ffp->fp_Type, &fp->fp_Type, sizeof(fp->fp_Type));
+    fp->fp_FrontPen = ffp->fp_FrontPen;
+    fp->fp_BackPen = ffp->fp_BackPen;
+    fp->fp_DrawMode = ffp->fp_Drawmode;
+    fp->fp_TextAttr.ta_Name = fp->fp_Name;
+    CopyMem
+    (
+	&ffp->fp_TextAttr_ta_YSize,
+	&fp->fp_TextAttr.ta_YSize,
+	sizeof(fp->fp_TextAttr.ta_YSize)
+    );
+    fp->fp_TextAttr.ta_Style = ffp->fp_TextAttr_ta_Style;
+    fp->fp_TextAttr.ta_Flags = ffp->fp_TextAttr_ta_Flags;
+    CopyMem(&ffp->fp_Name, &fp->fp_Name, FONTNAMESIZE);
+}
+
+VOID FontPrefs2FileFontPrefs(struct FontPrefs *fp, struct FileFontPrefs *ffp)
+{
+    /* Copy field by field to avoid any alignment problems whatsoever */
+    CopyMem(&fp->fp_Reserved, &ffp->fp_Reserved, sizeof(fp->fp_Reserved));
+    CopyMem(&fp->fp_Reserved2, &ffp->fp_Reserved2, sizeof(fp->fp_Reserved2));
+    CopyMem(&fp->fp_Type, &ffp->fp_Type, sizeof(fp->fp_Type));
+    ffp->fp_FrontPen = fp->fp_FrontPen;
+    ffp->fp_BackPen = fp->fp_BackPen;
+    ffp->fp_Drawmode = fp->fp_DrawMode;
+    /* fp->fp_TextAttr.ta_Name is not copied, it may have different sizes on
+       different architectures and contains only a pointer, so I guess there's
+       no need to write it on disk. */
+    CopyMem
+    (
+	&fp->fp_TextAttr.ta_YSize,
+	&ffp->fp_TextAttr_ta_YSize, 
+	sizeof(fp->fp_TextAttr.ta_YSize)
+    );
+    ffp->fp_TextAttr_ta_Style = fp->fp_TextAttr.ta_Style;
+    ffp->fp_TextAttr_ta_Flags = fp->fp_TextAttr.ta_Flags;
+    CopyMem(&fp->fp_Name, &ffp->fp_Name, FONTNAMESIZE);
+}
 
 VOID FontPrefs2FontString
 (
@@ -274,11 +333,12 @@ IPTR FPEditor__MUIM_PrefsEditor_ImportFH
             {
                 if ((error = ParseIFF(handle, IFFPARSE_SCAN)) == 0)
                 {
+                    struct FileFontPrefs ffp;
                     context = CurrentChunk(handle);
                     
                     error = ReadChunkBytes
                     (
-                        handle, FP(i), sizeof(struct FontPrefs)
+                        handle, &ffp, sizeof(struct FileFontPrefs)
                     );
                     
                     if (error < 0)
@@ -286,7 +346,7 @@ IPTR FPEditor__MUIM_PrefsEditor_ImportFH
                         printf("Error: ReadChunkBytes() returned %ld!\n", error);
                     }
                     
-                    FP(i)->fp_TextAttr.ta_Name = FP(i)->fp_Name;
+                    FileFontPrefs2FontPrefs(&ffp, FP(i));
                     
                     convertEndian(FP(i));
                 }
@@ -357,7 +417,8 @@ IPTR FPEditor__MUIM_PrefsEditor_ExportFH
             
             for (i = 0; i < FP_COUNT; i++)
             {
-                error = PushChunk(handle, ID_PREF, ID_FONT, sizeof(struct FontPrefs));
+                struct FileFontPrefs ffp;
+                error = PushChunk(handle, ID_PREF, ID_FONT, sizeof(struct FileFontPrefs));
                 
                 if (error != 0) // TODO: We need some error checking here!
                 {
@@ -365,8 +426,9 @@ IPTR FPEditor__MUIM_PrefsEditor_ExportFH
                 }
                 
                 convertEndian(FP(i)); // Convert to m68k endian
+                FontPrefs2FileFontPrefs(FP(i), &ffp);
                 
-                error = WriteChunkBytes(handle, FP(i), sizeof(struct FontPrefs));
+                error = WriteChunkBytes(handle, &ffp, sizeof(struct FileFontPrefs));
                 error = PopChunk(handle);
                 
                 convertEndian(FP(i)); // Revert to initial endian
