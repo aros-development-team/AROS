@@ -27,16 +27,10 @@ struct FileFontPrefs
     UBYTE   fp_BackPen;
     UBYTE   fp_Drawmode;
     UBYTE   fp_pad;
-#ifdef __x86_64__
-    UBYTE   fp_pad2[4];
-#endif
-    UBYTE   fp_TextAttr_ta_Name[sizeof(STRPTR)];
+    UBYTE   fp_TextAttr_ta_Name[4];
     UBYTE   fp_TextAttr_ta_YSize[2];
     UBYTE   fp_TextAttr_ta_Style;
     UBYTE   fp_TextAttr_ta_Flags;
-#ifdef __x86_64__
-    UBYTE   fp_pad3[4];
-#endif
     BYTE    fp_Name[FONTNAMESIZE];
 };
 
