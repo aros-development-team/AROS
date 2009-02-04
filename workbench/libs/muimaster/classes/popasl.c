@@ -324,6 +324,29 @@ IPTR Popasl__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
+IPTR Popasl__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct Popasl_DATA *data = INST_DATA(cl, obj);
+    struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem *tag;
+
+    while ((tag = NextTagItem(&tags)) != NULL)
+    {
+    	switch(tag->ti_Tag)
+	{
+    	    case MUIA_Popasl_StartHook:
+    		data->start_hook = (struct Hook*) tag->ti_Data;
+    		break;
+    	    case MUIA_Popasl_StopHook:
+    		data->stop_hook = (struct Hook*) tag->ti_Data;
+    		break;
+	} /* switch(tag->ti_Tag) */
+	
+    } /* while ((tag = NextTagItem(&tags)) != NULL) */
+    
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
 IPTR Popasl__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Popasl_DATA *data = INST_DATA(cl, obj);
@@ -339,6 +362,7 @@ BOOPSI_DISPATCHER(IPTR, Popasl_Dispatcher, cl, obj, msg)
 	case OM_NEW: return Popasl__OM_NEW(cl, obj, (struct opSet *)msg);
 	case OM_DISPOSE: return Popasl__OM_DISPOSE(cl, obj, msg);
 	case OM_GET: return Popasl__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_SET: return Popasl__OM_SET(cl, obj, (struct opSet *)msg);
 	case MUIM_Cleanup: return Popasl__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup*)msg);
         default: return DoSuperMethodA(cl, obj, msg);
     }
