@@ -199,7 +199,7 @@ static void setup_mmu()
 
 /*
  * This tiny procedure sets the complete 64-bit environment up - it loads the descriptors, 
- * enables 64-bit mode, loads MMU tables and trhough paging it activates the 64-bit long mode.
+ * enables 64-bit mode, loads MMU tables and through paging it activates the 64-bit long mode.
  * 
  * After that it is perfectly safe to jump into the pure 64-bit kernel.
  */
@@ -265,7 +265,7 @@ static struct module *module_prepare(const char *s, const struct module *m, int 
     while (c>0)
     {
         /* Module exists? Break here to allow overriding it */
-        if (strncmp(s, mo->name, strlen(s)) == 0)
+        if (__bs_strncmp(s, mo->name, __bs_strlen(s)) == 0)
             break;
         
         /* Iterate... */
@@ -285,27 +285,27 @@ static struct module *module_prepare(const char *s, const struct module *m, int 
 static int find_modules(struct multiboot *mb, const struct module *m)
 {
     int count = 0;
-    
+
     /* Are there any modules at all? */
     if (mb->flags && MB_FLAGS_MODS)
     {
         int i;
         struct mb_module *mod = (struct mb_module *)mb->mods_addr;
         D(kprintf("[BOOT] GRUB has loaded %d files\n", mb->mods_count));
-              
+
         /* Go through the list of modules loaded by GRUB */
         for (i=0; i < mb->mods_count; i++, mod++)
         {
             char *p = (char *)mod->mod_start;
-            
+
             if (p[0] == 0x7f && p[1] == 'E' && p[2] == 'L' && p[3] == 'F')
             {
                 /* 
                  * The loaded file is an ELF object. It may be put directly into our list of modules
                  */
-                const char *s = remove_path((char*)mod->string);
+                const char *s = __bs_remove_path((char*)mod->string);
                 struct module *mo = module_prepare(s, m, &count);
-                
+
                 mo->name = s;
                 mo->address = (void*)mod->mod_start;
 
@@ -319,18 +319,18 @@ static int find_modules(struct multiboot *mb, const struct module *m)
                  */
                 void *file = p + 8;
 
-                D(kprintf("[BOOT] * package %s @ %p:\n", remove_path((char *)mod->string), mod->mod_start));
+                D(kprintf("[BOOT] * package %s @ %p:\n", __bs_remove_path((char *)mod->string), mod->mod_start));
 
                 while (file < (void*)mod->mod_end)
                 {
                     int len = LONG2BE(*(int *)file);
-                    const char *s = remove_path(file+4);
+                    const char *s = __bs_remove_path(file+4);
                     struct module *mo = module_prepare(s, m, &count);
-                        
+
                     file += 5+len;
                     len = LONG2BE(*(int *)file);
                     file += 4;
-                    
+
                     mo->name    = s;
                     mo->address = file;
                     D(kprintf("[BOOT]   * PKG module %s @ %p\n", mo->name, mo->address));
@@ -347,7 +347,7 @@ static int find_modules(struct multiboot *mb, const struct module *m)
 
 void setupVesa(const char *str)
 {
-    char *vesa = strstr(str, "vesa=");
+    char *vesa = __bs_strstr(str, "vesa=");
     
     if (vesa)
     {
@@ -373,17 +373,17 @@ void setupVesa(const char *str)
         }
         
         kprintf("[VESA] module (@ %p) size=%d\n", &_binary_vesa_start, &_binary_vesa_size);
-        memcpy(__vesa_buffer, (void *)0x1000, sizeof(__vesa_buffer));
-        memcpy((void *)0x1000, vesa_start, vesa_size);
+        __bs_memcpy(__vesa_buffer, (void *)0x1000, sizeof(__vesa_buffer));
+        __bs_memcpy((void *)0x1000, vesa_start, vesa_size);
         kprintf("[VESA] Module installed\n");
 
         kprintf("[VESA] BestModeMatch for %dx%dx%d = ",x,y,d);        
         mode = findMode(x,y,d);
 
         getModeInfo(mode);
-        memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
+        __bs_memcpy(&VBEModeInfo, modeinfo, sizeof(struct vbe_mode));
         getControllerInfo();
-        memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
+        __bs_memcpy(&VBEControllerInfo, controllerinfo, sizeof(struct vbe_controller));
 
         if (modeinfo->mode_attributes & 0x80)
             mode |= 0x4000;
@@ -415,14 +415,14 @@ void setupVesa(const char *str)
             tag++;
         }
             
-        memcpy((void *)0x1000, __vesa_buffer, sizeof(__vesa_buffer));
+        __bs_memcpy((void *)0x1000, __vesa_buffer, sizeof(__vesa_buffer));
         kprintf("[VESA] Module uninstalled\n");
     }
 }
 
 void change_kernel_address(const char *str)
 {
-    char *kern = strstr(str, "base_address=");
+    char *kern = __bs_strstr(str, "base_address=");
     if (kern)
     {
         unsigned long addr=0;
@@ -454,7 +454,7 @@ void change_kernel_address(const char *str)
         }
         else
         {
-            kprintf("[BOOT] Kernel base address to low (%p). Keeping default.\n", addr);
+            kprintf("[BOOT] Kernel base address too low (%p). Keeping default.\n", addr);
         }
     }
 }
@@ -529,6 +529,8 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
         kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
     kprintf("[BOOT] Command line '%s'\n", mb->cmdline);
 
+    kprintf("[BOOT] Stack @ %p, [%d bytes]\n",__stack, 65536);
+
     set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
 
     setupVesa(mb->cmdline);
@@ -541,14 +543,39 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
     if (mb->mmap_length)
     {
-#warning "TODO: quickly scan the mmap and add set KRN_MEMLower to the first chunk < 1mb"
         tag->ti_Tag = KRN_MMAPLength;
         tag->ti_Data = mb->mmap_length;
         tag++;
         tag->ti_Tag = KRN_MMAPAddress;
         tag->ti_Data = KERNEL_OFFSET | mb->mmap_addr;
         tag++;
-        tag->ti_Tag = TAG_DONE;                
+        tag->ti_Tag = TAG_DONE;
+
+        /* Quickly locate a suitable region to use for lowpage memory */
+        unsigned long len = mb->mmap_length;
+        struct mb_mmap *mmap = (struct mb_mmap *)mb->mmap_addr;
+
+        while(len >= sizeof(struct mb_mmap))
+        {
+            if (mmap->type == MMAP_TYPE_RAM)
+            {
+                unsigned long addr = (mmap->addr_low | ((unsigned long)mmap->addr_high << 32));
+                unsigned long size = (mmap->len_low | ((unsigned long)mmap->len_high << 32));
+
+                 if (addr < 0x00100000 && (addr+size) <= 0x00100000)
+                {
+                    kprintf("[BOOT] MMAP: Using Entry %p [%d bytes] for lowpages\n", addr, size);
+                    tag->ti_Tag = KRN_MEMLower;
+                    tag->ti_Data = ((addr + size)/1024);
+                    tag++;
+                    break;
+                }
+            }
+
+            len -= mmap->size+4;
+            mmap = (struct mb_mmap *)(mmap->size + (unsigned long)mmap+4);
+        }
+        tag->ti_Tag = TAG_DONE;
     }
     else
     {
@@ -564,7 +591,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     /* Setup stage - prepare 64-bit environment */
     setup_tables();
     setup_mmu();
-    
+
     /* Load the first ELF relocable object - the kernel itself */
     kprintf("[BOOT] Loading kernel\n");
     //load_elf_file(&_binary_aros_o_start, 0); //((unsigned long long)KERNEL_HIGH_OFFSET) << 39);
