@@ -132,12 +132,15 @@ BOOL Gadgets2FontPrefs
     // FIXME: error checking
     GET(data->fped_IconsString, MUIA_String_Contents, &str);
     FontString2FontPrefs(FP(FP_WBFONT), str);
+    FP(FP_WBFONT)->fp_Type = FP_WBFONT;
     
     GET(data->fped_SystemString, MUIA_String_Contents, &str);
     FontString2FontPrefs(FP(FP_SYSFONT), str);
+    FP(FP_SYSFONT)->fp_Type = FP_SYSFONT;
     
     GET(data->fped_ScreenString, MUIA_String_Contents, &str);
     FontString2FontPrefs(FP(FP_SCREENFONT), str);
+    FP(FP_SCREENFONT)->fp_Type = FP_SCREENFONT;
     
     return TRUE;
 }
