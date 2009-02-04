@@ -98,8 +98,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[Kernel] Kernel_Init: Post-exec init\n"));
 
-    if (LIBBASE->kb_APICBase == NULL)
-        LIBBASE->kb_APICBase= core_APICGetMSRAPICBase();
+    LIBBASE->kb_APICBase = core_APICGetMSRAPICBase();
 
     D(bug("[Kernel] Kernel_Init: APIC Base @ %012p\n", LIBBASE->kb_APICBase));
 
