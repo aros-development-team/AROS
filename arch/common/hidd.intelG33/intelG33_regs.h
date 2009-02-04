@@ -92,25 +92,36 @@ MMADR+
 #define G33_RD_REG_ARRAY(a, reg, offset) ( readl((sd->Chipset.a + reg) + ((offset) << 2)) )
 #define G33_WR_REG_ARRAY(a, reg, offset, value) ( writel((value), ((sd->Chipset.a + reg) + ((offset) << 2))) )
 
-#define G33_PGETBL_SIZE_MASK        (3 << 8)
-#define G33_PGETBL_SIZE_1M          (1 << 8)
-#define G33_PGETBL_SIZE_2M          (2 << 8)
+#define MEMORY_CONTROL_ENABLED      0x0004
+#define MEMORY_MASK                 0x0001
 
-#define G33_GMCH_GMS_STOLEN_128M    (0x8 << 4)
-#define G33_GMCH_GMS_STOLEN_256M    (0x9 << 4)
+#define STOLEN_MEMORY_MASK          0x00f0
+#define G33_STOLEN_MEMORY_1M        0x0010
+#define G33_STOLEN_MEMORY_4M        0x0020
+#define G33_STOLEN_MEMORY_8M        0x0030
+#define G33_STOLEN_MEMORY_16M       0x0040
+#define G33_STOLEN_MEMORY_32M       0x0050
+#define G33_STOLEN_MEMORY_48M       0x0060
+#define G33_STOLEN_MEMORY_64M       0x0070
+#define G33_STOLEN_MEMORY_128M      0x0080
+#define G33_STOLEN_MEMORY_256M      0x0090
 
-#define GMBUSRate1MHz   3<<8
-#define GMBUSRate400KHz 2<<8
-#define GMBUSRate100KHz 0
-#define GMBUSRate50KHz  1<<8
-#define GMBUSHTimeExt   1<<7
+#define G33_GTT_MASK                0x0300
+#define G33_GTT_1M                  0x0100
+#define G33_GTT_2M                  0x0200
 
-#define GMBUS0  0x5100
-#define GMBUS1  0x5104
-#define GMBUS2  0x5108
-#define GMBUS3  0x510c
-#define GMBUS4  0x5110
-#define GMBUS5  0x5120
+#define GMBUSRate1MHz               3<<8
+#define GMBUSRate400KHz             2<<8
+#define GMBUSRate100KHz             0
+#define GMBUSRate50KHz              1<<8
+#define GMBUSHTimeExt               1<<7
+
+#define GMBUS0      0x5100
+#define GMBUS1      0x5104
+#define GMBUS2      0x5108
+#define GMBUS3      0x510c
+#define GMBUS4      0x5110
+#define GMBUS5      0x5120
 
 #define ADPA        0x61100
 #define DPMSMASK    0x0c00
