@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2007, The AROS Development Team. All rights reserved.
+    Copyright  2002-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -488,7 +488,8 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath, struct 
 		MUIA_Menuitem_Shortcut, params[1],
 		MUIA_Menuitem_Checkit, !!(params[2]&CHECKIT),
 		MUIA_Menuitem_Checked, !!(params[2]&CHECKED),
-		MUIA_Menuitem_Enabled, !((params[2]&NM_ITEMDISABLED) || (params[2]&NM_MENUDISABLED)),
+		MUIA_Menuitem_Toggle,  !!(params[2]&MENUTOGGLE),
+		MUIA_Menuitem_Enabled, !(params[2]&NM_ITEMDISABLED),
 		/* flags NYI */
 		MUIA_UserData, params[3],
 	    	TAG_DONE);
