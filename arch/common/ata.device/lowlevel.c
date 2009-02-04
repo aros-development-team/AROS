@@ -52,6 +52,7 @@
  *                                 PIO works correctly again
  * 2008-11-28  T. Wiszkowski       updated test unit ready to suit individual taste of hw manufacturers
  * 2009-01-20  J. Koivisto         Modified bus reseting scheme
+ * 2009-02-04  T. Wiszkowski       Disabled ATA debug on official builds
  */
 /*
  * TODO: 
@@ -60,11 +61,11 @@
 
 #define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
-#define DIRQ(a)
-#define DIRQ_MORE(a) 
+#define DIRQ(a) D(a)
+#define DIRQ_MORE(a) D(a) 
 #define DUMP(a) 
-#define DATA(a)
-#define DATAPI(a)
+#define DATA(a) D(a)
+#define DATAPI(a) D(a)
 #define DINIT(a) D(a)
 
 #include <aros/debug.h>
