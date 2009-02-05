@@ -95,6 +95,7 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
 
 
+    /* Intel doesn't produce any addon gfx cards so it might be pointless to check if allready found intel chip */
     if( (IS_G33(ProductID) & (sd->pciG33 == NULL)) ){
         D(bug("[G33]   found (%04x:%04x)",VendorID, ProductID));
 
@@ -105,7 +106,7 @@ AROS_UFH3(void, Enumerator,
         APTR Base0, Base1, Base2, Base3;
         IPTR sizeBase0, sizeBase1, sizeBase2, sizeBase3;
         IPTR bus, dev, sub;
-        IPTR MGGC, GMCH, sizeGTT, sizeMemory;
+        IPTR BSM, MGGC, sizeGTT, sizeMemory;
 
         OOP_Object *pciDriver;
 
@@ -150,61 +151,60 @@ AROS_UFH3(void, Enumerator,
 
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &sd->G33IntLine);
 
-        D(bug("        Bus =%x, Dev =%x, Sub =%x\n",bus, dev, sub));
-        D(bug("        Base0 =%x (%x)\n",Base0, sizeBase0));   //MMADR
-        D(bug("        Base1 =%x (%x)\n",Base1, sizeBase1));   //IOBAR
-        D(bug("        Base2 =%x (%x)\n",Base2, sizeBase2));   //GMADR
-        D(bug("        Base3 =%x (%x)\n",Base3, sizeBase3));   //GTTADR
-        D(bug("        IntLine =%d\n",sd->G33IntLine));
-
         MGGC = pciReadWord(sd, bus, dev, sub, 0x52);
-        GMCH = pciReadWord(sd, 0, 0, 0, 0x52);  //These two registers should be the same, and they are...
+        BSM = pciReadLong(sd, bus, dev, sub, 0x5c);
+        sd->Chipset.StolenMemory = (APTR *)BSM;
 
-        D(bug("        MGGC =%x\n",MGGC));
-        D(bug("        GMCH =%x\n",GMCH));
-
-        D(bug("        BSM =%x\n",pciReadLong(sd, bus, dev, sub, 0x5c)));
-
+        /* sizeBase3 is the same as sizeGTT in MGGC and allways 1MB on my system, do "sd->Chipset.sizeGTT = sizeBase3" ? */
 		switch ((MGGC & G33_GTT_MASK)) {
 			case G33_GTT_1M:
-				sizeGTT = 1;
+				sizeGTT = 1*(1024*1024);
 				break;
 			case G33_GTT_2M:
-				sizeGTT = 2;
+				sizeGTT = 2*(1024*1024);
 				break;
 		}
-        D(bug("        %x sizeGTT =%x\n",(MGGC & G33_GTT_MASK), sizeGTT));
+        sd->Chipset.sizeGTT = sizeGTT;
 
         switch ((MGGC & STOLEN_MEMORY_MASK)) {
             case G33_STOLEN_MEMORY_1M:
-                sizeMemory = 1;
+                sizeMemory = 1*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_4M:
-                sizeMemory = 4;
+                sizeMemory = 4*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_8M:
-                sizeMemory = 8;
+                sizeMemory = 8*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_16M:
-                sizeMemory = 16;
+                sizeMemory = 16*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_32M:
-                sizeMemory = 32;
+                sizeMemory = 32*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_48M:
-                sizeMemory = 48;
+                sizeMemory = 48*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_64M:
-                sizeMemory = 64;
+                sizeMemory = 64*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_128M:
-                sizeMemory = 128;
+                sizeMemory = 128*(1024*1024);
                 break;
             case G33_STOLEN_MEMORY_256M:
-                sizeMemory = 256;
+                sizeMemory = 256*(1024*1024);
                 break;
         }
-        D(bug("        %x sizeMemory =%x\n",(MGGC & STOLEN_MEMORY_MASK), sizeMemory));
+        sd->Chipset.sizeStolenMemory = sizeMemory;
+
+        D(bug("        Bus =%x, Dev =%x, Sub =%x\n",bus, dev, sub));
+        D(bug("        MMADR     =%x (%x)\n",Base0, sizeBase0));   //MMADR
+        D(bug("        IOBAR     =%x (%x)\n",Base1, sizeBase1));   //IOBAR
+        D(bug("        GMADR     =%x (%dMB)\n",Base2, sizeBase2/(1024*1024)));   //GMADR
+        D(bug("        GTTADR    =%x (%dMB)\n",Base3, sizeBase3/(1024*1024)));   //GTTADR
+        D(bug("        IRQ       =%d\n",sd->G33IntLine));
+
+        D(bug("        StolenMem =%p (%dMB)\n",sd->Chipset.StolenMemory, sd->Chipset.sizeStolenMemory/(1024*1024)));
 
         /*
           Map the PCI address space to CPU address space

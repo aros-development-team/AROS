@@ -54,6 +54,10 @@ struct Chipset {
     APTR          MMADR;
     APTR          GMADR;
     APTR          GTTADR;
+    IPTR          sizeGTT;
+
+    APTR         *StolenMemory;
+    IPTR          sizeStolenMemory;
 
     /*
       (MMADR) is used to access graphics control registers.
