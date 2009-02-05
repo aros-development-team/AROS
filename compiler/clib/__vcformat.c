@@ -265,9 +265,9 @@ const unsigned char *const __decimalpoint = ".";
 	  if(subtype=='l')
 #ifdef AROS_HAVE_LONG_LONG
             { if(lltype)
-	        buffer2=va_arg(args,long long);
+	        *buffer2=va_arg(args,long long);
               else
-	        buffer2=va_arg(args,long); }
+	        *buffer2=va_arg(args,long); }
 #else
 	    *buffer2=va_arg(args,long);
 #endif
