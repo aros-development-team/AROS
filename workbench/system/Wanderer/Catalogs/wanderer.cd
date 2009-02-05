@@ -30,25 +30,25 @@ MSG_MEN_SC_BACKDROP (//)
 B
 ;
 MSG_MEN_EXECUTE (//)
-Execute ...
+Execute...
 ;
 MSG_MEN_SC_EXECUTE (//)
 E
 ;
 MSG_MEN_SHELL (//)
-Shell ...
+Shell
 ;
 MSG_MEN_SC_SHELL (//)
 W
 ;
 MSG_MEN_GUISET (//)
-GUI Settings ...
+GUI Settings...
 ;
 MSG_MEN_ABOUT (//)
-About ...
+About...
 ;
 MSG_MEN_QUIT (//)
-Quit ...
+Quit...
 ;
 MSG_MEN_SC_QUIT (//)
 Q
@@ -57,7 +57,7 @@ MSG_MEN_WINDOW (//)
 Window
 ;
 MSG_MEN_NEWDRAW (//)
-New drawer...
+New Drawer...
 ;
 MSG_MEN_SC_NEWDRAW (//)
 N
@@ -75,13 +75,13 @@ MSG_MEN_UPDATE (//)
 Update
 ;
 MSG_MEN_CONTENTS (//)
-Select contents
+Select Contents
 ;
 MSG_MEN_SC_CONTENTS (//)
 A
 ;
 MSG_MEN_CLRSEL (//)
-Clear selection
+Clear Selection
 ;
 MSG_MEN_SC_CLRSEL (//)
 Z
@@ -96,16 +96,16 @@ MSG_MEN_VIEW (//)
 View
 ;
 MSG_MEN_ICVIEW (//)
-Icon view
+Icon View
 ;
 MSG_MEN_DCVIEW (//)
-Detail view
+Detail View
 ;
 MSG_MEN_ALLFIL (//)
-All files
+All Files
 ;
 MSG_MEN_SORTIC (//)
-Sorted
+Sort
 ;
 MSG_MEN_CLNUP (//)
 Clean Up
@@ -114,22 +114,22 @@ MSG_MEN_SC_CLNUP (//)
 U
 ;
 MSG_MEN_BYNAME (//)
-By name
+By Name
 ;
 MSG_MEN_BYDATE (//)
-By date
+By Date
 ;
 MSG_MEN_BYSIZE (//)
-By size
+By Size
 ;
 MSG_MEN_BYTYPE (//)
-By type
+By Type
 ;
 MSG_MEN_REVERSE (//)
 Reverse
 ;
 MSG_MEN_DRWFRST (//)
-Drawers first
+Drawers First
 ;
 MSG_MEN_ICON (//)
 Icon
@@ -141,19 +141,19 @@ MSG_MEN_SC_OPEN (//)
 O
 ;
 MSG_MEN_RENAME (//)
-Rename ...
+Rename...
 ;
 MSG_MEN_SC_RENAME (//)
 R
 ;
 MSG_MEN_INFO (//)
-Information ...
+Information...
 ;
 MSG_MEN_SC_INFO (//)
 I
 ;
 MSG_MEN_DELETE (//)
-Delete ...
+Delete...
 ;
 MSG_MEN_TOOLS  (//)
 Tools
@@ -171,34 +171,34 @@ MSG_USERSCREENTITLE (//)
 Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT (//)
-Format disk ...
+Format Disk...
 ;
 MSG_MEN_SHUTDOWN (//)
-Shut down ...
+Shut Down...
 ;
 MSG_SHUTDOWN_TITLE (//)
-System shut down
+System Shutdown
 ;
 MSG_SHUTDOWN_BODY (//)
 What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS (//)
-Power off|Reboot machine|Reboot AROS|*Cancel
+Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED (//)
-Selected action is not supported by your system
+The selected action is not supported by your system.
 ;
 MSG_OK (//)
-*Ok
+*OK
 ;
 MSG_EMPTY_TRASH (//)
-Empty trash
+Empty Trash
 ;
 MSG_PUT_AWAY (//)
-Put away
+Put Away
 ;
 MSG_LEAVE_OUT (//)
-Leave out
+Leave Out
 ;
 MSG_UNSNAPSHOT (//)
 Unsnapshot

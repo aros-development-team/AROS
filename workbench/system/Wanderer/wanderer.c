@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2008, The AROS Development Team. All rights reserved.
+    Copyright  2004-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include "portable_macros.h"
@@ -2913,7 +2913,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
     
             {NM_ITEM,  _(MSG_MEN_SHELL),   _(MSG_MEN_SC_SHELL)   , 0                                    , 0, (APTR) MEN_WANDERER_SHELL},
 #if defined(__AROS__)
-            {NM_ITEM,  "AROS ..."},
+            {NM_ITEM,  "AROS"},
             {NM_SUB,   _(MSG_MEN_ABOUT),   NULL                  , 0                                    , 0, (APTR) MEN_WANDERER_AROS_ABOUT},
             {NM_SUB,   _(MSG_MEN_GUISET),  NULL                  , 0                                    , 0, (APTR) MEN_WANDERER_AROS_GUISETTINGS},
 #endif
