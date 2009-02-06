@@ -49,12 +49,15 @@ struct Chipset {
     struct        Locks Locks;
 
     UWORD	      VendorID;
-    UWORD	      ProductID;
+    UWORD         ProductID;
 
     APTR          MMADR;
     APTR          GMADR;
     APTR          GTTADR;
     IPTR          sizeGTT;
+
+    APTR         *VMemory;
+    IPTR          sizeVMemory;
 
     APTR         *StolenMemory;
     IPTR          sizeStolenMemory;
@@ -110,8 +113,8 @@ struct IntelG33Base {
 
 #define XSD(cl) (&((struct IntelG33Base *)cl->UserData)->sd)
 
-#define LOCK_CS		     { ObtainSemaphore(&sd->Chipset.CSLock); }
-#define UNLOCK_CS	     { ReleaseSemaphore(&sd->Chipset.CSLock); }
+#define CSLOCK(a)   { ObtainSemaphore(&sd->Chipset.Locks.a); }
+#define CSUNLOCK(a) { ReleaseSemaphore(&sd->Chipset.Locks.a); }
 
 
 void GMBUS_Init(struct staticdata *sd);

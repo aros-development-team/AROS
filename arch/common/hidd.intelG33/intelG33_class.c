@@ -137,7 +137,7 @@ void METHOD(IntelG33, Root, Get) {
                 break;
             case aoHidd_Gfx_DPMSLevel:
                 D(bug("      (GET) DPMSLevel\n"));
-//                ObtainSemaphore(&sd->Chipset.Locks.DPMS);
+                CSLOCK(DPMS)
                 switch(((G33_RD_REGW(MMADR, ADPA)>>10)&0x3)) {
                     case 0:
                         *msg->storage = vHidd_Gfx_DPMSLevel_On;
@@ -152,7 +152,7 @@ void METHOD(IntelG33, Root, Get) {
                         *msg->storage = vHidd_Gfx_DPMSLevel_Off;
                         break;
                 }
-//                ReleaseSemaphore(&sd->Chipset.Locks.DPMS);
+                CSUNLOCK(DPMS)
                 found = TRUE;
                 break;
             default:
@@ -182,7 +182,7 @@ void METHOD(IntelG33, Root, Set) {
             switch(idx) {
                 case aoHidd_Gfx_DPMSLevel:
                     D(bug("      (SET) DPMSLevel\n"));
-                    ObtainSemaphore(&sd->Chipset.Locks.DPMS);
+                    CSLOCK(DPMS)
                     switch(tag->ti_Data) {
                         case vHidd_Gfx_DPMSLevel_On:
                             G33_WRM_REGW(MMADR, ADPA, 0x0000, DPMSMASK);
@@ -197,7 +197,7 @@ void METHOD(IntelG33, Root, Set) {
                             G33_WRM_REGW(MMADR, ADPA, 0x0c00, DPMSMASK);
                             break;
                     }
-                    ReleaseSemaphore(&sd->Chipset.Locks.DPMS);
+                    CSUNLOCK(DPMS)
                     break;
                 default:
                     D(bug("      (SET) ID = %d\n",idx));
