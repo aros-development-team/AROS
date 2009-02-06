@@ -53,7 +53,7 @@
 	(eg. *str2 is 0), then the diff part will be FALSE. I calculate
 	the diff first since a) it's more probable that the first chars
 	will be different and b) I don't need to initialize diff then. */
-    while (n && !(diff = *str1 - *str2) && *str1)
+    while (n && !(diff = *(unsigned char*) str1 - *(unsigned char*) str2) && *str1)
     {
 	/* advance both strings. I do that here, since doing it in the
 	    check above would mean to advance the strings once too often */
