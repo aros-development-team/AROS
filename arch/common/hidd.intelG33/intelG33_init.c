@@ -12,14 +12,17 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
+#include <aros/bootloader.h>
 
 #define __OOP_NOATTRBASES__
 
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <proto/bootloader.h>
 
 #include <exec/types.h>
 #include <exec/lists.h>
+#include <exec/nodes.h>
 
 #include <hidd/graphics.h>
 #include <hidd/irq.h>
@@ -205,7 +208,7 @@ AROS_UFH3(void, Enumerator,
         D(bug("        IRQ       =%d\n",sd->G33IntLine));
 
         D(bug("        StolenMem =%p (%dMB)\n",sd->Chipset.StolenMemory, sd->Chipset.sizeStolenMemory/(1024*1024)));
-
+        D(bug("        Maximum of %dMB for video memory\n",sd->Chipset.sizeVMemory/(1024*1024)));
         /*
           Map the PCI address space to CPU address space
         */
@@ -231,6 +234,36 @@ static int IntelG33_Init(LIBBASETYPEPTR LIBBASE) {
     sd->memPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
     if ((sd->memPool == NULL))
         return FALSE;
+
+    struct BootLoaderBase   *BootLoaderBase;
+    BootLoaderBase = OpenResource("bootloader.resource");
+
+    /*
+        Use default of 256MB for video memory, unless user want's less, then go down to 32MB
+    */
+    sd->Chipset.sizeVMemory = 256*(1024*1024);
+
+    if (BootLoaderBase != NULL) {
+        struct List *list;
+        struct Node *node;
+
+        list = (struct List *)GetBootInfo(BL_Args);
+        if (list) {
+            ForeachNode(list, node) {
+                if (strncmp(node->ln_Name, "iGfxMem", 7) == 0) {
+                    if (strstr(node->ln_Name, "=128MB")) {
+                        sd->Chipset.sizeVMemory = 128*(1024*1024);
+                    }
+                    if (strstr(node->ln_Name, "=64MB")) {
+                        sd->Chipset.sizeVMemory = 64*(1024*1024);
+                    }
+                    if (strstr(node->ln_Name, "=32MB")) {
+                        sd->Chipset.sizeVMemory = 32*(1024*1024);
+                    }
+                }
+            }
+        }
+    }
 
 	InitSemaphore(&sd->Chipset.Locks.DPMS);
 
