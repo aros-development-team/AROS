@@ -596,8 +596,12 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
     ULONG backdrop = LAYERBACKDROP;
     WORD  ypos = 0;
 
+    D(bug("[intuition] CreateScreenBar()\n"));
+    
 #ifdef SKINS
-    if (scr->Flags & SCREENQUIET || (GetPrivScreen(scr)->SpecialFlags & SF_InvisibleBar)) front = FALSE;
+    if (scr->Flags & SCREENQUIET || (GetPrivScreen(scr)->SpecialFlags & SF_InvisibleBar))
+        front = FALSE;
+
     if (GetPrivScreen(scr)->SpecialFlags & SF_AppearingBar)
     {
         backdrop = 0;
@@ -606,9 +610,11 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 #else
     if (scr->Flags & SCREENQUIET) front = FALSE;
 #endif
+    D(bug("[intuition] CreateScreenBar: Got initial flags\n"));
 
     if (!scr->BarLayer)
     {
+        D(bug("[intuition] CreateScreenBar: No current BarLayer\n"));
         if (front)
         {
             scr->BarLayer = CreateUpfrontHookLayer(&scr->LayerInfo,
@@ -636,10 +642,21 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 
         if (scr->BarLayer)
         {
+            D(bug("[intuition] CreateScreenBar: Adding BarLayer @ %p\n", scr->BarLayer));
+            D(bug("[intuition] CreateScreenBar: Rastport @ %p, Font @ %p\n", scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font));
             SetFont(scr->BarLayer->rp, ((struct IntScreen *)scr)->DInfo.dri.dri_Font);
+            D(bug("[intuition] CreateScreenBar: Rendering Bar  ...\n"));
             RenderScreenBar(scr, FALSE, IntuitionBase);
+            D(bug("[intuition] CreateScreenBar:    ... done\n"));
         }
-
+        else
+        {
+            D(bug("[intuition] CreateScreenBar: Failed to create BarLayer!!\n"));
+        }
+    }
+    else
+    {
+        D(bug("[intuition] CreateScreenBar: Screen already has BarLayer\n"));
     }
 }
 
@@ -669,6 +686,8 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
     struct DrawInfo *dri = &((struct IntScreen *)scr)->DInfo.dri;
     struct RastPort *rp;
 
+    D(bug("[intuition] RenderScreenBar()\n"));
+
     if (scr->BarLayer)
     {
 #if USE_NEWDISPLAYBEEP
@@ -677,14 +696,18 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 #define beeping 0
 #endif
 
+        D(bug("[intuition] RenderScreenBar: BarLayer @ %p\n", scr->BarLayer));
+
         rp = scr->BarLayer->rp;
 
+        D(bug("[intuition] RenderScreenBar: RastPort @ %p\n", rp));
         /* must lock GadgetLock to avoid deadlocks with ObtainGIRPort
            when calling refreshgadget inside layer update state */
         LockLayerInfo(scr->BarLayer->LayerInfo);
         LOCKGADGET
         LockLayer(0, scr->BarLayer);
 
+        D(bug("[intuition] RenderScreenBar: Layer locked\n"));
 #if USE_NEWDISPLAYBEEP
         beeping = (scr->Flags & BEEPING) && GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8;
 #endif
@@ -694,17 +717,25 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
         {
     	    struct sdpDrawScreenBar  msg;
 
+            D(bug("[intuition] RenderScreenBar: Begin Refresh .. \n"));
+
 	    msg.MethodID	= SDM_DRAW_SCREENBAR;
 	    msg.sdp_Layer	= scr->BarLayer;
 	    msg.sdp_RPort	= rp;
     	    msg.sdp_Flags	= 0;
 	    msg.sdp_Screen	= scr;
 	    msg.sdp_Dri		= dri;
-	    msg.sdp_UserBuffer	= ((struct IntScreen *)(scr))->DecorUserBuffer;
-    	    msg.sdp_TrueColor   = (((struct IntScreen *)scr)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
+	    if ((msg.sdp_UserBuffer = ((struct IntScreen *)(scr))->DecorUserBuffer) != NULL)
+            {
+                msg.sdp_TrueColor   = (((struct IntScreen *)(scr))->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
 
-	    DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);	
+                D(bug("[intuition] RenderScreenBar: ScrDecorObj @ %p, DecorUserBuffer @ %p\n", ((struct IntScreen *)(scr))->ScrDecorObj, ((struct IntScreen *)(scr))->DecorUserBuffer));
+
+                DoMethodA(((struct IntScreen *)(scr))->ScrDecorObj, (Msg)&msg);
+            }
         }
+
+        D(bug("[intuition] RenderScreenBar: Update gadgets .. \n"));
 
         if (scr->FirstGadget)
         {
@@ -713,18 +744,19 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
         if (refresh)
         {
+            D(bug("[intuition] RenderScreenBar: End Refresh .. \n"));
             scr->BarLayer->Flags &= ~LAYERREFRESH;
             EndUpdate(scr->BarLayer, TRUE);
         }
 
-
+        D(bug("[intuition] RenderScreenBar: Unlock Layer ..\n"));
 
         UnlockLayer(scr->BarLayer);
         UNLOCKGADGET
         UnlockLayerInfo(scr->BarLayer->LayerInfo);
 
     } /* if (scr->BarLayer) */
-
+    D(bug("[intuition] RenderScreenBar: Done \n"));
 }
 
 #endif

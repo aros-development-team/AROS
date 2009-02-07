@@ -1780,6 +1780,8 @@ static const char THIS_FILE[] = __FILE__;
         //jDc: ALL screens MUST have BarLayer!
         CreateScreenBar(&screen->Screen, IntuitionBase);
 
+        D(bug("[intuition] OpenScreen: ScreenBar = %p\n", screen->Screen.BarLayer));
+
         if (!screen->Screen.BarLayer) ok = FALSE;
 
         /*
@@ -1795,7 +1797,11 @@ static const char THIS_FILE[] = __FILE__;
             msg.NewScreen = &ns;
             msg.List = list;
 
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Calling DoSyncAction()\n"));
+
             DoSyncAction((APTR)int_openscreen,&msg.msg,IntuitionBase);
+
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: DoSyncAction returned\n"));
 
             UnlockPubScreenList();
         }
