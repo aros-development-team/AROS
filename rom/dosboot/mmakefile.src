@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 29897 2008-10-27 09:27:10Z sonic $
+include $(TOP)/config/make.cfg
+
+FILES := dosboot_init inithidds boot
+
+#MM- kernel-dosboot-includes : kernel-bootloader-$(ARCH)-$(CPU)-includes
+#MM- kernel-dosboot : includes linklibs kernel-dosboot-$(ARCH)
+
+USER_INCLUDES := -I$(TOP)/rom/devs
+
+%build_module mmake=kernel-dosboot \
+  modname=dosboot modtype=resource \
+  files=$(FILES)
