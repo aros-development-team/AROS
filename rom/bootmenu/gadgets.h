@@ -7,7 +7,7 @@
 struct BootMenuBase;
 
 struct ButtonGadget {
-	struct Gadget *gadget;
+	struct Gadget gadget;
 	Object *button;
 	WORD XY1[6];
 	WORD XY2[6];

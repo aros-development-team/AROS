@@ -94,42 +94,57 @@ static BOOL initHidds(struct BootConfig *bootcfg, struct BootMenuBase *BootMenuB
 {
 	D(bug("[BootMenu] initHidds()\n"));
 
-	OpenLibrary(bootcfg->defaultgfx.libname, 0);
-	init_gfx(bootcfg->defaultgfx.hiddname, BootMenuBase);
+	if ((OpenLibrary(bootcfg->defaultgfx.libname, 0)) != NULL)
+        {
+            if ((init_gfx(bootcfg->defaultgfx.hiddname, BootMenuBase)) == TRUE)
+            {
 
-	if (!bootcfg->defaultmouse.hiddname[0])
-		return TRUE;
+                if (!bootcfg->defaultmouse.hiddname[0])
+                {
+                        return TRUE;
+                }
 
-	OpenLibrary(bootcfg->defaultmouse.libname, 0);
-	init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase);
+                if ((OpenLibrary(bootcfg->defaultmouse.libname, 0)) != NULL)
+                {
+                    if ((init_device(bootcfg->defaultmouse.hiddname, "gameport.device", BootMenuBase)) == TRUE)
+                    {
 
-	D(bug("[BootMenu] initHidds: Hidds initialised\n"));
+                        D(bug("[BootMenu] initHidds: Hidds initialised\n"));
 
-	return TRUE;
+                        return TRUE;
+                    }
+                }
+            }
+        }
+        return FALSE;
 }
 
 static struct Gadget *createGadgets(struct BootMenuBase_intern *BootMenuBase) 
 {
-	struct Gadget *first = NULL;
+	struct Gadget *first;
 	struct ButtonGadget *last;
 
-	last = BootMenuBase->bm_MainGadgets.boot = createButton(16, 190, 280, 14, (struct Gadget *)&first, "Boot", BUTTON_BOOT, BootMenuBase);
+#warning "TOD: This is very unclean! free-up resources if we fail!"
+
+	last = BootMenuBase->bm_MainGadgets.boot = createButton(16, 190, 280, 14, NULL, "Boot", BUTTON_BOOT, BootMenuBase);
 	if (last == NULL)
 		return NULL;
 
-	last = BootMenuBase->bm_MainGadgets.bootnss = createButton(344, 190, 280, 14, last->gadget, "Boot With No Startup-Sequence", BUTTON_BOOT_WNSS, BootMenuBase);
+        first = (struct Gadget *)&last->gadget;;
+        
+	last = BootMenuBase->bm_MainGadgets.bootnss = createButton(344, 190, 280, 14, &last->gadget, "Boot With No Startup-Sequence", BUTTON_BOOT_WNSS, BootMenuBase);
 	if (last == NULL)
 		return NULL;
 
-	last = BootMenuBase->bm_MainGadgets.bootopt = createButton(180, 63, 280, 14, last->gadget, "Boot Options...", BUTTON_BOOT_OPTIONS, BootMenuBase);
+	last = BootMenuBase->bm_MainGadgets.bootopt = createButton(180, 63, 280, 14, &last->gadget, "Boot Options...", BUTTON_BOOT_OPTIONS, BootMenuBase);
 	if (last == NULL)
 		return NULL;
 
-	last = BootMenuBase->bm_MainGadgets.displayopt = createButton(180, 84, 280, 14, last->gadget, "Display Options...", BUTTON_DISPLAY_OPTIONS, BootMenuBase);
+	last = BootMenuBase->bm_MainGadgets.displayopt = createButton(180, 84, 280, 14, &last->gadget, "Display Options...", BUTTON_DISPLAY_OPTIONS, BootMenuBase);
 	if (last == NULL)
 		return NULL;
 
-	last = BootMenuBase->bm_MainGadgets.expboarddiag = createButton(180, 105, 280, 14, last->gadget, "Expansion Board Diagnostic...", BUTTON_EXPBOARDDIAG, BootMenuBase);
+	last = BootMenuBase->bm_MainGadgets.expboarddiag = createButton(180, 105, 280, 14, &last->gadget, "Expansion Board Diagnostic...", BUTTON_EXPBOARDDIAG, BootMenuBase);
 	if (last == NULL)
 		return NULL;
 
@@ -156,8 +171,12 @@ static void msgLoop(struct BootMenuBase *BootMenuBase, struct Window *win, struc
 	struct IntuiMessage *msg;
 	struct Gadget *g;
 
+	D(bug("[BootMenu] msgLoop(BootMenuBase @ %p, Window @ %p, Cfg @ %p)\n", BootMenuBase, win, bcfg));
+
 	do
 	{
+            if (win->UserPort)
+            {
 		WaitPort(win->UserPort);
 		while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 		{
@@ -176,8 +195,13 @@ static void msgLoop(struct BootMenuBase *BootMenuBase, struct Window *win, struc
 					break;
 				}
 			}
-			ReplyMsg(&msg->ExecMessage);
+			ReplyMsg((struct Message *)msg);
 		}
+            }
+            else
+            {
+                D(bug("[BootMenu] msgLoop: Window lacks a userport!\n"));
+            }
 	} while (exit == FALSE);
 	while ((msg=(struct IntuiMessage *)GetMsg(win->UserPort)))
 		ReplyMsg(&msg->ExecMessage);
@@ -224,9 +248,13 @@ static BOOL initScreen(struct BootMenuBase_intern *BootMenuBase, struct BootConf
 			if ((BootMenuBase->bm_Window = OpenWindowTagList(NULL, wintags)) != NULL)
 			{
 				D(bug("[BootMenu] initScreen: Window opened @ %p\n", first));
+                                D(bug("[BootMenu] initScreen: Window RastPort @ %p\n", BootMenuBase->bm_Window->RPort));
 				SetAPen(BootMenuBase->bm_Window->RPort, 2);
+                                D(bug("[BootMenu] initScreen: SetAPen 2\n"));
 				Move(BootMenuBase->bm_Window->RPort, 215, 20);
+                                D(bug("[BootMenu] initScreen: Move(d) to 215, 20\n"));
 				Text(BootMenuBase->bm_Window->RPort, "AROS Early Startup Control", 26);
+                                D(bug("[BootMenu] initScreen: Early Startup text displayed\n"));
 #warning "TODO: Remove the the following text?"
 				SetAPen(BootMenuBase->bm_Window->RPort, 1);
 				Move(BootMenuBase->bm_Window->RPort, 225, 40);
@@ -300,12 +328,12 @@ static BOOL buttonsPressed(struct BootMenuBase *BootMenuBase, struct DefaultHidd
 	return success;
 }
 
-int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
+int bootmenu_Init(LIBBASETYPEPTR LIBBASE)
 {
 	struct BootLoaderBase *BootLoaderBase = NULL;
 	struct DefaultHidd *kbd = &LIBBASE->bm_BootConfig.defaultkbd;
-
-	D(bug("[BootMenu] bootmenu_EarlyPrep()\n"));
+        int bmi_RetVal = (int)FALSE;
+	D(bug("[BootMenu] bootmenu_Init()\n"));
 
 	LIBBASE->bm_Force = FALSE; /* Set FALSE here to be sure .. */
 
@@ -328,7 +356,7 @@ int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
 						{
 							if (0 == strcmp(node->ln_Name,"bootmenu"))
 							{
-								D(bug("[BootMenu] Forced with bootloader argument\n"));
+								D(bug("[BootMenu] bootmenu_Init: Forced with bootloader argument\n"));
 								LIBBASE->bm_Force = TRUE;
 							}
 						}
@@ -336,70 +364,39 @@ int bootmenu_EarlyPrep(LIBBASETYPEPTR LIBBASE)
 				}
 
 				if (!kbd->hiddname[0]) {
-					D(bug("[BootMenu] This system uses no keyboard HIDD\n"));
-					return TRUE;
+					D(bug("[BootMenu] bootmenu_Init: This system uses no keyboard HIDD\n"));
+					bmi_RetVal = (int)TRUE;
 				}
 				if (OpenLibrary(kbd->libname, 0) != NULL)
 				{
 					if (init_device(kbd->hiddname, "keyboard.device", LIBBASE))
 					{
-						return TRUE;
+						bmi_RetVal = (int)TRUE;
 					}
 				}
 			}
 		}
 	}
-	return FALSE;
-}
-
-#warning "TODO: THis call should dissapear and be handled via RTF_AFTERDOS"
-/*****************************************************************************
-
-	NAME */
-	AROS_LH0(void, bootmenu_CheckAndDisplay,
-
-/*  SYNOPSIS */
-
-/*  LOCATION */
-	LIBBASETYPEPTR, LIBBASE, 1, Bootmenu)
-
-/*  FUNCTION
-
-	INPUTS
-
-	RESULT
-
-	NOTES
-		Temporary call used to check if the bootmenu should be displayed, and display it.
-		 this should be removed at a later time and handled via RTF_AFTERDOS.
-
-	EXAMPLE
-
-	BUGS
-
-	SEE ALSO
-
-	INTERNALS
-
-*****************************************************************************/
-{
-	AROS_LIBFUNC_INIT
-
-	D(bug("[BootMenu] bootmenu_CheckAndDisplay()\n"));
-
 	/* check keyboard */
-	if (LIBBASE->bm_Force || buttonsPressed(LIBBASE, &LIBBASE->bm_BootConfig.defaultkbd))
+	if ((bmi_RetVal) && (LIBBASE->bm_Force || buttonsPressed(LIBBASE, &LIBBASE->bm_BootConfig.defaultkbd)))
 	{
-		D(kprintf("Entering Boot Menu ...\n"));
+		D(kprintf("[BootMenu] bootmenu_Init: Entering Boot Menu ...\n"));
 		/* init mouse + gfx */
 		if (initHidds(&LIBBASE->bm_BootConfig, LIBBASE))
 		{
-			D(bug("[BootMenu] bootmenu_CheckAndDisplay: Hidds Initialised\n"));
+			D(bug("[BootMenu] bootmenu_Init: Hidds Initialised\n"));
 			initScreen(LIBBASE, &LIBBASE->bm_BootConfig);
 		}
+                else
+                {
+                    D(bug("[BootMenu] bootmenu_Init: Hidds Failed to initialise!\n"));
+                }
 	}
+        else
+        {
+            D(bug("[BootMenu] bootmenu_Init: Menu not requested ..\n"));
+        }
+	return bmi_RetVal;
+}
 
-	AROS_LIBFUNC_EXIT
-} /* bootmenu_CheckAndDisplay */
-
-ADD2INITLIB(bootmenu_EarlyPrep, 0)
+ADD2INITLIB(bootmenu_Init, 0)
