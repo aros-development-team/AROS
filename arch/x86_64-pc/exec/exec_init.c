@@ -91,10 +91,9 @@ const struct __text Resident Exec_resident =
 
 /** Screen/Serial Debug **/
 
-#if (AROS_SERIAL_DEBUG > 0)
+
 extern void Exec_SerialRawIOInit();
 extern void Exec_SerialRawPutChar(UBYTE chr);
-#endif
 
 void scr_RawPutChars(char *, int);
 void clr();
@@ -105,6 +104,8 @@ char tab[512];
 #undef rkprintf
 #endif
 #define rkprintf(x...) scr_RawPutChars(tab, snprintf(tab, 510, x))
+
+ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
 
 void _aros_not_implemented(char *string) {}
 
@@ -129,89 +130,94 @@ void exec_InsertMemory(struct TagItem *msg, uintptr_t lower, uintptr_t upper)
     
     uintptr_t kernLow = krnGetTagData(KRN_KernelLowest, 0, msg);
     uintptr_t kernHigh = krnGetTagData(KRN_KernelHighest, 0, msg);
-    
+
+    /* Check System Memory bounds */
+    if (lower < 0x2000)
+    {
+        if (upper < 0x2000)
+            return;
+
+        lower = 0x2000;
+    }
+
     if (lower >= 0x100000000L)
       return;
-    
+
     if (upper >= 0x100000000L)
       upper = 0xffffffff;
-    
-    /* Scenario 1: Kernel area outside the affected area. */
-    if (kernHigh < lower || kernLow > upper)
-    {
-        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
-    
-        if (lower < 0x01000000)
-            AddMemList(upper-lower+1,
-                       MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
-                       -10,
-                       (APTR)lower,
-                       (STRPTR)exec_chipname);
-        else
-            AddMemList(upper-lower+1,
-                       MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
-                       0,
-                       (APTR)lower,
-                       (STRPTR)exec_fastname);
 
-    }
-    /* Scenario 2: Kernel area completely inside the memory region */
-    else if (kernLow >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh <= upper)
+    if ((upper - lower) < 0x1000)
+        return;
+
+    /* Scenario 1: Kernel and ExecBase areas outside the affected range. */
+    if ((kernHigh < lower || kernLow > upper) && 
+        ((SysBase + sizeof(struct ExecBase)) < lower || (SysBase - negsize) > upper))
     {
         rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
     
         if (lower < 0x01000000)
+        {
             AddMemList(upper-lower+1,
                        MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
                        -10,
                        (APTR)lower,
                        (STRPTR)exec_chipname);
+        }
         else
+        {
             AddMemList(upper-lower+1,
                        MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
                        0,
                        (APTR)lower,
                        (STRPTR)exec_fastname);
-        rkprintf("[exec]    rejecting %012p - %012p\n", kernLow, kernHigh);
-        AllocAbs(kernHigh-kernLow+1, kernLow);
+        }
+        return;
+    }
+
+    /* Scenario 2: Kernel area completely inside the memory region */
+    if (kernLow >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh <= upper)
+    {
+        rkprintf("[exec]    Splitting %012p - %012p\n", lower, upper);
+
+        exec_InsertMemory(msg, lower, kernLow - 1);
+        exec_InsertMemory(msg, kernHigh + 1, upper);
+        return;
     }
     /* Scenario 3: Kernel in lower portion of memory region */
     else if (kernLow <= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh <= upper)
     {
-        lower = (kernHigh + 4095) & ~4095;
-        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
-            
-                if (lower < 0x01000000)
-                    AddMemList(upper-lower+1,
-                               MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
-                               -10,
-                               (APTR)lower,
-                               (STRPTR)exec_chipname);
-                else
-                    AddMemList(upper-lower+1,
-                               MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
-                               0,
-                               (APTR)lower,
-                               (STRPTR)exec_fastname);
+        lower = (kernHigh + 4096) & ~4095;
+
+        rkprintf("[exec]    Adding Upper region %012p - %012p\n", lower, upper);
+
+        exec_InsertMemory(msg, lower, upper);
+        return;
     }
-    /* Scenario 3: Kernel in upper portion of memory region */
+    /* Scenario 4: Kernel in upper portion of memory region */
     else if (kernLow >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && kernHigh >= upper)
     {
-        upper = kernLow & ~4095;
-        rkprintf("[exec]    Adding %012p - %012p\n", lower, upper);
-            
-                if (lower < 0x01000000)
-                    AddMemList(upper-lower+1,
-                               MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
-                               -10,
-                               (APTR)lower,
-                               (STRPTR)exec_chipname);
-                else
-                    AddMemList(upper-lower+1,
-                               MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
-                               0,
-                               (APTR)lower,
-                               (STRPTR)exec_fastname);
+        upper = (kernLow - 1) & ~4095;
+
+        rkprintf("[exec]    Adding Lower region %012p - %012p\n", lower, upper);
+
+        exec_InsertMemory(msg, lower, upper);
+        return;
+    }
+    /* Scenario 5: ExecBase completely inside the memory region */
+    else if ((SysBase - negsize) >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct ExecBase)) <= upper)
+    {
+#warning "TODO: Check if sysbase falls within the region being added"
+        // Add 2 chunks ?
+    }
+    /* Scenario 6: ExecBase in lower portion of memory region */
+    else if ((SysBase - negsize) <= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct ExecBase)) <= upper)
+    {
+        // Adjust ..
+    }
+    /* Scenario 7: ExecBase in upper portion of memory region */
+    else if ((SysBase - negsize) >= (lower+sizeof(struct MemHeader)+sizeof(struct MemChunk)) && (SysBase + sizeof(struct ExecBase)) >= upper)
+    {
+        // Adjust ..
     }
 }
 
@@ -220,8 +226,9 @@ int exec_main(struct TagItem *msg, void *entry)
     struct ExecBase *SysBase;
     int i;
     struct vbe_mode *mode;
+    uintptr_t addr_lower = (uintptr_t)(krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
 
-    if ((mode = krnGetTagData(KRN_VBEModeInfo, 0, msg)))
+    if ((mode = (struct vbe_mode *)krnGetTagData(KRN_VBEModeInfo, 0, msg)))
     {
         vesa_init(mode->x_resolution, mode->y_resolution, 
             mode->bits_per_pixel, (void*)mode->phys_base);
@@ -232,14 +239,25 @@ int exec_main(struct TagItem *msg, void *entry)
 
     /* Prepare the exec base */
 
-    ULONG   negsize = LIB_VECTSIZE;             /* size of vector table */
     void  **fp      = Exec_FuncTable; //LIBFUNCTABLE;  /* pointer to a function in the table */
 
     rkprintf("[exec] Preparing the ExecBase...\n");
 
     /* Calculate the size of the vector table */
     while (*fp++ != (APTR) -1) negsize += LIB_VECTSIZE;
-    SysBase = (struct ExecBase *)(0x1000 + negsize);
+
+    if (addr_lower != 0)
+    {
+        addr_lower = ((addr_lower - (negsize + sizeof(struct ExecBase))) & ~PAGE_MASK);
+        SysBase = (struct ExecBase *)(addr_lower + negsize);
+        krnSetTagData(KRN_MEMLower, ((addr_lower - 1)/1024), msg);
+        addr_lower = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+    }
+    else
+    {
+        /* Warn that theres no lowmem pages to load execbase into? */
+        SysBase = (struct ExecBase *)(0x1000 + negsize);
+    }
 
     rkprintf("[exec] Clearing ExecBase [SysBase = %012p]\n", SysBase);
 
@@ -347,8 +365,6 @@ int exec_main(struct TagItem *msg, void *entry)
         rkprintf("[exec] Registering MMAP regions (MMAP Length = %d)\n", len);
         mmap = (struct mb_mmap *)(krnGetTagData(KRN_MMAPAddress, 0, msg));
 
-        uintptr_t addr_lower = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
-
         while(len >= sizeof(struct mb_mmap))
         {
             if (mmap->type == MMAP_TYPE_RAM)
@@ -364,13 +380,6 @@ int exec_main(struct TagItem *msg, void *entry)
                     rkprintf("[exec]   Fixup entry for lowpages [size %012p -> ", size);
                     size = addr_lower - addr;
                     rkprintf("%012p]\n", size);
-                }
-
-                if (addr < (uintptr_t)SysBase)
-                {
-                    tmp = ((uintptr_t)SysBase +sizeof(struct ExecBase)+ 4095) & ~4095;
-                    size -= (tmp-addr);
-                    addr = tmp;
                 }
 
                 rkprintf("[exec]   %012p - %012p\n", addr, addr+size-1);
@@ -400,7 +409,6 @@ int exec_main(struct TagItem *msg, void *entry)
 
         uintptr_t chip_start, chip_end, fast_start, fast_end, tmp;
 
-        uintptr_t addr_lower = krnGetTagData(KRN_MEMLower, 0, msg);
         uintptr_t addr_upper = krnGetTagData(KRN_MEMUpper, 0, msg);
 
         if (addr_lower > 0)
@@ -616,10 +624,25 @@ int exec_main(struct TagItem *msg, void *entry)
 
     Permit();
 
-#if (AROS_SERIAL_DEBUG > 0)
-    SetFunction(&SysBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
-    SetFunction(&SysBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
-#endif
+    struct TagItem *tag = krnFindTagItem(KRN_CmdLine, msg);
+    if (tag)
+    {
+        STRPTR cmd;
+        ULONG temp;
+        cmd = stpblk(tag->ti_Data);
+        while(cmd[0])
+        {
+            /* Split the command line */
+            temp = strcspn(cmd," ");
+            if (strncmp(cmd, "DEBUG", 5)==0)
+            {
+                SetFunction(&SysBase->LibNode, -84*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawIOInit, Exec));
+                SetFunction(&SysBase->LibNode, -86*LIB_VECTSIZE, AROS_SLIB_ENTRY(SerialRawPutChar, Exec));
+                break;
+            }
+            cmd = stpblk(cmd+temp);
+        }
+    }
 
     /* Scan for valid RomTags */
     SysBase->ResModules = exec_RomTagScanner(msg);
