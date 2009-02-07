@@ -66,9 +66,11 @@ struct ButtonGadget *createButton
 		button->button = NewObjectA(NULL, FRBUTTONCLASS, tags);
 		if (button->button)
 		{
-			button->gadget = prev->NextGadget;
-			button->gadget->NextGadget = NULL;
-			return button;
+                    if (prev)
+                    {
+			prev->NextGadget = &button->gadget;
+                    }
+                    return button;
 		}
 		FreeMem(button, sizeof(struct ButtonGadget));
 	}
