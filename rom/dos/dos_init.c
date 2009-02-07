@@ -25,8 +25,6 @@
 #include LC_LIBDEFS_FILE
 #include "dos_intern.h"
 
-extern void DOSBoot(struct ExecBase *, struct DosLibrary *);
-
 static int DosInit(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("DosInit\n"));
@@ -122,13 +120,8 @@ static int DosInit(LIBBASETYPEPTR LIBBASE)
 	    AddLibrary((struct Library *)LIBBASE);
 
 	    /* This is where we start the RTC_AFTERDOS residents */
+bug("[DOS] DosInit: InitCode(RTF_AFTERDOS)\n");
 	    InitCode(RTF_AFTERDOS, 0);
-
-	    /*
-		Here we have to get the first node of the mountlist,
-		and we try and boot from it, (assign it to SYS:).
-	    */
-	    DOSBoot(SysBase, DOSBase);
 
 	    /* We now restart the multitasking	- this is done
 	       automatically by RemTask() when it switches.
