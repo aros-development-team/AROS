@@ -28,10 +28,11 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-misc-kobj \
 #MM	kernel-bootloader-pc-i386-kobj \
 #MM	kernel-bootmenu-kobj \
+#MM	kernel-dosboot-kobj \
 #MM     workbench-libs-partition-kobj \
 #MM     kernel-fs-afs-kobj \
 #MM     workbench-hidd-graphics-kobj \
-#MM     kernel-cpu-pc-i386-kobj \
+##MM     kernel-cpu-pc-i386-kobj \
 #MM	kernel-pc-i386-drivers \
 #MM     kernel-contrib-necessary-pc-i386
 
@@ -43,15 +44,15 @@ USELIBS	:= hiddgraphicsstubs hiddstubs amiga arossupport rom arosm autoinit libi
 LIBS    := $(addprefix -l,$(USELIBS))
 DEPLIBS := $(addprefix $(LIBDIR)/lib,$(addsuffix .a,$(USELIBS)))
 
-KRSRCS  := bootloader battclock bootmenu misc
+KRSRCS  := battclock bootloader bootmenu dosboot misc
 KLIBS   := exec boot aros dos graphics utility intuition keymap \
       	   mathieeesingbas expansion oop layers workbench cybergraphics \
 	   partition
 KDEVS   := timer input keyboard console gameport ata trackdisk
 KHNDLRS := con nil packet amberram cdrom afs sfs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc
-#Disabled RSRC cpu
-#Disabled HIDD vmwaregfx usbuhci
+##Disabled RSRC cpu
+##Disabled HIDD vmwaregfx usbuhci
 
 KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _resource.o,$(KRSRCS) )) \
          $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
