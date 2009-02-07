@@ -86,7 +86,7 @@ const struct Resident LDDemon_resident =
     RTF_AFTERDOS,
     VERSION_NUMBER,
     NT_PROCESS,
-    -125,
+    -123,
     (STRPTR)name,
     (STRPTR)&version[6],
     AROS_SLIB_ENTRY(Init,LDDemon)
