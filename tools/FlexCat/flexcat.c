@@ -142,7 +142,7 @@ char    prefs_sddir[MAXPATHLEN] = "\0";
 #endif
 
 #ifndef ULONG
-#define ULONG unsigned long
+#define ULONG unsigned int
 #endif
 
 //|
@@ -1488,7 +1488,7 @@ int ScanCTFile(char *ctfile)
 */
 int CatPuts(FILE *fp, char *str, int padbytes, int countnul)
 {
-  unsigned long reallen, virtuallen, chunklen, swapped_long;
+  unsigned int reallen, virtuallen, chunklen, swapped_long;
   int bytesread;
   char *oldstr;
   char bytes[10];
