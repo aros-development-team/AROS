@@ -60,7 +60,8 @@
 
     while (*str)
     {
-	if (*str == c)
+        /* those casts are needed to compare chars > 127 */
+	if ((unsigned char)*str == (unsigned char*)c)
 	    p = (char *)str;
 
 	str ++;
