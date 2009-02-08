@@ -1533,10 +1533,10 @@ static LONG create_softlink(struct emulbase * emulbase,
     struct filehandle *fh;
     struct DosList    *dl;
     char *path;
-    char *volname;
-    char *unixram = "/Ram Disk";
+    char volname[32];
     char *unixvolname;
     char *unixfullpath;
+    LONG pos;
     
     if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
@@ -1545,17 +1545,10 @@ static LONG create_softlink(struct emulbase * emulbase,
     		return ERROR_INVALID_RESIDENT_LIBRARY; /* I guess this is very unlikely */
 
     /* ref is an absolute path with volume, we have to translate them to the real unix file
-       path - first split it to path part and volume part */
-    path = strchr(ref, ':') + 1;
-    if(!path)
-    	return ERROR_INVALID_COMPONENT_NAME; /* sorry, we need volume name */
-
-    /* copy volume name to separate array */
-    volname = (char *)emul_malloc(emulbase, (IPTR) path - (IPTR) ref);
-    if(!volname)
-    	return ERROR_NO_FREE_STORE;
-    strncpy(volname, ref, (IPTR) path - (IPTR) ref - 1);
-    volname[(IPTR) path - (IPTR) ref - 1] = '\0';
+       path, first get the volume part. */
+    if((pos = SplitName(ref, ':', volname, 0, sizeof(volname)-1)) == -1)
+	return ERROR_INVALID_COMPONENT_NAME;
+    path = &ref[pos];
 
     /* due to the current _open implementation we can't really handle anything outside
        filesystem (for example Ram Disk), so the only supported Volume is VOLNAME.
@@ -1567,19 +1560,15 @@ static LONG create_softlink(struct emulbase * emulbase,
     dl = LockDosList(LDF_VOLUMES | LDF_READ);
     dl = FindDosEntry(dl, volname, LDF_VOLUMES);
     UnLockDosList(LDF_VOLUMES | LDF_READ);
-    /* we don't need volume name anymore, free it here to ease further error handling */
-    emul_free(emulbase, volname);
+
     if (dl == NULL)
     	return ERROR_OBJECT_NOT_FOUND;
 
-    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC);
+    fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
     if(!fh)
       return ERROR_NO_FREE_STORE;
 
-    fh->pathname = NULL; /* just to make sure... */
-    fh->DIR      = NULL;
-    
-   	unixvolname = ((struct filehandle *)((struct DeviceList*)dl)->dl_Ext.dl_AROS.dn_Unit)->volume;
+    unixvolname = ((struct filehandle *)((struct DeviceList*)dl)->dl_Ext.dl_AROS.dn_Unit)->volume;
     unixfullpath = (char *)emul_malloc(emulbase, strlen(unixvolname) + strlen(path) + 2);
     if(!unixfullpath)
     {
