@@ -3,8 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := dosboot_init inithidds boot
 
-#MM- kernel-dosboot-includes : kernel-bootloader-$(ARCH)-$(CPU)-includes
-#MM- kernel-dosboot : includes linklibs kernel-dosboot-$(ARCH)
+#MM- kernel-dosboot-includes : kernel-bootloader-includes kernel-bootmenu-includes
+#MM- kernel-dosboot : includes linklibs kernel-bootloader-includes kernel-bootmenu-includes
 
 USER_INCLUDES := -I$(TOP)/rom/devs
 
