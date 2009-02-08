@@ -1,0 +1,15 @@
+# $Id: mmakefile.src 29897 2008-10-27 09:27:10Z sonic $
+include $(TOP)/config/make.cfg
+
+#MM- kernel-dosboot-mingw32 : kernel-dosboot-hosted
+#MM- kernel-dosboot-linux   : kernel-dosboot-hosted
+#MM- kernel-dosboot-darwin  : kernel-dosboot-hosted
+#MM- kernel-dosboot-freebsd : kernel-dosboot-hosted
+
+USER_INCLUDES	:= -I$(GENINCDIR)
+USER_CFLAGS	:= -I$(TOP)/rom/dosboot -I..
+%build_archspecific \
+  mainmmake=kernel-dosboot maindir=rom/dosboot \
+  arch=hosted files="boot"
+
+%common

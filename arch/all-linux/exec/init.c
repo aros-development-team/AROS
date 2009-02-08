@@ -76,8 +76,10 @@ extern const struct Resident
     Nil_ROMTag,
     Ram_ROMTag,
     PCI_ROMTag,
-    PCILx_ROMTag;
-
+    PCILx_ROMTag,
+    Dosboot_ROMTag;
+//    Packet_ROMTag,
+//    Bootmenu_ROMTag;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
@@ -127,12 +129,14 @@ static const struct Resident *romtagList[] =
     */
     &boot_resident,                     /* ColdStart,  -50       */
     &Dos_ROMTag,                        /* None,           -120  */
-    &LDDemon_resident,                  /* AfterDOS,   -125  */
-    &Con_ROMTag,                        /* AfterDOS,   -126  */
-    &Nil_ROMTag,                        /* AfterDOS,   -127      */
-    &Ram_ROMTag,                        /* AfterDOS,   -128      */
+    &LDDemon_resident,                  /* AfterDOS,   -123  */
+    &Con_ROMTag,                        /* AfterDOS,   -124  */
+//    &Packet_ROMTag,                        /* AfterDOS,   -124  */
+    &Nil_ROMTag,                        /* AfterDOS,   -125      */
+    &Ram_ROMTag,                        /* AfterDOS,   -125      */
 //    &Partition_ROMTag,                     
-
+//    &Bootmenu_ROMTag,                   /* AfterDOS,   -127      */
+    &Dosboot_ROMTag,                    /* AfterDOS,   -128      */
     NULL
 };
 
