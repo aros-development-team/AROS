@@ -22,7 +22,7 @@ KHIDDS  += linux
 	KHIDDS	+= pci pcilinux
     endif
 endif
-KRSRCS  := battclock hostlib
+KRSRCS  := battclock dosboot hostlib
 ifeq ($(ENABLE_DBUS),1)
 KLIBS	+= dbus
 endif

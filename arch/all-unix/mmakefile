@@ -7,6 +7,7 @@
 #MM     intuition-$(GFXSYSTEM)                        \
 #MM     kernel-fs-emul-kobj                           \
 #MM     contrib-amberram-kobj                         \
+#MM     kernel-dosboot-kobj                         \
 #MM     workbench-hidd-unix-parallel-kobj             \
 #MM     workbench-hidd-unix-serial-kobj
 

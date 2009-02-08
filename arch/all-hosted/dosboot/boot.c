@@ -1,6 +1,6 @@
 /*
     Copyright  1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+    $Id: boot.c 29897 2008-10-27 09:27:10Z sonic $
 
     Desc: Boot your operating system.
     Lang: english
@@ -33,7 +33,7 @@ struct emulbase
     APTR eb_stderr;
 };
 
-void boot(struct ExecBase *SysBase, BOOL hidds_ok)
+void __dosboot_Boot(struct ExecBase *SysBase, BOOL hidds_ok)
 {
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. We do this by calling the submain()
@@ -67,6 +67,8 @@ void boot(struct ExecBase *SysBase, BOOL hidds_ok)
     BPTR sseq = NULL;
     LONG rc = RETURN_FAIL;
 
+    D(bug("[DOSBoot.hosted] __dosboot_Boot()\n")); 
+
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if( DOSBase == NULL )
     {
@@ -81,7 +83,7 @@ void boot(struct ExecBase *SysBase, BOOL hidds_ok)
     Forbid();
     emulbase = (struct emulbase *)FindName(&SysBase->DeviceList, "emul.handler");
     Permit();
-    D(bug("[boot] emulbase = 0x%08lX\n", emulbase));
+    D(bug("[DOSBoot.hosted] __dosboot_Boot: emulbase = 0x%08lX\n", emulbase));
 
     if( emulbase == NULL )
     {
@@ -110,16 +112,16 @@ void boot(struct ExecBase *SysBase, BOOL hidds_ok)
     if(Output())
     	Close(Output());
 
-    D(bug("[boot] Selecting input and output for DOS\n"));
+    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting input and output for DOS\n"));
     SelectInput(MKBADDR(fh_stdin));
     SelectOutput(MKBADDR(fh_stdout));
     SelectError(MKBADDR(fh_stdout));
 
-    D(bug("[boot] Selecting output for AROSSupport\n"));
+    D(bug("[DOSBoot.hosted] __dosboot_Boot: Selecting output for AROSSupport\n"));
     ((struct AROSSupportBase *)(SysBase->DebugAROSBase))->StdOut = fh_stdout;
 
     if (hidds_ok) {
-        D(bug("[SubMain] Opening boot shell\n"));
+        D(bug("[DOSBoot.hosted] __dosboot_Boot: Opening boot shell\n"));
         cis  = Open("CON:20/20///Boot Shell/AUTO", FMF_READ);
     } else
         PutStr("Failed to load system HIDDs\n");
@@ -128,14 +130,14 @@ void boot(struct ExecBase *SysBase, BOOL hidds_ok)
         struct ExpansionBase *ExpansionBase;
         BOOL opensseq = TRUE;
 
-	D(bug("[SubMain] Boot shell opened\n"));
+	D(bug("[DOSBoot.hosted] __dosboot_Boot: Boot shell opened\n"));
         if ((ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0)) != NULL)
         {
             opensseq = !(ExpansionBase->Flags & EBF_DOSFLAG);
             CloseLibrary((struct Library *)ExpansionBase);
         }
 
-        D(bug("[SubMain] Open Startup Sequence = %d\n", opensseq));
+        D(bug("[DOSBoot.hosted] __dosboot_Boot: Open Startup Sequence = %d\n", opensseq));
 
         if (opensseq)
         {
