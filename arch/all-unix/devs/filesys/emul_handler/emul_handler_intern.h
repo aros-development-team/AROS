@@ -55,6 +55,6 @@ static LONG err_u2a(void);
 static LONG makefilename(struct emulbase *, char **dest, STRPTR path, STRPTR filename);
 
 /* Actions */
-static LONG read_softlink(struct emulbase *, struct filehandle *, STRPTR, ULONG);
+static LONG read_softlink(struct emulbase *, struct filehandle *, STRPTR, STRPTR, ULONG*);
 
 #endif /* __EMUL_HANDLER_INTERN_H */

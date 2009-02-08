@@ -17,6 +17,9 @@
 
 #include <aros/host-conf.h>
 
+/* To enable O_NOFOLLOW */
+#define _GNU_SOURCE
+
 /* POSIX includes */
 #define timeval sys_timeval
 #include <unistd.h>
@@ -708,7 +711,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 	ret = makefilename(emulbase, &fh->name, (*handle)->name, name);
 	if (!ret)
 	{
-	    if(!stat(*fh->name?fh->name:".",&st))
+	    if(!lstat(*fh->name?fh->name:".",&st))
 	    {
 		if(S_ISREG(st.st_mode))
 		{
@@ -731,10 +734,14 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
 			*handle=fh;
 			return 0;
 		    }
+		}else if(S_ISLNK(st.st_mode))
+		{
+		    /* file is a symbolic link */
+		    ret = ERROR_IS_SOFT_LINK;
 		}else
 		  ret = ERROR_OBJECT_WRONG_TYPE;
 	    }
-	    /* stat() failed. If ret is unset, generate it from errno. */
+	    /* lstat() failed. If ret is unset, generate it from errno. */
 	    if (!ret)
 		ret = err_u2a();
 
@@ -783,7 +790,7 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
 	if (!ret)
 	{
 	    fh->type=FHD_FILE;
-	    flags=mode2flags(mode);
+	    flags=mode2flags(mode) | O_NOFOLLOW;
 	    prot = prot_a2u((ULONG)protect);
 	    fh->fd=open(fh->name,flags,prot);
 	    if (fh->fd != -1)
@@ -791,7 +798,10 @@ static LONG open_file(struct emulbase *emulbase, struct filehandle **handle,STRP
 		*handle=fh;
 		return 0;
 	    }
-	    ret=err_u2a();
+	    if(errno == ELOOP)
+		ret = ERROR_IS_SOFT_LINK;
+	    else
+		ret=err_u2a();
 	    emul_free(emulbase, fh->name);
 	}
 	FreeMem(fh, sizeof(struct filehandle));
@@ -1284,6 +1294,8 @@ static LONG examine(struct emulbase *emulbase,
 		} else {
 		   ead->ed_Type = ST_USERDIR;
 		}
+	    } else if(S_ISLNK(st.st_mode)) {
+		ead->ed_Type    = ST_SOFTLINK;
 	    } else {
 	        ead->ed_Type 	= ST_FILE;
 	    }
@@ -1372,9 +1384,9 @@ static LONG examine_next(struct emulbase *emulbase,
     
     strcat(name, dir->d_name);
     
-    if (stat(name, &st))
+    if (lstat(name, &st))
     {
-	D(bug("stat() failed for %s\n", name));
+	D(bug("lstat() failed for %s\n", name));
 	      
 	emul_free(emulbase, name);
 
@@ -1393,6 +1405,10 @@ static LONG examine_next(struct emulbase *emulbase,
     if (S_ISDIR(st.st_mode))
     {
 	FIB->fib_DirEntryType = ST_USERDIR; /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/
+    }
+    else if(S_ISLNK(st.st_mode))
+    {
+	FIB->fib_DirEntryType = ST_SOFTLINK;
     }
     else
     {
@@ -1531,60 +1547,17 @@ static LONG create_softlink(struct emulbase * emulbase,
 {
     LONG error=0L;
     struct filehandle *fh;
-    struct DosList    *dl;
-    char *path;
-    char volname[32];
-    char *unixvolname;
-    char *unixfullpath;
-    LONG pos;
     
     if (!check_volume(*handle, emulbase)) return ERROR_OBJECT_NOT_FOUND;
-
-    if (DOSBase == NULL)
-    	if(!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 41)))
-    		return ERROR_INVALID_RESIDENT_LIBRARY; /* I guess this is very unlikely */
-
-    /* ref is an absolute path with volume, we have to translate them to the real unix file
-       path, first get the volume part. */
-    if((pos = SplitName(ref, ':', volname, 0, sizeof(volname)-1)) == -1)
-	return ERROR_INVALID_COMPONENT_NAME;
-    path = &ref[pos];
-
-    /* due to the current _open implementation we can't really handle anything outside
-       filesystem (for example Ram Disk), so the only supported Volume is VOLNAME.
-       It may change in the future. */
-    if (strcmp(volname, VOLNAME) != 0)
-    	return ERROR_INVALID_COMPONENT_NAME;
-
-    /* now get DeviceList structure containing information about given volume */
-    dl = LockDosList(LDF_VOLUMES | LDF_READ);
-    dl = FindDosEntry(dl, volname, LDF_VOLUMES);
-    UnLockDosList(LDF_VOLUMES | LDF_READ);
-
-    if (dl == NULL)
-    	return ERROR_OBJECT_NOT_FOUND;
 
     fh = AllocMem(sizeof(struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
     if(!fh)
       return ERROR_NO_FREE_STORE;
 
-    unixvolname = ((struct filehandle *)((struct DeviceList*)dl)->dl_Ext.dl_AROS.dn_Unit)->volume;
-    unixfullpath = (char *)emul_malloc(emulbase, strlen(unixvolname) + strlen(path) + 2);
-    if(!unixfullpath)
-    {
-        FreeMem(fh, sizeof(struct filehandle));
-        return ERROR_NO_FREE_STORE;    	
-    }
-    unixfullpath[0] = '\0';
-    strcat(unixfullpath, unixvolname);
-    strcat(unixfullpath, "/");
-    /* we don't have to convert the path, as it's absolute (no // to convert to ..) */
-    strcat(unixfullpath, path);
-    
     error = makefilename(emulbase, &fh->name, (*handle)->name, name);
     if (!error)
     {
-        if (!symlink(unixfullpath, fh->name))
+        if (!symlink(ref, fh->name))
             *handle = fh;
         else
             error = err_u2a();
@@ -1593,7 +1566,6 @@ static LONG create_softlink(struct emulbase * emulbase,
         error = ERROR_NO_FREE_STORE;
         FreeMem(fh, sizeof(struct filehandle));
     }
-    emul_free(emulbase, unixfullpath);
 
     return error;
 }
@@ -1628,17 +1600,42 @@ static LONG rename_object(struct emulbase * emulbase,
 
 static LONG read_softlink(struct emulbase *emulbase,
                           struct filehandle *fh,
+                          STRPTR link,
                           STRPTR buffer,
-                          ULONG size)
+                          ULONG *size)
 {
-	bug("read_softlink volume %s\n", fh->volume);
+    LONG ret = 0;
+    char *filename = NULL;
+
     if (!check_volume(fh, emulbase)) return ERROR_OBJECT_NOT_FOUND;
 
-	bug("read_softlink name %s\n", fh->name);
-    if (readlink(fh->name, buffer, size-1) == -1)
-        return err_u2a();
+    ret = makefilename(emulbase, &filename, fh->name, link);
+    if (!ret)
+    {
+	int len;
+	if ((len = readlink(filename, buffer, *size)) == -1)
+	    ret = err_u2a();
+	else
+	{
+	    if(len == *size)
+	    {
+		/* Buffer was too small */
+		*size = -2;
+	    }
+	    else
+	    {
+		/* All ok, store size and add terminating nil */
+		*size = len;
+		buffer[len] = '\0';
+	    }
+	}
 
-    return 0L;
+	emul_free(emulbase, filename);
+    }
+    else
+	ret = ERROR_NO_FREE_STORE;
+
+    return ret;
 }
 
 /*********************************************************************************************/
@@ -2210,9 +2207,10 @@ AROS_LH1(void, beginio,
 	
     case FSA_READ_SOFTLINK:
 	error = read_softlink(emulbase,
-			      (struct filehandle *)iofs->IOFS.io_Unit,
+		              (struct filehandle *)iofs->IOFS.io_Unit,
+			      iofs->io_Union.io_READ_SOFTLINK.io_Filename,
 			      iofs->io_Union.io_READ_SOFTLINK.io_Buffer,
-			      iofs->io_Union.io_READ_SOFTLINK.io_Size);
+			      &iofs->io_Union.io_READ_SOFTLINK.io_Size);
 	break;
 	
     case FSA_DELETE_OBJECT:
