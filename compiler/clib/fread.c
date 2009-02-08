@@ -73,7 +73,7 @@
 
 	cnt = 0;
     }
-    else if (cnt == 0)
+    else if (cnt == 0 || cnt < nblocks)
     {
 	stream->flags |= _STDIO_EOF;
     }
