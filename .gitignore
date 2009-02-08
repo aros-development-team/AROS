@@ -191,8 +191,8 @@
 # /arch/all-freebsd/exec/
 /arch/all-freebsd/exec/mmakefile
 
-# /arch/all-hosted/dos/
-/arch/all-hosted/dos/mmakefile
+# /arch/all-hosted/dosboot/
+/arch/all-hosted/dosboot/mmakefile
 
 # /arch/all-hosted/hidd/sdl/
 /arch/all-hosted/hidd/sdl/mmakefile
@@ -1135,6 +1135,9 @@
 
 # /rom/dos/catalogs/
 /rom/dos/catalogs/mmakefile
+
+# /rom/dosboot/
+/rom/dosboot/mmakefile
 
 # /rom/exec/
 /rom/exec/*.s
