@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-x86_64.iso
 
 #MM bootiso-pc-x86_64 :	kernel-bootstrap-x86_64		  \
-#MM			kernel-package-x86_64		  \
+#MM			kernel-package-pc-x86_64		  \
 #MM                     AROS-pc-x86_64-drivers            \
 #MM                     arch-common-boot-generatebootsig  \
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64
@@ -32,7 +32,7 @@ endif
 
 $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 
-$(TARGET_ISO): $(BINDIR)/boot/kernel.pkg $(BINDIR)/boot/kernel
+$(TARGET_ISO): $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/boot/kernel-pc-x86_64
 	%mkdirs_q $(AROSDIR)/S
 	@$(CP) $(TOP)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
 	@$(MKDIR) -p "$(DISTDIR)"

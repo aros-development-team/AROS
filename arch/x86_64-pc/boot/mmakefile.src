@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-package-x86_64: \
+#MM kernel-package-pc-x86_64: \
 #MM	linklibs-clib \
 #MM	kernel-aros \
 #MM	kernel-bootloader-pc-x86_64 \
@@ -49,13 +49,13 @@ MODULES := \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS)))
 
-kernel-package-x86_64:
+kernel-package-pc-x86_64:
 	$(RM) -rf $(BINDIR)/.pkg
 	%mkdirs_q $(BINDIR)/.pkg
 	@mv $(MODULES) $(BINDIR)/.pkg/
 	# Dirty hack to link graphics.library with cybergraphics (they use the same graphics_driver!!!)
 	$(TARGET_LD) -r $(BINDIR)/.pkg/graphics.library $(KOBJSDIR)/cybergraphics_library.o -o $(BINDIR)/.pkg/gfx.library
 	$(RM) $(BINDIR)/.pkg/graphics.library
-	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg  
+	$(TOP)/tools/package/pkg c $(BINDIR)/boot/kernel-pc-x86_64.pkg $(BINDIR)/.pkg  
 	$(RM) -rf $(BINDIR)/.pkg
 
