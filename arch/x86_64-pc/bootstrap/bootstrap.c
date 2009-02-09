@@ -116,6 +116,7 @@ static void setup_tables()
     GDT.super_cs.g=1;
     
     GDT.super_ds.type=0x12;	/* data segment */
+    GDT.super_ds.dpl=0;		/* supervisor level */
     GDT.super_ds.p=1;		/* present */
     GDT.super_ds.limit_low=0xffff;
     GDT.super_ds.limit_high=0xf;
@@ -205,7 +206,7 @@ static void setup_mmu()
  */
 int leave_32bit_mode()
 {
-    unsigned int v1, v2, v3, v4;
+    unsigned int v1 = 0, v2 = 0, v3 = 0, v4 = 0;
     int retval = 0;
     asm volatile ("lgdt %0"::"m"(GDT_sel));
 
@@ -523,7 +524,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     struct multiboot *mb = (struct multiboot *)addr;/* Multiboot structure from GRUB */
     int module_count = 0;
     struct module *mod = (struct module *)__stack;  /* The list of modules at the bottom of stack */
-    
+
     clr();
 //    kprintf("[BOOT] Entered AROS Bootstrap @ %p [asm stub @ %p].\n", __bootstrap, kernel_bootstrap);
         kprintf("[BOOT] Entered AROS Bootstrap @ %p\n", __bootstrap);
@@ -532,9 +533,9 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
     kprintf("[BOOT] Stack @ %p, [%d bytes]\n",__stack, 65536);
 
     set_base_address((void *)KERNEL_TARGET_ADDRESS, __bss_track);
+    change_kernel_address(mb->cmdline);
 
     setupVesa(mb->cmdline);
-    change_kernel_address(mb->cmdline);
 
     tag->ti_Tag = KRN_CmdLine;
     tag->ti_Data = KERNEL_OFFSET | (unsigned long long)(mb->cmdline);
@@ -553,7 +554,7 @@ static void __attribute__((used)) __bootstrap(unsigned int magic, unsigned int a
 
         /* Quickly locate a suitable region to use for lowpage memory */
         unsigned long len = mb->mmap_length;
-        struct mb_mmap *mmap = (struct mb_mmap *)mb->mmap_addr;
+        struct mb_mmap *mmap = (struct mb_mmap *)(KERNEL_OFFSET | mb->mmap_addr);
 
         while(len >= sizeof(struct mb_mmap))
         {

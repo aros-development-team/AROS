@@ -6,12 +6,12 @@ KOBJS 		:=
 FILES		:= bootstrap screen elfloader support
 
 #MM kernel-bootstrap-x86_64: kernel-kernel-pc-x86_64-kobj kernel-exec-kobj kernel-utility-kobj kernel-expansion-kobj kernel-oop-kobj kernel-hidd-kobj kernel-bootstrap-pc-x86_64-drivers
-kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-x86_64
+kernel-bootstrap-x86_64: $(BINDIR)/boot/kernel-pc-x86_64 $(TARGETDIR)/vesa.bin.o $(BINDIR)/boot/aros-pc-x86_64
 
 setup-pc-x86_64 :
 	%mkdirs_q $(BINDIR)/boot $(OSGENDIR)/boot $(TARGETDIR)
 
-$(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o
+$(BINDIR)/boot/aros-pc-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o
 	$(HOST_LD) -melf_i386 -N -e kernel_bootstrap -Map $(OSGENDIR)/boot/aros.map -T ldscript.lds \
 		-o $@ $< $(KOBJS) 
 	@strip --strip-unneeded -R .note -R .comment $@
@@ -19,7 +19,7 @@ $(BINDIR)/boot/aros-x86_64: $(KOBJSDIR)/bootstrap.o $(TARGETDIR)/vesa.bin.o
 $(KOBJSDIR)/bootstrap.o: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/vesa.bin.o
 	$(HOST_LD) -melf_i386 -r $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/vesa.bin.o -o $@
 
-$(BINDIR)/boot/kernel: setup-pc-x86_64 $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/smpboot.bin.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
+$(BINDIR)/boot/kernel-pc-x86_64: setup-pc-x86_64 $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/smpboot.bin.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o 
 	$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T kernel.lds -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/smpboot.bin.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/utility_library.o $(KOBJSDIR)/expansion_library.o $(KOBJSDIR)/oop_library.o $(KOBJSDIR)/hiddclass_hidd.o $(KOBJSDIR)/irq_hidd.o $(KOBJSDIR)/kbd_hidd.o $(KOBJSDIR)/mouse_hidd.o -L$(LIBDIR) -lautoinit -llibinit -lamiga -larossupport -lrom -larosm -lhiddstubs
 
 $(TARGETDIR)/aros.bin.o: setup-pc-x86_64 $(KOBJSDIR)/kernel.o $(foreach f, $(KOBJS), $(KOBJSDIR)/$(f).o)
