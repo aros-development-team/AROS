@@ -35,9 +35,6 @@ struct IntrNode {
     void                *in_HandlerData2;
 };
 
-#define STACK_SIZE      8192
-#define PAGE_SIZE	    0x1000
-
 #define SC_CAUSE        0
 #define SC_DISPATCH     1
 #define SC_SWITCH       2
