@@ -4,6 +4,8 @@
 */
 #include <inttypes.h>
 
+#include <proto/kernel.h>
+
 #include "exec_intern.h"
 #include "etask.h"
 
@@ -125,7 +127,7 @@ IPTR core_APICGetMSRAPICBase()
 
     _apic_base = 0xfee00000;
 
-    rkprintf("[Kernel] core_APICGetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base);
+    D(rkprintf("[Kernel] core_APICGetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
     return _apic_base;
 }
 
@@ -134,7 +136,7 @@ UBYTE core_APICGetID(IPTR _APICBase)
     UBYTE _apic_id;
     
     _apic_id = (*(volatile uint32_t*)(_APICBase + 0x20) & 0xFF000000) >> 24;
-    rkprintf("[Kernel] core_APICGetID: APIC ID %d\n", _apic_id);
+    D(rkprintf("[Kernel] core_APICGetID: APIC ID %d\n", _apic_id));
     return _apic_id;
 }
 
@@ -171,7 +173,7 @@ void core_APICInitialise(IPTR _APICBase)
     APIC_VAL = 0x700;
     *(volatile uint32_t*)(_APICBase + 0x350) = APIC_VAL;
 
-    /* only the BP should see the LINT1 NMI signal.  */
+    /* only the BSP should see the LINT1 NMI signal.  */
     APIC_VAL = 0x400;
     *(volatile uint32_t*)(_APICBase + 0x360) = APIC_VAL;
 
