@@ -163,7 +163,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
     struct TagItem *tag;
     IPTR _APICBase;
     UBYTE _APICID;
-    BOOL _EnableDebug = FALSE;
+    UBYTE _EnableDebug = 0;
 
     /* Enable fxsave/fxrstor */ 
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -172,7 +172,6 @@ int kernel_cstart(struct TagItem *msg, void *entry)
         rkprintf (screen output) _may_ also be directed to the serial output */
     if (!(_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
     {
-        struct ExecBase *SysBase = NULL;
         BOOL            _DoDebug = FALSE;
 
         tag = krnFindTagItem(KRN_CmdLine, msg);
@@ -187,7 +186,7 @@ int kernel_cstart(struct TagItem *msg, void *entry)
                 temp = strcspn(cmd," ");
                 if (strncmp(cmd, "DEBUG", 5)==0)
                 {
-                    _EnableDebug = TRUE;
+                    _EnableDebug = 1;
                     if (cmd[5] == '=')
                     {
                         /* Check if our debug is requested .. */
@@ -246,37 +245,30 @@ int kernel_cstart(struct TagItem *msg, void *entry)
                 cmd = stpblk(cmd+temp);
             }
         }
-        if (_EnableDebug)
+        if (_EnableDebug == 1)
         {
+            struct ExecBase *SysBase = NULL;
             Exec_SerialRawIOInit();
         }
         _kern_initflags |= KERNBOOTFLAG_SERDEBUGCONFIGURED;
     }
 
     rkprintf("[Kernel] kernel_cstart: Jumped into kernel.resource @ %p [asm stub @ %p].\n", kernel_cstart, start64);
-
+//        while(1) asm volatile("hlt");
     _APICBase = core_APICGetMSRAPICBase();
     _APICID = core_APICGetID(_APICBase);
     rkprintf("[Kernel] kernel_cstart: launching on APIC ID %d, base @ %p\n", _APICID, _APICBase);
 
     if (!(_kern_initflags & KERNBOOTFLAG_BOOTCPUSET))
     {
-        if ((_EnableDebug) && (_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
+        if ((_EnableDebug == 1) && (_kern_initflags & KERNBOOTFLAG_SERDEBUGCONFIGURED))
         {
             rkprintf("[Kernel] kernel_cstart: Serial Debug initialised [port 0x%x, speed=%d, flags=0x%x].\n", __serial_rawio_port, __serial_rawio_speed, (__serial_rawio_databits | __serial_rawio_parity | __serial_rawio_stopbits));
         }
         _kern_early_BOOTAPICID = _APICID;
         _kern_initflags |= KERNBOOTFLAG_BOOTCPUSET;
 
-        /* Prepair GDT */
-        core_SetupGDT();
-
-        /* Set TSS, GDT, LDT and MMU up */
-        core_CPUSetup(_APICBase);
-        core_SetupIDT();
-        core_SetupMMU();
-
-        tag = krnFindTagItem(KRN_CmdLine, msg);
+         tag = krnFindTagItem(KRN_CmdLine, msg);
         if (tag)
         {
             if (tag->ti_Data != (IPTR)_kern_early_BOOTCmdLine) {
@@ -314,9 +306,11 @@ int kernel_cstart(struct TagItem *msg, void *entry)
 #warning "TODO: Allocate Trampoline page better"
 
         IPTR lowpages = (krnGetTagData(KRN_MEMLower, 0, msg) * 1024);
+
+        rkprintf("[Kernel] kernel_cstart: lowpages = %p\n", lowpages);
         if ((lowpages > 0x2000) && ((lowpages - 0x2000) > PAGE_SIZE))
         {
-            _Kern_APICTrampolineBase = (lowpages - PAGE_SIZE) & 0xFF000;
+            _Kern_APICTrampolineBase = (lowpages - PAGE_SIZE) & ~PAGE_MASK;
             lowpages = (_Kern_APICTrampolineBase - 1)/1024;
 
             krnSetTagData(KRN_MEMLower, lowpages, msg);
@@ -330,6 +324,14 @@ int kernel_cstart(struct TagItem *msg, void *entry)
                         _binary_smpbootstrap_size);
 #endif
         }
+
+        /* Prepair GDT */
+        core_SetupGDT();
+
+        /* Set TSS, GDT, LDT and MMU up */
+        core_CPUSetup(_APICBase);
+        core_SetupIDT();
+        core_SetupMMU();
 
         addr = krnGetTagData(KRN_KernelBase, 0, msg);
         len = krnGetTagData(KRN_KernelHighest, 0, msg) - addr;
@@ -432,6 +434,7 @@ void core_SetupGDT()
     GDT.super_cs.g=1;
 
     GDT.super_ds.type=0x12;     /* data segment */
+    GDT.super_ds.dpl=0;         /* supervisor level */
     GDT.super_ds.p=1;           /* present */
     GDT.super_ds.limit_low=0xffff;
     GDT.super_ds.limit_high=0xf;
@@ -558,7 +561,7 @@ IPTR krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagL
 {
     struct TagItem *ti = 0;
 
-    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
+    if (tagList && ((ti = krnFindTagItem(tagValue, tagList)) != 0))
         return ti->ti_Data;
 
     return defaultVal;
@@ -568,7 +571,7 @@ void krnSetTagData(Tag tagValue, intptr_t newtagValue, const struct TagItem *tag
 {
     struct TagItem *ti = 0;
 
-    if (tagList && (ti = krnFindTagItem(tagValue, tagList)))
+    if (tagList && ((ti = krnFindTagItem(tagValue, tagList)) != 0))
         ti->ti_Data = newtagValue;
 }
 
