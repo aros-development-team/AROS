@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function memchr().
 */
-
-#include <proto/exec.h>
 
 /*****************************************************************************
 
@@ -20,16 +18,16 @@
 	size_t	     n)
 
 /*  FUNCTION
-	Copy the contents of a part of memory to another. Both areas
-	must not overlap. If they do, use memmove().
+        Locate the first occurence of c which is converted to an unsigned
+        char in the first n bytes of the memory pointed to by mem.
 
     INPUTS
-	dest - The first byte of the destination area in memory
-	src - The first byte of the source area in memory
-	count - How many bytes to copy
+        mem - pointer to memory that is searched for c
+          c - the character to search for
+          n - how many bytes to search through starting at mem
 
     RESULT
-	dest.
+        pointer to the located byte or null if c was not found
 
     NOTES
 
@@ -43,11 +41,12 @@
 
 ******************************************************************************/
 {
-    const char * ptr = (char *)mem;
+    /* unsigned char to compare chars > 127 */
+    const unsigned char * ptr = (unsigned char *)mem;
 
     while (n)
     {
-	if (*ptr == c)
+        if (*ptr == (unsigned char)c)
 	    return ((void *)ptr);
 
 	n --;
@@ -56,4 +55,3 @@
 
     return NULL;
 } /* memchr */
-
