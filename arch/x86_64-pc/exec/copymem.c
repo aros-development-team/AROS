@@ -117,19 +117,19 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
 D(bug("[Exec] CopyMem(%p, %p, %d)\n", src, dst, size));
 
     __asm__ __volatile__ (
-                "  prefetchnta (%0)\n"
-                "  prefetchnta 32(%0)\n"
-                "  prefetchnta 64(%0)\n"
-                "  prefetchnta 96(%0)\n"
-                "  prefetchnta 128(%0)\n"
-                "  prefetchnta 160(%0)\n"
-                "  prefetchnta 192(%0)\n"
-                "  prefetchnta 256(%0)\n"
-                "  prefetchnta 288(%0)\n"
+                "    prefetchnta (%0)\n"
+                "    prefetchnta 32(%0)\n"
+                "    prefetchnta 64(%0)\n"
+                "    prefetchnta 96(%0)\n"
+                "    prefetchnta 128(%0)\n"
+                "    prefetchnta 160(%0)\n"
+                "    prefetchnta 192(%0)\n"
+                "    prefetchnta 256(%0)\n"
+                "    prefetchnta 288(%0)\n"
                 :
                 : "r" (src) );
 
-    if ((lcnt > 0) && (size > (SSE_REG_SIZE * 4)))
+    if ((lcnt > 0) && ((size > (SSE_REG_SIZE * 4)) || ((size == (SSE_REG_SIZE * 4)) && (((IPTR)src & SSE_REG_MASK) == 0))))
     {
 D(bug("[Exec] CopyMem: Using SSE Copy.\n"));
         if ((IPTR)src & SSE_REG_MASK)
@@ -158,16 +158,16 @@ D(bug("[Exec] CopyMem: Aligning src to %d byte boundary (%d bytes) .. \n", SSE_R
 D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
 
                 __asm__ __volatile__ (
-                        "prefetchnta 320(%0)\n"
-                        "prefetchnta 352(%0)\n"
-                        "movaps (%0), %%xmm0\n"
-                        "movaps 16(%0), %%xmm1\n"
-                        "movaps 32(%0), %%xmm2\n"
-                        "movaps 48(%0), %%xmm3\n"
-                        "movntps %%xmm0, (%1)\n"
-                        "movntps %%xmm1, 16(%1)\n"
-                        "movntps %%xmm2, 32(%1)\n"
-                        "movntps %%xmm3, 48(%1)\n"
+                        "    prefetchnta 320(%0)\n"
+                        "    prefetchnta 352(%0)\n"
+                        "    movaps (%0), %%xmm0\n"
+                        "    movaps 16(%0), %%xmm1\n"
+                        "    movaps 32(%0), %%xmm2\n"
+                        "    movaps 48(%0), %%xmm3\n"
+                        "    movntps %%xmm0, (%1)\n"
+                        "    movntps %%xmm1, 16(%1)\n"
+                        "    movntps %%xmm2, 32(%1)\n"
+                        "    movntps %%xmm3, 48(%1)\n"
                         :
                         : "r" (src), "r" (dst)
                         : "memory");
@@ -175,16 +175,31 @@ D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
                 src += (SSE_REG_SIZE * 4);
                 dst += (SSE_REG_SIZE * 4);
             }
-            /* 
-                FENCE Memory to re-order again since movntq is weakly-ordered ?
-            */
-            MEMFENCE;
-            /*
-                enable FPU use ?
-            */
-            MMENABLE;
         }
     }
+/*    else if ((lcnt == 1) && (size == (SSE_REG_SIZE * 4)))
+    {
+D(bug("[Exec] CopyMem: Using SSE Copy.\n"));
+D(bug("[Exec] CopyMem: SSE Unaligned-Copy %p to %p.\n", src, dst));
+
+        __asm__ __volatile__ (
+            "    prefetchnta 320(%0)\n"
+            "    prefetchnta 352(%0)\n"
+            "    movups (%0), %%xmm0\n"
+            "    movups 16(%0), %%xmm1\n"
+            "    movups 32(%0), %%xmm2\n"
+            "    movups 48(%0), %%xmm3\n"
+            "    movntps %%xmm0, (%1)\n"
+            "    movntps %%xmm1, 16(%1)\n"
+            "    movntps %%xmm2, 32(%1)\n"
+            "    movntps %%xmm3, 48(%1)\n"
+            :
+            : "r" (src), "r" (dst)
+            : "memory");
+
+            src += (SSE_REG_SIZE * 4);
+            dst += (SSE_REG_SIZE * 4);
+    } */
     else
     {
         remainingbytes = size;
@@ -195,6 +210,15 @@ D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
 D(bug("[Exec] CopyMem: Copy remaining %d bytes.\n", remainingbytes));
         __small_memcpy(src, dst, remainingbytes);
     }
+
+    /* 
+        FENCE Memory to re-order again since movntq is weakly-ordered ?
+    */
+    MEMFENCE;
+    /*
+        enable FPU use ?
+    */
+    MMENABLE;
 
     D(bug("[Exec] CopyMem: Finished.\n"));
 
