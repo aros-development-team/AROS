@@ -20,7 +20,6 @@
 
 #define __byte_memcpy(src,dst,size)                             \
 {                                                               \
-    register unsigned long int dummy;                           \
     __asm__ __volatile__(                                       \
         "    rep; movsb"                                        \
         : "=&D" (dst), "=&S" (src), "=&c" (dummy)               \
@@ -30,7 +29,6 @@
 
 #define __long_memcpy(src,dst,size)                             \
 {                                                               \
-    register unsigned long int dummy;                           \
     __asm__ __volatile__(                                       \
         "    rep ; movsl" "\n\t"                                \
         "    testb $2,%b4" "\n\t"                               \
@@ -47,6 +45,7 @@
 
 static __inline__ void __small_memcpy(const void * src, void * dst, ULONG size)
 {
+    register unsigned long int dummy;
 //    if( size < 4 ) {
 D(bug("[Exec] __byte_memcpy(%p, %p, %d)\n", src, dst, size));
 
@@ -104,8 +103,6 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
 {
     AROS_LIBFUNC_INIT
 
-    register unsigned long int dummy;
-
     if (!size) return;
 
     ULONG lcnt = (size >> 6);                   /* size / 64       */
@@ -129,7 +126,7 @@ D(bug("[Exec] CopyMem(%p, %p, %d)\n", src, dst, size));
                 :
                 : "r" (src) );
 
-    if ((lcnt > 0) && ((size > (SSE_REG_SIZE * 4)) || ((size == (SSE_REG_SIZE * 4)) && (((IPTR)src & SSE_REG_MASK) == 0))))
+    if ((lcnt > 0) && ((size > (SSE_REG_SIZE * 4)) || ((size == (SSE_REG_SIZE * 4)) && (((IPTR)src & SSE_REG_MASK) == 0) && (((IPTR)dst & SSE_REG_MASK) == 0))))
     {
 D(bug("[Exec] CopyMem: Using SSE Copy.\n"));
         if ((IPTR)src & SSE_REG_MASK)
@@ -144,6 +141,13 @@ D(bug("[Exec] CopyMem: Aligning src to %d byte boundary (%d bytes) .. \n", SSE_R
             remainingbytes = (size & 0x3F);     /* remaining bytes */
             src += alignsize;
             dst += alignsize;
+
+
+        }
+        if (!((((IPTR)src & SSE_REG_MASK) == 0) && (((IPTR)dst & SSE_REG_MASK) == 0)))
+        {
+            lcnt = 0;
+            remainingbytes = size;
         }
         /*
             # SRC is aligned on 16-byte boundary.
