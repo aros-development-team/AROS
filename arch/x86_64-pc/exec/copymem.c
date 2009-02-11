@@ -145,36 +145,33 @@ D(bug("[Exec] CopyMem: Aligning src to %d byte boundary (%d bytes) .. \n", SSE_R
             src += alignsize;
             dst += alignsize;
         }
-        if (lcnt > 0)
+        /*
+            # SRC is aligned on 16-byte boundary.
+            We can use movaps instead of movups since we meet
+            the alignment constraints (a general-protection fault
+            would be triggered otherwise)
+        */
+        for( ; lcnt > 0; lcnt--)
         {
-            /*
-                # SRC is aligned on 16-byte boundary.
-                We can use movaps instead of movups since we meet
-                the alignment constraints (a general-protection fault
-                would be triggered otherwise)
-            */
-            for( ; lcnt > 0; lcnt--)
-            {
 D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
 
-                __asm__ __volatile__ (
-                        "    prefetchnta 320(%0)\n"
-                        "    prefetchnta 352(%0)\n"
-                        "    movaps (%0), %%xmm0\n"
-                        "    movaps 16(%0), %%xmm1\n"
-                        "    movaps 32(%0), %%xmm2\n"
-                        "    movaps 48(%0), %%xmm3\n"
-                        "    movntps %%xmm0, (%1)\n"
-                        "    movntps %%xmm1, 16(%1)\n"
-                        "    movntps %%xmm2, 32(%1)\n"
-                        "    movntps %%xmm3, 48(%1)\n"
-                        :
-                        : "r" (src), "r" (dst)
-                        : "memory");
+            __asm__ __volatile__ (
+                    "    prefetchnta 320(%0)\n"
+                    "    prefetchnta 352(%0)\n"
+                    "    movaps (%0), %%xmm0\n"
+                    "    movaps 16(%0), %%xmm1\n"
+                    "    movaps 32(%0), %%xmm2\n"
+                    "    movaps 48(%0), %%xmm3\n"
+                    "    movntps %%xmm0, (%1)\n"
+                    "    movntps %%xmm1, 16(%1)\n"
+                    "    movntps %%xmm2, 32(%1)\n"
+                    "    movntps %%xmm3, 48(%1)\n"
+                    :
+                    : "r" (src), "r" (dst)
+                    : "memory");
 
-                src += (SSE_REG_SIZE * 4);
-                dst += (SSE_REG_SIZE * 4);
-            }
+            src += (SSE_REG_SIZE * 4);
+            dst += (SSE_REG_SIZE * 4);
         }
     }
 /*    else if ((lcnt == 1) && (size == (SSE_REG_SIZE * 4)))
