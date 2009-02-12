@@ -294,8 +294,8 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
     {
         if (obj->type == 0) 
         {
-            string = CombineString("Really delete file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s", 
+                _(MSG_REQU_DELETE_FILE_S), obj->file, _(MSG_REQU_DELETE_FILE_M), obj->spath, _(MSG_REQU_DELETE_FILE_E) );
         }
         else if (obj->type == 1) 
         {
@@ -315,14 +315,14 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
     } 
     else 
     {
-        if (obj->type == 0) string = CombineString("Really delete drawer\n\033b%s\033n ?", obj->spath);
+        if (obj->type == 0) string = CombineString("%s \033b%s\033n %s", _(MSG_REQU_DELETE_DRAWER_S), obj->spath, _(MSG_REQU_DELETE_DRAWER_E) );
         else if (obj->type == 1) string = CombineString("Do you wish to unprotect drawer\n\033b%s\033n ?", obj->spath);
         else if (obj->type == 3) string = CombineString("Can't access drawer\n\033b%s", obj->spath);
     }
 
     if (string) 
     {
-        if (obj->type == 0) ret = AskChoiceCentered("Delete Requester:", string, "_Yes|Yes to _All|_No|No _to ALL", 0);
+        if (obj->type == 0) ret = AskChoiceCentered(_(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0);
         else if (obj->type == 1) ret = AskChoiceCentered("Protection Requester:", string, "_Unprotect|Unprotect _All|_No|No _to ALL", 0);
         else if (obj->type == 2) ret = AskChoiceCentered("Overwrite Requester:", string, "_Overwrite|Overwrite _All|_No|No _to ALL", 0);
         else ret = AskChoiceCentered("Overwrite Requester:", string, "_Skip|_Abort", 0);
@@ -2919,7 +2919,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
 #endif
             {NM_ITEM,  _(MSG_MEN_QUIT) ,   _(MSG_MEN_SC_QUIT)    , 0                                    , 0, (APTR) MEN_WANDERER_QUIT},
             {NM_ITEM,  _(MSG_MEN_SHUTDOWN), NULL                 , 0			                        , 0, (APTR) MEN_WANDERER_SHUTDOWN},
-            {NM_TITLE,     _(MSG_MEN_WINDOW),  NULL, 0},
+            {NM_TITLE, _(MSG_MEN_WINDOW),  NULL, 0},
             {NM_ITEM,  _(MSG_MEN_UPDATE),  NULL                  , 0                                    , 0, (APTR) MEN_WINDOW_UPDATE},
             {NM_ITEM, NM_BARLABEL},
             {NM_ITEM, _(MSG_MEN_CONTENTS), _(MSG_MEN_SC_CONTENTS), 0                                    , 0, (APTR) MEN_WINDOW_SELECT},

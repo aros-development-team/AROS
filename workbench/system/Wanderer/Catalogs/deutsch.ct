@@ -45,7 +45,7 @@ B
 ;
 MSG_MEN_EXECUTE
 Befehl ausführen ...
-; Execute...
+; Execute ...
 ;
 MSG_MEN_SC_EXECUTE
 E
@@ -53,7 +53,7 @@ E
 ;
 MSG_MEN_SHELL
 Shell öffnen
-; Shell...
+; Shell ...
 ;
 MSG_MEN_SC_SHELL
 W
@@ -61,15 +61,15 @@ W
 ;
 MSG_MEN_GUISET
 Benutzeroberfläche einstellen ...
-; GUI Settings...
+; GUI Settings ...
 ;
 MSG_MEN_ABOUT
 Über
-; About...
+; About ...
 ;
 MSG_MEN_QUIT
 Wanderer beenden ...
-; Quit...
+; Quit ...
 ;
 MSG_MEN_SC_QUIT
 Q
@@ -81,7 +81,7 @@ Fenster
 ;
 MSG_MEN_NEWDRAW
 Neue Schublade anlegen ...
-; New Drawer...
+; New Drawer ...
 ;
 MSG_MEN_SC_NEWDRAW
 N
@@ -193,7 +193,7 @@ O
 ;
 MSG_MEN_RENAME
 Umbenennen ...
-; Rename...
+; Rename ...
 ;
 MSG_MEN_SC_RENAME
 R
@@ -201,7 +201,7 @@ R
 ;
 MSG_MEN_INFO
 Informationen anzeigen ...
-; Information...
+; Information ...
 ;
 MSG_MEN_SC_INFO
 I
@@ -209,7 +209,7 @@ I
 ;
 MSG_MEN_DELETE
 Löschen ...
-; Delete...
+; Delete ...
 ;
 MSG_MEN_TOOLS
 Hilfsmittel
@@ -254,25 +254,53 @@ Die gewählte Funktion wird von Ihrem System nicht unterstützt
 ;
 MSG_EMPTY_TRASH (//)
 Papierkorb leeren
-;Empty Trash
+; Empty Trash
 ;
 MSG_MEN_FORMAT (//)
 Disk formatieren ...
-;Format disk ...
+; Format disk ...
 ;
 MSG_PUT_AWAY (//)
 Zurücklegen
-;Put Away
+; Put Away
 ;
 MSG_LEAVE_OUT (//)
 Auslagern
-;Leave Out
+; Leave Out
 ;
 MSG_UNSNAPSHOT (//)
 Position freigeben
-;Unsnapshot
+; Unsnapshot
 ;
 MSG_SNAPSHOT (//)
 Fixieren
-;Snapshot
+; Snapshot
+;
+MSG_REQU_DELETE (//)
+Löschen ...
+; Delete ...
+;
+MSG_REQU_DELETE_YESNO (//)
+_Ja|Ja, _alle|_Nein|Nein, alles _behalten
+; _Yes|Yes to _All|_No|No _to all
+;
+MSG_REQU_DELETE_DRAWER_S (//)
+Schublade
+; Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E (//)
+wirklich löschen?
+; ?
+;
+MSG_REQU_DELETE_FILE_S (//)
+Soll die Datei
+; Really delete file
+;
+MSG_REQU_DELETE_FILE_M (//)
+in Schublade
+; located in
+;
+MSG_REQU_DELETE_FILE_E (//)
+wirklich gelöscht werden?
+; ?
 ;
