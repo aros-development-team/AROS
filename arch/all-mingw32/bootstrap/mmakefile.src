@@ -20,7 +20,8 @@ KOBJS_LIBS	:= $(KOBJSDIR)/exec_library.o	     $(KOBJSDIR)/expansion_library.o	  
 		   $(KOBJSDIR)/layers_library.o
 K_RES		:= $(KOBJSDIR)/kernel_resource.o     $(KOBJSDIR)/hostlib_resource.o	   \
 		   $(KOBJSDIR)/hostthread_resource.o $(KOBJSDIR)/battclock_resource.o	   \
-		   $(KOBJSDIR)/bootmenu_resource.o   $(KOBJSDIR)/bootloader_resource.o
+		   $(KOBJSDIR)/bootmenu_resource.o   $(KOBJSDIR)/bootloader_resource.o	   \
+		   $(KOBJSDIR)/dosboot_resource.o
 KOBJS_HANDLERS  := $(KOBJSDIR)/emul_handler.o	     $(KOBJSDIR)/packet_handler.o	   \
 		   $(KOBJSDIR)/amberram_handler.o    $(KOBJSDIR)/nil_handler.o		   \
 		   $(KOBJSDIR)/con_handler.o
@@ -35,6 +36,7 @@ KOBJS := $(K_RES) $(KOBJS_HANDLERS) $(KOBJS_LIBS) $(KOBJS_DEVICES) $(KOBJS_HIDD)
 #MM			 kernel-hostthread-mingw32-kobj	    \
 #MM			 kernel-fs-emul-mingw32-kobj	    \
 #MM			 kernel-fs-packet-kobj		    \
+#MM			 kernel-dosboot-kobj		    \
 #MM			 kernel-aros			    \
 #MM			 workbench-hidd-graphics-kobj	    \
 #MM			 contrib-amberram-kobj
