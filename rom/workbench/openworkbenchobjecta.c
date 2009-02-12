@@ -84,8 +84,8 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
     ASSERT_VALID_PTR(name);
     ASSERT_VALID_PTR_OR_NULL(tags);
 
-    D(bug("OpenWorkbenchObject: name = %s\n", name));
-    D(bug("OpenWorkbenchObject: isDefaultIcon = %ld\n", isDefaultIcon));
+    D(bug("[WBLIB] OpenWorkbenchObjectA: name = %s\n", name));
+    D(bug("[WBLIB] OpenWorkbenchObjectA: isDefaultIcon = %ld\n", isDefaultIcon));
 
     if (icon != NULL)
     {
@@ -99,7 +99,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     Application to open the corresponding drawer.
                 */
 
-                D(bug("OpenWorkbenchObject: it's a DISK, DRAWER or GARBAGE\n"));
+                D(bug("[WBLIB] OpenWorkbenchObjectA: it's a DISK, DRAWER or GARBAGE\n"));
 
                 {
                     struct WBCommandMessage *wbcm     = NULL;
@@ -135,7 +135,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     whether it is a Workbench program or a CLI program.
                 */
 
-                D(bug("OpenWorkbenchObject: it's a TOOL\n"));
+                D(bug("[WBLIB] OpenWorkbenchObjectA: it's a TOOL\n"));
 
                 if
                 (
@@ -146,7 +146,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                     /* It's a Workbench program */
                     BPTR lock = Lock(name, ACCESS_READ);
 
-                    D(bug("OpenWorkbenchObject: it's a WB program\n"));
+                    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a WB program\n"));
 
                     if (lock != NULL)
                     {
@@ -154,9 +154,26 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
 
                         if (parent != NULL)
                         {
+                            IPTR stacksize = icon->do_StackSize;
+
+                            if (stacksize < WorkbenchBase->wb_DefaultStackSize)
+                                stacksize = WorkbenchBase->wb_DefaultStackSize;
+
+                            D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
+
+                            struct TagItem wbp_Tags[] =
+                            {
+                                { NP_StackSize, stacksize       },
+                                { TAG_MORE, tags                },
+                                { TAG_DONE, 0                   }
+                            };
+
+                            if (tags == NULL)
+                                wbp_Tags[1].ti_Tag = TAG_IGNORE;
+
                             success = WB_LaunchProgram
                             (
-                                parent, FilePart(name), tags
+                                parent, FilePart(name), wbp_Tags
                             );
 
                             if (!success)
@@ -166,7 +183,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                                     Most likely it will also fail, but we
                                     might get lucky.
                                 */
-                                success = CLI_LaunchProgram(name, tags);
+                                success = CLI_LaunchProgram(name, wbp_Tags);
                             }
 
                             UnLock(parent);
@@ -179,7 +196,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                 {
                     /* It's a CLI program */
 
-                    D(bug("OpenWorkbenchObject: it's a CLI program\n"));
+                    D(bug("[WBLIB] OpenWorkbenchObjectA: it's a CLI program\n"));
 
                     success = CLI_LaunchProgram(name, tags);
                 }
@@ -188,8 +205,8 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
             case WBPROJECT:
                 /* It's a project; try to launch it via its default tool. */
 
-                D(bug("OpenWorkbenchObject: it's a PROJECT\n"));
-                D(bug("OpenWorkbenchObject: default tool: %s\n", icon->do_DefaultTool));
+                D(bug("[WBLIB] OpenWorkbenchObjectA: it's a PROJECT\n"));
+                D(bug("[WBLIB] OpenWorkbenchObjectA: default tool: %s\n", icon->do_DefaultTool));
 
                 if
                 (
@@ -204,11 +221,19 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                         parent = ParentDir(lock);
                     if (parent != (BPTR)NULL)
                     {
+                        IPTR stacksize = icon->do_StackSize;
+
+                        if (stacksize < WorkbenchBase->wb_DefaultStackSize)
+                            stacksize = WorkbenchBase->wb_DefaultStackSize;
+
+                        D(bug("[WBLIB] OpenWorkbenchObjectA: stack size: %d Bytes\n", stacksize));
+
                         struct TagItem tags[] =
                         {
-                            {WBOPENA_ArgLock, (IPTR) parent},
-                            {WBOPENA_ArgName, (IPTR) FilePart(name)},
-                            {TAG_DONE, (IPTR)NULL}
+                            { NP_StackSize, stacksize                   },
+                            { WBOPENA_ArgLock, (IPTR) parent            },
+                            { WBOPENA_ArgName, (IPTR) FilePart(name)    },
+                            { TAG_DONE, (IPTR)NULL                      }
                         };
                         
                         if (FindToolType(icon->do_ToolTypes, "CLI") == NULL)
@@ -293,7 +318,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
         }
     }
 
-    D(bug("OpenWorkbenchObject: success = %d\n", success));
+    D(bug("[WBLIB] OpenWorkbenchObjectA: success = %d\n", success));
 
     return success;
 
@@ -406,12 +431,17 @@ BOOL __CLI_LaunchProgram
 {
     BPTR   input       = NULL;
     STRPTR commandline = NULL;
+    IPTR                stacksize = WorkbenchBase->wb_DefaultStackSize;
+    struct TagItem      *foundTag = NULL;
 
     input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
     if (input == NULL) goto error;
 
     commandline = CLI_BuildCommandLine(command, tags);
     if (commandline == NULL) goto error;
+
+    if ((tags) && ((foundTag = FindTagItem(NP_StackSize, tags)) != NULL))
+        stacksize = foundTag->ti_Data;
 
     if
     (
@@ -429,7 +459,7 @@ BOOL __CLI_LaunchProgram
             SYS_Input,    (IPTR) input,
             SYS_Output,   (IPTR) NULL,
             SYS_Error,    (IPTR) NULL,
-            NP_StackSize,        WorkbenchBase->wb_DefaultStackSize,
+            NP_StackSize,        stacksize,
             TAG_DONE
         ) == -1
     )
@@ -525,7 +555,7 @@ BOOL __WB_BuildArguments
 
                             if (args[i].wa_Lock == NULL)
                             {
-                                D(bug("workbench.library: WB_BuildArguments: Failed to duplicate lock!\n"));
+                                D(bug("[WBLIB] WB_BuildArguments: Failed to duplicate lock!\n"));
                                 goto error;
                                 break;
                             }
@@ -542,7 +572,7 @@ BOOL __WB_BuildArguments
 
                             if (args[i].wa_Name == NULL)
                             {
-                                D(bug("workbench.library: WB_BuildArguments: Failed to duplicate string!\n"));
+                                D(bug("[WBLIB] WB_BuildArguments: Failed to duplicate string!\n"));
                                 goto error;
                                 break;
                             }
@@ -562,11 +592,11 @@ BOOL __WB_BuildArguments
     }
     else
     {
-        D(bug("workbench.library: WB_BuildArguments: Failed to allocate memory for argument array\n"));
+        D(bug("[WBLIB] WB_BuildArguments: Failed to allocate memory for argument array\n"));
     }
 
 error:
-    D(bug("workbench.library: WB_BuildArguments: Freeing resources after error...\n"));
+    D(bug("[WBLIB] WB_BuildArguments: Freeing resources after error...\n"));
     /* Free allocated resources */
     if (args != NULL)
     {
@@ -600,7 +630,7 @@ BOOL __WB_LaunchProgram
     startup = CreateWBS();
     if (startup == NULL)
     {
-        D(bug("workbench.library: WB_LaunchProgram: Failed to allocate memory for startup message\n"));
+        D(bug("[WBLIB] WB_LaunchProgram: Failed to allocate memory for startup message\n"));
         SetIoErr(ERROR_NO_FREE_STORE);
         goto error;
     }
@@ -608,15 +638,17 @@ BOOL __WB_LaunchProgram
     message = CreateWBCM(WBCM_TYPE_LAUNCH);
     if (message == NULL)
     {
-        D(bug("workbench.library: WB_LaunchProgram: Failed to allocate memory for launch message\n"));
+        D(bug("[WBLIB] WB_LaunchProgram: Failed to allocate memory for launch message\n"));
         SetIoErr(ERROR_NO_FREE_STORE);
         goto error;
     }
 
+    message->wbcm_Tags = tags;
+
     /*-- Build the arguments array -----------------------------------------*/
     if (!WB_BuildArguments(startup, lock, name, tags))
     {
-        D(bug("workbench.library: WB_LaunchProgram: Failed to build arguments\n"));
+        D(bug("[WBLIB] WB_LaunchProgram: Failed to build arguments\n"));
         goto error;
     }
 
@@ -626,7 +658,7 @@ BOOL __WB_LaunchProgram
 
     PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) message);
 
-    D(bug("workbench.library: WB_LaunchProgram: Success\n"));
+    D(bug("[WBLIB]  WB_LaunchProgram: Success\n"));
 
     return TRUE;
 
@@ -634,7 +666,7 @@ error:
     if (startup != NULL) DestroyWBS(startup);
     if (message != NULL) DestroyWBCM(message);
 
-    D(bug("workbench.library: WB_LaunchProgram: Failure\n"));
+    D(bug("[WBLIB] WB_LaunchProgram: Failure\n"));
 
     return FALSE;
 }

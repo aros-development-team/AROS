@@ -38,6 +38,7 @@ struct WBCommandMessage
             struct WBHandlerMessage *Message;
         } Relay;
     } wbcm_Data;
+    struct TagItem *wbcm_Tags;
 };
 
 #define WBCM_SIZE (sizeof(struct WBCommandMessage))

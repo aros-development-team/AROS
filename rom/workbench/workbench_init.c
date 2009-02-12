@@ -36,10 +36,12 @@ static int WBInit(LIBBASETYPEPTR LIBBASE)
     WorkbenchBase->wb_HandlerPort.mp_SigTask = NULL;      
     WorkbenchBase->wb_HandlerPort.mp_Flags   = PA_IGNORE;
     NEWLIST(&(WorkbenchBase->wb_HandlerPort.mp_MsgList));
-    
+
+#warning "TODO:  DefaultStackSize should differ depending on the platform AROS is compiled for"
     /* Initialize miscellanous variables -----------------------------------*/
     WorkbenchBase->wb_DefaultStackSize = 1024 * 32; /* 32kiB */ // FIXME: also read from preferences */
-        
+D(bug("[WBLIB] WBInit: Using %d Bytes for DefaultStackSize\n", WorkbenchBase->wb_DefaultStackSize));
+
     return TRUE;
 }
 
