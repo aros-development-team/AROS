@@ -69,6 +69,11 @@ Original author of this program is:
 4. HISTORY
 ----------
 
+12 February 2009
+
+- GUI for selecting device added so it is possible to start from Wanderer.
+- Device was not released when formatting was interrupted by user or error.
+
 Version 43.6, 28 June 2008.
 
 Fixed one minor and one major bug:

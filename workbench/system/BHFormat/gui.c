@@ -95,13 +95,281 @@
 #include "format.h"
 #include "locale.h"
 
-static struct DosList * pdlVolume = 0;
 static char szCapacityInfo[5+1+8+2+2+2+4+1];
 static Object *app, *mainwin, *formatwin, *chk_trash, *chk_intl, *chk_ffs, *chk_cache;
 static Object *txt_action, *str_volume, *gauge;
+static struct DosList * pdlVolume = 0;
 static struct Hook btn_format_hook;
+static struct Hook list_consfunc_hook;
+static struct Hook list_desfunc_hook;
+static struct Hook list_dispfunc_hook;
 
 static void message(CONST_STRPTR s);
+
+struct SFormatEntry
+{
+    TEXT deviceName[32];
+    TEXT volumeName[32];
+    TEXT capacityInfo[64];
+};
+
+AROS_UFH3S(IPTR, consfunc,
+    AROS_UFHA(struct Hook *, h, A0),
+	AROS_UFHA(IPTR*, pool, A2),
+	AROS_UFHA(struct SFormatEntry *, entry,A1))
+{
+    AROS_USERFUNC_INIT
+    
+    int size = sizeof(struct SFormatEntry);
+    
+    struct SFormatEntry *new = AllocPooled(pool, size);
+    
+    if (new) memcpy(new, entry, size);
+    
+    return (IPTR)new;
+    
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, desfunc,
+    AROS_UFHA(struct Hook *, h, A0),
+	AROS_UFHA(IPTR*, pool, A2),
+	AROS_UFHA(struct SFormatEntry *, entry,A1))
+{
+    AROS_USERFUNC_INIT
+    
+    FreePooled(pool, entry, sizeof(struct SFormatEntry));
+    
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, dispfunc,
+    AROS_UFHA(struct Hook *, h, A0),
+	AROS_UFHA(char **, array, A2),
+	AROS_UFHA(struct SFormatEntry *, entry,A1))
+{
+    AROS_USERFUNC_INIT
+    
+    static char s[128];
+    
+    strcpy(s, "(");
+    if (strlen(entry->volumeName))
+    {
+    	strcat(s, entry->volumeName);
+    	strcat(s, ", ");
+    }
+    strcat(s, entry->capacityInfo);
+    strcat(s, ")");
+    
+    *array++ = entry->deviceName;
+    *array = s;
+    
+    return 0;
+    
+    AROS_USERFUNC_EXIT
+}
+
+BOOL ObjectTypeOk(struct DosList* device)
+{
+    struct FileSysStartupMsg *pfssm;
+    struct DosEnvec *pdenDevice;
+    
+    if( (pfssm = (struct FileSysStartupMsg *)
+	 BADDR(device->dol_misc.dol_handler.dol_Startup)) == 0
+	|| TypeOfMem(pfssm) == 0
+	|| pfssm->fssm_Device == 0
+	|| (pdenDevice = (struct DosEnvec *)BADDR(pfssm->fssm_Environ)) == 0
+	|| TypeOfMem(pdenDevice) == 0
+	|| pdenDevice->de_TableSize < DE_DOSTYPE
+	/* Check that parameters that should always be 0, are */
+	|| pdenDevice->de_SecOrg != 0
+	|| pdenDevice->de_Interleave != 0 )
+    {
+    	/* error object wrong type */
+		return FALSE;
+    }
+    
+    ULLONG cbyTrack = (ULLONG)pdenDevice->de_BlocksPerTrack * (ULLONG)(pdenDevice->de_SizeBlock * sizeof(LONG));
+    ULLONG cbyCylinder = cbyTrack * pdenDevice->de_Surfaces;
+
+    ibyStart = pdenDevice->de_LowCyl * cbyCylinder;
+    ibyEnd = (pdenDevice->de_HighCyl + 1) * cbyCylinder;    
+    
+    return TRUE;
+}
+
+void ComputeCapacity(struct DosList *pdlVolume, struct InfoData *pInfoData)
+{
+	/* The units of the size are initially bytes, but we shift the
+	   number until the units are kilobytes, megabytes or
+	   something larger and the number of units has at most 4
+	   digits. */
+	ULLONG cUnits;
+	/* The unit symbols go up to exabytes, since the maximum
+           possible disk size is 2^64 bytes = 16 exabytes. */
+	const char * pchUnitSymbol = _(MSG_UNITS);
+
+	D(Printf("Calculating capacity info...\n"));
+	cUnits = ibyEnd - ibyStart;
+	while( (cUnits >>= 10) > 9999 )
+	    ++pchUnitSymbol;
+
+	if(pdlVolume && pInfoData)
+	    RawDoFmtSz( szCapacityInfo, _(MSG_CAPACITY_USED),
+			(ULONG)cUnits, (ULONG)*pchUnitSymbol,
+			/* Calculate percentage used, to nearest point. */
+			(ULONG)(((ULLONG)pInfoData->id_NumBlocksUsed*100ULL
+				 + pInfoData->id_NumBlocks/2) / pInfoData->id_NumBlocks) );
+	else
+	    RawDoFmtSz( szCapacityInfo, "%lu%lc capacity",
+			(ULONG)cUnits, (ULONG)*pchUnitSymbol );
+	D(Printf("Done: %s\n", szCapacityInfo));
+}
+
+void VolumesToList(Object* listObject)
+{
+    ULONG flags = LDF_READ | LDF_DEVICES | LDF_VOLUMES;
+    struct DosList *adl, *device, *volume;
+	
+    adl = device = AttemptLockDosList(flags);
+	
+    if (adl == NULL) return;
+
+    while((device = NextDosEntry(device, flags - LDF_VOLUMES)) != NULL)
+    {
+	TEXT name[128];
+	strcpy(name, device->dol_Name);
+	strcat(name, ":");
+		
+	/* exclude RAM, NIL, RAW, CON, ... */
+	if (!ObjectTypeOk(device)) continue;
+    
+	/* floppy, cdrom and unformatted disks can't be locked */
+	BPTR lock = Lock(name, SHARED_LOCK);
+	BOOL addDevice = TRUE;
+	struct InfoData *pInfoData = NULL;
+			
+	if (lock)
+	{
+	    struct InfoData infoData;
+			
+	    /* XPIPE and PIPEFS fails here */
+	    if (Info(lock, &infoData))
+	    {
+		pInfoData = &infoData;
+	    }
+	    else addDevice = FALSE;
+
+	    UnLock(lock);
+	}
+			
+	if (addDevice)
+	{
+	    struct SFormatEntry entry;
+	    strcpy(entry.deviceName, device->dol_Name);
+	    volume = adl;            
+    	    
+    	    do
+    	    {
+		if ((volume = NextDosEntry(volume, LDF_VOLUMES)) == 0) break;
+    	    } while((volume->dol_Ext.dol_AROS.dol_Device != device->dol_Ext.dol_AROS.dol_Device) ||
+		(volume->dol_Ext.dol_AROS.dol_Unit != device->dol_Ext.dol_AROS.dol_Unit));
+	
+	    if (volume) strcpy(entry.volumeName, volume->dol_Name);
+	    else strcpy(entry.volumeName, "");
+	
+	    ComputeCapacity(volume, pInfoData);
+	    strcpy(entry.capacityInfo, szCapacityInfo);
+	
+	    DoMethod(listObject, MUIM_List_InsertSingle, &entry,
+		MUIV_List_Insert_Top);				
+	}
+    }
+		
+    UnLockDosList(flags);
+}
+
+struct SFormatEntry* SelectDevice(void)
+{
+    Object *app, *wnd, *list, *ok, *cancel;
+    
+    list_consfunc_hook.h_Entry = (HOOKFUNC)consfunc;
+    list_desfunc_hook.h_Entry = (HOOKFUNC)desfunc;
+    list_dispfunc_hook.h_Entry = (HOOKFUNC)dispfunc;
+
+    app = (Object *)ApplicationObject,
+        SubWindow, (IPTR)(wnd = (Object *)WindowObject,
+            MUIA_Window_CloseGadget, (IPTR)FALSE,
+            MUIA_Window_Title, (IPTR)_(MSG_APPLICATION_TITLE),
+            WindowContents, (IPTR)(VGroup,
+		Child, (IPTR)(TextObject,
+		    MUIA_Text_Contents, (IPTR)"Select Device To Format",
+		End),
+		Child, (IPTR)(list = (Object *)ListviewObject,
+		    MUIA_Listview_List, ListObject,
+			InputListFrame,
+			MUIA_List_ConstructHook, (IPTR)&list_consfunc_hook,
+			MUIA_List_DestructHook, (IPTR)&list_desfunc_hook,
+			MUIA_List_DisplayHook, (IPTR)&list_dispfunc_hook,
+			MUIA_List_Format, (IPTR)",",
+			MUIA_List_AdjustWidth, (IPTR)TRUE,
+		    End,
+            	End),
+                Child, (IPTR)(HGroup,
+		    Child, (IPTR)(ok = SimpleButton(_(MSG_OK))),
+		    Child, (IPTR)RectangleObject, End,
+                    Child, (IPTR)(cancel = SimpleButton(_(MSG_CANCEL))),
+               	End),
+            End),
+        End),
+    End;
+
+    if(app == NULL) return;
+	
+    VolumesToList(list);
+
+    DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+        ok , 3, MUIM_Set, MUIA_Disabled, FALSE);
+    DoMethod(ok, MUIM_Notify, MUIA_Pressed, FALSE,
+	app, 2, MUIM_Application_ReturnID, (IPTR)ok);
+    DoMethod(cancel, MUIM_Notify, MUIA_Pressed, FALSE,
+	app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    
+    set(ok, MUIA_Disabled, TRUE);
+    set(wnd, MUIA_Window_Open, TRUE);
+	
+    ULONG sigs = 0;
+ 
+    // Main loop
+    struct SFormatEntry* selectedEntry = NULL;
+    LONG returnId;
+    while((returnId = (LONG)DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs))
+	!= MUIV_Application_ReturnID_Quit)
+    {
+	if (sigs)
+        {
+       	    if ((Object*) returnId == ok)
+            {
+	        IPTR active = XGET(list, MUIA_List_Active);
+		struct SFormatEntry *entry;
+		DoMethod(list, MUIM_List_GetEntry, active, &entry);
+		selectedEntry = AllocMem(sizeof(struct SFormatEntry), 0L);
+		if (selectedEntry)
+		    memcpy(selectedEntry, entry, sizeof(struct SFormatEntry));
+           	break;
+	    }
+                	
+            sigs = Wait(sigs | SIGBREAKF_CTRL_C);
+            
+            if (sigs & SIGBREAKF_CTRL_C)
+                break;
+	}
+    }	
+
+    MUI_DisposeObject(app);
+    
+    return selectedEntry;	
+}
 
 AROS_UFH3S(void, btn_format_function,
     AROS_UFHA(struct Hook *, h, A0),
@@ -116,7 +384,10 @@ AROS_UFH3S(void, btn_format_function,
     LONG rc = FALSE;
 
     D(Printf("Full format? %d\n", bDoFormat));
-
+    
+    if(!bSetSzDosDeviceFromSz(szDosDevice))
+        goto cleanup;
+    
     /* TODO: set volume name same as old one if name is null string */
     if( !bSetSzVolumeFromSz( (char *)XGET(str_volume, MUIA_String_Contents) ) )
     {
@@ -139,7 +410,8 @@ AROS_UFH3S(void, btn_format_function,
     {
 	set(txt_action, MUIA_Text_Contents, _(MSG_GUI_INITIALIZING) );
     }
-
+    
+    set(mainwin, MUIA_Window_Open, FALSE);
     set(formatwin, MUIA_Window_Open, TRUE);
     
     {
@@ -154,31 +426,39 @@ AROS_UFH3S(void, btn_format_function,
 			    szVolumeId, szCapacityInfo) != 1)
 	    goto cleanup;
     }
-
+ 
+    BOOL formatOk = TRUE;
     if(bDoFormat)
     {
-	ULONG icyl;
-
+	ULONG icyl, sigs;
 	if(!bGetExecDevice(TRUE))
 	    goto cleanup;
-
+	D(PutStr("GetExecDevice done\n"));
 	set(gauge, MUIA_Gauge_Max, HighCyl-LowCyl);
-	for( icyl = LowCyl;
-	     icyl <= HighCyl;
-	     ++icyl )
+	for( icyl = LowCyl; icyl <= HighCyl; ++icyl )
 	{
-	    set(gauge, MUIA_Gauge_Max, icyl-LowCyl);
-	    
-	    if( !bFormatCylinder(icyl) || !bVerifyCylinder(icyl) )
-		goto cleanup;
-
+	    DoMethod(app, MUIM_Application_Input, (IPTR)&sigs);
+	    /* interrupted by user? */
+	    if(XGET(formatwin, MUIA_UserData) == 1)
+	    {
+		formatOk = FALSE;
+		break;
+	    }
+	    if(!bFormatCylinder(icyl) || !bVerifyCylinder(icyl))
+	    {
+		formatOk = FALSE;
+		break;
+	    }
+	    set(gauge, MUIA_Gauge_Current, icyl-LowCyl);    
 	}
 	FreeExecDevice();
+	D(PutStr("FreeExecDevice done\n"));
     }
 
-    if( bMakeFileSys( bFFS, !bFFS, bIntl, !bIntl, bDirCache, !bDirCache )
-	&& (!bMakeTrashcan || bMakeFiles(FALSE)) )
-	rc = RETURN_OK;
+    if(formatOk)
+	if( bMakeFileSys( bFFS, !bFFS, bIntl, !bIntl, bDirCache, !bDirCache )
+            && (!bMakeTrashcan || bMakeFiles(FALSE)) )
+            rc = RETURN_OK;
     
 cleanup:
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
@@ -186,11 +466,14 @@ cleanup:
     AROS_USERFUNC_EXIT
 }
 
-
 int rcGuiMain(void)
 {
     static char szTitle[6+3+30+1];
+    char szVolumeInfo[6+2+MAX_FS_NAME_LEN+2];
+    char szDeviceInfo[6+2+MAX_FS_NAME_LEN+2];
+    char szVolumeName[108];
     struct DosList *pdlDevice = NULL;
+    szVolumeInfo[0] = '\0';
 #ifdef AROS_FAKE_LOCK
     char volName[108];
 #else
@@ -232,12 +515,14 @@ int rcGuiMain(void)
 		goto cleanup;
 	    }
 #ifdef AROS_FAKE_LOCK
-	    if (NameFromLock(_WBenchMsg->sm_ArgList[1].wa_Lock, volName, sizeof(volName))) {
+	    if (NameFromLock(_WBenchMsg->sm_ArgList[1].wa_Lock, volName, sizeof(volName))) 
+	    {
 		D(Printf("Volume name: %s\n", volName));
 		volName[strlen(volName)-1] = '\0';
 		pdlList = LockDosList( LDF_DEVICES | LDF_VOLUMES | LDF_READ );
 		pdlVolume = FindDosEntry(pdlList, volName, LDF_VOLUMES);
-		if (pdlVolume) {
+		if (pdlVolume) 
+		{
 		    D(Printf("Looking for device = 0x%08lX Unit = 0x%08lX\n",
 			     pdlVolume->dol_Ext.dol_AROS.dol_Device,
 			     pdlVolume->dol_Ext.dol_AROS.dol_Unit));
@@ -282,64 +567,41 @@ int rcGuiMain(void)
 	    goto cleanup;
 	}
 
-#ifdef AROS_FAKE_LOCK
-	if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_VOLUMES|LDF_READ))
-#else
-	if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_READ))
-#endif
+	ComputeCapacity(pdlVolume, &dinf );
+	
+	if (pdlVolume)
+	    strcpy(szVolumeName, pdlVolume->dol_Name); 
+    }
+    else if ( _WBenchMsg->sm_NumArgs == 1 )
+    {
+	/* message(_(MSG_ERROR_WANDERER) ); */
+	struct SFormatEntry* entry = SelectDevice();
+	if (!entry)
 	    goto cleanup;
+	strcpy(szDosDevice, entry->deviceName);
+	strcat(szDosDevice, ":");
+	strcpy(szVolumeName, entry->volumeName);
+	strcpy(szCapacityInfo, entry->capacityInfo);
+	FreeMem(entry, sizeof(struct SFormatEntry));	    
     }
-
-    {
-	/* The units of the size are initially bytes, but we shift the
-	   number until the units are kilobytes, megabytes or
-	   something larger and the number of units has at most 4
-	   digits. */
-	ULLONG cUnits;
-	/* The unit symbols go up to exabytes, since the maximum
-           possible disk size is 2^64 bytes = 16 exabytes. */
-	const char * pchUnitSymbol = _(MSG_UNITS);
-
-	D(Printf("Calculating capacity info...\n"));
-	cUnits = ibyEnd - ibyStart;
-	while( (cUnits >>= 10) > 9999 )
-	    ++pchUnitSymbol;
-
-	if(pdlVolume)
-	    RawDoFmtSz( szCapacityInfo, _(MSG_CAPACITY_USED),
-			(ULONG)cUnits, (ULONG)*pchUnitSymbol,
-			/* Calculate percentage used, to nearest point. */
-			(ULONG)(((ULLONG)dinf.id_NumBlocksUsed*100ULL
-				 + dinf.id_NumBlocks/2) / dinf.id_NumBlocks) );
-	else
-	    RawDoFmtSz( szCapacityInfo, "%lu%lc capacity",
-			(ULONG)cUnits, (ULONG)*pchUnitSymbol );
-	D(Printf("Done: %s\n", szCapacityInfo));
-    }
-
-    if( _WBenchMsg->sm_NumArgs == 1 )
-    {
-	message(_(MSG_ERROR_WANDERER) );
-	/* TODO: display list of devices and have user select one */
+    
+#ifdef AROS_FAKE_LOCK
+    if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_VOLUMES|LDF_READ))
+#else
+    if (!bGetDosDevice(pdlDevice, LDF_DEVICES|LDF_READ))
+#endif
 	goto cleanup;
-    }
-
+	    
     RawDoFmtSz( szTitle, _(MSG_WINDOW_TITLE), szDosDevice );
     D(Printf("Setting window title to '%s'\n", szTitle));
 
     {
-	Object *btn_format, *btn_qformat, *btn_cancel;
+	Object *btn_format, *btn_qformat, *btn_cancel, *btn_stop;
 
 	btn_format_hook.h_Entry = (HOOKFUNC)btn_format_function;
 
-	char szDeviceInfo[6+2+MAX_FS_NAME_LEN+2];
-	char szVolumeInfo[6+2+MAX_FS_NAME_LEN+2];
 	RawDoFmtSz( szDeviceInfo, _(MSG_DEVICE), szDosDevice );
-	szVolumeInfo[0] = '\0';
-	if(pdlVolume)
-	{
-	    RawDoFmtSz( szVolumeInfo, _(MSG_VOLUME), pdlVolume->dol_Name );
-	}
+	RawDoFmtSz( szVolumeInfo, _(MSG_VOLUME), szVolumeName );
 
 	D(Printf("Creating GUI...\n"));
 	
@@ -400,14 +662,21 @@ int rcGuiMain(void)
 	    SubWindow, (IPTR)(formatwin = (Object *)WindowObject,
 		MUIA_Window_ID, MAKE_ID('F','R','M','2'),
 		MUIA_Window_Title, (IPTR)szTitle,
+		MUIA_Window_CloseGadget, (IPTR)FALSE,
 		WindowContents, (IPTR)(VGroup,
 		    Child, (IPTR)(txt_action = (Object *)TextObject,
 			TextFrame,
 		    End),
 		    Child, (IPTR)(gauge = (Object *)GaugeObject,
 			GaugeFrame,
+			MUIA_Gauge_Horiz, (IPTR)TRUE,
+			MUIA_FixHeightTxt, (IPTR)"|",
 		    End),
-		    Child, (IPTR)SimpleButton( _(MSG_BTN_STOP) ),
+		    Child, (IPTR)(HGroup,
+		    	Child, RectangleObject, End,
+		    	Child, (IPTR)(btn_stop = SimpleButton( _(MSG_BTN_STOP) )),
+		    	Child, RectangleObject, End,
+		    End),
 		End), /* VGroup */
 	    End), /* Window */
 	End; /* Application */
@@ -426,7 +695,9 @@ int rcGuiMain(void)
 	    app, 3, MUIM_CallHook, (IPTR)&btn_format_hook, TRUE);
 	DoMethod(btn_qformat, MUIM_Notify, MUIA_Pressed, FALSE,
 	    app, 3, MUIM_CallHook, (IPTR)&btn_format_hook, FALSE);
-
+	DoMethod(btn_stop, MUIM_Notify, MUIA_Pressed, FALSE,
+	    formatwin, 3, MUIM_Set, MUIA_UserData, 1);
+	    
 	set(chk_trash, MUIA_Selected, TRUE);
 	if( DosType >= 0x444F5300 && DosType <= 0x444F5305 )
 	{

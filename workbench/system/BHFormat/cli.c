@@ -130,6 +130,7 @@ int rcCliMain(void)
     PutStr("\n");
 	
     /* Do (low-level) format unless the "QUICK" switch was used */
+    BOOL formatOk = TRUE;
     if(!args.bQuick)
     {
 	ULONG icyl;
@@ -150,22 +151,29 @@ int rcCliMain(void)
 		PutStr("\033[ p\n");
 		D(Printf("Cancelled by user\n"));
 		PrintFault( ERROR_BREAK, 0 );
-		goto cleanup;
+		formatOk = FALSE;
+		break;
 	    }
 
 	    Printf( _(MSG_FORMATTING), icyl, HighCyl-icyl );
 	    D(PutStr("\n"));
 	    Flush(bpfhStdOut);
 	    if(!bFormatCylinder(icyl))
-		goto cleanup;
-
+	    {
+		formatOk = FALSE;
+		break;
+	    }
+	    
 	    if(!args.bNoVerify)
 	    {
 		PutStr( _(MSG_VERIFYING) );
 		D(PutStr("\n"));
 		Flush(bpfhStdOut);
 		if(!bVerifyCylinder(icyl))
-		    goto cleanup;
+		{
+		    formatOk = FALSE;
+		    break;
+		}	
 	    }
 	}
 
@@ -174,17 +182,20 @@ int rcCliMain(void)
 
     FreeExecDevice();
 
-    PutStr( _(MSG_INITIALIZING) );
+    if(formatOk)
+    {
+        PutStr( _(MSG_INITIALIZING) );
 
 #ifndef __AROS__
-    DirCache = args.bDirCache;
-    NoDirCache = args.bNoDirCache;
+        DirCache = args.bDirCache;
+        NoDirCache = args.bNoDirCache;
 #endif
-    if( bMakeFileSys( args.bFFS, args.bOFS, args.bIntl, args.bNoIntl,
+        if( bMakeFileSys( args.bFFS, args.bOFS, args.bIntl, args.bNoIntl,
 		      DirCache, NoDirCache )
-	&& (args.bNoIcons || bMakeFiles(args.bDiskIcon)) )
-	rc = RETURN_OK;
-
+	    && (args.bNoIcons || bMakeFiles(args.bDiskIcon)) )
+	    rc = RETURN_OK;
+    }
+    
 cleanup:
     if(bCloseStdErr)
 	(void) Close(bpfhStdErr);
