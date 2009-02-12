@@ -15,12 +15,19 @@
 #include "intelG33_intern.h"
 #include "intelG33_regs.h"
 
-void GMBUS_Init(struct staticdata *sd) {
+void init_GMBus(struct staticdata *sd) {
 }
 
-UWORD GMBUS_GetStatus(struct staticdata *sd) {
+UWORD status_GMBus(struct staticdata *sd) {
 
     return G33_RD_REGW(MMADR, GMBUS2);
 
 }
 
+BOOL read_DDC2(struct staticdata *sd) {
+
+    G33_WR_REGW(MMADR, GMBUS0, GMBUSRate400KHz);
+
+    return TRUE;
+
+}
