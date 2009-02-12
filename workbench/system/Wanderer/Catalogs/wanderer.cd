@@ -30,7 +30,7 @@ MSG_MEN_SC_BACKDROP (//)
 B
 ;
 MSG_MEN_EXECUTE (//)
-Execute...
+Execute ...
 ;
 MSG_MEN_SC_EXECUTE (//)
 E
@@ -42,13 +42,13 @@ MSG_MEN_SC_SHELL (//)
 W
 ;
 MSG_MEN_GUISET (//)
-GUI Settings...
+GUI Settings ...
 ;
 MSG_MEN_ABOUT (//)
-About...
+About ...
 ;
 MSG_MEN_QUIT (//)
-Quit...
+Quit ...
 ;
 MSG_MEN_SC_QUIT (//)
 Q
@@ -57,7 +57,7 @@ MSG_MEN_WINDOW (//)
 Window
 ;
 MSG_MEN_NEWDRAW (//)
-New Drawer...
+New Drawer ...
 ;
 MSG_MEN_SC_NEWDRAW (//)
 N
@@ -141,19 +141,19 @@ MSG_MEN_SC_OPEN (//)
 O
 ;
 MSG_MEN_RENAME (//)
-Rename...
+Rename ...
 ;
 MSG_MEN_SC_RENAME (//)
 R
 ;
 MSG_MEN_INFO (//)
-Information...
+Information ...
 ;
 MSG_MEN_SC_INFO (//)
 I
 ;
 MSG_MEN_DELETE (//)
-Delete...
+Delete ...
 ;
 MSG_MEN_TOOLS  (//)
 Tools
@@ -171,10 +171,10 @@ MSG_USERSCREENTITLE (//)
 Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT (//)
-Format Disk...
+Format Disk ...
 ;
 MSG_MEN_SHUTDOWN (//)
-Shut Down...
+Shut Down ...
 ;
 MSG_SHUTDOWN_TITLE (//)
 System Shutdown
@@ -205,4 +205,25 @@ Unsnapshot
 ;
 MSG_SNAPSHOT (//)
 Snapshot
+;
+MSG_REQU_DELETE (//)
+Delete ...
+;
+MSG_REQU_DELETE_YESNO (//)
+_Yes|Yes to _All|_No|No _to All
+;
+MSG_REQU_DELETE_DRAWER_S (//)
+Really delete drawer
+;
+MSG_REQU_DELETE_DRAWER_E (//)
+?
+;
+MSG_REQU_DELETE_FILE_S (//)
+Really delete file
+;
+MSG_REQU_DELETE_FILE_M (//)
+located in
+;
+MSG_REQU_DELETE_FILE_E (//)
+?
 ;
