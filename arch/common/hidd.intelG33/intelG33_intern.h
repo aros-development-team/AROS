@@ -101,6 +101,7 @@ struct staticdata {
 
     OOP_MethodID  mid_ReadLong;
     OOP_MethodID  mid_ReadWord;
+    OOP_MethodID  mid_ReadByte;
 
     struct        Chipset Chipset;
  
@@ -117,7 +118,7 @@ struct IntelG33Base {
 #define CSUNLOCK(a) { ReleaseSemaphore(&sd->Chipset.Locks.a); }
 
 
-void GMBUS_Init(struct staticdata *sd);
-UWORD GMBUS_GetStatus(struct staticdata *sd);
+void init_GMBus(struct staticdata *sd);
+UWORD status_GMBus(struct staticdata *sd);
 
 #endif

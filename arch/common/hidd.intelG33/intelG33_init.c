@@ -62,6 +62,15 @@ static inline __attribute__((always_inline)) UWORD pciReadWord(struct staticdata
     return (UWORD)OOP_DoMethod(sd->pciDriver, (OOP_Msg)msg);
 }
 
+static inline __attribute__((always_inline)) UWORD pciReadByte(struct staticdata *sd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg) {
+    struct pHidd_PCIDriver_ReadConfigByte __msg = {
+	    sd->mid_ReadByte,
+	    bus, dev, sub, reg
+    }, *msg = &__msg;
+    
+    return (UBYTE)OOP_DoMethod(sd->pciDriver, (OOP_Msg)msg);
+}
+
 static BOOL Chip_Init(struct staticdata *sd) {
     D(bug("[G33] IntelG33 chip init\n"));
 
@@ -71,13 +80,20 @@ static BOOL Chip_Init(struct staticdata *sd) {
 //    G33_CLRBMASK_REGL(MMADR, ADPA, 0x0c00); // Warning! Turns monitor ON! Just testing mmio register reads/writes...
 //    D(bug("[G33]   ADPA %08x\n",G33_RD_REGL(MMADR, ADPA) ));
 
+	if ( G33_RD_REGL(MMADR, ADPA) & (1<<31) )
+        D(bug("[G33]    Analog display port A enabled\n"));
+	if ( G33_RD_REGL(MMADR, DDPBC) & (1<<31) )
+        D(bug("[G33]    Digital display port B enabled\n"));;
+	if ( G33_RD_REGL(MMADR, DDPCC) & (1<<31) )
+        D(bug("[G33]    Digital display port C enabled\n"));;
+
     D(bug("[G33]   VGACNTRL %08x\n",G33_RD_REGL(MMADR, VGACNTRL) ));
     G33_SETBMASK_REGL(MMADR, VGACNTRL, VGADisable); //Disable VGA
     D(bug("[G33]   VGACNTRL %08x\n",G33_RD_REGL(MMADR, VGACNTRL) ));
 
-    GMBUS_Init(sd);
-    D(bug("[G33]   GMBUS status %04x\n",GMBUS_GetStatus(sd))); // Testing hardware "semaphore"
-    D(bug("[G33]   GMBUS status %04x\n",GMBUS_GetStatus(sd)));
+    init_GMBus(sd);
+//    D(bug("[G33]   GMBUS status %04x\n",status_GMBus(sd))); // Testing hardware "semaphore"
+//    D(bug("[G33]   GMBUS status %04x\n",status_GMBus(sd)));
     return TRUE;
 }
 
@@ -109,7 +125,7 @@ AROS_UFH3(void, Enumerator,
         APTR Base0, Base1, Base2, Base3;
         IPTR sizeBase0, sizeBase1, sizeBase2, sizeBase3;
         IPTR bus, dev, sub;
-        IPTR BSM, MGGC, sizeGTT, sizeMemory;
+        IPTR BSM, MGGC, MSAC, sizeGTT, sizeMemory;
 
         OOP_Object *pciDriver;
 
@@ -155,52 +171,84 @@ AROS_UFH3(void, Enumerator,
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &sd->G33IntLine);
 
         MGGC = pciReadWord(sd, bus, dev, sub, 0x52);
+        MGGC = pciReadWord(sd, 0, 0, 0, 0x52);    //Read from bridge
+
         BSM = pciReadLong(sd, bus, dev, sub, 0x5c);
         sd->Chipset.StolenMemory = (APTR *)BSM;
 
-        /* sizeBase3 is the same as sizeGTT in MGGC and allways 1MB on my system, do "sd->Chipset.sizeGTT = sizeBase3" ? */
-		switch ((MGGC & G33_GTT_MASK)) {
-			case G33_GTT_1M:
+        MSAC = pciReadByte(sd, bus, dev, sub, 0x62);
+        D(bug("        MSAC =%x\n",MSAC));
+
+        switch((MSAC & 0x6)) {
+            case 0:
+                D(bug("        Gfx Aperture size 128MB\n"));
+                break;
+            case 3:
+                D(bug("        Gfx Aperture size 256MB\n"));
+                break;
+            case 6:
+                D(bug("        Gfx Aperture size 512MB\n"));
+                break;
+            default:
+                D(bug("        Gfx Aperture size is illegal!\n"));
+                break;
+        }
+
+		switch ((MGGC & GTT_MASK)) {
+			case GTT_1M:
 				sizeGTT = 1*(1024*1024);
 				break;
-			case G33_GTT_2M:
+			case GTT_2M:
 				sizeGTT = 2*(1024*1024);
 				break;
 		}
         sd->Chipset.sizeGTT = sizeGTT;
 
         switch ((MGGC & STOLEN_MEMORY_MASK)) {
-            case G33_STOLEN_MEMORY_1M:
+            case STOLEN_MEMORY_1M:
                 sizeMemory = 1*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_4M:
+            case STOLEN_MEMORY_4M:
                 sizeMemory = 4*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_8M:
+            case STOLEN_MEMORY_8M:
                 sizeMemory = 8*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_16M:
+            case STOLEN_MEMORY_16M:
                 sizeMemory = 16*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_32M:
+            case STOLEN_MEMORY_32M:
                 sizeMemory = 32*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_48M:
+            case STOLEN_MEMORY_48M:
                 sizeMemory = 48*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_64M:
+            case STOLEN_MEMORY_64M:
                 sizeMemory = 64*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_128M:
+            case STOLEN_MEMORY_96M:
+                sizeMemory = 96*(1024*1024);
+                break;
+            case STOLEN_MEMORY_128M:
                 sizeMemory = 128*(1024*1024);
                 break;
-            case G33_STOLEN_MEMORY_256M:
+            case STOLEN_MEMORY_160M:
+                sizeMemory = 160*(1024*1024);
+                break;
+            case STOLEN_MEMORY_224M:
+                sizeMemory = 224*(1024*1024);
+                break;
+            case STOLEN_MEMORY_256M:
                 sizeMemory = 256*(1024*1024);
+                break;
+            case STOLEN_MEMORY_352M:
+                sizeMemory = 352*(1024*1024);
                 break;
         }
         sd->Chipset.sizeStolenMemory = sizeMemory;
 
         D(bug("        Bus =%x, Dev =%x, Sub =%x\n",bus, dev, sub));
+        D(bug("        MGGC      =%x\n\n",MGGC));
         D(bug("        MMADR     =%x (%x)\n",Base0, sizeBase0));   //MMADR
         D(bug("        IOBAR     =%x (%x)\n",Base1, sizeBase1));   //IOBAR
         D(bug("        GMADR     =%x (%dMB)\n",Base2, sizeBase2/(1024*1024)));   //GMADR
@@ -208,7 +256,7 @@ AROS_UFH3(void, Enumerator,
         D(bug("        IRQ       =%d\n",sd->G33IntLine));
 
         D(bug("        StolenMem =%p (%dMB)\n",sd->Chipset.StolenMemory, sd->Chipset.sizeStolenMemory/(1024*1024)));
-        D(bug("        Maximum of %dMB for video memory\n",sd->Chipset.sizeVMemory/(1024*1024)));
+        D(bug("        %dMB for video memory\n",sd->Chipset.sizeVMemory/(1024*1024)));
         /*
           Map the PCI address space to CPU address space
         */

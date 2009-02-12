@@ -96,20 +96,25 @@ MMADR+
 #define MEMORY_MASK                 0x0001
 
 #define STOLEN_MEMORY_MASK          0x00f0
-#define G33_STOLEN_MEMORY_1M        0x0010
-#define G33_STOLEN_MEMORY_4M        0x0020
-#define G33_STOLEN_MEMORY_8M        0x0030
-#define G33_STOLEN_MEMORY_16M       0x0040
-#define G33_STOLEN_MEMORY_32M       0x0050
-#define G33_STOLEN_MEMORY_48M       0x0060
-#define G33_STOLEN_MEMORY_64M       0x0070
-#define G33_STOLEN_MEMORY_128M      0x0080
-#define G33_STOLEN_MEMORY_256M      0x0090
+#define STOLEN_MEMORY_1M            0x0010
+#define STOLEN_MEMORY_4M            0x0020
+#define STOLEN_MEMORY_8M            0x0030
+#define STOLEN_MEMORY_16M           0x0040
+#define STOLEN_MEMORY_32M           0x0050
+#define STOLEN_MEMORY_48M           0x0060
+#define STOLEN_MEMORY_64M           0x0070
+#define STOLEN_MEMORY_128M          0x0080
+#define STOLEN_MEMORY_256M          0x0090
+#define STOLEN_MEMORY_96M           0x00a0
+#define STOLEN_MEMORY_160M          0x00b0
+#define STOLEN_MEMORY_224M          0x00c0
+#define STOLEN_MEMORY_352M          0x00d0
 
-#define G33_GTT_MASK                0x0300
-#define G33_GTT_1M                  0x0100
-#define G33_GTT_2M                  0x0200
+#define GTT_MASK                    0x0300
+#define GTT_1M                      0x0100
+#define GTT_2M                      0x0200
 
+/* I/O Control Registers (05000h−05FFFh) */
 #define GMBUSRate1MHz               3<<8
 #define GMBUSRate400KHz             2<<8
 #define GMBUSRate100KHz             0
@@ -123,7 +128,11 @@ MMADR+
 #define GMBUS4      0x5110
 #define GMBUS5      0x5120
 
-#define ADPA        0x61100
+#define ADPA        0x61100     /* Analog display port A*/
+#define DDPBC       0x61140     /* Digital display port B control */
+#define DDPCC       0x61160     /* Digital display port C control */
+#define LVDS        0x61180     /* Digital display port control*/
+
 #define DPMSMASK    0x0c00
 
 #define VGADisable  1<<31
