@@ -5,6 +5,7 @@
     The Workbench Handler process and associated functions.
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/ports.h>
@@ -79,20 +80,20 @@ AROS_UFH3
     if (!Initialize()) return 20; // FIXME: report error to user somehow. displaybeep? alert?
     
     /*-- Event loop --------------------------------------------------------*/
-    D(bug("Workbench Handler: entering event loop\n"));
+    D(bug("[WBLIB] WorkbenchHandler: entering event loop\n"));
     
     while (running)
     {
         ULONG signals = Wait(hc->hc_Signals);
         
-        D(bug("Workbench Handler: Got message(s)...\n"));
+        D(bug("[WBLIB] WorkbenchHandler: Got message(s)...\n"));
         
         /*== Messages from the library =====================================*/
         if (signals & hc->hc_CommandSignal)
         {
             struct WBCommandMessage *message;
             
-            D(bug("Workbench Handler: Got message(s) at command port\n"));
+            D(bug("[WBLIB] WorkbenchHandler: Got message(s) at command port\n"));
             
             while ((message = WBCM(GetMsg(hc->hc_CommandPort))) != NULL)
             {
@@ -100,12 +101,12 @@ AROS_UFH3
                 switch (message->wbcm_Type)
                 {
                     case WBCM_TYPE_LAUNCH:
-                        D(bug("Workbench Handler: Got WBCM_Launch message\n"));
+                        D(bug("[WBLIB] WorkbenchHandler: Got WBCM_Launch message\n"));
                         HandleLaunch(message);
                         break;
                         
                     case WBCM_TYPE_RELAY:
-                        D(bug("Workbench Handler: Got WBCM_Relay message\n"));
+                        D(bug("[WBLIB] WorkbenchHandler: Got WBCM_Relay message\n"));
                         HandleRelay(message);
                         break;
                 }
@@ -120,13 +121,13 @@ AROS_UFH3
         {
             struct WBStartup *message;
             
-            D(bug("Workbench Handler: Got message(s) at startup reply port\n"));
+            D(bug("[WBLIB] WorkbenchHandler: Got message(s) at startup reply port\n"));
             
             while ((message = WBS(GetMsg(hc->hc_StartupReplyPort))) != NULL)
             {
                 if (message->sm_Message.mn_Node.ln_Type == NT_REPLYMSG)
                 {
-                    D(bug("Workbench Handler: Deallocating WBStartup message and arguments\n"));
+                    D(bug("[WBLIB] WorkbenchHandler: Deallocating WBStartup message and arguments\n"));
                     DestroyWBS(message);
                 }
                 else
@@ -145,21 +146,21 @@ AROS_UFH3
         {
             struct WBHandlerMessage *message;
             
-            D(bug("Workbench Handler: Got message(s) at relay reply port\n"));
+            D(bug("[WBLIB] WorkbenchHandler: Got message(s) at relay reply port\n"));
             
             while ((message = WBHM(GetMsg(hc->hc_RelayReplyPort))) != NULL)
             {
                 if (message->wbhm_Message.mn_Node.ln_Type == NT_REPLYMSG)
                 {
-                    D(bug("Workbench Handler: Deallocating WBHandlerMessage\n"));
-		    if (message->wbhm_Type == WBHM_TYPE_HIDE)
-		    {
-		        struct IntWBHandlerMessage *iwbhm = (struct IntWBHandlerMessage *)message;
-                    
-		        D(bug("Workbench Handler: Replying IntuiMessage because Type = "
-			      "WBHM_TYPE_HIDE"));
-		        ReplyMsg((struct Message *)iwbhm->iwbhm_Data.Hide.imsg);
-		    }
+                    D(bug("[WBLIB] WorkbenchHandler: Deallocating WBHandlerMessage\n"));
+                    if (message->wbhm_Type == WBHM_TYPE_HIDE)
+                    {
+                        struct IntWBHandlerMessage *iwbhm = (struct IntWBHandlerMessage *)message;
+                            
+                        D(bug("[WBLIB] WorkbenchHandler: Replying IntuiMessage because Type = "
+                          "WBHM_TYPE_HIDE\n"));
+                        ReplyMsg((struct Message *)iwbhm->iwbhm_Data.Hide.imsg);
+                    }
                     DestroyWBHM(message);
                 }
                 else
@@ -176,7 +177,7 @@ AROS_UFH3
         {
             struct IntuiMessage *message;
             
-            D(bug("Workbench Handler: Got message(s) at intuition port\n"));
+            D(bug("[WBLIB] WorkbenchHandler: Got message(s) at intuition port\n"));
             
             while ((message = (struct IntuiMessage *) GetMsg(hc->hc_IntuitionPort)))
             {
@@ -268,14 +269,21 @@ static VOID __HandleLaunch_WB
 )
 {
     struct WBStartup *startup = message->wbcm_Data.Launch.Startup;
+    struct TagItem *msgTags = (struct TagItem *)message->wbcm_Tags;
+    struct TagItem *foundTag = NULL;
+
     STRPTR            name    = startup->sm_ArgList[0].wa_Name;
     BPTR              lock    = startup->sm_ArgList[0].wa_Lock;
     BPTR              home;
     BPTR              cd;
+    IPTR              stacksize = WorkbenchBase->wb_DefaultStackSize;
     struct Process   *process;
-    
-    D(bug("Workbench Handler: HandleLaunch: name = %s\n", name));
-    
+
+    D(bug("[WBLIB] __HandleLaunch_WB('%s')\n", name));
+
+    if ((msgTags) && ((foundTag = FindTagItem(NP_StackSize, msgTags)) != NULL))
+        stacksize = foundTag->ti_Data;
+
     /* Change directory to where the program resides */
     cd = CurrentDir(startup->sm_ArgList[0].wa_Lock);
     
@@ -287,21 +295,23 @@ static VOID __HandleLaunch_WB
     home = DupLock(lock);
     if (home == NULL) goto error;
 
-    const struct TagItem 	     tags[]=
+    const struct TagItem tags[]=
     {
-        {NP_Seglist,     (IPTR)startup->sm_Segment},
-        {NP_Name,        (IPTR)name},
-        {NP_HomeDir,     (IPTR)home},
-        {NP_StackSize,   WorkbenchBase->wb_DefaultStackSize}, /* FIXME: should be read from icon */
-        {TAG_DONE    , 0     	    	    	   }
+        {NP_Seglist,    (IPTR)startup->sm_Segment       },
+        {NP_Name,       (IPTR)name                      },
+        {NP_HomeDir,    (IPTR)home                      },
+        {NP_StackSize,  stacksize                       },
+        {TAG_DONE,      0     	    	    	        }
     };
 
+    D(bug("[WBLIB] __HandleLaunch_WB: Starting '%s' with %d stack\n", tags[1].ti_Data, tags[3].ti_Data));
+    
     /* Launch the program */
     process = CreateNewProc(tags);
     
     if (process != NULL)
     {
-        D(bug("Workbench Handler: HandleLaunch: Process created successfully\n"));
+        D(bug("[WBLIB] __HandleLaunch_WB: Process created successfully @ %p\n", process));
         
         /* Setup startup message */
         startup->sm_Process              = &process->pr_MsgPort;
@@ -315,7 +325,7 @@ static VOID __HandleLaunch_WB
     
 error:
     //FIXME: report error somehow?
-    D(bug("Workbench Handler: HandleLaunch: Failed to launch program. Deallocating resources.\n"));
+    D(bug("[WBLIB] __HandleLaunch_WB: Failed to launch program. Deallocating resources.\n"));
     if (startup->sm_Segment != NULL) UnLoadSeg(startup->sm_Segment);
     DestroyWBS(startup);
     
@@ -332,8 +342,8 @@ static VOID __HandleRelay_WB
 {
     struct WBHandlerMessage *relaymsg = message->wbcm_Data.Relay.Message;
     
-    D(bug("Workbench Handler: HandleRelay: Relaying message to workbench application\n"));
-    D(bug("Workbench Handler: HandleRelay: destination port %p\n", WorkbenchBase->wb_WorkbenchPort));
+    D(bug("[WBLIB] __HandleRelay_WB: Relaying message to workbench application\n"));
+    D(bug("[WBLIB] __HandleRelay_WB: destination port %p\n", WorkbenchBase->wb_WorkbenchPort));
     relaymsg->wbhm_Message.mn_ReplyPort = hc->hc_RelayReplyPort;
     PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *) relaymsg);
 }
@@ -351,9 +361,11 @@ static void __HandleIntuition_WB
         switch (message->Code)
 	{
 	    case WBENCHOPEN:
+D(bug("[WBLIB] __HandleIntuition_WB: WBENCHOPEN\n"));
 	        iwbhm = CreateIWBHM(WBHM_TYPE_SHOW, hc->hc_RelayReplyPort);
 		break;
 	    case WBENCHCLOSE:
+D(bug("[WBLIB] __HandleIntuition_WB: WBENCHCLOSE\n"));
 	        iwbhm = CreateIWBHM(WBHM_TYPE_HIDE, hc->hc_RelayReplyPort);
 		iwbhm->iwbhm_Data.Hide.imsg = message;
 		break;
@@ -364,6 +376,7 @@ static void __HandleIntuition_WB
         
         if ((iwbhm != NULL) && (WorkbenchBase->wb_WorkbenchPort != NULL))
         {
+D(bug("[WBLIB] __HandleIntuition_WB: Forwarding message to Workbench port @ %p\n", WorkbenchBase->wb_WorkbenchPort));
             PutMsg(WorkbenchBase->wb_WorkbenchPort, (struct Message *)iwbhm);
 	
 	    /* Don't reply immediately if we're asked to close the WB,
