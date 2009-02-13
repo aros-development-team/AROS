@@ -56,7 +56,7 @@
     char *str_builddate;
     char *architecture;
     char *cpu;
-    
+
     bzero(name, sizeof(struct utsname));
 
     ArosInquire(AI_ArosBuildDate, &str_builddate,
@@ -71,8 +71,9 @@
     snprintf(name->version, sizeof(name->version) - 1, "%d %s", (int) version, str_builddate);
     cpu = rindex(architecture, '-') + 1;
     strncpy(name->machine, (cpu?cpu:architecture), sizeof(name->machine) - 1);
+
     /* If TCP is running it will set the ENV:HOSTNAME var with out hostname */
-    if (GetVar("HOSTNAME", name->nodename, sizeof(name->nodename) - 1, GVF_GLOBAL_ONLY) != -1)
+    if (GetVar("HOSTNAME", name->nodename, sizeof(name->nodename) - 1, GVF_GLOBAL_ONLY) == -1)
     {
         strncpy(name->nodename, "localhost.localdomain", sizeof(name->nodename) - 1);
     }
