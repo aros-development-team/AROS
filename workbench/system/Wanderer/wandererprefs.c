@@ -21,6 +21,8 @@
 #include <zune_AROS/customclasses.h>
 #endif
 
+#include <proto/workbench.h>
+
 #include <proto/utility.h>
 
 #include <proto/dos.h>
@@ -559,8 +561,25 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessGlobalChunk()\n"));
     if (cont)
     {
       /* prefs file is stored in little endian */
-      if (AROS_LE2LONG(global_chunk[i].ti_Tag) == TAG_DONE) cont = FALSE;
-      else SET(self, AROS_LE2LONG(global_chunk[i].ti_Tag), AROS_LE2LONG(global_chunk[i].ti_Data));
+      if (AROS_LE2LONG(global_chunk[i].ti_Tag) == TAG_DONE)
+      {
+          cont = FALSE;
+      }
+      else if (AROS_LE2LONG(global_chunk[i].ti_Tag) == MUIA_WandererPrefs_DefaultStack)
+      {
+#warning "TODO: We should have an option to set the DefaultStackSize in wanderers prefs, and push it onto workbench.library"
+          struct TagItem wbca_Tags[] =
+          {
+                { WBCTRLA_SetDefaultStackSize, (IPTR)AROS_LE2LONG(global_chunk[i].ti_Data)      },
+                { TAG_DONE, 0                                                                   }
+          };
+#warning "TODO: What should we use for the name arg in WorkbenchControlA"
+          WorkbenchControlA("", wbca_Tags);
+      }
+      else
+      {
+          SET(self, AROS_LE2LONG(global_chunk[i].ti_Tag), AROS_LE2LONG(global_chunk[i].ti_Data));
+      }
     }
   }
 
@@ -634,7 +653,9 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk()\n"));
   if (_viewSettings_Node)
   {
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Updating Existing node @ 0x%p\n", _viewSettings_Node));
-    if (_viewSettings_Node->wpbn_Background) FreeVec((APTR)_viewSettings_Node->wpbn_Background);
+    if (_viewSettings_Node->wpbn_Background)
+		FreeVec((APTR)_viewSettings_Node->wpbn_Background);
+#warning "TODO: Free any Cached backgrounds here .."		
   }
   else
   {
@@ -656,7 +677,9 @@ D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: Creating new no
   strcpy((char *)_viewSettings_Node->wpbn_Background, _viewSettings_Chunk);
 D(bug("[WANDERER.PREFS] WandererPrefs_ProccessViewSettingsChunk: NAME BACKGROUND= %s\n",_viewSettings_Chunk));
   SET(_viewSettings_Node->wpbn_NotifyObject, MUIA_Background, _viewSettings_Chunk);
-  
+
+#warning "TODO: Cache backgrounds here .."
+
   if (chunk_size > (strlen(_viewSettings_Chunk) + 1))
   {
     UBYTE _viewSettings_TagOffset = ((strlen(_viewSettings_Chunk)  + 1)/4);
@@ -748,7 +771,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload()\n"));
           context = CurrentChunk(handle);
           iff_parse_mode = IFFPARSE_STEP;
 
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n", context));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n", context));
             
           if ((error=ReadChunkBytes(handle, chunk_buffer, IFF_CHUNK_BUFFER_SIZE)))
           {
@@ -761,17 +784,17 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
             if ((this_chunk_name = AllocVec(strlen(this_header->wpIFFch_ChunkType) +1,MEMF_ANY|MEMF_CLEAR)))
             {
               strcpy(this_chunk_name, this_header->wpIFFch_ChunkType);
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Prefs Header for '%s' data size %d bytes\n", this_chunk_name, this_chunk_size));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Prefs Header for '%s' data size %d bytes\n", this_chunk_name, this_chunk_size));
 
               if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
               {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of header chunk ..\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: End of header chunk ..\n"));
 
                 if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
                 {
                   context = CurrentChunk(handle);
 
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n", context));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Context 0x%p\n", context));
 
                   error = ReadChunkBytes
                         (
@@ -782,34 +805,34 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
 
                   if (error == this_chunk_size)
                   {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes() Chunk matches Prefs Data size .. (%d)\n", error));
                     if ((strcmp(this_chunk_name, "wanderer:global")) == 0)
                     {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer global chunk ..\n"));
                       WandererPrefs_ProccessGlobalChunk(CLASS, self,(struct TagItem32 *) chunk_buffer, this_chunk_size);
                     }
                     else if ((strcmp(this_chunk_name, "wanderer:network")) == 0)
                     {
-  D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer network config chunk ..\n"));
                       WPEditor_ProccessNetworkChunk(CLASS, self, chunk_buffer);
                     }
                     else if ((strcmp(this_chunk_name, "wanderer:screentitle")) == 0)
                     {
-  D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer screentitle config chunk ..size=%d\n", error));
-  D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer screentitle STRING= %s\n", chunk_buffer));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer screentitle config chunk ..size=%d\n", error));
+D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH: Process data for wanderer screentitle STRING= %s\n", chunk_buffer));
                       WPEditor_ProccessScreenTitleChunk(CLASS, self, chunk_buffer);
                     }
 
                     else if ((strncmp(this_chunk_name, "wanderer:viewsettings", strlen("wanderer:viewsettings"))) == 0)
                     {
                       char *view_name = this_chunk_name + strlen("wanderer:viewsettings") + 1;
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: Process data for wanderer background chunk '%s'..\n", view_name));
                       WandererPrefs_ProccessViewSettingsChunk(CLASS, self, view_name, chunk_buffer, this_chunk_size);
                     }
                   }//END if (error == this_chunk_size)  
                   if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)
                   {
-  D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: TAG_DONE) of Data chunk ..\n"));
+D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: TAG_DONE) of Data chunk ..\n"));
                   }
                 }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == 0)
               }//END if ((error = ParseIFF(handle, IFFPARSE_STEP)) == IFFERR_EOC)       
@@ -818,7 +841,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
         }
         else
         {
-  D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
+D(bug("[WANDERER.PREFS] ParseIFF() failed, returncode %ld!\n", error));
           //success = FALSE;
         }//END if ((error = ParseIFF(handle, iff_parse_mode)) == 0)
 
@@ -827,7 +850,7 @@ D(bug("[WANDERER.PREFS] WandererPrefs__MUIM_WandererPrefs_Reload: ReadChunkBytes
     }
     else
     {
-  D(bug("[WANDERER.PREFS] StopChunk() failed, returncode %ld!\n", error));
+D(bug("[WANDERER.PREFS] StopChunk() failed, returncode %ld!\n", error));
       //success = FALSE;
     }
 
