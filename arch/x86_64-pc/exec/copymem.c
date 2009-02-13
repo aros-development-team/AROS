@@ -106,7 +106,6 @@ D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
     if (!size) return;
 
     ULONG lcnt = (size >> 6);                   /* size / 64       */
-    ULONG remainingbytes = (size & 0x3F);       /* remaining bytes */
 
     const void *src = source;
     void *dst = dest;
@@ -126,90 +125,90 @@ D(bug("[Exec] CopyMem(%p, %p, %d)\n", src, dst, size));
                 :
                 : "r" (src) );
 
-    if ((lcnt > 0) && ((size > (SSE_REG_SIZE * 4)) || ((size == (SSE_REG_SIZE * 4)) && (((IPTR)src & SSE_REG_MASK) == 0) && (((IPTR)dst & SSE_REG_MASK) == 0))))
+    if ((lcnt > 0) && (size >= (SSE_REG_SIZE * 4)))
     {
 D(bug("[Exec] CopyMem: Using SSE Copy.\n"));
-        if ((IPTR)src & SSE_REG_MASK)
+        ULONG alignsize = ((SSE_REG_SIZE - ((IPTR)src & SSE_REG_MASK)));
+
+        if ((((IPTR)src & SSE_REG_MASK) != 0) && (((IPTR)(dst + alignsize) & SSE_REG_MASK) == 0))
         {
-            ULONG alignsize = ((SSE_REG_SIZE - ((IPTR)src & SSE_REG_MASK)));
 D(bug("[Exec] CopyMem: Aligning src to %d byte boundary (%d bytes) .. \n", SSE_REG_SIZE, alignsize));
 
             __small_memcpy(src, dst, alignsize);
 
             size -= alignsize;
             lcnt = (size >> 6);                 /* size / 64       */
-            remainingbytes = (size & 0x3F);     /* remaining bytes */
             src += alignsize;
             dst += alignsize;
-
-
         }
-        if (!((((IPTR)src & SSE_REG_MASK) == 0) && (((IPTR)dst & SSE_REG_MASK) == 0)))
-        {
-            lcnt = 0;
-            remainingbytes = size;
-        }
-        /*
-            # SRC is aligned on 16-byte boundary.
-            We can use movaps instead of movups since we meet
-            the alignment constraints (a general-protection fault
-            would be triggered otherwise)
-        */
-        for( ; lcnt > 0; lcnt--)
-        {
+        if (lcnt > 0)
+            if ((((IPTR)src & SSE_REG_MASK) == 0) && (((IPTR)dst & SSE_REG_MASK) == 0))
+            {
+                /*
+                    # SRC and DST aligned on 16-byte boundary.
+                    We can use movaps instead of movups since we meet
+                    the alignment constraints (a general-protection fault
+                    would be triggered otherwise)
+                */
+                size -= (lcnt << 6);
+                for( ; lcnt > 0; lcnt--)
+                {
 D(bug("[Exec] CopyMem: SSE Aligned-Copy %p to %p.\n", src, dst));
 
-            __asm__ __volatile__ (
-                    "    prefetchnta 320(%0)\n"
-                    "    prefetchnta 352(%0)\n"
-                    "    movaps (%0), %%xmm0\n"
-                    "    movaps 16(%0), %%xmm1\n"
-                    "    movaps 32(%0), %%xmm2\n"
-                    "    movaps 48(%0), %%xmm3\n"
-                    "    movntps %%xmm0, (%1)\n"
-                    "    movntps %%xmm1, 16(%1)\n"
-                    "    movntps %%xmm2, 32(%1)\n"
-                    "    movntps %%xmm3, 48(%1)\n"
-                    :
-                    : "r" (src), "r" (dst)
-                    : "memory");
+                    __asm__ __volatile__ (
+                        "    prefetchnta 320(%0)\n"
+                        "    prefetchnta 352(%0)\n"
+                        "    movaps (%0), %%xmm0\n"
+                        "    movaps 16(%0), %%xmm1\n"
+                        "    movaps 32(%0), %%xmm2\n"
+                        "    movaps 48(%0), %%xmm3\n"
+                        "    movntps %%xmm0, (%1)\n"
+                        "    movntps %%xmm1, 16(%1)\n"
+                        "    movntps %%xmm2, 32(%1)\n"
+                        "    movntps %%xmm3, 48(%1)\n"
+                        :
+                        : "r" (src), "r" (dst)
+                        : "memory");
 
-            src += (SSE_REG_SIZE * 4);
-            dst += (SSE_REG_SIZE * 4);
-        }
-    }
-/*    else if ((lcnt == 1) && (size == (SSE_REG_SIZE * 4)))
-    {
-D(bug("[Exec] CopyMem: Using SSE Copy.\n"));
+                    src += (SSE_REG_SIZE * 4);
+                    dst += (SSE_REG_SIZE * 4);
+                }
+            }
+            else if (((IPTR)dst & SSE_REG_MASK) == 0)
+            {
+                /*
+                    # SRC is unaligned and DST aligned on 16-byte boundary.
+                */
+                size -= (lcnt << 6);
+                for( ; lcnt > 0; lcnt--)
+                {
 D(bug("[Exec] CopyMem: SSE Unaligned-Copy %p to %p.\n", src, dst));
 
-        __asm__ __volatile__ (
-            "    prefetchnta 320(%0)\n"
-            "    prefetchnta 352(%0)\n"
-            "    movups (%0), %%xmm0\n"
-            "    movups 16(%0), %%xmm1\n"
-            "    movups 32(%0), %%xmm2\n"
-            "    movups 48(%0), %%xmm3\n"
-            "    movntps %%xmm0, (%1)\n"
-            "    movntps %%xmm1, 16(%1)\n"
-            "    movntps %%xmm2, 32(%1)\n"
-            "    movntps %%xmm3, 48(%1)\n"
-            :
-            : "r" (src), "r" (dst)
-            : "memory");
+                    __asm__ __volatile__ (
+                        "    prefetchnta 320(%0)\n"
+                        "    prefetchnta 352(%0)\n"
+                        "    movups (%0), %%xmm0\n"
+                        "    movups 16(%0), %%xmm1\n"
+                        "    movups 32(%0), %%xmm2\n"
+                        "    movups 48(%0), %%xmm3\n"
+                        "    movntps %%xmm0, (%1)\n"
+                        "    movntps %%xmm1, 16(%1)\n"
+                        "    movntps %%xmm2, 32(%1)\n"
+                        "    movntps %%xmm3, 48(%1)\n"
+                        :
+                        : "r" (src), "r" (dst)
+                        : "memory");
 
-            src += (SSE_REG_SIZE * 4);
-            dst += (SSE_REG_SIZE * 4);
-    } */
-    else
-    {
-        remainingbytes = size;
+                    src += (SSE_REG_SIZE * 4);
+                    dst += (SSE_REG_SIZE * 4);
+                }
+            }
     }
 
-    if (remainingbytes > 0)
+    if (size > 0)
     {
-D(bug("[Exec] CopyMem: Copy remaining %d bytes.\n", remainingbytes));
-        __small_memcpy(src, dst, remainingbytes);
+D(bug("[Exec] CopyMem: Copy remaining %d bytes.\n", size));
+        __small_memcpy(src, dst, size);
     }
 
     /* 

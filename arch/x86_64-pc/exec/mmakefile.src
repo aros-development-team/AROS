@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        exec_init cause disable enable preparecontext rawputchar serialrawio screen \
+        exec_init cause copymem disable enable preparecontext rawputchar serialrawio screen \
         initcode alert dispatch permit newaddtask remtask reschedule setexcept settaskpri \
         findresident signal wait prepareexecbase #rawdofmt
 # RawDoFmt() is left out since currently generic RawDoFmt should be 64bit-friendly. Due to
