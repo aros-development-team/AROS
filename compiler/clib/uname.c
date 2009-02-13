@@ -12,7 +12,7 @@
 #include <utility/tagitem.h>
 #include <aros/inquire.h>
 #include <proto/aros.h>
-
+#include <proto/dos.h>
 
 /*****************************************************************************
 
@@ -71,7 +71,10 @@
     snprintf(name->version, sizeof(name->version) - 1, "%d %s", (int) version, str_builddate);
     cpu = rindex(architecture, '-') + 1;
     strncpy(name->machine, (cpu?cpu:architecture), sizeof(name->machine) - 1);
-    strncpy(name->nodename, "localhost", sizeof(name->nodename) - 1);
-    
+    /* If TCP is running it will set the ENV:HOSTNAME var with out hostname */
+    if (GetVar("HOSTNAME", name->nodename, sizeof(name->nodename) - 1, GVF_GLOBAL_ONLY) != -1)
+    {
+        strncpy(name->nodename, "localhost.localdomain", sizeof(name->nodename) - 1);
+    }
     return 0;
 }
