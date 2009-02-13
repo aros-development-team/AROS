@@ -23,6 +23,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
+#include <proto/locale.h>
 
 #ifdef __AROS__
 #include <devices/rawkeycodes.h>
@@ -154,15 +155,16 @@ static BOOL Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
         if (data->msd_useSecret) 
         {
             strncpy(data->SecBuffer, str, data->BufferSize);
-            int i;
-            for (i=0;i<data->BufferSize;i++) data->Buffer[i]=0x78;
             data->SecBuffer[data->BufferSize - 1] = 0;
+            int i;
+            for (i=0; i < data->NumChars; i++) data->Buffer[i]=0x78;
+            data->Buffer[data->NumChars] = 0;
         }
         else 
         {
             strncpy(data->Buffer, str, data->BufferSize);
+            data->Buffer[data->BufferSize - 1] = 0;
         }
-        data->Buffer[data->BufferSize - 1] = 0;
 
     }
     data->BufferPos = data->NumChars;
@@ -1305,6 +1307,7 @@ static int String_HandleVanillakey(struct IClass *cl, Object * obj,
     {
     	STRPTR text;
 	int    retval;
+	struct Locale *locale = OpenLocale(NULL);
 
 	retval = Buffer_KillMarked(data);
 	if ((text = clipboard_read_text()))
@@ -1314,13 +1317,15 @@ static int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	    
 	    while((c = *text2++))
 	    {
-	    	if (!isprint(c)) break;
+	    	if (!IsPrint(locale, c)) break;
 		if (!(Buffer_AddChar(data, c))) break;
 		if (!retval) retval = 1;
 	    }
 	    
 	    clipboard_free_text(text);
 	}
+	
+	CloseLocale(locale);
  
 	return retval;
     }
@@ -1342,14 +1347,21 @@ static int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	}
     }
 
-    if (doinput && isprint(code))
+    if (doinput)
     {
-    	Buffer_KillMarked(data);
-	if (Buffer_AddChar(data, code))
+	struct Locale *locale = OpenLocale(NULL);
+	
+	if(IsPrint(locale, code))
 	{
-	    data->msd_RedrawReason = DO_ADDCHAR;
-	    return 2;
+	    Buffer_KillMarked(data);
+	    if (Buffer_AddChar(data, code))
+	    {
+		data->msd_RedrawReason = DO_ADDCHAR;
+		return 2;
+	    }
 	}
+	
+	CloseLocale(locale);
     }
 
     data->msd_RedrawReason = DO_UNKNOWN;
