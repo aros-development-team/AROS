@@ -30,33 +30,33 @@
 #define __long_memcpy(src,dst,size)                             \
 {                                                               \
     __asm__ __volatile__(                                       \
-        "    rep ; movsl" "\n\t"                                \
-        "    testb $2,%b4" "\n\t"                               \
+        "    rep; movsl" "\n\t"                                 \
+        "    testb $2,%b6" "\n\t"                               \
         "    je 1f" "\n\t"                                      \
         "    movsw" "\n"                                        \
-        "1:  testb $1,%b4" "\n\t"                               \
+        "1:  testb $1,%b6" "\n\t"                               \
         "    je 2f" "\n\t"                                      \
         "    movsb" "\n"                                        \
         "2:"                                                    \
         : "=&D" (dst), "=&S" (src), "=&c" (dummy)               \
-        : "0" (size >> 2), "q" (size), "1" (dst), "2" (src)     \
+        : "0" (dst), "1" (src), "2" (size >> 2), "q" (size)     \
         : "memory");                                            \
 }
 
 static __inline__ void __small_memcpy(const void * src, void * dst, ULONG size)
 {
     register unsigned long int dummy;
-//    if( size < 4 ) {
+    if( size < 4 ) {
 D(bug("[Exec] __byte_memcpy(%p, %p, %d)\n", src, dst, size));
 
         __byte_memcpy(src, dst, size);
-/*    }
+    }
     else
     {
 D(bug("[Exec] __long_memcpy(%p, %p, %d)\n", src, dst, size));
 
         __long_memcpy(src, dst, size);
-    }*/
+    }
 }
 
 /*****************************************************************************
