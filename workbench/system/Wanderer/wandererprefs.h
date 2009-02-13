@@ -14,6 +14,7 @@
 
 /*** Public Attributes ******************************************************/
 #define MUIA_WandererPrefs_Processing                        (MUIB_WandererPrefs | 0x00000001) /* --G Set (TRUE) while processing/ cleared (FALSE) when complete*/
+#define MUIA_WandererPrefs_DefaultStack                      (MUIB_WandererPrefs | 0x00000002) /* --- Only used in the global prefs - may be moved! */
 
 #define Wanderer_Viewsetting_Workbench                       0
 #define Wanderer_Viewsetting_Drawer                          1
