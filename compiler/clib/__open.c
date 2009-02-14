@@ -18,6 +18,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <exec/memory.h>
+#include <exec/semaphores.h>
 #include <dos/dos.h>
 #include <dos/filesystem.h>
 #include <aros/symbolsets.h>
@@ -25,6 +26,7 @@
 #include "__errno.h"
 #include "__open.h"
 #include "__upath.h"
+
 
 fdesc *__getfdesc(register int fd)
 {
@@ -262,6 +264,52 @@ err:
 }
 
 
+struct __reg_fdarray {
+    struct MinNode node;
+    struct Task *task;
+    fdesc **fdarray;
+    int numslots;
+};
+
+/* Some local variables for register_init_fdarray */
+static int __fdinit = 0;
+static struct SignalSemaphore __fdsem;
+static struct MinList __fdreglist;
+    
+int __init_vars(void)
+{
+    InitSemaphore(&__fdsem);
+    NEWLIST(&__fdreglist);
+    
+    return TRUE;
+}
+
+int __register_init_fdarray(fdesc **__fdarray, int numslots)
+{
+    /* arosc privdata should not be used inside this function,
+     * this function is called before aroscbase is initialized
+     */
+    struct __reg_fdarray *regnode = AllocVec(sizeof(struct __reg_fdarray), MEMF_ANY|MEMF_CLEAR);
+
+    if (regnode == NULL)
+        return 0;
+
+    regnode->task = FindTask(NULL);
+    regnode->fdarray = __fdarray;
+    regnode->numslots = numslots;
+    
+    D(bug("Allocated regnode: %p, fdarray: %p, numslots: %d\n",
+          regnode, regnode->fdarray, regnode->numslots
+    ));
+    
+    ObtainSemaphore(&__fdsem);
+    AddHead((struct List *)&__fdreglist, (struct Node *)regnode);
+    ReleaseSemaphore(&__fdsem);
+    
+    return 1;
+}
+
+
 #warning perhaps this has to be handled in a different way...
 int __init_stdfiles(void)
 {
@@ -324,7 +372,69 @@ int __init_stdfiles(void)
     return 1;
 }
 
-void __exit_stdfiles(void)
+static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
+{
+    int i;
+    
+    for(i = numslots - 1; i >= 0; i--)
+    {
+        if(__src_fd_array[i])
+        {
+            if(__getfdslot(i) != i)
+                return 0;
+            
+            if((__fd_array[i] = malloc(sizeof(fdesc))) == NULL)
+                return 0;
+            
+            __fd_array[i]->fdflags = 0;
+            __fd_array[i]->fcb = __src_fd_array[i]->fcb;
+            __fd_array[i]->fcb->opencount++;
+        }
+    }
+    
+    return 1;
+}
+
+int __init_fd(void)
+{
+    struct __reg_fdarray *regnodeit, *regnode = NULL;
+    struct Task *self = FindTask(NULL);
+
+    if (!__fdinit)
+    {
+        __init_vars();
+        __fdinit = 1;
+    }
+    
+    ObtainSemaphore(&__fdsem);
+    ForeachNode(&__fdreglist, regnodeit)
+    {
+        if (regnodeit->task == self)
+        {
+            regnode = regnodeit;
+    
+            D(bug("Found regnode: %p, fdarray: %p, numslots: %d\n",
+                  regnode, regnode->fdarray, regnode->numslots
+            ));
+            Remove((struct Node *)regnode);
+            break;
+        }
+    }
+    ReleaseSemaphore(&__fdsem);
+    
+    if (regnode == NULL)
+        return __init_stdfiles();
+    else
+    {
+        int ok = __copy_fdarray(regnode->fdarray, regnode->numslots);
+        
+        FreeVec(regnode);
+        
+        return ok;
+    }
+}
+
+void __exit_fd(void)
 {
     int i = __numslots;
     while (i)
@@ -355,5 +465,5 @@ void __updatestdio(void)
         __fd_array[STDERR_FILENO]->fcb->privflags = _FCB_DONTCLOSE_FH;
 }
 
-ADD2INIT(__init_stdfiles, 2);
-ADD2EXIT(__exit_stdfiles, 2);
+ADD2INIT(__init_fd, 2);
+ADD2EXIT(__exit_fd, 2);
