@@ -11,6 +11,7 @@
 #include <dos/dostags.h>
 #include <dos/datetime.h>
 #include <utility/date.h>
+#include <prefs/prefhdr.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -24,6 +25,7 @@
 #include <proto/utility.h>
 #include <proto/commodities.h>
 #include <proto/muimaster.h>
+#include <proto/iffparse.h>
 
 //#define MYDEBUG 1 */
 #include "debug.h"
@@ -180,6 +182,18 @@ struct MQNode {
     LONG              mq_Count;
     IPTR             *mq_Msg;
 };
+
+/*
+ * FilePrefHeader
+ */
+struct FilePrefHeader
+{
+    UBYTE ph_Version;
+    UBYTE ph_Type;
+    UBYTE ph_Flags[4];
+};
+
+#define ID_MUIO MAKE_ID('M','U','I','O')
 
 /*
  * Allocates an MethodQueue Method
@@ -1620,6 +1634,148 @@ static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj, Msg me
     return 0;
 }
 
+static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj, struct MUIP_Application_Load *message)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct IFFHandle *iff;
+    char name[1024];
+    BPTR fh;
+    Object *dataspace;
+    struct MinList *children;
+    Object *cstate;
+    Object *child;
+
+    if(!data->app_Base)
+	return 0;
+
+    dataspace = MUI_NewObject(MUIC_Dataspace, TAG_DONE);
+    if(!dataspace)
+	return 0;
+
+    if(message->name == MUIV_Application_Load_ENV)
+        snprintf(name, sizeof(name), "ENV:Zune/%s.cfg", data->app_Base);
+    else if(message->name == MUIV_Application_Load_ENVARC)
+        snprintf(name, sizeof(name), "ENVARC:Zune/%s.cfg", data->app_Base);
+    else
+        strncpy(name, message->name, sizeof(name));
+    
+    fh = Open(name, MODE_OLDFILE);
+    if(fh)
+    {
+        if ((iff = AllocIFF()))
+        {
+            iff->iff_Stream = (IPTR) fh;
+    	    
+            InitIFFasDOS(iff);
+    	    
+            if (!OpenIFF(iff, IFFF_READ))
+            {
+                if (!StopChunk(iff, ID_PREF, ID_MUIO))
+                {
+                    if (!ParseIFF(iff, IFFPARSE_SCAN))
+                    {
+                	DoMethod(dataspace, MUIM_Dataspace_ReadIFF, iff, ID_PREF, ID_MUIO);
+                    }
+                }
+
+        	CloseIFF(iff);
+            }
+            FreeIFF(iff);
+        }
+        Close(fh);
+    }
+    
+    get(data->app_WindowFamily, MUIA_Family_List, &children);
+    cstate = (Object *)children->mlh_Head;
+    if ((child = NextObject(&cstate)))
+    {
+	DoMethod(child, MUIM_Import, dataspace);
+    }
+    
+    MUI_DisposeObject(dataspace);
+
+    return 0;
+}
+
+static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj, struct MUIP_Application_Save *message)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    struct IFFHandle *iff;
+    char name[1024];
+    BPTR fh;
+    Object *dataspace;
+    struct MinList *children;
+    Object *cstate;
+    Object *child;
+
+    if(!data->app_Base)
+	return 0;
+    
+    dataspace = MUI_NewObject(MUIC_Dataspace, TAG_DONE);
+    if(!dataspace)
+	return 0;
+
+    get(data->app_WindowFamily, MUIA_Family_List, &children);
+    cstate = (Object *)children->mlh_Head;
+    if ((child = NextObject(&cstate)))
+    {
+	DoMethod(child, MUIM_Export, dataspace);
+    }
+    
+    if(message->name == MUIV_Application_Save_ENV)
+        snprintf(name, sizeof(name), "ENV:Zune/%s.cfg", data->app_Base);
+    else if(message->name == MUIV_Application_Save_ENVARC)
+        snprintf(name, sizeof(name), "ENVARC:Zune/%s.cfg", data->app_Base);
+    else
+        strncpy(name, message->name, sizeof(name));
+    
+    fh = Open(name, MODE_NEWFILE);
+    if(fh)
+    {
+        if ((iff = AllocIFF()))
+        {
+            iff->iff_Stream = (IPTR) fh;
+    	    
+            InitIFFasDOS(iff);
+    	    
+            if (!OpenIFF(iff, IFFF_WRITE))
+            {
+		if (!PushChunk(iff, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN))
+		{
+		    if (!PushChunk(iff, ID_PREF, ID_PRHD, sizeof(struct FilePrefHeader)))
+		    {
+			struct FilePrefHeader head;
+
+			head.ph_Version = PHV_CURRENT;
+			head.ph_Type = 0;
+			head.ph_Flags[0] = 
+			head.ph_Flags[1] = 
+			head.ph_Flags[2] = 
+			head.ph_Flags[3] = 0;
+
+			if (WriteChunkBytes(iff, &head, sizeof(head)) == sizeof(head))
+			{
+			    PopChunk(iff);
+			    DoMethod(dataspace, MUIM_Dataspace_WriteIFF, iff, ID_PREF, ID_MUIO);
+			}
+			else
+			{
+			    PopChunk(iff);
+			}
+		    }
+		    PopChunk(iff);
+		}
+        	CloseIFF(iff);
+            }
+            FreeIFF(iff);
+        }
+        Close(fh);
+    }
+    
+    MUI_DisposeObject(dataspace);
+    
+    return 0;
+}
 
 /*
  * The class dispatcher
@@ -1651,6 +1807,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	case MUIM_Application_OpenConfigWindow: return Application__MUIM_OpenConfigWindow(cl, obj, (APTR)msg);
         case MUIM_Application_Execute:          return Application__MUIM_Execute(cl, obj, msg);
 	case MUIM_Application_UpdateMenus:      return Application__MUIM_UpdateMenus(cl, obj, msg);
+	case MUIM_Application_Load:             return Application__MUIM_Load(cl, obj, (APTR) msg);
+	case MUIM_Application_Save:             return Application__MUIM_Save(cl, obj, (APTR) msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
