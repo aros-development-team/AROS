@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function close().
@@ -64,9 +64,7 @@
     {
         /* Due to a *stupid* behaviour of the dos.library we cannot handle closing failures cleanly :-(
 	if (
-	    fdesc->fh!=__stdfiles[STDIN_FILENO] &&
-	    fdesc->fh!=__stdfiles[STDOUT_FILENO] &&
-	    fdesc->fh!=__stdfiles[STDERR_FILENO] &&
+	    !(fdesc->fcb->privflags & _FCB_DONTCLOSE_FH) &&
 	    !Close(fdesc->fh)
 	)
 	{
@@ -80,12 +78,7 @@
 	/* Since the dos.library destroyes the file handle anyway, even if the closing fails, we cannot
            report the error code correctly, so just close the file and get out of here */
 
-	if
-        (
-	    fdesc->fcb->fh!=__stdfiles[STDIN_FILENO] &&
-	    fdesc->fcb->fh!=__stdfiles[STDOUT_FILENO] &&
-	    fdesc->fcb->fh!=__stdfiles[STDERR_FILENO]
-        )
+	if (!(fdesc->fcb->privflags & _FCB_DONTCLOSE_FH))
 	{
             (void)Close(fdesc->fcb->fh);
 	}

@@ -46,7 +46,6 @@ struct arosc_privdata
 
     /* __stdio.c */
     struct MinList acpd_stdio_files;
-    void   *acpd_stdfiles[3];
 
     /* clock.c */
     struct DateStamp acpd_startup_datestamp;
@@ -132,7 +131,6 @@ struct arosc_privdata
 #define __startup_memsem                      (__get_arosc_privdata()->acpd_startup_memsem)
 #define __startup_mempool                     (__get_arosc_privdata()->acpd_startup_mempool)
 #define __startup_datestamp                   (__get_arosc_privdata()->acpd_startup_datestamp)
-#define __stdfiles                            (__get_arosc_privdata()->acpd_stdfiles)
 #define __atexit_list                         (__get_arosc_privdata()->acpd_atexit_list)
 #define __umask                               (__get_arosc_privdata()->acpd_umask)
 #define __startup_cd_changed                  (__get_arosc_privdata()->acpd_startup_cd_changed)

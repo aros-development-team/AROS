@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     File descriptors handling internals.
@@ -306,15 +306,16 @@ int __init_stdfiles(void)
     errdesc->fcb = errfcb;
 
     me = (struct Process *)FindTask (NULL);
-    indesc->fcb->fh  = __stdfiles[STDIN_FILENO]  = Input();
-    outdesc->fcb->fh = __stdfiles[STDOUT_FILENO] = Output();
-    errdesc->fcb->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
+    indesc->fcb->fh  = Input();
+    outdesc->fcb->fh = Output();
+    errdesc->fcb->fh = me->pr_CES ? me->pr_CES : me->pr_COS;
 
     indesc->fcb->flags  = O_RDONLY;
     outdesc->fcb->flags = O_WRONLY | O_APPEND;
     errdesc->fcb->flags = O_WRONLY | O_APPEND;
 
     indesc->fcb->opencount = outdesc->fcb->opencount = errdesc->fcb->opencount = 1;
+    indesc->fcb->privflags = outdesc->fcb->privflags = errdesc->fcb->privflags = _FCB_DONTCLOSE_FH;
 
     __fd_array[STDIN_FILENO]  = indesc;
     __fd_array[STDOUT_FILENO] = outdesc;
@@ -345,9 +346,13 @@ void __updatestdio(void)
     fflush(stdout);
     fflush(stderr);
 
-    __fd_array[STDIN_FILENO]->fcb->fh  = __stdfiles[STDIN_FILENO]  = Input();
-    __fd_array[STDOUT_FILENO]->fcb->fh = __stdfiles[STDOUT_FILENO] = Output();
-    __fd_array[STDERR_FILENO]->fcb->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
+    __fd_array[STDIN_FILENO]->fcb->fh  = Input();
+    __fd_array[STDOUT_FILENO]->fcb->fh = Output();
+    __fd_array[STDERR_FILENO]->fcb->fh = me->pr_CES ? me->pr_CES : me->pr_COS;
+
+    __fd_array[STDIN_FILENO]->fcb->privflags =
+        __fd_array[STDOUT_FILENO]->fcb->privflags =
+        __fd_array[STDERR_FILENO]->fcb->privflags = _FCB_DONTCLOSE_FH;
 }
 
 ADD2INIT(__init_stdfiles, 2);

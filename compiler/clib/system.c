@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function system().
@@ -130,10 +130,6 @@ static AROS_UFH3(LONG, wait_entry,
     D(bug("privdata: %p, ppriv: %p\n", privdata, childdata->ppriv));
     privdata->acpd_parent_does_upath = childdata->ppriv->acpd_doupath;
     __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD | DO_NOT_CLONE_ENV_VARS;
-
-    __stdfiles[STDIN_FILENO] = childdata->ppriv->acpd_stdfiles[STDIN_FILENO];
-    __stdfiles[STDOUT_FILENO] = childdata->ppriv->acpd_stdfiles[STDOUT_FILENO];
-    __stdfiles[STDERR_FILENO] = childdata->ppriv->acpd_stdfiles[STDERR_FILENO];
 
     cli = Cli();
     if (cli)

@@ -2,7 +2,7 @@
 #define ___OPEN_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: file descriptors handling internals - header file
@@ -18,7 +18,11 @@ typedef struct _fcb
     int  flags;
     unsigned int opencount;
     char  isdir;
+    unsigned char privflags;
 } fcb;
+
+/* privflags */
+#define _FCB_DONTCLOSE_FH 1 
 
 /* file descriptor structure - one per descriptor */
 typedef struct _fdesc
