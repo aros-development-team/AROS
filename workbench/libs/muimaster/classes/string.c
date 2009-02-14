@@ -1846,12 +1846,18 @@ IPTR String__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
     ULONG id;
+    STRPTR buf = NULL;
+
+    if (data->msd_useSecret)
+    	buf = data->SecBuffer;
+    else
+    	buf = data->Buffer;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-	if (data->Buffer != NULL)
+	if (buf != NULL)
 	    DoMethod(msg->dataspace, MUIM_Dataspace_Add,
-		     (IPTR)data->Buffer,
+		     (IPTR)buf,
 		     data->NumChars + 1, 
 		     (IPTR)id);
 	else
