@@ -1010,7 +1010,7 @@ struct pragma_description * parse_pragmas(char * filename)
 						      parameters_s);
 						pd->offset = strtol(offset_s,NULL,16)/6;
 #if 1
-						printf("|%s| |%s| %d %s[%d]\t",
+						printf("|%s| |%s| %d %s[%zd]\t",
 						       pd->basename,
 						       pd->funcname,
 						       pd->offset,
@@ -1308,10 +1308,10 @@ char * getfuncname(char * s)
 
 char * get_returntype(char * pattern, char * funcname)
 {
-	int len;
+	size_t len;
 	int c = 0;
 	char * ret_type;
-	len = (int)strstr(pattern, funcname) - (int)pattern;
+	len = strstr(pattern, funcname) - pattern;
 	
 	ret_type = malloc(len-c+1);
 	strncpy(ret_type, pattern+c, len-c);
