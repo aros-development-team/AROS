@@ -277,8 +277,8 @@ Fixieren
 ; Snapshot
 ;
 MSG_REQU_DELETE (//)
-Löschen ...
-; Delete ...
+Datei Löschen ...
+; Delete file ...
 ;
 MSG_REQU_DELETE_YESNO (//)
 _Ja|Ja, _alle|_Nein|Nein, alles _behalten
@@ -303,4 +303,71 @@ in Schublade
 MSG_REQU_DELETE_FILE_E (//)
 wirklich gelöscht werden?
 ; ?
+;
+MSG_REQU_OVERWRITE (//)
+Datei überschreiben ...
+; Overwrite file ...
+;
+MSG_REQU_OVERWRITE_S (//)
+Soll die Datei
+; Really overwrite file
+;
+MSG_REQU_OVERWRITE_M (//)
+in Schublade
+; located in
+;
+MSG_REQU_OVERWRITE_E (//)
+wirklich überschrieben werden?
+; ?
+;
+MSG_REQU_OVERWRITE_YESNO (//)
+_Überschreiben|_Alles überschreiben|_Nein|Nein, alles _behalten
+; _Overwrite|Overwrite _All|_No|No _to All
+;
+MSG_REQU_OVERWRITE_SKIPABORT (//)
+_Überspringen|_Abbrechen
+;
+MSG_WANDERER_FILEACCESS (//)
+Wanderer Dateizugriff
+; Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING (//)
+Verarbeite ...
+; Processing ...
+;
+MSG_WANDERER_FILEACCESS_STOP (//)
+Abbrechen
+; Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM (//)
+verschiebe von
+; move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO (//)
+verschiebe nach
+; move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM (//)
+kopiere von
+; copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO (//)
+kopiere nach
+; copy to
+;
+MSG_WANDERER_FILEACCESS_FILE (//)
+Datei
+; file
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC (//)
+Datenrate
+; data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM (//)
+lösche aus Schublade
+; delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE (//)
+zu löschende Datei
+; file to delete
 ;

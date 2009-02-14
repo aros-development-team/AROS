@@ -207,7 +207,7 @@ MSG_SNAPSHOT (//)
 Snapshot
 ;
 MSG_REQU_DELETE (//)
-Delete ...
+Delete file ...
 ;
 MSG_REQU_DELETE_YESNO (//)
 _Yes|Yes to _All|_No|No _to All
@@ -226,4 +226,55 @@ located in
 ;
 MSG_REQU_DELETE_FILE_E (//)
 ?
+;
+MSG_REQU_OVERWRITE (//)
+Overwrite file ...
+;
+MSG_REQU_OVERWRITE_S (//)
+Really overwrite file
+;
+MSG_REQU_OVERWRITE_M (//)
+located in
+;
+MSG_REQU_OVERWRITE_E (//)
+?
+;
+MSG_REQU_OVERWRITE_YESNO (//)
+_Overwrite|Overwrite _All|_No|No _to All
+;
+MSG_REQU_OVERWRITE_SKIPABORT (//)
+_Skip|_Abort
+;
+MSG_WANDERER_FILEACCESS (//)
+Wanderer file access
+;
+MSG_WANDERER_FILEACCESS_PROCESSING (//)
+Processing ...
+;
+MSG_WANDERER_FILEACCESS_STOP (//)
+Stop
+;
+MSG_WANDERER_FILEACCESS_MOVEFROM (//)
+move from
+;
+MSG_WANDERER_FILEACCESS_MOVETO (//)
+move to
+;
+MSG_WANDERER_FILEACCESS_COPYFROM (//)
+copy from
+;
+MSG_WANDERER_FILEACCESS_COPYTO (//)
+copy to
+;
+MSG_WANDERER_FILEACCESS_FILE (//)
+file
+;
+MSG_WANDERER_FILEACCESS_TRAFFIC (//)
+data transfer rate
+;
+MSG_WANDERER_FILEACCESS_DELETEFROM (//)
+delete from drawer
+;
+MSG_WANDERER_FILEACCESS_FILETODELETE (//)
+file to delete
 ;
