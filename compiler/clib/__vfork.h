@@ -2,7 +2,7 @@
 #define __VFORK_H
 
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -47,6 +47,7 @@ struct vfork_data
 
     struct Task *child;
     struct aros_startup child_startup;
+    struct arosc_privdata *cpriv;
     struct Library *aroscbase;
     int child_executed;
     int child_errno;

@@ -40,8 +40,7 @@ LONG launcher()
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
     LONG ret = 0;
-    struct Library *aroscbase;
-    fdesc *newin, *newout, *newerr;
+    struct Library *aroscbase = NULL;
 
     GetIntETask(this)->iet_startup = GetETask(this)->et_Result2 = AllocVec(sizeof(struct aros_startup), MEMF_ANY | MEMF_CLEAR);
 
@@ -56,7 +55,8 @@ LONG launcher()
 	return -1;
     }
 
-    aroscbase = OpenLibrary((STRPTR) "arosc.library", 0);
+    if(__register_init_fdarray(udata->ppriv->acpd_fd_array, udata->ppriv->acpd_numslots))
+        aroscbase = OpenLibrary((STRPTR) "arosc.library", 0);
     if(!aroscbase)
     {
 	FreeSignal(child_signal);
@@ -65,20 +65,10 @@ LONG launcher()
 	return -1;	
     }
 
+    udata->cpriv = __get_arosc_privdata();
     __get_arosc_privdata()->acpd_parent_does_upath = udata->ppriv->acpd_doupath;
     __get_arosc_privdata()->acpd_flags |= KEEP_OLD_ACPD | DO_NOT_CLONE_ENV_VARS;
 
-    newin = malloc(sizeof(fdesc));
-    newout = malloc(sizeof(fdesc));
-    newerr = malloc(sizeof(fdesc));
-    if(!newin || !newout || !newerr)
-    {
-	FreeSignal(child_signal);
-	udata->child_errno = ENOMEM;
-	Signal(udata->parent, 1 << udata->parent_signal);
-	return -1;
-    }
-    
     /* Setup complete, signal parent */
     D(bug("launcher: Signaling parent that we finished setup\n"));
     Signal(udata->parent, 1 << udata->parent_signal);
@@ -96,36 +86,17 @@ LONG launcher()
 
 	fdesc *in, *out, *err;
 
-	if(__fd_array[STDIN_FILENO])
-	    close(STDIN_FILENO);
-	if(__fd_array[STDOUT_FILENO])
-	    close(STDOUT_FILENO);
-	if(__fd_array[STDERR_FILENO])
-	    close(STDERR_FILENO);
-
-	in = udata->ppriv->acpd_fd_array[STDIN_FILENO];
-	out = udata->ppriv->acpd_fd_array[STDOUT_FILENO];
-	err = udata->ppriv->acpd_fd_array[STDERR_FILENO];
-
+	in = __fd_array[STDIN_FILENO];
 	if(in) 
 	    SelectInput(in->fcb->fh);
+
+	out = __fd_array[STDOUT_FILENO];
 	if(out) 
 	    SelectOutput(out->fcb->fh);
+
+	err = __fd_array[STDERR_FILENO];
 	if(err)
 	    SelectError(err->fcb->fh);
-
-	in->fcb->opencount++;
-	out->fcb->opencount++;
-	err->fcb->opencount++;
-	newin->fdflags = 0;
-	newout->fdflags = 0;
-	newerr->fdflags = 0;
-	newin->fcb  = in->fcb;
-	newout->fcb = out->fcb;
-	newerr->fcb = err->fcb;
-	__fd_array[STDIN_FILENO] = newin;
-	__fd_array[STDOUT_FILENO] = newout;
-	__fd_array[STDERR_FILENO] = newerr;
 
 	D(bug("launcher: informing parent that we won't use udata anymore\n"));
 	/* Inform parent that we won't use udata anymore */
@@ -174,7 +145,6 @@ void FreeAndJump(struct vfork_data *udata)
 
 pid_t __vfork(jmp_buf env)
 {
-    int i;
     struct Task *this = FindTask(NULL);
     struct vfork_data *udata = AllocMem(sizeof(struct vfork_data), MEMF_ANY | MEMF_CLEAR);
     if(udata == NULL)
@@ -204,7 +174,7 @@ pid_t __vfork(jmp_buf env)
     udata->prev = __get_arosc_privdata()->acpd_vfork_data;
     D(bug("__vfork: Saved old parent's vfork_data: %p\n", udata->prev));
     udata->ppriv = __get_arosc_privdata();
-    
+                                        
     D(bug("__vfork: backuping startup buffer\n"));
     /* Backup startup buffer */
     CopyMem(&__aros_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
@@ -221,36 +191,6 @@ pid_t __vfork(jmp_buf env)
     udata->parent_acpd_numslots = ppriv->acpd_numslots;
     udata->parent_acpd_fd_array = ppriv->acpd_fd_array;
 
-    fdesc **acpd_fd_array = calloc((ppriv->acpd_numslots), sizeof(fdesc *));
-    if(acpd_fd_array == NULL)
-    {
-	/* Couldn't allocate fd array, return -1 */
-	FreeMem(udata, sizeof(struct vfork_data));
-	errno = ENOMEM;
-	longjmp(udata->vfork_jump, -1);    	    
-    }
-
-    D(bug("__vfork: opening descriptors\n"));
-    /* Copy and "Open" all parent descriptors */
-    for(i = 0; i < ppriv->acpd_numslots; i++)
-    {
-	if(ppriv->acpd_fd_array[i])
-	{
-	    acpd_fd_array[i] = malloc(sizeof(fdesc));
-	    if(!acpd_fd_array[i])
-	    {
-		FreeMem(udata, sizeof(struct vfork_data));
-		errno = ENOMEM;
-		longjmp(udata->vfork_jump, -1);		
-	    }
-	    acpd_fd_array[i]->fdflags = 0;
-	    acpd_fd_array[i]->fcb = ppriv->acpd_fd_array[i]->fcb;
-	    acpd_fd_array[i]->fcb->opencount++;
-	}
-    }
-
-    ppriv->acpd_fd_array = acpd_fd_array;
-    
     D(bug("__vfork: Allocating parent signal\n"));
     /* Allocate signal for child->parent communication */
     udata->parent_signal = AllocSignal(-1);
@@ -309,22 +249,10 @@ pid_t __vfork(jmp_buf env)
 
 	D(bug("__vfork: Restoring current directory\n"));
 	UnLock(CurrentDir(GETUDATA->parent_curdir));
-	
-	D(bug("__vfork: Closing opened files\n"));
-	/* Close all opened files in "child" */
-	int i;
-	for(i = 0; i < ((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_numslots; i++)
-	{
-	    if(((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array[i])
-	    {
-		close(i);
-	    }
-	}
 
 	D(bug("__vfork: restoring old fd_array\n"));
 	/* Restore parent's old fd_array */
 	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_numslots = GETUDATA->parent_acpd_numslots;
-	free(((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array);
 	((struct arosc_privdata *) GetIntETask(GETUDATA->parent)->iet_acpd)->acpd_fd_array =  GETUDATA->parent_acpd_fd_array;
 
 	D(bug("__vfork: restoring startup buffer\n"));
@@ -340,6 +268,8 @@ pid_t __vfork(jmp_buf env)
 
     __get_arosc_privdata()->acpd_vfork_data = udata;
     __get_arosc_privdata()->acpd_flags |= PRETEND_CHILD;
+    ppriv->acpd_fd_array = udata->cpriv->acpd_fd_array;
+    
     D(bug("__vfork: Jumping to jmp_buf %p\n", &udata->vfork_jump));
     D(bug("__vfork: ip: %p, stack: %p\n", udata->vfork_jump[0].retaddr, udata->vfork_jump[0].regs[_JMPLEN - 1]));
     vfork_longjmp(udata->vfork_jump, 0);

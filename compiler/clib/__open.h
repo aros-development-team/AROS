@@ -31,6 +31,7 @@ typedef struct _fdesc
     int  fdflags;
 } fdesc;
 
+int __register_init_fdarray(fdesc **fdarray, int numslots);
 fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);
 int __getfdslot(int wanted_fd);
