@@ -4091,6 +4091,26 @@ IPTR Window__MUIM_UpdateMenu(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
+/**************************************************************************
+MUIM_Export : to export an objects "contents" to a dataspace object.
+**************************************************************************/
+static IPTR Window__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    DoMethodA(data->wd_RootObject, msg);
+    return 0;
+}
+
+
+/**************************************************************************
+MUIM_Import : to import an objects "contents" from a dataspace object.
+**************************************************************************/
+static IPTR Window__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+{
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    DoMethodA(data->wd_RootObject, msg);
+    return 0;
+}
 
 BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 {
@@ -4128,6 +4148,8 @@ BOOPSI_DISPATCHER(IPTR, Window_Dispatcher, cl, obj, msg)
 	case MUIM_Window_ActionIconify:         return Window__MUIM_ActionIconify(cl, obj, (APTR)msg);
 	case MUIM_Window_Snapshot:              return Window__MUIM_Snapshot(cl, obj, (APTR)msg);
 	case MUIM_Window_UpdateMenu:            return Window__MUIM_UpdateMenu(cl, obj, (APTR)msg);
+	case MUIM_Export:                       return Window__MUIM_Export(cl, obj, (APTR)msg);
+	case MUIM_Import:                       return Window__MUIM_Import(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

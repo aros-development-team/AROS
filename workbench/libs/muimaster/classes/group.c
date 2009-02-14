@@ -2816,6 +2816,47 @@ IPTR Group__MUIM_FindAreaObject(struct IClass *cl, Object *obj,
 }
 
 /**************************************************************************
+MUIM_Export : to export an objects "contents" to a dataspace object.
+**************************************************************************/
+static IPTR Group__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    get(data->family, MUIA_Family_List, &(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	DoMethodA(child, (Msg)msg);
+    }
+    
+    return 0;
+}
+
+
+/**************************************************************************
+MUIM_Import : to import an objects "contents" from a dataspace object.
+**************************************************************************/
+static IPTR Group__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    get(data->family, MUIA_Family_List, &(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	DoMethodA(child, (Msg)msg);
+    }
+
+    return 0;
+}
+
+/**************************************************************************
  MUIM_Notify - disabled now because previous Zune versions had a OM_GET
  check in MUIM_Notify which is no longer the case
 **************************************************************************/
@@ -2928,6 +2969,8 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 	case MUIM_DrawBackground:   return Group__MUIM_DrawBackground(cl, obj, (APTR)msg);
 	case MUIM_DragQueryExtended:return Group__MUIM_DragQueryExtended(cl, obj, (APTR)msg);
 	case MUIM_FindAreaObject:   return Group__MUIM_FindAreaObject(cl, obj, (APTR)msg);
+	case MUIM_Export:           return Group__MUIM_Export(cl, obj, (APTR) msg);
+	case MUIM_Import:           return Group__MUIM_Import(cl, obj, (APTR) msg);
 
 //#if 0
 #if 1
