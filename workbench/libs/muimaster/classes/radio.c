@@ -188,17 +188,57 @@ IPTR Radio__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_Export - to export an objects "contents" to a dataspace object.
+**************************************************************************/
+IPTR Radio__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+{
+    struct Radio_DATA *data = INST_DATA(cl, obj);
+    ULONG id;
+
+    if ((id = muiNotifyData(obj)->mnd_ObjectID))
+    {
+	LONG value = data->entries_active;
+	DoMethod(msg->dataspace, MUIM_Dataspace_Add, 
+		(IPTR) &value, 
+		sizeof(value), 
+		(IPTR) id);
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Import - to import an objects "contents" from a dataspace object.
+**************************************************************************/
+IPTR Radio__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+{
+    struct Radio_DATA *data = INST_DATA(cl, obj);
+    ULONG id;
+    LONG *s;
+
+    if ((id = muiNotifyData(obj)->mnd_ObjectID))
+    {
+	if ((s = (LONG*) DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR) id)))
+	{
+	    set(obj, MUIA_Radio_Active, *s);
+	}
+    }
+    return 0;
+}
+
 #if ZUNE_BUILTIN_RADIO
 BOOPSI_DISPATCHER(IPTR, Radio_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-        case OM_NEW:     return Radio__OM_NEW(cl, obj, (struct opSet *) msg);
-        case OM_DISPOSE: return Radio__OM_DISPOSE(cl, obj, (Msg) msg);
-        case OM_SET:     return Radio__OM_SET(cl, obj, (struct opSet *) msg);
-        case OM_GET:     return Radio__OM_GET(cl, obj, (struct opGet *) msg);
-        case MUIM_Setup: return Radio__MUIM_Setup(cl, obj, msg);
-        default:         return DoSuperMethodA(cl, obj, msg);
+        case OM_NEW:      return Radio__OM_NEW(cl, obj, (struct opSet *) msg);
+        case OM_DISPOSE:  return Radio__OM_DISPOSE(cl, obj, (Msg) msg);
+        case OM_SET:      return Radio__OM_SET(cl, obj, (struct opSet *) msg);
+        case OM_GET:      return Radio__OM_GET(cl, obj, (struct opGet *) msg);
+        case MUIM_Setup:  return Radio__MUIM_Setup(cl, obj, msg);
+        case MUIM_Export: return Radio__MUIM_Export(cl, obj, (Msg) msg);
+        case MUIM_Import: return Radio__MUIM_Import(cl, obj, (Msg) msg);
+        default:          return DoSuperMethodA(cl, obj, msg);
     }
 }
 BOOPSI_DISPATCHER_END

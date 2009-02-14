@@ -790,6 +790,44 @@ IPTR Cycle__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
+/**************************************************************************
+ MUIM_Export - to export an objects "contents" to a dataspace object.
+**************************************************************************/
+IPTR Cycle__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
+{
+    struct MUI_CycleData *data = INST_DATA(cl, obj);
+    ULONG id;
+
+    if ((id = muiNotifyData(obj)->mnd_ObjectID))
+    {
+	LONG value = data->entries_active;
+	DoMethod(msg->dataspace, MUIM_Dataspace_Add, 
+		(IPTR) &value, 
+		sizeof(value), 
+		(IPTR) id);
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Import - to import an objects "contents" from a dataspace object.
+**************************************************************************/
+IPTR Cycle__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
+{
+    struct MUI_CycleData *data = INST_DATA(cl, obj);
+    ULONG id;
+    LONG *s;
+
+    if ((id = muiNotifyData(obj)->mnd_ObjectID))
+    {
+	if ((s = (LONG*) DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR) id)))
+	{
+	    set(obj, MUIA_Cycle_Active, *s);
+	}
+    }
+    return 0;
+}
+
 BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -801,6 +839,8 @@ BOOPSI_DISPATCHER(IPTR, Cycle_Dispatcher, cl, obj, msg)
     case MUIM_Cleanup:     return Cycle__MUIM_Cleanup(cl, obj, (APTR)msg);
     case MUIM_Hide:        return Cycle__MUIM_Hide(cl, obj, (APTR)msg);
     case MUIM_HandleEvent: return Cycle__MUIM_HandleEvent(cl,obj,(APTR)msg);
+    case MUIM_Export:      return Cycle__MUIM_Export(cl,obj,(APTR)msg);
+    case MUIM_Import:      return Cycle__MUIM_Import(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
