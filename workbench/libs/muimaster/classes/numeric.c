@@ -496,16 +496,17 @@ IPTR Numeric__MUIM_ValueToScaleExt(struct IClass *cl, Object * obj, struct MUIP_
 **************************************************************************/
 IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
-#if 0
     struct MUI_NumericData *data = INST_DATA(cl, obj);
-    STRPTR id;
+    ULONG id;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-	DoMethod(msg->dataspace, MUIM_Dataspace_AddInt,
-		 _U(id), _U("value"), _U(&data->value));
+	LONG value = data->value;
+	DoMethod(msg->dataspace, MUIM_Dataspace_Add, 
+		(IPTR) &value, 
+		sizeof(value), 
+		(IPTR) id);
     }
-#endif
     return 0;
 }
 
@@ -514,21 +515,17 @@ IPTR Numeric__MUIM_Export(struct IClass *cl, Object *obj, struct MUIP_Export *ms
 **************************************************************************/
 IPTR Numeric__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-#if 0
     struct MUI_NumericData *data = INST_DATA(cl, obj);
-    STRPTR id;
-    LONG val;
+    ULONG id;
+    LONG *s;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-	if (DoMethod(msg->dataspace, MUIM_Dataspace_FindString, _U(id), _U("value")))
+	if ((s = (LONG*) DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR) id)))
 	{
-	    DoMethod(msg->dataspace, MUIM_Dataspace_FindInt,
-		     _U(id), _U("value"), _U(&val));
-	    set(obj, MUIA_Numeric_Value, val);
+	    set(obj, MUIA_Numeric_Value, *s);
 	}
     }
-#endif
     return 0;
 }
 
