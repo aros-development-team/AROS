@@ -209,7 +209,7 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
             if (d->updateme &&(obj->totallen <= obj->filelen))
             {
                 double rate = (double) (((double) obj->totallen) / (((double) obj->difftime) / ((double) CLOCKS_PER_SEC))) / 1024.0;
-                if (rate < 1024.0) sprintf(d->SpeedBuffer, "Speed: %.2f kBytes/s",  rate); else sprintf(d->SpeedBuffer, "Speed: %.2f MBytes/s",  rate / 1024.0);
+                if (rate < 1024.0) sprintf(d->SpeedBuffer, "%.2f kBytes/s",  rate); else sprintf(d->SpeedBuffer, "%.2f MBytes/s",  rate / 1024.0);
                 SetAttrs(d->gauge, MUIA_Gauge_Current, (ULONG) (32768.0 * (double) obj->totallen / (double) obj->filelen),  MUIA_Gauge_InfoText, d->SpeedBuffer, TAG_DONE);
             }
         }
@@ -304,12 +304,12 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
         }
         else if (obj->type == 2) 
         {
-            string = CombineString("Really overwrite file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
-                obj->file, obj->spath);
+            string = CombineString("%s\n\033b%s\033n\n%s\n\033b%s\033n %s", 
+                _(MSG_REQU_OVERWRITE_S), obj->file, _(MSG_REQU_OVERWRITE_M), obj->spath, _(MSG_REQU_OVERWRITE_E) );
         }
         else 
         {
-            string = CombineString("Can't access file\n\033b%s\033n\nlocated in\n\033b%s\033n ?", 
+            string = CombineString("Can't access file\n\033b%s\033n\nlocated in\n\033b%s\033n", 
                 obj->file, obj->spath);
         }
     } 
@@ -322,10 +322,10 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
 
     if (string) 
     {
-        if (obj->type == 0) ret = AskChoiceCentered(_(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0);
+        if (obj->type == 0) ret = AskChoiceCentered( _(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0);
         else if (obj->type == 1) ret = AskChoiceCentered("Protection Requester:", string, "_Unprotect|Unprotect _All|_No|No _to ALL", 0);
-        else if (obj->type == 2) ret = AskChoiceCentered("Overwrite Requester:", string, "_Overwrite|Overwrite _All|_No|No _to ALL", 0);
-        else ret = AskChoiceCentered("Overwrite Requester:", string, "_Skip|_Abort", 0);
+        else if (obj->type == 2) ret = AskChoiceCentered( _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_YESNO), 0);
+        else ret = AskChoiceCentered( _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_SKIPABORT), 0);
         freeString(NULL, string);
     }
 
@@ -1798,7 +1798,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
         MUIA_Application_Title,     (IPTR)"CopyRequester",
         MUIA_Application_Base,      (IPTR)"WANDERER_COPY",
         MUIA_Application_Window, (IPTR)(d->win = MUI_NewObject(MUIC_Window,
-            MUIA_Window_Title,          (IPTR)"Copy Filesystem",
+            MUIA_Window_Title,          (IPTR)_(MSG_WANDERER_FILEACCESS),
             MUIA_Window_Activate,       TRUE,
             MUIA_Window_DepthGadget,    TRUE,
             MUIA_Window_DragBar,        TRUE,
@@ -1873,7 +1873,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     Child, d->gauge = MUI_NewObject(MUIC_Gauge,
                         MUIA_Gauge_Horiz, TRUE,
                         MUIA_Gauge_Max, 32768,
-                        MUIA_Gauge_InfoText, "Processing...",
+                        MUIA_Gauge_InfoText, _(MSG_WANDERER_FILEACCESS_PROCESSING),
                     TAG_DONE),
                     Child, MUI_NewObject(MUIC_Scale,
                         MUIA_Scale_Horiz, TRUE,
@@ -1890,7 +1890,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
                     MUIA_Text_Contents, (IPTR)"...........0 Bytes...........",
                 TAG_DONE)),
 
-                Child, (IPTR)( d->stopObject = SimpleButton("Stop") ),
+                Child, (IPTR)( d->stopObject = SimpleButton( _(MSG_WANDERER_FILEACCESS_STOP) ) ),
             TAG_DONE)),
         TAG_DONE)),
     TAG_DONE);
@@ -1900,22 +1900,22 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
     {
         if ((flags & (ACTION_COPY|ACTION_DELETE)) == (ACTION_COPY|ACTION_DELETE)) 
         {
-            SET(fromObject, MUIA_Text_Contents, (IPTR)"move from");
-            SET(toObject, MUIA_Text_Contents, (IPTR)"move to");
-            SET(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
-            SET(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
+            SET(fromObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_MOVEFROM) );
+            SET(toObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_MOVETO) );
+            SET(fileTextObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_FILE) );
+            SET(fileLengthObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_TRAFFIC) );
         } 
         else if ((flags & ACTION_COPY) == ACTION_COPY) 
         {
-            SET(fromObject, MUIA_Text_Contents, (IPTR)"copy from");
-            SET(toObject, MUIA_Text_Contents, (IPTR)"copy to");
-            SET(fileTextObject, MUIA_Text_Contents, (IPTR)"file");
-            SET(fileLengthObject, MUIA_Text_Contents, (IPTR)"traffic");
+            SET(fromObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_COPYFROM) );
+            SET(toObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_COPYTO) );
+            SET(fileTextObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_FILE) );
+            SET(fileLengthObject, MUIA_Text_Contents, (IPTR) _(MSG_WANDERER_FILEACCESS_TRAFFIC) );
 
         } 
         else if ((flags & ACTION_DELETE) == ACTION_DELETE) 
         {
-            SET(fromObject, MUIA_Text_Contents, "delete from");
+            SET(fromObject, MUIA_Text_Contents, _(MSG_WANDERER_FILEACCESS_DELETEFROM) );
             DoMethod(group, MUIM_Group_InitChange);
             DoMethod(group, OM_REMMEMBER, toObject);
             DoMethod(group, OM_REMMEMBER, fileLengthObject);
@@ -1923,7 +1923,7 @@ BOOL CreateCopyDisplay(UWORD flags, struct MUIDisplayObjects *d)
             DoMethod(group, OM_REMMEMBER, d->destObject);
             DoMethod(group, OM_REMMEMBER, gaugeGroup);
             DoMethod(group, MUIM_Group_ExitChange);
-            SET(fileTextObject, MUIA_Text_Contents, "file to delete");
+            SET(fileTextObject, MUIA_Text_Contents, _(MSG_WANDERER_FILEACCESS_FILETODELETE) );
         }
 
         SET(d->win,MUIA_Window_Open,TRUE);
