@@ -2081,17 +2081,13 @@ static IPTR Area__MUIM_Import(struct IClass *cl, Object *obj, struct MUIP_Import
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     ULONG id;
-    //BOOL val = FALSE;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
         char *selected = (char*)DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR)id);
 
-    if (selected)
-    {
-        if (*selected) data->mad_Flags |= MADF_SELECTED;
-        else data->mad_Flags &= ~MADF_SELECTED;
-    }
+        if (selected)
+            set(obj, MUIA_Selected, *selected);
     }
     return 0;
 }
