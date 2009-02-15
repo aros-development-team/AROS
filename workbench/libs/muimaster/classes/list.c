@@ -34,6 +34,8 @@ extern struct Library *MUIMasterBase;
 
 #define FORMAT_TEMPLATE "DELTA=D/N,PREPARSE=P/K,WEIGHT=W/N,MINWIDTH=MIW/N,MAXWIDTH=MAW/N,COL=C/N,BAR/S"
 
+#define BAR_WIDTH 2
+
 enum {
     ARG_DELTA,
     ARG_PREPARSE,
@@ -1166,7 +1168,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
 	    zune_text_draw(text, obj, x1, x2, y); /* totally wrong! */
 	    zune_text_destroy(text);
 	}
-	x1 = x2 + data->ci[col].delta;
+	x1 = x2 + data->ci[col].delta + (data->ci[col].bar ? BAR_WIDTH : 0);
     }
 }
 
@@ -1303,6 +1305,61 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    
 	    MUI_EndRefresh(muiRenderInfo(obj), 0);
 	}
+    }
+    
+    ULONG x1 = _mleft(obj);
+    ULONG col;
+    y = _mtop(obj);
+    
+    if (data->title_height && data->title)
+    {
+        for (col = 0; col < data->columns; col++)
+        {
+    	    ULONG halfdelta = data->ci[col].delta / 2;
+            x1 += data->ci[col].entries_width + halfdelta;
+
+            if(x1 + (data->ci[col].bar ? BAR_WIDTH : 0) > _mright(obj))
+        	break;
+
+    	    if(data->ci[col].bar)
+    	    {                
+    	        SetAPen(_rp(obj),_pens(obj)[MPEN_SHINE]);
+    	        Move(_rp(obj),x1, y);
+    	        Draw(_rp(obj),x1, y + data->entries[ENTRY_TITLE]->height - 1);
+    	        SetAPen(_rp(obj),_pens(obj)[MPEN_SHADOW]);
+    	        Move(_rp(obj),x1 + 1, y);
+    	        Draw(_rp(obj),x1 + 1, y + data->entries[ENTRY_TITLE]->height - 1);   
+                
+                x1 += BAR_WIDTH;
+    	    }
+    	    x1 += data->ci[col].delta - halfdelta;
+        }
+        y += data->entries[ENTRY_TITLE]->height + 1;
+    }
+  
+    x1 = _mleft(obj);
+    
+    for (col = 0; col < data->columns; col++)
+    {
+	ULONG halfdelta = data->ci[col].delta / 2;
+        x1 += data->ci[col].entries_width + halfdelta;
+        
+        if(x1 + (data->ci[col].bar ? BAR_WIDTH : 0) > _mright(obj))
+            break;
+        
+	if(data->ci[col].bar)
+	{
+	    SetAPen(_rp(obj),_pens(obj)[MPEN_SHINE]);
+	    Move(_rp(obj),x1, y);
+	    Draw(_rp(obj),x1, _mbottom(obj));
+	    SetAPen(_rp(obj),_pens(obj)[MPEN_SHADOW]);
+	    Move(_rp(obj),x1 + 1, y);
+	    Draw(_rp(obj),x1 + 1, _mbottom(obj));   
+            
+            x1 += BAR_WIDTH;
+	}
+	
+	x1 += data->ci[col].delta - halfdelta;
     }
     
     return 0;
