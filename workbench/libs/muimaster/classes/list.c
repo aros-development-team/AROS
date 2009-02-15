@@ -440,16 +440,18 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
 
 /**************************************************************************
  Determine the dims of a single entry and adapt the columinfo according
- to it. pos might be ENTRY_TITLE
+ to it. pos might be ENTRY_TITLE. Returns 0 if pos entry needs to
+ be redrawn after this operation, 1 if all entries need to be redrawn.
 **************************************************************************/
-static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
+static int CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     struct ListEntry *entry = data->entries[pos];
     int j;
+    int ret = 0;
 
     if (!entry)
-	return;
+	return ret;
 
     DisplayEntry(cl, obj, pos);
 
@@ -464,7 +466,11 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 	    zune_text_get_bounds(text, obj);
 	    
 	    if (text->height > data->entries[pos]->height)
+	    {
 		data->entries[pos]->height = text->height;
+		/* entry height changed, redraw all entries later */
+		ret = 1;
+	    }
 	    data->entries[pos]->widths[j] = text->width;
 
 	    if (text->width > data->ci[j].entries_width)
@@ -473,13 +479,21 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 		 * columns, so we store this value
 		 */
 	        data->ci[j].entries_width = text->width;
+	        /* column width changed, redraw all entries later */
+	        ret = 1;
 	    }
 
 	    zune_text_destroy(text);
 	}
     }
     if (data->entries[pos]->height > data->entry_maxheight)
+    {
 	data->entry_maxheight = data->entries[pos]->height;
+	/* maximum entry height changed, redraw all entries later */
+	ret = 1;
+    }
+    
+    return ret;
 }
 
 /**************************************************************************
@@ -1627,6 +1641,7 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *
     if (msg->pos == MUIV_List_Redraw_All)
     {
 	data->update = 1;
+	CalcWidths(cl,obj);
 	MUI_Redraw(obj,MADF_DRAWUPDATE);
     } else
     {
@@ -1636,8 +1651,13 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *
 
     	if (pos != -1)
     	{
-	    data->update = 2;
-	    data->update_pos = pos;
+	    if(CalcDimsOfEntry(cl, obj, pos))
+		data->update = 1;
+	    else
+	    {
+		data->update = 2;
+		data->update_pos = pos;
+	    }
 	    MUI_Redraw(obj,MADF_DRAWUPDATE);
 	}
     }
