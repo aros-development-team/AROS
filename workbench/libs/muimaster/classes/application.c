@@ -1687,7 +1687,7 @@ static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj, struct MUIP_A
     
     get(data->app_WindowFamily, MUIA_Family_List, &children);
     cstate = (Object *)children->mlh_Head;
-    if ((child = NextObject(&cstate)))
+    while ((child = NextObject(&cstate)))
     {
 	DoMethod(child, MUIM_Import, dataspace);
     }
@@ -1717,7 +1717,7 @@ static IPTR Application__MUIM_Save(struct IClass *cl, Object *obj, struct MUIP_A
 
     get(data->app_WindowFamily, MUIA_Family_List, &children);
     cstate = (Object *)children->mlh_Head;
-    if ((child = NextObject(&cstate)))
+    while ((child = NextObject(&cstate)))
     {
 	DoMethod(child, MUIM_Export, dataspace);
     }
