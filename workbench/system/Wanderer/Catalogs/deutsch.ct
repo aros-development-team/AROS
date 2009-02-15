@@ -340,34 +340,46 @@ Abbrechen
 ; Stop
 ;
 MSG_WANDERER_FILEACCESS_MOVEFROM (//)
-verschiebe von
-; move from
+Verschiebe von
+; Move from
 ;
 MSG_WANDERER_FILEACCESS_MOVETO (//)
-verschiebe nach
-; move to
+Verschiebe nach
+; Move to
 ;
 MSG_WANDERER_FILEACCESS_COPYFROM (//)
-kopiere von
-; copy from
+Kopiere von
+; Copy from
 ;
 MSG_WANDERER_FILEACCESS_COPYTO (//)
-kopiere nach
-; copy to
+Kopiere nach
+; Copy to
 ;
 MSG_WANDERER_FILEACCESS_FILE (//)
 Datei
-; file
+; File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC (//)
 Datenrate
-; data transfer rate
+; Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM (//)
-lösche aus Schublade
-; delete from drawer
+Lösche aus Schublade
+; Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE (//)
-zu löschende Datei
-; file to delete
+Zu löschende Datei
+; File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES (//)
+Bearbeitete Dateien:
+; Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL (//)
+Größe der aktuellen Datei:
+; Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL (//)
+Gesamtgröße:
+; Overall size:
 ;
