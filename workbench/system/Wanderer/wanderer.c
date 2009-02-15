@@ -221,15 +221,15 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
                 if (obj->filelen < 1048576)
                 {
                     sprintf(
-                        d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f kBytes", 
-                        d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1024.0
+                        d->Buffer, "%s %ld   %s %.2f kBytes   %s %.2f kBytes", 
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
                     );
                 }
                 else
                 {
                     sprintf(
-                        d->Buffer, "# of files: %ld   Actual: %.2f MBytes   Total: %.2f kBytes", 
-                        d->numfiles, (double) obj->filelen / 1048576.0, (double) d->bytes / 1024.0
+                        d->Buffer, "%s %ld   %s %.2f MBytes   %s %.2f kBytes", 
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1024.0
                     );
                 }
             }
@@ -238,15 +238,15 @@ HOOKPROTO(Wanderer__HookFunc_DisplayCopyFunc, BOOL, struct dCopyStruct *obj, APT
                 if (obj->filelen < 1048576)
                 {
                     sprintf(
-                        d->Buffer, "# of files: %ld   Actual: %.2f kBytes   Total: %.2f MBytes", 
-                        d->numfiles, (double) obj->filelen / 1024.0, (double) d->bytes / 1048576.0
+                        d->Buffer, "%s %ld   %s %.2f kBytes   %s %.2f MBytes", 
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1024.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
                     );
                 }
                 else
                 {
                     sprintf(
-                        d->Buffer, "# of files: %ld   Actual: %.2f MBytes   Total: %.2f MBytes", 
-                        d->numfiles, (double) obj->filelen / 1048576.0, (double) d->bytes / 1048576.0
+                        d->Buffer, "%s %ld   %s %.2f MBytes   %s %.2f MBytes", 
+                        _(MSG_WANDERER_FILEACCESS_NOOFFILES), d->numfiles, _(MSG_WANDERER_FILEACCESS_ACTUAL), (double) obj->filelen / 1048576.0, _(MSG_WANDERER_FILEACCESS_TOTAL), (double) d->bytes / 1048576.0
                     );
                 }
             }

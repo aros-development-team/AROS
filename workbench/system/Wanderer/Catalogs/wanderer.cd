@@ -255,26 +255,35 @@ MSG_WANDERER_FILEACCESS_STOP (//)
 Stop
 ;
 MSG_WANDERER_FILEACCESS_MOVEFROM (//)
-move from
+Move from
 ;
 MSG_WANDERER_FILEACCESS_MOVETO (//)
-move to
+Move to
 ;
 MSG_WANDERER_FILEACCESS_COPYFROM (//)
-copy from
+Copy from
 ;
 MSG_WANDERER_FILEACCESS_COPYTO (//)
-copy to
+Copy to
 ;
 MSG_WANDERER_FILEACCESS_FILE (//)
-file
+File
 ;
 MSG_WANDERER_FILEACCESS_TRAFFIC (//)
-data transfer rate
+Data transfer rate
 ;
 MSG_WANDERER_FILEACCESS_DELETEFROM (//)
-delete from drawer
+Delete from drawer
 ;
 MSG_WANDERER_FILEACCESS_FILETODELETE (//)
-file to delete
+File to delete
+;
+MSG_WANDERER_FILEACCESS_NOOFFILES (//)
+Processed files:
+;
+MSG_WANDERER_FILEACCESS_ACTUAL (//)
+Size of current file:
+;
+MSG_WANDERER_FILEACCESS_TOTAL (//)
+Overall size:
 ;
