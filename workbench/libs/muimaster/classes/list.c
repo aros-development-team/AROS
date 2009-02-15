@@ -1885,7 +1885,7 @@ IPTR List__MUIM_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Const
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
     if (NULL == data->construct_hook)
-	return (ULONG)msg->entry;
+	return (IPTR)msg->entry;
     if ((ULONG)data->construct_hook == MUIV_List_ConstructHook_String)
     {
     	int len = msg->entry ? strlen((STRPTR)msg->entry) : 0;
@@ -1898,7 +1898,7 @@ IPTR List__MUIM_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Const
 	    strcpy((STRPTR)(mem+1), (STRPTR)msg->entry);
     	else
 	    *(STRPTR)(mem+1) = 0;
-    	return (ULONG)(mem+1);
+    	return (IPTR)(mem+1);
     }
     return CallHookPkt(data->construct_hook, msg->pool, msg->entry);
 }
