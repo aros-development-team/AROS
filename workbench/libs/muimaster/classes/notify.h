@@ -79,9 +79,9 @@ struct MUIP_DisconnectParent     {STACKED ULONG MethodID;};
 #define MUIA_Version             (MUIB_MUI|0x00422301) /* MUI: V4  ..g LONG                */
 
 /* Special values for MUIM_Notify */
-#define MUIV_TriggerValue    0x49893131
-#define MUIV_NotTriggerValue 0x49893133
-#define MUIV_EveryTime       0x49893131 /* as TrigVal */
+#define MUIV_TriggerValue    0x49893131UL
+#define MUIV_NotTriggerValue 0x49893133UL
+#define MUIV_EveryTime       0x49893131UL /* as TrigVal */
 
 enum
 {
