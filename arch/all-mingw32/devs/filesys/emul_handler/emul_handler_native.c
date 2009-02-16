@@ -12,7 +12,7 @@
 #include <shlobj.h>
 
 #include <stdio.h>
-#include <aros/hostthread.h>
+#include <aros/kernel_host.h>
 
 #include "dos_native.h"
 #include "emul_handler_intern.h"
@@ -128,32 +128,40 @@ int __declspec(dllexport) EmulStatFS(const char *path, struct InfoData *id)
   return GetLastError();
 }
 
-DWORD __declspec(dllexport) EmulThread(struct ThreadHandle *THandle)
+DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
 {
-    struct EmulThreadMessage *emsg;
     BOOL res;
 
     DASYNC(printf("[EmulHandler I/O] Thread started, handle 0x%08lX, host handle 0x%08lX, host ID %lu\n", THandle, THandle->handle, THandle->id));
     for (;;) {
-        emsg = HT_GetMsg();
-        DASYNC(printf("[EmulHandler I/O] Got message: 0x%p\n", emsg));
-        if (emsg && (emsg != (struct EmulThreadMessage *)-1)) {
-	    switch(emsg->op) {
-	    case EMUL_CMD_READ:
-	        DASYNC(printf("[EmulHandler I/O] READ %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
-	        res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
-	    	break;
-	    case EMUL_CMD_WRITE:
-	        DASYNC(printf("[EmulHandler I/O] WRITE %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
-	        res = WriteFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
-	    	break;
-	    }
+        WaitForSingleObject(emsg->CmdEvent, INFINITE);
+        DASYNC(printf("[EmulHandler I/O] Got command: 0xu\n", emsg->cmd));
+        switch(emsg->cmd) {
+        case ASYNC_CMD_SHUTDOWN:
+            DASYNC(printf("[EmulHandler I/O] shutting down thread\n"));
+	    return 0;
+        case ASYNC_CMD_READ:
+	    DASYNC(printf("[EmulHandler I/O] READ %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
+	    res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
 	    emsg->error = res ? 0 : GetLastError();
 	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
-	    HT_CauseInterrupt(emsg);
-	} else {
-	    DASYNC(printf("[EmulHandler I/O] shutting down thread\n"));
-	    return 0;
+	    CauseException(1);
 	}
     }
+}
+
+struct AsyncReaderControl ControlStruct;
+
+struct AsyncReaderControl * __declspec(dllexport) Emul_Init_Native(void)
+{
+    DWORD id;
+
+    ControlStruct.CmdEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (ControlStruct.CmdEvent) {
+    	ControlStruct.thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)EmulThread, &ControlStruct, 0, &id);
+    	if (ControlStruct.thread)
+    	    return &ControlStruct;
+    	CloseHandle(ControlStruct.CmdEvent);
+    }
+    return NULL;
 }

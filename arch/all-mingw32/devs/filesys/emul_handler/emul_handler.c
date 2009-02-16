@@ -16,7 +16,7 @@
 
 #define __DOS_NOLIBBASE__
 #include <aros/debug.h>
-#include <aros/hostthread.h>
+#include <aros/kernel.h>
 #include <aros/system.h>
 #include <aros/symbolsets.h>
 #include <exec/resident.h>
@@ -35,7 +35,7 @@
 #include <proto/arossupport.h>
 #include <proto/expansion.h>
 #include <proto/hostlib.h>
-#include <proto/hostthread.h>
+#include <proto/kernel.h>
 #include <libraries/expansion.h>
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
@@ -54,7 +54,7 @@
 
 /* Init DOSBase ourselves because emul_handler is initialized before dos.library */
 static struct DosLibrary *DOSBase;
-static APTR HostLibBase, HostThreadBase;
+static APTR HostLibBase, KernelBase;
 static struct EmulInterface *EmulIFace;
 static struct KernelInterface *KernelIFace;
 
@@ -534,18 +534,10 @@ static LONG set_protect(struct emulbase *emulbase, struct filehandle* fh,
 
 /*********************************************************************************************/
 
-AROS_UFH3(static int, EmulIntHandler,
-	  AROS_UFCA(struct EmulThreadMessage *, msg, A0),
-	  AROS_UFCA(APTR, data, A1),
-	  AROS_UFCA(APTR, code, A5))
+static void EmulIntHandler(struct AsyncReaderControl *msg, void *d)
 {
-    AROS_USERFUNC_INIT
-
-    DASYNC(bug("[emul] Interrupt on request 0x%p, task 0x%p\n", msg, msg->task));
-    Signal(msg->task, SIGF_BLIT);
-    return 1;
-
-    AROS_USERFUNC_EXIT
+    DASYNC(bug("[emul] Interrupt on request 0x%p, task 0x%p, signal 0x%08lX\n", msg, msg->task, msg->sig));
+    Signal(msg->task, msg->sig);
 }
 
 /*********************************************************************************************/
@@ -636,82 +628,83 @@ static LONG startup(struct emulbase *emulbase)
 
 	    ret = ERROR_NO_FREE_STORE;
 
-	    emulbase->EmulInt.is_Code = EmulIntHandler;
-	    D(bug("[Emulhandler] Creating host thread\n"));
-	    emulbase->HostThread = HT_CreateNewThread(EmulIFace->EmulThread, NULL);
-	    if (emulbase->HostThread) {
-	      D(bug("[Emulhandler] Created host thread 0x%08lX, handle 0x%08lX, ID %lu\n", emulbase->HostThread, emulbase->HostThread->handle, emulbase->HostThread->id));
-	      HT_AddIntServer(&emulbase->EmulInt, emulbase->HostThread);
+	    D(bug("[Emulhandler] Creating console reader\n"));
+	    emulbase->ConsoleReader = InitNative();
+	    if (emulbase->ConsoleReader) {
+		D(bug("[Emulhandler] Created console reader %p\n", emulbase->ConsoleReader));
+	        emulbase->ConsoleInt = KrnAddExceptionHandler(1, EmulIntHandler, emulbase->ConsoleReader, NULL);
+	        D(bug("[Emulhandler] Added console interrupt %p\n", emulbase->ConsoleReader));
+	        if (emulbase->ConsoleInt) {
 
+		    /*
+		       Allocate space for the string from same mem,
+		       Use AROS_BSTR_MEMSIZE4LEN macro for space to
+		       to allocate and add an extra 4 for alignment
+		       purposes.
+		    */
 
-	      /*
-	         Allocate space for the string from same mem,
-	         Use AROS_BSTR_MEMSIZE4LEN macro for space to
-	         to allocate and add an extra 4 for alignment
-	         purposes.
-	      */
+		    dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
+		    if (dlv) {
+			dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
+			if(dlv2 != NULL)
+			{
+			    BSTR s;
+			    BSTR s2;
+			    WORD   i;
 
-	      dlv = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-	      if (dlv) {
-		dlv2 = AllocMem(sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(VOLNAME)), MEMF_CLEAR|MEMF_PUBLIC);
-		if(dlv2 != NULL)
-		{
-		    BSTR s;
-		    BSTR s2;
-		    WORD   i;
+			    D(kprintf("[Emulhandler] startup allocated dlv/dlv2\n"));
+			    /* We want s to point to the first 4-byte
+			       aligned memory after the structure.
+			     */
+			    s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
+			    s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
+					
+			    for(i = 0; i < sizeof(DEVNAME) - 1; i++)
+			    {
+				AROS_BSTR_putchar(s, i, devname[i]);
+			    }
+			    AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
+					
+			    dlv->dn_Type    = DLT_DEVICE;
+			    dlv->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
+			    dlv->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
+			    dlv->dn_Handler = NULL;
+			    dlv->dn_Startup = NULL;
+			    dlv->dn_Name    = s;
+			    dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
+					
+			    AddBootNode(5, 0, dlv, NULL);
+					
+					
+			    /* Unfortunately, we cannot do the stuff below
+			       as dos is not yet initialized... */
+			    // AddDosEntry(MakeDosEntry("System", DLT_VOLUME));
 
-		    D(kprintf("[Emulhandler] startup allocated dlv/dlv2\n"));
-		    /* We want s to point to the first 4-byte
-		       aligned memory after the structure.
-		     */
-		    s = (BSTR)MKBADDR(((IPTR)dlv + sizeof(struct DeviceNode) + 3) & ~3);
-		    s2 = (BSTR)MKBADDR(((IPTR)dlv2 + sizeof(struct DeviceNode) + 3) & ~3);
-				
-		    for(i = 0; i < sizeof(DEVNAME) - 1; i++)
-		    {
-			AROS_BSTR_putchar(s, i, devname[i]);
+			    for(i = 0; i < sizeof(VOLNAME) - 1; i++)
+			    {
+				AROS_BSTR_putchar(s2, i, volname[i]);
+			    }
+			    AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
+					
+			    dlv2->dn_Type   = DLT_VOLUME;
+			    dlv2->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
+			    dlv2->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
+			    dlv2->dn_Handler = NULL;
+			    dlv2->dn_Startup = NULL;
+			    dlv2->dn_Name = s2;
+			    dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
+					
+			    /* Make sure this is not booted from */
+			    AddBootNode(-128, 0, dlv2, NULL);
+			    fhv->dl = dlv2;
+			    
+			    /* Increment our open counter because we use ourselves */
+			    emulbase->device.dd_Library.lib_OpenCnt++;
+			    return 0;
+			}
+			FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));
 		    }
-		    AROS_BSTR_setstrlen(s, sizeof(DEVNAME) - 1);
-				
-		    dlv->dn_Type    = DLT_DEVICE;
-		    dlv->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
-		    dlv->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
-		    dlv->dn_Handler = NULL;
-		    dlv->dn_Startup = NULL;
-		    dlv->dn_Name    = s;
-		    dlv->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv->dn_Name);
-				
-		    AddBootNode(5, 0, dlv, NULL);
-				
-				
-		    /* Unfortunately, we cannot do the stuff below
-		       as dos is not yet initialized... */
-		    // AddDosEntry(MakeDosEntry("System", DLT_VOLUME));
-
-		    for(i = 0; i < sizeof(VOLNAME) - 1; i++)
-		    {
-			AROS_BSTR_putchar(s2, i, volname[i]);
-		    }
-		    AROS_BSTR_setstrlen(s2, sizeof(VOLNAME) - 1);
-				
-		    dlv2->dn_Type   = DLT_VOLUME;
-		    dlv2->dn_Ext.dn_AROS.dn_Unit   = (struct Unit *)fhv;
-		    dlv2->dn_Ext.dn_AROS.dn_Device = &emulbase->device;
-		    dlv2->dn_Handler = NULL;
-		    dlv2->dn_Startup = NULL;
-		    dlv2->dn_Name = s2;
-		    dlv2->dn_Ext.dn_AROS.dn_DevName = AROS_BSTR_ADDR(dlv2->dn_Name);
-				
-		    /* Make sure this is not booted from */
-		    AddBootNode(-128, 0, dlv2, NULL);
-		    fhv->dl = dlv2;
-		    
-		    /* Increment our open counter because we use ourselves */
-		    emulbase->device.dd_Library.lib_OpenCnt++;
-		    return 0;
 		}
-		FreeMem(dlv, sizeof(struct DeviceNode) + 4 + AROS_BSTR_MEMSIZE4LEN(strlen(DEVNAME)));
-	      }
 	    }
 	    if (fhe)
 		FreeMem(fhe, sizeof(struct filehandle));
@@ -1384,7 +1377,6 @@ AROS_LH1(void, beginio,
   /* WaitIO will look into this */
   iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
   
-  /* Disable(); */
   ObtainSemaphore(&emulbase->sem);
   
   /*
@@ -1426,18 +1418,17 @@ AROS_LH1(void, beginio,
 		    fh->fd = emulbase->stdin_handle;
 		if (fh->fd == emulbase->stdin_handle) {
 		    DASYNC(bug("[emul] Reading %lu bytes asynchronously \n", iofs->io_Union.io_READ.io_Length));
-		    /* TODO: This stuff will be probably replaced with overlapped I/O and hostthread.resource
-		     * will be removed */
-		    emulbase->EmulMsg.op = EMUL_CMD_READ;
-		    emulbase->EmulMsg.fh = fh->fd;
-		    emulbase->EmulMsg.addr = iofs->io_Union.io_READ.io_Buffer;
-		    emulbase->EmulMsg.len = iofs->io_Union.io_READ.io_Length;
-		    emulbase->EmulMsg.task = FindTask(NULL);
-		    if (HT_PutMsg(emulbase->HostThread, &emulbase->EmulMsg)) {
-		    	Wait(SIGF_BLIT);
+		    emulbase->ConsoleReader->fh = fh->fd;
+		    emulbase->ConsoleReader->addr = iofs->io_Union.io_READ.io_Buffer;
+		    emulbase->ConsoleReader->len = iofs->io_Union.io_READ.io_Length;
+		    emulbase->ConsoleReader->sig = SIGF_BLIT;
+		    emulbase->ConsoleReader->task = FindTask(NULL);
+		    emulbase->ConsoleReader->cmd = ASYNC_CMD_READ;
+		    if (RaiseEvent(emulbase->ConsoleReader->CmdEvent)) {
+		    	Wait(emulbase->ConsoleReader->sig);
 		    	DASYNC(bug("[emul] Read %ld bytes, error %lu\n", emulbase->EmulMsg.actual, emulbase->EmulMsg.error));
-		    	iofs->io_Union.io_READ.io_Length = emulbase->EmulMsg.actual;
-		    	error = Errno_w2a(emulbase->EmulMsg.error);
+		    	iofs->io_Union.io_READ.io_Length = emulbase->ConsoleReader->actual;
+		    	error = Errno_w2a(emulbase->ConsoleReader->error);
 		    	if (!error) {
 		            char *c, *d;
 
@@ -1452,7 +1443,7 @@ AROS_LH1(void, beginio,
 		            }
 		        }
 		    } else {
-		        DASYNC(bug("[emul] FSA_READ: HT_PutMsg failed!\n"));
+		        DASYNC(bug("[emul] FSA_READ: RaiseEvent() failed!\n"));
 		        error = ERROR_UNKNOWN;
 		    }
 		} else {
@@ -1720,8 +1711,7 @@ AROS_LH1(void, beginio,
 	  error = ERROR_ACTION_NOT_KNOWN;
 	  break;
   }
-  
-  /*Enable();*/
+
   ReleaseSemaphore(&emulbase->sem);
   
   /* Set error code */
@@ -1753,7 +1743,7 @@ AROS_LH1(LONG, abortio,
 /*********************************************************************************************/
 
 const char *EmulSymbols[] = {
-    "EmulThread",
+    "Emul_Init_Native",
     "EmulStat",
     "EmulDelete",
     "EmulGetHome",
@@ -1779,6 +1769,7 @@ const char *KernelSymbols[] = {
     "GetLastError",
     "CreateHardLinkA",
     "CreateSymbolicLinkA",
+    "SetEvent",
     NULL
 };
 
@@ -1805,8 +1796,8 @@ int loadhooks(struct emulbase *emulbase)
             	    if (r < 3) {
             	    	D(bug("[EmulHandler] CreateHardLink()     : 0x%08lX\n", KernelIFace->CreateHardLink));
             	    	D(bug("[EmulHandler] CreateSymbolicLink() : 0x%08lX\n", KernelIFace->CreateSymbolicLink));
-            	    	HostThreadBase = OpenResource("hostthread.resource");
-            	    	if (HostThreadBase)
+            	    	KernelBase = OpenResource("kernel.resource");
+            	    	if (KernelBase)
             	    	    return 0;
             	    }
             	    HostLib_DropInterface((APTR *)KernelIFace);

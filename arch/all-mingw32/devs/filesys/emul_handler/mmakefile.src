@@ -20,7 +20,7 @@ SO_LDFLAGS := -shared
 kernel-fs-emul-mingw32-native: $(NATIVE_BINDIR)/emul_handler$(SOEXT)
 
 $(NATIVE_BINDIR)/emul_handler$(SOEXT): $(NATIVE_OBJS) $(NATIVE_BINDIR)
-	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS) -L $(NATIVE_DIR) -lkernel
 
 $(NATIVE_BINDIR) :
 	mkdir -p $(NATIVE_BINDIR)

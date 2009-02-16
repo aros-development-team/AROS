@@ -26,11 +26,10 @@ typedef unsigned char UBYTE;
 
 struct SwitcherData {
     HANDLE MainThread;
-    HANDLE IntTimer;
+    HANDLE IntObjects[HW_INTS_NUM];
 };
 
 struct SwitcherData SwData;
-DWORD SwitcherId;
 DWORD *LastErrorPtr;
 unsigned char Ints_Enabled;
 unsigned char PendingInts[HW_INTS_NUM];
@@ -109,7 +108,7 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     MSG msg;
 
     for (;;) {
-        obj = MsgWaitForMultipleObjects(1, &args->IntTimer, FALSE, INFINITE, QS_POSTMESSAGE);
+        obj = WaitForMultipleObjects(HW_INTS_NUM, args->IntObjects, FALSE, INFINITE);
         DS(bug("[Task switcher] Object %lu signalled\n", obj));
         DS(res =) SuspendThread(args->MainThread);
     	DS(bug("[Task switcher] Suspend thread result: %lu\n", res));
@@ -127,13 +126,6 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    DS(OutputDebugString("[Task switcher] original CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
 	    user_handler(obj);
-	    if (obj == HW_INTS_NUM-1) {
-		while (PeekMessage(&msg, NULL, MSG_IRQ_PENDING, MSG_IRQ_0, PM_REMOVE)) {
-		    DIRQ(printf("[Task switcher] IRQ message %lu\n", msg.message));
-		    if (msg.message != MSG_IRQ_PENDING)
-		    	user_irq_handler_2(msg.message-MSG_IRQ_0, (void *)msg.wParam, (void *)msg.lParam);
-		}
-	    }
     	    core_ExitInterrupt(&MainCtx);
     	    DS(OutputDebugString("[Task switcher] new CPU context: ****\n"));
     	    DS(PrintCPUContext(&MainCtx));
@@ -142,7 +134,6 @@ DWORD WINAPI TaskSwitcher(struct SwitcherData *args)
     	    DS(bug("[Task switcher] Set context result: %lu\n", res));
     	    Supervisor--;
     	} else {
-    	    PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE);
     	    PendingInts[obj] = 1;
             DS(bug("[KRN] Interrupts are disabled, interrupt %lu is pending\n", obj));
         }
@@ -167,9 +158,11 @@ long __declspec(dllexport) core_intr_enable(void)
     DI(printf("[KRN] enabling interrupts\n"));
     Ints_Enabled = 1;
     /* FIXME: here we do not force timer interrupt, probably this is wrong */
-    if (PendingInts[1]) {
-        DI(printf("[KRN] enable: sigalling about pending interrupt 1\n"));
-        PostThreadMessage(SwitcherId, MSG_IRQ_PENDING, 0, 0);
+    for (i = 1; i < HW_INTS_NUM; i++) {
+        if (PendingInts[1]) {
+            DI(printf("[KRN] enable: sigalling about pending interrupt %lu\n", i));
+            SetEvent(SwData.IntObjects[i]);
+        }
     }
 }
 
@@ -183,6 +176,33 @@ unsigned char __declspec(dllexport) core_is_super(void)
     return Supervisor;
 }
 
+BOOL InitIntObjects(HANDLE *Objs)
+{
+    int i;
+
+    for (i = 0; i < HW_INTS_NUM; i++) {
+        Objs[i] = NULL;
+        PendingInts[i] = 0;
+    }
+    /* Timer interrupt is a waitable timer, it's not an event */
+    for (i = 1; i < HW_INTS_NUM; i++) {
+        Objs[i] = CreateEvent(NULL, FALSE, FALSE, NULL);
+        if (!Objs[i])
+            return FALSE;
+    }
+    return TRUE;
+}
+
+void CleanupIntObjects(HANDLE *Objs)
+{
+    int i;
+
+    for (i = 0; i < HW_INTS_NUM; i++) {
+        if (Objs[i])
+            CloseHandle(Objs[i]);
+    }
+}
+
 int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase **SysBasePointer, struct KernelBase **KernelBasePointer)
 {
     HANDLE ThisProcess;
@@ -190,43 +210,61 @@ int __declspec(dllexport) core_init(unsigned long TimerPeriod, struct ExecBase *
     LARGE_INTEGER VBLPeriod;
     void *MainTEB;
     int i;
+    DWORD SwitcherId;
 
     D(printf("[KRN] Setting up interrupts, SysBasePtr = 0x%08lX, KernelBasePtr = 0x%08lX\n", SysBasePointer, KernelBasePointer));
     SysBasePtr = SysBasePointer;
     KernelBasePtr = KernelBasePointer;
     Ints_Enabled = 0;
-    for (i = 0; i < HW_INTS_NUM; i++)
-        PendingInts[i] = 0;
     Supervisor = 0;
     SetUnhandledExceptionFilter(ExceptionHandler);
-    SwData.IntTimer = CreateWaitableTimer(NULL, 0, NULL);
-    if (SwData.IntTimer) {
-	ThisProcess = GetCurrentProcess();
-	if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
-	    MainTEB = NtCurrentTeb();
-	    /* TODO: This currently works only on Windows NT family. In order to get it running on earlier Windows versions (98 and Me)
-	     * we should determine OS version and use appropriate offsets:
-	     * Windows 95 - 0x60
-	     * Windows 98 - ????
-	     * Windows Me - 0x74
-	     */
-	    LastErrorPtr = MainTEB + 0x34;
-	    SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
-	    if (SwitcherThread) {
-	        CloseHandle(SwitcherThread);
-	  	D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
+    if (InitIntObjects(SwData.IntObjects)) {
+    	SwData.IntObjects[INT_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
+    	if (SwData.IntObjects[INT_TIMER]) {
+	    ThisProcess = GetCurrentProcess();
+	    if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &SwData.MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+	        MainTEB = NtCurrentTeb();
+	        /* TODO: This currently works only on Windows NT family. In order to get it running on earlier Windows versions (98 and Me)
+	         * we should determine OS version and use appropriate offsets:
+	         * Windows 95 - 0x60
+	         * Windows 98 - ????
+	         * Windows Me - 0x74
+	         */
+	        LastErrorPtr = MainTEB + 0x34;
+	        SwitcherThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)TaskSwitcher, &SwData, 0, &SwitcherId);
+	        if (SwitcherThread) {
+	   	    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
 #ifdef SLOW
-		TimerPeriod = 5000;
+		    TimerPeriod = 5000;
 #else
-		TimerPeriod = 1000/TimerPeriod;
+		    TimerPeriod = 1000/TimerPeriod;
 #endif
-		VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
-	  	return SetWaitableTimer(SwData.IntTimer, &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+		    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
+		    return SetWaitableTimer(SwData.IntObjects[INT_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0);
+		}
+		    D(else printf("[KRN] Failed to run task switcher thread\n");)
 	    }
-	        D(else printf("[KRN] Failed to run task switcher thread\n");)
+		D(else printf("[KRN] failed to get thread handle\n");)
 	}
-	    D(else printf("[KRN] failed to get thread handle\n");)
+	    D(else printf("[KRN] Failed to create timer interrupt\n");)
     }
-        D(else printf("[KRN] failed to create VBlank timer\n");)
+        D(else printf("[KRN] failed to create interrupt objects\n");)
+    CleanupIntObjects(SwData.IntObjects);
     return 0;
+}
+
+/*
+ * This is the only function to be called by modules other than kernel.resource.
+ * It is used for causing interrupts from within asynchronous threads of
+ * emul.handler and wingdi.hidd.
+ */
+
+unsigned long __declspec(dllexport) CauseException(unsigned char irq)
+{
+    unsigned long res;
+
+    D(printf("[kernel IRQ] Causing exception %u\n", irq));
+    res = SetEvent(SwData.IntObjects[irq]);
+    D(printf("[kernel IRQ] Result: %ld\n", res));
+    return res;
 }
