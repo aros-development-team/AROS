@@ -125,6 +125,8 @@ static int load_hunk(void *file, struct sheader *sh)
         bss_tracker->addr = KERNEL_OFFSET | (unsigned long long)ptr;
         bss_tracker->len = sh->size;
         bss_tracker++;
+        bss_tracker->addr = NULL;
+        bss_tracker->len = 0;
     }
     
     return 1;
