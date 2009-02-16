@@ -1,0 +1,84 @@
+# $Id: mmakefile.src 28824 2008-05-25 12:35:42Z mazze $
+include $(TOP)/config/make.cfg
+
+FLAGS := $(HOST_CFLAGS) -I$(GENINCDIR)
+
+KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/Host/keycode2rawkey.table
+
+FILES := gdi_init gdi_hostlib gdigfx onbitmap offbitmap gdikbd gdimouse
+# gdiclipboard xshm fullscreen
+
+#MM kernel-hidd-wingdi-kobj : kernel-hidd-wingdi-native
+#MM kernel-hidd-wingdi : kernel-hidd-wingdi-native
+#gdikeymaptable
+
+%build_module mmake=kernel-hidd-wingdi \
+  modname=wingdi modtype=hidd \
+  files=$(FILES) cflags=$(FLAGS) \
+  uselibs="oop hiddgraphicsstubs"
+
+NATIVE_BINDIR := $(BINDIR)/Libs/Host
+NATIVE_DIR := $(GENDIR)/native
+NATIVE_OBJS := $(NATIVE_DIR)/gdi_native.o
+SOEXT := .dll
+SO_LDFLAGS := -shared
+
+#MM
+kernel-hidd-wingdi-native: $(NATIVE_BINDIR)/wingdi$(SOEXT)
+
+$(NATIVE_BINDIR)/wingdi$(SOEXT): $(NATIVE_OBJS) $(NATIVE_BINDIR)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ $(SO_LDFLAGS) $(NATIVE_OBJS)
+
+$(NATIVE_BINDIR) :
+	mkdir -p $(NATIVE_BINDIR)
+
+$(NATIVE_DIR) :
+	mkdir $(NATIVE_DIR)
+	 
+$(NATIVE_DIR)/%.o : %.c $(NATIVE_DIR)
+	$(KERNEL_CC) $(KERNEL_CFLAGS) -o $@ -c $< -I$(GENINCDIR) -I$(TOP)/arch/all-mingw32/hidd/wingdi
+
+#MM gdikeymaptable
+gdikeymaptable : setup-gdikeymaptable $(TOOLDIR)/makexkeytable $(KEYMAPTABLE_FILE)
+	@$(NOP)
+
+#MM change-gdikeymaptable
+change-gdikeymaptable : setup-gdikeymaptable $(TOOLDIR)/makexkeytable
+	$(TOOLDIR)/makexkeytable -o $(KEYMAPTABLE_FILE)
+
+#MM default-gdikeymaptable
+default-gdikeymaptable : $(KEYMAPTABLE_FILE)
+	@$(NOP)
+
+$(KEYMAPTABLE_FILE) : def-gdi-keycode2rawkey.table  setup-gdikeymaptable
+	@$(CP) $< $@
+
+#MM backup-gdikeymaptable
+backup-gdikeymaptable :
+	@$(IF) $(TEST) -f $(KEYMAPTABLE_FILE) ; then \
+	    $(CP) $(KEYMAPTABLE_FILE) ~/aros-gdi-keycode2rawkey.table ; \
+	    $(ECHO) "" ; \
+	    $(ECHO) "Made backup of gdi keymaptable to \"~/aros-gdi-keycode2rawkey.table\"" ; \
+	    $(ECHO) "" ; \
+	else \
+	    $(ECHO) "There is no gdi keymaptable existing (\"$(KEYMAPTABLE_FILE)\")!?" ; \
+	fi
+
+#MM restore-gdikeymaptable
+restore-gdikeymaptable : setup-gdikeymaptable
+	@$(IF) $(TEST) -f ~/aros-gdi-keycode2rawkey.table ; then \
+	    $(CP) ~/aros-gdi-keycode2rawkey.table $(KEYMAPTABLE_FILE) ; \
+	    $(ECHO) "" ; \
+	    $(ECHO) "Restored gdi keymaptable from \"~/aros-gdi-keycode2rawkey.table\"" ; \
+	    $(ECHO) "" ; \
+	else \
+	    $(ECHO) "There is no gdi keymaptable backup existing (\"~/aros-gdi-keycode2rawkey.table\")!?" ; \
+	fi
+		
+setup-gdikeymaptable :
+	%mkdirs_q $(AROS_DEVS)/Keymaps $(AROS_DEVS)/Keymaps/Host
+		
+$(TOOLDIR)/makexkeytable: makexkeytable.c
+	$(HOST_CC) $(HOST_CFLAGS) $(USER_INCLUDES) $< -o $@
+
+%common
