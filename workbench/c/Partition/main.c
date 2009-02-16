@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2008, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2009, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -130,7 +130,8 @@ int main(void)
     CONST_STRPTR device;
     LONG error = 0, sysSize = 0, workSize = 0, sysHighCyl, rootLowBlock = 1,
         rootHighBlock = 0, extLowBlock = 1, extHighBlock = 0, lowBlock,
-        highBlock, lowCyl, highCyl, rootBlocks, extBlocks, reqHighCyl, unit;
+        highBlock, lowCyl, highCyl, rootBlocks, extBlocks, reqHighCyl, unit,
+        hasActive = FALSE;
     UWORD partCount = 0;
 
     /* Read and check arguments */
@@ -257,6 +258,11 @@ int main(void)
                 else
                     ClosePartitionTable(partition);
             }
+
+            if (!hasActive)
+                GetPartitionAttrsTags(partition,
+                    PT_ACTIVE, (IPTR) &hasActive, TAG_DONE);
+
             partCount++;
         }
 
@@ -385,6 +391,11 @@ int main(void)
 
     if (error == 0)
     {
+        /* If MBR has no active partition, make extended partition active to
+           prevent broken BIOSes from treating disk as unbootable */
+        if (!hasActive)
+            SetPartitionAttrsTags(extPartition, PT_ACTIVE, TRUE, TAG_DONE);
+
         /* Save to disk and deallocate */
         WritePartitionTable(diskPart);
         ClosePartitionTable(diskPart);
