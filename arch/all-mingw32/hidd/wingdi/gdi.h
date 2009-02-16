@@ -9,6 +9,22 @@
     Lang: English.
 */
 
+#ifndef WM_QUIT
+#define WM_QUIT 18
+#define WM_USER 1024
+#endif
+
+#define NOTY_WINCREATE    (WM_USER+1)
+#define NOTY_WINDISPOSE   (WM_USER+2)
+#define NOTY_RESIZEWINDOW (WM_USER+3)
+
+struct NewWindowMsg
+{
+    void *window;
+    ULONG xsize;
+    ULONG ysize;
+};
+
 #ifdef __AROS__
 
 #include <exec/libraries.h>
@@ -76,27 +92,6 @@ struct pHidd_GDIKbd_HandleEvent
 };
 
 //VOID Hidd_GDIKbd_HandleEvent(OOP_Object *o, XEvent *event);
-/* misc */
-
-
-
-
-struct gditask_params
-{
-    struct Task     	    *parent;
-    ULONG   	     	     ok_signal;
-    ULONG   	     	     fail_signal;
-    ULONG   	     	     kill_signal;
-    struct gdi_staticdata   *xsd;
-};
-
-struct xwinnode
-{
-    struct MinNode   node;
-//  Window	     xwindow;
-    OOP_Object	    *bmobj; 
-    BOOL    	     window_mapped;
-};
 
 struct gdi_staticdata
 {
@@ -130,27 +125,26 @@ struct gdi_staticdata
     ULONG   	    	     red_shift;
     ULONG   	    	     green_shift;
     ULONG   	    	     blue_shift;
-
-    ULONG   	    	     depth; /* Size of pixel in bits */ /* stegerg: was called "size" */
-    ULONG   	    	     bytes_per_pixel;
+    ULONG   	    	     depth; /* Size of pixel in bits */
     
+/*  ULONG   	    	     bytes_per_pixel;
     ULONG   	    	     clut_shift;
     ULONG   	    	     clut_mask;
-/*
+
     Atom    	    	     delete_win_atom;
     Atom    	    	     clipboard_atom;
     Atom    	    	     clipboard_property_atom;
     Atom    	    	     clipboard_incr_atom;
     Atom    	    	     clipboard_targets_atom;
 
-    Time    	    	     x_time;*/
+    Time    	    	     x_time;
 #if 0
     VOID	    	     (*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	    	     callbackdata;
 #endif    
 
     BOOL    	    	    fullscreen;
-/*    
+
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;
     ULONG   	    	     hostclipboard_readstate;
@@ -175,12 +169,8 @@ struct gfx_data
 {
     APTR	 display;
     int		 depth;
-/*  Colormap	 colmap;
-    Cursor	 cursor;*/
+/*  Cursor	 cursor;*/
     APTR	 fbwin; /* Frame buffer window */
-//#if ADJUST_XWIN_SIZE
-//  Window	 masterwin;
-//#endif
 };
 
 #define HOSTCLIPBOARDSTATE_IDLE     	0
@@ -191,21 +181,7 @@ struct gfx_data
 VOID get_bitmap_info(struct gdi_staticdata *xsd, Drawable d, ULONG *sz, ULONG *bpl);
 
 BOOL set_pixelformat(struct TagItem *pftags, struct gdi_staticdata *xsd, Drawable d);
-*/
 
-OOP_Class *init_gfxclass	( struct gdi_staticdata * );
-OOP_Class *init_onbmclass	( struct gdi_staticdata * );
-OOP_Class *init_offbmclass	( struct gdi_staticdata * );
-OOP_Class *init_kbdclass  	( struct gdi_staticdata * );
-OOP_Class *init_mouseclass	( struct gdi_staticdata * );
-
-VOID free_gfxclass	( struct gdi_staticdata * );
-VOID free_onbmclass	( struct gdi_staticdata * );
-VOID free_offbmclass	( struct gdi_staticdata * );
-VOID free_osbmclass	( struct gdi_staticdata * );
-VOID free_kbdclass	( struct gdi_staticdata * );
-VOID free_mouseclass	( struct gdi_staticdata * );
-/*
 ULONG gdiclipboard_init(struct gdi_staticdata *);
 VOID  gdiclipboard_handle_commands(struct gdi_staticdata *);
 BOOL  gdiclipboard_want_event(XEvent *);
@@ -215,15 +191,13 @@ VOID  gdiclipboard_handle_event(struct gdi_staticdata *, XEvent *);
 #define XSD(cl)     	(&((struct gdiclbase *)cl->UserData)->xsd)
 
 /* This lock has two uses:
-- Making X calls threadsafe.
-- In the bitmap class, protecting the bimtap X GC from changes
-from other tasks
+- Making GDI calls threadsafe.
+- In the bitmap class, protecting the bimtap GC from changes from other tasks
 */
 
 #define LOCK_GDI ObtainSemaphore (&XSD(cl)->gdisema);
 #define UNLOCK_GDI ReleaseSemaphore(&XSD(cl)->gdisema);
 
-#define WM_USER 0x0400
 #define SRCCOPY 0x00CC0020
 
 #else
@@ -231,12 +205,5 @@ from other tasks
 #include <windows.h>
 
 #endif
-
-/* Message used for getting info on when a window has been mapped */
-
-#define NOTY_MAPWINDOW    WM_USER
-#define NOTY_WINCREATE    (WM_USER+1)
-#define NOTY_WINDISPOSE   (WM_USER+2)
-#define NOTY_RESIZEWINDOW (WM_USER+3)
 
 #endif /* HIDD_GDI_H */

@@ -88,23 +88,23 @@ static void init_empty_cursor(Window w, GC c, struct gdi_staticdata *xsd);
 /*static Pixmap init_icon(Display *d, Window w, Colormap cm, LONG depth,
     	    	    	struct gdi_staticdata *xsd);
 */
+
 /****************************************************************************************/
 
 OOP_Object *GDIOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct NewWindowMsg nw;
     BOOL ok = TRUE;
     
-    D(bug("GDIGfx.OnBitMap::New()\n"));
+    EnterFunc(bug("GDIGfx.OnBitMap::New()\n"));
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-    	struct bitmap_data  	*data;
-//	Window      	    	 rootwin;	
-        IPTR 	    	    	 width, height, depth;
-//	XSetWindowAttributes 	 winattr;
-	int 	    	    	 visualclass;
-	unsigned long 	    	 valuemask;
+    	struct bitmap_data *data;
+        IPTR width, height;
+        struct NewWindowMsg nw;
+        struct Task *me;
 	
         data = OOP_INST_DATA(cl, o);
 	
@@ -117,305 +117,27 @@ OOP_Object *GDIOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	data->cursor  = (Cursor)   GetTagData(aHidd_GDIGfx_SysCursor,  0, msg->attrList);
 	data->colmap  = (Colormap) GetTagData(aHidd_GDIGfx_ColorMap,   0, msg->attrList);*/
 
-	/* stegerg*/
-
-/*	visualclass   =		   GetTagData(aHidd_GDIGfx_VisualClass, TrueColor, msg->attrList);
-		
-        if ( visualclass == PseudoColor)
-	{
-	    Colormap cm;
-	    
-    	    LOCK_GDI
-	    cm = XCALL(XCreateColormap, GetSysDisplay(),
-				 RootWindow(GetSysDisplay(), GetSysScreen()),
-				 XSD(cl)->vi.visual,
-				 AllocAll);				 
-    	    UNLOCK_GDI
-	    
-	    if (cm)
-	    {
-	        data->colmap = cm;
-		data->flags |= BMDF_COLORMAP_ALLOCED;
-	    }
-	}*/
-	
-	/* end stegerg */
-	
 	/* Get attr values */
 	OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
 	OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
-	/* Open an X window to be used for viewing */
-	    
-	D(bug("Displayable bitmap\n"));
-	    
-	/* Listen for all sorts of events */
-//	winattr.event_mask = 0;
-	/* Mouse buttons .. */
-//	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
-	/* Mouse movement .. */
-//	winattr.event_mask |= PointerMotionMask;
-	/* Key press & release .. */
-//	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
-	    
-	/* We must allways have this one */
-//	winattr.event_mask |= StructureNotifyMask;
-//	winattr.event_mask |= SubstructureNotifyMask;
-	
-//	winattr.event_mask |= FocusChangeMask;
-#ifdef NOT_YET
-	/* Use backing store for now. (Uses lots of mem) */
-	winattr.backing_store = Always;
-
-    	LOCK_GDI	
-    
-	winattr.cursor = GetSysCursor();
-	winattr.save_under = True;
-	
-	winattr.background_pixel = BlackPixel(GetSysDisplay(), GetSysScreen());
-	rootwin = DefaultRootWindow (GetSysDisplay());
-	D(bug("Creating Window: root win=%p\n", rootwin));
-	depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
-	
-	valuemask = CWBackingStore | CWCursor | CWSaveUnder |
-	    	    CWEventMask    | CWBackPixel;
-	
-	if (data->flags & BMDF_COLORMAP_ALLOCED)
-	{
-	    winattr.colormap = data->colmap;
-	    valuemask |= CWColormap;
-	}
-
-    #if ADJUST_XWIN_SIZE
-	{
-	    XSetWindowAttributes winattr;
-	    unsigned long 	 valuemask = 0;
-
-    	    if (XSD(cl)->fullscreen)
-	    {
-    	    	winattr.override_redirect = True;
-    	    	valuemask |= CWOverrideRedirect;
-	    }
-	    
-	    if (data->flags & BMDF_COLORMAP_ALLOCED)
-	    {
-		winattr.colormap = data->colmap;
-		valuemask |= CWColormap;
-	    }
-	    
-	    MASTERWIN(data) = XCALL(XCreateWindow,  GetSysDisplay(),
-	    	    	      	    	     rootwin,
-					     0,	/* leftedge 	*/
-			    	    	     0,	/* topedge	*/
-			    	    	     width,
-			    	    	     height,
-			    	    	     0,	/* BorderWidth	*/
-			    	    	     depth,
-			    	    	     InputOutput,
-			    	    	     DefaultVisual(GetSysDisplay(), GetSysScreen()),
-			    	    	     valuemask,
-			    	    	     &winattr);
-	}
-	
-	if (MASTERWIN(data)) 
-    #endif	
-
-	DRAWABLE(data) = XCALL(XCreateWindow,  GetSysDisplay(),
-    	    	    	    	    #if ADJUST_XWIN_SIZE
-	    		    	    	MASTERWIN(data),
-    	    	    	    	    #else
-			    	    	rootwin,
-    	    	    	    	    #endif
-					0,	/* leftedge 	*/
-					0,	/* topedge	*/
-					width,
-					height,
-					0,	/* BorderWidth	*/
-					depth,
-					InputOutput,
-					DefaultVisual (GetSysDisplay(), GetSysScreen()),
-					valuemask,
-					&winattr);
-    	UNLOCK_GDI	    
-
-	D(bug("Xwindow : %p\n", DRAWABLE(data)));
-
-    #if ADJUST_XWIN_SIZE
-	if (DRAWABLE(data) && MASTERWIN(data))
-	{
-    #else
-	if (DRAWABLE(data))
-	{
-            XSizeHints 		 sizehint;
-    #endif
-	    struct MsgPort 	*port;	    
-	    struct notify_msg 	*msg;
-    	    Pixmap  	    	 icon;
-
-    	    LOCK_GDI
-	    
-	    XCALL(XStoreName, GetSysDisplay(), MASTERWIN(data), "AROS");
-	    XCALL(XSetIconName, GetSysDisplay(), MASTERWIN(data), "AROS Screen");
-		    
-    	#if !ADJUST_XWIN_SIZE
-	    sizehint.flags      = PMinSize | PMaxSize;
-	    sizehint.min_width  = width;
-	    sizehint.min_height = height;
-	    sizehint.max_width  = width;
-	    sizehint.max_height = height;
-	    
-	    XCALL(XSetWMNormalHints, GetSysDisplay(), MASTERWIN(data), &sizehint);
-    	#endif
-	    
-	    XCALL(XSetWMProtocols, GetSysDisplay(), MASTERWIN(data), &XSD(cl)->delete_win_atom, 1);
-
-    	    icon = init_icon(GetSysDisplay(),
-	    	    	     MASTERWIN(data),
-			     DefaultColormap(GetSysDisplay(), GetSysScreen()),
-			     depth,
-			     XSD(cl));
-	    if (icon)
-	    {
-		XWMHints hints;
-
-		hints.icon_pixmap = icon;
-		hints.flags = IconPixmapHint;
-
-		XCALL(XSetWMHints, GetSysDisplay(), MASTERWIN(data), &hints);
-	    }
-	    
-
-	    D(bug("Calling XMapRaised\n"));
-
-/*
-  stegerg: XMapRaised is now called inside the GDI task when getting
-           the NOTY_MAPWINDOW message, otherwise the GDI task can
-	   get a "dead" MapNotify event:
-	   
-	   XCreateWindow is called here on the app task context.
-	   If we also call XMapRaised here then the GDI task might
-	   get the MapNotify event before he got the NOTY_WINCREATE
-	   message sent from here (see below). So the GDI task
-	   would not know about our window and therefore ignore
-	   the MapNotify event from X.
-	   
-	   This caused the freezes which sometimes happened during
-	   startup when the Workbench screen was opened.
-	   
-	   //XCALL(XMapRaised, GetSysDisplay(), DRAWABLE(data));
-*/
-
-    	    UNLOCK_GDI	 
-	       
-	    /* Now we need to get some message from the GDI task about when
-	       the window has been mapped (ie. MapWindow event).
-	       This is because we cannot render into the window until the
-	       it has been mapped.kfind &
-	    */
-
-	    /* Create GDI GC */
-	    
-	    port = CreateMsgPort();
-	    msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
-
-	    if (NULL != port && NULL != msg)
-	    {
-	    	XGCValues gcval;
-
-		/* Send a message to the gdi task that the window has been created */
-		
-		msg->notify_type = NOTY_WINCREATE;
-		msg->xdisplay = GetSysDisplay();
-		msg->xwindow = DRAWABLE(data);
-		msg->masterxwindow = MASTERWIN(data);
-		msg->bmobj = o;
-		msg->execmsg.mn_ReplyPort = port;
-		
-    	    	LOCK_GDI
-		XCALL(XSync, GetSysDisplay(), FALSE);
-    	    	UNLOCK_GDI
-
-		PutMsg(XSD(cl)->gditask_notify_port, (struct Message *)msg);
-				
-		/* Wait for the reply, so we are sure that the gdi task
-		   has got it */
-
-		WaitPort(port);
-		GetMsg(port);
-		
-    	    #if !DELAY_XWIN_MAPPING		
-		/* Send a message to the GDI task to ask when the window has been mapped */
-		
-   		msg->xdisplay = GetSysDisplay();
-		msg->xwindow = DRAWABLE(data);
-		msg->masterxwindow = MASTERWIN(data);
-		msg->notify_type = NOTY_MAPWINDOW;
-		msg->execmsg.mn_ReplyPort = port;
-
-    	    	LOCK_GDI
-		XCALL(XSync, GetSysDisplay(), FALSE);
-    	    	UNLOCK_GDI
-		
-		PutMsg(XSD(cl)->gditask_notify_port, (struct Message *)msg);
-
-		/* Wait for result */
-		WaitPort(port);		
-		GetMsg(port);
-
-    	    	kprintf("NOTY_MAPWINDOW request returned\n");		
-    	    #endif
-	    		
-	    	gcval.plane_mask = AllPlanes;
-	    	gcval.graphics_exposures = False;
-		
-    	    	LOCK_GDI	 
-	    	data->gc = XCALL(XCreateGC, data->display, DRAWABLE(data),
-		    	    	     GCPlaneMask | GCGraphicsExposures, &gcval);
-    	    	UNLOCK_GDI	
-			
-	    	if (data->gc)
-		{
-		    ok = TRUE;
-		    
-    	    	#if GDISOFTMOUSE
-		    init_empty_cursor(DRAWABLE(data), data->gc, XSD(cl));
-    	    	#endif	    
-		}	    
-		else
-		{
-		    ok = FALSE;
-		}
-		
-	    }
-	    else
-	    {
-	    	ok = FALSE;
-	    } /* if (msgport created && msg allocated) */
-
-	    if (NULL != msg)
-	    	FreeMem(msg, sizeof (*msg));
-		
-	    if (NULL != port)
-	    	DeleteMsgPort(port);
-		
-	    
-	}
-	else
-	{
-	    ok = FALSE;
-	} /* if (Xwindow created) */
-		
-    	if (!ok)
-    	{
-    
+	/* Open a window to be used for viewing */
+	nw.xsize = width;
+	nw.ysize = height;
+	nw.window = NULL;
+	D(bug("Creating a window\n"));
+	/* Send a message to the GDI thread to create a window */
+	if (NATIVECALL(GDI_PutMsg, NULL, NOTY_WINCREATE, (IPTR)&nw, 0))
+	    Wait(SIGF_BLIT);
+	D(bug("Created window 0x%p\n", nw.window));
+    	if (nw.window) {
+    	    data->drawable = nw.window;
+    	} else {
             OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 	    
     	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-	
 	    o = NULL;
     	}
-
-#endif
     } /* if (object allocated by superclass) */
 
     ReturnPtr("GDIGfx.OnBitMap::New()", OOP_Object *, o);

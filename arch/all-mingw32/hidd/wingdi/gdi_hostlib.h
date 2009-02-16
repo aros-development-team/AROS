@@ -26,7 +26,7 @@ struct user_func {
 
 struct native_func {
     ULONG (*GDI_Init)(void);
-    ULONG (*GDI_PutMsg)(APTR win, ULONG msg, IPTR wp, IPTR lp);
+    ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
 };
 
 extern void *gdi_handle;

@@ -47,6 +47,7 @@ struct bitmap_data
     APTR drawable;
     APTR bitmap;
     APTR dc_bitmap;
+    struct WindowControl *winctrl;
 /*  Window	    masterxwindow;    
     Cursor	    cursor;
     unsigned long   sysplanemask;

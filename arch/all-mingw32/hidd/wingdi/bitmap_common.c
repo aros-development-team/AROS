@@ -340,10 +340,6 @@ VOID MNAME(Root__Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    case aoHidd_GDIBitMap_Drawable:
 	    	*msg->storage = (IPTR)data->drawable;
 		break;
-
-	    case aoHidd_GDIBitMap_MasterWindow:
-	        *msg->storage = (IPTR)data->drawable;
-		break;
 		
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
