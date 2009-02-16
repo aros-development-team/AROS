@@ -1351,7 +1351,7 @@ static int String_HandleVanillakey(struct IClass *cl, Object * obj,
     {
 	struct Locale *locale = OpenLocale(NULL);
 	
-	if(IsPrint(locale, code))
+	if(!(code >= 0x09 && code <= 0x0D) && IsPrint(locale, code))
 	{
 	    Buffer_KillMarked(data);
 	    if (Buffer_AddChar(data, code))
