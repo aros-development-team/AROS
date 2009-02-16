@@ -13,8 +13,13 @@
 
 #define STACK_SIZE 4096
 
-#define EXCEPTIONS_NUM 2
+#define EXCEPTIONS_NUM 3
 #define INTERRUPTS_NUM 1
+
+#define HW_INTS_NUM 3
+#define INT_TIMER 0
+#define INT_IO    1
+#define INT_GFX   2
 
 struct KernelBase {
     struct Node         kb_Node;
@@ -75,12 +80,8 @@ static inline void bug(const char *format, ...)
     AROS_SLIB_ENTRY(KrnBug, Kernel)(format, args, KernelBase);
     va_end(args);
 }
+
 #else
-
-#define MSG_IRQ_PENDING  WM_USER
-#define MSG_IRQ_0	(WM_USER+1)
-
-#define HW_INTS_NUM 2
 
 extern DWORD SwitcherId;
 extern DWORD *LastErrorPtr;
@@ -94,8 +95,8 @@ void core_Switch(CONTEXT *regs);
 void core_Schedule(CONTEXT *regs);
 void core_ExitInterrupt(CONTEXT *regs);
 void core_Cause(struct ExecBase *SysBase);
+long core_intr_enable(void);
 
-void user_irq_handler_2(uint8_t irq, void *data1, void *data2);
 #endif
 
 #endif /*KERNEL_INTERN_H_*/

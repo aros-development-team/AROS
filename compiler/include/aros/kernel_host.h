@@ -7,6 +7,6 @@
 #define IMPORT
 #endif
 
-unsigned long IMPORT CauseIRQ(unsigned char irq, void *data1, void *data2);
+unsigned long IMPORT CauseException(unsigned char irq);
 
 #endif

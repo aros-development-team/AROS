@@ -8,19 +8,22 @@
     Lang: english
 */
 
-struct EmulThreadMessage
+struct AsyncReaderControl
 {
-    unsigned char op;
-    void *task;
+    unsigned char cmd;
+    void *CmdEvent;
+    void *thread;
     void *fh;
     void *addr;
     unsigned long len;
     unsigned long actual;
     unsigned long error;
+    unsigned long sig;
+    void *task;
 };
 
-#define EMUL_CMD_READ     0
-#define EMUL_CMD_WRITE    1
+#define ASYNC_CMD_SHUTDOWN 0
+#define ASYNC_CMD_READ     1
 
 #ifdef __AROS__
 
@@ -47,8 +50,8 @@ struct emulbase
     APTR			  mempool;
     void			* EmulHandle;
     void			* KernelHandle;
-    struct ThreadHandle		* HostThread;
-    struct EmulThreadMessage	  EmulMsg;
+    void			* ConsoleInt;
+    struct AsyncReaderControl	* ConsoleReader;
     struct Interrupt		  EmulInt;
 };
 
@@ -68,13 +71,14 @@ struct filehandle
 
 struct EmulInterface
 {
-    ULONG (*EmulThread)(struct ThreadHandle *myhandle);
+    struct AsyncReaderControl *(*EmulInitNative)(void);
     LONG (*EmulStat)(char *path, WIN32_FILE_ATTRIBUTE_DATA *FIB);
     ULONG (*EmulDelete)(char *filename);
     unsigned long (*EmulGetHome)(char *name, char *home);
     ULONG (*EmulStatFS)(char *path, struct InfoData *id);
 };
 
+#define InitNative EmulIFace->EmulInitNative
 #define Stat EmulIFace->EmulStat
 #define Delete EmulIFace->EmulDelete
 #define GetHome EmulIFace->EmulGetHome
@@ -104,6 +108,7 @@ struct KernelInterface
     __attribute__((stdcall)) ULONG (*GetLastError)(void);
     __attribute__((stdcall)) ULONG (*CreateHardLink)(char *lpFileName, char *lpExistingFileName, void *lpSecurityAttributes);
     __attribute__((stdcall)) ULONG (*CreateSymbolicLink)(char *lpSymlinkFileName, char *lpTargetFileName, ULONG dwFlags);
+    __attribute__((stdcall)) ULONG (*SetEvent)(void *hEvent);
 };
 
 #define OpenFile KernelIFace->CreateFile
@@ -123,6 +128,7 @@ struct KernelInterface
 #define GetLastError KernelIFace->GetLastError
 #define Link KernelIFace->CreateHardLink
 #define SymLink KernelIFace->CreateSymbolicLink
+#define RaiseEvent KernelIFace->SetEvent
 
 #endif
 

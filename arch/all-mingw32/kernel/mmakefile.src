@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_DIR := $(GENDIR)/native
-NATIVE_OBJS := $(NATIVE_DIR)/host_intr.o $(NATIVE_DIR)/host_irq.o $(NATIVE_DIR)/host_scheduler.o
+NATIVE_OBJS := $(NATIVE_DIR)/host_intr.o $(NATIVE_DIR)/host_scheduler.o
 SOEXT := .dll
 SO_LDFLAGS := -shared
 
