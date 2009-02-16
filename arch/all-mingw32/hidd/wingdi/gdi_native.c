@@ -8,11 +8,12 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <aros/kernel_host.h>
 #include "gdi.h"
 
 #define D(x) x
 
-DWORD gdi_id;
+DWORD thread_id;
 
 /****************************************************************************************/
 
@@ -28,7 +29,6 @@ DWORD WINAPI gdithread_entry(LPVOID p)
     BOOL res;
     MSG msg;
     ATOM wcl;
-    HWND win;
     WINDOWPLACEMENT wpos;
     WNDCLASS wcl_desc = {
         CS_SAVEBITS,
@@ -40,6 +40,7 @@ DWORD WINAPI gdithread_entry(LPVOID p)
         COLOR_WINDOW,
         NULL
     };
+    struct NewWindowMsg *nw;
 
     wcl_desc.hInstance = GetModuleHandle(NULL);
     wcl = RegisterClass(&wcl_desc);
@@ -52,10 +53,12 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             	D(printf("[GDI] Got message %lu\n", msg.message));
             	switch (msg.message) {
             	case NOTY_WINCREATE:
-            	    win = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, msg.wParam,  msg.lParam,
+            	    nw = (struct NewWindowMsg *)msg.wParam;
+            	    nw->window = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, nw->xsize,  nw->ysize,
             	    		       NULL, NULL, wcl_desc.hInstance, NULL);
-            	    ShowWindow(win, SW_SHOW);
-            	    UpdateWindow(win);
+            	    ShowWindow(nw->window, SW_SHOW);
+            	    UpdateWindow(nw->window);
+            	    CauseException(2);
             	    break;
             	case NOTY_WINDISPOSE:
             	    DestroyWindow(msg.hwnd);
@@ -79,24 +82,23 @@ DWORD WINAPI gdithread_entry(LPVOID p)
 
 /****************************************************************************************/
 
-DWORD __declspec(dllexport) GDI_Init(void)
+ULONG __declspec(dllexport) GDI_Init(void)
 {
     HANDLE th;
-
-    th = CreateThread(NULL, 0, gdithread_entry, NULL, 0, &gdi_id);
-    D(printf("[GDI] Started thread 0x%p\n", th));
-    if (th) {
+    
+    th = CreateThread(NULL, 0, gdithread_entry, NULL, 0, &thread_id);
+    D(printf("[GDI] Started thread 0x%p ID 0x%08lX\n", th, thread_id));
+    if (th)
         CloseHandle(th);
-    }
     return th ? 1 : 0;
 }
-    
+
 /****************************************************************************************/
 
-ULONG __declspec(dllexport) GDI_PutMsg(HWND win, UINT msg, WPARAM wp, LPARAM lp)
+ULONG __declspec(dllexport) GDI_PutMsg(void *window, UINT msg, WPARAM wp, LPARAM lp)
 {
-    if (win)
-    	return PostMessage(win, msg, wp, lp);
+    if (window)
+    	return PostMessage(window, msg, wp, lp);
     else
-        return PostThreadMessage(gdi_id, msg, wp, lp);
+        return PostThreadMessage(thread_id, msg, wp, lp);
 }

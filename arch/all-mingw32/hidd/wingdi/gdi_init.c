@@ -42,8 +42,6 @@
 
 static BOOL initclasses( struct gdi_staticdata *xsd );
 static VOID freeclasses( struct gdi_staticdata *xsd );
-struct Task *create_gditask( struct gditask_params *params);
-VOID gditask_entry(struct gditask_params *xtp);
 
 /****************************************************************************************/
 
@@ -83,7 +81,6 @@ static VOID freeclasses(struct gdi_staticdata *xsd)
 
 static int GDI_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct gditask_params 	 xtp;
     struct Task 	    	*gditask;
     struct gdi_staticdata *xsd = &LIBBASE->xsd;
 
@@ -104,23 +101,15 @@ static int GDI_Init(LIBBASETYPEPTR LIBBASE)
         xsd->clipboard_property_atom = XCALL(XInternAtom, xsd->display, "AROS_HOSTCLIP", FALSE);
         xsd->clipboard_incr_atom     = XCALL(XInternAtom, xsd->display, "INCR", FALSE);
         xsd->clipboard_targets_atom  = XCALL(XInternAtom, xsd->display, "TARGETS", FALSE);
-	
-        xtp.parent = FindTask(NULL);
-        xtp.ok_signal	= SIGBREAKF_CTRL_E;
-        xtp.fail_signal	= SIGBREAKF_CTRL_F;
-        xtp.kill_signal	= SIGBREAKF_CTRL_C;
-        xtp.xsd		= xsd;
-
-        if ((gditask = create_gditask(&xtp)))
-        {			*/
+*/
+	if (NATIVECALL(GDI_Init)) {
 	    if (initclasses(xsd))
 	    {
 	        D(bug("GDI_Init succeeded\n"));
 	        return TRUE;
 	    }
-	    
-/*	    Signal(gditask, xtp.kill_signal);
-        }*/
+	    NATIVECALL(GDI_PutMsg, NULL, WM_QUIT, 0, 0);
+        }
     }
     
     D(bug("GDI_Init failed\n"));

@@ -231,7 +231,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     /* Do GfxHidd initalization here */
     if (!initgdistuff(XSD(cl)))
     {
-	D(kprintf("!!! initgdistuff() FAILED IN X11Gfx::New() !!!\n"));
+	D(kprintf("!!! initgdistuff() FAILED IN GDIGfx::New() !!!\n"));
 	ReturnPtr("GDIGfx::New()", OOP_Object *, NULL);
     }
 	
@@ -250,39 +250,20 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     {
         pftags[8].ti_Data = vHidd_ColorModel_TrueColor;
     }
-    else
+/*  else
     {
 	pftags[8].ti_Data = vHidd_ColorModel_Palette;
         pftags[13].ti_Data = XSD(cl)->clut_shift;
 	pftags[14].ti_Data = XSD(cl)->clut_mask;		
-    }
+    }*/
 	
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mymsg);
     if (NULL != o)
     {
 	struct gfx_data *data = OOP_INST_DATA(cl, o);
-	
-/*    	LOCK_GDI
-	data->screen	= DefaultScreen( data->display );
-	data->depth	= DisplayPlanes( data->display, data->screen );
-	data->colmap	= DefaultColormap( data->display, data->screen );
-        data->cursor = XCALL(XCreateFontCursor,  data->display, XC_top_left_arrow);
 
-	fg.pixel = BlackPixel(data->display, data->screen);
-	fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
-	fg.flags = (DoRed | DoGreen | DoBlue);
-	bg.pixel = WhitePixel(data->display, data->screen);
-	bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
-	bg.flags = (DoRed | DoGreen | DoBlue);
-
-	XCALL(XRecolorCursor, data->display, data->cursor, &fg, &bg);
-	
-    	UNLOCK_GDI
-*/
 	D(bug("GDIGfx::New(): Got object from super\n"));
-
 	data->display = XSD(cl)->display;
-	
     }
     ReturnPtr("GDIGfx::New", OOP_Object *, o);
 }
@@ -294,7 +275,7 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     EnterFunc(bug("GDIGfx::Dispose(o=%p)\n", o));
     
-    data = OOP_INST_DATA(cl, o);    
+    data = OOP_INST_DATA(cl, o);
     cleanupgdistuff(XSD(cl));
 
     D(bug("GDIGfx::Dispose: calling super\n"));    
@@ -310,18 +291,14 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     BOOL    	    	    	 displayable, framebuffer;    
     struct pHidd_Gfx_NewBitMap   p;
     OOP_Object      	    	*newbm;
-    APTR    	    	    	 drawable;
+    IPTR    	    	    	 drawable;
     
     struct gfx_data 	    	*data;
     struct TagItem  	    	 tags[] =
     {
-    	{ aHidd_GDIGfx_SysDisplay   , (IPTR) NULL   },	/* 0 */
-	{ aHidd_GDIGfx_SysScreen    , 0UL   	    },	/* 1 */	
-	{ aHidd_GDIGfx_SysCursor    , 0UL   	    },	/* 2 */
-	{ aHidd_GDIGfx_ColorMap     , 0UL   	    },	/* 3 */
-	{ aHidd_GDIGfx_VisualClass  , 0UL   	    },	/* 4 */
-	{ TAG_IGNORE	    	    , 0UL   	    },	/* 5 */
-	{ TAG_MORE  	    	    , (IPTR) NULL   }   /* 6 */
+    	{ aHidd_GDIGfx_SysDisplay   , 0UL },	/* 0 */
+	{ TAG_IGNORE	    	    , 0UL },	/* 1 */
+	{ TAG_MORE  	    	    , 0UL }     /* 2 */
     };
     
     EnterFunc(bug("GDIGfx::NewBitMap()\n"));
@@ -329,11 +306,7 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     data = OOP_INST_DATA(cl, o);
     
     tags[0].ti_Data = (IPTR)data->display;
-/*  tags[1].ti_Data = data->screen;
-    tags[2].ti_Data = (IPTR)data->cursor;
-    tags[3].ti_Data = data->colmap;
-    tags[4].ti_Data = XSD(cl)->vi.class;*/
-    tags[6].ti_Data = (IPTR)msg->attrList;
+    tags[2].ti_Data = (IPTR)msg->attrList;
     
     /* Displayable bitmap ? */
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
@@ -341,15 +314,14 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     
     if (framebuffer)
     {
-    	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[5].ti_Data	= (IPTR)XSD(cl)->onbmclass;
-//	tags[5].ti_Data	= (IPTR)XSD(cl)->offbmclass;
+    	tags[1].ti_Tag	= aHidd_BitMap_ClassPtr;
+	tags[1].ti_Data	= (IPTR)XSD(cl)->onbmclass;
 	D(bug("[GDI] Creating framebuffer, ClassPtr is %p\n", tags[5].ti_Data));
     }
     else if (displayable)
     {
-    	tags[5].ti_Tag	= aHidd_BitMap_ClassPtr;
-	tags[5].ti_Data	= (IPTR)XSD(cl)->offbmclass;
+    	tags[1].ti_Tag	= aHidd_BitMap_ClassPtr;
+	tags[1].ti_Data	= (IPTR)XSD(cl)->offbmclass;
 	D(bug("[GDI] Creating displayable bitmap, ClassPtr is %p\n", tags[5].ti_Data));
     }
     else
@@ -403,8 +375,8 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
 	
 	if (usegdi)
 	{
-	    tags[5].ti_Tag  = aHidd_BitMap_ClassPtr;
-	    tags[5].ti_Data = (IPTR)XSD(cl)->offbmclass;
+	    tags[1].ti_Tag  = aHidd_BitMap_ClassPtr;
+	    tags[1].ti_Data = (IPTR)XSD(cl)->offbmclass;
 	    D(bug("[GDI] Creating offscreen bitmap, ClassPtr is %p\n", tags[5].ti_Data));
 	    
 	}
@@ -417,14 +389,11 @@ OOP_Object *GDICl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHid
     p.attrList = tags;
     
     newbm = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&p);
-    
     if (NULL != newbm && framebuffer)
     {
-        D(bug("Getting framebuffer drawable\n"));
-    	OOP_GetAttr(newbm, aHidd_GDIBitMap_Drawable, (IPTR *)&drawable);
-	data->fbwin = drawable;
+    	OOP_GetAttr(newbm, aHidd_GDIBitMap_Drawable, &drawable);
+	data->fbwin = (APTR)drawable;
     }
-    
     ReturnPtr("GDIGfx::NewBitMap", OOP_Object *, newbm);
 }
 
@@ -443,10 +412,6 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 	    	*msg->storage = (IPTR)data->display;
 		break;
 		
-/*	    case aoHidd_GDIGfx_SysScreen:
-	    	*msg->storage = (IPTR)data->screen;
-		break;
-*/	    
 	    default:
 	    	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 		break;
@@ -497,11 +462,9 @@ OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 	
     	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Width, &width);
 	OOP_GetAttr(msg->bitMap, aHidd_BitMap_Height, &height);
-
-#if ADJUST_WIN_SIZE		
+		
 	/* Send resize message to the GDI thread */
 	NATIVECALL(GDI_PutMsg, data->fbwin, NOTY_RESIZEWINDOW, width, height);
-#endif		
 		
 	fb = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
@@ -580,7 +543,7 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
     BOOL    	     ok = TRUE;
     int     	     template_mask;
 
-    EnterFunc(bug("initx11stuff()\n"));
+    EnterFunc(bug("initgdistuff()\n"));
 
     LOCK_GDI
     xsd->depth = GDICALL(GetDeviceCaps, xsd->display, BITSPIXEL);
@@ -598,7 +561,6 @@ static BOOL initgdistuff(struct gdi_staticdata *xsd)
 	kprintf("!!! GFX HIDD only supports truecolor diplays for now !!!\n");
 	return FALSE;
     }
-
     ReturnBool("initgdistuff", TRUE);
 }
 
