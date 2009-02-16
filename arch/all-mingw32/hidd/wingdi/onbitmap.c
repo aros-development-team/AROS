@@ -125,7 +125,7 @@ OOP_Object *GDIOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	nw.xsize = width;
 	nw.ysize = height;
 	nw.window = NULL;
-	D(bug("Creating a window\n"));
+	D(bug("Creating a window: %lux%lu\n", width, height));
 	/* Send a message to the GDI thread to create a window */
 	if (NATIVECALL(GDI_PutMsg, NULL, NOTY_WINCREATE, (IPTR)&nw, 0))
 	    Wait(SIGF_BLIT);

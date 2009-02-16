@@ -11,7 +11,7 @@
 #include <aros/kernel_host.h>
 #include "gdi.h"
 
-#define D(x) x
+#define D(x)
 
 DWORD thread_id;
 
@@ -31,14 +31,16 @@ DWORD WINAPI gdithread_entry(LPVOID p)
     ATOM wcl;
     WINDOWPLACEMENT wpos;
     WNDCLASS wcl_desc = {
-        CS_SAVEBITS,
+        CS_SAVEBITS|CS_NOCLOSE,
         window_callback,
         0,
         0,
         NULL,
         NULL,
+        NULL,
         COLOR_WINDOW,
-        NULL
+        NULL,
+        "AROS_Screen"
     };
     struct NewWindowMsg *nw;
 
@@ -54,8 +56,8 @@ DWORD WINAPI gdithread_entry(LPVOID p)
             	switch (msg.message) {
             	case NOTY_WINCREATE:
             	    nw = (struct NewWindowMsg *)msg.wParam;
-            	    nw->window = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, nw->xsize,  nw->ysize,
-            	    		       NULL, NULL, wcl_desc.hInstance, NULL);
+            	    nw->window = CreateWindow(wcl, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+            	        		      CW_USEDEFAULT, CW_USEDEFAULT, nw->xsize,  nw->ysize, NULL, NULL, wcl_desc.hInstance, NULL);
             	    ShowWindow(nw->window, SW_SHOW);
             	    UpdateWindow(nw->window);
             	    CauseException(2);
