@@ -575,7 +575,73 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 
     return TRUE;
 }
+/**************************************************************************************************/
+static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG SrcX, LONG SrcY, struct RastPort * destRP, 
+    LONG DestX, LONG DestY, LONG SizeX, LONG SizeY)
+{
+    ULONG depth;
+    struct BitMapHeader * bmhd;
 
+    depth = (ULONG) GetBitMapAttr(destRP->BitMap, BMA_DEPTH);
+    GetDTAttrs((Object *) g, PDTA_BitMapHeader, (IPTR)&bmhd, TAG_DONE);
+
+    if ((depth >= 15) && (bmhd->bmh_Masking == mskHasAlpha))
+    {
+        /* Transparency on high color rast port with alpha channel in picture*/
+        ULONG * img = (ULONG *) AllocVec(SizeX * SizeY * 4, MEMF_ANY);
+        if (img)
+        {
+            struct pdtBlitPixelArray pa;
+            pa.MethodID = PDTM_READPIXELARRAY;
+            pa.pbpa_PixelData = (UBYTE *) img;
+            pa.pbpa_PixelFormat = PBPAFMT_ARGB;
+            pa.pbpa_PixelArrayMod = SizeX * 4;
+            pa.pbpa_Left = 0;
+            pa.pbpa_Top = 0;
+            pa.pbpa_Width = SizeX;
+            pa.pbpa_Height = SizeY;
+            if(DoMethodA((Object *) g, (Msg) &pa))
+                WritePixelArrayAlpha(img, SrcX, SrcY, SizeX * 4, destRP, DestX, DestY, SizeX, SizeY, 0xffffffff);
+            FreeVec((APTR) img);
+        }
+    }
+    else
+    {   
+        if (bmhd->bmh_Masking == mskHasMask)
+        {
+            /* Transparency with mask */
+            APTR mask = NULL;
+
+            GetDTAttrs((Object *) g, PDTA_MaskPlane, (IPTR)&mask, TAG_DONE);
+
+            if (mask) 
+                BltMaskBitMapRastPort(pd->DestBM, 
+                                    SrcX,
+                                    SrcY,
+                                    destRP,
+                                    DestX,
+                                    DestY,
+                                    SizeX,
+                                    SizeY,
+                                    0xE0,
+                                    (PLANEPTR)mask);
+        }
+        else
+        {
+            /* All other cases */
+            BltBitMapRastPort( pd->DestBM,
+                              SrcX,
+                              SrcY,
+                              destRP,
+                              DestX,
+                              DestY,
+                              SizeX,
+                              SizeY,
+                              0xC0);
+        }
+    }
+
+}
 /**************************************************************************************************/
 
 STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
@@ -627,15 +693,7 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 	D(bug("picture.datatype/GM_RENDER: SizeX/Y %ld/%ld\n SrcX/Y %ld/%ld DestX/Y %ld/%ld\n",
 	    SizeX, SizeY, SrcX, SrcY, DestX, DestY));
 
-        BltBitMapRastPort( pd->DestBM,
-                          SrcX,
-                          SrcY,
-                          msg->gpr_RPort,
-                          DestX,
-                          DestY,
-                          SizeX,
-                          SizeY,
-                          0xC0);
+	render_on_rastport(pd, g, SrcX, SrcY, msg->gpr_RPort, DestX, DestY, SizeX, SizeY);
     }
     else /* if(pd->DestBuffer) || if(pd->DestBM) */
     {
@@ -1415,15 +1473,7 @@ STATIC IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
 	D(bug("picture.datatype/DTM_DRAW: SizeX/Y %ld/%ld SrcX/Y %ld/%ld DestX/Y %ld/%ld\n",
 	    SizeX, SizeY, SrcX, SrcY, DestX, DestY));
 
-        BltBitMapRastPort( pd->DestBM,
-                          SrcX,
-                          SrcY,
-                          msg->dtd_RPort,
-                          DestX,
-                          DestY,
-                          SizeX,
-                          SizeY,
-                          0xC0);
+	render_on_rastport(pd, g, SrcX, SrcY, msg->dtd_RPort, DestX, DestY, SizeX, SizeY);
         D(bug("picture.datatype/DTM_DRAW: Switched to image mode\n"));
         RetVal = TRUE;
     }
