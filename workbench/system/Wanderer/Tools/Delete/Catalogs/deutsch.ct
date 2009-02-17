@@ -1,0 +1,52 @@
+## version $VER: delete.catalog 1.0 (17.02.2008)
+## language deutsch
+## codeset 0
+; 
+MSG_TITLE (//)
+Delete
+; Delete
+;
+MSG_DELETE_REQUEST (//)
+Löschen?
+; Delete?
+;
+MSG_DELETE_CHOICE (//)
+Löschen|Abbrechen
+; Delete|Cancel
+;
+MSG_REQUEST (//)
+Soll '%s' wirklich gelöscht werden?
+; Are you sure you want to delete '%s'?
+;
+MSG_ERROR (//)
+Fehler
+; Error
+;
+MSG_OK (//)
+OK
+; OK
+;
+MSG_COULDNT_DELETE (//)
+Datei konnte nicht gelöscht werden.
+; Could not delete file.
+;
+MSG_COULDNT_ALLOCATE (//)
+Speicher konnte nicht bereitgestellt werden.
+; Could not allocate memory.
+;
+MSG_COULDNT_LOCK (//)
+Dateisperre konnte nicht erstellt werden.
+; Could not lock file for deletion.
+;
+MSG_INFO (//)
+Info
+; Info
+;
+MSG_WRONG_ARGS (//)
+Fehler: Falsche Anzahl an Argumenten.
+; Error: Wrong number of arguments.
+;
+MSG_WB_ONLY (//)
+Fehler: Das Programm muss von Wanderer aus gestartet werden.\n
+; Error: Must be started from Wanderer.\n
+;
