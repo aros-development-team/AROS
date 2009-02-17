@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include <proto/kernel.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
 
@@ -89,6 +90,11 @@ static void init_empty_cursor(Window w, GC c, struct gdi_staticdata *xsd);
     	    	    	struct gdi_staticdata *xsd);
 */
 
+void GfxIntHandler(struct NewWindowMsg *nw, struct Task *task)
+{
+    Signal(task, SIGF_BLIT);
+}
+
 /****************************************************************************************/
 
 OOP_Object *GDIOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -105,6 +111,7 @@ OOP_Object *GDIOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         IPTR width, height;
         struct NewWindowMsg nw;
         struct Task *me;
+        void *gfx_int;
 	
         data = OOP_INST_DATA(cl, o);
 	
@@ -125,10 +132,15 @@ OOP_Object *GDIOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 	nw.xsize = width;
 	nw.ysize = height;
 	nw.window = NULL;
+	me = FindTask(NULL);
 	D(bug("Creating a window: %lux%lu\n", width, height));
-	/* Send a message to the GDI thread to create a window */
-	if (NATIVECALL(GDI_PutMsg, NULL, NOTY_WINCREATE, (IPTR)&nw, 0))
-	    Wait(SIGF_BLIT);
+	gfx_int = KrnAddExceptionHandler(2, GfxIntHandler, &nw, me);
+	if (gfx_int) {
+	    /* Send a message to the GDI thread to create a window */
+	    if (NATIVECALL(GDI_PutMsg, NULL, NOTY_WINCREATE, (IPTR)&nw, 0))
+	        Wait(SIGF_BLIT);
+	    KrnRemExceptionHandler(gfx_int);
+	}
 	D(bug("Created window 0x%p\n", nw.window));
     	if (nw.window) {
     	    data->drawable = nw.window;
@@ -151,69 +163,7 @@ VOID GDIOnBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     
     EnterFunc(bug("GDIGfx.BitMap::Dispose()\n"));
     
-    /* Someone is trying to dispose the framefuffer. This should really
-    never happen in AROS. */
-    
-    //CCALL(raise, 19);
-    
-/*  if (data->gc)
-    {
-    	LOCK_GDI
-    	XCALL(XFreeGC, data->display, data->gc);
-    	UNLOCK_GDI	
-    }
-
-    if (DRAWABLE(data))
-    {
-	struct MsgPort    *port;
-	struct notify_msg *msg;
-
-	port = CreateMsgPort();
-	msg = AllocMem(sizeof (*msg), MEMF_PUBLIC | MEMF_CLEAR);
-
-	if (NULL == port || NULL == msg)
-	{
-	    kprintf("COULD NOT CREATE PORT OR ALLOCATE MEM IN onbitmap_dispose()\n");
-    	    //CCALL(raise, 19);
-	}
-	
-	msg->notify_type = NOTY_WINDISPOSE;
-   	msg->xdisplay = GetSysDisplay();
-	msg->xwindow = DRAWABLE(data);
-	msg->masterxwindow = MASTERWIN(data);
-	msg->execmsg.mn_ReplyPort = port;
-	
-	PutMsg(XSD(cl)->gditask_notify_port, (struct Message *)msg);
-	WaitPort(port);
-	
-	GetMsg(port);
-	
-	FreeMem(msg, sizeof (*msg));
-	DeleteMsgPort(port);
-
-    	LOCK_GDI	
-    	XCALL(XDestroyWindow,  GetSysDisplay(), DRAWABLE(data));
-	XCALL(XFlush,  GetSysDisplay() );
-    	UNLOCK_GDI		
-    }
-
-#if ADJUST_XWIN_SIZE
-    if (MASTERWIN(data))
-    {
-    	LOCK_GDI
-        XCALL(XDestroyWindow,  GetSysDisplay(), MASTERWIN(data));
-	XCALL(XFlush,  GetSysDisplay() );
-    	UNLOCK_GDI
-    }
-#endif
-
-    if (data->flags & BMDF_COLORMAP_ALLOCED)
-    {
-    	LOCK_GDI
-	XCALL(XFreeColormap, GetSysDisplay(), data->colmap);
-    	UNLOCK_GDI
-    }
-    */
+    NATIVECALL(GDI_PutMsg, data->drawable, WM_CLOSE, 0, 0);
     OOP_DoSuperMethod(cl, o, msg);
     
     ReturnVoid("GDIGfx.BitMap::Dispose");

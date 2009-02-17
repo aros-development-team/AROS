@@ -30,8 +30,8 @@
 
 #include <aros/symbolsets.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -84,8 +84,8 @@ static struct OOP_ABDescr attrbases[] =
 OOP_Object *GDIOffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object  *friend = NULL, *pixfmt;
-    APTR 	 friend_drawable = NULL;
-    APTR	 display;
+/*  APTR 	 friend_drawable = NULL;*/
+    APTR	 display, my_dc, my_bitmap, orig_bitmap;
     ULONG   	 width, height;
     IPTR	 depth;
     IPTR    	 attrs[num_Hidd_BitMap_Attrs];
@@ -117,92 +117,53 @@ OOP_Object *GDIOffBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
     /* Get the GDI object from the friend bitmap */
-    if (NULL != friend)
+/*  if (NULL != friend)
     {
 	OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
-    }
+    }*/
 
     display = (APTR)GetTagData(aHidd_GDIGfx_SysDisplay, 0, msg->attrList);
-    
-    D(bug("Creating GDI bitmap, %p, %d, %d, %d\n", friend_drawable, width, height, depth));
 
-    data = OOP_INST_DATA(cl, o);
-    /* clear all data  */
-    memset(data, 0, sizeof(struct bitmap_data));
-    	
+    D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
+
     LOCK_GDI
-    data->drawable = GDICALL(CreateCompatibleDC, display);
-    if (data->drawable) {
-        data->bitmap = GDICALL(CreateCompatibleBitmap, display, width, height);
-        if (data->bitmap)
-            data->dc_bitmap = GDICALL(SelectObject, data->drawable, data->bitmap);
+    my_dc = GDICALL(CreateCompatibleDC, display);
+    D(bug("[GDI] Memory device context: 0x%p\n", my_dc));
+    if (my_dc) {
+        my_bitmap = GDICALL(CreateCompatibleBitmap, display, width, height);
+        D(bug("[GDI] Memory bitmap: 0x%p\n", my_bitmap));
+        if (my_bitmap)
+            orig_bitmap = GDICALL(SelectObject, my_dc, my_bitmap);
+        D(bug("[GDI] Olriginal DC bitmap: 0x%p\n", orig_bitmap));
     }
     UNLOCK_GDI
 
-    if (!data->drawable)
+    if (!my_dc)
     	return NULL;
-    if (!data->dc_bitmap)
+    if (!orig_bitmap)
         goto dispose_bitmap;
     
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
-    
-    if (NULL == o)
-    {
-    	/* Delete the drawable */
-	goto dispose_bitmap;
-    }
-    else
-    {
+    D(bug("[GDI] Object created by superclass: 0x%p\n", o));
+    if (o) {
+        data = OOP_INST_DATA(cl, o);
+        /* clear all data  */
+        memset(data, 0, sizeof(struct bitmap_data));
 	/* Get some info passed to us by the gdigfxhidd class */
 	data->display = display;
-/*	data->cursor  = (Cursor)   GetTagData(aHidd_GDIGfx_SysCursor,  0, msg->attrList);
-	data->colmap  = (Colormap) GetTagData(aHidd_GDIGfx_ColorMap,   0, msg->attrList);
-
-	D(bug("Creating GC\n"));
-	 
-	gcval.plane_mask = AllPlanes;
-	gcval.graphics_exposures = False;
-	 
-    	LOCK_GDI	    
-	data->gc = XCALL(XCreateGC,  data->display, DRAWABLE(data),
-	    	    	      GCPlaneMask | GCGraphicsExposures, &gcval);
-
-    	UNLOCK_GDI
-			
-	if (data->gc)
-	{
-    	    LOCK_GDI	    
-	    XCALL(XFlush, data->display);
-    	    UNLOCK_GDI
-	}
-	else
-	{
-	    ok = FALSE;
-	}
-	
-		
-    	if (!ok)
-	{
-	    OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
-	    
-    	    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
-	    o = NULL;
-    	}
-*/
-
+/*	data->cursor  = (Cursor)   GetTagData(aHidd_GDIGfx_SysCursor,  0, msg->attrList);*/
+	data->drawable = my_dc;
+	data->bitmap = my_bitmap;
+	data->dc_bitmap = orig_bitmap;
+    	ReturnPtr("GDIGfx.OffBitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
-    
-    
-    ReturnPtr("GDIGfx.OffBitMap::New()", OOP_Object *, o);
-
 dispose_bitmap:    
     LOCK_GDI
-    if (data->dc_bitmap)
-    	GDICALL(SelectObject, data->drawable, data->dc_bitmap);
-    if (data->bitmap)
-        GDICALL(DeleteObject, data->bitmap);
-    if (data->drawable)
-        GDICALL(DeleteDC, data->drawable);
+    if (orig_bitmap)
+    	GDICALL(SelectObject, my_dc, orig_bitmap);
+    if (my_bitmap)
+        GDICALL(DeleteObject, my_bitmap);
+    GDICALL(DeleteDC, my_dc);
     UNLOCK_GDI
     
     ReturnPtr("GDIGfx.OffBitMap::New()", OOP_Object *, NULL);

@@ -32,7 +32,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "gdi.h"
-#include "fullscreen.h"
+#include "winapi.h"
 
 /****************************************************************************************/
 

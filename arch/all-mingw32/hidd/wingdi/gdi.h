@@ -9,14 +9,12 @@
     Lang: English.
 */
 
-#ifndef WM_QUIT
-#define WM_QUIT 18
+#ifndef WM_USER
 #define WM_USER 1024
 #endif
 
-#define NOTY_WINCREATE    (WM_USER+1)
-#define NOTY_WINDISPOSE   (WM_USER+2)
-#define NOTY_RESIZEWINDOW (WM_USER+3)
+#define NOTY_WINCREATE    (WM_USER)
+#define NOTY_RESIZEWINDOW (WM_USER+1)
 
 struct NewWindowMsg
 {

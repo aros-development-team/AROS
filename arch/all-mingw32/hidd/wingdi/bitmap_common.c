@@ -62,13 +62,15 @@ VOID MNAME(Hidd_BitMap__PutPixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     APTR dc;
-     
+    
+    DB2(bug("[GDI] hidd.bitmap.gdibitmap::PutPixel(0x%p): (%lu, %lu) = 0x%08lX\n", o, msg->x, msg->y, msg->pixel));
     LOCK_GDI
     dc = GET_DC(data);
     if (dc) {
     	GDICALL(SetPixel, dc, msg->x, msg->y, msg->pixel);
     	FREE_DC(data, dc);
     }
+        D(else bug("[GDI] hidd.bitmap.gdibitmap::PutPixel(0x%p): Failed to get device context\n", o);)
     UNLOCK_GDI
 }
 
@@ -98,9 +100,8 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     APTR dc, br;
     ULONG col, mode;
-        
-    EnterFunc(bug("GDIGfx.BitMap::FillRect(%d,%d,%d,%d)\n",
-    	          msg->minX, msg->minY, msg->maxX, msg->maxY));
+    
+    D(bug("[GDI] hidd.bitmap.gdibitmap::FillRect(%d,%d,%d,%d)\n", msg->minX, msg->minY, msg->maxX, msg->maxY));
     
     switch (GC_DRMD(msg->gc)) {
     case vHidd_GC_DrawMode_Clear:
@@ -138,6 +139,7 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     LOCK_GDI
     dc = GET_DC(data);
     if (dc) {
+        D(bug("[GDI] Brush color 0x%08lX, mode 0x%08lX\n", col, mode));
     	br = GDICALL(CreateSolidBrush, col);
     	if (br) {
     	    GDICALL(PatBlt, dc, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mode);
@@ -146,53 +148,6 @@ VOID MNAME(Hidd_BitMap__FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     	FREE_DC(data, dc);
     }
     UNLOCK_GDI    
-    
-    ReturnVoid("GDIGfx.BitMap::FillRect");    
-}
-
-/****************************************************************************************/
-
-VOID MNAME(Hidd_BitMap__GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
-{    
-    ASSERT(msg->width > 0 && msg->height > 0);
-    
-/*  getimage_xlib(cl, o, msg->x, msg->y, msg->width, msg->height,
-	    	       msg->pixels, (APTR (*)())ximage_to_buf, msg);*/
-}
-
-/****************************************************************************************/
-
-VOID MNAME(Hidd_BitMap__GetImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
-{
-    ASSERT(msg->width != 0 && msg->height != 0);
-/*  getimage_xlib(cl, o, msg->x, msg->y, msg->width, msg->height,
-	    	      msg->pixels, (APTR (*)())ximage_to_buf_lut, msg);*/
-}
-
-/****************************************************************************************/
-
-VOID MNAME(Hidd_BitMap__PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
-{
-    EnterFunc(bug("GDIGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
-	
-/*  putimage_xlib(cl, o, msg->gc, msg->x, msg->y,
-	    	      msg->width, msg->height, msg->pixels,
-		      (APTR (*)()) buf_to_ximage, msg);*/
-    ReturnVoid("GDIGfx.BitMap::PutImage");
-}
-
-/****************************************************************************************/
-
-VOID MNAME(Hidd_BitMap__PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
-{
-    EnterFunc(bug("GDIGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
-	
-/*  putimage_xlib(cl, o, msg->gc, msg->x, msg->y,
-	    	      msg->width, msg->height, msg->pixels,
-		      (APTR (*)())buf_to_ximage_lut, msg);*/
-    ReturnVoid("GDIGfx.BitMap::PutImageLUT");
 }
 
 /****************************************************************************************/
@@ -202,24 +157,22 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
 )
 {
     struct bitmap_data  *data = OOP_INST_DATA(cl, o);
-/*  XImage  	    	*dest_im;*/
     HIDDT_Pixel     	 fg, bg;
     ULONG   	    	 cemd;
     LONG    	    	 x, y;    
-/*  Drawable 	    	 d = 0;*/
+    APTR 	    	 d = 0;
     
     EnterFunc(bug("GDIGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n",
     	    	  msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
-    
-#ifdef NOT_YET
+
     OOP_GetAttr(msg->srcBitMap, aHidd_GDIBitMap_Drawable, (IPTR *)&d);
     
-    if (0 == d)
-    {
+/*  if (0 == d)
+    {*/
     	/* We know nothing about the source bitmap. Let the superclass handle this */
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	return;
-    }
+/*  }
     
     fg = GC_FG(msg->gc);
     bg = GC_BG(msg->gc);
@@ -241,9 +194,9 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
 		       msg->destX, msg->destY, 0x01);
 	}
 	else
-	{
+	{*/
 	    /* Do transparent blit */
-	    
+/*	    
 	    XGCValues val;
 	    
 	    val.stipple		= d;
@@ -266,64 +219,7 @@ VOID MNAME(Hidd_BitMap__BlitColorExpansion)(OOP_Class *cl, OOP_Object *o,
 	
     	UNLOCK_GDI	
 
-    }
-    else
-    {
-    	/* We know nothing about the format of the source bitmap
-	   an must get single pixels
-	*/
-
-    	LOCK_GDI    
-	dest_im = XCALL(XGetImage, data->display, DRAWABLE(data),
-	    	    	    msg->destX, msg->destY, msg->width, msg->height,
-			    AllPlanes, ZPixmap);    	
-    	UNLOCK_GDI   
-	 
-	if (!dest_im)
-    	    ReturnVoid("GDIGfx.BitMap::BlitColorExpansion()");
-
-	D(bug("Src bm: %p\n", msg->srcBitMap));
-	
-	for (y = 0; y < msg->height; y ++)
-	{
-	    for (x = 0; x < msg->width; x ++)
-	    {
-		ULONG is_set;
-	    
-	    	is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
-	    
-	    	if (is_set)
-	    	{
-	    	    XPutPixel(dest_im, x, y, fg);
-		
-	    	}
-	    	else
-	    	{
-		    if (cemd & vHidd_GC_ColExp_Opaque)
-		    {
-			XPutPixel(dest_im, x, y, bg);
-		    }
-		}
-		
-	    } /* for (each x) */
-	    
-    	} /* for (each y) */
-    
-	/* Put image back into display */
-
-    	LOCK_GDI    
-	XCALL(XSetFunction, data->display, data->gc, GC_DRMD(msg->gc));
-	XCALL(XPutImage, data->display, DRAWABLE(data), data->gc, dest_im,
-	    	  0, 0, msg->destX, msg->destY, msg->width, msg->height);
-    	XDestroyImage(dest_im);
-    	UNLOCK_GDI
-    }
-
-    LOCK_GDI
-    XFLUSH(data->display);
-    UNLOCK_GDI 
-#endif
-    ReturnVoid("GDIGfx.BitMap::BlitColorExpansion");
+    }*/
 }
 
 /****************************************************************************************/

@@ -149,3 +149,6 @@
 #define TC_VA_ABLE 16384
 #define TC_RESERVED 32768
 #define TC_SCROLLBLT 65536
+
+#define WM_CLOSE 16
+#define WM_QUIT  18
